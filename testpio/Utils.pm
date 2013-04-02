@@ -165,6 +165,7 @@ sub loadmodules{
 		   erebus => "/usr/share/Modules/",
 		   yellowstone => "/glade/apps/opt/modulefiles",
 		   yellowstone_pgi => "/glade/apps/opt/modulefiles",
+		   yellowstone_gnu => "/glade/apps/opt/modulefiles",
 		   titan  => "/opt/modules/default/",
 		   athena => "/opt/modules/default/",
 		   kraken => "/opt/modules/default/",
@@ -282,6 +283,20 @@ sub loadmodules{
         module("rm netcdf");
         module("rm intel");
         module("load pgi/12.5");
+	module("load ncarcompilers/1.0");
+        module("unload netcdf");
+        module("load netcdf/4.2");
+        module("load pnetcdf/1.3.0");
+        module("load ncarenv/1.0");
+	module("load ncarbinlibs/0.0");
+	module("list");
+    }elsif($host eq "yellowstone_gnu"){
+	print "Loading modules for $host\n";
+	require "/glade/apps/opt/lmod/lmod/init/perl";    
+	module_check($modpath,"yellowstone");
+        module("rm netcdf");
+        module("rm intel");
+        module("load gnu");
 	module("load ncarcompilers/1.0");
         module("unload netcdf");
         module("load netcdf/4.2");

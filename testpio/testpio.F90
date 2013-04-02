@@ -641,22 +641,29 @@ program testpio
            
            if (trim(iodof_input) == 'namelist') then
               if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #7'
-              if(TestR8 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_double,  gDims3D,compDOF,IOdesc_r8,startpio,countpio)
+              if(TestR8 .or. TestCombo) &
+                   call PIO_initDecomp(PIOSYS,PIO_double,  gDims3D,compDOF,&
+                   IOdesc_r8,startpio,countpio)
               if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #7.1'
               
               if(TestR4 .or. TestCombo) then
                  if(iotype == PIO_IOTYPE_vdc2) then
                     call PIO_initDecomp(PIOSYS,  gDims3D,compDOF,IOdesc_r4,10)
                  else
-                    call PIO_initDecomp(PIOSYS,PIO_real,    gDims3D,compDOF,IOdesc_r4,startpio,countpio)
+                    call PIO_initDecomp(PIOSYS,PIO_real,    gDims3D,compDOF,&
+                         IOdesc_r4,startpio,countpio)
                  end if
               end if
               if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #7.2'
-              if(TestInt .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_int,     gDims3D,compDOF,IOdesc_i4,startpio,countpio)
+              if(TestInt .or. TestCombo) &
+                   call PIO_initDecomp(PIOSYS,PIO_int,     gDims3D,compDOF,&
+                   IOdesc_i4,startpio,countpio)
               if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8'
            else
               if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.1'
-              if(TestR8 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_double,  gDims3D,compDOF,IOdesc_r8)
+              if(TestR8 .or. TestCombo) &
+                   call PIO_initDecomp(PIOSYS,PIO_double,  gDims3D,compDOF,&
+                   IOdesc_r8)
               if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.2'
               if(TestR4 .or. TestCombo) then
                  if(iotype == PIO_IOTYPE_vdc2) then
@@ -664,31 +671,46 @@ program testpio
                     call PIO_initDecomp(PIOSYS,  gDims3D,compDOF,IOdesc_r4,10)
                  else
                     if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.2b'
-                    call PIO_initDecomp(PIOSYS,PIO_real,    gDims3D,compDOF,IOdesc_r4)
+                    call PIO_initDecomp(PIOSYS,PIO_real,    gDims3D,compDOF,&
+                         IOdesc_r4)
                  end if
               end if
 
               if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.3'
-              if(TestInt .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_int,     gDims3D,compDOF,IOdesc_i4)
+              if(TestInt .or. TestCombo) &
+                   call PIO_initDecomp(PIOSYS,PIO_int,     gDims3D,compDOF,&
+                   IOdesc_i4)
               if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.4'
            endif
         else
            if(iofmtd.eq.'nc' ) then ! netCDF
               if (num_iodofs == 1) then
                  if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.5'
-                 if(TestR8 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_double, gDims3D,lenblocks,compDOF,ioDOF,startpio,countpio,IOdesc_r8)
-                 if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.6'
-                 if(TestR4 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_real,   gDims3D,lenblocks,compDOF,ioDOF,startpio,countpio,IOdesc_r4)
+                 if(TestR8 .or. TestCombo) &
+                      call PIO_initDecomp(PIOSYS,PIO_double, gDims3D,lenblocks,&
+                      compDOF,ioDOF,startpio,countpio,IOdesc_r8)
+                 if(Debug)print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.6'
+                 if(TestR4 .or. TestCombo) &
+                      call PIO_initDecomp(PIOSYS,PIO_real,   gDims3D,lenblocks,&
+                      compDOF,ioDOF,startpio,countpio,IOdesc_r4)
                  if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.7'
-                 if(TestInt .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_int,    gDims3D,lenblocks,compDOF,ioDOF,startpio,countpio,IOdesc_i4)
-                 if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.8'
+                 if(TestInt .or. TestCombo) &
+                      call PIO_initDecomp(PIOSYS,PIO_int,    gDims3D,lenblocks,&
+                      compDOF,ioDOF,startpio,countpio,IOdesc_i4)
+                 if(Debug) print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.8'
               elseif (num_iodofs == 2) then
-                 if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.9'
-                 if(TestR8 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_double, gDims3D,lenblocks,compDOF,ioDOFR,ioDOFW,startpio,countpio,IOdesc_r8)
+                 if(Debug) print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.9'
+                 if(TestR8 .or. TestCombo) &
+                      call PIO_initDecomp(PIOSYS,PIO_double, gDims3D,lenblocks,&
+                      compDOF,ioDOFR,ioDOFW,startpio,countpio,IOdesc_r8)
                  if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.10'
-                 if(TestR4 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_real,   gDims3D,lenblocks,compDOF,ioDOFR,ioDOFW,startpio,countpio,IOdesc_r4)
+                 if(TestR4 .or. TestCombo) &
+                      call PIO_initDecomp(PIOSYS,PIO_real,   gDims3D,lenblocks,&
+                      compDOF,ioDOFR,ioDOFW,startpio,countpio,IOdesc_r4)
                  if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.11'
-                 if(TestInt .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_int,    gDims3D,lenblocks,compDOF,ioDOFR,ioDOFW,startpio,countpio,IOdesc_i4)
+                 if(TestInt .or. TestCombo) &
+                      call PIO_initDecomp(PIOSYS,PIO_int,    gDims3D,lenblocks,&
+                      compDOF,ioDOFR,ioDOFW,startpio,countpio,IOdesc_i4)
                  if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.12'
               else
                  call piodie(__FILE__,__LINE__,' num_iodofs not 1 or 2')
@@ -697,19 +719,31 @@ program testpio
               ! tcraig: there are cases where lenblocks is not valid here like different size IO blocks
               if (num_iodofs == 1) then
               if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.13'
-                 if(TestR8 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_double, gDims3D,lenblocks,compDOF,ioDOF,IOdesc_r8)
+                 if(TestR8 .or. TestCombo) &
+                      call PIO_initDecomp(PIOSYS,PIO_double, gDims3D,lenblocks,&
+                      compDOF,ioDOF,IOdesc_r8)
               if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.14'
-                 if(TestR4 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_real,   gDims3D,lenblocks,compDOF,ioDOF,IOdesc_r4)
+                 if(TestR4 .or. TestCombo) &
+                      call PIO_initDecomp(PIOSYS,PIO_real,   gDims3D,lenblocks,&
+                      compDOF,ioDOF,IOdesc_r4)
               if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.15'
-                 if(TestInt .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_int,    gDims3D,lenblocks,compDOF,ioDOF,IOdesc_i4)
+                 if(TestInt .or. TestCombo) &
+                      call PIO_initDecomp(PIOSYS,PIO_int,    gDims3D,lenblocks,&
+                      compDOF,ioDOF,IOdesc_i4)
               if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.16'
               elseif (num_iodofs == 2) then
               if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.17'
-                 if(TestR8 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_double, gDims3D,lenblocks,compDOF,ioDOFR,ioDOFW,IOdesc_r8)
+                 if(TestR8 .or. TestCombo) &
+                      call PIO_initDecomp(PIOSYS,PIO_double, gDims3D,lenblocks,&
+                      compDOF,ioDOFR,ioDOFW,IOdesc_r8)
               if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.18'
-                 if(TestR4 .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_real,   gDims3D,lenblocks,compDOF,ioDOFR,ioDOFW,IOdesc_r4)
+                 if(TestR4 .or. TestCombo) &
+                      call PIO_initDecomp(PIOSYS,PIO_real,   gDims3D,lenblocks,&
+                      compDOF,ioDOFR,ioDOFW,IOdesc_r4)
               if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.19'
-                 if(TestInt .or. TestCombo) call PIO_initDecomp(PIOSYS,PIO_int,    gDims3D,lenblocks,compDOF,ioDOFR,ioDOFW,IOdesc_i4)
+                 if(TestInt .or. TestCombo) &
+                      call PIO_initDecomp(PIOSYS,PIO_int,    gDims3D,lenblocks,&
+                      compDOF,ioDOFR,ioDOFW,IOdesc_i4)
               if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #8.20'
               else
                  call piodie(__FILE__,__LINE__,' num_iodofs not 1 or 2')

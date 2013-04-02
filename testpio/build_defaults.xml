@@ -97,6 +97,36 @@
 #BSUB -W 1:00
 '
  />  
+<yellowstone_gnu
+  PNETCDF_PATH="${PNETCDF}"
+  NETCDF_PATH="${NETCDF}"
+  ENV_MP_LABELIO="yes"
+  ENV_MP_MPILIB="mpich2"
+  CXX="g++"
+  CC="gcc"
+  FC="gfortran"
+  MPIFC="mpif90"
+  MPICC="mpicc"
+  MPICXX="mpiCC"
+  FFLAGS = "  "
+  CFLAGS = " "
+  CPPDEFS= "-DFORTRANUNDERSCORE  "
+  workdir="/glade/scratch/${USER}/testpio_gnu"
+  submit="bsub &lt; "
+  run = "mpirun.lsf"
+  corespernode="16"
+  conopts="--enable-filesystem-hints=gpfs "
+  preamble = '
+#BSUB -q small
+#BSUB -N
+#BSUB -x
+#BSUB -a poe
+#BSUB -o testpio.%J.stdout
+#BSUB -e testpio.%J.stderr
+#BSUB -J testpio_suite
+#BSUB -W 1:00
+'
+ />  
 
 
 <janus

@@ -689,7 +689,8 @@ contains
          minv = min(minv,testdof(n2,n1))
          maxv = max(maxv,testdof(n2,n1))
       enddo
-      write(6,*) trim(subname),' TESTDOF ntask=',n1,' size=',cnta(n1),' min=',minv,' max=',maxv,' values=',testdof(1:min(10,cnta(n1)),n1)
+      write(6,*) trim(subname),' TESTDOF ntask=',n1,' size=',cnta(n1),&
+           ' min=',minv,' max=',maxv,' values=',testdof(1:min(10,cnta(n1)),n1)
    enddo
    endif ! testonly
 

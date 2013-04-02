@@ -535,8 +535,8 @@ if test "$USE_COMPRESSION" = "yes"
           LDLIBS=" $LDLIBS -lexpat"
         fi	
 	AC_LANG_POP
-
 	CPPDEFS="$CPPDEFS -D_COMPRESSION"
+        AC_LANG_PUSH(Fortran)
         AC_MSG_CHECKING([how to link f90 with cxx])
         LDFLAGS_TMP=$LDFLAGS
 	LDFLAGS="$LDFLAGS -cxxlib"
