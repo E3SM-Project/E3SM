@@ -1,6 +1,6 @@
 # Relevant Directories within the HOMME repository
 # holding source files needed for building the library
-# and executable sweqx.
+# and executable swim.
 
 INCLUDE_DIRECTORIES ( ${Trilinos_INCLUDE_DIRS} ${Trilinos_TPL_INCLUDE_DIRS} )
 LINK_DIRECTORIES    ( ${Trilinos_LIBRARY_DIRS} ${Trilinos_TPL_LIBRARY_DIRS} )
@@ -17,7 +17,7 @@ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR}
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}
                     ${CMAKE_CURRENT_SOURCE_DIR}/share)
 
-# Set up swim specifc defaults 
+# Set up swim specfic defaults 
 IF (NOT SWIM_NP)
   SET (SWIM_NP 4 CACHE STRING "Default number of points (NP) in the element (default value is 4)")
 ENDIF ()
