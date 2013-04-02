@@ -1,6 +1,6 @@
  /*!  \page api PIO user interface
-  This is a list of all user interface routines
-  Lets not forget about the very important routine piolib_mod::PIO_freeDecomp
+  This is a list of all user interface routines:
+
   \section api_fileops PIO file Operations
      - \ref PIO_openfile
      - \ref PIO_createfile
@@ -15,7 +15,20 @@
   \section readwrite Reading and Writing distributed variables
     - \ref PIO_read_darray
     - \ref PIO_write_darray
-  \section netcdf Netcdf format specific routines 
+  \section utility Utility routines
+    - \ref PIO_setiotype
+    - \ref PIO_set_hint
+    - \ref PIO_numtoread
+    - \ref PIO_numtowrite
+    - \ref PIO_setframe
+    - \ref PIO_advanceframe
+    - \ref PIO_setdebuglevel
+    - \ref PIO_seterrorhandling
+    - \ref PIO_get_local_array_size
+    - \ref PIO_dupiodesc
+    - \ref PIO_getnumiotasks
+    - \ref PIO_set_blocksize
+  \section netcdf NetCDF format specific routines 
      Also see: http://www.unidata.ucar.edu/software/netcdf/docs/
      \subsection putget Reading/Writing netcdf metadata  
          - \ref PIO_get_att
@@ -27,6 +40,8 @@
     - \ref PIO_redef
     - \ref PIO_def_dim 
     - \ref PIO_def_var
+    - \ref PIO_copy_att
+     \subsection inqnc NetCDF file inquiry routines
     - \ref PIO_inquire
     - \ref PIO_inq_attname
     - \ref PIO_inq_att
@@ -40,20 +55,7 @@
     - \ref PIO_inq_dimid
     - \ref PIO_inq_dimname
     - \ref PIO_inq_dimlen
-    - \ref PIO_copy_att
     - \ref PIO_inquire_variable
     - \ref PIO_inquire_dimension
-  \section utility Utility routines
-    - \ref PIO_setiotype
-    - \ref PIO_set_hint
-    - \ref PIO_numtoread
-    - \ref PIO_numtowrite
-    - \ref PIO_setframe
-    - \ref PIO_advanceframe
-    - \ref PIO_setdebuglevel
-    - \ref PIO_seterrorhandling
-    - \ref PIO_get_local_array_size
-    - \ref PIO_setnumagg
-    - \ref PIO_dupiodesc
-    - \ref PIO_getnumiotasks
+
 */

@@ -6,7 +6,13 @@
 #ifdef BGL
 #define BGx
 #endif
-
+!>
+!! @file 
+!! @brief Initialization Routines for PIO
+!! 
+!! $Revision$
+!! $LastChangedDate$
+!<
 module piolib_mod
   !--------------
   use pio_kinds
@@ -261,7 +267,13 @@ module piolib_mod
 #endif
 
 contains
-
+!> 
+!! @public 
+!! @ingroup PIO_file_is_open
+!! @brief This logical function indicates if a file is open.
+!! @details
+!! @param File @copydoc file_desc_t
+!<
   logical function PIO_FILE_IS_OPEN(File)
     type(file_desc_t), intent(in) :: file
     pio_file_is_open = file%file_is_open
@@ -273,7 +285,8 @@ contains
 !! @ingroup PIO_get_local_array_size
 !! @brief This function returns the expected local size of an array associated with iodesc
 !! @details
-!! @param iodesc @copydoc io_desc_t
+!! @param iodesc 
+!! @copydoc io_desc_t
 !<
   integer function PIO_get_local_array_size(iodesc)
     type(io_desc_t), intent(in) :: iodesc   
@@ -286,7 +299,7 @@ contains
 !! @brief advances the record dimension of a variable in a netcdf format file 
 !!  or the block address in a binary file
 !! @details
-!! @param vardesc @copydoc var_desc_t
+!! @param[in,out] vardesc @copybrief var_desc_t 
 !<
   subroutine advanceframe(vardesc)
     type(var_desc_t), intent(inout) :: vardesc
@@ -2538,7 +2551,7 @@ contains
 !! @details  Input parameters are read on comp task 0 and ignored elsewhere.
 !! @param iosystem : a defined pio system descriptor created by a call to @ref PIO_init (see PIO_types)
 !! @param file	:  the returned file descriptor
-!! @param iotype : @copydoc PIO_iotype
+!! @param iotype : @copybrief PIO_iotype
 !! @param fname : the name of the file to open
 !! @param mode : a zero value (or PIO_nowrite) specifies the default
 !! behavior: open the dataset with read-only access, buffering and

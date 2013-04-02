@@ -13,31 +13,48 @@
  * Documents produced by Doxygen are derivative works derived from the
  * input used in their production; they are not affected by this license.
  *
- */ /*! \page install Installing
+ */ /*! \page install Installing PIO
 
-PIO uses the gnu autoconf tools, for historical reasons the configure
-script is in the pio subdirectory.  Before running configure you will
-need to know the location of some supporting libraries. 
+<ol>
+<li>Download the code from the following Google code subversion location:
 
-Set NETCDF_PATH to the netcdf install directory or --disable-netcdf to
+> http://parallelio.googlecode.com/svn/trunk/
+</li>
+
+<li>Configure - PIO uses the gnu autoconf tools, for historical reasons the configure
+script is in the pio subdirectory.  A complete set of configure arguments, options and flags is available by running:
+
+> configure --help.   
+
+Before running configure, you will need to know the location of some supporting libraries. 
+
+- Set the NETCDF_PATH environment variable to the netcdf install directory or --disable-netcdf to
 disable serial NetCDF support.
 
-Use the flag --enable-netcdf4 to enable the NetCDF4/HDF5 parallel interface.
+- Use the flag --enable-netcdf4 to enable the NetCDF4/HDF5 parallel interface.
 
-Set PNETCDF_PATH to the pnetcdf install directory, this will enable support
+- Set the PNETCDF_PATH environment variable to the pnetcdf install directory, This will enable support
 for parallel-netcdf
 
-Set CC, FC, MPICC, MPIFC to the serial and parallel c and fortran 90 compiler names.
+- Set the CC, FC, MPICC, and MPIFC environment variables to the serial and parallel C and Fortran 90 compiler names.
 
-That should be the minimal set of flags required to build pio, a complete set of flags is available by running configure --help.   
+This should be the minimal set of flags required to build pio.
 
 One additional flag of interest is --enable-filesystem-hints which can
 be set to gpfs or lustre.  You should only use this flag if you are sure that the
-file system you are using is either gpfs or lustre respectively.   
+file system you are using is either gpfs or lustre respectively. (ASB - what it you don't know? does it matter if this flag is set or not?)  </li>
 
-After configure completes use gmake to complete the build.   
+<li>After configure completes use gmake in the pio subdirectory to complete the build.   
 
-gmake install will move the compiled library and module files to the directory specified
-by $PREFIX which can be set by using the --prefix argument to configure.   Note that
-although the user application only needs to 'use pio'  at least some compilers require that
-all of the module files be located in the install directory.   
+> gmake
+
+Note that although the user application only needs to 'use pio'  at least some compilers require that
+all of the module files be located in the install directory. If that is the case, then running
+
+> gmake install 
+
+will move the compiled library and module files to the directory specified
+by $PREFIX which can be set by using the --prefix argument to configure.   </li>
+</ol>
+
+*/

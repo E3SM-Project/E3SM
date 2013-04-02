@@ -13,16 +13,18 @@
  * Documents produced by Doxygen are derivative works derived from the
  * input used in their production; they are not affected by this license.
  *
- */ /*! \page error Error Handling
+ */ /*! 
+\page error Error Handling
 
 By default PIO handles errors internally by printing a string
 describing the error and then calling mpi_abort.  Application
 developers can change this behaivior with a call to
-\ref PIO_seterrorhandling. @copydoc PIO_error_method 
+\ref PIO_seterrorhandling
 
 For example if a developer wanted
-to see if an input netcdf file contained the variable 'U' they might do the following
+to see if an input netcdf file contained the variable 'U' they might do the following:
 
 \verbinclude errorhandle
 
+\copydoc PIO_error_method
 */

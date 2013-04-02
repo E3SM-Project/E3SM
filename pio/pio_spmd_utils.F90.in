@@ -1,3 +1,9 @@
+!>
+!! @file 
+!! $Revision$
+!! $LastChangedDate$
+!! @brief SPMD helper routines
+!<
 #define __PIO_FILE__ "pio_spmd_utils.F90"
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !

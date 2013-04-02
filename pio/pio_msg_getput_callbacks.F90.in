@@ -1,10 +1,11 @@
 ! Not a module - this line is required by genf90.pl
-
-#define TYPETEXT 100
-#define TYPEREAL 101
-#define TYPEDOUBLE 102
-#define TYPEINT 103
-
+#include <dtypes.h>
+!>
+!! @file 
+!! $Revision$
+!! $LastChangedDate$
+!! @brief Callback functions for Asyncronous IO 
+!<
 subroutine string_handler_for_var1(file, varid, index, ndims, strlen, msg)
   use pio, only : file_desc_t, pio_get_var, pio_put_var
   use pio_msg_mod, only : pio_msg_getvar1

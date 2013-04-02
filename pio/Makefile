@@ -17,7 +17,7 @@ FDEPENDS=$(SRCDIR)/fdepends.awk
 DEPSUF = .d
 MODSUF = .mod
 CPPSUF = .f90
-
+GENF90 := ../bin
 
 ifeq (,$(PIOARCH))
   PIOARCH=conf
@@ -41,10 +41,10 @@ SRCS_FC =  pio.F90 \
 	    pio_mpi_utils.F90 \
             pio_nf_utils.F90 \
 	    pio_utils.F90 \
-            pio_quicksort.F90 \
             pio_msg_mod.F90 \
 	    calcdisplace_mod.F90 \
 	    pio_msg_callbacks.F90 \
+            pio_support.F90 \
             C_interface_mod.F90
 
 ifeq (yes,$(USE_COMPRESSION))
@@ -59,7 +59,6 @@ TEMPLATES_FC = pionfatt_mod.F90.in \
 	        alloc_mod.F90.in \
                 box_rearrange.F90.in \
                 rearrange.F90.in \
-                pio_support.F90.in \
 	        iompi_mod.F90.in  \
 	        piodarray.F90.in \
 	        pio_spmd_utils.F90.in \
@@ -71,6 +70,8 @@ MOD_SRCS := $(filter-out C_interface_mod.F90 pio_msg_callbacks.F90 pio_msg_getpu
 
 OBJS=  $(SRCS_C:.c=.o) \
        $(SRCS_FC:.F90=.o)
+
+PP_SRC=$(SRCS_FC:.F90=.f90)
 
 
 MODFILES := $(MOD_SRCS:.F90=$(MODSUF))
@@ -92,13 +93,15 @@ all: depends
 depends: $(DEPENDS)
 	@echo "Done updating dependencies"
 
+ppsrc: $(PP_SRC)
+
 
 #
 # Suffix rules
 #
 
 .SUFFIXES:
-.SUFFIXES: .o .c .F90 $(DEPSUF)
+.SUFFIXES: .o .c .F90  $(DEPSUF)
 
 
 # For each file foo.F90, make the depency file foo.d
@@ -109,15 +112,18 @@ depends: $(DEPENDS)
 
 
 SRCS_CPP=
-.F90.o:
+%.o : %.F90
 	$(MPIFC) -c $(FPPDEFS) $(FFLAGS) $(FOPTS) $(INCLUDES) $<
 
-.c.o:
+%.o : %.c
 	$(MPICC) -c $(CPPDEFS) $(CFLAGS) $(COPTS) $(INCLUDES) $<
+
+%.f90 : %.F90
+	$(CPP) $< -o  $@
 
 
 $(TEMPSRCFC): $(TEMPLATE_FC)
-	$(PERL) $(SRCDIR)/genf90.pl $< > $*.F90
+	$(PERL) $(GENF90)/genf90.pl $< > $*.F90
 
 
 
@@ -173,7 +179,6 @@ pionfget_mod.F90 : pionfget_mod.F90.in
 pionfput_mod.F90 : pionfput_mod.F90.in
 pionfread_mod.F90 : pionfread_mod.F90.in
 pionfwrite_mod.F90 : pionfwrite_mod.F90.in
-pio_support.F90 : pio_support.F90.in
 rearrange.F90 : rearrange.F90.in
 pio_spmd_utils.F90: pio_spmd_utils.F90.in
 pio_msg_getput_callbacks.F90 : pio_msg_getput_callbacks.F90.in

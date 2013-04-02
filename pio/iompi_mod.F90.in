@@ -1,31 +1,38 @@
 #define __PIO_FILE__ "iompi_mod.F90"
+!>
+!! @file 
+!! $Revision$
+!! $LastChangedDate$
+!! @brief The MPI-IO direct binary interface to PIO
+!<
 module iompi_mod
-    use pio_kinds, only : i4,r4,r8,log_kind,pio_offset
-    use pio_types, only : io_desc_t,file_desc_t,var_desc_t, &
-		  iotype_pbinary, &
-		  iotype_direct_pbinary,pio_noerr
+  use pio_kinds, only : i4,r4,r8,log_kind,pio_offset
+  use pio_types, only : io_desc_t,file_desc_t,var_desc_t, &
+       iotype_pbinary, &
+       iotype_direct_pbinary,pio_noerr
 #ifdef TIMING
-    use perf_mod, only : t_startf, t_stopf  !_EXTERNAL
+  use perf_mod, only : t_startf, t_stopf  !_EXTERNAL
 #endif
 
-    use pio_support
-    use alloc_mod, only : alloc_check
+  use pio_support
+  use alloc_mod, only : alloc_check
+  use iso_c_binding, only : c_sizeof  ! _EXTERNAL
 #ifndef NO_MPIMOD
-    use mpi ! _EXTERNAL
+  use mpi ! _EXTERNAL
 #endif
 
-    implicit none
-    private
+  implicit none
+  private
 
 #ifdef NO_MPIMOD  
-    include 'mpif.h'        ! _EXTERNAL
+  include 'mpif.h'        ! _EXTERNAL
 #endif
-    public :: open_mpiio, create_mpiio, close_mpiio, write_mpiio,read_mpiio
+  public :: open_mpiio, create_mpiio, close_mpiio, write_mpiio,read_mpiio
 
 !>
 !! @private
 !<
-    interface write_mpiio
+  interface write_mpiio
 ! TYPE int,real,double
        module procedure write_mpiio_{TYPE}
     end interface
@@ -189,7 +196,7 @@ contains
      ! write the record control word
      !-------------------------------
 
-     reclen=glen*sizeof(iobuf(1))
+     reclen=glen*c_sizeof(iobuf(1))
 
      if(iotype == iotype_direct_pbinary) then
 	File%offset = INT(varDesc%rec-1,kind=PIO_OFFSET)*reclen
@@ -255,7 +262,7 @@ contains
     call t_startf("pio_read_mpiio_{TYPE}")
 #endif
 #ifdef USEMPIIO
-     reclen=glen*sizeof(iobuf(1))
+     reclen=glen*c_sizeof(iobuf(1))
 
      if(Debug) print *, subName,':: IAM: ',File%iosystem%io_rank,' read_real8_mpiio: SIZE(IOBUF),n_RelemTYPE: ', &
                 SIZE(IOBUF),iodesc%Read%n_elemTYPE

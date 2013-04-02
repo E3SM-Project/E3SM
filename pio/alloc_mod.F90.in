@@ -1,4 +1,10 @@
 #define __PIO_FILE__ "alloc_mod.F90.in"
+!>
+!! @file 
+!! $Revision$
+!! $LastChangedDate$
+!! @brief Internal allocation routines for PIO
+!<
 module alloc_mod
 
   use pio_kinds

@@ -1,4 +1,10 @@
 #define __PIO_FILE__ "pionfatt_mod.F90"
+!>
+!! @file 
+!! $Revision$
+!! $LastChangedDate$
+!! @brief NetCDF attribute interface to PIO
+!<
 module pionfatt_mod
   use pio_kinds, only : r4, r8, i4
   use pio_types, only : iotype_netcdf, iotype_pnetcdf, pio_noerr

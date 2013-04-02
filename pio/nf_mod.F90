@@ -1,4 +1,12 @@
 #define __PIO_FILE__ "nf_mod.F90"
+!>
+!! @file
+!! @brief NetCDF interface routines
+!!
+!! $Revision$
+!! $LastChangedDate$
+!!
+!<
 module nf_mod
 
 #ifdef TIMING

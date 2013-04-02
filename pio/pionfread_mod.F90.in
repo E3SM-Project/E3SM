@@ -1,4 +1,10 @@
 #define __PIO_FILE__ "pionfread_mod.F90.in"
+!>
+!! @file 
+!! $Revision$
+!! $LastChangedDate$
+!! @brief Decomposed Read interface to NetCDF
+!<
 module pionfread_mod
 
   implicit none

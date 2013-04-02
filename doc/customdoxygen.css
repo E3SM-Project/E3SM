@@ -3,6 +3,7 @@
 body, table, div, p, dl {
 	font-family: Lucida Grande, Verdana, Geneva, Arial, sans-serif;
 	font-size: 12px;
+	margin: 5px;
 }
 
 /* @group Heading Levels */
@@ -495,4 +496,11 @@ proper pixel height of your image.
 address {
 	font-style: normal;
 	color: #333;
+}
+
+blockquote {
+    background-color: #DDDDDD;
+    border-left: 2px solid #9CAFD4;
+    margin: 0 24px 0 4px;
+    padding: 0 12px 0 16px;
 }

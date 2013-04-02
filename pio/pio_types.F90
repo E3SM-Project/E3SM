@@ -1,4 +1,11 @@
 #define __PIO_FILE__ "pio_types.F90"
+!>
+!! @file 
+!! @brief Derived datatypes and constants for PIO
+!! 
+!! $Revision$
+!! $LastChangedDate$
+!<
 module pio_types
     use pio_kinds
 
@@ -30,7 +37,7 @@ module pio_types
     !------------------------------------
 !>
 !! @public
-!! @struct iosystem_desc_t 
+!! @defgroup iosystem_desc_t 
 !! @brief A defined PIO system descriptor created by @ref PIO_init (see pio_types)
 !<
     type, public :: IOSystem_desc_t
@@ -83,7 +90,11 @@ module pio_types
     integer, parameter :: MAX_IO_SYSTEMS=6
     type(iosystem_list_t), save :: iosystems(MAX_IO_SYSTEMS)
 
-
+!> 
+!! @private
+!! @struct io_data_list
+!! @brief Linked list of buffers for pnetcdf non-blocking interface
+!>
     type, public :: io_data_list
        integer :: request
        real(r4), pointer :: data_real(:) => null()
@@ -94,9 +105,9 @@ module pio_types
 
      
 !> 
-!! @public
-!! @struct file_desc_t 
-!! @brief File descriptor returned by \ref PIO_openfile or \ref PIO_createfile (see pio_types)
+!! @defgroup file_desc_t
+!! File descriptor returned by \ref PIO_openfile or \ref PIO_createfile (see pio_types)
+!! 
 !>
     type, public :: File_desc_t
        type(iosystem_desc_t), pointer :: iosystem => null()
@@ -133,7 +144,7 @@ module pio_types
 
 !>
 !! @public 
-!! @struct io_desc_t io_desc_t
+!! @struct io_desc_t
 !! @brief  An io descriptor handle that is generated in @ref PIO_initdecomp 
 !! (see pio_types)
 !<
@@ -181,7 +192,7 @@ module pio_types
 
 !>
 !! @public
-!! @struct var_desc_t 
+!! @defgroup var_desc_t 
 !! @brief A variable descriptor returned from @ref PIO_def_var (see pio_types) 
 !<
     type, public :: Var_desc_t
@@ -242,16 +253,16 @@ module pio_types
 
 !> 
 !! @public
-!! @defgroup PIO_error_method error handling method 
-!! @brief  The three types of error handling methods are: 
+!! @defgroup PIO_error_method error_methods 
 !! @details
+!! The three types of error handling methods are: 
 !!  - PIO_INTERNAL_ERROR  : abort on error from any task
 !!  - PIO_BCAST_ERROR     : broadcast an error from io_rank 0 to all tasks in comm
 !!  - PIO_RETURN_ERROR    : do nothing - allow the user to handle it
 !<
-  integer(i4), public :: PIO_INTERNAL_ERROR = -51
-  integer(i4), public :: PIO_BCAST_ERROR = -52
-  integer(i4), public :: PIO_RETURN_ERROR = -53
+  integer(i4), public, parameter :: PIO_INTERNAL_ERROR = -51
+  integer(i4), public, parameter :: PIO_BCAST_ERROR = -52
+  integer(i4), public, parameter :: PIO_RETURN_ERROR = -53
 
 !>
 !! @public 

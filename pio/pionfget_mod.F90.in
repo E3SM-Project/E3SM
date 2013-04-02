@@ -1,4 +1,10 @@
 #define __PIO_FILE__ "pionfget_mod.F90"
+!>
+!! @file 
+!! $Revision$
+!! $LastChangedDate$
+!! @brief Read Routines for non-decomposed NetCDF data.
+!<
 module pionfget_mod
 #ifdef TIMING
   use perf_mod, only : t_startf, t_stopf      ! _EXTERNAL
@@ -27,9 +33,9 @@ module pionfget_mod
 #endif
 !>
 !! @defgroup PIO_get_var PIO_get_var
-!! @brief Reads netcdf metadata from a file
+!! @brief Reads non-decomposed data from a NetCDF file
 !! @details The get_var interface is provided as a simplified interface to
-!!  read variables from a netcdf format file.   The variable is read on the 
+!!  read variables from a NetCDF format file.   The variable is read on the 
 !!  root IO task and broadcast in its entirety to all tasks.  
 !<
   public :: get_var
@@ -47,13 +53,13 @@ CONTAINS
 !>
 !! @public
 !! @ingroup PIO_get_var
-!! @brief Writes an netcdf attribute to a file
+!! @brief Reads non-decomposed fields from a NetCDF file
 !! @details
-!! @param File @copydoc file_desc_t
+!! @param File @ref file_desc_t
 !! @param varid : The netcdf variable identifier
-!! @param index :
+!! @param index :  a multidimensional index that specifies which value to get
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr @copydoc error_return
+!! @retval ierr @ref error_return
 !<
   integer function get_var1_{TYPE} (File,varid, index, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar1
@@ -148,11 +154,11 @@ CONTAINS
 !! @ingroup PIO_get_var
 !! @brief Writes an netcdf attribute to a file
 !! @details
-!! @param File @copydoc file_desc_t
-!! @param vardesc @copydoc var_desc_t
-!! @param index :
+!! @param File @ref file_desc_t
+!! @param vardesc @ref var_desc_t
+!! @param index :  a multidimensional index that specifies which value to get
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr @copydoc error_return
+!! @retval ierr @ref error_return
 !<
   integer function get_var1_vdesc_{TYPE} (File,vardesc, index, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
@@ -173,12 +179,28 @@ CONTAINS
 !! @ingroup PIO_get_var
 !! @brief Writes an netcdf attribute to a file
 !! @details
-!! @param File @copydoc file_desc_t
+!! @param File @ref file_desc_t
 !! @param varid : The netcdf variable identifier
-!! @param start :
-!! @param count :
+!! @param start : A vector of size_t integers specifying the index in
+!!   the variable where the first of the data values will be read. The
+!!   indices are relative to 0, so for example, the first data value of
+!!   a variable would have index (0, 0, ... , 0). The length of start
+!!   must be the same as the number of dimensions of the specified
+!!   variable. The elements of start correspond, in order, to the
+!!   variable's dimensions. Hence, if the variable is a record variable,
+!!   the first index would correspond to the starting record number for
+!!   reading the data values.
+!! @param count : A vector of size_t integers specifying the edge
+!!   lengths along each dimension of the block of data values to be
+!!   read. To read a single value, for example, specify count as (1, 1,
+!!   ... , 1). The length of count is the number of dimensions of the
+!!   specified variable. The elements of count correspond, in order, to
+!!   the variable's dimensions. Hence, if the variable is a record
+!!   variable, the first element of count corresponds to a count of the
+!!   number of records to read.
+!! Note: setting any element of the count array to zero causes the function to exit without error, and without doing anything. 
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr @copydoc error_return
+!! @retval ierr @ref error_return
 !<
   integer function get_vara_{DIMS}d_{TYPE} (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
@@ -276,12 +298,28 @@ CONTAINS
 !! @ingroup PIO_get_var
 !! @brief Writes an netcdf attribute to a file
 !! @details
-!! @param File @copydoc file_desc_t
-!! @param vardesc @copydoc var_desc_t
-!! @param start :
-!! @param count :
+!! @param File @ref file_desc_t
+!! @param vardesc @ref var_desc_t
+!! @param start : A vector of size_t integers specifying the index in
+!!   the variable where the first of the data values will be read. The
+!!   indices are relative to 0, so for example, the first data value of
+!!   a variable would have index (0, 0, ... , 0). The length of start
+!!   must be the same as the number of dimensions of the specified
+!!   variable. The elements of start correspond, in order, to the
+!!   variable's dimensions. Hence, if the variable is a record variable,
+!!   the first index would correspond to the starting record number for
+!!   reading the data values.
+!! @param count : A vector of size_t integers specifying the edge
+!!   lengths along each dimension of the block of data values to be
+!!   read. To read a single value, for example, specify count as (1, 1,
+!!   ... , 1). The length of count is the number of dimensions of the
+!!   specified variable. The elements of count correspond, in order, to
+!!   the variable's dimensions. Hence, if the variable is a record
+!!   variable, the first element of count corresponds to a count of the
+!!   number of records to read.
+!! Note: setting any element of the count array to zero causes the function to exit without error, and without doing anything. 
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr @copydoc error_return
+!! @retval ierr @ref error_return
 !<
   integer function get_vara_vdesc_{DIMS}d_{TYPE} (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
@@ -300,10 +338,10 @@ CONTAINS
 !! @ingroup PIO_get_var
 !! @brief Writes an netcdf attribute to a file
 !! @details
-!! @param File @copydoc file_desc_t
+!! @param File @ref file_desc_t
 !! @param varid : The netcdf variable identifier
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr @copydoc error_return
+!! @retval ierr @ref error_return
 !<
   integer function get_var_{DIMS}d_{TYPE} (File,varid, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar_{DIMS}d
@@ -392,10 +430,10 @@ CONTAINS
 !! @ingroup PIO_get_var
 !! @brief Writes an netcdf attribute to a file
 !! @details
-!! @param File @copydoc file_desc_t
-!! @param vardesc @copydoc var_desc_t
+!! @param File @ref file_desc_t
+!! @param vardesc @ref var_desc_t
 !! @param ival : The value for the netcdf metadata
-!! @retval ierr @copydoc error_return
+!! @retval ierr @ref error_return
 !<
   integer function get_var_vdesc_{DIMS}d_{TYPE} (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File

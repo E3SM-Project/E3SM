@@ -1,9 +1,9 @@
 !> @file piovdc.F90
 !> @author  Yannick Polius <ypolius@ucar.edu>
-!> @version 1.0
-!> @date 03/22/2012
+!> @version $Revision$
+!> @date $LastChangedDate$
 !> @brief The piovdc library for writing Vapor Data Collection (VDC) 2 data files
-!> 
+!> https://wiki.ucar.edu/display/dasg/PIOVDC
 !> <br>
 !> @details The piovdc library is used to write VDC2 data files in a	 
 !> parallel manner using PIO. After the prerequisite library functions are 
