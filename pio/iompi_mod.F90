@@ -5,8 +5,8 @@
 #define __PIO_FILE__ "iompi_mod.F90"
 !>
 !! @file 
-!! $Revision: 752 $
-!! $LastChangedDate: 2013-04-02 13:23:33 -0400 (Tue, 02 Apr 2013) $
+!! $Revision: 757 $
+!! $LastChangedDate: 2013-04-02 13:55:15 -0600 (Tue, 02 Apr 2013) $
 !! @brief The MPI-IO direct binary interface to PIO
 !<
 module iompi_mod

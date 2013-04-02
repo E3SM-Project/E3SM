@@ -6,8 +6,8 @@
 ! Not a module - this line is required by genf90.pl
 !>
 !! @file 
-!! $Revision: 751 $
-!! $LastChangedDate: 2013-04-02 12:01:13 -0400 (Tue, 02 Apr 2013) $
+!! $Revision: 757 $
+!! $LastChangedDate: 2013-04-02 13:55:15 -0600 (Tue, 02 Apr 2013) $
 # 6 "pio_msg_getput_callbacks.F90.in"
 !! @brief Callback functions for Asyncronous IO 
 !<
