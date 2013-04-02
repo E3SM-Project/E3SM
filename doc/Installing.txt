@@ -38,11 +38,13 @@ for parallel-netcdf
 
 - Set the CC, FC, MPICC, and MPIFC environment variables to the serial and parallel C and Fortran 90 compiler names.
 
+- Use the --prefix=$PREFIX argument to set the correct installation directory. The default is /usr/local.
+
 This should be the minimal set of flags required to build pio.
 
 One additional flag of interest is --enable-filesystem-hints which can
 be set to gpfs or lustre.  You should only use this flag if you are sure that the
-file system you are using is either gpfs or lustre respectively. (ASB - what it you don't know? does it matter if this flag is set or not?)  </li>
+file system you are using is either gpfs or lustre respectively. If you are unsure, then do not use this flag. </li>
 
 <li>After configure completes use gmake in the pio subdirectory to complete the build.   
 
@@ -54,7 +56,7 @@ all of the module files be located in the install directory. If that is the case
 > gmake install 
 
 will move the compiled library and module files to the directory specified
-by $PREFIX which can be set by using the --prefix argument to configure.   </li>
+by $PREFIX.</li>
 </ol>
 
 */
