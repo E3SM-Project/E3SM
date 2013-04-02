@@ -6,8 +6,8 @@
 #define __PIO_FILE__ "pionfatt_mod.F90"
 !>
 !! @file 
-!! $Revision: 283 $
-!! $LastChangedDate: 2011-04-22 19:51:10 -0600 (Fri, 22 Apr 2011) $
+!! $Revision: 751 $
+!! $LastChangedDate: 2013-04-02 10:01:13 -0600 (Tue, 02 Apr 2013) $
 !! @brief NetCDF attribute interface to PIO
 !<
 module pionfatt_mod
