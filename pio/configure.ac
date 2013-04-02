@@ -65,10 +65,10 @@ AC_HELP_STRING([--enable-mpi2],
 [Enable use of mpi2 calls (default yes)]),
 [USE_MPI2=$enableval],[USE_MPI2=yes])
 
-AC_ARG_ENABLE(sizeof,
-AC_HELP_STRING([--enable-sizeof],
-[Enable use of sizeof() in Fortran (default auto detect)]),
-[FC_USE_SIZEOF=$enableval],[FC_USE_SIZEOF=default])
+AC_ARG_ENABLE(c_sizeof,
+AC_HELP_STRING([--enable-c_sizeof],
+[Enable use of c_sizeof() in Fortran (default auto detect)]),
+[FC_USE_C_SIZEOF=$enableval],[FC_USE_C_SIZEOF=default])
 
 AC_ARG_ENABLE(memmon,
 AC_HELP_STRING([--enable-memmon],
@@ -231,28 +231,45 @@ AC_LANG_POP(Fortran)
 
 
 ###########################################################################
-if test "$FC_USE_SIZEOF" = "default"
+if test "$FC_USE_C_SIZEOF" = "default"
   then AC_LANG_PUSH(Fortran)
-       AC_MSG_CHECKING([Fortran support for sizeof()])
+       AC_MSG_CHECKING([Fortran support for c_sizeof()])
        AC_COMPILE_IFELSE( [[
+        use iso_c_binding, only : c_sizeof 
         implicit none
         integer :: a,b 
-        b = sizeof(a)
+        b = c_sizeof(a)
         end]],
-                FC_USE_SIZEOF="yes", FC_USE_SIZEOF="no" )
+        FC_USE_C_SIZEOF="yes", FC_USE_C_SIZEOF="no" )
        AC_LANG_POP(Fortran)
 
-       if test "$FC_USE_SIZEOF" = "yes"
+       if test "$FC_USE_C_SIZEOF" = "yes"
          then AC_MSG_RESULT(yes)
-         else AC_MSG_RESULT(no)
-       fi
+         else 
+            AC_MSG_RESULT(no)
+            AC_MSG_CHECKING([Fortran support for sizeof()])
+            AC_COMPILE_IFELSE( [[
+              implicit none
+              integer :: a,b 
+              b = sizeof(a)
+              end]],
+              FC_USE_SIZEOF="yes", FC_USE_SIZEOF="no" )
+         AC_LANG_POP(Fortran)
+
+         if test "$FC_USE_SIZEOF" = "yes"
+           then AC_MSG_RESULT(yes)
+           else AC_MSG_RESULT(no)
+         fi
+    fi
 fi
 
-if test "$FC_USE_SIZEOF" = "no"
-  then CPPDEFS=" $CPPDEFS -DNO_SIZEOF "
+if test "$FC_USE_C_SIZEOF" = "no"
+  then CPPDEFS=" $CPPDEFS -DNO_C_SIZEOF "
+  if test "$FC_USE_SIZEOF" = "no"
+    then CPPDEFS=" $CPPDEFS -DNO_SIZEOF "
        echo "disabling Fortran sizeof()"
+  fi
 fi
-
 #####
 
 # A HACK TO FIX ACX_MPI TO GET MPI_LIB TO BE AN EMPTY STRING

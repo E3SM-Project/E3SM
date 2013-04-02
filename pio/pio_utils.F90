@@ -24,9 +24,7 @@ module pio_utils
 
   public :: check_netcdf 
   public :: bad_iotype 
-#ifdef _PNETCDF_OLD
-  public :: pnetcdf_version_check
-#endif
+
   
 
 contains
@@ -106,46 +104,6 @@ contains
 
   end subroutine bad_iotype
 
-#ifdef _PNETCDF_OLD
-  subroutine pnetcdf_version_check()
-    character(len=80) :: version
-    integer :: dot1, dot2, s
-    integer :: v1, v2, v3
-    integer, parameter :: rv1=1, rv2=1, rv3=0
-    logical,save :: pnetcdf_version_okay=.false.
-    character(len=180) :: error
-
-    if(pnetcdf_version_okay) return
-
-
-    write(error,*) 'Pnetcdf version appears to be older than minimum required ',rv1,'.',rv2,'.',rv3
-
-    version = nfmpi_inq_libvers()
-
-    dot1 = index(version,'.')
-    dot2 = index(version,'.',.true.)
-
-    s = index(version(1:dot1),' ',.true.)
-    read(version(s:dot1-1),'(i)') v1
-    read(version(dot1+1:dot2-1),'(i)') v2
-    s = dot2+index(version(dot2:),' ')
-!   print *,__FILE__,__LINE__,version,dot2,s
-    read(version(dot2+1:s-1),'(i)') v3
-
-    if(v1<rv1) then
-       call piodie(version,__LINE__,error)
-    else if(v1==rv1) then
-       if(v2<rv2) then
-          call piodie(version,__LINE__,error)
-       else if(v2==rv2) then
-          if(v3<rv3) then
-             call piodie(version,__LINE__,error)
-          end if
-       end if
-    end if
-    pnetcdf_version_okay=.true.
-  end subroutine pnetcdf_version_check
-#endif
-
+  
 
 end module pio_utils
