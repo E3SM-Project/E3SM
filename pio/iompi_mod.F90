@@ -6,7 +6,7 @@
 !>
 !! @file 
 !! $Revision: 752 $
-!! $LastChangedDate: 2013-04-02 11:23:33 -0600 (Tue, 02 Apr 2013) $
+!! $LastChangedDate: 2013-04-02 13:23:33 -0400 (Tue, 02 Apr 2013) $
 !! @brief The MPI-IO direct binary interface to PIO
 !<
 module iompi_mod
@@ -20,7 +20,7 @@ module iompi_mod
 
   use pio_support
   use alloc_mod, only : alloc_check
-#ifdef NO_C_SIZEOF 
+#ifndef NO_C_SIZEOF 
   use iso_c_binding, only : c_sizeof  ! _EXTERNAL
 #else 
 #define c_sizeof sizeof

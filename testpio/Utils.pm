@@ -78,7 +78,7 @@ sub projectInfo{
        $projectInfo = "#BSUB -R \"span[ptile=16]\"\n#BSUB -P $project\n";
        $projectInfo .= "#BSUB -R \"select[scratch_ok > 0]\"\n" if ($host=="yellowstone");
    }elsif($host =~ "titan"){
-     $project = `/sw/xt5/bin/showproj -s $host | tail -1`;
+     $project = `showproj -s $host | tail -1`;
      $projectInfo ="#PBS -A $project\n";
    }elsif($host =~ "athena" or $host =~ "kraken"){
 #    $project = `showproj -s athena | tail -1`;
@@ -187,12 +187,12 @@ sub loadmodules{
 #        module(" load xt-mpt/4.0.0");
 #	module(" load PrgEnv-pgi");
 #	module(" load xtpe-interlagos");
-        module("switch cray-mpich2    cray-mpich2/5.5.5");
-        module(" switch xt-libsci xt-libsci/11.1.01");
+        module("switch cray-mpich2    cray-mpich2/5.6.3");
+        module(" switch xt-libsci xt-libsci/12.0.00");
         module(" swap xt-asyncpe xt-asyncpe/5.16");
         module("load szip/2.1");
 #        module("load hdf5-parallel/1.8.8");
-	module(" switch pgi pgi/12.5.0");
+	module(" switch pgi pgi/12.10.0");
 	module(" load netcdf-hdf5parallel/4.2.0");      
 	module(" load parallel-netcdf/1.3.1");
 #	module(" load para");

@@ -16,7 +16,7 @@ module iompi_mod
 
   use pio_support
   use alloc_mod, only : alloc_check
-#ifdef NO_C_SIZEOF 
+#ifndef NO_C_SIZEOF 
   use iso_c_binding, only : c_sizeof  ! _EXTERNAL
 #else 
 #define c_sizeof sizeof
