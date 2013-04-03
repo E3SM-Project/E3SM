@@ -55,6 +55,9 @@ module spelt_mod
     real (kind=real_kind)    :: Rm(1-nhe:nc+nhe,1-nhe:nc+nhe,nlev,ntrac_d)
     real (kind=real_kind)    :: fluxhigh(nc,nc,nlev,ntrac_d,4)
     
+!     real (kind=real_kind)    :: c_low(1-nhe:nc+nhe,1-nhe:nc+nhe,nlev,ntrac_d)  % use for min max of low order solution
+    
+    real (kind=real_kind)    :: maxcfl(2,nlev)
     integer                  :: Facenumber
   end type spelt_struct
   
@@ -78,6 +81,7 @@ subroutine spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
   ! ------EXTERNAL----------------
   use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
   ! -----------------------------------------------  
+  use control_mod, only : test_cfldep
   
   implicit none
   type (element_t), intent(inout)             :: elem(:)
@@ -125,7 +129,9 @@ subroutine spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
 !       call spelt_dep_from_gll(elem(ie), deriv, spelt(ie)%asphere,dsphere2,tstep,tl,k)
 !       call get_contravelocities(elem(ie),spelt(ie),contrauv, k,deriv)         
       !search has not to be done for all tracers!
-      
+      if (test_cfldep) then
+        call check_departurecell(spelt(ie),dsphere2,k) 
+      endif
       do j=1,nep
         do i=1,nep
           call cell_search(elem(ie),spelt(ie), dsphere1(i,j),icell1(i,j), jcell1(i,j),dref1(i,j),alphabeta, face_nodep)
@@ -186,7 +192,7 @@ subroutine spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
               i=1+(icell-1)*nipm
               j=1+(jcell-1)*nipm
               
-              dx=spelt(ie)%dab(icell)   
+              dx=spelt(ie)%dab(icell)  
               dy=spelt(ie)%dab(jcell)
               
               flux(1) = dy * (fluxval(i,j,1) + 4.0D0 * fluxval(i,j+1,1) + fluxval(i,j+2,1))/6.0D0  ! west
@@ -446,6 +452,7 @@ subroutine spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
   use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
   ! -----------------------------------------------  
   use edge_mod, only : ghostbuffertr_t, ghostvpackR, ghostvunpackR
+  use control_mod, only : test_cfldep
        
   implicit none
   type (element_t), intent(inout)             :: elem(:)
@@ -473,7 +480,7 @@ subroutine spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
   integer                                     :: icell1(1:nep,1:nep), jcell1(1:nep,1:nep)     
   integer                                     :: icell2(1:nep,1:nep), jcell2(1:nep,1:nep)
   
-  integer                                     :: icell, jcell, jx, jy
+  integer                                     :: icell, jcell, jx, jy, jup1, iup1, jup2, iup2
   real (kind=real_kind)                       :: dxoy, dxyi, dt6, sg, sga
   type (cartesian2D_t)                        :: alphabeta
   real (kind=real_kind)                       :: dx, dy, tmp,tmpR, tmpQ, minphi, maxphi
@@ -484,12 +491,15 @@ subroutine spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
     do ie=nets,nete 
       do k=1, nlev
         !FOR BENCHMARK TESTS
-        !       call solidbody_all(spelt(ie), dsphere1,dsphere2,contrauv,k) 
+!               call solidbody_all(spelt(ie), dsphere1,dsphere2,contrauv,k) 
         call boomerang_all(spelt(ie), dsphere1,dsphere2,contrauv,k,tl%nstep)
         !FOR USING THE SE VELOCITIES    
-  !       call spelt_dep_from_gll(elem(ie), deriv, spelt(ie)%asphere,dsphere1,0.5D0*tstep,tl,k)         
-  !       call spelt_dep_from_gll(elem(ie), deriv, spelt(ie)%asphere,dsphere2,tstep,tl,k)
-  !       call get_contravelocities(elem(ie),spelt(ie),contrauv, k,deriv)    
+!         call spelt_dep_from_gll(elem(ie), deriv, spelt(ie)%asphere,dsphere1,0.5D0*tstep,tl,k)         
+!         call spelt_dep_from_gll(elem(ie), deriv, spelt(ie)%asphere,dsphere2,tstep,tl,k)
+!         call get_contravelocities(elem(ie),spelt(ie),contrauv, k,deriv)   
+         if (test_cfldep) then
+           call check_departurecell(spelt(ie),dsphere2,k) 
+         endif
         !search has not to be done for all tracers!
         do j=1,nep
           do i=1,nep
@@ -537,28 +547,47 @@ subroutine spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
             end do
           end do
 
-        !calculate low order flux
+        !calculate low order flux, iterate over edges!
         do j=1,nc+1
           do i=1,nc
             dx=spelt(ie)%dab(i)   
             dy=dx
-            icell=2+(i-1)*nipm
-            jcell=1+(j-1)*nipm
+            jx=2+(i-1)*nipm
+            jy=1+(j-1)*nipm
             
-            if (contrauv(jcell,icell,1,1)>0.0D0) then
-              fluxlowx(j,i)=dy*tstep*contrauv(jcell,icell,1,1)* &
-                            spelt(ie)%c(jcell-1,icell,k,itr,tl%n0)*spelt(ie)%sga(jcell,icell)
-            else
-              fluxlowx(j,i)=dy*tstep*contrauv(jcell,icell,1,1)* &
-                            spelt(ie)%c(jcell+1,icell,k,itr,tl%n0)*spelt(ie)%sga(jcell,icell)
-            endif
-            if (contrauv(icell,jcell,2,1)>0.0D0) then
-              fluxlowy(i,j)=dx*tstep*contrauv(icell,jcell,2,1)* &
-                            spelt(ie)%c(icell,jcell-1,k,itr,tl%n0)*spelt(ie)%sga(icell,jcell)
-            else
-              fluxlowy(i,j)=dx*tstep*contrauv(icell,jcell,2,1)* &
-                            spelt(ie)%c(icell,jcell+1,k,itr,tl%n0)*spelt(ie)%sga(icell,jcell)
-            endif  
+            iup1=2+(icell1(jy,jx)-1)*nipm
+            jup1=2+(jcell1(jy,jx)-1)*nipm
+            iup2=2+(icell2(jy,jx)-1)*nipm
+            jup2=2+(jcell2(jy,jx)-1)*nipm
+
+            fluxlowx(j,i)=dy*(tstep/2.0D0)* &
+                          (contrauv(jy,jx,1,3)*spelt(ie)%c(iup2,jup2,k,itr,tl%n0)*spelt(ie)%sga(jy,jx) + &
+                           contrauv(jy,jx,1,2)*spelt(ie)%c(iup1,jup1,k,itr,tl%n0)*spelt(ie)%sga(jy,jx))
+            
+            iup1=2+(icell1(jx,jy)-1)*nipm
+            jup1=2+(jcell1(jx,jy)-1)*nipm
+            iup2=2+(icell2(jx,jy)-1)*nipm
+            jup2=2+(jcell2(jx,jy)-1)*nipm
+            fluxlowy(i,j)=dx*(tstep/2.0D0)* &
+                          (contrauv(jx,jy,2,3)*spelt(ie)%c(iup2,jup2,k,itr,tl%n0)*spelt(ie)%sga(jx,jy) + &
+                           contrauv(jx,jy,2,2)*spelt(ie)%c(iup1,jup1,k,itr,tl%n0)*spelt(ie)%sga(jx,jy))
+            
+            
+!              if (contrauv(jy,jx,1,1)>0.0D0) then
+!                fluxlowx(j,i)=dy*tstep*contrauv(jy,jx,1,1)* &
+!                              spelt(ie)%c(jy-1,jx,k,itr,tl%n0)*spelt(ie)%sga(jy,jx)
+!              else
+!                fluxlowx(j,i)=dy*tstep*contrauv(jy,jx,1,1)* &
+!                              spelt(ie)%c(jy+1,jx,k,itr,tl%n0)*spelt(ie)%sga(jy,jx)
+!              endif
+!              if (contrauv(jx,jy,2,1)>0.0D0) then
+!                fluxlowy(i,j)=dx*tstep*contrauv(jx,jy,2,1)* &
+!                              spelt(ie)%c(jx,jy-1,k,itr,tl%n0)*spelt(ie)%sga(jx,jy)
+!              else
+!                fluxlowy(i,j)=dx*tstep*contrauv(jx,jy,2,1)* &
+!                              spelt(ie)%c(jx,jy+1,k,itr,tl%n0)*spelt(ie)%sga(jx,jy)
+!              endif  
+
                      
           end do
         end do
@@ -586,18 +615,74 @@ subroutine spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
                                                             fluxval(jx+2,jy+2,1)) / 6.0D0 - fluxlowx(icell+1,jcell)! east
             spelt(ie)%fluxhigh(icell,jcell,k,itr,4) = dx * (fluxval(jx+2,jy+2,2) + 4.0D0 * fluxval(jx+1,jy+2,2) + &
                                                             fluxval(jx,jy+2,2)) / 6.0D0 - fluxlowy(icell,jcell+1)! north
+                                                            
+          !UNCOMMENT IF you want to use min/max from the low order soltution                                                  
+!             spelt(ie)%c_low(icell,jcell,k,itr)=c_low(icell,jcell)                                                
+!           end do
+!         end do
+!       end do !ntrac
+!     end do   !nlev
+!     call ghostVpackR(factorR, spelt(ie)%c_low,nhe,nc,nlev,ntrac,nlev,elem(ie)%desc)
+!   end do
+!          
+!   call ghost_exchangeV(hybrid,factorR,nhe,nc,ntrac)
+! 
+!   do ie=nets,nete
+!     call ghostVunpackR(factorR, spelt(ie)%c_low, nhe, nc,nlev,ntrac,0,elem(ie)%desc)
+!       
+!     do k=1, nlev
+!      do itr=1,ntrac 
+!         do jcell=1,nc
+!           j=2+(jcell-1)*nipm
+!           do icell=1,nc
+!             i=2+(icell-1)*nipm
+!             
+!             c_low(icell,jcell)=spelt(ie)%c_low(icell,jcell,k,itr)
             
-            ! not a good programming style
+            ! not a good programming style, min(a,b,c,...) does not work for all compilers
             !minimum of the patch
             minphi=min(spelt(ie)%c(i-nipm,j,k,itr,tl%n0),spelt(ie)%c(i,j,k,itr,tl%n0))
             minphi=min(minphi,spelt(ie)%c(i,j-nipm,k,itr,tl%n0))
             minphi=min(minphi,spelt(ie)%c(i+nipm,j,k,itr,tl%n0))
             minphi=min(minphi,spelt(ie)%c(i,j+nipm,k,itr,tl%n0))
+            
+!             minphi=min(minphi,spelt(ie)%c(i-nipm,j-nipm,k,itr,tl%n0))
+!             minphi=min(minphi,spelt(ie)%c(i-nipm,j+nipm,k,itr,tl%n0))
+!             minphi=min(minphi,spelt(ie)%c(i+nipm,j-nipm,k,itr,tl%n0))
+!             minphi=min(minphi,spelt(ie)%c(i+nipm,j+nipm,k,itr,tl%n0))
+            
+!             minphi=min(minphi,spelt(ie)%c_low(icell,jcell,k,itr))
+!             minphi=min(minphi,spelt(ie)%c_low(icell-1,jcell,k,itr))
+!             minphi=min(minphi,spelt(ie)%c_low(icell+1,jcell,k,itr))
+!             minphi=min(minphi,spelt(ie)%c_low(icell,jcell-1,k,itr))
+!             minphi=min(minphi,spelt(ie)%c_low(icell,jcell+1,k,itr))
+            
+!             minphi=min(minphi,spelt(ie)%c_low(icell-1,jcell-1,k,itr))
+!             minphi=min(minphi,spelt(ie)%c_low(icell+1,jcell-1,k,itr))
+!             minphi=min(minphi,spelt(ie)%c_low(icell-1,jcell+1,k,itr))
+!             minphi=min(minphi,spelt(ie)%c_low(icell+1,jcell+1,k,itr))
+            
             !maximum of the patch
             maxphi=max(spelt(ie)%c(i-nipm,j,k,itr,tl%n0),spelt(ie)%c(i,j,k,itr,tl%n0))
             maxphi=max(maxphi,spelt(ie)%c(i,j-nipm,k,itr,tl%n0))
             maxphi=max(maxphi,spelt(ie)%c(i+nipm,j,k,itr,tl%n0))
             maxphi=max(maxphi,spelt(ie)%c(i,j+nipm,k,itr,tl%n0))
+            
+!             maxphi=max(maxphi,spelt(ie)%c(i-nipm,j-nipm,k,itr,tl%n0))
+!             maxphi=max(maxphi,spelt(ie)%c(i-nipm,j+nipm,k,itr,tl%n0))
+!             maxphi=max(maxphi,spelt(ie)%c(i+nipm,j-nipm,k,itr,tl%n0))
+!             maxphi=max(maxphi,spelt(ie)%c(i+nipm,j+nipm,k,itr,tl%n0))
+
+!             maxphi=max(maxphi,spelt(ie)%c_low(icell,jcell,k,itr))
+!             maxphi=max(maxphi,spelt(ie)%c_low(icell-1,jcell,k,itr))
+!             maxphi=max(maxphi,spelt(ie)%c_low(icell+1,jcell,k,itr))
+!             maxphi=max(maxphi,spelt(ie)%c_low(icell,jcell-1,k,itr))
+!             maxphi=max(maxphi,spelt(ie)%c_low(icell,jcell+1,k,itr))
+            
+!             maxphi=max(maxphi,spelt(ie)%c_low(icell-1,jcell-1,k,itr))
+!             maxphi=max(maxphi,spelt(ie)%c_low(icell+1,jcell-1,k,itr))
+!             maxphi=max(maxphi,spelt(ie)%c_low(icell-1,jcell+1,k,itr))
+!             maxphi=max(maxphi,spelt(ie)%c_low(icell+1,jcell+1,k,itr))
             
             tmpR=max(0.0D0,spelt(ie)%fluxhigh(icell,jcell,k,itr,1))-min(0.0D0,spelt(ie)%fluxhigh(icell,jcell,k,itr,3)) + &
                                max(0.0D0,spelt(ie)%fluxhigh(icell,jcell,k,itr,2))-min(0.0D0,spelt(ie)%fluxhigh(icell,jcell,k,itr,4))
@@ -616,12 +701,7 @@ subroutine spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
             if (tmpR>0.0D0) then
               spelt(ie)%Rm(icell,jcell,k,itr)=min(1.0D0,tmpQ/tmpR)  
             endif
-          end do
-        end do
-        do jcell=1,nc
-          j=2+(jcell-1)*nipm
-          do icell=1,nc
-            i=2+(icell-1)*nipm
+             
             !write low order monotone solution in structure
             spelt(ie)%c(i,j,k,itr,tl%n0)=c_low(icell,jcell)
           end do
@@ -678,9 +758,9 @@ subroutine spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
 !                 cmo(3)=1.0D0
 !                 cmo(4)=1.0D0
                 spelt(ie)%c(i,j,k,itr,tl%np1) = spelt(ie)%c(i,j,k,itr,tl%n0) - &
-                     (-cmo(1)*spelt(ie)%fluxhigh(icell,jcell,k,itr,1) - cmo(2)*spelt(ie)%fluxhigh(icell,jcell,k,itr,2) &
-                      + cmo(3)*spelt(ie)%fluxhigh(icell,jcell,k,itr,3) + cmo(4)*spelt(ie)%fluxhigh(icell,jcell,k,itr,4) ) &
-                       /(spelt(ie)%area_sphere(icell,jcell)) 
+                   (-cmo(1)*spelt(ie)%fluxhigh(icell,jcell,k,itr,1) - cmo(2)*spelt(ie)%fluxhigh(icell,jcell,k,itr,2) &
+                    + cmo(3)*spelt(ie)%fluxhigh(icell,jcell,k,itr,3) + cmo(4)*spelt(ie)%fluxhigh(icell,jcell,k,itr,4) ) &
+                     /(spelt(ie)%area_sphere(icell,jcell)) 
           end do
         end do              
       end do !ntrac
@@ -695,6 +775,54 @@ subroutine spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
   end do
 end subroutine spelt_runlimit
 
+!SUBROUTINE CHECK_DEPARTURECELL----------------------------------------CE-for  SPELT!
+! AUTHOR: CHRISTOPH ERATH, 17.October 2011                                          !
+! DESCRIPTION: Check if CFL number > 1.0D0                                          !
+!         IF THE CHECK FAILS, THE PROGRAM WILL STOP                                 !
+!                                                                                   !
+! INPUT:  spelt  ... spelt structur, dsphere ... departure points, klev ... level   ! 
+!-----------------------------------------------------------------------------------!
+subroutine check_departurecell(spelt,dsphere,klev)
+  use coordinate_systems_mod, only: cart2cubedsphere, spherical_to_cart
+  implicit none
+
+  type (spelt_struct), intent(inout)   :: spelt
+  type (spherical_polar_t)             :: dsphere(1:nep,1:nep)  
+  integer, intent(in)                  :: klev
+  
+  type (cartesian2D_t)                 :: dcart(nep,nep), acart(nep,nep)
+  real (kind=real_kind)                :: cflx, cfly, maxcflx, maxcfly  
+  integer                              :: i,j
+            
+  ! calculate xy Cartesian on the cube of departure points on the corresponding face  
+  ! the calculation of dcart is also done in fvm_line_integrals_mod.F90, one could 
+  ! save the points here...
+  ! BUT: this subroutine should only be used for test reasons
+  cflx=0.0D0
+  cfly=0.0D0
+  spelt%maxcfl(1,klev)=cflx
+  spelt%maxcfl(2,klev)=cfly
+  do j=1,nep
+     do i=1,nep               
+        dcart(i,j)=cart2cubedsphere(spherical_to_cart(dsphere(i,j)),spelt%Facenumber)     
+        acart(i,j)=cart2cubedsphere(spherical_to_cart(spelt%asphere(i,j)),spelt%Facenumber)              
+      ! equidistant mesh in alpha/beta coordinates
+      cflx=abs(dcart(i,j)%x-acart(i,j)%x)/spelt%dab(i)
+      cfly=abs(dcart(i,j)%y-acart(i,j)%y)/spelt%dab(j)
+      if(cflx>spelt%maxcfl(1,klev)) spelt%maxcfl(1,klev)=cflx
+      if(cfly>spelt%maxcfl(2,klev)) spelt%maxcfl(2,klev)=cfly
+     end do
+  end do  
+
+  if (spelt%maxcfl(1,klev) > 1.0D0 .OR. spelt%maxcfl(2,klev) > 1.0D0) then
+    write(*,*) "Error in spelt_mod.F90: CFL number too big"
+    write(*,*) "CFL has to be < 1.0D0"
+    write(*,*) "Choose a smaller time step!"
+    write(*,*) "max CFL in this element: maxcflx", spelt%maxcfl(1,klev), "maxcfly", spelt%maxcfl(2,klev) 
+    STOP "Exit program!"
+  endif
+
+end subroutine check_departurecell
 
 
 subroutine spelt_runair(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
@@ -970,8 +1098,10 @@ subroutine get_contravelocities(elem, spelt, contrauv,k,deriv)
   vstar=elem%derived%vstar(:,:,:,k)/rearth
   do j=1,np
     do i=1,np
-      v1 = spelt%Dinv(1,1,i,j)*vstar(i,j,1) + spelt%Dinv(1,2,i,j)*vstar(i,j,2)
-      v2 = spelt%Dinv(2,1,i,j)*vstar(i,j,1) + spelt%Dinv(2,2,i,j)*vstar(i,j,2)
+!       v1 = spelt%Dinv(1,1,i,j)*vstar(i,j,1) + spelt%Dinv(1,2,i,j)*vstar(i,j,2)
+!       v2 = spelt%Dinv(2,1,i,j)*vstar(i,j,1) + spelt%Dinv(2,2,i,j)*vstar(i,j,2)
+      v1 = elem%Dinv(1,1,i,j)*vstar(i,j,1) + elem%Dinv(1,2,i,j)*vstar(i,j,2)
+      v2 = elem%Dinv(2,1,i,j)*vstar(i,j,1) + elem%Dinv(2,2,i,j)*vstar(i,j,2)
       vstar(i,j,1)=v1
       vstar(i,j,2)=v2    
     enddo
@@ -984,6 +1114,10 @@ subroutine get_contravelocities(elem, spelt, contrauv,k,deriv)
     do i=1,np
       v1 = spelt%Dinv(1,1,i,j)*vstar(i,j,1) + spelt%Dinv(1,2,i,j)*vstar(i,j,2)
       v2 = spelt%Dinv(2,1,i,j)*vstar(i,j,1) + spelt%Dinv(2,2,i,j)*vstar(i,j,2)
+      
+!       v1 = elem%Dinv(1,1,i,j)*vstar(i,j,1) + elem%Dinv(1,2,i,j)*vstar(i,j,2)
+!       v2 = elem%Dinv(2,1,i,j)*vstar(i,j,1) + elem%Dinv(2,2,i,j)*vstar(i,j,2)
+      
       vstar(i,j,1)=v1
       vstar(i,j,2)=v2    
     enddo
@@ -996,6 +1130,10 @@ subroutine get_contravelocities(elem, spelt, contrauv,k,deriv)
     do i=1,np
       v1 = spelt%Dinv(1,1,i,j)*vstar(i,j,1) + spelt%Dinv(1,2,i,j)*vstar(i,j,2)
       v2 = spelt%Dinv(2,1,i,j)*vstar(i,j,1) + spelt%Dinv(2,2,i,j)*vstar(i,j,2)
+      
+!       v1 = elem%Dinv(1,1,i,j)*vstar(i,j,1) + elem%Dinv(1,2,i,j)*vstar(i,j,2)
+!       v2 = elem%Dinv(2,1,i,j)*vstar(i,j,1) + elem%Dinv(2,2,i,j)*vstar(i,j,2)
+      
       vstar(i,j,1)=v1
       vstar(i,j,2)=v2    
     enddo
@@ -2532,7 +2670,7 @@ subroutine solidbody_all(spelt, dsphere1,dsphere2,contrauv,k)
 
   ! set values for solid-body rotation on the sphere with alpha, this should be 
   ! outside 
-  alpha=0.0D0 !DD_PI/4!-0.9*DD_PI/4.0D0 !DD_PI/4  !DD_PI/4 !1.3!0.78
+  alpha=DD_PI/4!-0.9*DD_PI/4.0D0 !DD_PI/4  !DD_PI/4 !1.3!0.78
 !   omega=2*DD_PI/Time_at(nmax)          ! angular velocity: around the earth
   
   omega=2*DD_PI/1036800                !in 12 days around the earth
