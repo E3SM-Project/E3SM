@@ -153,4 +153,7 @@ MESSAGE(STATUS "  ENERGY = ${PRIM_USE_ENERGY}")
 ############################################################################
 createTestExec(prim prim PRIM_SRCS ${PRIM_NP} ${PRIM_NC} ${PRIM_PLEV} 
                ${PRIM_NTRAC} ${PRIM_USE_PIO}  ${PRIM_USE_ENERGY})
+
+SET_PROPERTY(TARGET prim PROPERTY LINKER_LANGUAGE Fortran)
+
 TARGET_LINK_LIBRARIES(prim ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES})

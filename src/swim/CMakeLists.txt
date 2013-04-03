@@ -14,8 +14,6 @@ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR}
                     ${CMAKE_CURRENT_BINARY_DIR}/share
                     ${PIO_INCLUDE_DIRS}
                     ${TIMING_INCLUDE_DIRS})
-INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}
-                    ${CMAKE_CURRENT_SOURCE_DIR}/share)
 
 # Set up swim specfic defaults 
 IF (NOT SWIM_NP)
@@ -139,13 +137,16 @@ SET(SRCS_SWIM     ${SRC_TRIL}/donoxloca.cpp
                   ${SRC_BASE}/precon_mod.F90
 )
 
-
-
-
 ADD_LIBRARY(homme_swim ${SRCS_F90} ${SRCS_SWIM})
-TARGET_LINK_LIBRARIES(homme_swim pio timing  ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES})
+ADD_DEPENDENCIES(homme_swim pio timing)
 
 ADD_EXECUTABLE(swim ${SRC_BASE}/main.F90)
-TARGET_LINK_LIBRARIES(swim homme_swim)
+
+ADD_DEPENDENCIES(swim homme_swim pio timing)
+
+SET_PROPERTY(TARGET swim PROPERTY LINKER_LANGUAGE Fortran)
+
+TARGET_LINK_LIBRARIES(swim homme_swim pio timing ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES})
+
 INSTALL(TARGETS swim
         RUNTIME DESTINATION bin)

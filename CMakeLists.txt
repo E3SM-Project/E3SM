@@ -177,6 +177,11 @@ ELSE ()
   FIND_PACKAGE(Pnetcdf)
 ENDIF ()
 
+# swim and prim executables require trilinos
+IF(${BUILD_HOMME_SWIM} OR ${BUILD_HOMME_PRIM})
+  FIND_PACKAGE(Trilinos REQUIRED)
+ENDIF ()
+
 ADD_SUBDIRECTORY(utils/pio)
 ADD_SUBDIRECTORY(utils/timing)
 
@@ -192,17 +197,12 @@ if(${BUILD_HOMME_SWDGX})
   ADD_SUBDIRECTORY(src/swdgx)
 endif()
 
-if(${BUILD_HOMME_SWIM})
-  MESSAGE(STATUS "Building swim...")
-  FIND_PACKAGE(Trilinos REQUIRED)
-  MESSAGE(STATUS "Using Trilinos: ${Trilinos_LIBRARY_DIRS}")
+IF(${BUILD_HOMME_SWIM})
   ADD_SUBDIRECTORY(src/swim)
-endif()
-if(${BUILD_HOMME_PRIM})
-  MESSAGE(STATUS "Building prim...")
-  FIND_PACKAGE(Trilinos REQUIRED)
-  MESSAGE(STATUS "Using Trilinos: ${Trilinos_LIBRARY_DIRS}")
-  ADD_SUBDIRECTORY(src/prim) # process src/prim/CMakeLists.txt
-endif()
+ENDIF()
+
+IF(${BUILD_HOMME_PRIM})
+  ADD_SUBDIRECTORY(src/prim)
+ENDIF()
 
 ADD_SUBDIRECTORY(test_execs)
