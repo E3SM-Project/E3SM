@@ -536,7 +536,7 @@ contains
          debug_level, vfile_int, filter_freq, filter_freq_advection, &
          transfer_type, vform, vfile_mid, filter_type, kcut_fm, wght_fm, p_bv, &
          s_bv, topology,columnpackage, moisture, precon_method, rsplit, qsplit, rk_stage_user,&
-         TRACERADV_TOTAL_DIVERGENCE, TRACERADV_UGRADQ, sub_case, &
+         sub_case, &
          use_cpstar, energy_fixer, limiter_option, nu, nu_q, nu_div, tstep_type, hypervis_subcycle, &
          hypervis_subcycle_q
     use prim_si_ref_mod, only: prim_si_refstate_init, prim_set_mass
@@ -1015,7 +1015,6 @@ contains
   !
   use hybvcoord_mod, only : hvcoord_t
   use time_mod, only : TimeLevel_t, time_at
-  use control_mod, only : tstep_type
 
   type (element_t) , intent(inout)        :: elem(:)
   type (hybrid_t), intent(in)           :: hybrid  ! distributed parallel structure (shared)
@@ -1054,8 +1053,7 @@ contains
   subroutine prim_run(elem, hybrid,nets,nete, dt, tl, hvcoord, advance_name)
     use hybvcoord_mod, only : hvcoord_t
     use time_mod, only : TimeLevel_t, time_at, timelevel_update, smooth
-    use control_mod, only: statefreq, integration, &
-           TRACERADV_TOTAL_DIVERGENCE,TRACERADV_UGRADQ, ftype, tstep_type, qsplit
+    use control_mod, only: statefreq, integration, ftype, qsplit
     use prim_advance_mod, only : prim_advance_exp, prim_advance_si, preq_robert3
     use prim_state_mod, only : prim_printstate, prim_diag_scalars, prim_energy_halftimes
     use parallel_mod, only : abortmp
@@ -1245,8 +1243,8 @@ contains
     use time_mod, only : TimeLevel_t, time_at, timelevel_update, nsplit
     use control_mod, only: statefreq,&
            energy_fixer, ftype, qsplit, rsplit, test_cfldep
-    use prim_advance_mod, only : prim_advance_exp, prim_advance_si, applycamforcing, &
-                                 applycamforcing_dynamics, prim_advance_exp
+    use prim_advance_mod, only : prim_advance_si, applycamforcing, &
+                                 applycamforcing_dynamics
     use prim_state_mod, only : prim_printstate, prim_diag_scalars, prim_energy_halftimes
     use parallel_mod, only : abortmp
     use reduction_mod, only : parallelmax
