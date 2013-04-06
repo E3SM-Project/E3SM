@@ -2258,6 +2258,7 @@ contains
            dp_star(:,:,k) = dp(:,:,k) + dt*(elem(ie)%derived%eta_dot_dpdn(:,:,k+1) -&
                 elem(ie)%derived%eta_dot_dpdn(:,:,k)) 
         enddo
+        if (minval(dp_star)<0) call abortmp('negative layer thickness.  timestep or remap time too large')
      else
         !  REMAP u,v,T from levels in dp3d() to REF levels
         !
@@ -2269,6 +2270,7 @@ contains
                 ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,np1)
            dp_star(:,:,k) = elem(ie)%state%dp3d(:,:,k,np1)
         enddo
+        if (minval(dp_star)<0) call abortmp('negative layer thickness.  timestep or remap time too large')
 
         ! remap the dynamics:  
 #undef REMAP_TE
