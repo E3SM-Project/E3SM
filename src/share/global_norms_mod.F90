@@ -125,7 +125,7 @@ contains
     real (kind=real_kind) :: min_min_eig, max_min_eig, avg_min_eig
     real (kind=real_kind) :: min_len
     real (kind=real_kind) :: max_ratio
-    integer :: ie,corner, i, j
+    integer :: ie,corner, i, j,nlon
 
     !   MNL: use these variables for calculating largest length scale of element with
     !        smallest dx (in uniform meshes, these are in the corner, with
@@ -266,7 +266,6 @@ contains
         mindxout=1000_real_kind*min_len
         min_len = 0.002d0*rearth/(dble(np-1)*max_max_eig)
     end if
-
 
   end subroutine test_global_integral
 
@@ -611,7 +610,7 @@ contains
                min_gw/(120.0d0*max_max_eig*rrearth),'s'
        endif
        write(iulog,'(a,f10.2,a)') 'Stability: advective (120m/s)   dt_tracer < S *', 1/(120.0d0*max_max_eig*lambda_max*rrearth),'s'
-       write(iulog,'(a,f10.2,a)') 'Stability: gravity wave(342m/s) RK dyn stage dt  < S *', &
+       write(iulog,'(a,f10.2,a)') 'Stability: gravity wave(342m/s)   dt_dyn  < S *', &
             1/(342.0d0*max_max_eig*lambda_max*rrearth),'s'
        if (nu>0) then
           if (hypervis_order==1) then

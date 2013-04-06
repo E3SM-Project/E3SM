@@ -359,7 +359,6 @@ subroutine fvm_readnl(par)
        runtype,       &
        integration,   &       ! integration method
        tracer_advection_formulation, &   ! conservation or non-conservation formulaton
-       tstep_type, &
        cubed_sphere_map, &
        compute_mean_flux, &
        qsplit, &

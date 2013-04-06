@@ -1034,12 +1034,8 @@ module namelist_mod
        if (interp_nlon==0 .or. interp_nlat==0) then
           ! compute interpolation grid based on number of points around equator
           call set_interp_parameter('auto',4*ne*(np-1))
-          
           interp_nlat = get_interp_parameter('nlat')
           interp_nlon = get_interp_parameter('nlon')
-          
-          call MPI_bcast(interp_nlat , 1,MPIinteger_t,par%root,par%comm,ierr)
-          call MPI_bcast(interp_nlon , 1,MPIinteger_t,par%root,par%comm,ierr)
        else
           call set_interp_parameter('nlat',interp_nlat)
           call set_interp_parameter('nlon',interp_nlon)
@@ -1106,7 +1102,7 @@ module namelist_mod
        if (integration == "explicit" ) then
           write(iulog,*)"readnl: LF-trapazoidal freq= ",LFTfreq
        endif
-       if (integration == "runge_kutta" .or. tstep_type==1 ) then
+       if (integration == "runge_kutta" .or. tstep_type>0 ) then
           write(iulog,*)"readnl: rk_stage_user   = ",rk_stage_user
        endif
        write(iulog,*)"readnl: tracer_advection_formulation  = ",tracer_advection_formulation
