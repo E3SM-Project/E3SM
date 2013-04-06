@@ -89,6 +89,8 @@ module interpolate_mod
   integer :: itype = 1           ! 0 = native high order
                                  ! 1 = bilinear
 
+  integer :: auto_grid = 0        ! 0 = interpolation grid set by namelist
+                                  ! 1 = grid set via mesh resolution
 
 contains
 
@@ -108,6 +110,7 @@ contains
     else if(parm_name.eq. 'gridtype') then
        gridtype=value
     else if(parm_name.eq. 'auto') then
+       auto_grid=1
        ! compute recommended nlat,nlon which has slightly higher
        ! resolution than the specifed number of points around equator given in "value"
        ! computed recommended lat-lon grid.
@@ -118,8 +121,8 @@ contains
            ! This makes it hard to guess how many interpolation points to use
            ! So We'll set the default as 720 x 360
            ! BUT if you're running with an unstructured mesh, set interp_nlon and interp_nlat
-           nlon = 720
-           nlat = 360
+           nlon = 1536
+           nlat = 768
        else
            value_target=value*1.25
            power = nint(.5 +  log( value_target)/log(2d0) )
@@ -149,6 +152,8 @@ contains
        value=nlat
     else if(parm_name.eq. 'gridtype') then
        value=gridtype
+    else if(parm_name.eq. 'auto_grid') then
+       value=auto_grid
     else
        write(msg,*) 'Did not recognize parameter named ',parm_name,' in interpolate_mod:get_interp_parameter'
        value=-1

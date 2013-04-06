@@ -608,18 +608,17 @@ contains
 
 
     ! compute most restrictive dt*nu for use by variable res viscosity: 
-    if (tstep_type.eq.0) then
+    if (tstep_type == 0) then
        ! LF case: no tracers, timestep seen by viscosity is 2*tstep
        dt_tracer_vis = 0  
        dt_dyn_vis = 2*tstep
        dtnu = 2.0d0*tstep*max(nu,nu_div)
-    endif
-    if (tstep_type.eq.1) then
+    else
        ! compute timestep seen by viscosity operator:
-       if (qsplit==1) then
-          dt_dyn_vis = tstep   ! dynamics uses pure RK2 method
-       else
-          dt_dyn_vis = 2*tstep  ! dynamics uses RK2 + (qsplit-1) LF.  LF viscosity uses 2dt. 
+       dt_dyn_vis = tstep
+       if (qsplit>1 .and. tstep_type == 1) then
+          ! tstep_type==1: RK2 followed by LF.  internal LF stages apply viscosity at 2*dt
+          dt_dyn_vis = 2*tstep  
        endif
        dt_tracer_vis=tstep*qsplit
 
@@ -630,8 +629,6 @@ contains
        dt_tracer_vis = dt_tracer_vis/hypervis_subcycle_q
        dt_dyn_vis = dt_dyn_vis/hypervis_subcycle
     endif
-    ! timesteps to use for advective stability:  tstep*qsplit and tstep
-    call print_cfl(elem,hybrid,nets,nete,dtnu)
 
 
 
@@ -972,12 +969,16 @@ contains
        enddo
     endif
 
+
+    ! timesteps to use for advective stability:  tstep*qsplit and tstep
+    call print_cfl(elem,hybrid,nets,nete,dtnu)
+
     if (hybrid%masterthread) then 
        ! CAM has set tstep based on dtime before calling prim_init2(), 
        ! so only now does HOMME learn the timstep.  print them out:
        write(iulog,'(a,2f9.2)') "dt_remap: (0=disabled)   ",tstep*qsplit*rsplit
        write(iulog,'(a,2f9.2)') "dt_tracer, per RK stage: ",tstep*qsplit,(tstep*qsplit)/(rk_stage_user-1)
-       write(iulog,'(a,2f9.2)') "dt_dyn, per RK stage:    ",tstep*qsplit,tstep
+       write(iulog,'(a,2f9.2)') "dt_dyn:                  ",tstep*qsplit
        write(iulog,'(a,2f9.2)') "dt_dyn (viscosity):      ",dt_dyn_vis
        write(iulog,'(a,2f9.2)') "dt_tracer (viscosity):   ",dt_tracer_vis
 
@@ -1146,8 +1147,7 @@ contains
 #endif
     if (integration == "explicit") then
        call prim_advance_exp(elem, deriv(hybrid%ithr), hvcoord,   &
-            flt , hybrid,             &
-            dt, tl, nets, nete, compute_diagnostics)
+            hybrid, dt, tl, nets, nete, compute_diagnostics)
 
        ! keep lnps up to date (we should get rid of this requirement)
        do ie=nets,nete
@@ -1445,7 +1445,7 @@ contains
     use time_mod, only : TimeLevel_t, time_at, timelevel_update, nsplit
     use control_mod, only: statefreq,&
            energy_fixer, ftype, qsplit, nu_p, test_cfldep, rsplit
-    use prim_advance_mod, only : prim_advance_exp, overwrite_SEdensity
+    use prim_advance_mod, only : prim_advance_exp
     use prim_advection_mod, only : prim_advec_tracers_remap_rk2, prim_advec_tracers_fvm, &
          prim_advec_tracers_spelt
     use prim_state_mod, only : prim_printstate, prim_diag_scalars, prim_energy_halftimes
@@ -1514,11 +1514,11 @@ contains
     ! ===============
     n_Q = tl%n0  ! n_Q = timelevel of FV tracers at time t.  need to save this
     call prim_advance_exp(elem, deriv(hybrid%ithr), hvcoord,   &
-         flt , hybrid, dt, tl, nets, nete, compute_diagnostics)
+         hybrid, dt, tl, nets, nete, compute_diagnostics)
     do n=2,qsplit
        call TimeLevel_update(tl,"leapfrog")
        call prim_advance_exp(elem, deriv(hybrid%ithr), hvcoord,   &
-            flt , hybrid, dt, tl, nets, nete, .false.)
+            hybrid, dt, tl, nets, nete, .false.)
        ! defer final timelevel update until after Q update.
     enddo
 

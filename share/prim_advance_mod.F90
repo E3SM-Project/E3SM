@@ -15,7 +15,7 @@ module prim_advance_mod
   private
   save
   public :: prim_advance_exp, prim_advance_si, prim_advance_init, preq_robert3,&
-       applyCAMforcing_dynamics, applyCAMforcing, smooth_phis, overwrite_SEdensity
+       applyCAMforcing_dynamics, applyCAMforcing, smooth_phis
 
   type (EdgeBuffer_t) :: edge1
   type (EdgeBuffer_t) :: edge2
@@ -66,10 +66,10 @@ contains
 
 
 
-  subroutine prim_advance_exp(elem, deriv, hvcoord, Flt, hybrid,&
+  subroutine prim_advance_exp(elem, deriv, hvcoord, hybrid,&
        dt, tl,  nets, nete, compute_diagnostics)
     use bndry_mod, only : bndry_exchangev
-    use control_mod, only : hypervis_order, prescribed_wind, qsplit, tstep_type, nu_p, rsplit
+    use control_mod, only : prescribed_wind, qsplit, tstep_type, rsplit
     use derivative_mod, only : derivative_t, vorticity, divergence, gradient, gradient_wk
     use dimensions_mod, only : np, nlev, nlevp
     use edge_mod, only : EdgeBuffer_t, edgevpack, edgevunpack, initEdgeBuffer
@@ -90,7 +90,6 @@ contains
     type (element_t), intent(inout), target   :: elem(:)
     type (derivative_t), intent(in)   :: deriv
     type (hvcoord_t)                  :: hvcoord
-    type (filter_t)                   :: flt
 
     type (hybrid_t)    , intent(in):: hybrid
 
@@ -115,33 +114,47 @@ contains
     n0    = tl%n0
     np1   = tl%np1
     nstep = tl%nstep
-    dt2 = 2*dt
-
-!collect mean quantities:
-! omega_P        used by CAM physics
-! Udp            used by advection, when subcycling for consistenent advection 
-! eta_dot_dpdn   used by advection when not subcycling
 !
-    if(tstep_type==1)then        ! forward in time scheme 
-       method=1
+!   tstep_type=0  pure leapfrog except for very first timestep   CFL=1
+!                    typically requires qsplit=4 or 5 
+!   tstep_type=1  RK2 followed by qsplit-1 leapfrog steps        CFL=?
+!                    typically requires qsplit=4 or 5 
+!   tstep_type=3  RK2-SSP 3 stage (as used by tracers)           CFL=?
+!                    typically requires qsplit=3
+!                    but if windspeed > 340m/s, could use this
+!                    with qsplit=1
+!   tstep_type=4  Kinnmark&Gray RK2 4 stage                      CFL=3.0
+!                 should we replace by standard RK4 (CFL=sqrt(8))?
+!   tstep_type=5  Kinnmark&Gray RK3 5 stage                      CFL=3.9.  
+!                    optimal: for windspeeds ~120m/s,gravity: 340m/2
+!                    run with qsplit=1
+!
+    if(tstep_type==0)then  
+       method=1                ! pure leapfrog
+       if (nstep==0) method=2  ! always use RK2 for first timestep
+    else if (tstep_type==1) then  
+       method=1                           ! LF
        qsplit_stage = mod(nstep,qsplit)
-       if (qsplit_stage==0) method=0
-       eta_ave_w=ur_weights(qsplit_stage+1)
-    else     ! pure leapfrog
-       method=1  
-       eta_ave_w = 1d0/qsplit
+       if (qsplit_stage==0) method=2      ! RK2 on first of qsplit steps
+    else if (tstep_type>1) then  
+       method = tstep_type                ! other RK variants 
     endif
-    if (nstep==0) method=0  ! RK2 for first timestep
 
 
+    ! weights for computing mean dynamics fluxes
+    eta_ave_w = 1d0/qsplit   
+    if(tstep_type==1)then                 
+       ! RK2 + LF scheme has tricky weights:
+       eta_ave_w=ur_weights(qsplit_stage+1) 
+    endif
 
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
+    ! fix dynamical variables, skip dynamics
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
     if (1==prescribed_wind) then
-       ! fix dynamical variables, skip dynamics
        time=tl%nstep*dt
-
        do ie=nets,nete
-
 #ifdef CAM
           ! read in omega met data and store it in derived%omega_prescribed
           ! --- compute eta_dot_dpdn from omega_prescribed ...
@@ -188,24 +201,77 @@ contains
 
 
 
+
     ! ==================================
     ! Take timestep
     ! ==================================
-    if (method==0) then ! RK2
+    dt_vis = dt                      
+    if (method==1) then
+       ! regular LF step
+       dt2 = 2*dt
+       call compute_and_apply_rhs(np1,nm1,n0,dt2,elem,hvcoord,hybrid,&
+            deriv,nets,nete,compute_diagnostics,eta_ave_w)
+       dt_vis = dt2  ! dt to use for time-split dissipation
+    else if (method==2) then
+       ! RK2
        ! forward euler to u(dt/2) = u(0) + (dt/2) RHS(0)  (store in u(np1))
        call compute_and_apply_rhs(np1,n0,n0,dt/2,elem,hvcoord,hybrid,&
             deriv,nets,nete,compute_diagnostics,0d0)
        ! leapfrog:  u(dt) = u(0) + dt RHS(dt/2)     (store in u(np1))
        call compute_and_apply_rhs(np1,n0,np1,dt,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,eta_ave_w)
-       dt_vis = dt                      
+    else if (method==3) then
+       ! RK2-SSP 3 stage.  matches tracer scheme. optimal SSP CFL, but
+       ! not optimal for regular CFL
+       ! u1 = u0 + dt/2 RHS(u0)
+       call compute_and_apply_rhs(np1,n0,n0,dt/2,elem,hvcoord,hybrid,&
+            deriv,nets,nete,compute_diagnostics,eta_ave_w/3)
+       ! u2 = u1 + dt/2 RHS(u1)
+       call compute_and_apply_rhs(np1,np1,np1,dt/2,elem,hvcoord,hybrid,&
+            deriv,nets,nete,.false.,eta_ave_w/3)
+       ! u3 = u2 + dt/2 RHS(u2)
+       call compute_and_apply_rhs(np1,np1,np1,dt/2,elem,hvcoord,hybrid,&
+            deriv,nets,nete,.false.,eta_ave_w/3)
+       ! unew = u/3 +2*u3/3  = u + 1/3 (RHS(u) + RHS(u1) + RHS(u2))
+       do ie=nets,nete
+          elem(ie)%state%v(:,:,:,:,np1)= elem(ie)%state%v(:,:,:,:,n0)/3 &
+               + 2*elem(ie)%state%v(:,:,:,:,np1)/3
+       enddo
+    else if (method==4) then
+       ! KG 2nd order 4 stage:   CFL=3
+       ! u1 = u0 + dt/3 RHS(u0)
+       call compute_and_apply_rhs(np1,n0,n0,dt/3,elem,hvcoord,hybrid,&
+            deriv,nets,nete,compute_diagnostics,0d0)
+       ! u2 = u0 + dt/5 RHS(u1)
+       call compute_and_apply_rhs(np1,n0,np1,dt*4d0/15d0,elem,hvcoord,hybrid,&
+            deriv,nets,nete,.false.,0d0)
+       ! u3 = u0 + dt/3 RHS(u2)
+       call compute_and_apply_rhs(np1,n0,np1,dt*5d0/9d0,elem,hvcoord,hybrid,&
+            deriv,nets,nete,.false.,0d0)
+       ! u4 = u0 + dt/2 RHS(u3)
+       call compute_and_apply_rhs(np1,n0,np1,dt,elem,hvcoord,hybrid,&
+            deriv,nets,nete,.false.,eta_ave_w)
+    else if (method==5) then
+       ! KG 3nd order 5 stage:   CFL=sqrt( 4^2 -1) = 3.87
+       ! u1 = u0 + dt/5 RHS(u0)
+       call compute_and_apply_rhs(np1,n0,n0,dt/5,elem,hvcoord,hybrid,&
+            deriv,nets,nete,compute_diagnostics,0d0)
+       ! u2 = u0 + dt/5 RHS(u1)
+       call compute_and_apply_rhs(np1,n0,np1,dt/5,elem,hvcoord,hybrid,&
+            deriv,nets,nete,.false.,0d0)
+       ! u3 = u0 + dt/3 RHS(u2)
+       call compute_and_apply_rhs(np1,n0,np1,dt/3,elem,hvcoord,hybrid,&
+            deriv,nets,nete,.false.,0d0)
+       ! u4 = u0 + dt/2 RHS(u3)
+       call compute_and_apply_rhs(np1,n0,np1,dt/2,elem,hvcoord,hybrid,&
+            deriv,nets,nete,.false.,0d0)
+       ! u5 = u0 + dt/2 RHS(u4)
+       call compute_and_apply_rhs(np1,n0,np1,dt,elem,hvcoord,hybrid,&
+            deriv,nets,nete,.false.,eta_ave_w)
+    else
+       call abortmp('ERROR: bad choice of tstep_type')
     endif
-    if (method==1) then
-       ! regular LF step
-       call compute_and_apply_rhs(np1,nm1,n0,dt2,elem,hvcoord,hybrid,&
-            deriv,nets,nete,compute_diagnostics,eta_ave_w)
-       dt_vis = dt2  ! dt to use for time-split dissipation
-    endif
+
  
 
     ! ==============================================
@@ -220,8 +286,6 @@ contains
        enddo
     endif
 #endif
-
-
 
     ! note:time step computes u(t+1)= u(t*) + RHS. 
     ! for consistency, dt_vis = t-1 - t*, so this is timestep method dependent
