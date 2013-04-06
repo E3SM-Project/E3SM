@@ -1222,7 +1222,7 @@ contains
 !=======================================================================================================! 
 
 
-  subroutine prim_run_subcycle(elem, fvm, hybrid,nets,nete, dt, tl, hvcoord)
+  subroutine prim_run_subcycle(elem, fvm, hybrid,nets,nete, dt, tl, hvcoord,nsubstep)
 !
 !   advance all variables (u,v,T,ps,Q,C) from time t to t + dt_q
 !     
@@ -1267,13 +1267,14 @@ contains
     integer, intent(in)                     :: nete  ! ending thread element number   (private)
     real(kind=real_kind), intent(in)        :: dt  ! "timestep dependent" timestep
     type (TimeLevel_t), intent(inout)       :: tl
+    integer, intent(in)                     :: nsubstep  ! nsubstep = 1 .. nsplit
     real(kind=real_kind) :: st, st1, dp, dt_q, dt_remap
     integer :: ie, t, q,k,i,j,n, n_Q
     integer :: n0_qdp,np1_qdp,r, nstep_end
 
     real (kind=real_kind)                          :: maxcflx, maxcfly  
     real (kind=real_kind) :: dp_np1(np,np)
-    logical :: compute_diagnostics, compute_energy
+    logical :: compute_diagnostics, compute_energy, compute_energy_forcing
 
 
     ! ===================================
@@ -1293,14 +1294,22 @@ contains
     ! compute energy if we are using an energy fixer
     compute_diagnostics=.false.
     compute_energy=energy_fixer > 0
+    compute_energy_forcing = .false.
+    ! for forcing applied in dynamics, compute d(E)/dt due to forcing on
+    ! first timestep only:
+    if (compute_energy .and. ftype/=1 .and. nsubstep==1) &
+         compute_energy_forcing=.true.
+
     if (MODULO(nstep_end,statefreq)==0 .or. nstep_end==tl%nstep0) then
        compute_diagnostics=.true.  
        compute_energy = .true.
+       compute_energy_forcing = .true.
     endif
-    if (compute_diagnostics) then
+    if (compute_diagnostics) &
        call prim_diag_scalars(elem,hvcoord,tl,4,.true.,nets,nete)
+    if (compute_energy_forcing) &
        call prim_energy_halftimes(elem,hvcoord,tl,4,.true.,nets,nete,tl%n0)
-    endif
+
 
 
 #ifdef CAM
@@ -1387,8 +1396,8 @@ contains
     if (compute_energy) call prim_energy_halftimes(elem,hvcoord,tl,2,.false.,nets,nete,1)
 
     if (energy_fixer > 0) then
-       if ( .not. compute_energy) call abortmp("ERROR: energy fixer needs compute_energy=.true")
-       call prim_energy_fixer(elem,hvcoord,hybrid,tl,nets,nete)
+       call prim_energy_fixer(elem,hvcoord,hybrid,tl,nets,nete,&
+            compute_energy_forcing,nsubstep)
     endif
 
     if (compute_diagnostics) then
@@ -1611,7 +1620,8 @@ contains
   end subroutine prim_finalize
 
 !=======================================================================================================! 
-  subroutine prim_energy_fixer(elem,hvcoord,hybrid,tl,nets,nete)
+  subroutine prim_energy_fixer(elem,hvcoord,hybrid,tl,nets,nete,compute_energy_forcing,&
+       nsubstep)
 ! 
 ! non-subcycle code:
 !  Solution is given at times u(t-1),u(t),u(t+1)
@@ -1634,17 +1644,24 @@ contains
     type (element_t)     , intent(inout), target :: elem(:)
     type (hvcoord_t)                  :: hvcoord
     type (TimeLevel_t), intent(inout)       :: tl
+    logical, intent(inout)                 :: compute_energy_forcing
+    integer, intent(in)                    :: nsubstep
 
-    integer :: ie,k,i,j,nm_f
+    integer :: ie,k,i,j,nmax
     real (kind=real_kind), dimension(np,np,nlev)  :: dp   ! delta pressure
     real (kind=real_kind), dimension(np,np,nlev)  :: sumlk
     real (kind=real_kind), dimension(np,np)  :: suml
+    real (kind=real_kind) :: psum(nets:nete,4),psum_g(4),beta
 
-    real (kind=real_kind) :: psum(nets:nete,3),psum_g(3),beta
-
+    ! when forcing is applied during dynamics timstep, actual forcing is
+    ! slightly different (about 0.1 W/m^2) then expected by the physics
+    ! since u & T are changing while FU and FT are held constant.
+    ! to correct for this, save compute de_from_forcing at step 1
+    ! and then adjust by:  de_from_forcing_step1 - de_from_forcing_stepN
+    real (kind=real_kind),save :: de_from_forcing_step1
+    real (kind=real_kind)      :: de_from_forcing
 
     t2=tl%np1    ! timelevel for T
-
     if (use_cpstar /= 0 ) then
        call abortmp('Energy fixer requires use_cpstar=0')
     endif
@@ -1679,24 +1696,50 @@ contains
           enddo
           enddo
        enddo
+       ! psum(:,4) = energy before forcing
+       ! psum(:,1) = energy after forcing, before dynamics
+       ! psum(:,2) = energy after dynamics
+       ! psum(:,3) = cp*dp (internal energy added is beta*psum(:,3))
        psum(ie,3) = psum(ie,3) + SUM(suml(:,:)*elem(ie)%spheremp(:,:))
        do n=1,2
-             psum(ie,n) = psum(ie,n) + SUM(  elem(ie)%spheremp(:,:)*&
-                                    (elem(ie)%accum%PEner(:,:,n) + &
-              (elem(ie)%accum%IEner(:,:,n)-elem(ie)%accum%IEner_wet(:,:,n)) + &
-                                    elem(ie)%accum%KEner(:,:,n) ) )
+          psum(ie,n) = psum(ie,n) + SUM(  elem(ie)%spheremp(:,:)*&
+               (elem(ie)%accum%PEner(:,:,n) + &
+               elem(ie)%accum%IEner(:,:,n) + &
+               elem(ie)%accum%KEner(:,:,n) ) )
        enddo
+       n=4
+       psum(ie,n) = psum(ie,n) + SUM(  elem(ie)%spheremp(:,:)*&
+            (elem(ie)%accum%PEner(:,:,n) + &
+            elem(ie)%accum%IEner(:,:,n) + &
+            elem(ie)%accum%KEner(:,:,n) ) )
     enddo
+
+    nmax=3
+    if (compute_energy_forcing) nmax=4
+
     do ie=nets,nete
-       do n=1,3
+       do n=1,nmax
           global_shared_buf(ie,n) = psum(ie,n)
        enddo
     enddo
-    call wrap_repro_sum(nvars=3, comm=hybrid%par%comm)
-    do n=1,3
+    call wrap_repro_sum(nvars=nmax, comm=hybrid%par%comm)
+    do n=1,nmax
        psum_g(n) = global_shared_sum(n)
     enddo
+
     beta = ( psum_g(1)-psum_g(2) )/psum_g(3)
+
+    ! apply adjustment when forcing applied in RHS
+    if (compute_energy_forcing) then
+       de_from_forcing = psum_g(1)-psum_g(4)
+       if (nsubstep==1) then
+          de_from_forcing_step1 = de_from_forcing
+       else
+          beta = beta + (de_from_forcing_step1 - de_from_forcing)/psum_g(3)
+       endif
+    endif
+
+    ! apply fixer
     do ie=nets,nete
        elem(ie)%state%T(:,:,:,t2) =  elem(ie)%state%T(:,:,:,t2) + beta
     enddo
