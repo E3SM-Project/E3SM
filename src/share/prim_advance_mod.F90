@@ -236,6 +236,15 @@ contains
        do ie=nets,nete
           elem(ie)%state%v(:,:,:,:,np1)= elem(ie)%state%v(:,:,:,:,n0)/3 &
                + 2*elem(ie)%state%v(:,:,:,:,np1)/3
+          elem(ie)%state%T(:,:,:,np1)= elem(ie)%state%T(:,:,:,n0)/3 &
+               + 2*elem(ie)%state%T(:,:,:,np1)/3
+          if (rsplit==0) then
+             elem(ie)%state%ps_v(:,:,np1)= elem(ie)%state%ps_v(:,:,n0)/3 &
+                  + 2*elem(ie)%state%ps_v(:,:,np1)/3
+          else
+             elem(ie)%state%dp3d(:,:,:,np1)= elem(ie)%state%dp3d(:,:,:,n0)/3 &
+                  + 2*elem(ie)%state%dp3d(:,:,:,np1)/3
+          endif
        enddo
     else if (method==4) then
        ! KG 2nd order 4 stage:   CFL=3
@@ -289,7 +298,10 @@ contains
 
     ! note:time step computes u(t+1)= u(t*) + RHS. 
     ! for consistency, dt_vis = t-1 - t*, so this is timestep method dependent
-    if (tstep_type==1) then  
+    if (tstep_type==0) then  
+       ! leapfrog special case
+       call advance_hypervis_lf(edge3p1,elem,hvcoord,hybrid,deriv,nm1,n0,np1,nets,nete,dt_vis)
+    else
        if (rsplit==0) then
           ! forward-in-time, maybe hypervis applied to PS
           call advance_hypervis(edge3p1,elem,hvcoord,hybrid,deriv,np1,nets,nete,dt_vis,eta_ave_w)
@@ -297,8 +309,6 @@ contains
           ! forward-in-time, hypervis applied to dp3d
           call advance_hypervis_dp(edge3p1,elem,hvcoord,hybrid,deriv,np1,nets,nete,dt_vis,eta_ave_w)
        endif
-    else ! leapfrog
-       call advance_hypervis_lf(edge3p1,elem,hvcoord,hybrid,deriv,nm1,n0,np1,nets,nete,dt_vis)
     endif
 
 
