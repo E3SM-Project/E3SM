@@ -239,6 +239,9 @@ contains
 
        tmax_local(ie)    = MAXVAL(elem(ie)%state%T(:,:,:,n0))
 
+       if (rsplit>0) &
+            dpmax_local(ie)    = MAXVAL(elem(ie)%state%dp3d(:,:,:,n0))
+
        psmax_local(ie) = MAXVAL(tmp(:,:,ie))
        ftmax_local(ie)    = MAXVAL(elem(ie)%derived%FT(:,:,:,pnm1))
        fqmax_local(ie)    = MAXVAL(elem(ie)%derived%FQ(:,:,:,1,pnm1))
@@ -252,9 +255,9 @@ contains
        Fvmin_local(ie)    = MINVAL(elem(ie)%derived%FM(:,:,2,:,pnm1))
 
        tmin_local(ie)    = MINVAL(elem(ie)%state%T(:,:,:,n0))
+
        if (rsplit>0) &
             dpmin_local(ie)    = MINVAL(elem(ie)%state%dp3d(:,:,:,n0))
-
 
        Ftmin_local(ie)    = MINVAL(elem(ie)%derived%FT(:,:,:,pnm1))
        Fqmin_local(ie) = MINVAL(elem(ie)%derived%FQ(:,:,:,1,pnm1))
