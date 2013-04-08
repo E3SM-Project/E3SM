@@ -14,7 +14,7 @@ module control_mod
 
 ! none of this is used anymore:
   integer, public, parameter :: TRACERADV_UGRADQ=0            !  u grad(Q) formulation
-  integer, public, parameter :: TRACERADV_TOTAL_DIVERGENCE=1   ! div(u dp/dn Q ) formulation                                                    
+  integer, public, parameter :: TRACERADV_TOTAL_DIVERGENCE=1   ! div(u dp/dn Q ) formulation
   integer, public  :: tracer_advection_formulation  = TRACERADV_TOTAL_DIVERGENCE
 
 !shallow water advection tests:
@@ -51,8 +51,10 @@ module control_mod
   integer, public :: compute_mean_flux=-1
 
 ! vert_remap_q_alg:    0  default value, Zerroukat monotonic splines
-!                      1  PPM vertical remap with mirroring at the boundaries (solid wall bc's, high-order throughout)
-!                      2  PPM vertical remap without mirroring at the boundaries (no bc's enforced, first-order at two cells bordering top and bottom boundaries)
+!                      1  PPM vertical remap with mirroring at the boundaries
+!                         (solid wall bc's, high-order throughout)
+!                      2  PPM vertical remap without mirroring at the boundaries
+!                         (no bc's enforced, first-order at two cells bordering top and bottom boundaries)
   integer, public :: vert_remap_q_alg = 0
 
 
@@ -120,7 +122,8 @@ module control_mod
 
   integer              , public :: while_iter
   integer              , public :: fine_ne = -1              ! set for refined exodus meshes (variable viscosity)
-  real (kind=real_kind), public :: max_hypervis_courant = 1d99 ! upper bound for Courant number (only used for variable viscosity, recommend 1.9 in namelist)
+  real (kind=real_kind), public :: max_hypervis_courant = 1d99 ! upper bound for Courant number
+                                                               ! (only used for variable viscosity, recommend 1.9 in namelist)
   real (kind=real_kind), public :: nu      = 7.0D5           ! viscosity (momentum equ)
   real (kind=real_kind), public :: nu_div  = -1              ! viscsoity (momentum equ, div component)
   real (kind=real_kind), public :: nu_s    = -1              ! default = nu   T equ. viscosity

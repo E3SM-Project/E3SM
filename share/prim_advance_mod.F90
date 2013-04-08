@@ -13,8 +13,9 @@ module prim_advance_mod
   use parallel_mod, only : abortmp
   implicit none
   private
+  save
   public :: prim_advance_exp, prim_advance_si, prim_advance_init, preq_robert3,&
-       applyCAMforcing_dynamics, applyCAMforcing, smooth_phis, overwrite_SEdensity
+       applyCAMforcing_dynamics, applyCAMforcing, smooth_phis
 
   type (EdgeBuffer_t) :: edge1
   type (EdgeBuffer_t) :: edge2
@@ -65,10 +66,10 @@ contains
 
 
 
-  subroutine prim_advance_exp(elem, deriv, hvcoord, Flt, hybrid,&
+  subroutine prim_advance_exp(elem, deriv, hvcoord, hybrid,&
        dt, tl,  nets, nete, compute_diagnostics)
     use bndry_mod, only : bndry_exchangev
-    use control_mod, only : hypervis_order, prescribed_wind, qsplit, tstep_type, nu_p, rsplit
+    use control_mod, only : prescribed_wind, qsplit, tstep_type, rsplit
     use derivative_mod, only : derivative_t, vorticity, divergence, gradient, gradient_wk
     use dimensions_mod, only : np, nlev, nlevp
     use edge_mod, only : EdgeBuffer_t, edgevpack, edgevunpack, initEdgeBuffer
@@ -89,7 +90,6 @@ contains
     type (element_t), intent(inout), target   :: elem(:)
     type (derivative_t), intent(in)   :: deriv
     type (hvcoord_t)                  :: hvcoord
-    type (filter_t)                   :: flt
 
     type (hybrid_t)    , intent(in):: hybrid
 
@@ -114,33 +114,47 @@ contains
     n0    = tl%n0
     np1   = tl%np1
     nstep = tl%nstep
-    dt2 = 2*dt
-
-!collect mean quantities:
-! omega_P        used by CAM physics
-! Udp            used by advection, when subcycling for consistenent advection 
-! eta_dot_dpdn   used by advection when not subcycling
 !
-    if(tstep_type==1)then        ! forward in time scheme 
-       method=1
+!   tstep_type=0  pure leapfrog except for very first timestep   CFL=1
+!                    typically requires qsplit=4 or 5 
+!   tstep_type=1  RK2 followed by qsplit-1 leapfrog steps        CFL=?
+!                    typically requires qsplit=4 or 5 
+!   tstep_type=3  RK2-SSP 3 stage (as used by tracers)           CFL=?
+!                    typically requires qsplit=3
+!                    but if windspeed > 340m/s, could use this
+!                    with qsplit=1
+!   tstep_type=4  Kinnmark&Gray RK2 4 stage                      CFL=3.0
+!                 should we replace by standard RK4 (CFL=sqrt(8))?
+!   tstep_type=5  Kinnmark&Gray RK3 5 stage                      CFL=3.9.  
+!                    optimal: for windspeeds ~120m/s,gravity: 340m/2
+!                    run with qsplit=1
+!
+    if(tstep_type==0)then  
+       method=1                ! pure leapfrog
+       if (nstep==0) method=2  ! always use RK2 for first timestep
+    else if (tstep_type==1) then  
+       method=1                           ! LF
        qsplit_stage = mod(nstep,qsplit)
-       if (qsplit_stage==0) method=0
-       eta_ave_w=ur_weights(qsplit_stage+1)
-    else     ! pure leapfrog
-       method=1  
-       eta_ave_w = 1d0/qsplit
+       if (qsplit_stage==0) method=2      ! RK2 on first of qsplit steps
+    else if (tstep_type>1) then  
+       method = tstep_type                ! other RK variants 
     endif
-    if (nstep==0) method=0  ! RK2 for first timestep
 
 
+    ! weights for computing mean dynamics fluxes
+    eta_ave_w = 1d0/qsplit   
+    if(tstep_type==1)then                 
+       ! RK2 + LF scheme has tricky weights:
+       eta_ave_w=ur_weights(qsplit_stage+1) 
+    endif
 
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
+    ! fix dynamical variables, skip dynamics
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
     if (1==prescribed_wind) then
-       ! fix dynamical variables, skip dynamics
        time=tl%nstep*dt
-
        do ie=nets,nete
-
 #ifdef CAM
           ! read in omega met data and store it in derived%omega_prescribed
           ! --- compute eta_dot_dpdn from omega_prescribed ...
@@ -187,24 +201,86 @@ contains
 
 
 
+
     ! ==================================
     ! Take timestep
     ! ==================================
-    if (method==0) then ! RK2
+    dt_vis = dt                      
+    if (method==1) then
+       ! regular LF step
+       dt2 = 2*dt
+       call compute_and_apply_rhs(np1,nm1,n0,dt2,elem,hvcoord,hybrid,&
+            deriv,nets,nete,compute_diagnostics,eta_ave_w)
+       dt_vis = dt2  ! dt to use for time-split dissipation
+    else if (method==2) then
+       ! RK2
        ! forward euler to u(dt/2) = u(0) + (dt/2) RHS(0)  (store in u(np1))
        call compute_and_apply_rhs(np1,n0,n0,dt/2,elem,hvcoord,hybrid,&
             deriv,nets,nete,compute_diagnostics,0d0)
        ! leapfrog:  u(dt) = u(0) + dt RHS(dt/2)     (store in u(np1))
        call compute_and_apply_rhs(np1,n0,np1,dt,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,eta_ave_w)
-       dt_vis = dt                      
+    else if (method==3) then
+       ! RK2-SSP 3 stage.  matches tracer scheme. optimal SSP CFL, but
+       ! not optimal for regular CFL
+       ! u1 = u0 + dt/2 RHS(u0)
+       call compute_and_apply_rhs(np1,n0,n0,dt/2,elem,hvcoord,hybrid,&
+            deriv,nets,nete,compute_diagnostics,eta_ave_w/3)
+       ! u2 = u1 + dt/2 RHS(u1)
+       call compute_and_apply_rhs(np1,np1,np1,dt/2,elem,hvcoord,hybrid,&
+            deriv,nets,nete,.false.,eta_ave_w/3)
+       ! u3 = u2 + dt/2 RHS(u2)
+       call compute_and_apply_rhs(np1,np1,np1,dt/2,elem,hvcoord,hybrid,&
+            deriv,nets,nete,.false.,eta_ave_w/3)
+       ! unew = u/3 +2*u3/3  = u + 1/3 (RHS(u) + RHS(u1) + RHS(u2))
+       do ie=nets,nete
+          elem(ie)%state%v(:,:,:,:,np1)= elem(ie)%state%v(:,:,:,:,n0)/3 &
+               + 2*elem(ie)%state%v(:,:,:,:,np1)/3
+          elem(ie)%state%T(:,:,:,np1)= elem(ie)%state%T(:,:,:,n0)/3 &
+               + 2*elem(ie)%state%T(:,:,:,np1)/3
+          if (rsplit==0) then
+             elem(ie)%state%ps_v(:,:,np1)= elem(ie)%state%ps_v(:,:,n0)/3 &
+                  + 2*elem(ie)%state%ps_v(:,:,np1)/3
+          else
+             elem(ie)%state%dp3d(:,:,:,np1)= elem(ie)%state%dp3d(:,:,:,n0)/3 &
+                  + 2*elem(ie)%state%dp3d(:,:,:,np1)/3
+          endif
+       enddo
+    else if (method==4) then
+       ! KG 2nd order 4 stage:   CFL=3
+       ! u1 = u0 + dt/3 RHS(u0)
+       call compute_and_apply_rhs(np1,n0,n0,dt/3,elem,hvcoord,hybrid,&
+            deriv,nets,nete,compute_diagnostics,0d0)
+       ! u2 = u0 + dt/5 RHS(u1)
+       call compute_and_apply_rhs(np1,n0,np1,dt*4d0/15d0,elem,hvcoord,hybrid,&
+            deriv,nets,nete,.false.,0d0)
+       ! u3 = u0 + dt/3 RHS(u2)
+       call compute_and_apply_rhs(np1,n0,np1,dt*5d0/9d0,elem,hvcoord,hybrid,&
+            deriv,nets,nete,.false.,0d0)
+       ! u4 = u0 + dt/2 RHS(u3)
+       call compute_and_apply_rhs(np1,n0,np1,dt,elem,hvcoord,hybrid,&
+            deriv,nets,nete,.false.,eta_ave_w)
+    else if (method==5) then
+       ! KG 3nd order 5 stage:   CFL=sqrt( 4^2 -1) = 3.87
+       ! u1 = u0 + dt/5 RHS(u0)
+       call compute_and_apply_rhs(np1,n0,n0,dt/5,elem,hvcoord,hybrid,&
+            deriv,nets,nete,compute_diagnostics,0d0)
+       ! u2 = u0 + dt/5 RHS(u1)
+       call compute_and_apply_rhs(np1,n0,np1,dt/5,elem,hvcoord,hybrid,&
+            deriv,nets,nete,.false.,0d0)
+       ! u3 = u0 + dt/3 RHS(u2)
+       call compute_and_apply_rhs(np1,n0,np1,dt/3,elem,hvcoord,hybrid,&
+            deriv,nets,nete,.false.,0d0)
+       ! u4 = u0 + dt/2 RHS(u3)
+       call compute_and_apply_rhs(np1,n0,np1,dt/2,elem,hvcoord,hybrid,&
+            deriv,nets,nete,.false.,0d0)
+       ! u5 = u0 + dt/2 RHS(u4)
+       call compute_and_apply_rhs(np1,n0,np1,dt,elem,hvcoord,hybrid,&
+            deriv,nets,nete,.false.,eta_ave_w)
+    else
+       call abortmp('ERROR: bad choice of tstep_type')
     endif
-    if (method==1) then
-       ! regular LF step
-       call compute_and_apply_rhs(np1,nm1,n0,dt2,elem,hvcoord,hybrid,&
-            deriv,nets,nete,compute_diagnostics,eta_ave_w)
-       dt_vis = dt2  ! dt to use for time-split dissipation
-    endif
+
  
 
     ! ==============================================
@@ -220,11 +296,12 @@ contains
     endif
 #endif
 
-
-
     ! note:time step computes u(t+1)= u(t*) + RHS. 
     ! for consistency, dt_vis = t-1 - t*, so this is timestep method dependent
-    if (tstep_type==1) then  
+    if (tstep_type==0) then  
+       ! leapfrog special case
+       call advance_hypervis_lf(edge3p1,elem,hvcoord,hybrid,deriv,nm1,n0,np1,nets,nete,dt_vis)
+    else
        if (rsplit==0) then
           ! forward-in-time, maybe hypervis applied to PS
           call advance_hypervis(edge3p1,elem,hvcoord,hybrid,deriv,np1,nets,nete,dt_vis,eta_ave_w)
@@ -232,8 +309,6 @@ contains
           ! forward-in-time, hypervis applied to dp3d
           call advance_hypervis_dp(edge3p1,elem,hvcoord,hybrid,deriv,np1,nets,nete,dt_vis,eta_ave_w)
        endif
-    else ! leapfrog
-       call advance_hypervis_lf(edge3p1,elem,hvcoord,hybrid,deriv,nm1,n0,np1,nets,nete,dt_vis)
     endif
 
 
@@ -419,7 +494,11 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
              kptr=1
              do j=1,np
                 do i=1,np
-                   solver_wts(kptr,ie-nets+1) = elem(ie)%solver_wts(i,j)
+
+                   ! so this code is BFB  with old code.  should change to simpler formula below
+                   solver_wts(kptr,ie-nets+1) = 1d0/nint(1d0/(elem(ie)%mp(i,j)*elem(ie)%rmp(i,j)))
+                   !solver_wts(kptr,ie-nets+1) = elem(ie)%mp(i,j)*elem(ie)%rmp(i,j)
+
                    kptr=kptr+1
                 end do
              end do
@@ -1296,7 +1375,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   real (kind=real_kind), dimension(np,np,nets:nete) :: pstens	
   real (kind=real_kind), dimension(np,np,nlev) :: p
   real (kind=real_kind), dimension(np,np) :: dptemp1,dptemp2
-  real(kind=real_kind), pointer, dimension(:,:) :: ournull
   
   
 ! NOTE: PGI compiler bug: when using spheremp, rspheremp and ps as pointers to elem(ie)% members,
@@ -1309,8 +1387,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   real (kind=real_kind), dimension(np,np,2) :: lap_v
   real (kind=real_kind) :: v1,v2,dt,heating,utens_tmp,vtens_tmp,ptens_tmp
 
-
-  ournull => NULL()
 
   if (nu_s == 0 .and. nu == 0 .and. nu_p==0 ) return;
   call t_barrierf('sync_advance_hypervis', hybrid%par%comm)
@@ -1330,8 +1406,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 !$omp parallel do private(k,lap_p,lap_v,deriv,i,j)
 #endif
            do k=1,nlev
-              lap_p=laplace_sphere_wk(elem(ie)%state%T(:,:,k,nt),deriv,elem(ie),ournull)
-              lap_v=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie),ournull)
+              lap_p=laplace_sphere_wk(elem(ie)%state%T(:,:,k,nt),deriv,elem(ie),var_coef=.false.)
+              lap_v=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie),var_coef=.false.)
               ! advace in time.  (note: DSS commutes with time stepping, so we
               ! can time advance and then DSS.  this has the advantage of
               ! not letting any discontinuties accumulate in p,v via roundoff
@@ -1401,8 +1477,10 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            ! comptue mean flux
            if (nu_p>0) then
 #if 0
-              elem(ie)%derived%psdiss_ave(:,:)=elem(ie)%derived%psdiss_ave(:,:)+eta_ave_w*elem(ie)%state%ps_v(:,:,nt)/hypervis_subcycle
-              elem(ie)%derived%psdiss_biharmonic(:,:)=elem(ie)%derived%psdiss_biharmonic(:,:)+eta_ave_w*pstens(:,:,ie)/hypervis_subcycle
+              elem(ie)%derived%psdiss_ave(:,:)=&
+                   elem(ie)%derived%psdiss_ave(:,:)+eta_ave_w*elem(ie)%state%ps_v(:,:,nt)/hypervis_subcycle
+              elem(ie)%derived%psdiss_biharmonic(:,:)=&
+                   elem(ie)%derived%psdiss_biharmonic(:,:)+eta_ave_w*pstens(:,:,ie)/hypervis_subcycle
 #else
               do k=1,nlev
                  dptemp1(:,:) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
@@ -1410,7 +1488,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
                  elem(ie)%derived%dpdiss_ave(:,:,k)=elem(ie)%derived%dpdiss_ave(:,:,k)+eta_ave_w*dptemp1(:,:)/hypervis_subcycle
                  
                  dptemp2(:,:) = (hvcoord%hybi(k+1)-hvcoord%hybi(k))*pstens(:,:,ie)
-                 elem(ie)%derived%dpdiss_biharmonic(:,:,k)=elem(ie)%derived%dpdiss_biharmonic(:,:,k)+eta_ave_w*dptemp2(:,:)/hypervis_subcycle              
+                 elem(ie)%derived%dpdiss_biharmonic(:,:,k)=&
+                      elem(ie)%derived%dpdiss_biharmonic(:,:,k)+eta_ave_w*dptemp2(:,:)/hypervis_subcycle
               enddo
 #endif
            endif
@@ -1425,8 +1504,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
               
               ! add regular diffusion in top 3 layers:
               if (nu_top>0 .and. k<=3) then
-                 lap_p=laplace_sphere_wk(elem(ie)%state%T(:,:,k,nt),deriv,elem(ie),ournull)
-                 lap_v=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie),ournull)
+                 lap_p=laplace_sphere_wk(elem(ie)%state%T(:,:,k,nt),deriv,elem(ie),var_coef=.false.)
+                 lap_v=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie),var_coef=.false.)
               endif
               nu_scale_top = 1
               if (k==1) nu_scale_top=4
@@ -1581,7 +1660,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   real (kind=real_kind), dimension(np,np,nlev,nets:nete)        :: dptens
   real (kind=real_kind), dimension(np,np,nlev) :: p
   real (kind=real_kind), dimension(np,np) :: dptemp1,dptemp2
-  real(kind=real_kind), pointer, dimension(:,:) :: ournull
   
   
 ! NOTE: PGI compiler bug: when using spheremp, rspheremp and ps as pointers to elem(ie)% members,
@@ -1594,8 +1672,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   real (kind=real_kind), dimension(np,np,2) :: lap_v
   real (kind=real_kind) :: v1,v2,dt,heating,utens_tmp,vtens_tmp,ttens_tmp,dptens_tmp
 
-
-  ournull => NULL()
 
   if (nu_s == 0 .and. nu == 0 .and. nu_p==0 ) return;
   call t_barrierf('sync_advance_hypervis', hybrid%par%comm)
@@ -1615,8 +1691,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 !$omp parallel do private(k,lap_p,lap_v,deriv,i,j)
 #endif
            do k=1,nlev
-              lap_t=laplace_sphere_wk(elem(ie)%state%T(:,:,k,nt),deriv,elem(ie),ournull)
-              lap_v=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie),ournull)
+              lap_t=laplace_sphere_wk(elem(ie)%state%T(:,:,k,nt),deriv,elem(ie),var_coef=.false.)
+              lap_v=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie),var_coef=.false.)
               ! advace in time.  (note: DSS commutes with time stepping, so we
               ! can time advance and then DSS.  this has the advantage of
               ! not letting any discontinuties accumulate in p,v via roundoff
@@ -1700,9 +1776,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
               
               ! add regular diffusion in top 3 layers:
               if (nu_top>0 .and. k<=3) then
-                 lap_t=laplace_sphere_wk(elem(ie)%state%T(:,:,k,nt),deriv,elem(ie),ournull)
-                 lap_dp=laplace_sphere_wk(elem(ie)%state%dp3d(:,:,k,nt),deriv,elem(ie),ournull)
-                 lap_v=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie),ournull)
+                 lap_t=laplace_sphere_wk(elem(ie)%state%T(:,:,k,nt),deriv,elem(ie),var_coef=.false.)
+                 lap_dp=laplace_sphere_wk(elem(ie)%state%dp3d(:,:,k,nt),deriv,elem(ie),var_coef=.false.)
+                 lap_v=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie),var_coef=.false.)
               endif
               nu_scale_top = 1
               if (k==1) nu_scale_top=4
@@ -1845,7 +1921,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   real (kind=real_kind), dimension(np,np,nets:nete) :: pstens	
   real (kind=real_kind), dimension(np,np,nlev) :: p
   real (kind=real_kind), dimension(np,np) :: dXdp
-  real(kind=real_kind), pointer, dimension(:,:) :: ournull
   
   
 ! NOTE: PGI compiler bug: when using spheremp, rspheremp and ps as pointers to elem(ie)% members,
@@ -1858,8 +1933,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   real (kind=real_kind), dimension(np,np,2) :: lap_v
   real (kind=real_kind) :: v1,v2,dt,heating,utens_tmp,vtens_tmp,ptens_tmp
 
-
-  ournull => NULL()
 
   if (nu_s == 0 .and. nu == 0 .and. nu_p==0 ) return;
   call t_barrierf('sync_advance_hypervis_lf', hybrid%par%comm)
@@ -1885,8 +1958,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 !$omp parallel do private(k,lap_p,lap_v,deriv,i,j)
 #endif
            do k=1,nlev
-              lap_p=laplace_sphere_wk(elem(ie)%state%T(:,:,k,nt),deriv,elem(ie),ournull)
-              lap_v=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie),ournull)
+              lap_p=laplace_sphere_wk(elem(ie)%state%T(:,:,k,nt),deriv,elem(ie),var_coef=.false.)
+              lap_v=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie),var_coef=.false.)
               ! advace in time.  (note: DSS commutes with time stepping, so we
               ! can time advance and then DSS.  this has the advantage of
               ! not letting any discontinuties accumulate in p,v via roundoff
@@ -1957,8 +2030,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
               
               ! add regular diffusion in top 3 layers:
               if (nu_top>0 .and. k<=3) then
-                 lap_p=laplace_sphere_wk(elem(ie)%state%T(:,:,k,nt),deriv,elem(ie),ournull)
-                 lap_v=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie),ournull)
+                 lap_p=laplace_sphere_wk(elem(ie)%state%T(:,:,k,nt),deriv,elem(ie),var_coef=.false.)
+                 lap_v=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie),var_coef=.false.)
               endif
               nu_scale_top = 1
               if (k==1) nu_scale_top=4
@@ -2802,6 +2875,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   use time_mod, only : TimeLevel_t
   implicit none
   
+  integer :: nets,nete
   real (kind=real_kind), dimension(np,np,nets:nete), intent(inout)   :: phis
   type (hybrid_t)      , intent(in) :: hybrid
   type (element_t)     , intent(inout), target :: elem(:)
@@ -2809,12 +2883,10 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   real (kind=real_kind), intent(in)   :: minf
   integer,               intent(in) :: numcycle
   
-  integer :: nets,nete
   ! local 
   real (kind=real_kind), dimension(np,np,nets:nete) :: pstens	
   real (kind=real_kind), dimension(nets:nete) :: pmin,pmax
   real (kind=real_kind) :: mx,mn
-  real (kind=real_kind), dimension(:,:), pointer :: viscosity
   integer :: nt,ie,ic,i,j,order,order_max, iuse
 
 
@@ -2851,8 +2923,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
      do order=1,order_max-1
         do ie=nets,nete
-           viscosity=>elem(ie)%variable_hyperviscosity
-           pstens(:,:,ie)=laplace_sphere_wk(pstens(:,:,ie),deriv,elem(ie),viscosity)
+           pstens(:,:,ie)=laplace_sphere_wk(pstens(:,:,ie),deriv,elem(ie),var_coef=.true.)
            call edgeVpack(edge3p1,pstens(:,:,ie),1,0,elem(ie)%desc)
         enddo
         call bndry_exchangeV(hybrid,edge3p1)
@@ -2867,8 +2938,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 #endif
      enddo
      do ie=nets,nete
-        viscosity=>elem(ie)%variable_hyperviscosity
-        pstens(:,:,ie)=laplace_sphere_wk(pstens(:,:,ie),deriv,elem(ie),viscosity)
+        pstens(:,:,ie)=laplace_sphere_wk(pstens(:,:,ie),deriv,elem(ie),var_coef=.true.)
      enddo
      if (mod(order_max,2)==0) pstens=-pstens
 

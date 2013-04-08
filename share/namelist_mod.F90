@@ -154,7 +154,7 @@ module namelist_mod
 
 #endif
   use interpolate_mod, only : set_interp_parameter, get_interp_parameter
-!=======================================================================================================!                                 
+!=======================================================================================================!
 !    Adding for SW DG                                                                                   !
 !=======================================================================================================!
 #ifdef _SWDG  
@@ -196,7 +196,7 @@ module namelist_mod
     type (parallel_t), intent(in) ::  par
     character(len=MAX_FILE_LEN) :: mesh_file
     integer :: se_ftype, se_limiter_option
-    integer :: se_smooth, se_phys_tscale, se_nsplit
+    integer :: se_phys_tscale, se_nsplit
     integer :: interp_nlat, interp_nlon, interp_gridtype, interp_type
     integer :: i, ii, j
     integer  :: ierr
@@ -220,7 +220,6 @@ module namelist_mod
                      se_topology,      &
                      se_ne,            &
                      se_limiter_option, &
-                     se_smooth,        &        ! Timestep Filter  
 #else
                      qsize,         &       ! number of SE tracers
                      ntrac,         &       ! number of fvm tracers
@@ -364,7 +363,7 @@ module namelist_mod
         interp_type,          &
         interpolate_analysis
 
-!=======================================================================================================!                                 
+!=======================================================================================================!
 !   Adding for SW DG                                                                                    !
 !=======================================================================================================!
 #ifdef _SWDG
@@ -394,7 +393,6 @@ module namelist_mod
     ! CAM requires forward-in-time, subcycled dynamics
     ! RK2 3 stage tracers, sign-preserving conservative
     tstep_type = 1            ! foward-in-time RK methods
-    se_smooth=0;              ! RK methods dont use robert filter
     qsplit=4; rk_stage_user=3
     se_limiter_option=4
     se_ftype = 2
@@ -639,8 +637,10 @@ module namelist_mod
        interp_type = 0
        vector_uvars(:)=''
        vector_vvars(:)=''
-       vector_uvars(1:10) = (/'U       ','UBOT    ','U200    ','U250    ','U850    ','FU      ','CONVU   ','DIFFU   ','UTGWORO ','UFLX    '/)
-       vector_vvars(1:10) = (/'V       ','VBOT    ','V200    ','V250    ','V850    ','FV      ','CONVV   ','DIFFV   ','VTGWORO ','VFLX    '/)
+       vector_uvars(1:10) = (/'U       ','UBOT    ','U200    ','U250    ',&
+            'U850    ','FU      ','CONVU   ','DIFFU   ','UTGWORO ','UFLX    '/)
+       vector_vvars(1:10) = (/'V       ','VBOT    ','V200    ','V250    ',&
+            'V850    ','FV      ','CONVV   ','DIFFV   ','VTGWORO ','VFLX    '/)
 #ifndef CAM
        infilenames(:) = ''
        output_prefix = ""
@@ -723,7 +723,7 @@ module namelist_mod
        end do
 
 
-!=======================================================================================================!                                 
+!=======================================================================================================!
 !     Adding for SW DG                                                                                  !
 !=======================================================================================================!
 #ifdef _SWDG
@@ -788,7 +788,6 @@ module namelist_mod
     call MPI_bcast(useframes ,1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(runtype   ,1,MPIinteger_t,par%root,par%comm,ierr)
 #ifdef CAM
-    smooth = se_smooth
     phys_tscale = se_phys_tscale
     limiter_option  = se_limiter_option
     nsplit = se_nsplit
@@ -986,11 +985,6 @@ module namelist_mod
           call abortmp('vertically lagrangian code requires tstep_type=1(RK timestepping)')
         endif
     endif
-    if (tstep_type == 1) then
-       if (energy_fixer == 1 .or. energy_fixer==2) then
-          call abortmp("ERROR: Rk timesteping requires non-staggered-in-time energy fixer")
-       endif
-    endif
 
 
     ! CHECK phys timescale, requires se_ftype=0 (pure tendencies for forcing)
@@ -1010,7 +1004,7 @@ module namelist_mod
 
 
 
-!=======================================================================================================!                                 
+!=======================================================================================================!
 !   Adding for SW DG                                                                                    !
 !=======================================================================================================!
 #ifndef CAM
@@ -1040,12 +1034,8 @@ module namelist_mod
        if (interp_nlon==0 .or. interp_nlat==0) then
           ! compute interpolation grid based on number of points around equator
           call set_interp_parameter('auto',4*ne*(np-1))
-          
           interp_nlat = get_interp_parameter('nlat')
           interp_nlon = get_interp_parameter('nlon')
-          
-          call MPI_bcast(interp_nlat , 1,MPIinteger_t,par%root,par%comm,ierr)
-          call MPI_bcast(interp_nlon , 1,MPIinteger_t,par%root,par%comm,ierr)
        else
           call set_interp_parameter('nlat',interp_nlat)
           call set_interp_parameter('nlon',interp_nlon)
@@ -1112,7 +1102,7 @@ module namelist_mod
        if (integration == "explicit" ) then
           write(iulog,*)"readnl: LF-trapazoidal freq= ",LFTfreq
        endif
-       if (integration == "runge_kutta" .or. tstep_type==1 ) then
+       if (integration == "runge_kutta" .or. tstep_type>0 ) then
           write(iulog,*)"readnl: rk_stage_user   = ",rk_stage_user
        endif
        write(iulog,*)"readnl: tracer_advection_formulation  = ",tracer_advection_formulation
@@ -1122,7 +1112,6 @@ module namelist_mod
        write(iulog,*)"readnl: se_nsplit         = ", NSPLIT
        write(iulog,*)"readnl: se_ftype          = ",ftype
        write(iulog,*)"readnl: se_limiter_option = ",limiter_option
-       write(iulog,*)"filter: se_smooth         = ",se_smooth
 #else
        write(iulog,*)"readnl: tstep          = ",tstep
        write(iulog,*)"readnl: ftype          = ",ftype
@@ -1253,7 +1242,7 @@ module namelist_mod
           write(iulog,*)" analysis interp gridtype = ",interp_gridtype
           write(iulog,*)" analysis interpolation type = ",interp_type
        end if
-!=======================================================================================================!                                 
+!=======================================================================================================!
 !      Adding for SW DG                                                                                 !
 !=======================================================================================================!
 #ifdef _SWDG

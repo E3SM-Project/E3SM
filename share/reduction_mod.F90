@@ -256,8 +256,8 @@ contains
 #endif
 
     type (ReductionBuffer_int_1d_t)   :: red       ! shared memory reduction buffer struct
-    integer, intent(inout)            :: redp(len) ! thread private vector of partial sum
     integer,               intent(in) :: len       ! buffer length
+    integer, intent(inout)            :: redp(len) ! thread private vector of partial sum
     type (hybrid_t),       intent(in) :: hybrid    ! parallel handle
 
     ! Local variables

@@ -370,7 +370,7 @@ contains
 #ifdef _MPI
          call MPI_finalize(info)
 #endif
-         stop
+         !stop
        end subroutine haltmp
 
 ! =========================================================

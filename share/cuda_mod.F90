@@ -31,6 +31,7 @@ module cuda_mod
   use edge_mod       , only: EdgeBuffer_t
   implicit none
   private
+  save
 
   !First listed are all externally accescible routines
   public :: cuda_mod_init

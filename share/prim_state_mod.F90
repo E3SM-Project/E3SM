@@ -239,6 +239,9 @@ contains
 
        tmax_local(ie)    = MAXVAL(elem(ie)%state%T(:,:,:,n0))
 
+       if (rsplit>0) &
+            dpmax_local(ie)    = MAXVAL(elem(ie)%state%dp3d(:,:,:,n0))
+
        psmax_local(ie) = MAXVAL(tmp(:,:,ie))
        ftmax_local(ie)    = MAXVAL(elem(ie)%derived%FT(:,:,:,pnm1))
        fqmax_local(ie)    = MAXVAL(elem(ie)%derived%FQ(:,:,:,1,pnm1))
@@ -252,9 +255,9 @@ contains
        Fvmin_local(ie)    = MINVAL(elem(ie)%derived%FM(:,:,2,:,pnm1))
 
        tmin_local(ie)    = MINVAL(elem(ie)%state%T(:,:,:,n0))
+
        if (rsplit>0) &
             dpmin_local(ie)    = MINVAL(elem(ie)%state%dp3d(:,:,:,n0))
-
 
        Ftmin_local(ie)    = MINVAL(elem(ie)%derived%FT(:,:,:,pnm1))
        Fqmin_local(ie) = MINVAL(elem(ie)%derived%FQ(:,:,:,1,pnm1))
@@ -361,7 +364,8 @@ contains
     !
     !   ptop =  hvcoord%hyai(1)*hvcoord%ps0)  + hvcoord%hybi(1)*ps(i,j)
     !   but we assume hybi(1) is zero at top of atmosphere (pure pressure coordinates)
-    !    Mass = (Mass2-(hvcoord%hyai(1)*hvcoord%ps0) )*scale  ! this correction is a constant, ~20 kg/m^2 (effects 4th digit of Mass)
+    !    Mass = (Mass2-(hvcoord%hyai(1)*hvcoord%ps0) )*scale  ! this correction is a constant,
+    !                                                         ! ~20 kg/m^2 (effects 4th digit of Mass)
     !   BUT: CAM EUL defines mass as integral( ps ), so to be consistent, ignore ptop contribution; 
     Mass = Mass2*scale
     Mass_np1 = Mass_np1*scale
@@ -388,7 +392,7 @@ contains
        if (rsplit>0) &
        write(iulog,100) "dp    = ",dpmin_p,dpmax_p,dpsum_p
 
-       if (tstep_type==1) then  !no longer support tracer advection with tstep_type = 0
+       if (tstep_type>0) then  !no longer support tracer advection with tstep_type = 0
           do q=1,qsize
              write(iulog,100) "qv= ",qvmin_p(q), qvmax_p(q), qvsum_p(q)
           enddo
@@ -641,7 +645,7 @@ contains
           ddt_tot = (TOTE(2)-TOTE(1))/(dt)
           write(iulog,'(a,3E22.14)') " E,dE/dt     ",TOTE(2),ddt_tot
           
-          if (tstep_type==1) then  !no longer support tracer advection with tstep_type = 0
+          if (tstep_type>0) then  !no longer support tracer advection with tstep_type = 0
              do q=1,qsize
                 write(iulog,'(a,i1,a,E22.14,a,2E15.7)') "Q",q,",Q diss, dQ^2/dt:",Qmass(q,2)," kg/m^2",&
                      (Qmass(q,2)-Qmass(q,1))/dt,(Qvar(q,2)-Qvar(q,1))/dt
@@ -654,9 +658,7 @@ contains
              write(iulog,'(a,2e15.7)') 'dKE/dt(W/m^2): ',(KEner(4)-KEner(3))/dt,(KEner(3)-KEner(2))/dt
              write(iulog,'(a,2e15.7)') 'dIE/dt(W/m^2): ',(IEner(4)-IEner(3))/dt,(IEner(3)-IEner(2))/dt
              write(iulog,'(a,2e15.7)') 'dPE/dt(W/m^2): ',(PEner(4)-PEner(3))/dt,(PEner(3)-PEner(2))/dt
-          endif
-          ! RK code diagnostics
-          if (tstep_type==1) then  
+          else
              write(iulog,'(a)') 'Energy Fixer, Physics (except adjustments):'
              write(iulog,'(a,2e15.7)') 'dKE/dt(W/m^2): ',(KEner(3)-KEner(2))/dt,(KEner(1)-KEner(4))/dt
              write(iulog,'(a,2e15.7)') 'dIE/dt(W/m^2): ',(IEner(3)-IEner(2))/dt,(IEner(1)-IEner(4))/dt
@@ -672,7 +674,7 @@ contains
 #endif       
        if (TOTE0>0) then
           write(iulog,100) "(E-E0)/E0    ",(TOTE(4)-TOTE0)/TOTE0
-          if (tstep_type==1) then  !no longer support tracer advection with tstep_type = 0
+          if (tstep_type>0) then  !no longer support tracer advection with tstep_type = 0
              do q=1,qsize
                 if(Qmass0(q)>0.0D0) then
                    write(iulog,'(a,E23.15,a,i1)') "(Q-Q0)/Q0 ",(Qmass(q,2)-Qmass0(q))/Qmass0(q),"   Q",q
@@ -930,7 +932,7 @@ subroutine prim_diag_scalars(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     !  RK2 forward scheme.  compute everything at t2
     !  (used by CAM)
     !   Q has only one time dimension
-    if (tstep_type==1) then
+    if (tstep_type>0) then
 
        do ie=nets,nete
 #if (defined ELEMENT_OPENMP)
