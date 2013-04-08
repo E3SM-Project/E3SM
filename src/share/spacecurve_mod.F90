@@ -882,7 +882,7 @@ contains
 
   end function IsLoadBalanced
   !---------------------------------------------------------
-  function GenCurve(l,type,ma,md,ja,jd) result(ierr)
+  recursive function GenCurve(l,type,ma,md,ja,jd) result(ierr)
 
     implicit none
     integer,intent(in)               :: l,type,ma,md,ja,jd

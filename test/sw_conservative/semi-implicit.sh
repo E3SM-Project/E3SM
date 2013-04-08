@@ -2,7 +2,7 @@
 
 
 set wdir = ~/scratch1/sweqx
-set src = ~/codes/homme/build.Linux
+set src = ~/codes/homme/build/sweqx
 set input = ~/codes/homme/test/sw_conservative
 
 
@@ -12,12 +12,23 @@ if ( ${?PBS_NODEFILE} ) then
 endif
 echo using NCPU = $NCPU
 
-set params = $input/Params.inc
-diff  $params  $src/../Params.inc
-if ($status != 0) then
-   echo "replacing Params.inc"
-   cp $params $src/../Params.inc
+
+#configure the model
+cd $src
+set configure = 0
+if ( $configure ) then
+  cd $src
+  ./configure --with-netcdf=$NETCDF_PATH --with-pnetcdf=$PNETCDF_PATH NP=8 PLEV=1
+  if ($status ) exit
+
+  make clean
+  make -j4 depends
+  if ($status ) exit
 endif
+
+make -j2 sweqx
+if ($status ) exit
+
 
 
 cd $src

@@ -30,7 +30,7 @@ echo "Test name = ${TEST_NAME}"
 
 if [ "${USE_CPRNC}" == ON -o "${USE_CPRNC}" == TRUE ] ; then
   echo "Diffing the Netcdf output files"
-  diffCprnc
+  diffCprncOutput
   echo "############################################################################"
   echo "  The diff using CPRNC has passed"
   echo "############################################################################"

@@ -365,10 +365,10 @@ end do
 ! Compute interpolation matrix from gll(1:n1) -> gs(1:n2)
 ! =======================================
   subroutine v2pinit(v2p,gll,gs,n1,n2)
+    integer :: n1,n2
     real(kind=real_kind)  ::  v2p(n1,n2)
     real(kind=real_kind)  ::  v2p_new(n1,n2)
     real(kind=longdouble_kind)  ::  gll(n1),gs(n2)
-    integer :: n1,n2
     ! Local variables
 
     integer i,j,k,m,l
@@ -1505,8 +1505,8 @@ endif
 !  1st order, monotone, conservative
 !  ================================================
   function remap_phys2gll(pin,nphys) result(pout)
-    real(kind=real_kind), intent(in) :: pin(nphys*nphys)
     integer :: nphys
+    real(kind=real_kind), intent(in) :: pin(nphys*nphys)
     real(kind=real_kind) :: pout(np,np)
     
     ! Local
@@ -2421,14 +2421,14 @@ endif
 
 
 
-  function laplace_sphere_wk(s,deriv,elem,viscosity) result(laplace)
+  function laplace_sphere_wk(s,deriv,elem,var_coef) result(laplace)
 !
 !   input:  s = scalar
 !   ouput:  -< grad(PHI), grad(s) >   = weak divergence of grad(s)
 !     note: for this form of the operator, grad(s) does not need to be made C0
 !            
     real(kind=real_kind), intent(in) :: s(np,np) 
-    real(kind=real_kind), pointer, dimension(:,:) :: viscosity
+    logical :: var_coef
     type (derivative_t)              :: deriv
     type (element_t)                 :: elem
     real(kind=real_kind)             :: laplace(np,np)
@@ -2440,11 +2440,11 @@ endif
 
     grads=gradient_sphere(s,deriv,elem%Dinv)
  
-    if (ASSOCIATED(viscosity)) then
+    if (var_coef) then
        if (use_tensorhv==0 ) then
           ! const or variable viscosity, (1) or (2)
-          grads(:,:,1) = grads(:,:,1)*viscosity(:,:)
-          grads(:,:,2) = grads(:,:,2)*viscosity(:,:)
+          grads(:,:,1) = grads(:,:,1)*elem%variable_hyperviscosity(:,:)
+          grads(:,:,2) = grads(:,:,2)*elem%variable_hyperviscosity(:,:)
        else
           ! tensor hv, (3)
           oldgrads=grads
@@ -2464,37 +2464,37 @@ endif
   end function laplace_sphere_wk
 
 
-  function vlaplace_sphere_wk(v,deriv,elem,viscosity,nu_ratio) result(laplace)
+  function vlaplace_sphere_wk(v,deriv,elem,var_coef,nu_ratio) result(laplace)
 !
 !   input:  v = vector in lat-lon coordinates
 !   ouput:  weak laplacian of v, in lat-lon coordinates
 
     real(kind=real_kind), intent(in) :: v(np,np,2) 
-    real(kind=real_kind), pointer, dimension(:,:) :: viscosity
+    logical :: var_coef
     type (derivative_t)              :: deriv
     type (element_t)                 :: elem
     real(kind=real_kind), optional :: nu_ratio
     real(kind=real_kind) :: laplace(np,np,2)
 
     if (which_vlaplace .eq. 2) then
-      laplace=cartesian_laplace_sphere_wk(v,deriv,elem,viscosity,nu_ratio)
+      laplace=cartesian_laplace_sphere_wk(v,deriv,elem,var_coef,nu_ratio)
     else if (which_vlaplace .eq. 1) then
-      laplace=laplace_sphere_wk_orig(v,deriv,elem,viscosity,nu_ratio)
+      laplace=laplace_sphere_wk_orig(v,deriv,elem,var_coef,nu_ratio)
     else
-      laplace=laplace_sphere_wk_new(v,deriv,elem,viscosity,nu_ratio)
+      laplace=laplace_sphere_wk_new(v,deriv,elem,var_coef,nu_ratio)
     endif
 
   end function vlaplace_sphere_wk
 
 
 
-  function cartesian_laplace_sphere_wk(v,deriv,elem,viscosity,nu_ratio) result(laplace)
+  function cartesian_laplace_sphere_wk(v,deriv,elem,var_coef,nu_ratio) result(laplace)
 !
 !   input:  v = vector in lat-lon coordinates
 !   ouput:  weak laplacian of v, in lat-lon coordinates
 
     real(kind=real_kind), intent(in) :: v(np,np,2) 
-    real(kind=real_kind), pointer, dimension(:,:) :: viscosity
+    logical :: var_coef
     type (derivative_t)              :: deriv
     type (element_t)                 :: elem
     real(kind=real_kind) :: laplace(np,np,2)
@@ -2512,7 +2512,7 @@ endif
 
     ! Do laplace on cartesian comps
     do component=1,3
-       dum_cart(:,:,component) = laplace_sphere_wk(dum_cart(:,:,component),deriv,elem,viscosity)
+       dum_cart(:,:,component) = laplace_sphere_wk(dum_cart(:,:,component),deriv,elem,var_coef)
     enddo
 
     ! cartesian -> latlon
@@ -2525,7 +2525,7 @@ endif
 
 
 
-  function laplace_sphere_wk_orig(v,deriv,elem,viscosity,nu_ratio) result(laplace)
+  function laplace_sphere_wk_orig(v,deriv,elem,var_coef,nu_ratio) result(laplace)
 !
 !   input:  v = vector in lat-lon coordinates
 !   ouput:  weak laplacian of v, in lat-lon coordinates
@@ -2589,7 +2589,7 @@ endif
 !  < 1/g F >     = sum mv * F
 !
     real(kind=real_kind), intent(in) :: v(np,np,2) 
-    real(kind=real_kind), pointer, dimension(:,:) :: viscosity
+    logical var_coef
     type (derivative_t)              :: deriv
     type (element_t)                 :: elem
     real(kind=real_kind) :: laplace(np,np,2)
@@ -2604,9 +2604,9 @@ endif
     vor=vorticity_sphere(v,deriv,elem)
 
 
-    if (ASSOCIATED(viscosity)) then
-       div = div*viscosity
-       vor = vor*viscosity
+    if (var_coef) then
+       div = div*elem%variable_hyperviscosity(:,:)
+       vor = vor*elem%variable_hyperviscosity(:,:)
     end if
     if (present(nu_ratio)) div = nu_ratio*div
 
@@ -2674,7 +2674,7 @@ endif
 
 
 
-  function laplace_sphere_wk_new(v,deriv,elem,viscosity,nu_ratio) result(laplace)
+  function laplace_sphere_wk_new(v,deriv,elem,var_coef,nu_ratio) result(laplace)
 !
 !   input:  v = vector in lat-lon coordinates
 !   ouput:  weak laplacian of v, in lat-lon coordinates
@@ -2685,7 +2685,7 @@ endif
 !                 = grad_wk(div) - curl_wk(vor)               
 !
     real(kind=real_kind), intent(in) :: v(np,np,2) 
-    real(kind=real_kind), pointer, dimension(:,:) :: viscosity
+    logical :: var_coef
     type (derivative_t)              :: deriv
     type (element_t)                 :: elem
     real(kind=real_kind) :: laplace(np,np,2)
@@ -2699,9 +2699,9 @@ endif
     div=divergence_sphere(v,deriv,elem)
     vor=vorticity_sphere(v,deriv,elem)
 
-    if (ASSOCIATED(viscosity)) then
-       div = div*viscosity
-       vor = vor*viscosity
+    if (var_coef) then
+       div = div*elem%variable_hyperviscosity(:,:)
+       vor = vor*elem%variable_hyperviscosity(:,:)
     end if
     if (present(nu_ratio)) div = nu_ratio*div
 

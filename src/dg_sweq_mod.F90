@@ -50,10 +50,6 @@ subroutine sweq_dg(elem,edge1,edge2,edge3,red,par,ithr,nets,nete)
     !-----------------
     use filter_mod, only : filter_t, taylor_filter_create, fm_filter_create, fm_transfer, bv_transfer
     !-----------------
-    use solver_mod, only : blkjac_t,blkjac_init
-    !-----------------
-    use cg_mod, only : cg_t, cg_create
-    !-----------------
     use restart_io_mod, only : readrestart, writerestart
     !-----------------
     use control_mod, only : integration, filter_mu, filter_type, transfer_type, debug_level, test_case, &
@@ -92,9 +88,6 @@ subroutine sweq_dg(elem,edge1,edge2,edge3,red,par,ithr,nets,nete)
     real (kind=real_kind)       :: pmean           ! mean geopotential
     type (derivative_t)         :: deriv           ! derivative struct
     type (TimeLevel_t)          :: tl              ! time level struct
-    type (blkjac_t),allocatable :: blkjac(:)  
-    type (cg_t)                 :: cg              ! conjugate gradient struct
-    real (kind=real_kind)       :: lambdasq(nlev)  ! Helmholtz length scale
     type (hybrid_t)             :: hybrid
     type (quadrature_t)         :: gll,gs          ! gauss-lobatto and gauss wts and pts
 
@@ -102,7 +95,6 @@ subroutine sweq_dg(elem,edge1,edge2,edge3,red,par,ithr,nets,nete)
     real (kind=real_kind) :: Tp(np)          ! transfer function pressure and velocity grid
     type (filter_t)       :: flt           ! Filter structure for both v and p grid
     type (quadrature_t)   :: gv,gp           ! quadratures on velocity and pressure grids
-    real (kind=real_kind) :: solver_wts(npsq,nete-nets+1)        ! solver weights array for nonstaggered grid
 
     integer  :: simday
 
@@ -190,15 +182,6 @@ subroutine sweq_dg(elem,edge1,edge2,edge3,red,par,ithr,nets,nete)
 #endif
     end if
 
-    do ie=nets,nete
-       iptr=1
-       do j=1,np
-          do i=1,np
-             solver_wts(iptr,ie-nets+1) = elem(ie)%solver_wts(i,j)
-             iptr=iptr+1
-          end do
-       end do
-    end do
 !=======================================================================================================!
 !	Sync-up to make sure timing is clean								!
 !=======================================================================================================!    

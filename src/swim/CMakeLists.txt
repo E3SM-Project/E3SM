@@ -1,6 +1,6 @@
 # Relevant Directories within the HOMME repository
 # holding source files needed for building the library
-# and executable sweqx.
+# and executable swim.
 
 INCLUDE_DIRECTORIES ( ${Trilinos_INCLUDE_DIRS} ${Trilinos_TPL_INCLUDE_DIRS} )
 LINK_DIRECTORIES    ( ${Trilinos_LIBRARY_DIRS} ${Trilinos_TPL_LIBRARY_DIRS} )
@@ -14,10 +14,8 @@ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR}
                     ${CMAKE_CURRENT_BINARY_DIR}/share
                     ${PIO_INCLUDE_DIRS}
                     ${TIMING_INCLUDE_DIRS})
-INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}
-                    ${CMAKE_CURRENT_SOURCE_DIR}/share)
 
-# Set up swim specifc defaults 
+# Set up swim specfic defaults 
 IF (NOT SWIM_NP)
   SET (SWIM_NP 4 CACHE STRING "Default number of points (NP) in the element (default value is 4)")
 ENDIF ()
@@ -139,13 +137,16 @@ SET(SRCS_SWIM     ${SRC_TRIL}/donoxloca.cpp
                   ${SRC_BASE}/precon_mod.F90
 )
 
-
-
-
 ADD_LIBRARY(homme_swim ${SRCS_F90} ${SRCS_SWIM})
-TARGET_LINK_LIBRARIES(homme_swim pio timing  ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES})
+ADD_DEPENDENCIES(homme_swim pio timing)
 
 ADD_EXECUTABLE(swim ${SRC_BASE}/main.F90)
-TARGET_LINK_LIBRARIES(swim homme_swim)
+
+ADD_DEPENDENCIES(swim homme_swim pio timing)
+
+SET_PROPERTY(TARGET swim PROPERTY LINKER_LANGUAGE Fortran)
+
+TARGET_LINK_LIBRARIES(swim homme_swim pio timing ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES})
+
 INSTALL(TARGETS swim
         RUNTIME DESTINATION bin)

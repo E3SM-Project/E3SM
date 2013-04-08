@@ -7,6 +7,7 @@ module checksum_mod
   implicit none
 
   private
+  save
 
   ! test_ghost is called from within a openMP parrallel region,
   ! and these buffers have to be thread-shared

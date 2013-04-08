@@ -353,7 +353,9 @@ contains
     integer i,j
     real(kind=real_kind) :: r!, l_inf
 
-! MNL: removing check that points are on the unit cube because we allow spherical grids to map beyond the extent of the cube (though we probably should still have an upper bound for how far past the edge the element lies...)
+! MNL: removing check that points are on the unit cube because we allow
+! spherical grids to map beyond the extent of the cube (though we probably
+! should still have an upper bound for how far past the edge the element lies)
 !    l_inf = MAX(ABS(cart%x), ABS(cart%y)) 
 !    if (1.01 < l_inf) then
 !      call abortmp('unit_face_based_cube_to_unit_sphere: Input not on unit cube.')
@@ -447,7 +449,9 @@ contains
     integer i,j
     real(kind=real_kind) :: r!, l_inf
 
-! MNL: removing check that points are on the unit cube because we allow spherical grids to map beyond the extent of the cube (though we probably should still have an upper bound for how far past the edge the element lies...)
+! MNL: removing check that points are on the unit cube because we allow
+! spherical grids to map beyond the extent of the cube (though we probably
+! should still have an upper bound for how far past the edge the element lies)
 !    l_inf = MAX(ABS(cart%x), ABS(cart%y)) 
 !    if (1.01 < l_inf) then
 !      call abortmp('unit_face_based_cube_to_unit_sphere: Input not on unit cube.')

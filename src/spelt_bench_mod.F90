@@ -45,6 +45,7 @@ subroutine spelt_run_bench(elem,spelt,hybrid,nets,nete,tl)
   use perf_mod, only : t_startf, t_stopf, t_barrierf ! _EXTERNAL
   ! -----------------------------------------------
   use quadrature_mod, only : quadrature_t, gausslobatto
+  use control_mod, only : test_cfldep
   
   
 #ifdef PIO_INTERP
@@ -82,6 +83,7 @@ subroutine spelt_run_bench(elem,spelt,hybrid,nets,nete,tl)
   real (kind=real_kind)                       :: sga, dx, dy
   type (cartesian2D_t)                        :: dref, alphabeta
   real (kind=real_kind)                       :: vstar(np,np,2), v1, v2, u(1:nep,1:nep), v(1:nep,1:nep)
+  real (kind=real_kind)                       :: maxcflx=0.0D0, maxcfly=0.0D0,maxcflxstep, maxcflystep  
   
   type (quadrature_t) :: gp   ! Quadrature points and weights on pressure grid
   
@@ -117,7 +119,7 @@ subroutine spelt_run_bench(elem,spelt,hybrid,nets,nete,tl)
   do i=1,nep
     refnep(i)= 2*(i-1)/tmp - 1
   end do
-  
+
   call v2pinit(deriv%Sfvm,gp%points,refnep,np,nep)
   
 !Initialize test example with first communication-----------------------------------!      
@@ -230,9 +232,10 @@ DO WHILE(tl%nstep<nmax) !nmax)
   do ie=nets,nete
     do k=1,nlev
       !simulate gll velocities, I get the velocities on the gll from the Spectral Element simulation
-!       elem(ie)%derived%vstar(:,:,:,k)=get_boomerang_velocities_gll(elem(ie), time_at(tl%nstep+1))
-!       spelt(ie)%vn0(:,:,:,k)=get_boomerang_velocities_gll(elem(ie),time_at(tl%nstep))
-!       spelt(ie)%vn12(:,:,:,k)=get_boomerang_velocities_gll(elem(ie),(time_at(tl%nstep)+time_at(tl%nstep+1))/2.0D0)
+      elem(ie)%derived%vstar(:,:,:,k)=get_boomerang_velocities_gll(elem(ie), time_at(tl%nstep+1))
+      spelt(ie)%vn0(:,:,:,k)=get_boomerang_velocities_gll(elem(ie),time_at(tl%nstep))
+      spelt(ie)%vn12(:,:,:,k)=get_boomerang_velocities_gll(elem(ie),(time_at(tl%nstep)+time_at(tl%nstep+1))/2.0D0)
+
 !       elem(ie)%derived%vstar(:,:,:,k)=get_solidbody_velocities_gll(elem(ie), time_at(tl%nstep+1))
 !       spelt(ie)%vn0(:,:,:,k)=get_solidbody_velocities_gll(elem(ie),time_at(tl%nstep))
 !       spelt(ie)%vn1(:,:,:,k)=get_solidbody_velocities_gll(elem(ie),(time_at(tl%nstep)+time_at(tl%nstep+1))/2)
@@ -313,8 +316,8 @@ DO WHILE(tl%nstep<nmax) !nmax)
 !   call spelt_mcgregordss(elem,spelt,nets,nete, hybrid, deriv, tstep, 3)
 !   call spelt_rkdss(elem,spelt,nets,nete, hybrid, deriv, tstep, 3)
 ! ! end mcgregordss
-!   call spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
-  call spelt_runpos(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
+  call spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
+!   call spelt_runpos(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
 !   call spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
 !   call spelt_runair(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
 
@@ -359,8 +362,18 @@ if (mod(tl%nstep,1)==0) then
   mass=global_shared_sum(1)
   maxc = parallelmax(tmp1,hybrid)
   minc = parallelmin(tmp2,hybrid)
+
 ! !-----------------------------------------------------------------------------------!
-!    
+!   
+  if (test_cfldep) then
+    maxcflxstep = parallelmax(spelt(:)%maxcfl(1,chooselev),hybrid)
+    maxcflystep = parallelmax(spelt(:)%maxcfl(2,chooselev),hybrid)
+    maxcflx=max(maxcflxstep,maxcflx)
+    maxcfly=max(maxcflystep,maxcfly)
+    if  (hybrid%masterthread) then
+      write(*,*) "CFL: maxcflxstep=", maxcflxstep, "maxcflystep=", maxcflystep 
+    endif
+  endif 
   if  (hybrid%masterthread) then 
     write(*,*) 'time=', time_at(tl%nstep), 'timeatmax',Time_at(nmax)
     write(*,*) 'chooselev=', chooselev, 'choosetrac=', choosetrac
@@ -370,7 +383,6 @@ if (mod(tl%nstep,1)==0) then
     write(*,*) 'rel', (mass-massstart)/massstart           
     write(*,*) 'maxvaluestart:', maxcstart, 'minvaluestart:', mincstart
     write(*,*) 'maxvalue:     ', maxc,       'minvalue:    ', minc
-!      write(*,*) "CFL: maxcflx=", maxcflx, "maxcfly=", maxcfly 
     print *
   endif 
 endif
@@ -480,6 +492,7 @@ ENDDO  ! END TIME LOOP
   maxc = parallelmax(tmp1,hybrid)
   minc = parallelmin(tmp2,hybrid)
 !SUMMARY
+
   if(hybrid%masterthread) then 
     print *
     print *,"!-----------------------------------------------------------------------!"
@@ -496,6 +509,8 @@ ENDDO  ! END TIME LOOP
     write(*,*) 'maxvalue:     ', maxc,      'minvalue:     ', minc
     write(*,*) "l1 = ", l1, "l2 = ", l2, "lmax = ", lmax
     write(*,*) "ne*nc = ", ne*nc, "timestep = ", tstep
+    write(*,*) "CFL: maxcflx=", maxcflx, "maxcfly=", maxcfly 
+    print *
   endif  
   
 

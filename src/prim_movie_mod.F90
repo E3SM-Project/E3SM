@@ -78,10 +78,11 @@ module prim_movie_mod
 
   implicit none
   private
+  save
   public :: prim_movie_output, prim_movie_init, &
        prim_movie_finish,  nextoutputstep
 
-  type(nf_handle), save :: ncdf(max_output_streams)
+  type(nf_handle) :: ncdf(max_output_streams)
   integer, private :: nxyp
   integer(kind=nfsizekind) :: piostart2d, piocount2d, piocount3d(2), piostart3d(2)
 

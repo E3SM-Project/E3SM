@@ -305,7 +305,13 @@ contains
 #endif
     endif
 
-    if (ntrac>0) allocate(fvm(nelemd))
+    if (ntrac>0) then
+       allocate(fvm(nelemd))
+    else
+       ! Even if fvm not needed, still desirable to allocate it as empty
+       ! so it can be passed as a (size zero) array rather than pointer.
+       allocate(fvm(0))
+    end if
 
     ! ====================================================
     !  Generate the communication schedule
@@ -530,7 +536,7 @@ contains
          debug_level, vfile_int, filter_freq, filter_freq_advection, &
          transfer_type, vform, vfile_mid, filter_type, kcut_fm, wght_fm, p_bv, &
          s_bv, topology,columnpackage, moisture, precon_method, rsplit, qsplit, rk_stage_user,&
-         TRACERADV_TOTAL_DIVERGENCE, TRACERADV_UGRADQ, sub_case, &
+         sub_case, &
          use_cpstar, energy_fixer, limiter_option, nu, nu_q, nu_div, tstep_type, hypervis_subcycle, &
          hypervis_subcycle_q
     use prim_si_ref_mod, only: prim_si_refstate_init, prim_set_mass
@@ -602,18 +608,17 @@ contains
 
 
     ! compute most restrictive dt*nu for use by variable res viscosity: 
-    if (tstep_type.eq.0) then
+    if (tstep_type == 0) then
        ! LF case: no tracers, timestep seen by viscosity is 2*tstep
        dt_tracer_vis = 0  
        dt_dyn_vis = 2*tstep
        dtnu = 2.0d0*tstep*max(nu,nu_div)
-    endif
-    if (tstep_type.eq.1) then
+    else
        ! compute timestep seen by viscosity operator:
-       if (qsplit==1) then
-          dt_dyn_vis = tstep   ! dynamics uses pure RK2 method
-       else
-          dt_dyn_vis = 2*tstep  ! dynamics uses RK2 + (qsplit-1) LF.  LF viscosity uses 2dt. 
+       dt_dyn_vis = tstep
+       if (qsplit>1 .and. tstep_type == 1) then
+          ! tstep_type==1: RK2 followed by LF.  internal LF stages apply viscosity at 2*dt
+          dt_dyn_vis = 2*tstep  
        endif
        dt_tracer_vis=tstep*qsplit
 
@@ -624,8 +629,6 @@ contains
        dt_tracer_vis = dt_tracer_vis/hypervis_subcycle_q
        dt_dyn_vis = dt_dyn_vis/hypervis_subcycle
     endif
-    ! timesteps to use for advective stability:  tstep*qsplit and tstep
-    call print_cfl(elem,hybrid,nets,nete,dtnu)
 
 
 
@@ -966,12 +969,16 @@ contains
        enddo
     endif
 
+
+    ! timesteps to use for advective stability:  tstep*qsplit and tstep
+    call print_cfl(elem,hybrid,nets,nete,dtnu)
+
     if (hybrid%masterthread) then 
        ! CAM has set tstep based on dtime before calling prim_init2(), 
        ! so only now does HOMME learn the timstep.  print them out:
        write(iulog,'(a,2f9.2)') "dt_remap: (0=disabled)   ",tstep*qsplit*rsplit
        write(iulog,'(a,2f9.2)') "dt_tracer, per RK stage: ",tstep*qsplit,(tstep*qsplit)/(rk_stage_user-1)
-       write(iulog,'(a,2f9.2)') "dt_dyn, per RK stage:    ",tstep*qsplit,tstep
+       write(iulog,'(a,2f9.2)') "dt_dyn:                  ",tstep*qsplit
        write(iulog,'(a,2f9.2)') "dt_dyn (viscosity):      ",dt_dyn_vis
        write(iulog,'(a,2f9.2)') "dt_tracer (viscosity):   ",dt_tracer_vis
 
@@ -1009,7 +1016,6 @@ contains
   !
   use hybvcoord_mod, only : hvcoord_t
   use time_mod, only : TimeLevel_t, time_at
-  use control_mod, only : tstep_type
 
   type (element_t) , intent(inout)        :: elem(:)
   type (hybrid_t), intent(in)           :: hybrid  ! distributed parallel structure (shared)
@@ -1048,8 +1054,7 @@ contains
   subroutine prim_run(elem, hybrid,nets,nete, dt, tl, hvcoord, advance_name)
     use hybvcoord_mod, only : hvcoord_t
     use time_mod, only : TimeLevel_t, time_at, timelevel_update, smooth
-    use control_mod, only: statefreq, integration, &
-           TRACERADV_TOTAL_DIVERGENCE,TRACERADV_UGRADQ, ftype, tstep_type, qsplit
+    use control_mod, only: statefreq, integration, ftype, qsplit
     use prim_advance_mod, only : prim_advance_exp, prim_advance_si, preq_robert3
     use prim_state_mod, only : prim_printstate, prim_diag_scalars, prim_energy_halftimes
     use parallel_mod, only : abortmp
@@ -1142,8 +1147,7 @@ contains
 #endif
     if (integration == "explicit") then
        call prim_advance_exp(elem, deriv(hybrid%ithr), hvcoord,   &
-            flt , hybrid,             &
-            dt, tl, nets, nete, compute_diagnostics)
+            hybrid, dt, tl, nets, nete, compute_diagnostics)
 
        ! keep lnps up to date (we should get rid of this requirement)
        do ie=nets,nete
@@ -1218,7 +1222,7 @@ contains
 !=======================================================================================================! 
 
 
-  subroutine prim_run_subcycle(elem, fvm, hybrid,nets,nete, dt, tl, hvcoord)
+  subroutine prim_run_subcycle(elem, fvm, hybrid,nets,nete, dt, tl, hvcoord,nsubstep)
 !
 !   advance all variables (u,v,T,ps,Q,C) from time t to t + dt_q
 !     
@@ -1239,8 +1243,8 @@ contains
     use time_mod, only : TimeLevel_t, time_at, timelevel_update, nsplit
     use control_mod, only: statefreq,&
            energy_fixer, ftype, qsplit, rsplit, test_cfldep
-    use prim_advance_mod, only : prim_advance_exp, prim_advance_si, applycamforcing, &
-                                 applycamforcing_dynamics, prim_advance_exp
+    use prim_advance_mod, only : prim_advance_si, applycamforcing, &
+                                 applycamforcing_dynamics
     use prim_state_mod, only : prim_printstate, prim_diag_scalars, prim_energy_halftimes
     use parallel_mod, only : abortmp
     use reduction_mod, only : parallelmax
@@ -1263,13 +1267,14 @@ contains
     integer, intent(in)                     :: nete  ! ending thread element number   (private)
     real(kind=real_kind), intent(in)        :: dt  ! "timestep dependent" timestep
     type (TimeLevel_t), intent(inout)       :: tl
+    integer, intent(in)                     :: nsubstep  ! nsubstep = 1 .. nsplit
     real(kind=real_kind) :: st, st1, dp, dt_q, dt_remap
     integer :: ie, t, q,k,i,j,n, n_Q
     integer :: n0_qdp,np1_qdp,r, nstep_end
 
     real (kind=real_kind)                          :: maxcflx, maxcfly  
     real (kind=real_kind) :: dp_np1(np,np)
-    logical :: compute_diagnostics, compute_energy
+    logical :: compute_diagnostics, compute_energy, compute_energy_forcing
 
 
     ! ===================================
@@ -1289,14 +1294,20 @@ contains
     ! compute energy if we are using an energy fixer
     compute_diagnostics=.false.
     compute_energy=energy_fixer > 0
+    compute_energy_forcing = .false.
+    ! for forcing applied in dynamics, compute d(E)/dt due to forcing 
+    if (compute_energy .and. ftype/=1) compute_energy_forcing=.true.
+
     if (MODULO(nstep_end,statefreq)==0 .or. nstep_end==tl%nstep0) then
        compute_diagnostics=.true.  
        compute_energy = .true.
+       compute_energy_forcing = .true.
     endif
-    if (compute_diagnostics) then
+    if (compute_diagnostics) &
        call prim_diag_scalars(elem,hvcoord,tl,4,.true.,nets,nete)
+    if (compute_energy_forcing) &
        call prim_energy_halftimes(elem,hvcoord,tl,4,.true.,nets,nete,tl%n0)
-    endif
+
 
 
 #ifdef CAM
@@ -1383,8 +1394,8 @@ contains
     if (compute_energy) call prim_energy_halftimes(elem,hvcoord,tl,2,.false.,nets,nete,1)
 
     if (energy_fixer > 0) then
-       if ( .not. compute_energy) call abortmp("ERROR: energy fixer needs compute_energy=.true")
-       call prim_energy_fixer(elem,hvcoord,hybrid,tl,nets,nete)
+       call prim_energy_fixer(elem,hvcoord,hybrid,tl,nets,nete,&
+            compute_energy_forcing,nsubstep)
     endif
 
     if (compute_diagnostics) then
@@ -1441,7 +1452,7 @@ contains
     use time_mod, only : TimeLevel_t, time_at, timelevel_update, nsplit
     use control_mod, only: statefreq,&
            energy_fixer, ftype, qsplit, nu_p, test_cfldep, rsplit
-    use prim_advance_mod, only : prim_advance_exp, overwrite_SEdensity
+    use prim_advance_mod, only : prim_advance_exp
     use prim_advection_mod, only : prim_advec_tracers_remap_rk2, prim_advec_tracers_fvm, &
          prim_advec_tracers_spelt
     use prim_state_mod, only : prim_printstate, prim_diag_scalars, prim_energy_halftimes
@@ -1510,11 +1521,11 @@ contains
     ! ===============
     n_Q = tl%n0  ! n_Q = timelevel of FV tracers at time t.  need to save this
     call prim_advance_exp(elem, deriv(hybrid%ithr), hvcoord,   &
-         flt , hybrid, dt, tl, nets, nete, compute_diagnostics)
+         hybrid, dt, tl, nets, nete, compute_diagnostics)
     do n=2,qsplit
        call TimeLevel_update(tl,"leapfrog")
        call prim_advance_exp(elem, deriv(hybrid%ithr), hvcoord,   &
-            flt , hybrid, dt, tl, nets, nete, .false.)
+            hybrid, dt, tl, nets, nete, .false.)
        ! defer final timelevel update until after Q update.
     enddo
 
@@ -1607,7 +1618,8 @@ contains
   end subroutine prim_finalize
 
 !=======================================================================================================! 
-  subroutine prim_energy_fixer(elem,hvcoord,hybrid,tl,nets,nete)
+  subroutine prim_energy_fixer(elem,hvcoord,hybrid,tl,nets,nete,compute_energy_forcing,&
+       nsubstep)
 ! 
 ! non-subcycle code:
 !  Solution is given at times u(t-1),u(t),u(t+1)
@@ -1630,17 +1642,24 @@ contains
     type (element_t)     , intent(inout), target :: elem(:)
     type (hvcoord_t)                  :: hvcoord
     type (TimeLevel_t), intent(inout)       :: tl
+    logical, intent(inout)                 :: compute_energy_forcing
+    integer, intent(in)                    :: nsubstep
 
-    integer :: ie,k,i,j,nm_f
+    integer :: ie,k,i,j,nmax
     real (kind=real_kind), dimension(np,np,nlev)  :: dp   ! delta pressure
     real (kind=real_kind), dimension(np,np,nlev)  :: sumlk
     real (kind=real_kind), dimension(np,np)  :: suml
+    real (kind=real_kind) :: psum(nets:nete,4),psum_g(4),beta
 
-    real (kind=real_kind) :: psum(nets:nete,3),psum_g(3),beta
-
+    ! when forcing is applied during dynamics timstep, actual forcing is
+    ! slightly different (about 0.1 W/m^2) then expected by the physics
+    ! since u & T are changing while FU and FT are held constant.
+    ! to correct for this, save compute de_from_forcing at step 1
+    ! and then adjust by:  de_from_forcing_step1 - de_from_forcing_stepN
+    real (kind=real_kind),save :: de_from_forcing_step1
+    real (kind=real_kind)      :: de_from_forcing
 
     t2=tl%np1    ! timelevel for T
-
     if (use_cpstar /= 0 ) then
        call abortmp('Energy fixer requires use_cpstar=0')
     endif
@@ -1675,24 +1694,50 @@ contains
           enddo
           enddo
        enddo
+       ! psum(:,4) = energy before forcing
+       ! psum(:,1) = energy after forcing, before dynamics
+       ! psum(:,2) = energy after dynamics
+       ! psum(:,3) = cp*dp (internal energy added is beta*psum(:,3))
        psum(ie,3) = psum(ie,3) + SUM(suml(:,:)*elem(ie)%spheremp(:,:))
        do n=1,2
-             psum(ie,n) = psum(ie,n) + SUM(  elem(ie)%spheremp(:,:)*&
-                                    (elem(ie)%accum%PEner(:,:,n) + &
-              (elem(ie)%accum%IEner(:,:,n)-elem(ie)%accum%IEner_wet(:,:,n)) + &
-                                    elem(ie)%accum%KEner(:,:,n) ) )
+          psum(ie,n) = psum(ie,n) + SUM(  elem(ie)%spheremp(:,:)*&
+               (elem(ie)%accum%PEner(:,:,n) + &
+               elem(ie)%accum%IEner(:,:,n) + &
+               elem(ie)%accum%KEner(:,:,n) ) )
        enddo
+       n=4
+       psum(ie,n) = psum(ie,n) + SUM(  elem(ie)%spheremp(:,:)*&
+            (elem(ie)%accum%PEner(:,:,n) + &
+            elem(ie)%accum%IEner(:,:,n) + &
+            elem(ie)%accum%KEner(:,:,n) ) )
     enddo
+
+    nmax=3
+    if (compute_energy_forcing) nmax=4
+
     do ie=nets,nete
-       do n=1,3
+       do n=1,nmax
           global_shared_buf(ie,n) = psum(ie,n)
        enddo
     enddo
-    call wrap_repro_sum(nvars=3, comm=hybrid%par%comm)
-    do n=1,3
+    call wrap_repro_sum(nvars=nmax, comm=hybrid%par%comm)
+    do n=1,nmax
        psum_g(n) = global_shared_sum(n)
     enddo
+
     beta = ( psum_g(1)-psum_g(2) )/psum_g(3)
+
+    ! apply adjustment when forcing applied in RHS
+    if (compute_energy_forcing) then
+       de_from_forcing = psum_g(1)-psum_g(4)
+       if (nsubstep==1) then
+          de_from_forcing_step1 = de_from_forcing
+       else
+          beta = beta + (de_from_forcing_step1 - de_from_forcing)/psum_g(3)
+       endif
+    endif
+
+    ! apply fixer
     do ie=nets,nete
        elem(ie)%state%T(:,:,:,t2) =  elem(ie)%state%T(:,:,:,t2) + beta
     enddo
@@ -1712,12 +1757,12 @@ contains
     use prim_advance_mod, only : smooth_phis
     implicit none
     
+    integer , intent(in) :: nets,nete
     real (kind=real_kind), intent(inout)   :: phis(np,np,nets:nete)
     real (kind=real_kind), intent(inout)   :: sghdyn(np,np,nets:nete)
     real (kind=real_kind), intent(inout)   :: sgh30dyn(np,np,nets:nete)
     type (hybrid_t)      , intent(in) :: hybrid
     type (element_t)     , intent(inout), target :: elem(:)
-    integer , intent(in) :: nets,nete
     ! local
     integer :: ie
     real (kind=real_kind) :: minf 

@@ -48,12 +48,12 @@ end
 ;***********************************************************************;
 begin
 ; swtc6
-;fref = addfile("~/ncar/shallow/data/REF0092.cdf","r")
+;fref = addfile("../reg_test/ref_sol/REF0092.cdf","r")
 ;fnames =systemfunc("ls /tmp/sweqx/swtc6-NE?-*-LFT.nc ; ls /tmp/sweqx/swtc6-NE??-*-LFT.nc ")
 ;itime = 14
 ;case = 6
 
-fref = addfile("./REF0114.cdf","r")
+fref = addfile("../reg_test/ref_sol/REF0114.cdf","r")
 ;fnames =systemfunc("ls /tmp/sweqx/swtc5-NE?-*-LFT.nc ; ls /tmp/sweqx/swtc5-NE??-*-LFT.nc ")
 fnames =systemfunc("ls ~/scratch1/swtc5/movies/swtc51.nc")
 itime = 15

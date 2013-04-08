@@ -262,6 +262,12 @@ getJobID() {
 
 submitTestsToQueue() {
 
+  if [ "${CREATE_BASELINE}" == true ] ; then
+    cd ${HOMME_DEFAULT_BASELINE_DIR}
+  else
+    cd ${HOMME_TESTING_DIR}
+  fi
+
   if [ "${SUBMIT_ALL_AT_ONCE}" == true ] ; then
     echo "Submitting ${num_submissions} jobs to queue"
   fi
@@ -388,6 +394,7 @@ createAllRunScripts() {
       outputDir=`dirname ${!testFile}`
     fi
 
+    # delete the run script file if it exists
     rm -f ${thisRunScript}
 
     # Set up header
@@ -463,14 +470,15 @@ createAllRunScripts() {
         #  exit -1
         #fi
 
-        cmd="${CPRNC_BINARY} ${newFile} ${repoFile}"
 
         diffStdout=${testName}.${baseFilename}.out
         diffStderr=${testName}.${baseFilename}.err
 
         echo "# Running cprnc to difference ${baseFilename} against baseline " >> $thisRunScript
+        #echo "$cmd > $diffStdout 2> $diffStderr" >> $thisRunScript
+        cmd="${CPRNC_BINARY} ${newFile} ${repoFile} > $diffStdout 2> $diffStderr"
         #echo "  $cmd"
-        echo "$cmd > $diffStdout 2> $diffStderr" >> $thisRunScript
+        serExecLine $thisRunScript "$cmd"
         echo "" >> $thisRunScript # blank line
       done
 
@@ -571,6 +579,21 @@ execLine() {
   fi
 }
 
+serExecLine() {
+  RUN_SCRIPT=$1
+  EXEC=$2
+
+  if [ "$HOMME_Submission_Type" = lsf ]; then
+    echo "mpirun.lsf -pam \"-n 1\" $EXEC" >> $RUN_SCRIPT
+  elif [ "$HOMME_Submission_Type" = pbs ]; then
+    echo "aprun -n 1 $EXEC" >> $RUN_SCRIPT
+  else
+    echo "mpiexec -n 1 $EXEC" >> $RUN_SCRIPT
+  fi
+}
+
+
+
 diffCprnc() {
 
   if [ ! -f "${CPRNC_BINARY}" ] ; then
@@ -637,6 +660,49 @@ diffCprnc() {
       exit -1
     fi
 
+    
+  done
+}
+
+diffCprncOutput() {
+
+  # source the test.sh file to get the names of the nc_output_files
+  source ${HOMME_TESTING_DIR}/${TEST_NAME}/${TEST_NAME}.sh
+
+  # nc_output_files is defined in the .sh file
+  FILES="${nc_output_files}"
+
+  if [ -z "${FILES}" ] ; then
+      echo "Test ${TEST_NAME} doesn't have Netcdf output files"
+  fi
+
+  # for files in movies
+  for file in $FILES 
+  do
+    echo "file = ${file}"
+    cprncOutputFile="${HOMME_TESTING_DIR}/${TEST_NAME}/${TEST_NAME}.`basename $file`.out"
+    cprncErrorFile="${HOMME_TESTING_DIR}/${TEST_NAME}/${TEST_NAME}.`basename $file`.err"
+
+    # ensure that cprncOutputFile exists
+    if [ ! -f "${cprncOutputFile}" ]; then
+      echo "Error cprnc output file ${cprncOutputFile} not found. Exiting."
+      exit -1
+    fi
+
+    # Parse the output file to determine if they were identical
+    DIFF_RESULT=`grep -e 'diff_test' ${cprncOutputFile} | awk '{ print $8 }'`
+
+    if [ "${DIFF_RESULT}" == IDENTICAL ] ; then
+      echo "The files are identical: DIFF_RESULT=${DIFF_RESULT}"
+      # Delete the output file to remove clutter
+    else
+      echo "The files are different: DIFF_RESULT=${DIFF_RESULT}"
+      echo "############################################################################"
+      echo "CPRNC returned the following RMS differences"
+      grep RMS ${cprncOutputFile}
+      echo "############################################################################"
+      exit -1
+    fi
     
   done
 }

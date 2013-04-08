@@ -575,6 +575,7 @@ extern "C" {
     static int totalKrylovIters=0;
     static int stepNum=0;
     int NewtonIters = nlParams.sublist("Output").get("Nonlinear Iterations", -1000);
+// replace with thyra/belos version
     int KrylovIters = nlParams.sublist("Direction").sublist("Newton").
                                sublist("Linear Solver").sublist("Output").
                                get("Total Number of Linear Iterations", -1000);

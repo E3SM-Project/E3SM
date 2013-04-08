@@ -28,6 +28,27 @@ FortranCInterface_HEADER(cmake_fortran_c_interface.h
 INCLUDE(SetHostPaths)
 INCLUDE(HommeMacros)
 
+# scorep
+#SET (CMAKE_CXX_COMPILER 
+#     "/glade/apps/opt/unite/packages/scorep/1.1.1p1-intelpoe-intel-papi/bin/scorep\
+#     --user\ ${CMAKE_CXX_COMPILER}")
+#SET (CMAKE_C_COMPILER 
+#     "/glade/apps/opt/unite/packages/scorep/1.1.1p1-intelpoe-intel-papi/bin/scorep\
+#     --user\ ${CMAKE_C_COMPILER}")
+#SET (CMAKE_Fortran_COMPILER 
+#     "/glade/apps/opt/unite/packages/scorep/1.1.1p1-intelpoe-intel-papi/bin/scorep\
+#     --user\ ${CMAKE_Fortran_COMPILER}")
+#SET (CMAKE_CXX_COMPILER 
+#     "/glade/scratch/jamroz/builds/glade/apps/opt/unite/packages/scorep/1.1.1p1-intelpoe-intel-papi/bin/scorep\
+#     --user\ ${CMAKE_CXX_COMPILER}")
+#SET (CMAKE_C_COMPILER 
+#     "/glade/apps/opt/unite/packages/scorep/1.1.1p1-intelpoe-intel-papi/bin/scorep\
+#     --user\ ${CMAKE_C_COMPILER}")
+#SET (CMAKE_Fortran_COMPILER 
+#     "/glade/apps/opt/unite/packages/scorep/1.1.1p1-intelpoe-intel-papi/bin/scorep\
+#     --user\ ${CMAKE_Fortran_COMPILER}")
+
+
 # Default don't use quad precision
 OPTION(HOMME_QUAD_PREC "" TRUE)
 
@@ -65,6 +86,7 @@ OPTION(BUILD_HOMME_SWEQX "" ON)
 OPTION(BUILD_HOMME_PREQX "" ON)
 OPTION(BUILD_HOMME_SWDGX "" ON)
 OPTION(BUILD_HOMME_SWIM  "" OFF)
+OPTION(BUILD_HOMME_PRIM  "" OFF)
 
 IF (${SWEQX_ONLY})
   SET(BUILD_HOMME_SWEQX "" ON)
@@ -94,6 +116,21 @@ IF (${SWIM_ONLY})
   SET(BUILD_HOMME_SWIM  "" ON)
 ENDIF ()
 
+IF (${PRIM_ONLY})
+  SET(BUILD_HOMME_SWEQX "" OFF)
+  SET(BUILD_HOMME_PREQX "" OFF)
+  SET(BUILD_HOMME_SWDGX "" OFF)
+  SET(BUILD_HOMME_SWIM  "" OFF)
+  SET(BUILD_HOMME_PRIM  "" ON)
+ENDIF ()
+
+IF (${CG_ONLY})
+  SET(BUILD_HOMME_SWEQX "" ON)
+  SET(BUILD_HOMME_PREQX "" ON)
+  SET(BUILD_HOMME_SWDGX "" OFF)
+  SET(BUILD_HOMME_SWIM  "" ON)
+  SET(BUILD_HOMME_PRIM  "" ON)
+ENDIF ()
 # to allow ifdefs to be included
 if(REFSOLN)
   MESSAGE(STATUS "Including option to read or write reference soln data...")
@@ -162,6 +199,11 @@ ELSE ()
   FIND_PACKAGE(Pnetcdf)
 ENDIF ()
 
+# swim and prim executables require trilinos
+IF(${BUILD_HOMME_SWIM} OR ${BUILD_HOMME_PRIM})
+  FIND_PACKAGE(Trilinos REQUIRED)
+ENDIF ()
+
 ADD_SUBDIRECTORY(utils/pio)
 ADD_SUBDIRECTORY(utils/timing)
 
@@ -177,12 +219,13 @@ if(${BUILD_HOMME_SWDGX})
   ADD_SUBDIRECTORY(src/swdgx)
 endif()
 
-if(${BUILD_HOMME_SWIM})
-  MESSAGE(STATUS "Building swim...")
-  FIND_PACKAGE(Trilinos REQUIRED)
-  MESSAGE(STATUS "Using Trilinos: ${Trilinos_LIBRARY_DIRS}")
+IF(${BUILD_HOMME_SWIM})
   ADD_SUBDIRECTORY(src/swim)
-endif()
+ENDIF()
+
+IF(${BUILD_HOMME_PRIM})
+  ADD_SUBDIRECTORY(src/prim)
+ENDIF()
 
 ADD_SUBDIRECTORY(test_execs)
 

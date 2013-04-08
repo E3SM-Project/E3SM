@@ -27,8 +27,13 @@ fi
 
 # Either read the list of tests or set the arguments
 if [ "${SUBMIT_ALL_AT_ONCE}" == true ] ; then
+
   # If we are submitting all at once read the prepared list of tests
-  source ${HOMME_DIR}/tests/submission-list.sh
+  if [ "${CREATE_BASELINE}" == true ] ; then
+    source ${HOMME_DEFAULT_BASELINE_DIR}/submission-list.sh
+  else
+    source ${HOMME_DIR}/tests/submission-list.sh
+  fi
 
 else
 
@@ -56,7 +61,7 @@ else
 fi
 
 # parse the stdout to grab only the relevant info
-parseStdout
+#parseStdout
 
 if [ "${SUBMIT_ALL_AT_ONCE}" == true ] ; then
 
@@ -65,7 +70,7 @@ if [ "${SUBMIT_ALL_AT_ONCE}" == true ] ; then
   # If baseline then move the netcdf output files to the baseline dir
   if [ ${CREATE_BASELINE} == true ] ; then
     echo "Creating baseline..."
-    moveBaseline
+    #moveBaseline
   fi
 
 else
