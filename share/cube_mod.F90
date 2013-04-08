@@ -14,7 +14,7 @@ module cube_mod
        change_coordinates
 
   use physical_constants, only : dd_pi, rearth
-  use control_mod, only : hypervis_power, cubed_sphere_map
+  use control_mod, only : hypervis_scaling, cubed_sphere_map
   use parallel_mod, only : abortmp
 
   implicit none
@@ -401,15 +401,33 @@ contains
 ! viscosity tensor = DE * Lambda^* * Lambda * (DE)^t     
 ! lamStar is like a diag matrix Lam* which is inserted in front of matrix Lambda=(lam_1 0;0 lam2) 
 ! in order to scale Lambda
-! 4th order scaling is given by division by lambda, because lambda ~ 4/(Delta x)^2
+! 4th order scaling is given by division by lambda, because lambda ~ 4/((np-1)Delta x)^2
 ! 4th order scaling, for example, is 
 !	  lamStar1=1/(eig(1))*(rearth**2)
 !	  lamStar2=1/(eig(2))*(rearth**2)
 
+
+
 !TENSOR IS V = D E LAM LAM^* E^T D^T
-!tensor V is in physical dimensions now
-	  lamStar1=1/(eig(1)**(hypervis_power/4.0d0))*(rearth**(hypervis_power/2.0d0))
-	  lamStar2=1/(eig(2)**(hypervis_power/4.0d0))*(rearth**(hypervis_power/2.0d0))
+
+!CONVERSION between const HV coefficient and tensor HV coefficient:
+!nu_tensor = nu_const *(2/((np-1)\Delta x))^{hv_scaling/2} * rearth^hv_scaling
+!Delta x = 2\pi *rearth/(np-1)/4/NE
+
+!comment out R^{hv_scaling/2} to bring tensor HV coefficient to dimensions meter^4/sec
+!instead of meter^{4-hp_scaling}/sec
+!note that this leads to following hv coeffs: Based on nu=1e15 for NE30, nu_tensor=3.3e21 for 4th order scaling
+!and nu_tensor=6e19 for scaling=3.2
+!See below
+	  lamStar1=1/(eig(1)**(hypervis_scaling/4.0d0))!*(rearth**(hypervis_scaling/2.0d0))
+	  lamStar2=1/(eig(2)**(hypervis_scaling/4.0d0))!*(rearth**(hypervis_scaling/2.0d0))
+
+!Due to big values of nu for tensor HV, is it reasonable to set
+!	  lamStar1=1/(eig(1)**(hypervis_scaling/4.0d0)) *rearth
+!	  lamStar2=1/(eig(2)**(hypervis_scaling/4.0d0)) *rearth
+!which would lead to nu_tensor dimensions meter^2/sec
+!and nu_tensor values to become 8e7 and 1.5e6 for scalings 4.0 and 3.2 correspondingly?
+
 
 #if 0
           ! eig(1) >= eig(2)
@@ -442,11 +460,16 @@ contains
 #endif
 
 
-!matrix (DE) * Lam^* * Lam  
-          DEL(1:2,1) = lamStar1*eig(1)*DE(1:2,1)
-          DEL(1:2,2) = lamStar2*eig(2)*DE(1:2,2)
+!matrix (DE) * Lam^* * Lam , tensor HV when V is applied at each Laplace calculation
+!          DEL(1:2,1) = lamStar1*eig(1)*DE(1:2,1)
+!          DEL(1:2,2) = lamStar2*eig(2)*DE(1:2,2)
 
-!matrix (DE) * Lam^* * Lam  *E^t *D^t
+!matrix (DE) * (Lam^*)^2 * Lam, tensor HV when V is applied only once, at the last Laplace calculation
+!will only work with hyperviscosity, not viscosity
+          DEL(1:2,1) = (lamStar1**2) *eig(1)*DE(1:2,1)
+          DEL(1:2,2) = (lamStar2**2) *eig(2)*DE(1:2,2)
+
+!matrix (DE) * Lam^* * Lam  *E^t *D^t or (DE) * (Lam^*)^2 * Lam  *E^t *D^t 
           V(1,1)=sum(DEL(1,:)*DE(1,:))
           V(1,2)=sum(DEL(1,:)*DE(2,:))
           V(2,1)=sum(DEL(2,:)*DE(1,:))
@@ -459,14 +482,10 @@ contains
 !           V(1,2)=sum(elem%D(1,:,i,j)*elem%D(2,:,i,j))*(rearth**(2.0d0))
 !           V(2,1)=sum(elem%D(2,:,i,j)*elem%D(1,:,i,j))*(rearth**(2.0d0))
 !           V(2,2)=sum(elem%D(2,:,i,j)*elem%D(2,:,i,j))*(rearth**(2.0d0))
-!if(abs(V(1,1)-sum(elem%D(1,:,i,j)*elem%D(1,:,i,j))*(rearth**(2.0d0))) > 1e-2) write(6,*) elem%GlobalID
-!if(abs(V(1,2)-sum(elem%D(1,:,i,j)*elem%D(2,:,i,j))*(rearth**(2.0d0))) > 1e-2) write(6,*) elem%GlobalID
-!if(abs(V(2,1)-sum(elem%D(2,:,i,j)*elem%D(1,:,i,j))*(rearth**(2.0d0))) > 1e-2) write(6,*) elem%GlobalID
-!if(abs(V(2,2)-sum(elem%D(2,:,i,j)*elem%D(2,:,i,j))*(rearth**(2.0d0))) > 1e-2) write(6,*) elem%GlobalID
 
 
 	  elem%tensorVisc(:,:,i,j)=V(:,:)
-        
+!        print *, V
        end do
     end do
 
