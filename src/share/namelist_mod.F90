@@ -55,7 +55,7 @@ module namelist_mod
        nu_p,          &
        nu_top,        &
        which_vlaplace, & ! which vector laplace to use, cartesian or vector_identities
-       use_tensorhv,   & ! use tensor HV instead of scalar coefficient
+       hypervis_scaling,   & ! use tensor HV instead of scalar coefficient
        psurf_vis,    &  
        hypervis_order,    &  
        hypervis_power,    &  
@@ -268,7 +268,7 @@ module namelist_mod
                      hypervis_subcycle, &
                      hypervis_subcycle_q, &
                      which_vlaplace, & 
-                     use_tensorhv, & 
+                     hypervis_scaling, & 
                      smooth_phis_numcycle, &
                      smooth_sgh_numcycle, &
                      smooth_phis_nudt, &
@@ -495,6 +495,7 @@ module namelist_mod
        
        nEndStep = nmax
 #endif
+
        if ((integration == "semi_imp").or.(integration == "full_imp")) then
           ! =========================
           ! set solver defaults
@@ -809,8 +810,6 @@ module namelist_mod
     call MPI_bcast(fine_ne    ,1,MPIinteger_t,par%root,par%comm,ierr) 
     call MPI_bcast(max_hypervis_courant,1,MPIreal_t   ,par%root,par%comm,ierr)
     call MPI_bcast(which_vlaplace    ,1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(use_tensorhv      ,1,MPIinteger_t,par%root,par%comm,ierr)
-
     call MPI_bcast(nu         ,1,MPIreal_t   ,par%root,par%comm,ierr) 
     call MPI_bcast(nu_s         ,1,MPIreal_t   ,par%root,par%comm,ierr) 
     call MPI_bcast(nu_q         ,1,MPIreal_t   ,par%root,par%comm,ierr) 
@@ -819,7 +818,8 @@ module namelist_mod
     call MPI_bcast(nu_top   ,1,MPIreal_t   ,par%root,par%comm,ierr) 
     call MPI_bcast(psurf_vis,1,MPIinteger_t   ,par%root,par%comm,ierr) 
     call MPI_bcast(hypervis_order,1,MPIinteger_t   ,par%root,par%comm,ierr) 
-    call MPI_bcast(hypervis_power,1,MPIreal_t   ,par%root,par%comm,ierr) 
+    call MPI_bcast(hypervis_power,1,MPIreal_t   ,par%root,par%comm,ierr)
+    call MPI_bcast(hypervis_scaling,1,MPIreal_t   ,par%root,par%comm,ierr) 
     call MPI_bcast(hypervis_subcycle,1,MPIinteger_t   ,par%root,par%comm,ierr) 
     call MPI_bcast(hypervis_subcycle_q,1,MPIinteger_t   ,par%root,par%comm,ierr) 
     call MPI_bcast(smooth_phis_numcycle,1,MPIinteger_t   ,par%root,par%comm,ierr) 
@@ -960,8 +960,20 @@ module namelist_mod
     endif
     if (par%masterproc) write (iulog,*) "Reference element projection: cubed_sphere_map=",cubed_sphere_map
 
+
+!logic around different hyperviscosity options
+    if (hypervis_power /= 0) then
+      if (hypervis_scaling /= 0) then
+        print *,'Both hypervis_power and hypervis_scaling are nonzero.'
+        print *,'(1) Set hypervis_power=1, hypervis_scaling=0 for HV based on an element area.'
+        print *,'(2) Set hypervis_power=0 and hypervis_scaling=1 for HV based on a tensor.'
+        print *,'(3) Set hypervis_power=0 and hypervis_scaling=0 for constant HV.'
+          call abortmp("Error: hypervis_power>0 and hypervis_scaling>0")
+      endif
+    endif
+
     ! sanity check:
-    if (use_tensorhv==1) then
+    if (hypervis_scaling==1) then
        if (which_vlaplace/=2) then
           call abortmp('Tensor HV option requires which_vlaplace=2 for now')
        endif
@@ -1136,23 +1148,26 @@ module namelist_mod
 
 
 
-
-       if (hypervis_power==0) then
-          write(iulog,*)"Hyperviscosity power set to zero, constant hyperviscosity used."
-       else
-          write(iulog,*)"Variable hyperviscosity with power ",hypervis_power," used."
+!!!!!!!!!!!!!!!fix this
+       if (hypervis_power /= 0)then
+          write(iulog,*)"Variable area-based hyperviscosity with power ",hypervis_power," used."
           write(iulog,*)"Maximum imposed on hypervis Courant = ", max_hypervis_courant
+       elseif(hypervis_scaling /=0)then
+          write(iulog,*)"Tensor hyperviscosity with scaling ",hypervis_scaling," used."
+       else
+          write(iulog,*)"Constant (hyper)viscosity used."
        endif
+!!!!!!!!!!!!!
+
        if (hypervis_order==1) then
-          write(iulog,*)"weak form viscsosity subcycle, tracer subcycle = ",&
+          write(iulog,*)"weak form viscosity subcycle, tracer subcycle = ",&
           hypervis_subcycle,hypervis_subcycle_q
        else if (hypervis_order==2) then
-          write(iulog,*)"weak form hyper viscsosity subcycle, tracer subcycle = ",&
+          write(iulog,*)"weak form hyper viscosity subcycle, tracer subcycle = ",&
           hypervis_subcycle, hypervis_subcycle_q
        endif
        write(iulog,*)"psurf_vis: ",psurf_vis
        write(iulog,*)"which_vlaplace (0=new, 1=orig, 2=cartesian): ",which_vlaplace
-       write(iulog,*)"use_tensorhv (0=off, 1=on): ",use_tensorhv
        write(iulog,*)"Equivalent ne in fine region = ", fine_ne
        write(iulog,'(a,2e9.2)')"viscosity:  nu (vor/div) = ",nu,nu_div
        write(iulog,'(a,2e9.2)')"viscosity:  nu_s      = ",nu_s

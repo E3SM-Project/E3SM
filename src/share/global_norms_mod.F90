@@ -297,7 +297,7 @@ contains
     use reduction_mod, only : ParallelMin,ParallelMax
     use physical_constants, only : rrearth, rearth,dd_pi
     use control_mod, only : nu, nu_div, hypervis_order, nu_top, hypervis_power, &
-                            fine_ne, rk_stage_user, max_hypervis_courant
+                            fine_ne, rk_stage_user, max_hypervis_courant, hypervis_scaling
     use parallel_mod, only : abortmp, global_shared_buf, global_shared_sum
     use edge_mod, only : EdgeBuffer_t, initedgebuffer, FreeEdgeBuffer, edgeVpack, edgeVunpack
     use bndry_mod, only : bndry_exchangeV
@@ -321,6 +321,7 @@ contains
     real (kind=real_kind) :: lambda_max, lambda_vis, min_gw
     integer :: ie,corner, i, j, rowind, colind
     type (quadrature_t)    :: gp
+
 
     ! Eigenvalues calculated by folks at UMich (Paul U & Jared W)
     select case (np)
@@ -355,7 +356,7 @@ contains
     end if
 
     do ie=nets,nete
-      elem(ie)%variable_hyperviscosity = 1;
+      elem(ie)%variable_hyperviscosity = 1.0
     end do
 
     gp=gausslobatto(np)
@@ -414,6 +415,7 @@ contains
     avg_min_eig = global_shared_sum(2)/dble(nelem)
     avg_max_dx = global_shared_sum(3)/dble(nelem)
     avg_min_dx = global_shared_sum(4)/dble(nelem)
+
 
     if (hypervis_power /= 0) then
 
@@ -538,17 +540,10 @@ contains
     end if
 
 
-
-!!! this is a temp solution: right now, hypervis_power ~= 0 means either variable hv or tensor hv,
-!but variable hv uses elem%variable_hyperviscosity, tensor hv uses elem%tensorVisc. When hypervis_power ~=0,
-!both valiables are built (though only one is needed), leads to extra dss calls
-    if (hypervis_power /= 0) then
+   if (hypervis_scaling /= 0) then
 !this is a code for smoothing V for tensor HV
-!probably can be placed better but
-!here we dss matrix V, each component
 
-!WARNING: since the switch between tensor HV and other HV algs is in preproc directive in derivative_mod, 
-!if tensor HV is not used, (or even if nu=0), we have extra 4 DSS here!
+!if nu=0, we have extra 4 DSS here!
 !rowind, colind are from 1 to 2 cause they correspond to 2D tensor in lat/lon
 
 !IF DSSED V NEEDED
@@ -560,6 +555,7 @@ contains
 	  zeta(:,:,ie) = elem(ie)%tensorVisc(rowind,colind,:,:)*elem(ie)%spheremp(:,:)
 	  call edgeVpack(edgebuf,zeta(1,1,ie),1,0,elem(ie)%desc)
 	end do
+
 	call bndry_exchangeV(hybrid,edgebuf)
 	do ie=nets,nete
 	  call edgeVunpack(edgebuf,zeta(1,1,ie),1,0,elem(ie)%desc)
@@ -596,6 +592,7 @@ contains
     enddo !colind
 #endif
     endif
+
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
