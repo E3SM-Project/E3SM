@@ -1295,10 +1295,8 @@ contains
     compute_diagnostics=.false.
     compute_energy=energy_fixer > 0
     compute_energy_forcing = .false.
-    ! for forcing applied in dynamics, compute d(E)/dt due to forcing on
-    ! first timestep only:
-    if (compute_energy .and. ftype/=1 .and. nsubstep==1) &
-         compute_energy_forcing=.true.
+    ! for forcing applied in dynamics, compute d(E)/dt due to forcing 
+    if (compute_energy .and. ftype/=1) compute_energy_forcing=.true.
 
     if (MODULO(nstep_end,statefreq)==0 .or. nstep_end==tl%nstep0) then
        compute_diagnostics=.true.  
