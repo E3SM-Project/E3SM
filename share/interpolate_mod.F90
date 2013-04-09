@@ -936,7 +936,7 @@ end subroutine interpol_spelt_latlon
     sphere_xyz=spherical_to_cart(sphere)
 
     number=-1
-    print *,'WARNING: using GC map'
+!    print *,'WARNING: using GC map'
     do ii = 1,nelemd
        ! for equiangular gnomonic map:
        ! unstructed grid element edges are NOT great circles
