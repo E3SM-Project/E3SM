@@ -9,7 +9,15 @@ SET (NUM_TEST_FILES 0)
 SET(Homme_Build_DIR ${CMAKE_BINARY_DIR})
 SET(Homme_Results_DIR ${CMAKE_SOURCE_DIR}/test/reg_test/results)
 
+# Want this to be resetable...
+IF (DEFINED HOMME_BASELINE_DIR)
+  # Need to check that the files are there...
+  SET(Homme_Baseline_DIR ${HOMME_BASELINE_DIR}/tests/baseline)
+ELSE ()
+  SET(Homme_Baseline_DIR ${CMAKE_BINARY_DIR}/tests/baseline)
+ENDIF ()
 
+MESSAGE(STATUS "Setting HOMME_BASELINE_DIR as ${Homme_Baseline_DIR}")
 
 # Host specific
 IF (Homme_Hostname STREQUAL "Yellowstone") 
@@ -23,7 +31,30 @@ ELSEIF (Homme_OS STREQUAL "Darwin")
 
 ENDIF ()
 
-IF (NOT ${Homme_Submission_Type} STREQUAL none)
+# Determine if there is a submission system
+# lsf uses bsub
+FIND_PROGRAM(BSUB_PATH bsub) # Note this searches the environment
+IF (BSUB_PATH)
+  MESSAGE(STATUS "Using LSF queuing")
+  SET(HOMME_SUBMISSION_TYPE lsf)
+ELSE ()
+  FIND_PROGRAM(QSUB_PATH qsub) # Note this searches the environment
+  IF (QSUB_PATH)
+    MESSAGE(STATUS "Using PBS queuing")
+    SET(HOMME_SUBMISSION_TYPE pbs)
+  ELSE ()
+    MESSAGE(STATUS "No queuing system found")
+    SET(HOMME_SUBMISSION_TYPE none)
+  ENDIF ()
+ENDIF ()
+
+# Queuing specific info
+IF (${HOMME_SUBMISSION_TYPE} STREQUAL none) 
+  INCLUDE(ProcessorCount)
+  ProcessorCount(MAX_NUM_PROCS)
+  MESSAGE(STATUS "Warning: No queuing system. Maximum number of processes is ${MAX_NUM_PROCS}")
+  SET(HOMME_QUEUING FALSE)
+ELSE ()
   IF (DEFINED HOMME_PROJID)
     MESSAGE(STATUS "Using HOMME Project ID (HOMME_PROJID) ${HOMME_PROJID}")
   ELSE ()
@@ -32,11 +63,16 @@ IF (NOT ${Homme_Submission_Type} STREQUAL none)
       SET(HOMME_PROJID $ENV{HOMME_PROJID})
       MESSAGE(STATUS "Using HOMME Project ID (HOMME_PROJID) ${HOMME_PROJID} from environment")
     ELSE ()
-      MESSAGE(FATAL_ERROR "No HOMME Project ID found. Please set HOMME_PROJID")
+      MESSAGE(FATAL_ERROR "No HOMME Project ID found. Please set HOMME_PROJID
+                           using -DHOMME_PROJID=XXXX0000 or in the environment")
     ENDIF ()
   ENDIF ()
+  # We have queuing
+  SET(HOMME_QUEUING TRUE)
 ENDIF ()
 
+# Set up the CPRNC build
+INCLUDE(SetUpCprnc)
 
 # Because of the queuing system on machines like Yellowstone the testing can be a little awkward
 # The following scripts prepare submission scripts and allow submission to
@@ -47,15 +83,24 @@ CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/submit_tests.sh
                ${CMAKE_BINARY_DIR}/tests/submit_tests.sh @ONLY)
 CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/diff_output.sh
                ${CMAKE_BINARY_DIR}/tests/diff_output.sh @ONLY)
+CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/cmake_variables.sh
+               ${CMAKE_BINARY_DIR}/tests/cmake_variables.sh @ONLY)
 
 CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/testing-utils.sh
                ${CMAKE_BINARY_DIR}/tests/testing-utils.sh COPYONLY)
 CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/diffTol.py
                ${CMAKE_BINARY_DIR}/tests/diffTol.py COPYONLY)
 
+# The first CMake test is running
+#   this is a little awkward because submit_tests.sh uses 
+#   submissions-list.sh which hasn't been created yet.
+ADD_TEST(submitAndRunTests ${CMAKE_BINARY_DIR}/tests/submit_tests.sh "all")
+
 ADD_CUSTOM_TARGET(check 
                   COMMAND ${CMAKE_CTEST_COMMAND} "--output-on-failure")
 
+ADD_CUSTOM_TARGET(baseline
+         COMMAND ${CMAKE_BINARY_DIR}/tests/submit_tests.sh "baseline")
 
 IF (${HOMME_QUEUING})
   # The first CMake test is running
@@ -109,7 +154,18 @@ EXECUTE_PROCESS(
   ERROR_VARIABLE CREATE_RUNS_ERROR)
 
 IF (NOT ${CREATE_RUNS_RESULT} EQUAL 0) 
-  MESSAGE(FATAL_ERROR "The script createRunScripts.sh has failed with error
+  MESSAGE(FATAL_ERROR "The script \"createRunScripts.sh all\" has failed with error
+                        ${CREATE_RUNS_RESULT}")
+ENDIF ()
+
+EXECUTE_PROCESS(
+  COMMAND ${CMAKE_BINARY_DIR}/tests/createRunScripts.sh "baseline"
+  RESULT_VARIABLE CREATE_RUNS_RESULT
+  OUTPUT_VARIABLE CREATE_RUNS_OUTPUT
+  ERROR_VARIABLE CREATE_RUNS_ERROR)
+
+IF (NOT ${CREATE_RUNS_RESULT} EQUAL 0) 
+  MESSAGE(FATAL_ERROR "The script \"createRunScripts.sh baseline\" has failed with error
                         ${CREATE_RUNS_RESULT}")
 ENDIF ()
 

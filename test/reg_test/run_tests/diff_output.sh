@@ -1,18 +1,16 @@
 #!/bin/bash
 
-# These variables are set by CMake
+# Get the build dir from cmake
 HOMME_DIR=@Homme_Build_DIR@
-HOMME_TEST_RESULTS=@Homme_Results_DIR@
 
-# The location of the Netcdf reference files (if they exist)
-HOMME_NC_RESULTS_DIR=@NETCDF_RESULTS_DIR@
+# Source the following file to get the rest of the cmake variables
+source ${HOMME_DIR}/tests/cmake_variables.sh
 
-# The location of the tests directory
-HOMME_TESTING_DIR=${HOMME_DIR}/tests
+# Enter the testing dir
 cd $HOMME_TESTING_DIR
 
 # The "type" of submission (lsf, pbs, standard mpi etc.) for creating the executable scripts 
-HOMME_Submission_Type=@Homme_Submission_Type@
+HOMME_Submission_Type=@HOMME_SUBMISSION_TYPE@
 
 # Whether to use cprnc to diff the Netcdf files
 USE_CPRNC=@TEST_USING_CPRNC@
@@ -30,23 +28,26 @@ source ${HOMME_DIR}/tests/testing-utils.sh
 TEST_NAME=$1
 echo "Test name = ${TEST_NAME}"
 
-echo "Diffing the stdout of the run:"
-diffStdout
-
-echo "############################################################################"
-echo "  The diff of the stdout has passed"
-echo "############################################################################"
-
 if [ "${USE_CPRNC}" == ON -o "${USE_CPRNC}" == TRUE ] ; then
   echo "Diffing the Netcdf output files"
-  diffCprnc
+  diffCprncOutput
   echo "############################################################################"
   echo "  The diff using CPRNC has passed"
   echo "############################################################################"
 
 else
+  echo "############################################################################"
   echo "Not diffing the Netcdf output"
   echo "############################################################################"
+  echo "Diffing the stdout of the run:"
+  echo "############################################################################"
+  diffStdout
+  echo "############################################################################"
+  echo "  The diff of the stdout has passed"
+  echo "############################################################################"
+
+
+
 fi
 
 exit 0
