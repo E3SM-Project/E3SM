@@ -1157,8 +1157,8 @@ contains
     use control_mod,            only : north, south, east, west, neast, seast, swest, nwest
 
     implicit none
-    type (GridEdge_t),   intent(out) :: GridEdge(:)
-    type (GridVertex_t), intent(out) :: GridVertex(:)
+    type (GridEdge_t),   intent(inout) :: GridEdge(:)
+    type (GridVertex_t), intent(inout) :: GridVertex(:)
 
     real(kind=real_kind)             :: coordinates(4,3) 
     real(kind=real_kind)             :: centroid(3)
