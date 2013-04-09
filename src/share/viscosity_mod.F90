@@ -19,6 +19,7 @@ use derivative_mod, only : derivative_t, laplace_sphere_wk, vlaplace_sphere_wk, 
 use edge_mod, only : EdgeBuffer_t, edgevpack, edgerotate, edgevunpack, edgevunpackmin, &
     edgevunpackmax, initEdgeBuffer, FreeEdgeBuffer
 use bndry_mod, only : bndry_exchangev
+use control_mod, only : hypervis_scaling
 
 implicit none
 save
@@ -83,7 +84,13 @@ real (kind=real_kind), dimension(np,np,2) :: v
       
 #ifdef _PRIM
       ! should filter lnps + PHI_s/RT?
-      pstens(:,:,ie)=laplace_sphere_wk(elem(ie)%state%ps_v(:,:,nt),deriv,elem(ie),var_coef=.true.)
+
+      !if tensor hyperviscosity with tensor V is used, then biharmonic operator is (\grad\cdot V\grad) (\grad \cdot \grad) 
+      if(hypervis_scaling > 0)then
+	pstens(:,:,ie)=laplace_sphere_wk(elem(ie)%state%ps_v(:,:,nt),deriv,elem(ie),var_coef=.false.)
+      else
+	pstens(:,:,ie)=laplace_sphere_wk(elem(ie)%state%ps_v(:,:,nt),deriv,elem(ie),var_coef=.true.)
+      endif
 #endif
       
 #if (defined ELEMENT_OPENMP)
@@ -102,9 +109,17 @@ real (kind=real_kind), dimension(np,np,2) :: v
 #endif
             enddo
          enddo
-         ptens(:,:,k,ie)=laplace_sphere_wk(T(:,:,k),deriv,elem(ie),var_coef=.true.)
-         vtens(:,:,:,k,ie)=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,&
-              elem(ie),var_coef=.true.,nu_ratio=nu_ratio)
+
+         if(hypervis_scaling > 0)then
+           ptens(:,:,k,ie)=laplace_sphere_wk(T(:,:,k),deriv,elem(ie),var_coef=.false.)
+           vtens(:,:,:,k,ie)=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,&
+                elem(ie),var_coef=.false.,nu_ratio=nu_ratio)
+         else
+           ptens(:,:,k,ie)=laplace_sphere_wk(T(:,:,k),deriv,elem(ie),var_coef=.true.)
+           vtens(:,:,:,k,ie)=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,&
+                elem(ie),var_coef=.true.,nu_ratio=nu_ratio)
+         endif
+
       enddo
       kptr=0
       call edgeVpack(edge3, ptens(1,1,1,ie),nlev,kptr,elem(ie)%desc)

@@ -11,7 +11,7 @@ module derivative_mod
   ! needed for spherical differential operators:
   use physical_constants, only : rrearth 
   use element_mod, only : element_t
-  use control_mod, only : which_vlaplace, use_tensorhv
+  use control_mod, only : which_vlaplace, hypervis_scaling
 
 implicit none
 private
@@ -2441,7 +2441,7 @@ endif
     grads=gradient_sphere(s,deriv,elem%Dinv)
  
     if (var_coef) then
-       if (use_tensorhv==0 ) then
+       if (hypervis_scaling==0 ) then
           ! const or variable viscosity, (1) or (2)
           grads(:,:,1) = grads(:,:,1)*elem%variable_hyperviscosity(:,:)
           grads(:,:,2) = grads(:,:,2)*elem%variable_hyperviscosity(:,:)

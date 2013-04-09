@@ -138,22 +138,26 @@ module control_mod
 
   real (kind=real_kind), public :: hypervis_power=0     ! if not 0, use variable hyperviscosity based on element area          
 
+  real (kind=real_kind), public :: hypervis_scaling=0      ! use tensor hyperviscosity
+                                                           ! if turned on, requires which_vlaplace=2
 
 !three types of viscosity are supported right now:
 ! (1) const hv, i.e., the operator nu * (\div \grad)^hypervis_order
 ! (2) variable-within-element (or just variable) hv, the operator nu * (viscosity \div \grad )^hypervis_order
 ! (3) tensor hv,  nu * ( \div * tensor * \grad )^hypervis_order
 !
-! (1) default:  which_vlaplace=0,1 or 2, use_tensorhv = 0
-!               hypervis_power=0
+! (1) default:  which_vlaplace=0,1 or 2
+!               hypervis_power=0, hypervis_scaling=0
 ! (2) Mike's original version for var-res grids.  
 !            scalar coefficient within each element
-!            which_vlaplace=0,1 or 2, use_tensorhv = 0
+!            which_vlaplace=0,1 or 2
+!            hypervisc_scaling=0
 !            set hypervis_power>0 and set fine_ne, max_hypervis_courant
 ! (3) tensor HV var-res grids 
 !            tensor within each element:
-!            which_vlaplace=2    use_tensorhv = 1
-!
+!            which_vlaplace=2    
+!            set hypervis_scaling > 0 (typical values would be 3.2 or 4.0)
+!            hypervis_power=0
 !
 !
 
@@ -161,8 +165,7 @@ module control_mod
                                          ! 1= orig (buggy) spherical laplace
 					 ! 2= vector laplace based on transform to cartesian
 
-  integer, public :: use_tensorhv=0      ! use tensor hyperviscosity
-                                         ! if turned on, requires which_vlaplace=2
+
 
 
 
