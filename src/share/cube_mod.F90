@@ -1546,7 +1546,9 @@ contains
 
     ! Since GridVertex fields must be allocated before calling this, it
     ! must be intent(inout).
-    type (GridEdge_t),   intent(out),target     :: GridEdge(:)
+!og: is 'target' here necessary?
+!GridEdge : changed its 'out' attribute to 'inout'
+    type (GridEdge_t),   intent(inout),target     :: GridEdge(:)
     type (GridVertex_t), intent(inout),target     :: GridVertex(:)
 
 
