@@ -20,13 +20,12 @@ HOMME_Submission_Type=@HOMME_SUBMISSION_TYPE@
 # Account ID for charging
 HOMME_ACCOUNT=@HOMME_PROJID@
 
-# Whether to use cprnc to diff the Netcdf files
-USE_CPRNC=@TEST_USING_CPRNC@
-
 # The cprnc Netcdf comparison tool
 CPRNC_BINARY=@CPRNC_BINARY@
 
 # The cprnc Netcdf comparison tool
 PYTHON_EXECUTABLE=@PYTHON_EXECUTABLE@
 
+# Whether to run the OpenMP tests
+RUN_OPENMP=@HOMME_ENABLE_OPENMP@
 

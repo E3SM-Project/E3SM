@@ -423,7 +423,7 @@ createAllRunScripts() {
          echo "# Hybrid test ${testNum}" >> $thisRunScript
          #echo "mpiexec -n $omp_num_mpi ${!testExec} > $testName.out 2> $testName.err" >> $thisRunScript
          #yellowstoneExec $thisRunScript "${!testExec}"
-         execLine $thisRunScript "${!testExec}" $omp_num_mpi
+         ompExecLine $thisRunScript "${!testExec}" $omp_num_mpi
          echo "" >> $thisRunScript # new line
       done
     fi
@@ -535,7 +535,7 @@ createRunScript() {
     do
        testExec=omp_test${testNum}
        echo "# Hybrid test ${testNum}" >> $thisRunScript
-       execLine $thisRunScript "${!testExec}" $omp_num_mpi
+       ompExecLine $thisRunScript "${!testExec}" $omp_num_mpi
        echo "" >> $thisRunScript # new line
     done
   fi
@@ -578,6 +578,22 @@ execLine() {
     echo "mpiexec -n $NUM_CPUS $EXEC" >> $RUN_SCRIPT
   fi
 }
+
+ompExecLine() {
+  RUN_SCRIPT=$1
+  EXEC=$2
+  NUM_CPUS=$3
+
+  if [ "$HOMME_Submission_Type" = lsf ]; then
+    echo "mpirun.lsf -pam \"-n ${NUM_CPUS}\" $EXEC" >> $RUN_SCRIPT
+  elif [ "$HOMME_Submission_Type" = pbs ]; then
+    echo "aprun -n 16 $EXEC" >> $RUN_SCRIPT
+  else
+    echo "mpiexec -n $NUM_CPUS $EXEC" >> $RUN_SCRIPT
+  fi
+}
+
+
 
 serExecLine() {
   RUN_SCRIPT=$1

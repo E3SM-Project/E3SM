@@ -3,9 +3,6 @@
 # CMake sets this variable
 HOMME_DIR=@Homme_Build_DIR@
 
-# Whether to run the OpenMP tests
-RUN_OPENMP=false
-
 # Source the following file to get the rest of the cmake variables
 source ${HOMME_DIR}/tests/cmake_variables.sh
 

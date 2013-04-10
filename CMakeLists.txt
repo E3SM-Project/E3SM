@@ -24,32 +24,14 @@ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR})
 FortranCInterface_HEADER(cmake_fortran_c_interface.h
                          MACRO_NAMESPACE  "FCI_")
 
+# need to tell the source to use this capability
+ADD_DEFINITIONS(-DINCLUDE_CMAKE_FCI)
+
 # Set up some directories to facilitate finding netcdf and pnetcdf
 INCLUDE(SetHostPaths)
 INCLUDE(HommeMacros)
 
-# scorep
-#SET (CMAKE_CXX_COMPILER 
-#     "/glade/apps/opt/unite/packages/scorep/1.1.1p1-intelpoe-intel-papi/bin/scorep\
-#     --user\ ${CMAKE_CXX_COMPILER}")
-#SET (CMAKE_C_COMPILER 
-#     "/glade/apps/opt/unite/packages/scorep/1.1.1p1-intelpoe-intel-papi/bin/scorep\
-#     --user\ ${CMAKE_C_COMPILER}")
-#SET (CMAKE_Fortran_COMPILER 
-#     "/glade/apps/opt/unite/packages/scorep/1.1.1p1-intelpoe-intel-papi/bin/scorep\
-#     --user\ ${CMAKE_Fortran_COMPILER}")
-#SET (CMAKE_CXX_COMPILER 
-#     "/glade/scratch/jamroz/builds/glade/apps/opt/unite/packages/scorep/1.1.1p1-intelpoe-intel-papi/bin/scorep\
-#     --user\ ${CMAKE_CXX_COMPILER}")
-#SET (CMAKE_C_COMPILER 
-#     "/glade/apps/opt/unite/packages/scorep/1.1.1p1-intelpoe-intel-papi/bin/scorep\
-#     --user\ ${CMAKE_C_COMPILER}")
-#SET (CMAKE_Fortran_COMPILER 
-#     "/glade/apps/opt/unite/packages/scorep/1.1.1p1-intelpoe-intel-papi/bin/scorep\
-#     --user\ ${CMAKE_Fortran_COMPILER}")
-
-
-# Default don't use quad precision
+# Default use quad precision
 OPTION(HOMME_QUAD_PREC "" TRUE)
 
 IF (${HOMME_QUAD_PREC}) 
@@ -61,25 +43,11 @@ IF (${HOMME_QUAD_PREC})
   ENDIF()
 ENDIF ()
 
+# Debug
 #MESSAGE(STATUS "CMAKE_IMP_LIBS=${CMAKE_Fortran_IMPLICIT_LINK_LIBRARIES}")
 
-# CPRNC for diffing Netcdf files
-#OPTION(TEST_USING_CPRNC "Whether to use cprnc for testing" FALSE)
-OPTION(TEST_USING_CPRNC "Whether to use cprnc for testing" TRUE)
-
-#IF (${TEST_USING_CPRNC})
-#  find_package(Cprnc REQUIRED)
-#  MESSAGE(STATUS "Using CPRNC to diff the Netcdf files")
-#ELSE ()
-#  MESSAGE(STATUS 
-#    "Not using CPRNC to diff the Netcdf files, only diffing stdout")
-#ENDIF ()
-
-# Use python for 
+# Use python for testing
 find_package(PythonInterp REQUIRED)
-
-# need to tell the source to use this capability
-ADD_DEFINITIONS(-DINCLUDE_CMAKE_FCI)
 
 # Some options for conditional builds
 OPTION(BUILD_HOMME_SWEQX "" ON)
@@ -131,13 +99,12 @@ IF (${CG_ONLY})
   SET(BUILD_HOMME_SWIM  "" ON)
   SET(BUILD_HOMME_PRIM  "" ON)
 ENDIF ()
-# to allow ifdefs to be included
-if(REFSOLN)
+
+# Reference solution data
+IF(REFSOLN)
   MESSAGE(STATUS "Including option to read or write reference soln data...")
   ADD_DEFINITIONS(-D_REFSOLN)
-endif()
-
-#ADD_SUBDIRECTORY(cmake)
+ENDIF()
 
 MESSAGE(STATUS "Homme hostname = ${Homme_Hostname}")
 MESSAGE(STATUS "Homme OS = ${Homme_OS}")
