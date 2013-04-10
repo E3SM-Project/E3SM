@@ -575,7 +575,8 @@ subroutine spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
             ! for low order solution
             c_low(icell,jcell) = spelt(ie)%c(i,j,k,itr,tl%n0) - &
                                       (-fluxlowx(icell,jcell) - fluxlowy(icell,jcell) + &
-                                        fluxlowx(icell+1,jcell) + fluxlowy(icell,jcell+1) ) / spelt(ie)%area_sphere(icell,jcell)                      
+                                        fluxlowx(icell+1,jcell) + fluxlowy(icell,jcell+1) ) &
+                                        / spelt(ie)%area_sphere(icell,jcell)
 !             spelt(ie)%c(icell,jcell,k,itr,tl%np1)=c_low(i,j) 
             !anti diffusive flux:high order flux - low order flux
             spelt(ie)%fluxhigh(icell,jcell,k,itr,1) = dy * (fluxval(jx,jy,1) + 4.0D0 * fluxval(jx,jy+1,1) + &
@@ -1308,8 +1309,10 @@ subroutine spelt_init1(par)
      call haltmp("PARAMTER ERROR for spelt: ntrac > ntrac_d")
   endif
 
-  call initghostbuffer(cellghostbuf,nlev,ntrac,nipm,nep) !+1 for the air_density, which comes from SE
-  call initghostbuffer(factorR,2*nlev,ntrac,nhe,nc)    ! use the tracer entry, have R plus and R minus factor (for positivity on only one)
+  !+1 for the air_density, which comes from SE
+  call initghostbuffer(cellghostbuf,nlev,ntrac,nipm,nep)
+  ! use the tracer entry, have R plus and R minus factor (for positivity on only one)
+  call initghostbuffer(factorR,2*nlev,ntrac,nhe,nc)
   call initEdgebuffer(edgeveloc,2*nlev)
 end subroutine spelt_init1
 
