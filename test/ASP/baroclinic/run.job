@@ -1,7 +1,7 @@
 #!/bin/tcsh -f 
 #SBATCH --job-name baroclinic
 #SBATCH -N 8
-#SBATCH --account=FY115932
+#SBATCH --account=FY139209
 #SBATCH --time=0:60:00
 
 # SNL batch system:
@@ -36,13 +36,13 @@
 
 
 # directores
-#set HOMME = ~/codes/homme1_2_2      
-set HOMME = /tmp/work/$USER/homme
+set HOMME = ~/codes/homme
+#set HOMME = /tmp/work/$USER/homme
 set src = $HOMME/build/preqx
 
 
-set wdir = /tmp/work/$USER/preqx   # work directory where output is stored
-#set wdir = /ptmp/$user/preqx
+#set wdir = /tmp/work/$USER/preqx   # work directory where output is stored
+set wdir = ~/scratch1/preqx
 #set wdir = /ptmp/$HOMME/prexq
 
 set input = $HOMME/test/ASP/baroclinic   # test cases
@@ -61,7 +61,7 @@ set psurf = 0
 set npdg=0
 set nu_p = 0
 set nu_div = -1
-
+set hsub = 1
 
 # Advection scheme
 
@@ -70,23 +70,23 @@ set nu_div = -1
 # this used to conserve mass, but now (2010/8) nu_q>0 breaks conservation - 
 # probably because prim_state_mod is using a staggered mass formulation
 #set smooth = 0.005
-#set tadv = 1 ; set RK2 = 0    
+#set RK2 = 0    
 #set qsplit = 1; set rk_stage_user = 0
-#set mean_flux=0
 
 #CAM-type:  subcycled, consistent advection, monotone limiter
 #              RK 5 stage dynamics
 #              RK 3 stage for tracers
 set smooth = 0
-set tadv = 1 ; set RK2 = 1    
+set RK2 = 1    
 set qsplit = 4
-set mean_flux=1
 set limiter = 8
-
+set rsplit=0
 
 
 # resolution parameters
-set ne = 8    # setup for 8,15,30,60,120?
+set ne = 30    # setup for 8,15,30,60,120?
+
+
 
 #set ndays = 30
 set ndays = 9
@@ -119,8 +119,27 @@ if ( $ne == 30 ) then
    set nu_q = 9.6e14
 
    set tstep = 90        # dynamics timestep
-#   set tstep = 20
    set resolution = medium_high
+
+   # CAM defaults
+   #set nu = 1e15
+   #set nu_q = 1e15
+   #set nu_div = 2.5e15 
+
+# Kinnmark and Gray Options:
+#   set RK2 = 5  # turn on K&G 5 stage optionoption    5 dycore + 3 vis
+#   set tstep=360
+#   set qsplit=1
+#   set hsub = 3  # 2.5 would work, if possible
+#   set rsplit = 5 #; set nu_p = 1e15
+
+# try and get RK3-SSP working:
+#   set RK2 = 3    # 3 stage SSP  9 dycore + 1 vis
+#   set tstep=120  #
+#   set qsplit=3
+#   set hsub = 1  # 2.5 would work, if possible
+#   set rsplit = 5 ; set nu_p = 1e15
+
 endif
 if ( $ne == 60 ) then
    # 0.5 degree
@@ -156,7 +175,7 @@ set sfreq = `echo "$sfreq / $tstep " | bc`
 
 # set caseno = 1
 # if ( $u_perturb == 1 ) set caseno = 2
-# set name = HOMME-$caseno-$rindex-$qindex-$resolution-L26-nu$nu-tadv$tadv
+# set name = HOMME-$caseno-$rindex-$qindex-$resolution-L26-nu$nu
 # if ( $RK2 == 1 ) then
 #    if ( $qsplit == 1 ) then
 #       set name = HOMME-$caseno-$rindex-$qindex-$resolution-L26-nu$nu-rk3
@@ -167,6 +186,9 @@ set sfreq = `echo "$sfreq / $tstep " | bc`
 # if ( $psurf == 1 ) set name = $name-psurf
 
 set name = jwasp-ne${ne}-nu$nu
+if ( $RK2 > 1 ) then
+    set name = jwasp-ne${ne}-nu$nu-RK$RK2-q$qsplit-r$rsplit
+endif
 
 
 echo runname =  $name
@@ -183,9 +205,9 @@ mkdir $wdir/movies
 cd $input
 rm -f $wdir/explicit.nl
 sed s/NE/$ne/ explicit26.nl.sed |\
-sed s/TSTEP/"$tstep qsplit=$qsplit psurf_vis=$psurf  "/ |\
+sed s/TSTEP/"$tstep qsplit=$qsplit rsplit=$rsplit psurf_vis=$psurf  "/ |\
 sed s/SFREQ/$sfreq/ |\
-sed s/tracer_advection_formulation.\*/"tracer_advection_formulation=$tadv  tstep_type = $RK2  compute_mean_flux=$mean_flux  "/ |\
+sed s/tracer_advection_formulation.\*/"tstep_type = $RK2  hypervis_subcycle = $hsub"/ |\
 sed s/NU1/$nu/ | sed s/NU2/$nu_q/ | \
 sed s/nu_div.\*/"nu_div = $nu_div  npdg=$npdg"/ |\
 sed s/nu_p.\*/"nu_p = $nu_p"/ |\
@@ -245,6 +267,7 @@ endif
 
 cd $src
 set build = run  # build, make or run(default)
+
 if ( $#argv >= 1) set build = $1
 if ( $build == "build" ) then
    if (${?PNETCDF_PATH} ) then
@@ -262,7 +285,10 @@ endif
 if ( $build == "make" ) then
     $make
     if ($status) exit
+    exit
 endif
+$make
+if ($status) exit
 
 
 
