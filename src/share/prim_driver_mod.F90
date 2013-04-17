@@ -978,7 +978,7 @@ contains
        ! so only now does HOMME learn the timstep.  print them out:
        write(iulog,'(a,2f9.2)') "dt_remap: (0=disabled)   ",tstep*qsplit*rsplit
        write(iulog,'(a,2f9.2)') "dt_tracer, per RK stage: ",tstep*qsplit,(tstep*qsplit)/(rk_stage_user-1)
-       write(iulog,'(a,2f9.2)') "dt_dyn:                  ",tstep*qsplit
+       write(iulog,'(a,2f9.2)') "dt_dyn:                  ",tstep
        write(iulog,'(a,2f9.2)') "dt_dyn (viscosity):      ",dt_dyn_vis
        write(iulog,'(a,2f9.2)') "dt_tracer (viscosity):   ",dt_tracer_vis
 

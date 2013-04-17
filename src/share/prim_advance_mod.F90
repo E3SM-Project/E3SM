@@ -117,25 +117,30 @@ contains
 !
 !   tstep_type=0  pure leapfrog except for very first timestep   CFL=1
 !                    typically requires qsplit=4 or 5 
-!   tstep_type=1  RK2 followed by qsplit-1 leapfrog steps        CFL=?
+!   tstep_type=1  RK2 followed by qsplit-1 leapfrog steps        CFL=close to qsplit
 !                    typically requires qsplit=4 or 5 
-!   tstep_type=3  RK2-SSP 3 stage (as used by tracers)           CFL=?
+!   tstep_type=2  classic RK3                                    CFL=1.73 (sqrt(3))
+!                 (not yet coded)
+!   tstep_type=3  RK2-SSP 3 stage (as used by tracers)           CFL=.58  
+!                    optimal in terms of SSP CFL, but not        CFLSSP=2 
+!                    optimal in terms of CFL
 !                    typically requires qsplit=3
 !                    but if windspeed > 340m/s, could use this
 !                    with qsplit=1
 !   tstep_type=4  Kinnmark&Gray RK2 4 stage                      CFL=3.0
 !                 should we replace by standard RK4 (CFL=sqrt(8))?
-!   tstep_type=5  Kinnmark&Gray RK3 5 stage                      CFL=3.9.  
+!   tstep_type=5  Kinnmark&Gray RK3 5 stage                      CFL=3.87  (sqrt(8))
 !                    optimal: for windspeeds ~120m/s,gravity: 340m/2
 !                    run with qsplit=1
 !
+
     if(tstep_type==0)then  
-       method=1                ! pure leapfrog
-       if (nstep==0) method=2  ! always use RK2 for first timestep
+       method=0                ! pure leapfrog
+       if (nstep==0) method=1  ! always use RK2 for first timestep
     else if (tstep_type==1) then  
-       method=1                           ! LF
+       method=0                           ! LF
        qsplit_stage = mod(nstep,qsplit)
-       if (qsplit_stage==0) method=2      ! RK2 on first of qsplit steps
+       if (qsplit_stage==0) method=1      ! RK2 on first of qsplit steps
     else if (tstep_type>1) then  
        method = tstep_type                ! other RK variants 
     endif
@@ -206,13 +211,13 @@ contains
     ! Take timestep
     ! ==================================
     dt_vis = dt                      
-    if (method==1) then
+    if (method==0) then
        ! regular LF step
        dt2 = 2*dt
        call compute_and_apply_rhs(np1,nm1,n0,dt2,elem,hvcoord,hybrid,&
             deriv,nets,nete,compute_diagnostics,eta_ave_w)
        dt_vis = dt2  ! dt to use for time-split dissipation
-    else if (method==2) then
+    else if (method==1) then
        ! RK2
        ! forward euler to u(dt/2) = u(0) + (dt/2) RHS(0)  (store in u(np1))
        call compute_and_apply_rhs(np1,n0,n0,dt/2,elem,hvcoord,hybrid,&
