@@ -28,7 +28,6 @@ module prim_driver_mod
   use spelt_mod, only : spelt_struct, spelt_init1,spelt_init2, spelt_init3
   
   use element_mod, only : element_t, timelevels,  allocate_element_desc
-  use time_mod, only           : TimeLevel_Qdp
 
   implicit none
   private
@@ -528,7 +527,7 @@ contains
   subroutine prim_init2(elem, fvm, hybrid, nets, nete, tl, hvcoord)
 
     use parallel_mod, only : parallel_t, haltmp, syncmp, abortmp
-    use time_mod, only : timelevel_t, tstep, phys_tscale, timelevel_init, time_at, nendstep, smooth, nsplit, TimeLevel_Qdp
+    use time_mod, only : timelevel_t, tstep, phys_tscale, timelevel_init, nendstep, smooth, nsplit, TimeLevel_Qdp
     use prim_state_mod, only : prim_printstate, prim_diag_scalars
     use filter_mod, only : filter_t, fm_filter_create, taylor_filter_create, &
          fm_transfer, bv_transfer
@@ -537,7 +536,7 @@ contains
          transfer_type, vform, vfile_mid, filter_type, kcut_fm, wght_fm, p_bv, &
          s_bv, topology,columnpackage, moisture, precon_method, rsplit, qsplit, rk_stage_user,&
          sub_case, &
-         use_cpstar, energy_fixer, limiter_option, nu, nu_q, nu_div, tstep_type, hypervis_subcycle, &
+         limiter_option, nu, nu_q, nu_div, tstep_type, hypervis_subcycle, &
          hypervis_subcycle_q
     use prim_si_ref_mod, only: prim_si_refstate_init, prim_set_mass
     use thread_mod, only : nthreads
@@ -764,7 +763,6 @@ contains
        endif ! runtype==2
        if (hybrid%masterthread) then 
           write(iulog,*) "initial state from restart file:"
-          write(iulog,*) "nstep=",tl%nstep," time=",Time_at(tl%nstep)/(24*3600)," [day]"
        end if
        
     else  ! initial run  RUNTYPE=0
@@ -843,7 +841,6 @@ contains
        
        if (hybrid%masterthread) then 
           write(iulog,*) "initial state:"
-          write(iulog,*) "nstep=",tl%nstep," time=",Time_at(tl%nstep)/(24*3600)," [day]"
        end if
     end if  ! runtype
 
@@ -989,7 +986,6 @@ contains
        endif
        write(iulog,'(a,2f9.2)') "CAM dtime (dt_phys):         ",tstep*nsplit*qsplit*max(rsplit,1)
        write(iulog,*) "initial state from CAM:"
-       write(iulog,*) "nstep=",tl%nstep," time=",Time_at(tl%nstep)/(24*3600)," [day]"
 #endif
     end if
 
@@ -1015,7 +1011,7 @@ contains
   ! dt/2 euler and a dt/2 leapfrog step  
   !
   use hybvcoord_mod, only : hvcoord_t
-  use time_mod, only : TimeLevel_t, time_at
+  use time_mod, only : TimeLevel_t
 
   type (element_t) , intent(inout)        :: elem(:)
   type (hybrid_t), intent(in)           :: hybrid  ! distributed parallel structure (shared)
@@ -1053,7 +1049,7 @@ contains
 
   subroutine prim_run(elem, hybrid,nets,nete, dt, tl, hvcoord, advance_name)
     use hybvcoord_mod, only : hvcoord_t
-    use time_mod, only : TimeLevel_t, time_at, timelevel_update, smooth
+    use time_mod, only : TimeLevel_t, timelevel_update, smooth
     use control_mod, only: statefreq, integration, ftype, qsplit
     use prim_advance_mod, only : prim_advance_exp, prim_advance_si, preq_robert3
     use prim_state_mod, only : prim_printstate, prim_diag_scalars, prim_energy_halftimes
@@ -1212,7 +1208,6 @@ contains
 
     if (compute_diagnostics) then
        if (hybrid%masterthread) then 
-          write(iulog,*) "nstep=",tl%nstep," time=",Time_at(tl%nstep)/(24*3600)," [day]"
           if (integration == "semi_imp") write(iulog,*) "cg its=",cg(0)%iter
        end if
        call prim_printstate(elem, tl, hybrid,hvcoord,nets,nete)
@@ -1240,10 +1235,10 @@ contains
 !   
 !
     use hybvcoord_mod, only : hvcoord_t
-    use time_mod, only : TimeLevel_t, time_at, timelevel_update, nsplit
+    use time_mod, only : TimeLevel_t, timelevel_update, timelevel_qdp, nsplit
     use control_mod, only: statefreq,&
            energy_fixer, ftype, qsplit, rsplit, test_cfldep
-    use prim_advance_mod, only : prim_advance_si, applycamforcing, &
+    use prim_advance_mod, only : applycamforcing, &
                                  applycamforcing_dynamics
     use prim_state_mod, only : prim_printstate, prim_diag_scalars, prim_energy_halftimes
     use parallel_mod, only : abortmp
@@ -1305,8 +1300,9 @@ contains
     endif
     if (compute_diagnostics) &
        call prim_diag_scalars(elem,hvcoord,tl,4,.true.,nets,nete)
+    ! E(4) Energy at start of timestep, before CAM forcing
     if (compute_energy_forcing) &
-       call prim_energy_halftimes(elem,hvcoord,tl,4,.true.,nets,nete,tl%n0)
+       call prim_energy_halftimes(elem,hvcoord,tl,4,.true.,nets,nete)
 
 
 
@@ -1320,9 +1316,8 @@ contains
     if (ftype==2) call ApplyCAMForcing_dynamics(elem, hvcoord,tl%n0,dt_remap,nets,nete)
 #endif
 
-    !We are only storing Q now (just n0 - not nm1 and np1)  
-    ! E(1) Energy at start of timestep, diagnostics at t-dt/2  (using t-dt, t and Q(t))
-    if (compute_energy) call prim_energy_halftimes(elem,hvcoord,tl,1,.true.,nets,nete,1)
+    ! E(1) Energy after CAM forcing
+    if (compute_energy) call prim_energy_halftimes(elem,hvcoord,tl,1,.true.,nets,nete)
 
     ! qmass and variance, using Q(n0),Qdp(n0)
     if (compute_diagnostics) call prim_diag_scalars(elem,hvcoord,tl,1,.true.,nets,nete)
@@ -1391,7 +1386,7 @@ contains
     !
     !   Q(1)   Q at t+dt_remap
     if (compute_diagnostics) call prim_diag_scalars(elem,hvcoord,tl,2,.false.,nets,nete)
-    if (compute_energy) call prim_energy_halftimes(elem,hvcoord,tl,2,.false.,nets,nete,1)
+    if (compute_energy) call prim_energy_halftimes(elem,hvcoord,tl,2,.false.,nets,nete)
 
     if (energy_fixer > 0) then
        call prim_energy_fixer(elem,hvcoord,hybrid,tl,nets,nete,&
@@ -1400,7 +1395,7 @@ contains
 
     if (compute_diagnostics) then
        call prim_diag_scalars(elem,hvcoord,tl,3,.false.,nets,nete)
-       call prim_energy_halftimes(elem,hvcoord,tl,3,.false.,nets,nete,1)
+       call prim_energy_halftimes(elem,hvcoord,tl,3,.false.,nets,nete)
      endif
 
     ! =================================
@@ -1418,9 +1413,6 @@ contains
     ! Print some diagnostic information 
     ! ============================================================
     if (compute_diagnostics) then
-       if (hybrid%masterthread) then 
-          write(iulog,*) "nstep=",tl%nstep," time=",Time_at(tl%nstep)/(24*3600)," [day]"
-       end if
        call prim_printstate(elem, tl, hybrid,hvcoord,nets,nete, fvm)
     end if
   end subroutine prim_run_subcycle
@@ -1449,13 +1441,12 @@ contains
 !   
 !
     use hybvcoord_mod, only : hvcoord_t
-    use time_mod, only : TimeLevel_t, time_at, timelevel_update, nsplit
+    use time_mod, only : TimeLevel_t, timelevel_update, nsplit
     use control_mod, only: statefreq,&
-           energy_fixer, ftype, qsplit, nu_p, test_cfldep, rsplit
+           ftype, qsplit, nu_p, test_cfldep, rsplit
     use prim_advance_mod, only : prim_advance_exp
     use prim_advection_mod, only : prim_advec_tracers_remap_rk2, prim_advec_tracers_fvm, &
          prim_advec_tracers_spelt
-    use prim_state_mod, only : prim_printstate, prim_diag_scalars, prim_energy_halftimes
     use parallel_mod, only : abortmp
     use reduction_mod, only : parallelmax
 
@@ -1520,6 +1511,8 @@ contains
     ! Dynamical Step 
     ! ===============
     n_Q = tl%n0  ! n_Q = timelevel of FV tracers at time t.  need to save this
+                 ! FV tracers still carry 3 timelevels 
+                 ! SE tracers only carry 2 timelevels 
     call prim_advance_exp(elem, deriv(hybrid%ithr), hvcoord,   &
          hybrid, dt, tl, nets, nete, compute_diagnostics)
     do n=2,qsplit
@@ -1590,17 +1583,8 @@ contains
            endif 
        endif   
        !overwrite SE density by fvm(ie)%psc
-!        call overwrite_SEdensity(elem,fvm,hybrid,nets,nete,tl%np1) 
-!elem(ie)%state%ps_v(i,j,np1)
+       !call overwrite_SEdensity(elem,fvm,hybrid,nets,nete,tl%np1) 
 #endif
-       ! dynamics computed a predictor surface pressure, now correct with fvm result
-       ! fvm has computed a new dp(:,:,k) on the fvm grid
-       !
-       ! step 1:  computes sum of fvm density on fvm grid
-       ! step 2:  interpolate to GLL grid
-       ! step 3:  store in  elem(ie)%state%ps_v(:,:,tl%np1)
-       ! step 4:  apply DSS to make ps_v continuous 
-       !          (or use continuous reconstruction)
     endif
 
   end subroutine prim_step
@@ -1617,6 +1601,8 @@ contains
     ! ==========================
   end subroutine prim_finalize
 
+
+
 !=======================================================================================================! 
   subroutine prim_energy_fixer(elem,hvcoord,hybrid,tl,nets,nete,compute_energy_forcing,&
        nsubstep)
@@ -1632,8 +1618,8 @@ contains
     use kinds, only : real_kind
     use hybvcoord_mod, only : hvcoord_t
     use physical_constants, only : Cp 
-    use time_mod, only : timelevel_t, TimeLevel_Qdp
-    use control_mod, only : energy_fixer, use_cpstar
+    use time_mod, only : timelevel_t
+    use control_mod, only : use_cpstar
     use hybvcoord_mod, only : hvcoord_t
     use global_norms_mod, only: wrap_repro_sum
     use parallel_mod, only : abortmp
@@ -1741,9 +1727,9 @@ contains
     do ie=nets,nete
        elem(ie)%state%T(:,:,:,t2) =  elem(ie)%state%T(:,:,:,t2) + beta
     enddo
-
-!=======================================================================================================! 
     end subroutine prim_energy_fixer
+!=======================================================================================================! 
+
 
 
     subroutine smooth_topo_datasets(phis,sghdyn,sgh30dyn,elem,hybrid,nets,nete)
@@ -1753,7 +1739,6 @@ contains
     use bndry_mod, only : bndry_exchangev
     use derivative_mod, only : derivative_t , laplace_sphere_wk
     use viscosity_mod, only : biharmonic_wk
-    use time_mod, only : TimeLevel_t
     use prim_advance_mod, only : smooth_phis
     implicit none
     

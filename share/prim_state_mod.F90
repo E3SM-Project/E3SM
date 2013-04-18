@@ -17,7 +17,7 @@ module prim_state_mod
   ! ------------------------------
   use physical_constants, only : p0,Cp,g
   ! ------------------------------
-  use time_mod, only : tstep, secpday, timelevel_t, TimeLevel_Qdp 
+  use time_mod, only : tstep, secpday, timelevel_t, TimeLevel_Qdp, time_at
   ! ------------------------------
   use control_mod, only : integration, test_case, runtype, moisture, &
        tstep_type,energy_fixer, qsplit, ftype, use_cpstar, rsplit
@@ -145,7 +145,10 @@ contains
     real (kind=real_kind) :: ddt_tot,ddt_diss
     integer               :: n0, nm1, pnm1, np1
     integer               :: npts,n,q
-
+    
+    if (hybrid%masterthread) then 
+       write(iulog,*) "nstep=",tl%nstep," time=",Time_at(tl%nstep)/(24*3600)," [day]"
+    end if
     if (.not. present(fvm) .and. ntrac>0) then
        print *,'ERROR: prim_state_mod.F90: optional fvm argument required if ntrac>0'
     endif
@@ -706,7 +709,7 @@ contains
 !=======================================================================================================! 
 
 
-subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete,tQ)
+subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
 ! 
 !  called at the end of a timestep, before timelevel update.  Solution known at
 !  dynamics:     nm1,  n0,  np1.  
@@ -743,7 +746,6 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete,tQ
     type (element_t)     , intent(inout), target :: elem(:)
     type (hvcoord_t)                  :: hvcoord
     type (TimeLevel_t), intent(in)       :: tl
-    integer, intent(in),optional    :: tQ
     logical :: t_before_advance
 
     integer :: ie,k,i,j,nm_f
@@ -802,16 +804,10 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete,tQ
           do j=1,np
              if(use_cpstar == 1)  then
                 ! Cp_star = cp + (Cpwater_vapor - cp)*qval
-                if (present(tQ)) then
-                   ! we should interpolate to t +/- dt_dynamics/2, but not worth the trouble
-                   cp_star2= Virtual_Specific_Heat(elem(ie)%state%Q(i,j,k,1))
-                   cp_star1= cp_star2  
-                else !not used for now with CAM
-                   qval_t1 = elem(ie)%state%Qdp(i,j,k,1,t1_qdp)/dpt1(i,j,k)
-                   qval_t2 = elem(ie)%state%Qdp(i,j,k,1,t2_qdp)/dpt2(i,j,k)
-                   cp_star1= Virtual_Specific_Heat(qval_t1)
-                   cp_star2= Virtual_Specific_Heat(qval_t2)
-                endif
+                qval_t1 = elem(ie)%state%Qdp(i,j,k,1,t1_qdp)/dpt1(i,j,k)
+                qval_t2 = elem(ie)%state%Qdp(i,j,k,1,t2_qdp)/dpt2(i,j,k)
+                cp_star1= Virtual_Specific_Heat(qval_t1)
+                cp_star2= Virtual_Specific_Heat(qval_t2)
              else
                 cp_star1=cp
                 cp_star2=cp
