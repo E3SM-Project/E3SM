@@ -1362,10 +1362,10 @@ contains
     ! Q    (mixing ratio)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!    
     do ie=nets,nete
+       elem(ie)%state%lnps(:,:,tl%np1)= LOG(elem(ie)%state%ps_v(:,:,tl%np1))
 #if (defined ELEMENT_OPENMP)
        !$omp parallel do private(k,q)
 #endif
-       elem(ie)%state%lnps(:,:,tl%np1)= LOG(elem(ie)%state%ps_v(:,:,tl%np1))
        do k=1,nlev    !  Loop inversion (AAM)
           dp_np1(:,:) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
                ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%np1)
@@ -1491,11 +1491,12 @@ contains
         ! save velocity at time t for fvm
         fvm(ie)%vn0=elem(ie)%state%v(:,:,:,:,tl%n0)
       end if
+
+      if (rsplit==0) then
 #if (defined ELEMENT_OPENMP)
 !$omp parallel do private(k, j, i)
 #endif
       ! save dp at time t for use in tracers
-      if (rsplit==0) then
          do k=1,nlev
             elem(ie)%derived%dp(:,:,k)=&
                  ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &

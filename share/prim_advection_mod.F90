@@ -1672,10 +1672,10 @@ contains
 	call edgeDGVunpack(edgeAdv,qedges,nlev*qsize,0,elem(ie)%desc)
      else
 	call edgeDGVunpack(edgeAdv_p1,qedges,nlev*qsize,0,elem(ie)%desc)
+	call edgeVunpack(edgeAdv_p1,DSSvar(:,:,1:nlev),nlev,qsize*nlev,elem(ie)%desc)
 #if (defined ELEMENT_OPENMP)
 !$omp parallel do private(k,q)
 #endif
-	call edgeVunpack(edgeAdv_p1,DSSvar(:,:,1:nlev),nlev,qsize*nlev,elem(ie)%desc)
 	do k=1,nlev
 	  DSSvar(:,:,k)=DSSvar(:,:,k)*elem(ie)%rspheremp(:,:)
 	enddo
