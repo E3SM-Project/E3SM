@@ -205,7 +205,8 @@ contains
 
        if (MeshUseMeshFile .EQV. .FALSE.) then
           ! MNL: there are abort calls in edge_mod::ghostVpackfull that
-          !      require ne>0 / don't allow -DMESH as compile option
+          !      require ne>0 / don't allow these calls when reading a
+          !      mesh from file
           ! used by fvm:
           !TODO: should fix these function for meshes
           call compute_ghost_corner_orientation(hybrid,elem,nets,nete)

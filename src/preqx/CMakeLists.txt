@@ -146,10 +146,14 @@ MESSAGE(STATUS "  NTRAC = ${PREQX_NTRAC}")
 MESSAGE(STATUS "  PIO = ${PREQX_USE_PIO}")
 MESSAGE(STATUS "  ENERGY = ${PREQX_USE_ENERGY}")
 
+IF (PREQX_USE_FVM)
+  SET(_FVM "USE_FVM")
+  MESSAGE(STATUS "  Using FVM")
+ENDIF()
+
 # The following macro handles the compilation with the appropriate variables
 ############################################################################
 # createTestExec(exec_name exec_type SRCS NP PLEV USE_PIO USE_ENERGY)
 ############################################################################
 createTestExec(preqx preqx PREQX_SRCS ${PREQX_NP} ${PREQX_NC} ${PREQX_PLEV} 
                ${PREQX_NTRAC} ${PREQX_USE_PIO}  ${PREQX_USE_ENERGY})
-

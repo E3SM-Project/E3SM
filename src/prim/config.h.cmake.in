@@ -1,12 +1,8 @@
 /* PRIM Options */
 #define ENERGY_DIAGNOSTICS
 #define _PRIM
-#define _NONSTAGGER
 #define _WK_GRAD 1
 #define _PRESTART 1
-
-/* Enable external mesh file */
-#undef MESH
 
 /* PIO with interpolation */
 #cmakedefine PIO_INTERP
@@ -16,9 +12,6 @@
 
 /* Number of POINTS in the element (Default value is 4) */
 #define NP @NUM_POINTS@
-
-/* Number of TRACERS (Default value is 1) */
-#define NTRAC @NUM_TRACERS@
 
 /* Number of POINTS in the element (Default value is 1) */
 #define PLEV @NUM_PLEV@
@@ -35,13 +28,8 @@
 /* SPHEREW */
 #define SPHEREW 1
 
-/* NOTRACE */
-#define _NOTRACE 1
-
 /* _NO_OMP_THREADS */
 #define _NO_OMP_THREADS 1
-
-#define MOVIE _PIO
 
 #define TRILINOS 1
 
