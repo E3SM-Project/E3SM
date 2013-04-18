@@ -47,6 +47,7 @@ contains
        call initEdgeBuffer(edge2,2*nlev)
     end if
 
+    ! compute averaging weights for RK+LF (tstep_type=1) timestepping:
     allocate(ur_weights(qsplit))
     ur_weights(:)=0.0d0
 
@@ -69,7 +70,7 @@ contains
   subroutine prim_advance_exp(elem, deriv, hvcoord, hybrid,&
        dt, tl,  nets, nete, compute_diagnostics)
     use bndry_mod, only : bndry_exchangev
-    use control_mod, only : prescribed_wind, qsplit, tstep_type, rsplit
+    use control_mod, only : prescribed_wind, qsplit, tstep_type, rsplit, qsplit, moisture
     use derivative_mod, only : derivative_t, vorticity, divergence, gradient, gradient_wk
     use dimensions_mod, only : np, nlev, nlevp
     use edge_mod, only : EdgeBuffer_t, edgevpack, edgevunpack, initEdgeBuffer
@@ -78,7 +79,7 @@ contains
     use hybvcoord_mod, only : hvcoord_t
     use hybrid_mod, only : hybrid_t
     use reduction_mod, only : reductionbuffer_ordered_1d_t
-    use time_mod, only : TimeLevel_t, smooth
+    use time_mod, only : TimeLevel_t,  timelevel_qdp
     use diffusion_mod, only :  prim_diffusion
 
 #ifndef CAM
@@ -105,7 +106,7 @@ contains
     real (kind=real_kind) ::  dt2, time, dt_vis, eta_ave_w
     real (kind=real_kind) ::  eta_dot_dpdn(np,np,nlevp)
     real (kind=real_kind) ::  dp(np,np)
-    integer :: ie,nm1,n0,np1,nstep,method,qsplit_stage,nflux,k
+    integer :: ie,nm1,n0,np1,nstep,method,qsplit_stage,k, qn0
 
 
     call t_barrierf('sync_prim_advance_exp', hybrid%par%comm)
@@ -114,22 +115,31 @@ contains
     n0    = tl%n0
     np1   = tl%np1
     nstep = tl%nstep
+
+    ! timelevel to use for accessing Qdp() to compute virtual temperature
+    qn0 = -1    ! -1 = disabled (assume dry dynamics)
+    if ( moisture /= "dry") then
+       call TimeLevel_Qdp(tl, qsplit, qn0)  ! compute current Qdp() timelevel
+    endif
+     
+
+
 !
 !   tstep_type=0  pure leapfrog except for very first timestep   CFL=1
 !                    typically requires qsplit=4 or 5 
 !   tstep_type=1  RK2 followed by qsplit-1 leapfrog steps        CFL=close to qsplit
 !                    typically requires qsplit=4 or 5 
-!   tstep_type=2  classic RK3                                    CFL=1.73 (sqrt(3))
-!                 (not yet coded)
-!   tstep_type=3  RK2-SSP 3 stage (as used by tracers)           CFL=.58  
+!   tstep_type=2  RK2-SSP 3 stage (as used by tracers)           CFL=.58  
 !                    optimal in terms of SSP CFL, but not        CFLSSP=2 
 !                    optimal in terms of CFL
 !                    typically requires qsplit=3
 !                    but if windspeed > 340m/s, could use this
 !                    with qsplit=1
-!   tstep_type=4  Kinnmark&Gray RK2 4 stage                      CFL=3.0
+!   tstep_type=3  classic RK3                                    CFL=1.73 (sqrt(3))
+!                 
+!   tstep_type=4  Kinnmark&Gray RK4 4 stage                      CFL=sqrt(8)
 !                 should we replace by standard RK4 (CFL=sqrt(8))?
-!   tstep_type=5  Kinnmark&Gray RK3 5 stage                      CFL=3.87  (sqrt(8))
+!   tstep_type=5  Kinnmark&Gray RK3 5 stage 3rd order            CFL=3.87  (sqrt(15))
 !                    optimal: for windspeeds ~120m/s,gravity: 340m/2
 !                    run with qsplit=1
 !
@@ -214,28 +224,28 @@ contains
     if (method==0) then
        ! regular LF step
        dt2 = 2*dt
-       call compute_and_apply_rhs(np1,nm1,n0,dt2,elem,hvcoord,hybrid,&
+       call compute_and_apply_rhs(np1,nm1,n0,qn0,dt2,elem,hvcoord,hybrid,&
             deriv,nets,nete,compute_diagnostics,eta_ave_w)
        dt_vis = dt2  ! dt to use for time-split dissipation
     else if (method==1) then
        ! RK2
        ! forward euler to u(dt/2) = u(0) + (dt/2) RHS(0)  (store in u(np1))
-       call compute_and_apply_rhs(np1,n0,n0,dt/2,elem,hvcoord,hybrid,&
+       call compute_and_apply_rhs(np1,n0,n0,qn0,dt/2,elem,hvcoord,hybrid,&
             deriv,nets,nete,compute_diagnostics,0d0)
        ! leapfrog:  u(dt) = u(0) + dt RHS(dt/2)     (store in u(np1))
-       call compute_and_apply_rhs(np1,n0,np1,dt,elem,hvcoord,hybrid,&
+       call compute_and_apply_rhs(np1,n0,np1,qn0,dt,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,eta_ave_w)
-    else if (method==3) then
+    else if (method==2) then
        ! RK2-SSP 3 stage.  matches tracer scheme. optimal SSP CFL, but
        ! not optimal for regular CFL
        ! u1 = u0 + dt/2 RHS(u0)
-       call compute_and_apply_rhs(np1,n0,n0,dt/2,elem,hvcoord,hybrid,&
+       call compute_and_apply_rhs(np1,n0,n0,qn0,dt/2,elem,hvcoord,hybrid,&
             deriv,nets,nete,compute_diagnostics,eta_ave_w/3)
        ! u2 = u1 + dt/2 RHS(u1)
-       call compute_and_apply_rhs(np1,np1,np1,dt/2,elem,hvcoord,hybrid,&
+       call compute_and_apply_rhs(np1,np1,np1,qn0,dt/2,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,eta_ave_w/3)
        ! u3 = u2 + dt/2 RHS(u2)
-       call compute_and_apply_rhs(np1,np1,np1,dt/2,elem,hvcoord,hybrid,&
+       call compute_and_apply_rhs(np1,np1,np1,qn0,dt/2,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,eta_ave_w/3)
        ! unew = u/3 +2*u3/3  = u + 1/3 (RHS(u) + RHS(u1) + RHS(u2))
        do ie=nets,nete
@@ -251,36 +261,48 @@ contains
                   + 2*elem(ie)%state%dp3d(:,:,:,np1)/3
           endif
        enddo
-    else if (method==4) then
-       ! KG 2nd order 4 stage:   CFL=3
+    else if (method==3) then
+       ! classic RK3  CFL=sqrt(3)  
        ! u1 = u0 + dt/3 RHS(u0)
-       call compute_and_apply_rhs(np1,n0,n0,dt/3,elem,hvcoord,hybrid,&
+       call compute_and_apply_rhs(np1,n0,n0,qn0,dt/3,elem,hvcoord,hybrid,&
             deriv,nets,nete,compute_diagnostics,0d0)
-       ! u2 = u0 + dt/5 RHS(u1)
-       call compute_and_apply_rhs(np1,n0,np1,dt*4d0/15d0,elem,hvcoord,hybrid,&
+       ! u2 = u0 + dt/2 RHS(u1)
+       call compute_and_apply_rhs(np1,n0,np1,qn0,dt/2,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,0d0)
-       ! u3 = u0 + dt/3 RHS(u2)
-       call compute_and_apply_rhs(np1,n0,np1,dt*5d0/9d0,elem,hvcoord,hybrid,&
+       ! u3 = u0 + dt RHS(u2)
+       call compute_and_apply_rhs(np1,n0,np1,qn0,dt,elem,hvcoord,hybrid,&
+            deriv,nets,nete,.false.,eta_ave_w)
+    else if (method==4) then
+       ! KG 4th order 4 stage:   CFL=sqrt(8)
+       ! low storage version of classic RK4
+       ! u1 = u0 + dt/4 RHS(u0)
+       call compute_and_apply_rhs(np1,n0,n0,qn0,dt/4,elem,hvcoord,hybrid,&
+            deriv,nets,nete,compute_diagnostics,0d0)
+       ! u2 = u0 + dt/3 RHS(u1)
+       call compute_and_apply_rhs(np1,n0,np1,qn0,dt/3,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,0d0)
-       ! u4 = u0 + dt/2 RHS(u3)
-       call compute_and_apply_rhs(np1,n0,np1,dt,elem,hvcoord,hybrid,&
+       ! u3 = u0 + dt/2 RHS(u2)
+       call compute_and_apply_rhs(np1,n0,np1,qn0,dt/2,elem,hvcoord,hybrid,&
+            deriv,nets,nete,.false.,0d0)
+       ! u4 = u0 + dt RHS(u3)
+       call compute_and_apply_rhs(np1,n0,np1,qn0,dt,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,eta_ave_w)
     else if (method==5) then
        ! KG 3nd order 5 stage:   CFL=sqrt( 4^2 -1) = 3.87
        ! u1 = u0 + dt/5 RHS(u0)
-       call compute_and_apply_rhs(np1,n0,n0,dt/5,elem,hvcoord,hybrid,&
+       call compute_and_apply_rhs(np1,n0,n0,qn0,dt/5,elem,hvcoord,hybrid,&
             deriv,nets,nete,compute_diagnostics,0d0)
        ! u2 = u0 + dt/5 RHS(u1)
-       call compute_and_apply_rhs(np1,n0,np1,dt/5,elem,hvcoord,hybrid,&
+       call compute_and_apply_rhs(np1,n0,np1,qn0,dt/5,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,0d0)
        ! u3 = u0 + dt/3 RHS(u2)
-       call compute_and_apply_rhs(np1,n0,np1,dt/3,elem,hvcoord,hybrid,&
+       call compute_and_apply_rhs(np1,n0,np1,qn0,dt/3,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,0d0)
        ! u4 = u0 + dt/2 RHS(u3)
-       call compute_and_apply_rhs(np1,n0,np1,dt/2,elem,hvcoord,hybrid,&
+       call compute_and_apply_rhs(np1,n0,np1,qn0,dt/2,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,0d0)
-       ! u5 = u0 + dt/2 RHS(u4)
-       call compute_and_apply_rhs(np1,n0,np1,dt,elem,hvcoord,hybrid,&
+       ! u5 = u0 + dt RHS(u4)
+       call compute_and_apply_rhs(np1,n0,np1,qn0,dt,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,eta_ave_w)
     else
        call abortmp('ERROR: bad choice of tstep_type')
@@ -352,7 +374,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
        use prim_si_ref_mod, only : ref_state_t, set_vert_struct_mat
        use reduction_mod, only : reductionbuffer_ordered_1d_t
        use solver_mod, only : pcg_solver, blkjac_t, blkjac_init
-       use time_mod, only : TimeLevel_t, smooth
+       use time_mod, only : TimeLevel_t
        use prim_si_mod, only : preq_vertadv, preq_omegap, preq_pressure
        use diffusion_mod, only :  prim_diffusion
        use physical_constants, only : kappa, rrearth, rgas, cp, rwater_vapor
@@ -1231,7 +1253,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   use element_mod, only : element_t
   use hybvcoord_mod, only : hvcoord_t
   use control_mod, only : moisture
-  use time_mod, only : smooth
   
   implicit none
   type (element_t)     , intent(inout) :: elem(:)
@@ -1315,7 +1336,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   use dimensions_mod, only : np, nlev, qsize
   use element_mod, only : element_t
   use hybvcoord_mod, only : hvcoord_t
-  use time_mod, only : smooth
   
   implicit none
   type (element_t)     , intent(inout) :: elem(:)
@@ -2158,7 +2178,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   end subroutine advance_hypervis_lf
   
 
-  subroutine compute_and_apply_rhs(np1,nm1,n0,dt2,elem,hvcoord,hybrid,&
+  subroutine compute_and_apply_rhs(np1,nm1,n0,qn0,dt2,elem,hvcoord,hybrid,&
        deriv,nets,nete,compute_diagnostics,eta_ave_w)
   ! ===================================
   ! compute the RHS, accumulate into u(np1) and apply DSS
@@ -2169,6 +2189,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   ! but by adjusting np1,nm1,n0 and dt2, many other timesteps can be
   ! accomodated.  For example, setting nm1=np1=n0 this routine will
   ! take a forward euler step, overwriting the input with the output.
+  !
+  !    qn0 = timelevel used to access Qdp() in order to compute virtual Temperature
+  !          qn0=-1 for the dry case
   !
   ! if  dt2<0, then the DSS'd RHS is returned in timelevel np1
   !
@@ -2199,7 +2222,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
 
   implicit none
-  integer :: np1,nm1,n0,nets,nete
+  integer :: np1,nm1,n0,qn0,nets,nete
   real*8 :: dt2
   logical  :: compute_diagnostics
 
@@ -2239,7 +2262,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   real (kind=real_kind) ::  cp2,cp_ratio,E,de,Qt,v1,v2
   real (kind=real_kind) ::  glnps1,glnps2,gpterm
   integer :: i,j,k,kptr,ie
-  logical :: wet
 
   call t_barrierf('sync_compute_and_apply_rhs', hybrid%par%comm)
   call t_startf('compute_and_apply_rhs')
@@ -2331,27 +2353,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      enddo
      
      
-     
      ! compute T_v for timelevel n0
-     wet = ( moisture /= "dry")
-     if(wet) then
-#if (defined ELEMENT_OPENMP)
-!$omp parallel do private(k,i,j,Qt)
-#endif
-        do k=1,nlev
-           do j=1,np
-              do i=1,np
-                 Qt = elem(ie)%state%Q(i,j,k,1) 
-                 T_v(i,j,k) = Virtual_Temperature(elem(ie)%state%T(i,j,k,n0),Qt)
-                 if (use_cpstar==1) then
-                    kappa_star(i,j,k) =  Rgas/Virtual_Specific_Heat(Qt)
-                 else
-                    kappa_star(i,j,k) = kappa
-                 endif
-              end do
-           end do
-        end do
-     else
+     !if ( moisture /= "dry") then
+     if (qn0 == -1 ) then
 #if (defined ELEMENT_OPENMP)
 !$omp parallel do private(k,i,j)
 #endif
@@ -2360,6 +2364,24 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
               do i=1,np
                  T_v(i,j,k) = elem(ie)%state%T(i,j,k,n0)
                  kappa_star(i,j,k) = kappa
+              end do
+           end do
+        end do
+     else
+#if (defined ELEMENT_OPENMP)
+!$omp parallel do private(k,i,j,Qt)
+#endif
+        do k=1,nlev
+           do j=1,np
+              do i=1,np
+                 ! Qt = elem(ie)%state%Q(i,j,k,1) 
+                 Qt = elem(ie)%state%Qdp(i,j,k,1,qn0)/dp(i,j,k)
+                 T_v(i,j,k) = Virtual_Temperature(elem(ie)%state%T(i,j,k,n0),Qt)
+                 if (use_cpstar==1) then
+                    kappa_star(i,j,k) =  Rgas/Virtual_Specific_Heat(Qt)
+                 else
+                    kappa_star(i,j,k) = kappa
+                 endif
               end do
            end do
         end do
