@@ -1713,7 +1713,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
         do ie=nets,nete
            
 #if (defined ELEMENT_OPENMP)
-!$omp parallel do private(k,lap_p,lap_v,deriv,i,j)
+!$omp parallel do private(k,lap_t,lap_v,deriv,i,j)
 #endif
            do k=1,nlev
               lap_t=laplace_sphere_wk(elem(ie)%state%T(:,:,k,nt),deriv,elem(ie),var_coef=.false.)
@@ -2283,9 +2283,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      ! ============================
      ! compute p and delta p
      ! ============================
-#if (defined ELEMENT_OPENMP)
-!$omp parallel do private(k,i,j)
-#endif
+!#if (defined ELEMENT_OPENMP)
+!!$omp parallel do private(k,i,j)
+!#endif
 !     do k=1,nlev+1
 !       ph(:,:,k)   = hvcoord%hyai(k)*hvcoord%ps0 + hvcoord%hybi(k)*elem(ie)%state%ps_v(:,:,n0)
 !     end do
