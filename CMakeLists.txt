@@ -1,4 +1,4 @@
-PROJECT(HOMME C CXX Fortran)
+PROJECT(HOMME C Fortran)
 
 ENABLE_LANGUAGE(Fortran) 
 INCLUDE(FortranCInterface)
@@ -7,7 +7,6 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8.5)
 
 # CTest For Nightly Builds
 OPTION(HOMME_USE_CTEST FALSE)
-
 IF (${HOMME_USE_CTEST})
   INCLUDE(CTest)
 ENDIF ()
@@ -17,7 +16,6 @@ ENABLE_TESTING()
 
 # Add the cmake/CMakeLists.txt file
 SET (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-
 
 # need to get the cmake_fortran_c_interface.h header
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR})
@@ -100,6 +98,20 @@ IF (${CG_ONLY})
   SET(BUILD_HOMME_PRIM  "" ON)
 ENDIF ()
 
+OPTION(HOMME_USE_CXX FALSE)
+OPTION(HOMME_USE_TRILINOS FALSE)
+
+# swim and prim executables require C++ compiler
+IF(${BUILD_HOMME_SWIM} OR ${BUILD_HOMME_PRIM})
+  SET (HOMME_USE_CXX TRUE)
+  SET (HOMME_USE_TRILINOS TRUE)
+ENDIF ()
+
+IF (${HOMME_USE_CXX})
+  MESSAGE(STATUS "This configuration of HOMME requires a C++ compiler")
+  ENABLE_LANGUAGE(CXX)
+ENDIF ()
+
 # Reference solution data
 IF(REFSOLN)
   MESSAGE(STATUS "Including option to read or write reference soln data...")
@@ -166,10 +178,33 @@ ELSE ()
   FIND_PACKAGE(Pnetcdf)
 ENDIF ()
 
-# swim and prim executables require trilinos
-IF(${BUILD_HOMME_SWIM} OR ${BUILD_HOMME_PRIM})
+IF (${HOMME_USE_TRILINOS})
+  MESSAGE(STATUS "This configuration of requires Trilinos")
   FIND_PACKAGE(Trilinos REQUIRED)
 ENDIF ()
+
+##############################################################################
+# Compiler test to see if the mpi compiler supports "use mpi"
+# Note 1) Although "use mpi" is part of the standard, many installs of MPI are
+#   incorrect and this doesn't work.
+# Note 2) Steve G. has pushed this exact fix into PIO, which is the only place
+#   that needs it. Once that code is in place this code will be deleted.
+TRY_COMPILE(MPIMOD_SUCCESS 
+            ${CMAKE_BINARY_DIR}/compiler_test/ ${CMAKE_CURRENT_SOURCE_DIR}/cmake/mpiModTest.f90
+            OUTPUT_VARIABLE COMPILE_OUTPUT)
+IF (${MPIMOD_SUCCESS})
+  SET(PIO_USE_MPIMOD TRUE)
+  MESSAGE(STATUS "MPI Fortran \"use\" mpi module available.")
+ELSE()
+  SET(PIO_USE_MPIMOD FALSE)
+  MESSAGE(STATUS "MPI Fortran \"use\" mpi module not available.")
+ENDIF()
+##############################################################################
+IF (NOT PIO_USE_MPIMOD)
+  ADD_DEFINITIONS(-DNO_MPIMOD)
+ENDIF()
+##############################################################################
+
 
 ADD_SUBDIRECTORY(utils/pio)
 ADD_SUBDIRECTORY(utils/timing)

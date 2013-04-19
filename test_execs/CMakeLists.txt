@@ -99,6 +99,10 @@ ADD_TEST(submitAndRunTests ${CMAKE_BINARY_DIR}/tests/submit_tests.sh "all")
 ADD_CUSTOM_TARGET(check 
                   COMMAND ${CMAKE_CTEST_COMMAND} "--output-on-failure")
 
+# Force cprnc to be built when make check is run
+ADD_DEPENDENCIES(check cprnc)
+
+# Create a target for making the reference data
 ADD_CUSTOM_TARGET(baseline
          COMMAND ${CMAKE_BINARY_DIR}/tests/submit_tests.sh "baseline")
 
