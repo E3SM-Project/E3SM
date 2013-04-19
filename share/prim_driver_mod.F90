@@ -1620,7 +1620,7 @@ contains
     use hybvcoord_mod, only : hvcoord_t
     use physical_constants, only : Cp 
     use time_mod, only : timelevel_t
-    use control_mod, only : use_cpstar
+    use control_mod, only : use_cpstar, energy_fixer
     use hybvcoord_mod, only : hvcoord_t
     use global_norms_mod, only: wrap_repro_sum
     use parallel_mod, only : abortmp
@@ -1646,9 +1646,16 @@ contains
     real (kind=real_kind),save :: de_from_forcing_step1
     real (kind=real_kind)      :: de_from_forcing
 
+    logical :: ftype0_adjustment = .false.
+
+
     t2=tl%np1    ! timelevel for T
     if (use_cpstar /= 0 ) then
        call abortmp('Energy fixer requires use_cpstar=0')
+    endif
+
+    if (energy_fixer==2 .and. compute_energy_forcing) then
+       ftype0_adjustment = .true.
     endif
 
 
@@ -1700,7 +1707,7 @@ contains
     enddo
 
     nmax=3
-    if (compute_energy_forcing) nmax=4
+    if (ftype0_adjustment) nmax=4
 
     do ie=nets,nete
        do n=1,nmax
@@ -1715,7 +1722,7 @@ contains
     beta = ( psum_g(1)-psum_g(2) )/psum_g(3)
 
     ! apply adjustment when forcing applied in RHS
-    if (compute_energy_forcing) then
+    if (ftype0_adjustment) then
        de_from_forcing = psum_g(1)-psum_g(4)
        if (nsubstep==1) then
           de_from_forcing_step1 = de_from_forcing
