@@ -16,9 +16,13 @@
  */ /*! \page install Installing PIO
 
 <ol>
-<li>Download the code from the following Google code subversion location:
+<li>Download the code from the following Google code subversion location using either a subversion export:
 
-> http://parallelio.googlecode.com/svn/trunk/
+> svn export https://parallelio.googlecode.com/svn/trunk/
+
+or downloading a tagged zip file from:
+
+> https://code.google.com/p/parallelio/downloads/list
 </li>
 
 <li>Configure - PIO uses the gnu autoconf tools, for historical reasons the configure

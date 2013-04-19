@@ -32,6 +32,7 @@ Although PIO has a binary output capability the focus of development has been on
 use the NetCDF file format.   
 
 This user's guide provides information about the PIO library and examples on how it can be used. 
+Please review the ChangeLog that is included with the distribution for up-to-date release information.
 
  - \ref intro
  - \ref install
