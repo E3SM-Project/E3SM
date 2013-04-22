@@ -1204,15 +1204,15 @@ contains
 
 #ifdef _PNETCDF
        case(pio_iotype_pnetcdf)
-          ierr=nfmpi_inq_dimid(File%fh,name,dimid)
+          ierr=nfmpi_inq_dimid(File%fh,name(1:nlen),dimid)
 #endif
 
 #ifdef _NETCDF
        case (pio_iotype_netcdf4c, pio_iotype_netcdf4p)
-             ierr=nf90_inq_dimid(File%fh,name,dimid)
+             ierr=nf90_inq_dimid(File%fh,name(1:nlen),dimid)
        case(pio_iotype_netcdf)
           if (ios%io_rank==0) then
-             ierr=nf90_inq_dimid(File%fh,name,dimid)
+             ierr=nf90_inq_dimid(File%fh,name(1:nlen),dimid)
           endif
           if(.not. ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
              call MPI_BCAST(dimid,1,MPI_INTEGER,0,ios%IO_comm, mpierr)
@@ -1227,8 +1227,7 @@ contains
     endif
 
     if(Debug .or. Debugasync) print *,__PIO_FILE__,__LINE__,file%fh, &
-      name, dimid, ios%async_interface, ios%iomaster, &
-      ios%my_comm,ios%intercomm, ierr
+      name, dimid, ierr
     call check_netcdf(File, ierr,__PIO_FILE__,__LINE__)
 
     if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
@@ -1541,14 +1540,15 @@ contains
     ios => file%iosystem
     nlen = len_trim(name)
     if(ios%async_interface) then
+       if(Debugasync) print *,__PIO_FILE__,__LINE__
        if( .not. ios%ioproc) then
           if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
-          if(Debugasync) print *,__PIO_FILE__,__LINE__,file%fh
           call mpi_bcast(file%fh, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
        end if
        call mpi_bcast(len, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
        call mpi_bcast(nlen, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
        call mpi_bcast(name, nlen, mpi_character, ios%compmaster, ios%intercomm, ierr)
+       if(Debugasync) print *,__PIO_FILE__,__LINE__,file%fh, name(1:nlen)
     end if
        
     if(ios%IOproc) then

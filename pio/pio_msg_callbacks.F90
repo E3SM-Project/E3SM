@@ -89,7 +89,7 @@ subroutine freedecomp_handler(iosystem)
   type(io_desc_t), pointer :: iodesc
   integer :: async_id, ierr
 
-
+  async_id=-1
   call mpi_bcast(async_id, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
   iodesc=>delete_from_iodesc_list(async_id)
   call pio_freedecomp(iosystem, iodesc)

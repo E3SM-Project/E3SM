@@ -3575,13 +3575,16 @@ contains
 #ifdef TIMING
     call t_startf("pio_put_vara_1d_text")
 #endif 
+    ndims=0
     ierr=0
     iotype = File%iotype 
     ios=>File%iosystem
-    xlen=1
+    xlen = len(ival)
     if(.not. ios%async_interface .or. .not. ios%ioproc ) then
        ierr = pio_inq_varndims(File, varid, ndims)
     end if
+
+
     if(ios%async_interface .and. .not. ios%ioproc ) then
        msg=PIO_MSG_PUTVARA_1d
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
@@ -3599,7 +3602,6 @@ contains
        end do
        call MPI_BCAST(dims,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 #endif
-       xlen = len(ival)
        call MPI_BCAST(xlen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
     endif
 
@@ -3607,6 +3609,7 @@ contains
        call MPI_BCAST(ndims,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(ival,xlen*size(ival),MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
     end if
+
 
 
     
@@ -3693,13 +3696,16 @@ contains
 #ifdef TIMING
     call t_startf("pio_put_vara_2d_text")
 #endif 
+    ndims=0
     ierr=0
     iotype = File%iotype 
     ios=>File%iosystem
-    xlen=1
+    xlen = len(ival)
     if(.not. ios%async_interface .or. .not. ios%ioproc ) then
        ierr = pio_inq_varndims(File, varid, ndims)
     end if
+
+
     if(ios%async_interface .and. .not. ios%ioproc ) then
        msg=PIO_MSG_PUTVARA_2d
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
@@ -3717,7 +3723,6 @@ contains
        end do
        call MPI_BCAST(dims,2,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 #endif
-       xlen = len(ival)
        call MPI_BCAST(xlen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
     endif
 
@@ -3725,6 +3730,7 @@ contains
        call MPI_BCAST(ndims,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(ival,xlen*size(ival),MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
     end if
+
 
 
     
@@ -3811,13 +3817,16 @@ contains
 #ifdef TIMING
     call t_startf("pio_put_vara_3d_text")
 #endif 
+    ndims=0
     ierr=0
     iotype = File%iotype 
     ios=>File%iosystem
-    xlen=1
+    xlen = len(ival)
     if(.not. ios%async_interface .or. .not. ios%ioproc ) then
        ierr = pio_inq_varndims(File, varid, ndims)
     end if
+
+
     if(ios%async_interface .and. .not. ios%ioproc ) then
        msg=PIO_MSG_PUTVARA_3d
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
@@ -3835,7 +3844,6 @@ contains
        end do
        call MPI_BCAST(dims,3,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 #endif
-       xlen = len(ival)
        call MPI_BCAST(xlen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
     endif
 
@@ -3843,6 +3851,7 @@ contains
        call MPI_BCAST(ndims,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(ival,xlen*size(ival),MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
     end if
+
 
 
     
@@ -3929,13 +3938,16 @@ contains
 #ifdef TIMING
     call t_startf("pio_put_vara_4d_text")
 #endif 
+    ndims=0
     ierr=0
     iotype = File%iotype 
     ios=>File%iosystem
-    xlen=1
+    xlen = len(ival)
     if(.not. ios%async_interface .or. .not. ios%ioproc ) then
        ierr = pio_inq_varndims(File, varid, ndims)
     end if
+
+
     if(ios%async_interface .and. .not. ios%ioproc ) then
        msg=PIO_MSG_PUTVARA_4d
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
@@ -3953,7 +3965,6 @@ contains
        end do
        call MPI_BCAST(dims,4,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 #endif
-       xlen = len(ival)
        call MPI_BCAST(xlen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
     endif
 
@@ -3961,6 +3972,7 @@ contains
        call MPI_BCAST(ndims,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(ival,xlen*size(ival),MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
     end if
+
 
 
     
@@ -4047,13 +4059,16 @@ contains
 #ifdef TIMING
     call t_startf("pio_put_vara_5d_text")
 #endif 
+    ndims=0
     ierr=0
     iotype = File%iotype 
     ios=>File%iosystem
-    xlen=1
+    xlen = len(ival)
     if(.not. ios%async_interface .or. .not. ios%ioproc ) then
        ierr = pio_inq_varndims(File, varid, ndims)
     end if
+
+
     if(ios%async_interface .and. .not. ios%ioproc ) then
        msg=PIO_MSG_PUTVARA_5d
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
@@ -4071,7 +4086,6 @@ contains
        end do
        call MPI_BCAST(dims,5,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 #endif
-       xlen = len(ival)
        call MPI_BCAST(xlen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
     endif
 
@@ -4079,6 +4093,7 @@ contains
        call MPI_BCAST(ndims,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(ival,xlen*size(ival),MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
     end if
+
 
 
     
@@ -4148,7 +4163,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 709 "pionfput_mod.F90.in"
+# 712 "pionfput_mod.F90.in"
   integer function put_vara_1d_int (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -4263,7 +4278,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 709 "pionfput_mod.F90.in"
+# 712 "pionfput_mod.F90.in"
   integer function put_vara_2d_int (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -4378,7 +4393,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 709 "pionfput_mod.F90.in"
+# 712 "pionfput_mod.F90.in"
   integer function put_vara_3d_int (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -4493,7 +4508,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 709 "pionfput_mod.F90.in"
+# 712 "pionfput_mod.F90.in"
   integer function put_vara_4d_int (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -4608,7 +4623,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 709 "pionfput_mod.F90.in"
+# 712 "pionfput_mod.F90.in"
   integer function put_vara_5d_int (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -4723,7 +4738,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 709 "pionfput_mod.F90.in"
+# 712 "pionfput_mod.F90.in"
   integer function put_vara_1d_real (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -4838,7 +4853,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 709 "pionfput_mod.F90.in"
+# 712 "pionfput_mod.F90.in"
   integer function put_vara_2d_real (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -4953,7 +4968,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 709 "pionfput_mod.F90.in"
+# 712 "pionfput_mod.F90.in"
   integer function put_vara_3d_real (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -5068,7 +5083,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 709 "pionfput_mod.F90.in"
+# 712 "pionfput_mod.F90.in"
   integer function put_vara_4d_real (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -5183,7 +5198,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 709 "pionfput_mod.F90.in"
+# 712 "pionfput_mod.F90.in"
   integer function put_vara_5d_real (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -5298,7 +5313,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 709 "pionfput_mod.F90.in"
+# 712 "pionfput_mod.F90.in"
   integer function put_vara_1d_double (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -5413,7 +5428,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 709 "pionfput_mod.F90.in"
+# 712 "pionfput_mod.F90.in"
   integer function put_vara_2d_double (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -5528,7 +5543,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 709 "pionfput_mod.F90.in"
+# 712 "pionfput_mod.F90.in"
   integer function put_vara_3d_double (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -5643,7 +5658,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 709 "pionfput_mod.F90.in"
+# 712 "pionfput_mod.F90.in"
   integer function put_vara_4d_double (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -5758,7 +5773,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 709 "pionfput_mod.F90.in"
+# 712 "pionfput_mod.F90.in"
   integer function put_vara_5d_double (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -5873,7 +5888,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 823 "pionfput_mod.F90.in"
+# 826 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_1d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5898,7 +5913,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 823 "pionfput_mod.F90.in"
+# 826 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_2d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5923,7 +5938,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 823 "pionfput_mod.F90.in"
+# 826 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_3d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5948,7 +5963,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 823 "pionfput_mod.F90.in"
+# 826 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_4d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5973,7 +5988,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 823 "pionfput_mod.F90.in"
+# 826 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_5d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5998,7 +6013,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 823 "pionfput_mod.F90.in"
+# 826 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_1d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6023,7 +6038,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 823 "pionfput_mod.F90.in"
+# 826 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_2d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6048,7 +6063,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 823 "pionfput_mod.F90.in"
+# 826 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_3d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6073,7 +6088,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 823 "pionfput_mod.F90.in"
+# 826 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_4d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6098,7 +6113,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 823 "pionfput_mod.F90.in"
+# 826 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_5d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6123,7 +6138,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 823 "pionfput_mod.F90.in"
+# 826 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_1d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6148,7 +6163,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 823 "pionfput_mod.F90.in"
+# 826 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_2d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6173,7 +6188,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 823 "pionfput_mod.F90.in"
+# 826 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_3d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6198,7 +6213,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 823 "pionfput_mod.F90.in"
+# 826 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_4d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6223,7 +6238,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 823 "pionfput_mod.F90.in"
+# 826 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_5d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6248,7 +6263,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 823 "pionfput_mod.F90.in"
+# 826 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_1d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6273,7 +6288,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 823 "pionfput_mod.F90.in"
+# 826 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_2d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6298,7 +6313,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 823 "pionfput_mod.F90.in"
+# 826 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_3d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6323,7 +6338,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 823 "pionfput_mod.F90.in"
+# 826 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_4d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6348,7 +6363,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 823 "pionfput_mod.F90.in"
+# 826 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_5d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc

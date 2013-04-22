@@ -130,14 +130,15 @@ contains
     call t_startf('pio_msg_mod')
 #endif
     if(iorank==0) then
+       req(:) = MPI_REQUEST_NULL
        do index=1,numcomps
           ios=>iosystem(index)
-          if(ios%io_rank==0) then
+          if(ios%io_comm .ne. mpi_comm_null) then
              call mpi_irecv(msg, 1, mpi_integer, ios%comproot, 1, ios%union_comm, req(index), ierr)       
           end if
        enddo
     end if
-    do while(msg /= pio_msg_exit)
+    do while(msg /= -1)
        if(iorank==0) then
           if(Debugasync) print *,__PIO_FILE__,__LINE__, ' waiting'
           call mpi_waitany(numcomps, req, index, status, ierr)
@@ -149,9 +150,8 @@ contains
 
        if(Debugasync) print *,__PIO_FILE__,__LINE__, index, ios%intercomm
        call mpi_bcast(msg, 1, mpi_integer, 0, io_comm, ierr)
-       if(Debugasync) print *,__PIO_FILE__,__LINE__,msg
 
-
+       if(debugasync) print *,__PIO_FILE__,__LINE__, msg ,' recieved on ', index
        select case(msg) 
        case (PIO_MSG_CREATE_FILE)
           call create_file_handler(ios)
@@ -224,17 +224,18 @@ contains
        case (PIO_MSG_PUTATT_1D)
           call att_1d_handler(ios, msg)          
        case (PIO_MSG_FREEDECOMP)
-          call freedecomp_handler(ios, msg)
+          call freedecomp_handler(ios)
        case (PIO_MSG_EXIT)
-          call finalize_handler(ios)
           print *,'PIO Exiting'
+!          call mpi_barrier(ios%io_comm,ierr)
+          call finalize_handler(ios)
+          exit
        case default
           call pio_callback_handler(ios,msg)
        end select   
        if(iorank==0) then
           call mpi_irecv(msg, 1, mpi_integer, ios%comproot, 1, ios%union_comm, req(index), ierr)
        end if
-
     end do
 
 #ifdef TIMING
@@ -319,7 +320,6 @@ contains
     nullify(previtem)
     do while(associated(list_item%iodesc) )
        if(abs(list_item%iodesc%async_id) == id) then
-    if(debugasync) print *,__FILE__,__LINE__,id,list_item%index
           iodesc=>list_item%iodesc
           iodesc%async_id=-1
           nullify(list_item%iodesc)
@@ -349,7 +349,15 @@ contains
           previtem=>list_item
           list_item=>list_item%next
        else
-          call piodie(__PIO_FILE__,__LINE__)
+          if(debugasync) then
+             list_item=> top_iodesc
+             do while(associated(list_item))
+                print *,__FILE__,__LINE__,id,list_item%index,list_item%iodesc%async_id
+                list_item=>list_item%next
+             enddo
+          endif
+
+          call piodie(__PIO_FILE__,__LINE__,'delete_from_iodesc_list',id)
        end if
     end do
 
@@ -381,7 +389,7 @@ contains
           previtem=>list_item
           list_item=>list_item%next
        else
-          call piodie(__PIO_FILE__,__LINE__)
+          call piodie(__PIO_FILE__,__LINE__,'delete_from_file_list')
        end if
     end do
 

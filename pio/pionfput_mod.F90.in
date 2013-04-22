@@ -605,13 +605,16 @@ contains
 #ifdef TIMING
     call t_startf("pio_put_vara_{DIMS}d_text")
 #endif 
+    ndims=0
     ierr=0
     iotype = File%iotype 
     ios=>File%iosystem
-    xlen=1
+    xlen = len(ival)
     if(.not. ios%async_interface .or. .not. ios%ioproc ) then
        ierr = pio_inq_varndims(File, varid, ndims)
     end if
+
+
     if(ios%async_interface .and. .not. ios%ioproc ) then
        msg=PIO_MSG_PUTVARA_{DIMS}d
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
@@ -629,14 +632,14 @@ contains
        end do
        call MPI_BCAST(dims,{DIMS},MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 #endif
-       xlen = len(ival)
        call MPI_BCAST(xlen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
     endif
 
     if(ios%async_interface ) then    
        call MPI_BCAST(ndims,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(ival,xlen*size(ival),{MPITYPE},ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(ival,xlen*size(ival),MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
     end if
+
 
 
     

@@ -121,8 +121,7 @@ SRCS_CPP=
 %.f90 : %.F90
 	$(CPP) $< -o  $@
 
-
-$(TEMPSRCFC): $(TEMPLATE_FC)
+$(TEMPSRCFC): 
 	$(PERL) $(GENF90)/genf90.pl $< > $*.F90
 
 

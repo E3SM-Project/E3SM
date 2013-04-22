@@ -190,6 +190,7 @@ subroutine box_rearrange_comp2io_real (IOsystem, ioDesc, s1, src, niodof, &
 
 
 #ifdef _MPISERIAL
+  integer :: num_tasks, ioproc, ioindex, s2
   ndof= iodesc%ndof
   num_tasks   = IOsystem%num_tasks
   num_iotasks = IOsystem%num_iotasks
@@ -462,6 +463,7 @@ subroutine box_rearrange_comp2io_double (IOsystem, ioDesc, s1, src, niodof, &
 
 
 #ifdef _MPISERIAL
+  integer :: num_tasks, ioproc, ioindex, s2
   ndof= iodesc%ndof
   num_tasks   = IOsystem%num_tasks
   num_iotasks = IOsystem%num_iotasks
@@ -734,6 +736,7 @@ subroutine box_rearrange_comp2io_int (IOsystem, ioDesc, s1, src, niodof, &
 
 
 #ifdef _MPISERIAL
+  integer :: num_tasks, ioproc, ioindex, s2
   ndof= iodesc%ndof
   num_tasks   = IOsystem%num_tasks
   num_iotasks = IOsystem%num_iotasks
@@ -950,7 +953,7 @@ subroutine box_rearrange_comp2io_int (IOsystem, ioDesc, s1, src, niodof, &
 end subroutine box_rearrange_comp2io_int
 
 ! TYPE real,double,int
-# 393 "box_rearrange.F90.in"
+# 394 "box_rearrange.F90.in"
 subroutine box_rearrange_io2comp_real (IOsystem,ioDesc,s1, iobuf,s2, compbuf, &
                                          comm_option, fc_options)
   implicit none
@@ -999,6 +1002,7 @@ subroutine box_rearrange_io2comp_real (IOsystem,ioDesc,s1, iobuf,s2, compbuf, &
   integer,pointer :: rreq(:)      ! receive requests for comp procs
  
 #ifdef _MPISERIAL
+  integer :: num_tasks, ioproc, ioindex
   ! begin
   compbuf(:) = 0
   ndof   = iodesc%ndof
@@ -1209,7 +1213,7 @@ subroutine box_rearrange_io2comp_real (IOsystem,ioDesc,s1, iobuf,s2, compbuf, &
 end subroutine box_rearrange_io2comp_real
 
 ! TYPE real,double,int
-# 393 "box_rearrange.F90.in"
+# 394 "box_rearrange.F90.in"
 subroutine box_rearrange_io2comp_double (IOsystem,ioDesc,s1, iobuf,s2, compbuf, &
                                          comm_option, fc_options)
   implicit none
@@ -1258,6 +1262,7 @@ subroutine box_rearrange_io2comp_double (IOsystem,ioDesc,s1, iobuf,s2, compbuf, 
   integer,pointer :: rreq(:)      ! receive requests for comp procs
  
 #ifdef _MPISERIAL
+  integer :: num_tasks, ioproc, ioindex
   ! begin
   compbuf(:) = 0
   ndof   = iodesc%ndof
@@ -1468,7 +1473,7 @@ subroutine box_rearrange_io2comp_double (IOsystem,ioDesc,s1, iobuf,s2, compbuf, 
 end subroutine box_rearrange_io2comp_double
 
 ! TYPE real,double,int
-# 393 "box_rearrange.F90.in"
+# 394 "box_rearrange.F90.in"
 subroutine box_rearrange_io2comp_int (IOsystem,ioDesc,s1, iobuf,s2, compbuf, &
                                          comm_option, fc_options)
   implicit none
@@ -1517,6 +1522,7 @@ subroutine box_rearrange_io2comp_int (IOsystem,ioDesc,s1, iobuf,s2, compbuf, &
   integer,pointer :: rreq(:)      ! receive requests for comp procs
  
 #ifdef _MPISERIAL
+  integer :: num_tasks, ioproc, ioindex
   ! begin
   compbuf(:) = 0
   ndof   = iodesc%ndof
@@ -1733,7 +1739,7 @@ end subroutine box_rearrange_io2comp_int
   !   find the rank in union_comm of the ith io processor
   !
 
-# 657 "box_rearrange.F90.in"
+# 659 "box_rearrange.F90.in"
   integer function find_io_comprank( Iosystem, ioprocindex )
     implicit none
 
@@ -1750,7 +1756,7 @@ end subroutine box_rearrange_io2comp_int
   !   find global xyz coordinates given a global index
   !
 
-# 673 "box_rearrange.F90.in"
+# 675 "box_rearrange.F90.in"
   subroutine gindex_to_coord( gindex, gstride, ndim, gcoord )
     implicit none
     integer(kind=pio_offset),intent(in) :: gindex           ! 0-based global index
@@ -1787,7 +1793,7 @@ end subroutine box_rearrange_io2comp_int
   !   and 1-based index for that ioproc's iobuf          '
   !
 
-# 709 "box_rearrange.F90.in"
+# 711 "box_rearrange.F90.in"
   logical function find_ioproc( gcoord, lb, ub, lstride, ndim, nioproc, &
        io_proc, io_index )
     implicit none
@@ -1869,7 +1875,7 @@ end subroutine box_rearrange_io2comp_int
   !
   !
 
-# 790 "box_rearrange.F90.in"
+# 792 "box_rearrange.F90.in"
   subroutine compute_dest(compdof, start, kount, gsize, ndim, nioproc, &
                           dest_ioproc, dest_ioindex                    )
     implicit none
@@ -1980,7 +1986,7 @@ end subroutine box_rearrange_io2comp_int
 !! this space should be freed in box_rearrange_free
 !!
 !<
-# 900 "box_rearrange.F90.in"
+# 902 "box_rearrange.F90.in"
   subroutine box_rearrange_create(Iosystem, compdof, gsize, ndim, &
                                   nioproc, ioDesc)
 
@@ -2134,7 +2140,7 @@ end subroutine box_rearrange_io2comp_int
 !! @brief Define comp <-> IO communications patterns
 !!
 !<
-# 1053 "box_rearrange.F90.in"
+# 1055 "box_rearrange.F90.in"
   subroutine compute_counts(Iosystem, ioDesc, niodof)
     
     use calcdisplace_mod, only : calcdisplace,GCDblocksize,gcd
@@ -2658,7 +2664,7 @@ end subroutine box_rearrange_io2comp_int
 !!
 !<
 
-# 1576 "box_rearrange.F90.in"
+# 1578 "box_rearrange.F90.in"
   subroutine box_rearrange_free(Iosystem,ioDesc)
     implicit none
 

@@ -2191,10 +2191,12 @@ contains
 #ifndef _MPISERIAL
      if(iosystem%info .ne. mpi_info_null) then 
         call mpi_info_free(iosystem%info,ierr) 
+        iosystem%info=mpi_info_null
         !print *,'IAM: ',iosystem%comp_rank, ' finalize (1) error = ', ierr
      endif
      if(iosystem%io_comm .ne. mpi_comm_null) then 
         call mpi_comm_free(iosystem%io_comm,ierr)
+        iosystem%io_comm=mpi_comm_null
         !print *,'IAM: ',iosystem%comp_rank, ' finalize (2) error = ', ierr
      endif
 #endif
@@ -2681,6 +2683,7 @@ contains
 !! @param file @copydoc file_desc_t
 !<
   subroutine syncfile(file)
+    use piodarray, only : darray_write_complete
     implicit none
     type (file_desc_t), target :: file
     integer :: ierr, msg
@@ -2699,6 +2702,7 @@ contains
 
     select case(file%iotype)
     case( pio_iotype_pnetcdf, pio_iotype_netcdf)
+       call darray_write_complete(file)
        ierr = sync_nf(file)
     case(pio_iotype_pbinary, pio_iotype_direct_pbinary)
     case(pio_iotype_binary) 
@@ -2723,8 +2727,11 @@ contains
        if(ios%comp_rank==0) then
           call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        end if
+       call MPI_Barrier(ios%comp_comm,ierr)
        call mpi_bcast(iodesc%async_id,1, mpi_integer, ios%compmaster,ios%intercomm, ierr)
     end if
+    call MPI_Barrier(ios%union_comm,ierr)
+
     iodesc%async_id=-1
     call rearrange_free(ios,iodesc)
 

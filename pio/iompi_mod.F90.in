@@ -19,7 +19,7 @@ module iompi_mod
 #ifndef NO_C_SIZEOF 
   use iso_c_binding, only : c_sizeof  ! _EXTERNAL
 #else 
-#define c_sizeof sizeof
+#define c_sizeof(x)  size(transfer (x, xxx_sizeof_data))
 #endif
 
 #ifndef NO_MPIMOD
@@ -33,6 +33,9 @@ module iompi_mod
   include 'mpif.h'        ! _EXTERNAL
 #endif
   public :: open_mpiio, create_mpiio, close_mpiio, write_mpiio,read_mpiio
+#if defined(NO_C_SIZEOF)
+  character, private :: xxx_sizeof_data(32)
+#endif
 
 !>
 !! @private

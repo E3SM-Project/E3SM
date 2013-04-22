@@ -25,8 +25,11 @@ module piodarray
 #ifndef NO_C_SIZEOF
   use iso_c_binding, only : c_sizeof  ! _EXTERNAL
 #else
-#define c_sizeof sizeof
+#define c_sizeof(x)  size(transfer (x, xxx_sizeof_data))
 #endif
+
+
+
 
 #ifdef _COMPRESSION
   use piovdc
@@ -43,12 +46,17 @@ module piodarray
 #endif
   private
   public :: pio_read_darray, pio_write_darray, darray_write_complete, pio_set_buffer_size_limit
+
+#if defined(NO_C_SIZEOF)
+  character, private :: xxx_sizeof_data(32)
+#endif
+
   
 !> 
 !! @defgroup PIO_write_darray PIO_write_darray
 !! @brief The overloaded PIO_write_darray writes a distributed array to disk.
 !<
-# 46 "piodarray.F90.in"
+# 54 "piodarray.F90.in"
   interface PIO_write_darray
 ! TYPE real,int,double
 ! DIMS 1,2,3,4,5,6,7
@@ -118,10 +126,10 @@ module piodarray
 
 !> 
 !! @defgroup PIO_read_darray PIO_read_darray
-# 55 "piodarray.F90.in"
+# 63 "piodarray.F90.in"
 !! @brief The overloaded PIO_read_darray function reads a distributed array from disk.
 !<
-# 57 "piodarray.F90.in"
+# 65 "piodarray.F90.in"
   interface PIO_read_darray
 ! TYPE real,int,double
 ! DIMS 1,2,3,4,5,6,7
@@ -191,7 +199,7 @@ module piodarray
 !>
 !! @private
 !<
-# 66 "piodarray.F90.in"
+# 74 "piodarray.F90.in"
   interface add_data_to_buffer
 ! TYPE real,int,double
      module procedure add_data_to_buffer_real
@@ -202,9 +210,9 @@ module piodarray
   end interface
 
 #ifdef _COMPRESSION
-# 72 "piodarray.F90.in"
+# 80 "piodarray.F90.in"
   interface 
-# 73 "piodarray.F90.in"
+# 81 "piodarray.F90.in"
      subroutine WriteVDC2Var(iobuf, start, kount, iocomm, ts, lod, reflevel, iotasks, name ) bind(C)
        use, intrinsic :: iso_c_binding
        type(c_ptr), intent(in), value :: iobuf
@@ -213,9 +221,9 @@ module piodarray
        type(c_ptr), intent(in), value :: name
      end subroutine WriteVDC2Var
   end interface
-# 81 "piodarray.F90.in"
+# 89 "piodarray.F90.in"
   interface
-# 82 "piodarray.F90.in"
+# 90 "piodarray.F90.in"
      subroutine ReadVDC2Var(iobuf, start, kount, iocomm, ts, lod, reflevel, iotasks, name) bind(C)
        use, intrinsic :: iso_c_binding
        type(c_ptr), intent(in), value :: iobuf
@@ -234,10 +242,10 @@ module piodarray
 integer :: msize, rss, mshare, mtext, mstack, lastrss=0
 #endif
 
-# 100 "piodarray.F90.in"
+# 108 "piodarray.F90.in"
 contains
 
-# 102 "piodarray.F90.in"
+# 110 "piodarray.F90.in"
   subroutine pio_set_buffer_size_limit(limit)
     integer, intent(in) :: limit 
 
@@ -261,7 +269,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 125 "piodarray.F90.in"
+# 133 "piodarray.F90.in"
   subroutine write_darray_1d_real (File,varDesc,ioDesc, array, iostat, fillval)
     use pio_msg_mod, only : pio_msg_writedarray
     ! !DESCRIPTION:
@@ -289,6 +297,7 @@ contains
 
     integer(i4), intent(out) :: iostat
     integer :: msg, ierr
+    integer :: hasfill
 
     character(len=*), parameter :: subName=modName//'::write_darray_real'
 
@@ -307,10 +316,12 @@ contains
        if(debugasync) print *,__PIO_FILE__,__LINE__, MPI_REAL4
        
        if(present(fillval)) then
-          call mpi_bcast(1, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+          hasfill = 1
+          call mpi_bcast(hasfill, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
           call mpi_bcast(fillval, 1, MPI_REAL4, ios%compmaster, ios%intercomm, ierr)
        else
-          call mpi_bcast(0, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+          hasfill=0
+          call mpi_bcast(hasfill, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
        end if
        if(debugasync) print *,__PIO_FILE__,__LINE__
     endif
@@ -355,7 +366,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 125 "piodarray.F90.in"
+# 133 "piodarray.F90.in"
   subroutine write_darray_1d_int (File,varDesc,ioDesc, array, iostat, fillval)
     use pio_msg_mod, only : pio_msg_writedarray
     ! !DESCRIPTION:
@@ -383,6 +394,7 @@ contains
 
     integer(i4), intent(out) :: iostat
     integer :: msg, ierr
+    integer :: hasfill
 
     character(len=*), parameter :: subName=modName//'::write_darray_int'
 
@@ -401,10 +413,12 @@ contains
        if(debugasync) print *,__PIO_FILE__,__LINE__, MPI_INTEGER
        
        if(present(fillval)) then
-          call mpi_bcast(1, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+          hasfill = 1
+          call mpi_bcast(hasfill, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
           call mpi_bcast(fillval, 1, MPI_INTEGER, ios%compmaster, ios%intercomm, ierr)
        else
-          call mpi_bcast(0, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+          hasfill=0
+          call mpi_bcast(hasfill, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
        end if
        if(debugasync) print *,__PIO_FILE__,__LINE__
     endif
@@ -449,7 +463,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 125 "piodarray.F90.in"
+# 133 "piodarray.F90.in"
   subroutine write_darray_1d_double (File,varDesc,ioDesc, array, iostat, fillval)
     use pio_msg_mod, only : pio_msg_writedarray
     ! !DESCRIPTION:
@@ -477,6 +491,7 @@ contains
 
     integer(i4), intent(out) :: iostat
     integer :: msg, ierr
+    integer :: hasfill
 
     character(len=*), parameter :: subName=modName//'::write_darray_double'
 
@@ -495,10 +510,12 @@ contains
        if(debugasync) print *,__PIO_FILE__,__LINE__, MPI_REAL8
        
        if(present(fillval)) then
-          call mpi_bcast(1, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+          hasfill = 1
+          call mpi_bcast(hasfill, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
           call mpi_bcast(fillval, 1, MPI_REAL8, ios%compmaster, ios%intercomm, ierr)
        else
-          call mpi_bcast(0, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+          hasfill=0
+          call mpi_bcast(hasfill, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
        end if
        if(debugasync) print *,__PIO_FILE__,__LINE__
     endif
@@ -544,7 +561,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 219 "piodarray.F90.in"
+# 230 "piodarray.F90.in"
   subroutine write_darray_2d_real (File,varDesc,ioDesc, array, iostat, fillval)
     ! !INPUT PARAMETERS:
 
@@ -565,7 +582,23 @@ contains
     integer(i4), intent(out) :: iostat
     real(r4) :: transvar(1), dumbvar(0)
 
-# 239 "piodarray.F90.in"
+! This code is required due to a bug in gfortran 4.7.2
+#if (__GFORTRAN__) &&  (__GNUC__ == 4) && (__GNUC_MINOR__ < 8)
+    real(r4), allocatable :: acopy(:)
+    integer :: isize 
+
+    isize= size(array)
+    allocate(acopy(isize))
+    acopy = reshape(array,(/isize/))
+    if(present(fillval)) then
+       call write_darray_1d_real (File, varDesc, iodesc, acopy, iostat, fillval)
+    else
+       call write_darray_1d_real (File, varDesc, iodesc, acopy, iostat)
+    end if
+    deallocate(acopy)
+    return
+#else
+# 266 "piodarray.F90.in"
 ! cannot call transfer function with a 0 sized array
     if(size(array)==0) then
        call write_darray_1d_real (File, varDesc, iodesc, dumbvar, iostat)
@@ -574,7 +607,7 @@ contains
     else
        call write_darray_1d_real (File, varDesc, iodesc, transfer(array,transvar), iostat)
     end if
-
+#endif
   end subroutine write_darray_2d_real
 
 ! TYPE real,int,double
@@ -591,7 +624,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 219 "piodarray.F90.in"
+# 230 "piodarray.F90.in"
   subroutine write_darray_3d_real (File,varDesc,ioDesc, array, iostat, fillval)
     ! !INPUT PARAMETERS:
 
@@ -612,7 +645,23 @@ contains
     integer(i4), intent(out) :: iostat
     real(r4) :: transvar(1), dumbvar(0)
 
-# 239 "piodarray.F90.in"
+! This code is required due to a bug in gfortran 4.7.2
+#if (__GFORTRAN__) &&  (__GNUC__ == 4) && (__GNUC_MINOR__ < 8)
+    real(r4), allocatable :: acopy(:)
+    integer :: isize 
+
+    isize= size(array)
+    allocate(acopy(isize))
+    acopy = reshape(array,(/isize/))
+    if(present(fillval)) then
+       call write_darray_1d_real (File, varDesc, iodesc, acopy, iostat, fillval)
+    else
+       call write_darray_1d_real (File, varDesc, iodesc, acopy, iostat)
+    end if
+    deallocate(acopy)
+    return
+#else
+# 266 "piodarray.F90.in"
 ! cannot call transfer function with a 0 sized array
     if(size(array)==0) then
        call write_darray_1d_real (File, varDesc, iodesc, dumbvar, iostat)
@@ -621,7 +670,7 @@ contains
     else
        call write_darray_1d_real (File, varDesc, iodesc, transfer(array,transvar), iostat)
     end if
-
+#endif
   end subroutine write_darray_3d_real
 
 ! TYPE real,int,double
@@ -638,7 +687,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 219 "piodarray.F90.in"
+# 230 "piodarray.F90.in"
   subroutine write_darray_4d_real (File,varDesc,ioDesc, array, iostat, fillval)
     ! !INPUT PARAMETERS:
 
@@ -659,7 +708,23 @@ contains
     integer(i4), intent(out) :: iostat
     real(r4) :: transvar(1), dumbvar(0)
 
-# 239 "piodarray.F90.in"
+! This code is required due to a bug in gfortran 4.7.2
+#if (__GFORTRAN__) &&  (__GNUC__ == 4) && (__GNUC_MINOR__ < 8)
+    real(r4), allocatable :: acopy(:)
+    integer :: isize 
+
+    isize= size(array)
+    allocate(acopy(isize))
+    acopy = reshape(array,(/isize/))
+    if(present(fillval)) then
+       call write_darray_1d_real (File, varDesc, iodesc, acopy, iostat, fillval)
+    else
+       call write_darray_1d_real (File, varDesc, iodesc, acopy, iostat)
+    end if
+    deallocate(acopy)
+    return
+#else
+# 266 "piodarray.F90.in"
 ! cannot call transfer function with a 0 sized array
     if(size(array)==0) then
        call write_darray_1d_real (File, varDesc, iodesc, dumbvar, iostat)
@@ -668,7 +733,7 @@ contains
     else
        call write_darray_1d_real (File, varDesc, iodesc, transfer(array,transvar), iostat)
     end if
-
+#endif
   end subroutine write_darray_4d_real
 
 ! TYPE real,int,double
@@ -685,7 +750,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 219 "piodarray.F90.in"
+# 230 "piodarray.F90.in"
   subroutine write_darray_5d_real (File,varDesc,ioDesc, array, iostat, fillval)
     ! !INPUT PARAMETERS:
 
@@ -706,7 +771,23 @@ contains
     integer(i4), intent(out) :: iostat
     real(r4) :: transvar(1), dumbvar(0)
 
-# 239 "piodarray.F90.in"
+! This code is required due to a bug in gfortran 4.7.2
+#if (__GFORTRAN__) &&  (__GNUC__ == 4) && (__GNUC_MINOR__ < 8)
+    real(r4), allocatable :: acopy(:)
+    integer :: isize 
+
+    isize= size(array)
+    allocate(acopy(isize))
+    acopy = reshape(array,(/isize/))
+    if(present(fillval)) then
+       call write_darray_1d_real (File, varDesc, iodesc, acopy, iostat, fillval)
+    else
+       call write_darray_1d_real (File, varDesc, iodesc, acopy, iostat)
+    end if
+    deallocate(acopy)
+    return
+#else
+# 266 "piodarray.F90.in"
 ! cannot call transfer function with a 0 sized array
     if(size(array)==0) then
        call write_darray_1d_real (File, varDesc, iodesc, dumbvar, iostat)
@@ -715,7 +796,7 @@ contains
     else
        call write_darray_1d_real (File, varDesc, iodesc, transfer(array,transvar), iostat)
     end if
-
+#endif
   end subroutine write_darray_5d_real
 
 ! TYPE real,int,double
@@ -732,7 +813,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 219 "piodarray.F90.in"
+# 230 "piodarray.F90.in"
   subroutine write_darray_6d_real (File,varDesc,ioDesc, array, iostat, fillval)
     ! !INPUT PARAMETERS:
 
@@ -753,7 +834,23 @@ contains
     integer(i4), intent(out) :: iostat
     real(r4) :: transvar(1), dumbvar(0)
 
-# 239 "piodarray.F90.in"
+! This code is required due to a bug in gfortran 4.7.2
+#if (__GFORTRAN__) &&  (__GNUC__ == 4) && (__GNUC_MINOR__ < 8)
+    real(r4), allocatable :: acopy(:)
+    integer :: isize 
+
+    isize= size(array)
+    allocate(acopy(isize))
+    acopy = reshape(array,(/isize/))
+    if(present(fillval)) then
+       call write_darray_1d_real (File, varDesc, iodesc, acopy, iostat, fillval)
+    else
+       call write_darray_1d_real (File, varDesc, iodesc, acopy, iostat)
+    end if
+    deallocate(acopy)
+    return
+#else
+# 266 "piodarray.F90.in"
 ! cannot call transfer function with a 0 sized array
     if(size(array)==0) then
        call write_darray_1d_real (File, varDesc, iodesc, dumbvar, iostat)
@@ -762,7 +859,7 @@ contains
     else
        call write_darray_1d_real (File, varDesc, iodesc, transfer(array,transvar), iostat)
     end if
-
+#endif
   end subroutine write_darray_6d_real
 
 ! TYPE real,int,double
@@ -779,7 +876,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 219 "piodarray.F90.in"
+# 230 "piodarray.F90.in"
   subroutine write_darray_7d_real (File,varDesc,ioDesc, array, iostat, fillval)
     ! !INPUT PARAMETERS:
 
@@ -800,7 +897,23 @@ contains
     integer(i4), intent(out) :: iostat
     real(r4) :: transvar(1), dumbvar(0)
 
-# 239 "piodarray.F90.in"
+! This code is required due to a bug in gfortran 4.7.2
+#if (__GFORTRAN__) &&  (__GNUC__ == 4) && (__GNUC_MINOR__ < 8)
+    real(r4), allocatable :: acopy(:)
+    integer :: isize 
+
+    isize= size(array)
+    allocate(acopy(isize))
+    acopy = reshape(array,(/isize/))
+    if(present(fillval)) then
+       call write_darray_1d_real (File, varDesc, iodesc, acopy, iostat, fillval)
+    else
+       call write_darray_1d_real (File, varDesc, iodesc, acopy, iostat)
+    end if
+    deallocate(acopy)
+    return
+#else
+# 266 "piodarray.F90.in"
 ! cannot call transfer function with a 0 sized array
     if(size(array)==0) then
        call write_darray_1d_real (File, varDesc, iodesc, dumbvar, iostat)
@@ -809,7 +922,7 @@ contains
     else
        call write_darray_1d_real (File, varDesc, iodesc, transfer(array,transvar), iostat)
     end if
-
+#endif
   end subroutine write_darray_7d_real
 
 ! TYPE real,int,double
@@ -826,7 +939,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 219 "piodarray.F90.in"
+# 230 "piodarray.F90.in"
   subroutine write_darray_2d_int (File,varDesc,ioDesc, array, iostat, fillval)
     ! !INPUT PARAMETERS:
 
@@ -847,7 +960,23 @@ contains
     integer(i4), intent(out) :: iostat
     integer(i4) :: transvar(1), dumbvar(0)
 
-# 239 "piodarray.F90.in"
+! This code is required due to a bug in gfortran 4.7.2
+#if (__GFORTRAN__) &&  (__GNUC__ == 4) && (__GNUC_MINOR__ < 8)
+    integer(i4), allocatable :: acopy(:)
+    integer :: isize 
+
+    isize= size(array)
+    allocate(acopy(isize))
+    acopy = reshape(array,(/isize/))
+    if(present(fillval)) then
+       call write_darray_1d_int (File, varDesc, iodesc, acopy, iostat, fillval)
+    else
+       call write_darray_1d_int (File, varDesc, iodesc, acopy, iostat)
+    end if
+    deallocate(acopy)
+    return
+#else
+# 266 "piodarray.F90.in"
 ! cannot call transfer function with a 0 sized array
     if(size(array)==0) then
        call write_darray_1d_int (File, varDesc, iodesc, dumbvar, iostat)
@@ -856,7 +985,7 @@ contains
     else
        call write_darray_1d_int (File, varDesc, iodesc, transfer(array,transvar), iostat)
     end if
-
+#endif
   end subroutine write_darray_2d_int
 
 ! TYPE real,int,double
@@ -873,7 +1002,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 219 "piodarray.F90.in"
+# 230 "piodarray.F90.in"
   subroutine write_darray_3d_int (File,varDesc,ioDesc, array, iostat, fillval)
     ! !INPUT PARAMETERS:
 
@@ -894,7 +1023,23 @@ contains
     integer(i4), intent(out) :: iostat
     integer(i4) :: transvar(1), dumbvar(0)
 
-# 239 "piodarray.F90.in"
+! This code is required due to a bug in gfortran 4.7.2
+#if (__GFORTRAN__) &&  (__GNUC__ == 4) && (__GNUC_MINOR__ < 8)
+    integer(i4), allocatable :: acopy(:)
+    integer :: isize 
+
+    isize= size(array)
+    allocate(acopy(isize))
+    acopy = reshape(array,(/isize/))
+    if(present(fillval)) then
+       call write_darray_1d_int (File, varDesc, iodesc, acopy, iostat, fillval)
+    else
+       call write_darray_1d_int (File, varDesc, iodesc, acopy, iostat)
+    end if
+    deallocate(acopy)
+    return
+#else
+# 266 "piodarray.F90.in"
 ! cannot call transfer function with a 0 sized array
     if(size(array)==0) then
        call write_darray_1d_int (File, varDesc, iodesc, dumbvar, iostat)
@@ -903,7 +1048,7 @@ contains
     else
        call write_darray_1d_int (File, varDesc, iodesc, transfer(array,transvar), iostat)
     end if
-
+#endif
   end subroutine write_darray_3d_int
 
 ! TYPE real,int,double
@@ -920,7 +1065,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 219 "piodarray.F90.in"
+# 230 "piodarray.F90.in"
   subroutine write_darray_4d_int (File,varDesc,ioDesc, array, iostat, fillval)
     ! !INPUT PARAMETERS:
 
@@ -941,7 +1086,23 @@ contains
     integer(i4), intent(out) :: iostat
     integer(i4) :: transvar(1), dumbvar(0)
 
-# 239 "piodarray.F90.in"
+! This code is required due to a bug in gfortran 4.7.2
+#if (__GFORTRAN__) &&  (__GNUC__ == 4) && (__GNUC_MINOR__ < 8)
+    integer(i4), allocatable :: acopy(:)
+    integer :: isize 
+
+    isize= size(array)
+    allocate(acopy(isize))
+    acopy = reshape(array,(/isize/))
+    if(present(fillval)) then
+       call write_darray_1d_int (File, varDesc, iodesc, acopy, iostat, fillval)
+    else
+       call write_darray_1d_int (File, varDesc, iodesc, acopy, iostat)
+    end if
+    deallocate(acopy)
+    return
+#else
+# 266 "piodarray.F90.in"
 ! cannot call transfer function with a 0 sized array
     if(size(array)==0) then
        call write_darray_1d_int (File, varDesc, iodesc, dumbvar, iostat)
@@ -950,7 +1111,7 @@ contains
     else
        call write_darray_1d_int (File, varDesc, iodesc, transfer(array,transvar), iostat)
     end if
-
+#endif
   end subroutine write_darray_4d_int
 
 ! TYPE real,int,double
@@ -967,7 +1128,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 219 "piodarray.F90.in"
+# 230 "piodarray.F90.in"
   subroutine write_darray_5d_int (File,varDesc,ioDesc, array, iostat, fillval)
     ! !INPUT PARAMETERS:
 
@@ -988,7 +1149,23 @@ contains
     integer(i4), intent(out) :: iostat
     integer(i4) :: transvar(1), dumbvar(0)
 
-# 239 "piodarray.F90.in"
+! This code is required due to a bug in gfortran 4.7.2
+#if (__GFORTRAN__) &&  (__GNUC__ == 4) && (__GNUC_MINOR__ < 8)
+    integer(i4), allocatable :: acopy(:)
+    integer :: isize 
+
+    isize= size(array)
+    allocate(acopy(isize))
+    acopy = reshape(array,(/isize/))
+    if(present(fillval)) then
+       call write_darray_1d_int (File, varDesc, iodesc, acopy, iostat, fillval)
+    else
+       call write_darray_1d_int (File, varDesc, iodesc, acopy, iostat)
+    end if
+    deallocate(acopy)
+    return
+#else
+# 266 "piodarray.F90.in"
 ! cannot call transfer function with a 0 sized array
     if(size(array)==0) then
        call write_darray_1d_int (File, varDesc, iodesc, dumbvar, iostat)
@@ -997,7 +1174,7 @@ contains
     else
        call write_darray_1d_int (File, varDesc, iodesc, transfer(array,transvar), iostat)
     end if
-
+#endif
   end subroutine write_darray_5d_int
 
 ! TYPE real,int,double
@@ -1014,7 +1191,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 219 "piodarray.F90.in"
+# 230 "piodarray.F90.in"
   subroutine write_darray_6d_int (File,varDesc,ioDesc, array, iostat, fillval)
     ! !INPUT PARAMETERS:
 
@@ -1035,7 +1212,23 @@ contains
     integer(i4), intent(out) :: iostat
     integer(i4) :: transvar(1), dumbvar(0)
 
-# 239 "piodarray.F90.in"
+! This code is required due to a bug in gfortran 4.7.2
+#if (__GFORTRAN__) &&  (__GNUC__ == 4) && (__GNUC_MINOR__ < 8)
+    integer(i4), allocatable :: acopy(:)
+    integer :: isize 
+
+    isize= size(array)
+    allocate(acopy(isize))
+    acopy = reshape(array,(/isize/))
+    if(present(fillval)) then
+       call write_darray_1d_int (File, varDesc, iodesc, acopy, iostat, fillval)
+    else
+       call write_darray_1d_int (File, varDesc, iodesc, acopy, iostat)
+    end if
+    deallocate(acopy)
+    return
+#else
+# 266 "piodarray.F90.in"
 ! cannot call transfer function with a 0 sized array
     if(size(array)==0) then
        call write_darray_1d_int (File, varDesc, iodesc, dumbvar, iostat)
@@ -1044,7 +1237,7 @@ contains
     else
        call write_darray_1d_int (File, varDesc, iodesc, transfer(array,transvar), iostat)
     end if
-
+#endif
   end subroutine write_darray_6d_int
 
 ! TYPE real,int,double
@@ -1061,7 +1254,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 219 "piodarray.F90.in"
+# 230 "piodarray.F90.in"
   subroutine write_darray_7d_int (File,varDesc,ioDesc, array, iostat, fillval)
     ! !INPUT PARAMETERS:
 
@@ -1082,7 +1275,23 @@ contains
     integer(i4), intent(out) :: iostat
     integer(i4) :: transvar(1), dumbvar(0)
 
-# 239 "piodarray.F90.in"
+! This code is required due to a bug in gfortran 4.7.2
+#if (__GFORTRAN__) &&  (__GNUC__ == 4) && (__GNUC_MINOR__ < 8)
+    integer(i4), allocatable :: acopy(:)
+    integer :: isize 
+
+    isize= size(array)
+    allocate(acopy(isize))
+    acopy = reshape(array,(/isize/))
+    if(present(fillval)) then
+       call write_darray_1d_int (File, varDesc, iodesc, acopy, iostat, fillval)
+    else
+       call write_darray_1d_int (File, varDesc, iodesc, acopy, iostat)
+    end if
+    deallocate(acopy)
+    return
+#else
+# 266 "piodarray.F90.in"
 ! cannot call transfer function with a 0 sized array
     if(size(array)==0) then
        call write_darray_1d_int (File, varDesc, iodesc, dumbvar, iostat)
@@ -1091,7 +1300,7 @@ contains
     else
        call write_darray_1d_int (File, varDesc, iodesc, transfer(array,transvar), iostat)
     end if
-
+#endif
   end subroutine write_darray_7d_int
 
 ! TYPE real,int,double
@@ -1108,7 +1317,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 219 "piodarray.F90.in"
+# 230 "piodarray.F90.in"
   subroutine write_darray_2d_double (File,varDesc,ioDesc, array, iostat, fillval)
     ! !INPUT PARAMETERS:
 
@@ -1129,7 +1338,23 @@ contains
     integer(i4), intent(out) :: iostat
     real(r8) :: transvar(1), dumbvar(0)
 
-# 239 "piodarray.F90.in"
+! This code is required due to a bug in gfortran 4.7.2
+#if (__GFORTRAN__) &&  (__GNUC__ == 4) && (__GNUC_MINOR__ < 8)
+    real(r8), allocatable :: acopy(:)
+    integer :: isize 
+
+    isize= size(array)
+    allocate(acopy(isize))
+    acopy = reshape(array,(/isize/))
+    if(present(fillval)) then
+       call write_darray_1d_double (File, varDesc, iodesc, acopy, iostat, fillval)
+    else
+       call write_darray_1d_double (File, varDesc, iodesc, acopy, iostat)
+    end if
+    deallocate(acopy)
+    return
+#else
+# 266 "piodarray.F90.in"
 ! cannot call transfer function with a 0 sized array
     if(size(array)==0) then
        call write_darray_1d_double (File, varDesc, iodesc, dumbvar, iostat)
@@ -1138,7 +1363,7 @@ contains
     else
        call write_darray_1d_double (File, varDesc, iodesc, transfer(array,transvar), iostat)
     end if
-
+#endif
   end subroutine write_darray_2d_double
 
 ! TYPE real,int,double
@@ -1155,7 +1380,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 219 "piodarray.F90.in"
+# 230 "piodarray.F90.in"
   subroutine write_darray_3d_double (File,varDesc,ioDesc, array, iostat, fillval)
     ! !INPUT PARAMETERS:
 
@@ -1176,7 +1401,23 @@ contains
     integer(i4), intent(out) :: iostat
     real(r8) :: transvar(1), dumbvar(0)
 
-# 239 "piodarray.F90.in"
+! This code is required due to a bug in gfortran 4.7.2
+#if (__GFORTRAN__) &&  (__GNUC__ == 4) && (__GNUC_MINOR__ < 8)
+    real(r8), allocatable :: acopy(:)
+    integer :: isize 
+
+    isize= size(array)
+    allocate(acopy(isize))
+    acopy = reshape(array,(/isize/))
+    if(present(fillval)) then
+       call write_darray_1d_double (File, varDesc, iodesc, acopy, iostat, fillval)
+    else
+       call write_darray_1d_double (File, varDesc, iodesc, acopy, iostat)
+    end if
+    deallocate(acopy)
+    return
+#else
+# 266 "piodarray.F90.in"
 ! cannot call transfer function with a 0 sized array
     if(size(array)==0) then
        call write_darray_1d_double (File, varDesc, iodesc, dumbvar, iostat)
@@ -1185,7 +1426,7 @@ contains
     else
        call write_darray_1d_double (File, varDesc, iodesc, transfer(array,transvar), iostat)
     end if
-
+#endif
   end subroutine write_darray_3d_double
 
 ! TYPE real,int,double
@@ -1202,7 +1443,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 219 "piodarray.F90.in"
+# 230 "piodarray.F90.in"
   subroutine write_darray_4d_double (File,varDesc,ioDesc, array, iostat, fillval)
     ! !INPUT PARAMETERS:
 
@@ -1223,7 +1464,23 @@ contains
     integer(i4), intent(out) :: iostat
     real(r8) :: transvar(1), dumbvar(0)
 
-# 239 "piodarray.F90.in"
+! This code is required due to a bug in gfortran 4.7.2
+#if (__GFORTRAN__) &&  (__GNUC__ == 4) && (__GNUC_MINOR__ < 8)
+    real(r8), allocatable :: acopy(:)
+    integer :: isize 
+
+    isize= size(array)
+    allocate(acopy(isize))
+    acopy = reshape(array,(/isize/))
+    if(present(fillval)) then
+       call write_darray_1d_double (File, varDesc, iodesc, acopy, iostat, fillval)
+    else
+       call write_darray_1d_double (File, varDesc, iodesc, acopy, iostat)
+    end if
+    deallocate(acopy)
+    return
+#else
+# 266 "piodarray.F90.in"
 ! cannot call transfer function with a 0 sized array
     if(size(array)==0) then
        call write_darray_1d_double (File, varDesc, iodesc, dumbvar, iostat)
@@ -1232,7 +1489,7 @@ contains
     else
        call write_darray_1d_double (File, varDesc, iodesc, transfer(array,transvar), iostat)
     end if
-
+#endif
   end subroutine write_darray_4d_double
 
 ! TYPE real,int,double
@@ -1249,7 +1506,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 219 "piodarray.F90.in"
+# 230 "piodarray.F90.in"
   subroutine write_darray_5d_double (File,varDesc,ioDesc, array, iostat, fillval)
     ! !INPUT PARAMETERS:
 
@@ -1270,7 +1527,23 @@ contains
     integer(i4), intent(out) :: iostat
     real(r8) :: transvar(1), dumbvar(0)
 
-# 239 "piodarray.F90.in"
+! This code is required due to a bug in gfortran 4.7.2
+#if (__GFORTRAN__) &&  (__GNUC__ == 4) && (__GNUC_MINOR__ < 8)
+    real(r8), allocatable :: acopy(:)
+    integer :: isize 
+
+    isize= size(array)
+    allocate(acopy(isize))
+    acopy = reshape(array,(/isize/))
+    if(present(fillval)) then
+       call write_darray_1d_double (File, varDesc, iodesc, acopy, iostat, fillval)
+    else
+       call write_darray_1d_double (File, varDesc, iodesc, acopy, iostat)
+    end if
+    deallocate(acopy)
+    return
+#else
+# 266 "piodarray.F90.in"
 ! cannot call transfer function with a 0 sized array
     if(size(array)==0) then
        call write_darray_1d_double (File, varDesc, iodesc, dumbvar, iostat)
@@ -1279,7 +1552,7 @@ contains
     else
        call write_darray_1d_double (File, varDesc, iodesc, transfer(array,transvar), iostat)
     end if
-
+#endif
   end subroutine write_darray_5d_double
 
 ! TYPE real,int,double
@@ -1296,7 +1569,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 219 "piodarray.F90.in"
+# 230 "piodarray.F90.in"
   subroutine write_darray_6d_double (File,varDesc,ioDesc, array, iostat, fillval)
     ! !INPUT PARAMETERS:
 
@@ -1317,7 +1590,23 @@ contains
     integer(i4), intent(out) :: iostat
     real(r8) :: transvar(1), dumbvar(0)
 
-# 239 "piodarray.F90.in"
+! This code is required due to a bug in gfortran 4.7.2
+#if (__GFORTRAN__) &&  (__GNUC__ == 4) && (__GNUC_MINOR__ < 8)
+    real(r8), allocatable :: acopy(:)
+    integer :: isize 
+
+    isize= size(array)
+    allocate(acopy(isize))
+    acopy = reshape(array,(/isize/))
+    if(present(fillval)) then
+       call write_darray_1d_double (File, varDesc, iodesc, acopy, iostat, fillval)
+    else
+       call write_darray_1d_double (File, varDesc, iodesc, acopy, iostat)
+    end if
+    deallocate(acopy)
+    return
+#else
+# 266 "piodarray.F90.in"
 ! cannot call transfer function with a 0 sized array
     if(size(array)==0) then
        call write_darray_1d_double (File, varDesc, iodesc, dumbvar, iostat)
@@ -1326,7 +1615,7 @@ contains
     else
        call write_darray_1d_double (File, varDesc, iodesc, transfer(array,transvar), iostat)
     end if
-
+#endif
   end subroutine write_darray_6d_double
 
 ! TYPE real,int,double
@@ -1343,7 +1632,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 219 "piodarray.F90.in"
+# 230 "piodarray.F90.in"
   subroutine write_darray_7d_double (File,varDesc,ioDesc, array, iostat, fillval)
     ! !INPUT PARAMETERS:
 
@@ -1364,7 +1653,23 @@ contains
     integer(i4), intent(out) :: iostat
     real(r8) :: transvar(1), dumbvar(0)
 
-# 239 "piodarray.F90.in"
+! This code is required due to a bug in gfortran 4.7.2
+#if (__GFORTRAN__) &&  (__GNUC__ == 4) && (__GNUC_MINOR__ < 8)
+    real(r8), allocatable :: acopy(:)
+    integer :: isize 
+
+    isize= size(array)
+    allocate(acopy(isize))
+    acopy = reshape(array,(/isize/))
+    if(present(fillval)) then
+       call write_darray_1d_double (File, varDesc, iodesc, acopy, iostat, fillval)
+    else
+       call write_darray_1d_double (File, varDesc, iodesc, acopy, iostat)
+    end if
+    deallocate(acopy)
+    return
+#else
+# 266 "piodarray.F90.in"
 ! cannot call transfer function with a 0 sized array
     if(size(array)==0) then
        call write_darray_1d_double (File, varDesc, iodesc, dumbvar, iostat)
@@ -1373,7 +1678,7 @@ contains
     else
        call write_darray_1d_double (File, varDesc, iodesc, transfer(array,transvar), iostat)
     end if
-
+#endif
   end subroutine write_darray_7d_double
 
 ! TYPE real,int,double
@@ -1388,7 +1693,7 @@ contains
 !! @param array  : The read data
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 262 "piodarray.F90.in"
+# 289 "piodarray.F90.in"
   subroutine read_darray_1d_real (File,varDesc, ioDesc, array, iostat)
     use pio_msg_mod, only : pio_msg_readdarray
     ! !DESCRIPTION:
@@ -1464,7 +1769,7 @@ contains
 !! @param array  : The read data
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 262 "piodarray.F90.in"
+# 289 "piodarray.F90.in"
   subroutine read_darray_1d_int (File,varDesc, ioDesc, array, iostat)
     use pio_msg_mod, only : pio_msg_readdarray
     ! !DESCRIPTION:
@@ -1540,7 +1845,7 @@ contains
 !! @param array  : The read data
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 262 "piodarray.F90.in"
+# 289 "piodarray.F90.in"
   subroutine read_darray_1d_double (File,varDesc, ioDesc, array, iostat)
     use pio_msg_mod, only : pio_msg_readdarray
     ! !DESCRIPTION:
@@ -1617,7 +1922,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 338 "piodarray.F90.in"
+# 365 "piodarray.F90.in"
   subroutine read_darray_2d_real (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -1656,7 +1961,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 338 "piodarray.F90.in"
+# 365 "piodarray.F90.in"
   subroutine read_darray_3d_real (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -1695,7 +2000,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 338 "piodarray.F90.in"
+# 365 "piodarray.F90.in"
   subroutine read_darray_4d_real (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -1734,7 +2039,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 338 "piodarray.F90.in"
+# 365 "piodarray.F90.in"
   subroutine read_darray_5d_real (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -1773,7 +2078,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 338 "piodarray.F90.in"
+# 365 "piodarray.F90.in"
   subroutine read_darray_6d_real (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -1812,7 +2117,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 338 "piodarray.F90.in"
+# 365 "piodarray.F90.in"
   subroutine read_darray_7d_real (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -1851,7 +2156,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 338 "piodarray.F90.in"
+# 365 "piodarray.F90.in"
   subroutine read_darray_2d_int (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -1890,7 +2195,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 338 "piodarray.F90.in"
+# 365 "piodarray.F90.in"
   subroutine read_darray_3d_int (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -1929,7 +2234,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 338 "piodarray.F90.in"
+# 365 "piodarray.F90.in"
   subroutine read_darray_4d_int (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -1968,7 +2273,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 338 "piodarray.F90.in"
+# 365 "piodarray.F90.in"
   subroutine read_darray_5d_int (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -2007,7 +2312,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 338 "piodarray.F90.in"
+# 365 "piodarray.F90.in"
   subroutine read_darray_6d_int (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -2046,7 +2351,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 338 "piodarray.F90.in"
+# 365 "piodarray.F90.in"
   subroutine read_darray_7d_int (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -2085,7 +2390,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 338 "piodarray.F90.in"
+# 365 "piodarray.F90.in"
   subroutine read_darray_2d_double (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -2124,7 +2429,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 338 "piodarray.F90.in"
+# 365 "piodarray.F90.in"
   subroutine read_darray_3d_double (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -2163,7 +2468,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 338 "piodarray.F90.in"
+# 365 "piodarray.F90.in"
   subroutine read_darray_4d_double (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -2202,7 +2507,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 338 "piodarray.F90.in"
+# 365 "piodarray.F90.in"
   subroutine read_darray_5d_double (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -2241,7 +2546,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 338 "piodarray.F90.in"
+# 365 "piodarray.F90.in"
   subroutine read_darray_6d_double (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -2280,7 +2585,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 338 "piodarray.F90.in"
+# 365 "piodarray.F90.in"
   subroutine read_darray_7d_double (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -2318,7 +2623,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<
-# 375 "piodarray.F90.in"
+# 402 "piodarray.F90.in"
   subroutine write_darray_nf_real (File,varDesc,ioDesc,array, iostat, fillval)
 
     ! !DESCRIPTION:
@@ -2559,7 +2864,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<
-# 375 "piodarray.F90.in"
+# 402 "piodarray.F90.in"
   subroutine write_darray_nf_int (File,varDesc,ioDesc,array, iostat, fillval)
 
     ! !DESCRIPTION:
@@ -2800,7 +3105,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<
-# 375 "piodarray.F90.in"
+# 402 "piodarray.F90.in"
   subroutine write_darray_nf_double (File,varDesc,ioDesc,array, iostat, fillval)
 
     ! !DESCRIPTION:
@@ -3041,7 +3346,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 615 "piodarray.F90.in"
+# 642 "piodarray.F90.in"
   subroutine write_darray_bin_real(File,varDesc,ioDesc,array, iostat, fillval)
 
     ! !DESCRIPTION:
@@ -3226,7 +3531,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 615 "piodarray.F90.in"
+# 642 "piodarray.F90.in"
   subroutine write_darray_bin_int(File,varDesc,ioDesc,array, iostat, fillval)
 
     ! !DESCRIPTION:
@@ -3411,7 +3716,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 615 "piodarray.F90.in"
+# 642 "piodarray.F90.in"
   subroutine write_darray_bin_double(File,varDesc,ioDesc,array, iostat, fillval)
 
     ! !DESCRIPTION:
@@ -3597,7 +3902,7 @@ contains
 !! @param array  : The read data
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 800 "piodarray.F90.in"
+# 827 "piodarray.F90.in"
   subroutine read_darray_nf_real (File,varDesc,ioDesc,array, iostat)
     !
     ! !DESCRIPTION:
@@ -3789,7 +4094,7 @@ contains
 !! @param array  : The read data
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 800 "piodarray.F90.in"
+# 827 "piodarray.F90.in"
   subroutine read_darray_nf_int (File,varDesc,ioDesc,array, iostat)
     !
     ! !DESCRIPTION:
@@ -3981,7 +4286,7 @@ contains
 !! @param array  : The read data
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 800 "piodarray.F90.in"
+# 827 "piodarray.F90.in"
   subroutine read_darray_nf_double (File,varDesc,ioDesc,array, iostat)
     !
     ! !DESCRIPTION:
@@ -4172,7 +4477,7 @@ contains
 !! @param array  : The read data
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 990 "piodarray.F90.in"
+# 1017 "piodarray.F90.in"
   subroutine read_darray_bin_real (File,varDesc,ioDesc,array, iostat)
     !
     ! !DESCRIPTION:
@@ -4342,7 +4647,7 @@ contains
 !! @param array  : The read data
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 990 "piodarray.F90.in"
+# 1017 "piodarray.F90.in"
   subroutine read_darray_bin_int (File,varDesc,ioDesc,array, iostat)
     !
     ! !DESCRIPTION:
@@ -4512,7 +4817,7 @@ contains
 !! @param array  : The read data
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 990 "piodarray.F90.in"
+# 1017 "piodarray.F90.in"
   subroutine read_darray_bin_double (File,varDesc,ioDesc,array, iostat)
     !
     ! !DESCRIPTION:
@@ -4671,7 +4976,7 @@ contains
   end subroutine read_darray_bin_double
 
   ! TYPE real,int,double  
-# 1148 "piodarray.F90.in"
+# 1175 "piodarray.F90.in"
   subroutine add_data_to_buffer_real (File, IOBUF, request)
     use pio_types, only : io_data_list
     type(file_desc_t) :: File
@@ -4711,7 +5016,7 @@ contains
   end subroutine add_data_to_buffer_real
 
   ! TYPE real,int,double  
-# 1148 "piodarray.F90.in"
+# 1175 "piodarray.F90.in"
   subroutine add_data_to_buffer_int (File, IOBUF, request)
     use pio_types, only : io_data_list
     type(file_desc_t) :: File
@@ -4751,7 +5056,7 @@ contains
   end subroutine add_data_to_buffer_int
 
   ! TYPE real,int,double  
-# 1148 "piodarray.F90.in"
+# 1175 "piodarray.F90.in"
   subroutine add_data_to_buffer_double (File, IOBUF, request)
     use pio_types, only : io_data_list
     type(file_desc_t) :: File
@@ -4792,7 +5097,7 @@ contains
 
 
 
-# 1188 "piodarray.F90.in"
+# 1215 "piodarray.F90.in"
   subroutine darray_write_complete(File)
     use pio_types, only : io_data_list
 #ifdef _PNETCDF
@@ -4861,7 +5166,7 @@ contains
 
 #ifdef _COMPRESSION
 
-# 1256 "piodarray.F90.in"
+# 1283 "piodarray.F90.in"
  subroutine write_vdc2_real(File, Vardesc, iodesc, array, iostat)
     use pio_support, only : piodie
     use, intrinsic :: iso_c_binding
@@ -4974,7 +5279,7 @@ contains
 #endif
   end subroutine write_vdc2_real
 
-# 1368 "piodarray.F90.in"
+# 1395 "piodarray.F90.in"
 subroutine read_vdc2_real(File, Vardesc, iodesc, array, iostat)
     use pio_support, only : piodie
     use, intrinsic :: iso_c_binding
