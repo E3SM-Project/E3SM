@@ -31,6 +31,7 @@ SET(PREQX_SRCS ${SRC_SHARE_DIR}/kinds.F90
 					     ${SRC_SHARE_DIR}/params_mod.F90
 					     ${SRC_SHARE_DIR}/gridgraph_mod.F90
 					     ${SRC_SHARE_DIR}/edge_mod.F90
+					     ${SRC_SHARE_DIR}/cuda_mod.F90
 					     ${SRC_SHARE_DIR}/element_mod.F90
 					     ${SRC_SHARE_DIR}/parallel_mod.F90
 					     ${SRC_SHARE_DIR}/hybrid_mod.F90
@@ -115,6 +116,9 @@ SET(PREQX_SRCS ${SRC_SHARE_DIR}/kinds.F90
 					     ${SRC_SHARE_DIR}/Manager.F90
 )
 
+#INCLUDE(AddFileDependencies)
+#ADD_FILE_DEPENDENCIES(${SRC_SHARE_DIR}/prim_advection_mod.F90 
+#                      ${SRC_SHARE_DIR}/cuda_mod.F90)
 
 SET(PREQX_SRCS ${PREQX_SRCS} ${SRC_DIR}/prim_main.F90 CACHE INTERNAL "Sources for preqx")
 

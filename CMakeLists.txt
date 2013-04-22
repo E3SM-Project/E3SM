@@ -127,9 +127,8 @@ MESSAGE(STATUS "CMAKE_SYSTEM = ${CMAKE_SYSTEM}")
 MESSAGE(STATUS "CMAKE_SYSTEM_NAME = ${CMAKE_SYSTEM_NAME}")
 MESSAGE(STATUS "HOMME_FIND_BLASLAPACK = ${HOMME_FIND_BLASLAPACK}")
 
-OPTION(HOMME_ENABLE_OPENMP FALSE)
-
-IF (HOMME_ENABLE_OPENMP)
+OPTION(ENABLE_OPENMP FALSE)
+IF (ENABLE_OPENMP)
   FIND_PACKAGE(OpenMP)
   IF(OPENMP_FOUND)
     # The fortran openmp flag should be the same as the C Flag
@@ -142,12 +141,17 @@ IF (HOMME_ENABLE_OPENMP)
   ENDIF()
 ENDIF ()
 
+#SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${HOMME_ADDITIONAL_FLAGS}")
+#SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${HOMME_ADDITIONAL_FLAGS}")
+#SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${HOMME_ADDITIONAL_FLAGS}")
+#SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${HOMME_ADDITIONAL_FLAGS}")
+
 # For PIO Set these options to allow a longer line length (until PIO is fixed)
 IF (${CMAKE_Fortran_COMPILER_ID} STREQUAL GNU)
   SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -ffree-line-length-none")
-ELSEIF (CMAKE_COMPILER_ID STREQUAL PGI)
-  SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Mextend")
-ELSEIF (CMAKE_COMPILER_ID STREQUAL PathScale)
+ELSEIF (CMAKE_Fortran_COMPILER_ID STREQUAL PGI)
+  SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Mextend -O2")
+ELSEIF (CMAKE_Fortran_COMPILER_ID STREQUAL PathScale)
   SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -extend-source")
 ENDIF ()
 
@@ -159,6 +163,59 @@ IF (${CMAKE_Fortran_COMPILER_ID} STREQUAL Intel)
   SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -traceback")
   SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O2")
 ENDIF ()
+
+# OpenACC specific flag - only supporting PGI compiler
+OPTION(ENABLE_OPENACC FALSE)
+IF (${ENABLE_OPENACC})
+  IF (NOT ${CMAKE_Fortran_COMPILER_ID} STREQUAL PGI)
+    MESSAGE(FATAL_ERROR "OpenACC only supported through the PGI compiler")
+  ELSE ()
+    # Need to add -acc to the Fortran FLAGS to see if it will compile 
+    # "call acc_init()"
+    SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -acc")
+    TRY_COMPILE(OPENACC_SUCCESS
+                ${CMAKE_BINARY_DIR}/compiler_test/
+                ${CMAKE_CURRENT_SOURCE_DIR}/cmake/openAccTest.f90
+                OUTPUT_VARIABLE COMPILE_OUTPUT)
+    IF (${OPENACC_SUCCESS})
+      SET(USE_CUDA_FORTRAN TRUE)
+      MESSAGE(STATUS "Using OpenACC through PGI compiler")
+    ELSE()
+      SET(USE_CUDA_FORTRAN FALSE)
+      MESSAGE(FATAL_ERROR "Unable to use OpenACC through the PGI compiler")
+    ENDIF()
+  ENDIF()
+ENDIF ()
+
+# CUDA Fortran specific flags - only supporting PGI compiler
+OPTION(ENABLE_CUDA_FORTRAN FALSE)
+IF (${ENABLE_CUDA_FORTRAN})
+  IF (NOT ${CMAKE_Fortran_COMPILER_ID} STREQUAL PGI)
+    MESSAGE(FATAL_ERROR "CUDA Fortran only supported through the PGI compiler")
+  ELSE ()
+    # Need to add -Mcuda to the Fortran FLAGS to see if it will compile 
+    # "use cudafor"
+    #SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Mcuda")
+    #SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -ta=nvidia -Mcuda=4.2,cc2x,ptxinfo,keepgpu")
+    SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -ta=nvidia -Mcuda")
+    TRY_COMPILE(CUDAFOR
+                ${CMAKE_BINARY_DIR}/compiler_test/
+                ${CMAKE_CURRENT_SOURCE_DIR}/cmake/cudaFortranTest.F90
+                OUTPUT_VARIABLE COMPILE_OUTPUT)
+    IF (${CUDAFOR})
+      SET(USE_CUDA_FORTRAN TRUE)
+      MESSAGE(STATUS "Using CUDA Fortran through PGI compiler")
+    ELSE()
+      SET(USE_CUDA_FORTRAN FALSE)
+      MESSAGE(FATAL_ERROR "Unable to use CUDA Fortran through the PGI compiler")
+    ENDIF()
+  ENDIF()
+ENDIF ()
+
+MESSAGE(STATUS "Fortran Flags = ${CMAKE_Fortran_FLAGS}")
+MESSAGE(STATUS "C Flags = ${CMAKE_C_FLAGS}")
+MESSAGE(STATUS "CXX Flags = ${CMAKE_CXX_FLAGS}")
+MESSAGE(STATUS "Linker Flags = ${CMAKE_EXE_LINKER_FLAGS}")
 
 IF(HOMME_FIND_BLASLAPACK)
   FIND_PACKAGE(BLAS REQUIRED)

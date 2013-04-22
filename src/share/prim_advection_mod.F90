@@ -1213,7 +1213,7 @@ contains
 !-----------------------------------------------------------------------------
 
   subroutine qdp_time_avg( elem , rkstage , n0_qdp , np1_qdp , limiter_option , nu_p , nets , nete )
-#ifdef _ACCEL
+#if USE_CUDA_FORTRAN
     use cuda_mod, only: qdp_time_avg_cuda
 #endif
     implicit none
@@ -1221,7 +1221,7 @@ contains
     integer             , intent(in   ) :: rkstage , n0_qdp , np1_qdp , nets , nete , limiter_option
     real(kind=real_kind), intent(in   ) :: nu_p
     integer :: ie
-#ifdef _ACCEL
+#if USE_CUDA_FORTRAN
     call qdp_time_avg_cuda( elem , rkstage , n0_qdp , np1_qdp , limiter_option , nu_p , nets , nete )
     return
 #endif
@@ -1255,7 +1255,7 @@ contains
   use edge_mod       , only : edgevpack, edgevunpack
   use bndry_mod      , only : bndry_exchangev
   use hybvcoord_mod  , only : hvcoord_t
-#ifdef _ACCEL
+#if USE_CUDA_FORTRAN
   use cuda_mod, only: euler_step_cuda
 #endif
   implicit none
@@ -1286,7 +1286,7 @@ contains
     call euler_step_dg( np1_qdp , n0_qdp , dt , elem , hvcoord , hybrid , deriv , nets , nete , DSSopt , rhs_multiplier )
     return
   endif
-#ifdef _ACCEL
+#if USE_CUDA_FORTRAN
   call euler_step_cuda( np1_qdp , n0_qdp , dt , elem , hvcoord , hybrid , deriv , nets , nete , DSSopt , rhs_multiplier )
   return
 #endif
@@ -2064,7 +2064,7 @@ contains
   !          Q(:,:,:,np) = Q(:,:,:,np) +  dt2*nu*laplacian**order ( Q )
   !
   !  For correct scaling, dt2 should be the same 'dt2' used in the leapfrog advace
-#ifdef _ACCEL
+#if USE_CUDA_FORTRAN
   use cuda_mod       , only : advance_hypervis_scalar_cuda
 #endif
   use kinds          , only : real_kind
@@ -2103,7 +2103,7 @@ contains
   integer :: density_scaling = 0
   if ( nu_q           == 0 ) return
   if ( hypervis_order /= 2 ) return
-#ifdef _ACCEL
+#if USE_CUDA_FORTRAN
   call advance_hypervis_scalar_cuda( edgeAdv , elem , hvcoord , hybrid , deriv , nt , nt_qdp , nets , nete , dt2 )
   return
 #endif
