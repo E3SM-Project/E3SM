@@ -13,7 +13,9 @@
  * Documents produced by Doxygen are derivative works derived from the
  * input used in their production; they are not affected by this license.
  *
- */ /*! \page intro Introduction 
+ */ 
+
+/*! \page intro Introduction 
 
 PIO is a software interface layer designed to encapsolate the
 complexities of parallel IO and make it easier to replace the lower
@@ -25,7 +27,6 @@ PIO calls are collective. A MPI communicator is set in a call to
 \ref PIO_init and all tasks associated with that communicator must
 participate in all subsequent calls to PIO.  An application can make
 multiple calls to PIO in order to support multiple MPI communicators.
-
 
 To use PIO, your program should begin by calling the
 \ref PIO_init function providing the MPI communicator and the
@@ -49,8 +50,8 @@ between the organization of data in the file and that same data in the
 application space.  This is done in a call to
 \ref PIO_initdecomp. In the simplest call to this function, a
 one dimensional integer array is passed from each task, the values in
-the array represent the (ASB - shouldn't this be 1-based??) 0 based 
-offset from the beginning of the array
+the array represent the 0 based offset from the beginning of the array
 on file.   
 
+(ASB add an sample program here...)
 */

@@ -57,7 +57,7 @@ simple example in Figure 1 to include an IO decomposition in Figure 1b.
 
 Figure 1b illustrates the creation of an IO decomposition on two of the MPI tasks. For this decomposition,  the 8 word IO decomposition array and corresponding disk layout are  evenly distributed between PE 0 (yellow) and PE 2 (blue). The arrows in Figure 1b indicates rearrangement that is performed within the PIO library.  In this 
 case, PE 0 sends a word to PE 2, illustrated by the shading of yellow to blue, while PE 1 sends two words to PE 0 as illustrated by the shading of red to yellow.  The rearranged array in the IO decomposition is subsequently written to disk.  
-Note that in this case, only two of three MPI tasks are performing writes to disk. PIO allows the user to specify the IO decomposition using the 
+Note that in this case, only two of three MPI tasks are performing writes to disk. The number of MPI tasks involved in IO to disk is specified in the \ref PIO_init using a combination of the num_aggregator and stride parameters. For figure 1b, the num_aggregator=3 and the stride=2. PIO allows the user to specify the IO decomposition using the 
 optional parameters \em iostart and \em iocount. The following bits of code for PE 0, PE 1, and PE 2 illustrates the necessary calls to \ref PIO_initdecomp.  
 
 \verbinclude simple-bc-rearr  
