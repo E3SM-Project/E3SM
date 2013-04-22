@@ -551,7 +551,7 @@ contains
     use asp_tests, only : asp_tracer, asp_baroclinic, asp_rossby, asp_mountain, asp_gravity_wave 
     use aquaplanet, only : aquaplanet_init_state
 #endif
-#ifdef _ACCEL
+#if USE_CUDA_FORTRAN
     use cuda_mod, only: cuda_mod_init
 #endif
 
@@ -990,7 +990,7 @@ contains
     end if
 
 
-#ifdef _ACCEL
+#if USE_CUDA_FORTRAN
     !Inside this routine, we enforce an OMP BARRIER and an OMP MASTER. It's left out of here because it's ugly
     call cuda_mod_init(elem,deriv(hybrid%ithr),hvcoord)
 #endif

@@ -1,5 +1,5 @@
 !This is where all of the PGI CUDA FORTRAN code will go, and these routines will be called from prim_advection_mod.
-!This is compiled regardless, but PGI-specific calls are always wrapped in the _ACCEL ifdefs that are automagically
+!This is compiled regardless, but PGI-specific calls are always wrapped in the USE_CUDA_FORTRAN ifdefs that are automagically
 !activated when -Mcuda is specified during compilation with a PGI compiler. Thus, it will be ignored unless explicitly
 !activated by the user
 !
@@ -19,8 +19,12 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 module cuda_mod
-#ifdef _ACCEL
+#if USE_CUDA_FORTRAN
 #define PAD 1
 
 !Put everything CUDA-specific in here so it doesn't get compiled without -Mcuda enabled on a PGI compiler
