@@ -41,3 +41,6 @@
 
 /* Enable FVM */
 #cmakedefine _FVM
+
+/* Enable SPELT */
+#cmakedefine _SPELT
