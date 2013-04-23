@@ -155,6 +155,11 @@ IF (PREQX_USE_FVM)
   MESSAGE(STATUS "  Using FVM")
 ENDIF()
 
+IF (${PREQX_USE_CUDA_FORTRAN})
+  SET(USE_CUDA_FORTRAN TRUE)
+  MESSAGE(STATUS "  Using CUDA Fortran")
+ENDIF ()
+
 # The following macro handles the compilation with the appropriate variables
 ############################################################################
 # createTestExec(exec_name exec_type SRCS NP PLEV USE_PIO USE_ENERGY)

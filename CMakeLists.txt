@@ -182,10 +182,8 @@ IF (${ENABLE_OPENACC})
                 ${CMAKE_CURRENT_SOURCE_DIR}/cmake/openAccTest.f90
                 OUTPUT_VARIABLE COMPILE_OUTPUT)
     IF (${OPENACC_SUCCESS})
-      SET(USE_CUDA_FORTRAN TRUE)
       MESSAGE(STATUS "Using OpenACC through PGI compiler")
     ELSE()
-      SET(USE_CUDA_FORTRAN FALSE)
       MESSAGE(FATAL_ERROR "Unable to use OpenACC through the PGI compiler")
     ENDIF()
   ENDIF()
@@ -199,18 +197,16 @@ IF (${ENABLE_CUDA_FORTRAN})
   ELSE ()
     # Need to add -Mcuda to the Fortran FLAGS to see if it will compile 
     # "use cudafor"
-    #SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Mcuda")
-    #SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -ta=nvidia -Mcuda=4.2,cc2x,ptxinfo,keepgpu")
-    SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -ta=nvidia -Mcuda")
+    SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -ta=nvidia -Mcuda=4.2,cc3x,ptxinfo,keepgpu")
     TRY_COMPILE(CUDAFOR
                 ${CMAKE_BINARY_DIR}/compiler_test/
                 ${CMAKE_CURRENT_SOURCE_DIR}/cmake/cudaFortranTest.F90
                 OUTPUT_VARIABLE COMPILE_OUTPUT)
     IF (${CUDAFOR})
-      SET(USE_CUDA_FORTRAN TRUE)
+      SET(PREQX_USE_CUDA_FORTRAN TRUE)
       MESSAGE(STATUS "Using CUDA Fortran through PGI compiler")
     ELSE()
-      SET(USE_CUDA_FORTRAN FALSE)
+      SET(PREQX_USE_CUDA_FORTRAN FALSE)
       MESSAGE(FATAL_ERROR "Unable to use CUDA Fortran through the PGI compiler")
     ENDIF()
   ENDIF()
