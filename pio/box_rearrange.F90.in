@@ -178,7 +178,6 @@ subroutine box_rearrange_comp2io_{TYPE} (IOsystem, ioDesc, s1, src, niodof, &
   ndof= iodesc%ndof
   num_tasks   = IOsystem%num_tasks
   num_iotasks = IOsystem%num_iotasks
-
   if (num_tasks /= 1 .or. num_iotasks /= 1) &
     call piodie( __PIO_FILE__,__LINE__, &
                  'built with -D_MPISERIAL but num_tasks=', num_tasks, &
@@ -199,7 +198,7 @@ subroutine box_rearrange_comp2io_{TYPE} (IOsystem, ioDesc, s1, src, niodof, &
                      'box_rearrange_comp2io: i=', i, &
                      'dest_ioproc(i)=', ioproc )
 
-      if ( ioindex<0 .or. ioindex>=s2 ) &
+      if ( ioindex<0 .or. ioindex>=ndof ) &
         call piodie( __PIO_FILE__,__LINE__, &
                      'box_rearrange_comp2io: i=', i, &
                      'dest_ioindex(i) out of range=', int(ioindex))

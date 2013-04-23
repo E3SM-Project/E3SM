@@ -1,6 +1,17 @@
 ===============================================================
 *** You must run 'make predist' in the pio subdirectory before committing. ***
 
+Tag name: pio1_6_8
+Originator(s): Jim
+Date: April 23, 2013
+One-line Summary: minor fix in box_rearrange.F90 for mpi-serial
+	
+M                 pio/box_rearrange.F90.in
+M                 pio/box_rearrange.F90
+
+===============================================================
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
 Tag name: pio1_6_7
 Originator(s): Jim
 Date: April 22, 2013

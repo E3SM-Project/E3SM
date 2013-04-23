@@ -6,8 +6,8 @@
 !>
 !!
 !! @file 
-!! $Revision: 766 $
-!! $LastChangedDate: 2013-04-22 16:42:31 -0600 (Mon, 22 Apr 2013) $
+!! $Revision: 771 $
+!! $LastChangedDate: 2013-04-22 21:04:14 -0600 (Mon, 22 Apr 2013) $
 !! @brief
 !!  Perform data rearrangement with each io processor
 !!  owning a rectangular box in the output domain
@@ -194,7 +194,6 @@ subroutine box_rearrange_comp2io_real (IOsystem, ioDesc, s1, src, niodof, &
   ndof= iodesc%ndof
   num_tasks   = IOsystem%num_tasks
   num_iotasks = IOsystem%num_iotasks
-
   if (num_tasks /= 1 .or. num_iotasks /= 1) &
     call piodie( __PIO_FILE__,__LINE__, &
                  'built with -D_MPISERIAL but num_tasks=', num_tasks, &
@@ -215,7 +214,7 @@ subroutine box_rearrange_comp2io_real (IOsystem, ioDesc, s1, src, niodof, &
                      'box_rearrange_comp2io: i=', i, &
                      'dest_ioproc(i)=', ioproc )
 
-      if ( ioindex<0 .or. ioindex>=s2 ) &
+      if ( ioindex<0 .or. ioindex>=ndof ) &
         call piodie( __PIO_FILE__,__LINE__, &
                      'box_rearrange_comp2io: i=', i, &
                      'dest_ioindex(i) out of range=', int(ioindex))
@@ -467,7 +466,6 @@ subroutine box_rearrange_comp2io_double (IOsystem, ioDesc, s1, src, niodof, &
   ndof= iodesc%ndof
   num_tasks   = IOsystem%num_tasks
   num_iotasks = IOsystem%num_iotasks
-
   if (num_tasks /= 1 .or. num_iotasks /= 1) &
     call piodie( __PIO_FILE__,__LINE__, &
                  'built with -D_MPISERIAL but num_tasks=', num_tasks, &
@@ -488,7 +486,7 @@ subroutine box_rearrange_comp2io_double (IOsystem, ioDesc, s1, src, niodof, &
                      'box_rearrange_comp2io: i=', i, &
                      'dest_ioproc(i)=', ioproc )
 
-      if ( ioindex<0 .or. ioindex>=s2 ) &
+      if ( ioindex<0 .or. ioindex>=ndof ) &
         call piodie( __PIO_FILE__,__LINE__, &
                      'box_rearrange_comp2io: i=', i, &
                      'dest_ioindex(i) out of range=', int(ioindex))
@@ -740,7 +738,6 @@ subroutine box_rearrange_comp2io_int (IOsystem, ioDesc, s1, src, niodof, &
   ndof= iodesc%ndof
   num_tasks   = IOsystem%num_tasks
   num_iotasks = IOsystem%num_iotasks
-
   if (num_tasks /= 1 .or. num_iotasks /= 1) &
     call piodie( __PIO_FILE__,__LINE__, &
                  'built with -D_MPISERIAL but num_tasks=', num_tasks, &
@@ -761,7 +758,7 @@ subroutine box_rearrange_comp2io_int (IOsystem, ioDesc, s1, src, niodof, &
                      'box_rearrange_comp2io: i=', i, &
                      'dest_ioproc(i)=', ioproc )
 
-      if ( ioindex<0 .or. ioindex>=s2 ) &
+      if ( ioindex<0 .or. ioindex>=ndof ) &
         call piodie( __PIO_FILE__,__LINE__, &
                      'box_rearrange_comp2io: i=', i, &
                      'dest_ioindex(i) out of range=', int(ioindex))
@@ -953,7 +950,7 @@ subroutine box_rearrange_comp2io_int (IOsystem, ioDesc, s1, src, niodof, &
 end subroutine box_rearrange_comp2io_int
 
 ! TYPE real,double,int
-# 394 "box_rearrange.F90.in"
+# 393 "box_rearrange.F90.in"
 subroutine box_rearrange_io2comp_real (IOsystem,ioDesc,s1, iobuf,s2, compbuf, &
                                          comm_option, fc_options)
   implicit none
@@ -1213,7 +1210,7 @@ subroutine box_rearrange_io2comp_real (IOsystem,ioDesc,s1, iobuf,s2, compbuf, &
 end subroutine box_rearrange_io2comp_real
 
 ! TYPE real,double,int
-# 394 "box_rearrange.F90.in"
+# 393 "box_rearrange.F90.in"
 subroutine box_rearrange_io2comp_double (IOsystem,ioDesc,s1, iobuf,s2, compbuf, &
                                          comm_option, fc_options)
   implicit none
@@ -1473,7 +1470,7 @@ subroutine box_rearrange_io2comp_double (IOsystem,ioDesc,s1, iobuf,s2, compbuf, 
 end subroutine box_rearrange_io2comp_double
 
 ! TYPE real,double,int
-# 394 "box_rearrange.F90.in"
+# 393 "box_rearrange.F90.in"
 subroutine box_rearrange_io2comp_int (IOsystem,ioDesc,s1, iobuf,s2, compbuf, &
                                          comm_option, fc_options)
   implicit none
@@ -1739,7 +1736,7 @@ end subroutine box_rearrange_io2comp_int
   !   find the rank in union_comm of the ith io processor
   !
 
-# 659 "box_rearrange.F90.in"
+# 658 "box_rearrange.F90.in"
   integer function find_io_comprank( Iosystem, ioprocindex )
     implicit none
 
@@ -1756,7 +1753,7 @@ end subroutine box_rearrange_io2comp_int
   !   find global xyz coordinates given a global index
   !
 
-# 675 "box_rearrange.F90.in"
+# 674 "box_rearrange.F90.in"
   subroutine gindex_to_coord( gindex, gstride, ndim, gcoord )
     implicit none
     integer(kind=pio_offset),intent(in) :: gindex           ! 0-based global index
@@ -1793,7 +1790,7 @@ end subroutine box_rearrange_io2comp_int
   !   and 1-based index for that ioproc's iobuf          '
   !
 
-# 711 "box_rearrange.F90.in"
+# 710 "box_rearrange.F90.in"
   logical function find_ioproc( gcoord, lb, ub, lstride, ndim, nioproc, &
        io_proc, io_index )
     implicit none
@@ -1875,7 +1872,7 @@ end subroutine box_rearrange_io2comp_int
   !
   !
 
-# 792 "box_rearrange.F90.in"
+# 791 "box_rearrange.F90.in"
   subroutine compute_dest(compdof, start, kount, gsize, ndim, nioproc, &
                           dest_ioproc, dest_ioindex                    )
     implicit none
@@ -1986,7 +1983,7 @@ end subroutine box_rearrange_io2comp_int
 !! this space should be freed in box_rearrange_free
 !!
 !<
-# 902 "box_rearrange.F90.in"
+# 901 "box_rearrange.F90.in"
   subroutine box_rearrange_create(Iosystem, compdof, gsize, ndim, &
                                   nioproc, ioDesc)
 
@@ -2141,7 +2138,7 @@ end subroutine box_rearrange_io2comp_int
 !!
 !<
 #ifndef _MPISERIAL
-# 1056 "box_rearrange.F90.in"
+# 1055 "box_rearrange.F90.in"
   subroutine compute_counts(Iosystem, ioDesc, niodof)
     
     use calcdisplace_mod, only : calcdisplace,GCDblocksize,gcd
@@ -2665,7 +2662,7 @@ end subroutine box_rearrange_io2comp_int
 !!
 !<
 
-# 1579 "box_rearrange.F90.in"
+# 1578 "box_rearrange.F90.in"
   subroutine box_rearrange_free(Iosystem,ioDesc)
     implicit none
 
