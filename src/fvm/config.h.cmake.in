@@ -1,0 +1,37 @@
+/* FVM Options */
+
+/* ENERGY DIAGNOSTICS */
+#define ENERGY_DIAGNOSTICS
+
+/* WK_GRAD */
+#define _WK_GRAD 1
+
+/* _PRESTART */
+#define _PRESTART 1
+
+/* Using MPI */
+#define _MPI 1
+
+/* PIO with interpolation */
+#cmakedefine PIO_INTERP
+
+/* Number of cells NC*NC in each element (Default value NC=4) */
+#define NC @NUM_CELLS@
+
+/* Number of POINTS in the element (Default value is 4) */
+#define NP @NUM_POINTS@
+
+/* Number of POINTS in the element (Default value is 1) */
+#define PLEV @NUM_PLEV@
+
+/* Basic PIO */
+#cmakedefine PIO
+
+/* TIMING */
+#define TIMING 1
+
+/* Quadruple-precision */
+#cmakedefine01 HOMME_QUAD_PREC
+
+/* Enable FVM */
+#define _FVM 1
