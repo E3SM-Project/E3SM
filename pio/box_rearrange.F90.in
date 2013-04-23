@@ -1052,6 +1052,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
 !! @brief Define comp <-> IO communications patterns
 !!
 !<
+#ifndef _MPISERIAL
   subroutine compute_counts(Iosystem, ioDesc, niodof)
     
     use calcdisplace_mod, only : calcdisplace,GCDblocksize,gcd
@@ -1567,7 +1568,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
     call dealloc_check(sindex, 'sindex temp')
 
   end subroutine compute_counts
-
+#endif
 
 !>
 !! @public box_rearrange_free

@@ -6,8 +6,8 @@
 !>
 !!
 !! @file 
-!! $Revision: 751 $
-!! $LastChangedDate: 2013-04-02 10:01:13 -0600 (Tue, 02 Apr 2013) $
+!! $Revision: 766 $
+!! $LastChangedDate: 2013-04-22 16:42:31 -0600 (Mon, 22 Apr 2013) $
 !! @brief
 !!  Perform data rearrangement with each io processor
 !!  owning a rectangular box in the output domain
@@ -2140,7 +2140,8 @@ end subroutine box_rearrange_io2comp_int
 !! @brief Define comp <-> IO communications patterns
 !!
 !<
-# 1055 "box_rearrange.F90.in"
+#ifndef _MPISERIAL
+# 1056 "box_rearrange.F90.in"
   subroutine compute_counts(Iosystem, ioDesc, niodof)
     
     use calcdisplace_mod, only : calcdisplace,GCDblocksize,gcd
@@ -2656,7 +2657,7 @@ end subroutine box_rearrange_io2comp_int
     call dealloc_check(sindex, 'sindex temp')
 
   end subroutine compute_counts
-
+#endif
 
 !>
 !! @public box_rearrange_free
@@ -2664,7 +2665,7 @@ end subroutine box_rearrange_io2comp_int
 !!
 !<
 
-# 1578 "box_rearrange.F90.in"
+# 1579 "box_rearrange.F90.in"
   subroutine box_rearrange_free(Iosystem,ioDesc)
     implicit none
 
