@@ -1,6 +1,6 @@
 # Relevant Directories within the HOMME repository
 # holding source files needed for building the library
-# and executable swim.
+# and executable sweqx.
 
 INCLUDE_DIRECTORIES ( ${Trilinos_INCLUDE_DIRS} ${Trilinos_TPL_INCLUDE_DIRS} )
 LINK_DIRECTORIES    ( ${Trilinos_LIBRARY_DIRS} ${Trilinos_TPL_LIBRARY_DIRS} )
@@ -14,8 +14,10 @@ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR}
                     ${CMAKE_CURRENT_BINARY_DIR}/share
                     ${PIO_INCLUDE_DIRS}
                     ${TIMING_INCLUDE_DIRS})
+INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}
+                    ${CMAKE_CURRENT_SOURCE_DIR}/share)
 
-# Set up swim specfic defaults 
+# Set up swim specifc defaults 
 IF (NOT SWIM_NP)
   SET (SWIM_NP 4 CACHE STRING "Default number of points (NP) in the element (default value is 4)")
 ENDIF ()
@@ -128,25 +130,24 @@ SET(SRCS_F90
                ${SRC_BASE}/jrio.c
 )
 
-SET(SRCS_SWIM     ${SRC_TRIL}/donoxloca.cpp
+SET(SRCS_SWIM
+                  ${SRC_TRIL}/trilinosNoxSolver.cpp
+                  ${SRC_TRIL}/trilinosModelEvaluator.cpp
                   ${SRC_TRIL}/block_precon_interface.cpp
-                  ${SRC_TRIL}/noxlocainterface.cpp
                   ${SRC_TRIL}/precon_interface.cpp
                   ${SRC_BASE}/derived_type_mod.F90
                   ${SRC_BASE}/implicit_mod.F90
                   ${SRC_BASE}/precon_mod.F90
 )
 
+#                  ${SRC_TRIL}/donoxloca.cpp
+#                  ${SRC_TRIL}/noxlocainterface.cpp
+
+
 ADD_LIBRARY(homme_swim ${SRCS_F90} ${SRCS_SWIM})
-ADD_DEPENDENCIES(homme_swim pio timing)
+TARGET_LINK_LIBRARIES(homme_swim pio timing  ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES})
 
 ADD_EXECUTABLE(swim ${SRC_BASE}/main.F90)
-
-ADD_DEPENDENCIES(swim homme_swim pio timing)
-
-SET_PROPERTY(TARGET swim PROPERTY LINKER_LANGUAGE Fortran)
-
-TARGET_LINK_LIBRARIES(swim homme_swim pio timing ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES})
-
+TARGET_LINK_LIBRARIES(swim homme_swim ${CMAKE_Fortran_IMPLICIT_LINK_LIBRARIES})
 INSTALL(TARGETS swim
         RUNTIME DESTINATION bin)

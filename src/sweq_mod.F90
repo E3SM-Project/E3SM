@@ -423,7 +423,6 @@ contains
           !============================
           call ReadRestart(elem,ithr,nete,nets,tl)
           if (integration == "semi_imp") then
-!          if ((integration == "semi_imp").or.(integration == "full_imp")) then
              allocate(blkjac(nets:nete))
              call cg_create(cg, npsq, nlev, nete-nets+1, hybrid, debug_level, solver_wts)
           endif
@@ -777,13 +776,6 @@ contains
          end do !nlev 
         end if
         end do !ie
-
-
-
-
-
-
-
 
 #else
 !           Check /utils/trilinos/README for more details

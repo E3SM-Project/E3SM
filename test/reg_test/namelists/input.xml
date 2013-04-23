@@ -17,21 +17,30 @@
     </ParameterList>
   </ParameterList>
   <ParameterList name="NOX">
-    <Parameter name="Convergence Tolerance" type="double" value="1.0e-8"/>
+    <Parameter name="Convergence Tolerance" type="double" value="1.0e-6"/>
     <ParameterList name="Direction">
       <ParameterList name="Newton">
-        <ParameterList name="Linear Solver">
-          <Parameter name="Aztec Solver" type="string" value="GMRES"/>
-          <Parameter name="Max Iterations" type="int" value="1000"/>
-          <Parameter name="Output Frequency" type="int" value="1"/>
-          <!--Parameter name="Convergence Test" type="string" value="AZ_rhs"/-->
-          <Parameter name="Size of Krylov Subspace" type="int" value="50"/>
-          <Parameter name="Tolerance" type="double" value="1.0e-3"/>
-          <Parameter name="Write Linear System" type="bool" value="0"/>
-          <!--Parameter name="Preconditioner" type="string" value="User Defined"/-->
-        </ParameterList>
-      </ParameterList>
-    </ParameterList>
-  </ParameterList>
+        <ParameterList name="Stratimikos">
+          <Parameter name="Linear Solver Type" type="string" value="Belos"/>
+          <ParameterList name="Linear Solver Types">
+            <ParameterList name="Belos">
+              <Parameter name="Solver Type" type="string" value="Block GMRES"/>
+              <ParameterList name="Solver Types">
+                <ParameterList name="Block GMRES">
+                  <Parameter name="Convergence Tolerance" type="double" value="1e-3"/>
+                  <Parameter name="Output Frequency" type="int" value="1"/>
+                  <Parameter name="Verbosity" type="int" value="33"/>
+                  <Parameter name="Maximum Iterations" type="int" value="500"/>
+                  <Parameter name="Block Size" type="int" value="1"/>
+                  <Parameter name="Num Blocks" type="int" value="100"/>
+                  <Parameter name="Flexible Gmres" type="bool" value="0"/>
+                </ParameterList> 
+              </ParameterList> 
+            </ParameterList> 
+          </ParameterList>  
+        </ParameterList>  
+      </ParameterList> 
+    </ParameterList> 
+  </ParameterList> 
 </ParameterList>
 

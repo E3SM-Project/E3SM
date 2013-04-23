@@ -114,6 +114,11 @@ SET(PRIM_SRCS ${SRC_SHARE_DIR}/kinds.F90
 					     ${SRC_DIR}/netcdf_io_mod.F90 
 					     ${SRC_SHARE_DIR}/mesh_mod.F90 
 					     ${SRC_SHARE_DIR}/Manager.F90
+#					     ${UTILS_TRILINOS_DIR}/trilinosNoxSolver.cpp 
+#					     ${UTILS_TRILINOS_DIR}/trilinosModelEvaluator.cpp 
+#					     ${UTILS_TRILINOS_DIR}/block_precon_interface.cpp 
+#					     ${UTILS_TRILINOS_DIR}/precon_interface.cpp 
+					     ${SRC_SHARE_DIR}/prim_derived_type_mod.F90 
 )
 
 
@@ -121,10 +126,10 @@ SET(PRIM_SRCS ${PRIM_SRCS} ${SRC_DIR}/prim_main.F90 CACHE INTERNAL "Sources for 
 
 # Set up defaults
 IF (NOT PRIM_NP)
-  SET (PRIM_NP 8) 
+  SET (PRIM_NP 4) 
 ENDIF ()
 IF (NOT PRIM_PLEV)
-  SET (PRIM_PLEV 20) 
+  SET (PRIM_PLEV 26) 
 ENDIF ()
 IF (NOT PRIM_USE_PIO)
   SET (PRIM_USE_PIO FALSE) 
