@@ -25,12 +25,6 @@
 /* Using MPI */
 #define _MPI 1
 
-/* SPHEREW */
-#define SPHEREW 1
-
-/* _NO_OMP_THREADS */
-#define _NO_OMP_THREADS 1
-
 #define TRILINOS 1
 
 /* Quadruple-precision */

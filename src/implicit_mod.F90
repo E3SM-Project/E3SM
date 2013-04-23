@@ -222,7 +222,6 @@ contains
 
   end subroutine advance_imp_nonstag
 
-!#ifdef SPHEREW
   subroutine residual(xstate, fx, nelemd, c_ptr_to_object) bind(C,name='calc_f')
 
     use ,intrinsic :: iso_c_binding 
@@ -1005,10 +1004,6 @@ contains
     call t_stopf('residual lin')
 
   end subroutine residual_lin
-
-
-!#endif 
-
 
 ! precon_si() is a preconditioner for the fully implicit solver based on 
 ! the semi-implicit solver advance_si_nonstag
