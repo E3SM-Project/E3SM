@@ -22,9 +22,9 @@ OBJS = mpas_ocn_mpas_core.o \
        mpas_ocn_restoring.o \
        mpas_ocn_tendency.o \
        mpas_ocn_diagnostics.o \
-	   mpas_ocn_tracer_hmix.o \
-	   mpas_ocn_tracer_hmix_del2.o \
-	   mpas_ocn_tracer_hmix_del4.o \
+       mpas_ocn_tracer_hmix.o \
+       mpas_ocn_tracer_hmix_del2.o \
+       mpas_ocn_tracer_hmix_del4.o \
        mpas_ocn_tracer_advection.o \
        mpas_ocn_tracer_advection_std.o \
        mpas_ocn_tracer_advection_std_hadv.o \
