@@ -1,17 +1,17 @@
 &time_management
 	config_do_restart = .false.
-	config_start_time = '0000-01-01_00:00:00'
-	config_stop_time = 'none'
-	config_run_duration = '0_06:00:00'
-	config_calendar_type = '360day'
+	config_start_time = "0000-01-01_00:00:00"
+	config_stop_time = "none"
+	config_run_duration = "0_06:00:00"
+	config_calendar_type = "360day"
 /
 &io
-	config_input_name = 'grid.nc'
-	config_output_name = 'output.nc'
-	config_restart_name = 'restart.nc'
-	config_restart_interval = '0_06:00:00'
-	config_output_interval = '0_06:00:00'
-	config_stats_interval = '0_01:00:00'
+	config_input_name = "grid.nc"
+	config_output_name = "output.nc"
+	config_restart_name = "restart.nc"
+	config_restart_interval = "0_06:00:00"
+	config_output_interval = "0_06:00:00"
+	config_stats_interval = "0_01:00:00"
 	config_write_stats_on_startup = .true.
 	config_write_output_on_startup = .true.
 	config_frames_per_outfile = 1000
@@ -20,20 +20,20 @@
 /
 &time_integration
 	config_dt = 3000.0
-	config_time_integrator = 'split_explicit'
+	config_time_integrator = "split_explicit"
 /
 &grid
 	config_num_halos = 3
-	config_vert_coord_movement = 'uniform_stretching'
-	config_alter_ICs_for_pbcs = 'zlevel_pbcs_off'
+	config_vert_coord_movement = "uniform_stretching"
+	config_alter_ICs_for_pbcs = "zlevel_pbcs_off"
 	config_min_pbc_fraction = 0.10
 	config_check_ssh_consistency = .true.
 /
 &decomposition
-	config_block_decomp_file_prefix = 'graph.info.part.'
+	config_block_decomp_file_prefix = "graph.info.part."
 	config_number_of_blocks = 0
 	config_explicit_proc_decomp = .false.
-	config_proc_decomp_file_prefix = 'graph.info.part.'
+	config_proc_decomp_file_prefix = "graph.info.part."
 /
 &hmix
 	config_hmix_ScaleWithMesh = .false.
@@ -102,7 +102,7 @@
 	config_restoreS_timescale = 90.0
 /
 &advection
-	config_vert_tracer_adv = 'stencil'
+	config_vert_tracer_adv = "stencil"
 	config_vert_tracer_adv_order = 3
 	config_horiz_tracer_adv_order = 3
 	config_coef_3rd_order = 0.25
@@ -112,11 +112,11 @@
 	config_bottom_drag_coeff = 1.0e-3
 /
 &pressure_gradient
-	config_pressure_gradient_type = 'pressure_and_zmid'
+	config_pressure_gradient_type = "pressure_and_zmid"
 	config_density0 = 1014.65
 /
 &eos
-	config_eos_type = 'jm'
+	config_eos_type = "jm"
 /
 &eos_linear
 	config_eos_linear_alpha = 2.55e-1
