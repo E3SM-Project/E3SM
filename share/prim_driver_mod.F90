@@ -1154,6 +1154,9 @@ contains
        call prim_advance_si(elem, nets, nete, cg(hybrid%ithr), blkjac, red, &
             refstate, hvcoord, deriv(hybrid%ithr), flt, hybrid, tl, dt)
        tot_iter=tot_iter+cg(hybrid%ithr)%iter
+
+    else if (integration == "full_imp") then
+       call abortmp('full_imp solver not yet activated')
     end if
 
 

@@ -604,7 +604,6 @@ contains
        ! note: diagnostics not yet coded for semi-implicit 
        if (integration == "explicit") then
           
-          
           write(iulog,'(3a25)') "**DYNAMICS**        J/m^2","   W/m^2","W/m^2    "
 #ifdef ENERGY_DIAGNOSTICS
           ! terms computed during prim_advance, if ENERGY_DIAGNOSTICS is enabled

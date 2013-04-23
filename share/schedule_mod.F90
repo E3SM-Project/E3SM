@@ -324,6 +324,8 @@ contains
        else if(integration == "semi_imp") then 
           call SetSerialParamsImplicit(time_per_elem,time_per_iter,avg_cg_iters, &
                np,nelem,nlev,machinename,FoundMachine)
+       else if(integration == "full_imp") then 
+	  write(iulog,*)'MessageStats: not set for implicit integration'
        endif
     endif
 

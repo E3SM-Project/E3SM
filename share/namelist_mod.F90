@@ -530,7 +530,7 @@ module namelist_mod
           read(*,nml=solver_nl)
 #endif
        else if((integration .ne. "explicit").and.(integration .ne. "runge_kutta")) then
-          call abortmp('integration must be explicit, semi_imp or runge_kutta')
+          call abortmp('integration must be explicit, semi_imp, full_imp, or runge_kutta')
        end if
 
        write(iulog,*)"reading filter namelist..."
