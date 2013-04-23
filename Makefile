@@ -1,5 +1,7 @@
 .SUFFIXES: .F .o
 
+CVMIX_REPO_ADDRESS=http://cvmix.googlecode.com/svn/trunk/src/shared
+
 OBJS = mpas_ocn_mpas_core.o \
        mpas_ocn_advection.o \
        mpas_ocn_thick_hadv.o \
@@ -45,10 +47,14 @@ OBJS = mpas_ocn_mpas_core.o \
        mpas_ocn_time_average.o \
        mpas_ocn_monthly_forcing.o
 
-all: core_hyd
+all: libcvmix core_hyd
+
+libcvmix:
+	(svn checkout $(CVMIX_REPO_ADDRESS) cvmix)
+	(cd cvmix; make all FC="$(FC)" FFLAGS="$(FFLAGS)" FINCLUDES="$(FINCLUDES)")
 
 core_hyd: $(OBJS)
-	ar -ru libdycore.a $(OBJS)
+	ar -ru libdycore.a $(OBJS) cvmix/*.o
 
 mpas_ocn_advection.o:
 
