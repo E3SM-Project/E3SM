@@ -14,6 +14,7 @@ restartfreq   =  1
 restartfile   = "./R0001"
 runtype       = 0
 tstep         = 100.0
+tstep_type    = 1
 integration   = "full_imp"
 /
 &solver_nl

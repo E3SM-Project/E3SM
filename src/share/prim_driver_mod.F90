@@ -539,6 +539,10 @@ contains
          limiter_option, nu, nu_q, nu_div, tstep_type, hypervis_subcycle, &
          hypervis_subcycle_q
     use prim_si_ref_mod, only: prim_si_refstate_init, prim_set_mass
+#ifdef TRILINOS
+    use prim_derived_type_mod ,only : derived_type, initialize
+    use, intrinsic :: iso_c_binding
+#endif
     use thread_mod, only : nthreads
     use derivative_mod, only : derivinit, interpolate_gll2fvm_points, interpolate_gll2spelt_points, v2pinit
     use global_norms_mod, only : test_global_integral, print_cfl
@@ -1156,7 +1160,7 @@ contains
        tot_iter=tot_iter+cg(hybrid%ithr)%iter
 
     else if (integration == "full_imp") then
-       call abortmp('full_imp solver not yet activated')
+       call abortmp('full_imp solver not activated with these settings')
     end if
 
 
@@ -1247,7 +1251,6 @@ contains
     use parallel_mod, only : abortmp
     use reduction_mod, only : parallelmax
     use prim_advection_mod, only : vertical_remap
-
     
 
     type (element_t) , intent(inout)        :: elem(:)
@@ -1445,8 +1448,7 @@ contains
 !
     use hybvcoord_mod, only : hvcoord_t
     use time_mod, only : TimeLevel_t, timelevel_update, nsplit
-    use control_mod, only: statefreq,&
-           ftype, qsplit, nu_p, test_cfldep, rsplit
+    use control_mod, only: statefreq, integration, ftype, qsplit, nu_p, test_cfldep, rsplit
     use prim_advance_mod, only : prim_advance_exp
     use prim_advection_mod, only : prim_advec_tracers_remap_rk2, prim_advec_tracers_fvm, &
          prim_advec_tracers_spelt
@@ -1517,14 +1519,27 @@ contains
     n_Q = tl%n0  ! n_Q = timelevel of FV tracers at time t.  need to save this
                  ! FV tracers still carry 3 timelevels 
                  ! SE tracers only carry 2 timelevels 
-    call prim_advance_exp(elem, deriv(hybrid%ithr), hvcoord,   &
+    if (integration == "explicit") then
+      call prim_advance_exp(elem, deriv(hybrid%ithr), hvcoord,   &
          hybrid, dt, tl, nets, nete, compute_diagnostics)
-    do n=2,qsplit
-       call TimeLevel_update(tl,"leapfrog")
-       call prim_advance_exp(elem, deriv(hybrid%ithr), hvcoord,   &
+      do n=2,qsplit
+        call TimeLevel_update(tl,"leapfrog")
+        call prim_advance_exp(elem, deriv(hybrid%ithr), hvcoord,   &
             hybrid, dt, tl, nets, nete, .false.)
-       ! defer final timelevel update until after Q update.
-    enddo
+        ! defer final timelevel update until after Q update.
+      enddo
+
+    else if (integration == "full_imp") then
+      call prim_advance_exp(elem, deriv(hybrid%ithr), hvcoord,   &
+         hybrid, dt, tl, nets, nete, compute_diagnostics)
+      do n=2,qsplit
+         call TimeLevel_update(tl,"leapfrog")
+         call prim_advance_exp(elem, deriv(hybrid%ithr), hvcoord,   &
+            hybrid, dt, tl, nets, nete, .false.)
+         ! defer final timelevel update until after Q update.
+      enddo
+
+    end if
 
 
 

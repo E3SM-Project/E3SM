@@ -168,8 +168,9 @@ public:
   
   hommePreconditionerBase(RCP<Epetra_Map> xMap) : xMap_(xMap) {};
 
-  virtual int ApplyInverse(const Epetra_MultiVector& V, Epetra_MultiVector& Y) const = 0;
+  // Methods that MUST be implemented for preconditioner
   virtual int computePreconditioner(RCP<const Epetra_Vector> xVec) = 0;
+  virtual int ApplyInverse(const Epetra_MultiVector& V, Epetra_MultiVector& Y) const = 0;
 
   // Trivial implemetations set in this base class
   int SetUseTranspose(bool UseTranspose) { TEUCHOS_TEST_FOR_EXCEPT(UseTranspose); return 0;};
@@ -191,6 +192,13 @@ private:
 /*******************************************************************************/
 /*******************************************************************************/
 /*******************************************************************************/
+   // Add Preconditioners, inheriting from hommePreconditionerBase to get
+   // default implementations of most required methods of an Epetra_Operator
+   // above. Only need to implement constructor, computePreconditioner,
+   // and ApplyInverse. 
+/*******************************************************************************/
+/*******************************************************************************/
+/*******************************************************************************/
 class identityPreconditioner : public hommePreconditionerBase {
 public:
   identityPreconditioner(int N, RCP<Epetra_Vector> xVec, RCP<Epetra_Map> xMap,
@@ -206,6 +214,38 @@ private:
   void* blackbox_res;
   void* precdata;
   void (*precUpdateFunction)(double *,int,void *);
+};
+/*******************************************************************************/
+/*******************************************************************************/
+/*******************************************************************************/
+class simplePreconditioner : public hommePreconditionerBase {
+public:
+  simplePreconditioner(int N, RCP<Epetra_Vector> xVec, RCP<Epetra_Map> xMap,
+                       void* blackbox_res, void* precdata,
+                       void (*precFunctionblock11)(double *,int,double*,void *),
+                       void (*precFunctionblock12)(double *,int,double*,void *),
+                       void (*precFunctionblock21)(double *,int,double*,void *),
+                       void (*precFunctionblock22)(double *,int,double*,void *),
+                       void (*precUpdateFunction)(double *,int,void *) );
+
+  int ApplyInverse(const Epetra_MultiVector& V, Epetra_MultiVector& Y) const;
+  int computePreconditioner(RCP<const Epetra_Vector> xVec);
+
+private:
+  int N;
+  bool printproc;
+  RCP<Epetra_Vector> xVec;
+  RCP<Epetra_Map> xMap;
+  void* blackbox_res;
+  void* precdata;
+  void (*precFunctionblock11)(double *,int,double*,void *);
+  void (*precFunctionblock12)(double *,int,double*,void *);
+  void (*precFunctionblock21)(double *,int,double*,void *);
+  void (*precFunctionblock22)(double *,int,double*,void *);
+  void (*precUpdateFunction)(double *,int,void *);
+  RCP<Epetra_Operator>F;
+  RCP<Epetra_Operator>S;
+
 };
 
 #endif

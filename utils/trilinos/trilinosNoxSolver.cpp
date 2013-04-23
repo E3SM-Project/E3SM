@@ -1,6 +1,6 @@
 // Trilinos Objects
 #include "Piro_Epetra_NOXSolver.hpp"
-#include "Piro_Epetra_LOCASolver.hpp"
+//#include "Piro_Epetra_LOCASolver.hpp"
 #include "trilinosModelEvaluator.hpp"
 
 #include "Epetra_MpiComm.h"
@@ -14,6 +14,7 @@
 //#define FD_JAC_SCALAR_PREC_ON   
 //#define AN_JAC_SCALAR_PREC_ON   
 //#define COMPARE_SIMPLE_BLOCK_VS_SEGGREGATED_ON
+
 //#define SIMPLE_PREC_ON
 #define IDENTITY_PREC_ON
 
@@ -96,6 +97,7 @@ extern "C" {
                void* blackbox_res, void* blackbox_prec, void* jac_data)
   {
 
+    int N=*nelems;
     void (*residualFunction)(double *, double *, int, void *) = calc_f;
     //pal the 'old' precon function is obsolete
 
@@ -213,7 +215,7 @@ extern "C" {
       Epetra_Comm& Comm=*Comm_;
       printProc = (Comm_->MyPID() == 0);
     
-      if (printProc) cout << "NOXINIT CALLED    for nelem=" << *nelems 
+      if (printProc) cout << "NOXINIT CALLED    for nelem=" << N 
                           << ". Looking for trilinosOptions.xml" << endl;
 
       try {
@@ -231,7 +233,7 @@ extern "C" {
       //Interface for scalar preconditioner
       /* Interface for SIMPLE preconditioner */
       #ifdef IDENTITY_PREC_ON
-        model = Teuchos::rcp(new trilinosModelEvaluator(*nelems, statevector, Comm, 
+        model = Teuchos::rcp(new trilinosModelEvaluator(N, statevector, Comm, 
                              blackbox_res, blackbox_prec, residualFunction, precUpdateFunction)); 
       #endif
 
@@ -269,6 +271,7 @@ extern "C" {
       #endif
 
     
+/* LOCA doesn't make sense in Homme
       // Logic to see if we want to use LOCA continuation or NOX single steady solve
       // Turn on LOCA by having a LOCA sublist AND setting "HOMME: Number of Time Steps To Use LOCA">0
       bool useLoca=false;
@@ -285,7 +288,8 @@ extern "C" {
         Nsolver = rcp(new Piro::Epetra::LOCASolver(paramList, model));
       }
       else
-        Nsolver = rcp(new Piro::Epetra::NOXSolver(paramList, model));
+*/
+      Nsolver = rcp(new Piro::Epetra::NOXSolver(paramList, model));
 
       inArgs=Nsolver->createInArgs();
       outArgs=Nsolver->createOutArgs();
@@ -297,11 +301,13 @@ extern "C" {
       outArgs.set_g(0,xout);
 
       // Set up parameter vector for continuation runs
+/*
       if (useLoca) {
         RCP<const Epetra_Map> pmap = Nsolver->get_p_map(0);
         RCP<Epetra_Vector> pvec = rcp(new Epetra_Vector(*pmap));
         inArgs.set_p(0, pvec);
       }
+*/
 
       // Time step counter: just for deciding whether to use continuation on relaxatin param
       timeStep++;
