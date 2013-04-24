@@ -92,6 +92,7 @@
 !local variables:
  type(block_type),pointer:: block
  type(MPAS_Time_Type):: currTime
+ type (MPAS_TimeInterval_type) :: dtInterval
 
  logical:: LeapYear
  character(len=StrKIND)   :: timeStamp
@@ -247,8 +248,10 @@
 
 !check to see if it is time to calculate additional physics diagnostics:
  l_diags = .false.
+ call mpas_set_timeInterval(dtInterval,dt=dt,ierr=ierr)
  if(mpas_is_alarm_ringing(clock,diagAlarmID,ierr=ierr)) then
     call mpas_reset_clock_alarm(clock,diagAlarmID,ierr=ierr)
+ else if(mpas_is_alarm_ringing(clock,diagAlarmID,interval=dtInterval,ierr=ierr)) then
     l_diags = .true.
  endif
  write(0,*) '--- time to calculate additional physics_diagnostics               =',l_diags
