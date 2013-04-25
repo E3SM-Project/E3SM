@@ -392,7 +392,7 @@ module namelist_mod
     ! set all CAM defaults 
     ! CAM requires forward-in-time, subcycled dynamics
     ! RK2 3 stage tracers, sign-preserving conservative
-    tstep_type = 1            ! foward-in-time RK methods
+    tstep_type = 1            ! forward-in-time RK methods
     qsplit=4; rk_stage_user=3
     se_limiter_option=4
     se_ftype = 2

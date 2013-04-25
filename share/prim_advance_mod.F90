@@ -70,7 +70,7 @@ contains
   subroutine prim_advance_exp(elem, deriv, hvcoord, hybrid,&
        dt, tl,  nets, nete, compute_diagnostics)
     use bndry_mod, only : bndry_exchangev
-    use control_mod, only : prescribed_wind, qsplit, tstep_type, rsplit, qsplit, moisture
+    use control_mod, only : prescribed_wind, qsplit, tstep_type, rsplit, qsplit, moisture, integration
     use derivative_mod, only : derivative_t, vorticity, divergence, gradient, gradient_wk
     use dimensions_mod, only : np, nlev, nlevp
     use edge_mod, only : EdgeBuffer_t, edgevpack, edgevunpack, initEdgeBuffer
@@ -123,7 +123,7 @@ contains
     endif
      
 
-
+! integration = "explicit"
 !
 !   tstep_type=0  pure leapfrog except for very first timestep   CFL=1
 !                    typically requires qsplit=4 or 5 
@@ -143,26 +143,41 @@ contains
 !                    optimal: for windspeeds ~120m/s,gravity: 340m/2
 !                    run with qsplit=1
 !
+! integration = "full_imp"  (under development)
+!
+!   tstep_type=1  Backward Euler, first order 
+!
+!   tstep_type=2  Crank Nicolson, second order
+!
+
+! default weights for computing mean dynamics fluxes
+    eta_ave_w = 1d0/qsplit   
 
     if(tstep_type==0)then  
-       method=0                ! pure leapfrog
-       if (nstep==0) method=1  ! always use RK2 for first timestep
+        method=0                ! pure leapfrog
+        if (nstep==0) method=1  ! always use RK2 for first timestep
+      if (integration == "full_imp") then
+       call abortmp('full_imp solver not activated with tstep_type=0')
+      end if
     else if (tstep_type==1) then  
-       method=0                           ! LF
-       qsplit_stage = mod(nstep,qsplit)
-       if (qsplit_stage==0) method=1      ! RK2 on first of qsplit steps
-    else if (tstep_type>1) then  
-       method = tstep_type                ! other RK variants 
+      if (integration == "explicit") then
+        method=0                           ! LF
+        qsplit_stage = mod(nstep,qsplit)
+        if (qsplit_stage==0) method=1      ! RK2 on first of qsplit steps
+! RK2 + LF scheme has tricky weights:
+        eta_ave_w=ur_weights(qsplit_stage+1) 
+      else if (integration == "full_imp") then
+	method = 10 + tstep_type
+! ONLY USE THIS WEIGHTING IN FI while its a dummy RK method
+        eta_ave_w=ur_weights(qsplit_stage+1) 
+      end if	
+    else if ((tstep_type.gt.1).and.(tstep_type.le.5)) then  
+      if (integration == "explicit") then
+        method = tstep_type                ! other RK variants 
+      else if (integration == "full_imp") then
+	method = 10 + tstep_type
+      end if	
     endif
-
-
-    ! weights for computing mean dynamics fluxes
-    eta_ave_w = 1d0/qsplit   
-    if(tstep_type==1)then                 
-       ! RK2 + LF scheme has tricky weights:
-       eta_ave_w=ur_weights(qsplit_stage+1) 
-    endif
-
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
     ! fix dynamical variables, skip dynamics
@@ -302,6 +317,14 @@ contains
        call compute_and_apply_rhs(np1,n0,np1,qn0,dt/2,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,0d0)
        ! u5 = u0 + dt RHS(u4)
+       call compute_and_apply_rhs(np1,n0,np1,qn0,dt,elem,hvcoord,hybrid,&
+            deriv,nets,nete,.false.,eta_ave_w)
+    else if (method==11) then
+       ! will be FI. But is LF placeholder right now
+       ! forward euler to u(dt/2) = u(0) + (dt/2) RHS(0)  (store in u(np1))
+       call compute_and_apply_rhs(np1,n0,n0,qn0,dt/2,elem,hvcoord,hybrid,&
+            deriv,nets,nete,compute_diagnostics,0d0)
+       ! leapfrog:  u(dt) = u(0) + dt RHS(dt/2)     (store in u(np1))
        call compute_and_apply_rhs(np1,n0,np1,qn0,dt,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,eta_ave_w)
     else
