@@ -1145,7 +1145,7 @@ contains
 #if (! defined ELEMENT_OPENMP)
 !$OMP BARRIER
 #endif
-    if (integration == "explicit") then
+    if ((integration == "explicit").or.(integration == "full_imp")) then
        call prim_advance_exp(elem, deriv(hybrid%ithr), hvcoord,   &
             hybrid, dt, tl, nets, nete, compute_diagnostics)
 
@@ -1159,8 +1159,6 @@ contains
             refstate, hvcoord, deriv(hybrid%ithr), flt, hybrid, tl, dt)
        tot_iter=tot_iter+cg(hybrid%ithr)%iter
 
-    else if (integration == "full_imp") then
-       call abortmp('full_imp solver not activated with these settings')
     end if
 
 
@@ -1519,7 +1517,7 @@ contains
     n_Q = tl%n0  ! n_Q = timelevel of FV tracers at time t.  need to save this
                  ! FV tracers still carry 3 timelevels 
                  ! SE tracers only carry 2 timelevels 
-    if (integration == "explicit") then
+    if ((integration == "explicit").or.(integration == "full_imp")) then
       call prim_advance_exp(elem, deriv(hybrid%ithr), hvcoord,   &
          hybrid, dt, tl, nets, nete, compute_diagnostics)
       do n=2,qsplit
@@ -1528,20 +1526,7 @@ contains
             hybrid, dt, tl, nets, nete, .false.)
         ! defer final timelevel update until after Q update.
       enddo
-
-    else if (integration == "full_imp") then
-      call prim_advance_exp(elem, deriv(hybrid%ithr), hvcoord,   &
-         hybrid, dt, tl, nets, nete, compute_diagnostics)
-      do n=2,qsplit
-         call TimeLevel_update(tl,"leapfrog")
-         call prim_advance_exp(elem, deriv(hybrid%ithr), hvcoord,   &
-            hybrid, dt, tl, nets, nete, .false.)
-         ! defer final timelevel update until after Q update.
-      enddo
-
     end if
-
-
 
     ! ===============
     ! Tracer Advection.  SE advection uses mean flux variables:
