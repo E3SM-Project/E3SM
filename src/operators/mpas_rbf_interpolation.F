@@ -20,6 +20,7 @@
 module mpas_rbf_interpolation
    use mpas_dmpar
    use mpas_grid_types
+   use mpas_vector_operations
 
    implicit none
    private
@@ -120,7 +121,7 @@ module mpas_rbf_interpolation
 !> the interpolation routines.
 !> Input: the grid
 !> Output:
-!>      edgeNormalVectors - the unit vector at the center of each edge tangent to the sphere
+!>      edgeNormalVector - the unit vector at the center of each edge tangent to the sphere
 !>      cellTangentPlane - 2 orthogonal unit vectors in the tangent plane of each cell
 !>                         The first unit vector is chosen to point toward the center of the first
 !>                         edge on the cell.
@@ -133,76 +134,7 @@ module mpas_rbf_interpolation
 
     type (mesh_type), intent(inout) :: grid  !< Input/Output: Grid information
 
-    integer :: nCells, nEdges
-    integer, dimension(:,:), pointer :: cellsOnEdge, edgesOnCell
-    integer :: iEdge, iCell, cell1, cell2
-    real(kind=RKIND), dimension(:), pointer :: xCell, yCell, zCell, xEdge, yEdge, zEdge
-    real(kind=RKIND), dimension(:,:), pointer :: localVerticalUnitVectors, edgeNormalVectors
-    real(kind=RKIND), dimension(:,:,:), pointer :: cellTangentPlane
-    real(kind=RKIND), dimension(3) :: xHatPlane, yHatPlane, rHat
-    real(kind=RKIND) :: normalDotRHat
-    logical :: on_a_sphere
-
-    xCell       => grid % xCell % array
-    yCell       => grid % yCell % array
-    zCell       => grid % zCell % array
-    xEdge       => grid % xEdge % array
-    yEdge       => grid % yEdge % array
-    zEdge       => grid % zEdge % array
-    cellsOnEdge => grid % cellsOnEdge % array
-    edgesOnCell => grid % edgesOnCell % array
-    nCells      = grid % nCells
-    nEdges      = grid % nEdges
-    on_a_sphere = grid % on_a_sphere
-
-    localVerticalUnitVectors => grid % localVerticalUnitVectors % array
-    edgeNormalVectors => grid % edgeNormalVectors % array
-    cellTangentPlane => grid % cellTangentPlane % array
-
-    ! init arrays
-    edgeNormalVectors = 0
-    localVerticalUnitVectors = 0
-
-    ! loop over all cells to be solved on this block
-    do iCell=1,nCells
-      if(on_a_sphere) then
-        localVerticalUnitVectors(1,iCell) = xCell(iCell)
-        localVerticalUnitVectors(2,iCell) = yCell(iCell)
-        localVerticalUnitVectors(3,iCell) = zCell(iCell)
-        call mpas_unit_vec_in_r3(localVerticalUnitVectors(:,iCell))
-      else ! on a plane
-        localVerticalUnitVectors(:,iCell) = (/ 0., 0., 1. /)
-      end if
-    end do
-
-    do iEdge = 1,nEdges
-      iCell = cellsOnEdge(1,iEdge) ! the normal vector points from the first cell toward the edge
-      if(iCell == nCells+1) then ! this is a boundary edge
-        ! the first cell bordering this edge is not real, use the second cell
-        !  The normal should always point outward at boundaries, away from the valid cell center
-        iCell = cellsOnEdge(2,iEdge)
-      end if
-      ! the normal points from the cell location to the edge location
-      edgeNormalVectors(1,iEdge) = xEdge(iEdge) - xCell(iCell)
-      edgeNormalVectors(2,iEdge) = yEdge(iEdge) - yCell(iCell)
-      edgeNormalVectors(3,iEdge) = zEdge(iEdge) - zCell(iCell)
-      call mpas_unit_vec_in_r3(edgeNormalVectors(:,iEdge))
-    end do
-
-    do iCell=1,nCells
-      iEdge = edgesOnCell(1,iCell)
-      ! xHat and yHat are a local basis in the plane of the horizontal cell
-      ! we arbitrarily choose xHat to point toward the first edge
-      rHat = localVerticalUnitVectors(:,iCell)
-      normalDotRHat = sum(edgeNormalVectors(:,iEdge)*rHat)
-      xHatPlane = edgeNormalVectors(:,iEdge) - normalDotRHat*rHat
-      call mpas_unit_vec_in_r3(xHatPlane)
-
-      call mpas_cross_product_in_r3(rHat, xHatPlane, yHatPlane)
-      call mpas_unit_vec_in_r3(yHatPlane) ! just to be sure...
-      cellTangentPlane(:,1,iCell) = xHatPlane
-      cellTangentPlane(:,2,iCell) = yHatPlane
-    end do
+    call mpas_initialize_vectors(grid)
 
   end subroutine mpas_rbf_interp_initialize!}}}
 
@@ -1140,15 +1072,17 @@ module mpas_rbf_interpolation
     integer :: i, j
     integer :: matrixSize
 
-    real(kind=RKIND), dimension(:,:), pointer :: matrix, matrixCopy
-    real(kind=RKIND), dimension(:,:), pointer :: rhs, coeffs
+    real(kind=RKIND), dimension(:,:), pointer :: matrix, matrixWork, matrixCopy
+    real(kind=RKIND), dimension(:,:), pointer :: rhs, rhsWork, coeffs
     integer, dimension(:), pointer :: pivotIndices
 
     matrixSize = pointCount+3 ! extra space for constant vector 
 
     allocate(matrix(matrixSize,matrixSize))  
+    allocate(matrixWork(pointCount,pointCount))  
     allocate(matrixCopy(matrixSize,matrixSize))  
     allocate(rhs(matrixSize,3))  
+    allocate(rhsWork(pointCount,3))  
     allocate(coeffs(matrixSize,3))  
     allocate(pivotIndices(matrixSize))  
 
@@ -1158,7 +1092,10 @@ module mpas_rbf_interpolation
 
     call mpas_set_up_vector_dirichlet_rbf_matrix_and_rhs(pointCount, 3, &
       sourcePoints, unitVectors, destinationPoint, &
-      alpha, matrix(1:pointCount,1:pointCount), rhs(1:pointCount,:))
+      alpha, matrixWork, rhsWork)
+
+    rhs(1:pointCount,:) = rhsWork
+    matrix(1:pointCount,1:pointCount) = matrixWork
 
     do i = 1, pointCount
       matrix(i,pointCount+1:pointCount+3) = unitVectors(i,:)
@@ -1244,15 +1181,17 @@ module mpas_rbf_interpolation
     real(kind=RKIND), dimension(pointCount,2) :: planarUnitVectors
     real(kind=RKIND), dimension(2) :: planarDestinationPoint
 
-    real(kind=RKIND), dimension(:,:), pointer :: matrix, matrixCopy
-    real(kind=RKIND), dimension(:,:), pointer :: rhs, coeffs
+    real(kind=RKIND), dimension(:,:), pointer :: matrix, matrixWork, matrixCopy
+    real(kind=RKIND), dimension(:,:), pointer :: rhs, rhsWork, coeffs
     integer, dimension(:), pointer :: pivotIndices
 
     matrixSize = pointCount+2 ! space for constant vector in plane
 
     allocate(matrix(matrixSize,matrixSize))  
+    allocate(matrixWork(pointCount,pointCount))  
     allocate(matrixCopy(matrixSize,matrixSize))  
     allocate(rhs(matrixSize,2))  
+    allocate(rhsWork(pointCount,2))  
     allocate(coeffs(matrixSize,2))  
     allocate(pivotIndices(matrixSize)) 
 
@@ -1271,7 +1210,10 @@ module mpas_rbf_interpolation
 
     call mpas_set_up_vector_dirichlet_rbf_matrix_and_rhs(pointCount, 2, &
       planarSourcePoints, planarUnitVectors, planarDestinationPoint, &
-      alpha, matrix(1:pointCount,1:pointCount), rhs(1:pointCount,:))
+      alpha, matrixWork, rhsWork)
+
+    matrix(1:pointCount,1:pointCount) = matrixWork
+    rhs(1:pointCount,:) = rhsWork
 
     do i = 1, pointCount
       matrix(i,pointCount+1:pointCount+2) = planarUnitVectors(i,:) 
@@ -1795,44 +1737,6 @@ module mpas_rbf_interpolation
     end do
 
   end subroutine mpas_set_up_vector_free_slip_rbf_matrix_and_rhs!}}}
-
-!***********************************************************************
-!
-!  routine mpas_unit_vec_in_r3
-!
-!> \brief   MPAS 3D unit vector routine
-!> \author  Xylar Asay-Davis
-!> \date    03/28/13
-!> \details 
-!> This routine creates a unit vector out of an input point.
-!-----------------------------------------------------------------------
-  subroutine mpas_unit_vec_in_r3(xin)!{{{
-    implicit none
-    real (kind=RKIND), intent(inout) :: xin(3) !< Input/Output: Vector and unit vector
-    real (kind=RKIND) :: mag
-    mag = sqrt(xin(1)**2+xin(2)**2+xin(3)**2)
-    xin(:) = xin(:) / mag
-  end subroutine mpas_unit_vec_in_r3!}}}
-
-!***********************************************************************
-!
-!  routine mpas_cross_product_in_r3
-!
-!> \brief   MPAS 3D cross product routine
-!> \author  Xylar Asay-Davis
-!> \date    03/28/13
-!> \details 
-!> This routine computes the cross product of two input vectors.
-!-----------------------------------------------------------------------
-  subroutine mpas_cross_product_in_r3(p_1,p_2,p_out)!{{{
-    real (kind=RKIND), intent(in) :: p_1 (3) !< Input: Vector 1
-    real (kind=RKIND), intent(in) :: p_2 (3) !< Input: Vector 2
-    real (kind=RKIND), intent(out) :: p_out (3) !< Output: Cross product of vector 1 and vector 2
-
-    p_out(1) = p_1(2)*p_2(3)-p_1(3)*p_2(2)
-    p_out(2) = p_1(3)*p_2(1)-p_1(1)*p_2(3)
-    p_out(3) = p_1(1)*p_2(2)-p_1(2)*p_2(1)
-  end subroutine mpas_cross_product_in_r3!}}}
 
 ! Updated 10/24/2001.
 !
