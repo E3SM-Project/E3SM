@@ -25,6 +25,9 @@
 		<dim name="R3" definition="3" units="unitless"
 			 description="The number three as a dimension."
 		/>
+		<dim name="SIX" definition="6" units="unitless"
+		     description="The number six as a dimension."
+		/>
 		<dim name="FIFTEEN" definition="15" units="unitless"
 			 description="The number 15 as a dimension."
 		/>
@@ -700,6 +703,36 @@
 		<var name="normalBaroclinicVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
 			 description="baroclinic velocity, used in split-explicit time-stepping"
 		/>
+		<var name="strainRate3DCell" type="real" dimensions="SIX nVertLevels nCells Time" streams="o" units="s^{-1}"
+		     description="strain rate tensor at cell center, 3D, in symmetric 6-index form"
+		/>
+		<var name="strainRate3DEdge" type="real" dimensions="SIX nVertLevels nEdges Time" streams="o" units="s^{-1}"
+		     description="strain rate tensor at edge, 3D, in symmetric 6-index form"
+		/>
+		<var name="divTensor3DCell" type="real" dimensions="R3 nVertLevels nCells Time" streams="o" units="s^{-2}"
+		     description="divergence of the tensor at cell center, as a 3-vector in x,y,z space"
+		/>
+		<var name="outerProductEdge" type="real" dimensions="SIX nVertLevels nEdges Time" streams="o" units="m^2 s^{-1}"
+		     description="Outer produce, u_e \cross n_e, at each edge. {\color{red} change to scratch}"
+		/>
+		<var name="strainRate3DCellSolution" type="real" dimensions="SIX nVertLevels nCells Time" streams="o" units="s^{-1}"
+		     description="strain rate solution tensor at cell center, 3D, in symmetric 6-index form"
+		/>
+		<var name="strainRate3DEdgeSolution" type="real" dimensions="SIX nVertLevels nEdges Time" streams="o" units="s^{-1}"
+		     description="strain rate solution tensor at edge, 3D, in symmetric 6-index form"
+		/>
+		<var name="divTensor3DCellSolution" type="real" dimensions="R3 nVertLevels nCells Time" streams="o" units="s^{-2}"
+		     description="divergence of the tensor solution at cell center, as a 3-vector in x,y,z space"
+		/>
+		<var name="strainRate3DCellDiff" type="real" dimensions="SIX nVertLevels nCells Time" streams="o" units="s^{-1}"
+		     description="strain rate difference between solution and computed tensor at cell center, 3D, in symmetric 6-index form"
+		/>
+		<var name="strainRate3DEdgeDiff" type="real" dimensions="SIX nVertLevels nEdges Time" streams="o" units="s^{-1}"
+		     description="strain rate difference between solution and computed tensor at edge, 3D, in symmetric 6-index form"
+		/>
+		<var name="divTensor3DCellDiff" type="real" dimensions="R3 nVertLevels nCells Time" streams="o" units="s^{-2}"
+		     description="divergence of the tensor difference between solution and computed at cell center, as a 3-vector in x,y,z space"
+		/>
 	</var_struct>
 	<var_struct name="mesh" time_levs="0">
 		<var name="latCell" type="real" dimensions="nCells" streams="iro" units="radians"
@@ -803,6 +836,9 @@
 		/>
 		<var name="edgeNormalVectors" type="real" dimensions="R3 nEdges" streams="o" units="unitless"
 			 description="Normal vector defined at an edge."
+		/>
+		<var name="edgeTangentVectors" type="real" dimensions="R3 nEdges" streams="o" units="unitless"
+		     description="Tangent vector defined at an edge."
 		/>
 		<var name="localVerticalUnitVectors" type="real" dimensions="R3 nCells" streams="o" units="unitless"
 			 description="Unit surface normal vectors defined at cell centers."
