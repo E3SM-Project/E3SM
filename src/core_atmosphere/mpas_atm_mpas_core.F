@@ -18,6 +18,7 @@ module mpas_core
    integer, parameter :: outputAlarmID = 1 
    integer, parameter :: restartAlarmID = 2 
    integer, parameter :: sfcAlarmID = 3 
+   integer, parameter :: hifreqAlarmID = 4
 
    contains
 
@@ -152,6 +153,13 @@ module mpas_core
          call mpas_add_clock_alarm(clock, restartAlarmID, alarmStartTime, alarmTimeStep, ierr=ierr)
       end if
 
+      ! set high-frequency history alarm, if necessary
+      if (trim(config_hifreq_output_interval) /= "none") then
+         call mpas_set_timeInterval(alarmTimeStep, timeString=config_hifreq_output_interval, ierr=ierr)
+         alarmStartTime = startTime + alarmTimeStep
+         call mpas_add_clock_alarm(clock, hifreqAlarmID, alarmStartTime, alarmTimeStep, ierr=ierr)
+      end if
+
       ! set sfc alarm, if necessary
       if (trim(config_sfc_update_interval) /= "none") then      
          call mpas_set_timeInterval(alarmTimeStep, timeString=config_sfc_update_interval, ierr=ierr)
@@ -251,6 +259,7 @@ module mpas_core
       use mpas_grid_types
       use mpas_kind_types
       use mpas_io_output
+      use mpas_io_input, only: insert_string_suffix => mpas_insert_string_suffix
       use mpas_timer
    
       implicit none
@@ -267,10 +276,24 @@ module mpas_core
       integer :: itimestep
       integer :: ierr
 
+      ! For high-frequency diagnostics output
+      character (len=StrKIND) :: tempfilename
+
       ! Eventually, dt should be domain specific
       dt = config_dt
 
       call atm_write_output_frame(output_obj, output_frame, domain)
+
+      if (trim(config_hifreq_output_interval) /= 'none') then
+         block_ptr => domain % blocklist
+         call atm_compute_output_diagnostics(block_ptr % state % time_levs(1) % state, block_ptr % diag, block_ptr % mesh)
+
+         currTime = mpas_get_clock_time(clock, MPAS_NOW, ierr)
+         call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
+
+         call insert_string_suffix('diagnostics.nc', trim(timeStamp), tempfilename)
+         call write_hifreq_output(block_ptr, tempfilename)
+      end if
 
       ! During integration, time level 1 stores the model state at the beginning of the
       !   time step, and time level 2 stores the state advanced dt in time by timestep(...)
@@ -312,6 +335,16 @@ module mpas_core
                call mpas_output_state_init(output_obj, domain, "OUTPUT", trim(timeStamp))
             end if
             call atm_write_output_frame(output_obj, output_frame, domain)
+         end if
+
+         if (mpas_is_alarm_ringing(clock, hifreqAlarmID, ierr=ierr)) then
+            call mpas_reset_clock_alarm(clock, hifreqAlarmID, ierr=ierr)
+
+            block_ptr => domain % blocklist
+            call atm_compute_output_diagnostics(block_ptr % state % time_levs(1) % state, block_ptr % diag, block_ptr % mesh)
+
+            call insert_string_suffix('diagnostics.nc', trim(timeStamp), tempfilename)
+            call write_hifreq_output(block_ptr, tempfilename)
          end if
 
          if (mpas_is_alarm_ringing(clock, restartAlarmID, ierr=ierr)) then
@@ -437,6 +470,47 @@ module mpas_core
       end do
    
    end subroutine atm_compute_restart_diagnostics
+
+
+   subroutine write_hifreq_output(block_ptr, fname)
+
+      implicit none
+
+      type (block_type), pointer :: block_ptr
+      character (len=*), intent(in) :: fname
+
+      integer :: ierr
+      type (MPAS_Stream_type) :: hifreq_stream
+
+      call MPAS_createStream(hifreq_stream, trim(fname), MPAS_IO_PNETCDF, MPAS_IO_WRITE, 1, ierr)
+      call MPAS_streamAddField(hifreq_stream, block_ptr % state % time_levs(1) % state % xtime, ierr)
+      call MPAS_streamAddField(hifreq_stream, block_ptr % diag_physics % olrtoa, ierr)
+      call MPAS_streamAddField(hifreq_stream, block_ptr % diag_physics % rainc, ierr)
+      call MPAS_streamAddField(hifreq_stream, block_ptr % diag_physics % rainnc, ierr)
+      call MPAS_streamAddField(hifreq_stream, block_ptr % diag_physics % refl10cm_max, ierr)
+      call MPAS_streamAddField(hifreq_stream, block_ptr % diag_physics % precipw, ierr)
+      call MPAS_streamAddField(hifreq_stream, block_ptr % diag % temperature_200hPa, ierr)
+      call MPAS_streamAddField(hifreq_stream, block_ptr % diag % temperature_500hPa, ierr)
+      call MPAS_streamAddField(hifreq_stream, block_ptr % diag % temperature_850hPa, ierr)
+      call MPAS_streamAddField(hifreq_stream, block_ptr % diag % height_200hPa, ierr)
+      call MPAS_streamAddField(hifreq_stream, block_ptr % diag % height_500hPa, ierr)
+      call MPAS_streamAddField(hifreq_stream, block_ptr % diag % height_850hPa, ierr)
+      call MPAS_streamAddField(hifreq_stream, block_ptr % diag % uzonal_200hPa, ierr)
+      call MPAS_streamAddField(hifreq_stream, block_ptr % diag % uzonal_500hPa, ierr)
+      call MPAS_streamAddField(hifreq_stream, block_ptr % diag % uzonal_850hPa, ierr)
+      call MPAS_streamAddField(hifreq_stream, block_ptr % diag % umeridional_200hPa, ierr)
+      call MPAS_streamAddField(hifreq_stream, block_ptr % diag % umeridional_500hPa, ierr)
+      call MPAS_streamAddField(hifreq_stream, block_ptr % diag % umeridional_850hPa, ierr)
+      call MPAS_streamAddField(hifreq_stream, block_ptr % diag % w_200hPa, ierr)
+      call MPAS_streamAddField(hifreq_stream, block_ptr % diag % w_500hPa, ierr)
+      call MPAS_streamAddField(hifreq_stream, block_ptr % diag % w_850hPa, ierr)
+      call MPAS_streamAddField(hifreq_stream, block_ptr % diag % vorticity_200hPa, ierr)
+      call MPAS_streamAddField(hifreq_stream, block_ptr % diag % vorticity_500hPa, ierr)
+      call MPAS_streamAddField(hifreq_stream, block_ptr % diag % vorticity_850hPa, ierr)
+      call MPAS_writeStream(hifreq_stream, 1, ierr)
+      call MPAS_closeStream(hifreq_stream, ierr)
+
+   end subroutine write_hifreq_output
    
    
    subroutine atm_do_timestep(domain, dt, itimestep)

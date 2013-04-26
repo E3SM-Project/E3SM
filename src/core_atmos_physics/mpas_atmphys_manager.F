@@ -269,7 +269,7 @@
 
 !local variables:
  type(MPAS_Time_Type):: startTime,alarmStartTime
- type(MPAS_TimeInterval_Type):: alarmTimeStep
+ type(MPAS_TimeInterval_Type):: alarmTimeStep, alarmTimeStepHi
  integer:: ierr
 
 !=============================================================================================
@@ -448,6 +448,12 @@
 
 !set alarm to calculate physics diagnostics on IO outpt only:
  call mpas_set_timeInterval(alarmTimeStep,timeString=config_output_interval,ierr=ierr)
+ if (trim(config_hifreq_output_interval) /= 'none') then
+    call mpas_set_timeInterval(alarmTimeStepHi,timeString=config_hifreq_output_interval,ierr=ierr)
+    if (alarmTimeStepHi < alarmTimeStep) then
+       alarmTimeStep = alarmTimeStepHi
+    end if
+ end if
  alarmStartTime = startTime
  call mpas_add_clock_alarm(clock,diagAlarmID,alarmStartTime,alarmTimeStep,ierr=ierr)
 
