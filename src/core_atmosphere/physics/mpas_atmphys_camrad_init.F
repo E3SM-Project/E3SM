@@ -338,7 +338,11 @@
 !open init file:
  if(dminfo % my_proc_id == IO_NODE) then
 
+#ifdef SINGLE_PRECISION
+    open(cam_abs_unit,file='CAM_ABS_DATA.TBL',form='UNFORMATTED',status='OLD',iostat=istat)
+#else
     open(cam_abs_unit,file='CAM_ABS_DATA.DBL',form='UNFORMATTED',status='OLD',iostat=istat)
+#endif
     if(istat /= 0) then
        write(errmess,'(A,I4)') 'module_ra_cam: error reading CAM_ABS_DATA on unit', &
              cam_abs_unit
@@ -591,7 +595,11 @@
 !open init file:
  if(dminfo % my_proc_id == IO_NODE) then
 
+#ifdef SINGLE_PRECISION
+    open(cam_aer_unit,file='CAM_AEROPT_DATA.TBL',form='UNFORMATTED',status='OLD',iostat=istat)
+#else
     open(cam_aer_unit,file='CAM_AEROPT_DATA.DBL',form='UNFORMATTED',status='OLD',iostat=istat)
+#endif
     if(istat /= 0) then
        write(errmess,'(A,I4)') 'module_ra_cam: error reading CAM_AEROPT_DATA on unit', &
              cam_aer_unit

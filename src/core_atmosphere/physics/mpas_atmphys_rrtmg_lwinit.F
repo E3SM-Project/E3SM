@@ -91,7 +91,11 @@
 
 !open init file:
  if(dminfo % my_proc_id == IO_NODE) then
+#ifdef SINGLE_PRECISION
+    open(rrtmg_unit,file='RRTMG_LW_DATA.TBL',form='UNFORMATTED',status='OLD',iostat=istat)
+#else
     open(rrtmg_unit,file='RRTMG_LW_DATA.DBL',form='UNFORMATTED',status='OLD',iostat=istat)
+#endif
 
     if(istat /= 0) then
        write(errmess,'(A,I4)') 'module_ra_rrtmg_lw: error reading RRTMG_LW_DATA on unit', &

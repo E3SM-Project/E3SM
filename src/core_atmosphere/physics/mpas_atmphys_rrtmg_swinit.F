@@ -90,7 +90,11 @@
 
 !open init file:
  if(dminfo % my_proc_id == IO_NODE) then
+#ifdef SINGLE_PRECISION
+    open(rrtmg_unit,file='RRTMG_SW_DATA.TBL',form='UNFORMATTED',iostat=istat)
+#else
     open(rrtmg_unit,file='RRTMG_SW_DATA.DBL',form='UNFORMATTED',iostat=istat)
+#endif
 
     if(istat /= 0) then
          write(0,*) 'rrtmg_unit=',rrtmg_unit
