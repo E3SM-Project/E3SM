@@ -560,7 +560,7 @@ module mpas_core
 
       integer, dimension(:), pointer :: maxLevelCell
       real (kind=RKIND), dimension(:), pointer :: refBottomDepth, &
-         refBottomDepthTopOfCell, vertCoordMovementWeights, hZLevel, bottomDepth
+         refBottomDepthTopOfCell, vertCoordMovementWeights, bottomDepth
       real (kind=RKIND), dimension(:), allocatable :: minBottomDepth, minBottomDepthMid, zMidZLevel
          
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness
@@ -578,17 +578,11 @@ module mpas_core
          refBottomDepthTopOfCell => block % mesh % refBottomDepthTopOfCell % array
          bottomDepth => block % mesh % bottomDepth % array
          vertCoordMovementWeights => block % mesh % vertCoordMovementWeights % array
-         hZLevel => block % mesh % hZLevel % array
          maxLevelCell => block % mesh % maxLevelCell % array
 
          nCells      = block % mesh % nCells
          nVertLevels = block % mesh % nVertLevels
          num_tracers = size(tracers, dim=1)
-
-         refBottomDepth(1) = hZLevel(1)
-         do k = 2,nVertLevels
-            refBottomDepth(k) = refBottomDepth(k-1) + hZLevel(k)
-         end do
 
          ! TopOfCell needed where zero depth for the very top may be referenced.
          refBottomDepthTopOfCell(1) = 0.0
@@ -635,7 +629,7 @@ module mpas_core
             !    as partial_bottom_cells = .false.
 
             do k=1,nVertLevels
-               minBottomDepth(k) = refBottomDepth(k) - (1.0-config_min_pbc_fraction)*hZLevel(k)
+               minBottomDepth(k) = refBottomDepth(k) - (1.0-config_min_pbc_fraction)*(refBottomDepth(k) - refBottomDepth(k-1))
                minBottomDepthMid(k) = 0.5*(minBottomDepth(k) + refBottomDepthTopOfCell(k))
                zMidZLevel(k) = - 0.5*(refBottomDepth(k) + refBottomDepthTopOfCell(k))
             enddo
@@ -696,9 +690,9 @@ module mpas_core
                   consistentSSH = .false.
 #ifdef MPAS_DEBUG
                   write (0,'(a)') ' Warning: abs(sum(h)-bottomDepth)>2m.  Most likely, initial layerThickness does not match bottomDepth.'
-                  write (0,*) ' iCell, K=maxLevelCell(iCell), bottomDepth(iCell),sum(h),bottomDepth,hZLevel(K),h(K): ', &
+                  write (0,*) ' iCell, K=maxLevelCell(iCell), bottomDepth(iCell),sum(h),bottomDepth: ', &
                                 iCell, maxLevelCell(iCell), bottomDepth(iCell),sum(layerThickness(1:maxLevelCell(iCell),iCell)),bottomDepth(iCell), &
-                                hZLevel(maxLevelCell(iCell)), layerThickness(maxLevelCell(iCell),iCell)
+                                layerThickness(maxLevelCell(iCell),iCell)
 #endif                            
                endif
             enddo
