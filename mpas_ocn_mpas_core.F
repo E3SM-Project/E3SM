@@ -313,12 +313,12 @@ module mpas_core
 
          block % state % time_levs(1) % state % normalVelocity % array( &
              block % mesh % maxLevelEdgeBot % array(iEdge)+1: &
-             block % mesh % nVertLevels,iEdge) = 0.0
+             block % mesh % nVertLevels,iEdge) = -1.0e34
       end do
       do iCell=1,block % mesh % nCells
          block % state % time_levs(1) % state % tracers % array( &
             :, block % mesh % maxLevelCell % array(iCell)+1 &
-              :block % mesh % nVertLevels,iCell) =  0.0
+              :block % mesh % nVertLevels,iCell) =  -1.0e34
       end do
 
       do i=2,nTimeLevs
