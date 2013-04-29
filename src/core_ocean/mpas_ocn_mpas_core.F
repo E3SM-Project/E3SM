@@ -112,6 +112,9 @@ module mpas_core
       call ocn_monthly_forcing_init(err_tmp)
       err = ior(err, err_tmp)
 
+      call ocn_global_diagnostics_init(dminfo,err_tmp)
+      err = ior(err, err_tmp)
+
       call mpas_timer_init(domain)
 
       if(err.eq.1) then

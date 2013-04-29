@@ -355,6 +355,7 @@ module ocn_global_diagnostics
 
       volumeCellGlobal = sums(1)
       volumeEdgeGlobal = sums(4)
+
       ! compute the averages (slightly different depending on how the sum was computed)
       variableIndex = 0
       ! layerThickness
@@ -442,7 +443,7 @@ module ocn_global_diagnostics
          close (fileID)
          open(fileID,file='stats_time.txt',STATUS='UNKNOWN', POSITION='append')
             write (fileID,'(i10,10x,a,100es24.14)') timeIndex, &
-               state % xtime % scalar, dt, &
+               trim(state % xtime % scalar), dt, &
                CFLNumberGlobal
          close (fileID)
          open(fileID,file='stats_colmin.txt',STATUS='UNKNOWN', POSITION='append')
@@ -732,5 +733,53 @@ module ocn_global_diagnostics
       call mpas_dmpar_max_real(dminfo, localMax, globalMax)
 
    end subroutine ocn_compute_global_vert_thickness_weighted_sum_horiz_max!}}}
+
+   subroutine ocn_global_diagnostics_init(dminfo,err)!{{{
+
+      ! Create stats_readme.txt file listing variable names
+
+      implicit none
+
+      type (dm_info), intent(in) :: dminfo
+      integer, intent(out) :: err
+      integer :: fileID, i
+
+      err = 0
+
+      if (dminfo % my_proc_id == IO_NODE) then
+         fileID = getFreeUnit()
+         open(fileID,file='stats_readme.txt',STATUS='UNKNOWN', POSITION='rewind')
+
+            write (fileID,'(a)') 'readme file for MPAS-Ocean global statistics'
+            write (fileID,'(/,a)') 'stats_time.txt. contains: timeIndex, timestamp, dt, CFLNumberGlobal'
+            write (fileID,'(/,a)') 'All other stats_*.txt. contain the following columns.  Rows correspond to timestamps in rows of stats_time.txt'
+
+            i=1
+            write (fileID,'(i5,a)') i,'. layerThickness'; i=i+1
+            write (fileID,'(i5,a)') i,'. normalVelocity'; i=i+1
+            write (fileID,'(i5,a)') i,'. tangentialVelocity'; i=i+1
+            write (fileID,'(i5,a)') i,'. layerThicknessEdge'; i=i+1
+            write (fileID,'(i5,a)') i,'. relativeVorticity'; i=i+1
+            write (fileID,'(i5,a)') i,'. relativeVorticity'; i=i+1
+            write (fileID,'(i5,a)') i,'. kineticEnergy'; i=i+1
+            write (fileID,'(i5,a)') i,'. potentialVorticityEdge'; i=i+1
+            write (fileID,'(i5,a)') i,'. potentialVorticityVertex'; i=i+1
+            write (fileID,'(i5,a)') i,'. potentialVorticityCell'; i=i+1
+            write (fileID,'(i5,a)') i,'. gradVor_n'; i=i+1
+            write (fileID,'(i5,a)') i,'. gradVor_t'; i=i+1
+            write (fileID,'(i5,a)') i,'. pressure'; i=i+1
+            write (fileID,'(i5,a)') i,'. montgomeryPotential'; i=i+1
+            write (fileID,'(i5,a)') i,'. vertTransportVelocityTop vertical velocity'; i=i+1
+            write (fileID,'(i5,a)') i,'. Tracers: usually T, S, then others in remaining columns'
+
+            write (fileID,'(/,a)') 'A chain of simple unix commands may be used to access a specific part of the data. For example,'
+            write (fileID,'(a)') 'to view the last three values of column seven in the global average, use:'
+            write (fileID,'(a)') "cat stats_avg.txt | awk '{print $7}' | tail -n3"
+  
+         close (fileID)
+      endif
+
+   end subroutine ocn_global_diagnostics_init!}}}
+
 
 end module ocn_global_diagnostics
