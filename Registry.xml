@@ -566,9 +566,6 @@
 			<var name="salinity" array_group="dynamics" streams="iro" units="grams salt per kilogram seawater"
 			     description="salinity"
 			/>
-			<var name="tracer1" array_group="testing" streams="iro" units="unitless"
-			     description="A tracer with value 1.0 to test conservation.  {\color{red} REMOVE THIS VARIABLE}"
-			/>
 		</var_array>
 		<var name="xtime" type="text" dimensions="Time" streams="ro" units="unitless"
 		     description="model time, with format 'YYYY-MM-DD_HH:MM:SS'"
@@ -722,9 +719,6 @@
 		/>
 		<var name="viscosity" type="real" dimensions="nVertLevels nEdges Time" streams="o" units="m^2 s^{-1}"
 		     description="horizontal viscosity"
-		/>
-		<var name="vh" type="real" dimensions="nVertLevels nEdges Time" units="m^2 s^{-1}"
-		     description="thickness flux in the tangent direction (from vertex1 to vertex2)"
 		/>
 		<var name="circulation" type="real" dimensions="nVertLevels nVertices Time" units="m^2 s^{-1}"
 		     description="area-integrated vorticity"
@@ -1039,9 +1033,6 @@
 			/>
 			<var name="tend_salinity" array_group="dynamics" units="PSU s^{-1}" name_in_code="salinity"
 			     description="time tendency of salinity measured as change in practical salinity units per second"
-			/>
-			<var name="tend_tracer1" array_group="testing" units="tracer s^{-1}" name_in_code="tracer1"
-			     description="time tendency of an arbitary tracer"
 			/>
 		</var_array>
 		<var name="tend_normalVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-2}" name_in_code="normalVelocity"
