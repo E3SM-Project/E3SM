@@ -684,21 +684,6 @@
 		<var name="normalVelocityMeridional" type="real" dimensions="nVertLevels nCells Time" streams="o" units="m s^{-1}"
 		     description="component of horizontal velocity in the northward"
 		/>
-		<var name="normalVelocityForcingReconstructX" type="real" dimensions="nVertLevels nCells Time" units="N m^{-2}"
-		     description="wind stress in the x-direction (cartesian)"
-		/>
-		<var name="normalVelocityForcingReconstructY" type="real" dimensions="nVertLevels nCells Time" units="N m^{-2}"
-		     description="wind stress in the y-direction (cartesian)"
-		/>
-		<var name="normalVelocityForcingReconstructZ" type="real" dimensions="nVertLevels nCells Time" units="N m^{-2}"
-		     description="wind stress in the z-direction (cartesian)"
-		/>
-		<var name="normalVelocityForcingReconstructZonal" type="real" dimensions="nVertLevels nCells Time" streams="o" units="N m^{-2}"
-		     description="wind stress in the eastward direction"
-		/>
-		<var name="normalVelocityForcingReconstructMeridional" type="real" dimensions="nVertLevels nCells Time" streams="o" units="N m^{-2}"
-		     description="wind stress in the northward direction"
-		/>
 		<var name="montgomeryPotential" type="real" dimensions="nVertLevels nCells Time" units="m^2 s^{-2}"
 		     description="Montgomery potential, may be used as the pressure for isopycnal coordinates."
 		/>
@@ -1023,7 +1008,7 @@
 		     description="Pressure defined at the sea surface."
 		/>
 	</var_struct>
-	<var_struct name="tend" time_levs="1">
+	<var_struct name="tend" time_levs="0">
 		<var_array name="tracers" type="real" dimensions="nVertLevels nCells Time">
 			<var name="tend_temperature" array_group="dynamics" units="K s^{-1}" name_in_code="temperature"
 			     description="time tendency of potential temperature"
@@ -1042,7 +1027,7 @@
 		     description="time tendency of sea-surface height"
 		/>
 	</var_struct>
-	<var_struct name="diagnostics" time_levs="1">
+	<var_struct name="diagnostics" time_levs="0">
 		<var name="RiTopOfCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="nondimensional"
 		     description="gradient Richardson number defined at the center (horizontally) and top (vertically)"
 		/>
@@ -1055,5 +1040,28 @@
 		<var name="vertDiffTopOfCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^{-1}"
 		     description="vertical diffusion defined at the edge (horizontally) and top (vertically)"
 		/>
+        <var name="windStressZonal" type="real" dimensions="nCells Time" streams="o" units="N m^{-2}"
+             description="reconstructed surface wind stress in the eastward direction."
+        />
+        <var name="windStressMeridional" type="real" dimensions="nCells Time" streams="o" units="N m^{-2}"
+             description="reconstructed surface wind stress in the northward direction."
+        />
 	</var_struct>
+    <var_struct name="scratch" time_levs="0">
+        <var name="normalVelocityForcingX" persistence="scratch" type="real" dimensions="nVertLevels nCells Time" units="N m^{-2}"
+		     description="reconstructed wind stress in the x-direction (cartesian)"
+		/>
+		<var name="normalVelocityForcingY" persistence="scratch" type="real" dimensions="nVertLevels nCells Time" units="N m^{-2}"
+		     description="reconstructed wind stress in the y-direction (cartesian)"
+		/>
+		<var name="normalVelocityForcingZ" persistence="scratch" type="real" dimensions="nVertLevels nCells Time" units="N m^{-2}"
+		     description="reconstructed wind stress in the z-direction (cartesian)"
+		/>
+		<var name="normalVelocityForcingZonal" persistence="scratch" type="real" dimensions="nVertLevels nCells Time" units="N m^{-2}"
+		     description="reconstructed wind stress in the eastward direction"
+		/>
+		<var name="normalVelocityForcingMeridional" persistence="scratch" type="real" dimensions="nVertLevels nCells Time" units="N m^{-2}"
+		     description="reconstructed wind stress in the northward direction"
+		/>
+    </var_struct>
 </registry>

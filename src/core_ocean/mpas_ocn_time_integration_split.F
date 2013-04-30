@@ -982,14 +982,6 @@ module ocn_time_integration_split
                           block % state % time_levs(2) % state % normalVelocityMeridional % array    &
                          )
 
-         call mpas_reconstruct(block % mesh, block % mesh % normalVelocityForcing % array,          &
-                          block % state % time_levs(2) % state % normalVelocityForcingReconstructX % array,            &
-                          block % state % time_levs(2) % state % normalVelocityForcingReconstructY % array,            &
-                          block % state % time_levs(2) % state % normalVelocityForcingReconstructZ % array,            &
-                          block % state % time_levs(2) % state % normalVelocityForcingReconstructZonal % array,        &
-                          block % state % time_levs(2) % state % normalVelocityForcingReconstructMeridional % array    &
-                         )
-
          call ocn_time_average_accumulate(block % state % time_levs(2) % state, block % state % time_levs(1) % state)
 
          block => block % next
