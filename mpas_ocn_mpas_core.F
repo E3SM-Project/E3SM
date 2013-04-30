@@ -294,14 +294,6 @@ module mpas_core
                        block % state % time_levs(1) % state % normalVelocityMeridional % array    &
                       )
 
-      call mpas_reconstruct(mesh, mesh % normalVelocityForcing % array,                  &
-                       block % state % time_levs(1) % state % normalVelocityForcingReconstructX % array,            &
-                       block % state % time_levs(1) % state % normalVelocityForcingReconstructY % array,            &
-                       block % state % time_levs(1) % state % normalVelocityForcingReconstructZ % array,            &
-                       block % state % time_levs(1) % state % normalVelocityForcingReconstructZonal % array,        &
-                       block % state % time_levs(1) % state % normalVelocityForcingReconstructMeridional % array    &
-                      )
-
       ! initialize velocities and tracers on land to be zero.
 
       block % mesh % areaCell % array(block % mesh % nCells+1) = -1.0e34
@@ -442,6 +434,7 @@ module mpas_core
    
       use mpas_grid_types
       use mpas_io_output
+      use mpas_vector_reconstruction
    
       implicit none
    
@@ -453,9 +446,32 @@ module mpas_core
       integer :: eoe
       type (block_type), pointer :: block_ptr
    
+      ! Compute output diagnostics
       block_ptr => domain % blocklist
       do while (associated(block_ptr))
          call ocn_compute_output_diagnostics(block_ptr % state % time_levs(1) % state, block_ptr % mesh)
+
+         call mpas_allocate_scratch_field(block_ptr % scratch % normalVelocityForcingX, .true.)
+         call mpas_allocate_scratch_field(block_ptr % scratch % normalVelocityForcingY, .true.)
+         call mpas_allocate_scratch_field(block_ptr % scratch % normalVelocityForcingZ, .true.)
+         call mpas_allocate_scratch_field(block_ptr % scratch % normalVelocityForcingZonal, .true.)
+         call mpas_allocate_scratch_field(block_ptr % scratch % normalVelocityForcingMeridional, .true.)
+
+         call mpas_reconstruct(block_ptr % mesh, block_ptr % mesh % normalVelocityForcing % array, &
+                               block_ptr % scratch % normalVelocityForcingX % array, &
+                               block_ptr % scratch % normalVelocityForcingY % array, &
+                               block_ptr % scratch % normalVelocityForcingZ % array, &
+                               block_ptr % scratch % normalVelocityForcingZonal % array, &
+                               block_ptr % scratch % normalVelocityForcingMeridional % array)
+
+         block_ptr % diagnostics % windStressZonal % array = block_ptr % scratch % normalVelocityForcingZonal % array(1,:)
+         block_ptr % diagnostics % windStressMeridional % array = block_ptr % scratch % normalVelocityForcingMeridional % array(1,:)
+         call mpas_deallocate_scratch_field(block_ptr % scratch % normalVelocityForcingX, .true.)
+         call mpas_deallocate_scratch_field(block_ptr % scratch % normalVelocityForcingY, .true.)
+         call mpas_deallocate_scratch_field(block_ptr % scratch % normalVelocityForcingZ, .true.)
+         call mpas_deallocate_scratch_field(block_ptr % scratch % normalVelocityForcingZonal, .true.)
+         call mpas_deallocate_scratch_field(block_ptr % scratch % normalVelocityForcingMeridional, .true.)
+
          block_ptr => block_ptr % next
       end do
    
