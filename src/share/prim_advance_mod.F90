@@ -3046,7 +3046,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   enddo
   end subroutine smooth_phis
 
-  subroutine overwrite_SEdensity(elem, fvm, hybrid,nets,nete, np1)
+  subroutine overwrite_SEdensity(elem, fvm, dt_q, hybrid,nets,nete, np1)
     use fvm_reconstruction_mod, only: reconstruction
     use fvm_filter_mod, only: monotonic_gradient_cart, recons_val_cart
     use dimensions_mod, only : np, nlev, nc,nhe
@@ -3075,7 +3075,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
     integer, intent(in)                     :: np1
     integer :: ie, k
 
-    real (kind=real_kind)             :: xp,yp, tmpval
+    real (kind=real_kind)             :: xp,yp, tmpval, dt_q
     integer                           :: i, j,ix, jy, starti,endi,tmpi
 
     real (kind=real_kind), dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe)      :: recons
@@ -3127,7 +3127,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 !           jy = starti
 
           call recons_val_cart(fvm(ie)%psc, xp,yp,fvm(ie)%spherecentroid,recons,ix,jy,tmpval)
-          elem(ie)%state%ps_v(i,j,np1)=tmpval    
+          elem(ie)%state%ps_v(i,j,np1)= elem(ie)%state%ps_v(i,j,np1) +&
+               dt_q*(tmpval - elem(ie)%state%ps_v(i,j,np1) )/(30*60)
         end do  
       end do
       elem(ie)%state%ps_v(:,:,np1)=elem(ie)%state%ps_v(:,:,np1)*elem(ie)%spheremp(:,:)
