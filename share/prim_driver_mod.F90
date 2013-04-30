@@ -1587,7 +1587,7 @@ contains
            endif 
        endif   
        !overwrite SE density by fvm(ie)%psc
-       !call overwrite_SEdensity(elem,fvm,hybrid,nets,nete,tl%np1) 
+       call overwrite_SEdensity(elem,fvm,dt_q,hybrid,nets,nete,tl%np1) 
 #endif
     endif
 
