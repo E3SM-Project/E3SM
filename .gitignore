@@ -41,3 +41,4 @@ src/registry/parse
 # Ignore WRF Physics Files
 *.TBL
 *.DBL
+src/core_atmos_physics/physics_wrf/files
