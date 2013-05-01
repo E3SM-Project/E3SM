@@ -125,7 +125,9 @@ contains
 !! Ported from CAM: P. Worley, May 2009
 !< 
 !-----------------------------------------------------------------------
-
+#ifdef TIMING
+  use perf_mod, only : t_startf, t_stopf   ! _EXTERNAL
+#endif
 !-----------------------------------------------------------------------
    implicit none
 !---------------------------Input arguments--------------------------
@@ -653,7 +655,9 @@ contains
 !! Ported from CAM: P. Worley, May 2009
 !< 
 !-----------------------------------------------------------------------
-
+#ifdef TIMING
+  use perf_mod, only : t_startf, t_stopf   ! _EXTERNAL
+#endif
 !-----------------------------------------------------------------------
    implicit none
 !---------------------------Input arguments--------------------------
@@ -1181,7 +1185,9 @@ contains
 !! Ported from CAM: P. Worley, May 2009
 !< 
 !-----------------------------------------------------------------------
-
+#ifdef TIMING
+  use perf_mod, only : t_startf, t_stopf   ! _EXTERNAL
+#endif
 !-----------------------------------------------------------------------
    implicit none
 !---------------------------Input arguments--------------------------
@@ -1709,7 +1715,9 @@ contains
 !! Ported from CAM: P. Worley, May 2009
 !< 
 !-----------------------------------------------------------------------
-
+#ifdef TIMING
+  use perf_mod, only : t_startf, t_stopf   ! _EXTERNAL
+#endif
 !-----------------------------------------------------------------------
    implicit none
 !---------------------------Input arguments--------------------------

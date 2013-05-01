@@ -6,8 +6,8 @@
 !>
 !!
 !! @file 
-!! $Revision: 771 $
-!! $LastChangedDate: 2013-04-22 21:04:14 -0600 (Mon, 22 Apr 2013) $
+!! $Revision: 775 $
+!! $LastChangedDate: 2013-04-23 14:25:21 -0600 (Tue, 23 Apr 2013) $
 !! @brief
 !!  Perform data rearrangement with each io processor
 !!  owning a rectangular box in the output domain
@@ -214,10 +214,10 @@ subroutine box_rearrange_comp2io_real (IOsystem, ioDesc, s1, src, niodof, &
                      'box_rearrange_comp2io: i=', i, &
                      'dest_ioproc(i)=', ioproc )
 
-      if ( ioindex<0 .or. ioindex>=ndof ) &
-        call piodie( __PIO_FILE__,__LINE__, &
-                     'box_rearrange_comp2io: i=', i, &
-                     'dest_ioindex(i) out of range=', int(ioindex))
+!      if ( ioindex<0 .or. ioindex>=ndof ) &
+!        call piodie( __PIO_FILE__,__LINE__, &
+!                     'box_rearrange_comp2io: i=', i, &
+!                     'dest_ioindex(i) out of range=', int(ioindex))
 
       dest(ioindex+1) = src(i)      ! ioindex is 0-based
 
@@ -486,10 +486,10 @@ subroutine box_rearrange_comp2io_double (IOsystem, ioDesc, s1, src, niodof, &
                      'box_rearrange_comp2io: i=', i, &
                      'dest_ioproc(i)=', ioproc )
 
-      if ( ioindex<0 .or. ioindex>=ndof ) &
-        call piodie( __PIO_FILE__,__LINE__, &
-                     'box_rearrange_comp2io: i=', i, &
-                     'dest_ioindex(i) out of range=', int(ioindex))
+!      if ( ioindex<0 .or. ioindex>=ndof ) &
+!        call piodie( __PIO_FILE__,__LINE__, &
+!                     'box_rearrange_comp2io: i=', i, &
+!                     'dest_ioindex(i) out of range=', int(ioindex))
 
       dest(ioindex+1) = src(i)      ! ioindex is 0-based
 
@@ -758,10 +758,10 @@ subroutine box_rearrange_comp2io_int (IOsystem, ioDesc, s1, src, niodof, &
                      'box_rearrange_comp2io: i=', i, &
                      'dest_ioproc(i)=', ioproc )
 
-      if ( ioindex<0 .or. ioindex>=ndof ) &
-        call piodie( __PIO_FILE__,__LINE__, &
-                     'box_rearrange_comp2io: i=', i, &
-                     'dest_ioindex(i) out of range=', int(ioindex))
+!      if ( ioindex<0 .or. ioindex>=ndof ) &
+!        call piodie( __PIO_FILE__,__LINE__, &
+!                     'box_rearrange_comp2io: i=', i, &
+!                     'dest_ioindex(i) out of range=', int(ioindex))
 
       dest(ioindex+1) = src(i)      ! ioindex is 0-based
 
