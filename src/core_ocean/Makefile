@@ -50,8 +50,12 @@ OBJS = mpas_ocn_mpas_core.o \
 all: libcvmix core_hyd
 
 libcvmix:
-	(test -d cvmix || svn checkout $(CVMIX_REPO_ADDRESS) cvmix)
-	(cd cvmix; svn update; make all FC="$(FC)" FFLAGS="$(FFLAGS)" FINCLUDES="$(FINCLUDES)")
+	if [ ! -d cvmix ]; then \
+		(svn checkout $(CVMIX_REPO_ADDRESS) cvmix) \
+	fi
+	if [ -d cvmix ]; then \
+		(cd cvmix; svn update; make all FC="$(FC)" FFLAGS="$(FFLAGS)" FINCLUDES="$(FINCLUDES)") \
+	fi
 
 core_hyd: $(OBJS)
 	ar -ru libdycore.a $(OBJS) cvmix/*.o
@@ -183,7 +187,9 @@ mpas_ocn_mpas_core.o: mpas_ocn_advection.o \
                       mpas_ocn_monthly_forcing.o
 
 clean:
-	(test -d cvmix && (cd cvmix; make clean) )
+	if [ -d cvmix ]; then \
+		(cd cvmix; make clean) \
+	fi
 	$(RM) *.o *.mod *.f90 libdycore.a
 
 .F.o:
