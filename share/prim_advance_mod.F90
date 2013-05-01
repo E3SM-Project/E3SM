@@ -3128,7 +3128,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
           call recons_val_cart(fvm(ie)%psc, xp,yp,fvm(ie)%spherecentroid,recons,ix,jy,tmpval)
           elem(ie)%state%ps_v(i,j,np1)= elem(ie)%state%ps_v(i,j,np1) +&
-               dt_q*(tmpval - elem(ie)%state%ps_v(i,j,np1) )/(30*60)
+               dt_q*(tmpval - elem(ie)%state%ps_v(i,j,np1) )/(7*24*60*60)
         end do  
       end do
       elem(ie)%state%ps_v(:,:,np1)=elem(ie)%state%ps_v(:,:,np1)*elem(ie)%spheremp(:,:)

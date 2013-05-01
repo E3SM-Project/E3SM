@@ -38,6 +38,7 @@ module prim_driver_mod
   type (quadrature_t)   :: gp                     ! element GLL points
   real(kind=longdouble_kind)  :: fvm_corners(nc+1)     ! fvm cell corners on reference element
   real(kind=longdouble_kind)  :: fvm_points(nc)     ! fvm cell centers on reference element
+  real (kind=longdouble_kind) :: spelt_refnep(1:nep)
 
 
 #ifndef CAM
@@ -370,7 +371,12 @@ contains
     do i=1,nc
        fvm_points(i)= ( fvm_corners(i)+fvm_corners(i+1) ) /2
     end do
-
+     
+    xtmp=nep-1
+    do i=1,nep
+      spelt_refnep(i)= 2*(i-1)/xtmp - 1
+    end do
+     
     if (topology=="cube") then
        if(par%masterproc) write(iulog,*) "initializing cube elements..."
        if (MeshUseMeshFile) then
@@ -598,9 +604,7 @@ contains
     integer :: i,j,k,ie,iptr,t,q
     integer :: ierr
     integer :: nfrc
-    integer :: n0_qdp
-    real (kind=longdouble_kind)                 :: refnep(1:nep), tmp
-    
+    integer :: n0_qdp    
 
     ! ==========================
     ! begin executable code
@@ -638,18 +642,12 @@ contains
     ! ==================================
     ! Initialize derivative structure
     ! ==================================
-    call derivinit(deriv(hybrid%ithr),fvm_corners, fvm_points)
-
+    call derivinit(deriv(hybrid%ithr),fvm_corners, fvm_points, spelt_refnep)
     ! ================================================
     ! fvm initialization
     ! ================================================
     if (ntrac>0) then
 #if defined(_SPELT)
-      tmp=nep-1
-      do i=1,nep
-        refnep(i)= 2*(i-1)/tmp - 1
-      end do
-      call v2pinit(deriv(hybrid%ithr)%Sfvm,gp%points,refnep,np,nep)
       call spelt_init2(elem,fvm,hybrid,nets,nete,tl)
 #else
       call fvm_init2(elem,fvm,hybrid,nets,nete,tl)    
@@ -897,19 +895,13 @@ contains
      	    enddo
           !write air density in tracer 1 of FVM
           fvm(ie)%c(1:nep,1:nep,k,1,tl%n0)=interpolate_gll2spelt_points(elem(ie)%derived%dp(:,:,k),deriv(hybrid%ithr))
-          do i=1,nep
-            do j=1,nep
-              fvm(ie)%c(i,j,k,1,tl%n0)=fvm(ie)%sga(i,j)*fvm(ie)%c(i,j,k,1,tl%n0)
-!            fvm(ie)%c(i,j,k,1,tl%n0)=fvm(ie)%sga(i,j)
-            end do
-          end do
         enddo
       enddo
       call spelt_init3(elem,fvm,hybrid,nets,nete,tl%n0)
       do ie=nets,nete 
    	    do i=1-nipm,nep+nipm
    	      do j=1-nipm,nep+nipm  
-   	        fvm(ie)%psc(i,j) = fvm(ie)%sga(i,j)*(sum(fvm(ie)%c(i,j,:,1,tl%n0)/fvm(ie)%sga(i,j)) +  hvcoord%hyai(1)*hvcoord%ps0)
+   	        fvm(ie)%psc(i,j) = (sum(fvm(ie)%c(i,j,:,1,tl%n0)/fvm(ie)%sga(i,j)) +  hvcoord%hyai(1)*hvcoord%ps0)
    	      enddo
    	    enddo
       enddo
@@ -1452,6 +1444,7 @@ contains
          prim_advec_tracers_spelt
     use parallel_mod, only : abortmp
     use reduction_mod, only : parallelmax
+    use derivative_mod, only : interpolate_gll2spelt_points
 
     type (element_t) , intent(inout)        :: elem(:)
     
@@ -1550,13 +1543,30 @@ contains
 #if defined(_SPELT) 
       call Prim_Advec_Tracers_spelt(elem, fvm, deriv(hybrid%ithr),hvcoord,hybrid,&
            dt_q,tl,nets,nete)
-       do ie=nets,nete 
-    	    do i=1-nipm,nep+nipm
-    	      do j=1-nipm,nep+nipm  
-    	        fvm(ie)%psc(i,j) = fvm(ie)%sga(i,j)*(sum(fvm(ie)%c(i,j,:,1,tl%np1)/fvm(ie)%sga(i,j)) +  hvcoord%hyai(1)*hvcoord%ps0)
-    	      enddo
-    	    enddo
-       enddo
+        do ie=nets,nete 
+          do k=1, nlev 
+            fvm(ie)%c(1:nep,1:nep,k,1,tl%np1)=interpolate_gll2spelt_points(elem(ie)%derived%dp(:,:,k),deriv(hybrid%ithr))
+          end do
+     	    do i=1-nipm,nep+nipm
+     	      do j=1-nipm,nep+nipm  
+     	        fvm(ie)%psc(i,j) = sum(fvm(ie)%c(i,j,:,1,tl%np1)) +  hvcoord%hyai(1)*hvcoord%ps0
+     	      enddo
+     	    enddo
+        enddo
+        if (test_cfldep) then         
+          maxcflx=0.0D0
+          maxcfly=0.0D0
+          do k=1, nlev 
+            maxcflx = max(maxcflx,parallelmax(fvm(:)%maxcfl(1,k),hybrid))
+            maxcfly = max(maxcfly,parallelmax(fvm(:)%maxcfl(2,k),hybrid))
+          end do
+                  
+          if  (hybrid%masterthread) then
+            write(*,*) "nstep",tl%nstep,"dt_q=", dt_q, "maximum over all Level"
+            write(*,*) "CFL: maxcflx=", maxcflx, "maxcfly=", maxcfly 
+            print * 
+         endif
+       endif
 #else      
       call Prim_Advec_Tracers_fvm(elem, fvm, deriv(hybrid%ithr),hvcoord,hybrid,&
            dt_q,tl,nets,nete)

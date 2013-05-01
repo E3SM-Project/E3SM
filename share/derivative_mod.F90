@@ -120,11 +120,12 @@ contains
 ! derivatives and interpolating
 ! ==========================================
 
-  subroutine derivinit(deriv,fvm_corners, fvm_points)
+  subroutine derivinit(deriv,fvm_corners, fvm_points, spelt_refnep)
     type (derivative_t)      :: deriv
 !    real (kind=longdouble_kind),optional :: phys_points(:)
     real (kind=longdouble_kind),optional :: fvm_corners(nc+1)
     real (kind=longdouble_kind),optional :: fvm_points(nc)
+    real (kind=longdouble_kind),optional :: spelt_refnep(nep)
 
     ! Local variables
     type (quadrature_t) :: gp   ! Quadrature points and weights on pressure grid
@@ -198,6 +199,10 @@ contains
 
     if (present(fvm_points)) &
          call v2pinit(deriv%Cfvm,gp%points,fvm_points,np,nc)
+         
+    if (present(spelt_refnep)) &     
+      call v2pinit(deriv%Sfvm,gp%points,spelt_refnep,np,nep)
+         
     ! notice we deallocate this memory here even though it was allocated 
     ! by the call to gausslobatto.
     deallocate(gp%points)
