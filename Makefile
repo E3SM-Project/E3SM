@@ -299,7 +299,7 @@ mpas_main:
                  CPPINCLUDES="$(CPPINCLUDES)" \
                  FCINCLUDES="$(FCINCLUDES)" \
                  CORE="$(CORE)"
-	if [ ! -e $(CORE)_model.exe ]; then ln -s src/$(CORE)_model.exe .; fi
+	if [ ! -e $(CORE)_model ]; then mv src/$(CORE)_model .; fi
 	@echo ""
 	@echo $(DEBUG_MESSAGE)
 	@echo $(SERIAL_MESSAGE)
