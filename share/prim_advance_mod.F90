@@ -15,7 +15,7 @@ module prim_advance_mod
   private
   save
   public :: prim_advance_exp, prim_advance_si, prim_advance_init, preq_robert3,&
-       applyCAMforcing_dynamics, applyCAMforcing, smooth_phis, overwrite_SEdensity
+       applyCAMforcing_dynamics, applyCAMforcing, smooth_phis
 
   type (EdgeBuffer_t) :: edge1
   type (EdgeBuffer_t) :: edge2
