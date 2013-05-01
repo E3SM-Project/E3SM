@@ -123,11 +123,11 @@ subroutine spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
     do k=1, nlev
 !       call solidbody_all(spelt(ie), dsphere1,dsphere2,contrauv,k) 
       !For Benchmark test
-      call boomerang_all(spelt(ie), dsphere1,dsphere2,contrauv,k,tl%nstep)
+!       call boomerang_all(spelt(ie), dsphere1,dsphere2,contrauv,k,tl%nstep)
       !For SE velocities
-!       call spelt_dep_from_gll(elem(ie), deriv, spelt(ie)%asphere,dsphere1,0.5D0*tstep,tl,k)         
-!       call spelt_dep_from_gll(elem(ie), deriv, spelt(ie)%asphere,dsphere2,tstep,tl,k)
-!       call get_contravelocities(elem(ie),spelt(ie),contrauv, k,deriv)         
+      call spelt_dep_from_gll(elem(ie), deriv, spelt(ie)%asphere,dsphere1,0.5D0*tstep,tl,k)         
+      call spelt_dep_from_gll(elem(ie), deriv, spelt(ie)%asphere,dsphere2,tstep,tl,k)
+      call get_contravelocities(elem(ie),spelt(ie),contrauv, k,deriv)         
       !search has not to be done for all tracers!
       if (test_cfldep) then
         call check_departurecell(spelt(ie),dsphere2,k) 
@@ -1099,10 +1099,10 @@ subroutine get_contravelocities(elem, spelt, contrauv,k,deriv)
   vstar=elem%derived%vstar(:,:,:,k)/rearth
   do j=1,np
     do i=1,np
-!       v1 = spelt%Dinv(1,1,i,j)*vstar(i,j,1) + spelt%Dinv(1,2,i,j)*vstar(i,j,2)
-!       v2 = spelt%Dinv(2,1,i,j)*vstar(i,j,1) + spelt%Dinv(2,2,i,j)*vstar(i,j,2)
-      v1 = elem%Dinv(1,1,i,j)*vstar(i,j,1) + elem%Dinv(1,2,i,j)*vstar(i,j,2)
-      v2 = elem%Dinv(2,1,i,j)*vstar(i,j,1) + elem%Dinv(2,2,i,j)*vstar(i,j,2)
+      v1 = spelt%Dinv(1,1,i,j)*vstar(i,j,1) + spelt%Dinv(1,2,i,j)*vstar(i,j,2)
+      v2 = spelt%Dinv(2,1,i,j)*vstar(i,j,1) + spelt%Dinv(2,2,i,j)*vstar(i,j,2)
+!       v1 = elem%Dinv(1,1,i,j)*vstar(i,j,1) + elem%Dinv(1,2,i,j)*vstar(i,j,2)
+!       v2 = elem%Dinv(2,1,i,j)*vstar(i,j,1) + elem%Dinv(2,2,i,j)*vstar(i,j,2)
       vstar(i,j,1)=v1
       vstar(i,j,2)=v2    
     enddo
