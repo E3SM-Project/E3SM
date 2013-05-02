@@ -166,6 +166,8 @@ module mpas_core
       err = ior(err,err_tmp)
       call ocn_tracer_short_wave_absorption_init(err_tmp)
       err = ior(err,err_tmp)
+      call ocn_gm_init(err_tmp)
+      err = ior(err,err_tmp)
 
       call ocn_vmix_init(domain, err_tmp)
       err = ior(err, err_tmp)
@@ -406,9 +408,9 @@ print *, 'output alarmTimeStep', alarmTimeStep, ierr
       integer, dimension(:), pointer :: maxLevelEdgeBot, maxLevelEdgeTop
       integer, dimension(:,:), pointer :: advCellsForEdge, highOrderAdvectionMask, boundaryCell
       real (kind=RKIND), dimension(:), pointer :: areaCell
-      real (kind=RKIND), dimension(:,:), pointer :: advCoefs, advCoefs3rd, uTransport
+      real (kind=RKIND), dimension(:,:), pointer :: advCoefs, advCoefs3rd, normalTransportVelocity
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness
-      real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, uBolusGM, edgeTangentVectors
+      real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, normalGMBolusVelocity, edgeTangentVectors
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocityX, normalVelocityY, normalVelocityZ
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocityZonal, normalVelocityMeridional
       real (kind=RKIND), dimension(:,:,:), pointer :: derivTwo
@@ -418,6 +420,7 @@ print *, 'output alarmTimeStep', alarmTimeStep, ierr
       integer, pointer :: nCells, nEdges, nVertices, nVertLevels
       integer, pointer :: config_horiz_tracer_adv_order
       logical, pointer :: config_hmix_scaleWithMesh
+      logical, pointer :: config_use_standardGM
       real (kind=RKIND), pointer :: config_maxMeshDensity
 
       call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
@@ -446,8 +449,8 @@ print *, 'output alarmTimeStep', alarmTimeStep, ierr
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeBot', maxLevelEdgeBot)
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
 
-      call mpas_pool_get_array(diagnosticsPool, 'uTransport', uTransport)
-      call mpas_pool_get_array(diagnosticsPool, 'uBolusGM', uBolusGM)
+      call mpas_pool_get_array(diagnosticsPool, 'normalTransportVelocity', normalTransportVelocity)
+      call mpas_pool_get_array(diagnosticsPool, 'normalGMBolusVelocity', normalGMBolusVelocity)
       call mpas_pool_get_array(diagnosticsPool, 'normalVelocityX', normalVelocityX)
       call mpas_pool_get_array(diagnosticsPool, 'normalVelocityY', normalVelocityY)
       call mpas_pool_get_array(diagnosticsPool, 'normalVelocityZ', normalVelocityZ)
@@ -461,7 +464,8 @@ print *, 'output alarmTimeStep', alarmTimeStep, ierr
       call mpas_pool_get_config(block % configs, 'config_horiz_tracer_adv_order', config_horiz_tracer_adv_order)
       call mpas_pool_get_config(block % configs, 'config_hmix_scaleWithMesh', config_hmix_scaleWithMesh)
       call mpas_pool_get_config(block % configs, 'config_maxMeshDensity', config_maxMeshDensity)
-   
+      call mpas_pool_get_config(block % configs, 'config_use_standardGM', config_use_standardGM)
+
       call ocn_setup_sign_and_index_fields(meshPool)
       call mpas_initialize_deriv_two(meshPool, derivTwo, err)
       call mpas_tracer_advection_coefficients(meshPool, &
@@ -472,27 +476,9 @@ print *, 'output alarmTimeStep', alarmTimeStep, ierr
       err = ior(err, err1)
 
       call ocn_time_average_init(averagePool)
-   
       call mpas_timer_start("diagnostic solve", .false., initDiagSolveTimer)
       call ocn_diagnostic_solve(dt,  statePool, forcingPool, meshPool, diagnosticsPool, scratchPool)
       call mpas_timer_stop("diagnostic solve", initDiagSolveTimer)
-
-      ! Compute velocity transport, used in advection terms of layerThickness and tracer tendency
-      uTransport(:,:) = normalVelocity(:,:) + uBolusGM(:,:)
-
-      call ocn_compute_mesh_scaling(meshPool, config_hmix_scaleWithMesh, config_maxMeshDensity)
- 
-      call mpas_rbf_interp_initialize(meshPool)
-      call mpas_initialize_tangent_vectors(meshPool, edgeTangentVectors)
-
-      call mpas_init_reconstruct(meshPool)
-      call mpas_reconstruct(meshPool, normalVelocity,        &
-                       normalVelocityX,            &
-                       normalVelocityY,            &
-                       normalVelocityZ,            &
-                       normalVelocityZonal,        &
-                       normalVelocityMeridional    &
-                      )
 
       ! initialize velocities and tracers on land to be zero.
       areaCell(nCells+1) = -1.0e34
@@ -508,6 +494,42 @@ print *, 'output alarmTimeStep', alarmTimeStep, ierr
       do iCell=1,nCells
          tracers(:, maxLevelCell(iCell)+1:nVertLevels,iCell) =  -1.0e34
       end do
+
+      ! ------------------------------------------------------------------
+      ! Accumulating various parametrizations of the transport velocity
+      ! ------------------------------------------------------------------
+      normalTransportVelocity(:,:) = normalVelocity(:,:)
+
+      ! Compute normalGMBolusVelocity, relativeSlope and RediDiffVertCoef if respective flags are turned on
+      if (config_use_standardGM) then
+          call ocn_gm_compute_Bolus_velocity(diagnosticsPool, meshPool, scratchPool)
+      end if
+ 
+      if (config_use_standardGM) then
+         normalTransportVelocity(:,:) = normalTransportVelocity(:,:) + normalGMBolusVelocity(:,:)
+       end if
+      ! ------------------------------------------------------------------
+      ! End: Accumulating various parametrizations of the transport velocity
+      ! ------------------------------------------------------------------
+
+      call ocn_compute_mesh_scaling(meshPool, config_hmix_scaleWithMesh, config_maxMeshDensity)
+ 
+      call mpas_rbf_interp_initialize(meshPool)
+      call mpas_initialize_tangent_vectors(meshPool, edgeTangentVectors)
+
+      call mpas_init_reconstruct(meshPool)
+
+      call mpas_reconstruct(meshPool, normalVelocity,        &
+                       normalVelocityX,            &
+                       normalVelocityY,            &
+                       normalVelocityZ,            &
+                       normalVelocityZonal,        &
+                       normalVelocityMeridional    &
+                      )
+
+      if (config_use_standardGM) then
+         call ocn_reconstruct_gm_vectors(diagnosticsPool, meshPool)
+      end if
 
       call mpas_pool_initialize_time_levels(statePool)
 

@@ -307,7 +307,7 @@ contains
       real (kind=RKIND) :: volumeCellGlobal, volumeEdgeGlobal, CFLNumberGlobal, localCFL, localSum, areaCellGlobal, areaEdgeGlobal, areaTriangleGlobal, time_days
       real (kind=RKIND), dimension(:), pointer ::  areaCell, dcEdge, dvEdge, areaTriangle, areaEdge
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness, normalVelocity, tangentialVelocity, layerThicknessEdge, relativeVorticity, kineticEnergyCell, &
-         normalizedRelativeVorticityEdge, normalizedPlanetaryVorticityEdge, pressure, montgomeryPotential, vertTransportVelocityTop, vertVelocityTop, &
+         normalizedRelativeVorticityEdge, normalizedPlanetaryVorticityEdge, pressure, montgomeryPotential, vertAleTransportTop, vertVelocityTop, &
          lowFreqDivergence, highFreqThickness, density
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers
       
@@ -383,7 +383,7 @@ contains
          call mpas_pool_get_array(diagnosticsPool, 'relativeVorticity', relativeVorticity)
          call mpas_pool_get_array(diagnosticsPool, 'normalizedRelativeVorticityEdge', normalizedRelativeVorticityEdge)
          call mpas_pool_get_array(diagnosticsPool, 'normalizedPlanetaryVorticityEdge', normalizedPlanetaryVorticityEdge)
-         call mpas_pool_get_array(diagnosticsPool, 'vertTransportVelocityTop', vertTransportVelocityTop)
+         call mpas_pool_get_array(diagnosticsPool, 'vertAleTransportTop', vertAleTransportTop)
          call mpas_pool_get_array(diagnosticsPool, 'vertVelocityTop', vertVelocityTop)
          call mpas_pool_get_array(diagnosticsPool, 'tangentialVelocity', tangentialVelocity)
          call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdge', layerThicknessEdge)
@@ -393,7 +393,6 @@ contains
 
          allocate(areaEdge(1:nEdgesSolve))
          areaEdge = dcEdge(1:nEdgesSolve)*dvEdge(1:nEdgesSolve)
-
 
          allocate(workArray(nVertLevels,nCellsSolve))
 
@@ -534,9 +533,9 @@ contains
          verticalSumMins(variableIndex) = min(verticalSumMins(variableIndex), verticalSumMins_tmp(variableIndex))
          verticalSumMaxes(variableIndex) = max(verticalSumMaxes(variableIndex), verticalSumMaxes_tmp(variableIndex))
 
-         ! vertTransportVelocityTop vertical velocity
+         ! vertAleTransportTop vertical velocity
          variableIndex = variableIndex + 1
-         workArray = vertTransportVelocityTop(1:nVertLevels,1:nCellsSolve)
+         workArray = vertAleTransportTop(1:nVertLevels,1:nCellsSolve)
          call ocn_compute_field_volume_weighted_local_stats_max_level(dminfo, nVertLevels, nCellsSolve, maxLevelCell(1:nCellsSolve), areaCell(1:nCellsSolve), layerThickness(:,1:nCellsSolve), &
             workArray, sums_tmp(variableIndex), sumSquares_tmp(variableIndex), mins_tmp(variableIndex), maxes_tmp(variableIndex), verticalSumMins_tmp(variableIndex), &
             verticalSumMaxes_tmp(variableIndex))
@@ -722,7 +721,7 @@ contains
       averages(variableIndex) = sums(variableIndex)/volumeCellGlobal
       rms(variableIndex) = sqrt(sumSquares(variableIndex)/volumeCellGlobal)
 
-      ! vertTransportVelocityTop vertical velocity
+      ! vertAleTransportTop vertical velocity
       variableIndex = variableIndex + 1
       averages(variableIndex) = sums(variableIndex)/volumeCellGlobal
       rms(variableIndex) = sqrt(sumSquares(variableIndex)/volumeCellGlobal)

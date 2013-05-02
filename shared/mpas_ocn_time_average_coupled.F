@@ -80,8 +80,7 @@ module ocn_time_average_coupled
         real (kind=RKIND), dimension(:,:), pointer :: tracersSurfaceValue, avgTracersSurfaceValue
         real (kind=RKIND), dimension(:,:), pointer :: avgSSHGradient
         real (kind=RKIND), dimension(:,:), pointer :: gradSSHZonal, gradSSHMeridional
-        integer, pointer :: index_temperature, index_zonalSSH, index_meridionalSSH
-        integer, pointer :: nAccumulatedCoupled
+        integer, pointer :: index_temperature, index_zonalSSH, index_meridionalSSH, nAccumulatedCoupled
 
         call mpas_pool_get_array(diagnosticsPool, 'tracersSurfaceValue', tracersSurfaceValue)
         call mpas_pool_get_array(diagnosticsPool, 'surfaceVelocity', surfaceVelocity)
