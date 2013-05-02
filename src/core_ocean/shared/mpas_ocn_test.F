@@ -20,11 +20,14 @@
 
 module ocn_test
 
+   use mpas_constants
    use mpas_framework
    use mpas_timekeeping
    use mpas_dmpar
    use mpas_timer
    use mpas_tensor_operations
+
+   use ocn_constants
 
    implicit none
    private
@@ -42,7 +45,8 @@ module ocn_test
    !
    !--------------------------------------------------------------------
 
-   public :: ocn_test_suite
+   public :: ocn_test_suite, &
+             ocn_init_gm_test_functions
 
    !--------------------------------------------------------------------
    !
@@ -227,6 +231,124 @@ contains
       err = 0
 
    end subroutine ocn_prep_test_tensor!}}}
+
+!***********************************************************************
+!
+!  routine ocn_init_gm_test_functions
+!
+!> \brief   Initialize Gent-McWilliams test functions
+!> \author  Mark Petersen
+!> \date    May 2014
+!> \details 
+!>  For the initial temperature distribution
+!>  T = T_1 + T_2*y/y_{max} + T_3*z/z_{max}
+!>  and linear EOS with T coefficient alpha, this subroutine computes
+!>  the instantaneous analytic solution for:
+!>    - the Bolus stream function
+!>    - horizontal Bolus velocity
+!
+!-----------------------------------------------------------------------
+
+   subroutine ocn_init_gm_test_functions(diagnosticsPool, meshPool, scratchPool)!{{{
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      type (mpas_pool_type), intent(in) :: &
+         meshPool            !< Input: mesh information
+
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+
+      type (mpas_pool_type), intent(inout) :: diagnosticsPool  !< Input: diagnostic fields derived from State
+      type (mpas_pool_type), intent(in) :: scratchPool !< Input: scratch variables
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      integer :: k, iCell
+      integer, pointer  :: nCells
+      integer, dimension(:), pointer   :: maxLevelCell
+
+      real(kind=RKIND) :: zTop, config_gm_analytic_temperature2, config_gm_analytic_temperature3, config_gm_analytic_ymax, &
+         config_gm_analytic_bottom_depth, L, R, c1, c2, zMax, zBot
+      real (kind=RKIND), pointer :: config_gravWaveSpeed_trunc, config_density0, config_standardGM_tracer_kappa, config_eos_linear_alpha
+
+      real(kind=RKIND), dimension(:), pointer   :: bottomDepth, refBottomDepthTopOfCell, yCell, yEdge
+      real(kind=RKIND), dimension(:,:), pointer :: yRelativeSlopeSolution, yGMStreamFuncSolution, yGMBolusVelocitySolution, zMid
+
+      type (field2DReal), pointer :: yRelativeSlopeSolutionField, yGMStreamFuncSolutionField, yGMBolusVelocitySolutionField
+
+      call mpas_pool_get_config(ocnConfigs, 'config_density0',config_density0)
+      call mpas_pool_get_config(ocnConfigs, 'config_eos_linear_alpha', config_eos_linear_alpha)
+      call mpas_pool_get_config(ocnConfigs, 'config_gravWaveSpeed_trunc',config_gravWaveSpeed_trunc)
+      call mpas_pool_get_config(ocnConfigs, 'config_standardGM_tracer_kappa',config_standardGM_tracer_kappa)
+
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+      call mpas_pool_get_array(meshPool, 'refBottomDepthTopOfCell',refBottomDepthTopOfCell)
+      call mpas_pool_get_array(meshPool, 'yCell',yCell)
+      call mpas_pool_get_array(meshPool, 'yEdge',yEdge)
+      call mpas_pool_get_array(meshPool, 'bottomDepth',bottomDepth)
+
+      call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
+
+      ! move solution variables to diagnostics pool to include them in output.
+      call mpas_pool_get_field(scratchPool, 'yRelativeSlopeSolution',yRelativeSlopeSolutionField)
+      call mpas_pool_get_field(scratchPool, 'yGMStreamFuncSolution',yGMStreamFuncSolutionField)
+      call mpas_pool_get_field(scratchPool, 'yGMBolusVelocitySolution',yGMBolusVelocitySolutionField)
+
+      yRelativeSlopeSolution   => yRelativeSlopeSolutionField % array
+      yGMStreamFuncSolution    => yGMStreamFuncSolutionField % array
+      yGMBolusVelocitySolution => yGMBolusVelocitySolutionField % array 
+
+      ! These are flags that must match your initial conditions settings.  See gm_analytic initial condition in mode_init.
+      config_gm_analytic_temperature2 = 10;
+      config_gm_analytic_temperature3 = -10;
+      config_gm_analytic_ymax = 500000;
+      config_gm_analytic_bottom_depth = 1000;
+
+      ! zMax is associated with linear temperature profile in z
+      zMax = -config_gm_analytic_bottom_depth;  
+      ! zBot is location we apply boundary conditions on the ODE for stream function.  
+      zBot = zMax;  
+
+      L = config_gravWaveSpeed_trunc * sqrt(config_density0*zMax/gravity/config_eos_linear_alpha/config_gm_analytic_temperature3);
+      R = - config_standardGM_tracer_kappa * config_gm_analytic_temperature2 * zMax / config_gm_analytic_temperature3 / config_gm_analytic_ymax;
+      c1 = R*(1-exp(-zBot/L))/(exp(zBot/L) - exp(-zBot/L));
+      c2 = R-c1;
+
+      do iCell = 1, nCells
+
+         do k = 1, maxLevelCell(iCell)
+            ! placed at mid-depth of cell center:
+            yGMBolusVelocitySolution(k,iCell) = 1/L*(c1*exp(zMid(k,iCell)/L) - c2*exp(-zMid(k,iCell)/L) );
+         end do
+
+         do k = 1, maxLevelCell(iCell)
+            ! placed at top interface, cell center.
+            zTop = - refBottomDepthTopOfCell(k)
+            yGMStreamFuncSolution(k,iCell) = c1*exp(zTop/L) + c2*exp(-zTop/L) - R;
+
+         end do
+
+         k = maxLevelCell(iCell)+1
+            ! placed at top interface, cell center.
+            zTop = zBot
+            yGMStreamFuncSolution(k,iCell) = c1*exp(zTop/L) + c2*exp(-zTop/L) - R;
+
+      end do
+
+   end subroutine ocn_init_gm_test_functions!}}}
 
 end module ocn_test
 

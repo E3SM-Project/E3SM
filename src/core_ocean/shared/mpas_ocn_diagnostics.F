@@ -14,7 +14,7 @@
 !> \date   23 September 2011
 !> \details
 !>  This module contains the routines for computing
-!>  diagnostic variables, and other quantities such as vertTransportVelocityTop.
+!>  diagnostic variables, and other quantities such as vertAleTransportTop.
 !
 !-----------------------------------------------------------------------
 
@@ -23,6 +23,7 @@ module ocn_diagnostics
    use mpas_grid_types
    use mpas_constants
    use mpas_timer
+   use mpas_vector_reconstruction
 
    use ocn_constants
    use ocn_gm
@@ -53,6 +54,7 @@ module ocn_diagnostics
              ocn_fuperp, &
              ocn_filter_btr_mode_vel, &
              ocn_filter_btr_mode_tend_vel, &
+             ocn_reconstruct_gm_vectors, &
              ocn_diagnostics_init
 
    !--------------------------------------------------------------------
@@ -105,18 +107,18 @@ contains
       real (kind=RKIND) :: d2fdx2_cell1, d2fdx2_cell2, coef_3rd_order, r_tmp, &
         invAreaCell1, invAreaCell2, invAreaTri1, invAreaTri2, invLength, layerThicknessVertex, coef
 
-      real (kind=RKIND), dimension(:), allocatable:: pTop, div_hu
+      real (kind=RKIND), dimension(:), allocatable:: pTop, div_hu,div_huTransport,div_huGMBolus
 
       real (kind=RKIND), dimension(:), pointer :: &
         bottomDepth, fVertex, dvEdge, dcEdge, areaCell, areaTriangle, ssh, seaSurfacePressure
       real (kind=RKIND), dimension(:,:), pointer :: &
-        weightsOnEdge, kiteAreasOnVertex, layerThicknessEdge, layerThickness, normalVelocity, tangentialVelocity, pressure,&
-        circulation, kineticEnergyCell, montgomeryPotential, vertTransportVelocityTop, zMid, zTop, divergence, &
+        weightsOnEdge, kiteAreasOnVertex, layerThicknessEdge, layerThickness, normalVelocity, normalTransportVelocity, normalGMBolusVelocity, tangentialVelocity, pressure,&
+        circulation, kineticEnergyCell, montgomeryPotential, vertAleTransportTop, zMid, zTop, divergence, &
         relativeVorticity, relativeVorticityCell, &
         normalizedPlanetaryVorticityEdge, normalizedPlanetaryVorticityVertex, &
         normalizedRelativeVorticityEdge, normalizedRelativeVorticityVertex, normalizedRelativeVorticityCell, &
-        density, displacedDensity, potentialDensity, temperature, salinity, kineticEnergyVertex, kineticEnergyVertexOnCells, uBolusGM, uTransport, &
-        vertVelocityTop, BruntVaisalaFreqTop, &
+        density, displacedDensity, potentialDensity, temperature, salinity, kineticEnergyVertex, kineticEnergyVertexOnCells, &
+        vertVelocityTop, vertTransportVelocityTop, vertGMBolusVelocityTop, BruntVaisalaFreqTop, &
         vorticityGradientNormalComponent, vorticityGradientTangentialComponent, gradSSH, &
         inSituThermalExpansionCoeff, inSituSalineContractionCoeff
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers, derivTwo
@@ -130,7 +132,7 @@ contains
 
       integer :: timeLevel
       integer, pointer :: indexTemperature, indexSalinity
-      real (kind=RKIND), pointer :: config_density0, config_apvm_scale_factor, config_h_kappa, config_coef_3rd_order
+      real (kind=RKIND), pointer :: config_density0, config_apvm_scale_factor,  config_coef_3rd_order
       character (len=StrKIND), pointer :: config_pressure_gradient_type
 
       if (present(timeLevelIn)) then
@@ -141,7 +143,6 @@ contains
 
       call mpas_pool_get_config(ocnConfigs, 'config_density0', config_density0)
       call mpas_pool_get_config(ocnConfigs, 'config_apvm_scale_factor', config_apvm_scale_factor)
-      call mpas_pool_get_config(ocnConfigs, 'config_h_kappa', config_h_kappa)
       call mpas_pool_get_config(ocnConfigs, 'config_pressure_gradient_type', config_pressure_gradient_type)
       call mpas_pool_get_config(ocnConfigs, 'config_coef_3rd_order', config_coef_3rd_order)
 
@@ -172,8 +173,10 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdge', layerThicknessEdge)
       call mpas_pool_get_array(diagnosticsPool, 'kineticEnergyCell', kineticEnergyCell)
       call mpas_pool_get_array(diagnosticsPool, 'vertVelocityTop', vertVelocityTop)
-      call mpas_pool_get_array(diagnosticsPool, 'uBolusGM', uBolusGM)
-      call mpas_pool_get_array(diagnosticsPool, 'uTransport', uTransport)
+      call mpas_pool_get_array(diagnosticsPool, 'vertTransportVelocityTop', vertTransportVelocityTop)
+      call mpas_pool_get_array(diagnosticsPool, 'vertGMBolusVelocityTop', vertGMBolusVelocityTop)
+      call mpas_pool_get_array(diagnosticsPool, 'normalGMBolusVelocity', normalGMBolusVelocity)
+      call mpas_pool_get_array(diagnosticsPool, 'normalTransportVelocity', normalTransportVelocity)
       call mpas_pool_get_array(diagnosticsPool, 'gradSSH', gradSSH)
 
       call mpas_pool_get_array(meshPool, 'weightsOnEdge', weightsOnEdge)
@@ -260,9 +263,14 @@ contains
         end do
       end do
 
-      allocate(div_hu(nVertLevels))
+      !
+      ! Compute divergence, kinetic energy, and vertical velocity
+      !
+      allocate(div_hu(nVertLevels),div_huTransport(nVertLevels),div_huGMBolus(nVertLevels))
       do iCell = 1, nCells
          div_hu(:) = 0.0
+         div_huTransport(:) = 0.0
+         div_huGMBolus(:) = 0.0
          invAreaCell1 = 1.0 / areaCell(iCell)
          do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
@@ -272,14 +280,21 @@ contains
                divergence(k, iCell) = divergence(k, iCell) - edgeSignOnCell(i, iCell) * r_tmp
                div_hu(k)    = div_hu(k) - layerThicknessEdge(k, iEdge) * edgeSignOnCell(i, iCell) * r_tmp 
                kineticEnergyCell(k, iCell) = kineticEnergyCell(k, iCell) + 0.25 * r_tmp * dcEdge(iEdge) * normalVelocity(k,iEdge)
+
+               ! Compute vertical velocity from the horizontal total transport
+               div_huTransport(k) = div_huTransport(k) - layerThicknessEdge(k, iEdge) * edgeSignOnCell(i, iCell) * dvEdge(iEdge) * normalTransportVelocity(k, iEdge) * invAreaCell1 
+               ! Compute vertical velocity from the horizontal GM Bolus velocity
+               div_huGMBolus(k)   = div_huGMBolus(k) - layerThicknessEdge(k, iEdge) * edgeSignOnCell(i, iCell) * dvEdge(iEdge) * normalGMBolusVelocity(k, iEdge) * invAreaCell1
             end do
          end do
          ! Vertical velocity at bottom (maxLevelCell(iCell)+1) is zero, initialized above.
          do k=maxLevelCell(iCell),1,-1
             vertVelocityTop(k,iCell) = vertVelocityTop(k+1,iCell) - div_hu(k)
+            vertTransportVelocityTop(k,iCell) = vertTransportVelocityTop(k+1,iCell) - div_huTransport(k)
+            vertGMBolusVelocityTop(k,iCell) = vertGMBolusVelocityTop(k+1,iCell) - div_huGMBolus(k)
          end do         
       end do
-      deallocate(div_hu)
+      deallocate(div_hu,div_huTransport,div_huGMBolus)
 
       do iEdge = 1, nEdges
          ! Compute v (tangential) velocities
@@ -551,15 +566,6 @@ contains
       !  compute fields used as intent(in) to CVMix/KPP
       call computeKPPInputFields(statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, timeLevel)
 
-      !
-      ! Apply the GM closure as a bolus velocity
-      !
-      if (config_h_kappa .GE. epsilon(0D0)) then
-         call ocn_gm_compute_uBolus(statePool, diagnosticsPool, meshPool)
-      else
-         uBolusGM = 0.0
-      end if
-
 #ifdef MPAS_CESM
       do iEdge = 1, nEdgesSolve
          cell1 = cellsOnEdge(1, iEdge)
@@ -584,7 +590,7 @@ contains
 !
 !-----------------------------------------------------------------------
    subroutine ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, oldLayerThickness, layerThicknessEdge, &
-     normalVelocity, oldSSH, newHighFreqThickness, dt, vertTransportVelocityTop, err)!{{{
+     normalVelocity, oldSSH, newHighFreqThickness, dt, vertAleTransportTop, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -623,7 +629,7 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:), intent(out) :: &
-         vertTransportVelocityTop     !< Output: vertical transport at top of cell
+         vertAleTransportTop     !< Output: vertical transport at top of cell
 
       integer, intent(out) :: err !< Output: error flag
 
@@ -665,7 +671,7 @@ contains
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
       if (config_vert_coord_movement.eq.'impermeable_interfaces') then
-        vertTransportVelocityTop = 0.0
+        vertAleTransportTop=0.0
         return
       end if
 
@@ -700,15 +706,15 @@ contains
       ! Vertical transport through layer interfaces
       !
       ! Vertical transport through layer interface at top and bottom is zero.
-      ! Here we are using solving the continuity equation for vertTransportVelocityTop ($w^t$),
+      ! Here we are using solving the continuity equation for vertAleTransportTop ($w^t$),
       ! and using ALE_Thickness for thickness at the new time.
 
-      do iCell = 1, nCells
-         vertTransportVelocityTop(1,iCell) = 0.0
-         vertTransportVelocityTop(maxLevelCell(iCell)+1,iCell) = 0.0
-         do k = maxLevelCell(iCell), 2, -1
-            vertTransportVelocityTop(k,iCell) = vertTransportVelocityTop(k+1,iCell) - div_hu(k,iCell) &
-              - (ALE_Thickness(k,iCell) - oldLayerThickness(k,iCell)) / dt
+      do iCell = 1,nCells
+         vertAleTransportTop(1,iCell) = 0.0
+         vertAleTransportTop(maxLevelCell(iCell)+1,iCell) = 0.0
+         do k = maxLevelCell(iCell),2,-1
+            vertAleTransportTop(k,iCell) = vertAleTransportTop(k+1,iCell) - div_hu(k,iCell) &
+              - (ALE_Thickness(k,iCell) - oldLayerThickness(k,iCell))/dt
          end do
       end do
 
@@ -1132,6 +1138,92 @@ contains
 
     end subroutine computeKPPInputFields!}}}
 
+!***********************************************************************
+!
+!  routine ocn_reconstruct_gm_vectors
+!
+!> \brief   Computes cell-centered vector diagnostics
+!> \author  Mark Petersen
+!> \date    May 2014
+!> \details 
+!>  This routine computes cell-centered vector diagnostics
+!
+!-----------------------------------------------------------------------
+
+   subroutine ocn_reconstruct_gm_vectors(diagnosticsPool, meshPool)
+
+      type (mpas_pool_type), intent(in) :: meshPool !< Input: mesh information
+      type (mpas_pool_type), intent(in) :: diagnosticsPool !< Input: Diagnostic information
+
+      real (kind=RKIND), dimension(:,:), pointer :: &
+         normalTransportVelocity, xTransportVelocity, yTransportVelocity, zTransportVelocity, zonalTransportVelocity, meridionalTransportVelocity, &
+         normalGMBolusVelocity, xGMBolusVelocity, yGMBolusVelocity, zGMBolusVelocity, zonalGMBolusVelocity, meridionalGMBolusVelocity, &
+         relativeSlopeTopOfEdge, xRelativeSlopeTopOfCell, yRelativeSlopeTopOfCell, zRelativeSlopeTopOfCell, zonalRelativeSlopeTopOfCell, meridionalRelativeSlopeTopOfCell, &
+         gmStreamFuncTopOfEdge, xGMStreamFunc, yGMStreamFunc, zGMStreamFunc, zonalGMStreamFunc, meridionalGMStreamFunc
+
+         call mpas_pool_get_array(diagnosticsPool, 'normalTransportVelocity', normalTransportVelocity)
+         call mpas_pool_get_array(diagnosticsPool, 'xTransportVelocity', xTransportVelocity)
+         call mpas_pool_get_array(diagnosticsPool, 'yTransportVelocity', yTransportVelocity)
+         call mpas_pool_get_array(diagnosticsPool, 'zTransportVelocity', zTransportVelocity)
+         call mpas_pool_get_array(diagnosticsPool, 'zonalTransportVelocity', zonalTransportVelocity)
+         call mpas_pool_get_array(diagnosticsPool, 'meridionalTransportVelocity', meridionalTransportVelocity)
+
+         call mpas_pool_get_array(diagnosticsPool, 'normalGMBolusVelocity', normalGMBolusVelocity)
+         call mpas_pool_get_array(diagnosticsPool, 'xGMBolusVelocity', xGMBolusVelocity)
+         call mpas_pool_get_array(diagnosticsPool, 'yGMBolusVelocity', yGMBolusVelocity)
+         call mpas_pool_get_array(diagnosticsPool, 'zGMBolusVelocity', zGMBolusVelocity)
+         call mpas_pool_get_array(diagnosticsPool, 'zonalGMBolusVelocity', zonalGMBolusVelocity)
+         call mpas_pool_get_array(diagnosticsPool, 'meridionalGMBolusVelocity', meridionalGMBolusVelocity)
+
+         call mpas_pool_get_array(diagnosticsPool, 'relativeSlopeTopOfEdge', relativeSlopeTopOfEdge)
+         call mpas_pool_get_array(diagnosticsPool, 'xRelativeSlopeTopOfCell', xRelativeSlopeTopOfCell)
+         call mpas_pool_get_array(diagnosticsPool, 'yRelativeSlopeTopOfCell', yRelativeSlopeTopOfCell)
+         call mpas_pool_get_array(diagnosticsPool, 'zRelativeSlopeTopOfCell', zRelativeSlopeTopOfCell)
+         call mpas_pool_get_array(diagnosticsPool, 'zonalRelativeSlopeTopOfCell', zonalRelativeSlopeTopOfCell)
+         call mpas_pool_get_array(diagnosticsPool, 'meridionalRelativeSlopeTopOfCell', meridionalRelativeSlopeTopOfCell)
+
+         call mpas_pool_get_array(diagnosticsPool, 'gmStreamFuncTopOfEdge', gmStreamFuncTopOfEdge)
+         call mpas_pool_get_array(diagnosticsPool, 'xGMStreamFunc', xGMStreamFunc)
+         call mpas_pool_get_array(diagnosticsPool, 'yGMStreamFunc', yGMStreamFunc)
+         call mpas_pool_get_array(diagnosticsPool, 'zGMStreamFunc', zGMStreamFunc)
+         call mpas_pool_get_array(diagnosticsPool, 'zonalGMStreamFunc', zonalGMStreamFunc)
+         call mpas_pool_get_array(diagnosticsPool, 'meridionalGMStreamFunc', meridionalGMStreamFunc)
+
+         call mpas_reconstruct(meshPool, normalTransportVelocity,          &
+                          xTransportVelocity,            &
+                          yTransportVelocity,            &
+                          zTransportVelocity,            &
+                          zonalTransportVelocity,        &
+                          meridionalTransportVelocity    &
+                         )
+
+         call mpas_reconstruct(meshPool, normalGMBolusVelocity,          &
+                          xGMBolusVelocity,            &
+                          yGMBolusVelocity,            &
+                          zGMBolusVelocity,            &
+                          zonalGMBolusVelocity,        &
+                          meridionalGMBolusVelocity    &
+                         )
+
+         call mpas_reconstruct(meshPool, relativeSlopeTopOfEdge,          &
+                         xRelativeSlopeTopOfCell,            &
+                         yRelativeSlopeTopOfCell,            &
+                         zRelativeSlopeTopOfCell,            &
+                         zonalRelativeSlopeTopOfCell,        &
+                         meridionalRelativeSlopeTopOfCell    &
+                        )
+
+         call mpas_reconstruct(meshPool, gmStreamFuncTopOfEdge,          &
+                         xGMStreamFunc,            &
+                         yGMStreamFunc,            &
+                         zGMStreamFunc,            &
+                         zonalGMStreamFunc,        &
+                         meridionalGMStreamFunc    &
+                        )
+
+   end subroutine ocn_reconstruct_gm_vectors!}}}
+
+!***********************************************************************
 
 end module ocn_diagnostics
 
