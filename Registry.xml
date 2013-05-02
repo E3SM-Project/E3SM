@@ -167,6 +167,10 @@
 		            description="If false, del2 and del4 coefficients are constant throughout the mesh (equivalent to setting $\rho_m=1$ throughout the mesh).  If true, these coefficients scale as mesh density to the -3/4 power."
 		            possible_values=".true. or .false."
 		/>
+                 <nml_option name="config_maxMeshDensity" type="real" default_value="-1.0" units="unitless"
+                            description="Global maximum of the mesh density"
+                            possible_values="Any positive real number. If set any negative real number, config_maxMeshDensity is computed during the initialization of each simulation."
+                />
 		<nml_option name="config_visc_vorticity_term" type="logical" default_value=".true." units="unitless"
 		            description="{\color{red} TO BE DELETED}"
 		            possible_values=".true. or .false."
