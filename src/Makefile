@@ -38,7 +38,7 @@ dycore: reg_includes externals frame ops
 
 
 clean:
-	$(RM) $(CORE)_model.exe libframework.a libops.a libdycore.a lib$(CORE).a *.o
+	$(RM) libframework.a libops.a libdycore.a lib$(CORE).a *.o
 	( cd registry; $(MAKE) clean )
 	( cd external; $(MAKE) clean )
 	( cd framework; $(MAKE) clean )

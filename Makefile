@@ -307,7 +307,7 @@ mpas_main:
 	@echo $(TAU_MESSAGE)
 clean:
 	cd src; $(MAKE) clean RM="$(RM)" CORE="$(CORE)"
-	$(RM) $(CORE)_model.exe
+	$(RM) $(CORE)_model
 error: errmsg
 
 else # CORE IF
