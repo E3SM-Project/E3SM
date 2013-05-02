@@ -30,6 +30,7 @@ OBJS = mpas_ocn_mpas_core.o \
        mpas_ocn_tracer_hmix_del4.o \
        mpas_ocn_tracer_advection.o \
        mpas_ocn_high_freq_thickness_hmix_del2.o \
+       mpas_ocn_tracer_surface_flux.o \
        mpas_ocn_time_integration.o \
        mpas_ocn_time_integration_rk4.o \
        mpas_ocn_time_integration_split.o \
@@ -38,6 +39,9 @@ OBJS = mpas_ocn_mpas_core.o \
        mpas_ocn_equation_of_state_linear.o \
        mpas_ocn_global_diagnostics.o \
        mpas_ocn_test.o \
+       mpas_ocn_constants.o \
+       mpas_ocn_forcing.o \
+       mpas_ocn_forcing_coupled.o \
        mpas_ocn_time_average.o
 
 all: libcvmix core_hyd
@@ -105,6 +109,8 @@ mpas_ocn_tracer_advection.o:
 
 mpas_ocn_high_freq_thickness_hmix_del2.o:
 
+mpas_ocn_tracer_surface_flux.o:
+
 mpas_ocn_restoring.o:
 
 mpas_ocn_vmix.o: mpas_ocn_vmix_coefs_const.o mpas_ocn_vmix_coefs_rich.o mpas_ocn_vmix_coefs_tanh.o mpas_ocn_vmix_cvmix.o
@@ -124,6 +130,12 @@ mpas_ocn_equation_of_state_jm.o:
 mpas_ocn_equation_of_state_linear.o:
 
 mpas_ocn_test.o: 
+
+mpas_ocn_constants.o:
+
+mpas_ocn_forcing.o: mpas_ocn_constants.o mpas_ocn_forcing_coupled.o
+
+mpas_ocn_forcing_coupled.o:
 
 mpas_ocn_mpas_core.o: mpas_ocn_thick_hadv.o \
                       mpas_ocn_gm.o \
@@ -148,6 +160,7 @@ mpas_ocn_mpas_core.o: mpas_ocn_thick_hadv.o \
                       mpas_ocn_vmix_cvmix.o \
                       mpas_ocn_restoring.o \
                       mpas_ocn_tracer_advection.o \
+                      mpas_ocn_tracer_surface_flux.o \
                       mpas_ocn_tendency.o \
                       mpas_ocn_diagnostics.o \
                       mpas_ocn_thick_ale.o \
@@ -159,6 +172,9 @@ mpas_ocn_mpas_core.o: mpas_ocn_thick_hadv.o \
                       mpas_ocn_equation_of_state_linear.o \
                       mpas_ocn_global_diagnostics.o \
                       mpas_ocn_test.o \
+                      mpas_ocn_constants.o \
+                      mpas_ocn_forcing.o \
+                      mpas_ocn_forcing_coupled.o \
                       mpas_ocn_time_average.o
 
 clean:

@@ -1222,6 +1222,7 @@
 		<var name="buoyancyForcingOBL" type="real" dimensions="nCells Time" streams="o" units="m s^{-3}"
 			 description="diagnosed buoyancy forcing due to heat, salt and freshwater fluxes averaged over ocean boundary layer depth"
 		/>
+
 		<var name="areaCellGlobal" type="real" dimensions="Time" streams="o" units="m^2"
 			 description="sum of the areaCell variable over the full domain, used to normalize global statistics"
 		/>
@@ -1402,9 +1403,9 @@
 			 description="DMS Flux."
 		/>
 	</var_struct>
-	<var_struct name="scratch" time_levs="0">
-		<var name="normalVelocityForcingX" persistence="scratch" type="real" dimensions="nVertLevels nCells Time" units="N m^{-2}"
-			 description="reconstructed wind stress in the x-direction (cartesian)"
+    <var_struct name="scratch" time_levs="0">
+        <var name="normalVelocityForcingX" persistence="scratch" type="real" dimensions="nVertLevels nCells Time" units="N m^{-2}"
+		     description="reconstructed wind stress in the x-direction (cartesian)"
 		/>
 		<var name="normalVelocityForcingY" persistence="scratch" type="real" dimensions="nVertLevels nCells Time" units="N m^{-2}"
 			 description="reconstructed wind stress in the y-direction (cartesian)"
