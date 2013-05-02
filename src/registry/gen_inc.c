@@ -467,84 +467,86 @@ void gen_field_defs(struct group_list * groups, struct variable * vars, struct d
          fortprintf(fd, "      type (block_type), pointer :: block\n");
 
          var_list_ptr = group_ptr->vlist;
-         memcpy(super_array, var_list_ptr->var->super_array, 1024);
-         i = 1;
-         while (var_list_ptr) {
-            if (strncmp(super_array, var_list_ptr->var->super_array, 1024) != 0) {
-               memcpy(super_array, var_list_ptr->var->super_array, 1024);
-               i = 1;
-             }
-            if (strncmp(var_list_ptr->var->array_class, "-", 1024) != 0) fortprintf(fd, "      integer :: index_%s = %i\n", var_list_ptr->var->name_in_code, i++);
-            var_list_ptr = var_list_ptr->next;
-         }
-
-         var_list_ptr = group_ptr->vlist;
-         sprintf(super_array, "-");
-         sprintf(array_class, "-");
-         class_start = 1;
-         class_end = 1;
-         i = 1;
-
-         while (var_list_ptr) {
-
-            /* Is the current variable in a super array? */
-            if (strncmp(var_list_ptr->var->super_array, "-", 1024) != 0) {
-
-               /* Have we hit the beginning of a new super array? */
+         if(group_ptr->vlist != NULL){
+            memcpy(super_array, var_list_ptr->var->super_array, 1024);
+            i = 1;
+            while (var_list_ptr) {
                if (strncmp(super_array, var_list_ptr->var->super_array, 1024) != 0) {
-                  /* Finish off the previous super array? */
-                  if (strncmp(super_array, "-", 1024) != 0) {
-                     fortprintf(fd, "      integer :: %s_end = %i\n", array_class, class_end);
-                     fortprintf(fd, "      integer :: num_%s = %i\n", super_array, i);
-                  }
-                  class_start = 1;
-                  class_end = 1;
-                  i = 1;
                   memcpy(super_array, var_list_ptr->var->super_array, 1024);
-                  memcpy(array_class, var_list_ptr->var->array_class, 1024);
-                  fortprintf(fd, "      integer :: %s_start = %i\n", array_class, class_start);
+                  i = 1;
+                }
+               if (strncmp(var_list_ptr->var->array_class, "-", 1024) != 0) fortprintf(fd, "      integer :: index_%s = %i\n", var_list_ptr->var->name_in_code, i++);
+               var_list_ptr = var_list_ptr->next;
+            }
+
+            var_list_ptr = group_ptr->vlist;
+            sprintf(super_array, "-");
+            sprintf(array_class, "-");
+            class_start = 1;
+            class_end = 1;
+            i = 1;
+
+            while (var_list_ptr) {
+
+               /* Is the current variable in a super array? */
+               if (strncmp(var_list_ptr->var->super_array, "-", 1024) != 0) {
+
+                  /* Have we hit the beginning of a new super array? */
+                  if (strncmp(super_array, var_list_ptr->var->super_array, 1024) != 0) {
+                     /* Finish off the previous super array? */
+                     if (strncmp(super_array, "-", 1024) != 0) {
+                        fortprintf(fd, "      integer :: %s_end = %i\n", array_class, class_end);
+                        fortprintf(fd, "      integer :: num_%s = %i\n", super_array, i);
+                     }
+                     class_start = 1;
+                     class_end = 1;
+                     i = 1;
+                     memcpy(super_array, var_list_ptr->var->super_array, 1024);
+                     memcpy(array_class, var_list_ptr->var->array_class, 1024);
+                     fortprintf(fd, "      integer :: %s_start = %i\n", array_class, class_start);
+                  }
+                  /* Or have we hit the beginning of a new array class? */
+                  else if (strncmp(array_class, var_list_ptr->var->array_class, 1024) != 0) {
+                     fortprintf(fd, "      integer :: %s_end = %i\n", array_class, class_end);
+                     class_start = class_end+1;
+                     class_end = class_start;
+                     memcpy(array_class, var_list_ptr->var->array_class, 1024);
+                     fortprintf(fd, "      integer :: %s_start = %i\n", array_class, class_start);
+                     i++;
+                  }
+                  else {
+                     class_end++;
+                     i++;
+                  }
+
                }
-               /* Or have we hit the beginning of a new array class? */
-               else if (strncmp(array_class, var_list_ptr->var->array_class, 1024) != 0) {
-                  fortprintf(fd, "      integer :: %s_end = %i\n", array_class, class_end);
-                  class_start = class_end+1;
-                  class_end = class_start;
-                  memcpy(array_class, var_list_ptr->var->array_class, 1024);
-                  fortprintf(fd, "      integer :: %s_start = %i\n", array_class, class_start);
-                  i++;
+               var_list_ptr = var_list_ptr->next;
+
+            }
+            if (strncmp(super_array, "-", 1024) != 0) fortprintf(fd, "      integer :: %s_end = %i\n", array_class, class_end);
+            if (strncmp(super_array, "-", 1024) != 0) fortprintf(fd, "      integer :: num_%s = %i\n", super_array, i);
+
+            var_list_ptr = group_ptr->vlist;
+            while (var_list_ptr) {
+               var_ptr = var_list_ptr->var;
+               if (!strncmp(var_ptr->super_array, "-", 1024)) {
+                 if (var_ptr->vtype == INTEGER)   fortprintf(fd, "      type (field%idInteger), pointer :: %s\n", var_ptr->ndims, var_ptr->name_in_code);
+                 if (var_ptr->vtype == REAL)      fortprintf(fd, "      type (field%idReal), pointer :: %s\n", var_ptr->ndims, var_ptr->name_in_code);
+                 if (var_ptr->vtype == CHARACTER) fortprintf(fd, "      type (field%idChar), pointer :: %s\n", var_ptr->ndims, var_ptr->name_in_code);
                }
                else {
-                  class_end++;
-                  i++;
+                 if (var_ptr->vtype == INTEGER)   fortprintf(fd, "      type (field%idInteger), pointer :: %s\n", var_ptr->ndims+1, var_ptr->super_array);
+                 if (var_ptr->vtype == REAL)      fortprintf(fd, "      type (field%idReal), pointer :: %s\n", var_ptr->ndims+1, var_ptr->super_array);
+                 if (var_ptr->vtype == CHARACTER) fortprintf(fd, "      type (field%idChar), pointer :: %s\n", var_ptr->ndims+1, var_ptr->super_array);
+                 while (var_list_ptr->next && !strncmp(var_list_ptr->next->var->super_array, var_list_ptr->var->super_array, 1024)) var_list_ptr = var_list_ptr->next;
                }
-
+               var_list_ptr = var_list_ptr->next;
             }
-            var_list_ptr = var_list_ptr->next;
-
-         }
-         if (strncmp(super_array, "-", 1024) != 0) fortprintf(fd, "      integer :: %s_end = %i\n", array_class, class_end);
-         if (strncmp(super_array, "-", 1024) != 0) fortprintf(fd, "      integer :: num_%s = %i\n", super_array, i);
-
-         var_list_ptr = group_ptr->vlist;
-         while (var_list_ptr) {
-            var_ptr = var_list_ptr->var;
-            if (!strncmp(var_ptr->super_array, "-", 1024)) {
-              if (var_ptr->vtype == INTEGER)   fortprintf(fd, "      type (field%idInteger), pointer :: %s\n", var_ptr->ndims, var_ptr->name_in_code);
-              if (var_ptr->vtype == REAL)      fortprintf(fd, "      type (field%idReal), pointer :: %s\n", var_ptr->ndims, var_ptr->name_in_code);
-              if (var_ptr->vtype == CHARACTER) fortprintf(fd, "      type (field%idChar), pointer :: %s\n", var_ptr->ndims, var_ptr->name_in_code);
-            }
-            else {
-              if (var_ptr->vtype == INTEGER)   fortprintf(fd, "      type (field%idInteger), pointer :: %s\n", var_ptr->ndims+1, var_ptr->super_array);
-              if (var_ptr->vtype == REAL)      fortprintf(fd, "      type (field%idReal), pointer :: %s\n", var_ptr->ndims+1, var_ptr->super_array);
-              if (var_ptr->vtype == CHARACTER) fortprintf(fd, "      type (field%idChar), pointer :: %s\n", var_ptr->ndims+1, var_ptr->super_array);
-              while (var_list_ptr->next && !strncmp(var_list_ptr->next->var->super_array, var_list_ptr->var->super_array, 1024)) var_list_ptr = var_list_ptr->next;
-            }
-            var_list_ptr = var_list_ptr->next;
          }
    
          fortprintf(fd, "   end type %s_type\n\n\n", group_ptr->name);
    
-         if (group_ptr->vlist->var->ntime_levs > 1) {
+         if (group_ptr->ntime_levs > 1) {
             fortprintf(fd, "   type %s_pointer_type\n", group_ptr->name);
             fortprintf(fd, "      type (%s_type), pointer :: %s \n", group_ptr->name, group_ptr->name);
             fortprintf(fd, "   end type %s_pointer_type\n\n\n", group_ptr->name);
@@ -554,7 +556,6 @@ void gen_field_defs(struct group_list * groups, struct variable * vars, struct d
             fortprintf(fd, "      type (%s_pointer_type), dimension(:), pointer :: time_levs\n", group_ptr->name);
             fortprintf(fd, "   end type %s_multilevel_type\n\n\n", group_ptr->name);
          }
-   
       }
       group_ptr = group_ptr->next;
    }
@@ -568,7 +569,7 @@ void gen_field_defs(struct group_list * groups, struct variable * vars, struct d
 
    group_ptr = groups;
    while (group_ptr) {
-      if (group_ptr->vlist->var->ntime_levs > 1) {
+      if (group_ptr->ntime_levs > 1) {
          fortprintf(fd, "      type (%s_multilevel_type), pointer :: %s\n", group_ptr->name, group_ptr->name);
          fortprintf(fd, "      type (%s_type), pointer :: provis\n", group_ptr->name, group_ptr->name);
 	  } else {
@@ -587,7 +588,7 @@ void gen_field_defs(struct group_list * groups, struct variable * vars, struct d
 
    group_ptr = groups;
    while (group_ptr) {
-      if (group_ptr->vlist->var->ntime_levs > 1) {
+      if (group_ptr->ntime_levs > 1) {
 		 fortprintf(fd, "   subroutine mpas_setup_provis_%ss(b)!{{{\n", group_ptr->name);
 		 fortprintf(fd, "      type (block_type), pointer :: b\n");
 		 fortprintf(fd, "      type (block_type), pointer :: block\n\n");
@@ -638,9 +639,9 @@ void gen_field_defs(struct group_list * groups, struct variable * vars, struct d
    group_ptr = groups;
    while (group_ptr) {
       fortprintf(fd, "      allocate(b %% %s)\n", group_ptr->name);
-      if (group_ptr->vlist->var->ntime_levs > 1) {
-         fortprintf(fd, "      b %% %s %% nTimeLevels = %i\n", group_ptr->name, group_ptr->vlist->var->ntime_levs);
-         fortprintf(fd, "      allocate(b %% %s %% time_levs(%i))\n", group_ptr->name, group_ptr->vlist->var->ntime_levs);
+      if (group_ptr->ntime_levs > 1) {
+         fortprintf(fd, "      b %% %s %% nTimeLevels = %i\n", group_ptr->name, group_ptr->ntime_levs);
+         fortprintf(fd, "      allocate(b %% %s %% time_levs(%i))\n", group_ptr->name, group_ptr->ntime_levs);
          fortprintf(fd, "      do i=1,b %% %s %% nTimeLevels\n", group_ptr->name);
          fortprintf(fd, "         allocate(b %% %s %% time_levs(i) %% %s)\n", group_ptr->name, group_ptr->name);
          fortprintf(fd, "         call mpas_allocate_%s(b, b %% %s %% time_levs(i) %% %s, &\n", group_ptr->name, group_ptr->name, group_ptr->name);
@@ -662,7 +663,7 @@ void gen_field_defs(struct group_list * groups, struct variable * vars, struct d
    fd = fopen("block_deallocs.inc", "w");
    group_ptr = groups;
    while (group_ptr) {
-      if (group_ptr->vlist->var->ntime_levs > 1) {
+      if (group_ptr->vlist != NULL && group_ptr->ntime_levs > 1) {
          fortprintf(fd, "      do i=1,b %% %s %% nTimeLevels\n", group_ptr->name);
          fortprintf(fd, "         call mpas_deallocate_%s(b %% %s %% time_levs(i) %% %s)\n", group_ptr->name, group_ptr->name, group_ptr->name);
          fortprintf(fd, "         deallocate(b %% %s %% time_levs(i) %% %s)\n", group_ptr->name, group_ptr->name);
@@ -1051,7 +1052,7 @@ void gen_field_defs(struct group_list * groups, struct variable * vars, struct d
    fd = fopen("group_shift_level_routines.inc", "w");
    group_ptr = groups;
    while (group_ptr) {
-      if (group_ptr->vlist->var->ntime_levs > 1) {
+      if (group_ptr->vlist != NULL && group_ptr->ntime_levs > 1) {
          fortprintf(fd, "   subroutine mpas_shift_time_levels_%s(%s)\n", group_ptr->name, group_ptr->name);
          fortprintf(fd, "\n");
          fortprintf(fd, "      implicit none\n");
@@ -1150,7 +1151,7 @@ void gen_field_defs(struct group_list * groups, struct variable * vars, struct d
    fortprintf(fd, "           nullify(next)\n");
    fortprintf(fd, "         end if\n\n");
    group_ptr = groups;
-   while (group_ptr)
+   while (group_ptr && group_ptr->vlist != NULL)
    {
      var_list_ptr = group_ptr->vlist;
      var_list_ptr = var_list_ptr->next;
@@ -1159,7 +1160,7 @@ void gen_field_defs(struct group_list * groups, struct variable * vars, struct d
 
      var_ptr = var_list_ptr->var;
      
-     int ntime_levs = 1;
+     int ntime_levs = group_ptr->ntime_levs;
      
      if (strncmp(var_ptr->super_array, "-", 1024) != 0) 
      {
@@ -1172,7 +1173,7 @@ void gen_field_defs(struct group_list * groups, struct variable * vars, struct d
          }
          var_ptr2 = var_list_ptr2->var;
          get_outer_dim(var_ptr2, outer_dim);
-         ntime_levs = var_ptr2->ntime_levs;
+//         ntime_levs = var_ptr2->ntime_levs; // DWJ: 05/02/2013
 
          if(ntime_levs > 1)
          {
@@ -1208,7 +1209,7 @@ void gen_field_defs(struct group_list * groups, struct variable * vars, struct d
      else if (var_ptr->ndims > 0)
      {
          get_outer_dim(var_ptr, outer_dim);
-         ntime_levs = var_ptr->ntime_levs;
+//         ntime_levs = var_ptr->ntime_levs; // DWJ: 05/02/2013
 
          if(ntime_levs > 1)
          {
@@ -1858,7 +1859,7 @@ void gen_reads(struct group_list * groups, struct variable * vars, struct dimens
       while (var_list_ptr) {
          var_ptr = var_list_ptr->var;
 
-         if (group_ptr->vlist->var->ntime_levs > 1)
+         if (group_ptr->ntime_levs > 1)
             snprintf(struct_deref, 1024, "block %% %s %% time_levs(1) %% %s", group_ptr->name, group_ptr->name);
          else
             snprintf(struct_deref, 1024, "block %% %s", group_ptr->name);
@@ -2127,7 +2128,7 @@ void gen_reads(struct group_list * groups, struct variable * vars, struct dimens
       while (var_list_ptr) {
          var_ptr = var_list_ptr->var;
 
-         if (var_ptr->ntime_levs > 1)
+         if (group_ptr->ntime_levs > 1)
             snprintf(struct_deref, 1024, "blocklist %% %s %% time_levs(1) %% %s", group_ptr->name, group_ptr->name);
          else
             snprintf(struct_deref, 1024, "blocklist %% %s", group_ptr->name);
@@ -2181,7 +2182,7 @@ void gen_reads(struct group_list * groups, struct variable * vars, struct dimens
          while (dimlist_ptr) {
             if (i == var_ptr->ndims) { 
 
-                  if (var_ptr->ntime_levs > 1) {
+                  if (group_ptr->ntime_levs > 1) {
                      snprintf(struct_deref, 1024, "domain %% blocklist %% %s %% time_levs(1) %% %s", group_ptr->name, group_ptr->name);
 				  } else {
                      snprintf(struct_deref, 1024, "domain %% blocklist %% %s", group_ptr->name);
@@ -2578,7 +2579,7 @@ void gen_writes(struct group_list * groups, struct variable * vars, struct dimen
       while (var_list_ptr) {
          var_ptr = var_list_ptr->var;
 
-         if (group_ptr->vlist->var->ntime_levs > 1)
+         if (group_ptr->ntime_levs > 1)
             snprintf(struct_deref, 1024, "domain %% blocklist %% %s %% time_levs(1) %% %s", group_ptr->name, group_ptr->name);
          else
             snprintf(struct_deref, 1024, "domain %% blocklist %% %s", group_ptr->name);
@@ -2647,7 +2648,7 @@ void gen_writes(struct group_list * groups, struct variable * vars, struct dimen
       while (var_list_ptr) {
          var_ptr = var_list_ptr->var;
 
-         if (group_ptr->vlist->var->ntime_levs > 1)
+         if (group_ptr->ntime_levs > 1)
             snprintf(struct_deref, 1024, "domain %% blocklist %% %s %% time_levs(1) %% %s", group_ptr->name, group_ptr->name);
          else
             snprintf(struct_deref, 1024, "domain %% blocklist %% %s", group_ptr->name);

@@ -12,11 +12,11 @@
 #include "gen_inc.h"
 #include "ezxml/ezxml.h"
 
-int parse_reg(FILE *, struct namelist **, struct dimension **, struct variable **, struct group_list **);
 int getword(FILE *, char *);
 int is_integer_constant(char *);
 void sort_vars(struct variable *);
 void sort_group_vars(struct group_list *);
+int parse_reg_xml(FILE * regfile, struct namelist **nls, struct dimension ** dims, struct variable ** vars, struct group_list ** groups, char * modelname, char * corename, char * version);
 
 int main(int argc, char ** argv)
 {
@@ -26,7 +26,11 @@ int main(int argc, char ** argv)
    struct variable * vars;
    struct group_list * groups;
 
-   char modelname[1024], corename[1024], version[1024];
+   char *modelname, *corename, *version;
+
+   modelname = (char *)malloc(sizeof(char)*1024);
+   corename = (char *)malloc(sizeof(char)*1024);
+   version = (char *)malloc(sizeof(char)*1024);
 
    if (argc != 2) {
       fprintf(stderr,"Reading registry file from standard input\n");
@@ -41,16 +45,10 @@ int main(int argc, char ** argv)
    dims = NULL;
    vars = NULL;
   
-   if (parse_reg_xml(regfile, &nls, &dims, &vars, &groups, &modelname, &corename, &version)) {
+   if (parse_reg_xml(regfile, &nls, &dims, &vars, &groups, modelname, corename, version)) {
       return 1;
    }
   
-/* Old Parser
-   if (parse_reg(regfile, &nls, &dims, &vars, &groups)) {
-      return 1;
-   }
-*/
-
    sort_vars(vars);
    sort_group_vars(groups);
 
@@ -234,6 +232,7 @@ int parse_reg_xml(FILE * regfile, struct namelist **nls, struct dimension ** dim
 		NEW_GROUP_LIST(grouplist_ptr->next);
 		grouplist_ptr = grouplist_ptr->next;
 		snprintf(grouplist_ptr->name, 1024, "%s", structname);
+		grouplist_ptr->ntime_levs = atoi(structlevs);
 		vlist_cursor = NULL;
 
 		// Parse variable arrays
@@ -320,8 +319,6 @@ int parse_reg_xml(FILE * regfile, struct namelist **nls, struct dimension ** dim
 				dimlist_ptr = var_ptr->dimlist;
 				if(var_ptr->dimlist) var_ptr->dimlist = var_ptr->dimlist->next;
 				free(dimlist_ptr);
-
-				var_ptr->ntime_levs = atoi(structlevs);
 
 				if(varstreams != NULL){
 					snprintf(streams_buffer, 128, "%s", varstreams);
@@ -425,8 +422,6 @@ int parse_reg_xml(FILE * regfile, struct namelist **nls, struct dimension ** dim
 			if(var_ptr->dimlist) var_ptr->dimlist = var_ptr->dimlist->next;
 			free(dimlist_ptr);
 
-			var_ptr->ntime_levs = atoi(structlevs);
-
 			if(varstreams != NULL){
 				snprintf(streams_buffer, 128, "%s", varstreams);
 				if(strchr(streams_buffer, (int)'i')) {
@@ -466,224 +461,6 @@ int parse_reg_xml(FILE * regfile, struct namelist **nls, struct dimension ** dim
 	if (grouplist_ptr) free(grouplist_ptr);
 
 	return 0;
-}
-
-
-int parse_reg(FILE * regfile, struct namelist ** nls, struct dimension ** dims, struct variable ** vars, struct group_list ** groups)
-{
-   char word[1024];
-   struct namelist * nls_ptr;
-   struct namelist * nls_chk_ptr;
-   struct dimension * dim_ptr;
-   struct variable * var_ptr;
-   struct dimension_list * dimlist_ptr;
-   struct dimension * dimlist_cursor;
-   struct group_list * grouplist_ptr;
-   struct variable_list * vlist_cursor;
-
-   NEW_NAMELIST(nls_ptr)
-   NEW_DIMENSION(dim_ptr)
-   NEW_VARIABLE(var_ptr)
-   NEW_GROUP_LIST(grouplist_ptr);
-   *nls = nls_ptr;
-   *dims = dim_ptr;
-   *vars = var_ptr;
-   *groups = grouplist_ptr;
-
-   while(getword(regfile, word) != EOF) {
-      if (strncmp(word, "namelist", 1024) == 0) {
-         NEW_NAMELIST(nls_ptr->next)
-         nls_ptr = nls_ptr->next;
-
-         getword(regfile, word); 
-         if (strncmp(word, "real", 1024) == 0) 
-            nls_ptr->vtype = REAL;
-         else if (strncmp(word, "integer", 1024) == 0) 
-            nls_ptr->vtype = INTEGER;
-         else if (strncmp(word, "logical", 1024) == 0) 
-            nls_ptr->vtype = LOGICAL;
-         else if (strncmp(word, "character", 1024) == 0) 
-            nls_ptr->vtype = CHARACTER;
-
-         getword(regfile, nls_ptr->record); 
-         getword(regfile, nls_ptr->name); 
-
-         getword(regfile, word); 
-         if (nls_ptr->vtype == REAL) 
-            nls_ptr->defval.rval = (float)atof(word);
-         else if (nls_ptr->vtype == INTEGER) 
-            nls_ptr->defval.ival = atoi(word);
-         else if (nls_ptr->vtype == LOGICAL) {
-            if (strncmp(word, "true", 1024) == 0) 
-               nls_ptr->defval.lval = 1;
-            else if (strncmp(word, "false", 1024) == 0) 
-               nls_ptr->defval.lval = 0;
-         }
-         else if (nls_ptr->vtype == CHARACTER) 
-            strncpy(nls_ptr->defval.cval, word, 32);
-      }
-      else if (strncmp(word, "dim", 1024) == 0) {
-         NEW_DIMENSION(dim_ptr->next)
-         dim_ptr = dim_ptr->next;
-         dim_ptr->namelist_defined = 0;
-         getword(regfile, dim_ptr->name_in_file); 
-         getword(regfile, dim_ptr->name_in_code); 
-         dim_ptr->constant_value = is_integer_constant(dim_ptr->name_in_code);
-         if (strncmp(dim_ptr->name_in_code, "namelist:", 9) == 0) {
-            dim_ptr->namelist_defined = 1;
-            sprintf(dim_ptr->name_in_code, "%s", (dim_ptr->name_in_code)+9);
-            
-            /* Check that the referenced namelist variable is defined as an integer variable */
-            nls_chk_ptr = (*nls)->next;
-            while (nls_chk_ptr) {
-               if (strncmp(nls_chk_ptr->name, dim_ptr->name_in_code, 1024) == 0) {
-                  if (nls_chk_ptr->vtype != INTEGER) {
-                     printf("\nRegistry error: Namelist variable %s must be an integer for namelist-derived dimension %s\n\n", nls_chk_ptr->name, dim_ptr->name_in_file);
-                     return 1;
-                  }
-                  break;
-               } 
-               nls_chk_ptr = nls_chk_ptr->next;
-            }
-            if (!nls_chk_ptr) {
-               printf("\nRegistry error: Namelist variable %s not defined for namelist-derived dimension %s\n\n", dim_ptr->name_in_code, dim_ptr->name_in_file);
-               return 1;
-            }
-         }
-      }
-      else if (strncmp(word, "var", 1024) == 0) {
-         NEW_VARIABLE(var_ptr->next)
-         var_ptr = var_ptr->next;
-         var_ptr->ndims = 0;
-         var_ptr->timedim = 0;
-         var_ptr->iostreams = 0;
-
-         /* 
-          * persistence 
-          */
-         getword(regfile, word); 
-         if (strncmp(word, "persistent", 1024) == 0) 
-            var_ptr->persistence = PERSISTENT;
-         else if (strncmp(word, "scratch", 1024) == 0) 
-            var_ptr->persistence = SCRATCH;
-
-         getword(regfile, word); 
-         if (strncmp(word, "real", 1024) == 0) 
-            var_ptr->vtype = REAL;
-         else if (strncmp(word, "integer", 1024) == 0) 
-            var_ptr->vtype = INTEGER;
-         else if (strncmp(word, "logical", 1024) == 0) 
-            var_ptr->vtype = LOGICAL;
-         else if (strncmp(word, "text", 1024) == 0) 
-            var_ptr->vtype = CHARACTER;
-
-         getword(regfile, var_ptr->name_in_file); 
-
-         NEW_DIMENSION_LIST(dimlist_ptr)
-         var_ptr->dimlist = dimlist_ptr;
-
-         getword(regfile, word); /* Should have just read a right paren */
-         getword(regfile, word); 
-         while (strncmp(word, ")", 1024) != 0) {
-            
-            if (strncmp(word, "Time", 1024) == 0) {
-               var_ptr->timedim = 1;
-            }
-            else {
-               NEW_DIMENSION_LIST(dimlist_ptr->next)
-               dimlist_ptr->next->prev = dimlist_ptr;
-               dimlist_ptr = dimlist_ptr->next;
-
-               dimlist_cursor = (*dims)->next;
-               while (dimlist_cursor && (strncmp(word, dimlist_cursor->name_in_file, 1024) != 0)) dimlist_cursor = dimlist_cursor->next;
-               if (dimlist_cursor) {
-                  dimlist_ptr->dim = dimlist_cursor;
-               }
-               else {
-                  fprintf(stderr, "Error: Unknown dimension %s for variable %s\n", word, var_ptr->name_in_file);
-                  return 1;
-               }
-            }
-            getword(regfile, word); 
-         }
-
-         /* 
-          * time_dim 
-          */
-         getword(regfile, word);
-         var_ptr->ntime_levs = atoi(word);
-
-         /* 
-          * I/O info 
-          */
-         getword(regfile, word);
-         if (strchr(word, (int)'i')) var_ptr->iostreams |= INPUT0;
-         if (strchr(word, (int)'s')) var_ptr->iostreams |= SFC0;
-         if (strchr(word, (int)'r')) var_ptr->iostreams |= RESTART0;
-         if (strchr(word, (int)'o')) var_ptr->iostreams |= OUTPUT0;
-
-         getword(regfile, var_ptr->name_in_code); 
-
-         /* 
-          * struct 
-          */
-         getword(regfile, var_ptr->struct_group); 
-         grouplist_ptr = *groups;
-         grouplist_ptr = grouplist_ptr->next;
-         while (grouplist_ptr && strncmp(var_ptr->struct_group, grouplist_ptr->name, 1024)) {
-            grouplist_ptr = grouplist_ptr->next;
-         }
-         if (!grouplist_ptr) {
-            grouplist_ptr = *groups;
-            while(grouplist_ptr->next) grouplist_ptr = grouplist_ptr->next;
-            NEW_GROUP_LIST(grouplist_ptr->next);
-            grouplist_ptr = grouplist_ptr->next;
-            memcpy(grouplist_ptr->name, var_ptr->struct_group, (size_t)1024);
-            NEW_VARIABLE_LIST(grouplist_ptr->vlist);
-            grouplist_ptr->vlist->var = var_ptr;
-         }
-         else {
-            vlist_cursor = grouplist_ptr->vlist;
-            while (vlist_cursor->next) vlist_cursor = vlist_cursor->next;
-            NEW_VARIABLE_LIST(vlist_cursor->next);
-            vlist_cursor->next->prev = vlist_cursor;
-            vlist_cursor = vlist_cursor->next;
-            vlist_cursor->var = var_ptr;
-         }
-
-         getword(regfile, var_ptr->super_array);
-         getword(regfile, var_ptr->array_class);
-
-         dimlist_ptr = var_ptr->dimlist;
-         if (var_ptr->dimlist) var_ptr->dimlist = var_ptr->dimlist->next;
-         if (dimlist_ptr) free(dimlist_ptr);
-
-         dimlist_ptr = var_ptr->dimlist;
-         while (dimlist_ptr) {
-            var_ptr->ndims++; 
-            dimlist_ptr = dimlist_ptr->next;
-         }
-      }
-      fprintf(stdout,"\n");
-   } 
-
-   nls_ptr = *nls;
-   if ((*nls)->next) *nls = (*nls)->next;
-   if (nls_ptr) free(nls_ptr);
-
-   dim_ptr = *dims;
-   if ((*dims)->next) *dims = (*dims)->next;
-   if (dim_ptr) free(dim_ptr);
-
-   var_ptr = *vars;
-   if ((*vars)->next) *vars = (*vars)->next;
-   if (var_ptr) free(var_ptr);
-
-   grouplist_ptr = *groups;
-   if ((*groups)->next) *groups = (*groups)->next;
-   if (grouplist_ptr) free(grouplist_ptr);
-
-   return 0;
 }
 
 int getword(FILE * regfile, char * word)
