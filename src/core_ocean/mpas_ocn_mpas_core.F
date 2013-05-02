@@ -69,6 +69,7 @@ module mpas_core
       type (dm_info) :: dminfo
 
       integer :: err, err_tmp
+      real (kind=RKIND) :: maxDensity, maxDensity_global
 
       ! Initialize submodules before initializing blocks.
       call ocn_timestep_init(err)
@@ -154,6 +155,18 @@ module mpas_core
          write (0,*) 'filter_btr_mode has only been tested with'// &
             ' config_vert_coord_movement=fixed.'
          call mpas_dmpar_abort(dminfo)
+      endif
+
+      ! find the maximum value of the meshDensity
+      if (config_maxMeshDensity < 0.0) then
+        maxDensity=-1
+        block => domain % blocklist
+        do while (associated(block))
+          maxDensity = max(maxDensity, maxval(block % mesh % meshDensity % array))
+          block => block % next
+        end do
+        call mpas_dmpar_max_real(domain % dminfo, maxDensity, maxDensity_global)
+        config_maxMeshDensity = maxDensity_global
       endif
 
       !
@@ -1019,9 +1032,9 @@ end subroutine ocn_compute_max_level!}}}
          do iEdge=1,mesh%nEdges
             cell1 = mesh % cellsOnEdge % array(1,iEdge)
             cell2 = mesh % cellsOnEdge % array(2,iEdge)
-            meshScalingDel2(iEdge) = 1.0 / ( (meshDensity(cell1) + meshDensity(cell2) )/2.0)**(3.0/4.0)  ! goes as dc**3
-            meshScalingDel4(iEdge) = 1.0 / ( (meshDensity(cell1) + meshDensity(cell2) )/2.0)**(3.0/4.0)  ! goes as dc**3
-            meshScaling(iEdge)     = 1.0 / ( (meshDensity(cell1) + meshDensity(cell2) )/2.0)**(1.0/4.0)
+            meshScalingDel2(iEdge) = 1.0 / ( ((meshDensity(cell1) + meshDensity(cell2) )/2.0)/config_maxMeshDensity)**(3.0/4.0)  ! goes as dc**3
+            meshScalingDel4(iEdge) = 1.0 / ( ((meshDensity(cell1) + meshDensity(cell2) )/2.0)/config_maxMeshDensity)**(3.0/4.0)  ! goes as dc**3
+            meshScaling(iEdge)     = 1.0 / ( ((meshDensity(cell1) + meshDensity(cell2) )/2.0)/config_maxMeshDensity)**(1.0/4.0)
          end do
       end if
 
