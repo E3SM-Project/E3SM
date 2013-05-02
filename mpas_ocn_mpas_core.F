@@ -53,6 +53,7 @@ module mpas_core
 
    use ocn_time_average
 
+   use ocn_forcing
 
    type (io_output_object), save :: restart_obj
 
@@ -464,6 +465,12 @@ module mpas_core
          call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
          write(stderrUnit,*) 'Doing timestep ', trim(timeStamp)
    
+         block_ptr => domain % blocklist
+         do while(associated(block_ptr))
+           call ocn_forcing_build_arrays(currTime, block_ptr % mesh, block_ptr % forcing, ierr)
+           block_ptr => block_ptr % next
+         end do
+
          call mpas_timer_start("time integration", .false., timeIntTimer)
          call mpas_timestep(domain, itimestep, dt, timeStamp)
          call mpas_timer_stop("time integration", timeIntTimer)
