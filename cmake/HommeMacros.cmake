@@ -28,7 +28,11 @@ macro(createTestExec execName execType execSources macroNP macroNC
     SET(PIO_INTERP TRUE)
   ENDIF ()
 
-  SET(ENERGY_DIAGNOSTICS ${macroWITH_ENERGY})
+  IF (${macroWITH_ENERGY})
+    SET(ENERGY_DIAGNOSTICS TRUE)
+  ELSE() 
+    SET(ENERGY_DIAGNOSTICS)
+  ENDIF ()
 
   # This is needed to compile the test executables with the correct options
   SET(THIS_CONFIG_H ${CMAKE_CURRENT_BINARY_DIR}/config.h)
@@ -161,7 +165,7 @@ macro (setUpTestDir TEST_DIR)
 
   # openMP runs
   IF (NOT "${OMP_NAMELIST_FILES}" STREQUAL "")
-    IF (${HOMME_ENABLE_OPENMP})
+    IF (${ENABLE_OPENMP})
       FILE(APPEND ${THIS_TEST_SCRIPT} "${POUND}===============================\n")
       FILE(APPEND ${THIS_TEST_SCRIPT} "${POUND} OpenMP Tests\n")
       FILE(APPEND ${THIS_TEST_SCRIPT} "${POUND}===============================\n")

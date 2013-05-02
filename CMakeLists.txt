@@ -41,11 +41,8 @@ IF (${HOMME_QUAD_PREC})
   ENDIF()
 ENDIF ()
 
-# Debug
+# Debug statement, please leave here
 #MESSAGE(STATUS "CMAKE_IMP_LIBS=${CMAKE_Fortran_IMPLICIT_LINK_LIBRARIES}")
-
-# Use python for testing
-find_package(PythonInterp REQUIRED)
 
 # Some options for conditional builds
 OPTION(BUILD_HOMME_SWEQX "" ON)
@@ -170,6 +167,13 @@ OPTION(ENABLE_OPENMP FALSE)
 IF (ENABLE_OPENMP)
   FIND_PACKAGE(OpenMP)
   IF(OPENMP_FOUND)
+    MESSAGE(STATUS "Found OpenMP Flags")
+    # This file is needed for the timing library - this is currently
+    # inaccessible from the timing CMake script
+    MESSAGE(STATUS "OpenMP_Fortran_FLAGS: ${OpenMP_Fortran_FLAGS}")
+    MESSAGE(STATUS "OpenMP_C_FLAGS: ${OpenMP_C_FLAGS}")
+    MESSAGE(STATUS "OpenMP_CXX_FLAGS: ${OpenMP_CXX_FLAGS}")
+    MESSAGE(STATUS "OpenMP_EXE_LINKER_FLAGS: ${OpenMP_EXE_LINKER_FLAGS}")
     # The fortran openmp flag should be the same as the C Flag
     SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${OpenMP_C_FLAGS}")
     SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
@@ -189,7 +193,7 @@ ENDIF ()
 IF (${CMAKE_Fortran_COMPILER_ID} STREQUAL GNU)
   SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -ffree-line-length-none")
 ELSEIF (CMAKE_Fortran_COMPILER_ID STREQUAL PGI)
-  SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Mextend -O2")
+  SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Mextend")
 ELSEIF (CMAKE_Fortran_COMPILER_ID STREQUAL PathScale)
   SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -extend-source")
 ENDIF ()
@@ -199,8 +203,11 @@ IF (${CMAKE_Fortran_COMPILER_ID} STREQUAL Intel)
   SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -assume byterecl")
   SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fp-model precise -ftz")
   SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -g -O3")
-  SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -traceback")
   SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O2")
+ 
+  # Saving this stuff for later - Do all modern Intel chips support mavx?
+  #SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -mavx -DTEMP_INTEL_COMPILER_WORKAROUND_001")
+  #SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mavx -DTEMP_INTEL_COMPILER_WORKAROUND_001")
 ENDIF ()
 
 # OpenACC specific flag - only supporting PGI compiler
@@ -230,9 +237,10 @@ IF (${ENABLE_CUDA_FORTRAN})
   IF (NOT ${CMAKE_Fortran_COMPILER_ID} STREQUAL PGI)
     MESSAGE(FATAL_ERROR "CUDA Fortran only supported through the PGI compiler")
   ELSE ()
-    # Need to add -Mcuda to the Fortran FLAGS to see if it will compile 
-    # "use cudafor"
-    SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -ta=nvidia -Mcuda=4.2,cc3x,ptxinfo,keepgpu")
+    # Need to add -Mcuda to the Fortran FLAGS to see if it will compile "use cudafor"
+    # Here cc2x is for devices with compute capability >= 2.0 
+    # To do: determine a way to generalize this
+    SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -ta=nvidia -Mcuda=4.2,cc2x,ptxinfo,keepgpu")
     TRY_COMPILE(CUDAFOR
                 ${CMAKE_BINARY_DIR}/compiler_test/
                 ${CMAKE_CURRENT_SOURCE_DIR}/cmake/cudaFortranTest.F90
@@ -266,10 +274,9 @@ ELSE()
 ENDIF()
 
 FIND_PACKAGE(Netcdf REQUIRED)
+OPTION(WITH_PNETCDF TRUE)
 IF (${WITH_PNETCDF})
   FIND_PACKAGE(Pnetcdf REQUIRED)
-ELSE ()
-  FIND_PACKAGE(Pnetcdf)
 ENDIF ()
 
 IF (${HOMME_USE_TRILINOS})
@@ -299,8 +306,13 @@ IF (NOT PIO_USE_MPIMOD)
 ENDIF()
 ##############################################################################
 
+# This is required in timing to set HAVE_MPI
+ADD_DEFINITIONS(-DSPMD)
+
+SET(PIO_USE_MPIIO OFF CACHE BOOL "Turn this off due to bug in pio")
 
 ADD_SUBDIRECTORY(utils/pio)
+
 ADD_SUBDIRECTORY(utils/timing)
 
 IF(${BUILD_HOMME_SWEQX})

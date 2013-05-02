@@ -414,8 +414,9 @@ createAllRunScripts() {
       echo "" >> $thisRunScript # new line
     done
 
-    if [ -n "$omp_num_tests" -a "${RUN_OPENMP}" == true ]; then
+    if [ -n "$omp_num_tests" -a "${RUN_OPENMP}" = TRUE ]; then
       echo "export OMP_NUM_THREADS=$omp_number_threads" >> $thisRunScript
+      echo "export OMP_STACKSIZE=1G" >> $thisRunScript
       echo "" >> $thisRunScript # new line
       for testNum in $(seq 1 $omp_num_tests)
       do

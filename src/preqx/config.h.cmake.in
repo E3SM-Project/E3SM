@@ -1,7 +1,7 @@
 /* PRIM Options */
 
 /* ENERGY DIAGNOSTICS */
-#define ENERGY_DIAGNOSTICS
+#cmakedefine ENERGY_DIAGNOSTICS
 
 /* Using PRIMITIVE */
 #define _PRIM
@@ -29,9 +29,6 @@
 
 /* Basic PIO */
 #cmakedefine PIO
-
-/* TIMING */
-#define TIMING 1
 
 /* Whether to use CUDA Fortran */
 #cmakedefine01 USE_CUDA_FORTRAN

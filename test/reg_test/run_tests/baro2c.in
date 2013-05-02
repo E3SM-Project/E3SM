@@ -9,7 +9,7 @@ test_type=preqx
 # The specifically compiled executable that this test uses
 exec_name=baroC
 
-NUM_CPUS=24
+NUM_CPUS=16
 
 namelist_files=\
   ${HOMME_ROOT}/test/reg_test/${namelist_dir}/${test_name}-run1.nl \
