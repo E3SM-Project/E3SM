@@ -1,7 +1,7 @@
 /* SPELT Options */
 
-/* ENERGY DIAGNOSTICS */
-#define ENERGY_DIAGNOSTICS
+/* Energy Diagnostics */
+#cmakedefine ENERGY_DIAGNOSTICS
 
 /* WK_GRAD */
 #define _WK_GRAD 1

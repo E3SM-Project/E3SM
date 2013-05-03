@@ -1,6 +1,6 @@
 /* PRIM Options */
 
-/* ENERGY DIAGNOSTICS */
+/* Energy Diagnostics */
 #cmakedefine ENERGY_DIAGNOSTICS
 
 /* Using PRIMITIVE */

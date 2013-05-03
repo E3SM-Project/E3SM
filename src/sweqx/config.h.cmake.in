@@ -1,5 +1,7 @@
+/* SWEQX options */
+
 /* Energy Diagnostics */
-#undef ENERGY_DIAGNOSTICS
+#cmakedefine ENERGY_DIAGNOSTICS
 
 /* PIO with interpolation */
 #cmakedefine PIO_INTERP
