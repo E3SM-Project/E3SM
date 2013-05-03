@@ -94,7 +94,7 @@ mpas_ocn_vel_hmix_leith.o:
 
 mpas_ocn_vel_hmix_del4.o:
 
-mpas_ocn_vel_forcing.o: mpas_ocn_vel_forcing_windstress.o mpas_ocn_vel_forcing_rayleigh.o
+mpas_ocn_vel_forcing.o: mpas_ocn_vel_forcing_windstress.o mpas_ocn_vel_forcing_rayleigh.o mpas_ocn_forcing.o
 
 mpas_ocn_vel_forcing_windstress.o:
 

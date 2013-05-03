@@ -243,7 +243,7 @@ module ocn_time_integration_split
               block % state % time_levs(2) % state % highFreqThickness % array, dt, &
               block % diagnostics % vertTransportVelocityTop % array, err)
 
-            call ocn_tend_vel(block % tend, block % state % time_levs(stage1_tend_time) % state, block % diagnostics, block % mesh, block % scratch)
+            call ocn_tend_vel(block % tend, block % state % time_levs(stage1_tend_time) % state, block % forcing, block % diagnostics, block % mesh, block % scratch)
 
             block => block % next
          end do

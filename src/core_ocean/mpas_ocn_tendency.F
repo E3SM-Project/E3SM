@@ -167,17 +167,20 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tend_vel(tend, state, diagnostics, mesh, scratch)!{{{
+   subroutine ocn_tend_vel(tend, state, forcing, diagnostics, mesh, scratch)!{{{
       implicit none
 
       type (tend_type), intent(inout) :: tend !< Input/Output: Tendency structure
       type (state_type), intent(in) :: state !< Input: State information
+      type (forcing_type), intent(in) :: forcing !< Input: Forcing information
       type (diagnostics_type), intent(in) :: diagnostics !< Input: Diagnostic information
       type (mesh_type), intent(in) :: mesh !< Input: Mesh information
       type (scratch_type), intent(inout) :: scratch !< Input: Scratch structure
 
+      real (kind=RKIND), dimension(:), pointer :: surfaceWindStress
+
       real (kind=RKIND), dimension(:,:), pointer :: &
-        layerThicknessEdge, h, normalVelocity, tangentialVelocity, density, zMid, pressure, &
+        layerThicknessEdge, normalVelocity, tangentialVelocity, density, zMid, pressure, &
         tend_normalVelocity, circulation, relativeVorticity, viscosity, kineticEnergyCell, &
         normalizedRelativeVorticityEdge, normalizedPlanetaryVorticityEdge, &
         montgomeryPotential, vertTransportVelocityTop, divergence, vertViscTopOfEdge
@@ -208,6 +211,8 @@ contains
       tend_normalVelocity      => tend % normalVelocity % array
                   
       normalVelocityForcing => mesh % normalVelocityForcing % array
+
+      surfaceWindStress => forcing % surfaceWindStress % array
 
       !
       ! velocity tendency: start accumulating tendency terms
@@ -258,7 +263,7 @@ contains
       !
 
       call mpas_timer_start("forcings", .false., velForceTimer)
-      call ocn_vel_forcing_tend(mesh, normalVelocity, normalVelocityForcing, layerThicknessEdge, tend_normalVelocity, err)
+      call ocn_vel_forcing_tend(mesh, normalVelocity, normalVelocityForcing, surfaceWindStress, layerThicknessEdge, tend_normalVelocity, err)
       call mpas_timer_stop("forcings", velForceTimer)
 
       !

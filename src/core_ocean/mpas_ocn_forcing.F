@@ -90,7 +90,7 @@ contains
       type (mesh_type), intent(inout) :: &
          mesh          !< Input: mesh information
 
-      type (forcing_type), intent(inout) :: forcing !< Input: State information
+      type (forcing_type), intent(inout) :: forcing !< Input: Forcing information
 
       !-----------------------------------------------------------------
       !
