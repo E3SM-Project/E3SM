@@ -339,7 +339,7 @@ contains
     ! Set number of domains (for 'decompose') equal to number of threads
     !  for OpenMP across elements, equal to 1 for OpenMP within element
     ! =================================================================
-    n_domains = Nthreads
+    n_domains = min(Nthreads,nelemd)
 #if (defined ELEMENT_OPENMP)
     n_domains = 1
 #endif
@@ -494,6 +494,12 @@ contains
     deallocate(HeadPartition)
 
 
+    n_domains = min(Nthreads,nelemd)
+#if defined(ELEMENT_OPENMP) || defined(NESTED_OPENMP)
+    call omp_set_num_threads(NThreads)
+#else
+    call omp_set_num_threads(n_domains)
+#endif
     ! =====================================
     ! Set number of threads...
     ! =====================================
@@ -501,7 +507,6 @@ contains
        write(iulog,*) "Main:NThreads=",NThreads
        write(iulog,*) "Main:n_domains = ",n_domains
     endif
-    call omp_set_num_threads(NThreads)
 
     allocate(dom_mt(0:n_domains-1))
     do ith=0,n_domains-1
