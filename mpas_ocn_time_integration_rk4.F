@@ -201,7 +201,7 @@ module ocn_time_integration_rk4
               block % state % time_levs(1) % state % ssh % array, block % provis_state % highFreqThickness % array, &
               rk_substep_weights(rk_step), block % diagnostics % vertTransportVelocityTop % array, err)
 
-           call ocn_tend_thick(block % tend, block % provis_state, block % diagnostics, block % mesh)
+           call ocn_tend_thick(block % tend, block % provis_state, block % forcing, block % diagnostics, block % mesh)
 
            if (config_filter_btr_mode) then
                call ocn_filter_btr_mode_tend_vel(block % tend, block % provis_state, block % diagnostics, block % mesh)

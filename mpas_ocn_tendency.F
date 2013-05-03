@@ -29,6 +29,7 @@ module ocn_tendency
 
    use ocn_thick_hadv
    use ocn_thick_vadv
+   use ocn_thick_surface_flux
 
    use ocn_vel_coriolis
    use ocn_vel_pressure_grad
@@ -92,16 +93,18 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tend_thick(tend, state, diagnostics, mesh)!{{{
+   subroutine ocn_tend_thick(tend, state, forcing, diagnostics, mesh)!{{{
       implicit none
 
       type (tend_type), intent(inout) :: tend !< Input/Output: Tendency structure
       !DWJ 09/25/2013: Remove State if it's really not needed here.
       type (state_type), intent(in) :: state !< Input: State information
+      type (forcing_type), intent(in) :: forcing !< Input: Forcing information
       type (diagnostics_type), intent(in) :: diagnostics !< Input: Diagnostics information
       type (mesh_type), intent(in) :: mesh !< Input: Mesh information
 
-      real (kind=RKIND), dimension(:,:), pointer :: layerThicknessEdge, vertTransportVelocityTop, tend_layerThickness, uTransport
+      real (kind=RKIND), dimension(:), pointer :: surfaceMassFlux
+      real (kind=RKIND), dimension(:,:), pointer :: layerThickness, layerThicknessEdge, vertTransportVelocityTop, tend_layerThickness, uTransport
 
       integer :: err
 
@@ -112,6 +115,8 @@ contains
       vertTransportVelocityTop  => diagnostics % vertTransportVelocityTop % array
 
       tend_layerThickness       => tend % layerThickness % array
+
+      surfaceMassFlux           => forcing % surfaceMassFlux % array
                   
       !
       ! height tendency: start accumulating tendency terms
@@ -138,6 +143,13 @@ contains
       call mpas_timer_start("vadv", .false., thickVadvTimer)
       call ocn_thick_vadv_tend(mesh, vertTransportVelocityTop, tend_layerThickness, err)
       call mpas_timer_stop("vadv", thickVadvTimer)
+
+      !
+      ! surface flux tendency
+      !
+      call mpas_timer_start("surface flux", .false.)
+      call ocn_thick_surface_flux_tend(mesh, layerThickness, surfaceMassFlux, tend_layerThickness, err)
+      call mpas_timer_stop("surface flux")
 
       call mpas_timer_stop("ocn_tend_thick")
    
