@@ -664,10 +664,10 @@
 		<var name="kineticEnergy" type="real" dimensions="nVertLevels nCells Time" streams="o" units="m^2 s^{-2}"
 		     description="kinetic energy of horizonal velocity"
 		/>
-		<var name="kineticEnergyVertex" type="real" dimensions="nVertLevels nVertices Time" streams="o" units="m^2 s^{-2}"
+		<var name="kineticEnergyVertex" type="real" dimensions="nVertLevels nVertices Time" units="m^2 s^{-2}"
 		     description="kinetic energy of horizonal velocity defined at vertices"
 		/>
-		<var name="kineticEnergyVertexOnCells" type="real" dimensions="nVertLevels nCells Time" streams="o" units="m^2 s^{-2}"
+		<var name="kineticEnergyVertexOnCells" type="real" dimensions="nVertLevels nCells Time" units="m^2 s^{-2}"
 		     description="kinetic energy of horizonal velocity defined at vertices"
 		/>
 		<var name="kineticEnergyEdge" type="real" dimensions="nVertLevels nEdges Time" units="m^2 s^{-2}"
@@ -691,16 +691,16 @@
 		<var name="montgomeryPotential" type="real" dimensions="nVertLevels nCells Time" units="m^2 s^{-2}"
 		     description="Montgomery potential, may be used as the pressure for isopycnal coordinates."
 		/>
-		<var name="pressure" type="real" dimensions="nVertLevels nCells Time" units="N m^{-2}"
+		<var name="pressure" type="real" dimensions="nVertLevels nCells Time" streams="o" units="N m^{-2}"
 		     description="pressure used in the momentum equation"
 		/>
-		<var name="vertTransportVelocityTop" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^{-1}"
+		<var name="vertTransportVelocityTop" type="real" dimensions="nVertLevelsP1 nCells Time" streams="o" units="m s^{-1}"
 		     description="vertical transport through the layer interface at the top of the cell"
 		/>
-		<var name="vertVelocityTop" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^{-1}"
+		<var name="vertVelocityTop" type="real" dimensions="nVertLevelsP1 nCells Time" streams="o" units="m s^{-1}"
 		     description="vertical velocity defined at center (horizonally) and top (vertically) of cell"
 		/>
-		<var name="displacedDensity" type="real" dimensions="nVertLevels nCells Time" units="kg m^{-3}"
+		<var name="displacedDensity" type="real" dimensions="nVertLevels nCells Time" streams="o" units="kg m^{-3}"
 		     description="potential density displaced to the mid-depth of top layer"
 		/>
 		<var name="BruntVaisalaFreqTop" type="real" dimensions="nVertLevels nCells Time" streams="o" units="s^{-2}"
