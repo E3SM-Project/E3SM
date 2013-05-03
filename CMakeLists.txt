@@ -45,14 +45,19 @@ ENDIF ()
 #MESSAGE(STATUS "CMAKE_IMP_LIBS=${CMAKE_Fortran_IMPLICIT_LINK_LIBRARIES}")
 
 # Some options for conditional builds
-OPTION(BUILD_HOMME_SWEQX "" ON)
-OPTION(BUILD_HOMME_PREQX "" ON)
-OPTION(BUILD_HOMME_SWDGX "" ON)
-OPTION(BUILD_HOMME_PRIMDGX "" ON)
-OPTION(BUILD_HOMME_FVM  "" OFF)
-OPTION(BUILD_HOMME_SPELT  "" OFF)
-OPTION(BUILD_HOMME_SWIM  "" OFF)
-OPTION(BUILD_HOMME_PRIM  "" OFF)
+OPTION(BUILD_HOMME_SWEQX "Shallow water equations FEM" ON)
+OPTION(BUILD_HOMME_PREQX "Primitive equations FEM" ON)
+OPTION(BUILD_HOMME_SWDGX "Shallow water equations DG" ON)
+OPTION(BUILD_HOMME_PRIMDGX "Primitive equations DG" ON)
+OPTION(BUILD_HOMME_SWIM  "Shallow water equations implicit" OFF)
+OPTION(BUILD_HOMME_PRIM  "Primitive equations implicit" OFF)
+# Primitive equations FEM with separate tracer routines
+OPTION(BUILD_PREQX_FVM "Primitive equations with FVM tracers" OFF)
+OPTION(BUILD_PREQX_SPELT "Primitive euqations with SPELT tracers" OFF)
+
+# Cristoph's "standalone" executables
+OPTION(BUILD_HOMME_FVM  "Standalone FVM tracers" OFF)
+OPTION(BUILD_HOMME_SPELT  "Standalone SPELT tracers" OFF)
 
 IF (${SWEQX_ONLY})
   SET(BUILD_HOMME_SWEQX "" ON)

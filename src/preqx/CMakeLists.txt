@@ -143,14 +143,6 @@ MESSAGE(STATUS "  NTRAC = ${PREQX_NTRAC}")
 MESSAGE(STATUS "  PIO = ${PREQX_USE_PIO}")
 MESSAGE(STATUS "  ENERGY = ${PREQX_USE_ENERGY}")
 
-IF (${PREQX_USE_FVM})
-  SET(_FVM "USE_FVM")
-  MESSAGE(STATUS "  Using FVM")
-ELSEIF (${PREQX_USE_SPELT})
-  SET(_SPELT "USE_SPELT")
-  MESSAGE(STATUS "  Using SPELT")
-ENDIF()
-
 IF (${PREQX_USE_CUDA_FORTRAN})
   SET(USE_CUDA_FORTRAN TRUE)
   MESSAGE(STATUS "  Using CUDA Fortran")
@@ -162,3 +154,18 @@ ENDIF ()
 ############################################################################
 createTestExec(preqx preqx PREQX_SRCS ${PREQX_NP} ${PREQX_NC} ${PREQX_PLEV} 
                ${PREQX_NTRAC} ${PREQX_USE_PIO}  ${PREQX_USE_ENERGY})
+
+IF (${BUILD_PREQX_FVM})
+  MESSAGE(STATUS "  Also building preqx_fvm")
+  createTestExec(preqx_fvm preqx PREQX_SRCS ${PREQX_NP} ${PREQX_NC} ${PREQX_PLEV} 
+                 ${PREQX_NTRAC} ${PREQX_USE_PIO}  ${PREQX_USE_ENERGY})
+  SET_TARGET_PROPERTIES(preqx_fvm PROPERTIES COMPILE_DEFINITIONS "_FVM")
+ENDIF ()
+
+IF (${BUILD_PREQX_SPELT})
+  MESSAGE(STATUS "  Also building preqx_spelt")
+  createTestExec(preqx_spelt preqx PREQX_SRCS ${PREQX_NP} ${PREQX_NC} ${PREQX_PLEV} 
+                 ${PREQX_NTRAC} ${PREQX_USE_PIO}  ${PREQX_USE_ENERGY})
+  SET_TARGET_PROPERTIES(preqx_spelt PROPERTIES COMPILE_DEFINITIONS "_SPELT")
+ENDIF ()
+

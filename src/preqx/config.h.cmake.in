@@ -36,8 +36,3 @@
 /* Quadruple-precision */
 #cmakedefine01 HOMME_QUAD_PREC
 
-/* Enable FVM */
-#cmakedefine _FVM
-
-/* Enable SPELT */
-#cmakedefine _SPELT
