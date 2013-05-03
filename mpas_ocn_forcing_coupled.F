@@ -129,6 +129,9 @@ contains
       angleEdge => mesh % angleEdge % array
       cellsOnEdge => mesh % cellsOnEdge % array
 
+      index_temperature_flux = forcing % index_surfaceTemperatureflux
+      index_salinity_flux = forcing % index_surfaceSalinityFlux
+
       index_temperature_flux = forcing % index_surfaceTemperatureFlux
       index_salinity_flux = forcing % index_surfaceSalinityFlux
 

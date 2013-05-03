@@ -23,6 +23,8 @@ module ocn_vel_forcing
    use mpas_grid_types
    use mpas_configure
 
+   use ocn_forcing
+
    use ocn_vel_forcing_windstress
    use ocn_vel_forcing_rayleigh
 
@@ -73,7 +75,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_forcing_tend(mesh, u, normalVelocityForcing, layerThicknessEdge, tend, err)!{{{
+   subroutine ocn_vel_forcing_tend(mesh, normalVelocity, normalVelocityForcing, surfaceWindStress, layerThicknessEdge, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -82,10 +84,13 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-         u    !< Input: velocity
+         normalVelocity    !< Input: Normal velocity at edges
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-         normalVelocityForcing     !< Input: wind stress
+         normalVelocityForcing     !< Input: Forcing of normal velocity at edges
+
+      real (kind=RKIND), dimension(:), intent(in) :: &
+         surfaceWindStress     !< Input: Wind stress at surface of normal velocity at edges
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          layerThicknessEdge     !< Input: thickness at edge
@@ -126,8 +131,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      call ocn_vel_forcing_windstress_tend(mesh, normalVelocityForcing, layerThicknessEdge, tend, err1)
-      call ocn_vel_forcing_rayleigh_tend(mesh, u, tend, err2)
+      call ocn_vel_forcing_windstress_tend(mesh, normalVelocityForcing, surfaceWindStress, layerThicknessEdge, tend, err1)
+      call ocn_vel_forcing_rayleigh_tend(mesh, normalVelocity, tend, err2)
 
       err = ior(err1, err2)
 
