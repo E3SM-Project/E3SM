@@ -207,8 +207,7 @@ module ocn_time_integration_rk4
                call ocn_filter_btr_mode_tend_vel(block % tend, block % provis_state, block % diagnostics, block % mesh)
            endif
 
-           call ocn_tend_tracer(block % tend, block % provis_state, block % diagnostics, block % mesh, dt)
-
+           call ocn_tend_tracer(block % tend, block % provis_state, block % forcing, block % diagnostics, block % mesh, dt)
            block => block % next
         end do
         call mpas_timer_stop("RK4-tendency computations")

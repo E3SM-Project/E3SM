@@ -109,7 +109,7 @@ mpas_ocn_tracer_advection.o:
 
 mpas_ocn_high_freq_thickness_hmix_del2.o:
 
-mpas_ocn_tracer_surface_flux.o:
+mpas_ocn_tracer_surface_flux.o: mpas_ocn_forcing.o
 
 mpas_ocn_restoring.o:
 

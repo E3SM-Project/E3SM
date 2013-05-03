@@ -140,6 +140,9 @@ module mpas_core
       call ocn_thick_ale_init(err_tmp)
       err = ior(err,err_tmp)
 
+      call ocn_forcing_init(err_tmp)
+      err = ior(err,err_tmp)
+
       call ocn_tracer_advection_init(err_tmp)
       err = ior(err,err_tmp)
 

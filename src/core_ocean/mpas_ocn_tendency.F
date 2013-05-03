@@ -39,6 +39,7 @@ module ocn_tendency
 
    use ocn_tracer_hmix
    use ocn_high_freq_thickness_hmix_del2
+   use ocn_tracer_surface_flux
    use ocn_restoring
 
    implicit none
@@ -266,17 +267,18 @@ contains
 !>  This routine computes tracer tendencies for the ocean
 !
 !-----------------------------------------------------------------------
-   subroutine ocn_tend_tracer(tend, state, diagnostics, mesh, dt)!{{{
+   subroutine ocn_tend_tracer(tend, state, forcing, diagnostics, mesh, dt)!{{{
       implicit none
 
       type (tend_type), intent(inout) :: tend !< Input/Output: Tendency structure
       type (state_type), intent(in) :: state !< Input: State information
+      type (forcing_type), intent(in) :: forcing !< Input: Forcing information
       type (diagnostics_type), intent(in) :: diagnostics !< Input: Diagnostic information
       type (mesh_type), intent(in) :: mesh !< Input: Mesh information
       real (kind=RKIND), intent(in) :: dt !< Input: Time step
 
       real (kind=RKIND), dimension(:,:), pointer :: &
-        uTransport, layerThickness,vertTransportVelocityTop, layerThicknessEdge, vertDiffTopOfCell, tend_layerThickness, normalThicknessFlux
+        uTransport, layerThickness,vertTransportVelocityTop, layerThicknessEdge, vertDiffTopOfCell, tend_layerThickness, normalThicknessFlux, surfaceTracerFlux
       real (kind=RKIND), dimension(:,:,:), pointer :: &
         tracers, tend_tr
 
@@ -291,6 +293,8 @@ contains
       layerThicknessEdge        => diagnostics % layerThicknessEdge % array
       vertDiffTopOfCell         => diagnostics % vertDiffTopOfCell % array
       vertTransportVelocityTop  => diagnostics % vertTransportVelocityTop % array
+
+      surfaceTracerFlux         => forcing % surfaceTracerFlux % array
 
       tend_tr     => tend % tracers % array
       tend_layerThickness      => tend % layerThickness % array
@@ -332,10 +336,15 @@ contains
       ! add restoring to T and S in top model layer
       !
       call mpas_timer_start("restoring", .false., tracerRestoringTimer)
-
       call ocn_restoring_tend(mesh, layerThickness, state % index_temperature, state % index_salinity, tracers, tend_tr, err)
-
       call mpas_timer_stop("restoring", tracerRestoringTimer)
+
+      !
+      ! Perform forcing from surface fluxes
+      !
+      call mpas_timer_start("surface_flux", .false.)
+      call ocn_tracer_surface_flux_tend(mesh, layerThickness, surfaceTracerFlux, tend_tr, err)
+      call mpas_timer_stop("surface_flux")
 
       call mpas_timer_stop("ocn_tend_tracer")
 
