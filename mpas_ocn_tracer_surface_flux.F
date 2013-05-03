@@ -24,6 +24,8 @@ module ocn_tracer_surface_flux
    use mpas_grid_types
    use mpas_configure
 
+   use ocn_forcing
+
    implicit none
    private
    save
@@ -49,8 +51,6 @@ module ocn_tracer_surface_flux
    !
    !--------------------------------------------------------------------
 
-   logical :: useShortWave
-
 !***********************************************************************
 
 contains
@@ -68,7 +68,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_surface_flux_tend(grid, surfaceTracerFlux, tend, err)!{{{
+   subroutine ocn_tracer_surface_flux_tend(mesh, layerThickness, surfaceTracerFlux, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -77,7 +77,10 @@ contains
       !-----------------------------------------------------------------
 
       type (mesh_type), intent(in) :: &
-         grid          !< Input: grid information
+         mesh          !< Input: mesh information
+
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+        layerThickness !< Input: Layer thickness
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
         surfaceTracerFlux !< Input: surface tracer fluxes
@@ -105,24 +108,31 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iCell, nCells, k, iTracer, nTracers
+      integer :: iCell, nCells, k, iTracer, nTracers, nVertLevels
+      real (kind=RKIND) :: transmissionCoeffTop, transmissionCoeffBot, zTop, zBot
 
       integer, dimension(:), pointer :: maxLevelCell
 
-      if(.not.useShortWave) return
-
       err = 0
 
-      nCells = grid % nCells
+      nCells = mesh % nCells
+      nVertLevels = mesh % nVertLevels
       nTracers = size(tend, dim=1)
 
-      maxLevelCell => grid % maxLevelCell % array
+      maxLevelCell => mesh % maxLevelCell % array
 
       do iCell = 1, nCells
-        k = max(1, maxLevelCell(iCell))
+        zTop = 0.0_RKIND
+        zBot = 0.0_RKIND
+        do k = 1, nVertLevels
+          zTop = zBot
+          zBot = zTop - layerThickness(k, iCell)
+          transmissionCoeffTop = ocn_forcing_transmission(zTop)
+          transmissionCoeffBot = ocn_forcing_transmission(zBot)
 
-        do iTracer = 1, nTracers
-           tend(iTracer, k, iCell) = tend(iTracer, k, iCell) + surfaceTracerFlux(iTracer, iCell)
+          do iTracer = 1, nTracers
+            tend(iTracer, k, iCell) = tend(iTracer, k, iCell) + surfaceTracerFlux(iTracer, iCell) * (transmissionCoeffTop - transmissionCoeffBot)
+          end do
         end do
       end do
 
@@ -150,11 +160,6 @@ contains
       integer, intent(out) :: err !< Output: error flag
 
       err = 0
-      useShortWave = .false.
-
-      if(config_use_coupled_forcing) then
-         useShortWave = .true.
-      end if
 
    end subroutine ocn_tracer_surface_flux_init!}}}
 
