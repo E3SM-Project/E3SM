@@ -657,7 +657,10 @@ module mpas_core
             ! If min_pbc_fraction = 1.0, bottomDepth reverts to discrete z-level depths, same 
             !    as partial_bottom_cells = .false.
 
-            do k=1,nVertLevels
+            minBottomDepth(1) = (1.0-config_min_pbc_fraction)*refBottomDepth(1)
+            minBottomDepthMid(1) = 0.5*(minBottomDepth(1) + refBottomDepthTopOfCell(1))
+            zMidZLevel(1) = - 0.5*(refBottomDepth(1) + refBottomDepthTopOfCell(1))
+            do k=2,nVertLevels
                minBottomDepth(k) = refBottomDepth(k) - (1.0-config_min_pbc_fraction)*(refBottomDepth(k) - refBottomDepth(k-1))
                minBottomDepthMid(k) = 0.5*(minBottomDepth(k) + refBottomDepthTopOfCell(k))
                zMidZLevel(k) = - 0.5*(refBottomDepth(k) + refBottomDepthTopOfCell(k))
