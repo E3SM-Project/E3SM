@@ -16,7 +16,7 @@ src/operators/*.f90
 *.a
 
 # Executables
-*.exe
+*_model
 src/registry/parse
 
 # NetCDF Files
