@@ -1,0 +1,36 @@
+include $(CASEROOT)/Macros
+RM = rm -f
+CPP = cpp -C -P -traditional
+FC=$(MPIFC)
+CC=$(MPICC)
+NETCDF=$(NETCDF_PATH)
+PNETCDF=$(PNETCDF_PATH)
+PIO=$(EXEROOT)/pio
+FILE_OFFSET = -DOFFSET64BIT
+CFLAGS += -DMPAS_CESM
+FFLAGS += -DMPAS_CESM
+CPPFLAGS += $(MODEL_FORMULATION) $(FILE_OFFSET) $(ZOLTAN_DEFINE) -DMPAS_CESM -D_MPI -DUNDERSCORE
+CPPINCLUDES += -I$(EXEROOT)/ocn/source/inc -I$(NETCDF)/include -I$(PIO) -I$(PNETCDF)/include
+FCINCLUDES += -I$(EXEROOT)/ocn/source/inc -I$(EXEROOT)/lib/include -I$(NETCDF)/include -I$(PIO) -I$(PNETCDF)/include
+LIBS += -L$(PIO) -L$(PNETCDF)/lib -L$(NETCDF)/lib -lpio -lpnetcdf -lnetcdf
+
+all:
+	@echo $(CPPINCLUDES)
+	@echo $(FCINCLUDES)
+	( $(MAKE) mpas GEN_F90=true RM="$(RM)" CPP="$(CPP)" NETCDF="$(NETCDF)" PNETCDF="$(PNETCDF)" \
+	  PIO="$(PIO)" FC="$(FC)" CC="$(CC)" SFC="$(SFC)" SCC="$(SCC)" \
+	  CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" FCINCLUDES="$(FCINCLUDES)" \
+	  FFLAGS="$(FFLAGS)" CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" )
+
+mpas: reg_includes externals frame ops dycore drver
+	ar ru libocn.a framework/*.o
+	ar ru libocn.a operators/*.o
+	ar ru libocn.a core_$(CORE)/*.o
+	ar ru libocn.a core_$(CORE)/cvmix/*.o
+	ar ru libocn.a $(DRIVER)/*.o
+
+externals: 
+
+drver:  reg_includes externals frame ops dycore
+	( cd $(DRIVER); $(MAKE) CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" FREEFLAGS="$(FREEFLAGS)" all ) 
+
