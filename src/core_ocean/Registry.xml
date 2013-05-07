@@ -712,12 +712,6 @@
 		<var name="circulation" type="real" dimensions="nVertLevels nVertices Time" units="m^2 s^{-1}"
 		     description="area-integrated vorticity"
 		/>
-		<var name="gradVor_t" type="real" dimensions="nVertLevels nEdges Time" units="s^{-1} m^{-1}"
-		     description="gradient of vorticity in the tangent direction (from vertex1 to vertex2)"
-		/>
-		<var name="gradVor_n" type="real" dimensions="nVertLevels nEdges Time" units="s^{-1} m^{-1}"
-		     description="gradient of vorticity in the normal direction (from cell1 to cell2)"
-		/>
 		<var name="areaCellGlobal" type="real" dimensions="Time" streams="o" units="m^2"
 		     description="sum of the areaCell variable over the full domain, used to normalize global statistics"
 		/>
@@ -1066,6 +1060,12 @@
 		/>
 		<var name="normalVelocityForcingMeridional" persistence="scratch" type="real" dimensions="nVertLevels nCells Time" units="N m^{-2}"
 		     description="reconstructed wind stress in the northward direction"
+		/>
+                <var name="gradVor_t" persistence="scratch" type="real" dimensions="nVertLevels nEdges Time" units="s^{-1} m^{-1}"
+                     description="gradient of vorticity in the tangent direction (from vertex1 to vertex2)"
+		/>
+		<var name="gradVor_n" persistence="scratch" type="real" dimensions="nVertLevels nEdges Time" units="s^{-1} m^{-1}"
+                     description="gradient of vorticity in the normal direction (from cell1 to cell2)"
 		/>
     </var_struct>
 </registry>
