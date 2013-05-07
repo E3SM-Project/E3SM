@@ -42,7 +42,8 @@ module mpas_vector_operations
              mpas_unit_vec_in_r3, &
              mpas_cross_product_in_r3, &
              mpas_tangential_velocity, &
-             mpas_vector_3DCell_to_2DEdge
+             mpas_vector_3DCell_to_2DEdge, &
+             mpas_zonal_meridional_vectors
 
    !--------------------------------------------------------------------
    !
@@ -233,6 +234,71 @@ contains
       end do
 
    end subroutine mpas_tangential_velocity!}}}
+
+
+!***********************************************************************
+!
+!  routine mpas_zonal_meridional_vectors
+!
+!> \brief   Computes zonal, meridional, and vertical unit vectors
+!> \author  Mark Petersen
+!> \date    1 May 2013
+!> \details 
+!>  Given a latitude and longitude location, compute unit vectors pointing 
+!>  in the zonal, meridional, and vertical directions.  
+!
+!-----------------------------------------------------------------------
+
+   subroutine mpas_zonal_meridional_vectors(lat, lon, zonalUnitVector, meridionalUnitVector, verticalUnitVector)
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), intent(in) :: &
+         lat, &!< Input: latitude,  in radians, ranging [-pi,pi]
+         lon   !< Input: longitude, in radians, ranging [0,2*pi]
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(3), intent(out) :: &
+         zonalUnitVector,     &!< Output: zonal unit vector
+         meridionalUnitVector,&!< Output: meridional unit vector
+         verticalUnitVector    !< Output: vertical unit vector
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND) :: sin_lat, sin_lon, cos_lat, cos_lon
+
+
+      sin_lat = sin(lat)
+      cos_lat = cos(lat)
+      sin_lon = sin(lon)
+      cos_lon = cos(lon)
+
+      zonalUnitVector(1) = - sin_lon
+      zonalUnitVector(2) =   cos_lon
+      zonalUnitVector(3) =   0
+
+      meridionalUnitVector(1) = - sin_lat * cos_lon
+      meridionalUnitVector(2) = - sin_lat * sin_lon
+      meridionalUnitVector(3) =   cos_lat
+
+      verticalUnitVector(1) = cos_lat * cos_lon
+      verticalUnitVector(2) = cos_lat * sin_lon
+      verticalUnitVector(3) = sin_lat
+
+   end subroutine mpas_zonal_meridional_vectors!}}}
 
 !***********************************************************************
 !
