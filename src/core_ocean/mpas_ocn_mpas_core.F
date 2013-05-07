@@ -287,7 +287,7 @@ module mpas_core
       call ocn_time_average_init(block % state % time_levs(1) % state)
    
       call mpas_timer_start("diagnostic solve", .false., initDiagSolveTimer)
-      call ocn_diagnostic_solve(dt, block % state % time_levs(1) % state, mesh)
+      call ocn_diagnostic_solve(dt, block, block % state % time_levs(1) % state, mesh)
       call mpas_timer_stop("diagnostic solve", initDiagSolveTimer)
 
       ! Compute velocity transport, used in advection terms of layerThickness and tracer tendency
