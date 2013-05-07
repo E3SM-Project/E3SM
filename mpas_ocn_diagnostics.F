@@ -111,7 +111,7 @@ contains
         potentialVorticityEdge, potentialVorticityVertex, potentialVorticityCell, divergence, &
         density, displacedDensity, temperature, salinity, kineticEnergyVertex, kineticEnergyVertexOnCells, uBolusGM, uTransport, &
         vertVelocityTop, BruntVaisalaFreqTop
-      real (kind=RKIND), dimension(:,:,:), pointer :: gradVor_n, gradVor_t
+      real (kind=RKIND), dimension(:,:), pointer :: gradVor_n, gradVor_t
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers, deriv_two
       character :: c1*6
 
