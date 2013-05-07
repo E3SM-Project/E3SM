@@ -92,7 +92,7 @@ module ocn_time_integration_split
       type (dm_info) :: dminfo
       integer :: iCell, i,k,j, iEdge, cell1, cell2, split_explicit_step, split, &
                  eoe, oldBtrSubcycleTime, newBtrSubcycleTime, uPerpTime, BtrCorIter, &
-                 n_bcl_iter(config_n_ts_iter), stage1_tend_time
+                 n_bcl_iter(config_n_ts_iter), stage1_tend_time, startIndex, endIndex
       type (block_type), pointer :: block
       real (kind=RKIND) :: normalThicknessFluxSum, thicknessSum, flux, sshEdge, hEdge1, &
                  CoriolisTerm, uCorr, temp, temp_h, coef, barotropicThicknessFlux_coeff, sshCell1, sshCell2
@@ -817,6 +817,10 @@ module ocn_time_integration_split
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             if (split_explicit_step < config_n_ts_iter) then
 
+               ! Get indices for dynamic tracers (Includes T&S).
+               startIndex = block % state % time_levs(1) % state % dynamics_start
+               endIndex = block % state % time_levs(1) % state % dynamics_end
+
                ! Only need T & S for earlier iterations,
                ! then all the tracers needed the last time through.
                do iCell=1,block % mesh % nCells
@@ -834,7 +838,7 @@ module ocn_time_integration_split
                        block % state % time_levs(1) % state % layerThickness % array(k,iCell) &
                        + temp_h)
 
-                     do i=1,2
+                     do i=startIndex, endIndex
                         ! This is Phi at n+1
                         temp = (  &
                            block % state % time_levs(1) % state % tracers % array(i,k,iCell) &
