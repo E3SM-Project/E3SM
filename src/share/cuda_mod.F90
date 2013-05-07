@@ -126,8 +126,8 @@ module cuda_mod
   integer, parameter :: north_px = 4
   integer, parameter :: west_px  = 2
   integer, parameter :: cuda_streams = 16
-  integer            :: streams(0:cuda_streams)
-  integer            :: streams2(0:cuda_streams)
+  integer(kind=cuda_stream_kind) :: streams(0:cuda_streams)
+  integer(kind=cuda_stream_kind) :: streams2(0:cuda_streams)
   integer            :: nbuf
   integer            :: nmsg_rcvd
   integer            :: nmsg_sent
