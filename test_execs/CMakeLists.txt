@@ -32,20 +32,27 @@ ELSEIF (Homme_OS STREQUAL "Darwin")
 ENDIF ()
 
 # Determine if there is a submission system
-# lsf uses bsub
-FIND_PROGRAM(BSUB_PATH bsub) # Note this searches the environment
-IF (BSUB_PATH)
-  MESSAGE(STATUS "Using LSF queuing")
-  SET(HOMME_SUBMISSION_TYPE lsf)
-ELSE ()
-  FIND_PROGRAM(QSUB_PATH qsub) # Note this searches the environment
-  IF (QSUB_PATH)
-    MESSAGE(STATUS "Using PBS queuing")
-    SET(HOMME_SUBMISSION_TYPE pbs)
+OPTION(USE_QUEUING "" TRUE)
+IF (USE_QUEUING)
+  # lsf uses bsub
+  FIND_PROGRAM(BSUB_PATH bsub) # Note this searches the environment
+  IF (BSUB_PATH)
+    MESSAGE(STATUS "Using LSF queuing")
+    SET(HOMME_SUBMISSION_TYPE lsf)
   ELSE ()
-    MESSAGE(STATUS "No queuing system found")
-    SET(HOMME_SUBMISSION_TYPE none)
+    # pbs uses qsub
+    FIND_PROGRAM(QSUB_PATH qsub) # Note this searches the environment
+    IF (QSUB_PATH)
+      MESSAGE(STATUS "Using PBS queuing")
+      SET(HOMME_SUBMISSION_TYPE pbs)
+    ELSE ()
+      MESSAGE(STATUS "No queuing system found")
+      SET(HOMME_SUBMISSION_TYPE none)
+    ENDIF ()
   ENDIF ()
+ELSE ()
+  MESSAGE(STATUS "Not searching for queuing system")
+  SET(HOMME_SUBMISSION_TYPE none)
 ENDIF ()
 
 # Queuing specific info
