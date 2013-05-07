@@ -571,7 +571,7 @@ void gen_field_defs(struct group_list * groups, struct variable * vars, struct d
    while (group_ptr) {
       if (group_ptr->ntime_levs > 1) {
          fortprintf(fd, "      type (%s_multilevel_type), pointer :: %s\n", group_ptr->name, group_ptr->name);
-         fortprintf(fd, "      type (%s_type), pointer :: provis\n", group_ptr->name, group_ptr->name);
+         fortprintf(fd, "      type (%s_type), pointer :: provis_%s\n", group_ptr->name, group_ptr->name);
 	  } else {
          fortprintf(fd, "      type (%s_type), pointer :: %s\n", group_ptr->name, group_ptr->name);
 	  }
@@ -589,44 +589,44 @@ void gen_field_defs(struct group_list * groups, struct variable * vars, struct d
    group_ptr = groups;
    while (group_ptr) {
       if (group_ptr->ntime_levs > 1) {
-		 fortprintf(fd, "   subroutine mpas_setup_provis_%ss(b)!{{{\n", group_ptr->name);
-		 fortprintf(fd, "      type (block_type), pointer :: b\n");
-		 fortprintf(fd, "      type (block_type), pointer :: block\n\n");
-		 fortprintf(fd, "#include \"dim_dummy_decls_noinput.inc\"\n\n");
-		 fortprintf(fd, "      block => b\n");
-		 fortprintf(fd, "      do while(associated(block))\n");
-		 fortprintf(fd, "#include \"dim_dummy_assigns.inc\"\n\n");
-         fortprintf(fd, "         allocate(block %% provis)\n");
-         fortprintf(fd, "         call mpas_allocate_%s(block, block %% provis, &\n", group_ptr->name);
+	 fortprintf(fd, "   subroutine mpas_setup_provis_%s(b)!{{{\n", group_ptr->name);
+	 fortprintf(fd, "      type (block_type), pointer :: b\n");
+	 fortprintf(fd, "      type (block_type), pointer :: block\n\n");
+	 fortprintf(fd, "#include \"dim_dummy_decls_noinput.inc\"\n\n");
+	 fortprintf(fd, "      block => b\n");
+	 fortprintf(fd, "      do while(associated(block))\n");
+	 fortprintf(fd, "#include \"dim_dummy_assigns.inc\"\n\n");
+         fortprintf(fd, "         allocate(block %% provis_%s)\n", group_ptr->name);
+         fortprintf(fd, "         call mpas_allocate_%s(block, block %% provis_%s, &\n", group_ptr->name, group_ptr->name);
          fortprintf(fd, "#include \"dim_dummy_args.inc\"\n");
          fortprintf(fd, "                              )\n\n");
-		 fortprintf(fd, "         block => block %% next \n");
-		 fortprintf(fd, "      end do\n\n");
-		 fortprintf(fd, "      block => b\n");
-		 fortprintf(fd, "      do while(associated(block))\n");
+	 fortprintf(fd, "         block => block %% next \n");
+	 fortprintf(fd, "      end do\n\n");
+	 fortprintf(fd, "      block => b\n");
+	 fortprintf(fd, "      do while(associated(block))\n");
          fortprintf(fd, "         if(associated(block %% prev) .and. associated(block %% next)) then\n");
-         fortprintf(fd, "            call mpas_create_%s_links(block %% provis, prev = block %% prev %% provis, next = block %% next %% provis)\n", group_ptr->name);
+         fortprintf(fd, "            call mpas_create_%s_links(block %% provis_%s, prev = block %% prev %% provis_%s, next = block %% next %% provis_%s)\n", group_ptr->name, group_ptr->name, group_ptr->name, group_ptr->name);
          fortprintf(fd, "         else if(associated(block %% prev)) then\n");
-         fortprintf(fd, "            call mpas_create_%s_links(block %% provis, prev = block %% prev %% provis)\n", group_ptr->name);
+         fortprintf(fd, "            call mpas_create_%s_links(block %% provis_%s, prev = block %% prev %% provis_%s)\n", group_ptr->name, group_ptr->name, group_ptr->name);
          fortprintf(fd, "         else if(associated(block %% next)) then\n");
-         fortprintf(fd, "            call mpas_create_%s_links(block %% provis, next = block %% next %% provis)\n", group_ptr->name);
+         fortprintf(fd, "            call mpas_create_%s_links(block %% provis_%s, next = block %% next %% provis_%s)\n", group_ptr->name, group_ptr->name, group_ptr->name);
          fortprintf(fd, "         else\n");
-         fortprintf(fd, "            call mpas_create_%s_links(block %% provis)\n", group_ptr->name);
+         fortprintf(fd, "            call mpas_create_%s_links(block %% provis_%s)\n", group_ptr->name, group_ptr->name);
          fortprintf(fd, "         end if\n");
-		 fortprintf(fd, "         block => block %% next \n");
-		 fortprintf(fd, "      end do\n");
-		 fortprintf(fd, "   end subroutine mpas_setup_provis_%ss!}}}\n\n", group_ptr->name);
+	 fortprintf(fd, "         block => block %% next \n");
+	 fortprintf(fd, "      end do\n");
+	 fortprintf(fd, "   end subroutine mpas_setup_provis_%s!}}}\n\n", group_ptr->name);
 
-		 fortprintf(fd, "   subroutine mpas_deallocate_provis_%ss(b)!{{{\n", group_ptr->name);
-		 fortprintf(fd, "      type (block_type), pointer :: b\n");
-		 fortprintf(fd, "      type (block_type), pointer :: block\n\n");
-		 fortprintf(fd, "      block => b\n");
-		 fortprintf(fd, "      do while(associated(block))\n");
-		 fortprintf(fd, "         call mpas_deallocate_%s(block %% provis)\n", group_ptr->name);
-		 fortprintf(fd, "         deallocate(block %% provis)\n");
-		 fortprintf(fd, "         block => block %% next\n");
-		 fortprintf(fd, "      end do\n");
-		 fortprintf(fd, "   end subroutine mpas_deallocate_provis_%ss!}}}\n", group_ptr->name);
+	 fortprintf(fd, "   subroutine mpas_deallocate_provis_%s(b)!{{{\n", group_ptr->name);
+	 fortprintf(fd, "      type (block_type), pointer :: b\n");
+	 fortprintf(fd, "      type (block_type), pointer :: block\n\n");
+	 fortprintf(fd, "      block => b\n");
+	 fortprintf(fd, "      do while(associated(block))\n");
+	 fortprintf(fd, "         call mpas_deallocate_%s(block %% provis_%s)\n", group_ptr->name, group_ptr->name);
+	 fortprintf(fd, "         deallocate(block %% provis_%s)\n", group_ptr->name);
+	 fortprintf(fd, "         block => block %% next\n");
+	 fortprintf(fd, "      end do\n");
+	 fortprintf(fd, "   end subroutine mpas_deallocate_provis_%s!}}}\n", group_ptr->name);
 	  }
       group_ptr = group_ptr->next;
    }

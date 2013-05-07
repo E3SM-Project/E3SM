@@ -70,14 +70,14 @@ module sw_time_integration
 
       integer :: iCell, k
       type (block_type), pointer :: block
-      type (state_type), target :: provis
-      type (state_type), pointer :: provis_ptr
+      type (state_type), target :: provis_state
+      type (state_type), pointer :: provis_state_ptr
 
       integer :: rk_step
 
       real (kind=RKIND), dimension(4) :: rk_weights, rk_substep_weights
 
-      call mpas_setup_provis_states(domain % blocklist)
+      call mpas_setup_provis_state(domain % blocklist)
    
      !
      ! Initialize time_levs(2) with state at current time
@@ -97,7 +97,7 @@ module sw_time_integration
            end do
         end do
 
-        call mpas_copy_state(block % provis, block % state % time_levs(1) % state)
+        call mpas_copy_state(block % provis_state, block % state % time_levs(1) % state)
 
         block => block % next
      end do
@@ -120,19 +120,19 @@ module sw_time_integration
 
 ! --- update halos for diagnostic variables
 
-        call mpas_dmpar_exch_halo_field(domain % blocklist % provis % pv_edge)
+        call mpas_dmpar_exch_halo_field(domain % blocklist % provis_state % pv_edge)
 
         if (config_h_mom_eddy_visc4 > 0.0) then
-            call mpas_dmpar_exch_halo_field(domain % blocklist % provis % divergence)
-            call mpas_dmpar_exch_halo_field(domain % blocklist % provis % vorticity)
+            call mpas_dmpar_exch_halo_field(domain % blocklist % provis_state % divergence)
+            call mpas_dmpar_exch_halo_field(domain % blocklist % provis_state % vorticity)
        end if
 
 ! --- compute tendencies
 
        block => domain % blocklist
        do while (associated(block))
-          call sw_compute_tend(block % tend, block % provis, block % mesh)
-          call sw_compute_scalar_tend(block % tend, block % provis, block % mesh)
+          call sw_compute_tend(block % tend, block % provis_state, block % mesh)
+          call sw_compute_scalar_tend(block % tend, block % provis_state, block % mesh)
           call sw_enforce_boundary_edge(block % tend, block % mesh)
           block => block % next
        end do
@@ -148,22 +148,22 @@ module sw_time_integration
        if (rk_step < 4) then
           block => domain % blocklist
           do while (associated(block))
-             block % provis % u % array(:,:) = block % state % time_levs(1) % state % u % array(:,:)  &
-                                             + rk_substep_weights(rk_step) * block % tend % u % array(:,:)
-             block % provis % h % array(:,:) = block % state % time_levs(1) % state % h % array(:,:)  &
-                                             + rk_substep_weights(rk_step) * block % tend % h % array(:,:)
+             block % provis_state % u % array(:,:) = block % state % time_levs(1) % state % u % array(:,:)  &
+                                                   + rk_substep_weights(rk_step) * block % tend % u % array(:,:)
+             block % provis_state % h % array(:,:) = block % state % time_levs(1) % state % h % array(:,:)  &
+                                                   + rk_substep_weights(rk_step) * block % tend % h % array(:,:)
              do iCell=1,block % mesh % nCells
                 do k=1,block % mesh % nVertLevels
-                   block % provis % tracers % array(:,k,iCell) = ( block % state % time_levs(1) % state % h % array(k,iCell) * &
-                                                                   block % state % time_levs(1) % state % tracers % array(:,k,iCell)  &
+                   block % provis_state % tracers % array(:,k,iCell) = ( block % state % time_levs(1) % state % h % array(k,iCell) * &
+                                                                         block % state % time_levs(1) % state % tracers % array(:,k,iCell)  &
                                    + rk_substep_weights(rk_step) * block % tend % tracers % array(:,k,iCell) &
-                                                                 ) / block % provis % h % array(k,iCell)
+                                                                       ) / block % provis_state % h % array(k,iCell)
                 end do
              end do
              if (config_test_case == 1) then    ! For case 1, wind field should be fixed
-                block % provis % u % array(:,:) = block % state % time_levs(1) % state % u % array(:,:)
+                block % provis_state % u % array(:,:) = block % state % time_levs(1) % state % u % array(:,:)
              end if
-             call sw_compute_solve_diagnostics(dt, block % provis, block % mesh)
+             call sw_compute_solve_diagnostics(dt, block % provis_state, block % mesh)
              block => block % next
           end do
        end if
@@ -222,7 +222,7 @@ module sw_time_integration
          block => block % next
       end do
 
-      call mpas_deallocate_provis_states(domain % blocklist)
+      call mpas_deallocate_provis_state(domain % blocklist)
 
    end subroutine sw_rk4
 
