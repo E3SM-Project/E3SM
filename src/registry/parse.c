@@ -58,6 +58,10 @@ int main(int argc, char ** argv)
    gen_reads(groups, vars, dims);
    gen_writes(groups, vars, dims, nls);
 
+   free(modelname);
+   free(corename);
+   free(version);
+
    return 0;
 }
 
