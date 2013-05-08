@@ -26,6 +26,7 @@ module mpas_io_output
       type (MPAS_Stream_type) :: io_stream
    end type io_output_object
 
+   private :: mpas_insert_string_suffix
 
    contains
 
