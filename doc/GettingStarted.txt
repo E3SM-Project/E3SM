@@ -53,5 +53,4 @@ one dimensional integer array is passed from each task, the values in
 the array represent the 0 based offset from the beginning of the array
 on file.   
 
-(ASB add an sample program here...)
 */
