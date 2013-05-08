@@ -1,0 +1,499 @@
+module cice_dynamics_hex
+
+  use mpas_grid_types
+
+  implicit none
+
+  private
+  public :: init_dynamics_hex, &
+            run_dynamics_hex
+  
+contains
+
+  !-------------------------------------------------------------
+  ! Initialization
+  !-------------------------------------------------------------
+  
+  subroutine init_dynamics_hex(mesh, &
+                               boundary, normal, &
+                               hexvar,   dt, &
+                               divergenceFormulation, gridCurvature)
+
+    use cice_dynamics_shared, only: init_evp
+    use cice_dyn_hex_weak, only: init_dynamics_hex_weak
+    use cice_dyn_hex_variational, only: init_dynamics_hex_variational
+
+    type(mesh_type), intent(inout) :: mesh
+
+    type(normal_type),   pointer :: normal
+    type(hexvar_type),   pointer :: hexvar
+    type(boundary_type), pointer :: boundary
+
+    real(kind=RKIND), intent(in) :: dt
+
+    character(len=*), intent(in) :: &
+         divergenceFormulation, &
+         gridCurvature
+
+    call init_evp(dt)
+
+    if (trim(divergenceFormulation) == "weak") then
+
+       call init_dynamics_hex_weak(mesh, boundary, normal, gridCurvature)
+
+    else if (trim(divergenceFormulation) == "variational") then
+
+       call init_dynamics_hex_variational(mesh, hexvar, boundary)
+
+    endif
+
+  end subroutine init_dynamics_hex
+
+  !-------------------------------------------------------------
+  ! Time stepping
+  !-------------------------------------------------------------
+
+  subroutine run_dynamics_hex(mesh, &
+                              icestate, boundary, &
+                              normal,             &
+                              hexdyn,   hexweak,  &
+                              hexvar,   hexfor,   &
+                              dt, divergenceFormulation, &
+                              evpDamping)
+
+    use cice_dynamics_shared, only: ice_strength, &
+                                    interpolate_cell_to_vertex, &
+                                    air_stress, &
+                                    ocean_stress, &
+                                    surface_tilt, &
+                                    principal_stresses, &
+                                    dtDynamics, &
+                                    dtElastic, &
+                                    elapsedTime
+
+    use cice_testing, only: gnuplot_triangle, gnuplot_cell, writeout_minmax
+
+    type(mesh_type), intent(in) :: mesh
+
+    type(icestate_type), pointer :: icestate
+    type(boundary_type), pointer :: boundary
+    type(normal_type),   pointer :: normal
+    type(hexdyn_type),   pointer :: hexdyn
+    type(hexweak_type),  pointer :: hexweak
+    type(hexvar_type),   pointer :: hexvar
+    type(hexfor_type),   pointer :: hexfor
+
+    real(kind=RKIND), intent(in) :: &
+         dt
+
+    character(len=*), intent(in) :: &
+         divergenceFormulation
+
+    logical, intent(in) :: &
+         evpDamping
+
+    ! interpolate area and mass from cells to vertices
+    call interpolate_cell_to_vertex(mesh, &
+         icestate % iceAreaVertex % array, &
+         icestate % iceAreaCell % array)
+
+    call interpolate_cell_to_vertex(mesh, &
+         icestate % totalMassVertex % array, &
+         icestate % totalMassCell % array)
+
+    ! calculate computational masks
+    call stress_calculation_mask_hex(mesh, &
+         hexdyn % solveStress % array, &
+         icestate % iceAreaCell % array, &
+         icestate % totalMassCell % array)
+
+    call velocity_calculation_mask_hex(mesh, &
+         hexdyn % solveVelocity % array, &
+         icestate % iceAreaVertex % array, &
+         icestate % totalMassVertex % array, &
+         boundary % interiorVertex % array)
+
+    ! calculate the ice strength
+    call ice_strength(mesh, &     
+         hexdyn % icePressure % array,     &
+         icestate % iceAreaCell % array,   &
+         icestate % iceVolumeCell % array, &
+         hexdyn % solveStress % array)
+
+    ! calculate the air stress
+    call air_stress(&
+         hexdyn % airStressCellU % array, &
+         hexdyn % airStressCellV % array, &
+         hexfor % uAirVelocity % array,   & 
+         hexfor % vAirVelocity % array,   &
+         icestate % iceAreaCell % array)
+    
+    call interpolate_cell_to_vertex(mesh, &
+         hexdyn % airStressVertexU % array, &
+         hexdyn % airStressCellU % array)
+
+    call interpolate_cell_to_vertex(mesh, &
+         hexdyn % airStressVertexV % array, &
+         hexdyn % airStressCellV % array)
+
+    ! calculate the ocean stress
+    call ocean_stress(& 
+         hexdyn % oceanStressU % array,   &
+         hexdyn % oceanStressV % array,   &
+         hexfor % uOceanVelocity % array, & 
+         hexfor % vOceanVelocity % array, &
+         mesh % fVertex % array,          &
+         hexdyn % solveVelocity % array)
+    
+    ! calculate the surface tilt force
+    call surface_tilt(&
+         hexdyn % surfaceTiltForceU % array, &
+         hexdyn % surfaceTiltForceV % array, &
+         hexfor % uOceanVelocity % array,    & 
+         hexfor % vOceanVelocity % array,    &
+         icestate % totalMassVertex % array, &
+         mesh % fVertex % array,             &
+         hexdyn % solveVelocity % array)
+
+    ! subcycle the dynamics
+    call subcycle_dynamics_hex(mesh, &
+                               icestate,   boundary,  &
+                               normal,                &        
+                               hexdyn,     hexweak,   &
+                               hexvar,     hexfor,    &
+                               dtDynamics, dtElastic, &
+                               divergenceFormulation, &
+                               evpDamping)
+
+    elapsedTime = elapsedTime + dt
+
+    ! calculate the principal stresses
+    if (trim(divergenceFormulation) == "weak") then
+
+       call principal_stresses(&
+            hexdyn % principalStress1 % array, &
+            hexdyn % principalStress2 % array, &
+            hexweak % stress11 % array, &
+            hexweak % stress22 % array, &
+            hexweak % stress12 % array, &
+            hexdyn % replacementPressure % array)
+
+    else if (trim(divergenceFormulation) == "variational") then
+
+       call principal_stresses(&
+            hexdyn % principalStress1 % array, &
+            hexdyn % principalStress2 % array, &
+            hexvar % stress11 % array(1,:), &
+            hexvar % stress22 % array(1,:), &
+            hexvar % stress12 % array(1,:), &
+            hexdyn % replacementPressure % array)
+
+    endif
+
+stop
+
+  end subroutine run_dynamics_hex
+
+  !-------------------------------------------------------------
+
+  subroutine subcycle_dynamics_hex(mesh, &
+                                  icestate,   boundary,  &
+                                  normal,                &
+                                  hexdyn,     hexweak,   &
+                                  hexvar,     hexfor,    &
+                                  dtDynamics, dtElastic, &
+                                  divergenceFormulation, &
+                                  evpDamping)
+
+    use cice_dynamics_shared, only: nElasticSubcycle
+
+    use cice_testing, only: gnuplot_triangle, gnuplot_cell, writeout_minmax, gnuplot_vertexvector
+
+    type(mesh_type), intent(in) :: mesh
+
+    type(icestate_type), pointer :: icestate
+    type(boundary_type), pointer :: boundary
+    type(normal_type),   pointer :: normal
+    type(hexdyn_type),   pointer :: hexdyn
+    type(hexweak_type),  pointer :: hexweak
+    type(hexvar_type),   pointer :: hexvar
+    type(hexfor_type),   pointer :: hexfor
+
+    real(kind=RKIND), intent(in) :: &
+         dtDynamics, &
+         dtElastic
+
+    character(len=*), intent(in) :: &
+         divergenceFormulation
+
+    logical, intent(in) :: &
+         evpDamping
+
+    integer :: &
+         iElasticSubcycle
+
+    do iElasticSubcycle = 1, nElasticSubcycle
+
+       write(*,*) "subcycle: ", iElasticSubcycle
+       call single_subcycle_dynamics_hex(mesh, &
+                                         icestate,   boundary,  &
+                                         normal,                &
+                                         hexdyn,     hexweak,   &
+                                         hexvar,     hexfor,    &
+                                         dtDynamics, dtElastic, &
+                                         divergenceFormulation, &
+                                         evpDamping)
+
+       !write(*,*) minval(hexdyn % uVelocity % array), maxval(hexdyn % vVelocity % array)
+
+    enddo
+
+    !call gnuplot_triangle(mesh, hexdyn % surfaceTiltForceU % array, "test.txt")
+    call gnuplot_triangle(mesh, hexdyn % uVelocity % array, "test.txt")
+
+    !call gnuplot_cell(mesh, hexvar % strain11 % array(4,:), "test.txt")
+    !call gnuplot_cell(mesh, hexvar % stress11 % array(4,:), "test.txt")
+    !call gnuplot_cell(mesh, hexdyn % icePressure % array, "test.txt")
+
+  end subroutine subcycle_dynamics_hex
+
+  !-------------------------------------------------------------
+
+  subroutine single_subcycle_dynamics_hex(mesh, &
+                                          icestate,   boundary,  &
+                                          normal,                &
+                                          hexdyn,     hexweak,   &
+                                          hexvar,     hexfor,    &
+                                          dtDynamics, dtElastic, &
+                                          divergenceFormulation, &
+                                          evpDamping)
+
+    use cice_dynamics_shared, only: interpolate_cell_to_vertex, &
+                                    ocean_stress_coefficient, &
+                                    solve_velocity
+
+    use cice_dyn_hex_weak, only: strain_tensor_hex_weak, &
+                                 stress_tensor_hex_weak, &
+                                 stress_divergence_hex_weak
+
+    use cice_dyn_hex_variational, only: strain_tensor_hex_variational, &
+                                        stress_tensor_hex_variational, &
+                                        stress_divergence_hex_variational
+
+    use cice_testing, only: gnuplot_triangle, gnuplot_cell, writeout_minmax, gnuplot_vertexvector, &
+                            divergence_stress_test_velocity_set
+
+    type(mesh_type), intent(in) :: mesh
+
+    type(icestate_type), pointer :: icestate
+    type(boundary_type), pointer :: boundary
+    type(normal_type),   pointer :: normal
+    type(hexdyn_type),   pointer :: hexdyn
+    type(hexweak_type),  pointer :: hexweak
+    type(hexvar_type),   pointer :: hexvar
+    type(hexfor_type),   pointer :: hexfor
+
+    real(kind=RKIND), intent(in) :: &
+         dtDynamics, &
+         dtElastic
+
+    logical, intent(in) :: &
+         evpDamping
+
+    character(len=*), intent(in) :: divergenceFormulation
+
+    if (trim(divergenceFormulation) == "weak") then
+
+       call strain_tensor_hex_weak(mesh, &
+            hexweak % strain11 % array,           &
+            hexweak % strain22 % array,           &
+            hexweak % strain12 % array,           &
+            hexdyn % uVelocity % array,           &
+            hexdyn % vVelocity % array,           &
+            normal % normalVectorPolygon % array, &
+            hexdyn % solveStress % array)
+
+       call stress_tensor_hex_weak(mesh, &
+            hexweak % stress11 % array,           &
+            hexweak % stress22 % array,           &
+            hexweak % stress12 % array,           &
+            hexweak % strain11 % array,           &
+            hexweak % strain22 % array,           &
+            hexweak % strain12 % array,           &
+            hexdyn % icePressure % array,         &
+            hexdyn % replacementPressure % array, &
+            hexdyn % solveStress % array,          &       
+            dtElastic, evpDamping)
+
+       call stress_divergence_hex_weak(mesh, &
+            hexdyn % stressDivergenceU % array,    &
+            hexdyn % stressDivergenceV % array,    &
+            hexweak % stress11 % array,            &
+            hexweak % stress22 % array,            &
+            hexweak % stress12 % array,            &
+            normal % normalVectorTriangle % array, &
+            hexdyn % solveVelocity % array)
+
+    else if (trim(divergenceFormulation) == "variational") then
+
+       call strain_tensor_hex_variational(mesh, &
+            hexvar % strain11 % array,       &
+            hexvar % strain22 % array,       &
+            hexvar % strain12 % array,       &
+            hexdyn % uVelocity % array,      &
+            hexdyn % vVelocity % array,      &
+            hexvar % basisGradientU % array, &
+            hexvar % basisGradientV % array, &
+            hexdyn % solveStress % array)
+
+       call stress_tensor_hex_variational(mesh, &
+            hexvar % stress11 % array,            &
+            hexvar % stress22 % array,            &
+            hexvar % stress12 % array,            &
+            hexvar % strain11 % array,            &
+            hexvar % strain22 % array,            &
+            hexvar % strain12 % array,            &
+            hexdyn % icePressure % array,         &
+            hexdyn % replacementPressure % array, &
+            hexdyn % solveStress % array,          &
+            dtElastic, evpDamping)
+
+       call stress_divergence_hex_variational(mesh, &
+            hexdyn % stressDivergenceU % array,    &
+            hexdyn % stressDivergenceV % array,    &
+            hexvar % stress11 % array,             &
+            hexvar % stress22 % array,             &
+            hexvar % stress12 % array,             &
+            hexvar % basisIntegralsU % array,      &
+            hexvar % basisIntegralsV % array,      &
+            hexvar % cellVerticesAtVertex % array, &
+            hexdyn % solveVelocity % array)
+
+    endif
+
+    call ocean_stress_coefficient(& 
+         hexdyn % oceanStressCoeff % array, &
+         hexfor % uOceanVelocity % array,   & 
+         hexfor % vOceanVelocity % array,   &
+         hexdyn % uVelocity % array,        &   
+         hexdyn % vVelocity % array,        &
+         icestate % iceAreaVertex % array,  &
+         hexdyn % solveVelocity % array)
+
+    call solve_velocity(mesh % nVertices, &
+         hexdyn % solveVelocity % array,      &
+         hexdyn % uVelocity % array,         &   
+         hexdyn % vVelocity % array,         &
+         icestate % totalMassVertex % array, & 
+         mesh % fVertex % array,             &
+         hexdyn % stressDivergenceU % array, & 
+         hexdyn % stressDivergenceV % array, &
+         hexdyn % airStressVertexU % array,  & 
+         hexdyn % airStressVertexV % array,  &
+         hexdyn % surfaceTiltForceU % array, &
+         hexdyn % surfaceTiltForceV % array, &
+         hexdyn % oceanStressU % array,      &
+         hexdyn % oceanStressV % array,      &
+         hexdyn % oceanStressCoeff % array,  &
+         dtElastic)
+
+  end subroutine single_subcycle_dynamics_hex
+
+  !-------------------------------------------------------------
+
+  subroutine stress_calculation_mask_hex(mesh,     solveStress, &
+                                         areaCell, massCell)
+
+    use cice_dynamics_shared, only: areaMinimum, massMinimum
+
+    type(mesh_type), intent(in) :: mesh
+
+    integer, dimension(:), intent(out) :: &
+         solveStress
+
+    real(kind=RKIND), dimension(:), intent(in) :: &
+         areaCell, &
+         massCell
+
+    integer :: &
+         iCell, &
+         iCellOnCell, &
+         iCellNeighbour
+
+    do iCell = 1, mesh % nCells
+
+       solveStress(iCell) = 0
+
+       if (areaCell(iCell) > areaMinimum .and. &
+           massCell(iCell) > massMinimum) then
+
+          ! this cell has sufficient ice
+          solveStress(iCell) = 1
+
+       else
+
+          ! test neighbouring cells to see if have sufficient ice
+          do iCellOnCell = 1, mesh % nEdgesOnCell % array(iCell)
+
+             iCellNeighbour = mesh % cellsOnCell % array(iCellOnCell,iCell)
+
+             if (areaCell(iCellNeighbour) > areaMinimum .and. &
+                 massCell(iCellNeighbour) > massMinimum) then
+
+                solveStress(iCell) = 1
+                exit
+
+             endif
+
+          enddo ! iCellOnCell
+
+       endif
+
+    enddo ! iCell
+
+  end subroutine stress_calculation_mask_hex
+
+  !-------------------------------------------------------------
+
+  subroutine velocity_calculation_mask_hex(mesh,       solveVelocity, &
+                                           areaVertex, massVertex, &
+                                           interiorVertex)
+
+    use cice_dynamics_shared, only: areaMinimum, massMinimum
+
+    type(mesh_type), intent(in) :: mesh
+
+    integer, dimension(:), intent(out) :: &
+         solveVelocity
+
+    real(kind=RKIND), dimension(:), intent(in) :: &
+         areaVertex, &
+         massVertex
+
+    integer, dimension(:), intent(in) :: &
+         interiorVertex    
+
+    integer :: &
+         iVertex
+
+    do iVertex = 1, mesh % nVertices
+
+       solveVelocity(iVertex) = 0
+
+       if (interiorVertex(iVertex) == 1 .and. &
+           areaVertex(iVertex) > areaMinimum .and. &
+           massVertex(iVertex) > massMinimum) then
+
+          ! this vertex has sufficient ice
+          solveVelocity(iVertex) = 1
+
+       endif
+
+    enddo ! iVertex
+
+  end subroutine velocity_calculation_mask_hex
+
+  !-------------------------------------------------------------
+
+end module cice_dynamics_hex
+
