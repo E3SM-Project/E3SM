@@ -1061,11 +1061,17 @@
 		<var name="normalVelocityForcingMeridional" persistence="scratch" type="real" dimensions="nVertLevels nCells Time" units="N m^{-2}"
 		     description="reconstructed wind stress in the northward direction"
 		/>
-                <var name="gradVor_t" persistence="scratch" type="real" dimensions="nVertLevels nEdges Time" units="s^{-1} m^{-1}"
-                     description="gradient of vorticity in the tangent direction (from vertex1 to vertex2)"
+                <var name="vorticityGradientTangentialComponent" 
+                     persistence="scratch" 
+                     type="real" dimensions="nVertLevels nEdges Time" 
+                     units="s^{-1} m^{-1}"
+                     description="gradient of vorticity in the tangent direction (positive points from vertex1 to vertex2)"
 		/>
-		<var name="gradVor_n" persistence="scratch" type="real" dimensions="nVertLevels nEdges Time" units="s^{-1} m^{-1}"
-                     description="gradient of vorticity in the normal direction (from cell1 to cell2)"
+		<var name="vorticityGradientNormalComponent" 
+                     persistence="scratch" 
+                     type="real" dimensions="nVertLevels nEdges Time" 
+                     units="s^{-1} m^{-1}"
+                     description="gradient of vorticity in the normal direction (positive points from cell1 to cell2)"
 		/>
     </var_struct>
 </registry>
