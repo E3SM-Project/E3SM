@@ -663,7 +663,7 @@ void gen_field_defs(struct group_list * groups, struct variable * vars, struct d
    fd = fopen("block_deallocs.inc", "w");
    group_ptr = groups;
    while (group_ptr) {
-      if (group_ptr->vlist != NULL && group_ptr->ntime_levs > 1) {
+      if (group_ptr->ntime_levs > 1) {
          fortprintf(fd, "      do i=1,b %% %s %% nTimeLevels\n", group_ptr->name);
          fortprintf(fd, "         call mpas_deallocate_%s(b %% %s %% time_levs(i) %% %s)\n", group_ptr->name, group_ptr->name, group_ptr->name);
          fortprintf(fd, "         deallocate(b %% %s %% time_levs(i) %% %s)\n", group_ptr->name, group_ptr->name);
