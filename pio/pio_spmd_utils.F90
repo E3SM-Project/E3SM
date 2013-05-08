@@ -4,8 +4,8 @@
 !===================================================
 !>
 !! @file 
-!! $Revision: 751 $
-!! $LastChangedDate: 2013-04-02 10:01:13 -0600 (Tue, 02 Apr 2013) $
+!! $Revision: 777 $
+!! $LastChangedDate: 2013-05-01 06:39:51 -0600 (Wed, 01 May 2013) $
 !! @brief SPMD helper routines
 !<
 #define __PIO_FILE__ "pio_spmd_utils.F90"

@@ -1006,8 +1006,7 @@ contains
 #ifdef MEMCHK
     integer :: msize, rss, mshare, mtext, mstack
 #endif
-
-    integer ierror
+    integer ierror, dsize
 
     nullify(displace)
 
@@ -1025,8 +1024,8 @@ contains
 
        call mpi_bcast(basepiotype, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
        if(DebugAsync) print*,__PIO_FILE__,__LINE__
-
-       call mpi_bcast(size(dims), 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
+       dsize = size(dims)
+       call mpi_bcast(dsize, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
        call mpi_bcast(dims, size(dims), mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
 
        if(DebugAsync) print*,__PIO_FILE__,__LINE__
@@ -1248,7 +1247,7 @@ contains
     logical, parameter :: check = .true.
     integer(kind=pio_offset) :: ndisp
     integer(i4) :: iosize               ! rml
-    integer(i4) :: msg
+    integer(i4) :: msg, dsize
     logical :: is_async=.false.
 #ifdef MEMCHK
     integer :: msize, rss, mshare, mtext, mstack
@@ -1274,9 +1273,9 @@ contains
 
 !       call mpi_bcast(basepiotype, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
 !       if(DebugAsync) print*,__PIO_FILE__,__LINE__
-
-       call mpi_bcast(size(dims), 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
-       call mpi_bcast(dims, size(dims), mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
+       dsize = size(dims)
+       call mpi_bcast(dsize, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
+       call mpi_bcast(dims, dsize, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
 
        if(DebugAsync) print*,__PIO_FILE__,__LINE__
        call mpi_bcast(iodesc%async_id, 1, mpi_integer, iosystem%iomaster, iosystem%intercomm, ierr)  

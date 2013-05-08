@@ -157,7 +157,7 @@ contains
 
     integer(i4), intent(out) :: iostat
     integer :: msg, ierr
-    integer :: hasfill
+    integer :: hasfill, itype
 
     character(len=*), parameter :: subName=modName//'::write_darray_{TYPE}'
 
@@ -172,7 +172,8 @@ contains
        call mpi_bcast(vardesc%rec, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
        call mpi_bcast(vardesc%ndims, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
        call mpi_bcast(iodesc%async_id, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
-       call mpi_bcast({MPITYPE}, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       itype = {MPITYPE}  
+       call mpi_bcast(itype, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
        if(debugasync) print *,__PIO_FILE__,__LINE__, {MPITYPE}
        
        if(present(fillval)) then
@@ -313,7 +314,7 @@ contains
     character(len=*), parameter :: subName=modName//'::read_darray_{TYPE}'
 	
     type(iosystem_desc_t), pointer :: ios
-    integer :: ierr, msg
+    integer :: ierr, msg, itype
 
 
     array = 0	
@@ -328,7 +329,8 @@ contains
        call mpi_bcast(vardesc%varid, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
        call mpi_bcast(vardesc%rec, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
        call mpi_bcast(iodesc%async_id, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
-       call mpi_bcast({MPITYPE}, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
+       itype = {MPITYPE}
+       call mpi_bcast(itype, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
        if(DebugAsync) print *,__PIO_FILE__,__LINE__, {MPITYPE}       
     endif
 

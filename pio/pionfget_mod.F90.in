@@ -69,7 +69,7 @@ CONTAINS
     {VTYPE}, intent(out) :: ival
     type(iosystem_desc_t), pointer :: ios
     character(len=*), parameter :: subName=modName//'::get_var1_{TYPE}'
-    integer :: iotype, mpierr, ilen, msg, sofindex
+    integer :: iotype, mpierr, ilen, msg, sofindex, itype
     integer(kind=pio_offset) :: kount(PIO_MAX_VAR_DIMS)
 #ifdef TIMING
     call t_startf("pio_get_var1_{TYPE}")
@@ -94,7 +94,8 @@ CONTAINS
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(sofindex,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(index,sofindex,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST({ITYPE},1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = {ITYPE}
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        if({ITYPE} == TYPETEXT) then
           call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        end if
@@ -210,7 +211,7 @@ CONTAINS
     character(len=*), parameter :: subName=modName//'::get_vara_{DIMS}d_{TYPE}'
 
     integer :: dims({DIMS})
-    integer :: iotype, mpierr, i, msg, ilen
+    integer :: iotype, mpierr, i, msg, ilen, itype, slen
     integer(kind=PIO_OFFSET) :: isize
     type(iosystem_desc_t), pointer :: ios
 #ifdef TIMING
@@ -231,11 +232,12 @@ CONTAINS
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST({ITYPE},1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-
-       call MPI_BCAST(size(start),1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(start,size(start),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(count,size(start),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = {ITYPE}
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       slen = size(start)
+       call MPI_BCAST(slen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(start,slen,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(count,slen,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 
 #if ({DIMS} > 0)
        do i=1,{DIMS}
@@ -350,7 +352,7 @@ CONTAINS
     {VTYPE}, intent(out) :: ival{DIMSTR}
     type(iosystem_desc_t), pointer :: ios
     character(len=*), parameter :: subName=modName//'::get_var_{DIMS}d_{TYPE}'
-    integer :: iotype, mpierr, msg, ilen
+    integer :: iotype, mpierr, msg, ilen, itype
 #if ({DIMS} > 0)
     integer :: dims({DIMS})
     integer :: i
@@ -377,7 +379,8 @@ CONTAINS
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST({ITYPE},1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = {ITYPE}
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 #if ({DIMS} > 0)
        do i=1,{DIMS}
           dims(i)=size(ival,i)

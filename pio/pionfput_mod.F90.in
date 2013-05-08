@@ -73,7 +73,7 @@ contains
     integer, allocatable :: count(:)
     integer :: iotype
     type(iosystem_desc_t), pointer :: ios
-    integer :: xlen, msg, mpierr
+    integer :: xlen, msg, mpierr, isize, itype
 
 #ifdef TIMING
     call t_startf("pio_put_var1_text")
@@ -84,15 +84,17 @@ contains
 
     ios=>File%iosystem
 
-    xlen = len(ival)
+    xlen = len_trim(ival)
     if(ios%async_interface .and. .not. ios%ioproc ) then
        msg=PIO_MSG_PUTVAR1
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(size(index),1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(index,size(index),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(TYPETEXT,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       isize = size(index)
+       call MPI_BCAST(isize,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(index,isize,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = TYPETEXT
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(xlen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
     endif
 
@@ -169,9 +171,9 @@ contains
     integer, intent(in) :: varid, index(:)
     {VTYPE}, intent(in) :: ival
     integer, allocatable :: count(:)
-    integer :: iotype
+    integer :: iotype, isize
     type(iosystem_desc_t), pointer :: ios
-    integer :: xlen, msg, mpierr
+    integer :: xlen, msg, mpierr, itype
 
 #ifdef TIMING
     call t_startf("pio_put_var1_{TYPE}")
@@ -186,9 +188,11 @@ contains
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(size(index),1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(index,size(index),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST({ITYPE},1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       isize = size(index)
+       call MPI_BCAST(isize,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(index,isize,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = {ITYPE}
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
     endif
 
     if(ios%async_interface) then
@@ -283,7 +287,7 @@ contains
     integer, intent(in) :: varid
     character(len=*), intent(in) :: ival{DIMSTR}
     integer :: iotype
-    integer :: i, is, msg, mpierr, xlen
+    integer :: i, is, msg, mpierr, xlen, itype
     type(iosystem_desc_t), pointer :: ios
     integer :: dims({DIMS})
     integer :: start({DIMS}+1), count({DIMS}+1)
@@ -304,7 +308,8 @@ contains
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(TYPETEXT,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = TYPETEXT
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 
 #if ({DIMS} > 0)
        do i=1,{DIMS}
@@ -318,9 +323,9 @@ contains
 
     if(ios%async_interface ) then
 #if({DIMS}==0)       
-       call MPI_BCAST(ival,1,{MPITYPE},ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(ival,len_trim(ival),MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
 #else
-       call MPI_BCAST(ival,size(ival),{MPITYPE},ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(ival,size(ival),MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
 #endif
     end if
 
@@ -401,7 +406,7 @@ contains
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
     {VTYPE}, intent(in) :: ival{DIMSTR}
-    integer :: iotype
+    integer :: iotype, itype
     integer :: i, is, msg, mpierr, xlen
     type(iosystem_desc_t), pointer :: ios
     integer :: dims({DIMS})
@@ -435,7 +440,8 @@ contains
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST({ITYPE},1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = {ITYPE}
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        do i=1,{DIMS}
           dims(i)=size(ival,i)
        end do
@@ -500,7 +506,7 @@ contains
     integer :: iotype
     integer :: i, is, msg, mpierr, xlen
     type(iosystem_desc_t), pointer :: ios
-    integer :: start(1),count(1)
+    integer :: start(1),count(1), itype
 
     ierr=PIO_NOERR
 
@@ -519,7 +525,8 @@ contains
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST({ITYPE},1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = {ITYPE}
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
     endif
 
     if(ios%async_interface ) then
@@ -601,7 +608,7 @@ contains
     integer :: iotype, i, ndims, msg, mpierr
     integer(kind=pio_offset) :: clen
     type(iosystem_desc_t), pointer :: ios
-    integer :: dims({DIMS}), xlen
+    integer :: dims({DIMS}), xlen, itype, slen
 #ifdef TIMING
     call t_startf("pio_put_vara_{DIMS}d_text")
 #endif 
@@ -620,11 +627,12 @@ contains
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(TYPETEXT,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-
-       call MPI_BCAST(size(start),1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(start,size(start),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(count,size(start),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = TYPETEXT
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       slen = size(start)
+       call MPI_BCAST(slen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(start,slen,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(count,slen,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 
 #if ({DIMS} > 0)
        do i=1,{DIMS}
@@ -720,7 +728,7 @@ contains
     integer :: iotype, i, ndims, msg, mpierr
     integer(kind=pio_offset) :: clen
     type(iosystem_desc_t), pointer :: ios
-    integer :: dims({DIMS}), xlen
+    integer :: dims({DIMS}), xlen, itype, slen
 #ifdef TIMING
     call t_startf("pio_put_vara_{DIMS}d_{TYPE}")
 #endif 
@@ -736,11 +744,12 @@ contains
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST({ITYPE},1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-
-       call MPI_BCAST(size(start),1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(start,size(start),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(count,size(start),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = {ITYPE}
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       slen = size(start)
+       call MPI_BCAST(slen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(start,slen,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(count,slen,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 
 #if ({DIMS} > 0)
        do i=1,{DIMS}

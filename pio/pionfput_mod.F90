@@ -6,8 +6,8 @@
 #define __PIO_FILE__ "pionfput_mod.F90"
 !>
 !! @file 
-!! $Revision: 751 $
-!! $LastChangedDate: 2013-04-02 10:01:13 -0600 (Tue, 02 Apr 2013) $
+!! $Revision: 766 $
+!! $LastChangedDate: 2013-04-22 16:42:31 -0600 (Mon, 22 Apr 2013) $
 !! @brief Write Routines for non-decomposed NetCDF data.
 !<
 module pionfput_mod
@@ -168,7 +168,7 @@ contains
     integer, allocatable :: count(:)
     integer :: iotype
     type(iosystem_desc_t), pointer :: ios
-    integer :: xlen, msg, mpierr
+    integer :: xlen, msg, mpierr, isize, itype
 
 #ifdef TIMING
     call t_startf("pio_put_var1_text")
@@ -179,15 +179,17 @@ contains
 
     ios=>File%iosystem
 
-    xlen = len(ival)
+    xlen = len_trim(ival)
     if(ios%async_interface .and. .not. ios%ioproc ) then
        msg=PIO_MSG_PUTVAR1
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(size(index),1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(index,size(index),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(TYPETEXT,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       isize = size(index)
+       call MPI_BCAST(isize,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(index,isize,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = TYPETEXT
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(xlen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
     endif
 
@@ -259,15 +261,15 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 167 "pionfput_mod.F90.in"
+# 169 "pionfput_mod.F90.in"
   integer function put_var1_int (File,varid, index, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, index(:)
     integer(i4), intent(in) :: ival
     integer, allocatable :: count(:)
-    integer :: iotype
+    integer :: iotype, isize
     type(iosystem_desc_t), pointer :: ios
-    integer :: xlen, msg, mpierr
+    integer :: xlen, msg, mpierr, itype
 
 #ifdef TIMING
     call t_startf("pio_put_var1_int")
@@ -282,9 +284,11 @@ contains
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(size(index),1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(index,size(index),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(103,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       isize = size(index)
+       call MPI_BCAST(isize,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(index,isize,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = 103
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
     endif
 
     if(ios%async_interface) then
@@ -352,15 +356,15 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 167 "pionfput_mod.F90.in"
+# 169 "pionfput_mod.F90.in"
   integer function put_var1_real (File,varid, index, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, index(:)
     real(r4), intent(in) :: ival
     integer, allocatable :: count(:)
-    integer :: iotype
+    integer :: iotype, isize
     type(iosystem_desc_t), pointer :: ios
-    integer :: xlen, msg, mpierr
+    integer :: xlen, msg, mpierr, itype
 
 #ifdef TIMING
     call t_startf("pio_put_var1_real")
@@ -375,9 +379,11 @@ contains
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(size(index),1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(index,size(index),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(101,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       isize = size(index)
+       call MPI_BCAST(isize,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(index,isize,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = 101
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
     endif
 
     if(ios%async_interface) then
@@ -445,15 +451,15 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 167 "pionfput_mod.F90.in"
+# 169 "pionfput_mod.F90.in"
   integer function put_var1_double (File,varid, index, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, index(:)
     real(r8), intent(in) :: ival
     integer, allocatable :: count(:)
-    integer :: iotype
+    integer :: iotype, isize
     type(iosystem_desc_t), pointer :: ios
-    integer :: xlen, msg, mpierr
+    integer :: xlen, msg, mpierr, itype
 
 #ifdef TIMING
     call t_startf("pio_put_var1_double")
@@ -468,9 +474,11 @@ contains
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(size(index),1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(index,size(index),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(102,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       isize = size(index)
+       call MPI_BCAST(isize,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(index,isize,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = 102
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
     endif
 
     if(ios%async_interface) then
@@ -538,7 +546,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 259 "pionfput_mod.F90.in"
+# 263 "pionfput_mod.F90.in"
   integer function put_var1_vdesc_text (File,vardesc, start, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -559,7 +567,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 259 "pionfput_mod.F90.in"
+# 263 "pionfput_mod.F90.in"
   integer function put_var1_vdesc_real (File,vardesc, start, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -580,7 +588,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 259 "pionfput_mod.F90.in"
+# 263 "pionfput_mod.F90.in"
   integer function put_var1_vdesc_double (File,vardesc, start, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -601,7 +609,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 259 "pionfput_mod.F90.in"
+# 263 "pionfput_mod.F90.in"
   integer function put_var1_vdesc_int (File,vardesc, start, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -624,13 +632,13 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 281 "pionfput_mod.F90.in"
+# 285 "pionfput_mod.F90.in"
   integer function put_var_0d_text (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
     character(len=*), intent(in) :: ival
     integer :: iotype
-    integer :: i, is, msg, mpierr, xlen
+    integer :: i, is, msg, mpierr, xlen, itype
     type(iosystem_desc_t), pointer :: ios
     integer :: dims(0)
     integer :: start(0+1), count(0+1)
@@ -651,7 +659,8 @@ contains
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(TYPETEXT,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = TYPETEXT
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 
 #if (0 > 0)
        do i=1,0
@@ -665,7 +674,7 @@ contains
 
     if(ios%async_interface ) then
 #if(0==0)       
-       call MPI_BCAST(ival,1,MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(ival,len_trim(ival),MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
 #else
        call MPI_BCAST(ival,size(ival),MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
 #endif
@@ -694,7 +703,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 350 "pionfput_mod.F90.in"
+# 355 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
           if (Ios%io_rank == 0) then
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
@@ -712,7 +721,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 367 "pionfput_mod.F90.in"
+# 372 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -746,13 +755,13 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 281 "pionfput_mod.F90.in"
+# 285 "pionfput_mod.F90.in"
   integer function put_var_1d_text (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
     character(len=*), intent(in) :: ival(:)
     integer :: iotype
-    integer :: i, is, msg, mpierr, xlen
+    integer :: i, is, msg, mpierr, xlen, itype
     type(iosystem_desc_t), pointer :: ios
     integer :: dims(1)
     integer :: start(1+1), count(1+1)
@@ -773,7 +782,8 @@ contains
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(TYPETEXT,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = TYPETEXT
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 
 #if (1 > 0)
        do i=1,1
@@ -787,7 +797,7 @@ contains
 
     if(ios%async_interface ) then
 #if(1==0)       
-       call MPI_BCAST(ival,1,MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(ival,len_trim(ival),MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
 #else
        call MPI_BCAST(ival,size(ival),MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
 #endif
@@ -816,7 +826,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 350 "pionfput_mod.F90.in"
+# 355 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
           if (Ios%io_rank == 0) then
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
@@ -834,7 +844,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 367 "pionfput_mod.F90.in"
+# 372 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -868,13 +878,13 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 281 "pionfput_mod.F90.in"
+# 285 "pionfput_mod.F90.in"
   integer function put_var_2d_text (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
     character(len=*), intent(in) :: ival(:,:)
     integer :: iotype
-    integer :: i, is, msg, mpierr, xlen
+    integer :: i, is, msg, mpierr, xlen, itype
     type(iosystem_desc_t), pointer :: ios
     integer :: dims(2)
     integer :: start(2+1), count(2+1)
@@ -895,7 +905,8 @@ contains
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(TYPETEXT,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = TYPETEXT
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 
 #if (2 > 0)
        do i=1,2
@@ -909,7 +920,7 @@ contains
 
     if(ios%async_interface ) then
 #if(2==0)       
-       call MPI_BCAST(ival,1,MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(ival,len_trim(ival),MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
 #else
        call MPI_BCAST(ival,size(ival),MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
 #endif
@@ -938,7 +949,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 350 "pionfput_mod.F90.in"
+# 355 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
           if (Ios%io_rank == 0) then
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
@@ -956,7 +967,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 367 "pionfput_mod.F90.in"
+# 372 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -990,13 +1001,13 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 281 "pionfput_mod.F90.in"
+# 285 "pionfput_mod.F90.in"
   integer function put_var_3d_text (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
     character(len=*), intent(in) :: ival(:,:,:)
     integer :: iotype
-    integer :: i, is, msg, mpierr, xlen
+    integer :: i, is, msg, mpierr, xlen, itype
     type(iosystem_desc_t), pointer :: ios
     integer :: dims(3)
     integer :: start(3+1), count(3+1)
@@ -1017,7 +1028,8 @@ contains
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(TYPETEXT,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = TYPETEXT
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 
 #if (3 > 0)
        do i=1,3
@@ -1031,7 +1043,7 @@ contains
 
     if(ios%async_interface ) then
 #if(3==0)       
-       call MPI_BCAST(ival,1,MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(ival,len_trim(ival),MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
 #else
        call MPI_BCAST(ival,size(ival),MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
 #endif
@@ -1060,7 +1072,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 350 "pionfput_mod.F90.in"
+# 355 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
           if (Ios%io_rank == 0) then
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
@@ -1078,7 +1090,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 367 "pionfput_mod.F90.in"
+# 372 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -1112,13 +1124,13 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 281 "pionfput_mod.F90.in"
+# 285 "pionfput_mod.F90.in"
   integer function put_var_4d_text (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
     character(len=*), intent(in) :: ival(:,:,:,:)
     integer :: iotype
-    integer :: i, is, msg, mpierr, xlen
+    integer :: i, is, msg, mpierr, xlen, itype
     type(iosystem_desc_t), pointer :: ios
     integer :: dims(4)
     integer :: start(4+1), count(4+1)
@@ -1139,7 +1151,8 @@ contains
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(TYPETEXT,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = TYPETEXT
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 
 #if (4 > 0)
        do i=1,4
@@ -1153,7 +1166,7 @@ contains
 
     if(ios%async_interface ) then
 #if(4==0)       
-       call MPI_BCAST(ival,1,MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(ival,len_trim(ival),MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
 #else
        call MPI_BCAST(ival,size(ival),MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
 #endif
@@ -1182,7 +1195,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 350 "pionfput_mod.F90.in"
+# 355 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
           if (Ios%io_rank == 0) then
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
@@ -1200,7 +1213,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 367 "pionfput_mod.F90.in"
+# 372 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -1234,13 +1247,13 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 281 "pionfput_mod.F90.in"
+# 285 "pionfput_mod.F90.in"
   integer function put_var_5d_text (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
     character(len=*), intent(in) :: ival(:,:,:,:,:)
     integer :: iotype
-    integer :: i, is, msg, mpierr, xlen
+    integer :: i, is, msg, mpierr, xlen, itype
     type(iosystem_desc_t), pointer :: ios
     integer :: dims(5)
     integer :: start(5+1), count(5+1)
@@ -1261,7 +1274,8 @@ contains
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(TYPETEXT,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = TYPETEXT
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 
 #if (5 > 0)
        do i=1,5
@@ -1275,7 +1289,7 @@ contains
 
     if(ios%async_interface ) then
 #if(5==0)       
-       call MPI_BCAST(ival,1,MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(ival,len_trim(ival),MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
 #else
        call MPI_BCAST(ival,size(ival),MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
 #endif
@@ -1304,7 +1318,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 350 "pionfput_mod.F90.in"
+# 355 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
           if (Ios%io_rank == 0) then
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
@@ -1322,7 +1336,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 367 "pionfput_mod.F90.in"
+# 372 "pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -1356,12 +1370,12 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 400 "pionfput_mod.F90.in"
+# 405 "pionfput_mod.F90.in"
   integer function put_var_1d_int (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
     integer(i4), intent(in) :: ival(:)
-    integer :: iotype
+    integer :: iotype, itype
     integer :: i, is, msg, mpierr, xlen
     type(iosystem_desc_t), pointer :: ios
     integer :: dims(1)
@@ -1395,7 +1409,8 @@ contains
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(103,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = 103
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        do i=1,1
           dims(i)=size(ival,i)
        end do
@@ -1454,12 +1469,12 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 400 "pionfput_mod.F90.in"
+# 405 "pionfput_mod.F90.in"
   integer function put_var_2d_int (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
     integer(i4), intent(in) :: ival(:,:)
-    integer :: iotype
+    integer :: iotype, itype
     integer :: i, is, msg, mpierr, xlen
     type(iosystem_desc_t), pointer :: ios
     integer :: dims(2)
@@ -1493,7 +1508,8 @@ contains
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(103,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = 103
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        do i=1,2
           dims(i)=size(ival,i)
        end do
@@ -1552,12 +1568,12 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 400 "pionfput_mod.F90.in"
+# 405 "pionfput_mod.F90.in"
   integer function put_var_3d_int (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
     integer(i4), intent(in) :: ival(:,:,:)
-    integer :: iotype
+    integer :: iotype, itype
     integer :: i, is, msg, mpierr, xlen
     type(iosystem_desc_t), pointer :: ios
     integer :: dims(3)
@@ -1591,7 +1607,8 @@ contains
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(103,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = 103
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        do i=1,3
           dims(i)=size(ival,i)
        end do
@@ -1650,12 +1667,12 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 400 "pionfput_mod.F90.in"
+# 405 "pionfput_mod.F90.in"
   integer function put_var_4d_int (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
     integer(i4), intent(in) :: ival(:,:,:,:)
-    integer :: iotype
+    integer :: iotype, itype
     integer :: i, is, msg, mpierr, xlen
     type(iosystem_desc_t), pointer :: ios
     integer :: dims(4)
@@ -1689,7 +1706,8 @@ contains
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(103,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = 103
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        do i=1,4
           dims(i)=size(ival,i)
        end do
@@ -1748,12 +1766,12 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 400 "pionfput_mod.F90.in"
+# 405 "pionfput_mod.F90.in"
   integer function put_var_5d_int (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
     integer(i4), intent(in) :: ival(:,:,:,:,:)
-    integer :: iotype
+    integer :: iotype, itype
     integer :: i, is, msg, mpierr, xlen
     type(iosystem_desc_t), pointer :: ios
     integer :: dims(5)
@@ -1787,7 +1805,8 @@ contains
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(103,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = 103
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        do i=1,5
           dims(i)=size(ival,i)
        end do
@@ -1846,12 +1865,12 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 400 "pionfput_mod.F90.in"
+# 405 "pionfput_mod.F90.in"
   integer function put_var_1d_real (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
     real(r4), intent(in) :: ival(:)
-    integer :: iotype
+    integer :: iotype, itype
     integer :: i, is, msg, mpierr, xlen
     type(iosystem_desc_t), pointer :: ios
     integer :: dims(1)
@@ -1885,7 +1904,8 @@ contains
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(101,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = 101
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        do i=1,1
           dims(i)=size(ival,i)
        end do
@@ -1944,12 +1964,12 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 400 "pionfput_mod.F90.in"
+# 405 "pionfput_mod.F90.in"
   integer function put_var_2d_real (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
     real(r4), intent(in) :: ival(:,:)
-    integer :: iotype
+    integer :: iotype, itype
     integer :: i, is, msg, mpierr, xlen
     type(iosystem_desc_t), pointer :: ios
     integer :: dims(2)
@@ -1983,7 +2003,8 @@ contains
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(101,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = 101
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        do i=1,2
           dims(i)=size(ival,i)
        end do
@@ -2042,12 +2063,12 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 400 "pionfput_mod.F90.in"
+# 405 "pionfput_mod.F90.in"
   integer function put_var_3d_real (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
     real(r4), intent(in) :: ival(:,:,:)
-    integer :: iotype
+    integer :: iotype, itype
     integer :: i, is, msg, mpierr, xlen
     type(iosystem_desc_t), pointer :: ios
     integer :: dims(3)
@@ -2081,7 +2102,8 @@ contains
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(101,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = 101
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        do i=1,3
           dims(i)=size(ival,i)
        end do
@@ -2140,12 +2162,12 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 400 "pionfput_mod.F90.in"
+# 405 "pionfput_mod.F90.in"
   integer function put_var_4d_real (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
     real(r4), intent(in) :: ival(:,:,:,:)
-    integer :: iotype
+    integer :: iotype, itype
     integer :: i, is, msg, mpierr, xlen
     type(iosystem_desc_t), pointer :: ios
     integer :: dims(4)
@@ -2179,7 +2201,8 @@ contains
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(101,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = 101
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        do i=1,4
           dims(i)=size(ival,i)
        end do
@@ -2238,12 +2261,12 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 400 "pionfput_mod.F90.in"
+# 405 "pionfput_mod.F90.in"
   integer function put_var_5d_real (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
     real(r4), intent(in) :: ival(:,:,:,:,:)
-    integer :: iotype
+    integer :: iotype, itype
     integer :: i, is, msg, mpierr, xlen
     type(iosystem_desc_t), pointer :: ios
     integer :: dims(5)
@@ -2277,7 +2300,8 @@ contains
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(101,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = 101
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        do i=1,5
           dims(i)=size(ival,i)
        end do
@@ -2336,12 +2360,12 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 400 "pionfput_mod.F90.in"
+# 405 "pionfput_mod.F90.in"
   integer function put_var_1d_double (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
     real(r8), intent(in) :: ival(:)
-    integer :: iotype
+    integer :: iotype, itype
     integer :: i, is, msg, mpierr, xlen
     type(iosystem_desc_t), pointer :: ios
     integer :: dims(1)
@@ -2375,7 +2399,8 @@ contains
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(102,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = 102
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        do i=1,1
           dims(i)=size(ival,i)
        end do
@@ -2434,12 +2459,12 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 400 "pionfput_mod.F90.in"
+# 405 "pionfput_mod.F90.in"
   integer function put_var_2d_double (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
     real(r8), intent(in) :: ival(:,:)
-    integer :: iotype
+    integer :: iotype, itype
     integer :: i, is, msg, mpierr, xlen
     type(iosystem_desc_t), pointer :: ios
     integer :: dims(2)
@@ -2473,7 +2498,8 @@ contains
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(102,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = 102
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        do i=1,2
           dims(i)=size(ival,i)
        end do
@@ -2532,12 +2558,12 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 400 "pionfput_mod.F90.in"
+# 405 "pionfput_mod.F90.in"
   integer function put_var_3d_double (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
     real(r8), intent(in) :: ival(:,:,:)
-    integer :: iotype
+    integer :: iotype, itype
     integer :: i, is, msg, mpierr, xlen
     type(iosystem_desc_t), pointer :: ios
     integer :: dims(3)
@@ -2571,7 +2597,8 @@ contains
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(102,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = 102
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        do i=1,3
           dims(i)=size(ival,i)
        end do
@@ -2630,12 +2657,12 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 400 "pionfput_mod.F90.in"
+# 405 "pionfput_mod.F90.in"
   integer function put_var_4d_double (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
     real(r8), intent(in) :: ival(:,:,:,:)
-    integer :: iotype
+    integer :: iotype, itype
     integer :: i, is, msg, mpierr, xlen
     type(iosystem_desc_t), pointer :: ios
     integer :: dims(4)
@@ -2669,7 +2696,8 @@ contains
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(102,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = 102
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        do i=1,4
           dims(i)=size(ival,i)
        end do
@@ -2728,12 +2756,12 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 400 "pionfput_mod.F90.in"
+# 405 "pionfput_mod.F90.in"
   integer function put_var_5d_double (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
     real(r8), intent(in) :: ival(:,:,:,:,:)
-    integer :: iotype
+    integer :: iotype, itype
     integer :: i, is, msg, mpierr, xlen
     type(iosystem_desc_t), pointer :: ios
     integer :: dims(5)
@@ -2767,7 +2795,8 @@ contains
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(102,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = 102
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        do i=1,5
           dims(i)=size(ival,i)
        end do
@@ -2825,7 +2854,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 496 "pionfput_mod.F90.in"
+# 502 "pionfput_mod.F90.in"
   integer function put_var_0d_int (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -2833,7 +2862,7 @@ contains
     integer :: iotype
     integer :: i, is, msg, mpierr, xlen
     type(iosystem_desc_t), pointer :: ios
-    integer :: start(1),count(1)
+    integer :: start(1),count(1), itype
 
     ierr=PIO_NOERR
 
@@ -2852,7 +2881,8 @@ contains
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(103,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = 103
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
     endif
 
     if(ios%async_interface ) then
@@ -2901,7 +2931,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 496 "pionfput_mod.F90.in"
+# 502 "pionfput_mod.F90.in"
   integer function put_var_0d_real (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -2909,7 +2939,7 @@ contains
     integer :: iotype
     integer :: i, is, msg, mpierr, xlen
     type(iosystem_desc_t), pointer :: ios
-    integer :: start(1),count(1)
+    integer :: start(1),count(1), itype
 
     ierr=PIO_NOERR
 
@@ -2928,7 +2958,8 @@ contains
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(101,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = 101
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
     endif
 
     if(ios%async_interface ) then
@@ -2977,7 +3008,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 496 "pionfput_mod.F90.in"
+# 502 "pionfput_mod.F90.in"
   integer function put_var_0d_double (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -2985,7 +3016,7 @@ contains
     integer :: iotype
     integer :: i, is, msg, mpierr, xlen
     type(iosystem_desc_t), pointer :: ios
-    integer :: start(1),count(1)
+    integer :: start(1),count(1), itype
 
     ierr=PIO_NOERR
 
@@ -3004,7 +3035,8 @@ contains
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(102,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = 102
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
     endif
 
     if(ios%async_interface ) then
@@ -3052,7 +3084,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 570 "pionfput_mod.F90.in"
+# 577 "pionfput_mod.F90.in"
   integer function put_var_vdesc_0d_text (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3073,7 +3105,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 570 "pionfput_mod.F90.in"
+# 577 "pionfput_mod.F90.in"
   integer function put_var_vdesc_1d_text (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3094,7 +3126,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 570 "pionfput_mod.F90.in"
+# 577 "pionfput_mod.F90.in"
   integer function put_var_vdesc_2d_text (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3115,7 +3147,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 570 "pionfput_mod.F90.in"
+# 577 "pionfput_mod.F90.in"
   integer function put_var_vdesc_3d_text (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3136,7 +3168,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 570 "pionfput_mod.F90.in"
+# 577 "pionfput_mod.F90.in"
   integer function put_var_vdesc_4d_text (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3157,7 +3189,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 570 "pionfput_mod.F90.in"
+# 577 "pionfput_mod.F90.in"
   integer function put_var_vdesc_5d_text (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3178,7 +3210,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 570 "pionfput_mod.F90.in"
+# 577 "pionfput_mod.F90.in"
   integer function put_var_vdesc_0d_real (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3199,7 +3231,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 570 "pionfput_mod.F90.in"
+# 577 "pionfput_mod.F90.in"
   integer function put_var_vdesc_1d_real (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3220,7 +3252,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 570 "pionfput_mod.F90.in"
+# 577 "pionfput_mod.F90.in"
   integer function put_var_vdesc_2d_real (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3241,7 +3273,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 570 "pionfput_mod.F90.in"
+# 577 "pionfput_mod.F90.in"
   integer function put_var_vdesc_3d_real (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3262,7 +3294,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 570 "pionfput_mod.F90.in"
+# 577 "pionfput_mod.F90.in"
   integer function put_var_vdesc_4d_real (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3283,7 +3315,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 570 "pionfput_mod.F90.in"
+# 577 "pionfput_mod.F90.in"
   integer function put_var_vdesc_5d_real (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3304,7 +3336,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 570 "pionfput_mod.F90.in"
+# 577 "pionfput_mod.F90.in"
   integer function put_var_vdesc_0d_double (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3325,7 +3357,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 570 "pionfput_mod.F90.in"
+# 577 "pionfput_mod.F90.in"
   integer function put_var_vdesc_1d_double (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3346,7 +3378,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 570 "pionfput_mod.F90.in"
+# 577 "pionfput_mod.F90.in"
   integer function put_var_vdesc_2d_double (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3367,7 +3399,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 570 "pionfput_mod.F90.in"
+# 577 "pionfput_mod.F90.in"
   integer function put_var_vdesc_3d_double (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3388,7 +3420,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 570 "pionfput_mod.F90.in"
+# 577 "pionfput_mod.F90.in"
   integer function put_var_vdesc_4d_double (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3409,7 +3441,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 570 "pionfput_mod.F90.in"
+# 577 "pionfput_mod.F90.in"
   integer function put_var_vdesc_5d_double (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3430,7 +3462,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 570 "pionfput_mod.F90.in"
+# 577 "pionfput_mod.F90.in"
   integer function put_var_vdesc_0d_int (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3451,7 +3483,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 570 "pionfput_mod.F90.in"
+# 577 "pionfput_mod.F90.in"
   integer function put_var_vdesc_1d_int (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3472,7 +3504,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 570 "pionfput_mod.F90.in"
+# 577 "pionfput_mod.F90.in"
   integer function put_var_vdesc_2d_int (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3493,7 +3525,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 570 "pionfput_mod.F90.in"
+# 577 "pionfput_mod.F90.in"
   integer function put_var_vdesc_3d_int (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3514,7 +3546,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 570 "pionfput_mod.F90.in"
+# 577 "pionfput_mod.F90.in"
   integer function put_var_vdesc_4d_int (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3535,7 +3567,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 570 "pionfput_mod.F90.in"
+# 577 "pionfput_mod.F90.in"
   integer function put_var_vdesc_5d_int (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3559,7 +3591,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 593 "pionfput_mod.F90.in"
+# 600 "pionfput_mod.F90.in"
   integer function put_vara_1d_text (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -3571,7 +3603,7 @@ contains
     integer :: iotype, i, ndims, msg, mpierr
     integer(kind=pio_offset) :: clen
     type(iosystem_desc_t), pointer :: ios
-    integer :: dims(1), xlen
+    integer :: dims(1), xlen, itype, slen
 #ifdef TIMING
     call t_startf("pio_put_vara_1d_text")
 #endif 
@@ -3590,11 +3622,12 @@ contains
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(TYPETEXT,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-
-       call MPI_BCAST(size(start),1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(start,size(start),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(count,size(start),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = TYPETEXT
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       slen = size(start)
+       call MPI_BCAST(slen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(start,slen,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(count,slen,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 
 #if (1 > 0)
        do i=1,1
@@ -3680,7 +3713,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 593 "pionfput_mod.F90.in"
+# 600 "pionfput_mod.F90.in"
   integer function put_vara_2d_text (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -3692,7 +3725,7 @@ contains
     integer :: iotype, i, ndims, msg, mpierr
     integer(kind=pio_offset) :: clen
     type(iosystem_desc_t), pointer :: ios
-    integer :: dims(2), xlen
+    integer :: dims(2), xlen, itype, slen
 #ifdef TIMING
     call t_startf("pio_put_vara_2d_text")
 #endif 
@@ -3711,11 +3744,12 @@ contains
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(TYPETEXT,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-
-       call MPI_BCAST(size(start),1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(start,size(start),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(count,size(start),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = TYPETEXT
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       slen = size(start)
+       call MPI_BCAST(slen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(start,slen,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(count,slen,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 
 #if (2 > 0)
        do i=1,2
@@ -3801,7 +3835,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 593 "pionfput_mod.F90.in"
+# 600 "pionfput_mod.F90.in"
   integer function put_vara_3d_text (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -3813,7 +3847,7 @@ contains
     integer :: iotype, i, ndims, msg, mpierr
     integer(kind=pio_offset) :: clen
     type(iosystem_desc_t), pointer :: ios
-    integer :: dims(3), xlen
+    integer :: dims(3), xlen, itype, slen
 #ifdef TIMING
     call t_startf("pio_put_vara_3d_text")
 #endif 
@@ -3832,11 +3866,12 @@ contains
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(TYPETEXT,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-
-       call MPI_BCAST(size(start),1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(start,size(start),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(count,size(start),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = TYPETEXT
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       slen = size(start)
+       call MPI_BCAST(slen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(start,slen,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(count,slen,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 
 #if (3 > 0)
        do i=1,3
@@ -3922,7 +3957,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 593 "pionfput_mod.F90.in"
+# 600 "pionfput_mod.F90.in"
   integer function put_vara_4d_text (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -3934,7 +3969,7 @@ contains
     integer :: iotype, i, ndims, msg, mpierr
     integer(kind=pio_offset) :: clen
     type(iosystem_desc_t), pointer :: ios
-    integer :: dims(4), xlen
+    integer :: dims(4), xlen, itype, slen
 #ifdef TIMING
     call t_startf("pio_put_vara_4d_text")
 #endif 
@@ -3953,11 +3988,12 @@ contains
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(TYPETEXT,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-
-       call MPI_BCAST(size(start),1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(start,size(start),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(count,size(start),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = TYPETEXT
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       slen = size(start)
+       call MPI_BCAST(slen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(start,slen,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(count,slen,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 
 #if (4 > 0)
        do i=1,4
@@ -4043,7 +4079,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 593 "pionfput_mod.F90.in"
+# 600 "pionfput_mod.F90.in"
   integer function put_vara_5d_text (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -4055,7 +4091,7 @@ contains
     integer :: iotype, i, ndims, msg, mpierr
     integer(kind=pio_offset) :: clen
     type(iosystem_desc_t), pointer :: ios
-    integer :: dims(5), xlen
+    integer :: dims(5), xlen, itype, slen
 #ifdef TIMING
     call t_startf("pio_put_vara_5d_text")
 #endif 
@@ -4074,11 +4110,12 @@ contains
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(TYPETEXT,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-
-       call MPI_BCAST(size(start),1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(start,size(start),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(count,size(start),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = TYPETEXT
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       slen = size(start)
+       call MPI_BCAST(slen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(start,slen,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(count,slen,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 
 #if (5 > 0)
        do i=1,5
@@ -4163,7 +4200,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 712 "pionfput_mod.F90.in"
+# 720 "pionfput_mod.F90.in"
   integer function put_vara_1d_int (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -4175,7 +4212,7 @@ contains
     integer :: iotype, i, ndims, msg, mpierr
     integer(kind=pio_offset) :: clen
     type(iosystem_desc_t), pointer :: ios
-    integer :: dims(1), xlen
+    integer :: dims(1), xlen, itype, slen
 #ifdef TIMING
     call t_startf("pio_put_vara_1d_int")
 #endif 
@@ -4191,11 +4228,12 @@ contains
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(103,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-
-       call MPI_BCAST(size(start),1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(start,size(start),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(count,size(start),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = 103
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       slen = size(start)
+       call MPI_BCAST(slen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(start,slen,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(count,slen,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 
 #if (1 > 0)
        do i=1,1
@@ -4278,7 +4316,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 712 "pionfput_mod.F90.in"
+# 720 "pionfput_mod.F90.in"
   integer function put_vara_2d_int (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -4290,7 +4328,7 @@ contains
     integer :: iotype, i, ndims, msg, mpierr
     integer(kind=pio_offset) :: clen
     type(iosystem_desc_t), pointer :: ios
-    integer :: dims(2), xlen
+    integer :: dims(2), xlen, itype, slen
 #ifdef TIMING
     call t_startf("pio_put_vara_2d_int")
 #endif 
@@ -4306,11 +4344,12 @@ contains
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(103,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-
-       call MPI_BCAST(size(start),1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(start,size(start),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(count,size(start),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = 103
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       slen = size(start)
+       call MPI_BCAST(slen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(start,slen,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(count,slen,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 
 #if (2 > 0)
        do i=1,2
@@ -4393,7 +4432,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 712 "pionfput_mod.F90.in"
+# 720 "pionfput_mod.F90.in"
   integer function put_vara_3d_int (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -4405,7 +4444,7 @@ contains
     integer :: iotype, i, ndims, msg, mpierr
     integer(kind=pio_offset) :: clen
     type(iosystem_desc_t), pointer :: ios
-    integer :: dims(3), xlen
+    integer :: dims(3), xlen, itype, slen
 #ifdef TIMING
     call t_startf("pio_put_vara_3d_int")
 #endif 
@@ -4421,11 +4460,12 @@ contains
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(103,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-
-       call MPI_BCAST(size(start),1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(start,size(start),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(count,size(start),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = 103
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       slen = size(start)
+       call MPI_BCAST(slen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(start,slen,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(count,slen,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 
 #if (3 > 0)
        do i=1,3
@@ -4508,7 +4548,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 712 "pionfput_mod.F90.in"
+# 720 "pionfput_mod.F90.in"
   integer function put_vara_4d_int (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -4520,7 +4560,7 @@ contains
     integer :: iotype, i, ndims, msg, mpierr
     integer(kind=pio_offset) :: clen
     type(iosystem_desc_t), pointer :: ios
-    integer :: dims(4), xlen
+    integer :: dims(4), xlen, itype, slen
 #ifdef TIMING
     call t_startf("pio_put_vara_4d_int")
 #endif 
@@ -4536,11 +4576,12 @@ contains
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(103,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-
-       call MPI_BCAST(size(start),1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(start,size(start),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(count,size(start),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = 103
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       slen = size(start)
+       call MPI_BCAST(slen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(start,slen,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(count,slen,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 
 #if (4 > 0)
        do i=1,4
@@ -4623,7 +4664,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 712 "pionfput_mod.F90.in"
+# 720 "pionfput_mod.F90.in"
   integer function put_vara_5d_int (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -4635,7 +4676,7 @@ contains
     integer :: iotype, i, ndims, msg, mpierr
     integer(kind=pio_offset) :: clen
     type(iosystem_desc_t), pointer :: ios
-    integer :: dims(5), xlen
+    integer :: dims(5), xlen, itype, slen
 #ifdef TIMING
     call t_startf("pio_put_vara_5d_int")
 #endif 
@@ -4651,11 +4692,12 @@ contains
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(103,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-
-       call MPI_BCAST(size(start),1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(start,size(start),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(count,size(start),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = 103
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       slen = size(start)
+       call MPI_BCAST(slen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(start,slen,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(count,slen,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 
 #if (5 > 0)
        do i=1,5
@@ -4738,7 +4780,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 712 "pionfput_mod.F90.in"
+# 720 "pionfput_mod.F90.in"
   integer function put_vara_1d_real (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -4750,7 +4792,7 @@ contains
     integer :: iotype, i, ndims, msg, mpierr
     integer(kind=pio_offset) :: clen
     type(iosystem_desc_t), pointer :: ios
-    integer :: dims(1), xlen
+    integer :: dims(1), xlen, itype, slen
 #ifdef TIMING
     call t_startf("pio_put_vara_1d_real")
 #endif 
@@ -4766,11 +4808,12 @@ contains
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(101,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-
-       call MPI_BCAST(size(start),1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(start,size(start),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(count,size(start),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = 101
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       slen = size(start)
+       call MPI_BCAST(slen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(start,slen,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(count,slen,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 
 #if (1 > 0)
        do i=1,1
@@ -4853,7 +4896,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 712 "pionfput_mod.F90.in"
+# 720 "pionfput_mod.F90.in"
   integer function put_vara_2d_real (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -4865,7 +4908,7 @@ contains
     integer :: iotype, i, ndims, msg, mpierr
     integer(kind=pio_offset) :: clen
     type(iosystem_desc_t), pointer :: ios
-    integer :: dims(2), xlen
+    integer :: dims(2), xlen, itype, slen
 #ifdef TIMING
     call t_startf("pio_put_vara_2d_real")
 #endif 
@@ -4881,11 +4924,12 @@ contains
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(101,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-
-       call MPI_BCAST(size(start),1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(start,size(start),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(count,size(start),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = 101
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       slen = size(start)
+       call MPI_BCAST(slen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(start,slen,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(count,slen,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 
 #if (2 > 0)
        do i=1,2
@@ -4968,7 +5012,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 712 "pionfput_mod.F90.in"
+# 720 "pionfput_mod.F90.in"
   integer function put_vara_3d_real (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -4980,7 +5024,7 @@ contains
     integer :: iotype, i, ndims, msg, mpierr
     integer(kind=pio_offset) :: clen
     type(iosystem_desc_t), pointer :: ios
-    integer :: dims(3), xlen
+    integer :: dims(3), xlen, itype, slen
 #ifdef TIMING
     call t_startf("pio_put_vara_3d_real")
 #endif 
@@ -4996,11 +5040,12 @@ contains
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(101,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-
-       call MPI_BCAST(size(start),1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(start,size(start),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(count,size(start),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = 101
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       slen = size(start)
+       call MPI_BCAST(slen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(start,slen,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(count,slen,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 
 #if (3 > 0)
        do i=1,3
@@ -5083,7 +5128,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 712 "pionfput_mod.F90.in"
+# 720 "pionfput_mod.F90.in"
   integer function put_vara_4d_real (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -5095,7 +5140,7 @@ contains
     integer :: iotype, i, ndims, msg, mpierr
     integer(kind=pio_offset) :: clen
     type(iosystem_desc_t), pointer :: ios
-    integer :: dims(4), xlen
+    integer :: dims(4), xlen, itype, slen
 #ifdef TIMING
     call t_startf("pio_put_vara_4d_real")
 #endif 
@@ -5111,11 +5156,12 @@ contains
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(101,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-
-       call MPI_BCAST(size(start),1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(start,size(start),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(count,size(start),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = 101
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       slen = size(start)
+       call MPI_BCAST(slen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(start,slen,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(count,slen,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 
 #if (4 > 0)
        do i=1,4
@@ -5198,7 +5244,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 712 "pionfput_mod.F90.in"
+# 720 "pionfput_mod.F90.in"
   integer function put_vara_5d_real (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -5210,7 +5256,7 @@ contains
     integer :: iotype, i, ndims, msg, mpierr
     integer(kind=pio_offset) :: clen
     type(iosystem_desc_t), pointer :: ios
-    integer :: dims(5), xlen
+    integer :: dims(5), xlen, itype, slen
 #ifdef TIMING
     call t_startf("pio_put_vara_5d_real")
 #endif 
@@ -5226,11 +5272,12 @@ contains
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(101,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-
-       call MPI_BCAST(size(start),1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(start,size(start),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(count,size(start),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = 101
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       slen = size(start)
+       call MPI_BCAST(slen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(start,slen,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(count,slen,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 
 #if (5 > 0)
        do i=1,5
@@ -5313,7 +5360,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 712 "pionfput_mod.F90.in"
+# 720 "pionfput_mod.F90.in"
   integer function put_vara_1d_double (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -5325,7 +5372,7 @@ contains
     integer :: iotype, i, ndims, msg, mpierr
     integer(kind=pio_offset) :: clen
     type(iosystem_desc_t), pointer :: ios
-    integer :: dims(1), xlen
+    integer :: dims(1), xlen, itype, slen
 #ifdef TIMING
     call t_startf("pio_put_vara_1d_double")
 #endif 
@@ -5341,11 +5388,12 @@ contains
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(102,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-
-       call MPI_BCAST(size(start),1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(start,size(start),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(count,size(start),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = 102
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       slen = size(start)
+       call MPI_BCAST(slen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(start,slen,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(count,slen,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 
 #if (1 > 0)
        do i=1,1
@@ -5428,7 +5476,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 712 "pionfput_mod.F90.in"
+# 720 "pionfput_mod.F90.in"
   integer function put_vara_2d_double (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -5440,7 +5488,7 @@ contains
     integer :: iotype, i, ndims, msg, mpierr
     integer(kind=pio_offset) :: clen
     type(iosystem_desc_t), pointer :: ios
-    integer :: dims(2), xlen
+    integer :: dims(2), xlen, itype, slen
 #ifdef TIMING
     call t_startf("pio_put_vara_2d_double")
 #endif 
@@ -5456,11 +5504,12 @@ contains
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(102,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-
-       call MPI_BCAST(size(start),1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(start,size(start),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(count,size(start),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = 102
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       slen = size(start)
+       call MPI_BCAST(slen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(start,slen,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(count,slen,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 
 #if (2 > 0)
        do i=1,2
@@ -5543,7 +5592,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 712 "pionfput_mod.F90.in"
+# 720 "pionfput_mod.F90.in"
   integer function put_vara_3d_double (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -5555,7 +5604,7 @@ contains
     integer :: iotype, i, ndims, msg, mpierr
     integer(kind=pio_offset) :: clen
     type(iosystem_desc_t), pointer :: ios
-    integer :: dims(3), xlen
+    integer :: dims(3), xlen, itype, slen
 #ifdef TIMING
     call t_startf("pio_put_vara_3d_double")
 #endif 
@@ -5571,11 +5620,12 @@ contains
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(102,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-
-       call MPI_BCAST(size(start),1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(start,size(start),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(count,size(start),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = 102
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       slen = size(start)
+       call MPI_BCAST(slen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(start,slen,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(count,slen,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 
 #if (3 > 0)
        do i=1,3
@@ -5658,7 +5708,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 712 "pionfput_mod.F90.in"
+# 720 "pionfput_mod.F90.in"
   integer function put_vara_4d_double (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -5670,7 +5720,7 @@ contains
     integer :: iotype, i, ndims, msg, mpierr
     integer(kind=pio_offset) :: clen
     type(iosystem_desc_t), pointer :: ios
-    integer :: dims(4), xlen
+    integer :: dims(4), xlen, itype, slen
 #ifdef TIMING
     call t_startf("pio_put_vara_4d_double")
 #endif 
@@ -5686,11 +5736,12 @@ contains
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(102,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-
-       call MPI_BCAST(size(start),1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(start,size(start),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(count,size(start),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = 102
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       slen = size(start)
+       call MPI_BCAST(slen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(start,slen,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(count,slen,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 
 #if (4 > 0)
        do i=1,4
@@ -5773,7 +5824,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 712 "pionfput_mod.F90.in"
+# 720 "pionfput_mod.F90.in"
   integer function put_vara_5d_double (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -5785,7 +5836,7 @@ contains
     integer :: iotype, i, ndims, msg, mpierr
     integer(kind=pio_offset) :: clen
     type(iosystem_desc_t), pointer :: ios
-    integer :: dims(5), xlen
+    integer :: dims(5), xlen, itype, slen
 #ifdef TIMING
     call t_startf("pio_put_vara_5d_double")
 #endif 
@@ -5801,11 +5852,12 @@ contains
        if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
        call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(102,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-
-       call MPI_BCAST(size(start),1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(start,size(start),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(count,size(start),MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = 102
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       slen = size(start)
+       call MPI_BCAST(slen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(start,slen,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(count,slen,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
 
 #if (5 > 0)
        do i=1,5
@@ -5888,7 +5940,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 826 "pionfput_mod.F90.in"
+# 835 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_1d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5913,7 +5965,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 826 "pionfput_mod.F90.in"
+# 835 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_2d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5938,7 +5990,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 826 "pionfput_mod.F90.in"
+# 835 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_3d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5963,7 +6015,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 826 "pionfput_mod.F90.in"
+# 835 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_4d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5988,7 +6040,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 826 "pionfput_mod.F90.in"
+# 835 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_5d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6013,7 +6065,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 826 "pionfput_mod.F90.in"
+# 835 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_1d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6038,7 +6090,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 826 "pionfput_mod.F90.in"
+# 835 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_2d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6063,7 +6115,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 826 "pionfput_mod.F90.in"
+# 835 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_3d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6088,7 +6140,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 826 "pionfput_mod.F90.in"
+# 835 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_4d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6113,7 +6165,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 826 "pionfput_mod.F90.in"
+# 835 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_5d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6138,7 +6190,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 826 "pionfput_mod.F90.in"
+# 835 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_1d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6163,7 +6215,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 826 "pionfput_mod.F90.in"
+# 835 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_2d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6188,7 +6240,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 826 "pionfput_mod.F90.in"
+# 835 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_3d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6213,7 +6265,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 826 "pionfput_mod.F90.in"
+# 835 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_4d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6238,7 +6290,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 826 "pionfput_mod.F90.in"
+# 835 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_5d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6263,7 +6315,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 826 "pionfput_mod.F90.in"
+# 835 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_1d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6288,7 +6340,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 826 "pionfput_mod.F90.in"
+# 835 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_2d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6313,7 +6365,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 826 "pionfput_mod.F90.in"
+# 835 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_3d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6338,7 +6390,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 826 "pionfput_mod.F90.in"
+# 835 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_4d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6363,7 +6415,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 826 "pionfput_mod.F90.in"
+# 835 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_5d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
