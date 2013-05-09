@@ -429,7 +429,13 @@ contains
 !and nu_tensor values to become 8e7 and 1.5e6 for scalings 4.0 and 3.2 correspondingly?
 
 
-#if 0
+!LATEST: bring nu_tensor to dimensions [1]/[sec]
+
+!	  lamStar1=1/(eig(1)**(hypervis_scaling/4.0d0)) *(rearth**2.0d0)
+!	  lamStar2=1/(eig(2)**(hypervis_scaling/4.0d0)) *(rearth**2.0d0)
+
+
+#if 0   
           ! eig(1) >= eig(2)
           ! theoretical:  nu1 = 1/eig(1)
           !               nu2 = 1/eig(2)
