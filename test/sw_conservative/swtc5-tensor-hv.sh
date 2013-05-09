@@ -4,7 +4,7 @@ set -e
 
 #MESH FILE LOCATION IS SET IN *.NL FILE
 
-tstep=30
+tstep=50
 nu=6e19 # 3.3e21 for hvscaling=4.0
 hvscaling=3.2 
 
@@ -16,7 +16,7 @@ input=$HOME/homme7/test/sw_conservative
 
 NCPU=46
 
-name=${test_case}
+name=${test_case}-tensor2
 
 cd ${input}/../../build/sweqx
 #./configure PLEV=1 NP=4 --with-netcdf=$NETCDF_PATH  --with-pnetcdf=$PNETCDF_PATH --enable-blas --enable-lapack
