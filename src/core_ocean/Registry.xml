@@ -643,8 +643,11 @@
 		<var name="divergence" type="real" dimensions="nVertLevels nCells Time" streams="o" units="s^{-1}"
 		     description="divergence of horizonal velocity"
 		/>
-		<var name="relativeVorticity" type="real" dimensions="nVertLevels nVertices Time" streams="o" units="s^{-1}"
+		<var name="relativeVorticity" type="real" dimensions="nVertLevels nVertices Time" streams="" units="s^{-1}"
 		     description="curl of horizontal velocity"
+		/>
+		<var name="relativeVorticityCell" type="real" dimensions="nVertLevels nCells Time" streams="o" units="s^{-1}"
+		     description="curl of horizontal velocity, averaged from vertices to cell centers"
 		/>
 		<var name="potentialVorticityEdge" type="real" dimensions="nVertLevels nEdges Time" units="s^{-1}"
 		     description="vorticity averaged from vertices to edges"
