@@ -211,7 +211,7 @@ module ocn_time_integration_rk4
                  block % provis_state % layerThickness % array(:,:) = block % state % time_levs(1) % state % layerThickness % array(:,:)
               end if
 
-              call ocn_diagnostic_solve(dt, block, block % provis_state, block % mesh)
+              call ocn_diagnostic_solve(dt, block % provis_state, block % mesh, block % scratch)
 
               ! Compute velocity transport, used in advection terms of layerThickness and tracer tendency
               block % provis_state % uTransport % array(:,:) &
@@ -279,7 +279,7 @@ module ocn_time_integration_rk4
         ! be computed.  For kpp, more variables may be needed.  Either way, this
         ! could be made more efficient by only computing what is needed for the
         ! implicit vmix routine that follows. 
-        call ocn_diagnostic_solve(dt, block, block % state % time_levs(2) % state, block % mesh)
+        call ocn_diagnostic_solve(dt, block % state % time_levs(2) % state, block % mesh, block % scratch)
 
         call ocn_vmix_implicit(dt, block % mesh, block % diagnostics, block % state % time_levs(2) % state, err)
         block => block % next
@@ -306,7 +306,7 @@ module ocn_time_integration_rk4
             block % state % time_levs(2) % state % layerThickness % array(:,:) = block % state % time_levs(1) % state % layerThickness % array(:,:)
          end if
 
-         call ocn_diagnostic_solve(dt, block, block % state % time_levs(2) % state, block % mesh)
+         call ocn_diagnostic_solve(dt, block % state % time_levs(2) % state, block % mesh, block % scratch)
 
          ! Compute velocity transport, used in advection terms of layerThickness and tracer tendency
             block % state % time_levs(2) % state % uTransport % array(:,:) &
