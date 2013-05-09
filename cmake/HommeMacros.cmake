@@ -136,22 +136,22 @@ macro (setUpTestDir TEST_DIR)
   FILE(APPEND ${THIS_TEST_SCRIPT} "${POUND}===============================\n")
 
   FILE(APPEND ${THIS_TEST_SCRIPT} "\n") # new line
-  IF (NOT ${NUM_CPUS} STREQUAL "")
-    IF (NOT ${HOMME_QUEUING})
-      IF (${NUM_CPUS} GREATER ${MAX_NUM_PROCS}) 
-        #MESSAGE(STATUS "For ${TEST_NAME} the requested number of CPU processes is larger than the number available")
-        #MESSAGE(STATUS "  Changing NUM_CPU from ${NUM_CPUS} to ${MAX_NUM_PROCS}")
-        #SET(NUM_CPUS ${MAX_NUM_PROCS})
-        FILE(APPEND ${THIS_TEST_SCRIPT} "num_cpus=${MAX_NUM_PROCS}\n") # new line
-      ELSE ()
-        FILE(APPEND ${THIS_TEST_SCRIPT} "num_cpus=${NUM_CPUS}\n") # new line
-      ENDIF ()
-    ELSE ()
-      FILE(APPEND ${THIS_TEST_SCRIPT} "num_cpus=${NUM_CPUS}\n") # new line
-    ENDIF ()
-  ELSE ()
+  IF (${NUM_CPUS} STREQUAL "")
     MESSAGE(FATAL_ERROR "In test ${testName} NUM_CPUS not defined. Quitting")
   ENDIF ()
+  IF (NOT ${HOMME_QUEUING})
+    IF (USE_NUM_PROCS)
+      #FILE(APPEND ${THIS_TEST_SCRIPT} "num_cpus=${USE_NUM_PROCS}\n") # new line
+      SET(NUM_CPUS ${USE_NUM_PROCS})
+    ELSEIF (${NUM_CPUS} GREATER ${MAX_NUM_PROCS}) 
+      ##MESSAGE(STATUS "For ${TEST_NAME} the requested number of CPU processes is larger than the number available")
+      ##MESSAGE(STATUS "  Changing NUM_CPU from ${NUM_CPUS} to ${MAX_NUM_PROCS}")
+      ##SET(NUM_CPUS ${MAX_NUM_PROCS})
+      #FILE(APPEND ${THIS_TEST_SCRIPT} "num_cpus=${MAX_NUM_PROCS}\n") # new line
+      SET(NUM_CPUS ${MAX_NUM_PROCS})
+    ENDIF ()
+  ENDIF ()
+  FILE(APPEND ${THIS_TEST_SCRIPT} "num_cpus=${NUM_CPUS}\n") # new line
   FILE(APPEND ${THIS_TEST_SCRIPT} "\n") # new line
   SET (TEST_INDEX 1)
   FOREACH (singleFile ${NAMELIST_FILES}) 
