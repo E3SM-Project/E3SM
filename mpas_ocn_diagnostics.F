@@ -78,15 +78,14 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_diagnostic_solve(dt, block, s, grid)!{{{
+   subroutine ocn_diagnostic_solve(dt, s, grid, scratch)!{{{
 
       implicit none
 
       real (kind=RKIND), intent(in) :: dt !< Input: Time step
       type (state_type), intent(inout) :: s !< Input/Output: State information
-      type (block_type), intent(inout) :: block
       type (mesh_type), intent(in) :: grid !< Input: Grid information
-
+      type (scratch_type), intent(inout) :: scratch !< Input: scratch variables
 
       integer :: iEdge, iCell, iVertex, k, cell1, cell2, vertex1, vertex2, eoe, i, j
       integer :: boundaryMask, velMask, nCells, nEdges, nVertices, nVertLevels, vertexDegree, err
@@ -339,10 +338,10 @@ contains
       end do
 
 
-      call mpas_allocate_scratch_field(block % scratch % vorticityGradientNormalComponent, .true.)
-      call mpas_allocate_scratch_field(block % scratch % vorticityGradientTangentialComponent, .true.)
-      vorticityGradientNormalComponent => block % scratch % vorticityGradientNormalComponent % array
-      vorticityGradientTangentialComponent => block % scratch % vorticityGradientTangentialComponent % array
+      call mpas_allocate_scratch_field(scratch % vorticityGradientNormalComponent, .true.)
+      call mpas_allocate_scratch_field(scratch % vorticityGradientTangentialComponent, .true.)
+      vorticityGradientNormalComponent => scratch % vorticityGradientNormalComponent % array
+      vorticityGradientTangentialComponent => scratch % vorticityGradientTangentialComponent % array
       do iEdge = 1,nEdges
          cell1 = cellsOnEdge(1, iEdge)
          cell2 = cellsOnEdge(2, iEdge)
@@ -378,8 +377,8 @@ contains
                   + tangentialVelocity(k,iEdge) * vorticityGradientTangentialComponent(k,iEdge) )
          enddo
       enddo
-      call mpas_deallocate_scratch_field(block % scratch % vorticityGradientNormalComponent, .true.)
-      call mpas_deallocate_scratch_field(block % scratch % vorticityGradientTangentialComponent, .true.)
+      call mpas_deallocate_scratch_field(scratch % vorticityGradientNormalComponent, .true.)
+      call mpas_deallocate_scratch_field(scratch % vorticityGradientTangentialComponent, .true.)
 
       !
       ! equation of state
