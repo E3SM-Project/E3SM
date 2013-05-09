@@ -7,7 +7,7 @@
 !
 #define DM_BCAST_MACRO(A) call mpas_dmpar_bcast_reals(dminfo,size(A),A)
 
-!=============================================================================================
+!==================================================================================================
  module mpas_atmphys_camrad_init
  use mpas_dmpar
  use mpas_kind_types
@@ -23,16 +23,32 @@
  private
  public:: camradinit
 
-!FOR NOW HERE, BUT NEEDS TO BE MOVED SOMEWHERE ELSE:
-!INITIALIZATION FOR INPUT OZONE DATA:
+
+!>\brief Initialization of CAM radiation codes using MPAS MPI decomposition.
+!>\author Laura D. Fowler (send comments to laura@ucar.edu).
+!>\date 2013-05-01.
+!>
+!>\details
+!> subroutine camradinit calls the main subroutines needed to initialize the long- and short-wave
+!> CAM radiation codes, and read input data from auxillary files.
+!>
+!> subroutines called in mpas_atmphys_camrad_init:
+!> -----------------------------------------------
+!> radini      :initialization of radiation constants.
+!> esinti      :initialization of saturation vapor pressures.
+!> oznini      :initialization of climatological monthly-mean ozone profiles.
+!> aerosol_init:initialization of aerosol optical properties.
+
+
+!local parameters:
  integer,parameter:: latsiz = 64
  integer,parameter:: lonsiz = 1
 
  contains
 
-!=============================================================================================
+!==================================================================================================
  subroutine camradinit(dminfo,mesh,state_1,state_2)
-!=============================================================================================
+!==================================================================================================
 
 !input arguments:
  type(dm_info),intent(in):: dminfo
@@ -45,7 +61,7 @@
  real(r8):: pstd
  real(r8):: rh2o, cpair
 
-!---------------------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------------------------
 
 !...these were made allocatable 20090612 to save static memory allocation. JM:
  if ( .not. allocated( ksul   ) ) allocate( ksul(nrh,nspint)   )
@@ -111,9 +127,9 @@
 
  end subroutine camradinit
 
-!=============================================================================================
+!==================================================================================================
  subroutine radini(dminfo,gravx,cpairx,epsilox,stebolx,pstdx)
-!----------------------------------------------------------------------- 
+!--------------------------------------------------------------------------------------------------
 ! 
 ! Purpose: 
 ! Initialize various constants for radiation scheme; note that
@@ -207,9 +223,9 @@
 
  end subroutine radini
 
-!=============================================================================================
+!==================================================================================================
  subroutine radaeini(dminfo,pstdx,mwdryx,mwco2x)
-!=============================================================================================
+!==================================================================================================
 
 !input arguments:
  type(dm_info),intent(in):: dminfo
@@ -263,7 +279,7 @@
 
  integer:: i_te,i_rh
 
-!---------------------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------------------------
 
 !... constants to set:
  p0     = pstdx
@@ -353,9 +369,9 @@
 
  end subroutine radaeini
 
-!=============================================================================================
+!==================================================================================================
  subroutine aerosol_init(dminfo,mesh,state_1,state_2)
-!=============================================================================================
+!==================================================================================================
 
 !This subroutine assumes a uniform aerosol distribution in both time and space. It should be
 !modified if aerosol data are available from WRF-CHEM or other sources.
@@ -386,7 +402,7 @@
               0.866419970989227 , 0.901350021362305 , 0.930540025234222 , & 
               0.954590022563934 , 0.974179983139038 , 0.990000009536743 , 1/
 
-!---------------------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------------------------
 
 !initialization:
  nCells     = mesh % nCells
@@ -472,9 +488,9 @@
 
  end subroutine aerosol_init
 
-!=============================================================================================
+!==================================================================================================
  subroutine aer_optics_initialize(dminfo)
-!=============================================================================================
+!==================================================================================================
 
 !input arguments:
  type(dm_info):: dminfo
@@ -513,7 +529,7 @@
  logical:: opened
  character(len=StrKIND):: errmess
  
-!---------------------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------------------------
 
 !write(0,*) '--- enter subroutine aer_optics_initialize:'
 
@@ -659,9 +675,9 @@
 
  end subroutine aer_optics_initialize
 
-!=============================================================================================
+!==================================================================================================
  subroutine oznini(mesh)
-!=============================================================================================
+!==================================================================================================
 
 !This subroutine assumes a uniform distribution of ozone concentration. It should be replaced
 !with monthly climatology varying ozone distribution.
@@ -687,7 +703,7 @@
 !real(Kind=RKIND),dimension(lonsiz,levsiz,latsiz,num_months):: ozmixin
  real(Kind=RKIND),dimension(:,:,:,:),allocatable:: ozmixin
 
-!---------------------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------------------------
 
  nCells     = mesh % nCells
  num_months = mesh % nMonths
@@ -793,6 +809,6 @@
 
  end subroutine oznini
 
-!=============================================================================================
+!==================================================================================================
  end module mpas_atmphys_camrad_init
-!=============================================================================================
+!==================================================================================================

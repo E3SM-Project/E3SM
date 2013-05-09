@@ -21,12 +21,6 @@
  private
  public:: physics_timetracker,physics_run_init
 
-!add-ons and modifications to sourcecode:
-!* added initialization of variable sf_surface_physics in subroutine physics_run_init. see
-!  definition of sf_surface_physics in mpas_atmphys_vars.F
-!  Laura D. Fowler (birch.ucar.edu) / 2013-03-11.
- 
-
  integer, public:: year                 !Current year.
  integer, public:: julday               !Initial Julian day.
  real(kind=RKIND), public:: curr_julday !Current Julian day (= 0.0 at 0Z on January 1st).
@@ -74,11 +68,30 @@
  integer :: h, m, s, s_n, s_d, DoY, yr
  real(kind=RKIND) :: utc_h
 
+
+!>\brief main time manager for physics parameterizations.
+!>\author Laura D. Fowler (send comments to laura@ucar.edu).
+!>\date 2013-05-01.
+!>
+!>\details
+!>
+!> subroutines in mpas_atmphys_manager:
+!> ------------------------------------
+!> physics_timetracker: check alarms and update boundary conditions if needed.
+!> physics_run_init   : create and initialize alarms used for physics parameterizations.
+!>
+!> add-ons and modifications to sourcecode:
+!> ----------------------------------------
+!> * added initialization of variable sf_surface_physics in subroutine physics_run_init. see
+!>   definition of sf_surface_physics in mpas_atmphys_vars.F
+!>   Laura D. Fowler (birch.ucar.edu) / 2013-03-11.
+ 
+
  contains
 
-!=============================================================================================
+!==================================================================================================
  subroutine physics_timetracker(domain,dt,clock,itimestep,xtime_s)
-!=============================================================================================
+!==================================================================================================
 
 !input arguments:
  integer,intent(in):: itimestep
@@ -100,7 +113,7 @@
  real(kind=RKIND):: utc_s
  real(kind=RKIND):: xtime_m
 
-!=============================================================================================
+!==================================================================================================
  write(0,*)
  write(0,*) '--- enter subroutine physics_timetracker: itimestep = ', itimestep
 
@@ -258,9 +271,9 @@
 
  end subroutine physics_timetracker
 
-!=============================================================================================
+!==================================================================================================
  subroutine physics_run_init(mesh,state,clock)
-!=============================================================================================
+!==================================================================================================
 
 !input arguments:
  type(mesh_type),intent(in) :: mesh
@@ -272,7 +285,7 @@
  type(MPAS_TimeInterval_Type):: alarmTimeStep, alarmTimeStepHi
  integer:: ierr
 
-!=============================================================================================
+!==================================================================================================
  write(0,*)
  write(0,*) '--- enter subroutine physics_run_init:'
 
@@ -539,7 +552,7 @@
 
  end subroutine physics_run_init
 
-!=============================================================================================
+!==================================================================================================
  end module mpas_atmphys_manager
-!=============================================================================================
+!==================================================================================================
  

@@ -19,23 +19,68 @@
  use mpas_atmphys_driver_radiation_lw
  use mpas_atmphys_driver_sfclayer
  use mpas_atmphys_constants
+ use mpas_atmphys_interface_nhyd
  use mpas_atmphys_update
  use mpas_atmphys_vars, only: l_camlw,l_conv,l_radtlw,l_radtsw
-#ifdef non_hydrostatic_core
- use mpas_atmphys_interface_nhyd
-#elif hydrostatic_core
- use mpas_atmphys_interface_hyd
-#endif
 
  implicit none
  private
  public:: physics_driver
 
+
+!>\brief MPAS top physics driver.
+!>\author Laura D. Fowler (send comments to laura@ucar.edu).
+!>\date 2013-05-01.
+!>
+!>\details
+!> subroutine physics_driver is the top physics driver from which separate drivers for all physics
+!> parameterizations, except cloud microphysics parameterizations are called.
+!>
+!> subroutines called in mpas_atmphys_driver:
+!> ------------------------------------------
+!> allocate_forall_physics     : allocate local arrays defining atmospheric soundings (pressure,..)
+!> allocate_cloudiness         : allocate all local arrays used in driver_cloudiness. 
+!> allocate_convection_deep    : allocate all local arrays used in driver_convection_deep.
+!> allocate_gwdo               : allocate all local arrays used in driver_gwdo.
+!> allocate_lsm                : allocate all local arrays used in driver_lsm.
+!> allocate_pbl                : allocate all local arrays used in driver_pbl.
+!> allocate_radiation_lw       : allocate all local arrays used in driver_radiation_lw.
+!> allocate_radiation_sw       : allocate all local arrays used in driver_radiation_sw.
+!> allocate_sfclayer           : allocate all local arrays used in driver_sfclayer.
+!>
+!> deallocate_forall_physics   : deallocate local arrays defining atmospheric soundings.
+!> deallocate_cloudiness       : dedeallocate all local arrays used in driver_cloudiness.
+!> deallocate_convection_deep  : deallocate all local arrays used in driver_convection_deep.
+!> deallocate_gwdo             : deallocate all local arrays used in driver_gwdo.
+!> deallocate_lsm              : deallocate all local arrays used in driver_lsm.
+!> deallocate_pbl              : deallocate all local arrays used in driver_pbl.
+!> deallocate_radiation_lw     : deallocate all local arrays used in driver_radiation_lw.
+!> deallocate_radiation_sw     : deallocate all local arrays used in driver_radiation_sw.
+!> deallocate_sfclayer         : deallocate all local arrays used in driver_sfclayer.
+!>
+!> MPAS_to_physics             :
+!> driver_cloudiness           : driver for parameterization of fractional cloudiness.
+!> driver_convection_deep      : driver for parameterization of convection.
+!> driver_gwdo                 : driver for parameterization of gravity wave drag over orography.
+!> driver_lsm                  : driver for land-surface scheme.
+!> driver_pbl                  : driver for planetary boundary layer scheme.
+!> driver_radiation_sw         : driver for short wave radiation schemes.
+!> driver_radiation_lw         : driver for long wave radiation schemes.
+!> driver_sfclayer             : driver for surface layer scheme.
+!> update_convection_step1     : updates lifetime of deep convective clouds in Kain-Fritsch scheme.
+!> update_convection_step2     : updates accumulated precipitation output from convection schemes.
+!> update_radiation_diagnostics: updates accumualted radiation diagnostics from radiation schemes.
+!>
+!> modifications:
+!> * removed call to calculate atmospheric soundings for the hydrostatic dynamical core.
+!>   Laura D. Fowler (2013-05-06).
+
+
  contains
 
-!=============================================================================================
+!==================================================================================================
  subroutine physics_driver(domain,itimestep,xtime_s)
-!=============================================================================================
+!==================================================================================================
 
 !input arguments:
  integer,intent(in):: itimestep
@@ -46,9 +91,8 @@
 
 !local variables:
  type(block_type),pointer:: block
- integer:: i,j,k
 
-!=============================================================================================
+!==================================================================================================
 
  if(config_conv_deep_scheme    .ne. 'off' .or. &
     config_lsm_scheme          .ne. 'off' .or. &
@@ -64,12 +108,8 @@
     call allocate_forall_physics
 
     !physics prep step:
-#ifdef non_hydrostatic_core
     call MPAS_to_physics(block%mesh,block%state%time_levs(1)%state,block%diag, &
                          block%diag_physics)
-#elif hydrostatic_core
-    call MPAS_to_physics(block%state%time_levs(1)%state,block%diag)
-#endif
 
     !call to cloud scheme:
     if(l_radtlw .or. l_radtsw) then
@@ -91,8 +131,6 @@
        call driver_radiation_lw(xtime_s,block%mesh,block%state%time_levs(1)%state, &
                               block%diag_physics,block%sfc_input,block%tend_physics)
     endif
-!   if(l_camlw .and. config_radt_lw_scheme .eq. 'cam_lw') &
-!                             call radiation_camlw_to_MPAS(block%diag_physics)
 
     !call to accumulate long- and short-wave diagnostics if needed:
      if(config_bucket_update /= 'none' .and. config_bucket_radt .gt. 0._RKIND) &
@@ -157,6 +195,6 @@
 
  end subroutine physics_driver
 
-!=============================================================================================
+!==================================================================================================
  end module mpas_atmphys_driver
-!=============================================================================================
+!==================================================================================================

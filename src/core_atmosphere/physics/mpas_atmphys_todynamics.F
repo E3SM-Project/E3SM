@@ -16,11 +16,24 @@
  private
  public:: physics_addtend
 
+
+!>\brief interface between the physics parameterizations and the non-hydrostatic dynamical core.
+!>\author Laura D. Fowler (send comments to laura@ucar.edu).
+!>\date 2013-05-01.
+!>
+!>\details
+!>
+!> subroutines in mpas_atmphys_todynamics:
+!> ---------------------------------------
+!> physics_addtend: add and mass-weigh tendencies before being added to dynamics tendencies.
+!> tend_toEdges   : interpolate wind-tendencies from centers to edges of grid-cells.
+
+
  contains
  
-!=============================================================================================
-subroutine physics_addtend(mesh, state, diag, tend, tend_physics, mass, mass_edge, rk_step)
-!=============================================================================================
+!==================================================================================================
+ subroutine physics_addtend(mesh, state, diag, tend, tend_physics, mass, mass_edge, rk_step)
+!==================================================================================================
 
 !input variables:
 !----------------
@@ -61,7 +74,7 @@ subroutine physics_addtend(mesh, state, diag, tend, tend_physics, mass, mass_edg
  real(kind=RKIND),dimension(:,:),allocatable:: theta,tend_th
 !ldf end.
 
-!=============================================================================================
+!==================================================================================================
  block => mesh % block
  
  nCells      = mesh % nCells
@@ -213,9 +226,9 @@ subroutine physics_addtend(mesh, state, diag, tend, tend_physics, mass, mass_edg
 
  end subroutine  physics_addtend
 
-!=============================================================================================
+!==================================================================================================
  subroutine tend_toEdges(mesh,Ux_tend,Uy_tend,U_tend)
-!=============================================================================================
+!==================================================================================================
 
 !input arguments:
 !----------------
@@ -238,7 +251,7 @@ subroutine physics_addtend(mesh, state, diag, tend, tend_physics, mass, mass_edg
  real(kind=RKIND),dimension(:,:),pointer:: east,north,edge_normal
  real(kind=RKIND),dimension(:,:),allocatable,target:: Ux_tend_halo,Uy_tend_halo
  
-!---------------------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------------------------
 
  block => mesh % block
  
@@ -301,6 +314,6 @@ subroutine physics_addtend(mesh, state, diag, tend, tend_physics, mass, mass_edg
  
  end subroutine tend_toEdges
 
-!=============================================================================================
+!==================================================================================================
  end module mpas_atmphys_todynamics
-!=============================================================================================
+!==================================================================================================

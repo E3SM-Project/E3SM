@@ -20,32 +20,54 @@
 
  integer,private:: i,j,k
 
+
+!>\brief MPAS driver for parameterization of the diagnostic cloud fraction.
+!>\author Laura D. Fowler (send comments to laura@ucar.edu).
+!>\date 2013-05-01.
+!>
+!>\details
+!>
+!> subroutines in mpas_atmphys_driver_cloudiness:
+!> ----------------------------------------------
+!> allocate_cloudiness  : allocate local arrays for parameterization of diagnostic cloudiness.
+!> deallocate_cloudiness: deallocate local arrays for parameterization of diagnostic cloudiness.
+!> cloudiness_from_MPAS : initialize local arrays.
+!> cloudiness_to_MPAS   : copy local arrays to MPAS arrays.
+!> driver_cloudiness    : main driver (called from subroutine physics_driver).
+!> calc_cldincidence    : calculates the cloud fraction as 0 or 1, depending on cloud condensates.
+!> calc_cldfraction     : calculates the cloud fraction as a function of the relative humidity.
+!>
+!> comments:
+!> The subroutine calc_cldfraction has not been testted in MPAS. The default is to use subroutine
+!> calc_cldincidence.
+
+
  contains
 
-!=============================================================================================
+!==================================================================================================
  subroutine allocate_cloudiness
-!=============================================================================================
+!==================================================================================================
 
  if(.not.allocated(cldfrac_p) ) allocate(cldfrac_p(ims:ime,kms:kme,jms:jme) )
 
  end subroutine allocate_cloudiness
 
-!=============================================================================================
+!==================================================================================================
  subroutine deallocate_cloudiness
-!=============================================================================================
+!==================================================================================================
 
  if(allocated(cldfrac_p) ) deallocate(cldfrac_p )
 
  end subroutine deallocate_cloudiness
 
-!=============================================================================================
+!==================================================================================================
  subroutine cloudiness_from_MPAS(diag_physics)
-!=============================================================================================
+!==================================================================================================
 
 !inout arguments:
  type(diag_physics_type),intent(inout):: diag_physics
 
-!---------------------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------------------------
 
  do j = jts,jte
  do k = kts,kte
@@ -57,14 +79,14 @@
 
  end subroutine cloudiness_from_MPAS
 
-!=============================================================================================
+!==================================================================================================
  subroutine cloudiness_to_MPAS(diag_physics)
-!=============================================================================================
+!==================================================================================================
 
 !inout arguments:
  type(diag_physics_type),intent(inout):: diag_physics
 
-!---------------------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------------------------
 
  do j = jts,jte
  do k = kts,kte
@@ -76,18 +98,18 @@
  
  end subroutine cloudiness_to_MPAS
 
-!=============================================================================================
+!==================================================================================================
  subroutine driver_cloudiness(diag_physics)
-!=============================================================================================
+!==================================================================================================
 
 !inout arguments:
  type(diag_physics_type),intent(inout):: diag_physics
 
-!---------------------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------------------------
  write(0,*)
  write(0,*) '--- enter subroutine driver_cloudiness:'
 
-!copy all MPAS arrays to rectangular grid:
+!copy MPAS arrays to local arrays:
  call cloudiness_from_MPAS(diag_physics)
 
  cld_fraction_select: select case (trim(radt_cld_scheme))
@@ -109,16 +131,16 @@
 
  end select cld_fraction_select
 
-!copy all arrays back to MPAS geodesic grid:
+!copy local arrays to MPAS grid:
  call cloudiness_to_MPAS(diag_physics)
 
  write(0,*) '--- exit subroutine driver_cloudiness'
 
  end subroutine driver_cloudiness
 
-!=============================================================================================
+!==================================================================================================
  subroutine calc_cldincidence(cldfrac,qc,qi,f_qc,f_qi)
-!=============================================================================================
+!==================================================================================================
 
 !input arguments:
  logical,intent(in):: f_qc,f_qi
@@ -130,12 +152,12 @@
 !local variables:
  real(kind=RKIND),parameter:: thresh = 1.e-06
 
-!---------------------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------------------------
 
  do j = jts,jte
  do k = kts,kte
  do i = its,ite
-    cldfrac(i,k,j) = 0.
+    cldfrac(i,k,j) = 0._RKIND
  enddo
  enddo
  enddo
@@ -144,7 +166,7 @@
     do j = jts,jte
     do k = kts,kte
     do i = its,ite
-       if(qc(i,k,j)+qi(i,k,j) .gt. thresh) cldfrac(i,k,j) = 1.0
+       if(qc(i,k,j)+qi(i,k,j) .gt. thresh) cldfrac(i,k,j) = 1.0_RKIND
     enddo
     enddo
     enddo
@@ -152,7 +174,7 @@
     do j = jts,jte
     do k = kts,kte
     do i = its,ite
-       if(qc(i,k,j) .gt. thresh) cldfrac(i,k,j) = 1.0
+       if(qc(i,k,j) .gt. thresh) cldfrac(i,k,j) = 1.0_RKIND
     enddo
     enddo
     enddo
@@ -160,9 +182,9 @@
     
  end subroutine calc_cldincidence
 
-!=============================================================================================
+!==================================================================================================
  subroutine calc_cldfraction(cldfrac,t_p,pres_p,qv,qc,qi,qs)
-!=============================================================================================
+!==================================================================================================
 
 !input arguments:
  real(kind=RKIND),intent(in),dimension(ims:ime,kms:kme,jms:jme):: qv,qc,qi,qs
@@ -188,12 +210,12 @@
  real(kind=RKIND):: esi,esw,qvsi,qvsw
  real(kind=RKIND):: arg,denom,qcld,qvs,rhum,subsat,weight
 
-!---------------------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------------------------
 
  do j = jts,jte
  do k = kts,kte
  do i = its,ite
-    cldfrac(i,k,j) = 0.
+    cldfrac(i,k,j) = 0._RKIND
  enddo
  enddo
  enddo
@@ -250,6 +272,6 @@
 
  end subroutine calc_cldfraction
 
-!=============================================================================================
+!==================================================================================================
  end module mpas_atmphys_driver_cloudiness
-!=============================================================================================
+!==================================================================================================

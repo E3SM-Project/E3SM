@@ -12,7 +12,7 @@
  use mpas_atmphys_constants
  use mpas_atmphys_vars
 
-!from wrf physics:
+!wrf physics:
  use module_sf_sfclay
 
  implicit none
@@ -29,6 +29,27 @@
                                                  !0=no 1=yes (WRF single column model option only).
 
  integer,private:: i,j
+
+
+!>\brief MPAS driver for parameterization of the surface layer.
+!>\author Laura D. Fowler (send comments to laura@ucar.edu).
+!>\date 2013-05-01.
+!>
+!>\details
+!>
+!> subroutines in mpas_atmphys_driver_sfclayer:
+!> --------------------------------------------
+!> allocate_sfclayer    : allocate local arrays for parameterization of surface layer.
+!> deallocate_sfclayer  : deallocate local arrays for parameterization of surface layer.
+!> init_sfclayer        : initialization of individual surface layer schemes.
+!> driver_sfclayer      : main driver (called from subroutine physics_driver).
+!> sfclayer_from_MPAS   : initialize local arrays.
+!> sfclayer_to_MPAS     : copy local arrays to MPAS arrays.
+!>
+!> WRF physics called from driver_sfclayer:
+!> ----------------------------------------
+!>    * module_sf_sfclay: Monin-Obukhov surface layer scheme.
+
 
  contains
 
@@ -275,7 +296,6 @@
     case("monin_obukhov")
        dx = sqrt(maxval(mesh % areaCell % array))
 #if defined(do_hydrostatic_pressure)
-!... REARRANGED CALL USING HYDROSTATIC PRESSURE:
        call sfclay( &
                    p3d      = pres_hyd_p , psfc     = psfc_p     , t3d      = t_p        , &
                    u3d      = u_p        , v3d      = v_p        , qv3d     = qv_p       , &
@@ -305,7 +325,6 @@
                    its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte   &
                  )
 #else
-!... REARRANGED CALL:
        call sfclay( &
                    p3d      = pres_p     , psfc     = psfc_p     , t3d      = t_p        , &
                    u3d      = u_p        , v3d      = v_p        , qv3d     = qv_p       , &
@@ -340,7 +359,7 @@
 
  end select sfclayer_select
 
-!copy all arrays back to the MPAS grid:
+!copy local arrays to MPAS grid:
  call sfclayer_to_MPAS(diag_physics)
 
  write(0,*) '--- end subroutine driver_sfclayer'

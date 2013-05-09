@@ -22,11 +22,25 @@
           physics_update_surface,     &
           physics_update_deepsoiltemp
 
+
+!>\brief update surface boundary conditions.
+!>\author Laura D. Fowler (send comments to laura@ucar.edu).
+!>\date 2013-05-01.
+!>
+!>\details
+!>
+!> subroutines in mpas_atmphys_update_surface:
+!> -------------------------------------------
+!> physics_update_surface     : update the surface albedo and greeness fraction.
+!> physics_update_sst         : update the sea-surface temperatures.
+!> physics_update_sstskin     : add a diurnal cycle to the sea-surface temperatures.
+!> physics_update_deepsoiltemp: update the deep soil temperatures.
+
  contains
 
-!=============================================================================================
+!==================================================================================================
  subroutine physics_update_surface(current_date,mesh,sfc_input)
-!=============================================================================================
+!==================================================================================================
 
 !input variables:
  type(mesh_type),intent(in) :: mesh
@@ -47,7 +61,7 @@
  real(kind=RKIND),dimension(:)  ,pointer:: vegfra,shdmin,shdmax
  real(kind=RKIND),dimension(:,:),pointer:: greenfrac
  
-!---------------------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------------------------
 
  nCellsSolve = mesh % nCellsSolve
 
@@ -81,9 +95,9 @@
 
  end subroutine physics_update_surface
 
-!=============================================================================================
+!==================================================================================================
  subroutine physics_update_sst(mesh,sfc_input,diag_physics)
-!=============================================================================================
+!==================================================================================================
 
 !input arguments:
  type(mesh_type),intent(in):: mesh
@@ -103,7 +117,7 @@
  real(kind=RKIND),dimension(:),pointer:: sfc_albedo,sfc_emiss,sfc_emibck
  real(kind=RKIND),dimension(:),pointer:: xicem,xland
 
-!---------------------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------------------------
  write(0,*)
  write(0,*) '--- enter subroutine physics_update_sst:'
  write(0,*) '--- config_frac_seaice =', config_frac_seaice
@@ -222,9 +236,9 @@
 
  end subroutine physics_update_sst
 
-!=============================================================================================
+!==================================================================================================
  subroutine physics_update_sstskin(dt,mesh,diag_physics,sfc_input)
-!=============================================================================================
+!==================================================================================================
 
 !input arguments:
  type(mesh_type),intent(in):: mesh
@@ -252,7 +266,7 @@
  real(kind=RKIND),dimension(:),pointer:: emiss,ust
  real(kind=RKIND),dimension(:),pointer:: sstsk,dtc1,dtw1
 
-!---------------------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------------------------
  write(0,*)
  write(0,*) '--- enter subroutine physics_update_sstskin:'
 
@@ -360,9 +374,9 @@
 
  end subroutine physics_update_sstskin
 
-!=============================================================================================
+!==================================================================================================
  subroutine physics_update_deepsoiltemp(LeapYear,dt,julian_in,mesh,sfc_input,diag_physics)
-!=============================================================================================
+!==================================================================================================
 
 !input arguments:
  type(mesh_type),intent(in) :: mesh
@@ -382,7 +396,7 @@
  real(kind=RKIND),dimension(:),pointer  :: tday_accum,tmn,tsk,tyear_accum,tyear_mean
  real(kind=RKIND),dimension(:,:),pointer:: tlag 
 
-!---------------------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------------------------
 !write(0,*)
 !write(0,*) '--- enter subroutine physics_update_deepsoiltemp:' 
 
@@ -460,8 +474,8 @@
 
  end subroutine physics_update_deepsoiltemp
 
-!=============================================================================================
+!==================================================================================================
  end module mpas_atmphys_update_surface
-!=============================================================================================
+!==================================================================================================
 
 

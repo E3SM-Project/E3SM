@@ -24,6 +24,25 @@
  private
  public:: physics_initialize_real
 
+
+!>\brief MPAS initialization of surface properties for real case initialization.
+!>\author Laura D. Fowler (send comments to laura@ucar.edu).
+!>\date 2013-05-01.
+!>
+!>\details
+!>
+!> subroutines in mpas_atmphys_initialize_real:
+!> --------------------------------------------
+!> physics_initialize_real    : main subroutine (called from subroutine init_atm_setup_test_case in
+!>                              ./src/core_init_atmosphere/mpas_init_atm_test_cases.F).
+!> init_soil_layers           : main subroutine for initialization of soil properties. 
+!> init_soil_layers_depth     : initialize height and depth of soil layers needed in NOAH scheme.
+!> init_soil_layers_properties: initialize soil temperature, soil moisture, etc.
+!> adjust_input_soiltemp      : adjust the deep soil temperature to sea-level values.
+!> physics_init_sst           : initialize the skin temperature to the SSTs over oceans.
+!> physics_init_seaice        : correct vegetation and soil typs as function of fractional sea ice.
+
+
  contains
 
 !==================================================================================================

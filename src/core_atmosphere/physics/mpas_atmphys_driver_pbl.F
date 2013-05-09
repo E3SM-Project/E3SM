@@ -12,7 +12,7 @@
  use mpas_atmphys_constants
  use mpas_atmphys_vars
 
-!from wrf physics:
+!wrf physics:
  use module_bl_ysu
 
  implicit none
@@ -23,11 +23,31 @@
 
  integer,private:: i,j,k
 
+
+!>\brief MPAS driver for parameterization of Planetary Boundary Layer (PBL) processes.
+!>\author Laura D. Fowler (send comments to laura@ucar.edu).
+!>\date 2013-05-01.
+!>
+!>\details
+!>
+!> subroutines in mpas_atmphys_driver_pbl:
+!> ---------------------------------------
+!> allocate_pbl  : allocate local arrays for parameterization of PBL processes.
+!> deallocate_pbl: deallocate local arrays for parameterization of PBL processes.
+!> driver_pbl    : main driver (called from subroutine physics_driver).
+!> pbl_from_MPAS : initialize local arrays.
+!> pbl_to_MPAS   : copy local arrays to MPAS arrays.
+
+!> WRF physics called from driver_pbl:
+!> -----------------------------------
+!>    * module_bl_ysu : YSU PBL scheme.
+
+
  contains
 
-!=============================================================================================
+!==================================================================================================
  subroutine allocate_pbl
-!=============================================================================================
+!==================================================================================================
 
 !from surface-layer model:
  if(.not.allocated(br_p)      ) allocate(br_p(ims:ime,jms:jme)               )
@@ -63,9 +83,9 @@
 
  end subroutine allocate_pbl
 
-!=============================================================================================
+!==================================================================================================
  subroutine deallocate_pbl
-!=============================================================================================
+!==================================================================================================
 
 !from surface-layer model:
  if(allocated(br_p)      ) deallocate(br_p       )
@@ -101,15 +121,15 @@
 
  end subroutine deallocate_pbl
 
-!=============================================================================================
+!==================================================================================================
  subroutine pbl_from_MPAS(sfc_input,diag_physics)
-!=============================================================================================
+!==================================================================================================
 
 !input arguments:
  type(diag_physics_type),intent(in):: diag_physics
  type(sfc_input_type),intent(in)   :: sfc_input
 
-!---------------------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------------------------
 
  do j = jts,jte
  do i = its,ite
@@ -139,13 +159,13 @@
  do j = jts,jte
  do k = kts,kte
  do i = its,ite
-    exch_p(i,k,j)     = 0.
-    rublten_p(i,k,j)  = 0.
-    rvblten_p(i,k,j)  = 0.
-    rthblten_p(i,k,j) = 0.
-    rqvblten_p(i,k,j) = 0.
-    rqcblten_p(i,k,j) = 0.
-    rqiblten_p(i,k,j) = 0.
+    exch_p(i,k,j)     = 0._RKIND
+    rublten_p(i,k,j)  = 0._RKIND
+    rvblten_p(i,k,j)  = 0._RKIND
+    rthblten_p(i,k,j) = 0._RKIND
+    rqvblten_p(i,k,j) = 0._RKIND
+    rqcblten_p(i,k,j) = 0._RKIND
+    rqiblten_p(i,k,j) = 0._RKIND
 !temporary for debugging the YSU PBL scheme:
     kzh_p(i,k,j)    = 0._RKIND
     kzm_p(i,k,j)    = 0._RKIND
@@ -156,15 +176,15 @@
 
  end subroutine pbl_from_MPAS
  
-!=============================================================================================
+!==================================================================================================
  subroutine pbl_to_MPAS(diag_physics,tend_physics)
-!=============================================================================================
+!==================================================================================================
 
 !inout arguments:
  type(diag_physics_type),intent(inout):: diag_physics
  type(tend_physics_type),intent(inout):: tend_physics
 
-!---------------------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------------------------
  
  do j = jts,jte
  do i = its,ite
@@ -193,9 +213,9 @@
 
  end subroutine pbl_to_MPAS
  
-!=============================================================================================
+!==================================================================================================
  subroutine driver_pbl(sfc_input,diag_physics,tend_physics)
-!=============================================================================================
+!==================================================================================================
 
 !input and output arguments:
 !---------------------------
@@ -203,18 +223,17 @@
  type(diag_physics_type),intent(inout):: diag_physics
  type(tend_physics_type),intent(inout):: tend_physics
 
-!--------------------------------------------------------------------------------------------- 
+!--------------------------------------------------------------------------------------------------
  write(0,*)
  write(0,*) '--- enter subroutine driver_pbl: dt_pbl=',dt_pbl
 
-!copy all MPAS arrays to rectanguler grid arrays:
+!copy MPAS arrays to local arrays:
  call pbl_from_MPAS(sfc_input,diag_physics)
 
  pbl_select: select case (trim(pbl_scheme))
 
     case("ysu")
 #if defined(do_hydrostatic_pressure)
-!... REARRANGED CALL USING HYDROSTATIC PRESSURE:
        call ysu ( &
                  p3d      = pres_hyd_p , p3di     = pres2_hyd_p , psfc     = psfc_p     , &
                  th3d     = th_p       , t3d      = t_p         , dz8w     = dz_p       , &
@@ -238,7 +257,6 @@
                  its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte    &
                 )
 #else
-!... REARRANGED CALL:
        call ysu ( &
                  p3d      = pres_p     , p3di     = pres2_p     , psfc     = psfc_p     , &
                  th3d     = th_p       , t3d      = t_p         , dz8w     = dz_p       , &
@@ -267,12 +285,12 @@
 
  end select pbl_select
 
-!copy all arrays back to the MPAS grid:
+!copy local arrays to MPAS grid:
  call pbl_to_MPAS(diag_physics,tend_physics)
  write(0,*) '--- end subroutine driver_pbl'
 
  end subroutine driver_pbl
 
-!=============================================================================================
+!==================================================================================================
  end module mpas_atmphys_driver_pbl
-!=============================================================================================
+!==================================================================================================

@@ -23,11 +23,28 @@
 
  integer:: i,j,k
 
+
+!>\brief interface for conversion between variables used in the MPAS dynamical core and variables
+!> needed in the physics parameterizations.  
+!>\author Laura D. Fowler (send comments to laura@ucar.edu).
+!>\date 2013-05-01.
+!>
+!>\details
+!>
+!> subroutines in mpas_atmphys_interface_nhyd:
+!> -------------------------------------------
+!> allocate_forall_physics  : allocation of all meteorological variables needed in the physics.
+!> deallocate_forall_physics: deallocation of all meteorological variables needed in the physics.
+!> MPAS_to_physics          : conversion of input "MPAS" variables to "physics" variables.
+!> microphysics_from_MPAS   : initialize local arrays needed in cloud microphysics schemes.
+!> microphysics_to_MPAS     : copy local arrays needed in cloud microphysics schemesto MPAS arrays.
+
+
  contains
 
-!=============================================================================================
+!==================================================================================================
  subroutine allocate_forall_physics
-!=============================================================================================
+!==================================================================================================
 
  if(.not.allocated(psfc_p) ) allocate(psfc_p(ims:ime,jms:jme)         )
  if(.not.allocated(ptop_p) ) allocate(ptop_p(ims:ime,jms:jme)         )
@@ -71,9 +88,9 @@
  
  end subroutine allocate_forall_physics
 
-!=============================================================================================
+!==================================================================================================
  subroutine deallocate_forall_physics
-!=============================================================================================
+!==================================================================================================
 
  if(allocated(psfc_p)  ) deallocate(psfc_p  )
  if(allocated(ptop_p)  ) deallocate(ptop_p  )
@@ -116,9 +133,9 @@
  
  end subroutine deallocate_forall_physics
 
-!=============================================================================================
+!==================================================================================================
  subroutine MPAS_to_physics(mesh,state,diag,diag_physics)
-!=============================================================================================
+!==================================================================================================
 
 !input variables:
  type(mesh_type) ,intent(in):: mesh
@@ -142,7 +159,7 @@
 
  real(kind=RKIND):: rho_a,rho1,rho2,tem1,tem2
 
-!---------------------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------------------------
 
  write(0,*)
  write(0,*) '--- enter subroutine MPAS_to_phys:'
@@ -345,9 +362,9 @@
 
  end subroutine MPAS_to_physics
 
-!=============================================================================================
+!==================================================================================================
  subroutine microphysics_from_MPAS(mesh,state,tend,diag)
-!=============================================================================================
+!==================================================================================================
 
 !input variables:
  type(state_type),intent(in):: state
@@ -369,7 +386,7 @@
  real(kind=RKIND),dimension(:,:),pointer:: rho_zz,theta_m,qv,rh,pressure_p
  real(kind=RKIND),dimension(:,:),pointer:: rt_diabatic_tend
 
-!---------------------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------------------------
 
 !initialization:
  write(0,*)
@@ -447,9 +464,9 @@
 
  end subroutine microphysics_from_MPAS
 
-!=============================================================================================
+!==================================================================================================
  subroutine microphysics_to_MPAS(mesh,state,diag,tend,itimestep)
-!=============================================================================================
+!==================================================================================================
 
 !input variables:
  integer,intent(in):: itimestep
@@ -479,7 +496,7 @@
  real(kind=RKIND),dimension(:,:),pointer:: zgrid
 !ldf end.
 
-!---------------------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------------------------
 
  write(0,*)
  write(0,*) '--- enter subroutine microphysics_to_MPAS:'
@@ -577,6 +594,6 @@
 
  end subroutine microphysics_to_MPAS
 
-!=============================================================================================
+!==================================================================================================
  end module mpas_atmphys_interface_nhyd
-!=============================================================================================
+!==================================================================================================

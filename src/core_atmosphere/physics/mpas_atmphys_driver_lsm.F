@@ -37,19 +37,37 @@
 
  integer,private:: i,j,k,n
 
-!DOCUMENTATION:
-!./physics_wrf/module_sf_noahdrv.F: main driver for the "NOAH" land-surface parameterization.
-!In the argument list,I added "OPTIONAL" to the declaration of a few arrays to avoid compiling
-!with the "urban physics" option. These arrays are:
-!.. num_roof_layers; num_wall_layers; num_road_layers;num_urban_layers.
-!.. ust_urb2d;frc_urb2d;utype_urb2d.
-!Laura D. Fowler (01-18-2011).
+!>\brief MPAS driver for parameterization of land surface processes.
+!>\author Laura D. Fowler (send comments to laura@ucar.edu).
+!>\date 2013-05-01.
+!>
+!>\details
+!>
+!> subroutines in mpas_atmphys_driver_lsm:
+!> ---------------------------------------
+!> allocate_lsm  : allocate local arrays for land surface parameterization.
+!> deallocate_lsm: deallocate local arrays for land surface parameterization.
+!> driver_lsm    : main driver (called from subroutine physics_driver).
+!> lsm_from_MPAS : initialize local arrays.
+!> lsm_to_MPAS   : copy local arrays to MPAS arrays.
+!>
+!> WRF physics called from driver_lsm:
+!> ------------------------ ----------
+!>    * module_sf_noahdrv : NOAH 4-layers land surface scheme.
+!>
+!> DOCUMENTATION:
+!> ./physics_wrf/module_sf_noahdrv.F: main driver for the "NOAH" land-surface parameterization.
+!> In the argument list,I added "OPTIONAL" to the declaration of a few arrays to avoid compiling
+!> with the "urban physics" option. These arrays are:
+!> .. num_roof_layers; num_wall_layers; num_road_layers;num_urban_layers.
+!> .. ust_urb2d;frc_urb2d;utype_urb2d.
+!> Laura D. Fowler (01-18-2011).
 
  contains
 
-!=============================================================================================
+!==================================================================================================
  subroutine allocate_lsm
-!=============================================================================================
+!==================================================================================================
 
 !arrays for soil layer properties:
  if(.not.allocated(dzs_p)    ) allocate(dzs_p(1:num_soils)                    )
@@ -111,9 +129,9 @@
 
  end subroutine allocate_lsm
 
-!=============================================================================================
+!==================================================================================================
  subroutine deallocate_lsm
-!=============================================================================================
+!==================================================================================================
 
 !arrays for soil layer properties:
  if(allocated(dzs_p)    ) deallocate(dzs_p    )
@@ -175,9 +193,9 @@
 
  end subroutine deallocate_lsm
 
-!=============================================================================================
+!==================================================================================================
  subroutine lsm_from_MPAS(mesh,diag_physics,sfc_input)
-!=============================================================================================
+!==================================================================================================
 
 !input arguments:
  type(mesh_type),intent(in):: mesh
@@ -189,7 +207,7 @@
 
  integer:: ip,iEdg
 
-!---------------------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------------------------
 
  do n = 1,num_soils
     dzs_p(n) = maxval(sfc_input%dzs%array(n,:))
@@ -270,9 +288,9 @@
 
  end subroutine lsm_from_MPAS
  
-!=============================================================================================
+!==================================================================================================
  subroutine lsm_to_MPAS(mesh,diag_physics,sfc_input)
-!=============================================================================================
+!==================================================================================================
 
 !input arguments:
  type(mesh_type),intent(in):: mesh
@@ -281,7 +299,7 @@
 
  integer:: ip,iEdg
 
-!---------------------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------------------------
 
  do j = jts,jte
  do n = 1,num_soils
@@ -351,9 +369,9 @@
 
  end subroutine lsm_to_MPAS
  
-!=============================================================================================
+!==================================================================================================
  subroutine init_lsm(dminfo,mesh,diag_physics,sfc_input)
-!=============================================================================================
+!==================================================================================================
 
 !input arguments:
  type(dm_info),intent(in):: dminfo
@@ -363,7 +381,7 @@
  type(diag_physics_type),intent(inout):: diag_physics
  type(sfc_input_type),intent(inout):: sfc_input
 
-!---------------------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------------------------
  write(0,*)
  write(0,*) '--- enter land surface model initialization:'
 
@@ -382,9 +400,9 @@
 
  end subroutine init_lsm
 
-!=============================================================================================
+!==================================================================================================
  subroutine driver_lsm(itimestep,mesh,diag_physics,sfc_input)
-!=============================================================================================
+!==================================================================================================
 
 !input arguments:
  integer,intent(in):: itimestep
@@ -405,7 +423,7 @@
  101 format(2i6,8(1x,e15.8))
  102 format(3i6,8(1x,e15.8))
 
-!copy all MPAS arrays to rectangular grid:
+!copy MPAS arrays to local arrays:
  call lsm_from_MPAS(mesh,diag_physics,sfc_input)
 
 !call to land-surface scheme:
@@ -493,12 +511,12 @@
 
  end select lsm_select
 
-!copy all arrays back to MPAS geodesic grid:
+!copy local arrays to MPAS grid:
  call lsm_to_MPAS(mesh,diag_physics,sfc_input)
  write(0,*) '--- end subroutine driver_lsm'
 
  end subroutine driver_lsm
 
-!=============================================================================================
+!==================================================================================================
  end module mpas_atmphys_driver_lsm
-!=============================================================================================
+!==================================================================================================

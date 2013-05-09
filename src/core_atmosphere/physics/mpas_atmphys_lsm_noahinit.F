@@ -11,7 +11,7 @@
 #define DM_BCAST_REAL(A)     call mpas_dmpar_bcast_real(dminfo,A)
 #define DM_BCAST_REALS(A)    call mpas_dmpar_bcast_reals(dminfo,size(A),A)
 
-!=============================================================================================
+!==================================================================================================
  module mpas_atmphys_lsm_noahinit
  use mpas_configure, only: restart => config_do_restart,  &
                            mminlu  => input_landuse_data, &
@@ -29,11 +29,24 @@
  private
  public:: noah_init_forMPAS
 
+
+!>\brief initialization of the NOAH 4-layer land surface scheme.
+!>\author Laura D. Fowler (send comments to laura@ucar.edu).
+!>\date 2013-05-01.
+!>
+!>\details
+!>
+!> subroutines in mpas_atmphys_lsm_noahinit:
+!> -----------------------------------------
+!> noah_init_forMPAS: call lsminit from subroutine init_lsm (module mpas_atmphyse_driver_lsm.F).
+!> lsminit          : main initialization subroutine for the NOAH 4-layer land surface scheme.
+
+
  contains
 
-!=============================================================================================
+!==================================================================================================
  subroutine noah_init_forMPAS(dminfo,mesh,diag_physics,sfc_input)
-!=============================================================================================
+!==================================================================================================
 
 !input arguments:
  type(dm_info):: dminfo
@@ -43,16 +56,16 @@
  type(diag_physics_type),intent(inout):: diag_physics
  type(sfc_input_type),intent(inout):: sfc_input
 
-!---------------------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------------------------
 
 !read formatted files needed for land-surface model:
  call lsminit(dminfo,mesh,diag_physics,sfc_input)
 
  end subroutine noah_init_forMPAS
 
-!=============================================================================================
+!==================================================================================================
  subroutine lsminit(dminfo,mesh,diag_physics,sfc_input)
-!=============================================================================================
+!==================================================================================================
 
 !input arguments:
  type(dm_info),intent(in):: dminfo
@@ -77,7 +90,7 @@
  real(kind=RKIND),dimension(:),pointer:: snoalb,snow,snowh
  real(kind=RKIND),dimension(:,:),pointer:: tslb,smois,sh2o
 
-!---------------------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------------------------
 
  nCells = mesh % nCells
  nSoilLevels = mesh % nSoilLevels
@@ -169,9 +182,9 @@
 
  end subroutine lsminit
 
-!=============================================================================================
+!==================================================================================================
  subroutine soil_veg_gen_parm(dminfo,mminlu,mminsl)
-!=============================================================================================
+!==================================================================================================
 
 !input arguments:
  type(dm_info),intent(in):: dminfo
@@ -206,7 +219,7 @@
 !
 !-----READ IN VEGETATION PROPERTIES FROM VEGPARM.TBL
 
-!---------------------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------------------------
 
 !write(0,*) '       enter subroutine soil_veg_gen_parm:'
 
@@ -488,6 +501,6 @@
 
  end subroutine soil_veg_gen_parm
 
-!=============================================================================================
+!==================================================================================================
  end module mpas_atmphys_lsm_noahinit
-!=============================================================================================
+!==================================================================================================

@@ -29,11 +29,39 @@
           microphysics_driver  ,   &
           microphysics_init
 
+
+!>\brief MPAS driver for parameterization of cloud microphysics processes.
+!>\author Laura D. Fowler (send comments to laura@ucar.edu).
+!>\date 2013-05-01.
+!>
+!>\details
+!>
+!> subroutines in mpas_atmphys_driver_microphysics:
+!> ------------------------------------------------
+!> allocate_microphysics  : allocate local arrays for parameterization of cloud microphysics.
+!> deallocate_microphysics: deallocate local arrays for parameterization of cloud microphysics.
+!> microphysics_init      : initialization of individual cloud microphysics schemes.
+!> microphysics_driver    : main driver (called from mpas_atm_time_integration).
+!> precip_from_MPAS       : initialize timestep local arrays for precipitation.
+!> precip_to_MPAS         : copy local arrays to MPAS arrays.
+!> compute_radar_reflectivity: compute radar reflectivities.
+!>
+!> WRF physics called from microphysics_driver:
+!> --------------------------------------------
+!>    * module_mp_kessler : Kessler cloud microphysics.
+!>    * module_mp_thompson: Thompson cloud microphysics.
+!>    * module_mp_wsm6    : WSM6 cloud microphysics.
+!>
+!> comments:
+!> unlike all the other physics parameterizations, parameterizations of cloud microphysics schemes
+!> are called at the bottom of subroutine atm_srk3 in module atm_time_integration.
+
+
  contains
 
-!=============================================================================================
+!==================================================================================================
  subroutine allocate_microphysics
-!=============================================================================================
+!==================================================================================================
 
 !sounding variables:
  if(.not.allocated(rho_p)     ) allocate(rho_p(ims:ime,kms:kme,jms:jme)   )
@@ -73,9 +101,9 @@
 
  end subroutine allocate_microphysics
 
-!=============================================================================================
+!==================================================================================================
  subroutine deallocate_microphysics
-!=============================================================================================
+!==================================================================================================
 
 !sounding variables:
  if(allocated(rho_p)     ) deallocate(rho_p     )
@@ -115,9 +143,9 @@
 
  end subroutine deallocate_microphysics
 
-!=============================================================================================
+!==================================================================================================
  subroutine microphysics_init
-!=============================================================================================
+!==================================================================================================
  write(0,*)
  write(0,*) '--- enter cloud microphysics initialization:'
 
@@ -136,9 +164,9 @@
 
  end subroutine microphysics_init
 
-!=============================================================================================
+!==================================================================================================
  subroutine microphysics_driver(state,diag,diag_physics,tend,mesh,itimestep)
-!=============================================================================================
+!==================================================================================================
 
 !input arguments:
 !----------------
@@ -157,7 +185,7 @@
  logical:: log_microphysics
  integer:: i,icell,icount,istep,j,k,kk
 
-!=============================================================================================
+!==================================================================================================
  write(0,*)
  write(0,*) '--- enter subroutine microphysics_driver: itimestep=', itimestep
  write(0,*) '    dt_microp=',dt_microp
@@ -182,19 +210,14 @@
 !... initialization of precipitation related arrays:
  call precip_from_MPAS(diag_physics,mesh)
 
-!... initialization of soundings for non-hydrostatic or hydrostatic dynamical cores.
-
-#ifdef non_hydrostatic_core
+!... initialization of soundings for non-hydrostatic dynamical cores.
  call microphysics_from_MPAS(mesh,state,tend,diag)
-#elif hydrostatic_core
- call microphysics_from_MPAS(state)
-#endif
 
-!---------------------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------------------------
 
 !... call to different cloud microphysics schemes:
 
-!---------------------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------------------------
 
  istep = 1
 
@@ -283,9 +306,9 @@
 
  end subroutine microphysics_driver
 
-!=============================================================================================
+!==================================================================================================
  subroutine precip_from_MPAS(diag_physics,mesh)
-!=============================================================================================
+!==================================================================================================
 
 !input variables:
  type(mesh_type) ,intent(in):: mesh
@@ -296,18 +319,18 @@
 !local variables:
  integer:: i,iCell,j
 
-!---------------------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------------------------
 
 !variables common to all cloud microphysics schemes:
  do j = jts, jte
  do i = its, ite
-    rainncv_p(i,j) = 0.
-    rainnc_p(i,j)  = 0.
+    rainncv_p(i,j) = 0._RKIND
+    rainnc_p(i,j)  = 0._RKIND
  enddo
  enddo
 
  do iCell = 1, mesh % nCellsSolve
-    diag_physics % rainncv % array(iCell) = 0.
+    diag_physics % rainncv % array(iCell) = 0._RKIND
  enddo
 
 !variables specific to different cloud microphysics schemes:
@@ -318,18 +341,18 @@
  
        do j = jts, jte
        do i = its, ite
-          snowncv_p(i,j)    = 0.
-          graupelncv_p(i,j) = 0.
-          snownc_p(i,j)     = 0.
-          graupelnc_p(i,j)  = 0.
-          sr_p(i,j)         = 0.
+          snowncv_p(i,j)    = 0._RKIND
+          graupelncv_p(i,j) = 0._RKIND
+          snownc_p(i,j)     = 0._RKIND
+          graupelnc_p(i,j)  = 0._RKIND
+          sr_p(i,j)         = 0._RKIND
        enddo
        enddo
 
        do iCell = 1, mesh % nCellsSolve
-          diag_physics % snowncv % array(iCell)    = 0.
-          diag_physics % graupelncv % array(iCell) = 0.
-          diag_physics % sr % array(iCell)         = 0.
+          diag_physics % snowncv % array(iCell)    = 0._RKIND
+          diag_physics % graupelncv % array(iCell) = 0._RKIND
+          diag_physics % sr % array(iCell)         = 0._RKIND
        enddo 
 
     case default
@@ -338,9 +361,9 @@
 
  end subroutine precip_from_MPAS
 
-!=============================================================================================
+!==================================================================================================
  subroutine precip_to_MPAS(bucket_rainnc,diag_physics)
-!=============================================================================================
+!==================================================================================================
 
 !output variables:
  real(kind=RKIND),intent(in):: bucket_rainnc
@@ -350,7 +373,7 @@
  integer:: i,j,k
  real(kind=RKIND):: rho_a
 
-!---------------------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------------------------
 
 !variables common to all cloud microphysics schemes:
 
@@ -411,9 +434,9 @@
 
  end subroutine precip_to_MPAS
 
-!=============================================================================================
+!==================================================================================================
  subroutine compute_radar_reflectivity(diag_physics)
-!=============================================================================================
+!==================================================================================================
 
 !inout arguments:
  type(diag_physics_type),intent(inout):: diag_physics
@@ -422,7 +445,7 @@
  integer:: i,j,k
  real(kind=RKIND),dimension(:),allocatable:: qv1d,qr1d,qs1d,qg1d,t1d,p1d,dBZ1d
 
-!---------------------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------------------------
 !write(0,*)
 !write(0,*) '--- enter subroutine COMPUTE_RADAR_REFLECTIVITY:'
 
@@ -483,6 +506,6 @@
 
  end subroutine compute_radar_reflectivity
 
-!=============================================================================================
+!==================================================================================================
  end module mpas_atmphys_driver_microphysics
-!=============================================================================================
+!==================================================================================================

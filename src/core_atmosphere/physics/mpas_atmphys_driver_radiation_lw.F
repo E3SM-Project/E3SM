@@ -18,8 +18,8 @@
  use mpas_atmphys_rrtmg_lwinit
  use mpas_atmphys_vars
 
-!from wrf physics:
- use module_ra_cam
+!wrf physics:
+ use module_ra_cam            
  use module_ra_rrtmg_lw
 
  implicit none
@@ -32,16 +32,39 @@
 
  integer,private:: i,j,k,n
 
+
+!>\brief MPAS driver for parameterization of longwave radiation codes.
+!>\author Laura D. Fowler (send comments to laura@ucar.edu).
+!>\date 2013-05-01.
+!>
+!>\details
+!>
+!> subroutines in mpas_atmphys_driver_radiation_lw:
+!> ------------------------------------------------
+!> allocate_radiation_lw     : allocate local arrays for parameterization of lw radiation codes.
+!> deallocate_radiation_lw   : deallocate local arrays for parameterization of lw radiation codes.
+!> init_radiation_lw         : initialization of individual lw radiation codes.
+!> driver_radiation_lw       : main driver (called from subroutine physics_driver).
+!> radiation_lw_from_MPAS    : initialize local arrays.
+!> radiation_lw_to_MPAS      : copy local arrays to MPAS arrays.
+!> radiation_camlw_to_MPAS   : save local arrays (absorption, emission) for CAM lw radiation code.
+!>
+!> WRF physics called from driver_radiation_lw:
+!> --------------------------------------------
+!>    * module_ra_cam        : CAM long wave radiation code.
+!>    * module_ra_rrtmg_lw   : RRTMG long wave radiation code.
+
+
  contains
 
-!=============================================================================================
+!==================================================================================================
  subroutine allocate_radiation_lw(xtime_s)
-!=============================================================================================
+!==================================================================================================
 
 !input arguments:
  real(kind=RKIND),intent(in):: xtime_s
 
-!---------------------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------------------------
 
  if(.not.allocated(f_ice)        ) allocate(f_ice(ims:ime,kms:kme,jms:jme)        )
  if(.not.allocated(f_rain)       ) allocate(f_rain(ims:ime,kms:kme,jms:jme)       )
@@ -122,9 +145,9 @@
 
  end subroutine allocate_radiation_lw
 
-!=============================================================================================
+!==================================================================================================
  subroutine deallocate_radiation_lw
-!=============================================================================================
+!==================================================================================================
 
  if(allocated(f_ice)        ) deallocate(f_ice        )
  if(allocated(f_rain)       ) deallocate(f_rain       )
@@ -192,9 +215,9 @@
 
  end subroutine deallocate_radiation_lw
 
-!=============================================================================================
+!==================================================================================================
  subroutine radiation_lw_from_MPAS(xtime_s,mesh,state,diag_physics,sfc_input)
-!=============================================================================================
+!==================================================================================================
 
 !input arguments:
  type(mesh_type),intent(in) :: mesh
@@ -204,7 +227,7 @@
 
  real(kind=RKIND),intent(in):: xtime_s
 
-!---------------------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------------------------
 
  do j = jts,jte
  do i = its,ite
@@ -304,27 +327,6 @@
        !these three arrays will be filled with the restart values.
        call mpas_timer_start("CAM lw: fill arrays for infrared absorption")
        if(xtime_s .lt. 1.e-12) then
-!         do j = jts,jte
-!         do n = 1,cam_abs_dim1
-!         do k = kts,kte
-!         do i = its,ite
-!            absnxt_p(i,k,n,j) = diag_physics % absnxt % array(k,n,i)
-!         enddo
-!         enddo
-!         enddo
-!         do n = 1,cam_abs_dim2
-!         do k = kts,kte+1
-!         do i = its,ite
-!            abstot_p(i,k,n,j) = diag_physics % abstot % array(k,n,i)
-!         enddo
-!         enddo
-!         enddo
-!         do k = kts,kte+1
-!         do i = its,ite
-!            emstot_p(i,k,j) = diag_physics % emstot % array(k,i)
-!         enddo
-!         enddo
-!         enddo
           do j = jts,jte
           do n = 1,cam_abs_dim1
           do k = kts,kte
@@ -394,15 +396,15 @@
 
  end subroutine radiation_lw_from_MPAS
 
-!=============================================================================================
+!==================================================================================================
  subroutine radiation_lw_to_MPAS(diag_physics,tend_physics)
-!=============================================================================================
+!==================================================================================================
 
 !input arguments:
  type(diag_physics_type),intent(inout):: diag_physics
  type(tend_physics_type),intent(inout):: tend_physics
 
-!---------------------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------------------------
 
  do j = jts,jte
  do i = its,ite
@@ -430,9 +432,9 @@
 
  end subroutine radiation_lw_to_MPAS
 
-!=============================================================================================
+!==================================================================================================
  subroutine radiation_camlw_to_MPAS(diag_physics)
-!=============================================================================================
+!==================================================================================================
 
 !input arguments:
  type(diag_physics_type),intent(inout):: diag_physics
@@ -464,9 +466,9 @@
 
  end subroutine radiation_camlw_to_MPAS
 
-!=============================================================================================
+!==================================================================================================
  subroutine init_radiation_lw(dminfo,mesh,state_1,state_2)
-!=============================================================================================
+!==================================================================================================
 
 !input arguments:
  type(dm_info),intent(in):: dminfo
@@ -475,7 +477,7 @@
 !inout arguments:
  type(state_type),intent(inout),optional:: state_1,state_2 
 
-!---------------------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------------------------
 
  write(0,*)
  write(0,*) '--- enter radiation_lw initialization:'
@@ -498,9 +500,9 @@
 
  end subroutine init_radiation_lw
 
-!=============================================================================================
+!==================================================================================================
  subroutine driver_radiation_lw(xtime_s,mesh,state,diag_physics,sfc_input,tend_physics)
-!=============================================================================================
+!==================================================================================================
 
 !input arguments:
  type(mesh_type),intent(in) :: mesh
@@ -515,7 +517,7 @@
 !local variables:
  real(kind=RKIND):: radt,xtime_m
 
-!---------------------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------------------------
  call mpas_timer_start("radiation_lw")
  write(0,100)
 
@@ -523,7 +525,7 @@
  100 format(/,' --- enter subroutine driver_radiation_lw: ',i6)
  101 format(i8,12(1x,e15.8))
 
-!copy all MPAS arrays to rectangular grid:
+!copy MPAS arrays to local arrays:
  call radiation_lw_from_MPAS(xtime_s,mesh,state,diag_physics,sfc_input)
 
 !call to longwave radiation scheme:
@@ -532,7 +534,6 @@
     case ("rrtmg_lw")
        write(0,*) '--- enter subroutine rrtmg_lwrad:'
 #if defined(do_hydrostatic_pressure)
-!... REARRANGED CALL USING HYDROSTATIC PRESSURE:
        call rrtmg_lwrad( &
                 p3d        = pres_hyd_p   , p8w       = pres2_hyd_p , pi3d      = pi_p      , &
                 t3d        = t_p          , t8w       = t2_p        , rho3d     = rho_p     , &
@@ -558,7 +559,6 @@
                 its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte         &
                        )
 #else
-!... REARRANGED CALL:
        call rrtmg_lwrad( &
                 p3d        = pres_p       , p8w       = pres2_p    , pi3d      = pi_p      , &
                 t3d        = t_p          , t8w       = t2_p       , rho3d     = rho_p     , &
@@ -584,31 +584,6 @@
                 its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte        &
                        )
 #endif
-!... CALL FROM REVISION 1721:
-!      call rrtmg_lwrad( &
-!               rthratenlw = rthratenlw_p , lwupt     = lwupt_p    , lwuptc    = lwuptc_p  , &
-!               lwdnt      = lwdnt_p      , lwdntc    = lwdntc_p   , lwupb     = lwupb_p   , &
-!               lwupbc     = lwupbc_p     , lwdnb     = lwdnb_p    , lwdnbc    = lwdnbc_p  , &
-!               lwcf       = lwcf_p       , glw       = glw_p      , olr       = olrtoa_p  , &
-!               emiss      = sfc_emiss_p  , t3d       = t_p        , t8w       = t2_p      , &
-!               tsk        = tsk_p        , p3d       = pres_p     , p8w       = pres2_p   , &
-!               pi3d       = pi_p         , rho3d     = rho_p      , dz8w      = dz_p      , &
-!               cldfra3d   = cldfrac_p    , r         = R_d        , g         = g         , &
-!               icloud     = icloud       , warm_rain = warm_rain  , f_ice_phy = f_ice     , &
-!               f_rain_phy = f_rain       , xland     = xland_p    , xice      = xice_p    , &
-!               snow       = snow_p       , qv3d      = qv_p       , qc3d      = qc_p      , &
-!               qr3d       = qr_p         , qi3d      = qi_p       , qs3d      = qs_p      , &
-!               qg3d       = qg_p         , f_qv      = f_qv       , f_qc      = f_qc      , &
-!               f_qr       = f_qr         , f_qi      = f_qi       , f_qs      = f_qs      , &
-!               f_qg       = f_qg         ,                                                  &
-!               !begin optional arguments:
-!               !lwupflx    = lwupflx_p    , lwupflxc  = lwupflxc_p , lwdnflx   = lwdnflx_p, &
-!               !lwdnflxc   = lwdnflxc_p   ,                                                 &
-!               !end optional arguments.
-!               ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde ,      &
-!               ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme ,      &
-!               its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte        &
-!                      )
        write(0,*) '--- exit subroutine rrtmg_lwrad'
 
     case ("cam_lw")
@@ -624,7 +599,6 @@
        write(0,*) '--- enter subroutine camrad_lw: doabsems=',doabsems
        call mpas_timer_start("camrad")
 #if defined(do_hydrostatic_pressure)
-!... REARRANGED CALL USING HYDROSTATIC PRESSURE:
        call camrad( dolw = .true. , dosw = .false. ,                                         &
                 p_phy         = pres_hyd_p    , p8w           = pres2_hyd_p   ,              &
                 pi_phy        = pi_p          , t_phy         = t_p           ,              &
@@ -674,7 +648,6 @@
                 its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte        &
                   )
 #else
-!... REARRANGED CALL:
        call camrad( dolw = .true. , dosw = .false. ,                                         &
                 p_phy         = pres_p        , p8w           = pres2_p       ,              &
                 pi_phy        = pi_p          , t_phy         = t_p           ,              &
@@ -724,69 +697,13 @@
                 its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte        &
                   )
 #endif
-!... CALL FROM REVISION 1721:
-!      call camrad( dolw = .true. , dosw = .false. ,                                         &
-!               rthratenlw    = rthratenlw_p  , rthratensw    = rthratensw_p  ,              &
-!               swupt         = swupt_p       , swuptc        = swuptc_p      ,              &
-!               swdnt         = swdnt_p       , swdntc        = swdntc_p      ,              &
-!               lwupt         = lwupt_p       , lwuptc        = lwuptc_p      ,              &
-!               lwdnt         = lwdnt_p       , lwdntc        = lwdntc_p      ,              &
-!               swupb         = swupb_p       , swupbc        = swupbc_p      ,              &
-!               swdnb         = swdnb_p       , swdnbc        = swdnbc_p      ,              &
-!               lwupb         = lwupb_p       , lwupbc        = lwupbc_p      ,              &
-!               lwdnb         = lwdnb_p       , lwdnbc        = lwdnbc_p      ,              &
-!               swcf          = swcf_p        , lwcf          = lwcf_p        ,              &
-!               gsw           = gsw_p         , glw           = glw_p         ,              &
-!               olr           = olrtoa_p      , cemiss        = cemiss_p      ,              &
-!               taucldc       = taucldc_p     , taucldi       = taucldi_p     ,              & 
-!               coszr         = coszr_p       , albedo        = sfc_albedo_p  ,              & 
-!               emiss         = sfc_emiss_p   , tsk           = tsk_p         ,              & 
-!               xlat          = xlat_p        , xlong         = xlon_p        ,              &
-!               t_phy         = t_p           , pi_phy        = pi_p          ,              &
-!               p_phy         = pres_p        , p8w           = pres2_p       ,              &
-!               z             = zmid_p        , dz8w          = dz_p          ,              &            
-!               rho_phy       = rho_p         , qv3d          = qv_p          ,              & 
-!               qc3d          = qc_p          , qr3d          = qr_p          ,              &
-!               qi3d          = qi_p          , qs3d          = qs_p          ,              &
-!               qg3d          = qg_p          , f_qv          = f_qv          ,              &
-!               f_qc          = f_qc          , f_qr          = f_qr          ,              &
-!               f_qi          = f_qi          , f_qs          = f_qs          ,              &
-!               f_qg          = f_qg          , f_ice_phy     = f_ice         ,              &
-!               f_rain_phy    = f_rain        , cldfra        = cldfrac_p     ,              &
-!               xland         = xland_p       , xice          = xice_p        ,              &
-!               num_months    = num_months    , levsiz        = num_oznlevels ,              & 
-!               pin0          = pin_p         , ozmixm        = ozmixm_p      ,              &
-!               paerlev       = num_aerlevels , naer_c        = num_aerosols  ,              &
-!               m_psp         = m_psp_p       , m_psn         = m_psn_p       ,              &
-!               aerosolcp     = aerosolcp_p   , aerosolcn     = aerosolcn_p   ,              &
-!               m_hybi0       = m_hybi_p      , snow          = snow_p        ,              &
-!               cam_abs_dim1  = cam_abs_dim1  , cam_abs_dim2  = cam_abs_dim2  ,              &
-!               gmt           = gmt           , yr            = year          ,              &
-!               julday        = julday        , julian        = curr_julday   ,              &
-!               dt            = dt_dyn        , xtime         = xtime_m       ,              &
-!               declin        = declin        , solcon        = solcon        ,              &
-!               radt          = radt          , degrad        = degrad        ,              &
-!               n_cldadv      = 3             , abstot_3d     = abstot_p      ,              &
-!               absnxt_3d     = absnxt_p      , emstot_3d     = emstot_p      ,              &
-!               doabsems      = doabsems      ,                                              &
-!               ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde ,      &
-!               ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme ,      &
-!               its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte        &
-!                 )
-       call mpas_timer_stop("camrad")
-!      write(0,*) 'max lwupb      =',maxval(lwupb_p(its:ite,jms:jme))
-!      write(0,*) 'max lwupbc     =',maxval(lwupbc_p(its:ite,jms:jme))
-!      write(0,*) 'max lwupt      =',maxval(lwupt_p(its:ite,jms:jme))
-!      write(0,*) 'max lwuptc     =',maxval(lwuptc_p(its:ite,jms:jme))
-!      write(0,*) 'max rthratenlw =',maxval(rthratenlw_p(its:ite,kts:kte,jms:jme))
-!      write(0,*) 'min rthratenlw =',minval(rthratenlw_p(its:ite,kts:kte,jms:jme))
-!      write(0,*) '--- end subroutine camrad lw: doabsems=',doabsems
+      call mpas_timer_stop("camrad")
 
     case default
 
  end select radiation_lw_select
 
-!copy all arrays back to MPAS geodesic grid:
+!copy local arrays to MPAS grid:
  call radiation_lw_to_MPAS(diag_physics,tend_physics)
 
  write(0,*) '--- end subroutine driver_radiation_lw'
@@ -797,6 +714,6 @@
 
  end subroutine driver_radiation_lw
 
-!=============================================================================================
+!==================================================================================================
  end module mpas_atmphys_driver_radiation_lw
-!=============================================================================================
+!==================================================================================================

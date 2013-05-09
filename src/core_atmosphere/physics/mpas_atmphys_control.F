@@ -7,23 +7,9 @@
 !
 !=============================================================================================
  module mpas_atmphys_control
-
-! ... description:
-! ... module_physics_control controls namelist parameters read in namelist.input.
-!     physics_namelist_check: checks that physics namelist parameters are defined correctly.
-!                             if not, mpas aborts cleanly.
-
-! ... physics_registry_init : initializes physics arrays declared in Registry for non-restart
-!                             runs.
-
-! Laura D. Fowler (laura@ucar.edu).
-
-! revision history:
-! 06-29-2010: creation of module.
-! 09-09-2010: added initialization of arrays related to surface parameterization.
-
  use mpas_configure
  use mpas_grid_types
+
  use mpas_atmphys_utilities
 
  implicit none
@@ -34,11 +20,26 @@
 
  logical,public:: moist_physics
 
+
+!>\brief MPAS control and initialization routines.
+!>\author Laura D. Fowler (send comments to laura@ucar.edu).
+!>\date 2013-05-01.
+!>
+!>\details
+!> mpas_atmphys_control contains subroutines called during the initialization.
+!>
+!> subroutines called in mpas_atmphys_control:
+!> -------------------------------------------
+!> physics_namelist_check: checks that physics namelist parameters are defined correctly.
+!> physics_registry_init : initializes thicknesses of soil layers for NOAH land-surface scheme.
+!> physics_idealized_init: initializes physics variables needed to run idealized cases.
+
+
  contains
 
-!=============================================================================================
+!==================================================================================================
  subroutine physics_namelist_check
-!=============================================================================================
+!==================================================================================================
 
  write(0,*)
  write(0,*) '--- enter subroutine physics_namelist_check:'
@@ -187,9 +188,9 @@
 
  end subroutine physics_namelist_check
 
-!=============================================================================================
+!==================================================================================================
  subroutine physics_registry_init(config_do_restart,mesh,sfc_input)
-!=============================================================================================
+!==================================================================================================
 
 !input and output arguments:
  logical,intent(in):: config_do_restart
@@ -199,7 +200,7 @@
 !local variables:
  integer:: iCell
  
-!---------------------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------------------------
 
 !initialization of input variables, if needed:
 
@@ -226,9 +227,9 @@
 
  end subroutine physics_registry_init
 
-!=============================================================================================
+!==================================================================================================
  subroutine physics_idealized_init(mesh,sfc_input)
-!=============================================================================================
+!==================================================================================================
 
 !input and output arguments:
  type(mesh_type),intent(in):: mesh
@@ -237,7 +238,7 @@
 !local variables:
  integer:: iCell,iMonth,iSoil
  
-!---------------------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------------------------
 
 !initialization of surface input variables that are not needed if we run the current set of
 !idealized test cases:
@@ -282,8 +283,8 @@
 
  end subroutine physics_idealized_init
 
-!=============================================================================================
+!==================================================================================================
  end module mpas_atmphys_control
-!=============================================================================================
+!==================================================================================================
 
 

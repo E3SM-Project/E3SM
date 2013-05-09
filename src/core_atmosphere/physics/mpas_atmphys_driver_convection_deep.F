@@ -28,11 +28,35 @@
 
  integer, private:: i,k,j
 
+
+!>\brief MPAS driver for parameterization of convection.
+!>\author Laura D. Fowler (send comments to laura@ucar.edu).
+!>\date 2013-05-01.
+!>
+!>\details
+!>
+!> subroutines in mpas_atmphys_driver_convection_deep:
+!> ---------------------------------------------------
+!> allocate_convection_deep  : allocate local arrays for parameterization of convection.
+!> deallocate_convection_deep: deallocate local arrays for parameterization of convection.
+!> init_convection_deep      : initialization of individual convection scheme.
+!> driver_convection_deep    : main driver (called from subroutine physics_driver).
+!> convection_from_MPAS      : initialize local arrays.
+!> convection_to_MPAS        : copy local arrays to MPAS arrays.
+!> update_convection_step1   : updates lifetime of deep convective clouds in Kain-Fritsch scheme.
+!> update_convection_step2   : updates accumulated precipitation output from convection schemes.
+!>
+!> WRF physics called from driver_convection_deep:
+!> -----------------------------------------------
+!>    * module_cu_kfeta      : Kain-Fritsch convection scheme.
+!>    * module_cu_tiedtke    : Tiedtke convection scheme.
+
+
  contains
 
-!=============================================================================================
+!==================================================================================================
  subroutine allocate_convection_deep
-!=============================================================================================
+!==================================================================================================
 
  if(.not.allocated(cu_act_flag)) allocate(cu_act_flag(ims:ime,jms:jme)       )
  if(.not.allocated(rthcuten_p) ) allocate(rthcuten_p(ims:ime,kms:kme,jms:jme))
@@ -119,9 +143,9 @@
 
  end subroutine allocate_convection_deep
 
-!=============================================================================================
+!==================================================================================================
  subroutine deallocate_convection_deep
-!=============================================================================================
+!==================================================================================================
 
  if(allocated(cu_act_flag)) deallocate(cu_act_flag)
  if(allocated(rthcuten_p) ) deallocate(rthcuten_p )
@@ -156,9 +180,9 @@
 
  end subroutine deallocate_convection_deep
 
-!=============================================================================================
+!==================================================================================================
  subroutine init_convection_deep(config_do_restart,mesh,diag_physics)
-!=============================================================================================
+!==================================================================================================
 
 !input arguments:
  logical,intent(in):: config_do_restart
@@ -170,7 +194,7 @@
 !local variables:
  integer:: iCell
 
-!---------------------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------------------------
  write(0,*)
  write(0,*) '--- enter convection_deep initialization:'
 
@@ -180,7 +204,7 @@
        write(0,*) '    enter kain-fritsch initialization:'
        if(.not. config_do_restart) then
           do iCell = 1, mesh % nCells
-             diag_physics % nca % array(iCell) = -100.
+             diag_physics % nca % array(iCell) = -100._RKIND
           enddo
        endif
        call kf_lutab(svp1,svp2,svp3,svpt0)
@@ -200,9 +224,9 @@
 
  end subroutine init_convection_deep
 
-!=============================================================================================
+!==================================================================================================
  subroutine driver_convection_deep(itimestep,mesh,sfc_input,diag_physics,tend_physics)
-!=============================================================================================
+!==================================================================================================
 
 !input and output arguments:
 !---------------------------
@@ -229,13 +253,12 @@
  real(kind=RKIND):: max_rthcuten
  real(kind=RKIND):: min_rthcuten
 
-!=============================================================================================
+!==================================================================================================
  write(0,*)
  write(0,*) '--- enter convection_driver: dt_cu=',dt_cu
 
 !initialize instantaneous precipitation, and copy convective tendencies from the dynamics to
 !the physics grid:
-
  call convection_from_MPAS(dt_dyn,mesh,sfc_input,diag_physics,tend_physics)
 
 !... convert the convection time-step to minutes:
@@ -260,7 +283,6 @@
           ktau = itimestep + 1
        endif
 #if defined(do_hydrostatic_pressure)
-!... REARRANGED CALL USING HYDROSTATIC PRESSURE:
        call  kf_eta_cps ( &
              pcps      = pres_hyd_p , t               = t_p             ,            &
 !            dt        = dt_dyn     , ktau            = itimestep       ,            &
@@ -293,7 +315,6 @@
              its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte   &
                         )
 #else
-!... REARRANGED CALL:
        call  kf_eta_cps ( &
              pcps      = pres_p     , t               = t_p             ,            &
 !            dt        = dt_dyn     , ktau            = itimestep       ,            &
@@ -326,43 +347,10 @@
              its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte   &
                         )
 #endif
-!... CALL FROM REVISION 1721:
-!      call  kf_eta_cps ( &
-!            dt        = dt_dyn     , ktau            = itimestep       ,            &
-!            dt        = dt_dyn     , ktau            = ktau            ,            &
-!            areaCell  = area_p     , cudt            = cudt            ,            &
-!            curr_secs = curr_secs  , adapt_step_flag = adapt_step_flag ,            &
-!            rho       = rho_p      , raincv          = raincv_p        ,            &
-!            pratec    = pratec_p   , nca             = nca_p           ,            &
-!            u         = u_p        , v               = v_p             ,            &
-!            th        = th_p       , t               = t_p             ,            &
-!            w         = w_p        , dz8w            = dz_p            ,            &
-!            pcps      = pres_p     , pi              = pi_p            ,            &
-!            w0avg     = w0avg_p    , xlv0            = xlv0            ,            &
-!            xlv1      = xlv1       , xls0            = xls0            ,            &
-!            xls1      = xls1       , cp              = cp              ,            &
-!            r         = r_d        , g               = g               ,            &
-!            ep1       = ep_1       , ep2             = ep_2            ,            &
-!            svp1      = svp1       , svp2            = svp2            ,            &
-!            svp3      = svp3       , svpt0           = svpt0           ,            &
-!            stepcu    = n_cu       , cu_act_flag     = cu_act_flag     ,            &
-!            warm_rain = warm_rain  , cutop           = cutop_p         ,            &
-!            cubot     = cubot_p    , qv              = qv_p            ,            &
-!            f_qv      = f_qv       , f_qc            = f_qc            ,            &
-!            f_qr      = f_qr       , f_qi            = f_qi            ,            &
-!            f_qs      = f_qs       , rthcuten        = rthcuten_p      ,            &
-!            rqvcuten  = rqvcuten_p , rqccuten        = rqccuten_p      ,            &
-!            rqrcuten  = rqrcuten_p , rqicuten        = rqicuten_p      ,            &
-!            rqscuten  = rqscuten_p ,                                                &
-!            ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde , &
-!            ims = ims , ime = ime , jms = jms , jme = jme , kms = kds , kme = kme , &
-!            its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte   &
-!                   )
 
     case("tiedtke")
        write(0,*) '--- enter subroutine cu_tiedtke:'
 #if defined(do_hydrostatic_pressure)
-!... REARRANGED CALL USING HYDROSTATIC PRESSURE:
        call cu_tiedtke ( &
              pcps        = pres_hyd_p  , p8w             = pres2_hyd_p     ,         &
              znu         = znu_hyd_p   , t3d             = t_p             ,         &              
@@ -389,7 +377,6 @@
              its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte   &
                     )
 #else
-!... REARRANGED CALL:
        call cu_tiedtke ( &
              pcps        = pres_p      , p8w             = pres2_p         ,         &
              znu         = znu_p       , t3d             = t_p             ,         &              
@@ -416,32 +403,6 @@
              its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte   &
                     )
 #endif
-!... CALL FROM REVISION 1721:
-!      call cu_tiedtke ( &
-!            dt          = dt_dyn      , itimestep       = itimestep       ,         &
-!            stepcu      = n_cu        , raincv          = raincv_p        ,         &
-!            pratec      = pratec_p    , qfx             = qfx_p           ,         &
-!            znu         = znu_p       , u3d             = u_p             ,         &
-!            v3d         = v_p         , w               = w_p             ,         &
-!            t3d         = t_p         , qv3d            = qv_p            ,         &
-!            qc3d        = qc_p        , qi3d            = qi_p            ,         &
-!            pi3d        = pi_p        , rho3d           = rho_p           ,         &
-!            qvften      = rqvdynten_p , qvpblten        = rqvdynblten_p   ,         &
-!            dz8w        = dz_p        , pcps            = pres_p          ,         &
-!            p8w         = pres2_p     , xland           = xland_p         ,         &
-!            cu_act_flag = cu_act_flag , cudt            = dt_cu           ,         &
-!            curr_secs   = curr_secs   , adapt_step_flag = adapt_step_flag ,         &
-!            cudtacttime = cudtacttime , f_qv            = f_qv            ,         &
-!            f_qv        = f_qv        ,                                             &
-!            f_qc        = f_qc        , f_qr            = f_qr            ,         &
-!            f_qi        = f_qi        , f_qs            = f_qs            ,         &        
-!            rthcuten    = rthcuten_p  , rqvcuten        = rqvcuten_p      ,         &
-!            rqccuten    = rqccuten_p  , rqicuten        = rqicuten_p      ,         &
-!            rucuten     = rucuten_p   , rvcuten         = rvcuten_p       ,         &
-!            ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde , &
-!            ims = ims , ime = ime , jms = jms , jme = jme , kms = kds , kme = kme , &
-!            its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte   &
-!                   )
 
     case default
 
@@ -449,16 +410,15 @@
 
 !copy instantaneous and accumulated precipitation, convective tendencies, and "other" arrays
 !specific to convection parameterization back to the dynamics grid:
-
  call convection_to_MPAS(diag_physics,tend_physics)
 
  write(0,*) '--- end subroutine convection_driver'
 
  end subroutine driver_convection_deep
 
-!=============================================================================================
+!==================================================================================================
  subroutine convection_from_MPAS(dt_dyn,mesh,sfc_input,diag_physics,tend_physics)
-!=============================================================================================
+!==================================================================================================
 !input arguments:
  type(mesh_type),intent(in):: mesh
  type(sfc_input_type),intent(in)   :: sfc_input
@@ -466,7 +426,7 @@
  type(tend_physics_type),intent(in):: tend_physics
  real(kind=RKIND),intent(in):: dt_dyn
 
-!---------------------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------------------------
  write(0,*)
  write(0,*) '--- enter subroutine convection_from_MPAS:'
 
@@ -504,25 +464,6 @@
           !are reset to zero (note that this is also done in subroutine kf_eta_cps).
           nca_p(i,j) = diag_physics % nca % array(i)
 
-!         if(nca_p(i,j) .gt. 0.) then
-!            nca_p(i,j) = nca_p(i,j) - dt_dyn
-             
-!            if(nca_p(i,j) .lt. 0.5*dt_dyn) then
-!               do k = kts,kte
-!                  rthcuten_p(i,k,j) = 0.
-!                  rqvcuten_p(i,k,j) = 0.
-!                  rqccuten_p(i,k,j) = 0.
-!                  rqrcuten_p(i,k,j) = 0.
-!                  rqicuten_p(i,k,j) = 0.
-!                  rqscuten_p(i,k,j) = 0.
-!               enddo
-!               raincv_p(i,j) = 0.
-!               pratec_p(i,j) = 0.
-!               cubot_p(i,j)  = kte+1
-!               cutop_p(i,j)  = kts
-!            endif
-!         endif
-
           do k = kts,kte
              w0avg_p(i,k,j) = diag_physics % w0avg % array(k,i)
           enddo
@@ -556,14 +497,14 @@
  
  end subroutine convection_from_MPAS
 
-!=============================================================================================
+!==================================================================================================
  subroutine convection_to_MPAS(diag_physics,tend_physics)
-!=============================================================================================
+!==================================================================================================
 !inout arguments:
  type(diag_physics_type),intent(inout):: diag_physics
  type(tend_physics_type),intent(inout):: tend_physics
 
-!---------------------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------------------------
 
  do j = jts,jte
  do i = its,ite
@@ -610,9 +551,9 @@
 
  end subroutine convection_to_MPAS
 
-!=============================================================================================
+!==================================================================================================
  subroutine update_convection_step1(mesh,diag_physics,tend_physics)
-!=============================================================================================
+!==================================================================================================
 !input arguments:
  type(mesh_type),intent(in):: mesh
 
@@ -623,7 +564,7 @@
 !local variables:
  integer:: iCell,k
 
-!---------------------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------------------------
  
  convection_select: select case(conv_deep_scheme)
 
@@ -659,9 +600,9 @@
 
  end subroutine update_convection_step1
 
-!=============================================================================================
+!==================================================================================================
  subroutine update_convection_step2(bucket_rainc,mesh,diag_physics)
-!=============================================================================================
+!==================================================================================================
 
 !input arguments:
  type(mesh_type),intent(in):: mesh
@@ -673,7 +614,7 @@
 !local variables:
  integer:: iCell
 
-!---------------------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------------------------
  
 !update the accumulated precipitation at the end of each dynamic time-step:
  do iCell = 1, mesh % nCellsSolve
@@ -691,6 +632,6 @@
 
  end subroutine update_convection_step2
 
-!=============================================================================================
+!==================================================================================================
  end module mpas_atmphys_driver_convection_deep
-!=============================================================================================
+!==================================================================================================
