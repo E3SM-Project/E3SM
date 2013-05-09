@@ -28,7 +28,7 @@ endif
 
 reg_includes: $(AUTOCLEAN_DEPS)  
 	( cd registry; $(MAKE) CC="$(SCC)" )
-	( cd inc; $(CPP) ../core_$(CORE)/Registry.xml | ../registry/parse > Registry.processed)
+	( cd inc; $(CPP) $(CPPFLAGS) $(CPPINCLUDES) ../core_$(CORE)/Registry.xml | ../registry/parse > Registry.processed)
 
 frame: $(AUTOCLEAN_DEPS) reg_includes externals
 	( cd framework; $(MAKE) CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" all ) 
