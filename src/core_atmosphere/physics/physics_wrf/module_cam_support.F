@@ -6,7 +6,7 @@ MODULE module_cam_support
 !
 ! Author: William.Gustafson@pnl.gov, Nov 2009
 !------------------------------------------------------------------------
-#if (defined(non_hydrostatic_core) || defined(hydrostatic_core))
+#if defined(mpas)
   use mpas_atmphys_utilities
 #else
   use module_state_description, only: param_num_moist
@@ -30,7 +30,7 @@ MODULE module_cam_support
 
 
 ! From constituents in CAM...
-#if (defined(non_hydrostatic_core) || defined(hydrostatic_core))
+#if defined(mpas)
   real(kind=r8),dimension(:),allocatable :: qmin !Minimun constituent concentration. note that
                                                  !qmin is never used in module_ra_cam_support.
                                                  !Laura D. Fowler (05-19-2011).
@@ -87,7 +87,7 @@ CONTAINS
 !!$END FUNCTION cnst_get_type_byind
 
 
-#if (defined(non_hydrostatic_core) || defined(hydrostatic_core))
+#if defined(mpas)
 !------------------------------------------------------------------------
 SUBROUTINE endrun(msg)
 ! Pass through routine to wrf_error_fatal that mimics endrun in module

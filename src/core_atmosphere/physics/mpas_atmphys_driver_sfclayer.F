@@ -49,7 +49,12 @@
 !> WRF physics called from driver_sfclayer:
 !> ----------------------------------------
 !>    * module_sf_sfclay: Monin-Obukhov surface layer scheme.
-
+!>
+!> add-ons and modifications to sourcecode:
+!> ----------------------------------------
+!>    * removed the pre-processor option "do_hydrostatic_pressure" before call to the subroutine
+!>      sfclay.
+!>      Laura D. Fowler (birch.ucar.edu) / 2013-05-29.
 
  contains
 
@@ -295,7 +300,6 @@
 
     case("monin_obukhov")
        dx = sqrt(maxval(mesh % areaCell % array))
-#if defined(do_hydrostatic_pressure)
        call sfclay( &
                    p3d      = pres_hyd_p , psfc     = psfc_p     , t3d      = t_p        , &
                    u3d      = u_p        , v3d      = v_p        , qv3d     = qv_p       , &
@@ -323,37 +327,7 @@
                    ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde , &
                    ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme , &
                    its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte   &
-                 )
-#else
-       call sfclay( &
-                   p3d      = pres_p     , psfc     = psfc_p     , t3d      = t_p        , &
-                   u3d      = u_p        , v3d      = v_p        , qv3d     = qv_p       , &
-                   dz8w     = dz_p       , cp       = cp         , g        = g          , &
-                   rovcp    = rcp        , R        = R_d        , xlv      = xlv        , & 
-                   chs      = chs_p      , chs2     = chs2_p     , cqs2     = cqs2_p     , &
-                   cpm      = cpm_p      , znt      = znt_p      , ust      = ust_p      , &
-                   pblh     = hpbl_p     , mavail   = mavail_p   , zol      = zol_p      , &
-                   mol      = mol_p      , regime   = regime_p   , psim     = psim_p     , &
-                   psih     = psih_p     , fm       = fm_p       , fh       = fh_p       , &
-                   xland    = xland_p    , hfx      = hfx_p      , qfx      = qfx_p      , &
-                   lh       = lh_p       , tsk      = tsk_p      , flhc     = flhc_p     , &
-                   flqc     = flqc_p     , qgh      = qgh_p      , qsfc     = qsfc_p     , &
-                   rmol     = rmol_p     , u10      = u10_p      , v10      = v10_p      , &
-                   th2      = th2m_p     , t2       = t2m_p      , q2       = q2_p       , &
-                   gz1oz0   = gz1oz0_p   , wspd     = wspd_p     , br       = br_p       , &
-                   isfflx   = isfflx     , dx       = dx         , svp1     = svp1       , &
-                   svp2     = svp2       , svp3     = svp3       , svpt0    = svpt0      , &
-                   ep1      = ep_1       , ep2      = ep_2       , karman   = karman     , &
-                   eomeg    = eomeg      , stbolt   = stbolt     , P1000mb  = P0         , &
-                   areaCell = area_p     , ustm     = ustm_p     , ck       = ck_p       , & 
-                   cka      = cka_p      , cd       = cd_p       , cda      = cda_p      , & 
-                   isftcflx = isftcflx   , iz0tlnd  = iz0tlnd    ,                         &
-                   scm_force_flux = scm_force_flux               ,                         & 
-                   ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde , &
-                   ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme , &
-                   its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte   &
-                 )
-#endif
+                  )
         
     case default
 

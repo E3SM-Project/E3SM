@@ -53,7 +53,12 @@
 !> --------------------------------------------
 !>    * module_ra_cam        : CAM long wave radiation code.
 !>    * module_ra_rrtmg_lw   : RRTMG long wave radiation code.
-
+!>
+!> add-ons and modifications to sourcecode:
+!> ----------------------------------------
+!>    * removed the pre-processor option "do_hydrostatic_pressure" before call to subroutines
+!>      rrtmg_lw and camrad.
+!>      Laura D. Fowler (birch.ucar.edu) / 2013-05-29.
 
  contains
 
@@ -533,7 +538,6 @@
 
     case ("rrtmg_lw")
        write(0,*) '--- enter subroutine rrtmg_lwrad:'
-#if defined(do_hydrostatic_pressure)
        call rrtmg_lwrad( &
                 p3d        = pres_hyd_p   , p8w       = pres2_hyd_p , pi3d      = pi_p      , &
                 t3d        = t_p          , t8w       = t2_p        , rho3d     = rho_p     , &
@@ -558,32 +562,6 @@
                 ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme ,       &
                 its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte         &
                        )
-#else
-       call rrtmg_lwrad( &
-                p3d        = pres_p       , p8w       = pres2_p    , pi3d      = pi_p      , &
-                t3d        = t_p          , t8w       = t2_p       , rho3d     = rho_p     , &
-                rthratenlw = rthratenlw_p , lwupt     = lwupt_p    , lwuptc    = lwuptc_p  , &
-                lwdnt      = lwdnt_p      , lwdntc    = lwdntc_p   , lwupb     = lwupb_p   , &
-                lwupbc     = lwupbc_p     , lwdnb     = lwdnb_p    , lwdnbc    = lwdnbc_p  , &
-                lwcf       = lwcf_p       , glw       = glw_p      , olr       = olrtoa_p  , &
-                emiss      = sfc_emiss_p  , tsk       = tsk_p      , dz8w      = dz_p      , &
-                cldfra3d   = cldfrac_p    , r         = R_d        , g         = g         , &
-                icloud     = icloud       , warm_rain = warm_rain  , f_ice_phy = f_ice     , &
-                f_rain_phy = f_rain       , xland     = xland_p    , xice      = xice_p    , &
-                snow       = snow_p       , qv3d      = qv_p       , qc3d      = qc_p      , &
-                qr3d       = qr_p         , qi3d      = qi_p       , qs3d      = qs_p      , &
-                qg3d       = qg_p         , f_qv      = f_qv       , f_qc      = f_qc      , &
-                f_qr       = f_qr         , f_qi      = f_qi       , f_qs      = f_qs      , &
-                f_qg       = f_qg         ,                                                  &
-                !begin optional arguments:
-                !lwupflx   = lwupflx_p    , lwupflxc  = lwupflxc_p , lwdnflx   = lwdnflx_p,  &
-                !lwdnflxc  = lwdnflxc_p   ,                                                  &
-                !end optional arguments.
-                ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde ,      &
-                ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme ,      &
-                its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte        &
-                       )
-#endif
        write(0,*) '--- exit subroutine rrtmg_lwrad'
 
     case ("cam_lw")
@@ -597,8 +575,6 @@
 
        call mpas_timer_start("camrad")
        write(0,*) '--- enter subroutine camrad_lw: doabsems=',doabsems
-       call mpas_timer_start("camrad")
-#if defined(do_hydrostatic_pressure)
        call camrad( dolw = .true. , dosw = .false. ,                                         &
                 p_phy         = pres_hyd_p    , p8w           = pres2_hyd_p   ,              &
                 pi_phy        = pi_p          , t_phy         = t_p           ,              &
@@ -647,57 +623,6 @@
                 ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme ,      &
                 its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte        &
                   )
-#else
-       call camrad( dolw = .true. , dosw = .false. ,                                         &
-                p_phy         = pres_p        , p8w           = pres2_p       ,              &
-                pi_phy        = pi_p          , t_phy         = t_p           ,              &
-                z             = zmid_p        , dz8w          = dz_p          ,              &            
-                rthratenlw    = rthratenlw_p  , rthratensw    = rthratensw_p  ,              &
-                swupt         = swupt_p       , swuptc        = swuptc_p      ,              &
-                swdnt         = swdnt_p       , swdntc        = swdntc_p      ,              &
-                lwupt         = lwupt_p       , lwuptc        = lwuptc_p      ,              &
-                lwdnt         = lwdnt_p       , lwdntc        = lwdntc_p      ,              &
-                swupb         = swupb_p       , swupbc        = swupbc_p      ,              &
-                swdnb         = swdnb_p       , swdnbc        = swdnbc_p      ,              &
-                lwupb         = lwupb_p       , lwupbc        = lwupbc_p      ,              &
-                lwdnb         = lwdnb_p       , lwdnbc        = lwdnbc_p      ,              &
-                swcf          = swcf_p        , lwcf          = lwcf_p        ,              &
-                gsw           = gsw_p         , glw           = glw_p         ,              &
-                olr           = olrtoa_p      , cemiss        = cemiss_p      ,              &
-                taucldc       = taucldc_p     , taucldi       = taucldi_p     ,              & 
-                coszr         = coszr_p       , albedo        = sfc_albedo_p  ,              & 
-                emiss         = sfc_emiss_p   , tsk           = tsk_p         ,              & 
-                xlat          = xlat_p        , xlong         = xlon_p        ,              &
-                rho_phy       = rho_p         , qv3d          = qv_p          ,              & 
-                qc3d          = qc_p          , qr3d          = qr_p          ,              &
-                qi3d          = qi_p          , qs3d          = qs_p          ,              &
-                qg3d          = qg_p          , f_qv          = f_qv          ,              &
-                f_qc          = f_qc          , f_qr          = f_qr          ,              &
-                f_qi          = f_qi          , f_qs          = f_qs          ,              &
-                f_qg          = f_qg          , f_ice_phy     = f_ice         ,              &
-                f_rain_phy    = f_rain        , cldfra        = cldfrac_p     ,              &
-                xland         = xland_p       , xice          = xice_p        ,              &
-                num_months    = num_months    , levsiz        = num_oznlevels ,              & 
-                pin0          = pin_p         , ozmixm        = ozmixm_p      ,              &
-                paerlev       = num_aerlevels , naer_c        = num_aerosols  ,              &
-                m_psp         = m_psp_p       , m_psn         = m_psn_p       ,              &
-                aerosolcp     = aerosolcp_p   , aerosolcn     = aerosolcn_p   ,              &
-                m_hybi0       = m_hybi_p      , snow          = snow_p        ,              &
-                cam_abs_dim1  = cam_abs_dim1  , cam_abs_dim2  = cam_abs_dim2  ,              &
-                gmt           = gmt           , yr            = year          ,              &
-                julday        = julday        , julian        = curr_julday   ,              &
-                dt            = dt_dyn        , xtime         = xtime_m       ,              &
-                declin        = declin        , solcon        = solcon        ,              &
-                radt          = radt          , degrad        = degrad        ,              &
-                n_cldadv      = 3             , abstot_3d     = abstot_p      ,              &
-                absnxt_3d     = absnxt_p      , emstot_3d     = emstot_p      ,              &
-                doabsems      = doabsems      ,                                              &
-                ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde ,      &
-                ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme ,      &
-                its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte        &
-                  )
-#endif
-      call mpas_timer_stop("camrad")
 
     case default
 

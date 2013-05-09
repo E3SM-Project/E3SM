@@ -15,7 +15,7 @@ MODULE module_cu_kfeta
 
 CONTAINS
 
-#if (defined(non_hydrostatic_core) || defined(hydrostatic_core))
+#if defined(mpas)
    SUBROUTINE KF_eta_CPS(                                      &
               ids,ide, jds,jde, kds,kde                        &
              ,ims,ime, jms,jme, kms,kme                        &
@@ -90,7 +90,7 @@ CONTAINS
 !This is particularly important when using global variable-mesh resolution. Here
 !we define dx as the area of the grid-cell (note that in wrf, dx is actually the
 !west-east length of the grid-cell.)
-#if (defined(non_hydrostatic_core) || defined(hydrostatic_core))
+#if defined(mpas)
    real,intent(in):: dt
    real,intent(in),dimension(ims:ime,jms:jme):: areaCell
 #else
@@ -168,7 +168,7 @@ CONTAINS
                                                       DQSDT, &
                                                        DTDT
 
-#if (defined(non_hydrostatic_core) || defined(hydrostatic_core))
+#if defined(mpas)
    real:: tst,tv,prs,rhoe,w0,scr1,dx,dxsq,tmp
 #else
    REAL    ::         TST,tv,PRS,RHOE,W0,SCR1,DXSQ,tmp
@@ -180,7 +180,7 @@ CONTAINS
    LOGICAL :: run_param
    
 !
-#if !(defined(non_hydrostatic_core) || defined(hydrostatic_core))
+#if !(defined(mpas))
    DXSQ=DX*DX
 #endif
 
@@ -272,7 +272,7 @@ CONTAINS
             CU_ACT_FLAG(i,j) = .false.
          ELSE
 
-#if (defined(non_hydrostatic_core) || defined(hydrostatic_core))
+#if defined(mpas)
             dxsq = areaCell(i,j)
             dx   = sqrt(dxsq)
 !           write(0,201) j,i,dxsq,dx

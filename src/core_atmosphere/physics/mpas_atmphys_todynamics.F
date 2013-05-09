@@ -186,22 +186,14 @@
 
 !if non-hydrostatic core, convert the tendency for the potential temperature to a
 !tendency for the modified potential temperature:
-#ifdef non_hydrostatic_core
-    do i = 1, nCellsSolve
-    do k = 1, nVertLevels
-       theta(k,i) = theta_m(k,i) / (1. + R_v/R_d * qv(k,i))
-       tend_th(k,i) = (1. + R_v/R_d * qv(k,i)) * tend_th(k,i) &
-                       + R_v/R_d * theta(k,i) * tend_scalars(tend%index_qv,k,i)
-       tend_theta(k,i) = tend_theta(k,i) + tend_th(k,i)
-    enddo
-    enddo
-#elif hydrostatic_core
-    do i = 1, nCellsSolve
-    do k = 1, nVertLevels
-       tend_theta(k,i) = tend_theta(k,i) + tend_th(k,i)
-    enddo
-    enddo
-#endif
+ do i = 1, nCellsSolve
+ do k = 1, nVertLevels
+    theta(k,i) = theta_m(k,i) / (1. + R_v/R_d * qv(k,i))
+    tend_th(k,i) = (1. + R_v/R_d * qv(k,i)) * tend_th(k,i) &
+                    + R_v/R_d * theta(k,i) * tend_scalars(tend%index_qv,k,i)
+    tend_theta(k,i) = tend_theta(k,i) + tend_th(k,i)
+ enddo
+ enddo
  deallocate(theta)
  deallocate(tend_th)
 

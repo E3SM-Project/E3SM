@@ -29,7 +29,7 @@ contains
                   its,ite, jts,jte, kts,kte,                                   &
                 !optional
                   regime                                                       &
-#if defined(non_hydrostatic_core) || defined(hydrostatic_core)
+#if defined(mpas)
                 !MPAS specific optional arguments for additional diagnostics:
                   ,rho,kzhout,kzmout,kzqout                                    &
 #endif
@@ -201,7 +201,7 @@ contains
                                                                         dvsfc, &
                                                                         dtsfc, &
                                                                         dqsfc
-#if defined(non_hydrostatic_core) || defined(hydrostatic_core)
+#if defined(mpas)
 !MPAS specific optional arguments for additional diagnostics (Laura Fowler = 2013-03-06):
    real,intent(in),dimension(ims:ime,kms:kme,jms:jme),optional:: rho
    real:: rho_d
@@ -286,7 +286,7 @@ contains
               ,dt=dt,rcl=1.0,kpbl1d=kpbl2d(ims,j)                              &
               ,exch_hx=exch_h(ims,kms,j)                                       &
               ,u10=u10(ims,j),v10=v10(ims,j)                                   &
-#if defined(non_hydrostatic_core) || defined(hydrostatic_core)
+#if defined(mpas)
 !MPAS specific optional arguments for additional diagnostics:
               ,kzh=kzhout(ims,kms,j)                                           & 
               ,kzm=kzmout(ims,kms,j)                                           &
@@ -329,7 +329,7 @@ contains
                   its,ite, jts,jte, kts,kte,                                   &
                 !optional
                   regime                                                       &
-#if defined(non_hydrostatic_core) || defined(hydrostatic_core)
+#if defined(mpas)
                 !MPAS specific optional arguments for additional diagnostics:
                  ,kzh,kzm,kzq                                                  &
 #endif
@@ -552,7 +552,7 @@ contains
                dsdzu,dsdzv,wm3,dthx,dqx,wspd10,ross,tem1,dsig,tvcon,conpr,     &
                prfac,prfac2,phim8z
 !
-#if defined (non_hydrostatic_core) || defined(hydrostatic_core)
+#if defined(mpas)
 !MPAS specific begin (Laura Fowler - 2013-03-01):
    real,intent(out),dimension(ims:ime,kms:kme),optional::kzh,kzm,kzq
 !MPAS specific end.

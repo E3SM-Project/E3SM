@@ -8,7 +8,7 @@
 
 MODULE module_mp_wsm6
 !
-!#if defined(non_hydrostatic_core) || defined(hydrostatic_code)
+!#if defined(mpas)
 !   USE mpas_atmphys_utilities
 !#else
 !   USE module_utility, ONLY: WRFU_Clock, WRFU_Alarm
@@ -122,7 +122,7 @@ CONTAINS
                                                               sr
 
 !+---+-----------------------------------------------------------------+
-#if defined(non_hydrostatic_core) | defined(hydrostatic_core)
+#if defined(mpas)
   REAL, DIMENSION(ims:ime, kms:kme, jms:jme), INTENT(INOUT),optional:: &  ! GT
                                                        refl_10cm
 #else

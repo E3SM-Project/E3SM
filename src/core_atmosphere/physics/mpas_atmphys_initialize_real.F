@@ -473,7 +473,7 @@
 !input arguments: 
  type(mesh_type),intent(in):: mesh
 
-#if !defined(non_hydrostatic_core)
+#if !defined(MPAS)
 !inout arguments: this subroutine is called from the MPAS initialization side.
  type(fg_type),intent(inout):: input
 #else

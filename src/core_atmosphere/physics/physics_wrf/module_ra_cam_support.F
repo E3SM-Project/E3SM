@@ -2910,7 +2910,7 @@ subroutine gestbl(tmn     ,tmx     ,trice   ,ip      ,epsil   , &
 !-----pcf(5) = -2.14444472424e-04
 !-----pcf(6) = -1.36639103771e-06
 !
-#if !(defined(non_hydrostatic_core) || defined(hydrostatic_core))
+#if !defined(mpas)
    if (masterproc) then
       write(6,*)' *** SATURATION VAPOR PRESSURE TABLE COMPLETED ***'
    end if
@@ -3172,7 +3172,7 @@ end function findvalue
 !the initialization of the longwave radiation code. Initialization is handled the same way
 !for the shortwave radiation code.
 
-#if !(defined(non_hydrostatic_core) || defined(hydrostatic_core))
+#if !defined(mpas)
 
 subroutine radini(gravx   ,cpairx  ,epsilox ,stebolx, pstdx )
 !----------------------------------------------------------------------- 

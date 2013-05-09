@@ -37,11 +37,15 @@
 !> driver_pbl    : main driver (called from subroutine physics_driver).
 !> pbl_from_MPAS : initialize local arrays.
 !> pbl_to_MPAS   : copy local arrays to MPAS arrays.
-
+!>
 !> WRF physics called from driver_pbl:
 !> -----------------------------------
 !>    * module_bl_ysu : YSU PBL scheme.
-
+!>
+!> add-ons and modifications to sourcecode:
+!> ----------------------------------------
+!>    * removed the pre-processor option "do_hydrostatic_pressure" before call to subroutine ysu.
+!>      Laura D. Fowler (birch.ucar.edu) / 2013-05-29.
 
  contains
 
@@ -233,7 +237,6 @@
  pbl_select: select case (trim(pbl_scheme))
 
     case("ysu")
-#if defined(do_hydrostatic_pressure)
        call ysu ( &
                  p3d      = pres_hyd_p , p3di     = pres2_hyd_p , psfc     = psfc_p     , &
                  th3d     = th_p       , t3d      = t_p         , dz8w     = dz_p       , &
@@ -256,30 +259,6 @@
                  ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme  , &
                  its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte    &
                 )
-#else
-       call ysu ( &
-                 p3d      = pres_p     , p3di     = pres2_p     , psfc     = psfc_p     , &
-                 th3d     = th_p       , t3d      = t_p         , dz8w     = dz_p       , &
-                 pi3d     = pi_p       , u3d      = u_p         , v3d      = v_p        , &
-                 qv3d     = qv_p       , qc3d     = qc_p        , qi3d     = qi_p       , &
-                 rublten  = rublten_p  , rvblten  = rvblten_p   , rthblten = rthblten_p , &
-                 rqvblten = rqvblten_p , rqcblten = rqcblten_p  , rqiblten = rqiblten_p , & 
-                 flag_qi  = f_qi       , cp       = cp          , g        = g          , &
-                 rovcp    = rcp        , rd       = R_d         , rovg     = rdg        , & 
-                 ep1      = ep_1       , ep2      = ep_2        , karman   = karman     , &
-                 xlv      = xlv        , rv       = R_v         , znt      = znt_p      , &
-                 ust      = ust_p      , hpbl     = hpbl_p      , psim     = psim_p     , &
-                 psih     = psih_p     , xland    = xland_p     , hfx      = hfx_p      , &
-                 qfx      = qfx_p      , wspd     = wspd_p      , br       = br_p       , &
-                 dt       = dt_pbl     , kpbl2d   = kpbl_p      , exch_h   = exch_p     , &
-                 u10      = u10_p      , v10      = v10_p       , ctopo    = ctopo_p    , & 
-                 ctopo2   = ctopo2_p   , regime   = regime_p    , rho      = rho_p      , &
-                 kzhout   = kzh_p      , kzmout   = kzm_p       , kzqout   = kzq_p      , &
-                 ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde  , &
-                 ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme  , &
-                 its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte    &
-                )
-#endif
 
      case default
 

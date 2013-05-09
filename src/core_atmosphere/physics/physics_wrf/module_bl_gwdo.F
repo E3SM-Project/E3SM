@@ -67,7 +67,7 @@ contains
   integer, intent(in ) :: itimestep
 !
 !MPAS specific (Laura D. Fowler 2013-02-12):
-#if defined(non_hydrostatic_core)
+#if defined(mpas)
   real, intent(in ) :: dt,cp,g,rd,rv,ep1,pi
   real, intent(in), dimension(ims:ime,jms:jme):: dx
 #else
@@ -172,7 +172,7 @@ contains
               ,oa4=oa4,ol4=ol4 &
               ,g=g,cp=cp,rd=rd,rv=rv,fv=ep1,pi=pi &
 !MPAS specific (Laura D. Fowler 2013-02-12): 
-#if defined(non_hydrostatic_core)
+#if defined(mpas)
               ,dxmeter=dx(ims,j),deltim=dt &
 #else
               ,dxmeter=dx,deltim=dt &
@@ -250,7 +250,7 @@ contains
                             its,ite, jts,jte, kts,kte
 !
 !MPAS specific (Laura D. Fowler 2013-02-12):
-#if defined(non_hydrostatic_core)
+#if defined(mpas)
    real :: g,rd,rv,fv,cp,pi,deltim,rcl
    real, dimension(ims:ime):: dxmeter
 #else
@@ -294,7 +294,7 @@ contains
                             klcap,kp1,ikount,kk
 !
 !MPAS specific (Laura D. Fowler 2013-02-12):
-#if defined(non_hydrostatic_core)
+#if defined(mpas)
    real :: rcs,rclcs,csg,fdir,cs,rcsks, &
                             wdir,ti,rdz,temp,tem2,dw2,shr2,bvf2,rdelks, &
                             wtkbj,coefm,tem,gfobnv,hd,fro,rim,temc,tem1,efact, &
@@ -350,7 +350,7 @@ contains
 !!!!!!! the bigger (smaller) value produce weaker (stronger) wave drag
 !
 !MPAS specific (Laura D. Fowler 2013-02-13):
-#if defined(non_hydrostatic_core)
+#if defined(mpas)
    do i = its, ite
       cleff(i) = max(dxmeter(i),50.e3)
    enddo
@@ -601,7 +601,7 @@ contains
        efact = min( max(efact,efmin), efmax )
        coefm = (1. + ol(i)) ** (oa(i)+1.)
 !MPAS specific (Laura D. Fowler 2013-02-12):
-#if defined (non_hydrostatic_core)
+#if defined(mpas)
        xlinv(i) = coefm / cleff(i)
 #else
        xlinv(i) = coefm / cleff

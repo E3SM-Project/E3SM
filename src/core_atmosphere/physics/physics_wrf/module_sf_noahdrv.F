@@ -1355,8 +1355,7 @@ CONTAINS
 !that it would be cleaner to do this instead of adding a lot of #ifdef statements throughout
 !the initialization subroutine.
 
-!#ifndef non_hydrostatic_core
-#if !(defined(non_hydrostatic_core) || defined(hydrostatic_core))
+#if !defined(mpas)
 
 
   SUBROUTINE LSMINIT(VEGFRA,SNOW,SNOWC,SNOWH,CANWAT,SMSTAV,    &

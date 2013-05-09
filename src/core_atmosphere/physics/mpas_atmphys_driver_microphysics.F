@@ -12,11 +12,7 @@
  
  use mpas_atmphys_constants
  use mpas_atmphys_vars
-#ifdef non_hydrostatic_core
  use mpas_atmphys_interface_nhyd
-#elif hydrostatic_core
- use mpas_atmphys_interface_hyd
-#endif
 
 !wrf physics:
  use module_mp_kessler
@@ -283,17 +279,11 @@
  end if
 
 !... copy updated precipitation from the wrf-physics grid back to the geodesic-dynamics grid:
-
  call precip_to_MPAS(config_bucket_rainnc,diag_physics)
 
 !... copy updated cloud microphysics variables from the wrf-physics grid back to the geodesic-
 !    dynamics grid:
-
-#ifdef non_hydrostatic_core
  call microphysics_to_MPAS(mesh,state,diag,tend,itimestep)
-#elif hydrostatic_core
- call microphysics_to_MPAS(state,tend)
-#endif
 
 !... deallocation of all microphysics arrays:
  call deallocate_microphysics

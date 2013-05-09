@@ -220,7 +220,7 @@ subroutine camrad(RTHRATENLW,RTHRATENSW,                           &
                      ims,ime, jms,jme, kms,kme,                    &
                      its,ite, jts,jte, kts,kte                     )
 
-#if (defined(non_hydrostatic_core) || defined(hydrostatic_core))
+#if defined(mpas)
    USE mpas_atmphys_utilities
 #else
    USE module_wrf_error
@@ -427,7 +427,7 @@ subroutine camrad(RTHRATENLW,RTHRATENSW,                           &
 
 !  if(naer_c.ne.naer) then
 !            WRITE( wrf_err_message , * ) 'naer_c ne naer ', naer_c, naer
-#if (defined(non_hydrostatic_core) || defined(hydrostatic_core))
+#if defined(mpas)
    if(naer_c.ne.naer_all) then
       write(mpas_err_message,*) 'naer_c-1 ne naer_all ', naer_c, naer_all
       call physics_error_fatal(mpas_err_message)
@@ -472,7 +472,7 @@ subroutine camrad(RTHRATENLW,RTHRATENSW,                           &
       enddo
 
 ! check for uninitialized arrays
-#if (defined(non_hydrostatic_core) || defined(hydrostatic_core))
+#if defined(mpas)
       if(abstot_3d(its,kts,kts,jts) .eq. 0.0 .and. .not.doabsems .and. dolw) then
         write(mpas_err_message,*) '   camrad lw: CAUTION: re-calculating abstot,absnxt, on restart'
         call physics_message(mpas_err_message)
@@ -545,7 +545,7 @@ subroutine camrad(RTHRATENLW,RTHRATENSW,                           &
       enddo
 
 !ldf (05-15-2011): In MPAS num_months ranges from 1 to 12 (instead of 2 to 13 in WRF):
-#if (defined(non_hydrostatic_core) || defined(hydrostatic_core))
+#if defined(mpas)
       do m=1,num_months
       do k=1,levsiz
       do i = its,ite
@@ -792,7 +792,7 @@ end subroutine camrad
 !the initialization of the longwave radiation code. Initialization is handled the same way
 !for the shortwave radiation code.
 
-#if !(defined(non_hydrostatic_core) || defined(hydrostatic_core))
+#if !(defined(mpas))
 !====================================================================
    SUBROUTINE camradinit(                                           &
                          R_D,R_V,CP,G,STBOLT,EP_2,shalf,pptop,               &

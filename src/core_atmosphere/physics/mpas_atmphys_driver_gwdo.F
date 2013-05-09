@@ -42,7 +42,11 @@
 !> WRF physics called from driver_gwdo:
 !> --------------------------- --------
 !>    * module_bl_gwdo       : parameterization of gravity wave drag over orography. 
-
+!>
+!> add-ons and modifications to sourcecode:
+!> ----------------------------------------
+!>    * removed the pre-processor option "do_hydrostatic_pressure" before call to subroutine gwdo. 
+!>      Laura D. Fowler (birch.ucar.edu) / 2013-05-29.
 
  contains
 
@@ -223,7 +227,6 @@
  gwdo_select: select case (trim(gwdo_scheme))
 
     case("ysu_gwdo")
-#if defined(do_hydrostatic_pressure)
        call gwdo ( &
                   p3d       = pres_hydd_p , p3di      = pres2_hydd_p , pi3d    = pi_p      , &
                   u3d       = u_p         , v3d       = v_p          , t3d     = t_p       , & 
@@ -241,7 +244,6 @@
                   ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme ,    &
                   its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte      &
                  )
-#endif
 
      case default
 

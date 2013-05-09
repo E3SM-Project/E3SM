@@ -11286,7 +11286,7 @@ contains
 !------------------------------------------------------------------
 MODULE module_ra_rrtmg_lw
 
-#if defined(non_hydrostatic_core) || defined(hydrostatic_core)
+#if defined(mpas)
 !MPAS specific (Laura D. Fowler):
  use mpas_atmphys_constants,only: cp
 #else
@@ -12104,7 +12104,7 @@ CONTAINS
 !the initialization of the longwave radiation code. Initialization is handled the same way
 !for the shortwave radiation code.
 
-#if !(defined(non_hydrostatic_core) || defined(hydrostatic_core))
+#if !(defined(mpas))
 
 !====================================================================
    SUBROUTINE rrtmg_lwinit(                                         &

@@ -55,6 +55,11 @@
 !> ------------------------ ----------
 !>    * module_sf_noahdrv : NOAH 4-layers land surface scheme.
 !>
+!> add-ons and modifications to sourcecode:
+!> ----------------------------------------
+!>    * removed the pre-processor option "do_hydrostatic_pressure" before call to subroutine lsm.
+!>      Laura D. Fowler (birch.ucar.edu) / 2013-05-29.
+!>
 !> DOCUMENTATION:
 !> ./physics_wrf/module_sf_noahdrv.F: main driver for the "NOAH" land-surface parameterization.
 !> In the argument list,I added "OPTIONAL" to the declaration of a few arrays to avoid compiling
@@ -430,8 +435,6 @@
  lsm_select: select case (trim(lsm_scheme))
 
     case("noah")
-#if defined(do_hydrostatic_pressure)
-!... REARRANGED CALL USING HYDROSTATIC PRESSURE:
        call lsm( &
                 dz8w      = dz_p      , p8w3d     = pres2_hyd_p  , t3d       = t_p          , &  
                 qv3d      = qv_p      , xland     = xland_p      , xice      = xice_p       , &
@@ -468,44 +471,6 @@
                 ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme ,       &
                 its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte         &
                )
-#else
-       call lsm( &
-                dz8w      = dz_p      , p8w3d     = pres2_p      , t3d       = t_p          , &  
-                qv3d      = qv_p      , xland     = xland_p      , xice      = xice_p       , &
-                ivgtyp    = ivgtyp_p  , isltyp    = isltyp_p     , tmn       = tmn_p        , &
-                vegfra    = vegfra_p  , shdmin    = shdmin_p     , shdmax    = shdmax_p     , &
-                snoalb    = snoalb_p  , glw       = glw_p        , gsw       = gsw_p        , &
-                swdown    = swdown_p  , rainbl    = rainbl_p     , embck     = sfc_emibck_p , & 
-                sr        = sr_p      , qgh       = qgh_p        , cpm       = cpm_p        , &
-                qz0       = qz0_p     , tsk       = tsk_p        , hfx       = hfx_p        , & 
-                qfx       = qfx_p     , lh        = lh_p         , grdflx    = grdflx_p     , &
-                qsfc      = qsfc_p    , cqs2      = cqs2_p       , chs       = chs_p        , &
-                chs2      = chs2_p    , snow      = snow_p       , snowc     = snowc_p      , &
-                snowh     = snowh_p   , canwat    = canwat_p     , smstav    = smstav_p     , &
-                smstot    = smstot_p  , sfcrunoff = sfcrunoff_p  , udrunoff  = udrunoff_p   , &               
-                acsnom    = acsnom_p  , acsnow    = acsnow_p     , snotime   = snotime_p    , &
-                snopcx    = snopcx_p  , emiss     = sfc_emiss_p  , rib       = br_p         , &
-                potevp    = potevp_p  , albedo    = sfc_albedo_p , albbck    = sfc_albbck_p , &
-                z0        = z0_p      , znt       = znt_p        , lai       = lai_p        , &
-                noahres   = noahres_p , chklowq   = chklowq_p    , sh2o      = sh2o_p       , &
-                smois     = smois_p   , tslb      = tslb_p       , smcrel    = smcrel_p     , &
-                dzs       = dzs_p     , isurban   = isurban      , isice     = isice        , &                
-                rovcp     = rcp       , dt        = dt_pbl       , myj       = myj          , &
-                itimestep = itimestep , frpcpn    = frpcpn       , rdlai2d   = rdlai2d      , &
-                xice_threshold   = xice_threshold     ,                                       &
-                usemonalb        = config_sfc_albedo  ,                                       &
-                mminlu           = input_landuse_data ,                                       &
-                num_soil_layers  = num_soil_layers    ,                                       &         
-                num_roof_layers  = num_soil_layers    ,                                       &
-                num_wall_layers  = num_soil_layers    ,                                       &
-                num_road_layers  = num_soil_layers    ,                                       &
-                num_urban_layers = num_soil_layers    ,                                       &
-                sf_urban_physics = sf_urban_physics   ,                                       &
-                ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde ,       &
-                ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme ,       &
-                its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte         &
-               )
-#endif
 
     case default
 

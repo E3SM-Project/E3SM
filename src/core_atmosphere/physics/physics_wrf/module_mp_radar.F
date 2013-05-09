@@ -22,7 +22,7 @@
 
 MODULE module_mp_radar
 
-#if defined(non_hydrostatic_core) || defined(hydrostatic_core)
+#if defined(mpas)
       USE mpas_atmphys_utilities
 #else
       USE module_wrf_error
@@ -389,7 +389,7 @@ CONTAINS
 
        if (matrix .eq. 'air') then
         write(radar_debug,*) 'GET_M_MIX_NESTED: bad matrix: ', matrix
-#if defined(non_hydrostatic_core) | defined(hydrostatic_core)
+#if defined(mpas)
         call physics_message(radar_debug)
 #else
         CALL wrf_debug(150, radar_debug)
@@ -415,7 +415,7 @@ CONTAINS
         else
          write(radar_debug,*) 'GET_M_MIX_NESTED: bad hostmatrix: ',        &
                            hostmatrix
-#if defined(non_hydrostatic_core) | defined(hydrostatic_core)
+#if defined(mpas)
         call physics_message(radar_debug)
 #else
          CALL wrf_debug(150, radar_debug)
@@ -428,7 +428,7 @@ CONTAINS
 
        if (matrix .eq. 'ice') then
         write(radar_debug,*) 'GET_M_MIX_NESTED: bad matrix: ', matrix
-#if defined(non_hydrostatic_core) | defined(hydrostatic_core)
+#if defined(mpas)
         call physics_message(radar_debug)
 #else
         CALL wrf_debug(150, radar_debug)
@@ -454,7 +454,7 @@ CONTAINS
         else
          write(radar_debug,*) 'GET_M_MIX_NESTED: bad hostmatrix: ',        &
                            hostmatrix
-#if defined(non_hydrostatic_core) | defined(hydrostatic_core)
+#if defined(mpas)
         call physics_message(radar_debug)
 #else
          CALL wrf_debug(150, radar_debug)
@@ -467,7 +467,7 @@ CONTAINS
 
        if (matrix .eq. 'water') then
         write(radar_debug,*) 'GET_M_MIX_NESTED: bad matrix: ', matrix
-#if defined(non_hydrostatic_core) | defined(hydrostatic_core)
+#if defined(mpas)
         call physics_message(radar_debug)
 #else
         CALL wrf_debug(150, radar_debug)
@@ -493,7 +493,7 @@ CONTAINS
         else
          write(radar_debug,*) 'GET_M_MIX_NESTED: bad hostmatrix: ',         &
                            hostmatrix
-#if defined(non_hydrostatic_core) | defined(hydrostatic_core)
+#if defined(mpas)
         call physics_message(radar_debug)
 #else
          CALL wrf_debug(150, radar_debug)
@@ -511,7 +511,7 @@ CONTAINS
         
       else
        write(radar_debug,*) 'GET_M_MIX_NESTED: unknown matrix: ', host
-#if defined(non_hydrostatic_core) | defined(hydrostatic_core)
+#if defined(mpas)
         call physics_message(radar_debug)
 #else
        CALL wrf_debug(150, radar_debug)
@@ -521,7 +521,7 @@ CONTAINS
 
       IF (cumulerror .ne. 0) THEN
        write(radar_debug,*) 'GET_M_MIX_NESTED: error encountered'
-#if defined(non_hydrostatic_core) | defined(hydrostatic_core)
+#if defined(mpas)
         call physics_message(radar_debug)
 #else
        CALL wrf_debug(150, radar_debug)
@@ -558,7 +558,7 @@ CONTAINS
                            m_a, m_w, m_i, inclusion, error)
        else
         write(radar_debug,*) 'GET_M_MIX: unknown matrix: ', matrix
-#if defined(non_hydrostatic_core) | defined(hydrostatic_core)
+#if defined(mpas)
         call physics_message(radar_debug)
 #else
         CALL wrf_debug(150, radar_debug)
@@ -568,7 +568,7 @@ CONTAINS
 
       else
        write(radar_debug,*) 'GET_M_MIX: unknown mixingrule: ', mixingrule
-#if defined(non_hydrostatic_core) | defined(hydrostatic_core)
+#if defined(mpas)
         call physics_message(radar_debug)
 #else
        CALL wrf_debug(150, radar_debug)
@@ -578,7 +578,7 @@ CONTAINS
 
       if (error .ne. 0) then
        write(radar_debug,*) 'GET_M_MIX: error encountered'
-#if defined(non_hydrostatic_core) | defined(hydrostatic_core)
+#if defined(mpas)
         call physics_message(radar_debug)
 #else
        CALL wrf_debug(150, radar_debug)
@@ -606,7 +606,7 @@ CONTAINS
       if (DABS(vol1+vol2+vol3-1.0d0) .gt. 1d-6) then
        write(radar_debug,*) 'M_COMPLEX_MAXWELLGARNETT: sum of the ',       &
               'partial volume fractions is not 1...ERROR'
-#if defined(non_hydrostatic_core) | defined(hydrostatic_core)
+#if defined(mpas)
         call physics_message(radar_debug)
 #else
        CALL wrf_debug(150, radar_debug)
@@ -629,7 +629,7 @@ CONTAINS
       else
        write(radar_debug,*) 'M_COMPLEX_MAXWELLGARNETT: ',                  &
                          'unknown inclusion: ', inclusion
-#if defined(non_hydrostatic_core) | defined(hydrostatic_core)
+#if defined(mpas)
         call physics_message(radar_debug)
 #else
        CALL wrf_debug(150, radar_debug)

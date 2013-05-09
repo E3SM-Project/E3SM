@@ -1,9 +1,6 @@
 MODULE module_sf_noahlsm
 
-#ifdef non_hydrostatic_core
-!MPAS specific (Laura D. Fowler):
-use mpas_atmphys_constants, rhowater => rho_w
-#elif hydrostatic_core
+#if defined(mpas)
 !MPAS specific (Laura D. Fowler):
 use mpas_atmphys_constants, rhowater => rho_w
 #else

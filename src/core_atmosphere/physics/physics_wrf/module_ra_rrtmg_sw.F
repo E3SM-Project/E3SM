@@ -9568,7 +9568,7 @@
 !------------------------------------------------------------------
 MODULE module_ra_rrtmg_sw
 
-#if defined(non_hydrostatic_core) || defined(hydrostatic_core)
+#if defined(mpas)
 !MPAS specific (Laura D. Fowler - 2013-03-11):
 use mpas_atmphys_constants,only: cp
 #else
@@ -10557,7 +10557,7 @@ CONTAINS
 !the initialization of the shortwave radiation code. Initialization is handled the same way
 !for the longwave radiation code.
 
-#if !(defined(non_hydrostatic_core) || defined(hydrostatic_core))
+#if !(defined(mpas))
  
 !====================================================================
    SUBROUTINE rrtmg_swinit(                                         &

@@ -25,7 +25,7 @@ CONTAINS
                      ims,ime, jms,jme, kms,kme,                    &
                      its,ite, jts,jte, kts,kte,                    &
                      ustm,ck,cka,cd,cda,isftcflx,iz0tlnd,scm_force_flux &
-#if defined(non_hydrostatic_core) || defined(hydrostatic_core)
+#if defined(mpas)
                     ,areaCell                                      &
 #endif
                     )
@@ -188,7 +188,7 @@ CONTAINS
       INTEGER,  OPTIONAL,  INTENT(IN )   ::     ISFTCFLX, IZ0TLND
       INTEGER,  OPTIONAL,  INTENT(IN )   ::     SCM_FORCE_FLUX
 
-#if defined(non_hydrostatic_core) || defined(hydrostatic_core)
+#if defined(mpas)
 !MPAS specific (Laura D. Fowler - 2013-03-06):
       real,intent(in),dimension(ims:ime,jms:jme),optional:: areaCell
 !MPAS specific end.
@@ -238,7 +238,7 @@ CONTAINS
                 ids,ide, jds,jde, kds,kde,                         &
                 ims,ime, jms,jme, kms,kme,                         &
                 its,ite, jts,jte, kts,kte                          &
-#if defined(non_hydrostatic_core) || defined(hydrostatic_core)
+#if defined(mpas)
 !MPAS specific (Laura D. Fowler - 2013-03-06):
                ,isftcflx,iz0tlnd,scm_force_flux,                   &
                USTM(ims,j),CK(ims,j),CKA(ims,j),                   &
@@ -269,7 +269,7 @@ CONTAINS
                      ims,ime, jms,jme, kms,kme,                    &
                      its,ite, jts,jte, kts,kte,                    &
                      isftcflx, iz0tlnd, scm_force_flux,            &
-#if defined(non_hydrostatic_core) || defined(hydrostatic_core)
+#if defined(mpas)
 !MPAS specific (Laura D. Fowler - 2013-03-06):
                      ustm,ck,cka,cd,cda,areaCell                   )
 #else
@@ -351,7 +351,7 @@ CONTAINS
       INTEGER,  OPTIONAL,  INTENT(IN )   ::     ISFTCFLX, IZ0TLND
       INTEGER,  OPTIONAL,  INTENT(IN )   ::     SCM_FORCE_FLUX
 
-#if defined(non_hydrostatic_core) || defined(hydrostatic_core)
+#if defined(mpas)
 !MPAS specific (Laura D. Fowler - 2013-03-06):
       real,intent(in),dimension(ims:ime),optional:: areaCell
 !MPAS specific end.

@@ -51,6 +51,11 @@
 !>    * module_cu_kfeta      : Kain-Fritsch convection scheme.
 !>    * module_cu_tiedtke    : Tiedtke convection scheme.
 
+!> add-ons and modifications to sourcecode:
+!> ----------------------------------------
+!>    * removed the pre-processor option "do_hydrostatic_pressure" before call to the subroutines 
+!>      kf_eta_cps and tiedtke.
+!>      Laura D. Fowler (birch.ucar.edu) / 2013-05-29.
 
  contains
 
@@ -282,10 +287,9 @@
        else
           ktau = itimestep + 1
        endif
-#if defined(do_hydrostatic_pressure)
+
        call  kf_eta_cps ( &
              pcps      = pres_hyd_p , t               = t_p             ,            &
-!            dt        = dt_dyn     , ktau            = itimestep       ,            &
              dt        = dt_dyn     , ktau            = ktau            ,            &
              areaCell  = area_p     , cudt            = cudt            ,            &
              curr_secs = curr_secs  , adapt_step_flag = adapt_step_flag ,            &
@@ -314,43 +318,9 @@
              ims = ims , ime = ime , jms = jms , jme = jme , kms = kds , kme = kme , &
              its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte   &
                         )
-#else
-       call  kf_eta_cps ( &
-             pcps      = pres_p     , t               = t_p             ,            &
-!            dt        = dt_dyn     , ktau            = itimestep       ,            &
-             dt        = dt_dyn     , ktau            = ktau            ,            &
-             areaCell  = area_p     , cudt            = cudt            ,            &
-             curr_secs = curr_secs  , adapt_step_flag = adapt_step_flag ,            &
-             rho       = rho_p      , raincv          = raincv_p        ,            &
-             pratec    = pratec_p   , nca             = nca_p           ,            &
-             u         = u_p        , v               = v_p             ,            &
-             th        = th_p       , pi              = pi_p            ,            &
-             w         = w_p        , dz8w            = dz_p            ,            &
-             w0avg     = w0avg_p    , xlv0            = xlv0            ,            &
-             xlv1      = xlv1       , xls0            = xls0            ,            &
-             xls1      = xls1       , cp              = cp              ,            &
-             r         = r_d        , g               = g               ,            &
-             ep1       = ep_1       , ep2             = ep_2            ,            &
-             svp1      = svp1       , svp2            = svp2            ,            &
-             svp3      = svp3       , svpt0           = svpt0           ,            &
-             stepcu    = n_cu       , cu_act_flag     = cu_act_flag     ,            &
-             warm_rain = warm_rain  , cutop           = cutop_p         ,            &
-             cubot     = cubot_p    , qv              = qv_p            ,            &
-             f_qv      = f_qv       , f_qc            = f_qc            ,            &
-             f_qr      = f_qr       , f_qi            = f_qi            ,            &
-             f_qs      = f_qs       , rthcuten        = rthcuten_p      ,            &
-             rqvcuten  = rqvcuten_p , rqccuten        = rqccuten_p      ,            &
-             rqrcuten  = rqrcuten_p , rqicuten        = rqicuten_p      ,            &
-             rqscuten  = rqscuten_p ,                                                &
-             ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde , &
-             ims = ims , ime = ime , jms = jms , jme = jme , kms = kds , kme = kme , &
-             its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte   &
-                        )
-#endif
 
     case("tiedtke")
        write(0,*) '--- enter subroutine cu_tiedtke:'
-#if defined(do_hydrostatic_pressure)
        call cu_tiedtke ( &
              pcps        = pres_hyd_p  , p8w             = pres2_hyd_p     ,         &
              znu         = znu_hyd_p   , t3d             = t_p             ,         &              
@@ -364,45 +334,16 @@
              qvften      = rqvdynten_p , qvpblten        = rqvdynblten_p   ,         &
              dz8w        = dz_p        , xland           = xland_p         ,         &
              cu_act_flag = cu_act_flag , cudt            = dt_cu           ,         &
-!            curr_secs   = curr_secs   , adapt_step_flag = adapt_step_flag ,         &
-!            cudtacttime = cudtacttime , f_qv            = f_qv            ,         &
-             f_qv        = f_qv        ,                                             &
-             f_qc        = f_qc        , f_qr            = f_qr            ,         &
-             f_qi        = f_qi        , f_qs            = f_qs            ,         &        
-             rthcuten    = rthcuten_p  , rqvcuten        = rqvcuten_p      ,         &
-             rqccuten    = rqccuten_p  , rqicuten        = rqicuten_p      ,         &
-             rucuten     = rucuten_p   , rvcuten         = rvcuten_p       ,         &
+             f_qv        = f_qv        , f_qc            = f_qc            ,         &
+             f_qr        = f_qr        , f_qi            = f_qi            ,         &
+             f_qs        = f_qs        , rthcuten        = rthcuten_p      ,         &
+             rqvcuten    = rqvcuten_p  , rqccuten        = rqccuten_p      ,         &
+             rqicuten    = rqicuten_p  , rucuten         = rucuten_p       ,         &
+             rvcuten     = rvcuten_p   ,                                             &
              ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde , &
              ims = ims , ime = ime , jms = jms , jme = jme , kms = kds , kme = kme , &
              its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte   &
                     )
-#else
-       call cu_tiedtke ( &
-             pcps        = pres_p      , p8w             = pres2_p         ,         &
-             znu         = znu_p       , t3d             = t_p             ,         &              
-             dt          = dt_dyn      , itimestep       = itimestep       ,         &
-             stepcu      = n_cu        , raincv          = raincv_p        ,         &
-             pratec      = pratec_p    , qfx             = qfx_p           ,         &
-             u3d         = u_p         , v3d             = v_p             ,         & 
-             w           = w_p         , qv3d            = qv_p            ,         &
-             qc3d        = qc_p        , qi3d            = qi_p            ,         &
-             pi3d        = pi_p        , rho3d           = rho_p           ,         &
-             qvften      = rqvdynten_p , qvpblten        = rqvdynblten_p   ,         &
-             dz8w        = dz_p        , xland           = xland_p         ,         &
-             cu_act_flag = cu_act_flag , cudt            = dt_cu           ,         &
-!            curr_secs   = curr_secs   , adapt_step_flag = adapt_step_flag ,         &
-!            cudtacttime = cudtacttime , f_qv            = f_qv            ,         &
-             f_qv        = f_qv        ,                                             &
-             f_qc        = f_qc        , f_qr            = f_qr            ,         &
-             f_qi        = f_qi        , f_qs            = f_qs            ,         &        
-             rthcuten    = rthcuten_p  , rqvcuten        = rqvcuten_p      ,         &
-             rqccuten    = rqccuten_p  , rqicuten        = rqicuten_p      ,         &
-             rucuten     = rucuten_p   , rvcuten         = rvcuten_p       ,         &
-             ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde , &
-             ims = ims , ime = ime , jms = jms , jme = jme , kms = kds , kme = kme , &
-             its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte   &
-                    )
-#endif
 
     case default
 
