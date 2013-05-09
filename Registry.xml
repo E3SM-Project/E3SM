@@ -57,7 +57,7 @@
 		            description="Timestamp descriping the final time of the simulation. If it is set to 'none' the final time is determined from config_start_time and config_run_duration."
 		            possible_values="'YYYY-MM-DD_HH:MM:SS' or 'none'"
 		/>
-		<nml_option name="config_run_duration" type="character" default_value="0_06:00:00" units="unitless"
+		<nml_option name="config_run_duration" type="character" default_value="01_00:00:00" units="unitless"
 		            description="Timestamp describing the length of the simulation. If it is set to 'none' the duraction is determined from config_start_time and config_stop_time. config_run_duration overrides inconsistent values of config_stop_time."
 		            possible_values="'DDDD_HH:MM:SS' or 'none'"
 		/>
@@ -79,15 +79,15 @@
 		            description=""
 		            possible_values=""
 		/>
-		<nml_option name="config_restart_interval" type="character" default_value="0_06:00:00" units=""
+		<nml_option name="config_restart_interval" type="character" default_value="0001_00:00:00" units=""
 		            description=""
 		            possible_values=""
 		/>
-		<nml_option name="config_output_interval" type="character" default_value="0_06:00:00" units=""
+		<nml_option name="config_output_interval" type="character" default_value="0001_00:00:00" units=""
 		            description=""
 		            possible_values=""
 		/>
-		<nml_option name="config_stats_interval" type="character" default_value="0_01:00:00" units=""
+		<nml_option name="config_stats_interval" type="character" default_value="0000_01:00:00" units=""
 		            description=""
 		            possible_values=""
 		/>
@@ -113,7 +113,7 @@
 		/>
 	</nml_record>
 	<nml_record name="time_integration">
-		<nml_option name="config_dt" type="real" default_value="3000.0" units="s"
+		<nml_option name="config_dt" type="real" default_value="300.0" units="s"
 		            description="Length of model time-step."
 		            possible_values="Any positive real value, but limited by CFL condition."
 		/>
@@ -181,7 +181,7 @@
 		/>
 	</nml_record>
 	<nml_record name="hmix_del2">
-		<nml_option name="config_use_mom_del2" type="logical" default_value=".false." units="unitless"
+		<nml_option name="config_use_mom_del2" type="logical" default_value=".true." units="unitless"
 		            description="If true, Laplacian horizontal mixing is used on the momentum equation."
 		            possible_values=".true. or .false."
 		/>
@@ -189,11 +189,11 @@
 		            description="If true, Laplacian horizontal mixing is used on the tracer equation."
 		            possible_values=".true. or .false."
 		/>
-		<nml_option name="config_mom_del2" type="real" default_value="0.0" units="m^2 s^{-1}"
+		<nml_option name="config_mom_del2" type="real" default_value="10.0" units="m^2 s^{-1}"
 		            description="Horizonal viscosity, $\nu_h$."
 		            possible_values="any positive real"
 		/>
-		<nml_option name="config_tracer_del2" type="real" default_value="0.0" units="m^2 s^{-1}"
+		<nml_option name="config_tracer_del2" type="real" default_value="10.0" units="m^2 s^{-1}"
 		            description="Horizonal diffusion, $\kappa_h$."
 		            possible_values="any positive real"
 		/>
@@ -203,7 +203,7 @@
 		/>
 	</nml_record>
 	<nml_record name="hmix_del4">
-		<nml_option name="config_use_mom_del4" type="logical" default_value=".true." units="unitless"
+		<nml_option name="config_use_mom_del4" type="logical" default_value=".false." units="unitless"
 		            description="If true, biharmonic horizontal mixing is used on the momentum equation."
 		            possible_values=".true. or .false."
 		/>
@@ -273,19 +273,19 @@
 		/>
 	</nml_record>
 	<nml_record name="vmix_const">
-		<nml_option name="config_use_const_visc" type="logical" default_value=".false." units=""
+		<nml_option name="config_use_const_visc" type="logical" default_value=".true." units=""
 		            description=""
 		            possible_values=""
 		/>
-		<nml_option name="config_use_const_diff" type="logical" default_value=".false." units=""
+		<nml_option name="config_use_const_diff" type="logical" default_value=".true." units=""
 		            description=""
 		            possible_values=""
 		/>
-		<nml_option name="config_vert_visc" type="real" default_value="2.5e-4" units=""
+		<nml_option name="config_vert_visc" type="real" default_value="1.0e-4" units=""
 		            description=""
 		            possible_values=""
 		/>
-		<nml_option name="config_vert_diff" type="real" default_value="2.5e-5" units=""
+		<nml_option name="config_vert_diff" type="real" default_value="1.0e-4" units=""
 		            description=""
 		            possible_values=""
 		/>
@@ -387,7 +387,7 @@
 		/>
 	</nml_record>
 	<nml_record name="bottom_drag">
-		<nml_option name="config_bottom_drag_coeff" type="real" default_value="1.0e-3" units="unitless"
+		<nml_option name="config_bottom_drag_coeff" type="real" default_value="1.0e-2" units="unitless"
 		            description="Dimensionless bottom drag coefficient, $c_{drag}$."
 		            possible_values="any positive real, typically 1.0e-3"
 		/>
@@ -403,7 +403,7 @@
 		/>
 	</nml_record>
 	<nml_record name="eos">
-		<nml_option name="config_eos_type" type="character" default_value="jm" units="unitless"
+		<nml_option name="config_eos_type" type="character" default_value="linear" units="unitless"
 		            description="Character string to choose EOS formulation"
 		            possible_values="Jackett McDougall EOS = 'jm' and Linear EOS = 'linear'"
 		/>
