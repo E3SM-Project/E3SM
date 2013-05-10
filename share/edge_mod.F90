@@ -158,6 +158,8 @@ contains
     edge%nbuf=nbuf
     if (nlyr==0) return  ! tracer code might call initedgebuffer() with zero tracers
 
+!$OMP BARRIER
+
 !   only master thread should allocate the buffer
 #if (! defined ELEMENT_OPENMP)
 !$OMP MASTER
@@ -226,7 +228,7 @@ contains
           call haltmp('ERROR: edge struct appears to be thread-private.')
        endif
 #if (! defined ELEMENT_OPENMP)
-       !$OMP ENDMASTER
+       !$OMP END MASTER
 #endif
     endif
 

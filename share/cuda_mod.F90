@@ -218,12 +218,7 @@ contains
     allocate( reverse_d                (max_neigh_edges              ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( putmapP_d                (max_neigh_edges              ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( getmapP_d                (max_neigh_edges              ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
-    allocate( recvbuf_d                (nlev*qsize_d,mx_recv_len,nRecvCycles) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( edgebuf_d                (nlev*qsize_d,nbuf                   ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
-    allocate( send_nelem_d             (       nSendCycles                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
-    allocate( recv_nelem_d             (       nRecvCycles                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
-    allocate( send_indices_d           (nelemd,nSendCycles                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
-    allocate( recv_indices_d           (nelemd,nRecvCycles                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( recv_internal_indices_d  (nelemd                              ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( recv_external_indices_d  (nelemd                              ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
 
@@ -238,24 +233,37 @@ contains
     allocate( dp_star_h                (np,np,nlev,qsize_d           ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( dpdiss_biharmonic_h      (np,np,nlev                   ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( dp_np1_h                 (np,np,nlev                   ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
-    allocate( sendbuf_h                (nlev*qsize_d,mx_send_len,nSendCycles) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
-    allocate( recvbuf_h                (nlev*qsize_d,mx_recv_len,nRecvCycles) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
-    allocate( send_elem_mask           (nelemd,nSendCycles                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
-    allocate( recv_elem_mask           (nelemd,nRecvCycles                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
-    allocate( send_nelem               (       nSendCycles                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
-    allocate( recv_nelem               (       nRecvCycles                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
-    allocate( send_indices             (nelemd,nSendCycles                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
-    allocate( recv_indices             (nelemd,nRecvCycles                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+
+    ! The PGI compiler with cuda enabled errors when allocating arrays of zero
+    !   size - here when using only one MPI task
+    if (nSendCycles > 0) then
+      allocate( send_nelem_d             (       nSendCycles                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+      allocate( send_indices_d           (nelemd,nSendCycles                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+      allocate( sendbuf_h                (nlev*qsize_d,mx_send_len,nSendCycles) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+      allocate( send_elem_mask           (nelemd,nSendCycles                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+      allocate( send_nelem               (       nSendCycles                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+      allocate( send_indices             (nelemd,nSendCycles                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+      allocate( send_elem_mask           (nelemd,nSendCycles                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+      allocate( d2h_done                 (nSendCycles                         ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+      allocate( msg_sent                 (nSendCycles                         ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+    endif
+
+    if (nRecvCycles > 0) then
+      allocate( recv_nelem_d             (       nRecvCycles                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+      allocate( recv_indices_d           (nelemd,nRecvCycles                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+      allocate( recvbuf_h                (nlev*qsize_d,mx_recv_len,nRecvCycles) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+      allocate( recvbuf_d                (nlev*qsize_d,mx_recv_len,nRecvCycles) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+      allocate( recv_elem_mask           (nelemd,nRecvCycles                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+      allocate( recv_nelem               (       nRecvCycles                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+      allocate( recv_indices             (nelemd,nRecvCycles                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+      allocate( recv_elem_mask           (nelemd,nRecvCycles                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+      allocate( h2d_done                 (nRecvCycles                         ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+      allocate( msg_rcvd                 (nRecvCycles                         ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+    endif 
+
     allocate( recv_internal_indices    (nelemd                              ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( recv_external_indices    (nelemd                              ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
-    allocate( send_elem_mask           (nelemd,nSendCycles                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
-    allocate( recv_elem_mask           (nelemd,nRecvCycles                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( elem_computed            (nelemd                              ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
-    allocate( d2h_done                 (nSendCycles                         ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
-    allocate( msg_sent                 (nSendCycles                         ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
-    allocate( msg_rcvd                 (nRecvCycles                         ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
-    allocate( h2d_done                 (nRecvCycles                         ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
-
     write(*,*) "send data from host to device"
     !Copy over data to the device
     ierr = cudaMemcpy( deriv_dvv_d , deriv%dvv    , size( deriv%dvv    ) , cudaMemcpyHostToDevice )

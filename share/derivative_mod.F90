@@ -1631,7 +1631,7 @@ endif
     call abortmp(__FILE__)
 #endif
     endif
-    !OMP ENDMASTER
+    !OMP END MASTER
     !OMP BARRIER
 
 
