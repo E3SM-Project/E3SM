@@ -296,10 +296,10 @@ sub loadmodules{
 	module_check($modpath,"yellowstone");
         module("rm netcdf");
         module("rm intel");
-        module("load gnu");
+        module("load gnu/4.8.0");
 	module("load ncarcompilers/1.0");
         module("unload netcdf");
-        module("load netcdf/4.2");
+        module("load netcdf/4.3.0-rc4");
         module("load pnetcdf/1.3.0");
         module("load ncarenv/1.0");
 	module("load ncarbinlibs/0.0");

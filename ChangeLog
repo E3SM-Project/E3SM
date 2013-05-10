@@ -1,6 +1,57 @@
 ===============================================================
 *** You must run 'make predist' in the pio subdirectory before committing. ***
 
+Tag name: pio1_7_0
+Originator(s): Jim
+Date: May 10, 2013
+One-line Summary: Bug fix in calcdecomp, remove parameters from mpi_bcast
+	and pass variables to satisfy f90 module issues.  
+
+List all subroutines eliminated:
+
+List all subroutines added and what they do:
+
+List all existing files that have been modified, and describe the changes:
+               pionfput_mod.F90.in
+               piolib_mod.F90
+               pionfget_mod.F90.in
+               pionfatt_mod.F90.in
+               piodarray.F90.in
+                  Remove constant fields from mpi_bcast calls, these were not errors, but 
+	          caused problems with the F90 interface in fujitsues mpi.mod
+	       calcdecomp.F90
+	           Every io task now computes all io tasks start and count and checks them
+	           for consistancy, if inconsistant reduce the number of io tasks by 1 and try 
+	           again.
+
+List all component tags that were used to create pio tag:
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+Bugs fixed: 
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+
+
+Code reviewed by:  Jim
+
+Summary of pre-tag testing:
+
+  Regression tests:
+     test complete on yellowstone 103 tests PASS, 0 tests FAIL
+     test complete on yellowstone_gnu 80 tests PASS, 0 tests FAIL
+     test complete on yellowstone_pgi 80 tests PASS, 0 tests FAIL
+     cesm intel prealpha tests on yellowstone
+
+===============================================================
+===============================================================
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
 Tag name: pio1_6_9
 Originator(s): Jim
 Date: May 01, 2013

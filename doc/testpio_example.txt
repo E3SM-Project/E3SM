@@ -18,7 +18,18 @@
 
 The testpio directory, included with the release package, tests both the accuracy 
 and performance of reading and writing data 
-using the pio library.  The tests are controlled via a namelist. Sample namelist files
+using the pio library. 
+
+The testpio directory contains 3 perl scripts that you can use to build and run the testpio.F90 code.
+<ul>
+<li>testpio_build.pl - builds the pio, timing and testpio libraries and executables</li>
+<li>testpio_bench.pl - setups, builds and runs a user specified set of test suites using testpio and generates log files with benchmarking information. </li>
+<li>testpio_run.pl - setups, builds and runs a user specified set of test suites using testpio. </li>
+</ul>
+
+Additional C shell scripts wrappers are packaged with the testpio suite to allow for environment customization of the 3 perl scripts listed above. The following help information describes in more detail how the testpio code works.
+
+ The tests are controlled via a namelist. Sample namelist files
 are located in the testpio/namelists directory. It contains a
 set of general namelists and specific namelists to setup a computational
 decomposition and an IO decomposition.  The computational decomposition
@@ -105,10 +116,10 @@ Notes:
   - num_aggregator is used with mpi-io and no pio rearranging.  mpi-io is only 
     used with binary data.
   - nprocsIO, base, and stride implementation has some special options
-    if nprocsIO >  0 and stride >  0, then use input values
-    if nprocsIO >  0 and stride <= 0, then stride=(npes-base)/nprocsIO
-    if nprocsIO <= 0 and stride >  0, then nprocsIO=(npes-base)/stride
-    if nprocsIO <= 0 and stride <= 0, then nprocsIO=npes, base=0, stride=1
+    - if nprocsIO >  0 and stride >  0, then use input values
+    - if nprocsIO >  0 and stride <= 0, then stride=(npes-base)/nprocsIO
+    - if nprocsIO <= 0 and stride >  0, then nprocsIO=(npes-base)/stride
+    - if nprocsIO <= 0 and stride <= 0, then nprocsIO=npes, base=0, stride=1
 
 Two other namelist blocks exist to described the computational
 and IO decompositions, compdof_nml and iodof_nml.  These namelist
@@ -210,9 +221,9 @@ come with pio test specific things.  In general, these tests include:
  <li>08 = 2d xy decomp with 4 blocks/pe and yxz grid ordering, yxz block ordering and cont1d block decomp the rd01 and wr01 tests are distinct and test writing, reading and use of DOF data via pio methods.</li>
 </ul>
 
-The test suite builds the model with different options and runs
-sets of tests for each build.  In general, mct is disabled and
-the timing utility is enabled during testing and
+PIO can use several backend libraries including netcdf, pnetcdf and mpi-io.   For each library used, a
+compile time cpp flag is defined (eg _USEMPIIO).   The test suite builds and tests the model for several
+combinations of these cpp flags.
 <ul>
  <li>snet  = serial netcdf only</li>
  <li>pnet  = parallel netcdf only</li>
@@ -244,8 +255,8 @@ based upon an internal algorithm that tries to determine the most
 "square" blocks with an additional constraint on minimizing the maximum
 number of gridcells across processors.  If evenly divided grids are
 desired, use of the "e" addition to grddecomp specifies that the grid 
-decomposition must be evenly divided.  the setblk option uses the
-prescibed gdx, gdy, and gdz inputs withtout further automation.
+decomposition must be evenly divided.  The setblk option uses the
+prescibed gdx, gdy, and gdz inputs without further automation.
 
 The blkdecomp1 input works fundamentally the same way as the grddecomp
 in mapping blocks to processors, but has a few additional options.
@@ -375,8 +386,5 @@ yxz block ordering, 2d grid decomp, 2d block decomp, 4 block per pe
  bdy        0          |________|_________|________|_________|
  bdz        0
 </pre>
-
-\include testpio.F90
-   Extended example of PIO benchmark
 
 */
