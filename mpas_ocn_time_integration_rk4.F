@@ -142,7 +142,7 @@ module ocn_time_integration_rk4
 ! ---  update halos for diagnostic variables
 
         call mpas_timer_start("RK4-diagnostic halo update")
-        call mpas_dmpar_exch_halo_field(domain % blocklist % provis_state % potentialVorticityEdge)
+        call mpas_dmpar_exch_halo_field(domain % blocklist % provis_state % normalizedRelativeVorticityEdge)
         if (config_mom_del4 > 0.0) then
            call mpas_dmpar_exch_halo_field(domain % blocklist % provis_state % divergence)
            call mpas_dmpar_exch_halo_field(domain % blocklist % provis_state % relativeVorticity)

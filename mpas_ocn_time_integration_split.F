@@ -172,7 +172,7 @@ module ocn_time_integration_split
          ! ---  update halos for diagnostic variables
 
          call mpas_timer_start("se halo diag", .false., timer_halo_diagnostic)
-         call mpas_dmpar_exch_halo_field(domain % blocklist % state % time_levs(2) % state % potentialVorticityEdge)
+         call mpas_dmpar_exch_halo_field(domain % blocklist % state % time_levs(2) % state % normalizedRelativeVorticityEdge)
          if (config_mom_del4 > 0.0) then
            call mpas_dmpar_exch_halo_field(domain % blocklist % state % time_levs(2) % state % divergence)
            call mpas_dmpar_exch_halo_field(domain % blocklist % state % time_levs(2) % state % relativeVorticity)

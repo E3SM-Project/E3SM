@@ -54,14 +54,14 @@ module ocn_global_diagnostics
 
       real (kind=RKIND) :: volumeCellGlobal, volumeEdgeGlobal, CFLNumberGlobal, localCFL, localSum, areaCellGlobal, areaEdgeGlobal, areaTriangleGlobal
       real (kind=RKIND), dimension(:), pointer ::  areaCell, dcEdge, dvEdge, areaTriangle, areaEdge
-      real (kind=RKIND), dimension(:,:), pointer :: layerThickness, normalVelocity, tangentialVelocity, layerThicknessEdge, relativeVorticity, kineticEnergy, potentialVorticityEdge, potentialVorticityVertex, &
-         potentialVorticityCell, pressure, montgomeryPotential, vertTransportVelocityTop, density, tracerTemp
+      real (kind=RKIND), dimension(:,:), pointer :: layerThickness, normalVelocity, tangentialVelocity, layerThicknessEdge, relativeVorticity, kineticEnergy, &
+         normalizedRelativeVorticityEdge, normalizedPlanetaryVorticityEdge, pressure, montgomeryPotential, vertTransportVelocityTop, density, tracerTemp
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers
       
       real (kind=RKIND), dimension(kMaxVariables) :: sums, mins, maxes, averages, verticalSumMins, verticalSumMaxes, reductions
       real (kind=RKIND), dimension(kMaxVariables) :: sums_tmp, mins_tmp, maxes_tmp, averages_tmp, verticalSumMins_tmp, verticalSumMaxes_tmp
 
-      real (kind=RKIND), dimension(:,:), allocatable :: enstrophy
+      real (kind=RKIND), dimension(:,:), allocatable :: enstrophy, normalizedAbsoluteVorticity
 
       block => domain % blocklist
       dminfo => domain % dminfo
@@ -105,9 +105,8 @@ module ocn_global_diagnostics
          layerThicknessEdge => state % layerThicknessEdge % array
          relativeVorticity => state % relativeVorticity % array
          kineticEnergy => state % kineticEnergy % array
-         potentialVorticityEdge => state % potentialVorticityEdge % array
-         potentialVorticityVertex => state % potentialVorticityVertex % array
-         potentialVorticityCell => state % potentialVorticityCell % array
+         normalizedRelativeVorticityEdge => state % normalizedRelativeVorticityEdge % array
+         normalizedPlanetaryVorticityEdge => state % normalizedPlanetaryVorticityEdge % array
          montgomeryPotential => state % montgomeryPotential % array
          pressure => state % pressure % array
 
@@ -189,33 +188,14 @@ module ocn_global_diagnostics
          verticalSumMins(variableIndex) = min(verticalSumMins(variableIndex), verticalSumMins_tmp(variableIndex))
          verticalSumMaxes(variableIndex) = max(verticalSumMaxes(variableIndex), verticalSumMaxes_tmp(variableIndex))
 
-         ! potentialVorticityEdge
+         ! normalizedAbsoluteVorticity
+         allocate(normalizedAbsoluteVorticity(nVertLevels,nEdgesSolve))
+         normalizedAbsoluteVorticity(:,:) = normalizedRelativeVorticityEdge(:,1:nEdgesSolve) + normalizedPlanetaryVorticityEdge(:,1:nEdgesSolve)
          variableIndex = variableIndex + 1
          call ocn_compute_field_volume_weighted_local_stats_max_level(dminfo, nVertLevels, nEdgesSolve, maxLevelEdgeTop(1:nEdgesSolve), areaEdge(1:nEdgesSolve), layerThicknessEdge(:,1:nEdgesSolve), &
-            potentialVorticityEdge(:,1:nEdgesSolve), sums_tmp(variableIndex), mins_tmp(variableIndex), maxes_tmp(variableIndex), verticalSumMins_tmp(variableIndex), &
+            normalizedAbsoluteVorticity(:,1:nEdgesSolve), sums_tmp(variableIndex), mins_tmp(variableIndex), maxes_tmp(variableIndex), verticalSumMins_tmp(variableIndex), &
             verticalSumMaxes_tmp(variableIndex))
-         sums(variableIndex) = sums(variableIndex) + sums_tmp(variableIndex)
-         mins(variableIndex) = min(mins(variableIndex), mins_tmp(variableIndex))
-         maxes(variableIndex) = max(maxes(variableIndex), maxes_tmp(variableIndex))
-         verticalSumMins(variableIndex) = min(verticalSumMins(variableIndex), verticalSumMins_tmp(variableIndex))
-         verticalSumMaxes(variableIndex) = max(verticalSumMaxes(variableIndex), verticalSumMaxes_tmp(variableIndex))
-
-         ! potentialVorticityVertex
-         variableIndex = variableIndex + 1
-         call ocn_compute_field_area_weighted_local_stats_max_level(dminfo, nVertLevels, nVerticesSolve, maxLevelVertexBot(1:nVerticesSolve), areaTriangle(1:nVerticesSolve), &
-            potentialVorticityVertex(:,1:nVerticesSolve), sums_tmp(variableIndex), mins_tmp(variableIndex), maxes_tmp(variableIndex), &
-            verticalSumMins_tmp(variableIndex), verticalSumMaxes_tmp(variableIndex))
-         sums(variableIndex) = sums(variableIndex) + sums_tmp(variableIndex)
-         mins(variableIndex) = min(mins(variableIndex), mins_tmp(variableIndex))
-         maxes(variableIndex) = max(maxes(variableIndex), maxes_tmp(variableIndex))
-         verticalSumMins(variableIndex) = min(verticalSumMins(variableIndex), verticalSumMins_tmp(variableIndex))
-         verticalSumMaxes(variableIndex) = max(verticalSumMaxes(variableIndex), verticalSumMaxes_tmp(variableIndex))
-
-         ! potentialVorticityCell
-         variableIndex = variableIndex + 1
-         call ocn_compute_field_volume_weighted_local_stats_max_level(dminfo, nVertLevels, nCellsSolve, maxLevelCell(1:nCellsSolve), areaCell(1:nCellsSolve), layerThickness(:,1:nCellsSolve), &
-            potentialVorticityCell(:,1:nCellsSolve), sums_tmp(variableIndex), mins_tmp(variableIndex), maxes_tmp(variableIndex), verticalSumMins_tmp(variableIndex), &
-            verticalSumMaxes_tmp(variableIndex))
+         deallocate(normalizedAbsoluteVorticity)
          sums(variableIndex) = sums(variableIndex) + sums_tmp(variableIndex)
          mins(variableIndex) = min(mins(variableIndex), mins_tmp(variableIndex))
          maxes(variableIndex) = max(maxes(variableIndex), maxes_tmp(variableIndex))
@@ -366,17 +346,9 @@ module ocn_global_diagnostics
       variableIndex = variableIndex + 1
       averages(variableIndex) = sums(variableIndex)/volumeCellGlobal
 
-      ! potentialVorticityEdge
+      ! normalizedAbsoluteVorticity
       variableIndex = variableIndex + 1
       averages(variableIndex) = sums(variableIndex)/volumeEdgeGlobal
-
-      ! potentialVorticityVertex
-      variableIndex = variableIndex + 1
-      averages(variableIndex) = sums(variableIndex)/(areaTriangleGlobal*nVertLevels)
-
-      ! potentialVorticityCell
-      variableIndex = variableIndex + 1
-      averages(variableIndex) = sums(variableIndex)/volumeCellGlobal
 
       ! pressure
       variableIndex = variableIndex + 1
@@ -804,9 +776,7 @@ module ocn_global_diagnostics
             write (fileID,'(i5,a)') i,'. relativeVorticity'; i=i+1
             write (fileID,'(i5,a)') i,'. enstrophy = relativeVorticity**2'; i=i+1
             write (fileID,'(i5,a)') i,'. kineticEnergy'; i=i+1
-            write (fileID,'(i5,a)') i,'. potentialVorticityEdge'; i=i+1
-            write (fileID,'(i5,a)') i,'. potentialVorticityVertex'; i=i+1
-            write (fileID,'(i5,a)') i,'. potentialVorticityCell'; i=i+1
+            write (fileID,'(i5,a)') i,'. normalizedAbsoluteVorticity = (relative vorticity + planetary vorticity)/layer thickness'; i=i+1
             write (fileID,'(i5,a)') i,'. pressure'; i=i+1
             write (fileID,'(i5,a)') i,'. montgomeryPotential'; i=i+1
             write (fileID,'(i5,a)') i,'. vertTransportVelocityTop vertical velocity'; i=i+1

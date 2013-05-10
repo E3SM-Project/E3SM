@@ -644,19 +644,25 @@
 		     description="divergence of horizonal velocity"
 		/>
 		<var name="relativeVorticity" type="real" dimensions="nVertLevels nVertices Time" streams="" units="s^{-1}"
-		     description="curl of horizontal velocity"
+		     description="curl of horizontal velocity, defined at vertices"
 		/>
 		<var name="relativeVorticityCell" type="real" dimensions="nVertLevels nCells Time" streams="o" units="s^{-1}"
 		     description="curl of horizontal velocity, averaged from vertices to cell centers"
 		/>
-		<var name="potentialVorticityEdge" type="real" dimensions="nVertLevels nEdges Time" units="s^{-1}"
-		     description="vorticity averaged from vertices to edges"
+		<var name="normalizedPlanetaryVorticityVertex" type="real" dimensions="nVertLevels nVertices Time" units="s^{-1}"
+		     description="earth's rotational rate (Coriolis parameter, f) divided by layer thickness, defined at vertices"
 		/>
-		<var name="potentialVorticityVertex" type="real" dimensions="nVertLevels nVertices Time" units="s^{-1}"
-		     description="curl of horizontal velocity defined at vertices"
+		<var name="normalizedPlanetaryVorticityEdge" type="real" dimensions="nVertLevels nEdges Time" units="s^{-1}"
+		     description="earth's rotational rate (Coriolis parameter, f) divided by layer thickness, averaged from vertices to edges"
 		/>
-		<var name="potentialVorticityCell" type="real" dimensions="nVertLevels nCells Time" streams="o" units="s^{-1}"
-		     description="curl of horizontal velocity defined at cell centers"
+		<var name="normalizedRelativeVorticityVertex" type="real" dimensions="nVertLevels nVertices Time" units="s^{-1}"
+		     description="curl of horizontal velocity divided by layer thickness, defined at vertices"
+		/>
+		<var name="normalizedRelativeVorticityEdge" type="real" dimensions="nVertLevels nEdges Time" units="s^{-1}"
+		     description="curl of horizontal velocity divided by layer thickness, averaged from vertices to edges"
+		/>
+		<var name="normalizedRelativeVorticityCell" type="real" dimensions="nVertLevels nCells Time" units="s^{-1}"
+		     description="curl of horizontal velocity divided by layer thickness, averaged from vertices to cell centers"
 		/>
 		<var name="layerThicknessEdge" type="real" dimensions="nVertLevels nEdges Time" units="m"
 		     description="layer thickness averaged from cell center to edges"
