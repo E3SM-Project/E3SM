@@ -71,6 +71,8 @@ module mpas_core
       integer :: err, err_tmp
       real (kind=RKIND) :: maxDensity, maxDensity_global
 
+      dminfo = domain % dminfo
+
       ! Initialize submodules before initializing blocks.
       call ocn_timestep_init(err)
 
