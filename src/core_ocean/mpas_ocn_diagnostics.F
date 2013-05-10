@@ -106,8 +106,10 @@ contains
         bottomDepth, fVertex, dvEdge, dcEdge, areaCell, areaTriangle, ssh, seaSurfacePressure
       real (kind=RKIND), dimension(:,:), pointer :: &
         weightsOnEdge, kiteAreasOnVertex, layerThicknessEdge, layerThickness, normalVelocity, tangentialVelocity, pressure,&
-        circulation, relativeVorticity, kineticEnergy, kineticEnergyEdge, montgomeryPotential, vertTransportVelocityTop, zMid, &
-        potentialVorticityEdge, potentialVorticityVertex, potentialVorticityCell, relativeVorticityCell, divergence, &
+        circulation, kineticEnergy, kineticEnergyEdge, montgomeryPotential, vertTransportVelocityTop, zMid, divergence, &
+        relativeVorticity, relativeVorticityCell, &
+        normalizedPlanetaryVorticityEdge, normalizedPlanetaryVorticityVertex, &
+        normalizedRelativeVorticityEdge, normalizedRelativeVorticityVertex, normalizedRelativeVorticityCell, &
         density, displacedDensity, temperature, salinity, kineticEnergyVertex, kineticEnergyVertexOnCells, uBolusGM, uTransport, &
         vertVelocityTop, BruntVaisalaFreqTop
       real (kind=RKIND), dimension(:,:), pointer :: vorticityGradientNormalComponent, vorticityGradientTangentialComponent
@@ -121,16 +123,18 @@ contains
       tangentialVelocity => s % tangentialVelocity % array
       layerThicknessEdge => s % layerThicknessEdge % array
       circulation => s % circulation % array
-      relativeVorticity   => s % relativeVorticity % array
       divergence  => s % divergence % array
       kineticEnergy          => s % kineticEnergy % array
       kineticEnergyVertex         => s % kineticEnergyVertex % array
       kineticEnergyVertexOnCells        => s % kineticEnergyVertexOnCells % array
       kineticEnergyEdge     => s % kineticEnergyEdge % array
-      potentialVorticityEdge    => s % potentialVorticityEdge % array
-      potentialVorticityVertex  => s % potentialVorticityVertex % array
-      potentialVorticityCell    => s % potentialVorticityCell % array
+      relativeVorticity   => s % relativeVorticity % array
       relativeVorticityCell    => s % relativeVorticityCell % array
+      normalizedPlanetaryVorticityVertex  => s % normalizedPlanetaryVorticityVertex % array
+      normalizedPlanetaryVorticityEdge    => s % normalizedPlanetaryVorticityEdge % array
+      normalizedRelativeVorticityVertex  => s % normalizedRelativeVorticityVertex % array
+      normalizedRelativeVorticityEdge    => s % normalizedRelativeVorticityEdge % array
+      normalizedRelativeVorticityCell    => s % normalizedRelativeVorticityCell % array
       density         => s % density % array
       displacedDensity=> s % displacedDensity % array
       montgomeryPotential     => s % montgomeryPotential % array
@@ -236,7 +240,6 @@ contains
         end do
       end do
 
-
       allocate(div_hu(nVertLevels))
       do iCell = 1, nCells
          div_hu(:) = 0.0
@@ -315,7 +318,7 @@ contains
 
       !
       ! Compute height at vertices, pv at vertices, and average pv to edge locations
-      !  ( this computes potentialVorticityVertex at all vertices bounding real cells and distance-1 ghost cells )
+      !  ( this computes normalizedRelativeVorticityVertex at all vertices bounding real cells and distance-1 ghost cells )
       !
       do iVertex = 1,nVertices
          invAreaTri1 = 1.0 / areaTriangle(iVertex)
@@ -326,16 +329,33 @@ contains
             end do
             layerThicknessVertex = layerThicknessVertex * invAreaTri1
 
-            potentialVorticityVertex(k,iVertex) = (fCoef*fVertex(iVertex) + relativeVorticity(k,iVertex)) / layerThicknessVertex
+            normalizedRelativeVorticityVertex(k,iVertex) = relativeVorticity(k,iVertex) / layerThicknessVertex
+            normalizedPlanetaryVorticityVertex(k,iVertex) = fVertex(iVertex) / layerThicknessVertex
          end do
       end do
 
-      potentialVorticityEdge(:,:) = 0.0
+      normalizedRelativeVorticityEdge(:,:) = 0.0
+      normalizedPlanetaryVorticityEdge(:,:) = 0.0
       do iEdge = 1, nEdges
         vertex1 = verticesOnEdge(1, iEdge)
         vertex2 = verticesOnEdge(2, iEdge)
         do k = 1, maxLevelEdgeBot(iEdge)
-          potentialVorticityEdge(k, iEdge) = 0.5 * (potentialVorticityVertex(k, vertex1) + potentialVorticityVertex(k, vertex2))
+          normalizedRelativeVorticityEdge(k, iEdge) = 0.5 * (normalizedRelativeVorticityVertex(k, vertex1) + normalizedRelativeVorticityVertex(k, vertex2))
+          normalizedPlanetaryVorticityEdge(k, iEdge) = 0.5 * (normalizedPlanetaryVorticityVertex(k, vertex1) + normalizedPlanetaryVorticityVertex(k, vertex2))
+        end do
+      end do
+
+      normalizedRelativeVorticityCell(:,:) = 0.0
+      do iCell = 1, nCells
+        invAreaCell1 = 1.0 / areaCell(iCell)
+
+        do i = 1, nEdgesOnCell(iCell)
+          j = kiteIndexOnCell(i, iCell)
+          iVertex = verticesOnCell(i, iCell)
+          do k = 1, maxLevelCell(iCell)
+            normalizedRelativeVorticityCell(k, iCell) = normalizedRelativeVorticityCell(k, iCell) &
+              + kiteAreasOnVertex(j, iVertex) * normalizedRelativeVorticityVertex(k, iVertex) * invAreaCell1
+          end do
         end do
       end do
 
@@ -354,7 +374,7 @@ contains
          !   ( this computes the gradient for all edges bounding real cells )
          do k=1,maxLevelEdgeTop(iEdge)
             vorticityGradientNormalComponent(k,iEdge) = &
-               (potentialVorticityCell(k,cell2) - potentialVorticityCell(k,cell1)) * invLength
+               (normalizedRelativeVorticityCell(k,cell2) - normalizedRelativeVorticityCell(k,cell1)) * invLength
          enddo
 
          invLength = 1.0 / dvEdge(iEdge)
@@ -362,7 +382,7 @@ contains
          !   ( this computes the gradient at all edges bounding real cells and distance-1 ghost cells )
          do k = 1,maxLevelEdgeBot(iEdge)
            vorticityGradientTangentialComponent(k,iEdge) = &
-              (potentialVorticityVertex(k,vertex2) - potentialVorticityVertex(k,vertex1)) * invLength
+              (normalizedRelativeVorticityVertex(k,vertex2) - normalizedRelativeVorticityVertex(k,vertex1)) * invLength
          enddo
 
       enddo
@@ -372,7 +392,7 @@ contains
       !
       do iEdge = 1,nEdges
          do k = 1,maxLevelEdgeBot(iEdge)
-           potentialVorticityEdge(k,iEdge) = potentialVorticityEdge(k,iEdge) &
+           normalizedRelativeVorticityEdge(k,iEdge) = normalizedRelativeVorticityEdge(k,iEdge) &
              - config_apvm_scale_factor * dt * &
                  (  normalVelocity(k,iEdge)     * vorticityGradientNormalComponent(k,iEdge)      &
                   + tangentialVelocity(k,iEdge) * vorticityGradientTangentialComponent(k,iEdge) )
