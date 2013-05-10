@@ -6,8 +6,8 @@
 #define __PIO_FILE__ "pionfget_mod.F90"
 !>
 !! @file 
-!! $Revision: 751 $
-!! $LastChangedDate: 2013-04-02 10:01:13 -0600 (Tue, 02 Apr 2013) $
+!! $Revision: 788 $
+!! $LastChangedDate: 2013-05-08 12:52:45 -0600 (Wed, 08 May 2013) $
 !! @brief Read Routines for non-decomposed NetCDF data.
 !<
 module pionfget_mod

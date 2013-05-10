@@ -50,19 +50,20 @@ contains
 !  to be optimal for the filesystem being used.   The actual number of io tasks used is output in variable
 !  use_io_procs
 !
-  subroutine CalcStartandCount(basetype, ndims, gdims, num_io_procs, iorank, start, kount, use_io_procs, innermostdecomposed)
-    integer(i4), intent(in) :: ndims, num_io_procs, iorank, basetype
+  subroutine CalcStartandCount(basetype, ndims, gdims, num_io_procs,myiorank,start, kount, use_io_procs, innermostdecomposed)
+    integer(i4), intent(in) :: ndims, num_io_procs, basetype,myiorank
     integer(i4), intent(in) :: gdims(ndims)
     integer(kind=PIO_OFFSET), intent(out) :: start(ndims), kount(ndims)
     integer, intent(out) :: use_io_procs
     integer, intent(out), optional :: innermostdecomposed
     integer :: i,  dims(ndims), lb, ub, inc
-    integer(kind=pio_offset) :: p
+    integer(kind=pio_offset) :: p, tpsize
+    logical :: converged
     integer :: extras, subrank, tioprocs, rem
-    integer :: minbytes, maxbytes
-
+    integer :: minbytes, maxbytes, iorank
     integer :: minblocksize, basesize, maxiosize, ioprocs, tiorank
     integer :: ldims
+    integer(kind=PIO_OFFSET) :: mystart(ndims), mykount(ndims)
 
 
     minbytes = blocksize-256   ! minimum number of contigous blocks in bytes to put on a IO task
@@ -81,76 +82,91 @@ contains
 
     p=product(int(gdims,pio_offset))
     use_io_procs = max(1, min(int(real(p)/real(minblocksize)+0.5),num_io_procs))
+    converged=.false.
+    tpsize=0
+    mystart=1
+    mykount=0
+    do while(.not. converged)
+       do iorank=0,use_io_procs-1
+          start(:)=1
+          kount(:)=0
 
-
-    start(:)=1
-    kount(:)=0
-
-    ldims=ndims
-    p=basesize
-    do i=1,ndims
-       p=p*gdims(i)
-       if(p/use_io_procs > maxbytes) then
-          ldims=i
-          exit
-       end if
-    end do
-
+          ldims=ndims
+          p=basesize
+          do i=1,ndims
+             p=p*gdims(i)
+             if(p/use_io_procs > maxbytes) then
+                ldims=i
+                exit
+             end if
+          end do
+          
 
 
 ! Things work best if use_io_procs is a multiple of gdims(ndims)
 ! this adjustment makes it so, potentially increasing the blocksize a bit
-    if (gdims(ldims)<use_io_procs) then
-       if(ldims>1 .and. gdims(ldims-1) > use_io_procs) then
-          ldims=ldims-1
-       else
-          use_io_procs = use_io_procs - mod(use_io_procs,gdims(ldims))
-       end if
-    end if
-!    
-!   
-!
-
-
-    if(iorank>=use_io_procs) return 
-
-
-    kount=gdims
-
-    ioprocs=use_io_procs
-    tiorank=iorank
-
-    do i=ldims,1,-1
-       if(gdims(i)>1) then
-          if(gdims(i)>=ioprocs) then
-             
-             call computestartandcount(gdims(i),ioprocs,tiorank,start(i),kount(i))
-             if(start(i)+kount(i)>gdims(i)+1) then
-                print *,__PIO_FILE__,__LINE__,i,ioprocs,gdims(i),start(i),kount(i)
-#if TESTCALCDECOMP
-                stop
-#else
-                call piodie(__PIO_FILE__,__LINE__,'Start plus count exceeds dimension bound')
-#endif
-             endif
-             exit  ! Decomposition is complete
-          else
-             ! The current dimension cannot complete the decomposition.   Decompose this 
-             ! dimension in groups then go on to decompose the next dimesion in each of those
-             ! groups.
-             tioprocs=gdims(i)
-             tiorank = (iorank*tioprocs)/ioprocs
-             
-             call computestartandcount(gdims(i),tioprocs, tiorank  , start(i),kount(i))
-             ioprocs=ioprocs/tioprocs
-             tiorank = mod(iorank,ioprocs)
+          if (gdims(ldims)<use_io_procs) then
+             if(ldims>1 .and. gdims(ldims-1) > use_io_procs) then
+                ldims=ldims-1
+             else
+                use_io_procs = use_io_procs - mod(use_io_procs,gdims(ldims))
+             end if
           end if
-       end if
+
+          kount(:)=gdims
+
+          ioprocs=use_io_procs
+          tiorank=iorank
+          
+          do i=ldims,1,-1
+             if(gdims(i)>1) then
+                if(gdims(i)>=ioprocs) then
+                   
+                   call computestartandcount(gdims(i),ioprocs,tiorank,start(i),kount(i))
+                   if(start(i)+kount(i)>gdims(i)+1) then
+                      print *,__PIO_FILE__,__LINE__,i,ioprocs,gdims(i),start(i),kount(i)
+#if TESTCALCDECOMP
+                      stop
+#else
+                      call piodie(__PIO_FILE__,__LINE__,'Start plus count exceeds dimension bound')
+#endif
+                   endif
+                   exit  ! Decomposition is complete
+                else
+                   ! The current dimension cannot complete the decomposition.   Decompose this 
+                   ! dimension in groups then go on to decompose the next dimesion in each of those
+                   ! groups.
+                   tioprocs=gdims(i)
+                   tiorank = (iorank*tioprocs)/ioprocs
+                   
+                   call computestartandcount(gdims(i),tioprocs, tiorank  , start(i),kount(i))
+                   ioprocs=ioprocs/tioprocs
+                   tiorank = mod(iorank,ioprocs)
+                end if
+             end if
+          end do
+          if(myiorank==iorank) then
+             mystart=start
+             mykount=kount
+          endif
+          tpsize=tpsize+product(kount(:))
+       enddo
+       if(tpsize==product(gdims)) then
+          converged=.true.
+       else
+          tpsize=0
+          use_io_procs=use_io_procs-1
+          print *, myiorank,' use ',use_io_procs
+       endif
+
     end do
+    start=mystart
+    kount=mykount
+
     if(present(innermostdecomposed)) then
        innermostdecomposed=i
     end if
-    if(Debug) print *,__PIO_FILE__,__LINE__,'iorank: ',iorank,'start: ',start,' kount: ',kount
+
 
 
   end subroutine Calcstartandcount
@@ -194,9 +210,13 @@ program sandctest
 
 !  integer, parameter :: ndims=4
 !  integer, parameter :: gdims(ndims) = (/66,199,10,8/)
-  integer, parameter :: ndims=3
-  integer, parameter :: gdims(ndims) = (/1024,1024,1024/)
-  integer, parameter :: num_io_procs=16
+!  integer, parameter :: ndims=3
+!  integer, parameter :: gdims(ndims) = (/1024,1024,1024/)
+!  integer, parameter :: num_io_procs=16
+  integer, parameter :: ndims=4
+  integer, parameter :: gdims(ndims) = (/720,360,3,2/)
+  integer :: num_io_procs=14
+  logical :: converged=.false.
 !  integer :: gdims(ndims)
   integer :: psize, n, i,j,k,m
   integer, parameter :: imax=200,jmax=200,kmax=30,mmax=7
@@ -214,7 +234,7 @@ program sandctest
 #endif
               tpsize = 0
               numaiotasks=0
-              do while(tpsize==0)
+              do while(.not. converged)
                  do iorank=0,num_io_procs-1
                     call Calcstartandcount(PIO_double, ndims, gdims, num_io_procs, iorank, start, count, numaiotasks)
                     
@@ -227,7 +247,7 @@ program sandctest
 !                                        write(*,'(i2,a,3i5,a,3i5,2i12)') iorank,' start =',start,' count=', count, product(gdims), psize
                     !                 else if(ndims==4) then
                     if(sum(count)>0) then
-                       write(*,'(i2,a,3i8,a,3i8,2i12)') iorank,' start =',start,' count=', count, product(gdims), psize
+                       write(*,'(i2,a,4i8,a,4i8,2i12)') iorank,' start =',start,' count=', count, product(gdims), psize
                        if(any(start<0)) then
                           print *, gdims
                           stop 
@@ -235,9 +255,12 @@ program sandctest
                     end if
                     
                  end do
-                 if(tpsize/=product(gdims)) then
-                    print *,'Failed to converge: ',tpsize,product(gdims),gdims
-                    stop
+                 if(tpsize==product(gdims)) then
+                    converged=.true.
+                 else
+                    print *,'Failed to converge: ',tpsize,product(gdims),gdims,num_io_procs
+                    tpsize=0
+                    num_io_procs=num_io_procs-1
                  end if
               end do
 #ifdef DOTHIS

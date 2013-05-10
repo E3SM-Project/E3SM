@@ -1481,7 +1481,6 @@ contains
     else
        elemtype = mpi_datatype_null
        filetype = mpi_datatype_null
-
        call mpi_type_contiguous(lenblocks,lbasetype,elemtype,ierr)
        if(check) call checkmpireturn('genindexedblock: after call to type_contiguous: ',ierr)
        call mpi_type_commit(elemtype,ierr)
