@@ -23,8 +23,6 @@ contains
     use shallow_water_mod, only : tc1_init_state, tc2_init_state, tc5_init_state, tc6_init_state, tc5_invariants, &
          tc8_init_state, vortex_init_state, vortex_errors, sj1_init_state, tc6_errors, &
          tc1_errors, tc2_errors, tc5_errors, sweq_invariants, swirl_init_state, swirl_errors, sj1_errors, tc1_velocity
-!is swirl ever run with this routine???? its a pure advection test
-
     !-----------------
 #ifdef PIO_INTERP
     use interp_movie_mod, only : interp_movie_init, interp_movie_output, interp_movie_finish
@@ -77,6 +75,7 @@ contains
 
     use reduction_mod, only : parallelmax
     use mesh_mod, only : MeshUseMeshFile
+    use viscosity_mod, only : test_ibyp, check_edge_flux ! dont remove
 
     
     implicit none
@@ -305,12 +304,12 @@ contains
 
 !   some test code
 #if 0
-    print *,'running CG solver test'
+    if (hybrid%masterthread) print *,'running CG solver test'
     call solver_test(elem,edge1,red,hybrid,deriv,nets,nete)
     stop
-    print *,'running global integration-by-parts checks'
+    if (hybrid%masterthread) print *,'running global integration-by-parts checks'
     call test_ibyp(elem,hybrid,nets,nete)
-    print *,'running element divergence/edge flux checks'
+    if (hybrid%masterthread) print *,'running element divergence/edge flux checks'
     call check_edge_flux(elem,deriv,nets,nete)
     stop
 #endif

@@ -67,6 +67,8 @@ output_end_time  = 1200000
 output_frequency = 6
 output_timeunits = 1
 output_varnames1 = 'geop'
+output_type='netcdf'
+io_stride = 4
 /
 &dg_nl
 riemanntype= 0
