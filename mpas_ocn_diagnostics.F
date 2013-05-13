@@ -106,7 +106,7 @@ contains
         bottomDepth, fVertex, dvEdge, dcEdge, areaCell, areaTriangle, ssh, seaSurfacePressure
       real (kind=RKIND), dimension(:,:), pointer :: &
         weightsOnEdge, kiteAreasOnVertex, layerThicknessEdge, layerThickness, normalVelocity, tangentialVelocity, pressure,&
-        circulation, kineticEnergy, kineticEnergyEdge, montgomeryPotential, vertTransportVelocityTop, zMid, divergence, &
+        circulation, kineticEnergyCell, kineticEnergyEdge, montgomeryPotential, vertTransportVelocityTop, zMid, divergence, &
         relativeVorticity, relativeVorticityCell, &
         normalizedPlanetaryVorticityEdge, normalizedPlanetaryVorticityVertex, &
         normalizedRelativeVorticityEdge, normalizedRelativeVorticityVertex, normalizedRelativeVorticityCell, &
@@ -124,13 +124,11 @@ contains
       layerThicknessEdge => s % layerThicknessEdge % array
       circulation => s % circulation % array
       divergence  => s % divergence % array
-      kineticEnergy          => s % kineticEnergy % array
-      kineticEnergyVertex         => s % kineticEnergyVertex % array
-      kineticEnergyVertexOnCells        => s % kineticEnergyVertexOnCells % array
-      kineticEnergyEdge     => s % kineticEnergyEdge % array
-      relativeVorticity   => s % relativeVorticity % array
-      relativeVorticityCell    => s % relativeVorticityCell % array
-      normalizedPlanetaryVorticityEdge    => s % normalizedPlanetaryVorticityEdge % array
+      kineticEnergyCell      => s % kineticEnergyCell % array
+      kineticEnergyEdge      => s % kineticEnergyEdge % array
+      relativeVorticity      => s % relativeVorticity % array
+      relativeVorticityCell  => s % relativeVorticityCell % array
+      normalizedPlanetaryVorticityEdge   => s % normalizedPlanetaryVorticityEdge % array
       normalizedRelativeVorticityEdge    => s % normalizedRelativeVorticityEdge % array
       normalizedRelativeVorticityCell    => s % normalizedRelativeVorticityCell % array
       density         => s % density % array
@@ -210,7 +208,7 @@ contains
       relativeVorticity(:,:) = 0.0
       divergence(:,:) = 0.0
       vertVelocityTop(:,:)=0.0
-      kineticEnergy(:,:) = 0.0
+      kineticEnergyCell(:,:) = 0.0
       tangentialVelocity(:,:) = 0.0
       do iVertex = 1, nVertices
          invAreaTri1 = 1.0 / areaTriangle(iVertex)
@@ -249,7 +247,7 @@ contains
 
                divergence(k, iCell) = divergence(k, iCell) - edgeSignOnCell(i, iCell) * r_tmp
                div_hu(k)    = div_hu(k) - layerThicknessEdge(k, iEdge) * edgeSignOnCell(i, iCell) * r_tmp 
-               kineticEnergy(k, iCell) = kineticEnergy(k, iCell) + 0.25 * r_tmp * dcEdge(iEdge) * normalVelocity(k,iEdge)
+               kineticEnergyCell(k, iCell) = kineticEnergyCell(k, iCell) + 0.25 * r_tmp * dcEdge(iEdge) * normalVelocity(k,iEdge)
             end do
          end do
          ! Vertical velocity at bottom (maxLevelCell(iCell)+1) is zero, initialized above.
@@ -270,9 +268,14 @@ contains
       end do
 
       !
-      ! Compute kinetic energy in each vertex
+      ! Compute kinetic energy
       !
-      kineticEnergyVertex(:,:) = 0.0; kineticEnergyVertexOnCells(:,:) = 0.0
+      call mpas_allocate_scratch_field(scratch % kineticEnergyVertex, .true.)
+      call mpas_allocate_scratch_field(scratch % kineticEnergyVertexOnCells, .true.)
+      kineticEnergyVertex         => scratch % kineticEnergyVertex % array
+      kineticEnergyVertexOnCells  => scratch % kineticEnergyVertexOnCells % array
+      kineticEnergyVertex(:,:) = 0.0; 
+      kineticEnergyVertexOnCells(:,:) = 0.0
       do iVertex = 1, nVertices*ke_vertex_flag
         do i = 1, vertexDegree
           iEdge = edgesOnVertex(i, iVertex)
@@ -295,24 +298,27 @@ contains
       end do
 
       !
-      ! Compute kinetic energy in each cell by blending kineticEnergy and kineticEnergyVertexOnCells
+      ! Compute kinetic energy in each cell by blending kineticEnergyCell and kineticEnergyVertexOnCells
       !
       do iCell=1,nCells*ke_vertex_flag
          do k=1,nVertLevels
-            kineticEnergy(k,iCell) = 5.0/8.0*kineticEnergy(k,iCell) + 3.0/8.0*kineticEnergyVertexOnCells(k,iCell)
+            kineticEnergyCell(k,iCell) = 5.0/8.0*kineticEnergyCell(k,iCell) + 3.0/8.0*kineticEnergyVertexOnCells(k,iCell)
          end do
       end do
 
       !
-      ! Compute kineticEnergy on cell edges at velocity locations for quadratic bottom drag. 
+      ! Compute kineticEnergy on edges at velocity locations for quadratic bottom drag. 
       !
       do iEdge=1,nEdges
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
          do k=1,maxLevelEdgeTop(iEdge)
-            kineticEnergyEdge(k,iEdge) = 0.5 * (kineticEnergy(k,cell1) + kineticEnergy(k,cell2))
+            kineticEnergyEdge(k,iEdge) = 0.5 * (kineticEnergyCell(k,cell1) + kineticEnergyCell(k,cell2))
          end do
       end do
+      call mpas_deallocate_scratch_field(scratch % kineticEnergyVertex, .true.)
+      call mpas_deallocate_scratch_field(scratch % kineticEnergyVertexOnCells, .true.)
+
 
       !
       ! Compute normalized relative and planetary vorticity

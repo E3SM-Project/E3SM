@@ -158,7 +158,7 @@ contains
 
       real (kind=RKIND), dimension(:,:), pointer :: &
         layerThicknessEdge, h, normalVelocity, density, zMid, pressure, &
-        tend_normalVelocity, circulation, relativeVorticity, viscosity, kineticEnergy, kineticEnergyEdge, &
+        tend_normalVelocity, circulation, relativeVorticity, viscosity, kineticEnergyCell, kineticEnergyEdge, &
         normalizedRelativeVorticityEdge, normalizedPlanetaryVorticityEdge, &
         montgomeryPotential, vertTransportVelocityTop, divergence, vertViscTopOfEdge
 
@@ -176,7 +176,7 @@ contains
       viscosity   => s % viscosity % array
       relativeVorticity   => s % relativeVorticity % array
       divergence  => s % divergence % array
-      kineticEnergy          => s % kineticEnergy % array
+      kineticEnergyCell          => s % kineticEnergyCell % array
       kineticEnergyEdge     => s % kineticEnergyEdge % array
       normalizedRelativeVorticityEdge     => s % normalizedRelativeVorticityEdge % array
       normalizedPlanetaryVorticityEdge     => s % normalizedPlanetaryVorticityEdge % array
@@ -200,7 +200,7 @@ contains
       !
 
       call mpas_timer_start("coriolis", .false., velCorTimer)
-      call ocn_vel_coriolis_tend(grid, normalizedRelativeVorticityEdge, normalizedPlanetaryVorticityEdge, layerThicknessEdge, normalVelocity, kineticEnergy, tend_normalVelocity, err)
+      call ocn_vel_coriolis_tend(grid, normalizedRelativeVorticityEdge, normalizedPlanetaryVorticityEdge, layerThicknessEdge, normalVelocity, kineticEnergyCell, tend_normalVelocity, err)
       call mpas_timer_stop("coriolis", velCorTimer)
 
       !
