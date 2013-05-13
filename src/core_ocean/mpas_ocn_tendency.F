@@ -158,7 +158,7 @@ contains
 
       real (kind=RKIND), dimension(:,:), pointer :: &
         layerThicknessEdge, h, normalVelocity, density, zMid, pressure, &
-        tend_normalVelocity, circulation, relativeVorticity, viscosity, kineticEnergyCell, kineticEnergyEdge, &
+        tend_normalVelocity, circulation, relativeVorticity, viscosity, kineticEnergyCell, &
         normalizedRelativeVorticityEdge, normalizedPlanetaryVorticityEdge, &
         montgomeryPotential, vertTransportVelocityTop, divergence, vertViscTopOfEdge
 
@@ -177,7 +177,6 @@ contains
       relativeVorticity   => s % relativeVorticity % array
       divergence  => s % divergence % array
       kineticEnergyCell          => s % kineticEnergyCell % array
-      kineticEnergyEdge     => s % kineticEnergyEdge % array
       normalizedRelativeVorticityEdge     => s % normalizedRelativeVorticityEdge % array
       normalizedPlanetaryVorticityEdge     => s % normalizedPlanetaryVorticityEdge % array
       montgomeryPotential     => s % montgomeryPotential % array
@@ -235,7 +234,7 @@ contains
       !
 
       call mpas_timer_start("forcings", .false., velForceTimer)
-      call ocn_vel_forcing_tend(grid, normalVelocity, normalVelocityForcing, kineticEnergyEdge, layerThicknessEdge, tend_normalVelocity, err)
+      call ocn_vel_forcing_tend(grid, normalVelocity, normalVelocityForcing, layerThicknessEdge, tend_normalVelocity, err)
       call mpas_timer_stop("forcings", velForceTimer)
 
       !

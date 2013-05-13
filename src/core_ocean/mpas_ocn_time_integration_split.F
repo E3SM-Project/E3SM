@@ -98,7 +98,7 @@ module ocn_time_integration_split
                  CoriolisTerm, uCorr, temp, temp_h, coef, barotropicThicknessFlux_coeff, sshCell1, sshCell2
       integer :: num_tracers, ucorr_coef, err
       real (kind=RKIND), dimension(:,:), pointer :: &
-                 u, h, layerThicknessEdge, kineticEnergyEdge, vertViscTopOfEdge, vertDiffTopOfCell
+                 u, h, layerThicknessEdge, vertViscTopOfEdge, vertDiffTopOfCell
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers
       integer, dimension(:), pointer :: & 
                  maxLevelCell, maxLevelEdgeTop
@@ -938,7 +938,7 @@ module ocn_time_integration_split
 
         ! Call ocean diagnostic solve in preparation for vertical mixing.  Note 
         ! it is called again after vertical mixing, because u and tracers change.
-        ! For Richardson vertical mixing, only density, layerThicknessEdge, and kineticEnergyEdge need to 
+        ! For Richardson vertical mixing, only density, layerThicknessEdge, and kineticEnergyCell need to 
         ! be computed.  For kpp, more variables may be needed.  Either way, this
         ! could be made more efficient by only computing what is needed for the
         ! implicit vmix routine that follows.
