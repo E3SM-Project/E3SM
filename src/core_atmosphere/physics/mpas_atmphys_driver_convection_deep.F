@@ -23,7 +23,7 @@
           deallocate_convection_deep, &
           init_convection_deep,       &
           driver_convection_deep,     &
-          update_convection_step1,        &
+          update_convection_step1,    &
           update_convection_step2
 
  integer, private:: i,k,j

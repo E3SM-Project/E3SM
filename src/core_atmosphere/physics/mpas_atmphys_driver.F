@@ -13,10 +13,10 @@
  use mpas_atmphys_driver_cloudiness
  use mpas_atmphys_driver_convection_deep
  use mpas_atmphys_driver_gwdo
- use mpas_atmphys_driver_pbl
  use mpas_atmphys_driver_lsm
- use mpas_atmphys_driver_radiation_sw 
+ use mpas_atmphys_driver_pbl
  use mpas_atmphys_driver_radiation_lw
+ use mpas_atmphys_driver_radiation_sw 
  use mpas_atmphys_driver_sfclayer
  use mpas_atmphys_constants
  use mpas_atmphys_interface_nhyd
