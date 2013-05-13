@@ -649,17 +649,11 @@
 		<var name="relativeVorticityCell" type="real" dimensions="nVertLevels nCells Time" streams="o" units="s^{-1}"
 		     description="curl of horizontal velocity, averaged from vertices to cell centers"
 		/>
-		<var name="normalizedPlanetaryVorticityVertex" type="real" dimensions="nVertLevels nVertices Time" units="s^{-1}"
-		     description="earth's rotational rate (Coriolis parameter, f) divided by layer thickness, defined at vertices"
+		<var name="normalizedRelativeVorticityEdge" type="real" dimensions="nVertLevels nEdges Time" units="s^{-1}"
+		     description="curl of horizontal velocity divided by layer thickness, averaged from vertices to edges"
 		/>
 		<var name="normalizedPlanetaryVorticityEdge" type="real" dimensions="nVertLevels nEdges Time" units="s^{-1}"
 		     description="earth's rotational rate (Coriolis parameter, f) divided by layer thickness, averaged from vertices to edges"
-		/>
-		<var name="normalizedRelativeVorticityVertex" type="real" dimensions="nVertLevels nVertices Time" units="s^{-1}"
-		     description="curl of horizontal velocity divided by layer thickness, defined at vertices"
-		/>
-		<var name="normalizedRelativeVorticityEdge" type="real" dimensions="nVertLevels nEdges Time" units="s^{-1}"
-		     description="curl of horizontal velocity divided by layer thickness, averaged from vertices to edges"
 		/>
 		<var name="normalizedRelativeVorticityCell" type="real" dimensions="nVertLevels nCells Time" units="s^{-1}"
 		     description="curl of horizontal velocity divided by layer thickness, averaged from vertices to cell centers"
@@ -1081,6 +1075,16 @@
                      type="real" dimensions="nVertLevels nEdges Time" 
                      units="s^{-1} m^{-1}"
                      description="gradient of vorticity in the normal direction (positive points from cell1 to cell2)"
+		/>
+		<var name="normalizedRelativeVorticityVertex"
+                     persistence="scratch" 
+                     type="real" dimensions="nVertLevels nVertices Time" units="s^{-1}"
+		     description="curl of horizontal velocity divided by layer thickness, defined at vertices"
+		/>
+		<var name="normalizedPlanetaryVorticityVertex"
+                     persistence="scratch" 
+                     type="real" dimensions="nVertLevels nVertices Time" units="s^{-1}"
+		     description="earth's rotational rate (Coriolis parameter, f) divided by layer thickness, defined at vertices"
 		/>
     </var_struct>
 </registry>

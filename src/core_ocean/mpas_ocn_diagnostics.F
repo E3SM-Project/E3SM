@@ -111,8 +111,8 @@ contains
         normalizedPlanetaryVorticityEdge, normalizedPlanetaryVorticityVertex, &
         normalizedRelativeVorticityEdge, normalizedRelativeVorticityVertex, normalizedRelativeVorticityCell, &
         density, displacedDensity, temperature, salinity, kineticEnergyVertex, kineticEnergyVertexOnCells, uBolusGM, uTransport, &
-        vertVelocityTop, BruntVaisalaFreqTop
-      real (kind=RKIND), dimension(:,:), pointer :: vorticityGradientNormalComponent, vorticityGradientTangentialComponent
+        vertVelocityTop, BruntVaisalaFreqTop, &
+        vorticityGradientNormalComponent, vorticityGradientTangentialComponent
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers, deriv_two
       character :: c1*6
 
@@ -130,9 +130,7 @@ contains
       kineticEnergyEdge     => s % kineticEnergyEdge % array
       relativeVorticity   => s % relativeVorticity % array
       relativeVorticityCell    => s % relativeVorticityCell % array
-      normalizedPlanetaryVorticityVertex  => s % normalizedPlanetaryVorticityVertex % array
       normalizedPlanetaryVorticityEdge    => s % normalizedPlanetaryVorticityEdge % array
-      normalizedRelativeVorticityVertex  => s % normalizedRelativeVorticityVertex % array
       normalizedRelativeVorticityEdge    => s % normalizedRelativeVorticityEdge % array
       normalizedRelativeVorticityCell    => s % normalizedRelativeVorticityCell % array
       density         => s % density % array
@@ -317,9 +315,12 @@ contains
       end do
 
       !
-      ! Compute height at vertices, pv at vertices, and average pv to edge locations
-      !  ( this computes normalizedRelativeVorticityVertex at all vertices bounding real cells and distance-1 ghost cells )
+      ! Compute normalized relative and planetary vorticity
       !
+      call mpas_allocate_scratch_field(scratch % normalizedRelativeVorticityVertex, .true.)
+      call mpas_allocate_scratch_field(scratch % normalizedPlanetaryVorticityVertex, .true.)
+      normalizedPlanetaryVorticityVertex  => scratch % normalizedPlanetaryVorticityVertex % array
+      normalizedRelativeVorticityVertex  => scratch % normalizedRelativeVorticityVertex % array
       do iVertex = 1,nVertices
          invAreaTri1 = 1.0 / areaTriangle(iVertex)
          do k=1,maxLevelVertexBot(iVertex)
@@ -359,47 +360,54 @@ contains
         end do
       end do
 
-      call mpas_allocate_scratch_field(scratch % vorticityGradientNormalComponent, .true.)
-      call mpas_allocate_scratch_field(scratch % vorticityGradientTangentialComponent, .true.)
-      vorticityGradientNormalComponent => scratch % vorticityGradientNormalComponent % array
-      vorticityGradientTangentialComponent => scratch % vorticityGradientTangentialComponent % array
-      do iEdge = 1,nEdges
-         cell1 = cellsOnEdge(1, iEdge)
-         cell2 = cellsOnEdge(2, iEdge)
-         vertex1 = verticesOnedge(1, iEdge)
-         vertex2 = verticesOnedge(2, iEdge)
+      ! Diagnostics required for the Anticipated Potential Vorticity Method (apvm).
+      if (config_apvm_scale_factor>1e-10) then
 
-         invLength = 1.0 / dcEdge(iEdge)
-         ! Compute gradient of PV in normal direction
-         !   ( this computes the gradient for all edges bounding real cells )
-         do k=1,maxLevelEdgeTop(iEdge)
-            vorticityGradientNormalComponent(k,iEdge) = &
-               (normalizedRelativeVorticityCell(k,cell2) - normalizedRelativeVorticityCell(k,cell1)) * invLength
+         call mpas_allocate_scratch_field(scratch % vorticityGradientNormalComponent, .true.)
+         call mpas_allocate_scratch_field(scratch % vorticityGradientTangentialComponent, .true.)
+         vorticityGradientNormalComponent => scratch % vorticityGradientNormalComponent % array
+         vorticityGradientTangentialComponent => scratch % vorticityGradientTangentialComponent % array
+         do iEdge = 1,nEdges
+            cell1 = cellsOnEdge(1, iEdge)
+            cell2 = cellsOnEdge(2, iEdge)
+            vertex1 = verticesOnedge(1, iEdge)
+            vertex2 = verticesOnedge(2, iEdge)
+
+            invLength = 1.0 / dcEdge(iEdge)
+            ! Compute gradient of PV in normal direction
+            !   ( this computes the gradient for all edges bounding real cells )
+            do k=1,maxLevelEdgeTop(iEdge)
+               vorticityGradientNormalComponent(k,iEdge) = &
+                  (normalizedRelativeVorticityCell(k,cell2) - normalizedRelativeVorticityCell(k,cell1)) * invLength
+            enddo
+
+            invLength = 1.0 / dvEdge(iEdge)
+            ! Compute gradient of PV in the tangent direction
+            !   ( this computes the gradient at all edges bounding real cells and distance-1 ghost cells )
+            do k = 1,maxLevelEdgeBot(iEdge)
+              vorticityGradientTangentialComponent(k,iEdge) = &
+                 (normalizedRelativeVorticityVertex(k,vertex2) - normalizedRelativeVorticityVertex(k,vertex1)) * invLength
+            enddo
+
          enddo
 
-         invLength = 1.0 / dvEdge(iEdge)
-         ! Compute gradient of PV in the tangent direction
-         !   ( this computes the gradient at all edges bounding real cells and distance-1 ghost cells )
-         do k = 1,maxLevelEdgeBot(iEdge)
-           vorticityGradientTangentialComponent(k,iEdge) = &
-              (normalizedRelativeVorticityVertex(k,vertex2) - normalizedRelativeVorticityVertex(k,vertex1)) * invLength
+         !
+         ! Modify PV edge with upstream bias.
+         !
+         do iEdge = 1,nEdges
+            do k = 1,maxLevelEdgeBot(iEdge)
+              normalizedRelativeVorticityEdge(k,iEdge) = normalizedRelativeVorticityEdge(k,iEdge) &
+                - config_apvm_scale_factor * dt * &
+                    (  normalVelocity(k,iEdge)     * vorticityGradientNormalComponent(k,iEdge)      &
+                     + tangentialVelocity(k,iEdge) * vorticityGradientTangentialComponent(k,iEdge) )
+            enddo
          enddo
+         call mpas_deallocate_scratch_field(scratch % vorticityGradientNormalComponent, .true.)
+         call mpas_deallocate_scratch_field(scratch % vorticityGradientTangentialComponent, .true.)
 
-      enddo
-
-      !
-      ! Modify PV edge with upstream bias.
-      !
-      do iEdge = 1,nEdges
-         do k = 1,maxLevelEdgeBot(iEdge)
-           normalizedRelativeVorticityEdge(k,iEdge) = normalizedRelativeVorticityEdge(k,iEdge) &
-             - config_apvm_scale_factor * dt * &
-                 (  normalVelocity(k,iEdge)     * vorticityGradientNormalComponent(k,iEdge)      &
-                  + tangentialVelocity(k,iEdge) * vorticityGradientTangentialComponent(k,iEdge) )
-         enddo
-      enddo
-      call mpas_deallocate_scratch_field(scratch % vorticityGradientNormalComponent, .true.)
-      call mpas_deallocate_scratch_field(scratch % vorticityGradientTangentialComponent, .true.)
+      endif
+      call mpas_deallocate_scratch_field(scratch % normalizedRelativeVorticityVertex, .true.)
+      call mpas_deallocate_scratch_field(scratch % normalizedPlanetaryVorticityVertex, .true.)
 
       !
       ! equation of state
