@@ -50,12 +50,12 @@ OBJS = mpas_ocn_mpas_core.o \
 all: libcvmix core_hyd
 
 libcvmix:
-#	if [ ! -d cvmix ]; then \
-#		(svn checkout $(CVMIX_REPO_ADDRESS) cvmix) \
-#	fi
-#	if [ -d cvmix ]; then \
-#		(cd cvmix; svn update; make all FC="$(FC)" FFLAGS="$(FFLAGS)" FINCLUDES="$(FINCLUDES)") \
-#	fi
+	if [ ! -d cvmix ]; then \
+	(svn checkout $(CVMIX_REPO_ADDRESS) cvmix) \
+	fi
+	if [ -d cvmix ]; then \
+		(cd cvmix; svn update; make all FC="$(FC)" FFLAGS="$(FFLAGS)" FINCLUDES="$(FINCLUDES)") \
+	fi
 
 core_hyd: $(OBJS)
 	ar -ru libdycore.a $(OBJS) cvmix/*.o
