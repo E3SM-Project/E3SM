@@ -1557,11 +1557,10 @@ endif
 
         end do
 
-
-     elseif (config_tensor_test_function.eq.'spherical_usinlon') then
+     elseif (config_tensor_test_function.eq.'spherical_uSinLon') then
 
         kLon = 1.0
-        kLat = 0.0
+        kLat = 1.0
 
         do iEdge = 1,nEdges
            lon = lonEdge(iEdge)
@@ -1575,9 +1574,10 @@ endif
              velocityMeridional = 0.0
            endif
            normalVelocity(:,iEdge) = velocityZonal*cos(angleEdge(iEdge)) + velocityMeridional*sin(angleEdge(iEdge))
+           tangentialVelocity(:,iEdge) = -velocityZonal*sin(angleEdge(iEdge)) + velocityMeridional*cos(angleEdge(iEdge))
         enddo
 
-        call mpas_tangential_velocity(block % mesh, normalVelocity, tangentialVelocity)
+!        call mpas_tangential_velocity(block % mesh, normalVelocity, tangentialVelocity)
 
         do iCell = 1,nCells
 
@@ -1611,9 +1611,9 @@ endif
            strainRate3DLatLonCellSolution(4,1,iCell) = & ! Elonlat
                  1.0/R/2 *tan_lat *sin_kLon_lon 
            strainRate3DLatLonCellSolution(5,1,iCell) = & ! Elatr
-                 - 3.0/R/2.0 *sin_kLon_lon 
-           strainRate3DLatLonCellSolution(6,1,iCell) = & ! Elonr
                  0.0
+           strainRate3DLatLonCellSolution(6,1,iCell) = & ! Elonr
+                 - 3.0/R/2.0 *sin_kLon_lon 
 
            call mpas_tensor_3DLatLon_to_R3(strainRate3DLatLonCellSolution(:,1,iCell), strainRateR3CellSolution(:,1,iCell), lat, lon)
 
@@ -1622,10 +1622,9 @@ endif
 !           divTensorR3CellSolution(2,:,iCell) = 
 
         end do
+     elseif (config_tensor_test_function.eq.'spherical_uSinLat') then
 
-     elseif (config_tensor_test_function.eq.'spherical') then
-
-        kLon = 0.0
+        kLon = 1.0
         kLat = 1.0
 
         do iEdge = 1,nEdges
@@ -1636,13 +1635,14 @@ endif
              velocityZonal      = 0.0
              velocityMeridional = 0.0
            else
-             velocityZonal      = kLat *cos(kLon *lon) *sin(kLat *lat)
-             velocityMeridional = kLon *sin(kLon *lon) *cos(kLat *lat)/cos(lat)  
+             velocityZonal      = sin(kLat *lat) 
+             velocityMeridional = 0.0
            endif
            normalVelocity(:,iEdge) = velocityZonal*cos(angleEdge(iEdge)) + velocityMeridional*sin(angleEdge(iEdge))
+           tangentialVelocity(:,iEdge) = -velocityZonal*sin(angleEdge(iEdge)) + velocityMeridional*cos(angleEdge(iEdge))
         enddo
 
-        call mpas_tangential_velocity(block % mesh, normalVelocity, tangentialVelocity)
+!        call mpas_tangential_velocity(block % mesh, normalVelocity, tangentialVelocity)
 
         do iCell = 1,nCells
 
@@ -1662,26 +1662,225 @@ endif
              block % state % time_levs(1) % state % zonalVelocityCell      % array(:,iCell) = 0.0
              block % state % time_levs(1) % state % meridionalVelocityCell % array(:,iCell) = 0.0
            else
-             block % state % time_levs(1) % state % streamFunctionCell     % array(:,iCell) =       cos_kLon_lon *cos_kLat_lat
-             block % state % time_levs(1) % state % zonalVelocityCell      % array(:,iCell) = kLat *cos_kLon_lon *sin_kLat_lat *sec_lat
-             block % state % time_levs(1) % state % meridionalVelocityCell % array(:,iCell) = kLon *cos_kLat_lat *sin_kLon_lon
+             block % state % time_levs(1) % state % streamFunctionCell     % array(:,iCell) = 0.0
+             block % state % time_levs(1) % state % zonalVelocityCell      % array(:,iCell) = sin_kLat_lat 
+             block % state % time_levs(1) % state % meridionalVelocityCell % array(:,iCell) = 0.0
            endif
 
            strainRate3DLatLonCellSolution(1,1,iCell) = & ! Elonlon
-                 1/R *sec_lat * (- kLon      *tan_lat *sin_kLon_lon *cos_kLat_lat  &
-                                 - kLon*kLat *sin_lat *sin_kLon_lon *sin_kLat_lat)
+                 0.0
            strainRate3DLatLonCellSolution(2,1,iCell) = & ! Elatlat
-                 1/R *kLon *kLat *sin_kLon_lon *sin_kLat_lat
+                 0.0
            strainRate3DLatLonCellSolution(3,1,iCell) = & ! Err
                  0.0
            strainRate3DLatLonCellSolution(4,1,iCell) = & ! Elonlat
-                 1/R/2 * (  kLon**2          *sec_lat *cos_kLon_lon *cos_kLat_lat  &
-                          - kLat**2          *sec_lat *cos_kLon_lon *cos_kLat_lat  &
-                          - 2 *kLat *tan_lat *sec_lat *cos_kLon_lon *sin_kLat_lat)
+                 1.0/R/2 *tan_lat *sin_kLat_lat 
+           strainRate3DLatLonCellSolution(5,1,iCell) = & ! Elatr
+                 0.0
+           strainRate3DLatLonCellSolution(6,1,iCell) = & ! Elonr
+                 - 3.0/R/2.0 *sin_kLat_lat 
+
+           call mpas_tensor_3DLatLon_to_R3(strainRate3DLatLonCellSolution(:,1,iCell), strainRateR3CellSolution(:,1,iCell), lat, lon)
+
+
+!           divTensorR3CellSolution(1,:,iCell) = 
+!           divTensorR3CellSolution(2,:,iCell) = 
+
+        end do
+
+     elseif (config_tensor_test_function.eq.'spherical_vSinLon') then
+
+        kLon = 1.0
+        kLat = 1.0
+
+        do iEdge = 1,nEdges
+           lon = lonEdge(iEdge)
+           lat = latEdge(iEdge)
+
+           if (abs(lat)>0.8*pii/2) then
+             velocityZonal      = 0.0
+             velocityMeridional = 0.0
+           else
+             velocityZonal      = 0.0
+             velocityMeridional = sin(kLon *lon) 
+           endif
+           normalVelocity(:,iEdge) = velocityZonal*cos(angleEdge(iEdge)) + velocityMeridional*sin(angleEdge(iEdge))
+           tangentialVelocity(:,iEdge) = -velocityZonal*sin(angleEdge(iEdge)) + velocityMeridional*cos(angleEdge(iEdge))
+        enddo
+
+!        call mpas_tangential_velocity(block % mesh, normalVelocity, tangentialVelocity)
+
+        do iCell = 1,nCells
+
+           lon = lonCell(iCell)
+           lat = latCell(iCell)
+
+           sin_kLon_lon = sin(kLon*lon)
+           cos_kLon_lon = cos(kLon*lon)
+           sin_kLat_lat = sin(kLat*lat)
+           cos_kLat_lat = cos(kLat*lat)
+           sin_lat = sin(lat)
+           sec_lat = 1/cos(lat)
+           tan_lat = sin_lat*sec_lat
+
+           if (abs(lat)>0.8*pii/2) then
+             block % state % time_levs(1) % state % streamFunctionCell     % array(:,iCell) = 0.0
+             block % state % time_levs(1) % state % zonalVelocityCell      % array(:,iCell) = 0.0
+             block % state % time_levs(1) % state % meridionalVelocityCell % array(:,iCell) = 0.0
+           else
+             block % state % time_levs(1) % state % streamFunctionCell     % array(:,iCell) = 0.0
+             block % state % time_levs(1) % state % zonalVelocityCell      % array(:,iCell) = 0.0
+             block % state % time_levs(1) % state % meridionalVelocityCell % array(:,iCell) = sin_kLon_lon 
+           endif
+
+           strainRate3DLatLonCellSolution(1,1,iCell) = & ! Elonlon
+                 - 1.0/R *tan_lat *sin_kLon_lon
+           strainRate3DLatLonCellSolution(2,1,iCell) = & ! Elatlat
+                 0.0
+           strainRate3DLatLonCellSolution(3,1,iCell) = & ! Err
+                 0.0
+           strainRate3DLatLonCellSolution(4,1,iCell) = & ! Elonlat
+                 1.0/R/2 *kLon*sec_lat *cos_kLon_lon 
            strainRate3DLatLonCellSolution(5,1,iCell) = & ! Elatr
                  - 3.0/R/2.0 *sin_kLon_lon 
            strainRate3DLatLonCellSolution(6,1,iCell) = & ! Elonr
                  0.0
+
+           call mpas_tensor_3DLatLon_to_R3(strainRate3DLatLonCellSolution(:,1,iCell), strainRateR3CellSolution(:,1,iCell), lat, lon)
+
+
+!           divTensorR3CellSolution(1,:,iCell) = 
+!           divTensorR3CellSolution(2,:,iCell) = 
+
+        end do
+
+     elseif (config_tensor_test_function.eq.'spherical_vSinLat') then
+
+        kLon = 1.0
+        kLat = 1.0
+
+        do iEdge = 1,nEdges
+           lon = lonEdge(iEdge)
+           lat = latEdge(iEdge)
+
+           if (abs(lat)>0.8*pii/2) then
+             velocityZonal      = 0.0
+             velocityMeridional = 0.0
+           else
+             velocityZonal      = 0.0
+             velocityMeridional = sin(kLat *lat) 
+           endif
+           normalVelocity(:,iEdge) = velocityZonal*cos(angleEdge(iEdge)) + velocityMeridional*sin(angleEdge(iEdge))
+           tangentialVelocity(:,iEdge) = -velocityZonal*sin(angleEdge(iEdge)) + velocityMeridional*cos(angleEdge(iEdge))
+        enddo
+
+!        call mpas_tangential_velocity(block % mesh, normalVelocity, tangentialVelocity)
+
+        do iCell = 1,nCells
+
+           lon = lonCell(iCell)
+           lat = latCell(iCell)
+
+           sin_kLon_lon = sin(kLon*lon)
+           cos_kLon_lon = cos(kLon*lon)
+           sin_kLat_lat = sin(kLat*lat)
+           cos_kLat_lat = cos(kLat*lat)
+           sin_lat = sin(lat)
+           sec_lat = 1/cos(lat)
+           tan_lat = sin_lat*sec_lat
+
+           if (abs(lat)>0.8*pii/2) then
+             block % state % time_levs(1) % state % streamFunctionCell     % array(:,iCell) = 0.0
+             block % state % time_levs(1) % state % zonalVelocityCell      % array(:,iCell) = 0.0
+             block % state % time_levs(1) % state % meridionalVelocityCell % array(:,iCell) = 0.0
+           else
+             block % state % time_levs(1) % state % streamFunctionCell     % array(:,iCell) = 0.0
+             block % state % time_levs(1) % state % zonalVelocityCell      % array(:,iCell) = 0.0
+             block % state % time_levs(1) % state % meridionalVelocityCell % array(:,iCell) = sin_kLat_lat 
+           endif
+
+           strainRate3DLatLonCellSolution(1,1,iCell) = & ! Elonlon
+                 - 1.0/R *tan_lat *sin_klat_lat
+           strainRate3DLatLonCellSolution(2,1,iCell) = & ! Elatlat
+                 1.0/R * kLat *cos_klat_lat
+           strainRate3DLatLonCellSolution(3,1,iCell) = & ! Err
+                 0.0
+           strainRate3DLatLonCellSolution(4,1,iCell) = & ! Elonlat
+                 0.0
+           strainRate3DLatLonCellSolution(5,1,iCell) = & ! Elatr
+                 - 3.0/R/2.0 *sin_kLat_lat 
+           strainRate3DLatLonCellSolution(6,1,iCell) = & ! Elonr
+                 0.0
+
+           call mpas_tensor_3DLatLon_to_R3(strainRate3DLatLonCellSolution(:,1,iCell), strainRateR3CellSolution(:,1,iCell), lat, lon)
+
+
+!           divTensorR3CellSolution(1,:,iCell) = 
+!           divTensorR3CellSolution(2,:,iCell) = 
+
+        end do
+
+     elseif (config_tensor_test_function.eq.'spherical') then
+
+        kLon = 1.0
+        kLat = 1.0
+
+        do iEdge = 1,nEdges
+           lon = lonEdge(iEdge)
+           lat = latEdge(iEdge)
+
+           if (abs(lat)>0.8*pii/2) then
+             velocityZonal      = 0.0
+             velocityMeridional = 0.0
+           else
+             velocityZonal      = kLat *cos(kLon *lon) *sin(kLat *lat)
+             velocityMeridional = kLon *sin(kLon *lon) *cos(kLat *lat)/cos(lat)  
+           endif
+           normalVelocity(:,iEdge) = velocityZonal*cos(angleEdge(iEdge)) + velocityMeridional*sin(angleEdge(iEdge))
+           tangentialVelocity(:,iEdge) = -velocityZonal*sin(angleEdge(iEdge)) + velocityMeridional*cos(angleEdge(iEdge))
+        enddo
+
+ !       call mpas_tangential_velocity(block % mesh, normalVelocity, tangentialVelocity)
+
+        do iCell = 1,nCells
+
+           lon = lonCell(iCell)
+           lat = latCell(iCell)
+
+           sin_kLon_lon = sin(kLon*lon)
+           cos_kLon_lon = cos(kLon*lon)
+           sin_kLat_lat = sin(kLat*lat)
+           cos_kLat_lat = cos(kLat*lat)
+           sin_lat = sin(lat)
+           sec_lat = 1/cos(lat)
+           tan_lat = sin_lat*sec_lat
+
+           if (abs(lat)>0.8*pii/2) then
+             block % state % time_levs(1) % state % streamFunctionCell     % array(:,iCell) = 0.0
+             block % state % time_levs(1) % state % zonalVelocityCell      % array(:,iCell) = 0.0
+             block % state % time_levs(1) % state % meridionalVelocityCell % array(:,iCell) = 0.0
+           else
+             block % state % time_levs(1) % state % streamFunctionCell     % array(:,iCell) =   -R *cos_kLon_lon *cos_kLat_lat
+             block % state % time_levs(1) % state % zonalVelocityCell      % array(:,iCell) = kLat *cos_kLon_lon *sin_kLat_lat
+             block % state % time_levs(1) % state % meridionalVelocityCell % array(:,iCell) = kLon *cos_kLat_lat *sin_kLon_lon *sec_lat
+           endif
+
+           strainRate3DLatLonCellSolution(1,1,iCell) = & ! Elonlon
+                 1/R *sec_lat * (- kLon      *tan_lat *sin_kLon_lon *cos_kLat_lat  &
+                                 - kLon*kLat          *sin_kLon_lon *sin_kLat_lat)
+           strainRate3DLatLonCellSolution(2,1,iCell) = & ! Elatlat
+                 1/R *sec_lat*( - kLon *kLat    *sin_kLon_lon *sin_kLat_lat  &
+                                + kLon *tan_lat *sin_kLon_lon *cos_kLat_lat )
+           strainRate3DLatLonCellSolution(3,1,iCell) = & ! Err
+                 0.0
+           strainRate3DLatLonCellSolution(4,1,iCell) = & ! Elonlat
+                 1/R/2 * (  kLon**2          *sec_lat**2 *cos_kLon_lon *cos_kLat_lat  &
+                          + kLat**2          *cos_kLon_lon *cos_kLat_lat  &
+                          + kLat *tan_lat *cos_kLon_lon *sin_kLat_lat)
+           strainRate3DLatLonCellSolution(5,1,iCell) = & ! Elatr
+                 - 3.0/R/2.0 *kLon *sec_lat *sin_kLon_lon *cos_kLat_lat
+           strainRate3DLatLonCellSolution(6,1,iCell) = & ! Elonr
+                 - 3.0/R/2.0 *kLat *cos_kLon_lon *sin_kLat_lat 
 
            call mpas_tensor_3DLatLon_to_R3(strainRate3DLatLonCellSolution(:,1,iCell), strainRateR3CellSolution(:,1,iCell), lat, lon)
 
