@@ -660,6 +660,12 @@
 					possible_values=".true. or .false."
 		/>
 	</nml_record>
+	<nml_record name="tensors">
+		<nml_option name="config_tensor_test_function" type="character" default_value="'sin_arb_rot'" units="unitless"
+		            description="Character string to choose tensor test fuction"
+		            possible_values="'constant', 'linear_x', 'linear_y', 'linear_arb_rot', 'sin_arb_rot', 'power_x', 'power_y', 'power_arb_rot', 'spherical_sinx', 'spherical_u1', 'spherical_v1', 'spherical_solid', 'spherical'"
+		/>
+	</nml_record>
 	<var_struct name="state" time_levs="2">
 		<var_array name="tracers" type="real" dimensions="nVertLevels nCells Time">
 			<var name="temperature" array_group="dynamics" streams="iro" units="degrees Celsius"
@@ -735,6 +741,9 @@
 		/>
 		<var name="strainRate2DCell" type="real" dimensions="R3 nVertLevels nCells Time" streams="o" units="s^{-1}"
 		     description="strain rate tensor at cell center, 2D, lat-lon in symmetric 3-index form, {\color{red}Temporary only}"
+		/>
+		<var name="strainRate2DVertex" type="real" dimensions="R3 nVertLevels nVertices Time" streams="o" units="s^{-1}"
+		     description="strain rate tensor at vertices, 2D, lat-lon in symmetric 3-index form, {\color{red}Temporary only}"
 		/>
 		<var name="strainRate3DLatLonCell" type="real" dimensions="SIX nVertLevels nCells Time" streams="o" units="s^{-1}"
 		     description="strain rate tensor at cell center, 3D, lat-lon in symmetric 3-index form, {\color{red}Temporary only}"

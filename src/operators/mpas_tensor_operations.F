@@ -23,6 +23,7 @@ module mpas_tensor_operations
 
    use mpas_grid_types
    use mpas_constants
+   use mpas_configure
    use mpas_vector_operations
    use mpas_matrix_operations
 
@@ -42,8 +43,8 @@ module mpas_tensor_operations
    !
    !--------------------------------------------------------------------
 
-   public :: mpas_strain_rate, &
-             mpas_divergence_of_tensor, &
+   public :: mpas_strain_rate_R3, &
+             mpas_divergence_of_tensor_3D, &
              mpas_tensor_edge_R3_to_2D, &
              mpas_tensor_edge_2D_to_R3, &
              mpas_tensor_R3_to_LatLon, &
@@ -62,9 +63,9 @@ contains
 
 !***********************************************************************
 !
-!  routine mpas_strain_rate
+!  routine mpas_strain_rate_R3
 !
-!> \brief   Computes 2D strain rate at edges
+!> \brief   Computes strain rate at cell centers, in R3
 !> \author  Mark Petersen
 !> \date    17 April 2013
 !> \details 
@@ -73,7 +74,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_strain_rate(grid, normalVelocity, tangentialVelocity, &
+   subroutine mpas_strain_rate_R3(grid, normalVelocity, tangentialVelocity, &
       strainRateR3Cell, outerProductEdge)!{{{
 
       !-----------------------------------------------------------------
@@ -210,11 +211,11 @@ if (1==2) then
 endif
       end do
 
-   end subroutine mpas_strain_rate!}}}
+   end subroutine mpas_strain_rate_R3!}}}
 
 !***********************************************************************
 !
-!  routine mpas_divergence_of_tensor
+!  routine mpas_divergence_of_tensor_3D
 !
 !> \brief   Computes divergence of the stress tensor
 !> \author  Mark Petersen
@@ -224,7 +225,7 @@ endif
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_divergence_of_tensor(grid, strainRateR3Edge, divTensorR3Cell)!{{{
+   subroutine mpas_divergence_of_tensor_3D(grid, strainRateR3Edge, divTensorR3Cell)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -295,7 +296,7 @@ endif
          end do
       end do
 
-   end subroutine mpas_divergence_of_tensor!}}}
+   end subroutine mpas_divergence_of_tensor_3D!}}}
 
 !***********************************************************************
 !
@@ -818,6 +819,287 @@ endif
 
    end subroutine mpas_tensor_R3_to_3DLatLon!}}}
 
+!***********************************************************************
+!
+!  routine mpas_strain_rate_2Dlatlon
+!
+!> \brief   Computes strain rate at cells and vertices
+!> \author  Mark Petersen
+!> \date    25 September 2012
+!> \version SVN:$Id$
+!> \details 
+!>  This routine computes the strain rate at the cell centers and 
+!>  vertices using the weak derivative.
+!
+!-----------------------------------------------------------------------
+
+   subroutine mpas_strain_rate_2Dlatlon(grid, normalVelocity,tangentialVelocity, strainRate2DCell, strainRate2DVertex)!{{{
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+         normalVelocity, &!< Input: Horizontal velocity normal to edge
+         tangentialVelocity   !< Input: Horizontal velocity tangent to edge
+
+      type (mesh_type), intent(in) :: &
+         grid          !< Input: grid information
+
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:,:,:), intent(out) :: &
+         strainRate2DCell  !< Output: strain rate tensor at cell center
+      real (kind=RKIND), dimension(:,:,:), intent(out) :: &
+         strainRate2DVertex  !< Output: strain rate tensor at vertex
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      integer :: iEdge, nEdges, nCells,nVertices, cell1, cell2, vertex1, vertex2, k
+
+      integer, dimension(:), pointer :: maxLevelEdgeBot
+      integer, dimension(:,:), pointer :: cellsOnEdge, verticesOnEdge
+
+      real (kind=RKIND) :: invAreaCell1, invAreaCell2, invAreaTri1, invAreaTri2, &
+        cos_pwr1, sin_pwr1, cos_pwr2, sin_pwr2, cossin, uDvEdge, uDcEdge, eps11, eps22, eps12, nVertLevels
+      real (kind=RKIND), dimension(:), pointer :: dvEdge, dcEdge, areaCell, areaTriangle, angleEdge
+
+      !-----------------------------------------------------------------
+      !
+      ! call relevant routines for computing tendencies
+      ! note that the user can choose multiple options and the 
+      !   tendencies will be added together
+      !
+      !-----------------------------------------------------------------
+
+      nEdges = grid % nEdges
+      nCells = grid % nCells
+      nVertices = grid % nVertices
+      nVertLevels = grid % nVertLevels
+
+      maxLevelEdgeBot   => grid % maxLevelEdgeBot % array
+      cellsOnEdge => grid % cellsOnEdge % array
+      verticesOnEdge    => grid % verticesOnEdge % array
+      dcEdge            => grid % dcEdge % array
+      dvEdge            => grid % dvEdge % array
+      areaCell          => grid % areaCell % array
+      areaTriangle      => grid % areaTriangle % array
+      angleEdge         => grid % angleEdge % array
+
+      strainRate2DCell = 0.0
+      strainRate2DVertex  = 0.0
+
+      do iEdge=1,nEdges
+         vertex1 = verticesOnEdge(1,iEdge)
+         vertex2 = verticesOnEdge(2,iEdge)
+
+         cell1 = cellsOnEdge(1,iEdge)
+         cell2 = cellsOnEdge(2,iEdge)
+
+         invAreaTri1 = 1.0 / areaTriangle(vertex1)
+         invAreaTri2 = 1.0 / areaTriangle(vertex2)
+
+         !dwj: 02/23/12 arraCell(nCells+1) is still 0, this is a temporary fix
+         invAreaCell1 = 1.0 / max(areaCell(cell1), 1e-10)
+         invAreaCell2 = 1.0 / max(areaCell(cell2), 1e-10)
+
+         cos_pwr1 = cos(angleEdge(iEdge))
+         cos_pwr2 = cos_pwr1**2
+         sin_pwr1 = sin(angleEdge(iEdge))
+         sin_pwr2 = sin_pwr1**2
+         cossin = cos_pwr1*sin_pwr1
+
+         ! change later:
+         !do k=1,maxLevelEdgeBot(iEdge)
+         do k=1,nVertLevels
+
+            ! strain rate tensor at cell center
+            eps11 = normalVelocity(k,iEdge)*cos_pwr2 - tangentialVelocity(k,iEdge)*cossin
+            eps22 = normalVelocity(k,iEdge)*sin_pwr2 + tangentialVelocity(k,iEdge)*cossin
+            eps12 = normalVelocity(k,iEdge)*cossin   + tangentialVelocity(k,iEdge)*0.5*(cos_pwr2-sin_pwr2)
+
+            ! index 1, 2, and 3 is for 11, 22, and 12 
+            strainRate2DCell(1,k,cell1) = strainRate2DCell(1,k,cell1) + eps11*invAreaCell1 * dvEdge(iEdge)
+            strainRate2DCell(1,k,cell2) = strainRate2DCell(1,k,cell2) - eps11*invAreaCell2 * dvEdge(iEdge)
+            strainRate2DCell(2,k,cell1) = strainRate2DCell(2,k,cell1) + eps22*invAreaCell1 * dvEdge(iEdge)
+            strainRate2DCell(2,k,cell2) = strainRate2DCell(2,k,cell2) - eps22*invAreaCell2 * dvEdge(iEdge)
+            strainRate2DCell(3,k,cell1) = strainRate2DCell(3,k,cell1) + eps12*invAreaCell1 * dvEdge(iEdge)
+            strainRate2DCell(3,k,cell2) = strainRate2DCell(3,k,cell2) - eps12*invAreaCell2 * dvEdge(iEdge)
+
+            ! strain rate tensor at vertex
+            eps11 = -tangentialVelocity(k,iEdge)*sin_pwr2   + normalVelocity(k,iEdge)*cossin
+            eps22 = -tangentialVelocity(k,iEdge)*cos_pwr2   - normalVelocity(k,iEdge)*cossin
+            eps12 =  tangentialVelocity(k,iEdge)*cossin - normalVelocity(k,iEdge)*0.5*(cos_pwr2-sin_pwr2)
+
+            strainRate2DVertex(1,k,vertex1) = strainRate2DVertex(1,k,vertex1) - eps11*invAreaTri1* dcEdge(iEdge)
+            strainRate2DVertex(1,k,vertex2) = strainRate2DVertex(1,k,vertex2) + eps11*invAreaTri2* dcEdge(iEdge)
+            strainRate2DVertex(2,k,vertex1) = strainRate2DVertex(2,k,vertex1) - eps22*invAreaTri1* dcEdge(iEdge)
+            strainRate2DVertex(2,k,vertex2) = strainRate2DVertex(2,k,vertex2) + eps22*invAreaTri2* dcEdge(iEdge)
+            strainRate2DVertex(3,k,vertex1) = strainRate2DVertex(3,k,vertex1) - eps12*invAreaTri1* dcEdge(iEdge)
+            strainRate2DVertex(3,k,vertex2) = strainRate2DVertex(3,k,vertex2) + eps12*invAreaTri2* dcEdge(iEdge)
+
+         end do
+      end do
+
+!   print '(a,100f8.3)', 'xCell     ',grid % xCell % array(6:7)
+!   print '(a,100f8.3)', 'yCell     ',grid % yCell % array(6:7)
+!   print '(a,100f8.3)', 'xEdge     ',grid % xEdge % array(1:nEdges)
+!   print '(a,100f8.3)', 'yEdge     ',grid % yEdge % array(1:nEdges)
+!   print '(a,100f8.3)', 'angleEdge ',angleEdge(1:nEdges)
+!   print '(a,100f8.3)', 'normalVelocity         ',normalVelocity(:,1:nEdges)
+!   print '(a,100f8.3)', 'tangentialVelocity         ',tangentialVelocity(:,1:nEdges)
+!   print '(a,100f8.3)', 'eps Nor 1 ',strainRate2DCell(1,:,6:7)
+!   print '(a,100f8.3)', 'eps Nor 2 ',strainRate2DCell(2,:,6:7)
+!   print '(a,100f8.3)', 'eps Nor 3 ',strainRate2DCell(3,:,6:7)
+!   print '(a,100f8.3)', 'xVertex   ',grid % xVertex % array(10:11)
+!   print '(a,100f8.3)', 'yVertex   ',grid % yVertex % array(10:11)
+!   print '(a,100f8.3)', 'eps Shr 1 ',strainRate2DVertex(1,:,10:11)
+!   print '(a,100f8.3)', 'eps Shr 2 ',strainRate2DVertex(2,:,10:11)
+!   print '(a,100f8.3)', 'eps Shr 3 ',strainRate2DVertex(3,:,10:11)
+
+if (1==2) then
+   print '(a,100f8.3)', 'xCell     ',grid % xCell % array(1:nCells)
+   print '(a,100f8.3)', 'yCell     ',grid % yCell % array(1:nCells)
+   print '(a,100f8.3)', 'xEdge     ',grid % xEdge % array(1:nEdges)
+   print '(a,100f8.3)', 'yEdge     ',grid % yEdge % array(1:nEdges)
+   print '(a,100f8.3)', 'angleEdge ',angleEdge(1:nEdges)
+   print '(a,100f8.3)', 'normalVelocity         ',normalVelocity(:,1:nEdges)
+   print '(a,100f8.3)', 'tangentialVelocity         ',tangentialVelocity(:,1:nEdges)
+   print '(a,100f8.3)', 'eps Nor 1 ',strainRate2DCell(1,:,1:nCells)
+   print '(a,100f8.3)', 'eps Nor 2 ',strainRate2DCell(2,:,1:nCells)
+   print '(a,100f8.3)', 'eps Nor 3 ',strainRate2DCell(3,:,1:nCells)
+   print '(a,100f8.3)', 'xVertex   ',grid % xVertex % array(1:nVertices)
+   print '(a,100f8.3)', 'yVertex   ',grid % yVertex % array(1:nVertices)
+   print '(a,100f8.3)', 'eps Shr 1 ',strainRate2DVertex(1,:,1:nVertices)
+   print '(a,100f8.3)', 'eps Shr 2 ',strainRate2DVertex(2,:,1:nVertices)
+   print '(a,100f8.3)', 'eps Shr 3 ',strainRate2DVertex(3,:,1:nVertices)
+endif
+
+
+   end subroutine mpas_strain_rate_2Dlatlon!}}}
+
+!***********************************************************************
+!
+!  routine mpas_div_tensor_2Dlatlon_strong
+!
+!> \brief   Computes divergence of the stress tensor
+!> \author  Mark Petersen
+!> \date    25 September 2012
+!> \version SVN:$Id$
+!> \details 
+!>  This routine computes the divergence of the stress tensor
+!
+!-----------------------------------------------------------------------
+
+   subroutine mpas_div_tensor_2Dlatlon_strong(grid, tensorCell, tensorVertex, divTensor)!{{{
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:,:,:), intent(in) :: &
+         tensorCell  !< Input: tensor at cell center
+      real (kind=RKIND), dimension(:,:,:), intent(in) :: &
+         tensorVertex  !< Input: tensor at vertex
+
+      type (mesh_type), intent(in) :: &
+         grid          !< Input: grid information
+
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:,:), intent(out) :: &
+         divTensor  !< Output: normal component of divergence of the stress tensor at edge
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      integer :: iEdge, nEdgesSolve, cell1, cell2, vertex1, vertex2, k
+
+      integer, dimension(:), pointer :: maxLevelEdgeTop
+      integer, dimension(:,:), pointer :: cellsOnEdge, verticesOnEdge, edgeMask
+
+      real (kind=RKIND) :: invAreaCell1, invAreaCell2, invAreaTri1, invAreaTri2, &
+        cos_pwr1, sin_pwr1, cos_pwr2, sin_pwr2, cossin, uDvEdge, uDcEdge, eps11, eps22, eps12, &
+        invdcEdge, invdvEdge
+      real (kind=RKIND), dimension(:), pointer :: dvEdge, dcEdge, areaCell, areaTriangle, angleEdge
+
+      !-----------------------------------------------------------------
+      !
+      ! call relevant routines for computing tendencies
+      ! note that the user can choose multiple options and the 
+      !   tendencies will be added together
+      !
+      !-----------------------------------------------------------------
+
+      nEdgesSolve = grid % nEdgesSolve
+
+      maxLevelEdgeTop   => grid % maxLevelEdgeTop % array
+      cellsOnEdge => grid % cellsOnEdge % array
+      verticesOnEdge    => grid % verticesOnEdge % array
+      dcEdge            => grid % dcEdge % array
+      dvEdge            => grid % dvEdge % array
+      angleEdge         => grid % angleEdge % array
+      edgeMask => grid % edgeMask % array
+
+      do iEdge=1,nEdgesSolve
+         vertex1 = verticesOnEdge(1,iEdge)
+         vertex2 = verticesOnEdge(2,iEdge)
+
+         cell1 = cellsOnEdge(1,iEdge)
+         cell2 = cellsOnEdge(2,iEdge)
+
+         cos_pwr1 = cos(angleEdge(iEdge))
+         cos_pwr2 = cos_pwr1**2
+         sin_pwr1 = sin(angleEdge(iEdge))
+         sin_pwr2 = sin_pwr1**2
+         cossin = cos_pwr1*sin_pwr1
+
+         invdcEdge = 1.0 / dcEdge(iEdge)
+         invdvEdge = 1.0 / dvEdge(iEdge)
+
+         do k=1,maxLevelEdgeTop(iEdge)
+            divTensor(k,iEdge) = edgeMask(k,iEdge) * invdcEdge &
+               * (  cos_pwr2*tensorCell(1,k,cell2) - 2.0*cossin*tensorCell(3,k,cell2) + sin_pwr2*tensorCell(2,k,cell2) &
+                  -(cos_pwr2*tensorCell(1,k,cell1) - 2.0*cossin*tensorCell(3,k,cell1) + sin_pwr2*tensorCell(2,k,cell1)) ) &
+               + edgeMask(k,iEdge) * invdvEdge &
+               * (  (cos_pwr2-sin_pwr2)*tensorVertex(3,k,vertex2) + cossin*(tensorVertex(1,k,vertex2) - tensorVertex(2,k,vertex2)) &
+                  -((cos_pwr2-sin_pwr2)*tensorVertex(3,k,vertex1) + cossin*(tensorVertex(1,k,vertex1) - tensorVertex(2,k,vertex1))))
+         end do
+
+      end do
+
+   end subroutine mpas_div_tensor_2Dlatlon_strong!}}}
 
 !***********************************************************************
 !
@@ -871,7 +1153,7 @@ endif
       real (kind=RKIND), dimension(:), pointer :: angleEdge, xCell, yCell, xEdge, yEdge, latCell, lonCell, latEdge, lonEdge
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, tangentialVelocity
       real (kind=RKIND), dimension(:,:), pointer :: edgeNormalVectors, edgeTangentVectors
-      real (kind=RKIND), dimension(:,:,:), pointer :: strainRateR3Cell, strainRateR3Edge, divTensorR3Cell
+      real (kind=RKIND), dimension(:,:,:), pointer :: strainRateR3Cell, strainRateR3Edge, divTensorR3Cell, strainRate2DCell, strainRate2DVertex
 
       real (kind=RKIND), dimension(:,:,:), pointer :: strainRateR3CellSolution, strainRate2DCellSolution, divTensorR3CellSolution, strainRate3DLatLonCellSolution
       real (kind=RKIND), dimension(:,:,:), pointer :: strainRateR3CellDiff, divTensorR3CellDiff, outerProductEdge
@@ -904,6 +1186,8 @@ endif
       tangentialVelocity  => block % state % time_levs(1) % state % tangentialVelocity % array
 
       ! mrp convert these to scratch so they are not required for other cores
+      strainRate2DCell    => block % state % time_levs(1) % state % strainRate2DCell % array
+      strainRate2DVertex    => block % state % time_levs(1) % state % strainRate2DVertex % array
       strainRateR3Cell    => block % state % time_levs(1) % state % strainRateR3Cell % array
       strainRateR3Edge    => block % state % time_levs(1) % state % strainRateR3Edge % array
       divTensorR3Cell     => block % state % time_levs(1) % state % divTensorR3Cell % array
@@ -926,19 +1210,6 @@ endif
       cs = 20.0e4
       rot = 1.0 !pii/4.0 !0.0*pii/2
       p = 2 ! power for polynomial function
-!      test_function_type = 'constant'
-!      test_function_type = 'linear_x'
-!      test_function_type = 'linear_y'
-!      test_function_type = 'linear_arb_rot'
-!      test_function_type = 'sin_arb_rot'
-!      test_function_type = 'power_x'
-!      test_function_type = 'power_y'
-!      test_function_type = 'power_arb_rot'
-!      test_function_type = 'spherical_sinx'
-!      test_function_type = 'spherical_u1'
-      test_function_type = 'spherical_v1'
-!     test_function_type = 'spherical_solid'
-!      test_function_type = 'spherical'
 
       ld = 100.0e3  ! wavelength in meters
       pi2l = pii/ld
@@ -947,7 +1218,7 @@ endif
 
       R = block % mesh % sphere_radius
 
-     if (test_function_type.eq.'constant') then
+     if (config_tensor_test_function.eq.'constant') then
        ! linear function in x
         do iEdge = 1,nEdges
            xVelocity = cn
@@ -959,7 +1230,7 @@ endif
         strainRateR3CellSolution = 0.0
         divTensorR3CellSolution = 0.0
 
-     elseif (test_function_type.eq.'linear_x') then
+     elseif (config_tensor_test_function.eq.'linear_x') then
        ! linear function in x
         do iEdge = 1,nEdges
            xVelocity = cn*xEdge(iEdge)
@@ -974,7 +1245,7 @@ endif
 
         divTensorR3CellSolution = 0.0
 
-     elseif (test_function_type.eq.'linear_y') then
+     elseif (config_tensor_test_function.eq.'linear_y') then
 
         ! linear function in y
         do iEdge = 1,nEdges
@@ -990,7 +1261,7 @@ endif
 
         divTensorR3CellSolution = 0.0
 
-     elseif (test_function_type.eq.'linear_arb_rot') then
+     elseif (config_tensor_test_function.eq.'linear_arb_rot') then
 
         ! linear function, arbitrary rotation
 
@@ -1014,7 +1285,7 @@ endif
 
         divTensorR3CellSolution = 0.0
 
-     elseif (test_function_type.eq.'power_x') then
+     elseif (config_tensor_test_function.eq.'power_x') then
 
        ! power function in x: x^p
         do iEdge = 1,nEdges
@@ -1033,7 +1304,7 @@ endif
            divTensorR3CellSolution(2,:,iCell) = 0.5*cs*p*(p-1)*xCell(iCell)**(p-2)  
         end do
 
-     elseif (test_function_type.eq.'power_y') then
+     elseif (config_tensor_test_function.eq.'power_y') then
 
         ! power function in y: y^n
         do iEdge = 1,nEdges
@@ -1052,7 +1323,7 @@ endif
            divTensorR3CellSolution(2,:,iCell) =  cn    *p*(p-1)*yCell(iCell)**(p-2)
         end do
 
-     elseif (test_function_type.eq.'power_arb_rot') then
+     elseif (config_tensor_test_function.eq.'power_arb_rot') then
 
         ! power function, arbitrary rotation
 
@@ -1081,7 +1352,7 @@ endif
            divTensorR3CellSolution(2,:,iCell) = p*(p-1)*f**(p-2) *(sin(rot)**2*g2 + 0.5*(cos(rot)**2*g2 + sin(rot)*cos(rot)*g1) )
         end do
 
-     elseif (test_function_type.eq.'sin_arb_rot') then
+     elseif (config_tensor_test_function.eq.'sin_arb_rot') then
 
         ! sin function, arbitrary rotation
 
@@ -1111,7 +1382,7 @@ endif
            divTensorR3CellSolution(2,:,iCell) = -pi2l**2*f*(sin(rot)**2*g2 + 0.5*(cos(rot)**2*g2 + sin(rot)*cos(rot)*g1) )
         end do
 
-     elseif (test_function_type.eq.'spherical_solid') then
+     elseif (config_tensor_test_function.eq.'spherical_solid') then
 
         do iEdge = 1,nEdges
            lon = lonEdge(iEdge)
@@ -1120,9 +1391,11 @@ endif
            velocityZonal      = cos(lat)
            velocityMeridional = 0.0
            normalVelocity(:,iEdge) = velocityZonal*cos(angleEdge(iEdge)) + velocityMeridional*sin(angleEdge(iEdge))
+           tangentialVelocity(:,iEdge) = -velocityZonal*sin(angleEdge(iEdge)) + velocityMeridional*cos(angleEdge(iEdge))
         enddo
 
-        call mpas_tangential_velocity(block % mesh, normalVelocity, tangentialVelocity)
+!  replacing with tangentialVel just above for now:
+!        call mpas_tangential_velocity(block % mesh, normalVelocity, tangentialVelocity)
 
         do iCell = 1,nCells
 
@@ -1144,14 +1417,14 @@ endif
            strainRate3DLatLonCellSolution(5,1,iCell) = & ! Elatr
                  0.0
            strainRate3DLatLonCellSolution(6,1,iCell) = & ! Elonr
-                 - 1.0/R/2.0*cos(lat)
+                 - 3.0/R/2.0*cos(lat) 
 
            call mpas_tensor_3DLatLon_to_R3(strainRate3DLatLonCellSolution(:,1,iCell), strainRateR3CellSolution(:,1,iCell), lat, lon)
         enddo
 
         divTensorR3CellSolution = 0.0
 
-     elseif (test_function_type.eq.'spherical_u1') then
+     elseif (config_tensor_test_function.eq.'spherical_u1') then
 
         kLon = 1.0
         kLat = 0.0
@@ -1168,9 +1441,11 @@ endif
              velocityMeridional = 0.0
            endif
            normalVelocity(:,iEdge) = velocityZonal*cos(angleEdge(iEdge)) + velocityMeridional*sin(angleEdge(iEdge))
+           tangentialVelocity(:,iEdge) = -velocityZonal*sin(angleEdge(iEdge)) + velocityMeridional*cos(angleEdge(iEdge))
         enddo
 
-        call mpas_tangential_velocity(block % mesh, normalVelocity, tangentialVelocity)
+!  replacing with tangentialVel just above for now:
+!        call mpas_tangential_velocity(block % mesh, normalVelocity, tangentialVelocity)
 
         do iCell = 1,nCells
 
@@ -1202,11 +1477,11 @@ endif
            strainRate3DLatLonCellSolution(3,1,iCell) = & ! Err
                  0.0
            strainRate3DLatLonCellSolution(4,1,iCell) = & ! Elonlat
-                 -0.5/R*tan_lat
+                 0.5/R*tan_lat
            strainRate3DLatLonCellSolution(5,1,iCell) = & ! Elatr
                  0.0
            strainRate3DLatLonCellSolution(6,1,iCell) = & ! Elonr
-                 - 1.0/R/2.0
+                 - 3.0/R/2.0
 
            call mpas_tensor_3DLatLon_to_R3(strainRate3DLatLonCellSolution(:,1,iCell), strainRateR3CellSolution(:,1,iCell), lat, lon)
 
@@ -1216,7 +1491,7 @@ endif
         end do
 
 
-     elseif (test_function_type.eq.'spherical_v1') then
+     elseif (config_tensor_test_function.eq.'spherical_v1') then
 
         kLon = 1.0
         kLat = 0.0
@@ -1233,9 +1508,11 @@ endif
              velocityMeridional = 1.0
            endif
            normalVelocity(:,iEdge) = velocityZonal*cos(angleEdge(iEdge)) + velocityMeridional*sin(angleEdge(iEdge))
+           tangentialVelocity(:,iEdge) = -velocityZonal*sin(angleEdge(iEdge)) + velocityMeridional*cos(angleEdge(iEdge))
         enddo
 
-        call mpas_tangential_velocity(block % mesh, normalVelocity, tangentialVelocity)
+!  replacing with tangentialVel just above for now:
+!        call mpas_tangential_velocity(block % mesh, normalVelocity, tangentialVelocity)
 
         do iCell = 1,nCells
 
@@ -1261,7 +1538,7 @@ endif
            endif
 
            strainRate3DLatLonCellSolution(1,1,iCell) = & ! Elonlon
-                 1.0/R*tan_lat
+                 -1.0/R*tan_lat
            strainRate3DLatLonCellSolution(2,1,iCell) = & ! Elatlat
                  0.0
            strainRate3DLatLonCellSolution(3,1,iCell) = & ! Err
@@ -1269,7 +1546,7 @@ endif
            strainRate3DLatLonCellSolution(4,1,iCell) = & ! Elonlat
                  0.0
            strainRate3DLatLonCellSolution(5,1,iCell) = & ! Elatr
-                 - 1.0/R/2.0
+                 - 3.0/R/2.0
            strainRate3DLatLonCellSolution(6,1,iCell) = & ! Elonr
                  0.0
 
@@ -1281,7 +1558,7 @@ endif
         end do
 
 
-     elseif (test_function_type.eq.'spherical_sinx') then
+     elseif (config_tensor_test_function.eq.'spherical_usinlon') then
 
         kLon = 1.0
         kLat = 0.0
@@ -1325,21 +1602,28 @@ endif
              block % state % time_levs(1) % state % meridionalVelocityCell % array(:,iCell) = 0.0
            endif
 
-           strainRate2DCellSolution(1,:,iCell) = & ! Elonlon
-                 1/R *sec_lat * kLon *cos_kLon_lon
-           strainRate2DCellSolution(2,:,iCell) = & ! Elatlat
+           strainRate3DLatLonCellSolution(1,1,iCell) = & ! Elonlon
+                 1.0/R *sec_lat * kLon *cos_kLon_lon
+           strainRate3DLatLonCellSolution(2,1,iCell) = & ! Elatlat
                  0.0
-           strainRate2DCellSolution(3,:,iCell) = & ! Elonlat
-                -1/R/2 *tan_lat *sin_kLon_lon 
+           strainRate3DLatLonCellSolution(3,1,iCell) = & ! Err
+                 0.0
+           strainRate3DLatLonCellSolution(4,1,iCell) = & ! Elonlat
+                 1.0/R/2 *tan_lat *sin_kLon_lon 
+           strainRate3DLatLonCellSolution(5,1,iCell) = & ! Elatr
+                 - 3.0/R/2.0 *sin_kLon_lon 
+           strainRate3DLatLonCellSolution(6,1,iCell) = & ! Elonr
+                 0.0
 
-           call mpas_tensor_LatLon_to_R3(strainRate2DCellSolution(:,1,iCell), strainRateR3CellSolution(:,1,iCell), lat, lon)
+           call mpas_tensor_3DLatLon_to_R3(strainRate3DLatLonCellSolution(:,1,iCell), strainRateR3CellSolution(:,1,iCell), lat, lon)
+
 
 !           divTensorR3CellSolution(1,:,iCell) = 
 !           divTensorR3CellSolution(2,:,iCell) = 
 
         end do
 
-     elseif (test_function_type.eq.'spherical') then
+     elseif (config_tensor_test_function.eq.'spherical') then
 
         kLon = 0.0
         kLat = 1.0
@@ -1352,8 +1636,8 @@ endif
              velocityZonal      = 0.0
              velocityMeridional = 0.0
            else
-             velocityZonal      = kLat *cos(kLon *lon) *sin(kLat *lat)/cos(lat) 
-             velocityMeridional = kLon *sin(kLon *lon) *cos(kLat *lat) 
+             velocityZonal      = kLat *cos(kLon *lon) *sin(kLat *lat)
+             velocityMeridional = kLon *sin(kLon *lon) *cos(kLat *lat)/cos(lat)  
            endif
            normalVelocity(:,iEdge) = velocityZonal*cos(angleEdge(iEdge)) + velocityMeridional*sin(angleEdge(iEdge))
         enddo
@@ -1383,17 +1667,24 @@ endif
              block % state % time_levs(1) % state % meridionalVelocityCell % array(:,iCell) = kLon *cos_kLat_lat *sin_kLon_lon
            endif
 
-           strainRate2DCellSolution(1,:,iCell) = & ! Elonlon
-                 1/R *sec_lat * (  kLon      *sin_lat *sin_kLon_lon *cos_kLat_lat  &
-                                 - kLon*kLat *sec_lat *sin_kLon_lon *sin_kLat_lat)
-           strainRate2DCellSolution(2,:,iCell) = & ! Elatlat
+           strainRate3DLatLonCellSolution(1,1,iCell) = & ! Elonlon
+                 1/R *sec_lat * (- kLon      *tan_lat *sin_kLon_lon *cos_kLat_lat  &
+                                 - kLon*kLat *sin_lat *sin_kLon_lon *sin_kLat_lat)
+           strainRate3DLatLonCellSolution(2,1,iCell) = & ! Elatlat
                  1/R *kLon *kLat *sin_kLon_lon *sin_kLat_lat
-           strainRate2DCellSolution(3,:,iCell) = & ! Elonlat
+           strainRate3DLatLonCellSolution(3,1,iCell) = & ! Err
+                 0.0
+           strainRate3DLatLonCellSolution(4,1,iCell) = & ! Elonlat
                  1/R/2 * (  kLon**2          *sec_lat *cos_kLon_lon *cos_kLat_lat  &
                           - kLat**2          *sec_lat *cos_kLon_lon *cos_kLat_lat  &
                           - 2 *kLat *tan_lat *sec_lat *cos_kLon_lon *sin_kLat_lat)
+           strainRate3DLatLonCellSolution(5,1,iCell) = & ! Elatr
+                 - 3.0/R/2.0 *sin_kLon_lon 
+           strainRate3DLatLonCellSolution(6,1,iCell) = & ! Elonr
+                 0.0
 
-           call mpas_tensor_LatLon_to_R3(strainRate2DCellSolution(:,1,iCell), strainRateR3CellSolution(:,1,iCell), lat, lon)
+           call mpas_tensor_3DLatLon_to_R3(strainRate3DLatLonCellSolution(:,1,iCell), strainRateR3CellSolution(:,1,iCell), lat, lon)
+
 
 !           divElon = 1/R *sec_lat ((*sin_lat (kLon**2 *cos_kLon_lon *cos_kLat_lat *sec_lat - *kLat**2 *cos_kLon_lon *cos_kLat_lat *sec_lat &
 !   + 2 *kLat *cos_kLon_lon *tan_lat *sec_lat *sin_kLat_lat))/(2 R) + 1/(2 R)
@@ -1416,21 +1707,26 @@ endif
         end do
 
      else
-       print *, 'bad choice of test_function_type:',test_function_type
+       print *, 'bad choice of config_tensor_test_function:',config_tensor_test_function
        stop
      endif
 
 
-     call mpas_strain_rate(block % mesh, normalVelocity, tangentialVelocity, strainRateR3Cell, outerProductEdge)
+     call mpas_strain_rate_R3(block % mesh, normalVelocity, tangentialVelocity, strainRateR3Cell, outerProductEdge)
 
      call mpas_matrix_cell_to_edge(block % mesh, strainRateR3Cell, strainRateR3Edge)
 
-     call mpas_divergence_of_tensor(block % mesh, strainRateR3Edge, divTensorR3Cell)
+     call mpas_divergence_of_tensor_3D(block % mesh, strainRateR3Edge, divTensorR3Cell)
 
      do iCell = 1,nCells
         call mpas_tensor_R3_to_3DLatLon(strainRateR3Cell(:,1,iCell), &
             block % state % time_levs(1) % state % strainRate3DLatLonCell % array(:,1,iCell), latCell(iCell), lonCell(iCell))
      enddo
+
+    ! test 2D operations:
+    call mpas_strain_rate_2Dlatlon(block % mesh, normalVelocity,tangentialVelocity, strainRate2DCell, strainRate2DVertex)
+
+
 
 minCell=17
 maxCell=17 
@@ -1486,6 +1782,9 @@ endif
 !    end subroutine mpas_tensor_operations_init!}}}
 
 !***********************************************************************
+
+
+
 
 end module mpas_tensor_operations
 
