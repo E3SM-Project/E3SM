@@ -54,7 +54,7 @@ module ocn_global_diagnostics
 
       real (kind=RKIND) :: volumeCellGlobal, volumeEdgeGlobal, CFLNumberGlobal, localCFL, localSum, areaCellGlobal, areaEdgeGlobal, areaTriangleGlobal
       real (kind=RKIND), dimension(:), pointer ::  areaCell, dcEdge, dvEdge, areaTriangle, areaEdge
-      real (kind=RKIND), dimension(:,:), pointer :: layerThickness, normalVelocity, tangentialVelocity, layerThicknessEdge, relativeVorticity, kineticEnergy, &
+      real (kind=RKIND), dimension(:,:), pointer :: layerThickness, normalVelocity, tangentialVelocity, layerThicknessEdge, relativeVorticity, kineticEnergyCell, &
          normalizedRelativeVorticityEdge, normalizedPlanetaryVorticityEdge, pressure, montgomeryPotential, vertTransportVelocityTop, density, tracerTemp
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers
       
@@ -104,7 +104,7 @@ module ocn_global_diagnostics
          vertTransportVelocityTop => state % vertTransportVelocityTop % array
          layerThicknessEdge => state % layerThicknessEdge % array
          relativeVorticity => state % relativeVorticity % array
-         kineticEnergy => state % kineticEnergy % array
+         kineticEnergyCell => state % kineticEnergyCell % array
          normalizedRelativeVorticityEdge => state % normalizedRelativeVorticityEdge % array
          normalizedPlanetaryVorticityEdge => state % normalizedPlanetaryVorticityEdge % array
          montgomeryPotential => state % montgomeryPotential % array
@@ -177,10 +177,10 @@ module ocn_global_diagnostics
          verticalSumMins(variableIndex) = min(verticalSumMins(variableIndex), verticalSumMins_tmp(variableIndex))
          verticalSumMaxes(variableIndex) = max(verticalSumMaxes(variableIndex), verticalSumMaxes_tmp(variableIndex))
 
-         ! kineticEnergy
+         ! kineticEnergyCell
          variableIndex = variableIndex + 1
          call ocn_compute_field_volume_weighted_local_stats_max_level(dminfo, nVertLevels, nCellsSolve, maxLevelCell(1:nCellsSolve), areaCell(1:nCellsSolve), layerThickness(:,1:nCellsSolve), &
-            kineticEnergy(:,1:nCellsSolve), sums_tmp(variableIndex), mins_tmp(variableIndex), maxes_tmp(variableIndex), verticalSumMins_tmp(variableIndex), &
+            kineticEnergyCell(:,1:nCellsSolve), sums_tmp(variableIndex), mins_tmp(variableIndex), maxes_tmp(variableIndex), verticalSumMins_tmp(variableIndex), &
             verticalSumMaxes_tmp(variableIndex))
          sums(variableIndex) = sums(variableIndex) + sums_tmp(variableIndex)
          mins(variableIndex) = min(mins(variableIndex), mins_tmp(variableIndex))
@@ -342,7 +342,7 @@ module ocn_global_diagnostics
       variableIndex = variableIndex + 1
       averages(variableIndex) = sums(variableIndex)/(areaTriangleGlobal*nVertLevels)
 
-      ! kineticEnergy
+      ! kineticEnergyCell
       variableIndex = variableIndex + 1
       averages(variableIndex) = sums(variableIndex)/volumeCellGlobal
 
@@ -775,7 +775,7 @@ module ocn_global_diagnostics
             write (fileID,'(i5,a)') i,'. layerThicknessEdge'; i=i+1
             write (fileID,'(i5,a)') i,'. relativeVorticity'; i=i+1
             write (fileID,'(i5,a)') i,'. enstrophy = relativeVorticity**2'; i=i+1
-            write (fileID,'(i5,a)') i,'. kineticEnergy'; i=i+1
+            write (fileID,'(i5,a)') i,'. kineticEnergyCell'; i=i+1
             write (fileID,'(i5,a)') i,'. normalizedAbsoluteVorticity = (relative vorticity + planetary vorticity)/layer thickness'; i=i+1
             write (fileID,'(i5,a)') i,'. pressure'; i=i+1
             write (fileID,'(i5,a)') i,'. montgomeryPotential'; i=i+1

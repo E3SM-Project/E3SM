@@ -664,14 +664,8 @@
 		<var name="layerThicknessVertex" type="real" dimensions="nVertLevels nVertices Time" units="m"
 		     description="layer thickness averaged from cell center to vertices"
 		/>
-		<var name="kineticEnergy" type="real" dimensions="nVertLevels nCells Time" streams="o" units="m^2 s^{-2}"
-		     description="kinetic energy of horizonal velocity"
-		/>
-		<var name="kineticEnergyVertex" type="real" dimensions="nVertLevels nVertices Time" units="m^2 s^{-2}"
-		     description="kinetic energy of horizonal velocity defined at vertices"
-		/>
-		<var name="kineticEnergyVertexOnCells" type="real" dimensions="nVertLevels nCells Time" units="m^2 s^{-2}"
-		     description="kinetic energy of horizonal velocity defined at vertices"
+		<var name="kineticEnergyCell" type="real" dimensions="nVertLevels nCells Time" streams="o" units="m^2 s^{-2}"
+		     description="kinetic energy of horizonal velocity on cells"
 		/>
 		<var name="kineticEnergyEdge" type="real" dimensions="nVertLevels nEdges Time" units="m^2 s^{-2}"
 		     description="kinetic energy of horizonal velocity defined at edges"
@@ -1085,6 +1079,16 @@
                      persistence="scratch" 
                      type="real" dimensions="nVertLevels nVertices Time" units="s^{-1}"
 		     description="earth's rotational rate (Coriolis parameter, f) divided by layer thickness, defined at vertices"
+		/>
+		<var name="kineticEnergyVertex" 
+                     persistence="scratch" 
+                     type="real" dimensions="nVertLevels nVertices Time" units="m^2 s^{-2}"
+		     description="kinetic energy of horizonal velocity defined at vertices"
+		/>
+		<var name="kineticEnergyVertexOnCells"
+                     persistence="scratch" 
+                     type="real" dimensions="nVertLevels nCells Time" units="m^2 s^{-2}"
+		     description="kinetic energy of horizonal velocity defined at vertices"
 		/>
     </var_struct>
 </registry>
