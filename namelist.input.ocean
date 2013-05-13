@@ -2,16 +2,16 @@
 	config_do_restart = .false.
 	config_start_time = "0000-01-01_00:00:00"
 	config_stop_time = "none"
-	config_run_duration = "0_06:00:00"
+	config_run_duration = "0001_00:00:00"
 	config_calendar_type = "360day"
 /
 &io
 	config_input_name = "grid.nc"
 	config_output_name = "output.nc"
 	config_restart_name = "restart.nc"
-	config_restart_interval = "0_06:00:00"
-	config_output_interval = "0_06:00:00"
-	config_stats_interval = "0_01:00:00"
+	config_restart_interval = "0001_00:00:00"
+	config_output_interval = "0001_00:00:00"
+	config_stats_interval = "0000_01:00:00"
 	config_write_stats_on_startup = .true.
 	config_write_output_on_startup = .true.
 	config_frames_per_outfile = 1000
@@ -19,7 +19,7 @@
 	config_pio_stride = 1
 /
 &time_integration
-	config_dt = 3000.0
+	config_dt = 300.0
 	config_time_integrator = "split_explicit"
 /
 &grid
@@ -37,18 +37,19 @@
 /
 &hmix
 	config_hmix_ScaleWithMesh = .false.
+	config_maxMeshDensity = -1.0
 	config_visc_vorticity_term = .true.
 	config_apvm_scale_factor = 0.0
 /
 &hmix_del2
-	config_use_mom_del2 = .false.
+	config_use_mom_del2 = .true.
 	config_use_tracer_del2 = .false.
-	config_mom_del2 = 0.0
-	config_tracer_del2 = 0.0
+	config_mom_del2 = 10.0
+	config_tracer_del2 = 10.0
 	config_vorticity_del2_scale = 1.0
 /
 &hmix_del4
-	config_use_mom_del4 = .true.
+	config_use_mom_del4 = .false.
 	config_use_tracer_del4 = .false.
 	config_mom_del4 = 5.0e13
 	config_tracer_del4 = 0.0
@@ -73,10 +74,10 @@
 	config_convective_diff = 1.0
 /
 &vmix_const
-	config_use_const_visc = .false.
-	config_use_const_diff = .false.
-	config_vert_visc = 2.5e-4
-	config_vert_diff = 2.5e-5
+	config_use_const_visc = .true.
+	config_use_const_diff = .true.
+	config_vert_visc = 1.0e-4
+	config_vert_diff = 1.0e-4
 /
 &vmix_rich
 	config_use_rich_visc = .true.
@@ -109,14 +110,14 @@
 	config_monotonic = .true.
 /
 &bottom_drag
-	config_bottom_drag_coeff = 1.0e-3
+	config_bottom_drag_coeff = 1.0e-2
 /
 &pressure_gradient
 	config_pressure_gradient_type = "pressure_and_zmid"
 	config_density0 = 1014.65
 /
 &eos
-	config_eos_type = "jm"
+	config_eos_type = "linear"
 /
 &eos_linear
 	config_eos_linear_alpha = 2.55e-1
