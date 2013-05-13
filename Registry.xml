@@ -667,9 +667,6 @@
 		<var name="kineticEnergyCell" type="real" dimensions="nVertLevels nCells Time" streams="o" units="m^2 s^{-2}"
 		     description="kinetic energy of horizonal velocity on cells"
 		/>
-		<var name="kineticEnergyEdge" type="real" dimensions="nVertLevels nEdges Time" units="m^2 s^{-2}"
-		     description="kinetic energy of horizonal velocity defined at edges"
-		/>
 		<var name="normalVelocityX" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 		     description="component of horizontal velocity in the x-direction (cartesian)"
 		/>

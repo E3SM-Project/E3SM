@@ -106,7 +106,7 @@ contains
         bottomDepth, fVertex, dvEdge, dcEdge, areaCell, areaTriangle, ssh, seaSurfacePressure
       real (kind=RKIND), dimension(:,:), pointer :: &
         weightsOnEdge, kiteAreasOnVertex, layerThicknessEdge, layerThickness, normalVelocity, tangentialVelocity, pressure,&
-        circulation, kineticEnergyCell, kineticEnergyEdge, montgomeryPotential, vertTransportVelocityTop, zMid, divergence, &
+        circulation, kineticEnergyCell, montgomeryPotential, vertTransportVelocityTop, zMid, divergence, &
         relativeVorticity, relativeVorticityCell, &
         normalizedPlanetaryVorticityEdge, normalizedPlanetaryVorticityVertex, &
         normalizedRelativeVorticityEdge, normalizedRelativeVorticityVertex, normalizedRelativeVorticityCell, &
@@ -125,7 +125,6 @@ contains
       circulation => s % circulation % array
       divergence  => s % divergence % array
       kineticEnergyCell      => s % kineticEnergyCell % array
-      kineticEnergyEdge      => s % kineticEnergyEdge % array
       relativeVorticity      => s % relativeVorticity % array
       relativeVorticityCell  => s % relativeVorticityCell % array
       normalizedPlanetaryVorticityEdge   => s % normalizedPlanetaryVorticityEdge % array
@@ -306,16 +305,6 @@ contains
          end do
       end do
 
-      !
-      ! Compute kineticEnergy on edges at velocity locations for quadratic bottom drag. 
-      !
-      do iEdge=1,nEdges
-         cell1 = cellsOnEdge(1,iEdge)
-         cell2 = cellsOnEdge(2,iEdge)
-         do k=1,maxLevelEdgeTop(iEdge)
-            kineticEnergyEdge(k,iEdge) = 0.5 * (kineticEnergyCell(k,cell1) + kineticEnergyCell(k,cell2))
-         end do
-      end do
       call mpas_deallocate_scratch_field(scratch % kineticEnergyVertex, .true.)
       call mpas_deallocate_scratch_field(scratch % kineticEnergyVertexOnCells, .true.)
 
