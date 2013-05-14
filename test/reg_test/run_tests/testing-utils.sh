@@ -416,7 +416,7 @@ createAllRunScripts() {
 
     if [ -n "$omp_num_tests" -a "${RUN_OPENMP}" = TRUE ]; then
       echo "export OMP_NUM_THREADS=$omp_number_threads" >> $thisRunScript
-      echo "export OMP_STACKSIZE=1G" >> $thisRunScript
+      echo "export OMP_STACKSIZE=128M" >> $thisRunScript
       echo "" >> $thisRunScript # new line
       for testNum in $(seq 1 $omp_num_tests)
       do
@@ -424,7 +424,7 @@ createAllRunScripts() {
          echo "# Hybrid test ${testNum}" >> $thisRunScript
          #echo "mpiexec -n $omp_num_mpi ${!testExec} > $testName.out 2> $testName.err" >> $thisRunScript
          #yellowstoneExec $thisRunScript "${!testExec}"
-         ompExecLine $thisRunScript "${!testExec}" $omp_num_mpi
+         execLine $thisRunScript "${!testExec}" $omp_num_mpi
          echo "" >> $thisRunScript # new line
       done
     fi
@@ -536,7 +536,7 @@ createRunScript() {
     do
        testExec=omp_test${testNum}
        echo "# Hybrid test ${testNum}" >> $thisRunScript
-       ompExecLine $thisRunScript "${!testExec}" $omp_num_mpi
+       execLine $thisRunScript "${!testExec}" $omp_num_mpi
        echo "" >> $thisRunScript # new line
     done
   fi
@@ -571,41 +571,37 @@ execLine() {
   EXEC=$2
   NUM_CPUS=$3
 
-  if [ "$HOMME_Submission_Type" = lsf ]; then
-    echo "mpirun.lsf $EXEC" >> $RUN_SCRIPT
-  elif [ "$HOMME_Submission_Type" = pbs ]; then
-    echo "aprun -n 16 $EXEC" >> $RUN_SCRIPT
+  if [ -n "${MPI_EXEC}" ]; then
+    echo "${MPI_EXEC} -n ${NUM_CPUS} ${MPI_OPTIONS} $EXEC" >> $RUN_SCRIPT
+
   else
-    echo "mpiexec -n $NUM_CPUS $EXEC" >> $RUN_SCRIPT
+    if [ "$HOMME_Submission_Type" = lsf ]; then
+      echo "mpirun.lsf -pam \"-n ${NUM_CPUS}\" ${MPI_OPTIONS} $EXEC" >> $RUN_SCRIPT
+
+    elif [ "$HOMME_Submission_Type" = pbs ]; then
+      echo "aprun -n ${NUM_CPUS} ${MPI_OPTIONS} $EXEC" >> $RUN_SCRIPT
+
+    else
+      echo "mpiexec -n ${NUM_CPUS} ${MPI_OPTIONS} $EXEC" >> $RUN_SCRIPT
+
+    fi
   fi
 }
-
-ompExecLine() {
-  RUN_SCRIPT=$1
-  EXEC=$2
-  NUM_CPUS=$3
-
-  if [ "$HOMME_Submission_Type" = lsf ]; then
-    echo "mpirun.lsf -pam \"-n ${NUM_CPUS}\" $EXEC" >> $RUN_SCRIPT
-  elif [ "$HOMME_Submission_Type" = pbs ]; then
-    echo "aprun -n 16 $EXEC" >> $RUN_SCRIPT
-  else
-    echo "mpiexec -n $NUM_CPUS $EXEC" >> $RUN_SCRIPT
-  fi
-}
-
-
 
 serExecLine() {
   RUN_SCRIPT=$1
   EXEC=$2
 
-  if [ "$HOMME_Submission_Type" = lsf ]; then
-    echo "mpirun.lsf -pam \"-n 1\" $EXEC" >> $RUN_SCRIPT
-  elif [ "$HOMME_Submission_Type" = pbs ]; then
-    echo "aprun -n 1 $EXEC" >> $RUN_SCRIPT
+  if [ -n "${MPI_EXEC}" ]; then
+    echo "${MPI_EXEC} -n 1 ${MPI_OPTIONS} $EXEC" >> $RUN_SCRIPT
   else
-    echo "mpiexec -n 1 $EXEC" >> $RUN_SCRIPT
+    if [ "$HOMME_Submission_Type" = lsf ]; then
+      echo "mpirun.lsf -pam \"-n 1\"  ${MPI_OPTIONS} $EXEC" >> $RUN_SCRIPT
+    elif [ "$HOMME_Submission_Type" = pbs ]; then
+      echo "aprun -n 1 ${MPI_OPTIONS} $EXEC" >> $RUN_SCRIPT
+    else
+      echo "mpiexec -n 1 ${MPI_OPTIONS} $EXEC" >> $RUN_SCRIPT
+    fi
   fi
 }
 

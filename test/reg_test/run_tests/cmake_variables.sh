@@ -29,3 +29,9 @@ PYTHON_EXECUTABLE=@PYTHON_EXECUTABLE@
 # Whether to run the OpenMP tests
 RUN_OPENMP=@ENABLE_OPENMP@
 
+# User defined MPI executable
+MPI_EXEC=@USE_MPIEXEC@
+
+# User defined MPI options
+MPI_OPTIONS="@USE_MPI_OPTIONS@"
+
