@@ -1346,11 +1346,14 @@ subroutine pack_exchange_unpack_stage(np1,hybrid,array_in,tl_in)
     ierr = cudaMemcpyAsync(edgebuf_d(1,iptr),recvbuf_d(1,1,icycle),size(recvbuf_h(1:nlyr,1:pCycle%lengthP,icycle)),cudaMemcpyDeviceToDevice,streams(icycle))
   enddo
   ierr = cudaThreadSynchronize()
-  blockdim6 = dim3( np      , np                  , nlev )
-  griddim6  = dim3( qsize_d , recv_external_nelem , 1    )
-  call edgeVunpack_kernel_stage<<<griddim6,blockdim6>>>(edgebuf_d,array_in,getmapP_d,nbuf,0,1,nelemd,np1,recv_external_indices_d,tl_in)
-  ierr = cudaThreadSynchronize()
 
+  ! Do not execute the following if recv_external_nelem = 0
+  if (recv_external_nelem > 0) then
+    blockdim6 = dim3( np      , np                  , nlev )
+    griddim6  = dim3( qsize_d , recv_external_nelem , 1    )
+    call edgeVunpack_kernel_stage<<<griddim6,blockdim6>>>(edgebuf_d,array_in,getmapP_d,nbuf,0,1,nelemd,np1,recv_external_indices_d,tl_in)
+    ierr = cudaThreadSynchronize()
+  endif
 
 ! ierr = cudaThreadSynchronize()
 ! do icycle=1,nRecvCycles
