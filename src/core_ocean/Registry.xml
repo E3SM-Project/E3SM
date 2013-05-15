@@ -745,10 +745,10 @@
 		<var name="strainRate2DVertex" type="real" dimensions="R3 nVertLevels nVertices Time" streams="o" units="s^{-1}"
 		     description="strain rate tensor at vertices, 2D, lat-lon in symmetric 3-index form, {\color{red}Temporary only}"
 		/>
-		<var name="strainRate3DLatLonCell" type="real" dimensions="SIX nVertLevels nCells Time" streams="o" units="s^{-1}"
+		<var name="strainRate3DLonLatCell" type="real" dimensions="SIX nVertLevels nCells Time" streams="o" units="s^{-1}"
 		     description="strain rate tensor at cell center, 3D, lat-lon in symmetric 3-index form, {\color{red}Temporary only}"
 		/>
-		<var name="strainRate3DLatLonCellSolution" type="real" dimensions="SIX nVertLevels nCells Time" streams="o" units="s^{-1}"
+		<var name="strainRate3DLonLatCellSolution" type="real" dimensions="SIX nVertLevels nCells Time" streams="o" units="s^{-1}"
 		     description="strain rate tensor at cell center, 3D, lat-lon in symmetric 3-index form, {\color{red}Temporary only}"
 		/>
 		<var name="zonalUnitVectorCell" type="real" dimensions="R3 nVertLevels nCells Time" streams="o" units="unitless"
