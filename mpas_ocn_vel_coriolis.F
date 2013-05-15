@@ -50,7 +50,7 @@ module ocn_vel_coriolis
    !--------------------------------------------------------------------
 
    logical :: coriolisOn
-   real (kind=RKIND) :: RK4On
+   integer :: RK4On
 
 !***********************************************************************
 
@@ -195,12 +195,12 @@ contains
 
       if (trim(config_time_integrator) == 'RK4') then
          ! For RK4, coriolis tendency term includes f: (eta+f)/h.
-         RK4On = 1.0
+         RK4On = 1
       elseif (trim(config_time_integrator) == 'split_explicit' &
         .or.trim(config_time_integrator) == 'unsplit_explicit') then
          ! For split explicit, Coriolis tendency uses eta/h because the Coriolis term 
          ! is added separately to the momentum tendencies.
-         RK4On = 0.0
+         RK4On = 0
       end if
 
 
