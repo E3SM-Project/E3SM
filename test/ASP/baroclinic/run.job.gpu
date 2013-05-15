@@ -40,12 +40,12 @@
 module add cudatoolkit
 setenv OMP_NUM_THREADS 16
 set executable = preqx.gpu
-setenv COMPUTE_PROFILE 1
-setenv COMPUTE_PROFILE_LOG 'cuda_profile_%p.log'
+#setenv COMPUTE_PROFILE 1
+#setenv COMPUTE_PROFILE_LOG 'cuda_profile_%p.log'
 
 # directores
 #set HOMME = ~/codes/homme1_2_2      
-set HOMME = /tmp/work/$USER/homme
+set HOMME = /tmp/work/$USER/homme-trunk
 set src = $HOMME/build/preqx
 
 

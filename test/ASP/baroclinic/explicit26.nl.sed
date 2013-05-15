@@ -27,7 +27,7 @@ limiter_option = 4
 energy_fixer = -1
 hypervis_order = 2
 u_perturb      = 1
-vert_remap_q_alg = 0
+vert_remap_q_alg = 1
 /
 &solver_nl
 precon_method = "identity"
@@ -52,7 +52,7 @@ vfile_int     = "vcoord/cami-26.fbin.littleendian"
 
 &prof_inparm
 profile_outpe_num = 100
-profile_single_file		= .true.
+profile_single_file	= .true.
 /
 
 
