@@ -51,7 +51,7 @@ all: libcvmix core_hyd
 
 libcvmix:
 	if [ ! -d cvmix ]; then \
-	(svn checkout $(CVMIX_REPO_ADDRESS) cvmix) \
+		(svn checkout $(CVMIX_REPO_ADDRESS) cvmix) \
 	fi
 	if [ -d cvmix ]; then \
 		(cd cvmix; svn update; make all FC="$(FC)" FFLAGS="$(FFLAGS)" FINCLUDES="$(FINCLUDES)") \
