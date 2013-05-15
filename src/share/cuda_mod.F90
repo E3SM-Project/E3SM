@@ -514,15 +514,14 @@ contains
   endif
 
   if (limiter_option == 8) then
-    do ie = nets , nete
-      divdp_h(:,:,:,ie) = elem(ie)%derived%divdp
-      if ( nu_p > 0 .and. rhs_multiplier == 2 ) dpdiss_biharmonic_h(:,:,:,ie) = elem(ie)%derived%dpdiss_biharmonic
-    enddo
-!$OMP BARRIER
-!$OMP MASTER
-    ierr = cudaMemcpyAsync( divdp_d , divdp_h , size( divdp_h ) , cudaMemcpyHostToDevice , streams(0) )
-    if ( nu_p > 0 .and. rhs_multiplier == 2 ) ierr = cudaMemcpyAsync( dpdiss_biharmonic_d , dpdiss_biharmonic_h , size( dpdiss_biharmonic_h ) , cudaMemcpyHostToDevice , streams(1) )
-!$OMP END MASTER
+    write(*,*) 'CUDA_MOD IS NOT INTENDED FOR USE WITH LIMITER_OPTION == 8 AT THIS TIME!'
+    write(*,*) 'PLEASE USE LIMITER_OPTION == 0 WHEN THE GPU OPTION IS ENABLED!'
+    stop
+  endif
+  if (nu_p > 0) then
+    write(*,*) 'CUDA_MOD IS NOT INTENDED FOR USE WITH NU_P > 0 AT THIS TIME!'
+    write(*,*) 'PLEASE USE NU_P == 0 WHEN THE GPU OPTION IS ENABLED!'
+    stop
   endif
 
   !This is a departure from the original order, adding an extra MPI communication. It's advantageous because it simplifies
@@ -548,163 +547,7 @@ contains
       enddo
     enddo
   endif
-
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !   compute Q min/max values for lim8
-  !   compute biharmonic mixing term f
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   rhs_viss = 0
-  if ( limiter_option == 8 .or. nu_p > 0 ) then
-    do ie = 1 , nelemd
-      dp_h(:,:,:,ie) = elem(ie)%derived%dp(:,:,:)
-      divdp_h(:,:,:,ie) = elem(ie)%derived%divdp_proj(:,:,:) 
-      Qdp_h(:,:,:,:,n0_qdp,ie) = elem(ie)%state%Qdp(:,:,:,:,n0_qdp)
-    enddo
-!$OMP BARRIER
-    if (hybrid%ithr == 0 ) then
-      !$acc data pcreate(dp,dp_h,divdp_h,qdp_h,qtens_biharmonic,qmin,qmax)
-      !$acc update device(dp_h,divdp_h,qdp_h)
-      !$acc kernels
-      !$acc loop private(k,q,ie)
-      do ie = 1 , nelemd
-        ! add hyperviscosity to RHS.  apply to Q at timelevel n0, Qdp(n0)/dp
-        do k = 1 , nlev    !  Loop index added with implicit inversion (AAM)
-          dp_h(:,:,k,ie) = dp_h(:,:,k,ie) - rhs_multiplier*dt*divdp_h(:,:,k,ie)
-          do q = 1 , qsize
-            Qtens_biharmonic(:,:,k,q,ie) = Qdp_h(:,:,k,q,n0_qdp,ie)/dp_h(:,:,k,ie)
-          enddo
-        enddo
-      enddo
-      !$acc end kernels
-      !$acc update host(qtens_biharmonic)
-
-      if ( rhs_multiplier == 0 .or. rhs_multiplier == 2 ) then
-        !$acc parallel loop gang vector_length(512)
-        do ie = 1 , nelemd
-          do q = 1 , qsize
-            !We had "worker" put here, but it doesn't work woth PGI
-            !$acc loop private(qmintmp,qmaxtmp) 
-            do k = 1 , nlev  
-              qmintmp = 1d9
-              qmaxtmp = -1d9
-              !$acc loop reduction(min:qmintmp) reduction(max:qmaxtmp) collapse(2) vector
-              do j = 1, np
-                do i = 1, np
-                  qmintmp=min(Qtens_biharmonic(i,j,k,q,ie),qmintmp)
-                  qmaxtmp=max(Qtens_biharmonic(i,j,k,q,ie),qmaxtmp)
-                enddo
-              enddo
-              qmin(k,q,ie) = max(qmintmp,0d0)
-              qmax(k,q,ie) = qmaxtmp
-            enddo
-          enddo
-        enddo
-        !$acc end parallel loop
-        !$acc update host(qmin,qmax)
-      endif
-
-      if ( rhs_multiplier == 1 ) then
-        !$acc update device(qmin,qmax)
-        !$acc parallel loop gang vector_length(512)
-        do ie = 1 , nelemd
-          do q = 1 , qsize
-            !We had "worker" put here, but it doesn't work woth PGI
-            !$acc loop private(qmintmp,qmaxtmp) 
-            do k = 1 , nlev  
-              qmintmp = 1d9
-              qmaxtmp = -1d9
-              !$acc loop reduction(min:qmintmp) reduction(max:qmaxtmp) collapse(2) vector
-              do j = 1, np
-                do i = 1, np
-                  qmintmp=min(Qtens_biharmonic(i,j,k,q,ie),qmintmp)
-                  qmaxtmp=max(Qtens_biharmonic(i,j,k,q,ie),qmaxtmp)
-                enddo
-              enddo
-              qmin(k,q,ie) = min(qmin(k,q,ie),qmintmp)
-              qmin(k,q,ie) = max(qmin(k,q,ie),0d0)
-              qmax(k,q,ie) = max(qmax(k,q,ie),qmaxtmp)
-            enddo
-          enddo
-        enddo
-        !$acc end parallel loop
-        !$acc update host(qmin,qmax)
-      endif
-
-      !$acc wait
-      !$acc end data
-    endif
-!$OMP BARRIER
-
-    ! compute element qmin/qmax
-    if ( rhs_multiplier == 0 ) then
-      ! update qmin/qmax based on neighbor data for lim8
-      if ( limiter_option == 8 ) call neighbor_minmax(elem,hybrid,edgeAdvQ2,nets,nete,qmin(:,:,nets:nete),qmax(:,:,nets:nete))
-!$OMP BARRIER
-!$OMP MASTER
-      ierr = cudaMemcpyAsync( qmin_d , qmin , size( qmin ) , cudaMemcpyHostToDevice , streams(2) )
-      ierr = cudaMemcpyAsync( qmax_d , qmax , size( qmax ) , cudaMemcpyHostToDevice , streams(3) )
-!$OMP END MASTER
-    endif
-
-    ! lets just reuse the old neighbor min/max, but update based on local data
-    if ( rhs_multiplier == 1 ) then
-!$OMP BARRIER
-!$OMP MASTER
-      ierr = cudaMemcpyAsync( qmin_d , qmin , size( qmin ) , cudaMemcpyHostToDevice , streams(2) )
-      ierr = cudaMemcpyAsync( qmax_d , qmax , size( qmax ) , cudaMemcpyHostToDevice , streams(3) )
-!$OMP END MASTER
-    endif
-
-    ! get niew min/max values, and also compute biharmonic mixing term
-    if ( rhs_multiplier == 2 ) then
-      rhs_viss = 3
-      ! two scalings depending on nu_p:
-      ! nu_p=0:    qtens_biharmonic *= dp0                   (apply viscsoity only to q)
-      ! nu_p>0):   qtens_biharmonc *= elem()%psdiss_ave      (for consistency, if nu_p=nu_q)
-      if ( nu_p > 0 ) then
-        do ie = nets , nete
-          do k = 1 , nlev    
-            dp0 = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*hvcoord%ps0
-            !dpdiss(:,:) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%derived%psdiss_ave(:,:)
-            dpdiss(:,:) = elem(ie)%derived%dpdiss_ave(:,:,k)
-            do q = 1 , qsize
-              ! NOTE: divide by dp0 since we multiply by dp0 below
-              Qtens_biharmonic(:,:,k,q,ie)=Qtens_biharmonic(:,:,k,q,ie)*dpdiss(:,:)/dp0
-            enddo
-          enddo
-        enddo
-      endif
-      if ( limiter_option == 8 ) then
-        ! biharmonic and update neighbor min/max
-        call biharmonic_wk_scalar_minmax( elem , qtens_biharmonic(:,:,:,:,nets:nete) , deriv , edgeAdvQ3 , hybrid , nets , nete , qmin(:,:,nets:nete) , qmax(:,:,nets:nete) )
-      else
-        ! regular biharmonic, no need to updat emin/max
-        call biharmonic_wk_scalar( elem , qtens_biharmonic(:,:,:,:,nets:nete) , deriv , edgeAdv , hybrid , nets , nete )
-      endif
-!$OMP BARRIER
-!$OMP MASTER
-      ierr = cudaMemcpyAsync( qmin_d , qmin , size( qmin ) , cudaMemcpyHostToDevice , streams(2) )
-      ierr = cudaMemcpyAsync( qmax_d , qmax , size( qmax ) , cudaMemcpyHostToDevice , streams(3) )
-!$OMP END MASTER
-      do ie = nets , nete
-        do k = 1 , nlev    !  Loop inversion (AAM)
-          dp0 = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*hvcoord%ps0
-          do q = 1 , qsize
-            ! note: biharmonic_wk() output has mass matrix already applied. Un-apply since we apply again below:
-            qtens_biharmonic(:,:,k,q,ie) = -rhs_viss*dt*nu_q*dp0*Qtens_biharmonic(:,:,k,q,ie) / elem(ie)%spheremp(:,:)
-          enddo
-        enddo
-      enddo
-    endif
-  endif  ! compute biharmonic mixing term and qmin/qmax
-
-  if ( (limiter_option == 8 .or. nu_p > 0) .and. rhs_multiplier == 2 ) then
-!$OMP BARRIER
-!$OMP MASTER
-    ierr = cudaMemcpyAsync( qtens_biharmonic_d  , qtens_biharmonic    , size( qtens_biharmonic    ) , cudaMemcpyHostToDevice , streams(4) )
-!$OMP END MASTER
-  endif
-
   !   2D Advection step
   do ie = nets , nete
     ! Compute velocity used to advance Qdp 
@@ -716,7 +559,6 @@ contains
       vstar_h(:,:,k,2,ie) = elem(ie)%derived%vn0(:,:,2,k) / dp_h(:,:,k,ie)
     enddo
   enddo
-
 !$OMP BARRIER
 !$OMP MASTER
   ierr = cudaMemcpyAsync( dp_d    , dp_h    , size( dp_h    ) , cudaMemcpyHostToDevice , streams(5) )
@@ -739,12 +581,6 @@ contains
   ierr = cudaThreadSynchronize()
 !$OMP END MASTER
 !$OMP BARRIER
-
-  if ( limiter_option == 8 .or. nu_p > 0 ) then
-    if (rhs_multiplier < 2) then
-      call copy_qdp_d2h( elem , np1_qdp)
-    endif
-  endif
 
   call t_stopf('euler_step')
 end subroutine euler_step_cuda
@@ -770,8 +606,6 @@ subroutine qdp_time_avg_cuda( elem , rkstage , n0_qdp , np1_qdp , limiter_option
 !$OMP END MASTER
 !$OMP BARRIER
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  if ( limiter_option == 8 .or. nu_p > 0 ) call copy_qdp_d2h( elem , np1_qdp )
 end subroutine qdp_time_avg_cuda
 
 
@@ -949,14 +783,6 @@ attributes(global) subroutine euler_step_kernel1( Qdp , spheremp , qmin , qmax ,
   qtens_s(ij,k) = qtmp - dt * divergence_sphere( i , j , ie , k , ij , vstar_s , qtmp , metdet_s , rmetdet_s , dinv , deriv_dvv_s , nets , nete )
   if ( rhs_viss /= 0 ) qtens_s(ij,k) = qtens_s(ij,k) + qtens_biharmonic(i,j,k,q,ie)
   call syncthreads()
-  if ( limiter_option == 8 ) then
-    dp_star_s(ij,k) = dp(i,j,k,ie) - dt * divdp(i,j,k,ie)
-    if ( nu_p > 0 .and. rhs_viss /= 0 ) then   ! add contribution from UN-DSS'ed PS dissipation
-      !dp_star_s(ij,k) = dp_star_s(ij,k) - rhs_viss * dt * nu_q * ( hybi_s(k+1) - hybi_s(k) ) * psdiss_biharmonic(i,j,ie) / spheremp_s(ij)
-       dp_star_s(ij,k) = dp_star_s(ij,k) - rhs_viss * dt * nu_q * dpdiss_biharmonic(i,j,k,ie) / spheremp_s(ij)
-    endif
-    call limiter_optim_iter_full_dev( i , j , k , qtens_s(:,:) , spheremp_s(:) , qmin_s(:) , qmax_s(:) , dp_star_s(:,:) )
-  endif
   Qdp(i,j,k,q,np1_qdp,ie) = spheremp_s(ij) * Qtens_s(ij,k)
 end subroutine euler_step_kernel1
 
@@ -987,185 +813,6 @@ attributes(device) function divergence_sphere(i,j,ie,k,ij,Vstar,qtmp,metdet,rmet
   end do
   dp_star = ( divtemp + vvtemp ) * ( rmetdet(ij) * rrearth )
 end function divergence_sphere
-
-
-
-attributes(device) subroutine limiter_optim_iter_full_dev(i_in,j_in,k_in,x,sphweights,minp,maxp,c)
-  !THIS IS A NEW VERSION OF LIM8, POTENTIALLY FASTER BECAUSE INCORPORATES KNOWLEDGE FROM
-  !PREVIOUS ITERATIONS
-  
-  !The idea here is the following: We need to find a grid field which is closest
-  !to the initial field (in terms of weighted sum), but satisfies the min/max constraints.
-  !So, first we find values which do not satisfy constraints and bring these values
-  !to a closest constraint. This way we introduce some mass change (addmass),
-  !so, we redistribute addmass in the way that l2 error is smallest. 
-  !This redistribution might violate constraints thus, we do a few iterations. 
-  use kinds         , only : real_kind
-  use dimensions_mod, only : np, np, nlev
-  integer                                       , intent(in   ) :: i_in,j_in,k_in
-  real (kind=real_kind), dimension(np*np+1,nlev), intent(inout) :: x              ! previously called ptens
-  real (kind=real_kind), dimension(np*np+1     ), intent(in   ) :: sphweights
-  real (kind=real_kind), dimension(        nlev), intent(inout) :: minp
-  real (kind=real_kind), dimension(        nlev), intent(inout) :: maxp
-  real (kind=real_kind), dimension(np*np+1,nlev), intent(inout) :: c              ! previously called dpmass, optional attribute removed
-
-  integer :: k1, k, i, j, i1, i2, ij, ijk
-  integer, shared :: neg_counter(nlev), pos_counter(nlev)
-  integer, shared :: whois_neg(np*np+1,nlev), whois_pos(np*np+1,nlev)
-  real (kind=real_kind), shared :: addmass(nlev), weightssum(nlev), mass(nlev), howmuch(nlev)
-  real (kind=real_kind), shared :: al_neg(np*np+1,nlev), al_pos(np*np+1,nlev)
-  real (kind=real_kind) :: tol_limiter
-  integer :: maxiter
-
-  tol_limiter = 1.D-15
-  maxiter = 5
-
-  k = k_in
-  ij = (j_in-1)*np + i_in
-  ijk = (k_in-1)*np*np + (j_in-1)*np + i_in
-
-  call syncthreads()
-
-  x(ij,k) = x(ij,k) / c(ij,k)
-  c(ij,k) = c(ij,k) * sphweights(ij)
-
-  call syncthreads()
-
-  if ( ijk <= nlev ) then
-    k = ijk
-
-    c        (np*np+1,k) = 0.D0
-    x        (np*np+1,k) = 0.D0
-    al_neg   (np*np+1,k) = 0.D0
-    al_pos   (np*np+1,k) = 0.D0
-    whois_neg(np*np+1,k) = 0
-    whois_pos(np*np+1,k) = 0
-
-    mass(k) = sum(c(:,k)*x(:,k))
-  
-    ! relax constraints to ensure limiter has a solution:
-    ! This is only needed if runnign with the SSP CFL>1 or 
-    ! due to roundoff errors
-    if( (mass(k) / sum(c(:,k))) < minp(k) ) then
-      minp(k) = mass(k) / sum(c(:,k))
-    endif
-    if( (mass(k) / sum(c(:,k))) > maxp(k) ) then
-      maxp(k) = mass(k) / sum(c(:,k))
-    endif
-  
-    addmass(k) = 0.0d0
-    pos_counter(k) = 0;
-    neg_counter(k) = 0;
-    
-    ! apply constraints, compute change in mass caused by constraints 
-    do k1 = 1 , np*np
-      if ( ( x(k1,k) >= maxp(k) ) ) then
-        addmass(k) = addmass(k) + ( x(k1,k) - maxp(k) ) * c(k1,k)
-        x(k1,k) = maxp(k)
-        whois_pos(k1,k) = -1
-      else
-        pos_counter(k) = pos_counter(k)+1;
-        whois_pos(pos_counter(k),k) = k1;
-      endif
-      if ( ( x(k1,k) <= minp(k) ) ) then
-        addmass(k) = addmass(k) - ( minp(k) - x(k1,k) ) * c(k1,k)
-        x(k1,k) = minp(k)
-        whois_neg(k1,k) = -1
-      else
-        neg_counter(k) = neg_counter(k)+1;
-        whois_neg(neg_counter(k),k) = k1;
-      endif
-    enddo
-    
-    ! iterate to find field that satifies constraints and is l2-norm closest to original 
-    weightssum(k) = 0.0d0
-    if ( addmass(k) > 0 ) then
-      do i2 = 1 , maxIter
-        weightssum(k) = 0.0
-        do k1 = 1 , pos_counter(k)
-          i1 = whois_pos(k1,k)
-          weightssum(k) = weightssum(k) + c(i1,k)
-          al_pos(i1,k) = maxp(k) - x(i1,k)
-        enddo
-        
-        if( ( pos_counter(k) > 0 ) .and. ( addmass(k) > tol_limiter * abs(mass(k)) ) ) then
-          do k1 = 1 , pos_counter(k)
-            i1 = whois_pos(k1,k)
-            howmuch(k) = addmass(k) / weightssum(k)
-            if ( howmuch(k) > al_pos(i1,k) ) then
-              howmuch(k) = al_pos(i1,k)
-              whois_pos(k1,k) = -1
-            endif
-            addmass(k) = addmass(k) - howmuch(k) * c(i1,k)
-            weightssum(k) = weightssum(k) - c(i1,k)
-            x(i1,k) = x(i1,k) + howmuch(k)
-          enddo
-          !now sort whois_pos and get a new number for pos_counter
-          !here neg_counter and whois_neg serve as temp vars
-          neg_counter(k) = pos_counter(k)
-          whois_neg(:,k) = whois_pos(:,k)
-          whois_pos(:,k) = -1
-          pos_counter(k) = 0
-          do k1 = 1 , neg_counter(k)
-            if ( whois_neg(k1,k) .ne. -1 ) then
-              pos_counter(k) = pos_counter(k)+1
-              whois_pos(pos_counter(k),k) = whois_neg(k1,k)
-            endif
-          enddo
-        else
-          exit
-        endif
-      enddo
-    else
-       do i2 = 1 , maxIter
-         weightssum(k) = 0.0
-         do k1 = 1 , neg_counter(k)
-           i1 = whois_neg(k1,k)
-           weightssum(k) = weightssum(k) + c(i1,k)
-           al_neg(i1,k) = x(i1,k) - minp(k)
-         enddo
-         
-         if ( ( neg_counter(k) > 0 ) .and. ( (-addmass(k)) > tol_limiter * abs(mass(k)) ) ) then
-           do k1 = 1 , neg_counter(k)
-             i1 = whois_neg(k1,k)
-             howmuch(k) = -addmass(k) / weightssum(k)
-             if ( howmuch(k) > al_neg(i1,k) ) then
-               howmuch(k) = al_neg(i1,k)
-               whois_neg(k1,k) = -1
-             endif
-             addmass(k) = addmass(k) + howmuch(k) * c(i1,k)
-             weightssum(k) = weightssum(k) - c(i1,k)
-             x(i1,k) = x(i1,k) - howmuch(k)
-           enddo
-           !now sort whois_pos and get a new number for pos_counter
-           !here pos_counter and whois_pos serve as temp vars
-           pos_counter(k) = neg_counter(k)
-           whois_pos(:,k) = whois_neg(:,k)
-           whois_neg(:,k) = -1
-           neg_counter(k) = 0
-           do k1 = 1 , pos_counter(k)
-             if ( whois_pos(k1,k) .ne. -1 ) then
-               neg_counter(k) = neg_counter(k)+1
-               whois_neg(neg_counter(k),k) = whois_pos(k1,k)
-             endif
-           enddo
-         else
-           exit
-         endif
-       enddo
-    endif
-  endif
-
-  k = k_in
-
-  call syncthreads()
-
-  c(ij,k) = c(ij,k) / sphweights(ij)
-  x(ij,k) = x(ij,k) * c(ij,k)
-
-  call syncthreads()
-
-end subroutine limiter_optim_iter_full_dev
 
 
 
