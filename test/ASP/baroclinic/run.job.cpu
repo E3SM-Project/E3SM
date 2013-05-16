@@ -1,131 +1,66 @@
 #!/bin/tcsh -f 
-#SBATCH --job-name baroclinic
-#SBATCH -N 8
-#SBATCH --account=FY115932
-#SBATCH --time=0:60:00
-
-# SNL batch system:
-#XPBS -l nodes=60:ppn=4
-#XPBS -l nodes=40:ppn=2
-#XPBS -A FY081407
-#XPBS -W depend=afterany:21212
-#XPBS -l walltime=0:30:00
-#XPBS -N baroclinic
-#XPBS -j oe
-
 # titan -- specify number of nodes
 #PBS -A STF006
 #PBS -l nodes=6
-#PBS -l walltime=0:30:00
+#PBS -l walltime=0:05:00
 #PBS -N baroclinic
 #PBS -j oe
 
-#NCAR batch system: 
-#BSUB -x                # exlusive use of node (not_shared)
-#BSUB -n 16             # number of tasks
-#BSUB -a poe            # select the poe elim
-#BSUB -R "span[ptile=16]"       # tasks per node
-#BSUB -J baroclinic     # job name
-#BSUB -o baro.out         # output filename
-#BSUB -e baro.out
-#BSUB -W 0:15	        #  wall clock time 
-#BSUB -P 39510003
-#BSUB -q regular        # queue
-
+source /opt/modules/default/init/tcsh
+module rm PrgEnv-cray
+module rm PrgEnv-intel
+module rm PrgEnv-gnu
+module rm PrgEnv-pgi
+module rm PrgEnv-pathscale
+module add PrgEnv-pgi
+module add netcdf parallel-netcdf
 module rm cudatoolkit
+
 setenv OMP_NUM_THREADS 1
 set executable = preqx.cpu
-
-#module add cudatoolkit
-#setenv OMP_NUM_THREADS 16
-#set executable = preqx.gpu
-
-# directores
-#set HOMME = ~/codes/homme1_2_2      
-set HOMME = /tmp/work/$USER/homme
+set HOMME = /tmp/work/$USER/homme-trunk
 set src = $HOMME/build/preqx
-
-
 set wdir = /tmp/work/$USER/$executable   # work directory where output is stored
-#set wdir = /ptmp/$user/preqx
-#set wdir = /ptmp/$HOMME/prexq
-
 set input = $HOMME/test/ASP/baroclinic   # test cases
 set vcoord = $HOMME/test/vcoord          # location of vertical coordinate files
-
-
-
-# steady state parameters:
 set qsize = 106             # number of tracers  (0 or 4)
 set u_perturb = 1         # size of perturbation (0 or 1)
 set rotate = 0            # rotation, in degrees.  0, 45 and 90
-set limiter = 4
-
-# other defaults:
 set psurf = 0
 set npdg=0
 set nu_p = 0
 set nu_div = -1
-
-
-# Advection scheme
-
-# ASP tests were all run with Robert filter at 0.005  
-# leapfrog for both dynamics and tracers, conservation form
-# this used to conserve mass, but now (2010/8) nu_q>0 breaks conservation - 
-# probably because prim_state_mod is using a staggered mass formulation
-#set smooth = 0.005
-#set tadv = 1 ; set RK2 = 0    
-#set qsplit = 1; set rk_stage_user = 0
-#set mean_flux=0
-
-#CAM-type:  subcycled, consistent advection, monotone limiter
-#              RK 5 stage dynamics
-#              RK 3 stage for tracers
 set smooth = 0
-set tadv = 1 ; set RK2 = 1    
-set qsplit = 4
+set tadv = 1
+set RK2 = 5
+set qsplit = 1
 set mean_flux=1
-#set limiter = 8
-
-
-
-# resolution parameters
+set limiter = 4
+set rsplit = 5
 set ne = 8    # setup for 8,15,30,60,120?
-
-#set ndays = 30
 set ndays = 2
 if ( $ne == 8 ) then
    # 3.75 degree      # bluevista: run takes 4min on 16 processors
    set tstep = 360        # dynamics timestep
    set nu = 2e16
    set nu_q = 2e16
-#   set nu_p = $nu_q
+#  set nu_p = $nu_q
    set resolution = low
-
 endif
 if ( $ne == 15 ) then
    # 2 degree   bluevista:  run takes 8min on 64 processors
    set tstep = 180        # dynamics timestep
-
    set nu = 0.9e16
    set nu_q = .9e16
+#  set nu_p = $nu_q
    set resolution = medium
-
-   # test new consistent advection with nu_p>0:
-   #set nu_p = $nu_q
-
-   # test DG option:
-   #set npdg=3 ; set limiter=4 ; set nu_q=0
-
 endif
 if ( $ne == 30 ) then
    # 1 degree
+   set tstep = 90        # dynamics timestep
    set nu = 9.6e14
    set nu_q = 9.6e14
-
-   set tstep = 90        # dynamics timestep
-#   set tstep = 20
+#  set nu_p = $nu_q
    set resolution = medium_high
 endif
 if ( $ne == 60 ) then
@@ -133,6 +68,7 @@ if ( $ne == 60 ) then
    set tstep = 40        # dynamics timestep
    set nu = 1e14
    set nu_q = 1e14
+#  set nu_p = $nu_q
    set resolution = high
 endif
 if ( $ne == 120 ) then
@@ -140,56 +76,25 @@ if ( $ne == 120 ) then
    set tstep = 20        # tbird 100 nodes:  15days took 3.5h
    set nu = 1.1e13
    set nu_q = 1.1e13
+#  set nu_p = $nu_q
    set resolution = ultra_high
-   set ndays = 15
-   #set ndays = 1
 endif
 
-
-
-
-# number of hours between calls to prim_printstate
 set sfreq = 6
 @ sfreq *= 3600
 set sfreq = `echo "$sfreq / $tstep " | bc`
-#@ sfreq /= $tstep
-
-# # construct the run name
-# @ rindex = $rotate / 15
-# @ case = $u_perturb + 1
-# set qindex=0
-# if ( $qsize == 4) set qindex=1234
-
-# set caseno = 1
-# if ( $u_perturb == 1 ) set caseno = 2
-# set name = HOMME-$caseno-$rindex-$qindex-$resolution-L26-nu$nu-tadv$tadv
-# if ( $RK2 == 1 ) then
-#    if ( $qsplit == 1 ) then
-#       set name = HOMME-$caseno-$rindex-$qindex-$resolution-L26-nu$nu-rk3
-#    else
-#       set name = HOMME-$caseno-$rindex-$qindex-$resolution-L26-nu$nu-sub$qsplit
-#    endif
-# endif
-# if ( $psurf == 1 ) set name = $name-psurf
-
 set name = jwasp-ne${ne}-nu$nu
-
-
 echo runname =  $name
-
 # create working directory
 mkdir $wdir
 set wdir = $wdir/$name
 mkdir $wdir
 mkdir $wdir/movies
-
-
-
 # create the namelist (input file) based on parameters set above
 cd $input
 rm -f $wdir/explicit.nl
 sed s/NE/$ne/ explicit26.nl.sed |\
-sed s/TSTEP/"$tstep qsplit=$qsplit psurf_vis=$psurf  "/ |\
+sed s/TSTEP/"$tstep rsplit=$rsplit qsplit=$qsplit psurf_vis=$psurf  "/ |\
 sed s/SFREQ/$sfreq/ |\
 sed s/tracer_advection_formulation.\*/"tracer_advection_formulation=$tadv  tstep_type = $RK2  compute_mean_flux=$mean_flux  "/ |\
 sed s/NU1/$nu/ | sed s/NU2/$nu_q/                    |\
@@ -203,95 +108,17 @@ sed s/smooth.\*/"smooth = $smooth"/                  |\
 sed s/NThreads.\*/"NThreads = $OMP_NUM_THREADS"/     |\
 sed s/qsize.\*/"qsize = $qsize"/    > $wdir/input.nl
 
-
-
-set NCPU = 12
-if ( ${?PBS_NODEFILE} ) then
-    set NCPU = `wc $PBS_NODEFILE | awk '{print $1}' - `
-endif
-if ( ${?PBS_NNODES} ) then
-  set NCPU = $PBS_NNODES
-endif
-if ( ${?LSB_MCPU_HOSTS} ) then
-  set NCPU = `wc $LSB_DJOB_HOSTFILE | awk '{print $1}' - `
-endif
-if ( ${?SLURM_NNODES} ) then
-   # SLURM_NNODES  = number of nodes
-   # hard to tell how many cores per nodes
-   # set NCPU to zero, and mpirun will use the max allowed
-   set NCPU = 0
-endif
-echo using NCPU = $NCPU
-
-set machine = default
-if ( AIX == `uname` ) set machine = aix
-if ( yodjag == `hostname | head -c 6` ) set machine = titan
-if ( chester == `hostname | head -c 7` ) set machine = titan
-if ( titan == `hostname | head -c 5` ) set machine = titan
-echo machine = $machine
-echo hostname = `hostname`
-
-
-if ( $machine == aix  ) then
-   set make = "gmake -j8 "
-   set mpirun = "mpirun.lsf "
-
-  # other stuff for blue vista: 
-  mv -f $wdir/input.nl $wdir/tmp.nl
-  sed  s/.littleendian//g $wdir/tmp.nl > $wdir/input.nl
-else if ( titan == $machine ) then
-   set make = "make -j4"
 @ NPER = (16 / $OMP_NUM_THREADS)
 @ NCPU = $PBS_NUM_NODES * $NPER
-   set mpirun = "aprun -n $NCPU -N $NPER -d $OMP_NUM_THREADS"
-   # cant reference home directory
-else
-   set make = "make -j4"
-   set mpirun = "mpirun -np $NCPU"
-endif
-
-cd $src
-set build = run  # build, make or run(default)
-if ( $#argv >= 1) set build = $1
-if ( $build == "build" ) then
-   if (${?PNETCDF_PATH} ) then
-      ./configure --enable-blas --enable-lapack --with-netcdf=$NETCDF_PATH \
-       --with-pnetcdf=$PNETCDF_PATH NP=4 PLEV=26   --enable-energy-diagnostics
-   else
-      ./configure --enable-blas --enable-lapack --with-netcdf=$NETCDF_PATH \
-       NP=4 PLEV=26   --enable-energy-diagnostics
-   endif
-   make -j4 depends
-   make clean
-   $make 
-   exit
-endif
-if ( $build == "make" ) then
-    $make
-    if ($status) exit
-endif
+set mpirun = "aprun -n $NCPU -N $NPER -d $OMP_NUM_THREADS"
 
 
 
 cd $wdir
-
 rm -f vcoord
 ln -s $vcoord vcoord
-
-
 date
 $mpirun  $src/$executable < $wdir/input.nl
 if ($status) exit
 date
-
-#ncrename -v .Q,Q1 -v .u,U -v .v,V -v .geos,PHIS -v .geo,PHI  -v .omega,OMEGA \
-# -v .ps,PS   movies/asp_baroclinic1.nc  
-#ncrename -v .Q,Q1 -v .u,U -v .v,V -v .geos,PHIS -v .geo,PHI  -v .omega,OMEGA \
-# -v .ps,PS   movies/asp_baroclinic2.nc  
-
-ncl $input/ps.ncl
-ncl $input/Q.ncl
-ncl $input/zeta.ncl
-
-
 
