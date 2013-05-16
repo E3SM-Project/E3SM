@@ -1206,7 +1206,7 @@ contains
       new_field_list_node % isAvailable => isAvailable
 
 !write(0,*) '... done adding field'
-!write(0,*) 'DEBUGGING : Finished adding 3d real field '//trim(field % fieldName)
+!write(0,*) 'DEBUGGING : Finished adding 5d real field '//trim(field % fieldName)
 
    end subroutine MPAS_streamAddField_5dReal
 
@@ -2326,6 +2326,8 @@ contains
       type (field1dReal), pointer :: field_1dreal_ptr
       type (field2dReal), pointer :: field_2dreal_ptr
       type (field3dReal), pointer :: field_3dreal_ptr
+      type (field4dReal), pointer :: field_4dreal_ptr
+      type (field5dReal), pointer :: field_5dreal_ptr
       type (field0dChar), pointer :: field_0dchar_ptr
       type (field1dChar), pointer :: field_1dchar_ptr
       type (field_list_type), pointer :: field_cursor
@@ -2333,10 +2335,12 @@ contains
       integer, dimension(:),     pointer :: int1d_temp
       integer, dimension(:,:),   pointer :: int2d_temp
       integer, dimension(:,:,:), pointer :: int3d_temp
-      real (kind=RKIND)                            :: real0d_temp
-      real (kind=RKIND), dimension(:),     pointer :: real1d_temp
-      real (kind=RKIND), dimension(:,:),   pointer :: real2d_temp
-      real (kind=RKIND), dimension(:,:,:), pointer :: real3d_temp
+      real (kind=RKIND)                                :: real0d_temp
+      real (kind=RKIND), dimension(:),         pointer :: real1d_temp
+      real (kind=RKIND), dimension(:,:),       pointer :: real2d_temp
+      real (kind=RKIND), dimension(:,:,:),     pointer :: real3d_temp
+      real (kind=RKIND), dimension(:,:,:,:),   pointer :: real4d_temp
+      real (kind=RKIND), dimension(:,:,:,:,:), pointer :: real5d_temp
 
       if (present(ierr)) ierr = MPAS_STREAM_NOERR
 
@@ -2736,6 +2740,132 @@ contains
                deallocate(real2d_temp)
             else
                deallocate(real3d_temp)
+            end if
+
+         else if (field_cursor % field_type == FIELD_4D_REAL) then
+
+            if (field_cursor % real4dField % isSuperArray) then
+               ncons = size(field_cursor % real4dField % constituentNames)
+               allocate(real3d_temp(field_cursor % real4dField % dimSizes(2), &
+                                    field_cursor % real4dField % dimSizes(3), &
+                                    field_cursor % totalDimSize))
+            else
+               ncons = 1
+               allocate(real4d_temp(field_cursor % real4dField % dimSizes(1), &
+                                    field_cursor % real4dField % dimSizes(2), &
+                                    field_cursor % real4dField % dimSizes(3), &
+                                    field_cursor % totalDimSize))
+            end if
+
+            do j=1,ncons
+               if (field_cursor % isDecomposed) then
+                  ! Gather field from across multiple blocks
+                  field_4dreal_ptr => field_cursor % real4dField
+                  i = 1
+                  do while (associated(field_4dreal_ptr))
+                     if (trim(field_4dreal_ptr % dimNames(4)) == 'nCells') then
+                        ownedSize = field_4dreal_ptr % block % mesh % nCellsSolve
+                     else if (trim(field_4dreal_ptr % dimNames(4)) == 'nEdges') then
+                        ownedSize = field_4dreal_ptr % block % mesh % nEdgesSolve
+                     else if (trim(field_4dreal_ptr % dimNames(4)) == 'nVertices') then
+                        ownedSize = field_4dreal_ptr % block % mesh % nVerticesSolve
+                     else
+                        ownedSize = field_4dreal_ptr % dimSizes(4)
+                     end if
+
+                     if (field_cursor % real4dField % isSuperArray) then
+                        real3d_temp(:,:,i:i+ownedSize-1) = field_4dreal_ptr % array(j,:,:,1:ownedSize)
+                     else
+                        real4d_temp(:,:,:,i:i+ownedSize-1) = field_4dreal_ptr % array(:,:,:,1:ownedSize)
+                     end if
+                     i = i + ownedSize
+                     field_4dreal_ptr => field_4dreal_ptr % next
+                  end do
+               else
+                  if (field_cursor % real4dField % isSuperArray) then
+                     real3d_temp(:,:,:) = field_cursor % real4dField % array(j,:,:,:)
+                  else
+                     real4d_temp(:,:,:,:) = field_cursor % real4dField % array(:,:,:,:)
+                  end if
+               end if
+
+               if (field_cursor % real4dField % isSuperArray) then
+                  call MPAS_io_put_var(stream % fileHandle, field_cursor % real4dField % constituentNames(j), real3d_temp, io_err)
+               else
+                  call MPAS_io_put_var(stream % fileHandle, field_cursor % real4dField % fieldName, real4d_temp, io_err)
+               end if
+               call MPAS_io_err_mesg(io_err, .false.)
+               if (io_err /= MPAS_IO_NOERR .and. present(ierr)) ierr = MPAS_IO_ERR
+            end do
+
+            if (field_cursor % real4dField % isSuperArray) then
+               deallocate(real3d_temp)
+            else
+               deallocate(real4d_temp)
+            end if
+
+         else if (field_cursor % field_type == FIELD_5D_REAL) then
+
+            if (field_cursor % real5dField % isSuperArray) then
+               ncons = size(field_cursor % real5dField % constituentNames)
+               allocate(real4d_temp(field_cursor % real5dField % dimSizes(2), &
+                                    field_cursor % real5dField % dimSizes(3), &
+                                    field_cursor % real5dField % dimSizes(4), &
+                                    field_cursor % totalDimSize))
+            else
+               ncons = 1
+               allocate(real5d_temp(field_cursor % real5dField % dimSizes(1), &
+                                    field_cursor % real5dField % dimSizes(2), &
+                                    field_cursor % real5dField % dimSizes(3), &
+                                    field_cursor % real5dField % dimSizes(4), &
+                                    field_cursor % totalDimSize))
+            end if
+
+            do j=1,ncons
+               if (field_cursor % isDecomposed) then
+                  ! Gather field from across multiple blocks
+                  field_5dreal_ptr => field_cursor % real5dField
+                  i = 1
+                  do while (associated(field_5dreal_ptr))
+                     if (trim(field_5dreal_ptr % dimNames(5)) == 'nCells') then
+                        ownedSize = field_5dreal_ptr % block % mesh % nCellsSolve
+                     else if (trim(field_5dreal_ptr % dimNames(5)) == 'nEdges') then
+                        ownedSize = field_5dreal_ptr % block % mesh % nEdgesSolve
+                     else if (trim(field_5dreal_ptr % dimNames(5)) == 'nVertices') then
+                        ownedSize = field_5dreal_ptr % block % mesh % nVerticesSolve
+                     else
+                        ownedSize = field_5dreal_ptr % dimSizes(5)
+                     end if
+
+                     if (field_cursor % real5dField % isSuperArray) then
+                        real4d_temp(:,:,:,i:i+ownedSize-1) = field_5dreal_ptr % array(j,:,:,:,1:ownedSize)
+                     else
+                        real5d_temp(:,:,:,:,i:i+ownedSize-1) = field_5dreal_ptr % array(:,:,:,:,1:ownedSize)
+                     end if
+                     i = i + ownedSize
+                     field_5dreal_ptr => field_5dreal_ptr % next
+                  end do
+               else
+                  if (field_cursor % real5dField % isSuperArray) then
+                     real4d_temp(:,:,:,:) = field_cursor % real5dField % array(j,:,:,:,:)
+                  else
+                     real5d_temp(:,:,:,:,:) = field_cursor % real5dField % array(:,:,:,:,:)
+                  end if
+               end if
+
+               if (field_cursor % real5dField % isSuperArray) then
+                  call MPAS_io_put_var(stream % fileHandle, field_cursor % real5dField % constituentNames(j), real4d_temp, io_err)
+               else
+                  call MPAS_io_put_var(stream % fileHandle, field_cursor % real5dField % fieldName, real5d_temp, io_err)
+               end if
+               call MPAS_io_err_mesg(io_err, .false.)
+               if (io_err /= MPAS_IO_NOERR .and. present(ierr)) ierr = MPAS_IO_ERR
+            end do
+
+            if (field_cursor % real5dField % isSuperArray) then
+               deallocate(real4d_temp)
+            else
+               deallocate(real5d_temp)
             end if
 
          else if (field_cursor % field_type == FIELD_0D_CHAR) then
