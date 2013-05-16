@@ -434,42 +434,6 @@ module mpas_io_input
 
    end subroutine mpas_io_input_init!}}}
 
-   subroutine mpas_io_input_get_dimension(input_obj, dimname, dimsize)!{{{
-
-      implicit none
-
-      type (io_input_object), intent(in) :: input_obj
-      character (len=*), intent(in) :: dimname
-      integer, intent(out) :: dimsize
-
-!include "get_dimension_by_name.inc"
-
-   end subroutine mpas_io_input_get_dimension!}}}
-
-   subroutine mpas_io_input_get_att_real(input_obj, attname, attvalue)!{{{
-      
-      implicit none
-
-      type (io_input_object), intent(in) :: input_obj
-      character (len=*), intent(in) :: attname
-      real (kind=RKIND), intent(out) :: attvalue
-
-      integer :: nferr
-
-   end subroutine mpas_io_input_get_att_real!}}}
-
-   subroutine mpas_io_input_get_att_text(input_obj, attname, attvalue)!{{{
-      
-      implicit none
-
-      type (io_input_object), intent(in) :: input_obj
-      character (len=*), intent(in) :: attname
-      character (len=*), intent(out) :: attvalue
-
-      integer :: nferr
-
-   end subroutine mpas_io_input_get_att_text!}}}
-
    subroutine mpas_exch_input_field_halos(domain, input_obj)!{{{
 
       implicit none
