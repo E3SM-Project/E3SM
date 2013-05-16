@@ -438,15 +438,11 @@ contains
     type(element_t), intent(in   ) :: elem(:)
     integer        , intent(in   ) :: nt
     integer :: ierr , ie
-!$OMP BARRIER
 !$OMP MASTER
-    ierr = cudaThreadSynchronize()
     do ie = 1,nelemd
-      ierr = cudaMemcpy( qdp_d(1,1,1,1,nt,ie) , elem(ie)%state%qdp(1,1,1,1,nt) , size(elem(ie)%state%qdp(:,:,:,:,nt)) , cudaMemcpyHostToDevice )
+      ierr = cudaMemcpyAsync( qdp_d(1,1,1,1,nt,ie) , elem(ie)%state%qdp(1,1,1,1,nt) , size(elem(ie)%state%qdp(:,:,:,:,nt)) , cudaMemcpyHostToDevice , streams(1) )
     enddo
-    ierr = cudaThreadSynchronize()
 !$OMP END MASTER
-!$OMP BARRIER
   end subroutine copy_qdp_h2d
 
 
@@ -524,6 +520,33 @@ contains
     stop
   endif
 
+  rhs_viss = 0
+  !   2D Advection step
+  do ie = nets , nete
+    ! Compute velocity used to advance Qdp 
+    do k = 1 , nlev    !  Loop index added (AAM)
+      ! derived variable divdp_proj() (DSS'd version of divdp) will only be correct on 2nd and 3rd stage
+      ! but that's ok because rhs_multiplier=0 on the first stage:
+      dp_h(:,:,k,ie) = elem(ie)%derived%dp(:,:,k) - rhs_multiplier * dt * elem(ie)%derived%divdp_proj(:,:,k) 
+      vstar_h(:,:,k,1,ie) = elem(ie)%derived%vn0(:,:,1,k) / dp_h(:,:,k,ie)
+      vstar_h(:,:,k,2,ie) = elem(ie)%derived%vn0(:,:,2,k) / dp_h(:,:,k,ie)
+    enddo
+  enddo
+!$OMP BARRIER
+!$OMP MASTER
+  ierr = cudaMemcpyAsync( dp_d    , dp_h    , size( dp_h    ) , cudaMemcpyHostToDevice , streams(1) )
+  ierr = cudaMemcpyAsync( vstar_d , vstar_h , size( vstar_h ) , cudaMemcpyHostToDevice , streams(1) )
+  blockdim = dim3( np      , np     , nlev )
+  griddim  = dim3( qsize_d , nelemd , 1    )
+  call euler_step_kernel1<<<griddim,blockdim,0,streams(1)>>>( qdp_d , spheremp_d , qmin_d , qmax_d , dp_d , vstar_d , divdp_d , hybi_d ,               &
+                                                              dpdiss_biharmonic_d , qtens_biharmonic_d , metdet_d , rmetdet_d , dinv_d , deriv_dvv_d , &
+                                                              n0_qdp , np1_qdp , rhs_viss , dt , nu_p , nu_q , limiter_option , 1 , nelemd )
+  if ( limiter_option == 4 ) then
+    blockdim = dim3( np      , np     , nlev )
+    griddim  = dim3( qsize_d , nelemd , 1    )
+    call limiter2d_zero_kernel<<<griddim,blockdim,0,streams(1)>>>( qdp_d , 1 , nelemd , np1_qdp )
+  endif
+!$OMP END MASTER
   !This is a departure from the original order, adding an extra MPI communication. It's advantageous because it simplifies
   !the Pack-Exchange-Unpack procedure for us, since we're adding complexity to overlap MPI and packing
   if ( DSSopt /= DSSno_var ) then
@@ -547,33 +570,7 @@ contains
       enddo
     enddo
   endif
-  rhs_viss = 0
-  !   2D Advection step
-  do ie = nets , nete
-    ! Compute velocity used to advance Qdp 
-    do k = 1 , nlev    !  Loop index added (AAM)
-      ! derived variable divdp_proj() (DSS'd version of divdp) will only be correct on 2nd and 3rd stage
-      ! but that's ok because rhs_multiplier=0 on the first stage:
-      dp_h(:,:,k,ie) = elem(ie)%derived%dp(:,:,k) - rhs_multiplier * dt * elem(ie)%derived%divdp_proj(:,:,k) 
-      vstar_h(:,:,k,1,ie) = elem(ie)%derived%vn0(:,:,1,k) / dp_h(:,:,k,ie)
-      vstar_h(:,:,k,2,ie) = elem(ie)%derived%vn0(:,:,2,k) / dp_h(:,:,k,ie)
-    enddo
-  enddo
-!$OMP BARRIER
 !$OMP MASTER
-  ierr = cudaMemcpyAsync( dp_d    , dp_h    , size( dp_h    ) , cudaMemcpyHostToDevice , streams(5) )
-  ierr = cudaMemcpyAsync( vstar_d , vstar_h , size( vstar_h ) , cudaMemcpyHostToDevice , streams(6) )
-  ierr = cudaThreadSynchronize()
-  blockdim = dim3( np      , np     , nlev )
-  griddim  = dim3( qsize_d , nelemd , 1    )
-  call euler_step_kernel1<<<griddim,blockdim>>>( qdp_d , spheremp_d , qmin_d , qmax_d , dp_d , vstar_d , divdp_d , hybi_d ,               &
-                                                 dpdiss_biharmonic_d , qtens_biharmonic_d , metdet_d , rmetdet_d , dinv_d , deriv_dvv_d , &
-                                                 n0_qdp , np1_qdp , rhs_viss , dt , nu_p , nu_q , limiter_option , 1 , nelemd )
-  if ( limiter_option == 4 ) then
-    blockdim = dim3( np      , np     , nlev )
-    griddim  = dim3( qsize_d , nelemd , 1    )
-    call limiter2d_zero_kernel<<<griddim,blockdim>>>( qdp_d , 1 , nelemd , np1_qdp )
-  endif
   call pack_exchange_unpack_stage(np1_qdp,hybrid,qdp_d,timelevels)
   blockdim = dim3( np*np   , nlev   , 1 )
   griddim  = dim3( qsize_d , nelemd , 1 )
@@ -655,21 +652,15 @@ subroutine advance_hypervis_scalar_cuda( edgeAdv , elem , hvcoord , hybrid , der
     do ie = nets , nete
       do k = 1 , nlev
         dp_h(:,:,k,ie) = elem(ie)%derived%dp(:,:,k) - dt2*elem(ie)%derived%divdp_proj(:,:,k)
-        !if ( rsplit > 0 ) then  ! verticaly lagrangian code: use prognostic dp
-        !  dp_h(:,:,k,ie) = elem(ie)%state%dp3d(:,:,k,nt)
-        !else                    ! eulerian code: derive dp from ps_v
-        !  dp_h(:,:,k,ie) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) ) * hvcoord%ps0 + ( hvcoord%hybi(k+1) - hvcoord%hybi(k) ) * elem(ie)%state%ps_v(:,:,nt)
-        !endif
       enddo
     enddo
 !$OMP BARRIER
 !$OMP MASTER
-    ierr = cudaMemcpy( dp_d , dp_h , size( dp_h ) , cudaMemcpyHostToDevice )
-    ierr = cudaThreadSynchronize()
+    ierr = cudaMemcpyAsync( dp_d , dp_h , size( dp_h ) , cudaMemcpyHostToDevice , streams(1) )
     !KERNEL 1
     blockdim = dim3( np     , np , nlev )
     griddim  = dim3( nelemd , 1  , 1    )
-    call hypervis_kernel1<<<griddim,blockdim>>>( qdp_d , qtens_d , dp_d , dinv_d , variable_hyperviscosity_d , spheremp_d , deriv_dvv_d , nets , nete , dt , nt_qdp )
+    call hypervis_kernel1<<<griddim,blockdim,0,streams(1)>>>( qdp_d , qtens_d , dp_d , dinv_d , variable_hyperviscosity_d , spheremp_d , deriv_dvv_d , nets , nete , dt , nt_qdp )
     ierr = cudaThreadSynchronize()
 
     call pack_exchange_unpack_stage(1,hybrid,qtens_d,1)
@@ -678,11 +669,10 @@ subroutine advance_hypervis_scalar_cuda( edgeAdv , elem , hvcoord , hybrid , der
     !KERNEL 2
     blockdim = dim3( np     , np , nlev )
     griddim  = dim3( nelemd , 1  , 1    )
-    call hypervis_kernel2<<<griddim,blockdim>>>( qdp_d , qtens_d , dp_d , dinv_d , variable_hyperviscosity_d , spheremp_d , rspheremp_d , deriv_dvv_d , hyai_d , hybi_d , hvcoord%ps0 , nu_q , nets , nete , dt , nt_qdp )
-    ierr = cudaThreadSynchronize()
+    call hypervis_kernel2<<<griddim,blockdim,0,streams(1)>>>( qdp_d , qtens_d , dp_d , dinv_d , variable_hyperviscosity_d , spheremp_d , rspheremp_d , deriv_dvv_d , hyai_d , hybi_d , hvcoord%ps0 , nu_q , nets , nete , dt , nt_qdp )
     blockdim = dim3( np, np, nlev )
     griddim  = dim3( qsize_d, nelemd , 1 )
-    call limiter2d_zero_kernel<<<griddim,blockdim>>>(qdp_d,nets,nete,nt_qdp)
+    call limiter2d_zero_kernel<<<griddim,blockdim,0,streams(1)>>>(qdp_d,nets,nete,nt_qdp)
     ierr = cudaThreadSynchronize()
 
     call pack_exchange_unpack_stage(nt_qdp,hybrid,qdp_d,timelevels)
@@ -697,9 +687,9 @@ subroutine advance_hypervis_scalar_cuda( edgeAdv , elem , hvcoord , hybrid , der
 !$OMP BARRIER
   enddo
 
+  call t_stopf('advance_hypervis_scalar_cuda')
   call copy_qdp_d2h( elem , nt_qdp )
 
-  call t_stopf('advance_hypervis_scalar_cuda')
 end subroutine advance_hypervis_scalar_cuda
 
 
