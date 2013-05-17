@@ -1142,7 +1142,12 @@ contains
 #if (! defined ELEMENT_OPENMP)
 !$OMP BARRIER
 #endif
-    if ((integration == "explicit").or.(integration == "full_imp")) then
+
+    if (integration == "semi_imp") then
+       call prim_advance_si(elem, nets, nete, cg(hybrid%ithr), blkjac, red, &
+            refstate, hvcoord, deriv(hybrid%ithr), flt, hybrid, tl, dt)
+       tot_iter=tot_iter+cg(hybrid%ithr)%iter
+    else
        call prim_advance_exp(elem, deriv(hybrid%ithr), hvcoord,   &
             hybrid, dt, tl, nets, nete, compute_diagnostics)
 
@@ -1150,14 +1155,7 @@ contains
        do ie=nets,nete
           elem(ie)%state%lnps(:,:,tl%np1)= LOG(elem(ie)%state%ps_v(:,:,tl%np1))
        enddo
-       
-    else if (integration == "semi_imp") then
-       call prim_advance_si(elem, nets, nete, cg(hybrid%ithr), blkjac, red, &
-            refstate, hvcoord, deriv(hybrid%ithr), flt, hybrid, tl, dt)
-       tot_iter=tot_iter+cg(hybrid%ithr)%iter
-
     end if
-
 
     ! =================================
     ! energy, dissipation rate diagnostics.  Uses data at t and t+1
@@ -1515,16 +1513,14 @@ contains
     n_Q = tl%n0  ! n_Q = timelevel of FV tracers at time t.  need to save this
                  ! FV tracers still carry 3 timelevels 
                  ! SE tracers only carry 2 timelevels 
-    if ((integration == "explicit").or.(integration == "full_imp")) then
-      call prim_advance_exp(elem, deriv(hybrid%ithr), hvcoord,   &
+    call prim_advance_exp(elem, deriv(hybrid%ithr), hvcoord,   &
          hybrid, dt, tl, nets, nete, compute_diagnostics)
-      do n=2,qsplit
-        call TimeLevel_update(tl,"leapfrog")
-        call prim_advance_exp(elem, deriv(hybrid%ithr), hvcoord,   &
+    do n=2,qsplit
+       call TimeLevel_update(tl,"leapfrog")
+       call prim_advance_exp(elem, deriv(hybrid%ithr), hvcoord,   &
             hybrid, dt, tl, nets, nete, .false.)
-        ! defer final timelevel update until after Q update.
-      enddo
-    end if
+       ! defer final timelevel update until after Q update.
+    enddo
 
     ! ===============
     ! Tracer Advection.  SE advection uses mean flux variables:

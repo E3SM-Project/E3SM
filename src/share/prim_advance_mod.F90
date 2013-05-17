@@ -75,7 +75,6 @@ contains
     use dimensions_mod, only : np, nlev, nlevp
     use edge_mod, only : EdgeBuffer_t, edgevpack, edgevunpack, initEdgeBuffer
     use element_mod, only : element_t
-    use filter_mod, only : filter_t
     use hybvcoord_mod, only : hvcoord_t
     use hybrid_mod, only : hybrid_t
     use reduction_mod, only : reductionbuffer_ordered_1d_t
@@ -137,11 +136,15 @@ contains
 !                    with qsplit=1
 !   tstep_type=3  classic RK3                                    CFL=1.73 (sqrt(3))
 !                 
-!   tstep_type=4  Kinnmark&Gray RK4 4 stage                      CFL=sqrt(8)
+!   tstep_type=4  Kinnmark&Gray RK4 4 stage                      CFL=sqrt(8)=2.8
 !                 should we replace by standard RK4 (CFL=sqrt(8))?
+!                 (K&G 1st order method has CFL=3)
 !   tstep_type=5  Kinnmark&Gray RK3 5 stage 3rd order            CFL=3.87  (sqrt(15))
-!                    optimal: for windspeeds ~120m/s,gravity: 340m/2
-!                    run with qsplit=1
+!                 From Paul Ullrich.  3rd order for nonlinear terms also
+!                 K&G method is only 3rd order for linear
+!                 optimal: for windspeeds ~120m/s,gravity: 340m/2
+!                 run with qsplit=1
+!                 (K&G 2nd order method has CFL=4. tiny CFL improvement not worth 2nd order)
 !
 ! integration = "full_imp"  (under development)
 !
@@ -154,29 +157,16 @@ contains
     eta_ave_w = 1d0/qsplit   
 
     if(tstep_type==0)then  
-        method=0                ! pure leapfrog
-        if (nstep==0) method=1  ! always use RK2 for first timestep
-      if (integration == "full_imp") then
-       call abortmp('full_imp solver not activated with tstep_type=0')
-      end if
+       method=0                ! pure leapfrog
+       if (nstep==0) method=1  ! but use RK2 on first step
     else if (tstep_type==1) then  
-      if (integration == "explicit") then
-        method=0                           ! LF
-        qsplit_stage = mod(nstep,qsplit)
-        if (qsplit_stage==0) method=1      ! RK2 on first of qsplit steps
-! RK2 + LF scheme has tricky weights:
-        eta_ave_w=ur_weights(qsplit_stage+1) 
-      else if (integration == "full_imp") then
-	method = 10 + tstep_type
-! ONLY USE THIS WEIGHTING IN FI while its a dummy RK method
-        eta_ave_w=ur_weights(qsplit_stage+1) 
-      end if	
-    else if ((tstep_type.gt.1).and.(tstep_type.le.5)) then  
-      if (integration == "explicit") then
-        method = tstep_type                ! other RK variants 
-      else if (integration == "full_imp") then
-	method = 10 + tstep_type
-      end if	
+       method=0                           ! LF
+       qsplit_stage = mod(nstep,qsplit)
+       if (qsplit_stage==0) method=1      ! RK2 on first of qsplit steps
+       ! RK2 + LF scheme has tricky weights:
+       eta_ave_w=ur_weights(qsplit_stage+1) 
+    else 
+       method = tstep_type                ! other RK variants 
     endif
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
@@ -228,8 +218,6 @@ contains
        call t_stopf('prim_advance_exp')
        return
     endif
-
-
 
 
     ! ==================================
@@ -303,7 +291,9 @@ contains
        call compute_and_apply_rhs(np1,n0,np1,qn0,dt,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,eta_ave_w)
     else if (method==5) then
+#if 0
        ! KG 3nd order 5 stage:   CFL=sqrt( 4^2 -1) = 3.87
+       ! but nonlinearly only 2nd order
        ! u1 = u0 + dt/5 RHS(u0)
        call compute_and_apply_rhs(np1,n0,n0,qn0,dt/5,elem,hvcoord,hybrid,&
             deriv,nets,nete,compute_diagnostics,0d0)
@@ -319,6 +309,42 @@ contains
        ! u5 = u0 + dt RHS(u4)
        call compute_and_apply_rhs(np1,n0,np1,qn0,dt,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,eta_ave_w)
+#else
+       ! Ullrich 3nd order 5 stage:   CFL=sqrt( 4^2 -1) = 3.87
+       ! u1 = u0 + dt/5 RHS(u0)  (save u1 in timelevel nm1)
+       call compute_and_apply_rhs(nm1,n0,n0,qn0,dt/5,elem,hvcoord,hybrid,&
+            deriv,nets,nete,compute_diagnostics,eta_ave_w/4)
+       ! u2 = u0 + dt/5 RHS(u1)
+       call compute_and_apply_rhs(np1,n0,nm1,qn0,dt/5,elem,hvcoord,hybrid,&
+            deriv,nets,nete,.false.,0d0)
+       ! u3 = u0 + dt/3 RHS(u2)
+       call compute_and_apply_rhs(np1,n0,np1,qn0,dt/3,elem,hvcoord,hybrid,&
+            deriv,nets,nete,.false.,0d0)
+       ! u4 = u0 + 2dt/3 RHS(u3)
+       call compute_and_apply_rhs(np1,n0,np1,qn0,2*dt/3,elem,hvcoord,hybrid,&
+            deriv,nets,nete,.false.,0d0)
+
+       ! compute (5*u1/4 - u0/4) in timelevel nm1:
+       do ie=nets,nete
+          elem(ie)%state%v(:,:,:,:,nm1)= (5*elem(ie)%state%v(:,:,:,:,nm1) &
+               - elem(ie)%state%v(:,:,:,:,n0) ) /4
+          elem(ie)%state%T(:,:,:,nm1)= (5*elem(ie)%state%T(:,:,:,nm1) &
+               - elem(ie)%state%T(:,:,:,n0) )/4
+          if (rsplit==0) then
+             elem(ie)%state%ps_v(:,:,nm1)= ( 5*elem(ie)%state%ps_v(:,:,nm1) &
+                  - elem(ie)%state%ps_v(:,:,n0) )/4
+          else
+             elem(ie)%state%dp3d(:,:,:,nm1)= (5*elem(ie)%state%dp3d(:,:,:,nm1) &
+                  - elem(ie)%state%dp3d(:,:,:,n0) )/4
+          endif
+       enddo
+       ! u5 = (5*u1/4 - u0/4) + 3dt/4 RHS(u4)
+       call compute_and_apply_rhs(np1,nm1,np1,qn0,3*dt/4,elem,hvcoord,hybrid,&
+            deriv,nets,nete,.false.,3*eta_ave_w/4)
+       ! final method is the same as:
+       ! u5 = u0 +  dt/4 RHS(u0)) + 3dt/4 RHS(u4)
+#endif      
+
     else if (method==11) then
        ! will be FI. But is LF placeholder right now
        ! forward euler to u(dt/2) = u(0) + (dt/2) RHS(0)  (store in u(np1))
@@ -360,7 +386,6 @@ contains
           call advance_hypervis_dp(edge3p1,elem,hvcoord,hybrid,deriv,np1,nets,nete,dt_vis,eta_ave_w)
        endif
     endif
-
 
 #ifdef ENERGY_DIAGNOSTICS
     if (compute_diagnostics) then
@@ -2552,7 +2577,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
 
      end do
-       
 #ifdef ENERGY_DIAGNOSTICS
      ! =========================================================
      !
@@ -2708,7 +2732,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
         enddo
      endif
 #endif
-       
      ! =========================================================
      ! local element timestep, store in np1.  
      ! note that we allow np1=n0 or nm1
@@ -2769,9 +2792,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
     ! Insert communications here: for shared memory, just a single
   ! sync is required
   ! =============================================================
-  
   call bndry_exchangeV(hybrid,edge3p1)
-  
   do ie=nets,nete
      ! ===========================================================
      ! Unpack the edges for vgrad_T and v tendencies...
