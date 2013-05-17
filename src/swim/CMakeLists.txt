@@ -27,21 +27,16 @@ ENDIF ()
 IF (NOT SWIM_PLEV)
   SET (SWIM_PLEV 1 CACHE STRING "Default number of levels (PLEV) in each element (default value is 1)")
 ENDIF ()
-IF (NOT SWIM_NTRAC)
-  SET (SWIM_NTRAC 1 CACHE STRING "Default number of tracers (NTRAC) (default value is 1)")
-ENDIF ()
 
 MESSAGE(STATUS "Building swim with:")
 MESSAGE(STATUS "  NP = ${SWIM_NP}")
 MESSAGE(STATUS "  NC = ${SWIM_NC}")
 MESSAGE(STATUS "  PLEV = ${SWIM_PLEV}")
-MESSAGE(STATUS "  NTRAC = ${SWIM_NTRAC}")
 
 # For the configuration
 SET(NUM_POINTS ${SWIM_NP})
 SET(NUM_CELLS ${SWIM_NC})
 SET(NUM_PLEV ${SWIM_PLEV})
-SET(NUM_TRACERS ${SWIM_NTRAC})
 
 IF (${macroUSE_PIO})
   SET(PIO TRUE)

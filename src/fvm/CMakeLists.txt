@@ -105,15 +105,11 @@ ENDIF ()
 IF (NOT FVM_NC)
   SET (FVM_NC 4)
 ENDIF ()
-IF (NOT FVM_NTRAC)
-  SET (FVM_NTRAC 1)
-ENDIF ()
 
 MESSAGE(STATUS "Building fvm with:")
 MESSAGE(STATUS "  NP = ${FVM_NP}")
 MESSAGE(STATUS "  NC = ${FVM_NC}")
 MESSAGE(STATUS "  PLEV = ${FVM_PLEV}")
-MESSAGE(STATUS "  NTRAC = ${FVM_NTRAC}")
 MESSAGE(STATUS "  PIO = ${FVM_USE_PIO}")
 MESSAGE(STATUS "  ENERGY = ${FVM_USE_ENERGY}")
 
@@ -121,5 +117,5 @@ MESSAGE(STATUS "  ENERGY = ${FVM_USE_ENERGY}")
 ############################################################################
 # createTestExec(exec_name exec_type SRCS NP PLEV USE_PIO USE_ENERGY)
 ############################################################################
-createTestExec(fvm fvm FVM_SRCS ${FVM_NP} ${FVM_NC} ${FVM_PLEV} 
-               ${FVM_NTRAC} ${FVM_USE_PIO}  ${FVM_USE_ENERGY})
+createTestExec(fvm fvm ${FVM_NP} ${FVM_NC} ${FVM_PLEV} 
+               ${FVM_USE_PIO}  ${FVM_USE_ENERGY})

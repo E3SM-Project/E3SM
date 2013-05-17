@@ -1,8 +1,4 @@
-# Set the include directories
-INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR}
-                    ${SWDGX_INCLUDE_DIRS})
 
-# There are only three separate executables that need to be compiled
-#   separately
-#                                        NP NC PLEV NTRAC USE_PIO  WITH_ENERGY
-createTestExec(swtc-dgA swdgx SWDGX_SRCS  6  4    1     1   FALSE        FALSE)
+# Set the variables for this test executable
+#                            NP NC PLEV USE_PIO  WITH_ENERGY
+createTestExec(swtc-dgA swdgx 6  4    1   FALSE        FALSE)

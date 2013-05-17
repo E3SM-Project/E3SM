@@ -140,24 +140,20 @@ ENDIF ()
 IF (NOT PRIM_NC)
   SET (PRIM_NC 4)
 ENDIF ()
-IF (NOT PRIM_NTRAC)
-  SET (PRIM_NTRAC 1)
-ENDIF ()
 
 MESSAGE(STATUS "Building prim with:")
 MESSAGE(STATUS "  NP = ${PRIM_NP}")
 MESSAGE(STATUS "  NC = ${PRIM_NC}")
 MESSAGE(STATUS "  PLEV = ${PRIM_PLEV}")
-MESSAGE(STATUS "  NTRAC = ${PRIM_NTRAC}")
 MESSAGE(STATUS "  PIO = ${PRIM_USE_PIO}")
 MESSAGE(STATUS "  ENERGY = ${PRIM_USE_ENERGY}")
 
 # The following macro handles the compilation with the appropriate variables
 ############################################################################
-# createTestExec(exec_name exec_type SRCS NP PLEV USE_PIO USE_ENERGY)
+# createTestExec(exec_name exec_type NP PLEV USE_PIO USE_ENERGY)
 ############################################################################
-createTestExec(prim prim PRIM_SRCS ${PRIM_NP} ${PRIM_NC} ${PRIM_PLEV} 
-               ${PRIM_NTRAC} ${PRIM_USE_PIO}  ${PRIM_USE_ENERGY})
+createTestExec(prim prim ${PRIM_NP} ${PRIM_NC} ${PRIM_PLEV} 
+               ${PRIM_USE_PIO}  ${PRIM_USE_ENERGY})
 
 SET_PROPERTY(TARGET prim PROPERTY LINKER_LANGUAGE Fortran)
 

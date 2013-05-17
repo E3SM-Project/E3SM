@@ -101,15 +101,11 @@ ENDIF ()
 IF (NOT SPELT_NC)
   SET (SPELT_NC 4)
 ENDIF ()
-IF (NOT SPELT_NTRAC)
-  SET (SPELT_NTRAC 1)
-ENDIF ()
 
 MESSAGE(STATUS "Building spelt with:")
 MESSAGE(STATUS "  NP = ${SPELT_NP}")
 MESSAGE(STATUS "  NC = ${SPELT_NC}")
 MESSAGE(STATUS "  PLEV = ${SPELT_PLEV}")
-MESSAGE(STATUS "  NTRAC = ${SPELT_NTRAC}")
 MESSAGE(STATUS "  PIO = ${SPELT_USE_PIO}")
 MESSAGE(STATUS "  ENERGY = ${SPELT_USE_ENERGY}")
 
@@ -117,5 +113,5 @@ MESSAGE(STATUS "  ENERGY = ${SPELT_USE_ENERGY}")
 ############################################################################
 # createTestExec(exec_name exec_type SRCS NP PLEV USE_PIO USE_ENERGY)
 ############################################################################
-createTestExec(spelt spelt SPELT_SRCS ${SPELT_NP} ${SPELT_NC} ${SPELT_PLEV} 
-               ${SPELT_NTRAC} ${SPELT_USE_PIO}  ${SPELT_USE_ENERGY})
+createTestExec(spelt spelt ${SPELT_NP} ${SPELT_NC} ${SPELT_PLEV} 
+               ${SPELT_USE_PIO}  ${SPELT_USE_ENERGY})

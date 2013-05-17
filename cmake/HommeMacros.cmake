@@ -3,14 +3,22 @@
 STRING(ASCII 35 POUND)
 
 # Macro to create the individual tests
-macro(createTestExec execName execType execSources macroNP macroNC 
-                     macroPLEV macroNTRAC macroUSE_PIO macroWITH_ENERGY)
+macro(createTestExec execName execType macroNP macroNC 
+                     macroPLEV macroUSE_PIO macroWITH_ENERGY)
+
+  STRING(TOUPPER ${execType} EXEC_TYPE)
+
+  # Set the include directories
+  INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR}
+                      ${${EXEC_TYPE}_INCLUDE_DIRS})
+
+  # Set the source files for this executable
+  SET(EXEC_SOURCES ${${EXEC_TYPE}_SRCS})
 
   # Backup the cmake variables
   SET(tempNP ${NUM_POINTS})
   SET(tempNC ${NUM_CELLS})
   SET(tempPLEV ${NUM_PLEV})
-  SET(tempNTRAC ${NUM_TRACERS})
   SET(tempUSE_PIO ${PIO})
   SET(tempWITH_ENERGY ${ENERGY_DIAGNOSTICS})
 
@@ -18,7 +26,6 @@ macro(createTestExec execName execType execSources macroNP macroNC
   SET(NUM_POINTS ${macroNP})
   SET(NUM_CELLS ${macroNC})
   SET(NUM_PLEV ${macroPLEV})
-  SET(NUM_TRACERS ${macroNTRAC})
 
   IF (${macroUSE_PIO})
     SET(PIO TRUE)
@@ -40,7 +47,7 @@ macro(createTestExec execName execType execSources macroNP macroNC
 
   ADD_DEFINITIONS(-DHAVE_CONFIG_H)
 
-  ADD_EXECUTABLE(${execName} ${${execSources}})
+  ADD_EXECUTABLE(${execName} ${EXEC_SOURCES})
 
   # Add this executable to a list 
   SET(EXEC_LIST ${EXEC_LIST} ${execName} PARENT_SCOPE)
@@ -67,7 +74,6 @@ macro(createTestExec execName execType execSources macroNP macroNC
   SET(NUM_POINTS ${tempNP})
   SET(NUM_CELLS ${tempNC})
   SET(NUM_PLEV ${tempPLEV})
-  SET(NUM_TRACERS ${tempNTRAC})
   SET(PIO ${tempUSE_PIO})
   SET(ENERGY_DIAGNOSTICS ${tempWITH_ENERGY})
 

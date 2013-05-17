@@ -108,23 +108,18 @@ ENDIF ()
 IF (NOT SWEQX_NC)
   SET (SWEQX_NC 4)
 ENDIF ()
-IF (NOT SWEQX_NTRAC)
-  SET (SWEQX_NTRAC 1)
-ENDIF ()
-
 
 MESSAGE(STATUS "Building sweqx with:")
 MESSAGE(STATUS "  NP = ${SWEQX_NP}")
 MESSAGE(STATUS "  NC = ${SWEQX_NC}")
 MESSAGE(STATUS "  PLEV = ${SWEQX_PLEV}")
-MESSAGE(STATUS "  NTRAC = ${SWEQX_NTRAC}")
 MESSAGE(STATUS "  PIO = ${SWEQX_USE_PIO}")
 MESSAGE(STATUS "  ENERGY = ${SWEQX_USE_ENERGY}")
 
 # The following macro handles the compilation with the appropriate variables
 ############################################################################
-# createTestExec(exec_name exec_type SRCS NP PLEV USE_PIO USE_ENERGY)
+# createTestExec(exec_name exec_type NP PLEV USE_PIO USE_ENERGY)
 ############################################################################
-createTestExec(sweqx sweqx SWEQX_SRCS ${SWEQX_NP} ${SWEQX_NC} ${SWEQX_PLEV} 
-               ${SWEQX_NTRAC} ${SWEQX_USE_PIO} ${SWEQX_USE_ENERGY})
+createTestExec(sweqx sweqx ${SWEQX_NP} ${SWEQX_NC} ${SWEQX_PLEV} 
+               ${SWEQX_USE_PIO} ${SWEQX_USE_ENERGY})
 

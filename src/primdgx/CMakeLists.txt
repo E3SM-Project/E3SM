@@ -113,21 +113,17 @@ ENDIF ()
 IF (NOT PRIMDGX_NC)
   SET (PRIMDGX_NC 4)
 ENDIF ()
-IF (NOT PRIMDGX_NTRAC)
-  SET (PRIMDGX_NTRAC 1)
-ENDIF ()
 
 MESSAGE(STATUS "Building primdgx with:")
 MESSAGE(STATUS "  NP = ${PRIMDGX_NP}")
 MESSAGE(STATUS "  NC = ${PRIMDGX_NC}")
 MESSAGE(STATUS "  PLEV = ${PRIMDGX_PLEV}")
-MESSAGE(STATUS "  NTRAC = ${PRIMDGX_NTRAC}")
 MESSAGE(STATUS "  PIO = ${PRIMDGX_USE_PIO}")
 MESSAGE(STATUS "  ENERGY = ${PRIMDGX_USE_ENERGY}")
 
 # The following macro handles the compilation with the appropriate variables
 ############################################################################
-# createTestExec(exec_name exec_type SRCS NP NC PLEV NTRAC USE_PIO USE_ENERGY)
+# createTestExec(exec_name exec_type NP NC PLEV USE_PIO USE_ENERGY)
 ############################################################################
-createTestExec(primdgx primdgx PRIMDGX_SRCS ${PRIMDGX_NP} ${PRIMDGX_NC} ${PRIMDGX_PLEV}
-               ${PRIMDGX_NTRAC} ${PRIMDGX_USE_PIO} ${PRIMDGX_USE_ENERGY})
+createTestExec(primdgx primdgx ${PRIMDGX_NP} ${PRIMDGX_NC} ${PRIMDGX_PLEV}
+               ${PRIMDGX_USE_PIO} ${PRIMDGX_USE_ENERGY})

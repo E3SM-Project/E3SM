@@ -127,25 +127,27 @@ IF (${HOMME_QUEUING})
 
 ENDIF ()
 
+# Add the test exec subdirs for the preqx executable
 IF(${BUILD_HOMME_PREQX})
   ADD_SUBDIRECTORY(baroA)
   ADD_SUBDIRECTORY(baroB)
   ADD_SUBDIRECTORY(baroC)
 ENDIF()
 
+# Add the test exec subdirs for the sweqx executable
 IF(${BUILD_HOMME_SWEQX})
   ADD_SUBDIRECTORY(swtcA)
   ADD_SUBDIRECTORY(swtcB)
   ADD_SUBDIRECTORY(swtcC)
 ENDIF()
 
+# Add the test exec subdirs for the swdgx executable
 IF(${BUILD_HOMME_SWDGX})
   ADD_SUBDIRECTORY(swtc-dgA)
 ENDIF()
 
 # Read the test-list.cmake file to get the HOMME_TESTS list
 INCLUDE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/test-list.cmake)
-MESSAGE(STATUS "HOMME_TEST=${HOMME_TESTS}")
 createTests(HOMME_TESTS)
 
 # End the file with the total number of test files
