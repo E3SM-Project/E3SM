@@ -425,12 +425,20 @@
             current % total_time = all_total_time
 
 #ifdef _MPI
-            current % efficiency = all_ave_time / all_total_time
+            if ( all_total_time > 0.0d0 ) then
+               current % efficiency = all_ave_time / all_total_time
+            else
+               current % efficiency = 1.0
+            end if
 #else
             current % efficiency = 1.0
 #endif
 
-            current % avg_time = current % total_time / current % calls
+            if ( current % calls > 0 ) then
+               current % avg_time = current % total_time / current % calls
+            else
+               current % avg_time = current % total_time
+            end if
 
             call mpas_dmpar_max_real(domain_info, current % max_time, all_max_time)
             current % max_time = all_max_time
