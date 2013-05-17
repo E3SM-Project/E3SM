@@ -1121,6 +1121,10 @@ module atm_time_integration
       ! we solved for these in the acoustic-step loop.  
       ! we will compute ru and u here also, given we are here, even though we only need them on nEdgesSolve
 
+      ! Avoid FP errors caused by a potential division by zero below by 
+      ! initializing the "garbage cell" of rho_zz to a non-zero value
+      rho_zz(:,nCells+1) = 1.0
+
       do iEdge = 1, nEdges
 
          cell1 = cellsOnEdge(1,iEdge)
@@ -3167,6 +3171,10 @@ module atm_time_integration
                ke(k,iCell) = ke_fact*ke(k,iCell)
             end do
          end do
+
+         ! Avoid FP errors caused by a potential division by zero below by 
+         ! initializing the "garbage cell" of areaCell to a non-zero value
+         areaCell(nCells+1) = 1.0
 
          do iVertex = 1, nVertices
             do i=1,vertexDegree
