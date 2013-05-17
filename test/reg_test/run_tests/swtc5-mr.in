@@ -1,21 +1,22 @@
 ###############################################################
+# Explicit leapfrog default benchmark
+###############################################################
 #
-# Discontinuous Galerkin -- swtc5
-# NE=6, dt=30, nu=7e5, limiter=0, filter_freq=1, NP=6
+# Spectral Element -- swtc5
+# NE=30, dt=90, nu=1.5e15, limiter=0, filter_freq=0, NP=4
 #
 ###############################################################
 
 # The name of this test (should be the basename of this file)
-test_name=swtc5-dg
+test_name=swtc5-mr
 # The type of run (preqx,sweqx,swdgx,etc.)
-test_type=swdgx
+test_type=sweqx
 # The specifically compiled executable that this test uses
-exec_name=swtc-dgA
+exec_name=swtcB
 
 NUM_CPUS=16
 
 namelist_files=${HOMME_ROOT}/test/reg_test/namelists/${test_name}.nl
-ncl_files=${HOMME_ROOT}/test/reg_test/ncl/swtc5ref.ncl
+copy_files=${HOMME_ROOT}/test/mesh_refine/grids/mountain_10_x8.g
 
 nc_output_files=swtc51.nc
-

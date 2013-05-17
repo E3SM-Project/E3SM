@@ -42,6 +42,9 @@ macro(createTestExec execName execType execSources macroNP macroNC
 
   ADD_EXECUTABLE(${execName} ${${execSources}})
 
+  # Add this executable to a list 
+  SET(EXEC_LIST ${EXEC_LIST} ${execName} PARENT_SCOPE)
+
   # More thought needs to go into this option
   #IF (macroWITH_ENERGY)
   #ENDIF ()
@@ -70,21 +73,6 @@ macro(createTestExec execName execType execSources macroNP macroNC
 
 endmacro(createTestExec)
 
-macro(getValue thisLine thisVar)
-
-  # Turn the line into a list
-  STRING(REPLACE "=" ";" LINE_LIST ${thisLine})
-
-  # Get the 0th and 1th items of the list
-  #LIST(GET LINE_LIST 0 thisKey) # Don't actually care about the key
-  LIST(GET LINE_LIST 1 thisVal)
-
-  # Remove whitespace  and set to the variable defined by thisVar
-  STRING(STRIP ${thisVal} ${thisVar})
-  STRING(REPLACE " " ";" ${thisVar} ${${thisVar}})
-
-endmacro(getValue)
-
 macro (copyDirFiles testDir)
   # Copy all of the files into the binary dir
   FOREACH (singleFile ${NAMELIST_FILES}) 
@@ -99,6 +87,11 @@ macro (copyDirFiles testDir)
   FOREACH (singleFile ${REFSOLN_FILES}) 
     FILE(COPY ${singleFile} DESTINATION ${testDir})
   ENDFOREACH () 
+  FOREACH (singleFile ${MESH_FILES}) 
+    FILE(COPY ${singleFile} DESTINATION ${testDir})
+  ENDFOREACH () 
+
+
 
   # Need to create the movie directory for output
   EXECUTE_PROCESS(COMMAND mkdir -p ${testDir}/movies
@@ -136,8 +129,8 @@ macro (setUpTestDir TEST_DIR)
   FILE(APPEND ${THIS_TEST_SCRIPT} "${POUND}===============================\n")
 
   FILE(APPEND ${THIS_TEST_SCRIPT} "\n") # new line
-  IF (${NUM_CPUS} STREQUAL "")
-    MESSAGE(FATAL_ERROR "In test ${testName} NUM_CPUS not defined. Quitting")
+  IF ("${NUM_CPUS}" STREQUAL "")
+    MESSAGE(FATAL_ERROR "In test ${TEST_NAME} NUM_CPUS not defined. Quitting")
   ENDIF ()
   IF (NOT ${HOMME_QUEUING})
     IF (NOT ${USE_NUM_PROCS} STREQUAL "")
@@ -173,7 +166,7 @@ macro (setUpTestDir TEST_DIR)
       FILE(APPEND ${THIS_TEST_SCRIPT} "\n") # new line
       MATH(EXPR OMP_MOD "${NUM_CPUS} % ${OMP_NUM_THREADS}")
       IF (NOT ${OMP_MOD} EQUAL 0)
-        MESSAGE(FATAL_ERROR "In test ${testName} NUM_CPUS not divisible by OMP_NUM_THREADS. Quitting.")
+        MESSAGE(FATAL_ERROR "In test ${TEST_NAME} NUM_CPUS not divisible by OMP_NUM_THREADS. Quitting.")
       ENDIF ()
       MATH(EXPR OMP_NUM_MPI "${NUM_CPUS} / ${OMP_NUM_THREADS}")
       FILE(APPEND ${THIS_TEST_SCRIPT} "omp_num_mpi=${OMP_NUM_MPI}\n") # new line
@@ -207,197 +200,176 @@ macro (setUpTestDir TEST_DIR)
 
 endmacro (setUpTestDir)
 
-
-
-macro(parseTestFile fileName testName execName namelistFiles vcoordFiles
-                    nclFiles refsolnFiles ncOutputFiles numCpus ompNamelistFiles ompNumThreads)
-
+macro(resetTestVariables)
   # Reset the variables
-  SET(${testName})
-  SET(${execName})
-  SET(${namelistFiles})
-  SET(${vcoordFiles})
-  SET(${nclFiles})
-  SET(${refsolnFiles})
-  SET(${ncOutputFiles})
+  SET(TEST_NAME)
+  SET(EXEC_NAME)
+  SET(NAMELIST_FILES)
+  SET(VCOORD_FILES)
+  SET(NCL_FILES)
+  SET(REFSOLN_FILES)
+  SET(MESH_FILES)
+  SET(NC_OUTPUT_FILES)
+  SET(NUM_CPUS)
+  SET(OMP_NAMELIST_FILES)
+  SET(OMP_NUM_THREADS)
 
-  # Need to do something with this
+endmacro(resetTestVariables)
+
+macro(printTestSummary)
+  MESSAGE(STATUS "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+  MESSAGE(STATUS "Summary of test ${TEST_NAME}")
+  IF (NOT "${NAMELIST_FILES}" STREQUAL "")
+    MESSAGE(STATUS "  namelist_files=")
+    FOREACH (singleFile ${NAMELIST_FILES}) 
+      MESSAGE(STATUS "    ${singleFile}")
+    ENDFOREACH () 
+  ENDIF ()
+  IF (NOT "${VCOORD_FILES}" STREQUAL "")
+    MESSAGE(STATUS "  vcoord_files=")
+    FOREACH (singleFile ${VCOORD_FILES}) 
+      MESSAGE(STATUS "    ${singleFile}")
+    ENDFOREACH () 
+  ENDIF ()
+  IF (NOT "${NCL_FILES}" STREQUAL "")
+    MESSAGE(STATUS "  ncl_files=")
+    FOREACH (singleFile ${NCL_FILES}) 
+      MESSAGE(STATUS "    ${singleFile}")
+    ENDFOREACH () 
+  ENDIF ()
+  IF (NOT "${REFSOLN_FILES}" STREQUAL "")
+    MESSAGE(STATUS "  refsoln_files=")
+    FOREACH (singleFile ${REFSOLN_FILES}) 
+      MESSAGE(STATUS "    ${singleFile}")
+    ENDFOREACH () 
+  ENDIF ()
+  IF (NOT "${NC_OUTPUT_FILES}" STREQUAL "")
+    MESSAGE(STATUS "  nc_output_files=")
+    FOREACH (singleFile ${NC_OUTPUT_FILES}) 
+      MESSAGE(STATUS "    ${singleFile}")
+    ENDFOREACH () 
+  ENDIF ()
+  IF (NOT "${MESH_FILES}" STREQUAL "")
+    MESSAGE(STATUS "  mesh_files=")
+    FOREACH (singleFile ${MESH_FILES}) 
+      MESSAGE(STATUS "    ${singleFile}")
+    ENDFOREACH () 
+  ENDIF ()
+  IF (NOT "${OMP_NAMELIST_FILES}" STREQUAL "")
+    MESSAGE(STATUS "  omp_namelist_files=")
+    FOREACH (singleFile ${OMP_NAMELIST_FILES}) 
+      MESSAGE(STATUS "    ${singleFile}")
+    ENDFOREACH () 
+  ENDIF ()
+endmacro(printTestSummary)
+
+# Macro to create the individual tests
+macro(createTest testFile)
+
+  SET(NAMELIST_DIR namelists/little_endian)
+
+  SET (THIS_TEST_INPUT ${HOMME_SOURCE_DIR}/test/reg_test/run_tests/${testFile})
+
+  resetTestVariables()
+
   SET(namelist_dir namelists/little_endian)
   SET(HOMME_ROOT ${HOMME_SOURCE_DIR})
 
-  FILE(STRINGS ${fileName}
-       Homme_Raw_Paths
-       LIMIT_COUNT 100)
+  INCLUDE(${THIS_TEST_INPUT})
 
-  # Go through each 
-  FOREACH(LINE ${Homme_Raw_Paths})
+  FILE(GLOB NAMELIST_FILES ${NAMELIST_FILES})
+  FILE(GLOB VCOORD_FILES ${VCOORD_FILES})
+  FILE(GLOB NCL_FILES ${NCL_FILES})
+  FILE(GLOB REFSOLN_FILES ${REFSOLN_FILES})
+  FILE(GLOB MESH_FILES ${MESH_FILES})
+  FILE(GLOB OMP_NAMELIST_FILES ${OMP_NAMELIST_FILES})
 
-    # Needed to propely concatenate text across multiple lines
-    STRING(REPLACE "\"" "" LINE ${LINE})
-
-    IF (NOT ${LINE} MATCHES "^${POUND}")
-      STRING(REPLACE "\;" "" REP_LINE ${LINE})
-      IF (${REP_LINE} MATCHES "^test_name")
-        getValue(${REP_LINE} ${testName})
-        SET(test_name ${${testName}})
-      ENDIF ()
-      IF (${REP_LINE} MATCHES "^exec_name")
-        getValue(${REP_LINE} ${execName})
-      ENDIF ()
-      IF (${REP_LINE} MATCHES "^namelist_files")
-        getValue(${REP_LINE} ${namelistFiles})
-        FILE(GLOB ${namelistFiles} ${${namelistFiles}})
-      ENDIF ()
-      IF (${REP_LINE} MATCHES "^vcoord_files")
-        getValue(${REP_LINE} ${vcoordFiles})
-        FILE(GLOB ${vcoordFiles} ${${vcoordFiles}})
-      ENDIF ()
-      IF (${REP_LINE} MATCHES "^ncl_files")
-        getValue(${REP_LINE} ${nclFiles})
-        FILE(GLOB ${nclFiles} ${${nclFiles}})
-      ENDIF ()
-      IF (${REP_LINE} MATCHES "^refsoln_files")
-        getValue(${REP_LINE} ${refsolnFiles})
-        FILE(GLOB ${refsolnFiles} ${${refsolnFiles}})
-      ENDIF ()
-      IF (${REP_LINE} MATCHES "^nc_output_files")
-        getValue(${REP_LINE} ${ncOutputFiles})
-      ENDIF ()
-      IF (${REP_LINE} MATCHES "^NUM_CPUS")
-        getValue(${REP_LINE} ${numCpus})
-      ENDIF ()
-      IF (${REP_LINE} MATCHES "^OMP_NUM_THREADS")
-        getValue(${REP_LINE} ${ompNumThreads})
-      ENDIF ()
-      IF (${REP_LINE} MATCHES "^omp_namelist_files")
-        getValue(${REP_LINE} ${ompNamelistFiles})
-        FILE(GLOB ${ompNamelistFiles} ${${ompNamelistFiles}})
-      ENDIF ()
-    ENDIF()
-  ENDFOREACH()
-
-endmacro(parseTestFile)
-
-# Macro to create the individual tests
-macro(createTest testName)
-
-  SET (THIS_TEST_INPUT ${HOMME_SOURCE_DIR}/test/reg_test/run_tests/${testName}.in)
-
-  # Weird this isn't getting reset for somre reason
-  SET (OMP_NAMELIST_FILES "")
-
-  parseTestFile(${THIS_TEST_INPUT}
-                TEST_NAME EXEC_NAME NAMELIST_FILES VCOORD_FILES NCL_FILES
-                REFSOLN_FILES NC_OUTPUT_FILES NUM_CPUS OMP_NAMELIST_FILES OMP_NUM_THREADS)
-
-  # Copy the file
-  #FILE(COPY ${THIS_TEST_INPUT} DESTINATION ${CMAKE_BINARY_DIR}/tests/${TEST_NAME}/)
-
-  MESSAGE(STATUS "Adding test: ${TEST_NAME}, using exec ${EXEC_NAME}")
-
-  IF (TEST_SUMMARY) 
-    IF (NOT "${NAMELIST_FILES}" STREQUAL "")
-      MESSAGE(STATUS "  namelist_files=")
-      FOREACH (singleFile ${NAMELIST_FILES}) 
-        MESSAGE(STATUS "    ${singleFile}")
-      ENDFOREACH () 
-    ENDIF ()
-    IF (NOT "${VCOORD_FILES}" STREQUAL "")
-      MESSAGE(STATUS "  vcoord_files=")
-      FOREACH (singleFile ${VCOORD_FILES}) 
-        MESSAGE(STATUS "    ${singleFile}")
-      ENDFOREACH () 
-    ENDIF ()
-    IF (NOT "${NCL_FILES}" STREQUAL "")
-      MESSAGE(STATUS "  ncl_files=")
-      FOREACH (singleFile ${NCL_FILES}) 
-        MESSAGE(STATUS "    ${singleFile}")
-      ENDFOREACH () 
-    ENDIF ()
-    IF (NOT "${REFSOLN_FILES}" STREQUAL "")
-      MESSAGE(STATUS "  refsoln_files=")
-      FOREACH (singleFile ${REFSOLN_FILES}) 
-        MESSAGE(STATUS "    ${singleFile}")
-      ENDFOREACH () 
-    ENDIF ()
-    IF (NOT "${NC_OUTPUT_FILES}" STREQUAL "")
-      MESSAGE(STATUS "  nc_output_files=")
-      FOREACH (singleFile ${NC_OUTPUT_FILES}) 
-        MESSAGE(STATUS "    ${singleFile}")
-      ENDFOREACH () 
-    ENDIF ()
-    IF (NOT "${OMP_NAMELIST_FILES}" STREQUAL "")
-      MESSAGE(STATUS "  omp_namelist_files=")
-      FOREACH (singleFile ${OMP_NAMELIST_FILES}) 
-        MESSAGE(STATUS "    ${singleFile}")
-      ENDFOREACH () 
-    ENDIF ()
-  ENDIF()
-
-
-# BFJ start here
-
-  # Set up the directory
-  SET(THIS_TEST_DIR ${CMAKE_BINARY_DIR}/tests/${TEST_NAME})
-
-  # Set up the test directory for both the baseline and the comparison tests
-  setUpTestDir(${THIS_TEST_DIR})
-  #setUpTestDir(${THIS_BASELINE_TEST_DIR})
-
-  # The test (not the baseline) run script
-  SET(THIS_TEST_RUN_SCRIPT "${THIS_TEST_DIR}/${TEST_NAME}-run.sh")
-
-  IF (${HOMME_QUEUING})
-
-    SET(THIS_TEST "${testName}-diff")
-
-    # When run through the queue the runs are submitted and ran in 
-    #   submitAndRunTests, and diffed in the subsequent tests
-    ADD_TEST(NAME ${THIS_TEST}
-             COMMAND ${CMAKE_BINARY_DIR}/tests/diff_output.sh ${TEST_NAME})
-
-    SET_TESTS_PROPERTIES(${THIS_TEST} PROPERTIES DEPENDS submitAndRunTests)
-
-
+  # Determine if the executable this tests depeds upon is built
+  LIST(FIND EXEC_LIST ${EXEC_NAME} FIND_INDEX)
+  
+  IF (${FIND_INDEX} LESS 0) 
+    MESSAGE(STATUS "Not configuring test ${TEST_NAME} since it depends upon the executable ${EXEC_NAME} 
+                    which isn't built with this configuration")
   ELSE ()
+   
+    MESSAGE(STATUS "Adding test: ${TEST_NAME}, using exec ${EXEC_NAME}")
 
-    SET(THIS_TEST "${testName}")
+    OPTION(TEST_SUMMARY "Print out information about the tests" OFF)
 
-    # When not run through a queue each run is ran and then diffed. This is handled by 
-    #  the submit_tests.sh script 
-    ADD_TEST(NAME ${THIS_TEST} 
-             COMMAND ${CMAKE_BINARY_DIR}/tests/submit_tests.sh "${THIS_TEST_RUN_SCRIPT}" "${TEST_NAME}"
-             DEPENDS ${EXEC_NAME})
+    IF (${TEST_SUMMARY})
+      printTestSummary()
+    ENDIF()
+
+    # Set up the directory
+    SET(THIS_TEST_DIR ${CMAKE_BINARY_DIR}/tests/${TEST_NAME})
+
+    # Set up the test directory for both the baseline and the comparison tests
+    setUpTestDir(${THIS_TEST_DIR})
+    #setUpTestDir(${THIS_BASELINE_TEST_DIR})
+
+    # The test (not the baseline) run script
+    SET(THIS_TEST_RUN_SCRIPT "${THIS_TEST_DIR}/${TEST_NAME}-run.sh")
+
+    IF (${HOMME_QUEUING})
+
+      SET(THIS_TEST "${TEST_NAME}-diff")
+
+      # When run through the queue the runs are submitted and ran in 
+      #   submitAndRunTests, and diffed in the subsequent tests
+      ADD_TEST(NAME ${THIS_TEST}
+               COMMAND ${CMAKE_BINARY_DIR}/tests/diff_output.sh ${TEST_NAME})
+
+      SET_TESTS_PROPERTIES(${THIS_TEST} PROPERTIES DEPENDS submitAndRunTests)
+
+
+    ELSE ()
+
+      SET(THIS_TEST "${TEST_NAME}")
+
+      # When not run through a queue each run is ran and then diffed. This is handled by 
+      #  the submit_tests.sh script 
+      ADD_TEST(NAME ${THIS_TEST} 
+               COMMAND ${CMAKE_BINARY_DIR}/tests/submit_tests.sh "${THIS_TEST_RUN_SCRIPT}" "${TEST_NAME}"
+               DEPENDS ${EXEC_NAME})
+
+    ENDIF ()
+
+    # Force cprnc to be built when the individual test is run
+    SET_TESTS_PROPERTIES(${THIS_TEST} PROPERTIES DEPENDS cprnc)
+
+    # Individual target to rerun and diff the tests
+    SET(THIS_TEST_INDIV "test-${TEST_NAME}")
+
+    ADD_CUSTOM_TARGET(${THIS_TEST_INDIV}
+             COMMAND ${CMAKE_BINARY_DIR}/tests/submit_tests.sh "${THIS_TEST_RUN_SCRIPT}" "${TEST_NAME}")
+
+    ADD_DEPENDENCIES(${THIS_TEST_INDIV} ${EXEC_NAME})
+
+    # Check target 
+    ADD_DEPENDENCIES(check ${EXEC_NAME})
+
+    # Baseline target
+    ADD_DEPENDENCIES(baseline ${EXEC_NAME})
+
+    # Force cprnc to be built when the individual test is run
+    ADD_DEPENDENCIES(${THIS_TEST_INDIV} cprnc)
+
+    # Now make the Individual targets
+    #ADD_CUSTOM_COMMAND(TARGET ${THIS_TEST_INDIV}
+    #                   COMMENT "Running the HOMME regression test: ${THIS_TEST}"
+    #                   POST_BUILD COMMAND ${CMAKE_CTEST_COMMAND} ARGS --output-on-failure -R ${THIS_TEST_INDIV} 
+    #                   WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 
   ENDIF ()
-
-  # Force cprnc to be built when the individual test is run
-  SET_TESTS_PROPERTIES(${THIS_TEST} PROPERTIES DEPENDS cprnc)
-
-  # Individual target to rerun and diff the tests
-  SET(THIS_TEST_INDIV "test-${testName}")
-
-  ADD_CUSTOM_TARGET(${THIS_TEST_INDIV}
-           COMMAND ${CMAKE_BINARY_DIR}/tests/submit_tests.sh "${THIS_TEST_RUN_SCRIPT}" "${TEST_NAME}")
-
-  ADD_DEPENDENCIES(${THIS_TEST_INDIV} ${EXEC_NAME})
-
-  # Check target 
-  ADD_DEPENDENCIES(check ${EXEC_NAME})
-
-  # Baseline target
-  ADD_DEPENDENCIES(baseline ${EXEC_NAME})
-
-  # Force cprnc to be built when the individual test is run
-  ADD_DEPENDENCIES(${THIS_TEST_INDIV} cprnc)
-
-  # Now make the Individual targets
-  #ADD_CUSTOM_COMMAND(TARGET ${THIS_TEST_INDIV}
-  #                   COMMENT "Running the HOMME regression test: ${THIS_TEST}"
-  #                   POST_BUILD COMMAND ${CMAKE_CTEST_COMMAND} ARGS --output-on-failure -R ${THIS_TEST_INDIV} 
-  #                   WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
-
 endmacro(createTest)
+
+macro(createTests testList)
+ 
+  FOREACH (test ${${testList}})
+    createTest(${test})
+  ENDFOREACH ()
+endmacro(createTests)
+
 
 macro(testQuadPrec HOMME_QUAD_PREC)
 
