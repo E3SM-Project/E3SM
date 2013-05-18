@@ -2211,6 +2211,9 @@ contains
 #else
   use fvm_control_volume_mod, only : fvm_struct
 #endif    
+#if USE_CUDA_FORTRAN
+  use cuda_mod, only: vertical_remap_cuda
+#endif    
   
 #if defined(_SPELT)
   type(spelt_struct), intent(inout) :: fvm(:)
@@ -2230,6 +2233,11 @@ contains
   integer :: ie,i,j,k,np1,nets,nete,np1_qdp
   real (kind=real_kind), dimension(np,np,nlev)  :: dp,dp_star
   real (kind=real_kind), dimension(np,np,nlev,2)  :: ttmp
+
+#if USE_CUDA_FORTRAN
+  call vertical_remap_cuda(elem,fvm,hvcoord,dt,np1,np1_qdp,nets,nete)
+  return
+#endif    
 
   call t_startf('vertical_remap')
   
