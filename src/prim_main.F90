@@ -49,9 +49,6 @@ program prim_main
   use restart_io_mod , only : restartheader_t, writerestart
   !-----------------
   use hybrid_mod, only : hybrid_create
-#if USE_CUDA_FORTRAN
-  use cuda_mod, only: copy_qdp_d2h
-#endif
 
 
 	
@@ -257,9 +254,6 @@ program prim_main
 
      ithr=omp_get_thread_num()
      hybrid = hybrid_create(par,ithr,1)
-#if USE_CUDA_FORTRAN
-     call copy_qdp_d2h( elem , tl%n0 )
-#endif
 #ifdef PIO_INTERP
      call interp_movie_output(elem, tl, hybrid, 0d0, 1, nelemd,fvm=fvm, hvcoord=hvcoord)
 #else
