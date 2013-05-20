@@ -1749,7 +1749,7 @@ module atm_time_integration
  
        ! rescale the vertical flux
  
-         do iCell=1,nCells
+         do iCell=1,nCellsSolve
             do k = 2, nVertLevels
                flux =  wdtn(k,iCell)
                flux = max(0.0_RKIND,flux) * min(scale_arr(SCALE_OUT,k-1,iCell), scale_arr(SCALE_IN,k  ,iCell)) &
