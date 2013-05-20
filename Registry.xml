@@ -718,6 +718,15 @@
 		<var name="divTensorR3Cell" type="real" dimensions="R3 nVertLevels nCells Time" streams="o" units="s^{-2}"
 		     description="divergence of the tensor at cell center, as an R3 vector"
 		/>
+		<var name="divTensorR3CellSolution" type="real" dimensions="R3 nVertLevels nCells Time" streams="o" units="s^{-2}"
+		     description="divergence of the tensor solution at cell center, as an R3 vector"
+		/>
+		<var name="divTensorLonLatRCell" type="real" dimensions="R3 nVertLevels nCells Time" streams="o" units="s^{-2}"
+		     description="divergence of the tensor at cell center, as a lon-lat-r vector"
+		/>
+		<var name="divTensorLonLatRCellSolution" type="real" dimensions="R3 nVertLevels nCells Time" streams="o" units="s^{-2}"
+		     description="divergence of the tensor at cell center, as a lon-lat-r vector, solution"
+		/>
 		<var name="outerProductEdge" type="real" dimensions="SIX nVertLevels nEdges Time" streams="o" units="m^2 s^{-1}"
 		     description="Outer produce, u_e \cross n_e, at each edge. {\color{red} change to scratch}"
 		/>
@@ -726,9 +735,6 @@
 		/>
 		<var name="strainRateR3EdgeSolution" type="real" dimensions="SIX nVertLevels nEdges Time" streams="o" units="s^{-1}"
 		     description="strain rate solution tensor at edge, R3, in symmetric 6-index form"
-		/>
-		<var name="divTensorR3CellSolution" type="real" dimensions="R3 nVertLevels nCells Time" streams="o" units="s^{-2}"
-		     description="divergence of the tensor solution at cell center, as an R3 vector"
 		/>
 		<var name="strainRateR3CellDiff" type="real" dimensions="SIX nVertLevels nCells Time" streams="o" units="s^{-1}"
 		     description="strain rate difference between solution and computed tensor at cell center, R3, in symmetric 6-index form"
@@ -745,11 +751,14 @@
 		<var name="strainRate2DVertex" type="real" dimensions="R3 nVertLevels nVertices Time" streams="o" units="s^{-1}"
 		     description="strain rate tensor at vertices, 2D, lat-lon in symmetric 3-index form, {\color{red}Temporary only}"
 		/>
-		<var name="strainRate3DLonLatCell" type="real" dimensions="SIX nVertLevels nCells Time" streams="o" units="s^{-1}"
-		     description="strain rate tensor at cell center, 3D, lat-lon in symmetric 3-index form, {\color{red}Temporary only}"
+		<var name="strainRateLonLatRCell" type="real" dimensions="SIX nVertLevels nCells Time" streams="o" units="s^{-1}"
+		     description="strain rate tensor at cell center, 3D, lon-lat-r in symmetric 6-index form, {\color{red}Temporary only}"
 		/>
-		<var name="strainRate3DLonLatCellSolution" type="real" dimensions="SIX nVertLevels nCells Time" streams="o" units="s^{-1}"
-		     description="strain rate tensor at cell center, 3D, lat-lon in symmetric 3-index form, {\color{red}Temporary only}"
+		<var name="strainRateLonLatREdge" type="real" dimensions="SIX nVertLevels nEdges Time" streams="o" units="s^{-1}"
+		     description="strain rate tensor at edge, 3D, lon-lat-r in symmetric 6-index form, {\color{red}Temporary only}"
+		/>
+		<var name="strainRateLonLatRCellSolution" type="real" dimensions="SIX nVertLevels nCells Time" streams="o" units="s^{-1}"
+		     description="strain rate tensor at cell center, 3D, lon-lat-r in symmetric 6-index form, {\color{red}Temporary only}"
 		/>
 		<var name="zonalUnitVectorCell" type="real" dimensions="R3 nVertLevels nCells Time" streams="o" units="unitless"
 		     description="zonal unit vector in R3.  {\color{red}Temporary only}"
