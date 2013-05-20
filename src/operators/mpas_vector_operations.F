@@ -43,6 +43,8 @@ module mpas_vector_operations
              mpas_cross_product_in_r3, &
              mpas_tangential_velocity, &
              mpas_vector_3DCell_to_2DEdge, &
+             mpas_vector_R3_to_LonLatR, &
+             mpas_vector_LonLatR_to_R3, &
              mpas_zonal_meridional_vectors
 
    !--------------------------------------------------------------------
@@ -249,7 +251,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_zonal_meridional_vectors(lat, lon, zonalUnitVector, meridionalUnitVector, verticalUnitVector)
+   subroutine mpas_zonal_meridional_vectors(lon, lat, zonalUnitVector, meridionalUnitVector, verticalUnitVector)
 
       !-----------------------------------------------------------------
       !
@@ -258,9 +260,9 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), intent(in) :: &
-         lat, &!< Input: latitude,  in radians, ranging [-pi,pi]
-         lon   !< Input: longitude, in radians, ranging [0,2*pi]
-
+         lon, &!< Input: longitude, in radians, ranging [0,2*pi]
+         lat   !< Input: latitude,  in radians, ranging [-pi,pi]
+ 
       !-----------------------------------------------------------------
       !
       ! output variables
@@ -299,6 +301,134 @@ contains
       verticalUnitVector(3) = sin_lat
 
    end subroutine mpas_zonal_meridional_vectors!}}}
+
+
+!***********************************************************************
+!
+!  routine mpas_vector_R3_to_LonLatR
+!
+!> \brief   Convert an R3 vector to a vector in spherical coordinates
+!> \author  Mark Petersen
+!> \date    17 April 2013
+!> \details 
+!>  Given an R3 vector, rotate it to spherical coordinates
+!
+!-----------------------------------------------------------------------
+
+   subroutine mpas_vector_R3_to_LonLatR(vectorR3, vectorLonLatR, lon, lat)!{{{
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(3), intent(in) :: &
+         vectorR3  !< Input: vector in R3
+
+      real (kind=RKIND), intent(in) :: &
+         lon, &!< Input: longitude, in radians, ranging [0,2*pi]
+         lat   !< Input: latitude,  in radians, ranging [-pi,pi]
+ 
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(3), intent(out) :: &
+         vectorLonLatR   !< Output: vector in spherical coordinates
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      integer :: i,j
+
+      real (kind=RKIND), dimension(3) :: zonalUnitVector, meridionalUnitVector, verticalUnitVector
+      real (kind=RKIND), dimension(3,3) :: rotationMatrix
+
+      call mpas_zonal_meridional_vectors(lon, lat, zonalUnitVector, meridionalUnitVector, verticalUnitVector)
+
+      rotationMatrix(:,1) = zonalUnitVector
+      rotationMatrix(:,2) = meridionalUnitVector
+      rotationMatrix(:,3) = verticalUnitVector
+
+      vectorLonLatR = 0.0
+      do i=1,3
+         do j=1,3
+            ! xi = R^T x
+            ! where ^T is the transpose.  Note indices on R are (j,i)
+            vectorLonLatR(i) = vectorLonLatR(i) + rotationMatrix(j,i)*vectorR3(j)
+         enddo
+      enddo
+
+   end subroutine mpas_vector_R3_to_LonLatR!}}}
+
+
+!***********************************************************************
+!
+!  routine mpas_vector_LonLatR_to_R3
+!
+!> \brief   Convert a vector in spherical coordinates to an R3 vector
+!> \author  Mark Petersen
+!> \date    17 April 2013
+!> \details 
+!>  Given a vector in spherical coordinates, rotate it R3
+!
+!-----------------------------------------------------------------------
+
+   subroutine mpas_vector_LonLatR_to_R3(vectorLonLatR, vectorR3, lon, lat)!{{{
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(3), intent(in) :: &
+         vectorLonLatR   !< Input: vector in spherical coordinates
+
+      real (kind=RKIND), intent(in) :: &
+         lon, &!< Input: longitude, in radians, ranging [0,2*pi]
+         lat   !< Input: latitude,  in radians, ranging [-pi,pi]
+ 
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(3), intent(out) :: &
+         vectorR3  !< Output: vector in R3
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      integer :: i,j
+
+      real (kind=RKIND), dimension(3) :: zonalUnitVector, meridionalUnitVector, verticalUnitVector
+      real (kind=RKIND), dimension(3,3) :: rotationMatrix
+
+      call mpas_zonal_meridional_vectors(lon, lat, zonalUnitVector, meridionalUnitVector, verticalUnitVector)
+
+      rotationMatrix(:,1) = zonalUnitVector
+      rotationMatrix(:,2) = meridionalUnitVector
+      rotationMatrix(:,3) = verticalUnitVector
+
+      vectorR3 = 0.0
+      do i=1,3
+         do j=1,3
+            vectorR3(i) = vectorR3(i) + rotationMatrix(i,j)*vectorLonLatR(j)
+         enddo
+      enddo
+
+   end subroutine mpas_vector_LonLatR_to_R3!}}}
 
 !***********************************************************************
 !

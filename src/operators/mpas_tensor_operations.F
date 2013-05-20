@@ -296,6 +296,19 @@ endif
          end do
       end do
 
+   print *, 'strainRateR3Edge(1) min max',minval(strainRateR3Edge(1,1,:)),maxval(strainRateR3Edge(1,1,:))
+   print *, 'strainRateR3Edge(2) min max',minval(strainRateR3Edge(2,1,:)),maxval(strainRateR3Edge(2,1,:))
+   print *, 'strainRateR3Edge(3) min max',minval(strainRateR3Edge(3,1,:)),maxval(strainRateR3Edge(3,1,:))
+   print *, 'strainRateR3Edge(4) min max',minval(strainRateR3Edge(4,1,:)),maxval(strainRateR3Edge(4,1,:))
+   print *, 'strainRateR3Edge(5) min max',minval(strainRateR3Edge(5,1,:)),maxval(strainRateR3Edge(5,1,:))
+   print *, 'strainRateR3Edge(6) min max',minval(strainRateR3Edge(6,1,:)),maxval(strainRateR3Edge(6,1,:))
+
+   print *, 'divTensorR3Cell(1) min max',minval(divTensorR3Cell(1,1,:)),maxval(divTensorR3Cell(1,1,:))
+   print *, 'divTensorR3Cell(2) min max',minval(divTensorR3Cell(2,1,:)),maxval(divTensorR3Cell(2,1,:))
+   print *, 'divTensorR3Cell(3) min max',minval(divTensorR3Cell(3,1,:)),maxval(divTensorR3Cell(3,1,:))
+
+
+
    end subroutine mpas_divergence_of_tensor_3D!}}}
 
 !***********************************************************************
@@ -492,7 +505,6 @@ endif
    end subroutine mpas_tensor_edge_2D_to_R3!}}}
 
 
-
 !***********************************************************************
 !
 !  routine mpas_tensor_LonLat_to_R3
@@ -508,7 +520,7 @@ endif
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_tensor_LonLat_to_R3(strainRateLonLat, strainRateR3, lat, lon)!{{{
+   subroutine mpas_tensor_LonLat_to_R3(strainRateLonLat, strainRateR3, lon, lat)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -520,9 +532,9 @@ endif
          strainRateLonLat   !< Input: strain rate tensor, 2D, in symmetric 3-index form
 
       real (kind=RKIND), intent(in) :: &
-         lat, &!< Input: latitude,  in radians, ranging [-pi,pi]
-         lon   !< Input: longitude, in radians, ranging [0,2*pi]
-
+         lon, &!< Input: longitude, in radians, ranging [0,2*pi]
+         lat   !< Input: latitude,  in radians, ranging [-pi,pi]
+ 
       !-----------------------------------------------------------------
       !
       ! output variables
@@ -544,7 +556,7 @@ endif
       real (kind=RKIND), dimension(3) :: zonalUnitVector, meridionalUnitVector, verticalUnitVector
       real (kind=RKIND), dimension(3,3) :: rotationMatrix, strainRateR3_3x3, strainRateLonLat3x3, A
 
-      call mpas_zonal_meridional_vectors(lat, lon, zonalUnitVector, meridionalUnitVector, verticalUnitVector)
+      call mpas_zonal_meridional_vectors(lon, lat, zonalUnitVector, meridionalUnitVector, verticalUnitVector)
 
       rotationMatrix(:,1) = zonalUnitVector
       rotationMatrix(:,2) = meridionalUnitVector
@@ -593,20 +605,21 @@ endif
 
 !***********************************************************************
 !
-!  routine mpas_tensor_3DLonLat_to_R3
+!  routine mpas_tensor_LonLatR_to_R3
 !
 !> \brief   Convert an R3 tensor to a 2D tensor
 !> \author  Mark Petersen
 !> \date    17 April 2013
 !> \details 
-!>  Given a 2D tensor in symetric 3-index form that is rotated such that
+!>  Given a 3D tensor in symetric 6-index form that is rotated such that
 !>  the 1-direction is zonal
-!>  the 2-direction is meridional, this routine rotates
+!>  the 2-direction is meridional, 
+!>  the 3-direction is radial, this routine rotates
 !>  the tensor to R3, and returns an R3 tensor in symetric 6-index form.
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_tensor_3DLonLat_to_R3(strainRateLonLat, strainRateR3, lat, lon)!{{{
+   subroutine mpas_tensor_LonLatR_to_R3(tensorLonLatR, strainRateR3, lon, lat)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -615,12 +628,12 @@ endif
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(6), intent(in) :: &
-         strainRateLonLat   !< Input: latlon strain rate tensor, 3D, in symmetric 6-index form
+         tensorLonLatR   !< Input: latlon strain rate tensor, 3D, in symmetric 6-index form
 
       real (kind=RKIND), intent(in) :: &
-         lat, &!< Input: latitude,  in radians, ranging [-pi,pi]
-         lon   !< Input: longitude, in radians, ranging [0,2*pi]
-
+         lon, &!< Input: longitude, in radians, ranging [0,2*pi]
+         lat   !< Input: latitude,  in radians, ranging [-pi,pi]
+ 
       !-----------------------------------------------------------------
       !
       ! output variables
@@ -640,25 +653,25 @@ endif
 
       real (kind=RKIND) :: determinant
       real (kind=RKIND), dimension(3) :: zonalUnitVector, meridionalUnitVector, verticalUnitVector
-      real (kind=RKIND), dimension(3,3) :: rotationMatrix, strainRateR3_3x3, strainRateLonLat3x3, A
+      real (kind=RKIND), dimension(3,3) :: rotationMatrix, strainRateR3_3x3, tensorLonLatR3x3, A
 
-      call mpas_zonal_meridional_vectors(lat, lon, zonalUnitVector, meridionalUnitVector, verticalUnitVector)
+      call mpas_zonal_meridional_vectors(lon, lat, zonalUnitVector, meridionalUnitVector, verticalUnitVector)
 
       rotationMatrix(:,1) = zonalUnitVector
       rotationMatrix(:,2) = meridionalUnitVector
       rotationMatrix(:,3) = verticalUnitVector
 
-      call mpas_matrix_sym6index_to_3x3(strainRateLonLat,strainRateLonLat3x3)
+      call mpas_matrix_sym6index_to_3x3(tensorLonLatR,tensorLonLatR3x3)
 
 !print '(/,a,100es10.2)', 'lat,lon, zonalUnitVector, meridionalUnitVector, verticalUnitVector',lat,lon, zonalUnitVector, meridionalUnitVector, verticalUnitVector
-!print '(a,100es10.2)', 'strainRateLonLat3x3',strainRateLonLat3x3
+!print '(a,100es10.2)', 'tensorLonLatR3x3',tensorLonLatR3x3
 !print '(a,100es10.2)', 'rotationMatrix',rotationMatrix
       strainRateR3_3x3 = 0.0
       do i=1,3
         do j=1,3
           do p=1,3
             do q=1,3
-               strainRateR3_3x3(i,j) = strainRateR3_3x3(i,j) + rotationMatrix(i,p)*strainRateLonLat3x3(p,q)*rotationMatrix(j,q)
+               strainRateR3_3x3(i,j) = strainRateR3_3x3(i,j) + rotationMatrix(i,p)*tensorLonLatR3x3(p,q)*rotationMatrix(j,q)
             enddo
           enddo
         enddo
@@ -668,7 +681,7 @@ endif
       call mpas_matrix_3x3_to_sym6index(strainRateR3_3x3,strainRateR3)
 !print '(a,100es10.2)', 'strainRateR3',strainRateR3
 
-   end subroutine mpas_tensor_3DLonLat_to_R3!}}}
+   end subroutine mpas_tensor_LonLatR_to_R3!}}}
 
 !***********************************************************************
 !
@@ -685,7 +698,7 @@ endif
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_tensor_R3_to_LonLat(strainRateR3, strainRateLonLat, lat, lon)!{{{
+   subroutine mpas_tensor_R3_to_LonLat(strainRateR3, strainRateLonLat, lon, lat)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -697,9 +710,9 @@ endif
          strainRateR3  !< Input: strain rate tensor at, R3, in symmetric 6-index form
 
       real (kind=RKIND), intent(in) :: &
-         lat, &!< Input: latitude,  in radians, ranging [-pi,pi]
-         lon   !< Input: longitude, in radians, ranging [0,2*pi]
-
+         lon, &!< Input: longitude, in radians, ranging [0,2*pi]
+         lat   !< Input: latitude,  in radians, ranging [-pi,pi]
+ 
       !-----------------------------------------------------------------
       !
       ! output variables
@@ -720,7 +733,7 @@ endif
       real (kind=RKIND), dimension(3) :: zonalUnitVector, meridionalUnitVector, verticalUnitVector
       real (kind=RKIND), dimension(3,3) :: rotationMatrix, strainRateR3_3x3, strainRateLonLat3x3
 
-      call mpas_zonal_meridional_vectors(lat, lon, zonalUnitVector, meridionalUnitVector, verticalUnitVector)
+      call mpas_zonal_meridional_vectors(lon, lat, zonalUnitVector, meridionalUnitVector, verticalUnitVector)
 
       rotationMatrix(:,1) = zonalUnitVector
       rotationMatrix(:,2) = meridionalUnitVector
@@ -748,7 +761,7 @@ endif
 
 !***********************************************************************
 !
-!  routine mpas_tensor_R3_to_3DLonLat
+!  routine mpas_tensor_R3_to_LonLatR
 !
 !> \brief   Convert an R3 tensor to a 2D tensor
 !> \author  Mark Petersen
@@ -761,7 +774,7 @@ endif
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_tensor_R3_to_3DLonLat(strainRateR3, strainRate3DLonLat, lat, lon)!{{{
+   subroutine mpas_tensor_R3_to_LonLatR(strainRateR3, tensorLonLatR, lon, lat)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -773,9 +786,9 @@ endif
          strainRateR3  !< Input: strain rate tensor at, R3, in symmetric 6-index form
 
       real (kind=RKIND), intent(in) :: &
-         lat, &!< Input: latitude,  in radians, ranging [-pi,pi]
-         lon   !< Input: longitude, in radians, ranging [0,2*pi]
-
+         lon, &!< Input: longitude, in radians, ranging [0,2*pi]
+         lat   !< Input: latitude,  in radians, ranging [-pi,pi]
+ 
       !-----------------------------------------------------------------
       !
       ! output variables
@@ -783,7 +796,7 @@ endif
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(6), intent(out) :: &
-         strainRate3DLonLat   !< Output: strain rate tensor, 3D lat-lon coord, in symmetric 6-index form
+         tensorLonLatR   !< Output: strain rate tensor, 3D lat-lon coord, in symmetric 6-index form
 
       !-----------------------------------------------------------------
       !
@@ -796,7 +809,7 @@ endif
       real (kind=RKIND), dimension(3) :: zonalUnitVector, meridionalUnitVector, verticalUnitVector
       real (kind=RKIND), dimension(3,3) :: rotationMatrix, strainRateR3_3x3, strainRateLonLat3x3
 
-      call mpas_zonal_meridional_vectors(lat, lon, zonalUnitVector, meridionalUnitVector, verticalUnitVector)
+      call mpas_zonal_meridional_vectors(lon, lat, zonalUnitVector, meridionalUnitVector, verticalUnitVector)
 
       rotationMatrix(:,1) = zonalUnitVector
       rotationMatrix(:,2) = meridionalUnitVector
@@ -815,13 +828,13 @@ endif
         enddo
       enddo
 
-      call mpas_matrix_3x3_to_sym6index(strainRateLonLat3x3,strainRate3DLonLat)
+      call mpas_matrix_3x3_to_sym6index(strainRateLonLat3x3,tensorLonLatR)
 
-   end subroutine mpas_tensor_R3_to_3DLonLat!}}}
+   end subroutine mpas_tensor_R3_to_LonLatR!}}}
 
 !***********************************************************************
 !
-!  routine mpas_strain_rate_2Dlatlon
+!  routine mpas_strain_rate_LonLat
 !
 !> \brief   Computes strain rate at cells and vertices
 !> \author  Mark Petersen
@@ -833,7 +846,7 @@ endif
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_strain_rate_2Dlatlon(grid, normalVelocity,tangentialVelocity, strainRate2DCell, strainRate2DVertex)!{{{
+   subroutine mpas_strain_rate_LonLat(grid, normalVelocity,tangentialVelocity, strainRate2DCell, strainRate2DVertex)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -992,11 +1005,11 @@ if (1==2) then
 endif
 
 
-   end subroutine mpas_strain_rate_2Dlatlon!}}}
+   end subroutine mpas_strain_rate_LonLat!}}}
 
 !***********************************************************************
 !
-!  routine mpas_div_tensor_2Dlatlon_strong
+!  routine mpas_div_tensor_LonLat_strong
 !
 !> \brief   Computes divergence of the stress tensor
 !> \author  Mark Petersen
@@ -1007,7 +1020,7 @@ endif
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_div_tensor_2Dlatlon_strong(grid, tensorCell, tensorVertex, divTensor)!{{{
+   subroutine mpas_div_tensor_LonLat_strong(grid, tensorCell, tensorVertex, divTensor)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -1099,7 +1112,7 @@ endif
 
       end do
 
-   end subroutine mpas_div_tensor_2Dlatlon_strong!}}}
+   end subroutine mpas_div_tensor_LonLat_strong!}}}
 
 !***********************************************************************
 !
@@ -1143,7 +1156,7 @@ endif
 
       type (block_type), pointer :: block
 
-      integer :: nCells, nEdges, nVertices, nVertLevels, iCell, iEdge, k, i, p, minCell, maxCell
+      integer :: nCells, nEdges, nVertices, nVertLevels, iCell, iEdge, k, i, p, minCell, maxCell, strainRateLonLatRIndex
 
       real (kind=RKIND) :: xVelocity, yVelocity, cn, cs, r, theta, rot, f, g1, g2, fcos, pi2l, ld, &
         divSigma_x, divSigma_y, kLon, kLat, &
@@ -1153,11 +1166,12 @@ endif
       real (kind=RKIND), dimension(:), pointer :: angleEdge, xCell, yCell, xEdge, yEdge, latCell, lonCell, latEdge, lonEdge
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, tangentialVelocity
       real (kind=RKIND), dimension(:,:), pointer :: edgeNormalVectors, edgeTangentVectors
-      real (kind=RKIND), dimension(:,:,:), pointer :: strainRateR3Cell, strainRateR3Edge, divTensorR3Cell, strainRate2DCell, strainRate2DVertex
+      real (kind=RKIND), dimension(:,:,:), pointer :: strainRateR3Cell, strainRateR3Edge, divTensorR3Cell, divTensorLonLatRCell, divTensorLonLatRCellSolution, strainRate2DCell, strainRate2DVertex
 
-      real (kind=RKIND), dimension(:,:,:), pointer :: strainRateR3CellSolution, strainRate2DCellSolution, divTensorR3CellSolution, strainRate3DLonLatCellSolution
+      real (kind=RKIND), dimension(:,:,:), pointer :: strainRateR3CellSolution, strainRate2DCellSolution, divTensorR3CellSolution, strainRateLonLatRCell, strainRateLonLatREdge, strainRateLonLatRCellSolution
       real (kind=RKIND), dimension(:,:,:), pointer :: strainRateR3CellDiff, divTensorR3CellDiff, outerProductEdge
       character(len=16) :: test_function_type
+      logical :: computeStrainRate
 
     ! Initialize z-level grid variables from h, read in from input file.
     block => domain % blocklist
@@ -1191,10 +1205,14 @@ endif
       strainRateR3Cell    => block % state % time_levs(1) % state % strainRateR3Cell % array
       strainRateR3Edge    => block % state % time_levs(1) % state % strainRateR3Edge % array
       divTensorR3Cell     => block % state % time_levs(1) % state % divTensorR3Cell % array
+      divTensorLonLatRCell     => block % state % time_levs(1) % state % divTensorLonLatRCell % array
+      divTensorLonLatRCellSolution     => block % state % time_levs(1) % state % divTensorLonLatRCellSolution % array
       outerProductEdge    => block % state % time_levs(1) % state % outerProductEdge % array
 
       strainRate2DCellSolution => block % state % time_levs(1) % state % strainRate2DCellSolution % array
-      strainRate3DLonLatCellSolution => block % state % time_levs(1) % state % strainRate3DLonLatCellSolution % array
+      strainRateLonLatREdge => block % state % time_levs(1) % state % strainRateLonLatREdge % array
+      strainRateLonLatRCell => block % state % time_levs(1) % state % strainRateLonLatRCell % array
+      strainRateLonLatRCellSolution => block % state % time_levs(1) % state % strainRateLonLatRCellSolution % array
       strainRateR3CellSolution => block % state % time_levs(1) % state % strainRateR3CellSolution % array
       divTensorR3CellSolution => block % state % time_levs(1) % state % divTensorR3CellSolution % array
       strainRateR3CellDiff => block % state % time_levs(1) % state % strainRateR3CellDiff % array
@@ -1216,7 +1234,11 @@ endif
       g1 = cn*cos(rot) - cs*sin(rot)
       g2 = cn*sin(rot) + cs*cos(rot)
 
+      kLon = 0.0
+      kLat = 0.0
+
       R = block % mesh % sphere_radius
+      computeStrainRate = .true.
 
      if (config_tensor_test_function.eq.'constant') then
        ! linear function in x
@@ -1406,20 +1428,20 @@ endif
            block % state % time_levs(1) % state % zonalVelocityCell      % array(:,iCell) = cos(lat)
            block % state % time_levs(1) % state % meridionalVelocityCell % array(:,iCell) = 0.0
 
-           strainRate3DLonLatCellSolution(1,1,iCell) = & ! Elonlon
+           strainRateLonLatRCellSolution(1,1,iCell) = & ! Elonlon
                  0.0
-           strainRate3DLonLatCellSolution(2,1,iCell) = & ! Elatlat
+           strainRateLonLatRCellSolution(2,1,iCell) = & ! Elatlat
                  0.0
-           strainRate3DLonLatCellSolution(3,1,iCell) = & ! Err
+           strainRateLonLatRCellSolution(3,1,iCell) = & ! Err
                  0.0
-           strainRate3DLonLatCellSolution(4,1,iCell) = & ! Elonlat
+           strainRateLonLatRCellSolution(4,1,iCell) = & ! Elonlat
                  0.0
-           strainRate3DLonLatCellSolution(5,1,iCell) = & ! Elatr
+           strainRateLonLatRCellSolution(5,1,iCell) = & ! Elatr
                  0.0
-           strainRate3DLonLatCellSolution(6,1,iCell) = & ! Elonr
+           strainRateLonLatRCellSolution(6,1,iCell) = & ! Elonr
                  - 3.0/R/2.0*cos(lat) 
 
-           call mpas_tensor_3DLonLat_to_R3(strainRate3DLonLatCellSolution(:,1,iCell), strainRateR3CellSolution(:,1,iCell), lat, lon)
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatRCellSolution(:,1,iCell), strainRateR3CellSolution(:,1,iCell), lon, lat)
         enddo
 
         divTensorR3CellSolution = 0.0
@@ -1470,20 +1492,20 @@ endif
              block % state % time_levs(1) % state % meridionalVelocityCell % array(:,iCell) = 0.0
            endif
 
-           strainRate3DLonLatCellSolution(1,1,iCell) = & ! Elonlon
+           strainRateLonLatRCellSolution(1,1,iCell) = & ! Elonlon
                  0.0
-           strainRate3DLonLatCellSolution(2,1,iCell) = & ! Elatlat
+           strainRateLonLatRCellSolution(2,1,iCell) = & ! Elatlat
                  0.0
-           strainRate3DLonLatCellSolution(3,1,iCell) = & ! Err
+           strainRateLonLatRCellSolution(3,1,iCell) = & ! Err
                  0.0
-           strainRate3DLonLatCellSolution(4,1,iCell) = & ! Elonlat
+           strainRateLonLatRCellSolution(4,1,iCell) = & ! Elonlat
                  0.5/R*tan_lat
-           strainRate3DLonLatCellSolution(5,1,iCell) = & ! Elatr
+           strainRateLonLatRCellSolution(5,1,iCell) = & ! Elatr
                  0.0
-           strainRate3DLonLatCellSolution(6,1,iCell) = & ! Elonr
+           strainRateLonLatRCellSolution(6,1,iCell) = & ! Elonr
                  - 3.0/R/2.0
 
-           call mpas_tensor_3DLonLat_to_R3(strainRate3DLonLatCellSolution(:,1,iCell), strainRateR3CellSolution(:,1,iCell), lat, lon)
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatRCellSolution(:,1,iCell), strainRateR3CellSolution(:,1,iCell), lon, lat)
 
            divTensorLonLatRCellSolution(1,:,iCell) = -1/R**2
            divTensorLonLatRCellSolution(2,:,iCell) = 0.0
@@ -1538,20 +1560,20 @@ endif
              block % state % time_levs(1) % state % meridionalVelocityCell % array(:,iCell) = 1.0
            endif
 
-           strainRate3DLonLatCellSolution(1,1,iCell) = & ! Elonlon
+           strainRateLonLatRCellSolution(1,1,iCell) = & ! Elonlon
                  -1.0/R*tan_lat
-           strainRate3DLonLatCellSolution(2,1,iCell) = & ! Elatlat
+           strainRateLonLatRCellSolution(2,1,iCell) = & ! Elatlat
                  0.0
-           strainRate3DLonLatCellSolution(3,1,iCell) = & ! Err
+           strainRateLonLatRCellSolution(3,1,iCell) = & ! Err
                  0.0
-           strainRate3DLonLatCellSolution(4,1,iCell) = & ! Elonlat
+           strainRateLonLatRCellSolution(4,1,iCell) = & ! Elonlat
                  0.0
-           strainRate3DLonLatCellSolution(5,1,iCell) = & ! Elatr
+           strainRateLonLatRCellSolution(5,1,iCell) = & ! Elatr
                  - 3.0/R/2.0
-           strainRate3DLonLatCellSolution(6,1,iCell) = & ! Elonr
+           strainRateLonLatRCellSolution(6,1,iCell) = & ! Elonr
                  0.0
 
-           call mpas_tensor_3DLonLat_to_R3(strainRate3DLonLatCellSolution(:,1,iCell), strainRateR3CellSolution(:,1,iCell), lat, lon)
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatRCellSolution(:,1,iCell), strainRateR3CellSolution(:,1,iCell), lon, lat)
 
            divTensorLonLatRCellSolution(1,:,iCell) = 0.0
            divTensorLonLatRCellSolution(2,:,iCell) = -3.0*0.5/R**2
@@ -1604,24 +1626,24 @@ endif
              block % state % time_levs(1) % state % meridionalVelocityCell % array(:,iCell) = 0.0
            endif
 
-           strainRate3DLonLatCellSolution(1,1,iCell) = & ! Elonlon
+           strainRateLonLatRCellSolution(1,1,iCell) = & ! Elonlon
                  1.0/R *sec_lat * kLon *cos_kLon_lon
-           strainRate3DLonLatCellSolution(2,1,iCell) = & ! Elatlat
+           strainRateLonLatRCellSolution(2,1,iCell) = & ! Elatlat
                  0.0
-           strainRate3DLonLatCellSolution(3,1,iCell) = & ! Err
+           strainRateLonLatRCellSolution(3,1,iCell) = & ! Err
                  0.0
-           strainRate3DLonLatCellSolution(4,1,iCell) = & ! Elonlat
+           strainRateLonLatRCellSolution(4,1,iCell) = & ! Elonlat
                  1.0/R/2 *tan_lat *sin_kLon_lon 
-           strainRate3DLonLatCellSolution(5,1,iCell) = & ! Elatr
+           strainRateLonLatRCellSolution(5,1,iCell) = & ! Elatr
                  0.0
-           strainRate3DLonLatCellSolution(6,1,iCell) = & ! Elonr
+           strainRateLonLatRCellSolution(6,1,iCell) = & ! Elonr
                  - 3.0/R/2.0 *sin_kLon_lon 
 
-           call mpas_tensor_3DLonLat_to_R3(strainRate3DLonLatCellSolution(:,1,iCell), strainRateR3CellSolution(:,1,iCell), lat, lon)
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatRCellSolution(:,1,iCell), strainRateR3CellSolution(:,1,iCell), lon, lat)
 
-           divTensorLonLatRCellSolution(1,:,iCell) = 1/R**2*Sec[lat] *(-Cos[lat] Sin[kLon lon] - kLon^2 Sec[lat] Sin[kLon lon])
-           divTensorLonLatRCellSolution(2,:,iCell) = 0.5/R**2*(kLon Cos[kLon lon] Sec[lat] Tan[lat])
-           divTensorLonLatRCellSolution(3,:,iCell) = -3.0*0.5/R**2* kLon Cos[kLon lon] Sec[lat]
+!           divTensorLonLatRCellSolution(1,:,iCell) = 1/R**2*Sec[lat] *(-Cos[lat] Sin[kLon lon] - kLon^2 Sec[lat] Sin[kLon lon])
+!           divTensorLonLatRCellSolution(2,:,iCell) = 0.5/R**2*(kLon Cos[kLon lon] Sec[lat] Tan[lat])
+!           divTensorLonLatRCellSolution(3,:,iCell) = -3.0*0.5/R**2* kLon Cos[kLon lon] Sec[lat]
 
         end do
      elseif (config_tensor_test_function.eq.'spherical_uSinLat') then
@@ -1669,20 +1691,20 @@ endif
              block % state % time_levs(1) % state % meridionalVelocityCell % array(:,iCell) = 0.0
            endif
 
-           strainRate3DLonLatCellSolution(1,1,iCell) = & ! Elonlon
+           strainRateLonLatRCellSolution(1,1,iCell) = & ! Elonlon
                  0.0
-           strainRate3DLonLatCellSolution(2,1,iCell) = & ! Elatlat
+           strainRateLonLatRCellSolution(2,1,iCell) = & ! Elatlat
                  0.0
-           strainRate3DLonLatCellSolution(3,1,iCell) = & ! Err
+           strainRateLonLatRCellSolution(3,1,iCell) = & ! Err
                  0.0
-           strainRate3DLonLatCellSolution(4,1,iCell) = & ! Elonlat
+           strainRateLonLatRCellSolution(4,1,iCell) = & ! Elonlat
                  1.0/R/2 *tan_lat *sin_kLat_lat 
-           strainRate3DLonLatCellSolution(5,1,iCell) = & ! Elatr
+           strainRateLonLatRCellSolution(5,1,iCell) = & ! Elatr
                  0.0
-           strainRate3DLonLatCellSolution(6,1,iCell) = & ! Elonr
+           strainRateLonLatRCellSolution(6,1,iCell) = & ! Elonr
                  - 3.0/R/2.0 *sin_kLat_lat 
 
-           call mpas_tensor_3DLonLat_to_R3(strainRate3DLonLatCellSolution(:,1,iCell), strainRateR3CellSolution(:,1,iCell), lat, lon)
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatRCellSolution(:,1,iCell), strainRateR3CellSolution(:,1,iCell), lon, lat)
 
 
 !           divTensorR3CellSolution(1,:,iCell) = 
@@ -1735,20 +1757,20 @@ endif
              block % state % time_levs(1) % state % meridionalVelocityCell % array(:,iCell) = sin_kLon_lon 
            endif
 
-           strainRate3DLonLatCellSolution(1,1,iCell) = & ! Elonlon
+           strainRateLonLatRCellSolution(1,1,iCell) = & ! Elonlon
                  - 1.0/R *tan_lat *sin_kLon_lon
-           strainRate3DLonLatCellSolution(2,1,iCell) = & ! Elatlat
+           strainRateLonLatRCellSolution(2,1,iCell) = & ! Elatlat
                  0.0
-           strainRate3DLonLatCellSolution(3,1,iCell) = & ! Err
+           strainRateLonLatRCellSolution(3,1,iCell) = & ! Err
                  0.0
-           strainRate3DLonLatCellSolution(4,1,iCell) = & ! Elonlat
+           strainRateLonLatRCellSolution(4,1,iCell) = & ! Elonlat
                  1.0/R/2 *kLon*sec_lat *cos_kLon_lon 
-           strainRate3DLonLatCellSolution(5,1,iCell) = & ! Elatr
+           strainRateLonLatRCellSolution(5,1,iCell) = & ! Elatr
                  - 3.0/R/2.0 *sin_kLon_lon 
-           strainRate3DLonLatCellSolution(6,1,iCell) = & ! Elonr
+           strainRateLonLatRCellSolution(6,1,iCell) = & ! Elonr
                  0.0
 
-           call mpas_tensor_3DLonLat_to_R3(strainRate3DLonLatCellSolution(:,1,iCell), strainRateR3CellSolution(:,1,iCell), lat, lon)
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatRCellSolution(:,1,iCell), strainRateR3CellSolution(:,1,iCell), lon, lat)
 
 
 !           divTensorR3CellSolution(1,:,iCell) = 
@@ -1801,20 +1823,20 @@ endif
              block % state % time_levs(1) % state % meridionalVelocityCell % array(:,iCell) = sin_kLat_lat 
            endif
 
-           strainRate3DLonLatCellSolution(1,1,iCell) = & ! Elonlon
+           strainRateLonLatRCellSolution(1,1,iCell) = & ! Elonlon
                  - 1.0/R *tan_lat *sin_klat_lat
-           strainRate3DLonLatCellSolution(2,1,iCell) = & ! Elatlat
+           strainRateLonLatRCellSolution(2,1,iCell) = & ! Elatlat
                  1.0/R * kLat *cos_klat_lat
-           strainRate3DLonLatCellSolution(3,1,iCell) = & ! Err
+           strainRateLonLatRCellSolution(3,1,iCell) = & ! Err
                  0.0
-           strainRate3DLonLatCellSolution(4,1,iCell) = & ! Elonlat
+           strainRateLonLatRCellSolution(4,1,iCell) = & ! Elonlat
                  0.0
-           strainRate3DLonLatCellSolution(5,1,iCell) = & ! Elatr
+           strainRateLonLatRCellSolution(5,1,iCell) = & ! Elatr
                  - 3.0/R/2.0 *sin_kLat_lat 
-           strainRate3DLonLatCellSolution(6,1,iCell) = & ! Elonr
+           strainRateLonLatRCellSolution(6,1,iCell) = & ! Elonr
                  0.0
 
-           call mpas_tensor_3DLonLat_to_R3(strainRate3DLonLatCellSolution(:,1,iCell), strainRateR3CellSolution(:,1,iCell), lat, lon)
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatRCellSolution(:,1,iCell), strainRateR3CellSolution(:,1,iCell), lon, lat)
 
 
 !           divTensorR3CellSolution(1,:,iCell) = 
@@ -1867,24 +1889,24 @@ endif
              block % state % time_levs(1) % state % meridionalVelocityCell % array(:,iCell) = kLon *cos_kLat_lat *sin_kLon_lon *sec_lat
            endif
 
-           strainRate3DLonLatCellSolution(1,1,iCell) = & ! Elonlon
+           strainRateLonLatRCellSolution(1,1,iCell) = & ! Elonlon
                  1/R *sec_lat * (- kLon      *tan_lat *sin_kLon_lon *cos_kLat_lat  &
                                  - kLon*kLat          *sin_kLon_lon *sin_kLat_lat)
-           strainRate3DLonLatCellSolution(2,1,iCell) = & ! Elatlat
+           strainRateLonLatRCellSolution(2,1,iCell) = & ! Elatlat
                  1/R *sec_lat*( - kLon *kLat    *sin_kLon_lon *sin_kLat_lat  &
                                 + kLon *tan_lat *sin_kLon_lon *cos_kLat_lat )
-           strainRate3DLonLatCellSolution(3,1,iCell) = & ! Err
+           strainRateLonLatRCellSolution(3,1,iCell) = & ! Err
                  0.0
-           strainRate3DLonLatCellSolution(4,1,iCell) = & ! Elonlat
+           strainRateLonLatRCellSolution(4,1,iCell) = & ! Elonlat
                  1/R/2 * (  kLon**2          *sec_lat**2 *cos_kLon_lon *cos_kLat_lat  &
                           + kLat**2          *cos_kLon_lon *cos_kLat_lat  &
                           + kLat *tan_lat *cos_kLon_lon *sin_kLat_lat)
-           strainRate3DLonLatCellSolution(5,1,iCell) = & ! Elatr
+           strainRateLonLatRCellSolution(5,1,iCell) = & ! Elatr
                  - 3.0/R/2.0 *kLon *sec_lat *sin_kLon_lon *cos_kLat_lat
-           strainRate3DLonLatCellSolution(6,1,iCell) = & ! Elonr
+           strainRateLonLatRCellSolution(6,1,iCell) = & ! Elonr
                  - 3.0/R/2.0 *kLat *cos_kLon_lon *sin_kLat_lat 
 
-           call mpas_tensor_3DLonLat_to_R3(strainRate3DLonLatCellSolution(:,1,iCell), strainRateR3CellSolution(:,1,iCell), lat, lon)
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatRCellSolution(:,1,iCell), strainRateR3CellSolution(:,1,iCell), lon, lat)
 
 
 !           divElon = 1/R *sec_lat ((*sin_lat (kLon**2 *cos_kLon_lon *cos_kLat_lat *sec_lat - *kLat**2 *cos_kLon_lon *cos_kLat_lat *sec_lat &
@@ -1907,25 +1929,545 @@ endif
 
         end do
 
+     elseif (config_tensor_test_function.eq.'spherical_ELonLon1') then
+        computeStrainRate = .false.
+        strainRateLonLatRIndex = 1
+
+        strainRateLonLatREdge = 0.0
+        do iEdge = 1,nEdges
+           lon = lonEdge(iEdge)
+           lat = latEdge(iEdge)
+           strainRateLonLatREdge(strainRateLonLatRIndex,1,iEdge) = 1.0 
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatREdge(:,1,iEdge), strainRateR3Edge(:,1,iEdge), lon, lat)
+        enddo
+
+        strainRateLonLatRCell = 0.0
+        do iCell = 1,nCells
+           lon = lonCell(iCell)
+           lat = latCell(iCell)
+
+           strainRateLonLatRCell(strainRateLonLatRIndex,1,iCell) = 1.0
+
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatRCell(:,1,iCell), strainRateR3Cell(:,1,iCell), lon, lat)
+
+           divTensorLonLatRCellSolution(1,:,iCell) = 0.0
+           divTensorLonLatRCellSolution(2,:,iCell) = tan(lat)/R
+           divTensorLonLatRCellSolution(3,:,iCell) = -1/R
+
+        end do
+
+     elseif (config_tensor_test_function.eq.'spherical_ELatLat1') then
+        computeStrainRate = .false.
+        strainRateLonLatRIndex = 2
+
+        strainRateLonLatREdge = 0.0
+        do iEdge = 1,nEdges
+           lon = lonEdge(iEdge)
+           lat = latEdge(iEdge)
+           strainRateLonLatREdge(strainRateLonLatRIndex,1,iEdge) = 1.0 
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatREdge(:,1,iEdge), strainRateR3Edge(:,1,iEdge), lon, lat)
+        enddo
+
+        strainRateLonLatRCell = 0.0
+        do iCell = 1,nCells
+           lon = lonCell(iCell)
+           lat = latCell(iCell)
+
+           strainRateLonLatRCell(strainRateLonLatRIndex,1,iCell) = 1.0
+
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatRCell(:,1,iCell), strainRateR3Cell(:,1,iCell), lon, lat)
+
+           divTensorLonLatRCellSolution(1,:,iCell) = 0.0
+           divTensorLonLatRCellSolution(2,:,iCell) = -1.0/R*tan(lat)
+           divTensorLonLatRCellSolution(3,:,iCell) = -1/R
+
+        end do
+
+     elseif (config_tensor_test_function.eq.'spherical_ERR1') then
+        computeStrainRate = .false.
+        strainRateLonLatRIndex = 3
+
+        strainRateLonLatREdge = 0.0
+        do iEdge = 1,nEdges
+           lon = lonEdge(iEdge)
+           lat = latEdge(iEdge)
+           strainRateLonLatREdge(strainRateLonLatRIndex,1,iEdge) = 1.0 
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatREdge(:,1,iEdge), strainRateR3Edge(:,1,iEdge), lon, lat)
+        enddo
+
+        strainRateLonLatRCell = 0.0
+        do iCell = 1,nCells
+           lon = lonCell(iCell)
+           lat = latCell(iCell)
+
+           strainRateLonLatRCell(strainRateLonLatRIndex,1,iCell) = 1.0
+
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatRCell(:,1,iCell), strainRateR3Cell(:,1,iCell), lon, lat)
+
+           divTensorLonLatRCellSolution(1,:,iCell) = 0.0
+           divTensorLonLatRCellSolution(2,:,iCell) = 0.0
+           divTensorLonLatRCellSolution(3,:,iCell) = 0.0
+
+        end do
+
+     elseif (config_tensor_test_function.eq.'spherical_ELonLat1') then
+        computeStrainRate = .false.
+        strainRateLonLatRIndex = 4
+
+        strainRateLonLatREdge = 0.0
+        do iEdge = 1,nEdges
+           lon = lonEdge(iEdge)
+           lat = latEdge(iEdge)
+           strainRateLonLatREdge(strainRateLonLatRIndex,1,iEdge) = 1.0 
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatREdge(:,1,iEdge), strainRateR3Edge(:,1,iEdge), lon, lat)
+        enddo
+
+        strainRateLonLatRCell = 0.0
+        do iCell = 1,nCells
+           lon = lonCell(iCell)
+           lat = latCell(iCell)
+
+           strainRateLonLatRCell(strainRateLonLatRIndex,1,iCell) = 1.0
+
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatRCell(:,1,iCell), strainRateR3Cell(:,1,iCell), lon, lat)
+
+           divTensorLonLatRCellSolution(1,:,iCell) = -2.0/R*tan(lat)
+           divTensorLonLatRCellSolution(2,:,iCell) = 0.0
+           divTensorLonLatRCellSolution(3,:,iCell) = 0.0
+
+        end do
+
+     elseif (config_tensor_test_function.eq.'spherical_ELatR1') then
+        computeStrainRate = .false.
+        strainRateLonLatRIndex = 5
+
+        strainRateLonLatREdge = 0.0
+        do iEdge = 1,nEdges
+           lon = lonEdge(iEdge)
+           lat = latEdge(iEdge)
+           strainRateLonLatREdge(strainRateLonLatRIndex,1,iEdge) = 1.0 
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatREdge(:,1,iEdge), strainRateR3Edge(:,1,iEdge), lon, lat)
+        enddo
+
+        strainRateLonLatRCell = 0.0
+        do iCell = 1,nCells
+           lon = lonCell(iCell)
+           lat = latCell(iCell)
+
+           strainRateLonLatRCell(strainRateLonLatRIndex,1,iCell) = 1.0
+
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatRCell(:,1,iCell), strainRateR3Cell(:,1,iCell), lon, lat)
+
+           divTensorLonLatRCellSolution(1,:,iCell) = 0.0
+           divTensorLonLatRCellSolution(2,:,iCell) = 1.0/R
+           divTensorLonLatRCellSolution(3,:,iCell) = -1.0/R*tan(lat)
+
+        end do
+
+     elseif (config_tensor_test_function.eq.'spherical_ELonR1') then
+        computeStrainRate = .false.
+        strainRateLonLatRIndex = 6
+
+        strainRateLonLatREdge = 0.0
+        do iEdge = 1,nEdges
+           lon = lonEdge(iEdge)
+           lat = latEdge(iEdge)
+           strainRateLonLatREdge(strainRateLonLatRIndex,1,iEdge) = 1.0 
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatREdge(:,1,iEdge), strainRateR3Edge(:,1,iEdge), lon, lat)
+        enddo
+
+        strainRateLonLatRCell = 0.0
+        do iCell = 1,nCells
+           lon = lonCell(iCell)
+           lat = latCell(iCell)
+
+           strainRateLonLatRCell(strainRateLonLatRIndex,1,iCell) = 1.0
+
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatRCell(:,1,iCell), strainRateR3Cell(:,1,iCell), lon, lat)
+
+           divTensorLonLatRCellSolution(1,:,iCell) = 1.0/R
+           divTensorLonLatRCellSolution(2,:,iCell) = 0.0
+           divTensorLonLatRCellSolution(3,:,iCell) = 0.0
+
+        end do
+
+     elseif (config_tensor_test_function.eq.'sph_ELonLon_sinLon') then
+        computeStrainRate = .false.
+        strainRateLonLatRIndex = 1
+
+        strainRateLonLatREdge = 0.0
+        do iEdge = 1,nEdges
+           lon = lonEdge(iEdge)
+           lat = latEdge(iEdge)
+           strainRateLonLatREdge(strainRateLonLatRIndex,1,iEdge) = sin(lon)
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatREdge(:,1,iEdge), strainRateR3Edge(:,1,iEdge), lon, lat)
+        enddo
+
+        strainRateLonLatRCell = 0.0
+        do iCell = 1,nCells
+           lon = lonCell(iCell)
+           lat = latCell(iCell)
+
+           strainRateLonLatRCell(strainRateLonLatRIndex,1,iCell) = sin(lon)
+
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatRCell(:,1,iCell), strainRateR3Cell(:,1,iCell), lon, lat)
+
+           divTensorLonLatRCellSolution(1,:,iCell) =  1/R*cos(lon)/cos(lat)
+           divTensorLonLatRCellSolution(2,:,iCell) =  1/R*sin(lon)*tan(lat)
+           divTensorLonLatRCellSolution(3,:,iCell) = -1/R*sin(lon)
+
+        end do
+
+     elseif (config_tensor_test_function.eq.'sph_ELonLon_sinLat') then
+        computeStrainRate = .false.
+        strainRateLonLatRIndex = 1
+
+        strainRateLonLatREdge = 0.0
+        do iEdge = 1,nEdges
+           lon = lonEdge(iEdge)
+           lat = latEdge(iEdge)
+           strainRateLonLatREdge(strainRateLonLatRIndex,1,iEdge) = sin(lat)
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatREdge(:,1,iEdge), strainRateR3Edge(:,1,iEdge), lon, lat)
+        enddo
+
+        strainRateLonLatRCell = 0.0
+        do iCell = 1,nCells
+           lon = lonCell(iCell)
+           lat = latCell(iCell)
+
+           strainRateLonLatRCell(strainRateLonLatRIndex,1,iCell) = sin(lat)
+
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatRCell(:,1,iCell), strainRateR3Cell(:,1,iCell), lon, lat)
+
+           divTensorLonLatRCellSolution(1,:,iCell) =  0.0
+           divTensorLonLatRCellSolution(2,:,iCell) =  1/R*sin(lat)*tan(lat)
+           divTensorLonLatRCellSolution(3,:,iCell) = -1/R*sin(lat)
+
+        end do
+
+     elseif (config_tensor_test_function.eq.'sph_ELonLon_coscos') then
+        computeStrainRate = .false.
+        strainRateLonLatRIndex = 1
+
+        strainRateLonLatREdge = 0.0
+        do iEdge = 1,nEdges
+           lon = lonEdge(iEdge)
+           lat = latEdge(iEdge)
+           strainRateLonLatREdge(strainRateLonLatRIndex,1,iEdge) = cos(lon)*cos(lat)
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatREdge(:,1,iEdge), strainRateR3Edge(:,1,iEdge), lon, lat)
+        enddo
+
+        strainRateLonLatRCell = 0.0
+        do iCell = 1,nCells
+           lon = lonCell(iCell)
+           lat = latCell(iCell)
+
+           strainRateLonLatRCell(strainRateLonLatRIndex,1,iCell) = cos(lon)*cos(lat)
+
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatRCell(:,1,iCell), strainRateR3Cell(:,1,iCell), lon, lat)
+
+           divTensorLonLatRCellSolution(1,:,iCell) = -1/R*sin(lon)
+           divTensorLonLatRCellSolution(2,:,iCell) =  1/R*cos(lon)*sin(lat)
+           divTensorLonLatRCellSolution(3,:,iCell) = -1/R*cos(lat)*cos(lon)
+
+        end do
+
+     elseif (config_tensor_test_function.eq.'sph_ELatLat_cosLon') then
+        computeStrainRate = .false.
+        strainRateLonLatRIndex = 2
+
+        strainRateLonLatREdge = 0.0
+        do iEdge = 1,nEdges
+           lon = lonEdge(iEdge)
+           lat = latEdge(iEdge)
+           strainRateLonLatREdge(strainRateLonLatRIndex,1,iEdge) = cos(lon)
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatREdge(:,1,iEdge), strainRateR3Edge(:,1,iEdge), lon, lat)
+        enddo
+
+        strainRateLonLatRCell = 0.0
+        do iCell = 1,nCells
+           lon = lonCell(iCell)
+           lat = latCell(iCell)
+
+           strainRateLonLatRCell(strainRateLonLatRIndex,1,iCell) = cos(lon)
+
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatRCell(:,1,iCell), strainRateR3Cell(:,1,iCell), lon, lat)
+
+           divTensorLonLatRCellSolution(1,:,iCell) =  0
+           divTensorLonLatRCellSolution(2,:,iCell) = -1/R*cos(lon)*tan(lat)
+           divTensorLonLatRCellSolution(3,:,iCell) = -1/R*cos(lon)
+
+        end do
+
+     elseif (config_tensor_test_function.eq.'sph_ELatLat_cosLat') then
+        computeStrainRate = .false.
+        strainRateLonLatRIndex = 2
+
+        strainRateLonLatREdge = 0.0
+        do iEdge = 1,nEdges
+           lon = lonEdge(iEdge)
+           lat = latEdge(iEdge)
+           strainRateLonLatREdge(strainRateLonLatRIndex,1,iEdge) = cos(lat)
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatREdge(:,1,iEdge), strainRateR3Edge(:,1,iEdge), lon, lat)
+        enddo
+
+        strainRateLonLatRCell = 0.0
+        do iCell = 1,nCells
+           lon = lonCell(iCell)
+           lat = latCell(iCell)
+
+           strainRateLonLatRCell(strainRateLonLatRIndex,1,iCell) = cos(lat)
+
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatRCell(:,1,iCell), strainRateR3Cell(:,1,iCell), lon, lat)
+
+           divTensorLonLatRCellSolution(1,:,iCell) =  0.0
+           divTensorLonLatRCellSolution(2,:,iCell) = -2/R*sin(lat)
+           divTensorLonLatRCellSolution(3,:,iCell) = -1/R*cos(lat)
+
+        end do
+
+     elseif (config_tensor_test_function.eq.'sph_ELatLat_coscos') then
+        computeStrainRate = .false.
+        strainRateLonLatRIndex = 2
+
+        strainRateLonLatREdge = 0.0
+        do iEdge = 1,nEdges
+           lon = lonEdge(iEdge)
+           lat = latEdge(iEdge)
+           strainRateLonLatREdge(strainRateLonLatRIndex,1,iEdge) = cos(lon)*cos(lat)
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatREdge(:,1,iEdge), strainRateR3Edge(:,1,iEdge), lon, lat)
+        enddo
+
+        strainRateLonLatRCell = 0.0
+        do iCell = 1,nCells
+           lon = lonCell(iCell)
+           lat = latCell(iCell)
+
+           strainRateLonLatRCell(strainRateLonLatRIndex,1,iCell) = cos(lon)*cos(lat)
+
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatRCell(:,1,iCell), strainRateR3Cell(:,1,iCell), lon, lat)
+
+           divTensorLonLatRCellSolution(1,:,iCell) =  0.0
+           divTensorLonLatRCellSolution(2,:,iCell) = -2/R*cos(lon)*sin(lat)
+           divTensorLonLatRCellSolution(3,:,iCell) = -1/R*cos(lon)*cos(lat)
+
+        end do
+
+     elseif (config_tensor_test_function.eq.'sph_ELonLat_sinLon') then
+        computeStrainRate = .false.
+        strainRateLonLatRIndex = 4
+
+        strainRateLonLatREdge = 0.0
+        do iEdge = 1,nEdges
+           lon = lonEdge(iEdge)
+           lat = latEdge(iEdge)
+           strainRateLonLatREdge(strainRateLonLatRIndex,1,iEdge) = sin(lon)
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatREdge(:,1,iEdge), strainRateR3Edge(:,1,iEdge), lon, lat)
+        enddo
+
+        strainRateLonLatRCell = 0.0
+        do iCell = 1,nCells
+           lon = lonCell(iCell)
+           lat = latCell(iCell)
+
+           strainRateLonLatRCell(strainRateLonLatRIndex,1,iCell) = sin(lon)
+
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatRCell(:,1,iCell), strainRateR3Cell(:,1,iCell), lon, lat)
+
+           divTensorLonLatRCellSolution(1,:,iCell) =  2/R*sin(lon)*tan(lat)
+           divTensorLonLatRCellSolution(2,:,iCell) =  1/R*cos(lon)/cos(lat)
+           divTensorLonLatRCellSolution(3,:,iCell) =  0.0
+
+        end do
+
+     elseif (config_tensor_test_function.eq.'sph_ELonLat_sinLat') then
+        computeStrainRate = .false.
+        strainRateLonLatRIndex = 4
+
+        strainRateLonLatREdge = 0.0
+        do iEdge = 1,nEdges
+           lon = lonEdge(iEdge)
+           lat = latEdge(iEdge)
+           strainRateLonLatREdge(strainRateLonLatRIndex,1,iEdge) = sin(lat)
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatREdge(:,1,iEdge), strainRateR3Edge(:,1,iEdge), lon, lat)
+        enddo
+
+        strainRateLonLatRCell = 0.0
+        do iCell = 1,nCells
+           lon = lonCell(iCell)
+           lat = latCell(iCell)
+
+           strainRateLonLatRCell(strainRateLonLatRIndex,1,iCell) = sin(lat)
+
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatRCell(:,1,iCell), strainRateR3Cell(:,1,iCell), lon, lat)
+
+           divTensorLonLatRCellSolution(1,:,iCell) =  1/R*(cos(lat)-2*sin(lat)*tan(lat))
+           divTensorLonLatRCellSolution(2,:,iCell) =  0.0
+           divTensorLonLatRCellSolution(3,:,iCell) =  0.0
+
+        end do
+
+     elseif (config_tensor_test_function.eq.'sph_ELonLat_coscos') then
+        computeStrainRate = .false.
+        strainRateLonLatRIndex = 4
+
+        strainRateLonLatREdge = 0.0
+        do iEdge = 1,nEdges
+           lon = lonEdge(iEdge)
+           lat = latEdge(iEdge)
+           strainRateLonLatREdge(strainRateLonLatRIndex,1,iEdge) = cos(lon)*cos(lat)
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatREdge(:,1,iEdge), strainRateR3Edge(:,1,iEdge), lon, lat)
+        enddo
+
+        strainRateLonLatRCell = 0.0
+        do iCell = 1,nCells
+           lon = lonCell(iCell)
+           lat = latCell(iCell)
+
+           strainRateLonLatRCell(strainRateLonLatRIndex,1,iCell) = cos(lon)*cos(lat)
+
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatRCell(:,1,iCell), strainRateR3Cell(:,1,iCell), lon, lat)
+
+           divTensorLonLatRCellSolution(1,:,iCell) =  -3/R*cos(lon)*sin(lat)
+           divTensorLonLatRCellSolution(2,:,iCell) =  -1/R*sin(lon)
+           divTensorLonLatRCellSolution(3,:,iCell) =  0.0
+
+        end do
+
+     elseif (config_tensor_test_function.eq.'sph_ELatR_sinLon') then
+        computeStrainRate = .false.
+        strainRateLonLatRIndex = 5
+
+        strainRateLonLatREdge = 0.0
+        do iEdge = 1,nEdges
+           lon = lonEdge(iEdge)
+           lat = latEdge(iEdge)
+           strainRateLonLatREdge(strainRateLonLatRIndex,1,iEdge) = sin(lon)
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatREdge(:,1,iEdge), strainRateR3Edge(:,1,iEdge), lon, lat)
+        enddo
+
+        strainRateLonLatRCell = 0.0
+        do iCell = 1,nCells
+           lon = lonCell(iCell)
+           lat = latCell(iCell)
+
+           strainRateLonLatRCell(strainRateLonLatRIndex,1,iCell) = sin(lon)
+
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatRCell(:,1,iCell), strainRateR3Cell(:,1,iCell), lon, lat)
+
+           divTensorLonLatRCellSolution(1,:,iCell) =  0.0
+           divTensorLonLatRCellSolution(2,:,iCell) =  1/R*sin(lon)
+           divTensorLonLatRCellSolution(3,:,iCell) = -1/R*sin(lon)*tan(lat)
+
+        end do
+
+     elseif (config_tensor_test_function.eq.'sph_ELatR_sinLat') then
+        computeStrainRate = .false.
+        strainRateLonLatRIndex = 5
+
+        strainRateLonLatREdge = 0.0
+        do iEdge = 1,nEdges
+           lon = lonEdge(iEdge)
+           lat = latEdge(iEdge)
+           strainRateLonLatREdge(strainRateLonLatRIndex,1,iEdge) = sin(lat)
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatREdge(:,1,iEdge), strainRateR3Edge(:,1,iEdge), lon, lat)
+        enddo
+
+        strainRateLonLatRCell = 0.0
+        do iCell = 1,nCells
+           lon = lonCell(iCell)
+           lat = latCell(iCell)
+
+           strainRateLonLatRCell(strainRateLonLatRIndex,1,iCell) = sin(lat)
+
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatRCell(:,1,iCell), strainRateR3Cell(:,1,iCell), lon, lat)
+
+           divTensorLonLatRCellSolution(1,:,iCell) =  0.0
+           divTensorLonLatRCellSolution(2,:,iCell) =  1/R*sin(lat)
+           divTensorLonLatRCellSolution(3,:,iCell) =  1/R*(cos(lat)-sin(lat)*tan(lat))
+
+        end do
+
+     elseif (config_tensor_test_function.eq.'sph_ELonR_sinLon') then
+        computeStrainRate = .false.
+        strainRateLonLatRIndex = 6
+
+        strainRateLonLatREdge = 0.0
+        do iEdge = 1,nEdges
+           lon = lonEdge(iEdge)
+           lat = latEdge(iEdge)
+           strainRateLonLatREdge(strainRateLonLatRIndex,1,iEdge) = sin(lon)
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatREdge(:,1,iEdge), strainRateR3Edge(:,1,iEdge), lon, lat)
+        enddo
+
+        strainRateLonLatRCell = 0.0
+        do iCell = 1,nCells
+           lon = lonCell(iCell)
+           lat = latCell(iCell)
+
+           strainRateLonLatRCell(strainRateLonLatRIndex,1,iCell) = sin(lon)
+
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatRCell(:,1,iCell), strainRateR3Cell(:,1,iCell), lon, lat)
+
+           divTensorLonLatRCellSolution(1,:,iCell) =  1/R*sin(lon)
+           divTensorLonLatRCellSolution(2,:,iCell) =  0.0
+           divTensorLonLatRCellSolution(3,:,iCell) =  1/R*cos(lon)/cos(lat)
+
+        end do
+
+     elseif (config_tensor_test_function.eq.'sph_ELonR_sinLat') then
+        computeStrainRate = .false.
+        strainRateLonLatRIndex = 6
+
+        strainRateLonLatREdge = 0.0
+        do iEdge = 1,nEdges
+           lon = lonEdge(iEdge)
+           lat = latEdge(iEdge)
+           strainRateLonLatREdge(strainRateLonLatRIndex,1,iEdge) = sin(lat)
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatREdge(:,1,iEdge), strainRateR3Edge(:,1,iEdge), lon, lat)
+        enddo
+
+        strainRateLonLatRCell = 0.0
+        do iCell = 1,nCells
+           lon = lonCell(iCell)
+           lat = latCell(iCell)
+
+           strainRateLonLatRCell(strainRateLonLatRIndex,1,iCell) = sin(lat)
+
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatRCell(:,1,iCell), strainRateR3Cell(:,1,iCell), lon, lat)
+
+           divTensorLonLatRCellSolution(1,:,iCell) =  1/R*sin(lat)
+           divTensorLonLatRCellSolution(2,:,iCell) =  0.0
+           divTensorLonLatRCellSolution(3,:,iCell) =  0.0
+
+        end do
+
      else
        print *, 'bad choice of config_tensor_test_function:',config_tensor_test_function
        stop
      endif
 
 
-     call mpas_strain_rate_R3(block % mesh, normalVelocity, tangentialVelocity, strainRateR3Cell, outerProductEdge)
+     if (computeStrainRate) then
+        call mpas_strain_rate_R3(block % mesh, normalVelocity, tangentialVelocity, strainRateR3Cell, outerProductEdge)
 
-     call mpas_matrix_cell_to_edge(block % mesh, strainRateR3Cell, strainRateR3Edge)
+        call mpas_matrix_cell_to_edge(block % mesh, strainRateR3Cell, strainRateR3Edge)
+     endif
 
      call mpas_divergence_of_tensor_3D(block % mesh, strainRateR3Edge, divTensorR3Cell)
 
      do iCell = 1,nCells
-        call mpas_tensor_R3_to_3DLonLat(strainRateR3Cell(:,1,iCell), &
-            block % state % time_levs(1) % state % strainRate3DLonLatCell % array(:,1,iCell), latCell(iCell), lonCell(iCell))
+
+        call mpas_tensor_R3_to_LonLatR(strainRateR3Cell(:,1,iCell), strainRateLonLatRCell(:,1,iCell), lonCell(iCell), latCell(iCell))
+
+        call mpas_vector_R3_to_LonLatR(divTensorR3Cell(:,1,iCell), divTensorLonLatRCell(:,1,iCell), lonCell(iCell), latCell(iCell))
+
+        call mpas_vector_LonLatR_to_R3(divTensorLonLatRCellSolution(:,1,iCell),  divTensorR3CellSolution(:,1,iCell), lonCell(iCell), latCell(iCell))
+
      enddo
 
     ! test 2D operations:
-    call mpas_strain_rate_2Dlatlon(block % mesh, normalVelocity,tangentialVelocity, strainRate2DCell, strainRate2DVertex)
+    call mpas_strain_rate_LonLat(block % mesh, normalVelocity,tangentialVelocity, strainRate2DCell, strainRate2DVertex)
 
 
 
