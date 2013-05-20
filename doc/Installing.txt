@@ -18,11 +18,7 @@
 <ol>
 <li>Download the code from the following Google code subversion location using either a subversion export:
 
-> svn export https://parallelio.googlecode.com/svn/trunk/
-
-or downloading a tagged zip file from:
-
-> https://code.google.com/p/parallelio/downloads/list
+> svn export http://parallelio.googlecode.com/svn/trunk_tags/pio1_7_1
 </li>
 
 <li>Configure - PIO uses the gnu autoconf tools, for historical reasons the configure
