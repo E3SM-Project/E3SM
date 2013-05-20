@@ -95,6 +95,13 @@ module cuda_mod
   real(kind=real_kind) ,device,allocatable,dimension(:,:,:)       :: z1_d
   real(kind=real_kind) ,device,allocatable,dimension(:,:,:)       :: z2_d
   integer              ,device,allocatable,dimension(:,:,:)       :: kid_d
+  real(kind=real_kind) ,device,allocatable,dimension(:,:,:)       :: masso_d
+  real(kind=real_kind) ,device,allocatable,dimension(:,:,:)       :: ao_d
+  real(kind=real_kind) ,device,allocatable,dimension(:,:,:,:)     :: coefs_d
+  real(kind=real_kind) ,device,allocatable,dimension(:,:)         :: massn1_d
+  real(kind=real_kind) ,device,allocatable,dimension(:,:)         :: massn2_d
+  real(kind=real_kind) ,device,allocatable,dimension(:,:,:)       :: ai_d
+  real(kind=real_kind) ,device,allocatable,dimension(:,:,:)       :: dma_d
 
   !PINNED Host arrays
   real(kind=real_kind),pinned,allocatable,dimension(:,:,:,:,:,:) :: qdp_h
@@ -115,6 +122,13 @@ module cuda_mod
   real(kind=real_kind),pinned,allocatable,dimension(:,:,:)       :: z1_h
   real(kind=real_kind),pinned,allocatable,dimension(:,:,:)       :: z2_h
   integer             ,pinned,allocatable,dimension(:,:,:)       :: kid_h
+  real(kind=real_kind),pinned,allocatable,dimension(:,:,:)       :: masso_h
+  real(kind=real_kind),pinned,allocatable,dimension(:,:,:)       :: ao_h
+  real(kind=real_kind),pinned,allocatable,dimension(:,:,:,:)     :: coefs_h
+  real(kind=real_kind),pinned,allocatable,dimension(:,:)         :: massn1_h
+  real(kind=real_kind),pinned,allocatable,dimension(:,:)         :: massn2_h
+  real(kind=real_kind),pinned,allocatable,dimension(:,:,:)       :: ai_h
+  real(kind=real_kind),pinned,allocatable,dimension(:,:,:)       :: dma_h
 
   !Normal Host arrays
   integer,allocatable,dimension(:)   :: send_nelem
@@ -236,6 +250,13 @@ contains
     allocate( z1_d                     (np,np,        nlev                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( z2_d                     (np,np,        nlev                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( kid_d                    (np,np,        nlev                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+    allocate( masso_d                  (np,np,        nlev+1                ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+    allocate( ao_d                     (np,np,   1-gs:nlev+gs               ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+    allocate( coefs_d                  (np,np,3 ,     nlev                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+    allocate( massn1_d                 (np,np                               ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+    allocate( massn2_d                 (np,np                               ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+    allocate( ai_d                     (np,np,      0:nlev                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+    allocate( dma_d                    (np,np,      0:nlev+1                ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
 
     allocate( qdp_h                    (np,np,nlev,qsize_d,timelevels,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( qmin                     (nlev,qsize_d                 ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
@@ -253,6 +274,13 @@ contains
     allocate( z1_h                     (np,np,        nlev                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( z2_h                     (np,np,        nlev                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( kid_h                    (np,np,        nlev                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+    allocate( masso_h                  (np,np,        nlev+1                ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+    allocate( ao_h                     (np,np,   1-gs:nlev+gs               ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+    allocate( coefs_h                  (np,np,3 ,     nlev                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+    allocate( massn1_h                 (np,np                               ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+    allocate( massn2_h                 (np,np                               ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+    allocate( ai_h                     (np,np,      0:nlev                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+    allocate( dma_h                    (np,np,      0:nlev+1                ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
 
     ! The PGI compiler with cuda enabled errors when allocating arrays of zero
     !   size - here when using only one MPI task
@@ -1640,21 +1668,21 @@ subroutine remap_Q_ppm_cuda(Qdp,nx,qsize,dp1,dp2,np1_qdp,ie)
       !mass accumulation
     enddo
   enddo
-! griddim  = dim3( 1 , 1 , 1 )
-! blockdim = dim3( 1 , 1 , 1 )
-! ierr = cudaMemcpy( dpo_d   , dpo_h   , size(dpo_h)   , cudaMemcpyHostToDevice )
-! ierr = cudaMemcpy( ppmdx_d , ppmdx_h , size(ppmdx_h) , cudaMemcpyHostToDevice )
-! ierr = cudaMemcpy( z1_d    , z1_h    , size(z1_h)    , cudaMemcpyHostToDevice )
-! ierr = cudaMemcpy( z2_d    , z2_h    , size(z2_h)    , cudaMemcpyHostToDevice )
-! ierr = cudaMemcpy( kid_d   , kid_h   , size(kid_h)   , cudaMemcpyHostToDevice )
-! ierr = cudaThreadSynchronize()
-  call remap_Q_ppm_cuda_kernel( nx , qsize , Qdp , dpo_h , ppmdx_h , z1_h , z2_h , kid_h )
-! ierr = cudaThreadSynchronize()
+  griddim  = dim3( 1 , 1 , 1 )
+  blockdim = dim3( 1 , 1 , 1 )
+  ierr = cudaMemcpy( dpo_d   , dpo_h   , size(dpo_h)   , cudaMemcpyHostToDevice )
+  ierr = cudaMemcpy( ppmdx_d , ppmdx_h , size(ppmdx_h) , cudaMemcpyHostToDevice )
+  ierr = cudaMemcpy( z1_d    , z1_h    , size(z1_h)    , cudaMemcpyHostToDevice )
+  ierr = cudaMemcpy( z2_d    , z2_h    , size(z2_h)    , cudaMemcpyHostToDevice )
+  ierr = cudaMemcpy( kid_d   , kid_h   , size(kid_h)   , cudaMemcpyHostToDevice )
+  ierr = cudaThreadSynchronize()
+  call remap_Q_ppm_cuda_kernel( nx , qsize , Qdp , dpo_h , ppmdx_h , z1_h , z2_h , kid_h , masso_h , ao_h , coefs_h , massn1_h , massn2_h , ai_h , dma_h )
+  ierr = cudaThreadSynchronize()
   call t_stopf('remap_Q_ppm_cuda')
 end subroutine remap_Q_ppm_cuda
 
 
-subroutine remap_Q_ppm_cuda_kernel( nx , qsize , Qdp , dpo , ppmdx , z1 , z2 , kid )
+subroutine remap_Q_ppm_cuda_kernel( nx , qsize , Qdp , dpo , ppmdx , z1 , z2 , kid , masso , ao , coefs , massn1 , massn2 , ai , dma )
   implicit none
   integer, value       , intent(in   ) :: nx, qsize
   real (kind=real_kind), intent(inout) :: Qdp  (nx,nx,        nlev   ,qsize)
@@ -1663,10 +1691,13 @@ subroutine remap_Q_ppm_cuda_kernel( nx , qsize , Qdp , dpo , ppmdx , z1 , z2 , k
   real(kind=real_kind) , intent(in   ) :: z1   (nx,nx,        nlev         )
   real(kind=real_kind) , intent(in   ) :: z2   (nx,nx,        nlev         )
   integer              , intent(in   ) :: kid  (nx,nx,        nlev         )
-  real(kind=real_kind), dimension(nx,nx,       nlev+1 ) :: masso  !Accumulate mass up to each interface
-  real(kind=real_kind), dimension(nx,nx,  1-gs:nlev+gs) :: ao     !Tracer value on old grid
-  real(kind=real_kind), dimension(nx,nx,3,     nlev   ) :: coefs  !PPM coefficients within each cell
-  real(kind=real_kind) :: massn1(nx,nx), massn2(nx,nx)
+  real(kind=real_kind) , intent(inout) , dimension(nx,nx,       nlev+1 ) :: masso  !Accumulate mass up to each interface
+  real(kind=real_kind) , intent(inout) , dimension(nx,nx,  1-gs:nlev+gs) :: ao     !Tracer value on old grid
+  real(kind=real_kind) , intent(inout) , dimension(nx,nx,3,     nlev   ) :: coefs  !PPM coefficients within each cell
+  real(kind=real_kind) , intent(inout) , dimension(nx,nx               ) :: massn1
+  real(kind=real_kind) , intent(inout) , dimension(nx,nx               ) :: massn2
+  real(kind=real_kind) , intent(inout) :: ai   (nx,nx,0:nlev  )                     !fourth-order accurate, then limited interface values
+  real(kind=real_kind) , intent(inout) :: dma  (nx,nx,0:nlev+1)                     !An expression from Collela's '84 publication
   integer ::  i , j ,k, q, kk
   do q = 1 , qsize
     !Accumulate the old mass up to old grid cell interface locations to simplify integration
@@ -1693,7 +1724,7 @@ subroutine remap_Q_ppm_cuda_kernel( nx , qsize , Qdp , dpo , ppmdx , z1 , z2 , k
      enddo
     enddo
     !Compute monotonic and conservative PPM reconstruction over every cell
-    coefs(:,:,:,:) = compute_ppm_d( nx , ao , ppmdx )
+    coefs(:,:,:,:) = compute_ppm_d( nx , ao , ppmdx , ai , dma )
     !Compute tracer values on the new grid by integrating from the old cell bottom to the new
     !cell interface to form a new grid mass accumulation. Taking the difference between
     !accumulation at successive interfaces gives the mass inside each cell. Since Qdp is
@@ -1764,15 +1795,15 @@ end function compute_ppm_grids_d
 
 
 !This computes a limited parabolic interpolant using a net 5-cell stencil, but the stages of computation are broken up into 3 stages
-function compute_ppm_d( nx , a , dx )    result(coefs)
+function compute_ppm_d( nx , a , dx , ai , dma )    result(coefs)
   use control_mod, only: vert_remap_q_alg
   implicit none
-  integer, value      , intent(in) :: nx
-  real(kind=real_kind), intent(in) :: a    (nx,nx,    -1:nlev+2)  !Cell-mean values
-  real(kind=real_kind), intent(in) :: dx   (nx,nx,10,  0:nlev+1)  !grid spacings
+  integer, value      , intent(in   ) :: nx
+  real(kind=real_kind), intent(in   ) :: a    (nx,nx,    -1:nlev+2)  !Cell-mean values
+  real(kind=real_kind), intent(in   ) :: dx   (nx,nx,10,  0:nlev+1)  !grid spacings
+  real(kind=real_kind), intent(inout) :: ai   (nx,nx,0:nlev  )                     !fourth-order accurate, then limited interface values
+  real(kind=real_kind), intent(inout) :: dma  (nx,nx,0:nlev+1)                     !An expression from Collela's '84 publication
   real(kind=real_kind) ::             coefs(nx,nx,0:2,   nlev  )  !PPM coefficients (for parabola)
-  real(kind=real_kind) :: ai (nx,nx,0:nlev  )                     !fourth-order accurate, then limited interface values
-  real(kind=real_kind) :: dma(nx,nx,0:nlev+1)                     !An expression from Collela's '84 publication
   real(kind=real_kind) :: da                                !Ditto
   ! Hold expressions based on the grid (which are cumbersome).
   real(kind=real_kind) :: al, ar                            !Left and right interface values for cell-local limiting
