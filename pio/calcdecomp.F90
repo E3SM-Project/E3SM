@@ -151,9 +151,6 @@ contains
              mykount=kount
           endif
           tpsize=tpsize+product(kount(:))
-          if(pgdims==518400) then
-             print *,__LINE__,tpsize,kount
-          endif
           if(tpsize==pgdims) then
             converged=.true.
             use_io_procs = iorank+1
@@ -161,7 +158,6 @@ contains
           endif 
        enddo
        if(.not.converged) then
-          print *, __FILE__,__LINE__,tpsize,pgdims
           tpsize=0
           use_io_procs=use_io_procs-1
        endif
@@ -170,16 +166,9 @@ contains
     start=mystart
     kount=mykount
 
-    if(myiorank>=0 .and. myiorank<use_io_procs) then
-       print *,__FILE__,__LINE__,use_io_procs,gdims,start,kount
-    endif
-
-
     if(present(innermostdecomposed)) then
        innermostdecomposed=i
     end if
-
-
 
   end subroutine Calcstartandcount
 
