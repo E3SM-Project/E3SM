@@ -671,11 +671,11 @@ subroutine spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
       do k=1, nlev
         !FOR BENCHMARK TESTS
 !               call solidbody_all(spelt(ie), dsphere1,dsphere2,contrauv,k) 
-        call boomerang_all(spelt(ie), dsphere1,dsphere2,contrauv,k,tl%nstep)
+!         call boomerang_all(spelt(ie), dsphere1,dsphere2,contrauv,k,tl%nstep)
         !FOR USING THE SE VELOCITIES    
-!         call spelt_dep_from_gll(elem(ie), deriv, spelt(ie)%asphere,dsphere1,0.5D0*tstep,tl,k)         
-!         call spelt_dep_from_gll(elem(ie), deriv, spelt(ie)%asphere,dsphere2,tstep,tl,k)
-!         call get_contravelocities(elem(ie),spelt(ie),contrauv, k,deriv)   
+        call spelt_dep_from_gll(elem(ie), deriv, spelt(ie)%asphere,dsphere1,0.5D0*tstep,tl,k)         
+        call spelt_dep_from_gll(elem(ie), deriv, spelt(ie)%asphere,dsphere2,tstep,tl,k)
+        call get_contravelocities(elem(ie),spelt(ie),contrauv, k,deriv)   
          if (test_cfldep) then
            call check_departurecell(spelt(ie),dsphere2,k) 
          endif
@@ -1065,11 +1065,11 @@ subroutine spelt_runair(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
       do k=1, nlev  !
 !         call solidbody_all(spelt(ie), dsphere1,dsphere2,contrauv,k) 
         !For Benchmark test
-        call boomerang_all(spelt(ie), dsphere1,dsphere2,contrauv,k,tl%nstep)
+!         call boomerang_all(spelt(ie), dsphere1,dsphere2,contrauv,k,tl%nstep)
         !For SE velocities
-  !       call spelt_dep_from_gll(elem(ie), deriv, spelt(ie)%asphere,dsphere1,0.5D0*tstep,tl,k)         
-  !       call spelt_dep_from_gll(elem(ie), deriv, spelt(ie)%asphere,dsphere2,tstep,tl,k)
-  !       call get_contravelocities(elem(ie),spelt(ie),contrauv, k,deriv)         
+        call spelt_dep_from_gll(elem(ie), deriv, spelt(ie)%asphere,dsphere1,0.5D0*tstep,tl,k)         
+        call spelt_dep_from_gll(elem(ie), deriv, spelt(ie)%asphere,dsphere2,tstep,tl,k)
+        call get_contravelocities(elem(ie),spelt(ie),contrauv, k,deriv)         
         !search has not to be done for all tracers!
         if (test_cfldep) then
           call check_departurecell(spelt(ie),dsphere2,k) 
@@ -1493,13 +1493,13 @@ subroutine spelt_runair_old(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
                                            fluxone(icell,jcell,2)*flux(2) - &
                                            fluxone(icell,jcell,3)*flux(3) - &
                                            fluxone(icell,jcell,4)*flux(4) ) / (spelt(ie)%area_sphere(icell,jcell))
-               if (isnan(spelt(ie)%c(i+1,j+1,k,itr,tl%np1))) then
-                 write(*,*) 'ERROR',spelt(ie)%c(i+1,j+1,k,itr,tl%n0),spelt(ie)%c(i+1,j+1,k,1,tl%np1)
-                 write(*,*) flux
-               endif                             
-                spelt(ie)%c(i+1,j+1,k,itr,tl%np1)=spelt(ie)%c(i+1,j+1,k,itr,tl%np1)/spelt(ie)%c(i+1,j+1,k,1,tl%np1)
-                if (isnan(spelt(ie)%c(i+1,j+1,k,itr,tl%np1))) write(*,*) 'ERROR2',spelt(ie)%c(i+1,j+1,k,itr,tl%np1),spelt(ie)%c(i+1,j+1,k,1,tl%np1)
-                
+!                if (isnan(spelt(ie)%c(i+1,j+1,k,itr,tl%np1))) then
+!                  write(*,*) 'ERROR',spelt(ie)%c(i+1,j+1,k,itr,tl%n0),spelt(ie)%c(i+1,j+1,k,1,tl%np1)
+!                  write(*,*) flux
+!                endif                             
+!                 spelt(ie)%c(i+1,j+1,k,itr,tl%np1)=spelt(ie)%c(i+1,j+1,k,itr,tl%np1)/spelt(ie)%c(i+1,j+1,k,1,tl%np1)
+!                 if (isnan(spelt(ie)%c(i+1,j+1,k,itr,tl%np1))) write(*,*) 'ERROR2',spelt(ie)%c(i+1,j+1,k,itr,tl%np1),spelt(ie)%c(i+1,j+1,k,1,tl%np1)
+!                 
             end do
           end do
         end do      

@@ -1000,9 +1000,9 @@ contains
     ! ! end mcgregordss
     ! spelt departure calcluation should use vstar.
     ! from c(n0) compute c(np1):
-    call spelt_run(elem,spelt,hybrid,deriv,dt,tl,nets,nete)
+!     call spelt_run(elem,spelt,hybrid,deriv,dt,tl,nets,nete)
     
-!     call spelt_runair(elem,spelt,hybrid,deriv,dt,tl,nets,nete)
+    call spelt_runair(elem,spelt,hybrid,deriv,dt,tl,nets,nete)
 !     call spelt_runpos(elem,spelt,hybrid,deriv,dt,tl,nets,nete)
 !       call spelt_runlimit(elem,spelt,hybrid,deriv,dt,tl,nets,nete)
     call t_stopf('prim_advec_tracers_spelt')

@@ -884,11 +884,11 @@ contains
        enddo
     endif
     
- ! do it only for FVM tracers, FIRST TRACER will be the AIR DENSITY   
+ ! do it only for SPELT/FVM tracers, FIRST TRACER will be the AIR DENSITY   
  ! should be optimize and combined with the above caculation 
     if (ntrac>0) then 
 #if defined(_SPELT)
-      ! do it only for FVM tracers, FIRST TRACER will be the AIR DENSITY   
+      ! do it only for SPELT tracers, FIRST TRACER will be the AIR DENSITY   
       ! should be optimize and combined with the above caculation 
       do ie=nets,nete 
         do k=1,nlev
@@ -906,7 +906,7 @@ contains
       do ie=nets,nete 
    	    do i=1-nipm,nep+nipm
    	      do j=1-nipm,nep+nipm  
-   	        fvm(ie)%psc(i,j) = (sum(fvm(ie)%c(i,j,:,1,tl%n0)/fvm(ie)%sga(i,j)) +  hvcoord%hyai(1)*hvcoord%ps0)
+   	        fvm(ie)%psc(i,j) = sum(fvm(ie)%c(i,j,:,1,tl%n0) +  hvcoord%hyai(1)*hvcoord%ps0)
    	      enddo
    	    enddo
       enddo
@@ -1545,9 +1545,9 @@ contains
       call Prim_Advec_Tracers_spelt(elem, fvm, deriv(hybrid%ithr),hvcoord,hybrid,&
            dt_q,tl,nets,nete)
         do ie=nets,nete 
-          do k=1, nlev 
-            fvm(ie)%c(1:nep,1:nep,k,1,tl%np1)=interpolate_gll2spelt_points(elem(ie)%derived%dp(:,:,k),deriv(hybrid%ithr))
-          end do
+!           do k=1, nlev 
+!             fvm(ie)%c(1:nep,1:nep,k,1,tl%np1)=interpolate_gll2spelt_points(elem(ie)%derived%dp(:,:,k),deriv(hybrid%ithr))
+!           end do
      	    do i=1-nipm,nep+nipm
      	      do j=1-nipm,nep+nipm  
      	        fvm(ie)%psc(i,j) = sum(fvm(ie)%c(i,j,:,1,tl%np1)) +  hvcoord%hyai(1)*hvcoord%ps0
@@ -1598,7 +1598,7 @@ contains
            endif 
        endif   
        !overwrite SE density by fvm(ie)%psc
-       call overwrite_SEdensity(elem,fvm,dt_q,hybrid,nets,nete,tl%np1) 
+!        call overwrite_SEdensity(elem,fvm,dt_q,hybrid,nets,nete,tl%np1) 
 #endif
     endif
 
