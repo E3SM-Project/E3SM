@@ -781,17 +781,14 @@ contains
       integer :: nCells, nEdges, nVertices, nVertLevels, iCell, iEdge, k, i, p, strainRateLonLatRIndex
 
       real (kind=RKIND) :: xVelocity, yVelocity, cn, cs, r, theta, rot, f, g1, g2, fcos, pi2l, ld, &
-        divSigma_x, divSigma_y, kLon, kLat, &
-        lon, lat, sin_kLon_lon, cos_kLon_lon, sin_kLat_lat, cos_kLat_lat, sin_lat, sec_lat, tan_lat, &
-        velocityZonal, velocityMeridional, rotAngle
-      real (kind=RKIND), dimension(6) :: strainRateLonLatCellSolution
+        lon, lat, velocityZonal, velocityMeridional, rotAngle
       real (kind=RKIND), dimension(:), pointer :: angleEdge, xCell, yCell, xEdge, yEdge, latCell, lonCell, latEdge, lonEdge
-      real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, tangentialVelocity
-      real (kind=RKIND), dimension(:,:), pointer :: edgeNormalVectors, edgeTangentVectors
-      real (kind=RKIND), dimension(:,:,:), pointer :: strainRateR3Cell, strainRateR3Edge, divTensorR3Cell, divTensorLonLatRCell, divTensorLonLatRCellSolution, strainRate2DCell, strainRate2DVertex
-
-      real (kind=RKIND), dimension(:,:,:), pointer :: strainRateR3CellSolution, strainRate2DCellSolution, divTensorR3CellSolution, strainRateLonLatRCell, strainRateLonLatREdge, strainRateLonLatRCellSolution
-      real (kind=RKIND), dimension(:,:,:), pointer :: strainRateLonLatRCellDiff, divTensorLonLatRCellDiff, outerProductEdge
+      real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, tangentialVelocity, edgeNormalVectors, edgeTangentVectors
+      real (kind=RKIND), dimension(:,:,:), pointer :: &
+         strainRateLonLatRCell, strainRateLonLatRCellSolution, strainRateLonLatRCellDiff, &
+         divTensorLonLatRCell,  divTensorLonLatRCellSolution,  divTensorLonLatRCellDiff, &
+         strainRateR3Cell, strainRateR3CellSolution, strainRateR3Edge, divTensorR3Cell, divTensorR3CellSolution, &
+         outerProductEdge,  strainRateLonLatREdge
       character(len=16) :: test_function_type
       logical :: computeStrainRate
 
@@ -817,28 +814,23 @@ contains
       edgeNormalVectors  => block % mesh % edgeNormalVectors % array
       edgeTangentVectors => block % mesh % edgeTangentVectors % array
 
-
       normalVelocity      => block % state % time_levs(1) % state % normalVelocity % array
       tangentialVelocity  => block % state % time_levs(1) % state % tangentialVelocity % array
 
       ! mrp convert these to scratch so they are not required for other cores
-      strainRate2DCell    => block % state % time_levs(1) % state % strainRate2DCell % array
-      strainRate2DVertex    => block % state % time_levs(1) % state % strainRate2DVertex % array
-      strainRateR3Cell    => block % state % time_levs(1) % state % strainRateR3Cell % array
-      strainRateR3Edge    => block % state % time_levs(1) % state % strainRateR3Edge % array
-      divTensorR3Cell     => block % state % time_levs(1) % state % divTensorR3Cell % array
-      divTensorLonLatRCell     => block % state % time_levs(1) % state % divTensorLonLatRCell % array
-      divTensorLonLatRCellSolution     => block % state % time_levs(1) % state % divTensorLonLatRCellSolution % array
-      outerProductEdge    => block % state % time_levs(1) % state % outerProductEdge % array
-
-      strainRate2DCellSolution => block % state % time_levs(1) % state % strainRate2DCellSolution % array
-      strainRateLonLatREdge => block % state % time_levs(1) % state % strainRateLonLatREdge % array
-      strainRateLonLatRCell => block % state % time_levs(1) % state % strainRateLonLatRCell % array
+      strainRateR3Cell              => block % state % time_levs(1) % state % strainRateR3Cell % array
+      strainRateR3CellSolution      => block % state % time_levs(1) % state % strainRateR3CellSolution % array
+      strainRateR3Edge              => block % state % time_levs(1) % state % strainRateR3Edge % array
+      strainRateLonLatRCell         => block % state % time_levs(1) % state % strainRateLonLatRCell % array
       strainRateLonLatRCellSolution => block % state % time_levs(1) % state % strainRateLonLatRCellSolution % array
-      strainRateR3CellSolution => block % state % time_levs(1) % state % strainRateR3CellSolution % array
-      divTensorR3CellSolution => block % state % time_levs(1) % state % divTensorR3CellSolution % array
-      strainRateLonLatRCellDiff => block % state % time_levs(1) % state % strainRateLonLatRCellDiff % array
-      divTensorLonLatRCellDiff => block % state % time_levs(1) % state % divTensorLonLatRCellDiff % array
+      strainRateLonLatRCellDiff     => block % state % time_levs(1) % state % strainRateLonLatRCellDiff % array
+      strainRateLonLatREdge         => block % state % time_levs(1) % state % strainRateLonLatREdge % array
+      divTensorR3Cell               => block % state % time_levs(1) % state % divTensorR3Cell % array
+      divTensorR3CellSolution       => block % state % time_levs(1) % state % divTensorR3CellSolution % array
+      divTensorLonLatRCell          => block % state % time_levs(1) % state % divTensorLonLatRCell % array
+      divTensorLonLatRCellSolution  => block % state % time_levs(1) % state % divTensorLonLatRCellSolution % array
+      divTensorLonLatRCellDiff      => block % state % time_levs(1) % state % divTensorLonLatRCellDiff % array
+      outerProductEdge              => block % state % time_levs(1) % state % outerProductEdge % array
 
       ! create test functions for normalVelocity and tangentialVelocity
       normalVelocity = 0.0
@@ -855,9 +847,6 @@ contains
       pi2l = pii/ld
       g1 = cn*cos(rot) - cs*sin(rot)
       g2 = cn*sin(rot) + cs*cos(rot)
-
-      kLon = 0.0
-      kLat = 0.0
 
       R = block % mesh % sphere_radius
       computeStrainRate = .true.
@@ -1042,10 +1031,6 @@ contains
 
            lon = lonCell(iCell)
            lat = latCell(iCell)
-
-           block % state % time_levs(1) % state % streamFunctionCell     % array(:,iCell) = 0.0 ! actually -lat/2 - sin(lat)**2/4
-           block % state % time_levs(1) % state % zonalVelocityCell      % array(:,iCell) = cos(lat)
-           block % state % time_levs(1) % state % meridionalVelocityCell % array(:,iCell) = 0.0
 
            strainRateLonLatRCellSolution(1,1,iCell) = & ! Elonlon
                  0.0
