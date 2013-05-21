@@ -116,7 +116,6 @@ contains
       real (kind=RKIND) :: invAreaCell
       real (kind=RKIND), dimension(3,3) :: outerProductEdge3x3
       real (kind=RKIND), dimension(:), pointer :: dvEdge, areaCell, angleEdge
-      real (kind=RKIND), dimension(:), pointer :: xCell,yCell,xEdge,yEdge ! temp
       real (kind=RKIND), dimension(:,:), pointer :: edgeNormalVectors, edgeTangentVectors
 
       nEdges = grid % nEdges
@@ -133,20 +132,6 @@ contains
       edgeNormalVectors  => grid % edgeNormalVectors % array
       edgeTangentVectors => grid % edgeTangentVectors % array
 
-! temp:
-      xCell  => grid % xCell % array
-      yCell  => grid % yCell % array
-      xEdge  => grid % xEdge % array
-      yEdge  => grid % yEdge % array
-
-if (1==2) then
-      print '(a,3f20.10)', 'min max mean edgeNormalVectors1  ',minval(edgeNormalVectors(1,1:nEdges)),maxval(edgeNormalVectors(1,1:nEdges)),sum(edgeNormalVectors(1,1:nEdges))/nEdges/grid%nVertLevels
-      print '(a,3f20.10)', 'min max mean edgeNormalVectors2  ',minval(edgeNormalVectors(2,1:nEdges)),maxval(edgeNormalVectors(2,1:nEdges)),sum(edgeNormalVectors(2,1:nEdges))/nEdges/grid%nVertLevels
-      print '(a,3f20.10)', 'min max mean edgeNormalVectors3  ',minval(edgeNormalVectors(3,1:nEdges)),maxval(edgeNormalVectors(3,1:nEdges)),sum(edgeNormalVectors(3,1:nEdges))/nEdges/grid%nVertLevels
-      print '(a,3f20.10)', 'min max mean edgeTangentVectors1 ',minval(edgeTangentVectors(1,1:nEdges)),maxval(edgeTangentVectors(1,1:nEdges)),sum(edgeTangentVectors(1,1:nEdges))/nEdges/grid%nVertLevels
-      print '(a,3f20.10)', 'min max mean edgeTangentVectors2 ',minval(edgeTangentVectors(2,1:nEdges)),maxval(edgeTangentVectors(2,1:nEdges)),sum(edgeTangentVectors(2,1:nEdges))/nEdges/grid%nVertLevels
-      print '(a,3f20.10)', 'min max mean edgeTangentVectors3 ',minval(edgeTangentVectors(3,1:nEdges)),maxval(edgeTangentVectors(3,1:nEdges)),sum(edgeTangentVectors(3,1:nEdges))/nEdges/grid%nVertLevels
-endif
       do iEdge=1,nEdges
          ! mrp question: for this to be general across cores, we need to use nVertLevels
          do k=1,maxLevelEdgeBot(iEdge)
@@ -161,27 +146,11 @@ endif
              enddo
            enddo
            call mpas_matrix_3x3_to_sym6index(outerProductEdge3x3,outerProductEdge(:,k,iEdge))
-if (1==2) then
-  print '(a,i5,30f8.2)', '*********** iEdge, angleEdge',iEdge, angleEdge(iEdge)
-  print '(a,30es10.2)', 'nor',edgeNormalVectors(:,iEdge)
-  print '(a,30es10.2)', 'tan',edgeTangentVectors(:,iEdge)
-  print '(a,30es10.2)', 'vel',normalVelocity(k,iEdge),tangentialVelocity(k,iEdge)
-  print '(a,30es10.2)', '3x3',outerProductEdge3x3
-  print '(a,30es10.2)', 'sm6', outerProductEdge(:,k,iEdge)
-endif
          enddo
       enddo
 
-if (1==2) then
-      print '(a,3f20.10)', 'min max mean outerProductEdge 1  ',minval(outerProductEdge(1,1,1:nEdges)),maxval(outerProductEdge(1,1,1:nEdges)),sum(outerProductEdge(1,1,1:nEdges))/nEdges/grid%nVertLevels
-      print '(a,3f20.10)', 'min max mean outerProductEdge 2  ',minval(outerProductEdge(2,1,1:nEdges)),maxval(outerProductEdge(2,1,1:nEdges)),sum(outerProductEdge(2,1,1:nEdges))/nEdges/grid%nVertLevels
-      print '(a,3f20.10)', 'min max mean outerProductEdge 4  ',minval(outerProductEdge(4,1,1:nEdges)),maxval(outerProductEdge(4,1,1:nEdges)),sum(outerProductEdge(4,1,1:nEdges))/nEdges/grid%nVertLevels
-print *, 'iCell, i, k, edgeSignOnCell(i,iCell),invAreaCell,outerProductEdge(:,k,iEdge)'
-endif
       strainRateR3Cell = 0.0
       do iCell = 1, nCells
-!  print '(a,i5,30f8.2)', '***************************************************** iCell,xCell,yCell',iCell,xCell(iCell),yCell(iCell)
-!  print '(a,30i5,30f8.2)', '** nCells,cellsOnCell',nCells,grid % cellsOnCell % array(:,iCell)
          invAreaCell = 1.0 / areaCell(iCell)
          do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
@@ -190,25 +159,8 @@ endif
                ! minus sign in front is to match form on divergence, below
                strainRateR3Cell(:,k,iCell) = strainRateR3Cell(:,k,iCell) &
                  - edgeSignOnCell(i,iCell)*outerProductEdge(:,k,iEdge)*invAreaCell*dvEdge(iEdge) 
-if (1==2) then
-!if (iCell>=15.and.iCell<=17) then
-  print '(a,2i5,30f8.2)', '*********** iEdge, edgeSignOnCell, angleEdge,xEdge,yEdge',iEdge, edgeSignOnCell(i,iCell), angleEdge(iEdge),xEdge(iEdge),yEdge(iEdge)
-  print '(a,2i5,30f8.2)', 'cell1, cell2',grid%cellsOnEdge%array(:,iEdge)
-  print '(a,30es10.2)', 'nor',edgeNormalVectors(:,iEdge)
-  print '(a,30es10.2)', 'tan',edgeTangentVectors(:,iEdge)
-  print '(a,30es10.2)', 'vel',normalVelocity(k,iEdge),tangentialVelocity(k,iEdge)
-  print '(a,30es10.2)', 'sm6', outerProductEdge(:,k,iEdge)
-  print '(a,30es10.2)', 'src', strainRateR3Cell(:,k,iCell)
-endif
             end do
          end do
-if (1==2) then
-  print '(a,30es10.2)', 'nor',edgeNormalVectors(:,iEdge)
-  print '(a,30es10.2)', 'tan',edgeTangentVectors(:,iEdge)
-  print '(a,30es10.2)', 'vel',normalVelocity(k,iEdge),tangentialVelocity(k,iEdge)
-  print '(a,30es10.2)', '3x3',outerProductEdge3x3
-  print '(a,30es10.2)', 'sm6', outerProductEdge(:,k,iEdge)
-endif
       end do
 
    end subroutine mpas_strain_rate_R3!}}}
@@ -295,19 +247,6 @@ endif
             end do
          end do
       end do
-
-   print *, 'strainRateR3Edge(1) min max',minval(strainRateR3Edge(1,1,:)),maxval(strainRateR3Edge(1,1,:))
-   print *, 'strainRateR3Edge(2) min max',minval(strainRateR3Edge(2,1,:)),maxval(strainRateR3Edge(2,1,:))
-   print *, 'strainRateR3Edge(3) min max',minval(strainRateR3Edge(3,1,:)),maxval(strainRateR3Edge(3,1,:))
-   print *, 'strainRateR3Edge(4) min max',minval(strainRateR3Edge(4,1,:)),maxval(strainRateR3Edge(4,1,:))
-   print *, 'strainRateR3Edge(5) min max',minval(strainRateR3Edge(5,1,:)),maxval(strainRateR3Edge(5,1,:))
-   print *, 'strainRateR3Edge(6) min max',minval(strainRateR3Edge(6,1,:)),maxval(strainRateR3Edge(6,1,:))
-
-   print *, 'divTensorR3Cell(1) min max',minval(divTensorR3Cell(1,1,:)),maxval(divTensorR3Cell(1,1,:))
-   print *, 'divTensorR3Cell(2) min max',minval(divTensorR3Cell(2,1,:)),maxval(divTensorR3Cell(2,1,:))
-   print *, 'divTensorR3Cell(3) min max',minval(divTensorR3Cell(3,1,:)),maxval(divTensorR3Cell(3,1,:))
-
-
 
    end subroutine mpas_divergence_of_tensor_3D!}}}
 
@@ -554,7 +493,7 @@ endif
 
       real (kind=RKIND) :: determinant
       real (kind=RKIND), dimension(3) :: zonalUnitVector, meridionalUnitVector, verticalUnitVector
-      real (kind=RKIND), dimension(3,3) :: rotationMatrix, strainRateR3_3x3, strainRateLonLat3x3, A
+      real (kind=RKIND), dimension(3,3) :: rotationMatrix, strainRateR3_3x3, strainRateLonLat3x3
 
       call mpas_zonal_meridional_vectors(lon, lat, zonalUnitVector, meridionalUnitVector, verticalUnitVector)
 
@@ -562,29 +501,12 @@ endif
       rotationMatrix(:,2) = meridionalUnitVector
       rotationMatrix(:,3) = verticalUnitVector
 
-      ! just for checking
-      A(1,1) = -2
-      A(1,2) = 2
-      A(1,3) =3
-      A(2,1) =-1
-      A(2,2) =1
-      A(2,3) =3
-      A(3,1) = 2
-      A(3,2) = 0
-      A(3,3) = -1
-      A = rotationMatrix
-!      determinant = A(1,1)*A(2,2)*A(3,3) + A(1,2)*A(2,3)*A(3,1) + A(1,3)*A(2,1)*A(3,2) - A(1,3)*A(2,2)*A(3,1) - A(1,2)*A(2,1)*A(3,3) - A(1,1)*A(2,3)*A(3,2)
-!print '(/,a,100es10.2)', 'determinant', determinant
-
       strainRateLonLat3x3 = 0.0
       strainRateLonLat3x3(1,1) = strainRateLonLat(1)
       strainRateLonLat3x3(2,2) = strainRateLonLat(2)
       strainRateLonLat3x3(1,2) = strainRateLonLat(3)
       strainRateLonLat3x3(2,1) = strainRateLonLat(3)
 
-!print '(/,a,100es10.2)', 'lat,lon, zonalUnitVector, meridionalUnitVector, verticalUnitVector',lat,lon, zonalUnitVector, meridionalUnitVector, verticalUnitVector
-!print '(a,100es10.2)', 'strainRateLonLat3x3',strainRateLonLat3x3
-!print '(a,100es10.2)', 'rotationMatrix',rotationMatrix
       strainRateR3_3x3 = 0.0
       do i=1,3
         do j=1,3
@@ -595,10 +517,8 @@ endif
           enddo
         enddo
       enddo
-!print '(a,100es10.2)', 'strainRateR3_3x3',strainRateR3_3x3
  
       call mpas_matrix_3x3_to_sym6index(strainRateR3_3x3,strainRateR3)
-!print '(a,100es10.2)', 'strainRateR3',strainRateR3
 
    end subroutine mpas_tensor_LonLat_to_R3!}}}
 
@@ -663,9 +583,6 @@ endif
 
       call mpas_matrix_sym6index_to_3x3(tensorLonLatR,tensorLonLatR3x3)
 
-!print '(/,a,100es10.2)', 'lat,lon, zonalUnitVector, meridionalUnitVector, verticalUnitVector',lat,lon, zonalUnitVector, meridionalUnitVector, verticalUnitVector
-!print '(a,100es10.2)', 'tensorLonLatR3x3',tensorLonLatR3x3
-!print '(a,100es10.2)', 'rotationMatrix',rotationMatrix
       strainRateR3_3x3 = 0.0
       do i=1,3
         do j=1,3
@@ -676,10 +593,8 @@ endif
           enddo
         enddo
       enddo
-!print '(a,100es10.2)', 'strainRateR3_3x3',strainRateR3_3x3
  
       call mpas_matrix_3x3_to_sym6index(strainRateR3_3x3,strainRateR3)
-!print '(a,100es10.2)', 'strainRateR3',strainRateR3
 
    end subroutine mpas_tensor_LonLatR_to_R3!}}}
 
@@ -970,41 +885,6 @@ endif
          end do
       end do
 
-!   print '(a,100f8.3)', 'xCell     ',grid % xCell % array(6:7)
-!   print '(a,100f8.3)', 'yCell     ',grid % yCell % array(6:7)
-!   print '(a,100f8.3)', 'xEdge     ',grid % xEdge % array(1:nEdges)
-!   print '(a,100f8.3)', 'yEdge     ',grid % yEdge % array(1:nEdges)
-!   print '(a,100f8.3)', 'angleEdge ',angleEdge(1:nEdges)
-!   print '(a,100f8.3)', 'normalVelocity         ',normalVelocity(:,1:nEdges)
-!   print '(a,100f8.3)', 'tangentialVelocity         ',tangentialVelocity(:,1:nEdges)
-!   print '(a,100f8.3)', 'eps Nor 1 ',strainRate2DCell(1,:,6:7)
-!   print '(a,100f8.3)', 'eps Nor 2 ',strainRate2DCell(2,:,6:7)
-!   print '(a,100f8.3)', 'eps Nor 3 ',strainRate2DCell(3,:,6:7)
-!   print '(a,100f8.3)', 'xVertex   ',grid % xVertex % array(10:11)
-!   print '(a,100f8.3)', 'yVertex   ',grid % yVertex % array(10:11)
-!   print '(a,100f8.3)', 'eps Shr 1 ',strainRate2DVertex(1,:,10:11)
-!   print '(a,100f8.3)', 'eps Shr 2 ',strainRate2DVertex(2,:,10:11)
-!   print '(a,100f8.3)', 'eps Shr 3 ',strainRate2DVertex(3,:,10:11)
-
-if (1==2) then
-   print '(a,100f8.3)', 'xCell     ',grid % xCell % array(1:nCells)
-   print '(a,100f8.3)', 'yCell     ',grid % yCell % array(1:nCells)
-   print '(a,100f8.3)', 'xEdge     ',grid % xEdge % array(1:nEdges)
-   print '(a,100f8.3)', 'yEdge     ',grid % yEdge % array(1:nEdges)
-   print '(a,100f8.3)', 'angleEdge ',angleEdge(1:nEdges)
-   print '(a,100f8.3)', 'normalVelocity         ',normalVelocity(:,1:nEdges)
-   print '(a,100f8.3)', 'tangentialVelocity         ',tangentialVelocity(:,1:nEdges)
-   print '(a,100f8.3)', 'eps Nor 1 ',strainRate2DCell(1,:,1:nCells)
-   print '(a,100f8.3)', 'eps Nor 2 ',strainRate2DCell(2,:,1:nCells)
-   print '(a,100f8.3)', 'eps Nor 3 ',strainRate2DCell(3,:,1:nCells)
-   print '(a,100f8.3)', 'xVertex   ',grid % xVertex % array(1:nVertices)
-   print '(a,100f8.3)', 'yVertex   ',grid % yVertex % array(1:nVertices)
-   print '(a,100f8.3)', 'eps Shr 1 ',strainRate2DVertex(1,:,1:nVertices)
-   print '(a,100f8.3)', 'eps Shr 2 ',strainRate2DVertex(2,:,1:nVertices)
-   print '(a,100f8.3)', 'eps Shr 3 ',strainRate2DVertex(3,:,1:nVertices)
-endif
-
-
    end subroutine mpas_strain_rate_LonLat!}}}
 
 !***********************************************************************
@@ -1156,7 +1036,7 @@ endif
 
       type (block_type), pointer :: block
 
-      integer :: nCells, nEdges, nVertices, nVertLevels, iCell, iEdge, k, i, p, minCell, maxCell, strainRateLonLatRIndex
+      integer :: nCells, nEdges, nVertices, nVertLevels, iCell, iEdge, k, i, p, strainRateLonLatRIndex
 
       real (kind=RKIND) :: xVelocity, yVelocity, cn, cs, r, theta, rot, f, g1, g2, fcos, pi2l, ld, &
         divSigma_x, divSigma_y, kLon, kLat, &
@@ -1646,38 +1526,8 @@ endif
     ! test 2D operations:
     call mpas_strain_rate_LonLat(block % mesh, normalVelocity,tangentialVelocity, strainRate2DCell, strainRate2DVertex)
 
-
-
-minCell=17
-maxCell=17 
-if (1==1) then
-!      print '(a,3es20.10)', 'min max mean normalVelocity      ',minval(normalVelocity(:,1:nEdges)),maxval(normalVelocity(:,1:nEdges)),sum(normalVelocity(:,1:nEdges))/nEdges/nVertLevels
-!      print '(a,3es20.10)', 'min max mean tangentialVelocity  ',minval(tangentialVelocity(:,1:nEdges)),maxval(tangentialVelocity(:,1:nEdges)),sum(tangentialVelocity(:,1:nEdges))/nEdges/nVertLevels
-      print '(a,3es20.10)', 'min max mean strainRateR3Cell1   ',minval(strainRateR3Cell(1,:,minCell:maxCell)),maxval(strainRateR3Cell(1,:,minCell:maxCell)),sum(strainRateR3Cell(1,:,minCell:maxCell))/(maxCell-minCell+1)/nVertLevels
-      print '(a,3es20.10)', 'min max mean strainRateR3CellSol1',minval(strainRateR3CellSolution(1,:,minCell:maxCell)),maxval(strainRateR3CellSolution(1,:,minCell:maxCell)),sum(strainRateR3CellSolution(1,:,minCell:maxCell))/(maxCell-minCell+1)/nVertLevels
-      print '(/,a,3es20.10)', 'min max mean strainRateR3Cell2   ',minval(strainRateR3Cell(2,:,minCell:maxCell)),maxval(strainRateR3Cell(2,:,minCell:maxCell)),sum(strainRateR3Cell(2,:,minCell:maxCell))/(maxCell-minCell+1)/nVertLevels
-      print '(a,3es20.10)', 'min max mean strainRateR3Cell2Sol',minval(strainRateR3CellSolution(2,:,minCell:maxCell)),maxval(strainRateR3CellSolution(2,:,minCell:maxCell)),sum(strainRateR3CellSolution(2,:,minCell:maxCell))/(maxCell-minCell+1)/nVertLevels
-      print '(/,a,3es20.10)', 'min max mean strainRateR3Cell4   ',minval(strainRateR3Cell(4,:,minCell:maxCell)),maxval(strainRateR3Cell(4,:,minCell:maxCell)),sum(strainRateR3Cell(4,:,minCell:maxCell))/(maxCell-minCell+1)/nVertLevels
-      print '(a,3es20.10)', 'min max mean strainRateR3Cell4Sol',minval(strainRateR3CellSolution(4,:,minCell:maxCell)),maxval(strainRateR3CellSolution(4,:,minCell:maxCell)),sum(strainRateR3CellSolution(4,:,minCell:maxCell))/(maxCell-minCell+1)/nVertLevels
-      print '(/,a,3es20.10)', 'min max mean divTensorR3Cell1    ',minval(divTensorR3Cell(1,:,minCell:maxCell)),maxval(divTensorR3Cell(1,:,minCell:maxCell)),sum(divTensorR3Cell(1,:,minCell:maxCell))/(maxCell-minCell+1)/nVertLevels
-      print '(a,3es20.10)',   'min max mean divTensorR3CellSol1 ',minval(divTensorR3CellSolution(1,:,minCell:maxCell)),maxval(divTensorR3CellSolution(1,:,minCell:maxCell)),sum(divTensorR3CellSolution(1,:,minCell:maxCell))/(maxCell-minCell+1)/nVertLevels
-!      print '(/,a,3es20.10)', 'min max mean strainRateR3Edge1   ',minval(strainRateR3Edge(1,:,minCell:maxCell)),maxval(strainRateR3Edge(1,:,minCell:maxCell)),sum(strainRateR3Edge(1,:,minCell:maxCell))/(maxCell-minCell+1)/nVertLevels
-!      print '(a,3es20.10)', 'min max mean strainRateR3Edge2   ',minval(strainRateR3Edge(2,:,minCell:maxCell)),maxval(strainRateR3Edge(2,:,minCell:maxCell)),sum(strainRateR3Edge(2,:,minCell:maxCell))/(maxCell-minCell+1)/nVertLevels
-!      print '(a,3es20.10)', 'min max mean strainRateR3Edge3   ',minval(strainRateR3Edge(3,:,minCell:maxCell)),maxval(strainRateR3Edge(3,:,minCell:maxCell)),sum(strainRateR3Edge(3,:,minCell:maxCell))/(maxCell-minCell+1)/nVertLevels
-
-      print '(/,a,3es20.10)', 'min max mean divTensorR3Cell2    ',minval(divTensorR3Cell(2,:,minCell:maxCell)),maxval(divTensorR3Cell(2,:,minCell:maxCell)),sum(divTensorR3Cell(2,:,minCell:maxCell))/(maxCell-minCell+1)/nVertLevels
-      print '(a,3es20.10)',   'min max mean divTensorR3CellSol2 ',minval(divTensorR3CellSolution(2,:,minCell:maxCell)),maxval(divTensorR3CellSolution(2,:,minCell:maxCell)),sum(divTensorR3CellSolution(2,:,minCell:maxCell))/(maxCell-minCell+1)/nVertLevels
-      print '(/,a,3es20.10)', 'min max mean divTensorR3Cell3    ',minval(divTensorR3Cell(3,:,minCell:maxCell)),maxval(divTensorR3Cell(3,:,minCell:maxCell)),sum(divTensorR3Cell(3,:,minCell:maxCell))/(maxCell-minCell+1)/nVertLevels
-      print '(a,3es20.10)',   'min max mean divTensorR3CellSol3 ',minval(divTensorR3CellSolution(3,:,minCell:maxCell)),maxval(divTensorR3CellSolution(3,:,minCell:maxCell)),sum(divTensorR3CellSolution(3,:,minCell:maxCell))/(maxCell-minCell+1)/nVertLevels
-endif
- 
       strainRateLonLatRCellDiff = strainRateLonLatRCell- strainRateLonLatRCellSolution
       divTensorLonLatRCellDiff  = divTensorLonLatRCell- divTensorLonLatRCellSolution
-
-      print '(/,a,3es20.10)', 'max abs diff strainRateLonLatRCell1',maxval(abs(strainRateLonLatRCell(1,:,minCell:maxCell) - strainRateLonLatRCellSolution(1,:,minCell:maxCell)))
-      print '(a,3es20.10)', 'max abs diff strainRateLonLatRCell2',maxval(abs(strainRateLonLatRCell(2,:,minCell:maxCell) - strainRateLonLatRCellSolution(2,:,minCell:maxCell)))
-      print '(a,3es20.10)', 'max abs diff strainRateLonLatRCell4',maxval(abs(strainRateLonLatRCell(4,:,minCell:maxCell) - strainRateLonLatRCellSolution(4,:,minCell:maxCell)))
-      print '(a,3es20.10)', 'max abs diff divTensorLonLatRCell  ',maxval(abs(divTensorLonLatRCell(:,:,minCell:maxCell) - divTensorLonLatRCellSolution(:,:,minCell:maxCell)))
 
         block => block % next
       end do
