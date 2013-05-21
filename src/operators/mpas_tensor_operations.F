@@ -1161,7 +1161,7 @@ endif
       real (kind=RKIND) :: xVelocity, yVelocity, cn, cs, r, theta, rot, f, g1, g2, fcos, pi2l, ld, &
         divSigma_x, divSigma_y, kLon, kLat, &
         lon, lat, sin_kLon_lon, cos_kLon_lon, sin_kLat_lat, cos_kLat_lat, sin_lat, sec_lat, tan_lat, &
-        velocityZonal, velocityMeridional
+        velocityZonal, velocityMeridional, rotAngle
       real (kind=RKIND), dimension(6) :: strainRateLonLatCellSolution
       real (kind=RKIND), dimension(:), pointer :: angleEdge, xCell, yCell, xEdge, yEdge, latCell, lonCell, latEdge, lonEdge
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, tangentialVelocity
@@ -1169,7 +1169,7 @@ endif
       real (kind=RKIND), dimension(:,:,:), pointer :: strainRateR3Cell, strainRateR3Edge, divTensorR3Cell, divTensorLonLatRCell, divTensorLonLatRCellSolution, strainRate2DCell, strainRate2DVertex
 
       real (kind=RKIND), dimension(:,:,:), pointer :: strainRateR3CellSolution, strainRate2DCellSolution, divTensorR3CellSolution, strainRateLonLatRCell, strainRateLonLatREdge, strainRateLonLatRCellSolution
-      real (kind=RKIND), dimension(:,:,:), pointer :: strainRateR3CellDiff, divTensorR3CellDiff, outerProductEdge
+      real (kind=RKIND), dimension(:,:,:), pointer :: strainRateLonLatRCellDiff, divTensorLonLatRCellDiff, outerProductEdge
       character(len=16) :: test_function_type
       logical :: computeStrainRate
 
@@ -1215,8 +1215,8 @@ endif
       strainRateLonLatRCellSolution => block % state % time_levs(1) % state % strainRateLonLatRCellSolution % array
       strainRateR3CellSolution => block % state % time_levs(1) % state % strainRateR3CellSolution % array
       divTensorR3CellSolution => block % state % time_levs(1) % state % divTensorR3CellSolution % array
-      strainRateR3CellDiff => block % state % time_levs(1) % state % strainRateR3CellDiff % array
-      divTensorR3CellDiff => block % state % time_levs(1) % state % divTensorR3CellDiff % array
+      strainRateLonLatRCellDiff => block % state % time_levs(1) % state % strainRateLonLatRCellDiff % array
+      divTensorLonLatRCellDiff => block % state % time_levs(1) % state % divTensorLonLatRCellDiff % array
 
       ! create test functions for normalVelocity and tangentialVelocity
       normalVelocity = 0.0
@@ -1445,6 +1445,191 @@ endif
         enddo
 
         divTensorR3CellSolution = 0.0
+
+     elseif (config_tensor_test_function.eq.'sph_Williamson') then
+
+        rotAngle=pii/4
+
+        do iEdge = 1,nEdges
+           lon = lonEdge(iEdge)
+           lat = latEdge(iEdge)
+
+           velocityZonal      =  cos(lat)*cos(rotAngle) + sin(lat)*cos(lon)*sin(rotAngle)
+           velocityMeridional = -sin(lat)*sin(rotAngle)
+
+           normalVelocity(:,iEdge) = velocityZonal*cos(angleEdge(iEdge)) + velocityMeridional*sin(angleEdge(iEdge))
+           tangentialVelocity(:,iEdge) = -velocityZonal*sin(angleEdge(iEdge)) + velocityMeridional*cos(angleEdge(iEdge))
+        enddo
+
+!  replacing with tangentialVel just above for now:
+!        call mpas_tangential_velocity(block % mesh, normalVelocity, tangentialVelocity)
+
+        do iCell = 1,nCells
+
+           lon = lonCell(iCell)
+           lat = latCell(iCell)
+
+           strainRateLonLatRCellSolution(1,1,iCell) = & ! Elonlon
+                 1/R/cos(lat)*( sin(rotAngle)*sin(lat)**2 - sin(rotAngle)*sin(lat)*sin(lon))
+           strainRateLonLatRCellSolution(2,1,iCell) = & ! Elatlat
+                 -1/R*cos(lat)*sin(rotAngle)
+           strainRateLonLatRCellSolution(3,1,iCell) = & ! Err
+                 0.0
+           strainRateLonLatRCellSolution(4,1,iCell) = & ! Elonlat
+                 1/2.0/R*(  cos(lat)*cos(lon)*sin(rotAngle) - cos(rotAngle)*sin(lat) + tan(lat)*cos(rotAngle)*cos(lat) + tan(lat)*cos(lon)*sin(rotAngle)*sin(lat))
+           strainRateLonLatRCellSolution(5,1,iCell) = & ! Elatr
+                 3.0/R/2.0*sin(lat)*sin(rotAngle)
+           strainRateLonLatRCellSolution(6,1,iCell) = & ! Elonr
+                 - 3.0/R/2.0*( cos(lat)*cos(rotAngle) + cos(lon)*sin(rotAngle)*sin(lat))
+
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatRCellSolution(:,1,iCell), strainRateR3CellSolution(:,1,iCell), lon, lat)
+
+        end do
+
+     elseif (config_tensor_test_function.eq.'sph_uCosCos') then
+
+        do iEdge = 1,nEdges
+           lon = lonEdge(iEdge)
+           lat = latEdge(iEdge)
+
+           velocityZonal      = cos(lon)*(1+cos(2*lat))
+           velocityMeridional = 0.0
+
+           normalVelocity(:,iEdge) = velocityZonal*cos(angleEdge(iEdge)) + velocityMeridional*sin(angleEdge(iEdge))
+           tangentialVelocity(:,iEdge) = -velocityZonal*sin(angleEdge(iEdge)) + velocityMeridional*cos(angleEdge(iEdge))
+        enddo
+
+!  replacing with tangentialVel just above for now:
+!        call mpas_tangential_velocity(block % mesh, normalVelocity, tangentialVelocity)
+
+        do iCell = 1,nCells
+
+           lon = lonCell(iCell)
+           lat = latCell(iCell)
+
+           strainRateLonLatRCellSolution(1,1,iCell) = & ! Elonlon
+                 -1/R*(1+cos(2*lat))*sin(lon)/cos(lat)
+           strainRateLonLatRCellSolution(2,1,iCell) = & ! Elatlat
+                 0.0
+           strainRateLonLatRCellSolution(3,1,iCell) = & ! Err
+                 0.0
+           strainRateLonLatRCellSolution(4,1,iCell) = & ! Elonlat
+                 1/2.0/R*( -2*cos(lon)*sin(2*lat) + (1+cos(2*lat))*cos(lon)*tan(lat))
+           strainRateLonLatRCellSolution(5,1,iCell) = & ! Elatr
+                 0.0
+           strainRateLonLatRCellSolution(6,1,iCell) = & ! Elonr
+                 - 3.0/R/2.0*(1+cos(2*lat))*cos(lon)
+
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatRCellSolution(:,1,iCell), strainRateR3CellSolution(:,1,iCell), lon, lat)
+
+        end do
+
+     elseif (config_tensor_test_function.eq.'sph_vCosCos') then
+
+        do iEdge = 1,nEdges
+           lon = lonEdge(iEdge)
+           lat = latEdge(iEdge)
+
+           velocityZonal      = 0.0
+           velocityMeridional = cos(lon)*(1+cos(2*lat))
+
+           normalVelocity(:,iEdge) = velocityZonal*cos(angleEdge(iEdge)) + velocityMeridional*sin(angleEdge(iEdge))
+           tangentialVelocity(:,iEdge) = -velocityZonal*sin(angleEdge(iEdge)) + velocityMeridional*cos(angleEdge(iEdge))
+        enddo
+
+!  replacing with tangentialVel just above for now:
+!        call mpas_tangential_velocity(block % mesh, normalVelocity, tangentialVelocity)
+
+        do iCell = 1,nCells
+
+           lon = lonCell(iCell)
+           lat = latCell(iCell)
+
+           strainRateLonLatRCellSolution(1,1,iCell) = & ! Elonlon
+                 -1/R*(1+cos(2*lat))*cos(lon)*tan(lat)
+           strainRateLonLatRCellSolution(2,1,iCell) = & ! Elatlat
+                 -2/R*cos(lon)*sin(2*lat)
+           strainRateLonLatRCellSolution(3,1,iCell) = & ! Err
+                 0.0
+           strainRateLonLatRCellSolution(4,1,iCell) = & ! Elonlat
+                 -1/2.0/R*(1+cos(2*lat))*sin(lon)/cos(lat)
+           strainRateLonLatRCellSolution(5,1,iCell) = & ! Elatr
+                 - 3.0/R/2.0*(1+cos(2*lat))*cos(lon)
+           strainRateLonLatRCellSolution(6,1,iCell) = & ! Elonr
+                 0.0
+
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatRCellSolution(:,1,iCell), strainRateR3CellSolution(:,1,iCell), lon, lat)
+
+        end do
+
+     elseif (config_tensor_test_function.eq.'sph_ELonLon_CosCos') then
+        computeStrainRate = .false.
+        strainRateLonLatRIndex = 1
+
+        strainRateLonLatREdge = 0.0
+        do iEdge = 1,nEdges
+           lon = lonEdge(iEdge)
+           lat = latEdge(iEdge)
+           strainRateLonLatREdge(strainRateLonLatRIndex,1,iEdge) = cos(lon)*(1+cos(2*lat))
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatREdge(:,1,iEdge), strainRateR3Edge(:,1,iEdge), lon, lat)
+        enddo
+
+        strainRateLonLatRCell = 0.0
+        do iCell = 1,nCells
+           lon = lonCell(iCell)
+           lat = latCell(iCell)
+
+           divTensorLonLatRCellSolution(1,:,iCell) = -1/R*(1+cos(2*lat))*sin(lon)/cos(lat)
+           divTensorLonLatRCellSolution(2,:,iCell) =  1/R*(1+cos(2*lat))*cos(lon)*tan(lat)
+           divTensorLonLatRCellSolution(3,:,iCell) = -1/R*(1+cos(2*lat))*cos(lon)
+
+        end do
+
+     elseif (config_tensor_test_function.eq.'sph_ELatLat_CosCos') then
+        computeStrainRate = .false.
+        strainRateLonLatRIndex = 2
+
+        strainRateLonLatREdge = 0.0
+        do iEdge = 1,nEdges
+           lon = lonEdge(iEdge)
+           lat = latEdge(iEdge)
+           strainRateLonLatREdge(strainRateLonLatRIndex,1,iEdge) = cos(lon)*(1+cos(2*lat))
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatREdge(:,1,iEdge), strainRateR3Edge(:,1,iEdge), lon, lat)
+        enddo
+
+        strainRateLonLatRCell = 0.0
+        do iCell = 1,nCells
+           lon = lonCell(iCell)
+           lat = latCell(iCell)
+
+           divTensorLonLatRCellSolution(1,:,iCell) =  0.0
+           divTensorLonLatRCellSolution(2,:,iCell) = -2/R*cos(lon)*sin(2*lat) -1/R*(1+cos(2*lat))*cos(lon)*tan(lat)
+           divTensorLonLatRCellSolution(3,:,iCell) = -1/R*(1+cos(2*lat))*cos(lon)
+
+        end do
+
+     elseif (config_tensor_test_function.eq.'sph_ELonLat_CosCos') then
+        computeStrainRate = .false.
+        strainRateLonLatRIndex = 4
+
+        strainRateLonLatREdge = 0.0
+        do iEdge = 1,nEdges
+           lon = lonEdge(iEdge)
+           lat = latEdge(iEdge)
+           strainRateLonLatREdge(strainRateLonLatRIndex,1,iEdge) = cos(lon)*(1+cos(2*lat))
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatREdge(:,1,iEdge), strainRateR3Edge(:,1,iEdge), lon, lat)
+        enddo
+
+        strainRateLonLatRCell = 0.0
+        do iCell = 1,nCells
+           lon = lonCell(iCell)
+           lat = latCell(iCell)
+
+           divTensorLonLatRCellSolution(1,:,iCell) = -2/R*cos(lon)*sin(2*lat) -2/R*(1+cos(2*lat))*cos(lon)*tan(lat)
+           divTensorLonLatRCellSolution(2,:,iCell) = -1/R*(1+cos(2*lat))*sin(lon)/cos(lat)
+           divTensorLonLatRCellSolution(3,:,iCell) =  0.0
+
+        end do
 
      elseif (config_tensor_test_function.eq.'spherical_u1') then
 
@@ -2494,13 +2679,13 @@ if (1==1) then
       print '(a,3es20.10)',   'min max mean divTensorR3CellSol3 ',minval(divTensorR3CellSolution(3,:,minCell:maxCell)),maxval(divTensorR3CellSolution(3,:,minCell:maxCell)),sum(divTensorR3CellSolution(3,:,minCell:maxCell))/(maxCell-minCell+1)/nVertLevels
 endif
  
-      block % state % time_levs(1) % state % strainRateR3CellDiff % array = abs(strainRateR3Cell- strainRateR3CellSolution)
-      block % state % time_levs(1) % state % divTensorR3CellDiff % array = abs(divTensorR3Cell- divTensorR3CellSolution)
+      strainRateLonLatRCellDiff = strainRateLonLatRCell- strainRateLonLatRCellSolution
+      divTensorLonLatRCellDiff  = divTensorLonLatRCell- divTensorLonLatRCellSolution
 
-      print '(/,a,3es20.10)', 'max abs diff strainRateR3Cell1',maxval(abs(strainRateR3Cell(1,:,minCell:maxCell) - strainRateR3CellSolution(1,:,minCell:maxCell)))
-      print '(a,3es20.10)', 'max abs diff strainRateR3Cell2',maxval(abs(strainRateR3Cell(2,:,minCell:maxCell) - strainRateR3CellSolution(2,:,minCell:maxCell)))
-      print '(a,3es20.10)', 'max abs diff strainRateR3Cell4',maxval(abs(strainRateR3Cell(4,:,minCell:maxCell) - strainRateR3CellSolution(4,:,minCell:maxCell)))
-      print '(a,3es20.10)', 'max abs diff divTensorR3Cell  ',maxval(abs(divTensorR3Cell(:,:,minCell:maxCell) - divTensorR3CellSolution(:,:,minCell:maxCell)))
+      print '(/,a,3es20.10)', 'max abs diff strainRateLonLatRCell1',maxval(abs(strainRateLonLatRCell(1,:,minCell:maxCell) - strainRateLonLatRCellSolution(1,:,minCell:maxCell)))
+      print '(a,3es20.10)', 'max abs diff strainRateLonLatRCell2',maxval(abs(strainRateLonLatRCell(2,:,minCell:maxCell) - strainRateLonLatRCellSolution(2,:,minCell:maxCell)))
+      print '(a,3es20.10)', 'max abs diff strainRateLonLatRCell4',maxval(abs(strainRateLonLatRCell(4,:,minCell:maxCell) - strainRateLonLatRCellSolution(4,:,minCell:maxCell)))
+      print '(a,3es20.10)', 'max abs diff divTensorLonLatRCell  ',maxval(abs(divTensorLonLatRCell(:,:,minCell:maxCell) - divTensorLonLatRCellSolution(:,:,minCell:maxCell)))
 
         block => block % next
       end do
