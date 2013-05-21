@@ -1416,9 +1416,6 @@ endif
            tangentialVelocity(:,iEdge) = -velocityZonal*sin(angleEdge(iEdge)) + velocityMeridional*cos(angleEdge(iEdge))
         enddo
 
-!  replacing with tangentialVel just above for now:
-!        call mpas_tangential_velocity(block % mesh, normalVelocity, tangentialVelocity)
-
         do iCell = 1,nCells
 
            lon = lonCell(iCell)
@@ -1461,9 +1458,6 @@ endif
            tangentialVelocity(:,iEdge) = -velocityZonal*sin(angleEdge(iEdge)) + velocityMeridional*cos(angleEdge(iEdge))
         enddo
 
-!  replacing with tangentialVel just above for now:
-!        call mpas_tangential_velocity(block % mesh, normalVelocity, tangentialVelocity)
-
         do iCell = 1,nCells
 
            lon = lonCell(iCell)
@@ -1499,9 +1493,6 @@ endif
            tangentialVelocity(:,iEdge) = -velocityZonal*sin(angleEdge(iEdge)) + velocityMeridional*cos(angleEdge(iEdge))
         enddo
 
-!  replacing with tangentialVel just above for now:
-!        call mpas_tangential_velocity(block % mesh, normalVelocity, tangentialVelocity)
-
         do iCell = 1,nCells
 
            lon = lonCell(iCell)
@@ -1536,9 +1527,6 @@ endif
            normalVelocity(:,iEdge) = velocityZonal*cos(angleEdge(iEdge)) + velocityMeridional*sin(angleEdge(iEdge))
            tangentialVelocity(:,iEdge) = -velocityZonal*sin(angleEdge(iEdge)) + velocityMeridional*cos(angleEdge(iEdge))
         enddo
-
-!  replacing with tangentialVel just above for now:
-!        call mpas_tangential_velocity(block % mesh, normalVelocity, tangentialVelocity)
 
         do iCell = 1,nCells
 
@@ -1651,9 +1639,6 @@ endif
            tangentialVelocity(:,iEdge) = -velocityZonal*sin(angleEdge(iEdge)) + velocityMeridional*cos(angleEdge(iEdge))
         enddo
 
-!  replacing with tangentialVel just above for now:
-!        call mpas_tangential_velocity(block % mesh, normalVelocity, tangentialVelocity)
-
         do iCell = 1,nCells
 
            lon = lonCell(iCell)
@@ -1718,9 +1703,6 @@ endif
            normalVelocity(:,iEdge) = velocityZonal*cos(angleEdge(iEdge)) + velocityMeridional*sin(angleEdge(iEdge))
            tangentialVelocity(:,iEdge) = -velocityZonal*sin(angleEdge(iEdge)) + velocityMeridional*cos(angleEdge(iEdge))
         enddo
-
-!  replacing with tangentialVel just above for now:
-!        call mpas_tangential_velocity(block % mesh, normalVelocity, tangentialVelocity)
 
         do iCell = 1,nCells
 
