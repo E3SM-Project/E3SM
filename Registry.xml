@@ -712,8 +712,23 @@
 		<var name="strainRateR3Cell" type="real" dimensions="SIX nVertLevels nCells Time" streams="o" units="s^{-1}"
 		     description="strain rate tensor at cell center, R3, in symmetric 6-index form"
 		/>
+		<var name="strainRateR3CellSolution" type="real" dimensions="SIX nVertLevels nCells Time" streams="o" units="s^{-1}"
+		     description="strain rate solution tensor at cell center, R3, in symmetric 6-index form"
+		/>
 		<var name="strainRateR3Edge" type="real" dimensions="SIX nVertLevels nEdges Time" streams="o" units="s^{-1}"
 		     description="strain rate tensor at edge, R3, in symmetric 6-index form"
+		/>
+		<var name="strainRateLonLatRCell" type="real" dimensions="SIX nVertLevels nCells Time" streams="o" units="s^{-1}"
+		     description="strain rate tensor at cell center, 3D, lon-lat-r in symmetric 6-index form, {\color{red}Temporary only}"
+		/>
+		<var name="strainRateLonLatRCellSolution" type="real" dimensions="SIX nVertLevels nCells Time" streams="o" units="s^{-1}"
+		     description="strain rate tensor at cell center, 3D, lon-lat-r in symmetric 6-index form, {\color{red}Temporary only}"
+		/>
+		<var name="strainRateLonLatRCellDiff" type="real" dimensions="SIX nVertLevels nCells Time" streams="o" units="s^{-1}"
+		     description="strain rate difference between solution and computed tensor at cell center, R3, in symmetric 6-index form"
+		/>
+		<var name="strainRateLonLatREdge" type="real" dimensions="SIX nVertLevels nEdges Time" streams="o" units="s^{-1}"
+		     description="strain rate tensor at edge, 3D, lon-lat-r in symmetric 6-index form, {\color{red}Temporary only}"
 		/>
 		<var name="divTensorR3Cell" type="real" dimensions="R3 nVertLevels nCells Time" streams="o" units="s^{-2}"
 		     description="divergence of the tensor at cell center, as an R3 vector"
@@ -727,59 +742,11 @@
 		<var name="divTensorLonLatRCellSolution" type="real" dimensions="R3 nVertLevels nCells Time" streams="o" units="s^{-2}"
 		     description="divergence of the tensor at cell center, as a lon-lat-r vector, solution"
 		/>
-		<var name="outerProductEdge" type="real" dimensions="SIX nVertLevels nEdges Time" streams="o" units="m^2 s^{-1}"
-		     description="Outer produce, u_e \cross n_e, at each edge. {\color{red} change to scratch}"
-		/>
-		<var name="strainRateR3CellSolution" type="real" dimensions="SIX nVertLevels nCells Time" streams="o" units="s^{-1}"
-		     description="strain rate solution tensor at cell center, R3, in symmetric 6-index form"
-		/>
-		<var name="strainRateR3EdgeSolution" type="real" dimensions="SIX nVertLevels nEdges Time" streams="o" units="s^{-1}"
-		     description="strain rate solution tensor at edge, R3, in symmetric 6-index form"
-		/>
-		<var name="strainRateLonLatRCellDiff" type="real" dimensions="SIX nVertLevels nCells Time" streams="o" units="s^{-1}"
-		     description="strain rate difference between solution and computed tensor at cell center, R3, in symmetric 6-index form"
-		/>
-		<var name="strainRateR3EdgeDiff" type="real" dimensions="SIX nVertLevels nEdges Time" streams="o" units="s^{-1}"
-		     description="strain rate difference between solution and computed tensor at edge, R3, in symmetric 6-index form"
-		/>
 		<var name="divTensorLonLatRCellDiff" type="real" dimensions="R3 nVertLevels nCells Time" streams="o" units="s^{-2}"
 		     description="divergence of the tensor difference between solution and computed at cell center, as an R3 vector"
 		/>
-		<var name="strainRate2DCell" type="real" dimensions="R3 nVertLevels nCells Time" streams="o" units="s^{-1}"
-		     description="strain rate tensor at cell center, 2D, lat-lon in symmetric 3-index form, {\color{red}Temporary only}"
-		/>
-		<var name="strainRate2DVertex" type="real" dimensions="R3 nVertLevels nVertices Time" streams="o" units="s^{-1}"
-		     description="strain rate tensor at vertices, 2D, lat-lon in symmetric 3-index form, {\color{red}Temporary only}"
-		/>
-		<var name="strainRateLonLatRCell" type="real" dimensions="SIX nVertLevels nCells Time" streams="o" units="s^{-1}"
-		     description="strain rate tensor at cell center, 3D, lon-lat-r in symmetric 6-index form, {\color{red}Temporary only}"
-		/>
-		<var name="strainRateLonLatREdge" type="real" dimensions="SIX nVertLevels nEdges Time" streams="o" units="s^{-1}"
-		     description="strain rate tensor at edge, 3D, lon-lat-r in symmetric 6-index form, {\color{red}Temporary only}"
-		/>
-		<var name="strainRateLonLatRCellSolution" type="real" dimensions="SIX nVertLevels nCells Time" streams="o" units="s^{-1}"
-		     description="strain rate tensor at cell center, 3D, lon-lat-r in symmetric 6-index form, {\color{red}Temporary only}"
-		/>
-		<var name="zonalUnitVectorCell" type="real" dimensions="R3 nVertLevels nCells Time" streams="o" units="unitless"
-		     description="zonal unit vector in R3.  {\color{red}Temporary only}"
-		/>
-		<var name="meridionalUnitVectorCell" type="real" dimensions="R3 nVertLevels nCells Time" streams="o" units="unitless"
-		     description="meridional unit vector in R3.  {\color{red}Temporary only}"
-		/>
-		<var name="verticalUnitVectorCell" type="real" dimensions="R3 nVertLevels nCells Time" streams="o" units="unitless"
-		     description="vertical unit vector in R3.  {\color{red}Temporary only}"
-		/>
-		<var name="streamFunctionCell" type="real" dimensions="nVertLevels nCells Time" streams="o" units="unitless"
-		     description="streamFunction.  {\color{red}Temporary only}"
-		/>
-		<var name="zonalVelocityCell" type="real" dimensions="nVertLevels nCells Time" streams="o" units="unitless"
-		     description="{\color{red}Temporary only}"
-		/>
-		<var name="meridionalVelocityCell" type="real" dimensions="nVertLevels nCells Time" streams="o" units="unitless"
-		     description="{\color{red}Temporary only}"
-		/>
-		<var name="strainRate2DCellSolution" type="real" dimensions="R3 nVertLevels nCells Time" streams="o" units="unitless"
-		     description="{\color{red}Temporary only}"
+		<var name="outerProductEdge" type="real" dimensions="SIX nVertLevels nEdges Time" streams="o" units="m^2 s^{-1}"
+		     description="Outer produce, u_e \cross n_e, at each edge. {\color{red} change to scratch}"
 		/>
 	</var_struct>
 	<var_struct name="mesh" time_levs="0">
