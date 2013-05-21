@@ -736,13 +736,13 @@
 		<var name="strainRateR3EdgeSolution" type="real" dimensions="SIX nVertLevels nEdges Time" streams="o" units="s^{-1}"
 		     description="strain rate solution tensor at edge, R3, in symmetric 6-index form"
 		/>
-		<var name="strainRateR3CellDiff" type="real" dimensions="SIX nVertLevels nCells Time" streams="o" units="s^{-1}"
+		<var name="strainRateLonLatRCellDiff" type="real" dimensions="SIX nVertLevels nCells Time" streams="o" units="s^{-1}"
 		     description="strain rate difference between solution and computed tensor at cell center, R3, in symmetric 6-index form"
 		/>
 		<var name="strainRateR3EdgeDiff" type="real" dimensions="SIX nVertLevels nEdges Time" streams="o" units="s^{-1}"
 		     description="strain rate difference between solution and computed tensor at edge, R3, in symmetric 6-index form"
 		/>
-		<var name="divTensorR3CellDiff" type="real" dimensions="R3 nVertLevels nCells Time" streams="o" units="s^{-2}"
+		<var name="divTensorLonLatRCellDiff" type="real" dimensions="R3 nVertLevels nCells Time" streams="o" units="s^{-2}"
 		     description="divergence of the tensor difference between solution and computed at cell center, as an R3 vector"
 		/>
 		<var name="strainRate2DCell" type="real" dimensions="R3 nVertLevels nCells Time" streams="o" units="s^{-1}"
