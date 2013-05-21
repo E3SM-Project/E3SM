@@ -101,16 +101,15 @@ contains
 
       real (kind=RKIND), dimension(:,:,:), intent(out) :: outerProductEdge
 
-
       !-----------------------------------------------------------------
       !
       ! local variables
       !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, nEdges, iCell, nCells, i,j,k
+      integer :: iEdge, nEdges, iCell, nCells, i,j,k, nVertLevels
 
-      integer, dimension(:), pointer :: maxLevelEdgeBot, nEdgesOnCell, maxLevelCell
+      integer, dimension(:), pointer :: nEdgesOnCell
       integer, dimension(:,:), pointer :: edgesOnCell, edgeSignOnCell
 
       real (kind=RKIND) :: invAreaCell
@@ -120,9 +119,8 @@ contains
 
       nEdges = grid % nEdges
       nCells = grid % nCells
+      nVertLevels = grid % nVertLevels
 
-      maxLevelEdgeBot   => grid % maxLevelEdgeBot % array
-      maxLevelCell      => grid % maxLevelCell % array
       nEdgesOnCell      => grid % nEdgesOnCell % array
       edgesOnCell       => grid % edgesOnCell % array
       edgeSignOnCell    => grid % edgeSignOnCell % array
@@ -133,8 +131,7 @@ contains
       edgeTangentVectors => grid % edgeTangentVectors % array
 
       do iEdge=1,nEdges
-         ! mrp question: for this to be general across cores, we need to use nVertLevels
-         do k=1,maxLevelEdgeBot(iEdge)
+         do k=1,nVertLevels
            do i=1,3
              do j=1,3
                ! outer produce at each edge:
@@ -154,9 +151,9 @@ contains
          invAreaCell = 1.0 / areaCell(iCell)
          do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
-            do k = 1, maxLevelCell(iCell)
-               ! mrp edgeSignOnCell is to get outward unit normal on edgeNormalVectors
-               ! minus sign in front is to match form on divergence, below
+            do k = 1, nVertLevels
+               ! edgeSignOnCell is to get outward unit normal on edgeNormalVectors
+               ! minus sign in front is to match form on divergence operator
                strainRateR3Cell(:,k,iCell) = strainRateR3Cell(:,k,iCell) &
                  - edgeSignOnCell(i,iCell)*outerProductEdge(:,k,iEdge)*invAreaCell*dvEdge(iEdge) 
             end do
@@ -207,9 +204,9 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, nEdges, iCell, nCells, i,j,k,p,q
+      integer :: iEdge, iCell, nCells, i,j,k,p,q, nVertLevels
 
-      integer, dimension(:), pointer :: nEdgesOnCell, maxLevelCell
+      integer, dimension(:), pointer :: nEdgesOnCell
       integer, dimension(:,:), pointer :: edgesOnCell, edgeSignOnCell
 
       real (kind=RKIND) :: invAreaCell
@@ -218,10 +215,9 @@ contains
       real (kind=RKIND), dimension(:), pointer :: dvEdge, areaCell
       real (kind=RKIND), dimension(:,:), pointer :: edgeNormalVectors
 
-      nEdges = grid % nEdges
       nCells = grid % nCells
+      nVertLevels = grid % nVertLevels
 
-      maxLevelCell      => grid % maxLevelCell % array
       edgesOnCell       => grid % edgesOnCell % array
       nEdgesOnCell      => grid % nEdgesOnCell % array
       dvEdge            => grid % dvEdge % array
@@ -234,7 +230,7 @@ contains
          invAreaCell = 1.0 / areaCell(iCell)
          do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
-            do k = 1, maxLevelCell(iCell)
+            do k = 1, nVertLevels
                call mpas_matrix_sym6index_to_3x3(strainRateR3Edge(:,k,iEdge),strainRateR3Edge3x3)
                edgeNormalDotTensor(:) = 0.0
                do q=1,3
@@ -295,7 +291,6 @@ contains
       !-----------------------------------------------------------------
 
       integer :: iEdge, nEdges, i,j,k,p,q, nVertLevels
-      integer, dimension(:), pointer :: maxLevelEdgeBot
 
       real (kind=RKIND), dimension(3) :: edgeVerticalVector
       real (kind=RKIND), dimension(3,3) :: rotationMatrix, strainRateR3Edge3x3, strainRateR3Edge3x3Rotated
@@ -304,7 +299,6 @@ contains
       nEdges = grid % nEdges
       nVertLevels = grid % nVertLevels
 
-      maxLevelEdgeBot   => grid % maxLevelEdgeBot % array
       edgeNormalVectors  => grid % edgeNormalVectors % array
       edgeTangentVectors => grid % edgeTangentVectors % array
 
@@ -317,8 +311,7 @@ contains
          rotationMatrix(:,2) = edgeTangentVectors(:,iEdge)
          rotationMatrix(:,3) = edgeVerticalvector
 
-         ! mrp question: for this to be general across cores, we need to use nVertLevels
-         do k=1,maxLevelEdgeBot(iEdge)
+         do k=1,nVertLevels
  
            call mpas_matrix_sym6index_to_3x3(strainRateR3Edge(:,k,iEdge),strainRateR3Edge3x3)
 
@@ -391,7 +384,6 @@ contains
       !-----------------------------------------------------------------
 
       integer :: iEdge, nEdges, i,j,k,p,q, nVertLevels
-      integer, dimension(:), pointer :: maxLevelEdgeBot
 
       real (kind=RKIND), dimension(3) :: edgeVerticalVector
       real (kind=RKIND), dimension(3,3) :: rotationMatrix, strainRateR3Edge3x3, strainRateR3Edge3x3Rotated
@@ -399,7 +391,7 @@ contains
 
       nEdges = grid % nEdges
       nVertLevels = grid % nVertLevels
-      maxLevelEdgeBot   => grid % maxLevelEdgeBot % array
+
       edgeNormalVectors  => grid % edgeNormalVectors % array
       edgeTangentVectors => grid % edgeTangentVectors % array
 
@@ -412,8 +404,7 @@ contains
          rotationMatrix(:,2) = edgeTangentVectors(:,iEdge)
          rotationMatrix(:,3) = edgeVerticalVector
 
-         ! mrp question: for this to be general across cores, we need to use nVertLevels
-         do k=1,maxLevelEdgeBot(iEdge)
+         do k=1,nVertLevels
 
            strainRateR3Edge3x3Rotated = 0.0
            strainRateR3Edge3x3Rotated(1,1) = strainRate2DEdge(1,k,iEdge) 
@@ -426,8 +417,6 @@ contains
              do j=1,3
                do p=1,3
                  do q=1,3
-                    ! I'm not sure if the star should be on the first or third matrix.
-                    ! Here it is on the third
                     strainRateR3Edge3x3(i,j) = strainRateR3Edge3x3(i,j) + rotationMatrix(i,p)*strainRateR3Edge3x3Rotated(p,q)*rotationMatrix(j,q)
                  enddo
                enddo
@@ -489,7 +478,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: i,j,k,p,q, nVertLevels
+      integer :: i,j,k,p,q
 
       real (kind=RKIND) :: determinant
       real (kind=RKIND), dimension(3) :: zonalUnitVector, meridionalUnitVector, verticalUnitVector
@@ -569,7 +558,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: i,j,k,p,q, nVertLevels
+      integer :: i,j,k,p,q
 
       real (kind=RKIND) :: determinant
       real (kind=RKIND), dimension(3) :: zonalUnitVector, meridionalUnitVector, verticalUnitVector
@@ -746,253 +735,6 @@ contains
       call mpas_matrix_3x3_to_sym6index(strainRateLonLat3x3,tensorLonLatR)
 
    end subroutine mpas_tensor_R3_to_LonLatR!}}}
-
-!***********************************************************************
-!
-!  routine mpas_strain_rate_LonLat
-!
-!> \brief   Computes strain rate at cells and vertices
-!> \author  Mark Petersen
-!> \date    25 September 2012
-!> \version SVN:$Id$
-!> \details 
-!>  This routine computes the strain rate at the cell centers and 
-!>  vertices using the weak derivative.
-!
-!-----------------------------------------------------------------------
-
-   subroutine mpas_strain_rate_LonLat(grid, normalVelocity,tangentialVelocity, strainRate2DCell, strainRate2DVertex)!{{{
-
-      !-----------------------------------------------------------------
-      !
-      ! input variables
-      !
-      !-----------------------------------------------------------------
-
-      real (kind=RKIND), dimension(:,:), intent(in) :: &
-         normalVelocity, &!< Input: Horizontal velocity normal to edge
-         tangentialVelocity   !< Input: Horizontal velocity tangent to edge
-
-      type (mesh_type), intent(in) :: &
-         grid          !< Input: grid information
-
-      !-----------------------------------------------------------------
-      !
-      ! input/output variables
-      !
-      !-----------------------------------------------------------------
-
-      !-----------------------------------------------------------------
-      !
-      ! output variables
-      !
-      !-----------------------------------------------------------------
-
-      real (kind=RKIND), dimension(:,:,:), intent(out) :: &
-         strainRate2DCell  !< Output: strain rate tensor at cell center
-      real (kind=RKIND), dimension(:,:,:), intent(out) :: &
-         strainRate2DVertex  !< Output: strain rate tensor at vertex
-
-      !-----------------------------------------------------------------
-      !
-      ! local variables
-      !
-      !-----------------------------------------------------------------
-
-      integer :: iEdge, nEdges, nCells,nVertices, cell1, cell2, vertex1, vertex2, k
-
-      integer, dimension(:), pointer :: maxLevelEdgeBot
-      integer, dimension(:,:), pointer :: cellsOnEdge, verticesOnEdge
-
-      real (kind=RKIND) :: invAreaCell1, invAreaCell2, invAreaTri1, invAreaTri2, &
-        cos_pwr1, sin_pwr1, cos_pwr2, sin_pwr2, cossin, uDvEdge, uDcEdge, eps11, eps22, eps12, nVertLevels
-      real (kind=RKIND), dimension(:), pointer :: dvEdge, dcEdge, areaCell, areaTriangle, angleEdge
-
-      !-----------------------------------------------------------------
-      !
-      ! call relevant routines for computing tendencies
-      ! note that the user can choose multiple options and the 
-      !   tendencies will be added together
-      !
-      !-----------------------------------------------------------------
-
-      nEdges = grid % nEdges
-      nCells = grid % nCells
-      nVertices = grid % nVertices
-      nVertLevels = grid % nVertLevels
-
-      maxLevelEdgeBot   => grid % maxLevelEdgeBot % array
-      cellsOnEdge => grid % cellsOnEdge % array
-      verticesOnEdge    => grid % verticesOnEdge % array
-      dcEdge            => grid % dcEdge % array
-      dvEdge            => grid % dvEdge % array
-      areaCell          => grid % areaCell % array
-      areaTriangle      => grid % areaTriangle % array
-      angleEdge         => grid % angleEdge % array
-
-      strainRate2DCell = 0.0
-      strainRate2DVertex  = 0.0
-
-      do iEdge=1,nEdges
-         vertex1 = verticesOnEdge(1,iEdge)
-         vertex2 = verticesOnEdge(2,iEdge)
-
-         cell1 = cellsOnEdge(1,iEdge)
-         cell2 = cellsOnEdge(2,iEdge)
-
-         invAreaTri1 = 1.0 / areaTriangle(vertex1)
-         invAreaTri2 = 1.0 / areaTriangle(vertex2)
-
-         !dwj: 02/23/12 arraCell(nCells+1) is still 0, this is a temporary fix
-         invAreaCell1 = 1.0 / max(areaCell(cell1), 1e-10)
-         invAreaCell2 = 1.0 / max(areaCell(cell2), 1e-10)
-
-         cos_pwr1 = cos(angleEdge(iEdge))
-         cos_pwr2 = cos_pwr1**2
-         sin_pwr1 = sin(angleEdge(iEdge))
-         sin_pwr2 = sin_pwr1**2
-         cossin = cos_pwr1*sin_pwr1
-
-         ! change later:
-         !do k=1,maxLevelEdgeBot(iEdge)
-         do k=1,nVertLevels
-
-            ! strain rate tensor at cell center
-            eps11 = normalVelocity(k,iEdge)*cos_pwr2 - tangentialVelocity(k,iEdge)*cossin
-            eps22 = normalVelocity(k,iEdge)*sin_pwr2 + tangentialVelocity(k,iEdge)*cossin
-            eps12 = normalVelocity(k,iEdge)*cossin   + tangentialVelocity(k,iEdge)*0.5*(cos_pwr2-sin_pwr2)
-
-            ! index 1, 2, and 3 is for 11, 22, and 12 
-            strainRate2DCell(1,k,cell1) = strainRate2DCell(1,k,cell1) + eps11*invAreaCell1 * dvEdge(iEdge)
-            strainRate2DCell(1,k,cell2) = strainRate2DCell(1,k,cell2) - eps11*invAreaCell2 * dvEdge(iEdge)
-            strainRate2DCell(2,k,cell1) = strainRate2DCell(2,k,cell1) + eps22*invAreaCell1 * dvEdge(iEdge)
-            strainRate2DCell(2,k,cell2) = strainRate2DCell(2,k,cell2) - eps22*invAreaCell2 * dvEdge(iEdge)
-            strainRate2DCell(3,k,cell1) = strainRate2DCell(3,k,cell1) + eps12*invAreaCell1 * dvEdge(iEdge)
-            strainRate2DCell(3,k,cell2) = strainRate2DCell(3,k,cell2) - eps12*invAreaCell2 * dvEdge(iEdge)
-
-            ! strain rate tensor at vertex
-            eps11 = -tangentialVelocity(k,iEdge)*sin_pwr2   + normalVelocity(k,iEdge)*cossin
-            eps22 = -tangentialVelocity(k,iEdge)*cos_pwr2   - normalVelocity(k,iEdge)*cossin
-            eps12 =  tangentialVelocity(k,iEdge)*cossin - normalVelocity(k,iEdge)*0.5*(cos_pwr2-sin_pwr2)
-
-            strainRate2DVertex(1,k,vertex1) = strainRate2DVertex(1,k,vertex1) - eps11*invAreaTri1* dcEdge(iEdge)
-            strainRate2DVertex(1,k,vertex2) = strainRate2DVertex(1,k,vertex2) + eps11*invAreaTri2* dcEdge(iEdge)
-            strainRate2DVertex(2,k,vertex1) = strainRate2DVertex(2,k,vertex1) - eps22*invAreaTri1* dcEdge(iEdge)
-            strainRate2DVertex(2,k,vertex2) = strainRate2DVertex(2,k,vertex2) + eps22*invAreaTri2* dcEdge(iEdge)
-            strainRate2DVertex(3,k,vertex1) = strainRate2DVertex(3,k,vertex1) - eps12*invAreaTri1* dcEdge(iEdge)
-            strainRate2DVertex(3,k,vertex2) = strainRate2DVertex(3,k,vertex2) + eps12*invAreaTri2* dcEdge(iEdge)
-
-         end do
-      end do
-
-   end subroutine mpas_strain_rate_LonLat!}}}
-
-!***********************************************************************
-!
-!  routine mpas_div_tensor_LonLat_strong
-!
-!> \brief   Computes divergence of the stress tensor
-!> \author  Mark Petersen
-!> \date    25 September 2012
-!> \version SVN:$Id$
-!> \details 
-!>  This routine computes the divergence of the stress tensor
-!
-!-----------------------------------------------------------------------
-
-   subroutine mpas_div_tensor_LonLat_strong(grid, tensorCell, tensorVertex, divTensor)!{{{
-
-      !-----------------------------------------------------------------
-      !
-      ! input variables
-      !
-      !-----------------------------------------------------------------
-
-      real (kind=RKIND), dimension(:,:,:), intent(in) :: &
-         tensorCell  !< Input: tensor at cell center
-      real (kind=RKIND), dimension(:,:,:), intent(in) :: &
-         tensorVertex  !< Input: tensor at vertex
-
-      type (mesh_type), intent(in) :: &
-         grid          !< Input: grid information
-
-      !-----------------------------------------------------------------
-      !
-      ! input/output variables
-      !
-      !-----------------------------------------------------------------
-
-      !-----------------------------------------------------------------
-      !
-      ! output variables
-      !
-      !-----------------------------------------------------------------
-
-      real (kind=RKIND), dimension(:,:), intent(out) :: &
-         divTensor  !< Output: normal component of divergence of the stress tensor at edge
-
-      !-----------------------------------------------------------------
-      !
-      ! local variables
-      !
-      !-----------------------------------------------------------------
-
-      integer :: iEdge, nEdgesSolve, cell1, cell2, vertex1, vertex2, k
-
-      integer, dimension(:), pointer :: maxLevelEdgeTop
-      integer, dimension(:,:), pointer :: cellsOnEdge, verticesOnEdge, edgeMask
-
-      real (kind=RKIND) :: invAreaCell1, invAreaCell2, invAreaTri1, invAreaTri2, &
-        cos_pwr1, sin_pwr1, cos_pwr2, sin_pwr2, cossin, uDvEdge, uDcEdge, eps11, eps22, eps12, &
-        invdcEdge, invdvEdge
-      real (kind=RKIND), dimension(:), pointer :: dvEdge, dcEdge, areaCell, areaTriangle, angleEdge
-
-      !-----------------------------------------------------------------
-      !
-      ! call relevant routines for computing tendencies
-      ! note that the user can choose multiple options and the 
-      !   tendencies will be added together
-      !
-      !-----------------------------------------------------------------
-
-      nEdgesSolve = grid % nEdgesSolve
-
-      maxLevelEdgeTop   => grid % maxLevelEdgeTop % array
-      cellsOnEdge => grid % cellsOnEdge % array
-      verticesOnEdge    => grid % verticesOnEdge % array
-      dcEdge            => grid % dcEdge % array
-      dvEdge            => grid % dvEdge % array
-      angleEdge         => grid % angleEdge % array
-      edgeMask => grid % edgeMask % array
-
-      do iEdge=1,nEdgesSolve
-         vertex1 = verticesOnEdge(1,iEdge)
-         vertex2 = verticesOnEdge(2,iEdge)
-
-         cell1 = cellsOnEdge(1,iEdge)
-         cell2 = cellsOnEdge(2,iEdge)
-
-         cos_pwr1 = cos(angleEdge(iEdge))
-         cos_pwr2 = cos_pwr1**2
-         sin_pwr1 = sin(angleEdge(iEdge))
-         sin_pwr2 = sin_pwr1**2
-         cossin = cos_pwr1*sin_pwr1
-
-         invdcEdge = 1.0 / dcEdge(iEdge)
-         invdvEdge = 1.0 / dvEdge(iEdge)
-
-         do k=1,maxLevelEdgeTop(iEdge)
-            divTensor(k,iEdge) = edgeMask(k,iEdge) * invdcEdge &
-               * (  cos_pwr2*tensorCell(1,k,cell2) - 2.0*cossin*tensorCell(3,k,cell2) + sin_pwr2*tensorCell(2,k,cell2) &
-                  -(cos_pwr2*tensorCell(1,k,cell1) - 2.0*cossin*tensorCell(3,k,cell1) + sin_pwr2*tensorCell(2,k,cell1)) ) &
-               + edgeMask(k,iEdge) * invdvEdge &
-               * (  (cos_pwr2-sin_pwr2)*tensorVertex(3,k,vertex2) + cossin*(tensorVertex(1,k,vertex2) - tensorVertex(2,k,vertex2)) &
-                  -((cos_pwr2-sin_pwr2)*tensorVertex(3,k,vertex1) + cossin*(tensorVertex(1,k,vertex1) - tensorVertex(2,k,vertex1))))
-         end do
-
-      end do
-
-   end subroutine mpas_div_tensor_LonLat_strong!}}}
 
 !***********************************************************************
 !
@@ -1523,14 +1265,11 @@ contains
 
      enddo
 
-    ! test 2D operations:
-    call mpas_strain_rate_LonLat(block % mesh, normalVelocity,tangentialVelocity, strainRate2DCell, strainRate2DVertex)
+     strainRateLonLatRCellDiff = strainRateLonLatRCell- strainRateLonLatRCellSolution
+     divTensorLonLatRCellDiff  = divTensorLonLatRCell- divTensorLonLatRCellSolution
 
-      strainRateLonLatRCellDiff = strainRateLonLatRCell- strainRateLonLatRCellSolution
-      divTensorLonLatRCellDiff  = divTensorLonLatRCell- divTensorLonLatRCellSolution
-
-        block => block % next
-      end do
+     block => block % next
+   end do
 
    end subroutine mpas_test_tensor!}}}
 
