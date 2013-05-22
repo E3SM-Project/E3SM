@@ -42,3 +42,6 @@ src/registry/parse
 # Ignore WRF Physics Files
 *.TBL
 *.DBL
+
+# Ignore MPAS core build files.
+.mpas_core_*

@@ -268,6 +268,33 @@ else
 endif
 
 
+ifneq ($(wildcard .mpas_core_*), ) # CHECK FOR BUILT CORE
+
+ifneq ($(wildcard .mpas_core_$(CORE)), ) # CHECK FOR SAME CORE AS ATTEMPTED BUILD.
+	override AUTOCLEAN=false
+	CONTINUE=true
+else
+	LAST_CORE=`cat .mpas_core_*`
+
+ifeq "$(AUTOCLEAN)" "true" # CHECK FOR CLEAN PRIOR TO BUILD OF A NEW CORE.
+	CONTINUE=true
+	AUTOCLEAN_MESSAGE="Infrastructure was cleaned prior to building ."
+else
+	CONTINUE=false
+endif # END OF AUTOCLEAN CHECK
+
+endif # END OF CORE=LAST_CORE CHECK
+
+else
+
+	override AUTOCLEAN=false
+	CONTINUE=true
+endif # END IF BUILT CORE CHECK
+
+ifeq "$(findstring clean, $(MAKECMDGOALS))" "clean" # CHECK FOR CLEAN TARGET
+	override AUTOCLEAN=false
+endif # END OF CLEAN TARGET CHECK
+
 ####################################################
 # Section for adding external libraries and includes
 ####################################################
@@ -280,10 +307,24 @@ ifdef MPAS_EXTERNAL_INCLUDES
 endif
 ####################################################
 
+ifeq ($(wildcard src/core_$(CORE)), ) # CHECK FOR EXISTENCE OF CORE DIRECTORY
 
+all: core_error
+
+else
+
+ifeq "$(CONTINUE)" "true"
 all: mpas_main
+else
+all: clean_core
+endif
+
+endif
 
 mpas_main: 
+ifeq "$(AUTOCLEAN)" "true"
+	$(RM) .mpas_core_*
+endif
 	cd src; $(MAKE) -j1 FC="$(FC)" \
                  CC="$(CC)" \
                  SFC="$(SFC)" \
@@ -298,17 +339,51 @@ mpas_main:
                  LIBS="$(LIBS)" \
                  CPPINCLUDES="$(CPPINCLUDES)" \
                  FCINCLUDES="$(FCINCLUDES)" \
-                 CORE="$(CORE)"
+                 CORE="$(CORE)"\
+                 AUTOCLEAN="$(AUTOCLEAN)"
+	@echo "$(CORE)" > .mpas_core_$(CORE)
 	if [ -e src/$(CORE)_model ]; then mv src/$(CORE)_model .; fi
 	@echo ""
+	@echo "*******************************************************************************"
 	@echo $(DEBUG_MESSAGE)
 	@echo $(SERIAL_MESSAGE)
 	@echo $(PAPI_MESSAGE)
 	@echo $(TAU_MESSAGE)
+ifeq "$(AUTOCLEAN)" "true"
+	@echo $(AUTOCLEAN_MESSAGE)
+endif
+	@echo "*******************************************************************************"
 clean:
+	$(RM) .mpas_core_*
 	cd src; $(MAKE) clean RM="$(RM)" CORE="$(CORE)"
 	$(RM) $(CORE)_model
+core_error:
+	@echo ""
+	@echo "*******************************************************************************"
+	@echo "     The directory src/core_$(CORE) does not exist."
+	@echo "     $(CORE) is not a valid core choice."
+	@echo "*******************************************************************************"
+	@echo ""
 error: errmsg
+
+clean_core:
+	@echo ""
+	@echo "*******************************************************************************"
+	@echo " The MPAS infrastructure is currently built for the $(LAST_CORE) core."
+	@echo " Before building the $(CORE) core, please do one of the following."
+	@echo ""
+	@echo ""
+	@echo " To remove the $(LAST_CORE)_model executable and clean the MPAS infrastructure, run:"
+	@echo "      make clean CORE=$(LAST_CORE)"
+	@echo ""
+	@echo " To preserve all executables except $(CORE)_model and clean the MPAS infrastructure, run:"
+	@echo "      make clean CORE=$(CORE)"
+	@echo ""
+	@echo " Alternatively, AUTOCLEAN=true can be appended to the make command to force a clean,"
+	@echo " build a new $(CORE)_model executable, and preserve all other executables."
+	@echo ""
+	@echo "*******************************************************************************"
+	@echo ""
 
 else # CORE IF
 
@@ -340,6 +415,7 @@ errmsg:
 	@echo "    DEBUG=true    - builds debug version. Default is optimized version."
 	@echo "    USE_PAPI=true - builds version using PAPI for timers. Default is off."
 	@echo "    TAU=true      - builds version using TAU hooks for profiling. Default is off."
+	@echo "    AUTOCLEAN=true    - forces a clean of infrastructure prior to build new core."
 	@echo ""
 	@echo "Ensure that NETCDF, PNETCDF, PIO, and PAPI (if USE_PAPI=true) are environment variables"
 	@echo "that point to the absolute paths for the libraries."
