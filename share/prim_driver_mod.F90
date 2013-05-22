@@ -1245,6 +1245,9 @@ contains
     use parallel_mod, only : abortmp
     use reduction_mod, only : parallelmax
     use prim_advection_mod, only : vertical_remap
+#if USE_CUDA_FORTRAN
+    use cuda_mod, only: copy_qdp_h2d
+#endif
     
 
     type (element_t) , intent(inout)        :: elem(:)
@@ -1322,6 +1325,9 @@ contains
     ! qmass and variance, using Q(n0),Qdp(n0)
     if (compute_diagnostics) call prim_diag_scalars(elem,hvcoord,tl,1,.true.,nets,nete)
 
+#if USE_CUDA_FORTRAN
+    call copy_qdp_h2d( elem , tl%n0 )
+#endif
 
     ! initialize dp3d from ps
     if (rsplit>0) then

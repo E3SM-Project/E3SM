@@ -51,6 +51,7 @@ module cuda_mod
   public :: vertical_remap_cuda
   public :: copy_qdp_d2h
   public :: copy_qdp_h2d
+  public :: cudaThreadSynchronize_wrap
 
   !This is from prim_advection_mod.F90
   type(EdgeBuffer_t) :: edgeAdv, edgeAdvQ3, edgeAdvQ2, edgeAdvDSS
@@ -61,6 +62,7 @@ module cuda_mod
 
   !Device arrays
   real (kind=real_kind),device,allocatable,dimension(:,:,:,:,:,:) :: qdp_d
+  real (kind=real_kind),device,allocatable,dimension(:,:,:,:)     :: qdp1_d
   real (kind=real_kind),device,allocatable,dimension(:,:,:,:,:)   :: qtens_d
   real (kind=real_kind),device,allocatable,dimension(:,:,:,:,:)   :: qtens_biharmonic_d
   real (kind=real_kind),device,allocatable,dimension(:,:,:)       :: spheremp_d
@@ -98,6 +100,7 @@ module cuda_mod
 
   !PINNED Host arrays
   real(kind=real_kind),pinned,allocatable,dimension(:,:,:,:,:,:) :: qdp_h
+  real(kind=real_kind),pinned,allocatable,dimension(:,:,:,:)     :: qdp1_h
   real(kind=real_kind),pinned,allocatable,dimension(:,:,:,:,:)   :: vstar_h
   real(kind=real_kind),pinned,allocatable,dimension(:,:,:,:,:)   :: qtens_h
   real(kind=real_kind),pinned,allocatable,dimension(:,:,:,:)     :: dp_h
@@ -213,6 +216,7 @@ contains
     allocate( qmin_d                   (nlev,qsize_d                 ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( qmax_d                   (nlev,qsize_d                 ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( qdp_d                    (np,np,nlev,qsize_d,timelevels,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+    allocate( qdp1_d                   (np,np,nlev                   ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( qtens_d                  (np,np,nlev,qsize_d           ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( qtens_biharmonic_d       (np,np,nlev,qsize_d           ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( spheremp_d               (np,np                        ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
@@ -242,6 +246,7 @@ contains
     allocate( kid_d                    (np,np,        nlev           ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
 
     allocate( qdp_h                    (np,np,nlev,qsize_d,timelevels,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+    allocate( qdp1_h                   (np,np,nlev                   ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( qmin                     (nlev,qsize_d                 ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( qmax                     (nlev,qsize_d                 ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( vstar_h                  (np,np,nlev,2                 ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
@@ -456,21 +461,24 @@ contains
 
 
 
+  function cudaThreadSynchronize_wrap() result(ierr)
+    integer :: ierr
+    ierr = cudaThreadSynchronize()
+  end function cudaThreadSynchronize_wrap
+
+
+
   subroutine copy_qdp_h2d( elem , nt )
     use element_mod, only: element_t
     implicit none
     type(element_t), intent(in   ) :: elem(:)
     integer        , intent(in   ) :: nt
     integer :: ierr , ie
-!$OMP BARRIER
-!$OMP MASTER
-    ierr = cudaThreadSynchronize()
+    !$OMP MASTER
     do ie = 1,nelemd
       ierr = cudaMemcpyAsync( qdp_d(1,1,1,1,nt,ie) , elem(ie)%state%qdp(1,1,1,1,nt) , size(elem(ie)%state%qdp(:,:,:,:,nt)) , cudaMemcpyHostToDevice , streams(1) )
     enddo
-    ierr = cudaThreadSynchronize()
-!$OMP END MASTER
-!$OMP BARRIER
+    !$OMP END MASTER
   end subroutine copy_qdp_h2d
 
 
@@ -481,15 +489,11 @@ contains
     type(element_t), intent(in   ) :: elem(:)
     integer        , intent(in   ) :: nt
     integer :: ierr , ie
-!$OMP BARRIER
-!$OMP MASTER
-    ierr = cudaThreadSynchronize()
+    !$OMP MASTER
     do ie = 1,nelemd
       ierr = cudaMemcpy( elem(ie)%state%qdp(1,1,1,1,nt) , qdp_d(1,1,1,1,nt,ie) , size(elem(ie)%state%qdp(:,:,:,:,nt)) , cudaMemcpyDeviceToHost )
     enddo
-    ierr = cudaThreadSynchronize()
-!$OMP END MASTER
-!$OMP BARRIER
+    !$OMP END MASTER
   end subroutine copy_qdp_d2h
 
 
@@ -534,10 +538,6 @@ contains
 
   call t_startf('euler_step')
 
-  if (rhs_multiplier == 0) then
-!   call copy_qdp_h2d( elem , n0_qdp)
-  endif
-
   if (limiter_option == 8) then
     write(*,*) 'CUDA_MOD IS NOT INTENDED FOR USE WITH LIMITER_OPTION == 8 AT THIS TIME!'
     write(*,*) 'PLEASE USE LIMITER_OPTION == 0 WHEN THE GPU OPTION IS ENABLED!'
@@ -547,6 +547,19 @@ contains
     write(*,*) 'CUDA_MOD IS NOT INTENDED FOR USE WITH NU_P > 0 AT THIS TIME!'
     write(*,*) 'PLEASE USE NU_P == 0 WHEN THE GPU OPTION IS ENABLED!'
     stop
+  endif
+
+  if (rhs_multiplier == 0) then
+    do ie = nets , nete
+      qdp1_h(:,:,:,ie) = elem(ie)%state%Qdp(:,:,:,1,n0_qdp)
+    enddo
+    !$OMP BARRIER
+    !$OMP MASTER
+    ierr = cudaMemcpyAsync( qdp1_d , qdp1_h , size( qdp1_h ) , cudaMemcpyHostToDevice , streams(1) )
+    blockdim = dim3( np     , np , nlev )
+    griddim  = dim3( nelemd , 1  , 1    )
+    call unpack_qdp1<<<griddim,blockdim,0,streams(1)>>>( qdp1_d , qdp_d , n0_qdp , nets , nete )
+    !$OMP END MASTER
   endif
 
   rhs_viss = 0
@@ -711,15 +724,52 @@ subroutine advance_hypervis_scalar_cuda( edgeAdv , elem , hvcoord , hybrid , der
     !KERNEL 3
     blockdim = dim3( np * np , nlev   , 1 )
     griddim  = dim3( qsize_d , nelemd , 1 )
-    call euler_hypervis_kernel_last<<<griddim,blockdim>>>( qdp_d , rspheremp_d , nets , nete , nt_qdp )
+    call euler_hypervis_kernel_last<<<griddim,blockdim,0,streams(1)>>>( qdp_d , rspheremp_d , nets , nete , nt_qdp )
+    blockdim = dim3( np , np , nlev )
+    griddim  = dim3( nelemd , 1 , 1 )
+    call pack_qdp1<<<griddim,blockdim,0,streams(1)>>>( qdp1_d , qdp_d , nt_qdp , 1 , nelemd )
+    ierr = cudaMemcpyAsync( qdp1_h , qdp1_d , size( qdp1_h ) , cudaMemcpyDeviceToHost , streams(1) )
     ierr = cudaThreadSynchronize()
 !$OMP END MASTER
 !$OMP BARRIER
+    do ie = nets , nete
+      elem(ie)%state%Qdp(:,:,:,1,nt_qdp) = qdp1_h(:,:,:,ie)
+    enddo
   enddo
 
   call t_stopf('advance_hypervis_scalar_cuda')
 
 end subroutine advance_hypervis_scalar_cuda
+
+
+
+attributes(global) subroutine pack_qdp1( qdp1 , qdp , nt , nets , nete )
+  implicit none
+  real(kind=real_kind), intent(  out) :: qdp1( np , np , nlev                        , nets:nete )
+  real(kind=real_kind), intent(in   ) :: qdp ( np , np , nlev , qsize_d , timelevels , nets:nete )
+  integer, value      , intent(in   ) :: nt , nets , nete
+  integer :: i,j,k,ie
+  i  = threadidx%x
+  j  = threadidx%y
+  k  = threadidx%z
+  ie = blockidx%x
+  qdp1(i,j,k,ie) = qdp(i,j,k,1,nt,ie)
+end subroutine pack_qdp1
+
+
+
+attributes(global) subroutine unpack_qdp1( qdp1 , qdp , nt , nets , nete )
+  implicit none
+  real(kind=real_kind), intent(in   ) :: qdp1( np , np , nlev                        , nets:nete )
+  real(kind=real_kind), intent(  out) :: qdp ( np , np , nlev , qsize_d , timelevels , nets:nete )
+  integer, value      , intent(in   ) :: nt , nets , nete
+  integer :: i,j,k,ie
+  i  = threadidx%x
+  j  = threadidx%y
+  k  = threadidx%z
+  ie = blockidx%x
+  qdp(i,j,k,1,nt,ie) = qdp1(i,j,k,ie)
+end subroutine unpack_qdp1
 
 
 
@@ -1566,7 +1616,6 @@ subroutine vertical_remap_cuda(elem,fvm,hvcoord,dt,np1,np1_qdp,nets,nete)
   do ie = nets , nete
     elem(ie)%state%qdp(:,:,:,:,np1_qdp) = qdp_h(:,:,:,:,np1_qdp,ie)
   enddo
-! call copy_qdp_d2h( elem , np1_qdp )
   call t_stopf('vertical_remap_cuda')  
 end subroutine vertical_remap_cuda
 
