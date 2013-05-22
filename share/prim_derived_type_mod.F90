@@ -9,7 +9,6 @@ module prim_derived_type_mod
    use hybvcoord_mod, only : hvcoord_t
    use hybrid_mod, only : hybrid_t
    use derivative_mod, only : derivative_t
-   use time_mod, only : TimeLevel_t
 
    implicit none
 
@@ -24,7 +23,9 @@ module prim_derived_type_mod
     real (kind=real_kind)   :: eta_ave_w
     type (derivative_t)     :: deriv
     real (kind=real_kind)   :: dt
-    type (TimeLevel_t)      :: tl
+    integer                 :: ntl1
+    integer                 :: ntl2
+    integer                 :: ntl3
     integer                 :: nets
     integer                 :: nete
 
@@ -45,7 +46,9 @@ module prim_derived_type_mod
 !    type (cg_t)             :: cg
 !    real (kind=real_kind)   :: dt
 !    real (kind=real_kind)   :: pmean
-!    type (TimeLevel_t)      :: tl
+!    integer                 :: ntl1
+!    integer                 :: ntl2
+!    integer                 :: ntl3
 !    integer                 :: nets
 !    integer                 :: nete
 !
@@ -53,14 +56,13 @@ module prim_derived_type_mod
 
  contains
   subroutine initialize(object, lenx, elem, hvcoord, compute_diagnostics, &
-           n_Q, eta_ave_w, hybrid, deriv, dt, tl, nets, nete)
+           n_Q, eta_ave_w, hybrid, deriv, dt, ntl1, ntl2, ntl3, nets, nete)
 
    use kinds, only : real_kind
    use element_mod, only : element_t
    use hybvcoord_mod, only : hvcoord_t
    use hybrid_mod, only : hybrid_t
    use derivative_mod, only : derivative_t
-   use time_mod, only : TimeLevel_t
 
    implicit none 
 
@@ -75,7 +77,9 @@ module prim_derived_type_mod
     real (kind=real_kind)  ,intent(in)  :: eta_ave_w
     type (derivative_t)    ,intent(in)  :: deriv
     real (kind=real_kind)  ,intent(in)  :: dt
-    type (TimeLevel_t)     ,intent(in)  :: tl
+    integer                ,intent(in)  :: ntl1
+    integer                ,intent(in)  :: ntl2
+    integer                ,intent(in)  :: ntl3
     integer                ,intent(in)  :: nets
     integer                ,intent(in)  :: nete
     type(derived_type)     ,intent(out) :: object
@@ -92,21 +96,22 @@ module prim_derived_type_mod
    object%eta_ave_w = eta_ave_w
    object%deriv = deriv
    object%dt = dt
-   object%tl = tl
+   object%ntl1 = ntl1
+   object%ntl2 = ntl2
+   object%ntl3 = ntl3
    object%nets = nets
    object%nete = nete
 
   end subroutine initialize
 
 !  subroutine init_precon(combo, lenx, elem, blkjac, refstate, hvcoord, flt, hybrid, &
-!         red, deriv, cg, dt, tl, nets, nete)
+!         red, deriv, cg, dt, ntl1, ntl2, ntl3, nets, nete)
 !
 !   use dimensions_mod, only : nelemd, nlev
 !   use kinds, only : real_kind
 !   use element_mod, only : element_t
 !   use derivative_mod, only : derivative_t
 !   use reduction_mod, only : reductionbuffer_ordered_1d_t
-!   use time_mod, only : TimeLevel_t
 !   use cg_mod, only : cg_t
 !   use solver_mod, only : blkjac_t
 !   use filter_mod, only : filter_t
@@ -129,7 +134,9 @@ module prim_derived_type_mod
 !    type (derivative_t)    ,intent(in)              :: deriv
 !    type (cg_t)            ,intent(in)              :: cg
 !    real (kind=real_kind)  ,intent(in)              :: dt
-!    type (TimeLevel_t)     ,intent(in)              :: tl
+!    integer                ,intent(in)              :: ntl1
+!    integer                ,intent(in)              :: ntl2
+!    integer                ,intent(in)              :: ntl3
 !    integer                ,intent(in)              :: nets
 !    integer                ,intent(in)              :: nete
 !    type(precon_type)      ,intent(out)             :: combo
@@ -150,7 +157,9 @@ module prim_derived_type_mod
 !    combo%deriv      = deriv
 !    combo%cg         = cg
 !    combo%dt         = dt
-!    combo%tl         = tl
+!    combo%ntl1       = ntl1
+!    combo%ntl2       = ntl2
+!    combo%ntl3       = ntl3
 !    combo%nets       = nets
 !    combo%nete       = nete
 

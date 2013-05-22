@@ -1142,12 +1142,13 @@ contains
 #if (! defined ELEMENT_OPENMP)
 !$OMP BARRIER
 #endif
-
     if (integration == "semi_imp") then
        call prim_advance_si(elem, nets, nete, cg(hybrid%ithr), blkjac, red, &
             refstate, hvcoord, deriv(hybrid%ithr), flt, hybrid, tl, dt)
        tot_iter=tot_iter+cg(hybrid%ithr)%iter
-    else
+    else if (integration == "full_imp") then
+       call abortmp('full_imp integration requires tstep_type > 0')
+    else 
        call prim_advance_exp(elem, deriv(hybrid%ithr), hvcoord,   &
             hybrid, dt, tl, nets, nete, compute_diagnostics)
 
@@ -1468,10 +1469,48 @@ contains
     integer :: ie, t, q,k,i,j,n, n_Q
 
     real (kind=real_kind)                          :: maxcflx, maxcfly 
-    
      
     real (kind=real_kind) :: dp_np1(np,np)
     logical :: compute_diagnostics
+
+!#ifdef TRILINOS
+!    real (c_double) ,allocatable, dimension(:) :: xstate(:)
+!! state_object is a derived data type passed thru noxinit as a pointer
+!    type(derived_type) ,target         :: state_object
+!    type(derived_type) ,pointer        :: fptr=>NULL()
+!    type(c_ptr)                        :: c_ptr_to_object
+!    type(derived_type) ,pointer         :: pptr=>NULL()
+!    type(c_ptr)                        :: c_ptr_to_pre
+!    type(derived_type) ,pointer         :: jptr=>NULL()
+!    type(c_ptr)                        :: c_ptr_to_jac
+!
+!  interface
+!    subroutine noxinit(vectorSize,vector,comm,v_container,p_container,j_container) &
+!        bind(C,name='noxinit')
+!    use ,intrinsic :: iso_c_binding
+!      integer(c_int)                :: vectorSize,comm
+!      real(c_double)  ,dimension(*) :: vector
+!      type(c_ptr)                   :: v_container
+!      type(c_ptr)                   :: p_container  !precon ptr
+!      type(c_ptr)                   :: j_container  !analytic jacobian ptr
+!    end subroutine noxinit
+!
+!   subroutine noxsolve(vectorSize,vector,v_container,p_container,j_container) &
+!     bind(C,name='noxsolve')
+!    use ,intrinsic :: iso_c_binding
+!      integer(c_int)                :: vectorSize
+!      real(c_double)  ,dimension(*) :: vector
+!      type(c_ptr)                   :: v_container
+!      type(c_ptr)                   :: p_container  !precon ptr
+!      type(c_ptr)                   :: j_container  !analytic jacobian ptr
+!    end subroutine noxsolve
+!
+!    subroutine noxfinish() bind(C,name='noxfinish')
+!    use ,intrinsic :: iso_c_binding
+!    end subroutine noxfinish
+!  end interface
+!#endif
+
     dt_q = dt*qsplit
 
     ! ===============
