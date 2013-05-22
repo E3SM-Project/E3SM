@@ -406,7 +406,7 @@ contains
       call noxinit(size(xstate), xstate, 1, c_ptr_to_object, c_ptr_to_pre, c_ptr_to_jac)
 
       call initialize(state_object, lenx, elem, hvcoord, compute_diagnostics, &
-        qn0, 0.0d0, hybrid, deriv, dt, np1, n0, np1, nets, nete)
+        qn0, eta_ave_w, hybrid, deriv, dt, np1, n0, np1, nets, nete)
         fptr => state_object
         c_ptr_to_object =  c_loc(fptr)
         pptr => state_object
@@ -3576,7 +3576,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
         enddo
 
         fpstens(:,:,ie) = elem(ie)%spheremp(:,:)* &
-        ( (elem(ie)%state%ps_v(:,:,np1)*dti - elem(ie)%state%ps_v(:,:,nm1)) &
+        ( (elem(ie)%state%ps_v(:,:,np1) - elem(ie)%state%ps_v(:,:,nm1))*dti &
         + sdot_sum(:,:) )
  
 ! add for fdptens later for vert lagrangian
