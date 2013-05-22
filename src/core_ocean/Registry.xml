@@ -746,7 +746,7 @@
 		     description="divergence of the tensor difference between solution and computed at cell center, as an R3 vector"
 		/>
 		<var name="outerProductEdge" type="real" dimensions="SIX nVertLevels nEdges Time" streams="o" units="m^2 s^{-1}"
-		     description="Outer produce, u_e \cross n_e, at each edge. {\color{red} change to scratch}"
+		     description="Outer product, u_e \cross n_e, at each edge."
 		/>
 	</var_struct>
 	<var_struct name="mesh" time_levs="0">

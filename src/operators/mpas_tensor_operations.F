@@ -26,6 +26,7 @@ module mpas_tensor_operations
    use mpas_configure
    use mpas_vector_operations
    use mpas_matrix_operations
+   use mpas_dmpar
 
    implicit none
    private
@@ -777,11 +778,15 @@ contains
       !-----------------------------------------------------------------
 
       type (block_type), pointer :: block
+      type (dm_info), pointer :: dminfo
 
-      integer :: nCells, nEdges, nVertices, nVertLevels, iCell, iEdge, k, i, p, strainRateLonLatRIndex
+      integer :: nCells, nCellsSolve, nCellsGlobal, nEdges, nVertices, nVertLevels, iCell, iEdge, k, i, p, strainRateLonLatRIndex
 
       real (kind=RKIND) :: xVelocity, yVelocity, cn, cs, r, theta, rot, f, g1, g2, fcos, pi2l, ld, &
         lon, lat, velocityZonal, velocityMeridional, rotAngle
+      real (kind=RKIND), dimension(6) ::  strainRateLonLatRDiffSum, strainRateR3DiffSum, strainRateLonLatRDiffSumGlobal, strainRateR3DiffSumGlobal
+      real (kind=RKIND), dimension(3) ::  divTensorLonLatRDiffSum, divTensorR3DiffSum, divTensorLonLatRDiffSumGlobal, divTensorR3DiffSumGlobal
+
       real (kind=RKIND), dimension(:), pointer :: angleEdge, xCell, yCell, xEdge, yEdge, latCell, lonCell, latEdge, lonEdge
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, tangentialVelocity, edgeNormalVectors, edgeTangentVectors
       real (kind=RKIND), dimension(:,:,:), pointer :: &
@@ -794,9 +799,11 @@ contains
 
     ! Initialize z-level grid variables from h, read in from input file.
     block => domain % blocklist
+    dminfo => domain % dminfo
     do while (associated(block))
 
       nCells      = block % mesh % nCells
+      nCellsSolve = block % mesh % nCellsSolve
       nEdges      = block % mesh % nEdges
       nVertices   = block % mesh % nVertices
       nVertLevels = block % mesh % nVertLevels
@@ -1250,35 +1257,38 @@ contains
 
      enddo
 
-     strainRateLonLatRCellDiff = strainRateLonLatRCell- strainRateLonLatRCellSolution
-     divTensorLonLatRCellDiff  = divTensorLonLatRCell- divTensorLonLatRCellSolution
+     strainRateLonLatRDiffSum = 0.0
+     divTensorLonLatRDiffSum = 0.0
+     strainRateR3DiffSum = 0.0
+     divTensorR3DiffSum = 0.0
+     do iCell = 1,nCellsSolve
+        strainRateLonLatRDiffSum(:) = strainRateLonLatRDiffSum(:) + (strainRateLonLatRCell(:,1,iCell) - strainRateLonLatRCellSolution(:,1,iCell))**2
+        divTensorLonLatRDiffSum(:) = divTensorLonLatRDiffSum(:) + (divTensorLonLatRCell(:,1,iCell) - divTensorLonLatRCellSolution(:,1,iCell))**2
+        strainRateR3DiffSum(:) = strainRateR3DiffSum(:) + (strainRateR3Cell(:,1,iCell) - strainRateR3CellSolution(:,1,iCell))**2
+        divTensorR3DiffSum(:) = divTensorR3DiffSum(:) + (divTensorR3Cell(:,1,iCell) - divTensorR3CellSolution(:,1,iCell))**2
+     enddo
+     strainRateLonLatRDiffSum(:) = strainRateLonLatRDiffSum(:)
+     divTensorLonLatRDiffSum(:) = divTensorLonLatRDiffSum(:)
+     strainRateR3DiffSum(:) = strainRateR3DiffSum(:)
+     divTensorR3DiffSum(:) = divTensorR3DiffSum(:)
+
+     call mpas_dmpar_sum_int(dminfo, nCellsSolve, nCellsGlobal)
+     call mpas_dmpar_sum_real_array(dminfo, 6, strainRateLonLatRDiffSum, strainRateLonLatRDiffSumGlobal)
+     call mpas_dmpar_sum_real_array(dminfo, 3, divTensorLonLatRDiffSum, divTensorLonLatRDiffSumGlobal)
+     call mpas_dmpar_sum_real_array(dminfo, 6, strainRateR3DiffSum, strainRateR3DiffSumGlobal)
+     call mpas_dmpar_sum_real_array(dminfo, 3, divTensorR3DiffSum, divTensorR3DiffSumGlobal)
+
+     if (dminfo % my_proc_id == IO_NODE) then
+         print '(a,10es14.6)', 'rms error, strainRateLonLatRCell:',sqrt(strainRateLonLatRDiffSumGlobal/nCellsGlobal)
+         print '(a,10es14.6)', 'rms error, divTensorLonLatRCell: ',sqrt(divTensorLonLatRDiffSumGlobal/nCellsGlobal)
+         print '(a,10es14.6)', 'rms error, strainRateR3Cell:     ',sqrt(strainRateR3DiffSumGlobal/nCellsGlobal)
+         print '(a,10es14.6)', 'rms error, divTensorR3Cell:      ',sqrt(divTensorR3DiffSumGlobal/nCellsGlobal)
+     endif
 
      block => block % next
    end do
 
    end subroutine mpas_test_tensor!}}}
-
-!***********************************************************************
-!
-!  routine mpas_tensor_operations_init
-!
-!> \brief   Initializes flags used within tendency routines.
-!> \author  Mark Petersen
-!> \date    17 April 2013
-!> \details 
-!>  This routine initializes flags related to quantities computed within
-!>  other tendency routines.
-!
-!-----------------------------------------------------------------------
-!    subroutine mpas_tensor_operations_init(err)!{{{
-!        integer, intent(out) :: err !< Output: Error flag
-
-!    end subroutine mpas_tensor_operations_init!}}}
-
-!***********************************************************************
-
-
-
 
 end module mpas_tensor_operations
 
