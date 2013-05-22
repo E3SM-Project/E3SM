@@ -502,6 +502,7 @@ contains
   use control_mod       , only: nu_q, nu_p, limiter_option
   use perf_mod          , only: t_startf, t_stopf  ! _EXTERNAL
   use viscosity_mod     , only: biharmonic_wk_scalar, biharmonic_wk_scalar_minmax, neighbor_minmax
+  use parallel_mod      , only: iam
   implicit none
   integer              , intent(in   )         :: np1_qdp, n0_qdp
   real (kind=real_kind), intent(in   )         :: dt
@@ -530,7 +531,7 @@ contains
   call t_startf('euler_step')
 
   if (rhs_multiplier == 0) then
-    call copy_qdp_h2d( elem , n0_qdp)
+!   call copy_qdp_h2d( elem , n0_qdp)
   endif
 
   if (limiter_option == 8) then
@@ -647,6 +648,7 @@ subroutine advance_hypervis_scalar_cuda( edgeAdv , elem , hvcoord , hybrid , der
   use bndry_mod      , only : bndry_exchangev
   use perf_mod       , only : t_startf, t_stopf, t_barrierf
   use control_mod    , only : rsplit, nu_q, hypervis_order, hypervis_subcycle_q
+  use parallel_mod   , only : iam
   implicit none
   type (EdgeBuffer_t)  , intent(inout)         :: edgeAdv
   type (element_t)     , intent(inout), target :: elem(:)
@@ -712,7 +714,6 @@ subroutine advance_hypervis_scalar_cuda( edgeAdv , elem , hvcoord , hybrid , der
   enddo
 
   call t_stopf('advance_hypervis_scalar_cuda')
-  call copy_qdp_d2h( elem , nt_qdp )
 
 end subroutine advance_hypervis_scalar_cuda
 
@@ -1484,7 +1485,7 @@ subroutine vertical_remap_cuda(elem,fvm,hvcoord,dt,np1,np1_qdp,nets,nete)
   use kinds, only : real_kind
   use hybvcoord_mod, only : hvcoord_t
   use control_mod, only :  rsplit
-  use parallel_mod, only : abortmp
+  use parallel_mod, only : abortmp, iam
   use element_mod, only: element_t
   use dimensions_mod, only: nc, ntrac
   use perf_mod, only: t_startf, t_stopf
@@ -1549,7 +1550,6 @@ subroutine vertical_remap_cuda(elem,fvm,hvcoord,dt,np1,np1_qdp,nets,nete)
 #endif
     endif
   enddo
-  call copy_qdp_h2d( elem , np1_qdp )
 !$OMP BARRIER
 !$OMP MASTER
   do ie=1,nelemd
