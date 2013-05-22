@@ -3729,8 +3729,6 @@ write(0,*) 'PROCESSING SEAICE'
    
       deallocate(vert_level)
 
-      end if    ! config_met_interp
-
      
       ! Calculate surface pressure (This is an ad-hoc calculation. The actual surface pressure is actually re-calculated at
       !the top of the subroutine MPAS_to_physics in ../core_atmos_physics/mpas_atmphys_interface_nhyd.F
@@ -3748,6 +3746,9 @@ write(0,*) 'PROCESSING SEAICE'
             diag % theta % array(k,iCell) = state % theta_m % array(k,iCell) / (1.0 + 1.61 * scalars(state % index_qv,k,iCell))
          end do
       end do
+
+
+      end if    ! config_met_interp
 
    end subroutine init_atm_test_case_gfs
 

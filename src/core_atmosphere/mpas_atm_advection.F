@@ -113,9 +113,19 @@ module atm_advection
                zc(i) = grid % zCell % array(advCells(i+1,iCell))/grid%sphere_radius
             end do
 
-            theta_abs(iCell) =  pii/2. - sphere_angle( xc(1), yc(1), zc(1),  &
-                                                       xc(2), yc(2), zc(2),  &
-                                                       0.0_RKIND, 0.0_RKIND, 1.0_RKIND ) 
+            !
+            ! In case the current cell center lies at exactly z=1.0, the sphere_angle() routine
+            !    may generate an FPE since the triangle it is given will have a zero side length
+            !    adjacent to the vertex whose angle we are trying to find; in this case, simply
+            !    set the value of theta_abs directly
+            !
+            if (zc(1) == 1.0) then
+               theta_abs(iCell) = pii/2.
+            else
+               theta_abs(iCell) =  pii/2. - sphere_angle( xc(1), yc(1), zc(1),  &
+                                                          xc(2), yc(2), zc(2),  &
+                                                          0.0_RKIND, 0.0_RKIND, 1.0_RKIND ) 
+            end if
   
 ! angles from cell center to neighbor centers (thetav)
 
@@ -821,9 +831,20 @@ module atm_advection
                zc(i) = grid % zVertex % array(iv)/grid%sphere_radius
             end do
 
-            theta_abs(iCell) =  pii/2. - sphere_angle( xc(1), yc(1), zc(1),  &
-                                                       xc(2), yc(2), zc(2),  &
-                                                       0.0_RKIND, 0.0_RKIND, 1.0_RKIND ) 
+            !
+            ! In case the current cell center lies at exactly z=1.0, the sphere_angle() routine
+            !    may generate an FPE since the triangle it is given will have a zero side length
+            !    adjacent to the vertex whose angle we are trying to find; in this case, simply
+            !    set the value of theta_abs directly
+            !
+            if (zc(1) == 1.0) then
+               theta_abs(iCell) = pii/2.
+            else
+               theta_abs(iCell) =  pii/2. - sphere_angle( xc(1), yc(1), zc(1),  &
+                                                          xc(2), yc(2), zc(2),  &
+                                                          0.0_RKIND, 0.0_RKIND, 1.0_RKIND ) 
+            end if
+
 
 ! angles from cell center to neighbor centers (thetav)
 
