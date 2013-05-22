@@ -114,11 +114,11 @@ SET(PRIM_SRCS ${SRC_SHARE_DIR}/kinds.F90
 					     ${SRC_DIR}/netcdf_io_mod.F90 
 					     ${SRC_SHARE_DIR}/mesh_mod.F90 
 					     ${SRC_SHARE_DIR}/Manager.F90
-#					     ${UTILS_TRILINOS_DIR}/trilinosNoxSolver.cpp 
-#					     ${UTILS_TRILINOS_DIR}/trilinosModelEvaluator.cpp 
-#					     ${UTILS_TRILINOS_DIR}/block_precon_interface.cpp 
-#					     ${UTILS_TRILINOS_DIR}/precon_interface.cpp 
 					     ${SRC_SHARE_DIR}/prim_derived_type_mod.F90 
+					     ${UTILS_TRILINOS_DIR}/trilinosNoxSolver.cpp 
+					     ${UTILS_TRILINOS_DIR}/trilinosModelEvaluator.cpp 
+					     ${UTILS_TRILINOS_DIR}/block_precon_interface.cpp 
+					     ${UTILS_TRILINOS_DIR}/precon_interface.cpp 
 )
 
 

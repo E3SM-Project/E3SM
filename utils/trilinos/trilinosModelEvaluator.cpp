@@ -26,7 +26,7 @@
 #include "BelosEpetraAdapter.hpp"
 #include "BelosBlockGmresSolMgr.hpp"
 
-//#define DEBUG_PRINT_ON 
+#define DEBUG_PRINT_ON 
 
 /*******************************************************************************/
 /*******************************************************************************/
@@ -233,8 +233,8 @@ Teuchos::RCP<const Epetra_Vector> trilinosModelEvaluator::get_x_init() const{
 Teuchos::RCP<EpetraExt::ModelEvaluator::Preconditioner>
 trilinosModelEvaluator::create_WPrec() const
 {
-  // precOp is already constructed.
-  //   bool is answer to: "Prec is already inverted?"
+// precOp is already constructed.
+//   bool is answer to: "Prec is already inverted?"
   return Teuchos::rcp(new EpetraExt::ModelEvaluator::Preconditioner(precOp,true));
 }
 
@@ -297,12 +297,11 @@ void trilinosModelEvaluator::evalModel(const InArgs& inArgs, const OutArgs& outA
       TEUCHOS_TEST_FOR_EXCEPTION(p_in.get(), std::logic_error,
           "Parameter being set in Model Evaluator, but not implemented in code.");
 
-
   // Save the current solution, which makes it initial guess for next nonlinear solve
   *xVec = *x;
 
   if (residualRequested) {
-    // Check if this is a perturbed eval. Glimmer only saves off matrices for unperturbed case.
+    // Check if this is a perturbed eval. CESM only saves off matrices for unperturbed case.
     // int ispert =0; if  (f.getType() == EpetraExt::ModelEvaluator::EVAL_TYPE_APPROX_DERIV) ispert=1;
 
     f->PutScalar(0.0);
@@ -336,6 +335,7 @@ int identityPreconditioner::computePreconditioner(RCP<const Epetra_Vector> xVecN
 {
   // Update state in preconditioner code
   precUpdateFunction(xVecNew->Values(), N, precdata);
+
 
   return 0;
 }

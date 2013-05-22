@@ -117,7 +117,7 @@ public:
   void resetBlackbox(void* blackbox_res_,  void* precdata_, void* jacdata_);
 
 
-  // 4. Utility functions not accessible from outside this calss.
+  // 4. Utility functions not accessible from outside this class.
 private:
   void initialize(double* statevector);
 

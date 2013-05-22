@@ -42,37 +42,37 @@ extern "C" {
   void calc_f_lin(double *, double *, int, void *);
   
 /*Defining external functions for analytic Jacobian*/
-  void sw_jacobian(double *, int, double *, void *); 
+//  void sw_jacobian(double *, int, double *, void *); 
 /*Defining external functions for analytic Picard linearization*/
-  void sw_picard(double *, int, double *, void *); 
+//  void sw_picard(double *, int, double *, void *); 
 /*Defining external functions for applying preconditioners and preconditioner blocks*/
 
-  void simple_prec_op(double *, int, double *, void *);
+//  void simple_prec_op(double *, int, double *, void *);
   void test_id(double *, int, double *, void *);
-  void picard_lin(double *, int, double *,  void *);
-  void picard_diag(double *, int, double *,  void *);
-  void test_picard_lin(double *, int, double *,  void *);
-  void sw_picard_fdiag(double *, int, double *, void *); 
-  void sw_picard_diag(double *, int, double *, void *); 
-  void sw_picard_simple(double *, int, double *, void *); 
+//  void picard_lin(double *, int, double *,  void *);
+//  void picard_diag(double *, int, double *,  void *);
+//  void test_picard_lin(double *, int, double *,  void *);
+//  void sw_picard_fdiag(double *, int, double *, void *); 
+//  void sw_picard_diag(double *, int, double *, void *); 
+//  void sw_picard_simple(double *, int, double *, void *); 
   void update_prec_state(double *, int, void *); 
-  void get_jac_vector(double *, int, void *); 
-  void sw_picard_block_FDiag(double *, int, double *, void *); 
-  void sw_picard_block_FDiagInv(double *, int, double *, void *); 
-  void sw_picard_block_ID11(double *, int, double *, void *); 
-  void sw_picard_block_ID22(double *, int, double *, void *); 
-  void sw_picard_block_11alt(double *, int, double *, void *); 
-  void sw_picard_block_11(double *, int, double *, void *); 
-  void sw_picard_block_12(double *, int, double *, void *);
-  void sw_picard_block_21(double *, int, double *, void *); 
-  void sw_picard_block_22(double *, int, double *, void *); 
-  void sw_picard_FDFinvBt(double *, int, double *, void *); 
-  void sw_picard_FDFinvBt2(double *, int, double *, void *); 
-  void sw_picard_FBt(double *, int, double *, void *); 
-  void sw_picard_DFinvBt(double *, int, double *, void *); 
-  void sw_picard_schur(double *, int, double *, void *); 
-  void sw_picard_alphaschur(double *, int, double *, void *);
-  void sw_picard_schur_approx(double *, int, double *, void *);
+//  void get_jac_vector(double *, int, void *); 
+//  void sw_picard_block_FDiag(double *, int, double *, void *); 
+//  void sw_picard_block_FDiagInv(double *, int, double *, void *); 
+//  void sw_picard_block_ID11(double *, int, double *, void *); 
+//  void sw_picard_block_ID22(double *, int, double *, void *); 
+//  void sw_picard_block_11alt(double *, int, double *, void *); 
+//  void sw_picard_block_11(double *, int, double *, void *); 
+//  void sw_picard_block_12(double *, int, double *, void *);
+//  void sw_picard_block_21(double *, int, double *, void *); 
+//  void sw_picard_block_22(double *, int, double *, void *); 
+//  void sw_picard_FDFinvBt(double *, int, double *, void *); 
+//  void sw_picard_FDFinvBt2(double *, int, double *, void *); 
+//  void sw_picard_FBt(double *, int, double *, void *); 
+//  void sw_picard_DFinvBt(double *, int, double *, void *); 
+//  void sw_picard_schur(double *, int, double *, void *); 
+//  void sw_picard_alphaschur(double *, int, double *, void *);
+//  void sw_picard_schur_approx(double *, int, double *, void *);
 // once precon_gmres is ready, use this as dummy
 //  void precon_si(double *, double *, int, double*, void *);
 
@@ -105,10 +105,10 @@ extern "C" {
     //void (*precFunction)(double *, double *, int, double*, void *, void *) = precon;
 
     //void (*jacFunction)(double *,  int, double*,  void *) = sw_picard;
-    void (*jacFunction)(double *,  int, double*,  void *) = sw_jacobian;
+    //void (*jacFunction)(double *,  int, double*,  void *) = sw_jacobian;
     //void (*jacFunction)(double *,  int, double*,  void *) = picard_lin;
     //void (*jacFunction)(double *,  int, double*,  void *) = test_picard_lin;
-    //void (*jacFunction)(double *, int, double*,  void *) = test_id;
+    void (*jacFunction)(double *, int, double*,  void *) = test_id;
     
     //void (*precFunction)(double *, int, double*,  void *) = simple_prec_op;
     void (*precFunction)(double *, int, double*,  void *) = test_id;
@@ -126,7 +126,7 @@ extern "C" {
     
     //void (*precFunction)(double *,  int, double*,  void *) = sw_jacobian;
     void (*precUpdateFunction)(double *, int, void *)=update_prec_state;
-    void (*getJacVector)(double *, int, void *)=get_jac_vector;
+    //void (*getJacVector)(double *, int, void *)=get_jac_vector;
     
     //void (*precFunctionblock11)(double *, int, double*,  void *) = sw_test_mass;
     
@@ -137,16 +137,16 @@ extern "C" {
     22 block is S=G-Bdiag(F)^{-1}B' */
     
     //void (*precFunctionblock11)(double *, int, double*,  void *) = sw_picard_block_11alt;
-    void (*precFunctionblock11)(double *, int, double*,  void *) = sw_picard_block_11;
+    //void (*precFunctionblock11)(double *, int, double*,  void *) = sw_picard_block_11;
     //void (*precFunctionblock11)(double *, int, double*,  void *) = sw_picard_block_FDiagInv;
     //void (*precFunctionblock11)(double *, int, double*,  void *) = sw_picard_block_FDiag;
     //void (*precFunctionblock11)(double *, int, double*,  void *) = sw_picard_block_ID11;
-    void (*precFunctionblock12)(double *, int, double*,  void *) = sw_picard_DFinvBt;
+    //void (*precFunctionblock12)(double *, int, double*,  void *) = sw_picard_DFinvBt;
     //void (*precFunctionblock12)(double *, int, double*,  void *) = sw_picard_block_12;
-    void (*precFunctionblock21)(double *, int, double*,  void *) = sw_picard_block_21;
+    //void (*precFunctionblock21)(double *, int, double*,  void *) = sw_picard_block_21;
 
    // void (*precFunctionblock22)(double *, int, double*,  void *) = sw_picard_schur_approx;
-    void (*precFunctionblock22)(double *, int, double*,  void *) = sw_picard_schur;
+   // void (*precFunctionblock22)(double *, int, double*,  void *) = sw_picard_schur;
     //void (*precFunctionblock22)(double *, int, double*,  void *) = sw_picard_alphaschur;
     //void (*precFunctionblock22)(double *, int, double*,  void *) = sw_picard_block_ID22;
     //void (*precFunctionblock22)(double *, int, double*,  void *) = sw_picard_block_12;//Testing only
@@ -189,18 +189,18 @@ extern "C" {
     //void (*precFunctionblock22)(double *, int, double*,  void *) = sw_picard_alphaschur;
     
     //void (*auxprecFunctionblock11)(double *, int, double*,  void *) = sw_picard_block_ID11;
-    void (*auxprecFunctionblock11)(double *, int, double*,  void *) = sw_picard_block_11;
+    //void (*auxprecFunctionblock11)(double *, int, double*,  void *) = sw_picard_block_11;
     //void (*auxprecFunctionblock11)(double *, int, double*,  void *) = sw_picard_block_FDiagInv;
     //void (*auxprecFunctionblock11)(double *, int, double*,  void *) = sw_picard_block_FDiag;
     //void (*auxprecFunctionblock12)(double *, int, double*,  void *) = sw_picard_FDFinvBt;
-    void (*auxprecFunctionblock12)(double *, int, double*,  void *) = sw_picard_FDFinvBt2;
+    //void (*auxprecFunctionblock12)(double *, int, double*,  void *) = sw_picard_FDFinvBt2;
     //void (*auxprecFunctionblock12)(double *, int, double*,  void *) = sw_picard_DFinvBt;
     //void (*auxprecFunctionblock12)(double *, int, double*,  void *) = sw_picard_block_12;
     // void (*auxprecFunctionblock12)(double *, int, double*,  void *) = sw_picard_FBt;
     //void (*auxprecFunctionblock12)(double *, int, double*,  void *) = sw_picard_DFinvBt;
-    void (*auxprecFunctionblock21)(double *, int, double*,  void *) = sw_picard_block_21;
+    //void (*auxprecFunctionblock21)(double *, int, double*,  void *) = sw_picard_block_21;
     //void (*auxprecFunctionblock22)(double *, int, double*,  void *) = sw_picard_block_22; 
-    void (*auxprecFunctionblock22)(double *, int, double*,  void *) = sw_picard_alphaschur;
+    //void (*auxprecFunctionblock22)(double *, int, double*,  void *) = sw_picard_alphaschur;
     //void (*auxprecFunctionblock22)(double *, int, double*,  void *) = sw_picard_schur;
     //void (*auxprecFunctionblock22)(double *, int, double*,  void *) = sw_picard_block_ID22;
 
@@ -383,10 +383,10 @@ extern "C" {
     nlPrintParams.set("MyPID", Comm_->MyPID());
     if (!nlPrintParams.isParameter("Output Information"))
       nlPrintParams.set("Output Information", 67);
-    // Following is require for our usage of Piro::NOX.
+    // Following is required for our usage of Piro::NOX.
     params->sublist("NOX").set("Reset Initial Guess",true);
 
-    // Validate top levl of parameter list
+    // Validate top level of parameter list
     Teuchos::ParameterList validPL("Valid List");;
     validPL.sublist("NOX"); validPL.sublist("LOCA");
     validPL.set("Jacobian Operator","Matrix-Free");
