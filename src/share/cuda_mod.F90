@@ -90,11 +90,11 @@ module cuda_mod
   integer              ,device,allocatable,dimension(:)           :: recv_internal_indices_d
   integer              ,device,allocatable,dimension(:)           :: recv_external_indices_d
   real (kind=real_kind),device,allocatable,dimension(:,:,:)       :: recvbuf_d
-  real(kind=real_kind) ,device,allocatable,dimension(:,:,:)       :: dpo_d
-  real(kind=real_kind) ,device,allocatable,dimension(:,:,:,:)     :: ppmdx_d
-  real(kind=real_kind) ,device,allocatable,dimension(:,:,:)       :: z1_d
-  real(kind=real_kind) ,device,allocatable,dimension(:,:,:)       :: z2_d
-  integer              ,device,allocatable,dimension(:,:,:)       :: kid_d
+  real(kind=real_kind) ,device,allocatable,dimension(:,:,:,:)     :: dpo_d
+  real(kind=real_kind) ,device,allocatable,dimension(:,:,:,:,:)   :: ppmdx_d
+  real(kind=real_kind) ,device,allocatable,dimension(:,:,:,:)     :: z1_d
+  real(kind=real_kind) ,device,allocatable,dimension(:,:,:,:)     :: z2_d
+  integer              ,device,allocatable,dimension(:,:,:,:)     :: kid_d
 
   !PINNED Host arrays
   real(kind=real_kind),pinned,allocatable,dimension(:,:,:,:,:,:) :: qdp_h
@@ -134,9 +134,9 @@ module cuda_mod
   integer, parameter :: east_px  = 3
   integer, parameter :: north_px = 4
   integer, parameter :: west_px  = 2
-  integer, parameter :: cuda_streams = 16
-  integer(kind=cuda_stream_kind) :: streams(0:cuda_streams)
-  integer(kind=cuda_stream_kind) :: streams2(0:cuda_streams)
+  integer :: cuda_streams
+  integer(kind=cuda_stream_kind), allocatable :: streams(:)
+  integer(kind=cuda_stream_kind), allocatable :: streams2(:)
   integer            :: nbuf
   integer            :: nmsg_rcvd
   integer            :: nmsg_sent
@@ -177,6 +177,10 @@ contains
 
     max_neigh_edges_d = max_neigh_edges
     max_corner_elem_d = max_corner_elem
+
+    cuda_streams = nelemd
+    allocate(streams (0:cuda_streams))
+    allocate(streams2(0:cuda_streams))
 
 #if (defined ELEMENT_OPENMP)
     write(*,*) 'ERROR: Do not use ELEMENT_OPENMP and CUDA FORTRAN'
@@ -231,11 +235,11 @@ contains
     allocate( edgebuf_d                (nlev*qsize_d,nbuf                   ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( recv_internal_indices_d  (nelemd                              ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( recv_external_indices_d  (nelemd                              ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
-    allocate( dpo_d                    (np,np,   1-gs:nlev+gs               ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
-    allocate( ppmdx_d                  (np,np,10,   0:nlev+1                ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
-    allocate( z1_d                     (np,np,        nlev                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
-    allocate( z2_d                     (np,np,        nlev                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
-    allocate( kid_d                    (np,np,        nlev                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+    allocate( dpo_d                    (np,np,   1-gs:nlev+gs        ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+    allocate( ppmdx_d                  (np,np,10,   0:nlev+1         ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+    allocate( z1_d                     (np,np,        nlev           ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+    allocate( z2_d                     (np,np,        nlev           ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+    allocate( kid_d                    (np,np,        nlev           ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
 
     allocate( qdp_h                    (np,np,nlev,qsize_d,timelevels,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( qmin                     (nlev,qsize_d                 ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
@@ -1506,7 +1510,7 @@ subroutine vertical_remap_cuda(elem,fvm,hvcoord,dt,np1,np1_qdp,nets,nete)
   type (element_t), intent(inout)   :: elem(:)
   type (hvcoord_t)                  :: hvcoord
   real (kind=real_kind)             :: dt
-  integer :: ie,i,j,k,np1,nets,nete,np1_qdp
+  integer :: ie,i,j,k,np1,nets,nete,np1_qdp,ierr
   real (kind=real_kind), dimension(np,np,nlev,2)  :: ttmp
   call t_startf('vertical_remap_cuda')
   do ie=nets,nete
@@ -1556,9 +1560,13 @@ subroutine vertical_remap_cuda(elem,fvm,hvcoord,dt,np1,np1_qdp,nets,nete)
     ! remap the tracers from lagrangian levels (dp_star)  to REF levels dp
     if (qsize>0) call remap_Q_ppm_cuda(elem,np,qsize,dp_star_h(:,:,:,ie),dp_h(:,:,:,ie),np1_qdp,ie)
   enddo
+  ierr = cudaThreadSynchronize()
 !$OMP END MASTER
 !$OMP BARRIER
-  call copy_qdp_d2h( elem , np1_qdp )
+  do ie = nets , nete
+    elem(ie)%state%qdp(:,:,:,:,np1_qdp) = qdp_h(:,:,:,:,np1_qdp,ie)
+  enddo
+! call copy_qdp_d2h( elem , np1_qdp )
   call t_stopf('vertical_remap_cuda')  
 end subroutine vertical_remap_cuda
 
@@ -1646,14 +1654,15 @@ subroutine remap_Q_ppm_cuda(elem,nx,qsize,dp1,dp2,np1_qdp,ie)
       !mass accumulation
     enddo
   enddo
-  ierr = cudaMemcpyAsync( dpo_d   , dpo_h(:,:,:,ie)     , size(dpo_h(:,:,:,ie)    ) , cudaMemcpyHostToDevice , streams(1) )
-  ierr = cudaMemcpyAsync( ppmdx_d , ppmdx_h(:,:,:,:,ie) , size(ppmdx_h(:,:,:,:,ie)) , cudaMemcpyHostToDevice , streams(1) )
-  ierr = cudaMemcpyAsync( z1_d    , z1_h(:,:,:,ie)      , size(z1_h(:,:,:,ie)     ) , cudaMemcpyHostToDevice , streams(1) )
-  ierr = cudaMemcpyAsync( z2_d    , z2_h(:,:,:,ie)      , size(z2_h(:,:,:,ie)     ) , cudaMemcpyHostToDevice , streams(1) )
-  ierr = cudaMemcpyAsync( kid_d   , kid_h(:,:,:,ie)     , size(kid_h(:,:,:,ie)    ) , cudaMemcpyHostToDevice , streams(1) )
-  griddim  = dim3( qsize , 1  , 1    )
-  blockdim = dim3( np    , np , 1    )
-  call remap_Q_ppm_cuda_kernel<<<griddim,blockdim,0,streams(1)>>>( Qdp_d(:,:,:,:,np1_qdp,ie) , dpo_d , ppmdx_d , z1_d , z2_d , kid_d , vert_remap_q_alg )
+  griddim  = dim3( qsize , 1  , 1      )
+  blockdim = dim3( np    , np , nlev+2 )
+  ierr = cudaMemcpyAsync( dpo_d(:,:,:,ie)     , dpo_h(:,:,:,ie)     , size(dpo_h(:,:,:,ie)    ) , cudaMemcpyHostToDevice , streams(ie) )
+  ierr = cudaMemcpyAsync( ppmdx_d(:,:,:,:,ie) , ppmdx_h(:,:,:,:,ie) , size(ppmdx_h(:,:,:,:,ie)) , cudaMemcpyHostToDevice , streams(ie) )
+  ierr = cudaMemcpyAsync( z1_d(:,:,:,ie)      , z1_h(:,:,:,ie)      , size(z1_h(:,:,:,ie)     ) , cudaMemcpyHostToDevice , streams(ie) )
+  ierr = cudaMemcpyAsync( z2_d(:,:,:,ie)      , z2_h(:,:,:,ie)      , size(z2_h(:,:,:,ie)     ) , cudaMemcpyHostToDevice , streams(ie) )
+  ierr = cudaMemcpyAsync( kid_d(:,:,:,ie)     , kid_h(:,:,:,ie)     , size(kid_h(:,:,:,ie)    ) , cudaMemcpyHostToDevice , streams(ie) )
+  call remap_Q_ppm_cuda_kernel<<<griddim,blockdim,0,streams(ie)>>>( Qdp_d(:,:,:,:,np1_qdp,ie) , dpo_d(:,:,:,ie) , ppmdx_d(:,:,:,:,ie) , z1_d(:,:,:,ie) , z2_d(:,:,:,ie) , kid_d(:,:,:,ie) , vert_remap_q_alg )
+  ierr = cudaMemcpyAsync( qdp_h(:,:,:,:,np1_qdp,ie) , qdp_d(:,:,:,:,np1_qdp,ie) , size(elem(ie)%state%qdp(:,:,:,:,np1_qdp) ) , cudaMemcpyDeviceToHost , streams(ie) )
   call t_stopf('remap_Q_ppm_cuda')
 end subroutine remap_Q_ppm_cuda
 
@@ -1686,17 +1695,21 @@ attributes(global) subroutine remap_Q_ppm_cuda_kernel( Qdp , dpo , ppmdx , z1 , 
   !tracer consistency for an initially uniform field. I copied it from the old remap routine.
   masso(i,j,1) = 0.
   call syncthreads()
-  do k = 1 , nlev
-    ao(i,j,k) = Qdp(i,j,k,q)
-    masso(i,j,k+1) = masso(i,j,k) + ao(i,j,k) !Accumulate the old mass. This will simplify the remapping
-    ao(i,j,k) = ao(i,j,k) / dpo(i,j,k)        !Divide out the old grid spacing because we want the tracer mixing ratio, not mass.
-  enddo
+  if (threadidx%z == 1) then
+    do k = 1 , nlev
+      ao(i,j,k) = Qdp(i,j,k,q)
+      masso(i,j,k+1) = masso(i,j,k) + ao(i,j,k) !Accumulate the old mass. This will simplify the remapping
+      ao(i,j,k) = ao(i,j,k) / dpo(i,j,k)        !Divide out the old grid spacing because we want the tracer mixing ratio, not mass.
+    enddo
+  endif
   call syncthreads()
   !Fill in ghost values. Ignored if vert_remap_q_alg == 2
-  do k = 1 , gs
-    ao(i,j,1   -k) = ao(i,j,       k)
-    ao(i,j,nlev+k) = ao(i,j,nlev+1-k)
-  enddo
+  if (threadidx%z == 1) then
+    do k = 1 , gs
+      ao(i,j,1   -k) = ao(i,j,       k)
+      ao(i,j,nlev+k) = ao(i,j,nlev+1-k)
+    enddo
+  endif
   call syncthreads()
   !Compute monotonic and conservative PPM reconstruction over every cell
   coefs(:,:,:,:) = compute_ppm_d( ao , ppmdx , ai , dma , vert_remap_q_alg , i , j )
@@ -1705,19 +1718,107 @@ attributes(global) subroutine remap_Q_ppm_cuda_kernel( Qdp , dpo , ppmdx , z1 , 
   !cell interface to form a new grid mass accumulation. Taking the difference between
   !accumulation at successive interfaces gives the mass inside each cell. Since Qdp is
   !supposed to hold the full mass this needs no normalization.
-  massn1(:,:) = 0.
-  do k = 1 , nlev
-    kk = kid(i,j,k)
-    massn2(i,j) = masso(i,j,kk) + ( coefs(i,j,1,kk) * (z2(i,j,k)      - z1(i,j,k)     )         + &
-                                    coefs(i,j,2,kk) * (z2(i,j,k) ** 2 - z1(i,j,k) ** 2) / 0.2D1 + &
-                                    coefs(i,j,3,kk) * (z2(i,j,k) ** 3 - z1(i,j,k) ** 3) / 0.3D1 ) * dpo(i,j,kk)
-    Qdp(i,j,k,q) = massn2(i,j) - massn1(i,j)
-    massn1(i,j) = massn2(i,j)
-  enddo
+  if (threadidx%z == 1) then
+    massn1(:,:) = 0.
+    do k = 1 , nlev
+      kk = kid(i,j,k)
+      massn2(i,j) = masso(i,j,kk) + ( coefs(i,j,1,kk) * (z2(i,j,k)      - z1(i,j,k)     )         + &
+                                      coefs(i,j,2,kk) * (z2(i,j,k) ** 2 - z1(i,j,k) ** 2) / 0.2D1 + &
+                                      coefs(i,j,3,kk) * (z2(i,j,k) ** 3 - z1(i,j,k) ** 3) / 0.3D1 ) * dpo(i,j,kk)
+      Qdp(i,j,k,q) = massn2(i,j) - massn1(i,j)
+      massn1(i,j) = massn2(i,j)
+    enddo
+  endif
 end subroutine remap_Q_ppm_cuda_kernel
 
 
-!=======================================================================================================! 
+
+!This computes a limited parabolic interpolant using a net 5-cell stencil, but the stages of computation are broken up into 3 stages
+attributes(device) function compute_ppm_d( a , dx , ai , dma , vert_remap_q_alg , ii , jj )    result(coefs)
+  implicit none
+  real(kind=real_kind), intent(in   ) :: a    (np,np,    -1:nlev+2)  !Cell-mean values
+  real(kind=real_kind), intent(in   ) :: dx   (np,np,10,  0:nlev+1)  !grid spacings
+  real(kind=real_kind), intent(inout) :: ai   (np,np,0:nlev  )                     !fourth-order accurate, then limited interface values
+  real(kind=real_kind), intent(inout) :: dma  (np,np,0:nlev+1)                     !An expression from Collela's '84 publication
+  integer , value     , intent(in   ) :: vert_remap_q_alg , ii , jj
+  real(kind=real_kind) ::                coefs(np,np,0:2,   nlev  )  !PPM coefficients (for parabola)
+  real(kind=real_kind) :: da                                !Ditto
+  ! Hold expressions based on the grid (which are cumbersome).
+  real(kind=real_kind) :: al, ar                            !Left and right interface values for cell-local limiting
+  integer :: j, nx
+  integer :: indB, indE
+  nx = np
+  j = threadidx%z-1
+
+  call syncthreads()
+  ! Stage 1: Compute dma for each cell, allowing a 1-cell ghost stencil below and above the domain
+  if (vert_remap_q_alg == 2) then
+    indB = 2
+    indE = nlev-1
+  else
+    indB = 0
+    indE = nlev+1
+  endif
+  if ( j >= indB .and. j <= indE ) then
+    da = dx(ii,jj,1,j) * ( dx(ii,jj,2,j) * ( a(ii,jj,j+1) - a(ii,jj,j) ) + dx(ii,jj,3,j) * ( a(ii,jj,j) - a(ii,jj,j-1) ) )
+    dma(ii,jj,j) = minval( (/ abs(da) , 2. * abs( a(ii,jj,j) - a(ii,jj,j-1) ) , 2. * abs( a(ii,jj,j+1) - a(ii,jj,j) ) /) ) * sign(1.D0,da)
+    if ( ( a(ii,jj,j+1) - a(ii,jj,j) ) * ( a(ii,jj,j) - a(ii,jj,j-1) ) <= 0. ) dma(ii,jj,j) = 0.
+  endif
+  call syncthreads()
+
+  ! Stage 2: Compute ai for each cell interface in the physical domain (dimension nlev+1)
+  if (vert_remap_q_alg == 2) then
+    indB = 2
+    indE = nlev-2
+  else
+    indB = 0
+    indE = nlev
+  endif
+  if ( j >= indB .and. j <= indE ) then
+    ai(ii,jj,j) = a(ii,jj,j) + dx(ii,jj,4,j) * ( a(ii,jj,j+1) - a(ii,jj,j) ) + dx(ii,jj,5,j) * ( dx(ii,jj,6,j) * ( dx(ii,jj,7,j) - dx(ii,jj,8,j) ) &
+                  * ( a(ii,jj,j+1) - a(ii,jj,j) ) - dx(ii,jj,9,j) * dma(ii,jj,j+1) + dx(ii,jj,10,j) * dma(ii,jj,j) )
+  endif
+  call syncthreads()
+
+  ! Stage 3: Compute limited PPM interpolant over each cell in the physical domain
+  ! (dimension nlev) using ai on either side and ao within the cell.
+  if (vert_remap_q_alg == 2) then
+    indB = 3
+    indE = nlev-2
+  else
+    indB = 1
+    indE = nlev
+  endif
+  if ( j >= indB .and. j <= indE ) then
+    al = ai(ii,jj,j-1)
+    ar = ai(ii,jj,j  )
+    if ( (ar - a(ii,jj,j)) * (a(ii,jj,j) - al) <= 0. ) then
+      al = a(ii,jj,j)
+      ar = a(ii,jj,j)
+    endif
+    if ( (ar - al) * (a(ii,jj,j) - (al + ar)/2.) >  (ar - al)**2/6. ) al = 3.*a(ii,jj,j) - 2. * ar
+    if ( (ar - al) * (a(ii,jj,j) - (al + ar)/2.) < -(ar - al)**2/6. ) ar = 3.*a(ii,jj,j) - 2. * al
+    !Computed these coefficients from the edge values and cell mean in Maple. Assumes normalized coordinates: xi=(x-x0)/dx
+    coefs(ii,jj,0,j) = 1.5 * a(ii,jj,j) - ( al + ar ) / 4.
+    coefs(ii,jj,1,j) = ar - al
+    coefs(ii,jj,2,j) = -6. * a(ii,jj,j) + 3. * ( al + ar )
+  endif
+  call syncthreads()
+
+  !If we're not using a mirrored boundary condition, then make the two cells bordering the top and bottom
+  !material boundaries piecewise constant. Zeroing out the first and second moments, and setting the zeroth
+  !moment to the cell mean is sufficient to maintain conservation.
+  if (vert_remap_q_alg == 2) then
+    if ( j == 0 ) then
+      coefs(ii,jj,0,1:2) = a(ii,jj,1:2)
+      coefs(ii,jj,1:2,1:2) = 0.
+      coefs(ii,jj,0,nlev-1:nlev) = a(ii,jj,nlev-1:nlev)
+      coefs(ii,jj,1:2,nlev-1:nlev) = 0.D0
+    endif
+  endif
+  call syncthreads()
+end function compute_ppm_d
+
 
 
 !THis compute grid-based coefficients from Collela & Woodward 1984.
@@ -1762,94 +1863,6 @@ function compute_ppm_grids_d( dx )   result(rslt)
   enddo
 end function compute_ppm_grids_d
 
-!=======================================================================================================! 
-
-
-
-!This computes a limited parabolic interpolant using a net 5-cell stencil, but the stages of computation are broken up into 3 stages
-attributes(device) function compute_ppm_d( a , dx , ai , dma , vert_remap_q_alg , ii , jj )    result(coefs)
-  implicit none
-  real(kind=real_kind), intent(in   ) :: a    (np,np,    -1:nlev+2)  !Cell-mean values
-  real(kind=real_kind), intent(in   ) :: dx   (np,np,10,  0:nlev+1)  !grid spacings
-  real(kind=real_kind), intent(inout) :: ai   (np,np,0:nlev  )                     !fourth-order accurate, then limited interface values
-  real(kind=real_kind), intent(inout) :: dma  (np,np,0:nlev+1)                     !An expression from Collela's '84 publication
-  integer , value     , intent(in   ) :: vert_remap_q_alg , ii , jj
-  real(kind=real_kind) ::                coefs(np,np,0:2,   nlev  )  !PPM coefficients (for parabola)
-  real(kind=real_kind) :: da                                !Ditto
-  ! Hold expressions based on the grid (which are cumbersome).
-  real(kind=real_kind) :: al, ar                            !Left and right interface values for cell-local limiting
-  integer :: j, nx
-  integer :: indB, indE
-  nx = np
-
-  call syncthreads()
-  ! Stage 1: Compute dma for each cell, allowing a 1-cell ghost stencil below and above the domain
-  if (vert_remap_q_alg == 2) then
-    indB = 2
-    indE = nlev-1
-  else
-    indB = 0
-    indE = nlev+1
-  endif
-  do j = indB , indE
-    da = dx(ii,jj,1,j) * ( dx(ii,jj,2,j) * ( a(ii,jj,j+1) - a(ii,jj,j) ) + dx(ii,jj,3,j) * ( a(ii,jj,j) - a(ii,jj,j-1) ) )
-    dma(ii,jj,j) = minval( (/ abs(da) , 2. * abs( a(ii,jj,j) - a(ii,jj,j-1) ) , 2. * abs( a(ii,jj,j+1) - a(ii,jj,j) ) /) ) * sign(1.D0,da)
-    if ( ( a(ii,jj,j+1) - a(ii,jj,j) ) * ( a(ii,jj,j) - a(ii,jj,j-1) ) <= 0. ) dma(ii,jj,j) = 0.
-  enddo
-  call syncthreads()
-
-  ! Stage 2: Compute ai for each cell interface in the physical domain (dimension nlev+1)
-  if (vert_remap_q_alg == 2) then
-    indB = 2
-    indE = nlev-2
-  else
-    indB = 0
-    indE = nlev
-  endif
-  do j = indB , indE
-    ai(ii,jj,j) = a(ii,jj,j) + dx(ii,jj,4,j) * ( a(ii,jj,j+1) - a(ii,jj,j) ) + dx(ii,jj,5,j) * ( dx(ii,jj,6,j) * ( dx(ii,jj,7,j) - dx(ii,jj,8,j) ) &
-                  * ( a(ii,jj,j+1) - a(ii,jj,j) ) - dx(ii,jj,9,j) * dma(ii,jj,j+1) + dx(ii,jj,10,j) * dma(ii,jj,j) )
-  enddo
-  call syncthreads()
-
-  ! Stage 3: Compute limited PPM interpolant over each cell in the physical domain
-  ! (dimension nlev) using ai on either side and ao within the cell.
-  if (vert_remap_q_alg == 2) then
-    indB = 3
-    indE = nlev-2
-  else
-    indB = 1
-    indE = nlev
-  endif
-  do j = indB , indE
-    al = ai(ii,jj,j-1)
-    ar = ai(ii,jj,j  )
-    if ( (ar - a(ii,jj,j)) * (a(ii,jj,j) - al) <= 0. ) then
-      al = a(ii,jj,j)
-      ar = a(ii,jj,j)
-    endif
-    if ( (ar - al) * (a(ii,jj,j) - (al + ar)/2.) >  (ar - al)**2/6. ) al = 3.*a(ii,jj,j) - 2. * ar
-    if ( (ar - al) * (a(ii,jj,j) - (al + ar)/2.) < -(ar - al)**2/6. ) ar = 3.*a(ii,jj,j) - 2. * al
-    !Computed these coefficients from the edge values and cell mean in Maple. Assumes normalized coordinates: xi=(x-x0)/dx
-    coefs(ii,jj,0,j) = 1.5 * a(ii,jj,j) - ( al + ar ) / 4.
-    coefs(ii,jj,1,j) = ar - al
-    coefs(ii,jj,2,j) = -6. * a(ii,jj,j) + 3. * ( al + ar )
-  enddo
-  call syncthreads()
-
-  !If we're not using a mirrored boundary condition, then make the two cells bordering the top and bottom
-  !material boundaries piecewise constant. Zeroing out the first and second moments, and setting the zeroth
-  !moment to the cell mean is sufficient to maintain conservation.
-  if (vert_remap_q_alg == 2) then
-    coefs(ii,jj,0,1:2) = a(ii,jj,1:2)
-    coefs(ii,jj,1:2,1:2) = 0.
-    coefs(ii,jj,0,nlev-1:nlev) = a(ii,jj,nlev-1:nlev)
-    coefs(ii,jj,1:2,nlev-1:nlev) = 0.D0
-  endif
-  call syncthreads()
-end function compute_ppm_d
-
-!=======================================================================================================! 
 
 
 
