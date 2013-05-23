@@ -1475,5 +1475,60 @@
 			 type="real" dimensions="nVertLevels nCells Time" streams="o" units="PSU^{-1}"
 			 description="Saline contraction coefficient (beta), defined as $1/\rho d\rho/dS$.  This is also called the haline contraction coefficient."
 		/>
-	</var_struct>
+		<var name="strainRateR3Cell" 
+                     persistence="scratch" 
+                     type="real" dimensions="SIX nVertLevels nCells Time" units="s^{-1}"
+		     description="strain rate tensor at cell center, R3, in symmetric 6-index form"
+		/>
+		<var name="strainRateR3CellSolution" 
+                     persistence="scratch" 
+                     type="real" dimensions="SIX nVertLevels nCells Time" units="s^{-1}"
+		     description="strain rate solution tensor at cell center, R3, in symmetric 6-index form"
+		/>
+		<var name="strainRateR3Edge" 
+                     persistence="scratch" 
+                     type="real" dimensions="SIX nVertLevels nEdges Time" units="s^{-1}"
+		     description="strain rate tensor at edge, R3, in symmetric 6-index form"
+		/>
+		<var name="strainRateLonLatRCell" 
+                     persistence="scratch" 
+                     type="real" dimensions="SIX nVertLevels nCells Time" units="s^{-1}"
+		     description="strain rate tensor at cell center, 3D, lon-lat-r in symmetric 6-index form, {\color{red}Temporary only}"
+		/>
+		<var name="strainRateLonLatRCellSolution" 
+                     persistence="scratch" 
+                     type="real" dimensions="SIX nVertLevels nCells Time" units="s^{-1}"
+		     description="strain rate tensor at cell center, 3D, lon-lat-r in symmetric 6-index form, {\color{red}Temporary only}"
+		/>
+		<var name="strainRateLonLatREdge" 
+                     persistence="scratch" 
+                     type="real" dimensions="SIX nVertLevels nEdges Time" units="s^{-1}"
+		     description="strain rate tensor at edge, 3D, lon-lat-r in symmetric 6-index form, {\color{red}Temporary only}"
+		/>
+		<var name="divTensorR3Cell" 
+                     persistence="scratch" 
+                     type="real" dimensions="R3 nVertLevels nCells Time" units="s^{-2}"
+		     description="divergence of the tensor at cell center, as an R3 vector"
+		/>
+		<var name="divTensorR3CellSolution" 
+                     persistence="scratch" 
+                     type="real" dimensions="R3 nVertLevels nCells Time" units="s^{-2}"
+		     description="divergence of the tensor solution at cell center, as an R3 vector"
+		/>
+		<var name="divTensorLonLatRCell" 
+                     persistence="scratch" 
+                     type="real" dimensions="R3 nVertLevels nCells Time" units="s^{-2}"
+		     description="divergence of the tensor at cell center, as a lon-lat-r vector"
+		/>
+		<var name="divTensorLonLatRCellSolution" 
+                     persistence="scratch" 
+                     type="real" dimensions="R3 nVertLevels nCells Time" units="s^{-2}"
+		     description="divergence of the tensor at cell center, as a lon-lat-r vector, solution"
+		/>
+		<var name="outerProductEdge" 
+                     persistence="scratch" 
+                     type="real" dimensions="SIX nVertLevels nEdges Time" units="m^2 s^{-1}"
+		     description="Outer product, u_e \cross n_e, at each edge."
+		/>
+    </var_struct>
 </registry>

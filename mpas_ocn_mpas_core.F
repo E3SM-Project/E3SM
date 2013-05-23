@@ -216,10 +216,7 @@ module mpas_core
       end do
 
       ! mrp added just to test stress tensor ops:
-      print *, 'mpas_test_stress_tensor'
-      call mpas_test_tensor(domain)
-      print *, 'mpas_test_stress_tensor complete'
-!     stop
+       call mpas_prep_test_tensor(domain)
       ! mrp added just to test stress tensor ops end
 
       if (config_write_stats_on_startup) then
@@ -1199,6 +1196,56 @@ end subroutine ocn_compute_max_level!}}}
        end do
 
    end subroutine ocn_setup_sign_and_index_fields!}}}
+
+!***********************************************************************
+!
+!  routine mpas_prep_test_tensor
+!
+!> \brief   set up scratch variables to test strain rate and tensor divergence operators
+!> \author  Mark Petersen
+!> \date    17 April 2013
+!> \details 
+!>  This routine sets up scratch variables to test strain rate and tensor divergence operators.
+!
+!-----------------------------------------------------------------------
+
+   subroutine mpas_prep_test_tensor(domain) !{{{
+
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+
+      type (domain_type), intent(inout) :: domain
+
+      call mpas_allocate_scratch_field(domain % blocklist % scratch % strainRateR3Cell, .false.)
+      call mpas_allocate_scratch_field(domain % blocklist % scratch % strainRateR3CellSolution, .false.)
+      call mpas_allocate_scratch_field(domain % blocklist % scratch % strainRateR3Edge, .false.)
+      call mpas_allocate_scratch_field(domain % blocklist % scratch % strainRateLonLatRCell, .false.)
+      call mpas_allocate_scratch_field(domain % blocklist % scratch % strainRateLonLatRCellSolution, .false.)
+      call mpas_allocate_scratch_field(domain % blocklist % scratch % strainRateLonLatREdge, .false.)
+      call mpas_allocate_scratch_field(domain % blocklist % scratch % divTensorR3Cell, .false.)
+      call mpas_allocate_scratch_field(domain % blocklist % scratch % divTensorR3CellSolution, .false.)
+      call mpas_allocate_scratch_field(domain % blocklist % scratch % divTensorLonLatRCell, .false.)
+      call mpas_allocate_scratch_field(domain % blocklist % scratch % divTensorLonLatRCellSolution, .false.)
+      call mpas_allocate_scratch_field(domain % blocklist % scratch % outerProductEdge, .false.)
+
+      call mpas_test_tensor(domain, config_tensor_test_function)
+
+      call mpas_deallocate_scratch_field(domain % blocklist % scratch % strainRateR3Cell, .false.)
+      call mpas_deallocate_scratch_field(domain % blocklist % scratch % strainRateR3CellSolution, .false.)
+      call mpas_deallocate_scratch_field(domain % blocklist % scratch % strainRateR3Edge, .false.)
+      call mpas_deallocate_scratch_field(domain % blocklist % scratch % strainRateLonLatRCell, .false.)
+      call mpas_deallocate_scratch_field(domain % blocklist % scratch % strainRateLonLatRCellSolution, .false.)
+      call mpas_deallocate_scratch_field(domain % blocklist % scratch % strainRateLonLatREdge, .false.)
+      call mpas_deallocate_scratch_field(domain % blocklist % scratch % divTensorR3Cell, .false.)
+      call mpas_deallocate_scratch_field(domain % blocklist % scratch % divTensorR3CellSolution, .false.)
+      call mpas_deallocate_scratch_field(domain % blocklist % scratch % divTensorLonLatRCell, .false.)
+      call mpas_deallocate_scratch_field(domain % blocklist % scratch % divTensorLonLatRCellSolution, .false.)
+      call mpas_deallocate_scratch_field(domain % blocklist % scratch % outerProductEdge, .false.)
+
+   end subroutine mpas_prep_test_tensor!}}}
 
 end module mpas_core
 
