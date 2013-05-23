@@ -847,3 +847,41 @@ moveBaseline() {
     done
   done
 }
+
+checkBaselineResults() {
+
+  for testFileNum in $(seq 1 $num_test_files)
+  do
+
+    testFile=test_file${testFileNum}
+    source ${!testFile}
+
+    testName=`basename ${!testFile} .sh`
+
+    FILES="${nc_output_files}"
+
+
+    if [ -z "${FILES}" ] ; then
+      echo "Test ${TEST_NAME} doesn't have Netcdf output files"
+    fi
+
+    # for files in movies
+    for file in $FILES 
+    do
+      baseFilename=`basename $file`
+
+      # result in the repo
+      repoFile=${HOMME_BASELINE_DIR}/${testName}/movies/${baseFilename}
+
+      if [ ! -f "${repoFile}" ] ; then
+        echo "Warning: The repo file ${repoFile} does not exist in the baseline dir"
+        exit 0
+      fi
+
+    done
+
+  done
+
+}
+
+

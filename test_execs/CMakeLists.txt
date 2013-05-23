@@ -99,6 +99,8 @@ CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/diff_output.sh
                ${CMAKE_BINARY_DIR}/tests/diff_output.sh @ONLY)
 CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/cmake_variables.sh
                ${CMAKE_BINARY_DIR}/tests/cmake_variables.sh @ONLY)
+CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/check_baseline.sh
+               ${CMAKE_BINARY_DIR}/tests/check_baseline.sh @ONLY)
 
 CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/testing-utils.sh
                ${CMAKE_BINARY_DIR}/tests/testing-utils.sh COPYONLY)
@@ -115,6 +117,10 @@ ADD_DEPENDENCIES(check cprnc)
 ADD_CUSTOM_TARGET(baseline
          COMMAND ${CMAKE_BINARY_DIR}/tests/submit_tests.sh "baseline")
 
+# Create a target for making the reference data
+ADD_TEST(verifyBaselineResults ${CMAKE_BINARY_DIR}/tests/check_baseline.sh)
+ADD_DEPENDENCIES(check verifyBaselineResults)
+
 IF (${HOMME_QUEUING})
   # The first CMake test is running
   #   this is a little awkward because submit_tests.sh uses 
@@ -127,13 +133,6 @@ IF (${HOMME_QUEUING})
 
 ENDIF ()
 
-# Add the test exec subdirs for the preqx executable
-IF(${BUILD_HOMME_PREQX})
-  ADD_SUBDIRECTORY(baroA)
-  ADD_SUBDIRECTORY(baroB)
-  ADD_SUBDIRECTORY(baroC)
-ENDIF()
-
 # Add the test exec subdirs for the sweqx executable
 IF(${BUILD_HOMME_SWEQX})
   ADD_SUBDIRECTORY(swtcA)
@@ -144,6 +143,13 @@ ENDIF()
 # Add the test exec subdirs for the swdgx executable
 IF(${BUILD_HOMME_SWDGX})
   ADD_SUBDIRECTORY(swtc-dgA)
+ENDIF()
+
+# Add the test exec subdirs for the preqx executable
+IF(${BUILD_HOMME_PREQX})
+  ADD_SUBDIRECTORY(baroA)
+  ADD_SUBDIRECTORY(baroB)
+  ADD_SUBDIRECTORY(baroC)
 ENDIF()
 
 # Read the test-list.cmake file to get the HOMME_TESTS list
