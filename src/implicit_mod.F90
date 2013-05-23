@@ -107,7 +107,6 @@ contains
     n0    = tl%n0
     np1   = tl%np1
     nstep = tl%nstep
-    t_stepper = tl%t_stepper
 
 
    ! write(6,*)'t_stepper=',t_stepper,'\n'
@@ -233,7 +232,7 @@ contains
     use derivative_mod, only : derivative_t, gradient_sphere, &
           divergence_sphere, vorticity_sphere, divergence_sphere_wk
     use time_mod, only : timelevel_t
-    use control_mod, only :  topology, test_case
+    use control_mod, only :  topology, test_case, tstep_type
     use bndry_mod, only : bndry_exchangev
     use derived_type_mod, only : derived_type
     use perf_mod, only : t_startf, t_stopf
@@ -269,7 +268,6 @@ contains
     integer    :: i,j,k,n,ie
     integer    :: kptr
     integer    :: nm1,n0,np1
-    integer    :: t_stepper
     integer    :: nstep
     integer    :: lenx,lenp, lx
 
@@ -280,7 +278,6 @@ contains
     n0         = fptr%tl%n0
     np1        = fptr%tl%np1
     nm1        = fptr%tl%nm1
-    t_stepper  = fptr%tl%t_stepper
     nstep      = fptr%tl%nstep
     dti        = 1.0d0/fptr%dt
     lenx       = fptr%n 
@@ -380,7 +377,7 @@ contains
             ptens(i,j,k,ie) =  -spheremp(i,j)*div(i,j)
 
 ! calculate nonlinear residual 
-    if (t_stepper==22) then !Crank Nicolson 2nd order
+    if (tstep_type==22) then !Crank Nicolson 2nd order
 
        ptens(i,j,k,ie) = spheremp(i,j)*(fptr%base(ie)%state%p(i,j,k,np1)- &
           fptr%base(ie)%state%p(i,j,k,n0))*dti - 0.5*ptens(i,j,k,ie) &
@@ -394,7 +391,7 @@ contains
          (up(i,j,2)-ulatlon(i,j,2))*dti - 0.5*vtens(i,j,2,k,ie) &
           - 0.5*vtens_n(i,j,2,k,ie)
 
-    else if (t_stepper==23) then !BDF2 2nd order
+    else if (tstep_type==23) then !BDF2 2nd order
 
 !      if (nstep==0) then ! BE bootstrap
 !       ptens(i,j,k,ie)   = spheremp(i,j)*(fptr%base(ie)%state%p(i,j,k,np1)- &
@@ -617,7 +614,7 @@ contains
           divergence_sphere, vorticity_sphere, divergence_sphere_wk, &
           vorticity_sphere_diag
     use time_mod, only : timelevel_t
-    use control_mod, only :  topology, test_case
+    use control_mod, only :  topology, test_case, tstep_type
     use bndry_mod, only : bndry_exchangev
     use derived_type_mod, only : derived_type
     use perf_mod, only : t_startf, t_stopf
@@ -663,7 +660,6 @@ contains
     integer    :: i,j,k,n,ie
     integer    :: kptr
     integer    :: nm1,n0,np1
-    integer    :: t_stepper
     integer    :: nstep
     integer    :: lenx,lenp, lx
 
@@ -674,7 +670,6 @@ contains
     n0         = fptr%tl%n0
     np1        = fptr%tl%np1
     nm1        = fptr%tl%nm1
-    t_stepper  = fptr%tl%t_stepper
     nstep      = fptr%tl%nstep
     dti        = 1/fptr%dt
     lenx       = fptr%n 
@@ -876,7 +871,7 @@ contains
 
 
 ! calculate nonlinear residual 
-    if (t_stepper==22) then !Crank Nicolson 2nd order
+    if (tstep_type==22) then !Crank Nicolson 2nd order
 
       vtens(i,j,1,k,ie) = spheremp(i,j)* &
         (up(i,j,1)-ulatlon(i,j,1))*dti - 0.5*vtens(i,j,1,k,ie) &
@@ -890,7 +885,7 @@ contains
           fptr%base(ie)%state%p(i,j,k,n0))*dti - 0.5*ptens(i,j,k,ie) &
           - 0.5*ptens_n(i,j,k,ie)
 
-    else if (t_stepper==23) then !BDF2 2nd order
+    else if (tstep_type==23) then !BDF2 2nd order
 
       if (nstep==0) then ! CN bootstrap
 
@@ -1361,7 +1356,6 @@ contains
     integer    :: i,j,k,n,ie
     integer    :: kptr
     integer    :: nm1,n0,np1
-!    integer    :: t_stepper
     integer    :: nstep
     integer    :: lenx,lenp, lx
 
@@ -1378,7 +1372,6 @@ contains
     n0         = fptr%tl%n0
     np1        = fptr%tl%np1
     nm1        = fptr%tl%nm1
-!    t_stepper  = fptr%tl%t_stepper
     nstep      = fptr%tl%nstep
     dti        = 1.0d0/fptr%dt
     lenx       = fptr%n 

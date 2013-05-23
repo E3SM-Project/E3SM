@@ -62,7 +62,8 @@ contains
     !-----------------
     use control_mod, only : integration, filter_mu, filter_type, transfer_type, debug_level,  &
          restartfreq, statefreq, runtype, s_bv, p_bv, wght_fm, kcut_fm, precon_method, topology,   &
-         test_case, sub_case, qsplit, nu, nu_s, limiter_option, hypervis_subcycle, test_cfldep, g_sw_output
+         test_case, sub_case, qsplit, nu, nu_s, limiter_option, hypervis_subcycle, test_cfldep, g_sw_output, &
+         tstep_type
     use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
     use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
     use bndry_mod, only : compute_ghost_corner_orientation
@@ -612,7 +613,7 @@ contains
     end if
 
     if (integration == "full_imp") then
-    tl%t_stepper=22 ! CN
+    tstep_type=22 ! CN
     !tl%t_stepper=0 ! BE
       if (hybrid%masterthread) print *,'initializing Trilinos solver info'
 
