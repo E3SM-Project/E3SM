@@ -1,4 +1,4 @@
-MPAS
+MPAS-v1.0
 ====
 
 The Model for Prediction Across Scales (MPAS) is a collaborative project for
@@ -16,6 +16,19 @@ high-level data types, communication routines, and I/O routines. By using MPAS,
 developers can leverage pre-existing code and focus more on development of
 their model.
 
+BUILDING
+========
+
+This README is provided as a brief introduction to the MPAS framework. It does
+not provide details about each specific model, nor does it provide building
+instructions.
+
+For information about building and running each core, please refer to each
+core's user's guide, which can be found at the following web sites:
+
+[MPAS-Atmosphere](http://mpas-dev.github.io/atmosphere/atmosphere_download.html)
+
+[MPAS-Ocean](http://mpas-dev.github.io/ocean/releases.html)
 
 Code Layout
 ----------
