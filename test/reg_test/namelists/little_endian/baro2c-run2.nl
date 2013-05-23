@@ -49,7 +49,13 @@ vfile_mid     = "vcoord/camm-26.fbin.littleendian"
 vfile_int     = "vcoord/cami-26.fbin.littleendian"
 /
 &analysis_nl
- output_timeunits=0
- output_frequency=0
+output_prefix    = "baro2c-run2-"
+output_timeunits = 1
+output_frequency = 3
+output_varnames1 = 'u', 'v', 'ps', 'T'
+interp_type      = 0          ! native high order
+output_type      = 'netcdf'
+io_stride        = 8
 /
+
 

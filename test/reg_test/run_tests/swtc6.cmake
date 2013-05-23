@@ -16,3 +16,5 @@ SET(NUM_CPUS 16)
 
 SET(NAMELIST_FILES ${HOMME_ROOT}/test/reg_test/namelists/swtc6-short.nl)
 
+SET(NC_OUTPUT_FILES swtc61.nc)
+

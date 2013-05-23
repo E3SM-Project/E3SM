@@ -21,4 +21,4 @@ SET(NAMELIST_FILES ${HOMME_ROOT}/test/reg_test/${NAMELIST_DIR}/${TEST_NAME}.nl)
 SET(VCOORD_FILES ${HOMME_ROOT}/test/vcoord/*20*)
 SET(NCL_FILES ${HOMME_ROOT}/test/reg_test/ncl/${TEST_NAME}.ncl)
 
-SET(NC_OUTPUT_FILES baroclinic1.nc)
+SET(NC_OUTPUT_FILES baro1b-baroclinic1.nc)

@@ -457,18 +457,18 @@ createAllRunScripts() {
 
         # new result
         newFile=${HOMME_TESTING_DIR}/${testName}/movies/$file
+
         #if [ ! -f "${newFile}" ] ; then
-        #  echo "ERROR: The result file ${newFile} does not exist exiting" 
+        #  echo "Error: The result file ${newFile} does not exist. Exiting" 
         #  exit -1
         #fi
 
         # result in the repo
-        #repoFile=${HOMME_NC_RESULTS_DIR}/${TEST_NAME}/${baseFilename}
         repoFile=${HOMME_BASELINE_DIR}/${testName}/movies/${baseFilename}
 
         #if [ ! -f "${newFile}" ] ; then
-        #  echo "ERROR: The repo file ${repoFile} does not exist exiting" 
-        #  exit -1
+        #  echo "Warning: The repo file ${repoFile} does not exist in the baseline dir"
+        #  exit 0
         #fi
 
 
@@ -698,7 +698,7 @@ diffCprncOutput() {
 
     # ensure that cprncOutputFile exists
     if [ ! -f "${cprncOutputFile}" ]; then
-      echo "Error cprnc output file ${cprncOutputFile} not found. Exiting."
+      echo "Error: cprnc output file ${cprncOutputFile} not found. Exiting."
       exit -1
     fi
 

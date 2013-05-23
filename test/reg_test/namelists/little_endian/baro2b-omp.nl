@@ -63,14 +63,15 @@ profile_single_file	= .true.
 /
 
 &analysis_nl
- interp_gridtype   = 2
- output_timeunits  = 1,1
- output_frequency  = 9,9
- output_start_time = 0,0
- output_end_time   = 30,30
- output_varnames1  = 'ps', 'zeta', 'DIFFT'
- output_varnames2  = 'Q', 'Q2', 'Q3', 'Q4','C', 'C2', 'C3', 'C4'
- io_stride         = 8
- output_type       = 'netcdf' 
+output_prefix     = "baro2b-omp-"
+interp_gridtype   = 2
+output_timeunits  = 1,1
+output_frequency  = 9,9
+output_start_time = 0,0
+output_end_time   = 30,30
+output_varnames1  = 'u', 'v', 'ps', 'T', 'DIFFT'
+output_varnames2  = 'Q', 'Q2', 'Q3', 'Q4','C', 'C2', 'C3', 'C4'
+io_stride         = 8
+output_type       = 'netcdf' 
 /
 

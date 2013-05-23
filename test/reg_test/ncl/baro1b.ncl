@@ -3,7 +3,7 @@ load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_code.ncl"
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_csm.ncl"
 
 begin
-  fname =  "movies/baroclinic1.nc"
+  fname =  "movies/baro1b-baroclinic1.nc"
   f     = addfile(fname,"r")       ; Open netCDF file.	
 
   field = (/"T","zeta"/)
