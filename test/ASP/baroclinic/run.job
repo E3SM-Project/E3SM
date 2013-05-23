@@ -35,16 +35,13 @@
 
 
 
-# directores
+# USER specific directores:
 set HOMME = ~/codes/homme
-#set HOMME = /tmp/work/$USER/homme
-set src = $HOMME/build/preqx
-
-
-#set wdir = /tmp/work/$USER/preqx   # work directory where output is stored
+set MACH = $HOMME/cmake/machineFiles/redsky.cmake
 set wdir = ~/scratch1/preqx
-#set wdir = /ptmp/$HOMME/prexq
 
+
+# location of test case and vertical coordinate files 
 set input = $HOMME/test/ASP/baroclinic   # test cases
 set vcoord = $HOMME/test/vcoord          # location of vertical coordinate files
 
@@ -81,7 +78,7 @@ set RK2 = 1
 set qsplit = 4
 set limiter = 8
 set rsplit=0
-
+set energy_fixer = -1  # disabled
 
 # resolution parameters
 set ne = 30    # setup for 8,15,30,60,120?
@@ -121,24 +118,24 @@ if ( $ne == 30 ) then
    set tstep = 90        # dynamics timestep
    set resolution = medium_high
 
-   # CAM defaults
-   #set nu = 1e15
-   #set nu_q = 1e15
-   #set nu_div = 2.5e15 
 
-# Kinnmark and Gray Options:
-#   set RK2 = 5  # turn on K&G 5 stage optionoption    5 dycore + 3 vis
-#   set tstep=360
-#   set qsplit=1
-#   set hsub = 3  # 2.5 would work, if possible
-#   set rsplit = 5 #; set nu_p = 1e15
-
-# try and get RK3-SSP working:
-#   set RK2 = 3    # 3 stage SSP  9 dycore + 1 vis
-#   set tstep=120  #
-#   set qsplit=3
-#   set hsub = 1  # 2.5 would work, if possible
-#   set rsplit = 5 ; set nu_p = 1e15
+    if ( 0 ) then
+        # Kinnmark and Gray Options:
+        # CAM defaults
+        set nu = 1e15
+        set nu_q = 1e15
+        set nu_div = 2.5e15 
+    
+        set RK2 = 5  # turn on K&G 5 stage optionoption    5 dycore + 3 vis
+        set tstep=360
+        set qsplit=1
+        set hsub = 3    # 2.5 would work, if possible 
+        #set rsplit = 0 ; set nu_p = 0
+        set rsplit = 5 ; set nu_p = 1e15
+    
+        set energy_fixer = -1
+    endif
+    
 
 endif
 if ( $ne == 60 ) then
@@ -214,6 +211,7 @@ sed s/nu_p.\*/"nu_p = $nu_p"/ |\
 sed s/u_perturb.\*/"u_perturb = $u_perturb"/ |\
 sed s/rotate_grid.\*/"rotate_grid = $rotate"/ |\
 sed s/ndays.\*/"ndays = $ndays"/ |\
+sed s/energy_fixer.\*/"energy_fixer = $energy_fixer"/ |\
 sed s/limiter_option.\*/"limiter_option = $limiter"/ |\
 sed s/smooth.\*/"smooth = $smooth"/ |\
 sed s/qsize.\*/"qsize = $qsize"/    > $wdir/input.nl
@@ -238,8 +236,10 @@ if ( ${?SLURM_NNODES} ) then
 endif
 echo using NCPU = $NCPU
 
+
+set build = run  # build, make or run(default)
+
 set machine = default
-if ( AIX == `uname` ) set machine = aix
 if ( yodjag == `hostname | head -c 6` ) set machine = titan
 if ( chester == `hostname | head -c 7` ) set machine = titan
 if ( titan == `hostname | head -c 5` ) set machine = titan
@@ -247,59 +247,33 @@ echo machine = $machine
 echo hostname = `hostname`
 
 
-if ( $machine == aix  ) then
-   set make = "gmake -j8 "
-   set mpirun = "mpirun.lsf "
-
-  # other stuff for blue vista: 
-  mv -f $wdir/input.nl $wdir/tmp.nl
-  sed  s/.littleendian//g $wdir/tmp.nl > $wdir/input.nl
-else if ( titan == $machine ) then
-   set make = "make -j4"
+if ( titan == $machine ) then
    set mpirun = "aprun -n $NCPU "
    # cant reference home directory
    set vcoord = /tmp/work/$USER/preqx/vcoord
    rsync -a $HOMME/test/vcoord/* $vcoord
 else
-   set make = "make -j4"
    set mpirun = "mpirun -np $NCPU"
 endif
 
-cd $src
-set build = run  # build, make or run(default)
-
-if ( $#argv >= 1) set build = $1
-if ( $build == "build" ) then
-   if (${?PNETCDF_PATH} ) then
-      ./configure --enable-blas --enable-lapack --with-netcdf=$NETCDF_PATH \
-       --with-pnetcdf=$PNETCDF_PATH NP=4 PLEV=26   --enable-energy-diagnostics
-   else
-      ./configure --enable-blas --enable-lapack --with-netcdf=$NETCDF_PATH \
-       NP=4 PLEV=26   --enable-energy-diagnostics
-   endif
-   make -j4 depends
-   make clean
-   $make 
-   exit
-endif
-if ( $build == "make" ) then
-    $make
-    if ($status) exit
-    exit
-endif
-$make
-if ($status) exit
-
-
 
 cd $wdir
+if ( $#argv >= 1) set build = $1
+if ( $build == "build" ) then
+   rm -rf CMakeFiles CMakeCache.txt
+   cmake -C $MACH -DPREQX_PLEV=26 -DPREQX_NP=4 -DWITH_ENERGY=TRUE  $HOMME
+   make -j4 preqx
+   exit
+endif
+make -j4 preqx
+if ($status) exit
+set exe = $wdir/src/preqx/preqx
 
 rm -f vcoord
 ln -s $vcoord vcoord
 
-
 date
-$mpirun  $src/preqx < $wdir/input.nl
+$mpirun  $exe x < $wdir/input.nl
 if ($status) exit
 date
 
