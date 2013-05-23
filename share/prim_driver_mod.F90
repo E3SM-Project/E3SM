@@ -719,14 +719,12 @@ contains
        call abortmp('Error: only cube topology supported for primaitve equations') 
     endif
 
-
 #ifndef CAM
     ! =================================
     ! HOMME stand alone initialization
     ! =================================
-    tl%nstep0=2   ! This will be the first full leapfrog step
-    call InitColumnModel(elem, cm(hybrid%ithr), hvcoord, hybrid, tl,nets,nete,runtype)
 
+    call InitColumnModel(elem, cm(hybrid%ithr), hvcoord, hybrid, tl,nets,nete,runtype)
     if(runtype >= 1) then 
        ! ===========================================================
        ! runtype==1   Exact Restart 
@@ -745,20 +743,14 @@ contains
           end if
           call aquaplanet_init_state(elem, hybrid,hvcoord,nets,nete,integration)
        end if
-       
+
        call ReadRestart(elem,hybrid%ithr,nets,nete,tl)
+
        ! scale PS to achieve prescribed dry mass
        if (runtype /= 1) &
             call prim_set_mass(elem, tl,hybrid,hvcoord,nets,nete)  
        
-       tl%nstep0=tl%nstep+1            ! restart run: first step = first first full leapfrog step
-       
        if (runtype==2) then
-          ! branch run
-          ! reset time counters to zero since timestep may have changed
-          nEndStep = nEndStep-tl%nstep ! restart set this to nmax + tl%nstep
-          tl%nstep=0
-          tl%nstep0=2   
           ! copy prognostic variables:  tl%n0 into tl%nm1
           do ie=nets,nete
              elem(ie)%state%v(:,:,:,:,tl%nm1)=elem(ie)%state%v(:,:,:,:,tl%n0)
@@ -768,10 +760,6 @@ contains
 
           enddo
        endif ! runtype==2
-       if (hybrid%masterthread) then 
-          write(iulog,*) "initial state from restart file:"
-       end if
-       
     else  ! initial run  RUNTYPE=0
        ! ===========================================================
        ! Initial Run  - compute initial condition
@@ -846,12 +834,23 @@ contains
        ! Print state and movie output
        ! ========================================
        
-       if (hybrid%masterthread) then 
-          write(iulog,*) "initial state:"
-       end if
     end if  ! runtype
 
+!$OMP MASTER
+    tl%nstep0=2   ! This will be the first full leapfrog step
+    if (runtype==1) then
+       tl%nstep0=tl%nstep+1            ! restart run: first step = first first full leapfrog step
+    endif
+    if (runtype==2) then
+       ! branch run
+       ! reset time counters to zero since timestep may have changed
+       nEndStep = nEndStep-tl%nstep ! restart set this to nmax + tl%nstep
+       tl%nstep=0
+    endif
+!$OMP END MASTER
+!$OMP BARRIER
 #endif
+
     ! For new runs, and branch runs, convert state variable to (Qdp)
     ! because initial conditon reads in Q, not Qdp
     ! restart runs will read dpQ from restart file
@@ -986,7 +985,6 @@ contains
           write(iulog,'(a,2f9.2)') "CAM physics timescale:       ",phys_tscale
        endif
        write(iulog,'(a,2f9.2)') "CAM dtime (dt_phys):         ",tstep*nsplit*qsplit*max(rsplit,1)
-       write(iulog,*) "initial state from CAM:"
 #endif
     end if
 
@@ -995,7 +993,7 @@ contains
     !Inside this routine, we enforce an OMP BARRIER and an OMP MASTER. It's left out of here because it's ugly
     call cuda_mod_init(elem,deriv(hybrid%ithr),hvcoord)
 #endif
-
+    if (hybrid%masterthread) write(iulog,*) "initial state:"
     call prim_printstate(elem, tl, hybrid,hvcoord,nets,nete, fvm)
   end subroutine prim_init2
 
@@ -1694,6 +1692,7 @@ contains
     integer :: ie,k,i,j,nmax
     real (kind=real_kind), dimension(np,np,nlev)  :: dp   ! delta pressure
     real (kind=real_kind), dimension(np,np,nlev)  :: sumlk
+    real (kind=real_kind), pointer  :: PEner(:,:,:)
     real (kind=real_kind), dimension(np,np)  :: suml
     real (kind=real_kind) :: psum(nets:nete,4),psum_g(4),beta
 
@@ -1747,6 +1746,11 @@ contains
           enddo
           enddo
        enddo
+       PEner => elem(ie)%accum%PEner(:,:,:)
+       if (energy_fixer==3) then
+          PEner => elem(ie)%accum%PEner_cam(:,:,:)
+       endif
+
        ! psum(:,4) = energy before forcing
        ! psum(:,1) = energy after forcing, before dynamics
        ! psum(:,2) = energy after dynamics
@@ -1754,13 +1758,13 @@ contains
        psum(ie,3) = psum(ie,3) + SUM(suml(:,:)*elem(ie)%spheremp(:,:))
        do n=1,2
           psum(ie,n) = psum(ie,n) + SUM(  elem(ie)%spheremp(:,:)*&
-               (elem(ie)%accum%PEner(:,:,n) + &
+               (PEner(:,:,n) + &
                elem(ie)%accum%IEner(:,:,n) + &
                elem(ie)%accum%KEner(:,:,n) ) )
        enddo
        n=4
        psum(ie,n) = psum(ie,n) + SUM(  elem(ie)%spheremp(:,:)*&
-            (elem(ie)%accum%PEner(:,:,n) + &
+            (PEner(:,:,n) + &
             elem(ie)%accum%IEner(:,:,n) + &
             elem(ie)%accum%KEner(:,:,n) ) )
     enddo

@@ -492,7 +492,6 @@ module namelist_mod
           nmax = ndays * (secpday/tstep)
           restartfreq  = restartfreq*(secpday/tstep)
        end if
-       
        nEndStep = nmax
 #endif
 

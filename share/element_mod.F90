@@ -170,6 +170,7 @@ module element_mod
      ! after calling TimeLevelUpdate, all time above decrease by 1.0
      real (kind=real_kind) :: KEner(np,np,4)       
      real (kind=real_kind) :: PEner(np,np,4)       
+     real (kind=real_kind) :: PEner_cam(np,np,4)       
      real (kind=real_kind) :: IEner(np,np,4)    
      real (kind=real_kind) :: IEner_wet(np,np,4)    
      real (kind=real_kind) :: Qvar(np,np,qsize_d,4)  ! Q variance at half time levels   

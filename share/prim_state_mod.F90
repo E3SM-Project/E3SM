@@ -739,7 +739,8 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     use hybvcoord_mod, only : hvcoord_t
     use element_mod, only : element_t
     use physical_constants, only : Cp, cpwater_vapor
-    use physics_mod, only : Virtual_Specific_Heat
+    use physics_mod, only : Virtual_Specific_Heat, Virtual_Temperature
+    use prim_si_mod, only : preq_hydrostatic
 
     integer :: t1,t2,n,nets,nete
     type (element_t)     , intent(inout), target :: elem(:)
@@ -752,7 +753,12 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     real (kind=real_kind), dimension(np,np)  :: E
     real (kind=real_kind), dimension(np,np)  :: suml,suml2,v1,v2
     real (kind=real_kind), dimension(np,np,nlev)  :: sumlk, suml2k
+    real (kind=real_kind), dimension(np,np,nlev)  :: p,T_v,phi
     real (kind=real_kind) :: cp_star1,cp_star2,qval_t1,qval_t2
+    real (kind=real_kind) :: Qt
+    logical :: wet
+
+
     logical tstagger
     integer:: t2_qdp, t1_qdp   ! the time pointers for Qdp are not the same
 
@@ -857,6 +863,7 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
        enddo
        elem(ie)%accum%KEner(:,:,n)=suml(:,:)
 
+
     
     !   PE   dp/dn PHIs
        suml=0
@@ -869,6 +876,34 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
           endif
        enddo
        elem(ie)%accum%PEner(:,:,n)=suml(:,:)
+
+
+
+!      compute alternate PE term which matches what is used in CAM physics
+       wet =(moisture /= "dry")
+       do k=1,nlev
+          p(:,:,k)   = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem(ie)%state%ps_v(:,:,t2)
+          do j=1,np
+             do i=1,np
+                if (wet) then
+                   Qt = elem(ie)%state%Qdp(i,j,k,1,t2_qdp)/dpt2(i,j,k)
+                   T_v(i,j,k) = Virtual_Temperature(elem(ie)%state%T(i,j,k,t2),Qt)
+                else
+                   T_v(i,j,k) = elem(ie)%state%T(i,j,k,t2)
+                endif
+             end do
+          end do
+       end do
+
+       call preq_hydrostatic(phi,elem(ie)%state%phis,T_v,p,dpt2)
+       !   PE   dp/dn PHIs
+       suml=0
+       do k=1,nlev
+          suml = suml + phi(:,:,k)*dpt2(:,:,k)
+       enddo
+       elem(ie)%accum%PEner_cam(:,:,n)=suml(:,:)
+
+
     enddo
     
 end subroutine prim_energy_halftimes

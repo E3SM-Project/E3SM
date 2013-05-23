@@ -27,7 +27,6 @@ module time_mod
      integer np1      ! relative time level n+1
      integer nstep    ! time level since simulation start
      integer nstep0   ! timelevel of first complete leapfrog timestep
-     integer t_stepper ! choice of time discretization scheme - eventually in namelist
   end type TimeLevel_t
 
   ! Methods
