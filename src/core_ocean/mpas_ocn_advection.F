@@ -135,9 +135,13 @@ module ocn_advection
                zc(i) = grid % zCell % array(advCells(i+1))/grid % sphere_radius
             end do
 
-            theta_abs(iCell) =  pii/2. - sphere_angle( xc(1), yc(1), zc(1),  &
-                                                       xc(2), yc(2), zc(2),  &
-                                                       0.0_RKIND, 0.0_RKIND, 1.0_RKIND ) 
+            if ( zc(1) == 1.0_RKIND) then
+               theta_abs(iCell) = pii/2.0_RKIND
+            else
+               theta_abs(iCell) =  pii/2.0_RKIND - sphere_angle( xc(1), yc(1), zc(1),  &
+                                                                 xc(2), yc(2), zc(2),  &
+                                                                 0.0_RKIND, 0.0_RKIND, 1.0_RKIND ) 
+            end if
 
 ! angles from cell center to neighbor centers (thetav)
 
