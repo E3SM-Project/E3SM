@@ -113,29 +113,29 @@ integer,dimension(MP_STATUS_SIZE) :: MP_status
 
 interface MP_init
   subroutine MPI_init(ier)
-    integer,intent(out) :: ier
+    integer :: ier
   end subroutine MPI_init
 end interface
 
 interface MP_initialized
   subroutine MPI_initialized(flag,ier)
-    logical,intent(out) :: flag
-    integer,intent(out) :: ier
+    logical :: flag
+    integer :: ier
   end subroutine MPI_initialized
 end interface
 
 interface MP_finalize
   subroutine MPI_finalize(ier)
-    integer,intent(out) :: ier
+    integer :: ier
   end subroutine MPI_finalize
 end interface
 
 interface MP_error_string
   subroutine MPI_error_string(ierror,cerror,ln,ier)
-    integer,intent(in) :: ierror
-    character(len=*),intent(out) :: cerror
-    integer,intent(out) :: ln
-    integer,intent(out) :: ier
+    integer :: ierror
+    character(len=*) :: cerror
+    integer :: ln
+    integer :: ier
   end subroutine MPI_error_string
 end interface
 
@@ -161,9 +161,9 @@ interface MP_perr; module procedure perr_; end interface
 
 interface MP_abort
   subroutine MPI_abort(comm,errorcode,ier)
-    integer,intent(in) :: comm
-    integer,intent(in) :: errorcode
-    integer,intent(out) :: ier
+    integer :: comm
+    integer :: errorcode
+    integer :: ier
   end subroutine MPI_abort
 end interface
 
@@ -183,32 +183,32 @@ end interface
 	!----------------------------------------
 interface MP_comm_size
   subroutine MPI_comm_size(comm,size,ier)
-    integer,intent(in) :: comm
-    integer,intent(out) :: size
-    integer,intent(out) :: ier
+    integer :: comm
+    integer :: size
+    integer :: ier
   end subroutine MPI_comm_size
 end interface
 
 interface MP_comm_rank
   subroutine MPI_comm_rank(comm,rank,ier)
-    integer,intent(in) :: comm
-    integer,intent(out) :: rank
-    integer,intent(out) :: ier
+    integer :: comm
+    integer :: rank
+    integer :: ier
   end subroutine MPI_comm_rank
 end interface
 
 interface MP_comm_dup
   subroutine MPI_comm_dup(comm,newcomm,ier)
-    integer,intent(in) :: comm
-    integer,intent(out) :: newcomm
-    integer,intent(out) :: ier
+    integer :: comm
+    integer :: newcomm
+    integer :: ier
   end subroutine MPI_comm_dup
 end interface
 
 interface MP_comm_free
   subroutine MPI_comm_free(comm,ier)
-    integer,intent(inout) :: comm
-    integer,intent(out) :: ier
+    integer :: comm
+    integer :: ier
   end subroutine MPI_comm_free
 end interface
 
@@ -216,41 +216,41 @@ end interface
 interface MP_cart_create
   subroutine MPI_cart_create(comm_old,ndims,dims,periods,	&
   	reorder,comm_cart,ier)
-    integer,intent(in) :: comm_old
-    integer,intent(in) :: ndims
-    integer,dimension(*),intent(in) :: dims
-    logical,dimension(*),intent(in) :: periods
-    logical,             intent(in) :: reorder
-    integer,intent(out) :: comm_cart
-    integer,intent(out) :: ier
+    integer :: comm_old
+    integer :: ndims
+    integer,dimension(*) :: dims
+    logical,dimension(*) :: periods
+    logical :: reorder
+    integer :: comm_cart
+    integer :: ier
   end subroutine MPI_cart_create
 end interface
 
 interface MP_dims_create
   subroutine MPI_dims_create(nnodes,ndims,dims,ier)
-    integer,intent(in) :: nnodes
-    integer,intent(in) :: ndims
-    integer,dimension(*),intent(inout) :: dims
-    integer,intent(out) :: ier
+    integer :: nnodes
+    integer :: ndims
+    integer,dimension(*) :: dims
+    integer :: ier
   end subroutine MPI_dims_create
 end interface
 
 interface MP_cart_coords
   subroutine MPI_cart_coords(comm,rank,maxdims,coords,ier)
-    integer,intent(in) :: comm
-    integer,intent(in) :: rank
-    integer,intent(in) :: maxdims
-    integer,dimension(*),intent(out) :: coords
-    integer,intent(out) :: ier
+    integer :: comm
+    integer :: rank
+    integer :: maxdims
+    integer,dimension(*) :: coords
+    integer :: ier
   end subroutine MPI_cart_coords
 end interface
 
 interface MP_cart_rank
   subroutine MPI_cart_rank(comm,coords,rank,ier)
-    integer,intent(in) :: comm
-    integer,dimension(*),intent(in) :: coords
-    integer,intent(out) :: rank
-    integer,intent(out) :: ier
+    integer :: comm
+    integer,dimension(*) :: coords
+    integer :: rank
+    integer :: ier
   end subroutine MPI_cart_rank
 end interface
 	!----------------------------------------
