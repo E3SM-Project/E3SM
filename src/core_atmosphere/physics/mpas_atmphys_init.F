@@ -130,6 +130,16 @@
     enddo
  endif
 
+!initialization of the local sea-surface temperature when a diurnal cycle of the
+!sea-surface temperature is applied. This avoids having the array sstsk equal to
+!zero over land:
+ if(.not. config_do_restart) then
+    write(0,*) '--- initialization of sstsk:'
+    do iCell = 1, mesh % nCellsSolve
+       diag_physics % sstsk % array(iCell) = sfc_input % sst % array(iCell)
+    enddo
+ endif
+
 !initialization of temperatures needed for updating the deep soil temperature:
  if(.not. config_do_restart) then
     do iCell = 1, mesh % nCellsSolve
