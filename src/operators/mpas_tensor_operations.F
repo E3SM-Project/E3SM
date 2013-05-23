@@ -749,7 +749,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_test_tensor(domain) !{{{
+   subroutine mpas_test_tensor(domain, tensor_test_function) !{{{
 
       !-----------------------------------------------------------------
       !
@@ -763,6 +763,7 @@ contains
       !
       !-----------------------------------------------------------------
 
+      character(len=*) :: tensor_test_function
       type (domain_type), intent(inout) :: domain
 
       !-----------------------------------------------------------------
@@ -790,11 +791,10 @@ contains
       real (kind=RKIND), dimension(:), pointer :: angleEdge, xCell, yCell, xEdge, yEdge, latCell, lonCell, latEdge, lonEdge
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, tangentialVelocity, edgeNormalVectors, edgeTangentVectors
       real (kind=RKIND), dimension(:,:,:), pointer :: &
-         strainRateLonLatRCell, strainRateLonLatRCellSolution, strainRateLonLatRCellDiff, &
-         divTensorLonLatRCell,  divTensorLonLatRCellSolution,  divTensorLonLatRCellDiff, &
+         strainRateLonLatRCell, strainRateLonLatRCellSolution, &
+         divTensorLonLatRCell,  divTensorLonLatRCellSolution, &
          strainRateR3Cell, strainRateR3CellSolution, strainRateR3Edge, divTensorR3Cell, divTensorR3CellSolution, &
          outerProductEdge,  strainRateLonLatREdge
-      character(len=16) :: test_function_type
       logical :: computeStrainRate
 
     nCellsSolveSum = 0
@@ -829,20 +829,29 @@ contains
       normalVelocity      => block % state % time_levs(1) % state % normalVelocity % array
       tangentialVelocity  => block % state % time_levs(1) % state % tangentialVelocity % array
 
-      ! mrp convert these to scratch so they are not required for other cores
-      strainRateR3Cell              => block % state % time_levs(1) % state % strainRateR3Cell % array
-      strainRateR3CellSolution      => block % state % time_levs(1) % state % strainRateR3CellSolution % array
-      strainRateR3Edge              => block % state % time_levs(1) % state % strainRateR3Edge % array
-      strainRateLonLatRCell         => block % state % time_levs(1) % state % strainRateLonLatRCell % array
-      strainRateLonLatRCellSolution => block % state % time_levs(1) % state % strainRateLonLatRCellSolution % array
-      strainRateLonLatRCellDiff     => block % state % time_levs(1) % state % strainRateLonLatRCellDiff % array
-      strainRateLonLatREdge         => block % state % time_levs(1) % state % strainRateLonLatREdge % array
-      divTensorR3Cell               => block % state % time_levs(1) % state % divTensorR3Cell % array
-      divTensorR3CellSolution       => block % state % time_levs(1) % state % divTensorR3CellSolution % array
-      divTensorLonLatRCell          => block % state % time_levs(1) % state % divTensorLonLatRCell % array
-      divTensorLonLatRCellSolution  => block % state % time_levs(1) % state % divTensorLonLatRCellSolution % array
-      divTensorLonLatRCellDiff      => block % state % time_levs(1) % state % divTensorLonLatRCellDiff % array
-      outerProductEdge              => block % state % time_levs(1) % state % outerProductEdge % array
+      strainRateR3Cell              => block % scratch % strainRateR3Cell % array
+      strainRateR3CellSolution      => block % scratch % strainRateR3CellSolution % array
+      strainRateR3Edge              => block % scratch % strainRateR3Edge % array
+      strainRateLonLatRCell         => block % scratch % strainRateLonLatRCell % array
+      strainRateLonLatRCellSolution => block % scratch % strainRateLonLatRCellSolution % array
+      strainRateLonLatREdge         => block % scratch % strainRateLonLatREdge % array
+      divTensorR3Cell               => block % scratch % divTensorR3Cell % array
+      divTensorR3CellSolution       => block % scratch % divTensorR3CellSolution % array
+      divTensorLonLatRCell          => block % scratch % divTensorLonLatRCell % array
+      divTensorLonLatRCellSolution  => block % scratch % divTensorLonLatRCellSolution % array
+      outerProductEdge              => block % scratch % outerProductEdge % array
+
+      strainRateR3Cell              = 0.0
+      strainRateR3CellSolution      = 0.0
+      strainRateR3Edge              = 0.0
+      strainRateLonLatRCell         = 0.0
+      strainRateLonLatRCellSolution = 0.0
+      strainRateLonLatREdge         = 0.0
+      divTensorR3Cell               = 0.0
+      divTensorR3CellSolution       = 0.0
+      divTensorLonLatRCell          = 0.0
+      divTensorLonLatRCellSolution  = 0.0
+      outerProductEdge              = 0.0
 
       ! create test functions for normalVelocity and tangentialVelocity
       normalVelocity = 0.0
@@ -863,7 +872,7 @@ contains
       R = block % mesh % sphere_radius
       computeStrainRate = .true.
 
-     if (config_tensor_test_function.eq.'constant') then
+     if (tensor_test_function.eq.'constant') then
        ! linear function in x
         do iEdge = 1,nEdges
            xVelocity = cn
@@ -875,7 +884,7 @@ contains
         strainRateR3CellSolution = 0.0
         divTensorR3CellSolution = 0.0
 
-     elseif (config_tensor_test_function.eq.'linear_x') then
+     elseif (tensor_test_function.eq.'linear_x') then
        ! linear function in x
         do iEdge = 1,nEdges
            xVelocity = cn*xEdge(iEdge)
@@ -890,7 +899,7 @@ contains
 
         divTensorR3CellSolution = 0.0
 
-     elseif (config_tensor_test_function.eq.'linear_y') then
+     elseif (tensor_test_function.eq.'linear_y') then
 
         ! linear function in y
         do iEdge = 1,nEdges
@@ -906,7 +915,7 @@ contains
 
         divTensorR3CellSolution = 0.0
 
-     elseif (config_tensor_test_function.eq.'linear_arb_rot') then
+     elseif (tensor_test_function.eq.'linear_arb_rot') then
 
         ! linear function, arbitrary rotation
 
@@ -930,7 +939,7 @@ contains
 
         divTensorR3CellSolution = 0.0
 
-     elseif (config_tensor_test_function.eq.'power_x') then
+     elseif (tensor_test_function.eq.'power_x') then
 
        ! power function in x: x^p
         do iEdge = 1,nEdges
@@ -949,7 +958,7 @@ contains
            divTensorR3CellSolution(2,:,iCell) = 0.5*cs*p*(p-1)*xCell(iCell)**(p-2)  
         end do
 
-     elseif (config_tensor_test_function.eq.'power_y') then
+     elseif (tensor_test_function.eq.'power_y') then
 
         ! power function in y: y^n
         do iEdge = 1,nEdges
@@ -968,7 +977,7 @@ contains
            divTensorR3CellSolution(2,:,iCell) =  cn    *p*(p-1)*yCell(iCell)**(p-2)
         end do
 
-     elseif (config_tensor_test_function.eq.'power_arb_rot') then
+     elseif (tensor_test_function.eq.'power_arb_rot') then
 
         ! power function, arbitrary rotation
 
@@ -997,7 +1006,7 @@ contains
            divTensorR3CellSolution(2,:,iCell) = p*(p-1)*f**(p-2) *(sin(rot)**2*g2 + 0.5*(cos(rot)**2*g2 + sin(rot)*cos(rot)*g1) )
         end do
 
-     elseif (config_tensor_test_function.eq.'sin_arb_rot') then
+     elseif (tensor_test_function.eq.'sin_arb_rot') then
 
         ! sin function, arbitrary rotation
 
@@ -1027,7 +1036,7 @@ contains
            divTensorR3CellSolution(2,:,iCell) = -pi2l**2*f*(sin(rot)**2*g2 + 0.5*(cos(rot)**2*g2 + sin(rot)*cos(rot)*g1) )
         end do
 
-     elseif (config_tensor_test_function.eq.'spherical_solid') then
+     elseif (tensor_test_function.eq.'spherical_solid') then
 
         do iEdge = 1,nEdges
            lon = lonEdge(iEdge)
@@ -1062,7 +1071,7 @@ contains
 
         divTensorR3CellSolution = 0.0
 
-     elseif (config_tensor_test_function.eq.'sph_Williamson') then
+     elseif (tensor_test_function.eq.'sph_Williamson') then
 
         rotAngle=pii/4
 
@@ -1099,7 +1108,7 @@ contains
 
         end do
 
-     elseif (config_tensor_test_function.eq.'sph_uCosCos') then
+     elseif (tensor_test_function.eq.'sph_uCosCos') then
 
         do iEdge = 1,nEdges
            lon = lonEdge(iEdge)
@@ -1134,7 +1143,7 @@ contains
 
         end do
 
-     elseif (config_tensor_test_function.eq.'sph_vCosCos') then
+     elseif (tensor_test_function.eq.'sph_vCosCos') then
 
         do iEdge = 1,nEdges
            lon = lonEdge(iEdge)
@@ -1169,7 +1178,7 @@ contains
 
         end do
 
-     elseif (config_tensor_test_function.eq.'sph_ELonLon_CosCos') then
+     elseif (tensor_test_function.eq.'sph_ELonLon_CosCos') then
         computeStrainRate = .false.
         strainRateLonLatRIndex = 1
 
@@ -1192,7 +1201,7 @@ contains
 
         end do
 
-     elseif (config_tensor_test_function.eq.'sph_ELatLat_CosCos') then
+     elseif (tensor_test_function.eq.'sph_ELatLat_CosCos') then
         computeStrainRate = .false.
         strainRateLonLatRIndex = 2
 
@@ -1215,7 +1224,7 @@ contains
 
         end do
 
-     elseif (config_tensor_test_function.eq.'sph_ELonLat_CosCos') then
+     elseif (tensor_test_function.eq.'sph_ELonLat_CosCos') then
         computeStrainRate = .false.
         strainRateLonLatRIndex = 4
 
@@ -1239,7 +1248,7 @@ contains
         end do
 
      else
-       print *, 'bad choice of config_tensor_test_function:',config_tensor_test_function
+       print *, 'bad choice of tensor_test_function: ',tensor_test_function
        stop
      endif
 
