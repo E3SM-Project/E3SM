@@ -366,11 +366,8 @@
 
 !update the surface temperature over the oceans:
  do iCell = 1, nCellsSolve
-    if(xland(iCell) .gt. 1.5) tsk(iCell) = sstsk(iCell)
+    if(xland(iCell) .ge. 1.5) tsk(iCell) = sstsk(iCell)
  enddo
-
- write(0,*) 'check skin sst skinmax = ', skinmax
- write(0,*) 'check skin sst skinmin = ', skinmin
 
  end subroutine physics_update_sstskin
 
