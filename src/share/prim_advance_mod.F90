@@ -1442,7 +1442,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   use element_mod, only : element_t
   use hybvcoord_mod, only : hvcoord_t
   use control_mod, only : moisture
-  
+  use physical_constants, only: Cp  
   implicit none
   type (element_t)     , intent(inout) :: elem(:)
   real (kind=real_kind), intent(in) :: dt_q
@@ -1452,6 +1452,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   ! local
   integer :: i,j,k,ie,q
   real (kind=real_kind) :: v1,dp
+  real (kind=real_kind) :: beta(np,np),E0(np,np),ED(np,np),dp0m1(np,np),dpsum(np,np)
   logical :: wet  
   
   wet = (moisture /= "dry")  
@@ -1492,7 +1493,40 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
         elem(ie)%state%ps_v(:,:,np1) = elem(ie)%state%ps_v(:,:,np1) + &
              dt_q*elem(ie)%derived%FQps(:,:,1)
      endif
-     
+
+#if 1
+     ! energy fixer for FQps term
+     ! dp1 = dp0 + d(FQps)
+     ! dp0-dp1 = -d(FQps)
+     ! E0-E1 = sum( dp0*ED) - sum( dp1*ED) = sum( dp0-dp1) * ED )
+     ! compute E0-E1  
+     E0=0
+     do k=1,nlev
+        ED(:,:) = ( 0.5d0* &
+             (elem(ie)%state%v(:,:,1,k,np1)**2 + elem(ie)%state%v(:,:,2,k,np1)**2)&
+             + cp*elem(ie)%state%T(:,:,k,np1)  &
+             + elem(ie)%state%phis(:,:) )
+ 
+        dp0m1(:,:) = -dt_q*( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%derived%FQps(:,:,1)
+        
+        E0(:,:) = E0(:,:) + dp0m1(:,:)*ED(:,:)
+     enddo
+     ! energy fixer:
+     ! Tnew = T + beta
+     ! cp*dp*beta  = E0-E1   beta = (E0-E1)/(cp*sum(dp))
+
+     dpsum(:,:) = ( hvcoord%hyai(nlev+1) - hvcoord%hyai(1) )*hvcoord%ps0 + &
+          ( hvcoord%hybi(nlev+1) - hvcoord%hybi(1) )*elem(ie)%state%ps_v(:,:,np1)
+
+     beta(:,:)=E0(:,:)/(dpsum(:,:)*cp)
+     do k=1,nlev
+        elem(ie)%state%T(:,:,k,np1)=elem(ie)%state%T(:,:,k,np1)+beta(:,:)
+     enddo
+#endif     
+
+
+
+
      ! Qdp(np1) and ps_v(np1) were updated by forcing - update Q(np1)
      ! ps_v(n0) may also have been changed if using Robert,
      ! but Q(n0) will be updated after robert filter
