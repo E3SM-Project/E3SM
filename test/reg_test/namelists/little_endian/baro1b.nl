@@ -46,11 +46,12 @@ vfile_int     = "vcoord/sabi-20.fbin.littleendian"
 /
 
 &analysis_nl
-output_timeunits=1,
-output_frequency=12,
-output_varnames1='T','zeta','c','phys_lat','phys_lon','phys_area'
-output_type='netcdf'
-io_stride = 8
+output_prefix    = "baro1b-"
+output_timeunits = 1
+output_frequency = 12,
+output_varnames1 = 'u', 'v', 'ps', 'T', 'zeta'
+output_type      = 'netcdf'
+io_stride        = 8
 /
 
 &prof_inparm

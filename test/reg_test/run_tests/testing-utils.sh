@@ -457,18 +457,18 @@ createAllRunScripts() {
 
         # new result
         newFile=${HOMME_TESTING_DIR}/${testName}/movies/$file
+
         #if [ ! -f "${newFile}" ] ; then
-        #  echo "ERROR: The result file ${newFile} does not exist exiting" 
+        #  echo "Error: The result file ${newFile} does not exist. Exiting" 
         #  exit -1
         #fi
 
         # result in the repo
-        #repoFile=${HOMME_NC_RESULTS_DIR}/${TEST_NAME}/${baseFilename}
         repoFile=${HOMME_BASELINE_DIR}/${testName}/movies/${baseFilename}
 
         #if [ ! -f "${newFile}" ] ; then
-        #  echo "ERROR: The repo file ${repoFile} does not exist exiting" 
-        #  exit -1
+        #  echo "Warning: The repo file ${repoFile} does not exist in the baseline dir"
+        #  exit 0
         #fi
 
 
@@ -572,8 +572,12 @@ execLine() {
   NUM_CPUS=$3
 
   if [ -n "${MPI_EXEC}" ]; then
-    echo "${MPI_EXEC} -n ${NUM_CPUS} ${MPI_OPTIONS} $EXEC" >> $RUN_SCRIPT
-
+    # mpirun.lsf is a special case
+    if [ "${MPI_EXEC}" = "mpirun.lsf" ] ; then
+      echo "mpirun.lsf -pam \"-n ${NUM_CPUS}\" ${MPI_OPTIONS} $EXEC" >> $RUN_SCRIPT
+    else
+      echo "${MPI_EXEC} -n ${NUM_CPUS} ${MPI_OPTIONS} $EXEC" >> $RUN_SCRIPT
+    fi
   else
     if [ "$HOMME_Submission_Type" = lsf ]; then
       echo "mpirun.lsf -pam \"-n ${NUM_CPUS}\" ${MPI_OPTIONS} $EXEC" >> $RUN_SCRIPT
@@ -593,7 +597,13 @@ serExecLine() {
   EXEC=$2
 
   if [ -n "${MPI_EXEC}" ]; then
-    echo "${MPI_EXEC} -n 1 ${MPI_OPTIONS} $EXEC" >> $RUN_SCRIPT
+    # mpirun.lsf is a special case
+    if [ "${MPI_EXEC}" = "mpirun.lsf" ] ; then
+      echo "mpirun.lsf -pam \"-n 1\" ${MPI_OPTIONS} $EXEC" >> $RUN_SCRIPT
+    else
+      echo "${MPI_EXEC} -n 1 ${MPI_OPTIONS} $EXEC" >> $RUN_SCRIPT
+    fi
+
   else
     if [ "$HOMME_Submission_Type" = lsf ]; then
       echo "mpirun.lsf -pam \"-n 1\"  ${MPI_OPTIONS} $EXEC" >> $RUN_SCRIPT
@@ -698,7 +708,7 @@ diffCprncOutput() {
 
     # ensure that cprncOutputFile exists
     if [ ! -f "${cprncOutputFile}" ]; then
-      echo "Error cprnc output file ${cprncOutputFile} not found. Exiting."
+      echo "Error: cprnc output file ${cprncOutputFile} not found. Exiting."
       exit -1
     fi
 
@@ -847,3 +857,41 @@ moveBaseline() {
     done
   done
 }
+
+checkBaselineResults() {
+
+  for testFileNum in $(seq 1 $num_test_files)
+  do
+
+    testFile=test_file${testFileNum}
+    source ${!testFile}
+
+    testName=`basename ${!testFile} .sh`
+
+    FILES="${nc_output_files}"
+
+
+    if [ -z "${FILES}" ] ; then
+      echo "Test ${TEST_NAME} doesn't have Netcdf output files"
+    fi
+
+    # for files in movies
+    for file in $FILES 
+    do
+      baseFilename=`basename $file`
+
+      # result in the repo
+      repoFile=${HOMME_BASELINE_DIR}/${testName}/movies/${baseFilename}
+
+      if [ ! -f "${repoFile}" ] ; then
+        echo "Warning: The repo file ${repoFile} does not exist in the baseline dir"
+        exit 0
+      fi
+
+    done
+
+  done
+
+}
+
+

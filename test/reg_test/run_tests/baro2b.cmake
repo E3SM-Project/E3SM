@@ -23,8 +23,15 @@ SET(NAMELIST_FILES ${HOMME_ROOT}/test/reg_test/${NAMELIST_DIR}/${TEST_NAME}.nl)
 SET(VCOORD_FILES ${HOMME_ROOT}/test/vcoord/*26*)
 SET(REFSOLN_FILES ${HOMME_ROOT}/test/reg_test/ref_sol/T340ref.nc)
 
+SET(NC_OUTPUT_FILES 
+  baro2b-asp_baroclinic1.nc 
+  baro2b-asp_baroclinic2.nc)
+
 SET(OMP_SUB_TESTS true)
 SET(OMP_NUM_THREADS 4)
 SET(OMP_NAMELIST_FILES ${HOMME_ROOT}/test/reg_test/${NAMELIST_DIR}/${TEST_NAME}-omp.nl)
 
-SET(NC_OUTPUT_FILES asp_baroclinic1.nc asp_baroclinic2.nc)
+
+SET(OMP_NC_OUTPUT_FILES 
+  baro2b-omp-asp_baroclinic1.nc 
+  baro2b-omp-asp_baroclinic2.nc)

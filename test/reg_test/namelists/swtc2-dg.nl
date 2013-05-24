@@ -56,14 +56,14 @@ kcut_fm       = 2
 !							!
 !  output_varnames1-5					!
 !=======================================================!
-output_start_time= 0
-output_end_time  =-1
-output_frequency = 1
-output_timeunits = 1
-output_varnames1 = 'geop','zeta','u','v'
-output_type = 'netcdf'
-interp_nlon = 720
-interp_nlat = 360
+output_start_time = 0
+output_end_time   = -1
+output_frequency  = 1
+output_timeunits  = 1
+output_varnames1  = 'u', 'v', 'ps', 'geop', 'zeta'
+output_type       = 'netcdf'
+interp_nlon       = 720
+interp_nlat       = 360
 /
 &dg_nl
 riemanntype= 0
