@@ -572,8 +572,12 @@ execLine() {
   NUM_CPUS=$3
 
   if [ -n "${MPI_EXEC}" ]; then
-    echo "${MPI_EXEC} -n ${NUM_CPUS} ${MPI_OPTIONS} $EXEC" >> $RUN_SCRIPT
-
+    # mpirun.lsf is a special case
+    if [ "${MPI_EXEC}" = "mpirun.lsf" ] ; then
+      echo "mpirun.lsf -pam \"-n ${NUM_CPUS}\" ${MPI_OPTIONS} $EXEC" >> $RUN_SCRIPT
+    else
+      echo "${MPI_EXEC} -n ${NUM_CPUS} ${MPI_OPTIONS} $EXEC" >> $RUN_SCRIPT
+    fi
   else
     if [ "$HOMME_Submission_Type" = lsf ]; then
       echo "mpirun.lsf -pam \"-n ${NUM_CPUS}\" ${MPI_OPTIONS} $EXEC" >> $RUN_SCRIPT
@@ -593,7 +597,13 @@ serExecLine() {
   EXEC=$2
 
   if [ -n "${MPI_EXEC}" ]; then
-    echo "${MPI_EXEC} -n 1 ${MPI_OPTIONS} $EXEC" >> $RUN_SCRIPT
+    # mpirun.lsf is a special case
+    if [ "${MPI_EXEC}" = "mpirun.lsf" ] ; then
+      echo "mpirun.lsf -pam \"-n 1\" ${MPI_OPTIONS} $EXEC" >> $RUN_SCRIPT
+    else
+      echo "${MPI_EXEC} -n 1 ${MPI_OPTIONS} $EXEC" >> $RUN_SCRIPT
+    fi
+
   else
     if [ "$HOMME_Submission_Type" = lsf ]; then
       echo "mpirun.lsf -pam \"-n 1\"  ${MPI_OPTIONS} $EXEC" >> $RUN_SCRIPT
