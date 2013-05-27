@@ -9,13 +9,14 @@
 #XXX -W depend=afterany:jobid
 
 #
-#  Shallow water test case 6 "referece" test described in
+#  Shallow water test case 5 "referece" test described in
 #  homme/README 
 #  Mark Taylor 2010/10
 #
 set wdir = ~/scratch1/swtc5
 set HOMME = ~/codes/homme
 set MACH = $HOMME/cmake/machineFiles/redsky.cmake
+set MACH = $HOMME/cmake/machineFiles/darwin.cmake
 set src = $HOMME/build/sweqx
 set input = $HOMME/test/sw_conservative
 mkdir $wdir
@@ -38,22 +39,6 @@ if ( $#argv >= 1) then
   if ( $1 == 'build' ) set build = 1
 endif
 
-# configure build system:
-# if ( $build == 1 ) then
-#    cd $src
-#    ./configure --enable-blas --enable-lapack --with-netcdf=$NETCDF_PATH \
-#      --with-pnetcdf=$PNETCDF_PATH NP=4 PLEV=1   --enable-energy-diagnostics
-#    make depends
-#    make clean
-#    make -j4 sweqx
-#    exit
-# endif
-# if ( $make == 1 ) then
-#    cd src
-#    make -j4 sweqx
-#    if ($status) exit
-# endif
-# set exe = $src/sweqx
 #cmake:
 cd $wdir
 if ( $build == 1 ) then
