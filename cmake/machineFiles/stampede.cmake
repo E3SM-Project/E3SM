@@ -1,4 +1,4 @@
-# CMake initial cache file for redsky
+# CMake initial cache file for stampede
 SET (CMAKE_Fortran_COMPILER $ENV{MPICH_HOME}/bin/mpif90 CACHE FILEPATH "")
 SET (CMAKE_C_COMPILER $ENV{MPICH_HOME}/bin/mpicc CACHE FILEPATH "")
 SET (CMAKE_CXX_COMPILER $ENV{MPICH_HOME}/bin/mpicxx CACHE FILEPATH "")
