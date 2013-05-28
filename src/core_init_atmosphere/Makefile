@@ -1,7 +1,7 @@
 .SUFFIXES: .F .o
 
 OBJS = mpas_init_atm_mpas_core.o \
-       mpas_init_atm_test_cases.o \
+       mpas_init_atm_cases.o \
        mpas_atm_advection.o \
        mpas_init_atm_read_met.o \
        mpas_init_atm_llxy.o \
@@ -20,7 +20,7 @@ all: core_hyd
 core_hyd: $(OBJS)
 	ar -ru libdycore.a $(OBJS)
 
-mpas_init_atm_test_cases.o: \
+mpas_init_atm_cases.o: \
 	read_geogrid.o \
 	mpas_atm_advection.o \
 	mpas_init_atm_read_met.o \
@@ -40,7 +40,7 @@ read_geogrid.o:
 
 mpas_init_atm_llxy.o:
 
-mpas_init_atm_mpas_core.o: mpas_advection.o mpas_init_atm_test_cases.o
+mpas_init_atm_mpas_core.o: mpas_advection.o mpas_init_atm_cases.o
 
 mpas_init_atm_static.o: \
 	mpas_atm_advection.o \

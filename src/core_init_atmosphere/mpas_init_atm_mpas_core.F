@@ -15,7 +15,7 @@ module mpas_core
    
       use mpas_grid_types
       use mpas_configure
-      use init_atm_test_cases
+      use init_atm_cases
    
       implicit none
    
@@ -41,7 +41,7 @@ module mpas_core
       use mpas_grid_types
       use mpas_io_output
       use mpas_timer
-      use init_atm_test_cases
+      use init_atm_cases
    
       implicit none
    
@@ -50,10 +50,10 @@ module mpas_core
       integer, intent(inout) :: output_frame
    
       
-      call init_atm_setup_test_case(domain)
+      call init_atm_setup_case(domain)
    
    !
-   ! Note: The following initialization calls have been moved to mpas_setup_test_case()
+   ! Note: The following initialization calls have been moved to the mpas_init_atm_case_*() subroutines,
    !       since values computed by these routines are needed to produce initial fields
    !
    !   call atm_initialize_advection_rk(mesh)

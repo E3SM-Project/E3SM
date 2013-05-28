@@ -1,5 +1,5 @@
 &nhyd_model
-   config_test_case = 7
+   config_init_case = 7
    config_theta_adv_order = 3
    config_start_time      = '2010-10-23_00:00:00'
    config_stop_time       = '2010-10-23_00:00:00'
