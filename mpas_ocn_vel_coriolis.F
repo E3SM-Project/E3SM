@@ -10,8 +10,8 @@
 !  ocn_vel_coriolis
 !
 !> \brief MPAS ocean horizontal momentum mixing driver
-!> \author Doug Jacobsen
-!> \date   15 September 2011
+!> \author Mark Petersen, Doug Jacobsen, Todd Ringler
+!> \date   September 2011
 !> \details
 !>  This module contains the routine for computing 
 !>  tendencies from the coriolis force.  
@@ -61,8 +61,8 @@ contains
 !  routine ocn_vel_coriolis_tend
 !
 !> \brief   Computes tendency term for coriolis force
-!> \author  Doug Jacobsen
-!> \date    15 September 2011
+!> \author  Mark Petersen, Doug Jacobsen, Todd Ringler
+!> \date    September 2011
 !> \details 
 !>  This routine computes the coriolis tendency for momentum
 !>  based on current state.
@@ -165,8 +165,8 @@ contains
 !  routine ocn_vel_coriolis_init
 !
 !> \brief   Initializes ocean momentum horizontal mixing quantities
-!> \author  Doug Jacobsen
-!> \date    15 September 2011
+!> \author  Mark Petersen, Doug Jacobsen, Todd Ringler
+!> \date    September 2011
 !> \details 
 !>  This routine initializes a variety of quantities related to 
 !>  horizontal velocity mixing in the ocean. Since a variety of 

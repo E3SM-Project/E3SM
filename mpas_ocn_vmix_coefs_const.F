@@ -10,8 +10,8 @@
 !  ocn_vmix_coefs_const
 !
 !> \brief MPAS ocean vertical mixing coefficients
-!> \author Doug Jacobsen
-!> \date   19 September 2011
+!> \author Mark Petersen
+!> \date   September 2011
 !> \details
 !>  This module contains the routines for computing 
 !>  constant vertical mixing coefficients.  
@@ -67,8 +67,8 @@ contains
 !  routine ocn_vmix_coefs_const_build
 !
 !> \brief   Computes coefficients for vertical mixing
-!> \author  Doug Jacobsen
-!> \date    19 September 2011
+!> \author  Mark Petersen
+!> \date    September 2011
 !> \details 
 !>  This routine computes the vertical mixing coefficients for momentum
 !>  and tracers based user choices of mixing parameterization.
@@ -144,8 +144,8 @@ contains
 !  routine ocn_vel_vmix_coefs_const
 !
 !> \brief   Computes coefficients for vertical momentum mixing
-!> \author  Doug Jacobsen
-!> \date    19 September 2011
+!> \author  Mark Petersen
+!> \date    September 2011
 !> \details 
 !>  This routine computes the constant vertical mixing coefficients for momentum
 !
@@ -199,8 +199,8 @@ contains
 !  routine ocn_tracer_vmix_coefs_const
 !
 !> \brief   Computes coefficients for vertical tracer mixing
-!> \author  Doug Jacobsen
-!> \date    19 September 2011
+!> \author  Mark Petersen
+!> \date    September 2011
 !> \details 
 !>  This routine computes the constant vertical mixing coefficients for tracers
 !
@@ -255,8 +255,8 @@ contains
 !  routine ocn_vmix_coefs_const_init
 !
 !> \brief   Initializes ocean momentum vertical mixing quantities
-!> \author  Doug Jacobsen
-!> \date    19 September 2011
+!> \author  Mark Petersen
+!> \date    September 2011
 !> \details 
 !>  This routine initializes a variety of quantities related to 
 !>  vertical velocity mixing in the ocean. Since a variety of 

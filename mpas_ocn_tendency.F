@@ -10,8 +10,8 @@
 !  ocn_tendency
 !
 !> \brief MPAS ocean tendency driver
-!> \author Doug Jacobsen
-!> \date   23 September 2011
+!> \author Mark Petersen, Doug Jacobsen, Todd Ringler
+!> \date   September 2011
 !> \details
 !>  This module contains the routines for computing
 !>  tendency terms for the ocean primitive equations.
@@ -80,8 +80,8 @@ contains
 !  routine ocn_tend_thick
 !
 !> \brief   Computes thickness tendency
-!> \author  Doug Jacobsen
-!> \date    23 September 2011
+!> \author  Mark Petersen, Doug Jacobsen, Todd Ringler
+!> \date    September 2011
 !> \details 
 !>  This routine computes the thickness tendency for the ocean
 !
@@ -141,8 +141,8 @@ contains
 !  routine ocn_tend_vel
 !
 !> \brief   Computes velocity tendency
-!> \author  Doug Jacobsen
-!> \date    23 September 2011
+!> \author  Mark Petersen, Doug Jacobsen, Todd Ringler
+!> \date    September 2011
 !> \details 
 !>  This routine computes the velocity tendency for the ocean
 !
@@ -249,8 +249,8 @@ contains
 !  routine ocn_tend_tracer
 !
 !> \brief   Computes tracer tendency
-!> \author  Doug Jacobsen
-!> \date    23 September 2011
+!> \author  Mark Petersen, Doug Jacobsen, Todd Ringler
+!> \date    September 2011
 !> \details 
 !>  This routine computes tracer tendencies for the ocean
 !
@@ -336,7 +336,7 @@ contains
 !  routine ocn_tendency_init
 !
 !> \brief   Initializes flags used within tendency routines.
-!> \author  Doug Jacobsen
+!> \author  Mark Petersen, Doug Jacobsen, Todd Ringler
 !> \date    4 November 2011
 !> \details 
 !>  This routine initializes flags related to quantities computed within

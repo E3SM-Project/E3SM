@@ -10,8 +10,8 @@
 !  ocn_time_integration_split
 !
 !> \brief MPAS ocean split explicit time integration scheme
-!> \author Doug Jacobsen
-!> \date   26 September 2011
+!> \author Mark Petersen, Doug Jacobsen, Todd Ringler
+!> \date   September 2011
 !> \details
 !>  This module contains the routine for the split explicit
 !>  time integration scheme
@@ -65,8 +65,8 @@ module ocn_time_integration_split
 !  ocn_time_integration_split
 !
 !> \brief MPAS ocean split explicit time integration scheme
-!> \author Mark Petersen
-!> \date   26 September 2011
+!> \author Mark Petersen, Doug Jacobsen, Todd Ringler
+!> \date   September 2011
 !> \details
 !>  This routine integrates a single time step (dt) using a
 !>  split explicit time integrator.

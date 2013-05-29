@@ -10,8 +10,8 @@
 !  ocn_vel_pressure_grad
 !
 !> \brief MPAS ocean pressure gradient module
-!> \author Doug Jacobsen
-!> \date   15 September 2011
+!> \author Mark Petersen
+!> \date   September 2011
 !> \details
 !>  This module contains the routine for computing 
 !>  tendencie from the horizontal pressure gradient.
@@ -63,8 +63,8 @@ contains
 !  routine ocn_vel_pressure_grad_tend
 !
 !> \brief   Computes tendency term for horizontal pressure gradient
-!> \author  Doug Jacobsen
-!> \date    15 September 2011
+!> \author  Mark Petersen
+!> \date    September 2011
 !> \details 
 !>  This routine computes the pressure gradient tendency for momentum
 !>  based on current state.
@@ -163,8 +163,8 @@ contains
 !  routine ocn_vel_pressure_grad_init
 !
 !> \brief   Initializes ocean momentum horizontal pressure gradient
-!> \author  Doug Jacobsen
-!> \date    15 September 2011
+!> \author  Mark Petersen
+!> \date    September 2011
 !> \details 
 !>  This routine initializes parameters required for the computation of the
 !>  horizontal pressure gradient.

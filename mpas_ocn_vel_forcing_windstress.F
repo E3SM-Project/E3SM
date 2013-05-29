@@ -10,8 +10,8 @@
 !  ocn_vel_forcing_windstress
 !
 !> \brief MPAS ocean wind stress
-!> \author Doug Jacobsen
-!> \date   16 September 2011
+!> \author Doug Jacobsen, Mark Petersen, Todd Ringler
+!> \date   September 2011
 !> \details
 !>  This module contains the routine for computing 
 !>  tendencies from wind stress.  
@@ -59,7 +59,7 @@ contains
 !  routine ocn_vel_forcing_windstress_tend
 !
 !> \brief   Computes tendency term from wind stress
-!> \author  Doug Jacobsen
+!> \author  Doug Jacobsen, Mark Petersen, Todd Ringler
 !> \date    15 September 2011
 !> \details 
 !>  This routine computes the wind stress tendency for momentum
@@ -150,8 +150,8 @@ contains
 !  routine ocn_vel_forcing_windstress_init
 !
 !> \brief   Initializes ocean wind stress forcing
-!> \author  Doug Jacobsen
-!> \date    16 September 2011
+!> \author  Doug Jacobsen, Mark Petersen, Todd Ringler
+!> \date    September 2011
 !> \details 
 !>  This routine initializes quantities related to wind stress 
 !>  in the ocean. 
