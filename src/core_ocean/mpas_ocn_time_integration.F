@@ -10,8 +10,8 @@
 !  ocn_time_integration
 !
 !> \brief MPAS ocean time integration driver
-!> \author Doug Jacobsen
-!> \date   26 September 2011
+!> \author Mark Petersen, Doug Jacobsen, Todd Ringler
+!> \date   September 2011
 !> \details
 !>  This module contains the main driver routine for calling
 !>  the time integration scheme
@@ -65,8 +65,8 @@ module ocn_time_integration
 !  ocn_timestep
 !
 !> \brief MPAS ocean time integration driver
-!> \author Doug Jacobsen
-!> \date   26 September 2011
+!> \author Mark Petersen, Doug Jacobsen, Todd Ringler
+!> \date   September 2011
 !> \details
 !>  This routine handles a single timestep for the ocean. It determines
 !>  the time integrator that will be used for the run, and calls the

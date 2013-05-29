@@ -10,8 +10,8 @@
 !  ocn_tracer_hmix_del2
 !
 !> \brief MPAS ocean horizontal tracer mixing driver
-!> \author Doug Jacobsen
-!> \date   19 September 2011
+!> \author Doug Jacobsen, Mark Petersen, Todd Ringler
+!> \date   September 2011
 !> \details
 !>  This module contains the main driver routine for computing 
 !>  horizontal mixing tendencies.  
@@ -64,8 +64,8 @@ contains
 !  routine ocn_tracer_hmix_del2_tend
 !
 !> \brief   Computes laplacian tendency term for horizontal tracer mixing
-!> \author  Doug Jacobsen
-!> \date    19 September 2011
+!> \author  Doug Jacobsen, Mark Petersen, Todd Ringler
+!> \date    September 2011
 !> \details 
 !>  This routine computes the horizontal mixing tendency for tracers
 !>  based on current state using a laplacian parameterization.
@@ -191,8 +191,8 @@ contains
 !  routine ocn_tracer_hmix_del2_init
 !
 !> \brief   Initializes ocean tracer horizontal mixing quantities
-!> \author  Doug Jacobsen
-!> \date    19 September 2011
+!> \author  Doug Jacobsen, Mark Petersen, Todd Ringler
+!> \date    September 2011
 !> \details 
 !>  This routine initializes a variety of quantities related to 
 !>  laplacian horizontal velocity mixing in the ocean. 

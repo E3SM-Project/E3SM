@@ -10,8 +10,8 @@
 !  ocn_vel_hmix_del2
 !
 !> \brief Ocean horizontal mixing - Laplacian parameterization 
-!> \author Phil Jones, Doug Jacobsen
-!> \date   15 September 2011
+!> \author Mark Petersen, Doug Jacobsen, Todd Ringler
+!> \date   September 2011
 !> \details
 !>  This module contains routines for computing horizontal mixing 
 !>  tendencies using a Laplacian formulation.
@@ -59,7 +59,7 @@ contains
 !  routine ocn_vel_hmix_del2_tend
 !
 !> \brief   Computes tendency term for Laplacian horizontal momentum mixing
-!> \author  Phil Jones, Doug Jacobsen
+!> \author  Mark Petersen, Doug Jacobsen, Todd Ringler
 !> \date    22 August 2011
 !> \details 
 !>  This routine computes the horizontal mixing tendency for momentum
@@ -177,8 +177,8 @@ contains
 !  routine ocn_vel_hmix_del2_init
 !
 !> \brief   Initializes ocean momentum Laplacian horizontal mixing
-!> \author  Phil Jones, Doug Jacobsen
-!> \date    15 September 2011
+!> \author  Mark Petersen, Doug Jacobsen, Todd Ringler
+!> \date    September 2011
 !> \details 
 !>  This routine initializes a variety of quantities related to 
 !>  Laplacian horizontal momentum mixing in the ocean.  

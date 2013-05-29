@@ -10,8 +10,8 @@
 !  ocn_vmix
 !
 !> \brief MPAS ocean vertical mixing driver
-!> \author Doug Jacobsen
-!> \date   19 September 2011
+!> \author Mark Petersen
+!> \date   September 2011
 !> \details
 !>  This module is the main driver for 
 !>  vertical mixing in the ocean. 
@@ -72,8 +72,8 @@ contains
 !  routine ocn_vmix_coefs
 !
 !> \brief   Computes coefficients for vertical mixing
-!> \author  Doug Jacobsen
-!> \date    19 September 2011
+!> \author  Mark Petersen
+!> \date    September 2011
 !> \details 
 !>  This routine computes the vertical mixing coefficients for momentum
 !>  and tracers based user choices of mixing parameterization.
@@ -145,8 +145,8 @@ contains
 !  routine ocn_vel_vmix_tend_implicit
 !
 !> \brief   Computes tendencies for implicit momentum vertical mixing
-!> \author  Doug Jacobsen
-!> \date    19 September 2011
+!> \author  Mark Petersen
+!> \date    September 2011
 !> \details 
 !>  This routine computes the tendencies for implicit vertical mixing for momentum
 !>  using computed coefficients.
@@ -279,8 +279,8 @@ contains
 !  routine ocn_tracer_vmix_tend_implicit
 !
 !> \brief   Computes tendencies for implicit tracer vertical mixing
-!> \author  Doug Jacobsen
-!> \date    19 September 2011
+!> \author  Mark Petersen
+!> \date    September 2011
 !> \details 
 !>  This routine computes the tendencies for implicit vertical mixing for
 !>  tracers using computed coefficients.
@@ -389,8 +389,8 @@ contains
 !  routine ocn_vmix_implicit
 !
 !> \brief   Driver for implicit vertical mixing
-!> \author  Doug Jacobsen
-!> \date    19 September 2011
+!> \author  Mark Petersen
+!> \date    September 2011
 !> \details 
 !>  This routine is a driver for handling implicit vertical mixing
 !>  of both momentum and tracers for a block. It's intended to reduce
@@ -443,8 +443,8 @@ contains
 !  routine ocn_vmix_init
 !
 !> \brief   Initializes ocean vertical mixing quantities
-!> \author  Doug Jacobsen
-!> \date    19 September 2011
+!> \author  Mark Petersen
+!> \date    September 2011
 !> \details 
 !>  This routine initializes a variety of quantities related to 
 !>  vertical mixing in the ocean. 

@@ -10,8 +10,8 @@
 !  ocn_equation_of_state_linear
 !
 !> \brief MPAS ocean equation of state driver
-!> \author Doug Jacobsen
-!> \date   28 September 2011
+!> \author Mark Petersen, Todd Ringler
+!> \date   September 2011
 !> \details
 !>  This module contains the main driver routine for calling
 !>  the equation of state.
@@ -57,8 +57,8 @@ contains
 !  routine ocn_equation_of_state_linear_density
 !
 !> \brief   Calls equation of state
-!> \author  Doug Jacobsen
-!> \date    28 September 2011
+!> \author  Mark Petersen, Todd Ringler
+!> \date    September 2011
 !> \details 
 !>  This routine uses a linear equation of state to update the density
 !
@@ -112,8 +112,8 @@ contains
 !  routine ocn_equation_of_state_linear_init
 !
 !> \brief   Initializes ocean momentum horizontal mixing quantities
-!> \author  Doug Jacobsen
-!> \date    28 September 2011
+!> \author  Mark Petersen, Todd Ringler
+!> \date    September 2011
 !> \details 
 !>  This routine initializes a variety of quantities related to 
 !>  horizontal velocity mixing in the ocean. Since a variety of 
