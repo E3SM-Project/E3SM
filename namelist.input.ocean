@@ -38,7 +38,6 @@
 &hmix
 	config_hmix_ScaleWithMesh = .false.
 	config_maxMeshDensity = -1.0
-	config_visc_vorticity_term = .true.
 	config_apvm_scale_factor = 0.0
 /
 &hmix_del2
@@ -46,14 +45,12 @@
 	config_use_tracer_del2 = .false.
 	config_mom_del2 = 10.0
 	config_tracer_del2 = 10.0
-	config_vorticity_del2_scale = 1.0
 /
 &hmix_del4
 	config_use_mom_del4 = .false.
 	config_use_tracer_del4 = .false.
 	config_mom_del4 = 5.0e13
 	config_tracer_del4 = 0.0
-	config_vorticity_del4_scale = 1.0
 /
 &hmix_Leith
 	config_use_Leith_del2 = .false.

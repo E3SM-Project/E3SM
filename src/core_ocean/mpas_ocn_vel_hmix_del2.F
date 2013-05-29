@@ -50,10 +50,6 @@ module ocn_vel_hmix_del2
 
    logical ::  hmixDel2On  !< integer flag to determine whether del2 chosen
 
-   real (kind=RKIND) :: &
-      eddyVisc2,        &!< base eddy diffusivity for Laplacian
-      viscVortCoef
-
 !***********************************************************************
 
 contains
@@ -161,10 +157,9 @@ contains
             !    + k \times \nabla relativeVorticity pointing from cell1 to cell2.
 
             u_diffusion = ( divergence(k,cell2)  - divergence(k,cell1) ) * invLength1 &
-                          -viscVortCoef &
-                          *( relativeVorticity(k,vertex2) - relativeVorticity(k,vertex1) ) * invLength2
+                         -( relativeVorticity(k,vertex2) - relativeVorticity(k,vertex1) ) * invLength2
 
-            visc2 = meshScalingDel2(iEdge) * eddyVisc2
+            visc2 =  config_mom_del2 * meshScalingDel2(iEdge)
 
             tend(k,iEdge) = tend(k,iEdge) + edgeMask(k, iEdge) * visc2 * u_diffusion
 
@@ -207,13 +202,6 @@ contains
 
    if ( config_mom_del2 > 0.0 ) then
       hmixDel2On = .true.
-      eddyVisc2 = config_mom_del2
-
-      if (config_visc_vorticity_term) then
-         viscVortCoef = config_vorticity_del2_scale
-      else
-         viscVortCoef = 0.0
-      endif
    endif
 
    if(.not.config_use_mom_del2) hmixDel2On = .false.
