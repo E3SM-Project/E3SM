@@ -1,0 +1,291 @@
+<?xml version="1.0"?>
+<registry model="mpas" core="init_nhyd_atmos" version="0.0">
+
+<!-- **************************************************************************************** -->
+<!-- ************************************** Dimensions ************************************** -->
+<!-- **************************************************************************************** -->
+
+        <dims>
+                <dim name="nCells"/>
+                <dim name="nEdges"/>
+                <dim name="maxEdges"/>
+                <dim name="maxEdges2"/>
+                <dim name="nVertices"/>
+                <dim name="TWO"                definition="2"/>
+                <dim name="THREE"              definition="3"/>
+                <dim name="vertexDegree"/>
+                <dim name="FIFTEEN"            definition="15"/>
+                <dim name="TWENTYONE"          definition="21"/>
+                <dim name="R3"                 definition="3"/>
+                <dim name="nVertLevels"        definition="namelist:config_nvertlevels"/>
+                <dim name="nSoilLevels"        definition="namelist:config_nsoillevels"/>
+                <dim name="nFGLevels"          definition="namelist:config_nfglevels"/>
+                <dim name="nFGSoilLevels"      definition="namelist:config_nfgsoillevels"/>
+                <dim name="nVertLevelsP1"      definition="nVertLevels+1"/>
+                <dim name="nMonths"            definition="namelist:config_months"/>
+        </dims>
+
+
+<!-- **************************************************************************************** -->
+<!-- ************************************** Namelists *************************************** -->
+<!-- **************************************************************************************** -->
+
+        <nml_record name="nhyd_model">
+                <nml_option name="config_test_case"             type="integer"       default_value="7"/>
+                <nml_option name="config_calendar_type"         type="character"     default_value="gregorian"/>
+                <nml_option name="config_start_time"            type="character"     default_value="none"/>
+                <nml_option name="config_stop_time"             type="character"     default_value="none"/>
+                <nml_option name="config_theta_adv_order"       type="integer"       default_value="3"/>
+                <nml_option name="config_coef_3rd_order"        type="real"          default_value="0.25"/>
+                <nml_option name="config_num_halos"             type="integer"       default_value="2"/>
+        </nml_record>
+
+        <nml_record name="dimensions">
+                <nml_option name="config_nvertlevels"           type="integer"       default_value="26"/>
+                <nml_option name="config_nsoillevels"           type="integer"       default_value="4"/>
+                <nml_option name="config_nfglevels"             type="integer"       default_value="27"/>
+                <nml_option name="config_nfgsoillevels"         type="integer"       default_value="4"/>
+                <nml_option name="config_months"                type="integer"       default_value="12"/>
+        </nml_record>
+
+        <nml_record name="data_sources">
+                <nml_option name="config_geog_data_path"        type="character"     default_value="/mmm/users/wrfhelp/WPS_GEOG/"/>
+                <nml_option name="config_met_prefix"            type="character"     default_value="FILE"/>
+                <nml_option name="config_sfc_prefix"            type="character"     default_value="FILE"/>
+                <nml_option name="config_fg_interval"           type="integer"       default_value="21600"/>
+        </nml_record>
+
+        <nml_record name="vertical_grid">
+                <nml_option name="config_ztop"                  type="real"          default_value="28000.0"/>
+                <nml_option name="config_nsmterrain"            type="integer"       default_value="2"/>
+                <nml_option name="config_smooth_surfaces"       type="logical"       default_value="false"/>
+        </nml_record>
+
+        <nml_record name="preproc_stages">
+                <nml_option name="config_static_interp"         type="logical"       default_value="true"/>
+                <nml_option name="config_vertical_grid"         type="logical"       default_value="true"/>
+                <nml_option name="config_met_interp"            type="logical"       default_value="true"/>
+                <nml_option name="config_input_sst"             type="logical"       default_value="false"/>
+                <nml_option name="config_frac_seaice"           type="logical"       default_value="false"/>
+        </nml_record>
+
+        <nml_record name="io">
+                <nml_option name="config_input_name"            type="character"     default_value="grid.nc"/>
+                <nml_option name="config_sfc_update_name"       type="character"     default_value="sfc_update.nc"/>
+                <nml_option name="config_output_name"           type="character"     default_value="init.nc"/>
+                <nml_option name="config_restart_name"          type="character"     default_value="restart.nc"/>
+                <nml_option name="config_frames_per_outfile"    type="integer"       default_value="0"/>
+                <nml_option name="config_pio_num_iotasks"       type="integer"       default_value="0"/>
+                <nml_option name="config_pio_stride"            type="integer"       default_value="1"/>
+        </nml_record>
+
+        <nml_record name="decomposition">
+                <nml_option name="config_block_decomp_file_prefix"   type="character"     default_value="graph.info.part."/>
+                <nml_option name="config_number_of_blocks"           type="integer"       default_value="0"/>
+                <nml_option name="config_explicit_proc_decomp"       type="logical"       default_value=".false."/>
+                <nml_option name="config_proc_decomp_file_prefix"    type="character"     default_value="graph.info.part."/>
+        </nml_record>
+
+        <nml_record name="restart">
+                <nml_option name="config_restart_interval"      type="integer"       default_value="0"/>
+                <nml_option name="config_do_restart"            type="logical"       default_value="false"/>
+                <nml_option name="config_restart_time"          type="real"          default_value="172800.0"/>
+        </nml_record>
+
+
+<!-- **************************************************************************************** -->
+<!-- ************************************** Variables *************************************** -->
+<!-- **************************************************************************************** -->
+
+        <var_struct name="mesh" time_levs="0">
+                <var name="latCell"                      type="real"     dimensions="nCells"                      streams="io"/>
+                <var name="lonCell"                      type="real"     dimensions="nCells"                      streams="io"/>
+                <var name="xCell"                        type="real"     dimensions="nCells"                      streams="io"/>
+                <var name="yCell"                        type="real"     dimensions="nCells"                      streams="io"/>
+                <var name="zCell"                        type="real"     dimensions="nCells"                      streams="io"/>
+                <var name="indexToCellID"                type="integer"  dimensions="nCells"                      streams="io"/>
+                <var name="latEdge"                      type="real"     dimensions="nEdges"                      streams="io"/>
+                <var name="lonEdge"                      type="real"     dimensions="nEdges"                      streams="io"/>
+                <var name="xEdge"                        type="real"     dimensions="nEdges"                      streams="io"/>
+                <var name="yEdge"                        type="real"     dimensions="nEdges"                      streams="io"/>
+                <var name="zEdge"                        type="real"     dimensions="nEdges"                      streams="io"/>
+                <var name="indexToEdgeID"                type="integer"  dimensions="nEdges"                      streams="io"/>
+                <var name="latVertex"                    type="real"     dimensions="nVertices"                   streams="io"/>
+                <var name="lonVertex"                    type="real"     dimensions="nVertices"                   streams="io"/>
+                <var name="xVertex"                      type="real"     dimensions="nVertices"                   streams="io"/>
+                <var name="yVertex"                      type="real"     dimensions="nVertices"                   streams="io"/>
+                <var name="zVertex"                      type="real"     dimensions="nVertices"                   streams="io"/>
+                <var name="indexToVertexID"              type="integer"  dimensions="nVertices"                   streams="io"/>
+                <var name="cellsOnEdge"                  type="integer"  dimensions="TWO nEdges"                  streams="io"/>
+                <var name="nEdgesOnCell"                 type="integer"  dimensions="nCells"                      streams="io"/>
+                <var name="nEdgesOnEdge"                 type="integer"  dimensions="nEdges"                      streams="io"/>
+                <var name="edgesOnCell"                  type="integer"  dimensions="maxEdges nCells"             streams="io"/>
+                <var name="edgesOnEdge"                  type="integer"  dimensions="maxEdges2 nEdges"            streams="io"/>
+                <var name="weightsOnEdge"                type="real"     dimensions="maxEdges2 nEdges"            streams="io"/>
+                <var name="dvEdge"                       type="real"     dimensions="nEdges"                      streams="io"/>
+                <var name="dcEdge"                       type="real"     dimensions="nEdges"                      streams="io"/>
+                <var name="angleEdge"                    type="real"     dimensions="nEdges"                      streams="io"/>
+                <var name="areaCell"                     type="real"     dimensions="nCells"                      streams="io"/>
+                <var name="areaTriangle"                 type="real"     dimensions="nVertices"                   streams="io"/>
+                <var name="edgeNormalVectors"            type="real"     dimensions="R3 nEdges"                   streams="io"/>
+                <var name="localVerticalUnitVectors"     type="real"     dimensions="R3 nCells"                   streams="io"/>
+                <var name="cellTangentPlane"             type="real"     dimensions="R3 TWO nCells"               streams="io"/>
+                <var name="cellsOnCell"                  type="integer"  dimensions="maxEdges nCells"             streams="io"/>
+                <var name="verticesOnCell"               type="integer"  dimensions="maxEdges nCells"             streams="io"/>
+                <var name="verticesOnEdge"               type="integer"  dimensions="TWO nEdges"                  streams="io"/>
+                <var name="edgesOnVertex"                type="integer"  dimensions="vertexDegree nVertices"      streams="io"/>
+                <var name="cellsOnVertex"                type="integer"  dimensions="vertexDegree nVertices"      streams="io"/>
+                <var name="kiteAreasOnVertex"            type="real"     dimensions="vertexDegree nVertices"      streams="io"/>
+                <var name="fEdge"                        type="real"     dimensions="nEdges"                      streams="io"/>
+                <var name="fVertex"                      type="real"     dimensions="nVertices"                   streams="io"/>
+                <var name="meshDensity"                  type="real"     dimensions="nCells"                      streams="iro"/>
+
+                <!-- coefficients for vertical extrapolation to the surface -->
+                <var name="cf1"                          type="real"     dimensions=""                            streams="io"/>
+                <var name="cf2"                          type="real"     dimensions=""                            streams="io"/>
+                <var name="cf3"                          type="real"     dimensions=""                            streams="io"/>
+
+                <!-- static terrestrial fields -->
+                <var name="ter"                                  type="real"     dimensions="nCells"              streams="io"/>
+                <var name="landmask"                             type="integer"  dimensions="nCells"              streams="io"/>
+                <var name="ivgtyp"   name_in_code="lu_index"     type="integer"  dimensions="nCells"              streams="io"/>
+                <var name="isltyp"   name_in_code="soilcat_top"  type="integer"  dimensions="nCells"              streams="io"/>
+                <var name="soilcat_bot"                          type="integer"  dimensions="nCells"              streams="io"/>
+                <var name="snoalb"                               type="real"     dimensions="nCells"              streams="io"/>
+                <var name="soiltemp"                             type="real"     dimensions="nCells"              streams="io"/>
+                <var name="greenfrac"                            type="real"     dimensions="nMonths nCells"      streams="io"/>
+                <var name="shdmin"                               type="real"     dimensions="nCells"              streams="io"/>
+                <var name="shdmax"                               type="real"     dimensions="nCells"              streams="io"/>
+                <var name="albedo12m"                            type="real"     dimensions="nMonths nCells"      streams="io"/>
+
+                <!-- GWDO fields -->
+                <var name="varsso"                               type="real"     dimensions="nCells"              streams="io"/>
+                <var name="var2d"                                type="real"     dimensions="nCells"              streams="io"/>
+                <var name="con"                                  type="real"     dimensions="nCells"              streams="io"/>
+                <var name="oa1"                                  type="real"     dimensions="nCells"              streams="io"/>
+                <var name="oa2"                                  type="real"     dimensions="nCells"              streams="io"/>
+                <var name="oa3"                                  type="real"     dimensions="nCells"              streams="io"/>
+                <var name="oa4"                                  type="real"     dimensions="nCells"              streams="io"/>
+                <var name="ol1"                                  type="real"     dimensions="nCells"              streams="io"/>
+                <var name="ol2"                                  type="real"     dimensions="nCells"              streams="io"/>
+                <var name="ol3"                                  type="real"     dimensions="nCells"              streams="io"/>
+                <var name="ol4"                                  type="real"     dimensions="nCells"              streams="io"/>
+
+                <!-- description of the vertical grid structure -->
+                <var name="hx"                         type="real"     dimensions="nVertLevelsP1 nCells"        streams="io"/>
+                <var name="zgrid"                      type="real"     dimensions="nVertLevelsP1 nCells"        streams="io"/>
+                <var name="rdzw"                       type="real"     dimensions="nVertLevels"                 streams="io"/>
+                <var name="dzu"                        type="real"     dimensions="nVertLevels"                 streams="io"/>
+                <var name="rdzu"                       type="real"     dimensions="nVertLevels"                 streams="io"/>
+                <var name="fzm"                        type="real"     dimensions="nVertLevels"                 streams="io"/>
+                <var name="fzp"                        type="real"     dimensions="nVertLevels"                 streams="io"/>
+                <var name="zx"                         type="real"     dimensions="nVertLevelsP1 nEdges"        streams="io"/>
+                <var name="zz"                         type="real"     dimensions="nVertLevelsP1 nCells"        streams="io"/>
+                <var name="zb"                         type="real"     dimensions="nVertLevelsP1 TWO nEdges"    streams="io"/>
+                <var name="zb3"                        type="real"     dimensions="nVertLevelsP1 TWO nEdges"    streams="io"/>
+
+                <!-- W-Rayleigh damping coefficient -->
+                <var name="dss"                        type="real"     dimensions="nVertLevels nCells"          streams="io"/>
+
+                <var name="u_init"                     type="real"     dimensions="nVertLevels"                 streams="io"/>
+                <var name="t_init"                     type="real"     dimensions="nVertLevels nCells"          streams="io"/>
+                <var name="qv_init"                    type="real"     dimensions="nVertLevels"                 streams="io"/>
+
+                <!-- variables needed for advection -->
+                <var name="deriv_two"                  type="real"     dimensions="FIFTEEN TWO nEdges"          streams="io"/>
+                <var name="advCells"                   type="integer"  dimensions="TWENTYONE nCells"            streams="io"/>
+
+                <!-- deformation calculation weights -->
+                <var name="defc_a"                     type="real"     dimensions="maxEdges nCells"             streams="io"/>
+                <var name="defc_b"                     type="real"     dimensions="maxEdges nCells"             streams="io"/>
+
+                <!-- arrays required for reconstruction of velocity field -->
+                <var name="coeffs_reconstruct"         type="real"     dimensions="R3 maxEdges nCells"          streams="io"/>
+        </var_struct>
+
+        <var_struct name="state" time_levs="2">
+                <var name="xtime"                      type="text"     dimensions="Time"                        streams="so"/>
+                <var name="u"                          type="real"     dimensions="nVertLevels nEdges Time"     streams="o"/>
+                <var name="w"                          type="real"     dimensions="nVertLevelsP1 nCells Time"   streams="o"/>
+                <var name="rho_zz"                     type="real"     dimensions="nVertLevels nCells Time"     streams="o"/>
+                <var name="theta_m"                    type="real"     dimensions="nVertLevels nCells Time"     streams="o"/>
+
+                <var_array name="scalars" type="real" dimensions="nVertLevels nCells Time">
+                        <var name="qv"      array_group="moist"       streams="o"/>
+                        <var name="qc"      array_group="moist"       streams="o"/>
+                        <var name="qr"      array_group="moist"       streams="o"/>
+                </var_array>
+        </var_struct>
+
+        <var_struct name="fg" time_levs="1">
+                
+                <!-- horizontally interpolated from first-guess data -->
+                <var name="u_fg"       name_in_code="u"       type="real"     dimensions="nFGLevels nEdges Time"/>
+                <var name="v_fg"       name_in_code="v"       type="real"     dimensions="nFGLevels nEdges Time"/>
+                <var name="t_fg"       name_in_code="t"       type="real"     dimensions="nFGLevels nCells Time"       streams="o"/>
+                <var name="p_fg"       name_in_code="p"       type="real"     dimensions="nFGLevels nCells Time"       streams="o"/>
+                <var name="z_fg"       name_in_code="z"       type="real"     dimensions="nFGLevels nCells Time"       streams="o"/>
+                <var name="rh_fg"      name_in_code="rh"      type="real"     dimensions="nFGLevels nCells Time"       streams="o"/>
+                <var name="soilz_fg"   name_in_code="soilz"   type="real"     dimensions="nCells Time"                 streams="io"/>
+                <var name="psfc_fg"    name_in_code="psfc"    type="real"     dimensions="nCells Time"/>
+                <var name="pmsl_fg"    name_in_code="pmsl"    type="real"     dimensions="nCells Time"/>
+                <var name="dz_fg"                             type="real"     dimensions="nFGSoilLevels nCells Time"   streams="io"/>
+                <var name="dzs_fg"                            type="real"     dimensions="nFGSoilLevels nCells Time"   streams="io"/>
+                <var name="zs_fg"                             type="real"     dimensions="nFGSoilLevels nCells Time"   streams="io"/>
+                <var name="st_fg"                             type="real"     dimensions="nFGSoilLevels nCells Time"   streams="io"/>
+                <var name="sm_fg"                             type="real"     dimensions="nFGSoilLevels nCells Time"   streams="io"/>
+
+                <!-- horizontally interpolated from first-guess data, and should be read in by model -->
+                <var name="dz"                                type="real"     dimensions="nSoilLevels nCells Time"     streams="io"/>
+                <var name="dzs"                               type="real"     dimensions="nSoilLevels nCells Time"     streams="io"/>
+                <var name="zs"                                type="real"     dimensions="nSoilLevels nCells Time"     streams="io"/>
+                <var name="sh2o"                              type="real"     dimensions="nSoilLevels nCells Time"     streams="io"/>
+                <var name="smois"                             type="real"     dimensions="nSoilLevels nCells Time"     streams="io"/>
+                <var name="tslb"                              type="real"     dimensions="nSoilLevels nCells Time"     streams="io"/>
+                <var name="smcrel"                            type="real"     dimensions="nSoilLevels nCells Time"     streams="io"/>
+                <var name="tmn"                               type="real"     dimensions="nCells Time"                 streams="io"/>
+                <var name="skintemp"                          type="real"     dimensions="nCells Time"                 streams="io"/>
+                <var name="sst"                               type="real"     dimensions="nCells Time"                 streams="iso"/>
+                <var name="snow"                              type="real"     dimensions="nCells Time"                 streams="io"/>
+                <var name="snowc"                             type="real"     dimensions="nCells Time"                 streams="io"/>
+                <var name="snowh"                             type="real"     dimensions="nCells Time"                 streams="io"/>
+                <var name="xice"                              type="real"     dimensions="nCells Time"                 streams="iso"/>
+                <var name="seaice"                            type="real"     dimensions="nCells Time"                 streams="io"/>
+                <var name="gfs_z"                             type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="vegfra"                            type="real"     dimensions="nCells Time"                 streams="io"/>
+                <var name="sfc_albbck"                        type="real"     dimensions="nCells Time"                 streams="io"/>
+                <var name="xland"                             type="real"     dimensions="nCells Time"                 streams="io"/>
+        </var_struct>
+
+        <var_struct name="diag" time_levs="1">
+                <var name="pressure_p"                        type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="rho"                               type="real"     dimensions="nVertLevels nCells Time"     streams="o"/>
+                <var name="theta"                             type="real"     dimensions="nVertLevels nCells Time"     streams="o"/>
+                <var name="v"                                 type="real"     dimensions="nVertLevels nEdges Time"     streams="o"/>
+                <var name="rh"                                type="real"     dimensions="nVertLevels nCells Time"     streams="o"/>
+                <var name="uReconstructX"                     type="real"     dimensions="nVertLevels nCells Time"     streams="o"/>
+                <var name="uReconstructY"                     type="real"     dimensions="nVertLevels nCells Time"     streams="o"/>
+                <var name="uReconstructZ"                     type="real"     dimensions="nVertLevels nCells Time"     streams="o"/>
+                <var name="uReconstructZonal"                 type="real"     dimensions="nVertLevels nCells Time"     streams="o"/>
+                <var name="uReconstructMeridional"            type="real"     dimensions="nVertLevels nCells Time"     streams="o"/>
+                <var name="exner"                             type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="exner_base"                        type="real"     dimensions="nVertLevels nCells Time"     streams="io"/>
+                <var name="rtheta_base"                       type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="pressure"                          type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="pressure_base"                     type="real"     dimensions="nVertLevels nCells Time"     streams="io"/>
+                <var name="rho_base"                          type="real"     dimensions="nVertLevels nCells Time"     streams="io"/>
+                <var name="theta_base"                        type="real"     dimensions="nVertLevels nCells Time"     streams="io"/>
+                <var name="cqw"                               type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="surface_pressure"                  type="real"     dimensions="nCells Time"                 streams="io"/>
+
+                <!-- coupled variables needed by the solver, but not output -->
+                <var name="ru"                                type="real"     dimensions="nVertLevels nEdges Time"/>
+                <var name="rw"                                type="real"     dimensions="nVertLevelsP1 nCells Time"/>
+                <var name="rtheta_p"                          type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="rho_p"                             type="real"     dimensions="nVertLevels nCells Time"/>
+        </var_struct>
+
+        <var_struct name="diag_physics" time_levs="1">
+                <var name="precipw"                           type="real"     dimensions="nCells Time"                 streams="o"/>
+        </var_struct>
+</registry>

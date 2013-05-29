@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"  elementFormDefault="qualified"  attributeFormDefault="unqualified" >
+	<xs:element name="registry" >
+		<xs:complexType>
+			<xs:sequence>
+				<!-- The dims element contains all dimensions -->
+				<xs:element name="dims" >
+					<xs:complexType>
+						<xs:sequence>
+							<!-- Each dimension is an independent child of the <dims></dims> element. -->
+							<xs:element name="dim"  maxOccurs="unbounded" >
+								<xs:complexType>
+									<!-- The name attribute should specify the name of the dimension. -->
+									<xs:attribute name="name"  type="xs:string" use="required"/>
+									<!-- The definition attribute is used to define a dimension based on other pre-defined dimensions -->
+									<xs:attribute name="definition"  type="xs:string" use="optional"/>
+									<!-- The units attribute defines the units of the dimension. -->
+									<xs:attribute name="units"  type="xs:string" use="optional"/>
+									<!-- The description attribute describes the dimensions. -->
+									<xs:attribute name="description"  type="xs:string" use="optional"/>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+				<!-- The nml_record element contains all namelist options for a particular namelist record -->
+				<xs:element name="nml_record"  maxOccurs="unbounded" >
+					<xs:complexType>
+						<xs:sequence>
+							<!-- The nml_option element defines a particular namelist option that lives within the defined nml_record -->
+							<xs:element name="nml_option"  maxOccurs="unbounded" >
+								<xs:complexType>
+									<!-- The name attribute defines the name of the namelist option. This is how it would look in a namelist file. -->
+									<xs:attribute name="name"  type="xs:string" use="required"/>
+									<!-- The type attribute defines the type of the particular namelist option. Options are real, integer, character, and logical. -->
+									<xs:attribute name="type"  type="xs:string" use="required"/>
+									<!-- The default_value attribute defines the default value of the namelist option. This is used if the option is omitted from a namelist file. -->
+									<xs:attribute name="default_value"  type="xs:string" use="required"/>
+									<!-- The units attribute defines the units for the particular namelist option. -->
+									<xs:attribute name="units"  type="xs:string" use="optional"/>
+									<!-- The description attribute describes the namelist option. -->
+									<xs:attribute name="description"  type="xs:string" use="optional"/>
+									<!-- The possible_values attribute defines what values are allowable for the namelist option. -->
+									<xs:attribute name="possible_values"  type="xs:string" use="optional"/>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+						<!-- The name attribute defines the name of the namelist record. This would be seen as &name in the actual namelist. -->
+						<xs:attribute name="name"  type="xs:string" use="required"/>
+					</xs:complexType>
+				</xs:element>
+				<!-- The var_struct element defines a grouping of variables. This is similar to mesh, or state and lives at the domain % blocklist level. -->
+				<xs:element name="var_struct"  maxOccurs="unbounded" >
+					<xs:complexType>
+						<xs:sequence>
+							<!-- The var_array element defines an array of variables. 
+								 Within the code all constituent variables are merged into a one higher dimension array, for ease of use.
+								 When written to the output file, they will be named their individual names. -->
+							<xs:element name="var_array" maxOccurs="unbounded" minOccurs="0" >
+								<xs:complexType>
+									<xs:sequence>
+										<!-- This specific var element defines a variable that is a constituent to a particular var_array group. -->
+										<xs:element name="var"  maxOccurs="unbounded" minOccurs="0" >
+											<xs:complexType>
+												<!-- The name attribute is the name of the variable. This how it will be displayed in the output file. -->
+												<xs:attribute name="name"  type="xs:string" use="required"/>
+												<!-- The array_group attribute is used to group variables within the var_array for ease of use. -->
+												<xs:attribute name="array_group"  type="xs:string" use="required"/>
+												<!-- The streams attribute defines the streams this variable is included in. Allowable values are omitted, i, r, o and any combination of i, r, and o. -->
+												<xs:attribute name="streams"  type="xs:string" use="optional"/>
+												<!-- The name_in_code attribute defines the name of the variable in the code, if it should be different then in the input/output/restart streams. -->
+												<xs:attribute name="name_in_code"  type="xs:string" use="optional"/>
+												<!-- The units attribute defines the units of the particular variable -->
+												<xs:attribute name="units"  type="xs:string" use="optional"/>
+												<!-- The description attribute describes the particular variable -->
+												<xs:attribute name="description"  type="xs:string" use="optional"/>
+											</xs:complexType>
+										</xs:element>
+									</xs:sequence>
+									<!-- The name attribute is the name of the var_array that will be seen in the code. -->
+									<xs:attribute name="name"  type="xs:string" use="required"/>
+									<!-- The type attribute defines the type of all constituents for the var_array. Valid options are real, integer, logical, and character -->
+									<xs:attribute name="type"  type="xs:string" use="required"/>
+									<!-- The dimensions attribute defines the dimensions of each individual constituent. This does not include the collapsed dimension. -->
+									<xs:attribute name="dimensions"  type="xs:string" use="required"/>
+									<!-- The persistence attribute determines if the var_array is persistence or scratch. Valid options are persistent, and scratch. -->
+									<xs:attribute name="persistence"  type="xs:string" use="optional"/>
+								</xs:complexType>
+							</xs:element>
+							<!-- This var element defines a variable that does not live within a var_array group. -->
+							<xs:element name="var"  maxOccurs="unbounded" minOccurs="0" >
+								<xs:complexType>
+									<!-- The name attribute defines the name in the NetCDF files of this variable. -->
+									<xs:attribute name="name"  type="xs:string" use="required"/>
+									<!-- The type attribute defines the type within MPAS of the variable. -->
+									<xs:attribute name="type"  type="xs:string" use="required"/>
+									<!-- The dimensions attribute defines the dimensions of the variable. -->
+									<xs:attribute name="dimensions"  type="xs:string" use="required"/>
+									<!-- The streams attribute defines the streams this variable is included in. -->
+									<xs:attribute name="streams"  type="xs:string" use="optional"/>
+									<!-- The name_in_code attribute defines the name of the variable within MPAS (if different from name). -->
+									<xs:attribute name="name_in_code"  type="xs:string" use="optional"/>
+									<!-- The units attribute defines the units of the variable. -->
+									<xs:attribute name="units"  type="xs:string" use="optional"/>
+									<!-- The description attribute provides a brief description of the variable. -->
+									<xs:attribute name="description"  type="xs:string" use="optional"/>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+						<!-- The name attribute defines the name of the var_struct. This would be similar to mesh, or state. -->
+						<xs:attribute name="name"  type="xs:string" use="required"/>
+						<!-- The time_levs attribute defines the number of time levels this var_struct contains. -->
+						<xs:attribute name="time_levs"  type="xs:int" use="required"/>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+			<!-- The model attribute defines the name of the model that is being run. Typically this will be MPAS. It will be written to all output files as a global attribute. -->
+			<xs:attribute name="model" type="xs:string" use="required"/>
+			<!-- The core attribute defines the core a Registry.xml file belongs to. It will be written to all output files as a global attribute. -->
+			<xs:attribute name="core" type="xs:string" use="required"/>
+			<!-- The version attribute defines the version of the model/core combination. It will be written to all output files as a global attribute. -->
+			<xs:attribute name="version" type="xs:string" use="required"/>
+		</xs:complexType>
+	</xs:element>
+</xs:schema>

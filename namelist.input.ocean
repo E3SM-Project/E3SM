@@ -1,0 +1,163 @@
+&time_management
+	config_do_restart = .false.
+	config_start_time = '0000-01-01_00:00:00'
+	config_stop_time = 'none'
+	config_run_duration = '0_06:00:00'
+	config_calendar_type = '360day'
+/
+&io
+	config_input_name = 'grid.nc'
+	config_output_name = 'output.nc'
+	config_restart_name = 'restart.nc'
+	config_restart_interval = '0_06:00:00'
+	config_output_interval = '0_06:00:00'
+	config_stats_interval = '0_01:00:00'
+	config_write_stats_on_startup = .true.
+	config_write_output_on_startup = .true.
+	config_frames_per_outfile = 1000
+	config_pio_num_iotasks = 0
+	config_pio_stride = 1
+/
+&time_integration
+	config_dt = 3000.0
+	config_time_integrator = 'split_explicit'
+/
+&grid
+	config_num_halos = 3
+	config_vert_coord_movement = 'uniform_stretching'
+	config_alter_ICs_for_pbcs = 'zlevel_pbcs_off'
+	config_min_pbc_fraction = 0.10
+	config_check_ssh_consistency = .true.
+/
+&decomposition
+	config_block_decomp_file_prefix = 'graph.info.part.'
+	config_number_of_blocks = 0
+	config_explicit_proc_decomp = .false.
+	config_proc_decomp_file_prefix = 'graph.info.part.'
+/
+&hmix
+	config_hmix_ScaleWithMesh = .false.
+	config_visc_vorticity_term = .true.
+	config_apvm_scale_factor = 0.0
+/
+&hmix_del2
+	config_use_mom_del2 = .false.
+	config_use_tracer_del2 = .false.
+	config_mom_del2 = 0.0
+	config_tracer_del2 = 0.0
+	config_vorticity_del2_scale = 1.0
+/
+&hmix_del4
+	config_use_mom_del4 = .true.
+	config_use_tracer_del4 = .false.
+	config_mom_del4 = 5.0e13
+	config_tracer_del4 = 0.0
+	config_vorticity_del4_scale = 1.0
+/
+&hmix_Leith
+	config_use_Leith_del2 = .false.
+	config_Leith_parameter = 1.0
+	config_Leith_dx = 15000.0
+	config_Leith_visc2_max = 2.5e3
+/
+&standard_GM
+	config_h_kappa = 0.0
+	config_h_kappa_q = 0.0
+/
+&Rayleigh_damping
+	config_Rayleigh_friction = .false.
+	config_Rayleigh_damping_coeff = 0.0
+/
+&vmix
+	config_convective_visc = 1.0
+	config_convective_diff = 1.0
+/
+&vmix_const
+	config_use_const_visc = .false.
+	config_use_const_diff = .false.
+	config_vert_visc = 2.5e-4
+	config_vert_diff = 2.5e-5
+/
+&vmix_rich
+	config_use_rich_visc = .true.
+	config_use_rich_diff = .true.
+	config_bkrd_vert_visc = 1.0e-4
+	config_bkrd_vert_diff = 1.0e-5
+	config_rich_mix = 0.005
+/
+&vmix_tanh
+	config_use_tanh_visc = .false.
+	config_use_tanh_diff = .false.
+	config_max_visc_tanh = 2.5e-1
+	config_min_visc_tanh = 1.0e-4
+	config_max_diff_tanh = 2.5e-2
+	config_min_diff_tanh = 1.0e-5
+	config_zMid_tanh = -100
+	config_zWidth_tanh = 100
+/
+&forcing
+	config_use_monthly_forcing = .false.
+	config_restoreTS = .false.
+	config_restoreT_timescale = 90.0
+	config_restoreS_timescale = 90.0
+/
+&advection
+	config_vert_tracer_adv = 'stencil'
+	config_vert_tracer_adv_order = 3
+	config_horiz_tracer_adv_order = 3
+	config_coef_3rd_order = 0.25
+	config_monotonic = .true.
+/
+&bottom_drag
+	config_bottom_drag_coeff = 1.0e-3
+/
+&pressure_gradient
+	config_pressure_gradient_type = 'pressure_and_zmid'
+	config_density0 = 1014.65
+/
+&eos
+	config_eos_type = 'jm'
+/
+&eos_linear
+	config_eos_linear_alpha = 2.55e-1
+	config_eos_linear_beta = 7.64e-1
+	config_eos_linear_Tref = 19.0
+	config_eos_linear_Sref = 35.0
+	config_eos_linear_densityref = 1025.022
+/
+&split_explicit_ts
+	config_n_ts_iter = 2
+	config_n_bcl_iter_beg = 1
+	config_n_bcl_iter_mid = 2
+	config_n_bcl_iter_end = 2
+	config_n_btr_subcycles = 20
+	config_n_btr_cor_iter = 2
+	config_vel_correction = .true.
+	config_btr_subcycle_loop_factor = 2
+	config_btr_gam1_velWt1 = 0.5
+	config_btr_gam2_SSHWt1 = 1.0
+	config_btr_gam3_velWt2 = 1.0
+	config_btr_solve_SSH2 = .false.
+/
+&debug
+	config_check_zlevel_consistency = .false.
+	config_filter_btr_mode = .false.
+	config_prescribe_velocity = .false.
+	config_prescribe_thickness = .false.
+	config_include_KE_vertex = .false.
+	config_check_tracer_monotonicity = .false.
+	config_disable_thick_all_tend = .false.
+	config_disable_thick_hadv = .false.
+	config_disable_thick_vadv = .false.
+	config_disable_vel_all_tend = .false.
+	config_disable_vel_coriolis = .false.
+	config_disable_vel_pgrad = .false.
+	config_disable_vel_hmix = .false.
+	config_disable_vel_windstress = .false.
+	config_disable_vel_vmix = .false.
+	config_disable_vel_vadv = .false.
+	config_disable_tr_all_tend = .false.
+	config_disable_tr_adv = .false.
+	config_disable_tr_hmix = .false.
+	config_disable_tr_vmix = .false.
+/
