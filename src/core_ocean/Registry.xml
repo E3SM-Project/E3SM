@@ -252,11 +252,11 @@
 	</nml_record>
 	<nml_record name="vmix">
 		<nml_option name="config_convective_visc" type="real" default_value="1.0" units="m^2 s^{-1}"
-		            description="Value of vertical viscosity to be used in unstable conditions (i.e. Richardson number<0)"
+		            description="Value of vertical viscosity to be used in unstable conditions (i.e. Richardson number less than zero)"
 		            possible_values="Any positive real value."
 		/>
 		<nml_option name="config_convective_diff" type="real" default_value="1.0" units="m^2 s^{-1}"
-		            description="Value of vertical diffusion to be used in unstable conditions (i.e. Richardson number<0)"
+		            description="Value of vertical diffusion to be used in unstable conditions (i.e. Richardson number less than zero)"
 		            possible_values="Any positive real value."
 		/>
 	</nml_record>
@@ -288,15 +288,15 @@
 		            possible_values=".true. or .false."
 		/>
 		<nml_option name="config_bkrd_vert_visc" type="real" default_value="1.0e-4" units="m^2 s^{-1}"
-		            description="Background vertical viscosity for Richardson-number based vertical mixing"
+		            description="Background vertical viscosity for Richardson-number based vertical mixing, $\nu_{bkrd}$"
 		            possible_values="Any positive real value."
 		/>
 		<nml_option name="config_bkrd_vert_diff" type="real" default_value="1.0e-5" units="m^2 s^{-1}"
-		            description="Background vertical diffusion for Richardson-number based vertical mixing"
+		            description="Background vertical diffusion for Richardson-number based vertical mixing, $\kappa_{bkrd}$"
 		            possible_values="Any positive real value."
 		/>
 		<nml_option name="config_rich_mix" type="real" default_value="0.005" units="m^2 s^{-1}"
-		            description="Coefficient for Richardon-number vertical mixing function"
+		            description="Coefficient for Richardon-number vertical mixing function, $c_{Ri}$"
 		            possible_values="Any positive real value."
 		/>
 	</nml_record>
@@ -486,7 +486,7 @@
 		            possible_values=".true. or .false."
 		/>
 		<nml_option name="config_include_KE_vertex" type="logical" default_value=".false." units="unitless"
-		            description=""
+		            description="If true, the kinetic energy in each cell is computed by blending cell-based and vertex-based values of kinetic energy."
 		            possible_values=".true. or .false."
 		/>
 		<nml_option name="config_check_tracer_monotonicity" type="logical" default_value=".false." units="unitless"
