@@ -58,7 +58,7 @@
 		            possible_values="'YYYY-MM-DD_HH:MM:SS' or 'none'"
 		/>
 		<nml_option name="config_run_duration" type="character" default_value="0001_00:00:00" units="unitless"
-		            description="Timestamp describing the length of the simulation. If it is set to 'none' the duraction is determined from config_start_time and config_stop_time. config_run_duration overrides inconsistent values of config_stop_time."
+		            description="Timestamp describing the length of the simulation. If it is set to 'none' the duration is determined from config_start_time and config_stop_time. config_run_duration overrides inconsistent values of config_stop_time."
 		            possible_values="'DDDD_HH:MM:SS' or 'none'"
 		/>
 		<nml_option name="config_calendar_type" type="character" default_value="360day" units="unitless"
@@ -67,49 +67,49 @@
 		/>
 	</nml_record>
 	<nml_record name="io">
-		<nml_option name="config_input_name" type="character" default_value="grid.nc" units=""
-		            description=""
-		            possible_values=""
+		<nml_option name="config_input_name" type="character" default_value="grid.nc" units="unitless"
+		            description="The path to the input file for the simulation."
+		            possible_values="path/to/grid.nc"
 		/>
-		<nml_option name="config_output_name" type="character" default_value="output.nc" units=""
-		            description=""
-		            possible_values=""
+		<nml_option name="config_output_name" type="character" default_value="output.nc" units="unitless"
+		            description="The template path and name to the output file from the simulation. A time stamp is prepended to the extension of the file (.nc)."
+		            possible_values="path/to/output.nc"
 		/>
-		<nml_option name="config_restart_name" type="character" default_value="restart.nc" units=""
-		            description=""
-		            possible_values=""
+		<nml_option name="config_restart_name" type="character" default_value="restart.nc" units="unitless"
+		            description="The template path and name to the restart file for the simulation. A time stamp is prepended to the extension of the file (.nc) both for input and output."
+		            possible_values="path/to/restart.nc"
 		/>
-		<nml_option name="config_restart_interval" type="character" default_value="0001_00:00:00" units=""
-		            description=""
-		            possible_values=""
+		<nml_option name="config_restart_interval" type="character" default_value="0001_00:00:00" units="unitless"
+		            description="Timestamp determining how often a restart file should be written."
+		            possible_values="'DDDD_HH:MM:SS'"
 		/>
-		<nml_option name="config_output_interval" type="character" default_value="0001_00:00:00" units=""
-		            description=""
-		            possible_values=""
+		<nml_option name="config_output_interval" type="character" default_value="0001_00:00:00" units="unitless"
+		            description="Timestamp determining how often an output file should be written."
+		            possible_values="'DDDD_HH:MM:SS'"
 		/>
-		<nml_option name="config_stats_interval" type="character" default_value="0000_01:00:00" units=""
-		            description=""
-		            possible_values=""
+		<nml_option name="config_stats_interval" type="character" default_value="0000_01:00:00" units="unitless"
+		            description="Timestamp determining how often a global statistics files should be written."
+		            possible_values="'DDDD_HH:MM:SS'"
 		/>
-		<nml_option name="config_write_stats_on_startup" type="logical" default_value=".true." units=""
-		            description=""
-		            possible_values=""
+		<nml_option name="config_write_stats_on_startup" type="logical" default_value=".true." units="unitless"
+		            description="Logical flag determining if statistics files should be written prior to the first time step."
+		            possible_values=".true. or .false."
 		/>
-		<nml_option name="config_write_output_on_startup" type="logical" default_value=".true." units=""
-		            description=""
-		            possible_values=""
+		<nml_option name="config_write_output_on_startup" type="logical" default_value=".true." units="unitless"
+		            description="Logical flag determining if an output file should be written prior to the first time step."
+		            possible_values=".true. or .false."
 		/>
-		<nml_option name="config_frames_per_outfile" type="integer" default_value="1000" units=""
-		            description=""
-		            possible_values=""
+		<nml_option name="config_frames_per_outfile" type="integer" default_value="1000" units="unitless"
+		            description="Integer specifying how many time frames should be included in an output file. Once the maximum is reached, a new output file is created."
+		            possible_values="Any positive integer value greater than 0"
 		/>
-		<nml_option name="config_pio_num_iotasks" type="integer" default_value="0" units=""
-		            description=""
-		            possible_values=""
+		<nml_option name="config_pio_num_iotasks" type="integer" default_value="0" units="unitless"
+		            description="Integer specifying how many IO tasks should be used within the PIO library. A value of 0 causes all MPI tasks to also be IO tasks. IO tasks are requried to write contiguous blocks of data to a file."
+		            possible_values="Any positive integer value greater than or equal to 0."
 		/>
-		<nml_option name="config_pio_stride" type="integer" default_value="1" units=""
-		            description=""
-		            possible_values=""
+		<nml_option name="config_pio_stride" type="integer" default_value="1" units="unitless"
+		            description="Integer specifying the stride of each IO task."
+		            possible_values="Any positive integer value greater than 0."
 		/>
 	</nml_record>
 	<nml_record name="time_integration">
@@ -139,9 +139,9 @@
 		            description="Determines the minimum fraction of a cell altering the initial conditions can create."
 		            possible_values="Any real between 0 and 1."
 		/>
-		<nml_option name="config_check_ssh_consistency" type="logical" default_value=".true." units=""
+		<nml_option name="config_check_ssh_consistency" type="logical" default_value=".true." units="unitless"
 		            description="Enables a check to determine if the SSH is consistent across relevant variables."
-		            possible_values=""
+		            possible_values=".true. or .false."
 		/>
 	</nml_record>
 	<nml_record name="decomposition">
