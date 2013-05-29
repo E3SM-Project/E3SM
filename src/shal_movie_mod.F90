@@ -134,7 +134,7 @@ contains
       nxyv=nxyv+elem(ie)%idxV%NumUniquePts
     enddo
 
-    dimsize = (/GlobalUniqueCols,nlev,nelemd,0,global_nc/)
+    dimsize = (/GlobalUniqueCols,nlev,nelem,0,global_nc/)
     call nf_output_register_dims(ncdf, maxdims, dimnames, dimsize)
 
     allocate(compdof(nxyp*nlev), latp(nxyp),lonp(nxyp))

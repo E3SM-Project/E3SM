@@ -158,7 +158,7 @@ contains
     enddo
     global_nc=nc*nc*nelem  ! total number of physics points
     global_nsub=(np-1)*(np-1)*nelem  ! total number of subelements
-    dimsize = (/GlobalUniqueCols,nlev,nlevp,nelemd,0,global_nc,global_nsub/)
+    dimsize = (/GlobalUniqueCols,nlev,nlevp,nelem,0,global_nc,global_nsub/)
     call nf_output_register_dims(ncdf,maxdims, dimnames, dimsize)
 
 

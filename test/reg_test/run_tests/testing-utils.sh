@@ -860,6 +860,8 @@ moveBaseline() {
 
 checkBaselineResults() {
 
+  filesNotFound=false
+
   for testFileNum in $(seq 1 $num_test_files)
   do
 
@@ -884,13 +886,18 @@ checkBaselineResults() {
       repoFile=${HOMME_BASELINE_DIR}/${testName}/movies/${baseFilename}
 
       if [ ! -f "${repoFile}" ] ; then
-        echo "Warning: The repo file ${repoFile} does not exist in the baseline dir"
-        exit 0
+        echo "Error: The Netcdf file ${repoFile} does not exist in the baseline dir"
+        filesNotFound=true
       fi
 
     done
 
   done
+
+  # Throw an error if any of the files to be compared were not found
+  if $filesNotFound ; then
+    exit -1
+  fi
 
 }
 
