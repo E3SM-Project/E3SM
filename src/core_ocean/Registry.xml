@@ -232,11 +232,11 @@
 	</nml_record>
 	<nml_record name="standard_GM">
 		<nml_option name="config_h_kappa" type="real" default_value="0.0" units=""
-		            description=""
+		            description="kappa parameter for Gent-McWilliams eddy parameterization"
 		            possible_values=""
 		/>
 		<nml_option name="config_h_kappa_q" type="real" default_value="0.0" units=""
-		            description=""
+		            description="kappa-q parameter for Gent-McWilliams eddy parameterization"
 		            possible_values=""
 		/>
 	</nml_record>
@@ -601,32 +601,32 @@
 		<var name="uTransport" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
 		     description="horizontal velocity used to transport mass and tracers"
 		/>
-		<var name="uBolusGM" type="real" dimensions="nVertLevels nEdges Time" units=""
-		     description=""
+		<var name="uBolusGM" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+		     description="Bolus velocity in Gent-McWilliams eddy parameterization"
 		/>
-		<var name="uBolusGMX" type="real" dimensions="nVertLevels nEdges Time" units=""
-		     description=""
+		<var name="uBolusGMX" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+		     description="Bolus velocity in Gent-McWilliams eddy parameterization, x-direction"
 		/>
-		<var name="uBolusGMY" type="real" dimensions="nVertLevels nEdges Time" units=""
-		     description=""
+		<var name="uBolusGMY" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+		     description="Bolus velocity in Gent-McWilliams eddy parameterization, y-direction"
 		/>
-		<var name="uBolusGMZ" type="real" dimensions="nVertLevels nEdges Time" units=""
-		     description=""
+		<var name="uBolusGMZ" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+		     description="Bolus velocity in Gent-McWilliams eddy parameterization, z-direction"
 		/>
-		<var name="uBolusGMZonal" type="real" dimensions="nVertLevels nEdges Time" streams="o" units=""
-		     description=""
+		<var name="uBolusGMZonal" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+		     description="Bolus velocity in Gent-McWilliams eddy parameterization, zonal-direction"
 		/>
-		<var name="uBolusGMMeridional" type="real" dimensions="nVertLevels nEdges Time" streams="o" units=""
-		     description=""
+		<var name="uBolusGMMeridional" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+		     description="Bolus velocity in Gent-McWilliams eddy parameterization, meridional-direction"
 		/>
 		<var name="hEddyFlux" type="real" dimensions="nVertLevels nEdges Time" units=""
-		     description=""
+		     description="Eddy flux in Gent-McWilliams eddy parameterization"
 		/>
 		<var name="h_kappa" type="real" dimensions="nVertLevels nEdges Time" units=""
-		     description=""
+		     description="kappa parameter for Gent-McWilliams eddy parameterization"
 		/>
 		<var name="h_kappa_q" type="real" dimensions="nVertLevels nEdges Time" units=""
-		     description=""
+		     description="kappa_q parameter for Gent-McWilliams eddy parameterization"
 		/>
 		<var name="divergence" type="real" dimensions="nVertLevels nCells Time" streams="o" units="s^{-1}"
 		     description="divergence of horizonal velocity"
