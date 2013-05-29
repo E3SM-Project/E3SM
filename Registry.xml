@@ -233,11 +233,11 @@
 	<nml_record name="standard_GM">
 		<nml_option name="config_h_kappa" type="real" default_value="0.0" units=""
 		            description="kappa parameter for Gent-McWilliams eddy parameterization"
-		            possible_values=""
+		            possible_values="Any positive real value."
 		/>
 		<nml_option name="config_h_kappa_q" type="real" default_value="0.0" units=""
 		            description="kappa-q parameter for Gent-McWilliams eddy parameterization"
-		            possible_values=""
+		            possible_values="Any positive real value."
 		/>
 	</nml_record>
 	<nml_record name="Rayleigh_damping">
@@ -251,87 +251,87 @@
 		/>
 	</nml_record>
 	<nml_record name="vmix">
-		<nml_option name="config_convective_visc" type="real" default_value="1.0" units=""
-		            description=""
-		            possible_values=""
+		<nml_option name="config_convective_visc" type="real" default_value="1.0" units="m^2 s^{-1}"
+		            description="Value of vertical viscosity to be used in unstable conditions (i.e. Richardson number<0)"
+		            possible_values="Any positive real value."
 		/>
-		<nml_option name="config_convective_diff" type="real" default_value="1.0" units=""
-		            description=""
-		            possible_values=""
+		<nml_option name="config_convective_diff" type="real" default_value="1.0" units="m^2 s^{-1}"
+		            description="Value of vertical diffusion to be used in unstable conditions (i.e. Richardson number<0)"
+		            possible_values="Any positive real value."
 		/>
 	</nml_record>
 	<nml_record name="vmix_const">
-		<nml_option name="config_use_const_visc" type="logical" default_value=".true." units=""
-		            description=""
-		            possible_values=""
+		<nml_option name="config_use_const_visc" type="logical" default_value=".true." units="unitless"
+		            description="If true, constant vertical viscosity is included in the momentum equation"
+		            possible_values=".true. or .false."
 		/>
-		<nml_option name="config_use_const_diff" type="logical" default_value=".true." units=""
-		            description=""
-		            possible_values=""
+		<nml_option name="config_use_const_diff" type="logical" default_value=".true." units="unitless"
+		            description="If true, constant vertical diffusion is included in the tracer equation"
+		            possible_values=".true. or .false."
 		/>
-		<nml_option name="config_vert_visc" type="real" default_value="1.0e-4" units=""
-		            description=""
-		            possible_values=""
+		<nml_option name="config_vert_visc" type="real" default_value="1.0e-4" units="m^2 s^{-1}"
+		            description="Vertical viscosity, applied uniformly throughout domain"
+		            possible_values="Any positive real value."
 		/>
-		<nml_option name="config_vert_diff" type="real" default_value="1.0e-4" units=""
-		            description=""
-		            possible_values=""
+		<nml_option name="config_vert_diff" type="real" default_value="1.0e-4" units="m^2 s^{-1}"
+		            description="Vertical diffusion, applied uniformly throughout domain"
+		            possible_values="Any positive real value."
 		/>
 	</nml_record>
 	<nml_record name="vmix_rich">
-		<nml_option name="config_use_rich_visc" type="logical" default_value=".true." units=""
-		            description=""
-		            possible_values=""
+		<nml_option name="config_use_rich_visc" type="logical" default_value=".true." units="unitless"
+		            description="If true, Richardson-number based vertical viscosity is included in the momentum equation"
+		            possible_values=".true. or .false."
 		/>
-		<nml_option name="config_use_rich_diff" type="logical" default_value=".true." units=""
-		            description=""
-		            possible_values=""
+		<nml_option name="config_use_rich_diff" type="logical" default_value=".true." units="unitless"
+		            description="If true, Richardson-number based vertical diffusion is included in the tracer equation"
+		            possible_values=".true. or .false."
 		/>
-		<nml_option name="config_bkrd_vert_visc" type="real" default_value="1.0e-4" units=""
-		            description=""
-		            possible_values=""
+		<nml_option name="config_bkrd_vert_visc" type="real" default_value="1.0e-4" units="m^2 s^{-1}"
+		            description="Background vertical viscosity for Richardson-number based vertical mixing"
+		            possible_values="Any positive real value."
 		/>
-		<nml_option name="config_bkrd_vert_diff" type="real" default_value="1.0e-5" units=""
-		            description=""
-		            possible_values=""
+		<nml_option name="config_bkrd_vert_diff" type="real" default_value="1.0e-5" units="m^2 s^{-1}"
+		            description="Background vertical diffusion for Richardson-number based vertical mixing"
+		            possible_values="Any positive real value."
 		/>
-		<nml_option name="config_rich_mix" type="real" default_value="0.005" units=""
-		            description=""
-		            possible_values=""
+		<nml_option name="config_rich_mix" type="real" default_value="0.005" units="m^2 s^{-1}"
+		            description="Coefficient for Richardon-number vertical mixing function"
+		            possible_values="Any positive real value."
 		/>
 	</nml_record>
 	<nml_record name="vmix_tanh">
-		<nml_option name="config_use_tanh_visc" type="logical" default_value=".false." units=""
-		            description=""
-		            possible_values=""
+		<nml_option name="config_use_tanh_visc" type="logical" default_value=".false." units="unitless"
+		            description="If true, tanh-based vertical viscosity is included in the momentum equation"
+		            possible_values=".true. or .false."
 		/>
-		<nml_option name="config_use_tanh_diff" type="logical" default_value=".false." units=""
-		            description=""
-		            possible_values=""
+		<nml_option name="config_use_tanh_diff" type="logical" default_value=".false." units="unitless"
+		            description="If true, tanh-based vertical diffusion is included in the tracer equation"
+		            possible_values=".true. or .false."
 		/>
-		<nml_option name="config_max_visc_tanh" type="real" default_value="2.5e-1" units=""
-		            description=""
-		            possible_values=""
+		<nml_option name="config_max_visc_tanh" type="real" default_value="2.5e-1" units="m^2 s^{-1}"
+		            description="maximum viscosity value for tanh-fit function"
+		            possible_values="Any positive real value."
 		/>
-		<nml_option name="config_min_visc_tanh" type="real" default_value="1.0e-4" units=""
-		            description=""
-		            possible_values=""
+		<nml_option name="config_min_visc_tanh" type="real" default_value="1.0e-4" units="m^2 s^{-1}"
+		            description="minimum viscosity value for tanh-fit function"
+		            possible_values="Any positive real value."
 		/>
-		<nml_option name="config_max_diff_tanh" type="real" default_value="2.5e-2" units=""
-		            description=""
-		            possible_values=""
+		<nml_option name="config_max_diff_tanh" type="real" default_value="2.5e-2" units="m^2 s^{-1}"
+		            description="maximum diffusion value for tanh-fit function"
+		            possible_values="Any positive real value."
 		/>
-		<nml_option name="config_min_diff_tanh" type="real" default_value="1.0e-5" units=""
-		            description=""
-		            possible_values=""
+		<nml_option name="config_min_diff_tanh" type="real" default_value="1.0e-5" units="m^2 s^{-1}"
+		            description="minimum diffusion value for tanh-fit function"
+		            possible_values="Any positive real value."
 		/>
-		<nml_option name="config_zMid_tanh" type="real" default_value="-100" units=""
-		            description=""
-		            possible_values=""
+		<nml_option name="config_zMid_tanh" type="real" default_value="-100" units="m"
+		            description="z-coodinate location of center of tanh function"
+		            possible_values="Any real value, typically negative."
 		/>
-		<nml_option name="config_zWidth_tanh" type="real" default_value="100" units=""
-		            description=""
-		            possible_values=""
+		<nml_option name="config_zWidth_tanh" type="real" default_value="100" units="m"
+		            description="vertical width parameter for tanh function"
+		            possible_values="Any positive real value."
 		/>
 	</nml_record>
 	<nml_record name="forcing">
