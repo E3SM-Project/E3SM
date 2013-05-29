@@ -82,10 +82,11 @@
 !>
 !> add-ons and modifications to sourcecode:
 !> ----------------------------------------
-!> * added initialization of variable sf_surface_physics in subroutine physics_run_init. see
-!>   definition of sf_surface_physics in mpas_atmphys_vars.F
-!>   Laura D. Fowler (birch.ucar.edu) / 2013-03-11.
- 
+!>    * added initialization of variable sf_surface_physics in subroutine physics_run_init. see
+!>      definition of sf_surface_physics in mpas_atmphys_vars.F
+!>      Laura D. Fowler (birch.ucar.edu) / 2013-03-11.
+!>    * removed the namelist option config_conv_shallow_scheme and associated sourcecode.
+!>      Laura D. Fowler (birch.ucar.edu) / 2013-05-29.
 
  contains
 

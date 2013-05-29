@@ -45,12 +45,17 @@
 !> WRF physics called from microphysics_driver:
 !> --------------------------------------------
 !>    * module_mp_kessler : Kessler cloud microphysics.
-!>    * module_mp_thompson: Thompson cloud microphysics.
 !>    * module_mp_wsm6    : WSM6 cloud microphysics.
 !>
 !> comments:
 !> unlike all the other physics parameterizations, parameterizations of cloud microphysics schemes
 !> are called at the bottom of subroutine atm_srk3 in module atm_time_integration.
+!>
+!> add-ons and modifications to sourcecode:
+!> ----------------------------------------
+!>    * removed call to the Thompson cloud microphysics scheme until the scheme is updated to that
+!>      in WRF revision 3.5.
+!>      Laura D. Fowler (birch.ucar.edu) / 2013-05-29.
 
 
  contains

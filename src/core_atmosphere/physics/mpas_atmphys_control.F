@@ -33,7 +33,13 @@
 !> physics_namelist_check: checks that physics namelist parameters are defined correctly.
 !> physics_registry_init : initializes thicknesses of soil layers for NOAH land-surface scheme.
 !> physics_idealized_init: initializes physics variables needed to run idealized cases.
-
+!>
+!> add-ons and modifications to sourcecode:
+!> ----------------------------------------
+!>    * removed the namelist option config_eddy_scheme and associated sourcecode.
+!>    * removed the namelist option config_conv_shallow_scheme and associated sourcecode.
+!>    * removed controls to the updated Kain-Fritsch convection scheme.
+!>      Laura D. Fowler (birch.ucar.edu) / 2013-05-29.
 
  contains
 

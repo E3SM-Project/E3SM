@@ -23,11 +23,12 @@
 !>
 !> add-ons and modifications:
 !> --------------------------
-!> * added the variables sf_surface_physics,alswvisdir_p,alswvisdif_p,alswnirdir_p,alswnirdif_p,
-!>   swvisdir_p,swvisdif_p,swnirdir_p,and swnirdif_p to upgrade the RRTMG short wave radiation
-!>   code to WRF version 3.4.1. see definition of each individual variables below.
-!>   Laura D. Fowler (birch.ucar.edu) / 2013-03-11.
-
+!>    * added the variables sf_surface_physics,alswvisdir_p,alswvisdif_p,alswnirdir_p,alswnirdif_p,
+!>      swvisdir_p,swvisdif_p,swnirdir_p,and swnirdif_p to upgrade the RRTMG short wave radiation
+!>      code to WRF version 3.4.1. see definition of each individual variables below.
+!>      Laura D. Fowler (birch.ucar.edu) / 2013-03-11.
+!>    * removed call to the updated Kain-Fritsch convection scheme.
+!>      Laura D. Fowler (birch.ucar.edu) / 2013-05-29.
 
 !==================================================================================================
 !list of physics parameterizations:

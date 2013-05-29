@@ -71,10 +71,13 @@
 !> update_convection_step2     : updates accumulated precipitation output from convection schemes.
 !> update_radiation_diagnostics: updates accumualted radiation diagnostics from radiation schemes.
 !>
-!> modifications:
-!> * removed call to calculate atmospheric soundings for the hydrostatic dynamical core.
-!>   Laura D. Fowler (2013-05-06).
-
+!> add-ons and modifications to sourcecode:
+!> ----------------------------------------
+!>    * removed call to calculate atmospheric soundings for the hydrostatic dynamical core.
+!>      Laura D. Fowler (2013-05-06).
+!>    * removed the namelist option config_eddy_scheme and associated sourcecode.
+!>    * removed the namelist option config_conv_shallow_scheme and associated sourcecode.
+!>      Laura D. Fowler (birch.ucar.edu) / 2013-05-29.
 
  contains
 

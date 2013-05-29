@@ -55,6 +55,7 @@
 !> ----------------------------------------
 !>    * removed the pre-processor option "do_hydrostatic_pressure" before call to the subroutines 
 !>      kf_eta_cps and tiedtke.
+!>    * removed call to the updated Kain-Fritsch convection scheme.
 !>      Laura D. Fowler (birch.ucar.edu) / 2013-05-29.
 
  contains
