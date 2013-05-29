@@ -41,7 +41,7 @@
 		     description="The number of interfaces in the vertical direction."
 		/>
 		<dim name="nMonths" units="unitless"
-			 description="The number of forcing slices in the monthly forcing fields. {\bf \color{red} Deprecated. Should be removed.}"
+			 description="The number of forcing slices in the monthly forcing fields."
 		/>
 	</dims>
 	<nml_record name="time_management">
