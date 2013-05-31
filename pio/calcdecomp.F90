@@ -151,11 +151,12 @@ contains
              mykount=kount
           endif
           tpsize=tpsize+product(kount(:))
-          if(tpsize==pgdims) then
-            converged=.true.
-            use_io_procs = iorank+1
-            exit
-          endif 
+          if(tpsize==pgdims .and. use_io_procs==iorank+1) then
+             converged=.true.
+             exit
+          else if(tpsize>=pgdims) then
+             exit
+          endif
        enddo
        if(.not.converged) then
           tpsize=0
@@ -165,6 +166,11 @@ contains
     end do
     start=mystart
     kount=mykount
+
+!    if(myiorank>=0 .and. myiorank<use_io_procs) then
+!       print *,__FILE__,__LINE__,use_io_procs,gdims,start,kount
+!    endif
+
 
     if(present(innermostdecomposed)) then
        innermostdecomposed=i

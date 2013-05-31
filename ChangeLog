@@ -1,6 +1,47 @@
 ===============================================================
 *** You must run 'make predist' in the pio subdirectory before committing. ***
 
+Tag name: pio1_7_2
+Originator(s): Jim
+Date: 05-31-2013
+One-line Summary: Bug fix in calcdecomp.F90
+
+List all subroutines eliminated:
+
+List all subroutines added and what they do:
+
+List all existing files that have been modified, and describe the changes:
+M   Calcdecomp.F90  - only mark as converged if all iotasks are counted
+M   box_rearranger.F90.in - add code to avoid an infinate loop
+	
+List all component tags that were used to create pio tag:
+
+Describe the changes for each component above that was changed relative
+to the previous ccsm tag in this sequence (this includes description
+of new functionality and how user can use it):
+
+Bugs fixed:   Bugzilla 1721
+
+Describe any changes made to scripts/build system:
+
+Describe any substantial timing or memory changes:
+
+
+
+Code reviewed by:  Jim 
+
+Summary of pre-tag testing:
+
+  Regression tests:  
+	testpio.693883.stdout:test complete on yellowstone 103 tests PASS, 0 tests FAIL
+        testpio.696040.stdout:test complete on yellowstone_gnu 80 tests PASS, 0 tests FAIL
+        testpio.696166.stdout:test complete on yellowstone_pgi 80 tests PASS, 0 tests FAIL
+
+
+===============================================================
+===============================================================
+*** You must run 'make predist' in the pio subdirectory before committing. ***
+
 Tag name: pio1_7_1
 Originator(s): Jim
 Date: 05-20-2013

@@ -720,7 +720,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
     integer(kind=pio_offset),intent(out) :: io_index
 
     character(len=*), parameter :: subName=modName//'::find_ioproc'
-    integer :: i,j, decompstep(ndim)
+    integer :: i,j, decompstep(ndim), k
     logical :: found
     integer(kind=pio_offset) :: lcoord(ndim)
     integer(kind=pio_offset)::  lindex
@@ -739,16 +739,17 @@ end subroutine box_rearrange_io2comp_{TYPE}
           enddo
        endif
     enddo
-
-    loop_ioproc: do while(.not. found)
+    k=0
+    loop_ioproc: do while(.not. found.and.k<1004)
+       k=k+1
        do j=1,ndim
           if ( gcoord(j) < lb(j,i) ) then
-             i = i-decompstep(j)
-!             print *,__LINE__,i,gcoord(:),lb(:,i),ub(:,i)
+             i = max(1,i-decompstep(j))
+             if(k>1000) print *,__FILE__,__LINE__,i,gcoord(:),lb(:,i),ub(:,i)
              cycle loop_ioproc
           else  if(gcoord(j) >= ub(j,i) ) then
-             i = i+decompstep(j)
-!             print *,__LINE__,i,gcoord(:),lb(:,i),ub(:,i)
+             i = min(nioproc,i+decompstep(j))
+             if(k>1000) print *,__FILE__,__LINE__,i,gcoord(:),lb(:,i),ub(:,i)
              cycle loop_ioproc
           endif
        end do
