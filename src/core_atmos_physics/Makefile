@@ -47,7 +47,10 @@ else
 	OBJS_dyn = mpas_atmphys_interface_nhyd.o
 endif
 
-all: core_physics_init core_physics_wrf core_dyn core_physics
+all: lookup_tables core_physics_init core_physics_wrf core_dyn core_physics
+
+lookup_tables:
+	./checkout_data_files.sh
 
 core_physics_wrf:
 	(cd physics_wrf; make all COREDEF="$(COREDEF)")
