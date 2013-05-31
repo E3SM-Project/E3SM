@@ -42,7 +42,7 @@
  integer:: nx,ny,nz
  integer:: endian,isigned,istatus,wordsize
  integer:: i,j,k
- integer:: iCell,iPoint,iTileStart,iTileEnd,jTileStart,jTileEnd
+ integer:: iCell,iEdge,iVtx,iPoint,iTileStart,iTileEnd,jTileStart,jTileEnd
  integer,dimension(5) :: interp_list
  integer,dimension(:),allocatable  :: nhs
  integer,dimension(:,:),allocatable:: ncat
@@ -86,8 +86,24 @@
  mesh % areaTriangle % array = mesh % areaTriangle % array * r_earth**2.0
  mesh % kiteAreasOnVertex % array = mesh % kiteAreasOnVertex % array * r_earth**2.0
 
+
+ !
+ ! Initialize Coriolis parameter field on edges and vertices
+ !
+ do iEdge=1,mesh % nEdges
+    mesh % fEdge % array(iEdge)  = 2.0 * omega * sin(mesh % latEdge % array(iEdge))
+ end do
+ do iVtx=1,mesh % nVertices
+    mesh % fVertex % array(iVtx) = 2.0 * omega * sin(mesh % latVertex % array(iVtx))
+ end do
+
+
+ !
+ ! Compute weights used in advection and deformation calculation
+ !
  call atm_initialize_advection_rk(mesh) 
  call atm_initialize_deformation_weights(mesh) 
+
 
 !
 ! Interpolate HGT
