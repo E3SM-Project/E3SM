@@ -17,7 +17,6 @@
     </ParameterList>
   </ParameterList>
   <ParameterList name="NOX">
-    <Parameter name="Convergence Tolerance" type="double" value="1.0e-10"/>
     <ParameterList name="Direction">
       <ParameterList name="Newton">
         <ParameterList name="Stratimikos Linear Solver">
