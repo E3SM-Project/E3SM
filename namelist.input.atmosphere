@@ -1,5 +1,4 @@
 &nhyd_model
-   config_time_integration = 'SRK3'
    config_dt = 450.0
    config_start_time   = '2010-10-23_00:00:00'
    config_run_duration = '12:00:00'
@@ -28,7 +27,6 @@
    config_smdiv               = 0.1
    config_h_ScaleWithMesh     = .false.
    config_newpx               = .false.
-   config_sfc_update_interval = 'none'
 /
    config_stop_time  = '0000-01-16_00:00:00'
 
@@ -38,23 +36,23 @@
 /
 
 &io
-   config_input_name         = 'x1.40962.init.nc'
-   config_output_name        = 'x1.40962.output.nc'
-   config_restart_name       = 'x1.40962.restart.nc'
-   config_output_interval    = '12:00:00'
-   config_frames_per_outfile = 1
-   config_pio_num_iotasks    = 0
-   config_pio_stride         = 1
+   config_input_name          = 'x1.40962.init.nc'
+   config_output_name         = 'x1.40962.output.nc'
+   config_output_interval     = '1_00:00:00'
+   config_restart_name        = 'x1.40962.restart.nc'
+   config_restart_interval    = '1_00:00:00'
+   config_sfc_update_name     = 'x1.40962.sfc_update.nc'
+   config_sfc_update_interval = 'none'
+   config_frames_per_outfile  = 1
+   config_pio_num_iotasks     = 0
+   config_pio_stride          = 1
 /
-   config_sfc_update_name    = 'x1.40962.sfc_update.nc'
 
 &decomposition
-   config_number_of_blocks         = 0
    config_block_decomp_file_prefix = 'x1.40962.graph.info.part.'
 /
 
 &restart
-   config_restart_interval = '1_00:00:00'
    config_do_restart = .false.
 /
 
@@ -73,7 +71,7 @@
    config_radtsw_interval     = '00:30:00'
    config_conv_interval       = 'none'
    config_pbl_interval        = 'none'
-   config_n_microp            = 5
+   config_n_microp            = 1
    config_microp_scheme       = 'wsm6'
    config_conv_deep_scheme    = 'kain_fritsch'
    config_lsm_scheme          = 'noah'

@@ -1,20 +1,19 @@
 &nhyd_model
-   config_time_integration = 'SRK3'
    config_dt = 3.0
    config_start_time = '0000-01-01_00:00:00'
    config_run_duration = '02:00:00'
    config_number_of_sub_steps = 6
-   config_h_mom_eddy_visc2 = 500.
-   config_h_mom_eddy_visc4 = 0.
-   config_v_mom_eddy_visc2 = 500.0
-   config_h_theta_eddy_visc2 = 500.
-   config_h_theta_eddy_visc4 = 0.
-   config_v_theta_eddy_visc2 = 500.
+   config_h_mom_eddy_visc2  = 500.0
+   config_h_mom_eddy_visc4  = 0.0
+   config_v_mom_eddy_visc2  = 500.0
+   config_h_theta_eddy_visc2 = 500.0
+   config_h_theta_eddy_visc4 = 0.0
+   config_v_theta_eddy_visc2 = 500.0
    config_horiz_mixing = '2d_fixed'
-   config_theta_adv_order = 3
-   config_w_adv_order = 3
-   config_u_vadv_order = 3
-   config_w_vadv_order = 3
+   config_theta_adv_order  = 3
+   config_w_adv_order      = 3
+   config_u_vadv_order     = 3
+   config_w_vadv_order     = 3
    config_theta_vadv_order = 3
    config_coef_3rd_order = 0.25
    config_epssm = 0.1
@@ -30,24 +29,21 @@
 /
 
 &io
-   config_input_name = 'supercell_init.nc'
-   config_output_name = 'output.nc'
-   config_restart_name = 'restart.nc'
-   config_output_interval = '00:30:00'
+   config_input_name       = 'supercell_init.nc'
+   config_output_name      = 'output.nc'
+   config_output_interval  = '00:30:00'
+   config_restart_name     = 'restart.nc'
+   config_restart_interval = '1_00:00:00'
    config_frames_per_outfile = 0
-   config_pio_num_iotasks = 0
-   config_pio_stride      = 1
+   config_pio_num_iotasks    = 0
+   config_pio_stride         = 1
 /
 
 &decomposition
-   config_number_of_blocks = 0
    config_block_decomp_file_prefix = 'graph.info.part.'
-   config_explicit_proc_decomp = .false.
-   config_proc_decomp_file_prefix = 'graph.info.part.'
 /
 
 &restart
-   config_restart_interval = '1_00:00:00'
    config_do_restart = .false.
 /
 

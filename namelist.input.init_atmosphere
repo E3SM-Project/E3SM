@@ -26,7 +26,7 @@
 /
 
 &preproc_stages 
-   config_static_interp   = .false.
+   config_static_interp   = .true.
    config_vertical_grid   = .true.
    config_met_interp      = .true.
    config_input_sst       = .false.
@@ -40,10 +40,7 @@
 /
 
 &decomposition
-   config_number_of_blocks = 0
    config_block_decomp_file_prefix = 'x1.40962.graph.info.part.' 
-   config_explicit_proc_decomp = .false.
-   config_proc_decomp_file_prefix = 'graph.info.part.'
 /
 
 &restart

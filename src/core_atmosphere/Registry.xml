@@ -40,7 +40,6 @@
                 <nml_option name="config_start_time"                 type="character"     default_value="0000-01-01_00:00:00"/>
                 <nml_option name="config_stop_time"                  type="character"     default_value="none"/>
                 <nml_option name="config_run_duration"               type="character"     default_value="none"/>
-                <nml_option name="config_sfc_update_interval"        type="character"     default_value="none"/>
                 <nml_option name="config_horiz_mixing"               type="character"     default_value="2d_smagorinsky"/>
                 <nml_option name="config_h_mom_eddy_visc2"           type="real"          default_value="0.0"/>
                 <nml_option name="config_h_mom_eddy_visc4"           type="real"          default_value="0.0"/>
@@ -79,10 +78,12 @@
 
         <nml_record name="io">
                 <nml_option name="config_input_name"                 type="character"     default_value="init.nc"/>
-                <nml_option name="config_sfc_update_name"            type="character"     default_value="sfc_update.nc"/>
                 <nml_option name="config_output_name"                type="character"     default_value="output.nc"/>
-                <nml_option name="config_restart_name"               type="character"     default_value="restart.nc"/>
                 <nml_option name="config_output_interval"            type="character"     default_value="06:00:00"/>
+                <nml_option name="config_restart_name"               type="character"     default_value="restart.nc"/>
+                <nml_option name="config_restart_interval"           type="character"     default_value="none"/>
+                <nml_option name="config_sfc_update_name"            type="character"     default_value="sfc_update.nc"/>
+                <nml_option name="config_sfc_update_interval"        type="character"     default_value="none"/>
                 <nml_option name="config_hifreq_output_interval"     type="character"     default_value="none"/>
                 <nml_option name="config_frames_per_outfile"         type="integer"       default_value="0"/>
                 <nml_option name="config_pio_num_iotasks"            type="integer"       default_value="0"/>
@@ -100,7 +101,6 @@
         <nml_record name="restart">
                 <nml_option name="config_do_restart"                 type="logical"       default_value="false"/>
                 <nml_option name="config_do_DAcycling"               type="logical"       default_value="false"/>
-                <nml_option name="config_restart_interval"           type="character"     default_value="none"/>
         </nml_record>
 
 
