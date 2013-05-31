@@ -247,7 +247,17 @@
  end do
 
 !... calculate the 10cm radar reflectivity, if needed:
- if(l_diags) call compute_radar_reflectivity(diag_physics)
+ if (l_diags) then
+ 
+    ! Ensure that we only call compute_radar_reflectivity() if we are using an MPS that
+    !    supports the computation of simulated radar reflectivity
+    if (trim(microp_scheme) == "wsm6") then
+       call compute_radar_reflectivity(diag_physics)
+    else
+       write(0,*) '*** NOTICE: NOT computing simulated radar reflectivity'
+       write(0,*) '            since WSM6 microphysics scheme was not selected'
+    end if
+ end if
 
 !... copy updated precipitation from the wrf-physics grid back to the geodesic-dynamics grid:
 
