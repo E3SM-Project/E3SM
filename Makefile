@@ -1,9 +1,6 @@
 #MODEL_FORMULATION = -DNCAR_FORMULATION
 MODEL_FORMULATION = -DLANL_FORMULATION
 
-# This flag must be off for nersc hopper:
-FILE_OFFSET = -DOFFSET64BIT
-
 
 dummy:
 	( $(MAKE) error )
@@ -22,9 +19,8 @@ xlf:
 	"LDFLAGS_DEBUG = -O0 -g" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
-	"SERIAL = $(SERIAL)" \
 	"USE_PAPI = $(USE_PAPI)" \
-	"CPPFLAGS = $(MODEL_FORMULATION) $(FILE_OFFSET)" )
+	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
  
 ftn:
 	( $(MAKE) all \
@@ -37,9 +33,8 @@ ftn:
 	"LDFLAGS_OPT = " \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
-	"SERIAL = $(SERIAL)" \
 	"USE_PAPI = $(USE_PAPI)" \
-	"CPPFLAGS = $(MODEL_FORMULATION) -DUNDERSCORE $(FILE_OFFSET)" )
+	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 pgi:
 	( $(MAKE) all \
@@ -55,9 +50,8 @@ pgi:
 	"LDFLAGS_DEBUG = -O0 -g -Mbounds -Mchkptr" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
-	"SERIAL = $(SERIAL)" \
 	"USE_PAPI = $(USE_PAPI)" \
-	"CPPFLAGS = $(MODEL_FORMULATION) -DUNDERSCORE $(FILE_OFFSET)" )
+	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 pgi-nersc:
 	( $(MAKE) all \
@@ -70,9 +64,8 @@ pgi-nersc:
 	"LDFLAGS_OPT = -O3" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
-	"SERIAL = $(SERIAL)" \
 	"USE_PAPI = $(USE_PAPI)" \
-	"CPPFLAGS = $(MODEL_FORMULATION) -DUNDERSCORE $(FILE_OFFSET)" )
+	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 pgi-llnl:
 	( $(MAKE) all \
@@ -85,9 +78,8 @@ pgi-llnl:
 	"LDFLAGS_OPT = " \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
-	"SERIAL = $(SERIAL)" \
 	"USE_PAPI = $(USE_PAPI)" \
-	"CPPFLAGS = $(MODEL_FORMULATION) -DUNDERSCORE $(FILE_OFFSET)" )
+	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 ifort:
 	( $(MAKE) all \
@@ -103,9 +95,8 @@ ifort:
 	"LDFLAGS_DEBUG = -g" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
-	"SERIAL = $(SERIAL)" \
 	"USE_PAPI = $(USE_PAPI)" \
-	"CPPFLAGS = $(MODEL_FORMULATION) -DUNDERSCORE -m64 $(FILE_OFFSET)" )
+	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE -m64" )
 
 gfortran:
 	( $(MAKE) all \
@@ -121,9 +112,8 @@ gfortran:
 	"LDFLAGS_DEBUG = -g -m64" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
-	"SERIAL = $(SERIAL)" \
 	"USE_PAPI = $(USE_PAPI)" \
-	"CPPFLAGS = $(MODEL_FORMULATION) -DUNDERSCORE -m64 $(FILE_OFFSET)" )
+	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE -m64" )
 
 g95:
 	( $(MAKE) all \
@@ -136,9 +126,8 @@ g95:
 	"LDFLAGS_OPT = -O3" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
-	"SERIAL = $(SERIAL)" \
 	"USE_PAPI = $(USE_PAPI)" \
-	"CPPFLAGS = $(MODEL_FORMULATION) -DUNDERSCORE $(FILE_OFFSET)" )
+	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 pathscale-nersc:
 	( $(MAKE) all \
@@ -151,9 +140,8 @@ pathscale-nersc:
 	"LDFLAGS_OPT = -O3" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
-	"SERIAL = $(SERIAL)" \
 	"USE_PAPI = $(USE_PAPI)" \
-	"CPPFLAGS = $(MODEL_FORMULATION) -DUNDERSCORE $(FILE_OFFSET)" )
+	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 cray-nersc:
 	( $(MAKE) all \
@@ -166,9 +154,8 @@ cray-nersc:
 	"LDFLAGS_OPT = -O3" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
-	"SERIAL = $(SERIAL)" \
 	"USE_PAPI = $(USE_PAPI)" \
-	"CPPFLAGS = $(MODEL_FORMULATION) -DUNDERSCORE $(FILE_OFFSET)" )
+	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 intel-nersc:
 	( $(MAKE) all \
@@ -181,9 +168,8 @@ intel-nersc:
 	"LDFLAGS_OPT = -O3" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
-	"SERIAL = $(SERIAL)" \
 	"USE_PAPI = $(USE_PAPI)" \
-	"CPPFLAGS = $(MODEL_FORMULATION) -DUNDERSCORE $(FILE_OFFSET)" )
+	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 CPPINCLUDES = 
 FCINCLUDES = 
@@ -234,20 +220,11 @@ else # DEBUG IF
 	DEBUG_MESSAGE="Debugging is off."
 endif # DEBUG IF
 
-ifeq "$(SERIAL)" "true"
-	FC=$(FC_SERIAL)
-	CC=$(CC_SERIAL)
-	SFC=$(FC_SERIAL)
-	SCC=$(CC_SERIAL)
-	SERIAL_MESSAGE="Serial version is on."
-else # SERIAL IF
-	FC=$(FC_PARALLEL)
-	CC=$(CC_PARALLEL)
-	SFC=$(FC_SERIAL)
-	SCC=$(CC_SERIAL)
-	override CPPFLAGS += -D_MPI
-	SERIAL_MESSAGE="Parallel version is on."
-endif # SERIAL IF
+FC=$(FC_PARALLEL)
+CC=$(CC_PARALLEL)
+SFC=$(FC_SERIAL)
+SCC=$(CC_SERIAL)
+PARALLEL_MESSAGE="Parallel version is on."
 
 ifeq "$(USE_PAPI)" "true"
 	CPPINCLUDES += -I$(PAPI)/include -D_PAPI
@@ -346,7 +323,7 @@ endif
 	@echo ""
 	@echo "*******************************************************************************"
 	@echo $(DEBUG_MESSAGE)
-	@echo $(SERIAL_MESSAGE)
+	@echo $(PARALLEL_MESSAGE)
 	@echo $(PAPI_MESSAGE)
 	@echo $(TAU_MESSAGE)
 ifeq "$(AUTOCLEAN)" "true"
@@ -411,7 +388,6 @@ errmsg:
 	@cd src; ls -d core_* | grep ".*" | sed "s/core_/    /g"
 	@echo ""
 	@echo "Available Options:"
-#@echo "    SERIAL=true   - builds serial version. Default is parallel version."
 	@echo "    DEBUG=true    - builds debug version. Default is optimized version."
 	@echo "    USE_PAPI=true - builds version using PAPI for timers. Default is off."
 	@echo "    TAU=true      - builds version using TAU hooks for profiling. Default is off."
