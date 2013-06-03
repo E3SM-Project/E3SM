@@ -56,6 +56,32 @@ else
 fi
 
 
+#
+# Try using 'curl'
+#
+which curl
+if [ $? == 0 ]; then
+   echo "*** trying curl to obtain WRF physics tables ***"
+   curl -o master.zip https://codeload.github.com/MPAS-Dev/MPAS-Data/zip/master
+   if [ $? == 0 ]; then
+      which unzip
+      if [ $? == 0 ]; then
+         unzip master.zip
+         mv MPAS-Data-master/atmosphere/physics_wrf/files physics_wrf/
+         rm -rf master.zip MPAS-Data-master
+         exit 0
+      else
+         echo "*** unzip not in path -- unable to unzip WRF physics tables"
+         rm -f master.zip
+      fi
+   else
+      echo "*** failed to obtain WRF physics tables using curl ***"
+   fi
+else
+   echo "*** curl not in path ***"
+fi
+
+
 echo "***************************************************"
 echo "Unable to obtain WRF physics tables by any means"
 echo "***************************************************"

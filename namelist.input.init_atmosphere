@@ -13,7 +13,7 @@
 /
 
 &data_sources
-   config_geog_data_path  = '/mmm/users/wrfhelp/WPS_GEOG/'
+   config_geog_data_path  = '/glade/p/work/wrfhelp/WPS_GEOG/'
    config_met_prefix      = 'CFSR'
    config_sfc_prefix      = 'SST'
    config_fg_interval     = 21600
@@ -21,7 +21,7 @@
 
 &vertical_grid
    config_ztop            = 30000.0
-   config_nsmterrain      = 2
+   config_nsmterrain      = 1
    config_smooth_surfaces = .true.
 /
 
@@ -33,14 +33,15 @@
 /
 
 &io
-   config_input_name         = 'x1.40962.static.nc'
-   config_output_name        = 'x1.40962.init.nc'
+   config_input_name         = 'grid.nc'
+   config_output_name        = 'init.nc'
+   config_sfc_update_name    = 'sfc_update.nc'
    config_pio_num_iotasks    = 0
    config_pio_stride         = 1
 /
 
 &decomposition
-   config_block_decomp_file_prefix = 'x1.40962.graph.info.part.' 
+   config_block_decomp_file_prefix = 'graph.info.part.' 
 /
 
 &restart

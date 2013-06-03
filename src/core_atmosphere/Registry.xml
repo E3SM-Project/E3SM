@@ -477,8 +477,6 @@
                 <var name="graupelnc"     type="real"     dimensions="nCells Time"                 streams="ro"/>
 
                 <var name="precipw"       type="real"     dimensions="nCells Time"                 streams="o"/>
-                <var name="qsat"          type="real"     dimensions="nVertLevels nCells Time"     streams="o"/>
-                <var name="relhum"        type="real"     dimensions="nVertLevels nCells Time"     streams="o"/>
 
                 <!-- ================================================================================================== -->
                 <!-- ... PARAMETERIZATION OF CONVECTION:                                                                -->
