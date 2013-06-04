@@ -17,7 +17,6 @@
     </ParameterList>
   </ParameterList>
   <ParameterList name="NOX">
-    <Parameter name="Convergence Tolerance" type="double" value="1.0e-12"/>
     <ParameterList name="Direction">
       <ParameterList name="Newton">
         <ParameterList name="Stratimikos Linear Solver">
@@ -28,7 +27,7 @@
               <ParameterList name="Belos">
                 <Parameter name="Solver Type" type="string" value="Block GMRES"/>
                 <ParameterList name="VerboseObject">
-                  <Parameter name="Verbosity Level" type="string" value="high"/>
+                  <Parameter name="Verbosity Level" type="string" value="low"/>
                 </ParameterList>
                 <ParameterList name="Solver Types">
                   <ParameterList name="Block GMRES">
@@ -38,7 +37,7 @@
                     <Parameter name="Maximum Iterations" type="int" value="10"/>
                     <Parameter name="Block Size" type="int" value="1"/>
                     <Parameter name="Num Blocks" type="int" value="10"/>
-                    <Parameter name="Flexible Gmres" type="bool" value="0"/>
+                    <Parameter name="Flexible Gmres" type="bool" value="1"/>
                   </ParameterList> 
                 </ParameterList> 
               </ParameterList> 
@@ -63,7 +62,8 @@
       <Parameter name="Number of Tests" type="int" value="3"/>
       <ParameterList name="Test 0">
         <Parameter name="Test Type" type="string" value="NormF"/>
-        <Parameter name="Tolerance" type="double" value="1.0e-10"/>
+        <Parameter name="Tolerance" type="double" value="1.0e-6"/>
+        <Parameter name="Scale Type" type="string" value="Scaled"/>
       </ParameterList>
       <ParameterList name="Test 1">
         <Parameter name="Test Type" type="string" value="MaxIters"/>
