@@ -33,6 +33,7 @@ module ocn_time_integration_rk4
    use ocn_equation_of_state
    use ocn_vmix
    use ocn_time_average
+   use ocn_time_average_coupled
 
    implicit none
    private
@@ -378,6 +379,7 @@ module ocn_time_integration_rk4
                          )
 
          call ocn_time_average_accumulate(block % average, block % state % time_levs(2) % state, block % diagnostics)
+         call ocn_time_average_coupled_accumulate(block % diagnostics, block % forcing)
 
          block => block % next
       end do
