@@ -76,6 +76,7 @@ lib$(MODULE).a: $(OBJS_ALL)
 	echo $(OBJS_ALL)
 	$(RM) $@
 	$(AR) $@ $(OBJS_ALL)
+	$(RANLIB) $@
 
 
 LIB	= lib$(MODULE).a
