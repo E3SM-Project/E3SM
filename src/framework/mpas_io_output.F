@@ -373,6 +373,8 @@ module mpas_io_output
       call MPAS_writeStreamAtt(output_obj % io_stream, 'core_name', domain % coreName, nferr)
       call MPAS_writeStreamAtt(output_obj % io_stream, 'model_version', domain % modelVersion, nferr)
       call MPAS_writeStreamAtt(output_obj % io_stream, 'history', runCmd, nferr)
+      call MPAS_writeStreamAtt(output_obj % io_stream, 'source', 'MPAS', nferr)
+      call MPAS_writeStreamAtt(output_obj % io_stream, 'Conventions', 'MPAS', nferr)
 
 #include "add_output_atts.inc"
  
