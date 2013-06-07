@@ -56,6 +56,7 @@ AC_ARG_VAR(ENDIAN,Fortran compiler flag for converting big-endian to little-endi
 AC_ARG_VAR(INCLUDEFLAG,Fortran compiler flag for specifying module search path)
 AC_ARG_VAR(INCLUDEPATH,Additional library and module paths with INCLUDEFLAG)
 AC_ARG_VAR(AR,Archive command)
+AC_ARG_VAR(RANLIB,Archive index update command)
 AC_ARG_VAR(BABELROOT,Root directory of your Babel installation. i.e.: $BABELROOT/bin/babel $BABELROOT/lib/libsidl.so)
 AC_ARG_VAR(COMPILER_ROOT,Root directory of your FORTRAN compiler)
 AC_ARG_VAR(FORT_SIZE, Number of bits in Fortran real and double kind)
@@ -569,6 +570,17 @@ if test -z "$AR"; then
    AR="ar cq"
 fi
 
+# RANLIB
+if test -z "$RANLIB"; then
+    # Necessary on Darwin to deal with common symbols (particularly when
+    # using ifort).
+    if test "$SYSDEF"x = DARWINx; then
+        RANLIB="ranlib -c"
+    else
+        AC_PROG_RANLIB
+    fi
+fi
+
 echo
 echo Output Variables: {CC=$CC} {CFLAGS=$CFLAGS} \
 {FC=$FC} {FCFLAGS=$FCFLAGS} {PROGFCFLAGS=$PROGFCFLAGS}\
@@ -576,7 +588,7 @@ echo Output Variables: {CC=$CC} {CFLAGS=$CFLAGS} \
 {BIT64=$BIT64} {ENDIAN=$ENDIAN} {MPIFC=$MPIFC} \
 {MPILIBS=$MPILIBS} {MPIHEADER=$MPIHEADER}  \
 {INCLUDEFLAG=$INCLUDEFLAG} {INCLUDEPATH=$INCLUDEPATH} \
-{AR=$AR} {BABELROOT=$BABELROOT} {COMPILER_ROOT=$COMPILER_ROOT} \
+{AR=$AR} {RANLIB=$RANLIB} {BABELROOT=$BABELROOT} {COMPILER_ROOT=$COMPILER_ROOT} \
 {PYTHON=$PYTHON} {PYTHONOPTS=$PYTHONOPTS} {FORT_SIZE=$FORT_SIZE} {prefix=$prefix} \
 {SRCDIR=$SRCDIR} {FC_DEFINE=$FC_DEFINE}
 echo

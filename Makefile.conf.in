@@ -79,6 +79,7 @@ libdir          = @prefix@/lib
 includedir      = @prefix@/include
 
 # OTHER COMMANDS #
+RANLIB		= @RANLIB@
 AR		= @AR@
 RM		= rm -f
 
