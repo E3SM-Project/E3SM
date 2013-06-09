@@ -396,7 +396,7 @@ contains
        if (rsplit > 0) then  
        call abortmp('ERROR: full_imp integration not yet coded for vert lagrangian adv option')
        end if
-      if (hybrid%masterthread) print*, "fully implicit integration is still under development and is not operational"
+      if (hybrid%masterthread) print*, "fully implicit integration is still under development"
 
 #ifdef TRILINOS
       lenx=(np*np*nlev*3 + np*np*1)*(nete-nets+1)  ! 3 3d vars plus 1 2d vars
@@ -2750,6 +2750,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
         end do
 
      end do
+
 #ifdef ENERGY_DIAGNOSTICS
      ! =========================================================
      !
@@ -3425,10 +3426,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
      end do
 
-!       if (hybrid%masterthread) print*, "NORM2 in tens",NORM2(T_vadv),NORM2(vgrad_T),NORM2(kappa_star), NORM2(T_v), NORM2(omega_p)
-!       if (hybrid%masterthread) print*, "NORM2 in vtens1",NORM2(v_vadv),glnps1,glnps2
-
-       
 #ifdef ENERGY_DIAGNOSTICS
      ! =========================================================
      !
@@ -3601,20 +3598,19 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
         ttens(:,:,k) )
 
         fvtens(:,:,1,k,ie) = elem(ie)%spheremp(:,:)* &
-        ( (elem(ie)%state%v(:,:,1,k,np1)*dti - &
-        elem(ie)%state%v(:,:,1,k,nm1)) - vtens1(:,:,k) )
+        ( (elem(ie)%state%v(:,:,1,k,np1) - elem(ie)%state%v(:,:,1,k,nm1))*dti - &
+        vtens1(:,:,k) )
 
         fvtens(:,:,2,k,ie) = elem(ie)%spheremp(:,:)* &
-        ( (elem(ie)%state%v(:,:,2,k,np1)*dti - &
-        elem(ie)%state%v(:,:,2,k,nm1)) - vtens2(:,:,k) )
+        ( (elem(ie)%state%v(:,:,2,k,np1) - elem(ie)%state%v(:,:,2,k,nm1))*dti - &
+        vtens2(:,:,k) )
         enddo
 
         fpstens(:,:,ie) = elem(ie)%spheremp(:,:)* &
-        ( (elem(ie)%state%ps_v(:,:,np1) - elem(ie)%state%ps_v(:,:,nm1))*dti &
-        + sdot_sum(:,:) )
+        ( (elem(ie)%state%ps_v(:,:,np1) - elem(ie)%state%ps_v(:,:,nm1))*dti + &
+        sdot_sum(:,:) )
  
 ! add for fdptens later for vert lagrangian
-
      
      ! =========================================================
      !

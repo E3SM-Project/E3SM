@@ -17,7 +17,7 @@
     </ParameterList>
   </ParameterList>
   <ParameterList name="NOX">
-    <Parameter name="Convergence Tolerance" type="double" value="1.0e-10"/>
+    <Parameter name="Convergence Tolerance" type="double" value="1.0e-8"/>
     <ParameterList name="Direction">
       <ParameterList name="Newton">
         <ParameterList name="Stratimikos Linear Solver">
@@ -28,14 +28,14 @@
               <ParameterList name="Belos">
                 <Parameter name="Solver Type" type="string" value="Block GMRES"/>
                 <ParameterList name="VerboseObject">
-                  <Parameter name="Verbosity Level" type="string" value="low"/>
+                  <Parameter name="Verbosity Level" type="string" value="high"/>
                 </ParameterList>
                 <ParameterList name="Solver Types">
                   <ParameterList name="Block GMRES">
                     <Parameter name="Convergence Tolerance" type="double" value="1e-2"/>
                     <Parameter name="Output Frequency" type="int" value="1"/>
-                    <Parameter name="Verbosity" type="int" value="0"/>
-                    <Parameter name="Maximum Iterations" type="int" value="10"/>
+                    <Parameter name="Verbosity" type="int" value="33"/>
+                    <Parameter name="Maximum Iterations" type="int" value="100"/>
                     <Parameter name="Block Size" type="int" value="1"/>
                     <Parameter name="Num Blocks" type="int" value="10"/>
                     <Parameter name="Flexible Gmres" type="bool" value="0"/>
@@ -54,7 +54,7 @@
        <Parameter name="Outer Iteration" type="bool" value="1"/>
        <Parameter name="Parameters" type="bool" value="0"/>
        <Parameter name="Details" type="bool" value="0"/>
-       <Parameter name="Linear Solver Details" type="bool" value="1"/>
+       <Parameter name="Linear Solver Details" type="bool" value="0"/>
       </ParameterList>
     </ParameterList>
     <ParameterList name="Status Tests">
@@ -63,11 +63,11 @@
       <Parameter name="Number of Tests" type="int" value="3"/>
       <ParameterList name="Test 0">
         <Parameter name="Test Type" type="string" value="NormF"/>
-        <Parameter name="Tolerance" type="double" value="1.0e-15"/>
+        <Parameter name="Tolerance" type="double" value="1.0e-8"/>
       </ParameterList>
       <ParameterList name="Test 1">
         <Parameter name="Test Type" type="string" value="MaxIters"/>
-        <Parameter name="Maximum Iterations" type="int" value="10"/>
+        <Parameter name="Maximum Iterations" type="int" value="15"/>
       </ParameterList>
       <ParameterList name="Test 2">
         <Parameter name="Test Type" type="string" value="FiniteValue"/>
