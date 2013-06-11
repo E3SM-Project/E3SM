@@ -1,1 +1,1 @@
-../core_atmos_physics/mpas_atmphys_date_time.F
+../core_atmosphere/physics/mpas_atmphys_date_time.F

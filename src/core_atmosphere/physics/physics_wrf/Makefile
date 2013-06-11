@@ -76,4 +76,4 @@ clean:
 
 .F.o:
 	$(CPP) $(CPPFLAGS) $(COREDEF) $(CPPINCLUDES) -DIWORDSIZE=4 -DRWORDSIZE=8 $< > $*.f90
-	$(FC) $(FFLAGS) -c $*.f90 $(FCINCLUDES) -I../../framework -I../../operators -I..
+	$(FC) $(FFLAGS) -c $*.f90 $(FCINCLUDES) -I../../../framework -I../../../operators -I..

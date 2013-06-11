@@ -1,3 +1,3 @@
-physics_eaung/*.f90
+*.f90
 physics_wrf/*.f90
 physics_wrf/files/

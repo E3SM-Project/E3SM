@@ -37,7 +37,6 @@ src/registry/parse
 # src/external (Externals might have a different compilation method)
 # src/inc (Include files don't exist until build time. But directory needs to exist.)
 # src/core_atmosphere (Directory to include object files from physics in the atmosphere core library.)
-# src/core_atmos_physics (Pre-processed source for different physics sources)
 
 # Ignore WRF Physics Files
 *.TBL
