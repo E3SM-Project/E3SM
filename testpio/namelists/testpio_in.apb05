@@ -4,8 +4,8 @@
  ny_global = 3014
   iofmt       = 'pnc'
   rearr       = 'box'
-  nprocsIO    = -1
-  stride      = 4
+  nprocsIO    = 8
+  stride      = 1
   base        = 0
   maxiter     = 10
   dir         = './none/'
