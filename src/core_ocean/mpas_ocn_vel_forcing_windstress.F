@@ -135,6 +135,9 @@ contains
       edgeMask => mesh % edgeMask % array
 
       do iEdge=1,nEdgesSolve
+        ! k = min(maxLevelEdgeTop(iEdge), 1)
+        ! tend(k,iEdge) =  tend(k,iEdge) + edgeMask(k, iEdge) * surfaceWindStress(iEdge) / config_density0 / layerThicknessEdge(k, iEdge)
+
         zTop = 0.0_RKIND
         zBot = 0.0_RKIND
         remainingStress = 1.0_RKIND
@@ -147,12 +150,12 @@ contains
 
            remainingStress = remainingStress - (transmissionCoeffTop - transmissionCoeffBot)
 
-           tend(k,iEdge) =  tend(k,iEdge) + edgeMask(k, iEdge) * ((normalVelocityForcing(k,iEdge) / config_density0 / layerThicknessEdge(k,iEdge)) + surfaceWindStress(iEdge) &
-                                                                  * (transmissionCoeffTop - transmissionCoeffBot))
+           tend(k,iEdge) =  tend(k,iEdge) + edgeMask(k, iEdge) * (normalVelocityForcing(k,iEdge) + surfaceWindStress(iEdge) * (transmissionCoeffTop - transmissionCoeffBot)) / config_density0 / layerThicknessEdge(k,iEdge)
         enddo
 
         if ( maxLevelEdgeTop(iEdge) > 0 .and. remainingStress > 0.0_RKIND) then
-           tend(maxLevelEdgeTop(iEdge), iEdge) = tend(maxLevelEdgeTop(iEdge), iEdge) + edgeMask(maxLevelEdgeTop(iEdge), iEdge) * surfaceWindStress(iEdge) * remainingStress
+           tend(maxLevelEdgeTop(iEdge), iEdge) = tend(maxLevelEdgeTop(iEdge), iEdge) + edgeMask(maxLevelEdgeTop(iEdge), iEdge) * surfaceWindStress(iEdge) * remainingStress &
+                                                                                     / config_density0 / layerThicknessEdge(maxLevelEdgeTop(iEdge), iEdge)
         end if
       enddo
 
