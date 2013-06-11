@@ -354,9 +354,9 @@ module mpas_io_output
       character (len=StrKIND*4) :: runCmd
 
       if(len(trim(domain % history)) > 0) then
-          write(runCmd,'(a,a,i0,a,a,a)') trim(domain % history),' mpirun -n ',domain % dminfo % nProcs, ' ', trim(domain % coreName), '_model.exe; '
+          write(runCmd,'(a,a,i0,a,a,a)') trim(domain % history),' mpirun -n ',domain % dminfo % nProcs, ' ', trim(domain % coreName), '_model; '
       else
-          write(runCmd,'(a,i0,a,a,a)') 'mpirun -n ',domain % dminfo % nProcs, ' ', trim(domain % coreName), '_model.exe; '
+          write(runCmd,'(a,i0,a,a,a)') 'mpirun -n ',domain % dminfo % nProcs, ' ', trim(domain % coreName), '_model; '
       end if
  
       call MPAS_createStream(output_obj % io_stream, trim(output_obj % filename), MPAS_IO_PNETCDF, MPAS_IO_WRITE, 1, nferr)
