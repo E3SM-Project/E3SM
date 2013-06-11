@@ -110,6 +110,7 @@ contains
 
       integer :: iCell, nCells, k, iTracer, nTracers, nVertLevels
       integer, dimension(:), pointer :: maxLevelCell
+      integer, dimension(:,:), pointer :: cellMask
 
       real (kind=RKIND) :: transmissionCoeffTop, transmissionCoeffBot, zTop, zBot, remainingFlux
 
@@ -121,6 +122,7 @@ contains
       nTracers = size(tend, dim=1)
 
       maxLevelCell => mesh % maxLevelCell % array
+      cellMask => mesh % cellMask % array
 
       do iCell = 1, nCells
         zTop = 0.0_RKIND
@@ -135,13 +137,13 @@ contains
           remainingFlux = remainingFlux - (transmissionCoeffTop - transmissionCoeffBot)
 
           do iTracer = 1, nTracers
-            tend(iTracer, k, iCell) = tend(iTracer, k, iCell) + surfaceTracerFlux(iTracer, iCell) * (transmissionCoeffTop - transmissionCoeffBot)
+            tend(iTracer, k, iCell) = tend(iTracer, k, iCell) + cellMask(k, icell) * surfaceTracerFlux(iTracer, iCell) * (transmissionCoeffTop - transmissionCoeffBot)
           end do
         end do
 
         if(maxLevelCell(iCell) > 0 .and. remainingFlux > 0.0_RKIND) then
           do iTracer = 1, nTracers
-            tend(iTracer, maxLevelCell(iCell), iCell) = tend(iTracer, maxLevelCell(iCell), iCell) + surfaceTracerFlux(iTracer, iCell) * remainingFlux
+            tend(iTracer, maxLevelCell(iCell), iCell) = tend(iTracer, maxLevelCell(iCell), iCell) + cellMask(k, iCell) * surfaceTracerFlux(iTracer, iCell) * remainingFlux
           end do
         end if
       end do

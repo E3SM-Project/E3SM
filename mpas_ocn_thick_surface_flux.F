@@ -112,12 +112,14 @@ contains
 
       integer :: iCell, nCells, k, nVertLevels
       integer, dimension(:), pointer :: maxLevelCell
+      integer, dimension(:,:), pointer :: cellMask
 
       real (kind=RKIND) :: transmissionCoeffTop, transmissionCoeffBot, zTop, zBot, remainingFlux
 
       err = 0
 
       maxLevelCell => mesh % maxLevelCell % array
+      cellMask => mesh % cellMask % array
 
       nCells = mesh % nCells
 
@@ -133,11 +135,11 @@ contains
 
           remainingFlux = remainingFlux - (transmissionCoeffTop - transmissionCoeffBot)
 
-          tend(k, iCell) = tend(k, iCell) + (surfaceMassFlux(iCell)/config_density0) * (transmissionCoeffTop - transmissionCoeffBot)
+          tend(k, iCell) = tend(k, iCell) + cellMask(k, iCell) * (surfaceMassFlux(iCell)/config_density0) * (transmissionCoeffTop - transmissionCoeffBot)
         end do
 
         if(maxLevelCell(iCell) > 0 .and. remainingFlux > 0.0_RKIND) then
-          tend(maxLevelCell(iCell), iCell) = tend(maxLevelCell(iCell), iCell) + remainingFlux*surfaceMassFlux(iCell)/config_density0
+          tend(maxLevelCell(iCell), iCell) = tend(maxLevelCell(iCell), iCell) + cellMask(maxLevelCell(iCell), iCell) * remainingFlux*surfaceMassFlux(iCell)/config_density0
         end if
       end do
 
