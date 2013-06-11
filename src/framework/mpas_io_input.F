@@ -248,6 +248,7 @@ module mpas_io_input
         end if
       end if
 
+#ifndef MPAS_CESM
       call MPAS_readStreamAtt(input_obj % io_stream, 'history', domain % history, ierr)
       if (ierr /= MPAS_STREAM_NOERR) then
         write(0,*) 'Warning: Attribute History not found in '//trim(input_obj % filename)
@@ -263,6 +264,9 @@ module mpas_io_input
           end if
         end do
       end if
+#else
+      domain % history = "cesm_run"
+#endif
 
       block_ptr => domain % blocklist % next
       do while (associated(block_ptr))
