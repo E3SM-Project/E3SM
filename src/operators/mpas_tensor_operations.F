@@ -75,7 +75,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_strain_rate_R3(grid, normalVelocity, tangentialVelocity, &
+   subroutine mpas_strain_rate_R3(grid, edgeSignOnCell, normalVelocity, tangentialVelocity, &
       strainRateR3Cell, outerProductEdge)!{{{
 
       !-----------------------------------------------------------------
@@ -85,8 +85,9 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-         normalVelocity, &!< Input: Horizontal velocity normal to edge
-         tangentialVelocity   !< Input: Horizontal velocity tangent to edge
+         normalVelocity,      &!< Input: Horizontal velocity normal to edge
+         tangentialVelocity,  &!< Input: Horizontal velocity tangent to edge
+         edgeSignOnCell        !< Input: Direction of vector connecting cells
 
       type (mesh_type), intent(in) :: &
          grid          !< Input: grid information
@@ -111,7 +112,7 @@ contains
       integer :: iEdge, nEdges, iCell, nCells, i,j,k, nVertLevels
 
       integer, dimension(:), pointer :: nEdgesOnCell
-      integer, dimension(:,:), pointer :: edgesOnCell, edgeSignOnCell
+      integer, dimension(:,:), pointer :: edgesOnCell
 
       real (kind=RKIND) :: invAreaCell
       real (kind=RKIND), dimension(3,3) :: outerProductEdge3x3
@@ -124,7 +125,6 @@ contains
 
       nEdgesOnCell      => grid % nEdgesOnCell % array
       edgesOnCell       => grid % edgesOnCell % array
-      edgeSignOnCell    => grid % edgeSignOnCell % array
       dvEdge            => grid % dvEdge % array
       angleEdge         => grid % angleEdge % array
       areaCell          => grid % areaCell % array
@@ -175,7 +175,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_divergence_of_tensor_3D(grid, strainRateR3Edge, divTensorR3Cell)!{{{
+   subroutine mpas_divergence_of_tensor_3D(grid, edgeSignOnCell, strainRateR3Edge, divTensorR3Cell)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -188,6 +188,9 @@ contains
 
       type (mesh_type), intent(in) :: &
          grid          !< Input: grid information
+
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+         edgeSignOnCell        !< Input: Direction of vector connecting cells
 
       !-----------------------------------------------------------------
       !
@@ -208,7 +211,7 @@ contains
       integer :: iEdge, iCell, nCells, i,j,k,p,q, nVertLevels
 
       integer, dimension(:), pointer :: nEdgesOnCell
-      integer, dimension(:,:), pointer :: edgesOnCell, edgeSignOnCell
+      integer, dimension(:,:), pointer :: edgesOnCell
 
       real (kind=RKIND) :: invAreaCell
       real (kind=RKIND), dimension(3) :: edgeNormalDotTensor
@@ -224,7 +227,6 @@ contains
       dvEdge            => grid % dvEdge % array
       areaCell          => grid % areaCell % array
       edgeNormalVectors  => grid % edgeNormalVectors % array
-      edgeSignOnCell    => grid % edgeSignOnCell % array
 
       divTensorR3Cell(:,:,:) = 0.0
       do iCell = 1, nCells
@@ -749,13 +751,31 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_test_tensor(domain, tensor_test_function) !{{{
+   subroutine mpas_test_tensor(domain, tensor_test_function, &
+         strainRateR3Cell_field, &
+         strainRateR3CellSolution_field, &
+         strainRateR3Edge_field, &
+         strainRateLonLatRCell_field, &
+         strainRateLonLatRCellSolution_field, &
+         strainRateLonLatREdge_field, &
+         divTensorR3Cell_field, &
+         divTensorR3CellSolution_field, &
+         divTensorLonLatRCell_field, &
+         divTensorLonLatRCellSolution_field, &
+         outerProductEdge_field  ) !{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      type (field3dReal), pointer :: &
+         strainRateLonLatRCell_field, strainRateLonLatRCellSolution_field, &
+         divTensorLonLatRCell_field,  divTensorLonLatRCellSolution_field, &
+         strainRateR3Cell_field, strainRateR3CellSolution_field, strainRateR3Edge_field, &
+         divTensorR3Cell_field, divTensorR3CellSolution_field, &
+         outerProductEdge_field,  strainRateLonLatREdge_field
 
       !-----------------------------------------------------------------
       !
@@ -795,6 +815,12 @@ contains
          divTensorLonLatRCell,  divTensorLonLatRCellSolution, &
          strainRateR3Cell, strainRateR3CellSolution, strainRateR3Edge, divTensorR3Cell, divTensorR3CellSolution, &
          outerProductEdge,  strainRateLonLatREdge
+      type (field3dReal), pointer :: &
+         strainRateLonLatRCell_field_ptr, strainRateLonLatRCellSolution_field_ptr, &
+         divTensorLonLatRCell_field_ptr,  divTensorLonLatRCellSolution_field_ptr, &
+         strainRateR3Cell_field_ptr, strainRateR3CellSolution_field_ptr, strainRateR3Edge_field_ptr, &
+         divTensorR3Cell_field_ptr, divTensorR3CellSolution_field_ptr, &
+         outerProductEdge_field_ptr,  strainRateLonLatREdge_field_ptr
       logical :: computeStrainRate
 
     nCellsSolveSum = 0
@@ -802,6 +828,18 @@ contains
     divTensorLonLatRDiffSum = 0.0
     strainRateR3DiffSum = 0.0
     divTensorR3DiffSum = 0.0
+
+    strainRateR3Cell_field_ptr              => strainRateR3Cell_field
+    strainRateR3CellSolution_field_ptr      => strainRateR3CellSolution_field
+    strainRateR3Edge_field_ptr              => strainRateR3Edge_field
+    strainRateLonLatRCell_field_ptr         => strainRateLonLatRCell_field
+    strainRateLonLatRCellSolution_field_ptr => strainRateLonLatRCellSolution_field
+    strainRateLonLatREdge_field_ptr         => strainRateLonLatREdge_field
+    divTensorR3Cell_field_ptr               => divTensorR3Cell_field
+    divTensorR3CellSolution_field_ptr       => divTensorR3CellSolution_field
+    divTensorLonLatRCell_field_ptr          => divTensorLonLatRCell_field
+    divTensorLonLatRCellSolution_field_ptr  => divTensorLonLatRCellSolution_field
+    outerProductEdge_field_ptr              => outerProductEdge_field
 
     block => domain % blocklist
     dminfo => domain % dminfo
@@ -829,17 +867,17 @@ contains
       normalVelocity      => block % state % time_levs(1) % state % normalVelocity % array
       tangentialVelocity  => block % state % time_levs(1) % state % tangentialVelocity % array
 
-      strainRateR3Cell              => block % scratch % strainRateR3Cell % array
-      strainRateR3CellSolution      => block % scratch % strainRateR3CellSolution % array
-      strainRateR3Edge              => block % scratch % strainRateR3Edge % array
-      strainRateLonLatRCell         => block % scratch % strainRateLonLatRCell % array
-      strainRateLonLatRCellSolution => block % scratch % strainRateLonLatRCellSolution % array
-      strainRateLonLatREdge         => block % scratch % strainRateLonLatREdge % array
-      divTensorR3Cell               => block % scratch % divTensorR3Cell % array
-      divTensorR3CellSolution       => block % scratch % divTensorR3CellSolution % array
-      divTensorLonLatRCell          => block % scratch % divTensorLonLatRCell % array
-      divTensorLonLatRCellSolution  => block % scratch % divTensorLonLatRCellSolution % array
-      outerProductEdge              => block % scratch % outerProductEdge % array
+      strainRateR3Cell              => strainRateR3Cell_field_ptr % array
+      strainRateR3CellSolution      => strainRateR3CellSolution_field_ptr % array
+      strainRateR3Edge              => strainRateR3Edge_field_ptr % array
+      strainRateLonLatRCell         => strainRateLonLatRCell_field_ptr % array
+      strainRateLonLatRCellSolution => strainRateLonLatRCellSolution_field_ptr % array
+      strainRateLonLatREdge         => strainRateLonLatREdge_field_ptr % array
+      divTensorR3Cell               => divTensorR3Cell_field_ptr % array
+      divTensorR3CellSolution       => divTensorR3CellSolution_field_ptr % array
+      divTensorLonLatRCell          => divTensorLonLatRCell_field_ptr % array
+      divTensorLonLatRCellSolution  => divTensorLonLatRCellSolution_field_ptr % array
+      outerProductEdge              => outerProductEdge_field_ptr % array
 
       strainRateR3Cell              = 0.0
       strainRateR3CellSolution      = 0.0
@@ -1254,12 +1292,12 @@ contains
 
 
      if (computeStrainRate) then
-        call mpas_strain_rate_R3(block % mesh, normalVelocity, tangentialVelocity, strainRateR3Cell, outerProductEdge)
+        call mpas_strain_rate_R3(block % mesh, edgeSignOnCell, normalVelocity, tangentialVelocity, strainRateR3Cell, outerProductEdge)
 
         call mpas_matrix_cell_to_edge(block % mesh, strainRateR3Cell, strainRateR3Edge)
      endif
 
-     call mpas_divergence_of_tensor_3D(block % mesh, strainRateR3Edge, divTensorR3Cell)
+     call mpas_divergence_of_tensor_3D(block % mesh, edgeSignOnCell, strainRateR3Edge, divTensorR3Cell)
 
      do iCell = 1,nCells
 
@@ -1280,6 +1318,17 @@ contains
      enddo
 
      block => block % next
+     strainRateR3Cell_field_ptr              => strainRateR3Cell_field_ptr % next
+     strainRateR3CellSolution_field_ptr      => strainRateR3CellSolution_field_ptr % next
+     strainRateR3Edge_field_ptr              => strainRateR3Edge_field_ptr % next
+     strainRateLonLatRCell_field_ptr         => strainRateLonLatRCell_field_ptr % next
+     strainRateLonLatRCellSolution_field_ptr => strainRateLonLatRCellSolution_field_ptr % next
+     strainRateLonLatREdge_field_ptr         => strainRateLonLatREdge_field_ptr % next
+     divTensorR3Cell_field_ptr               => divTensorR3Cell_field_ptr % next
+     divTensorR3CellSolution_field_ptr       => divTensorR3CellSolution_field_ptr % next
+     divTensorLonLatRCell_field_ptr          => divTensorLonLatRCell_field_ptr % next
+     divTensorLonLatRCellSolution_field_ptr  => divTensorLonLatRCellSolution_field_ptr % next
+     outerProductEdge_field_ptr              => outerProductEdge_field_ptr % next
    end do
 
    call mpas_dmpar_sum_int(dminfo, nCellsSolveSum, nCellsGlobal)

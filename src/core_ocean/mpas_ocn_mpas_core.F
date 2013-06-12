@@ -1203,7 +1203,7 @@ end subroutine ocn_compute_max_level!}}}
 !
 !> \brief   set up scratch variables to test strain rate and tensor divergence operators
 !> \author  Mark Petersen
-!> \date    17 April 2013
+!> \date    23 May 2013
 !> \details 
 !>  This routine sets up scratch variables to test strain rate and tensor divergence operators.
 !
@@ -1231,7 +1231,18 @@ end subroutine ocn_compute_max_level!}}}
       call mpas_allocate_scratch_field(domain % blocklist % scratch % divTensorLonLatRCellSolution, .false.)
       call mpas_allocate_scratch_field(domain % blocklist % scratch % outerProductEdge, .false.)
 
-      call mpas_test_tensor(domain, config_tensor_test_function)
+      call mpas_test_tensor(domain, config_tensor_test_function, &
+         domain % blocklist % scratch % strainRateR3Cell, &
+         domain % blocklist % scratch % strainRateR3CellSolution, &
+         domain % blocklist % scratch % strainRateR3Edge, &
+         domain % blocklist % scratch % strainRateLonLatRCell, &
+         domain % blocklist % scratch % strainRateLonLatRCellSolution, &
+         domain % blocklist % scratch % strainRateLonLatREdge, &
+         domain % blocklist % scratch % divTensorR3Cell, &
+         domain % blocklist % scratch % divTensorR3CellSolution, &
+         domain % blocklist % scratch % divTensorLonLatRCell, &
+         domain % blocklist % scratch % divTensorLonLatRCellSolution, &
+         domain % blocklist % scratch % outerProductEdge  )
 
       call mpas_deallocate_scratch_field(domain % blocklist % scratch % strainRateR3Cell, .false.)
       call mpas_deallocate_scratch_field(domain % blocklist % scratch % strainRateR3CellSolution, .false.)
