@@ -324,6 +324,7 @@ module mpas_core
    
       use mpas_grid_types
       use mpas_rbf_interpolation
+      use mpas_vector_operations
       use mpas_vector_reconstruction
       use mpas_tracer_advection_helpers
    
@@ -359,6 +360,7 @@ module mpas_core
       call ocn_compute_mesh_scaling(mesh)
  
       call mpas_rbf_interp_initialize(mesh)
+      call mpas_initialize_tangent_vectors(mesh, mesh % edgeTangentVectors % array)
       call mpas_init_reconstruct(mesh)
       call mpas_reconstruct(mesh, block % state % time_levs(1) % state % normalVelocity % array,                  &
                        block % diagnostics % normalVelocityX % array,            &
@@ -1234,8 +1236,8 @@ end subroutine ocn_compute_max_level!}}}
       call mpas_test_tensor(domain, config_tensor_test_function, &
          domain % blocklist % mesh % edgeSignOnCell, &
          domain % blocklist % mesh % edgeTangentVectors, &
-         domain % blocklist % state % time_levs(1) % state % normalVelocity, 
-         domain % blocklist % state % time_levs(1) % state % tangentialVelocity, 
+         domain % blocklist % state % time_levs(1) % state % normalVelocity, &
+         domain % blocklist % state % time_levs(1) % state % tangentialVelocity, &
          domain % blocklist % scratch % strainRateR3Cell, &
          domain % blocklist % scratch % strainRateR3CellSolution, &
          domain % blocklist % scratch % strainRateR3Edge, &

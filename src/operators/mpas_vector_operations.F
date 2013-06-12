@@ -39,6 +39,7 @@ module mpas_vector_operations
    !--------------------------------------------------------------------
 
    public :: mpas_initialize_vectors, &
+             mpas_initialize_tangent_vectors, &
              mpas_unit_vec_in_r3, &
              mpas_cross_product_in_r3, &
              mpas_tangential_velocity, &
@@ -108,7 +109,8 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_vector_3DCell_to_2DEdge(grid, vector3DCell, vector2DEdge)!{{{
+   subroutine mpas_vector_3DCell_to_2DEdge(vector3DCell, vector2DEdge, &
+      grid, edgeTangentVectors)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -121,6 +123,9 @@ contains
 
       type (mesh_type), intent(in) :: &
          grid          !< Input: grid information
+
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+         edgeTangentVectors   !< Input: unit vector tangent to an edge
 
       !-----------------------------------------------------------------
       !
@@ -144,13 +149,12 @@ contains
       integer, dimension(:,:), pointer :: cellsOnEdge
 
       real (kind=RKIND), dimension(3) :: vector3DEdge
-      real(kind=RKIND), dimension(:,:), pointer :: edgeNormalVectors, edgeTangentVectors
+      real(kind=RKIND), dimension(:,:), pointer :: edgeNormalVectors
 
       nEdges = grid % nEdges
       nVertLevels = grid % nVertLevels
 
       edgeNormalVectors => grid % edgeNormalVectors % array
-      edgeTangentVectors => grid % edgeTangentVectors % array
       cellsOnEdge       => grid % cellsOnEdge % array
 
       do iEdge=1,nEdges
@@ -442,8 +446,7 @@ contains
 !> the interpolation routines.
 !> Input: the grid
 !> Output:
-!>      edgeNormalVector - the unit vector normal to the edge and tangent to the sphere
-!>      edgeTangentVector - the unit vector tangent to the edge and tangent to the sphere
+!>      edgeNormalVectors - the unit vector normal to the edge and tangent to the sphere
 !>      cellTangentPlane - 2 orthogonal unit vectors in the tangent plane of each cell
 !>                         The first unit vector is chosen to point toward the center of the first
 !>                         edge on the cell.
@@ -459,8 +462,8 @@ contains
     integer :: nCells, nEdges
     integer, dimension(:,:), pointer :: cellsOnEdge, verticesOnEdge, edgesOnCell
     integer :: iEdge, iCell, cell1, cell2, vertex1, vertex2
-    real(kind=RKIND), dimension(:), pointer :: xCell, yCell, zCell, xEdge, yEdge, zEdge, xVertex, yVertex, zVertex
-    real(kind=RKIND), dimension(:,:), pointer :: localVerticalUnitVectors, edgeNormalVectors, edgeTangentVectors
+    real(kind=RKIND), dimension(:), pointer :: xCell, yCell, zCell, xEdge, yEdge, zEdge
+    real(kind=RKIND), dimension(:,:), pointer :: localVerticalUnitVectors, edgeNormalVectors
     real(kind=RKIND), dimension(:,:,:), pointer :: cellTangentPlane
     real(kind=RKIND), dimension(3) :: xHatPlane, yHatPlane, rHat
     real(kind=RKIND) :: normalDotRHat
@@ -472,9 +475,6 @@ contains
     xEdge       => grid % xEdge % array
     yEdge       => grid % yEdge % array
     zEdge       => grid % zEdge % array
-    xVertex     => grid % xVertex % array
-    yVertex     => grid % yVertex % array
-    zVertex     => grid % zVertex % array
     cellsOnEdge => grid % cellsOnEdge % array
     verticesOnEdge => grid % verticesOnEdge % array
     edgesOnCell => grid % edgesOnCell % array
@@ -484,12 +484,10 @@ contains
 
     localVerticalUnitVectors => grid % localVerticalUnitVectors % array
     edgeNormalVectors => grid % edgeNormalVectors % array
-    edgeTangentVectors => grid % edgeTangentVectors % array
     cellTangentPlane => grid % cellTangentPlane % array
 
     ! init arrays
     edgeNormalVectors = 0
-    edgeTangentVectors = 0
     localVerticalUnitVectors = 0
 
     ! loop over all cells to be solved on this block
@@ -534,17 +532,6 @@ contains
       call mpas_unit_vec_in_r3(edgeNormalVectors(:,iEdge))
     end do
 
-    ! Initialize tangent unit vectors at each edge
-    do iEdge = 1,nEdges
-      vertex1 = verticesOnEdge(1,iEdge) 
-      vertex2 = verticesOnEdge(2,iEdge) 
-      ! the tangent vector points from the vertex 1 to vertex 2
-      edgeTangentVectors(1,iEdge) = xVertex(vertex2) - xVertex(vertex1)
-      edgeTangentVectors(2,iEdge) = yVertex(vertex2) - yVertex(vertex1)
-      edgeTangentVectors(3,iEdge) = zVertex(vertex2) - zVertex(vertex1)
-      call mpas_unit_vec_in_r3(edgeTangentVectors(:,iEdge))
-    end do
-
     do iCell=1,nCells
       iEdge = edgesOnCell(1,iCell)
       ! xHat and yHat are a local basis in the plane of the horizontal cell
@@ -561,6 +548,63 @@ contains
     end do
 
   end subroutine mpas_initialize_vectors!}}}
+
+!***********************************************************************
+!
+!  routine mpas_initialize_tangent_vectors
+!
+!> \brief   Initialize edgeTangentVectors
+!> \author  Mark Petersen
+!> \date    June 2013
+!> \details 
+!> This routine initializes the array edgeTangentVectors.  It is not
+!> included in the mpas_initialize_vectors subroutine because the 
+!> array edgeTangentVectors is not included in all cores.
+!> Input: the grid
+!> Output:
+!>      edgeTangentVectors - the unit vector tangent to the edge and tangent to the sphere
+!-----------------------------------------------------------------------
+   subroutine mpas_initialize_tangent_vectors(grid, edgeTangentVectors)!{{{
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      type (mesh_type), intent(in) :: &
+         grid          !< Input: grid information
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:,:), intent(out) :: &
+         edgeTangentVectors   !< Output: unit vector tangent to an edge
+
+      integer :: iEdge, nEdges, vertex1, vertex2
+      integer, dimension(:,:), pointer :: verticesOnEdge
+      real(kind=RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
+
+      nEdges      = grid % nEdges
+      verticesOnEdge => grid % verticesOnEdge % array
+      xVertex     => grid % xVertex % array
+      yVertex     => grid % yVertex % array
+      zVertex     => grid % zVertex % array
+
+      do iEdge = 1,nEdges
+         vertex1 = verticesOnEdge(1,iEdge) 
+         vertex2 = verticesOnEdge(2,iEdge) 
+         ! the tangent vector points from the vertex 1 to vertex 2
+         edgeTangentVectors(1,iEdge) = xVertex(vertex2) - xVertex(vertex1)
+         edgeTangentVectors(2,iEdge) = yVertex(vertex2) - yVertex(vertex1)
+         edgeTangentVectors(3,iEdge) = zVertex(vertex2) - zVertex(vertex1)
+         call mpas_unit_vec_in_r3(edgeTangentVectors(:,iEdge))
+      end do
+
+  end subroutine mpas_initialize_tangent_vectors!}}}
 
 
 end module mpas_vector_operations

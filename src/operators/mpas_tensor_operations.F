@@ -75,8 +75,9 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_strain_rate_R3(grid, edgeSignOnCell, normalVelocity, tangentialVelocity, &
-      strainRateR3Cell, outerProductEdge)!{{{
+   subroutine mpas_strain_rate_R3(normalVelocity, tangentialVelocity, &
+      strainRateR3Cell, outerProductEdge, &
+      grid, edgeSignOnCell, edgeTangentVectors)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -85,8 +86,11 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
+         edgeTangentVectors,   &!< Input: unit vector tangent to an edge
          normalVelocity,      &!< Input: Horizontal velocity normal to edge
-         tangentialVelocity,  &!< Input: Horizontal velocity tangent to edge
+         tangentialVelocity    !< Input: Horizontal velocity tangent to edge
+
+      integer, dimension(:,:), intent(in) :: &
          edgeSignOnCell        !< Input: Direction of vector connecting cells
 
       type (mesh_type), intent(in) :: &
@@ -117,7 +121,7 @@ contains
       real (kind=RKIND) :: invAreaCell
       real (kind=RKIND), dimension(3,3) :: outerProductEdge3x3
       real (kind=RKIND), dimension(:), pointer :: dvEdge, areaCell, angleEdge
-      real (kind=RKIND), dimension(:,:), pointer :: edgeNormalVectors, edgeTangentVectors
+      real (kind=RKIND), dimension(:,:), pointer :: edgeNormalVectors
 
       nEdges = grid % nEdges
       nCells = grid % nCells
@@ -129,7 +133,6 @@ contains
       angleEdge         => grid % angleEdge % array
       areaCell          => grid % areaCell % array
       edgeNormalVectors  => grid % edgeNormalVectors % array
-      edgeTangentVectors => grid % edgeTangentVectors % array
 
       do iEdge=1,nEdges
          do k=1,nVertLevels
@@ -189,7 +192,7 @@ contains
       type (mesh_type), intent(in) :: &
          grid          !< Input: grid information
 
-      real (kind=RKIND), dimension(:,:), intent(in) :: &
+      integer, dimension(:,:), intent(in) :: &
          edgeSignOnCell        !< Input: Direction of vector connecting cells
 
       !-----------------------------------------------------------------
@@ -264,7 +267,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_tensor_edge_R3_to_2D(strainRateR3Edge, strainRate2DEdge, grid)!{{{
+   subroutine mpas_tensor_edge_R3_to_2D(strainRateR3Edge, strainRate2DEdge, grid, edgeTangentVectors)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -277,6 +280,9 @@ contains
 
       type (mesh_type), intent(in) :: &
          grid          !< Input: grid information
+
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+         edgeTangentVectors   !< Input: unit vector tangent to an edge
 
       !-----------------------------------------------------------------
       !
@@ -297,13 +303,12 @@ contains
 
       real (kind=RKIND), dimension(3) :: edgeVerticalVector
       real (kind=RKIND), dimension(3,3) :: rotationMatrix, strainRateR3Edge3x3, strainRateR3Edge3x3Rotated
-      real (kind=RKIND), dimension(:,:), pointer :: edgeNormalVectors, edgeTangentVectors
+      real (kind=RKIND), dimension(:,:), pointer :: edgeNormalVectors
 
       nEdges = grid % nEdges
       nVertLevels = grid % nVertLevels
 
       edgeNormalVectors  => grid % edgeNormalVectors % array
-      edgeTangentVectors => grid % edgeTangentVectors % array
 
       do iEdge=1,nEdges
 
@@ -357,7 +362,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_tensor_edge_2D_to_R3(strainRate2DEdge, strainRateR3Edge, grid)!{{{
+   subroutine mpas_tensor_edge_2D_to_R3(strainRate2DEdge, strainRateR3Edge, grid, edgeTangentVectors)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -370,6 +375,9 @@ contains
 
       type (mesh_type), intent(in) :: &
          grid          !< Input: grid information
+
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+         edgeTangentVectors   !< Input: unit vector tangent to an edge
 
       !-----------------------------------------------------------------
       !
@@ -390,13 +398,12 @@ contains
 
       real (kind=RKIND), dimension(3) :: edgeVerticalVector
       real (kind=RKIND), dimension(3,3) :: rotationMatrix, strainRateR3Edge3x3, strainRateR3Edge3x3Rotated
-      real (kind=RKIND), dimension(:,:), pointer :: edgeNormalVectors, edgeTangentVectors
+      real (kind=RKIND), dimension(:,:), pointer :: edgeNormalVectors
 
       nEdges = grid % nEdges
       nVertLevels = grid % nVertLevels
 
       edgeNormalVectors  => grid % edgeNormalVectors % array
-      edgeTangentVectors => grid % edgeTangentVectors % array
 
       do iEdge=1,nEdges
 
@@ -434,7 +441,6 @@ contains
       enddo
 
    end subroutine mpas_tensor_edge_2D_to_R3!}}}
-
 
 !***********************************************************************
 !
@@ -809,6 +815,7 @@ contains
       type (dm_info), pointer :: dminfo
 
       integer :: nCells, nCellsSolve, nCellsSolveSum, nCellsGlobal, nEdges, nVertices, nVertLevels, iCell, iEdge, k, i, p, strainRateLonLatRIndex
+      integer, dimension(:,:), pointer :: edgeSignOnCell
 
       real (kind=RKIND) :: xVelocity, yVelocity, cn, cs, r, theta, rot, f, g1, g2, fcos, pi2l, ld, &
         lon, lat, velocityZonal, velocityMeridional, rotAngle
@@ -1307,7 +1314,8 @@ contains
 
 
      if (computeStrainRate) then
-        call mpas_strain_rate_R3(block % mesh, edgeSignOnCell, normalVelocity, tangentialVelocity, strainRateR3Cell, outerProductEdge)
+        call mpas_strain_rate_R3(normalVelocity, tangentialVelocity, strainRateR3Cell, outerProductEdge, &
+          block % mesh, edgeSignOnCell, edgeTangentVectors)
 
         call mpas_matrix_cell_to_edge(block % mesh, strainRateR3Cell, strainRateR3Edge)
      endif
