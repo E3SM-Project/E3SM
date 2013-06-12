@@ -55,9 +55,8 @@ module mpas_vector_reconstruction
     integer :: i, iCell, iEdge, pointCount, maxEdgeCount
     real (kind=RKIND), dimension(:), pointer :: xCell, yCell, zCell, xEdge, yEdge, zEdge
     real (kind=RKIND) :: r, cellCenter(3), alpha, tangentPlane(2,3)
-    real (kind=RKIND), allocatable, dimension(:,:) :: edgeOnCellLocations, edgeOnCellNormals, &
-      coeffs
-
+    real (kind=RKIND), allocatable, dimension(:,:) :: edgeOnCellLocations, edgeOnCellNormals, coeffs, &
+       edgeOnCellLocationsWork, edgeOnCellNormalsWork, coeffsWork
     real(kind=RKIND), dimension(:,:), pointer :: edgeNormalVectors
     real(kind=RKIND), dimension(:,:,:), pointer :: cellTangentPlane
 
@@ -118,10 +117,23 @@ module mpas_vector_reconstruction
       tangentPlane(1,:) = cellTangentPlane(:,1,iCell)
       tangentPlane(2,:) = cellTangentPlane(:,2,iCell)
 
+      allocate(edgeOnCellLocationsWork(pointCount,3))
+      allocate(edgeOnCellNormalsWork(pointCount,3))
+      allocate(coeffsWork(pointCount,3))
+
+      edgeOnCellLocationsWork = edgeOnCellLocations(1:pointCount,:)
+      edgeOnCellNormalsWork = edgeOnCellNormals(1:pointCount,:)
+
       call mpas_rbf_interp_func_3D_plane_vec_const_dir_comp_coeffs(pointCount, &
-        edgeOnCellLocations(1:pointCount,:), &
-        edgeOnCellNormals(1:pointCount,:), &
-        cellCenter, alpha, tangentPlane, coeffs(1:pointCount,:))
+        edgeOnCellLocationsWork, edgeOnCellNormalsWork, &
+        cellCenter, alpha, tangentPlane, coeffsWork)
+
+      coeffs(1:pointCount,:) = coeffsWork
+
+      deallocate(edgeOnCellLocationsWork)
+      deallocate(edgeOnCellNormalsWork)
+      deallocate(coeffsWork)
+
       
       do i=1,pointCount
         coeffs_reconstruct(:,i,iCell) = coeffs(i,:)

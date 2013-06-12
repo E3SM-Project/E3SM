@@ -758,7 +758,7 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine mpas_test_tensor(domain, tensor_test_function, &
-         edgeSignOnCell_field, normalVelocity_field, tangentialVelocity_field, edgeTangentVectors_field, &
+         edgeSignOnCell_field, edgeTangentVectors_field, normalVelocity_field, tangentialVelocity_field, &
          strainRateR3Cell_field, &
          strainRateR3CellSolution_field, &
          strainRateR3Edge_field, &
@@ -888,7 +888,7 @@ contains
       edgeSignOnCell                => edgeSignOnCell_field_ptr % array
       edgeTangentVectors            => edgeTangentVectors_field_ptr % array
       normalVelocity                => normalVelocity_field_ptr % array
-      tangentialVelocity            => normalVelocity_field_ptr % array
+      tangentialVelocity            => tangentialVelocity_field_ptr % array
       strainRateR3Cell              => strainRateR3Cell_field_ptr % array
       strainRateR3CellSolution      => strainRateR3CellSolution_field_ptr % array
       strainRateR3Edge              => strainRateR3Edge_field_ptr % array
@@ -1311,7 +1311,6 @@ contains
        print *, 'bad choice of tensor_test_function: ',tensor_test_function
        stop
      endif
-
 
      if (computeStrainRate) then
         call mpas_strain_rate_R3(normalVelocity, tangentialVelocity, strainRateR3Cell, outerProductEdge, &
