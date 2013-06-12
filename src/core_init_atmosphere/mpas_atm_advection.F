@@ -1,1 +1,1 @@
-../core_atmosphere/mpas_atm_advection.F
+../core_atmosphere/dynamics/mpas_atm_advection.F
