@@ -49,7 +49,7 @@
                 <nml_option name="config_v_theta_eddy_visc2"         type="real"          default_value="0.0"/>
                 <nml_option name="config_visc4_2dsmag"               type="real"          default_value="0.0"/>
                 <nml_option name="config_del4u_div_factor"           type="real"          default_value="1.0"/>
-                <nml_option name="config_number_of_sub_steps"        type="integer"       default_value="4"/>
+                <nml_option name="config_number_of_sub_steps"        type="integer"       default_value="6"/>
                 <nml_option name="config_w_adv_order"                type="integer"       default_value="3"/>
                 <nml_option name="config_theta_adv_order"            type="integer"       default_value="3"/>
                 <nml_option name="config_scalar_adv_order"           type="integer"       default_value="3"/>
