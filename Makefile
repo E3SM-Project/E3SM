@@ -45,9 +45,9 @@ pgi:
 	"FFLAGS_OPT = -r8 -O3 -byteswapio -Mfree" \
 	"CFLAGS_OPT = -O3" \
 	"LDFLAGS_OPT = -O3" \
-	"FFLAGS_DEBUG = -r8 -O0 -g -Mbounds -Mchkptr -byteswapio -Mfree" \
-	"CFLAGS_DEBUG = -O0 -g" \
-	"LDFLAGS_DEBUG = -O0 -g -Mbounds -Mchkptr" \
+	"FFLAGS_DEBUG = -r8 -O0 -g -Mbounds -Mchkptr -byteswapio -Mfree -Ktrap=divz,fp,inv,ovf -traceback" \
+	"CFLAGS_DEBUG = -O0 -g -traceback" \
+	"LDFLAGS_DEBUG = -O0 -g -Mbounds -Mchkptr -Ktrap=divz,fp,inv,ovf -traceback" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
@@ -84,19 +84,19 @@ pgi-llnl:
 ifort:
 	( $(MAKE) all \
 	"FC_PARALLEL = mpif90" \
-	"CC_PARALLEL = gcc" \
+	"CC_PARALLEL = mpicc" \
 	"FC_SERIAL = ifort" \
-	"CC_SERIAL = gcc" \
+	"CC_SERIAL = icc" \
 	"FFLAGS_OPT = -real-size 64 -O3 -convert big_endian -FR" \
-	"CFLAGS_OPT = -O3 -m64" \
+	"CFLAGS_OPT = -O3" \
 	"LDFLAGS_OPT = -O3" \
-	"FFLAGS_DEBUG = -real-size 64 -g -convert big_endian -FR -CU -CB -check all" \
-	"CFLAGS_DEBUG = -g -m64" \
-	"LDFLAGS_DEBUG = -g" \
+	"FFLAGS_DEBUG = -real-size 64 -g -convert big_endian -FR -CU -CB -check all -fpe0 -traceback" \
+	"CFLAGS_DEBUG = -g -fpe0 -traceback" \
+	"LDFLAGS_DEBUG = -g -fpe0 -traceback" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
-	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE -m64" )
+	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 gfortran:
 	( $(MAKE) all \
@@ -113,7 +113,7 @@ gfortran:
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
-	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE -m64" )
+	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
 
 g95:
 	( $(MAKE) all \
@@ -170,6 +170,23 @@ intel-nersc:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE" )
+
+bluegene:
+	( $(MAKE) all \
+	"FC_PARALLEL = mpixlf95_r" \
+	"CC_PARALLEL = mpixlc_r" \
+	"FC_SERIAL = bgxlf95_r" \
+	"CC_SERIAL = bgxlc_r" \
+	"FFLAGS_OPT = -O2 -g -qrealsize=8" \
+	"CFLAGS_OPT = -O2 -g" \
+	"LDFLAGS_OPT = -O2 -g" \
+	"FFLAGS_DEBUG = -O0 -g -C -qinitalloc -qinitauto -qrealsize=8" \
+	"CFLAGS_DEBUG = -O0 -g" \
+	"LDFLAGS_DEBUG = -O0 -g" \
+	"CORE = $(CORE)" \
+	"DEBUG = $(DEBUG)" \
+	"USE_PAPI = $(USE_PAPI)" \
+	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
 CPPINCLUDES = 
 FCINCLUDES = 
