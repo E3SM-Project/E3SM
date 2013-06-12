@@ -53,10 +53,6 @@ createLSFHeader() {
 
   echo "" >> $RUN_SCRIPT # newline
 
-  echo "#BSUB -R \"select[scratch_ok > 0 ]\"" >> $RUN_SCRIPT
-
-  echo "" >> $RUN_SCRIPT # newline
-
   # Set the job name
   echo "#BSUB -J $testName" >> $RUN_SCRIPT
   echo "" >> $RUN_SCRIPT
