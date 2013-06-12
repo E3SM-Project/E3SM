@@ -483,6 +483,19 @@ module mpas_core
       type (MPAS_Stream_type) :: hifreq_stream
 
       call MPAS_createStream(hifreq_stream, trim(fname), MPAS_IO_PNETCDF, MPAS_IO_WRITE, 1, ierr)
+
+      if (block_ptr % mesh % on_a_sphere) then
+         call MPAS_writeStreamAtt(hifreq_stream, 'on_a_sphere', 'YES             ', ierr)
+      else
+         call MPAS_writeStreamAtt(hifreq_stream, 'on_a_sphere', 'NO              ', ierr)
+      end if
+      call MPAS_writeStreamAtt(hifreq_stream, 'sphere_radius', block_ptr % mesh % sphere_radius, ierr)
+      call MPAS_writeStreamAtt(hifreq_stream, 'model_name', block_ptr % domain % modelName, ierr)
+      call MPAS_writeStreamAtt(hifreq_stream, 'core_name', block_ptr % domain % coreName, ierr)
+      call MPAS_writeStreamAtt(hifreq_stream, 'model_version', block_ptr % domain % modelVersion, ierr)
+      call MPAS_writeStreamAtt(hifreq_stream, 'source', 'MPAS', ierr)
+      call MPAS_writeStreamAtt(hifreq_stream, 'Conventions', 'MPAS', ierr)
+
       call MPAS_streamAddField(hifreq_stream, block_ptr % state % time_levs(1) % state % xtime, ierr)
       call MPAS_streamAddField(hifreq_stream, block_ptr % diag_physics % olrtoa, ierr)
       call MPAS_streamAddField(hifreq_stream, block_ptr % diag_physics % rainc, ierr)
