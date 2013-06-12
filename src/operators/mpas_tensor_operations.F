@@ -752,6 +752,7 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine mpas_test_tensor(domain, tensor_test_function, &
+         edgeSignOnCell_field, normalVelocity_field, tangentialVelocity_field, edgeTangentVectors_field, &
          strainRateR3Cell_field, &
          strainRateR3CellSolution_field, &
          strainRateR3Edge_field, &
@@ -769,6 +770,12 @@ contains
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      type (field2dInteger), pointer :: &
+         edgeSignOnCell_field
+
+      type (field2dReal), pointer :: &
+         normalVelocity_field, tangentialVelocity_field, edgeTangentVectors_field
 
       type (field3dReal), pointer :: &
          strainRateLonLatRCell_field, strainRateLonLatRCellSolution_field, &
@@ -815,6 +822,10 @@ contains
          divTensorLonLatRCell,  divTensorLonLatRCellSolution, &
          strainRateR3Cell, strainRateR3CellSolution, strainRateR3Edge, divTensorR3Cell, divTensorR3CellSolution, &
          outerProductEdge,  strainRateLonLatREdge
+      type (field2dInteger), pointer :: &
+         edgeSignOnCell_field_ptr
+      type (field2dReal), pointer :: &
+         normalVelocity_field_ptr, tangentialVelocity_field_ptr, edgeTangentVectors_field_ptr
       type (field3dReal), pointer :: &
          strainRateLonLatRCell_field_ptr, strainRateLonLatRCellSolution_field_ptr, &
          divTensorLonLatRCell_field_ptr,  divTensorLonLatRCellSolution_field_ptr, &
@@ -829,6 +840,10 @@ contains
     strainRateR3DiffSum = 0.0
     divTensorR3DiffSum = 0.0
 
+    edgeSignOnCell_field_ptr                => edgeSignOnCell_field
+    edgeTangentVectors_field_ptr            => edgeTangentVectors_field
+    normalVelocity_field_ptr                => normalVelocity_field
+    tangentialVelocity_field_ptr            => tangentialVelocity_field
     strainRateR3Cell_field_ptr              => strainRateR3Cell_field
     strainRateR3CellSolution_field_ptr      => strainRateR3CellSolution_field
     strainRateR3Edge_field_ptr              => strainRateR3Edge_field
@@ -862,11 +877,11 @@ contains
       angleEdge => block % mesh % angleEdge % array
 
       edgeNormalVectors  => block % mesh % edgeNormalVectors % array
-      edgeTangentVectors => block % mesh % edgeTangentVectors % array
 
-      normalVelocity      => block % state % time_levs(1) % state % normalVelocity % array
-      tangentialVelocity  => block % state % time_levs(1) % state % tangentialVelocity % array
-
+      edgeSignOnCell                => edgeSignOnCell_field_ptr % array
+      edgeTangentVectors            => edgeTangentVectors_field_ptr % array
+      normalVelocity                => normalVelocity_field_ptr % array
+      tangentialVelocity            => normalVelocity_field_ptr % array
       strainRateR3Cell              => strainRateR3Cell_field_ptr % array
       strainRateR3CellSolution      => strainRateR3CellSolution_field_ptr % array
       strainRateR3Edge              => strainRateR3Edge_field_ptr % array
@@ -1318,6 +1333,10 @@ contains
      enddo
 
      block => block % next
+     edgeSignOnCell_field_ptr                => edgeSignOnCell_field_ptr % next
+     normalVelocity_field_ptr                => normalVelocity_field_ptr % next
+     tangentialVelocity_field_ptr            => tangentialVelocity_field_ptr % next
+     edgeTangentVectors_field_ptr            => edgeTangentVectors_field_ptr % next
      strainRateR3Cell_field_ptr              => strainRateR3Cell_field_ptr % next
      strainRateR3CellSolution_field_ptr      => strainRateR3CellSolution_field_ptr % next
      strainRateR3Edge_field_ptr              => strainRateR3Edge_field_ptr % next
