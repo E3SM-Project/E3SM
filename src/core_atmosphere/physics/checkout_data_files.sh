@@ -5,10 +5,17 @@
 #
 # The purpose of this script is to obtain lookup tables used by the WRF physics
 #   packages. At present, the only method for acquiring these tables is through
-#   the MPAS-Dev github repository using either git or svn.
+#   the MPAS-Dev github repository using either git, svn, or curl.
 #
 # If none of the methods used in this script are successful in acquiring the 
-#   tables, please contact the MPAS-A developers.
+#   tables, please attempt to manually download the files from the MPAS-Data 
+#   repository at www.github.com/MPAS-Dev/MPAS-Data/. All *.TBL and *.DBL files
+#   should be copied into a subdirectory named 
+#   src/core_atmosphere/physics/physics_wrf/files before continuing the build
+#   process.
+#
+# If all else fails, please contact the MPAS-A developers 
+#   via "mpas-atmosphere-help@googlegroups.com".
 #
 ################################################################################
 
@@ -24,7 +31,7 @@ fi
 which git
 if [ $? == 0 ]; then
    echo "*** trying git to obtain WRF physics tables ***"
-   git clone git@github.com:MPAS-Dev/MPAS-Data.git
+   git clone git://github.com/MPAS-Dev/MPAS-Data.git
    if [ $? == 0 ]; then
       mv MPAS-Data/atmosphere/physics_wrf/files physics_wrf/
       rm -rf MPAS-Data
@@ -82,8 +89,13 @@ else
 fi
 
 
-echo "***************************************************"
-echo "Unable to obtain WRF physics tables by any means"
-echo "***************************************************"
+echo "***************************************************************"
+echo "Unable to obtain WRF physics tables using git, svn, or curl."
+echo "This may be because 'git', 'svn', and 'curl' are not installed,"
+echo "or it could be due to network connectivity problems."
+echo " "
+echo "Please see src/core_atmosphere/physics/checkout_data_files.sh"
+echo "for suggestions on how to remedy this issue."
+echo "***************************************************************"
 
 exit 1

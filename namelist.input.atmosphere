@@ -78,7 +78,7 @@
    config_lsm_scheme          = 'noah'
    config_pbl_scheme          = 'ysu'
    config_gwdo_scheme         = 'off'
-   config_radt_cld_scheme     = 'off'
+   config_radt_cld_scheme     = 'cld_incidence'
    config_radt_lw_scheme      = 'rrtmg_lw'
    config_radt_sw_scheme      = 'rrtmg_sw'
    config_sfclayer_scheme     = 'monin_obukhov'
