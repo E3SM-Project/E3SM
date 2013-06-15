@@ -147,6 +147,7 @@ module cuda_mod
 
   type(cudaEvent) :: timer1, timer2
   integer, parameter :: gs = 2
+  real(kind=real_kind), device :: rrearth
 
 
 contains
@@ -163,6 +164,7 @@ contains
     use element_mod   , only: element_t
     use derivative_mod, only: derivative_t
     use hybvcoord_mod, only: hvcoord_t
+    use physical_constants, only: rrearth_mod => rrearth
     implicit none
     type(element_t)   , intent(in) :: elem(:)
     type(derivative_t), intent(in) :: deriv
@@ -177,6 +179,8 @@ contains
     logical,allocatable,dimension(:,:) :: recv_elem_mask
     logical,allocatable,dimension(:)   :: elem_computed
     integer :: total_work
+
+    rrearth = rrearth_mod
 
     max_neigh_edges_d = max_neigh_edges
     max_corner_elem_d = max_corner_elem
@@ -858,7 +862,6 @@ end subroutine euler_step_kernel1
 
 
 attributes(device) function divergence_sphere(i,j,ie,k,ij,Vstar,qtmp,metdet,rmetdet,dinv,deriv_dvv,nets,nete) result(dp_star)
-  use physical_constants, only: rrearth
   implicit none
   integer,              intent(in) :: i, j, ie, k, ij, nets, nete
   real(kind=real_kind), intent(in) :: Dinv     (np*np,2,2,nets:nete)
@@ -1491,7 +1494,6 @@ end function laplace_sphere_wk
 
 
 attributes(device) function gradient_sphere(i,j,ie,iz,s,dinv,variable_hyperviscosity,deriv_dvv,nets,nete) result(ds)
-  use physical_constants, only: rrearth
   implicit none
   integer,                                              intent(in) :: nets, nete, i, j, ie, iz
   real(kind=real_kind), dimension(np,np,2,nlev)       , intent(in) :: s
@@ -1514,7 +1516,6 @@ end function gradient_sphere
 
 
 attributes(device) function divergence_sphere_wk(i,j,ie,iz,tmp,s,dinv,spheremp,deriv_dvv,nets,nete) result(lapl)
-  use physical_constants, only: rrearth
   implicit none
   integer,                                              intent(in   ) :: nets, nete, i, j, ie, iz
   real(kind=real_kind), dimension(2),                   intent(in   ) :: tmp
