@@ -5,7 +5,7 @@
 ! Additional copyright and license information can be found in the LICENSE file
 ! distributed with this code, or at http://mpas-dev.github.com/license.html
 !
-!=============================================================================================
+!==================================================================================================
  module mpas_atmphys_update_surface
  use mpas_configure, only: config_frac_seaice,config_sfc_albedo
  use mpas_grid_types

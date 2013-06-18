@@ -5,7 +5,7 @@
 ! Additional copyright and license information can be found in the LICENSE file
 ! distributed with this code, or at http://mpas-dev.github.com/license.html
 !
-!=============================================================================================
+!==================================================================================================
  module mpas_atmphys_driver_lsm
  use mpas_grid_types
  use mpas_configure
