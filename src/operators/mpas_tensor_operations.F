@@ -1364,10 +1364,13 @@ contains
    call mpas_dmpar_sum_real_array(dminfo, 3, divTensorR3DiffSum, divTensorR3DiffSumGlobal)
 
    if (dminfo % my_proc_id == IO_NODE) then
-      print '(a,10es14.6)', 'rms error, strainRateLonLatRCell:',sqrt(strainRateLonLatRDiffSumGlobal/nCellsGlobal)
-      print '(a,10es14.6)', 'rms error, divTensorLonLatRCell: ',sqrt(divTensorLonLatRDiffSumGlobal/nCellsGlobal)
-      print '(a,10es14.6)', 'rms error, strainRateR3Cell:     ',sqrt(strainRateR3DiffSumGlobal/nCellsGlobal)
-      print '(a,10es14.6)', 'rms error, divTensorR3Cell:      ',sqrt(divTensorR3DiffSumGlobal/nCellsGlobal)
+     if (computeStrainRate) then
+       print '(a,10es14.6)', 'rms error, strainRateLonLatRCell:',sqrt(strainRateLonLatRDiffSumGlobal/nCellsGlobal)
+       print '(a,10es14.6)', 'rms error, strainRateR3Cell:     ',sqrt(strainRateR3DiffSumGlobal/nCellsGlobal)
+     else
+       print '(a,10es14.6)', 'rms error, divTensorLonLatRCell: ',sqrt(divTensorLonLatRDiffSumGlobal/nCellsGlobal)
+       print '(a,10es14.6)', 'rms error, divTensorR3Cell:      ',sqrt(divTensorR3DiffSumGlobal/nCellsGlobal)
+     endif
    endif
 
 
