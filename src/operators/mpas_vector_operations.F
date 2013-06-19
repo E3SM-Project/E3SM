@@ -11,7 +11,7 @@
 !
 !> \brief MPAS vector operations
 !> \author Mark Petersen
-!> \date    25 September 2012
+!> \date   April 2013
 !> \details
 !>  This module contains the routines involving vector operations
 !
@@ -43,7 +43,7 @@ module mpas_vector_operations
              mpas_unit_vec_in_r3, &
              mpas_cross_product_in_r3, &
              mpas_tangential_velocity, &
-             mpas_vector_3DCell_to_2DEdge, &
+             mpas_vector_R3Cell_to_2DEdge, &
              mpas_vector_R3_to_LonLatR, &
              mpas_vector_LonLatR_to_R3, &
              mpas_zonal_meridional_vectors
@@ -98,18 +98,18 @@ contains
 
 !***********************************************************************
 !
-!  routine mpas_vector_3DCell_to_2DEdge
+!  routine mpas_vector_R3Cell_to_2DEdge
 !
-!> \brief   Convert a 3D cell-centered vector field to 2D vectors at edges
+!> \brief   Convert an R3 cell-centered vector field to 2D vectors at edges
 !> \author  Mark Petersen
-!> \date    17 April 2013
+!> \date    April 2013
 !> \details 
-!>  Convert a 3D cell-centered vector field to 2D vectors at edges, where 
+!>  Convert an R3 cell-centered vector field to 2D vectors at edges, where 
 !>  the local coordinate system at the edge is normal and tangent to that edge.
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_vector_3DCell_to_2DEdge(vector3DCell, vector2DEdge, &
+   subroutine mpas_vector_R3Cell_to_2DEdge(vectorR3Cell, vector2DEdge, &
       grid, edgeTangentVectors)!{{{
 
       !-----------------------------------------------------------------
@@ -119,7 +119,7 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:,:), intent(in) :: &
-         vector3DCell  !< Input: 3-vector located at cell centers, in x,y,z coordinates
+         vectorR3Cell  !< Input: 3-vector located at cell centers, in x,y,z coordinates
 
       type (mesh_type), intent(in) :: &
          grid          !< Input: grid information
@@ -148,7 +148,7 @@ contains
 
       integer, dimension(:,:), pointer :: cellsOnEdge
 
-      real (kind=RKIND), dimension(3) :: vector3DEdge
+      real (kind=RKIND), dimension(3) :: vectorR3Edge
       real(kind=RKIND), dimension(:,:), pointer :: edgeNormalVectors
 
       nEdges = grid % nEdges
@@ -164,16 +164,16 @@ contains
          do k=1,nVertLevels
 
            ! average neighboring cell-centered vectors to the edge
-           vector3DEdge(:) = 0.5*(vector3DCell(:,k,cell1) + vector3DCell(:,k,cell2))
+           vectorR3Edge(:) = 0.5*(vectorR3Cell(:,k,cell1) + vectorR3Cell(:,k,cell2))
 
            ! components at edge: take dot products with unit vectors at edge
-           vector2DEdge(1,k,iEdge) = sum(vector3DEdge(:)*edgeNormalVectors(:,iEdge))
-           vector2DEdge(2,k,iEdge) = sum(vector3DEdge(:)*edgeTangentVectors(:,iEdge))      
+           vector2DEdge(1,k,iEdge) = sum(vectorR3Edge(:)*edgeNormalVectors(:,iEdge))
+           vector2DEdge(2,k,iEdge) = sum(vectorR3Edge(:)*edgeTangentVectors(:,iEdge))      
  
          enddo
       enddo
 
-   end subroutine mpas_vector_3DCell_to_2DEdge!}}}
+   end subroutine mpas_vector_R3Cell_to_2DEdge!}}}
 
 !***********************************************************************
 !
@@ -181,7 +181,7 @@ contains
 !
 !> \brief   compute tangential velocity at an edge from the normal velocities
 !> \author  Mark Petersen
-!> \date    17 April 2013
+!> \date    April 2013
 !> \details 
 !>  Compute tangential velocity at an edge from the normal velocities on the 
 !>  edges of the two neighboring cells.
@@ -313,7 +313,7 @@ contains
 !
 !> \brief   Convert an R3 vector to a vector in spherical coordinates
 !> \author  Mark Petersen
-!> \date    17 April 2013
+!> \date    April 2013
 !> \details 
 !>  Given an R3 vector, rotate it to spherical coordinates
 !
@@ -378,7 +378,7 @@ contains
 !
 !> \brief   Convert a vector in spherical coordinates to an R3 vector
 !> \author  Mark Petersen
-!> \date    17 April 2013
+!> \date    April 2013
 !> \details 
 !>  Given a vector in spherical coordinates, rotate it R3
 !

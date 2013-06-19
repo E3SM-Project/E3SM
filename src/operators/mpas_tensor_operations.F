@@ -11,7 +11,7 @@
 !
 !> \brief MPAS tensor operations
 !> \author Mark Petersen
-!> \date    17 April 2013
+!> \date    April 2013
 !> \details
 !>  This module contains the routines for computing
 !>  the strain rate tensor, the divergence of a tensor,
@@ -44,8 +44,8 @@ module mpas_tensor_operations
    !
    !--------------------------------------------------------------------
 
-   public :: mpas_strain_rate_R3, &
-             mpas_divergence_of_tensor_3D, &
+   public :: mpas_strain_rate_R3Cell, &
+             mpas_divergence_of_tensor_R3Cell, &
              mpas_tensor_edge_R3_to_2D, &
              mpas_tensor_edge_2D_to_R3, &
              mpas_tensor_R3_to_LonLat, &
@@ -64,18 +64,18 @@ contains
 
 !***********************************************************************
 !
-!  routine mpas_strain_rate_R3
+!  routine mpas_strain_rate_R3Cell
 !
 !> \brief   Computes strain rate at cell centers, in R3
 !> \author  Mark Petersen
-!> \date    17 April 2013
+!> \date    April 2013
 !> \details 
 !>  This routine computes the strain rate at cell centers using the weak 
 !>  derivative.  Output is an R3 strain rate tensor in 6-index format.
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_strain_rate_R3(normalVelocity, tangentialVelocity, &
+   subroutine mpas_strain_rate_R3Cell(normalVelocity, tangentialVelocity, &
       strainRateR3Cell, outerProductEdge, &
       grid, edgeSignOnCell, edgeTangentVectors)!{{{
 
@@ -164,21 +164,21 @@ contains
          end do
       end do
 
-   end subroutine mpas_strain_rate_R3!}}}
+   end subroutine mpas_strain_rate_R3Cell!}}}
 
 !***********************************************************************
 !
-!  routine mpas_divergence_of_tensor_3D
+!  routine mpas_divergence_of_tensor_R3Cell
 !
 !> \brief   Computes divergence of the stress tensor
 !> \author  Mark Petersen
-!> \date    17 April 2013
+!> \date    April 2013
 !> \details 
 !>  This routine computes the divergence of the stress tensor
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_divergence_of_tensor_3D(grid, edgeSignOnCell, strainRateR3Edge, divTensorR3Cell)!{{{
+   subroutine mpas_divergence_of_tensor_R3Cell(grid, edgeSignOnCell, strainRateR3Edge, divTensorR3Cell)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -250,7 +250,7 @@ contains
          end do
       end do
 
-   end subroutine mpas_divergence_of_tensor_3D!}}}
+   end subroutine mpas_divergence_of_tensor_R3Cell!}}}
 
 !***********************************************************************
 !
@@ -258,7 +258,7 @@ contains
 !
 !> \brief   Convert an R3 tensor to a 2D tensor, at an edge
 !> \author  Mark Petersen
-!> \date    17 April 2013
+!> \date    April 2013
 !> \details 
 !>  Given an R3 tensor in symetric 6-index form, this routine rotates
 !>  the tensor so that the 1-direction is towards the edge normal, and 
@@ -353,7 +353,7 @@ contains
 !
 !> \brief   Convert a 2D tensor to a tensor in R3, at an edge
 !> \author  Mark Petersen
-!> \date    17 April 2013
+!> \date    April 2013
 !> \details 
 !>  Given a 2D tensor in symetric 3-index form that is rotated such that
 !>  the 1-direction is towards the edge normal, and 
@@ -448,7 +448,7 @@ contains
 !
 !> \brief   Convert an R3 tensor to a 2D tensor
 !> \author  Mark Petersen
-!> \date    17 April 2013
+!> \date    April 2013
 !> \details 
 !>  Given a 2D tensor in symetric 3-index form that is rotated such that
 !>  the 1-direction is zonal
@@ -527,7 +527,7 @@ contains
 !
 !> \brief   Convert an R3 tensor to a 2D tensor
 !> \author  Mark Petersen
-!> \date    17 April 2013
+!> \date    April 2013
 !> \details 
 !>  Given a 3D tensor in symetric 6-index form that is rotated such that
 !>  the 1-direction is zonal
@@ -602,7 +602,7 @@ contains
 !
 !> \brief   Convert an R3 tensor to a 2D tensor
 !> \author  Mark Petersen
-!> \date    17 April 2013
+!> \date    April 2013
 !> \details 
 !>  Given a 2D tensor in symetric 3-index form that is rotated such that
 !>  the 1-direction is zonal
@@ -678,7 +678,7 @@ contains
 !
 !> \brief   Convert an R3 tensor to a 2D tensor
 !> \author  Mark Petersen
-!> \date    17 April 2013
+!> \date    April 2013
 !> \details 
 !>  Given a 2D tensor in symetric 3-index form that is rotated such that
 !>  the 1-direction is zonal
@@ -751,7 +751,7 @@ contains
 !
 !> \brief   Tests strain rate and tensor divergence operators
 !> \author  Mark Petersen
-!> \date    17 April 2013
+!> \date    April 2013
 !> \details 
 !>  This routine tests strain rate and tensor divergence operators.
 !
@@ -1313,13 +1313,13 @@ contains
      endif
 
      if (computeStrainRate) then
-        call mpas_strain_rate_R3(normalVelocity, tangentialVelocity, strainRateR3Cell, outerProductEdge, &
+        call mpas_strain_rate_R3Cell(normalVelocity, tangentialVelocity, strainRateR3Cell, outerProductEdge, &
           block % mesh, edgeSignOnCell, edgeTangentVectors)
 
         call mpas_matrix_cell_to_edge(block % mesh, strainRateR3Cell, strainRateR3Edge)
      endif
 
-     call mpas_divergence_of_tensor_3D(block % mesh, edgeSignOnCell, strainRateR3Edge, divTensorR3Cell)
+     call mpas_divergence_of_tensor_R3Cell(block % mesh, edgeSignOnCell, strainRateR3Edge, divTensorR3Cell)
 
      do iCell = 1,nCells
 
