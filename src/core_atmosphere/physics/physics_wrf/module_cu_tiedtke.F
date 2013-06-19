@@ -24,10 +24,20 @@ MODULE module_cu_tiedtke
 !-------------------------------------------------------------    
 !  Ends the parameters set
 !++++++++++++++++++++++++++++
+#if defined(mpas)
+!... In MPAS, the variable RV is already defined in ./src/framework/mpas_constants.F. Here,
+!    we declare RV as a private variable to avoid conflicts at compilation time.
+!    Laura D. Fowler (birch.ucar.edu) / 2013-06-19.
+     REAL,PRIVATE :: G,CPV,RV
+     REAL :: API,A,EOMEGA,RD,CPD,RCPD,VTMPC1,VTMPC2,      &
+             RHOH2O,ALV,ALS,ALF,CLW,TMELT,SOLC,STBO,DAYL,YEARL, &
+             C1ES,C2ES,C3LES,C3IES,C4LES,C4IES,C5LES,C5IES,ZRG 
+#else
      REAL,PRIVATE :: G,CPV
      REAL :: API,A,EOMEGA,RD,RV,CPD,RCPD,VTMPC1,VTMPC2,   &
              RHOH2O,ALV,ALS,ALF,CLW,TMELT,SOLC,STBO,DAYL,YEARL, &
              C1ES,C2ES,C3LES,C3IES,C4LES,C4IES,C5LES,C5IES,ZRG 
+#endif
     
      REAL :: ENTRPEN,ENTRSCV,ENTRMID,ENTRDD,CMFCTOP,RHM,RHC,    &
              CMFCMAX,CMFCMIN,CMFDEPS,RHCDD,CPRCON,CRIRH,ZBUO0,  &
