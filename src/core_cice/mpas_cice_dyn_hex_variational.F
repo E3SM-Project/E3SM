@@ -18,12 +18,17 @@ contains
 
   subroutine init_dynamics_hex_variational(mesh, hexvar, boundary)
 
-    use cice_dynamics_shared, only: interior_vertices
+    use cice_dynamics_shared, only: interior_vertices, &
+                                    calc_cell_vertices_at_vertex
 
     type(mesh_type), intent(in) :: mesh
 
     type(hexvar_type),   pointer :: hexvar
     type(boundary_type), pointer :: boundary
+
+    integer :: &
+         iCell, &
+         iVertex
 
     call interior_vertices(mesh, &
          boundary % interiorVertex % array)
@@ -59,6 +64,19 @@ contains
 
     call calc_cell_vertices_at_vertex(mesh, &
          hexvar % cellVerticesAtVertex % array)
+
+    iCell = 1
+    iVertex = 1
+
+    call plot_wachpress(mesh, &
+         iCell, &
+         mesh % nEdgesOnCell % array(iCell), &
+         iVertex, &
+         hexvar % wachspressKappa % array(:,:,iCell), &
+         hexvar % wachspressA % array(:,iCell), &
+         hexvar % wachspressB % array(:,iCell), &
+         hexvar % xLocal % array(:,iCell), &
+         hexvar % yLocal % array(:,iCell))
 
   end subroutine init_dynamics_hex_variational
   
@@ -789,48 +807,6 @@ contains
   end subroutine integrate_wachspress_subtriangle
 
   !-------------------------------------------------------------
-
-   subroutine calc_cell_vertices_at_vertex(mesh, cellVerticesAtVertex)
-
-    type(mesh_type), intent(in) :: mesh
-
-    integer, dimension(:,:), intent(out) :: &
-         cellVerticesAtVertex
-
-    integer :: &
-         iVertex, &
-         iVertexDegree, &
-         iCell, &
-         iVertexOnCell, &
-         jVertex
-
-    do iVertex = 1, mesh % nVertices
-
-       do iVertexDegree = 1, mesh % vertexDegree
-
-          cellVerticesAtVertex(iVertexDegree,iVertex) = 0
-
-          iCell = mesh % cellsOnVertex % array(iVertexDegree, iVertex)
-
-          do iVertexOnCell = 1, mesh % nEdgesOnCell % array(iCell)
-
-             jVertex = mesh % verticesOnCell % array(iVertexOnCell,iCell)
-
-             if (iVertex == jVertex) then
-
-                cellVerticesAtVertex(iVertexDegree,iVertex) = iVertexOnCell
-
-             endif
-
-          enddo ! iVertexOnCell
-
-       enddo ! iVertexDegree
-
-    enddo ! iVertex
-
-   end subroutine calc_cell_vertices_at_vertex
-
-  !-------------------------------------------------------------
   ! time step
   !-------------------------------------------------------------
   
@@ -895,7 +871,7 @@ contains
                      uVelocity(iVertex) * basisGradientV(jVertexOnCell,iVertexOnCell,iCell) + &
                      vVelocity(iVertex) * basisGradientU(jVertexOnCell,iVertexOnCell,iCell))
 
-             enddo ! iVertexOnCell   strain11(jVertexOnCell,iCell)
+             enddo ! iVertexOnCell
 
           enddo ! jVertexOnCell
 
@@ -1137,8 +1113,8 @@ contains
 
     open(55,file="wachspress.txt")
 
-    !write(55,fmt='(a,f10.2,a,f10.2,a)') "set xrange [",xmin,":",xmax,"]"
-    !write(55,fmt='(a,f10.2,a,f10.2,a)') "set yrange [",ymin,":",ymax,"]"
+    write(55,fmt='(a,f10.2,a,f10.2,a)') "set xrange [",xmin,":",xmax,"]"
+    write(55,fmt='(a,f10.2,a,f10.2,a)') "set yrange [",ymin,":",ymax,"]"
 
     ! loop over subtriangles
     do iSubTriangle = 1, nEdgesOnCell
@@ -1205,9 +1181,12 @@ stop
          d, minf, maxf, fValue, &
          dx, dy
     
+    !real(kind=RKIND), parameter :: &
+    !     fMin = -1.7759450831950581E-004_RKIND, &
+    !     fMax = 5.5313696223098112E-005_RKIND
     real(kind=RKIND), parameter :: &
-         fMin = -1.7759450831950581E-004_RKIND, &
-         fMax = 5.5313696223098112E-005_RKIND
+         fMin = 0.0_RKIND, &
+         fMax = 1.0_RKIND
 
     integer, parameter :: n = 50
 
@@ -1215,7 +1194,7 @@ stop
          color
 
     logical, parameter :: &
-         lfinitedifference = .true.
+         lfinitedifference = .false.
 
     iObject = ((iSubTriangle - 1) * (n+1) * (n+2)) / 2
 
@@ -1254,7 +1233,8 @@ stop
              else
 
                 wachspress = &
-                     wachspress_basis_derivative(nEdgesOnCell, iVertex, x, y, wachspressKappa, wachspressA, wachspressB, 2)
+                     wachspress_basis_function(nEdgesOnCell, iVertex, x, y, wachspressKappa, wachspressA, wachspressB)     
+                     !wachspress_basis_derivative(nEdgesOnCell, iVertex, x, y, wachspressKappa, wachspressA, wachspressB, 2)
 
              endif
 
@@ -1278,11 +1258,11 @@ stop
                 x4 = x4 + x0 ; y4 = y4 + y0
                 x5 = x5 + x0 ; y5 = y5 + y0
                 
-                !write(55,fmt='(a,i5,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2)') "set object ",iObject," polygon from ",&
-                !     x1,",",y1," to ",x2,",",y2," to ",x3,",",y3," to ",x4,",",y4," to ",x5,",",y5     
+                write(55,fmt='(a,i5,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2)') "set object ",iObject," polygon from ",&
+                     x1,",",y1," to ",x2,",",y2," to ",x3,",",y3," to ",x4,",",y4," to ",x5,",",y5     
 
                 color = matlab_jet(max(min(fValue,1.0_RKIND),0.0_RKIND))
-                !write(55,fmt='(a,i5,a,a,a)') "set object ",iObject,' fc rgb "', color, '" fillstyle solid'  
+                write(55,fmt='(a,i5,a,a,a)') "set object ",iObject,' fc rgb "', color, '" fillstyle solid'  
 
              else
 
@@ -1297,11 +1277,11 @@ stop
                 x4 = x4 + x0 ; y4 = y4 + y0
                 x5 = x5 + x0 ; y5 = y5 + y0
                 
-                !write(55,fmt='(a,i5,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2)') "set object ",iObject," polygon from ",&
-                !     x1,",",y1," to ",x2,",",y2," to ",x4,",",y4," to ",x5,",",y5    
+                write(55,fmt='(a,i5,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2,a,f10.2)') "set object ",iObject," polygon from ",&
+                     x1,",",y1," to ",x2,",",y2," to ",x4,",",y4," to ",x5,",",y5    
 
                 color = matlab_jet(max(min(fValue,1.0_RKIND),0.0_RKIND))
-                !write(55,fmt='(a,i5,a,a,a)') "set object ",iObject,' fc rgb "', color, '" fillstyle solid'   
+                write(55,fmt='(a,i5,a,a,a)') "set object ",iObject,' fc rgb "', color, '" fillstyle solid'   
 
              endif
 
@@ -1310,7 +1290,7 @@ stop
        enddo ! j
     enddo ! i
 
-    !write(0,*) minf, maxf
+    write(*,*) minf, maxf
 
   end subroutine plot_subtriangle
 

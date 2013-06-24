@@ -34,7 +34,7 @@ module cice_testing
   integer, public :: iCellTest
 
   integer :: &
-       iObject = 1, &
+       iObject = 2, &
        iLabel  = 1, &
        iArrow  = 1
 
@@ -57,21 +57,22 @@ contains
   ! Square test case
   !-------------------------------------------------------------
 
-  subroutine init_square_test_case_hex(mesh, icestate, hexdyn, hexfor, boundary)
+  subroutine init_square_test_case_hex(mesh, icestate, hexdyn, hexfor, boundary, atmos_forcing)
 
     type(mesh_type), intent(inout) :: mesh
 
-    type(icestate_type), pointer :: icestate
-    type(hexdyn_type),   pointer :: hexdyn
-    type(hexfor_type),   pointer :: hexfor
-    type(boundary_type), pointer :: boundary
+    type(icestate_type),      pointer :: icestate
+    type(hexdyn_type),        pointer :: hexdyn
+    type(hexfor_type),        pointer :: hexfor
+    type(boundary_type),      pointer :: boundary
+    type(atmos_forcing_type), pointer :: atmos_forcing
 
     call square_test_correct_positions(mesh)
 
-    call init_atmos_velocity(hexfor % uAirVelocity % array, &
-                             hexfor % vAirVelocity % array, &
-                             mesh % xCell % array,        &
-                             mesh % yCell % array,        &
+    call init_atmos_velocity(atmos_forcing % uAirVelocity % array, &
+                             atmos_forcing % vAirVelocity % array, &
+                             mesh % xCell % array,                 &
+                             mesh % yCell % array,                 &
                              0.0_RKIND)
 
     call init_ocean_velocity(hexfor % uOceanVelocity % array, &
@@ -868,6 +869,8 @@ contains
     
     enddo ! iVertex
     write(*,*) "gt:", fMin, fMax! ; stop
+    !fMin = -0.212_RKIND
+    !fMax = 0.033_RKIND
 
     !fMin = minval(vertexArray)
     !fMax = maxval(vertexArray)
@@ -2032,11 +2035,14 @@ contains
 
     lnofill = .false.
 
-    fMin = 250.0_RKIND!minval(cellArray(1:mesh % nCells))
-    fMax = 300.0_RKIND!maxval(cellArray(1:mesh % nCells))
+    !fMin = minval(cellArray(1:mesh % nCells))
+    !fMax = maxval(cellArray(1:mesh % nCells))
 
     !fMin = real(1,RKIND)
     !fMax = real(mesh % nCells,RKIND)
+
+    fMin = 223.0_RKIND
+    fMax = 310.0_RKIND
 
     open(55,file="spherical.txt",action="write")
     open(56,file="clearPlot.gnuplot",action="write")
@@ -2053,6 +2059,8 @@ contains
 
           fValue = (cellArray(iCell) - fMin) / (fMax - fMin)
           !fValue = (real(iCell,RKIND) - fMin) / (fMax - fMin)
+
+          write(*,*) iCell, iObject, fValue, cellArray(iCell)
 
           write(strout,fmt='(a,i5,a)') "set object ",iObject," polygon from "
 
@@ -2259,7 +2267,7 @@ contains
          thetaz    ! rotate about axis (positive look west)
 
     thetax = 0.0_RKIND
-    thetay = 50.0_RKIND
+    thetay = 40.0_RKIND
     thetaz = 70.0_RKIND
 
     v1(1) = x ; v1(2) = y ; v1(3) = z
@@ -2296,16 +2304,45 @@ contains
          cellArray
 
     integer :: &
-         i, j
+         i, j, iCell
+
+    logical :: lfound
 
     open(55,file='pop_grid.txt',action='write')
 
     do i = 1, mesh % POP_nx
        do j = 1, mesh % POP_ny
 
-          write(55,*) real(i,RKIND)-0.5_RKIND, real(i,RKIND)+0.5_RKIND, &
-                     real(j,RKIND)-0.5_RKIND, real(j,RKIND)+0.5_RKIND, &
-                     cellArray(mesh % cellID_ij % array(i,j))
+          lfound = .false.
+
+          do iCell = 1, mesh % nCells
+             
+             if (mesh % POPindxi % array(iCell) == i .and. mesh % POPindxj % array(iCell) == j) then
+                
+                lfound = .true.
+
+                !if (i == 70 .and. j == 60) then
+
+                !   write(55,*) real(i,RKIND)-0.5_RKIND, real(i,RKIND)+0.5_RKIND, &
+                !               real(j,RKIND)-0.5_RKIND, real(j,RKIND)+0.5_RKIND, &
+                !               251.0_RKIND
+
+                !else
+
+                   write(55,*) real(i,RKIND)-0.5_RKIND, real(i,RKIND)+0.5_RKIND, &
+                               real(j,RKIND)-0.5_RKIND, real(j,RKIND)+0.5_RKIND, &
+                               cellArray(iCell)
+                !endif
+
+                exit
+                   
+             endif
+
+          enddo ! iCell
+
+          if (.not. lfound) write(55,*) real(i,RKIND)-0.5_RKIND, real(i,RKIND)+0.5_RKIND, &
+                                        real(j,RKIND)-0.5_RKIND, real(j,RKIND)+0.5_RKIND, &
+                                        0.0_RKIND
 
        enddo ! j
     enddo ! i

@@ -123,15 +123,17 @@ module mpas_core
       call mpas_rbf_interp_initialize(mesh)
       call mpas_init_reconstruct(mesh)
 
-      !call init_dynamics(block, dt)
+      call init_dynamics(block, dt)
 
       !call init_square_test_case_hex(mesh, &
       !     block % icestate, &
       !     block % hexdyn, &
       !     block % hexfor, &
-      !     block % boundary)
+      !     block % boundary, &
+      !     block % atmos_forcing)
 
-      call init_forcing(mesh)
+      !call init_forcing(mesh, &
+      !     block % atmos_forcing)
 
    end subroutine mpas_init_block
    

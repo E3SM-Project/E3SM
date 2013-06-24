@@ -13,6 +13,7 @@ module cice_dynamics_shared
             boundary_vertices, &
             boundary_edges, &
             interior_vertices, &
+            calc_cell_vertices_at_vertex, &
             normal_vectors, &
             ice_strength, &
             evp_constitutive_relation, &
@@ -24,7 +25,10 @@ module cice_dynamics_shared
             surface_tilt, &
             solve_linear_basis_system, &
             interpolate_cell_to_vertex, &
-            principal_stresses
+            principal_stresses, &
+            grid_rotation_forward, &
+            grid_rotation_forward_nochange, &
+            dot_product_3space
 
   real(kind=RKIND), parameter, public :: &
        sinOceanTurningAngle = 0.0_RKIND, & ! northern hemisphere
@@ -508,6 +512,8 @@ contains
 
     nPoints = size(principalStress1)
 
+    open(48,file='principal.txt')
+
     do iPoint = 1, nPoints
 
        if (replacementPressure(iPoint) > puny) then
@@ -532,6 +538,8 @@ contains
        write(48,*) principalStress1(iPoint), principalStress2(iPoint)
 
     enddo ! iPoint
+
+    close(48)
 
   end subroutine principal_stresses
 
@@ -800,6 +808,48 @@ contains
   end subroutine interior_vertices
 
   !-------------------------------------------------------------
+
+   subroutine calc_cell_vertices_at_vertex(mesh, cellVerticesAtVertex)
+
+    type(mesh_type), intent(in) :: mesh
+
+    integer, dimension(:,:), intent(out) :: &
+         cellVerticesAtVertex
+
+    integer :: &
+         iVertex, &
+         iVertexDegree, &
+         iCell, &
+         iVertexOnCell, &
+         jVertex
+
+    do iVertex = 1, mesh % nVertices
+
+       do iVertexDegree = 1, mesh % vertexDegree
+
+          cellVerticesAtVertex(iVertexDegree,iVertex) = 0
+
+          iCell = mesh % cellsOnVertex % array(iVertexDegree, iVertex)
+
+          do iVertexOnCell = 1, mesh % nEdgesOnCell % array(iCell)
+
+             jVertex = mesh % verticesOnCell % array(iVertexOnCell,iCell)
+
+             if (iVertex == jVertex) then
+
+                cellVerticesAtVertex(iVertexDegree,iVertex) = iVertexOnCell
+
+             endif
+
+          enddo ! iVertexOnCell
+
+       enddo ! iVertexDegree
+
+    enddo ! iVertex
+
+   end subroutine calc_cell_vertices_at_vertex
+
+  !-------------------------------------------------------------
   ! normal vectors
   !-------------------------------------------------------------
 
@@ -978,7 +1028,7 @@ contains
                                   eastwardsVector(1),   eastwardsVector(2),   eastwardsVector(3))
           
           normalVectorPolygon(2,iEdgeOnCell,iCell) = sign(1.0_RKIND,normalGreatCircle(3))&
-                                                   * sqrt(1.0_RKIND - normalVectorPolygon(1,iEdgeOnCell,iCell)**2)
+                                                   * sqrt(1.0_RKIND - min(normalVectorPolygon(1,iEdgeOnCell,iCell),1.0_RKIND)**2)
 
        enddo ! iEdgeOnCell
        
@@ -1059,7 +1109,7 @@ contains
                                      eastwardsVector(1),   eastwardsVector(2),   eastwardsVector(3))
           
              normalVectorTriangle(2,iVertexDegree,iVertex) = sign(1.0_RKIND,normalGreatCircle(3))&
-                                                           * sqrt(1.0_RKIND - normalVectorTriangle(1,iVertexDegree,iVertex)**2)
+                                                           * sqrt(1.0_RKIND - min(normalVectorTriangle(1,iVertexDegree,iVertex),1.0_RKIND)**2)
              
           enddo ! iVertexDegree
 
@@ -1100,6 +1150,22 @@ contains
     cp3 = x1 * y2 - y1 * x2
 
   end subroutine cross_product_3space
+
+  !-------------------------------------------------------------
+
+  subroutine grid_rotation_forward_nochange(xp, yp, zp, x, y, z)
+
+    real(kind=RKIND), intent(out) :: &
+         xp, yp, zp
+
+    real(kind=RKIND), intent(in) :: &
+         x, y, z
+
+    xp = x
+    yp = y
+    zp = z
+
+  end subroutine grid_rotation_forward_nochange
 
   !-------------------------------------------------------------
 

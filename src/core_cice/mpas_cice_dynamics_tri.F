@@ -41,10 +41,10 @@ contains
   !-------------------------------------------------------------
 
   subroutine run_dynamics_tri(mesh, &
-                              icestate, boundary, &
-                              normal,             &
-                              tridyn,   triweak,  &
-                              trifor,             &
+                              icestate, boundary,        &
+                              normal,   atmos_forcing,   &
+                              tridyn,   triweak,         &
+                              trifor,                    &
                               dt, divergenceFormulation, &
                               evpDamping)
 
@@ -62,12 +62,13 @@ contains
 
     type(mesh_type), intent(in) :: mesh
 
-    type(icestate_type), pointer :: icestate
-    type(boundary_type), pointer :: boundary
-    type(normal_type),   pointer :: normal
-    type(tridyn_type),   pointer :: tridyn
-    type(triweak_type),  pointer :: triweak
-    type(trifor_type),   pointer :: trifor
+    type(icestate_type),      pointer :: icestate
+    type(boundary_type),      pointer :: boundary
+    type(normal_type),        pointer :: normal
+    type(atmos_forcing_type), pointer :: atmos_forcing    
+    type(tridyn_type),        pointer :: tridyn
+    type(triweak_type),       pointer :: triweak
+    type(trifor_type),        pointer :: trifor
 
     real(kind=RKIND), intent(in) :: &
          dt
@@ -89,10 +90,10 @@ contains
          tridyn % icePressure % array)
 
     call air_stress(&
-         tridyn % airStressU % array,   &
-         tridyn % airStressV % array,   &
-         trifor % uAirVelocity % array, & 
-         trifor % vAirVelocity % array, &
+         tridyn % airStressU % array,          &
+         tridyn % airStressV % array,          &
+         atmos_forcing % uAirVelocity % array, & 
+         atmos_forcing % vAirVelocity % array, &
          icestate % iceAreaCell % array)
 
     call ocean_stress(& 

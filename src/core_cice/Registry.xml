@@ -103,7 +103,8 @@
 		<var name="boundaryVertex"                    type="integer"  dimensions="nVertLevels nVertices"       streams="iro"/>
 		<var name="boundaryCell"                      type="integer"  dimensions="nVertLevels nCells"          streams="iro"/>
 		<var name="u_src"                             type="real"     dimensions="nVertLevels nEdges"          streams="iro"/>
-		<var name="cellID_ij"                         type="integer"  dimensions="POP_nx POP_ny"               streams="iro"/>
+		<var name="POPindxi"                          type="integer"  dimensions="nCells"                      streams="iro"/>
+		<var name="POPindxj"                          type="integer"  dimensions="nCells"                      streams="iro"/>
 	</var_struct>
 
 
@@ -118,7 +119,18 @@
 
 	<!--atmos forcing -->
 	<var_struct name="atmos_forcing" time_levs="0">
-	        <var name="airTemperature"                    type="real"     dimensions="nCells"              name_in_code="airTemperature"      streams="o"/>
+	        <var name="airTemperature"                    type="real"     dimensions="nCells"              name_in_code="airTemperature"/>
+		<var name="uAirVelocity"                      type="real"     dimensions="nCells"              name_in_code="uAirVelocity"/>
+		<var name="vAirVelocity"                      type="real"     dimensions="nCells"              name_in_code="vAirVelocity"/>
+		<var name="uAirVelocityPOP"                   type="real"     dimensions="nCells"              name_in_code="uAirVelocityPOP"/>
+		<var name="vAirVelocityPOP"                   type="real"     dimensions="nCells"              name_in_code="vAirVelocityPOP"/>
+		<var name="airDensity"                        type="real"     dimensions="nCells"              name_in_code="airDensity"/>
+		<var name="airHumidity"                       type="real"     dimensions="nCells"              name_in_code="airHumidity"/>
+		<var name="shortwaveDown"                     type="real"     dimensions="nCells"              name_in_code="shortwaveDown"/>
+		<var name="cloudiness"                        type="real"     dimensions="nCells"              name_in_code="cloudiness"/>
+		<var name="precipitation"                     type="real"     dimensions="nCells"              name_in_code="precipitation"/>
+		<var name="uPOPAlongGridVector"               type="real"     dimensions="TWO nCells"          name_in_code="uPOPAlongGridVector"/>
+		<var name="vPOPAlongGridVector"               type="real"     dimensions="TWO nCells"          name_in_code="vPOPAlongGridVector"/>
 	</var_struct>
 
 	<!-- define boundary variables -->
@@ -163,8 +175,6 @@
 	</var_struct>
 	<!-- forcing on hexagons -->
 	<var_struct name="hexfor" time_levs="0">
-		<var name="uAirVelocity"                      type="real"     dimensions="nCells"                     name_in_code="uAirVelocity"/>
-		<var name="vAirVelocity"                      type="real"     dimensions="nCells"                     name_in_code="vAirVelocity"/>
 		<var name="uOceanVelocity"                    type="real"     dimensions="nVertices"                  name_in_code="uOceanVelocity"/>
 		<var name="vOceanVelocity"                    type="real"     dimensions="nVertices"                  name_in_code="vOceanVelocity"/>
 	</var_struct>
@@ -196,7 +206,11 @@
 		<var name="basisGradientV"                    type="real"     dimensions="maxEdges maxEdges nCells" name_in_code="basisGradientV"/>
 		<var name="cellVerticesAtVertex"              type="integer"  dimensions="vertexDegree nVertices"   name_in_code="cellVerticesAtVertex"/>
 	</var_struct>
-
+	<var_struct name="hexpwl" time_levs="0">
+		<var name="basisSubArea"                      type="real"     dimensions="maxEdges nCells"     name_in_code="basisSubArea"/>
+		<var name="basisGradientU"                    type="real"     dimensions="TWO maxEdges nCells" name_in_code="basisGradientU"/>
+		<var name="basisGradientV"                    type="real"     dimensions="TWO maxEdges nCells" name_in_code="basisGradientV"/>
+	</var_struct>
 
 	<!-- dynamics with velocity points at cell centers -->
 	<var_struct name="tridyn" time_levs="0">
@@ -238,118 +252,16 @@
 	</var_struct>
 	<!-- forcing on triangles -->
 	<var_struct name="trifor" time_levs="0">
-		<var name="uAirVelocity"                      type="real"     dimensions="nCells"                   name_in_code="uAirVelocity"/>
-		<var name="vAirVelocity"                      type="real"     dimensions="nCells"                   name_in_code="vAirVelocity"/>
 		<var name="uOceanVelocity"                    type="real"     dimensions="nCells"                   name_in_code="uOceanVelocity"/>
 		<var name="vOceanVelocity"                    type="real"     dimensions="nCells"                   name_in_code="vOceanVelocity"/>
 	</var_struct>
 
-
-
-<!-- 
-	<var_struct name="dynamics" time_levs="0">
-		*<var name="uVelocity"                         type="real"     dimensions="nCells"                   name_in_code="uVelocity"/>
-		*<var name="vVelocity"                         type="real"     dimensions="nCells"                   name_in_code="vVelocity"/>
-		*<var name="icePressure"                       type="real"     dimensions="nCells"                   name_in_code="icePressure"/>
-		*<var name="stress1"                           type="real"     dimensions="vertexDegree nVertices"   name_in_code="stress1"/>
-		*<var name="stress2"                           type="real"     dimensions="vertexDegree nVertices"   name_in_code="stress2"/>
-		*<var name="stress12"                          type="real"     dimensions="vertexDegree nVertices"   name_in_code="stress12"/>
-		*<var name="stressDivergenceU"                 type="real"     dimensions="nCells"                   name_in_code="stressDivergenceU"/>
-		*<var name="stressDivergenceV"                 type="real"     dimensions="nCells"                   name_in_code="stressDivergenceV"/>
-		*<var name="airStressU"                        type="real"     dimensions="nCells"                   name_in_code="airStressU"/>
-		*<var name="airStressV"                        type="real"     dimensions="nCells"                   name_in_code="airStressV"/>
-		*<var name="oceanStressU"                      type="real"     dimensions="nCells"                   name_in_code="oceanStressU"/>
-		*<var name="oceanStressV"                      type="real"     dimensions="nCells"                   name_in_code="oceanStressV"/>
-		*<var name="oceanStressCoeff"                  type="real"     dimensions="nCells"                   name_in_code="oceanStressCoeff"/>
-		*<var name="surfaceTiltForceU"                 type="real"     dimensions="nCells"                   name_in_code="surfaceTiltForceU"/>
-		*<var name="surfaceTiltForceV"                 type="real"     dimensions="nCells"                   name_in_code="surfaceTiltForceV"/>
+	<!-- C grid version -->
+	<var_struct name="cgrid" time_levs="0">
+		<var name="velocity"                          type="real"     dimensions="nEdges"                   name_in_code="velocity"/>	  
+                <var name="strain11"                          type="real"     dimensions="nCells"                   name_in_code="strain11"/>	
+                <var name="strain22"                          type="real"     dimensions="nCells"                   name_in_code="strain22"/>	
+                <var name="strain12"                          type="real"     dimensions="nCells"                   name_in_code="strain12"/>	
 	</var_struct>
-	<var_struct name="basis" time_levs="0">
-		*<var name="basisGradientU"                    type="real"     dimensions="vertexDegree nVertices"   name_in_code="basisGradientU"/>
-		*<var name="basisGradientV"                    type="real"     dimensions="vertexDegree nVertices"   name_in_code="basisGradientV"/>
-		*<var name="basisIntegrals"                    type="real"     dimensions="vertexDegree nVertices"   name_in_code="basisIntegrals"/>
-		*<var name="triangleCornerAtCellCenter"        type="integer"  dimensions="maxEdges nCells"          name_in_code="triangleCornerAtCellCenter"/>
-		*<var name="edgeOppositeTriangleCorner"        type="integer"  dimensions="vertexDegree nVertices"   name_in_code="edgeOppositeTriangleCorner"/>
-	</var_struct>
-	<var_struct name="forcing" time_levs="0">
-		*<var name="uAirVelocity"                      type="real"     dimensions="nCells"                   name_in_code="uAirVelocity"/>
-		*<var name="vAirVelocity"                      type="real"     dimensions="nCells"                   name_in_code="vAirVelocity"/>
-		*<var name="uOceanVelocity"                    type="real"     dimensions="nCells"                   name_in_code="uOceanVelocity"/>
-		*<var name="vOceanVelocity"                    type="real"     dimensions="nCells"                   name_in_code="vOceanVelocity"/>
-	</var_struct>
-	<var_struct name="boundary" time_levs="0">
-		*<var name="boundaryCell"                      type="integer"  dimensions="nCells"                   name_in_code="boundaryCell"/>
-		*<var name="boundaryCell2"                     type="integer"  dimensions="nCells"                   name_in_code="boundaryCell2"/>
-		*<var name="boundaryEdge"                      type="integer"  dimensions="nEdges"                   name_in_code="boundaryEdge"/>
-		*<var name="boundaryVertex"                    type="integer"  dimensions="nVertices"                name_in_code="boundaryVertex"/>
-		*<var name="boundaryVertex2"                   type="integer"  dimensions="nVertices"                name_in_code="boundaryVertex2"/>
-		*<var name="interiorVertex"                    type="integer"  dimensions="nVertices"                name_in_code="interiorVertex"/>
-		*<var name="interiorVertex2"                   type="integer"  dimensions="nVertices"                name_in_code="interiorVertex2"/>
-	</var_struct>
-	<var_struct name="hexbas" time_levs="0">
-		*<var name="xLocal"                            type="real"     dimensions="maxEdges nCells"          name_in_code="xLocal"/>
-		*<var name="yLocal"                            type="real"     dimensions="maxEdges nCells"          name_in_code="yLocal"/>
-		*<var name="wachspressA"                       type="real"     dimensions="maxEdges nCells"          name_in_code="wachspressA"/>
-		*<var name="wachspressB"                       type="real"     dimensions="maxEdges nCells"          name_in_code="wachspressB"/>
-		*<var name="wachspressKappa"                   type="real"     dimensions="maxEdges maxEdges nCells" name_in_code="wachspressKappa"/>
-		*<var name="basisIntegralsU"                   type="real"     dimensions="maxEdges maxEdges nCells" name_in_code="basisIntegralsU"/>
-		*<var name="basisIntegralsV"                   type="real"     dimensions="maxEdges maxEdges nCells" name_in_code="basisIntegralsV"/>
-		*<var name="basisGradientU"                    type="real"     dimensions="maxEdges maxEdges nCells" name_in_code="basisGradientU"/>
-		*<var name="basisGradientV"                    type="real"     dimensions="maxEdges maxEdges nCells" name_in_code="basisGradientV"/>
-		*<var name="cellVerticesAtVertex"              type="integer"  dimensions="vertexDegree nVertices"   name_in_code="cellVerticesAtVertex"/>
-	</var_struct>
-	<var_struct name="hexdyn" time_levs="0">
-		*<var name="uVelocity"                         type="real"     dimensions="nVertices"                name_in_code="uVelocity"/>
-		*<var name="vVelocity"                         type="real"     dimensions="nVertices"                name_in_code="vVelocity"/>
-		*<var name="icePressure"                       type="real"     dimensions="nCells"                   name_in_code="icePressure"/>
-		*<var name="stress1"                           type="real"     dimensions="maxEdges nCells"          name_in_code="stress1"/>
-		*<var name="stress2"                           type="real"     dimensions="maxEdges nCells"          name_in_code="stress2"/>
-		*<var name="stress12"                          type="real"     dimensions="maxEdges nCells"          name_in_code="stress12"/>
-		*<var name="stressDivergenceU"                 type="real"     dimensions="nVertices"                name_in_code="stressDivergenceU"/>
-		*<var name="stressDivergenceV"                 type="real"     dimensions="nVertices"                name_in_code="stressDivergenceV"/>
-		*<var name="airStressU"                        type="real"     dimensions="nVertices"                name_in_code="airStressU"/>
-		*<var name="airStressV"                        type="real"     dimensions="nVertices"                name_in_code="airStressV"/>
-		*<var name="oceanStressU"                      type="real"     dimensions="nVertices"                name_in_code="oceanStressU"/>
-		*<var name="oceanStressV"                      type="real"     dimensions="nVertices"                name_in_code="oceanStressV"/>
-		*<var name="oceanStressCoeff"                  type="real"     dimensions="nVertices"                name_in_code="oceanStressCoeff"/>
-		*<var name="surfaceTiltForceU"                 type="real"     dimensions="nVertices"                name_in_code="surfaceTiltForceU"/>
-		*<var name="surfaceTiltForceV"                 type="real"     dimensions="nVertices"                name_in_code="surfaceTiltForceV"/>
-	</var_struct>
-	<var_struct name="hexfor" time_levs="0">
-		*<var name="uAirVelocity"                      type="real"     dimensions="nVertices"                name_in_code="uAirVelocity"/>
-		*<var name="vAirVelocity"                      type="real"     dimensions="nVertices"                name_in_code="vAirVelocity"/>
-		*<var name="uOceanVelocity"                    type="real"     dimensions="nVertices"                name_in_code="uOceanVelocity"/>
-		*<var name="vOceanVelocity"                    type="real"     dimensions="nVertices"                name_in_code="vOceanVelocity"/>
-	</var_struct>
-	<var_struct name="weak" time_levs="0">
-		*<var name="uVelocity"                         type="real"     dimensions="nVertices"                  name_in_code="uVelocity"/>
-		*<var name="vVelocity"                         type="real"     dimensions="nVertices"                  name_in_code="vVelocity"/>
-		*<var name="icePressure"                       type="real"     dimensions="nCells"                     name_in_code="icePressure"/>
-		*<var name="strain11"                          type="real"     dimensions="nCells"                     name_in_code="strain11"/>
-		*<var name="strain22"                          type="real"     dimensions="nCells"                     name_in_code="strain22"/>
-		*<var name="strain12"                          type="real"     dimensions="nCells"                     name_in_code="strain12"/>
-		*<var name="stress11"                          type="real"     dimensions="nCells"                     name_in_code="stress11"/>
-		*<var name="stress22"                          type="real"     dimensions="nCells"                     name_in_code="stress22"/>
-		*<var name="stress12"                          type="real"     dimensions="nCells"                     name_in_code="stress12"/>
-		*<var name="principalStress1"                  type="real"     dimensions="nCells"                     name_in_code="principalStress1"/>
-		*<var name="principalStress2"                  type="real"     dimensions="nCells"                     name_in_code="principalStress2"/>
-		*<var name="stressDivergenceU"                 type="real"     dimensions="nVertices"                  name_in_code="stressDivergenceU"/>
-		*<var name="stressDivergenceV"                 type="real"     dimensions="nVertices"                  name_in_code="stressDivergenceV"/>
-		*<var name="normalVectorPolygon"               type="real"     dimensions="TWO maxEdges nCells"        name_in_code="normalVectorPolygon"/>
-		*<var name="normalVectorTriangle"              type="real"     dimensions="TWO vertexDegree nVertices" name_in_code="normalVectorTriangle"/>
-		*<var name="airStressU"                        type="real"     dimensions="nVertices"                  name_in_code="airStressU"/>
-		*<var name="airStressV"                        type="real"     dimensions="nVertices"                  name_in_code="airStressV"/>
-		*<var name="oceanStressU"                      type="real"     dimensions="nVertices"                  name_in_code="oceanStressU"/>
-		*<var name="oceanStressV"                      type="real"     dimensions="nVertices"                  name_in_code="oceanStressV"/>
-		*<var name="oceanStressCoeff"                  type="real"     dimensions="nVertices"                  name_in_code="oceanStressCoeff"/>
-		*<var name="surfaceTiltForceU"                 type="real"     dimensions="nVertices"                  name_in_code="surfaceTiltForceU"/>
-		*<var name="surfaceTiltForceV"                 type="real"     dimensions="nVertices"                  name_in_code="surfaceTiltForceV"/>
-		*<var name="uAirVelocity"                      type="real"     dimensions="nVertices"                  name_in_code="uAirVelocity"/>
-		*<var name="vAirVelocity"                      type="real"     dimensions="nVertices"                  name_in_code="vAirVelocity"/>
-		*<var name="uOceanVelocity"                    type="real"     dimensions="nVertices"                  name_in_code="uOceanVelocity"/>
-		*<var name="vOceanVelocity"                    type="real"     dimensions="nVertices"                  name_in_code="vOceanVelocity"/>
-	</var_struct>
- -->
-
 
 </registry>

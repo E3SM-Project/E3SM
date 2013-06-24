@@ -14,19 +14,22 @@ contains
   ! Initialization
   !-------------------------------------------------------------
   
-  subroutine init_dynamics_hex(mesh, &
-                               boundary, normal, &
-                               hexvar,   dt, &
-                               divergenceFormulation, gridCurvature)
+  subroutine init_dynamics_hex(mesh,     dt,          &
+                               boundary, normal,      &
+                               hexvar,   hexpwl,      &
+                               divergenceFormulation, &
+                               gridCurvature)
 
     use cice_dynamics_shared, only: init_evp
     use cice_dyn_hex_weak, only: init_dynamics_hex_weak
     use cice_dyn_hex_variational, only: init_dynamics_hex_variational
+    use cice_dyn_hex_pwl, only: init_dynamics_hex_pwl
 
     type(mesh_type), intent(inout) :: mesh
 
     type(normal_type),   pointer :: normal
     type(hexvar_type),   pointer :: hexvar
+    type(hexpwl_type),   pointer :: hexpwl
     type(boundary_type), pointer :: boundary
 
     real(kind=RKIND), intent(in) :: dt
@@ -45,6 +48,10 @@ contains
 
        call init_dynamics_hex_variational(mesh, hexvar, boundary)
 
+    else if (trim(divergenceFormulation) == "pwl") then
+
+       call init_dynamics_hex_pwl(mesh, hexvar, hexpwl, boundary)
+
     endif
 
   end subroutine init_dynamics_hex
@@ -54,10 +61,11 @@ contains
   !-------------------------------------------------------------
 
   subroutine run_dynamics_hex(mesh, &
-                              icestate, boundary, &
-                              normal,             &
-                              hexdyn,   hexweak,  &
-                              hexvar,   hexfor,   &
+                              icestate, boundary,        &
+                              normal,   atmos_forcing,   &
+                              hexdyn,   hexweak,         &
+                              hexvar,   hexpwl,          &
+                              hexfor,                    &
                               dt, divergenceFormulation, &
                               evpDamping)
 
@@ -75,13 +83,15 @@ contains
 
     type(mesh_type), intent(in) :: mesh
 
-    type(icestate_type), pointer :: icestate
-    type(boundary_type), pointer :: boundary
-    type(normal_type),   pointer :: normal
-    type(hexdyn_type),   pointer :: hexdyn
-    type(hexweak_type),  pointer :: hexweak
-    type(hexvar_type),   pointer :: hexvar
-    type(hexfor_type),   pointer :: hexfor
+    type(icestate_type),      pointer :: icestate
+    type(boundary_type),      pointer :: boundary
+    type(normal_type),        pointer :: normal
+    type(atmos_forcing_type), pointer :: atmos_forcing    
+    type(hexdyn_type),        pointer :: hexdyn
+    type(hexweak_type),       pointer :: hexweak
+    type(hexvar_type),        pointer :: hexvar
+    type(hexpwl_type),        pointer :: hexpwl
+    type(hexfor_type),        pointer :: hexfor
 
     real(kind=RKIND), intent(in) :: &
          dt
@@ -122,10 +132,10 @@ contains
 
     ! calculate the air stress
     call air_stress(&
-         hexdyn % airStressCellU % array, &
-         hexdyn % airStressCellV % array, &
-         hexfor % uAirVelocity % array,   & 
-         hexfor % vAirVelocity % array,   &
+         hexdyn % airStressCellU % array,      &
+         hexdyn % airStressCellV % array,      &
+         atmos_forcing % uAirVelocity % array, & 
+         atmos_forcing % vAirVelocity % array, &
          icestate % iceAreaCell % array)
     
     call interpolate_cell_to_vertex(mesh, &
@@ -158,9 +168,9 @@ contains
     ! subcycle the dynamics
     call subcycle_dynamics_hex(mesh, &
                                icestate,   boundary,  &
-                               normal,                &        
-                               hexdyn,     hexweak,   &
-                               hexvar,     hexfor,    &
+                               normal,     hexdyn,    &
+                               hexweak,    hexvar,    &
+                               hexpwl,     hexfor,    &
                                dtDynamics, dtElastic, &
                                divergenceFormulation, &
                                evpDamping)
@@ -198,9 +208,9 @@ stop
 
   subroutine subcycle_dynamics_hex(mesh, &
                                   icestate,   boundary,  &
-                                  normal,                &
-                                  hexdyn,     hexweak,   &
-                                  hexvar,     hexfor,    &
+                                  normal,     hexdyn,    &
+                                  hexweak,    hexvar,    &
+                                  hexpwl,     hexfor,    &
                                   dtDynamics, dtElastic, &
                                   divergenceFormulation, &
                                   evpDamping)
@@ -217,6 +227,7 @@ stop
     type(hexdyn_type),   pointer :: hexdyn
     type(hexweak_type),  pointer :: hexweak
     type(hexvar_type),   pointer :: hexvar
+    type(hexpwl_type),   pointer :: hexpwl
     type(hexfor_type),   pointer :: hexfor
 
     real(kind=RKIND), intent(in) :: &
@@ -232,28 +243,29 @@ stop
     integer :: &
          iElasticSubcycle
 
-    do iElasticSubcycle = 1, nElasticSubcycle
+    do iElasticSubcycle = 1, 2000!nElasticSubcycle
 
        write(*,*) "subcycle: ", iElasticSubcycle
        call single_subcycle_dynamics_hex(mesh, &
                                          icestate,   boundary,  &
-                                         normal,                &
-                                         hexdyn,     hexweak,   &
-                                         hexvar,     hexfor,    &
+                                         normal,     hexdyn,    &
+                                         hexweak,    hexvar,    &
+                                         hexpwl,     hexfor,    &
                                          dtDynamics, dtElastic, &
                                          divergenceFormulation, &
                                          evpDamping)
-
-       !write(*,*) minval(hexdyn % uVelocity % array), maxval(hexdyn % vVelocity % array)
 
     enddo
 
     !call gnuplot_triangle(mesh, hexdyn % surfaceTiltForceU % array, "test.txt")
     call gnuplot_triangle(mesh, hexdyn % uVelocity % array, "test.txt")
+    !call gnuplot_triangle(mesh, hexdyn % stressDivergenceU % array, "test.txt")
 
     !call gnuplot_cell(mesh, hexvar % strain11 % array(4,:), "test.txt")
     !call gnuplot_cell(mesh, hexvar % stress11 % array(4,:), "test.txt")
     !call gnuplot_cell(mesh, hexdyn % icePressure % array, "test.txt")
+
+    call writeout_minmax()
 
   end subroutine subcycle_dynamics_hex
 
@@ -261,9 +273,9 @@ stop
 
   subroutine single_subcycle_dynamics_hex(mesh, &
                                           icestate,   boundary,  &
-                                          normal,                &
-                                          hexdyn,     hexweak,   &
-                                          hexvar,     hexfor,    &
+                                          normal,     hexdyn,    &
+                                          hexweak,    hexvar,    &
+                                          hexpwl,     hexfor,    &
                                           dtDynamics, dtElastic, &
                                           divergenceFormulation, &
                                           evpDamping)
@@ -280,6 +292,9 @@ stop
                                         stress_tensor_hex_variational, &
                                         stress_divergence_hex_variational
 
+    use cice_dyn_hex_pwl, only: strain_tensor_hex_pwl, &
+                                stress_divergence_hex_pwl
+
     use cice_testing, only: gnuplot_triangle, gnuplot_cell, writeout_minmax, gnuplot_vertexvector, &
                             divergence_stress_test_velocity_set
 
@@ -291,6 +306,7 @@ stop
     type(hexdyn_type),   pointer :: hexdyn
     type(hexweak_type),  pointer :: hexweak
     type(hexvar_type),   pointer :: hexvar
+    type(hexpwl_type),   pointer :: hexpwl
     type(hexfor_type),   pointer :: hexfor
 
     real(kind=RKIND), intent(in) :: &
@@ -366,6 +382,42 @@ stop
             hexvar % stress12 % array,             &
             hexvar % basisIntegralsU % array,      &
             hexvar % basisIntegralsV % array,      &
+            hexvar % cellVerticesAtVertex % array, &
+            hexdyn % solveVelocity % array)
+
+    else if (trim(divergenceFormulation) == "pwl") then
+
+       call strain_tensor_hex_pwl(mesh, &
+            hexvar % strain11 % array,       &
+            hexvar % strain22 % array,       &
+            hexvar % strain12 % array,       &
+            hexdyn % uVelocity % array,      &
+            hexdyn % vVelocity % array,      &
+            hexpwl % basisGradientU % array, &
+            hexpwl % basisGradientV % array, &
+            hexdyn % solveStress % array)
+
+       call stress_tensor_hex_variational(mesh, &
+            hexvar % stress11 % array,            &
+            hexvar % stress22 % array,            &
+            hexvar % stress12 % array,            &
+            hexvar % strain11 % array,            &
+            hexvar % strain22 % array,            &
+            hexvar % strain12 % array,            &
+            hexdyn % icePressure % array,         &
+            hexdyn % replacementPressure % array, &
+            hexdyn % solveStress % array,          &
+            dtElastic, evpDamping)
+
+       call stress_divergence_hex_pwl(mesh, &
+            hexdyn % stressDivergenceU % array,    &
+            hexdyn % stressDivergenceV % array,    &
+            hexvar % stress11 % array,             &
+            hexvar % stress22 % array,             &
+            hexvar % stress12 % array,             &
+            hexpwl % basisGradientU % array,       &
+            hexpwl % basisGradientV % array,       &
+            hexpwl % basisSubArea % array,         &
             hexvar % cellVerticesAtVertex % array, &
             hexdyn % solveVelocity % array)
 

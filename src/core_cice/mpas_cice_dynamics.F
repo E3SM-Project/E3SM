@@ -16,17 +16,18 @@ module cice_dynamics
   character(len=200), parameter :: dynamicsGridType = "hex";
   !character(len=200), parameter :: dynamicsGridType = "tri";
 
-  ! "weak" or "variational" 
+  ! "weak", "variational" or "pwl" 
   !character(len=200), parameter :: divergenceFormulation = "weak"
-  character(len=200), parameter :: divergenceFormulation = "variational"
+  !character(len=200), parameter :: divergenceFormulation = "variational"
+  character(len=200), parameter :: divergenceFormulation = "pwl"
 
   ! EVP Damping - ".false." or ".true."
   !logical, parameter :: evpDamping = .true.
   logical, parameter :: evpDamping = .false.
 
   ! Grid curvature - "planar" or "spherical"
-  !character(len=200), parameter :: gridCurvature = "planar"
-  character(len=200), parameter :: gridCurvature = "spherical"
+  character(len=200), parameter :: gridCurvature = "planar"
+  !character(len=200), parameter :: gridCurvature = "spherical"
 
 contains
 
@@ -44,10 +45,11 @@ contains
 
        call init_dynamics_hex(&
             block % mesh,          &
+            dt,                    &
             block % boundary,      &
             block % normal,        &
             block % hexvar,        &
-            dt,                    &
+            block % hexpwl,        &
             divergenceFormulation, &
             gridCurvature)
 
@@ -76,27 +78,30 @@ contains
     if (trim(dynamicsGridType) == "hex") then
 
        call run_dynamics_hex(&
-            block % mesh,     &
-            block % icestate, &
-            block % boundary, &
-            block % normal,   &
-            block % hexdyn,   &
-            block % hexweak,  &
-            block % hexvar,   &
-            block % hexfor,   &
+            block % mesh,          &
+            block % icestate,      &
+            block % boundary,      &
+            block % normal,        &
+            block % atmos_forcing, &
+            block % hexdyn,        &
+            block % hexweak,       &
+            block % hexvar,        &
+            block % hexpwl,        &
+            block % hexfor,        &
             dt, divergenceFormulation, &
             evpDamping)
        
     else if (trim(dynamicsGridType) == "tri") then
        
        call run_dynamics_tri(&
-            block % mesh,     &
-            block % icestate, &
-            block % boundary, &
-            block % normal,   &
-            block % tridyn,   &   
-            block % triweak,  &
-            block % trifor,   &
+            block % mesh,          &
+            block % icestate,      &
+            block % boundary,      &
+            block % normal,        &
+            block % atmos_forcing, &
+            block % tridyn,        &   
+            block % triweak,       &
+            block % trifor,        &
             dt, divergenceFormulation, &
             evpDamping)
        

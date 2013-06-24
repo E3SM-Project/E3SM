@@ -10,7 +10,7 @@ contains
   subroutine cice_timestep(block, clock, dt)
 
     use cice_dynamics, only: run_dynamics
-    use cice_forcing, only: get_forcing_test
+    use cice_forcing, only: get_forcing
 
     use cice_testing, only: plot_cells_spherical, plot_pop_grid
 
@@ -20,14 +20,17 @@ contains
     type (MPAS_Clock_type), intent(in) :: clock
     real(kind=RKIND), intent(in) :: dt
 
-    write(*,*) minval(block % mesh % cellID_ij % array), maxval(block % mesh % cellID_ij % array)
+    integer :: i, j
 
     !call run_dynamics(block, dt)
-    call get_forcing_test(block % mesh, clock, block % atmos_forcing)
+
+    call get_forcing(block % mesh, clock, block % atmos_forcing)
 
     call plot_cells_spherical(block % mesh, block % atmos_forcing % airTemperature % array(1:block % mesh % nCells))
 
-    call plot_pop_grid(block % mesh, block % atmos_forcing % airTemperature % array(1:block % mesh % nCells)); stop
+    stop
+
+    !call plot_pop_grid(block % mesh, block % atmos_forcing % airTemperature % array(1:block % mesh % nCells)) ; stop
 
   end subroutine cice_timestep
 
