@@ -257,20 +257,36 @@ IF (${ENABLE_CUDA_FORTRAN})
   IF (NOT ${CMAKE_Fortran_COMPILER_ID} STREQUAL PGI)
     MESSAGE(FATAL_ERROR "CUDA Fortran only supported through the PGI compiler")
   ELSE ()
-    # Need to add -Mcuda to the Fortran FLAGS to see if it will compile "use cudafor"
-    # Here cc2x is for devices with compute capability >= 2.0 
+    # Set PGI CUDA Fortran flags
+
+    # Set defaults as lowest version of CUDA and device capability allowed
     # To do: determine a way to generalize this
-    SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -ta=nvidia -Mcuda=4.2,cc2x,ptxinfo,keepgpu")
+    IF (NOT CUDA_VERSION)
+      SET(CUDA_VERSION "4.1")
+    ENDIF ()
+
+    # Compute capability: cc2x is for devices with compute capability >= 2.0 
+    IF (NOT CUDA_DEVICE_CAPABILITY)
+      SET(CUDA_DEVICE_CAPABILITY "cc2x")
+    ENDIF ()
+
+    SET(CMAKE_Fortran_FLAGS 
+        "${CMAKE_Fortran_FLAGS} -ta=nvidia -Mcuda=${CUDA_VERSION},${CUDA_DEVICE_CAPABILITY},ptxinfo,keepgpu")
+
+    MESSAGE(STATUS "Testing PGI CUDA Fortran Compilation with flags: ${CMAKE_Fortran_FLAGS}")
+
     TRY_COMPILE(CUDAFOR
                 ${CMAKE_BINARY_DIR}/compiler_test/
                 ${CMAKE_CURRENT_SOURCE_DIR}/cmake/cudaFortranTest.F90
                 OUTPUT_VARIABLE COMPILE_OUTPUT)
     IF (${CUDAFOR})
       SET(PREQX_USE_CUDA_FORTRAN TRUE)
-      MESSAGE(STATUS "Using CUDA Fortran through PGI compiler")
+      MESSAGE(STATUS "Succeeded. Using CUDA Fortran through PGI compiler")
     ELSE()
       SET(PREQX_USE_CUDA_FORTRAN FALSE)
-      MESSAGE(FATAL_ERROR "Unable to use CUDA Fortran through the PGI compiler")
+      MESSAGE(FATAL_ERROR "Unable to use CUDA Fortran through the PGI "
+              "compiler. Compilation failed with the following "
+              "output.\n${COMPILE_OUTPUT}")
     ENDIF()
   ENDIF()
 ENDIF ()
@@ -331,6 +347,7 @@ ENDIF ()
 #   incorrect and this doesn't work.
 # Note 2) Steve G. has pushed this exact fix into PIO, which is the only place
 #   that needs it. Once that code is in place this code will be deleted.
+##############################################################################
 TRY_COMPILE(MPIMOD_SUCCESS 
             ${CMAKE_BINARY_DIR}/compiler_test/ ${CMAKE_CURRENT_SOURCE_DIR}/cmake/mpiModTest.f90
             OUTPUT_VARIABLE COMPILE_OUTPUT)
