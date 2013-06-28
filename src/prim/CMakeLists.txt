@@ -17,12 +17,6 @@ SET (PRIM_INCLUDE_DIRS ${PIO_INCLUDE_DIRS}
                         ${TIMING_INCLUDE_DIRS}
                         ${SRC_SHARE_DIR} CACHE INTERNAL "include directories for prim")
 
-INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR}
-                    ${PRIM_INCLUDE_DIRS})
-
-CONFIGURE_FILE(config.h.cmake.in config.h)
-ADD_DEFINITIONS(-DHAVE_CONFIG_H)
-
 # Make SRCS global so the tests can access it
 SET(PRIM_SRCS ${SRC_SHARE_DIR}/kinds.F90
 					     ${SRC_SHARE_DIR}/dimensions_mod.F90

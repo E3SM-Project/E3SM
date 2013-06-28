@@ -10,12 +10,6 @@ SET(SRC_UTILS   ${SRC_BASE}/../utils/csm_share)
 SET (SWDGX_INCLUDE_DIRS ${PIO_INCLUDE_DIRS}
                         ${TIMING_INCLUDE_DIRS} CACHE INTERNAL "include directories for swdgx")
 
-INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR}
-                    ${SWDGX_INCLUDE_DIRS})
-
-CONFIGURE_FILE(config.h.cmake.in config.h)
-ADD_DEFINITIONS(-DHAVE_CONFIG_H)
-
 SET(SWDGX_SRCS
     ${SRC_BASE}/jrio.c
     ${SRC_SHARE}/kinds.F90

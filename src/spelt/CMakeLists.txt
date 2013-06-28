@@ -13,12 +13,6 @@ SET (SPELT_INCLUDE_DIRS ${PIO_INCLUDE_DIRS}
                         ${TIMING_INCLUDE_DIRS}
                         ${SRC_SHARE_DIR} CACHE INTERNAL "include directories for spelt")
 
-INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR}
-                    ${SPELT_INCLUDE_DIRS})
-
-CONFIGURE_FILE(config.h.cmake.in config.h)
-ADD_DEFINITIONS(-DHAVE_CONFIG_H)
-
 SET(SPELT_SRCS ${SRC_SHARE_DIR}/bndry_mod.F90
                ${SRC_SHARE_DIR}/spelt_mod.F90
                ${SRC_DIR}/spelt_bench_mod.F90

@@ -13,12 +13,6 @@ SET (FVM_INCLUDE_DIRS ${PIO_INCLUDE_DIRS}
                         ${TIMING_INCLUDE_DIRS}
                         ${SRC_SHARE_DIR} CACHE INTERNAL "include directories for fvm")
 
-INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR}
-                    ${FVM_INCLUDE_DIRS})
-
-CONFIGURE_FILE(config.h.cmake.in config.h)
-ADD_DEFINITIONS(-DHAVE_CONFIG_H)
-
 SET (FVM_SRCS ${SRC_SHARE_DIR}/bndry_mod.F90
               ${SRC_SHARE_DIR}/fvm_mod.F90
               ${SRC_SHARE_DIR}/spelt_mod.F90
@@ -91,7 +85,7 @@ SET(FVM_SRCS ${FVM_SRCS} ${SRC_DIR}/fvm_main.F90 CACHE INTERNAL "Sources for fvm
 
 # Set up defaults
 IF (NOT FVM_NP)
-  SET (FVM_NP 8) 
+  SET (FVM_NP 4) 
 ENDIF ()
 IF (NOT FVM_PLEV)
   SET (FVM_PLEV 20) 

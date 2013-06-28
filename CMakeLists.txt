@@ -177,8 +177,16 @@ MESSAGE(STATUS "CMAKE_SYSTEM = ${CMAKE_SYSTEM}")
 MESSAGE(STATUS "CMAKE_SYSTEM_NAME = ${CMAKE_SYSTEM_NAME}")
 MESSAGE(STATUS "HOMME_FIND_BLASLAPACK = ${HOMME_FIND_BLASLAPACK}")
 
+##############################################################################
+# OpenMP
+# Two flavors:
+#   1) OpenMP over elements (standard OPENMP)
+#   2) OpenMP within an element (ELEMENT_OPENMP)
+##############################################################################
 OPTION(ENABLE_OPENMP FALSE)
-IF (ENABLE_OPENMP)
+OPTION(ENABLE_ELEMENT_OPENMP FALSE)
+##############################################################################
+IF (ENABLE_OPENMP OR ENABLE_ELEMENT_OPENMP)
   FIND_PACKAGE(OpenMP)
   IF(OPENMP_FOUND)
     MESSAGE(STATUS "Found OpenMP Flags")
@@ -197,11 +205,7 @@ IF (ENABLE_OPENMP)
     MESSAGE(FATAL_ERROR "Unable to find OpenMP")
   ENDIF()
 ENDIF ()
-
-#SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${HOMME_ADDITIONAL_FLAGS}")
-#SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${HOMME_ADDITIONAL_FLAGS}")
-#SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${HOMME_ADDITIONAL_FLAGS}")
-#SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${HOMME_ADDITIONAL_FLAGS}")
+##############################################################################
 
 # For PIO Set these options to allow a longer line length (until PIO is fixed)
 IF (${CMAKE_Fortran_COMPILER_ID} STREQUAL GNU)

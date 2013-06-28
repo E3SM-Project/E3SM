@@ -12,12 +12,6 @@ SET(UTILS_TIMING_DIR ${HOMME_SOURCE_DIR}/utils/timing)
 SET (PRIMDGX_INCLUDE_DIRS ${PIO_INCLUDE_DIRS}
                         ${TIMING_INCLUDE_DIRS} CACHE INTERNAL "include directories for primdgx")
 
-INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR}
-                    ${PRIMDGX_INCLUDE_DIRS})
-
-CONFIGURE_FILE(config.h.cmake.in config.h)
-ADD_DEFINITIONS(-DHAVE_CONFIG_H)
-
 SET(PRIMDGX_SRCS
     ${SRC_SHARE}/kinds.F90
     ${SRC_SHARE}/dimensions_mod.F90

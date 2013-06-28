@@ -13,12 +13,6 @@ SET (PREQX_INCLUDE_DIRS ${PIO_INCLUDE_DIRS}
                         ${TIMING_INCLUDE_DIRS}
                         ${SRC_SHARE_DIR} CACHE INTERNAL "include directories for preqx")
 
-INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR}
-                    ${PREQX_INCLUDE_DIRS})
-
-CONFIGURE_FILE(config.h.cmake.in config.h)
-ADD_DEFINITIONS(-DHAVE_CONFIG_H)
-
 SET(PREQX_SRCS ${SRC_SHARE_DIR}/kinds.F90
                ${SRC_SHARE_DIR}/dimensions_mod.F90
                ${SRC_SHARE_DIR}/control_mod.F90
@@ -117,7 +111,7 @@ SET(PREQX_SRCS ${PREQX_SRCS} ${SRC_DIR}/prim_main.F90 CACHE INTERNAL "Sources fo
 
 # Set up defaults
 IF (NOT PREQX_NP)
-  SET (PREQX_NP 8) 
+  SET (PREQX_NP 4) 
 ENDIF ()
 IF (NOT PREQX_PLEV)
   SET (PREQX_PLEV 20) 
@@ -142,6 +136,11 @@ MESSAGE(STATUS "  ENERGY = ${PREQX_USE_ENERGY}")
 IF (${PREQX_USE_CUDA_FORTRAN})
   SET(USE_CUDA_FORTRAN TRUE)
   MESSAGE(STATUS "  Using CUDA Fortran")
+ENDIF ()
+
+IF (${ENABLE_ELEMENT_OPENMP})
+  SET(ELEMENT_OPENMP TRUE)
+  MESSAGE(STATUS "  Using ELEMENT_OPENMP")
 ENDIF ()
 
 # The following macro handles the compilation with the appropriate variables

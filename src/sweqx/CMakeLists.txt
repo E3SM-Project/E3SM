@@ -11,12 +11,6 @@ SET(SRC_UTILS   ${SRC_BASE}/../utils/csm_share)
 SET (SWEQX_INCLUDE_DIRS ${PIO_INCLUDE_DIRS}
                         ${TIMING_INCLUDE_DIRS} CACHE INTERNAL "include directories for sweqx")
 
-INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR}
-                    ${SWEQX_INCLUDE_DIRS})
-
-CONFIGURE_FILE(config.h.cmake.in config.h)
-ADD_DEFINITIONS(-DHAVE_CONFIG_H)
-
 SET(SWEQX_SRCS
                ${SRC_BASE}/advance_mod.F90
                ${SRC_BASE}/checksum_mod.F90
