@@ -2254,6 +2254,8 @@ module init_atm_cases
       integer :: iCell, iCell1, iCell2 , iEdge, vtx1, vtx2, ivtx, i, k, nz, nz1, itr, itrp, cell1, cell2, nCellsSolve
       integer :: nInterpPoints, ndims
 
+      integer :: nfglevels_actual
+
       integer, dimension(5) :: interp_list
       real (kind=RKIND) :: maskval
       real (kind=RKIND) :: msgval
@@ -2882,7 +2884,13 @@ write(0,*) 'minval, maxval of LANDSEA = ', minval(maskslab), maxval(maskslab)
                do k=1,config_nfglevels
                   if (vert_level(k) == field % xlvl .or. vert_level(k) == -1.0) exit
                end do
-               if (k > config_nfglevels) write(0,*) 'ERROR: We seem to have more levels than we thought we should!'
+               if (k > config_nfglevels) then
+                  write(0,*) '*******************************************************************'
+                  write(0,*) 'Error: The meteorological data file has more than config_nfglevels.'
+                  write(0,*) '       Please increase config_nfglevels in the namelist and re-run.'
+                  write(0,*) '*******************************************************************'
+                  call mpas_dmpar_abort(grid % block % domain % dminfo)
+               end if
                if (vert_level(k) == -1.0) vert_level(k) = field % xlvl
             else
                k = 1
@@ -3435,68 +3443,79 @@ write(0,*) 'PROCESSING SEAICE'
       end do
 
 
+      !
+      ! Check how many distinct levels we actually found in the meteorological data
+      !
+      do k=1,config_nfglevels
+         if (vert_level(k) == -1.0) exit 
+      end do
+      nfglevels_actual = k-1
+      write(0,*) '*************************************************'
+      write(0,*) 'Found ', nfglevels_actual, ' levels in the first-guess data'
+      write(0,*) '*************************************************'
+
       !  
       ! Vertically interpolate meteorological data
       !  
-      allocate(sorted_arr(2,config_nfglevels))
+      allocate(sorted_arr(2,nfglevels_actual))
 
       do iCell=1,grid%nCells
 
          ! T
          sorted_arr(:,:) = -999.0
-         do k=1,config_nfglevels
+         do k=1,nfglevels_actual
             sorted_arr(1,k) = fg % z % array(k,iCell)
 !NOSFC            if (vert_level(k) == 200100.0) sorted_arr(1,k) = fg % soilz % array(iCell)
             if (vert_level(k) == 200100.0) sorted_arr(1,k) = 99999.0
             sorted_arr(2,k) = fg % t % array(k,iCell)
          end do
-         call mpas_quicksort(config_nfglevels, sorted_arr)
+         call mpas_quicksort(nfglevels_actual, sorted_arr)
          do k=1,grid%nVertLevels
             target_z = 0.5 * (grid % zgrid % array(k,iCell) + grid % zgrid % array(k+1,iCell))
-!           state % theta_m % array(k,iCell) = vertical_interp(target_z, config_nfglevels, sorted_arr, order=1, extrap=1)
-            state % theta_m % array(k,iCell) = vertical_interp(target_z, config_nfglevels-1, &
-                                      sorted_arr(:,1:config_nfglevels-1), order=1, extrap=1)
+!           state % theta_m % array(k,iCell) = vertical_interp(target_z, nfglevels_actual, sorted_arr, order=1, extrap=1)
+            state % theta_m % array(k,iCell) = vertical_interp(target_z, nfglevels_actual-1, &
+                                      sorted_arr(:,1:nfglevels_actual-1), order=1, extrap=1)
          end do
 
 
          ! RH
          sorted_arr(:,:) = -999.0
-         do k=1,config_nfglevels
+         do k=1,nfglevels_actual
             sorted_arr(1,k) = fg % z % array(k,iCell)
 !NOSFC            if (vert_level(k) == 200100.0) sorted_arr(1,k) = fg % soilz % array(iCell)
             if (vert_level(k) == 200100.0) sorted_arr(1,k) = 99999.0
             sorted_arr(2,k) = fg % rh % array(k,iCell)
          end do
-         call mpas_quicksort(config_nfglevels, sorted_arr)
+         call mpas_quicksort(nfglevels_actual, sorted_arr)
          do k=1,grid%nVertLevels
             target_z = 0.5 * (grid % zgrid % array(k,iCell) + grid % zgrid % array(k+1,iCell))
-!           state % scalars % array(state % index_qv,k,iCell) = vertical_interp(target_z, config_nfglevels, sorted_arr, order=1, extrap=0)
-            state % scalars % array(state % index_qv,k,iCell) = vertical_interp(target_z, config_nfglevels-1, &
-                                                       sorted_arr(:,1:config_nfglevels-1), order=1, extrap=1)
+!           state % scalars % array(state % index_qv,k,iCell) = vertical_interp(target_z, nfglevels_actual, sorted_arr, order=1, extrap=0)
+            state % scalars % array(state % index_qv,k,iCell) = vertical_interp(target_z, nfglevels_actual-1, &
+                                                       sorted_arr(:,1:nfglevels_actual-1), order=1, extrap=1)
             diag % rh % array(k,iCell) = state % scalars % array(state % index_qv,k,iCell)
          end do
 
 
          ! GHT
          sorted_arr(:,:) = -999.0
-         do k=1,config_nfglevels
+         do k=1,nfglevels_actual
             sorted_arr(1,k) = fg % z % array(k,iCell)
 !NOSFC            if (vert_level(k) == 200100.0) sorted_arr(1,k) = fg % soilz % array(iCell)
             if (vert_level(k) == 200100.0) sorted_arr(1,k) = 99999.0
             sorted_arr(2,k) = fg % z % array(k,iCell)
          end do
-         call mpas_quicksort(config_nfglevels, sorted_arr)
+         call mpas_quicksort(nfglevels_actual, sorted_arr)
          do k=1,grid%nVertLevels
             target_z = 0.5 * (grid % zgrid % array(k,iCell) + grid % zgrid % array(k+1,iCell))
-!           fg % gfs_z % array(k,iCell) = vertical_interp(target_z, config_nfglevels, sorted_arr, order=1, extrap=1)
-            fg % gfs_z % array(k,iCell) = vertical_interp(target_z, config_nfglevels-1, &
-                                 sorted_arr(:,1:config_nfglevels-1), order=1, extrap=1)
+!           fg % gfs_z % array(k,iCell) = vertical_interp(target_z, nfglevels_actual, sorted_arr, order=1, extrap=1)
+            fg % gfs_z % array(k,iCell) = vertical_interp(target_z, nfglevels_actual-1, &
+                                 sorted_arr(:,1:nfglevels_actual-1), order=1, extrap=1)
          end do
 
 
          ! PRESSURE
          sorted_arr(:,:) = -999.0
-         do k=1,config_nfglevels
+         do k=1,nfglevels_actual
             sorted_arr(1,k) = fg % z % array(k,iCell)
             if (vert_level(k) == 200100.0) then 
 !NOSFC               sorted_arr(1,k) = fg % soilz % array(iCell)
@@ -3505,18 +3524,18 @@ write(0,*) 'PROCESSING SEAICE'
             end if
             sorted_arr(2,k) = log(fg % p % array(k,iCell))
          end do
-         call mpas_quicksort(config_nfglevels, sorted_arr)
+         call mpas_quicksort(nfglevels_actual, sorted_arr)
          do k=1,grid%nVertLevels
             target_z = 0.5 * (grid % zgrid % array(k,iCell) + grid % zgrid % array(k+1,iCell))
-!           diag % pressure % array(k,iCell) = exp(vertical_interp(target_z, config_nfglevels, sorted_arr, order=1, extrap=1))
-            diag % pressure % array(k,iCell) = exp(vertical_interp(target_z, config_nfglevels-1, &
-                                         sorted_arr(:,1:config_nfglevels-1), order=1, extrap=1))
+!           diag % pressure % array(k,iCell) = exp(vertical_interp(target_z, nfglevels_actual, sorted_arr, order=1, extrap=1))
+            diag % pressure % array(k,iCell) = exp(vertical_interp(target_z, nfglevels_actual-1, &
+                                         sorted_arr(:,1:nfglevels_actual-1), order=1, extrap=1))
          end do
 
 
          ! PRESSURE
 !         sorted_arr(:,:) = -999.0
-!         do k=1,config_nfglevels
+!         do k=1,nfglevels_actual
 !            sorted_arr(1,k) = fg % z % array(k,iCell)
 !            if (vert_level(k) == 200100.0) then 
 !!NOSFC               sorted_arr(1,k) = fg % soilz % array(iCell)
@@ -3525,10 +3544,10 @@ write(0,*) 'PROCESSING SEAICE'
 !            end if
 !            sorted_arr(2,k) = log(fg % p % array(k,iCell))
 !         end do
-!         call mpas_quicksort(config_nfglevels, sorted_arr)
+!         call mpas_quicksort(nfglevels_actual, sorted_arr)
 !         do k=1,grid%nVertLevels+1
 !            target_z = grid % zgrid % array(k,iCell)
-!            fg % gfs_p % array(k,iCell) = exp(vertical_interp(target_z, config_nfglevels, sorted_arr, order=1, extrap=1))
+!            fg % gfs_p % array(k,iCell) = exp(vertical_interp(target_z, nfglevels_actual, sorted_arr, order=1, extrap=1))
 !         end do
 
       end do
@@ -3538,18 +3557,18 @@ write(0,*) 'PROCESSING SEAICE'
 
          ! U
          sorted_arr(:,:) = -999.0
-         do k=1,config_nfglevels
+         do k=1,nfglevels_actual
             sorted_arr(1,k) = 0.5 * (fg % z % array(k,cellsOnEdge(1,iEdge)) + fg % z % array(k,cellsOnEdge(2,iEdge)))
 !NOSFC            if (vert_level(k) == 200100.0) sorted_arr(1,k) = 0.5 * (fg % soilz % array(cellsOnEdge(1,iEdge)) + fg % soilz % array(cellsOnEdge(2,iEdge)))
             if (vert_level(k) == 200100.0) sorted_arr(1,k) = 99999.0
             sorted_arr(2,k) = fg % u % array(k,iEdge)
          end do
-         call mpas_quicksort(config_nfglevels, sorted_arr)
+         call mpas_quicksort(nfglevels_actual, sorted_arr)
          do k=1,grid%nVertLevels
             target_z = 0.25 * (grid % zgrid % array(k,cellsOnEdge(1,iEdge)) + grid % zgrid % array(k+1,cellsOnEdge(1,iEdge)) + grid % zgrid % array(k,cellsOnEdge(2,iEdge)) + grid % zgrid % array(k+1,cellsOnEdge(2,iEdge)))
-!           state % u % array(k,iEdge) = vertical_interp(target_z, config_nfglevels, sorted_arr, order=1, extrap=0)
-            state % u % array(k,iEdge) = vertical_interp(target_z, config_nfglevels-1, & 
-                                sorted_arr(:,1:config_nfglevels-1), order=1, extrap=1)
+!           state % u % array(k,iEdge) = vertical_interp(target_z, nfglevels_actual, sorted_arr, order=1, extrap=0)
+            state % u % array(k,iEdge) = vertical_interp(target_z, nfglevels_actual-1, & 
+                                sorted_arr(:,1:nfglevels_actual-1), order=1, extrap=1)
          end do
 
       end do
@@ -3572,14 +3591,14 @@ write(0,*) 'PROCESSING SEAICE'
       !
       ! Adjust surface pressure for difference in topography
       !
-      do sfc_k=1,config_nfglevels
+      do sfc_k=1,nfglevels_actual
          if (vert_level(sfc_k) == 200100.) exit
       end do 
       do iCell=1,grid%nCells
 
          ! We need to extrapolate
             sorted_arr(:,:) = -999.0
-            do k=1,config_nfglevels
+            do k=1,nfglevels_actual
                sorted_arr(1,k) = fg % z % array(k,iCell)
                if (vert_level(k) == 200100.0) then 
 !NOSFC                  sorted_arr(1,k) = fg % soilz % array(iCell)
@@ -3587,9 +3606,9 @@ write(0,*) 'PROCESSING SEAICE'
                end if
                sorted_arr(2,k) = log(fg % p % array(k,iCell))
             end do
-            call mpas_quicksort(config_nfglevels, sorted_arr)
+            call mpas_quicksort(nfglevels_actual, sorted_arr)
             target_z = grid % zgrid % array(1,iCell)
-            fg % psfc % array(iCell) = exp(vertical_interp(target_z, config_nfglevels, sorted_arr, order=1, extrap=1))
+            fg % psfc % array(iCell) = exp(vertical_interp(target_z, nfglevels_actual, sorted_arr, order=1, extrap=1))
 
       end do
 
