@@ -893,15 +893,6 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
           end do
        end do
 
-       call preq_hydrostatic(phi,elem(ie)%state%phis,T_v,p,dpt2)
-       !   PE   dp/dn PHIs
-       suml=0
-       do k=1,nlev
-          suml = suml + phi(:,:,k)*dpt2(:,:,k)
-       enddo
-       elem(ie)%accum%PEner_cam(:,:,n)=suml(:,:)
-
-
     enddo
     
 end subroutine prim_energy_halftimes

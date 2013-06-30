@@ -1494,7 +1494,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
              dt_q*elem(ie)%derived%FQps(:,:,1)
      endif
 
-#if 1
+#if 0
+     ! disabled - energy fixers will be moving into CAM physics
      ! energy fixer for FQps term
      ! dp1 = dp0 + d(FQps)
      ! dp0-dp1 = -d(FQps)
@@ -1528,9 +1529,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
 
      ! Qdp(np1) and ps_v(np1) were updated by forcing - update Q(np1)
-     ! ps_v(n0) may also have been changed if using Robert,
-     ! but Q(n0) will be updated after robert filter
-     ! so no need to do that now
 #if (defined ELEMENT_OPENMP)
 !$omp parallel do private(q,k,i,j,dp)
 #endif

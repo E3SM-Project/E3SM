@@ -1270,7 +1270,7 @@ contains
 
     real (kind=real_kind)                          :: maxcflx, maxcfly  
     real (kind=real_kind) :: dp_np1(np,np)
-    logical :: compute_diagnostics, compute_energy, compute_energy_forcing
+    logical :: compute_diagnostics, compute_energy
 
 
     ! ===================================
@@ -1290,20 +1290,13 @@ contains
     ! compute energy if we are using an energy fixer
     compute_diagnostics=.false.
     compute_energy=energy_fixer > 0
-    compute_energy_forcing = .false.
-    ! for forcing applied in dynamics, compute d(E)/dt due to forcing 
-    if (compute_energy .and. ftype/=1) compute_energy_forcing=.true.
 
     if (MODULO(nstep_end,statefreq)==0 .or. nstep_end==tl%nstep0) then
        compute_diagnostics=.true.  
        compute_energy = .true.
-       compute_energy_forcing = .true.
     endif
     if (compute_diagnostics) &
        call prim_diag_scalars(elem,hvcoord,tl,4,.true.,nets,nete)
-    ! E(4) Energy at start of timestep, before CAM forcing
-    if (compute_energy_forcing) &
-       call prim_energy_halftimes(elem,hvcoord,tl,4,.true.,nets,nete)
 
 
 
@@ -1393,8 +1386,7 @@ contains
     if (compute_energy) call prim_energy_halftimes(elem,hvcoord,tl,2,.false.,nets,nete)
 
     if (energy_fixer > 0) then
-       call prim_energy_fixer(elem,hvcoord,hybrid,tl,nets,nete,&
-            compute_energy_forcing,nsubstep)
+       call prim_energy_fixer(elem,hvcoord,hybrid,tl,nets,nete,nsubstep)
     endif
 
     if (compute_diagnostics) then
@@ -1662,8 +1654,7 @@ contains
 
 
 !=======================================================================================================! 
-  subroutine prim_energy_fixer(elem,hvcoord,hybrid,tl,nets,nete,compute_energy_forcing,&
-       nsubstep)
+  subroutine prim_energy_fixer(elem,hvcoord,hybrid,tl,nets,nete,nsubstep)
 ! 
 ! non-subcycle code:
 !  Solution is given at times u(t-1),u(t),u(t+1)
@@ -1686,7 +1677,6 @@ contains
     type (element_t)     , intent(inout), target :: elem(:)
     type (hvcoord_t)                  :: hvcoord
     type (TimeLevel_t), intent(inout)       :: tl
-    logical, intent(inout)                 :: compute_energy_forcing
     integer, intent(in)                    :: nsubstep
 
     integer :: ie,k,i,j,nmax
@@ -1704,16 +1694,9 @@ contains
     real (kind=real_kind),save :: de_from_forcing_step1
     real (kind=real_kind)      :: de_from_forcing
 
-    logical :: ftype0_adjustment = .false.
-
-
     t2=tl%np1    ! timelevel for T
     if (use_cpstar /= 0 ) then
        call abortmp('Energy fixer requires use_cpstar=0')
-    endif
-
-    if (energy_fixer==2 .and. compute_energy_forcing) then
-       ftype0_adjustment = .true.
     endif
 
 
@@ -1747,9 +1730,6 @@ contains
           enddo
        enddo
        PEner => elem(ie)%accum%PEner(:,:,:)
-       if (energy_fixer==3) then
-          PEner => elem(ie)%accum%PEner_cam(:,:,:)
-       endif
 
        ! psum(:,4) = energy before forcing
        ! psum(:,1) = energy after forcing, before dynamics
@@ -1762,15 +1742,9 @@ contains
                elem(ie)%accum%IEner(:,:,n) + &
                elem(ie)%accum%KEner(:,:,n) ) )
        enddo
-       n=4
-       psum(ie,n) = psum(ie,n) + SUM(  elem(ie)%spheremp(:,:)*&
-            (PEner(:,:,n) + &
-            elem(ie)%accum%IEner(:,:,n) + &
-            elem(ie)%accum%KEner(:,:,n) ) )
     enddo
 
     nmax=3
-    if (ftype0_adjustment) nmax=4
 
     do ie=nets,nete
        do n=1,nmax
@@ -1783,16 +1757,6 @@ contains
     enddo
 
     beta = ( psum_g(1)-psum_g(2) )/psum_g(3)
-
-    ! apply adjustment when forcing applied in RHS
-    if (ftype0_adjustment) then
-       de_from_forcing = psum_g(1)-psum_g(4)
-       if (nsubstep==1) then
-          de_from_forcing_step1 = de_from_forcing
-       else
-          beta = beta + (de_from_forcing_step1 - de_from_forcing)/psum_g(3)
-       endif
-    endif
 
     ! apply fixer
     do ie=nets,nete
