@@ -92,7 +92,7 @@ contains
     integer :: i,j,k,ie
     integer,parameter  :: type=ORDERED
 
-    real (kind=real_kind)  :: Mass2,Mass,Mass_np1
+    real (kind=real_kind)  :: Mass2,Mass
     real (kind=real_kind)  :: TOTE(4),KEner(4),PEner(4),IEner(4),IEner_wet(4)
     real (kind=real_kind)  :: Qvar(qsize_d,4),Qmass(qsize_d,4),Q1mass(qsize_d)
     real (kind=real_kind)  :: Qmass_added(qsize_d)
@@ -362,7 +362,6 @@ contains
     do ie=nets,nete
        tmp(:,:,ie)=elem(ie)%state%ps_v(:,:,np1) 
     enddo
-    Mass_np1 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
 
     !
     !   ptop =  hvcoord%hyai(1)*hvcoord%ps0)  + hvcoord%hybi(1)*ps(i,j)
@@ -371,7 +370,6 @@ contains
     !                                                         ! ~20 kg/m^2 (effects 4th digit of Mass)
     !   BUT: CAM EUL defines mass as integral( ps ), so to be consistent, ignore ptop contribution; 
     Mass = Mass2*scale
-    Mass_np1 = Mass_np1*scale
 
 
     !   sum the mass added by the mass fixer
