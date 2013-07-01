@@ -38,7 +38,14 @@
 !> esinti      :initialization of saturation vapor pressures.
 !> oznini      :initialization of climatological monthly-mean ozone profiles.
 !> aerosol_init:initialization of aerosol optical properties.
-
+!>
+!> add-ons and modifications to sourcecode:
+!> ----------------------------------------
+!>    * added initialization of variable mxaerl which is the number of layers below 900 hPa in
+!>      which background aerosols are present. mxaerl is computed using the pressure-base array.
+!>      -> added diag in the argument list of subroutines camradinit and aerosol_init.
+!>      -> in subroutine aerosol_init, added initialization of variable mxaerl.
+!>      Laura D. Fowler (birch.ucar.edu) / 2013-07-01.
 
 !local parameters:
  integer,parameter:: latsiz = 64
@@ -47,12 +54,13 @@
  contains
 
 !==================================================================================================
- subroutine camradinit(dminfo,mesh,state_1,state_2)
+ subroutine camradinit(dminfo,mesh,diag,state_1,state_2)
 !==================================================================================================
 
 !input arguments:
  type(dm_info),intent(in):: dminfo
- type(mesh_type),intent(in) :: mesh
+ type(mesh_type),intent(in):: mesh
+ type(diag_type),intent(in):: diag
 
 !inout arguments:
  type(state_type),intent(inout):: state_1,state_2 
@@ -122,7 +130,7 @@
  write(0,*) '    end subroutine oznini'
 
 !initialization of aerosol concentrations:
- call aerosol_init(dminfo,mesh,state_1,state_2)
+ call aerosol_init(dminfo,mesh,diag,state_1,state_2)
  write(0,*) '    end subroutine aerosol_init'
 
  end subroutine camradinit
@@ -370,7 +378,7 @@
  end subroutine radaeini
 
 !==================================================================================================
- subroutine aerosol_init(dminfo,mesh,state_1,state_2)
+ subroutine aerosol_init(dminfo,mesh,diag,state_1,state_2)
 !==================================================================================================
 
 !This subroutine assumes a uniform aerosol distribution in both time and space. It should be
@@ -379,16 +387,20 @@
 !input arguments:!
  type(dm_info),intent(in)  :: dminfo
  type(mesh_type),intent(in):: mesh
+ type(diag_type),intent(in):: diag
 
 !inout arguments:
  type(state_type),intent(inout):: state_1,state_2
 
 !local variables:
- integer:: iCell,k,nAerLevels,nCells
+ integer:: max_mxaerl
+ integer,dimension(:),allocatable:: mxaerl_local
+ integer:: iCell,k,kk,nAerLevels,nCells,nCellsSolve,nVertLevels
 
  real(kind=RKIND):: psurf
  real(kind=RKIND),dimension(:),pointer:: m_psp,m_psn
  real(kind=RKIND),dimension(:,:),pointer:: m_hybi
+ real(kind=RKIND),dimension(:,:),pointer:: pressure_b
  real(kind=RKIND),dimension(:,:,:),pointer:: aerosolcn,aerosolcp
 
  real(kind=RKIND),dimension(29) :: hybi  
@@ -405,9 +417,13 @@
 !--------------------------------------------------------------------------------------------------
 
 !initialization:
- nCells     = mesh % nCells
- nAerLevels = mesh % nAerLevels
+ nCells      = mesh % nCells
+ nCellsSolve = mesh % nCellsSolve
+ nAerLevels  = mesh % nAerLevels
+ nVertLevels = mesh % nVertLevels
  m_hybi => mesh % m_hybi % array
+
+ pressure_b => diag % pressure_base % array
 
  m_psp => state_1 % m_ps % array
  m_psn => state_2 % m_ps % array
@@ -427,6 +443,23 @@
     m_psp(iCell) = psurf
     m_psn(iCell) = psurf
  enddo
+
+!mxaerl = max number of levels (from bottom) for background aerosol. Limit background aerosol
+!height below 900 mb:
+ if(.not.allocated(mxaerl_local)) allocate(mxaerl_local(1:nCellsSolve))
+ mxaerl_local(1:nCellsSolve) = 0
+ do k = 1, nVertLevels
+ do iCell = 1, nCellsSolve
+    if(pressure_b(k,iCell) .ge. 9.e04) mxaerl_local(iCell) = mxaerl_local(iCell) + 1
+ enddo
+ enddo 
+
+ max_mxaerl = maxval(mxaerl_local(1:nCellsSolve))
+ call mpas_dmpar_max_int(dminfo,max_mxaerl,mxaerl)
+ write(0,101) max_mxaerl,mxaerl
+ 101 format(/,1x,'--- AEROSOLS:mxaerl on node = ',i5, &
+            /,1x,'    AEROSOLS:Background aerosol limited to bottom ',i5,' model interfaces')
+ if(allocated(mxaerl_local)) deallocate(mxaerl_local)
 
 !initialize indices for water species:
  ozncyc = .true.
@@ -671,7 +704,7 @@
     enddo
  enddo
 
- write(0,*) '--- end subroutine aer_optics_initialize:'
+ write(0,*) '    end subroutine aer_optics_initialize:'
 
  end subroutine aer_optics_initialize
 
