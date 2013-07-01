@@ -170,7 +170,7 @@ contains
        ! ======================================
 
 #if (defined ELEMENT_OPENMP)
-!$omp parallel do private(k,i,j,div_tmp,grad_div,grad_zeta,v1,v2)
+!$omp parallel do private(k,i,j,grad_tmp,div_tmp,grad_div,grad_zeta,v1,v2)
 #endif
        do k=1,nlev
           do j=1,np

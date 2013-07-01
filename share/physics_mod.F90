@@ -119,7 +119,7 @@ contains
     integer i,j,k
 
 #if (defined ELEMENT_OPENMP)
-!$omp parallel do private(k,q)
+!$omp parallel do private(k,i,j)
 #endif
     do k=1,nlev
        do j=1,np

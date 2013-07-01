@@ -1390,7 +1390,7 @@ contains
       if ( nu_p > 0 ) then
         do ie = nets , nete
 #if (defined ELEMENT_OPENMP)
-          !$omp parallel do private(k, q, dp0)
+          !$omp parallel do private(k, q, dp0, dpdiss)
 #endif
           do k = 1 , nlev    
             dp0 = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
@@ -1458,7 +1458,7 @@ contains
 
     ! advance Qdp
 #if (defined ELEMENT_OPENMP)
-!$omp parallel do private(q,k,gradQ,dp_star,qtens)
+!$omp parallel do private(q,k,gradQ,dp_star,qtens,dpdiss)
 #endif
     do q = 1 , qsize
       do k = 1 , nlev  !  dp_star used as temporary instead of divdp (AAM)
@@ -1676,15 +1676,15 @@ contains
      else
 	call edgeDGVunpack(edgeAdv_p1,qedges,nlev*qsize,0,elem(ie)%desc)
 	call edgeVunpack(edgeAdv_p1,DSSvar(:,:,1:nlev),nlev,qsize*nlev,elem(ie)%desc)
-#if (defined ELEMENT_OPENMP)
-!$omp parallel do private(k,q)
-#endif
 	do k=1,nlev
 	  DSSvar(:,:,k)=DSSvar(:,:,k)*elem(ie)%rspheremp(:,:)
 	enddo
      endif
 
      ! compute flux and advection term
+#if (defined ELEMENT_OPENMP)
+!$omp parallel do private(k)
+#endif
      do k=1,nlev
         dp(:,:,k) = elem(ie)%derived%dp(:,:,k) - &
              rhs_multiplier*dt*elem(ie)%derived%divdp_proj(:,:,k) 
@@ -1692,6 +1692,9 @@ contains
         Vstar(:,:,2,k) = elem(ie)%derived%vn0(:,:,2,k)/dp(:,:,k)
      enddo
 
+#if (defined ELEMENT_OPENMP)
+!$omp parallel do private(k,q,vtemp,divdp,pshat,i,j)
+#endif
      do q=1,qsize
         do k=1,nlev
            vtemp(:,:,1)=elem(ie)%state%Qdp(:,:,k,q,n0_qdp)*Vstar(:,:,1,k)
@@ -2138,7 +2141,7 @@ contains
     do ie = nets , nete
       !spheremp     => elem(ie)%spheremp
 #if (defined ELEMENT_OPENMP)
-!$omp parallel do private(q,k,i,j)
+!$omp parallel do private(q,k,i,j,dp0)
 #endif
       do q = 1 , qsize
         do k = 1 , nlev
