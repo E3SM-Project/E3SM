@@ -1,4 +1,10 @@
 MODULE module_ra_cam_support
+#if defined(mpas)
+! added mpas_atmphys_utilities so that we can call subroutine physics_abort in subroutine
+! background.
+! Laura D. Fowler (birch.ucar.edu) / 2013-07-01.
+  use mpas_atmphys_utilities
+#endif
   implicit none
       integer, parameter :: r8 = 8
       real(r8), parameter:: inf = 1.e20 ! CAM sets this differently in infnan.F90
@@ -1792,6 +1798,13 @@ subroutine background(lchnk, ncol, pint, pcols, pverr, pverrp, mmr)
 ! ratio depends on pressure thickness of the lowest three atmospheric
 ! layers near the surface.
 !
+#if defined(mpas)
+! add-on to sourcecode:
+! * check the value of mxaerl at the top of subroutine. If mxaerl is equal
+!   to zero, then MPAS aborts to avoid dividing by zero in the calculation
+!   of mass2mmr.
+!   Laura D. Fowler (birch.ucar.edu) / 2013-07-01.
+#endif
 !-----------------------------------------------------------------------
 !  use shr_kind_mod, only: r8 => shr_kind_r8
 !  use aer_optics, only: kbg,idxVIS
@@ -1824,6 +1837,11 @@ subroutine background(lchnk, ncol, pint, pcols, pverr, pverrp, mmr)
 !
 !-----------------------------------------------------------------------
 !
+#if defined(mpas)
+   if(mxaerl .eq. 0) &
+      call physics_error_fatal('CAMrad abort: mxaerl equals 0 in subroutine background')
+#endif
+
    do i=1,ncol
       mass2mmr =  gravmks / (pint(i,pverrp)-pint(i,pverrp-mxaerl))
       do k=1,pverr

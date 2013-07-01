@@ -41,12 +41,17 @@
 !> physics_init    : call initialization of individual physics parameterizations.
 !> init_dir_forphys: needed for initialization of "reconstruct" subroutines.
 !> r3_normalize    : needed for initialization of "reconstruct" subroutines.
+!>
+!> add-ons and modifications to sourcecode:
+!> ----------------------------------------
+!>    * added structure diag in calls to subroutine init_radiation_lw and init_radiation_sw.
+!>      Laura D. Fowler (birch.ucar.edu) / 2013-07-01.
 
 
  contains
 
 !==================================================================================================
- subroutine physics_init(dminfo,clock,config_do_restart,mesh,state_1,state_2, &
+ subroutine physics_init(dminfo,clock,config_do_restart,mesh,diag,state_1,state_2, &
                          diag_physics,sfc_input)
 !==================================================================================================
 
@@ -54,6 +59,7 @@
  logical,intent(in):: config_do_restart
  type (dm_info), intent(in):: dminfo
  type(mesh_type),intent(in):: mesh
+ type(diag_type),intent(in):: diag
  type(MPAS_Clock_type),intent(in):: clock
 
 !inout arguments:
@@ -178,7 +184,7 @@
  init_done = .false.
  if(config_radt_sw_scheme.ne.'off') then
     if(trim(config_radt_sw_scheme) .eq. 'cam_sw') then
-       call init_radiation_sw(dminfo,mesh,state_1,state_2)
+       call init_radiation_sw(dminfo,mesh,diag,state_1,state_2)
        init_done = .true.
     else
        call init_radiation_sw(dminfo)
@@ -191,7 +197,7 @@
  if(config_radt_lw_scheme.ne.'off') then    
     if(trim(config_radt_lw_scheme) .eq. 'cam_lw') then
        if(.not. init_done) then
-          call init_radiation_lw(dminfo,mesh,state_1,state_2)
+          call init_radiation_lw(dminfo,mesh,diag,state_1,state_2)
        else
           write(0,*)
           write(0,*) '--- camrad lw initialization done above'

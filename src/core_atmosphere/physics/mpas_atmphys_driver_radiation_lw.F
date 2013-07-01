@@ -59,6 +59,9 @@
 !>    * removed the pre-processor option "do_hydrostatic_pressure" before call to subroutines
 !>      rrtmg_lw and camrad.
 !>      Laura D. Fowler (birch.ucar.edu) / 2013-05-29.
+!>
+!>    * added structure diag in the call to subroutine init_radiation_lw.
+!>      Laura D. Fowler (birch.ucar.edu) / 2013-07-01.
 
  contains
 
@@ -472,12 +475,13 @@
  end subroutine radiation_camlw_to_MPAS
 
 !==================================================================================================
- subroutine init_radiation_lw(dminfo,mesh,state_1,state_2)
+ subroutine init_radiation_lw(dminfo,mesh,diag,state_1,state_2)
 !==================================================================================================
 
 !input arguments:
  type(dm_info),intent(in):: dminfo
- type(mesh_type),intent(in),optional :: mesh
+ type(mesh_type),intent(in),optional:: mesh
+ type(diag_type),intent(in),optional:: diag
 
 !inout arguments:
  type(state_type),intent(inout),optional:: state_1,state_2 
@@ -495,7 +499,7 @@
 
     case("cam_lw")
        write(0,*) '    enter subroutine camradinit:'
-       call camradinit(dminfo,mesh,state_1,state_2)
+       call camradinit(dminfo,mesh,diag,state_1,state_2)
        write(0,*) '    end subroutine camradinit'
     
     case default

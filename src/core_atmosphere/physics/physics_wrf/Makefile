@@ -48,6 +48,9 @@ module_ra_cam.o: \
 	module_ra_cam_support.o \
 	../mpas_atmphys_utilities.o
 
+module_ra_cam_support.o: \
+	../mpas_atmphys_utilities.o
+
 module_ra_rrtmg_lw.o: \
 	../mpas_atmphys_constants.o
 
