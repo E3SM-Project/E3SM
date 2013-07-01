@@ -35,9 +35,8 @@ createLSFHeader() {
 
   echo "#BSUB -a poe" >> $RUN_SCRIPT
 
-  # To do: move this check up and properly handle the error status
-  if [ -n "$HOMME_PROJID" ]; then
-    echo "#BSUB -P $HOMME_PROJID" >> $RUN_SCRIPT
+  if [ -n "$HOMME_ACCOUNT" ]; then
+    echo "#BSUB -P $HOMME_ACCOUNT" >> $RUN_SCRIPT
   else
     echo "PROJECT CHARGE ID (HOMME_PROJID) not set"
     exit -1
@@ -51,10 +50,6 @@ createLSFHeader() {
   echo "" >> $RUN_SCRIPT # newline
 
   echo "#BSUB -x" >> $RUN_SCRIPT
-
-  echo "" >> $RUN_SCRIPT # newline
-
-  echo "#BSUB -R \"select[scratch_ok > 0 ]\"" >> $RUN_SCRIPT
 
   echo "" >> $RUN_SCRIPT # newline
 
@@ -73,7 +68,36 @@ createLSFHeader() {
 
   echo "" >> $RUN_SCRIPT
 
-  echo "cd $outputDir" >> $RUN_SCRIPT
+}
+
+createPBSHeader() {
+
+  RUN_SCRIPT=$1
+
+  #delete the file if it exists
+  rm -f $RUN_SCRIPT
+
+  # Set up some yellowstone boiler plate
+  echo "#!/bin/bash -l" >> $RUN_SCRIPT
+  echo ""  >> $RUN_SCRIPT # newlines
+  
+  if [ -n "$HOMME_ACCOUNT" ]; then
+    echo "#PBS -A $HOMME_ACCOUNT" >> $RUN_SCRIPT
+  else
+    echo "PROJECT CHARGE ID (HOMME_PROJID) not set"
+    exit -1
+  fi 
+
+  # Set the output and error filenames
+  echo "#PBS -o $testName.stdout.\${PBS_JOBID}" >> $RUN_SCRIPT
+  echo "#PBS -e $testName.stderr.\${PBS_JOBID}" >> $RUN_SCRIPT
+
+  echo "#PBS -N $testName" >> $RUN_SCRIPT
+
+  echo "#PBS -l nodes=1" >> $RUN_SCRIPT
+  echo "#PBS -l walltime=0:40:00" >> $RUN_SCRIPT
+  # Not sure how to make the following portable
+  #echo "#PBS -l gres=widow1" >> $RUN_SCRIPT
 
   echo "" >> $RUN_SCRIPT
 
@@ -85,10 +109,6 @@ createStdHeader() {
   RUN_SCRIPT=$1
 
   echo "#!/bin/bash " >> $RUN_SCRIPT
-
-  echo "" >> $RUN_SCRIPT
-
-  echo "cd $outputDir" >> $RUN_SCRIPT
 
   echo "" >> $RUN_SCRIPT
 
@@ -119,6 +139,36 @@ printSubmissionSummary() {
 
 }
 
+examineJobStat() {
+  # submit the job to the queue
+  if [ "$HOMME_Submission_Type" = lsf ]; then
+    jobStat=`bjobs -a $jobID 2>&1 | tail -n 1 | awk '{print $3}'`
+    if [ -n "$jobStat" ] ; then
+      if [ "$jobStat" == "PEND" ] ; then
+        jobStat="pending" 
+      elif [ "$jobStat" == "RUN" ]; then
+        jobStat="running" 
+      fi
+    else
+      jobStat="completed" 
+    fi
+  elif [ "$HOMME_Submission_Type" = pbs ]; then
+    jobStat=`qstat $jobID 2>&1 | tail -n 1 | awk '{print $5}'`
+    if [ -n "$jobStat" ] ; then
+      if [ "$jobStat" == "Q" ] ; then
+        jobStat="pending" 
+      elif [ "$jobStat" == "R" ]; then
+        jobStat="running" 
+      fi
+    else
+      jobStat="completed" 
+    fi
+  else
+    echo "Error: queue type not recognized"
+    exit -1
+  fi
+}
+
 queueWait() {
 
   for i in $(seq 0 $(( ${#SUBMIT_TEST[@]} - 1)))
@@ -130,18 +180,19 @@ queueWait() {
     while ! $jobFinished;
     do
       # Test if the job exists
-      jobStat=`bjobs -a $jobID | tail -n 1 | awk '{print $3}'`
-
-      # Print the status of the job
-      echo -n "...$jobStat..."
+      examineJobStat
+      #jobStat=`bjobs -a $jobID | tail -n 1 | awk '{print $3}'`
 
       # if the job is registered in the queue and the status is PEND or RUN then wait
-      if [ -n "$jobStat" -a "$jobStat" == "PEND" -o "$jobStat" == "RUN" ]; then
+      if [ "$jobStat" == "pending" -o "$jobStat" == "running" ]; then
+        # Print the status of the job
+        echo -n "$jobStat..."
+
         # Job still in queue or running
         sleep 20 # sleep for 20s
       else # if jobStat=DONE, EXIT or it is finished and no longer registered in the queue
         jobFinished=true
-        echo "FINISHED..."
+        echo "finished."
       fi
     done
   done
@@ -181,7 +232,37 @@ queueWait() {
 #  done
 #}
 
-submitTestsToLSF() {
+submitToQueue() {
+  # submit the job to the queue
+  if [ "$HOMME_Submission_Type" = lsf ]; then
+    bsub < ${subFile} > $THIS_STDOUT 2> $THIS_STDERR
+  elif [ "$HOMME_Submission_Type" = pbs ]; then
+    qsub ${subFile} > $THIS_STDOUT 2> $THIS_STDERR
+  else
+    echo "Error: queue type not recognized"
+    exit -1
+  fi
+}
+
+getJobID() {
+  # submit the job to the queue
+  if [ "$HOMME_Submission_Type" = lsf ]; then
+    SUB_ID=`cat $THIS_STDOUT | awk '{print $2}' | sed  's/<//' | sed -e 's/>//'`
+  elif [ "$HOMME_Submission_Type" = pbs ]; then
+    SUB_ID=`cat $THIS_STDOUT | awk '{print $1}'`
+  else
+    echo "Error: queue type not recognized"
+    exit -1
+  fi
+}
+
+submitTestsToQueue() {
+
+  if [ "${CREATE_BASELINE}" == true ] ; then
+    cd ${HOMME_DEFAULT_BASELINE_DIR}
+  else
+    cd ${HOMME_TESTING_DIR}
+  fi
 
   if [ "${SUBMIT_ALL_AT_ONCE}" == true ] ; then
     echo "Submitting ${num_submissions} jobs to queue"
@@ -204,18 +285,19 @@ submitTestsToLSF() {
     THIS_STDERR=${subJobName}.err
 
     # Run the command
-    # For some reason bsub must not be part of a string
     echo -n "Submitting test ${subJobName} to the queue... "
-    bsub < ${subFile} > $THIS_STDOUT 2> $THIS_STDERR
-    BSUB_STAT=$?
+    submitToQueue ${subFile} $THIS_STDOUT $THIS_STDERR
+
+    SUB_STAT=$?
 
     # Do some error checking
-    if [ $BSUB_STAT == 0 ]; then
-      # the command was succesful
-      BSUB_ID=`cat $THIS_STDOUT | awk '{print $2}' | sed  's/<//' | sed -e 's/>//'`
-      echo "successful job id = $BSUB_ID"
+    if [ $SUB_STAT == 0 ]; then # the command was succesful
+      # Get the queue job ID
+      getJobID 
+
+      echo "successful job id = $SUB_ID"
       SUBMIT_TEST+=( "${subJobName}" )
-      SUBMIT_JOB_ID+=( "$BSUB_ID" )
+      SUBMIT_JOB_ID+=( "$SUB_ID" )
     else 
       echo "failed with message:"
       cat $THIS_STDERR
@@ -253,13 +335,18 @@ runTestsStd() {
     echo -n "Running test ${subJobName} ... "
     #echo "${subFile} > $THIS_STDOUT 2> $THIS_STDERR"
     chmod u+x ${subFile}
-    ${subFile} > $THIS_STDOUT 2> $THIS_STDERR &
-    RUN_PID=$!
+    # Don't want this to run in the background
+    #cmd='${subFile} > $THIS_STDOUT 2> $THIS_STDERR &'
+    cmd="${subFile} > $THIS_STDOUT 2> $THIS_STDERR"
+    echo "$cmd"
+    $cmd
+    RUN_PID=$?
     echo "PID=$RUN_PID"
-    wait $RUN_PID
-    RUN_STAT=$?
+    RUN_STAT=${RUN_PID}
+    #wait $RUN_PID
+    #RUN_STAT=$?
     # Technically the PID is incorrect but it really doesn't matter
-    RUN_PID=$!
+    #RUN_PID=$!
     # Do some error checking
     if [ $RUN_STAT = 0 ]; then
       # the command was succesful
@@ -293,14 +380,25 @@ createAllRunScripts() {
       echo "  and $omp_num_tests Hybrid MPI + OpenMP tests"
     fi
 
-    # Create the run script
-    thisRunScript=`dirname ${!testFile}`/$testName-run.sh
+    if [ "${CREATE_BASELINE}" == true ] ; then
+      # Create the run script
+      thisRunScript="${HOMME_DEFAULT_BASELINE_DIR}/$testName/$testName-run.sh"
+      outputDir="${HOMME_DEFAULT_BASELINE_DIR}/$testName"
+    else
+      # Create the run script
+      thisRunScript=`dirname ${!testFile}`/$testName-run.sh
+      outputDir=`dirname ${!testFile}`
+    fi
 
-    outputDir=`dirname ${!testFile}`
+    # delete the run script file if it exists
+    rm -f ${thisRunScript}
 
     # Set up header
-    #yellowstoneLSFFile $thisRunScript
     submissionHeader $thisRunScript
+
+    # cd into the correct dir
+    echo "cd $outputDir" >> $RUN_SCRIPT
+    echo "" >> $RUN_SCRIPT # new line
 
     for testNum in $(seq 1 $num_tests)
     do
@@ -312,8 +410,9 @@ createAllRunScripts() {
       echo "" >> $thisRunScript # new line
     done
 
-    if [ -n "$omp_num_tests" -a "${RUN_OPENMP}" == true ]; then
+    if [ -n "$omp_num_tests" -a "${RUN_OPENMP}" = TRUE ]; then
       echo "export OMP_NUM_THREADS=$omp_number_threads" >> $thisRunScript
+      echo "export OMP_STACKSIZE=128M" >> $thisRunScript
       echo "" >> $thisRunScript # new line
       for testNum in $(seq 1 $omp_num_tests)
       do
@@ -326,7 +425,69 @@ createAllRunScripts() {
       done
     fi
 
+    ############################################################
+    # At this point, the submission files have been created.
+    # For the baseline, we are finished. 
+    # For the cprnc diffing we need to add that
+    ############################################################
+    if [ "${CREATE_BASELINE}" == false ] ; then 
+      mkdir -p ${HOMME_DEFAULT_BASELINE_DIR}/${testName}
+      echo "cp $thisRunScript ${HOMME_BASELINE_DIR}/${testName}/"
+      cp $thisRunScript ${HOMME_BASELINE_DIR}/${testName}/
+
+      ############################################################
+      # Now set up the cprnc diffing
+      ############################################################
+      # load the cprnc files for this run
+      FILES="${nc_output_files}"
+
+      if [ -z "${FILES}" ] ; then
+          echo "Test ${TEST_NAME} doesn't have Netcdf output files"
+      fi
+
+      # for files in movies
+      for file in $FILES 
+      do
+        echo "file = ${file}"
+        baseFilename=`basename $file`
+
+        # new result
+        newFile=${HOMME_TESTING_DIR}/${testName}/movies/$file
+
+        #if [ ! -f "${newFile}" ] ; then
+        #  echo "Error: The result file ${newFile} does not exist. Exiting" 
+        #  exit -1
+        #fi
+
+        # result in the repo
+        repoFile=${HOMME_BASELINE_DIR}/${testName}/movies/${baseFilename}
+
+        #if [ ! -f "${newFile}" ] ; then
+        #  echo "Warning: The repo file ${repoFile} does not exist in the baseline dir"
+        #  exit 0
+        #fi
+
+
+        diffStdout=${testName}.${baseFilename}.out
+        diffStderr=${testName}.${baseFilename}.err
+
+        echo "# Running cprnc to difference ${baseFilename} against baseline " >> $thisRunScript
+        #echo "$cmd > $diffStdout 2> $diffStderr" >> $thisRunScript
+        cmd="${CPRNC_BINARY} ${newFile} ${repoFile} > $diffStdout 2> $diffStderr"
+        #echo "  $cmd"
+        serExecLine $thisRunScript "$cmd"
+        echo "" >> $thisRunScript # blank line
+      done
+
+    fi
+    ############################################################
+    # Finished setting up cprnc
+    ############################################################
+
     echo "subFile$testFileNum=$thisRunScript" >>  $lsfListFile
+
+    # Make the script executable
+    chmod u+x ${thisRunScript}
 
     # Reset the variables (in case they are not redefined in the next iteration)
     unset omp_num_tests
@@ -347,10 +508,9 @@ createRunScript() {
     echo "  and $omp_num_tests Hybrid MPI + OpenMP tests"
   fi
 
-
-
   # Create the run script
   thisRunScript=`dirname ${THIS_TEST_FILE}`/$testName-run.sh
+  rm -f ${thisRunScript}
 
   outputDir=`dirname ${THIS_TEST_FILE}`
 
@@ -377,6 +537,9 @@ createRunScript() {
     done
   fi
 
+  # make it executable
+  chmod u+x ${thisRunScript}
+
   # Reset the variables (in case they are not redefined in the next iteration)
   #unset omp_num_tests
   #unset num_tests
@@ -389,6 +552,10 @@ submissionHeader() {
 
   if [ "$HOMME_Submission_Type" = lsf ]; then
     createLSFHeader $RUN_SCRIPT
+  elif [ "$HOMME_Submission_Type" = pbs ]; then
+    echo "creating PBS header"
+    createPBSHeader $RUN_SCRIPT
+    echo "finishd creating PBS header"
   else
     createStdHeader $RUN_SCRIPT
   fi
@@ -400,12 +567,51 @@ execLine() {
   EXEC=$2
   NUM_CPUS=$3
 
-  if [ "$HOMME_Submission_Type" = lsf ]; then
-    echo "mpirun.lsf $EXEC" >> $RUN_SCRIPT
+  if [ -n "${MPI_EXEC}" ]; then
+    # mpirun.lsf is a special case
+    if [ "${MPI_EXEC}" = "mpirun.lsf" ] ; then
+      echo "mpirun.lsf -pam \"-n ${NUM_CPUS}\" ${MPI_OPTIONS} $EXEC" >> $RUN_SCRIPT
+    else
+      echo "${MPI_EXEC} -n ${NUM_CPUS} ${MPI_OPTIONS} $EXEC" >> $RUN_SCRIPT
+    fi
   else
-    echo "mpiexec -n $NUM_CPUS $EXEC" >> $RUN_SCRIPT
+    if [ "$HOMME_Submission_Type" = lsf ]; then
+      echo "mpirun.lsf -pam \"-n ${NUM_CPUS}\" ${MPI_OPTIONS} $EXEC" >> $RUN_SCRIPT
+
+    elif [ "$HOMME_Submission_Type" = pbs ]; then
+      echo "aprun -n ${NUM_CPUS} ${MPI_OPTIONS} $EXEC" >> $RUN_SCRIPT
+
+    else
+      echo "mpiexec -n ${NUM_CPUS} ${MPI_OPTIONS} $EXEC" >> $RUN_SCRIPT
+
+    fi
   fi
 }
+
+serExecLine() {
+  RUN_SCRIPT=$1
+  EXEC=$2
+
+  if [ -n "${MPI_EXEC}" ]; then
+    # mpirun.lsf is a special case
+    if [ "${MPI_EXEC}" = "mpirun.lsf" ] ; then
+      echo "mpirun.lsf -pam \"-n 1\" ${MPI_OPTIONS} $EXEC" >> $RUN_SCRIPT
+    else
+      echo "${MPI_EXEC} -n 1 ${MPI_OPTIONS} $EXEC" >> $RUN_SCRIPT
+    fi
+
+  else
+    if [ "$HOMME_Submission_Type" = lsf ]; then
+      echo "mpirun.lsf -pam \"-n 1\"  ${MPI_OPTIONS} $EXEC" >> $RUN_SCRIPT
+    elif [ "$HOMME_Submission_Type" = pbs ]; then
+      echo "aprun -n 1 ${MPI_OPTIONS} $EXEC" >> $RUN_SCRIPT
+    else
+      echo "mpiexec -n 1 ${MPI_OPTIONS} $EXEC" >> $RUN_SCRIPT
+    fi
+  fi
+}
+
+
 
 diffCprnc() {
 
@@ -414,14 +620,14 @@ diffCprnc() {
     exit -1
   fi
 
-  # source the test.sh file to get the name of the nc_output_files
+  # source the test.sh file to get the names of the nc_output_files
   source ${HOMME_TESTING_DIR}/${TEST_NAME}/${TEST_NAME}.sh
 
   # nc_output_files is defined in the .sh file
   FILES="${nc_output_files}"
 
   if [ -z "${FILES}" ] ; then
-    echo "Test ${TEST_NAME} doesn't have Netcdf output files"
+      echo "Test ${TEST_NAME} doesn't have Netcdf output files"
   fi
 
   # for files in movies
@@ -438,7 +644,9 @@ diffCprnc() {
     fi
 
     # result in the repo
-    repoFile=${HOMME_NC_RESULTS_DIR}/${TEST_NAME}/${baseFilename}
+    #repoFile=${HOMME_NC_RESULTS_DIR}/${TEST_NAME}/${baseFilename}
+    repoFile=${HOMME_BASELINE_DIR}/${TEST_NAME}/movies/${baseFilename}
+
     if [ ! -f "${newFile}" ] ; then
       echo "ERROR: The repo file ${repoFile} does not exist exiting" 
       exit -1
@@ -463,10 +671,57 @@ diffCprnc() {
       rm $diffStderr
     else
       echo "The files are different: DIFF_RESULT=${DIFF_RESULT}"
-      echo "  The diff output is available in $diffStdout"
+      #echo "  The diff output is available in $diffStdout"
+      echo "############################################################################"
+      echo "CPRNC returned the following RMS differences"
+      grep RMS ${diffStdout}
+      echo "############################################################################"
       exit -1
     fi
 
+    
+  done
+}
+
+diffCprncOutput() {
+
+  # source the test.sh file to get the names of the nc_output_files
+  source ${HOMME_TESTING_DIR}/${TEST_NAME}/${TEST_NAME}.sh
+
+  # nc_output_files is defined in the .sh file
+  FILES="${nc_output_files}"
+
+  if [ -z "${FILES}" ] ; then
+      echo "Test ${TEST_NAME} doesn't have Netcdf output files"
+  fi
+
+  # for files in movies
+  for file in $FILES 
+  do
+    echo "file = ${file}"
+    cprncOutputFile="${HOMME_TESTING_DIR}/${TEST_NAME}/${TEST_NAME}.`basename $file`.out"
+    cprncErrorFile="${HOMME_TESTING_DIR}/${TEST_NAME}/${TEST_NAME}.`basename $file`.err"
+
+    # ensure that cprncOutputFile exists
+    if [ ! -f "${cprncOutputFile}" ]; then
+      echo "Error: cprnc output file ${cprncOutputFile} not found. Exiting."
+      exit -1
+    fi
+
+    # Parse the output file to determine if they were identical
+    DIFF_RESULT=`grep -e 'diff_test' ${cprncOutputFile} | awk '{ print $8 }'`
+
+    if [ "${DIFF_RESULT}" == IDENTICAL ] ; then
+      echo "The files are identical: DIFF_RESULT=${DIFF_RESULT}"
+      # Delete the output file to remove clutter
+    else
+      echo "The files are different: DIFF_RESULT=${DIFF_RESULT}"
+      echo "############################################################################"
+      echo "CPRNC returned the following RMS differences"
+      grep RMS ${cprncOutputFile}
+      echo "############################################################################"
+      exit -1
+    fi
     
   done
 }
@@ -493,6 +748,9 @@ diffStdout() {
       echo "${diffOutput}"
     elif [ "${fileDifference}" == different ]; then
       echo "${diffOutput}"
+      echo "diff of output: "
+      diffCmd="diff ${PARSE_RESULT} ${SAVED_RESULT}"
+      $diffCmd
       exit -1
     else
       echo "File comparison failed to yield expected result (identical,simlar,different)"
@@ -503,6 +761,16 @@ diffStdout() {
   else
     echo "$cmd failed with error code $diffCode"
     echo "diffTol Output: ${diffOutput}"
+    echo "############################################################################"
+    diffOutputFile=`dirname ${PARSE_RESULT}`/`basename ${PARSE_RESULT}`.diff
+    diffCmd="diff ${PARSE_RESULT} ${SAVED_RESULT}"
+    $diffCmd > $diffOutputFile
+    echo "The full diff of the two files is available in"
+    echo "${diffOutputFile}"
+    echo "here are the first 50 lines"
+    #echo `head -n 50 $diffOutputFile`
+    head -n 50 $diffOutputFile
+    echo "############################################################################"
     exit -1
   fi
 
@@ -530,3 +798,103 @@ parseStdout() {
 
   done
 }
+
+moveBaseline() {
+
+  source ${HOMME_TESTING_DIR}/test_list.sh
+
+  for subNum in $(seq 1 ${num_test_files})
+  do
+
+    subFile=test_file${subNum}
+    subFile=${!subFile}
+
+    subDirName=`dirname ${subFile}`
+    subBaseName=`basename ${subDirName}`
+
+    baselineDir=${HOMME_BASELINE_DIR}/$subBaseName
+    mkdir -p $baselineDir
+
+    # source the test.sh file to get the name of the nc_output_files
+    source ${subFile}
+
+    # nc_output_files is defined in the .sh file
+    FILES="${nc_output_files}"
+
+    if [ -z "${FILES}" ] ; then
+      : # pass for now
+      #echo "Test ${subBaseName} doesn't have Netcdf output files"
+    fi
+
+    # for files in movies
+    for file in $FILES 
+    do
+      #echo "file = ${file}"
+      baseFilename=`basename $file`
+
+      # new result
+      newFile=${subDirName}/movies/$file
+      newFileBasename=`basename $newFile`
+
+      if [ ! -f "${newFile}" ] ; then
+        echo "ERROR: The result file ${newFile} does not exist exiting" 
+        exit -1
+      fi
+
+      # Make the directory to store the netcdf files
+      cmd="mkdir -p $baselineDir/movies"
+      #echo $cmd
+      $cmd
+      # Move the netcdf files
+      cmd="mv $newFile $baselineDir/movies/$newFileBasename"
+      #echo "$cmd"
+      $cmd
+      
+    done
+  done
+}
+
+checkBaselineResults() {
+
+  filesNotFound=false
+
+  for testFileNum in $(seq 1 $num_test_files)
+  do
+
+    testFile=test_file${testFileNum}
+    source ${!testFile}
+
+    testName=`basename ${!testFile} .sh`
+
+    FILES="${nc_output_files}"
+
+
+    if [ -z "${FILES}" ] ; then
+      echo "Test ${TEST_NAME} doesn't have Netcdf output files"
+    fi
+
+    # for files in movies
+    for file in $FILES 
+    do
+      baseFilename=`basename $file`
+
+      # result in the repo
+      repoFile=${HOMME_BASELINE_DIR}/${testName}/movies/${baseFilename}
+
+      if [ ! -f "${repoFile}" ] ; then
+        echo "Error: The Netcdf file ${repoFile} does not exist in the baseline dir"
+        filesNotFound=true
+      fi
+
+    done
+
+  done
+
+  # Throw an error if any of the files to be compared were not found
+  if $filesNotFound ; then
+    exit -1
+  fi
+
+}
+
+

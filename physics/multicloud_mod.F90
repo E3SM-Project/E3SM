@@ -28,6 +28,7 @@ module multicloud_mod
   implicit none
 
   private
+  save
 
   public :: Multicloud_init
   public :: Prim_Advance_Multicloud

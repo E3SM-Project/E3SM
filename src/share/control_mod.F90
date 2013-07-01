@@ -10,11 +10,11 @@ module control_mod
 
   integer, public, parameter :: MAX_STRING_LEN=80
   integer, public, parameter :: MAX_FILE_LEN=240
-  character(len=MAX_STRING_LEN)    , public :: integration    ! time integration (explicit or semi_implicit)
+  character(len=MAX_STRING_LEN)    , public :: integration    ! time integration (explicit, semi_imp, or full imp)
 
 ! none of this is used anymore:
   integer, public, parameter :: TRACERADV_UGRADQ=0            !  u grad(Q) formulation
-  integer, public, parameter :: TRACERADV_TOTAL_DIVERGENCE=1   ! div(u dp/dn Q ) formulation                                                    
+  integer, public, parameter :: TRACERADV_TOTAL_DIVERGENCE=1   ! div(u dp/dn Q ) formulation
   integer, public  :: tracer_advection_formulation  = TRACERADV_TOTAL_DIVERGENCE
 
 !shallow water advection tests:
@@ -31,22 +31,16 @@ module control_mod
                                                                ! ftype = 0  HOMME ApplyColumn() type forcing process split
                                                                ! ftype = -1   ignore forcing  (used for testing energy balance)
   integer, public  :: use_cpstar=0                             ! use cp or cp* in T equation                               
-  integer, public  :: energy_fixer = 0    ! options appropriate for leapfrog:
-                                          !   0:  no fixer, compute energy staggered in time
-                                          !   1:  Energy with cp_star, staggered (for debug only)
-                                          !   2:  Energy with cp, staggered
-                                          ! options appropreate for forward-in-time
-                                          ! -1,-2:  no fixer, compute energy non-staggered in time
-                                          !   3:  Energy with cp_star, non-staggered (for debug only)
-                                          !   4:  Energy with cp, non-staggered
+  integer, public  :: energy_fixer = 0    !  -1: No fixer, use non-staggered formula
+                                          !   0: No Fixer, use staggered in time formula
+                                          !       (only for leapfrog)
+                                          !   1 or 4:  Enable fixer, non-staggered formula
 
-
-                                          ! 1 = CAM style fixer  Tnew = T + beta
                                               
   integer, public :: qsplit = 1           ! ratio of dynamics tsteps to tracer tsteps
   integer, public :: rsplit = 0           ! for vertically lagrangian dynamics, apply remap
                                           ! every rsplit tracer timesteps
-  integer, public :: physics = 0          ! Defines if the program is to use its own phsyics (HOMME standalone), valid values 1,2,3
+  integer, public :: physics = 0          ! Defines if the program is to use its own physics (HOMME standalone), valid values 1,2,3
                                           ! physics = 0, no physics
                                           ! physics = 1, Use physics
   integer, public :: LFTfreq=0            ! leapfrog-trapazoidal frequency
@@ -57,9 +51,18 @@ module control_mod
   integer, public :: compute_mean_flux=-1
 
 ! vert_remap_q_alg:    0  default value, Zerroukat monotonic splines
-!                      1  PPM vertical remap with mirroring at the boundaries (solid wall bc's, high-order throughout)
-!                      2  PPM vertical remap without mirroring at the boundaries (no bc's enforced, first-order at two cells bordering top and bottom boundaries)
+!                      1  PPM vertical remap with mirroring at the boundaries
+!                         (solid wall bc's, high-order throughout)
+!                      2  PPM vertical remap without mirroring at the boundaries
+!                         (no bc's enforced, first-order at two cells bordering top and bottom boundaries)
   integer, public :: vert_remap_q_alg = 0
+
+
+ integer, public :: cubed_sphere_map = -1  ! -1 = chosen at run time
+                                           !  0 = equi-angle Gnomonic (default)
+                                           !  1 = equi-spaced Gnomonic (not yet coded)
+                                           !  2 = element-local projection  (for var-res)
+                                           !  3 = parametric (not yet coded)
 
 !tolerance to define smth small, was introduced for lim 8 in 2d and 3d
   real (kind=real_kind), public, parameter :: tol_limiter=1e-13
@@ -119,7 +122,8 @@ module control_mod
 
   integer              , public :: while_iter
   integer              , public :: fine_ne = -1              ! set for refined exodus meshes (variable viscosity)
-  real (kind=real_kind), public :: max_hypervis_courant = 1d99 ! upper bound for Courant number (only used for variable viscosity, recommend 1.9 in namelist)
+  real (kind=real_kind), public :: max_hypervis_courant = 1d99 ! upper bound for Courant number
+                                                               ! (only used for variable viscosity, recommend 1.9 in namelist)
   real (kind=real_kind), public :: nu      = 7.0D5           ! viscosity (momentum equ)
   real (kind=real_kind), public :: nu_div  = -1              ! viscsoity (momentum equ, div component)
   real (kind=real_kind), public :: nu_s    = -1              ! default = nu   T equ. viscosity
@@ -134,10 +138,35 @@ module control_mod
 
   real (kind=real_kind), public :: hypervis_power=0     ! if not 0, use variable hyperviscosity based on element area          
 
-  integer, public :: which_vlaplace=1    ! 1= vector laplace based on vector identities
+  real (kind=real_kind), public :: hypervis_scaling=0      ! use tensor hyperviscosity
+                                                           ! if turned on, requires which_vlaplace=2
+
+!three types of viscosity are supported right now:
+! (1) const hv, i.e., the operator nu * (\div \grad)^hypervis_order
+! (2) variable-within-element (or just variable) hv, the operator nu * (viscosity \div \grad )^hypervis_order
+! (3) tensor hv,  nu * ( \div * tensor * \grad )^hypervis_order
+!
+! (1) default:  which_vlaplace=0,1 or 2
+!               hypervis_power=0, hypervis_scaling=0
+! (2) Mike's original version for var-res grids.  
+!            scalar coefficient within each element
+!            which_vlaplace=0,1 or 2
+!            hypervisc_scaling=0
+!            set hypervis_power>0 and set fine_ne, max_hypervis_courant
+! (3) tensor HV var-res grids 
+!            tensor within each element:
+!            which_vlaplace=2    
+!            set hypervis_scaling > 0 (typical values would be 3.2 or 4.0)
+!            hypervis_power=0
+!
+!
+
+  integer, public :: which_vlaplace=0    ! 0= new spherical laplace
+                                         ! 1= orig (buggy) spherical laplace
 					 ! 2= vector laplace based on transform to cartesian
-					 ! tensor HV would only work with (2) (impossible to overcome right now), 
-					 ! const or variable hv would work with (1) or (2)  
+
+
+
 
 
   ! hyperviscosity parameters used for smoothing topography

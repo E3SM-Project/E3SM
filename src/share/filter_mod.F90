@@ -253,6 +253,12 @@ contains
 
   function bvsigma(p,x) result(sigma)
 
+#ifdef CAM
+    ! CAM code is required to use this function, to handle differences in
+    ! Fortran 2008 support and compiler extensions.
+    use shr_spfn_mod, only: erfc => shr_spfn_erfc
+#endif
+
     real (kind=real_kind), intent(in) :: p
     real (kind=real_kind), intent(in) :: x
     real (kind=real_kind)             :: sigma
@@ -265,10 +271,11 @@ contains
 #if 0
     real (kind=real_kind) :: tmp
 #endif
-#ifdef CAM
-    real*8  :: erfc
-#else
-    real*8  :: derfc   ! why cant non-CAM use the generic name?
+
+    ! For some old (pre-F2008) compilers, this is safer than "erfc", which
+    ! is sometimes only single precision (not generic).
+#ifndef CAM
+    real*8  :: derfc
 #endif
     call t_startf('bvsigma')
 
@@ -856,7 +863,7 @@ contains
        ! ======================================
        ! Rotate cube velocities onto the sphere
        ! ======================================
-       if( integration == "explicit" )then
+       if( integration == "explicit" ) then
           do j=1,np
              do i=1,np
                 v1 = v(i,j,1,k)
@@ -885,7 +892,7 @@ contains
        ! ======================================
        ! Rotate sphere velocities onto the cube
        ! ======================================
-       if( integration == "explicit" )then
+       if( integration == "explicit" )  then
           do j=1,np
              do i=1,np
                 v1 = usph(i,j)
@@ -1065,7 +1072,7 @@ contains
 #endif
           do k=1,nlev
              call filter_P(elem(ie)%state%T(:,:,k,nfilt),flt)
-             if( integration == "explicit" )then
+       if( integration == "explicit" ) then
                 do j=1,np
                    do i=1,np
                       v1 = elem(ie)%state%v(i,j,1,k,nfilt)*rrearth
@@ -1088,7 +1095,7 @@ contains
              call filter_P(u(:,:),flt)
              call filter_P(v(:,:),flt)
 
-             if( integration == "explicit" )then
+       if( integration == "explicit" ) then
                 do j=1,np
                    do i=1,np
                       v1 = u(i,j)*rearth

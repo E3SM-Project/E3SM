@@ -67,9 +67,8 @@ contains
   ! len          problem vector length
   ! hybrid       general parallel descriptor
   ! debug_level  debugging level (optional)   0 = no debugging 
-  !                                           1 = print fast residuals
-  !                                           2 = use bit-for-bit reductions
-  !                                           3 = print bit-for bit residuals
+  !                                           1 = info at last iteration
+  !                                           2 = info for all iterations
   !         
   ! =======================================================
 
@@ -220,11 +219,14 @@ contains
 
              global_shared_buf(ie,1:3) = 0.d0
              do i=1,cg%len
-                cg%state(ie)%p(i,k)    = cg%state(ie)%z(i,k)                    ! p_1 = z_1
-                cg%state(ie)%v(i,k)    = cg%state(ie)%s(i,k)                    ! p_1 = z_1
-                global_shared_buf(ie,1)     = global_shared_buf(ie,1)     + cg%wts(i,ie)*cg%state(ie)%z(i,k)*cg%state(ie)%r(i,k) ! <z_1,r_1>
-                global_shared_buf(ie,2)     = global_shared_buf(ie,2)     + cg%wts(i,ie)*cg%state(ie)%p(i,k)*cg%state(ie)%v(i,k) ! <p_1,v_1>
-                global_shared_buf(ie,3)  = global_shared_buf(ie,3)  + cg%wts(i,ie)*cg%state(ie)%r(i,k)*cg%state(ie)%r(i,k) ! <b  ,b  >
+                cg%state(ie)%p(i,k)     = cg%state(ie)%z(i,k) ! p_1 = z_1  r_1
+                cg%state(ie)%v(i,k)     = cg%state(ie)%s(i,k) ! v_1 = s_1  LHS(r_1)
+                global_shared_buf(ie,1) = global_shared_buf(ie,1) + &
+                     cg%wts(i,ie)*cg%state(ie)%z(i,k)*cg%state(ie)%r(i,k) ! <z_1,r_1>
+                global_shared_buf(ie,2) = global_shared_buf(ie,2) + &
+                     cg%wts(i,ie)*cg%state(ie)%p(i,k)*cg%state(ie)%v(i,k) ! <p_1,v_1>
+                global_shared_buf(ie,3) = global_shared_buf(ie,3) + &
+                     cg%wts(i,ie)*cg%state(ie)%r(i,k)*cg%state(ie)%r(i,k) ! <b  ,b  >
              end do
           end do
           call wrap_repro_sum(nvars=3, comm=cg%hybrid%par%comm)
@@ -253,7 +255,7 @@ contains
           alpha = gamma/sigma
           do ie=1,cg%nblks
              do i=1,cg%len
-                cg%state(ie)%x(i,k) =        alpha*cg%state(ie)%p(i,k)   ! x_2 = x_1 + alpha*p_1 , recall x1=0
+                cg%state(ie)%x(i,k) = alpha*cg%state(ie)%p(i,k)   ! x_2 = x_1 + alpha*p_1 , recall x1=0
                 cg%state(ie)%r(i,k) = cg%state(ie)%r(i,k) - alpha*cg%state(ie)%v(i,k)   ! r_2 = r_1 - alpha*v_1
              end do
           end do
@@ -261,9 +263,8 @@ contains
           !          end if
        end do
 
-       if (cg%debug_level == 1 .or. cg%debug_level == 3) then
+       if (cg%debug_level == 2) then
           if (cg%hybrid%par%masterproc .and. cg%hybrid%ithr == 0) then
-             print *
              print *,"++++++++++++++++++++++++++++"
              do k=1,SIZE(eps)
                 print *,"iter = ",cg%iter,"eps(",k,")=",eps(k)," rhs_norm(",k,")=",cg%rhs_norm(k)
@@ -295,9 +296,12 @@ contains
              do ie=1,cg%nblks
                 global_shared_buf(ie,1:3) = 0.d0
                 do i=1,cg%len
-                   global_shared_buf(ie,1)=global_shared_buf(ie,1) + cg%wts(i,ie)*cg%state(ie)%z(i,k)*cg%state(ie)%r(i,k)     ! gamma_k = <z_k,r_k>
-                   global_shared_buf(ie,2)=global_shared_buf(ie,2) + cg%wts(i,ie)*cg%state(ie)%z(i,k)*cg%state(ie)%s(i,k)     ! delta_k = <z_k,s_k>
-                   global_shared_buf(ie,3)=global_shared_buf(ie,3)  + cg%wts(i,ie)*cg%state(ie)%r(i,k)*cg%state(ie)%r(i,k)
+                   global_shared_buf(ie,1)=global_shared_buf(ie,1) + &
+                        cg%wts(i,ie)*cg%state(ie)%z(i,k)*cg%state(ie)%r(i,k)     ! gamma_k = <z_k,r_k>
+                   global_shared_buf(ie,2)=global_shared_buf(ie,2) + &
+                        cg%wts(i,ie)*cg%state(ie)%z(i,k)*cg%state(ie)%s(i,k)     ! delta_k = <z_k,s_k>
+                   global_shared_buf(ie,3)=global_shared_buf(ie,3) + &
+                        cg%wts(i,ie)*cg%state(ie)%r(i,k)*cg%state(ie)%r(i,k)
                 end do
              end do
              call wrap_repro_sum(nvars=3, comm=cg%hybrid%par%comm)
@@ -341,9 +345,8 @@ contains
           end if
        end do
 
-       if (cg%debug_level == 1 .or. cg%debug_level == 3) then
+       if (cg%debug_level == 2) then
           if (cg%hybrid%par%masterproc .and. cg%hybrid%ithr == 0) then
-             print *
              print *,"++++++++++++++++++++++++++++"
              do k=1,SIZE(eps)
                 print *,"iter = ",cg%iter,"eps(",k,")=",eps(k)," rhs_norm(",k,")=",cg%rhs_norm(k)
@@ -353,6 +356,16 @@ contains
 
        cg%iter=cg%iter+1
        if (cg%iter==maxits .or. ALL(eps(:) < tol)) then
+          if (cg%debug_level == 1) then
+          if (cg%hybrid%par%masterproc .and. cg%hybrid%ithr == 0) then
+             print *
+             print *,"++++++++++++++++++++++++++++"
+             do k=1,SIZE(eps)
+                print *,"iter = ",cg%iter,"eps(",k,")=",eps(k)," rhs_norm(",k,")=",cg%rhs_norm(k)
+             end do
+          end if
+          end if
+
 	  !=================================================================
 	  ! hopefully this will provide a slightly more reliable branch test 
 	  !=================================================================

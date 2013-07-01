@@ -1,5 +1,21 @@
-
+5/1/2013 updated by Aaron Lott, Andy Salinger, and Kate Evans for a more modern interface
+adding a block preconditioner, using piro, and allowing a 3D and 2D solve using the same 
+xstate passed through.
 __________________
+
+To use the implicit solver for the 2D or 3D version of HOMME, copy over the 
+trilinosOptions.xml into the run directory you will use. 
+
+To build and run the fully implicit solver option, first build the code with
+the SWIM and PRIM options enabled. A working build of trilinos with the packages 
+required by the LOCA/NOX solver is needed. This version of the code is kept 
+current with the default build of Trilinos on ORNL's Titan system.
+
+Then select the integration='full_imp' option in the namelist, and copy over the
+.xml files, as instructed above, to the run directory and run the code as desired.
+  
+-------------------
+
 7/31/2009 directory added to the repository for eventual link to the implicit
 solver option in /src/implicit_mod.F90, which has routines that call the
 subroutines in this directory: noxinit, noxsolve, and noxfinalize
@@ -18,20 +34,6 @@ input.xml.2d file and precon.xml files need to be copied into the local director
 of the model run as input.xml and precon.xml so that the solver parameters can 
 be assigned. These templates are provided as a starting point. 
 
-12/17/2010 To use the implicit solver for the 3D version of HOMME, copy over the 
-input.xml.3d file to input.xml (along with precon.xml as with the 2D) into 
-the run directory you will use. Right now it is set to produce maximum output for 
-analysis.
-
-To build and run the fully implicit solver option, first build the code with
-the 'make swim' (shallow water) or 'make prim' (3D) commands in the build.Linux 
-directory. A working build of trilinos with the packages required by the 
-LOCA/NOX solver is needed. This version of the code is kept current with the 
-default build of Trilinos on ORNL's Jaguar system.
-
-Then select the integration='full_imp' option in the namelist, and copy over the
-.xml files, as instructed above, to the run directory and run the code as desired.
-  
 For more information or assistance contact:
 Kate Evans
 Oak Ridge National Laboratory

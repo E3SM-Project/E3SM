@@ -1,8 +1,7 @@
-/* Energy Diagnostics */
-#undef ENERGY_DIAGNOSTICS
+/* SWIM options */
 
-/* Enable external mesh file */
-#undef MESH
+/* Energy Diagnostics */
+#cmakedefine ENERGY_DIAGNOSTICS
 
 /* PIO with interpolation */
 #cmakedefine PIO_INTERP
@@ -12,9 +11,6 @@
 
 /* Number of POINTS in the element (Default value is 4) */
 #define NP @NUM_POINTS@
-
-/* Number of TRACERS (Default value is 1) */
-#define NTRAC @NUM_TRACERS@
 
 /* Number of POINTS in the element (Default value is 1) */
 #define PLEV @NUM_PLEV@
@@ -28,24 +24,11 @@
 /* Using MPI */
 #define _MPI 1
 
-/* SPHEREW */
-#define SPHEREW 1
-
-/* NOTRACE */
-#define _NOTRACE 1
-
-/* _NO_OMP_THREADS */
-#define _NO_OMP_THREADS 1
-
 /* Using PRESTART */
 #define _PRESTART 1
 
 /* _WK_GRAD */
 #define _WK_GRAD 1
-
-#define _NONSTAGGER
-
-#define MOVIE _PIO
 
 #define TRILINOS 1
 

@@ -303,7 +303,6 @@ contains
     integer :: np1
     real (kind=real_kind) :: lat_mtn,lon_mtn,r_mtn,h_mtn,rsq,lat,lon
 
-
     nm1= 1
     n0 = 2
     np1= 3
@@ -311,11 +310,11 @@ contains
     do ie=nets,nete
        elem(ie)%state%lnps(:,:,n0) =LOG(hvcoord%ps0)
        elem(ie)%state%lnps(:,:,nm1)=LOG(hvcoord%ps0)
-       elem(ie)%state%lnps(:,:,np1)=0.0D0
+       elem(ie)%state%lnps(:,:,np1)=LOG(hvcoord%ps0)
 
        elem(ie)%state%ps_v(:,:,n0) =hvcoord%ps0
        elem(ie)%state%ps_v(:,:,nm1)=hvcoord%ps0
-       elem(ie)%state%ps_v(:,:,np1)=0.0D0
+       elem(ie)%state%ps_v(:,:,np1)=hvcoord%ps0
 
        elem(ie)%state%phis(:,:)=0.0D0
 #undef HS_TOPO1
@@ -336,11 +335,11 @@ contains
 
        elem(ie)%state%T(:,:,:,n0) =Tinit
        elem(ie)%state%T(:,:,:,nm1)=elem(ie)%state%T(:,:,:,n0)
-       elem(ie)%state%T(:,:,:,np1)=0.0D0
+       elem(ie)%state%T(:,:,:,np1)=elem(ie)%state%T(:,:,:,n0)
 
        elem(ie)%state%v(:,:,:,:,n0) =0.0D0
        elem(ie)%state%v(:,:,:,:,nm1)=elem(ie)%state%v(:,:,:,:,n0)
-       elem(ie)%state%v(:,:,:,:,np1)=0.0D0
+       elem(ie)%state%v(:,:,:,:,np1)=elem(ie)%state%v(:,:,:,:,n0)
 
        if (qsize>=1) then
        q=1

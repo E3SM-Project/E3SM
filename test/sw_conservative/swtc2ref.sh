@@ -11,11 +11,17 @@
 #  Shallow water test case 6 Runge-Kutta test
 #  used to check stability of m-stage RK schemes
 #
-set wdir = ~/scratch1/sweqx
-set src = ~/codes/homme/build/sweqx
-set input = ~/codes/homme/test/sw_conservative
-set NCPU = 2
+set wdir = ~/scratch1/swtc2
+set HOMME = ~/codes/homme
+#set MACH = $HOMME/cmake/machineFiles/redsky.cmake
+set MACH = $HOMME/cmake/machineFiles/darwin.cmake
+set src = $HOMME/build/sweqx
+set input = $HOMME/test/sw_conservative
+mkdir $wdir
+cd $wdir
+mkdir movies
 
+set NCPU = 2
 if ( ${?PBS_NODEFILE} ) then
    set NCPU = `wc $PBS_NODEFILE | awk '{print $1}' - `
 endif
@@ -30,25 +36,24 @@ echo NCPU = $NCPU
 set test_case = swtc2
 
 #configure the model
-cd $src
-set configure = 0
-if ( $configure ) then
-  cd $src
-  ./configure --with-netcdf=$NETCDF_PATH --with-pnetcdf=$PNETCDF_PATH NP=4 PLEV=1
-  if ($status ) exit
-
-  make clean
-  make -j4 depends
-  if ($status ) exit
+set build = 0
+set make = 1
+if ( $#argv >= 1) then
+  if ( $1 == 'build' ) set build = 1
 endif
-
-make -j2 sweqx
-if ($status ) exit
-
-
-mkdir $wdir
+#cmake:
 cd $wdir
-mkdir movies
+if ( $build == 1 ) then
+   rm -rf CMakeFiles CMakeCache.txt
+   cmake -C $MACH -DSWEQX_PLEV=1  -DSWEQX_NP=4 $HOMME
+   exit
+endif
+if ( $make == 1 ) then
+   make -j4 sweqx
+    if ($status) exit
+endif
+set exe = $wdir/src/sweqx/sweqx
+
 
 # defaults:
 set smooth=0
@@ -106,7 +111,7 @@ sed s/statefreq.\*/"statefreq = $sfreq"/  \
 > input.nl
 
 date
-mpirun -np $NCPU $src/sweqx < input.nl | tee  sweq.out
+mpirun -np $NCPU $exe < input.nl | tee  sweq.out
 date
 
 mv -f sweq.mass $name.mass

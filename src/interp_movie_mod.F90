@@ -496,7 +496,6 @@ contains
 
     real (kind=real_kind) :: vco(np,np,2),ke(np,np,nlev)
     real (kind=real_kind) :: v1,v2
-    real (kind=real_kind),pointer,dimension(:,:) :: viscosity
 
     type (derivative_t)  :: deriv
 
@@ -810,7 +809,6 @@ contains
 
                 do ie=nets,nete
                    do k=1,nlev
-                      viscosity => elem(ie)%variable_hyperviscosity
                       var3d(:,:,k,ie) = 0
 #ifdef _PRIM
                       var3d(:,:,k,ie) = elem(ie)%state%ps_v(:,:,n0)
@@ -822,7 +820,7 @@ contains
                       var3d(:,:,k,ie) = elem(ie)%state%p(:,:,k,n0)
 #endif
                       var3d(:,:,k,ie)=laplace_sphere_wk(var3d(:,:,k,ie),&
-                           deriv,elem(ie),viscosity)
+                           deriv,elem(ie),var_coef=.true.)
                       ! laplace_sphere_wk returns weak form with mass matrix
                       ! already applied.  remove mass matrix, since make_C0
                       ! routine below will also multiply by mass matrix before DSS

@@ -20,8 +20,10 @@ macro(readRegisteredPaths)
     STRING(STRIP ${Homme_Dep_Path} Homme_Dep_Path)
 
     # Create a new variable called Homme_PackageName_Path
-    SET(Homme_${Homme_Dep}_DIR "${Homme_Dep_Path}")
+    SET(varName Homme_${Homme_Dep}_DIR)
+    SET(${varName} "${Homme_Dep_Path}")
 
+    MESSAGE(STATUS "  Found ${varName}=${Homme_Dep_Path}")
 endforeach()
 
 endmacro(readRegisteredPaths)

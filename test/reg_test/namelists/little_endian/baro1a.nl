@@ -43,13 +43,14 @@ vfile_mid     = "vcoord/sabm-20.fbin.littleendian"
 vfile_int     = "vcoord/sabi-20.fbin.littleendian"
 /
 &analysis_nl
- output_timeunits=1,
- output_frequency=12,
- output_varnames1='T','zeta'
- interp_type = 0          ! native high order
-! interp_type = 1         ! bilinear
- output_type='netcdf'
- io_stride = 8
+output_prefix    = "baro1a-"
+output_timeunits = 1
+output_frequency = 12
+output_varnames1 = 'u', 'v', 'ps', 'T', 'zeta'
+interp_type      = 0          ! native high order
+! interp_type     = 1         ! bilinear
+output_type      = 'netcdf'
+io_stride        = 8
 /
 
 &prof_inparm

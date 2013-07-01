@@ -266,21 +266,22 @@ extern "C" {
       Teuchos::ParameterList& nlDir = nlParams.sublist("Direction");
       Teuchos::ParameterList& nlNewton = nlDir.sublist("Newton");
       //
-     // Teuchos::ParameterList& stratParams = nlNewton.sublist("Stratimikos");
+      Teuchos::ParameterList& stratParams = nlNewton.sublist("Stratimikos");
       Teuchos::ParameterList& nlPrintParams = nlParams.sublist("Printing");
       nlPrintParams.set("MyPID", MyPID);
-      if (!nlPrintParams.isParameter("Output Information"))
-        //     nlPrintParams.set("Output Information",0
+      if (nlPrintParams.isParameter("Output Information"))
+//      if (!nlPrintParams.isParameter("Output Information"))
+//             nlPrintParams.set("Output Information",0
         nlPrintParams.set("Output Information",
             NOX::Utils::OuterIteration  +
-            // NOX::Utils::OuterIterationStatusTest +
-            // NOX::Utils::InnerIteration +
-            // NOX::Utils::Details +
-            NOX::Utils::LinearSolverDetails 
-            // NOX::Utils::Warning 
-            // NOX::Utils::StepperIteration +
-            // NOX::Utils::StepperDetails +
-            // NOX::Utils::StepperParameters
+//            NOX::Utils::OuterIterationStatusTest +
+//            NOX::Utils::InnerIteration +
+//            NOX::Utils::Details +
+             NOX::Utils::LinearSolverDetails 
+//            NOX::Utils::Warning 
+//            NOX::Utils::StepperIteration +
+//            NOX::Utils::StepperDetails +
+//            NOX::Utils::StepperParameters
             );
 
 
@@ -575,6 +576,7 @@ extern "C" {
     static int totalKrylovIters=0;
     static int stepNum=0;
     int NewtonIters = nlParams.sublist("Output").get("Nonlinear Iterations", -1000);
+// replace with thyra/belos version
     int KrylovIters = nlParams.sublist("Direction").sublist("Newton").
                                sublist("Linear Solver").sublist("Output").
                                get("Total Number of Linear Iterations", -1000);

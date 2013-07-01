@@ -37,17 +37,10 @@ kcut_fm       = 2
 wght_fm       = 0.10D0
 /
 &analysis_nl
-output_timeunits=1,
-output_frequency=0,
+output_timeunits = 2
+output_frequency = 6
+output_varnames1 = 'u', 'v', 'ps'
+interp_type      = 0          ! native high order
+output_type      = 'netcdf'
+io_stride        = 8
 /
-
-
-
-
-
-
-
-
-
-
-

@@ -775,8 +775,13 @@ contains
        !ierr = PIO_Redef(FileID))
 
        ! for now, just assume the calling program created a new, different filename:
-       if(masterproc) print *, 'Opening file ',trim(filename),' using pnetcdf'
-       ierr = PIO_CreateFile(PIOFS, FileID, iotype_pnetcdf, trim(filename), PIO_64BIT_OFFSET)
+       if(output_type.eq.'netcdf') then
+          if(masterproc) print *, 'Opening file ',trim(filename), ' using netcdf'
+          ierr = PIO_CreateFile(PIOFS, FileID, iotype_netcdf  ,trim(filename), PIO_64BIT_OFFSET)
+       else
+          if(masterproc) print *, 'Opening file ',trim(filename), ' using pnetcdf'
+          ierr = PIO_CreateFile(PIOFS, FileID, iotype_pnetcdf  ,trim(filename), PIO_64BIT_OFFSET)
+       end if
     end if
     ncFileID=fileid%fh
   end subroutine nf_open_file

@@ -51,6 +51,7 @@ program prim_main
   use hybrid_mod, only : hybrid_create
 
 
+
 	
   implicit none
   type (element_t), pointer  :: elem(:)
@@ -241,8 +242,8 @@ program prim_main
      nstep = nextoutputstep(tl)
      do while(tl%nstep<nstep)
         call t_startf('prim_run')
-        if (tstep_type==1) then  ! foreward in time methods
-           call prim_run_subcycle(elem, fvm, hybrid,nets,nete, tstep, tl, hvcoord)
+        if (tstep_type>0) then  ! forward in time subcycled methods
+           call prim_run_subcycle(elem, fvm, hybrid,nets,nete, tstep, tl, hvcoord,1)
         else  ! leapfrog
            call prim_run(elem, hybrid,nets,nete, tstep, tl, hvcoord, "leapfrog")
         endif

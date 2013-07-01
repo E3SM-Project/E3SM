@@ -22,6 +22,8 @@ module cwfv_mod
 
   implicit none
   private
+  save
+
   type (ghostBuffertr_t)                      :: cellghostbuf
   type (EdgeBuffer_t)                         :: edgeveloc
     
@@ -60,7 +62,7 @@ subroutine spelt_run(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
   ! ---------------------------------------------------------------------------------
   use bndry_mod, only: ghost_exchangeV
   ! ---------------------------------------------------------------------------------
-  use coordinate_systems_mod, only : spherical_to_cart, cart2cubedspherexy, ref2sphere, sphere2cubedsphere
+  use coordinate_systems_mod, only : spherical_to_cart, cart2cubedspherexy, sphere2cubedsphere
   ! ------EXTERNAL----------------
   use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
   ! -----------------------------------------------  
@@ -210,8 +212,8 @@ end subroutine fvm_init2
 
 
 subroutine fvm_grid_init(elem,fvm,nets,nete,tl)
-  use coordinate_systems_mod, only : ref2sphere, sphere2cubedsphere
-  use cube_mod, only : vmap
+  use coordinate_systems_mod, only : sphere2cubedsphere
+  use cube_mod, only : vmap, ref2sphere
   implicit none
   type (element_t),intent(inout)            :: elem(:)                 
   type (cwfv_struct),intent(inout)          :: fvm(:)
@@ -231,7 +233,7 @@ subroutine fvm_grid_init(elem,fvm,nets,nete,tl)
       do i=1,nep  
         xref=-1+(i-1)*dx
         !define the arrival grid in spherical coordinates
-        fvm(ie)%asphere(i,j)=ref2sphere(xref,yref,elem(ie)%corners,elem(ie)%FaceNum)             
+        fvm(ie)%asphere(i,j)=ref2sphere(xref,yref,elem(ie))
         alphabeta=sphere2cubedsphere(fvm(ie)%asphere(i,j), elem(ie)%FaceNum)
         fvm(ie)%sga(i,j)=metric_term(alphabeta)
         
@@ -870,16 +872,16 @@ function metric_termref(elem,ref) result(sg)
   type (cartesian2D_t), intent(in)      :: ref
   real (kind=real_kind)                 :: sg                
 
-  real (kind=real_kind)  :: Jp(2,2)
+!  real (kind=real_kind)  :: Jp(2,2)
   real (kind=real_kind)  :: D(2,2)
 
 
   ! input (a,b) shold be a point in the reference element [-1,1]
   ! compute Jp(a,b)
-  Jp(1,1) = elem%u2qmap(2,1) + elem%u2qmap(4,1)*ref%y
-  Jp(1,2) = elem%u2qmap(3,1) + elem%u2qmap(4,1)*ref%x
-  Jp(2,1) = elem%u2qmap(2,2) + elem%u2qmap(4,2)*ref%y
-  Jp(2,2) = elem%u2qmap(3,2) + elem%u2qmap(4,2)*ref%x
+!  Jp(1,1) = elem%u2qmap(2,1) + elem%u2qmap(4,1)*ref%y
+!  Jp(1,2) = elem%u2qmap(3,1) + elem%u2qmap(4,1)*ref%x
+!  Jp(2,1) = elem%u2qmap(2,2) + elem%u2qmap(4,2)*ref%y
+!  Jp(2,2) = elem%u2qmap(3,2) + elem%u2qmap(4,2)*ref%x
   
   call Dmap(D, elem, ref%x,ref%y)
   

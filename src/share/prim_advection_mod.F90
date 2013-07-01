@@ -97,7 +97,8 @@ subroutine remap_calc_grids( hvcoord , ps , dt , eta_dot_dpdn , p_lag , p_ref , 
   type(hvcoord_t)      , intent(in   ) :: hvcoord               !Derived type to hold vertical sigma grid parameters
   real(kind=real_kind) , intent(in   ) :: ps                    !Surface pressure for this column
   real(kind=real_kind) , intent(in   ) :: dt                    !Time step
-  real(kind=real_kind) , intent(in   ) :: eta_dot_dpdn(nlev+1)  !Looks like a vertical pressure flux to compute deformed grid spacing
+  real(kind=real_kind) , intent(in   ) :: eta_dot_dpdn(nlev+1)  !Looks like a vertical pressure flux
+                                                                !to compute deformed grid spacing
   real(kind=real_kind) , intent(  out) :: p_lag(nlev+1)         !Pressures at interfaces of the Lagrangian deformed grid
   real(kind=real_kind) , intent(  out) :: p_ref(nlev+1)         !Pressures at interfaces of the reference grid
   real(kind=real_kind) , intent(  out) :: dp_lag(nlev)          !Pressure differences on Lagrangian deformed grid
@@ -106,8 +107,10 @@ subroutine remap_calc_grids( hvcoord , ps , dt , eta_dot_dpdn , p_lag , p_ref , 
   p_ref(1) = 0  !Both grids have a model top pressure of zero
   p_lag(1) = 0  !Both grids have a model top pressure of zero
   do k = 1 , nlev
-    dp_ref(k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) ) * hvcoord%ps0 + ( hvcoord%hybi(k+1) - hvcoord%hybi(k) ) * ps  !Reference pressure difference
-    dp_lag(k) = dp_ref(k) + dt * ( eta_dot_dpdn(k+1) - eta_dot_dpdn(k) )  !Lagrangian pressure difference (flux in - flux out over the time step)
+    dp_ref(k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) ) * hvcoord%ps0 + &
+         ( hvcoord%hybi(k+1) - hvcoord%hybi(k) ) * ps  !Reference pressure difference
+    ! Lagrangian pressure difference (flux in - flux out over the time step)
+    dp_lag(k) = dp_ref(k) + dt * ( eta_dot_dpdn(k+1) - eta_dot_dpdn(k) )
     p_ref(k+1) = p_ref(k) + dp_ref(k) !Pressure at interfaces accumulated using difference over each cell
     p_lag(k+1) = p_lag(k) + dp_lag(k) !Pressure at interfaces accumulated using difference over each cell
   enddo
@@ -145,6 +148,7 @@ subroutine remap1(Qdp,nx,qsize,dp1,dp2)
 
   if (vert_remap_q_alg == 1 .or. vert_remap_q_alg == 2) then
      call remap_Q_ppm(qdp,nx,qsize,dp1,dp2)
+     call t_stopf('remap1')
      return
   endif
 
@@ -410,7 +414,7 @@ subroutine remap1_nofilter(Qdp,nx,qsize,dp1,dp2)
   integer(kind=int_kind) :: zkr(nlev+1),filter_code(nlev),peaks,im1,im2,im3,ip1,ip2, & 
                             lt1,lt2,lt3,t0,t1,t2,t3,t4,tm,tp,ie,i,ilev,j,jk,k,q
   logical :: abort=.false.  
-  call t_startf('remap1_nofilter')
+!   call t_startf('remap1_nofilter')
 
 #if (defined ELEMENT_OPENMP)
 !$omp parallel do private(qsize,i,j,z1c,z2c,zv,k,dp_np1,dp_star,Qcol,zkr,ilev) &
@@ -528,7 +532,7 @@ subroutine remap1_nofilter(Qdp,nx,qsize,dp1,dp2)
   enddo
   enddo ! q loop 
   if (abort) call abortmp('Bad levels in remap1_nofilter.  usually CFL violatioin')
-  call t_stopf('remap1_nofilter')
+!   call t_stopf('remap1_nofilter')
 end subroutine remap1_nofilter
 
 !=======================================================================================================! 
@@ -580,17 +584,21 @@ subroutine remap_Q_ppm(Qdp,nx,qsize,dp1,dp2)
 
       pio(nlev+2) = pio(nlev+1) + 1.  !This is here to allow an entire block of k threads to run in the remapping phase.
                                       !It makes sure there's an old interface value below the domain that is larger.
-      pin(nlev+1) = pio(nlev+1)       !The total mass in a column does not change. Therefore, the pressure of that mass cannot either.
+      pin(nlev+1) = pio(nlev+1)       !The total mass in a column does not change.
+                                      !Therefore, the pressure of that mass cannot either.
       !Fill in the ghost regions with mirrored values. if vert_remap_q_alg is defined, this is of no consequence.
       do k = 1 , gs
         dpo(1   -k) = dpo(       k)
         dpo(nlev+k) = dpo(nlev+1-k)
       enddo
 
-      !Compute remapping intervals once for all tracers. Find the old grid cell index in which the k-th new cell interface resides. Then integrate
-      !from the bottom of that old cell to the new interface location. In practice, the grid never deforms past one cell, so the search can be
-      !simplified by this. Also, the interval of integration is usually of magnitude close to zero or close to dpo because of minimial deformation.
-      !Numerous tests confirmed that the bottom and top of the grids match to machine precision, so I set them equal to each other.
+      !Compute remapping intervals once for all tracers. Find the old grid cell index in which the
+      !k-th new cell interface resides. Then integrate from the bottom of that old cell to the new
+      !interface location. In practice, the grid never deforms past one cell, so the search can be
+      !simplified by this. Also, the interval of integration is usually of magnitude close to zero
+      !or close to dpo because of minimial deformation.
+      !Numerous tests confirmed that the bottom and top of the grids match to machine precision, so
+      !I set them equal to each other.
       do k = 1 , nlev
         kk = k  !Keep from an order n^2 search operation by assuming the old cell index is close.
         !Find the index of the old grid cell in which this new cell's bottom interface resides.
@@ -598,22 +606,26 @@ subroutine remap_Q_ppm(Qdp,nx,qsize,dp1,dp2)
           kk = kk + 1
         enddo
         kk = kk - 1                   !kk is now the cell index we're integrating over.
-        if (kk == nlev+1) kk = nlev   !This is to keep the indices in bounds. Top bounds match anyway, so doesn't matter what coefficients are used
+        if (kk == nlev+1) kk = nlev   !This is to keep the indices in bounds.
+                                      !Top bounds match anyway, so doesn't matter what coefficients are used
         kid(k) = kk                   !Save for reuse
         z1(k) = -0.5D0                !This remapping assumes we're starting from the left interface of an old grid cell
                                       !In fact, we're usually integrating very little or almost all of the cell in question
-        z2(k) = ( pin(k+1) - ( pio(kk) + pio(kk+1) ) * 0.5 ) / dpo(kk)  !PPM interpolants are normalized to an independent coordinate domain [-0.5,0.5].
+        z2(k) = ( pin(k+1) - ( pio(kk) + pio(kk+1) ) * 0.5 ) / dpo(kk)  !PPM interpolants are normalized to an independent
+                                                                        !coordinate domain [-0.5,0.5].
       enddo
 
-      !This turned out a big optimization, remembering that only parts of the PPM algorithm depends on the data, namely the limiting. So anything that
-      !depends only on the grid is pre-computed outside the tracer loop.
+      !This turned out a big optimization, remembering that only parts of the PPM algorithm depends on the data, namely the
+      !limiting. So anything that depends only on the grid is pre-computed outside the tracer loop.
       ppmdx(:,:) = compute_ppm_grids( dpo )
 
-      !From here, we loop over tracers for only those portions which depend on tracer data, which includes PPM limiting and mass accumulation
+      !From here, we loop over tracers for only those portions which depend on tracer data, which includes PPM limiting and
+      !mass accumulation
       do q = 1 , qsize
-        !Accumulate the old mass up to old grid cell interface locations to simplify integration during remapping. Also, divide out the
-        !grid spacing so we're working with actual tracer values and can conserve mass. The option for ifndef ZEROHORZ I believe is there
-        !to ensure tracer consistency for an initially uniform field. I copied it from the old remap routine.
+        !Accumulate the old mass up to old grid cell interface locations to simplify integration
+        !during remapping. Also, divide out the grid spacing so we're working with actual tracer
+        !values and can conserve mass. The option for ifndef ZEROHORZ I believe is there to ensure
+        !tracer consistency for an initially uniform field. I copied it from the old remap routine.
         masso(1) = 0.
         do k = 1 , nlev
           ao(k) = Qdp(i,j,k,q)
@@ -627,9 +639,10 @@ subroutine remap_Q_ppm(Qdp,nx,qsize,dp1,dp2)
         enddo
         !Compute monotonic and conservative PPM reconstruction over every cell
         coefs(:,:) = compute_ppm( ao , ppmdx )
-        !Compute tracer values on the new grid by integrating from the old cell bottom to the new cell interface to form a new grid mass accumulation
-        !Taking the difference between accumulation at successive interfaces gives the mass inside each cell. Since Qdp is supposed to hold the full mass
-        !this needs no normalization.
+        !Compute tracer values on the new grid by integrating from the old cell bottom to the new
+        !cell interface to form a new grid mass accumulation. Taking the difference between
+        !accumulation at successive interfaces gives the mass inside each cell. Since Qdp is
+        !supposed to hold the full mass this needs no normalization.
         massn1 = 0.
         do k = 1 , nlev
           kk = kid(k)
@@ -703,7 +716,8 @@ function compute_ppm( a , dx )    result(coefs)
   real(kind=real_kind) :: ai (0:nlev  )                     !fourth-order accurate, then limited interface values
   real(kind=real_kind) :: dma(0:nlev+1)                     !An expression from Collela's '84 publication
   real(kind=real_kind) :: da                                !Ditto
-  real(kind=real_kind) :: dx1, dx2, dx3, dx4, dx5, dx6, dx7, dx8, dx9, dx10 !Holds expressions based on the grid which are cumbersome
+  ! Hold expressions based on the grid (which are cumbersome).
+  real(kind=real_kind) :: dx1, dx2, dx3, dx4, dx5, dx6, dx7, dx8, dx9, dx10
   real(kind=real_kind) :: al, ar                            !Left and right interface values for cell-local limiting
   integer :: j
   integer :: indB, indE
@@ -731,10 +745,12 @@ function compute_ppm( a , dx )    result(coefs)
     indE = nlev
   endif
   do j = indB , indE
-    ai(j) = a(j) + dx(4,j) * ( a(j+1) - a(j) ) + dx(5,j) * ( dx(6,j) * ( dx(7,j) - dx(8,j) ) * ( a(j+1) - a(j) ) - dx(9,j) * dma(j+1) + dx(10,j) * dma(j) )
+    ai(j) = a(j) + dx(4,j) * ( a(j+1) - a(j) ) + dx(5,j) * ( dx(6,j) * ( dx(7,j) - dx(8,j) ) &
+         * ( a(j+1) - a(j) ) - dx(9,j) * dma(j+1) + dx(10,j) * dma(j) )
   enddo
 
-  ! Stage 3: Compute limited PPM interpolant over each cell in the physical domain (dimension nlev) using ai on either side and ao within the cell.
+  ! Stage 3: Compute limited PPM interpolant over each cell in the physical domain
+  ! (dimension nlev) using ai on either side and ao within the cell.
   if (vert_remap_q_alg == 2) then
     indB = 3
     indE = nlev-2
@@ -757,8 +773,9 @@ function compute_ppm( a , dx )    result(coefs)
     coefs(2,j) = -6. * a(j) + 3. * ( al + ar )
   enddo
 
-  !If we're not using a mirrored boundary condition, then make the two cells bordering the top and bottom material boundaries piecewise constant.
-  !Zeroing out the first and second moments, and setting the zeroth moment to the cell mean is sufficient to maintain conservation.
+  !If we're not using a mirrored boundary condition, then make the two cells bordering the top and bottom
+  !material boundaries piecewise constant. Zeroing out the first and second moments, and setting the zeroth
+  !moment to the cell mean is sufficient to maintain conservation.
   if (vert_remap_q_alg == 2) then
     coefs(0,1:2) = a(1:2)
     coefs(1:2,1:2) = 0.
@@ -770,7 +787,8 @@ end function compute_ppm
 !=======================================================================================================! 
 
 
-!Simple function computes the definite integral of a parabola in normalized coordinates, xi=(x-x0)/dx, given two bounds. Make sure this gets inlined during compilation.
+!Simple function computes the definite integral of a parabola in normalized coordinates, xi=(x-x0)/dx,
+!given two bounds. Make sure this gets inlined during compilation.
 function integrate_parabola( a , x1 , x2 )    result(mass)
   implicit none
   real(kind=real_kind), intent(in) :: a(0:2)  !Coefficients of the parabola
@@ -841,7 +859,8 @@ module prim_advection_mod
 
   implicit none
   
-  private  
+  private
+  save
 
   public :: Prim_Advec_Init, Prim_Advec_Tracers_remap_rk2
   public :: prim_advec_tracers_fvm, prim_advec_tracers_spelt
@@ -862,17 +881,29 @@ contains
   subroutine Prim_Advec_Init()
     use dimensions_mod, only : nlev, qsize, nelemd
 
+    ! Shared buffer pointers.
+    ! Using "=> null()" in a subroutine is usually bad, because it makes
+    ! the variable have an implicit "save", and therefore shared between
+    ! threads. But in this case we want shared pointers.
+    real(kind=real_kind), pointer :: buf_ptr(:) => null()
+    real(kind=real_kind), pointer :: receive_ptr(:) => null()
+
     ! this might be called with qsize=0
     ! allocate largest one first
-    call initEdgeBuffer(edgeAdvQ3,max(nlev,qsize*nlev*3))  ! Qtens,Qmin, Qmax
-    ! remaining edge buffers can share %buf and %receive with edgeAdvQ3:
-    call initEdgeBuffer(edgeAdv1,nlev,edgeAdvQ3%buf,edgeAdvQ3%receive)
-    call initEdgeBuffer(edgeAdv,qsize*nlev,edgeAdvQ3%buf,edgeAdvQ3%receive)
-    call initEdgeBuffer(edgeAdv_p1,qsize*nlev + nlev,edgeAdvQ3%buf,edgeAdvQ3%receive) 
-    call initEdgeBuffer(edgeAdvQ2,qsize*nlev*2,edgeAdvQ3%buf,edgeAdvQ3%receive)  ! Qtens,Qmin, Qmax
+    ! Currently this is never freed. If it was, only this first one should
+    ! be freed, as only it knows the true size of the buffer.
+    call initEdgeBuffer(edgeAdvQ3,max(nlev,qsize*nlev*3), buf_ptr, receive_ptr)  ! Qtens,Qmin, Qmax
 
+    ! remaining edge buffers can share %buf and %receive with edgeAdvQ3
+    ! (This is done through the optional 1D pointer arguments.)
+    call initEdgeBuffer(edgeAdv1,nlev,buf_ptr,receive_ptr)
+    call initEdgeBuffer(edgeAdv,qsize*nlev,buf_ptr,receive_ptr)
+    call initEdgeBuffer(edgeAdv_p1,qsize*nlev + nlev,buf_ptr,receive_ptr) 
+    call initEdgeBuffer(edgeAdvQ2,qsize*nlev*2,buf_ptr,receive_ptr)  ! Qtens,Qmin, Qmax
 
-
+    ! Don't actually want these saved, if this is ever called twice.
+    nullify(buf_ptr)
+    nullify(receive_ptr)
 
     ! this static array is shared by all threads, so dimension for all threads (nelemd), not nets:nete:
     allocate (qmin(nlev,qsize,nelemd))
@@ -888,7 +919,7 @@ contains
   subroutine Prim_Advec_Tracers_spelt(elem, spelt, deriv,hvcoord,hybrid,&
         dt,tl,nets,nete)
     use perf_mod, only : t_startf, t_stopf            ! _EXTERNAL
-    use spelt_mod, only : spelt_run, spelt_runair, edgeveloc, spelt_mcgregordss, spelt_rkdss
+    use spelt_mod, only : spelt_run, spelt_runpos, spelt_runair, spelt_runlimit, edgeveloc, spelt_mcgregordss, spelt_rkdss
     use derivative_mod, only : interpolate_gll2spelt_points
     use vertremap_mod, only: remap1_nofilter ! _EXTERNAL (actually INTERNAL)
     
@@ -938,7 +969,8 @@ contains
           ! elem%derived%vstar = velocity at t+1 on floating levels (computed below) using eta_dot_dpdn
 !           call remap_UV_ref2lagrange(np1,dt,elem,hvcoord,ie)
           do k=1,nlev
-             dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,np1)
+             dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+                  ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,np1)
              dp_star(:,:,k) = dp(:,:,k) + dt*(elem(ie)%derived%eta_dot_dpdn(:,:,k+1) -&
                   elem(ie)%derived%eta_dot_dpdn(:,:,k)) 
           enddo
@@ -960,17 +992,19 @@ contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !------------------------------------------------------------------------------------      
     
-    call t_startf('spelt_depalg')
+!     call t_startf('spelt_depalg')
 !     call spelt_mcgregordss(elem,spelt,nets,nete, hybrid, deriv, dt, 3)
     call spelt_rkdss(elem,spelt,nets,nete, hybrid, deriv, dt, 3)
-    call t_stopf('spelt_depalg')
+!     call t_stopf('spelt_depalg')
     
     ! ! end mcgregordss
     ! spelt departure calcluation should use vstar.
     ! from c(n0) compute c(np1):
 !     call spelt_run(elem,spelt,hybrid,deriv,dt,tl,nets,nete)
+    
     call spelt_runair(elem,spelt,hybrid,deriv,dt,tl,nets,nete)
-
+!     call spelt_runpos(elem,spelt,hybrid,deriv,dt,tl,nets,nete)
+!       call spelt_runlimit(elem,spelt,hybrid,deriv,dt,tl,nets,nete)
     call t_stopf('prim_advec_tracers_spelt')
   end subroutine Prim_Advec_Tracers_spelt
   
@@ -984,7 +1018,7 @@ contains
     use perf_mod, only : t_startf, t_stopf            ! _EXTERNAL
     use vertremap_mod, only: remap1_nofilter  ! _EXTERNAL (actually INTERNAL)
 !    use fvm_mod, only : cslam_run, cslam_runairdensity, edgeveloc, fvm_mcgregor, fvm_mcgregordss
-    use fvm_mod, only : cslam_runairdensity, edgeveloc, fvm_mcgregor, fvm_mcgregordss, fvm_rkdss
+    use fvm_mod, only : cslam_run, cslam_runairdensity, edgeveloc, fvm_mcgregor, fvm_mcgregordss, fvm_rkdss
     
     implicit none
     type (element_t), intent(inout)   :: elem(:)
@@ -1036,7 +1070,8 @@ contains
           ! elem%derived%vstar = velocity at t+1 on floating levels (computed below)
 !           call remap_UV_ref2lagrange(np1,dt,elem,hvcoord,ie)
           do k=1,nlev
-             dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,np1)
+             dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+                  ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,np1)
              dp_star(:,:,k) = dp(:,:,k) + dt*(elem(ie)%derived%eta_dot_dpdn(:,:,k+1) -&
                   elem(ie)%derived%eta_dot_dpdn(:,:,k)) 
           enddo
@@ -1055,17 +1090,18 @@ contains
     ! 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !------------------------------------------------------------------------------------    
-    call t_startf('fvm_depalg')
+!     call t_startf('fvm_depalg')
 
 !     call fvm_mcgregordss(elem,fvm,nets,nete, hybrid, deriv, dt, 3)
     call fvm_rkdss(elem,fvm,nets,nete, hybrid, deriv, dt, 3)
-    call t_stopf('fvm_depalg')
+!     call t_stopf('fvm_depalg')
 
 !------------------------------------------------------------------------------------    
 
     ! fvm departure calcluation should use vstar.
     ! from c(n0) compute c(np1): 
     call cslam_runairdensity(elem,fvm,hybrid,deriv,dt,tl,nets,nete)
+!     call cslam_run(elem,fvm,hybrid,deriv,dt,tl,nets,nete)
 
     call t_stopf('prim_advec_tracers_fvm')
   end subroutine Prim_Advec_Tracers_fvm
@@ -1180,7 +1216,7 @@ contains
 !-----------------------------------------------------------------------------
 
   subroutine qdp_time_avg( elem , rkstage , n0_qdp , np1_qdp , limiter_option , nu_p , nets , nete )
-#ifdef _ACCEL
+#if USE_CUDA_FORTRAN
     use cuda_mod, only: qdp_time_avg_cuda
 #endif
     implicit none
@@ -1188,7 +1224,7 @@ contains
     integer             , intent(in   ) :: rkstage , n0_qdp , np1_qdp , nets , nete , limiter_option
     real(kind=real_kind), intent(in   ) :: nu_p
     integer :: ie
-#ifdef _ACCEL
+#if USE_CUDA_FORTRAN
     call qdp_time_avg_cuda( elem , rkstage , n0_qdp , np1_qdp , limiter_option , nu_p , nets , nete )
     return
 #endif
@@ -1222,7 +1258,7 @@ contains
   use edge_mod       , only : edgevpack, edgevunpack
   use bndry_mod      , only : bndry_exchangev
   use hybvcoord_mod  , only : hvcoord_t
-#ifdef _ACCEL
+#if USE_CUDA_FORTRAN
   use cuda_mod, only: euler_step_cuda
 #endif
   implicit none
@@ -1253,12 +1289,12 @@ contains
     call euler_step_dg( np1_qdp , n0_qdp , dt , elem , hvcoord , hybrid , deriv , nets , nete , DSSopt , rhs_multiplier )
     return
   endif
-#ifdef _ACCEL
+#if USE_CUDA_FORTRAN
   call euler_step_cuda( np1_qdp , n0_qdp , dt , elem , hvcoord , hybrid , deriv , nets , nete , DSSopt , rhs_multiplier )
   return
 #endif
 ! call t_barrierf('sync_euler_step', hybrid%par%comm)
-  call t_startf('euler_step')
+!   call t_startf('euler_step')
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !   compute Q min/max values for lim8
@@ -1524,7 +1560,7 @@ contains
 !$OMP BARRIER
 #endif
 #endif
-  call t_stopf('euler_step')
+!   call t_stopf('euler_step')
   end subroutine euler_step
 
 !-----------------------------------------------------------------------------
@@ -1639,7 +1675,6 @@ contains
 	call edgeDGVunpack(edgeAdv,qedges,nlev*qsize,0,elem(ie)%desc)
      else
 	call edgeDGVunpack(edgeAdv_p1,qedges,nlev*qsize,0,elem(ie)%desc)
-
 	call edgeVunpack(edgeAdv_p1,DSSvar(:,:,1:nlev),nlev,qsize*nlev,elem(ie)%desc)
 	do k=1,nlev
 	  DSSvar(:,:,k)=DSSvar(:,:,k)*elem(ie)%rspheremp(:,:)
@@ -2036,7 +2071,7 @@ contains
   !          Q(:,:,:,np) = Q(:,:,:,np) +  dt2*nu*laplacian**order ( Q )
   !
   !  For correct scaling, dt2 should be the same 'dt2' used in the leapfrog advace
-#ifdef _ACCEL
+#if USE_CUDA_FORTRAN
   use cuda_mod       , only : advance_hypervis_scalar_cuda
 #endif
   use kinds          , only : real_kind
@@ -2075,11 +2110,11 @@ contains
   integer :: density_scaling = 0
   if ( nu_q           == 0 ) return
   if ( hypervis_order /= 2 ) return
-#ifdef _ACCEL
+#if USE_CUDA_FORTRAN
   call advance_hypervis_scalar_cuda( edgeAdv , elem , hvcoord , hybrid , deriv , nt , nt_qdp , nets , nete , dt2 )
   return
 #endif
-  call t_barrierf('sync_advance_hypervis_scalar', hybrid%par%comm)
+!   call t_barrierf('sync_advance_hypervis_scalar', hybrid%par%comm)
   call t_startf('advance_hypervis_scalar')
   
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2180,6 +2215,9 @@ contains
 #else
   use fvm_control_volume_mod, only : fvm_struct
 #endif    
+#if USE_CUDA_FORTRAN
+  use cuda_mod, only: vertical_remap_cuda
+#endif
   
 #if defined(_SPELT)
   type(spelt_struct), intent(inout) :: fvm(:)
@@ -2194,11 +2232,16 @@ contains
   !    type (hybrid_t), intent(in)       :: hybrid  ! distributed parallel structure (shared)
   type (element_t), intent(inout)   :: elem(:)
   type (hvcoord_t)                  :: hvcoord
-  real (kind=real_kind)             :: dt,sga
+  real (kind=real_kind)             :: dt
   
   integer :: ie,i,j,k,np1,nets,nete,np1_qdp
   real (kind=real_kind), dimension(np,np,nlev)  :: dp,dp_star
   real (kind=real_kind), dimension(np,np,nlev,2)  :: ttmp
+
+#if USE_CUDA_FORTRAN
+  call vertical_remap_cuda(elem,fvm,hvcoord,dt,np1,np1_qdp,nets,nete)
+  return
+#endif
 
   call t_startf('vertical_remap')
   
@@ -2221,14 +2264,19 @@ contains
   ! hence:
   !    (dp_star(k)-dp(k))/dt_q = (eta_dot_dpdn(i,j,k+1) - eta_dot_dpdn(i,j,k) ) 
   !    
+
   do ie=nets,nete
+!     ! SET VERTICAL VELOCITY TO ZERO FOR DEBUGGING
+!     elem(ie)%derived%eta_dot_dpdn(:,:,:)=0
      if (rsplit==0) then
         ! compute dp_star from eta_dot_dpdn():
         do k=1,nlev
-           dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,np1)
+           dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+                ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,np1)
            dp_star(:,:,k) = dp(:,:,k) + dt*(elem(ie)%derived%eta_dot_dpdn(:,:,k+1) -&
                 elem(ie)%derived%eta_dot_dpdn(:,:,k)) 
         enddo
+        if (minval(dp_star)<0) call abortmp('negative layer thickness.  timestep or remap time too large')
      else
         !  REMAP u,v,T from levels in dp3d() to REF levels
         !
@@ -2236,12 +2284,14 @@ contains
         elem(ie)%state%ps_v(:,:,np1) = hvcoord%hyai(1)*hvcoord%ps0 + &
              sum(elem(ie)%state%dp3d(:,:,:,np1),3)
         do k=1,nlev
-           dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,np1)
+           dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+                ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,np1)
            dp_star(:,:,k) = elem(ie)%state%dp3d(:,:,k,np1)
         enddo
+        if (minval(dp_star)<0) call abortmp('negative layer thickness.  timestep or remap time too large')
 
         ! remap the dynamics:  
-#define REMAP_TE
+#undef REMAP_TE
 #ifdef REMAP_TE
         ! remap u,v and cp*T + .5 u^2 
         ttmp(:,:,:,1)=(elem(ie)%state%v(:,:,1,:,np1)**2 + &
@@ -2256,8 +2306,8 @@ contains
         
         ttmp(:,:,:,1)=elem(ie)%state%v(:,:,1,:,np1)*dp_star
         ttmp(:,:,:,2)=elem(ie)%state%v(:,:,2,:,np1)*dp_star
-!        call remap1(ttmp,np,2,dp_star,dp) 
-        call remap1_nofilter(ttmp,np,2,dp_star,dp) 
+        call remap1(ttmp,np,2,dp_star,dp) 
+!        call remap1_nofilter(ttmp,np,2,dp_star,dp) 
         elem(ie)%state%v(:,:,1,:,np1)=ttmp(:,:,:,1)/dp
         elem(ie)%state%v(:,:,2,:,np1)=ttmp(:,:,:,2)/dp
 #ifdef REMAP_TE
@@ -2279,26 +2329,24 @@ contains
 #if defined(_SPELT)
         do i=1,nep   
           do j=1,nep
-            sga=fvm(ie)%sga(i,j)
             ! 1. compute surface pressure, 'ps_c', from SPELT air density
-            psc(i,j)=sum(fvm(ie)%c(i,j,:,1,np1))/sga +  hvcoord%hyai(1)*hvcoord%ps0 
+            psc(i,j)=sum(fvm(ie)%c(i,j,:,1,np1)) +  hvcoord%hyai(1)*hvcoord%ps0 
             ! 2. compute dp_np1 using CSLAM air density and eta coordinate formula
             ! get the dp now on the eta coordinates (reference level)
             do k=1,nlev
               dpc(i,j,k) = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + &
                               (hvcoord%hybi(k+1) - hvcoord%hybi(k))*psc(i,j)
-              cdp(i,j,k,1:(ntrac-1))=fvm(ie)%c(i,j,k,2:ntrac,np1)*fvm(ie)%c(i,j,k,1,np1)/(sga*sga) 
-              dpc_star(i,j,k)=fvm(ie)%c(i,j,k,1,np1)/sga
+              cdp(i,j,k,1:(ntrac-1))=fvm(ie)%c(i,j,k,2:ntrac,np1)*fvm(ie)%c(i,j,k,1,np1) 
+              dpc_star(i,j,k)=fvm(ie)%c(i,j,k,1,np1)
             end do
           end do
         end do
         call remap1(cdp,nep,ntrac-1,dpc_star,dpc)
         do i=1,nep   
           do j=1,nep 
-            sga=fvm(ie)%sga(i,j)
             do k=1,nlev
-              fvm(ie)%c(i,j,k,1,np1)=dpc(i,j,k)*sga
-              fvm(ie)%c(i,j,k,2:ntrac,np1)=sga*cdp(i,j,k,1:(ntrac-1))/dpc(i,j,k)
+              fvm(ie)%c(i,j,k,1,np1)=dpc(i,j,k)
+              fvm(ie)%c(i,j,k,2:ntrac,np1)=cdp(i,j,k,1:(ntrac-1))/dpc(i,j,k)
             end do
           end do
         end do 

@@ -136,18 +136,17 @@ subroutine analytical_function(value,sphere,klev,itr)
   type (spherical_polar_t)                :: spherecenter
 !   ! temporary: set all parameters for the Solid Body rotation test
 !   Solid Body test ----------------------------------------------------------------!
-!   R0=7*DD_PI/64 !0.5D0 !sphere%r/3.0D0
-!   R0=20*DD_PI/64
+!   R0=sphere%r/3.0D0
 !   h0=1000.0D0
-! !   lon1=3.0D0*DD_PI/2.0D0
-!   lon1=DD_PI/1.0D0
+!   lon1=3.0D0*DD_PI/2.0D0
+! !   lon1=DD_PI/1.0D0
 !   lat1=0
 !   Rg1 = acos(sin(lat1)*sin(sphere%lat)+cos(lat1)*cos(sphere%lat)*cos(sphere%lon-lon1))
 ! !   lon2=6.0D0*DD_PI/5.0D0
 ! !   lat2=0.0D0
 ! !   Rg2 = acos(sin(lat2)*sin(sphere%lat)+cos(lat2)*cos(sphere%lat)*cos(sphere%lon-lon2))
 !   if (Rg1 .le. R0) then
-!     value = (h0/2.0D0)*(1.0D0+cos(DD_PI*Rg1/R0))
+!     value = (h0/4.0D0)*(1.0D0+cos(DD_PI*Rg1/R0))*(1.0D0+cos(DD_PI*Rg1/R0))
 ! !     value=sin(sphere%lon)*cos(sphere%lat)
 ! !   elseif (Rg2 .le. R0) then
 ! !     value = 1.0D0+(h0/2.0D0)*(1.0D0+cos(DD_PI*Rg2/R0))

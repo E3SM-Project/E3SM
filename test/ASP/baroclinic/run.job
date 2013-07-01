@@ -1,7 +1,7 @@
 #!/bin/tcsh -f 
 #SBATCH --job-name baroclinic
 #SBATCH -N 8
-#SBATCH --account=FY115932
+#SBATCH --account=FY139209
 #SBATCH --time=0:60:00
 
 # SNL batch system:
@@ -35,16 +35,13 @@
 
 
 
-# directores
-#set HOMME = ~/codes/homme1_2_2      
-set HOMME = /tmp/work/$USER/homme
-set src = $HOMME/build/preqx
+# USER specific directores:
+set HOMME = ~/codes/homme
+set MACH = $HOMME/cmake/machineFiles/redsky.cmake
+set wdir = ~/scratch1/preqx
 
 
-set wdir = /tmp/work/$USER/preqx   # work directory where output is stored
-#set wdir = /ptmp/$user/preqx
-#set wdir = /ptmp/$HOMME/prexq
-
+# location of test case and vertical coordinate files 
 set input = $HOMME/test/ASP/baroclinic   # test cases
 set vcoord = $HOMME/test/vcoord          # location of vertical coordinate files
 
@@ -61,7 +58,7 @@ set psurf = 0
 set npdg=0
 set nu_p = 0
 set nu_div = -1
-
+set hsub = 1
 
 # Advection scheme
 
@@ -70,23 +67,23 @@ set nu_div = -1
 # this used to conserve mass, but now (2010/8) nu_q>0 breaks conservation - 
 # probably because prim_state_mod is using a staggered mass formulation
 #set smooth = 0.005
-#set tadv = 1 ; set RK2 = 0    
+#set RK2 = 0    
 #set qsplit = 1; set rk_stage_user = 0
-#set mean_flux=0
 
 #CAM-type:  subcycled, consistent advection, monotone limiter
 #              RK 5 stage dynamics
 #              RK 3 stage for tracers
 set smooth = 0
-set tadv = 1 ; set RK2 = 1    
+set RK2 = 1    
 set qsplit = 4
-set mean_flux=1
 set limiter = 8
-
-
+set rsplit=0
+set energy_fixer = -1  # disabled
 
 # resolution parameters
-set ne = 8    # setup for 8,15,30,60,120?
+set ne = 30    # setup for 8,15,30,60,120?
+
+
 
 #set ndays = 30
 set ndays = 9
@@ -119,8 +116,27 @@ if ( $ne == 30 ) then
    set nu_q = 9.6e14
 
    set tstep = 90        # dynamics timestep
-#   set tstep = 20
    set resolution = medium_high
+
+
+    if ( 0 ) then
+        # Kinnmark and Gray Options:
+        # CAM defaults
+        set nu = 1e15
+        set nu_q = 1e15
+        set nu_div = 2.5e15 
+    
+        set RK2 = 5  # turn on K&G 5 stage optionoption    5 dycore + 3 vis
+        set tstep=360
+        set qsplit=1
+        set hsub = 3    # 2.5 would work, if possible 
+        #set rsplit = 0 ; set nu_p = 0
+        set rsplit = 5 ; set nu_p = 1e15
+    
+        set energy_fixer = -1
+    endif
+    
+
 endif
 if ( $ne == 60 ) then
    # 0.5 degree
@@ -156,7 +172,7 @@ set sfreq = `echo "$sfreq / $tstep " | bc`
 
 # set caseno = 1
 # if ( $u_perturb == 1 ) set caseno = 2
-# set name = HOMME-$caseno-$rindex-$qindex-$resolution-L26-nu$nu-tadv$tadv
+# set name = HOMME-$caseno-$rindex-$qindex-$resolution-L26-nu$nu
 # if ( $RK2 == 1 ) then
 #    if ( $qsplit == 1 ) then
 #       set name = HOMME-$caseno-$rindex-$qindex-$resolution-L26-nu$nu-rk3
@@ -167,6 +183,9 @@ set sfreq = `echo "$sfreq / $tstep " | bc`
 # if ( $psurf == 1 ) set name = $name-psurf
 
 set name = jwasp-ne${ne}-nu$nu
+if ( $RK2 > 1 ) then
+    set name = jwasp-ne${ne}-nu$nu-RK$RK2-q$qsplit-r$rsplit
+endif
 
 
 echo runname =  $name
@@ -183,15 +202,16 @@ mkdir $wdir/movies
 cd $input
 rm -f $wdir/explicit.nl
 sed s/NE/$ne/ explicit26.nl.sed |\
-sed s/TSTEP/"$tstep qsplit=$qsplit psurf_vis=$psurf  "/ |\
+sed s/TSTEP/"$tstep qsplit=$qsplit rsplit=$rsplit psurf_vis=$psurf  "/ |\
 sed s/SFREQ/$sfreq/ |\
-sed s/tracer_advection_formulation.\*/"tracer_advection_formulation=$tadv  tstep_type = $RK2  compute_mean_flux=$mean_flux  "/ |\
+sed s/tracer_advection_formulation.\*/"tstep_type = $RK2  hypervis_subcycle = $hsub"/ |\
 sed s/NU1/$nu/ | sed s/NU2/$nu_q/ | \
 sed s/nu_div.\*/"nu_div = $nu_div  npdg=$npdg"/ |\
 sed s/nu_p.\*/"nu_p = $nu_p"/ |\
 sed s/u_perturb.\*/"u_perturb = $u_perturb"/ |\
 sed s/rotate_grid.\*/"rotate_grid = $rotate"/ |\
 sed s/ndays.\*/"ndays = $ndays"/ |\
+sed s/energy_fixer.\*/"energy_fixer = $energy_fixer"/ |\
 sed s/limiter_option.\*/"limiter_option = $limiter"/ |\
 sed s/smooth.\*/"smooth = $smooth"/ |\
 sed s/qsize.\*/"qsize = $qsize"/    > $wdir/input.nl
@@ -216,8 +236,10 @@ if ( ${?SLURM_NNODES} ) then
 endif
 echo using NCPU = $NCPU
 
+
+set build = run  # build, make or run(default)
+
 set machine = default
-if ( AIX == `uname` ) set machine = aix
 if ( yodjag == `hostname | head -c 6` ) set machine = titan
 if ( chester == `hostname | head -c 7` ) set machine = titan
 if ( titan == `hostname | head -c 5` ) set machine = titan
@@ -225,55 +247,33 @@ echo machine = $machine
 echo hostname = `hostname`
 
 
-if ( $machine == aix  ) then
-   set make = "gmake -j8 "
-   set mpirun = "mpirun.lsf "
-
-  # other stuff for blue vista: 
-  mv -f $wdir/input.nl $wdir/tmp.nl
-  sed  s/.littleendian//g $wdir/tmp.nl > $wdir/input.nl
-else if ( titan == $machine ) then
-   set make = "make -j4"
+if ( titan == $machine ) then
    set mpirun = "aprun -n $NCPU "
    # cant reference home directory
    set vcoord = /tmp/work/$USER/preqx/vcoord
    rsync -a $HOMME/test/vcoord/* $vcoord
 else
-   set make = "make -j4"
    set mpirun = "mpirun -np $NCPU"
 endif
 
-cd $src
-set build = run  # build, make or run(default)
-if ( $#argv >= 1) set build = $1
-if ( $build == "build" ) then
-   if (${?PNETCDF_PATH} ) then
-      ./configure --enable-blas --enable-lapack --with-netcdf=$NETCDF_PATH \
-       --with-pnetcdf=$PNETCDF_PATH NP=4 PLEV=26   --enable-energy-diagnostics
-   else
-      ./configure --enable-blas --enable-lapack --with-netcdf=$NETCDF_PATH \
-       NP=4 PLEV=26   --enable-energy-diagnostics
-   endif
-   make -j4 depends
-   make clean
-   $make 
-   exit
-endif
-if ( $build == "make" ) then
-    $make
-    if ($status) exit
-endif
-
-
 
 cd $wdir
+if ( $#argv >= 1) set build = $1
+if ( $build == "build" ) then
+   rm -rf CMakeFiles CMakeCache.txt
+   cmake -C $MACH -DPREQX_PLEV=26 -DPREQX_NP=4 -DWITH_ENERGY=TRUE  $HOMME
+   make -j4 preqx
+   exit
+endif
+make -j4 preqx
+if ($status) exit
+set exe = $wdir/src/preqx/preqx
 
 rm -f vcoord
 ln -s $vcoord vcoord
 
-
 date
-$mpirun  $src/preqx < $wdir/input.nl
+$mpirun  $exe x < $wdir/input.nl
 if ($status) exit
 date
 

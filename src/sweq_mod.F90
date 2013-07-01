@@ -23,8 +23,6 @@ contains
     use shallow_water_mod, only : tc1_init_state, tc2_init_state, tc5_init_state, tc6_init_state, tc5_invariants, &
          tc8_init_state, vortex_init_state, vortex_errors, sj1_init_state, tc6_errors, &
          tc1_errors, tc2_errors, tc5_errors, sweq_invariants, swirl_init_state, swirl_errors, sj1_errors, tc1_velocity
-!is swirl ever run with this routine???? its a pure advection test
-
     !-----------------
 #ifdef PIO_INTERP
     use interp_movie_mod, only : interp_movie_init, interp_movie_output, interp_movie_finish
@@ -46,7 +44,7 @@ contains
     !-----------------
     use filter_mod, only : filter_t, taylor_filter_create, fm_filter_create, fm_transfer, bv_transfer
     !-----------------
-    use solver_mod, only : blkjac_t, blkjac_init
+    use solver_mod, only : blkjac_t, blkjac_init, solver_test
     !-----------------
     use cg_mod, only : cg_t, cg_create
     !-----------------
@@ -64,7 +62,8 @@ contains
     !-----------------
     use control_mod, only : integration, filter_mu, filter_type, transfer_type, debug_level,  &
          restartfreq, statefreq, runtype, s_bv, p_bv, wght_fm, kcut_fm, precon_method, topology,   &
-         test_case, sub_case, qsplit, nu, nu_s, limiter_option, hypervis_subcycle, test_cfldep, g_sw_output
+         test_case, sub_case, qsplit, nu, nu_s, limiter_option, hypervis_subcycle, test_cfldep, g_sw_output, &
+         tstep_type
     use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
     use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
     use bndry_mod, only : compute_ghost_corner_orientation
@@ -77,6 +76,7 @@ contains
 
     use reduction_mod, only : parallelmax
     use mesh_mod, only : MeshUseMeshFile
+    use viscosity_mod, only : test_ibyp, check_edge_flux ! dont remove
 
     
     implicit none
@@ -205,7 +205,8 @@ contains
 
        if (MeshUseMeshFile .EQV. .FALSE.) then
           ! MNL: there are abort calls in edge_mod::ghostVpackfull that
-          !      require ne>0 / don't allow -DMESH as compile option
+          !      require ne>0 / don't allow these calls when reading a
+          !      mesh from file
           ! used by fvm:
           !TODO: should fix these function for meshes
           call compute_ghost_corner_orientation(hybrid,elem,nets,nete)
@@ -296,11 +297,25 @@ contains
        iptr=1
        do j=1,np
           do i=1,np
-             solver_wts(iptr,ie-nets+1) = elem(ie)%solver_wts(i,j)
+             solver_wts(iptr,ie-nets+1) = elem(ie)%mp(i,j)*elem(ie)%rmp(i,j)
              iptr=iptr+1
           end do
        end do
     end do
+
+!   some test code
+#if 0
+    if (hybrid%masterthread) print *,'running CG solver test'
+    call solver_test(elem,edge1,red,hybrid,deriv,nets,nete)
+    stop
+    if (hybrid%masterthread) print *,'running global integration-by-parts checks'
+    call test_ibyp(elem,hybrid,nets,nete)
+    if (hybrid%masterthread) print *,'running element divergence/edge flux checks'
+    call check_edge_flux(elem,deriv,nets,nete)
+    stop
+#endif
+
+
 
     ! =================================
     ! Slow start leapfrog...
@@ -408,7 +423,6 @@ contains
           !============================
           call ReadRestart(elem,ithr,nete,nets,tl)
           if (integration == "semi_imp") then
-!          if ((integration == "semi_imp").or.(integration == "full_imp")) then
              allocate(blkjac(nets:nete))
              call cg_create(cg, npsq, nlev, nete-nets+1, hybrid, debug_level, solver_wts)
           endif
@@ -427,6 +441,7 @@ contains
           if (test_case(1:5) == "swtc1") then
              if (hybrid%masterthread) print *,"initializing swtc1..."
              call tc1_init_state(elem,nets,nete,pmean)
+             call tc1_errors(elem, 7, tl, pmean, hybrid, nets, nete)
           else if (test_case(1:5) == "swtc2") then
              if (hybrid%masterthread) print *,"initializing swtc2..."
              call tc2_init_state(elem,nets,nete,pmean)
@@ -477,36 +492,29 @@ contains
 	  call interp_movie_init(elem,hybrid,nets,nete,tl=tl)
           call interp_movie_output(elem,tl, hybrid, pmean, nets, nete,fvm)     
 #else
-  if (fvm_check) then
-	   call shal_movie_init(elem,hybrid,fvm)
-           call shal_movie_output(elem,tl, hybrid, pmean, nets, nete,deriv,fvm)
-  else
-            call shal_movie_init(elem,hybrid)
-            call shal_movie_output(elem,tl, hybrid, pmean, nets, nete,deriv)
-  endif
+          if (fvm_check) then
+             call shal_movie_init(elem,hybrid,fvm)
+             call shal_movie_output(elem,tl, hybrid, pmean, nets, nete,deriv,fvm)
+          else
+             call shal_movie_init(elem,hybrid)
+             call shal_movie_output(elem,tl, hybrid, pmean, nets, nete,deriv)
+          endif
 #endif
           call printstate(elem,pmean,g_sw_output,tl%n0,hybrid,nets,nete,-1)
-
           call sweq_invariants(elem,190,tl,pmean,edge3,deriv,hybrid,nets,nete)
-
           if(Debug) print *,'homme: point #6'
 
-! OG put it here. Otherwise, with tc1 and integration=explicit there are no
-! error files (not created)
-          if (test_case(1:5) == "swtc1") then
-             call tc1_errors(elem, 7, tl, pmean, hybrid, nets, nete)
-          endif
-! end of insert
+
           ! ===========================================================
           ! In the case of semi implicit integration (as solver or precon),
           ! initialize solver
           ! ===========================================================
 
           if (integration == "semi_imp") then
-             allocate(blkjac(nets:nete))
              call cg_create(cg, npsq, nlev, nete-nets+1, hybrid, debug_level, solver_wts)
              if (precon_method == "block_jacobi") then
                 !JMD call blkjac_init(deriv,lambdasq,nets,nete,E(1,1,1,nets),blkjac)
+                allocate(blkjac(nets:nete))
                 call blkjac_init(elem,deriv,lambdasq,nets,nete,blkjac)
              end if
           else if (integration == "full_imp") then
@@ -605,7 +613,7 @@ contains
     end if
 
     if (integration == "full_imp") then
-    tl%t_stepper=22 ! CN
+    tstep_type=22 ! CN
     !tl%t_stepper=0 ! BE
       if (hybrid%masterthread) print *,'initializing Trilinos solver info'
 
@@ -768,13 +776,6 @@ contains
          end do !nlev 
         end if
         end do !ie
-
-
-
-
-
-
-
 
 #else
 !           Check /utils/trilinos/README for more details

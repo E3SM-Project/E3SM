@@ -78,10 +78,11 @@ module prim_movie_mod
 
   implicit none
   private
+  save
   public :: prim_movie_output, prim_movie_init, &
        prim_movie_finish,  nextoutputstep
 
-  type(nf_handle), save :: ncdf(max_output_streams)
+  type(nf_handle) :: ncdf(max_output_streams)
   integer, private :: nxyp
   integer(kind=nfsizekind) :: piostart2d, piocount2d, piocount3d(2), piostart3d(2)
 
@@ -157,7 +158,7 @@ contains
     enddo
     global_nc=nc*nc*nelem  ! total number of physics points
     global_nsub=(np-1)*(np-1)*nelem  ! total number of subelements
-    dimsize = (/GlobalUniqueCols,nlev,nlevp,nelemd,0,global_nc,global_nsub/)
+    dimsize = (/GlobalUniqueCols,nlev,nlevp,nelem,0,global_nc,global_nsub/)
     call nf_output_register_dims(ncdf,maxdims, dimnames, dimsize)
 
 

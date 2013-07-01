@@ -359,7 +359,7 @@ subroutine fvm_readnl(par)
        runtype,       &
        integration,   &       ! integration method
        tracer_advection_formulation, &   ! conservation or non-conservation formulaton
-       tstep_type, &
+       cubed_sphere_map, &
        compute_mean_flux, &
        qsplit, &
        rk_stage_user, &
@@ -663,12 +663,21 @@ subroutine fvm_readnl(par)
   call MPI_bcast(output_dir   ,MAX_STRING_LEN,MPIChar_t  ,par%root,par%comm,ierr)
   call MPI_bcast(output_varnames1 ,varname_len*max_output_variables,MPIChar_t,par%root,par%comm,ierr)
   call MPI_bcast(output_type , 9,MPIChar_t,par%root,par%comm,ierr)
+  call MPI_bcast(cubed_sphere_map,1,MPIinteger_t ,par%root,par%comm,ierr)
 
   call MPI_bcast(interpolate_analysis, 7,MPIlogical_t,par%root,par%comm,ierr)
   call MPI_bcast(interp_nlat , 1,MPIinteger_t,par%root,par%comm,ierr)
   call MPI_bcast(interp_nlon , 1,MPIinteger_t,par%root,par%comm,ierr)
   call MPI_bcast(io_stride , 1,MPIinteger_t,par%root,par%comm,ierr)
   call MPI_bcast(num_io_procs , 1,MPIinteger_t,par%root,par%comm,ierr)
+
+  ! set map
+  if (cubed_sphere_map<0) then
+     cubed_sphere_map=0  ! default is equi-angle gnomonic
+     if (ne.eq.0) cubed_sphere_map=2  ! element_local for var-res grids
+  endif
+  if (par%masterproc) write (iulog,*) "Reference element projection: cubed_sphere_map=",cubed_sphere_map
+
 
   if(any(interpolate_analysis)) then
      if (interp_nlon==0 .or. interp_nlat==0) then

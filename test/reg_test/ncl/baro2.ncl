@@ -59,7 +59,7 @@ end
 
 
 begin
-  fnames =  systemfunc("ls movies/asp_baroclinic?.nc")
+  fnames =  systemfunc("ls movies/baro2?-asp_baroclinic?.nc")
   fall   = addfiles(fnames,"r")       ; Open netCDF files.	
 
   fcnt = dimsizes(fnames)

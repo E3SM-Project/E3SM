@@ -102,7 +102,6 @@ contains
   !==================================================
   function ParallelMax2d_int(data, n, m, hybrid) result(pmax)
     use hybrid_mod, only : hybrid_t
-    use parallel_mod, only : MPI_MAX, MPIinteger_t
     implicit none
     integer, intent(in)                 :: n,m
     integer, intent(in), dimension(n,m) :: data
@@ -253,11 +252,13 @@ contains
     use hybrid_mod, only : hybrid_t
 #ifdef _MPI
     use parallel_mod, only: mpi_min, mpi_max, mpiinteger_t,abortmp
+#else
+    use parallel_mod, only: abortmp
 #endif
 
     type (ReductionBuffer_int_1d_t)   :: red       ! shared memory reduction buffer struct
-    integer, intent(inout)            :: redp(len) ! thread private vector of partial sum
     integer,               intent(in) :: len       ! buffer length
+    integer, intent(inout)            :: redp(len) ! thread private vector of partial sum
     type (hybrid_t),       intent(in) :: hybrid    ! parallel handle
 
     ! Local variables
@@ -307,6 +308,8 @@ contains
     use hybrid_mod, only : hybrid_t
 #ifdef _MPI
     use parallel_mod, only: mpi_min, mpi_max, mpireal_t,abortmp
+#else
+    use parallel_mod, only: abortmp
 #endif
 
     type (ReductionBuffer_r_1d_t)     :: red     ! shared memory reduction buffer struct
@@ -368,6 +371,8 @@ contains
     use hybrid_mod, only : hybrid_t
 #ifdef _MPI
     use parallel_mod, only: mpi_min, mpireal_t,abortmp
+#else
+    use parallel_mod, only: abortmp
 #endif
 
     type (ReductionBuffer_r_1d_t)     :: red     ! shared memory reduction buffer struct

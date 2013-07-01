@@ -3,14 +3,22 @@
 STRING(ASCII 35 POUND)
 
 # Macro to create the individual tests
-macro(createTestExec execName execType execSources macroNP macroNC 
-                     macroPLEV macroNTRAC macroUSE_PIO macroWITH_ENERGY)
+macro(createTestExec execName execType macroNP macroNC 
+                     macroPLEV macroUSE_PIO macroWITH_ENERGY)
+
+  STRING(TOUPPER ${execType} EXEC_TYPE)
+
+  # Set the include directories
+  INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR}
+                      ${${EXEC_TYPE}_INCLUDE_DIRS})
+
+  # Set the source files for this executable
+  SET(EXEC_SOURCES ${${EXEC_TYPE}_SRCS})
 
   # Backup the cmake variables
   SET(tempNP ${NUM_POINTS})
   SET(tempNC ${NUM_CELLS})
   SET(tempPLEV ${NUM_PLEV})
-  SET(tempNTRAC ${NUM_TRACERS})
   SET(tempUSE_PIO ${PIO})
   SET(tempWITH_ENERGY ${ENERGY_DIAGNOSTICS})
 
@@ -18,7 +26,6 @@ macro(createTestExec execName execType execSources macroNP macroNC
   SET(NUM_POINTS ${macroNP})
   SET(NUM_CELLS ${macroNC})
   SET(NUM_PLEV ${macroPLEV})
-  SET(NUM_TRACERS ${macroNTRAC})
 
   IF (${macroUSE_PIO})
     SET(PIO TRUE)
@@ -28,7 +35,11 @@ macro(createTestExec execName execType execSources macroNP macroNC
     SET(PIO_INTERP TRUE)
   ENDIF ()
 
-  SET(ENERGY_DIAGNOSTICS ${macroWITH_ENERGY})
+  IF (${macroWITH_ENERGY})
+    SET(ENERGY_DIAGNOSTICS TRUE)
+  ELSE() 
+    SET(ENERGY_DIAGNOSTICS)
+  ENDIF ()
 
   # This is needed to compile the test executables with the correct options
   SET(THIS_CONFIG_H ${CMAKE_CURRENT_BINARY_DIR}/config.h)
@@ -36,9 +47,12 @@ macro(createTestExec execName execType execSources macroNP macroNC
 
   ADD_DEFINITIONS(-DHAVE_CONFIG_H)
 
-  ADD_EXECUTABLE(${execName} ${${execSources}})
+  ADD_EXECUTABLE(${execName} ${EXEC_SOURCES})
 
-  # More thought needs to go into these options
+  # Add this executable to a list 
+  SET(EXEC_LIST ${EXEC_LIST} ${execName} PARENT_SCOPE)
+
+  # More thought needs to go into this option
   #IF (macroWITH_ENERGY)
   #ENDIF ()
 
@@ -60,171 +74,58 @@ macro(createTestExec execName execType execSources macroNP macroNC
   SET(NUM_POINTS ${tempNP})
   SET(NUM_CELLS ${tempNC})
   SET(NUM_PLEV ${tempPLEV})
-  SET(NUM_TRACERS ${tempNTRAC})
   SET(PIO ${tempUSE_PIO})
   SET(ENERGY_DIAGNOSTICS ${tempWITH_ENERGY})
 
 endmacro(createTestExec)
 
-macro(getValue thisLine thisVar)
-
-  # Turn the line into a list
-  STRING(REPLACE "=" ";" LINE_LIST ${thisLine})
-
-  # Get the 0th and 1th items of the list
-  #LIST(GET LINE_LIST 0 thisKey)
-  LIST(GET LINE_LIST 1 thisVal)
-
-  # Remove whitespace  and set to the variable defined by thisVar
-  STRING(STRIP ${thisVal} ${thisVar})
-  STRING(REPLACE " " ";" ${thisVar} ${${thisVar}})
-
-endmacro(getValue)
-
-macro(parseTestFile fileName testName execName namelistFiles vcoordFiles
-                    nclFiles refsolnFiles ncOutputFiles numCpus ompNamelistFiles ompNumThreads)
-
-  # Reset the variables
-  SET(${testName})
-  SET(${execName})
-  SET(${namelistFiles})
-  SET(${vcoordFiles})
-  SET(${nclFiles})
-  SET(${refsolnFiles})
-  SET(${ncOutputFiles})
-
-  # Need to do something with this
-  SET(namelist_dir namelists/little_endian)
-  SET(HOMME_ROOT ${HOMME_SOURCE_DIR})
-
-  FILE(STRINGS ${fileName}
-       Homme_Raw_Paths
-       LIMIT_COUNT 100)
-
-  # Go through each 
-  FOREACH(LINE ${Homme_Raw_Paths})
-
-    # Needed to propely concatenate text across multiple lines
-    STRING(REPLACE "\"" "" LINE ${LINE})
-
-    IF (NOT ${LINE} MATCHES "^${POUND}")
-      STRING(REPLACE "\;" "" REP_LINE ${LINE})
-      IF (${REP_LINE} MATCHES "^test_name")
-        getValue(${REP_LINE} ${testName})
-        SET(test_name ${${testName}})
-      ENDIF ()
-      IF (${REP_LINE} MATCHES "^exec_name")
-        getValue(${REP_LINE} ${execName})
-      ENDIF ()
-      IF (${REP_LINE} MATCHES "^namelist_files")
-        getValue(${REP_LINE} ${namelistFiles})
-        FILE(GLOB ${namelistFiles} ${${namelistFiles}})
-      ENDIF ()
-      IF (${REP_LINE} MATCHES "^vcoord_files")
-        getValue(${REP_LINE} ${vcoordFiles})
-        FILE(GLOB ${vcoordFiles} ${${vcoordFiles}})
-      ENDIF ()
-      IF (${REP_LINE} MATCHES "^ncl_files")
-        getValue(${REP_LINE} ${nclFiles})
-        FILE(GLOB ${nclFiles} ${${nclFiles}})
-      ENDIF ()
-      IF (${REP_LINE} MATCHES "^refsoln_files")
-        getValue(${REP_LINE} ${refsolnFiles})
-        FILE(GLOB ${refsolnFiles} ${${refsolnFiles}})
-      ENDIF ()
-      IF (${REP_LINE} MATCHES "^nc_output_files")
-        getValue(${REP_LINE} ${ncOutputFiles})
-      ENDIF ()
-      IF (${REP_LINE} MATCHES "^NUM_CPUS")
-        getValue(${REP_LINE} ${numCpus})
-      ENDIF ()
-      IF (${REP_LINE} MATCHES "^OMP_NUM_THREADS")
-        getValue(${REP_LINE} ${ompNumThreads})
-      ENDIF ()
-      IF (${REP_LINE} MATCHES "^omp_namelist_files")
-        getValue(${REP_LINE} ${ompNamelistFiles})
-        FILE(GLOB ${ompNamelistFiles} ${${ompNamelistFiles}})
-      ENDIF ()
-    ENDIF()
-  ENDFOREACH()
-
-endmacro(parseTestFile)
-
-# Macro to create the individual tests
-macro(createTest testName)
-
-  SET (THIS_TEST_INPUT ${HOMME_SOURCE_DIR}/test/reg_test/run_tests/${testName}.in)
-
-  # Weird this isn't getting reset for somre reason
-  SET (OMP_NAMELIST_FILES "")
-
-  parseTestFile(${THIS_TEST_INPUT}
-                TEST_NAME EXEC_NAME NAMELIST_FILES VCOORD_FILES NCL_FILES
-                REFSOLN_FILES NC_OUTPUT_FILES NUM_CPUS OMP_NAMELIST_FILES OMP_NUM_THREADS)
-
-  # Copy the file
-  #FILE(COPY ${THIS_TEST_INPUT} DESTINATION ${CMAKE_BINARY_DIR}/tests/${TEST_NAME}/)
-
-  MESSAGE(STATUS "Adding test: ${TEST_NAME}, using exec ${EXEC_NAME}")
-
-  IF (TEST_SUMMARY) 
-    IF (NOT "${NAMELIST_FILES}" STREQUAL "")
-      MESSAGE(STATUS "  namelist_files=")
-      FOREACH (singleFile ${NAMELIST_FILES}) 
-        MESSAGE(STATUS "    ${singleFile}")
-      ENDFOREACH () 
-    ENDIF ()
-    IF (NOT "${VCOORD_FILES}" STREQUAL "")
-      MESSAGE(STATUS "  vcoord_files=")
-      FOREACH (singleFile ${VCOORD_FILES}) 
-        MESSAGE(STATUS "    ${singleFile}")
-      ENDFOREACH () 
-    ENDIF ()
-    IF (NOT "${NCL_FILES}" STREQUAL "")
-      MESSAGE(STATUS "  ncl_files=")
-      FOREACH (singleFile ${NCL_FILES}) 
-        MESSAGE(STATUS "    ${singleFile}")
-      ENDFOREACH () 
-    ENDIF ()
-    IF (NOT "${REFSOLN_FILES}" STREQUAL "")
-      MESSAGE(STATUS "  refsoln_files=")
-      FOREACH (singleFile ${REFSOLN_FILES}) 
-        MESSAGE(STATUS "    ${singleFile}")
-      ENDFOREACH () 
-    ENDIF ()
-    IF (NOT "${NC_OUTPUT_FILES}" STREQUAL "")
-      MESSAGE(STATUS "  nc_output_files=")
-      FOREACH (singleFile ${NC_OUTPUT_FILES}) 
-        MESSAGE(STATUS "    ${singleFile}")
-      ENDFOREACH () 
-    ENDIF ()
-    IF (NOT "${OMP_NAMELIST_FILES}" STREQUAL "")
-      MESSAGE(STATUS "  omp_namelist_files=")
-      FOREACH (singleFile ${OMP_NAMELIST_FILES}) 
-        MESSAGE(STATUS "    ${singleFile}")
-      ENDFOREACH () 
-    ENDIF ()
-  ENDIF()
-
-  # Set up the directory
-  SET(THIS_TEST_DIR ${CMAKE_BINARY_DIR}/tests/${TEST_NAME})
-
+macro (copyDirFiles testDir)
   # Copy all of the files into the binary dir
   FOREACH (singleFile ${NAMELIST_FILES}) 
-    FILE(COPY ${singleFile} DESTINATION ${THIS_TEST_DIR})
+    FILE(COPY ${singleFile} DESTINATION ${testDir})
   ENDFOREACH () 
   FOREACH (singleFile ${VCOORD_FILES}) 
-    FILE(COPY ${singleFile} DESTINATION ${THIS_TEST_DIR}/vcoord)
+    FILE(COPY ${singleFile} DESTINATION ${testDir}/vcoord)
   ENDFOREACH () 
   FOREACH (singleFile ${NCL_FILES}) 
-    FILE(COPY ${singleFile} DESTINATION ${THIS_TEST_DIR})
+    FILE(COPY ${singleFile} DESTINATION ${testDir})
   ENDFOREACH () 
   FOREACH (singleFile ${REFSOLN_FILES}) 
-    FILE(COPY ${singleFile} DESTINATION ${THIS_TEST_DIR})
+    FILE(COPY ${singleFile} DESTINATION ${testDir})
+  ENDFOREACH () 
+  FOREACH (singleFile ${MESH_FILES}) 
+    FILE(COPY ${singleFile} DESTINATION ${testDir})
   ENDFOREACH () 
 
+
+
+  # Need to create the movie directory for output
+  EXECUTE_PROCESS(COMMAND mkdir -p ${testDir}/movies
+    RESULT_VARIABLE Homme_result
+    OUTPUT_VARIABLE Homme_output
+    ERROR_VARIABLE Homme_error
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+
+  # Need to create the restart directory for restart files
+  EXECUTE_PROCESS(COMMAND mkdir -p ${testDir}/restart
+    RESULT_VARIABLE Homme_result
+    OUTPUT_VARIABLE Homme_output
+    ERROR_VARIABLE Homme_error
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+
+endmacro (copyDirFiles)
+
+macro (setUpTestDir TEST_DIR)
+
+  SET(THIS_BASELINE_TEST_DIR ${CMAKE_BINARY_DIR}/tests/baseline/${TEST_NAME})
+
+  copyDirFiles(${TEST_DIR})
+  copyDirFiles(${THIS_BASELINE_TEST_DIR})
+
   # Create a run script
-  SET(THIS_TEST_SCRIPT ${THIS_TEST_DIR}/${TEST_NAME}.sh)
+  SET(THIS_TEST_SCRIPT ${TEST_DIR}/${TEST_NAME}.sh)
 
   FILE(WRITE  ${THIS_TEST_SCRIPT} "${POUND}!/bin/bash\n")
   FILE(APPEND ${THIS_TEST_SCRIPT} "${POUND}===============================\n")
@@ -234,11 +135,23 @@ macro(createTest testName)
   FILE(APPEND ${THIS_TEST_SCRIPT} "${POUND}===============================\n")
 
   FILE(APPEND ${THIS_TEST_SCRIPT} "\n") # new line
-  IF (NOT ${NUM_CPUS} STREQUAL "")
-    FILE(APPEND ${THIS_TEST_SCRIPT} "num_cpus=${NUM_CPUS}\n") # new line
-  ELSE ()
-    MESSAGE(FATAL_ERROR "In test ${testName} NUM_CPUS not defined. Quitting")
+  IF ("${NUM_CPUS}" STREQUAL "")
+    MESSAGE(FATAL_ERROR "In test ${TEST_NAME} NUM_CPUS not defined. Quitting")
   ENDIF ()
+  IF (NOT ${HOMME_QUEUING})
+    IF (NOT ${USE_NUM_PROCS} STREQUAL "")
+    #IF (USE_NUM_PROCS)
+      #FILE(APPEND ${THIS_TEST_SCRIPT} "num_cpus=${USE_NUM_PROCS}\n") # new line
+      SET(NUM_CPUS ${USE_NUM_PROCS})
+    ELSEIF (${NUM_CPUS} GREATER ${MAX_NUM_PROCS}) 
+      ##MESSAGE(STATUS "For ${TEST_NAME} the requested number of CPU processes is larger than the number available")
+      ##MESSAGE(STATUS "  Changing NUM_CPU from ${NUM_CPUS} to ${MAX_NUM_PROCS}")
+      ##SET(NUM_CPUS ${MAX_NUM_PROCS})
+      #FILE(APPEND ${THIS_TEST_SCRIPT} "num_cpus=${MAX_NUM_PROCS}\n") # new line
+      SET(NUM_CPUS ${MAX_NUM_PROCS})
+    ENDIF ()
+  ENDIF ()
+  FILE(APPEND ${THIS_TEST_SCRIPT} "num_cpus=${NUM_CPUS}\n") # new line
   FILE(APPEND ${THIS_TEST_SCRIPT} "\n") # new line
   SET (TEST_INDEX 1)
   FOREACH (singleFile ${NAMELIST_FILES}) 
@@ -252,43 +165,31 @@ macro(createTest testName)
 
   # openMP runs
   IF (NOT "${OMP_NAMELIST_FILES}" STREQUAL "")
-    FILE(APPEND ${THIS_TEST_SCRIPT} "${POUND}===============================\n")
-    FILE(APPEND ${THIS_TEST_SCRIPT} "${POUND} OpenMP Tests\n")
-    FILE(APPEND ${THIS_TEST_SCRIPT} "${POUND}===============================\n")
-    FILE(APPEND ${THIS_TEST_SCRIPT} "\n") # new line
-    MATH(EXPR OMP_MOD "${NUM_CPUS} % ${OMP_NUM_THREADS}")
-    IF (NOT ${OMP_MOD} EQUAL 0)
-      MESSAGE(FATAL_ERROR "In test ${testName} NUM_CPUS not divisible by OMP_NUM_THREADS. Quitting.")
-    ENDIF ()
-    MATH(EXPR OMP_NUM_MPI "${NUM_CPUS} / ${OMP_NUM_THREADS}")
-    FILE(APPEND ${THIS_TEST_SCRIPT} "omp_num_mpi=${OMP_NUM_MPI}\n") # new line
-    FILE(APPEND ${THIS_TEST_SCRIPT} "omp_number_threads=${OMP_NUM_THREADS}\n") # new line
-    FILE(APPEND ${THIS_TEST_SCRIPT} "\n") # new line
-    SET (TEST_INDEX 1)
-    FOREACH (singleFile ${OMP_NAMELIST_FILES}) 
-      FILE(APPEND ${THIS_TEST_SCRIPT} "omp_test${TEST_INDEX}=\"${CMAKE_CURRENT_BINARY_DIR}/${EXEC_NAME}/${EXEC_NAME} < ${singleFile}\"\n")
+    IF (${ENABLE_OPENMP})
+      FILE(APPEND ${THIS_TEST_SCRIPT} "${POUND}===============================\n")
+      FILE(APPEND ${THIS_TEST_SCRIPT} "${POUND} OpenMP Tests\n")
+      FILE(APPEND ${THIS_TEST_SCRIPT} "${POUND}===============================\n")
       FILE(APPEND ${THIS_TEST_SCRIPT} "\n") # new line
-      MATH(EXPR TEST_INDEX "${TEST_INDEX} + 1")
-    ENDFOREACH () 
-    MATH(EXPR TEST_INDEX "${TEST_INDEX} - 1")
-    FILE(APPEND ${THIS_TEST_SCRIPT} "omp_num_tests=${TEST_INDEX}\n") # new line
+      MATH(EXPR OMP_MOD "${NUM_CPUS} % ${OMP_NUM_THREADS}")
+      IF (NOT ${OMP_MOD} EQUAL 0)
+        MESSAGE(FATAL_ERROR "In test ${TEST_NAME} NUM_CPUS not divisible by OMP_NUM_THREADS. Quitting.")
+      ENDIF ()
+      MATH(EXPR OMP_NUM_MPI "${NUM_CPUS} / ${OMP_NUM_THREADS}")
+      FILE(APPEND ${THIS_TEST_SCRIPT} "omp_num_mpi=${OMP_NUM_MPI}\n") # new line
+      FILE(APPEND ${THIS_TEST_SCRIPT} "omp_number_threads=${OMP_NUM_THREADS}\n") # new line
+      FILE(APPEND ${THIS_TEST_SCRIPT} "\n") # new line
+      SET (TEST_INDEX 1)
+      FOREACH (singleFile ${OMP_NAMELIST_FILES}) 
+        FILE(APPEND ${THIS_TEST_SCRIPT} "omp_test${TEST_INDEX}=\"${CMAKE_CURRENT_BINARY_DIR}/${EXEC_NAME}/${EXEC_NAME} < ${singleFile}\"\n")
+        FILE(APPEND ${THIS_TEST_SCRIPT} "\n") # new line
+        MATH(EXPR TEST_INDEX "${TEST_INDEX} + 1")
+      ENDFOREACH () 
+      MATH(EXPR TEST_INDEX "${TEST_INDEX} - 1")
+      FILE(APPEND ${THIS_TEST_SCRIPT} "omp_num_tests=${TEST_INDEX}\n") # new line
+    ELSE ()
+      MESSAGE(STATUS "  Not including OpenMP tests")
+    ENDIF()
   ENDIF ()
-
-  # Need to create the movie directory for output
-  EXECUTE_PROCESS(COMMAND mkdir -p ${THIS_TEST_DIR}/movies
-    RESULT_VARIABLE Homme_result
-    OUTPUT_VARIABLE Homme_output
-    ERROR_VARIABLE Homme_error
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-  )
-
-  # Need to create the restart directory for restart files
-  EXECUTE_PROCESS(COMMAND mkdir -p ${THIS_TEST_DIR}/restart
-    RESULT_VARIABLE Homme_result
-    OUTPUT_VARIABLE Homme_output
-    ERROR_VARIABLE Homme_error
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-  )
 
   # Add this test to the list of tests
   MATH(EXPR NUM_TEST_FILES "${NUM_TEST_FILES} + 1")
@@ -301,42 +202,193 @@ macro(createTest testName)
   FOREACH (singleFile ${NC_OUTPUT_FILES}) 
     FILE(APPEND ${THIS_TEST_SCRIPT} "${singleFile} ")
   ENDFOREACH ()
+  # Add the OPENMP netcdf outpuf files
+  IF (${ENABLE_OPENMP})
+    FOREACH (singleFile ${OMP_NC_OUTPUT_FILES}) 
+      FILE(APPEND ${THIS_TEST_SCRIPT} "${singleFile} ")
+    ENDFOREACH ()
+  ENDIF() 
   FILE(APPEND ${THIS_TEST_SCRIPT} "\"\n")
 
-  SET(THIS_TEST "${testName}-diff")
+endmacro (setUpTestDir)
 
-  ADD_TEST(NAME ${THIS_TEST}
-           COMMAND ${CMAKE_BINARY_DIR}/tests/diff_output.sh ${TEST_NAME})
+macro(resetTestVariables)
+  # Reset the variables
+  SET(TEST_NAME)
+  SET(EXEC_NAME)
+  SET(NAMELIST_FILES)
+  SET(VCOORD_FILES)
+  SET(NCL_FILES)
+  SET(REFSOLN_FILES)
+  SET(MESH_FILES)
+  SET(NC_OUTPUT_FILES)
+  SET(OMP_NC_OUTPUT_FILES)
+  SET(NUM_CPUS)
+  SET(OMP_NAMELIST_FILES)
+  SET(OMP_NUM_THREADS)
 
-  SET_TESTS_PROPERTIES(${THIS_TEST} PROPERTIES DEPENDS submitAndRunTests)
+endmacro(resetTestVariables)
 
-  SET (ALL_REG_TESTS ${ALL_REG_TESTS} ${THIS_TEST})
+macro(printTestSummary)
+  MESSAGE(STATUS "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+  MESSAGE(STATUS "Summary of test ${TEST_NAME}")
+  IF (NOT "${NAMELIST_FILES}" STREQUAL "")
+    MESSAGE(STATUS "  namelist_files=")
+    FOREACH (singleFile ${NAMELIST_FILES}) 
+      MESSAGE(STATUS "    ${singleFile}")
+    ENDFOREACH () 
+  ENDIF ()
+  IF (NOT "${VCOORD_FILES}" STREQUAL "")
+    MESSAGE(STATUS "  vcoord_files=")
+    FOREACH (singleFile ${VCOORD_FILES}) 
+      MESSAGE(STATUS "    ${singleFile}")
+    ENDFOREACH () 
+  ENDIF ()
+  IF (NOT "${NCL_FILES}" STREQUAL "")
+    MESSAGE(STATUS "  ncl_files=")
+    FOREACH (singleFile ${NCL_FILES}) 
+      MESSAGE(STATUS "    ${singleFile}")
+    ENDFOREACH () 
+  ENDIF ()
+  IF (NOT "${REFSOLN_FILES}" STREQUAL "")
+    MESSAGE(STATUS "  refsoln_files=")
+    FOREACH (singleFile ${REFSOLN_FILES}) 
+      MESSAGE(STATUS "    ${singleFile}")
+    ENDFOREACH () 
+  ENDIF ()
+  IF (NOT "${NC_OUTPUT_FILES}" STREQUAL "")
+    MESSAGE(STATUS "  nc_output_files=")
+    FOREACH (singleFile ${NC_OUTPUT_FILES}) 
+      MESSAGE(STATUS "    ${singleFile}")
+    ENDFOREACH () 
+  ENDIF ()
+  IF (NOT "${MESH_FILES}" STREQUAL "")
+    MESSAGE(STATUS "  mesh_files=")
+    FOREACH (singleFile ${MESH_FILES}) 
+      MESSAGE(STATUS "    ${singleFile}")
+    ENDFOREACH () 
+  ENDIF ()
+  IF (NOT "${OMP_NAMELIST_FILES}" STREQUAL "")
+    MESSAGE(STATUS "  omp_namelist_files=")
+    FOREACH (singleFile ${OMP_NAMELIST_FILES}) 
+      MESSAGE(STATUS "    ${singleFile}")
+    ENDFOREACH () 
+  ENDIF ()
+  IF (NOT "${OMP_NC_OUTPUT_FILES}" STREQUAL "")
+    MESSAGE(STATUS "  omp_nc_output_files=")
+    FOREACH (singleFile ${OMP_NC_OUTPUT_FILES}) 
+      MESSAGE(STATUS "    ${singleFile}")
+    ENDFOREACH () 
+  ENDIF ()
+endmacro(printTestSummary)
 
+# Macro to create the individual tests
+macro(createTest testFile)
 
-  # First run the createRunScript to generate the ${THIS_TEST_SCRIPT}
-  EXECUTE_PROCESS(
-    COMMAND ${CMAKE_BINARY_DIR}/tests/createRunScripts.sh ${THIS_TEST_SCRIPT}
-    RESULT_VARIABLE CREATE_RUNS_RESULT
-    OUTPUT_VARIABLE CREATE_RUNS_OUTPUT
-    ERROR_VARIABLE CREATE_RUNS_ERROR
-  )
+  SET(NAMELIST_DIR namelists/little_endian)
+
+  SET (THIS_TEST_INPUT ${HOMME_SOURCE_DIR}/test/reg_test/run_tests/${testFile})
+
+  resetTestVariables()
+
+  SET(namelist_dir namelists/little_endian)
+  SET(HOMME_ROOT ${HOMME_SOURCE_DIR})
+
+  INCLUDE(${THIS_TEST_INPUT})
+
+  FILE(GLOB NAMELIST_FILES ${NAMELIST_FILES})
+  FILE(GLOB VCOORD_FILES ${VCOORD_FILES})
+  FILE(GLOB NCL_FILES ${NCL_FILES})
+  FILE(GLOB REFSOLN_FILES ${REFSOLN_FILES})
+  FILE(GLOB MESH_FILES ${MESH_FILES})
+  FILE(GLOB OMP_NAMELIST_FILES ${OMP_NAMELIST_FILES})
+
+  # Determine if the executable this tests depeds upon is built
+  LIST(FIND EXEC_LIST ${EXEC_NAME} FIND_INDEX)
   
-  # Now for the individual tests
-  SET(THIS_TEST_RUN_SCRIPT "${THIS_TEST_DIR}/${TEST_NAME}-run.sh")
+  IF (${FIND_INDEX} LESS 0) 
+    MESSAGE(STATUS "Not configuring test ${TEST_NAME} since it depends upon the executable ${EXEC_NAME} 
+                    which isn't built with this configuration")
+  ELSE ()
+   
+    MESSAGE(STATUS "Adding test: ${TEST_NAME}, using exec ${EXEC_NAME}")
 
-  #SET(THIS_TEST_INDIV "${testName}-indiv")
-  SET(THIS_TEST_INDIV "test-${testName}")
+    OPTION(TEST_SUMMARY "Print out information about the tests" OFF)
 
-  ADD_CUSTOM_TARGET(${THIS_TEST_INDIV}
-           COMMAND ${CMAKE_BINARY_DIR}/tests/submit_tests.sh "${THIS_TEST_RUN_SCRIPT}" "${TEST_NAME}")
+    IF (${TEST_SUMMARY})
+      printTestSummary()
+    ENDIF()
 
-  # Now make the Individual targets
-  #ADD_CUSTOM_COMMAND(TARGET ${THIS_TEST_INDIV}
-  #                   COMMENT "Running the HOMME regression test: ${THIS_TEST}"
-  #                   POST_BUILD COMMAND ${CMAKE_CTEST_COMMAND} ARGS --output-on-failure -R ${THIS_TEST_INDIV} 
-  #                   WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+    # Set up the directory
+    SET(THIS_TEST_DIR ${CMAKE_BINARY_DIR}/tests/${TEST_NAME})
 
+    # Set up the test directory for both the baseline and the comparison tests
+    setUpTestDir(${THIS_TEST_DIR})
+    #setUpTestDir(${THIS_BASELINE_TEST_DIR})
+
+    # The test (not the baseline) run script
+    SET(THIS_TEST_RUN_SCRIPT "${THIS_TEST_DIR}/${TEST_NAME}-run.sh")
+
+    IF (${HOMME_QUEUING})
+
+      SET(THIS_TEST "${TEST_NAME}-diff")
+
+      # When run through the queue the runs are submitted and ran in 
+      #   submitAndRunTests, and diffed in the subsequent tests
+      ADD_TEST(NAME ${THIS_TEST}
+               COMMAND ${CMAKE_BINARY_DIR}/tests/diff_output.sh ${TEST_NAME})
+
+      SET_TESTS_PROPERTIES(${THIS_TEST} PROPERTIES DEPENDS submitAndRunTests)
+
+
+    ELSE ()
+
+      SET(THIS_TEST "${TEST_NAME}")
+
+      # When not run through a queue each run is ran and then diffed. This is handled by 
+      #  the submit_tests.sh script 
+      ADD_TEST(NAME ${THIS_TEST} 
+               COMMAND ${CMAKE_BINARY_DIR}/tests/submit_tests.sh "${THIS_TEST_RUN_SCRIPT}" "${TEST_NAME}"
+               DEPENDS ${EXEC_NAME})
+
+    ENDIF ()
+
+    # Force cprnc to be built when the individual test is run
+    SET_TESTS_PROPERTIES(${THIS_TEST} PROPERTIES DEPENDS cprnc)
+
+    # Individual target to rerun and diff the tests
+    SET(THIS_TEST_INDIV "test-${TEST_NAME}")
+
+    ADD_CUSTOM_TARGET(${THIS_TEST_INDIV}
+             COMMAND ${CMAKE_BINARY_DIR}/tests/submit_tests.sh "${THIS_TEST_RUN_SCRIPT}" "${TEST_NAME}")
+
+    ADD_DEPENDENCIES(${THIS_TEST_INDIV} ${EXEC_NAME})
+
+    # Check target 
+    ADD_DEPENDENCIES(check ${EXEC_NAME})
+
+    # Baseline target
+    ADD_DEPENDENCIES(baseline ${EXEC_NAME})
+
+    # Force cprnc to be built when the individual test is run
+    ADD_DEPENDENCIES(${THIS_TEST_INDIV} cprnc)
+
+    # Now make the Individual targets
+    #ADD_CUSTOM_COMMAND(TARGET ${THIS_TEST_INDIV}
+    #                   COMMENT "Running the HOMME regression test: ${THIS_TEST}"
+    #                   POST_BUILD COMMAND ${CMAKE_CTEST_COMMAND} ARGS --output-on-failure -R ${THIS_TEST_INDIV} 
+    #                   WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+
+  ENDIF ()
 endmacro(createTest)
+
+macro(createTests testList)
+ 
+  FOREACH (test ${${testList}})
+    createTest(${test})
+  ENDFOREACH ()
+endmacro(createTests)
+
 
 macro(testQuadPrec HOMME_QUAD_PREC)
 

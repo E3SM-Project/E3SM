@@ -292,14 +292,9 @@ contains
     real (kind=real_kind),save :: time_last,Imass_last(nlev),Ikenergy_last,Ipenergy_last,Ipenst_last,Ipv_last,Idiv_last
     real (kind=real_kind) :: time,Imass(nlev),Ikenergy,Ipenergy,Ipenst,Ienergy,Ipv,Idiv,rms_div,rms_vor,rms_f
     real (kind=real_kind), dimension(:,:,:), pointer :: v
-    real (kind=real_kind), dimension(:,:),   pointer :: viscosity => NULL()
 
     integer               :: k,n0,k1
 
-!    print *,'calling test_ibyp'
-!    call test_ibyp(elem,hybrid,nets,nete)
-!    call check_edge_flux(elem,deriv,nets,nete)
-!    stop
 
     n0 = tl%n0
     k=1
@@ -337,8 +332,8 @@ contains
           do ie=nets,nete
              v  => elem(ie)%state%v(:,:,:,k,n0)
              E(:,:)=elem(ie)%state%p(:,:,k,n0) + elem(ie)%state%ps(:,:)
-             diss_p(:,:,k,ie)=laplace_sphere_wk(E,deriv,elem(ie),viscosity)
-             diss_v(:,:,:,k,ie)=vlaplace_sphere_wk(v,deriv,elem(ie),viscosity)
+             diss_p(:,:,k,ie)=laplace_sphere_wk(E,deriv,elem(ie),var_coef=.false.)
+             diss_v(:,:,:,k,ie)=vlaplace_sphere_wk(v,deriv,elem(ie),var_coef=.false.)
           enddo
        endif
        ! convert lat-lon -> contra variant
@@ -3204,7 +3199,7 @@ contains
        lat1=lat1_case1
        lon2=lon2_case1
        lat2=lat2_case1
-       Kcoef=2.4   
+       Kcoef=2.4 !was 2.4 for 5 days, 1 for 12 days
        add_pure_rotation = .false.
     elseif(sub_case==2)then 
        lon1=lon1_case2
@@ -3226,11 +3221,13 @@ contains
        lat1=lat1_case2
        lon2=lon2_case2
        lat2=lat2_case2
-       Kcoef=2.0   
+       Kcoef=2.0  ! was 2.0 for 5 days, 2/(12/5) = 2/2.4 for 12 days
        add_pure_rotation = .true.
     endif
 
-    Tperiod=5*24*60*60
+!    Tperiod=12*24*60*60 for 12 days
+    Tperiod=5*24*60*60 !for 5 days
+
 
     Kcoef=Kcoef*rearth/24/60/60
 

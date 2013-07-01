@@ -65,13 +65,13 @@ module restart_io_mod
       integer(kind=int_kind)    :: version       !   2
       integer(kind=int_kind)    :: ne            !   3
       integer(kind=int_kind)    :: np            !   4
-      integer(kind=int_kind)    :: nlev          !   6
-      integer(kind=int_kind)    :: number        !   7
-      integer(kind=int_kind)    :: ElemRecLength !   8
-      type (TimeLevel_t)        :: TimeLevel     !  13 
+      integer(kind=int_kind)    :: nlev          !   5
+      integer(kind=int_kind)    :: number        !   6
+      integer(kind=int_kind)    :: ElemRecLength !   7
+      type (TimeLevel_t)        :: TimeLevel     !  12 
    end type
 
-   integer, parameter :: RESTART_HDR_CNT = 13 
+   integer, parameter :: RESTART_HDR_CNT = 12 
 
 
    ! MT 2010:  note: when using COLLECTIVE IO, the code we have now, 
@@ -697,13 +697,14 @@ endif
     type (TimeLevel_t), intent(out)            :: tl     ! time level struct
     type (RestartHeader_t)                 :: RestartHeader
     integer :: ie
-
-    RestFile%fname=restartfile
-
+!   MT: adding barrier here, since we will change tl, so need to make
+!       sure all threads are done using it
+!$OMP BARRIER
 !$OMP MASTER
          ! ===================================
          ! Read the restart info off the file
          ! ===================================
+    RestFile%fname=restartfile
     call ReadRestartHeader(RestFile,RestartHeader,tl)
     call ReadState(RestFile,RestartBuffer,RestartHeader%ElemRecLength)
 !$OMP END MASTER

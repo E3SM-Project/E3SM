@@ -27,21 +27,16 @@ ENDIF ()
 IF (NOT SWIM_PLEV)
   SET (SWIM_PLEV 1 CACHE STRING "Default number of levels (PLEV) in each element (default value is 1)")
 ENDIF ()
-IF (NOT SWIM_NTRAC)
-  SET (SWIM_NTRAC 1 CACHE STRING "Default number of tracers (NTRAC) (default value is 1)")
-ENDIF ()
 
 MESSAGE(STATUS "Building swim with:")
 MESSAGE(STATUS "  NP = ${SWIM_NP}")
 MESSAGE(STATUS "  NC = ${SWIM_NC}")
 MESSAGE(STATUS "  PLEV = ${SWIM_PLEV}")
-MESSAGE(STATUS "  NTRAC = ${SWIM_NTRAC}")
 
 # For the configuration
 SET(NUM_POINTS ${SWIM_NP})
 SET(NUM_CELLS ${SWIM_NC})
 SET(NUM_PLEV ${SWIM_PLEV})
-SET(NUM_TRACERS ${SWIM_NTRAC})
 
 IF (${macroUSE_PIO})
   SET(PIO TRUE)
@@ -130,22 +125,24 @@ SET(SRCS_F90
                ${SRC_BASE}/jrio.c
 )
 
-SET(SRCS_SWIM     ${SRC_TRIL}/donoxloca.cpp
+SET(SRCS_SWIM
+                  ${SRC_TRIL}/trilinosNoxSolver.cpp
+                  ${SRC_TRIL}/trilinosModelEvaluator.cpp
                   ${SRC_TRIL}/block_precon_interface.cpp
-                  ${SRC_TRIL}/noxlocainterface.cpp
                   ${SRC_TRIL}/precon_interface.cpp
                   ${SRC_BASE}/derived_type_mod.F90
                   ${SRC_BASE}/implicit_mod.F90
                   ${SRC_BASE}/precon_mod.F90
 )
 
-
+#                  ${SRC_TRIL}/donoxloca.cpp
+#                  ${SRC_TRIL}/noxlocainterface.cpp
 
 
 ADD_LIBRARY(homme_swim ${SRCS_F90} ${SRCS_SWIM})
 TARGET_LINK_LIBRARIES(homme_swim pio timing  ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES})
 
 ADD_EXECUTABLE(swim ${SRC_BASE}/main.F90)
-TARGET_LINK_LIBRARIES(swim homme_swim)
+TARGET_LINK_LIBRARIES(swim homme_swim ${CMAKE_Fortran_IMPLICIT_LINK_LIBRARIES})
 INSTALL(TARGETS swim
         RUNTIME DESTINATION bin)

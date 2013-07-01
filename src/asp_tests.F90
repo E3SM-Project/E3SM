@@ -1130,7 +1130,7 @@ if (present(fvm)) then
      do ie=nets,nete
         do j=1,nep
           do i=1,nep
-            fvm(ie)%c(i,j,:,idex,:) = fvm(ie)%sga(i,j)
+            fvm(ie)%c(i,j,:,idex,:) = 1.0D0
           enddo
         enddo
      enddo
@@ -1144,7 +1144,7 @@ if (present(fvm)) then
            lon = fvm(ie)%asphere(i,j)%lon
            lat = fvm(ie)%asphere(i,j)%lat
            do k=1,nlev
-              fvm(ie)%c(i,j,k,idex,:) = fvm(ie)%sga(i,j)*tracer_q1_q2(lon,lat,hvcoord%etam(k),rotate_grid, eta_c)
+              fvm(ie)%c(i,j,k,idex,:) = tracer_q1_q2(lon,lat,hvcoord%etam(k),rotate_grid, eta_c)
            enddo
         enddo
         enddo
@@ -1158,7 +1158,7 @@ if (present(fvm)) then
            lon = fvm(ie)%asphere(i,j)%lon
            lat = fvm(ie)%asphere(i,j)%lat
            do k=1,nlev
-              fvm(ie)%c(i,j,k,idex,:) = fvm(ie)%sga(i,j)*tracer_q3(lon,lat,hvcoord%etam(k),rotate_grid)
+              fvm(ie)%c(i,j,k,idex,:) = tracer_q3(lon,lat,hvcoord%etam(k),rotate_grid)
            enddo
         enddo
         enddo
@@ -1173,7 +1173,7 @@ if (present(fvm)) then
            lon = fvm(ie)%asphere(i,j)%lon
            lat = fvm(ie)%asphere(i,j)%lat
            do k=1,nlev
-              fvm(ie)%c(i,j,k,idex,:) = fvm(ie)%sga(i,j)*tracer_q1_q2(lon,lat,hvcoord%etam(k),rotate_grid, eta_c)
+              fvm(ie)%c(i,j,k,idex,:) = tracer_q1_q2(lon,lat,hvcoord%etam(k),rotate_grid, eta_c)
            enddo
         enddo
         enddo
@@ -1187,7 +1187,7 @@ if (present(fvm)) then
         do t=1,timelevels
           do j=1,nep
             do i=1,nep
-              fvm(ie)%c(i,j,k,idex,t) = fvm(ie)%sga(i,j)
+              fvm(ie)%c(i,j,k,idex,t) = 1.0D0
             enddo
           enddo
         enddo
