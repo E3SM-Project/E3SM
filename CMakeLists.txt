@@ -295,6 +295,29 @@ IF (${ENABLE_CUDA_FORTRAN})
   ENDIF()
 ENDIF ()
 
+# Intel Phi (MIC) specific flags - only supporting the Intel compiler
+OPTION(ENABLE_INTEL_PHI FALSE)
+IF (ENABLE_INTEL_PHI)
+  IF (NOT ${CMAKE_Fortran_COMPILER_ID} STREQUAL Intel)
+    MESSAGE(FATAL_ERROR "Intel Phi acceleration only supported through the Intel compiler")
+  ELSE ()
+    SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -mmic")
+    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mmic")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmic")
+    # CMake magic for cross-compilation
+    SET(CMAKE_SYSTEM_NAME Linux) 
+    SET(CMAKE_SYSTEM_PROCESSOR k1om) 
+    SET(CMAKE_SYSTEM_VERSION 1) 
+    SET(_CMAKE_TOOLCHAIN_PREFIX  x86_64-k1om-linux-)
+    # Specify the location of the target environment
+    IF (TARGET_ROOT_PATH)
+      SET(CMAKE_FIND_ROOT_PATH ${TARGET_ROOT_PATH})
+    ELSE ()
+      SET(CMAKE_FIND_ROOT_PATH /usr/linux-k1om-4.7)
+    ENDIF ()
+  ENDIF ()
+ENDIF ()
+
 # Allow the option to add compiler flags to those provided
 SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${ADD_Fortran_FLAGS}")
 SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${ADD_C_FLAGS}")
