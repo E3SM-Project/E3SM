@@ -19,7 +19,7 @@ module namelist_mod
        multilevel,    &    
        numnodes,      & 
        sub_case,      &
-       tasknum,	      &       ! used dg model in AIX machine
+       tasknum,       &       ! used dg model in AIX machine
        remapfreq,     &       ! number of steps per remapping call
        remap_type,    &       ! selected remapping option
        statefreq,     &       ! number of steps per printstate call
@@ -33,6 +33,7 @@ module namelist_mod
        integration,   &       ! integration method
        tracer_advection_formulation, &   ! conservation or non-conservation formulaton
        tstep_type, &
+       cubed_sphere_map, &
        compute_mean_flux, &
        qsplit, &
        rsplit, &
@@ -54,6 +55,7 @@ module namelist_mod
        nu_p,          &
        nu_top,        &
        which_vlaplace, & ! which vector laplace to use, cartesian or vector_identities
+       hypervis_scaling,   & ! use tensor HV instead of scalar coefficient
        psurf_vis,    &  
        hypervis_order,    &  
        hypervis_power,    &  
@@ -152,8 +154,8 @@ module namelist_mod
 
 #endif
   use interpolate_mod, only : set_interp_parameter, get_interp_parameter
-!=======================================================================================================!                                 
-!	Adding for SW DG										!
+!=======================================================================================================!
+!    Adding for SW DG                                                                                   !
 !=======================================================================================================!
 #ifdef _SWDG  
   ! ------------------------
@@ -161,10 +163,10 @@ module namelist_mod
   ! ------------------------
   use dg_tests_mod, only : alpha_dg, alphatype    
   ! ------------------------  
-  use dg_sweq_mod, only: stage_rk	  
+  use dg_sweq_mod, only: stage_rk  
   ! ------------------------
   use physical_constants, only: dd_pi  
-  ! ------------------------	
+  ! ------------------------
 #endif
 
 !=======================================================================================================!
@@ -194,7 +196,7 @@ module namelist_mod
     type (parallel_t), intent(in) ::  par
     character(len=MAX_FILE_LEN) :: mesh_file
     integer :: se_ftype, se_limiter_option
-    integer :: se_smooth, se_phys_tscale, se_nsplit
+    integer :: se_phys_tscale, se_nsplit
     integer :: interp_nlat, interp_nlon, interp_gridtype, interp_type
     integer :: i, ii, j
     integer  :: ierr
@@ -218,7 +220,6 @@ module namelist_mod
                      se_topology,      &
                      se_ne,            &
                      se_limiter_option, &
-                     se_smooth,        &        ! Timestep Filter  
 #else
                      qsize,         &       ! number of SE tracers
                      ntrac,         &       ! number of fvm tracers
@@ -232,8 +233,8 @@ module namelist_mod
                      useframes,     &
                      numnodes,      &
                      ne,            &       ! element resolution factor
-		             tasknum,	    &
-		             remapfreq,     &       ! number of steps per remapping call
+                     tasknum,       &
+                     remapfreq,     &       ! number of steps per remapping call
                      remap_type,    &       ! selected remapping option
                      statefreq,     &       ! number of steps per printstate call
                      accumfreq,     &       ! frequency in steps of accumulation
@@ -244,6 +245,7 @@ module namelist_mod
                      tstep_type, &
                      npdg, &
                      compute_mean_flux, &
+                     cubed_sphere_map, &
                      qsplit, &
                      rsplit, &
                      physics, &             ! The type of physics, 0=none, 1=multicloud or 2= emanuel.
@@ -259,17 +261,18 @@ module namelist_mod
                      nu_q,          &
                      nu_div,          &
                      nu_p,          &
-	                 nu_top,        &
+                     nu_top,        &
                      psurf_vis,    &  
                      hypervis_order,    &  
                      hypervis_power,    &  
                      hypervis_subcycle, &
                      hypervis_subcycle_q, &
                      which_vlaplace, & 
+                     hypervis_scaling, & 
                      smooth_phis_numcycle, &
                      smooth_sgh_numcycle, &
                      smooth_phis_nudt, &
-	                 initial_total_mass, &
+                     initial_total_mass, &
                      u_perturb,     &
                      rotate_grid,   &
                      mesh_file,     &               ! Name of mesh file
@@ -342,11 +345,11 @@ module namelist_mod
          output_frequency,    &
          output_dir,          &
          output_type,         &
-	io_stride,            &
-	num_io_procs,         &
-        infilenames,          &
-        vector_uvars,         & 
-        vector_vvars,         & 
+         io_stride,           &
+         num_io_procs,        &
+         infilenames,         &
+         vector_uvars,        & 
+         vector_vvars,        & 
          output_varnames1,    &
          output_varnames2,    &
          output_varnames3,    &
@@ -354,26 +357,26 @@ module namelist_mod
          output_varnames5
 #endif
     namelist /analysis_nl/    &
-	interp_nlat,                 &
-        interp_nlon,                 &
-        interp_gridtype,             &
+        interp_nlat,          &
+        interp_nlon,          &
+        interp_gridtype,      &
         interp_type,          &
         interpolate_analysis
 
-!=======================================================================================================!                                 
-!	Adding for SW DG										!
+!=======================================================================================================!
+!   Adding for SW DG                                                                                    !
 !=======================================================================================================!
 #ifdef _SWDG
-    namelist /dg_nl/ 	      &
-    		riemanntype,  &
-    		alphatype,    &
-		alpha_dg,     &
-		stage_rk
+    namelist /dg_nl/  &
+        riemanntype,  &
+        alphatype,    &
+        alpha_dg,     &
+        stage_rk
 !=======================================================================================================!
     riemanntype= 0  
     alphatype= 0
     alpha_dg = 0.0D0    
-    stage_rk = 3	
+    stage_rk = 3
 #endif
 !=======================================================================================================!
     ! ==========================
@@ -389,8 +392,7 @@ module namelist_mod
     ! set all CAM defaults 
     ! CAM requires forward-in-time, subcycled dynamics
     ! RK2 3 stage tracers, sign-preserving conservative
-    tstep_type = 1            ! foward-in-time RK methods
-    se_smooth=0;              ! RK methods dont use robert filter
+    tstep_type = 1            ! forward-in-time RK methods
     qsplit=4; rk_stage_user=3
     se_limiter_option=4
     se_ftype = 2
@@ -490,9 +492,9 @@ module namelist_mod
           nmax = ndays * (secpday/tstep)
           restartfreq  = restartfreq*(secpday/tstep)
        end if
-       
        nEndStep = nmax
 #endif
+
        if ((integration == "semi_imp").or.(integration == "full_imp")) then
           ! =========================
           ! set solver defaults
@@ -527,8 +529,16 @@ module namelist_mod
           read(*,nml=solver_nl)
 #endif
        else if((integration .ne. "explicit").and.(integration .ne. "runge_kutta")) then
-          call abortmp('integration must be explicit, semi_imp or runge_kutta')
+          call abortmp('integration must be explicit, semi_imp, full_imp, or runge_kutta')
        end if
+
+       if (integration == "full_imp") then
+          if (tstep_type<10) then
+             ! namelist did not set a valid tstep_type. pick one:
+             tstep_type=11   ! backward euler
+             !tstep_type=12  ! Crank Nicolson
+          endif
+       endif
 
        write(iulog,*)"reading filter namelist..."
        ! Set default mu/freq for advection filtering
@@ -575,46 +585,50 @@ module namelist_mod
            test_case(1:13)=="jw_baroclinic" .or. &
            test_case(1:4)=="asp_" .or. &
            test_case(1:10)=="aquaplanet") then
-          write(iulog,*)"reading vertical namelist..."
+         write(iulog,*) "reading vertical namelist..."
 #if defined(OSF1) || defined(_BGL) || defined(_NAMELIST_FROM_FILE)
-          read(unit=7,nml=vert_nl)
+         read(unit=7,nml=vert_nl)
 #else
-          read(*,nml=vert_nl)
+         read(*,nml=vert_nl)
 #endif
-	write(iulog,*) '  vform =',vform
-	write(iulog,*) '  vfile_mid=',vfile_mid
-        write(iulog,*) '  vfile_int=',vfile_int
+         ! Reformat these strings
+         vform = trim(adjustl(vform))
+         vfile_mid = trim(adjustl(vfile_mid))
+         vfile_int = trim(adjustl(vfile_int))
 
+         write(iulog,*) '  vform =',vform
+         write(iulog,*) '  vfile_mid=',vfile_mid
+         write(iulog,*) '  vfile_int=',vfile_int
 
-        write(iulog,*)"reading aquaplanet namelist..."
-	if(test_case(1:10)=="aquaplanet") then
-          cool_ampl     =  -1.5D0
-          cool_min      =  12.0D0
-          cool_max      =  15.0D0
-          qv_flag       =  0
-          qv_pert_flag  =  1
-          qv_pert_ampl  =  0.1D0
-          qv_pert_zmin  =  2.0D3
-          qv_pert_zmax  = 18.0D3
-          isrf_forc     =  1
-          h_dis         =  0.5D3
-          Cdrag         =  1.0D-3
-          wstar         =  1.0D0
-          tsurf         =  300.D0
-          qsurf         =  20.D-3
-          u0            =  0.D0
-          zabsampl      =  0.333D0
-          zabsmid       = 63.0D3
-          zabsmin       =  0.0D3
-          noisef        =  0
+         write(iulog,*)"reading aquaplanet namelist..."
+         if(test_case(1:10)=="aquaplanet") then
+            cool_ampl     =  -1.5D0
+            cool_min      =  12.0D0
+            cool_max      =  15.0D0
+            qv_flag       =  0
+            qv_pert_flag  =  1
+            qv_pert_ampl  =  0.1D0
+            qv_pert_zmin  =  2.0D3
+            qv_pert_zmax  = 18.0D3
+            isrf_forc     =  1
+            h_dis         =  0.5D3
+            Cdrag         =  1.0D-3
+            wstar         =  1.0D0
+            tsurf         =  300.D0
+            qsurf         =  20.D-3
+            u0            =  0.D0
+            zabsampl      =  0.333D0
+            zabsmid       = 63.0D3
+            zabsmin       =  0.0D3
+            noisef        =  0
  
 #if defined(OSF1) || defined(_BGL) || defined(_NAMELIST_FROM_FILE)
-          read(unit=7,nml=aquaplanet_nl)
+           read(unit=7,nml=aquaplanet_nl)
 #else
-          read(*,nml=aquaplanet_nl)
+           read(*,nml=aquaplanet_nl)
 #endif
         
-	end if
+         end if
 
        end if
 #endif
@@ -627,12 +641,14 @@ module namelist_mod
 #endif
        interp_nlat =  0
        interp_nlon = 0
-       interp_gridtype = 2	
+       interp_gridtype = 2
        interp_type = 0
        vector_uvars(:)=''
        vector_vvars(:)=''
-       vector_uvars(1:10) = (/'U       ','UBOT    ','U200    ','U250    ','U850    ','FU      ','CONVU   ','DIFFU   ','UTGWORO ','UFLX    '/)
-       vector_vvars(1:10) = (/'V       ','VBOT    ','V200    ','V250    ','V850    ','FV      ','CONVV   ','DIFFV   ','VTGWORO ','VFLX    '/)
+       vector_uvars(1:10) = (/'U       ','UBOT    ','U200    ','U250    ',&
+            'U850    ','FU      ','CONVU   ','DIFFU   ','UTGWORO ','UFLX    '/)
+       vector_vvars(1:10) = (/'V       ','VBOT    ','V200    ','V250    ',&
+            'V850    ','FV      ','CONVV   ','DIFFV   ','VTGWORO ','VFLX    '/)
 #ifndef CAM
        infilenames(:) = ''
        output_prefix = ""
@@ -692,14 +708,14 @@ module namelist_mod
       end if
 
       if(output_varnames1(1).eq.'     ') then
-         if( runtype>=0) 	then
+         if( runtype>=0) then
             call setvarnames(output_varnames1)
          else ! interpolation mode
             output_varnames1='all'
          end if
       end if
        do i=1,max_output_streams
-	if(output_frequency(i)>0 .and. output_end_time(i)==0) output_end_time(i)=-1
+          if(output_frequency(i)>0 .and. output_end_time(i)==0) output_end_time(i)=-1
           if(output_timeunits(i).eq.1) then  ! per_day
              output_frequency(i) = output_frequency(i)*(secpday/tstep)
              output_start_time(i)= output_start_time(i)*(secpday/tstep)
@@ -715,8 +731,8 @@ module namelist_mod
        end do
 
 
-!=======================================================================================================!                                 
-!	Adding for SW DG										!
+!=======================================================================================================!
+!     Adding for SW DG                                                                                  !
 !=======================================================================================================!
 #ifdef _SWDG
       write(iulog,*)"reading dg namelist..."
@@ -736,7 +752,7 @@ module namelist_mod
     endif 
 #endif      
 !=======================================================================================================!
-	
+
 #if defined(OSF1) || defined(_BGL) || defined(_NAMELIST_FROM_FILE)
        close(unit=7)
 #endif
@@ -749,7 +765,6 @@ module namelist_mod
     if(se_topology .ne. 'none') topology = se_topology
 #endif
 
-    	
     call MPI_barrier(par%comm,ierr)
 
     npart  = par%nprocs 
@@ -781,9 +796,8 @@ module namelist_mod
     call MPI_bcast(useframes ,1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(runtype   ,1,MPIinteger_t,par%root,par%comm,ierr)
 #ifdef CAM
-    smooth = se_smooth
     phys_tscale = se_phys_tscale
-    limiter_option  = se_limiter_option	
+    limiter_option  = se_limiter_option
     nsplit = se_nsplit
 #else
     call MPI_bcast(tstep     ,1,MPIreal_t   ,par%root,par%comm,ierr) 
@@ -802,9 +816,7 @@ module namelist_mod
 
     call MPI_bcast(fine_ne    ,1,MPIinteger_t,par%root,par%comm,ierr) 
     call MPI_bcast(max_hypervis_courant,1,MPIreal_t   ,par%root,par%comm,ierr)
- 
     call MPI_bcast(which_vlaplace    ,1,MPIinteger_t,par%root,par%comm,ierr)
-
     call MPI_bcast(nu         ,1,MPIreal_t   ,par%root,par%comm,ierr) 
     call MPI_bcast(nu_s         ,1,MPIreal_t   ,par%root,par%comm,ierr) 
     call MPI_bcast(nu_q         ,1,MPIreal_t   ,par%root,par%comm,ierr) 
@@ -813,7 +825,8 @@ module namelist_mod
     call MPI_bcast(nu_top   ,1,MPIreal_t   ,par%root,par%comm,ierr) 
     call MPI_bcast(psurf_vis,1,MPIinteger_t   ,par%root,par%comm,ierr) 
     call MPI_bcast(hypervis_order,1,MPIinteger_t   ,par%root,par%comm,ierr) 
-    call MPI_bcast(hypervis_power,1,MPIreal_t   ,par%root,par%comm,ierr) 
+    call MPI_bcast(hypervis_power,1,MPIreal_t   ,par%root,par%comm,ierr)
+    call MPI_bcast(hypervis_scaling,1,MPIreal_t   ,par%root,par%comm,ierr) 
     call MPI_bcast(hypervis_subcycle,1,MPIinteger_t   ,par%root,par%comm,ierr) 
     call MPI_bcast(hypervis_subcycle_q,1,MPIinteger_t   ,par%root,par%comm,ierr) 
     call MPI_bcast(smooth_phis_numcycle,1,MPIinteger_t   ,par%root,par%comm,ierr) 
@@ -828,6 +841,7 @@ module namelist_mod
     call MPI_bcast(tstep_type,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(npdg,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(compute_mean_flux,1,MPIinteger_t ,par%root,par%comm,ierr)
+    call MPI_bcast(cubed_sphere_map,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(qsplit,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(rsplit,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(physics,1,MPIinteger_t ,par%root,par%comm,ierr)
@@ -940,15 +954,37 @@ module namelist_mod
       write (*,*) "Specify one or the other, but not both."
       call abortmp("Do not specify ne if using a mesh file input.")
     end if 
-    if (par%masterproc) write (iulog,*) "Mesh File:", mesh_file
+    if (par%masterproc) write (iulog,*) "Mesh File:", trim(mesh_file)
     if (ne.eq.0) then
-       if (par%masterproc) write (iulog,*) "Opening Mesh File:", mesh_file
-       
+       if (par%masterproc) write (iulog,*) "Opening Mesh File:", trim(mesh_file)
       call set_mesh_dimensions() 
       call MeshOpen(mesh_file, par) 
-      
     end if
+    ! set map
+    if (cubed_sphere_map<0) then
+       cubed_sphere_map=0  ! default is equi-angle gnomonic
+       if (ne.eq.0) cubed_sphere_map=2  ! element_local for var-res grids
+    endif
+    if (par%masterproc) write (iulog,*) "Reference element projection: cubed_sphere_map=",cubed_sphere_map
 
+
+!logic around different hyperviscosity options
+    if (hypervis_power /= 0) then
+      if (hypervis_scaling /= 0) then
+        print *,'Both hypervis_power and hypervis_scaling are nonzero.'
+        print *,'(1) Set hypervis_power=1, hypervis_scaling=0 for HV based on an element area.'
+        print *,'(2) Set hypervis_power=0 and hypervis_scaling=1 for HV based on a tensor.'
+        print *,'(3) Set hypervis_power=0 and hypervis_scaling=0 for constant HV.'
+          call abortmp("Error: hypervis_power>0 and hypervis_scaling>0")
+      endif
+    endif
+
+    ! sanity check:
+    if (hypervis_scaling==1) then
+       if (which_vlaplace/=2) then
+          call abortmp('Tensor HV option requires which_vlaplace=2 for now')
+       endif
+    endif
 
 
     ftype = se_ftype    
@@ -967,11 +1003,6 @@ module namelist_mod
         if (rsplit>0) then
           call abortmp('vertically lagrangian code requires tstep_type=1(RK timestepping)')
         endif
-    endif
-    if (tstep_type == 1) then
-       if (energy_fixer == 1 .or. energy_fixer==2) then
-          call abortmp("ERROR: Rk timesteping requires non-staggered-in-time energy fixer")
-       endif
     endif
 
 
@@ -992,8 +1023,8 @@ module namelist_mod
 
 
 
-!=======================================================================================================!                                 
-!	Adding for SW DG										!
+!=======================================================================================================!
+!   Adding for SW DG                                                                                    !
 !=======================================================================================================!
 #ifndef CAM
 #ifdef _SWDG    
@@ -1022,12 +1053,8 @@ module namelist_mod
        if (interp_nlon==0 .or. interp_nlat==0) then
           ! compute interpolation grid based on number of points around equator
           call set_interp_parameter('auto',4*ne*(np-1))
-          
           interp_nlat = get_interp_parameter('nlat')
           interp_nlon = get_interp_parameter('nlon')
-          
-          call MPI_bcast(interp_nlat , 1,MPIinteger_t,par%root,par%comm,ierr)
-          call MPI_bcast(interp_nlon , 1,MPIinteger_t,par%root,par%comm,ierr)
        else
           call set_interp_parameter('nlat',interp_nlat)
           call set_interp_parameter('nlon',interp_nlon)
@@ -1035,9 +1062,9 @@ module namelist_mod
     endif
 
     ! some default diffusion coefficiets
-    if(nu_s<0) nu_s=nu	
-    if(nu_q<0) nu_q=nu	
-    if(nu_div<0) nu_div=nu	
+    if(nu_s<0) nu_s=nu
+    if(nu_q<0) nu_q=nu
+    if(nu_div<0) nu_div=nu
 
     if (multilevel <= 0) then  
       nmpi_per_node = 1
@@ -1094,7 +1121,7 @@ module namelist_mod
        if (integration == "explicit" ) then
           write(iulog,*)"readnl: LF-trapazoidal freq= ",LFTfreq
        endif
-       if (integration == "runge_kutta" .or. tstep_type==1 ) then
+       if (integration == "runge_kutta" .or. tstep_type>0 ) then
           write(iulog,*)"readnl: rk_stage_user   = ",rk_stage_user
        endif
        write(iulog,*)"readnl: tracer_advection_formulation  = ",tracer_advection_formulation
@@ -1104,7 +1131,6 @@ module namelist_mod
        write(iulog,*)"readnl: se_nsplit         = ", NSPLIT
        write(iulog,*)"readnl: se_ftype          = ",ftype
        write(iulog,*)"readnl: se_limiter_option = ",limiter_option
-       write(iulog,*)"filter: se_smooth         = ",se_smooth
 #else
        write(iulog,*)"readnl: tstep          = ",tstep
        write(iulog,*)"readnl: ftype          = ",ftype
@@ -1129,21 +1155,26 @@ module namelist_mod
 
 
 
-
-       if (hypervis_power==0) then
-          write(iulog,*)"Hyperviscosity power set to zero, constant hyperviscosity used."
-       else
-          write(iulog,*)"Variable hyperviscosity with power ",hypervis_power," used."
+!!!!!!!!!!!!!!!fix this
+       if (hypervis_power /= 0)then
+          write(iulog,*)"Variable area-based hyperviscosity with power ",hypervis_power," used."
           write(iulog,*)"Maximum imposed on hypervis Courant = ", max_hypervis_courant
+       elseif(hypervis_scaling /=0)then
+          write(iulog,*)"Tensor hyperviscosity with scaling ",hypervis_scaling," used."
+       else
+          write(iulog,*)"Constant (hyper)viscosity used."
        endif
+!!!!!!!!!!!!!
+
        if (hypervis_order==1) then
-          write(iulog,*)"weak form viscsosity subcycle, tracer subcycle = ",&
+          write(iulog,*)"weak form viscosity subcycle, tracer subcycle = ",&
           hypervis_subcycle,hypervis_subcycle_q
        else if (hypervis_order==2) then
-          write(iulog,*)"weak form hyper viscsosity subcycle, tracer subcycle = ",&
+          write(iulog,*)"weak form hyper viscosity subcycle, tracer subcycle = ",&
           hypervis_subcycle, hypervis_subcycle_q
        endif
        write(iulog,*)"psurf_vis: ",psurf_vis
+       write(iulog,*)"which_vlaplace (0=new, 1=orig, 2=cartesian): ",which_vlaplace
        write(iulog,*)"Equivalent ne in fine region = ", fine_ne
        write(iulog,'(a,2e9.2)')"viscosity:  nu (vor/div) = ",nu,nu_div
        write(iulog,'(a,2e9.2)')"viscosity:  nu_s      = ",nu_s
@@ -1206,8 +1237,8 @@ module namelist_mod
        write(iulog,*)"  analysis: num_io_procs = ",num_io_procs
 
        do i=1,max_output_streams
-          if(output_frequency(i) .gt. 0) then	
-             write(iulog,*)"  analysis stream     :",i	
+          if(output_frequency(i) .gt. 0) then
+             write(iulog,*)"  analysis stream     :",i
              write(iulog,*)"  analysis : start_time", output_start_time(i)
              write(iulog,*)"  analysis : end_time  ", output_end_time(i)
              write(iulog,*)"  analysis : frequency ", output_frequency(i)
@@ -1233,8 +1264,8 @@ module namelist_mod
           write(iulog,*)" analysis interp gridtype = ",interp_gridtype
           write(iulog,*)" analysis interpolation type = ",interp_type
        end if
-!=======================================================================================================!                                 
-!	Adding for SW DG										!
+!=======================================================================================================!
+!      Adding for SW DG                                                                                 !
 !=======================================================================================================!
 #ifdef _SWDG
        write(iulog,*)'dg: riemanntype=',riemanntype

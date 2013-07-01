@@ -1,5 +1,5 @@
 !This is where all of the PGI CUDA FORTRAN code will go, and these routines will be called from prim_advection_mod.
-!This is compiled regardless, but PGI-specific calls are always wrapped in the _ACCEL ifdefs that are automagically
+!This is compiled regardless, but PGI-specific calls are always wrapped in the USE_CUDA_FORTRAN ifdefs that are automagically
 !activated when -Mcuda is specified during compilation with a PGI compiler. Thus, it will be ignored unless explicitly
 !activated by the user
 !
@@ -19,8 +19,18 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 module cuda_mod
-#ifdef _ACCEL
+#if USE_CUDA_FORTRAN
+
+! NP > 4 is not supported due to shared memory constraints
+#if NP > 4
+#error CUDA Fortran build only supported with NP <= 4
+#endif
+
 #define PAD 1
 
 !Put everything CUDA-specific in here so it doesn't get compiled without -Mcuda enabled on a PGI compiler
@@ -31,14 +41,17 @@ module cuda_mod
   use edge_mod       , only: EdgeBuffer_t
   implicit none
   private
+  save
 
   !First listed are all externally accescible routines
   public :: cuda_mod_init
   public :: euler_step_cuda 
   public :: qdp_time_avg_cuda
   public :: advance_hypervis_scalar_cuda
+  public :: vertical_remap_cuda
   public :: copy_qdp_d2h
   public :: copy_qdp_h2d
+  public :: cudaThreadSynchronize_wrap
 
   !This is from prim_advection_mod.F90
   type(EdgeBuffer_t) :: edgeAdv, edgeAdvQ3, edgeAdvQ2, edgeAdvDSS
@@ -49,6 +62,7 @@ module cuda_mod
 
   !Device arrays
   real (kind=real_kind),device,allocatable,dimension(:,:,:,:,:,:) :: qdp_d
+  real (kind=real_kind),device,allocatable,dimension(:,:,:,:)     :: qdp1_d
   real (kind=real_kind),device,allocatable,dimension(:,:,:,:,:)   :: qtens_d
   real (kind=real_kind),device,allocatable,dimension(:,:,:,:,:)   :: qtens_biharmonic_d
   real (kind=real_kind),device,allocatable,dimension(:,:,:)       :: spheremp_d
@@ -57,7 +71,6 @@ module cuda_mod
   real (kind=real_kind),device,allocatable,dimension(:,:)         :: deriv_dvv_d
   real (kind=real_kind),device,allocatable,dimension(:,:,:)       :: variable_hyperviscosity_d
   real (kind=real_kind),device,allocatable,dimension(:,:,:)       :: metdet_d
-!  real (kind=real_kind),device,allocatable,dimension(:,:,:)       :: psdiss_biharmonic_d
   real (kind=real_kind),device,allocatable,dimension(:,:,:,:)     :: dpdiss_biharmonic_d
   real (kind=real_kind),device,allocatable,dimension(:,:,:)       :: rmetdet_d
   real (kind=real_kind),device,allocatable,dimension(:,:)         :: edgebuf_d
@@ -69,7 +82,7 @@ module cuda_mod
   real (kind=real_kind),device,allocatable,dimension(:,:,:,:,:)   :: vstar_d
   real (kind=real_kind),device,allocatable,dimension(:,:,:,:)     :: divdp_d
   real (kind=real_kind),device,allocatable,dimension(:,:,:,:)     :: dp_d
-  real (kind=real_kind),device,allocatable,dimension(:,:,:,:,:)   :: dp_star_d
+  real (kind=real_kind),device,allocatable,dimension(:,:,:,:)     :: dp_star_d
   real (kind=real_kind),device,allocatable,dimension(:,:,:)       :: qmin_d
   real (kind=real_kind),device,allocatable,dimension(:,:,:)       :: qmax_d
   integer              ,device,allocatable,dimension(:)           :: send_nelem_d
@@ -79,22 +92,32 @@ module cuda_mod
   integer              ,device,allocatable,dimension(:)           :: recv_internal_indices_d
   integer              ,device,allocatable,dimension(:)           :: recv_external_indices_d
   real (kind=real_kind),device,allocatable,dimension(:,:,:)       :: recvbuf_d
+  real(kind=real_kind) ,device,allocatable,dimension(:,:,:,:)     :: dpo_d
+  real(kind=real_kind) ,device,allocatable,dimension(:,:,:,:,:)   :: ppmdx_d
+  real(kind=real_kind) ,device,allocatable,dimension(:,:,:,:)     :: z1_d
+  real(kind=real_kind) ,device,allocatable,dimension(:,:,:,:)     :: z2_d
+  integer              ,device,allocatable,dimension(:,:,:,:)     :: kid_d
 
   !PINNED Host arrays
   real(kind=real_kind),pinned,allocatable,dimension(:,:,:,:,:,:) :: qdp_h
-  real(kind=real_kind),pinned,allocatable,dimension(:,:,:,:,:) :: vstar_h
-  real(kind=real_kind),pinned,allocatable,dimension(:,:,:,:,:) :: qtens_h
-  real(kind=real_kind),pinned,allocatable,dimension(:,:,:,:)   :: dp_h
-  real(kind=real_kind),pinned,allocatable,dimension(:,:,:,:)   :: divdp_h
-  real(kind=real_kind),pinned,allocatable,dimension(:,:,:,:,:) :: dp_star_h
-  real(kind=real_kind),pinned,allocatable,dimension(:,:,:,:) :: dp_np1_h
-  real(kind=real_kind),pinned,allocatable,dimension(:,:,:) :: sendbuf_h
-  real(kind=real_kind),pinned,allocatable,dimension(:,:,:) :: recvbuf_h
-  real(kind=real_kind),pinned,allocatable,dimension(:,:,:,:,:) :: qtens_biharmonic
-  real(kind=real_kind),pinned,allocatable,dimension(:,:,:) :: qmin
-  real(kind=real_kind),pinned,allocatable,dimension(:,:,:) :: qmax
-!  real(kind=real_kind),pinned,allocatable,dimension(:,:,:) :: psdiss_biharmonic_h
-  real(kind=real_kind),pinned,allocatable,dimension(:,:,:,:) :: dpdiss_biharmonic_h
+  real(kind=real_kind),pinned,allocatable,dimension(:,:,:,:)     :: qdp1_h
+  real(kind=real_kind),pinned,allocatable,dimension(:,:,:,:,:)   :: vstar_h
+  real(kind=real_kind),pinned,allocatable,dimension(:,:,:,:,:)   :: qtens_h
+  real(kind=real_kind),pinned,allocatable,dimension(:,:,:,:)     :: dp_h
+  real(kind=real_kind),pinned,allocatable,dimension(:,:,:,:)     :: divdp_h
+  real(kind=real_kind),pinned,allocatable,dimension(:,:,:,:)     :: dp_star_h
+  real(kind=real_kind),pinned,allocatable,dimension(:,:,:,:)     :: dp_np1_h
+  real(kind=real_kind),pinned,allocatable,dimension(:,:,:)       :: sendbuf_h
+  real(kind=real_kind),pinned,allocatable,dimension(:,:,:)       :: recvbuf_h
+  real(kind=real_kind),pinned,allocatable,dimension(:,:,:,:,:)   :: qtens_biharmonic
+  real(kind=real_kind),pinned,allocatable,dimension(:,:,:)       :: qmin
+  real(kind=real_kind),pinned,allocatable,dimension(:,:,:)       :: qmax
+  real(kind=real_kind),pinned,allocatable,dimension(:,:,:,:)     :: dpdiss_biharmonic_h
+  real(kind=real_kind),pinned,allocatable,dimension(:,:,:,:)     :: dpo_h
+  real(kind=real_kind),pinned,allocatable,dimension(:,:,:,:,:)   :: ppmdx_h
+  real(kind=real_kind),pinned,allocatable,dimension(:,:,:,:)     :: z1_h
+  real(kind=real_kind),pinned,allocatable,dimension(:,:,:,:)     :: z2_h
+  integer             ,pinned,allocatable,dimension(:,:,:,:)     :: kid_h
 
   !Normal Host arrays
   integer,allocatable,dimension(:)   :: send_nelem
@@ -114,15 +137,17 @@ module cuda_mod
   integer, parameter :: east_px  = 3
   integer, parameter :: north_px = 4
   integer, parameter :: west_px  = 2
-  integer, parameter :: cuda_streams = 16
-  integer            :: streams(0:cuda_streams)
-  integer            :: streams2(0:cuda_streams)
+  integer :: cuda_streams
+  integer(kind=cuda_stream_kind), allocatable :: streams(:)
+  integer(kind=cuda_stream_kind), allocatable :: streams2(:)
   integer            :: nbuf
   integer            :: nmsg_rcvd
   integer            :: nmsg_sent
   integer, device :: max_neigh_edges_d, max_corner_elem_d
 
   type(cudaEvent) :: timer1, timer2
+  integer, parameter :: gs = 2
+  real(kind=real_kind), device :: rrearth
 
 
 contains
@@ -139,6 +164,7 @@ contains
     use element_mod   , only: element_t
     use derivative_mod, only: derivative_t
     use hybvcoord_mod, only: hvcoord_t
+    use physical_constants, only: rrearth_mod => rrearth
     implicit none
     type(element_t)   , intent(in) :: elem(:)
     type(derivative_t), intent(in) :: deriv
@@ -154,8 +180,14 @@ contains
     logical,allocatable,dimension(:)   :: elem_computed
     integer :: total_work
 
+    rrearth = rrearth_mod
+
     max_neigh_edges_d = max_neigh_edges
     max_corner_elem_d = max_corner_elem
+
+    cuda_streams = nelemd
+    allocate(streams (0:cuda_streams))
+    allocate(streams2(0:cuda_streams))
 
 #if (defined ELEMENT_OPENMP)
     write(*,*) 'ERROR: Do not use ELEMENT_OPENMP and CUDA FORTRAN'
@@ -188,6 +220,7 @@ contains
     allocate( qmin_d                   (nlev,qsize_d                 ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( qmax_d                   (nlev,qsize_d                 ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( qdp_d                    (np,np,nlev,qsize_d,timelevels,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+    allocate( qdp1_d                   (np,np,nlev                   ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( qtens_d                  (np,np,nlev,qsize_d           ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( qtens_biharmonic_d       (np,np,nlev,qsize_d           ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( spheremp_d               (np,np                        ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
@@ -203,20 +236,21 @@ contains
     allocate( dp_d                     (np,np,nlev                   ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( hyai_d                   (      nlev+1                        ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( hybi_d                   (      nlev+1                        ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
-    allocate( dp_star_d                (np,np,nlev,qsize_d           ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+    allocate( dp_star_d                (np,np,nlev                   ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( reverse_d                (max_neigh_edges              ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( putmapP_d                (max_neigh_edges              ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( getmapP_d                (max_neigh_edges              ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
-    allocate( recvbuf_d                (nlev*qsize_d,mx_recv_len,nRecvCycles) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( edgebuf_d                (nlev*qsize_d,nbuf                   ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
-    allocate( send_nelem_d             (       nSendCycles                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
-    allocate( recv_nelem_d             (       nRecvCycles                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
-    allocate( send_indices_d           (nelemd,nSendCycles                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
-    allocate( recv_indices_d           (nelemd,nRecvCycles                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( recv_internal_indices_d  (nelemd                              ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( recv_external_indices_d  (nelemd                              ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+    allocate( dpo_d                    (np,np,   1-gs:nlev+gs        ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+    allocate( ppmdx_d                  (np,np,10,   0:nlev+1         ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+    allocate( z1_d                     (np,np,        nlev           ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+    allocate( z2_d                     (np,np,        nlev           ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+    allocate( kid_d                    (np,np,        nlev           ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
 
     allocate( qdp_h                    (np,np,nlev,qsize_d,timelevels,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+    allocate( qdp1_h                   (np,np,nlev                   ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( qmin                     (nlev,qsize_d                 ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( qmax                     (nlev,qsize_d                 ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( vstar_h                  (np,np,nlev,2                 ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
@@ -224,27 +258,45 @@ contains
     allocate( qtens_biharmonic         (np,np,nlev,qsize_d           ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( dp_h                     (np,np,nlev                   ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( divdp_h                  (np,np,nlev                   ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
-    allocate( dp_star_h                (np,np,nlev,qsize_d           ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+    allocate( dp_star_h                (np,np,nlev                   ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( dpdiss_biharmonic_h      (np,np,nlev                   ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( dp_np1_h                 (np,np,nlev                   ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
-    allocate( sendbuf_h                (nlev*qsize_d,mx_send_len,nSendCycles) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
-    allocate( recvbuf_h                (nlev*qsize_d,mx_recv_len,nRecvCycles) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
-    allocate( send_elem_mask           (nelemd,nSendCycles                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
-    allocate( recv_elem_mask           (nelemd,nRecvCycles                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
-    allocate( send_nelem               (       nSendCycles                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
-    allocate( recv_nelem               (       nRecvCycles                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
-    allocate( send_indices             (nelemd,nSendCycles                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
-    allocate( recv_indices             (nelemd,nRecvCycles                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+    allocate( dpo_h                    (np,np,   1-gs:nlev+gs        ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+    allocate( ppmdx_h                  (np,np,10,   0:nlev+1         ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+    allocate( z1_h                     (np,np,        nlev           ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+    allocate( z2_h                     (np,np,        nlev           ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+    allocate( kid_h                    (np,np,        nlev           ,nelemd) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+
+    ! The PGI compiler with cuda enabled errors when allocating arrays of zero
+    !   size - here when using only one MPI task
+    if (nSendCycles > 0) then
+      allocate( send_nelem_d             (       nSendCycles                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+      allocate( send_indices_d           (nelemd,nSendCycles                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+      allocate( sendbuf_h                (nlev*qsize_d,mx_send_len,nSendCycles) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+      allocate( send_elem_mask           (nelemd,nSendCycles                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+      allocate( send_nelem               (       nSendCycles                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+      allocate( send_indices             (nelemd,nSendCycles                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+      allocate( send_elem_mask           (nelemd,nSendCycles                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+      allocate( d2h_done                 (nSendCycles                         ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+      allocate( msg_sent                 (nSendCycles                         ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+    endif
+
+    if (nRecvCycles > 0) then
+      allocate( recv_nelem_d             (       nRecvCycles                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+      allocate( recv_indices_d           (nelemd,nRecvCycles                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+      allocate( recvbuf_h                (nlev*qsize_d,mx_recv_len,nRecvCycles) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+      allocate( recvbuf_d                (nlev*qsize_d,mx_recv_len,nRecvCycles) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+      allocate( recv_elem_mask           (nelemd,nRecvCycles                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+      allocate( recv_nelem               (       nRecvCycles                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+      allocate( recv_indices             (nelemd,nRecvCycles                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+      allocate( recv_elem_mask           (nelemd,nRecvCycles                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+      allocate( h2d_done                 (nRecvCycles                         ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+      allocate( msg_rcvd                 (nRecvCycles                         ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
+    endif 
+
     allocate( recv_internal_indices    (nelemd                              ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( recv_external_indices    (nelemd                              ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
-    allocate( send_elem_mask           (nelemd,nSendCycles                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
-    allocate( recv_elem_mask           (nelemd,nRecvCycles                  ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
     allocate( elem_computed            (nelemd                              ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
-    allocate( d2h_done                 (nSendCycles                         ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
-    allocate( msg_sent                 (nSendCycles                         ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
-    allocate( msg_rcvd                 (nRecvCycles                         ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
-    allocate( h2d_done                 (nRecvCycles                         ) , stat = ierr ) ; if ( ierr .ne. 0 ) stop __LINE__
-
     write(*,*) "send data from host to device"
     !Copy over data to the device
     ierr = cudaMemcpy( deriv_dvv_d , deriv%dvv    , size( deriv%dvv    ) , cudaMemcpyHostToDevice )
@@ -413,21 +465,24 @@ contains
 
 
 
+  function cudaThreadSynchronize_wrap() result(ierr)
+    integer :: ierr
+    ierr = cudaThreadSynchronize()
+  end function cudaThreadSynchronize_wrap
+
+
+
   subroutine copy_qdp_h2d( elem , nt )
     use element_mod, only: element_t
     implicit none
     type(element_t), intent(in   ) :: elem(:)
     integer        , intent(in   ) :: nt
     integer :: ierr , ie
-!$OMP BARRIER
-!$OMP MASTER
-    ierr = cudaThreadSynchronize()
+    !$OMP MASTER
     do ie = 1,nelemd
-      ierr = cudaMemcpy( qdp_d(1,1,1,1,nt,ie) , elem(ie)%state%qdp(1,1,1,1,nt) , size(elem(ie)%state%qdp(:,:,:,:,nt)) , cudaMemcpyHostToDevice )
+      ierr = cudaMemcpyAsync( qdp_d(1,1,1,1,nt,ie) , elem(ie)%state%qdp(1,1,1,1,nt) , size(elem(ie)%state%qdp(:,:,:,:,nt)) , cudaMemcpyHostToDevice , streams(1) )
     enddo
-    ierr = cudaThreadSynchronize()
-!$OMP END MASTER
-!$OMP BARRIER
+    !$OMP END MASTER
   end subroutine copy_qdp_h2d
 
 
@@ -438,15 +493,11 @@ contains
     type(element_t), intent(in   ) :: elem(:)
     integer        , intent(in   ) :: nt
     integer :: ierr , ie
-!$OMP BARRIER
-!$OMP MASTER
-    ierr = cudaThreadSynchronize()
+    !$OMP MASTER
     do ie = 1,nelemd
       ierr = cudaMemcpy( elem(ie)%state%qdp(1,1,1,1,nt) , qdp_d(1,1,1,1,nt,ie) , size(elem(ie)%state%qdp(:,:,:,:,nt)) , cudaMemcpyDeviceToHost )
     enddo
-    ierr = cudaThreadSynchronize()
-!$OMP END MASTER
-!$OMP BARRIER
+    !$OMP END MASTER
   end subroutine copy_qdp_d2h
 
 
@@ -463,6 +514,7 @@ contains
   use control_mod       , only: nu_q, nu_p, limiter_option
   use perf_mod          , only: t_startf, t_stopf  ! _EXTERNAL
   use viscosity_mod     , only: biharmonic_wk_scalar, biharmonic_wk_scalar_minmax, neighbor_minmax
+  use parallel_mod      , only: iam
   implicit none
   integer              , intent(in   )         :: np1_qdp, n0_qdp
   real (kind=real_kind), intent(in   )         :: dt
@@ -490,22 +542,57 @@ contains
 
   call t_startf('euler_step')
 
-  if (rhs_multiplier == 0) then
-    call copy_qdp_h2d( elem , n0_qdp)
+  if (limiter_option == 8) then
+    write(*,*) 'CUDA_MOD IS NOT INTENDED FOR USE WITH LIMITER_OPTION == 8 AT THIS TIME!'
+    write(*,*) 'PLEASE USE LIMITER_OPTION == 0 WHEN THE GPU OPTION IS ENABLED!'
+    stop
+  endif
+  if (nu_p > 0) then
+    write(*,*) 'CUDA_MOD IS NOT INTENDED FOR USE WITH NU_P > 0 AT THIS TIME!'
+    write(*,*) 'PLEASE USE NU_P == 0 WHEN THE GPU OPTION IS ENABLED!'
+    stop
   endif
 
-  if (limiter_option == 8) then
+  if (rhs_multiplier == 0) then
     do ie = nets , nete
-      divdp_h(:,:,:,ie) = elem(ie)%derived%divdp
-      if ( nu_p > 0 .and. rhs_multiplier == 2 ) dpdiss_biharmonic_h(:,:,:,ie) = elem(ie)%derived%dpdiss_biharmonic
+      qdp1_h(:,:,:,ie) = elem(ie)%state%Qdp(:,:,:,1,n0_qdp)
     enddo
+    !$OMP BARRIER
+    !$OMP MASTER
+    ierr = cudaMemcpyAsync( qdp1_d , qdp1_h , size( qdp1_h ) , cudaMemcpyHostToDevice , streams(1) )
+    blockdim = dim3( np     , np , nlev )
+    griddim  = dim3( nelemd , 1  , 1    )
+    call unpack_qdp1<<<griddim,blockdim,0,streams(1)>>>( qdp1_d , qdp_d , n0_qdp , nets , nete )
+    !$OMP END MASTER
+  endif
+
+  rhs_viss = 0
+  !   2D Advection step
+  do ie = nets , nete
+    ! Compute velocity used to advance Qdp 
+    do k = 1 , nlev    !  Loop index added (AAM)
+      ! derived variable divdp_proj() (DSS'd version of divdp) will only be correct on 2nd and 3rd stage
+      ! but that's ok because rhs_multiplier=0 on the first stage:
+      dp_h(:,:,k,ie) = elem(ie)%derived%dp(:,:,k) - rhs_multiplier * dt * elem(ie)%derived%divdp_proj(:,:,k) 
+      vstar_h(:,:,k,1,ie) = elem(ie)%derived%vn0(:,:,1,k) / dp_h(:,:,k,ie)
+      vstar_h(:,:,k,2,ie) = elem(ie)%derived%vn0(:,:,2,k) / dp_h(:,:,k,ie)
+    enddo
+  enddo
 !$OMP BARRIER
 !$OMP MASTER
-    ierr = cudaMemcpyAsync( divdp_d , divdp_h , size( divdp_h ) , cudaMemcpyHostToDevice , streams(0) )
-    if ( nu_p > 0 .and. rhs_multiplier == 2 ) ierr = cudaMemcpyAsync( dpdiss_biharmonic_d , dpdiss_biharmonic_h , size( dpdiss_biharmonic_h ) , cudaMemcpyHostToDevice , streams(1) )
-!$OMP END MASTER
+  ierr = cudaMemcpyAsync( dp_d    , dp_h    , size( dp_h    ) , cudaMemcpyHostToDevice , streams(1) )
+  ierr = cudaMemcpyAsync( vstar_d , vstar_h , size( vstar_h ) , cudaMemcpyHostToDevice , streams(1) )
+  blockdim = dim3( np      , np     , nlev )
+  griddim  = dim3( qsize_d , nelemd , 1    )
+  call euler_step_kernel1<<<griddim,blockdim,0,streams(1)>>>( qdp_d , spheremp_d , qmin_d , qmax_d , dp_d , vstar_d , divdp_d , hybi_d ,               &
+                                                              dpdiss_biharmonic_d , qtens_biharmonic_d , metdet_d , rmetdet_d , dinv_d , deriv_dvv_d , &
+                                                              n0_qdp , np1_qdp , rhs_viss , dt , nu_p , nu_q , limiter_option , 1 , nelemd )
+  if ( limiter_option == 4 ) then
+    blockdim = dim3( np      , np     , nlev )
+    griddim  = dim3( qsize_d , nelemd , 1    )
+    call limiter2d_zero_kernel<<<griddim,blockdim,0,streams(1)>>>( qdp_d , 1 , nelemd , np1_qdp )
   endif
-
+!$OMP END MASTER
   !This is a departure from the original order, adding an extra MPI communication. It's advantageous because it simplifies
   !the Pack-Exchange-Unpack procedure for us, since we're adding complexity to overlap MPI and packing
   if ( DSSopt /= DSSno_var ) then
@@ -529,190 +616,7 @@ contains
       enddo
     enddo
   endif
-
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !   compute Q min/max values for lim8
-  !   compute biharmonic mixing term f
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  rhs_viss = 0
-  if ( limiter_option == 8 .or. nu_p > 0 ) then
-    do ie = 1 , nelemd
-      dp_h(:,:,:,ie) = elem(ie)%derived%dp(:,:,:)
-      divdp_h(:,:,:,ie) = elem(ie)%derived%divdp_proj(:,:,:) 
-      Qdp_h(:,:,:,:,n0_qdp,ie) = elem(ie)%state%Qdp(:,:,:,:,n0_qdp)
-    enddo
-!$OMP BARRIER
-    if (hybrid%ithr == 0 ) then
-      !$acc data pcreate(dp,dp_h,divdp_h,qdp_h,qtens_biharmonic,qmin,qmax)
-      !$acc update device(dp_h,divdp_h,qdp_h)
-      !$acc kernels
-      !$acc loop private(k,q,ie)
-      do ie = 1 , nelemd
-        ! add hyperviscosity to RHS.  apply to Q at timelevel n0, Qdp(n0)/dp
-        do k = 1 , nlev    !  Loop index added with implicit inversion (AAM)
-          dp_h(:,:,k,ie) = dp_h(:,:,k,ie) - rhs_multiplier*dt*divdp_h(:,:,k,ie)
-          do q = 1 , qsize
-            Qtens_biharmonic(:,:,k,q,ie) = Qdp_h(:,:,k,q,n0_qdp,ie)/dp_h(:,:,k,ie)
-          enddo
-        enddo
-      enddo
-      !$acc end kernels
-      !$acc update host(qtens_biharmonic)
-
-      if ( rhs_multiplier == 0 .or. rhs_multiplier == 2 ) then
-        !$acc parallel loop gang vector_length(512)
-        do ie = 1 , nelemd
-          do q = 1 , qsize
-            !We had "worker" put here, but it doesn't work woth PGI
-            !$acc loop private(qmintmp,qmaxtmp) 
-            do k = 1 , nlev  
-              qmintmp = 1d9
-              qmaxtmp = -1d9
-              !$acc loop reduction(min:qmintmp) reduction(max:qmaxtmp) collapse(2) vector
-              do j = 1, np
-                do i = 1, np
-                  qmintmp=min(Qtens_biharmonic(i,j,k,q,ie),qmintmp)
-                  qmaxtmp=max(Qtens_biharmonic(i,j,k,q,ie),qmaxtmp)
-                enddo
-              enddo
-              qmin(k,q,ie) = max(qmintmp,0d0)
-              qmax(k,q,ie) = qmaxtmp
-            enddo
-          enddo
-        enddo
-        !$acc end parallel loop
-        !$acc update host(qmin,qmax)
-      endif
-
-      if ( rhs_multiplier == 1 ) then
-        !$acc update device(qmin,qmax)
-        !$acc parallel loop gang vector_length(512)
-        do ie = 1 , nelemd
-          do q = 1 , qsize
-            !We had "worker" put here, but it doesn't work woth PGI
-            !$acc loop private(qmintmp,qmaxtmp) 
-            do k = 1 , nlev  
-              qmintmp = 1d9
-              qmaxtmp = -1d9
-              !$acc loop reduction(min:qmintmp) reduction(max:qmaxtmp) collapse(2) vector
-              do j = 1, np
-                do i = 1, np
-                  qmintmp=min(Qtens_biharmonic(i,j,k,q,ie),qmintmp)
-                  qmaxtmp=max(Qtens_biharmonic(i,j,k,q,ie),qmaxtmp)
-                enddo
-              enddo
-              qmin(k,q,ie) = min(qmin(k,q,ie),qmintmp)
-              qmin(k,q,ie) = max(qmin(k,q,ie),0d0)
-              qmax(k,q,ie) = max(qmax(k,q,ie),qmaxtmp)
-            enddo
-          enddo
-        enddo
-        !$acc end parallel loop
-        !$acc update host(qmin,qmax)
-      endif
-
-      !$acc wait
-      !$acc end data
-    endif
-!$OMP BARRIER
-
-    ! compute element qmin/qmax
-    if ( rhs_multiplier == 0 ) then
-      ! update qmin/qmax based on neighbor data for lim8
-      if ( limiter_option == 8 ) call neighbor_minmax(elem,hybrid,edgeAdvQ2,nets,nete,qmin(:,:,nets:nete),qmax(:,:,nets:nete))
-!$OMP BARRIER
 !$OMP MASTER
-      ierr = cudaMemcpyAsync( qmin_d , qmin , size( qmin ) , cudaMemcpyHostToDevice , streams(2) )
-      ierr = cudaMemcpyAsync( qmax_d , qmax , size( qmax ) , cudaMemcpyHostToDevice , streams(3) )
-!$OMP END MASTER
-    endif
-
-    ! lets just reuse the old neighbor min/max, but update based on local data
-    if ( rhs_multiplier == 1 ) then
-!$OMP BARRIER
-!$OMP MASTER
-      ierr = cudaMemcpyAsync( qmin_d , qmin , size( qmin ) , cudaMemcpyHostToDevice , streams(2) )
-      ierr = cudaMemcpyAsync( qmax_d , qmax , size( qmax ) , cudaMemcpyHostToDevice , streams(3) )
-!$OMP END MASTER
-    endif
-
-    ! get niew min/max values, and also compute biharmonic mixing term
-    if ( rhs_multiplier == 2 ) then
-      rhs_viss = 3
-      ! two scalings depending on nu_p:
-      ! nu_p=0:    qtens_biharmonic *= dp0                   (apply viscsoity only to q)
-      ! nu_p>0):   qtens_biharmonc *= elem()%psdiss_ave      (for consistency, if nu_p=nu_q)
-      if ( nu_p > 0 ) then
-        do ie = nets , nete
-          do k = 1 , nlev    
-            dp0 = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*hvcoord%ps0
-            !dpdiss(:,:) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%derived%psdiss_ave(:,:)
-            dpdiss(:,:) = elem(ie)%derived%dpdiss_ave(:,:,k)
-            do q = 1 , qsize
-              ! NOTE: divide by dp0 since we multiply by dp0 below
-              Qtens_biharmonic(:,:,k,q,ie)=Qtens_biharmonic(:,:,k,q,ie)*dpdiss(:,:)/dp0
-            enddo
-          enddo
-        enddo
-      endif
-      if ( limiter_option == 8 ) then
-        ! biharmonic and update neighbor min/max
-        call biharmonic_wk_scalar_minmax( elem , qtens_biharmonic(:,:,:,:,nets:nete) , deriv , edgeAdvQ3 , hybrid , nets , nete , qmin(:,:,nets:nete) , qmax(:,:,nets:nete) )
-      else
-        ! regular biharmonic, no need to updat emin/max
-        call biharmonic_wk_scalar( elem , qtens_biharmonic(:,:,:,:,nets:nete) , deriv , edgeAdv , hybrid , nets , nete )
-      endif
-!$OMP BARRIER
-!$OMP MASTER
-      ierr = cudaMemcpyAsync( qmin_d , qmin , size( qmin ) , cudaMemcpyHostToDevice , streams(2) )
-      ierr = cudaMemcpyAsync( qmax_d , qmax , size( qmax ) , cudaMemcpyHostToDevice , streams(3) )
-!$OMP END MASTER
-      do ie = nets , nete
-        do k = 1 , nlev    !  Loop inversion (AAM)
-          dp0 = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*hvcoord%ps0
-          do q = 1 , qsize
-            ! note: biharmonic_wk() output has mass matrix already applied. Un-apply since we apply again below:
-            qtens_biharmonic(:,:,k,q,ie) = -rhs_viss*dt*nu_q*dp0*Qtens_biharmonic(:,:,k,q,ie) / elem(ie)%spheremp(:,:)
-          enddo
-        enddo
-      enddo
-    endif
-  endif  ! compute biharmonic mixing term and qmin/qmax
-
-  if ( (limiter_option == 8 .or. nu_p > 0) .and. rhs_multiplier == 2 ) then
-!$OMP BARRIER
-!$OMP MASTER
-    ierr = cudaMemcpyAsync( qtens_biharmonic_d  , qtens_biharmonic    , size( qtens_biharmonic    ) , cudaMemcpyHostToDevice , streams(4) )
-!$OMP END MASTER
-  endif
-
-  !   2D Advection step
-  do ie = nets , nete
-    ! Compute velocity used to advance Qdp 
-    do k = 1 , nlev    !  Loop index added (AAM)
-      ! derived variable divdp_proj() (DSS'd version of divdp) will only be correct on 2nd and 3rd stage
-      ! but that's ok because rhs_multiplier=0 on the first stage:
-      dp_h(:,:,k,ie) = elem(ie)%derived%dp(:,:,k) - rhs_multiplier * dt * elem(ie)%derived%divdp_proj(:,:,k) 
-      vstar_h(:,:,k,1,ie) = elem(ie)%derived%vn0(:,:,1,k) / dp_h(:,:,k,ie)
-      vstar_h(:,:,k,2,ie) = elem(ie)%derived%vn0(:,:,2,k) / dp_h(:,:,k,ie)
-    enddo
-  enddo
-
-!$OMP BARRIER
-!$OMP MASTER
-  ierr = cudaMemcpyAsync( dp_d    , dp_h    , size( dp_h    ) , cudaMemcpyHostToDevice , streams(5) )
-  ierr = cudaMemcpyAsync( vstar_d , vstar_h , size( vstar_h ) , cudaMemcpyHostToDevice , streams(6) )
-  ierr = cudaThreadSynchronize()
-  blockdim = dim3( np      , np     , nlev )
-  griddim  = dim3( qsize_d , nelemd , 1    )
-  call euler_step_kernel1<<<griddim,blockdim>>>( qdp_d , spheremp_d , qmin_d , qmax_d , dp_d , vstar_d , divdp_d , hybi_d ,               &
-                                                 dpdiss_biharmonic_d , qtens_biharmonic_d , metdet_d , rmetdet_d , dinv_d , deriv_dvv_d , &
-                                                 n0_qdp , np1_qdp , rhs_viss , dt , nu_p , nu_q , limiter_option , 1 , nelemd )
-  if ( limiter_option == 4 ) then
-    blockdim = dim3( np      , np     , nlev )
-    griddim  = dim3( qsize_d , nelemd , 1    )
-    call limiter2d_zero_kernel<<<griddim,blockdim>>>( qdp_d , 1 , nelemd , np1_qdp )
-  endif
   call pack_exchange_unpack_stage(np1_qdp,hybrid,qdp_d,timelevels)
   blockdim = dim3( np*np   , nlev   , 1 )
   griddim  = dim3( qsize_d , nelemd , 1 )
@@ -720,12 +624,6 @@ contains
   ierr = cudaThreadSynchronize()
 !$OMP END MASTER
 !$OMP BARRIER
-
-  if ( limiter_option == 8 .or. nu_p > 0 ) then
-    if (rhs_multiplier < 2) then
-      call copy_qdp_d2h( elem , np1_qdp)
-    endif
-  endif
 
   call t_stopf('euler_step')
 end subroutine euler_step_cuda
@@ -751,8 +649,6 @@ subroutine qdp_time_avg_cuda( elem , rkstage , n0_qdp , np1_qdp , limiter_option
 !$OMP END MASTER
 !$OMP BARRIER
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  if ( limiter_option == 8 .or. nu_p > 0 ) call copy_qdp_d2h( elem , np1_qdp )
 end subroutine qdp_time_avg_cuda
 
 
@@ -773,6 +669,7 @@ subroutine advance_hypervis_scalar_cuda( edgeAdv , elem , hvcoord , hybrid , der
   use bndry_mod      , only : bndry_exchangev
   use perf_mod       , only : t_startf, t_stopf, t_barrierf
   use control_mod    , only : rsplit, nu_q, hypervis_order, hypervis_subcycle_q
+  use parallel_mod   , only : iam
   implicit none
   type (EdgeBuffer_t)  , intent(inout)         :: edgeAdv
   type (element_t)     , intent(inout), target :: elem(:)
@@ -802,21 +699,15 @@ subroutine advance_hypervis_scalar_cuda( edgeAdv , elem , hvcoord , hybrid , der
     do ie = nets , nete
       do k = 1 , nlev
         dp_h(:,:,k,ie) = elem(ie)%derived%dp(:,:,k) - dt2*elem(ie)%derived%divdp_proj(:,:,k)
-        !if ( rsplit > 0 ) then  ! verticaly lagrangian code: use prognostic dp
-        !  dp_h(:,:,k,ie) = elem(ie)%state%dp3d(:,:,k,nt)
-        !else                    ! eulerian code: derive dp from ps_v
-        !  dp_h(:,:,k,ie) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) ) * hvcoord%ps0 + ( hvcoord%hybi(k+1) - hvcoord%hybi(k) ) * elem(ie)%state%ps_v(:,:,nt)
-        !endif
       enddo
     enddo
 !$OMP BARRIER
 !$OMP MASTER
-    ierr = cudaMemcpy( dp_d , dp_h , size( dp_h ) , cudaMemcpyHostToDevice )
-    ierr = cudaThreadSynchronize()
+    ierr = cudaMemcpyAsync( dp_d , dp_h , size( dp_h ) , cudaMemcpyHostToDevice , streams(1) )
     !KERNEL 1
     blockdim = dim3( np     , np , nlev )
     griddim  = dim3( nelemd , 1  , 1    )
-    call hypervis_kernel1<<<griddim,blockdim>>>( qdp_d , qtens_d , dp_d , dinv_d , variable_hyperviscosity_d , spheremp_d , deriv_dvv_d , nets , nete , dt , nt_qdp )
+    call hypervis_kernel1<<<griddim,blockdim,0,streams(1)>>>( qdp_d , qtens_d , dp_d , dinv_d , variable_hyperviscosity_d , spheremp_d , deriv_dvv_d , nets , nete , dt , nt_qdp )
     ierr = cudaThreadSynchronize()
 
     call pack_exchange_unpack_stage(1,hybrid,qtens_d,1)
@@ -825,11 +716,10 @@ subroutine advance_hypervis_scalar_cuda( edgeAdv , elem , hvcoord , hybrid , der
     !KERNEL 2
     blockdim = dim3( np     , np , nlev )
     griddim  = dim3( nelemd , 1  , 1    )
-    call hypervis_kernel2<<<griddim,blockdim>>>( qdp_d , qtens_d , dp_d , dinv_d , variable_hyperviscosity_d , spheremp_d , rspheremp_d , deriv_dvv_d , hyai_d , hybi_d , hvcoord%ps0 , nu_q , nets , nete , dt , nt_qdp )
-    ierr = cudaThreadSynchronize()
+    call hypervis_kernel2<<<griddim,blockdim,0,streams(1)>>>( qdp_d , qtens_d , dp_d , dinv_d , variable_hyperviscosity_d , spheremp_d , rspheremp_d , deriv_dvv_d , hyai_d , hybi_d , hvcoord%ps0 , nu_q , nets , nete , dt , nt_qdp )
     blockdim = dim3( np, np, nlev )
     griddim  = dim3( qsize_d, nelemd , 1 )
-    call limiter2d_zero_kernel<<<griddim,blockdim>>>(qdp_d,nets,nete,nt_qdp)
+    call limiter2d_zero_kernel<<<griddim,blockdim,0,streams(1)>>>(qdp_d,nets,nete,nt_qdp)
     ierr = cudaThreadSynchronize()
 
     call pack_exchange_unpack_stage(nt_qdp,hybrid,qdp_d,timelevels)
@@ -838,16 +728,52 @@ subroutine advance_hypervis_scalar_cuda( edgeAdv , elem , hvcoord , hybrid , der
     !KERNEL 3
     blockdim = dim3( np * np , nlev   , 1 )
     griddim  = dim3( qsize_d , nelemd , 1 )
-    call euler_hypervis_kernel_last<<<griddim,blockdim>>>( qdp_d , rspheremp_d , nets , nete , nt_qdp )
+    call euler_hypervis_kernel_last<<<griddim,blockdim,0,streams(1)>>>( qdp_d , rspheremp_d , nets , nete , nt_qdp )
+    blockdim = dim3( np , np , nlev )
+    griddim  = dim3( nelemd , 1 , 1 )
+    call pack_qdp1<<<griddim,blockdim,0,streams(1)>>>( qdp1_d , qdp_d , nt_qdp , 1 , nelemd )
+    ierr = cudaMemcpyAsync( qdp1_h , qdp1_d , size( qdp1_h ) , cudaMemcpyDeviceToHost , streams(1) )
     ierr = cudaThreadSynchronize()
 !$OMP END MASTER
 !$OMP BARRIER
+    do ie = nets , nete
+      elem(ie)%state%Qdp(:,:,:,1,nt_qdp) = qdp1_h(:,:,:,ie)
+    enddo
   enddo
 
-  call copy_qdp_d2h( elem , nt_qdp )
-
   call t_stopf('advance_hypervis_scalar_cuda')
+
 end subroutine advance_hypervis_scalar_cuda
+
+
+
+attributes(global) subroutine pack_qdp1( qdp1 , qdp , nt , nets , nete )
+  implicit none
+  real(kind=real_kind), intent(  out) :: qdp1( np , np , nlev                        , nets:nete )
+  real(kind=real_kind), intent(in   ) :: qdp ( np , np , nlev , qsize_d , timelevels , nets:nete )
+  integer, value      , intent(in   ) :: nt , nets , nete
+  integer :: i,j,k,ie
+  i  = threadidx%x
+  j  = threadidx%y
+  k  = threadidx%z
+  ie = blockidx%x
+  qdp1(i,j,k,ie) = qdp(i,j,k,1,nt,ie)
+end subroutine pack_qdp1
+
+
+
+attributes(global) subroutine unpack_qdp1( qdp1 , qdp , nt , nets , nete )
+  implicit none
+  real(kind=real_kind), intent(in   ) :: qdp1( np , np , nlev                        , nets:nete )
+  real(kind=real_kind), intent(  out) :: qdp ( np , np , nlev , qsize_d , timelevels , nets:nete )
+  integer, value      , intent(in   ) :: nt , nets , nete
+  integer :: i,j,k,ie
+  i  = threadidx%x
+  j  = threadidx%y
+  k  = threadidx%z
+  ie = blockidx%x
+  qdp(i,j,k,1,nt,ie) = qdp1(i,j,k,ie)
+end subroutine unpack_qdp1
 
 
 
@@ -930,21 +856,12 @@ attributes(global) subroutine euler_step_kernel1( Qdp , spheremp , qmin , qmax ,
   qtens_s(ij,k) = qtmp - dt * divergence_sphere( i , j , ie , k , ij , vstar_s , qtmp , metdet_s , rmetdet_s , dinv , deriv_dvv_s , nets , nete )
   if ( rhs_viss /= 0 ) qtens_s(ij,k) = qtens_s(ij,k) + qtens_biharmonic(i,j,k,q,ie)
   call syncthreads()
-  if ( limiter_option == 8 ) then
-    dp_star_s(ij,k) = dp(i,j,k,ie) - dt * divdp(i,j,k,ie)
-    if ( nu_p > 0 .and. rhs_viss /= 0 ) then   ! add contribution from UN-DSS'ed PS dissipation
-      !dp_star_s(ij,k) = dp_star_s(ij,k) - rhs_viss * dt * nu_q * ( hybi_s(k+1) - hybi_s(k) ) * psdiss_biharmonic(i,j,ie) / spheremp_s(ij)
-       dp_star_s(ij,k) = dp_star_s(ij,k) - rhs_viss * dt * nu_q * dpdiss_biharmonic(i,j,k,ie) / spheremp_s(ij)
-    endif
-    call limiter_optim_iter_full_dev( i , j , k , qtens_s(:,:) , spheremp_s(:) , qmin_s(:) , qmax_s(:) , dp_star_s(:,:) )
-  endif
   Qdp(i,j,k,q,np1_qdp,ie) = spheremp_s(ij) * Qtens_s(ij,k)
 end subroutine euler_step_kernel1
 
 
 
 attributes(device) function divergence_sphere(i,j,ie,k,ij,Vstar,qtmp,metdet,rmetdet,dinv,deriv_dvv,nets,nete) result(dp_star)
-  use physical_constants, only: rrearth
   implicit none
   integer,              intent(in) :: i, j, ie, k, ij, nets, nete
   real(kind=real_kind), intent(in) :: Dinv     (np*np,2,2,nets:nete)
@@ -968,185 +885,6 @@ attributes(device) function divergence_sphere(i,j,ie,k,ij,Vstar,qtmp,metdet,rmet
   end do
   dp_star = ( divtemp + vvtemp ) * ( rmetdet(ij) * rrearth )
 end function divergence_sphere
-
-
-
-attributes(device) subroutine limiter_optim_iter_full_dev(i_in,j_in,k_in,x,sphweights,minp,maxp,c)
-  !THIS IS A NEW VERSION OF LIM8, POTENTIALLY FASTER BECAUSE INCORPORATES KNOWLEDGE FROM
-  !PREVIOUS ITERATIONS
-  
-  !The idea here is the following: We need to find a grid field which is closest
-  !to the initial field (in terms of weighted sum), but satisfies the min/max constraints.
-  !So, first we find values which do not satisfy constraints and bring these values
-  !to a closest constraint. This way we introduce some mass change (addmass),
-  !so, we redistribute addmass in the way that l2 error is smallest. 
-  !This redistribution might violate constraints thus, we do a few iterations. 
-  use kinds         , only : real_kind
-  use dimensions_mod, only : np, np, nlev
-  integer                                       , intent(in   ) :: i_in,j_in,k_in
-  real (kind=real_kind), dimension(np*np+1,nlev), intent(inout) :: x              ! previously called ptens
-  real (kind=real_kind), dimension(np*np+1     ), intent(in   ) :: sphweights
-  real (kind=real_kind), dimension(        nlev), intent(inout) :: minp
-  real (kind=real_kind), dimension(        nlev), intent(inout) :: maxp
-  real (kind=real_kind), dimension(np*np+1,nlev), intent(inout) :: c              ! previously called dpmass, optional attribute removed
-
-  integer :: k1, k, i, j, i1, i2, ij, ijk
-  integer, shared :: neg_counter(nlev), pos_counter(nlev)
-  integer, shared :: whois_neg(np*np+1,nlev), whois_pos(np*np+1,nlev)
-  real (kind=real_kind), shared :: addmass(nlev), weightssum(nlev), mass(nlev), howmuch(nlev)
-  real (kind=real_kind), shared :: al_neg(np*np+1,nlev), al_pos(np*np+1,nlev)
-  real (kind=real_kind) :: tol_limiter
-  integer :: maxiter
-
-  tol_limiter = 1.D-15
-  maxiter = 5
-
-  k = k_in
-  ij = (j_in-1)*np + i_in
-  ijk = (k_in-1)*np*np + (j_in-1)*np + i_in
-
-  call syncthreads()
-
-  x(ij,k) = x(ij,k) / c(ij,k)
-  c(ij,k) = c(ij,k) * sphweights(ij)
-
-  call syncthreads()
-
-  if ( ijk <= nlev ) then
-    k = ijk
-
-    c        (np*np+1,k) = 0.D0
-    x        (np*np+1,k) = 0.D0
-    al_neg   (np*np+1,k) = 0.D0
-    al_pos   (np*np+1,k) = 0.D0
-    whois_neg(np*np+1,k) = 0
-    whois_pos(np*np+1,k) = 0
-
-    mass(k) = sum(c(:,k)*x(:,k))
-  
-    ! relax constraints to ensure limiter has a solution:
-    ! This is only needed if runnign with the SSP CFL>1 or 
-    ! due to roundoff errors
-    if( (mass(k) / sum(c(:,k))) < minp(k) ) then
-      minp(k) = mass(k) / sum(c(:,k))
-    endif
-    if( (mass(k) / sum(c(:,k))) > maxp(k) ) then
-      maxp(k) = mass(k) / sum(c(:,k))
-    endif
-  
-    addmass(k) = 0.0d0
-    pos_counter(k) = 0;
-    neg_counter(k) = 0;
-    
-    ! apply constraints, compute change in mass caused by constraints 
-    do k1 = 1 , np*np
-      if ( ( x(k1,k) >= maxp(k) ) ) then
-        addmass(k) = addmass(k) + ( x(k1,k) - maxp(k) ) * c(k1,k)
-        x(k1,k) = maxp(k)
-        whois_pos(k1,k) = -1
-      else
-        pos_counter(k) = pos_counter(k)+1;
-        whois_pos(pos_counter(k),k) = k1;
-      endif
-      if ( ( x(k1,k) <= minp(k) ) ) then
-        addmass(k) = addmass(k) - ( minp(k) - x(k1,k) ) * c(k1,k)
-        x(k1,k) = minp(k)
-        whois_neg(k1,k) = -1
-      else
-        neg_counter(k) = neg_counter(k)+1;
-        whois_neg(neg_counter(k),k) = k1;
-      endif
-    enddo
-    
-    ! iterate to find field that satifies constraints and is l2-norm closest to original 
-    weightssum(k) = 0.0d0
-    if ( addmass(k) > 0 ) then
-      do i2 = 1 , maxIter
-        weightssum(k) = 0.0
-        do k1 = 1 , pos_counter(k)
-          i1 = whois_pos(k1,k)
-          weightssum(k) = weightssum(k) + c(i1,k)
-          al_pos(i1,k) = maxp(k) - x(i1,k)
-        enddo
-        
-        if( ( pos_counter(k) > 0 ) .and. ( addmass(k) > tol_limiter * abs(mass(k)) ) ) then
-          do k1 = 1 , pos_counter(k)
-            i1 = whois_pos(k1,k)
-            howmuch(k) = addmass(k) / weightssum(k)
-            if ( howmuch(k) > al_pos(i1,k) ) then
-              howmuch(k) = al_pos(i1,k)
-              whois_pos(k1,k) = -1
-            endif
-            addmass(k) = addmass(k) - howmuch(k) * c(i1,k)
-            weightssum(k) = weightssum(k) - c(i1,k)
-            x(i1,k) = x(i1,k) + howmuch(k)
-          enddo
-          !now sort whois_pos and get a new number for pos_counter
-          !here neg_counter and whois_neg serve as temp vars
-          neg_counter(k) = pos_counter(k)
-          whois_neg(:,k) = whois_pos(:,k)
-          whois_pos(:,k) = -1
-          pos_counter(k) = 0
-          do k1 = 1 , neg_counter(k)
-            if ( whois_neg(k1,k) .ne. -1 ) then
-              pos_counter(k) = pos_counter(k)+1
-              whois_pos(pos_counter(k),k) = whois_neg(k1,k)
-            endif
-          enddo
-        else
-          exit
-        endif
-      enddo
-    else
-       do i2 = 1 , maxIter
-         weightssum(k) = 0.0
-         do k1 = 1 , neg_counter(k)
-           i1 = whois_neg(k1,k)
-           weightssum(k) = weightssum(k) + c(i1,k)
-           al_neg(i1,k) = x(i1,k) - minp(k)
-         enddo
-         
-         if ( ( neg_counter(k) > 0 ) .and. ( (-addmass(k)) > tol_limiter * abs(mass(k)) ) ) then
-           do k1 = 1 , neg_counter(k)
-             i1 = whois_neg(k1,k)
-             howmuch(k) = -addmass(k) / weightssum(k)
-             if ( howmuch(k) > al_neg(i1,k) ) then
-               howmuch(k) = al_neg(i1,k)
-               whois_neg(k1,k) = -1
-             endif
-             addmass(k) = addmass(k) + howmuch(k) * c(i1,k)
-             weightssum(k) = weightssum(k) - c(i1,k)
-             x(i1,k) = x(i1,k) - howmuch(k)
-           enddo
-           !now sort whois_pos and get a new number for pos_counter
-           !here pos_counter and whois_pos serve as temp vars
-           pos_counter(k) = neg_counter(k)
-           whois_pos(:,k) = whois_neg(:,k)
-           whois_neg(:,k) = -1
-           neg_counter(k) = 0
-           do k1 = 1 , pos_counter(k)
-             if ( whois_pos(k1,k) .ne. -1 ) then
-               neg_counter(k) = neg_counter(k)+1
-               whois_neg(neg_counter(k),k) = whois_pos(k1,k)
-             endif
-           enddo
-         else
-           exit
-         endif
-       enddo
-    endif
-  endif
-
-  k = k_in
-
-  call syncthreads()
-
-  c(ij,k) = c(ij,k) / sphweights(ij)
-  x(ij,k) = x(ij,k) * c(ij,k)
-
-  call syncthreads()
-
-end subroutine limiter_optim_iter_full_dev
 
 
 
@@ -1327,11 +1065,14 @@ subroutine pack_exchange_unpack_stage(np1,hybrid,array_in,tl_in)
     ierr = cudaMemcpyAsync(edgebuf_d(1,iptr),recvbuf_d(1,1,icycle),size(recvbuf_h(1:nlyr,1:pCycle%lengthP,icycle)),cudaMemcpyDeviceToDevice,streams(icycle))
   enddo
   ierr = cudaThreadSynchronize()
-  blockdim6 = dim3( np      , np                  , nlev )
-  griddim6  = dim3( qsize_d , recv_external_nelem , 1    )
-  call edgeVunpack_kernel_stage<<<griddim6,blockdim6>>>(edgebuf_d,array_in,getmapP_d,nbuf,0,1,nelemd,np1,recv_external_indices_d,tl_in)
-  ierr = cudaThreadSynchronize()
 
+  ! Do not execute the following if recv_external_nelem = 0
+  if (recv_external_nelem > 0) then
+    blockdim6 = dim3( np      , np                  , nlev )
+    griddim6  = dim3( qsize_d , recv_external_nelem , 1    )
+    call edgeVunpack_kernel_stage<<<griddim6,blockdim6>>>(edgebuf_d,array_in,getmapP_d,nbuf,0,1,nelemd,np1,recv_external_indices_d,tl_in)
+    ierr = cudaThreadSynchronize()
+  endif
 
 ! ierr = cudaThreadSynchronize()
 ! do icycle=1,nRecvCycles
@@ -1644,7 +1385,7 @@ attributes(global) subroutine edgeVunpack_kernel(edgebuf,v,getmapP,nbuf,kptr,net
   ! update the "corner" columns
   if( tj==1 ) then
     do l=1, max_corner_elem_d       
-      x = mod(ti-1,2)*(np-1) + 1  ! we need to convert ti index from {1,2,3,4} to {(1,1),(4,1),(1,4),(4,4)}
+      x = mod(ti-1,2)*(np-1) + 1  ! we need to convert ti index from {1,2,3,4} to {(1,1),(4,1),(1,4),(4,4)}€;€;€;€;
       y = ((ti-1)/2)*(np-1) + 1   !   so, ti->(x,y)
       if( ic(l,ti) /= 0 ) vshrd(tk,x,y) = vshrd(tk,x,y) + edgebuf( offset, ic(l,ti) )
     enddo
@@ -1753,7 +1494,6 @@ end function laplace_sphere_wk
 
 
 attributes(device) function gradient_sphere(i,j,ie,iz,s,dinv,variable_hyperviscosity,deriv_dvv,nets,nete) result(ds)
-  use physical_constants, only: rrearth
   implicit none
   integer,                                              intent(in) :: nets, nete, i, j, ie, iz
   real(kind=real_kind), dimension(np,np,2,nlev)       , intent(in) :: s
@@ -1776,7 +1516,6 @@ end function gradient_sphere
 
 
 attributes(device) function divergence_sphere_wk(i,j,ie,iz,tmp,s,dinv,spheremp,deriv_dvv,nets,nete) result(lapl)
-  use physical_constants, only: rrearth
   implicit none
   integer,                                              intent(in   ) :: nets, nete, i, j, ie, iz
   real(kind=real_kind), dimension(2),                   intent(in   ) :: tmp
@@ -1794,6 +1533,674 @@ attributes(device) function divergence_sphere_wk(i,j,ie,iz,tmp,s,dinv,spheremp,d
     lapl = lapl - (spheremp(l,j)*s(l,j,1,iz)*deriv_dvv(i,l)+spheremp(i,l)*s(i,l,2,iz)*deriv_dvv(j,l)) * rrearth
   enddo
 end function divergence_sphere_wk
+
+
+
+subroutine vertical_remap_cuda(elem,fvm,hvcoord,dt,np1,np1_qdp,nets,nete)
+  use kinds, only : real_kind
+  use hybvcoord_mod, only : hvcoord_t
+  use control_mod, only :  rsplit
+  use parallel_mod, only : abortmp, iam
+  use element_mod, only: element_t
+  use dimensions_mod, only: nc, ntrac
+  use perf_mod, only: t_startf, t_stopf
+#if defined(_SPELT)
+  use spelt_mod, only: spelt_struct
+#else
+  use fvm_control_volume_mod, only : fvm_struct
+#endif    
+#if defined(_SPELT)
+  type(spelt_struct), intent(inout) :: fvm(:)
+  real (kind=real_kind) :: cdp(1:nep,1:nep,nlev,ntrac-1) 
+  real (kind=real_kind)  :: psc(nep,nep), dpc(nep,nep,nlev),dpc_star(nep,nep,nlev)
+#else
+  type(fvm_struct), intent(inout) :: fvm(:)
+  real (kind=real_kind) :: cdp(1:nc,1:nc,nlev,ntrac-1) 
+  real (kind=real_kind)  :: psc(nc,nc), dpc(nc,nc,nlev),dpc_star(nc,nc,nlev)
+#endif
+  type (element_t), intent(inout)   :: elem(:)
+  type (hvcoord_t)                  :: hvcoord
+  real (kind=real_kind)             :: dt
+  integer :: ie,i,j,k,np1,nets,nete,np1_qdp,ierr
+  real (kind=real_kind), dimension(np,np,nlev,2)  :: ttmp
+  call t_startf('vertical_remap_cuda')
+  do ie=nets,nete
+!    ! SET VERTICAL VELOCITY TO ZERO FOR DEBUGGING
+!    elem(ie)%derived%eta_dot_dpdn(:,:,:)=0
+    if (rsplit==0) then
+      ! compute dp_star from eta_dot_dpdn():
+      do k=1,nlev
+        dp_h(:,:,k,ie) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,np1)
+        dp_star_h(:,:,k,ie) = dp_h(:,:,k,ie) + dt*(elem(ie)%derived%eta_dot_dpdn(:,:,k+1) - elem(ie)%derived%eta_dot_dpdn(:,:,k)) 
+      enddo
+      if (minval(dp_star_h(:,:,:,ie))<0) call abortmp('negative layer thickness.  timestep or remap time too large')
+    else
+      !  REMAP u,v,T from levels in dp3d() to REF levels
+      ! update final ps_v 
+      elem(ie)%state%ps_v(:,:,np1) = hvcoord%hyai(1)*hvcoord%ps0 + sum(elem(ie)%state%dp3d(:,:,:,np1),3)
+      do k=1,nlev
+        dp_h(:,:,k,ie) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,np1)
+        dp_star_h(:,:,k,ie) = elem(ie)%state%dp3d(:,:,k,np1)
+      enddo
+      if (minval(dp_star_h(:,:,:,ie))<0) call abortmp('negative layer thickness.  timestep or remap time too large')
+      ! remap the dynamics:  
+#undef REMAP_TE
+#ifdef REMAP_TE
+      ! remap u,v and cp*T + .5 u^2 
+      ttmp(:,:,:,1)=(elem(ie)%state%v(:,:,1,:,np1)**2 + elem(ie)%state%v(:,:,2,:,np1)**2)/2 + elem(ie)%state%t(:,:,:,np1)*cp
+#else
+      ttmp(:,:,:,1)=elem(ie)%state%t(:,:,:,np1)
+#endif
+      ttmp(:,:,:,1)=ttmp(:,:,:,1)*dp_star_h(:,:,:,ie)
+      call remap_Q_ppm(ttmp,np,1,dp_star_h(:,:,:,ie),dp_h(:,:,:,ie))
+      elem(ie)%state%t(:,:,:,np1)=ttmp(:,:,:,1)/dp_h(:,:,:,ie)
+      ttmp(:,:,:,1)=elem(ie)%state%v(:,:,1,:,np1)*dp_star_h(:,:,:,ie)
+      ttmp(:,:,:,2)=elem(ie)%state%v(:,:,2,:,np1)*dp_star_h(:,:,:,ie)
+      call remap_Q_ppm(ttmp,np,2,dp_star_h(:,:,:,ie),dp_h(:,:,:,ie)) 
+      elem(ie)%state%v(:,:,1,:,np1)=ttmp(:,:,:,1)/dp_h(:,:,:,ie)
+      elem(ie)%state%v(:,:,2,:,np1)=ttmp(:,:,:,2)/dp_h(:,:,:,ie)
+#ifdef REMAP_TE
+      ! back out T from TE
+      elem(ie)%state%t(:,:,:,np1) = ( elem(ie)%state%t(:,:,:,np1) - ( (elem(ie)%state%v(:,:,1,:,np1)**2 + elem(ie)%state%v(:,:,2,:,np1)**2)/2))/cp
+#endif
+    endif
+  enddo
+!$OMP BARRIER
+!$OMP MASTER
+  do ie=1,nelemd
+    ! remap the tracers from lagrangian levels (dp_star)  to REF levels dp
+    if (qsize>0) call remap_Q_ppm_cuda(elem,np,qsize,dp_star_h(:,:,:,ie),dp_h(:,:,:,ie),np1_qdp,ie)
+  enddo
+  ierr = cudaThreadSynchronize()
+!$OMP END MASTER
+!$OMP BARRIER
+  do ie = nets , nete
+    elem(ie)%state%qdp(:,:,:,:,np1_qdp) = qdp_h(:,:,:,:,np1_qdp,ie)
+  enddo
+  call t_stopf('vertical_remap_cuda')  
+end subroutine vertical_remap_cuda
+
+
+
+!This uses the exact same model and reference grids and data as remap_Q, but it interpolates
+!using PPM instead of splines.
+subroutine remap_Q_ppm_cuda(elem,nx,qsize,dp1,dp2,np1_qdp,ie)
+  ! remap 1 field
+  ! input:  Qdp   field to be remapped (NOTE: MASS, not MIXING RATIO)
+  !         dp1   layer thickness (source)
+  !         dp2   layer thickness (target)
+  !
+  ! output: remaped Qdp, conserving mass
+  !
+  use perf_mod, only    : t_startf, t_stopf
+  use control_mod, only : prescribed_wind, vert_remap_q_alg
+  use element_mod, only : element_t
+  implicit none
+  type(element_t)      , intent(inout) :: elem(:)
+  integer,intent(in) :: nx,qsize
+  real (kind=real_kind), intent(in) :: dp1(nx,nx,nlev),dp2(nx,nx,nlev)
+  integer, value       , intent(in) :: np1_qdp,ie
+  ! Local Variables
+  real(kind=real_kind), dimension(       nlev+2 ) :: pio    !Pressure at interfaces for old grid
+  real(kind=real_kind), dimension(       nlev+1 ) :: pin    !Pressure at interfaces for new grid
+  real(kind=real_kind), dimension(  1-gs:nlev+gs) :: dpn    !change in pressure over a cell for old grid
+  real(kind=real_kind), dimension(nx,nx, nlev   ) :: z1, z2
+  real(kind=real_kind) :: ppmdx(nx,nx,10,0:nlev+1)  !grid spacings
+  integer :: i, j, k, q, kk, kid(nx,nx,nlev), ierr
+  type(dim3) :: griddim, blockdim
+
+  call t_startf('remap_Q_ppm_cuda')
+
+  if ( vert_remap_q_alg /= 1 .and. vert_remap_q_alg /= 2 ) then
+    write(*,*) 'MUST USE  VERT_REMAP_Q_ALG == 1 OR 2 WITH THE CUDA PORT.'
+    stop
+  endif
+
+  do j = 1 , nx
+    do i = 1 , nx
+      pin(1)=0
+      pio(1)=0
+      do k=1,nlev
+         dpn(k)=dp2(i,j,k)
+         dpo_h(i,j,k,ie)=dp1(i,j,k)
+         pin(k+1)=pin(k)+dpn(k)
+         pio(k+1)=pio(k)+dpo_h(i,j,k,ie)
+      enddo
+      pio(nlev+2) = pio(nlev+1) + 1.  !This is here to allow an entire block of k threads to run in the remapping phase.
+                                      !It makes sure there's an old interface value below the domain that is larger.
+      pin(nlev+1) = pio(nlev+1)       !The total mass in a column does not change.
+                                      !Therefore, the pressure of that mass cannot either.
+      !Fill in the ghost regions with mirrored values. if vert_remap_q_alg is defined, this is of no consequence.
+      do k = 1 , gs
+        dpo_h(i,j,1   -k,ie) = dpo_h(i,j,       k,ie)
+        dpo_h(i,j,nlev+k,ie) = dpo_h(i,j,nlev+1-k,ie)
+      enddo
+      !Compute remapping intervals once for all tracers. Find the old grid cell index in which the
+      !k-th new cell interface resides. Then integrate from the bottom of that old cell to the new
+      !interface location. In practice, the grid never deforms past one cell, so the search can be
+      !simplified by this. Also, the interval of integration is usually of magnitude close to zero
+      !or close to dpo because of minimial deformation.
+      !Numerous tests confirmed that the bottom and top of the grids match to machine precision, so
+      !I set them equal to each other.
+      do k = 1 , nlev
+        kk = k  !Keep from an order n^2 search operation by assuming the old cell index is close.
+        !Find the index of the old grid cell in which this new cell's bottom interface resides.
+        do while ( pio(kk) <= pin(k+1) )
+          kk = kk + 1
+        enddo
+        kk = kk - 1                   !kk is now the cell index we're integrating over.
+        if (kk == nlev+1) kk = nlev   !This is to keep the indices in bounds.
+                                      !Top bounds match anyway, so doesn't matter what coefficients are used
+        kid_h(i,j,k,ie) = kk                   !Save for reuse
+        z1_h(i,j,k,ie) = -0.5D0                !This remapping assumes we're starting from the left interface of an old grid cell
+                                      !In fact, we're usually integrating very little or almost all of the cell in question
+        z2_h(i,j,k,ie) = ( pin(k+1) - ( pio(kk) + pio(kk+1) ) * 0.5 ) / dpo_h(i,j,kk,ie)  !PPM interpolants are normalized to an independent
+                                                                        !coordinate domain [-0.5,0.5].
+      enddo
+      !This turned out a big optimization, remembering that only parts of the PPM algorithm depends on the data, namely the
+      !limiting. So anything that depends only on the grid is pre-computed outside the tracer loop.
+      ppmdx_h(i,j,:,:,ie) = compute_ppm_grids_d( dpo_h(i,j,:,ie) )
+      !From here, we loop over tracers for only those portions which depend on tracer data, which includes PPM limiting and
+      !mass accumulation
+    enddo
+  enddo
+  griddim  = dim3( qsize , 1  , 1      )
+  blockdim = dim3( np    , np , nlev+2 )
+  ierr = cudaMemcpyAsync( dpo_d(:,:,:,ie)     , dpo_h(:,:,:,ie)     , size(dpo_h(:,:,:,ie)    ) , cudaMemcpyHostToDevice , streams(ie) )
+  ierr = cudaMemcpyAsync( ppmdx_d(:,:,:,:,ie) , ppmdx_h(:,:,:,:,ie) , size(ppmdx_h(:,:,:,:,ie)) , cudaMemcpyHostToDevice , streams(ie) )
+  ierr = cudaMemcpyAsync( z1_d(:,:,:,ie)      , z1_h(:,:,:,ie)      , size(z1_h(:,:,:,ie)     ) , cudaMemcpyHostToDevice , streams(ie) )
+  ierr = cudaMemcpyAsync( z2_d(:,:,:,ie)      , z2_h(:,:,:,ie)      , size(z2_h(:,:,:,ie)     ) , cudaMemcpyHostToDevice , streams(ie) )
+  ierr = cudaMemcpyAsync( kid_d(:,:,:,ie)     , kid_h(:,:,:,ie)     , size(kid_h(:,:,:,ie)    ) , cudaMemcpyHostToDevice , streams(ie) )
+  call remap_Q_ppm_cuda_kernel<<<griddim,blockdim,0,streams(ie)>>>( Qdp_d(:,:,:,:,np1_qdp,ie) , dpo_d(:,:,:,ie) , ppmdx_d(:,:,:,:,ie) , z1_d(:,:,:,ie) , z2_d(:,:,:,ie) , kid_d(:,:,:,ie) , vert_remap_q_alg )
+  ierr = cudaMemcpyAsync( qdp_h(:,:,:,:,np1_qdp,ie) , qdp_d(:,:,:,:,np1_qdp,ie) , size(elem(ie)%state%qdp(:,:,:,:,np1_qdp) ) , cudaMemcpyDeviceToHost , streams(ie) )
+  call t_stopf('remap_Q_ppm_cuda')
+end subroutine remap_Q_ppm_cuda
+
+
+
+attributes(global) subroutine remap_Q_ppm_cuda_kernel( Qdp , dpo , ppmdx , z1 , z2 , kid , vert_remap_q_alg )
+  implicit none
+  real (kind=real_kind), intent(inout) :: Qdp   (np,np,        nlev   ,qsize_d)
+  real(kind=real_kind) , intent(in   ) :: dpo   (np,np,   1-gs:nlev+gs        )
+  real(kind=real_kind) , intent(in   ) :: ppmdx (np,np,10,   0:nlev+1         )
+  real(kind=real_kind) , intent(in   ) :: z1    (np,np,        nlev           )
+  real(kind=real_kind) , intent(in   ) :: z2    (np,np,        nlev           )
+  integer              , intent(in   ) :: kid   (np,np,        nlev           )
+  integer , value      , intent(in   ) :: vert_remap_q_alg
+  integer ::  i , j ,k, q, kk, nx
+  real(kind=real_kind), shared :: masso (np,np,       nlev+1 ) !Accumulate mass up to each interface
+  real(kind=real_kind), shared :: ao    (np,np,  1-gs:nlev+gs) !Tracer value on old grid
+  real(kind=real_kind), shared :: coefs (np,np,3,     nlev   ) !PPM coefficients within each cell
+  real(kind=real_kind), shared :: massn1(np,np               )
+  real(kind=real_kind), shared :: massn2(np,np               )
+  real(kind=real_kind), shared :: ai    (np,np,0:nlev  )                     !fourth-order accurate, then limited interface values
+  real(kind=real_kind), shared :: dma   (np,np,0:nlev+1)                     !An expression from Collela's '84 publication
+  nx = np
+  q = blockidx%x
+  i = threadidx%x
+  j = threadidx%y
+  !Accumulate the old mass up to old grid cell interface locations to simplify integration
+  !during remapping. Also, divide out the grid spacing so we're working with actual tracer
+  !values and can conserve mass. The option for ifndef ZEROHORZ I believe is there to ensure
+  !tracer consistency for an initially uniform field. I copied it from the old remap routine.
+  masso(i,j,1) = 0.
+  call syncthreads()
+  if (threadidx%z == 1) then
+    do k = 1 , nlev
+      ao(i,j,k) = Qdp(i,j,k,q)
+      masso(i,j,k+1) = masso(i,j,k) + ao(i,j,k) !Accumulate the old mass. This will simplify the remapping
+      ao(i,j,k) = ao(i,j,k) / dpo(i,j,k)        !Divide out the old grid spacing because we want the tracer mixing ratio, not mass.
+    enddo
+  endif
+  call syncthreads()
+  !Fill in ghost values. Ignored if vert_remap_q_alg == 2
+  if (threadidx%z == 1) then
+    do k = 1 , gs
+      ao(i,j,1   -k) = ao(i,j,       k)
+      ao(i,j,nlev+k) = ao(i,j,nlev+1-k)
+    enddo
+  endif
+  call syncthreads()
+  !Compute monotonic and conservative PPM reconstruction over every cell
+  coefs(:,:,:,:) = compute_ppm_d( ao , ppmdx , ai , dma , vert_remap_q_alg , i , j )
+  call syncthreads()
+  !Compute tracer values on the new grid by integrating from the old cell bottom to the new
+  !cell interface to form a new grid mass accumulation. Taking the difference between
+  !accumulation at successive interfaces gives the mass inside each cell. Since Qdp is
+  !supposed to hold the full mass this needs no normalization.
+  if (threadidx%z == 1) then
+    massn1(:,:) = 0.
+    do k = 1 , nlev
+      kk = kid(i,j,k)
+      massn2(i,j) = masso(i,j,kk) + ( coefs(i,j,1,kk) * (z2(i,j,k)      - z1(i,j,k)     )         + &
+                                      coefs(i,j,2,kk) * (z2(i,j,k) ** 2 - z1(i,j,k) ** 2) / 0.2D1 + &
+                                      coefs(i,j,3,kk) * (z2(i,j,k) ** 3 - z1(i,j,k) ** 3) / 0.3D1 ) * dpo(i,j,kk)
+      Qdp(i,j,k,q) = massn2(i,j) - massn1(i,j)
+      massn1(i,j) = massn2(i,j)
+    enddo
+  endif
+end subroutine remap_Q_ppm_cuda_kernel
+
+
+
+!This computes a limited parabolic interpolant using a net 5-cell stencil, but the stages of computation are broken up into 3 stages
+attributes(device) function compute_ppm_d( a , dx , ai , dma , vert_remap_q_alg , ii , jj )    result(coefs)
+  implicit none
+  real(kind=real_kind), intent(in   ) :: a    (np,np,    -1:nlev+2)  !Cell-mean values
+  real(kind=real_kind), intent(in   ) :: dx   (np,np,10,  0:nlev+1)  !grid spacings
+  real(kind=real_kind), intent(inout) :: ai   (np,np,0:nlev  )                     !fourth-order accurate, then limited interface values
+  real(kind=real_kind), intent(inout) :: dma  (np,np,0:nlev+1)                     !An expression from Collela's '84 publication
+  integer , value     , intent(in   ) :: vert_remap_q_alg , ii , jj
+  real(kind=real_kind) ::                coefs(np,np,0:2,   nlev  )  !PPM coefficients (for parabola)
+  real(kind=real_kind) :: da                                !Ditto
+  ! Hold expressions based on the grid (which are cumbersome).
+  real(kind=real_kind) :: al, ar                            !Left and right interface values for cell-local limiting
+  integer :: j, nx
+  integer :: indB, indE
+  nx = np
+  j = threadidx%z-1
+
+  call syncthreads()
+  ! Stage 1: Compute dma for each cell, allowing a 1-cell ghost stencil below and above the domain
+  if (vert_remap_q_alg == 2) then
+    indB = 2
+    indE = nlev-1
+  else
+    indB = 0
+    indE = nlev+1
+  endif
+  if ( j >= indB .and. j <= indE ) then
+    da = dx(ii,jj,1,j) * ( dx(ii,jj,2,j) * ( a(ii,jj,j+1) - a(ii,jj,j) ) + dx(ii,jj,3,j) * ( a(ii,jj,j) - a(ii,jj,j-1) ) )
+    dma(ii,jj,j) = minval( (/ abs(da) , 2. * abs( a(ii,jj,j) - a(ii,jj,j-1) ) , 2. * abs( a(ii,jj,j+1) - a(ii,jj,j) ) /) ) * sign(1.D0,da)
+    if ( ( a(ii,jj,j+1) - a(ii,jj,j) ) * ( a(ii,jj,j) - a(ii,jj,j-1) ) <= 0. ) dma(ii,jj,j) = 0.
+  endif
+  call syncthreads()
+
+  ! Stage 2: Compute ai for each cell interface in the physical domain (dimension nlev+1)
+  if (vert_remap_q_alg == 2) then
+    indB = 2
+    indE = nlev-2
+  else
+    indB = 0
+    indE = nlev
+  endif
+  if ( j >= indB .and. j <= indE ) then
+    ai(ii,jj,j) = a(ii,jj,j) + dx(ii,jj,4,j) * ( a(ii,jj,j+1) - a(ii,jj,j) ) + dx(ii,jj,5,j) * ( dx(ii,jj,6,j) * ( dx(ii,jj,7,j) - dx(ii,jj,8,j) ) &
+                  * ( a(ii,jj,j+1) - a(ii,jj,j) ) - dx(ii,jj,9,j) * dma(ii,jj,j+1) + dx(ii,jj,10,j) * dma(ii,jj,j) )
+  endif
+  call syncthreads()
+
+  ! Stage 3: Compute limited PPM interpolant over each cell in the physical domain
+  ! (dimension nlev) using ai on either side and ao within the cell.
+  if (vert_remap_q_alg == 2) then
+    indB = 3
+    indE = nlev-2
+  else
+    indB = 1
+    indE = nlev
+  endif
+  if ( j >= indB .and. j <= indE ) then
+    al = ai(ii,jj,j-1)
+    ar = ai(ii,jj,j  )
+    if ( (ar - a(ii,jj,j)) * (a(ii,jj,j) - al) <= 0. ) then
+      al = a(ii,jj,j)
+      ar = a(ii,jj,j)
+    endif
+    if ( (ar - al) * (a(ii,jj,j) - (al + ar)/2.) >  (ar - al)**2/6. ) al = 3.*a(ii,jj,j) - 2. * ar
+    if ( (ar - al) * (a(ii,jj,j) - (al + ar)/2.) < -(ar - al)**2/6. ) ar = 3.*a(ii,jj,j) - 2. * al
+    !Computed these coefficients from the edge values and cell mean in Maple. Assumes normalized coordinates: xi=(x-x0)/dx
+    coefs(ii,jj,0,j) = 1.5 * a(ii,jj,j) - ( al + ar ) / 4.
+    coefs(ii,jj,1,j) = ar - al
+    coefs(ii,jj,2,j) = -6. * a(ii,jj,j) + 3. * ( al + ar )
+  endif
+  call syncthreads()
+
+  !If we're not using a mirrored boundary condition, then make the two cells bordering the top and bottom
+  !material boundaries piecewise constant. Zeroing out the first and second moments, and setting the zeroth
+  !moment to the cell mean is sufficient to maintain conservation.
+  if (vert_remap_q_alg == 2) then
+    if ( j == 0 ) then
+      coefs(ii,jj,0,1:2) = a(ii,jj,1:2)
+      coefs(ii,jj,1:2,1:2) = 0.
+      coefs(ii,jj,0,nlev-1:nlev) = a(ii,jj,nlev-1:nlev)
+      coefs(ii,jj,1:2,nlev-1:nlev) = 0.D0
+    endif
+  endif
+  call syncthreads()
+end function compute_ppm_d
+
+
+
+!THis compute grid-based coefficients from Collela & Woodward 1984.
+function compute_ppm_grids_d( dx )   result(rslt)
+  use control_mod, only: vert_remap_q_alg
+  implicit none
+  real(kind=real_kind), intent(in) :: dx(-1:nlev+2)  !grid spacings
+  real(kind=real_kind)             :: rslt(10,0:nlev+1)  !grid spacings
+  integer :: j
+  integer :: indB, indE
+
+  !Calculate grid-based coefficients for stage 1 of compute_ppm
+  if (vert_remap_q_alg == 2) then
+    indB = 2
+    indE = nlev-1
+  else
+    indB = 0
+    indE = nlev+1
+  endif
+  do j = indB , indE
+    rslt( 1,j) = dx(j) / ( dx(j-1) + dx(j) + dx(j+1) )
+    rslt( 2,j) = ( 2.*dx(j-1) + dx(j) ) / ( dx(j+1) + dx(j) )
+    rslt( 3,j) = ( dx(j) + 2.*dx(j+1) ) / ( dx(j-1) + dx(j) )
+  enddo
+
+  !Caculate grid-based coefficients for stage 2 of compute_ppm
+  if (vert_remap_q_alg == 2) then
+    indB = 2
+    indE = nlev-2
+  else
+    indB = 0
+    indE = nlev
+  endif
+  do j = indB , indE
+    rslt( 4,j) = dx(j) / ( dx(j) + dx(j+1) )
+    rslt( 5,j) = 1. / sum( dx(j-1:j+2) )
+    rslt( 6,j) = ( 2. * dx(j+1) * dx(j) ) / ( dx(j) + dx(j+1 ) )
+    rslt( 7,j) = ( dx(j-1) + dx(j  ) ) / ( 2. * dx(j  ) + dx(j+1) )
+    rslt( 8,j) = ( dx(j+2) + dx(j+1) ) / ( 2. * dx(j+1) + dx(j  ) )
+    rslt( 9,j) = dx(j  ) * ( dx(j-1) + dx(j  ) ) / ( 2.*dx(j  ) +    dx(j+1) )
+    rslt(10,j) = dx(j+1) * ( dx(j+1) + dx(j+2) ) / (    dx(j  ) + 2.*dx(j+1) )
+  enddo
+end function compute_ppm_grids_d
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+!This uses the exact same model and reference grids and data as remap_Q, but it interpolates
+!using PPM instead of splines.
+subroutine remap_Q_ppm(Qdp,nx,qsize,dp1,dp2)
+  ! remap 1 field
+  ! input:  Qdp   field to be remapped (NOTE: MASS, not MIXING RATIO)
+  !         dp1   layer thickness (source)
+  !         dp2   layer thickness (target)
+  !
+  ! output: remaped Qdp, conserving mass
+  !
+  use control_mod, only        : prescribed_wind, vert_remap_q_alg
+  use perf_mod, only: t_startf, t_stopf
+  implicit none
+  integer,intent(in) :: nx,qsize
+  real (kind=real_kind), intent(inout) :: Qdp(nx,nx,nlev,qsize)
+  real (kind=real_kind), intent(in) :: dp1(nx,nx,nlev),dp2(nx,nx,nlev)
+  ! Local Variables
+  integer, parameter :: gs = 2                              !Number of cells to place in the ghost region
+  real(kind=real_kind), dimension(       nlev+2 ) :: pio    !Pressure at interfaces for old grid
+  real(kind=real_kind), dimension(       nlev+1 ) :: pin    !Pressure at interfaces for new grid
+  real(kind=real_kind), dimension(       nlev+1 ) :: masso  !Accumulate mass up to each interface
+  real(kind=real_kind), dimension(  1-gs:nlev+gs) :: ao     !Tracer value on old grid
+  real(kind=real_kind), dimension(  1-gs:nlev+gs) :: dpo    !change in pressure over a cell for old grid
+  real(kind=real_kind), dimension(  1-gs:nlev+gs) :: dpn    !change in pressure over a cell for old grid
+  real(kind=real_kind), dimension(3,     nlev   ) :: coefs  !PPM coefficients within each cell
+  real(kind=real_kind), dimension(       nlev   ) :: z1, z2
+  real(kind=real_kind) :: ppmdx(10,0:nlev+1)  !grid spacings
+  real(kind=real_kind) :: mymass, massn1, massn2
+  integer :: i, j, k, q, kk, kid(nlev)
+
+  call t_startf('remap_Q_ppm')
+  do j = 1 , nx
+    do i = 1 , nx
+      
+      pin(1)=0
+      pio(1)=0
+      do k=1,nlev
+         dpn(k)=dp2(i,j,k)
+         dpo(k)=dp1(i,j,k)
+         pin(k+1)=pin(k)+dpn(k)
+         pio(k+1)=pio(k)+dpo(k)
+      enddo
+
+
+
+      pio(nlev+2) = pio(nlev+1) + 1.  !This is here to allow an entire block of k threads to run in the remapping phase.
+                                      !It makes sure there's an old interface value below the domain that is larger.
+      pin(nlev+1) = pio(nlev+1)       !The total mass in a column does not change.
+                                      !Therefore, the pressure of that mass cannot either.
+      !Fill in the ghost regions with mirrored values. if vert_remap_q_alg is defined, this is of no consequence.
+      do k = 1 , gs
+        dpo(1   -k) = dpo(       k)
+        dpo(nlev+k) = dpo(nlev+1-k)
+      enddo
+
+      !Compute remapping intervals once for all tracers. Find the old grid cell index in which the
+      !k-th new cell interface resides. Then integrate from the bottom of that old cell to the new
+      !interface location. In practice, the grid never deforms past one cell, so the search can be
+      !simplified by this. Also, the interval of integration is usually of magnitude close to zero
+      !or close to dpo because of minimial deformation.
+      !Numerous tests confirmed that the bottom and top of the grids match to machine precision, so
+      !I set them equal to each other.
+      do k = 1 , nlev
+        kk = k  !Keep from an order n^2 search operation by assuming the old cell index is close.
+        !Find the index of the old grid cell in which this new cell's bottom interface resides.
+        do while ( pio(kk) <= pin(k+1) )
+          kk = kk + 1
+        enddo
+        kk = kk - 1                   !kk is now the cell index we're integrating over.
+        if (kk == nlev+1) kk = nlev   !This is to keep the indices in bounds.
+                                      !Top bounds match anyway, so doesn't matter what coefficients are used
+        kid(k) = kk                   !Save for reuse
+        z1(k) = -0.5D0                !This remapping assumes we're starting from the left interface of an old grid cell
+                                      !In fact, we're usually integrating very little or almost all of the cell in question
+        z2(k) = ( pin(k+1) - ( pio(kk) + pio(kk+1) ) * 0.5 ) / dpo(kk)  !PPM interpolants are normalized to an independent
+                                                                        !coordinate domain [-0.5,0.5].
+      enddo
+
+      !This turned out a big optimization, remembering that only parts of the PPM algorithm depends on the data, namely the
+      !limiting. So anything that depends only on the grid is pre-computed outside the tracer loop.
+      ppmdx(:,:) = compute_ppm_grids( dpo )
+
+      !From here, we loop over tracers for only those portions which depend on tracer data, which includes PPM limiting and
+      !mass accumulation
+      do q = 1 , qsize
+        !Accumulate the old mass up to old grid cell interface locations to simplify integration
+        !during remapping. Also, divide out the grid spacing so we're working with actual tracer
+        !values and can conserve mass. The option for ifndef ZEROHORZ I believe is there to ensure
+        !tracer consistency for an initially uniform field. I copied it from the old remap routine.
+        masso(1) = 0.
+        do k = 1 , nlev
+          ao(k) = Qdp(i,j,k,q)
+          masso(k+1) = masso(k) + ao(k) !Accumulate the old mass. This will simplify the remapping
+          ao(k) = ao(k) / dpo(k)        !Divide out the old grid spacing because we want the tracer mixing ratio, not mass.
+        enddo
+        !Fill in ghost values. Ignored if vert_remap_q_alg == 2
+        do k = 1 , gs
+          ao(1   -k) = ao(       k)
+          ao(nlev+k) = ao(nlev+1-k)
+        enddo
+        !Compute monotonic and conservative PPM reconstruction over every cell
+        coefs(:,:) = compute_ppm( ao , ppmdx )
+        !Compute tracer values on the new grid by integrating from the old cell bottom to the new
+        !cell interface to form a new grid mass accumulation. Taking the difference between
+        !accumulation at successive interfaces gives the mass inside each cell. Since Qdp is
+        !supposed to hold the full mass this needs no normalization.
+        massn1 = 0.
+        do k = 1 , nlev
+          kk = kid(k)
+          massn2 = masso(kk) + integrate_parabola( coefs(:,kk) , z1(k) , z2(k) ) * dpo(kk)
+          Qdp(i,j,k,q) = massn2 - massn1
+          massn1 = massn2
+        enddo
+      enddo
+    enddo
+  enddo
+  call t_stopf('remap_Q_ppm')
+end subroutine remap_Q_ppm
+
+
+!=======================================================================================================! 
+
+
+!THis compute grid-based coefficients from Collela & Woodward 1984.
+function compute_ppm_grids( dx )   result(rslt)
+  use control_mod, only: vert_remap_q_alg
+  implicit none
+  real(kind=real_kind), intent(in) :: dx(-1:nlev+2)  !grid spacings
+  real(kind=real_kind)             :: rslt(10,0:nlev+1)  !grid spacings
+  integer :: j
+  integer :: indB, indE
+
+  !Calculate grid-based coefficients for stage 1 of compute_ppm
+  if (vert_remap_q_alg == 2) then
+    indB = 2
+    indE = nlev-1
+  else
+    indB = 0
+    indE = nlev+1
+  endif
+  do j = indB , indE
+    rslt( 1,j) = dx(j) / ( dx(j-1) + dx(j) + dx(j+1) )
+    rslt( 2,j) = ( 2.*dx(j-1) + dx(j) ) / ( dx(j+1) + dx(j) )
+    rslt( 3,j) = ( dx(j) + 2.*dx(j+1) ) / ( dx(j-1) + dx(j) )
+  enddo
+
+  !Caculate grid-based coefficients for stage 2 of compute_ppm
+  if (vert_remap_q_alg == 2) then
+    indB = 2
+    indE = nlev-2
+  else
+    indB = 0
+    indE = nlev
+  endif
+  do j = indB , indE
+    rslt( 4,j) = dx(j) / ( dx(j) + dx(j+1) )
+    rslt( 5,j) = 1. / sum( dx(j-1:j+2) )
+    rslt( 6,j) = ( 2. * dx(j+1) * dx(j) ) / ( dx(j) + dx(j+1 ) )
+    rslt( 7,j) = ( dx(j-1) + dx(j  ) ) / ( 2. * dx(j  ) + dx(j+1) )
+    rslt( 8,j) = ( dx(j+2) + dx(j+1) ) / ( 2. * dx(j+1) + dx(j  ) )
+    rslt( 9,j) = dx(j  ) * ( dx(j-1) + dx(j  ) ) / ( 2.*dx(j  ) +    dx(j+1) )
+    rslt(10,j) = dx(j+1) * ( dx(j+1) + dx(j+2) ) / (    dx(j  ) + 2.*dx(j+1) )
+  enddo
+end function compute_ppm_grids
+
+!=======================================================================================================! 
+
+
+
+!This computes a limited parabolic interpolant using a net 5-cell stencil, but the stages of computation are broken up into 3 stages
+function compute_ppm( a , dx )    result(coefs)
+  use control_mod, only: vert_remap_q_alg
+  implicit none
+  real(kind=real_kind), intent(in) :: a    (    -1:nlev+2)  !Cell-mean values
+  real(kind=real_kind), intent(in) :: dx   (10,  0:nlev+1)  !grid spacings
+  real(kind=real_kind) ::             coefs(0:2,   nlev  )  !PPM coefficients (for parabola)
+  real(kind=real_kind) :: ai (0:nlev  )                     !fourth-order accurate, then limited interface values
+  real(kind=real_kind) :: dma(0:nlev+1)                     !An expression from Collela's '84 publication
+  real(kind=real_kind) :: da                                !Ditto
+  ! Hold expressions based on the grid (which are cumbersome).
+  real(kind=real_kind) :: dx1, dx2, dx3, dx4, dx5, dx6, dx7, dx8, dx9, dx10
+  real(kind=real_kind) :: al, ar                            !Left and right interface values for cell-local limiting
+  integer :: j
+  integer :: indB, indE
+
+  ! Stage 1: Compute dma for each cell, allowing a 1-cell ghost stencil below and above the domain
+  if (vert_remap_q_alg == 2) then
+    indB = 2
+    indE = nlev-1
+  else
+    indB = 0
+    indE = nlev+1
+  endif
+  do j = indB , indE
+    da = dx(1,j) * ( dx(2,j) * ( a(j+1) - a(j) ) + dx(3,j) * ( a(j) - a(j-1) ) )
+    dma(j) = minval( (/ abs(da) , 2. * abs( a(j) - a(j-1) ) , 2. * abs( a(j+1) - a(j) ) /) ) * sign(1.D0,da)
+    if ( ( a(j+1) - a(j) ) * ( a(j) - a(j-1) ) <= 0. ) dma(j) = 0.
+  enddo
+
+  ! Stage 2: Compute ai for each cell interface in the physical domain (dimension nlev+1)
+  if (vert_remap_q_alg == 2) then
+    indB = 2
+    indE = nlev-2
+  else
+    indB = 0
+    indE = nlev
+  endif
+  do j = indB , indE
+    ai(j) = a(j) + dx(4,j) * ( a(j+1) - a(j) ) + dx(5,j) * ( dx(6,j) * ( dx(7,j) - dx(8,j) ) &
+         * ( a(j+1) - a(j) ) - dx(9,j) * dma(j+1) + dx(10,j) * dma(j) )
+  enddo
+
+  ! Stage 3: Compute limited PPM interpolant over each cell in the physical domain
+  ! (dimension nlev) using ai on either side and ao within the cell.
+  if (vert_remap_q_alg == 2) then
+    indB = 3
+    indE = nlev-2
+  else
+    indB = 1
+    indE = nlev
+  endif
+  do j = indB , indE
+    al = ai(j-1)
+    ar = ai(j  )
+    if ( (ar - a(j)) * (a(j) - al) <= 0. ) then
+      al = a(j)
+      ar = a(j)
+    endif
+    if ( (ar - al) * (a(j) - (al + ar)/2.) >  (ar - al)**2/6. ) al = 3.*a(j) - 2. * ar
+    if ( (ar - al) * (a(j) - (al + ar)/2.) < -(ar - al)**2/6. ) ar = 3.*a(j) - 2. * al
+    !Computed these coefficients from the edge values and cell mean in Maple. Assumes normalized coordinates: xi=(x-x0)/dx
+    coefs(0,j) = 1.5 * a(j) - ( al + ar ) / 4.
+    coefs(1,j) = ar - al
+    coefs(2,j) = -6. * a(j) + 3. * ( al + ar )
+  enddo
+
+  !If we're not using a mirrored boundary condition, then make the two cells bordering the top and bottom
+  !material boundaries piecewise constant. Zeroing out the first and second moments, and setting the zeroth
+  !moment to the cell mean is sufficient to maintain conservation.
+  if (vert_remap_q_alg == 2) then
+    coefs(0,1:2) = a(1:2)
+    coefs(1:2,1:2) = 0.
+    coefs(0,nlev-1:nlev) = a(nlev-1:nlev)
+    coefs(1:2,nlev-1:nlev) = 0.D0
+  endif
+end function compute_ppm
+
+!=======================================================================================================! 
+
+
+!Simple function computes the definite integral of a parabola in normalized coordinates, xi=(x-x0)/dx,
+!given two bounds. Make sure this gets inlined during compilation.
+function integrate_parabola( a , x1 , x2 )    result(mass)
+  implicit none
+  real(kind=real_kind), intent(in) :: a(0:2)  !Coefficients of the parabola
+  real(kind=real_kind), intent(in) :: x1      !lower domain bound for integration
+  real(kind=real_kind), intent(in) :: x2      !upper domain bound for integration
+  real(kind=real_kind)             :: mass
+  mass = a(0) * (x2 - x1) + a(1) * (x2 ** 2 - x1 ** 2) / 0.2D1 + a(2) * (x2 ** 3 - x1 ** 3) / 0.3D1
+end function integrate_parabola
+
+
+
 
 
 

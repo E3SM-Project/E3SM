@@ -59,11 +59,11 @@
 !! \n
 !> @author Jose Garcia (jgarcia@ucar.edu). NCAR
 !------------------------------------------------------------------------------
+module Manager
 
 ! In the absence of a clear alternative, I have removed this module
 ! and all uses of it from CAM compilations. -Sean Santos (santos@ucar.edu)
 #ifndef CAM
-module Manager
 
     use physics_mod, only : elem_physics_t
     use control_mod, only : physics
@@ -100,7 +100,8 @@ contains
         type (elem_physics_t), dimension(:), pointer :: elem_physics  ! removed intent(out), for gfortran4.2
 
         if  (physics == 0) then
-            call abortmp('The variable physics is set to zero, yet you wish to get a handle to the physics resource. Not possible, aborting!')
+            call abortmp('The variable physics is set to zero, yet you wish to &
+                 &get a handle to the physics resource. Not possible, aborting!')
         endif
         if (associated(elem_physics)) then
             call abortmp('Pointer <elem_physics> is currently associated, setting it will cause a memory leak, aborting.')
@@ -123,5 +124,5 @@ contains
         endif
     end subroutine ManagerInit
 
-end module Manager
 #endif
+end module Manager

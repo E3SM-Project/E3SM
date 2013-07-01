@@ -17,7 +17,7 @@ module prim_state_mod
   ! ------------------------------
   use physical_constants, only : p0,Cp,g
   ! ------------------------------
-  use time_mod, only : tstep, secpday, timelevel_t, TimeLevel_Qdp 
+  use time_mod, only : tstep, secpday, timelevel_t, TimeLevel_Qdp, time_at
   ! ------------------------------
   use control_mod, only : integration, test_case, runtype, moisture, &
        tstep_type,energy_fixer, qsplit, ftype, use_cpstar, rsplit
@@ -92,7 +92,7 @@ contains
     integer :: i,j,k,ie
     integer,parameter  :: type=ORDERED
 
-    real (kind=real_kind)  :: Mass2,Mass,Mass_np1
+    real (kind=real_kind)  :: Mass2,Mass
     real (kind=real_kind)  :: TOTE(4),KEner(4),PEner(4),IEner(4),IEner_wet(4)
     real (kind=real_kind)  :: Qvar(qsize_d,4),Qmass(qsize_d,4),Q1mass(qsize_d)
     real (kind=real_kind)  :: Qmass_added(qsize_d)
@@ -145,7 +145,10 @@ contains
     real (kind=real_kind) :: ddt_tot,ddt_diss
     integer               :: n0, nm1, pnm1, np1
     integer               :: npts,n,q
-
+    
+    if (hybrid%masterthread) then 
+       write(iulog,*) "nstep=",tl%nstep," time=",Time_at(tl%nstep)/(24*3600)," [day]"
+    end if
     if (.not. present(fvm) .and. ntrac>0) then
        print *,'ERROR: prim_state_mod.F90: optional fvm argument required if ntrac>0'
     endif
@@ -239,6 +242,9 @@ contains
 
        tmax_local(ie)    = MAXVAL(elem(ie)%state%T(:,:,:,n0))
 
+       if (rsplit>0) &
+            dpmax_local(ie)    = MAXVAL(elem(ie)%state%dp3d(:,:,:,n0))
+
        psmax_local(ie) = MAXVAL(tmp(:,:,ie))
        ftmax_local(ie)    = MAXVAL(elem(ie)%derived%FT(:,:,:,pnm1))
        fqmax_local(ie)    = MAXVAL(elem(ie)%derived%FQ(:,:,:,1,pnm1))
@@ -252,9 +258,9 @@ contains
        Fvmin_local(ie)    = MINVAL(elem(ie)%derived%FM(:,:,2,:,pnm1))
 
        tmin_local(ie)    = MINVAL(elem(ie)%state%T(:,:,:,n0))
+
        if (rsplit>0) &
             dpmin_local(ie)    = MINVAL(elem(ie)%state%dp3d(:,:,:,n0))
-
 
        Ftmin_local(ie)    = MINVAL(elem(ie)%derived%FT(:,:,:,pnm1))
        Fqmin_local(ie) = MINVAL(elem(ie)%derived%FQ(:,:,:,1,pnm1))
@@ -356,15 +362,14 @@ contains
     do ie=nets,nete
        tmp(:,:,ie)=elem(ie)%state%ps_v(:,:,np1) 
     enddo
-    Mass_np1 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
 
     !
     !   ptop =  hvcoord%hyai(1)*hvcoord%ps0)  + hvcoord%hybi(1)*ps(i,j)
     !   but we assume hybi(1) is zero at top of atmosphere (pure pressure coordinates)
-    !    Mass = (Mass2-(hvcoord%hyai(1)*hvcoord%ps0) )*scale  ! this correction is a constant, ~20 kg/m^2 (effects 4th digit of Mass)
+    !    Mass = (Mass2-(hvcoord%hyai(1)*hvcoord%ps0) )*scale  ! this correction is a constant,
+    !                                                         ! ~20 kg/m^2 (effects 4th digit of Mass)
     !   BUT: CAM EUL defines mass as integral( ps ), so to be consistent, ignore ptop contribution; 
     Mass = Mass2*scale
-    Mass_np1 = Mass_np1*scale
 
 
     !   sum the mass added by the mass fixer
@@ -388,7 +393,7 @@ contains
        if (rsplit>0) &
        write(iulog,100) "dp    = ",dpmin_p,dpmax_p,dpsum_p
 
-       if (tstep_type==1) then  !no longer support tracer advection with tstep_type = 0
+       if (tstep_type>0) then  !no longer support tracer advection with tstep_type = 0
           do q=1,qsize
              write(iulog,100) "qv= ",qvmin_p(q), qvmax_p(q), qvsum_p(q)
           enddo
@@ -597,7 +602,6 @@ contains
        ! note: diagnostics not yet coded for semi-implicit 
        if (integration == "explicit") then
           
-          
           write(iulog,'(3a25)') "**DYNAMICS**        J/m^2","   W/m^2","W/m^2    "
 #ifdef ENERGY_DIAGNOSTICS
           ! terms computed during prim_advance, if ENERGY_DIAGNOSTICS is enabled
@@ -641,7 +645,7 @@ contains
           ddt_tot = (TOTE(2)-TOTE(1))/(dt)
           write(iulog,'(a,3E22.14)') " E,dE/dt     ",TOTE(2),ddt_tot
           
-          if (tstep_type==1) then  !no longer support tracer advection with tstep_type = 0
+          if (tstep_type>0) then  !no longer support tracer advection with tstep_type = 0
              do q=1,qsize
                 write(iulog,'(a,i1,a,E22.14,a,2E15.7)') "Q",q,",Q diss, dQ^2/dt:",Qmass(q,2)," kg/m^2",&
                      (Qmass(q,2)-Qmass(q,1))/dt,(Qvar(q,2)-Qvar(q,1))/dt
@@ -654,9 +658,7 @@ contains
              write(iulog,'(a,2e15.7)') 'dKE/dt(W/m^2): ',(KEner(4)-KEner(3))/dt,(KEner(3)-KEner(2))/dt
              write(iulog,'(a,2e15.7)') 'dIE/dt(W/m^2): ',(IEner(4)-IEner(3))/dt,(IEner(3)-IEner(2))/dt
              write(iulog,'(a,2e15.7)') 'dPE/dt(W/m^2): ',(PEner(4)-PEner(3))/dt,(PEner(3)-PEner(2))/dt
-          endif
-          ! RK code diagnostics
-          if (tstep_type==1) then  
+          else
              write(iulog,'(a)') 'Energy Fixer, Physics (except adjustments):'
              write(iulog,'(a,2e15.7)') 'dKE/dt(W/m^2): ',(KEner(3)-KEner(2))/dt,(KEner(1)-KEner(4))/dt
              write(iulog,'(a,2e15.7)') 'dIE/dt(W/m^2): ',(IEner(3)-IEner(2))/dt,(IEner(1)-IEner(4))/dt
@@ -672,7 +674,7 @@ contains
 #endif       
        if (TOTE0>0) then
           write(iulog,100) "(E-E0)/E0    ",(TOTE(4)-TOTE0)/TOTE0
-          if (tstep_type==1) then  !no longer support tracer advection with tstep_type = 0
+          if (tstep_type>0) then  !no longer support tracer advection with tstep_type = 0
              do q=1,qsize
                 if(Qmass0(q)>0.0D0) then
                    write(iulog,'(a,E23.15,a,i1)') "(Q-Q0)/Q0 ",(Qmass(q,2)-Qmass0(q))/Qmass0(q),"   Q",q
@@ -704,7 +706,7 @@ contains
 !=======================================================================================================! 
 
 
-subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete,tQ)
+subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
 ! 
 !  called at the end of a timestep, before timelevel update.  Solution known at
 !  dynamics:     nm1,  n0,  np1.  
@@ -735,13 +737,13 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete,tQ
     use hybvcoord_mod, only : hvcoord_t
     use element_mod, only : element_t
     use physical_constants, only : Cp, cpwater_vapor
-    use physics_mod, only : Virtual_Specific_Heat
+    use physics_mod, only : Virtual_Specific_Heat, Virtual_Temperature
+    use prim_si_mod, only : preq_hydrostatic
 
     integer :: t1,t2,n,nets,nete
     type (element_t)     , intent(inout), target :: elem(:)
     type (hvcoord_t)                  :: hvcoord
     type (TimeLevel_t), intent(in)       :: tl
-    integer, intent(in),optional    :: tQ
     logical :: t_before_advance
 
     integer :: ie,k,i,j,nm_f
@@ -749,7 +751,12 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete,tQ
     real (kind=real_kind), dimension(np,np)  :: E
     real (kind=real_kind), dimension(np,np)  :: suml,suml2,v1,v2
     real (kind=real_kind), dimension(np,np,nlev)  :: sumlk, suml2k
+    real (kind=real_kind), dimension(np,np,nlev)  :: p,T_v,phi
     real (kind=real_kind) :: cp_star1,cp_star2,qval_t1,qval_t2
+    real (kind=real_kind) :: Qt
+    logical :: wet
+
+
     logical tstagger
     integer:: t2_qdp, t1_qdp   ! the time pointers for Qdp are not the same
 
@@ -800,16 +807,10 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete,tQ
           do j=1,np
              if(use_cpstar == 1)  then
                 ! Cp_star = cp + (Cpwater_vapor - cp)*qval
-                if (present(tQ)) then
-                   ! we should interpolate to t +/- dt_dynamics/2, but not worth the trouble
-                   cp_star2= Virtual_Specific_Heat(elem(ie)%state%Q(i,j,k,1))
-                   cp_star1= cp_star2  
-                else !not used for now with CAM
-                   qval_t1 = elem(ie)%state%Qdp(i,j,k,1,t1_qdp)/dpt1(i,j,k)
-                   qval_t2 = elem(ie)%state%Qdp(i,j,k,1,t2_qdp)/dpt2(i,j,k)
-                   cp_star1= Virtual_Specific_Heat(qval_t1)
-                   cp_star2= Virtual_Specific_Heat(qval_t2)
-                endif
+                qval_t1 = elem(ie)%state%Qdp(i,j,k,1,t1_qdp)/dpt1(i,j,k)
+                qval_t2 = elem(ie)%state%Qdp(i,j,k,1,t2_qdp)/dpt2(i,j,k)
+                cp_star1= Virtual_Specific_Heat(qval_t1)
+                cp_star2= Virtual_Specific_Heat(qval_t2)
              else
                 cp_star1=cp
                 cp_star2=cp
@@ -860,6 +861,7 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete,tQ
        enddo
        elem(ie)%accum%KEner(:,:,n)=suml(:,:)
 
+
     
     !   PE   dp/dn PHIs
        suml=0
@@ -872,6 +874,25 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete,tQ
           endif
        enddo
        elem(ie)%accum%PEner(:,:,n)=suml(:,:)
+
+
+
+!      compute alternate PE term which matches what is used in CAM physics
+       wet =(moisture /= "dry")
+       do k=1,nlev
+          p(:,:,k)   = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem(ie)%state%ps_v(:,:,t2)
+          do j=1,np
+             do i=1,np
+                if (wet) then
+                   Qt = elem(ie)%state%Qdp(i,j,k,1,t2_qdp)/dpt2(i,j,k)
+                   T_v(i,j,k) = Virtual_Temperature(elem(ie)%state%T(i,j,k,t2),Qt)
+                else
+                   T_v(i,j,k) = elem(ie)%state%T(i,j,k,t2)
+                endif
+             end do
+          end do
+       end do
+
     enddo
     
 end subroutine prim_energy_halftimes
@@ -930,7 +951,7 @@ subroutine prim_diag_scalars(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     !  RK2 forward scheme.  compute everything at t2
     !  (used by CAM)
     !   Q has only one time dimension
-    if (tstep_type==1) then
+    if (tstep_type>0) then
 
        do ie=nets,nete
 #if (defined ELEMENT_OPENMP)

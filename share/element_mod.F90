@@ -290,6 +290,7 @@ module element_mod
      type (cartesian2D_t)     :: cartp(np,np)  ! gnomonic coordinates of GLL points 
      type (cartesian2D_t)     :: corners(4)    ! gnomonic coordinates of element corners
      real (kind=real_kind)    :: u2qmap(4,2)   ! bilinear map from ref element to quad in cubedsphere coordinates
+                                               ! SHOULD BE REMOVED 
      ! 3D cartesian coordinates
      type (cartesian3D_t)     :: corners3D(4)  
 
@@ -297,13 +298,13 @@ module element_mod
      real (kind=real_kind)    :: area               ! Area of element
      real (kind=real_kind)    :: max_eig        ! max singular value of metinv
      real (kind=real_kind)    :: min_eig        ! min singular value of metinv
+     real (kind=real_kind)    :: max_eig_ratio  ! max ratio of singular values
      real (kind=real_kind)    :: dx_short       ! short length scale
      real (kind=real_kind)    :: dx_long        ! long length scale
 
      real (kind=real_kind)    :: variable_hyperviscosity(np,np)  ! hyperviscosity based on above
-     real (kind=real_kind)    :: courant !  advective courant number
      real (kind=real_kind)    :: hv_courant ! hyperviscosity courant number
-
+     real (kind=real_kind)    :: tensorVisc(2,2,np,np)    !og, matrix V for tensor viscosity
 
      ! Edge connectivity information
      integer(kind=int_kind) :: node_numbers(4)
@@ -326,8 +327,6 @@ module element_mod
      real (kind=real_kind)    :: D(2,2,np,np)        ! Map covariant field on cube to vector field on the sphere
      real (kind=real_kind)    :: Dinv(2,2,np,np)     ! Map vector field on the sphere to covariant v on cube
 
-!og, matrix V for tensor viscosity
-     real (kind=real_kind)    :: tensorVisc(2,2,np,np)   
 
      ! Convert vector fields from spherical to rectangular components
      ! The transpose of this operation is its pseudoinverse.
@@ -349,7 +348,9 @@ module element_mod
      real (kind=real_kind)    :: fcor(np,np)        ! coreolis term
 
      ! Solver weights (used only for non-staggered grid
-     real (kind=real_kind)    :: solver_wts(np,np)
+!     real (kind=real_kind)    :: solver_wts(np,np)  ! REMOVE. 
+                                   ! non-conservative operatores: use spheremp*rspheremp
+                                   ! conservative operators: use spheremp
 
      type (index_t) :: idxP
      type (index_t),pointer :: idxV

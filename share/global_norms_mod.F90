@@ -7,6 +7,7 @@ module global_norms_mod
   use edge_mod, only : EdgeBuffer_t
   implicit none
   private
+  save
 
   public :: l1_snorm
   public :: l2_snorm
@@ -123,7 +124,8 @@ contains
     real (kind=real_kind) :: min_max_eig, max_max_eig, avg_max_eig
     real (kind=real_kind) :: min_min_eig, max_min_eig, avg_min_eig
     real (kind=real_kind) :: min_len
-    integer :: ie,corner, i, j
+    real (kind=real_kind) :: max_ratio
+    integer :: ie,corner, i, j,nlon
 
     !   MNL: use these variables for calculating largest length scale of element with
     !        smallest dx (in uniform meshes, these are in the corner, with
@@ -142,6 +144,8 @@ contains
     min_area=1d99
     max_area=0
     avg_area=0_real_kind
+
+    max_ratio = 0
 
     min_max_eig=1d99
     max_max_eig=0
@@ -167,6 +171,8 @@ contains
 
        min_max_eig = min(min_max_eig,elem(ie)%max_eig)
        max_max_eig = max(max_max_eig,elem(ie)%max_eig)
+
+       max_ratio   = max(max_ratio,elem(ie)%max_eig_ratio)
 
        min_min_eig = min(min_min_eig,elem(ie)%min_eig)
        max_min_eig = max(max_min_eig,elem(ie)%min_eig)
@@ -202,6 +208,8 @@ contains
 
     min_max_eig=ParallelMin(min_max_eig,hybrid)
     max_max_eig=ParallelMax(max_max_eig,hybrid)
+
+    max_ratio=ParallelMax(max_ratio,hybrid)
 
     min_min_eig=ParallelMin(min_min_eig,hybrid)
     max_min_eig=ParallelMax(max_min_eig,hybrid)
@@ -244,8 +252,11 @@ contains
        end if
        write(iulog,'(a,2f8.4)') 'Min eigenvalue of Dinv (min, max): ', min_min_eig, max_min_eig
        write(iulog,'(a,2f8.4)') 'Max eigenvalue of Dinv (min, max): ', min_max_eig, max_max_eig
+       write(iulog,'(a,1f8.2)') 'Max eigenvalue ratio (element distortion): ', max_ratio
        write(iulog,'(a,3f8.2)') 'dx for CFL (smallest scale per elem): ave,min,max = ', avg_min_dx, min_min_dx, max_min_dx
        write(iulog,'(a,3f8.2)') 'dx for hypervis (largest scale per elem): ave,min,max = ', avg_max_dx, min_max_dx, max_max_dx
+       write(iulog,'(a,3f8.2)') "dx based on sqrt element area: ave,min,max = ", &
+                sqrt(avg_area)/(np-1),sqrt(min_area)/(np-1),sqrt(max_area)/(np-1)
     end if
 
     deallocate(h)
@@ -255,7 +266,6 @@ contains
         mindxout=1000_real_kind*min_len
         min_len = 0.002d0*rearth/(dble(np-1)*max_max_eig)
     end if
-
 
   end subroutine test_global_integral
 
@@ -287,7 +297,7 @@ contains
     use reduction_mod, only : ParallelMin,ParallelMax
     use physical_constants, only : rrearth, rearth,dd_pi
     use control_mod, only : nu, nu_div, hypervis_order, nu_top, hypervis_power, &
-                            fine_ne, rk_stage_user, max_hypervis_courant
+                            fine_ne, rk_stage_user, max_hypervis_courant, hypervis_scaling
     use parallel_mod, only : abortmp, global_shared_buf, global_shared_sum
     use edge_mod, only : EdgeBuffer_t, initedgebuffer, FreeEdgeBuffer, edgeVpack, edgeVunpack
     use bndry_mod, only : bndry_exchangeV
@@ -311,6 +321,7 @@ contains
     real (kind=real_kind) :: lambda_max, lambda_vis, min_gw
     integer :: ie,corner, i, j, rowind, colind
     type (quadrature_t)    :: gp
+
 
     ! Eigenvalues calculated by folks at UMich (Paul U & Jared W)
     select case (np)
@@ -345,7 +356,7 @@ contains
     end if
 
     do ie=nets,nete
-      elem(ie)%variable_hyperviscosity = 1;
+      elem(ie)%variable_hyperviscosity = 1.0
     end do
 
     gp=gausslobatto(np)
@@ -404,6 +415,7 @@ contains
     avg_min_eig = global_shared_sum(2)/dble(nelem)
     avg_max_dx = global_shared_sum(3)/dble(nelem)
     avg_min_dx = global_shared_sum(4)/dble(nelem)
+
 
     if (hypervis_power /= 0) then
 
@@ -528,21 +540,14 @@ contains
     end if
 
 
-
-!!! this is a temp solution: right now, hypervis_power ~= 0 means either variable hv or tensor hv,
-!but variable hv uses elem%variable_hyperviscosity, tensor hv uses elem%tensorVisc. When hypervis_power ~=0,
-!both valiables are built (though only one is needed), leads to extra dss calls
-    if (hypervis_power /= 0) then
+   if (hypervis_scaling /= 0) then
 !this is a code for smoothing V for tensor HV
-!probably can be placed better but
-!here we dss matrix V, each component
 
-!WARNING: since the switch between tensor HV and other HV algs is in preproc directive in derivative_mod, 
-!if tensor HV is not used, (or even if nu=0), we have extra 4 DSS here!
+!if nu=0, we have extra 4 DSS here!
 !rowind, colind are from 1 to 2 cause they correspond to 2D tensor in lat/lon
 
 !IF DSSED V NEEDED
-#if 0
+#if 1
     call initEdgeBuffer(edgebuf,1)
     do rowind=1,2
       do colind=1,2
@@ -550,6 +555,7 @@ contains
 	  zeta(:,:,ie) = elem(ie)%tensorVisc(rowind,colind,:,:)*elem(ie)%spheremp(:,:)
 	  call edgeVpack(edgebuf,zeta(1,1,ie),1,0,elem(ie)%desc)
 	end do
+
 	call bndry_exchangeV(hybrid,edgebuf)
 	do ie=nets,nete
 	  call edgeVunpack(edgebuf,zeta(1,1,ie),1,0,elem(ie)%desc)
@@ -561,7 +567,7 @@ contains
 #endif
 
 !IF BILINEAR MAP OF V NEEDED
-#if 0
+#if 1
     do rowind=1,2
       do colind=1,2
     ! replace hypervis w/ bilinear based on continuous corner values
@@ -587,6 +593,7 @@ contains
 #endif
     endif
 
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     deallocate(gp%points)
@@ -596,10 +603,12 @@ contains
        write(iulog,'(a,f10.2)') 'CFL estimates in terms of S=time step stability region'
        write(iulog,'(a,f10.2)') '(i.e. advection w/leapfrog: S=1, viscosity w/forward Euler: S=2)'
        if (rk_stage_user>0) then
-          write(iulog,'(a,f10.2,a)') 'SSP preservation (120m/s) RKSSP euler step dt  < S *', min_gw/(120.0d0*max_max_eig*rrearth),'s'
+          write(iulog,'(a,f10.2,a)') 'SSP preservation (120m/s) RKSSP euler step dt  < S *', &
+               min_gw/(120.0d0*max_max_eig*rrearth),'s'
        endif
        write(iulog,'(a,f10.2,a)') 'Stability: advective (120m/s)   dt_tracer < S *', 1/(120.0d0*max_max_eig*lambda_max*rrearth),'s'
-       write(iulog,'(a,f10.2,a)') 'Stability: gravity wave(342m/s) RK dyn stage dt  < S *', 1/(342.0d0*max_max_eig*lambda_max*rrearth),'s'
+       write(iulog,'(a,f10.2,a)') 'Stability: gravity wave(342m/s)   dt_dyn  < S *', &
+            1/(342.0d0*max_max_eig*lambda_max*rrearth),'s'
        if (nu>0) then
           if (hypervis_order==1) then
               write(iulog,'(a,f10.2,a)') 'Stability: viscosity dt < S *',1/(((rrearth*max_max_eig)**2)*lambda_vis),'s'

@@ -14,35 +14,31 @@ module edge_mod
 
   implicit none
   private
+  save
 
   type, public :: rotation_t
      integer  :: nbr                                        ! nbr direction: north south east west
      integer  :: reverse                                    ! 0 = do not reverse order
      ! 1 = reverse order
-     real (kind=real_kind), dimension(:,:,:), pointer :: R  ! rotation matrix
+     real (kind=real_kind), dimension(:,:,:), pointer :: R => null()  ! rotation matrix
   end type rotation_t
 
   type, public :: EdgeDescriptor_t
      integer(kind=int_kind)  :: use_rotation
      integer(kind=int_kind)  :: padding
-     integer(kind=int_kind), pointer  :: putmapP(:)
-     integer(kind=int_kind), pointer  :: getmapP(:)
-     integer(kind=int_kind), pointer  :: putmapP_ghost(:)
-     integer(kind=int_kind), pointer  :: getmapP_ghost(:)
-     logical(kind=log_kind), pointer  :: reverse(:)
+     integer(kind=int_kind), pointer  :: putmapP(:) => null()
+     integer(kind=int_kind), pointer  :: getmapP(:) => null()
+     integer(kind=int_kind), pointer  :: putmapP_ghost(:) => null()
+     integer(kind=int_kind), pointer  :: getmapP_ghost(:) => null()
+     logical(kind=log_kind), pointer  :: reverse(:) => null()
      type (rotation_t), dimension(:), pointer :: rot => null() ! Identifies list of edges
      !  that must be rotated, and how
   end type EdgeDescriptor_t
 
 
   type, public :: EdgeBuffer_t
-#ifdef HAVE_F2008_CONTIGUOUS
-     real (kind=real_kind), dimension(:,:), pointer, contiguous :: buf
-     real (kind=real_kind), dimension(:,:), pointer, contiguous :: receive
-#else
-     real (kind=real_kind), dimension(:,:), pointer :: buf
-     real (kind=real_kind), dimension(:,:), pointer :: receive
-#endif
+     real (kind=real_kind), dimension(:,:), pointer :: buf => null()
+     real (kind=real_kind), dimension(:,:), pointer :: receive => null()
      integer :: nlyr ! Number of layers
      integer :: nbuf ! size of the horizontal dimension of the buffers.
   end type EdgeBuffer_t
@@ -50,8 +46,8 @@ module edge_mod
   type, public :: LongEdgeBuffer_t
      integer :: nlyr
      integer :: nbuf
-     integer (kind=int_kind), dimension(:,:), pointer :: buf
-     integer (kind=int_kind), dimension(:,:), pointer :: receive
+     integer (kind=int_kind), dimension(:,:), pointer :: buf => null()
+     integer (kind=int_kind), dimension(:,:), pointer :: receive => null()
   end type LongEdgeBuffer_t
 
   public :: initEdgeBuffer, initLongEdgeBuffer
@@ -69,22 +65,22 @@ module edge_mod
 
 
   type, public :: GhostBuffer_t
-     real (kind=real_kind), dimension(:,:,:,:), pointer :: buf
-     real (kind=real_kind), dimension(:,:,:,:), pointer :: receive
+     real (kind=real_kind), dimension(:,:,:,:), pointer :: buf => null()
+     real (kind=real_kind), dimension(:,:,:,:), pointer :: receive => null()
      integer :: nlyr ! Number of layers
      integer :: nbuf ! size of the horizontal dimension of the buffers.
   end type GhostBuffer_t
   
   type, public :: GhostBuffertr_t
-     real (kind=real_kind), dimension(:,:,:,:,:), pointer :: buf
-     real (kind=real_kind), dimension(:,:,:,:,:), pointer :: receive
+     real (kind=real_kind), dimension(:,:,:,:,:), pointer :: buf => null()
+     real (kind=real_kind), dimension(:,:,:,:,:), pointer :: receive => null()
      integer :: nlyr ! Number of layers
      integer :: nbuf ! size of the horizontal dimension of the buffers.
   end type GhostBuffertr_t
   
   type, public :: GhostBuffer3d_t
-     real (kind=real_kind), dimension(:,:,:,:), pointer :: buf
-     real (kind=real_kind), dimension(:,:,:,:), pointer :: receive
+     real (kind=real_kind), dimension(:,:,:,:), pointer :: buf => null()
+     real (kind=real_kind), dimension(:,:,:,:), pointer :: receive => null()
      integer :: nlyr ! Number of layers
      integer :: nhc  ! Number of layers of ghost cells
      integer :: np   ! Number of points in a cell
@@ -111,9 +107,14 @@ module edge_mod
   public :: ghostVpack3d
   public :: ghostVunpack3d
   public :: initGhostBuffer3d
-  
 
-  integer*8 :: edgebuff_addr(0:1)
+  ! Wrap pointer so we can make an array of them.
+  type :: wrap_ptr
+     real (kind=real_kind), dimension(:,:), pointer :: ptr => null()
+  end type wrap_ptr
+
+  type(wrap_ptr) :: edgebuff_ptrs(0:1)
+
 contains
 
   ! =========================================
@@ -121,43 +122,83 @@ contains
   !
   ! create an Real based communication buffer
   ! =========================================
-  subroutine initEdgeBuffer(edge,nlyr, newbuf,newreceive)
+  subroutine initEdgeBuffer(edge,nlyr, buf_ptr,receive_ptr)
     use dimensions_mod, only : np, nelemd, max_corner_elem
     implicit none
     integer,intent(in)                :: nlyr
-    type (EdgeBuffer_t),intent(out) :: edge
-#ifdef HAVE_F2008_CONTIGUOUS
-    real(kind=real_kind), optional, target, contiguous :: newbuf(:,:), newreceive(:,:)
-#else
-    real(kind=real_kind), optional, target :: newbuf(:,:), newreceive(:,:)
-#endif
+    type (EdgeBuffer_t),intent(out), target :: edge
+    real(kind=real_kind), optional, pointer :: buf_ptr(:), receive_ptr(:)
+
+    ! Notes about the buf_ptr/receive_ptr options:
+    !
+    ! You can pass in 1D pointers to this function. If they are not
+    ! associated, they will be allocated and used as buffer space. If they
+    ! are associated, their targets will be used as buffer space.
+    !
+    ! The pointers must not be thread-private.
+    !
+    ! If an EdgeBuffer_t object is initialized from pre-existing storage
+    ! (i.e. buf_ptr is provided and not null), it must *not* be freed,
+    ! and must not be used if the underlying storage has been deallocated.
+    !
+    ! All these restrictions also applied to the old newbuf and newreceive
+    ! options.
+
+    ! Workaround for NAG bug.
+    ! NAG 5.3.1 dies if you use pointer bounds remapping to set
+    ! a pointer that is also a component. So remap to temporary,
+    ! then use that to set component pointer.
+    real(kind=real_kind), pointer :: tmp_ptr(:,:)
+
     ! Local variables
-    integer :: nbuf,ith,xtra
+    integer :: nbuf,ith
 
     nbuf=4*(np+max_corner_elem)*nelemd
     edge%nlyr=nlyr
     edge%nbuf=nbuf
     if (nlyr==0) return  ! tracer code might call initedgebuffer() with zero tracers
 
+!$OMP BARRIER
+
 !   only master thread should allocate the buffer
 #if (! defined ELEMENT_OPENMP)
 !$OMP MASTER
 #endif
-    if (present(newbuf) .and. present(newreceive)) then
-       xtra = size(newbuf)/nlyr
-       if (xtra<nbuf) then
-          print *,'xtra,nbuf=',xtra,nbuf
+    if (present(buf_ptr)) then
+       ! If buffer is passed in but not allocated, allocate it.
+       if (.not. associated(buf_ptr)) allocate(buf_ptr(nlyr*nbuf))
+       ! Verify dimensions
+       if (size(buf_ptr) < nlyr*nbuf) then
+          print *,'size(buf_ptr),nlyr,nbuf=',size(buf_ptr),nlyr,nbuf
           call abortmp('Error: user provided edge buffer is too small')
-       endif
-#ifdef HAVE_F2008_CONTIGUOUS
-       edge%buf(1:nlyr,1:xtra) => newbuf
-       edge%receive(1:nlyr,1:xtra) => newreceive
+       end if
+#ifdef HAVE_F2003_PTR_BND_REMAP
+       tmp_ptr(1:nlyr,1:nbuf) => buf_ptr
+       edge%buf => tmp_ptr
 #else
-       ! call F77 routine which will reshape arrays.  
-       call set_edge_buffers(edge,edge%nlyr,edge%nbuf,newbuf,newreceive)
+       ! call F77 routine which will reshape array.
+       call remap_2D_ptr_buf(edge,nlyr,nbuf,buf_ptr)
 #endif
     else
        allocate(edge%buf    (nlyr,nbuf))
+    end if
+
+    if (present(receive_ptr)) then
+       ! If buffer is passed in but not allocated, allocate it.
+       if (.not. associated(receive_ptr)) allocate(receive_ptr(nlyr*nbuf))
+       ! Verify dimensions
+       if (size(receive_ptr) < nlyr*nbuf) then
+          print *,'size(receive_ptr),nlyr,nbuf=',size(receive_ptr),nlyr,nbuf
+          call abortmp('Error: user provided edge buffer is too small')
+       end if
+#ifdef HAVE_F2003_PTR_BND_REMAP
+       tmp_ptr(1:nlyr,1:nbuf) => receive_ptr
+       edge%receive => tmp_ptr
+#else
+       ! call F77 routine which will reshape array.
+       call remap_2D_ptr_receive(edge,nlyr,nbuf,receive_ptr)
+#endif
+    else
        allocate(edge%receive(nlyr,nbuf))
     endif
     edge%buf    (:,:)=0.0D0
@@ -177,17 +218,17 @@ contains
     if (omp_get_num_threads()>1) then
        ith=omp_get_thread_num()
        if (ith <= 1 ) then
-          edgebuff_addr(ith)=loc(edge%buf)
+          edgebuff_ptrs(ith)%ptr => edge%buf
        endif
 #if (! defined ELEMENT_OPENMP)
        !$OMP BARRIER
        !$OMP MASTER
 #endif
-       if (edgebuff_addr(0) .ne. edgebuff_addr(1)) then
+       if (.not. associated(edgebuff_ptrs(0)%ptr, edgebuff_ptrs(1)%ptr)) then
           call haltmp('ERROR: edge struct appears to be thread-private.')
        endif
 #if (! defined ELEMENT_OPENMP)
-       !$OMP ENDMASTER
+       !$OMP END MASTER
 #endif
     endif
 
@@ -1377,8 +1418,8 @@ contains
 
     type (Ghostbuffer_t)                      :: edge
     integer,              intent(in)   :: vlyr
-    real (kind=real_kind),intent(in)   :: v(nc1:nc2,nc1:nc2,vlyr)
     integer,              intent(in)   :: nc1,nc2,nc,kptr
+    real (kind=real_kind),intent(in)   :: v(nc1:nc2,nc1:nc2,vlyr)
     type (EdgeDescriptor_t),intent(in) :: desc
 
     ! Local variables
@@ -1557,8 +1598,8 @@ contains
     type (Ghostbuffer_t),         intent(in)  :: edge
 
     integer,               intent(in)  :: vlyr
-    real (kind=real_kind), intent(inout) :: v(nc1:nc2,nc1:nc2,vlyr)
     integer,               intent(in)  :: kptr,nc1,nc2,nc
+    real (kind=real_kind), intent(inout) :: v(nc1:nc2,nc1:nc2,vlyr)
     type (EdgeDescriptor_t)            :: desc
 
     ! Local
@@ -4197,25 +4238,37 @@ End module edge_mod
 
 
 
-#ifndef HAVE_F2008_CONTIGUOUS
+#ifndef HAVE_F2003_PTR_BND_REMAP
 !
 ! subroutine to allow sharing edge buffers
 ! this has to be outside a module to allow us to (F77 style) access the same chunk 
 ! of memory with a different shape
 !
 ! some compilers dont allow the 'target' attribute to be used in a F77 subroutine
-! such as cray.  if that is the case, try compiling with -DHAVE_F2008_CONTIGUOUS
+! such as cray.  if that is the case, try compiling with -DHAVE_F2003_PTR_BND_REMAP
 !
-subroutine set_edge_buffers(edge,nlyr,nbuf,newbuf,newreceive)
-use kinds, only          : real_kind,int_kind
-use edge_mod, only       : EdgeBuffer_t ! _EXTERNAL
-! input
+subroutine remap_2D_ptr_buf(edge,nlyr,nbuf,src_array)
+use edge_mod, only       : EdgeBuffer_t ! _EXTERNAL                                                   
+use kinds, only          : real_kind
+! input                                                                                               
 type (EdgeBuffer_t) :: edge
 integer :: nlyr,nbuf
-real(kind=real_kind) , target :: newbuf(nlyr,nbuf), newreceive(nlyr,nbuf)
+real(kind=real_kind) , target :: src_array(nlyr,nbuf)
 
-edge%buf => newbuf
-edge%receive => newreceive
-end subroutine set_edge_buffers
+edge%buf  => src_array
+
+end subroutine remap_2D_ptr_buf
+
+subroutine remap_2D_ptr_receive(edge,nlyr,nbuf,src_array)
+use edge_mod, only       : EdgeBuffer_t ! _EXTERNAL                                                   
+use kinds, only          : real_kind
+! input                                                                                               
+type (EdgeBuffer_t) :: edge
+integer :: nlyr,nbuf
+real(kind=real_kind) , target :: src_array(nlyr,nbuf)
+
+edge%receive  => src_array
+
+end subroutine remap_2D_ptr_receive
 
 #endif

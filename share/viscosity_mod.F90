@@ -19,8 +19,11 @@ use derivative_mod, only : derivative_t, laplace_sphere_wk, vlaplace_sphere_wk, 
 use edge_mod, only : EdgeBuffer_t, edgevpack, edgerotate, edgevunpack, edgevunpackmin, &
     edgevunpackmax, initEdgeBuffer, FreeEdgeBuffer
 use bndry_mod, only : bndry_exchangev
+use control_mod, only : hypervis_scaling
 
 implicit none
+save
+
 public :: biharmonic_wk
 #ifdef _PRIM
 public :: biharmonic_wk_scalar
@@ -60,11 +63,11 @@ subroutine biharmonic_wk(elem,ptens,vtens,deriv,edge3,hybrid,nt,nets,nete,nu_rat
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 type (hybrid_t)      , intent(in) :: hybrid
 type (element_t)     , intent(inout), target :: elem(:)
+integer :: nt,nets,nete
 real (kind=real_kind), dimension(np,np,2,nlev,nets:nete)  :: vtens
 real (kind=real_kind), dimension(np,np,nlev,nets:nete) :: ptens
 type (EdgeBuffer_t)  , intent(inout) :: edge3
 type (derivative_t)  , intent(in) :: deriv
-integer :: nt,nets,nete
 real (kind=real_kind) ::  nu_ratio
 #ifdef _PRIM
 real (kind=real_kind), dimension(np,np,nets:nete) :: pstens
@@ -72,18 +75,22 @@ real (kind=real_kind), dimension(np,np,nets:nete) :: pstens
 
 ! local
 integer :: k,kptr,i,j,ie,ic
-real (kind=real_kind), dimension(:,:), pointer :: rspheremv, viscosity
+real (kind=real_kind), dimension(:,:), pointer :: rspheremv
 real (kind=real_kind), dimension(np,np) :: lap_ps
 real (kind=real_kind), dimension(np,np,nlev) :: T
 real (kind=real_kind), dimension(np,np,2) :: v
 
    do ie=nets,nete
       
-      viscosity    => elem(ie)%variable_hyperviscosity
-
 #ifdef _PRIM
       ! should filter lnps + PHI_s/RT?
-      pstens(:,:,ie)=laplace_sphere_wk(elem(ie)%state%ps_v(:,:,nt),deriv,elem(ie),viscosity)
+
+      !if tensor hyperviscosity with tensor V is used, then biharmonic operator is (\grad\cdot V\grad) (\grad \cdot \grad) 
+      if(hypervis_scaling > 0)then
+	pstens(:,:,ie)=laplace_sphere_wk(elem(ie)%state%ps_v(:,:,nt),deriv,elem(ie),var_coef=.false.)
+      else
+	pstens(:,:,ie)=laplace_sphere_wk(elem(ie)%state%ps_v(:,:,nt),deriv,elem(ie),var_coef=.true.)
+      endif
 #endif
       
 #if (defined ELEMENT_OPENMP)
@@ -102,8 +109,17 @@ real (kind=real_kind), dimension(np,np,2) :: v
 #endif
             enddo
          enddo
-         ptens(:,:,k,ie)=laplace_sphere_wk(T(:,:,k),deriv,elem(ie),viscosity)
-         vtens(:,:,:,k,ie)=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie),viscosity,nu_ratio)
+
+         if(hypervis_scaling > 0)then
+           ptens(:,:,k,ie)=laplace_sphere_wk(T(:,:,k),deriv,elem(ie),var_coef=.false.)
+           vtens(:,:,:,k,ie)=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,&
+                elem(ie),var_coef=.false.,nu_ratio=nu_ratio)
+         else
+           ptens(:,:,k,ie)=laplace_sphere_wk(T(:,:,k),deriv,elem(ie),var_coef=.true.)
+           vtens(:,:,:,k,ie)=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,&
+                elem(ie),var_coef=.true.,nu_ratio=nu_ratio)
+         endif
+
       enddo
       kptr=0
       call edgeVpack(edge3, ptens(1,1,1,ie),nlev,kptr,elem(ie)%desc)
@@ -120,7 +136,6 @@ real (kind=real_kind), dimension(np,np,2) :: v
    
    do ie=nets,nete
       rspheremv     => elem(ie)%rspheremp(:,:)
-      viscosity     => elem(ie)%variable_hyperviscosity
       
       kptr=0
       call edgeVunpack(edge3, ptens(1,1,1,ie), nlev, kptr, elem(ie)%desc)
@@ -139,8 +154,9 @@ real (kind=real_kind), dimension(np,np,2) :: v
                v(i,j,2)=rspheremv(i,j)*vtens(i,j,2,k,ie)
             enddo
          enddo
-         ptens(:,:,k,ie)=laplace_sphere_wk(T(:,:,k),deriv,elem(ie),viscosity)
-         vtens(:,:,:,k,ie)=vlaplace_sphere_wk(v(:,:,:),deriv,elem(ie),viscosity,nu_ratio)
+         ptens(:,:,k,ie)=laplace_sphere_wk(T(:,:,k),deriv,elem(ie),var_coef=.true.)
+         vtens(:,:,:,k,ie)=vlaplace_sphere_wk(v(:,:,:),deriv,elem(ie),var_coef=.true.,&
+              nu_ratio=nu_ratio)
       enddo
          
 #ifdef _PRIM
@@ -148,7 +164,7 @@ real (kind=real_kind), dimension(np,np,2) :: v
       call edgeVunpack(edge3, pstens(1,1,ie), 1, kptr, elem(ie)%desc)
       ! apply inverse mass matrix, then apply laplace again
       lap_ps(:,:)=rspheremv(:,:)*pstens(:,:,ie)
-      pstens(:,:,ie)=laplace_sphere_wk(lap_ps,deriv,elem(ie),viscosity)
+      pstens(:,:,ie)=laplace_sphere_wk(lap_ps,deriv,elem(ie),var_coef=.true.)
 #endif
 
    enddo
@@ -171,31 +187,31 @@ subroutine biharmonic_wk_dp3d(elem,dptens,ptens,vtens,deriv,edge3,hybrid,nt,nets
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 type (hybrid_t)      , intent(in) :: hybrid
 type (element_t)     , intent(inout), target :: elem(:)
+integer :: nt,nets,nete
 real (kind=real_kind), dimension(np,np,2,nlev,nets:nete)  :: vtens
 real (kind=real_kind), dimension(np,np,nlev,nets:nete) :: ptens,dptens
 type (EdgeBuffer_t)  , intent(inout) :: edge3
 type (derivative_t)  , intent(in) :: deriv
-integer :: nt,nets,nete
 real (kind=real_kind) ::  nu_ratio
 
 ! local
 integer :: k,kptr,ie
-real (kind=real_kind), dimension(:,:), pointer :: rspheremv, viscosity
+real (kind=real_kind), dimension(:,:), pointer :: rspheremv
 real (kind=real_kind), dimension(np,np) :: tmp
 real (kind=real_kind), dimension(np,np,2) :: v
 
    do ie=nets,nete
-      viscosity    => elem(ie)%variable_hyperviscosity
 
 #if (defined ELEMENT_OPENMP)
 !$omp parallel do private(k)
 #endif
       do k=1,nlev
          tmp=elem(ie)%state%T(:,:,k,nt) 
-         ptens(:,:,k,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),viscosity)
+         ptens(:,:,k,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),var_coef=.true.)
          tmp=elem(ie)%state%dp3d(:,:,k,nt) 
-         dptens(:,:,k,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),viscosity)
-         vtens(:,:,:,k,ie)=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie),viscosity,nu_ratio)
+         dptens(:,:,k,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),var_coef=.true.)
+         vtens(:,:,:,k,ie)=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie),&
+              var_coef=.true.,nu_ratio=nu_ratio)
       enddo
       kptr=0
       call edgeVpack(edge3, ptens(1,1,1,ie),nlev,kptr,elem(ie)%desc)
@@ -210,7 +226,6 @@ real (kind=real_kind), dimension(np,np,2) :: v
    
    do ie=nets,nete
       rspheremv     => elem(ie)%rspheremp(:,:)
-      viscosity     => elem(ie)%variable_hyperviscosity
       
       kptr=0
       call edgeVunpack(edge3, ptens(1,1,1,ie), nlev, kptr, elem(ie)%desc)
@@ -225,13 +240,14 @@ real (kind=real_kind), dimension(np,np,2) :: v
 #endif
       do k=1,nlev
          tmp(:,:)=rspheremv(:,:)*ptens(:,:,k,ie)
-         ptens(:,:,k,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),viscosity)
+         ptens(:,:,k,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),var_coef=.true.)
          tmp(:,:)=rspheremv(:,:)*dptens(:,:,k,ie)
-         dptens(:,:,k,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),viscosity)
+         dptens(:,:,k,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),var_coef=.true.)
 
          v(:,:,1)=rspheremv(:,:)*vtens(:,:,1,k,ie)
          v(:,:,2)=rspheremv(:,:)*vtens(:,:,2,k,ie)
-         vtens(:,:,:,k,ie)=vlaplace_sphere_wk(v(:,:,:),deriv,elem(ie),viscosity,nu_ratio)
+         vtens(:,:,:,k,ie)=vlaplace_sphere_wk(v(:,:,:),deriv,elem(ie),&
+              var_coef=.true.,nu_ratio=nu_ratio)
 
       enddo
    enddo
@@ -253,18 +269,16 @@ subroutine biharmonic_wk_scalar(elem,qtens,deriv,edgeq,hybrid,nets,nete)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 type (hybrid_t)      , intent(in) :: hybrid
 type (element_t)     , intent(inout), target :: elem(:)
+integer :: nets,nete
 real (kind=real_kind), dimension(np,np,nlev,qsize,nets:nete) :: qtens
 type (EdgeBuffer_t)  , intent(inout) :: edgeq
 type (derivative_t)  , intent(in) :: deriv
-integer :: nets,nete
 
 ! local
 integer :: k,kptr,i,j,ie,ic,q
 real (kind=real_kind), dimension(np,np) :: lap_p
-real (kind=real_kind), dimension(:,:), pointer :: viscosity
 
    do ie=nets,nete
-      viscosity    => elem(ie)%variable_hyperviscosity
 #if (defined ELEMENT_OPENMP)
 !$omp parallel do private(k, q, lap_p)
 #endif
@@ -272,7 +286,7 @@ real (kind=real_kind), dimension(:,:), pointer :: viscosity
          do k=1,nlev    !  Potential loop inversion (AAM)
             lap_p(:,:)=qtens(:,:,k,q,ie)
 ! Original use of qtens on left and right hand sides caused OpenMP errors (AAM)
-           qtens(:,:,k,q,ie)=laplace_sphere_wk(lap_p,deriv,elem(ie),viscosity)
+           qtens(:,:,k,q,ie)=laplace_sphere_wk(lap_p,deriv,elem(ie),var_coef=.true.)
          enddo
       enddo
       call edgeVpack(edgeq, qtens(:,:,:,:,ie),qsize*nlev,0,elem(ie)%desc)
@@ -290,7 +304,7 @@ real (kind=real_kind), dimension(:,:), pointer :: viscosity
       do q=1,qsize      
       do k=1,nlev    !  Potential loop inversion (AAM)
          lap_p(:,:)=elem(ie)%rspheremp(:,:)*qtens(:,:,k,q,ie)
-         qtens(:,:,k,q,ie)=laplace_sphere_wk(lap_p,deriv,elem(ie),viscosity)
+         qtens(:,:,k,q,ie)=laplace_sphere_wk(lap_p,deriv,elem(ie),var_coef=.true.)
       enddo
       enddo
    enddo
@@ -313,22 +327,20 @@ subroutine biharmonic_wk_scalar_minmax(elem,qtens,deriv,edgeq,hybrid,nets,nete,e
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 type (hybrid_t)      , intent(in) :: hybrid
 type (element_t)     , intent(inout), target :: elem(:)
+integer :: nets,nete
 real (kind=real_kind), dimension(np,np,nlev,qsize,nets:nete) :: qtens
 type (EdgeBuffer_t)  , intent(inout) :: edgeq
 type (derivative_t)  , intent(in) :: deriv
 real (kind=real_kind), intent(out), dimension(nlev,qsize,nets:nete) :: emin,emax
-integer :: nets,nete
 
 ! local
 integer :: k,kptr,i,j,ie,ic,q
 real (kind=real_kind), dimension(np,np) :: lap_p
 real (kind=real_kind) :: Qmin(np,np,nlev,qsize)
 real (kind=real_kind) :: Qmax(np,np,nlev,qsize)
-real (kind=real_kind), dimension(:,:), pointer :: viscosity 
 
 
    do ie=nets,nete
-      viscosity    => elem(ie)%variable_hyperviscosity
 #if (defined ELEMENT_OPENMP)
 !$omp parallel do private(k, q, lap_p)
 #endif
@@ -338,7 +350,7 @@ real (kind=real_kind), dimension(:,:), pointer :: viscosity
          Qmax(:,:,k,q)=emax(k,q,ie)  ! edgeVpack routine below
          lap_p(:,:) = qtens(:,:,k,q,ie)
 ! Original use of qtens on left and right hand sides caused OpenMP errors (AAM)
-         qtens(:,:,k,q,ie)=laplace_sphere_wk(lap_p,deriv,elem(ie),viscosity)
+         qtens(:,:,k,q,ie)=laplace_sphere_wk(lap_p,deriv,elem(ie),var_coef=.true.)
       enddo
       enddo
       call edgeVpack(edgeq, qtens(:,:,:,:,ie),qsize*nlev,0,elem(ie)%desc)
@@ -367,7 +379,7 @@ real (kind=real_kind), dimension(:,:), pointer :: viscosity
       do q=1,qsize      
       do k=1,nlev    !  Potential loop inversion (AAM)
          lap_p(:,:)=elem(ie)%rspheremp(:,:)*qtens(:,:,k,q,ie)
-         qtens(:,:,k,q,ie)=laplace_sphere_wk(lap_p,deriv,elem(ie),viscosity)
+         qtens(:,:,k,q,ie)=laplace_sphere_wk(lap_p,deriv,elem(ie),var_coef=.true.)
          ! note: only need to consider the corners, since the data we packed was
          ! constant within each element
          emin(k,q,ie)=min(qmin(1,1,k,q),qmin(1,np,k,q),qmin(np,1,k,q),qmin(np,np,k,q))
@@ -397,8 +409,8 @@ subroutine make_C0_2d(zeta,elem,hybrid,nets,nete)
 
 type (hybrid_t)      , intent(in) :: hybrid
 type (element_t)     , intent(in), target :: elem(:)
-real (kind=real_kind), dimension(np,np,nets:nete) :: zeta
 integer :: nets,nete
+real (kind=real_kind), dimension(np,np,nets:nete) :: zeta
 
 ! local
 integer :: k,i,j,ie,ic,kptr
@@ -429,8 +441,8 @@ subroutine make_C0(zeta,elem,hybrid,nets,nete)
 
 type (hybrid_t)      , intent(in) :: hybrid
 type (element_t)     , intent(in), target :: elem(:)
-real (kind=real_kind), dimension(np,np,nlev,nets:nete) :: zeta
 integer :: nets,nete
+real (kind=real_kind), dimension(np,np,nlev,nets:nete) :: zeta
 
 ! local
 integer :: k,i,j,ie,ic,kptr
@@ -472,8 +484,8 @@ end subroutine
 subroutine make_C0_vector(v,elem,hybrid,nets,nete)
 type (hybrid_t)      , intent(in) :: hybrid
 type (element_t)     , intent(in), target :: elem(:)
-real (kind=real_kind), dimension(np,np,2,nlev,nets:nete) :: v
 integer :: nets,nete
+real (kind=real_kind), dimension(np,np,2,nlev,nets:nete) :: v
 
 ! local
 integer :: k,i,j,ie,ic,kptr
@@ -530,8 +542,8 @@ subroutine compute_zeta_C0_2d_sphere(zeta,elem,hybrid,nets,nete,nt,k)
 
 type (hybrid_t)      , intent(in) :: hybrid
 type (element_t)     , intent(in), target :: elem(:)
-real (kind=real_kind), dimension(np,np,nets:nete) :: zeta
 integer :: nt,nets,nete,k
+real (kind=real_kind), dimension(np,np,nets:nete) :: zeta
 
 ! local
 integer :: i,j,ie,ic
@@ -560,10 +572,10 @@ subroutine compute_zeta_C0_2d_contra(zeta,elem,hybrid,nets,nete,nt)
 
 type (hybrid_t)      , intent(in) :: hybrid
 type (element_t)     , intent(in), target :: elem(:)
+integer :: nt,nets,nete
 real (kind=real_kind), dimension(np,np,nlev,nets:nete) :: zeta
 real (kind=real_kind), dimension(np,np,2) :: ulatlon
 real (kind=real_kind), dimension(np,np) :: v1,v2
-integer :: nt,nets,nete
 
 ! local
 integer :: k,ie
@@ -599,8 +611,8 @@ subroutine compute_div_C0_2d_sphere(zeta,elem,hybrid,nets,nete,nt,k)
 
 type (hybrid_t)      , intent(in) :: hybrid
 type (element_t)     , intent(in), target :: elem(:)
-real (kind=real_kind), dimension(np,np,nets:nete) :: zeta
 integer :: nt,nets,nete,k
+real (kind=real_kind), dimension(np,np,nets:nete) :: zeta
 
 ! local
 integer :: i,j,ie,ic
@@ -629,10 +641,10 @@ subroutine compute_div_C0_2d_contra(zeta,elem,hybrid,nets,nete,nt)
 
 type (hybrid_t)      , intent(in) :: hybrid
 type (element_t)     , intent(in), target :: elem(:)
+integer :: nt,nets,nete
 real (kind=real_kind), dimension(np,np,nlev,nets:nete) :: zeta
 real (kind=real_kind), dimension(np,np,2) :: ulatlon
 real (kind=real_kind), dimension(np,np) :: v1,v2
-integer :: nt,nets,nete
 
 ! local
 integer :: k,ie
@@ -667,8 +679,8 @@ subroutine compute_zeta_C0(zeta,elem,hybrid,nets,nete,nt)
 
 type (hybrid_t)      , intent(in) :: hybrid
 type (element_t)     , intent(in), target :: elem(:)
-real (kind=real_kind), dimension(np,np,nlev,nets:nete) :: zeta
 integer :: nt,nets,nete
+real (kind=real_kind), dimension(np,np,nlev,nets:nete) :: zeta
 
 ! local
 integer :: k,i,j,ie,ic
@@ -703,8 +715,8 @@ subroutine compute_div_C0(zeta,elem,hybrid,nets,nete,nt)
 
 type (hybrid_t)      , intent(in) :: hybrid
 type (element_t)     , intent(in), target :: elem(:)
-real (kind=real_kind), dimension(np,np,nlev,nets:nete) :: zeta
 integer :: nt,nets,nete
+real (kind=real_kind), dimension(np,np,nlev,nets:nete) :: zeta
 
 ! local
 integer :: k,i,j,ie,ic
@@ -1232,17 +1244,87 @@ end subroutine
 
   subroutine check_edge_flux(elem,deriv,nets,nete)
 !
-!  check two identities:
-!  1. div and weak div are adjoints:
-!     integral[  p div(u) ] + integral[ grad(p) dot u ] = boundary_integral[ u p]
-!  1. grad and weak grad are adjoints:
-!     integral[  p div(u) ] + integral[ grad(p) dot u ] = boundary_integral[ u p]
+!  check local element vector dentities:
+!*****
+!  1. div and weak div are adjoints: (for all scalar test functions)
+!     integral[  p div(u) ] + integral[ grad(p) dot u ] = boundary_integral[ p u dot n]
+!       PHI div(u) spheremp - div_wk(u)(i,j) = boundary_integral[ u PHI]
+!       where PHI = the delta function at (i,j)
 !
+!*****
+!  2. grad and weak grad are adjoints: 
+!     weak gradient is defined with CONTRA vector test functions
+!     i.e. it returns vector:   [  integral[ p div(PHIcontra_1) ]       
+!                               [  integral[ p div(PHIcontra_2) ]       
+!     
+!   integral[  p div(u) ] + integral[ grad(p) dot u ] = boundary_integral[ p u dot n]
+! take u = PHIcontra_1 = (1,0) vector delta funciton at (i,j):
+!  -grad_wk(p)_1(i,j) + spheremp PHIcontra_1 dot grad(p) = boundary_integral[ PHIcontra_1 p]
+! and then take u = PHIcontra_2 = (0,1) vector delta function at (i,j):
+!  -grad_wk(p)_2(i,j) + spheremp PHIcontra_2 dot grad(p) = boundary_integral[ PHIcontra_2 p]
+!
+! which is an equation for each covariant component:
+! -grad_wk(p)_cov1 + spheremp grad(p)_cov1 = boundary_integral[ PHIcontra_1 p dot n]
+! -grad_wk(p)_cov2 + spheremp grad(p)_cov2 = boundary_integral[ PHIcontra_2 p dot n]
+!
+! HOMME-SE works in latlon, so convert cov->lat/lon:
+!
+! -grad_wk(p) + spheremp grad(p) = D^-t * B 
+!
+! with
+!    B1 = boundary_integral[ PHIcontra_1 p] 
+!    B2 = boundary_integral[ PHIcontra_2 p]
+!
+!*****
+! 3.  weak grid with COVARIANT test functions! 
+!   integral[  p div(u) ] + integral[ grad(p) dot u ] = boundary_integral[ p u dot n]
+! take u = PHIcov_1 = (1,0) vector delta funciton at (i,j):
+!  -grad_wk(p)_1(i,j) + spheremp PHIcov_1 dot grad(p) = boundary_integral[ PHIcov_1 p]
+! and then take u = PHIcov_2 = (0,1) vector delta function at (i,j):
+!  -grad_wk(p)_2(i,j) + spheremp PHIcov_2 dot grad(p) = boundary_integral[ PHIcov_2 p]
+!
+! which is an equation for each CONTRA component:
+! -grad_wk(p)_contra1 + spheremp grad(p)_contra1 = B1
+! -grad_wk(p)_contra2 + spheremp grad(p)_contra2 = B2
+!
+! HOMME-SE works in latlon, so convert contra ->lat/lon:
+!
+! -grad_wk(p) + spheremp grad(p) = D * B 
+!
+! with
+!    B1 = boundary_integral[ PHIcov_1 p] 
+!    B2 = boundary_integral[ PHIcov_2 p]
+!
+!*****
+! 4.  weak curl with COVARIANT test functions! 
+!  integral[ u dot curl(v)] - integral[v dot curl(u)] = boundary_integral[ v cross u dot n]
+!  curl(p) = curl(p*khat) = horizontal vector
+!  vor(U) =  s*khat       = (which we treat as a scalar)
+!   integral[ p * vor(u)  ] - integral[ u dot curl(p) ] = boundary_integral[ u cross p*khat  dot n]
+!
+! take u = PHIcov_1 = (1,0) vector delta funciton at (i,j):
+!   curl_wk(p)_1(i,j) - spheremp PHIcov_1 dot curl(p) = boundary_integral[ perp(PHIcov_1) p]
+! and then take u = PHIcov_2 = (0,1) vector delta function at (i,j):
+!   curl_wk(p)_2(i,j) - spheremp PHIcov_2 dot curl(p) = boundary_integral[ perp(PHIcov_2) p]
+!
+! which is an equation for each CONTRA component:
+! curl_wk(p)_contra1 - spheremp curl(p)_contra1 = B1
+! curl_wk(p)_contra2 - spheremp curl(p)_contra2 = B2
+!
+! HOMME-SE works in latlon, so convert contra ->lat/lon:
+!
+! curl_wk(p) + spheremp curl(p) = D * B 
+!
+! with
+!    B1 = boundary_integral[ PHIcov_1 p] 
+!    B2 = boundary_integral[ PHIcov_2 p]
 !
   use dimensions_mod, only : np, np, nlev
   use element_mod, only    : element_t
   use derivative_mod, only  : derivative_t, divergence_sphere, divergence_sphere_wk, &
-                             element_boundary_integral, gradient_sphere, gradient_sphere_wk
+                             element_boundary_integral, gradient_sphere, &
+                             gradient_sphere_wk_testcontra,gradient_sphere_wk_testcov, &
+                             curl_sphere, curl_sphere_wk_testcov
   use physical_constants, only : rrearth
 
   implicit none
@@ -1256,13 +1338,14 @@ end subroutine
   real (kind=real_kind), dimension(np,np) :: rhs2,lhs2
   integer :: i,j,ie
 
-
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   print *,'integration by parts identity: check div/weak div:'
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   ! test integration by parts identity for each Cardinal function PHI:
   ! div(u)*spheremp - div_wk(u) = boundary integral phi u dot n
   do ie=nets,nete
      call random_number(ucontra)
-  ! contra->latlon
+     ! contra->latlon
      ulatlon(:,:,1)=(elem(ie)%D(1,1,:,:)*ucontra(:,:,1) + elem(ie)%D(1,2,:,:)*ucontra(:,:,2))
      ulatlon(:,:,2)=(elem(ie)%D(2,1,:,:)*ucontra(:,:,1) + elem(ie)%D(2,2,:,:)*ucontra(:,:,2))
      phidivu = elem(ie)%spheremp(:,:)*divergence_sphere(ulatlon,deriv,elem(ie))
@@ -1282,7 +1365,9 @@ end subroutine
      enddo
   enddo
 
-  print *,'integration by parts identity: check grad/weak grad:'
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  print *,'check grad/weak grad (gradient_sphere_wk_testcontra)'
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   ! PHIVEC = contra cardinal function 
   !          check each contra component seperately
 
@@ -1293,9 +1378,9 @@ end subroutine
      gradp = gradient_sphere(p,deriv,elem(ie)%Dinv)
      gradp(:,:,1)=gradp(:,:,1)*elem(ie)%spheremp(:,:)  
      gradp(:,:,2)=gradp(:,:,2)*elem(ie)%spheremp(:,:)
-     gradp_wk = gradient_sphere_wk(p,deriv,elem(ie))
+     gradp_wk = gradient_sphere_wk_testcontra(p,deriv,elem(ie))
      
-     ucontra(:,:,1)=p
+     ucontra(:,:,1)=p  ! PHIvec_1 * p
      ucontra(:,:,2)=0
      ! contra->latlon
      ulatlon(:,:,1)=(elem(ie)%D(1,1,:,:)*ucontra(:,:,1) + elem(ie)%D(1,2,:,:)*ucontra(:,:,2))
@@ -1304,7 +1389,7 @@ end subroutine
      rhs = element_boundary_integral(ulatlon,deriv,elem(ie))
      lhs = gradp(:,:,1)-gradp_wk(:,:,1)
 
-     ucontra(:,:,1)=0
+     ucontra(:,:,1)=0  ! PHIvec_2 * p
      ucontra(:,:,2)=p
      ! contra->latlon
      ulatlon(:,:,1)=(elem(ie)%D(1,1,:,:)*ucontra(:,:,1) + elem(ie)%D(1,2,:,:)*ucontra(:,:,2))
@@ -1313,10 +1398,8 @@ end subroutine
      lhs2 = gradp(:,:,2)-gradp_wk(:,:,2)  
 
 
-     ! gradient_sphere() and gradient_sphere_wk() compute covariant vectors
-     ! and then convert to latlon.  Thus to get the identity to work, the
-     ! same transformation has to be applied to the vector of boundary integrals:
-     ! tread (rhs,rhs2) as covariant vector and convert to latlon:
+     ! boundary integral gives covariant components. (see above) convert to latlon:
+     ! cov -> latlon
      gradp(:,:,1)=rhs
      gradp(:,:,2)=rhs2
      rhs(:,:)=elem(ie)%Dinv(1,1,:,:)*gradp(:,:,1) + elem(ie)%Dinv(2,1,:,:)*gradp(:,:,2)
@@ -1326,8 +1409,9 @@ end subroutine
      do j=1,np
         do i=1,np
            if ( abs(lhs(i,j)-rhs(i,j)) .gt. 1d-20) then
-              write(*,'(a)') 'ERROR: grad/grad_wk (1) integration by parts failure!'
-              write(*,'(a,2i3,a,4e13.5)') 'for test function (i,j)=',i,j,' lhs,rhs=',lhs(i,j),rhs(i,j),lhs(i,j)-rhs(i,j),lhs(i,j)/rhs(i,j)
+              write(*,'(a)') 'ERROR: grad/grad_wk CONTRA (1) integration by parts failure!'
+              write(*,'(a,2i3,a,4e12.4)') '(i,j)=',i,j,' lhs,rhs=',lhs(i,j),rhs(i,j),&
+                   lhs(i,j)-rhs(i,j),lhs(i,j)/rhs(i,j)
            endif
         enddo
      enddo
@@ -1336,18 +1420,127 @@ end subroutine
      do j=1,np
         do i=1,np
            if ( abs(lhs2(i,j)-rhs2(i,j)) .gt. 1d-20) then
-              write(*,'(a)') 'ERROR: grad/grad_wk (2) integration by parts failure!'
-              write(*,'(a,2i3,a,3e12.5)') 'for test function (i,j)=',i,j,' lhs,rhs=',lhs(i,j),rhs(i,j),lhs(i,j)-rhs(i,j)
+              write(*,'(a)') 'ERROR: grad/grad_wk CONTRA (2) integration by parts failure!'
+              write(*,'(a,2i2,a,3e12.4)') '(i,j)=',i,j,' lhs,rhs=',lhs2(i,j),rhs2(i,j),lhs2(i,j)-rhs2(i,j)
+           endif
+        enddo
+     enddo
+  enddo
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  print *,'check grad/weak grad (gradient_sphere_wk_testcov)'
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  do ie=nets,nete
+     call random_number(p)
+
+     
+     ! grad(p)  (lat/lon vector)
+     gradp = gradient_sphere(p,deriv,elem(ie)%Dinv)
+     gradp(:,:,1)=gradp(:,:,1)*elem(ie)%spheremp(:,:)  
+     gradp(:,:,2)=gradp(:,:,2)*elem(ie)%spheremp(:,:)
+     gradp_wk = gradient_sphere_wk_testcov(p,deriv,elem(ie))
+     lhs = gradp(:,:,1)-gradp_wk(:,:,1)
+     lhs2 = gradp(:,:,2)-gradp_wk(:,:,2)  
+     
+     ucov(:,:,1)=p  ! PHIvec_1 * p
+     ucov(:,:,2)=0
+     ! cov->latlon
+     ulatlon(:,:,1)=(elem(ie)%Dinv(1,1,:,:)*ucov(:,:,1) + elem(ie)%Dinv(2,1,:,:)*ucov(:,:,2))
+     ulatlon(:,:,2)=(elem(ie)%Dinv(1,2,:,:)*ucov(:,:,1) + elem(ie)%Dinv(2,2,:,:)*ucov(:,:,2))
+     rhs = element_boundary_integral(ulatlon,deriv,elem(ie))
+
+     ucov(:,:,1)=0  ! PHIvec_2 * p
+     ucov(:,:,2)=p
+     ! cov->latlon
+     ulatlon(:,:,1)=(elem(ie)%Dinv(1,1,:,:)*ucov(:,:,1) + elem(ie)%Dinv(2,1,:,:)*ucov(:,:,2))
+     ulatlon(:,:,2)=(elem(ie)%Dinv(1,2,:,:)*ucov(:,:,1) + elem(ie)%Dinv(2,2,:,:)*ucov(:,:,2))
+     rhs2 = element_boundary_integral(ulatlon,deriv,elem(ie))
+
+
+     ! boundary integral gives contra components. (see above) convert to latlon:
+     ! contra -> latlon
+     gradp(:,:,1)=rhs
+     gradp(:,:,2)=rhs2
+     rhs(:,:) =elem(ie)%D(1,1,:,:)*gradp(:,:,1) + elem(ie)%D(1,2,:,:)*gradp(:,:,2)
+     rhs2(:,:)=elem(ie)%D(2,1,:,:)*gradp(:,:,1) + elem(ie)%D(2,2,:,:)*gradp(:,:,2)
+
+
+     do j=1,np
+        do i=1,np
+           if ( abs(lhs(i,j)-rhs(i,j)) .gt. 1d-20) then
+              write(*,'(a)') 'ERROR: grad/grad_wk COV (1) integration by parts failure!'
+              write(*,'(a,2i2,a,4e12.4)') '(i,j)=',i,j,' lhs,rhs=',lhs(i,j),rhs(i,j),lhs(i,j)-rhs(i,j),lhs(i,j)/rhs(i,j)
            endif
         enddo
      enddo
 
+     do j=1,np
+        do i=1,np
+           if ( abs(lhs2(i,j)-rhs2(i,j)) .gt. 1d-20) then
+              write(*,'(a)') 'ERROR: grad/grad_wk COV (2) integration by parts failure!'
+              write(*,'(a,2i2,a,3e12.4)') '(i,j)=',i,j,' lhs,rhs=',lhs2(i,j),rhs2(i,j),lhs2(i,j)-rhs2(i,j)
+           endif
+        enddo
+     enddo
   enddo
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  print *,'check curl/weak curl (curl_sphere_wk_testcov)'
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  do ie=nets,nete
+     call random_number(p)
+     
+     ! grad(p)  (lat/lon vector)
+     gradp = curl_sphere(p,deriv,elem(ie))
+     gradp(:,:,1)=gradp(:,:,1)*elem(ie)%spheremp(:,:)  
+     gradp(:,:,2)=gradp(:,:,2)*elem(ie)%spheremp(:,:)
+     gradp_wk = curl_sphere_wk_testcov(p,deriv,elem(ie))
+     lhs =  gradp_wk(:,:,1)-gradp(:,:,1)
+     lhs2 = gradp_wk(:,:,2)-gradp(:,:,2)
+     
+     ucov(:,:,1)=p  ! PHIvec_1 * p
+     ucov(:,:,2)=0
+     ! cov->latlon, and then u cross khat:
+     ulatlon(:,:,2)=-(elem(ie)%Dinv(1,1,:,:)*ucov(:,:,1) + elem(ie)%Dinv(2,1,:,:)*ucov(:,:,2))
+     ulatlon(:,:,1)= (elem(ie)%Dinv(1,2,:,:)*ucov(:,:,1) + elem(ie)%Dinv(2,2,:,:)*ucov(:,:,2))
+     rhs = element_boundary_integral(ulatlon,deriv,elem(ie))
+
+     ucov(:,:,1)=0  ! PHIvec_2 * p
+     ucov(:,:,2)=p
+     ! cov->latlon, and u cross khat:
+     ulatlon(:,:,2)=-(elem(ie)%Dinv(1,1,:,:)*ucov(:,:,1) + elem(ie)%Dinv(2,1,:,:)*ucov(:,:,2))
+     ulatlon(:,:,1)= (elem(ie)%Dinv(1,2,:,:)*ucov(:,:,1) + elem(ie)%Dinv(2,2,:,:)*ucov(:,:,2))
+     rhs2 = element_boundary_integral(ulatlon,deriv,elem(ie))
+
+
+     ! boundary integral gives contra components. (see above) convert to latlon:
+     ! contra -> latlon
+     gradp(:,:,1)=rhs
+     gradp(:,:,2)=rhs2
+     rhs(:,:) =elem(ie)%D(1,1,:,:)*gradp(:,:,1) + elem(ie)%D(1,2,:,:)*gradp(:,:,2)
+     rhs2(:,:)=elem(ie)%D(2,1,:,:)*gradp(:,:,1) + elem(ie)%D(2,2,:,:)*gradp(:,:,2)
+
+
+     do j=1,np
+        do i=1,np
+           if ( abs(lhs(i,j)-rhs(i,j)) .gt. 1d-20) then
+              write(*,'(a)') 'ERROR: curl/curl_wk COV (1) integration by parts failure!'
+              write(*,'(a,2i2,a,4e12.4)') '(i,j)=',i,j,' lhs,rhs=',lhs(i,j),rhs(i,j),lhs(i,j)-rhs(i,j),lhs(i,j)/rhs(i,j)
+           endif
+        enddo
+     enddo
+     stop
+
+     do j=1,np
+        do i=1,np
+           if ( abs(lhs2(i,j)-rhs2(i,j)) .gt. 1d-20) then
+              write(*,'(a)') 'ERROR: curl/curl_wk COV (2) integration by parts failure!'
+              write(*,'(a,2i2,a,3e12.4)') '(i,j)=',i,j,' lhs,rhs=',lhs2(i,j),rhs2(i,j),lhs2(i,j)-rhs2(i,j)
+           endif
+        enddo
+     enddo
+  enddo
+
   print *,'done. integration by parts identity check:'
-  stop
   end subroutine
-
-
-
-
 end module

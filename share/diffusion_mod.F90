@@ -13,6 +13,7 @@ module diffusion_mod
   use edge_mod, only : EdgeBuffer_t, edgevpack, edgerotate, edgevunpack, initedgebuffer
   ! =======================
   private
+  save
   public :: diffusion_init, prim_diffusion, scalar_diffusion
   type(EdgeBuffer_t)  :: edgeS1, edgeS2
   type (EdgeBuffer_t) :: edge3
