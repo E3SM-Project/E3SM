@@ -255,7 +255,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_zonal_meridional_vectors(lon, lat, zonalUnitVector, meridionalUnitVector, verticalUnitVector)
+   subroutine mpas_zonal_meridional_vectors(lon, lat, zonalUnitVector, meridionalUnitVector, verticalUnitVector)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -319,7 +319,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_vector_R3_to_LonLatR(vectorR3, vectorLonLatR, lon, lat)!{{{
+   subroutine mpas_vector_R3_to_LonLatR(vectorR3, lon, lat, vectorLonLatR)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -384,7 +384,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_vector_LonLatR_to_R3(vectorLonLatR, vectorR3, lon, lat)!{{{
+   subroutine mpas_vector_LonLatR_to_R3(vectorLonLatR, lon, lat, vectorR3)!{{{
 
       !-----------------------------------------------------------------
       !

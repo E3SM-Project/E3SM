@@ -76,8 +76,8 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine mpas_strain_rate_R3Cell(normalVelocity, tangentialVelocity, &
-      strainRateR3Cell, outerProductEdge, &
-      grid, edgeSignOnCell, edgeTangentVectors)!{{{
+      grid, edgeSignOnCell, edgeTangentVectors, &
+      outerProductEdge, strainRateR3Cell)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -103,9 +103,10 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:,:), intent(out) :: &
-         strainRateR3Cell   !< Output: strain rate tensor at cell center, R3, in symmetric 6-index form
+         outerProductEdge   !< Output: Outer product work array, computed at the edge before interpolation.
 
-      real (kind=RKIND), dimension(:,:,:), intent(out) :: outerProductEdge
+      real (kind=RKIND), dimension(:,:,:), intent(out) :: &
+         strainRateR3Cell   !< Output: strain rate tensor at cell center, R3, in symmetric 6-index form
 
       !-----------------------------------------------------------------
       !
@@ -267,7 +268,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_tensor_edge_R3_to_2D(strainRateR3Edge, strainRate2DEdge, grid, edgeTangentVectors)!{{{
+   subroutine mpas_tensor_edge_R3_to_2D(strainRateR3Edge, grid, edgeTangentVectors, strainRate2DEdge)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -362,7 +363,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_tensor_edge_2D_to_R3(strainRate2DEdge, strainRateR3Edge, grid, edgeTangentVectors)!{{{
+   subroutine mpas_tensor_edge_2D_to_R3(strainRate2DEdge, grid, edgeTangentVectors, strainRateR3Edge)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -457,7 +458,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_tensor_LonLat_to_R3(strainRateLonLat, strainRateR3, lon, lat)!{{{
+   subroutine mpas_tensor_LonLat_to_R3(strainRateLonLat, lon, lat, strainRateR3)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -537,7 +538,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_tensor_LonLatR_to_R3(tensorLonLatR, strainRateR3, lon, lat)!{{{
+   subroutine mpas_tensor_LonLatR_to_R3(tensorLonLatR, lon, lat, strainRateR3)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -611,7 +612,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_tensor_R3_to_LonLat(strainRateR3, strainRateLonLat, lon, lat)!{{{
+   subroutine mpas_tensor_R3_to_LonLat(strainRateR3, lon, lat, strainRateLonLat)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -687,7 +688,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_tensor_R3_to_LonLatR(strainRateR3, tensorLonLatR, lon, lat)!{{{
+   subroutine mpas_tensor_R3_to_LonLatR(strainRateR3, lon, lat, tensorLonLatR)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -1126,7 +1127,7 @@ contains
            strainRateLonLatRCellSolution(6,1,iCell) = & ! Elonr
                  - 3.0/R/2.0*cos(lat) 
 
-           call mpas_tensor_LonLatR_to_R3(strainRateLonLatRCellSolution(:,1,iCell), strainRateR3CellSolution(:,1,iCell), lon, lat)
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatRCellSolution(:,1,iCell), lon, lat, strainRateR3CellSolution(:,1,iCell))
         enddo
 
         divTensorR3CellSolution = 0.0
@@ -1164,7 +1165,7 @@ contains
            strainRateLonLatRCellSolution(6,1,iCell) = & ! Elonr
                  - 3.0/R/2.0*( cos(lat)*cos(rotAngle) + cos(lon)*sin(rotAngle)*sin(lat))
 
-           call mpas_tensor_LonLatR_to_R3(strainRateLonLatRCellSolution(:,1,iCell), strainRateR3CellSolution(:,1,iCell), lon, lat)
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatRCellSolution(:,1,iCell), lon, lat, strainRateR3CellSolution(:,1,iCell))
 
         end do
 
@@ -1199,7 +1200,7 @@ contains
            strainRateLonLatRCellSolution(6,1,iCell) = & ! Elonr
                  - 3.0/R/2.0*(1+cos(2*lat))*cos(lon)
 
-           call mpas_tensor_LonLatR_to_R3(strainRateLonLatRCellSolution(:,1,iCell), strainRateR3CellSolution(:,1,iCell), lon, lat)
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatRCellSolution(:,1,iCell), lon, lat, strainRateR3CellSolution(:,1,iCell))
 
         end do
 
@@ -1234,7 +1235,7 @@ contains
            strainRateLonLatRCellSolution(6,1,iCell) = & ! Elonr
                  0.0
 
-           call mpas_tensor_LonLatR_to_R3(strainRateLonLatRCellSolution(:,1,iCell), strainRateR3CellSolution(:,1,iCell), lon, lat)
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatRCellSolution(:,1,iCell), lon, lat, strainRateR3CellSolution(:,1,iCell))
 
         end do
 
@@ -1247,7 +1248,7 @@ contains
            lon = lonEdge(iEdge)
            lat = latEdge(iEdge)
            strainRateLonLatREdge(strainRateLonLatRIndex,1,iEdge) = cos(lon)*(1+cos(2*lat))
-           call mpas_tensor_LonLatR_to_R3(strainRateLonLatREdge(:,1,iEdge), strainRateR3Edge(:,1,iEdge), lon, lat)
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatREdge(:,1,iEdge), lon, lat, strainRateR3Edge(:,1,iEdge))
         enddo
 
         strainRateLonLatRCell = 0.0
@@ -1270,7 +1271,7 @@ contains
            lon = lonEdge(iEdge)
            lat = latEdge(iEdge)
            strainRateLonLatREdge(strainRateLonLatRIndex,1,iEdge) = cos(lon)*(1+cos(2*lat))
-           call mpas_tensor_LonLatR_to_R3(strainRateLonLatREdge(:,1,iEdge), strainRateR3Edge(:,1,iEdge), lon, lat)
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatREdge(:,1,iEdge), lon, lat, strainRateR3Edge(:,1,iEdge))
         enddo
 
         strainRateLonLatRCell = 0.0
@@ -1293,7 +1294,7 @@ contains
            lon = lonEdge(iEdge)
            lat = latEdge(iEdge)
            strainRateLonLatREdge(strainRateLonLatRIndex,1,iEdge) = cos(lon)*(1+cos(2*lat))
-           call mpas_tensor_LonLatR_to_R3(strainRateLonLatREdge(:,1,iEdge), strainRateR3Edge(:,1,iEdge), lon, lat)
+           call mpas_tensor_LonLatR_to_R3(strainRateLonLatREdge(:,1,iEdge), lon, lat, strainRateR3Edge(:,1,iEdge))
         enddo
 
         strainRateLonLatRCell = 0.0
@@ -1313,8 +1314,8 @@ contains
      endif
 
      if (computeStrainRate) then
-        call mpas_strain_rate_R3Cell(normalVelocity, tangentialVelocity, strainRateR3Cell, outerProductEdge, &
-          block % mesh, edgeSignOnCell, edgeTangentVectors)
+        call mpas_strain_rate_R3Cell(normalVelocity, tangentialVelocity, &
+          block % mesh, edgeSignOnCell, edgeTangentVectors, outerProductEdge, strainRateR3Cell)
 
         call mpas_matrix_cell_to_edge(block % mesh, strainRateR3Cell, strainRateR3Edge)
      endif
@@ -1323,11 +1324,11 @@ contains
 
      do iCell = 1,nCells
 
-        call mpas_tensor_R3_to_LonLatR(strainRateR3Cell(:,1,iCell), strainRateLonLatRCell(:,1,iCell), lonCell(iCell), latCell(iCell))
+        call mpas_tensor_R3_to_LonLatR(strainRateR3Cell(:,1,iCell), lonCell(iCell), latCell(iCell), strainRateLonLatRCell(:,1,iCell))
 
-        call mpas_vector_R3_to_LonLatR(divTensorR3Cell(:,1,iCell), divTensorLonLatRCell(:,1,iCell), lonCell(iCell), latCell(iCell))
+        call mpas_vector_R3_to_LonLatR(divTensorR3Cell(:,1,iCell), lonCell(iCell), latCell(iCell), divTensorLonLatRCell(:,1,iCell))
 
-        call mpas_vector_LonLatR_to_R3(divTensorLonLatRCellSolution(:,1,iCell),  divTensorR3CellSolution(:,1,iCell), lonCell(iCell), latCell(iCell))
+        call mpas_vector_LonLatR_to_R3(divTensorLonLatRCellSolution(:,1,iCell), lonCell(iCell), latCell(iCell), divTensorR3CellSolution(:,1,iCell))
 
      enddo
 

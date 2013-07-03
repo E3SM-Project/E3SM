@@ -11,7 +11,7 @@
 !
 !> \brief MPAS matrix operations
 !> \author Mark Petersen
-!> \date    15 April 2013
+!> \date    April 2013
 !> \details
 !>  This module contains the routines for matrix operations
 !
@@ -61,14 +61,14 @@ contains
 !
 !> \brief   Rotate a 2D matrix in 2x2 index format
 !> \author  Mark Petersen
-!> \date    15 April 2013
+!> \date    April 2013
 !> \details 
 !>  Rotate matrix A about the angle theta using rotation matrix R, where
 !>  B = RAR'  and R' is the tranpose.
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_rotate_2D_matrix_2x2(A,theta,B)
+   subroutine mpas_rotate_2D_matrix_2x2(A,theta,B)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -141,7 +141,7 @@ contains
 !
 !> \brief   Rotate a 2D matrix in 3-index format
 !> \author  Mark Petersen
-!> \date    15 April 2013
+!> \date    April 2013
 !> \details 
 !>  Rotate matrix A about the angle theta using rotation matrix R, where
 !>  B = RAR'  and R' is the tranpose.  A is a symmetric matrix in 3-index
@@ -149,7 +149,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_rotate_2D_matrix_sym3index(A,theta,B)
+   subroutine mpas_rotate_2D_matrix_sym3index(A,theta,B)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -214,7 +214,7 @@ contains
 !
 !> \brief   Convert a symetric 6-index matrix to 3x3 format
 !> \author  Mark Petersen
-!> \date    15 April 2013
+!> \date    April 2013
 !> \details 
 !>  Given a symetric 6-index matrix A, produce a 3x3 matrix B, where
 !>  A(1)=B_{11}, A(2)=B_{22}, A(3)=A_{33},
@@ -222,7 +222,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_matrix_sym6index_to_3x3(A,B)
+   subroutine mpas_matrix_sym6index_to_3x3(A,B)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -262,7 +262,7 @@ contains
 !
 !> \brief   Convert a 3x3 format matrix to a symetric 6-index matrix
 !> \author  Mark Petersen
-!> \date    15 April 2013
+!> \date    April 2013
 !> \details 
 !>  Given a 3x3 matrix B, produce a symetric 6-index matrix A,
 !>  B(1)=A(1,1), B(2)=A(2,2), B(3)=A(3,3)
@@ -272,7 +272,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_matrix_3x3_to_sym6index(A,B)
+   subroutine mpas_matrix_3x3_to_sym6index(A,B)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -312,8 +312,6 @@ contains
 !> \date    5 April 2013
 !> \details 
 !>  This routine interpolates a matrix from cell to edge locations.
-!>  derivative.  Output is a 2D strain rate in 3-index format, with
-!>  direction one normal to the edge and direction two tangent to the edge.
 !
 !-----------------------------------------------------------------------
 
@@ -359,15 +357,11 @@ contains
       do iEdge=1,nEdges
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
-
          do k=1,nVertLevels
 
             matrixEdge(:,k,iEdge) = 0.5*(matrixCell(:,k,cell1) + matrixCell(:,k,cell2))
 
          enddo
-!print '(/,a,30es10.2)','cel1',matrixCell(:,1,cell1)
-!print '(a,30es10.2)','cel2',matrixCell(:,1,cell2)
-!print '(a,30es10.2)','edge',matrixEdge(:,1,iEdge)
       enddo
 
    end subroutine mpas_matrix_cell_to_edge!}}}
@@ -379,7 +373,7 @@ contains
 !
 !> \brief   Compute the outer product of vectors u and v
 !> \author  Mark Petersen
-!> \date    15 April 2013
+!> \date    April 2013
 !> \details 
 !>  Given two n-length vector u and m-length vector v, compute the 
 !>  outer product (tensor product) to compute the nxm matrix A,
@@ -387,7 +381,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_outer_product(u,v,A)
+   subroutine mpas_outer_product(u,v,A)!{{{
 
       !-----------------------------------------------------------------
       !
