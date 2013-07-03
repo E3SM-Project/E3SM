@@ -26,8 +26,6 @@ module mpas_core
    use mpas_dmpar
    use mpas_timer
    use mpas_io_units
-   ! mrp added to test stress tensor:
-   use mpas_tensor_operations
 
    use ocn_global_diagnostics
    use ocn_time_integration
@@ -53,6 +51,7 @@ module mpas_core
    use ocn_vmix
 
    use ocn_time_average
+
 
    type (io_output_object), save :: restart_obj
 
@@ -958,7 +957,7 @@ module mpas_core
    end subroutine ocn_init_split_timestep!}}}
 
 subroutine ocn_compute_max_level(domain)!{{{
-! Initialize maxLevel and bouncary mesh variables.
+! Initialize maxLevel and boundary mesh variables.
 
    use mpas_grid_types
    use mpas_configure
@@ -1205,13 +1204,13 @@ end subroutine ocn_compute_max_level!}}}
 !
 !> \brief   set up scratch variables to test strain rate and tensor divergence operators
 !> \author  Mark Petersen
-!> \date    23 May 2013
+!> \date    May 2013
 !> \details 
 !>  This routine sets up scratch variables to test strain rate and tensor divergence operators.
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_prep_test_tensor(domain) !{{{
+   subroutine mpas_prep_test_tensor(domain)!{{{
 
       !-----------------------------------------------------------------
       !
