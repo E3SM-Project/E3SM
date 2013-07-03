@@ -2366,6 +2366,7 @@
       real(kind=rb) :: zrk, zrk2, zrkg, zrm1, zrp, zrp1, zrpp
       real(kind=rb) :: zsr3, zt1, zt2, zt3, zt4, zt5, zto1
       real(kind=rb) :: zw, zwcrit, zwo
+      real(kind=rb) :: denom
 
       real(kind=rb), parameter :: eps = 1.e-08_rb
 
@@ -2409,8 +2410,9 @@
             zgamma4= 1._rb - zgamma3
     
 ! Recompute original s.s.a. to test for conservative solution
-
-            zwo= zw / (1._rb - (1._rb - zw) * (zg / (1._rb - zg))**2)
+            !Balwinder.Singh@pnnl.gov: Code added to avoid 'divide by zero' error in zwo computation
+            denom = max((1._rb - (1._rb - zw) * (zg / (1._rb - zg))**2),1.0E-30_rb)
+            zwo= zw / denom
 
             if (zwo >= zwcrit) then
 ! Conservative scattering
@@ -8931,6 +8933,7 @@
 
 ! Initializations
 
+      iout = 0 !BSINGH(PNNL) initializing iout to zero(Might be wrong!) as this variable is never initialized but used in spcvmc_sw
       zepsec = 1.e-06_rb
       zepzen = 1.e-10_rb
       oneminus = 1.0_rb - zepsec
@@ -9569,8 +9572,16 @@
 MODULE module_ra_rrtmg_sw
 
 #if defined(mpas)
+!add-ons and modifications to sourcecode:
+!----------------------------------------
+!   * Updated sourcecode to that of WRF revision 3.5. The interpolation
+!     of climatological ozone to pressure levels uses subroutine radozn
+!     (from the CAM radiation code) instead of that used in WRF.
+!     Laura D. Fowler (birch.ucar.edu) / 2013-07-08.
+
 !MPAS specific (Laura D. Fowler - 2013-03-11):
 use mpas_atmphys_constants,only: cp
+use mpas_atmphys_o3climatology,only: radozn
 #else
 use module_model_constants, only : cp
 USE module_wrf_error
@@ -9607,6 +9618,7 @@ CONTAINS
                        xland, xice, snow,                         &
                        qv3d, qc3d, qr3d,                          &
                        qi3d, qs3d, qg3d,                          &
+                       o3input, o33d,                             &
                        alswvisdir, alswvisdif,                    &  !Zhenxin ssib alb comp (06/20/2011)
                        alswnirdir, alswnirdif,                    &  !Zhenxin ssib alb comp (06/20/2011)
                        swvisdir, swvisdif,                        &  !Zhenxin ssib swr comp (06/20/2011)
@@ -9624,6 +9636,9 @@ CONTAINS
                        ims,ime, jms,jme, kms,kme,                 &
                        its,ite, jts,jte, kts,kte,                 &
                        swupflx, swupflxc, swdnflx, swdnflxc       &
+#if defined(mpas)
+                      ,noznlevels,pin,o3clim                      &
+#endif
                                                                   )
 !------------------------------------------------------------------
    IMPLICIT NONE
@@ -9720,6 +9735,21 @@ CONTAINS
    INTEGER,    INTENT(IN  ), OPTIONAL   ::       aer_ra_feedback
 !jdfcz   INTEGER,    INTENT(IN  ), OPTIONAL   ::       progn,prescribe
    INTEGER,    INTENT(IN  ), OPTIONAL   ::       progn
+!  Ozone
+   REAL, DIMENSION( ims:ime, kms:kme, jms:jme )                 , &
+         OPTIONAL                                               , &
+         INTENT(IN   ) :: O33D
+   INTEGER, OPTIONAL, INTENT(IN ) :: o3input
+
+#if defined(mpas)
+!MPAS specific (Laura D. Fowler. 2013-05-14): Added the CAM ozone climatology.
+!input arguments:
+ integer,intent(in):: noznlevels
+ real,intent(in),dimension(1:noznlevels),optional:: pin
+ real,intent(in),dimension(ims:ime,1:noznlevels,jms:jme),optional:: o3clim
+!local variables:
+  real,dimension(1:noznlevels):: o3clim1d
+#endif
 
       !wavelength corresponding to wavenum1 and wavenum2 (cm-1)
       real, save :: wavemin(nbndsw) ! Min wavelength (um) of 14 intervals
@@ -9761,6 +9791,7 @@ CONTAINS
                                                             QI1D, &
                                                             QS1D, &
                                                             QG1D, &
+                                                            O31D, &
                                                           qndrop1d 
 
 ! Added local arrays for RRTMG
@@ -9788,7 +9819,7 @@ CONTAINS
                                                            asdif, &
                                                            aldir, &
                                                            aldif
-! Dimension with extra layer from model top to TOA, 
+! Dimension with extra layer from model top to TOA,
 ! though no clouds are allowed in extra layer
     real, dimension( 1, kts:kte+1 )  ::                   clwpth, &
                                                           ciwpth, &
@@ -9810,7 +9841,7 @@ CONTAINS
                                                          fsfcmcl
     real, dimension( 1, kts:kte+1, nbndsw )  ::           tauaer, &
                                                           ssaaer, &
-                                                          asmaer   
+                                                          asmaer
     real, dimension( 1, kts:kte+1, naerec )  ::            ecaer
 
 ! Output arrays contain extra layer from model top to TOA
@@ -9935,6 +9966,7 @@ CONTAINS
 
 ! longitude loop
      i_loop: do i = its,ite
+
 !
 ! Do shortwave by default, deactivate below if sun below horizon
          dorrsw = .true.
@@ -9976,6 +10008,9 @@ CONTAINS
          DO K=kts,kte
             QV1D(K)=QV3D(I,K,J)
             QV1D(K)=max(0.,QV1D(K))
+            IF ( PRESENT( O33D ) ) THEN
+            O31D(K)=O33D(I,K,J)
+            ENDIF
          ENDDO
 
          DO K=kts,kte
@@ -10159,9 +10194,37 @@ CONTAINS
 ! Get ozone profile including amount in extra layer above model top
          call inirad (o3mmr,plev,kts,kte)
 
-         do k = kts, kte+1
-            o3vmr(ncol,k) = o3mmr(k) * amdo
-         enddo
+#if defined(mpas)
+         if(o3input .eq. 2) then 
+            do k = 1, noznlevels
+               o3clim1d(k) = o3clim(i,k,j)
+            enddo
+            call radozn(1,ncol,ncol,kte+1,play,pin,noznlevels,o3clim1d,o3mmr)
+            do k = kts,kte+1
+               o3vmr(ncol,k) = o3mmr(k)
+            enddo
+         else
+            do k = kts,kte+1
+               o3vmr(ncol,k) = o3mmr(k) * amdo
+            enddo
+         endif   
+#else
+          do k = kts, kte+1
+             o3vmr(ncol,k) = o3mmr(k) * amdo
+             IF ( PRESENT( O33D ) ) THEN
+             if(o3input .eq. 2)then
+                if(k.le.kte)then
+                  o3vmr(ncol,k) = o31d(k)
+                else
+! apply shifted climatology profile above model top
+                  o3vmr(ncol,k) = o31d(kte) - o3mmr(kte)*amdo + o3mmr(k)*amdo
+                  if(o3vmr(ncol,k) .le. 0.)o3vmr(ncol,k) = o3mmr(k)*amdo
+                endif
+             endif
+             ENDIF
+          enddo
+#endif
+
 
 ! Set surface albedo for direct and diffuse radiation in UV/visible and
 ! near-IR spectral regions

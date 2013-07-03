@@ -795,8 +795,17 @@
 
 
                 <!-- ================================================================================================== -->
+                <!-- ... ADDITIONAL OZONE ARRAYS NEEDED ONLY IN THE LW AND SW RADIATION CODES:                          -->
+                <!-- ================================================================================================== -->
+
+                <var name="o3clim"        type="real"     dimensions="nOznLevels nCells Time"      streams="ro"/>
+                <var name="o3vmr "        type="real"     dimensions="nVertLevels nCells Time"     streams="ro"/>
+
+
+                <!-- ================================================================================================== -->
                 <!-- ... PARAMERIZATION OF CLOUDINESS:                                                                  -->
                 <!-- ================================================================================================== -->
+
                 <var name="cldfrac"       type="real"     dimensions="nVertLevels nCells Time"     streams="o"/>
 
 
@@ -914,6 +923,12 @@
 
                 <var name="rthratensw"  type="real"     dimensions="nVertLevels nCells Time"     streams="ro"/>
                 <var name="rthratenlw"  type="real"     dimensions="nVertLevels nCells Time"     streams="ro"/>
+        </var_struct>
+
+        <var_struct name="atm_input" time_levs="0">
+                <!-- Monthly mean ozone climatology used in the CAM and RRTMG radiation codes -->
+                <var name="pin"         type="real"     dimensions="nOznLevels"                  streams="ro"/>
+                <var name="ozmixm"      type="real"     dimensions="nMonths nOznLevels nCells"   streams="ro"/>
         </var_struct>
 
         <var_struct name="sfc_input" time_levs="0">

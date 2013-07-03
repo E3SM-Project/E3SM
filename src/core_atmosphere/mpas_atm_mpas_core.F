@@ -235,7 +235,8 @@ module mpas_core
          call physics_init(dminfo, clock, config_do_restart, mesh, block % diag, &
                            block % state % time_levs(1) % state, &
                            block % state % time_levs(1) % state, &
-                           block % diag_physics, block % sfc_input)
+                           block % diag_physics, block % atm_input, &
+                           block % sfc_input)
 
       endif
 #endif

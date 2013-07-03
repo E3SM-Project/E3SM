@@ -25,6 +25,7 @@
  use mpas_atmphys_driver_sfclayer
 
  use mpas_atmphys_landuse
+ use mpas_atmphys_o3climatology
 
  implicit none
  private
@@ -46,13 +47,16 @@
 !> ----------------------------------------
 !>    * added structure diag in calls to subroutine init_radiation_lw and init_radiation_sw.
 !>      Laura D. Fowler (birch.ucar.edu) / 2013-07-01.
+!>    * added call to subroutine init_o3climatology. reads monthly-mean climatological ozone data
+!>      and interpolates ozone data to the MPAS grid.
+!>      Laura D. Fowler (birch.ucar.edu) / 2013-07-03.
 
 
  contains
 
 !==================================================================================================
  subroutine physics_init(dminfo,clock,config_do_restart,mesh,diag,state_1,state_2, &
-                         diag_physics,sfc_input)
+                         diag_physics,atm_input,sfc_input)
 !==================================================================================================
 
 !input arguments:
@@ -65,7 +69,8 @@
 !inout arguments:
  type(state_type),intent(inout):: state_1,state_2
  type(diag_physics_type),intent(inout):: diag_physics
- type(sfc_input_type) ,intent(inout):: sfc_input
+ type(atm_input_type),intent(inout):: atm_input
+ type(sfc_input_type),intent(inout):: sfc_input
 
 !local variables:
  type(MPAS_Time_Type):: currTime
@@ -159,6 +164,10 @@
        enddo
     enddo
  endif
+
+!read the input files that contain the monthly-mean ozone climatology on fixed pressure levels:
+ if(.not. config_do_restart) &
+    call init_o3climatology(mesh,atm_input)
 
 !initialization of global surface properties. set here for now, but may be moved when time
 !manager is implemented:

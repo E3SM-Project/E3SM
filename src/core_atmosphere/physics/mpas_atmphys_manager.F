@@ -14,6 +14,7 @@
 
  use mpas_atmphys_constants
  use mpas_atmphys_vars
+ use mpas_atmphys_o3climatology
  use mpas_atmphys_update_surface
  use mpas_atmphys_utilities
 
@@ -87,6 +88,10 @@
 !>      Laura D. Fowler (birch.ucar.edu) / 2013-03-11.
 !>    * removed the namelist option config_conv_shallow_scheme and associated sourcecode.
 !>      Laura D. Fowler (birch.ucar.edu) / 2013-05-29.
+!>    * added call to subroutine o3climatology_from_MPAS to interpolate the climatological ozone
+!>      mixing ratios to the current julian day.
+!>      Laura F. Fowler (birch.ucar.edu) / 2013-07-03
+
 
  contains
 
@@ -166,6 +171,9 @@
     if(config_deepsoiltemp_update) &
        call physics_update_deepsoiltemp(LeapYear,dt_dyn,curr_julday,block%mesh, &
                     block%sfc_input,block%diag_physics)
+
+    !update the ozone climatology to the current julian day:
+    call o3climatology_from_MPAS(curr_julday,block%mesh,block%atm_input,block%diag_physics)
 
     block => block % next
  end do 
@@ -540,9 +548,11 @@
     !aerosols and ozone mixing ratios:
     num_aerosols  = state % num_aerosols
     num_aerLevels = mesh % naerLevels
-    num_oznLevels = mesh % noznLevels
 
  endif 
+
+!initialization of number of ozone levels:
+ num_oznlevels = mesh % noznLevels
 
 !initialization of sea-ice threshold:
  if(.not. config_frac_seaice) then
