@@ -842,6 +842,16 @@ contains
          outerProductEdge_field_ptr,  strainRateLonLatREdge_field_ptr
       logical :: computeStrainRate
 
+    ! Parameter settings for test functions on a plane.
+    cn = 15.0e4  ! normal component of strain
+    cs = 20.0e4  ! shear component of strain
+    rot = 1.0 ! rotation angle of test function, in radians
+    p = 2 ! power for polynomial test function
+    ld = 100.0e3  ! wavelength in meters
+    pi2l = pii*2/ld  ! 2 pi / wavelength
+    g1 = cn*cos(rot) - cs*sin(rot)
+    g2 = cn*sin(rot) + cs*cos(rot)
+
     nCellsSolveSum = 0
     strainRateLonLatRDiffSum = 0.0
     divTensorLonLatRDiffSum = 0.0
@@ -919,16 +929,6 @@ contains
       tangentialVelocity = 0.0
       strainRateR3CellSolution = 0.0
       divTensorR3CellSolution = 0.0
-
-      cn = 15.0e4
-      cs = 20.0e4
-      rot = 1.0 !pii/4.0 !0.0*pii/2
-      p = 2 ! power for polynomial function
-
-      ld = 100.0e3  ! wavelength in meters
-      pi2l = pii/ld
-      g1 = cn*cos(rot) - cs*sin(rot)
-      g2 = cn*sin(rot) + cs*cos(rot)
 
       R = block % mesh % sphere_radius
       computeStrainRate = .true.
