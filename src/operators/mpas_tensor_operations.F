@@ -76,7 +76,7 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine mpas_strain_rate_R3Cell(normalVelocity, tangentialVelocity, &
-      grid, edgeSignOnCell, edgeTangentVectors, &
+      grid, edgeSignOnCell, edgeTangentVectors, includeHalo, &
       outerProductEdge, strainRateR3Cell)!{{{
 
       !-----------------------------------------------------------------
@@ -96,6 +96,9 @@ contains
       type (mesh_type), intent(in) :: &
          grid          !< Input: grid information
 
+      logical, intent(in) :: & 
+         includeHalo !< Input: If true, halo cells and edges are included in computation
+
       !-----------------------------------------------------------------
       !
       ! output variables
@@ -114,7 +117,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, nEdges, iCell, nCells, i,j,k, nVertLevels
+      integer :: iEdge, nEdges, iCell, nCellsCompute, i,j,k, nVertLevels
 
       integer, dimension(:), pointer :: nEdgesOnCell
       integer, dimension(:,:), pointer :: edgesOnCell
@@ -125,7 +128,12 @@ contains
       real (kind=RKIND), dimension(:,:), pointer :: edgeNormalVectors
 
       nEdges = grid % nEdges
-      nCells = grid % nCells
+      if (includeHalo) then
+         nCellsCompute = grid % nCells
+      else 
+         nCellsCompute = grid % nCellsSolve
+      endif
+
       nVertLevels = grid % nVertLevels
 
       nEdgesOnCell      => grid % nEdgesOnCell % array
@@ -152,7 +160,7 @@ contains
       enddo
 
       strainRateR3Cell = 0.0
-      do iCell = 1, nCells
+      do iCell = 1, nCellsCompute
          invAreaCell = 1.0 / areaCell(iCell)
          do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
@@ -179,7 +187,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_divergence_of_tensor_R3Cell(grid, edgeSignOnCell, strainRateR3Edge, divTensorR3Cell)!{{{
+   subroutine mpas_divergence_of_tensor_R3Cell(strainRateR3Edge, grid, edgeSignOnCell, includeHalo, divTensorR3Cell)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -195,6 +203,9 @@ contains
 
       integer, dimension(:,:), intent(in) :: &
          edgeSignOnCell        !< Input: Direction of vector connecting cells
+
+      logical, intent(in) :: & 
+         includeHalo !< Input: If true, halo cells and edges are included in computation
 
       !-----------------------------------------------------------------
       !
@@ -212,7 +223,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, iCell, nCells, i,j,k,p,q, nVertLevels
+      integer :: iEdge, iCell, nCellsCompute, i,j,k,p,q, nVertLevels
 
       integer, dimension(:), pointer :: nEdgesOnCell
       integer, dimension(:,:), pointer :: edgesOnCell
@@ -223,7 +234,11 @@ contains
       real (kind=RKIND), dimension(:), pointer :: dvEdge, areaCell
       real (kind=RKIND), dimension(:,:), pointer :: edgeNormalVectors
 
-      nCells = grid % nCells
+      if (includeHalo) then
+         nCellsCompute = grid % nCells
+      else 
+         nCellsCompute = grid % nCellsSolve
+      endif
       nVertLevels = grid % nVertLevels
 
       edgesOnCell       => grid % edgesOnCell % array
@@ -233,7 +248,7 @@ contains
       edgeNormalVectors  => grid % edgeNormalVectors % array
 
       divTensorR3Cell(:,:,:) = 0.0
-      do iCell = 1, nCells
+      do iCell = 1, nCellsCompute
          invAreaCell = 1.0 / areaCell(iCell)
          do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
@@ -268,7 +283,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_tensor_edge_R3_to_2D(strainRateR3Edge, grid, edgeTangentVectors, strainRate2DEdge)!{{{
+   subroutine mpas_tensor_edge_R3_to_2D(strainRateR3Edge, grid, edgeTangentVectors, includeHalo, strainRate2DEdge)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -285,6 +300,9 @@ contains
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          edgeTangentVectors   !< Input: unit vector tangent to an edge
 
+      logical, intent(in) :: & 
+         includeHalo !< Input: If true, halo cells and edges are included in computation
+
       !-----------------------------------------------------------------
       !
       ! output variables
@@ -300,18 +318,22 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, nEdges, i,j,k,p,q, nVertLevels
+      integer :: iEdge, nEdgesCompute, i,j,k,p,q, nVertLevels
 
       real (kind=RKIND), dimension(3) :: edgeVerticalVector
       real (kind=RKIND), dimension(3,3) :: rotationMatrix, strainRateR3Edge3x3, strainRateR3Edge3x3Rotated
       real (kind=RKIND), dimension(:,:), pointer :: edgeNormalVectors
 
-      nEdges = grid % nEdges
+      if (includeHalo) then
+         nEdgesCompute = grid % nEdges
+      else 
+         nEdgesCompute = grid % nEdgesSolve
+      endif
       nVertLevels = grid % nVertLevels
 
       edgeNormalVectors  => grid % edgeNormalVectors % array
 
-      do iEdge=1,nEdges
+      do iEdge=1,nEdgesCompute
 
          ! compute vertical vector at edge
          call mpas_cross_product_in_r3(edgeNormalVectors(:,iEdge),edgeTangentVectors(:,iEdge),edgeVerticalvector)
@@ -324,14 +346,11 @@ contains
  
            call mpas_matrix_sym6index_to_3x3(strainRateR3Edge(:,k,iEdge),strainRateR3Edge3x3)
 
-           ! If I were convinced everything is correct, could just compute i=1,2 and j=1,i
            strainRateR3Edge3x3Rotated = 0.0
            do i=1,3
              do j=1,3
                do p=1,3
                  do q=1,3
-                    ! I'm not sure if the star should be on the first or third matrix.
-                    ! Here it is on the first
                     strainRateR3Edge3x3Rotated(i,j) = strainRateR3Edge3x3Rotated(i,j) + rotationMatrix(p,i)*strainRateR3Edge3x3(p,q)*rotationMatrix(q,j)
                  enddo
                enddo
@@ -341,7 +360,6 @@ contains
            strainRate2DEdge(1,k,iEdge) = strainRateR3Edge3x3Rotated(1,1)
            strainRate2DEdge(2,k,iEdge) = strainRateR3Edge3x3Rotated(2,2)
            strainRate2DEdge(3,k,iEdge) = 0.5*(strainRateR3Edge3x3Rotated(1,2) + strainRateR3Edge3x3Rotated(2,1))
-           ! mrp set land edges to zero?
          enddo
 
       enddo
@@ -363,7 +381,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_tensor_edge_2D_to_R3(strainRate2DEdge, grid, edgeTangentVectors, strainRateR3Edge)!{{{
+   subroutine mpas_tensor_edge_2D_to_R3(strainRate2DEdge, grid, edgeTangentVectors, includeHalo, strainRateR3Edge)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -380,6 +398,9 @@ contains
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          edgeTangentVectors   !< Input: unit vector tangent to an edge
 
+      logical, intent(in) :: & 
+         includeHalo !< Input: If true, halo cells and edges are included in computation
+
       !-----------------------------------------------------------------
       !
       ! output variables
@@ -395,18 +416,22 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, nEdges, i,j,k,p,q, nVertLevels
+      integer :: iEdge, nEdgesCompute, i,j,k,p,q, nVertLevels
 
       real (kind=RKIND), dimension(3) :: edgeVerticalVector
       real (kind=RKIND), dimension(3,3) :: rotationMatrix, strainRateR3Edge3x3, strainRateR3Edge3x3Rotated
       real (kind=RKIND), dimension(:,:), pointer :: edgeNormalVectors
 
-      nEdges = grid % nEdges
+      if (includeHalo) then
+         nEdgesCompute = grid % nEdges
+      else 
+         nEdgesCompute = grid % nEdgesSolve
+      endif
       nVertLevels = grid % nVertLevels
 
       edgeNormalVectors  => grid % edgeNormalVectors % array
 
-      do iEdge=1,nEdges
+      do iEdge=1,nEdgesCompute
 
          ! compute vertical vector at edge
          call mpas_cross_product_in_r3(edgeNormalVectors(:,iEdge),edgeTangentVectors(:,iEdge),edgeVerticalVector)
@@ -436,7 +461,6 @@ contains
  
            call mpas_matrix_3x3_to_sym6index(strainRateR3Edge3x3,strainRateR3Edge(:,k,iEdge))
 
-           ! mrp set land edges to zero?
          enddo
 
       enddo
@@ -1315,12 +1339,13 @@ contains
 
      if (computeStrainRate) then
         call mpas_strain_rate_R3Cell(normalVelocity, tangentialVelocity, &
-          block % mesh, edgeSignOnCell, edgeTangentVectors, outerProductEdge, strainRateR3Cell)
+          block % mesh, edgeSignOnCell, edgeTangentVectors, .false., &
+          outerProductEdge, strainRateR3Cell)
 
-        call mpas_matrix_cell_to_edge(block % mesh, strainRateR3Cell, strainRateR3Edge)
+        call mpas_matrix_cell_to_edge(block % mesh, strainRateR3Cell, .false., strainRateR3Edge)
      endif
 
-     call mpas_divergence_of_tensor_R3Cell(block % mesh, edgeSignOnCell, strainRateR3Edge, divTensorR3Cell)
+     call mpas_divergence_of_tensor_R3Cell(strainRateR3Edge, block % mesh, edgeSignOnCell, .false., divTensorR3Cell)
 
      do iCell = 1,nCells
 

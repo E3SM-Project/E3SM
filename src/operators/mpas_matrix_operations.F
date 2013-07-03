@@ -309,13 +309,13 @@ contains
 !
 !> \brief   Interpolate a matrix from cell to edge
 !> \author  Mark Petersen
-!> \date    5 April 2013
+!> \date    April 2013
 !> \details 
 !>  This routine interpolates a matrix from cell to edge locations.
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_matrix_cell_to_edge(grid, matrixCell, matrixEdge)!{{{
+   subroutine mpas_matrix_cell_to_edge(grid, matrixCell, includeHalo, matrixEdge)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -328,6 +328,9 @@ contains
 
       type (mesh_type), intent(in) :: &
          grid          !< Input: grid information
+
+      logical, intent(in) :: & 
+         includeHalo !< Input: If true, halo cells and edges are included in computation
 
       !-----------------------------------------------------------------
       !
@@ -344,17 +347,21 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, nEdges, cell1, cell2, k, nVertLevels
+      integer :: iEdge, nEdgesCompute, cell1, cell2, k, nVertLevels
       integer, dimension(:,:), pointer :: cellsOnEdge
 
-      nEdges = grid % nEdges
+      if (includeHalo) then
+         nEdgesCompute = grid % nEdges
+      else 
+         nEdgesCompute = grid % nEdgesSolve
+      endif
       nVertLevels = grid % nVertLevels
 
       cellsOnEdge => grid % cellsOnEdge % array
 
       ! error check that index 1 of matrixEdge and matrixCell are same length?
 
-      do iEdge=1,nEdges
+      do iEdge=1,nEdgesCompute
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
          do k=1,nVertLevels

@@ -110,7 +110,7 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine mpas_vector_R3Cell_to_2DEdge(vectorR3Cell, vector2DEdge, &
-      grid, edgeTangentVectors)!{{{
+      grid, includeHalo, edgeTangentVectors)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -126,6 +126,9 @@ contains
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          edgeTangentVectors   !< Input: unit vector tangent to an edge
+
+      logical, intent(in) :: & 
+         includeHalo !< Input: If true, halo cells and edges are included in computation
 
       !-----------------------------------------------------------------
       !
@@ -144,20 +147,24 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, nEdges, cell1, cell2, k, nVertLevels
+      integer :: iEdge, nEdgesCompute, cell1, cell2, k, nVertLevels
 
       integer, dimension(:,:), pointer :: cellsOnEdge
 
       real (kind=RKIND), dimension(3) :: vectorR3Edge
       real(kind=RKIND), dimension(:,:), pointer :: edgeNormalVectors
 
-      nEdges = grid % nEdges
+      if (includeHalo) then
+         nEdgesCompute = grid % nEdges
+      else 
+         nEdgesCompute = grid % nEdgesSolve
+      endif
       nVertLevels = grid % nVertLevels
 
       edgeNormalVectors => grid % edgeNormalVectors % array
       cellsOnEdge       => grid % cellsOnEdge % array
 
-      do iEdge=1,nEdges
+      do iEdge=1,nEdgesCompute
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
 
@@ -188,7 +195,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_tangential_velocity(grid, normalVelocity, tangentialVelocity)!{{{
+   subroutine mpas_tangential_velocity(normalVelocity, grid, includeHalo, tangentialVelocity)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -201,6 +208,9 @@ contains
 
       type (mesh_type), intent(in) :: &
          grid          !< Input: grid information
+
+      logical, intent(in) :: & 
+         includeHalo !< Input: If true, halo cells and edges are included in computation
 
       !-----------------------------------------------------------------
       !
@@ -217,20 +227,24 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, nEdges,i,k,nVertLevels, eoe
+      integer :: iEdge, nEdgesCompute,i,k,nVertLevels, eoe
       integer, dimension(:), pointer :: nEdgesOnEdge
       integer, dimension(:,:), pointer :: edgesOnEdge
 
       real (kind=RKIND), dimension(:,:), pointer :: weightsOnEdge
 
-      nEdges = grid % nEdges
+      if (includeHalo) then
+         nEdgesCompute = grid % nEdges
+      else 
+         nEdgesCompute = grid % nEdgesSolve
+      endif
       nVertLevels = grid % nVertLevels
 
       nEdgesOnEdge      => grid % nEdgesOnEdge % array
       edgesOnEdge       => grid % edgesOnEdge % array
       weightsOnEdge     => grid % weightsOnEdge % array
 
-      do iEdge = 1,nEdges
+      do iEdge = 1,nEdgesCompute
          do i=1,nEdgesOnEdge(iEdge)
             eoe = edgesOnEdge(i,iEdge)
             do k=1,nVertLevels
