@@ -5,8 +5,8 @@ INCLUDE(FortranCInterface)
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8.5)
 
-# CTest For Nightly Builds
-OPTION(HOMME_USE_CTEST FALSE)
+# CTest For Nightly/Experimental Builds
+OPTION(HOMME_USE_CTEST "Use CTest Dashboard" FALSE)
 IF (${HOMME_USE_CTEST})
   INCLUDE(CTest)
 ENDIF ()
@@ -30,7 +30,7 @@ INCLUDE(SetHostPaths)
 INCLUDE(HommeMacros)
 
 # Default use quad precision
-OPTION(HOMME_QUAD_PREC "" TRUE)
+OPTION(HOMME_QUAD_PREC "Default to try to use quadruple precision" TRUE)
 
 IF (${HOMME_QUAD_PREC}) 
   testQuadPrec(HOMME_QUAD_SUPPORTED)
@@ -148,13 +148,13 @@ IF (${3D_CG_ONLY})
   SET(BUILD_HOMME_PRIM  "" ON)
 ENDIF ()
 
-OPTION(HOMME_USE_CXX FALSE)
-OPTION(HOMME_USE_TRILINOS FALSE)
-
 # swim and prim executables require C++ compiler
 IF(${BUILD_HOMME_SWIM} OR ${BUILD_HOMME_PRIM})
   SET (HOMME_USE_CXX TRUE)
   SET (HOMME_USE_TRILINOS TRUE)
+ELSE ()
+  SET(HOMME_USE_CXX FALSE)
+  SET(HOMME_USE_TRILINOS FALSE)
 ENDIF ()
 
 IF (${HOMME_USE_CXX})
@@ -162,6 +162,7 @@ IF (${HOMME_USE_CXX})
   ENABLE_LANGUAGE(CXX)
 ENDIF ()
 
+OPTION(REFSOLN "Whether to read/write reference soln data" FALSE)
 # Reference solution data
 IF(REFSOLN)
   MESSAGE(STATUS "Including option to read or write reference soln data...")
@@ -183,8 +184,8 @@ MESSAGE(STATUS "HOMME_FIND_BLASLAPACK = ${HOMME_FIND_BLASLAPACK}")
 #   1) OpenMP over elements (standard OPENMP)
 #   2) OpenMP within an element (ELEMENT_OPENMP)
 ##############################################################################
-OPTION(ENABLE_OPENMP FALSE)
-OPTION(ENABLE_ELEMENT_OPENMP FALSE)
+OPTION(ENABLE_OPENMP "OpenMP across elements" FALSE)
+OPTION(ENABLE_ELEMENT_OPENMP "OpenMP within an element" FALSE)
 ##############################################################################
 IF (ENABLE_OPENMP OR ENABLE_ELEMENT_OPENMP)
   FIND_PACKAGE(OpenMP)
@@ -235,7 +236,7 @@ IF (${CMAKE_Fortran_COMPILER_ID} STREQUAL Intel)
 ENDIF ()
 
 # OpenACC specific flag - only supporting PGI compiler
-OPTION(ENABLE_OPENACC FALSE)
+OPTION(ENABLE_OPENACC "Whether to build with OpenACC support" FALSE)
 IF (${ENABLE_OPENACC})
   IF (NOT ${CMAKE_Fortran_COMPILER_ID} STREQUAL PGI)
     MESSAGE(FATAL_ERROR "OpenACC only supported through the PGI compiler")
@@ -256,7 +257,7 @@ IF (${ENABLE_OPENACC})
 ENDIF ()
 
 # CUDA Fortran specific flags - only supporting PGI compiler
-OPTION(ENABLE_CUDA_FORTRAN FALSE)
+OPTION(ENABLE_CUDA_FORTRAN "Whether to build with CUDA Fortran support" FALSE)
 IF (${ENABLE_CUDA_FORTRAN})
   IF (NOT ${CMAKE_Fortran_COMPILER_ID} STREQUAL PGI)
     MESSAGE(FATAL_ERROR "CUDA Fortran only supported through the PGI compiler")
@@ -296,7 +297,7 @@ IF (${ENABLE_CUDA_FORTRAN})
 ENDIF ()
 
 # Intel Phi (MIC) specific flags - only supporting the Intel compiler
-OPTION(ENABLE_INTEL_PHI FALSE)
+OPTION(ENABLE_INTEL_PHI "Whether to build with Intel Xeon Phi (MIC) support" FALSE)
 IF (ENABLE_INTEL_PHI)
   IF (NOT ${CMAKE_Fortran_COMPILER_ID} STREQUAL Intel)
     MESSAGE(FATAL_ERROR "Intel Phi acceleration only supported through the Intel compiler")
@@ -344,7 +345,7 @@ MESSAGE(STATUS "C Flags = ${CMAKE_C_FLAGS}")
 MESSAGE(STATUS "CXX Flags = ${CMAKE_CXX_FLAGS}")
 MESSAGE(STATUS "Linker Flags = ${CMAKE_EXE_LINKER_FLAGS}")
 
-OPTION(HOMME_FIND_BLASLAPACK FALSE)
+OPTION(HOMME_FIND_BLASLAPACK "Whether to use system blas/lapack" FALSE)
 
 IF(${HOMME_FIND_BLASLAPACK})
   FIND_PACKAGE(BLAS REQUIRED)
@@ -358,7 +359,7 @@ ELSE()
 ENDIF()
 
 FIND_PACKAGE(Netcdf REQUIRED)
-OPTION(WITH_PNETCDF "" TRUE)
+OPTION(WITH_PNETCDF "Whether to build with PNetcdf" TRUE)
 IF (${WITH_PNETCDF})
   FIND_PACKAGE(Pnetcdf REQUIRED)
 ENDIF ()
