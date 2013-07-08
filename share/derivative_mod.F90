@@ -11,7 +11,7 @@ module derivative_mod
   ! needed for spherical differential operators:
   use physical_constants, only : rrearth 
   use element_mod, only : element_t
-  use control_mod, only : which_vlaplace, hypervis_scaling
+  use control_mod, only : which_vlaplace, hypervis_scaling, hypervis_power
 
 implicit none
 private
@@ -2450,11 +2450,11 @@ endif
     grads=gradient_sphere(s,deriv,elem%Dinv)
  
     if (var_coef) then
-       if (hypervis_scaling==0 ) then
-          ! const or variable viscosity, (1) or (2)
+       if (hypervis_power/=0 ) then
+          ! scalar viscosity with variable coefficient
           grads(:,:,1) = grads(:,:,1)*elem%variable_hyperviscosity(:,:)
           grads(:,:,2) = grads(:,:,2)*elem%variable_hyperviscosity(:,:)
-       else
+       else if (hypervis_scaling /=0 ) then
           ! tensor hv, (3)
           oldgrads=grads
           do j=1,np
@@ -2463,6 +2463,8 @@ endif
                 grads(i,j,2) = sum(oldgrads(i,j,:)*elem%tensorVisc(2,:,i,j))
              end do
           end do
+       else
+          ! do nothing: constant coefficient viscsoity
        endif
     endif
 
@@ -2488,9 +2490,9 @@ endif
     if (which_vlaplace .eq. 2) then
       laplace=cartesian_laplace_sphere_wk(v,deriv,elem,var_coef,nu_ratio)
     else if (which_vlaplace .eq. 1) then
-      laplace=laplace_sphere_wk_orig(v,deriv,elem,var_coef,nu_ratio)
+       laplace=vlaplace_sphere_wk_orig(v,deriv,elem,var_coef,nu_ratio)
     else
-      laplace=laplace_sphere_wk_new(v,deriv,elem,var_coef,nu_ratio)
+      laplace=vlaplace_sphere_wk_new(v,deriv,elem,var_coef,nu_ratio)
     endif
 
   end function vlaplace_sphere_wk
@@ -2534,7 +2536,7 @@ endif
 
 
 
-  function laplace_sphere_wk_orig(v,deriv,elem,var_coef,nu_ratio) result(laplace)
+  function vlaplace_sphere_wk_orig(v,deriv,elem,var_coef,nu_ratio) result(laplace)
 !
 !   input:  v = vector in lat-lon coordinates
 !   ouput:  weak laplacian of v, in lat-lon coordinates
@@ -2614,9 +2616,16 @@ endif
 
 
     if (var_coef) then
-       div = div*elem%variable_hyperviscosity(:,:)
-       vor = vor*elem%variable_hyperviscosity(:,:)
-    end if
+       if (hypervis_power/=0 ) then
+          ! scalar viscosity with variable coefficient
+          div = div*elem%variable_hyperviscosity(:,:)
+          vor = vor*elem%variable_hyperviscosity(:,:)
+       else if (hypervis_scaling /=0 ) then
+          call abortmp('Error: vlaplace_sphere_weak does not support tensor HV. use which_vlaplace=2')
+       else
+          ! do nothing: constant coefficient viscsoity
+       endif
+    endif
     if (present(nu_ratio)) div = nu_ratio*div
 
 #undef DIVCONTRA_VORCO
@@ -2679,11 +2688,11 @@ endif
 #endif
        enddo
     enddo
-  end function laplace_sphere_wk_orig
+  end function vlaplace_sphere_wk_orig
 
 
 
-  function laplace_sphere_wk_new(v,deriv,elem,var_coef,nu_ratio) result(laplace)
+  function vlaplace_sphere_wk_new(v,deriv,elem,var_coef,nu_ratio) result(laplace)
 !
 !   input:  v = vector in lat-lon coordinates
 !   ouput:  weak laplacian of v, in lat-lon coordinates
@@ -2709,9 +2718,17 @@ endif
     vor=vorticity_sphere(v,deriv,elem)
 
     if (var_coef) then
-       div = div*elem%variable_hyperviscosity(:,:)
-       vor = vor*elem%variable_hyperviscosity(:,:)
-    end if
+       if (hypervis_power/=0 ) then
+          ! scalar viscosity with variable coefficient
+          div = div*elem%variable_hyperviscosity(:,:)
+          vor = vor*elem%variable_hyperviscosity(:,:)
+       else if (hypervis_scaling /=0 ) then
+          call abortmp('Error: vlaplace_sphere_weak does not support tensor HV. use which_vlaplace=2')
+       else
+          ! do nothing: constant coefficient viscsoity
+       endif
+    endif
+
     if (present(nu_ratio)) div = nu_ratio*div
 
     laplace = gradient_sphere_wk_testcov(div,deriv,elem) - &
@@ -2727,7 +2744,7 @@ endif
 #endif
        enddo
     enddo
-  end function laplace_sphere_wk_new
+  end function vlaplace_sphere_wk_new
 
 
 

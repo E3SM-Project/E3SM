@@ -79,18 +79,19 @@ real (kind=real_kind), dimension(:,:), pointer :: rspheremv
 real (kind=real_kind), dimension(np,np) :: lap_ps
 real (kind=real_kind), dimension(np,np,nlev) :: T
 real (kind=real_kind), dimension(np,np,2) :: v
+logical var_coef_first_call
+
+   !if tensor hyperviscosity with tensor V is used, then biharmonic operator is (\grad\cdot V\grad) (\grad \cdot \grad) 
+   !so tensor is only used on second call to laplace_sphere_wk
+   var_coef_first_call = .true.
+   if(hypervis_scaling > 0)    var_coef_first_call = .false.
+    
 
    do ie=nets,nete
       
 #ifdef _PRIM
       ! should filter lnps + PHI_s/RT?
-
-      !if tensor hyperviscosity with tensor V is used, then biharmonic operator is (\grad\cdot V\grad) (\grad \cdot \grad) 
-      if(hypervis_scaling > 0)then
-	pstens(:,:,ie)=laplace_sphere_wk(elem(ie)%state%ps_v(:,:,nt),deriv,elem(ie),var_coef=.false.)
-      else
-	pstens(:,:,ie)=laplace_sphere_wk(elem(ie)%state%ps_v(:,:,nt),deriv,elem(ie),var_coef=.true.)
-      endif
+      pstens(:,:,ie)=laplace_sphere_wk(elem(ie)%state%ps_v(:,:,nt),deriv,elem(ie),var_coef=var_coef_first_call)
 #endif
       
 #if (defined ELEMENT_OPENMP)
@@ -102,23 +103,17 @@ real (kind=real_kind), dimension(np,np,2) :: v
 #ifdef _PRIM
                T(i,j,k)=elem(ie)%state%T(i,j,k,nt) 
 #elif defined _PRIMDG
-            T(i,j,k)=elem(ie)%state%p(i,j,k,nt) + elem(ie)%state%phis(i,j)
+               T(i,j,k)=elem(ie)%state%p(i,j,k,nt) + elem(ie)%state%phis(i,j)
 #else            
                ! filter surface height, not thickness
                T(i,j,k)=elem(ie)%state%p(i,j,k,nt) + elem(ie)%state%ps(i,j)
 #endif
             enddo
          enddo
-
-         if(hypervis_scaling > 0)then
-           ptens(:,:,k,ie)=laplace_sphere_wk(T(:,:,k),deriv,elem(ie),var_coef=.false.)
-           vtens(:,:,:,k,ie)=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,&
-                elem(ie),var_coef=.false.,nu_ratio=nu_ratio)
-         else
-           ptens(:,:,k,ie)=laplace_sphere_wk(T(:,:,k),deriv,elem(ie),var_coef=.true.)
-           vtens(:,:,:,k,ie)=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,&
-                elem(ie),var_coef=.true.,nu_ratio=nu_ratio)
-         endif
+        
+         ptens(:,:,k,ie)=laplace_sphere_wk(T(:,:,k),deriv,elem(ie),var_coef=var_coef_first_call)
+         vtens(:,:,:,k,ie)=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,&
+              elem(ie),var_coef=var_coef_first_call,nu_ratio=nu_ratio)
 
       enddo
       kptr=0
@@ -199,6 +194,12 @@ integer :: k,kptr,ie
 real (kind=real_kind), dimension(:,:), pointer :: rspheremv
 real (kind=real_kind), dimension(np,np) :: tmp
 real (kind=real_kind), dimension(np,np,2) :: v
+logical var_coef_first_call
+
+   !if tensor hyperviscosity with tensor V is used, then biharmonic operator is (\grad\cdot V\grad) (\grad \cdot \grad) 
+   !so tensor is only used on second call to laplace_sphere_wk
+   var_coef_first_call = .true.
+   if(hypervis_scaling > 0)    var_coef_first_call = .false.
 
    do ie=nets,nete
 
@@ -207,11 +208,11 @@ real (kind=real_kind), dimension(np,np,2) :: v
 #endif
       do k=1,nlev
          tmp=elem(ie)%state%T(:,:,k,nt) 
-         ptens(:,:,k,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),var_coef=.true.)
+         ptens(:,:,k,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),var_coef=var_coef_first_call)
          tmp=elem(ie)%state%dp3d(:,:,k,nt) 
-         dptens(:,:,k,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),var_coef=.true.)
+         dptens(:,:,k,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),var_coef=var_coef_first_call)
          vtens(:,:,:,k,ie)=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie),&
-              var_coef=.true.,nu_ratio=nu_ratio)
+              var_coef=var_coef_first_call,nu_ratio=nu_ratio)
       enddo
       kptr=0
       call edgeVpack(edge3, ptens(1,1,1,ie),nlev,kptr,elem(ie)%desc)
@@ -277,6 +278,14 @@ type (derivative_t)  , intent(in) :: deriv
 ! local
 integer :: k,kptr,i,j,ie,ic,q
 real (kind=real_kind), dimension(np,np) :: lap_p
+logical var_coef_first_call
+
+   !if tensor hyperviscosity with tensor V is used, then biharmonic operator is (\grad\cdot V\grad) (\grad \cdot \grad) 
+   !so tensor is only used on second call to laplace_sphere_wk
+   var_coef_first_call = .true.
+   if(hypervis_scaling > 0)    var_coef_first_call = .false.
+
+
 
    do ie=nets,nete
 #if (defined ELEMENT_OPENMP)
@@ -286,7 +295,7 @@ real (kind=real_kind), dimension(np,np) :: lap_p
          do k=1,nlev    !  Potential loop inversion (AAM)
             lap_p(:,:)=qtens(:,:,k,q,ie)
 ! Original use of qtens on left and right hand sides caused OpenMP errors (AAM)
-           qtens(:,:,k,q,ie)=laplace_sphere_wk(lap_p,deriv,elem(ie),var_coef=.true.)
+           qtens(:,:,k,q,ie)=laplace_sphere_wk(lap_p,deriv,elem(ie),var_coef=var_coef_first_call)
          enddo
       enddo
       call edgeVpack(edgeq, qtens(:,:,:,:,ie),qsize*nlev,0,elem(ie)%desc)
@@ -338,6 +347,13 @@ integer :: k,kptr,i,j,ie,ic,q
 real (kind=real_kind), dimension(np,np) :: lap_p
 real (kind=real_kind) :: Qmin(np,np,nlev,qsize)
 real (kind=real_kind) :: Qmax(np,np,nlev,qsize)
+logical var_coef_first_call
+
+   !if tensor hyperviscosity with tensor V is used, then biharmonic operator is (\grad\cdot V\grad) (\grad \cdot \grad) 
+   !so tensor is only used on second call to laplace_sphere_wk
+   var_coef_first_call = .true.
+   if(hypervis_scaling > 0)    var_coef_first_call = .false.
+
 
 
    do ie=nets,nete
@@ -350,7 +366,7 @@ real (kind=real_kind) :: Qmax(np,np,nlev,qsize)
          Qmax(:,:,k,q)=emax(k,q,ie)  ! edgeVpack routine below
          lap_p(:,:) = qtens(:,:,k,q,ie)
 ! Original use of qtens on left and right hand sides caused OpenMP errors (AAM)
-         qtens(:,:,k,q,ie)=laplace_sphere_wk(lap_p,deriv,elem(ie),var_coef=.true.)
+         qtens(:,:,k,q,ie)=laplace_sphere_wk(lap_p,deriv,elem(ie),var_coef=var_coef_first_call)
       enddo
       enddo
       call edgeVpack(edgeq, qtens(:,:,:,:,ie),qsize*nlev,0,elem(ie)%desc)
