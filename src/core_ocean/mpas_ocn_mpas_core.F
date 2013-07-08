@@ -83,7 +83,7 @@ module mpas_core
    subroutine mpas_core_init(domain, startTimeStamp)!{{{
 
       use mpas_grid_types
-      use mpas_ocn_tracer_advection
+      use ocn_tracer_advection
 
       implicit none
 
@@ -135,7 +135,7 @@ module mpas_core
       call ocn_diagnostics_init(err_tmp)
       err = ior(err,err_tmp)
 
-      call mpas_ocn_tracer_advection_init(err_tmp)
+      call ocn_tracer_advection_init(err_tmp)
       err = ior(err,err_tmp)
 
       call ocn_monthly_forcing_init(err_tmp)
@@ -320,7 +320,7 @@ module mpas_core
       use mpas_grid_types
       use mpas_rbf_interpolation
       use mpas_vector_reconstruction
-      use mpas_ocn_tracer_advection
+      use mpas_tracer_advection_helpers
       use ocn_advection
    
       implicit none
@@ -334,7 +334,7 @@ module mpas_core
    
       call ocn_setup_sign_and_index_fields(mesh)
       call ocn_initialize_advection_rk(mesh, err)
-      call mpas_ocn_tracer_advection_coefficients(mesh, err1)
+      call mpas_tracer_advection_coefficients(mesh, err1)
       err = ior(err, err1)
 
       call ocn_time_average_init(block % state % time_levs(1) % state)

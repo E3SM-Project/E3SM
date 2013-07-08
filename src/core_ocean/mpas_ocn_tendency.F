@@ -25,7 +25,7 @@ module ocn_tendency
    use mpas_constants
    use mpas_timer
 
-   use mpas_ocn_tracer_advection
+   use ocn_tracer_advection
 
    use ocn_thick_hadv
    use ocn_thick_vadv
@@ -306,7 +306,7 @@ contains
 
       ! Monotonoic Advection, or standard advection
       call mpas_timer_start("adv", .false., tracerHadvTimer)
-      call mpas_ocn_tracer_advection_tend(tracers, normalThicknessFlux, vertTransportVelocityTop, layerThickness, layerThickness, dt, grid, tend_layerThickness, tend_tr)
+      call ocn_tracer_advection_tend(tracers, normalThicknessFlux, vertTransportVelocityTop, layerThickness, layerThickness, dt, grid, tend_layerThickness, tend_tr)
       call mpas_timer_stop("adv", tracerHadvTimer)
 
       !

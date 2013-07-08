@@ -7,9 +7,9 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  ocn_tracer_advection_std_hadv
+!  mpas_tracer_advection_std_hadv
 !
-!> \brief MPAS ocean standard horizontal tracer advection (non-monotonic/fct)
+!> \brief MPAS standard horizontal tracer advection (non-monotonic/fct)
 !> \author Doug Jacobsen
 !> \date   03/09/12
 !> \details
@@ -17,21 +17,21 @@
 !>  and initialization of the horizontal advection routines.
 !
 !-----------------------------------------------------------------------
-module mpas_ocn_tracer_advection_std_hadv
+module mpas_tracer_advection_std_hadv
 
    use mpas_kind_types
    use mpas_grid_types
    use mpas_configure
    use mpas_dmpar
 
-   use mpas_ocn_tracer_advection_helpers
+   use mpas_tracer_advection_helpers
 
    implicit none
    private
    save
 
-   public :: mpas_ocn_tracer_advection_std_hadv_tend, &
-             mpas_ocn_tracer_advection_std_hadv_init
+   public :: mpas_tracer_advection_std_hadv_tend, &
+             mpas_tracer_advection_std_hadv_init
 
    real (kind=RKIND) :: coef_3rd_order
 
@@ -41,16 +41,16 @@ module mpas_ocn_tracer_advection_std_hadv
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  routine mpas_ocn_tracer_advection_std_hadv_tend
+!  routine mpas_tracer_advection_std_hadv_tend
 !
-!> \brief MPAS ocean standard horizontal tracer advection tendency
+!> \brief MPAS standard horizontal tracer advection tendency
 !> \author Doug Jacobsen
 !> \date   03/09/12
 !> \details
 !>  This routine computes the tendency for 3rd order horizontal advection of tracers.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_ocn_tracer_advection_std_hadv_tend(tracers, normalThicknessFlux, grid, tend)!{{{
+   subroutine mpas_tracer_advection_std_hadv_tend(tracers, normalThicknessFlux, grid, tend)!{{{
       real (kind=RKIND), dimension(:,:,:), intent(inout) :: tend !< Input/output: Tracer tendency
       real (kind=RKIND), dimension(:,:,:), intent(in) :: tracers !< Input: Tracer values
       real (kind=RKIND), dimension(:,:), intent(in) :: normalThicknessFlux !< Input: Thickness weighted horizontal velocity
@@ -114,20 +114,20 @@ module mpas_ocn_tracer_advection_std_hadv
 
        deallocate(flux_arr)
 
-   end subroutine mpas_ocn_tracer_advection_std_hadv_tend!}}}
+   end subroutine mpas_tracer_advection_std_hadv_tend!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  routine mpas_ocn_tracer_advection_std_hadv_init
+!  routine mpas_tracer_advection_std_hadv_init
 !
-!> \brief MPAS ocean standard horizontal tracer advection initialization
+!> \brief MPAS standard horizontal tracer advection initialization
 !> \author Doug Jacobsen
 !> \date   03/09/12
 !> \details
 !>  This routine initializes the 3rd order standard horizontal advection of tracers
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_ocn_tracer_advection_std_hadv_init(err)!{{{
+   subroutine mpas_tracer_advection_std_hadv_init(err)!{{{
       integer, intent(inout) :: err !< Input/Output: Error flag
 
       err = 0
@@ -139,6 +139,6 @@ module mpas_ocn_tracer_advection_std_hadv
       else if ( config_horiz_tracer_adv_order == 2 .or. config_horiz_tracer_adv_order == 4) then
         coef_3rd_order = 0.0
       end if
-   end subroutine mpas_ocn_tracer_advection_std_hadv_init!}}}
+   end subroutine mpas_tracer_advection_std_hadv_init!}}}
 
-end module mpas_ocn_tracer_advection_std_hadv
+end module mpas_tracer_advection_std_hadv

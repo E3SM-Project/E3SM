@@ -7,9 +7,9 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  ocn_tracer_advection_std
+!  mpas_tracer_advection_std
 !
-!> \brief MPAS ocean tracer advection driver (non-monotonic/fct)
+!> \brief MPAS tracer advection driver (non-monotonic/fct)
 !> \author Doug Jacobsen
 !> \date   03/09/12
 !> \details
@@ -18,7 +18,7 @@
 !>  initialization of the advection routines.
 !
 !-----------------------------------------------------------------------
-module mpas_ocn_tracer_advection_std
+module mpas_tracer_advection_std
 
    use mpas_kind_types
    use mpas_grid_types
@@ -26,23 +26,23 @@ module mpas_ocn_tracer_advection_std
    use mpas_dmpar
    use mpas_timer
 
-   use mpas_ocn_tracer_advection_std_hadv
-   use mpas_ocn_tracer_advection_std_vadv
+   use mpas_tracer_advection_std_hadv
+   use mpas_tracer_advection_std_vadv
 
    implicit none
    private
    save
 
-   public :: mpas_ocn_tracer_advection_std_tend, &
-             mpas_ocn_tracer_advection_std_init
+   public :: mpas_tracer_advection_std_tend, &
+             mpas_tracer_advection_std_init
 
    contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  routine mpas_ocn_tracer_advection_std_tend
+!  routine mpas_tracer_advection_std_tend
 !
-!> \brief MPAS ocean standard tracer advection tendency
+!> \brief MPAS standard tracer advection tendency
 !> \author Doug Jacobsen
 !> \date   03/09/12
 !> \details
@@ -50,14 +50,7 @@ module mpas_ocn_tracer_advection_std
 !>  tracer advection tendencies.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_ocn_tracer_advection_std_tend(tracers, normalThicknessFlux, w, verticalCellSize, grid, tend)!{{{
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
-   !
-   ! Input: s - current model state
-   !        grid - grid metadata
-   !
-   ! Output: tend - computed tracer tendencies
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
+   subroutine mpas_tracer_advection_std_tend(tracers, normalThicknessFlux, w, verticalCellSize, grid, tend)!{{{
 
       real (kind=RKIND), dimension(:,:,:), intent(inout) :: tend !< Input/Output: Tracer tendency
       real (kind=RKIND), dimension(:,:,:), intent(in) :: tracers !< Input: Tracer values
@@ -67,19 +60,19 @@ module mpas_ocn_tracer_advection_std
       type (mesh_type), intent(in) :: grid !< Input: Grid information
 
       call mpas_timer_start("tracer-hadv", .false.)
-      call mpas_ocn_tracer_advection_std_hadv_tend(tracers, normalThicknessFlux, grid, tend)
+      call mpas_tracer_advection_std_hadv_tend(tracers, normalThicknessFlux, grid, tend)
       call mpas_timer_stop("tracer-hadv")
       call mpas_timer_start("tracer-vadv", .false.)
-      call mpas_ocn_tracer_advection_std_vadv_tend(tracers, w, verticalCellSize, grid, tend)
+      call mpas_tracer_advection_std_vadv_tend(tracers, w, verticalCellSize, grid, tend)
       call mpas_timer_stop("tracer-vadv")
 
-   end subroutine mpas_ocn_tracer_advection_std_tend!}}}
+   end subroutine mpas_tracer_advection_std_tend!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  routine mpas_ocn_tracer_advection_std_init
+!  routine mpas_tracer_advection_std_init
 !
-!> \brief MPAS ocean standard tracer advection initialization
+!> \brief MPAS standard tracer advection initialization
 !> \author Doug Jacobsen
 !> \date   03/09/12
 !> \details
@@ -87,18 +80,18 @@ module mpas_ocn_tracer_advection_std
 !>  tracer advection routines.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_ocn_tracer_advection_std_init(err)!{{{
+   subroutine mpas_tracer_advection_std_init(err)!{{{
       integer, intent(inout) :: err !< Input: Error Flags
 
       integer :: err_tmp
 
       err = 0
 
-      call mpas_ocn_tracer_advection_std_hadv_init(err_tmp)
+      call mpas_tracer_advection_std_hadv_init(err_tmp)
       err = ior(err, err_tmp)
-      call mpas_ocn_tracer_advection_std_vadv_init(err_tmp)
+      call mpas_tracer_advection_std_vadv_init(err_tmp)
       err = ior(err, err_tmp)
 
-   end subroutine mpas_ocn_tracer_advection_std_init!}}}
+   end subroutine mpas_tracer_advection_std_init!}}}
 
-end module mpas_ocn_tracer_advection_std
+end module mpas_tracer_advection_std

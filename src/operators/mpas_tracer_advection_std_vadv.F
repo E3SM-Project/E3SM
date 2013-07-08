@@ -7,9 +7,9 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  ocn_tracer_advection_std_vadv
+!  mpas_tracer_advection_std_vadv
 !
-!> \brief MPAS ocean vertical tracer advection driver (non-monotonic/fct)
+!> \brief MPAS vertical tracer advection driver (non-monotonic/fct)
 !> \author Doug Jacobsen
 !> \date   03/09/12
 !> \details
@@ -17,23 +17,23 @@
 !>  and initialization of the advection routines.
 !
 !-----------------------------------------------------------------------
-module mpas_ocn_tracer_advection_std_vadv
+module mpas_tracer_advection_std_vadv
 
    use mpas_kind_types
    use mpas_grid_types
    use mpas_configure
    use mpas_dmpar
 
-   use mpas_ocn_tracer_advection_std_vadv2
-   use mpas_ocn_tracer_advection_std_vadv3
-   use mpas_ocn_tracer_advection_std_vadv4
+   use mpas_tracer_advection_std_vadv2
+   use mpas_tracer_advection_std_vadv3
+   use mpas_tracer_advection_std_vadv4
 
    implicit none
    private
    save
 
-   public :: mpas_ocn_tracer_advection_std_vadv_tend, &
-             mpas_ocn_tracer_advection_std_vadv_init
+   public :: mpas_tracer_advection_std_vadv_tend, &
+             mpas_tracer_advection_std_vadv_init
 
    logical :: order2, order3, order4
 
@@ -41,9 +41,9 @@ module mpas_ocn_tracer_advection_std_vadv
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  routine mpas_ocn_tracer_advection_std_vadv_tend
+!  routine mpas_tracer_advection_std_vadv_tend
 !
-!> \brief MPAS ocean standard vertical tracer advection tendency
+!> \brief MPAS standard vertical tracer advection tendency
 !> \author Doug Jacobsen
 !> \date   03/09/12
 !> \details
@@ -51,7 +51,7 @@ module mpas_ocn_tracer_advection_std_vadv
 !>  vertical tracer advection tendencies.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_ocn_tracer_advection_std_vadv_tend(tracers, w, verticalCellSize, grid, tend)!{{{
+   subroutine mpas_tracer_advection_std_vadv_tend(tracers, w, verticalCellSize, grid, tend)!{{{
 
       real (kind=RKIND), dimension(:,:,:), intent(inout) :: tend !< Input/Output: Tracer Tendency
       real (kind=RKIND), dimension(:,:,:), intent(in) :: tracers !< Input: Tracer Values
@@ -60,27 +60,27 @@ module mpas_ocn_tracer_advection_std_vadv
       type (mesh_type), intent(in) :: grid !< Input: Grid information
 
       if(order2) then
-        call mpas_ocn_tracer_advection_std_vadv2_tend(tracers, w, verticalCellSize, grid, tend) 
+        call mpas_tracer_advection_std_vadv2_tend(tracers, w, verticalCellSize, grid, tend) 
       else if(order3) then
-        call mpas_ocn_tracer_advection_std_vadv3_tend(tracers, w, verticalCellSize, grid, tend) 
+        call mpas_tracer_advection_std_vadv3_tend(tracers, w, verticalCellSize, grid, tend) 
       else if(order4) then
-        call mpas_ocn_tracer_advection_std_vadv4_tend(tracers, w, verticalCellSize, grid, tend) 
+        call mpas_tracer_advection_std_vadv4_tend(tracers, w, verticalCellSize, grid, tend) 
       endif
 
-   end subroutine mpas_ocn_tracer_advection_std_vadv_tend!}}}
+   end subroutine mpas_tracer_advection_std_vadv_tend!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  routine mpas_ocn_tracer_advection_std_vadv_init
+!  routine mpas_tracer_advection_std_vadv_init
 !
-!> \brief MPAS ocean standard vertical tracer advection tendency
+!> \brief MPAS standard vertical tracer advection tendency
 !> \author Doug Jacobsen
 !> \date   03/09/12
 !> \details
 !>  This routine initializes the vertical tracer advection tendencies.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_ocn_tracer_advection_std_vadv_init(err)!{{{
+   subroutine mpas_tracer_advection_std_vadv_init(err)!{{{
      integer, intent(inout) :: err !< Input/Output: Error flag
 
      err = 0
@@ -101,7 +101,7 @@ module mpas_ocn_tracer_advection_std_vadv
          err = 1
      endif
         
-   end subroutine mpas_ocn_tracer_advection_std_vadv_init!}}}
+   end subroutine mpas_tracer_advection_std_vadv_init!}}}
 
-end module mpas_ocn_tracer_advection_std_vadv
+end module mpas_tracer_advection_std_vadv
 

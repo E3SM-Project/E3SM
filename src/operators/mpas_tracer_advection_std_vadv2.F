@@ -7,37 +7,37 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  ocn_tracer_advection_std_vadv2
+!  mpas_tracer_advection_std_vadv2
 !
-!> \brief MPAS ocean 2nd order vertical tracer advection driver (non-monotonic/fct)
+!> \brief MPAS 2nd order vertical tracer advection driver (non-monotonic/fct)
 !> \author Doug Jacobsen
 !> \date   03/09/12
 !> \details
 !>  This module contains routines for 2nd order vertical tracer advection tendencies.
 !
 !-----------------------------------------------------------------------
-module mpas_ocn_tracer_advection_std_vadv2
+module mpas_tracer_advection_std_vadv2
 
    use mpas_kind_types
    use mpas_grid_types
    use mpas_configure
    use mpas_dmpar
 
-   use mpas_ocn_tracer_advection_helpers
+   use mpas_tracer_advection_helpers
 
    implicit none
    private
    save
 
-   public :: mpas_ocn_tracer_advection_std_vadv2_tend
+   public :: mpas_tracer_advection_std_vadv2_tend
 
    contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  routine mpas_ocn_tracer_advection_std_vadv2_tend
+!  routine mpas_tracer_advection_std_vadv2_tend
 !
-!> \brief MPAS ocean 2nd order standard vertical tracer advection tendency
+!> \brief MPAS 2nd order standard vertical tracer advection tendency
 !> \author Doug Jacobsen
 !> \date   03/09/12
 !> \details
@@ -45,7 +45,7 @@ module mpas_ocn_tracer_advection_std_vadv2
 !>  vertical tracer advection tendencies.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_ocn_tracer_advection_std_vadv2_tend(tracers, w, verticalCellSize, grid, tend)!{{{
+   subroutine mpas_tracer_advection_std_vadv2_tend(tracers, w, verticalCellSize, grid, tend)!{{{
       real (kind=RKIND), dimension(:,:,:), intent(inout) :: tend !< Input/Output: tracer tendency
       real (kind=RKIND), dimension(:,:,:), intent(in) :: tracers !< Input: Tracer values
       real (kind=RKIND), dimension(:,:), intent(in) :: w !< Input: Vertical Velocity
@@ -96,6 +96,6 @@ module mpas_ocn_tracer_advection_std_vadv2
 
       deallocate(vert_flux)
       
-   end subroutine mpas_ocn_tracer_advection_std_vadv2_tend!}}}
+   end subroutine mpas_tracer_advection_std_vadv2_tend!}}}
 
-end module mpas_ocn_tracer_advection_std_vadv2
+end module mpas_tracer_advection_std_vadv2
