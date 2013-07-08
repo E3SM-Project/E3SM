@@ -21,6 +21,7 @@ module mpas_tracer_advection_helpers
    use mpas_kind_types
    use mpas_grid_types
    use mpas_configure
+   use mpas_geometry_utils
 
    implicit none
    save
@@ -93,8 +94,8 @@ module mpas_tracer_advection_helpers
       integer, dimension(:,:), pointer, optional :: boundaryCell_in !< Input- optional: Mask for boundary cells
 
       real (kind=RKIND), dimension(:,:,:), pointer :: deriv_two
-      real (kind=RKIND), dimension(:,:), pointer :: adv_coefs, adv_coefs_2nd, adv_coefs_3rd
-      integer, dimension(:,:), pointer :: cellsOnCell, cellsOnEdge, advCellsForEdge, highOrderAdvectionMask, lowOrderAdvectionMask, boundaryCell
+      real (kind=RKIND), dimension(:,:), pointer :: adv_coefs, adv_coefs_3rd
+      integer, dimension(:,:), pointer :: cellsOnCell, cellsOnEdge, advCellsForEdge, highOrderAdvectionMask, boundaryCell
       integer, dimension(:), pointer :: nEdgesOnCell, nAdvCellsForEdge, maxLevelCell
 
       integer, dimension(:), pointer :: cell_indices 
@@ -239,18 +240,15 @@ module mpas_tracer_advection_helpers
            k = mpas_binary_search(sorted_cell_indices, 2, 1, nAdvCellsForEdge(iEdge), grid % indexToCellID % array(cell1))
            if(k <= nAdvCellsForEdge(iEdge)) then
              adv_coefs(k, iEdge) = adv_coefs(k, iEdge) + 0.5
-             adv_coefs_2nd(k, iEdge) = adv_coefs_2nd(k, iEdge) + 0.5
            end if
 
            k = mpas_binary_search(sorted_cell_indices, 2, 1, nAdvCellsForEdge(iEdge), grid % indexToCellID % array(cell2))
            if(k <= nAdvCellsForEdge(iEdge)) then
              adv_coefs(k, iEdge) = adv_coefs(k, iEdge) + 0.5
-             adv_coefs_2nd(k, iEdge) = adv_coefs_2nd(k, iEdge) + 0.5
            end if
 
            do iCell=1,nAdvCellsForEdge(iEdge)
              adv_coefs    (iCell,iEdge) = grid % dvEdge % array(iEdge) * adv_coefs    (iCell,iEdge)
-             adv_coefs_2nd(iCell,iEdge) = grid % dvEdge % array(iEdge) * adv_coefs_2nd(iCell,iEdge)
              adv_coefs_3rd(iCell,iEdge) = grid % dvEdge % array(iEdge) * adv_coefs_3rd(iCell,iEdge)
            end do ! loop over iCell
         end if
@@ -273,5 +271,417 @@ module mpas_tracer_advection_helpers
       end if
 
    end subroutine mpas_tracer_advection_coefficients!}}}
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  routine mpas_initialize_deriv_two
+!
+!> \brief MPAS deriv two computation
+!> \author Doug Jacobsen, Bill Skamarock
+!> \date   03/09/12
+!> \details
+!>  This routine precomputes the second derivative values for tracer advection.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_initialize_deriv_two( grid, err )!{{{
+                                      
+!
+! compute the cell coefficients for the polynomial fit.
+! this is performed during setup for model integration.
+! WCS, 31 August 2009
+!
+! Described in:
+! Skamarock, W. C., & Gassmann, A. (2011). 
+! Conservative Transport Schemes for Spherical Geodesic Grids: High-Order Flux Operators for ODE-Based Time Integration. 
+! Monthly Weather Review, 139(9), 2962-2975. doi:10.1175/MWR-D-10-05056.1
+!
+      implicit none
+
+      type (mesh_type), intent(in) :: grid
+      integer, intent(out) :: err
+
+      real (kind=RKIND), dimension(:,:,:), pointer :: deriv_two
+      integer, dimension(:), pointer :: advCells
+
+!  local variables
+
+      real (kind=RKIND), dimension(2, grid % nEdges) :: thetae
+      real (kind=RKIND), dimension(grid % nEdges) :: xe, ye
+      real (kind=RKIND), dimension(grid % nCells) :: theta_abs
+
+      real (kind=RKIND), dimension(25) :: xc, yc, zc ! cell center coordinates
+      real (kind=RKIND), dimension(25) :: thetav, thetat, dl_sphere
+      real (kind=RKIND) :: xm, ym, zm, dl, xec, yec, zec
+      real (kind=RKIND) :: thetae_tmp, xe_tmp, ye_tmp
+      real (kind=RKIND) :: xv1, xv2, yv1, yv2, zv1, zv2
+      integer :: i, j, k, ip1, ip2, m, n, ip1a, ii
+      integer :: iCell, iEdge
+      real (kind=RKIND) :: pii
+      real (kind=RKIND) :: x0, y0, x1, y1, x2, y2, x3, y3, x4, y4, x5, y5
+      real (kind=RKIND) :: pdx1, pdx2, pdx3, pdy1, pdy2, pdy3, dx1, dx2, dy1, dy2
+      real (kind=RKIND) :: angv1, angv2, dl1, dl2
+      real (kind=RKIND), dimension(25) :: dxe, dye, x2v, y2v, xp, yp
+      
+      real (kind=RKIND) :: amatrix(25,25), bmatrix(25,25), wmatrix(25,25)
+      real (kind=RKIND) :: length_scale
+      integer :: ma,na, cell_add, mw, nn
+      integer, dimension(25) :: cell_list
+
+
+      integer :: cell1, cell2
+      integer, parameter :: polynomial_order = 2
+      logical, parameter :: debug = .false.
+      logical, parameter :: least_squares = .true.
+      logical :: add_the_cell, do_the_cell
+
+      logical, parameter :: reset_poly = .true.
+
+      real (kind=RKIND) :: rcell, cos2t, costsint, sin2t
+      real (kind=RKIND), dimension(grid%maxEdges) :: angle_2d
+
+!---    
+      err = 0
+
+      if(polynomial_order > 2) then
+        write (*,*) 'Polynomial for second derivitave can only be 2'
+        err = 1
+        return
+      end if
+
+      pii = 2.*asin(1.0)
+
+!     advCells => grid % advCells % array
+      allocate(advCells(grid % maxEdges2))
+      deriv_two => grid % deriv_two % array
+      deriv_two(:,:,:) = 0.
+
+      do iCell = 1, grid % nCells !  is this correct? - we need first halo cell also...
+
+         cell_list(1) = iCell
+         do i=2, grid % nEdgesOnCell % array(iCell)+1
+            cell_list(i) = grid % CellsOnCell % array(i-1,iCell)
+         end do
+         n = grid % nEdgesOnCell % array(iCell) + 1
+
+         if ( polynomial_order > 2 ) then
+            do i=2,grid % nEdgesOnCell % array(iCell) + 1
+               do j=1,grid % nEdgesOnCell % array ( cell_list(i) )
+                  cell_add = grid % CellsOnCell % array (j,cell_list(i))
+                  add_the_cell = .true.
+                  do k=1,n
+                     if ( cell_add == cell_list(k) ) add_the_cell = .false.
+                  end do
+                  if (add_the_cell) then
+                     n = n+1
+                     cell_list(n) = cell_add
+                  end if
+               end do
+            end do
+         end if
+ 
+         advCells(1) = n
+
+!  check to see if we are reaching outside the halo
+
+         do_the_cell = .true.
+         do i=1,n
+            if (cell_list(i) > grid % nCells) do_the_cell = .false.
+         end do
+
+
+         if ( .not. do_the_cell ) cycle
+
+
+!  compute poynomial fit for this cell if all needed neighbors exist
+         if ( grid % on_a_sphere ) then
+
+            do i=1,n
+               advCells(i+1) = cell_list(i)
+               xc(i) = grid % xCell % array(advCells(i+1))/grid % sphere_radius
+               yc(i) = grid % yCell % array(advCells(i+1))/grid % sphere_radius
+               zc(i) = grid % zCell % array(advCells(i+1))/grid % sphere_radius
+            end do
+
+            if ( zc(1) == 1.0_RKIND) then
+               theta_abs(iCell) = pii/2.0_RKIND
+            else
+               theta_abs(iCell) =  pii/2.0_RKIND - mpas_sphere_angle( xc(1), yc(1), zc(1),  &
+                                                                 xc(2), yc(2), zc(2),  &
+                                                                 0.0_RKIND, 0.0_RKIND, 1.0_RKIND ) 
+            end if
+
+! angles from cell center to neighbor centers (thetav)
+
+            do i=1,n-1
+   
+               ip2 = i+2
+               if (ip2 > n) ip2 = 2
+    
+               thetav(i) = mpas_sphere_angle( xc(1),   yc(1),   zc(1),    &
+                                         xc(i+1), yc(i+1), zc(i+1),  &
+                                         xc(ip2), yc(ip2), zc(ip2)   )
+
+               dl_sphere(i) = grid % sphere_radius*mpas_arc_length( xc(1),   yc(1),   zc(1),  &
+                                            xc(i+1), yc(i+1), zc(i+1) )
+            end do
+
+            length_scale = 1.
+            do i=1,n-1
+               dl_sphere(i) = dl_sphere(i)/length_scale
+            end do
+
+!            thetat(1) = 0.  !  this defines the x direction, cell center 1 -> 
+            thetat(1) = theta_abs(iCell)  !  this defines the x direction, longitude line
+            do i=2,n-1
+               thetat(i) = thetat(i-1) + thetav(i-1)
+            end do
+   
+            do i=1,n-1
+               xp(i) = cos(thetat(i)) * dl_sphere(i)
+               yp(i) = sin(thetat(i)) * dl_sphere(i)
+            end do
+
+         else     ! On an x-y plane
+
+            do i=1,n-1
+
+               angle_2d(i) = grid%angleEdge%array(grid % EdgesOnCell % array(i,iCell))
+               iEdge = grid % EdgesOnCell % array(i,iCell)
+               if ( iCell .ne. grid % CellsOnEdge % array(1,iEdge)) &
+                  angle_2d(i) = angle_2d(i) - pii
+
+!              xp(i) = grid % xCell % array(cell_list(i)) - grid % xCell % array(iCell)
+!              yp(i) = grid % yCell % array(cell_list(i)) - grid % yCell % array(iCell)
+
+               xp(i) = grid % dcEdge % array(grid % EdgesOnCell % array(i,iCell)) * cos(angle_2d(i))
+               yp(i) = grid % dcEdge % array(grid % EdgesOnCell % array(i,iCell)) * sin(angle_2d(i))
+
+            end do
+
+         end if
+
+
+         ma = n-1
+         mw = grid % nEdgesOnCell % array (iCell)
+
+         bmatrix = 0.
+         amatrix = 0.
+         wmatrix = 0.
+
+         if (polynomial_order == 2) then
+            na = 6
+            ma = ma+1
+  
+            amatrix(1,1) = 1.
+            wmatrix(1,1) = 1.
+            do i=2,ma
+               amatrix(i,1) = 1.
+               amatrix(i,2) = xp(i-1)
+               amatrix(i,3) = yp(i-1)
+               amatrix(i,4) = xp(i-1)**2
+               amatrix(i,5) = xp(i-1) * yp(i-1)
+               amatrix(i,6) = yp(i-1)**2
+   
+               wmatrix(i,i) = 1.
+            end do
+ 
+         else if (polynomial_order == 3) then
+            na = 10
+            ma = ma+1
+  
+            amatrix(1,1) = 1.
+            wmatrix(1,1) = 1.
+            do i=2,ma
+               amatrix(i,1) = 1.
+               amatrix(i,2) = xp(i-1)
+               amatrix(i,3) = yp(i-1)
+   
+               amatrix(i,4) = xp(i-1)**2
+               amatrix(i,5) = xp(i-1) * yp(i-1)
+               amatrix(i,6) = yp(i-1)**2
+   
+               amatrix(i,7) = xp(i-1)**3
+               amatrix(i,8) = yp(i-1) * (xp(i-1)**2)
+               amatrix(i,9) = xp(i-1) * (yp(i-1)**2)
+               amatrix(i,10) = yp(i-1)**3
+   
+               wmatrix(i,i) = 1.
+ 
+            end do
+
+         else
+            na = 15
+            ma = ma+1
+  
+            amatrix(1,1) = 1.
+            wmatrix(1,1) = 1.
+            do i=2,ma
+               amatrix(i,1) = 1.
+               amatrix(i,2) = xp(i-1)
+               amatrix(i,3) = yp(i-1)
+   
+               amatrix(i,4) = xp(i-1)**2
+               amatrix(i,5) = xp(i-1) * yp(i-1)
+               amatrix(i,6) = yp(i-1)**2
+   
+               amatrix(i,7) = xp(i-1)**3
+               amatrix(i,8) = yp(i-1) * (xp(i-1)**2)
+               amatrix(i,9) = xp(i-1) * (yp(i-1)**2)
+               amatrix(i,10) = yp(i-1)**3
+   
+               amatrix(i,11) = xp(i-1)**4
+               amatrix(i,12) = yp(i-1) * (xp(i-1)**3)
+               amatrix(i,13) = (xp(i-1)**2)*(yp(i-1)**2)
+               amatrix(i,14) = xp(i-1) * (yp(i-1)**3)
+               amatrix(i,15) = yp(i-1)**4
+   
+               wmatrix(i,i) = 1.
+  
+            end do
+ 
+            do i=1,mw
+               wmatrix(i,i) = 1.
+            end do
+ 
+         end if
+ 
+         call mpas_poly_fit_2( amatrix, bmatrix, wmatrix, ma, na, 25 )
+
+         do i=1,grid % nEdgesOnCell % array (iCell)
+            ip1 = i+1
+            if (ip1 > n-1) ip1 = 1
+  
+            iEdge = grid % EdgesOnCell % array (i,iCell)
+
+            if(grid % on_a_sphere) then
+              xv1 = grid % xVertex % array(grid % verticesOnEdge % array (1,iedge))/grid % sphere_radius
+              yv1 = grid % yVertex % array(grid % verticesOnEdge % array (1,iedge))/grid % sphere_radius
+              zv1 = grid % zVertex % array(grid % verticesOnEdge % array (1,iedge))/grid % sphere_radius
+              xv2 = grid % xVertex % array(grid % verticesOnEdge % array (2,iedge))/grid % sphere_radius
+              yv2 = grid % yVertex % array(grid % verticesOnEdge % array (2,iedge))/grid % sphere_radius
+              zv2 = grid % zVertex % array(grid % verticesOnEdge % array (2,iedge))/grid % sphere_radius
+            else
+              xv1 = grid % xVertex % array(grid % verticesOnEdge % array (1,iedge))
+              yv1 = grid % yVertex % array(grid % verticesOnEdge % array (1,iedge))
+              zv1 = grid % zVertex % array(grid % verticesOnEdge % array (1,iedge))
+              xv2 = grid % xVertex % array(grid % verticesOnEdge % array (2,iedge))
+              yv2 = grid % yVertex % array(grid % verticesOnEdge % array (2,iedge))
+              zv2 = grid % zVertex % array(grid % verticesOnEdge % array (2,iedge))
+            end if
+  
+            if ( grid % on_a_sphere ) then
+               call mpas_arc_bisect( xv1, yv1, zv1,  &
+                                xv2, yv2, zv2,  &
+                                xec, yec, zec   )
+  
+               thetae_tmp = mpas_sphere_angle( xc(1),   yc(1),   zc(1),    &
+                                          xc(i+1), yc(i+1), zc(i+1),  &
+                                          xec,     yec,     zec       )
+               thetae_tmp = thetae_tmp + thetat(i)
+               if (iCell == grid % cellsOnEdge % array(1,iEdge)) then
+                  thetae(1,grid % EdgesOnCell % array (i,iCell)) = thetae_tmp
+               else
+                  thetae(2,grid % EdgesOnCell % array (i,iCell)) = thetae_tmp
+               end if
+!            else
+!
+!               xe(grid % EdgesOnCell % array (i,iCell)) = 0.5 * (xv1 + xv2)
+!               ye(grid % EdgesOnCell % array (i,iCell)) = 0.5 * (yv1 + yv2)
+
+            end if
+  
+         end do
+
+!  fill second derivative stencil for rk advection 
+
+         do i=1, grid % nEdgesOnCell % array (iCell)
+            iEdge = grid % EdgesOnCell % array (i,iCell)
+  
+  
+            if ( grid % on_a_sphere ) then
+               if (iCell == grid % cellsOnEdge % array(1,iEdge)) then
+  
+                  cos2t = cos(thetae(1,grid % EdgesOnCell % array (i,iCell)))
+                  sin2t = sin(thetae(1,grid % EdgesOnCell % array (i,iCell)))
+                  costsint = cos2t*sin2t
+                  cos2t = cos2t**2
+                  sin2t = sin2t**2
+   
+                  do j=1,n
+                     deriv_two(j,1,iEdge) =   2.*cos2t*bmatrix(4,j)  &
+                                            + 2.*costsint*bmatrix(5,j)  &
+                                            + 2.*sin2t*bmatrix(6,j)
+                  end do
+               else
+     
+                  cos2t = cos(thetae(2,grid % EdgesOnCell % array (i,iCell)))
+                  sin2t = sin(thetae(2,grid % EdgesOnCell % array (i,iCell)))
+                  costsint = cos2t*sin2t
+                  cos2t = cos2t**2
+                  sin2t = sin2t**2
+      
+                  do j=1,n
+                     deriv_two(j,2,iEdge) =   2.*cos2t*bmatrix(4,j)  &
+                                            + 2.*costsint*bmatrix(5,j)  &
+                                            + 2.*sin2t*bmatrix(6,j)
+                  end do
+               end if
+
+            else
+
+               cos2t = cos(angle_2d(i))
+               sin2t = sin(angle_2d(i))
+               costsint = cos2t*sin2t
+               cos2t = cos2t**2
+               sin2t = sin2t**2
+
+!               do j=1,n
+!
+!                  deriv_two(j,1,iEdge) =   2.*xe(iEdge)*xe(iEdge)*bmatrix(4,j)  &
+!                                         + 2.*xe(iEdge)*ye(iEdge)*bmatrix(5,j)  &
+!                                         + 2.*ye(iEdge)*ye(iEdge)*bmatrix(6,j)
+!               end do
+
+               if (iCell == grid % cellsOnEdge % array(1,iEdge)) then
+                  do j=1,n
+                     deriv_two(j,1,iEdge) =   2.*cos2t*bmatrix(4,j)  &
+                                            + 2.*costsint*bmatrix(5,j)  &
+                                            + 2.*sin2t*bmatrix(6,j)
+                  end do
+               else
+                  do j=1,n
+                     deriv_two(j,2,iEdge) =   2.*cos2t*bmatrix(4,j)  &
+                                            + 2.*costsint*bmatrix(5,j)  &
+                                            + 2.*sin2t*bmatrix(6,j)
+                  end do
+               end if
+
+            end if
+         end do
+ 
+      end do ! end of loop over cells
+
+      if (debug) stop
+
+
+!      write(0,*) ' check for deriv2 coefficients, iEdge 4 '
+!
+!      iEdge = 4
+!      j = 1
+!      iCell = grid % cellsOnEdge % array(1,iEdge)
+!      write(0,*) ' j, icell, coef ',j,iCell,deriv_two(j,1,iEdge)
+!      do j=2,7
+!         write(0,*) ' j, icell, coef ',j,grid % CellsOnCell % array(j-1,iCell),deriv_two(j,1,iEdge)
+!      end do
+!
+!      j = 1
+!      iCell = grid % cellsOnEdge % array(2,iEdge)
+!      write(0,*) ' j, icell, coef ',j,iCell,deriv_two(j,2,iEdge)
+!      do j=2,7
+!         write(0,*) ' j, icell, coef ',j,grid % CellsOnCell % array(j-1,iCell),deriv_two(j,2,iEdge)
+!      end do
+!      stop
+
+   end subroutine mpas_initialize_deriv_two!}}}
 
 end module mpas_tracer_advection_helpers
