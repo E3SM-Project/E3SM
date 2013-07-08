@@ -143,6 +143,10 @@
 		            description="Enables a check to determine if the SSH is consistent across relevant variables."
 		            possible_values=".true. or .false."
 		/>
+		<nml_option name="config_dzdk_positive" type="logical" default_value=".false." units="unitless"
+		            description="Determines if the positive Z axis is aligned with the positive K index direction."
+		            possible_values=".true. or .false."
+		/>
 	</nml_record>
 	<nml_record name="decomposition">
 		<nml_option name="config_block_decomp_file_prefix" type="character" default_value="graph.info.part." units="unitless"
