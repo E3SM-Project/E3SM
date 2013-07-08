@@ -49,7 +49,7 @@ module mpas_tracer_advection_mono
 !>  Both horizontal and vertical.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_tracer_advection_mono_tend(tracers, normalThicknessFlux, w, layerThickness, verticalCellSize, dt, grid, tend_layerThickness, tend, maxLevelCell_in, maxLevelEdgeTop_in, highOrderAdvectionMask_in, verticalDivergenceFactor_in)!{{{
+   subroutine mpas_tracer_advection_mono_tend(tracers, normalThicknessFlux, w, layerThickness, verticalCellSize, dt, grid, tend_layerThickness, tend, maxLevelCell_in, maxLevelEdgeTop_in, highOrderAdvectionMask_in, verticalDivergenceFactor_in, edgeSignOnCell_in)!{{{
 
       real (kind=RKIND), dimension(:,:,:), intent(in) :: tracers !< Input: current tracer values
       real (kind=RKIND), dimension(:,:), intent(in) :: normalThicknessFlux !< Input: Thichness weighted velocitiy
@@ -64,9 +64,10 @@ module mpas_tracer_advection_mono
       integer, dimension(:), pointer, optional :: maxLevelEdgeTop_in !< Input - optional: Index to max level at edge with non-land cells on both sides
       integer, dimension(:,:), pointer, optional :: highOrderAdvectionMask_in !< Input - optional: Mask for high order advection
       real (kind=RKIND), dimension(:), pointer, optional :: verticalDivergenceFactor_in !< Input - optional: Denominator for vertical divergence. Given as an inverse which can be multiplied.
+      integer, dimension(:, :), pointer, optional :: edgeSignOnCell_in !< Input - optional: Sign for flux from edge on each cell. Used for bit-reproducibility
 
       integer :: i, iCell, iEdge, k, iTracer, cell1, cell2
-      integer :: nVertLevels, num_tracers, nCells, nEdges, nCellsSolve
+      integer :: nVertLevels, num_tracers, nCells, nEdges, nCellsSolve, maxEdges
       integer, dimension(:), pointer :: nAdvCellsForEdge, maxLevelCell, maxLevelEdgeTop, nEdgesOnCell
       integer, dimension(:,:), pointer :: cellsOnEdge, cellsOnCell, advCellsForEdge, highOrderAdvectionMask, edgeSignOnCell, edgesOnCell
 
@@ -87,6 +88,7 @@ module mpas_tracer_advection_mono
       nCells = grid % nCells
       nCellsSolve = grid % nCellsSolve
       nEdges = grid % nEdges
+      maxEdges = grid % maxEdges
       nVertLevels = grid % nVertLevels
       num_tracers = size(tracers,dim=1)
 
@@ -94,7 +96,6 @@ module mpas_tracer_advection_mono
       dvEdge      => grid % dvEdge % array
       cellsOnEdge => grid % cellsOnEdge % array
       edgesOnCell => grid % edgesOnCell % array
-      edgeSignOnCell => grid % edgeSignOnCell % array
       cellsOnCell => grid % cellsOnCell % array
       areaCell    => grid % areaCell % array
 
@@ -135,6 +136,22 @@ module mpas_tracer_advection_mono
       else
         allocate(verticalDivergenceFactor(nVertLevels))
         verticalDivergenceFactor = 1.0_RKIND
+      end if
+
+      if(present(edgeSignOnCell_in)) then
+        edgeSignOnCell => edgeSignOnCell_in
+      else
+        allocate(edgeSignOnCell(maxEdges, nCells+1))
+        do iCell = 1, nCells
+          do i = 1, nEdgesOnCell(iCell)
+            iEdge = edgesOnCell(i, iCell)
+            if(iCell == cellsOnEdge(1, iEdge)) then
+              edgeSignOnCell(i, iCell) = -1
+            else
+              edgeSignOnCell(i, iCell) =  1
+            end if
+          end do
+        end do
       end if
 
       ! Setup high order horizontal flux field
