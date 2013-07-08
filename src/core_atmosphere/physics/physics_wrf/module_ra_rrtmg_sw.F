@@ -2411,8 +2411,11 @@
     
 ! Recompute original s.s.a. to test for conservative solution
             !Balwinder.Singh@pnnl.gov: Code added to avoid 'divide by zero' error in zwo computation
-            denom = max((1._rb - (1._rb - zw) * (zg / (1._rb - zg))**2),1.0E-30_rb)
-            zwo= zw / denom
+            !denom = max((1._rb - (1._rb - zw) * (zg / (1._rb - zg))**2),1.0E-30_rb)
+            !zwo= zw / denom
+
+            !as develop:
+            zwo= zw / (1._rb - (1._rb - zw) * (zg / (1._rb - zg))**2)
 
             if (zwo >= zwcrit) then
 ! Conservative scattering

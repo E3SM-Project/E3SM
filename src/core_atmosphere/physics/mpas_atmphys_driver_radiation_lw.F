@@ -224,14 +224,15 @@
  end subroutine deallocate_radiation_lw
 
 !==================================================================================================
- subroutine radiation_lw_from_MPAS(xtime_s,mesh,state,diag_physics,sfc_input)
+ subroutine radiation_lw_from_MPAS(xtime_s,mesh,state,diag_physics,atm_input,sfc_input)
 !==================================================================================================
 
 !input arguments:
  type(mesh_type),intent(in) :: mesh
  type(state_type),intent(in):: state
- type(sfc_input_type)   ,intent(in):: sfc_input
  type(diag_physics_type),intent(in):: diag_physics
+ type(atm_input_type)   ,intent(in):: atm_input
+ type(sfc_input_type)   ,intent(in):: sfc_input
 
  real(kind=RKIND),intent(in):: xtime_s
 
@@ -361,13 +362,13 @@
        call mpas_timer_start("CAM lw: ozone and aerosols")
        !ozone mixing ratio:
        do k = 1, num_oznlevels
-          pin_p(k) = mesh % pin % array(k,1)
+          pin_p(k) = atm_input % pin % array(k)
        enddo
        do n = 1, num_months
           do j = jts,jte
           do k = 1, num_oznlevels
           do i = its,ite
-             ozmixm_p(i,k,j,n) = mesh % ozmixm % array(n,k,i)
+             ozmixm_p(i,k,j,n) = atm_input % ozmixm % array(n,k,i)
           enddo
           enddo
           enddo
@@ -475,7 +476,7 @@
  end subroutine radiation_camlw_to_MPAS
 
 !==================================================================================================
- subroutine init_radiation_lw(dminfo,mesh,diag,state_1,state_2)
+ subroutine init_radiation_lw(dminfo,mesh,atm_input,diag,state_1,state_2)
 !==================================================================================================
 
 !input arguments:
@@ -484,6 +485,7 @@
  type(diag_type),intent(in),optional:: diag
 
 !inout arguments:
+ type(atm_input_type),intent(inout),optional:: atm_input
  type(state_type),intent(inout),optional:: state_1,state_2 
 
 !--------------------------------------------------------------------------------------------------
@@ -499,7 +501,7 @@
 
     case("cam_lw")
        write(0,*) '    enter subroutine camradinit:'
-       call camradinit(dminfo,mesh,diag,state_1,state_2)
+       call camradinit(dminfo,mesh,atm_input,diag,state_1,state_2)
        write(0,*) '    end subroutine camradinit'
     
     case default
@@ -510,7 +512,7 @@
  end subroutine init_radiation_lw
 
 !==================================================================================================
- subroutine driver_radiation_lw(xtime_s,mesh,state,diag_physics,sfc_input,tend_physics)
+ subroutine driver_radiation_lw(xtime_s,mesh,state,diag_physics,atm_input,sfc_input,tend_physics)
 !==================================================================================================
 
 !input arguments:
@@ -520,6 +522,7 @@
 !inout arguments:
  type(state_type)       ,intent(inout):: state
  type(diag_physics_type),intent(inout):: diag_physics
+ type(atm_input_type)   ,intent(inout):: atm_input
  type(sfc_input_type)   ,intent(inout):: sfc_input
  type(tend_physics_type),intent(inout):: tend_physics
 
@@ -535,7 +538,7 @@
  101 format(i8,12(1x,e15.8))
 
 !copy MPAS arrays to local arrays:
- call radiation_lw_from_MPAS(xtime_s,mesh,state,diag_physics,sfc_input)
+ call radiation_lw_from_MPAS(xtime_s,mesh,state,diag_physics,atm_input,sfc_input)
 
 !call to longwave radiation scheme:
  radiation_lw_select: select case (trim(radt_lw_scheme))

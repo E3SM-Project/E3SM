@@ -203,10 +203,6 @@
                 <var name="east"                      type="real"     dimensions="R3 nCells"                   streams="r"/>
                 <var name="north"                     type="real"     dimensions="R3 nCells"                   streams="r"/>
 
-                <!-- Arrays needed only in the CAM LW and SW radiation codes: Ozone -->
-                <var name="pin"                       type="real"     dimensions="nOznLevels nCells"/>
-                <var name="ozmixm"                    type="real"     dimensions="nMonths nOznLevels nCells"/>
-
                 <!-- Arrays needed only in the CAM LW and SW radiation codes: Aerosols -->
                 <var name="m_hybi"                    type="real"     dimensions="nAerLevels nCells"/>
         </var_struct>
@@ -413,6 +409,7 @@
                 <nml_option name="config_sst_update"                 type="logical"       default_value="false"/>
                 <nml_option name="config_sstdiurn_update"            type="logical"       default_value="false"/>
                 <nml_option name="config_deepsoiltemp_update"        type="logical"       default_value="false"/>
+                <nml_option name="config_o3climatology"              type="logical"       default_value="false"/>
 
                 <nml_option name="config_n_microp"                   type="integer"       default_value="1"/>
 

@@ -123,16 +123,17 @@
     !call to short wave radiation scheme:
     if(l_radtsw) then
        call allocate_radiation_sw(xtime_s)
-       call driver_radiation_sw(itimestep,block%mesh,block%state%time_levs(1)%state,  &
-                               block%diag_physics,block%sfc_input,block%tend_physics, &
-                               xtime_s)
+       call driver_radiation_sw(itimestep,block%mesh,block%state%time_levs(1)%state, &
+                                block%diag_physics,block%atm_input,block%sfc_input,  &
+                                block%tend_physics,xtime_s)
     endif
 
     !call to long wave radiation scheme:
     if(l_radtlw) then
        call allocate_radiation_lw(xtime_s)
-       call driver_radiation_lw(xtime_s,block%mesh,block%state%time_levs(1)%state, &
-                              block%diag_physics,block%sfc_input,block%tend_physics)
+       call driver_radiation_lw(xtime_s,block%mesh,block%state%time_levs(1)%state,  &
+                                block%diag_physics,block%atm_input,block%sfc_input, &
+                                block%tend_physics)
     endif
 
     !call to accumulate long- and short-wave diagnostics if needed:

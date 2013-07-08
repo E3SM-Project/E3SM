@@ -46,6 +46,9 @@
 !>      -> added diag in the argument list of subroutines camradinit and aerosol_init.
 !>      -> in subroutine aerosol_init, added initialization of variable mxaerl.
 !>      Laura D. Fowler (birch.ucar.edu) / 2013-07-01.
+!>    * moved the arrays pin and ozmixm from the mesh structure to the atm_input structure in
+!>      subroutine oznini.
+!>      Laura D. Fowler (birch.ucar.edu) / 2013-07-08.
 
 !local parameters:
  integer,parameter:: latsiz = 64
@@ -54,7 +57,7 @@
  contains
 
 !==================================================================================================
- subroutine camradinit(dminfo,mesh,diag,state_1,state_2)
+ subroutine camradinit(dminfo,mesh,atm_input,diag,state_1,state_2)
 !==================================================================================================
 
 !input arguments:
@@ -63,6 +66,7 @@
  type(diag_type),intent(in):: diag
 
 !inout arguments:
+ type(atm_input_type),intent(inout):: atm_input
  type(state_type),intent(inout):: state_1,state_2 
 
 !local variables:
@@ -126,7 +130,7 @@
  write(0,*) '    end subroutine esinti'
  
 !initialization of ozone mixing ratios:
- call oznini(mesh)
+ call oznini(mesh,atm_input)
  write(0,*) '    end subroutine oznini'
 
 !initialization of aerosol concentrations:
@@ -709,7 +713,7 @@
  end subroutine aer_optics_initialize
 
 !==================================================================================================
- subroutine oznini(mesh)
+ subroutine oznini(mesh,atm_input)
 !==================================================================================================
 
 !This subroutine assumes a uniform distribution of ozone concentration. It should be replaced
@@ -717,6 +721,9 @@
 
 !input arguments:
  type(mesh_type),intent(in):: mesh
+
+!inout arguments:
+ type(atm_input_type),intent(inout):: atm_input
 
 !local variables:
  integer,parameter:: pin_unit = 27
@@ -728,7 +735,7 @@
  integer:: iCell,nCells,num_months,levsiz
  
  real(kind=RKIND),dimension(:),pointer:: latCell,lonCell
- real(kind=RKIND),dimension(:,:),pointer:: pin
+ real(kind=RKIND),dimension(:),pointer:: pin
  real(kind=RKIND),dimension(:,:,:),pointer:: ozmixm
 
  real(kind=RKIND):: lat,lon,dlat,dlatCell
@@ -741,10 +748,10 @@
  nCells     = mesh % nCells
  num_months = mesh % nMonths
  levsiz     = mesh % nOznLevels
- pin => mesh % pin % array
- ozmixm  => mesh % ozmixm  % array
  latCell => mesh % latCell % array
  lonCell => mesh % lonCell % array
+ pin     => atm_input % pin % array
+ ozmixm  => atm_input % ozmixm % array
 
 !-- read in ozone pressure data:
  open(pin_unit,file='OZONE_PLEV.TBL',action='READ',status='OLD',iostat=istat)
@@ -752,12 +759,9 @@
     call physics_error_fatal('subroutine oznini: ' // &
                              'failure opening OZONE_PLEV.TBL')
  do k = 1,levsiz
-    read(pin_unit,*) pin(k,1)
-    pin(k,1) = pin(k,1)*100.
-    do i = 1, nCells
-       pin(k,i) = pin(k,1)
-    enddo
-!   write(0,*) pin(k,1)
+    read(pin_unit,*) pin(k)
+    pin(k) = pin(k)*100.
+!   write(0,*) pin(k)
  enddo
  close(pin_unit)
 

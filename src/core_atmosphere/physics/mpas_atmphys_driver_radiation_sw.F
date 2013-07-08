@@ -7,6 +7,7 @@
 !
 !==================================================================================================
  module mpas_atmphys_driver_radiation_sw
+ use mpas_configure
  use mpas_grid_types
  use mpas_timer
 
@@ -28,7 +29,7 @@
           init_radiation_sw,       &
           radconst
 
- integer,private:: i,j,k,n
+ integer,private:: i,j,k,kk,n
 
 !>\brief MPAS driver for parameterization of shortwave radiation codes.
 !>\author Laura D. Fowler (send comments to laura@ucar.edu).
@@ -102,19 +103,23 @@
  radiation_sw_select: select case (trim(radt_sw_scheme))
 
     case("rrtmg_sw")
-       if(.not.allocated(alswvisdir_p) ) allocate(alswvisdir_p(ims:ime,jms:jme)         )
-       if(.not.allocated(alswvisdif_p) ) allocate(alswvisdif_p(ims:ime,jms:jme)         )
-       if(.not.allocated(alswnirdir_p) ) allocate(alswnirdir_p(ims:ime,jms:jme)         )
-       if(.not.allocated(alswnirdif_p) ) allocate(alswnirdif_p(ims:ime,jms:jme)         )
-       if(.not.allocated(swvisdir_p)   ) allocate(swvisdir_p(ims:ime,jms:jme)           )
-       if(.not.allocated(swvisdif_p)   ) allocate(swvisdif_p(ims:ime,jms:jme)           )
-       if(.not.allocated(swnirdir_p)   ) allocate(swnirdir_p(ims:ime,jms:jme)           )
-       if(.not.allocated(swnirdif_p)   ) allocate(swnirdif_p(ims:ime,jms:jme)           )
+       if(.not.allocated(alswvisdir_p) ) allocate(alswvisdir_p(ims:ime,jms:jme)            )
+       if(.not.allocated(alswvisdif_p) ) allocate(alswvisdif_p(ims:ime,jms:jme)            )
+       if(.not.allocated(alswnirdir_p) ) allocate(alswnirdir_p(ims:ime,jms:jme)            )
+       if(.not.allocated(alswnirdif_p) ) allocate(alswnirdif_p(ims:ime,jms:jme)            )
+       if(.not.allocated(swvisdir_p)   ) allocate(swvisdir_p(ims:ime,jms:jme)              )
+       if(.not.allocated(swvisdif_p)   ) allocate(swvisdif_p(ims:ime,jms:jme)              )
+       if(.not.allocated(swnirdir_p)   ) allocate(swnirdir_p(ims:ime,jms:jme)              )
+       if(.not.allocated(swnirdif_p)   ) allocate(swnirdif_p(ims:ime,jms:jme)              )
 
-       if(.not.allocated(swdnflx_p)    ) allocate(swdnflx_p(ims:ime,kms:kme+1,jms:jme)  )
-       if(.not.allocated(swdnflxc_p)   ) allocate(swdnflxc_p(ims:ime,kms:kme+1,jms:jme) )
-       if(.not.allocated(swupflx_p)    ) allocate(swupflx_p(ims:ime,kms:kme+1,jms:jme)  )
-       if(.not.allocated(swupflxc_p)   ) allocate(swupflxc_p(ims:ime,kms:kme+1,jms:jme) )
+       if(.not.allocated(swdnflx_p)    ) allocate(swdnflx_p(ims:ime,kms:kme+1,jms:jme)     )
+       if(.not.allocated(swdnflxc_p)   ) allocate(swdnflxc_p(ims:ime,kms:kme+1,jms:jme)    )
+       if(.not.allocated(swupflx_p)    ) allocate(swupflx_p(ims:ime,kms:kme+1,jms:jme)     )
+       if(.not.allocated(swupflxc_p)   ) allocate(swupflxc_p(ims:ime,kms:kme+1,jms:jme)    )
+
+       if(.not.allocated(pin_p)        ) allocate(pin_p(num_oznlevels)                     )
+       if(.not.allocated(o3clim_p)     ) allocate(o3clim_p(ims:ime,1:num_oznlevels,jms:jme))
+       if(.not.allocated(o3vmr_p)      ) allocate(o3vmr_p(ims:ime,kms:kme,jms:jme)         )
 
     case("cam_sw")
        if(.not.allocated(glw_p)        ) allocate(glw_p(ims:ime,jms:jme)                )
@@ -204,6 +209,10 @@
        if(allocated(swupflx_p)    ) deallocate(swupflx_p    )
        if(allocated(swupflxc_p)   ) deallocate(swupflxc_p   )
 
+       if(allocated(pin_p)        ) deallocate(pin_p        )
+       if(allocated(o3clim_p)     ) deallocate(o3clim_p     )
+       if(allocated(o3vmr_p)      ) deallocate(o3vmr_p      )
+
     case("cam_sw")
        if(allocated(pin_p)        ) deallocate(pin_p        )
        if(allocated(m_hybi_p)     ) deallocate(m_hybi_p     )
@@ -242,14 +251,15 @@
  end subroutine deallocate_radiation_sw
 
 !==================================================================================================
- subroutine radiation_sw_from_MPAS(mesh,state,diag_physics,sfc_input,xtime_s)
+ subroutine radiation_sw_from_MPAS(mesh,state,diag_physics,atm_input,sfc_input,xtime_s)
 !==================================================================================================
 
 !input arguments:
  type(mesh_type),intent(in) :: mesh
  type(state_type),intent(in):: state
- type(diag_physics_type),intent(inout):: diag_physics
- type(sfc_input_type)   ,intent(inout):: sfc_input
+ type(diag_physics_type),intent(in):: diag_physics
+ type(atm_input_type)   ,intent(in):: atm_input
+ type(sfc_input_type)   ,intent(in):: sfc_input
 
  real(kind=RKIND),intent(in):: xtime_s
 
@@ -321,6 +331,25 @@
        enddo
        enddo
 
+       !ozone mixing ratio:
+       do k = 1, num_oznLevels
+          kk = num_oznLevels-k+1
+          pin_p(kk) = atm_input % pin % array(k)
+       enddo
+       do j = jts,jte
+       do k = 1, num_oznLevels
+          kk = num_oznLevels-k+1
+          do i = its,ite
+             o3clim_p(i,kk,j) = diag_physics % o3clim % array(k,i)
+          enddo
+       enddo
+       do k = kts,kte
+          do i = its,ite
+             o3vmr_p(i,k,j) = diag_physics % o3vmr % array(k,i)
+          enddo
+       enddo
+       enddo
+
     case("cam_sw")
        do j = jts,jte
        do i = its,ite
@@ -373,13 +402,13 @@
        endif
        !ozone mixing ratio:
        do k = 1, num_oznlevels
-          pin_p(k) = mesh % pin % array(k,1)
+          pin_p(k) = atm_input % pin % array(k)
        enddo
        do n = 1, num_months
           do j = jts,jte
           do k = 1, num_oznlevels
           do i = its,ite
-             ozmixm_p(i,k,j,n) = mesh % ozmixm % array(n,k,i)
+             ozmixm_p(i,k,j,n) = atm_input % ozmixm % array(n,k,i)
           enddo
           enddo
           enddo
@@ -453,6 +482,7 @@
  do k = kts,kte
  do i = its,ite
     tend_physics % rthratensw % array(k,i) = rthratensw_p(i,k,j)
+    diag_physics % o3vmr      % array(k,i) = o3vmr_p(i,k,j)
  enddo
  enddo
 
@@ -461,7 +491,7 @@
  end subroutine radiation_sw_to_MPAS
 
 !==================================================================================================
- subroutine init_radiation_sw(dminfo,mesh,diag,state_1,state_2)
+ subroutine init_radiation_sw(dminfo,mesh,atm_input,diag,state_1,state_2)
 !==================================================================================================
 
 !input arguments:
@@ -470,6 +500,7 @@
  type(diag_type),intent(in),optional :: diag
 
 !inout arguments:
+ type(atm_input_type),intent(inout),optional:: atm_input
  type(state_type),intent(inout),optional:: state_1,state_2 
 
 !--------------------------------------------------------------------------------------------------
@@ -486,7 +517,7 @@
 
     case("cam_sw")
        write(0,*) '    enter subroutine camradinit:'
-       call camradinit(dminfo,mesh,diag,state_1,state_2)
+       call camradinit(dminfo,mesh,atm_input,diag,state_1,state_2)
        write(0,*) '    end subroutine camradinit'
 
     case default
@@ -498,7 +529,7 @@
  end subroutine init_radiation_sw
 
 !==================================================================================================
- subroutine driver_radiation_sw(itimestep,mesh,state,diag_physics,sfc_input, &
+ subroutine driver_radiation_sw(itimestep,mesh,state,diag_physics,atm_input,sfc_input, &
                                 tend_physics,xtime_s)
 !==================================================================================================
 
@@ -510,13 +541,13 @@
 !inout arguments:
  type(state_type)       ,intent(inout):: state
  type(diag_physics_type),intent(inout):: diag_physics
+ type(atm_input_type)   ,intent(inout):: atm_input
  type(sfc_input_type)   ,intent(inout):: sfc_input
  type(tend_physics_type),intent(inout):: tend_physics
 
 !local variables:
+ integer:: o3input
  real(kind=RKIND):: radt,xtime_m
-
- !real(kind=RKIND),pointer:: xtime
 
 !--------------------------------------------------------------------------------------------------
  write(0,100) itimestep
@@ -532,10 +563,10 @@
             '     SOLCON      =', f16.9,/, &
             '     DECLIN      =', f16.9)
 
-  xtime_m = xtime_s/60.
+ xtime_m = xtime_s/60.
 
 !copy MPAS arrays to local arrays:
- call radiation_sw_from_MPAS(mesh,state,diag_physics,sfc_input,xtime_s)
+ call radiation_sw_from_MPAS(mesh,state,diag_physics,atm_input,sfc_input,xtime_s)
 
 !... calculates solar declination:
 !call radconst(declin,solcon,julday,degrad,dpd)
@@ -551,34 +582,44 @@
     case ("rrtmg_sw")
 
        write(0,*) '--- enter subroutine rrtmg_swrad:'
+       o3input = 0
+       if(config_o3climatology) o3input = 2
+       
+       
        call rrtmg_swrad( &
-                p3d        = pres_hyd_p   , p8w        = pres2_hyd_p  , pi3d       = pi_p        ,&
-                t3d        = t_p          , t8w        = t2_p         , rho3d      = rho_p       ,&
-                rthratensw = rthratensw_p , swupt      = swupt_p      , swuptc     = swuptc_p    ,&
-                swdnt      = swdnt_p      , swdntc     = swdntc_p     , swupb      = swupb_p     ,&
-                swupbc     = swupbc_p     , swdnb      = swdnb_p      , swdnbc     = swdnbc_p    ,&
-                swcf       = swcf_p       , gsw        = gsw_p        , xtime      = xtime_m     ,&
-                gmt        = gmt          , xlat       = xlat_p       , xlong      = xlon_p      ,&
-                radt       = radt         , degrad     = degrad       , declin     = declin      ,&
-                coszr      = coszr_p      , julday     = julday       , solcon     = solcon      ,&
-                albedo     = sfc_albedo_p , tsk        = tsk_p        , dz8w       = dz_p        ,&
-                cldfra3d   = cldfrac_p    , r          = R_d          , g          = g           ,&
-                icloud     = icloud       , warm_rain  = warm_rain    , f_ice_phy  = f_ice       ,&
-                f_rain_phy = f_rain       , xland      = xland_p      , xice       = xice_p      ,&
-                snow       = snow_p       , qv3d       = qv_p         , qc3d       = qc_p        ,&
-                qr3d       = qr_p         , qi3d       = qi_p         , qs3d       = qs_p        ,&
-                qg3d       = qg_p         , sf_surface_physics = sf_surface_physics ,             & 
-                !begin optional arguments:
-                f_qv       = f_qv         , f_qc       = f_qc         , f_qr       = f_qr        ,&
-                f_qi       = f_qi         , f_qs       = f_qs         , f_qg       = f_qg        ,&
-                alswvisdir = alswvisdir_p , alswvisdif = alswvisdif_p , alswnirdir = alswnirdir_p,&
-                alswnirdif = alswnirdif_p , swvisdir   = swvisdir_p   , swvisdif   = swvisdif_p  ,&
-                swnirdir   = swnirdir_p   , swnirdif   = swnirdif_p   ,                           &
-                !end optional arguments.
-                ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde ,&
-                ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme ,&
-                its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte  &
+              p3d        = pres_hyd_p   , p8w        = pres2_hyd_p  , pi3d       = pi_p          ,&
+              t3d        = t_p          , t8w        = t2_p         , rho3d      = rho_p         ,&
+              rthratensw = rthratensw_p , swupt      = swupt_p      , swuptc     = swuptc_p      ,&
+              swdnt      = swdnt_p      , swdntc     = swdntc_p     , swupb      = swupb_p       ,&
+              swupbc     = swupbc_p     , swdnb      = swdnb_p      , swdnbc     = swdnbc_p      ,&
+              swcf       = swcf_p       , gsw        = gsw_p        , xtime      = xtime_m       ,&
+              gmt        = gmt          , xlat       = xlat_p       , xlong      = xlon_p        ,&
+              radt       = radt         , degrad     = degrad       , declin     = declin        ,&
+              coszr      = coszr_p      , julday     = julday       , solcon     = solcon        ,&
+              albedo     = sfc_albedo_p , tsk        = tsk_p        , dz8w       = dz_p          ,&
+              cldfra3d   = cldfrac_p    , r          = R_d          , g          = g             ,&
+              icloud     = icloud       , warm_rain  = warm_rain    , f_ice_phy  = f_ice         ,&
+              f_rain_phy = f_rain       , xland      = xland_p      , xice       = xice_p        ,&
+              snow       = snow_p       , qv3d       = qv_p         , qc3d       = qc_p          ,&
+              qr3d       = qr_p         , qi3d       = qi_p         , qs3d       = qs_p          ,&
+              qg3d       = qg_p         , o3input    = o3input      , o33d       = o3vmr_p       ,&
+              sf_surface_physics = sf_surface_physics                                            ,&
+              !begin optional arguments:
+              f_qv       = f_qv         , f_qc       = f_qc         , f_qr       = f_qr          ,&
+              f_qi       = f_qi         , f_qs       = f_qs         , f_qg       = f_qg          ,&
+              alswvisdir = alswvisdir_p , alswvisdif = alswvisdif_p , alswnirdir = alswnirdir_p  ,&
+              alswnirdif = alswnirdif_p , swvisdir   = swvisdir_p   , swvisdif   = swvisdif_p    ,&
+              swnirdir   = swnirdir_p   , swnirdif   = swnirdif_p   , noznlevels = num_oznlevels ,&
+              pin        = pin_p        , o3clim     = o3clim_p     ,                             &
+              !end optional arguments.
+              ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde ,&
+              ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme ,&
+              its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte  &
                        )
+       j=1;i=ite
+       do k = kts,kte
+          write(0,200) i,k,rthratensw_p(i,k,j),o3vmr_p(i,k,j)
+       enddo
        write(0,*) '--- exit subroutine rrtmg_swrad'
 
     case ("cam_sw")
