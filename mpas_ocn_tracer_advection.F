@@ -69,9 +69,9 @@ module ocn_tracer_advection
       if(.not. tracerAdvOn) return
 
       if(monotonicOn) then
-         call mpas_tracer_advection_mono_tend(tracers, normalThicknessFlux, w, layerThickness, verticalCellSize, dt, grid, tend_layerThickness, tend, grid % maxLevelCell % array, grid % maxLevelEdgeTop % array, grid % highOrderAdvectionMask % array)
+         call mpas_tracer_advection_mono_tend(tracers, normalThicknessFlux, w, layerThickness, verticalCellSize, dt, grid, tend_layerThickness, tend, grid % maxLevelCell % array, grid % maxLevelEdgeTop % array, grid % highOrderAdvectionMask % array, edgeSignOnCell_in = grid % edgeSignOnCell % array)
       else
-         call mpas_tracer_advection_std_tend(tracers, normalThicknessFlux, w, layerThickness, verticalCellSize, dt, grid, tend_layerThickness, tend, grid % maxLevelCell % array, grid % maxLevelEdgeTop % array, grid % highOrderAdvectionMask % array)
+         call mpas_tracer_advection_std_tend(tracers, normalThicknessFlux, w, layerThickness, verticalCellSize, dt, grid, tend_layerThickness, tend, grid % maxLevelCell % array, grid % maxLevelEdgeTop % array, grid % highOrderAdvectionMask % array, edgeSignOnCell_in = grid % edgeSignOnCell % array)
       endif
    end subroutine ocn_tracer_advection_tend!}}}
 
