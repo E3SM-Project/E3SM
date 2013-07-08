@@ -979,11 +979,14 @@ module namelist_mod
       endif
     endif
 
-    ! sanity check:
-    if (hypervis_scaling==1) then
+    ! sanity checks:
+    if (hypervis_scaling/=0) then
        if (which_vlaplace/=2) then
           call abortmp('Tensor HV option requires which_vlaplace=2 for now')
        endif
+    endif
+    if (nu_div /= nu .and. which_vlaplace==2) then
+       call abortmp('which_vlaplace==2 does not yet support nu_div /= nu')
     endif
 
 
