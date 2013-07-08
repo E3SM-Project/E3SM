@@ -321,7 +321,6 @@ module mpas_core
       use mpas_rbf_interpolation
       use mpas_vector_reconstruction
       use mpas_tracer_advection_helpers
-      use ocn_advection
    
       implicit none
    
@@ -333,8 +332,8 @@ module mpas_core
       integer :: err1
    
       call ocn_setup_sign_and_index_fields(mesh)
-      call ocn_initialize_advection_rk(mesh, err)
-      call mpas_tracer_advection_coefficients(mesh, err1)
+      call mpas_initialize_deriv_two(mesh, err)
+      call mpas_tracer_advection_coefficients(mesh, err1, mesh % maxLevelCell % array, mesh % highOrderAdvectionMask % array, mesh % boundaryCell % array)
       err = ior(err, err1)
 
       call ocn_time_average_init(block % state % time_levs(1) % state)
