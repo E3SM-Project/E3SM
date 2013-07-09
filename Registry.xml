@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<registry model="mpas" core="ocean" version="1.0">
+<registry model="mpas" core="ocean" version="1.1">
 	<dims>
 		<dim name="nCells" units="unitless"
 		     description="The number of polygons in the primary grid."
@@ -683,7 +683,10 @@
 		     description="vertical velocity defined at center (horizonally) and top (vertically) of cell"
 		/>
 		<var name="displacedDensity" type="real" dimensions="nVertLevels nCells Time" streams="o" units="kg m^{-3}"
-		     description="potential density displaced to the mid-depth of top layer"
+		     description="Density displaced adiabatically to the mid-depth one layer deeper.  That is, layer k has been displaced to the depth of layer k+1."
+		/>
+		<var name="potentialDensity" type="real" dimensions="nVertLevels nCells Time" streams="o" units="kg m^{-3}"
+		     description="potential density: density displaced adiabatically to the mid-depth of top layer"
 		/>
 		<var name="BruntVaisalaFreqTop" type="real" dimensions="nVertLevels nCells Time" streams="o" units="s^{-2}"
 		     description="Brunt Vaisala frequency defined at the center (horizontally) and top (vertically) of cell"
@@ -1015,7 +1018,7 @@
 		     description="vertical viscosity defined at the edge (horizontally) and top (vertically)"
 		/>
 		<var name="vertDiffTopOfCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^{-1}"
-		     description="vertical diffusion defined at the edge (horizontally) and top (vertically)"
+		     description="vertical diffusion defined at the cell center (horizontally) and top (vertically)"
 		/>
         <var name="windStressZonal" type="real" dimensions="nCells Time" streams="o" units="N m^{-2}"
              description="reconstructed surface wind stress in the eastward direction."

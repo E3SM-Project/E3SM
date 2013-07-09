@@ -71,7 +71,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_equation_of_state_density(s, grid, k_displaced, displacement_type, err)!{{{
+   subroutine ocn_equation_of_state_density(s, grid, k_displaced, displacement_type, density, err)!{{{
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !  This module contains routines necessary for computing the density
    !  from model temperature and salinity using an equation of state.
@@ -80,9 +80,9 @@ contains
    !        s - state: tracers
    !        k_displaced 
    !
-   !  If k_displaced==0, state % density is returned with no displacement 
+   !  If k_displaced==0, density is returned with no displacement 
    !
-   !  If k_displaced~=0,the state % displacedDensity is returned, and is for
+   !  If k_displaced~=0, density is returned, and is for
    !  a parcel adiabatically displaced from its original level to level 
    !  k_displaced.  When using the linear EOS, state % displacedDensity is 
    !  still filled, but depth (i.e. pressure) does not modify the output.
@@ -93,12 +93,12 @@ contains
 
       type (state_type), intent(inout) :: s
       type (mesh_type), intent(in) :: grid
+      real (kind=RKIND), dimension(:,:), intent(out) :: density
       integer, intent(out) :: err
       integer :: k_displaced
       character(len=*), intent(in) :: displacement_type
 
       integer, dimension(:), pointer :: maxLevelCell
-      real (kind=RKIND), dimension(:,:), pointer :: density
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers
       integer :: nCells, iCell, k, indexT, indexS
       type (dm_info) :: dminfo
@@ -110,13 +110,6 @@ contains
       tracers => s % tracers % array
       indexT = s % index_temperature
       indexS = s % index_salinity
-
-      !  Choose to fill the array density or displacedDensity
-      if (k_displaced == 0) then
-         density => s % density % array
-      else
-         density => s % displacedDensity % array
-      endif
 
       if (linearEos) then
 
