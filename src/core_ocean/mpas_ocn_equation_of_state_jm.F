@@ -102,9 +102,8 @@ contains
 
       real (kind=RKIND), dimension(:), pointer :: &
         refBottomDepth, pRefEOS
-      real (kind=RKIND), dimension(:,:), intent(inout) :: &
-        density
       real (kind=RKIND), dimension(:,:,:), intent(in) :: tracers
+      real (kind=RKIND), dimension(:,:), intent(out) :: density
 
       integer, dimension(:), pointer :: maxLevelCell
 
