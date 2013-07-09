@@ -892,9 +892,6 @@
 		<var name="adv_coefs" type="real" dimensions="nAdvectionCells nEdges" units="m"
 		     description="Weighting coefficients used for reconstruction of cell center quantities at edges. Used in advection routines."
 		/>
-		<var name="adv_coefs_2nd" type="real" dimensions="nAdvectionCells nEdges" units="m"
-		     description="Weighting coefficients used for reconstruction of cell center quantities at edges. Used in advection routines."
-		/>
 		<var name="adv_coefs_3rd" type="real" dimensions="nAdvectionCells nEdges" units="m"
 			description="Wegihting coefficients used for reconstruction of cell center quantities at edges. Used in advection routines."
 		/>
@@ -906,9 +903,6 @@
 		/>
 		<var name="highOrderAdvectionMask" type="integer" dimensions="nVertLevels nEdges" units="unitless"
 		     description="Mask for high order advection. Values are 1 if high order is used, and 0 if not."
-		/>
-		<var name="lowOrderAdvectionMask" type="integer" dimensions="nVertLevels nEdges" units="unitless"
-		     description="Mask for low order advection. Values are 1 if low order is used, and 0 if not."
 		/>
 		<var name="defc_a" type="real" dimensions="maxEdges nCells" units="m^{-1}"
 		     description="Variable used with advection setup to compute advection coefficients. Deformation weight coefficients."
