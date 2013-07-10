@@ -836,7 +836,7 @@ module namelist_mod
     call MPI_bcast(u_perturb     ,1,MPIreal_t   ,par%root,par%comm,ierr) 
     call MPI_bcast(rotate_grid   ,1,MPIreal_t   ,par%root,par%comm,ierr) 
     call MPI_bcast(integration,MAX_STRING_LEN,MPIChar_t ,par%root,par%comm,ierr)
-    call MPI_bcast(mesh_file,MAX_STRING_LEN,MPIChar_t ,par%root,par%comm,ierr)
+    call MPI_bcast(mesh_file,MAX_FILE_LEN,MPIChar_t ,par%root,par%comm,ierr)
     call MPI_bcast(tracer_advection_formulation,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(tstep_type,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(npdg,1,MPIinteger_t ,par%root,par%comm,ierr)
@@ -985,9 +985,6 @@ module namelist_mod
           call abortmp('Tensor HV option requires which_vlaplace=2 for now')
        endif
     endif
-    if (nu_div /= nu .and. which_vlaplace==2) then
-       call abortmp('which_vlaplace==2 does not yet support nu_div /= nu')
-    endif
 
 
     ftype = se_ftype    
@@ -1068,6 +1065,10 @@ module namelist_mod
     if(nu_s<0) nu_s=nu
     if(nu_q<0) nu_q=nu
     if(nu_div<0) nu_div=nu
+    if (nu_div /= nu .and. which_vlaplace==2) then
+       call abortmp('which_vlaplace==2 does not yet support nu_div /= nu')
+    endif
+
 
     if (multilevel <= 0) then  
       nmpi_per_node = 1

@@ -31,13 +31,10 @@ module surfaces_mod
   private
   save
 
-  !If this cade will be used with refined meshes, need to set to 14 (note: ok to use
-  !14 for regular meshes - just wastes memory) - asking christoph about if this code
-  !is used with refined meshes
-  !TO DO: change code to dynamically allocate the right amount of memory
-  
-  !integer, parameter, public ::nv = 14 !2*max_elements_attached_to_node (refined mesh case)
-  integer, parameter, public ::nv = 6 !2*max_elements_attached_to_node (regular case)
+  !when using this code for refined meshes (to generate template files), 
+  !need to set to 14 (note: ok to use 14 for regular meshes - just wastes memory) 
+  integer, parameter, public ::nv = 14 !2*max_elements_attached_to_node (refined mesh case)
+  !integer, parameter, public ::nv = 6 !2*max_elements_attached_to_node (regular case)
 
   type, public :: ctrlvol_t
      real (kind=real_kind)    :: vol(np,np)           ! area of the unit sphere covered (local)
