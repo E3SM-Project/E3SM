@@ -3846,6 +3846,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   real (kind=real_kind), dimension(nets:nete) :: pmin,pmax
   real (kind=real_kind) :: mx,mn
   integer :: nt,ie,ic,i,j,order,order_max, iuse
+  logical :: use_var_coef
 
 
   ! compute local element neighbor min/max
@@ -3867,21 +3868,29 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      call edgeVunpackMax(edge3p1, pstens(:,:,ie), 1, 0, elem(ie)%desc)
      pmax(ie)=maxval(pstens(:,:,ie))
   enddo
+
+  ! order = 1   laplacian
+  ! order = 2   grad^4 (need to add a negative sign)
+  ! order = 3   grad^6
+  ! order = 4   grad^8 (need to add a negative sign)  
+  order_max = 1
+
+  
+  use_var_coef=.true.
+  if (hypervis_scaling/=0) then
+     ! for tensorHV option, we turn off the tensor except for *last* laplace operator
+     use_var_coef=.false.
+     order_max = 2    ! tensor only initialized for hyperviscosity
+  endif
   
 
   do ic=1,numcycle
-
      pstens=phis
 
-     ! order = 1   laplacian
-     ! order = 2   grad^4 (need to add a negative sign)
-     ! order = 3   grad^6
-     ! order = 4   grad^8 (need to add a negative sign)  
-     order_max = 1
-
      do order=1,order_max-1
+
         do ie=nets,nete
-           pstens(:,:,ie)=laplace_sphere_wk(pstens(:,:,ie),deriv,elem(ie),var_coef=.true.)
+           pstens(:,:,ie)=laplace_sphere_wk(pstens(:,:,ie),deriv,elem(ie),var_coef=use_var_coef)
            call edgeVpack(edge3p1,pstens(:,:,ie),1,0,elem(ie)%desc)
         enddo
         call bndry_exchangeV(hybrid,edge3p1)

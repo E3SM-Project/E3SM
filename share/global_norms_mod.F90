@@ -296,7 +296,7 @@ contains
 
     use reduction_mod, only : ParallelMin,ParallelMax
     use physical_constants, only : rrearth, rearth,dd_pi
-    use control_mod, only : nu, nu_div, hypervis_order, nu_top, hypervis_power, &
+    use control_mod, only : nu, nu_q, nu_div, hypervis_order, nu_top, hypervis_power, &
                             fine_ne, rk_stage_user, max_hypervis_courant, hypervis_scaling
     use parallel_mod, only : abortmp, global_shared_buf, global_shared_sum
     use edge_mod, only : EdgeBuffer_t, initedgebuffer, FreeEdgeBuffer, edgeVpack, edgeVunpack
@@ -318,7 +318,7 @@ contains
     real (kind=real_kind) :: max_eig_hypervis
     real (kind=real_kind) :: x, y, noreast, nw, se, sw
     real (kind=real_kind), dimension(np,np,nets:nete) :: zeta
-    real (kind=real_kind) :: lambda_max, lambda_vis, min_gw
+    real (kind=real_kind) :: lambda_max, lambda_vis, min_gw, lambda
     integer :: ie,corner, i, j, rowind, colind
     type (quadrature_t)    :: gp
 
@@ -535,9 +535,17 @@ contains
                 end do
             end do
         end do
+    else  if (hypervis_scaling/=0) then
+       ! tensorHV.  New eigenvalues are the eigenvalues of the tensor V
+       ! formulas here must match what is in cube_mod.F90
+       ! for tensorHV, we scale out the rearth dependency
+       lambda = max_max_eig**2
+       max_eig_hypervis = (lambda_vis**2) * (max_max_eig**4) * &
+            (lambda**(-hypervis_scaling/2) )
     else
-        max_eig_hypervis = (lambda_vis)**2 * (rrearth*max_max_eig)**4
-    end if
+       ! constant coefficient formula:
+       max_eig_hypervis = (lambda_vis**2) * (rrearth*max_max_eig)**4
+    endif
 
 
    if (hypervis_scaling /= 0) then
@@ -616,7 +624,7 @@ contains
           if (hypervis_order==2) then
              ! counrant number = dtnu*max_eig_hypervis  < S
              !  dt < S  1/nu*max_eig
-             write(iulog,'(a,f10.2,a)') "Stability: nu_q   hyperviscosity dt < S *", 1/(nu*max_eig_hypervis),'s'
+             write(iulog,'(a,f10.2,a)') "Stability: nu_q   hyperviscosity dt < S *", 1/(nu_q*max_eig_hypervis),'s'
              write(iulog,'(a,f10.2,a)') "Stability: nu_vor hyperviscosity dt < S *", 1/(nu*max_eig_hypervis),'s'
              write(iulog,'(a,f10.2,a)') "Stability: nu_div hyperviscosity dt < S *", 1/(nu_div*max_eig_hypervis),'s'
           endif
