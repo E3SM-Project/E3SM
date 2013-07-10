@@ -3824,7 +3824,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   
   subroutine smooth_phis(phis,elem,hybrid,deriv,nets,nete,minf,numcycle)
   use dimensions_mod, only : np, np, nlev
-  use control_mod, only : smooth_phis_nudt
+  use control_mod, only : smooth_phis_nudt, hypervis_scaling
   use hybrid_mod, only : hybrid_t
   use edge_mod, only : EdgeBuffer_t, edgevpack, edgevunpack, edgevunpackmax, edgevunpackmin
   use bndry_mod, only : bndry_exchangev
