@@ -537,6 +537,7 @@ module namelist_mod
              ! namelist did not set a valid tstep_type. pick one:
              tstep_type=11   ! backward euler
              !tstep_type=12  ! Crank Nicolson
+             !tstep_type=13  ! BDF2 with BE bootstrap
           endif
        endif
 

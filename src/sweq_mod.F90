@@ -613,8 +613,6 @@ contains
     end if
 
     if (integration == "full_imp") then
-    tstep_type=22 ! CN
-    !tl%t_stepper=0 ! BE
       if (hybrid%masterthread) print *,'initializing Trilinos solver info'
 
 #ifdef TRILINOS
@@ -802,7 +800,11 @@ contains
        ! update time level pointers
        ! =================================
         if (integration == "full_imp") then
-           call TimeLevel_update(tl,"forward") ! second order Crank Nicolson
+           if (tstep_type == 13) then
+              call TimeLevel_update(tl,"leapfrog") ! for BDF2
+           else     
+              call TimeLevel_update(tl,"forward") ! second order Crank Nicolson
+           end if
         else
            if (tl%nstep==0) then
               call TimeLevel_update(tl,"forward")

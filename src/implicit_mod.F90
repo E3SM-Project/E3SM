@@ -69,7 +69,6 @@ contains
     integer    :: lenx, lx
     integer    :: comm
     integer    :: state_size
-    integer    :: t_stepper
 
 ! state_object is a derived data type passed from doloca thru cpp to calc_f
 ! in the form of a pointer
@@ -107,10 +106,6 @@ contains
     n0    = tl%n0
     np1   = tl%np1
     nstep = tl%nstep
-
-
-   ! write(6,*)'t_stepper=',t_stepper,'\n'
-
 
     comm = par%comm
     call t_startf('implicit header')
@@ -332,14 +327,15 @@ contains
           um(i,j,2)      = fptr%base(ie)%state%v(i,j,2,k,nm1)   !  
 
 
-
-          E_n(i,j) = 0.5D0*(ulatlon(i,j,1)**2 + ulatlon(i,j,2)**2)  + &
-                         fptr%base(ie)%state%p(i,j,k,n0) + ps(i,j)
           E(i,j)   = 0.5D0*(up(i,j,1)**2 + up(i,j,2)**2)  + &
                          fptr%base(ie)%state%p(i,j,k,np1) + ps(i,j)
+          if (tstep_type==12) then  !compute extra terms needed for CN
+             E_n(i,j) = 0.5D0*(ulatlon(i,j,1)**2 + ulatlon(i,j,2)**2)  + &
+                         fptr%base(ie)%state%p(i,j,k,n0) + ps(i,j)
+             pv_n(i,j,1) = ulatlon(i,j,1)*( fptr%pmean + fptr%base(ie)%state%p(i,j,k,n0) )
+             pv_n(i,j,2) = ulatlon(i,j,2)*( fptr%pmean + fptr%base(ie)%state%p(i,j,k,n0) )
+          endif
 
-          pv_n(i,j,1) = ulatlon(i,j,1)*( fptr%pmean + fptr%base(ie)%state%p(i,j,k,n0) )
-          pv_n(i,j,2) = ulatlon(i,j,2)*( fptr%pmean + fptr%base(ie)%state%p(i,j,k,n0) )
           pv(i,j,1) = up(i,j,1)*( fptr%pmean + fptr%base(ie)%state%p(i,j,k,np1) )
           pv(i,j,2) = up(i,j,2)*( fptr%pmean + fptr%base(ie)%state%p(i,j,k,np1) )
 
@@ -350,10 +346,11 @@ contains
 !stop
 
 ! residual time level n
-     grade_n = gradient_sphere(E_n,fptr%deriv,fptr%base(ie)%Dinv)  ! scalar -> latlon vector
-     zeta_n = vorticity_sphere(ulatlon,fptr%deriv,fptr%base(ie)) ! latlon vector -> scalar 
-     div_n = divergence_sphere(pv_n,fptr%deriv,fptr%base(ie)) ! latlon vector -> scalar 
-
+     if (tstep_type==12) then  !compute extra terms needed for CN
+        grade_n = gradient_sphere(E_n,fptr%deriv,fptr%base(ie)%Dinv)  ! scalar -> latlon vector
+        zeta_n = vorticity_sphere(ulatlon,fptr%deriv,fptr%base(ie)) ! latlon vector -> scalar 
+        div_n = divergence_sphere(pv_n,fptr%deriv,fptr%base(ie)) ! latlon vector -> scalar 
+     endif 
      grade = gradient_sphere(E,fptr%deriv,fptr%base(ie)%Dinv)  ! scalar -> latlon vector
      zeta = vorticity_sphere(up,fptr%deriv,fptr%base(ie)) ! latlon vector -> scalar 
      div = divergence_sphere(pv,fptr%deriv,fptr%base(ie)) ! latlon vector -> scalar 
@@ -363,21 +360,23 @@ contains
           do j=1,np
              do i=1,np
 
-            vtens_n(i,j,1,k,ie)=spheremp(i,j)* &
-          (ulatlon(i,j,2)*(fcor(i,j) + zeta_n(i,j)) - grade_n(i,j,1))
-            vtens_n(i,j,2,k,ie)=spheremp(i,j)* &
-          (-ulatlon(i,j,1)*(fcor(i,j) + zeta_n(i,j)) - grade_n(i,j,2))
+           if (tstep_type==12) then  !compute extra terms needed for CN
+               vtens_n(i,j,1,k,ie)=spheremp(i,j)* &
+                  (ulatlon(i,j,2)*(fcor(i,j) + zeta_n(i,j)) - grade_n(i,j,1))
+               vtens_n(i,j,2,k,ie)=spheremp(i,j)* &
+                  (-ulatlon(i,j,1)*(fcor(i,j) + zeta_n(i,j)) - grade_n(i,j,2))
+               ptens_n(i,j,k,ie) =  -spheremp(i,j)*div_n(i,j)
+           endif
 
             vtens(i,j,1,k,ie)=spheremp(i,j)* &
-          (up(i,j,2)*(fcor(i,j) + zeta(i,j)) - grade(i,j,1))
+               (up(i,j,2)*(fcor(i,j) + zeta(i,j)) - grade(i,j,1))
             vtens(i,j,2,k,ie)=spheremp(i,j)* &
-          (-up(i,j,1)*(fcor(i,j) + zeta(i,j)) - grade(i,j,2))
+               (-up(i,j,1)*(fcor(i,j) + zeta(i,j)) - grade(i,j,2))
 
-            ptens_n(i,j,k,ie) =  -spheremp(i,j)*div_n(i,j)
             ptens(i,j,k,ie) =  -spheremp(i,j)*div(i,j)
 
 ! calculate nonlinear residual 
-    if (tstep_type==22) then !Crank Nicolson 2nd order
+    if (tstep_type==12) then !Crank Nicolson 2nd order
 
        ptens(i,j,k,ie) = spheremp(i,j)*(fptr%base(ie)%state%p(i,j,k,np1)- &
           fptr%base(ie)%state%p(i,j,k,n0))*dti - 0.5*ptens(i,j,k,ie) &
@@ -391,30 +390,30 @@ contains
          (up(i,j,2)-ulatlon(i,j,2))*dti - 0.5*vtens(i,j,2,k,ie) &
           - 0.5*vtens_n(i,j,2,k,ie)
 
-    else if (tstep_type==23) then !BDF2 2nd order
+    else if (tstep_type==13) then !BDF2 2nd order
 
-!      if (nstep==0) then ! BE bootstrap
-!       ptens(i,j,k,ie)   = spheremp(i,j)*(fptr%base(ie)%state%p(i,j,k,np1)- &
-!          fptr%base(ie)%state%p(i,j,k,n0))*dti - ptens(i,j,k,ie)
-!
-!       vtens(i,j,1,k,ie) = spheremp(i,j)* &
-!         (up(i,j,1)-ulatlon(i,j,1))*dti - vtens(i,j,1,k,ie)
-!
-!       vtens(i,j,2,k,ie) = spheremp(i,j)* &
-!         (up(i,j,2)-ulatlon(i,j,2))*dti - vtens(i,j,2,k,ie)
-
-      if (nstep==0) then ! CN bootstrap
-       ptens(i,j,k,ie) = spheremp(i,j)*(fptr%base(ie)%state%p(i,j,k,np1)- &
-          fptr%base(ie)%state%p(i,j,k,n0))*dti - 0.5*ptens(i,j,k,ie) &
-          - 0.5*ptens_n(i,j,k,ie)
+      if (nstep==0) then ! BE bootstrap
+       ptens(i,j,k,ie)   = spheremp(i,j)*(fptr%base(ie)%state%p(i,j,k,np1)- &
+          fptr%base(ie)%state%p(i,j,k,n0))*dti - ptens(i,j,k,ie)
 
        vtens(i,j,1,k,ie) = spheremp(i,j)* &
-         (up(i,j,1)-ulatlon(i,j,1))*dti - 0.5*vtens(i,j,1,k,ie) &
-          - 0.5*vtens_n(i,j,1,k,ie)
+         (up(i,j,1)-ulatlon(i,j,1))*dti - vtens(i,j,1,k,ie)
 
        vtens(i,j,2,k,ie) = spheremp(i,j)* &
-         (up(i,j,2)-ulatlon(i,j,2))*dti - 0.5*vtens(i,j,2,k,ie) &
-          - 0.5*vtens_n(i,j,2,k,ie)
+         (up(i,j,2)-ulatlon(i,j,2))*dti - vtens(i,j,2,k,ie)
+
+!      if (nstep==0) then ! CN bootstrap
+!       ptens(i,j,k,ie) = spheremp(i,j)*(fptr%base(ie)%state%p(i,j,k,np1)- &
+!          fptr%base(ie)%state%p(i,j,k,n0))*dti - 0.5*ptens(i,j,k,ie) &
+!          - 0.5*ptens_n(i,j,k,ie)
+!
+!       vtens(i,j,1,k,ie) = spheremp(i,j)* &
+!         (up(i,j,1)-ulatlon(i,j,1))*dti - 0.5*vtens(i,j,1,k,ie) &
+!          - 0.5*vtens_n(i,j,1,k,ie)
+!
+!       vtens(i,j,2,k,ie) = spheremp(i,j)* &
+!         (up(i,j,2)-ulatlon(i,j,2))*dti - 0.5*vtens(i,j,2,k,ie) &
+!          - 0.5*vtens_n(i,j,2,k,ie)
 
       else 
 
@@ -871,7 +870,7 @@ contains
 
 
 ! calculate nonlinear residual 
-    if (tstep_type==22) then !Crank Nicolson 2nd order
+    if (tstep_type==12) then !Crank Nicolson 2nd order
 
       vtens(i,j,1,k,ie) = spheremp(i,j)* &
         (up(i,j,1)-ulatlon(i,j,1))*dti - 0.5*vtens(i,j,1,k,ie) &
@@ -885,7 +884,7 @@ contains
           fptr%base(ie)%state%p(i,j,k,n0))*dti - 0.5*ptens(i,j,k,ie) &
           - 0.5*ptens_n(i,j,k,ie)
 
-    else if (tstep_type==23) then !BDF2 2nd order
+    else if (tstep_type==13) then !BDF2 2nd order
 
       if (nstep==0) then ! CN bootstrap
 
@@ -898,7 +897,7 @@ contains
           - 0.5*vtens_n(i,j,2,k,ie)
 
        ptens(i,j,k,ie) = spheremp(i,j)*(fptr%base(ie)%state%p(i,j,k,np1)- &
-          fptr%base(ie)%state%p(i,j,k,n0))*dti - 0.5*ptens(i,j,k,ie) &
+         fptr%base(ie)%state%p(i,j,k,n0))*dti - 0.5*ptens(i,j,k,ie) &
           - 0.5*ptens_n(i,j,k,ie)
 
       else 
