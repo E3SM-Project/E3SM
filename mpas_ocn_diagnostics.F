@@ -80,8 +80,6 @@ contains
 
    subroutine ocn_diagnostic_solve(dt, state, grid, diagnostics, scratch)!{{{
 
-      implicit none
-
       real (kind=RKIND), intent(in) :: dt !< Input: Time step
       type (state_type), intent(inout) :: state !< Input/Output: State information
       type (mesh_type), intent(in) :: grid !< Input: Grid information
@@ -542,7 +540,7 @@ contains
 !
 !> \brief   Computes vertical transport
 !> \author  Mark Petersen
-!> \date    23 September 2011
+!> \date    December 2011
 !> \details 
 !>  This routine computes the vertical transport through the top of each 
 !>  cell.
@@ -585,29 +583,20 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, iCell, iVertex, k, cell1, cell2, vertex1, vertex2, eoe, i, j, cov
-      real (kind=RKIND) :: flux, layerThicknessVertex, workpv, density0Inv, thicknessSum, invAreaCell
+      integer :: iEdge, iCell, k, i, nCells, nEdges, nVertLevels
+      integer, dimension(:), pointer :: nEdgesOnCell, nEdgesOnEdge, &
+        maxLevelCell, maxLevelEdgeBot
+      integer, dimension(:,:), pointer :: edgesOnCell, edgeSignOnCell
 
-      integer :: nCells, nEdges, nVertices, nVertLevels, vertexDegree
-
-
+      real (kind=RKIND) :: flux, thicknessSum, invAreaCell, div_hu_btr
       real (kind=RKIND), dimension(:), pointer :: &
         dvEdge, areaCell, vertCoordMovementWeights
       real (kind=RKIND), dimension(:), allocatable:: div_hu, h_tend_col
-      real (kind=RKIND) :: div_hu_btr
-
-      integer, dimension(:,:), pointer :: cellsOnEdge, cellsOnVertex, &
-        verticesOnEdge, edgesOnCell, edgesOnEdge, edgesOnVertex, &
-        boundaryEdge, boundaryCell, edgeSignOnCell
-      integer, dimension(:), pointer :: nEdgesOnCell, nEdgesOnEdge, &
-        maxLevelCell, maxLevelEdgeTop, maxLevelEdgeBot, &
-        maxLevelVertexBot,  maxLevelVertexTop
 
       err = 0
 
       nEdgesOnCell      => grid % nEdgesOnCell % array
       areaCell          => grid % areaCell % array
-      cellsOnEdge       => grid % cellsOnEdge % array
       edgesOnCell       => grid % edgesOnCell % array
       edgeSignOnCell    => grid % edgeSignOnCell % array
       maxLevelCell      => grid % maxLevelCell % array
@@ -683,7 +672,6 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_fuperp(state, grid)!{{{
-      implicit none
 
       type (state_type), intent(inout) :: state !< Input/Output: State information
       type (mesh_type), intent(in) :: grid !< Input: Grid information
@@ -745,7 +733,6 @@ contains
 !
 !-----------------------------------------------------------------------
    subroutine ocn_filter_btr_mode_vel(state, grid)!{{{
-      implicit none
 
       type (state_type), intent(inout) :: state
       type (mesh_type), intent(in) :: grid
@@ -797,7 +784,6 @@ contains
 !
 !-----------------------------------------------------------------------
    subroutine ocn_filter_btr_mode_tend_vel(tend, state, grid)!{{{
-      implicit none
 
       type (tend_type), intent(inout) :: tend
       type (state_type), intent(in) :: state

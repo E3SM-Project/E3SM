@@ -157,6 +157,16 @@ module ocn_time_integration_split
             end do
          end do
 
+         if (config_use_frequency_filtered_thickness) then
+
+              block % state % time_levs(2) % state % highFreqThickness % array(:,:) &
+            = block % state % time_levs(1) % state % highFreqThickness % array(:,:)
+
+              block % state % time_levs(2) % state % lowFreqDivergence % array(:,:) &
+            = block % state % time_levs(1) % state % lowFreqDivergence % array(:,:)
+
+         endif
+
          block => block % next
       end do
 
@@ -779,6 +789,10 @@ module ocn_time_integration_split
          block => domain % blocklist
          do while (associated(block))
 
+            if (config_use_frequency_filtered_thickness) then
+               call ocn_tend_frequency_filtered_thickness(block % tend, block % state % time_levs(1) % state, block % mesh)
+            endif
+
             ! compute vertTransportVelocityTop.  Use uTransport for advection of layerThickness and tracers.
             ! Use time level 1 values of layerThickness and layerThicknessEdge because layerThickness has not yet been computed for time level 2.
             call ocn_vert_transport_velocity_top(block % mesh, block % state % time_levs(1) % state % layerThickness % array, &
@@ -790,10 +804,18 @@ module ocn_time_integration_split
             block => block % next
          end do
 
-         ! update halo for thickness and tracer tendencies
+         ! update halo for thickness tendencies
          call mpas_timer_start("se halo thickness", .false., timer_halo_thickness)
          call mpas_dmpar_exch_halo_field(domain % blocklist % tend % layerThickness)
          call mpas_timer_stop("se halo thickness", timer_halo_thickness)
+
+         ! update halo for filtered frequency thickness tendencies
+         if (config_use_frequency_filtered_thickness) then
+            ! call mpas_timer_start("se halo freq_filter_thick", .false., timer_halo_freq_filter_thick) ! add timer later mrp - how do I do it?
+            call mpas_dmpar_exch_halo_field(domain % blocklist % tend % highFreqThickness)
+            call mpas_dmpar_exch_halo_field(domain % blocklist % tend % lowFreqDivergence)
+            ! call mpas_timer_stop("se halo freq_filter_thick", timer_freq_filter_thick) ! add timer later mrp - how do I do it?
+         endif
 
          block => domain % blocklist
          do while (associated(block))
@@ -802,7 +824,7 @@ module ocn_time_integration_split
             block => block % next
          end do
 
-         ! update halo for thickness and tracer tendencies
+         ! update halo for tracer tendencies
          call mpas_timer_start("se halo tracers", .false., timer_halo_tracers)
          call mpas_dmpar_exch_halo_field(domain % blocklist % tend % tracers)
          call mpas_timer_stop("se halo tracers", timer_halo_tracers)
@@ -855,6 +877,30 @@ module ocn_time_integration_split
                   end do
                end do ! iCell
 
+               if (config_use_frequency_filtered_thickness) then
+                  do iCell=1,block % mesh % nCells
+                     do k=1,block % mesh % maxLevelCell % array(iCell)
+
+                        ! this is h^{hf}_{n+1}
+                        temp = block % state % time_levs(1) % state % highFreqThickness % array(k,iCell) &
+                         + dt* block % tend % highFreqThickness % array(k,iCell) 
+
+                        ! this is h^{hf}_{n+1/2}
+                        block % state % time_levs(2) % state % highFreqThickness % array(k,iCell) &
+                           = 0.5*(block % state % time_levs(1) % state % highFreqThickness % array(k,iCell) + temp)
+
+                        ! this is D^{lf}_{n+1}
+                        temp = block % state % time_levs(1) % state % lowFreqDivergence % array(k,iCell) &
+                         + dt* block % tend % lowFreqDivergence % array(k,iCell) 
+
+                        ! this is D^{lf}_{n+1/2}
+                        block % state % time_levs(2) % state % lowFreqDivergence % array(k,iCell) &
+                           = 0.5*(block % state % time_levs(1) % state % lowFreqDivergence % array(k,iCell) + temp)
+
+                     end do
+                  end do
+               end if
+
                do iEdge=1,block % mesh % nEdges
 
                   do k=1,block % mesh % nVertLevels
@@ -901,6 +947,24 @@ module ocn_time_integration_split
                      enddo
                   end do
                end do
+
+               if (config_use_frequency_filtered_thickness) then
+                  do iCell=1,block % mesh % nCells
+                     do k=1,block % mesh % maxLevelCell % array(iCell)
+
+                        ! this is h^{hf}_{n+1}
+                           block % state % time_levs(2) % state % highFreqThickness % array(k,iCell) &
+                         = block % state % time_levs(1) % state % highFreqThickness % array(k,iCell) &
+                         + dt* block % tend % highFreqThickness % array(k,iCell) 
+
+                        ! this is D^{lf}_{n+1}
+                           block % state % time_levs(2) % state % lowFreqDivergence % array(k,iCell) &
+                         = block % state % time_levs(1) % state % lowFreqDivergence % array(k,iCell) &
+                         + dt* block % tend % lowFreqDivergence % array(k,iCell) 
+
+                     end do
+                  end do
+               end if
 
                ! Recompute final u to go on to next step.
                ! u_{n+1} = normalBarotropicVelocity_{n+1} + normalBaroclinicVelocity_{n+1} 

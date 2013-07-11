@@ -38,6 +38,7 @@ module ocn_tendency
    use ocn_vmix
 
    use ocn_tracer_hmix
+   use ocn_high_freq_thickness_hmix_del2
    use ocn_restoring
 
    implicit none
@@ -63,6 +64,7 @@ module ocn_tendency
    public :: ocn_tend_thick, &
              ocn_tend_vel, &
              ocn_tend_tracer, &
+             ocn_tend_frequency_filtered_thickness, &
              ocn_tendency_init
 
    !--------------------------------------------------------------------
@@ -330,6 +332,107 @@ contains
       deallocate(normalThicknessFlux)
 
    end subroutine ocn_tend_tracer!}}}
+
+!***********************************************************************
+!
+!  routine ocn_tend_frequency_filtered_thickness
+!
+!> \brief   Compute tendencies needed for frequency filtered thickness
+!> \author  Mark Petersen
+!> \date    July 2013
+!> \details 
+!>  This routine compute high frequency thickness tendency and the 
+!>  low freqency divergence.  It is only called when
+!>  frequency_filtered_thickness is on (z-tilde)
+!
+!-----------------------------------------------------------------------
+
+   subroutine ocn_tend_frequency_filtered_thickness(tend, s, grid)!{{{
+
+      type (tend_type), intent(inout) :: tend
+      type (state_type), intent(in) :: s
+      type (mesh_type), intent(in) :: grid
+
+      integer :: err, nCells, nVertLevels, iCell, i, k, iEdge
+      integer, dimension(:), pointer :: maxLevelCell, maxLevelEdgeBot, nEdgesOnCell
+      integer, dimension(:,:), pointer :: edgesOnCell, edgeSignOnCell
+
+      real (kind=RKIND) :: flux, invAreaCell, div_hu_btr
+      real (kind=RKIND), dimension(:), pointer :: dvEdge, areaCell
+      real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, layerThicknessEdge, &
+         lowFreqDivergence, highFreqThickness, &
+         tend_lowFreqDivergence, tend_highFreqThickness
+      real (kind=RKIND), dimension(:), allocatable:: div_hu
+
+      call mpas_timer_start("ocn_tend_frequency_filtered_thickness")
+      err = 0
+
+      nCells      = grid % nCells
+      nVertLevels = grid % nVertLevels
+
+      nEdgesOnCell      => grid % nEdgesOnCell % array
+      areaCell          => grid % areaCell % array
+      edgesOnCell       => grid % edgesOnCell % array
+      edgeSignOnCell    => grid % edgeSignOnCell % array
+      maxLevelCell      => grid % maxLevelCell % array
+      maxLevelEdgeBot   => grid % maxLevelEdgeBot % array
+      dvEdge            => grid % dvEdge % array
+
+      normalVelocity => s % normalVelocity % array
+      layerThicknessEdge => s % layerThicknessEdge % array
+      lowFreqDivergence => s % lowFreqDivergence % array
+      highFreqThickness => s % highFreqThickness % array
+      tend_lowFreqDivergence => tend % lowFreqDivergence % array
+      tend_highFreqThickness => tend % highFreqThickness % array
+
+      allocate(div_hu(nVertLevels))
+
+      !
+      ! Low Frequency Divergence and high frequency thickness Tendency
+      !
+      tend_lowFreqDivergence = 0.0
+      tend_highFreqThickness = 0.0
+      do iCell=1,nCells
+        div_hu(:) = 0.0
+        div_hu_btr = 0.0
+        invAreaCell = 1.0 / areaCell(iCell)
+
+        do i = 1, nEdgesOnCell(iCell)
+          iEdge = edgesOnCell(i, iCell)
+
+          do k = 1, maxLevelEdgeBot(iEdge)
+            flux = layerThicknessEdge(k, iEdge) * normalVelocity(k, iEdge) * dvEdge(iEdge) * edgeSignOnCell(i, iCell) * invAreaCell
+            div_hu(k) = div_hu(k) - flux
+            div_hu_btr = div_hu_btr - flux
+          end do
+        end do
+
+        do k = 1, maxLevelCell(iCell)
+
+            tend_lowFreqDivergence(k,iCell) = &
+               -2.0*pii/config_Dlf_restore_time &
+               *(lowFreqDivergence(k,iCell)  - div_hu(k) + div_hu_btr)
+
+            tend_highFreqThickness(k,iCell) = &
+               - div_hu(k) + div_hu_btr + lowFreqDivergence(k,iCell) &
+               -2.0*pii/config_hhf_restore_time * highFreqThickness(k,iCell)
+
+        end do
+
+      end do
+
+      deallocate(div_hu)
+
+      !
+      !  high frequency thickness tendency: del2 horizontal hhf diffusion, div(\kappa_{hf} \nabla h^{hf})
+      !
+      call mpas_timer_start("hmix", .false., tracerHmixTimer)
+      call ocn_high_freq_thickness_hmix_del2_tend(grid, highFreqThickness, tend_highFreqThickness, err)
+      call mpas_timer_stop("hmix", tracerHmixTimer)
+
+      call mpas_timer_stop("ocn_tend_frequency_filtered_thickness")
+
+   end subroutine ocn_tend_frequency_filtered_thickness!}}}
 
 !***********************************************************************
 !
