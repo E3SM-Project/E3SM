@@ -137,6 +137,12 @@
 	config_btr_gam3_velWt2 = 1.0
 	config_btr_solve_SSH2 = .false.
 /
+&frequency_filtered_thickness
+	config_use_frequency_filtered_thickness  = .false.
+	config_Dlf_restore_time  = 5.0
+	config_hhf_restore_time  = 5.0
+	config_hhf_del2          = 100
+/
 &debug
 	config_check_zlevel_consistency = .false.
 	config_filter_btr_mode = .false.

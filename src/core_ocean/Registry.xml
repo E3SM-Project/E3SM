@@ -472,6 +472,24 @@
 		            possible_values=".true. or .false."
 		/>
 	</nml_record>
+	<nml_record name="frequency_filtered_thickness">
+		<nml_option name="config_use_frequency_filtered_thickness" type="logical" default_value=".false." units="unitless"
+		            description="If true, a high-frequency tendency term is added to the thickness equation."
+		            possible_values=".true. or .false."
+		/>
+		<nml_option name="config_Dlf_restore_time" type="real" default_value="5.0" units="days"
+		            description="Restoring timescale for low frequency baroclinic divergence, $\tau_{Dlf}$."
+		            possible_values="any positive real value, but typically 5 days."
+		/>
+		<nml_option name="config_hhf_restore_time" type="real" default_value="5.0" units="days"
+		            description="Restoring timescale for high frequency thickness, $\tau_{hhf}$."
+		            possible_values="any positive real value, but typically 5 days."
+		/>
+		<nml_option name="config_hhf_del2" type="real" default_value="100.0" units="m^2 s^{-1}"
+		            description="Horizonal thickness diffusion, $\kappa_{hhf}$."
+		            possible_values="any positive real"
+		/>
+	</nml_record>
 	<nml_record name="debug">
 		<nml_option name="config_check_zlevel_consistency" type="logical" default_value=".false." units="unitless"
 		            description="Enables a run-time check for consistency for a zlevel grid. Ensures relevant variables correctly define the bottom of the ocean."
@@ -571,6 +589,12 @@
 		/>
 		<var name="layerThickness" type="real" dimensions="nVertLevels nCells Time" streams="iro" units="m"
 		     description="layer thickness"
+		/>
+		<var name="highFreqThickness" type="real" dimensions="nVertLevels nCells Time" streams="o" units="m"
+		     description="high frequency-filtered layer thickness"
+		/>
+		<var name="lowFreqDivergence" type="real" dimensions="nVertLevels nCells Time" streams="o" units="m"
+		     description="low frequency-filtered divergence"
 		/>
 		<var name="density" type="real" dimensions="nVertLevels nCells Time" streams="iro" units="kg m^{-3}"
 		     description="density"
@@ -752,6 +776,12 @@
 		<var name="avgVertVelocityTop" type="real" dimensions="nVertLevelsP1 nCells Time" streams="o" units="m s^{-1}"
 		     description="time-averaged vertical velocity at top of cell"
 		/>
+#del           <var name="thicknessWeightedDivergence" type="real" dimensions="nVertLevels nCells Time" streams="o" units="s^{-1}"
+#                   description="thickness-weighted divergence of horizonal velocity, $\nabla\cdot(h\bf{u})$"
+#              />
+#              <var name="barotropicThicknessWeightedDivergence" type="real" dimensions="nCells Time" streams="o" units="s^{-1}"
+#                   description="thickness-weighted divergence of horizonal velocity, $\nabla\cdot(h\bf{u})$"
+#              />
 	</var_struct>
 	<var_struct name="mesh" time_levs="0">
 		<var name="latCell" type="real" dimensions="nCells" streams="iro" units="radians"
@@ -1006,6 +1036,12 @@
 		/>
 		<var name="tend_ssh" type="real" dimensions="nCells Time" units="m s^{-1}" name_in_code="ssh"
 		     description="time tendency of sea-surface height"
+		/>
+		<var name="tend_highFreqThickness" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}" name_in_code="highFreqThickness"
+		     description="time tendency of high frequency-filtered layer thickness"
+		/>
+		<var name="tend_lowFreqDivergence" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}" name_in_code="lowFreqDivergence"
+		     description="time tendency of low frequency-filtered divergence"
 		/>
 	</var_struct>
 	<var_struct name="diagnostics" time_levs="0">
