@@ -393,7 +393,8 @@ endmacro(createTests)
 macro(testQuadPrec HOMME_QUAD_PREC)
 
   TRY_COMPILE(COMPILE_RESULT_VAR
-              ${CMAKE_BINARY_DIR}/compiler_test/ ${CMAKE_SOURCE_DIR}/cmake/quadTest.f90
+              ${CMAKE_BINARY_DIR}/tests/compilerTests/
+              ${CMAKE_SOURCE_DIR}/cmake/compilerTests/quadTest.f90
               OUTPUT_VARIABLE COMPILE_OUTPUT)
 
   IF (${COMPILE_RESULT_VAR})

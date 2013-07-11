@@ -1,6 +1,0 @@
-NETCDF=/glade/apps/opt/netcdf/4.2/pgi/12.5
-PNETCDF=/glade/apps/opt/pnetcdf/1.3.0/pgi/12.5
-HDF5=/glade/apps/opt/hdf5/1.8.9/pgi/default
-SZIP=/glade/apps/opt/szlib/2.1/pgi/12.5/    
-ZLIB=/glade/apps/opt/zlib/1.2.7/pgi/12.5/
-

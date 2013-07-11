@@ -1,15 +1,22 @@
 
-
 find_path(Netcdf_INCLUDE_DIR 
           NAMES netcdf.h
           PATHS ${NETCDF_DIR} ${Homme_NETCDF_DIR}
           PATH_SUFFIXES include
           NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
 
+IF (NOT Netcdf_INCLUDE_DIR)
+  MESSAGE(FATAL_ERROR "Netcdf include file netcdf.h not found. Set the location of the Netcdf installation with -DNETCDF_DIR")
+ENDIF ()
+
 find_library(Netcdf_LIBRARY 
              NAMES libnetcdf.a netcdf
              HINTS ${Netcdf_INCLUDE_DIR}/../lib
              NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
+
+IF (NOT Netcdf_INCLUDE_DIR)
+  MESSAGE(FATAL_ERROR "Netcdf library libnetcdf not found. Set the location of the Netcdf installation with -DNETCDF_DIR")
+ENDIF ()
 
 find_library(NetcdfF_LIBRARY 
              NAMES libnetcdff.a netcdff
