@@ -625,7 +625,8 @@ contains
       do iCell=1,nCells
         div_hu(:) = 0.0
         div_hu_btr = 0.0
-        thicknessSum = 0.0
+        ! This is epsilon due to divide, below:
+        thicknessSum = 1e-14  
         invAreaCell = 1.0 / areaCell(iCell)
 
         do i = 1, nEdgesOnCell(iCell)
@@ -643,9 +644,7 @@ contains
            thicknessSum = thicknessSum + vertCoordMovementWeights(k) * layerThickness(k, iCell)
         end do
 
-        if(thicknessSum > 0.0) then
-           h_tend_col = h_tend_col / thicknessSum
-        end if
+        h_tend_col = h_tend_col / thicknessSum
 
         ! Vertical transport through layer interface at top and bottom is zero.
         vertTransportVelocityTop(1,iCell) = 0.0
