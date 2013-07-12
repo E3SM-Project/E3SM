@@ -69,9 +69,9 @@ module ocn_tracer_advection
       if(.not. tracerAdvOn) return
 
       if(monotonicOn) then
-         call mpas_tracer_advection_mono_tend(tracers, normalThicknessFlux, w, layerThickness, verticalCellSize, dt, grid, tend_layerThickness, tend, grid % maxLevelCell % array, grid % maxLevelEdgeTop % array, grid % highOrderAdvectionMask % array, edgeSignOnCell_in = grid % edgeSignOnCell % array)
+         call mpas_tracer_advection_mono_tend(tracers, grid % adv_coefs % array, grid % adv_coefs_3rd % array, grid % nAdvCellsForEdge % array, grid % advCellsForEdge % array, normalThicknessFlux, w, layerThickness, verticalCellSize, dt, grid, tend_layerThickness, tend, grid % maxLevelCell % array, grid % maxLevelEdgeTop % array, grid % highOrderAdvectionMask % array, edgeSignOnCell_in = grid % edgeSignOnCell % array)
       else
-         call mpas_tracer_advection_std_tend(tracers, normalThicknessFlux, w, layerThickness, verticalCellSize, dt, grid, tend_layerThickness, tend, grid % maxLevelCell % array, grid % maxLevelEdgeTop % array, grid % highOrderAdvectionMask % array, edgeSignOnCell_in = grid % edgeSignOnCell % array)
+         call mpas_tracer_advection_std_tend(tracers, grid % adv_coefs % array, grid % adv_coefs_3rd % array, grid % nAdvCellsForEdge % array, grid % advCellsForEdge % array, normalThicknessFlux, w, layerThickness, verticalCellSize, dt, grid, tend_layerThickness, tend, grid % maxLevelCell % array, grid % maxLevelEdgeTop % array, grid % highOrderAdvectionMask % array, edgeSignOnCell_in = grid % edgeSignOnCell % array)
       endif
    end subroutine ocn_tracer_advection_tend!}}}
 
@@ -99,8 +99,8 @@ module ocn_tracer_advection
 
       if(config_disable_tr_adv) tracerAdvOn = .false.
 
-      call mpas_tracer_advection_std_init(err_tmp)
-      call mpas_tracer_advection_mono_init(err_tmp)
+      call mpas_tracer_advection_std_init(config_horiz_tracer_adv_order, config_vert_tracer_adv_order, config_coef_3rd_order, config_dzdk_positive, config_check_tracer_monotonicity, err_tmp)
+      call mpas_tracer_advection_mono_init(config_horiz_tracer_adv_order, config_vert_tracer_adv_order, config_coef_3rd_order, config_dzdk_positive, config_check_tracer_monotonicity, err_tmp)
 
       err = ior(err, err_tmp)
 

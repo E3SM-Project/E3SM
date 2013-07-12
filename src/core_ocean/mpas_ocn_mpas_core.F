@@ -332,8 +332,12 @@ module mpas_core
       integer :: err1
    
       call ocn_setup_sign_and_index_fields(mesh)
-      call mpas_initialize_deriv_two(mesh, err)
-      call mpas_tracer_advection_coefficients(mesh, err1, mesh % maxLevelCell % array, mesh % highOrderAdvectionMask % array, mesh % boundaryCell % array)
+      call mpas_initialize_deriv_two(mesh, mesh % deriv_two % array, err)
+      call mpas_tracer_advection_coefficients(mesh, &
+          config_horiz_tracer_adv_order, mesh % deriv_two % array, mesh % adv_coefs % array, &
+          mesh % adv_coefs_3rd % array, mesh % nAdvCellsForEdge % array, mesh % advCellsForEdge % array, &
+          err1, mesh % maxLevelCell % array, mesh % highOrderAdvectionMask % array, &
+          mesh % boundaryCell % array)
       err = ior(err, err1)
 
       call ocn_time_average_init(block % state % time_levs(1) % state)
