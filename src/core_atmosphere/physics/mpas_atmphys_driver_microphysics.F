@@ -55,7 +55,10 @@
 !> ----------------------------------------
 !>    * removed call to the Thompson cloud microphysics scheme until the scheme is updated to that
 !>      in WRF revision 3.5.
-!>      Laura D. Fowler (birch.ucar.edu) / 2013-05-29.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-05-29.
+!>    * added subroutine compute_relhum to calculate the relative humidity using the functions
+!>      rslf and rsif from the Thompson cloud microphysics scheme.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-07-12. 
 
 
  contains
@@ -270,7 +273,7 @@
     
  end do
 
-!... calculate the 10cm radar reflectivity, if needed:
+!... calculate the 10cm radar reflectivity and relative humidity, if needed:
  if (l_diags) then
  
     ! Ensure that we only call compute_radar_reflectivity() if we are using an MPS that
@@ -281,6 +284,9 @@
        write(0,*) '*** NOTICE: NOT computing simulated radar reflectivity'
        write(0,*) '            since WSM6 microphysics scheme was not selected'
     end if
+
+    call compute_relhum(diag_physics)
+
  end if
 
 !... copy updated precipitation from the wrf-physics grid back to the geodesic-dynamics grid:
@@ -500,6 +506,123 @@
  201 format(2i6,e15.8)
 
  end subroutine compute_radar_reflectivity
+
+!==================================================================================================
+ subroutine compute_relhum(diag_physics)
+!==================================================================================================
+
+!inout arguments:
+ type(diag_physics_type),intent(inout):: diag_physics
+
+!local variables:
+ integer:: i,j,k
+ real(kind=RKIND),dimension(:),allocatable:: qv1d,qvs1d,t1d,p1d
+
+!--------------------------------------------------------------------------------------------------
+
+ diag_physics % relhum % array(:,:) = 0._RKIND
+
+ if(.not.allocated(p1d)  ) allocate(p1d(kts:kte)  )
+ if(.not.allocated(t1d)  ) allocate(t1d(kts:kte)  )
+ if(.not.allocated(qv1d) ) allocate(qv1d(kts:kte) )
+ if(.not.allocated(qvs1d)) allocate(qvs1d(kts:kte))
+
+ do j = jts,jte
+ do i = its,ite
+
+    do k = kts,kte
+       p1d(k)  = pres_p(i,k,j)
+       t1d(k)  = th_p(i,k,j) * pi_p(i,k,j)
+       t1d(k)  = t1d(k) - 273.15
+       qv1d(k) = qv_p(i,k,j)
+       if(t1d(k) .gt. 0._RKIND) then
+          qvs1d(k) = rslf(p1d(k),t1d(k))
+       elseif(t1d(k) .le. 0._RKIND) then
+          qvs1d(k) = rsif(p1d(k),t1d(k))
+       endif
+       diag_physics % relhum % array(k,i) = qv1d(k) / qvs1d(k)
+    enddo
+
+ enddo
+ enddo
+
+ if(allocated(p1d)  ) deallocate(p1d  )
+ if(allocated(t1d)  ) deallocate(t1d  )
+ if(allocated(qv1d) ) deallocate(qv1d )
+ if(allocated(qvs1d)) deallocate(qvs1d)
+
+ end subroutine compute_relhum
+
+!=============================================================================================
+!NOTE: functions rslf and rsif are taken from module_mp_thompson temporarily for computing
+!      the diagnostic relative humidity. These two functions will be removed from this module
+!      when the Thompson cloud microphysics scheme will be restored to MPAS-Dev.
+!      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-07-11.
+
+!+---+-----------------------------------------------------------------+
+! THIS FUNCTION CALCULATES THE LIQUID SATURATION VAPOR MIXING RATIO AS
+! A FUNCTION OF TEMPERATURE AND PRESSURE
+!
+      REAL FUNCTION RSLF(P,T)
+
+      IMPLICIT NONE
+      REAL, INTENT(IN):: P, T
+      REAL:: ESL,X
+      REAL, PARAMETER:: C0= .611583699E03
+      REAL, PARAMETER:: C1= .444606896E02
+      REAL, PARAMETER:: C2= .143177157E01
+      REAL, PARAMETER:: C3= .264224321E-1
+      REAL, PARAMETER:: C4= .299291081E-3
+      REAL, PARAMETER:: C5= .203154182E-5
+      REAL, PARAMETER:: C6= .702620698E-8
+      REAL, PARAMETER:: C7= .379534310E-11
+      REAL, PARAMETER:: C8=-.321582393E-13
+
+      X=MAX(-80.,T-273.16)
+
+!      ESL=612.2*EXP(17.67*X/(T-29.65))
+      ESL=C0+X*(C1+X*(C2+X*(C3+X*(C4+X*(C5+X*(C6+X*(C7+X*C8)))))))
+      RSLF=.622*ESL/(P-ESL)
+
+!    ALTERNATIVE
+!  ; Source: Murphy and Koop, Review of the vapour pressure of ice and
+!             supercooled water for atmospheric applications, Q. J. R.
+!             Meteorol. Soc (2005), 131, pp. 1539-1565.
+!    ESL = EXP(54.842763 - 6763.22 / T - 4.210 * ALOG(T) + 0.000367 * T
+!        + TANH(0.0415 * (T - 218.8)) * (53.878 - 1331.22
+!        / T - 9.44523 * ALOG(T) + 0.014025 * T))
+
+      END FUNCTION RSLF
+!+---+-----------------------------------------------------------------+
+! THIS FUNCTION CALCULATES THE ICE SATURATION VAPOR MIXING RATIO AS A
+! FUNCTION OF TEMPERATURE AND PRESSURE
+!
+      REAL FUNCTION RSIF(P,T)
+
+      IMPLICIT NONE
+      REAL, INTENT(IN):: P, T
+      REAL:: ESI,X
+      REAL, PARAMETER:: C0= .609868993E03
+      REAL, PARAMETER:: C1= .499320233E02
+      REAL, PARAMETER:: C2= .184672631E01
+      REAL, PARAMETER:: C3= .402737184E-1
+      REAL, PARAMETER:: C4= .565392987E-3
+      REAL, PARAMETER:: C5= .521693933E-5
+      REAL, PARAMETER:: C6= .307839583E-7
+      REAL, PARAMETER:: C7= .105785160E-9
+      REAL, PARAMETER:: C8= .161444444E-12
+
+      X=MAX(-80.,T-273.16)
+      ESI=C0+X*(C1+X*(C2+X*(C3+X*(C4+X*(C5+X*(C6+X*(C7+X*C8)))))))
+      RSIF=.622*ESI/(P-ESI)
+
+!    ALTERNATIVE
+!  ; Source: Murphy and Koop, Review of the vapour pressure of ice and
+!             supercooled water for atmospheric applications, Q. J. R.
+!             Meteorol. Soc (2005), 131, pp. 1539-1565.
+!     ESI = EXP(9.550426 - 5723.265/T + 3.53068*ALOG(T) - 0.00728332*T)
+
+      END FUNCTION RSIF
 
 !==================================================================================================
  end module mpas_atmphys_driver_microphysics
