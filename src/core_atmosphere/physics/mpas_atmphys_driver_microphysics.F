@@ -285,6 +285,8 @@
        write(0,*) '            since WSM6 microphysics scheme was not selected'
     end if
 
+    ! calculate the relative humidity over water if the temperature is strictly greater than 0.C,
+    ! over ice otherwise.
     call compute_relhum(diag_physics)
 
  end if
@@ -516,6 +518,7 @@
 
 !local variables:
  integer:: i,j,k
+ real(kind=RKIND):: tempc
  real(kind=RKIND),dimension(:),allocatable:: qv1d,qvs1d,t1d,p1d
 
 !--------------------------------------------------------------------------------------------------
@@ -533,13 +536,10 @@
     do k = kts,kte
        p1d(k)  = pres_p(i,k,j)
        t1d(k)  = th_p(i,k,j) * pi_p(i,k,j)
-       t1d(k)  = t1d(k) - 273.15
+       tempc   = t1d(k) - 273.16_RKIND
+       qvs1d(k) = rslf(p1d(k),t1d(k))
+       if(tempc .le. 0._RKIND) qvs1d(k) = rsif(p1d(k),t1d(k))
        qv1d(k) = qv_p(i,k,j)
-       if(t1d(k) .gt. 0._RKIND) then
-          qvs1d(k) = rslf(p1d(k),t1d(k))
-       elseif(t1d(k) .le. 0._RKIND) then
-          qvs1d(k) = rsif(p1d(k),t1d(k))
-       endif
        diag_physics % relhum % array(k,i) = qv1d(k) / qvs1d(k)
     enddo
 

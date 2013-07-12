@@ -330,21 +330,31 @@
 
                 <var name="temperature_200hPa"     type="real"     dimensions="nCells Time"                 streams="o"/>
                 <var name="temperature_500hPa"     type="real"     dimensions="nCells Time"                 streams="o"/>
+                <var name="temperature_700hPa"     type="real"     dimensions="nCells Time"                 streams="o"/>
                 <var name="temperature_850hPa"     type="real"     dimensions="nCells Time"                 streams="o"/>
+                <var name="relhum_200hPa"          type="real"     dimensions="nCells Time"                 streams="o"/>
+                <var name="relhum_500hPa"          type="real"     dimensions="nCells Time"                 streams="o"/>
+                <var name="relhum_700hPa"          type="real"     dimensions="nCells Time"                 streams="o"/>
+                <var name="relhum_850hPa"          type="real"     dimensions="nCells Time"                 streams="o"/>
                 <var name="height_200hPa"          type="real"     dimensions="nCells Time"                 streams="o"/>
                 <var name="height_500hPa"          type="real"     dimensions="nCells Time"                 streams="o"/>
+                <var name="height_700hPa"          type="real"     dimensions="nCells Time"                 streams="o"/>
                 <var name="height_850hPa"          type="real"     dimensions="nCells Time"                 streams="o"/>
                 <var name="uzonal_200hPa"          type="real"     dimensions="nCells Time"                 streams="o"/>
                 <var name="uzonal_500hPa"          type="real"     dimensions="nCells Time"                 streams="o"/>
+                <var name="uzonal_700hPa"          type="real"     dimensions="nCells Time"                 streams="o"/>
                 <var name="uzonal_850hPa"          type="real"     dimensions="nCells Time"                 streams="o"/>
                 <var name="umeridional_200hPa"     type="real"     dimensions="nCells Time"                 streams="o"/>
                 <var name="umeridional_500hPa"     type="real"     dimensions="nCells Time"                 streams="o"/>
+                <var name="umeridional_700hPa"     type="real"     dimensions="nCells Time"                 streams="o"/>
                 <var name="umeridional_850hPa"     type="real"     dimensions="nCells Time"                 streams="o"/>
                 <var name="w_200hPa"               type="real"     dimensions="nCells Time"                 streams="o"/>
                 <var name="w_500hPa"               type="real"     dimensions="nCells Time"                 streams="o"/>
+                <var name="w_700hPa"               type="real"     dimensions="nCells Time"                 streams="o"/>
                 <var name="w_850hPa"               type="real"     dimensions="nCells Time"                 streams="o"/>
                 <var name="vorticity_200hPa"       type="real"     dimensions="nVertices Time"              streams="o"/>
                 <var name="vorticity_500hPa"       type="real"     dimensions="nVertices Time"              streams="o"/>
+                <var name="vorticity_700hPa"       type="real"     dimensions="nVertices Time"              streams="o"/>
                 <var name="vorticity_850hPa"       type="real"     dimensions="nVertices Time"              streams="o"/>
         </var_struct>
 
@@ -477,6 +487,7 @@
                 <var name="graupelnc"     type="real"     dimensions="nCells Time"                 streams="ro"/>
 
                 <var name="precipw"       type="real"     dimensions="nCells Time"                 streams="o"/>
+                <var name="relhum"        type="real"     dimensions="nVertLevels nCells Time"     streams="o"/>
 
                 <!-- ================================================================================================== -->
                 <!-- ... PARAMETERIZATION OF CONVECTION:                                                                -->

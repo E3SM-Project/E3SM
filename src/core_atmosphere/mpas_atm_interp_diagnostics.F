@@ -18,7 +18,7 @@
  contains
 
 !==================================================================================================
- subroutine interp_diagnostics(mesh,state,diag)
+ subroutine interp_diagnostics(mesh,state,diag,diag_physics)
 !==================================================================================================
 
 !input arguments:
@@ -27,6 +27,7 @@
 
 !inout arguments:
  type(diag_type),intent(inout):: diag
+ type(diag_physics_type),intent(inout):: diag_physics
 
 !local variables:
  integer:: iCell,iVert,iVertD,k,kk
@@ -38,9 +39,9 @@
  
  real(kind=RKIND),dimension(:,:),pointer:: exner,height
  real(kind=RKIND),dimension(:,:),pointer:: pressure_b,pressure_p 
- real(kind=RKIND),dimension(:,:),pointer:: qvapor,theta_m,vorticity
+ real(kind=RKIND),dimension(:,:),pointer:: qvapor,relhum,theta_m,vorticity
  real(kind=RKIND),dimension(:,:),pointer:: umeridional,uzonal,vvel
- 
+
  real(kind=RKIND),dimension(:,:),allocatable:: pressure,pressureCp1,pressure2,pressure_v,temperature
 
 !local interpolated fields:
@@ -76,6 +77,8 @@
  vorticity   => diag % vorticity     % array
  umeridional => diag % uReconstructMeridional % array
  uzonal      => diag % uReconstructZonal      % array
+
+ relhum => diag_physics % relhum % array
 
  if(.not.allocated(pressure)    ) allocate(pressure(nVertLevels,nCells)      )
  if(.not.allocated(pressureCp1) ) allocate(pressureCp1(nVertLevels,nCells+1) )
@@ -145,13 +148,14 @@
  enddo
 
 !interpolation to fixed pressure levels for fields located at cells centers and at mass points:
- nIntP = 3
+ nIntP = 4
  if(.not.allocated(field_interp)) allocate(field_interp(nCells,nIntP) )
  if(.not.allocated(press_interp)) allocate(press_interp(nCells,nIntP) )
  do iCell = 1, nCells
     press_interp(iCell,1) = 200.0_RKIND
     press_interp(iCell,2) = 500.0_RKIND
-    press_interp(iCell,3) = 850.0_RKIND
+    press_interp(iCell,3) = 700.0_RKIND
+    press_interp(iCell,4) = 850.0_RKIND
  enddo
 
  if(.not.allocated(press_in)) allocate(press_in(nCells,nVertLevels))
@@ -173,8 +177,23 @@
  call interp_tofixed_pressure(nCells,nVertLevels,nIntP,press_in,field_in,press_interp,field_interp)
  diag % temperature_200hPa % array(1:nCells) = field_interp(1:nCells,1)
  diag % temperature_500hPa % array(1:nCells) = field_interp(1:nCells,2)
- diag % temperature_850hPa % array(1:nCells) = field_interp(1:nCells,3)
+ diag % temperature_700hPa % array(1:nCells) = field_interp(1:nCells,3)
+ diag % temperature_850hPa % array(1:nCells) = field_interp(1:nCells,4)
  write(0,*) '--- end interpolate temperature:'
+
+!... relative humidity:
+ do iCell = 1, nCells
+ do k = 1, nVertLevels
+    kk = nVertLevels+1-k
+    field_in(iCell,kk) = relhum(k,iCell)
+ enddo
+ enddo
+ call interp_tofixed_pressure(nCells,nVertLevels,nIntP,press_in,field_in,press_interp,field_interp)
+ diag % relhum_200hPa % array(1:nCells) = field_interp(1:nCells,1)
+ diag % relhum_500hPa % array(1:nCells) = field_interp(1:nCells,2)
+ diag % relhum_700hPa % array(1:nCells) = field_interp(1:nCells,3)
+ diag % relhum_850hPa % array(1:nCells) = field_interp(1:nCells,4)
+ write(0,*) '--- end interpolate relative humidity:'
 
 !... u zonal wind:
  do iCell = 1, nCells
@@ -186,7 +205,8 @@
  call interp_tofixed_pressure(nCells,nVertLevels,nIntP,press_in,field_in,press_interp,field_interp)
  diag % uzonal_200hPa % array(1:nCells) = field_interp(1:nCells,1)
  diag % uzonal_500hPa % array(1:nCells) = field_interp(1:nCells,2)
- diag % uzonal_850hPa % array(1:nCells) = field_interp(1:nCells,3)
+ diag % uzonal_700hPa % array(1:nCells) = field_interp(1:nCells,3)
+ diag % uzonal_850hPa % array(1:nCells) = field_interp(1:nCells,4)
  write(0,*) '--- end interpolate zonal wind:'
 
 !... u meridional wind:
@@ -199,7 +219,8 @@
  call interp_tofixed_pressure(nCells,nVertLevels,nIntP,press_in,field_in,press_interp,field_interp)
  diag % umeridional_200hPa % array(1:nCells) = field_interp(1:nCells,1)
  diag % umeridional_500hPa % array(1:nCells) = field_interp(1:nCells,2)
- diag % umeridional_850hPa % array(1:nCells) = field_interp(1:nCells,3)
+ diag % umeridional_700hPa % array(1:nCells) = field_interp(1:nCells,3)
+ diag % umeridional_850hPa % array(1:nCells) = field_interp(1:nCells,4)
  write(0,*) '--- end interpolate meridional wind:'
 
  if(allocated(field_in)) deallocate(field_in)
@@ -226,7 +247,8 @@
  call interp_tofixed_pressure(nCells,nVertLevelsP1,nIntP,press_in,field_in,press_interp,field_interp)
  diag % height_200hPa % array(1:nCells) = field_interp(1:nCells,1)
  diag % height_500hPa % array(1:nCells) = field_interp(1:nCells,2)
- diag % height_850hPa % array(1:nCells) = field_interp(1:nCells,3)
+ diag % height_700hPa % array(1:nCells) = field_interp(1:nCells,3)
+ diag % height_850hPa % array(1:nCells) = field_interp(1:nCells,4)
  write(0,*) '--- end interpolate height:'
  
 !... vertical velocity
@@ -239,20 +261,22 @@
  call interp_tofixed_pressure(nCells,nVertLevelsP1,nIntP,press_in,field_in,press_interp,field_interp)
  diag % w_200hPa % array(1:nCells) = field_interp(1:nCells,1)
  diag % w_500hPa % array(1:nCells) = field_interp(1:nCells,2)
- diag % w_850hPa % array(1:nCells) = field_interp(1:nCells,3)
+ diag % w_700hPa % array(1:nCells) = field_interp(1:nCells,3)
+ diag % w_850hPa % array(1:nCells) = field_interp(1:nCells,4)
  write(0,*) '--- end interpolate vertical velocity:'
  
  if(allocated(field_interp)) deallocate(field_interp)
  if(allocated(press_interp)) deallocate(press_interp)
 
 !interpolation to fixed pressure levels for fields located at cell vertices and at mass points:
- nIntP = 3
+ nIntP = 4
  if(.not.allocated(field_interp)) allocate(field_interp(nVertices,nIntP) )
  if(.not.allocated(press_interp)) allocate(press_interp(nVertices,nIntP) )
  do iVert = 1, nVertices
     press_interp(iVert,1) = 200.0_RKIND
     press_interp(iVert,2) = 500.0_RKIND
-    press_interp(iVert,3) = 850.0_RKIND
+    press_interp(iVert,3) = 700.0_RKIND
+    press_interp(iVert,4) = 850.0_RKIND
  enddo
 
  if(allocated(field_in)) deallocate(field_in)
@@ -277,7 +301,8 @@
  call interp_tofixed_pressure(nVertices,nVertLevels,nIntP,press_in,field_in,press_interp,field_interp)
  diag % vorticity_200hPa % array(1:nVertices) = field_interp(1:nVertices,1)
  diag % vorticity_500hPa % array(1:nVertices) = field_interp(1:nVertices,2)
- diag % vorticity_850hPa % array(1:nVertices) = field_interp(1:nVertices,3)
+ diag % vorticity_700hPa % array(1:nVertices) = field_interp(1:nVertices,3)
+ diag % vorticity_850hPa % array(1:nVertices) = field_interp(1:nVertices,4)
  write(0,*) '--- end interpolate relative vorticity:'
 
  if(allocated(field_interp)) deallocate(field_interp)
