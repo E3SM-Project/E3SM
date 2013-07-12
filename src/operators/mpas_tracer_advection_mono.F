@@ -20,8 +20,6 @@ module mpas_tracer_advection_mono
 
    use mpas_kind_types
    use mpas_grid_types
-   use mpas_configure
-   use mpas_dmpar
 
    use mpas_tracer_advection_helpers
 
@@ -30,7 +28,9 @@ module mpas_tracer_advection_mono
    save 
 
    real (kind=RKIND) :: coef_3rd_order
+   integer :: horizOrder
    logical :: vert2ndOrder, vert3rdOrder, vert4thOrder
+   logical :: positiveDzDk, monotonicityCheck
 
    public :: mpas_tracer_advection_mono_tend, &
              mpas_tracer_advection_mono_init
@@ -49,9 +49,13 @@ module mpas_tracer_advection_mono
 !>  Both horizontal and vertical.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_tracer_advection_mono_tend(tracers, normalThicknessFlux, w, layerThickness, verticalCellSize, dt, grid, tend_layerThickness, tend, maxLevelCell_in, maxLevelEdgeTop_in, highOrderAdvectionMask_in, verticalDivergenceFactor_in, edgeSignOnCell_in)!{{{
+   subroutine mpas_tracer_advection_mono_tend(tracers, adv_coefs, adv_coefs_3rd, nAdvCellsForEdge, advCellsForEdge, normalThicknessFlux, w, layerThickness, verticalCellSize, dt, grid, tend_layerThickness, tend, maxLevelCell_in, maxLevelEdgeTop_in, highOrderAdvectionMask_in, verticalDivergenceFactor_in, edgeSignOnCell_in)!{{{
 
       real (kind=RKIND), dimension(:,:,:), intent(in) :: tracers !< Input: current tracer values
+      real (kind=RKIND), dimension(:,:), intent(in) :: adv_coefs !< Input: Advection coefficients for 2nd order advection
+      real (kind=RKIND), dimension(:,:), intent(in) :: adv_coefs_3rd !< Input: Advection coefficients for blending in 3rd or 4th order advection
+      integer, dimension(:), intent(in) :: nAdvCellsForEdge !< Input: Number of advection cells for each edge
+      integer, dimension(:,:), intent(in) :: advCellsForEdge !< Input: List of advection cells for each edge
       real (kind=RKIND), dimension(:,:), intent(in) :: normalThicknessFlux !< Input: Thichness weighted velocitiy
       real (kind=RKIND), dimension(:,:), intent(in) :: w !< Input: Vertical velocitiy
       real (kind=RKIND), dimension(:,:), intent(in) :: layerThickness !< Input: Thickness
@@ -68,21 +72,18 @@ module mpas_tracer_advection_mono
 
       integer :: i, iCell, iEdge, k, iTracer, cell1, cell2
       integer :: nVertLevels, num_tracers, nCells, nEdges, nCellsSolve, maxEdges
-      integer, dimension(:), pointer :: nAdvCellsForEdge, maxLevelCell, maxLevelEdgeTop, nEdgesOnCell
-      integer, dimension(:,:), pointer :: cellsOnEdge, cellsOnCell, advCellsForEdge, highOrderAdvectionMask, edgeSignOnCell, edgesOnCell
+      integer, dimension(:), pointer :: maxLevelCell, maxLevelEdgeTop, nEdgesOnCell
+      integer, dimension(:,:), pointer :: cellsOnEdge, cellsOnCell, highOrderAdvectionMask, edgeSignOnCell, edgesOnCell
 
       real (kind=RKIND) :: flux_upwind, tracer_min_new, tracer_max_new, tracer_upwind_new, scale_factor
       real (kind=RKIND) :: flux, tracer_weight, invDvEdge, invAreaCell1, invAreaCell2
       real (kind=RKIND) :: cur_max, cur_min, new_max, new_min
       real (kind=RKIND) :: verticalWeightK, verticalWeightKm1
       real (kind=RKIND), dimension(:), pointer :: dvEdge, areaCell, verticalDivergenceFactor
-      real (kind=RKIND), dimension(:,:), pointer :: adv_coefs, adv_coefs_3rd
       real (kind=RKIND), dimension(:,:), pointer :: tracer_cur, tracer_new, upwind_tendency, inv_h_new, tracer_max, tracer_min
       real (kind=RKIND), dimension(:,:), pointer :: flux_incoming, flux_outgoing, high_order_horiz_flux, high_order_vert_flux
 
       real (kind=RKIND), parameter :: eps = 1.e-10_RKIND
-
-      type (field2dReal), pointer :: high_order_horiz_flux_field
 
       ! Get dimensions
       nCells = grid % nCells
@@ -98,12 +99,7 @@ module mpas_tracer_advection_mono
       edgesOnCell => grid % edgesOnCell % array
       cellsOnCell => grid % cellsOnCell % array
       areaCell    => grid % areaCell % array
-
       nEdgesOnCell => grid % nEdgesOnCell % array
-      nAdvCellsForEdge => grid % nAdvCellsForEdge % array
-      advCellsForEdge => grid % advCellsForEdge % array
-      adv_coefs => grid % adv_coefs % array
-      adv_coefs_3rd => grid % adv_coefs_3rd % array
       
       ! Setup arrays from optional arguments
       if(present(maxLevelCell_in)) then
@@ -124,7 +120,7 @@ module mpas_tracer_advection_mono
         highOrderAdvectionMask => highOrderAdvectionMask_in
       else
         allocate(highOrderAdvectionMask(nVertLevels, nEdges+1))
-        if(config_horiz_tracer_adv_order == 2) then
+        if(horizOrder == 2) then
           highOrderAdvectionMask = 0
         else
           highOrderAdvectionMask = 1
@@ -155,16 +151,7 @@ module mpas_tracer_advection_mono
       end if
 
       ! Setup high order horizontal flux field
-      allocate(high_order_horiz_flux_field)
-      nullify(high_order_horiz_flux_field % next)
-      high_order_horiz_flux_field % block => grid % block
-      high_order_horiz_flux_field % sendList => grid % xEdge % sendList
-      high_order_horiz_flux_field % recvList => grid % xEdge % recvList
-      high_order_horiz_flux_field % copyList => grid % xEdge % copyList
-      high_order_horiz_flux_field % dimSizes(1) = nVertLevels
-      high_order_horiz_flux_field % dimSizes(2) = nEdges+1
-      allocate(high_order_horiz_flux_field % array(high_order_horiz_flux_field % dimSizes(1), high_order_horiz_flux_field % dimSizes(2)))
-      high_order_horiz_flux => high_order_horiz_flux_field % array
+      allocate(high_order_horiz_flux(nVertLevels, nEdges+1))
 
       ! allocate nCells arrays
       allocate(tracer_new(nVertLevels, nCells+1))
@@ -194,7 +181,7 @@ module mpas_tracer_advection_mono
             upwind_tendency(k, iCell) = 0.0_RKIND
 
             !tracer_new is supposed to be the "new" tracer state. This allows bounds checks.
-            if (config_check_tracer_monotonicity) then
+            if (monotonicityCheck) then
               tracer_new(k,iCell) = 0.0_RKIND
             end if
           end do ! k loop
@@ -279,7 +266,7 @@ module mpas_tracer_advection_mono
         do iCell = 1, nCells
           do k = 2, maxLevelCell(iCell)
             ! dwj 02/03/12 and Atmosphere are different in vertical
-            if(config_dzdk_positive) then
+            if(positiveDzDk) then
               flux_upwind = max(0.0_RKIND,w(k,iCell))*tracer_cur(k-1,iCell) + min(0.0_RKIND,w(k,iCell))*tracer_cur(k,iCell)
             else
               flux_upwind = min(0.0_RKIND,w(k,iCell))*tracer_cur(k-1,iCell) + max(0.0_RKIND,w(k,iCell))*tracer_cur(k,iCell)
@@ -295,7 +282,7 @@ module mpas_tracer_advection_mono
           !           it is negative
           do k = 1, maxLevelCell(iCell)
             ! dwj 02/03/12 and Atmosphere are different in vertical
-            if(config_dzdk_positive) then
+            if(positiveDzDk) then
               flux_incoming (k,iCell) = -(min(0.0_RKIND,high_order_vert_flux(k+1,iCell))-max(0.0_RKIND,high_order_vert_flux(k,iCell)))
               flux_outgoing(k,iCell) = -(max(0.0_RKIND,high_order_vert_flux(k+1,iCell))-min(0.0_RKIND,high_order_vert_flux(k,iCell)))
             else
@@ -374,7 +361,7 @@ module mpas_tracer_advection_mono
           do k = 2, maxLevelCell(iCell)
             flux =  high_order_vert_flux(k,iCell)
             ! dwj 02/03/12 and Atmosphere are different in vertical.
-            if(config_dzdk_positive) then
+            if(positiveDzDk) then
               flux = max(0.0_RKIND,flux) * min(flux_outgoing(k-1,iCell), flux_incoming(k  ,iCell)) &
                    + min(0.0_RKIND,flux) * min(flux_outgoing(k  ,iCell), flux_incoming(k-1,iCell))
             else
@@ -393,7 +380,7 @@ module mpas_tracer_advection_mono
             do k = 1, maxLevelEdgeTop(iEdge)
               tend(iTracer, k, iCell) = tend(iTracer, k, iCell) + edgeSignOnCell(i, iCell) * high_order_horiz_flux(k, iEdge) * invAreaCell1
 
-              if(config_check_tracer_monotonicity) then
+              if(monotonicityCheck) then
                 tracer_new(k, iCell) = tracer_new(k, iCell) + edgeSignOnCell(i, iCell) * high_order_horiz_flux(k, iEdge) * invAreaCell1
               end if
             end do
@@ -405,7 +392,7 @@ module mpas_tracer_advection_mono
           do k = 1,maxLevelCell(iCell)
             tend(iTracer, k, iCell) = tend(iTracer, k, iCell) + verticalDivergenceFactor(k) * (high_order_vert_flux(k+1, iCell) - high_order_vert_flux(k, iCell)) + upwind_tendency(k,iCell)
 
-            if (config_check_tracer_monotonicity) then
+            if (monotonicityCheck) then
               !tracer_new holds a tendency for now. Only for a check on monotonicity
               tracer_new(k, iCell) = tracer_new(k, iCell) + verticalDivergenceFactor(k) * (high_order_vert_flux(k+1, iCell) - high_order_vert_flux(k, iCell)) + upwind_tendency(k,iCell)
 
@@ -415,7 +402,7 @@ module mpas_tracer_advection_mono
           end do ! k loop
         end do ! iCell loop
 
-        if (config_check_tracer_monotonicity) then
+        if (monotonicityCheck) then
           !build min and max bounds on old and new tracer for check on monotonicity.
           do iCell = 1, nCellsSolve
             do k = 1, maxLevelCell(iCell)
@@ -441,7 +428,6 @@ module mpas_tracer_advection_mono
       deallocate(flux_outgoing)
       deallocate(high_order_horiz_flux)
       deallocate(high_order_vert_flux)
-      deallocate(high_order_horiz_flux_field)
 
       if(.not.present(maxLevelCell_in)) then
         deallocate(maxLevelCell)
@@ -471,10 +457,15 @@ module mpas_tracer_advection_mono
 !>  This routine initializes the monotonic tracer advection tendencity using a FCT.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_tracer_advection_mono_init(err)!{{{
-      integer, intent(inout) :: err !< Input: Error Flags
+   subroutine mpas_tracer_advection_mono_init(horiz_adv_order, vert_adv_order, coef_3rd_order_in, dzdk_positive, check_monotonicity, err)!{{{
 
-      integer :: err_tmp
+      use mpas_dmpar
+      integer, intent(in) :: horiz_adv_order !< Input: Order for horizontal advection
+      integer, intent(in) :: vert_adv_order !< Input: Order for vertical advection
+      real (kind=RKIND), intent(in) :: coef_3rd_order_in !< Input: coefficient for blending advection orders.
+      logical, intent(in) :: dzdk_positive !< Input: Logical flag determining if dzdk is positive or negative.
+      logical, intent(in) :: check_monotonicity !< Input: Logical flag determining check on monotonicity of tracers
+      integer, intent(inout) :: err !< Input/Output: Error Flag
 
       err = 0
 
@@ -482,22 +473,31 @@ module mpas_tracer_advection_mono
       vert3rdOrder = .false.
       vert4thOrder = .false.
 
-      if ( config_horiz_tracer_adv_order == 3) then
-          coef_3rd_order = config_coef_3rd_order
-      else if(config_horiz_tracer_adv_order == 2 .or. config_horiz_tracer_adv_order == 4) then
+      if ( horiz_adv_order == 3) then
+          coef_3rd_order = coef_3rd_order_in
+      else if(horiz_adv_order == 2 .or. horiz_adv_order == 4) then
           coef_3rd_order = 0.0_RKIND
       end if
 
-      if (config_vert_tracer_adv_order == 3) then
+      horizOrder = horiz_adv_order
+
+      if (vert_adv_order == 3) then
           vert3rdOrder = .true.
-      else if (config_vert_tracer_adv_order == 4) then
+      else if (vert_adv_order == 4) then
           vert4thOrder = .true.
       else
           vert2ndOrder = .true.
-          if(config_vert_tracer_adv_order /= 2) then
-            write(6,*) 'Invalid value for config_vert_tracer_adv_order, defaulting to 2nd order'
+          if(vert_adv_order /= 2) then
+            write(6,*) 'Invalid value for vert_adv_order, defaulting to 2nd order'
           end if
       end if
+
+      if (config_num_halos < 3) then
+        call mpas_dmpar_global_abort('ERROR: Monotonic advection cannot be used with less than 3 halos.')
+      end if
+
+      positiveDzDk = dzdk_positive
+      monotonicityCheck = check_monotonicity
 
    end subroutine mpas_tracer_advection_mono_init!}}}
 

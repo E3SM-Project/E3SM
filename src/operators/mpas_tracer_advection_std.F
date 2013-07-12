@@ -20,8 +20,6 @@ module mpas_tracer_advection_std
 
    use mpas_kind_types
    use mpas_grid_types
-   use mpas_configure
-   use mpas_dmpar
 
    use mpas_tracer_advection_helpers
 
@@ -30,7 +28,9 @@ module mpas_tracer_advection_std
    save 
 
    real (kind=RKIND) :: coef_3rd_order
+   integer :: horizOrder
    logical :: vert2ndOrder, vert3rdOrder, vert4thOrder
+   logical :: positiveDzDk, monotonicityCheck
 
    public :: mpas_tracer_advection_std_tend, &
              mpas_tracer_advection_std_init
@@ -49,9 +49,13 @@ module mpas_tracer_advection_std
 !>  Both horizontal and vertical.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_tracer_advection_std_tend(tracers, normalThicknessFlux, w, layerThickness, verticalCellSize, dt, grid, tend_layerThickness, tend, maxLevelCell_in, maxLevelEdgeTop_in, highOrderAdvectionMask_in, verticalDivergenceFactor_in, edgeSignOnCell_in)!{{{
+   subroutine mpas_tracer_advection_std_tend(tracers, adv_coefs, adv_coefs_3rd, nAdvCellsForEdge, advCellsForEdge, normalThicknessFlux, w, layerThickness, verticalCellSize, dt, grid, tend_layerThickness, tend, maxLevelCell_in, maxLevelEdgeTop_in, highOrderAdvectionMask_in, verticalDivergenceFactor_in, edgeSignOnCell_in)!{{{
 
       real (kind=RKIND), dimension(:,:,:), intent(in) :: tracers !< Input: current tracer values
+      real (kind=RKIND), dimension(:,:), intent(in) :: adv_coefs !< Input: Advection coefficients for 2nd order advection
+      real (kind=RKIND), dimension(:,:), intent(in) :: adv_coefs_3rd !< Input: Advection coefficients for blending in 3rd or 4th order advection
+      integer, dimension(:), intent(in) :: nAdvCellsForEdge !< Input: Number of advection cells for each edge
+      integer, dimension(:,:), intent(in) :: advCellsForEdge !< Input: List of advection cells for each edge
       real (kind=RKIND), dimension(:,:), intent(in) :: normalThicknessFlux !< Input: Thichness weighted velocitiy
       real (kind=RKIND), dimension(:,:), intent(in) :: w !< Input: Vertical velocitiy
       real (kind=RKIND), dimension(:,:), intent(in) :: layerThickness !< Input: Thickness
@@ -68,13 +72,12 @@ module mpas_tracer_advection_std
 
       integer :: i, iCell, iEdge, k, iTracer, cell1, cell2
       integer :: nVertLevels, num_tracers, nCells, nEdges, nCellsSolve, maxEdges
-      integer, dimension(:), pointer :: nAdvCellsForEdge, maxLevelCell, maxLevelEdgeTop, nEdgesOnCell
-      integer, dimension(:,:), pointer :: cellsOnEdge, cellsOnCell, advCellsForEdge, highOrderAdvectionMask, edgeSignOnCell, edgesOnCell
+      integer, dimension(:), pointer :: maxLevelCell, maxLevelEdgeTop, nEdgesOnCell
+      integer, dimension(:,:), pointer :: cellsOnEdge, cellsOnCell, highOrderAdvectionMask, edgeSignOnCell, edgesOnCell
 
       real (kind=RKIND) :: flux, tracer_weight, invDvEdge, invAreaCell1, invAreaCell2
       real (kind=RKIND) :: verticalWeightK, verticalWeightKm1
       real (kind=RKIND), dimension(:), pointer :: dvEdge, areaCell, verticalDivergenceFactor
-      real (kind=RKIND), dimension(:,:), pointer :: adv_coefs, adv_coefs_3rd
       real (kind=RKIND), dimension(:,:), pointer :: tracer_cur, high_order_horiz_flux, high_order_vert_flux
       real (kind=RKIND), parameter :: eps = 1.e-10_RKIND
 
@@ -92,12 +95,7 @@ module mpas_tracer_advection_std
       edgesOnCell => grid % edgesOnCell % array
       cellsOnCell => grid % cellsOnCell % array
       areaCell    => grid % areaCell % array
-
       nEdgesOnCell => grid % nEdgesOnCell % array
-      nAdvCellsForEdge => grid % nAdvCellsForEdge % array
-      advCellsForEdge => grid % advCellsForEdge % array
-      adv_coefs => grid % adv_coefs % array
-      adv_coefs_3rd => grid % adv_coefs_3rd % array
       
       ! Setup arrays from optional arguments
       if(present(maxLevelCell_in)) then
@@ -118,7 +116,7 @@ module mpas_tracer_advection_std
         highOrderAdvectionMask => highOrderAdvectionMask_in
       else
         allocate(highOrderAdvectionMask(nVertLevels, nEdges+1))
-        if(config_horiz_tracer_adv_order == 2) then
+        if(horizOrder == 2) then
           highOrderAdvectionMask = 0
         else
           highOrderAdvectionMask = 1
@@ -267,10 +265,13 @@ module mpas_tracer_advection_std
 !>  This routine initializes the standard tracer advection tendencity.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_tracer_advection_std_init(err)!{{{
-      integer, intent(inout) :: err !< Input: Error Flags
-
-      integer :: err_tmp
+   subroutine mpas_tracer_advection_std_init(horiz_adv_order, vert_adv_order, coef_3rd_order_in, dzdk_positive, check_monotonicity, err)!{{{
+      integer, intent(in) :: horiz_adv_order !< Input: Order for horizontal advection
+      integer, intent(in) :: vert_adv_order !< Input: Order for vertical advection
+      real (kind=RKIND), intent(in) :: coef_3rd_order_in !< Input: coefficient for blending advection orders.
+      logical, intent(in) :: dzdk_positive !< Input: Logical flag determining if dzdk is positive or negative.
+      logical, intent(in) :: check_monotonicity !< Input: Logical flag determining check on monotonicity of tracers
+      integer, intent(inout) :: err !< Input/Output: Error Flag
 
       err = 0
 
@@ -278,22 +279,27 @@ module mpas_tracer_advection_std
       vert3rdOrder = .false.
       vert4thOrder = .false.
 
-      if ( config_horiz_tracer_adv_order == 3) then
-          coef_3rd_order = config_coef_3rd_order
-      else if(config_horiz_tracer_adv_order == 2 .or. config_horiz_tracer_adv_order == 4) then
+      if ( horiz_adv_order == 3) then
+          coef_3rd_order = coef_3rd_order_in
+      else if(horiz_adv_order == 2 .or. horiz_adv_order == 4) then
           coef_3rd_order = 0.0_RKIND
       end if
 
-      if (config_vert_tracer_adv_order == 3) then
+      horizOrder = horiz_adv_order
+
+      if (vert_adv_order == 3) then
           vert3rdOrder = .true.
-      else if (config_vert_tracer_adv_order == 4) then
+      else if (vert_adv_order == 4) then
           vert4thOrder = .true.
       else
           vert2ndOrder = .true.
-          if(config_vert_tracer_adv_order /= 2) then
-            write(6,*) 'Invalid value for config_vert_tracer_adv_order, defaulting to 2nd order'
+          if(vert_adv_order /= 2) then
+            write(6,*) 'Invalid value for vert_adv_order, defaulting to 2nd order'
           end if
       end if
+
+      positiveDzDk = dzdk_positive
+      monotonicityCheck = check_monotonicity
 
    end subroutine mpas_tracer_advection_std_init!}}}
 

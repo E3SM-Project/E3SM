@@ -82,21 +82,25 @@ module mpas_tracer_advection_helpers
 !>  advection of tracers.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_tracer_advection_coefficients( grid, err, maxLevelCell_in, highOrderAdvectionMask_in, boundaryCell_in )!{{{
+   subroutine mpas_tracer_advection_coefficients( grid, horiz_adv_order, deriv_two, adv_coefs, adv_coefs_3rd, nAdvCellsForEdge, advCellsForEdge, err, maxLevelCell_in, highOrderAdvectionMask_in, boundaryCell_in )!{{{
 
       use mpas_hash
 
       implicit none
       type (mesh_type) :: grid !< Input: Grid information
+      integer, intent(in) :: horiz_adv_order !< Input: Order of horizontal advection
+      real (kind=RKIND), dimension(:,:,:), intent(in) :: deriv_two !< Input: 2nd derivative values for polynomial fit to tracers
+      real (kind=RKIND), dimension(:,:), intent(inout) :: adv_coefs !< Input/Output: Advection coefficients for 2nd order advection
+      real (kind=RKIND), dimension(:,:), intent(inout) :: adv_coefs_3rd !< Input/Output: Advection coefficients for blending in 3rd or 4th order advection
+      integer, dimension(:), intent(inout) :: nAdvCellsForEdge !< Input/Output: Number of advection cells for each edge
+      integer, dimension(:,:), intent(inout) :: advCellsForEdge !< Input/Output: List of advection cells for each edge
       integer, intent(out) :: err !< Input/Output: Error flag
       integer, dimension(:), pointer, optional :: maxLevelCell_in !< Input - optional: Index to last real cell
       integer, dimension(:,:), pointer, optional :: highOrderAdvectionMask_in !< Input - optional: Mask for high order advection
       integer, dimension(:,:), pointer, optional :: boundaryCell_in !< Input- optional: Mask for boundary cells
 
-      real (kind=RKIND), dimension(:,:,:), pointer :: deriv_two
-      real (kind=RKIND), dimension(:,:), pointer :: adv_coefs, adv_coefs_3rd
-      integer, dimension(:,:), pointer :: cellsOnCell, cellsOnEdge, advCellsForEdge, highOrderAdvectionMask, boundaryCell
-      integer, dimension(:), pointer :: nEdgesOnCell, nAdvCellsForEdge, maxLevelCell
+      integer, dimension(:,:), pointer :: cellsOnCell, cellsOnEdge, highOrderAdvectionMask, boundaryCell
+      integer, dimension(:), pointer :: nEdgesOnCell, maxLevelCell
 
       integer, dimension(:), pointer :: cell_indices 
       integer, dimension(:,:), pointer :: sorted_cell_indices
@@ -105,14 +109,9 @@ module mpas_tracer_advection_helpers
 
       type (hashtable) :: cell_hash
 
-      deriv_two => grid % deriv_two % array
-      adv_coefs => grid % adv_coefs % array
-      adv_coefs_3rd => grid % adv_coefs_3rd % array
       cellsOnCell => grid % cellsOnCell % array
       cellsOnEdge => grid % cellsOnEdge % array
-      advCellsForEdge => grid % advCellsForEdge % array
       nEdgesOnCell => grid % nEdgesOnCell % array
-      nAdvCellsForEdge => grid % nAdvCellsForEdge % array
 
       nVertLevels = grid % nVertLevels
 
@@ -258,7 +257,7 @@ module mpas_tracer_advection_helpers
       deallocate(sorted_cell_indices)
 
       ! If 2nd order advection, set masks appropriately.
-      if(config_horiz_tracer_adv_order == 2 .and. present(highOrderAdvectionMask_in)) then
+      if(horiz_adv_order == 2 .and. present(highOrderAdvectionMask_in)) then
         highOrderAdvectionMask = 0
       end if
 
@@ -283,7 +282,7 @@ module mpas_tracer_advection_helpers
 !>  This routine precomputes the second derivative values for tracer advection.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_initialize_deriv_two( grid, err )!{{{
+   subroutine mpas_initialize_deriv_two( grid, deriv_two, err )!{{{
                                       
 !
 ! compute the cell coefficients for the polynomial fit.
@@ -298,9 +297,9 @@ module mpas_tracer_advection_helpers
       implicit none
 
       type (mesh_type), intent(in) :: grid
+      real (kind=RKIND), dimension(:,:,:), intent(inout) :: deriv_two !< Input/Output: 2nd derivative values of polynomial for tracer fit.
       integer, intent(out) :: err
 
-      real (kind=RKIND), dimension(:,:,:), pointer :: deriv_two
       integer, dimension(:), pointer :: advCells
 
 !  local variables
@@ -352,7 +351,6 @@ module mpas_tracer_advection_helpers
 
 !     advCells => grid % advCells % array
       allocate(advCells(grid % maxEdges2))
-      deriv_two => grid % deriv_two % array
       deriv_two(:,:,:) = 0.
 
       do iCell = 1, grid % nCells !  is this correct? - we need first halo cell also...
