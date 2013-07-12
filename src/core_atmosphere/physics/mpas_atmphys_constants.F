@@ -7,7 +7,7 @@
 !
 !=============================================================================================
  module mpas_atmphys_constants
- use mpas_constants, cp => cp, R_d => rgas, g => gravity
+ use mpas_constants, R_d => rgas, g => gravity
 
  implicit none
  public
