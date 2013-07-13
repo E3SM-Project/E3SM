@@ -2490,14 +2490,14 @@ endif
 
     if (nu_ratio /= 1) then
        ! must use contra formulation
-       if (hypervis_scaling/=0) then
+       if (hypervis_scaling/=0 .and. var_coef) then
           ! error: tensorHV must use cartesian formulation
           call abortmp('Error: tensorHV cant be used with nu_div /= nu')
        else
           use_cartesian=.false.
        endif
     else
-       if (hypervis_scaling/=0) then
+       if (hypervis_scaling/=0 .and. var_coef) then
           ! requres scalar laplace on cartesian components
           use_cartesian=.true.
        else
