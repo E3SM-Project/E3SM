@@ -19,7 +19,7 @@ use derivative_mod, only : derivative_t, laplace_sphere_wk, vlaplace_sphere_wk, 
 use edge_mod, only : EdgeBuffer_t, edgevpack, edgerotate, edgevunpack, edgevunpackmin, &
     edgevunpackmax, initEdgeBuffer, FreeEdgeBuffer
 use bndry_mod, only : bndry_exchangev
-use control_mod, only : hypervis_scaling
+use control_mod, only : hypervis_scaling, nu, nu_div
 
 implicit none
 save
@@ -51,9 +51,9 @@ type (EdgeBuffer_t)          :: edge1
 contains
 
 #ifdef _PRIM
-subroutine biharmonic_wk(elem,pstens,ptens,vtens,deriv,edge3,hybrid,nt,nets,nete,nu_ratio)
+subroutine biharmonic_wk(elem,pstens,ptens,vtens,deriv,edge3,hybrid,nt,nets,nete)
 #else
-subroutine biharmonic_wk(elem,ptens,vtens,deriv,edge3,hybrid,nt,nets,nete,nu_ratio)
+subroutine biharmonic_wk(elem,ptens,vtens,deriv,edge3,hybrid,nt,nets,nete)
 #endif
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! compute weak biharmonic operator
@@ -68,7 +68,6 @@ real (kind=real_kind), dimension(np,np,2,nlev,nets:nete)  :: vtens
 real (kind=real_kind), dimension(np,np,nlev,nets:nete) :: ptens
 type (EdgeBuffer_t)  , intent(inout) :: edge3
 type (derivative_t)  , intent(in) :: deriv
-real (kind=real_kind) ::  nu_ratio
 #ifdef _PRIM
 real (kind=real_kind), dimension(np,np,nets:nete) :: pstens
 #endif
@@ -79,19 +78,39 @@ real (kind=real_kind), dimension(:,:), pointer :: rspheremv
 real (kind=real_kind), dimension(np,np) :: lap_ps
 real (kind=real_kind), dimension(np,np,nlev) :: T
 real (kind=real_kind), dimension(np,np,2) :: v
-logical var_coef_first_call
+real (kind=real_kind) ::  nu_ratio1,nu_ratio2
+logical var_coef1
 
    !if tensor hyperviscosity with tensor V is used, then biharmonic operator is (\grad\cdot V\grad) (\grad \cdot \grad) 
    !so tensor is only used on second call to laplace_sphere_wk
-   var_coef_first_call = .true.
-   if(hypervis_scaling > 0)    var_coef_first_call = .false.
-    
+   var_coef1 = .true.
+   if(hypervis_scaling > 0)  var_coef1= .false.
+
+   ! note: there is a scaling bug in the treatment of nu_div
+   ! nu_ratio is applied twice, once in each laplace operator
+   ! so in reality:   nu_div_actual = (nu_div/nu)**2 nu
+   ! We should fix this, but it requires adjusting all CAM defaults
+   nu_ratio1=1
+   nu_ratio2=1
+   if (nu_div/=nu) then
+      if(hypervis_scaling /= 0) then
+         ! we have a problem with the tensor in that we cant seperate
+         ! div and curl components.  So we do, with tensor V:
+         ! nu * (del V del ) * ( nu_ratio * grad(div) - curl(curl))
+         nu_ratio1=(nu_div/nu)**2   ! preserve buggy scaling
+         nu_ratio2=1
+      else
+         nu_ratio1=nu_div/nu
+         nu_ratio2=nu_div/nu
+      endif
+   endif
+
 
    do ie=nets,nete
       
 #ifdef _PRIM
       ! should filter lnps + PHI_s/RT?
-      pstens(:,:,ie)=laplace_sphere_wk(elem(ie)%state%ps_v(:,:,nt),deriv,elem(ie),var_coef=var_coef_first_call)
+      pstens(:,:,ie)=laplace_sphere_wk(elem(ie)%state%ps_v(:,:,nt),deriv,elem(ie),var_coef=var_coef1)
 #endif
       
 #if (defined ELEMENT_OPENMP)
@@ -111,9 +130,9 @@ logical var_coef_first_call
             enddo
          enddo
         
-         ptens(:,:,k,ie)=laplace_sphere_wk(T(:,:,k),deriv,elem(ie),var_coef=var_coef_first_call)
+         ptens(:,:,k,ie)=laplace_sphere_wk(T(:,:,k),deriv,elem(ie),var_coef=var_coef1)
          vtens(:,:,:,k,ie)=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,&
-              elem(ie),var_coef=var_coef_first_call,nu_ratio=nu_ratio)
+              elem(ie),var_coef=var_coef1,nu_ratio=nu_ratio1)
 
       enddo
       kptr=0
@@ -151,7 +170,7 @@ logical var_coef_first_call
          enddo
          ptens(:,:,k,ie)=laplace_sphere_wk(T(:,:,k),deriv,elem(ie),var_coef=.true.)
          vtens(:,:,:,k,ie)=vlaplace_sphere_wk(v(:,:,:),deriv,elem(ie),var_coef=.true.,&
-              nu_ratio=nu_ratio)
+              nu_ratio=nu_ratio2)
       enddo
          
 #ifdef _PRIM
@@ -173,7 +192,7 @@ end subroutine
 
 
 #ifdef _PRIM
-subroutine biharmonic_wk_dp3d(elem,dptens,ptens,vtens,deriv,edge3,hybrid,nt,nets,nete,nu_ratio)
+subroutine biharmonic_wk_dp3d(elem,dptens,ptens,vtens,deriv,edge3,hybrid,nt,nets,nete)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! compute weak biharmonic operator
 !    input:  h,v (stored in elem()%, in lat-lon coordinates
@@ -187,19 +206,40 @@ real (kind=real_kind), dimension(np,np,2,nlev,nets:nete)  :: vtens
 real (kind=real_kind), dimension(np,np,nlev,nets:nete) :: ptens,dptens
 type (EdgeBuffer_t)  , intent(inout) :: edge3
 type (derivative_t)  , intent(in) :: deriv
-real (kind=real_kind) ::  nu_ratio
 
 ! local
 integer :: k,kptr,ie
 real (kind=real_kind), dimension(:,:), pointer :: rspheremv
 real (kind=real_kind), dimension(np,np) :: tmp
 real (kind=real_kind), dimension(np,np,2) :: v
-logical var_coef_first_call
+real (kind=real_kind) :: nu_ratio1, nu_ratio2
+logical var_coef1
 
    !if tensor hyperviscosity with tensor V is used, then biharmonic operator is (\grad\cdot V\grad) (\grad \cdot \grad) 
    !so tensor is only used on second call to laplace_sphere_wk
-   var_coef_first_call = .true.
-   if(hypervis_scaling > 0)    var_coef_first_call = .false.
+   var_coef1 = .true.
+   if(hypervis_scaling > 0)    var_coef1 = .false.
+
+   ! note: there is a scaling bug in the treatment of nu_div
+   ! nu_ratio is applied twice, once in each laplace operator
+   ! so in reality:   nu_div_actual = (nu_div/nu)**2 nu
+   ! We should fix this, but it requires adjusting all CAM defaults
+   nu_ratio1=1
+   nu_ratio2=1
+   if (nu_div/=nu) then
+      if(hypervis_scaling /= 0) then
+         ! we have a problem with the tensor in that we cant seperate
+         ! div and curl components.  So we do, with tensor V:
+         ! nu * (del V del ) * ( nu_ratio * grad(div) - curl(curl))
+         nu_ratio1=(nu_div/nu)**2   ! preserve buggy scaling
+         nu_ratio2=1
+      else
+         nu_ratio1=nu_div/nu
+         nu_ratio2=nu_div/nu
+      endif
+   endif
+
+
 
    do ie=nets,nete
 
@@ -208,11 +248,11 @@ logical var_coef_first_call
 #endif
       do k=1,nlev
          tmp=elem(ie)%state%T(:,:,k,nt) 
-         ptens(:,:,k,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),var_coef=var_coef_first_call)
+         ptens(:,:,k,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),var_coef=var_coef1)
          tmp=elem(ie)%state%dp3d(:,:,k,nt) 
-         dptens(:,:,k,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),var_coef=var_coef_first_call)
+         dptens(:,:,k,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),var_coef=var_coef1)
          vtens(:,:,:,k,ie)=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie),&
-              var_coef=var_coef_first_call,nu_ratio=nu_ratio)
+              var_coef=var_coef1,nu_ratio=nu_ratio1)
       enddo
       kptr=0
       call edgeVpack(edge3, ptens(1,1,1,ie),nlev,kptr,elem(ie)%desc)
@@ -248,7 +288,7 @@ logical var_coef_first_call
          v(:,:,1)=rspheremv(:,:)*vtens(:,:,1,k,ie)
          v(:,:,2)=rspheremv(:,:)*vtens(:,:,2,k,ie)
          vtens(:,:,:,k,ie)=vlaplace_sphere_wk(v(:,:,:),deriv,elem(ie),&
-              var_coef=.true.,nu_ratio=nu_ratio)
+              var_coef=.true.,nu_ratio=nu_ratio2)
 
       enddo
    enddo
@@ -278,12 +318,12 @@ type (derivative_t)  , intent(in) :: deriv
 ! local
 integer :: k,kptr,i,j,ie,ic,q
 real (kind=real_kind), dimension(np,np) :: lap_p
-logical var_coef_first_call
+logical var_coef1
 
    !if tensor hyperviscosity with tensor V is used, then biharmonic operator is (\grad\cdot V\grad) (\grad \cdot \grad) 
    !so tensor is only used on second call to laplace_sphere_wk
-   var_coef_first_call = .true.
-   if(hypervis_scaling > 0)    var_coef_first_call = .false.
+   var_coef1 = .true.
+   if(hypervis_scaling > 0)    var_coef1 = .false.
 
 
 
@@ -295,7 +335,7 @@ logical var_coef_first_call
          do k=1,nlev    !  Potential loop inversion (AAM)
             lap_p(:,:)=qtens(:,:,k,q,ie)
 ! Original use of qtens on left and right hand sides caused OpenMP errors (AAM)
-           qtens(:,:,k,q,ie)=laplace_sphere_wk(lap_p,deriv,elem(ie),var_coef=var_coef_first_call)
+           qtens(:,:,k,q,ie)=laplace_sphere_wk(lap_p,deriv,elem(ie),var_coef=var_coef1)
          enddo
       enddo
       call edgeVpack(edgeq, qtens(:,:,:,:,ie),qsize*nlev,0,elem(ie)%desc)
@@ -347,12 +387,12 @@ integer :: k,kptr,i,j,ie,ic,q
 real (kind=real_kind), dimension(np,np) :: lap_p
 real (kind=real_kind) :: Qmin(np,np,nlev,qsize)
 real (kind=real_kind) :: Qmax(np,np,nlev,qsize)
-logical var_coef_first_call
+logical var_coef1
 
    !if tensor hyperviscosity with tensor V is used, then biharmonic operator is (\grad\cdot V\grad) (\grad \cdot \grad) 
    !so tensor is only used on second call to laplace_sphere_wk
-   var_coef_first_call = .true.
-   if(hypervis_scaling > 0)    var_coef_first_call = .false.
+   var_coef1 = .true.
+   if(hypervis_scaling > 0)    var_coef1 = .false.
 
 
 
@@ -366,7 +406,7 @@ logical var_coef_first_call
          Qmax(:,:,k,q)=emax(k,q,ie)  ! edgeVpack routine below
          lap_p(:,:) = qtens(:,:,k,q,ie)
 ! Original use of qtens on left and right hand sides caused OpenMP errors (AAM)
-         qtens(:,:,k,q,ie)=laplace_sphere_wk(lap_p,deriv,elem(ie),var_coef=var_coef_first_call)
+         qtens(:,:,k,q,ie)=laplace_sphere_wk(lap_p,deriv,elem(ie),var_coef=var_coef1)
       enddo
       enddo
       call edgeVpack(edgeq, qtens(:,:,:,:,ie),qsize*nlev,0,elem(ie)%desc)

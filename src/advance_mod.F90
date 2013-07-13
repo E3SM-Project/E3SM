@@ -410,7 +410,7 @@ contains
               enddo
            enddo
         enddo
-	call biharmonic_wk(elem,ptens,vtens,deriv,edge3,hybrid,n0,nets,nete,nu_div/nu)
+	call biharmonic_wk(elem,ptens,vtens,deriv,edge3,hybrid,n0,nets,nete)
         ! convert lat-lon -> contra variant
         do ie=nets,nete
            do k=1,nlev
@@ -1558,7 +1558,7 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     if (hypervis_order == 2) then
        do ic=1,hypervis_subcycle
-          call biharmonic_wk(elem,ptens,vtens,deriv,edge3,hybrid,nt,nets,nete,nu_div/nu)
+          call biharmonic_wk(elem,ptens,vtens,deriv,edge3,hybrid,nt,nets,nete)
 
           do ie=nets,nete
              spheremp     => elem(ie)%spheremp

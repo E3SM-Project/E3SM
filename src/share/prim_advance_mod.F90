@@ -1614,7 +1614,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   
   ! local
   real (kind=real_kind) :: eta_ave_w  ! weighting for mean flux terms
-  real (kind=real_kind) :: nu_scale, dpdn,dpdn0, nu_scale_top,nu_ratio
+  real (kind=real_kind) :: nu_scale, dpdn,dpdn0, nu_scale_top
   integer :: k,kptr,i,j,ie,ic,nt
   real (kind=real_kind), dimension(np,np,2,nlev,nets:nete)      :: vtens   
   real (kind=real_kind), dimension(np,np,nlev,nets:nete)        :: ptens
@@ -1715,9 +1715,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 !                (1 deg: to about 0.1 W/m^2)
 !
   if (hypervis_order == 2) then
-     nu_ratio = nu_div/nu ! possibly weight div component more inside biharmonc_wk
      do ic=1,hypervis_subcycle
-        call biharmonic_wk(elem,pstens,ptens,vtens,deriv,edge3,hybrid,nt,nets,nete,nu_ratio)
+        call biharmonic_wk(elem,pstens,ptens,vtens,deriv,edge3,hybrid,nt,nets,nete)
         do ie=nets,nete
 
            ! comptue mean flux
@@ -1899,7 +1898,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   
   ! local
   real (kind=real_kind) :: eta_ave_w  ! weighting for mean flux terms
-  real (kind=real_kind) :: dpdn,dpdn0, nu_scale_top,nu_ratio
+  real (kind=real_kind) :: dpdn,dpdn0, nu_scale_top
   integer :: k,kptr,i,j,ie,ic,nt
   real (kind=real_kind), dimension(np,np,2,nlev,nets:nete)      :: vtens   
   real (kind=real_kind), dimension(np,np,nlev,nets:nete)        :: ttens
@@ -2000,9 +1999,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 !                (1 deg: to about 0.1 W/m^2)
 !
   if (hypervis_order == 2) then
-     nu_ratio = nu_div/nu ! possibly weight div component more inside biharmonc_wk
      do ic=1,hypervis_subcycle
-        call biharmonic_wk_dp3d(elem,dptens,ttens,vtens,deriv,edge3,hybrid,nt,nets,nete,nu_ratio)
+        call biharmonic_wk_dp3d(elem,dptens,ttens,vtens,deriv,edge3,hybrid,nt,nets,nete)
         do ie=nets,nete
 
            ! comptue mean flux
@@ -2163,7 +2161,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   integer :: nets,nete
   
   ! local
-  real (kind=real_kind) :: nu_scale, dpdn,dpdn0, nu_scale_top,nu_ratio
+  real (kind=real_kind) :: nu_scale, dpdn,dpdn0, nu_scale_top
   integer :: k,kptr,i,j,ie,ic,n0,nt,nm1
   real (kind=real_kind), dimension(np,np,2,nlev,nets:nete)      :: vtens   
   real (kind=real_kind), dimension(np,np,nlev,nets:nete)        :: ptens
@@ -2263,9 +2261,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   !  hyper viscosity  
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   if (hypervis_order == 2) then
-     nu_ratio = nu_div/nu ! possibly weight div component more inside biharmonc_wk
      do ic=1,hypervis_subcycle
-        call biharmonic_wk(elem,pstens,ptens,vtens,deriv,edge3,hybrid,nt,nets,nete,nu_ratio)
+        call biharmonic_wk(elem,pstens,ptens,vtens,deriv,edge3,hybrid,nt,nets,nete)
         do ie=nets,nete
 
            nu_scale=1
@@ -3869,7 +3866,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      pmax(ie)=maxval(pstens(:,:,ie))
   enddo
 
-  ! order = 1   laplacian
+  ! order = 1   grad^2 laplacian
   ! order = 2   grad^4 (need to add a negative sign)
   ! order = 3   grad^6
   ! order = 4   grad^8 (need to add a negative sign)  
@@ -3878,9 +3875,12 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   
   use_var_coef=.true.
   if (hypervis_scaling/=0) then
-     ! for tensorHV option, we turn off the tensor except for *last* laplace operator
+     ! for tensorHV option, we turn off the tensor except for *last* laplace operator                             
      use_var_coef=.false.
-     order_max = 2    ! tensor only initialized for hyperviscosity
+     if (hypervis_scaling>=3) then
+        ! with a 3.2 or 4 scaling, assume hyperviscosity                                                          
+        order_max = 2
+     endif
   endif
   
 
@@ -3915,14 +3915,10 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
         ! but output of biharminc_wk is of the form M*RHS.  rewrite as:
         !  ps(t+1) = Minv * DSS * M [ ps(t) +  M*RHS/M ]
         ! so we can apply limiter to ps(t) +  (M*RHS)/M
-#if 0
-        mn=minval(phis(:,:,ie))
-        mx=maxval(phis(:,:,ie))
-        iuse = numcycle/2  ! apply first half of iterations
-#else
+#if 1
         mn=pmin(ie)
         mx=pmax(ie)
-        iuse = numcycle+1  ! always apply
+        iuse = numcycle+1  ! always apply min/max limiter
 #endif
         phis(:,:,ie)=phis(:,:,ie) + &
            smooth_phis_nudt*pstens(:,:,ie)/elem(ie)%spheremp(:,:)
@@ -3967,7 +3963,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
     use fvm_reconstruction_mod, only: reconstruction
     use fvm_filter_mod, only: monotonic_gradient_cart, recons_val_cart
     use dimensions_mod, only : np, nlev, nc,nhe
-    use control_mod, only : smooth_phis_nudt
     use hybrid_mod, only : hybrid_t
     use edge_mod, only : EdgeBuffer_t, edgevpack, edgevunpack, edgevunpackmax, edgevunpackmin
     use bndry_mod, only : bndry_exchangev

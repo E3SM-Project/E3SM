@@ -327,7 +327,7 @@ contains
           enddo
        enddo
        if (hypervis_order==2) then
-          call biharmonic_wk(elem,diss_p,diss_v,deriv,edge3,hybrid,n0,nets,nete,nu_div/nu)
+          call biharmonic_wk(elem,diss_p,diss_v,deriv,edge3,hybrid,n0,nets,nete)
        else
           do ie=nets,nete
              v  => elem(ie)%state%v(:,:,:,k,n0)
