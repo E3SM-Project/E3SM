@@ -980,13 +980,6 @@ module namelist_mod
       endif
     endif
 
-    ! sanity checks:
-    if (hypervis_scaling/=0) then
-       if (which_vlaplace/=2) then
-          call abortmp('Tensor HV option requires which_vlaplace=2 for now')
-       endif
-    endif
-
 
     ftype = se_ftype    
 
@@ -1066,9 +1059,6 @@ module namelist_mod
     if(nu_s<0) nu_s=nu
     if(nu_q<0) nu_q=nu
     if(nu_div<0) nu_div=nu
-    if (nu_div /= nu .and. which_vlaplace==2) then
-       call abortmp('which_vlaplace==2 does not yet support nu_div /= nu')
-    endif
 
 
     if (multilevel <= 0) then  
@@ -1179,7 +1169,7 @@ module namelist_mod
           hypervis_subcycle, hypervis_subcycle_q
        endif
        write(iulog,*)"psurf_vis: ",psurf_vis
-       write(iulog,*)"which_vlaplace (0=new, 1=orig, 2=cartesian): ",which_vlaplace
+       write(iulog,*)"which_vlaplace (0=contra, 2=cartesian): ",which_vlaplace
        write(iulog,*)"Equivalent ne in fine region = ", fine_ne
        write(iulog,'(a,2e9.2)')"viscosity:  nu (vor/div) = ",nu,nu_div
        write(iulog,'(a,2e9.2)')"viscosity:  nu_s      = ",nu_s

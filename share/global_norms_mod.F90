@@ -318,7 +318,7 @@ contains
     real (kind=real_kind) :: max_eig_hypervis
     real (kind=real_kind) :: x, y, noreast, nw, se, sw
     real (kind=real_kind), dimension(np,np,nets:nete) :: zeta
-    real (kind=real_kind) :: lambda_max, lambda_vis, min_gw, lambda
+    real (kind=real_kind) :: lambda_max, lambda_vis, min_gw, lambda, nu_div_actual
     integer :: ie,corner, i, j, rowind, colind
     type (quadrature_t)    :: gp
 
@@ -626,7 +626,14 @@ contains
              !  dt < S  1/nu*max_eig
              write(iulog,'(a,f10.2,a)') "Stability: nu_q   hyperviscosity dt < S *", 1/(nu_q*max_eig_hypervis),'s'
              write(iulog,'(a,f10.2,a)') "Stability: nu_vor hyperviscosity dt < S *", 1/(nu*max_eig_hypervis),'s'
-             write(iulog,'(a,f10.2,a)') "Stability: nu_div hyperviscosity dt < S *", 1/(nu_div*max_eig_hypervis),'s'
+             
+             ! bug in nu_div implimentation:
+             ! we apply nu_ration=(nu_div/nu) in laplace, so it is applied 2x
+             ! making the effective nu_div = nu * (nu_div/nu)**2 
+             ! should be fixed - but need all CAM defaults adjusted, 
+             ! so we have to coordiante with CAM
+             nu_div_actual = nu_div**2/nu
+             write(iulog,'(a,f10.2,a)') "Stability: nu_div hyperviscosity dt < S *", 1/(nu_div_actual*max_eig_hypervis),'s'
           endif
        endif
        if(nu_top>0) then
