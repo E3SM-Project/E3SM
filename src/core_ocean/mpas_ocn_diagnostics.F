@@ -110,7 +110,7 @@ contains
         relativeVorticity, relativeVorticityCell, &
         normalizedPlanetaryVorticityEdge, normalizedPlanetaryVorticityVertex, &
         normalizedRelativeVorticityEdge, normalizedRelativeVorticityVertex, normalizedRelativeVorticityCell, &
-        density, displacedDensity, temperature, salinity, kineticEnergyVertex, kineticEnergyVertexOnCells, uBolusGM, uTransport, &
+        density, displacedDensity, potentialDensity, temperature, salinity, kineticEnergyVertex, kineticEnergyVertexOnCells, uBolusGM, uTransport, &
         vertVelocityTop, BruntVaisalaFreqTop, &
         vorticityGradientNormalComponent, vorticityGradientTangentialComponent
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers, deriv_two
@@ -132,6 +132,7 @@ contains
       normalizedRelativeVorticityCell    => s % normalizedRelativeVorticityCell % array
       density         => s % density % array
       displacedDensity=> s % displacedDensity % array
+      potentialDensity=> s % potentialDensity % array
       montgomeryPotential     => s % montgomeryPotential % array
       pressure    => s % pressure % array
       zMid        => s % zMid % array
@@ -413,17 +414,21 @@ contains
          call mpas_timer_start("equation of state", .false., diagEOSTimer)
 
          ! compute in-place density
-         call ocn_equation_of_state_density(s, grid, 0, 'relative', err)
+         call ocn_equation_of_state_density(s, grid, 0, 'relative', density, err)
 
-         ! compute displacedDensity, the potential density referenced to the top layer
-         call ocn_equation_of_state_density(s, grid, 1, 'relative', err)
+         ! compute potentialDensity, the density displaced adiabatically to the mid-depth of top layer.
+         call ocn_equation_of_state_density(s, grid, 1, 'absolute', potentialDensity, err)
+
+         ! compute displacedDensity, density displaced adiabatically to the mid-depth one layer deeper.  
+         ! That is, layer k has been displaced to the depth of layer k+1.
+         call ocn_equation_of_state_density(s, grid, 1, 'relative', displacedDensity, err)
 
          call mpas_timer_stop("equation of state", diagEOSTimer)
       endif
 
       !
       ! Pressure
-      ! This section must be after computing density
+      ! This section must be placed in the code after computing the density.
       !
       if (config_pressure_gradient_type.eq.'MontgomeryPotential') then
 
@@ -491,7 +496,7 @@ contains
       do iCell=1,nCells
          BruntVaisalaFreqTop(1,iCell) = 0.0
          do k=2,maxLevelCell(iCell)
-            BruntVaisalaFreqTop(k,iCell) = coef * (displacedDensity(k-1,iCell) - displacedDensity(k,iCell)) & 
+            BruntVaisalaFreqTop(k,iCell) = coef * (displacedDensity(k-1,iCell) - density(k,iCell)) & 
               / (zMid(k-1,iCell) - zMid(k,iCell))
           end do
       end do
