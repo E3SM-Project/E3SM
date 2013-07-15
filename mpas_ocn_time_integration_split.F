@@ -179,8 +179,9 @@ module ocn_time_integration_split
       n_bcl_iter(config_n_ts_iter) = config_n_bcl_iter_end
 
       do split_explicit_step = 1, config_n_ts_iter
-         ! ---  update halos for diagnostic variables
+         stage1_tend_time = min(split_explicit_step,2)
 
+         ! ---  update halos for diagnostic variables
          call mpas_timer_start("se halo diag", .false., timer_halo_diagnostic)
          call mpas_dmpar_exch_halo_field(domain % blocklist % state % time_levs(2) % state % normalizedRelativeVorticityEdge)
          if (config_mom_del4 > 0.0) then
@@ -195,19 +196,34 @@ module ocn_time_integration_split
          !
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+         if (config_use_frequency_filtered_thickness) then
+            call mpas_timer_start("se freq-filtered-thick computations")
+            block => domain % blocklist
+            do while (associated(block))
+               call ocn_tend_frequency_filtered_thickness(block % tend, &
+                  block % state % time_levs(stage1_tend_time) % state, block % mesh)
+               block => block % next
+            end do
+            call mpas_timer_stop("se freq-filtered-thick computations")
+
+            call mpas_timer_start("se freq-filtered-thick halo update")
+            call mpas_dmpar_exch_halo_field(domain % blocklist % tend % highFreqThickness)
+            call mpas_dmpar_exch_halo_field(domain % blocklist % tend % lowFreqDivergence)
+            call mpas_timer_stop("se freq-filtered-thick halo update")
+         endif
+
+
          ! compute velocity tendencies, T(u*,w*,p*)
          call mpas_timer_start("se bcl vel", .false., timer_bcl_vel)
 
          block => domain % blocklist
          do while (associated(block))
 
-            stage1_tend_time = min(split_explicit_step,2)
-
            ! compute vertTransportVelocityTop.  Use u (rather than uTransport) for momentum advection.
            ! Use the most recent time level available.
            call ocn_vert_transport_velocity_top(block % mesh, block % state % time_levs(stage1_tend_time) % state % layerThickness % array, &
               block % state % time_levs(stage1_tend_time) % state % layerThicknessEdge % array, &
-              block % state % time_levs(stage1_tend_time) % state % normalVelocity % array, &
+              block % state % time_levs(stage1_tend_time) % state % normalVelocity % array, block % tend % highFreqThickness % array, &
               block % state % time_levs(stage1_tend_time) % state % vertTransportVelocityTop % array, err)
 
             call ocn_tend_vel(block % tend, block % state % time_levs(stage1_tend_time) % state, block % diagnostics, block % mesh)
@@ -789,15 +805,11 @@ module ocn_time_integration_split
          block => domain % blocklist
          do while (associated(block))
 
-            if (config_use_frequency_filtered_thickness) then
-               call ocn_tend_frequency_filtered_thickness(block % tend, block % state % time_levs(1) % state, block % mesh)
-            endif
-
             ! compute vertTransportVelocityTop.  Use uTransport for advection of layerThickness and tracers.
             ! Use time level 1 values of layerThickness and layerThicknessEdge because layerThickness has not yet been computed for time level 2.
             call ocn_vert_transport_velocity_top(block % mesh, block % state % time_levs(1) % state % layerThickness % array, &
                block % state % time_levs(1) % state % layerThicknessEdge % array, &
-               block % state % time_levs(2) % state % uTransport % array, &
+               block % state % time_levs(2) % state % uTransport % array, block % tend % highFreqThickness % array, &
                block % state % time_levs(2) % state % vertTransportVelocityTop % array, err)
 
             call ocn_tend_thick(block % tend, block % state % time_levs(2) % state, block % mesh)
@@ -808,14 +820,6 @@ module ocn_time_integration_split
          call mpas_timer_start("se halo thickness", .false., timer_halo_thickness)
          call mpas_dmpar_exch_halo_field(domain % blocklist % tend % layerThickness)
          call mpas_timer_stop("se halo thickness", timer_halo_thickness)
-
-         ! update halo for filtered frequency thickness tendencies
-         if (config_use_frequency_filtered_thickness) then
-            ! call mpas_timer_start("se halo freq_filter_thick", .false., timer_halo_freq_filter_thick) ! add timer later mrp - how do I do it?
-            call mpas_dmpar_exch_halo_field(domain % blocklist % tend % highFreqThickness)
-            call mpas_dmpar_exch_halo_field(domain % blocklist % tend % lowFreqDivergence)
-            ! call mpas_timer_stop("se halo freq_filter_thick", timer_freq_filter_thick) ! add timer later mrp - how do I do it?
-         endif
 
          block => domain % blocklist
          do while (associated(block))

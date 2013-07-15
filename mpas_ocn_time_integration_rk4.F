@@ -158,23 +158,36 @@ module ocn_time_integration_rk4
 
 ! ---  compute tendencies
 
+        if (config_use_frequency_filtered_thickness) then
+           call mpas_timer_start("RK4-tendency computations")
+           block => domain % blocklist
+           do while (associated(block))
+              call ocn_tend_frequency_filtered_thickness(block % tend, block % provis_state, block % mesh)
+              block => block % next
+           end do
+           call mpas_timer_stop("RK4-tendency computations")
+
+           call mpas_timer_start("RK4-prognostic halo update")
+           call mpas_dmpar_exch_halo_field(domain % blocklist % tend % highFreqThickness)
+           call mpas_dmpar_exch_halo_field(domain % blocklist % tend % lowFreqDivergence)
+           call mpas_timer_stop("RK4-prognostic halo update")
+        endif
+
         call mpas_timer_start("RK4-tendency computations")
         block => domain % blocklist
         do while (associated(block))
 
-           if (config_use_frequency_filtered_thickness) then
-              call ocn_tend_frequency_filtered_thickness(block % tend, block % provis_state, block % mesh)
-           endif
-
            ! advection of u uses u, while advection of layerThickness and tracers use uTransport.
            call ocn_vert_transport_velocity_top(block % mesh, block % provis_state % layerThickness % array, &
               block % provis_state % layerThicknessEdge % array, &
-              block % provis_state % normalVelocity % array, block % provis_state % vertTransportVelocityTop % array, err)
+              block % provis_state % normalVelocity % array, block % tend % highFreqThickness % array, &
+              block % provis_state % vertTransportVelocityTop % array, err)
            call ocn_tend_vel(block % tend, block % provis_state, block % diagnostics, block % mesh)
 
            call ocn_vert_transport_velocity_top(block % mesh, block % provis_state % layerThickness % array, &
               block % provis_state % layerThicknessEdge % array, &
-              block % provis_state % uTransport % array, block % provis_state % vertTransportVelocityTop % array, err)
+              block % provis_state % uTransport % array, block % tend % highFreqThickness % array, &
+              block % provis_state % vertTransportVelocityTop % array, err)
            call ocn_tend_thick(block % tend, block % provis_state, block % mesh)
 
            if (config_filter_btr_mode) then
@@ -192,12 +205,6 @@ module ocn_time_integration_rk4
         call mpas_dmpar_exch_halo_field(domain % blocklist % tend % normalVelocity)
         call mpas_dmpar_exch_halo_field(domain % blocklist % tend % layerThickness)
         call mpas_dmpar_exch_halo_field(domain % blocklist % tend % tracers)
-
-        if (config_use_frequency_filtered_thickness) then
-           call mpas_dmpar_exch_halo_field(domain % blocklist % tend % highFreqThickness)
-           call mpas_dmpar_exch_halo_field(domain % blocklist % tend % lowFreqDivergence)
-        endif
-
         call mpas_timer_stop("RK4-prognostic halo update")
 
 ! ---  compute next substep state

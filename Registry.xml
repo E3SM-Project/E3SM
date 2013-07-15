@@ -477,6 +477,10 @@
 		            description="If true, a high-frequency tendency term is added to the thickness equation."
 		            possible_values=".true. or .false."
 		/>
+		<nml_option name="config_apply_hff_to_w" type="logical" default_value=".false." units="unitless"
+		            description="If true, a high-frequency tendency term is added to the thickness equation."
+		            possible_values=".true. or .false."
+		/>
 		<nml_option name="config_Dlf_restore_time" type="real" default_value="5.0" units="days"
 		            description="Restoring timescale for low frequency baroclinic divergence, $\tau_{Dlf}$."
 		            possible_values="any positive real value, but typically 5 days."
