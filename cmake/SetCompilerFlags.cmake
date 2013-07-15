@@ -21,9 +21,9 @@ ENDIF ()
 ##############################################################################
 IF (OPT_FLAGS)
   # Flags for Fortran C and CXX
-  SET (${CMAKE_Fortran_FLAGS} "${CMAKE_Fortran_FLAGS} ${OPT_FLAGS}")
-  SET (${CMAKE_C_FLAGS} "${CMAKE_C_FLAGS} ${OPT_FLAGS}")
-  SET (${CMAKE_CXX_FLAGS} "${CMAKE_CXX_FLAGS} ${OPT_FLAGS}")
+  SET (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${OPT_FLAGS}")
+  SET (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OPT_FLAGS}")
+  SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OPT_FLAGS}")
 
 ELSE ()
 
@@ -77,25 +77,25 @@ ENDIF ()
 # 4) DEBUG_CXXFLAGS if specified sets the CXX debug flags
 ##############################################################################
 IF (DEBUG_FLAGS)
-  SET (${CMAKE_Fortran_FLAGS} "${CMAKE_Fortran_FLAGS} ${DEBUG_FFLAGS}")
-  SET (${CMAKE_C_FLAGS} "${CMAKE_C_FLAGS} ${DEBUG_CFLAGS}")
+  SET (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${DEBUG_FFLAGS}")
+  SET (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${DEBUG_CFLAGS}")
 ELSE ()
   IF (DEBUG_FFLAGS)
-    SET (${CMAKE_Fortran_FLAGS} "${CMAKE_Fortran_FLAGS} ${DEBUG_FFLAGS}")
+    SET (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${DEBUG_FFLAGS}")
   ELSE ()
-    SET (${CMAKE_Fortran_FLAGS} "${CMAKE_Fortran_FLAGS} -g")
+    SET (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -g")
   ENDIF ()
 
   IF (DEBUG_CFLAGS)
-    SET (${CMAKE_C_FLAGS} "${CMAKE_C_FLAGS} ${DEBUG_CFLAGS}")
+    SET (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${DEBUG_CFLAGS}")
   ELSE ()
-    SET (${CMAKE_C_FLAGS} "${CMAKE_C_FLAGS} -g")
+    SET (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g")
   ENDIF ()
 
   IF (DEBUG_CXXFLAGS)
-    SET (${CMAKE_CXX_FLAGS} "${CMAKE_CXX_FLAGS} ${DEBUG_CXXFLAGS}")
+    SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${DEBUG_CXXFLAGS}")
   ELSE ()
-    SET (${CMAKE_CXX_FLAGS} "${CMAKE_CXX_FLAGS} -g")
+    SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
   ENDIF ()
 
 ENDIF ()
