@@ -245,16 +245,16 @@ contains
        write(iulog,* )"Running Global Integral Diagnostic..."
        write(iulog,*)"Area of unit sphere is",I_sphere
        write(iulog,*)"Should be 1.0 to round off..."
-       write(iulog,'(a,f7.3)') 'Element area:  max/min',(max_area/min_area)
+       write(iulog,'(a,f9.3)') 'Element area:  max/min',(max_area/min_area)
        if (.not.MeshUseMeshFile) then 
            write(iulog,'(a,f6.3,f8.2)') "Average equatorial node spacing (deg, km) = ", &
                 dble(90)/dble(ne*(np-1)), DD_PI*rearth/(2000.0d0*dble(ne*(np-1)))
        end if
-       write(iulog,'(a,2f8.4)') 'Min eigenvalue of Dinv (min, max): ', min_min_eig, max_min_eig
-       write(iulog,'(a,2f8.4)') 'Max eigenvalue of Dinv (min, max): ', min_max_eig, max_max_eig
-       write(iulog,'(a,1f8.2)') 'Max eigenvalue ratio (element distortion): ', max_ratio
-       write(iulog,'(a,3f8.2)') 'dx for CFL (smallest scale per elem): ave,min,max = ', avg_min_dx, min_min_dx, max_min_dx
-       write(iulog,'(a,3f8.2)') 'dx for hypervis (largest scale per elem): ave,min,max = ', avg_max_dx, min_max_dx, max_max_dx
+       write(iulog,'(a,2f9.3)') 'Min eigenvalue of Dinv (min, max): ', min_min_eig, max_min_eig
+       write(iulog,'(a,2f9.3)') 'Max eigenvalue of Dinv (min, max): ', min_max_eig, max_max_eig
+       write(iulog,'(a,1e11.3)') 'Max eigenvalue ratio (element distortion): ', max_ratio
+       write(iulog,'(a,3f8.2)') 'dx for CFL (based on Dinv eigenvalue): ave,min,max = ', avg_min_dx, min_min_dx, max_min_dx
+!       write(iulog,'(a,3f8.2)') 'dx for hypervis (largest scale per elem): ave,min,max = ', avg_max_dx, min_max_dx, max_max_dx
        write(iulog,'(a,3f8.2)') "dx based on sqrt element area: ave,min,max = ", &
                 sqrt(avg_area)/(np-1),sqrt(min_area)/(np-1),sqrt(max_area)/(np-1)
     end if
