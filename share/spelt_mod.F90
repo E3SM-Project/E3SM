@@ -317,8 +317,8 @@ subroutine spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
             icell=1+(i-1)*nipm
             jcell=1+(j-1)*nipm
             ff=spelt(ie)%c(icell:icell+nipm,jcell:jcell+nipm,k,itr,tl%n0)*spelt(ie)%sga(icell:icell+nipm,jcell:jcell+nipm)
-!             minmax(i,j,:)=cell_minmax(ff)
-            minmax(i,j,:)=cell_minmax(spelt(ie)%c(icell:icell+nipm,jcell:jcell+nipm,k,itr,tl%n0))
+            minmax(i,j,:)=cell_minmax(ff)
+!             minmax(i,j,:)=cell_minmax(spelt(ie)%c(icell:icell+nipm,jcell:jcell+nipm,k,itr,tl%n0))
             
             call cip_coeff(spelt(ie)%drefx(i,j),spelt(ie)%drefy(i,j),ff,ff(2,2),cf(:,:,i,j))
           enddo
@@ -330,20 +330,20 @@ subroutine spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
  
             tmp=cip_interpolate(cf(:,:,icell1(i,j),jcell1(i,j)),dref1(i,j)%x,dref1(i,j)%y) 
 !             tmp=qmsl_cell_filter(icell1(i,j),jcell1(i,j),minmax,tmp)
-!             slval(2)=(sga/sg1(i,j))*tmp
+            slval(2)=(sga/sg1(i,j))*tmp
 
-            tmp=qmsl_cell_filter(icell1(i,j),jcell1(i,j),minmax,tmp/sg1(i,j))
-            slval(2)=(sga)*tmp
+!             tmp=qmsl_cell_filter(icell1(i,j),jcell1(i,j),minmax,tmp/sg1(i,j))
+!             slval(2)=(sga)*tmp
 
 
             tmp=cip_interpolate(cf(:,:,icell2(i,j),jcell2(i,j)),dref2(i,j)%x,dref2(i,j)%y) 
 !             tmp=qmsl_cell_filter(icell2(i,j),jcell2(i,j),minmax,tmp)            
-!             slval(3)=(sga/sg2(i,j))*tmp
-!             spelt(ie)%c(i,j,k,itr,tl%np1)=(1.0D0/sg2(i,j))*tmp
+            slval(3)=(sga/sg2(i,j))*tmp
+            spelt(ie)%c(i,j,k,itr,tl%np1)=(1.0D0/sg2(i,j))*tmp
             
-            tmp=qmsl_cell_filter(icell2(i,j),jcell2(i,j),minmax,tmp/sg2(i,j))
-            slval(3)=(sga)*tmp
-            spelt(ie)%c(i,j,k,itr,tl%np1)=tmp
+!             tmp=qmsl_cell_filter(icell2(i,j),jcell2(i,j),minmax,tmp/sg2(i,j))
+!             slval(3)=(sga)*tmp
+!             spelt(ie)%c(i,j,k,itr,tl%np1)=tmp
  
 
 !            if (mod(i,2)==1) then                   ! works only for nip=3!!!
@@ -354,6 +354,7 @@ subroutine spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
 !               fluxval(i,j,2) =  dt6 * contrauv(i,j,2,1)* (slval(1) + & 
 !                        4.0D0 * slval(2) + slval(3) )                      
 !             endif
+            
             
             if (mod(i,2)==1) then                   ! works only for nip=3!!!
                fluxval(i,j,1) =  dt6 * (contrauv(i,j,1,1)* slval(1) + & 
@@ -371,6 +372,7 @@ subroutine spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
               i=1+(icell-1)*nipm
               j=1+(jcell-1)*nipm
               
+              sga=spelt(ie)%sga(i+1,j+1)
               dx=spelt(ie)%dab(icell)  
               dy=spelt(ie)%dab(jcell)
               
@@ -379,8 +381,9 @@ subroutine spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
               flux(3) = dy * (fluxval(i+2,j,1) + 4.0D0 * fluxval(i+2,j+1,1) + fluxval(i+2,j+2,1))/6.0D0 ! east
               flux(4) = dx * (fluxval(i+2,j+2,2) + 4.0D0 * fluxval(i+1,j+2,2) + fluxval(i,j+2,2))/6.0D0 ! north
               
-              spelt(ie)%c(i+1,j+1,k,itr,tl%np1) = spelt(ie)%c(i+1,j+1,k,itr,tl%n0) + &
-                                        (flux(1) + flux(2) - flux(3) - flux(4) ) / (spelt(ie)%area_sphere(icell,jcell))
+              spelt(ie)%c(i+1,j+1,k,itr,tl%np1) = spelt(ie)%c(i+1,j+1,k,itr,tl%n0)*sga + &
+                                        (flux(1) + flux(2) - flux(3) - flux(4) ) / (dx*dy) !(spelt(ie)%area_sphere(icell,jcell))
+              spelt(ie)%c(i+1,j+1,k,itr,tl%np1)=spelt(ie)%c(i+1,j+1,k,itr,tl%np1)/sga                          
           end do
         end do
       end do      
@@ -400,7 +403,6 @@ subroutine spelt_run(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
 !   call t_stopf('SPELT scheme') 
   
 end subroutine spelt_run
-
 
 ! POSITIVITY PRESERVING WORKS HERE
 subroutine spelt_runpos(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
@@ -460,11 +462,11 @@ subroutine spelt_runpos(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
     do k=1, nlev
       !FOR BENCHMARK TESTS
       !       call solidbody_all(spelt(ie), dsphere1,dsphere2,contrauv,k) 
-      call boomerang_all(spelt(ie), dsphere1,dsphere2,contrauv,k,tl%nstep)
+!       call boomerang_all(spelt(ie), dsphere1,dsphere2,contrauv,k,tl%nstep)
       !FOR USING THE SE VELOCITIES    
-!       call spelt_dep_from_gll(elem(ie), deriv, spelt(ie)%asphere,dsphere1,0.5D0*tstep,tl,k)         
-!       call spelt_dep_from_gll(elem(ie), deriv, spelt(ie)%asphere,dsphere2,tstep,tl,k)
-!       call get_contravelocities(elem(ie),spelt(ie),contrauv, k,deriv)    
+      call spelt_dep_from_gll(elem(ie), deriv, spelt(ie)%asphere,dsphere1,0.5D0*tstep,tl,k)         
+      call spelt_dep_from_gll(elem(ie), deriv, spelt(ie)%asphere,dsphere2,tstep,tl,k)
+      call get_contravelocities(elem(ie),spelt(ie),contrauv, k,deriv)    
       !search has not to be done for all tracers!
       do j=1,nep
         do i=1,nep
@@ -481,7 +483,7 @@ subroutine spelt_runpos(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
             icell=1+(i-1)*nipm
             jcell=1+(j-1)*nipm
             ff=spelt(ie)%c(icell:icell+nipm,jcell:jcell+nipm,k,itr,tl%n0)*spelt(ie)%sga(icell:icell+nipm,jcell:jcell+nipm)
-            minmax(i,j,:)=cell_minmax(ff)
+            minmax(i,j,:)=cell_minmax(spelt(ie)%c(icell:icell+nipm,jcell:jcell+nipm,k,itr,tl%n0))
             call cip_coeff(spelt(ie)%drefx(i,j),spelt(ie)%drefy(i,j),ff,ff(2,2),cf(:,:,i,j))
           enddo
         enddo
@@ -492,13 +494,13 @@ subroutine spelt_runpos(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
             slval(1)=spelt(ie)%c(i,j,k,itr,tl%n0)*sga
  
             tmp=cip_interpolate(cf(:,:,icell1(i,j),jcell1(i,j)),dref1(i,j)%x,dref1(i,j)%y) 
-            tmp=qmsl_cell_filter(icell1(i,j),jcell1(i,j),minmax,tmp)
-            slval(2)=(sga/sg1(i,j))*tmp
+            tmp=qmsl_cell_filter(icell1(i,j),jcell1(i,j),minmax,tmp/sg1(i,j))
+            slval(2)=(sga)*tmp
 
             tmp=cip_interpolate(cf(:,:,icell2(i,j),jcell2(i,j)),dref2(i,j)%x,dref2(i,j)%y) 
-            tmp=qmsl_cell_filter(icell2(i,j),jcell2(i,j),minmax,tmp)
-            slval(3)=(sga/sg2(i,j))*tmp
-            spelt(ie)%c(i,j,k,itr,tl%np1)=(1.0D0/sg2(i,j))*tmp
+            tmp=qmsl_cell_filter(icell2(i,j),jcell2(i,j),minmax,tmp/sg2(i,j))
+            slval(3)=(sga)*tmp
+            spelt(ie)%c(i,j,k,itr,tl%np1)=tmp
 
 !            if (mod(i,2)==1) then                   ! works only for nip=3!!!
 !               fluxval(i,j,1) =  dt6 * spelt(ie)%contrau(i,j,k)* (slval(1) + & 
@@ -695,7 +697,7 @@ subroutine spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
               i=1+(icell-1)*nipm
               j=1+(jcell-1)*nipm
               ff=spelt(ie)%c(i:i+nipm,j:j+nipm,k,itr,tl%n0)*spelt(ie)%sga(i:i+nipm,j:j+nipm)
-              minmax(icell,jcell,:)=cell_minmax(ff)
+              minmax(icell,jcell,:)=cell_minmax(spelt(ie)%c(i:i+nipm,j:j+nipm,k,itr,tl%n0))
               call cip_coeff(spelt(ie)%drefx(icell,jcell),spelt(ie)%drefy(icell,jcell),ff,ff(2,2),cf(:,:,icell,jcell))
             enddo
           enddo
@@ -706,13 +708,13 @@ subroutine spelt_runlimit(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
               slval(1)=spelt(ie)%c(i,j,k,itr,tl%n0)*sga
 
               tmp=cip_interpolate(cf(:,:,icell1(i,j),jcell1(i,j)),dref1(i,j)%x,dref1(i,j)%y) 
-              tmp=qmsl_cell_filter(icell1(i,j),jcell1(i,j),minmax,tmp)
-              slval(2)=(sga/sg1(i,j))*tmp
+              tmp=qmsl_cell_filter(icell1(i,j),jcell1(i,j),minmax,tmp/sg1(i,j))
+              slval(2)=(sga)*tmp
 
               tmp=cip_interpolate(cf(:,:,icell2(i,j),jcell2(i,j)),dref2(i,j)%x,dref2(i,j)%y) 
-              tmp=qmsl_cell_filter(icell2(i,j),jcell2(i,j),minmax,tmp)
-              slval(3)=(sga/sg2(i,j))*tmp
-              spelt(ie)%c(i,j,k,itr,tl%np1)=(1.0D0/sg2(i,j))*tmp
+              tmp=qmsl_cell_filter(icell2(i,j),jcell2(i,j),minmax,tmp/sg2(i,j))
+              slval(3)=(sga)*tmp
+              spelt(ie)%c(i,j,k,itr,tl%np1)=tmp
 
               if (mod(i,2)==1) then                   ! works only for nip=3!!!
                  fluxval(i,j,1) =  dt6 * (contrauv(i,j,1,1)* slval(1) + & 
@@ -1065,7 +1067,7 @@ subroutine spelt_runair(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
       do k=1, nlev  !
 !         call solidbody_all(spelt(ie), dsphere1,dsphere2,contrauv,k) 
         !For Benchmark test
-!         call boomerang_all(spelt(ie), dsphere1,dsphere2,contrauv,k,tl%nstep)
+        call boomerang_all(spelt(ie), dsphere1,dsphere2,contrauv,k,tl%nstep)
         !For SE velocities
         call spelt_dep_from_gll(elem(ie), deriv, spelt(ie)%asphere,dsphere1,0.5D0*tstep,tl,k)         
         call spelt_dep_from_gll(elem(ie), deriv, spelt(ie)%asphere,dsphere2,tstep,tl,k)
@@ -1126,17 +1128,17 @@ subroutine spelt_runair(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
 
             tmp=cip_interpolate(cf(:,:,icell1(i,j),jcell1(i,j)),dref1(i,j)%x,dref1(i,j)%y) 
 !             tmp=qmsl_cell_filter(icell1(i,j),jcell1(i,j),minmax,tmp)
-!             slval_air(i,j,2)=(tmp/sg1(i,j))
-            tmp=qmsl_cell_filter(icell1(i,j),jcell1(i,j),minmax,tmp/sg1(i,j))
-            slval_air(i,j,2)=tmp
+            slval_air(i,j,2)=(tmp/sg1(i,j))
+!             tmp=qmsl_cell_filter(icell1(i,j),jcell1(i,j),minmax,tmp/sg1(i,j))
+!             slval_air(i,j,2)=tmp
 
             tmp=cip_interpolate(cf(:,:,icell2(i,j),jcell2(i,j)),dref2(i,j)%x,dref2(i,j)%y) 
 !             tmp=qmsl_cell_filter(icell2(i,j),jcell2(i,j),minmax,tmp)
-!             slval_air(i,j,3)=(tmp/sg2(i,j))
-!             spelt(ie)%c(i,j,k,1,tl%np1)=(tmp/sg2(i,j))
-            tmp=qmsl_cell_filter(icell2(i,j),jcell2(i,j),minmax,tmp/sg2(i,j))
-            slval_air(i,j,3)=tmp
-            spelt(ie)%c(i,j,k,1,tl%np1)=tmp
+            slval_air(i,j,3)=(tmp/sg2(i,j))
+            spelt(ie)%c(i,j,k,1,tl%np1)=(tmp/sg2(i,j))
+!             tmp=qmsl_cell_filter(icell2(i,j),jcell2(i,j),minmax,tmp/sg2(i,j))
+!             slval_air(i,j,3)=tmp
+!             spelt(ie)%c(i,j,k,1,tl%np1)=tmp
             
             if (mod(i,2)==1) then                   ! works only for nip=3!!!
                fluxval(i,j,1) =  dt6 * sga*(contrauv(i,j,1,1)* slval_air(i,j,1) + & 
@@ -1186,20 +1188,20 @@ subroutine spelt_runair(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
 
               tmp=cip_interpolate(cf(:,:,icell1(i,j),jcell1(i,j)),dref1(i,j)%x,dref1(i,j)%y) 
 !               tmp=qmsl_cell_filter(icell1(i,j),jcell1(i,j),minmax,tmp)
-!               slval(2)=(tmp/sg1(i,j)) !/slvalone(i,j,2)
-              tmp=qmsl_cell_filter(icell1(i,j),jcell1(i,j),minmax,tmp/sg1(i,j))
-              slval(2)=tmp !/slvalone(i,j,2)
+              slval(2)=(tmp/sg1(i,j)) !/slvalone(i,j,2)
+!               tmp=qmsl_cell_filter(icell1(i,j),jcell1(i,j),minmax,tmp/sg1(i,j))
+!               slval(2)=tmp !/slvalone(i,j,2)
 
               tmp=cip_interpolate(cf(:,:,icell2(i,j),jcell2(i,j)),dref2(i,j)%x,dref2(i,j)%y) 
 !               tmp=qmsl_cell_filter(icell2(i,j),jcell2(i,j),minmax,tmp)
-!               slval(3)=(tmp/sg2(i,j)) !/slvalone(i,j,3)
-!               spelt(ie)%c(i,j,k,itr,tl%np1)=(1.0D0/sg2(i,j))*tmp
+              slval(3)=(tmp/sg2(i,j)) !/slvalone(i,j,3)
+              spelt(ie)%c(i,j,k,itr,tl%np1)=(1.0D0/sg2(i,j))*tmp
 !               spelt(ie)%c(i,j,k,itr,tl%np1)=(tmp/sg2(i,j))/slvalone(i,j,3)
 
-              tmp=qmsl_cell_filter(icell2(i,j),jcell2(i,j),minmax,tmp/sg2(i,j))
-              slval(3)=tmp !/slvalone(i,j,3)
+!               tmp=qmsl_cell_filter(icell2(i,j),jcell2(i,j),minmax,tmp/sg2(i,j))
+!               slval(3)=tmp !/slvalone(i,j,3)
 !               spelt(ie)%c(i,j,k,itr,tl%np1)=(1.0D0/sg2(i,j))*tmp
-              spelt(ie)%c(i,j,k,itr,tl%np1)=tmp !/slvalone(i,j,3)
+!               spelt(ie)%c(i,j,k,itr,tl%np1)=tmp !/slvalone(i,j,3)
               
               
               if (mod(i,2)==1) then                   ! works only for nip=3!!!
@@ -1534,53 +1536,101 @@ subroutine get_contravelocities(elem, spelt, contrauv,k,deriv)
   type (derivative_t), intent(in)          :: deriv           ! derivative struct
   
   integer                                  :: i,j
-  real (kind=real_kind)                    :: vstar(np,np,2), v1, v2 
+  real (kind=real_kind)                    :: vstar(np,np,2), v1, v2, vstar1(nep,nep,2) 
   
+!   vstar=elem%derived%vstar(:,:,:,k)/rearth
+!   do j=1,np
+!     do i=1,np
+!       v1 = spelt%Dinv(1,1,i,j)*vstar(i,j,1) + spelt%Dinv(1,2,i,j)*vstar(i,j,2)
+!       v2 = spelt%Dinv(2,1,i,j)*vstar(i,j,1) + spelt%Dinv(2,2,i,j)*vstar(i,j,2)
+! !       v1 = elem%Dinv(1,1,i,j)*vstar(i,j,1) + elem%Dinv(1,2,i,j)*vstar(i,j,2)
+! !       v2 = elem%Dinv(2,1,i,j)*vstar(i,j,1) + elem%Dinv(2,2,i,j)*vstar(i,j,2)
+!       vstar(i,j,1)=v1
+!       vstar(i,j,2)=v2    
+!     enddo
+!   enddo
+!   contrauv(:,:,1,1)=interpolate_gll2spelt_points(vstar(:,:,1),deriv)
+!   contrauv(:,:,2,1)=interpolate_gll2spelt_points(vstar(:,:,2),deriv)
+!   
+!   vstar=spelt%vn12(:,:,:,k)/rearth
+!   do j=1,np
+!     do i=1,np
+!       v1 = spelt%Dinv(1,1,i,j)*vstar(i,j,1) + spelt%Dinv(1,2,i,j)*vstar(i,j,2)
+!       v2 = spelt%Dinv(2,1,i,j)*vstar(i,j,1) + spelt%Dinv(2,2,i,j)*vstar(i,j,2)
+!       
+! !       v1 = elem%Dinv(1,1,i,j)*vstar(i,j,1) + elem%Dinv(1,2,i,j)*vstar(i,j,2)
+! !       v2 = elem%Dinv(2,1,i,j)*vstar(i,j,1) + elem%Dinv(2,2,i,j)*vstar(i,j,2)
+!       
+!       vstar(i,j,1)=v1
+!       vstar(i,j,2)=v2    
+!     enddo
+!   enddo
+!   contrauv(:,:,1,2)=interpolate_gll2spelt_points(vstar(:,:,1),deriv)
+!   contrauv(:,:,2,2)=interpolate_gll2spelt_points(vstar(:,:,2),deriv)
+!   
+!   vstar=spelt%vn0(:,:,:,k)/rearth
+!   do j=1,np
+!     do i=1,np
+!       v1 = spelt%Dinv(1,1,i,j)*vstar(i,j,1) + spelt%Dinv(1,2,i,j)*vstar(i,j,2)
+!       v2 = spelt%Dinv(2,1,i,j)*vstar(i,j,1) + spelt%Dinv(2,2,i,j)*vstar(i,j,2)
+!       
+! !       v1 = elem%Dinv(1,1,i,j)*vstar(i,j,1) + elem%Dinv(1,2,i,j)*vstar(i,j,2)
+! !       v2 = elem%Dinv(2,1,i,j)*vstar(i,j,1) + elem%Dinv(2,2,i,j)*vstar(i,j,2)
+!       
+!       vstar(i,j,1)=v1
+!       vstar(i,j,2)=v2    
+!     enddo
+!   enddo
+!   contrauv(:,:,1,3)=interpolate_gll2spelt_points(vstar(:,:,1),deriv)
+!   contrauv(:,:,2,3)=interpolate_gll2spelt_points(vstar(:,:,2),deriv)
+
+
+
+
   vstar=elem%derived%vstar(:,:,:,k)/rearth
-  do j=1,np
-    do i=1,np
-      v1 = spelt%Dinv(1,1,i,j)*vstar(i,j,1) + spelt%Dinv(1,2,i,j)*vstar(i,j,2)
-      v2 = spelt%Dinv(2,1,i,j)*vstar(i,j,1) + spelt%Dinv(2,2,i,j)*vstar(i,j,2)
+  vstar1(:,:,1)=interpolate_gll2spelt_points(vstar(:,:,1),deriv)
+  vstar1(:,:,2)=interpolate_gll2spelt_points(vstar(:,:,2),deriv)  
+  do j=1,nep
+    do i=1,nep
+      v1 = spelt%Ainv(1,1,i,j)*vstar1(i,j,1) + spelt%Ainv(1,2,i,j)*vstar1(i,j,2)
+      v2 = spelt%Ainv(2,1,i,j)*vstar1(i,j,1) + spelt%Ainv(2,2,i,j)*vstar1(i,j,2)
 !       v1 = elem%Dinv(1,1,i,j)*vstar(i,j,1) + elem%Dinv(1,2,i,j)*vstar(i,j,2)
 !       v2 = elem%Dinv(2,1,i,j)*vstar(i,j,1) + elem%Dinv(2,2,i,j)*vstar(i,j,2)
-      vstar(i,j,1)=v1
-      vstar(i,j,2)=v2    
+      contrauv(i,j,1,1)=v1
+      contrauv(i,j,2,1)=v2    
     enddo
   enddo
-  contrauv(:,:,1,1)=interpolate_gll2spelt_points(vstar(:,:,1),deriv)
-  contrauv(:,:,2,1)=interpolate_gll2spelt_points(vstar(:,:,2),deriv)
+
   
   vstar=spelt%vn12(:,:,:,k)/rearth
-  do j=1,np
-    do i=1,np
-      v1 = spelt%Dinv(1,1,i,j)*vstar(i,j,1) + spelt%Dinv(1,2,i,j)*vstar(i,j,2)
-      v2 = spelt%Dinv(2,1,i,j)*vstar(i,j,1) + spelt%Dinv(2,2,i,j)*vstar(i,j,2)
-      
-!       v1 = elem%Dinv(1,1,i,j)*vstar(i,j,1) + elem%Dinv(1,2,i,j)*vstar(i,j,2)
-!       v2 = elem%Dinv(2,1,i,j)*vstar(i,j,1) + elem%Dinv(2,2,i,j)*vstar(i,j,2)
-      
-      vstar(i,j,1)=v1
-      vstar(i,j,2)=v2    
+    vstar1(:,:,1)=interpolate_gll2spelt_points(vstar(:,:,1),deriv)
+    vstar1(:,:,2)=interpolate_gll2spelt_points(vstar(:,:,2),deriv)  
+    do j=1,nep
+      do i=1,nep
+        v1 = spelt%Ainv(1,1,i,j)*vstar1(i,j,1) + spelt%Ainv(1,2,i,j)*vstar1(i,j,2)
+        v2 = spelt%Ainv(2,1,i,j)*vstar1(i,j,1) + spelt%Ainv(2,2,i,j)*vstar1(i,j,2)
+  !       v1 = elem%Dinv(1,1,i,j)*vstar(i,j,1) + elem%Dinv(1,2,i,j)*vstar(i,j,2)
+  !       v2 = elem%Dinv(2,1,i,j)*vstar(i,j,1) + elem%Dinv(2,2,i,j)*vstar(i,j,2)
+        contrauv(i,j,1,2)=v1
+        contrauv(i,j,2,2)=v2    
+      enddo
     enddo
-  enddo
-  contrauv(:,:,1,2)=interpolate_gll2spelt_points(vstar(:,:,1),deriv)
-  contrauv(:,:,2,2)=interpolate_gll2spelt_points(vstar(:,:,2),deriv)
+
   
   vstar=spelt%vn0(:,:,:,k)/rearth
-  do j=1,np
-    do i=1,np
-      v1 = spelt%Dinv(1,1,i,j)*vstar(i,j,1) + spelt%Dinv(1,2,i,j)*vstar(i,j,2)
-      v2 = spelt%Dinv(2,1,i,j)*vstar(i,j,1) + spelt%Dinv(2,2,i,j)*vstar(i,j,2)
-      
-!       v1 = elem%Dinv(1,1,i,j)*vstar(i,j,1) + elem%Dinv(1,2,i,j)*vstar(i,j,2)
-!       v2 = elem%Dinv(2,1,i,j)*vstar(i,j,1) + elem%Dinv(2,2,i,j)*vstar(i,j,2)
-      
-      vstar(i,j,1)=v1
-      vstar(i,j,2)=v2    
+    vstar1(:,:,1)=interpolate_gll2spelt_points(vstar(:,:,1),deriv)
+    vstar1(:,:,2)=interpolate_gll2spelt_points(vstar(:,:,2),deriv)  
+    do j=1,nep
+      do i=1,nep
+        v1 = spelt%Ainv(1,1,i,j)*vstar1(i,j,1) + spelt%Ainv(1,2,i,j)*vstar1(i,j,2)
+        v2 = spelt%Ainv(2,1,i,j)*vstar1(i,j,1) + spelt%Ainv(2,2,i,j)*vstar1(i,j,2)
+  !       v1 = elem%Dinv(1,1,i,j)*vstar(i,j,1) + elem%Dinv(1,2,i,j)*vstar(i,j,2)
+  !       v2 = elem%Dinv(2,1,i,j)*vstar(i,j,1) + elem%Dinv(2,2,i,j)*vstar(i,j,2)
+        contrauv(i,j,1,3)=v1
+        contrauv(i,j,2,3)=v2    
+      enddo
     enddo
-  enddo
-  contrauv(:,:,1,3)=interpolate_gll2spelt_points(vstar(:,:,1),deriv)
-  contrauv(:,:,2,3)=interpolate_gll2spelt_points(vstar(:,:,2),deriv)
+
   
 end subroutine get_contravelocities
 
@@ -2266,7 +2316,7 @@ subroutine spelt_rkdss(elem,spelt,nets,nete, hybrid, deriv, tstep, ordertaylor)
         ugradvtmp(:,:,:)=ugradv_sphere(elem(ie)%derived%vstar(:,:,:,k),spelt(ie)%vn0(:,:,:,k),deriv,elem(ie))
         
         elem(ie)%derived%vstar(:,:,:,k) = &
-             (elem(ie)%derived%vstar(:,:,:,k) + spelt(ie)%vn0(:,:,:,k))/2   - tstep*ugradvtmp(:,:,:)/2
+             (elem(ie)%derived%vstar(:,:,:,k) + spelt(ie)%vn0(:,:,:,k))/2   - tstep*ugradvtmp(:,:,:)/2.0D0
 
         elem(ie)%derived%vstar(:,:,1,k) = elem(ie)%derived%vstar(:,:,1,k)*elem(ie)%spheremp(:,:)
         elem(ie)%derived%vstar(:,:,2,k) = elem(ie)%derived%vstar(:,:,2,k)*elem(ie)%spheremp(:,:)
@@ -3118,7 +3168,7 @@ subroutine solidbody_all(spelt, dsphere1,dsphere2,contrauv,k)
 
   ! set values for solid-body rotation on the sphere with alpha, this should be 
   ! outside 
-  alpha=DD_PI/4 !0.0D0!-0.9*DD_PI/4.0D0 !DD_PI/4  !DD_PI/4 !1.3!0.78
+  alpha=0.0D0 !DD_PI/4 !0.0D0!-0.9*DD_PI/4.0D0 !DD_PI/4  !DD_PI/4 !1.3!0.78
 !   omega=2*DD_PI/Time_at(nmax)          ! angular velocity: around the earth
   
   omega=2*DD_PI/1036800                !in 12 days around the earth
