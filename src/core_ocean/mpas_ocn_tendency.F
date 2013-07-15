@@ -357,7 +357,7 @@ contains
       integer, dimension(:), pointer :: maxLevelCell, maxLevelEdgeBot, nEdgesOnCell
       integer, dimension(:,:), pointer :: edgesOnCell, edgeSignOnCell
 
-      real (kind=RKIND) :: flux, invAreaCell, div_hu_btr
+      real (kind=RKIND) :: flux, invAreaCell, div_hu_btr, Dlf_restore_time_sec, hhf_restore_time_sec
       real (kind=RKIND), dimension(:), pointer :: dvEdge, areaCell
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, layerThicknessEdge, &
          lowFreqDivergence, highFreqThickness, &
@@ -392,6 +392,10 @@ contains
       !
       tend_lowFreqDivergence = 0.0
       tend_highFreqThickness = 0.0
+
+      ! Convert restore time from days to seconds
+      Dlf_restore_time_sec = config_Dlf_restore_time*86400.0
+      hhf_restore_time_sec = config_hhf_restore_time*86400.0
       do iCell=1,nCells
         div_hu(:) = 0.0
         div_hu_btr = 0.0
@@ -409,13 +413,13 @@ contains
 
         do k = 1, maxLevelCell(iCell)
 
-            tend_lowFreqDivergence(k,iCell) = &
-               -2.0*pii/config_Dlf_restore_time &
-               *(lowFreqDivergence(k,iCell)  - div_hu(k) + div_hu_btr)
+           tend_lowFreqDivergence(k,iCell) = &
+              -2.0*pii/Dlf_restore_time_sec &
+              *(lowFreqDivergence(k,iCell)  - div_hu(k) + div_hu_btr)
 
-            tend_highFreqThickness(k,iCell) = &
-               - div_hu(k) + div_hu_btr + lowFreqDivergence(k,iCell) &
-               -2.0*pii/config_hhf_restore_time * highFreqThickness(k,iCell)
+           tend_highFreqThickness(k,iCell) = &
+              - div_hu(k) + div_hu_btr + lowFreqDivergence(k,iCell) &
+              -2.0*pii/hhf_restore_time_sec * highFreqThickness(k,iCell)
 
         end do
 

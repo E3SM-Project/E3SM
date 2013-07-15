@@ -546,7 +546,8 @@ contains
 !>  cell.
 !
 !-----------------------------------------------------------------------
-   subroutine ocn_vert_transport_velocity_top(grid,layerThickness,layerThicknessEdge,normalVelocity,vertTransportVelocityTop, err)!{{{
+   subroutine ocn_vert_transport_velocity_top(grid, layerThickness, layerThicknessEdge, &
+     normalVelocity, tend_highFreqThickness, vertTransportVelocityTop, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -566,6 +567,9 @@ contains
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          normalVelocity     !< Input: transport
 
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+         tend_highFreqThickness   !< Input: high frequency thickness tendency, only used for frequency filtered thickness
+
       !-----------------------------------------------------------------
       !
       ! output variables
@@ -583,7 +587,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, iCell, k, i, nCells, nEdges, nVertLevels
+      integer :: iEdge, iCell, k, i, nCells, nEdges, nVertLevels, frequency_filtered_thickness_on
       integer, dimension(:), pointer :: nEdgesOnCell, nEdgesOnEdge, &
         maxLevelCell, maxLevelEdgeBot
       integer, dimension(:,:), pointer :: edgesOnCell, edgeSignOnCell
@@ -591,7 +595,9 @@ contains
       real (kind=RKIND) :: flux, thicknessSum, invAreaCell, div_hu_btr
       real (kind=RKIND), dimension(:), pointer :: &
         dvEdge, areaCell, vertCoordMovementWeights
-      real (kind=RKIND), dimension(:), allocatable:: div_hu, h_tend_col
+      real (kind=RKIND), dimension(:), allocatable:: &
+         div_hu, &  !> Local: divergence of (thickness*velocity)
+         work_tend_thick_ext !> Local: tendency due to external, i.e. SSH changes
 
       err = 0
 
@@ -608,6 +614,11 @@ contains
       nEdges      = grid % nEdges
       nVertLevels = grid % nVertLevels
 
+      if (config_use_frequency_filtered_thickness.and.config_apply_hff_to_w) then
+         frequency_filtered_thickness_on = 1
+      else
+         frequency_filtered_thickness_on = 0
+      endif
 
       if (config_vert_coord_movement.eq.'isopycnal') then
         ! set vertical transport to zero in isopycnal case
@@ -615,7 +626,7 @@ contains
         return
       end if
 
-      allocate(div_hu(nVertLevels), h_tend_col(nVertLevels))
+      allocate(div_hu(nVertLevels), work_tend_thick_ext(nVertLevels))
 
       !
       ! Compute div(h^{edge} u) for each cell
@@ -640,21 +651,22 @@ contains
         end do
 
         do k = 1, maxLevelCell(iCell)
-           h_tend_col(k) = - vertCoordMovementWeights(k) * layerThickness(k, iCell) * div_hu_btr
+           work_tend_thick_ext(k) = - vertCoordMovementWeights(k) * layerThickness(k, iCell) * div_hu_btr
            thicknessSum = thicknessSum + vertCoordMovementWeights(k) * layerThickness(k, iCell)
         end do
 
-        h_tend_col = h_tend_col / thicknessSum
+        work_tend_thick_ext = work_tend_thick_ext / thicknessSum
 
         ! Vertical transport through layer interface at top and bottom is zero.
         vertTransportVelocityTop(1,iCell) = 0.0
         vertTransportVelocityTop(maxLevelCell(iCell)+1,iCell) = 0.0
         do k=maxLevelCell(iCell),2,-1
-           vertTransportVelocityTop(k,iCell) = vertTransportVelocityTop(k+1,iCell) - div_hu(k) - h_tend_col(k)
+           vertTransportVelocityTop(k,iCell) = vertTransportVelocityTop(k+1,iCell) - div_hu(k) - work_tend_thick_ext(k) &
+             - frequency_filtered_thickness_on * tend_highFreqThickness(k,iCell)
         end do
       end do
 
-      deallocate(div_hu, h_tend_col)
+      deallocate(div_hu, work_tend_thick_ext)
 
    end subroutine ocn_vert_transport_velocity_top!}}}
 
