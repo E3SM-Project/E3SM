@@ -2479,6 +2479,23 @@ endif
 !
 !   input:  v = vector in lat-lon coordinates
 !   ouput:  weak laplacian of v, in lat-lon coordinates
+!
+!   logic:
+!      tensorHV:     requires cartesian
+!      nu_div/=nu:   requires contra formulatino
+!
+!   use_cartesian=(which_vlaplace.eq.2)                             ! default is namelist specified
+!   One combination cant be done:  tensorHV and nu_div/=nu:  abort
+!
+!   if (hypervis_scaling/=0 .and. var_coef) then
+!       use_cartesian=.true.    ! must have cartesian
+!       if (nu_ratio/=1) abort.
+!   else
+!       if (nu_ratio/=1) use_cartesian=.true.
+!   endif  
+!       
+!   
+!
 
     real(kind=real_kind), intent(in) :: v(np,np,2) 
     logical :: var_coef
@@ -2488,28 +2505,29 @@ endif
     real(kind=real_kind) :: laplace(np,np,2)
     logical use_cartesian
 
-    if (nu_ratio /= 1) then
-       ! must use contra formulation
-       if (hypervis_scaling/=0 .and. var_coef) then
-          ! error: tensorHV must use cartesian formulation
-          call abortmp('Error: tensorHV cant be used with nu_div /= nu')
-       else
-          use_cartesian=.false.
-       endif
-    else
-       if (hypervis_scaling/=0 .and. var_coef) then
-          ! requres scalar laplace on cartesian components
-          use_cartesian=.true.
-       else
-          ! can use either.  take value in namelist:
-          use_cartesian=(which_vlaplace.eq.2)
+    use_cartesian=(which_vlaplace.eq.2)  ! default: as specifed in namelist
+
+    if (hypervis_scaling/=0 .and. var_coef) then
+       use_cartesian=.true.              ! tensorHV requires cartesian
+    endif
+
+    ! nu_ratio/=1 requires contra formulation.  switch if needed:
+    if (use_cartesian) then
+       if (present(nu_ratio)) then
+          if (nu_ratio /= 1) then
+             if (hypervis_scaling/=0 .and. var_coef) then          
+                call abortmp('ERROR: tensorHV can not be used with nu_div/=nu')
+             endif
+             use_cartesian=.false.
+          endif
        endif
     endif
     
-
     if (use_cartesian) then
-      laplace=vlaplace_sphere_wk_cartesian(v,deriv,elem,var_coef,nu_ratio)
+      ! abort of nu_ratio/=1 - checked above 
+      laplace=vlaplace_sphere_wk_cartesian(v,deriv,elem,var_coef)
     else
+      ! abort of tensorHV is turned on - checked above
       laplace=vlaplace_sphere_wk_contra(v,deriv,elem,var_coef,nu_ratio)
     endif
 
@@ -2517,7 +2535,7 @@ endif
 
 
 
-  function vlaplace_sphere_wk_cartesian(v,deriv,elem,var_coef,nu_ratio) result(laplace)
+  function vlaplace_sphere_wk_cartesian(v,deriv,elem,var_coef) result(laplace)
 !
 !   input:  v = vector in lat-lon coordinates
 !   ouput:  weak laplacian of v, in lat-lon coordinates
@@ -2527,7 +2545,6 @@ endif
     type (derivative_t)              :: deriv
     type (element_t)                 :: elem
     real(kind=real_kind) :: laplace(np,np,2)
-    real(kind=real_kind), optional :: nu_ratio
     ! Local
 
     integer component
