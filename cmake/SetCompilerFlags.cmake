@@ -77,8 +77,8 @@ ENDIF ()
 # 4) DEBUG_CXXFLAGS if specified sets the CXX debug flags
 ##############################################################################
 IF (DEBUG_FLAGS)
-  SET (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${DEBUG_FFLAGS}")
-  SET (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${DEBUG_CFLAGS}")
+  SET (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${DEBUG_FLAGS}")
+  SET (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${DEBUG_FLAGS}")
 ELSE ()
   IF (DEBUG_FFLAGS)
     SET (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${DEBUG_FFLAGS}")
@@ -182,7 +182,7 @@ IF (${ENABLE_CUDA_FORTRAN})
 
     TRY_COMPILE(CUDAFOR
                 ${CMAKE_BINARY_DIR}/tests/compilerTests/
-                ${CMAKE_CURRENT_SOURCE_DIR}/cmake/compilerTests/cudaFortranTest.F90
+                ${CMAKE_CURRENT_SOURCE_DIR}/cmake/compilerTests/cudaFortranTest.f90
                 OUTPUT_VARIABLE COMPILE_OUTPUT)
     IF (${CUDAFOR})
       SET(PREQX_USE_CUDA_FORTRAN TRUE)
