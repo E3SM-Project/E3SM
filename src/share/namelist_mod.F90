@@ -54,7 +54,6 @@ module namelist_mod
        nu_div,          &
        nu_p,          &
        nu_top,        &
-       which_vlaplace, & ! which vector laplace to use, cartesian or vector_identities
        hypervis_scaling,   & ! use tensor HV instead of scalar coefficient
        psurf_vis,    &  
        hypervis_order,    &  
@@ -267,7 +266,6 @@ module namelist_mod
                      hypervis_power,    &  
                      hypervis_subcycle, &
                      hypervis_subcycle_q, &
-                     which_vlaplace, & 
                      hypervis_scaling, & 
                      smooth_phis_numcycle, &
                      smooth_sgh_numcycle, &
@@ -817,7 +815,6 @@ module namelist_mod
 
     call MPI_bcast(fine_ne    ,1,MPIinteger_t,par%root,par%comm,ierr) 
     call MPI_bcast(max_hypervis_courant,1,MPIreal_t   ,par%root,par%comm,ierr)
-    call MPI_bcast(which_vlaplace    ,1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(nu         ,1,MPIreal_t   ,par%root,par%comm,ierr) 
     call MPI_bcast(nu_s         ,1,MPIreal_t   ,par%root,par%comm,ierr) 
     call MPI_bcast(nu_q         ,1,MPIreal_t   ,par%root,par%comm,ierr) 
@@ -1147,30 +1144,19 @@ module namelist_mod
        endif
        
 
-
-
-
-!!!!!!!!!!!!!!!fix this
        if (hypervis_power /= 0)then
-          write(iulog,*)"Variable area-based hyperviscosity with power ",hypervis_power," used."
-          write(iulog,*)"Maximum imposed on hypervis Courant = ", max_hypervis_courant
+          write(iulog,*)"Variable scalar hyperviscosity: hypervis_power=",hypervis_power
+          write(iulog,*)"max_hypervis_courant = ", max_hypervis_courant
+          write(iulog,*)"Equivalent ne in fine region = ", fine_ne
        elseif(hypervis_scaling /=0)then
-          write(iulog,*)"Tensor hyperviscosity with scaling ",hypervis_scaling," used."
+          write(iulog,*)"Tensor hyperviscosity:  hypervis_scaling=",hypervis_scaling
        else
           write(iulog,*)"Constant (hyper)viscosity used."
        endif
-!!!!!!!!!!!!!
 
-       if (hypervis_order==1) then
-          write(iulog,*)"weak form viscosity subcycle, tracer subcycle = ",&
-          hypervis_subcycle,hypervis_subcycle_q
-       else if (hypervis_order==2) then
-          write(iulog,*)"weak form hyper viscosity subcycle, tracer subcycle = ",&
-          hypervis_subcycle, hypervis_subcycle_q
-       endif
-       write(iulog,*)"psurf_vis: ",psurf_vis
-       write(iulog,*)"which_vlaplace (0=contra, 2=cartesian): ",which_vlaplace
-       write(iulog,*)"Equivalent ne in fine region = ", fine_ne
+       write(iulog,*)"hypervis_subcycle, hypervis_subcycle_q = ",&
+            hypervis_subcycle,hypervis_subcycle_q
+       !write(iulog,*)"psurf_vis: ",psurf_vis
        write(iulog,'(a,2e9.2)')"viscosity:  nu (vor/div) = ",nu,nu_div
        write(iulog,'(a,2e9.2)')"viscosity:  nu_s      = ",nu_s
        write(iulog,'(a,2e9.2)')"viscosity:  nu_q      = ",nu_q
