@@ -11,7 +11,7 @@ module derivative_mod
   ! needed for spherical differential operators:
   use physical_constants, only : rrearth 
   use element_mod, only : element_t
-  use control_mod, only : which_vlaplace, hypervis_scaling, hypervis_power
+  use control_mod, only : hypervis_scaling, hypervis_power
 
 implicit none
 private
@@ -2484,51 +2484,27 @@ endif
 !      tensorHV:     requires cartesian
 !      nu_div/=nu:   requires contra formulatino
 !
-!   use_cartesian=(which_vlaplace.eq.2)                             ! default is namelist specified
-!   One combination cant be done:  tensorHV and nu_div/=nu:  abort
+!   One combination NOT supported:  tensorHV and nu_div/=nu then abort
 !
-!   if (hypervis_scaling/=0 .and. var_coef) then
-!       use_cartesian=.true.    ! must have cartesian
-!       if (nu_ratio/=1) abort.
-!   else
-!       if (nu_ratio/=1) use_cartesian=.true.
-!   endif  
-!       
-!   
-!
-
     real(kind=real_kind), intent(in) :: v(np,np,2) 
     logical :: var_coef
     type (derivative_t)              :: deriv
     type (element_t)                 :: elem
     real(kind=real_kind), optional :: nu_ratio
     real(kind=real_kind) :: laplace(np,np,2)
-    logical use_cartesian
 
-    use_cartesian=(which_vlaplace.eq.2)  ! default: as specifed in namelist
 
     if (hypervis_scaling/=0 .and. var_coef) then
-       use_cartesian=.true.              ! tensorHV requires cartesian
-    endif
-
-    ! nu_ratio/=1 requires contra formulation.  switch if needed:
-    if (use_cartesian) then
+       ! tensorHV is turned on - requires cartesian formulation
        if (present(nu_ratio)) then
           if (nu_ratio /= 1) then
-             if (hypervis_scaling/=0 .and. var_coef) then          
-                call abortmp('ERROR: tensorHV can not be used with nu_div/=nu')
-             endif
-             use_cartesian=.false.
+             call abortmp('ERROR: tensorHV can not be used with nu_div/=nu')
           endif
        endif
-    endif
-    
-    if (use_cartesian) then
-      ! abort of nu_ratio/=1 - checked above 
-      laplace=vlaplace_sphere_wk_cartesian(v,deriv,elem,var_coef)
-    else
-      ! abort of tensorHV is turned on - checked above
-      laplace=vlaplace_sphere_wk_contra(v,deriv,elem,var_coef,nu_ratio)
+       laplace=vlaplace_sphere_wk_cartesian(v,deriv,elem,var_coef)
+    else  
+       ! all other cases, use contra formulation:
+       laplace=vlaplace_sphere_wk_contra(v,deriv,elem,var_coef,nu_ratio)
     endif
 
   end function vlaplace_sphere_wk
@@ -2596,16 +2572,10 @@ endif
     div=divergence_sphere(v,deriv,elem)
     vor=vorticity_sphere(v,deriv,elem)
 
-    if (var_coef) then
-       if (hypervis_power/=0 ) then
+    if (var_coef .and. hypervis_power/=0 ) then
           ! scalar viscosity with variable coefficient
           div = div*elem%variable_hyperviscosity(:,:)
           vor = vor*elem%variable_hyperviscosity(:,:)
-       else if (hypervis_scaling /=0 ) then
-          call abortmp('Error: vlaplace_sphere_weak does not support tensor HV. use which_vlaplace=2')
-       else
-          ! do nothing: constant coefficient viscsoity
-       endif
     endif
 
     if (present(nu_ratio)) div = nu_ratio*div

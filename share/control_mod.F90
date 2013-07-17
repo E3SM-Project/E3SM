@@ -137,20 +137,16 @@ module control_mod
                                           ! 1 = use (approx.) laplace on p surfaces
 
   real (kind=real_kind), public :: hypervis_power=0     ! if not 0, use variable hyperviscosity based on element area          
-
   real (kind=real_kind), public :: hypervis_scaling=0      ! use tensor hyperviscosity
-                                                           ! if turned on, requires which_vlaplace=2
 
 !three types of hyper viscosity are supported right now:
 ! (1) const hv:    nu * del^2 del^2
 ! (2) scalar hv:   nu(lat,lon) * del^2 del^2
 ! (3) tensor hv,   nu * ( \div * tensor * \grad ) * del^2
 !
-! (1) default:  which_vlaplace=0,1 or 2
-!               hypervis_power=0, hypervis_scaling=0
-! (2) Mike's original version for var-res grids.  
+! (1) default:  hypervis_power=0, hypervis_scaling=0
+! (2) Original version for var-res grids. (M. Levy)
 !            scalar coefficient within each element
-!            which_vlaplace=0,1 or 2
 !            hypervisc_scaling=0
 !            set hypervis_power>0 and set fine_ne, max_hypervis_courant
 ! (3) tensor HV var-res grids 
@@ -158,13 +154,7 @@ module control_mod
 !            set hypervis_scaling > 0 (typical values would be 3.2 or 4.0)
 !            hypervis_power=0
 !            (\div * tensor * \grad) operator uses cartesian laplace
-!            del^2 operator: set by which_vlaplace, unless nu_div/= nu
 !
-  integer, public :: which_vlaplace=0    ! 0= contravariant laplace
-                                         ! 1= orig (buggy) spherical laplace (REMOVED)
-					 ! 2= scalar laplace applied to Cartesian components
-
-
 
 
 
