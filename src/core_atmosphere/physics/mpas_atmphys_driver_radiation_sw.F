@@ -56,11 +56,13 @@
 !> ----------------------------------------
 !>    * removed the pre-processor option "do_hydrostatic_pressure" before call to subroutines
 !>      rrtmg_sw and camrad.
-!>      Laura D. Fowler (birch.ucar.edu) / 2013-05-29.
-!>
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-05-29.
 !>    * added structure diag in the call to subroutine init_radiation_sw and call to subroutine
 !>      camradinit for initialization of variable mxaerl.
-!>      Laura D. Fowler (birch.ucar.edu) / 2013-07-01.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-07-01.
+!>    * modified the call to subroutine rrtmg_swrad to include the option of using the same ozone
+!>      climatology as the one used in the CAM radiation codes.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-07-17.
 
 
  contains
@@ -584,8 +586,7 @@
        write(0,*) '--- enter subroutine rrtmg_swrad:'
        o3input = 0
        if(config_o3climatology) o3input = 2
-       
-       
+
        call rrtmg_swrad( &
               p3d        = pres_hyd_p   , p8w        = pres2_hyd_p  , pi3d       = pi_p          ,&
               t3d        = t_p          , t8w        = t2_p         , rho3d      = rho_p         ,&
