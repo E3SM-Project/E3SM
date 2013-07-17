@@ -228,7 +228,7 @@ module mpas_tracer_advection_mono
 
           ! pull tracer_min and tracer_max from the (horizontal) surrounding cells
           do i = 1, nEdgesOnCell(iCell)
-            do k=1, maxLevelCell(cellsOnCell(i, iCell))
+            do k=1, min(maxLevelCell(iCell), maxLevelCell(cellsOnCell(i, iCell)))
               tracer_max(k,iCell) = max(tracer_max(k,iCell),tracer_cur(k, cellsOnCell(i,iCell)))
               tracer_min(k,iCell) = min(tracer_min(k,iCell),tracer_cur(k, cellsOnCell(i,iCell)))
             end do ! k loop
