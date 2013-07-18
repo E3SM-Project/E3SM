@@ -236,7 +236,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, nEdgesSolve, nEdges, k
+      integer :: iEdge, nEdgesSolve, nEdges, k, nVertLevels
       integer, dimension(:), pointer :: maxLevelEdgeTop
       integer, dimension(:,:), pointer :: edgeMask, edgeSignOnCell
 
@@ -257,6 +257,7 @@ contains
       if(.not.config_use_mom_del2_tensor) return
 
       nEdges = grid % nEdges
+      nVertLevels = grid % nVertLevels
       nEdgesSolve = grid % nEdgesSolve
       maxLevelEdgeTop => grid % maxLevelEdgeTop % array
       meshScalingDel2 => grid % meshScalingDel2 % array
@@ -287,6 +288,10 @@ contains
          do k=1,maxLevelEdgeTop(iEdge)
             strainRateR3Edge(:,k,iEdge) = visc2 * strainRateR3Edge(:,k,iEdge) 
             viscosity(k,iEdge) = viscosity(k,iEdge) + visc2
+         end do
+         ! Impose zero strain rate at land boundaries
+         do k=maxLevelEdgeTop(iEdge)+1,nVertLevels
+            strainRateR3Edge(:,k,iEdge) = 0.0
          end do
       end do
 
