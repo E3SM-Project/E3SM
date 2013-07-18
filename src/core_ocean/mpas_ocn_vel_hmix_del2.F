@@ -285,28 +285,38 @@ contains
 
       call mpas_matrix_cell_to_edge(grid, strainRateR3Cell, .true., strainRateR3Edge)
 
-      do iEdge=1,nEdges  ! nEdgesSolve?
-         visc2 = config_mom_del2_tensor * meshScalingDel2(iEdge)
+! mrp temp: turn off visc product inside
+!      do iEdge=1,nEdges  ! nEdgesSolve?
+!         visc2 = config_mom_del2_tensor * meshScalingDel2(iEdge)
 
-         do k=1,maxLevelEdgeTop(iEdge)
+!         do k=1,maxLevelEdgeTop(iEdge)
 
-            strainRateR3Edge(:,k,iEdge) = visc2 * strainRateR3Edge(:,k,iEdge) 
+!            strainRateR3Edge(:,k,iEdge) = visc2 * strainRateR3Edge(:,k,iEdge) 
 
-            viscosity(k,iEdge) = viscosity(k,iEdge) + visc2
+!            viscosity(k,iEdge) = viscosity(k,iEdge) + visc2
 
-         end do
-      end do
+!         end do
+!      end do
 
      ! may change boundaries to false later
      call mpas_divergence_of_tensor_R3Cell(strainRateR3Edge, grid, edgeSignOnCell, .true., divTensorR3Cell)
 
      call mpas_vector_R3Cell_to_normalVectorEdge(divTensorR3Cell, grid, .true., normalVectorEdge)
 
-      do iEdge=1,nEdges  !Solve?
+! mrp temp: turn off visc product inside
+!      do iEdge=1,nEdges  !Solve?
+!         do k=1,maxLevelEdgeTop(iEdge)
+!            tend(k,iEdge) = tend(k,iEdge) + edgeMask(k, iEdge) * normalVectorEdge(k,iEdge)
+!         end do
+!      end do
+
+! mrp temp: turn off visc product inside, replace with this:
+      do iEdge=1,nEdges  ! nEdgesSolve?
+         visc2 = config_mom_del2_tensor * meshScalingDel2(iEdge)
+
          do k=1,maxLevelEdgeTop(iEdge)
-
-            tend(k,iEdge) = tend(k,iEdge) + edgeMask(k, iEdge) * normalVectorEdge(k,iEdge)
-
+            tend(k,iEdge) = tend(k,iEdge) + visc2 * edgeMask(k, iEdge) * normalVectorEdge(k,iEdge)
+            viscosity(k,iEdge) = viscosity(k,iEdge) + visc2
          end do
       end do
 
