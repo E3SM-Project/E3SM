@@ -32,5 +32,6 @@ ELSE()
 ENDIF()
 
 IF(Pnetcdf_FIND_REQUIRED AND NOT Pnetcdf_FOUND)
-  MESSAGE(FATAL_ERROR "Did not find required library Pnetcdf")
+  MESSAGE(FATAL_ERROR "Did not find required library Pnetcdf.\n"
+          "Please set location of Pnetcdf with -DPNETCDF_DIR")
 ENDIF()

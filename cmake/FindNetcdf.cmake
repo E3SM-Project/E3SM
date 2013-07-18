@@ -47,7 +47,6 @@ ENDIF ()
 
 SET(Netcdf_LIBRARIES ${NetcdfF_LIBRARY} ${Netcdf_LIBRARY})
 
-
 # If using shared libaries, test if we can link a simple executable to the 
 #  shared Netcdf libraries directly. If so, then we don't need to specify dependencies.
 SET(NETCDF_LINK FALSE)
@@ -59,6 +58,7 @@ IF (${PREFER_SHARED})
                 "-DINCLUDE_DIRECTORIES:FILEPATH=${Netcdf_INCLUDE_DIRS}" 
                 "-DLINK_LIBRARIES=${Netcdf_LIBRARIES}"
               OUTPUT_VARIABLE NETCDF_LINK_OUTPUT)
+  #MESSAGE(STATUS "NETCDF_LINK_OUTPUT=${NETCDF_LINK_OUTPUT}")
 ENDIF ()
 
 IF (${NETCDF_LINK})
@@ -238,7 +238,7 @@ ELSE ()
 ENDIF()
 
 # If we haven't had a FATAL_ERROR then we have found Netcdf and all dependencies
-set(Netcdf_FOUND ON)
+SET(Netcdf_FOUND ON)
 
 MESSAGE(STATUS "Found Netcdf:")
 MESSAGE(STATUS "  Libraries: ${Netcdf_LIBRARIES}")

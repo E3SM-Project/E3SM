@@ -12,7 +12,6 @@ program checkNCLink
 
   fileName = "someDummyFile.nc"
 
-  nmode = ior(nmode,NF90_NETCDF4)
   ierr = nf90_create(fileName,nmode,fileHandle)
 
 end program
