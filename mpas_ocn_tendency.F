@@ -154,16 +154,17 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tend_vel(tend, state, diagnostics, mesh)!{{{
+   subroutine ocn_tend_vel(tend, state, diagnostics, mesh, scratch)!{{{
       implicit none
 
       type (tend_type), intent(inout) :: tend !< Input/Output: Tendency structure
       type (state_type), intent(in) :: state !< Input: State information
       type (diagnostics_type), intent(in) :: diagnostics !< Input: Diagnostic information
       type (mesh_type), intent(in) :: mesh !< Input: Mesh information
+      type (scratch_type), intent(inout) :: scratch !< Input: Scratch structure
 
       real (kind=RKIND), dimension(:,:), pointer :: &
-        layerThicknessEdge, h, normalVelocity, density, zMid, pressure, &
+        layerThicknessEdge, h, normalVelocity, tangentialVelocity, density, zMid, pressure, &
         tend_normalVelocity, circulation, relativeVorticity, viscosity, kineticEnergyCell, &
         normalizedRelativeVorticityEdge, normalizedPlanetaryVorticityEdge, &
         montgomeryPotential, vertTransportVelocityTop, divergence, vertViscTopOfEdge
@@ -189,6 +190,7 @@ contains
       pressure                          => diagnostics % pressure % array
       vertViscTopOfEdge                 => diagnostics % vertViscTopOfEdge % array
       density                           => diagnostics % density % array
+      tangentialVelocity                => diagnostics % tangentialVelocity % array
 
       tend_normalVelocity      => tend % normalVelocity % array
                   
@@ -233,7 +235,7 @@ contains
       !   strictly only valid for config_mom_del2 == constant
       !
       call mpas_timer_start("hmix", .false., velHmixTimer)
-      call ocn_vel_hmix_tend(mesh, divergence, relativeVorticity, viscosity, tend_normalVelocity, err)
+      call ocn_vel_hmix_tend(mesh, divergence, relativeVorticity, normalVelocity, tangentialVelocity, viscosity, tend_normalVelocity, err)
       call mpas_timer_stop("hmix", velHmixTimer)
 
       !

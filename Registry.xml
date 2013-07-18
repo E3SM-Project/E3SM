@@ -250,6 +250,24 @@
 					possible_values="any positive real"
 		/>
 	</nml_record>
+	<nml_record name="hmix_del2_tensor">
+		<nml_option name="config_use_mom_del2_tensor" type="logical" default_value=".true." units="unitless"
+		            description="If true, Laplacian horizontal mixing is used on the momentum equation."
+		            possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_tracer_del2_tensor" type="logical" default_value=".false." units="unitless"
+		            description="If true, Laplacian horizontal mixing is used on the tracer equation."
+		            possible_values=".true. or .false."
+		/>
+		<nml_option name="config_mom_del2_tensor" type="real" default_value="10.0" units="m^2 s^{-1}"
+		            description="Horizonal viscosity, $\nu_h$."
+		            possible_values="any positive real"
+		/>
+		<nml_option name="config_tracer_del2_tensor" type="real" default_value="10.0" units="m^2 s^{-1}"
+		            description="Horizonal diffusion, $\kappa_h$."
+		            possible_values="any positive real"
+		/>
+	</nml_record>
 	<nml_record name="hmix_del4">
 		<nml_option name="config_use_mom_del4" type="logical" default_value=".false." units="unitless"
 					description="If true, biharmonic horizontal mixing is used on the momentum equation."
@@ -1529,6 +1547,11 @@
                      persistence="scratch" 
                      type="real" dimensions="SIX nVertLevels nEdges Time" units="m^2 s^{-1}"
 		     description="Outer product, u_e \cross n_e, at each edge."
+		/>
+		<var name="normalVectorEdge" 
+                     persistence="scratch" 
+                     type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+		     description="Vector component normal to an edge."
 		/>
     </var_struct>
 </registry>

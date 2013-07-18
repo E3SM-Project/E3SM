@@ -55,7 +55,7 @@ module ocn_vel_hmix
    !--------------------------------------------------------------------
 
    logical :: hmixOn
-   type (timer_node), pointer :: del2Timer, leithTimer, del4Timer
+   type (timer_node), pointer :: del2Timer, del2TensorTimer, leithTimer, del4Timer
 
 
 !***********************************************************************
@@ -79,7 +79,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_hmix_tend(mesh, divergence, relativeVorticity, viscosity, tend, err)!{{{
+   subroutine ocn_vel_hmix_tend(mesh, divergence, relativeVorticity, normalVelocity, tangentialVelocity, viscosity, tend, scratch, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -87,14 +87,20 @@ contains
       !
       !-----------------------------------------------------------------
 
+      type (mesh_type), intent(in) :: &
+         mesh          !< Input: mesh information
+
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          divergence    !< Input: velocity divergence
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          relativeVorticity     !< Input: relative vorticity
 
-      type (mesh_type), intent(in) :: &
-         mesh          !< Input: mesh information
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+         normalVelocity     !< Input: velocity normal to an edge
+
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+         tangentialVelocity     !< Input: velocity, tangent to an edge
 
       !-----------------------------------------------------------------
       !
@@ -103,10 +109,13 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:), intent(inout) :: &
-         tend          !< Input/Output: velocity tendency
+         viscosity     !< Input: viscosity
 
       real (kind=RKIND), dimension(:,:), intent(inout) :: &
-         viscosity     !< Input: viscosity
+         tend          !< Input/Output: velocity tendency
+
+      type (scratch_type), intent(inout) :: &
+         scratch !< Input: Scratch structure
 
       !-----------------------------------------------------------------
       !
@@ -139,6 +148,10 @@ contains
       call mpas_timer_start("del2", .false., del2Timer)
       call ocn_vel_hmix_del2_tend(mesh, divergence, relativeVorticity, viscosity, tend, err1)
       call mpas_timer_stop("del2", del2Timer)
+
+      call mpas_timer_start("del2_tensor", .false., del2TensorTimer)
+      call ocn_vel_hmix_del2_tensor_tend(grid, normalVelocity, tangentialVelocity, viscosity, tend, scratch, err1)
+      call mpas_timer_stop("del2_tensor", del2TensorTimer)
 
       call mpas_timer_start("leith", .false., leithTimer)
       call ocn_vel_hmix_leith_tend(mesh, divergence, relativeVorticity, viscosity, tend, err2)
