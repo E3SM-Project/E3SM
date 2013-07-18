@@ -23,6 +23,9 @@ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR})
 FortranCInterface_HEADER(cmake_fortran_c_interface.h
                          MACRO_NAMESPACE  "FCI_")
 
+# Prefer shared libraries (Yellowstone etc.) 
+OPTION(PREFER_SHARED "Prefer linking with shared libraries." FALSE)
+
 # need to tell the source to use this capability
 ADD_DEFINITIONS(-DINCLUDE_CMAKE_FCI)
 
