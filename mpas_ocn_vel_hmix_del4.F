@@ -229,6 +229,8 @@ contains
          end do
       end do
 
+print *, 'del4 tend min/max',minval(tend), maxval(tend)
+
       deallocate(delsq_u)
       deallocate(delsq_divergence)
       deallocate(delsq_relativeVorticity)
@@ -298,7 +300,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, nEdgesSolve, nEdges, k
+      integer :: iEdge, nEdgesSolve, nEdges, k, nVertLevels
       integer, dimension(:), pointer :: maxLevelEdgeTop
       integer, dimension(:,:), pointer :: edgeMask, edgeSignOnCell
 
@@ -319,6 +321,7 @@ contains
       if(.not.config_use_mom_del4_tensor) return
 
       nEdges = grid % nEdges
+      nVertLevels = grid % nVertLevels
       nEdgesSolve = grid % nEdgesSolve
       maxLevelEdgeTop => grid % maxLevelEdgeTop % array
       meshScalingDel4 => grid % meshScalingDel4 % array
@@ -353,6 +356,10 @@ contains
          do k=1,maxLevelEdgeTop(iEdge)
             strainRateR3Edge(:,k,iEdge) = visc4_sqrt * strainRateR3Edge(:,k,iEdge) 
          end do
+         ! Impose zero strain rate at land boundaries
+         do k=maxLevelEdgeTop(iEdge)+1,nVertLevels
+            strainRateR3Edge(:,k,iEdge) = 0.0
+         end do
       end do
 
       ! may change boundaries to false later
@@ -370,9 +377,13 @@ contains
 
       do iEdge=1,nEdges  ! nEdgesSolve?
          visc4_sqrt = sqrt(config_mom_del4_tensor * meshScalingDel4(iEdge))
-         viscosity(:,iEdge) = viscosity(k,iEdge) + config_mom_del4_tensor * meshScalingDel4(iEdge)
+         viscosity(:,iEdge) = viscosity(:,iEdge) + config_mom_del4_tensor * meshScalingDel4(iEdge)
          do k=1,maxLevelEdgeTop(iEdge)
             strainRateR3Edge(:,k,iEdge) = visc4_sqrt * strainRateR3Edge(:,k,iEdge) 
+         end do
+         ! Impose zero strain rate at land boundaries
+         do k=maxLevelEdgeTop(iEdge)+1,nVertLevels
+            strainRateR3Edge(:,k,iEdge) = 0.0
          end do
       end do
 
