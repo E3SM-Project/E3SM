@@ -27,6 +27,7 @@ module ocn_time_integration
    use mpas_vector_reconstruction
    use mpas_spline_interpolation
    use mpas_timer
+   use mpas_io_units
 
    use ocn_time_integration_rk4
    use ocn_time_integration_split
@@ -109,7 +110,7 @@ module ocn_time_integration
         nanCheck = sum(block % state % time_levs(2) % state % normalVelocity % array)
 
         if (nanCheck /= nanCheck) then
-           write(0,*) 'Abort: NaN detected'
+           write(stderrUnit,*) 'Abort: NaN detected'
            call mpas_dmpar_abort(dminfo)
         endif
 
