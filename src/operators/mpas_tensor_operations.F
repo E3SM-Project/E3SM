@@ -1342,7 +1342,7 @@ contains
           block % mesh, edgeSignOnCell, edgeTangentVectors, .false., &
           outerProductEdge, strainRateR3Cell)
 
-        call mpas_matrix_cell_to_edge(block % mesh, strainRateR3Cell, .false., strainRateR3Edge)
+        call mpas_matrix_cell_to_edge(strainRateR3Cell, block % mesh, .false., strainRateR3Edge)
      endif
 
      call mpas_divergence_of_tensor_R3Cell(strainRateR3Edge, block % mesh, edgeSignOnCell, .false., divTensorR3Cell)

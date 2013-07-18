@@ -111,7 +111,7 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine mpas_vector_R3Cell_to_2DEdge(vectorR3Cell, &
-      grid, includeHalo, edgeTangentVectors, vector2DEdge)!{{{
+      grid, edgeTangentVectors, includeHalo, normalVectorEdge, tangentialVectorEdge)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -137,10 +137,11 @@ contains
       !
       !-----------------------------------------------------------------
 
-      real (kind=RKIND), dimension(:,:,:), intent(out) :: &
-         vector2DEdge   !< Output: vector at edge, where 
-                        !< index 1=1 is for normal component to edge
-                        !< index 1=2 is for tangential component to edge
+      real (kind=RKIND), dimension(:,:), intent(out) :: &
+         normalVectorEdge   !< Output: normal component of vector at edge
+
+      real (kind=RKIND), dimension(:,:), intent(out) :: &
+         tangentialVectorEdge   !< Output: tangential component of vector at edge
 
       !-----------------------------------------------------------------
       !
@@ -174,9 +175,9 @@ contains
            ! average neighboring cell-centered vectors to the edge
            vectorR3Edge(:) = 0.5*(vectorR3Cell(:,k,cell1) + vectorR3Cell(:,k,cell2))
 
-           ! components at edge: take dot products with unit vectors at edge
-           vector2DEdge(1,k,iEdge) = sum(vectorR3Edge(:)*edgeNormalVectors(:,iEdge))
-           vector2DEdge(2,k,iEdge) = sum(vectorR3Edge(:)*edgeTangentVectors(:,iEdge))      
+           ! normal component at edge: take dot products with unit vectors at edge
+           normalVectorEdge(k,iEdge) = sum(vectorR3Edge(:)*edgeNormalVectors(:,iEdge))
+           tangentialVectorEdge(k,iEdge) = sum(vectorR3Edge(:)*edgeTangentVectors(:,iEdge))
  
          enddo
       enddo
@@ -220,9 +221,7 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:), intent(out) :: &
-         normalVectorEdge   !< Output: vector at edge, where 
-                        !< index 1=1 is for normal component to edge
-                        !< index 1=2 is for tangential component to edge
+         normalVectorEdge   !< Output: normal component of vector at edge
 
       !-----------------------------------------------------------------
       !

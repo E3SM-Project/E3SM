@@ -315,7 +315,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_matrix_cell_to_edge(grid, matrixCell, includeHalo, matrixEdge)!{{{
+   subroutine mpas_matrix_cell_to_edge(matrixCell, grid, includeHalo, matrixEdge)!{{{
 
       !-----------------------------------------------------------------
       !

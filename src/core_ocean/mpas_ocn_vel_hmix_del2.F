@@ -99,10 +99,10 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:), intent(inout) :: &
-         tend             !< Input/Output: velocity tendency
+         viscosity       !< Input: viscosity
 
       real (kind=RKIND), dimension(:,:), intent(inout) :: &
-         viscosity       !< Input: viscosity
+         tend             !< Input/Output: velocity tendency
 
       !-----------------------------------------------------------------
       !
@@ -181,19 +181,16 @@ contains
 !  routine ocn_vel_hmix_del2_tensor_tend
 !
 !> \brief   Computes tendency term for Laplacian horizontal momentum mixing
-!> \author  Mark Petersen, Doug Jacobsen, Todd Ringler
-!> \date    22 August 2011
+!> \author  Mark Petersen
+!> \date    July 2013
 !> \details 
 !>  This routine computes the horizontal mixing tendency for momentum
-!>  based on a Laplacian form for the mixing, \f$\nu_2 \nabla^2 u\f$
-!>  This tendency takes the
-!>  form \f$\nu( \nabla divergence + k \times \nabla relativeVorticity )\f$,
-!>  where \f$\nu\f$ is a viscosity and \f$k\f$ is the vertical unit vector.
-!>  This form is strictly only valid for constant \f$\nu\f$ .
+!>  based on a Laplacian form for the mixing, \f$\nabla\cdot( \nu_2 \nabla(u))\f$
+!>  where \f$\nu_2\f$ is a viscosity.
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_hmix_del2_tensor_tend(grid, normalVelocity, tangentialVelocity, viscosity, tend, scratch, err)!{{{
+   subroutine ocn_vel_hmix_del2_tensor_tend(grid, normalVelocity, tangentialVelocity, viscosity, scratch, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -217,13 +214,13 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:), intent(inout) :: &
-         tend             !< Input/Output: velocity tendency
-
-      real (kind=RKIND), dimension(:,:), intent(inout) :: &
          viscosity       !< Input/Output: viscosity
 
       type (scratch_type), intent(inout) :: &
          scratch !< Input/Output: Scratch structure
+
+      real (kind=RKIND), dimension(:,:), intent(inout) :: &
+         tend             !< Input/Output: velocity tendency
 
       !-----------------------------------------------------------------
       !
@@ -283,40 +280,24 @@ contains
          grid, edgeSignOnCell, edgeTangentVectors, .true., &
          outerProductEdge, strainRateR3Cell)
 
-      call mpas_matrix_cell_to_edge(grid, strainRateR3Cell, .true., strainRateR3Edge)
+      call mpas_matrix_cell_to_edge(strainRateR3Cell, grid, .true., strainRateR3Edge)
 
-! mrp temp: turn off visc product inside
-!      do iEdge=1,nEdges  ! nEdgesSolve?
-!         visc2 = config_mom_del2_tensor * meshScalingDel2(iEdge)
-
-!         do k=1,maxLevelEdgeTop(iEdge)
-
-!            strainRateR3Edge(:,k,iEdge) = visc2 * strainRateR3Edge(:,k,iEdge) 
-
-!            viscosity(k,iEdge) = viscosity(k,iEdge) + visc2
-
-!         end do
-!      end do
+      do iEdge=1,nEdges  ! nEdgesSolve?
+         visc2 = config_mom_del2_tensor * meshScalingDel2(iEdge)
+         do k=1,maxLevelEdgeTop(iEdge)
+            strainRateR3Edge(:,k,iEdge) = visc2 * strainRateR3Edge(:,k,iEdge) 
+            viscosity(k,iEdge) = viscosity(k,iEdge) + visc2
+         end do
+      end do
 
      ! may change boundaries to false later
      call mpas_divergence_of_tensor_R3Cell(strainRateR3Edge, grid, edgeSignOnCell, .true., divTensorR3Cell)
 
      call mpas_vector_R3Cell_to_normalVectorEdge(divTensorR3Cell, grid, .true., normalVectorEdge)
 
-! mrp temp: turn off visc product inside
-!      do iEdge=1,nEdges  !Solve?
-!         do k=1,maxLevelEdgeTop(iEdge)
-!            tend(k,iEdge) = tend(k,iEdge) + edgeMask(k, iEdge) * normalVectorEdge(k,iEdge)
-!         end do
-!      end do
-
-! mrp temp: turn off visc product inside, replace with this:
-      do iEdge=1,nEdges  ! nEdgesSolve?
-         visc2 = config_mom_del2_tensor * meshScalingDel2(iEdge)
-
+      do iEdge=1,nEdges  !Solve?
          do k=1,maxLevelEdgeTop(iEdge)
-            tend(k,iEdge) = tend(k,iEdge) + visc2 * edgeMask(k, iEdge) * normalVectorEdge(k,iEdge)
-            viscosity(k,iEdge) = viscosity(k,iEdge) + visc2
+            tend(k,iEdge) = tend(k,iEdge) + edgeMask(k, iEdge) * normalVectorEdge(k,iEdge)
          end do
       end do
 
