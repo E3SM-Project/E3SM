@@ -20,6 +20,7 @@ module mpas_tracer_advection_mono
 
    use mpas_kind_types
    use mpas_grid_types
+   use mpas_io_units
 
    use mpas_tracer_advection_helpers
 
@@ -409,11 +410,11 @@ module mpas_tracer_advection_mono
           do iCell = 1, nCellsSolve
             do k = 1, maxLevelCell(iCell)
               if(tracer_new(k,iCell) < tracer_min(k, iCell)-eps) then
-                write(*,*) 'Minimum out of bounds on tracer ', iTracer, tracer_min(k, iCell), tracer_new(k,iCell)
+                write(stderrUnit,*) 'Minimum out of bounds on tracer ', iTracer, tracer_min(k, iCell), tracer_new(k,iCell)
               end if
 
               if(tracer_new(k,iCell) > tracer_max(k,iCell)+eps) then
-                write(*,*) 'Maximum out of bounds on tracer ', iTracer, tracer_max(k, iCell), tracer_new(k,iCell)
+                write(stderrUnit,*) 'Maximum out of bounds on tracer ', iTracer, tracer_max(k, iCell), tracer_new(k,iCell)
               end if
             end do
           end do
@@ -490,7 +491,7 @@ module mpas_tracer_advection_mono
       else
           vert2ndOrder = .true.
           if(vert_adv_order /= 2) then
-            write(6,*) 'Invalid value for vert_adv_order, defaulting to 2nd order'
+            write(stderrUnit,*) 'Invalid value for vert_adv_order, defaulting to 2nd order'
           end if
       end if
 

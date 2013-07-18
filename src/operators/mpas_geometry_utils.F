@@ -11,6 +11,7 @@ module mpas_geometry_utils
    use mpas_grid_types
    use mpas_configure
    use mpas_constants
+   use mpas_io_units
 
    contains
 
@@ -175,7 +176,7 @@ module mpas_geometry_utils
       cz = 0.5*(az + bz)
    
       if (cx == 0. .and. cy == 0. .and. cz == 0.) then
-         write(0,*) 'Error: arc_bisect: A and B are diametrically opposite'
+         write(stderrUnit,*) 'Error: arc_bisect: A and B are diametrically opposite'
       else
          d = sqrt(cx*cx + cy*cy + cz*cz)
          cx = r * cx / d
@@ -205,7 +206,7 @@ module mpas_geometry_utils
       integer :: i,j
    
       if ( (ne<n) .or. (ne<m) ) then
-         write(6,*) ' error in poly_fit_2 inversion ',m,n,ne
+         write(stdoutUnit,*) ' error in poly_fit_2 inversion ',m,n,ne
          stop
       end if
    
@@ -236,10 +237,10 @@ module mpas_geometry_utils
       b_out(1:n,1:m) = b(1:n,1:m)
 
 !     do i=1,n
-!        write(6,*) ' i, indx ',i,indx(i)
+!        write(stdoutUnit,*) ' i, indx ',i,indx(i)
 !     end do
 !
-!     write(6,*) ' '
+!     write(stdoutUnit,*) ' '
 
    end subroutine mpas_poly_fit_2!}}}
 

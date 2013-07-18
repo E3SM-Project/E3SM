@@ -22,6 +22,7 @@
 
         use mpas_kind_types
         use mpas_grid_types
+        use mpas_io_units
 
         implicit none
         save
@@ -332,7 +333,7 @@
               percent = timer_ptr%total_time/total_ptr%total_time
             endif
 
-            write(*,'(i2, 1x, a35, f15.5, i10, 3f15.5, 2f8.2)') timer_ptr%levels, tname(1:timer_ptr%levels)//timer_ptr%timer_name, timer_ptr%total_time, timer_ptr%calls, timer_ptr%min_time, timer_ptr%max_time, timer_ptr%avg_time, percent, timer_ptr%efficiency
+            write(stdoutUnit,'(i2, 1x, a35, f15.5, i10, 3f15.5, 2f8.2)') timer_ptr%levels, tname(1:timer_ptr%levels)//timer_ptr%timer_name, timer_ptr%total_time, timer_ptr%calls, timer_ptr%min_time, timer_ptr%max_time, timer_ptr%avg_time, percent, timer_ptr%efficiency
             return
           endif
 
@@ -352,8 +353,8 @@
             stop
           end if
 
-          write(*,'(3x, a10, 24x, a15, a10, a13, a15, a15, a12, a12)') 'timer_name', 'total', 'calls', 'min', 'max', 'avg', 'percent', 'efficiency'
-          write(*,'(i2, 1x, a35, f15.5, i10, 3f15.5)') total%levels, total%timer_name, total%total_time, total%calls, total%min_time, total%max_time, total%avg_time
+          write(stdoutUnit,'(3x, a10, 24x, a15, a10, a13, a15, a15, a12, a12)') 'timer_name', 'total', 'calls', 'min', 'max', 'avg', 'percent', 'efficiency'
+          write(stdoutUnit,'(i2, 1x, a35, f15.5, i10, 3f15.5)') total%levels, total%timer_name, total%total_time, total%calls, total%min_time, total%max_time, total%avg_time
 
           current => all_timers
 

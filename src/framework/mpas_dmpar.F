@@ -21,6 +21,7 @@ module mpas_dmpar
    use mpas_grid_types
    use mpas_sort
    use mpas_hash
+   use mpas_io_units
 
 #ifdef _MPI
 include 'mpif.h'
@@ -135,7 +136,7 @@ include 'mpif.h'
       dminfo % nprocs = mpi_size
       dminfo % my_proc_id = mpi_rank
 
-      write(0,'(a,i5,a,i5,a)') 'task ', mpi_rank, ' of ', mpi_size, &
+      write(stderrUnit,'(a,i5,a,i5,a)') 'task ', mpi_rank, ' of ', mpi_size, &
         ' is running'
 
 #ifndef MPAS_CESM
@@ -223,11 +224,11 @@ include 'mpif.h'
 #ifdef _MPI
       integer :: mpi_ierr, mpi_errcode
 
-      write(0,*) trim(mesg)
+      write(stderrUnit,*) trim(mesg)
       call MPI_Abort(MPI_COMM_WORLD, mpi_errcode, mpi_ierr)
 #endif
 
-      write(0,*) trim(mesg)
+      write(stderrUnit,*) trim(mesg)
       stop
 
    end subroutine mpas_dmpar_global_abort!}}}

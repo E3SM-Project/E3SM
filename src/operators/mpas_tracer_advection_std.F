@@ -20,6 +20,7 @@ module mpas_tracer_advection_std
 
    use mpas_kind_types
    use mpas_grid_types
+   use mpas_io_units
 
    use mpas_tracer_advection_helpers
 
@@ -296,7 +297,7 @@ module mpas_tracer_advection_std
       else
           vert2ndOrder = .true.
           if(vert_adv_order /= 2) then
-            write(6,*) 'Invalid value for vert_adv_order, defaulting to 2nd order'
+            write(stderrUnit,*) 'Invalid value for vert_adv_order, defaulting to 2nd order'
           end if
       end if
 

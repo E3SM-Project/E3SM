@@ -20,6 +20,7 @@
 module mpas_sort
 
    use mpas_kind_types
+   use mpas_io_units
 
    interface mpas_quicksort
       module procedure mpas_quicksort_1dint
@@ -163,14 +164,14 @@ module mpas_sort
 
          if (s-1 > l) then
             top = top + 1
-if (top > 1000) write(0,*) 'Error: Quicksort exhausted its stack.'
+if (top > 1000) write(stderrUnit,*) 'Error: Quicksort exhausted its stack.'
             lstack(top) = l
             rstack(top) = s-1
          end if
 
          if (r > s+1) then
             top = top + 1
-if (top > 1000) write(0,*) 'Error: Quicksort exhausted its stack.'
+if (top > 1000) write(stderrUnit,*) 'Error: Quicksort exhausted its stack.'
             lstack(top) = s+1
             rstack(top) = r
          end if
@@ -236,14 +237,14 @@ if (top > 1000) write(0,*) 'Error: Quicksort exhausted its stack.'
 
          if (s-1 > l) then
             top = top + 1
-if (top > 1000) write(0,*) 'Error: Quicksort exhausted its stack.'
+if (top > 1000) write(stderrUnit,*) 'Error: Quicksort exhausted its stack.'
             lstack(top) = l
             rstack(top) = s-1
          end if
 
          if (r > s+1) then
             top = top + 1
-if (top > 1000) write(0,*) 'Error: Quicksort exhausted its stack.'
+if (top > 1000) write(stderrUnit,*) 'Error: Quicksort exhausted its stack.'
             lstack(top) = s+1
             rstack(top) = r
          end if
@@ -309,14 +310,14 @@ if (top > 1000) write(0,*) 'Error: Quicksort exhausted its stack.'
 
          if (s-1 > l) then
             top = top + 1
-if (top > 1000) write(0,*) 'Error: Quicksort exhausted its stack.'
+if (top > 1000) write(stderrUnit,*) 'Error: Quicksort exhausted its stack.'
             lstack(top) = l
             rstack(top) = s-1
          end if
 
          if (r > s+1) then
             top = top + 1
-if (top > 1000) write(0,*) 'Error: Quicksort exhausted its stack.'
+if (top > 1000) write(stderrUnit,*) 'Error: Quicksort exhausted its stack.'
             lstack(top) = s+1
             rstack(top) = r
          end if
@@ -382,14 +383,14 @@ if (top > 1000) write(0,*) 'Error: Quicksort exhausted its stack.'
 
          if (s-1 > l) then
             top = top + 1
-if (top > 1000) write(0,*) 'Error: Quicksort exhausted its stack.'
+if (top > 1000) write(stderrUnit,*) 'Error: Quicksort exhausted its stack.'
             lstack(top) = l
             rstack(top) = s-1
          end if
 
          if (r > s+1) then
             top = top + 1
-if (top > 1000) write(0,*) 'Error: Quicksort exhausted its stack.'
+if (top > 1000) write(stderrUnit,*) 'Error: Quicksort exhausted its stack.'
             lstack(top) = s+1
             rstack(top) = r
          end if

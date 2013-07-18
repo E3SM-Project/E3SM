@@ -23,6 +23,7 @@ module mpas_tracer_advection_helpers
    use mpas_configure
    use mpas_sort
    use mpas_geometry_utils
+   use mpas_io_units
 
    implicit none
    save
@@ -343,7 +344,7 @@ module mpas_tracer_advection_helpers
       err = 0
 
       if(polynomial_order > 2) then
-        write (*,*) 'Polynomial for second derivitave can only be 2'
+        write (stderrUnit,*) 'Polynomial for second derivitave can only be 2'
         err = 1
         return
       end if
@@ -663,21 +664,21 @@ module mpas_tracer_advection_helpers
       if (debug) stop
 
 
-!      write(0,*) ' check for deriv2 coefficients, iEdge 4 '
+!      write(stderrUnit,*) ' check for deriv2 coefficients, iEdge 4 '
 !
 !      iEdge = 4
 !      j = 1
 !      iCell = grid % cellsOnEdge % array(1,iEdge)
-!      write(0,*) ' j, icell, coef ',j,iCell,deriv_two(j,1,iEdge)
+!      write(stderrUnit,*) ' j, icell, coef ',j,iCell,deriv_two(j,1,iEdge)
 !      do j=2,7
-!         write(0,*) ' j, icell, coef ',j,grid % CellsOnCell % array(j-1,iCell),deriv_two(j,1,iEdge)
+!         write(stderrUnit,*) ' j, icell, coef ',j,grid % CellsOnCell % array(j-1,iCell),deriv_two(j,1,iEdge)
 !      end do
 !
 !      j = 1
 !      iCell = grid % cellsOnEdge % array(2,iEdge)
-!      write(0,*) ' j, icell, coef ',j,iCell,deriv_two(j,2,iEdge)
+!      write(stderrUnit,*) ' j, icell, coef ',j,iCell,deriv_two(j,2,iEdge)
 !      do j=2,7
-!         write(0,*) ' j, icell, coef ',j,grid % CellsOnCell % array(j-1,iCell),deriv_two(j,2,iEdge)
+!         write(stderrUnit,*) ' j, icell, coef ',j,grid % CellsOnCell % array(j-1,iCell),deriv_two(j,2,iEdge)
 !      end do
 !      stop
 

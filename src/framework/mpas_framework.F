@@ -25,6 +25,7 @@ module mpas_framework
    use mpas_timer
    use mpas_timekeeping
    use mpas_io
+   use mpas_io_units
 
 
    contains
@@ -39,7 +40,7 @@ module mpas_framework
 !>  This routine initializes the MPAS framework. It calls routines related to initializing different parts of MPAS, that are housed within the framework.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_framework_init(dminfo, domain, mpi_comm, nml_filename, io_system)!{{{
+   subroutine mpas_framework_init(dminfo, domain, mpi_comm, nml_filename, io_system, stdoutUnit, stderrUnit)!{{{
 
       implicit none
 
@@ -50,10 +51,13 @@ module mpas_framework
       character (len=*), optional :: nml_filename
       type (iosystem_desc_t), optional, pointer :: io_system
 
+      integer, intent(in), optional :: stdoutUnit, stderrUnit
+
       integer :: pio_num_iotasks
       integer :: pio_stride
 
       allocate(dminfo)
+      call mpas_io_units_init(stdoutUnit, stderrUnit)
       call mpas_dmpar_init(dminfo, mpi_comm)
 
       call mpas_read_namelist(dminfo, nml_filename)
