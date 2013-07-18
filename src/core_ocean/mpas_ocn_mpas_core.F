@@ -215,7 +215,7 @@ module mpas_core
       end do
 
       ! mrp added just to test stress tensor ops:
-       call mpas_prep_test_tensor(domain)
+      ! call mpas_prep_test_tensor(domain)
       ! mrp added just to test stress tensor ops end
 
       if (config_write_stats_on_startup) then

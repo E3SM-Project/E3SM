@@ -44,6 +44,7 @@ module mpas_vector_operations
              mpas_cross_product_in_r3, &
              mpas_tangential_velocity, &
              mpas_vector_R3Cell_to_2DEdge, &
+             mpas_vector_R3Cell_to_normalVectorEdge, &
              mpas_vector_R3_to_LonLatR, &
              mpas_vector_LonLatR_to_R3, &
              mpas_zonal_meridional_vectors
@@ -109,8 +110,8 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_vector_R3Cell_to_2DEdge(vectorR3Cell, vector2DEdge, &
-      grid, includeHalo, edgeTangentVectors)!{{{
+   subroutine mpas_vector_R3Cell_to_2DEdge(vectorR3Cell, &
+      grid, includeHalo, edgeTangentVectors, vector2DEdge)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -181,6 +182,87 @@ contains
       enddo
 
    end subroutine mpas_vector_R3Cell_to_2DEdge!}}}
+
+!***********************************************************************
+!
+!  routine mpas_vector_R3Cell_to_normalVectorEdge
+!
+!> \brief   Interpolate from R3 cell-centered vector field vector normal to edge
+!> \author  Mark Petersen
+!> \date    April 2013
+!> \details 
+!>  Convert an R3 cell-centered vector field to normal vectors at edges.
+!
+!-----------------------------------------------------------------------
+
+   subroutine mpas_vector_R3Cell_to_normalVectorEdge(vectorR3Cell, &
+      grid, includeHalo, normalVectorEdge)!{{{
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:,:,:), intent(in) :: &
+         vectorR3Cell  !< Input: 3-vector located at cell centers, in x,y,z coordinates
+
+      type (mesh_type), intent(in) :: &
+         grid          !< Input: grid information
+
+      logical, intent(in) :: & 
+         includeHalo !< Input: If true, halo cells and edges are included in computation
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:,:), intent(out) :: &
+         normalVectorEdge   !< Output: vector at edge, where 
+                        !< index 1=1 is for normal component to edge
+                        !< index 1=2 is for tangential component to edge
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      integer :: iEdge, nEdgesCompute, cell1, cell2, k, nVertLevels
+
+      integer, dimension(:,:), pointer :: cellsOnEdge
+
+      real (kind=RKIND), dimension(3) :: vectorR3Edge
+      real(kind=RKIND), dimension(:,:), pointer :: edgeNormalVectors
+
+      if (includeHalo) then
+         nEdgesCompute = grid % nEdges
+      else 
+         nEdgesCompute = grid % nEdgesSolve
+      endif
+      nVertLevels = grid % nVertLevels
+
+      edgeNormalVectors => grid % edgeNormalVectors % array
+      cellsOnEdge       => grid % cellsOnEdge % array
+
+      do iEdge=1,nEdgesCompute
+         cell1 = cellsOnEdge(1,iEdge)
+         cell2 = cellsOnEdge(2,iEdge)
+
+         do k=1,nVertLevels
+
+           ! average neighboring cell-centered vectors to the edge
+           vectorR3Edge(:) = 0.5*(vectorR3Cell(:,k,cell1) + vectorR3Cell(:,k,cell2))
+
+           ! normal component at edge: take dot products with unit vectors at edge
+           normalVectorEdge(k,iEdge) = sum(vectorR3Edge(:)*edgeNormalVectors(:,iEdge))
+ 
+         enddo
+      enddo
+
+   end subroutine mpas_vector_R3Cell_to_normalVectorEdge!}}}
 
 !***********************************************************************
 !

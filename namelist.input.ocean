@@ -63,6 +63,12 @@
 	config_mom_del2 = 10.0
 	config_tracer_del2 = 10.0
 /
+&hmix_del2_tensor
+	config_use_mom_del2_tensor = .true.
+	config_use_tracer_del2_tensor = .false.
+	config_mom_del2_tensor = 10.0
+	config_tracer_del2_tensor = 10.0
+/
 &hmix_del4
 	config_use_mom_del4 = .false.
 	config_use_tracer_del4 = .false.
