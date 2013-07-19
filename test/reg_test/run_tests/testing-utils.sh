@@ -85,7 +85,7 @@ createPBSHeader() {
     echo "#PBS -A $HOMME_ACCOUNT" >> $RUN_SCRIPT
   else
     echo "PROJECT CHARGE ID (HOMME_PROJID) not set"
-    exit -1
+    exit -2
   fi 
 
   # Set the output and error filenames
@@ -165,7 +165,7 @@ examineJobStat() {
     fi
   else
     echo "Error: queue type not recognized"
-    exit -1
+    exit -3
   fi
 }
 
@@ -240,7 +240,7 @@ submitToQueue() {
     qsub ${subFile} > $THIS_STDOUT 2> $THIS_STDERR
   else
     echo "Error: queue type not recognized"
-    exit -1
+    exit -4
   fi
 }
 
@@ -252,7 +252,7 @@ getJobID() {
     SUB_ID=`cat $THIS_STDOUT | awk '{print $1}'`
   else
     echo "Error: queue type not recognized"
-    exit -1
+    exit -5
   fi
 }
 
@@ -301,7 +301,7 @@ submitTestsToQueue() {
     else 
       echo "failed with message:"
       cat $THIS_STDERR
-      exit -1
+      exit -6
     fi
     rm $THIS_STDOUT
     rm $THIS_STDERR
@@ -356,7 +356,7 @@ runTestsStd() {
     else 
       echo "failed with message:"
       cat $THIS_STDERR
-      exit -1
+      exit -7
     fi
     rm $THIS_STDOUT
     rm $THIS_STDERR
@@ -617,7 +617,7 @@ diffCprnc() {
 
   if [ ! -f "${CPRNC_BINARY}" ] ; then
     echo "Netcdf differencing tool cprnc not found"
-    exit -1
+    exit -8
   fi
 
   # source the test.sh file to get the names of the nc_output_files
@@ -640,7 +640,7 @@ diffCprnc() {
     newFile=${HOMME_TESTING_DIR}/${TEST_NAME}/movies/$file
     if [ ! -f "${newFile}" ] ; then
       echo "ERROR: The result file ${newFile} does not exist exiting" 
-      exit -1
+      exit -9
     fi
 
     # result in the repo
@@ -649,7 +649,7 @@ diffCprnc() {
 
     if [ ! -f "${newFile}" ] ; then
       echo "ERROR: The repo file ${repoFile} does not exist exiting" 
-      exit -1
+      exit -10
     fi
 
     cmd="${CPRNC_BINARY} ${newFile} ${repoFile}"
@@ -676,7 +676,7 @@ diffCprnc() {
       echo "CPRNC returned the following RMS differences"
       grep RMS ${diffStdout}
       echo "############################################################################"
-      exit -1
+      exit -11
     fi
 
     
@@ -705,7 +705,7 @@ diffCprncOutput() {
     # ensure that cprncOutputFile exists
     if [ ! -f "${cprncOutputFile}" ]; then
       echo "Error: cprnc output file ${cprncOutputFile} not found. Exiting."
-      exit -1
+      exit -12
     fi
 
     # Parse the output file to determine if they were identical
@@ -720,7 +720,7 @@ diffCprncOutput() {
       echo "CPRNC returned the following RMS differences"
       grep RMS ${cprncOutputFile}
       echo "############################################################################"
-      exit -1
+      exit -13
     fi
     
   done
@@ -751,11 +751,11 @@ diffStdout() {
       echo "diff of output: "
       diffCmd="diff ${PARSE_RESULT} ${SAVED_RESULT}"
       $diffCmd
-      exit -1
+      exit -14
     else
       echo "File comparison failed to yield expected result (identical,simlar,different)"
       echo "diffTol Output: ${diffOutput}"
-      exit -1
+      exit -15
     fi
 
   else
@@ -771,7 +771,7 @@ diffStdout() {
     #echo `head -n 50 $diffOutputFile`
     head -n 50 $diffOutputFile
     echo "############################################################################"
-    exit -1
+    exit -16
   fi
 
 }
@@ -838,7 +838,7 @@ moveBaseline() {
 
       if [ ! -f "${newFile}" ] ; then
         echo "ERROR: The result file ${newFile} does not exist exiting" 
-        exit -1
+        exit -17
       fi
 
       # Make the directory to store the netcdf files
@@ -892,7 +892,7 @@ checkBaselineResults() {
 
   # Throw an error if any of the files to be compared were not found
   if $filesNotFound ; then
-    exit -1
+    exit -18
   fi
 
 }

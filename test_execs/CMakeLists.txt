@@ -169,7 +169,9 @@ EXECUTE_PROCESS(
 
 IF (NOT ${CREATE_RUNS_RESULT} EQUAL 0) 
   MESSAGE(FATAL_ERROR "The script \"createRunScripts.sh all\" has failed with error
-                        ${CREATE_RUNS_RESULT}")
+                        ${CREATE_RUNS_RESULT}\n"
+          "OUTPUT: \n ${CREATE_RUNS_OUTPUT}\n"
+          "ERROR: \n ${CREATE_RUNS_ERROR}")
 ENDIF ()
 
 EXECUTE_PROCESS(
@@ -180,6 +182,9 @@ EXECUTE_PROCESS(
 
 IF (NOT ${CREATE_RUNS_RESULT} EQUAL 0) 
   MESSAGE(FATAL_ERROR "The script \"createRunScripts.sh baseline\" has failed with error
-                        ${CREATE_RUNS_RESULT}")
+                        ${CREATE_RUNS_RESULT}\n"
+          "OUTPUT: \n ${CREATE_RUNS_OUTPUT}\n"
+          "ERROR: \n ${CREATE_RUNS_ERROR}")
+
 ENDIF ()
 
