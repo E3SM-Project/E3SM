@@ -529,7 +529,7 @@ contains
           end do
           ndims = infile%vars%ndims(i) 
 
-
+          ntimes=1
           if(infile%vars%timedependent(i)) then
              ntimes = get_dimlen(infile%dims,'time')
           end if
@@ -571,7 +571,7 @@ contains
                    if (get_interp_parameter('itype')==1) print *,'using bilinear interpolation'
                 endif
                 do n=1,ntimes
-                   if(par%masterproc) print *, 'interpolating for timelevel ',n
+                   if(par%masterproc) print *, 'interpolating for timelevel ',n,'/',ntimes
                    if(infile%vars%timedependent(i)) then
                       call pio_setframe(infile%vars%vardesc(i),int(n,kind=PIO_Offset))
                       call pio_setframe(infile%vars%vardesc(iv),int(n,kind=PIO_Offset))
@@ -654,7 +654,7 @@ contains
                 endif
                
                 do n=1,ntimes
-                   if(par%masterproc) print *, 'interpolating for timelevel ',n
+                   if(par%masterproc) print *, 'interpolating for timelevel ',n,'/',ntimes
                    if(infile%vars%timedependent(i)) then
                       call pio_setframe(infile%vars%vardesc(i),int(n,kind=PIO_Offset))
                    end if
