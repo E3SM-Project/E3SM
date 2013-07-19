@@ -465,7 +465,9 @@ contains
        elem(ie)%accum%Qvar=0
        elem(ie)%accum%Qmass=0
        elem(ie)%accum%Q1mass=0
-       elem(ie)%accum%mass_added=0
+
+       elem(ie)%derived%Omega_p=0
+       elem(ie)%state%dp3d=0
     enddo
 
 
