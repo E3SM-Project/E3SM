@@ -95,7 +95,6 @@ contains
     real (kind=real_kind)  :: Mass2,Mass
     real (kind=real_kind)  :: TOTE(4),KEner(4),PEner(4),IEner(4),IEner_wet(4)
     real (kind=real_kind)  :: Qvar(qsize_d,4),Qmass(qsize_d,4),Q1mass(qsize_d)
-    real (kind=real_kind)  :: Qmass_added(qsize_d)
     real (kind=real_kind),save  :: time0
     real (kind=real_kind),save  :: TOTE0=0,Qmass0(qsize_d)=0
     real (kind=real_kind)  :: I_div(nlev)
@@ -372,17 +371,6 @@ contains
     Mass = Mass2*scale
 
 
-    !   sum the mass added by the mass fixer
-    !   mass fixer computed mass within each element.  now just global sum:
-    !   result in kg/m^2
-    do q=1,qsize
-       do ie=nets,nete
-          tmp1(ie) = elem(ie)%accum%mass_added(q)
-          global_shared_buf(ie,1) = tmp1(ie)
-       enddo
-       call wrap_repro_sum(nvars=1, comm=hybrid%par%comm)
-       Qmass_added(q) = global_shared_sum(1)*scale
-    enddo
 
 
     if(hybrid%masterthread) then
@@ -409,11 +397,6 @@ contains
        if(fvmin_p.ne.fvmax_p) write(iulog,100) "fv = ",fvmin_p,fvmax_p,fvsum_p
        if(ftmin_p.ne.ftmax_p) write(iulog,100) "ft = ",ftmin_p,ftmax_p,ftsum_p
        if(fqmin_p.ne.fqmax_p) write(iulog,100) "fq = ",fqmin_p, fqmax_p, fqsum_p
-       do q=1,qsize
-          if (Qmass_added(q) /= 0) then
-             write(iulog,'(a,i1,a,E23.15)') "Q",q," qnegfix mass added:: ",Qmass_added(q)
-          endif
-       enddo
     endif
  
 

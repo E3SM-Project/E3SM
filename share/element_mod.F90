@@ -175,7 +175,6 @@ module element_mod
      real (kind=real_kind) :: Qvar(np,np,qsize_d,4)  ! Q variance at half time levels   
      real (kind=real_kind) :: Qmass(np,np,qsize_d,4) ! Q mass at half time levels
      real (kind=real_kind) :: Q1mass(np,np,qsize_d)  ! Q mass at full time levels
-     real (kind=real_kind) :: mass_added(qsize_d)    ! mass added by qneg fixer
 
   end type elem_accum_t
 
