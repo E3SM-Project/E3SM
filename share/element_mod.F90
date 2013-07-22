@@ -276,12 +276,6 @@ module element_mod
      integer(kind=int_kind) :: LocalId
      integer(kind=int_kind) :: GlobalId
 
-     !=====================================
-     !Add the link list hooks
-     !=====================================
-     type (element_t), pointer :: prev
-     type (element_t), pointer :: next
-
      ! Coordinate values of element points
      type (spherical_polar_t) :: spherep(np,np)           ! Spherical coordinates of GLL points
 
