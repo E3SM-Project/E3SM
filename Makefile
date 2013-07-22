@@ -375,6 +375,7 @@ core_error:
 	@echo "     $(CORE) is not a valid core choice."
 	@echo "*******************************************************************************"
 	@echo ""
+	exit 1
 error: errmsg
 
 clean_core:
@@ -395,16 +396,19 @@ clean_core:
 	@echo ""
 	@echo "*******************************************************************************"
 	@echo ""
+	exit 1
 
 else # CORE IF
 
 all: error
 clean: errmsg
+	exit 1
 error: errmsg
 	@echo "************ ERROR ************"
 	@echo "No CORE specified. Quitting."
 	@echo "************ ERROR ************"
 	@echo ""
+	exit 1
 
 endif # CORE IF
 
@@ -430,4 +434,7 @@ errmsg:
 	@echo "Ensure that NETCDF, PNETCDF, PIO, and PAPI (if USE_PAPI=true) are environment variables"
 	@echo "that point to the absolute paths for the libraries."
 	@echo ""
+ifdef CORE
+	exit 1
+endif
 
