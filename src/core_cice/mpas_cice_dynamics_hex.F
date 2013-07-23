@@ -286,7 +286,8 @@ stop
 
     use cice_dyn_hex_weak, only: strain_tensor_hex_weak, &
                                  stress_tensor_hex_weak, &
-                                 stress_divergence_hex_weak
+                                 stress_divergence_hex_weak, &
+                                 stress_divergence_hex_weak_corners
 
     use cice_dyn_hex_variational, only: strain_tensor_hex_variational, &
                                         stress_tensor_hex_variational, &
@@ -327,6 +328,7 @@ stop
             hexdyn % uVelocity % array,           &
             hexdyn % vVelocity % array,           &
             normal % normalVectorPolygon % array, &
+            normal % latCellRotated % array,      &
             hexdyn % solveStress % array)
 
        call stress_tensor_hex_weak(mesh, &
@@ -348,6 +350,7 @@ stop
             hexweak % stress22 % array,            &
             hexweak % stress12 % array,            &
             normal % normalVectorTriangle % array, &
+            normal % latVertexRotated % array,     &
             hexdyn % solveVelocity % array)
 
     else if (trim(divergenceFormulation) == "variational") then

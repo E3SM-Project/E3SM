@@ -28,6 +28,9 @@ module cice_dynamics_shared
             principal_stresses, &
             grid_rotation_forward, &
             grid_rotation_forward_nochange, &
+            latlon_vector_rotation_forward, &
+            latlon_vector_rotation_backward, &
+            latlon_from_xyz, &
             dot_product_3space
 
   real(kind=RKIND), parameter, public :: &
@@ -854,7 +857,8 @@ contains
   !-------------------------------------------------------------
 
   subroutine normal_vectors(mesh, &
-                            normalVectorPolygon, normalVectorTriangle, &
+                            normalVectorPolygon, normalVectorTriangle, normalVectorTriangleCorners, &
+                            latCellRotated,      latVertexRotated,     &
                             interiorVertex,      gridCurvature)
 
     type(mesh_type), intent(in) :: mesh
@@ -862,6 +866,13 @@ contains
     real(kind=RKIND), dimension(:,:,:), intent(out) :: &
          normalVectorPolygon, &
          normalVectorTriangle
+
+    real(kind=RKIND), dimension(:,:,:,:), intent(out) :: &
+         normalVectorTriangleCorners
+
+    real(kind=RKIND), dimension(:), intent(out) :: &
+         latCellRotated, &
+         latVertexRotated
 
     integer, dimension(:), intent(in) :: &
          interiorVertex
@@ -876,8 +887,8 @@ contains
 
     else if (trim(gridCurvature) == "spherical") then
 
-       call normal_vectors_spherical_polygon(mesh, normalVectorPolygon)
-       call normal_vectors_spherical_triangle(mesh, normalVectorTriangle, interiorVertex)
+       call normal_vectors_spherical_polygon_metric(mesh, normalVectorPolygon, latCellRotated)
+       call normal_vectors_spherical_triangle_metric(mesh, normalVectorTriangle, latVertexRotated, interiorVertex)
 
     endif
 
@@ -964,6 +975,140 @@ contains
 
   !-------------------------------------------------------------
 
+  subroutine normal_vectors_spherical_polygon_metric(mesh, normalVectorPolygon, latCellRotated)
+
+    type(mesh_type), intent(in) :: mesh
+
+    real(kind=RKIND), dimension(:,:,:), intent(out) :: &
+         normalVectorPolygon
+
+    real(kind=RKIND), dimension(:), intent(out) :: &
+         latCellRotated
+    
+    real(kind=RKIND), dimension(3) :: &
+         cellCentreRotated, &
+         cellCentreEquator, &
+         edgeRotated, &
+         vertexRotated1, &
+         vertexRotated2, &
+         edgeEquator, &
+         vertexEquator1, &
+         vertexEquator2, &
+         vertexVector, &
+         normalGreatCircle, &
+         eastwardsVector
+
+    real(kind=RKIND) :: &
+         lonCellRotated, &
+         normalGreatCircleNorm
+
+    real(kind=RKIND), dimension(3,3) :: &
+         yRotationMatrix, &
+         zRotationMatrix
+
+    integer :: &
+         iCell, &
+         iEdgeOnCell, &
+         iEdge, &
+         iVertex1, &
+         iVertex2
+
+    real(kind=RKIND), parameter :: &
+         rad_to_deg = 180.0_RKIND / 3.14159265359_RKIND
+
+    yRotationMatrix = 0.0_RKIND
+    zRotationMatrix = 0.0_RKIND
+
+    yRotationMatrix(2,2) = 1.0_RKIND
+    zRotationMatrix(3,3) = 1.0_RKIND
+
+    do iCell = 1, mesh % nCells
+
+       ! rotate the cell centre to rotated geographical grid
+       call grid_rotation_forward(cellCentreRotated(1),        cellCentreRotated(2),        cellCentreRotated(3), &
+                                  mesh % xCell % array(iCell), mesh % yCell % array(iCell), mesh % zCell % array(iCell))
+
+       ! calculate lon and lat of the cell centre in the rotated coordinate system
+       lonCellRotated        = atan2(cellCentreRotated(2), cellCentreRotated(1))
+       latCellRotated(iCell) = asin(cellCentreRotated(3) / mesh % sphere_radius)
+
+       ! rotate the cell centre onto the rotated equator
+       yRotationMatrix(1,1) =  cos(latCellRotated(iCell))
+       yRotationMatrix(1,3) =  sin(latCellRotated(iCell))
+       yRotationMatrix(3,1) = -sin(latCellRotated(iCell))
+       yRotationMatrix(3,3) =  cos(latCellRotated(iCell))
+
+       zRotationMatrix(1,1) =  cos(-lonCellRotated)
+       zRotationMatrix(1,2) = -sin(-lonCellRotated)
+       zRotationMatrix(2,1) =  sin(-lonCellRotated)
+       zRotationMatrix(2,2) =  cos(-lonCellRotated)
+
+       ! this should be (r, 0, 0)
+       !cellCentreEquator = matmul(yRotationMatrix, matmul(zRotationMatrix, cellCentreRotated))
+       
+       do iEdgeOnCell = 1, mesh % nEdgesOnCell % array(iCell)
+          
+          iEdge = mesh % edgesOnCell % array(iEdgeOnCell,iCell)
+
+          ! vector in great circle plane
+          iVertex1 = mesh % verticesOnEdge % array(1,iEdge)
+          iVertex2 = mesh % verticesOnEdge % array(2,iEdge)
+
+          ! perform grid rotations
+          call grid_rotation_forward(edgeRotated(1),                   edgeRotated(2),                   edgeRotated(3), &
+                                     mesh % xEdge % array(iEdge),      mesh % yEdge % array(iEdge),      mesh % zEdge % array(iEdge))
+          
+          call grid_rotation_forward(vertexRotated1(1),                vertexRotated1(2),                vertexRotated1(3), &
+                                     mesh % xVertex % array(iVertex1), mesh % yVertex % array(iVertex1), mesh % zVertex % array(iVertex1))
+
+          call grid_rotation_forward(vertexRotated2(1),                vertexRotated2(2),                vertexRotated2(3), &
+                                     mesh % xVertex % array(iVertex2), mesh % yVertex % array(iVertex2), mesh % zVertex % array(iVertex2))
+
+          ! rotate to equator in new coords
+          edgeEquator    = matmul(yRotationMatrix, matmul(zRotationMatrix, edgeRotated))
+          vertexEquator1 = matmul(yRotationMatrix, matmul(zRotationMatrix, vertexRotated1))
+          vertexEquator2 = matmul(yRotationMatrix, matmul(zRotationMatrix, vertexRotated2))
+
+          ! vector joining vertices
+          vertexVector = vertexEquator2 - vertexEquator1
+
+          ! form great circle plane normal vector
+          call cross_product_3space(normalGreatCircle(1), normalGreatCircle(2), normalGreatCircle(3), &
+                                    vertexVector(1),      vertexVector(2),      vertexVector(3), &
+                                    edgeEquator(1),       edgeEquator(2),       edgeEquator(3))
+
+          if (iCell == mesh % cellsOnEdge % array(2,iEdge)) then
+             normalGreatCircle = -1.0_RKIND * normalGreatCircle
+          endif
+
+          ! normalize normal vector
+          normalGreatCircleNorm = sqrt(normalGreatCircle(1)**2 + normalGreatCircle(2)**2 + normalGreatCircle(3)**2)
+          normalGreatCircle(1) = normalGreatCircle(1) / normalGreatCircleNorm
+          normalGreatCircle(2) = normalGreatCircle(2) / normalGreatCircleNorm
+          normalGreatCircle(3) = normalGreatCircle(3) / normalGreatCircleNorm
+
+          ! eastwards vector at edge
+          eastwardsVector(1) = -edgeEquator(2)
+          eastwardsVector(2) =  edgeEquator(1)
+          eastwardsVector(3) = 0.0_RKIND
+          eastwardsVector = eastwardsVector / &
+                            sqrt(eastwardsVector(1)**2 + eastwardsVector(2)**2)
+
+          call dot_product_3space(normalVectorPolygon(1,iEdgeOnCell,iCell), &
+                                  normalGreatCircle(1), normalGreatCircle(2), normalGreatCircle(3), &
+                                  eastwardsVector(1),   eastwardsVector(2),   eastwardsVector(3))
+          
+          normalVectorPolygon(2,iEdgeOnCell,iCell) = sign(1.0_RKIND,normalGreatCircle(3))&
+                                                   * sqrt(1.0_RKIND - max(min(normalVectorPolygon(1,iEdgeOnCell,iCell),1.0_RKIND),-1.0_RKIND)**2)
+
+       enddo ! iEdgeOnCell
+       
+    enddo ! iCell
+
+  end subroutine normal_vectors_spherical_polygon_metric
+
+  !-------------------------------------------------------------
+
   subroutine normal_vectors_spherical_polygon(mesh, normalVectorPolygon)
 
     type(mesh_type), intent(in) :: mesh
@@ -980,12 +1125,18 @@ contains
          xVertex1, yVertex1, zVertex1, &
          xVertex2, yVertex2, zVertex2
 
+    real(kind=RKIND) :: &
+         normalGreatCircleNorm
+
     integer :: &
          iCell, &
          iEdgeOnCell, &
          iEdge, &
          iVertex1, &
          iVertex2
+
+    real(kind=RKIND), parameter :: &
+         rad_to_deg = 180.0_RKIND / 3.14159265359_RKIND
 
     do iCell = 1, mesh % nCells
 
@@ -998,13 +1149,13 @@ contains
           iVertex2 = mesh % verticesOnEdge % array(2,iEdge)
 
           ! perform grid rotations
-          call grid_rotation_forward(xEdge, yEdge, zEdge, &
+          call grid_rotation_forward_nochange(xEdge, yEdge, zEdge, &
                                      mesh % xEdge % array(iEdge), mesh % yEdge % array(iEdge), mesh % zEdge % array(iEdge))
           
-          call grid_rotation_forward(xVertex1, yVertex1, zVertex1, &
+          call grid_rotation_forward_nochange(xVertex1, yVertex1, zVertex1, &
                                      mesh % xVertex % array(iVertex1), mesh % yVertex % array(iVertex1), mesh % zVertex % array(iVertex1))
 
-          call grid_rotation_forward(xVertex2, yVertex2, zVertex2, &
+          call grid_rotation_forward_nochange(xVertex2, yVertex2, zVertex2, &
                                      mesh % xVertex % array(iVertex2), mesh % yVertex % array(iVertex2), mesh % zVertex % array(iVertex2))
 
           ! form great circle plane normal vector
@@ -1015,6 +1166,12 @@ contains
           if (iCell == mesh % cellsOnEdge % array(2,iEdge)) then
              normalGreatCircle = -1.0_RKIND * normalGreatCircle
           endif
+
+          ! normalize normal vector
+          normalGreatCircleNorm = sqrt(normalGreatCircle(1)**2 + normalGreatCircle(2)**2 + normalGreatCircle(3)**2)
+          normalGreatCircle(1) = normalGreatCircle(1) / normalGreatCircleNorm
+          normalGreatCircle(2) = normalGreatCircle(2) / normalGreatCircleNorm
+          normalGreatCircle(3) = normalGreatCircle(3) / normalGreatCircleNorm
 
           ! eastwards vector at edge
           eastwardsVector(1) = -yEdge
@@ -1028,13 +1185,332 @@ contains
                                   eastwardsVector(1),   eastwardsVector(2),   eastwardsVector(3))
           
           normalVectorPolygon(2,iEdgeOnCell,iCell) = sign(1.0_RKIND,normalGreatCircle(3))&
-                                                   * sqrt(1.0_RKIND - min(normalVectorPolygon(1,iEdgeOnCell,iCell),1.0_RKIND)**2)
+                                                   * sqrt(1.0_RKIND - max(min(normalVectorPolygon(1,iEdgeOnCell,iCell),1.0_RKIND),-1.0_RKIND)**2)
 
        enddo ! iEdgeOnCell
        
-    enddo ! iEdge
-    
+    enddo ! iCell
+
   end subroutine normal_vectors_spherical_polygon
+
+  !-------------------------------------------------------------
+
+  subroutine normal_vectors_spherical_triangle_corners_metric(mesh, normalVectorTriangleCorners, latVertexRotated, interiorVertex)
+
+    type(mesh_type), intent(in) :: mesh
+
+    real(kind=RKIND), dimension(:,:,:,:), intent(out) :: &
+         normalVectorTriangleCorners
+
+    real(kind=RKIND), dimension(:), intent(out) :: &
+         latVertexRotated
+
+    integer, dimension(:), intent(in) :: &
+         interiorVertex
+
+    real(kind=RKIND), dimension(3) :: &
+         vertexRotated, &
+         vertexEquator, &
+         edgeRotated, &
+         cellRotated1, &
+         cellRotated2, &
+         edgeEquator, &
+         cellEquator1, &
+         cellEquator2, &
+         cellVector, &
+         normalGreatCircle, &
+         eastwardsVector
+
+    real(kind=RKIND) :: &
+         lonVertexRotated, &
+         normalGreatCircleNorm
+
+    real(kind=RKIND), dimension(3,3) :: &
+         yRotationMatrix, &
+         zRotationMatrix
+
+    integer :: &
+         iVertex, &
+         iVertexDegree, &
+         iEdge, &
+         iCell1, &
+         iCell2
+
+    real(kind=RKIND), parameter :: &
+         pi = 3.14159265359_RKIND, &
+         deg_to_rad = pi / 180.0_RKIND, &
+         rad_to_deg = 180.0_RKIND / pi
+
+    yRotationMatrix = 0.0_RKIND
+    zRotationMatrix = 0.0_RKIND
+
+    yRotationMatrix(2,2) = 1.0_RKIND
+    zRotationMatrix(3,3) = 1.0_RKIND
+
+    do iVertex = 1, mesh % nVertices
+
+       normalVectorTriangleCorners(:,:,:,iVertex) = 0.0_RKIND
+
+       if (interiorVertex(iVertex) == 1) then
+
+          ! rotate the cell centre to rotated geographical grid
+          call grid_rotation_forward(vertexRotated(1),                vertexRotated(2),                vertexRotated(3), &
+                                     mesh % xVertex % array(iVertex), mesh % yVertex % array(iVertex), mesh % zVertex % array(iVertex))
+ 
+          ! calculate lon and lat of the cell centre in the rotated coordinate system
+          lonVertexRotated          = atan2(vertexRotated(2), vertexRotated(1))
+          latVertexRotated(iVertex) = asin(vertexRotated(3) / mesh % sphere_radius)
+          
+          ! rotate the cell centre onto the rotated equator
+          yRotationMatrix(1,1) =  cos(latVertexRotated(iVertex))
+          yRotationMatrix(1,3) =  sin(latVertexRotated(iVertex))
+          yRotationMatrix(3,1) = -sin(latVertexRotated(iVertex))
+          yRotationMatrix(3,3) =  cos(latVertexRotated(iVertex))
+          
+          zRotationMatrix(1,1) =  cos(-lonVertexRotated)
+          zRotationMatrix(1,2) = -sin(-lonVertexRotated)
+          zRotationMatrix(2,1) =  sin(-lonVertexRotated)
+          zRotationMatrix(2,2) =  cos(-lonVertexRotated)
+
+          ! this should be (r, 0, 0)
+          !vertexEquator = matmul(yRotationMatrix, matmul(zRotationMatrix, vertexRotated))
+          
+          do iVertexDegree = 1, mesh % vertexDegree
+             
+             iEdge = mesh % edgesOnVertex % array(iVertexDegree,iVertex)
+
+             ! vector in great circle plane
+             iCell1 = mesh % cellsOnEdge % array(1,iEdge)
+             iCell2 = mesh % cellsOnEdge % array(2,iEdge)
+
+             ! perform grid rotations
+             call grid_rotation_forward(cellRotated1(1),              cellRotated1(2),              cellRotated1(3), &
+                                        mesh % xCell % array(iCell1), mesh % yCell % array(iCell1), mesh % zCell % array(iCell1))
+
+             call grid_rotation_forward(cellRotated2(1),              cellRotated2(2),              cellRotated2(3), &
+                                        mesh % xCell % array(iCell2), mesh % yCell % array(iCell2), mesh % zCell % array(iCell2))
+
+             ! rotate to equator in new coords
+             cellEquator1 = matmul(yRotationMatrix, matmul(zRotationMatrix, cellRotated1))
+             cellEquator2 = matmul(yRotationMatrix, matmul(zRotationMatrix, cellRotated2))
+
+             ! vector joining vertices
+             cellVector = cellEquator2 - cellEquator1
+
+             ! first cell 
+             
+             ! form great circle plane normal vector
+             call cross_product_3space(normalGreatCircle(1), normalGreatCircle(2), normalGreatCircle(3), &
+                                       cellVector(1),        cellVector(2),        cellVector(3), &
+                                       cellEquator1(1),      cellEquator1(2),     cellEquator1(3))
+
+             if (iVertex == mesh % verticesOnEdge % array(1,iEdge)) then
+                normalGreatCircle = -1.0_RKIND * normalGreatCircle
+             endif
+
+             ! normalize normal vector
+             normalGreatCircleNorm = sqrt(normalGreatCircle(1)**2 + normalGreatCircle(2)**2 + normalGreatCircle(3)**2)
+             normalGreatCircle(1) = normalGreatCircle(1) / normalGreatCircleNorm
+             normalGreatCircle(2) = normalGreatCircle(2) / normalGreatCircleNorm
+             normalGreatCircle(3) = normalGreatCircle(3) / normalGreatCircleNorm
+             
+             ! eastwards vector at edge
+             eastwardsVector(1) = -cellEquator1(2)
+             eastwardsVector(2) =  cellEquator1(1)
+             eastwardsVector(3) = 0.0_RKIND
+             eastwardsVector = eastwardsVector / &
+                               sqrt(eastwardsVector(1)**2 + eastwardsVector(2)**2)
+             
+             call dot_product_3space(normalVectorTriangleCorners(1,1,iVertexDegree,iVertex), &
+                                     normalGreatCircle(1), normalGreatCircle(2), normalGreatCircle(3), &
+                                     eastwardsVector(1),   eastwardsVector(2),   eastwardsVector(3))
+          
+             normalVectorTriangleCorners(2,1,iVertexDegree,iVertex) = sign(1.0_RKIND,normalGreatCircle(3)) &
+                                                                    * sqrt(1.0_RKIND - max(min(normalVectorTriangleCorners(1,1,iVertexDegree,iVertex),1.0_RKIND),-1.0_RKIND)**2)
+
+             ! second cell 
+             
+             ! form great circle plane normal vector
+             call cross_product_3space(normalGreatCircle(1), normalGreatCircle(2), normalGreatCircle(3), &
+                                       cellVector(1),        cellVector(2),        cellVector(3), &
+                                       cellEquator2(1),      cellEquator2(2),     cellEquator2(3))
+
+             if (iVertex == mesh % verticesOnEdge % array(1,iEdge)) then
+                normalGreatCircle = -1.0_RKIND * normalGreatCircle
+             endif
+
+             ! normalize normal vector
+             normalGreatCircleNorm = sqrt(normalGreatCircle(1)**2 + normalGreatCircle(2)**2 + normalGreatCircle(3)**2)
+             normalGreatCircle(1) = normalGreatCircle(1) / normalGreatCircleNorm
+             normalGreatCircle(2) = normalGreatCircle(2) / normalGreatCircleNorm
+             normalGreatCircle(3) = normalGreatCircle(3) / normalGreatCircleNorm
+             
+             ! eastwards vector at edge
+             eastwardsVector(1) = -cellEquator2(2)
+             eastwardsVector(2) =  cellEquator2(1)
+             eastwardsVector(3) = 0.0_RKIND
+             eastwardsVector = eastwardsVector / &
+                               sqrt(eastwardsVector(1)**2 + eastwardsVector(2)**2)
+             
+             call dot_product_3space(normalVectorTriangleCorners(1,2,iVertexDegree,iVertex), &
+                                     normalGreatCircle(1), normalGreatCircle(2), normalGreatCircle(3), &
+                                     eastwardsVector(1),   eastwardsVector(2),   eastwardsVector(3))
+          
+             normalVectorTriangleCorners(2,2,iVertexDegree,iVertex) = sign(1.0_RKIND,normalGreatCircle(3)) &
+                                                                    * sqrt(1.0_RKIND - max(min(normalVectorTriangleCorners(1,2,iVertexDegree,iVertex),1.0_RKIND),-1.0_RKIND)**2)
+
+          enddo ! iVertexDegree
+
+       endif ! interiorVertex
+
+    enddo ! iVertex
+
+  end subroutine normal_vectors_spherical_triangle_corners_metric
+
+  !-------------------------------------------------------------
+
+  subroutine normal_vectors_spherical_triangle_metric(mesh, normalVectorTriangle, latVertexRotated, interiorVertex)
+
+    type(mesh_type), intent(in) :: mesh
+
+    real(kind=RKIND), dimension(:,:,:), intent(out) :: &
+         normalVectorTriangle
+
+    real(kind=RKIND), dimension(:), intent(out) :: &
+         latVertexRotated
+
+    integer, dimension(:), intent(in) :: &
+         interiorVertex
+
+    real(kind=RKIND), dimension(3) :: &
+         vertexRotated, &
+         vertexEquator, &
+         edgeRotated, &
+         cellRotated1, &
+         cellRotated2, &
+         edgeEquator, &
+         cellEquator1, &
+         cellEquator2, &
+         cellVector, &
+         normalGreatCircle, &
+         eastwardsVector
+
+    real(kind=RKIND) :: &
+         lonVertexRotated, &
+         normalGreatCircleNorm
+
+    real(kind=RKIND), dimension(3,3) :: &
+         yRotationMatrix, &
+         zRotationMatrix
+
+    integer :: &
+         iVertex, &
+         iVertexDegree, &
+         iEdge, &
+         iCell1, &
+         iCell2
+
+    real(kind=RKIND), parameter :: &
+         pi = 3.14159265359_RKIND, &
+         deg_to_rad = pi / 180.0_RKIND, &
+         rad_to_deg = 180.0_RKIND / pi
+
+    yRotationMatrix = 0.0_RKIND
+    zRotationMatrix = 0.0_RKIND
+
+    yRotationMatrix(2,2) = 1.0_RKIND
+    zRotationMatrix(3,3) = 1.0_RKIND
+
+    do iVertex = 1, mesh % nVertices
+
+       normalVectorTriangle(:,:,iVertex) = 0.0_RKIND
+
+       if (interiorVertex(iVertex) == 1) then
+
+          ! rotate the cell centre to rotated geographical grid
+          call grid_rotation_forward(vertexRotated(1),                vertexRotated(2),                vertexRotated(3), &
+                                     mesh % xVertex % array(iVertex), mesh % yVertex % array(iVertex), mesh % zVertex % array(iVertex))
+ 
+          ! calculate lon and lat of the cell centre in the rotated coordinate system
+          lonVertexRotated          = atan2(vertexRotated(2), vertexRotated(1))
+          latVertexRotated(iVertex) = asin(vertexRotated(3) / mesh % sphere_radius)
+          
+          ! rotate the cell centre onto the rotated equator
+          yRotationMatrix(1,1) =  cos(latVertexRotated(iVertex))
+          yRotationMatrix(1,3) =  sin(latVertexRotated(iVertex))
+          yRotationMatrix(3,1) = -sin(latVertexRotated(iVertex))
+          yRotationMatrix(3,3) =  cos(latVertexRotated(iVertex))
+          
+          zRotationMatrix(1,1) =  cos(-lonVertexRotated)
+          zRotationMatrix(1,2) = -sin(-lonVertexRotated)
+          zRotationMatrix(2,1) =  sin(-lonVertexRotated)
+          zRotationMatrix(2,2) =  cos(-lonVertexRotated)
+
+          ! this should be (r, 0, 0)
+          !vertexEquator = matmul(yRotationMatrix, matmul(zRotationMatrix, vertexRotated))
+          
+          do iVertexDegree = 1, mesh % vertexDegree
+             
+             iEdge = mesh % edgesOnVertex % array(iVertexDegree,iVertex)
+
+             ! vector in great circle plane
+             iCell1 = mesh % cellsOnEdge % array(1,iEdge)
+             iCell2 = mesh % cellsOnEdge % array(2,iEdge)
+
+             ! perform grid rotations
+             call grid_rotation_forward(edgeRotated(1),               edgeRotated(2),               edgeRotated(3), &
+                                        mesh % xEdge % array(iEdge),  mesh % yEdge % array(iEdge),  mesh % zEdge % array(iEdge))
+
+             call grid_rotation_forward(cellRotated1(1),              cellRotated1(2),              cellRotated1(3), &
+                                        mesh % xCell % array(iCell1), mesh % yCell % array(iCell1), mesh % zCell % array(iCell1))
+
+             call grid_rotation_forward(cellRotated2(1),              cellRotated2(2),              cellRotated2(3), &
+                                        mesh % xCell % array(iCell2), mesh % yCell % array(iCell2), mesh % zCell % array(iCell2))
+
+             ! rotate to equator in new coords
+             edgeEquator  = matmul(yRotationMatrix, matmul(zRotationMatrix, edgeRotated))
+             cellEquator1 = matmul(yRotationMatrix, matmul(zRotationMatrix, cellRotated1))
+             cellEquator2 = matmul(yRotationMatrix, matmul(zRotationMatrix, cellRotated2))
+
+             ! vector joining vertices
+             cellVector = cellEquator2 - cellEquator1
+
+             ! form great circle plane normal vector
+             call cross_product_3space(normalGreatCircle(1), normalGreatCircle(2), normalGreatCircle(3), &
+                                       cellVector(1),        cellVector(2),        cellVector(3), &
+                                       edgeEquator(1),       edgeEquator(2),       edgeEquator(3))
+
+             if (iVertex == mesh % verticesOnEdge % array(1,iEdge)) then
+                normalGreatCircle = -1.0_RKIND * normalGreatCircle
+             endif
+
+             ! normalize normal vector
+             normalGreatCircleNorm = sqrt(normalGreatCircle(1)**2 + normalGreatCircle(2)**2 + normalGreatCircle(3)**2)
+             normalGreatCircle(1) = normalGreatCircle(1) / normalGreatCircleNorm
+             normalGreatCircle(2) = normalGreatCircle(2) / normalGreatCircleNorm
+             normalGreatCircle(3) = normalGreatCircle(3) / normalGreatCircleNorm
+             
+             ! eastwards vector at edge
+             eastwardsVector(1) = -edgeEquator(2)
+             eastwardsVector(2) =  edgeEquator(1)
+             eastwardsVector(3) = 0.0_RKIND
+             eastwardsVector = eastwardsVector / &
+                               sqrt(eastwardsVector(1)**2 + eastwardsVector(2)**2)
+             
+             call dot_product_3space(normalVectorTriangle(1,iVertexDegree,iVertex), &
+                                     normalGreatCircle(1), normalGreatCircle(2), normalGreatCircle(3), &
+                                     eastwardsVector(1),   eastwardsVector(2),   eastwardsVector(3))
+          
+             normalVectorTriangle(2,iVertexDegree,iVertex) = sign(1.0_RKIND,normalGreatCircle(3)) &
+                                                           * sqrt(1.0_RKIND - max(min(normalVectorTriangle(1,iVertexDegree,iVertex),1.0_RKIND),-1.0_RKIND)**2)
+
+          enddo ! iVertexDegree
+
+       endif ! interiorVertex
+
+    enddo ! iVertex
+
+  end subroutine normal_vectors_spherical_triangle_metric
 
   !-------------------------------------------------------------
 
@@ -1145,21 +1621,29 @@ contains
          x1, y1, z1, &
          x2, y2, z2
 
-    cp1 = y1 * z2 - z1 * y1
+    cp1 = y1 * z2 - z1 * y2
     cp2 = z1 * x2 - x1 * z2
     cp3 = x1 * y2 - y1 * x2
 
   end subroutine cross_product_3space
 
   !-------------------------------------------------------------
+  ! rotated lat-lon grid
+  !-------------------------------------------------------------
 
   subroutine grid_rotation_forward_nochange(xp, yp, zp, x, y, z)
 
+    ! leave the grid unchanged - for testing
+
     real(kind=RKIND), intent(out) :: &
-         xp, yp, zp
+         xp, & ! x position of point on rotated grid
+         yp, & ! y position of point on rotated grid
+         zp    ! z position of point on rotated grid
 
     real(kind=RKIND), intent(in) :: &
-         x, y, z
+         x,  & ! x position of point on geographical grid
+         y,  & ! y position of point on geographical grid
+         z     ! z position of point on geographical grid
 
     xp = x
     yp = y
@@ -1171,11 +1655,17 @@ contains
 
   subroutine grid_rotation_forward(xp, yp, zp, x, y, z)
 
+    ! rotate xyz coordinates from geographical grid to rotated grid with poles on real equator
+
     real(kind=RKIND), intent(out) :: &
-         xp, yp, zp
+         xp, & ! x position of point on rotated grid
+         yp, & ! y position of point on rotated grid
+         zp    ! z position of point on rotated grid
 
     real(kind=RKIND), intent(in) :: &
-         x, y, z
+         x,  & ! x position of point on geographical grid
+         y,  & ! y position of point on geographical grid
+         z     ! z position of point on geographical grid
 
     xp = -z
     yp = y
@@ -1187,17 +1677,239 @@ contains
 
   subroutine grid_rotation_backward(x, y, z, xp, yp, zp)
 
+    ! rotate xyz coordinates from rotated grid with poles on real equator to geographical grid
+
     real(kind=RKIND), intent(out) :: &
-         x, y, z
+         x,  & ! x position of point on geographical grid
+         y,  & ! y position of point on geographical grid
+         z     ! z position of point on geographical grid
 
     real(kind=RKIND), intent(in) :: &
-         xp, yp, zp
+         xp, & ! x position of point on rotated grid
+         yp, & ! y position of point on rotated grid
+         zp    ! z position of point on rotated grid
 
     x = zp
     y = yp
     z = -xp
 
   end subroutine grid_rotation_backward
+
+  !-------------------------------------------------------------
+
+  subroutine xyz_vector_rotation_forward(vxp, vyp, vzp, vx, vy, vz)
+
+    ! rotate a xyz vector from geographical grid to rotated grid with poles on real equator
+
+    real(kind=RKIND), intent(out) :: &
+         vxp, & ! x component of velocity vector on rotated grid
+         vyp, & ! y component of velocity vector on rotated grid
+         vzp    ! z component of velocity vector on rotated grid
+
+    real(kind=RKIND), intent(in) :: &
+         vx,  & ! x component of velocity vector on geographical grid
+         vy,  & ! y component of velocity vector on geographical grid
+         vz     ! z component of velocity vector on geographical grid
+    
+    vxp = -vz
+    vyp =  vy
+    vzp =  vx
+
+  end subroutine xyz_vector_rotation_forward
+
+  !-------------------------------------------------------------
+
+  subroutine xyz_vector_rotation_backward(vx, vy, vz, vxp, vyp, vzp)
+
+    ! rotate xyz vector from rotated grid with poles on real equator to geographical grid
+
+    real(kind=RKIND), intent(out) :: &
+         vx,  & ! x component of velocity vector on geographical grid
+         vy,  & ! y component of velocity vector on geographical grid
+         vz     ! z component of velocity vector on geographical grid
+
+    real(kind=RKIND), intent(in) :: &
+         vxp, & ! x component of velocity vector on rotated grid
+         vyp, & ! y component of velocity vector on rotated grid
+         vzp    ! z component of velocity vector on rotated grid
+
+    vx =  vzp
+    vy =  vyp
+    vz = -vxp
+
+  end subroutine xyz_vector_rotation_backward
+
+  !-------------------------------------------------------------
+
+  subroutine latlon_vector_rotation_forward(up, vp, u, v, lat, lon, x, y, z, r)
+
+    ! rotate a latlon vector from geographical grid to rotated grid with poles on real equator
+
+    real(kind=RKIND), intent(out) :: &
+         up,   & ! u component of velocity in rotated grid
+         vp      ! v component of velocity in rotated grid
+
+    real(kind=RKIND), intent(in) :: &
+         u,    & ! u component of velocity on geographical grid
+         v,    & ! v component of velocity on geographical grid
+         lat,  & ! latitude of point on geographical grid
+         lon,  & ! longitude of point on geographical grid
+         x,    & ! x position of point on geographical grid
+         y,    & ! y position of point on geographical grid
+         z,    & ! z position of point on geographical grid
+         r       ! radius of the earth 
+
+    real(kind=RKIND) :: &
+         xp,   & ! x position of point on rotated grid
+         yp,   & ! y position of point on rotated grid
+         zp,   & ! z position of point on rotated grid
+         latp, & ! latitude of point on rotated grid
+         lonp, & ! longitude of point on rotated grid
+         vx,   & ! x component of velocity vector on geographical grid
+         vy,   & ! y component of velocity vector on geographical grid
+         vz,   & ! z component of velocity vector on geographical grid
+         vxp,  & ! x component of velocity vector on rotated grid
+         vyp,  & ! y component of velocity vector on rotated grid
+         vzp     ! z component of velocity vector on rotated grid
+
+    ! perform rotation of the point from geographical grid to rotated grid
+    call grid_rotation_forward(xp, yp, zp, x, y, z)
+
+    ! calculate latitude and longitude of the point in the rotated grid
+    call latlon_from_xyz(latp, lonp, xp, yp, zp, r)
+
+    ! convert lat lon vector to xyz vector on geographical grid
+    call latlon_vector_to_xyz_vector(vx, vy, vz, u, v, lat, lon)
+
+    ! perform rotation of geographical xyz vector to rotated grid
+    call xyz_vector_rotation_forward(vxp, vyp, vzp, vx, vy, vz)
+
+    ! convert xyz vector to lat lon vector on rotated grid
+    call xyz_vector_to_latlon_vector(up, vp, vxp, vyp, vzp, latp, lonp)
+
+  end subroutine latlon_vector_rotation_forward
+
+  !-------------------------------------------------------------
+
+  subroutine latlon_vector_rotation_backward(u, v, up, vp, lat, lon, x, y, z, r)
+
+    ! rotate latlon vector from rotated grid with poles on real equator to geographical grid
+
+    real(kind=RKIND), intent(out) :: &
+         u,    & ! u component of velocity on geographical grid
+         v       ! v component of velocity on geographical grid
+
+    real(kind=RKIND), intent(in) :: &
+         up,   & ! u component of velocity in rotated grid
+         vp,   & ! v component of velocity in rotated grid
+         lat,  & ! latitude of point on geographical grid
+         lon,  & ! longitude of point on geographical grid
+         x,    & ! x position of point on geographical grid
+         y,    & ! y position of point on geographical grid
+         z,    & ! z position of point on geographical grid
+         r       ! radius of the earth 
+
+    real(kind=RKIND) :: &
+         xp,   & ! x position of point on rotated grid
+         yp,   & ! y position of point on rotated grid
+         zp,   & ! z position of point on rotated grid
+         latp, & ! latitude of point on rotated grid
+         lonp, & ! longitude of point on rotated grid
+         vx,   & ! x component of velocity vector on geographical grid
+         vy,   & ! y component of velocity vector on geographical grid
+         vz,   & ! z component of velocity vector on geographical grid
+         vxp,  & ! x component of velocity vector on rotated grid
+         vyp,  & ! y component of velocity vector on rotated grid
+         vzp     ! z component of velocity vector on rotated grid
+
+    ! perform rotation of the point from geographical grid to rotated grid
+    call grid_rotation_forward(xp, yp, zp, x, y, z)
+
+    ! calculate latitude and longitude of the point in the rotated grid
+    call latlon_from_xyz(latp, lonp, xp, yp, zp, r)
+
+    ! convert lat lon vector to xyz vector on rotated grid
+    call latlon_vector_to_xyz_vector(vxp, vyp, vzp, up, vp, latp, lonp)
+
+    ! perform rotation of rotated xyz vector to geographical grid
+    call xyz_vector_rotation_backward(vx, vy, vz, vxp, vyp, vzp)
+
+    ! convert xyz vector to lat lon vector on geographical grid
+    call xyz_vector_to_latlon_vector(u, v, vx, vy, vz, lat, lon)
+     
+  end subroutine latlon_vector_rotation_backward
+
+  !-------------------------------------------------------------
+
+  subroutine latlon_vector_to_xyz_vector(vx, vy, vz, u, v, lat, lon)
+
+    ! convert a latlon vector to a xyz vector
+
+    real(kind=RKIND), intent(out) :: &
+         vx,  & ! x component of velocity vector
+         vy,  & ! y component of velocity vector
+         vz     ! z component of velocity vector
+
+    real(kind=RKIND), intent(in) :: &
+         u,   & ! u component of velocity
+         v,   & ! v component of velocity
+         lat, & ! latitude of point 
+         lon    ! longitude of point 
+
+    vx = (-u) * sin(lon) - v * sin(lat) * cos(lon)
+    vy =   u  * cos(lon) - v * sin(lat) * sin(lon)
+    vz =                   v * cos(lat)
+
+  end subroutine latlon_vector_to_xyz_vector
+
+  !-------------------------------------------------------------
+
+  subroutine xyz_vector_to_latlon_vector(u, v, vx, vy, vz, lat, lon)
+
+    ! convert a xyz vector vector to a latlon vector
+
+    real(kind=RKIND), intent(out) :: &
+         u,   & ! u component of velocity
+         v      ! v component of velocity
+
+    real(kind=RKIND), intent(in) :: &
+         vx,  & ! x component of velocity vector
+         vy,  & ! y component of velocity vector
+         vz,  & ! z component of velocity vector
+         lat, & ! latitude of point 
+         lon    ! longitude of point 
+
+    u = (-sin(lon)) * vx + &
+          cos(lon)  * vy
+    
+    !write(*,*) 1, (-sin(lat)) * cos(lon), vx, (-sin(lat)) * cos(lon) * vx, (-sin(lat)) * cos(lon),  vy, (-sin(lat)) * cos(lon) * vy, cos(lat),  vz, cos(lat)  * vz
+
+    v = (-sin(lat)) * cos(lon) * vx + &
+        (-sin(lat)) * sin(lon) * vy + &
+          cos(lat)  * vz
+
+  end subroutine xyz_vector_to_latlon_vector
+
+  !-------------------------------------------------------------
+
+  subroutine latlon_from_xyz(lat, lon, x, y, z, r)
+
+    ! given xyz coordinates determine the latitude and longitude
+
+    real(kind=RKIND), intent(out) :: &
+         lat, & ! latitude of point 
+         lon    ! longitude of point 
+
+    real(kind=RKIND), intent(in) :: &
+         x,   & ! x position of point
+         y,   & ! y position of point
+         z,   & ! z position of point
+         r      ! radius of earth
+
+    lon = atan2(y, x)
+    lat = asin(z/r)
+
+  end subroutine latlon_from_xyz
 
   !-------------------------------------------------------------
   ! LU decomposition

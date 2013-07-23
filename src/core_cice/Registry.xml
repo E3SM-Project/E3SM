@@ -147,8 +147,11 @@
 
 	<!-- normal vectors -->
 	<var_struct name="normal" time_levs="0">
-		<var name="normalVectorPolygon"               type="real"     dimensions="TWO maxEdges nCells"        name_in_code="normalVectorPolygon"/>
-		<var name="normalVectorTriangle"              type="real"     dimensions="TWO vertexDegree nVertices" name_in_code="normalVectorTriangle"/>
+		<var name="normalVectorPolygon"               type="real"     dimensions="TWO maxEdges nCells"            name_in_code="normalVectorPolygon"/>
+		<var name="normalVectorTriangle"              type="real"     dimensions="TWO vertexDegree nVertices"     name_in_code="normalVectorTriangle"/>
+		<var name="normalVectorTriangleCorners"       type="real"     dimensions="TWO TWO vertexDegree nVertices" name_in_code="normalVectorTriangleCorners"/>
+		<var name="latCellRotated"                    type="real"     dimensions="nCells"                         name_in_code="latCellRotated"/>
+		<var name="latVertexRotated"                  type="real"     dimensions="nVertices"                      name_in_code="latVertexRotated"/>
 	</var_struct>
 
 	<!-- dynamics with velocity points at vertices -->
@@ -189,79 +192,79 @@
 	</var_struct>
 	<!-- variational formulation on hexagons -->
 	<var_struct name="hexvar" time_levs="0">
-		<var name="strain11"                          type="real"     dimensions="maxEdges nCells"          name_in_code="strain11"/>
-		<var name="strain22"                          type="real"     dimensions="maxEdges nCells"          name_in_code="strain22"/>
-		<var name="strain12"                          type="real"     dimensions="maxEdges nCells"          name_in_code="strain12"/>
-		<var name="stress11"                          type="real"     dimensions="maxEdges nCells"          name_in_code="stress11"/>
-		<var name="stress22"                          type="real"     dimensions="maxEdges nCells"          name_in_code="stress22"/>
-		<var name="stress12"                          type="real"     dimensions="maxEdges nCells"          name_in_code="stress12"/>
-		<var name="xLocal"                            type="real"     dimensions="maxEdges nCells"          name_in_code="xLocal"/>
-		<var name="yLocal"                            type="real"     dimensions="maxEdges nCells"          name_in_code="yLocal"/>
-		<var name="wachspressA"                       type="real"     dimensions="maxEdges nCells"          name_in_code="wachspressA"/>
-		<var name="wachspressB"                       type="real"     dimensions="maxEdges nCells"          name_in_code="wachspressB"/>
-		<var name="wachspressKappa"                   type="real"     dimensions="maxEdges maxEdges nCells" name_in_code="wachspressKappa"/>
-		<var name="basisIntegralsU"                   type="real"     dimensions="maxEdges maxEdges nCells" name_in_code="basisIntegralsU"/>
-		<var name="basisIntegralsV"                   type="real"     dimensions="maxEdges maxEdges nCells" name_in_code="basisIntegralsV"/>
-		<var name="basisGradientU"                    type="real"     dimensions="maxEdges maxEdges nCells" name_in_code="basisGradientU"/>
-		<var name="basisGradientV"                    type="real"     dimensions="maxEdges maxEdges nCells" name_in_code="basisGradientV"/>
-		<var name="cellVerticesAtVertex"              type="integer"  dimensions="vertexDegree nVertices"   name_in_code="cellVerticesAtVertex"/>
+		<var name="strain11"                          type="real"     dimensions="maxEdges nCells"          name_in_code="strain11"              persistence="scratch"/>
+		<var name="strain22"                          type="real"     dimensions="maxEdges nCells"          name_in_code="strain22"              persistence="scratch"/>
+		<var name="strain12"                          type="real"     dimensions="maxEdges nCells"          name_in_code="strain12"              persistence="scratch"/>
+		<var name="stress11"                          type="real"     dimensions="maxEdges nCells"          name_in_code="stress11"              persistence="scratch"/>
+		<var name="stress22"                          type="real"     dimensions="maxEdges nCells"          name_in_code="stress22"              persistence="scratch"/>
+		<var name="stress12"                          type="real"     dimensions="maxEdges nCells"          name_in_code="stress12"              persistence="scratch"/>
+		<var name="xLocal"                            type="real"     dimensions="maxEdges nCells"          name_in_code="xLocal"                persistence="scratch"/>
+		<var name="yLocal"                            type="real"     dimensions="maxEdges nCells"          name_in_code="yLocal"                persistence="scratch"/>
+		<var name="wachspressA"                       type="real"     dimensions="maxEdges nCells"          name_in_code="wachspressA"           persistence="scratch"/>
+		<var name="wachspressB"                       type="real"     dimensions="maxEdges nCells"          name_in_code="wachspressB"           persistence="scratch"/>
+		<var name="wachspressKappa"                   type="real"     dimensions="maxEdges maxEdges nCells" name_in_code="wachspressKappa"       persistence="scratch"/>
+		<var name="basisIntegralsU"                   type="real"     dimensions="maxEdges maxEdges nCells" name_in_code="basisIntegralsU"       persistence="scratch"/>
+		<var name="basisIntegralsV"                   type="real"     dimensions="maxEdges maxEdges nCells" name_in_code="basisIntegralsV"       persistence="scratch"/>
+		<var name="basisGradientU"                    type="real"     dimensions="maxEdges maxEdges nCells" name_in_code="basisGradientU"        persistence="scratch"/>
+		<var name="basisGradientV"                    type="real"     dimensions="maxEdges maxEdges nCells" name_in_code="basisGradientV"        persistence="scratch"/>
+		<var name="cellVerticesAtVertex"              type="integer"  dimensions="vertexDegree nVertices"   name_in_code="cellVerticesAtVertex"  persistence="scratch"/>
 	</var_struct>
 	<var_struct name="hexpwl" time_levs="0">
-		<var name="basisSubArea"                      type="real"     dimensions="maxEdges nCells"     name_in_code="basisSubArea"/>
-		<var name="basisGradientU"                    type="real"     dimensions="TWO maxEdges nCells" name_in_code="basisGradientU"/>
-		<var name="basisGradientV"                    type="real"     dimensions="TWO maxEdges nCells" name_in_code="basisGradientV"/>
+		<var name="basisSubArea"                      type="real"     dimensions="maxEdges nCells"     name_in_code="basisSubArea"    persistence="scratch"/>
+		<var name="basisGradientU"                    type="real"     dimensions="TWO maxEdges nCells" name_in_code="basisGradientU"  persistence="scratch"/>
+		<var name="basisGradientV"                    type="real"     dimensions="TWO maxEdges nCells" name_in_code="basisGradientV"  persistence="scratch"/>
 	</var_struct>
 
-	<!-- dynamics with velocity points at cell centers -->
+	<!-- dynamics with velocity points at cell centres -->
 	<var_struct name="tridyn" time_levs="0">
-		<var name="uVelocity"                         type="real"     dimensions="nCells"                   name_in_code="uVelocity"/>
-		<var name="vVelocity"                         type="real"     dimensions="nCells"                   name_in_code="vVelocity"/>
-		<var name="icePressure"                       type="real"     dimensions="nCells"                   name_in_code="icePressure"/>
-		<var name="stressDivergenceU"                 type="real"     dimensions="nCells"                   name_in_code="stressDivergenceU"/>
-		<var name="stressDivergenceV"                 type="real"     dimensions="nCells"                   name_in_code="stressDivergenceV"/>
-		<var name="airStressU"                        type="real"     dimensions="nCells"                   name_in_code="airStressU"/>
-		<var name="airStressV"                        type="real"     dimensions="nCells"                   name_in_code="airStressV"/>
-		<var name="oceanStressU"                      type="real"     dimensions="nCells"                   name_in_code="oceanStressU"/>
-		<var name="oceanStressV"                      type="real"     dimensions="nCells"                   name_in_code="oceanStressV"/>
-		<var name="oceanStressCoeff"                  type="real"     dimensions="nCells"                   name_in_code="oceanStressCoeff"/>
-		<var name="surfaceTiltForceU"                 type="real"     dimensions="nCells"                   name_in_code="surfaceTiltForceU"/>
-		<var name="surfaceTiltForceV"                 type="real"     dimensions="nCells"                   name_in_code="surfaceTiltForceV"/>
-	</var_struct>
+		<var name="uVelocity"                         type="real"     dimensions="nCells"                   name_in_code="uVelocity"           persistence="scratch"/>
+		<var name="vVelocity"                         type="real"     dimensions="nCells"                   name_in_code="vVelocity"           persistence="scratch"/>
+		<var name="icePressure"                       type="real"     dimensions="nCells"                   name_in_code="icePressure"         persistence="scratch"/>
+		<var name="stressDivergenceU"                 type="real"     dimensions="nCells"                   name_in_code="stressDivergenceU"   persistence="scratch"/>
+		<var name="stressDivergenceV"                 type="real"     dimensions="nCells"                   name_in_code="stressDivergenceV"   persistence="scratch"/>
+		<var name="airStressU"                        type="real"     dimensions="nCells"                   name_in_code="airStressU"          persistence="scratch"/>
+		<var name="airStressV"                        type="real"     dimensions="nCells"                   name_in_code="airStressV"          persistence="scratch"/>
+		<var name="oceanStressU"                      type="real"     dimensions="nCells"                   name_in_code="oceanStressU"        persistence="scratch"/>
+		<var name="oceanStressV"                      type="real"     dimensions="nCells"                   name_in_code="oceanStressV"        persistence="scratch"/>
+		<var name="oceanStressCoeff"                  type="real"     dimensions="nCells"                   name_in_code="oceanStressCoeff"    persistence="scratch"/>
+		<var name="surfaceTiltForceU"                 type="real"     dimensions="nCells"                   name_in_code="surfaceTiltForceU"   persistence="scratch"/>
+		<var name="surfaceTiltForceV"                 type="real"     dimensions="nCells"                   name_in_code="surfaceTiltForceV"   persistence="scratch"/>
+	</var_struct>  
 	<var_struct name="triweak" time_levs="0">
-		<var name="icePressureVertex"                 type="real"     dimensions="nVertices"                name_in_code="icePressureVertex"/>
-		<var name="strain11"                          type="real"     dimensions="nVertices"                name_in_code="strain11"/>
-		<var name="strain22"                          type="real"     dimensions="nVertices"                name_in_code="strain22"/>
-		<var name="strain12"                          type="real"     dimensions="nVertices"                name_in_code="strain12"/>
-		<var name="stress11"                          type="real"     dimensions="nVertices"                name_in_code="stress11"/>
-		<var name="stress22"                          type="real"     dimensions="nVertices"                name_in_code="stress22"/>
-		<var name="stress12"                          type="real"     dimensions="nVertices"                name_in_code="stress12"/>
+		<var name="icePressureVertex"                 type="real"     dimensions="nVertices"                name_in_code="icePressureVertex"   persistence="scratch"/>
+		<var name="strain11"                          type="real"     dimensions="nVertices"                name_in_code="strain11"            persistence="scratch"/>
+		<var name="strain22"                          type="real"     dimensions="nVertices"                name_in_code="strain22"            persistence="scratch"/>
+		<var name="strain12"                          type="real"     dimensions="nVertices"                name_in_code="strain12"            persistence="scratch"/>
+		<var name="stress11"                          type="real"     dimensions="nVertices"                name_in_code="stress11"            persistence="scratch"/>
+		<var name="stress22"                          type="real"     dimensions="nVertices"                name_in_code="stress22"            persistence="scratch"/>
+		<var name="stress12"                          type="real"     dimensions="nVertices"                name_in_code="stress12"            persistence="scratch"/>
 	</var_struct>
 	<!-- variational formulation on triangles -->
 	<var_struct name="trivar" time_levs="0">
-		<var name="strain11"                          type="real"     dimensions="vertexDegree nVertices"   name_in_code="strain11"/>
-		<var name="strain22"                          type="real"     dimensions="vertexDegree nVertices"   name_in_code="strain22"/>
-		<var name="strain12"                          type="real"     dimensions="vertexDegree nVertices"   name_in_code="strain12"/>
-		<var name="stress11"                          type="real"     dimensions="vertexDegree nVertices"   name_in_code="stress11"/>
-		<var name="stress22"                          type="real"     dimensions="vertexDegree nVertices"   name_in_code="stress22"/>
-		<var name="stress12"                          type="real"     dimensions="vertexDegree nVertices"   name_in_code="stress12"/>
-		<var name="basisGradientU"                    type="real"     dimensions="vertexDegree nVertices"   name_in_code="basisGradientU"/>
-		<var name="basisGradientV"                    type="real"     dimensions="vertexDegree nVertices"   name_in_code="basisGradientV"/>
-		<var name="basisIntegrals"                    type="real"     dimensions="vertexDegree nVertices"   name_in_code="basisIntegrals"/>
-		<var name="triangleCornerAtCellCenter"        type="integer"  dimensions="maxEdges nCells"          name_in_code="triangleCornerAtCellCenter"/>
-		<var name="edgeOppositeTriangleCorner"        type="integer"  dimensions="vertexDegree nVertices"   name_in_code="edgeOppositeTriangleCorner"/>
+		<var name="strain11"                          type="real"     dimensions="vertexDegree nVertices"   name_in_code="strain11"                     persistence="scratch"/>
+		<var name="strain22"                          type="real"     dimensions="vertexDegree nVertices"   name_in_code="strain22"                     persistence="scratch"/>
+		<var name="strain12"                          type="real"     dimensions="vertexDegree nVertices"   name_in_code="strain12"                     persistence="scratch"/>
+		<var name="stress11"                          type="real"     dimensions="vertexDegree nVertices"   name_in_code="stress11"                     persistence="scratch"/>
+		<var name="stress22"                          type="real"     dimensions="vertexDegree nVertices"   name_in_code="stress22"                     persistence="scratch"/>
+		<var name="stress12"                          type="real"     dimensions="vertexDegree nVertices"   name_in_code="stress12"                     persistence="scratch"/>
+		<var name="basisGradientU"                    type="real"     dimensions="vertexDegree nVertices"   name_in_code="basisGradientU"               persistence="scratch"/>
+		<var name="basisGradientV"                    type="real"     dimensions="vertexDegree nVertices"   name_in_code="basisGradientV"               persistence="scratch"/>
+		<var name="basisIntegrals"                    type="real"     dimensions="vertexDegree nVertices"   name_in_code="basisIntegrals"               persistence="scratch"/>
+		<var name="triangleCornerAtCellCenter"        type="integer"  dimensions="maxEdges nCells"          name_in_code="triangleCornerAtCellCenter"   persistence="scratch"/>
+		<var name="edgeOppositeTriangleCorner"        type="integer"  dimensions="vertexDegree nVertices"   name_in_code="edgeOppositeTriangleCorner"   persistence="scratch"/>
 	</var_struct>
 	<!-- forcing on triangles -->
 	<var_struct name="trifor" time_levs="0">
-		<var name="uOceanVelocity"                    type="real"     dimensions="nCells"                   name_in_code="uOceanVelocity"/>
-		<var name="vOceanVelocity"                    type="real"     dimensions="nCells"                   name_in_code="vOceanVelocity"/>
+		<var name="uOceanVelocity"                    type="real"     dimensions="nCells"                   name_in_code="uOceanVelocity"   persistence="scratch"/>
+		<var name="vOceanVelocity"                    type="real"     dimensions="nCells"                   name_in_code="vOceanVelocity"   persistence="scratch"/>
 	</var_struct>
 
 	<!-- C grid version -->
 	<var_struct name="cgrid" time_levs="0">
-		<var name="velocity"                          type="real"     dimensions="nEdges"                   name_in_code="velocity"/>	  
-                <var name="strain11"                          type="real"     dimensions="nCells"                   name_in_code="strain11"/>	
-                <var name="strain22"                          type="real"     dimensions="nCells"                   name_in_code="strain22"/>	
-                <var name="strain12"                          type="real"     dimensions="nCells"                   name_in_code="strain12"/>	
+		<var name="velocity"                          type="real"     dimensions="nEdges"                   name_in_code="velocity"   persistence="scratch"/>	  
+                <var name="strain11"                          type="real"     dimensions="nCells"                   name_in_code="strain11"   persistence="scratch"/>	
+                <var name="strain22"                          type="real"     dimensions="nCells"                   name_in_code="strain22"   persistence="scratch"/>	
+                <var name="strain12"                          type="real"     dimensions="nCells"                   name_in_code="strain12"   persistence="scratch"/>	
 	</var_struct>
 
 </registry>

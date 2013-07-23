@@ -40,6 +40,9 @@ contains
     call normal_vectors(mesh, &
          normal % normalVectorPolygon % array, &
          normal % normalVectorTriangle % array, &
+         normal % normalVectorTriangleCorners % array, &
+         normal % latCellRotated % array, &
+         normal % latVertexRotated % array, &
          boundary % interiorVertex % array, &
          "planar")
 

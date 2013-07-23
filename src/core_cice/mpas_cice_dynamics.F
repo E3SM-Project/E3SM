@@ -17,17 +17,17 @@ module cice_dynamics
   !character(len=200), parameter :: dynamicsGridType = "tri";
 
   ! "weak", "variational" or "pwl" 
-  !character(len=200), parameter :: divergenceFormulation = "weak"
+  character(len=200), parameter :: divergenceFormulation = "weak"
   !character(len=200), parameter :: divergenceFormulation = "variational"
-  character(len=200), parameter :: divergenceFormulation = "pwl"
+  !character(len=200), parameter :: divergenceFormulation = "pwl"
 
   ! EVP Damping - ".false." or ".true."
   !logical, parameter :: evpDamping = .true.
   logical, parameter :: evpDamping = .false.
 
   ! Grid curvature - "planar" or "spherical"
-  character(len=200), parameter :: gridCurvature = "planar"
-  !character(len=200), parameter :: gridCurvature = "spherical"
+  !character(len=200), parameter :: gridCurvature = "planar"
+  character(len=200), parameter :: gridCurvature = "spherical"
 
 contains
 
