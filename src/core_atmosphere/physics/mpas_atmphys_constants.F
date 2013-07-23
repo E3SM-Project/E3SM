@@ -7,7 +7,8 @@
 !
 !=============================================================================================
  module mpas_atmphys_constants
- use mpas_constants, R_d => rgas, g => gravity
+ use mpas_kind_types, only : RKIND
+ use mpas_constants, only : pii, cp, R_d => rgas, g => gravity
 
  implicit none
  public
