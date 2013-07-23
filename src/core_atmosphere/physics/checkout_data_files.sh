@@ -29,10 +29,10 @@ fi
 # Try using 'git'
 #
 which git
-if [ $? == 0 ]; then
+if [ $? -eq 0 ]; then
    echo "*** trying git to obtain WRF physics tables ***"
    git clone git://github.com/MPAS-Dev/MPAS-Data.git
-   if [ $? == 0 ]; then
+   if [ $? -eq 0 ]; then
       mv MPAS-Data/atmosphere/physics_wrf/files physics_wrf/
       rm -rf MPAS-Data
       exit 0
@@ -48,10 +48,10 @@ fi
 # Try using 'svn'
 #
 which svn
-if [ $? == 0 ]; then
+if [ $? -eq 0 ]; then
    echo "*** trying svn to obtain WRF physics tables ***"
    svn checkout --non-interactive --trust-server-cert https://github.com/MPAS-Dev/MPAS-Data.git
-   if [ $? == 0 ]; then
+   if [ $? -eq 0 ]; then
       mv MPAS-Data.git/trunk/atmosphere/physics_wrf/files physics_wrf/
       rm -rf MPAS-Data.git
       exit 0
@@ -67,12 +67,12 @@ fi
 # Try using 'curl'
 #
 which curl
-if [ $? == 0 ]; then
+if [ $? -eq 0 ]; then
    echo "*** trying curl to obtain WRF physics tables ***"
    curl -o master.zip https://codeload.github.com/MPAS-Dev/MPAS-Data/zip/master
-   if [ $? == 0 ]; then
+   if [ $? -eq 0 ]; then
       which unzip
-      if [ $? == 0 ]; then
+      if [ $? -eq 0 ]; then
          unzip master.zip
          mv MPAS-Data-master/atmosphere/physics_wrf/files physics_wrf/
          rm -rf master.zip MPAS-Data-master
