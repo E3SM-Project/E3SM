@@ -2994,11 +2994,10 @@ write(0,*) 'Interpolating SOILHGT'
             else if (index(field % field, 'SM000010') /= 0) then
 write(0,*) 'Interpolating SM000010'
 
-               interp_list(1) = SIXTEEN_POINT
-               interp_list(2) = FOUR_POINT
-               interp_list(3) = W_AVERAGE4
-               interp_list(4) = SEARCH
-               interp_list(5) = 0
+               interp_list(1) = FOUR_POINT
+               interp_list(2) = W_AVERAGE4
+               interp_list(3) = SEARCH
+               interp_list(4) = 0
 
                maskval = 0.0
                masked = 0
@@ -3015,11 +3014,10 @@ write(0,*) 'Interpolating SM000010'
             else if (index(field % field, 'SM010200') /= 0) then
 write(0,*) 'Interpolating SM010200'
 
-               interp_list(1) = SIXTEEN_POINT
-               interp_list(2) = FOUR_POINT
-               interp_list(3) = W_AVERAGE4
-               interp_list(4) = SEARCH
-               interp_list(5) = 0
+               interp_list(1) = FOUR_POINT
+               interp_list(2) = W_AVERAGE4
+               interp_list(3) = SEARCH
+               interp_list(4) = 0
 
                maskval = 0.0
                masked = 0
@@ -3036,11 +3034,10 @@ write(0,*) 'Interpolating SM010200'
             else if (index(field % field, 'SM010040') /= 0) then
 write(0,*) 'Interpolating SM010040'
 
-               interp_list(1) = SIXTEEN_POINT
-               interp_list(2) = FOUR_POINT
-               interp_list(3) = W_AVERAGE4
-               interp_list(4) = SEARCH
-               interp_list(5) = 0
+               interp_list(1) = FOUR_POINT
+               interp_list(2) = W_AVERAGE4
+               interp_list(3) = SEARCH
+               interp_list(4) = 0
 
                maskval = 0.0
                masked = 0
@@ -3057,11 +3054,10 @@ write(0,*) 'Interpolating SM010040'
             else if (index(field % field, 'SM040100') /= 0) then
 write(0,*) 'Interpolating SM040100'
 
-               interp_list(1) = SIXTEEN_POINT
-               interp_list(2) = FOUR_POINT
-               interp_list(3) = W_AVERAGE4
-               interp_list(4) = SEARCH
-               interp_list(5) = 0
+               interp_list(1) = FOUR_POINT
+               interp_list(2) = W_AVERAGE4
+               interp_list(3) = SEARCH
+               interp_list(4) = 0
 
                maskval = 0.0
                masked = 0
@@ -3078,11 +3074,10 @@ write(0,*) 'Interpolating SM040100'
             else if (index(field % field, 'SM100200') /= 0) then
 write(0,*) 'Interpolating SM100200'
 
-               interp_list(1) = SIXTEEN_POINT
-               interp_list(2) = FOUR_POINT
-               interp_list(3) = W_AVERAGE4
-               interp_list(4) = SEARCH
-               interp_list(5) = 0
+               interp_list(1) = FOUR_POINT
+               interp_list(2) = W_AVERAGE4
+               interp_list(3) = SEARCH
+               interp_list(4) = 0
 
                maskval = 0.0
                masked = 0
@@ -3219,12 +3214,10 @@ write(0,*) 'Interpolating SNOW'
             else if (index(field % field, 'SEAICE') /= 0) then
 write(0,*) 'Interpolating SEAICE'
 
-               !interp_list(1) = SIXTEEN_POINT
                interp_list(1) = FOUR_POINT
-               interp_list(2) = FOUR_POINT
-               interp_list(3) = W_AVERAGE4
-               interp_list(4) = SEARCH
-               interp_list(5) = 0
+               interp_list(2) = W_AVERAGE4
+               interp_list(3) = SEARCH
+               interp_list(4) = 0
 
                maskval = 1.0
                masked = 1
