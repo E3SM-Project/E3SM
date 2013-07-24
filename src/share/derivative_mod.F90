@@ -2333,11 +2333,6 @@ endif
       real(kind=real_kind) :: rdx
       real(kind=real_kind) :: rdy
 
-! dx,dy are no longer initialized - this routine must be updated 
-! see vorticity_sphere above
-!      rdx=2.0D0/(elem%dx*rrearth) ! strong derivative inverse x length
-!      rdy=2.0D0/(elem%dy*rrearth) ! strong derivative inverse y length
-
       ! convert to covariant form
                                                                     
       do j=1,np
@@ -2368,7 +2363,7 @@ endif
 
       do j=1,np
          do i=1,np 
-            vort(i,j)=elem%rmetdet(i,j)*(rdx*vort(i,j)-rdy*vtemp(i,j))
+          vort(i,j)=(vort(i,j)-vtemp(i,j))*(elem%rmetdet(i,j)*rrearth)
          end do 
       end do 
      
