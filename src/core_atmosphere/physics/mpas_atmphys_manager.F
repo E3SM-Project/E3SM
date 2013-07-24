@@ -282,12 +282,13 @@
 
 !check to see if it is time to calculate additional physics diagnostics:
  l_diags = .false.
- call mpas_set_timeInterval(dtInterval,dt=dt,ierr=ierr)
- if(mpas_is_alarm_ringing(clock,diagAlarmID,ierr=ierr)) then
+ if (mpas_is_alarm_ringing(clock,diagAlarmID,ierr=ierr)) then
     call mpas_reset_clock_alarm(clock,diagAlarmID,ierr=ierr)
- else if(mpas_is_alarm_ringing(clock,diagAlarmID,interval=dtInterval,ierr=ierr)) then
+ end if
+ call mpas_set_timeInterval(dtInterval,dt=dt,ierr=ierr)
+ if (mpas_is_alarm_ringing(clock,diagAlarmID,interval=dtInterval,ierr=ierr)) then
     l_diags = .true.
- endif
+ end if
  write(0,*) '--- time to calculate additional physics_diagnostics               =',l_diags
 
  end subroutine physics_timetracker
