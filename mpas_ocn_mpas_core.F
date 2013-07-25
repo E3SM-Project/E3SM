@@ -161,6 +161,7 @@ module mpas_core
       if (config_vert_coord_movement.ne.'isopycnal'.and. &
           config_vert_coord_movement.ne.'fixed'.and. &
           config_vert_coord_movement.ne.'uniform_stretching'.and. &
+          config_vert_coord_movement.ne.'no_vert_transport'.and. &
           config_vert_coord_movement.ne.'user_specified') then
          write (0,*) ' Incorrect choice of config_vert_coord_movement.'
          call mpas_dmpar_abort(dminfo)

@@ -620,7 +620,7 @@ contains
          frequency_filtered_thickness_on = 0
       endif
 
-      if (config_vert_coord_movement.eq.'isopycnal') then
+      if (config_vert_coord_movement.eq.'isopycnal'.or.config_vert_coord_movement.eq.'no_vert_transport') then
         ! set vertical transport to zero in isopycnal case
         vertTransportVelocityTop=0.0
         return

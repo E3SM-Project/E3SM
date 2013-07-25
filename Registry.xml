@@ -129,7 +129,7 @@
 		/>
 		<nml_option name="config_vert_coord_movement" type="character" default_value="uniform_stretching" units="unitless"
 		            description="Determines the vertical coordinate movement type. 'uniform_stretching' distrubtes SSH perturbations through all vertical levels, 'fixed' places them all in the top level, 'user_specified' allows the input file to determine the distribution, and 'isopycnal' causes levels to be pure isopycnal."
-		            possible_values="'uniform_stretching', 'fixed', 'user_specified', 'isopycnal'"
+		            possible_values="'uniform_stretching', 'fixed', 'user_specified', 'isopycnal', 'no_vert_transport'"
 		/>
 		<nml_option name="config_alter_ICs_for_pbcs" type="character" default_value="zlevel_pbcs_off" units="unitless"
 		            description="Determines the method of alteration for partial bottom cells. 'zlevel_pbcs_on' alters the initial conditions for partial bottom cells, 'zlevel_pbcs_off' alters the initial conditions to have full cells everwhere, and 'off' does nothing to the initial conditions."
