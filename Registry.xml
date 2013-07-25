@@ -597,7 +597,7 @@
 		<var name="highFreqThickness" type="real" dimensions="nVertLevels nCells Time" streams="o" units="m"
 		     description="high frequency-filtered layer thickness"
 		/>
-		<var name="lowFreqDivergence" type="real" dimensions="nVertLevels nCells Time" streams="o" units="m"
+		<var name="lowFreqDivergence" type="real" dimensions="nVertLevels nCells Time" streams="o" units="s^{-1}"
 		     description="low frequency-filtered divergence"
 		/>
 		<var name="density" type="real" dimensions="nVertLevels nCells Time" streams="iro" units="kg m^{-3}"
