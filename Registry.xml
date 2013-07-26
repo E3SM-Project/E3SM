@@ -481,6 +481,18 @@
 		            description="If true, a high-frequency tendency term is added to the thickness equation."
 		            possible_values=".true. or .false."
 		/>
+		<nml_option name="config_apply_Dhf_to_hhf" type="logical" default_value=".true." units="unitless"
+		            description="If true, the high-frequency divergence tendency term is added to the high-freqency thickness equation."
+		            possible_values=".true. or .false."
+		/>
+		<nml_option name="config_apply_hff_restore_to_hhf" type="logical" default_value=".true." units="unitless"
+		            description="If true, the high-frequency thickness restore tendency term is added to the high-freqency thickness equation."
+		            possible_values=".true. or .false."
+		/>
+		<nml_option name="config_apply_hff_del2_to_hhf" type="logical" default_value=".true." units="unitless"
+		            description="If true, a high-frequency thickness diffusion tendency term is added to the high-freqency thickness equation."
+		            possible_values=".true. or .false."
+		/>
 		<nml_option name="config_Dlf_restore_time" type="real" default_value="5.0" units="days"
 		            description="Restoring timescale for low frequency baroclinic divergence, $\tau_{Dlf}$."
 		            possible_values="any positive real value, but typically 5 days."

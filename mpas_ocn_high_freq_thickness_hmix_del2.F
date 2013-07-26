@@ -107,6 +107,8 @@ contains
 
       err = 0
 
+      if(.not.config_apply_hff_del2_to_hhf) return
+
       nCells = grid % nCells
       nVertLevels = grid % nVertLevels
 

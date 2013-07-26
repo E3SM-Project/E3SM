@@ -73,6 +73,8 @@ module ocn_tendency
    !
    !--------------------------------------------------------------------
 
+   integer :: apply_Dhf_to_hhf, apply_hff_restore_to_hhf
+
 !***********************************************************************
 
 contains
@@ -418,8 +420,8 @@ contains
               *(lowFreqDivergence(k,iCell)  - div_hu(k) + div_hu_btr)
 
            tend_highFreqThickness(k,iCell) = &
-              - div_hu(k) + div_hu_btr + lowFreqDivergence(k,iCell) &
-              -2.0*pii/hhf_restore_time_sec * highFreqThickness(k,iCell)
+                apply_Dhf_to_hhf*( - div_hu(k) + div_hu_btr + lowFreqDivergence(k,iCell) ) &
+              + apply_hff_restore_to_hhf*( -2.0*pii/hhf_restore_time_sec * highFreqThickness(k,iCell) )
 
         end do
 
@@ -454,6 +456,9 @@ contains
         integer, intent(out) :: err !< Output: Error flag
 
         err = 0
+
+	if (config_apply_Dhf_to_hhf) apply_Dhf_to_hhf = 1
+	if (config_apply_hff_restore_to_hhf) apply_hff_restore_to_hhf = 1
 
     end subroutine ocn_tendency_init!}}}
 
