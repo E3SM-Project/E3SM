@@ -139,6 +139,7 @@
 /
 &frequency_filtered_thickness
 	config_use_frequency_filtered_thickness  = .false.
+        config_apply_hff_to_w = .false.
 	config_Dlf_restore_time  = 5.0
 	config_hhf_restore_time  = 5.0
 	config_hhf_del2          = 100

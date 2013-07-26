@@ -42,7 +42,7 @@ OBJS = mpas_ocn_mpas_core.o \
 all: libcvmix core_hyd
 
 libcvmix:
-cd cvmix; make all FC="$(FC)" FFLAGS="$(FFLAGS)" FINCLUDES="$(FINCLUDES)"
+	cd cvmix; make all FC="$(FC)" FFLAGS="$(FFLAGS)" FINCLUDES="$(FINCLUDES)"
 #	if [ ! -d cvmix ]; then \
 #		(svn checkout $(CVMIX_REPO_ADDRESS) cvmix) \
 #	fi
