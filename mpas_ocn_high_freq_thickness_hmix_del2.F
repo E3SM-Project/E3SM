@@ -107,7 +107,8 @@ contains
 
       err = 0
 
-      if(.not.config_apply_hff_del2_to_hhf) return
+! turn off while flags are always false.
+ !     if(.not.config_apply_hff_del2_to_hhf) return
 
       nCells = grid % nCells
       nVertLevels = grid % nVertLevels

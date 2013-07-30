@@ -466,6 +466,11 @@ contains
 	if (config_apply_Dhf_to_hhf) apply_Dhf_to_hhf = 1
 	if (config_apply_hff_restore_to_hhf) apply_hff_restore_to_hhf = 1
 
+! mrp always turn to 1;
+   apply_Dhf_to_hhf = 1
+   apply_hff_restore_to_hhf = 1
+
+!mrp end
     end subroutine ocn_tendency_init!}}}
 
 !***********************************************************************
