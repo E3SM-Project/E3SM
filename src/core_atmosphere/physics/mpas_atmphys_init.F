@@ -14,7 +14,8 @@
                            config_conv_deep_scheme,    &
                            config_sfclayer_scheme,     &
                            config_radt_lw_scheme,      &
-                           config_radt_sw_scheme
+                           config_radt_sw_scheme,      &
+                           config_o3climatology
  use mpas_timekeeping
 
  use mpas_atmphys_driver_convection_deep, only: init_convection_deep
@@ -166,7 +167,7 @@
  endif
 
 !read the input files that contain the monthly-mean ozone climatology on fixed pressure levels:
- if(.not. config_do_restart) &
+ if(config_o3climatology .and. (.not. config_do_restart)) &
     call init_o3climatology(mesh,atm_input)
 
 !initialization of global surface properties. set here for now, but may be moved when time

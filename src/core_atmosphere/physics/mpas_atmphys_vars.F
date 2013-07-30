@@ -29,8 +29,8 @@
 !>      Laura D. Fowler (birch.ucar.edu) / 2013-03-11.
 !>    * removed call to the updated Kain-Fritsch convection scheme.
 !>      Laura D. Fowler (birch.ucar.edu) / 2013-05-29.
-!>    * added the arrays o3clim_p and o3vmr_p for implementation of monthly-varying climatological
-!>      ozone in the long wave and short wave RRTMG radiation codes.
+!>    * added the arrays o3clim_p for implementation of monthly-varying climatological ozone in the
+!>      long wave and short wave RRTMG radiation codes.
 !>      laura D. Fowler (birch.ucar.edu) / 2013-07-08.
 
 
@@ -141,8 +141,7 @@
 !=============================================================================================
 
  real(kind=RKIND),dimension(:,:,:),allocatable:: &
-    o3clim_p,         &!climatological ozone volume mixing ratio                         [???]
-    o3vmr_p            !interpolated ozone volume mixing ratio                           [???]
+    o3clim_p           !climatological ozone volume mixing ratio                         [???]
 
 !==================================================================================================
 !... variables and arrays related to parameterization of cloud microphysics:

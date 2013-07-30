@@ -2411,11 +2411,8 @@
     
 ! Recompute original s.s.a. to test for conservative solution
             !Balwinder.Singh@pnnl.gov: Code added to avoid 'divide by zero' error in zwo computation
-            !denom = max((1._rb - (1._rb - zw) * (zg / (1._rb - zg))**2),1.0E-30_rb)
-            !zwo= zw / denom
-
-            !as develop:
-            zwo= zw / (1._rb - (1._rb - zw) * (zg / (1._rb - zg))**2)
+            denom = max((1._rb - (1._rb - zw) * (zg / (1._rb - zg))**2),1.0E-30_rb)
+            zwo= zw / denom
 
             if (zwo >= zwcrit) then
 ! Conservative scattering
@@ -9575,22 +9572,23 @@
 MODULE module_ra_rrtmg_sw
 
 #if defined(mpas)
-!add-ons and modifications to sourcecode:
-!----------------------------------------
-!   * Updated sourcecode to that of WRF revision 3.5. The interpolation
-!     of climatological ozone to pressure levels uses subroutine radozn
-!     (from the CAM radiation code) instead of that used in WRF.
-!     Laura D. Fowler (birch.ucar.edu) / 2013-07-08.
-
-!MPAS specific (Laura D. Fowler - 2013-03-11):
+!MPAS specific (Laura D. Fowler):
 use mpas_atmphys_constants,only: cp
-use mpas_atmphys_o3climatology,only: radozn
+use mpas_atmphys_o3climatology,only: vinterp_ozn
+
+!> add-ons and modifications to sourcecode:
+!> ----------------------------------------
+!>   * updated the sourcecode to WRF revision 3.5, except for the implementation
+!>     of time-varying trace gases: added option to use the ozone climatology
+!>     from the CAM radiation codes.
+!>     Laura D. Fowler (birch.mmm.ucar.edu) / 2013-07-08.
+!MPAS specfic end.
+
 #else
 use module_model_constants, only : cp
 USE module_wrf_error
 !USE module_dm
 #endif
-!MPAS specific end.
 
 use parrrsw, only : nbndsw, ngptsw, naerec
 use rrtmg_sw_init, only: rrtmg_sw_ini
@@ -10198,11 +10196,14 @@ CONTAINS
          call inirad (o3mmr,plev,kts,kte)
 
 #if defined(mpas)
+! Laura D. Fowler (2013-07-08): Added the option to use the ozone climatology from the
+! CAM radiation codes, instead of the annual mean ozone in subroutine o3dat. As output
+! to the subroutine vinterp_ozn, the unit of o3mmr is actually "volume mixing ratio".
          if(o3input .eq. 2) then 
             do k = 1, noznlevels
                o3clim1d(k) = o3clim(i,k,j)
             enddo
-            call radozn(1,ncol,ncol,kte+1,play,pin,noznlevels,o3clim1d,o3mmr)
+            call vinterp_ozn(1,ncol,ncol,kte+1,play,pin,noznlevels,o3clim1d,o3mmr)
             do k = kts,kte+1
                o3vmr(ncol,k) = o3mmr(k)
             enddo

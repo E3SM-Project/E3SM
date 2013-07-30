@@ -172,9 +172,6 @@
        call physics_update_deepsoiltemp(LeapYear,dt_dyn,curr_julday,block%mesh, &
                     block%sfc_input,block%diag_physics)
 
-    !update the ozone climatology to the current julian day:
-    call o3climatology_from_MPAS(curr_julday,block%mesh,block%atm_input,block%diag_physics)
-
     block => block % next
  end do 
 
@@ -220,6 +217,21 @@
        l_conv = .true.
     endif
     write(0,*) '--- time to run the convection scheme L_CONV    =',l_conv
+ endif
+
+!check to see if it is time to update ozone to the current julian day in the RRTMG radiation codes:
+ if(config_o3climatology) then
+    block => domain % blocklist
+    do while(associated(block))
+
+       if((l_radtlw .and. trim(config_radt_lw_scheme) .eq. "rrtmg_lw") .or. &
+           l_radtsw .and. trim(config_radt_sw_scheme) .eq. "rrtmg_sw" ) then
+          call o3climatology_from_MPAS(curr_julday,block%mesh,block%atm_input,block%diag_physics)
+          write(0,*) '--- time to update the ozone climatology for RRTMG radiation codes'
+       endif
+    
+       block => block % next
+    end do 
  endif
 
 !check to see if it is time to update the ozone trace gas path lengths,the total emissivity,

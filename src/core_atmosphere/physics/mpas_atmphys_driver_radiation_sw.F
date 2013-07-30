@@ -121,7 +121,6 @@
 
        if(.not.allocated(pin_p)        ) allocate(pin_p(num_oznlevels)                     )
        if(.not.allocated(o3clim_p)     ) allocate(o3clim_p(ims:ime,1:num_oznlevels,jms:jme))
-       if(.not.allocated(o3vmr_p)      ) allocate(o3vmr_p(ims:ime,kms:kme,jms:jme)         )
 
     case("cam_sw")
        if(.not.allocated(glw_p)        ) allocate(glw_p(ims:ime,jms:jme)                )
@@ -213,7 +212,6 @@
 
        if(allocated(pin_p)        ) deallocate(pin_p        )
        if(allocated(o3clim_p)     ) deallocate(o3clim_p     )
-       if(allocated(o3vmr_p)      ) deallocate(o3vmr_p      )
 
     case("cam_sw")
        if(allocated(pin_p)        ) deallocate(pin_p        )
@@ -333,24 +331,30 @@
        enddo
        enddo
 
-       !ozone mixing ratio:
-       do k = 1, num_oznLevels
-          kk = num_oznLevels-k+1
-          pin_p(kk) = atm_input % pin % array(k)
-       enddo
-       do j = jts,jte
-       do k = 1, num_oznLevels
-          kk = num_oznLevels-k+1
-          do i = its,ite
-             o3clim_p(i,kk,j) = diag_physics % o3clim % array(k,i)
+       !ozone volum mixing ratio:
+       if(config_o3climatology) then
+          do k = 1, num_oznLevels
+             pin_p(k) = atm_input % pin % array(k)
           enddo
-       enddo
-       do k = kts,kte
-          do i = its,ite
-             o3vmr_p(i,k,j) = diag_physics % o3vmr % array(k,i)
+          do j = jts,jte
+          do k = 1, num_oznLevels
+             do i = its,ite
+                o3clim_p(i,k,j) = diag_physics % o3clim % array(k,i)
+             enddo
           enddo
-       enddo
-       enddo
+          enddo
+       else
+          do k = 1, num_oznLevels
+             pin_p(k) = 0.0_RKIND
+          enddo
+          do j = jts,jte
+          do k = 1, num_oznLevels
+             do i = its,ite
+                o3clim_p(i,k,j) = 0.0_RKIND
+             enddo
+          enddo
+          enddo
+       endif
 
     case("cam_sw")
        do j = jts,jte
@@ -484,7 +488,6 @@
  do k = kts,kte
  do i = its,ite
     tend_physics % rthratensw % array(k,i) = rthratensw_p(i,k,j)
-    diag_physics % o3vmr      % array(k,i) = o3vmr_p(i,k,j)
  enddo
  enddo
 
@@ -588,39 +591,33 @@
        if(config_o3climatology) o3input = 2
 
        call rrtmg_swrad( &
-              p3d        = pres_hyd_p   , p8w        = pres2_hyd_p  , pi3d       = pi_p          ,&
-              t3d        = t_p          , t8w        = t2_p         , rho3d      = rho_p         ,&
-              rthratensw = rthratensw_p , swupt      = swupt_p      , swuptc     = swuptc_p      ,&
-              swdnt      = swdnt_p      , swdntc     = swdntc_p     , swupb      = swupb_p       ,&
-              swupbc     = swupbc_p     , swdnb      = swdnb_p      , swdnbc     = swdnbc_p      ,&
-              swcf       = swcf_p       , gsw        = gsw_p        , xtime      = xtime_m       ,&
-              gmt        = gmt          , xlat       = xlat_p       , xlong      = xlon_p        ,&
-              radt       = radt         , degrad     = degrad       , declin     = declin        ,&
-              coszr      = coszr_p      , julday     = julday       , solcon     = solcon        ,&
-              albedo     = sfc_albedo_p , tsk        = tsk_p        , dz8w       = dz_p          ,&
-              cldfra3d   = cldfrac_p    , r          = R_d          , g          = g             ,&
-              icloud     = icloud       , warm_rain  = warm_rain    , f_ice_phy  = f_ice         ,&
-              f_rain_phy = f_rain       , xland      = xland_p      , xice       = xice_p        ,&
-              snow       = snow_p       , qv3d       = qv_p         , qc3d       = qc_p          ,&
-              qr3d       = qr_p         , qi3d       = qi_p         , qs3d       = qs_p          ,&
-              qg3d       = qg_p         , o3input    = o3input      , o33d       = o3vmr_p       ,&
-              sf_surface_physics = sf_surface_physics                                            ,&
-              !begin optional arguments:
-              f_qv       = f_qv         , f_qc       = f_qc         , f_qr       = f_qr          ,&
-              f_qi       = f_qi         , f_qs       = f_qs         , f_qg       = f_qg          ,&
-              alswvisdir = alswvisdir_p , alswvisdif = alswvisdif_p , alswnirdir = alswnirdir_p  ,&
-              alswnirdif = alswnirdif_p , swvisdir   = swvisdir_p   , swvisdif   = swvisdif_p    ,&
-              swnirdir   = swnirdir_p   , swnirdif   = swnirdif_p   , noznlevels = num_oznlevels ,&
-              pin        = pin_p        , o3clim     = o3clim_p     ,                             &
+              p3d        = pres_hyd_p   , p8w        = pres2_hyd_p   , pi3d       = pi_p          ,&
+              t3d        = t_p          , t8w        = t2_p          , rho3d      = rho_p         ,&
+              rthratensw = rthratensw_p , swupt      = swupt_p       , swuptc     = swuptc_p      ,&
+              swdnt      = swdnt_p      , swdntc     = swdntc_p      , swupb      = swupb_p       ,&
+              swupbc     = swupbc_p     , swdnb      = swdnb_p       , swdnbc     = swdnbc_p      ,&
+              swcf       = swcf_p       , gsw        = gsw_p         , xtime      = xtime_m       ,&
+              gmt        = gmt          , xlat       = xlat_p        , xlong      = xlon_p        ,&
+              radt       = radt         , degrad     = degrad        , declin     = declin        ,&
+              coszr      = coszr_p      , julday     = julday        , solcon     = solcon        ,&
+              albedo     = sfc_albedo_p , tsk        = tsk_p         , dz8w       = dz_p          ,&
+              cldfra3d   = cldfrac_p    , r          = R_d           , g          = g             ,&
+              icloud     = icloud       , warm_rain  = warm_rain     , f_ice_phy  = f_ice         ,&
+              f_rain_phy = f_rain       , xland      = xland_p       , xice       = xice_p        ,&
+              snow       = snow_p       , qv3d       = qv_p          , qc3d       = qc_p          ,&
+              qr3d       = qr_p         , qi3d       = qi_p          , qs3d       = qs_p          ,&
+              qg3d       = qg_p         , f_qv       = f_qv          , f_qc       = f_qc          ,&
+              f_qr       = f_qr         , f_qi       = f_qi          , f_qs       = f_qs          ,&
+              f_qg       = f_qg         , alswvisdir = alswvisdir_p  , alswvisdif = alswvisdif_p  ,&
+              alswnirdir = alswnirdir_p , alswnirdif = alswnirdif_p  , swvisdir   = swvisdir_p    ,&
+              swvisdif   = swvisdif_p   , swnirdir   = swnirdir_p    , swnirdif   = swnirdif_p    ,&
+              o3input    = o3input      , noznlevels = num_oznlevels , pin        = pin_p         ,& 
+              o3clim     = o3clim_p     , sf_surface_physics = sf_surface_physics                 ,&
               !end optional arguments.
               ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde ,&
               ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme ,&
               its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte  &
                        )
-       j=1;i=ite
-       do k = kts,kte
-          write(0,200) i,k,rthratensw_p(i,k,j),o3vmr_p(i,k,j)
-       enddo
        write(0,*) '--- exit subroutine rrtmg_swrad'
 
     case ("cam_sw")

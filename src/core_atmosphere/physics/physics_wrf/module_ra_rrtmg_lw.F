@@ -16,8 +16,10 @@
 !     integer kinds
 !     -------------
 !
-      integer, parameter :: kind_ib = selected_int_kind(13)  ! 8 byte integer
-      integer, parameter :: kind_im = selected_int_kind(6)   ! 4 byte integer
+!     integer, parameter :: kind_ib = selected_int_kind(13)  ! 8 byte integer
+!     integer, parameter :: kind_im = selected_int_kind(6)   ! 4 byte integer
+      integer, parameter :: kind_ib = kind(1)            
+      integer, parameter :: kind_im = kind(1)            
       integer, parameter :: kind_in = kind(1)                ! native integer
 
 !
@@ -28,6 +30,7 @@
 !      integer, parameter :: kind_rm = selected_real_kind(6)  ! 4 byte real
 !      integer, parameter :: kind_rn = kind(1.0)              ! native real
 
+#if 0
 ! Modified for WRF:
 #if (RWORDSIZE == 8)
       integer, parameter :: kind_rb = selected_real_kind(12) ! 8 byte real
@@ -35,7 +38,9 @@
 #if (RWORDSIZE == 4)
       integer, parameter :: kind_rb = selected_real_kind(6)  ! 4 byte real
 #endif
-!      integer, parameter :: kind_rb = kind(1.0)              ! native real
+#else
+       integer, parameter :: kind_rb = kind(1.0)              ! native real
+#endif
 
       end module parkind
 
@@ -7003,6 +7008,7 @@ contains
 
 ! Upper atmosphere loop
       do lay = laytrop+1, nlayers
+
          do ig = 1, ng12
             taug(lay,ngs11+ig) = 0.0_rb
             fracs(lay,ngs11+ig) = 0.0_rb
@@ -7043,7 +7049,6 @@ contains
       real(kind=rb) :: chi_co2, ratco2, adjfac, adjcolco2
       real(kind=rb) :: refrat_planck_a, refrat_m_a, refrat_m_a3
       real(kind=rb) :: tau_major, tau_major1
-
 
 ! Minor gas mapping levels :
 !     lower - co2, p = 1053.63 mb, t = 294.2 k
@@ -7792,7 +7797,10 @@ contains
       use rrlw_wvn
       use rrtmg_lw_setcoef, only: lwatmref, lwavplank
 
+! Steven Cavallo: added for buffer layer adjustment
       implicit none
+
+      integer , save    :: nlayers 
 
       contains
 
@@ -11288,13 +11296,23 @@ MODULE module_ra_rrtmg_lw
 
 #if defined(mpas)
 !MPAS specific (Laura D. Fowler):
- use mpas_atmphys_constants,only: cp
+use mpas_atmphys_constants,only: cp
+use mpas_atmphys_o3climatology,only: vinterp_ozn
+
+!> add-ons and modifications to sourcecode:
+!> ----------------------------------------
+!>    * updated the sourcecode to WRF revision 3.5, except for the implementation
+!>      of time-varying trace gases: added multiple layers above the model-top
+!>      following Cavalo et al. (2010). added option to use the ozone climatology
+!>      from the CAM radiation codes.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-07-17.
+!MPAS specific end.
+
 #else
 use module_model_constants, only : cp
 use module_wrf_error
 !use module_dm
 #endif
-!MPAS specific end.
 
 use parrrtm, only : nbndlw, ngptlw
 use rrtmg_lw_init, only: rrtmg_lw_ini
@@ -11321,7 +11339,10 @@ use mcica_subcol_gen_lw, only: mcica_subcol_lw
          205.728, 214.055, 222.694, 231.661, 240.971, 250.639/	
     !
     save retab
-
+    ! For buffer layer adjustment.  Steven Cavallo, Dec 2010.
+    integer , save    :: nlayers    
+    real, PARAMETER :: deltap = 4.  ! Pressure interval for buffer layer in mb
+    
 CONTAINS
 
 !------------------------------------------------------------------
@@ -11338,11 +11359,23 @@ CONTAINS
                        xland, xice, snow,                         &
                        qv3d, qc3d, qr3d,                          &
                        qi3d, qs3d, qg3d,                          &
+                       o3input, o33d,                             &
                        f_qv, f_qc, f_qr, f_qi, f_qs, f_qg,        &
+                       tauaerlw1,tauaerlw2,tauaerlw3,tauaerlw4,   & ! czhao 
+                       tauaerlw5,tauaerlw6,tauaerlw7,tauaerlw8,   & ! czhao 
+                       tauaerlw9,tauaerlw10,tauaerlw11,tauaerlw12,   & ! czhao 
+                       tauaerlw13,tauaerlw14,tauaerlw15,tauaerlw16,   & ! czhao 
+                       aer_ra_feedback,                           & !czhao
+!jdfcz                 progn,prescribe,                           & !czhao
+                       progn,                                     & !czhao
+                       qndrop3d,f_qndrop,                         & !czhao
                        ids,ide, jds,jde, kds,kde,                 & 
                        ims,ime, jms,jme, kms,kme,                 &
                        its,ite, jts,jte, kts,kte,                 &
                        lwupflx, lwupflxc, lwdnflx, lwdnflxc       &
+#if defined(mpas)
+                      ,noznlevels,pin,o3clim                      &
+#endif
                                                                   )
 !------------------------------------------------------------------
    IMPLICIT NONE
@@ -11394,7 +11427,9 @@ CONTAINS
                                                             QR3D, &
                                                             QI3D, &
                                                             QS3D, &
-                                                            QG3D
+                                                            QG3D, &
+                                                        QNDROP3D
+   real pi,third,relconst,lwpmin,rhoh2o
 
    REAL, DIMENSION( ims:ime, kms:kme, jms:jme )                 , &
          OPTIONAL                                               , &
@@ -11403,7 +11438,27 @@ CONTAINS
                                                       F_RAIN_PHY
 
    LOGICAL, OPTIONAL, INTENT(IN)   ::                             &
-                                   F_QV,F_QC,F_QR,F_QI,F_QS,F_QG
+                                   F_QV,F_QC,F_QR,F_QI,F_QS,F_QG,F_QNDROP
+! Optional
+   REAL, DIMENSION( ims:ime, kms:kme, jms:jme ), OPTIONAL ,       &
+         INTENT(IN    ) :: tauaerlw1,tauaerlw2,tauaerlw3,tauaerlw4, & ! czhao 
+                           tauaerlw5,tauaerlw6,tauaerlw7,tauaerlw8, & ! czhao 
+                           tauaerlw9,tauaerlw10,tauaerlw11,tauaerlw12, & ! czhao 
+                           tauaerlw13,tauaerlw14,tauaerlw15,tauaerlw16
+
+   INTEGER,    INTENT(IN  ), OPTIONAL   ::       aer_ra_feedback
+!jdfcz   INTEGER,    INTENT(IN  ), OPTIONAL   ::       progn,prescribe
+   INTEGER,    INTENT(IN  ), OPTIONAL   ::       progn
+!  Ozone
+   REAL, DIMENSION( ims:ime, kms:kme, jms:jme )                 , &
+         OPTIONAL                                               , &
+         INTENT(IN   ) :: O33D
+   INTEGER, OPTIONAL, INTENT(IN ) :: o3input
+
+      real, parameter :: thresh=1.e-9
+      real slope
+      character(len=200) :: msg
+
 
 ! Top of atmosphere and surface longwave fluxes (W m-2)
    REAL, DIMENSION( ims:ime, jms:jme ),                           &
@@ -11413,8 +11468,7 @@ CONTAINS
 
 ! Layer longwave fluxes (including extra layer above model top)
 ! Vertical ordering is from bottom to top (W m-2)
-!  REAL, DIMENSION( ims:ime, kms:kme+2, jms:jme ),                &
-   REAL, DIMENSION( ims:ime, kms:kme+1, jms:jme ),                &
+   REAL, DIMENSION( ims:ime, kms:kme+2, jms:jme ),                &
          OPTIONAL, INTENT(OUT) ::                                 &
                                LWUPFLX,LWUPFLXC,LWDNFLX,LWDNFLXC
 
@@ -11433,7 +11487,9 @@ CONTAINS
                                                             QR1D, &
                                                             QI1D, &
                                                             QS1D, &
-                                                            QG1D
+                                                            QG1D, &
+                                                            O31D, &
+                                                          qndrop1d 
 
 ! Added local arrays for RRTMG
     integer ::                                              ncol, &
@@ -11442,10 +11498,42 @@ CONTAINS
                                                          inflglw, &
                                                         iceflglw, &
                                                         liqflglw
+
+#if defined(mpas)
+!MPAS specific (Laura D. Fowler - 2013-03-15): Letting the arrays below to be
+!allocatable allows the number of layers added above the model-top to vary as
+!function of the grid-point. This is needed because the MPAS vertical coordi-
+!nate system is a height coordinate system, and model-tops vary between grid-
+!points:
+ integer,dimension(ims:ime,jms:jme):: mpas_nlay
+ real,dimension(:),allocatable:: o3mmr,varint
+ real,dimension(:,:),allocatable:: &
+    plev,tlev,play,tlay,h2ovmr,o3vmr,co2vmr,o2vmr,ch4vmr,n2ovmr,cfc11vmr,  &
+    cfc12vmr,cfc22vmr,ccl4vmr,clwpth,ciwpth,rel,rei,cldfrac,relqmcl,reicmcl
+ real,dimension(:,:),allocatable:: &
+    uflx,dflx,uflxc,dflxc,hr,hrc
+ real,dimension(:,:,:),allocatable:: &
+    taucld,cldfmcl,clwpmcl,ciwpmcl,taucmcl,tauaer
+!For old cloud property specification for rrtm_lw
+ real,dimension(kts:kte):: clwp,ciwp,plwp,piwp
+!Surface emissivity (for 16 LW spectral bands)
+ real,dimension(1,nbndlw):: emis
+
+!MPAS specific (Laura D. Fowler - 2013-04-16): Added the CAM ozone climatology.
+!input arguments:
+ integer,intent(in):: noznlevels
+ real,intent(in),dimension(1:noznlevels),optional:: pin
+ real,intent(in),dimension(ims:ime,1:noznlevels,jms:jme),optional:: o3clim
+!local variables:
+ real,dimension(1:noznlevels):: o3clim1d
+!end MPAS specific.
+
+#else
+
 ! Dimension with extra layer from model top to TOA
-    real, dimension( 1, kts:kte+2 )  ::                     plev, &
+    real, dimension( 1, kts:nlayers+1 )  ::                 plev, &
                                                             tlev
-    real, dimension( 1, kts:kte+1 )  ::                     play, &
+    real, dimension( 1, kts:nlayers )  ::                   play, &
                                                             tlay, &
                                                           h2ovmr, &
                                                            o3vmr, &
@@ -11457,7 +11545,7 @@ CONTAINS
                                                         cfc12vmr, &
                                                         cfc22vmr, &
                                                          ccl4vmr
-    real, dimension( kts:kte+1 )  ::                       o3mmr
+    real, dimension( kts:nlayers )  ::                     o3mmr
 ! For old cloud property specification for rrtm_lw
     real, dimension( kts:kte )  ::                          clwp, &
                                                             ciwp, &
@@ -11467,32 +11555,34 @@ CONTAINS
     real, dimension( 1, nbndlw )  ::                        emis
 ! Dimension with extra layer from model top to TOA, 
 ! though no clouds are allowed in extra layer
-    real, dimension( 1, kts:kte+1 )  ::                   clwpth, &
+    real, dimension( 1, kts:nlayers )  ::                 clwpth, &
                                                           ciwpth, &
                                                              rel, &
                                                              rei, &
                                                          cldfrac, &
                                                          relqmcl, &
                                                          reicmcl
-    real, dimension( nbndlw, 1, kts:kte+1 )  ::           taucld
-    real, dimension( ngptlw, 1, kts:kte+1 )  ::          cldfmcl, &
+    real, dimension( nbndlw, 1, kts:nlayers )  ::        taucld
+    real, dimension( ngptlw, 1, kts:nlayers )  ::        cldfmcl, &
                                                          clwpmcl, &
                                                          ciwpmcl, &
                                                          taucmcl
-    real, dimension( 1, kts:kte+1, nbndlw )  ::           tauaer
+    real, dimension( 1, kts:nlayers, nbndlw )  ::           tauaer
 
 ! Output arrays contain extra layer from model top to TOA
-    real, dimension( 1, kts:kte+2 )  ::                     uflx, &
+    real, dimension( 1, kts:nlayers+1 )  ::                 uflx, &
                                                             dflx, &
                                                            uflxc, &
                                                            dflxc
-    real, dimension( 1, kts:kte+1 )  ::                       hr, &
+    real, dimension( 1, kts:nlayers )  ::                    hr, &
                                                              hrc
+#endif
 
     real, dimension ( 1 ) ::                                tsfc, &
                                                               ps
     real ::                                                   ro, &
                                                               dz
+
 
 ! Set trace gas volume mixing ratios, 2005 values, IPCC (2007)
 ! carbon dioxide (379 ppmv)
@@ -11569,7 +11659,67 @@ CONTAINS
     INTEGER :: i,j,K
     LOGICAL :: predicate
 
+! Added for top of model adjustment.  Steven Cavallo NCAR/MMM December 2010
+    INTEGER, PARAMETER :: nproflevs = 60 ! Constant, from the table
+    INTEGER :: L, LL, klev               ! Loop indices      
+#if !defined(mpas)
+    REAL, DIMENSION( kts:nlayers+1 ) :: varint
+#endif
+    REAL :: wght,vark,vark1       
+    REAL :: PPROF(nproflevs), TPROF(nproflevs)            
+    ! Weighted mean pressure and temperature profiles from midlatitude 
+    ! summer (MLS),midlatitude winter (MLW), sub-Arctic 
+    ! winter (SAW),sub-Arctic summer (SAS), and tropical (TROP) 
+    ! standard atmospheres.
+    DATA PPROF   /1000.00,855.47,731.82,626.05,535.57,458.16,     &
+                  391.94,335.29,286.83,245.38,209.91,179.57,      &
+                  153.62,131.41,112.42,96.17,82.27,70.38,         &
+                  60.21,51.51,44.06,37.69,32.25,27.59,            &
+                  23.60,20.19,17.27,14.77,12.64,10.81,            &
+                  9.25,7.91,6.77,5.79,4.95,4.24,                  &
+                  3.63,3.10,2.65,2.27,1.94,1.66,                  &
+                  1.42,1.22,1.04,0.89,0.76,0.65,                  &
+                  0.56,0.48,0.41,0.35,0.30,0.26,                  &
+                  0.22,0.19,0.16,0.14,0.12,0.10/
+    DATA TPROF   /286.96,281.07,275.16,268.11,260.56,253.02,      &
+         	  245.62,238.41,231.57,225.91,221.72,217.79,      &
+		  215.06,212.74,210.25,210.16,210.69,212.14,      &
+		  213.74,215.37,216.82,217.94,219.03,220.18,      &
+		  221.37,222.64,224.16,225.88,227.63,229.51,      &
+		  231.50,233.73,236.18,238.78,241.60,244.44,      &
+		  247.35,250.33,253.32,256.30,259.22,262.12,      &
+		  264.80,266.50,267.59,268.44,268.69,267.76,      &
+		  266.13,263.96,261.54,258.93,256.15,253.23,      &
+		  249.89,246.67,243.48,240.25,236.66,233.86/	
 !------------------------------------------------------------------
+#ifdef WRF_CHEM
+      IF ( aer_ra_feedback == 1) then
+      IF ( .NOT. &
+      ( PRESENT(tauaerlw1) .AND. &
+        PRESENT(tauaerlw2) .AND. &
+        PRESENT(tauaerlw3) .AND. &
+        PRESENT(tauaerlw4) .AND. &
+        PRESENT(tauaerlw5) .AND. &
+        PRESENT(tauaerlw6) .AND. &
+        PRESENT(tauaerlw7) .AND. &
+        PRESENT(tauaerlw8) .AND. &
+        PRESENT(tauaerlw9) .AND. &
+        PRESENT(tauaerlw10) .AND. &
+        PRESENT(tauaerlw11) .AND. &
+        PRESENT(tauaerlw12) .AND. &
+        PRESENT(tauaerlw13) .AND. &
+        PRESENT(tauaerlw14) .AND. &
+        PRESENT(tauaerlw15) .AND. &
+        PRESENT(tauaerlw16) ) ) THEN
+      CALL wrf_error_fatal  &
+      ('Warning: missing fields required for aerosol radiation' )
+      ENDIF
+      ENDIF
+#endif
+
+  write(0,*)
+  write(0,*) '--- enter subroutine RRTMG_LWRAD:'
+  write(0,*) '--- o3input = ',o3input
 
 !-----CALCULATE LONG WAVE RADIATION
 !                                                              
@@ -11599,6 +11749,9 @@ CONTAINS
          DO K=kts,kte
             QV1D(K)=QV3D(I,K,J)
             QV1D(K)=max(0.,QV1D(K))
+            IF ( PRESENT( O33D ) ) THEN
+            O31D(K)=O33D(I,K,J)
+            ENDIF
          ENDDO
 
          DO K=kts,kte
@@ -11633,6 +11786,14 @@ CONTAINS
                     QR1D(K)=max(0.,QR1D(K))
                  ENDDO
               ENDIF
+            ENDIF
+
+            IF ( PRESENT(F_QNDROP).AND.PRESENT(QNDROP3D)) THEN
+             IF (F_QNDROP) THEN
+              DO K=kts,kte
+               qndrop1d(K)=qndrop3d(I,K,J)
+              ENDDO
+             ENDIF
             ENDIF
 
 ! This logic is tortured because cannot test F_QI unless
@@ -11709,7 +11870,57 @@ CONTAINS
 ! Set up input for longwave
          ncol = 1
 ! Add extra layer from top of model to top of atmosphere
-         nlay = (kte - kts + 1) + 1
+!         nlay = (kte - kts + 1) + 1
+! Edited for top of model adjustment (nlayers = kte + 1).  
+
+#if defined(mpas)
+!MPAS specific (Laura D. Fowler - 2013-04-11):
+!In contrast to WRF, MPAS columns have different model top presssures because MPAS uses a height
+!coordinate system. Therefore, we define nlayers for each individual column:
+          nlayers = kte + nint(pw1d(kte+1)/deltap)
+          mpas_nlay(i,j) = nlayers-kte
+!         write(0,101) j,i,kme,kte,nlayers,mpas_nlay(i,j),pw1d(kte+1)
+!         101 format(6i9,1x,f9.4)
+          if(.not.allocated(o3mmr)   ) allocate(o3mmr(kts:nlayers)     )
+          if(.not.allocated(varint)  ) allocate(varint(kts:nlayers+1)  )
+          if(.not.allocated(plev)    ) allocate(plev(1,kts:nlayers+1)  )
+          if(.not.allocated(tlev)    ) allocate(tlev(1,kts:nlayers+1)  )
+          if(.not.allocated(play)    ) allocate(play(1,kts:nlayers)    )
+          if(.not.allocated(tlay)    ) allocate(tlay(1,kts:nlayers)    )
+          if(.not.allocated(h2ovmr)  ) allocate(h2ovmr(1,kts:nlayers)  )
+          if(.not.allocated(o3vmr)   ) allocate(o3vmr(1,kts:nlayers)   )
+          if(.not.allocated(co2vmr)  ) allocate(co2vmr(1,kts:nlayers)  )
+          if(.not.allocated(o2vmr)   ) allocate(o2vmr(1,kts:nlayers)   )
+          if(.not.allocated(ch4vmr)  ) allocate(ch4vmr(1,kts:nlayers)  )
+          if(.not.allocated(n2ovmr)  ) allocate(n2ovmr(1,kts:nlayers)  )
+          if(.not.allocated(cfc11vmr)) allocate(cfc11vmr(1,kts:nlayers))
+          if(.not.allocated(cfc12vmr)) allocate(cfc12vmr(1,kts:nlayers))
+          if(.not.allocated(cfc22vmr)) allocate(cfc22vmr(1,kts:nlayers))
+          if(.not.allocated(ccl4vmr) ) allocate(ccl4vmr(1,kts:nlayers) )
+          if(.not.allocated(clwpth)  ) allocate(clwpth(1,kts:nlayers)  )
+          if(.not.allocated(ciwpth)  ) allocate(ciwpth(1,kts:nlayers)  )
+          if(.not.allocated(rel)     ) allocate(rel(1,kts:nlayers)     )
+          if(.not.allocated(rei)     ) allocate(rei(1,kts:nlayers)     )
+          if(.not.allocated(cldfrac) ) allocate(cldfrac(1,kts:nlayers) )
+          if(.not.allocated(relqmcl) ) allocate(relqmcl(1,kts:nlayers) )
+          if(.not.allocated(reicmcl) ) allocate(reicmcl(1,kts:nlayers) )
+          if(.not.allocated(uflx)    ) allocate(uflx(1,kts:nlayers+1)  )
+          if(.not.allocated(dflx)    ) allocate(dflx(1,kts:nlayers+1)  )
+          if(.not.allocated(uflxc)   ) allocate(uflxc(1,kts:nlayers+1) )
+          if(.not.allocated(dflxc)   ) allocate(dflxc(1,kts:nlayers+1) )
+          if(.not.allocated(hr)      ) allocate(hr(1,kts:nlayers)      )
+          if(.not.allocated(hrc)     ) allocate(hrc(1,kts:nlayers)     )
+          if(.not.allocated(taucld)  ) allocate(taucld(nbndlw,1,kts:nlayers) )
+          if(.not.allocated(cldfmcl) ) allocate(cldfmcl(ngptlw,1,kts:nlayers))         
+          if(.not.allocated(clwpmcl) ) allocate(clwpmcl(ngptlw,1,kts:nlayers))
+          if(.not.allocated(ciwpmcl) ) allocate(ciwpmcl(ngptlw,1,kts:nlayers))
+          if(.not.allocated(taucmcl) ) allocate(taucmcl(ngptlw,1,kts:nlayers))
+          if(.not.allocated(tauaer)  ) allocate(tauaer(1,kts:nlayers,nbndlw) )
+#endif
+
+! Steven Cavallo, December 2010
+          nlay = nlayers ! Keep these indices the same
+
 
 ! Select cloud liquid and ice optics parameterization options
 ! For passing in cloud optical properties directly:
@@ -11746,6 +11957,9 @@ CONTAINS
             ccl4vmr(ncol,k) = ccl4
          enddo
 
+! This section is replaced with a new method to deal with model top
+         if ( 1 == 0 ) then
+
 !  Define profile values for extra layer from model top to top of atmosphere. 
 !  The top layer temperature for all gridpoints is set to the top layer-1 
 !  temperature plus a constant (0 K) that represents an isothermal layer    
@@ -11766,12 +11980,117 @@ CONTAINS
          cfc22vmr(ncol,kte+1) = cfc22vmr(ncol,kte) 
          ccl4vmr(ncol,kte+1) = ccl4vmr(ncol,kte) 
 
-! Get ozone profile including amount in extra layer above model top
-         call inirad (o3mmr,plev,kts,kte)
+         endif
 
-         do k = kts, kte+1
+!  Set up values for extra layers to the top of the atmosphere.                       
+!  Temperature is calculated based on an average temperature profile given
+!  here in a table.  The input table data is linearly interpolated to the
+!  column pressure.  Mixing ratios are held constant except for ozone.  
+!  Caution should be used if model top pressure is less than 5 hPa.
+!  Steven Cavallo, NCAR/MMM, December 2010
+       ! Calculate the column pressure buffer levels above the 
+       ! model top       
+       do L=kte+1,nlayers,1
+          plev(ncol,L+1) = plev(ncol,L) - deltap
+          play(ncol,L) = 0.5*(plev(ncol,L) + plev(ncol,L+1))
+       enddo          
+
+       ! Add zero as top level.  This gets the temperature max at the
+       ! stratopause, reducing the downward flux errors in the top 
+       ! levels.  If zero happened to be the top level already,
+       ! this will add another level with zero, but will not affect
+       ! the radiative transfer calculation.
+       plev(ncol,nlayers+1) = 0.00
+       play(ncol,nlayers) =  0.5*(plev(ncol,nlayers) + plev(ncol,nlayers+1))
+
+       ! Interpolate the table temperatures to column pressure levels    
+       do L=1,nlayers+1,1
+          if ( PPROF(nproflevs) .lt. plev(ncol,L) ) then
+             do LL=2,nproflevs,1       
+                if ( PPROF(LL) .lt. plev(ncol,L) ) then           
+                   klev = LL - 1
+                   exit
+                endif
+             enddo
+          
+          else
+             klev = nproflevs
+          endif  
+  
+          if (klev .ne. nproflevs ) then
+             vark  = TPROF(klev) 
+             vark1 = TPROF(klev+1)
+             wght=(plev(ncol,L)-PPROF(klev) )/( PPROF(klev+1)-PPROF(klev))
+          else
+             vark  = TPROF(klev) 
+             vark1 = TPROF(klev)
+             wght = 0.0
+          endif
+          varint(L) = wght*(vark1-vark)+vark
+
+       enddo                   
+       
+       ! Match the interpolated table temperature profile to WRF column
+       do L=kte+1,nlayers+1,1
+          tlev(ncol,L) = varint(L) + (tlev(ncol,kte) - varint(kte))
+          !if ( L .le. nlay ) then
+          tlay(ncol,L-1) = 0.5*(tlev(ncol,L) + tlev(ncol,L-1))
+          !endif
+       enddo
+
+       ! Now the chemical species (except for ozone)
+       do L=kte+1,nlayers,1
+          h2ovmr(ncol,L) = h2ovmr(ncol,kte) 
+          co2vmr(ncol,L) = co2vmr(ncol,kte) 
+          o2vmr(ncol,L) = o2vmr(ncol,kte) 
+          ch4vmr(ncol,L) = ch4vmr(ncol,kte) 
+          n2ovmr(ncol,L) = n2ovmr(ncol,kte) 
+          cfc11vmr(ncol,L) = cfc11vmr(ncol,kte) 
+          cfc12vmr(ncol,L) = cfc12vmr(ncol,kte) 
+          cfc22vmr(ncol,L) = cfc22vmr(ncol,kte) 
+          ccl4vmr(ncol,L) = ccl4vmr(ncol,kte) 
+       enddo	 
+! End top of model buffer 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!	
+! Get ozone profile including amount in extra layer above model top.
+! Steven Cavallo: Must pass nlay-1 into subroutine to get nlayers 
+! dimension for o3mmr
+         call inirad (o3mmr,plev,kts,nlay-1)
+
+#if defined(mpas)
+! Laura D. Fowler (2013-04-16): Added the option to use the ozone climatology from the
+! CAM radiation codes, instead of the annual mean ozone in subroutine o3dat. As output
+! to the subroutine vinterp_ozn, the unit of o3mmr is actually "volume mixing ratio".
+       if(o3input .eq. 2) then
+          do k = 1, noznlevels
+             o3clim1d(k) = o3clim(i,k,j)
+          enddo
+          call vinterp_ozn(1,ncol,ncol,nlayers,play,pin,noznlevels,o3clim1d,o3mmr)
+          do k = kts,nlayers
+             o3vmr(ncol,k) = o3mmr(k)
+          enddo
+       else
+          do k = kts,nlayers
+             o3vmr(ncol,k) = o3mmr(k)*amdo
+          enddo
+       endif
+#else
+! Steven Cavallo: Changed to nlayers from kte+1
+         do k = kts, nlayers
             o3vmr(ncol,k) = o3mmr(k) * amdo
+            IF ( PRESENT( O33D ) ) THEN
+            if(o3input .eq. 2)then
+               if(k.le.kte)then
+                 o3vmr(ncol,k) = o31d(k)
+               else
+! apply shifted climatology profile above model top
+                 o3vmr(ncol,k) = o31d(kte) - o3mmr(kte)*amdo + o3mmr(k)*amdo
+                 if(o3vmr(ncol,k) .le. 0.)o3vmr(ncol,k) = o3mmr(k)*amdo
+               endif
+            endif
+            ENDIF
          enddo
+#endif
 
 ! Set surface emissivity in each RRTMG longwave band
          do nb = 1, nbndlw
@@ -11841,8 +12160,45 @@ CONTAINS
                cliqwp(ncol,k) = gliqwp / max(0.01,cldfrac(ncol,k))               ! In-cloud liquid water path.
             end do
 
+!link the aerosol feedback to cloud  -czhao
+  if( PRESENT( progn ) ) then
+    if (progn == 1) then
+!jdfcz     if(prescribe==0) then
+
+      pi = 4.*atan(1.0)
+      third=1./3.
+      rhoh2o=1.e3
+      relconst=3/(4.*pi*rhoh2o)
+!     minimun liquid water path to calculate rel
+!     corresponds to optical depth of 1.e-3 for radius 4 microns.
+      lwpmin=3.e-5
+      do k = kts, kte
+         reliq(ncol,k) = 10.
+         if( PRESENT( F_QNDROP ) ) then
+            if( F_QNDROP ) then
+              if ( qc1d(k)*pdel(ncol,k).gt.lwpmin.and. &
+                   qndrop1d(k).gt.1000. ) then
+               reliq(ncol,k)=(relconst*qc1d(k)/qndrop1d(k))**third ! effective radius in m
+!           apply scaling from Martin et al., JAS 51, 1830.
+               reliq(ncol,k)=1.1*reliq(ncol,k)
+               reliq(ncol,k)=reliq(ncol,k)*1.e6 ! convert from m to microns
+               reliq(ncol,k)=max(reliq(ncol,k),4.)
+               reliq(ncol,k)=min(reliq(ncol,k),20.)
+              end if
+            end if
+         end if
+      end do
+!jdfcz     else ! prescribe 
 ! following Kiehl
-            call relcalc(ncol, pcols, pver, tlay, landfrac, landm, icefrac, reliq, snowh)
+      call relcalc(ncol, pcols, pver, tlay, landfrac, landm, icefrac, reliq, snowh)
+!     write(0,*) 'lw prescribe aerosol',maxval(qndrop3d)
+!jdfcz     endif
+    else  ! progn   
+      call relcalc(ncol, pcols, pver, tlay, landfrac, landm, icefrac, reliq, snowh)
+    endif
+  else   !present(progn) 
+      call relcalc(ncol, pcols, pver, tlay, landfrac, landm, icefrac, reliq, snowh)
+  endif
 
 ! following Kristjansson and Mitchell
             call reicalc(ncol, pcols, pver, tlay, reice)
@@ -11874,6 +12230,10 @@ CONTAINS
          endif
 
 ! No clouds are allowed in the extra layer from model top to TOA
+         ! Steven Cavallo: Edited out for buffer adjustment below
+         if ( 1 == 0 ) then
+
+
          clwpth(ncol,kte+1) = 0.
          ciwpth(ncol,kte+1) = 0.
          rel(ncol,kte+1) = 10.
@@ -11882,6 +12242,20 @@ CONTAINS
          do nb = 1, nbndlw
             taucld(nb,ncol,kte+1) = 0.
          enddo
+
+         endif
+
+         ! Buffer adjustment. Steven Cavallo December 2010
+	 do k=kte+1,nlayers
+	    clwpth(ncol,k) = 0.
+	    ciwpth(ncol,k) = 0.
+	    rel(ncol,k) = 10.
+            rei(ncol,k) = 10.
+            cldfrac(ncol,k) = 0.
+	    do nb = 1,nbndlw
+               taucld(nb,ncol,k) = 0.
+            enddo
+	 enddo	 
 
          iplon = 1
          irng = 0
@@ -11892,13 +12266,75 @@ CONTAINS
                        cldfrac, ciwpth, clwpth, rei, rel, taucld, cldfmcl, &
                        ciwpmcl, clwpmcl, reicmcl, relqmcl, taucmcl)
 
+!--------------------------------------------------------------------------
+! Aerosol optical depth, single scattering albedo and asymmetry parameter -czhao 03/2010
+!--------------------------------------------------------------------------
 ! Aerosol optical depth by layer for each RRTMG longwave band
 ! No aerosols in layer above model top (kte+1)
-         do nb = 1, nbndlw
-            do k = kts, kte+1
-               tauaer(ncol,k,nb) = 0.
-            enddo
-         enddo
+! Steven Cavallo: Upper bound of loop changed to nlayers from kte+1
+!        do nb = 1, nbndlw
+!           do k = kts, kte+1
+!              tauaer(ncol,k,nb) = 0.
+!           enddo
+!        enddo
+
+! ... Aerosol effects. Added aerosol feedbacks from Chem , 03/2010 -czhao
+!
+      do nb = 1, nbndlw
+      do k = kts,nlayers
+         tauaer(ncol,k,nb) = 0.
+      end do
+      end do
+
+#ifdef WRF_CHEM
+   IF ( AER_RA_FEEDBACK == 1) then
+!     do nb = 1, nbndlw 
+      do k = kts,kte      !wig
+        if(tauaerlw1(i,k,j).gt.thresh .and. tauaerlw16(i,k,j).gt.thresh) then
+          tauaer(ncol,k,1)=tauaerlw1(i,k,j)
+          tauaer(ncol,k,2)=tauaerlw2(i,k,j)
+          tauaer(ncol,k,3)=tauaerlw3(i,k,j)
+          tauaer(ncol,k,4)=tauaerlw4(i,k,j)
+          tauaer(ncol,k,5)=tauaerlw5(i,k,j)
+          tauaer(ncol,k,6)=tauaerlw6(i,k,j)
+          tauaer(ncol,k,7)=tauaerlw7(i,k,j)
+          tauaer(ncol,k,8)=tauaerlw8(i,k,j)
+          tauaer(ncol,k,9)=tauaerlw9(i,k,j)
+          tauaer(ncol,k,10)=tauaerlw10(i,k,j)
+          tauaer(ncol,k,11)=tauaerlw11(i,k,j)
+          tauaer(ncol,k,12)=tauaerlw12(i,k,j)
+          tauaer(ncol,k,13)=tauaerlw13(i,k,j)
+          tauaer(ncol,k,14)=tauaerlw14(i,k,j)
+          tauaer(ncol,k,15)=tauaerlw15(i,k,j)
+          tauaer(ncol,k,16)=tauaerlw16(i,k,j)
+        endif
+      enddo ! k
+!     end do ! nb
+
+!wig beg
+      do nb = 1, nbndlw
+         slope = 0.  !use slope as a sum holder
+         do k = kts,kte
+            slope = slope + tauaer(ncol,k,nb)
+         end do
+         if( slope < 0. ) then
+            write(msg,'("ERROR: Negative total lw optical depth of ",f8.2," at point i,j,nb=",3i5)') slope,i,j,nb
+            call wrf_error_fatal(msg)
+         else if( slope > 5. ) then
+            call wrf_message("-------------------------")
+            write(msg,'("WARNING: Large total lw optical depth of ",f8.2," at point i,j,nb=",3i5)') slope,i,j,nb
+            call wrf_message(msg)
+
+            call wrf_message("Diagnostics 1: k, tauaerlw1, tauaerlw16")
+            do k=kts,kte
+               write(msg,'(i4,2f8.2)') k, tauaerlw1(i,k,j), tauaerlw16(i,k,j)
+               call wrf_message(msg)
+            end do
+            call wrf_message("-------------------------")
+         endif
+      enddo  ! nb
+      endif  ! aer_ra_feedback
+#endif
 
 ! Call RRTMG longwave radiation model
          call rrtmg_lw &
@@ -11914,8 +12350,12 @@ CONTAINS
 ! Output downard surface flux, and outgoing longwave flux and cloud forcing 
 ! at the top of atmosphere (W/m2)
          glw(i,j) = dflx(1,1)
-         olr(i,j) = uflx(1,kte+2)
-         lwcf(i,j) = uflxc(1,kte+2) - uflx(1,kte+2)
+!         olr(i,j) = uflx(1,kte+2)
+!         lwcf(i,j) = uflxc(1,kte+2) - uflx(1,kte+2)
+! Steven Cavallo: Changed OLR to be valid at the top of atmosphere instead 
+! of top of model.  Dec 2010.
+         olr(i,j) = uflx(1,nlayers+1)
+         lwcf(i,j) = uflxc(1,nlayers+1) - uflx(1,nlayers+1)
 
          if (present(lwupt)) then 
 ! Output up and down toa fluxes for total and clear sky
@@ -11949,6 +12389,46 @@ CONTAINS
          enddo
 
 !
+#if defined(mpas) || defined(hydrostatic_core)
+!MPAS specific (Laura D. Fowler - 2013-04-11): deallocate all local arrays.
+!coordinate system. Therefore, we define nlayers for each individual column:
+          if(allocated(o3mmr)   ) deallocate(o3mmr   )
+          if(allocated(varint)  ) deallocate(varint  )
+          if(allocated(plev)    ) deallocate(plev    )
+          if(allocated(tlev)    ) deallocate(tlev    )
+          if(allocated(play)    ) deallocate(play    )
+          if(allocated(tlay)    ) deallocate(tlay    )
+          if(allocated(h2ovmr)  ) deallocate(h2ovmr  )
+          if(allocated(o3vmr)   ) deallocate(o3vmr   )
+          if(allocated(co2vmr)  ) deallocate(co2vmr  )
+          if(allocated(o2vmr)   ) deallocate(o2vmr   )
+          if(allocated(ch4vmr)  ) deallocate(ch4vmr  )
+          if(allocated(n2ovmr)  ) deallocate(n2ovmr  )
+          if(allocated(cfc11vmr)) deallocate(cfc11vmr)
+          if(allocated(cfc12vmr)) deallocate(cfc12vmr)
+          if(allocated(cfc22vmr)) deallocate(cfc22vmr)
+          if(allocated(ccl4vmr) ) deallocate(ccl4vmr )
+          if(allocated(clwpth)  ) deallocate(clwpth  )
+          if(allocated(ciwpth)  ) deallocate(ciwpth  )
+          if(allocated(rel)     ) deallocate(rel     )
+          if(allocated(rei)     ) deallocate(rei     )
+          if(allocated(cldfrac) ) deallocate(cldfrac )
+          if(allocated(relqmcl) ) deallocate(relqmcl )
+          if(allocated(reicmcl) ) deallocate(reicmcl )
+          if(allocated(uflx)    ) deallocate(uflx    )
+          if(allocated(dflx)    ) deallocate(dflx    )
+          if(allocated(uflxc)   ) deallocate(uflxc   )
+          if(allocated(dflxc)   ) deallocate(dflxc   )
+          if(allocated(hr)      ) deallocate(hr      )
+          if(allocated(hrc)     ) deallocate(hrc     )
+          if(allocated(taucld)  ) deallocate(taucld  )
+          if(allocated(cldfmcl) ) deallocate(cldfmcl )         
+          if(allocated(clwpmcl) ) deallocate(clwpmcl )
+          if(allocated(ciwpmcl) ) deallocate(ciwpmcl )
+          if(allocated(taucmcl) ) deallocate(taucmcl )
+          if(allocated(tauaer)  ) deallocate(tauaer  )
+#endif
+
       end do i_loop
    end do j_loop                                           
 
@@ -12098,17 +12578,17 @@ CONTAINS
 
 !------------------------------------------------------------------
 
-!LDF (12-20-2010): This section of the module is moved to module_physics_rrtmg_lwinit.F in
+!LDF (2013-03-15): This section of the module is moved to module_physics_rrtmg_lwinit.F in
 !./../core_physics to accomodate differences in the mpi calls between WRF and MPAS.I thought
 !that it would be cleaner to do this instead of adding a lot of #ifdef statements throughout
 !the initialization of the longwave radiation code. Initialization is handled the same way
 !for the shortwave radiation code.
 
-#if !(defined(mpas))
+#if !defined(mpas)
 
 !====================================================================
    SUBROUTINE rrtmg_lwinit(                                         &
-                       allowed_to_read ,                            &
+                       p_top, allowed_to_read ,                     &
                        ids, ide, jds, jde, kds, kde,                &
                        ims, ime, jms, jme, kms, kme,                &
                        its, ite, jts, jte, kts, kte                 )
@@ -12120,6 +12600,12 @@ CONTAINS
    INTEGER , INTENT(IN)           :: ids, ide, jds, jde, kds, kde,  &
                                      ims, ime, jms, jme, kms, kme,  &
                                      its, ite, jts, jte, kts, kte
+   REAL, INTENT(IN)               :: p_top 
+
+! Steven Cavallo.  Added for buffer layer adjustment.   December 2010.
+   NLAYERS = kme + nint(p_top*0.01/deltap)- 1 ! Model levels plus new levels.
+                                              ! nlayers will subsequently 
+					      ! replace kte+1
 
 ! Read in absorption coefficients and other data
    IF ( allowed_to_read ) THEN
@@ -13659,7 +14145,7 @@ IMPLICIT NONE
       end subroutine lw_kgb16
 
 #endif
-!ldf end (12-20-2010).
+!ldf end (2013-03-15).
 
 !===============================================================================
   subroutine relcalc(ncol, pcols, pver, t, landfrac, landm, icefrac, rel, snowh)

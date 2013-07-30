@@ -14,6 +14,7 @@
  use mpas_atmphys_driver_radiation_sw, only: radconst
  use mpas_atmphys_constants
  use mpas_atmphys_manager, only: gmt,curr_julday,julday,year
+ use mpas_atmphys_o3climatology, only: vinterp_ozn
  use mpas_atmphys_camrad_init
  use mpas_atmphys_rrtmg_lwinit
  use mpas_atmphys_vars
@@ -103,14 +104,13 @@
  radiation_lw_select: select case (trim(radt_lw_scheme))
 
     case("rrtmg_lw")
-       if(.not.allocated(lwdnflx_p)    ) allocate(lwdnflx_p(ims:ime,kms:kme+1,jms:jme)  )
-       if(.not.allocated(lwdnflxc_p)   ) allocate(lwdnflxc_p(ims:ime,kms:kme+1,jms:jme) )
-       if(.not.allocated(lwupflx_p)    ) allocate(lwupflx_p(ims:ime,kms:kme+1,jms:jme)  )
-       if(.not.allocated(lwupflxc_p)   ) allocate(lwupflxc_p(ims:ime,kms:kme+1,jms:jme) )
+       if(.not.allocated(lwdnflx_p)    ) allocate(lwdnflx_p(ims:ime,kms:kme+1,jms:jme)     )
+       if(.not.allocated(lwdnflxc_p)   ) allocate(lwdnflxc_p(ims:ime,kms:kme+1,jms:jme)    )
+       if(.not.allocated(lwupflx_p)    ) allocate(lwupflx_p(ims:ime,kms:kme+1,jms:jme)     )
+       if(.not.allocated(lwupflxc_p)   ) allocate(lwupflxc_p(ims:ime,kms:kme+1,jms:jme)    )
 
        if(.not.allocated(pin_p)        ) allocate(pin_p(num_oznlevels)                     )
        if(.not.allocated(o3clim_p)     ) allocate(o3clim_p(ims:ime,1:num_oznlevels,jms:jme))
-       if(.not.allocated(o3vmr_p)      ) allocate(o3vmr_p(ims:ime,kms:kme,jms:jme)         )
 
     case("cam_lw")
        if(.not.allocated(xlat_p)       ) allocate(xlat_p(ims:ime,jms:jme)               )
@@ -195,7 +195,6 @@
 
        if(allocated(pin_p)        ) deallocate(pin_p        )
        if(allocated(o3clim_p)     ) deallocate(o3clim_p     )
-       if(allocated(o3vmr_p)      ) deallocate(o3vmr_p      )
 
     case("cam_lw")
        if(allocated(pin_p)        ) deallocate(pin_p        )
@@ -241,11 +240,17 @@
 !input arguments:
  type(mesh_type),intent(in) :: mesh
  type(state_type),intent(in):: state
- type(diag_physics_type),intent(in):: diag_physics
  type(atm_input_type)   ,intent(in):: atm_input
  type(sfc_input_type)   ,intent(in):: sfc_input
 
+!inout arguments:
+ type(diag_physics_type),intent(inout):: diag_physics
+
  real(kind=RKIND),intent(in):: xtime_s
+
+!local variables:
+ integer:: ncols,nlevs
+ real(kind=RKIND),dimension(:,:),allocatable:: p2d,o32d
 
 !--------------------------------------------------------------------------------------------------
 
@@ -312,24 +317,50 @@
        enddo
        enddo
 
-       !ozone mixing ratio:
-       do k = 1, num_oznLevels
-          kk = num_oznLevels-k+1
-          pin_p(kk) = atm_input % pin % array(k)
-       enddo
-       do j = jts,jte
-       do k = 1, num_oznLevels
-          kk = num_oznLevels-k+1
-          do i = its,ite
-             o3clim_p(i,kk,j) = diag_physics % o3clim % array(k,i)
+       if(config_o3climatology) then
+          !ozone mixing ratio:
+          do k = 1, num_oznLevels
+             pin_p(k) = atm_input % pin % array(k)         
           enddo
-       enddo
-       do k = kts,kte
-          do i = its,ite
-             o3vmr_p(i,k,j) = diag_physics % o3vmr % array(k,i)
+          do j = jts,jte
+          do k = 1, num_oznLevels
+             do i = its,ite
+                o3clim_p(i,k,j) = diag_physics % o3clim % array(k,i)
+             enddo
           enddo
-       enddo
-       enddo
+          enddo
+
+          nlevs = kte-kts+1
+          ncols = ite-its+1
+          if(.not.allocated(p2d) ) allocate(p2d(its:ite,kts:kte) )
+          if(.not.allocated(o32d)) allocate(o32d(its:ite,kts:kte))
+          do j = jts,jte
+             do i = its,ite
+             do k = kts,kte
+                o32d(i,k) = 0._RKIND
+                p2d(i,k)  = pres_hyd_p(i,k,j) / 100._RKIND
+             enddo
+             enddo
+             call vinterp_ozn(1,ncols,ncols,nlevs,p2d,pin_p,num_oznlevels,o3clim_p(1,1,j),o32d)
+             do i = its,ite
+             do k = kts,kte
+                diag_physics % o3vmr % array(k,i) = o32d(i,k)
+             enddo
+             enddo
+          enddo
+          if(allocated(p2d)) deallocate(p2d)
+       else
+          do k = 1, num_oznLevels
+             pin_p(k) = 0.0_RKIND
+          enddo
+          do j = jts,jte
+          do k = 1, num_oznLevels
+             do i = its,ite
+                o3clim_p(i,k,j) = 0.0_RKIND
+             enddo
+          enddo
+          enddo
+       endif
 
     case("cam_lw")
        do j = jts,jte
@@ -443,6 +474,10 @@
  type(diag_physics_type),intent(inout):: diag_physics
  type(tend_physics_type),intent(inout):: tend_physics
 
+!local variables:
+ integer:: nlay,pcols
+ real(kind=RKIND),dimension(:,:),allocatable:: p1d
+
 !--------------------------------------------------------------------------------------------------
 
  do j = jts,jte
@@ -463,12 +498,9 @@
  do k = kts,kte
  do i = its,ite
     tend_physics % rthratenlw % array(k,i) = rthratenlw_p(i,k,j)
-    diag_physics % o3vmr      % array(k,i) = o3vmr_p(i,k,j)
  enddo
  enddo
  enddo
-
-!end select radiation_lw_select
 
  end subroutine radiation_lw_to_MPAS
 
@@ -581,27 +613,26 @@
        if(config_o3climatology) o3input = 2
 
        call rrtmg_lwrad( &
-                p3d        = pres_hyd_p    , p8w        = pres2_hyd_p   , pi3d      = pi_p      ,&
-                t3d        = t_p           , t8w        = t2_p          , rho3d     = rho_p     ,&
-                rthratenlw = rthratenlw_p  , lwupt      = lwupt_p       , lwuptc    = lwuptc_p  ,&
-                lwdnt      = lwdnt_p       , lwdntc     = lwdntc_p      , lwupb     = lwupb_p   ,&
-                lwupbc     = lwupbc_p      , lwdnb      = lwdnb_p       , lwdnbc    = lwdnbc_p  ,&
-                lwcf       = lwcf_p        , glw        = glw_p         , olr       = olrtoa_p  ,&
-                emiss      = sfc_emiss_p   , tsk        = tsk_p         , dz8w      = dz_p      ,&
-                cldfra3d   = cldfrac_p     , r          = R_d           , g         = g         ,&
-                icloud     = icloud        , warm_rain  = warm_rain     , f_ice_phy = f_ice     ,&
-                f_rain_phy = f_rain        , xland      = xland_p       , xice      = xice_p    ,&
-                snow       = snow_p        , qv3d       = qv_p          , qc3d      = qc_p      ,&
-                qr3d       = qr_p          , qi3d       = qi_p          , qs3d      = qs_p      ,&
-                qg3d       = qg_p          , o3input    = o3input       , o33d      = o3vmr_p   ,& 
-                f_qv       = f_qv          , f_qc       = f_qc          , f_qr      = f_qr      ,&
-                f_qi       = f_qi          , f_qs      = f_qs           , f_qg      = f_qg      ,& 
-                noznlevels = num_oznlevels , pin       = pin_p          , o3clim    = o3clim_p  ,&
-                ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde ,&
-                ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme ,&
-                its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte  &
+             p3d        = pres_hyd_p   , p8w        = pres2_hyd_p , pi3d       = pi_p          ,&
+             t3d        = t_p          , t8w        = t2_p        , rho3d      = rho_p         ,&
+             rthratenlw = rthratenlw_p , lwupt      = lwupt_p     , lwuptc     = lwuptc_p      ,&
+             lwdnt      = lwdnt_p      , lwdntc     = lwdntc_p    , lwupb      = lwupb_p       ,&
+             lwupbc     = lwupbc_p     , lwdnb      = lwdnb_p     , lwdnbc     = lwdnbc_p      ,&
+             lwcf       = lwcf_p       , glw        = glw_p       , olr        = olrtoa_p      ,&
+             emiss      = sfc_emiss_p  , tsk        = tsk_p       , dz8w       = dz_p          ,&
+             cldfra3d   = cldfrac_p    , r          = R_d         , g          = g             ,&
+             icloud     = icloud       , warm_rain  = warm_rain   , f_ice_phy  = f_ice         ,&
+             f_rain_phy = f_rain       , xland      = xland_p     , xice       = xice_p        ,&
+             snow       = snow_p       , qv3d       = qv_p        , qc3d       = qc_p          ,&
+             qr3d       = qr_p         , qi3d       = qi_p        , qs3d       = qs_p          ,&
+             qg3d       = qg_p         , f_qv       = f_qv        , f_qc       = f_qc          ,& 
+             f_qr       = f_qr         , f_qi       = f_qi        , f_qs       = f_qs          ,&
+             f_qg       = f_qg         , o3input    = o3input     , noznlevels = num_oznlevels ,&
+             pin        = pin_p        , o3clim     = o3clim_p    ,                             &
+             ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde ,&
+             ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme ,&
+             its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte  &
                        )
-       write(0,*) '--- exit subroutine rrtmg_lwrad'
 
     case ("cam_lw")
        xtime_m = xtime_s/60.

@@ -78,6 +78,9 @@
 !>    * removed the namelist option config_eddy_scheme and associated sourcecode.
 !>    * removed the namelist option config_conv_shallow_scheme and associated sourcecode.
 !>      Laura D. Fowler (birch.ucar.edu) / 2013-05-29.
+!>    * added block%atm_input in calls to subroutines driver_radiation_lw amd driver_radiation_lw.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-07-03.
+
 
  contains
 
