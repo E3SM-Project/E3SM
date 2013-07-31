@@ -528,6 +528,15 @@ contains
          uBolusGM = 0.0
       end if
 
+#ifdef MPAS_CESM
+      do iEdge = 1, grid % nEdgesSolve
+         cell1 = cellsOnEdge(1, iEdge)
+         cell2 = cellsOnEdge(2, iEdge)
+
+         s % gradSSH % array(1, iEdge) = (ssh(cell2) - ssh(cell1)) / dcEdge(iEdge)
+      end do
+#endif
+
    end subroutine ocn_diagnostic_solve!}}}
 
 !***********************************************************************
