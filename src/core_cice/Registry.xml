@@ -113,24 +113,40 @@
 		<var name="iceAreaCell"                       type="real"     dimensions="nCells"              name_in_code="iceAreaCell"/>
 		<var name="iceAreaVertex"                     type="real"     dimensions="nVertices"           name_in_code="iceAreaVertex"/>
 		<var name="iceVolumeCell"                     type="real"     dimensions="nCells"              name_in_code="iceVolumeCell"/>
+		<var name="snowVolumeCell"                    type="real"     dimensions="nCells"              name_in_code="snowVolumeCell"/>
 		<var name="totalMassCell"                     type="real"     dimensions="nCells"              name_in_code="totalMassCell"/>
 		<var name="totalMassVertex"                   type="real"     dimensions="nVertices"           name_in_code="totalMassVertex"/>
+		<var name="surfaceTemperature"                type="real"     dimensions="nVertices"           name_in_code="surfaceTemperature"/>
 	</var_struct>
 
 	<!--atmos forcing -->
 	<var_struct name="atmos_forcing" time_levs="0">
 	        <var name="airTemperature"                    type="real"     dimensions="nCells"              name_in_code="airTemperature"/>
+	        <var name="airPotentialTemperature"           type="real"     dimensions="nCells"              name_in_code="airPotentialTemperature"/>
 		<var name="uAirVelocity"                      type="real"     dimensions="nCells"              name_in_code="uAirVelocity"/>
 		<var name="vAirVelocity"                      type="real"     dimensions="nCells"              name_in_code="vAirVelocity"/>
 		<var name="uAirVelocityPOP"                   type="real"     dimensions="nCells"              name_in_code="uAirVelocityPOP"/>
 		<var name="vAirVelocityPOP"                   type="real"     dimensions="nCells"              name_in_code="vAirVelocityPOP"/>
+		<var name="windSpeed"                         type="real"     dimensions="nCells"              name_in_code="windSpeed"/>
+		<var name="uAirStress"                        type="real"     dimensions="nCells"              name_in_code="uAirStress"/>
+		<var name="vAirStress"                        type="real"     dimensions="nCells"              name_in_code="vAirStress"/>
 		<var name="airDensity"                        type="real"     dimensions="nCells"              name_in_code="airDensity"/>
-		<var name="airHumidity"                       type="real"     dimensions="nCells"              name_in_code="airHumidity"/>
+		<var name="airSpecificHumidity"               type="real"     dimensions="nCells"              name_in_code="airSpecificHumidity"/>
 		<var name="shortwaveDown"                     type="real"     dimensions="nCells"              name_in_code="shortwaveDown"/>
-		<var name="cloudiness"                        type="real"     dimensions="nCells"              name_in_code="cloudiness"/>
-		<var name="precipitation"                     type="real"     dimensions="nCells"              name_in_code="precipitation"/>
+		<var name="longwaveDown"                      type="real"     dimensions="nCells"              name_in_code="longwaveDown"/>
+		<var name="cloudFraction"                     type="real"     dimensions="nCells"              name_in_code="cloudFraction"/>
+		<var name="precipitationRate"                 type="real"     dimensions="nCells"              name_in_code="precipitationRate"/>
+		<var name="snowfallRate"                      type="real"     dimensions="nCells"              name_in_code="snowfallRate"/>
+		<var name="sensibleTransferCoefficient"       type="real"     dimensions="nCells"              name_in_code="sensibleTransferCoefficient"/>
+		<var name="latentTransferCoefficient"         type="real"     dimensions="nCells"              name_in_code="latentTransferCoefficient"/>
 		<var name="uPOPAlongGridVector"               type="real"     dimensions="TWO nCells"          name_in_code="uPOPAlongGridVector"/>
 		<var name="vPOPAlongGridVector"               type="real"     dimensions="TWO nCells"          name_in_code="vPOPAlongGridVector"/>
+	</var_struct>
+
+	<!--atmos forcing -->
+	<var_struct name="ocean_forcing" time_levs="0">
+		<var name="seaSurfaceSalinity"                type="real"     dimensions="nCells"              name_in_code="seaSurfaceSalinity"/>
+		<var name="seaSurfaceTemperature"             type="real"     dimensions="nCells"              name_in_code="seaSurfaceTemperature"/>
 	</var_struct>
 
 	<!-- define boundary variables -->

@@ -79,7 +79,10 @@ contains
                                     dtElastic, &
                                     elapsedTime
 
-    use cice_testing, only: gnuplot_triangle, gnuplot_cell, writeout_minmax
+    use cice_testing, only: gnuplot_triangle, gnuplot_cell, writeout_minmax, plot_pop_grid_cells, &
+         plot_cells_spherical, &
+         plot_vertices_spherical, &
+         plot_pop_grid_vertices
 
     type(mesh_type), intent(in) :: mesh
 
@@ -110,6 +113,24 @@ contains
     call interpolate_cell_to_vertex(mesh, &
          icestate % totalMassVertex % array, &
          icestate % totalMassCell % array)
+ 
+    call plot_cells_spherical(mesh, &
+         icestate % totalMassCell % array, &
+         "totalMassCell.txt")
+
+    !call plot_vertices_spherical(mesh, &
+    !     icestate % totalMassVertex % array, &
+    !     boundary % interiorVertex % array, &
+    !     "totalMassVertex.txt")
+
+
+    call plot_pop_grid_vertices(mesh, &
+         icestate % totalMassVertex % array, &
+         boundary % interiorVertex % array, &
+         "totalMassVertex.txt")
+
+
+    stop
 
     ! calculate computational masks
     call stress_calculation_mask_hex(mesh, &
@@ -117,11 +138,20 @@ contains
          icestate % iceAreaCell % array, &
          icestate % totalMassCell % array)
 
+    call plot_cells_spherical(mesh, &
+         real(hexdyn % solveStress % array,RKIND), &
+         "solveStress.txt")
+
     call velocity_calculation_mask_hex(mesh, &
          hexdyn % solveVelocity % array, &
          icestate % iceAreaVertex % array, &
          icestate % totalMassVertex % array, &
          boundary % interiorVertex % array)
+
+    call plot_vertices_spherical(mesh, &
+         real(hexdyn % solveVelocity % array,RKIND), &
+         boundary % interiorVertex % array, &
+         "solveVelocity.txt")
 
     ! calculate the ice strength
     call ice_strength(mesh, &     
@@ -130,6 +160,10 @@ contains
          icestate % iceVolumeCell % array, &
          hexdyn % solveStress % array)
 
+    call plot_cells_spherical(mesh, &
+         real(hexdyn % icePressure % array,RKIND), &
+         "icePressure.txt")
+
     ! calculate the air stress
     call air_stress(&
          hexdyn % airStressCellU % array,      &
@@ -137,14 +171,32 @@ contains
          atmos_forcing % uAirVelocity % array, & 
          atmos_forcing % vAirVelocity % array, &
          icestate % iceAreaCell % array)
-    
+
+    call plot_cells_spherical(mesh, &
+         real(hexdyn % airStressCellU % array,RKIND), &
+         "airStressCellU.txt")
+
+    call plot_cells_spherical(mesh, &
+         real(hexdyn % airStressCellV % array,RKIND), &
+         "airStressCellV.txt")
+  
     call interpolate_cell_to_vertex(mesh, &
          hexdyn % airStressVertexU % array, &
          hexdyn % airStressCellU % array)
 
+    call plot_vertices_spherical(mesh, &
+         hexdyn % airStressVertexU % array, &
+         boundary % interiorVertex % array, &
+         "airStressVertexU.txt")
+
     call interpolate_cell_to_vertex(mesh, &
          hexdyn % airStressVertexV % array, &
          hexdyn % airStressCellV % array)
+
+    call plot_vertices_spherical(mesh, &
+         hexdyn % airStressVertexV % array, &
+         boundary % interiorVertex % array, &
+         "airStressVertexV.txt")
 
     ! calculate the ocean stress
     call ocean_stress(& 
@@ -154,7 +206,17 @@ contains
          hexfor % vOceanVelocity % array, &
          mesh % fVertex % array,          &
          hexdyn % solveVelocity % array)
-    
+
+    call plot_vertices_spherical(mesh, &
+         hexdyn % oceanStressU % array, &
+         boundary % interiorVertex % array, &
+         "oceanStressU.txt")
+
+    call plot_vertices_spherical(mesh, &
+         hexdyn % oceanStressV % array, &
+         boundary % interiorVertex % array, &
+         "oceanStressV.txt")
+
     ! calculate the surface tilt force
     call surface_tilt(&
          hexdyn % surfaceTiltForceU % array, &
@@ -164,6 +226,16 @@ contains
          icestate % totalMassVertex % array, &
          mesh % fVertex % array,             &
          hexdyn % solveVelocity % array)
+
+    call plot_vertices_spherical(mesh, &
+         hexdyn % surfaceTiltForceU % array, &
+         boundary % interiorVertex % array, &
+         "surfaceTiltForceU.txt")
+
+    call plot_vertices_spherical(mesh, &
+         hexdyn % surfaceTiltForceV % array, &
+         boundary % interiorVertex % array, &
+         "surfaceTiltForceV.txt")
 
     ! subcycle the dynamics
     call subcycle_dynamics_hex(mesh, &
@@ -200,7 +272,19 @@ contains
 
     endif
 
-stop
+
+    call plot_vertices_spherical(mesh, &
+         hexdyn % uVelocity % array, &
+         boundary % interiorVertex % array, &
+         "uVelocity.txt")
+    
+    call plot_vertices_spherical(mesh, &
+         hexdyn % vVelocity % array, &
+         boundary % interiorVertex % array, &
+         "vVelocity.txt")
+
+
+    stop
 
   end subroutine run_dynamics_hex
 
@@ -216,8 +300,6 @@ stop
                                   evpDamping)
 
     use cice_dynamics_shared, only: nElasticSubcycle
-
-    use cice_testing, only: gnuplot_triangle, gnuplot_cell, writeout_minmax, gnuplot_vertexvector
 
     type(mesh_type), intent(in) :: mesh
 
@@ -243,7 +325,7 @@ stop
     integer :: &
          iElasticSubcycle
 
-    do iElasticSubcycle = 1, 2000!nElasticSubcycle
+    do iElasticSubcycle = 1, nElasticSubcycle
 
        write(*,*) "subcycle: ", iElasticSubcycle
        call single_subcycle_dynamics_hex(mesh, &
@@ -256,16 +338,6 @@ stop
                                          evpDamping)
 
     enddo
-
-    !call gnuplot_triangle(mesh, hexdyn % surfaceTiltForceU % array, "test.txt")
-    call gnuplot_triangle(mesh, hexdyn % uVelocity % array, "test.txt")
-    !call gnuplot_triangle(mesh, hexdyn % stressDivergenceU % array, "test.txt")
-
-    !call gnuplot_cell(mesh, hexvar % strain11 % array(4,:), "test.txt")
-    !call gnuplot_cell(mesh, hexvar % stress11 % array(4,:), "test.txt")
-    !call gnuplot_cell(mesh, hexdyn % icePressure % array, "test.txt")
-
-    call writeout_minmax()
 
   end subroutine subcycle_dynamics_hex
 
@@ -296,8 +368,9 @@ stop
     use cice_dyn_hex_pwl, only: strain_tensor_hex_pwl, &
                                 stress_divergence_hex_pwl
 
-    use cice_testing, only: gnuplot_triangle, gnuplot_cell, writeout_minmax, gnuplot_vertexvector, &
-                            divergence_stress_test_velocity_set
+    use cice_testing, only: &
+         plot_cells_spherical, &
+         plot_vertices_spherical
 
     type(mesh_type), intent(in) :: mesh
 
@@ -331,6 +404,20 @@ stop
             normal % latCellRotated % array,      &
             hexdyn % solveStress % array)
 
+       !call plot_cells_spherical(mesh, &
+       !     hexweak % strain11 % array, &
+       !     "strain11.txt")
+
+       !call plot_cells_spherical(mesh, &
+       !     hexweak % strain22 % array, &
+       !     "strain22.txt")
+
+       !call plot_cells_spherical(mesh, &
+       !     hexweak % strain12 % array, &
+       !     "strain12.txt")
+
+
+
        call stress_tensor_hex_weak(mesh, &
             hexweak % stress11 % array,           &
             hexweak % stress22 % array,           &
@@ -343,6 +430,21 @@ stop
             hexdyn % solveStress % array,          &       
             dtElastic, evpDamping)
 
+       !call plot_cells_spherical(mesh, &
+       !     hexweak % stress11 % array, &
+       !     "stress11.txt")
+
+       !call plot_cells_spherical(mesh, &
+       !     hexweak % stress22 % array, &
+       !     "stress22.txt")
+
+       !call plot_cells_spherical(mesh, &
+       !     hexweak % stress12 % array, &
+       !     "stress12.txt")
+
+
+
+
        call stress_divergence_hex_weak(mesh, &
             hexdyn % stressDivergenceU % array,    &
             hexdyn % stressDivergenceV % array,    &
@@ -352,6 +454,21 @@ stop
             normal % normalVectorTriangle % array, &
             normal % latVertexRotated % array,     &
             hexdyn % solveVelocity % array)
+
+
+       !call plot_vertices_spherical(mesh, &
+       !     hexdyn % stressDivergenceU % array, &
+       !     boundary % interiorVertex % array, &
+       !     "stressDivergenceU.txt")
+       
+       !call plot_vertices_spherical(mesh, &
+       !     hexdyn % stressDivergenceV % array, &
+       !     boundary % interiorVertex % array, &
+       !     "stressDivergenceV.txt")
+
+
+
+
 
     else if (trim(divergenceFormulation) == "variational") then
 
@@ -435,6 +552,14 @@ stop
          icestate % iceAreaVertex % array,  &
          hexdyn % solveVelocity % array)
 
+    !call plot_vertices_spherical(mesh, &
+    !     hexdyn % oceanStressCoeff % array, &
+    !     boundary % interiorVertex % array, &
+    !     "oceanStressCoeff.txt")
+    
+
+
+
     call solve_velocity(mesh % nVertices, &
          hexdyn % solveVelocity % array,      &
          hexdyn % uVelocity % array,         &   
@@ -451,6 +576,17 @@ stop
          hexdyn % oceanStressV % array,      &
          hexdyn % oceanStressCoeff % array,  &
          dtElastic)
+
+    !call plot_vertices_spherical(mesh, &
+    !     hexdyn % uVelocity % array, &
+    !     boundary % interiorVertex % array, &
+    !     "uVelocity.txt")
+    
+    !call plot_vertices_spherical(mesh, &
+    !     hexdyn % vVelocity % array, &
+    !     boundary % interiorVertex % array, &
+    !     "vVelocity.txt")
+
 
   end subroutine single_subcycle_dynamics_hex
 

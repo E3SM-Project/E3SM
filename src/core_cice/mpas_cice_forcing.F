@@ -120,7 +120,7 @@ contains
     call init_forcing_field(mesh, atmosForcingFields % forcingFieldsArray(6), "monthly", &
          "/ISCCPM/MONTHLY/RADFLX/", "swdn.", ".dat", "binaryPOP", 12, 0.5_RKIND)
 
-    ! cloudiness
+    ! cloudFraction
     call init_forcing_field(mesh, atmosForcingFields % forcingFieldsArray(7), "monthly", &
          "/ISCCPM/MONTHLY/RADFLX/", "cldf.", ".dat", "binaryPOP", 12, 0.5_RKIND)
 
@@ -159,7 +159,7 @@ contains
 
   subroutine get_atmos_forcing(mesh, atmos_forcing, forcingTime, forcingTimeEpoch, year, month, dayOfMonth)
 
-    use cice_testing, only: plot_pop_grid, plot_cells_spherical
+    use cice_testing, only: plot_pop_grid_cells, plot_cells_spherical
     
     type(mesh_type), intent(in) :: mesh
     type (atmos_forcing_type), pointer :: atmos_forcing
@@ -204,7 +204,7 @@ contains
     call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
          atmosForcingFields % forcingDirectory, &
          atmosForcingFields % forcingFieldsArray(5), &
-         atmos_forcing % airHumidity % array)
+         atmos_forcing % airSpecificHumidity % array)
 
     ! shortwave down
     call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
@@ -212,28 +212,28 @@ contains
          atmosForcingFields % forcingFieldsArray(6), &
          atmos_forcing % shortwaveDown % array)
 
-    ! cloudiness
+    ! cloudFraction
     call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
          atmosForcingFields % forcingDirectory, &
          atmosForcingFields % forcingFieldsArray(7), &
-         atmos_forcing % cloudiness % array)
+         atmos_forcing % cloudFraction % array)
 
     ! precipitation
     call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
          atmosForcingFields % forcingDirectory, &
          atmosForcingFields % forcingFieldsArray(8), &
-         atmos_forcing % precipitation % array)
+         atmos_forcing % precipitationRate % array)
 
-    iCell = POPiCell(mesh,69,59)
-    write(56,*) elapsed_time_forcing/3600.0_RKIND, &
-         atmos_forcing % airTemperature % array(iCell), &
-         atmos_forcing % uAirVelocityPOP % array(iCell), &
-         atmos_forcing % vAirVelocityPOP % array(iCell), &
-         atmos_forcing % airDensity % array(iCell), &
-         atmos_forcing % airHumidity % array(iCell), &
-         atmos_forcing % shortwaveDown % array(iCell), &         
-         atmos_forcing % cloudiness % array(iCell), &
-         atmos_forcing % precipitation % array(iCell)
+    !iCell = POPiCell(mesh,69,59)
+    !write(56,*) elapsed_time_forcing/3600.0_RKIND, &
+    !     atmos_forcing % airTemperature % array(iCell), &
+    !     atmos_forcing % uAirVelocityPOP % array(iCell), &
+    !     atmos_forcing % vAirVelocityPOP % array(iCell), &
+    !     atmos_forcing % airDensity % array(iCell), &
+    !     atmos_forcing % airSpecificHumidity % array(iCell), &
+    !     atmos_forcing % shortwaveDown % array(iCell), &         
+    !     atmos_forcing % cloudFraction % array(iCell), &
+    !     atmos_forcing % precipitationRate % array(iCell)
 
     ! plot 'fort.56' using 1:2 with linespoints, '/Users/akt/Work/MPAS-CICE/cice_sphere/rundir/fort.55' using 1:2 with lines
     ! plot 'fort.56' using 1:3 with linespoints, '/Users/akt/Work/MPAS-CICE/cice_sphere/rundir/fort.55' using 1:3 with lines
@@ -251,7 +251,120 @@ contains
                                         atmos_forcing % uPOPAlongGridVector % array, &
                                         atmos_forcing % vPOPAlongGridVector % array)
 
+
+    ! calculate other quantities
+    do iCell = 1, mesh % nCells
+
+       call calculate_derived_forcing_variables( &
+            atmos_forcing % longWavedown % array(iCell), &
+            atmos_forcing % snowfallRate % array(iCell), &
+            atmos_forcing % airPotentialTemperature % array(iCell), &
+            atmos_forcing % windSpeed % array(iCell), &
+            atmos_forcing % sensibleTransferCoefficient % array(iCell), &
+            atmos_forcing % latentTransferCoefficient % array(iCell), &
+            atmos_forcing % uAirStress % array(iCell), &
+            atmos_forcing % vAirStress % array(iCell), &
+            atmos_forcing % airTemperature % array(iCell), &
+            atmos_forcing % cloudFraction % array(iCell), &
+            atmos_forcing % precipitationRate % array(iCell), &
+            atmos_forcing % uAirVelocity % array(iCell), &
+            atmos_forcing % vAirVelocity % array(iCell), &
+            atmos_forcing % airDensity % array(iCell))
+
+    enddo ! iCell
+
   end subroutine get_atmos_forcing
+
+  !-------------------------------------------------------------
+  ! Physical conversions
+  !-------------------------------------------------------------
+
+  subroutine calculate_derived_forcing_variables( &
+       longWavedown, &
+       snowfallRate, &
+       airPotentialTemperature, &
+       windSpeed, &
+       sensibleTransferCoefficient, &
+       latentTransferCoefficient, &
+       uAirStress, &
+       vAirStress, &
+       airTemperature, &
+       cloudFraction, &
+       precipitationRate, &
+       uAirVelocity, &
+       vAirVelocity, &
+       airDensity)
+    
+    real(kind=RKIND), intent(out) :: &
+         longWavedown, &
+         snowfallRate, &
+         airPotentialTemperature, &
+         windSpeed, &
+         sensibleTransferCoefficient, &
+         latentTransferCoefficient, &
+         uAirStress, &
+         vAirStress
+
+    real(kind=RKIND), intent(inout) :: &
+         precipitationRate
+
+    real(kind=RKIND), intent(in) :: &
+         airTemperature, &
+         cloudFraction, &
+         uAirVelocity, &
+         vAirVelocity, &
+         airDensity
+
+    real(kind=RKIND), parameter :: &
+         stefanBoltzmann         = 5.79484e-8_RKIND , & ! J m-2 K-4 s-1
+         freshWaterFreezingPoint = 273.15_RKIND     , & ! freezing temp of fresh ice (K)
+         airSpecificHeat         = 1005.0_RKIND     , & ! specific heat of air (J/kg/K)
+         latentHeatSublimation   = 2.835e6_RKIND        ! latent heat, sublimation freshwater (J/kg)
+
+    real(kind=RKIND), parameter :: &
+         seconds_per_year        = 365.0_RKIND * 24.0_RKIND * 3600.0_RKIND
+
+    real(kind=RKIND) :: &
+         airStressCoefficient
+
+    ! Longwave down
+    ! Parkinson, C. L. and W. M. Washington (1979),
+    ! Large-scale numerical-model of sea ice,
+    ! JGR, 84, 311-337, doi:10.1029/JC084iC01p00311
+
+    longWavedown = stefanBoltzmann * airTemperature**4 * &
+                   (1.0_RKIND - 0.261_RKIND * exp(-7.77e-4_RKIND * (freshWaterFreezingPoint - airTemperature)**2)) * &
+                   (1.0_RKIND + 0.275_RKIND * cloudFraction)
+
+    ! snowfall rate
+    precipitationRate = precipitationRate * (12.0_RKIND / seconds_per_year) ! convert mm per year
+
+    snowfallRate = 0.0_RKIND
+
+    if (airTemperature < freshWaterFreezingPoint) then
+
+       snowfallRate = precipitationRate
+       precipitationRate = 0.0_RKIND
+
+    endif
+
+    ! air potential temperature
+    airPotentialTemperature = airTemperature - freshWaterFreezingPoint
+
+    ! wind speed
+    windSpeed = sqrt(uAirVelocity**2 + vAirVelocity**2)
+
+    ! transfer coefficients
+    sensibleTransferCoefficient = 1.20e-3_RKIND * airSpecificHeat        * airDensity * windSpeed
+    latentTransferCoefficient   = 1.50e-3_RKIND * latentHeatSublimation  * airDensity * windSpeed
+
+    ! air stresses
+    airStressCoefficient = 0.0012_RKIND * airDensity * windSpeed
+
+    uAirStress = uAirVelocity * airStressCoefficient
+    vAirStress = vAirVelocity * airStressCoefficient
+
+  end subroutine calculate_derived_forcing_variables
 
   !-------------------------------------------------------------
   ! Generic forcing routines
@@ -422,7 +535,7 @@ contains
 
     call get_desired_record_positions(forcingTime, year, month, dayOfMonth, forcingField, &
                                       desiredYears, desiredRecordNumbers, desiredTimes)
-    write(59,*) desiredYears, desiredRecordNumbers, desiredTimes
+    !write(59,*) desiredYears, desiredRecordNumbers, desiredTimes
 
     ! get desired data
     existingDataLocation = 0
@@ -464,7 +577,7 @@ contains
              forcingField % dataOrder(nDesired) = 1
 
              existingHasData(1) = .true.
-             write(60,*) "r:1", nDesired, POPiCell(mesh,70,60), forcingField % data(POPiCell(mesh,70,60),forcingField % dataOrder(nDesired))
+             !write(60,*) "r:1", nDesired, POPiCell(mesh,70,60), forcingField % data(POPiCell(mesh,70,60),forcingField % dataOrder(nDesired))
 
           else if (.not. existingHasData(2)) then
 
@@ -477,7 +590,7 @@ contains
              forcingField % dataOrder(nDesired) = 2
 
              existingHasData(2) = .true.
-             write(60,*) "r:2", nDesired, POPiCell(mesh,70,60), forcingField % data(POPiCell(mesh,70,60),forcingField % dataOrder(nDesired))
+             !write(60,*) "r:2", nDesired, POPiCell(mesh,70,60), forcingField % data(POPiCell(mesh,70,60),forcingField % dataOrder(nDesired))
 
           else
 
@@ -494,14 +607,14 @@ contains
     interpolationCoeff(1) = (desiredTimes(2) - forcingTimeEpoch) / (desiredTimes(2) - desiredTimes(1))
     interpolationCoeff(2) = (forcingTimeEpoch - desiredTimes(1)) / (desiredTimes(2) - desiredTimes(1))
 
-    write(61,*) interpolationCoeff(1), desiredTimes(1), desiredTimes(2), forcingTimeEpoch
+    !write(61,*) interpolationCoeff(1), desiredTimes(1), desiredTimes(2), forcingTimeEpoch
 
     forcingArray = forcingField % data(:,forcingField % dataOrder(1)) * interpolationCoeff(1) + &
                    forcingField % data(:,forcingField % dataOrder(2)) * interpolationCoeff(2)
 
-    write(57,*) forcingArray(iCell), &
-         forcingField % data(iCell,forcingField % dataOrder(1)), interpolationCoeff(1), &
-         forcingField % data(iCell,forcingField % dataOrder(2)), interpolationCoeff(2)
+    !write(57,*) forcingArray(iCell), &
+    !     forcingField % data(iCell,forcingField % dataOrder(1)), interpolationCoeff(1), &
+    !     forcingField % data(iCell,forcingField % dataOrder(2)), interpolationCoeff(2)
 
   end subroutine get_individual_forcing
 
@@ -754,6 +867,8 @@ contains
     do iCell = 1, mesh % nCells
 
        forcingField % data(iCell,slot) = arrayPOP(mesh % POPindxi % array(iCell),mesh % POPindxj % array(iCell))
+
+       !write(*,*) iCell, mesh % POPindxi % array(iCell),mesh % POPindxj % array(iCell)
 
     enddo ! iCell
 
@@ -1042,7 +1157,7 @@ contains
        uPOPAlongGridVector(2,iCell) = sign(1.0_RKIND,uVector(3))&
                                     * sqrt(1.0_RKIND - min(uPOPAlongGridVector(1,iCell),1.0_RKIND)**2)
 
-       write(*,*) iCell, uPOPAlongGridVector(1,iCell), uPOPAlongGridVector(2,iCell)
+       !write(*,*) iCell, uPOPAlongGridVector(1,iCell), uPOPAlongGridVector(2,iCell)
        
        ! V vector
        call grid_rotation_forward(xEdge2, yEdge2, zEdge2, &

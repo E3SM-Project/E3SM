@@ -108,9 +108,11 @@ module mpas_core
 
       use cice_dynamics, only: init_dynamics
 
-      use cice_testing, only: init_square_test_case_hex
+      use cice_testing, only: plot_cells_spherical, plot_pop_grid_cells, init_spherical_test_case
 
-      use cice_forcing, only: init_forcing
+      use cice_forcing, only: init_forcing, get_forcing
+
+      use cice_therm_zerolayer, only: init_semtner_forcing, init_semtner_test_case
 
       implicit none
 
@@ -118,22 +120,28 @@ module mpas_core
       type (mesh_type), intent(inout) :: mesh
       real (kind=RKIND), intent(in) :: dt
 
-      integer :: iCell
-
       call mpas_rbf_interp_initialize(mesh)
       call mpas_init_reconstruct(mesh)
 
-      call init_dynamics(block, dt)
+      !call init_semtner_forcing()
 
-      !call init_square_test_case_hex(mesh, &
-      !     block % icestate, &
-      !     block % hexdyn, &
-      !     block % hexfor, &
-      !     block % boundary, &
-      !     block % atmos_forcing)
+      !call init_semtner_test_case(mesh, block % icestate)
 
-      !call init_forcing(mesh, &
-      !     block % atmos_forcing)
+      call init_forcing(mesh, &
+           block % atmos_forcing)
+
+      call get_forcing(block % mesh, clock, block % atmos_forcing)
+
+      call init_spherical_test_case(block % mesh, &
+           block % icestate % iceAreaCell % array, &
+           block % icestate % iceVolumeCell % array, &
+           block % icestate % totalMassCell % array, &
+           block % icestate % surfaceTemperature % array, &
+           block % atmos_forcing % airTemperature % array)
+
+      !call plot_cells_spherical(mesh, block % atmos_forcing % airTemperature % array)
+
+      !call init_dynamics(block, dt)
 
    end subroutine mpas_init_block
    

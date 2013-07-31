@@ -146,11 +146,15 @@ contains
 
           iCell = mesh % cellsOnVertex % array(iVertexDegree,iVertex) 
 
+          write(*,*) iVertex, iVertexDegree, iCell, variableCell(iCell), mesh % areaCell % array(iCell)
+
           variableVertex(iVertex) = variableVertex(iVertex) + mesh % areaCell % array(iCell) * variableCell(iCell)
 
           totalArea = totalArea + mesh % areaCell % array(iCell)
 
        enddo ! iVertexDegree
+
+       write(*,*) iVertex, variableVertex(iVertex), totalArea, variableVertex(iVertex) / totalArea
 
        variableVertex(iVertex) = variableVertex(iVertex) / totalArea
 
@@ -1917,17 +1921,25 @@ contains
 
   subroutine solve_linear_basis_system(leftMatrix, rightHandSide, solutionVector)
 
-    real(kind=RKIND), dimension(3,3), intent(in) :: &
+    real(kind=RKIND), dimension(:,:), intent(in) :: &
          leftMatrix
-    real(kind=RKIND), dimension(3), intent(in) :: &
+    real(kind=RKIND), dimension(:), intent(in) :: &
          rightHandSide
-    real(kind=RKIND), dimension(3), intent(out) :: &
+    real(kind=RKIND), dimension(:), intent(out) :: &
          solutionVector
 
-    real(kind=RKIND), dimension(3,3) :: a
-    real(kind=RKIND), dimension(3) :: b
-    integer, dimension(3) :: indx
+    real(kind=RKIND), allocatable, dimension(:,:) :: a
+    real(kind=RKIND), allocatable, dimension(:) :: b
+    integer, allocatable, dimension(:) :: indx
     real(kind=RKIND) :: d
+
+    integer :: n
+
+    n = size(rightHandSide)
+
+    allocate(a(n,n))
+    allocate(b(n))
+    allocate(indx(n))
 
     a(:,:) = leftMatrix(:,:)
     b(:) = rightHandSide(:)
@@ -1937,6 +1949,10 @@ contains
     call lubksb(a,indx,b)
 
     solutionVector(:) = b(:)
+
+    deallocate(a)
+    deallocate(b)
+    deallocate(indx)
 
   end subroutine solve_linear_basis_system
 

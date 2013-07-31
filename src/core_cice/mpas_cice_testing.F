@@ -29,10 +29,14 @@ module cice_testing
             find_nearest_cell, &
             init_square_test_case_hex, &
             plot_cells_spherical, &
-            plot_pop_grid, &
+            plot_vertices_spherical, &
+            plot_pop_grid_cells, &
+            plot_pop_grid_vertices, &
             spherical_test_strain, &
             spherical_test_divergence_stress, &
-            rms_difference
+            rms_difference, &
+            init_spherical_test_case, &
+            plot_state
 
   integer, public :: iCellTest
 
@@ -49,7 +53,8 @@ module cice_testing
 
     real(kind=RKIND), parameter :: &
          pi = 3.14159265359_RKIND, &
-         deg_to_rad = pi / 180.0_RKIND
+         deg_to_rad = pi / 180.0_RKIND, &
+         rhoi = 917.0_RKIND
 
   ! parameter in constant stress strain relation
   real(kind=RKIND), parameter, public :: lambda = 1.0_RKIND
@@ -57,9 +62,55 @@ module cice_testing
 contains
 
   !-------------------------------------------------------------
+  ! Spherical test case
+  !-------------------------------------------------------------
+  
+  subroutine init_spherical_test_case(mesh, iceAreaCell, iceVolumeCell, totalMassCell, surfaceTemperature, airTemperature)
+
+    type(mesh_type), intent(inout) :: mesh
+
+    real(kind=RKIND), dimension(:), intent(out) :: &
+         iceAreaCell, &
+         iceVolumeCell, &
+         totalMassCell, &
+         surfaceTemperature
+
+    real(kind=RKIND), dimension(:), intent(in) :: &
+         airTemperature
+
+    real(kind=RKIND), parameter :: &
+         iceHeightCell = 1.0_RKIND
+
+    integer :: &
+         iCell
+
+    do iCell = 1, mesh % nCells
+
+       if (airTemperature(iCell) < 273.15_RKIND) then
+
+          ! below freezing air temperature
+          iceAreaCell(iCell)        = 1.0_RKIND
+          iceVolumeCell(iCell)      = iceAreaCell(iCell) * iceHeightCell
+          totalMassCell(iCell)      = iceVolumeCell(iCell) * rhoi
+          surfaceTemperature(iCell) = 0.0_RKIND
+
+       else
+
+          ! above freezing
+          iceAreaCell(iCell)   = 0.0_RKIND
+          iceVolumeCell(iCell) = 0.0_RKIND
+          totalMassCell(iCell) = 0.0_RKIND
+          surfaceTemperature(iCell) = 0.0_RKIND
+
+       endif
+
+    end do ! iCell
+    
+  end subroutine init_spherical_test_case
+
+  !-------------------------------------------------------------
   ! Square test case
   !-------------------------------------------------------------
-
 
   subroutine init_square_test_case_hex(mesh, icestate, hexdyn, hexfor, boundary, atmos_forcing)
 
@@ -218,8 +269,7 @@ contains
     real(kind=RKIND) :: x    
 
     real(kind=RKIND), parameter :: &
-         Lx = 1.28e6_RKIND, &
-         rhoi = 917.0_RKIND
+         Lx = 1.28e6_RKIND
 
     integer :: &
          iCell, &
@@ -1979,12 +2029,89 @@ contains
   ! Spherical plotting
   !-------------------------------------------------------------
 
-  subroutine plot_cells_spherical(mesh, cellArray)
+  subroutine plot_state(mesh, icestate, atmos_forcing, time, dt)
+
+    type(mesh_type), intent(in) :: mesh
+    type(icestate_type), pointer :: icestate
+    type(atmos_forcing_type), pointer :: atmos_forcing
+
+    real(kind=RKIND), intent(in) :: &
+         time, &
+         dt
+
+    character(len=200) :: &
+         suffix
+
+    integer :: &
+         iCell
+
+    integer, parameter :: &
+         output_freq = 24
+
+    real(kind=RKIND), dimension(:), allocatable :: &
+         iceThickness, &
+         snowThickness
+
+    if (mod(nint(time/dt),output_freq) == 0) then
+
+       allocate(iceThickness(mesh % nCells))
+       allocate(snowThickness(mesh % nCells))
+
+       do iCell = 1, mesh % nCells
+
+          if (icestate % iceAreaCell % array(iCell) > 0.0_RKIND) then
+             iceThickness(iCell)  = icestate % iceVolumeCell % array(iCell) / &
+                                    icestate % iceAreaCell % array(iCell)
+             snowThickness(iCell) = icestate % snowVolumeCell % array(iCell) / &
+                                    icestate % iceAreaCell % array(iCell)
+          else
+             iceThickness(iCell)  = 0.0_RKIND
+             snowThickness(iCell) = 0.0_RKIND
+          endif
+
+          if (iCell == 7755) write(*,*) time, iceThickness(iCell), snowThickness(iCell), icestate % surfaceTemperature % array(iCell)
+
+       enddo ! iCell
+
+       !return
+
+       write(suffix,fmt='(a,i10.10,a)') "_", nint(time), ".txt"
+       
+       call plot_cells_spherical(mesh, atmos_forcing % airPotentialTemperature % array, "movie/data/airTemperature"//trim(suffix), -50.0_RKIND, 50.0_RKIND)
+       call plot_cells_spherical(mesh, atmos_forcing % longwaveDown % array, "movie/data/longwave"//trim(suffix), 0.0_RKIND, 1000.0_RKIND)
+
+       call plot_cells_spherical(mesh, icestate % iceAreaCell % array,        "movie/data/iceAreaCell"//trim(suffix),          0.0_RKIND, 1.0_RKIND)
+       call plot_cells_spherical(mesh, iceThickness,                          "movie/data/iceThickness"//trim(suffix),         0.0_RKIND, 2.0_RKIND)
+       call plot_cells_spherical(mesh, snowThickness,                         "movie/data/snowThickness"//trim(suffix),        0.0_RKIND, 2.0_RKIND)
+       call plot_cells_spherical(mesh, icestate % surfaceTemperature % array, "movie/data/surfaceTemperature"//trim(suffix), -60.0_RKIND, 0.1_RKIND)
+
+       deallocate(iceThickness)
+       deallocate(snowThickness)
+
+       !stop
+
+    endif
+
+  end subroutine plot_state
+
+  !-------------------------------------------------------------
+
+  subroutine plot_vertices_spherical(mesh, cellArray, interiorVertex, filename, fmin, fmax)
 
     type(mesh_type), intent(in) :: mesh
     
     real(kind=RKIND), dimension(:), intent(in) :: &
          cellArray
+
+    integer, dimension(:), intent(in) :: &
+         interiorVertex
+
+    character(len=*), optional, intent(in) :: &
+         filename
+    
+    real(kind=RKIND), optional, intent(in) :: &
+         fmin, &
+         fmax
 
     real(kind=RKIND) :: &
          xc, yc, zc, &
@@ -2009,8 +2136,286 @@ contains
 
     real(kind=RKIND) :: &
          fValue, &
-         fMin, &
-         fMax
+         fMin_use, &
+         fMax_use
+
+    integer :: &
+         iVertex, &
+         iVertexDegree, &
+         iCell
+
+    integer, parameter :: &
+         nLat = 20, &
+         nLon = 40
+
+    integer :: &
+         iLat, iLon
+
+    real(kind=RKIND) :: &
+         dLat, &
+         dLon
+
+    character(len=7) :: &
+         color
+
+    character(len=400) :: &
+         stroutvertex, &
+         strout, &
+         stroutlabel, &
+         stroutint
+
+    character(len=200) :: &
+         filename_use
+
+    iObject = 1
+
+    lnofill = .false.
+
+    if (present(fmin) .and. present(fmax)) then
+       fMin_use = fmin
+       fMax_use = fmax
+    else
+       fMin_use = minval(cellArray(1:mesh % nVertices))
+       fMax_use = maxval(cellArray(1:mesh % nVertices))
+    endif
+
+    filename_use = "spherical_vertices.txt"
+    if (present(filename)) filename_use = trim(filename)
+
+    open(55,file=trim(filename_use),action="write")
+    open(56,file="clearPlot.gnuplot",action="write")
+
+    do iVertex = 1, mesh % nVertices
+
+       write(*,*) "v:", iVertex, interiorVertex(iVertex)
+
+       if (interiorVertex(iVertex) == 1) then
+
+          xc = mesh % xVertex % array(iVertex)
+          yc = mesh % yVertex % array(iVertex)
+          zc = mesh % zVertex % array(iVertex)
+          
+          call perform_rotation(xc, yc, zc)
+          
+          if (xc > 0.0_RKIND) then
+             
+             fValue = (cellArray(iVertex) - fMin_use) / (fMax_use - fMin_use)
+             !fValue = (real(iCell,RKIND) - fMin_use) / (fMax_use - fMin_use)
+             
+             write(*,*) iVertex, iObject, fValue, cellArray(iVertex)
+             
+             write(strout,fmt='(a,i5,a)') "set object ",iObject," polygon from "
+             
+             do iVertexDegree = 1, mesh % vertexDegree
+                
+                iCell = mesh % cellsOnVertex % array(iVertexDegree, iVertex)
+                
+                xv = mesh % xCell % array(iCell)
+                yv = mesh % yCell % array(iCell)
+                zv = mesh % zCell % array(iCell)
+                
+                call perform_rotation(xv, yv, zv)
+                
+                if (iVertexDegree == 1) then
+                   xv0 = xv
+                   yv0 = yv
+                   zv0 = zv
+                endif
+                
+                write(stroutvertex,fmt='(f14.2,a,f14.2,a)') yv, ",", zv, " to "
+                strout = trim(strout)//trim(stroutvertex)
+                
+             enddo ! iVertexDegree
+             
+             write(stroutvertex,fmt='(f14.2,a,f14.2)') yv0, ",", zv0
+             strout = trim(strout)//trim(stroutvertex)
+             write(55,*) trim(strout)
+             
+             color = matlab_jet(fValue)
+             if (lnofill) then
+                write(strout,fmt='(a,i5,a,a,a)') "set object ",iObject,' fillstyle empty border lt -1'
+             else
+                write(strout,fmt='(a,i5,a,a,a)') "set object ",iObject,' fc rgb "', color, '" fillstyle solid'
+             endif
+             
+             write(55,*) trim(strout)
+             
+             write(56,*) "unset object ", iObject
+             iObject = iObject + 1
+             
+          endif
+          
+       endif ! interiorVertex
+       
+    enddo ! iVertex
+       
+    ! now write on latitude/longitude lines
+    dLat = 180.0_RKIND / real(nLat,RKIND)
+    dLon = 360.0_RKIND / real(nLon,RKIND)
+
+    do iLat = 1, nLat-2
+       do iLon = 1, nLon
+
+          lat0 = (real(iLat,RKIND) + 0.5_RKIND) * dLat - 90.0_RKIND
+          lon0 = (real(iLon,RKIND) + 0.5_RKIND) * dLat
+
+          lat1 = (real(iLat,RKIND) + 0.0_RKIND) * dLat - 90.0_RKIND
+          lon1 = (real(iLon,RKIND) + 0.0_RKIND) * dLat
+
+          lat2 = (real(iLat,RKIND) + 1.0_RKIND) * dLat - 90.0_RKIND
+          lon2 = (real(iLon,RKIND) + 0.0_RKIND) * dLat
+
+          lat3 = (real(iLat,RKIND) + 1.0_RKIND) * dLat - 90.0_RKIND
+          lon3 = (real(iLon,RKIND) + 1.0_RKIND) * dLat
+
+          lat4 = (real(iLat,RKIND) + 0.0_RKIND) * dLat - 90.0_RKIND
+          lon4 = (real(iLon,RKIND) + 1.0_RKIND) * dLat
+
+          call latlon_to_xyz(mesh, x0, y0, z0, lat0, lon0)
+          call perform_rotation(x0, y0, z0)
+
+          if (x0 > 0.0_RKIND) then
+
+             call latlon_to_xyz(mesh, x1, y1, z1, lat1, lon1) ; call perform_rotation(x1, y1, z1)
+             call latlon_to_xyz(mesh, x2, y2, z2, lat2, lon2) ; call perform_rotation(x2, y2, z2)
+             call latlon_to_xyz(mesh, x3, y3, z3, lat3, lon3) ; call perform_rotation(x3, y3, z3)
+             call latlon_to_xyz(mesh, x4, y4, z4, lat4, lon4) ; call perform_rotation(x4, y4, z4)
+             
+             write(strout,fmt='(a,i5,a)') "set object ",iObject," polygon from "
+             
+             write(stroutvertex,fmt='(f14.2,a,f14.2,a)') y1, ",", z1, " to " ; strout = trim(strout)//trim(stroutvertex)
+             write(stroutvertex,fmt='(f14.2,a,f14.2,a)') y2, ",", z2, " to " ; strout = trim(strout)//trim(stroutvertex)
+             write(stroutvertex,fmt='(f14.2,a,f14.2,a)') y3, ",", z3, " to " ; strout = trim(strout)//trim(stroutvertex)
+             write(stroutvertex,fmt='(f14.2,a,f14.2,a)') y4, ",", z4, " to " ; strout = trim(strout)//trim(stroutvertex)
+             write(stroutvertex,fmt='(f14.2,a,f14.2)')   y1, ",", z1         ; strout = trim(strout)//trim(stroutvertex)
+
+             write(55,*) trim(strout)
+
+             write(strout,fmt='(a,i5,a,a,a)') "set object ",iObject,' fillstyle empty border rgb "gray" lw 0.2'
+
+             write(55,*) trim(strout)
+
+             write(56,*) "unset object ", iObject
+             iObject = iObject + 1
+
+          endif
+
+       enddo ! iLon
+
+    enddo ! iLat
+
+    ! prime meridian
+    do iLat = 1, nLat
+
+       lat1 = real(iLat-1,RKIND) * dLat - 90.0_RKIND
+       lon1 = 0.0_RKIND
+       
+       lat2 = real(iLat,RKIND) * dLat - 90.0_RKIND
+       lon2 = 0.0_RKIND
+
+       call latlon_to_xyz(mesh, x1, y1, z1, lat1, lon1) ; call perform_rotation(x1, y1, z1)
+       call latlon_to_xyz(mesh, x2, y2, z2, lat2, lon2) ; call perform_rotation(x2, y2, z2)
+
+       if (0.5_RKIND * (x1 + x2) > 0.0_RKIND) then
+
+          write(strout,fmt='(a,i5,a,f14.2,a,f14.2,a,f14.2,a,f14.2,a)') "set arrow ",iArrow," from ", y1, ", ", z1, " to ", y2, ", ", z2, " nohead lt 4"
+          write(55,*) trim(strout)
+
+          write(56,*) "unset arrow ", iArrow
+          iArrow = iArrow + 1
+
+       endif
+
+    enddo ! iLat
+
+    ! equator
+    do iLon = 1, nLon
+
+       lat1 = 0.0_RKIND
+       lon1 = real(iLon-1,RKIND) * dLat
+       
+       lat2 = 0.0_RKIND
+       lon2 = real(iLon,RKIND) * dLat
+
+       call latlon_to_xyz(mesh, x1, y1, z1, lat1, lon1) ; call perform_rotation(x1, y1, z1)
+       call latlon_to_xyz(mesh, x2, y2, z2, lat2, lon2) ; call perform_rotation(x2, y2, z2)
+
+       if (0.5_RKIND * (x1 + x2) > 0.0_RKIND) then
+
+          write(strout,fmt='(a,i5,a,f14.2,a,f14.2,a,f14.2,a,f14.2,a)') "set arrow ",iArrow," from ", y1, ", ", z1, " to ", y2, ", ", z2, " nohead lt 3"
+          write(55,*) trim(strout)
+
+          write(56,*) "unset arrow ", iArrow
+          iArrow = iArrow + 1
+
+       endif
+
+    enddo ! iLon
+
+    ! min/max labels
+    write(stroutint,fmt='(e20.8)') fMax_use
+    write(stroutlabel,fmt='(a,i5,a,a,a)') "set label ",iLabel,' "',trim(adjustl(stroutint)),'" at graph 1.02, 0.9'
+    write(55,*) trim(stroutlabel)
+    write(56,*) "unset label ", iLabel
+    iLabel = iLabel + 1
+
+    write(stroutint,fmt='(e20.8)') fMin_use
+    write(stroutlabel,fmt='(a,i5,a,a,a)') "set label ",iLabel,' "',trim(adjustl(stroutint)),'" at graph 1.02, 0.8'
+    write(55,*) trim(stroutlabel)
+    write(56,*) "unset label ", iLabel
+    iLabel = iLabel + 1
+
+    close(55)
+    close(56)
+
+    write(strout,fmt='(a,f15.3,a,f15.3,a,f15.3,a,f15.3,a)') &
+         "set xrange [",-mesh % sphere_radius*1.1_RKIND,":",mesh % sphere_radius*1.1_RKIND,&
+         "] ; set yrange [",-mesh % sphere_radius*1.1_RKIND,":",mesh % sphere_radius*1.1_RKIND,"]"
+    write(*,*) trim(strout)
+
+  end subroutine plot_vertices_spherical
+
+  !-------------------------------------------------------------
+
+  subroutine plot_cells_spherical(mesh, cellArray, filename, fmin, fmax)
+
+    type(mesh_type), intent(in) :: mesh
+    
+    real(kind=RKIND), dimension(:), intent(in) :: &
+         cellArray
+
+    character(len=*), optional, intent(in) :: &
+         filename
+    
+    real(kind=RKIND), optional, intent(in) :: &
+         fmin, &
+         fmax
+
+    real(kind=RKIND) :: &
+         xc, yc, zc, &
+         xv, yv, zv, &
+         xv0, yv0, zv0
+
+    real(kind=RKIND) :: &
+         x0, y0, z0, &
+         x1, y1, z1, &
+         x2, y2, z2, &
+         x3, y3, z3, &
+         x4, y4, z4
+
+    real(kind=RKIND) :: &
+         lat0, lon0, &
+         lat1, lon1, &
+         lat2, lon2, &
+         lat3, lon3, &
+         lat4, lon4
+
+    logical :: lnofill
+
+    real(kind=RKIND) :: &
+         fValue, &
+         fMin_use, &
+         fMax_use
 
     integer :: &
          iCell, &
@@ -2037,18 +2442,25 @@ contains
          stroutlabel, &
          stroutint
 
+    character(len=200) :: &
+         filename_use
+
+    iObject = 1
+
     lnofill = .false.
 
-    !fMin = minval(cellArray(1:mesh % nCells))
-    !fMax = maxval(cellArray(1:mesh % nCells))
+    if (present(fmin) .and. present(fmax)) then
+       fMin_use = fmin
+       fMax_use = fmax
+    else
+       fMin_use = minval(cellArray(1:mesh % nCells))
+       fMax_use = maxval(cellArray(1:mesh % nCells))
+    endif
 
-    !fMin = real(1,RKIND)
-    !fMax = real(mesh % nCells,RKIND)
+    filename_use = "spherical_cells.txt"
+    if (present(filename)) filename_use = trim(filename)
 
-    fMin = 223.0_RKIND
-    fMax = 310.0_RKIND
-
-    open(55,file="spherical.txt",action="write")
+    open(55,file=trim(filename_use),action="write")
     open(56,file="clearPlot.gnuplot",action="write")
 
     do iCell = 1, mesh % nCells
@@ -2061,10 +2473,10 @@ contains
 
        if (xc > 0.0_RKIND) then
 
-          fValue = (cellArray(iCell) - fMin) / (fMax - fMin)
-          !fValue = (real(iCell,RKIND) - fMin) / (fMax - fMin)
+          fValue = (cellArray(iCell) - fMin_use) / (fMax_use - fMin_use)
+          !fValue = (real(iCell,RKIND) - fMin_use) / (fMax_use - fMin_use)
 
-          write(*,*) iCell, iObject, fValue, cellArray(iCell)
+          !write(*,*) iCell, iObject, fValue, cellArray(iCell)
 
           write(strout,fmt='(a,i5,a)') "set object ",iObject," polygon from "
 
@@ -2213,13 +2625,13 @@ contains
     enddo ! iLon
 
     ! min/max labels
-    write(stroutint,fmt='(e20.8)') fMax
+    write(stroutint,fmt='(e20.8)') fMax_use
     write(stroutlabel,fmt='(a,i5,a,a,a)') "set label ",iLabel,' "',trim(adjustl(stroutint)),'" at graph 1.02, 0.9'
     write(55,*) trim(stroutlabel)
     write(56,*) "unset label ", iLabel
     iLabel = iLabel + 1
 
-    write(stroutint,fmt='(e20.8)') fMin
+    write(stroutint,fmt='(e20.8)') fMin_use
     write(stroutlabel,fmt='(a,i5,a,a,a)') "set label ",iLabel,' "',trim(adjustl(stroutint)),'" at graph 1.02, 0.8'
     write(55,*) trim(stroutlabel)
     write(56,*) "unset label ", iLabel
@@ -2228,9 +2640,10 @@ contains
     close(55)
     close(56)
 
-    write(strout,fmt='(a,f15.3,a,f15.3,a,f15.3,a,f15.3,a)') "set xrange [",-mesh % sphere_radius*1.1_RKIND,":",mesh % sphere_radius*1.1_RKIND,&
-                       "] ; set yrange [",-mesh % sphere_radius*1.1_RKIND,":",mesh % sphere_radius*1.1_RKIND,"]"
-    write(*,*) trim(strout)
+    write(strout,fmt='(a,f15.3,a,f15.3,a,f15.3,a,f15.3,a)') &
+         "set xrange [",-mesh % sphere_radius*1.1_RKIND,":",mesh % sphere_radius*1.1_RKIND,&
+         "] ; set yrange [",-mesh % sphere_radius*1.1_RKIND,":",mesh % sphere_radius*1.1_RKIND,"]"
+    !write(*,*) trim(strout)
 
   end subroutine plot_cells_spherical
 
@@ -2271,7 +2684,7 @@ contains
          thetaz    ! rotate about axis (positive look west)
 
     thetax = 0.0_RKIND
-    thetay = 40.0_RKIND
+    thetay = 60.0_RKIND
     thetaz = 70.0_RKIND
 
     v1(1) = x ; v1(2) = y ; v1(3) = z
@@ -2300,7 +2713,7 @@ contains
 
   !-------------------------------------------------------------
 
-  subroutine plot_pop_grid(mesh, cellArray, filename)
+  subroutine plot_pop_grid_cells(mesh, cellArray, filename)
 
     type(mesh_type), intent(in) :: mesh
     
@@ -2342,16 +2755,80 @@ contains
 
           enddo ! iCell
 
-          if (.not. lfound) write(55,*) real(i,RKIND)-0.5_RKIND, real(i,RKIND)+0.5_RKIND, &
-                                        real(j,RKIND)-0.5_RKIND, real(j,RKIND)+0.5_RKIND, &
-                                        0.0_RKIND
+          !if (.not. lfound) write(55,*) real(i,RKIND)-0.5_RKIND, real(i,RKIND)+0.5_RKIND, &
+          !                              real(j,RKIND)-0.5_RKIND, real(j,RKIND)+0.5_RKIND, &
+          !                              -99.0_RKIND
 
        enddo ! j
     enddo ! i
 
     close(55)
 
-  end subroutine plot_pop_grid
+  end subroutine plot_pop_grid_cells
+
+  !-------------------------------------------------------------
+
+  subroutine plot_pop_grid_vertices(mesh, vertexArray, interiorVertex, filename)
+
+    type(mesh_type), intent(in) :: mesh
+    
+    real(kind=RKIND), dimension(:), intent(in) :: &
+         vertexArray
+
+    integer, dimension(:), intent(in) :: &
+         interiorVertex
+
+    character(len=*), optional, intent(in) :: &
+         filename
+
+    integer :: &
+         iVertex, &
+         iVertexDegree, &
+         iCell, &
+         i, &
+         j, &
+         imin, &
+         jmin
+
+    if (present(filename)) then
+       open(55,file=trim(filename),action='write')
+    else
+       open(55,file='pop_grid.txt',action='write')
+    endif
+
+    do iVertex = 1, mesh % nVertices
+
+       if (interiorVertex(iVertex) == 1) then
+          
+          imin = 10000000
+          jmin = 10000000
+
+          do iVertexDegree = 1, mesh % vertexDegree
+             
+             iCell = mesh % cellsOnVertex % array(iVertexDegree,iVertex)
+             
+             i = mesh % POPindxi % array(iCell)
+             j = mesh % POPindxj % array(iCell)
+
+             imin = min(imin,i)
+             jmin = min(jmin,j)
+             
+          enddo ! iVertexDegree
+
+          write(55,*) &
+               real(imin,RKIND), &
+               real(imin,RKIND)+1.0_RKIND,  &
+               real(jmin,RKIND),  &
+               real(jmin,RKIND)+1.0_RKIND,  &
+               vertexArray(iVertex)
+
+       endif ! interiorVertex
+
+    enddo ! iVertex
+
+    close(55)
+stop
+  end subroutine plot_pop_grid_vertices
 
   !-------------------------------------------------------------
   ! spherical tests - strain

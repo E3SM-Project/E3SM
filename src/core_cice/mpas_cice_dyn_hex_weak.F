@@ -33,26 +33,6 @@ contains
 
     character(len=*), intent(in) :: gridCurvature
 
-    mesh % xCell % array = mesh % xCell % array / mesh % sphere_radius
-    mesh % yCell % array = mesh % yCell % array / mesh % sphere_radius
-    mesh % zCell % array = mesh % zCell % array / mesh % sphere_radius
-
-    mesh % xVertex % array = mesh % xVertex % array / mesh % sphere_radius
-    mesh % yVertex % array = mesh % yVertex % array / mesh % sphere_radius
-    mesh % zVertex % array = mesh % zVertex % array / mesh % sphere_radius
-
-    mesh % xEdge % array = mesh % xEdge % array / mesh % sphere_radius
-    mesh % yEdge % array = mesh % yEdge % array / mesh % sphere_radius
-    mesh % zEdge % array = mesh % zEdge % array / mesh % sphere_radius
-
-    mesh % dcEdge % array = mesh % dcEdge % array / mesh % sphere_radius
-    mesh % dvEdge % array = mesh % dvEdge % array / mesh % sphere_radius
-
-    mesh % areaCell % array = mesh % areaCell % array / (mesh % sphere_radius)**2
-    mesh % areaTriangle % array = mesh % areaTriangle % array / (mesh % sphere_radius)**2
-
-    mesh % sphere_radius = 1.0_RKIND
-
     call interior_vertices(mesh, &
          boundary % interiorVertex % array)
 
@@ -570,7 +550,7 @@ contains
 
   subroutine spherical_test_strain_weak(mesh, hexdyn, hexweak, normal)
 
-    use cice_testing, only: spherical_test_strain, plot_pop_grid, rms_difference
+    use cice_testing, only: spherical_test_strain, plot_pop_grid_cells, rms_difference
 
     use cice_dynamics_shared, only: latlon_from_xyz, grid_rotation_forward, grid_rotation_forward_nochange
     
