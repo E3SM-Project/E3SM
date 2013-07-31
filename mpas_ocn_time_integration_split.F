@@ -1073,6 +1073,14 @@ module ocn_time_integration_split
                           block % diagnostics % normalVelocityMeridional % array    &
                          )
 
+         call mpas_reconstruct(block % mesh, block % diagnostics % gradSSH % array,          &
+                          block % diagnostics % gradSSHX % array,            &
+                          block % diagnostics % gradSSHY % array,            &
+                          block % diagnostics % gradSSHZ % array,            &
+                          block % diagnostics % gradSSHZonal % array,        &
+                          block % diagnostics % gradSSHMeridional % array    &
+                         )
+
          call ocn_time_average_accumulate(block % average, block % state % time_levs(2) % state, block % diagnostics)
          call ocn_time_average_coupled_accumulate(block % diagnostics, block % forcing)
 
