@@ -202,5 +202,9 @@ clean:
 
 .F.o:
 	$(RM) $@ $*.mod
-	$(CPP) $(CPPFLAGS) $(COREDEF) $(HYDROSTATIC) $(CPPINCLUDES)  -DIWORDSIZE=4 -DRWORDSIZE=8 $< > $*.f90
+ifeq "$(GEN_F90)" "true"
+	$(CPP) $(CPPFLAGS) $(COREDEF) $(HYDROSTATIC) $(CPPINCLUDES) -DIWORDSIZE=4 -DRWORDSIZE=8 $< > $*.f90
 	$(FC) $(FFLAGS) -c $*.f90 $(FCINCLUDES) -I../../framework -I../../operators -I./physics_wrf -I../../external/esmf_time_f90
+else
+	$(FC) $(CPPFLAGS) $(COREDEF) $(HYDROSATIC) -DIWORDSIZE=4 -DRWORDSIZE=8 $(FFLAGS) -c $*.F $(CPPINCLUDES) $(FCINCLUDES) -I../../framework -I../../operators -I./physics_wrf -I../../external/esmf_time_f90
+endif

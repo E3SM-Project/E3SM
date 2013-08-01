@@ -54,9 +54,13 @@ Test1_WRFU.exe : libesmf_time.a Test1_WRFU.o
 .F90.o :
 	$(RM) $@
 	$(SED_FTN) $*.F90 > $*.b
+ifeq "$(GEN_F90)" "true"
 	$(CPP) -C -P -I. $*.b > $*.f
-	$(RM) $*.b
 	$(FC) -o $@ -c $*.f
+else
+	$(FC) -o $@ -c $*.F90 -I.
+endif
+	$(RM) $*.b
 
 .F90.f :
 	$(RM) $@

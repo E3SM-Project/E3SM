@@ -1,6 +1,6 @@
 .SUFFIXES: .F .o
 
-DEPS := $(wildcard ../core_$(CORE)/*.xml)
+DEPS := $(wildcard ../core_$(CORE)/Registry.xml)
 
 OBJS = mpas_kind_types.o \
        mpas_framework.o \
@@ -67,8 +67,12 @@ clean:
 
 .F.o:
 	$(RM) $@ $*.mod
+ifeq "$(GEN_F90)" "true"
 	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) $< > $*.f90
 	$(FC) $(FFLAGS) -c $*.f90 $(FCINCLUDES) -I../external/esmf_time_f90
+else
+	$(FC) $(CPPFLAGS) $(FFLAGS) -c $*.F $(CPPINCLUDES) $(FCINCLUDES) -I../external/esmf_time_f90
+endif
 
 .c.o:
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(CPPINCLUDES) -c $<

@@ -78,5 +78,9 @@ clean:
 	$(RM) *.f90 *.o *.mod
 
 .F.o:
+ifeq "$(GEN_F90)" "true"
 	$(CPP) $(CPPFLAGS) $(COREDEF) $(CPPINCLUDES) -DIWORDSIZE=4 -DRWORDSIZE=8 $< > $*.f90
 	$(FC) $(FFLAGS) -c $*.f90 $(FCINCLUDES) -I../../../framework -I../../../operators -I..
+else
+	$(FC) $(CPPFLAGS) $(COREDEF) -DIWORDSIZE=4 -DRWORDSIZE=8 $(FFLAGS) -c $*.F $(CPPINCLUDES) $(FCINCLUDES) -I../../../framework -I../../../operators -I..
+endif

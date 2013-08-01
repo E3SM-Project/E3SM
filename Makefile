@@ -295,6 +295,13 @@ else
 	TAU_MESSAGE="TAU Hooks are off."
 endif
 
+ifeq "$(GEN_F90)" "true"
+	GEN_F90_MESSAGE="MPAS generated and was built with intermediate .f90 files."
+else
+	override GEN_F90=false
+	GEN_F90_MESSAGE="MPAS was built with .F files."
+endif
+
 
 ifneq ($(wildcard .mpas_core_*), ) # CHECK FOR BUILT CORE
 
@@ -368,7 +375,8 @@ endif
                  CPPINCLUDES="$(CPPINCLUDES)" \
                  FCINCLUDES="$(FCINCLUDES)" \
                  CORE="$(CORE)"\
-                 AUTOCLEAN="$(AUTOCLEAN)"
+                 AUTOCLEAN="$(AUTOCLEAN)" \
+                 GEN_F90="$(GEN_F90)"
 	@echo "$(CORE)" > .mpas_core_$(CORE)
 	if [ -e src/$(CORE)_model ]; then mv src/$(CORE)_model .; fi
 	@echo ""
@@ -380,6 +388,7 @@ endif
 ifeq "$(AUTOCLEAN)" "true"
 	@echo $(AUTOCLEAN_MESSAGE)
 endif
+	@echo $(GEN_F90_MESSAGE)
 	@echo "*******************************************************************************"
 clean:
 	$(RM) .mpas_core_*
@@ -447,6 +456,7 @@ errmsg:
 	@echo "    USE_PAPI=true - builds version using PAPI for timers. Default is off."
 	@echo "    TAU=true      - builds version using TAU hooks for profiling. Default is off."
 	@echo "    AUTOCLEAN=true    - forces a clean of infrastructure prior to build new core."
+	@echo "    GEN_F90=true  - Generates intermediate .f90 files through CPP, and builds with them."
 	@echo ""
 	@echo "Ensure that NETCDF, PNETCDF, PIO, and PAPI (if USE_PAPI=true) are environment variables"
 	@echo "that point to the absolute paths for the libraries."
