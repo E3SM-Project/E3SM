@@ -560,7 +560,7 @@ module ocn_global_diagnostics
       localVertSumMax
 
       integer :: elementIndex
-      real (kind=RKIND) :: colSum
+      real (kind=RKIND) :: colSum, colSumAbs
 
       localSum = 0.0
       localMin =  1.0e34
@@ -570,8 +570,9 @@ module ocn_global_diagnostics
 
       do elementIndex = 1, nElements
         colSum = sum(field(1:maxLevel(elementIndex),elementIndex))
+        colSumAbs = sum(abs(field(1:maxLevel(elementIndex),elementIndex)))
 
-        localSum = localSum + areas(elementIndex) * colSum
+        localSum = localSum + areas(elementIndex) * colSumAbs
         localMin = min(localMin,minval(field(1:maxLevel(elementIndex),elementIndex)))
         localMax = max(localMax,maxval(field(1:maxLevel(elementIndex),elementIndex)))
         localVertSumMin = min(localVertSumMin,colSum)
@@ -648,7 +649,7 @@ module ocn_global_diagnostics
       localVertSumMax
 
       integer :: elementIndex
-      real (kind=RKIND) :: thicknessWeightedColSum
+      real (kind=RKIND) :: thicknessWeightedColSum, thicknessWeightedColSumAbs
       real (kind=RKIND), dimension(nVertLevels, nElements) :: hTimesField
 
       localSum = 0.0
@@ -659,7 +660,8 @@ module ocn_global_diagnostics
 
       do elementIndex = 1, nElements
         thicknessWeightedColSum = sum(layerThickness(1:maxLevel(elementIndex),elementIndex)*field(1:maxLevel(elementIndex),elementIndex))
-        localSum = localSum + areas(elementIndex) * thicknessWeightedColSum
+        thicknessWeightedColSumAbs = sum(layerThickness(1:maxLevel(elementIndex),elementIndex)*abs(field(1:maxLevel(elementIndex),elementIndex)))
+        localSum = localSum + areas(elementIndex) * thicknessWeightedColSumAbs
         localMin = min(localMin,minval(field(1:maxLevel(elementIndex),elementIndex)))
         localMax = max(localMax,maxval(field(1:maxLevel(elementIndex),elementIndex)))
         localVertSumMin = min(localVertSumMin,thicknessWeightedColSum)
