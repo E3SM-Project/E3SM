@@ -80,7 +80,8 @@ module ocn_global_diagnostics
       real (kind=RKIND) :: volumeCellGlobal, volumeEdgeGlobal, CFLNumberGlobal, localCFL, localSum, areaCellGlobal, areaEdgeGlobal, areaTriangleGlobal
       real (kind=RKIND), dimension(:), pointer ::  areaCell, dcEdge, dvEdge, areaTriangle, areaEdge
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness, normalVelocity, tangentialVelocity, layerThicknessEdge, relativeVorticity, kineticEnergyCell, &
-         normalizedRelativeVorticityEdge, normalizedPlanetaryVorticityEdge, pressure, montgomeryPotential, vertTransportVelocityTop, density, tracerTemp
+         normalizedRelativeVorticityEdge, normalizedPlanetaryVorticityEdge, pressure, montgomeryPotential, vertTransportVelocityTop, vertVelocityTop, &
+         lowFreqDivergence, highFreqThickness, density, tracerTemp
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers
       
       real (kind=RKIND), dimension(kMaxVariables) :: sums, mins, maxes, averages, verticalSumMins, verticalSumMaxes, reductions
@@ -127,6 +128,7 @@ module ocn_global_diagnostics
          tracers => state % tracers % array
          tangentialVelocity => state % tangentialVelocity % array
          vertTransportVelocityTop => state % vertTransportVelocityTop % array
+         vertVelocityTop => state % vertVelocityTop % array
          layerThicknessEdge => state % layerThicknessEdge % array
          relativeVorticity => state % relativeVorticity % array
          kineticEnergyCell => state % kineticEnergyCell % array
@@ -134,6 +136,8 @@ module ocn_global_diagnostics
          normalizedPlanetaryVorticityEdge => state % normalizedPlanetaryVorticityEdge % array
          montgomeryPotential => state % montgomeryPotential % array
          pressure => state % pressure % array
+         lowFreqDivergence => state % lowFreqDivergence % array
+         highFreqThickness => state % highFreqThickness % array
 
          variableIndex = 0
          ! layerThickness
@@ -249,10 +253,43 @@ module ocn_global_diagnostics
          verticalSumMins(variableIndex) = min(verticalSumMins(variableIndex), verticalSumMins_tmp(variableIndex))
          verticalSumMaxes(variableIndex) = max(verticalSumMaxes(variableIndex), verticalSumMaxes_tmp(variableIndex))
 
+         ! vertVelocityTop vertical velocity
+         variableIndex = variableIndex + 1
+         call ocn_compute_field_volume_weighted_local_stats_max_level(dminfo, nVertLevels, nCellsSolve, maxLevelCell(1:nCellsSolve), areaCell(1:nCellsSolve), layerThickness(:,1:nCellsSolve), &
+            vertVelocityTop(1:nVertLevels,1:nCellsSolve), sums_tmp(variableIndex), mins_tmp(variableIndex), maxes_tmp(variableIndex), verticalSumMins_tmp(variableIndex), &
+            verticalSumMaxes_tmp(variableIndex))
+         sums(variableIndex) = sums(variableIndex) + sums_tmp(variableIndex)
+         mins(variableIndex) = min(mins(variableIndex), mins_tmp(variableIndex))
+         maxes(variableIndex) = max(maxes(variableIndex), maxes_tmp(variableIndex))
+         verticalSumMins(variableIndex) = min(verticalSumMins(variableIndex), verticalSumMins_tmp(variableIndex))
+         verticalSumMaxes(variableIndex) = max(verticalSumMaxes(variableIndex), verticalSumMaxes_tmp(variableIndex))
+
          ! vertTransportVelocityTop vertical velocity
          variableIndex = variableIndex + 1
          call ocn_compute_field_volume_weighted_local_stats_max_level(dminfo, nVertLevels, nCellsSolve, maxLevelCell(1:nCellsSolve), areaCell(1:nCellsSolve), layerThickness(:,1:nCellsSolve), &
             vertTransportVelocityTop(1:nVertLevels,1:nCellsSolve), sums_tmp(variableIndex), mins_tmp(variableIndex), maxes_tmp(variableIndex), verticalSumMins_tmp(variableIndex), &
+            verticalSumMaxes_tmp(variableIndex))
+         sums(variableIndex) = sums(variableIndex) + sums_tmp(variableIndex)
+         mins(variableIndex) = min(mins(variableIndex), mins_tmp(variableIndex))
+         maxes(variableIndex) = max(maxes(variableIndex), maxes_tmp(variableIndex))
+         verticalSumMins(variableIndex) = min(verticalSumMins(variableIndex), verticalSumMins_tmp(variableIndex))
+         verticalSumMaxes(variableIndex) = max(verticalSumMaxes(variableIndex), verticalSumMaxes_tmp(variableIndex))
+
+         ! lowFreqDivergence
+         variableIndex = variableIndex + 1
+         call ocn_compute_field_volume_weighted_local_stats_max_level(dminfo, nVertLevels, nCellsSolve, maxLevelCell(1:nCellsSolve), areaCell(1:nCellsSolve), layerThickness(:,1:nCellsSolve), &
+            lowFreqDivergence(:,1:nCellsSolve), sums_tmp(variableIndex), mins_tmp(variableIndex), maxes_tmp(variableIndex), verticalSumMins_tmp(variableIndex), &
+            verticalSumMaxes_tmp(variableIndex))
+         sums(variableIndex) = sums(variableIndex) + sums_tmp(variableIndex)
+         mins(variableIndex) = min(mins(variableIndex), mins_tmp(variableIndex))
+         maxes(variableIndex) = max(maxes(variableIndex), maxes_tmp(variableIndex))
+         verticalSumMins(variableIndex) = min(verticalSumMins(variableIndex), verticalSumMins_tmp(variableIndex))
+         verticalSumMaxes(variableIndex) = max(verticalSumMaxes(variableIndex), verticalSumMaxes_tmp(variableIndex))
+
+         ! highFreqThickness
+         variableIndex = variableIndex + 1
+         call ocn_compute_field_volume_weighted_local_stats_max_level(dminfo, nVertLevels, nCellsSolve, maxLevelCell(1:nCellsSolve), areaCell(1:nCellsSolve), layerThickness(:,1:nCellsSolve), &
+            highFreqThickness(:,1:nCellsSolve), sums_tmp(variableIndex), mins_tmp(variableIndex), maxes_tmp(variableIndex), verticalSumMins_tmp(variableIndex), &
             verticalSumMaxes_tmp(variableIndex))
          sums(variableIndex) = sums(variableIndex) + sums_tmp(variableIndex)
          mins(variableIndex) = min(mins(variableIndex), mins_tmp(variableIndex))
@@ -383,7 +420,19 @@ module ocn_global_diagnostics
       variableIndex = variableIndex + 1
       averages(variableIndex) = sums(variableIndex)/volumeCellGlobal
 
+      ! vertVelocityTop vertical velocity
+      variableIndex = variableIndex + 1
+      averages(variableIndex) = sums(variableIndex)/volumeCellGlobal
+
       ! vertTransportVelocityTop vertical velocity
+      variableIndex = variableIndex + 1
+      averages(variableIndex) = sums(variableIndex)/volumeCellGlobal
+
+      ! lowFreqDivergence
+      variableIndex = variableIndex + 1
+      averages(variableIndex) = sums(variableIndex)/volumeCellGlobal
+
+      ! highFreqThickness
       variableIndex = variableIndex + 1
       averages(variableIndex) = sums(variableIndex)/volumeCellGlobal
 
@@ -804,7 +853,10 @@ module ocn_global_diagnostics
             write (fileID,'(i5,a)') i,'. normalizedAbsoluteVorticity = (relative vorticity + planetary vorticity)/layer thickness'; i=i+1
             write (fileID,'(i5,a)') i,'. pressure'; i=i+1
             write (fileID,'(i5,a)') i,'. montgomeryPotential'; i=i+1
-            write (fileID,'(i5,a)') i,'. vertTransportVelocityTop vertical velocity'; i=i+1
+            write (fileID,'(i5,a)') i,'. vertVelocityTop vertical velocity'; i=i+1
+            write (fileID,'(i5,a)') i,'. vertTransportVelocityTop vertical transport'; i=i+1
+            write (fileID,'(i5,a)') i,'. lowFreqDivergence'; i=i+1
+            write (fileID,'(i5,a)') i,'. highFreqThickness'; i=i+1
             write (fileID,'(i5,a)') i,'. Tracers: usually T, S, then others in remaining columns'
 
             write (fileID,'(/,a)') 'A chain of simple unix commands may be used to access a specific part of the data. For example,'
