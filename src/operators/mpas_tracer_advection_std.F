@@ -49,7 +49,9 @@ module mpas_tracer_advection_std
 !>  Both horizontal and vertical.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_tracer_advection_std_tend(tracers, adv_coefs, adv_coefs_3rd, nAdvCellsForEdge, advCellsForEdge, normalThicknessFlux, w, layerThickness, verticalCellSize, dt, grid, tend_layerThickness, tend, maxLevelCell_in, maxLevelEdgeTop_in, highOrderAdvectionMask_in, verticalDivergenceFactor_in, edgeSignOnCell_in)!{{{
+   subroutine mpas_tracer_advection_std_tend(tracers, adv_coefs, adv_coefs_3rd, nAdvCellsForEdge, advCellsForEdge, normalThicknessFlux, &!{{{
+                                             w, layerThickness, verticalCellSize, dt, grid, tend_layerThickness, tend, maxLevelCell_in, &
+                                             maxLevelEdgeTop_in, highOrderAdvectionMask_in, verticalDivergenceFactor_in, edgeSignOnCell_in)
 
       real (kind=RKIND), dimension(:,:,:), intent(in) :: tracers !< Input: current tracer values
       real (kind=RKIND), dimension(:,:), intent(in) :: adv_coefs !< Input: Advection coefficients for 2nd order advection
