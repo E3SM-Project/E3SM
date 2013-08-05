@@ -65,6 +65,7 @@ module interpolate_mod
   public :: cube_facepoint_ne
   public :: cube_facepoint_unstructured
 
+  public :: interpolate_tracers
   public :: interpolate_2d
   public :: interpolate_create
 
@@ -221,6 +222,68 @@ contains
     deallocate(leg)
 
   end subroutine interpolate_create
+
+
+  subroutine interpolate_tracers(r, tracers, f) 
+    use kinds,          only : longdouble_kind
+    use dimensions_mod, only : np, qsize
+    use quadrature_mod, only : quadrature_t, gausslobatto
+
+
+    implicit none
+
+    type (cartesian2D_t), intent(in)  :: r
+    real (kind=real_kind),intent(in)  :: tracers(np*np,qsize)
+    real (kind=real_kind),intent(out) :: f(qsize)
+
+    type (quadrature_t        )       :: gll        
+    real (kind=real_kind      )       :: dp    (np)
+    real (kind=real_kind      )       :: x     (np)
+    real (kind=real_kind      )       :: y     (np)
+    real (kind=real_kind      )       :: c     (np,np)
+    real (kind=real_kind      )       :: xy    (np*np)
+
+    integer                           :: i,j
+    logical                           :: first_time=.true.
+    
+    save c
+    save gll
+   
+    if (first_time) then
+      first_time = .false.
+      gll=gausslobatto(np)
+      dp = 1
+      do i=1,np
+        do j=1,np
+          if (i /= j) then
+            dp(i) = dp(i) * (gll%points(i) - gll%points(j))
+          end if
+        end do
+      end do 
+      do i=1,np
+        do j=1,np
+          c(i,j) = 1/(dp(i)*dp(j))
+        end do
+      end do 
+    end if
+
+    x = 1
+    y = 1
+    do i=1,np
+      do j=1,np
+        if (i /= j) then
+          x(i) = x(i) * (r%x - gll%points(j))
+          y(i) = y(i) * (r%y - gll%points(j))
+        end if
+      end do
+    end do 
+    do j=1,np  
+      do i=1,np
+        xy(i + (j-1)*np) = x(i)*y(j)*c(i,j)
+      end do
+    end do 
+    f = MATMUL(xy,tracers)
+  end subroutine interpolate_tracers
 
   function interpolate_2d(cart, f, interp, npts, fillvalue) result(fxy)
     integer, intent(in)               :: npts
