@@ -557,11 +557,11 @@ contains
     write(*,*) 'PLEASE USE LIMITER_OPTION == 0 WHEN THE GPU OPTION IS ENABLED!'
     stop
   endif
-  if (nu_p > 0) then
-    write(*,*) 'CUDA_MOD IS NOT INTENDED FOR USE WITH NU_P > 0 AT THIS TIME!'
-    write(*,*) 'PLEASE USE NU_P == 0 WHEN THE GPU OPTION IS ENABLED!'
-    stop
-  endif
+!  if (nu_p > 0) then
+!    write(*,*) 'CUDA_MOD IS NOT INTENDED FOR USE WITH NU_P > 0 AT THIS TIME!'
+!    write(*,*) 'PLEASE USE NU_P == 0 WHEN THE GPU OPTION IS ENABLED!'
+!    stop
+!  endif
 
   if (rhs_multiplier == 0) then
     do ie = nets , nete

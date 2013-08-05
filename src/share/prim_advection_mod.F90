@@ -1203,7 +1203,7 @@ contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !  Dissipation
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    if ( limiter_option == 8 .or. nu_p > 0 ) then
+    if ( limiter_option == 8  ) then
       ! dissipation was applied in RHS.  
     else
       call advance_hypervis_scalar(edgeadv,elem,hvcoord,hybrid,deriv,tl%np1,np1_qdp,nets,nete,dt)
@@ -1301,7 +1301,7 @@ contains
   !   compute biharmonic mixing term f
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   rhs_viss = 0
-  if ( limiter_option == 8 .or. nu_p > 0 ) then
+  if ( limiter_option == 8  ) then
     ! when running lim8, we also need to limit the biharmonic, so that term needs
     ! to be included in each euler step.  three possible algorithms here:
     ! 1) most expensive:
@@ -1354,8 +1354,7 @@ contains
         enddo
       enddo
       ! update qmin/qmax based on neighbor data for lim8
-      if ( limiter_option == 8 ) &
-           call neighbor_minmax(elem,hybrid,edgeAdvQ2,nets,nete,qmin(:,:,nets:nete),qmax(:,:,nets:nete))
+      call neighbor_minmax(elem,hybrid,edgeAdvQ2,nets,nete,qmin(:,:,nets:nete),qmax(:,:,nets:nete))
     endif
 
     ! lets just reuse the old neighbor min/max, but update based on local data
@@ -1408,14 +1407,8 @@ contains
           enddo
         enddo
       endif
-      if ( limiter_option == 8 ) then
-        ! biharmonic and update neighbor min/max
-        call biharmonic_wk_scalar_minmax( elem , qtens_biharmonic , deriv , edgeAdvQ3 , hybrid , &
-                                          nets , nete , qmin(:,:,nets:nete) , qmax(:,:,nets:nete) )
-      else
-        ! regular biharmonic, no need to updat emin/max
-        call biharmonic_wk_scalar( elem , qtens_biharmonic , deriv , edgeAdv , hybrid , nets , nete )
-      endif
+      call biharmonic_wk_scalar_minmax( elem , qtens_biharmonic , deriv , edgeAdvQ3 , hybrid , &
+           nets , nete , qmin(:,:,nets:nete) , qmax(:,:,nets:nete) )
       do ie = nets , nete
 #if (defined ELEMENT_OPENMP)
         !$omp parallel do private(k, q, dp0)
@@ -2128,13 +2121,28 @@ contains
 !$omp parallel do private(k,q)
 #endif
       do k = 1 , nlev
-         ! apply dissipation to Q, not Qdp, for tracer/mass consistency
-        dp(:,:,k) = elem(ie)%derived%dp(:,:,k) - dt2*elem(ie)%derived%divdp_proj(:,:,k)
-        do q = 1 , qsize
-          Qtens(:,:,k,q,ie) = elem(ie)%state%Qdp(:,:,k,q,nt_qdp) / dp(:,:,k)
-        enddo
+         ! various options:
+         !   1)  biharmonic( Qdp )
+         !   2)  dp0 * biharmonic( Qdp/dp )    
+         !   3)  dpave * biharmonic(Q/dp)
+         ! For trace mass / mass consistenciy, we use #2 when nu_p=0
+         ! and #e when nu_p>0, where dpave is the mean mass flux from the nu_p
+         ! contribution from dynamics.
+         dp0 = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) ) * hvcoord%ps0 + &
+              ( hvcoord%hybi(k+1) - hvcoord%hybi(k) ) * hvcoord%ps0
+         dp(:,:,k) = elem(ie)%derived%dp(:,:,k) - dt2*elem(ie)%derived%divdp_proj(:,:,k)
+         if (nu_p>0) then
+            do q = 1 , qsize
+               Qtens(:,:,k,q,ie) = elem(ie)%derived%dpdiss_ave(:,:,k)*&
+                    elem(ie)%state%Qdp(:,:,k,q,nt_qdp) / dp(:,:,k) 
+            enddo
+         else
+            do q = 1 , qsize
+               Qtens(:,:,k,q,ie) = dp0*elem(ie)%state%Qdp(:,:,k,q,nt_qdp) / dp(:,:,k)
+            enddo
+         endif
       enddo
-    enddo
+   enddo
 
     ! compute biharmonic operator. Qtens = input and output 
     call biharmonic_wk_scalar( elem , Qtens , deriv , edgeAdv , hybrid , nets , nete )
@@ -2152,7 +2160,7 @@ contains
               ! advection Qdp.  For mass advection consistency:
               ! DIFF( Qdp) ~   dp0 DIFF (Q)  =  dp0 DIFF ( Qdp/dp )  
               elem(ie)%state%Qdp(i,j,k,q,nt_qdp) = elem(ie)%state%Qdp(i,j,k,q,nt_qdp) * elem(ie)%spheremp(i,j) &
-                                                   - dt * nu_q * dp0 * Qtens(i,j,k,q,ie)
+                                                   - dt * nu_q * Qtens(i,j,k,q,ie)
             enddo
           enddo
         enddo
