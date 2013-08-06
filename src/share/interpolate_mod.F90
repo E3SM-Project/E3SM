@@ -66,6 +66,7 @@ module interpolate_mod
   public :: cube_facepoint_unstructured
 
   public :: interpolate_tracers
+  public :: minmax_tracers
   public :: interpolate_2d
   public :: interpolate_create
 
@@ -284,6 +285,41 @@ contains
     end do 
     f = MATMUL(xy,tracers)
   end subroutine interpolate_tracers
+
+  subroutine minmax_tracers(r, tracers, mint, maxt) 
+    use dimensions_mod, only : np, qsize
+    use quadrature_mod, only : quadrature_t, gausslobatto
+
+
+    implicit none
+
+    type (cartesian2D_t), intent(in)  :: r
+    real (kind=real_kind),intent(in)  :: tracers(np,np,qsize)
+    real (kind=real_kind),intent(out) :: mint(qsize)
+    real (kind=real_kind),intent(out) :: maxt(qsize)
+
+    type (quadrature_t        )       :: gll        
+    integer                           :: i,j,k
+    logical                           :: first_time=.true.
+    
+    save gll
+   
+    if (first_time) then
+      first_time = .false.
+      gll=gausslobatto(np)
+    end if
+
+    do i=1,np  
+      if (r%x < gll%points(i)) exit
+    end do 
+    do j=1,np  
+      if (r%y < gll%points(j)) exit
+    end do 
+    if (1 < i) i = i-1
+    if (1 < j) j = j-1
+    mint(:) = minval(minval(tracers(i:i+1,j:j+1,:),1),1)
+    maxt(:) = maxval(maxval(tracers(i:i+1,j:j+1,:),1),1)
+  end subroutine minmax_tracers
 
   function interpolate_2d(cart, f, interp, npts, fillvalue) result(fxy)
     integer, intent(in)               :: npts
