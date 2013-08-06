@@ -17,6 +17,7 @@ private
      type (parallel_t) :: par
      integer           :: ithr
      integer           :: NThreads
+     integer           :: vert_num_threads
      logical           :: masterthread
   end type
 

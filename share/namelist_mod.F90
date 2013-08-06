@@ -88,7 +88,7 @@ module namelist_mod
        test_cfldep                          
                                  
   !-----------------
-  use thread_mod, only : nthreads, omp_get_max_threads
+  use thread_mod, only : nthreads, omp_get_max_threads, vert_num_threads
   !-----------------
   use dimensions_mod, only : ne, np, npdg, nnodes, nmpi_per_node, npart, ntrac, ntrac_d, qsize, qsize_d, set_mesh_dimensions
   !-----------------
@@ -223,6 +223,7 @@ module namelist_mod
                      qsize,         &       ! number of SE tracers
                      ntrac,         &       ! number of fvm tracers
                      nthreads,      &       ! Number of threads per process
+                     vert_num_threads,      &       ! Number of threads per process
                      limiter_option, &
                      smooth,        &        ! Timestep Filter  
 #endif
@@ -405,6 +406,7 @@ module namelist_mod
     ndays         = 0
     nmax          = 12
     nthreads = 1
+    vert_num_threads = 1
     se_ftype = ftype   ! MNL: For non-CAM runs, ftype=0 in control_mod 
     phys_tscale=0
     nsplit = 1 
@@ -802,6 +804,7 @@ module namelist_mod
     call MPI_bcast(tstep     ,1,MPIreal_t   ,par%root,par%comm,ierr) 
     call MPI_bcast(nmax      ,1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(NTHREADS  ,1,MPIinteger_t,par%root,par%comm,ierr)
+    call MPI_bcast(vert_num_threads,1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(ndays     ,1,MPIinteger_t,par%root,par%comm,ierr)
     nEndStep = nmax
 #endif
@@ -921,7 +924,7 @@ module namelist_mod
 
     ! sanity check on thread count
     ! HOMME will run if if nthreads > max, but gptl will print out GB of warnings.
-    if (NThreads > omp_get_max_threads()) then
+    if (NThreads*vert_num_threads > omp_get_max_threads()) then
        if(par%masterproc) write(iulog,*) "Main:NThreads=",NThreads
        if(par%masterproc) print *,'omp_get_max_threads() = ',OMP_get_max_threads()       
        if(par%masterproc) print *,'requested threads exceeds OMP_get_max_threads()'
@@ -1096,6 +1099,7 @@ module namelist_mod
           call abortmp('user specified ntrac > ntrac_d parameter in dimensions_mod.F90')
        endif
        write(iulog,*)"readnl: NThreads      = ",NTHREADS
+       write(iulog,*)"readnl: vert_num_threads = ",vert_num_threads
 #endif
 
        write(iulog,*)"readnl: ne,np         = ",NE,np
