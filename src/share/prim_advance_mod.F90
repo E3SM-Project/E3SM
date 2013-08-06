@@ -2443,9 +2443,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
 
   implicit none
-  integer :: np1,nm1,n0,qn0,nets,nete
-  real*8 :: dt2
-  logical  :: compute_diagnostics
+  integer, intent(in) :: np1,nm1,n0,qn0,nets,nete
+  real*8, intent(in) :: dt2
+  logical, intent(in)  :: compute_diagnostics
 
   type (hvcoord_t)     , intent(in) :: hvcoord
   type (hybrid_t)      , intent(in) :: hybrid
@@ -2511,7 +2511,13 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 !       ph(:,:,k)   = hvcoord%hyai(k)*hvcoord%ps0 + hvcoord%hybi(k)*elem(ie)%state%ps_v(:,:,n0)
 !     end do
 
-#if (defined ELEMENT_OPENMP)
+#if (defined ELEMENT_OPENMP_BROKEN)
+!  Note that the following does not work with OpenMP threading turned on.
+!  The line 
+!              p(:,:,k)=p(:,:,k-1) + dp(:,:,k-1)/2 + dp(:,:,k)/2
+!  is sequential in that it depends upon the previous p(:,:,k-1) and therefore
+!  gives a race condition.
+!  More thought has to go into enabling threading here.
 !$omp parallel do private(k,i,j,v1,v2,vtemp)
 #endif
      do k=1,nlev
