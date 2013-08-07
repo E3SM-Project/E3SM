@@ -110,7 +110,7 @@ program prim_main
   ! =====================================
   ! Begin threaded region so each thread can print info
   ! =====================================
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
   !$OMP PARALLEL DEFAULT(SHARED), PRIVATE(ithr,nets,nete,hybrid)
 #endif
   ithr=omp_get_thread_num()
@@ -124,7 +124,7 @@ program prim_main
      write(6,9) par%rank,ithr,nets,nete 
   endif
 9 format("process: ",i2,1x,"thread: ",i2,1x,"element limits: ",i5," - ",i5)
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
   !$OMP END PARALLEL
 #endif
 
@@ -155,7 +155,7 @@ program prim_main
 #endif
 
   if(par%masterproc) print *,"Primitive Equation Initialization..."
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
   !$OMP PARALLEL DEFAULT(SHARED), PRIVATE(ithr,nets,nete,hybrid)
 #endif
   ithr=omp_get_thread_num()
@@ -166,7 +166,7 @@ program prim_main
   call t_startf('prim_init2')
   call prim_init2(elem, fvm,  hybrid,nets,nete,tl, hvcoord)
   call t_stopf('prim_init2')
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
   !$OMP END PARALLEL
 #endif
 
@@ -231,7 +231,7 @@ program prim_main
 
   if(par%masterproc) print *,"Entering main timestepping loop"
   do while(tl%nstep < nEndStep)
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
      !$OMP PARALLEL DEFAULT(SHARED), PRIVATE(ithr,nets,nete,hybrid)
 #endif
      ithr=omp_get_thread_num()
@@ -249,7 +249,7 @@ program prim_main
         endif
         call t_stopf('prim_run')
      end do
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
      !$OMP END PARALLEL
 #endif
 

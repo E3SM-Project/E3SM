@@ -36,5 +36,11 @@
 /* Quadruple-precision */
 #cmakedefine01 HOMME_QUAD_PREC
 
-/* Element OpenMP */
-#cmakedefine ELEMENT_OPENMP
+/* Horizontal OpenMP (over elements) */
+#cmakedefine HORIZ_OPENMP
+
+/* Vertical OpenMP (within elements) */
+#cmakedefine VERT_OPENMP
+
+/* Nested OpenMP (both horizontal and vertical) */
+#cmakedefine NESTED_OPENMP

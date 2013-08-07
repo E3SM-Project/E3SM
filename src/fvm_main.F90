@@ -107,7 +107,7 @@ program fvm_main
   ! =====================================
   ! Begin threaded region...
   ! =====================================
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
   !$OMP PARALLEL DEFAULT(SHARED), PRIVATE(ithr,nets,nete)
 #endif
   ithr=omp_get_thread_num()
@@ -140,7 +140,7 @@ program fvm_main
 
   call cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
 
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
   !$OMP END PARALLEL
 #endif
   ! ================================================

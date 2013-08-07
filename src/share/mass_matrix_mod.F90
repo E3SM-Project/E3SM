@@ -84,7 +84,7 @@ contains
        end do
 
     end do
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
 !$OMP BARRIER
 #endif
 
@@ -114,7 +114,7 @@ contains
           end do
        end do
     end do
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
 !$OMP BARRIER
 #endif
 

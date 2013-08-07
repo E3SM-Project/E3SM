@@ -165,7 +165,7 @@ macro (setUpTestDir TEST_DIR)
 
   # openMP runs
   IF (NOT "${OMP_NAMELIST_FILES}" STREQUAL "")
-    IF (${ENABLE_OPENMP})
+    IF (${ENABLE_HORIZ_OPENMP})
       FILE(APPEND ${THIS_TEST_SCRIPT} "${POUND}===============================\n")
       FILE(APPEND ${THIS_TEST_SCRIPT} "${POUND} OpenMP Tests\n")
       FILE(APPEND ${THIS_TEST_SCRIPT} "${POUND}===============================\n")
@@ -203,7 +203,7 @@ macro (setUpTestDir TEST_DIR)
     FILE(APPEND ${THIS_TEST_SCRIPT} "${singleFile} ")
   ENDFOREACH ()
   # Add the OPENMP netcdf outpuf files
-  IF (${ENABLE_OPENMP})
+  IF (${ENABLE_HORIZ_OPENMP})
     FOREACH (singleFile ${OMP_NC_OUTPUT_FILES}) 
       FILE(APPEND ${THIS_TEST_SCRIPT} "${singleFile} ")
     ENDFOREACH ()
