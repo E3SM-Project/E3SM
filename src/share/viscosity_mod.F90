@@ -244,7 +244,7 @@ logical var_coef1
    do ie=nets,nete
 
 #if (defined ELEMENT_OPENMP)
-!$omp parallel do private(k)
+!$omp parallel do private(k,tmp)
 #endif
       do k=1,nlev
          tmp=elem(ie)%state%T(:,:,k,nt) 
@@ -277,7 +277,7 @@ logical var_coef1
       
       ! apply inverse mass matrix, then apply laplace again
 #if (defined ELEMENT_OPENMP)
-!$omp parallel do private(k,  v)
+!$omp parallel do private(k,v,tmp)
 #endif
       do k=1,nlev
          tmp(:,:)=rspheremv(:,:)*ptens(:,:,k,ie)
@@ -351,10 +351,10 @@ logical var_coef1
 !$omp parallel do private(k, q, lap_p)
 #endif
       do q=1,qsize      
-      do k=1,nlev    !  Potential loop inversion (AAM)
-         lap_p(:,:)=elem(ie)%rspheremp(:,:)*qtens(:,:,k,q,ie)
-         qtens(:,:,k,q,ie)=laplace_sphere_wk(lap_p,deriv,elem(ie),var_coef=.true.)
-      enddo
+        do k=1,nlev    !  Potential loop inversion (AAM)
+           lap_p(:,:)=elem(ie)%rspheremp(:,:)*qtens(:,:,k,q,ie)
+           qtens(:,:,k,q,ie)=laplace_sphere_wk(lap_p,deriv,elem(ie),var_coef=.true.)
+        enddo
       enddo
    enddo
 #ifdef DEBUGOMP
@@ -433,15 +433,15 @@ logical var_coef1
 !$omp parallel do private(k, q, lap_p)
 #endif
       do q=1,qsize      
-      do k=1,nlev    !  Potential loop inversion (AAM)
-         lap_p(:,:)=elem(ie)%rspheremp(:,:)*qtens(:,:,k,q,ie)
-         qtens(:,:,k,q,ie)=laplace_sphere_wk(lap_p,deriv,elem(ie),var_coef=.true.)
-         ! note: only need to consider the corners, since the data we packed was
-         ! constant within each element
-         emin(k,q,ie)=min(qmin(1,1,k,q),qmin(1,np,k,q),qmin(np,1,k,q),qmin(np,np,k,q))
-         emin(k,q,ie)=max(emin(k,q,ie),0d0)
-         emax(k,q,ie)=max(qmax(1,1,k,q),qmax(1,np,k,q),qmax(np,1,k,q),qmax(np,np,k,q))
-      enddo
+        do k=1,nlev    !  Potential loop inversion (AAM)
+           lap_p(:,:)=elem(ie)%rspheremp(:,:)*qtens(:,:,k,q,ie)
+           qtens(:,:,k,q,ie)=laplace_sphere_wk(lap_p,deriv,elem(ie),var_coef=.true.)
+           ! note: only need to consider the corners, since the data we packed was
+           ! constant within each element
+           emin(k,q,ie)=min(qmin(1,1,k,q),qmin(1,np,k,q),qmin(np,1,k,q),qmin(np,np,k,q))
+           emin(k,q,ie)=max(emin(k,q,ie),0d0)
+           emax(k,q,ie)=max(qmax(1,1,k,q),qmax(1,np,k,q),qmax(np,1,k,q),qmax(np,np,k,q))
+        enddo
       enddo
    enddo
 #ifdef DEBUGOMP
@@ -825,7 +825,7 @@ real (kind=real_kind) :: Qmax(np,np,nlev,qsize)
 #if (defined ELEMENT_OPENMP)
 !$omp parallel do private(k, q)
 #endif
-       do q=1,qsize	
+       do q=1,qsize
           do k=1,nlev
              Qmin(:,:,k,q)=min_neigh(k,q,ie)
              Qmax(:,:,k,q)=max_neigh(k,q,ie)
@@ -841,7 +841,7 @@ real (kind=real_kind) :: Qmax(np,np,nlev,qsize)
 #if (defined ELEMENT_OPENMP)
 !$omp parallel do private(k, q)
 #endif
-       do q=1,qsize	
+       do q=1,qsize
           do k=1,nlev         
              Qmin(:,:,k,q)=min_neigh(k,q,ie) ! restore element data.  we could avoid
              Qmax(:,:,k,q)=max_neigh(k,q,ie) ! this by adding a "ie" index to Qmin/max
