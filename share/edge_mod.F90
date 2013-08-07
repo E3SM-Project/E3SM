@@ -161,7 +161,7 @@ contains
 !$OMP BARRIER
 
 !   only master thread should allocate the buffer
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
 !$OMP MASTER
 #endif
     if (present(buf_ptr)) then
@@ -203,11 +203,11 @@ contains
     endif
     edge%buf    (:,:)=0.0D0
     edge%receive(:,:)=0.0D0
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
 !$OMP END MASTER
 #endif
 !   make sure all threads wait until buffer is allocated
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
 !$OMP BARRIER
 #endif
 
@@ -220,14 +220,14 @@ contains
        if (ith <= 1 ) then
           edgebuff_ptrs(ith)%ptr => edge%buf
        endif
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
        !$OMP BARRIER
        !$OMP MASTER
 #endif
        if (.not. associated(edgebuff_ptrs(0)%ptr, edgebuff_ptrs(1)%ptr)) then
           call haltmp('ERROR: edge struct appears to be thread-private.')
        endif
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
        !$OMP END MASTER
 #endif
     endif
@@ -293,7 +293,7 @@ contains
     implicit none
     type (EdgeBuffer_t),intent(inout) :: edge
 
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
 !$OMP BARRIER
 !$OMP MASTER
 #endif
@@ -301,7 +301,7 @@ contains
     edge%nlyr=0
     deallocate(edge%buf)
     deallocate(edge%receive)
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
 !$OMP END MASTER
 #endif
 
@@ -311,7 +311,7 @@ contains
     implicit none
     type (Ghostbuffer3d_t),intent(inout) :: buffer
 
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
 !$OMP BARRIER
 !$OMP MASTER
 #endif
@@ -319,7 +319,7 @@ contains
     buffer%nlyr=0
     deallocate(buffer%buf)
     deallocate(buffer%receive)
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
 !$OMP END MASTER
 #endif
 
@@ -376,7 +376,7 @@ contains
 
     call t_startf('edge_pack')
     if(.not. threadsafe) then
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
 !$OMP BARRIER
 #endif
        threadsafe=.true.
@@ -390,7 +390,7 @@ contains
        call haltmp('edgeVpack: Buffer overflow: size of the vertical dimension must be increased!')
     endif
     if(MODULO(np,2) == 0 .and. UseUnroll) then 
-#if (defined ELEMENT_OPENMP)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k,i)
 #endif
        do k=1,vlyr
@@ -407,7 +407,7 @@ contains
           enddo
        end do
     else
-#if (defined ELEMENT_OPENMP)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k,i)
 #endif
        do k=1,vlyr
@@ -426,7 +426,7 @@ contains
 
     if(desc%reverse(south)) then
        is = desc%putmapP(south)
-#if (defined ELEMENT_OPENMP)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k,i,ir)
 #endif
        do k=1,vlyr
@@ -439,7 +439,7 @@ contains
 
     if(desc%reverse(east)) then
        ie = desc%putmapP(east)
-#if (defined ELEMENT_OPENMP)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k,i,ir)
 #endif
        do k=1,vlyr
@@ -452,7 +452,7 @@ contains
 
     if(desc%reverse(north)) then
        in = desc%putmapP(north)
-#if (defined ELEMENT_OPENMP)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k,i,ir)
 #endif
        do k=1,vlyr
@@ -465,7 +465,7 @@ contains
 
     if(desc%reverse(west)) then
        iw = desc%putmapP(west)
-#if (defined ELEMENT_OPENMP)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k,i,ir)
 #endif
        do k=1,vlyr
@@ -539,7 +539,7 @@ contains
     integer :: is,ie,in,iw
 
     if(.not. threadsafe) then
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
 !$OMP BARRIER
 #endif
        threadsafe=.true.
@@ -689,7 +689,7 @@ contains
     iw=desc%getmapP(west)
 
     if(MODULO(np,2) == 0 .and. UseUnroll) then 
-#if (defined ELEMENT_OPENMP)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k,i)
 #endif
        do k=1,vlyr
@@ -705,7 +705,7 @@ contains
           end do
        end do
     else
-#if (defined ELEMENT_OPENMP)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k,i)
 #endif
        do k=1,vlyr
@@ -1332,7 +1332,7 @@ contains
     endif
 
     nbuf=max_neigh_edges*nelemd
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
 !$OMP MASTER
 #endif
     edge%nlyr=nlyr
@@ -1342,7 +1342,7 @@ contains
 
     allocate(edge%receive(nc,nc,nlyr,nbuf))
     edge%receive=0
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
 !$OMP END MASTER
 !$OMP BARRIER
 #endif
@@ -1357,7 +1357,7 @@ contains
     implicit none
     type (GhostBuffer_t),intent(inout) :: ghost
 
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
 !$OMP BARRIER
 !$OMP MASTER
 #endif
@@ -1365,7 +1365,7 @@ contains
     ghost%nlyr=0
     deallocate(ghost%buf)
     deallocate(ghost%receive)
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
 !$OMP END MASTER
 #endif
 
@@ -1379,7 +1379,7 @@ contains
     implicit none
     type (GhostBuffertr_t),intent(inout) :: ghost
 
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
 !$OMP BARRIER
 !$OMP MASTER
 #endif
@@ -1387,7 +1387,7 @@ contains
     ghost%nlyr=0
     deallocate(ghost%buf)
     deallocate(ghost%receive)
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
 !$OMP END MASTER
 #endif
 
@@ -1428,7 +1428,7 @@ contains
     integer :: is,ie,in,iw
 
     if(.not. threadsafe) then
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
 !$OMP BARRIER
 #endif
        threadsafe=.true.
@@ -1779,7 +1779,7 @@ contains
     endif
 
     nbuf=max_neigh_edges*nelemd
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
 !$OMP MASTER
 #endif
     ghost%nlyr=nlyr
@@ -1789,7 +1789,7 @@ contains
 
     allocate(ghost%receive(npoints,nhc,nlyr,ntrac,nbuf))
     ghost%receive=0
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
 !$OMP END MASTER
 !$OMP BARRIER
 #endif
@@ -1822,7 +1822,7 @@ subroutine ghostVpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,tn0,timelevels,desc)
   integer :: is,ie,in,iw
 
   if(.not. threadsafe) then
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
 !$OMP BARRIER
 #endif
      threadsafe=.true.
@@ -2017,7 +2017,7 @@ subroutine ghostVpackR(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
   integer :: is,ie,in,iw
 
   if(.not. threadsafe) then
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
 !$OMP BARRIER
 #endif
      threadsafe=.true.
@@ -2665,7 +2665,7 @@ end subroutine ghostVunpackR
 
 
       if(.not. threadsafe) then
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
   !$OMP BARRIER
 #endif
          threadsafe=.true.
@@ -3079,7 +3079,7 @@ end subroutine ghostVunpackR
 
 
       if(.not. threadsafe) then
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
   !$OMP BARRIER
 #endif
          threadsafe=.true.
@@ -3448,7 +3448,7 @@ end subroutine ghostVunpackR
 
 
       if(.not. threadsafe) then
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
   !$OMP BARRIER
 #endif
          threadsafe=.true.
@@ -3765,7 +3765,7 @@ end subroutine ghostVunpackR
     endif
 
     nbuf=max_neigh_edges*nelemd
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
 !$OMP MASTER
 #endif
     ghost%nlyr    = nlyr
@@ -3776,7 +3776,7 @@ end subroutine ghostVunpackR
     allocate(ghost%receive(np,(nhc+1),nlyr,nbuf))
     ghost%buf=0
     ghost%receive=0
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
 !$OMP END MASTER
 !$OMP BARRIER
 #endif
@@ -3821,7 +3821,7 @@ end subroutine ghostVunpackR
     integer :: is,ie,in,iw
 
     if(.not. threadsafe) then
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
 !$OMP BARRIER
 #endif
        threadsafe=.true.

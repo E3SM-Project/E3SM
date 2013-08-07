@@ -270,7 +270,7 @@ contains
     if (len>red%len) call abortmp('ERROR: threadsafe reduction buffer too small')
 
 
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
     !$OMP BARRIER
     !$OMP CRITICAL (CRITMAX)
 #endif
@@ -282,11 +282,11 @@ contains
        red%ctr=red%ctr+1
     end if
     if (red%ctr == hybrid%NThreads) red%ctr=0
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
     !$OMP END CRITICAL (CRITMAX)
 #endif
 #ifdef _MPI
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
     !$OMP BARRIER
 #endif
     if (hybrid%ithr==0) then
@@ -297,7 +297,7 @@ contains
        red%buf(1:len)=redp(1:len)
     end if
 #endif
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
     !$OMP BARRIER
 #endif
 
@@ -325,7 +325,7 @@ contains
     integer  :: k
     if (len>red%len) call abortmp('ERROR: threadsafe reduction buffer too small')
 
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
     !$OMP BARRIER
     !$OMP CRITICAL (CRITMAX)
 #endif
@@ -337,11 +337,11 @@ contains
        red%ctr=red%ctr+1
     end if
     if (red%ctr == hybrid%NThreads) red%ctr=0
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
     !$OMP END CRITICAL (CRITMAX)
 #endif
 #ifdef _MPI
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
     !$OMP BARRIER
 #endif
     if (hybrid%ithr==0) then
@@ -352,7 +352,7 @@ contains
        red%buf(1:len)=redp(1:len)
     end if
 #endif
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
     !$OMP BARRIER
 #endif
 
@@ -389,7 +389,7 @@ contains
 
     if (len>red%len) call abortmp('ERROR: threadsafe reduction buffer too small')
 
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
     !$OMP BARRIER
     !$OMP CRITICAL (CRITMAX)
 #endif
@@ -401,11 +401,11 @@ contains
        red%ctr=red%ctr+1
     end if
     if (red%ctr == hybrid%NThreads) red%ctr=0
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
     !$OMP END CRITICAL (CRITMAX)
 #endif
 #ifdef _MPI
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
     !$OMP BARRIER
 #endif
     if (hybrid%ithr==0) then
@@ -416,7 +416,7 @@ contains
        red%buf(1:len)=redp(1:len)
     end if
 #endif
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
     !$OMP BARRIER
 #endif
 

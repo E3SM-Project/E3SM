@@ -109,7 +109,7 @@ contains
     !DBG print *,'pcg_solver: point #1'
     do ie=nets,nete
        ieptr=ie-nets+1
-#if (defined ELEMENT_OPENMP)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k,iptr,i,j)
 #endif
        do k=1,nlev
@@ -140,7 +140,7 @@ contains
           metinv => elem(ie)%metinv
           metdet => elem(ie)%metdet
 
-#if (defined ELEMENT_OPENMP)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k,Trans,inc,deriv,i,j,gradp1,gradp2)
 #endif
           do k=1,nlev
@@ -239,7 +239,7 @@ contains
           kptr=0
           call edgeVunpack(edge2, gradp(1,1,1,1,ie), 2*nlev, kptr, elem(ie)%desc)
 
-#if (defined ELEMENT_OPENMP)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k,i,j,gradp1,gradp2,div,deriv,iptr)
 #endif
           do k=1,nlev
@@ -284,7 +284,7 @@ contains
           end do
        end do
 #ifdef DEBUGOMP
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -299,7 +299,7 @@ contains
 
     do ie=nets,nete
        ieptr=ie-nets+1
-#if (defined ELEMENT_OPENMP)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k,i,j,iptr)
 #endif
        do k=1,nlev
@@ -403,7 +403,7 @@ contains
 
     do ie=nets,nete
        ieptr=ie-nets+1
-#if (defined ELEMENT_OPENMP)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k,i,j,iptr)
 #endif
        do k=1,nlev
@@ -428,7 +428,7 @@ contains
           metdet => elem(ie)%metdet
           rmetdet  => elem(ie)%rmetdet
 
-#if (defined ELEMENT_OPENMP)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k,i,j,deriv,iptr,gradp1,gradp2)
 #endif
           do k=1,nlev
@@ -529,11 +529,11 @@ contains
           kptr=0
           call edgeVunpack(edge2, gradp(1,1,1,1,ie), 2*nlev, kptr, elem(ie)%desc)
 #ifdef DEBUGOMP
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
-#if (defined ELEMENT_OPENMP)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k,i,j,gradp1,gradp2,deriv)
 #endif
           do k=1,nlev
@@ -593,7 +593,7 @@ contains
           kptr=0
           call edgeVunpack(edge1, div(1,1,1,ie), nlev, kptr, elem(ie)%desc)
 
-#if (defined ELEMENT_OPENMP)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k,i,j,iptr)
 #endif
           do k=1,nlev
@@ -611,7 +611,7 @@ contains
           end do
        end do
 #ifdef DEBUGOMP
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -625,7 +625,7 @@ contains
 
     do ie=nets,nete
        ieptr=ie-nets+1
-#if (defined ELEMENT_OPENMP)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k,i,j,iptr)
 #endif
        do k=1,nlev
@@ -724,7 +724,7 @@ contains
           rmp     => elem(ie)%rmp
           mp      => elem(ie)%mp          
 
-#if (defined ELEMENT_OPENMP)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(kk,p,gradp,gradp1,gradp2,deriv,i,j,div,iptr)
 #endif
           do kk = 1, npsq     ! delta fn excitation index

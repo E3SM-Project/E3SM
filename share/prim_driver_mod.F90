@@ -341,7 +341,7 @@ contains
     !  for OpenMP across elements, equal to 1 for OpenMP within element
     ! =================================================================
     n_domains = min(Nthreads,nelemd)
-#if (defined ELEMENT_OPENMP)
+#if (defined VERT_OPENMP)
     n_domains = 1
 #endif
 
@@ -498,7 +498,7 @@ contains
 
 
     n_domains = min(Nthreads,nelemd)
-#if defined(ELEMENT_OPENMP) || defined(NESTED_OPENMP)
+#if defined(VERT_OPENMP) || defined(NESTED_OPENMP)
     call omp_set_num_threads(vert_num_threads)
 #else
     call omp_set_num_threads(n_domains)
@@ -666,7 +666,7 @@ contains
     ! initialize vertical structure and 
     ! related matrices..
     ! ====================================
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
 !$OMP MASTER
 #endif
     if (integration == "semi_imp") then
@@ -675,7 +675,7 @@ contains
           allocate(blkjac(nets:nete))
        endif
     endif
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
 !$OMP END MASTER
 #endif
     ! ==========================================
@@ -708,13 +708,13 @@ contains
        endif
     endif
 
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
     !$OMP BARRIER
 #endif
     if (hybrid%ithr==0) then
        call syncmp(hybrid%par)
     end if
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
     !$OMP BARRIER
 #endif
 
@@ -865,7 +865,7 @@ contains
 
        call TimeLevel_Qdp( tl, qsplit, n0_qdp)
        do ie=nets,nete
-#if (defined ELEMENT_OPENMP)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k, t, q, i, j, dp)
 #endif
           do k=1,nlev    !  Loop inversion (AAM)
@@ -950,7 +950,7 @@ contains
     if (runtype==1) then
        call TimeLevel_Qdp( tl, qsplit, n0_qdp)
        do ie=nets,nete
-#if (defined ELEMENT_OPENMP)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k, t, q, i, j, dp)
 #endif
           do k=1,nlev    !  Loop inversion (AAM)
@@ -1140,7 +1140,7 @@ contains
     ! ===============
     ! Dynamical Step  uses Q at tl%n0
     ! ===============
-#if (! defined ELEMENT_OPENMP)
+#if (! defined VERT_OPENMP)
 !$OMP BARRIER
 #endif
     if (integration == "semi_imp") then
@@ -1363,7 +1363,7 @@ contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!    
     do ie=nets,nete
        elem(ie)%state%lnps(:,:,tl%np1)= LOG(elem(ie)%state%ps_v(:,:,tl%np1))
-#if (defined ELEMENT_OPENMP)
+#if (defined VERT_OPENMP)
        !$omp parallel do private(k,q,dp_np1)
 #endif
        do k=1,nlev    !  Loop inversion (AAM)
@@ -1530,7 +1530,7 @@ contains
       end if
 
       if (rsplit==0) then
-#if (defined ELEMENT_OPENMP)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k)
 #endif
       ! save dp at time t for use in tracers
@@ -1706,7 +1706,7 @@ contains
     psum = 0
     do ie=nets,nete
 
-#if (defined ELEMENT_OPENMP)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k)
 #endif
        do k=1,nlev
@@ -1714,7 +1714,7 @@ contains
                ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,t2)
        enddo
        suml=0
-#if (defined ELEMENT_OPENMP)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k, i, j)
 #endif
        do k=1,nlev
