@@ -866,7 +866,7 @@ contains
        call TimeLevel_Qdp( tl, qsplit, n0_qdp)
        do ie=nets,nete
 #if (defined ELEMENT_OPENMP)
-!$omp parallel do private(k, j, i, t, q, dp)
+!$omp parallel do private(k, t, q, i, j, dp)
 #endif
           do k=1,nlev    !  Loop inversion (AAM)
              do t=1,3
@@ -951,7 +951,7 @@ contains
        call TimeLevel_Qdp( tl, qsplit, n0_qdp)
        do ie=nets,nete
 #if (defined ELEMENT_OPENMP)
-!$omp parallel do private(k, j, i, t, q, dp)
+!$omp parallel do private(k, t, q, i, j, dp)
 #endif
           do k=1,nlev    !  Loop inversion (AAM)
              do t=tl%n0,tl%n0
@@ -1364,7 +1364,7 @@ contains
     do ie=nets,nete
        elem(ie)%state%lnps(:,:,tl%np1)= LOG(elem(ie)%state%ps_v(:,:,tl%np1))
 #if (defined ELEMENT_OPENMP)
-       !$omp parallel do private(k,q)
+       !$omp parallel do private(k,q,dp_np1)
 #endif
        do k=1,nlev    !  Loop inversion (AAM)
           dp_np1(:,:) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
@@ -1531,7 +1531,7 @@ contains
 
       if (rsplit==0) then
 #if (defined ELEMENT_OPENMP)
-!$omp parallel do private(k, j, i)
+!$omp parallel do private(k)
 #endif
       ! save dp at time t for use in tracers
          do k=1,nlev
@@ -1715,7 +1715,7 @@ contains
        enddo
        suml=0
 #if (defined ELEMENT_OPENMP)
-!$omp parallel do private(k, j, i)
+!$omp parallel do private(k, i, j)
 #endif
        do k=1,nlev
           do i=1,np
