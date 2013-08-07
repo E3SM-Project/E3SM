@@ -1534,7 +1534,7 @@ contains
     else
       call edgeVunpack( edgeAdv_p1 , elem(ie)%state%Qdp(:,:,:,:,np1_qdp) , nlev*qsize , 0 , elem(ie)%desc )
 #if (defined ELEMENT_OPENMP)
-      !$omp parallel do private(k,q)
+      !$omp parallel do private(q,k)
 #endif
       do q = 1 , qsize
         do k = 1 , nlev    !  Potential loop inversion (AAM)
@@ -1686,7 +1686,7 @@ contains
      enddo
 
 #if (defined ELEMENT_OPENMP)
-!$omp parallel do private(k,q,vtemp,divdp,pshat,i,j)
+!$omp parallel do private(q,k,vtemp,divdp,pshat,j,i)
 #endif
      do q=1,qsize
         do k=1,nlev
@@ -2118,7 +2118,7 @@ contains
     do ie = nets , nete
       ! Qtens = Q/dp   (apply hyperviscsoity to dp0 * Q, not Qdp)
 #if (defined ELEMENT_OPENMP)
-!$omp parallel do private(k,q)
+!$omp parallel do private(k,dp0,q)
 #endif
       do k = 1 , nlev
          ! various options:
@@ -2149,7 +2149,7 @@ contains
     do ie = nets , nete
       !spheremp     => elem(ie)%spheremp
 #if (defined ELEMENT_OPENMP)
-!$omp parallel do private(q,k,i,j,dp0)
+!$omp parallel do private(q,k,j,i,dp0)
 #endif
       do q = 1 , qsize
         do k = 1 , nlev

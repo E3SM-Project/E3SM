@@ -1007,6 +1007,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 #endif
 #endif
 #if (defined ELEMENT_OPENMP)
+! Not sure about deriv here.
 !$omp parallel do private(k,i,j,gVscript,deriv)
 #endif
           do k=1,nlev
@@ -1164,6 +1165,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
        ! to find prognostic variables at time level n+1
        ! ================================================================
 
+       kptr=0
        do ie = nets, nete
 
 #if (defined ELEMENT_OPENMP)
@@ -1193,7 +1195,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
           end do
 
-          kptr=0
           call edgeVpack(edge1,B(:,:,:,ie),nlev,kptr,elem(ie)%desc)
 
        end do
@@ -1534,7 +1535,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 #endif
      do q=1,qsize
         do k=1,nlev
-           do j=1,np	
+           do j=1,np
               do i=1,np
                  dp = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
                       ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,np1)
@@ -1649,6 +1650,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
         do ie=nets,nete
            
 #if (defined ELEMENT_OPENMP)
+! Not sure about deriv here
 !$omp parallel do private(k,lap_p,lap_v,deriv,i,j)
 #endif
            do k=1,nlev
@@ -1809,7 +1811,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            
            ! apply inverse mass matrix, accumulate tendencies
 #if (defined ELEMENT_OPENMP)
-!$omp parallel do private(k,i,j,v1,v2,heating)
+!$omp parallel do private(k)
 #endif
            do k=1,nlev
               vtens(:,:,1,k,ie)=dt*vtens(:,:,1,k,ie)*elem(ie)%rspheremp(:,:)
@@ -1933,6 +1935,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
         do ie=nets,nete
            
 #if (defined ELEMENT_OPENMP)
+! Not sure about deriv here
 !$omp parallel do private(k,lap_t,lap_v,deriv,i,j)
 #endif
            do k=1,nlev
@@ -2202,6 +2205,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
         do ie=nets,nete
            
 #if (defined ELEMENT_OPENMP)
+! Not sure about deriv here
 !$omp parallel do private(k,lap_p,lap_v,deriv,i,j)
 #endif
            do k=1,nlev
@@ -2995,7 +2999,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      ! ====================================================
 
 #if (defined ELEMENT_OPENMP)
-!$omp parallel do private(k,i,j)
+!$omp parallel do private(k)
 #endif
      do k=1,nlev
         elem(ie)%state%T(:,:,k,np1)   = elem(ie)%rspheremp(:,:)*elem(ie)%state%T(:,:,k,np1)
@@ -3597,17 +3601,17 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
 !  Backward Euler 1st order method
         do k=1,nlev
-        fttens(:,:,k,ie) = elem(ie)%spheremp(:,:)* &
-        ( (elem(ie)%state%T(:,:,k,np1) - elem(ie)%state%T(:,:,k,nm1))*dti - &
-        ttens(:,:,k) )
+          fttens(:,:,k,ie) = elem(ie)%spheremp(:,:)* &
+          ( (elem(ie)%state%T(:,:,k,np1) - elem(ie)%state%T(:,:,k,nm1))*dti - &
+          ttens(:,:,k) )
 
-        fvtens(:,:,1,k,ie) = elem(ie)%spheremp(:,:)* &
-        ( (elem(ie)%state%v(:,:,1,k,np1) - elem(ie)%state%v(:,:,1,k,nm1))*dti - &
-        vtens1(:,:,k) )
+          fvtens(:,:,1,k,ie) = elem(ie)%spheremp(:,:)* &
+          ( (elem(ie)%state%v(:,:,1,k,np1) - elem(ie)%state%v(:,:,1,k,nm1))*dti - &
+          vtens1(:,:,k) )
 
-        fvtens(:,:,2,k,ie) = elem(ie)%spheremp(:,:)* &
-        ( (elem(ie)%state%v(:,:,2,k,np1) - elem(ie)%state%v(:,:,2,k,nm1))*dti - &
-        vtens2(:,:,k) )
+          fvtens(:,:,2,k,ie) = elem(ie)%spheremp(:,:)* &
+          ( (elem(ie)%state%v(:,:,2,k,np1) - elem(ie)%state%v(:,:,2,k,nm1))*dti - &
+          vtens2(:,:,k) )
         enddo
 
         fpstens(:,:,ie) = elem(ie)%spheremp(:,:)* &
@@ -3666,7 +3670,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      ! ====================================================
 
 #if (defined ELEMENT_OPENMP)
-!$omp parallel do private(k,i,j)
+!$omp parallel do private(k)
 #endif
      do k=1,nlev
         fttens(:,:,k,ie)   = elem(ie)%rspheremp(:,:)*fttens(:,:,k,ie)
