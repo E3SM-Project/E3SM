@@ -1032,14 +1032,14 @@ contains
 
 ! Repro_sum contains its own OpenMP, so only one thread should call it (AAM)
 
-#if (! defined 	VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 !$OMP MASTER
 #endif
 
     call repro_sum(global_shared_buf, global_shared_sum, nsize_use, nelemd, nvars, commid=comm)
 
-#if (! defined 	VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP END MASTER
 !$OMP BARRIER
 #endif
