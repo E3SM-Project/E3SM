@@ -697,11 +697,11 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
        if ( dt /= initialized_for_dt ) then
           if(hybrid%par%masterproc) print *,'Initializing semi-implicit matricies for dt=',dt
 
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
           !$OMP MASTER
 #endif
           call set_vert_struct_mat(dt, refstate, hvcoord, hybrid%masterthread)
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
           !$OMP END MASTER
 #endif
 
@@ -1002,7 +1002,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
           kptr=0
           call edgeVunpack(edge2, Vscript(1,1,1,1,ie), 2*nlev, kptr, elem(ie)%desc)
 #ifdef DEBUGOMP
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -1139,7 +1139,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
        end do
 #ifdef DEBUGOMP
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -1206,7 +1206,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
           kptr=0
           call edgeVunpack(edge1, B(:,:,:,ie), nlev, kptr, elem(ie)%desc)
 #ifdef DEBUGOMP
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -1384,7 +1384,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
        end do
 #ifdef DEBUGOMP
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -1698,7 +1698,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            enddo
         enddo
 #ifdef DEBUGOMP
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -1851,7 +1851,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            
         enddo
 #ifdef DEBUGOMP
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -1983,7 +1983,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            enddo
         enddo
 #ifdef DEBUGOMP
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -2114,7 +2114,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            enddo
         enddo
 #ifdef DEBUGOMP
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -2253,7 +2253,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            enddo
         enddo
 #ifdef DEBUGOMP
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -2391,7 +2391,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            elem(ie)%state%ps_v(:,:,nt)=elem(ie)%state%ps_v(:,:,nt) + dt*elem(ie)%rspheremp(:,:)*pstens(:,:,ie)
         enddo
 #ifdef DEBUGOMP
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -3023,7 +3023,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
 
 #ifdef DEBUGOMP
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -3722,7 +3722,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
        fptr%base = elem
 
 #ifdef DEBUGOMP
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -3909,7 +3909,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            pstens(:,:,ie)=pstens(:,:,ie)*elem(ie)%rspheremp(:,:)
         enddo
 #ifdef DEBUGOMP
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -3962,7 +3962,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
         phis(:,:,ie)=phis(:,:,ie)*elem(ie)%rspheremp(:,:)
      enddo
 #ifdef DEBUGOMP
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif

@@ -1045,9 +1045,9 @@ contains
     integer ia,im,ic,ierr,iran,ifirst
     save iran
 
-    amp=max(0.0_real_kind,(ha-z)/ha)
 #ifdef DONTDO
 #if defined(_AIX) || defined(_BGL)      
+    amp=max(0.0_real_kind,(ha-z)/ha)
     call random_number(ff)
 
     do j=1,ny

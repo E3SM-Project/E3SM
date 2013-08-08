@@ -105,7 +105,7 @@ program cwfv_main
   ! =====================================
   ! Begin threaded region...
   ! =====================================
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
   !$OMP PARALLEL DEFAULT(SHARED), PRIVATE(ithr,nets,nete)
 #endif
   ithr=omp_get_thread_num()
@@ -138,7 +138,7 @@ program cwfv_main
 
   call cwfv_run_bench(elem,fvm,hybrid,nets,nete,tl)
 
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
   !$OMP END PARALLEL
 #endif
   ! ================================================

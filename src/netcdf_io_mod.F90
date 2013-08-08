@@ -259,6 +259,8 @@ contains
     integer, pointer :: vartype(:)
     logical :: time_dep_var
 
+    ivarid=0
+
     !$OMP SINGLE
     if(present(varrequired_in)) then
        varrequired=>varrequired_in

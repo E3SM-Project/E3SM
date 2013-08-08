@@ -183,7 +183,7 @@ logical var_coef1
 
    enddo
 #ifdef DEBUGOMP
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -293,7 +293,7 @@ logical var_coef1
       enddo
    enddo
 #ifdef DEBUGOMP
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -358,7 +358,7 @@ logical var_coef1
       enddo
    enddo
 #ifdef DEBUGOMP
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -445,7 +445,7 @@ logical var_coef1
       enddo
    enddo
 #ifdef DEBUGOMP
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -528,7 +528,7 @@ do ie=nets,nete
    enddo
 enddo
 #ifdef DEBUGOMP
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -574,7 +574,7 @@ do ie=nets,nete
    enddo
 enddo
 #ifdef DEBUGOMP
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -864,7 +864,7 @@ real (kind=real_kind) :: Qmax(np,np,nlev,qsize)
        end do
     end do
 #ifdef DEBUGOMP
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -994,7 +994,7 @@ integer :: ie,k,q
 
     call FreeEdgeBuffer(edgebuf) 
 #ifdef DEBUGOMP
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -1275,7 +1275,7 @@ end subroutine
 
     end do
 #ifdef DEBUGOMP
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif

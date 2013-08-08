@@ -161,7 +161,7 @@ contains
        kptr=3*nlev
        call edgeVunpack(edge4, div_np1(1,1,1,ie), nlev, kptr, elem(ie)%desc)
 #ifdef DEBUGOMP
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -284,7 +284,7 @@ contains
 
     end do
 #ifdef DEBUGOMP
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -388,7 +388,7 @@ contains
        
        call edgeVunpack(edgeS2, grad_Q_np1(:,:,:,:,:,ie), 2*nlev*qsize, 0, elem(ie)%desc)
 #ifdef DEBUGOMP
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -457,7 +457,7 @@ contains
        end do
     end do
 #ifdef DEBUGOMP
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif

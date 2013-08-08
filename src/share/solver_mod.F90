@@ -284,7 +284,7 @@ contains
           end do
        end do
 #ifdef DEBUGOMP
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -529,7 +529,7 @@ contains
           kptr=0
           call edgeVunpack(edge2, gradp(1,1,1,1,ie), 2*nlev, kptr, elem(ie)%desc)
 #ifdef DEBUGOMP
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -611,7 +611,7 @@ contains
           end do
        end do
 #ifdef DEBUGOMP
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif

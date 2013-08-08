@@ -84,7 +84,7 @@ contains
        end do
 
     end do
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 
@@ -114,7 +114,7 @@ contains
           end do
        end do
     end do
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 

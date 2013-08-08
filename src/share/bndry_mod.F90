@@ -263,7 +263,7 @@ contains
 
 
     call t_startf('bndry_exchange')
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
     if(hybrid%ithr == 0) then 
@@ -338,7 +338,7 @@ contains
 
 #endif
     endif  ! if (hybrid%ithr == 0)
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
     call t_stopf('bndry_exchange')
@@ -385,7 +385,7 @@ contains
     logical(kind=log_kind),parameter      :: Debug = .FALSE.
 
 
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
     if(hybrid%ithr == 0) then 
@@ -463,7 +463,7 @@ contains
 
 #endif
     endif  ! if (hybrid%ithr == 0)
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
 
@@ -512,7 +512,7 @@ contains
     logical(kind=log_kind),parameter      :: Debug = .FALSE.
 
 
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
     if(hybrid%ithr == 0) then 
@@ -590,7 +590,7 @@ contains
 
 #endif
     endif  ! if (hybrid%ithr == 0)
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
 
@@ -641,7 +641,7 @@ contains
     logical(kind=log_kind),parameter      :: Debug = .FALSE.
 
 
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
     if(hybrid%ithr == 0) then 
@@ -723,7 +723,7 @@ contains
 
 #endif
     endif  ! if (hybrid%ithr == 0)
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
 

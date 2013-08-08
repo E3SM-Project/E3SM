@@ -322,6 +322,7 @@ contains
 
 
     allocate(global_shared_buf(nelemd,nrepro_vars))
+    global_shared_buf=0.0_real_kind
     !  nlyr=edge3p1%nlyr
     !  call MessageStats(nlyr)
     !  call testchecksum(par,GridEdge)
@@ -341,9 +342,9 @@ contains
     !  for OpenMP across elements, equal to 1 for OpenMP within element
     ! =================================================================
     n_domains = min(Nthreads,nelemd)
-#if (defined VERT_OPENMP)
-    n_domains = 1
-#endif
+!#if (defined VERT_OPENMP)
+!    n_domains = 1
+!#endif
 
 
     ! =================================================================
@@ -498,11 +499,12 @@ contains
 
 
     n_domains = min(Nthreads,nelemd)
-#if defined(VERT_OPENMP) || defined(NESTED_OPENMP)
-    call omp_set_num_threads(vert_num_threads)
-#else
-    call omp_set_num_threads(n_domains)
-#endif
+    call omp_set_num_threads(Nthreads)
+!#if defined(VERT_OPENMP) || defined(NESTED_OPENMP)
+!    call omp_set_num_threads(vert_num_threads)
+!#else
+!    call omp_set_num_threads(n_domains)
+!#endif
     ! =====================================
     ! Set number of threads...
     ! =====================================
@@ -666,7 +668,7 @@ contains
     ! initialize vertical structure and 
     ! related matrices..
     ! ====================================
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP MASTER
 #endif
     if (integration == "semi_imp") then
@@ -675,7 +677,7 @@ contains
           allocate(blkjac(nets:nete))
        endif
     endif
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP END MASTER
 #endif
     ! ==========================================
@@ -708,13 +710,13 @@ contains
        endif
     endif
 
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
     if (hybrid%ithr==0) then
        call syncmp(hybrid%par)
     end if
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
 
@@ -1140,7 +1142,7 @@ contains
     ! ===============
     ! Dynamical Step  uses Q at tl%n0
     ! ===============
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
     if (integration == "semi_imp") then

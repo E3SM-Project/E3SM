@@ -100,7 +100,7 @@ program main
   ! =====================================
   ! Begin threaded region...
   ! =====================================
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
   !$OMP PARALLEL DEFAULT(SHARED), PRIVATE(ithr,nets,nete)
 #endif
   ithr=omp_get_thread_num()
@@ -121,7 +121,7 @@ program main
      call sweq(elem,fvm,edge1,edge2,edge3,red,par,ithr,nets,nete)
   endif
 
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
   !$OMP END PARALLEL
 #endif
   ! ================================================

@@ -1549,7 +1549,7 @@ contains
     endif
   enddo
 #ifdef DEBUGOMP
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -1743,7 +1743,7 @@ contains
      end do
   end do
 #ifdef DEBUGOMP
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -2187,7 +2187,7 @@ contains
       enddo
     enddo
 #ifdef DEBUGOMP
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif

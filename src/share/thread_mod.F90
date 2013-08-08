@@ -37,12 +37,18 @@ module thread_mod
      integer function omp_get_max_threads()
      end function omp_get_max_threads
   end interface
+
+  interface omp_get_nested
+     integer function omp_get_nested()
+     end function omp_get_nested
+  end interface
 #endif
   public :: omp_get_thread_num
   public :: omp_in_parallel
   public :: omp_set_num_threads
   public :: omp_get_max_threads
   public :: omp_get_num_threads
+  public :: omp_get_nested
 #ifndef _OPENMP
 contains
 
@@ -69,6 +75,11 @@ contains
   integer function omp_get_max_threads()
     omp_get_max_threads=1
   end function omp_get_max_threads
+
+  integer function omp_get_nested()
+    omp_get_nested=0
+  end function omp_get_nested
+
 #endif
 
 end module thread_mod
