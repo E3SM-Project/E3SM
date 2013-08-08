@@ -495,11 +495,9 @@ module repro_sum_mod
 ! determine maximum and minimum (non-zero) summand values
             arr_lmax_exp(:) = MINEXPONENT(1._r8)
             arr_lmin_exp(:) = MAXEXPONENT(1._r8)
-#if (defined VERT_OPENMP2)
 !$omp parallel do      &
 !$omp default(shared)  &
 !$omp private(ifld, isum)
-#endif
             do ifld=1,nflds
                do isum=1,nsummands
                   if (arr(isum,ifld) .ne. 0.0) then
@@ -581,11 +579,9 @@ module repro_sum_mod
             nonrepro_sum = 1
 ! compute nonreproducible sum
             arr_lsum(:) = 0._r8
-#if (defined VERT_OPENMP2)
 !$omp parallel do      &
 !$omp default(shared)  &
 !$omp private(ifld, isum)
-#endif
             do ifld=1,nflds
                do isum=1,nsummands
                   arr_lsum(ifld) = arr(isum,ifld) + arr_lsum(ifld)
@@ -601,11 +597,9 @@ module repro_sum_mod
             call t_stopf('nonrepro_sum')
 
 ! determine differences
-#if (defined VERT_OPENMP2)
 !$omp parallel do      &
 !$omp default(shared)  &
 !$omp private(ifld, abs_diff)
-#endif
             do ifld=1,nflds
                abs_diff = abs(arr_gsum_fast(ifld)-arr_gsum(ifld))
                if (abs(arr_gsum(ifld)) > abs_diff) then
@@ -764,12 +758,10 @@ module repro_sum_mod
       max_error(:) = 0
       not_exact(:) = 0
 
-#if (defined VERT_OPENMP2)
 !$omp parallel do      &
 !$omp default(shared)  &
 !$omp private(ifld, ioffset, isum, arr_frac, arr_exp, arr_shift, &
 !$omp         ilevel, i8_arr_level, arr_remainder)
-#endif
       do ifld=1,nflds
          ioffset = offset(ifld)
 
