@@ -786,7 +786,7 @@ contains
 
        end do
 #ifdef DEBUGOMP
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -947,11 +947,11 @@ contains
  
     if (flt%type == "bv") then
 
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
        !$OMP BARRIER
 #endif
        if (hybrid%ithr==0) call syncmp(hybrid%par)
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
        !$OMP BARRIER
 #endif
 
@@ -1047,7 +1047,7 @@ contains
 
        end do
 #ifdef DEBUGOMP
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif

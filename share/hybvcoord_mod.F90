@@ -64,7 +64,7 @@ contains
 
     ierr=0
     hvcoord%ps0    = p0            ! Base state surface pressure (millibars)
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP CRITICAL
 #endif
     ln=len(trim(hvfile_int))
@@ -148,7 +148,7 @@ contains
           close(12)
        end if
     endif
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP END CRITICAL
 #endif
   if(ierr>0) return 

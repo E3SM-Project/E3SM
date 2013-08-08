@@ -1529,7 +1529,7 @@ endif
     real(kind=longdouble_kind) :: gll_edges(np+1),phys_edges(nphys+1)
     type(quadrature_t) :: gll_pts
     ! setup (most be done on masterthread only) since all data is static
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !OMP MASTER
 #endif
     if (nphys_init/=nphys) then
@@ -1633,7 +1633,7 @@ endif
     call abortmp(__FILE__)
 #endif
     endif
-#if (! defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !OMP END MASTER
     !OMP BARRIER
 #endif
