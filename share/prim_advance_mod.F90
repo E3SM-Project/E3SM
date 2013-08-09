@@ -247,7 +247,7 @@ contains
                elem(ie)%derived%eta_dot_dpdn(:,:,:) + eta_dot_dpdn(:,:,:)*eta_ave_w
 
           ! subcycling code uses a mean flux to advect tracers 
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
           !$omp parallel do private(k,dp)
 #endif
           do k=1,nlev
@@ -526,7 +526,7 @@ contains
 #ifdef ENERGY_DIAGNOSTICS
     if (compute_diagnostics) then
        do ie = nets,nete
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k)
 #endif
          do k=1,nlev  !  Loop index added (AAM)
@@ -788,7 +788,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
           rpmid = 1.0_real_kind/pmid
           rpdel = 1.0_real_kind/pdel
 
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k,i,j,v1,v2,vco)
 #endif
           do k=1,nlev
@@ -833,7 +833,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
              end do
           end do
 
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k,i,j)
 #endif
           do k=1,nlev-1
@@ -954,7 +954,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
           end do
 
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k,i,j,Vs1,Vs2)
 #endif
           do k=1,nlev
@@ -1005,7 +1005,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 !$OMP BARRIER
 #endif
 #endif
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
 ! Not sure about deriv here.
 !$omp parallel do private(k,i,j,gVscript,deriv)
 #endif
@@ -1037,7 +1037,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
           end do
 
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k,i,j,l)
 #endif
           do k=1,nlev
@@ -1062,7 +1062,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
           !  Weight C (the RHS of the helmholtz problem) by the mass matrix
           ! ===============================================================
 
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k,i,j)
 #endif
           do k=1,nlev
@@ -1101,7 +1101,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
           ! Complete global assembly by normalizing by rmp
           ! ===============================================
 
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k,i,j)
 #endif
           do k=1,nlev
@@ -1114,7 +1114,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
           end do
 
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k,i,j,l)
 #endif
           do k=1,nlev
@@ -1166,7 +1166,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
        kptr=0
        do ie = nets, nete
 
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k,i,j,l)
 #endif
           do k=1,nlev
@@ -1208,7 +1208,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 !$OMP BARRIER
 #endif
 #endif
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k,i,j)
 #endif
           do k=1,nlev
@@ -1221,7 +1221,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
           end do
 
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k,i,j,l)
 #endif
           do k=1,nlev
@@ -1243,7 +1243,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
           end do
 
 #if 1
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k,i,j,l)
 #endif
           do k=1,nlev 
@@ -1349,7 +1349,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
           ! Vscript = Vscript - dt*grad(Gref)
           ! ==========================================================
 
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k,i,j)
 #endif
           do k=1,nlev
@@ -1369,7 +1369,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
              end do
           end do
 
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k,i,j)
 #endif
           do k=1,nlev
@@ -1459,7 +1459,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   do ie=nets,nete
      ! apply forcing to Qdp
      elem(ie)%derived%FQps(:,:,1)=0
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(q,k,i,j,v1)
 #endif
      do q=1,qsize
@@ -1528,7 +1528,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
 
      ! Qdp(np1) and ps_v(np1) were updated by forcing - update Q(np1)
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(q,k,i,j,dp)
 #endif
      do q=1,qsize
@@ -1647,7 +1647,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      do ic=1,hypervis_subcycle
         do ie=nets,nete
            
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
 ! Not sure about deriv here
 !$omp parallel do private(k,lap_p,lap_v,deriv,i,j)
 #endif
@@ -1682,7 +1682,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            call edgeVunpack(edge3, elem(ie)%state%v(:,:,:,:,nt), 2*nlev, kptr, elem(ie)%desc)
            
            ! apply inverse mass matrix
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k,i,j)
 #endif
            do k=1,nlev
@@ -1739,7 +1739,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 #endif
            endif
            nu_scale=1
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k,i,j,lap_p,lap_v,nu_scale_top,dpdn,dpdn0,nu_scale,utens_tmp,vtens_tmp,ptens_tmp)
 #endif
            do k=1,nlev
@@ -1808,7 +1808,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
            
            ! apply inverse mass matrix, accumulate tendencies
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k)
 #endif
            do k=1,nlev
@@ -1932,7 +1932,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      do ic=1,hypervis_subcycle
         do ie=nets,nete
            
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
 ! Not sure about deriv here
 !$omp parallel do private(k,lap_t,lap_v,deriv,i,j)
 #endif
@@ -1967,7 +1967,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            call edgeVunpack(edge3, elem(ie)%state%v(:,:,:,:,nt), 2*nlev, kptr, elem(ie)%desc)
            
            ! apply inverse mass matrix
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k,i,j)
 #endif
            do k=1,nlev
@@ -2011,7 +2011,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
               elem(ie)%derived%dpdiss_biharmonic(:,:,:)=elem(ie)%derived%dpdiss_biharmonic(:,:,:)+&
                    eta_ave_w*dptens(:,:,:,ie)/hypervis_subcycle
            endif
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k,i,j,lap_t,lap_dp,lap_v,nu_scale_top,dpdn,dpdn0,utens_tmp,vtens_tmp,ttens_tmp,dptens_tmp)
 #endif
            do k=1,nlev
@@ -2074,7 +2074,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
            
            ! apply inverse mass matrix, accumulate tendencies
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k)
 #endif
            do k=1,nlev
@@ -2090,7 +2090,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            ! E1-E0:   dpdn (u dot utens) + dpdn .5 utens dot utens   - dpdn X
            !      X = (u dot utens) + .5 utens dot utens
            !  alt:  (u+utens) dot utens
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k,i,j,v1,v2,heating)
 #endif
            do k=1,nlev
@@ -2202,7 +2202,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      do ic=1,hypervis_subcycle
         do ie=nets,nete
            
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
 ! Not sure about deriv here
 !$omp parallel do private(k,lap_p,lap_v,deriv,i,j)
 #endif
@@ -2237,7 +2237,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            call edgeVunpack(edge3, elem(ie)%state%v(:,:,:,:,nt), 2*nlev, kptr, elem(ie)%desc)
            
            ! apply inverse mass matrix
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k,i,j)
 #endif
            do k=1,nlev
@@ -2268,7 +2268,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
         do ie=nets,nete
 
            nu_scale=1
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k,i,j,lap_p,lap_v,nu_scale_top,dpdn,dpdn0,nu_scale,utens_tmp,vtens_tmp,ptens_tmp)
 #endif
            do k=1,nlev
@@ -2342,7 +2342,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
               do k=1,nlev
                  p(:,:,k)   = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem(ie)%state%ps_v(:,:,nt)
               enddo
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k,dXdp)
 #endif
               do k=1,nlev
@@ -2363,7 +2363,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
            
            ! apply inverse mass matrix, accumulate tendencies
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k,i,j,v1,v2,heating)
 #endif
            do k=1,nlev
@@ -2506,14 +2506,14 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      ! ============================
      ! compute p and delta p
      ! ============================
-!#if (defined VERT_OPENMP2)
+!#if (defined VERT_OPENMP)
 !!$omp parallel do private(k,i,j)
 !#endif
 !     do k=1,nlev+1
 !       ph(:,:,k)   = hvcoord%hyai(k)*hvcoord%ps0 + hvcoord%hybi(k)*elem(ie)%state%ps_v(:,:,n0)
 !     end do
 
-#if (defined VERT_OPENMP2_BROKEN)
+#if (defined VERT_OPENMP_BROKEN)
 !  Note that the following does not work with OpenMP threading turned on.
 !  The line 
 !              p(:,:,k)=p(:,:,k-1) + dp(:,:,k-1)/2 + dp(:,:,k)/2
@@ -2584,7 +2584,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      ! compute T_v for timelevel n0
      !if ( moisture /= "dry") then
      if (qn0 == -1 ) then
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k,i,j)
 #endif
         do k=1,nlev
@@ -2596,7 +2596,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            end do
         end do
      else
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k,i,j,Qt)
 #endif
         do k=1,nlev
@@ -2662,7 +2662,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
         ! for reference: at mid layers we have:
         !    omega = v grad p  - integral_etatop^eta[ divdp ]
         ! ===========================================================
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
         !$omp parallel do private(k)
 #endif
         do k=1,nlev-1
@@ -2683,7 +2683,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      ! ================================
      ! accumulate mean vertical flux:
      ! ================================
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
      !$omp parallel do private(k)
 #endif
      do k=1,nlev  !  Loop index added (AAM)
@@ -2702,7 +2702,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      ! ==============================================
      ! Compute phi + kinetic energy term: 10*nv*nv Flops
      ! ==============================================
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k,i,j,v1,v2,E,Ephi,vtemp,vgrad_T,gpterm,glnps1,glnps2)
 #endif
      do k=1,nlev   
@@ -2919,7 +2919,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      ! =========================================================
      if (dt2<0) then
         ! calling program just wanted DSS'd RHS, skip time advance
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k)
 #endif
         do k=1,nlev
@@ -2932,7 +2932,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
         enddo
         elem(ie)%state%ps_v(:,:,np1) = -elem(ie)%spheremp(:,:)*sdot_sum
      else
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k)
 #endif
         do k=1,nlev
@@ -2996,7 +2996,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      ! Scale tendencies by inverse mass matrix
      ! ====================================================
 
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k)
 #endif
      do k=1,nlev
@@ -3196,14 +3196,14 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      ! ============================
      ! compute p and delta p
      ! ============================
-!#if (defined VERT_OPENMP2)
+!#if (defined VERT_OPENMP)
 !!$omp parallel do private(k,i,j)
 !#endif
 !     do k=1,nlev+1
 !       ph(:,:,k)   = hvcoord%hyai(k)*hvcoord%ps0 + hvcoord%hybi(k)*elem(ie)%state%ps_v(:,:,n0)
 !     end do
 
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k,i,j,v1,v2,vtemp)
 #endif
      do k=1,nlev
@@ -3267,7 +3267,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      ! compute T_v for timelevel n0
      !if ( moisture /= "dry") then
      if (qn0 == -1 ) then
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k,i,j)
 #endif
         do k=1,nlev
@@ -3279,7 +3279,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            end do
         end do
      else
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k,i,j,Qt)
 #endif
         do k=1,nlev
@@ -3341,7 +3341,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
         ! for reference: at mid layers we have:
         !    omega = v grad p  - integral_etatop^eta[ divdp ]
         ! ===========================================================
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
         !$omp parallel do private(k)
 #endif
         do k=1,nlev-1
@@ -3361,7 +3361,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      ! ================================
      ! accumulate mean vertical flux:
      ! ================================
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
      !$omp parallel do private(k)
 #endif
      do k=1,nlev  !  Loop index added (AAM)
@@ -3377,7 +3377,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      ! ==============================================
      ! Compute phi + kinetic energy term: 10*np*np Flops
      ! ==============================================
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k,i,j,v1,v2,E,Ephi,vtemp,vgrad_T,gpterm,glnps1,glnps2)
 #endif
      do k=1,nlev   
@@ -3593,7 +3593,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      ! note that we allow np1=n0 or nm1
      ! apply mass matrix
      ! =========================================================
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k)
 #endif
 
@@ -3667,7 +3667,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      ! Scale tendencies by inverse mass matrix
      ! ====================================================
 
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k)
 #endif
      do k=1,nlev
