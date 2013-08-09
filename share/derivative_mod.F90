@@ -538,6 +538,7 @@ end do
     real(kind=real_kind)  sumx10,sumx11
     real(kind=real_kind)  sumy10,sumy11
 
+    !write(*,*) "divergence_stag"
 #ifdef DEBUG
     print *, "divergence_stag"
 #endif
@@ -675,6 +676,7 @@ endif
     real(kind=real_kind) ::  dvdy00,dvdy01
     real(kind=real_kind) ::  dvdy10,dvdy11
 
+    !write(*,*) "divergence_nonstag"
 if(modulo(np,2) .eq. 0 .and. UseUnroll) then
 ! this is just loop unrolling - a good compiler should do it for you jpe
        do j=1,np,2
@@ -770,6 +772,7 @@ if(modulo(np,2) .eq. 0 .and. UseUnroll) then
     real(kind=real_kind)  sumx10,sumx11
     real(kind=real_kind)  sumy10,sumy11
 
+    !write(*,*) "gradient_wk_stag"
 #ifdef DEBUG
     print *, "gradient_wk_stag"
 #endif
@@ -918,6 +921,7 @@ endif
     !JMD 2*np*np*np Flops 
     !JMD ================================
 
+    !write(*,*) "gradient_wk_nonstag"
 !   print *, "gradient_wk_nonstag"
     if(modulo(np,2) .eq. 0 .and. UseUnroll) then
 ! this is just loop unrolling - a good compiler should do it for you jpe
@@ -1083,6 +1087,7 @@ endif
     real(kind=real_kind)  sumx10,sumx11
     real(kind=real_kind)  sumy10,sumy11
 
+    !write(*,*) "gradient_str_stag"
 #ifdef DEBUG
     print *, "gradient_str_stag"
 #endif
@@ -1310,6 +1315,7 @@ endif
     real(kind=real_kind) ::  dudy00,dudy01
     real(kind=real_kind) ::  dudy10,dudy11
 
+    !write(*,*) "vorticity"
 if(MODULO(np,2) == 0 .and. UseUnroll) then 
     do j=1,np,2
        do l=1,np,2
@@ -2432,16 +2438,16 @@ endif
 !     note: for this form of the operator, grad(s) does not need to be made C0
 !            
     real(kind=real_kind), intent(in) :: s(np,np) 
-    logical :: var_coef
-    type (derivative_t)              :: deriv
-    type (element_t)                 :: elem
+    logical, intent(in) :: var_coef
+    type (derivative_t), intent(in) :: deriv
+    type (element_t), intent(in) :: elem
     real(kind=real_kind)             :: laplace(np,np)
     real(kind=real_kind)             :: laplace2(np,np)
     integer i,j
 
     ! Local
     real(kind=real_kind) :: grads(np,np,2), oldgrads(np,np,2)
-
+    !write(*,*) "laplace_sphere_wk"
     grads=gradient_sphere(s,deriv,elem%Dinv)
  
     if (var_coef) then
@@ -2482,12 +2488,13 @@ endif
 !   One combination NOT supported:  tensorHV and nu_div/=nu then abort
 !
     real(kind=real_kind), intent(in) :: v(np,np,2) 
-    logical :: var_coef
-    type (derivative_t)              :: deriv
-    type (element_t)                 :: elem
+    logical, intent(in) :: var_coef
+    type (derivative_t), intent(in) :: deriv
+    type (element_t), intent(in) :: elem
     real(kind=real_kind), optional :: nu_ratio
     real(kind=real_kind) :: laplace(np,np,2)
 
+    !write(*,*) "vlaplace_sphere_wk"
 
     if (hypervis_scaling/=0 .and. var_coef) then
        ! tensorHV is turned on - requires cartesian formulation
@@ -2521,6 +2528,7 @@ endif
     integer component
     real(kind=real_kind) :: dum_cart(np,np,3)
 
+    !write(*,*) "vlaplace_sphere_wk_cartesian"
 
     ! latlon -> cartesian
     do component=1,3
@@ -2553,9 +2561,9 @@ endif
 !                 = grad_wk(div) - curl_wk(vor)               
 !
     real(kind=real_kind), intent(in) :: v(np,np,2) 
-    logical :: var_coef
-    type (derivative_t)              :: deriv
-    type (element_t)                 :: elem
+    logical, intent(in) :: var_coef
+    type (derivative_t), intent(in) :: deriv
+    type (element_t), intent(in) :: elem
     real(kind=real_kind) :: laplace(np,np,2)
     real(kind=real_kind), optional :: nu_ratio
     ! Local
@@ -2563,6 +2571,8 @@ endif
     integer i,j,l,m,n
     real(kind=real_kind) :: vor(np,np),div(np,np)
     real(kind=real_kind) :: v1,v2,div1,div2,vor1,vor2,phi_x,phi_y
+
+    !write(*,*) "vlaplace_sphere_wk_contra"
 
     div=divergence_sphere(v,deriv,elem)
     vor=vorticity_sphere(v,deriv,elem)
