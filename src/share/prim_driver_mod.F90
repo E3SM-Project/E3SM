@@ -342,7 +342,7 @@ contains
     !  for OpenMP across elements, equal to 1 for OpenMP within element
     ! =================================================================
     n_domains = min(Nthreads,nelemd)
-!#if (defined VERT_OPENMP)
+!#if (defined VERT_OPENMP2)
 !    n_domains = 1
 !#endif
 
@@ -499,8 +499,8 @@ contains
 
 
     n_domains = min(Nthreads,nelemd)
-    call omp_set_num_threads(Nthreads)
-!#if defined(VERT_OPENMP) || defined(NESTED_OPENMP)
+    call omp_set_num_threads(n_domains)
+!#if defined(VERT_OPENMP2) || defined(NESTED_OPENMP)
 !    call omp_set_num_threads(vert_num_threads)
 !#else
 !    call omp_set_num_threads(n_domains)
@@ -868,7 +868,7 @@ contains
        call TimeLevel_Qdp( tl, qsplit, n0_qdp)
        do ie=nets,nete
 #if (defined VERT_OPENMP)
-!$omp parallel do private(k, t, q, i, j, dp)
+!$omp parallel do default(shared), private(k, t, q, i, j, dp)
 #endif
           do k=1,nlev    !  Loop inversion (AAM)
              do t=1,3
@@ -953,7 +953,7 @@ contains
        call TimeLevel_Qdp( tl, qsplit, n0_qdp)
        do ie=nets,nete
 #if (defined VERT_OPENMP)
-!$omp parallel do private(k, t, q, i, j, dp)
+!$omp parallel do default(shared), private(k, t, q, i, j, dp)
 #endif
           do k=1,nlev    !  Loop inversion (AAM)
              do t=tl%n0,tl%n0
@@ -1366,7 +1366,7 @@ contains
     do ie=nets,nete
        elem(ie)%state%lnps(:,:,tl%np1)= LOG(elem(ie)%state%ps_v(:,:,tl%np1))
 #if (defined VERT_OPENMP)
-       !$omp parallel do private(k,q,dp_np1)
+       !$omp parallel do default(shared), private(k,q,dp_np1)
 #endif
        do k=1,nlev    !  Loop inversion (AAM)
           dp_np1(:,:) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
@@ -1532,10 +1532,10 @@ contains
       end if
 
       if (rsplit==0) then
+        ! save dp at time t for use in tracers
 #if (defined VERT_OPENMP)
-!$omp parallel do private(k)
+!$omp parallel do default(shared), private(k)
 #endif
-      ! save dp at time t for use in tracers
          do k=1,nlev
             elem(ie)%derived%dp(:,:,k)=&
                  ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
@@ -1709,7 +1709,7 @@ contains
     do ie=nets,nete
 
 #if (defined VERT_OPENMP)
-!$omp parallel do private(k)
+!$omp parallel do default(shared), private(k)
 #endif
        do k=1,nlev
           dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
@@ -1717,7 +1717,7 @@ contains
        enddo
        suml=0
 #if (defined VERT_OPENMP)
-!$omp parallel do private(k, i, j)
+!$omp parallel do default(shared), private(k, i, j)
 #endif
        do k=1,nlev
           do i=1,np

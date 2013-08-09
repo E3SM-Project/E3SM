@@ -152,8 +152,8 @@ subroutine remap1(Qdp,nx,qsize,dp1,dp2)
      return
   endif
 
-#if (defined VERT_OPENMP)
-!$omp parallel do private(qsize,i,j,z1c,z2c,zv,k,dp_np1,dp_star,Qcol,zkr,ilev) &
+#if (defined VERT_OPENMP2)
+!$omp parallel do private(q,i,j,z1c,z2c,zv,k,dp_np1,dp_star,Qcol,zkr,ilev) &
 !$omp    private(jk,zgam,zhdp,h,zarg,rhs,lower_diag,diag,upper_diag,q_diag,tmp_cal,filter_code) &
 !$omp    private(dy,im1,im2,im3,ip1,t1,t2,t3,za0,za1,za2,xm_d,xm,f_xm,t4,tm,tp,peaks,peaks_min) &
 !$omp    private(peaks_max,ip2,level1,level2,level3,level4,level5,lt1,lt2,lt3,zv1,zv2)
@@ -416,8 +416,8 @@ subroutine remap1_nofilter(Qdp,nx,qsize,dp1,dp2)
   logical :: abort=.false.  
 !   call t_startf('remap1_nofilter')
 
-#if (defined VERT_OPENMP)
-!$omp parallel do private(qsize,i,j,z1c,z2c,zv,k,dp_np1,dp_star,Qcol,zkr,ilev) &
+#if (defined VERT_OPENMP2)
+!$omp parallel do private(q,i,j,z1c,z2c,zv,k,dp_np1,dp_star,Qcol,zkr,ilev) &
 !$omp    private(jk,zgam,zhdp,h,zarg,rhs,lower_diag,diag,upper_diag,q_diag,tmp_cal,filter_code) &
 !$omp    private(dy,im1,im2,im3,ip1,t1,t2,t3,za0,za1,za2,xm_d,xm,f_xm,t4,tm,tp,peaks,peaks_min) &
 !$omp    private(peaks_max,ip2,level1,level2,level3,level4,level5,lt1,lt2,lt3,zv1,zv2)
@@ -1174,7 +1174,7 @@ contains
     ! Also: save a copy of div(U dp) in derived%div(:,:,:,1), which will be DSS'd 
     !       and a DSS'ed version stored in derived%div(:,:,:,2)
     do ie=nets,nete
-#if (defined VERT_OPENMP)
+#if (defined VERT_OPENMP2)
 !$omp parallel do private(k, gradQ)
 #endif
       do k=1,nlev
@@ -1331,7 +1331,7 @@ contains
     ! initialize dp, and compute Q from Qdp (and store Q in Qtens_biharmonic)
     do ie = nets , nete
       ! add hyperviscosity to RHS.  apply to Q at timelevel n0, Qdp(n0)/dp
-#if (defined VERT_OPENMP)
+#if (defined VERT_OPENMP2)
 !$omp parallel do private(k, q)
 #endif
       do k = 1 , nlev    !  Loop index added with implicit inversion (AAM)
@@ -1388,7 +1388,7 @@ contains
       ! nu_p>0):   qtens_biharmonc *= elem()%psdiss_ave      (for consistency, if nu_p=nu_q)
       if ( nu_p > 0 ) then
         do ie = nets , nete
-#if (defined VERT_OPENMP)
+#if (defined VERT_OPENMP2)
           !$omp parallel do private(k, q, dp0, dpdiss)
 #endif
           do k = 1 , nlev    
@@ -1410,7 +1410,7 @@ contains
       call biharmonic_wk_scalar_minmax( elem , qtens_biharmonic , deriv , edgeAdvQ3 , hybrid , &
            nets , nete , qmin(:,:,nets:nete) , qmax(:,:,nets:nete) )
       do ie = nets , nete
-#if (defined VERT_OPENMP)
+#if (defined VERT_OPENMP2)
         !$omp parallel do private(k, q, dp0)
 #endif
         do k = 1 , nlev    !  Loop inversion (AAM)
@@ -1438,7 +1438,7 @@ contains
     if ( DSSopt == DSSdiv_vdp_ave ) DSSvar => elem(ie)%derived%divdp_proj(:,:,:)
 
     ! Compute velocity used to advance Qdp 
-#if (defined VERT_OPENMP)
+#if (defined VERT_OPENMP2)
 !$omp parallel do private(k)
 #endif
     do k = 1 , nlev    !  Loop index added (AAM)
@@ -1450,7 +1450,7 @@ contains
     enddo
 
     ! advance Qdp
-#if (defined VERT_OPENMP)
+#if (defined VERT_OPENMP2)
 !$omp parallel do private(q,k,gradQ,dp_star,qtens,dpdiss)
 #endif
     do q = 1 , qsize
@@ -1500,7 +1500,7 @@ contains
     else
       call edgeVpack(edgeAdv_p1 , elem(ie)%state%Qdp(:,:,:,:,np1_qdp) , nlev*qsize , 0 , elem(ie)%desc )
       ! also DSS extra field
-#if (defined VERT_OPENMP)
+#if (defined VERT_OPENMP2)
 !$omp parallel do private(k)
 #endif
       do k = 1 , nlev
@@ -1523,7 +1523,7 @@ contains
 
     if ( DSSopt == DSSno_var ) then
       call edgeVunpack( edgeAdv    , elem(ie)%state%Qdp(:,:,:,:,np1_qdp) , nlev*qsize , 0 , elem(ie)%desc )
-#if (defined VERT_OPENMP)
+#if (defined VERT_OPENMP2)
 !$omp parallel do private(k,q)
 #endif
       do q = 1 , qsize
@@ -1533,7 +1533,7 @@ contains
       enddo
     else
       call edgeVunpack( edgeAdv_p1 , elem(ie)%state%Qdp(:,:,:,:,np1_qdp) , nlev*qsize , 0 , elem(ie)%desc )
-#if (defined VERT_OPENMP)
+#if (defined VERT_OPENMP2)
       !$omp parallel do private(q,k)
 #endif
       do q = 1 , qsize
@@ -1641,7 +1641,7 @@ contains
      else
 	call edgeVpack(edgeAdv_p1,elem(ie)%state%Qdp(:,:,:,:,n0_qdp),nlev*qsize,0,elem(ie)%desc)
 	! also DSS extra field
-#if (defined VERT_OPENMP)
+#if (defined VERT_OPENMP2)
 !$omp parallel do private(k)
 #endif
 	do k=1,nlev
@@ -1675,7 +1675,7 @@ contains
      endif
 
      ! compute flux and advection term
-#if (defined VERT_OPENMP)
+#if (defined VERT_OPENMP2)
 !$omp parallel do private(k)
 #endif
      do k=1,nlev
@@ -1685,7 +1685,7 @@ contains
         Vstar(:,:,2,k) = elem(ie)%derived%vn0(:,:,2,k)/dp(:,:,k)
      enddo
 
-#if (defined VERT_OPENMP)
+#if (defined VERT_OPENMP2)
 !$omp parallel do private(q,k,vtemp,divdp,pshat,j,i)
 #endif
      do q=1,qsize
@@ -1939,7 +1939,7 @@ contains
   integer i,j,k
   real (kind=real_kind) :: mass,mass_new,area,qmin(nlev),qmax(nlev),mass2
 
-#if (defined VERT_OPENMP)
+#if (defined VERT_OPENMP2)
 !$omp parallel do private(k,mass,area,mass2,mass_new,i,j)
 #endif
   do k = 1 , nlev
@@ -2117,7 +2117,7 @@ contains
   do ic = 1 , hypervis_subcycle_q
     do ie = nets , nete
       ! Qtens = Q/dp   (apply hyperviscsoity to dp0 * Q, not Qdp)
-#if (defined VERT_OPENMP)
+#if (defined VERT_OPENMP2)
 !$omp parallel do private(k,dp0,q)
 #endif
       do k = 1 , nlev
@@ -2148,7 +2148,7 @@ contains
     call biharmonic_wk_scalar( elem , Qtens , deriv , edgeAdv , hybrid , nets , nete )
     do ie = nets , nete
       !spheremp     => elem(ie)%spheremp
-#if (defined VERT_OPENMP)
+#if (defined VERT_OPENMP2)
 !$omp parallel do private(q,k,j,i,dp0)
 #endif
       do q = 1 , qsize
@@ -2176,7 +2176,7 @@ contains
     do ie = nets , nete
       call edgeVunpack( edgeAdv , elem(ie)%state%Qdp(:,:,:,:,nt_qdp) , qsize*nlev , 0 , elem(ie)%desc )
       !rspheremp     => elem(ie)%rspheremp
-#if (defined VERT_OPENMP)
+#if (defined VERT_OPENMP2)
 !$omp parallel do private(q,k)
 #endif
       do q = 1 , qsize    

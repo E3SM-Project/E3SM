@@ -968,7 +968,7 @@ contains
 
           elem(ie)%state%lnps(:,:,nfilt) = mp*elem(ie)%state%lnps(:,:,nfilt)
 
-#if (defined VERT_OPENMP)
+#if (defined VERT_OPENMP2)
 !$omp parallel do private(k,i,j)
 #endif
           do k=1,nlev
@@ -1032,7 +1032,7 @@ contains
           elem(ie)%state%lnps(:,:,nfilt) = LOG(elem(ie)%state%lnps(:,:,nfilt))
 #endif
 
-#if (defined VERT_OPENMP)
+#if (defined VERT_OPENMP2)
 !$omp parallel do private(k,i,j)
 #endif
           do k=1,nlev
@@ -1067,7 +1067,7 @@ contains
 #else
           elem(ie)%state%lnps(:,:,nfilt) = LOG(elem(ie)%state%lnps(:,:,nfilt))
 #endif
-#if (defined VERT_OPENMP)
+#if (defined VERT_OPENMP2)
 !$omp parallel do private(k,i,j,v1,v2,u,v)
 #endif
           do k=1,nlev
