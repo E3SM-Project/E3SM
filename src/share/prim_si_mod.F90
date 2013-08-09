@@ -39,7 +39,7 @@ contains
     integer :: i,j,k
     real (kind=real_kind) :: facp, facm
 
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k,j,i,facp,facm)
 #endif
     do j=1,np   !   Loop inversion (AAM)
@@ -192,7 +192,7 @@ contains
     real(kind=real_kind) suml(np,np)      ! partial sum over l = (1, k-1)
     !-----------------------------------------------------------------------
 
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k,j,i,ckk,term,ckl)
 #endif
        do j=1,np   !   Loop inversion (AAM)
@@ -331,7 +331,7 @@ contains
     real(kind=real_kind), dimension(np,np,nlev) :: phii       ! Geopotential at interfaces
     !-----------------------------------------------------------------------
 
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k,j,i,hkk,hkl)
 #endif
        do j=1,np   !   Loop inversion (AAM)

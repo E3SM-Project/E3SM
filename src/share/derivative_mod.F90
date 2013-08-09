@@ -207,7 +207,7 @@ contains
   end subroutine derivinit
 
   subroutine deriv_print(deriv)
-    type (derivative_t) :: deriv
+    type (derivative_t), intent(in) :: deriv
     
     ! Local variables
 
@@ -518,7 +518,7 @@ end do
   function divergence_stag(v,deriv) result(div)
 
     real(kind=real_kind), intent(in) :: v(np,np,2)
-    type (derivative_stag_t)         :: deriv
+    type (derivative_stag_t), intent(in) :: deriv
 
     real(kind=real_kind) :: div(np,np)
 
@@ -657,7 +657,7 @@ endif
   function divergence_nonstag(v,deriv) result(div)
 
     real(kind=real_kind), intent(in) :: v(np,np,2)
-    type (derivative_t)              :: deriv
+    type (derivative_t), intent(in) :: deriv
 
     real(kind=real_kind) :: div(np,np)
 
@@ -756,7 +756,7 @@ if(modulo(np,2) .eq. 0 .and. UseUnroll) then
 
   function gradient_wk_stag(p,deriv) result(dp)
 
-    type (derivative_stag_t)         :: deriv
+    type (derivative_stag_t), intent(in) :: deriv
     real(kind=real_kind), intent(in) :: p(np,np)
 
     real(kind=real_kind)             :: dp(np,np,2)
@@ -903,7 +903,7 @@ endif
 
   function gradient_wk_nonstag(p,deriv) result(dp)
 
-    type (derivative_t)         :: deriv
+    type (derivative_t), intent(in) :: deriv
     real(kind=real_kind), intent(in) :: p(np,np)
 
     real(kind=real_kind)             :: dp(np,np,2)
@@ -1073,7 +1073,7 @@ endif
 
   function gradient_str_stag(p,deriv) result(dp)
 
-    type (derivative_stag_t)         :: deriv
+    type (derivative_stag_t), intent(in) :: deriv
     real(kind=real_kind), intent(in) :: p(np,np)
 
     real(kind=real_kind)             :: dp(np,np,2)
@@ -1211,7 +1211,7 @@ endif
 
   function gradient_str_nonstag(s,deriv) result(ds)
 
-    type (derivative_t)              :: deriv
+    type (derivative_t), intent(in) :: deriv
     real(kind=real_kind), intent(in) :: s(np,np)
 
     real(kind=real_kind) :: ds(np,np,2)
@@ -1303,7 +1303,7 @@ endif
 
   function vorticity(v,deriv) result(vort)
 
-    type (derivative_t)              :: deriv
+    type (derivative_t), intent(in) :: deriv
     real(kind=real_kind), intent(in) :: v(np,np,2)
 
     real(kind=real_kind) :: vort(np,np)
@@ -1440,7 +1440,7 @@ endif
   !  ================================================
   function interpolate_gll2spelt_points(v,deriv) result(p)
     real(kind=real_kind), intent(in) :: v(np,np)
-    type (derivative_t)         :: deriv
+    type (derivative_t), intent(in) :: deriv
     real(kind=real_kind) :: p(nep,nep)
 
     ! Local
@@ -1479,7 +1479,7 @@ endif
   function interpolate_gll2fvm_corners(v,deriv) result(p)
 
     real(kind=real_kind), intent(in) :: v(np,np)
-    type (derivative_t)         :: deriv
+    type (derivative_t), intent(in) :: deriv
     real(kind=real_kind) :: p(nc+1,nc+1)
 
     ! Local
@@ -1677,7 +1677,7 @@ endif
 !   output  ds: spherical gradient of s, lat-lon coordinates
 !
 
-    type (derivative_t)              :: deriv
+    type (derivative_t), intent(in) :: deriv
     real(kind=real_kind), intent(in), dimension(2,2,np,np) :: Dinv
     real(kind=real_kind), intent(in) :: s(np,np)
 
@@ -1714,8 +1714,6 @@ endif
     end function gradient_sphere
 
 
-
-
   function curl_sphere_wk_testcov(s,deriv,elem) result(ds)
 !
 !   integrated-by-parts gradient, w.r.t. COVARIANT test functions
@@ -1747,8 +1745,8 @@ endif
 !       = +sum  w_in s_in  d( PHI^m)(i)
 !           i
 !
-    type (derivative_t)              :: deriv
-    type (element_t)                 :: elem
+    type (derivative_t), intent(in) :: deriv
+    type (element_t), intent(in) :: elem
     real(kind=real_kind), intent(in) :: s(np,np)
 
     real(kind=real_kind) :: ds(np,np,2)
@@ -1807,8 +1805,8 @@ endif
 !  and we have two terms for each componet of ds 
 !
 !
-    type (derivative_t)              :: deriv
-    type (element_t)                 :: elem
+    type (derivative_t), intent(in) :: deriv
+    type (element_t), intent(in) :: elem
     real(kind=real_kind), intent(in) :: s(np,np)
 
     real(kind=real_kind) :: ds(np,np,2)
@@ -1862,8 +1860,8 @@ endif
 !   s1(m,n)  =  sum w_i,n g_mn dx(PHI^m)_i,n s_i,n
 !                i
 !
-    type (derivative_t)              :: deriv
-    type (element_t)              :: elem
+    type (derivative_t), intent(in) :: deriv
+    type (element_t), intent(in) :: elem
     real(kind=real_kind), intent(in) :: s(np,np)
 
     real(kind=real_kind) :: ds(np,np,2)
@@ -1951,8 +1949,8 @@ endif
 !   input:  vectors u and v  (latlon coordinates)
 !   output: vector  [ u dot grad ] v  (latlon coordinates)
 !
-    type (derivative_t)              :: deriv
-    type (element_t)                 :: elem
+    type (derivative_t), intent(in) :: deriv
+    type (element_t), intent(in) :: elem
     real(kind=real_kind), intent(in) :: u(np,np,2)
     real(kind=real_kind), intent(in) :: v(np,np,2)
 
@@ -1999,8 +1997,8 @@ endif
 !    curl(s khat) = (1/jacobian) ( ds/dy, -ds/dx ) in contra-variant coordinates
 !    then map to lat-lon
 !
-    type (derivative_t)              :: deriv
-    type (element_t)                 :: elem
+    type (derivative_t), intent(in) :: deriv
+    type (element_t), intent(in) :: elem
     real(kind=real_kind), intent(in) :: s(np,np)
 
     real(kind=real_kind) :: ds(np,np,2)
@@ -2052,8 +2050,8 @@ endif
 !   are identical to roundoff, as theory predicts.
 !
     real(kind=real_kind), intent(in) :: v(np,np,2)  ! in lat-lon coordinates
-    type (derivative_t)              :: deriv
-    type (element_t)                 :: elem
+    type (derivative_t), intent(in) :: deriv
+    type (element_t), intent(in) :: elem
     real(kind=real_kind) :: div(np,np)
 
     ! Local
@@ -2123,8 +2121,8 @@ endif
 !   this routine is used just to check spectral element integration by parts identities
 !
     real(kind=real_kind), intent(in) :: v(np,np,2)  ! in lat-lon coordinates
-    type (derivative_t)              :: deriv
-    type (element_t)                 :: elem
+    type (derivative_t), intent(in) :: deriv
+    type (element_t), intent(in) :: elem
     real(kind=real_kind) :: result(np,np)
 
     ! Local
@@ -2178,8 +2176,8 @@ endif
     real(kind=real_kind), intent(in) :: v(np,np,2) 
     real(kind=real_kind), intent(in) :: p(np,np) 
     real(kind=real_kind), intent(in) :: pedges(0:np+1,0:np+1) 
-    type (derivative_t)              :: deriv
-    type (element_t)                 :: elem
+    type (derivative_t), intent(in) :: deriv
+    type (element_t), intent(in) :: elem
     real(kind=real_kind) :: result(np,np)
     logical :: u_is_contra
 
@@ -2269,8 +2267,8 @@ endif
 !   ouput:  spherical vorticity of v
 !
 
-    type (derivative_t)              :: deriv
-    type (element_t)                 :: elem
+    type (derivative_t), intent(in) :: deriv
+    type (element_t), intent(in) :: elem
     real(kind=real_kind), intent(in) :: v(np,np,2)
 
     real(kind=real_kind) :: vort(np,np)
@@ -2316,20 +2314,14 @@ endif
 
   end function vorticity_sphere
 
-
-
-
-
-
-
   function vorticity_sphere_diag(v,deriv,elem) result(vort)
   !
   !   input:  v = velocity in lat-lon coordinates
   !   ouput:  diagonal component of spherical vorticity of v
   !
 
-      type (derivative_t)              :: deriv
-      type (element_t)                 :: elem
+      type (derivative_t), intent(in) :: deriv
+      type (element_t), intent(in) :: elem
       real(kind=real_kind), intent(in) :: v(np,np,2)
 
       real(kind=real_kind) :: vort(np,np)
@@ -2391,8 +2383,8 @@ endif
 
 
     real(kind=real_kind), intent(in) :: v(np,np,2)  ! in lat-lon coordinates
-    type (derivative_t)              :: deriv
-    type (element_t)                 :: elem
+    type (derivative_t), intent(in) :: deriv
+    type (element_t), intent(in) :: elem
     real(kind=real_kind) :: div(np,np)
 
     ! Local
@@ -2526,8 +2518,8 @@ endif
 
     real(kind=real_kind), intent(in) :: v(np,np,2) 
     logical :: var_coef
-    type (derivative_t)              :: deriv
-    type (element_t)                 :: elem
+    type (derivative_t), intent(in) :: deriv
+    type (element_t), intent(in) :: elem
     real(kind=real_kind) :: laplace(np,np,2)
     ! Local
 
@@ -2606,11 +2598,6 @@ endif
     enddo
   end function vlaplace_sphere_wk_contra
 
-
-
-!-----------------------------------------------------------------------------------
-
-
   function gll_to_dgmodal(p,deriv) result(phat)
 !
 !   input:  v = velocity in lat-lon coordinates
@@ -2623,7 +2610,7 @@ endif
 !   for npdg < np, this routine gives the (exact) modal expansion of p/spheremp()
 !
     real(kind=real_kind), intent(in) :: p(np,np) 
-    type (derivative_t)              :: deriv
+    type (derivative_t), intent(in) :: deriv
     real(kind=real_kind) :: phat(npdg,npdg)
 
     ! Local
@@ -2669,7 +2656,7 @@ endif
 !   ouput:  p    = sum expansion to evaluate phat at GLL points
 !
     real(kind=real_kind) :: p(np,np) 
-    type (derivative_t)  :: deriv
+    type (derivative_t), intent(in) :: deriv
     real(kind=real_kind) :: phat(npdg,npdg)
     ! Local
     integer i,j,m,n

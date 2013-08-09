@@ -28,7 +28,7 @@ module prim_driver_mod
   use spelt_mod, only : spelt_struct, spelt_init1,spelt_init2, spelt_init3
   
   use element_mod, only : element_t, timelevels,  allocate_element_desc
-
+  use thread_mod, only : omp_get_num_threads
   implicit none
   private
   public :: prim_init1, prim_init2 , prim_run, prim_run_subcycle, prim_finalize, leapfrog_bootstrap
@@ -342,10 +342,6 @@ contains
     !  for OpenMP across elements, equal to 1 for OpenMP within element
     ! =================================================================
     n_domains = min(Nthreads,nelemd)
-!#if (defined VERT_OPENMP2)
-!    n_domains = 1
-!#endif
-
 
     ! =================================================================
     ! Initialize shared boundary_exchange and reduction buffers
@@ -500,11 +496,7 @@ contains
 
     n_domains = min(Nthreads,nelemd)
     call omp_set_num_threads(n_domains)
-!#if defined(VERT_OPENMP2) || defined(NESTED_OPENMP)
-!    call omp_set_num_threads(vert_num_threads)
-!#else
-!    call omp_set_num_threads(n_domains)
-!#endif
+
     ! =====================================
     ! Set number of threads...
     ! =====================================
@@ -1369,6 +1361,9 @@ contains
        !$omp parallel do default(shared), private(k,q,dp_np1)
 #endif
        do k=1,nlev    !  Loop inversion (AAM)
+          !if (k == 1) then
+           !write(*,*) "In prim run there are ", omp_get_num_threads(), " in the current team in parallel region"
+          !endif
           dp_np1(:,:) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
                ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%np1)
           do q=1,qsize

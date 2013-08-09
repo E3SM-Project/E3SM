@@ -90,7 +90,7 @@ contains
        metdet   => elem(ie)%metdet
        rmetdetv(:,:)=1.0_real_kind/elem(ie)%metdet(:,:)
 
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k,grad_tmp,i,j,v1,v2,gp,vco,div_tmp,zeta_tmp)
 #endif
        do k=1,nlev   
@@ -169,7 +169,7 @@ contains
        ! compute Laplacian of T(n+1)
        ! ======================================
 
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k,i,j,grad_tmp,div_tmp,grad_div,grad_zeta,v1,v2)
 #endif
        do k=1,nlev
@@ -263,7 +263,7 @@ contains
        kptr=2*nlev
        call edgeVunpack(edge3, lap_T_np1(1,1,1,ie), nlev, kptr, elem(ie)%desc)
 
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k,i,j)
 #endif
        do k=1,nlev   
@@ -343,7 +343,7 @@ contains
           metinv   => elem(ie)%metinv
           metdet   => elem(ie)%metdet
 
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k,grad_tmp,i,j,v1,v2)
 #endif
           do k=1,nlev   
@@ -395,7 +395,7 @@ contains
 
        do q=1,qsize
 
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k,i,j,div_tmp)
 #endif
           do k=1,nlev
@@ -440,7 +440,7 @@ contains
        call edgeVunpack(edgeS1, lap_Q_np1(1,1,1,1,ie), nlev*qsize, 0, elem(ie)%desc)
 
        do q=1,qsize
-#if (defined VERT_OPENMP2)
+#if (defined VERT_OPENMP)
 !$omp parallel do private(k,i,j)
 #endif
           do k=1,nlev   
