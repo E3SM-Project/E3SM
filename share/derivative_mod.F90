@@ -21,8 +21,6 @@ private
      real (kind=real_kind) :: Dvv_diag(np,np)
      real (kind=real_kind) :: Dvv_twt(np,np)
      real (kind=real_kind) :: Mvv_twt(np,np)  ! diagonal matrix of GLL weights
-     real (kind=real_kind) :: vvtemp(np,np)
-     real (kind=real_kind) :: vvtempt(np,np,2)
      real (kind=real_kind) :: Mfvm(np,nc+1)
      real (kind=real_kind) :: Cfvm(np,nc)
      real (kind=real_kind) :: Sfvm(np,nep)
@@ -36,8 +34,6 @@ private
      real (kind=real_kind) :: D_twt(np,np)
      real (kind=real_kind) :: M_twt(np,np)
      real (kind=real_kind) :: M_t(np,np)
-     real (kind=real_kind) :: vtemp(np,np,2)
-     real (kind=real_kind) :: vtempt(np,np,2)
   end type derivative_stag_t
 
   real (kind=real_kind), allocatable :: integration_matrix(:,:)
@@ -295,8 +291,8 @@ contains
     deallocate(gll%points)
     deallocate(gll%weights)
 
-	deallocate(gs%points)
-	deallocate(gs%weights)
+    deallocate(gs%points)
+    deallocate(gs%weights)
 
 end subroutine dmatinit
 
@@ -538,6 +534,9 @@ end do
     real(kind=real_kind)  sumx10,sumx11
     real(kind=real_kind)  sumy10,sumy11
 
+    real(kind=real_kind) :: vtemp(np,np,2)
+    
+
     !write(*,*) "divergence_stag"
 #ifdef DEBUG
     print *, "divergence_stag"
@@ -571,15 +570,15 @@ if(MODULO(np,2) == 0 .and. UseUnroll) then
              sumy11 = sumy11 + deriv%M(i,l+1)*v(i,j+1,2)
           end do
 
-          deriv%vtemp(j  ,l  ,1) = sumx00
-          deriv%vtemp(j  ,l+1,1) = sumx01
-          deriv%vtemp(j+1,l  ,1) = sumx10
-          deriv%vtemp(j+1,l+1,1) = sumx11
+          vtemp(j  ,l  ,1) = sumx00
+          vtemp(j  ,l+1,1) = sumx01
+          vtemp(j+1,l  ,1) = sumx10
+          vtemp(j+1,l+1,1) = sumx11
 
-          deriv%vtemp(j  ,l  ,2) = sumy00
-          deriv%vtemp(j  ,l+1,2) = sumy01
-          deriv%vtemp(j+1,l  ,2) = sumy10
-          deriv%vtemp(j+1,l+1,2) = sumy11
+          vtemp(j  ,l  ,2) = sumy00
+          vtemp(j  ,l+1,2) = sumy01
+          vtemp(j+1,l  ,2) = sumy10
+          vtemp(j+1,l+1,2) = sumy11
 
        end do
     end do
@@ -601,15 +600,15 @@ if(MODULO(np,2) == 0 .and. UseUnroll) then
           sumy11=0.0d0
 
           do l=1,np
-             sumx00 = sumx00 +  deriv%M(l,j  )*deriv%vtemp(l,i  ,1)
-             sumx01 = sumx01 +  deriv%M(l,j+1)*deriv%vtemp(l,i  ,1)
-             sumx10 = sumx10 +  deriv%M(l,j  )*deriv%vtemp(l,i+1,1)
-             sumx11 = sumx11 +  deriv%M(l,j+1)*deriv%vtemp(l,i+1,1)
+             sumx00 = sumx00 +  deriv%M(l,j  )*vtemp(l,i  ,1)
+             sumx01 = sumx01 +  deriv%M(l,j+1)*vtemp(l,i  ,1)
+             sumx10 = sumx10 +  deriv%M(l,j  )*vtemp(l,i+1,1)
+             sumx11 = sumx11 +  deriv%M(l,j+1)*vtemp(l,i+1,1)
 
-             sumy00 = sumy00 +  deriv%D(l,j  )*deriv%vtemp(l,i  ,2)
-             sumy01 = sumy01 +  deriv%D(l,j+1)*deriv%vtemp(l,i  ,2)
-             sumy10 = sumy10 +  deriv%D(l,j  )*deriv%vtemp(l,i+1,2)
-             sumy11 = sumy11 +  deriv%D(l,j+1)*deriv%vtemp(l,i+1,2)
+             sumy00 = sumy00 +  deriv%D(l,j  )*vtemp(l,i  ,2)
+             sumy01 = sumy01 +  deriv%D(l,j+1)*vtemp(l,i  ,2)
+             sumy10 = sumy10 +  deriv%D(l,j  )*vtemp(l,i+1,2)
+             sumy11 = sumy11 +  deriv%D(l,j+1)*vtemp(l,i+1,2)
           end do
 
           div(i  ,j  ) = sumx00 + sumy00
@@ -628,22 +627,22 @@ else
            do i=1,np
               sumx00 = sumx00 + deriv%D(i,l  )*v(i,j  ,1)
               sumy00 = sumy00 + deriv%M(i,l  )*v(i,j  ,2)
- 	   enddo
-          deriv%vtemp(j  ,l  ,1) = sumx00
-          deriv%vtemp(j  ,l  ,2) = sumy00
+           enddo
+          vtemp(j  ,l  ,1) = sumx00
+          vtemp(j  ,l  ,2) = sumy00
        enddo
     enddo
     do j=1,np
        do i=1,np
           sumx00=0.0d0
-	  sumy00=0.0d0
+          sumy00=0.0d0
           do l=1,np
-             sumx00 = sumx00 +  deriv%M(l,j  )*deriv%vtemp(l,i  ,1)
-	     sumy00 = sumy00 +  deriv%D(l,j  )*deriv%vtemp(l,i  ,2)
-	  enddo
+             sumx00 = sumx00 +  deriv%M(l,j  )*vtemp(l,i  ,1)
+             sumy00 = sumy00 +  deriv%D(l,j  )*vtemp(l,i  ,2)
+          enddo
           div(i  ,j  ) = sumx00 + sumy00
 
-	enddo
+       enddo
     enddo
 endif
 
@@ -675,6 +674,8 @@ endif
 
     real(kind=real_kind) ::  dvdy00,dvdy01
     real(kind=real_kind) ::  dvdy10,dvdy11
+
+    real(kind=real_kind) ::  vvtemp(np,np)
 
     !write(*,*) "divergence_nonstag"
 if(modulo(np,2) .eq. 0 .and. UseUnroll) then
@@ -711,10 +712,10 @@ if(modulo(np,2) .eq. 0 .and. UseUnroll) then
              div(l  ,j+1) = dudx10
              div(l+1,j+1) = dudx11
 
-             deriv%vvtemp(j  ,l  ) = dvdy00
-             deriv%vvtemp(j  ,l+1) = dvdy01
-             deriv%vvtemp(j+1,l  ) = dvdy10
-             deriv%vvtemp(j+1,l+1) = dvdy11
+             vvtemp(j  ,l  ) = dvdy00
+             vvtemp(j  ,l+1) = dvdy01
+             vvtemp(j+1,l  ) = dvdy10
+             vvtemp(j+1,l+1) = dvdy11
 
           end do
        end do
@@ -731,7 +732,7 @@ if(modulo(np,2) .eq. 0 .and. UseUnroll) then
              end do
 
              div(l  ,j  ) = dudx00
-             deriv%vvtemp(j  ,l  ) = dvdy00
+             vvtemp(j  ,l  ) = dvdy00
 
 
           end do
@@ -739,7 +740,7 @@ if(modulo(np,2) .eq. 0 .and. UseUnroll) then
     end if
     do j=1,np
        do i=1,np
-          div(i,j)=div(i,j)+deriv%vvtemp(i,j)
+          div(i,j)=div(i,j)+vvtemp(i,j)
        end do
     end do
 
@@ -771,6 +772,8 @@ if(modulo(np,2) .eq. 0 .and. UseUnroll) then
     real(kind=real_kind)  sumy00,sumy01
     real(kind=real_kind)  sumx10,sumx11
     real(kind=real_kind)  sumy10,sumy11
+
+    real(kind=real_kind)  :: vtempt(np,np,2)
 
     !write(*,*) "gradient_wk_stag"
 #ifdef DEBUG
@@ -807,19 +810,19 @@ if(MODULO(np,2) == 0 .and. UseUnroll) then
              sumy11 = sumy11 + deriv%M_twt(i,l+1)*p(i,j+1)
           end do
 
-          deriv%vtempt(j  ,l  ,1) = sumx00
-          deriv%vtempt(j  ,l+1,1) = sumx01
-          deriv%vtempt(j+1,l  ,1) = sumx10
-          deriv%vtempt(j+1,l+1,1) = sumx11
+          vtempt(j  ,l  ,1) = sumx00
+          vtempt(j  ,l+1,1) = sumx01
+          vtempt(j+1,l  ,1) = sumx10
+          vtempt(j+1,l+1,1) = sumx11
 
-          deriv%vtempt(j  ,l  ,2) = sumy00
-          deriv%vtempt(j  ,l+1,2) = sumy01
-          deriv%vtempt(j+1,l  ,2) = sumy10
-          deriv%vtempt(j+1,l+1,2) = sumy11
+          vtempt(j  ,l  ,2) = sumy00
+          vtempt(j  ,l+1,2) = sumy01
+          vtempt(j+1,l  ,2) = sumy10
+          vtempt(j+1,l+1,2) = sumy11
        end do
     end do
 
-	
+
     !JMD ================================
     !JMD 2*np*np*np Flops 
     !JMD ================================
@@ -837,15 +840,15 @@ if(MODULO(np,2) == 0 .and. UseUnroll) then
           sumy11=0.0d0
 
           do l=1,np
-             sumx00 = sumx00 +  deriv%M_twt(l,j  )*deriv%vtempt(l,i  ,1)
-             sumx01 = sumx01 +  deriv%M_twt(l,j+1)*deriv%vtempt(l,i  ,1)
-             sumx10 = sumx10 +  deriv%M_twt(l,j  )*deriv%vtempt(l,i+1,1)
-             sumx11 = sumx11 +  deriv%M_twt(l,j+1)*deriv%vtempt(l,i+1,1)
+             sumx00 = sumx00 +  deriv%M_twt(l,j  )*vtempt(l,i  ,1)
+             sumx01 = sumx01 +  deriv%M_twt(l,j+1)*vtempt(l,i  ,1)
+             sumx10 = sumx10 +  deriv%M_twt(l,j  )*vtempt(l,i+1,1)
+             sumx11 = sumx11 +  deriv%M_twt(l,j+1)*vtempt(l,i+1,1)
 
-             sumy00 = sumy00 +  deriv%D_twt(l,j  )*deriv%vtempt(l,i  ,2)
-             sumy01 = sumy01 +  deriv%D_twt(l,j+1)*deriv%vtempt(l,i  ,2)
-             sumy10 = sumy10 +  deriv%D_twt(l,j  )*deriv%vtempt(l,i+1,2)
-             sumy11 = sumy11 +  deriv%D_twt(l,j+1)*deriv%vtempt(l,i+1,2)
+             sumy00 = sumy00 +  deriv%D_twt(l,j  )*vtempt(l,i  ,2)
+             sumy01 = sumy01 +  deriv%D_twt(l,j+1)*vtempt(l,i  ,2)
+             sumy10 = sumy10 +  deriv%D_twt(l,j  )*vtempt(l,i+1,2)
+             sumy11 = sumy11 +  deriv%D_twt(l,j+1)*vtempt(l,i+1,2)
           end do
 
           dp(i  ,j  ,1) = sumx00
@@ -863,25 +866,25 @@ if(MODULO(np,2) == 0 .and. UseUnroll) then
 else
     do j=1,np
        do l=1,np
- 	  sumx00=0.0d0
+          sumx00=0.0d0
           sumy00=0.0d0
            do i=1,np
               sumx00 = sumx00 + deriv%D_twt(i,l  )*p(i,j  )
               sumy00 = sumy00 + deriv%M_twt(i,l  )*p(i,j  )
- 	  enddo
-           deriv%vtempt(j  ,l  ,1) = sumx00
-           deriv%vtempt(j  ,l  ,2) = sumy00
+           enddo
+           vtempt(j  ,l  ,1) = sumx00
+           vtempt(j  ,l  ,2) = sumy00
         enddo
     enddo
     do j=1,np
        do i=1,np
           sumx00=0.0d0
-	  sumy00=0.0d0
+          sumy00=0.0d0
           do l=1,np
-             sumx00 = sumx00 +  deriv%M_twt(l,j  )*deriv%vtempt(l,i  ,1)
-	     sumy00 = sumy00 +  deriv%D_twt(l,j  )*deriv%vtempt(l,i  ,2)
-	  enddo
-	  dp(i  ,j  ,1) = sumx00
+             sumx00 = sumx00 +  deriv%M_twt(l,j  )*vtempt(l,i  ,1)
+             sumy00 = sumy00 +  deriv%D_twt(l,j  )*vtempt(l,i  ,2)
+          enddo
+          dp(i  ,j  ,1) = sumx00
           dp(i  ,j  ,2) = sumy00
       enddo
     enddo
@@ -917,6 +920,8 @@ endif
     real(kind=real_kind)  sumx10,sumx11
     real(kind=real_kind)  sumy10,sumy11
 
+    real(kind=real_kind)  :: vvtempt(np,np,2)
+
     !JMD ================================
     !JMD 2*np*np*np Flops 
     !JMD ================================
@@ -950,15 +955,15 @@ endif
                 sumy11 = sumy11 + deriv%Mvv_twt(i,l+1)*p(i,j+1)
              end do
 
-             deriv%vvtempt(j  ,l  ,1) = sumx00
-             deriv%vvtempt(j  ,l+1,1) = sumx01
-             deriv%vvtempt(j+1,l  ,1) = sumx10
-             deriv%vvtempt(j+1,l+1,1) = sumx11
+             vvtempt(j  ,l  ,1) = sumx00
+             vvtempt(j  ,l+1,1) = sumx01
+             vvtempt(j+1,l  ,1) = sumx10
+             vvtempt(j+1,l+1,1) = sumx11
 
-             deriv%vvtempt(j  ,l  ,2) = sumy00
-             deriv%vvtempt(j  ,l+1,2) = sumy01
-             deriv%vvtempt(j+1,l  ,2) = sumy10
-             deriv%vvtempt(j+1,l+1,2) = sumy11
+             vvtempt(j  ,l  ,2) = sumy00
+             vvtempt(j  ,l+1,2) = sumy01
+             vvtempt(j+1,l  ,2) = sumy10
+             vvtempt(j+1,l+1,2) = sumy11
 
           end do
        end do
@@ -990,15 +995,15 @@ endif
              sumy11=0.0d0
              
              do l=1,np
-                sumx00 = sumx00 +  deriv%Mvv_twt(l,j  )*deriv%vvtempt(l,i  ,1)
-                sumx01 = sumx01 +  deriv%Mvv_twt(l,j+1)*deriv%vvtempt(l,i  ,1)
-                sumx10 = sumx10 +  deriv%Mvv_twt(l,j  )*deriv%vvtempt(l,i+1,1)
-                sumx11 = sumx11 +  deriv%Mvv_twt(l,j+1)*deriv%vvtempt(l,i+1,1)
+                sumx00 = sumx00 +  deriv%Mvv_twt(l,j  )*vvtempt(l,i  ,1)
+                sumx01 = sumx01 +  deriv%Mvv_twt(l,j+1)*vvtempt(l,i  ,1)
+                sumx10 = sumx10 +  deriv%Mvv_twt(l,j  )*vvtempt(l,i+1,1)
+                sumx11 = sumx11 +  deriv%Mvv_twt(l,j+1)*vvtempt(l,i+1,1)
 
-                sumy00 = sumy00 +  deriv%Dvv_twt(l,j  )*deriv%vvtempt(l,i  ,2)
-                sumy01 = sumy01 +  deriv%Dvv_twt(l,j+1)*deriv%vvtempt(l,i  ,2)
-                sumy10 = sumy10 +  deriv%Dvv_twt(l,j  )*deriv%vvtempt(l,i+1,2)
-                sumy11 = sumy11 +  deriv%Dvv_twt(l,j+1)*deriv%vvtempt(l,i+1,2)
+                sumy00 = sumy00 +  deriv%Dvv_twt(l,j  )*vvtempt(l,i  ,2)
+                sumy01 = sumy01 +  deriv%Dvv_twt(l,j+1)*vvtempt(l,i  ,2)
+                sumy10 = sumy10 +  deriv%Dvv_twt(l,j  )*vvtempt(l,i+1,2)
+                sumy11 = sumy11 +  deriv%Dvv_twt(l,j+1)*vvtempt(l,i+1,2)
              end do
              
              dp(i  ,j  ,1) = sumx00
@@ -1027,9 +1032,8 @@ endif
                 sumy00 = sumy00 + deriv%Mvv_twt(i,l  )*p(i,j  )
              end do
 
-             deriv%vvtempt(j  ,l  ,1) = sumx00
-
-             deriv%vvtempt(j  ,l  ,2) = sumy00
+             vvtempt(j  ,l  ,1) = sumx00
+             vvtempt(j  ,l  ,2) = sumy00
 
           end do
        end do
@@ -1045,9 +1049,9 @@ endif
              sumy00=0.0d0
              
              do l=1,np
-                sumx00 = sumx00 +  deriv%Mvv_twt(l,j  )*deriv%vvtempt(l,i  ,1)
+                sumx00 = sumx00 +  deriv%Mvv_twt(l,j  )*vvtempt(l,i  ,1)
 
-                sumy00 = sumy00 +  deriv%Dvv_twt(l,j  )*deriv%vvtempt(l,i  ,2)
+                sumy00 = sumy00 +  deriv%Dvv_twt(l,j  )*vvtempt(l,i  ,2)
              end do
              
              dp(i  ,j  ,1) = sumx00
@@ -1087,6 +1091,7 @@ endif
     real(kind=real_kind)  sumx10,sumx11
     real(kind=real_kind)  sumy10,sumy11
 
+    real(kind=real_kind)  :: vtempt(np,np,2)
     !write(*,*) "gradient_str_stag"
 #ifdef DEBUG
     print *, "gradient_str_stag"
@@ -1116,15 +1121,15 @@ if(MODULO(np,2) == 0 .and. UseUnroll) then
              sumy11 = sumy11 + deriv%M_t(i,l+1)*p(i,j+1)
           end do
 
-          deriv%vtempt(j  ,l  ,1) = sumx00
-          deriv%vtempt(j  ,l+1,1) = sumx01
-          deriv%vtempt(j+1,l  ,1) = sumx10
-          deriv%vtempt(j+1,l+1,1) = sumx11
+          vtempt(j  ,l  ,1) = sumx00
+          vtempt(j  ,l+1,1) = sumx01
+          vtempt(j+1,l  ,1) = sumx10
+          vtempt(j+1,l+1,1) = sumx11
 
-          deriv%vtempt(j  ,l  ,2) = sumy00
-          deriv%vtempt(j  ,l+1,2) = sumy01
-          deriv%vtempt(j+1,l  ,2) = sumy10
-          deriv%vtempt(j+1,l+1,2) = sumy11
+          vtempt(j  ,l  ,2) = sumy00
+          vtempt(j  ,l+1,2) = sumy01
+          vtempt(j+1,l  ,2) = sumy10
+          vtempt(j+1,l+1,2) = sumy11
 
        end do
     end do
@@ -1145,15 +1150,15 @@ if(MODULO(np,2) == 0 .and. UseUnroll) then
           sumy11=0.0d0
 
           do l=1,np
-             sumx00 = sumx00 +  deriv%M_t(l,j  )*deriv%vtempt(l,i  ,1)
-             sumx01 = sumx01 +  deriv%M_t(l,j+1)*deriv%vtempt(l,i  ,1)
-             sumx10 = sumx10 +  deriv%M_t(l,j  )*deriv%vtempt(l,i+1,1)
-             sumx11 = sumx11 +  deriv%M_t(l,j+1)*deriv%vtempt(l,i+1,1)
+             sumx00 = sumx00 +  deriv%M_t(l,j  )*vtempt(l,i  ,1)
+             sumx01 = sumx01 +  deriv%M_t(l,j+1)*vtempt(l,i  ,1)
+             sumx10 = sumx10 +  deriv%M_t(l,j  )*vtempt(l,i+1,1)
+             sumx11 = sumx11 +  deriv%M_t(l,j+1)*vtempt(l,i+1,1)
 
-             sumy00 = sumy00 +  deriv%Dpv(l,j  )*deriv%vtempt(l,i  ,2)
-             sumy01 = sumy01 +  deriv%Dpv(l,j+1)*deriv%vtempt(l,i  ,2)
-             sumy10 = sumy10 +  deriv%Dpv(l,j  )*deriv%vtempt(l,i+1,2)
-             sumy11 = sumy11 +  deriv%Dpv(l,j+1)*deriv%vtempt(l,i+1,2)
+             sumy00 = sumy00 +  deriv%Dpv(l,j  )*vtempt(l,i  ,2)
+             sumy01 = sumy01 +  deriv%Dpv(l,j+1)*vtempt(l,i  ,2)
+             sumy10 = sumy10 +  deriv%Dpv(l,j  )*vtempt(l,i+1,2)
+             sumy11 = sumy11 +  deriv%Dpv(l,j+1)*vtempt(l,i+1,2)
           end do
 
           dp(i  ,j  ,1) = sumx00
@@ -1176,21 +1181,21 @@ else
           do i=1,np
              sumx00 = sumx00 + deriv%Dpv(i,l  )*p(i,j  )
              sumy00 = sumy00 + deriv%M_t(i,l  )*p(i,j  )
-   	   enddo
-	   deriv%vtempt(j  ,l  ,1) = sumx00
-   	   deriv%vtempt(j  ,l  ,2) = sumy00
-	enddo
+          enddo
+          vtempt(j  ,l  ,1) = sumx00
+          vtempt(j  ,l  ,2) = sumy00
+       enddo
     enddo
     do j=1,np
        do i=1,np
           sumx00=0.0d0
           sumy00=0.0d0
           do l=1,np
-             sumx00 = sumx00 +  deriv%M_t(l,j  )*deriv%vtempt(l,i  ,1)
-             sumy00 = sumy00 +  deriv%Dpv(l,j  )*deriv%vtempt(l,i  ,2)
-	  enddo
+             sumx00 = sumx00 +  deriv%M_t(l,j  )*vtempt(l,i  ,1)
+             sumy00 = sumy00 +  deriv%Dpv(l,j  )*vtempt(l,i  ,2)
+          enddo
           dp(i  ,j  ,1) = sumx00
-	  dp(i  ,j  ,2) = sumy00
+          dp(i  ,j  ,2) = sumy00
        enddo
     enddo
 endif
@@ -1315,6 +1320,7 @@ endif
     real(kind=real_kind) ::  dudy00,dudy01
     real(kind=real_kind) ::  dudy10,dudy11
 
+    real(kind=real_kind)  :: vvtemp(np,np)
     !write(*,*) "vorticity"
 if(MODULO(np,2) == 0 .and. UseUnroll) then 
     do j=1,np,2
@@ -1349,10 +1355,10 @@ if(MODULO(np,2) == 0 .and. UseUnroll) then
           vort(l  ,j+1) = dvdx10
           vort(l+1,j+1) = dvdx11
 
-          deriv%vvtemp(j  ,l  ) = dudy00
-          deriv%vvtemp(j  ,l+1) = dudy01
-          deriv%vvtemp(j+1,l  ) = dudy10
-          deriv%vvtemp(j+1,l+1) = dudy11
+          vvtemp(j  ,l  ) = dudy00
+          vvtemp(j  ,l+1) = dudy01
+          vvtemp(j+1,l  ) = dudy10
+          vvtemp(j+1,l+1) = dudy11
 
         end do
     end do
@@ -1361,23 +1367,23 @@ else
        do l=1,np
 
           dudy00=0.0d0
-	  dvdx00=0.0d0
+          dvdx00=0.0d0
 
           do i=1,np
              dvdx00 = dvdx00 + deriv%Dvv(i,l  )*v(i,j  ,2)
              dudy00 = dudy00 + deriv%Dvv(i,l  )*v(j  ,i,1)
-	  enddo
+          enddo
  
-	  vort(l  ,j  ) = dvdx00
-	  deriv%vvtemp(j  ,l  ) = dudy00
-	enddo
-     enddo
+          vort(l  ,j  ) = dvdx00
+          vvtemp(j  ,l  ) = dudy00
+       enddo
+    enddo
 
 endif
 
     do j=1,np
        do i=1,np
-          vort(i,j)=vort(i,j)-deriv%vvtemp(i,j)
+          vort(i,j)=vort(i,j)-vvtemp(i,j)
        end do
     end do
 
@@ -2290,17 +2296,17 @@ endif
        do l=1,np
 
           dudy00=0.0d0
-	  dvdx00=0.0d0
+          dvdx00=0.0d0
 
           do i=1,np
              dvdx00 = dvdx00 + deriv%Dvv(i,l  )*vco(i,j  ,2)
              dudy00 = dudy00 + deriv%Dvv(i,l  )*vco(j  ,i,1)
-	  enddo
+          enddo
  
-	  vort(l  ,j  ) = dvdx00
-	  vtemp(j  ,l  ) = dudy00
-	enddo
-     enddo
+          vort(l  ,j  ) = dvdx00
+          vtemp(j  ,l  ) = dudy00
+       enddo
+    enddo
 
     do j=1,np
        do i=1,np
