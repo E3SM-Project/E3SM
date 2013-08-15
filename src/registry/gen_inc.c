@@ -1136,113 +1136,64 @@ void gen_field_defs(struct group_list * groups, struct variable * vars, struct d
    fd = fopen("field_links.inc", "w");
 
    /* subroutine to call link subroutine for every field type */
-   fortprintf(fd, "      subroutine mpas_create_field_links(b)\n\n");
-   fortprintf(fd, "         implicit none\n");
-   fortprintf(fd, "         type (block_type), pointer :: b\n");
-   fortprintf(fd, "         type (block_type), pointer :: prev, next\n\n");
-   fortprintf(fd, "         if(associated(b %% prev)) then\n");
-   fortprintf(fd, "           prev => b %% prev\n");
-   fortprintf(fd, "         else\n");
-   fortprintf(fd, "           nullify(prev)\n");
-   fortprintf(fd, "         end if\n");
-   fortprintf(fd, "         if(associated(b %% next)) then\n");
-   fortprintf(fd, "           next => b %% next\n");
-   fortprintf(fd, "         else\n");
-   fortprintf(fd, "           nullify(next)\n");
-   fortprintf(fd, "         end if\n\n");
+   fortprintf(fd, "   subroutine mpas_create_field_links(b)\n\n");
+
+   fortprintf(fd, "      implicit none\n");
+
+   fortprintf(fd, "      type (block_type), pointer :: b\n");
+   fortprintf(fd, "      type (block_type), pointer :: prev, next\n\n");
+
+   fortprintf(fd, "      if (associated(b %% prev)) then\n");
+   fortprintf(fd, "         prev => b %% prev\n");
+   fortprintf(fd, "      else\n");
+   fortprintf(fd, "         nullify(prev)\n");
+   fortprintf(fd, "      end if\n");
+   fortprintf(fd, "      if (associated(b %% next)) then\n");
+   fortprintf(fd, "         next => b %% next\n");
+   fortprintf(fd, "      else\n");
+   fortprintf(fd, "         nullify(next)\n");
+   fortprintf(fd, "      end if\n\n");
+
    group_ptr = groups;
-   while (group_ptr && group_ptr->vlist != NULL)
+   while (group_ptr)
    {
-     var_list_ptr = group_ptr->vlist;
-     var_list_ptr = var_list_ptr->next;
+      var_list_ptr = group_ptr->vlist;
 
-     if (!var_list_ptr) break;
+      if (!group_ptr->vlist) {
+         group_ptr = group_ptr->next;
+         continue;
+      }
 
-     var_ptr = var_list_ptr->var;
-     
-     int ntime_levs = group_ptr->ntime_levs;
-     
-     if (strncmp(var_ptr->super_array, "-", 1024) != 0) 
-     {
-         memcpy(super_array, var_ptr->super_array, 1024);
-         memcpy(array_class, var_ptr->array_class, 1024);
-         while (var_list_ptr && strncmp(super_array, var_list_ptr->var->super_array, 1024) == 0)
-         {
-            var_list_ptr2 = var_list_ptr;
-            var_list_ptr = var_list_ptr->next;
-         }
-         var_ptr2 = var_list_ptr2->var;
-         get_outer_dim(var_ptr2, outer_dim);
-//         ntime_levs = var_ptr2->ntime_levs; // DWJ: 05/02/2013
+      if (group_ptr->ntime_levs > 1) {
+         for(i=1; i<=group_ptr->ntime_levs; i++) {
+            fortprintf(fd, "      if (associated(next) .and. associated(prev)) then\n");	
+            fortprintf(fd, "         call mpas_create_%s_links(b %% %s %% time_levs(%i) %% %s, ", group_ptr->name, group_ptr->name, i, group_ptr->name, i);
+            fortprintf(fd, " prev = prev %% %s %% time_levs(%i) %% %s,", group_ptr->name, i, group_ptr->name);
+            fortprintf(fd, " next = next %% %s %% time_levs(%i) %% %s)\n", group_ptr->name, i, group_ptr->name);
+            fortprintf(fd, "      else if (associated(next)) then\n");	
+            fortprintf(fd, "         call mpas_create_%s_links(b %% %s %% time_levs(%i) %% %s, next = next %% %s %% time_levs(%i) %% %s)\n", group_ptr->name, group_ptr->name, i, group_ptr->name, group_ptr->name, i, group_ptr->name);
+            fortprintf(fd, "      else if (associated(prev)) then\n");	
+            fortprintf(fd, "         call mpas_create_%s_links(b %% %s %% time_levs(%i) %% %s, prev = prev %% %s %% time_levs(%i) %% %s)\n", group_ptr->name, group_ptr->name, i, group_ptr->name, group_ptr->name, i, group_ptr->name);
+            fortprintf(fd, "      else\n");
+            fortprintf(fd, "         call mpas_create_%s_links(b %% %s %% time_levs(%i) %% %s)\n", group_ptr->name, group_ptr->name, i, group_ptr->name);
+            fortprintf(fd, "      end if\n\n");
+         }	
+      }
+      else {
+         fortprintf(fd, "      if (associated(next) .and. associated(prev)) then\n");	
+         fortprintf(fd, "         call mpas_create_%s_links(b %% %s, prev = prev %% %s, next = next %% %s)\n", group_ptr->name, group_ptr->name, group_ptr->name, group_ptr->name); 
+         fortprintf(fd, "      else if (associated(next)) then\n");	
+         fortprintf(fd, "         call mpas_create_%s_links(b %% %s, next = next %% %s)\n", group_ptr->name, group_ptr->name, group_ptr->name); 
+         fortprintf(fd, "      else if (associated(prev)) then\n");	
+         fortprintf(fd, "         call mpas_create_%s_links(b %% %s, prev = prev %% %s)\n", group_ptr->name, group_ptr->name, group_ptr->name); 
+         fortprintf(fd, "      else\n");
+         fortprintf(fd, "         call mpas_create_%s_links(b %% %s)\n", group_ptr->name, group_ptr->name); 
+         fortprintf(fd, "      end if\n\n");
+      }
 
-         if(ntime_levs > 1)
-         {
-            for(i=1; i<=ntime_levs; i++) 
-            {
-				fortprintf(fd, "         if(associated(next) .and. associated(prev)) then\n");	
-//				fortprintf(fd, "           call mpas_create_%s_links(b %% %s %% time_levs(%i) %% %s, prev = prev %% %s %% time_levs(%i) %% %s, next = next %% %s %% time_levs(%i) %% %s)\n", group_ptr->name, group_ptr->name, i, group_ptr->name, i, group_ptr->name, group_ptr->name, i, group_ptr->name);
-				fortprintf(fd, "           call mpas_create_%s_links(b %% %s %% time_levs(%i) %% %s, ", group_ptr->name, group_ptr->name, i, group_ptr->name, i);
-				fortprintf(fd, " prev = prev %% %s %% time_levs(%i) %% %s,", group_ptr->name, i, group_ptr->name);
-				fortprintf(fd, " next = next %% %s %% time_levs(%i) %% %s)\n", group_ptr->name, i, group_ptr->name);
-				fortprintf(fd, "         else if(associated(next)) then\n");	
-				fortprintf(fd, "           call mpas_create_%s_links(b %% %s %% time_levs(%i) %% %s, next = next %% %s %% time_levs(%i) %% %s)\n", group_ptr->name, group_ptr->name, i, group_ptr->name, group_ptr->name, i, group_ptr->name);
-				fortprintf(fd, "         else if(associated(prev)) then\n");	
-				fortprintf(fd, "           call mpas_create_%s_links(b %% %s %% time_levs(%i) %% %s, prev = prev %% %s %% time_levs(%i) %% %s)\n", group_ptr->name, group_ptr->name, i, group_ptr->name, group_ptr->name, i, group_ptr->name);
-				fortprintf(fd, "         else\n");
-				fortprintf(fd, "           call mpas_create_%s_links(b %% %s %% time_levs(%i) %% %s)\n", group_ptr->name, group_ptr->name, i, group_ptr->name);
-				fortprintf(fd, "         end if\n\n");
-            }	
-         }
-         else
-         {
-			fortprintf(fd, "         if(associated(next) .and. associated(prev)) then\n");	
-            fortprintf(fd, "           call mpas_create_%s_links(b %% %s, prev = prev %% %s, next = next %% %s)\n", group_ptr->name, group_ptr->name, group_ptr->name, group_ptr->name); 
-			fortprintf(fd, "         else if(associated(next)) then\n");	
-            fortprintf(fd, "           call mpas_create_%s_links(b %% %s, next = next %% %s)\n", group_ptr->name, group_ptr->name, group_ptr->name); 
-			fortprintf(fd, "         else if(associated(prev)) then\n");	
-            fortprintf(fd, "           call mpas_create_%s_links(b %% %s, prev = prev %% %s)\n", group_ptr->name, group_ptr->name, group_ptr->name); 
-			fortprintf(fd, "         else\n");
-            fortprintf(fd, "           call mpas_create_%s_links(b %% %s)\n", group_ptr->name, group_ptr->name); 
-			fortprintf(fd, "         end if\n\n");
-         }
-     }
-     else if (var_ptr->ndims > 0)
-     {
-         get_outer_dim(var_ptr, outer_dim);
-//         ntime_levs = var_ptr->ntime_levs; // DWJ: 05/02/2013
-
-         if(ntime_levs > 1)
-         {
-            for(i=1; i<=ntime_levs; i++) 
-            {
-				fortprintf(fd, "         if(associated(next) .and. associated(prev)) then\n");	
-				fortprintf(fd, "           call mpas_create_%s_links(b %% %s %% time_levs(%i) %% %s, prev = prev %% %s %% time_levs(%i) %% %s, next = next %% %s %% time_levs(%i) %% %s)\n", group_ptr->name, group_ptr->name, i, group_ptr->name, group_ptr->name, i, group_ptr->name, group_ptr->name, i, group_ptr->name);
-				fortprintf(fd, "         else if(associated(next)) then\n");	
-				fortprintf(fd, "           call mpas_create_%s_links(b %% %s %% time_levs(%i) %% %s, next = next %% %s %% time_levs(%i) %% %s)\n", group_ptr->name, group_ptr->name, i, group_ptr->name, group_ptr->name, i, group_ptr->name);
-				fortprintf(fd, "         else if(associated(prev)) then\n");	
-				fortprintf(fd, "           call mpas_create_%s_links(b %% %s %% time_levs(%i) %% %s, prev = prev %% %s %% time_levs(%i) %% %s)\n", group_ptr->name, group_ptr->name, i, group_ptr->name, group_ptr->name, i, group_ptr->name);
-				fortprintf(fd, "         else\n");
-				fortprintf(fd, "           call mpas_create_%s_links(b %% %s %% time_levs(%i) %% %s)\n", group_ptr->name, group_ptr->name, i, group_ptr->name);
-				fortprintf(fd, "         end if\n\n");
-            }	
-         }
-         else
-         {
-			 fortprintf(fd, "         if(associated(next) .and. associated(prev)) then\n");	
-			 fortprintf(fd, "           call mpas_create_%s_links(b %% %s, prev = prev %% %s, next = next %% %s)\n", group_ptr->name, group_ptr->name, group_ptr->name, group_ptr->name);
-			 fortprintf(fd, "         else if(associated(next)) then\n");	
-			 fortprintf(fd, "           call mpas_create_%s_links(b %% %s, next = next %% %s)\n", group_ptr->name, group_ptr->name, group_ptr->name); 
-			 fortprintf(fd, "         else if(associated(prev)) then\n");	
-			 fortprintf(fd, "           call mpas_create_%s_links(b %% %s, prev = prev %% %s)\n", group_ptr->name, group_ptr->name, group_ptr->name); 
-			 fortprintf(fd, "         else\n");
-			 fortprintf(fd, "           call mpas_create_%s_links(b %% %s)\n", group_ptr->name, group_ptr->name); 
-			 fortprintf(fd, "         end if\n\n");
-         }
-     }
-
-     group_ptr = group_ptr->next;
+      group_ptr = group_ptr->next;
    }
-   fortprintf(fd, "\n      end subroutine mpas_create_field_links\n\n\n");
+   fortprintf(fd, "   end subroutine mpas_create_field_links\n\n\n");
 
    /* subroutines for linking specific field type */
    group_ptr = groups;
