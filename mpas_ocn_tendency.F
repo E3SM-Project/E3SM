@@ -64,7 +64,7 @@ module ocn_tendency
    public :: ocn_tend_thick, &
              ocn_tend_vel, &
              ocn_tend_tracer, &
-             ocn_tend_frequency_filtered_thickness, &
+             ocn_tend_freq_filtered_thickness, &
              ocn_tendency_init
 
    !--------------------------------------------------------------------
@@ -73,7 +73,7 @@ module ocn_tendency
    !
    !--------------------------------------------------------------------
 
-   integer :: apply_Dhf_to_hhf, apply_hff_restore_to_hhf
+   integer :: apply_Dhf_to_hhf, use_highFreqThick_restore
 
 !***********************************************************************
 
@@ -337,7 +337,7 @@ contains
 
 !***********************************************************************
 !
-!  routine ocn_tend_frequency_filtered_thickness
+!  routine ocn_tend_freq_filtered_thickness
 !
 !> \brief   Compute tendencies needed for frequency filtered thickness
 !> \author  Mark Petersen
@@ -345,11 +345,11 @@ contains
 !> \details 
 !>  This routine compute high frequency thickness tendency and the 
 !>  low freqency divergence.  It is only called when
-!>  frequency_filtered_thickness is on (z-tilde)
+!>  config_freq_filtered_thickness is true (z-tilde)
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tend_frequency_filtered_thickness(tend, s, grid)!{{{
+   subroutine ocn_tend_freq_filtered_thickness(tend, s, grid)!{{{
 
       type (tend_type), intent(inout) :: tend
       type (state_type), intent(in) :: s
@@ -359,7 +359,7 @@ contains
       integer, dimension(:), pointer :: maxLevelCell, maxLevelEdgeBot, nEdgesOnCell
       integer, dimension(:,:), pointer :: edgesOnCell, edgeSignOnCell
 
-      real (kind=RKIND) :: flux, invAreaCell, div_hu_btr, Dlf_restore_time_sec, hhf_restore_time_sec, &
+      real (kind=RKIND) :: flux, invAreaCell, div_hu_btr, thickness_filter_timescale_sec, highFreqThick_restore_time_sec, &
          totalThickness
       real (kind=RKIND), dimension(:), pointer :: dvEdge, areaCell
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, layerThicknessEdge, &
@@ -368,7 +368,7 @@ contains
          tend_lowFreqDivergence, tend_highFreqThickness
       real (kind=RKIND), dimension(:), allocatable:: div_hu
 
-      call mpas_timer_start("ocn_tend_frequency_filtered_thickness")
+      call mpas_timer_start("ocn_tend_freq_filtered_thickness")
       err = 0
 
       nCells      = grid % nCells
@@ -399,8 +399,8 @@ contains
       tend_highFreqThickness = 0.0
 
       ! Convert restore time from days to seconds
-      Dlf_restore_time_sec = config_Dlf_restore_time*86400.0
-      hhf_restore_time_sec = config_hhf_restore_time*86400.0
+      thickness_filter_timescale_sec = config_thickness_filter_timescale*86400.0
+      highFreqThick_restore_time_sec = config_highFreqThick_restore_time*86400.0
       do iCell=1,nCells
         div_hu(:) = 0.0
         div_hu_btr = 0.0
@@ -420,14 +420,13 @@ contains
         do k = 1, maxLevelCell(iCell)
 
            tend_lowFreqDivergence(k,iCell) = &
-              -2.0*pii/Dlf_restore_time_sec &
+              -2.0*pii/thickness_filter_timescale_sec &
               *(lowFreqDivergence(k,iCell)  - div_hu(k) &
                 + div_hu_btr*layerThickness(k,iCell)/totalThickness)
 
            tend_highFreqThickness(k,iCell) = &
-                apply_Dhf_to_hhf*( - div_hu(k) + div_hu_btr*layerThickness(k,iCell)/totalThickness &
-                                   + lowFreqDivergence(k,iCell) ) &
-              + apply_hff_restore_to_hhf*( -2.0*pii/hhf_restore_time_sec * highFreqThickness(k,iCell) )
+              - div_hu(k) + div_hu_btr*layerThickness(k,iCell)/totalThickness + lowFreqDivergence(k,iCell) &
+              + use_highFreqThick_restore*( -2.0*pii/highFreqThick_restore_time_sec * highFreqThickness(k,iCell) )
 
         end do
 
@@ -442,9 +441,9 @@ contains
       call ocn_high_freq_thickness_hmix_del2_tend(grid, highFreqThickness, tend_highFreqThickness, err)
       call mpas_timer_stop("hmix", tracerHmixTimer)
 
-      call mpas_timer_stop("ocn_tend_frequency_filtered_thickness")
+      call mpas_timer_stop("ocn_tend_freq_filtered_thickness")
 
-   end subroutine ocn_tend_frequency_filtered_thickness!}}}
+   end subroutine ocn_tend_freq_filtered_thickness!}}}
 
 !***********************************************************************
 !
@@ -462,15 +461,12 @@ contains
         integer, intent(out) :: err !< Output: Error flag
 
         err = 0
+	if (config_use_highFreqThick_restore) then
+           use_highFreqThick_restore = 1
+        else
+           use_highFreqThick_restore = 0
+        endif
 
-	if (config_apply_Dhf_to_hhf) apply_Dhf_to_hhf = 1
-	if (config_apply_hff_restore_to_hhf) apply_hff_restore_to_hhf = 1
-
-! mrp always turn to 1;
-   apply_Dhf_to_hhf = 1
-   apply_hff_restore_to_hhf = 1
-
-!mrp end
     end subroutine ocn_tendency_init!}}}
 
 !***********************************************************************

@@ -157,7 +157,7 @@ module ocn_time_integration_split
             end do
          end do
 
-         if (config_use_frequency_filtered_thickness) then
+         if (config_use_freq_filtered_thickness) then
 
               block % state % time_levs(2) % state % highFreqThickness % array(:,:) &
             = block % state % time_levs(1) % state % highFreqThickness % array(:,:)
@@ -196,11 +196,11 @@ module ocn_time_integration_split
          !
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-         if (config_use_frequency_filtered_thickness) then
+         if (config_use_freq_filtered_thickness) then
             call mpas_timer_start("se freq-filtered-thick computations")
             block => domain % blocklist
             do while (associated(block))
-               call ocn_tend_frequency_filtered_thickness(block % tend, &
+               call ocn_tend_freq_filtered_thickness(block % tend, &
                   block % state % time_levs(stage1_tend_time) % state, block % mesh)
                block => block % next
             end do
@@ -210,6 +210,20 @@ module ocn_time_integration_split
             call mpas_dmpar_exch_halo_field(domain % blocklist % tend % highFreqThickness)
             call mpas_dmpar_exch_halo_field(domain % blocklist % tend % lowFreqDivergence)
             call mpas_timer_stop("se freq-filtered-thick halo update")
+
+            block => domain % blocklist
+            do while (associated(block))
+               do iCell=1,block % mesh % nCells
+                  do k=1,block % mesh % maxLevelCell % array(iCell)
+                     ! this is h^{hf}_{n+1}
+                        block % state % time_levs(2) % state % highFreqThickness % array(k,iCell) &
+                      = block % state % time_levs(1) % state % highFreqThickness % array(k,iCell) &
+                      + dt* block % tend % highFreqThickness % array(k,iCell) 
+                  end do
+               end do
+               block => block % next
+            end do
+
          endif
 
 
@@ -221,9 +235,11 @@ module ocn_time_integration_split
 
            ! compute vertTransportVelocityTop.  Use u (rather than uTransport) for momentum advection.
            ! Use the most recent time level available.
-           call ocn_vert_transport_velocity_top(block % mesh, block % state % time_levs(stage1_tend_time) % state % layerThickness % array, &
+           call ocn_vert_transport_velocity_top(block % mesh, block % state % time_levs(1) % state % layerThickness % array, &
               block % state % time_levs(stage1_tend_time) % state % layerThicknessEdge % array, &
-              block % state % time_levs(stage1_tend_time) % state % normalVelocity % array, block % tend % highFreqThickness % array, &
+              block % state % time_levs(stage1_tend_time) % state % normalVelocity % array, &
+              block % state % time_levs(1) % state % ssh % array, &
+              block % state % time_levs(2) % state % highFreqThickness % array, dt, &
               block % state % time_levs(stage1_tend_time) % state % vertTransportVelocityTop % array, err)
 
             call ocn_tend_vel(block % tend, block % state % time_levs(stage1_tend_time) % state, block % diagnostics, block % mesh)
@@ -809,10 +825,13 @@ module ocn_time_integration_split
             ! Use time level 1 values of layerThickness and layerThicknessEdge because layerThickness has not yet been computed for time level 2.
             call ocn_vert_transport_velocity_top(block % mesh, block % state % time_levs(1) % state % layerThickness % array, &
                block % state % time_levs(1) % state % layerThicknessEdge % array, &
-               block % state % time_levs(2) % state % uTransport % array, block % tend % highFreqThickness % array, &
+               block % state % time_levs(2) % state % uTransport % array, &
+               block % state % time_levs(1) % state % ssh % array, &
+               block % state % time_levs(2) % state % highFreqThickness % array, dt, &
                block % state % time_levs(2) % state % vertTransportVelocityTop % array, err)
 
             call ocn_tend_thick(block % tend, block % state % time_levs(2) % state, block % mesh)
+
             block => block % next
          end do
 
@@ -881,17 +900,16 @@ module ocn_time_integration_split
                   end do
                end do ! iCell
 
-               if (config_use_frequency_filtered_thickness) then
+               if (config_use_freq_filtered_thickness) then
                   do iCell=1,block % mesh % nCells
                      do k=1,block % mesh % maxLevelCell % array(iCell)
 
-                        ! this is h^{hf}_{n+1}
-                        temp = block % state % time_levs(1) % state % highFreqThickness % array(k,iCell) &
-                         + dt* block % tend % highFreqThickness % array(k,iCell) 
+                        ! h^{hf}_{n+1} was computed in Stage 1
 
                         ! this is h^{hf}_{n+1/2}
                         block % state % time_levs(2) % state % highFreqThickness % array(k,iCell) &
-                           = 0.5*(block % state % time_levs(1) % state % highFreqThickness % array(k,iCell) + temp)
+                           = 0.5*(block % state % time_levs(1) % state % highFreqThickness % array(k,iCell) &
+                                + block % state % time_levs(2) % state % highFreqThickness % array(k,iCell))
 
                         ! this is D^{lf}_{n+1}
                         temp = block % state % time_levs(1) % state % lowFreqDivergence % array(k,iCell) &
@@ -952,14 +970,11 @@ module ocn_time_integration_split
                   end do
                end do
 
-               if (config_use_frequency_filtered_thickness) then
+               if (config_use_freq_filtered_thickness) then
                   do iCell=1,block % mesh % nCells
                      do k=1,block % mesh % maxLevelCell % array(iCell)
 
-                        ! this is h^{hf}_{n+1}
-                           block % state % time_levs(2) % state % highFreqThickness % array(k,iCell) &
-                         = block % state % time_levs(1) % state % highFreqThickness % array(k,iCell) &
-                         + dt* block % tend % highFreqThickness % array(k,iCell) 
+                        ! h^{hf}_{n+1} was computed in Stage 1
 
                         ! this is D^{lf}_{n+1}
                            block % state % time_levs(2) % state % lowFreqDivergence % array(k,iCell) &

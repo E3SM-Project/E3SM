@@ -107,8 +107,7 @@ contains
 
       err = 0
 
-! turn off while flags are always false.
- !     if(.not.config_apply_hff_del2_to_hhf) return
+      if(.not.config_use_highFreqThick_del2) return
 
       nCells = grid % nCells
       nVertLevels = grid % nVertLevels
@@ -132,7 +131,7 @@ contains
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
 
-            r_tmp = meshScalingDel2(iEdge) * config_hhf_del2 * dvEdge(iEdge) / dcEdge(iEdge)
+            r_tmp = meshScalingDel2(iEdge) * config_highFreqThick_del2 * dvEdge(iEdge) / dcEdge(iEdge)
            
             do k = 1, maxLevelEdgeTop(iEdge)
                ! \nabla h^{hf} on edge

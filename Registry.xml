@@ -127,10 +127,6 @@
 		            description="Determines the number of halo cells extending from a blocks owned cells (Called the 0-Halo). The default of 3 is the minimum that can be used with monotonic advection."
 		            possible_values="Any positive interger value."
 		/>
-		<nml_option name="config_vert_coord_movement" type="character" default_value="uniform_stretching" units="unitless"
-		            description="Determines the vertical coordinate movement type. 'uniform_stretching' distrubtes SSH perturbations through all vertical levels, 'fixed' places them all in the top level, 'user_specified' allows the input file to determine the distribution, and 'isopycnal' causes levels to be pure isopycnal."
-		            possible_values="'uniform_stretching', 'fixed', 'user_specified', 'isopycnal', 'no_vert_transport'"
-		/>
 		<nml_option name="config_alter_ICs_for_pbcs" type="character" default_value="zlevel_pbcs_off" units="unitless"
 		            description="Determines the method of alteration for partial bottom cells. 'zlevel_pbcs_on' alters the initial conditions for partial bottom cells, 'zlevel_pbcs_off' alters the initial conditions to have full cells everwhere, and 'off' does nothing to the initial conditions."
 		            possible_values="'zlevel_pbcs_on', 'zlevel_pbcs_off', 'off'"
@@ -146,6 +142,50 @@
 		<nml_option name="config_dzdk_positive" type="logical" default_value=".false." units="unitless"
 		            description="Determines if the positive Z axis is aligned with the positive K index direction."
 		            possible_values=".true. or .false."
+		/>
+	</nml_record>
+	<nml_record name="ALE_vertical_grid">
+		<nml_option name="config_vert_coord_movement" type="character" default_value="uniform_stretching" units="unitless"
+		            description="Determines the vertical coordinate movement type. 'uniform_stretching' distributes SSH perturbations through all vertical levels (z-star vertical coordinate); 'fixed' places them all in the top level (z-level vertical coordinate); 'user_specified' allows the input file to determine the distribution (weighted z-star vertical coordinate); and 'impermeable_interface' makes the vertical transport between layers zero (idealized isopycnal)."
+		            possible_values="'uniform_stretching', 'fixed', 'user_specified', 'impermeable_interface'"
+		/>
+		<nml_option name="config_use_minimum_thickness" type="logical" default_value=".false." units="unitless"
+		            description="If true, a minimum thickness is enforced to prevent massless layers."
+		            possible_values=".true. or .false."
+		/>
+		<nml_option name="config_minimum_thickness" type="real" default_value="0.5" units="m"
+		            description="Minimum thickness allowed, $h_{min}$."
+		            possible_values="any positive real value, but typically 0.1 to 1 m."
+		/>
+		<nml_option name="config_set_restingThickness_to_z" type="logical" default_value=".true." units="unitless"
+		            description="If true, compute restingThickness using refBottomDepth.  This can be used for z-type grids.  If false, restingThickness must be in init or restart file.  For sigma grids, this must be false."
+		            possible_values=".true. or .false."
+		/>
+	</nml_record>
+	<nml_record name="ALE_frequency_filtered_thickness">
+		<nml_option name="config_use_freq_filtered_thickness" type="logical" default_value=".false." units="unitless"
+		            description="If true, a high-frequency tendency term is added to the thickness equation."
+		            possible_values=".true. or .false."
+		/>
+		<nml_option name="config_thickness_filter_timescale" type="real" default_value="5.0" units="days"
+		            description="filter timescale for the low-frequency baroclinic divergence, $\tau_{Dlf}$."
+		            possible_values="any positive real value, but typically 5 days."
+		/>
+		<nml_option name="config_use_highFreqThick_restore" type="logical" default_value=".true." units="unitless"
+		            description="If true, the high frequency thickness equation (\ref{ocean:hhf}) includes term 2, the restoring term.  The high frequency thickness is restored to zero with timescale $\tau_{hhf}$."
+		            possible_values=".true. or .false."
+		/>
+		<nml_option name="config_highFreqThick_restore_time" type="real"  default_value="30.0" units="days"
+		            description="Restoring timescale for thickness, $\tau_{hhf}$."
+		            possible_values="any positive real value, but typically 5-30 days."
+		/>
+		<nml_option name="config_use_highFreqThick_del2" type="logical" default_value=".false." units="unitless"
+		            description="If true, high frequency thickness equation (\ref{ocean:hhf}) includes term 3, the diffusion term."
+		            possible_values=".true. or .false."
+		/>
+		<nml_option name="config_highFreqThick_del2" type="real" default_value="100.0" units="m^2 s^{-1}"
+		            description="Horizonal high frequency thickness diffusion, $\kappa_{hhf}$."
+		            possible_values="any positive real"
 		/>
 	</nml_record>
 	<nml_record name="decomposition">
@@ -470,40 +510,6 @@
 		<nml_option name="config_btr_solve_SSH2" type="logical" default_value=".false." units="unitless"
 		            description="If true, execute the SSH corrector step in stage 2"
 		            possible_values=".true. or .false."
-		/>
-	</nml_record>
-	<nml_record name="frequency_filtered_thickness">
-		<nml_option name="config_use_frequency_filtered_thickness" type="logical" default_value=".false." units="unitless"
-		            description="If true, a high-frequency tendency term is added to the thickness equation."
-		            possible_values=".true. or .false."
-		/>
-		<nml_option name="config_apply_hff_to_w" type="logical" default_value=".false." units="unitless"
-		            description="If true, a high-frequency tendency term is added to the thickness equation."
-		            possible_values=".true. or .false."
-		/>
-		<nml_option name="config_apply_Dhf_to_hhf" type="logical" default_value=".true." units="unitless"
-		            description="If true, the high-frequency divergence tendency term is added to the high-freqency thickness equation."
-		            possible_values=".true. or .false."
-		/>
-		<nml_option name="config_apply_hff_restore_to_hhf" type="logical" default_value=".true." units="unitless"
-		            description="If true, the high-frequency thickness restore tendency term is added to the high-freqency thickness equation."
-		            possible_values=".true. or .false."
-		/>
-		<nml_option name="config_apply_hff_del2_to_hhf" type="logical" default_value=".true." units="unitless"
-		            description="If true, a high-frequency thickness diffusion tendency term is added to the high-freqency thickness equation."
-		            possible_values=".true. or .false."
-		/>
-		<nml_option name="config_Dlf_restore_time" type="real" default_value="5.0" units="days"
-		            description="Restoring timescale for low frequency baroclinic divergence, $\tau_{Dlf}$."
-		            possible_values="any positive real value, but typically 5 days."
-		/>
-		<nml_option name="config_hhf_restore_time" type="real" default_value="5.0" units="days"
-		            description="Restoring timescale for high frequency thickness, $\tau_{hhf}$."
-		            possible_values="any positive real value, but typically 5 days."
-		/>
-		<nml_option name="config_hhf_del2" type="real" default_value="100.0" units="m^2 s^{-1}"
-		            description="Horizonal thickness diffusion, $\kappa_{hhf}$."
-		            possible_values="any positive real"
 		/>
 	</nml_record>
 	<nml_record name="debug">
@@ -1027,6 +1033,9 @@
 		/>
 		<var name="seaSurfacePressure" type="real" dimensions="nCells Time" streams="ir" units="Pa"
 		     description="Pressure defined at the sea surface."
+		/>
+		<var name="restingThickness" type="real" dimensions="nVertLevels nCells" streams="ir" units="m"
+		     description="Layer thickness when the ocean is at rest, i.e. without SSH or internal perturbations."
 		/>
 	</var_struct>
 	<var_struct name="tend" time_levs="0">

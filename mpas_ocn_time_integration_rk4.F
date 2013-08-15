@@ -120,7 +120,7 @@ module ocn_time_integration_rk4
             end do
          end do
 
-         if (config_use_frequency_filtered_thickness) then
+         if (config_use_freq_filtered_thickness) then
               block % state % time_levs(2) % state % highFreqThickness % array(:,:) = block % state % time_levs(1) % state % highFreqThickness % array(:,:)
               block % state % time_levs(2) % state % lowFreqDivergence % array(:,:) = block % state % time_levs(1) % state % lowFreqDivergence % array(:,:)
          endif
@@ -138,7 +138,7 @@ module ocn_time_integration_rk4
       rk_substep_weights(1) = dt/2.
       rk_substep_weights(2) = dt/2.
       rk_substep_weights(3) = dt
-      rk_substep_weights(4) = 0.
+      rk_substep_weights(4) = dt ! a_4 only used for ALE step, otherwise it is skipped.
 
 
       call mpas_timer_start("RK4-main loop")
@@ -158,11 +158,11 @@ module ocn_time_integration_rk4
 
 ! ---  compute tendencies
 
-        if (config_use_frequency_filtered_thickness) then
+        if (config_use_freq_filtered_thickness) then
            call mpas_timer_start("RK4-tendency computations")
            block => domain % blocklist
            do while (associated(block))
-              call ocn_tend_frequency_filtered_thickness(block % tend, block % provis_state, block % mesh)
+              call ocn_tend_freq_filtered_thickness(block % tend, block % provis_state, block % mesh)
               block => block % next
            end do
            call mpas_timer_stop("RK4-tendency computations")
@@ -171,6 +171,15 @@ module ocn_time_integration_rk4
            call mpas_dmpar_exch_halo_field(domain % blocklist % tend % highFreqThickness)
            call mpas_dmpar_exch_halo_field(domain % blocklist % tend % lowFreqDivergence)
            call mpas_timer_stop("RK4-prognostic halo update")
+
+
+           block => domain % blocklist
+           do while (associated(block))
+                 block % provis_state % highFreqThickness % array(:,:) = block % state % time_levs(1) % state % highFreqThickness % array(:,:)  &
+                    + rk_substep_weights(rk_step) * block % tend % highFreqThickness % array(:,:)
+              block => block % next
+           end do
+
         endif
 
         call mpas_timer_start("RK4-tendency computations")
@@ -178,16 +187,18 @@ module ocn_time_integration_rk4
         do while (associated(block))
 
            ! advection of u uses u, while advection of layerThickness and tracers use uTransport.
-           call ocn_vert_transport_velocity_top(block % mesh, block % provis_state % layerThickness % array, &
-              block % provis_state % layerThicknessEdge % array, &
-              block % provis_state % normalVelocity % array, block % tend % highFreqThickness % array, &
-              block % provis_state % vertTransportVelocityTop % array, err)
+           call ocn_vert_transport_velocity_top(block % mesh, block % state % time_levs(1) % state % layerThickness % array, &
+              block % provis_state % layerThicknessEdge % array, block % provis_state % normalVelocity % array, &
+              block % state % time_levs(1) % state % ssh % array, block % provis_state % highFreqThickness % array, &
+              rk_substep_weights(rk_step), block % provis_state % vertTransportVelocityTop % array, err)
+
            call ocn_tend_vel(block % tend, block % provis_state, block % diagnostics, block % mesh)
 
-           call ocn_vert_transport_velocity_top(block % mesh, block % provis_state % layerThickness % array, &
-              block % provis_state % layerThicknessEdge % array, &
-              block % provis_state % uTransport % array, block % tend % highFreqThickness % array, &
-              block % provis_state % vertTransportVelocityTop % array, err)
+           call ocn_vert_transport_velocity_top(block % mesh, block % state % time_levs(1) % state % layerThickness % array, &
+              block % provis_state % layerThicknessEdge % array, block % provis_state % uTransport % array, &
+              block % state % time_levs(1) % state % ssh % array, block % provis_state % highFreqThickness % array, &
+              rk_substep_weights(rk_step), block % provis_state % vertTransportVelocityTop % array, err)
+
            call ocn_tend_thick(block % tend, block % provis_state, block % mesh)
 
            if (config_filter_btr_mode) then
@@ -195,6 +206,7 @@ module ocn_time_integration_rk4
            endif
 
            call ocn_tend_tracer(block % tend, block % provis_state, block % diagnostics, block % mesh, dt)
+
            block => block % next
         end do
         call mpas_timer_stop("RK4-tendency computations")
@@ -229,10 +241,7 @@ module ocn_time_integration_rk4
 
               end do
 
-              if (config_use_frequency_filtered_thickness) then
-
-                 block % provis_state % highFreqThickness % array(:,:) = block % state % time_levs(1) % state % highFreqThickness % array(:,:)  &
-                    + rk_substep_weights(rk_step) * block % tend % highFreqThickness % array(:,:)
+              if (config_use_freq_filtered_thickness) then
 
                  block % provis_state % lowFreqDivergence % array(:,:) = block % state % time_levs(1) % state % lowFreqDivergence % array(:,:)  &
                     + rk_substep_weights(rk_step) * block % tend % lowFreqDivergence % array(:,:)
@@ -278,7 +287,7 @@ module ocn_time_integration_rk4
               end do
            end do
 
-           if (config_use_frequency_filtered_thickness) then
+           if (config_use_freq_filtered_thickness) then
                 block % state % time_levs(2) % state % highFreqThickness % array(:,:) &
               = block % state % time_levs(2) % state % highFreqThickness % array(:,:) &
                 + rk_weights(rk_step) * block % tend % highFreqThickness % array(:,:) 
