@@ -59,7 +59,7 @@ module ocn_diagnostics
    !
    !--------------------------------------------------------------------
 
-   integer :: ke_cell_flag, ke_vertex_flag
+   integer :: ke_cell_flag, ke_vertex_flag, use_freq_filtered_thickness, use_minimum_thickness
    real (kind=RKIND) ::  coef_3rd_order, fCoef
 
 !***********************************************************************
@@ -540,14 +540,16 @@ contains
 !
 !> \brief   Computes vertical transport
 !> \author  Mark Petersen
-!> \date    December 2011
+!> \date    August 2013
 !> \details 
 !>  This routine computes the vertical transport through the top of each 
-!>  cell.
+!>  cell.  It uses the ALE formulation, and includes contributions
+!>  from SSH variations (z-star), high-frequency divergence (z-tilde),
+!>  and imposes a minimum layer thickness.
 !
 !-----------------------------------------------------------------------
-   subroutine ocn_vert_transport_velocity_top(grid, layerThickness, layerThicknessEdge, &
-     normalVelocity, tend_highFreqThickness, vertTransportVelocityTop, err)!{{{
+   subroutine ocn_vert_transport_velocity_top(grid, oldLayerThickness, layerThicknessEdge, &
+     normalVelocity, oldSSH, newHighFreqThickness, dt, vertTransportVelocityTop, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -559,7 +561,7 @@ contains
          grid          !< Input: grid information
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-         layerThickness    !< Input: thickness
+         oldLayerThickness    !< Input: layer thickness at old time
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          layerThicknessEdge     !< Input: layerThickness interpolated to an edge
@@ -567,8 +569,14 @@ contains
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          normalVelocity     !< Input: transport
 
+      real (kind=RKIND), dimension(:), intent(in) :: &
+         oldSSH     !< Input: sea surface height at old time
+
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-         tend_highFreqThickness   !< Input: high frequency thickness tendency, only used for frequency filtered thickness
+         newHighFreqThickness   !< Input: high frequency thickness.  Alters ALE thickness.
+
+      real (kind=RKIND), intent(in) :: &
+         dt     !< Input: time step
 
       !-----------------------------------------------------------------
       !
@@ -587,17 +595,20 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, iCell, k, i, nCells, nEdges, nVertLevels, frequency_filtered_thickness_on
+      integer :: iEdge, iCell, k, i, nCells, nEdges, nVertLevels
       integer, dimension(:), pointer :: nEdgesOnCell, nEdgesOnEdge, &
         maxLevelCell, maxLevelEdgeBot
       integer, dimension(:,:), pointer :: edgesOnCell, edgeSignOnCell
 
-      real (kind=RKIND) :: flux, thicknessSum, invAreaCell, div_hu_btr
-      real (kind=RKIND), dimension(:), pointer :: &
-        dvEdge, areaCell, vertCoordMovementWeights
-      real (kind=RKIND), dimension(:), allocatable:: &
+      real (kind=RKIND) :: flux, thicknessSum, invAreaCell, div_hu_btr, newSSH
+      real (kind=RKIND), dimension(:), pointer :: dvEdge, areaCell, vertCoordMovementWeights, refBottomDepth
+      real (kind=RKIND), dimension(:), allocatable :: &
          div_hu, &  !> Local: divergence of (thickness*velocity)
-         work_tend_thick_ext !> Local: tendency due to external, i.e. SSH changes
+         ALE_Thickness, &     !> Local: ALE thickness at new time
+         SSH_ALE_Thickness, & !> Local: ALE thickness alteration due to SSH (z-star)
+         min_ALE_Thickness    !> Local: ALE thickness alteration due to minimum thickness
+      real (kind=RKIND), dimension(:,:), pointer :: &
+         restingThickness   !>  Layer thickness when the ocean is at rest, i.e. without SSH or internal perturbations.
 
       err = 0
 
@@ -609,37 +620,30 @@ contains
       maxLevelEdgeBot   => grid % maxLevelEdgeBot % array
       dvEdge            => grid % dvEdge % array
       vertCoordMovementWeights => grid % vertCoordMovementWeights % array
+      refBottomDepth => grid % refBottomDepth % array
+      restingThickness => grid % restingThickness % array
 
       nCells      = grid % nCells
       nEdges      = grid % nEdges
       nVertLevels = grid % nVertLevels
 
-      if (config_use_frequency_filtered_thickness.and.config_apply_hff_to_w) then
-         frequency_filtered_thickness_on = 1
-      else
-         frequency_filtered_thickness_on = 0
-      endif
-
-      if (config_vert_coord_movement.eq.'isopycnal'.or.config_vert_coord_movement.eq.'no_vert_transport') then
+      if (config_vert_coord_movement.eq.'isopycnal'.or.config_vert_coord_movement.eq.'impermeable_interfaces') then
         ! set vertical transport to zero in isopycnal case
         vertTransportVelocityTop=0.0
         return
       end if
 
-      allocate(div_hu(nVertLevels), work_tend_thick_ext(nVertLevels))
-
-      !
-      ! Compute div(h^{edge} u) for each cell
-      ! See Ringler et al. (2010) jcp paper, eqn 19, 21, and fig. 3.
-      !
+      allocate(div_hu(nVertLevels), ALE_Thickness(nVertLevels), SSH_ALE_Thickness(nVertLevels), min_ALE_Thickness(nVertLevels))
 
       do iCell=1,nCells
+
+        !
+        ! thickness-weighted divergence and barotropic divergence
+        !
+        ! See Ringler et al. (2010) jcp paper, eqn 19, 21, and fig. 3.
         div_hu(:) = 0.0
         div_hu_btr = 0.0
-        ! This is epsilon due to divide, below:
-        thicknessSum = 1e-14  
         invAreaCell = 1.0 / areaCell(iCell)
-
         do i = 1, nEdgesOnCell(iCell)
           iEdge = edgesOnCell(i, iCell)
 
@@ -650,23 +654,45 @@ contains
           end do
         end do
 
+        !
+        ! ALE thickness alteration due to SSH (z-star)
+        !
+        newSSH = oldSSH(iCell) - dt*div_hu_btr
+        thicknessSum = 1e-14  
         do k = 1, maxLevelCell(iCell)
-           work_tend_thick_ext(k) = - vertCoordMovementWeights(k) * layerThickness(k, iCell) * div_hu_btr
-           thicknessSum = thicknessSum + vertCoordMovementWeights(k) * layerThickness(k, iCell)
+           SSH_ALE_Thickness(k) = newSSH * vertCoordMovementWeights(k) * restingThickness(k, iCell) * div_hu_btr
+           thicknessSum = thicknessSum + vertCoordMovementWeights(k) * restingThickness(k, iCell)
         end do
+        SSH_ALE_Thickness = SSH_ALE_Thickness / thicknessSum
 
-        work_tend_thick_ext = work_tend_thick_ext / thicknessSum
+        !
+        ! ALE thickness alteration due to minimum thickness
+        !
+        min_ALE_Thickness(:) = 0.0
 
+        !
+        ! Add all contributions to the new ALE thickness.
+        !
+        ! Note that restingThickness is nonzero, and remaining terms are perturbations about zero.
+        ALE_Thickness(:) = restingThickness(:,iCell) + SSH_ALE_Thickness(:) &
+           + use_freq_filtered_thickness * newHighFreqThickness(:,iCell) &
+           + use_minimum_thickness * min_ALE_Thickness(:)
+
+        !
+        ! Vertical transport through layer interfaces
+        !
         ! Vertical transport through layer interface at top and bottom is zero.
+        ! Here we are using solving the continuity equation for vertTransportVelocityTop ($w^t$),
+        ! and using ALE_Thickness for thickness at the new time.
         vertTransportVelocityTop(1,iCell) = 0.0
         vertTransportVelocityTop(maxLevelCell(iCell)+1,iCell) = 0.0
         do k=maxLevelCell(iCell),2,-1
-           vertTransportVelocityTop(k,iCell) = vertTransportVelocityTop(k+1,iCell) - div_hu(k) - work_tend_thick_ext(k) &
-             - frequency_filtered_thickness_on * tend_highFreqThickness(k,iCell)
+           vertTransportVelocityTop(k,iCell) = vertTransportVelocityTop(k+1,iCell) - div_hu(k) &
+             - (ALE_Thickness(k) - oldLayerThickness(k,iCell))/dt
         end do
       end do
 
-      deallocate(div_hu, work_tend_thick_ext)
+      deallocate(div_hu, ALE_Thickness, SSH_ALE_Thickness, min_ALE_Thickness)
 
    end subroutine ocn_vert_transport_velocity_top!}}}
 
@@ -848,28 +874,40 @@ contains
 !>  other diagnostics routines.
 !
 !-----------------------------------------------------------------------
-    subroutine ocn_diagnostics_init(err)!{{{
-        integer, intent(out) :: err !< Output: Error flag
+   subroutine ocn_diagnostics_init(err)!{{{
+      integer, intent(out) :: err !< Output: Error flag
 
-        err = 0
+      err = 0
 
-        if(config_include_KE_vertex) then
-            ke_vertex_flag = 1
-            ke_cell_flag = 0
-        else
-            ke_vertex_flag = 0
-            ke_cell_flag = 1
-        endif
+      if(config_include_KE_vertex) then
+         ke_vertex_flag = 1
+         ke_cell_flag = 0
+      else
+         ke_vertex_flag = 0
+         ke_cell_flag = 1
+      endif
 
-        if (trim(config_time_integrator) == 'RK4') then
-            ! For RK4, PV includes f: PV = (eta+f)/h.
-            fCoef = 1
-        elseif (trim(config_time_integrator) == 'split_explicit' &
-          .or.trim(config_time_integrator) == 'unsplit_explicit') then
-            ! For split explicit, PV is eta/h because the Coriolis term 
-            ! is added separately to the momentum tendencies.
-            fCoef = 0
-        end if
+      if (trim(config_time_integrator) == 'RK4') then
+         ! For RK4, PV includes f: PV = (eta+f)/h.
+         fCoef = 1
+      elseif (trim(config_time_integrator) == 'split_explicit' &
+        .or.trim(config_time_integrator) == 'unsplit_explicit') then
+          ! For split explicit, PV is eta/h because the Coriolis term 
+          ! is added separately to the momentum tendencies.
+          fCoef = 0
+      end if
+
+      if (config_use_freq_filtered_thickness) then
+         use_freq_filtered_thickness = 1
+      else
+         use_freq_filtered_thickness = 0
+      endif
+
+      if (config_use_minimum_thickness) then
+         use_minimum_thickness = 1
+      else
+         use_minimum_thickness = 0
+      endif
 
     end subroutine ocn_diagnostics_init!}}}
 

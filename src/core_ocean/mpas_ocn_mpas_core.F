@@ -674,7 +674,7 @@ module mpas_core
          refBottomDepthTopOfCell, vertCoordMovementWeights, bottomDepth
       real (kind=RKIND), dimension(:), allocatable :: minBottomDepth, minBottomDepthMid, zMidZLevel
          
-      real (kind=RKIND), dimension(:,:), pointer :: layerThickness
+      real (kind=RKIND), dimension(:,:), pointer :: layerThickness, restingThickness
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers
       integer :: nVertLevels
       logical :: consistentSSH
@@ -690,6 +690,7 @@ module mpas_core
          bottomDepth => block % mesh % bottomDepth % array
          vertCoordMovementWeights => block % mesh % vertCoordMovementWeights % array
          maxLevelCell => block % mesh % maxLevelCell % array
+         restingThickness => block % mesh % restingThickness % array
 
          nCells      = block % mesh % nCells
          nVertLevels = block % mesh % nVertLevels
@@ -700,6 +701,16 @@ module mpas_core
          do k = 1,nVertLevels
             refBottomDepthTopOfCell(k+1) = refBottomDepth(k)
          end do
+
+         ! Layer thickness when the ocean is at rest, i.e. without SSH or internal perturbations.
+         if (config_set_restingThickness_to_z) then
+            do iCell=1,nCells
+               restingThickness(1, iCell) = refBottomDepth(1)
+               do k = 2,nVertLevels
+                  restingThickness(k,iCell) = refBottomDepth(k) - refBottomDepth(k-1)
+               end do
+            enddo
+         endif
 
          ! Initialization of vertCoordMovementWeights. This determines how SSH perturbations
          ! are distributed throughout the column.
