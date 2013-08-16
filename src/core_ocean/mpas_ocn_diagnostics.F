@@ -595,18 +595,21 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, iCell, k, i, nCells, nEdges, nVertLevels
+      integer :: iEdge, iCell, k, i, nCells, nEdges, nVertLevels, kMax, nCellsSolve
       integer, dimension(:), pointer :: nEdgesOnCell, nEdgesOnEdge, &
         maxLevelCell, maxLevelEdgeBot
       integer, dimension(:,:), pointer :: edgesOnCell, edgeSignOnCell
 
-      real (kind=RKIND) :: flux, thicknessSum, invAreaCell, div_hu_btr, newSSH
-      real (kind=RKIND), dimension(:), pointer :: dvEdge, areaCell, vertCoordMovementWeights, refBottomDepth
+      real (kind=RKIND) :: flux, thicknessSum, invAreaCell, div_hu_btr, newSSH, thicknessRemainder, oldSSHtemp
+      real (kind=RKIND), dimension(:), pointer :: dvEdge, areaCell, vertCoordMovementWeights, refBottomDepth, bottomDepth
       real (kind=RKIND), dimension(:), allocatable :: &
          div_hu, &  !> Local: divergence of (thickness*velocity)
          ALE_Thickness, &     !> Local: ALE thickness at new time
-         SSH_ALE_Thickness, & !> Local: ALE thickness alteration due to SSH (z-star)
-         min_ALE_Thickness    !> Local: ALE thickness alteration due to minimum thickness
+         SSH_ALE_thickness, & !> Local: ALE thickness alteration due to SSH (z-star)
+         prelim_ALE_Thickness, &     !> Local: ALE thickness at new time
+         min_ALE_thickness, & !> Local: ALE thickness alteration due to minimum thickness
+         min_ALE_thickness_down, & !> Local: ALE thickness alteration due to minimum thickness
+         min_ALE_thickness_up !> Local: ALE thickness alteration due to minimum thickness
       real (kind=RKIND), dimension(:,:), pointer :: &
          restingThickness   !>  Layer thickness when the ocean is at rest, i.e. without SSH or internal perturbations.
 
@@ -620,10 +623,12 @@ contains
       maxLevelEdgeBot   => grid % maxLevelEdgeBot % array
       dvEdge            => grid % dvEdge % array
       vertCoordMovementWeights => grid % vertCoordMovementWeights % array
+      bottomDepth => grid % bottomDepth % array
       refBottomDepth => grid % refBottomDepth % array
       restingThickness => grid % restingThickness % array
 
       nCells      = grid % nCells
+      nCellsSolve      = grid % nCellsSolve
       nEdges      = grid % nEdges
       nVertLevels = grid % nVertLevels
 
@@ -633,9 +638,11 @@ contains
         return
       end if
 
-      allocate(div_hu(nVertLevels), ALE_Thickness(nVertLevels), SSH_ALE_Thickness(nVertLevels), min_ALE_Thickness(nVertLevels))
+      allocate(div_hu(nVertLevels), ALE_Thickness(nVertLevels), SSH_ALE_thickness(nVertLevels), prelim_ALE_thickness(nVertLevels), &
+         min_ALE_thickness(nVertLevels), min_ALE_thickness_down(nVertLevels), min_ALE_thickness_up(nVertLevels))
 
-      do iCell=1,nCells
+      do iCell=1,nCellsSolve
+        kMax = maxLevelCell(iCell)
 
         !
         ! thickness-weighted divergence and barotropic divergence
@@ -657,9 +664,10 @@ contains
         !
         ! ALE thickness alteration due to SSH (z-star)
         !
-        newSSH = oldSSH(iCell) - dt*div_hu_btr
+        oldSSHtemp = - bottomDepth(iCell) + sum(oldLayerThickness(1:kMax,iCell))
+        newSSH = oldSSHtemp - dt*div_hu_btr
         thicknessSum = 1e-14  
-        do k = 1, maxLevelCell(iCell)
+        do k = 1, kMax
            SSH_ALE_Thickness(k) = newSSH * vertCoordMovementWeights(k) * restingThickness(k, iCell) * div_hu_btr
            thicknessSum = thicknessSum + vertCoordMovementWeights(k) * restingThickness(k, iCell)
         end do
@@ -668,15 +676,42 @@ contains
         !
         ! ALE thickness alteration due to minimum thickness
         !
-        min_ALE_Thickness(:) = 0.0
+
+        if (config_use_minimum_thickness) then
+
+           ! go down the column:
+           prelim_ALE_Thickness(1:kMax) = restingThickness(1:kMax,iCell) + SSH_ALE_Thickness(1:kMax) + use_freq_filtered_thickness * newHighFreqThickness(1:kMax,iCell) 
+           thicknessRemainder = 0.0
+           do k = 1, kMax
+              min_ALE_thickness_down(k) = max(-thicknessRemainder, config_minimum_thickness - prelim_ALE_Thickness(k))
+              thicknessRemainder = thicknessRemainder + min_ALE_thickness_down(k)
+           end do
+
+           ! go back up the column if needed:
+           if (thicknessRemainder>0.0) then
+              min_ALE_thickness_up(kMax) = 0.0
+              prelim_ALE_Thickness(1:kMax) = prelim_ALE_Thickness(1:kMax) + min_ALE_thickness_down(1:kMax)
+              do k = kMax-1,1,-1
+                 min_ALE_thickness_up(k) = max(-thicknessRemainder, config_minimum_thickness - prelim_ALE_Thickness(k) )
+                 thicknessRemainder = thicknessRemainder + min_ALE_thickness_up(k)
+              end do
+              min_ALE_thickness(1:kMax) = min_ALE_thickness_down(1:kMax) + min_ALE_thickness_up(1:kMax)
+           else
+              min_ALE_thickness(1:kMax) = min_ALE_thickness_down(1:kMax) 
+           endif
+
+        else
+           min_ALE_thickness(1:kMax) = 0.0
+        endif
 
         !
         ! Add all contributions to the new ALE thickness.
         !
         ! Note that restingThickness is nonzero, and remaining terms are perturbations about zero.
-        ALE_Thickness(:) = restingThickness(:,iCell) + SSH_ALE_Thickness(:) &
-           + use_freq_filtered_thickness * newHighFreqThickness(:,iCell) &
-           + use_minimum_thickness * min_ALE_Thickness(:)
+        ALE_Thickness(1:kMax) = restingThickness(1:kMax,iCell) + SSH_ALE_Thickness(1:kMax) &
+          + use_freq_filtered_thickness * newHighFreqThickness(1:kMax,iCell) &
+          + use_minimum_thickness * min_ALE_Thickness(1:kMax)
+
 
         !
         ! Vertical transport through layer interfaces
@@ -685,14 +720,15 @@ contains
         ! Here we are using solving the continuity equation for vertTransportVelocityTop ($w^t$),
         ! and using ALE_Thickness for thickness at the new time.
         vertTransportVelocityTop(1,iCell) = 0.0
-        vertTransportVelocityTop(maxLevelCell(iCell)+1,iCell) = 0.0
-        do k=maxLevelCell(iCell),2,-1
+        vertTransportVelocityTop(kMax+1,iCell) = 0.0
+        do k=kMax,2,-1
            vertTransportVelocityTop(k,iCell) = vertTransportVelocityTop(k+1,iCell) - div_hu(k) &
              - (ALE_Thickness(k) - oldLayerThickness(k,iCell))/dt
         end do
       end do
 
-      deallocate(div_hu, ALE_Thickness, SSH_ALE_Thickness, min_ALE_Thickness)
+      deallocate(div_hu, ALE_Thickness, SSH_ALE_Thickness, prelim_ALE_thickness, &
+         min_ALE_thickness, min_ALE_thickness_down, min_ALE_thickness_up)
 
    end subroutine ocn_vert_transport_velocity_top!}}}
 

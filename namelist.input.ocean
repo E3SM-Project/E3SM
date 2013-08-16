@@ -24,7 +24,6 @@
 /
 &grid
 	config_num_halos = 3
-	config_vert_coord_movement = "uniform_stretching"
 	config_alter_ICs_for_pbcs = "zlevel_pbcs_off"
 	config_min_pbc_fraction = 0.10
 	config_check_ssh_consistency = .true.
@@ -32,13 +31,13 @@
 &ALE_vertical_grid
         config_vert_coord_movement = "uniform_stretching"
         config_use_minimum_thickness = .false.
-        config_minimum_thickness = 0.5
+        config_minimum_thickness = 1.0
         config_set_restingThickness_to_z = .true.
 /
 &ALE_frequency_filtered_thickness
         config_use_freq_filtered_thickness = .false.
         config_thickness_filter_timescale = 5.0
-        config_use_highFreqThick_restore = .true.
+        config_use_highFreqThick_restore = .false.
         config_highFreqThick_restore_time = 30.0
         config_use_highFreqThick_del2 = .false.
         config_highFreqThick_del2 = 100.0
