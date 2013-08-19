@@ -161,7 +161,7 @@ module mpas_core
       if (config_vert_coord_movement.ne.'isopycnal'.and. &
           config_vert_coord_movement.ne.'fixed'.and. &
           config_vert_coord_movement.ne.'uniform_stretching'.and. &
-          config_vert_coord_movement.ne.'no_vert_transport'.and. &
+          config_vert_coord_movement.ne.'impermeable_interfaces'.and. &
           config_vert_coord_movement.ne.'user_specified') then
          write (0,*) ' Incorrect choice of config_vert_coord_movement.'
          call mpas_dmpar_abort(dminfo)
@@ -367,6 +367,8 @@ module mpas_core
       ! initialize velocities and tracers on land to be zero.
 
       block % mesh % areaCell % array(block % mesh % nCells+1) = -1.0e34
+
+      block % state % time_levs(1) % state % layerThickness % array(:,block % mesh % nCells+1) = 0.0
 
       do iEdge=1,block % mesh % nEdges
          block % state % time_levs(1) % state % normalVelocity % array( &

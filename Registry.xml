@@ -147,7 +147,7 @@
 	<nml_record name="ALE_vertical_grid">
 		<nml_option name="config_vert_coord_movement" type="character" default_value="uniform_stretching" units="unitless"
 		            description="Determines the vertical coordinate movement type. 'uniform_stretching' distributes SSH perturbations through all vertical levels (z-star vertical coordinate); 'fixed' places them all in the top level (z-level vertical coordinate); 'user_specified' allows the input file to determine the distribution using the variable vertCoordMovementWeights (weighted z-star vertical coordinate); and 'impermeable_interface' makes the vertical transport between layers zero (idealized isopycnal)."
-		            possible_values="'uniform_stretching', 'fixed', 'user_specified', 'impermeable_interface'"
+		            possible_values="'uniform_stretching', 'fixed', 'user_specified', 'impermeable_interfaces'"
 		/>
 		<nml_option name="config_use_minimum_thickness" type="logical" default_value=".false." units="unitless"
 		            description="If true, a minimum thickness is enforced to prevent massless layers."
@@ -612,10 +612,10 @@
 		<var name="layerThickness" type="real" dimensions="nVertLevels nCells Time" streams="iro" units="m"
 		     description="layer thickness"
 		/>
-		<var name="highFreqThickness" type="real" dimensions="nVertLevels nCells Time" streams="o" units="m"
+		<var name="highFreqThickness" type="real" dimensions="nVertLevels nCells Time" streams="iro" units="m"
 		     description="high frequency-filtered layer thickness"
 		/>
-		<var name="lowFreqDivergence" type="real" dimensions="nVertLevels nCells Time" streams="o" units="s^{-1}"
+		<var name="lowFreqDivergence" type="real" dimensions="nVertLevels nCells Time" streams="iro" units="s^{-1}"
 		     description="low frequency-filtered divergence"
 		/>
 		<var name="density" type="real" dimensions="nVertLevels nCells Time" streams="iro" units="kg m^{-3}"
