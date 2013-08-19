@@ -600,7 +600,7 @@ contains
         maxLevelCell, maxLevelEdgeBot
       integer, dimension(:,:), pointer :: edgesOnCell, edgeSignOnCell
 
-      real (kind=RKIND) :: flux, thicknessSum, invAreaCell, div_hu_btr, newSSH, thicknessRemainder, oldSSHtemp
+      real (kind=RKIND) :: flux, thicknessSum, invAreaCell, div_hu_btr, newSSH, thicknessRemainder
       real (kind=RKIND), dimension(:), pointer :: dvEdge, areaCell, vertCoordMovementWeights, refBottomDepth, bottomDepth
       real (kind=RKIND), dimension(:), allocatable :: &
          div_hu, &  !> Local: divergence of (thickness*velocity)
@@ -665,8 +665,7 @@ contains
         !
         ! ALE thickness alteration due to SSH (z-star)
         !
-        oldSSHtemp = - bottomDepth(iCell) + sum(oldLayerThickness(1:kMax,iCell))
-        newSSH = oldSSHtemp - dt*div_hu_btr
+        newSSH = oldSSH(iCell) - dt*div_hu_btr
         thicknessSum = 1e-14  
         do k = 1, kMax
            SSH_ALE_Thickness(k) = newSSH * vertCoordMovementWeights(k) * restingThickness(k, iCell) * div_hu_btr

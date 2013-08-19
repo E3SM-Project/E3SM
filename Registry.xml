@@ -602,6 +602,9 @@
 			<var name="salinity" array_group="dynamics" streams="iro" units="grams salt per kilogram seawater"
 			     description="salinity"
 			/>
+			<var name="tracer1" array_group="dynamics" streams="iro" units="na"
+			     description="tracer"
+			/>
 		</var_array>
 		<var name="xtime" type="text" dimensions="Time" streams="ro" units="unitless"
 		     description="model time, with format 'YYYY-MM-DD_HH:MM:SS'"
@@ -1045,6 +1048,9 @@
 			/>
 			<var name="tend_salinity" array_group="dynamics" units="PSU s^{-1}" name_in_code="salinity"
 			     description="time tendency of salinity measured as change in practical salinity units per second"
+			/>
+			<var name="tend_tracer1" array_group="dynamics" units="na" name_in_code="tracer1"
+			     description="test tracer"
 			/>
 		</var_array>
 		<var name="tend_normalVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-2}" name_in_code="normalVelocity"
