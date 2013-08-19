@@ -641,7 +641,8 @@ contains
       allocate(div_hu(nVertLevels), ALE_Thickness(nVertLevels), SSH_ALE_thickness(nVertLevels), prelim_ALE_thickness(nVertLevels), &
          min_ALE_thickness(nVertLevels), min_ALE_thickness_down(nVertLevels), min_ALE_thickness_up(nVertLevels))
 
-      do iCell=1,nCellsSolve
+!      do iCell=1,nCellsSolve ! mrp temp testing.  This line causes non-bfb-match.
+      do iCell=1,nCells
         kMax = maxLevelCell(iCell)
 
         !
@@ -711,7 +712,6 @@ contains
         ALE_Thickness(1:kMax) = restingThickness(1:kMax,iCell) + SSH_ALE_Thickness(1:kMax) &
           + use_freq_filtered_thickness * newHighFreqThickness(1:kMax,iCell) &
           + use_minimum_thickness * min_ALE_Thickness(1:kMax)
-
 
         !
         ! Vertical transport through layer interfaces
