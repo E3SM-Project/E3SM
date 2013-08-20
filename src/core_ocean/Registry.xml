@@ -122,28 +122,6 @@
 		            possible_values="'split_explicit', 'RK4', 'unsplit_explicit'"
 		/>
 	</nml_record>
-	<nml_record name="grid">
-		<nml_option name="config_num_halos" type="integer" default_value="3" units="unitless"
-		            description="Determines the number of halo cells extending from a blocks owned cells (Called the 0-Halo). The default of 3 is the minimum that can be used with monotonic advection."
-		            possible_values="Any positive interger value."
-		/>
-		<nml_option name="config_alter_ICs_for_pbcs" type="character" default_value="zlevel_pbcs_off" units="unitless"
-		            description="Determines the method of alteration for partial bottom cells. 'zlevel_pbcs_on' alters the initial conditions for partial bottom cells, 'zlevel_pbcs_off' alters the initial conditions to have full cells everwhere, and 'off' does nothing to the initial conditions."
-		            possible_values="'zlevel_pbcs_on', 'zlevel_pbcs_off', 'off'"
-		/>
-		<nml_option name="config_min_pbc_fraction" type="real" default_value="0.10" units="unitless"
-		            description="Determines the minimum fraction of a cell altering the initial conditions can create."
-		            possible_values="Any real between 0 and 1."
-		/>
-		<nml_option name="config_check_ssh_consistency" type="logical" default_value=".true." units="unitless"
-		            description="Enables a check to determine if the SSH is consistent across relevant variables."
-		            possible_values=".true. or .false."
-		/>
-		<nml_option name="config_dzdk_positive" type="logical" default_value=".false." units="unitless"
-		            description="Determines if the positive Z axis is aligned with the positive K index direction."
-		            possible_values=".true. or .false."
-		/>
-	</nml_record>
 	<nml_record name="ALE_vertical_grid">
 		<nml_option name="config_vert_coord_movement" type="character" default_value="uniform_stretching" units="unitless"
 		            description="Determines the vertical coordinate movement type. 'uniform_stretching' distributes SSH perturbations through all vertical levels (z-star vertical coordinate); 'fixed' places them all in the top level (z-level vertical coordinate); 'user_specified' allows the input file to determine the distribution using the variable vertCoordMovementWeights (weighted z-star vertical coordinate); and 'impermeable_interface' makes the vertical transport between layers zero (idealized isopycnal)."
@@ -157,10 +135,14 @@
 		            description="Minimum thickness allowed."
 		            possible_values="any positive real value, but typically 0.1 to 1 m."
 		/>
-		<nml_option name="config_set_restingThickness_to_z" type="logical" default_value=".true." units="unitless"
-		            description="If true, compute restingThickness using refBottomDepth.  This can be used for z-type grids.  If false, restingThickness must be in init or restart file.  For sigma grids, this must be false."
+		<nml_option name="config_set_restingThickness_to_IC" type="logical" default_value=".true." units="unitless"
+		            description="If true, set restingThickness to be the same as layerThickness upon start-up.  This only occurs when config_do_restart is false, i.e. on an initial run."
 		            possible_values=".true. or .false."
 		/>
+                <nml_option name="config_dzdk_positive" type="logical" default_value=".false." units="unitless"
+                            description="Determines if the positive Z axis is aligned with the positive K index direction."
+                            possible_values=".true. or .false."
+                />
 	</nml_record>
 	<nml_record name="ALE_frequency_filtered_thickness">
 		<nml_option name="config_use_freq_filtered_thickness" type="logical" default_value=".false." units="unitless"
@@ -168,15 +150,15 @@
 		            possible_values=".true. or .false."
 		/>
 		<nml_option name="config_thickness_filter_timescale" type="real" default_value="5.0" units="days"
-		            description="Filter timescale for the low-frequency baroclinic divergence, $\tau_{Dlf}$."
+		            description="Filter time scale for the low-frequency baroclinic divergence, $\tau_{Dlf}$."
 		            possible_values="any positive real value, but typically 5 days."
 		/>
 		<nml_option name="config_use_highFreqThick_restore" type="logical" default_value=".false." units="unitless"
-		            description="If true, the high frequency thickness equation (\ref{ocean:hhf}) includes term 2 on the RHS, the restoring term.  The high frequency thickness is restored to zero with timescale $\tau_{hhf}$."
+		            description="If true, the high frequency thickness equation (\ref{ocean:hhf}) includes term 2 on the RHS, the restoring term.  The high frequency thickness is restored to zero with time scale $\tau_{hhf}$."
 		            possible_values=".true. or .false."
 		/>
 		<nml_option name="config_highFreqThick_restore_time" type="real"  default_value="30.0" units="days"
-		            description="Restoring timescale for thickness, $\tau_{hhf}$."
+		            description="Restoring time scale for high-frequency thickness, $\tau_{hhf}$."
 		            possible_values="any positive real value, but typically 5-30 days."
 		/>
 		<nml_option name="config_use_highFreqThick_del2" type="logical" default_value=".false." units="unitless"
@@ -188,7 +170,25 @@
 		            possible_values="any positive real"
 		/>
 	</nml_record>
+	<nml_record name="partial_bottom_cells">
+		<nml_option name="config_alter_ICs_for_pbcs" type="character" default_value="zlevel_pbcs_off" units="unitless"
+		            description="Determines the method of layer thickness alteration for partial bottom cells. 'zlevel_pbcs_on' alters the initial conditions for partial bottom cells, 'zlevel_pbcs_off' alters the initial conditions to have full cells everwhere, and 'off' does nothing to the initial conditions.  The alteration of layer thickness only occurs when config_do_restart is false, i.e. on an initial run."
+		            possible_values="'zlevel_pbcs_on', 'zlevel_pbcs_off', 'off'"
+		/>
+		<nml_option name="config_min_pbc_fraction" type="real" default_value="0.10" units="unitless"
+		            description="Determines the minimum fraction of a cell altering the initial conditions can create.  The alteration of layer thickness only occurs when config_do_restart is false, i.e. on an initial run."
+		            possible_values="Any real between 0 and 1."
+		/>
+		<nml_option name="config_check_ssh_consistency" type="logical" default_value=".true." units="unitless"
+		            description="Enables a check to determine if the SSH is within 2m of the surface, as specified in (\ref{ocean:pbc SSH})."
+		            possible_values=".true. or .false."
+		/>
+	</nml_record>
 	<nml_record name="decomposition">
+		<nml_option name="config_num_halos" type="integer" default_value="3" units="unitless"
+		            description="Determines the number of halo cells extending from a blocks owned cells (Called the 0-Halo). The default of 3 is the minimum that can be used with monotonic advection."
+		            possible_values="Any positive interger value."
+		/>
 		<nml_option name="config_block_decomp_file_prefix" type="character" default_value="graph.info.part." units="unitless"
 		            description="Defines the prefix for the block decomposition file. Can include a path. The number of blocks is appended to the end of the prefix at run-time."
 					possible_values="Any path/prefix to a block decomposition file."
@@ -388,11 +388,11 @@
 		            possible_values=".true. or .false."
 		/>
 		<nml_option name="config_restoreT_timescale" type="real" default_value="90.0" units="days"
-		            description="Restoring timescale for temperature, $\tau_r.$"
+		            description="Restoring time scale for temperature, $\tau_r.$"
 		            possible_values="any positive real value, but typically between 30 and 90 days."
 		/>
 		<nml_option name="config_restoreS_timescale" type="real" default_value="90.0" units="days"
-		            description="Restoring timescale for salinity, $\tau_r$."
+		            description="Restoring time scale for salinity, $\tau_r$."
 		            possible_values="any positive real value, but typically between 30 and 90 days."
 		/>
 	</nml_record>
@@ -741,7 +741,7 @@
 		<var name="displacedDensity" type="real" dimensions="nVertLevels nCells Time" streams="" units="kg m^{-3}"
 		     description="Density displaced adiabatically to the mid-depth one layer deeper.  That is, layer k has been displaced to the depth of layer k+1."
 		/>
-		<var name="potentialDensity" type="real" dimensions="nVertLevels nCells Time" streams="" units="kg m^{-3}"
+		<var name="potentialDensity" type="real" dimensions="nVertLevels nCells Time" streams="o" units="kg m^{-3}"
 		     description="potential density: density displaced adiabatically to the mid-depth of top layer"
 		/>
 		<var name="BruntVaisalaFreqTop" type="real" dimensions="nVertLevels nCells Time" streams="" units="s^{-2}"
@@ -1090,7 +1090,6 @@
 		<var name="vertDiffTopOfCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^{-1}"
 		     description="vertical diffusion defined at the cell center (horizontally) and top (vertically)"
 		/>
-<<<<<<< HEAD:src/core_ocean/Registry.xml
                 <var name="windStressZonal" type="real" dimensions="nCells Time" streams="o" units="N m^{-2}"
                      description="reconstructed surface wind stress in the eastward direction."
                 />
@@ -1112,14 +1111,6 @@
                 <var name="surfaceBuoyancyForcing" type="real" dimensions="nCells Time" streams="o" units="m s^{-3}"
                      description="diagnosed surface buoyancy forcing due to heat, salt and freshwater fluxes at ocean surface"
                 />
-=======
-        <var name="windStressZonal" type="real" dimensions="nCells Time" streams="" units="N m^{-2}"
-             description="reconstructed surface wind stress in the eastward direction."
-        />
-        <var name="windStressMeridional" type="real" dimensions="nCells Time" streams="" units="N m^{-2}"
-             description="reconstructed surface wind stress in the northward direction."
-        />
->>>>>>> Remove variables from output stream for lighter weight output.:src/core_ocean/Registry.xml
 	</var_struct>
     <var_struct name="scratch" time_levs="0">
         <var name="normalVelocityForcingX" persistence="scratch" type="real" dimensions="nVertLevels nCells Time" units="N m^{-2}"
