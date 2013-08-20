@@ -704,16 +704,6 @@ module mpas_core
             refBottomDepthTopOfCell(k+1) = refBottomDepth(k)
          end do
 
-         ! Layer thickness when the ocean is at rest, i.e. without SSH or internal perturbations.
-         if (config_set_restingThickness_to_z) then
-            do iCell=1,nCells
-               restingThickness(1, iCell) = refBottomDepth(1)
-               do k = 2,nVertLevels
-                  restingThickness(k,iCell) = refBottomDepth(k) - refBottomDepth(k-1)
-               end do
-            enddo
-         endif
-
          ! Initialization of vertCoordMovementWeights. This determines how SSH perturbations
          ! are distributed throughout the column.
          if (config_vert_coord_movement.eq.'fixed') then
@@ -735,7 +725,6 @@ module mpas_core
          !    bottomDepth will be altered so it is full cells everywhere.
          !    If your input file does not include bottomDepth, the false option will
          !    initialize bottomDepth correctly for a non-pbc run.
-
 
          if (.not.config_do_restart) then
 
@@ -807,7 +796,14 @@ module mpas_core
              call mpas_dmpar_abort(dminfo)
 
           endif
-         endif
+
+           ! Layer thickness when the ocean is at rest, i.e. without SSH or internal perturbations.
+           ! This is applied only from the initial condition
+           if (config_set_restingThickness_to_IC) then
+               restingThickness = layerThickness
+           endif
+
+         endif ! .not.config_do_restart
 
          if (config_check_ssh_consistency) then
             consistentSSH = .true.
@@ -827,7 +823,8 @@ module mpas_core
             if (.not. consistentSSH) then
                write(0,*) 'Warning: SSH is not consistent. Most likely, initial layerThickness does not match bottomDepth.'
             end if
-         endif
+
+         endif ! config_check_ssh_consistency
 
          if (config_check_zlevel_consistency) then
             do iCell = 1,nCells
