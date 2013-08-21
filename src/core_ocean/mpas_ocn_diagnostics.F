@@ -78,13 +78,14 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_diagnostic_solve(dt, s, grid, scratch)!{{{
+   subroutine ocn_diagnostic_solve(dt, s, grid, diagnostics, scratch)!{{{
 
       implicit none
 
       real (kind=RKIND), intent(in) :: dt !< Input: Time step
       type (state_type), intent(inout) :: s !< Input/Output: State information
       type (mesh_type), intent(in) :: grid !< Input: Grid information
+      type (diagnostics_type), intent(inout) :: diagnostics  !< Input/Output: diagnostic fields derived from State
       type (scratch_type), intent(inout) :: scratch !< Input: scratch variables
 
       integer :: iEdge, iCell, iVertex, k, cell1, cell2, vertex1, vertex2, eoe, i, j
@@ -115,6 +116,8 @@ contains
         vorticityGradientNormalComponent, vorticityGradientTangentialComponent
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers, deriv_two
       character :: c1*6
+
+      real (kind=RKIND), dimension(:,:), pointer :: tracersSurfaceValue ! => diagnostics % tracersSurfaceValue % array
 
       layerThickness => s % layerThickness % array
       normalVelocity => s % normalVelocity % array
@@ -178,6 +181,8 @@ contains
       edgeSignOnVertex => grid % edgeSignOnVertex % array
       edgeSignOnCell => grid % edgeSignOnCell % array
 
+      tracersSurfaceValue  => diagnostics % tracersSurfaceValue % array(:,:)
+
       !
       ! Compute height on cell edges at velocity locations
       !   Namelist options control the order of accuracy of the reconstructed layerThicknessEdge value
@@ -203,6 +208,12 @@ contains
       layerThickness(:,nCells+1) = -1e34
       tracers(s % index_temperature,:,nCells+1) = -1e34
       tracers(s % index_salinity,:,nCells+1) = -1e34
+
+      !
+      ! extrapolate tracer values to ocean surface
+      ! this eventually be a modelled process
+      ! at present, just copy k=1 tracer values onto surface values
+      tracersSurfaceValue(:,:) = tracers(:,1,:)
 
       circulation(:,:) = 0.0
       relativeVorticity(:,:) = 0.0
