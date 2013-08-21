@@ -3654,14 +3654,23 @@ write(0,*) 'PROCESSING SEAICE'
 
       do iCell=1,grid%nCells
          do k=1,grid%nVertLevels
+
+!  WCS 20130821 - couple with vertical metric
+
+            rb(k,iCell) = rb(k,iCell) / zz(k,iCell)
+            rho_zz(k,iCell) = rho_zz(k,iCell) / zz(k,iCell)
+
             pp(k,iCell) = diag % pressure % array(k,iCell) - ppb(k,iCell) 
             rr(k,iCell) = rho_zz(k,iCell) - rb(k,iCell)
+
          end do
       end do
 
       do iCell=1,grid%nCells
          k = 1
-         rho_zz(k,iCell) = ((diag % pressure % array(k,iCell) / p0)**(cv / cp)) * (p0 / rgas) / (t(k,iCell)*(1.0 + 1.61*scalars(state % index_qv,k,iCell)))
+!  WCS 20130821 - couple with vertical metric, note: rr is coupled here
+         rho_zz(k,iCell) = ((diag % pressure % array(k,iCell) / p0)**(cv / cp)) * (p0 / rgas) &
+                            / (t(k,iCell)*(1.0 + 1.61*scalars(state % index_qv,k,iCell))) / zz(k,iCell)
          rr(k,iCell) = rho_zz(k,iCell) - rb(k,iCell)
 
          do k=2,grid % nVertLevels
@@ -3670,12 +3679,15 @@ write(0,*) 'PROCESSING SEAICE'
             do while ( (it < 30) .and. (p_check > 0.0001) )
 
                p_check = pp(k,iCell)
-               dz = (zgrid(k,iCell) - zgrid(k-1,iCell))
-               pp(k,iCell) = pp(k-1,iCell) - 0.5 * (rr(k,iCell) + rr(k-1,iCell))*gravity*dz &
-                                           - 0.5 * (rho_zz(k,iCell)*scalars(state % index_qv,k,iCell) + rho_zz(k-1,iCell)*scalars(state % index_qv,k-1,iCell))*gravity*dz
+!  WCS 20130821 - MPAS hydrostatic relation
+               pp(k,iCell) = pp(k-1,iCell) - (fzm(k)*rr(k,iCell) + fzp(k)*rr(k-1,iCell))*gravity*dzu(k) &
+                                           - (fzm(k)*rho_zz(k,iCell)*scalars(state % index_qv,k,iCell) &
+                                                  + fzp(k)*rho_zz(k-1,iCell)*scalars(state % index_qv,k-1,iCell))*gravity*dzu(k)
                diag % pressure % array(k,iCell) = pp(k,iCell) + ppb(k,iCell)
                p(k,iCell) = (diag % pressure % array(k,iCell) / p0) ** (rgas / cp)
-               rho_zz(k,iCell) = diag % pressure % array(k,iCell) / rgas / (p(k,iCell)*t(k,iCell)*(1.0 + 1.61*scalars(state % index_qv,k,iCell)))
+!  WCS 20130821 - couple with vertical metric
+               rho_zz(k,iCell) = diag % pressure % array(k,iCell) / rgas &
+                     / (p(k,iCell)*t(k,iCell)*(1.0 + 1.61*scalars(state % index_qv,k,iCell)))/zz(k,iCell)
                rr(k,iCell) = rho_zz(k,iCell) - rb(k,iCell)
 
                p_check = abs(p_check - pp(k,iCell))
@@ -3689,8 +3701,11 @@ write(0,*) 'PROCESSING SEAICE'
       do iCell=1,grid%nCells
          do k=1,grid%nVertLevels
             t(k,iCell) = t(k,iCell) * (1.0 + 1.61*scalars(state % index_qv,k,iCell))
-            rho_zz(k,iCell) = rho_zz(k,iCell) / zz(k,iCell)
-            rb(k,iCell) = rb(k,iCell) / zz(k,iCell)
+!!  WCS 20130821 - coupling with vertical metric already accomplished...
+!!            rho_zz(k,iCell) = rho_zz(k,iCell) / zz(k,iCell)
+!!            rb(k,iCell) = rb(k,iCell) / zz(k,iCell)
+!  WCS 20130821 - decouple rr from vertical metric
+            rr(k,iCell) = rr(k,iCell)*zz(k,iCell)
          end do
       end do
 
