@@ -1006,6 +1006,14 @@
 		/>
 	</var_struct>
 	<var_struct name="diagnostics" time_levs="0">
+                <var_array name="tracersSurfaceValue" type="real" dimensions="nCells Time">
+                        <var name="temperatureSurfaceValue" array_group="surfaceVales" units="C" name_in_code="temperatureSurfaceValue"
+                             description="potential temperature extrapolated to ocean surface"
+                        />
+                        <var name="salinitySurfaceValue" array_group="surfaceVales" units="C" name_in_code="salinitySurfaceValue"
+                             description="salinity extrapolated to ocean surface"
+                        />
+                </var_array>
 		<var name="RiTopOfCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="nondimensional"
 		     description="gradient Richardson number defined at the center (horizontally) and top (vertically)"
 		/>
