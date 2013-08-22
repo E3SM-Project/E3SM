@@ -184,10 +184,16 @@ contains
       tracersSurfaceValue  => diagnostics % tracersSurfaceValue % array(:,:)
 
       !
+      ! extrapolate tracer values to ocean surface
+      ! this eventually be a modelled process
+      ! at present, just copy k=1 tracer values onto surface values
+      tracersSurfaceValue(:,:) = tracers(:,1,:)
+
+      !
       ! Compute bulk Richardson number
       !   (note: this is a proposed new template for this subroutine
       !     where we push the computation one level down)
-      !call computeBulkRichardsonNumber(state, grid, diagnostics, scratch)
+      call computeBulkRichardsonNumber(state, grid, diagnostics, scratch)
 
       !
       ! Compute height on cell edges at velocity locations
@@ -214,12 +220,6 @@ contains
       layerThickness(:,nCells+1) = -1e34
       tracers(state % index_temperature,:,nCells+1) = -1e34
       tracers(state % index_salinity,:,nCells+1) = -1e34
-
-      !
-      ! extrapolate tracer values to ocean surface
-      ! this eventually be a modelled process
-      ! at present, just copy k=1 tracer values onto surface values
-      tracersSurfaceValue(:,:) = tracers(:,1,:)
 
       circulation(:,:) = 0.0
       relativeVorticity(:,:) = 0.0
@@ -883,6 +883,68 @@ contains
     end subroutine ocn_diagnostics_init!}}}
 
 !***********************************************************************
+!
+!  routine computeBulkRichardsonNumber
+!
+!> \brief   
+!>    Computes the bulk Richardson number used to diagnose 
+!>      ocean boundary layer depth.
+!> \author  Todd Ringler
+!> \date    20 August 2013
+!> \details
+!>    Adiabatically displace SST/SSS to every vertical layer in order to
+!>      to determine tendency of buoyancy to suppress mixing. 
+!>      The buoyancy restoring is compared to (i.e. divided by) the tendency
+!>      of vertical shear to enhance mixing.
+!
+!-----------------------------------------------------------------------
+
+    subroutine computeBulkRichardsonNumber(state, grid, diagnostics, scratch)!{{{
+
+      type (state_type), intent(in) :: state !< Input/Output: State information
+      type (mesh_type), intent(in) :: grid !< Input: Grid information
+      type (diagnostics_type), intent(inout) :: diagnostics !< Diagnostics information derived from State
+      type (scratch_type), intent(inout) :: scratch !< Input: scratch variables
+
+      integer :: nCells, nVertLevels, indexT, indexS
+
+      integer, dimension(:), pointer :: maxLevelCell
+
+      real (kind=RKIND), dimension(:,:), pointer :: zMid, bulkRichardsonNumber, tracersSurfaceValues
+
+      ! local
+      integer :: iCell, k
+
+      ! set scalar values
+      nCells      = grid % nCells
+      nVertLevels = grid % nVertLevels
+      indexT = state % index_temperature
+      indexS = state % index_salinity
+
+      ! set pointers into state, grid, diagnostics and scratch
+      maxLevelCell      => grid % maxLevelCell % array 
+      bulkRichardsonNumber => diagnostics % bulkRichardsonNumber % array
+      tracersSurfaceValues => diagnostics % tracersSurfaceValue  % array
+
+
+      ! compute EOS by displacing SST/SSS to every vertical layer in column
+      do iCell=1,nCells
+
+       do k=1,maxLevelCell(iCell)
+
+
+       enddo
+
+
+      enddo
+
+
+
+      
+
+
+    end subroutine computeBulkRichardsonNumber!}}}
+
 
 end module ocn_diagnostics
 
