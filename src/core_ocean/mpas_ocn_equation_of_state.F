@@ -71,7 +71,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_equation_of_state_density(s, grid, k_displaced, displacement_type, density, err)!{{{
+   subroutine ocn_equation_of_state_density(s, diagnostics, grid, k_displaced, displacement_type, density, err)!{{{
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !  This module contains routines necessary for computing the density
    !  from model temperature and salinity using an equation of state.
@@ -92,6 +92,7 @@ contains
       implicit none
 
       type (state_type), intent(inout) :: s
+      type (diagnostics_type), intent(inout) :: diagnostics
       type (mesh_type), intent(in) :: grid
       real (kind=RKIND), dimension(:,:), intent(out) :: density
       integer, intent(out) :: err
@@ -99,6 +100,7 @@ contains
       character(len=*), intent(in) :: displacement_type
 
       integer, dimension(:), pointer :: maxLevelCell
+      real (kind=RKIND), dimension(:,:), pointer :: tracersSurfaceValue
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers
       integer :: nCells, iCell, k, indexT, indexS
       type (dm_info) :: dminfo
@@ -107,6 +109,7 @@ contains
 
       if(.not.eosOn) return
 
+      tracersSurfaceValue => diagnostics % tracersSurfaceValue % array
       tracers => s % tracers % array
       indexT = s % index_temperature
       indexS = s % index_salinity
@@ -117,7 +120,7 @@ contains
 
       elseif (jmEos) then
 
-         call ocn_equation_of_state_jm_density(grid, k_displaced, displacement_type, indexT, indexS, tracers, density, err)
+         call ocn_equation_of_state_jm_density(grid, k_displaced, displacement_type, indexT, indexS, tracers, density, err, tracersSurfaceValue)
 
       endif
 
