@@ -16,21 +16,21 @@ MODULE module_cu_kfeta
 CONTAINS
 
 #if defined(mpas)
-   SUBROUTINE KF_eta_CPS(                                      &
-              ids,ide, jds,jde, kds,kde                        &
-             ,ims,ime, jms,jme, kms,kme                        &
-             ,its,ite, jts,jte, kts,kte                        &
-             ,DT,KTAU, areaCell,CUDT,CURR_SECS,ADAPT_STEP_FLAG &
-             ,rho,RAINCV,PRATEC,NCA                            &
-             ,U,V,TH,T,W,dz8w,Pcps,pi                          &
-             ,W0AVG,XLV0,XLV1,XLS0,XLS1,CP,R,G,EP1             &
-             ,EP2,SVP1,SVP2,SVP3,SVPT0                         &
-             ,STEPCU,CU_ACT_FLAG,warm_rain,CUTOP,CUBOT         &
-             ,QV                                               &
+   SUBROUTINE KF_eta_CPS(                                            &
+              ids,ide, jds,jde, kds,kde                              &
+             ,ims,ime, jms,jme, kms,kme                              &
+             ,its,ite, jts,jte, kts,kte                              &
+             ,DT,KTAU,dxCell,areaCell,CUDT,CURR_SECS,ADAPT_STEP_FLAG &
+             ,rho,RAINCV,PRATEC,NCA                                  &
+             ,U,V,TH,T,W,dz8w,Pcps,pi                                &
+             ,W0AVG,XLV0,XLV1,XLS0,XLS1,CP,R,G,EP1                   &
+             ,EP2,SVP1,SVP2,SVP3,SVPT0                               &
+             ,STEPCU,CU_ACT_FLAG,warm_rain,CUTOP,CUBOT               &
+             ,QV                                                     &
             ! optionals
-             ,F_QV    ,F_QC    ,F_QR    ,F_QI    ,F_QS         &
-             ,RTHCUTEN,RQVCUTEN,RQCCUTEN,RQRCUTEN              &
-             ,RQICUTEN,RQSCUTEN                                &
+             ,F_QV    ,F_QC    ,F_QR    ,F_QI    ,F_QS               &
+             ,RTHCUTEN,RQVCUTEN,RQCCUTEN,RQRCUTEN                    &
+             ,RQICUTEN,RQSCUTEN                                      &
                                                              )
 #else
    SUBROUTINE KF_eta_CPS(                                    &
@@ -86,13 +86,12 @@ CONTAINS
           INTENT(INOUT) ::                                   &
                                                       W0AVG
 
-!In MPAS and unlike WRF, individual grid-cells do not always have the same area.
-!This is particularly important when using global variable-mesh resolution. Here
-!we define dx as the area of the grid-cell (note that in wrf, dx is actually the
-!west-east length of the grid-cell.)
+!MPAS specific (Laura D. Fowler 2013-08-23): In MPAS, the mean distance between cell
+!centers varies between cells, in particular, for variable-resolution meshes. Below,
+!we take into account the actual mean distance between cell centers. 
 #if defined(mpas)
    real,intent(in):: dt
-   real,intent(in),dimension(ims:ime,jms:jme):: areaCell
+   real,intent(in),dimension(ims:ime,jms:jme):: areaCell,dxCell
 #else
    REAL,  INTENT(IN   ) :: DT, DX
 #endif
@@ -274,7 +273,7 @@ CONTAINS
 
 #if defined(mpas)
             dxsq = areaCell(i,j)
-            dx   = sqrt(dxsq)
+            dx   = dxCell(i,j)
 !           write(0,201) j,i,dxsq,dx
 !           201 format(i3,i8,2(1x,e15.8))
 #endif

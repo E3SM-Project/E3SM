@@ -47,11 +47,12 @@
 !> add-ons and modifications to sourcecode:
 !> ----------------------------------------
 !>    * added structure diag in calls to subroutine init_radiation_lw and init_radiation_sw.
-!>      Laura D. Fowler (birch.ucar.edu) / 2013-07-01.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-07-01.
 !>    * added call to subroutine init_o3climatology. reads monthly-mean climatological ozone data
 !>      and interpolates ozone data to the MPAS grid.
-!>      Laura D. Fowler (birch.ucar.edu) / 2013-07-03.
-
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-07-03.
+!>    * added the calculation of the mean distance between cell centers.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-08-22.
 
  contains
 
@@ -78,6 +79,7 @@
 
  logical:: init_done
  integer:: iCell,iLag,ierr,julday 
+ integer:: iEdge,nEdges
 
 !--------------------------------------------------------------------------------------------------
  write(0,*)
@@ -85,6 +87,24 @@
 
  currTime = mpas_get_clock_time(clock,MPAS_NOW,ierr)
  call mpas_get_time(curr_time=currTime,DoY=julday,ierr=ierr)
+
+!calculation of the mean distance between cell centers:
+ if(.not. config_do_restart) then
+    do iCell = 1, mesh % nCellsSolve
+       diag_physics % dcEdge_m % array(iCell) = 0._RKIND
+       nEdges = mesh%nEdgesOnCell%array(iCell)
+       do iEdge = 1, nEdges
+          diag_physics%dcEdge_m%array(iCell) = diag_physics%dcEdge_m%array(iCell) &
+                       + mesh%dcEdge%array(mesh%edgesOnCell%array(iEdge,iCell))
+       enddo
+       diag_physics % dcEdge_m % array(iCell) = diag_physics % dcEdge_m % array(iCell) &
+                       / nEdges
+!      write(0,102) iCell,nEdges,(mesh%dcEdge%array(mesh%edgesOnCell%array(iEdge,iCell)), &
+!                   iEdge=1,nEdges),diag_physics%dcEdge_m%array(iCell)
+    enddo
+ endif
+ 101 format(8i9,10(1x,e15.8))
+ 102 format(2i9,10(1x,e15.8))
 
 !initialization of east-north directions to convert u-tendencies from cell centers to cell
 !edges:

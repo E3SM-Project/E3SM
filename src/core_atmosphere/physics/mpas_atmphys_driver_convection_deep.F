@@ -56,7 +56,10 @@
 !>    * removed the pre-processor option "do_hydrostatic_pressure" before call to the subroutines 
 !>      kf_eta_cps and tiedtke.
 !>    * removed call to the updated Kain-Fritsch convection scheme.
-!>      Laura D. Fowler (birch.ucar.edu) / 2013-05-29.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-05-29.
+!>    * added the mean distance between cell centers in the call to the Kain-Fritsch convection
+!>      parameterization of convection.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-08-22. 
 
  contains
 
@@ -93,6 +96,7 @@
  convection_select: select case(conv_deep_scheme)
 
     case ("kain_fritsch")
+       if(.not.allocated(dx_p)       ) allocate(dx_p(ims:ime,jms:jme)              )
        if(.not.allocated(area_p)     ) allocate(area_p(ims:ime,jms:jme)            )
        if(.not.allocated(nca_p)      ) allocate(nca_p(ims:ime,jms:jme)             )
        if(.not.allocated(cubot_p)    ) allocate(cubot_p(ims:ime,jms:jme)           )
@@ -164,6 +168,7 @@
  convection_select: select case(conv_deep_scheme)
 
     case ("kain_fritsch")
+       if(allocated(dx_p)         ) deallocate(dx_p         )
        if(allocated(area_p)       ) deallocate(area_p       )
        if(allocated(nca_p)        ) deallocate(nca_p        )
        if(allocated(cubot_p)      ) deallocate(cubot_p      )
@@ -290,31 +295,31 @@
        endif
 
        call  kf_eta_cps ( &
-             pcps      = pres_hyd_p , t               = t_p             ,            &
-             dt        = dt_dyn     , ktau            = ktau            ,            &
-             areaCell  = area_p     , cudt            = cudt            ,            &
-             curr_secs = curr_secs  , adapt_step_flag = adapt_step_flag ,            &
-             rho       = rho_p      , raincv          = raincv_p        ,            &
-             pratec    = pratec_p   , nca             = nca_p           ,            &
-             u         = u_p        , v               = v_p             ,            &
-             th        = th_p       , pi              = pi_p            ,            &
-             w         = w_p        , dz8w            = dz_p            ,            &
-             w0avg     = w0avg_p    , xlv0            = xlv0            ,            &
-             xlv1      = xlv1       , xls0            = xls0            ,            &
-             xls1      = xls1       , cp              = cp              ,            &
-             r         = r_d        , g               = g               ,            &
-             ep1       = ep_1       , ep2             = ep_2            ,            &
-             svp1      = svp1       , svp2            = svp2            ,            &
-             svp3      = svp3       , svpt0           = svpt0           ,            &
-             stepcu    = n_cu       , cu_act_flag     = cu_act_flag     ,            &
-             warm_rain = warm_rain  , cutop           = cutop_p         ,            &
-             cubot     = cubot_p    , qv              = qv_p            ,            &
-             f_qv      = f_qv       , f_qc            = f_qc            ,            &
-             f_qr      = f_qr       , f_qi            = f_qi            ,            &
-             f_qs      = f_qs       , rthcuten        = rthcuten_p      ,            &
-             rqvcuten  = rqvcuten_p , rqccuten        = rqccuten_p      ,            &
-             rqrcuten  = rqrcuten_p , rqicuten        = rqicuten_p      ,            &
-             rqscuten  = rqscuten_p ,                                                &
+             pcps            = pres_hyd_p      , t         = t_p        ,            &
+             dt              = dt_dyn          , ktau      = ktau       ,            &
+             dxCell          = dx_p            , areaCell  = area_p     ,            &
+             cudt            = cudt            , curr_secs = curr_secs  ,            & 
+             adapt_step_flag = adapt_step_flag , rho       = rho_p      ,            &
+             raincv          = raincv_p        , pratec    = pratec_p   ,            &
+             nca             = nca_p           , u         = u_p        ,            &
+             v               = v_p             , th        = th_p       ,            &
+             pi              = pi_p            , w         = w_p        ,            &
+             dz8w            = dz_p            , w0avg     = w0avg_p    ,            &
+             xlv0            = xlv0            , xlv1      = xlv1       ,            &
+             xls0            = xls0            , xls1      = xls1       ,            &
+             cp              = cp              , r         = r_d        ,            &
+             g               = g               , ep1       = ep_1       ,            &
+             ep2             = ep_2            , svp1      = svp1       ,            &
+             svp2            = svp2            , svp3      = svp3       ,            &
+             svpt0           = svpt0           , stepcu    = n_cu       ,            &
+             cu_act_flag     = cu_act_flag     , warm_rain = warm_rain  ,            &
+             cutop           = cutop_p         , cubot     = cubot_p    ,            &
+             qv              = qv_p            , f_qv      = f_qv       ,            &
+             f_qc            = f_qc            , f_qr      = f_qr       ,            &
+             f_qi            = f_qi            , f_qs      = f_qs       ,            &
+             rthcuten        = rthcuten_p      , rqvcuten  = rqvcuten_p ,            &
+             rqccuten        = rqccuten_p      , rqrcuten  = rqrcuten_p ,            &
+             rqicuten        = rqicuten_p      , rqscuten  = rqscuten_p ,            &
              ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde , &
              ims = ims , ime = ime , jms = jms , jme = jme , kms = kds , kme = kme , &
              its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte   &
@@ -393,8 +398,9 @@
        do i = its,ite
           !area of grid-cell:       
           area_p(i,j)  = mesh % areaCell % array(i)
-          cubot_p(i,j) = diag_physics % cubot % array(i)
-          cutop_p(i,j) = diag_physics % cutop % array(i)
+          dx_p(i,j)    = diag_physics % dcEdge_m % array(i)
+          cubot_p(i,j) = diag_physics % cubot    % array(i)
+          cutop_p(i,j) = diag_physics % cutop    % array(i)
 
           do k = kts,kte
              rqrcuten_p(i,k,j) = tend_physics % rqrcuten % array(k,i)
