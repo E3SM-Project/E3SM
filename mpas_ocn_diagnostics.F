@@ -59,7 +59,7 @@ module ocn_diagnostics
    !
    !--------------------------------------------------------------------
 
-   integer :: ke_cell_flag, ke_vertex_flag, use_freq_filtered_thickness, use_minimum_thickness
+   integer :: ke_cell_flag, ke_vertex_flag, use_freq_filtered_thickness, use_min_max_thickness
    real (kind=RKIND) ::  coef_3rd_order, fCoef
 
 !***********************************************************************
@@ -600,7 +600,7 @@ contains
         maxLevelCell, maxLevelEdgeBot
       integer, dimension(:,:), pointer :: edgesOnCell, edgeSignOnCell
 
-      real (kind=RKIND) :: flux, thicknessSum, invAreaCell, div_hu_btr, newSSH, thicknessRemainder
+      real (kind=RKIND) :: flux, thicknessSum, invAreaCell, div_hu_btr, newSSH, remainder, newThickness, thicknessWithRemainder
       real (kind=RKIND), dimension(:), pointer :: dvEdge, areaCell, vertCoordMovementWeights, refBottomDepth, bottomDepth
       real (kind=RKIND), dimension(:), allocatable :: &
          div_hu, &  !> Local: divergence of (thickness*velocity)
@@ -641,7 +641,6 @@ contains
       allocate(div_hu(nVertLevels), ALE_Thickness(nVertLevels), SSH_ALE_thickness(nVertLevels), prelim_ALE_thickness(nVertLevels), &
          min_ALE_thickness(nVertLevels), min_ALE_thickness_down(nVertLevels), min_ALE_thickness_up(nVertLevels))
 
-!      do iCell=1,nCellsSolve ! mrp temp testing.  This line causes non-bfb-match.
       do iCell=1,nCells
         kMax = maxLevelCell(iCell)
 
@@ -677,24 +676,29 @@ contains
         ! ALE thickness alteration due to minimum thickness
         !
 
-        if (config_use_minimum_thickness) then
+        if (config_use_min_max_thickness) then
+
 
            ! go down the column:
            prelim_ALE_Thickness(1:kMax) = restingThickness(1:kMax,iCell) + SSH_ALE_Thickness(1:kMax) + use_freq_filtered_thickness * newHighFreqThickness(1:kMax,iCell) 
-           thicknessRemainder = 0.0
+
+           remainder = 0.0
            do k = 1, kMax
-              min_ALE_thickness_down(k) = max(-thicknessRemainder, config_minimum_thickness - prelim_ALE_Thickness(k))
-              thicknessRemainder = thicknessRemainder + min_ALE_thickness_down(k)
+              newThickness = max(min(prelim_ALE_Thickness(k)+remainder,config_max_thickness_factor*restingThickness(k,iCell)),config_min_thickness)
+              min_ALE_thickness_down(k) = newThickness - prelim_ALE_Thickness(k) 
+              remainder = remainder - min_ALE_thickness_down(k)
            end do
 
            ! go back up the column if needed:
-           if (thicknessRemainder>0.0) then
+           if (abs(remainder)>1e-12) then
               min_ALE_thickness_up(kMax) = 0.0
               prelim_ALE_Thickness(1:kMax) = prelim_ALE_Thickness(1:kMax) + min_ALE_thickness_down(1:kMax)
               do k = kMax-1,1,-1
-                 min_ALE_thickness_up(k) = max(-thicknessRemainder, config_minimum_thickness - prelim_ALE_Thickness(k) )
-                 thicknessRemainder = thicknessRemainder + min_ALE_thickness_up(k)
+                 newThickness = max(min(prelim_ALE_Thickness(k)+remainder,config_max_thickness_factor*restingThickness(k,iCell)),config_min_thickness)
+                 min_ALE_thickness_up(k) = newThickness - prelim_ALE_Thickness(k) 
+                 remainder = remainder - min_ALE_thickness_up(k)
               end do
+              min_ALE_thickness_up(1) = min_ALE_thickness_up(1) + remainder
               min_ALE_thickness(1:kMax) = min_ALE_thickness_down(1:kMax) + min_ALE_thickness_up(1:kMax)
            else
               min_ALE_thickness(1:kMax) = min_ALE_thickness_down(1:kMax) 
@@ -710,7 +714,7 @@ contains
         ! Note that restingThickness is nonzero, and remaining terms are perturbations about zero.
         ALE_Thickness(1:kMax) = restingThickness(1:kMax,iCell) + SSH_ALE_Thickness(1:kMax) &
           + use_freq_filtered_thickness * newHighFreqThickness(1:kMax,iCell) &
-          + use_minimum_thickness * min_ALE_Thickness(1:kMax)
+          + use_min_max_thickness * min_ALE_Thickness(1:kMax)
 
         !
         ! Vertical transport through layer interfaces
@@ -938,10 +942,10 @@ contains
          use_freq_filtered_thickness = 0
       endif
 
-      if (config_use_minimum_thickness) then
-         use_minimum_thickness = 1
+      if (config_use_min_max_thickness) then
+         use_min_max_thickness = 1
       else
-         use_minimum_thickness = 0
+         use_min_max_thickness = 0
       endif
 
     end subroutine ocn_diagnostics_init!}}}
