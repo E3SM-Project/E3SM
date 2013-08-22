@@ -58,14 +58,27 @@ contains
 !  routine ocn_equation_of_state_jm_density
 !
 !> \brief   Calls JM equation of state
-!> \author  Mark Petersen
-!> \date    September 2011
+!> \author  Mark Petersen and Todd Ringler
+!> \date    September 2011, updated August 2013
 !> \details 
-!>  This routine uses a JM equation of state to update the density
+!>  This routine uses a JM equation of state to update the density. 
+!>
+!>  Density can be computed in-situ using k_displaced=0 and 
+!>      displacement_type = 'relative'.
+!>
+!>  Potential density (referenced to top layer) can be computed 
+!>      using k_displaced=1 and displacement_type = 'absolute'.
+!>
+!>  The density of SST/SSS after adiabatic displacement to each layer 
+!>      can be computed using displacement_type = 'surfaceDisplaced'.
+!>
+!>  When using displacement_type = 'surfaceDisplaced', k_displaced is 
+!>      ignored and tracersSurfaceValue must be present.
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_equation_of_state_jm_density(grid, k_displaced, displacement_type, indexT, indexS, tracers, density, err, tracersSurfaceValue)!{{{
+   subroutine ocn_equation_of_state_jm_density(grid, k_displaced, displacement_type, &
+       indexT, indexS, tracers, density, err, tracersSurfaceValue)!{{{
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !  This module contains routines necessary for computing the density
    !  from model temperature and salinity using an equation of state.
