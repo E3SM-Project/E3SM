@@ -24,8 +24,9 @@
 /
 &ALE_vertical_grid
         config_vert_coord_movement = "uniform_stretching"
-        config_use_minimum_thickness = .false.
-        config_minimum_thickness = 1.0
+        config_use_min_max_thickness = .false.
+        config_min_thickness = 1.0
+        config_max_thickness_factor = 6.0
         config_set_restingThickness_to_IC = .true.
 /
 &ALE_frequency_filtered_thickness

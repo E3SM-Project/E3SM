@@ -824,7 +824,7 @@ module ocn_time_integration_split
             ! compute vertTransportVelocityTop.  Use uTransport for advection of layerThickness and tracers.
             ! Use time level 1 values of layerThickness and layerThicknessEdge because layerThickness has not yet been computed for time level 2.
             call ocn_vert_transport_velocity_top(block % mesh, block % state % time_levs(1) % state % layerThickness % array, &
-               block % state % time_levs(1) % state % layerThicknessEdge % array, &
+               block % state % time_levs(2) % state % layerThicknessEdge % array, &
                block % state % time_levs(2) % state % uTransport % array, &
                block % state % time_levs(1) % state % ssh % array, &
                block % state % time_levs(2) % state % highFreqThickness % array, dt, &

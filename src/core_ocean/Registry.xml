@@ -127,13 +127,17 @@
 		            description="Determines the vertical coordinate movement type. 'uniform_stretching' distributes SSH perturbations through all vertical levels (z-star vertical coordinate); 'fixed' places them all in the top level (z-level vertical coordinate); 'user_specified' allows the input file to determine the distribution using the variable vertCoordMovementWeights (weighted z-star vertical coordinate); and 'impermeable_interface' makes the vertical transport between layers zero (idealized isopycnal)."
 		            possible_values="'uniform_stretching', 'fixed', 'user_specified', 'impermeable_interfaces'"
 		/>
-		<nml_option name="config_use_minimum_thickness" type="logical" default_value=".false." units="unitless"
-		            description="If true, a minimum thickness is enforced to prevent massless layers."
+		<nml_option name="config_use_min_max_thickness" type="logical" default_value=".false." units="unitless"
+		            description="If true, a minimum and maximum thicknesses are enforced to prevent massless and very thick layers."
 		            possible_values=".true. or .false."
 		/>
-		<nml_option name="config_minimum_thickness" type="real" default_value="1.0" units="m"
+		<nml_option name="config_min_thickness" type="real" default_value="1.0" units="m"
 		            description="Minimum thickness allowed."
 		            possible_values="any positive real value, but typically 0.1 to 1 m."
+		/>
+		<nml_option name="config_max_thickness_factor" type="real" default_value="6.0" units="unitless"
+		            description="Maximum thickness allowed.  This is a factor times the resting thickness, i.e., maximum thickness = config_max_thickness_factor*$h^{rest}$."
+		            possible_values="any positive real value, but typically 2-4."
 		/>
 		<nml_option name="config_set_restingThickness_to_IC" type="logical" default_value=".true." units="unitless"
 		            description="If true, set restingThickness to be the same as layerThickness upon start-up.  This only occurs when config_do_restart is false, i.e. on an initial run."
@@ -146,7 +150,7 @@
 	</nml_record>
 	<nml_record name="ALE_frequency_filtered_thickness">
 		<nml_option name="config_use_freq_filtered_thickness" type="logical" default_value=".false." units="unitless"
-		            description="If true, $h^{hf}$ is included in the desired ALE thickness in \ref{ocean:desired thickness}, and the prognostic equations \ref{Dlf} and \ref{hhf} are integrated in the code."
+		            description="If true, $h^{hf}$ is included in the desired ALE thickness in \ref{ocean:ocean:desired thickness}, and the prognostic equations \ref{ocean:Dlf} and \ref{ocean:hhf} are integrated in the code."
 		            possible_values=".true. or .false."
 		/>
 		<nml_option name="config_thickness_filter_timescale" type="real" default_value="5.0" units="days"
