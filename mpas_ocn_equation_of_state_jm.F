@@ -65,7 +65,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_equation_of_state_jm_density(grid, k_displaced, displacement_type, indexT, indexS, tracers, density, err)!{{{
+   subroutine ocn_equation_of_state_jm_density(grid, k_displaced, displacement_type, indexT, indexS, tracers, density, err, tracersSurfaceValue)!{{{
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !  This module contains routines necessary for computing the density
    !  from model temperature and salinity using an equation of state.
@@ -90,20 +90,22 @@ contains
       implicit none
 
       type (mesh_type), intent(in) :: grid
-      integer :: k_displaced, indexT, indexS
+      integer, intent(in) :: k_displaced, indexT, indexS
       character(len=*), intent(in) :: displacement_type
+      real (kind=RKIND), dimension(:,:,:), intent(in) :: tracers
+      real (kind=RKIND), dimension(:,:), intent(out) :: density
       integer, intent(out) :: err
+      real (kind=RKIND), dimension(:,:), intent(in), optional :: tracersSurfaceValue
 
       type (dm_info) :: dminfo
       integer :: iEdge, iCell, iVertex, k
 
       integer :: nCells, nEdges, nVertices, nVertLevels
-
+      integer :: k_displaced_local
+      character(len=60) :: displacement_type_local
 
       real (kind=RKIND), dimension(:), pointer :: &
         refBottomDepth, pRefEOS
-      real (kind=RKIND), dimension(:,:,:), intent(in) :: tracers
-      real (kind=RKIND), dimension(:,:), intent(out) :: density
 
       integer, dimension(:), pointer :: maxLevelCell
 
@@ -124,6 +126,9 @@ contains
 
       real (kind=RKIND), dimension(:), allocatable :: &
          p, p2 ! temporary pressure scalars
+
+      real (kind=RKIND), dimension(:,:,:), allocatable :: &
+         tracerTS
 
 !-----------------------------------------------------------------------
 !
@@ -203,6 +208,28 @@ contains
       nVertLevels = grid % nVertLevels
       refBottomDepth => grid % refBottomDepth % array
 
+!  allocate local T,S tracer field
+      allocate(tracerTS(2,nVertLevels,nCells))
+
+!  fill tracerTS
+      if (displacement_type == 'surfaceDisplaced') then
+        if(present(tracersSurfaceValue)) then
+          do k=1,nVertLevels
+            tracerTS(1,k,:) = tracersSurfaceValue(indexT,:)
+            tracerTS(2,k,:) = tracersSurfaceValue(indexS,:)
+          enddo
+          displacement_type_local = 'relative'
+          k_displaced_local = 0
+        else
+          write(0,*) 'Abort: tracersSurfaceValue must be present'
+          call mpas_dmpar_abort(dminfo)
+        endif
+      else
+        tracerTS(1,:,:) = tracers(indexT,:,:)
+        tracerTS(2,:,:) = tracers(indexS,:,:)
+        displacement_type_local = trim(displacement_type)
+        k_displaced_local = k_displaced
+      endif
 
 !  Jackett and McDougall
       tmin = -2.0  ! valid pot. temp. range
@@ -240,8 +267,8 @@ contains
       !  NOTE: k_displaced = 0 or > nVertLevels is incompatible with 'absolute'
       !     so abort if necessary
 
-      if (displacement_type == 'absolute' .and.   &
-         (k_displaced <= 0 .or. k_displaced > nVertLevels) ) then
+      if (displacement_type_local == 'absolute' .and.   &
+         (k_displaced_local <= 0 .or. k_displaced_local > nVertLevels) ) then
 
          write(0,*) 'Abort: In equation_of_state_jm', &
              ' k_displaced must be between 1 and nVertLevels for ', &
@@ -249,18 +276,18 @@ contains
          call mpas_dmpar_abort(dminfo)
       endif
 
-      if (k_displaced == 0) then
+      if (k_displaced_local == 0) then
          do k=1,nVertLevels
             p(k)   = pRefEOS(k)
             p2(k)  = p(k)*p(k)
          enddo
-      else ! k_displaced /= 0
+      else ! k_displaced_local /= 0
          do k=1,nVertLevels
-            if (displacement_type == 'relative') then
-               k_test = min(k + k_displaced, nVertLevels)
+            if (displacement_type_local == 'relative') then
+               k_test = min(k + k_displaced_local, nVertLevels)
                k_ref  = max(k_test, 1)
             else
-               k_test = min(k_displaced, nVertLevels)
+               k_test = min(k_displaced_local, nVertLevels)
                k_ref  = max(k_test, 1)
             endif
             p(k)   = pRefEOS(k_ref)
@@ -270,8 +297,8 @@ contains
 
       do iCell=1,nCells
          do k=1,maxLevelCell(iCell)
-            SQ  = max(min(tracers(indexS,k,iCell),smax),smin)
-            TQ  = max(min(tracers(indexT,k,iCell),tmax),tmin)
+            SQ  = max(min(tracerTS(2,k,iCell),smax),smin)
+            TQ  = max(min(tracerTS(1,k,iCell),tmax),tmin)
    
             SQR = sqrt(SQ)
             T2  = TQ*TQ
@@ -314,6 +341,8 @@ contains
       end do
 
       deallocate(pRefEOS,p,p2)
+      deallocate(tracerTS)
+
    end subroutine ocn_equation_of_state_jm_density!}}}
 
 !***********************************************************************
