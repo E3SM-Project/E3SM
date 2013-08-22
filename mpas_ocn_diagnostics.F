@@ -107,7 +107,7 @@ contains
         bottomDepth, fVertex, dvEdge, dcEdge, areaCell, areaTriangle, ssh, seaSurfacePressure
       real (kind=RKIND), dimension(:,:), pointer :: &
         weightsOnEdge, kiteAreasOnVertex, layerThicknessEdge, layerThickness, normalVelocity, tangentialVelocity, pressure,&
-        circulation, kineticEnergyCell, montgomeryPotential, vertTransportVelocityTop, zMid, divergence, &
+        circulation, kineticEnergyCell, montgomeryPotential, vertTransportVelocityTop, zMid, zTop, divergence, &
         relativeVorticity, relativeVorticityCell, &
         normalizedPlanetaryVorticityEdge, normalizedPlanetaryVorticityVertex, &
         normalizedRelativeVorticityEdge, normalizedRelativeVorticityVertex, normalizedRelativeVorticityCell, &
@@ -139,6 +139,7 @@ contains
       montgomeryPotential     => state % montgomeryPotential % array
       pressure    => state % pressure % array
       zMid        => state % zMid % array
+      zTop        => state % zTop % array
       ssh         => state % ssh % array
       tracers     => state % tracers % array
       vertVelocityTop => state % vertVelocityTop % array
@@ -182,18 +183,6 @@ contains
       edgeSignOnCell => grid % edgeSignOnCell % array
 
       tracersSurfaceValue  => diagnostics % tracersSurfaceValue % array(:,:)
-
-      !
-      ! extrapolate tracer values to ocean surface
-      ! this eventually be a modelled process
-      ! at present, just copy k=1 tracer values onto surface values
-      tracersSurfaceValue(:,:) = tracers(:,1,:)
-
-      !
-      ! Compute bulk Richardson number
-      !   (note: this is a proposed new template for this subroutine
-      !     where we push the computation one level down)
-      call computeBulkRichardsonNumber(state, grid, diagnostics, scratch)
 
       !
       ! Compute height on cell edges at velocity locations
@@ -431,14 +420,14 @@ contains
          call mpas_timer_start("equation of state", .false., diagEOSTimer)
 
          ! compute in-place density
-         call ocn_equation_of_state_density(state, grid, 0, 'relative', density, err)
+         call ocn_equation_of_state_density(state, diagnostics, grid, 0, 'relative', density, err)
 
          ! compute potentialDensity, the density displaced adiabatically to the mid-depth of top layer.
-         call ocn_equation_of_state_density(state, grid, 1, 'absolute', potentialDensity, err)
+         call ocn_equation_of_state_density(state, diagnostics, grid, 1, 'absolute', potentialDensity, err)
 
          ! compute displacedDensity, density displaced adiabatically to the mid-depth one layer deeper.  
          ! That is, layer k has been displaced to the depth of layer k+1.
-         call ocn_equation_of_state_density(state, grid, 1, 'relative', displacedDensity, err)
+         call ocn_equation_of_state_density(state, diagnostics, grid, 1, 'relative', displacedDensity, err)
 
          call mpas_timer_stop("equation of state", diagEOSTimer)
       endif
@@ -490,17 +479,23 @@ contains
            end do
 
            ! Compute zMid, the z-coordinate of the middle of the layer.
-           ! This is used for the density g grad z momentum term.
+           ! Compute zTop, the z-coordinate of the top of the layer.
            ! Note the negative sign, since bottomDepth is positive
            ! and z-coordinates are negative below the surface.
            k = maxLevelCell(iCell)
            zMid(k:nVertLevels,iCell) = -bottomDepth(iCell) + 0.5*layerThickness(k,iCell)
+           zTop(k:nVertLevels,iCell) = -bottomDepth(iCell) +     layerThickness(k,iCell)
 
            do k=maxLevelCell(iCell)-1, 1, -1
               zMid(k,iCell) = zMid(k+1,iCell)  &
                 + 0.5*(  layerThickness(k+1,iCell) &
                        + layerThickness(k  ,iCell))
+              zTop(k,iCell) = zTop(k+1,iCell)  &
+                       + layerThickness(k  ,iCell)
            end do
+
+           ! copy zTop(1,iCell) into sea-surface height array
+           ssh(iCell) = zTop(1,iCell)
 
         end do
 
@@ -519,17 +514,16 @@ contains
       end do
 
       !
-      ! Sea Surface Height
+      ! extrapolate tracer values to ocean surface
+      ! this eventually be a modelled process
+      ! at present, just copy k=1 tracer values onto surface values
+      tracersSurfaceValue(:,:) = tracers(:,1,:)
+
       !
-      do iCell=1,nCells
-         ! Start at the bottom where we know the depth, and go up.
-         ! The bottom depth for this cell is bottomDepth(iCell).
-         ! Note the negative sign, since bottomDepth is positive
-         ! and z-coordinates are negative below the surface.
-
-         ssh(iCell) = - bottomDepth(iCell) + sum(layerThickness(1:maxLevelCell(iCell),iCell))
-
-      end do
+      ! Compute bulk Richardson number
+      !   (note: this is a proposed new template for this subroutine
+      !     where we push the computation one level down)
+      call computeBulkRichardsonNumber(state, grid, diagnostics, scratch)
 
       !
       ! Apply the GM closure as a bolus velocity
@@ -901,47 +895,81 @@ contains
 
     subroutine computeBulkRichardsonNumber(state, grid, diagnostics, scratch)!{{{
 
-      type (state_type), intent(in) :: state !< Input/Output: State information
+      type (state_type), intent(inout) :: state !< Input/Output: State information
       type (mesh_type), intent(in) :: grid !< Input: Grid information
       type (diagnostics_type), intent(inout) :: diagnostics !< Diagnostics information derived from State
       type (scratch_type), intent(inout) :: scratch !< Input: scratch variables
 
-      integer :: nCells, nVertLevels, indexT, indexS
+      ! scalars
+      integer :: nCells, nVertLevels
 
-      integer, dimension(:), pointer :: maxLevelCell
+      ! integer pointers
+      integer, dimension(:), pointer :: maxLevelCell, nEdgesOnCell
+      integer, dimension(:,:), pointer :: edgesOnCell
 
-      real (kind=RKIND), dimension(:,:), pointer :: zMid, bulkRichardsonNumber, tracersSurfaceValues
+      ! real pointers
+      real (kind=RKIND), dimension(:), pointer :: dcEdge, dvEdge, areaCell
+      real (kind=RKIND), dimension(:,:), pointer ::  &
+           zMid, zTop, bulkRichardsonNumber, tracersSurfaceValues, densitySurfaceDisplaced, density, &
+           normalVelocity
 
       ! local
-      integer :: iCell, k
+      integer :: iCell, iEdge, i, k, err
+      real (kind=RKIND) :: numerator, denominator, factor, deltaVelocitySquared, turbulentVelocitySquared, delU2, invAreaCell
+
+      ! set the parameter turbulentVelocitySquared
+      turbulentVelocitySquared = 0.001
 
       ! set scalar values
       nCells      = grid % nCells
       nVertLevels = grid % nVertLevels
-      indexT = state % index_temperature
-      indexS = state % index_salinity
 
       ! set pointers into state, grid, diagnostics and scratch
-      maxLevelCell      => grid % maxLevelCell % array 
+      normalVelocity => state % normalVelocity % array
+      zMid => state % zMid % array
+      zTop => state % zTop % array
+      maxLevelCell => grid % maxLevelCell % array 
+      nEdgesOnCell => grid % nEdgesOnCell % array
+      edgesOnCell => grid % edgesOnCell % array
+      areaCell => grid % areaCell % array
+      dcEdge => grid % dcEdge % array
+      dvEdge => grid % dvEdge % array
+      density => state % density % array
       bulkRichardsonNumber => diagnostics % bulkRichardsonNumber % array
       tracersSurfaceValues => diagnostics % tracersSurfaceValue  % array
 
-
       ! compute EOS by displacing SST/SSS to every vertical layer in column
+      call mpas_allocate_scratch_field(scratch % densitySurfaceDisplaced, .true.)
+      densitySurfaceDisplaced => scratch % densitySurfaceDisplaced % array
+      call ocn_equation_of_state_density(state, diagnostics, grid, 0, 'surfaceDisplaced', densitySurfaceDisplaced, err)
+
+      ! set value to out-of-bounds
+      bulkRichardsonNumber(:,:) = -1.0e34
+
       do iCell=1,nCells
 
+       invAreaCell = 1.0 / areaCell(iCell)
        do k=1,maxLevelCell(iCell)
 
+        ! find deltaVelocitySquared defined at cell centers
+        deltaVelocitySquared = 0.0
+        do i = 1, nEdgesOnCell(iCell)
+          iEdge = edgesOnCell(i, iCell)
+          factor = 0.5 * dcEdge(iEdge) * dvEdge(iEdge) * invAreaCell
+          delU2 = (normalVelocity(1,iEdge) - normalVelocity(k,iEdge))**2 
+          deltaVelocitySquared = deltaVelocitySquared + factor * delU2
+        enddo
+
+        numerator = gravity * (zTop(1,iCell) - zMid(k,iCell)) * (density(k,iCell) - densitySurfaceDisplaced(k,iCell))
+        denominator = config_density0 * (deltaVelocitySquared + turbulentVelocitySquared)
+
+        bulkRichardsonNumber(k,iCell) = numerator / denominator
 
        enddo
-
-
       enddo
 
-
-
-      
-
+      ! deallocate scratch space
+      call mpas_deallocate_scratch_field(scratch % densitySurfaceDisplaced, .true.)
 
     end subroutine computeBulkRichardsonNumber!}}}
 

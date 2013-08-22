@@ -596,9 +596,12 @@
 		<var name="normalBaroclinicVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
 		     description="baroclinic velocity, used in split-explicit time-stepping"
 		/>
-		<var name="zMid" type="real" dimensions="nVertLevels nCells Time" units="m"
+		<var name="zMid" type="real" dimensions="nVertLevels nCells Time" streams="o" units="m"
 		     description="z-coordinate of the mid-depth of the layer"
 		/>
+                <var name="zTop" type="real" dimensions="nVertLevels nCells Time" streams="o" units="m"
+                     description="z-coordinate of the top of the layer"
+                />
 		<var name="tangentialVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
 		     description="horizontal velocity, tangential to an edge"
 		/>
@@ -1032,7 +1035,7 @@
                 <var name="windStressMeridional" type="real" dimensions="nCells Time" streams="o" units="N m^{-2}"
                      description="reconstructed surface wind stress in the northward direction."
                 />
-                <var name="BulkRichardsonNumber" type="real" dimensions="nVertLevels nCells Time" streams="o" units="nondimensional"
+                <var name="bulkRichardsonNumber" type="real" dimensions="nVertLevels nCells Time" streams="o" units="nondimensional"
                      description="bulk Richardson number"
                 />
                 <var name="boundaryLayerDepth" type="real" dimensions="nCells Time" streams="o" units="m"
@@ -1096,5 +1099,10 @@
                      type="real" dimensions="nVertLevels nCells Time" units="m^2 s^{-2}"
 		     description="kinetic energy of horizonal velocity defined at vertices"
 		/>
+                <var name="densitySurfaceDisplaced"
+                     persistence="scratch"
+                     type="real" dimensions="nVertLevels nCells Time" units="kg m^{-3}"
+                     description="Density computed by displacing SST and SSS to every vertical layer within the column"
+                />
     </var_struct>
 </registry>

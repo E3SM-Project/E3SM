@@ -148,11 +148,11 @@ contains
       call mpas_timer_start("eos rich", .false., richEOSTimer)
 
          ! compute in-place density
-         call ocn_equation_of_state_density(s, grid, 0, 'relative', density, err)
+         call ocn_equation_of_state_density(s, d, grid, 0, 'relative', density, err)
 
          ! compute displacedDensity, density displaced adiabatically to the mid-depth one layer deeper.  
          ! That is, layer k has been displaced to the depth of layer k+1.
-         call ocn_equation_of_state_density(s, grid, 1, 'relative', displacedDensity, err)
+         call ocn_equation_of_state_density(s, d, grid, 1, 'relative', displacedDensity, err)
 
       call mpas_timer_stop("eos rich", richEOSTimer)
 
