@@ -641,6 +641,9 @@ contains
       allocate(div_hu(nVertLevels), ALE_Thickness(nVertLevels), SSH_ALE_thickness(nVertLevels), prelim_ALE_thickness(nVertLevels), &
          min_ALE_thickness(nVertLevels), min_ALE_thickness_down(nVertLevels), min_ALE_thickness_up(nVertLevels))
 
+      min_ALE_thickness_down = 0.0
+      min_ALE_thickness_up   = 0.0
+
       do iCell=1,nCells
         kMax = maxLevelCell(iCell)
 
@@ -675,38 +678,26 @@ contains
         !
         ! ALE thickness alteration due to minimum thickness
         !
+        ! go down the column:
+        ! Note we have use_min_max_thickness in loop index rather than use if statements around this section.
+        prelim_ALE_Thickness(1:kMax) = restingThickness(1:kMax,iCell) + SSH_ALE_Thickness(1:kMax) + use_freq_filtered_thickness * newHighFreqThickness(1:kMax,iCell) 
+        remainder = 0.0
+        do k = 1, kMax*use_min_max_thickness
+           newThickness = max(min(prelim_ALE_Thickness(k)+remainder,config_max_thickness_factor*restingThickness(k,iCell)),config_min_thickness)
+           min_ALE_thickness_down(k) = newThickness - prelim_ALE_Thickness(k) 
+           remainder = remainder - min_ALE_thickness_down(k)
+        end do
 
-        if (config_use_min_max_thickness) then
-
-
-           ! go down the column:
-           prelim_ALE_Thickness(1:kMax) = restingThickness(1:kMax,iCell) + SSH_ALE_Thickness(1:kMax) + use_freq_filtered_thickness * newHighFreqThickness(1:kMax,iCell) 
-
-           remainder = 0.0
-           do k = 1, kMax
-              newThickness = max(min(prelim_ALE_Thickness(k)+remainder,config_max_thickness_factor*restingThickness(k,iCell)),config_min_thickness)
-              min_ALE_thickness_down(k) = newThickness - prelim_ALE_Thickness(k) 
-              remainder = remainder - min_ALE_thickness_down(k)
-           end do
-
-           ! go back up the column if needed:
-           if (abs(remainder)>1e-12) then
-              min_ALE_thickness_up(kMax) = 0.0
-              prelim_ALE_Thickness(1:kMax) = prelim_ALE_Thickness(1:kMax) + min_ALE_thickness_down(1:kMax)
-              do k = kMax-1,1,-1
-                 newThickness = max(min(prelim_ALE_Thickness(k)+remainder,config_max_thickness_factor*restingThickness(k,iCell)),config_min_thickness)
-                 min_ALE_thickness_up(k) = newThickness - prelim_ALE_Thickness(k) 
-                 remainder = remainder - min_ALE_thickness_up(k)
-              end do
-              min_ALE_thickness_up(1) = min_ALE_thickness_up(1) + remainder
-              min_ALE_thickness(1:kMax) = min_ALE_thickness_down(1:kMax) + min_ALE_thickness_up(1:kMax)
-           else
-              min_ALE_thickness(1:kMax) = min_ALE_thickness_down(1:kMax) 
-           endif
-
-        else
-           min_ALE_thickness(1:kMax) = 0.0
-        endif
+        ! go back up the column:
+        min_ALE_thickness_up(kMax) = 0.0
+        prelim_ALE_Thickness(1:kMax) = prelim_ALE_Thickness(1:kMax) + min_ALE_thickness_down(1:kMax)
+        do k = kMax*use_min_max_thickness-1,1,-1
+           newThickness = max(min(prelim_ALE_Thickness(k)+remainder,config_max_thickness_factor*restingThickness(k,iCell)),config_min_thickness)
+           min_ALE_thickness_up(k) = newThickness - prelim_ALE_Thickness(k) 
+           remainder = remainder - min_ALE_thickness_up(k)
+        end do
+        min_ALE_thickness_up(1) = min_ALE_thickness_up(1) + remainder
+        min_ALE_thickness(1:kMax) = min_ALE_thickness_down(1:kMax) + min_ALE_thickness_up(1:kMax)
 
         !
         ! Add all contributions to the new ALE thickness.
