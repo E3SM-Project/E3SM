@@ -150,7 +150,7 @@ module mpas_core
           call mpas_dmpar_abort(dminfo)
       endif
 
-      if (config_vert_coord_movement.ne.'isopycnal') call ocn_init_vert_coord(domain)
+      call ocn_init_vert_coord(domain)
 
       call ocn_compute_max_level(domain)
 
@@ -158,8 +158,7 @@ module mpas_core
 
       write (0,'(a,a)') ' Vertical coordinate movement is: ',trim(config_vert_coord_movement)
 
-      if (config_vert_coord_movement.ne.'isopycnal'.and. &
-          config_vert_coord_movement.ne.'fixed'.and. &
+      if (config_vert_coord_movement.ne.'fixed'.and. &
           config_vert_coord_movement.ne.'uniform_stretching'.and. &
           config_vert_coord_movement.ne.'impermeable_interfaces'.and. &
           config_vert_coord_movement.ne.'user_specified') then
@@ -174,7 +173,7 @@ module mpas_core
          call mpas_dmpar_abort(dminfo)
       endif
 
-      if(config_vert_coord_movement .ne. 'isopycnal' .and. config_pressure_gradient_type .eq. 'MontgomeryPotential') then
+      if(config_vert_coord_movement .ne. 'impermeable_interfaces' .and. config_pressure_gradient_type .eq. 'MontgomeryPotential') then
          write (0,*) ' Incorrect combination of config_vert_coord_movement and config_pressure_gradient_type'
          call mpas_dmpar_abort(dminfo)
       end if
@@ -787,7 +786,7 @@ module mpas_core
             enddo
 
           elseif (config_alter_ICs_for_pbcs.eq.'off') then
-            ! No action taken.  This is for isopycnal or sigma coordinates,
+            ! No action taken.  This is for when no pbcs are desired,
             !  or if ICs were already altered upon start-up.
 
           else
@@ -999,13 +998,6 @@ subroutine ocn_compute_max_level(domain)!{{{
       nVertices   = block % mesh % nVertices
       nVertLevels = block % mesh % nVertLevels
       vertexDegree = block % mesh % vertexDegree
-
-      ! for z-grids, maxLevelCell should be in input state
-      ! Isopycnal grid uses all vertical cells
-      if (config_vert_coord_movement.eq.'isopycnal') then
-         maxLevelCell(1:nCells) = nVertLevels
-      endif
-      maxLevelCell(nCells+1) = 0
 
       ! maxLevelEdgeTop is the minimum (shallowest) of the surrounding cells
       do iEdge=1,nEdges
