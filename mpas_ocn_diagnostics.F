@@ -412,23 +412,19 @@ contains
       !
       ! equation of state
       !
-      ! For an isopycnal model, density should remain constant.
-      ! For zlevel, calculate in-situ density
-      if (config_vert_coord_movement.ne.'isopycnal') then
-         call mpas_timer_start("equation of state", .false., diagEOSTimer)
+      call mpas_timer_start("equation of state", .false., diagEOSTimer)
 
-         ! compute in-place density
-         call ocn_equation_of_state_density(state, diagnostics, grid, 0, 'relative', density, err)
+      ! compute in-place density
+      call ocn_equation_of_state_density(state, diagnostics, grid, 0, 'relative', density, err)
 
-         ! compute potentialDensity, the density displaced adiabatically to the mid-depth of top layer.
-         call ocn_equation_of_state_density(state, diagnostics, grid, 1, 'absolute', potentialDensity, err)
+      ! compute potentialDensity, the density displaced adiabatically to the mid-depth of top layer.
+      call ocn_equation_of_state_density(state, diagnostics, grid, 1, 'absolute', potentialDensity, err)
 
-         ! compute displacedDensity, density displaced adiabatically to the mid-depth one layer deeper.  
-         ! That is, layer k has been displaced to the depth of layer k+1.
-         call ocn_equation_of_state_density(state, diagnostics, grid, 1, 'relative', displacedDensity, err)
+      ! compute displacedDensity, density displaced adiabatically to the mid-depth one layer deeper.  
+      ! That is, layer k has been displaced to the depth of layer k+1.
+      call ocn_equation_of_state_density(state, diagnostics, grid, 1, 'relative', displacedDensity, err)
 
-         call mpas_timer_stop("equation of state", diagEOSTimer)
-      endif
+      call mpas_timer_stop("equation of state", diagEOSTimer)
 
       !
       ! Pressure
@@ -436,15 +432,14 @@ contains
       !
       if (config_pressure_gradient_type.eq.'MontgomeryPotential') then
 
-        ! For Isopycnal model.
-        ! Compute pressure at top of each layer, and then
-        ! Montgomery Potential.
+        ! use Montgomery Potential when layers are isopycnal.
+        ! However, one may use 'pressure_and_zmid' when layers are isopycnal as well.
+        ! Compute pressure at top of each layer, and then Montgomery Potential.
         allocate(pTop(nVertLevels))
         do iCell=1,nCells
 
            ! assume atmospheric pressure at the surface is zero for now.
            pTop(1) = 0.0
-           ! For isopycnal mode, p is the Montgomery Potential.
            ! At top layer it is g*SSH, where SSH may be off by a 
            ! constant (ie, bottomDepth can be relative to top or bottom)
            montgomeryPotential(1,iCell) = gravity &
@@ -461,7 +456,7 @@ contains
         end do
         deallocate(pTop)
 
-      else
+      elseif (config_pressure_gradient_type.eq.'pressure_and_zmid') then
 
         do iCell=1,nCells
            ! Pressure for generalized coordinates.
@@ -632,8 +627,7 @@ contains
       nEdges      = grid % nEdges
       nVertLevels = grid % nVertLevels
 
-      if (config_vert_coord_movement.eq.'isopycnal'.or.config_vert_coord_movement.eq.'impermeable_interfaces') then
-        ! set vertical transport to zero in isopycnal case
+      if (config_vert_coord_movement.eq.'impermeable_interfaces') then
         vertTransportVelocityTop=0.0
         return
       end if

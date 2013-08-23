@@ -124,7 +124,7 @@
 	</nml_record>
 	<nml_record name="ALE_vertical_grid">
 		<nml_option name="config_vert_coord_movement" type="character" default_value="uniform_stretching" units="unitless"
-		            description="Determines the vertical coordinate movement type. 'uniform_stretching' distributes SSH perturbations through all vertical levels (z-star vertical coordinate); 'fixed' places them all in the top level (z-level vertical coordinate); 'user_specified' allows the input file to determine the distribution using the variable vertCoordMovementWeights (weighted z-star vertical coordinate); and 'impermeable_interface' makes the vertical transport between layers zero (idealized isopycnal)."
+		            description="Determines the vertical coordinate movement type. 'uniform_stretching' distributes SSH perturbations through all vertical levels (z-star vertical coordinate); 'fixed' places them all in the top level (z-level vertical coordinate); 'user_specified' allows the input file to determine the distribution using the variable vertCoordMovementWeights (weighted z-star vertical coordinate); and 'impermeable_interfaces' makes the vertical transport between layers zero (idealized isopycnal)."
 		            possible_values="'uniform_stretching', 'fixed', 'user_specified', 'impermeable_interfaces'"
 		/>
 		<nml_option name="config_use_min_max_thickness" type="logical" default_value=".false." units="unitless"

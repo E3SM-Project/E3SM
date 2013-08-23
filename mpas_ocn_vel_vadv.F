@@ -182,7 +182,7 @@ contains
       err = 0
       velVadvOn = .false.
 
-      if (config_vert_coord_movement.ne.'isopycnal') then
+      if (config_vert_coord_movement.ne.'impermeable_interfaces') then
           velVadvOn = .true.
       end if
 

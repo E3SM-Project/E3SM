@@ -51,7 +51,6 @@ module ocn_equation_of_state
    !
    !--------------------------------------------------------------------
 
-   logical :: eosON
    logical :: linearEos, jmEos
 
 
@@ -107,8 +106,6 @@ contains
 
       err = 0
 
-      if(.not.eosOn) return
-
       tracersSurfaceValue => diagnostics % tracersSurfaceValue % array
       tracers => s % tracers % array
       indexT = s % index_temperature
@@ -154,22 +151,17 @@ contains
       integer, intent(out) :: err
 
       err = 0
-      eosON = .false.
       linearEos = .false.
       jmEos = .false.
 
-      if(config_vert_coord_movement.ne.'isopycnal') then
-          eosON = .true.
-
-          if (config_eos_type.eq.'linear') then
-              linearEos = .true.
-          elseif (config_eos_type.eq.'jm') then
-              jmEos = .true.
-          else
-              print *,'Invalid choice for config_eos_type.'
-              print *,'  Choices are: linear, jm'
-              err = 1
-          endif
+      if (config_eos_type.eq.'linear') then
+         linearEos = .true.
+      elseif (config_eos_type.eq.'jm') then
+         jmEos = .true.
+      else
+         print *,'Invalid choice for config_eos_type.'
+         print *,'  Choices are: linear, jm'
+         err = 1
       endif
 
    !--------------------------------------------------------------------

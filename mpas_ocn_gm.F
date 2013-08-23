@@ -57,7 +57,7 @@ contains
 
       call ocn_gm_compute_hEddyFlux(s, grid)
 
-      if (config_vert_coord_movement .EQ. 'isopycnal') then
+      if (config_vert_coord_movement .EQ. 'impermeable_interfaces') then
 
          do iEdge = 1, nEdges
             do k = 1, maxLevelEdgeTop(iEdge)
@@ -96,7 +96,7 @@ contains
 
       hEddyFlux(:,:) = 0.0
 
-      if (config_vert_coord_movement .EQ. 'isopycnal') then
+      if (config_vert_coord_movement .EQ. 'impermeable_interfaces') then
             do iEdge = 1,nEdges
                cell1 = cellsOnEdge(1,iEdge)
                cell2 = cellsOnEdge(2,iEdge)
