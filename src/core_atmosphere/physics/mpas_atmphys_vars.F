@@ -26,12 +26,14 @@
 !>    * added the variables sf_surface_physics,alswvisdir_p,alswvisdif_p,alswnirdir_p,alswnirdif_p,
 !>      swvisdir_p,swvisdif_p,swnirdir_p,and swnirdif_p to upgrade the RRTMG short wave radiation
 !>      code to WRF version 3.4.1. see definition of each individual variables below.
-!>      Laura D. Fowler (birch.ucar.edu) / 2013-03-11.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-03-11.
 !>    * removed call to the updated Kain-Fritsch convection scheme.
-!>      Laura D. Fowler (birch.ucar.edu) / 2013-05-29.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-05-29.
 !>    * added the arrays o3clim_p for implementation of monthly-varying climatological ozone in the
 !>      long wave and short wave RRTMG radiation codes.
-!>      laura D. Fowler (birch.ucar.edu) / 2013-07-08.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-07-08.
+!>    * corrected definition of local variable dx_p.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-08-23.
 
 
 !==================================================================================================
@@ -268,7 +270,7 @@
     ol4_p              !orographic direction asymmetry function                                 [-]
 
  real(kind=RKIND),dimension(:,:),allocatable:: &
-    dx_p               !maximum distance between cell centers                                   [m]
+    dx_p               !mean distance between cell centers                                      [m]
 
  real(kind=RKIND),dimension(:,:),allocatable:: &
     dusfcg_p,         &!vertically-integrated gwdo u-stress                              [Pa m s-1]

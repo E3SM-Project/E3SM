@@ -47,6 +47,8 @@
 !> ----------------------------------------
 !>    * removed the pre-processor option "do_hydrostatic_pressure" before call to subroutine gwdo. 
 !>      Laura D. Fowler (birch.ucar.edu) / 2013-05-29.
+!>    * changed the definition of dx_p to the mean distance between cell centers.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-08-23.
 
  contains
 
@@ -112,17 +114,7 @@
  type(diag_physics_type),intent(in):: diag_physics
  type(tend_physics_type),intent(in):: tend_physics
 
-!local variables:
- integer:: iEdge
-
 !--------------------------------------------------------------------------------------------------
-
- do j = jts,jte
- do i = its,ite
-    iEdge = mesh%nEdgesOnCell%array(i)
-    dx_p(i,j) = maxval(mesh%dcEdge%array(mesh%edgesOnCell%array(1:iEdge,i)))
- enddo
- enddo
 
  do j = jts,jte
  do i = its,ite
@@ -141,9 +133,10 @@
 
  do j = jts,jte
  do i = its,ite
-    kpbl_p(i,j)   = diag_physics % kpbl   % array(i)
-    dusfcg_p(i,j) = diag_physics % dusfcg % array(i)
-    dvsfcg_p(i,j) = diag_physics % dvsfcg % array(i)
+    dx_p(i,j)     = diag_physics % dcEdge_m % array(i)
+    kpbl_p(i,j)   = diag_physics % kpbl     % array(i)
+    dusfcg_p(i,j) = diag_physics % dusfcg   % array(i)
+    dvsfcg_p(i,j) = diag_physics % dvsfcg   % array(i)
  enddo
  enddo
 

@@ -54,7 +54,11 @@
 !> ----------------------------------------
 !>    * removed the pre-processor option "do_hydrostatic_pressure" before call to the subroutine
 !>      sfclay.
-!>      Laura D. Fowler (birch.ucar.edu) / 2013-05-29.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-05-29.
+!>    * updated the definition of the horizontal resolution to the actual mean distance between
+!>      cell centers.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-08-23.
+
 
  contains
 
@@ -62,7 +66,7 @@
  subroutine allocate_sfclayer
 !==================================================================================================
 
- if(.not.allocated(area_p)   ) allocate(area_p(ims:ime,jms:jme)   )
+ if(.not.allocated(dx_p)     ) allocate(dx_p(ims:ime,jms:jme)     )
  if(.not.allocated(br_p)     ) allocate(br_p(ims:ime,jms:jme)     )
  if(.not.allocated(cd_p)     ) allocate(cd_p(ims:ime,jms:jme)     )
  if(.not.allocated(cda_p)    ) allocate(cda_p(ims:ime,jms:jme)    )
@@ -108,7 +112,7 @@
  subroutine deallocate_sfclayer
 !==================================================================================================
 
- if(allocated(area_p)   ) deallocate(area_p   )
+ if(allocated(dx_p)     ) deallocate(dx_p     )
  if(allocated(br_p)     ) deallocate(br_p     )
  if(allocated(cd_p)     ) deallocate(cd_p     )
  if(allocated(cda_p)    ) deallocate(cda_p    )
@@ -164,9 +168,9 @@
  do j = jts,jte
  do i = its,ite
     !input variables:
-    area_p(i,j)   = mesh % areaCell % array(i)
-    hpbl_p(i,j)   = diag_physics % hpbl   % array(i)
-    mavail_p(i,j) = diag_physics % mavail % array(i)
+    dx_p(i,j)     = diag_physics % dcEdge_m % array(i)
+    hpbl_p(i,j)   = diag_physics % hpbl     % array(i)
+    mavail_p(i,j) = diag_physics % mavail   % array(i)
     tsk_p(i,j)    = sfc_input    % skintemp % array(i)
     xland_p(i,j)  = sfc_input    % xland    % array(i)       
     !inout variables:
@@ -320,7 +324,7 @@
                    svp2     = svp2       , svp3     = svp3       , svpt0    = svpt0      , &
                    ep1      = ep_1       , ep2      = ep_2       , karman   = karman     , &
                    eomeg    = eomeg      , stbolt   = stbolt     , P1000mb  = P0         , &
-                   areaCell = area_p     , ustm     = ustm_p     , ck       = ck_p       , & 
+                   dxCell   = dx_p       , ustm     = ustm_p     , ck       = ck_p       , & 
                    cka      = cka_p      , cd       = cd_p       , cda      = cda_p      , & 
                    isftcflx = isftcflx   , iz0tlnd  = iz0tlnd    ,                         &
                    scm_force_flux = scm_force_flux               ,                         & 
