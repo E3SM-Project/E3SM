@@ -21,6 +21,8 @@
  private
  public:: init_atm_case_sfc,interp_sfc_to_MPAS
 
+ integer, parameter :: R4KIND = selected_real_kind(6)
+
  contains
 
 !==================================================================================================
@@ -103,6 +105,7 @@
  integer:: masked
  integer,dimension(5):: interp_list
  integer,dimension(:),pointer:: mask_array
+ logical :: have_landmask
 
  real(kind=RKIND):: fillval,maskval,msgval
  real(kind=RKIND),dimension(:,:),allocatable:: maskslab
@@ -125,9 +128,11 @@
  endif
 
 !scan through all fields in the file, looking for the LANDSEA field:
+ have_landmask = .false.
  call read_next_met_field(field,istatus)
  do while (istatus == 0)
     if(index(field % field, 'LANDSEA') /= 0) then
+       have_landmask = .true.
        if(.not.allocated(maskslab)) allocate(maskslab(-2:field % nx+3, field % ny))
        maskslab(1:field % nx, 1:field % ny) = field % slab(1:field % nx, 1:field % ny)
        maskslab(0, 1:field % ny)  = field % slab(field % nx, 1:field % ny)
@@ -153,6 +158,12 @@
     call mpas_dmpar_abort(dminfo)
  endif
 
+ if(.not. have_landmask) then
+    write(0,*) '********************************************************************************'
+    write(0,*) 'Landsea mask not available from the surface file '
+    write(0,*) '********************************************************************************'
+ endif
+
 !scan through all fields in the file, looking for the SST,SKINTEMP, or SEAICE field:
  call read_next_met_field(field,istatus)
  do while (istatus == 0)
@@ -167,14 +178,17 @@
        interp_list(1) = FOUR_POINT
        interp_list(2) = SEARCH
        interp_list(3) = 0
-       interp_list(4) = SEARCH
-       interp_list(5) = 0
-       msgval  = -1.0e30_RKIND !missing value
+       msgval  = -1.0e30_R4KIND !missing value
        masked  = -1
        maskval = -1.0_RKIND
        fillval =  0.0_RKIND
-       call interp_to_MPAS(mesh,field,destField1d,interp_list,msgval,masked,maskval,fillval, &
-                           maskslab,mask_array)
+       if(have_landmask) then
+          call interp_to_MPAS(mesh,field,destField1d,interp_list,msgval,masked,maskval,fillval, &
+                              mask_array,maskslab)
+       else
+          call interp_to_MPAS(mesh,field,destField1d,interp_list,msgval,masked,maskval,fillval, &
+                              mask_array)
+       endif
 
        !field%slab was allocated in the subroutine read_next_met_field
        deallocate(field%slab)
@@ -186,18 +200,21 @@
        destField1d => fg % xice % array
 
        !interpolation to the MPAS grid:
-       !interp_list(1) = SIXTEEN_POINT
        interp_list(1) = FOUR_POINT
-       interp_list(2) = FOUR_POINT
-       interp_list(3) = W_AVERAGE4
-       interp_list(4) = SEARCH
-       interp_list(5) = 0
-       msgval  = -1.0e30_RKIND  !missing value
+       interp_list(2) = W_AVERAGE4
+       interp_list(3) = SEARCH
+       interp_list(4) = 0
+       msgval  = -1.0e30_R4KIND  !missing value
        masked  = 1
        maskval = 1.0_RKIND
        fillval = 0.0_RKIND
-       call interp_to_MPAS(mesh,field,destField1d,interp_list,msgval,masked,maskval,fillval, &
-                           maskslab,mask_array)
+       if(have_landmask) then
+          call interp_to_MPAS(mesh,field,destField1d,interp_list,msgval,masked,maskval,fillval, &
+                              mask_array,maskslab)
+       else
+          call interp_to_MPAS(mesh,field,destField1d,interp_list,msgval,masked,maskval,fillval, &
+                              mask_array)
+       endif
 
        !field%slab was allocated in the subroutine read_next_met_field
        deallocate(field%slab)
@@ -226,7 +243,7 @@
 
 !==================================================================================================
  subroutine interp_to_MPAS(mesh,field,destField1d,interp_list,msgval,masked,maskval,fillval, &
-                           maskslab,mask_array)
+                           mask_array,maskslab)
 !==================================================================================================
 
 !input arguments:
@@ -238,7 +255,7 @@
  integer,dimension(:),intent(in),pointer:: mask_array
 
  real(kind=RKIND),intent(in):: fillval,maskval,msgval
- real(kind=RKIND),intent(in),dimension(*):: maskslab
+ real(kind=RKIND),intent(in),dimension(*),optional:: maskslab
 
 !inout arguments:
  real(kind=RKIND),intent(inout),dimension(:),pointer:: destField1d
@@ -312,8 +329,13 @@
           lon = lon - 360.0
           call latlon_to_ij(proj, lat, lon, x, y)
        endif
-       destField1d(i) = interp_sequence(x,y,1,rslab,-2,field%nx+3,1,field%ny,1,1, &
-                        msgval,interp_list,1,maskval=maskval,mask_array=maskslab)
+       if(present(maskslab)) then
+          destField1d(i) = interp_sequence(x,y,1,rslab,-2,field%nx+3,1,field%ny,1,1, &
+                           msgval,interp_list,1,maskval=maskval,mask_array=maskslab)
+       else
+          destField1d(i) = interp_sequence(x,y,1,rslab,-2,field%nx+3,1,field%ny,1,1, &
+                           msgval,interp_list,1,maskval=maskval)
+       endif
     else
        destField1d(i) = fillval
     endif

@@ -41,6 +41,15 @@
 !> adjust_input_soiltemp      : adjust the deep soil temperature to sea-level values.
 !> physics_init_sst           : initialize the skin temperature to the SSTs over oceans.
 !> physics_init_seaice        : correct vegetation and soil typs as function of fractional sea ice.
+!>
+!> add-ons and modifications to sourcecode:
+!> ----------------------------------------
+!>    * revised entire module:
+!>      -> changed nCells to nCellsSolve in every subroutine.
+!>      -> removed modifying snoalb (surface albedo over snow) over sea-ice points.
+!>      -> revised subroutine physics_init_sst.
+!>      -> revised subroutine physics_init_seaice.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-08-02.
 
 
  contains
@@ -65,13 +74,15 @@
  real(kind=RKIND),dimension(:,:),pointer:: albedo12m
 
  real(kind=RKIND),dimension(:),pointer:: seaice,xice,xland
- real(kind=RKIND),dimension(:),pointer:: snoalb 
  real(kind=RKIND),dimension(:),pointer:: vegfra,shdmin,shdmax
  real(kind=RKIND),dimension(:),pointer:: snow,snowc,snowh
  real(kind=RKIND),dimension(:,:),pointer:: greenfrac
 
  real(kind=RKIND),dimension(:),pointer:: skintemp,sst
  
+!temporary:
+ integer:: icount,iSoil,nSoilLevels
+
 !--------------------------------------------------------------------------------------------------
 
  write(0,*)
@@ -84,7 +95,6 @@
  greenfrac  => mesh % greenfrac % array
  shdmin     => mesh % shdmin    % array
  shdmax     => mesh % shdmax    % array
- snoalb     => mesh % snoalb    % array
 
  sfc_albbck => fg % sfc_albbck % array
  vegfra     => fg % vegfra     % array
@@ -96,6 +106,16 @@
  seaice     => fg % seaice     % array
  xice       => fg % xice       % array
  xland      => fg % xland      % array
+
+!initialization of xland:
+ do iCell = 1, nCellsSolve
+    xland(iCell) = 0._RKIND
+    if(landmask(iCell) == 1) then
+       xland(iCell) = 1._RKIND
+    elseif(landmask(iCell) == 0) then
+       xland(iCell) = 2._RKIND
+    endif
+ enddo
 
 !initialization of the sea-surface temperature and seaice if they are read from a separate
 !input file. calling this subroutine will overwrite the arrays sst and seaice already read
@@ -118,21 +138,11 @@
 
 !initialization of the green-ness (vegetation) fraction: interpolation of the monthly values to
 !the initial date. get the min/max for each cell for the monthly green-ness fraction:
-!initial_date = trim(config_init_date)
  initial_date = trim(config_start_time)
  call monthly_interp_to_date(nCellsSolve,initial_date,greenfrac,vegfra)
 
 !calculates the maximum and minimum green-ness (vegetation) fraction:
  call monthly_min_max(nCellsSolve,greenfrac,shdmin,shdmax)
-
-!limit the annual maximum snow albedo to 0.08 over open-ocean and to 0.75 over sea-ice cells::
- do iCell = 1, nCellsSolve
-    if(landmask(iCell) .eq. 0 .and. seaice(iCell) .eq. 0._RKIND) then
-       snoalb(iCell) = 0.08_RKIND
-    elseif(landmask(iCell) .eq. 0 .and. seaice(iCell) .eq. 1._RKIND) then
-       snoalb(iCell) = 0.75_RKIND
-    endif
- enddo
 
 !initialization of the flag indicating the presence of snow (0 or 1) and of the snow depth
 !(m) as functions of the input snow water content (kg/m2). we use a 5:1 ratio from liquid
@@ -152,15 +162,52 @@
 !initialize seaice points:
  call physics_init_seaice(mesh,fg)
 
-!define xland over land and ocean:
+ write(0,*)
+ write(0,*) '--- check xland over oceans:'
+ nSoilLevels = mesh % nSoilLevels
+ icount = 0
  do iCell = 1, nCellsSolve
-    if(landmask(iCell) .eq. 1 .or. (landmask(iCell).eq.0 .and. seaice(iCell).eq.1._RKIND)) then
-       xland(iCell) = 1._RKIND
-    elseif(landmask(iCell) .eq. 0) then
-       xland(iCell) = 2._RKIND
+    if(xland(iCell) == 2._RKIND) then
+       icount = icount + 1
+       do iSoil = 1,nSoilLevels
+          write(0,102) iCell,iSoil,xland(iCell),xice(iCell),fg%tmn%array(iCell), &
+                       fg%tslb%array(iSoil,iCell),fg%smois%array(iSoil,iCell),   &
+                       fg%sh2o%array(iSoil,iCell),fg%smcrel%array(iSoil,iCell)
+       enddo
+       write(0,*)
+       if(seaice(iCell) /= 0._RKIND) stop
     endif
  enddo
-
+ write(0,*) '... number of ocean points = ',icount
+ write(0,*)
+ do iCell = 1, nCellsSolve
+    if(xland(iCell) == 1._RKIND .and. seaice(iCell) == 0._RKIND) then
+       icount = icount + 1
+       do iSoil = 1,nSoilLevels
+          write(0,102) iCell,iSoil,xland(iCell),xice(iCell),fg%tmn%array(iCell), &
+                       fg%tslb%array(iSoil,iCell),fg%smois%array(iSoil,iCell),   &
+                       fg%sh2o%array(iSoil,iCell),fg%smcrel%array(iSoil,iCell)
+       enddo
+       write(0,*)
+    endif
+ enddo
+ write(0,*) '... number of land points  = ',icount
+ write(0,*)
+ do iCell = 1, nCellsSolve
+    if(xland(iCell) == 1._RKIND .and. seaice(iCell) == 1._RKIND) then
+       icount = icount + 1
+       do iSoil = 1,nSoilLevels
+          write(0,102) iCell,iSoil,xland(iCell),xice(iCell),fg%tmn%array(iCell), &
+                       fg%tslb%array(iSoil,iCell),fg%smois%array(iSoil,iCell),   &
+                       fg%sh2o%array(iSoil,iCell),fg%smcrel%array(iSoil,iCell)
+       enddo
+       write(0,*)
+    endif
+ enddo
+ write(0,*) '... number of land points with ice = ',icount
+ 101 format(i9,5(1x,e15.8))
+ 102 format(i9,1x,i4,10(1x,e15.8))
+ 
  write(0,*) '--- end physics_initialize_real:'
 
  end subroutine physics_initialize_real
@@ -237,7 +284,7 @@
     elseif(landmask(iCell) .eq. 0) then
 
        tmn(iCell) = skintemp(iCell)
-       
+
     endif
  enddo
 
@@ -255,20 +302,25 @@
 
 !local variables:
  integer:: iCell,iSoil
+ integer:: nCellsSolve,nSoilLevels,nFGSoilLevels
 
 !--------------------------------------------------------------------------------------------------
 
  write(0,*)
  write(0,*) '--- enter subroutine init_soil_layers_depth:'
 
+ nCellsSolve   = mesh % nCellsSolve
+ nSoilLevels   = mesh % nSoilLevels
+ nFGSoilLevels = mesh % nFGSoilLevels
+
  if(config_nsoillevels .ne. 4) &
     call physics_error_fatal('NOAH lsm uses 4 soil layers. Correct config_nsoillevels.')
 
- do iCell = 1, mesh % nCells
+ do iCell = 1, nCellsSolve
 
     iSoil = 1
     fg % zs_fg % array(iSoil,iCell) = 0.5_RKIND * fg % dzs_fg % array(iSoil,iCell)
-    do iSoil = 2, mesh % nFGSoilLevels
+    do iSoil = 2, nFGSoilLevels
        fg % zs_fg % array(iSoil,iCell) = fg % zs_fg % array(iSoil-1,iCell)        &
                                  + 0.5_RKIND * fg % dzs_fg % array(iSoil-1,iCell) &
                                  + 0.5_RKIND * fg % dzs_fg % array(iSoil,iCell)
@@ -276,7 +328,7 @@
 
  enddo
 
- do iCell = 1, mesh % nCells
+ do iCell = 1, nCellsSolve
     fg % dzs % array(1,iCell) = 0.10_RKIND
     fg % dzs % array(2,iCell) = 0.30_RKIND
     fg % dzs % array(3,iCell) = 0.60_RKIND
@@ -284,7 +336,7 @@
 
     iSoil = 1
     fg % zs % array(iSoil,iCell)  = 0.5_RKIND * fg % dzs % array(iSoil,iCell)
-    do iSoil = 2, mesh % nSoilLevels
+    do iSoil = 2, nSoilLevels
        fg % zs % array(iSoil,iCell) = fg % zs % array(iSoil-1,iCell)              &
                                     + 0.5_RKIND * fg % dzs % array(iSoil-1,iCell) &
                                     + 0.5_RKIND * fg % dzs % array(iSoil,iCell)
@@ -307,7 +359,7 @@
 
 !local variables:
  integer:: iCell,ifgSoil,iSoil
- integer:: nCells,nFGSoilLevels,nSoilLevels
+ integer:: nCellsSolve,nFGSoilLevels,nSoilLevels
  integer:: num_sm,num_st
  integer,dimension(:),pointer:: landmask
  
@@ -322,7 +374,7 @@
 !write(0,*)
  write(0,*) '--- enter subroutine init_soil_layers_properties:'
 
- nCells        = mesh % nCells
+ nCellsSolve   = mesh % nCellsSolve
  nSoilLevels   = mesh % nSoilLevels
  nFGSoilLevels = mesh % nFGSoilLevels
  write(0,*) 'nSoilLevels   =',nSoilLevels
@@ -347,7 +399,7 @@
 !values for the first-guess soil temperatures and soil moistures.
  num_sm = 0
  num_st = 0
- do iCell = 1, nCells
+ do iCell = 1, nCellsSolve
     do ifgSoil = 1, nFGSoilLevels
        if(st_fg(ifgSoil,iCell) .le. 0._RKIND) num_st = num_st + 1
        if(sm_fg(ifgSoil,iCell) .lt. 0._RKIND) num_sm = num_sm + 1
@@ -364,11 +416,11 @@
  if(config_nsoillevels .ne. 4) &
     call physics_error_fatal('NOAH lsm uses 4 soil layers. Correct config_nsoillevels.')
 
- if(.not.allocated(zhave)   ) allocate(zhave(nFGSoilLevels+2,nCells)   )
- if(.not.allocated(st_input)) allocate(st_input(nFGSoilLevels+2,nCells))
- if(.not.allocated(sm_input)) allocate(sm_input(nFGSoilLevels+2,nCells))
+ if(.not.allocated(zhave)   ) allocate(zhave(nFGSoilLevels+2,nCellsSolve)   )
+ if(.not.allocated(st_input)) allocate(st_input(nFGSoilLevels+2,nCellsSolve))
+ if(.not.allocated(sm_input)) allocate(sm_input(nFGSoilLevels+2,nCellsSolve))
 
- do iCell = 1, nCells
+ do iCell = 1, nCellsSolve
 
     ifgSoil = 1
     zhave(ifgSoil,iCell)    = 0._RKIND
@@ -396,7 +448,7 @@
 !... interpolate the soil temperature, soil moisture, and soil liquid temperature to the four
 !    layers used in the NOAH land surface scheme:
 
- do iCell = 1, nCells
+ do iCell = 1, nCellsSolve
 
     if(landmask(iCell) .eq. 1) then
 
@@ -445,9 +497,9 @@
 
 !... final checks:
 
- do iCell = 1, nCells
+ do iCell = 1, nCellsSolve
 
-    if(landmask(iCell).eq. 1 .and. tslb(1,iCell).gt.170._RKIND .and. tslb(1,iCell).lt.400._RKIND &
+    if(landmask(iCell).eq.1 .and. tslb(1,iCell).gt.170._RKIND .and. tslb(1,iCell).lt.400._RKIND &
        .and. smois(1,iCell).lt.0.005_RKIND) then
        do iSoil = 1, nSoilLevels
           smois(iSoil,iCell) = 0.005_RKIND
@@ -482,41 +534,57 @@
 #endif
 
 !local variables:
- integer:: iCell,nCells
+ character(len=StrKIND):: mess
+
+ integer:: iCell,nCellsSolve
+ integer:: num_seaice_changes
  integer,dimension(:),pointer:: landmask
 
- real(kind=RKIND),dimension(:),pointer  :: sst,tsk,xice
- real(kind=RKIND),dimension(:,:),pointer:: tslb
+ real(kind=RKIND):: xice_threshold
+ real(kind=RKIND),dimension(:),pointer  :: seaice,sst,tsk,xice
 
 !--------------------------------------------------------------------------------------------------
  write(0,*)
- write(0,*) '--- enter subroutine physics_update_sst:'
+ write(0,*) '--- enter subroutine physics_init_sst:'
 
 !initialization:
- nCells = mesh % nCells
+ nCellsSolve = mesh % nCellsSolve
 
  landmask => mesh % landmask % array
- sst  => input % sst      % array
- tsk  => input % skintemp % array
- tslb => input % tslb     % array
- xice => input % xice     % array
+ sst    => input % sst       % array
+ seaice => input % seaice    % array
+ tsk    => input % skintemp  % array
+ xice   => input % xice      % array
 
-!update the skin temperature and the soil temperature of the first soil layer with the updated
-!sea-surface temperatures:
-!change made so that the SSTs read for the surface update file are the same as the skin temperature
-!over the oceans.
-!do iCell = 1, nCells
-!   if(landmask(iCell) == 0 .and. xice(iCell) == 0) then
-!      tsk(iCell) = sst(iCell)
-!   endif
-!enddo
- do iCell = 1, nCells
-    if(landmask(iCell) == 0) then
-       tsk(iCell) = sst(iCell)
+ if(.not. config_frac_seaice) then
+    xice_threshold = 0.5_RKIND
+ elseif(config_frac_seaice) then
+    xice_threshold = 0.02
+ endif
+ write(0,*) '--- config_frac_seaice      :', config_frac_seaice
+ write(0,*) '--- xice_threshold          :', xice_threshold
+
+ do iCell = 1, nCellsSolve
+    seaice(iCell) = 0._RKIND
+
+    !... initialize skin temperature with sea-surface temperature over ocean cells:
+    if(landmask(iCell) == 0 .and. xice(iCell) < xice_threshold) tsk(iCell) = sst(iCell)
+
+    !... make sure that cells with sea-ice fraction greater than 0 are defined as ocean cells. If
+    !not, the sea-ice fraction is reset to zero:
+    num_seaice_changes = 0
+    if((landmask(iCell) == 1 .and. xice(iCell) > 0._RKIND) .or. xice(iCell) > 200._RKIND) then
+       num_seaice_changes = num_seaice_changes + 1
+       xice(iCell) = 0._RKIND
     endif
+    if(xice(iCell) .ge. xice_threshold) seaice(iCell) = 1._RKIND
  enddo
 
- write(0,*) '--- end subroutine physics_update_sst:'
+ write(mess,fmt='(A,i12)') '    number of seaice cells converted to land cells 1 =', &
+       num_seaice_changes
+ call physics_message(mess)
+
+ write(0,*) '--- end subroutine physics_init_sst:'
 
  end subroutine physics_init_sst
 
@@ -537,7 +605,7 @@
 
 !local variables:
  character(len=StrKIND):: mess
- integer:: iCell,iSoil,nCells,nSoilLevels
+ integer:: iCell,iSoil,nCellsSolve,nSoilLevels
  integer:: num_seaice_changes
  integer,dimension(:),pointer:: landmask,isltyp,ivgtyp
 
@@ -545,7 +613,7 @@
  real(kind=RKIND):: mid_point_depth
  real(kind=RKIND),dimension(:),pointer  :: vegfra
  real(kind=RKIND),dimension(:),pointer  :: seaice,xice
- real(kind=RKIND),dimension(:),pointer  :: skintemp,tmn
+ real(kind=RKIND),dimension(:),pointer  :: skintemp,tmn,xland
  real(kind=RKIND),dimension(:,:),pointer:: tslb,smois,sh2o,smcrel
 
 !note that this threshold is also defined in module_physics_vars.F.It is defined here to avoid
@@ -558,7 +626,7 @@
  write(0,*)
  write(0,*) '--- enter physics_init_seaice:'
 
- nCells     = mesh % nCells
+ nCellsSolve = mesh % nCellsSolve
  nSoilLevels = mesh % nSoilLevels
 
  landmask => mesh % landmask    % array
@@ -571,33 +639,17 @@
 
  skintemp => input % skintemp   % array
  tmn      => input % tmn        % array
+ xland    => input % xland      % array
 
  tslb     => input % tslb       % array
  smois    => input % smois      % array
  sh2o     => input % sh2o       % array
  smcrel   => input % smcrel     % array
 
- do iCell = 1, nCells
-    seaice(iCell) = 0._RKIND
- enddo
-
-!make sure that all the cells flagged as sea-ice cells are defined as ocean cells:
- num_seaice_changes = 0
- do iCell = 1, nCells
-    if((landmask(iCell).eq.1 .and. xice(iCell).gt.0._RKIND) .or. xice(iCell).gt.200._RKIND) then
-       num_seaice_changes = num_seaice_changes + 1
-       seaice(iCell) = 0._RKIND
-       xice(iCell)   = 0._RKIND
-    endif
- enddo
- write(mess,fmt='(A,i12)') 'number of seaice cells converted to land cells 1 =', &
-       num_seaice_changes
- call physics_message(mess)
-
 !assign the threshold value for xice as a function of config_frac_seaice:
  if(.not. config_frac_seaice) then
     xice_threshold = 0.5_RKIND
-    do iCell = 1,nCells
+    do iCell = 1,nCellsSolve
        if(xice(iCell) >= xice_threshold) then
           xice(iCell) = 1._RKIND
        else
@@ -610,47 +662,53 @@
  write(0,*) '--- config_frac_seaice      :', config_frac_seaice
  write(0,*) '--- xice_threshold          :', xice_threshold
 
-!convert seaice points to land points:
+!convert seaice points to land points when the sea-ice fraction is greater than the
+!prescribed threshold:
  num_seaice_changes = 0
- do iCell = 1, nCells
-
+ do iCell = 1, nCellsSolve
     if(xice(iCell) .ge. xice_threshold .or. &
       (landmask(iCell).eq.0 .and. skintemp(iCell).lt.xice_tsk_threshold)) then
 
        num_seaice_changes = num_seaice_changes + 1
-       !sea-ice points are converted to land points:
-       if(.not. config_frac_seaice) xice(iCell) = 1._RKIND
+       !... sea-ice points are converted to land points:
        if(landmask(iCell) .eq. 0) tmn(iCell) = 271.4_RKIND
+       ivgtyp(iCell) = 24 ! (isice = 24)
+       isltyp(iCell) = 16
+       vegfra(iCell) = 0._RKIND
+       xland(iCell)  = 1._RKIND
 
-       ivgtyp(iCell)   = 24 ! (isice = 24)
-       isltyp(iCell)   = 16
-       vegfra(iCell)   = 0._RKIND
-       landmask(iCell) = 1._RKIND
-
+       !... recalculate the soil temperature and soil moisture:
        do iSoil = 1, nSoilLevels
           mid_point_depth = total_depth/nSoilLevels/2. &
                           + (iSoil-1)*(total_depth/nSoilLevels)
           tslb(iSoil,iCell) = ((total_depth-mid_point_depth) * skintemp(iCell) &
-                            +  mid_point_depth * tmn(iCell)) / total_depth
+                             +  mid_point_depth * tmn(iCell)) / total_depth
           smois(iSoil,iCell)  = 1._RKIND
           sh2o(iSoil,iCell)   = 0._RKIND
           smcrel(iSoil,iCell) = 0._RKIND
        enddo
        
     elseif(xice(iCell) .lt. xice_threshold) then
+       if(xice(iCell) .gt. 0._RKIND) &
+          write(0,101) iCell,DBLE(landmask(iCell)),xland(iCell),xice(iCell)
        xice(iCell) = 0._RKIND
-
     endif
 
  enddo
+ write(0,*)
  write(mess,fmt='(A,i12)') 'number of seaice cells converted to land cells 2 =', &
        num_seaice_changes
  call physics_message(mess)
 
 !finally, update the sea-ice flag:
- do iCell = 1, nCells
-    if(xice(iCell) > 0._RKIND) seaice(iCell) = 1._RKIND
+ do iCell = 1, nCellsSolve
+    seaice(iCell) = 0._RKIND
+    if(xice(iCell) > 0._RKIND) then
+       seaice(iCell) = 1._RKIND
+    endif
  enddo
+ 101 format(i9,5(1x,e15.8))
+
  write(0,*) '--- end physics_init_seaice:'
 
  end subroutine physics_init_seaice
