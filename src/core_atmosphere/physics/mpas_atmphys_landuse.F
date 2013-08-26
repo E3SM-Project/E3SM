@@ -61,6 +61,14 @@
 !> .. land mask                       (xland).
 !> .. thermal inertia                 (thc).
 !> .. surface moisture availability   (mavail).
+!>
+!> add-ons and modifications to sourcecode:
+!> ----------------------------------------
+!>    * deleted initialization of xicem and xland.
+!>      - xicem is now initialized in physics_init.
+!>      - xland is now initialized in physics_initialize_real and updated in physics_update_sst if
+!>        needed.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-08-24. 
 
 
  contains
@@ -241,22 +249,8 @@
     embck(iCell)  = sfem(is,isn)
     sfc_emiss(iCell) = embck(iCell)
 
-!02-11-2011:
-!   if(is .ne. iswater) then
-!      xland(iCell) = 1.0
-!   else
-!      xland(iCell) = 2.0
-!   endif
-    if(landmask(iCell) == 1) then
-       xland(iCell) = 1.0
-    else
-       xland(iCell) = 2.0
-    endif
-
     !set sea-ice points to land with ice/snow surface properties:
-    xicem(iCell) = xice(iCell)
     if(xice(iCell) .ge. xice_threshold) then
-       xland(iCell)  = 1.0
        albbck(iCell) = albd(isice,isn) / 100.
        embck(iCell)  = sfem(isice,isn)
        if(config_frac_seaice) then
