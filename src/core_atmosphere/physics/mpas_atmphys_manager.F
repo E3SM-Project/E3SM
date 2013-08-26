@@ -85,12 +85,15 @@
 !> ----------------------------------------
 !>    * added initialization of variable sf_surface_physics in subroutine physics_run_init. see
 !>      definition of sf_surface_physics in mpas_atmphys_vars.F
-!>      Laura D. Fowler (birch.ucar.edu) / 2013-03-11.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-03-11.
 !>    * removed the namelist option config_conv_shallow_scheme and associated sourcecode.
-!>      Laura D. Fowler (birch.ucar.edu) / 2013-05-29.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-05-29.
 !>    * added call to subroutine o3climatology_from_MPAS to interpolate the climatological ozone
 !>      mixing ratios to the current julian day.
-!>      Laura F. Fowler (birch.ucar.edu) / 2013-07-03
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-07-03.
+!>    * added domain%dminfo in call to subroutine physics_update_sst to print local and global
+!>      min and max values of the updated sea-surface temperatures and sea-ice fractions.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-07-24.
 
 
  contains
@@ -160,7 +163,7 @@
     if(mpas_is_alarm_ringing(clock,sfcbdyAlarmID,ierr=ierr)) then
        call mpas_reset_clock_alarm(clock,sfcbdyAlarmID,ierr=ierr)
        if(config_sst_update) &
-          call physics_update_sst(block%mesh,block%sfc_input,block%diag_physics)
+          call physics_update_sst(domain%dminfo,block%mesh,block%sfc_input,block%diag_physics)
     endif   
 
     !apply a diurnal cycle to the sea-surface temperature:

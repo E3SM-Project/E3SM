@@ -53,6 +53,9 @@
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-07-03.
 !>    * added the calculation of the mean distance between cell centers.
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-08-22.
+!>    * added initialization of variable xicem.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-08-24.
+
 
  contains
 
@@ -159,6 +162,14 @@
        diag_physics % aclwupbc % array(iCell) = 0._RKIND
        diag_physics % aclwupt  % array(iCell) = 0._RKIND
        diag_physics % aclwuptc % array(iCell) = 0._RKIND
+    enddo
+ endif
+
+!initialization of xicem:
+ if(.not.config_do_restart) then
+    write(0,*) '--- initialization of xicem:'
+    do iCell = 1, mesh % nCellsSolve
+       diag_physics % xicem % array(iCell) = sfc_input % xice % array(iCell)
     enddo
  endif
 
