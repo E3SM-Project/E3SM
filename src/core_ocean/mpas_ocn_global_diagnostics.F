@@ -72,8 +72,9 @@ module ocn_global_diagnostics
 
       integer :: nVertLevels, nCellsSolve, nEdgesSolve, nVerticesSolve, nCellsGlobal, nEdgesGlobal, nVerticesGlobal, iTracer
       integer :: elementIndex, variableIndex, nVariables, nSums, nMaxes, nMins
-      integer :: timeLevel,k,i, num_tracers
-      integer :: fileID
+      integer :: timeLevel,k,i, num_tracers, fileID
+      integer :: timeYYYY, timeMM, timeDD, timeH, timeM, timeS
+      character*1 timeChar
       integer, parameter :: kMaxVariables = 1024 ! this must be a little more than double the number of variables to be reduced
       integer, dimension(:), pointer :: maxLevelCell, maxLevelEdgeTop, maxLevelVertexBot
 
@@ -378,8 +379,16 @@ module ocn_global_diagnostics
       volumeCellGlobal = sums(1)
       volumeEdgeGlobal = sums(4)
 
+
       ! compute the averages (slightly different depending on how the sum was computed)
       variableIndex = 0
+
+      ! time, in days, using a 360 day calendar
+      variableIndex = variableIndex + 1
+      read (state % xtime % scalar, '(i4,5(a1,i2))'), timeYYYY, timeChar, timeMM, timeChar, timeDD, timeChar, timeH, timeChar, timeM, timeChar, timeS
+      ! subtract 31.0 because calendar starts on 00-01-01
+      averages(variableIndex) = timeYYYY*360.0 + timeMM*30.0 + timeDD + (timeH + (timeM + timeS/60.0)/60.0)/24.0 - 31.0
+
       ! layerThickness
       variableIndex = variableIndex + 1
       averages(variableIndex) = sums(variableIndex)/(areaCellGlobal*nVertLevels)
@@ -845,6 +854,7 @@ module ocn_global_diagnostics
             write (fileID,'(a)')   "See user's guide for units associated with these variables."
 
             i=1
+            write (fileID,'(i5,a)') i,'. time, in days, using a 360 day calendar'; i=i+1
             write (fileID,'(i5,a)') i,'. layerThickness'; i=i+1
             write (fileID,'(i5,a)') i,'. normalVelocity'; i=i+1
             write (fileID,'(i5,a)') i,'. tangentialVelocity'; i=i+1
