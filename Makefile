@@ -42,13 +42,12 @@ OBJS = mpas_ocn_mpas_core.o \
 all: libcvmix core_hyd
 
 libcvmix:
-	cd cvmix; make all FC="$(FC)" FFLAGS="$(FFLAGS)" FINCLUDES="$(FINCLUDES)"
-#	if [ ! -d cvmix ]; then \
-#		(svn checkout $(CVMIX_REPO_ADDRESS) cvmix) \
-#	fi
-#	if [ -d cvmix ]; then \
-#		(cd cvmix; svn update; make all FC="$(FC)" FFLAGS="$(FFLAGS)" FINCLUDES="$(FINCLUDES)") \
-#	fi
+	if [ ! -d cvmix ]; then \
+		(svn checkout $(CVMIX_REPO_ADDRESS) cvmix) \
+	fi
+	if [ -d cvmix ]; then \
+		(cd cvmix; svn update; make all FC="$(FC)" FFLAGS="$(FFLAGS)" FINCLUDES="$(FINCLUDES)") \
+	fi
 
 core_hyd: $(OBJS)
 	ar -ru libdycore.a $(OBJS) cvmix/*.o
@@ -99,29 +98,10 @@ mpas_ocn_tracer_hmix_del2.o:
 
 mpas_ocn_tracer_hmix_del4.o:
 
-<<<<<<< HEAD:src/core_ocean/Makefile
 mpas_ocn_tracer_advection.o:
-=======
+
 mpas_ocn_high_freq_thickness_hmix_del2.o:
 
-mpas_ocn_tracer_advection.o: mpas_ocn_tracer_advection_std.o mpas_ocn_tracer_advection_mono.o
-
-mpas_ocn_tracer_advection_std.o: mpas_ocn_tracer_advection_std_hadv.o mpas_ocn_tracer_advection_std_vadv.o
-
-mpas_ocn_tracer_advection_std_hadv.o: mpas_ocn_tracer_advection_helpers.o
-
-mpas_ocn_tracer_advection_std_vadv.o: mpas_ocn_tracer_advection_std_vadv2.o mpas_ocn_tracer_advection_std_vadv3.o mpas_ocn_tracer_advection_std_vadv4.o
-
-mpas_ocn_tracer_advection_std_vadv2.o: mpas_ocn_tracer_advection_helpers.o
-
-mpas_ocn_tracer_advection_std_vadv3.o: mpas_ocn_tracer_advection_helpers.o
-
-mpas_ocn_tracer_advection_std_vadv4.o: mpas_ocn_tracer_advection_helpers.o
-
-mpas_ocn_tracer_advection_mono.o: mpas_ocn_tracer_advection_helpers.o
-
-mpas_ocn_tracer_advection_helpers.o:
->>>>>>> Add z-tilde variables to Registry, tendency and timestepping routines.
 Matches bfb with previous.:src/core_ocean/Makefile
 
 mpas_ocn_restoring.o:
@@ -177,9 +157,9 @@ mpas_ocn_mpas_core.o: mpas_ocn_thick_hadv.o \
                       mpas_ocn_monthly_forcing.o
 
 clean:
-#	if [ -d cvmix ]; then \
-#		(cd cvmix; make clean) \
-#	fi
+	if [ -d cvmix ]; then \
+		(cd cvmix; make clean) \
+	fi
 	$(RM) *.o *.mod *.f90 libdycore.a
 
 .F.o:
