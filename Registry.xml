@@ -619,10 +619,10 @@
 		<var name="layerThickness" type="real" dimensions="nVertLevels nCells Time" streams="iro" units="m"
 		     description="layer thickness"
 		/>
-		<var name="highFreqThickness" type="real" dimensions="nVertLevels nCells Time" streams="iro" units="m"
+		<var name="highFreqThickness" type="real" dimensions="nVertLevels nCells Time" streams="ir" units="m"
 		     description="high frequency-filtered layer thickness"
 		/>
-		<var name="lowFreqDivergence" type="real" dimensions="nVertLevels nCells Time" streams="iro" units="s^{-1}"
+		<var name="lowFreqDivergence" type="real" dimensions="nVertLevels nCells Time" streams="ir" units="s^{-1}"
 		     description="low frequency-filtered divergence"
 		/>
 		<var name="density" type="real" dimensions="nVertLevels nCells Time" streams="iro" units="kg m^{-3}"
@@ -733,7 +733,7 @@
 		<var name="montgomeryPotential" type="real" dimensions="nVertLevels nCells Time" units="m^2 s^{-2}"
 		     description="Montgomery potential, may be used as the pressure for isopycnal coordinates."
 		/>
-		<var name="pressure" type="real" dimensions="nVertLevels nCells Time" streams="" units="N m^{-2}"
+		<var name="pressure" type="real" dimensions="nVertLevels nCells Time" streams="o" units="N m^{-2}"
 		     description="pressure used in the momentum equation"
 		/>
 		<var name="vertTransportVelocityTop" type="real" dimensions="nVertLevelsP1 nCells Time" streams="o" units="m s^{-1}"
@@ -742,16 +742,16 @@
 		<var name="vertVelocityTop" type="real" dimensions="nVertLevelsP1 nCells Time" streams="o" units="m s^{-1}"
 		     description="vertical velocity defined at center (horizonally) and top (vertically) of cell"
 		/>
-		<var name="displacedDensity" type="real" dimensions="nVertLevels nCells Time" streams="" units="kg m^{-3}"
+		<var name="displacedDensity" type="real" dimensions="nVertLevels nCells Time" streams="o" units="kg m^{-3}"
 		     description="Density displaced adiabatically to the mid-depth one layer deeper.  That is, layer k has been displaced to the depth of layer k+1."
 		/>
 		<var name="potentialDensity" type="real" dimensions="nVertLevels nCells Time" streams="o" units="kg m^{-3}"
 		     description="potential density: density displaced adiabatically to the mid-depth of top layer"
 		/>
-		<var name="BruntVaisalaFreqTop" type="real" dimensions="nVertLevels nCells Time" streams="" units="s^{-2}"
+		<var name="BruntVaisalaFreqTop" type="real" dimensions="nVertLevels nCells Time" streams="o" units="s^{-2}"
 		     description="Brunt Vaisala frequency defined at the center (horizontally) and top (vertically) of cell"
 		/>
-		<var name="viscosity" type="real" dimensions="nVertLevels nEdges Time" streams="" units="m^2 s^{-1}"
+		<var name="viscosity" type="real" dimensions="nVertLevels nEdges Time" streams="o" units="m^2 s^{-1}"
 		     description="horizontal viscosity"
 		/>
 		<var name="circulation" type="real" dimensions="nVertLevels nVertices Time" units="m^2 s^{-1}"
@@ -784,22 +784,22 @@
 		<var name="varSsh" type="real" dimensions="nCells Time" streams="o" units="m"
 		     description="variance of sea surface height"
 		/>
-		<var name="avgNormalVelocityZonal" type="real" dimensions="nVertLevels nCells Time" streams="" units="m s^{-1}"
+		<var name="avgNormalVelocityZonal" type="real" dimensions="nVertLevels nCells Time" streams="o" units="m s^{-1}"
 		     description="time-averaged velocity in the eastward direction"
 		/>
-		<var name="avgNormalVelocityMeridional" type="real" dimensions="nVertLevels nCells Time" streams="" units="m s^{-1}"
+		<var name="avgNormalVelocityMeridional" type="real" dimensions="nVertLevels nCells Time" streams="o" units="m s^{-1}"
 		     description="time-averaged velocity in the northward direction"
 		/>
-		<var name="varNormalVelocityZonal" type="real" dimensions="nVertLevels nCells Time" streams="" units="m s^{-1}"
+		<var name="varNormalVelocityZonal" type="real" dimensions="nVertLevels nCells Time" streams="o" units="m s^{-1}"
 		     description="variance of velocity in the eastward direction"
 		/>
-		<var name="varNormalVelocityMeridional" type="real" dimensions="nVertLevels nCells Time" streams="" units="m s^{-1}"
+		<var name="varNormalVelocityMeridional" type="real" dimensions="nVertLevels nCells Time" streams="o" units="m s^{-1}"
 		     description="variance of velocity in the northward direction"
 		/>
-		<var name="avgNormalVelocity" type="real" dimensions="nVertLevels nEdges Time" streams="" units="m s^{-1}"
+		<var name="avgNormalVelocity" type="real" dimensions="nVertLevels nEdges Time" streams="o" units="m s^{-1}"
 		     description="time-averaged velocity, normal to cell edge"
 		/>
-		<var name="varNormalVelocity" type="real" dimensions="nVertLevels nEdges Time" streams="" units="m s^{-1}"
+		<var name="varNormalVelocity" type="real" dimensions="nVertLevels nEdges Time" streams="o" units="m s^{-1}"
 		     description="variance of velocity, normal to cell edge"
 		/>
 		<var name="avgVertVelocityTop" type="real" dimensions="nVertLevelsP1 nCells Time" streams="o" units="m s^{-1}"
