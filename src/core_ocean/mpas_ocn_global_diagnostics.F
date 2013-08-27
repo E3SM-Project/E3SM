@@ -668,8 +668,12 @@ module ocn_global_diagnostics
       localVertSumMax = -1.0e34
 
       do elementIndex = 1, nElements
+        ! This would be used for an L1-norm:
+        ! thicknessWeightedColSumAbs = sum(layerThickness(1:maxLevel(elementIndex),elementIndex)*abs(field(1:maxLevel(elementIndex),elementIndex)))
+        ! localSum = localSum + areas(elementIndex) * thicknessWeightedColSumAbs
+
+        ! Instead, use a simple average:
         thicknessWeightedColSum = sum(layerThickness(1:maxLevel(elementIndex),elementIndex)*field(1:maxLevel(elementIndex),elementIndex))
-        thicknessWeightedColSumAbs = sum(layerThickness(1:maxLevel(elementIndex),elementIndex)*abs(field(1:maxLevel(elementIndex),elementIndex)))
         localSum = localSum + areas(elementIndex) * thicknessWeightedColSumAbs
         localMin = min(localMin,minval(field(1:maxLevel(elementIndex),elementIndex)))
         localMax = max(localMax,maxval(field(1:maxLevel(elementIndex),elementIndex)))
