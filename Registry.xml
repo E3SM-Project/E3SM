@@ -784,16 +784,16 @@
 		<var name="varSsh" type="real" dimensions="nCells Time" streams="o" units="m"
 		     description="variance of sea surface height"
 		/>
-		<var name="avgNormalVelocityZonal" type="real" dimensions="nVertLevels nCells Time" streams="o" units="m s^{-1}"
+		<var name="avgVelocityZonal" type="real" dimensions="nVertLevels nCells Time" streams="o" units="m s^{-1}"
 		     description="time-averaged velocity in the eastward direction"
 		/>
-		<var name="avgNormalVelocityMeridional" type="real" dimensions="nVertLevels nCells Time" streams="o" units="m s^{-1}"
+		<var name="avgVelocityMeridional" type="real" dimensions="nVertLevels nCells Time" streams="o" units="m s^{-1}"
 		     description="time-averaged velocity in the northward direction"
 		/>
-		<var name="varNormalVelocityZonal" type="real" dimensions="nVertLevels nCells Time" streams="o" units="m s^{-1}"
+		<var name="varVelocityZonal" type="real" dimensions="nVertLevels nCells Time" streams="o" units="m s^{-1}"
 		     description="variance of velocity in the eastward direction"
 		/>
-		<var name="varNormalVelocityMeridional" type="real" dimensions="nVertLevels nCells Time" streams="o" units="m s^{-1}"
+		<var name="varVelocityMeridional" type="real" dimensions="nVertLevels nCells Time" streams="o" units="m s^{-1}"
 		     description="variance of velocity in the northward direction"
 		/>
 		<var name="avgNormalVelocity" type="real" dimensions="nVertLevels nEdges Time" streams="o" units="m s^{-1}"
