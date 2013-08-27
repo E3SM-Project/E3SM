@@ -23,31 +23,32 @@
 	config_time_integrator = "split_explicit"
 /
 &ALE_vertical_grid
-        config_vert_coord_movement = "uniform_stretching"
-        config_use_min_max_thickness = .false.
-        config_min_thickness = 1.0
-        config_max_thickness_factor = 6.0
-        config_set_restingThickness_to_IC = .true.
+	config_vert_coord_movement = "uniform_stretching"
+	config_use_min_max_thickness = .false.
+	config_min_thickness = 1.0
+	config_max_thickness_factor = 6.0
+	config_set_restingThickness_to_IC = .true.
+	config_dzdk_positive = .false.
 /
 &ALE_frequency_filtered_thickness
-        config_use_freq_filtered_thickness = .false.
-        config_thickness_filter_timescale = 5.0
-        config_use_highFreqThick_restore = .false.
-        config_highFreqThick_restore_time = 30.0
-        config_use_highFreqThick_del2 = .false.
-        config_highFreqThick_del2 = 100.0
+	config_use_freq_filtered_thickness = .false.
+	config_thickness_filter_timescale = 5.0
+	config_use_highFreqThick_restore = .false.
+	config_highFreqThick_restore_time = 30.0
+	config_use_highFreqThick_del2 = .false.
+	config_highFreqThick_del2 = 100.0
 /
 &partial_bottom_cells
-        config_alter_ICs_for_pbcs = "zlevel_pbcs_off"
-        config_min_pbc_fraction = 0.10
-        config_check_ssh_consistency = .true.
+	config_alter_ICs_for_pbcs = "zlevel_pbcs_off"
+	config_min_pbc_fraction = 0.10
+	config_check_ssh_consistency = .true.
 /
 &decomposition
-        config_num_halos = 3
-        config_block_decomp_file_prefix = "graph.info.part."
-        config_number_of_blocks = 0
-        config_explicit_proc_decomp = .false.
-        config_proc_decomp_file_prefix = "graph.info.part."
+	config_num_halos = 3
+	config_block_decomp_file_prefix = "graph.info.part."
+	config_number_of_blocks = 0
+	config_explicit_proc_decomp = .false.
+	config_proc_decomp_file_prefix = "graph.info.part."
 /
 &hmix
 	config_hmix_ScaleWithMesh = .false.
