@@ -102,8 +102,6 @@ mpas_ocn_tracer_advection.o:
 
 mpas_ocn_high_freq_thickness_hmix_del2.o:
 
-Matches bfb with previous.:src/core_ocean/Makefile
-
 mpas_ocn_restoring.o:
 
 mpas_ocn_vmix.o: mpas_ocn_vmix_coefs_const.o mpas_ocn_vmix_coefs_rich.o mpas_ocn_vmix_coefs_tanh.o
