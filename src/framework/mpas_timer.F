@@ -66,7 +66,7 @@
 !-----------------------------------------------------------------------
         subroutine mpas_timer_start(timer_name, clear_timer, timer_ptr)!{{{
 #         ifdef _MPI
-          use mpi
+          include 'mpif.h'
 #         endif
 
           character (len=*), intent (in) :: timer_name !< Input: name of timer, stored as name of timer
@@ -207,7 +207,7 @@
 !-----------------------------------------------------------------------
         subroutine mpas_timer_stop(timer_name, timer_ptr)!{{{
 #         ifdef _MPI
-          use mpi
+          include 'mpif.h'
 #         endif
 
           character (len=*), intent(in) :: timer_name !< Input: name of timer to stop
