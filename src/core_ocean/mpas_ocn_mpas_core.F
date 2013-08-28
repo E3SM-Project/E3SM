@@ -785,7 +785,7 @@ module mpas_core
                bottomDepth(iCell) = refBottomDepth(maxLevelCell(iCell))
             enddo
 
-          elseif (config_alter_ICs_for_pbcs.eq.'off') then
+          elseif (config_alter_ICs_for_pbcs.eq.'no_alteration') then
             ! No action taken.  This is for when no pbcs are desired,
             !  or if ICs were already altered upon start-up.
 

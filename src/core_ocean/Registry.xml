@@ -176,8 +176,8 @@
 	</nml_record>
 	<nml_record name="partial_bottom_cells">
 		<nml_option name="config_alter_ICs_for_pbcs" type="character" default_value="zlevel_pbcs_off" units="unitless"
-		            description="Determines the method of layer thickness alteration for partial bottom cells. 'zlevel_pbcs_on' alters the initial conditions for partial bottom cells, 'zlevel_pbcs_off' alters the initial conditions to have full cells everwhere, and 'off' does nothing to the initial conditions.  The alteration of layer thickness only occurs when config_do_restart is false, i.e. on an initial run."
-		            possible_values="'zlevel_pbcs_on', 'zlevel_pbcs_off', 'off'"
+		            description="Determines the method of layer thickness alteration for partial bottom cells. 'zlevel_pbcs_on' alters layerThickness and interpolates all tracers in the bottom cell based on the bottomDepth variable;  'zlevel_pbcs_off' alters bottomDepth to have full cells everwhere, based on the refBottomDepth variable; and 'no_alteration' does nothing to the initial conditions.  The alteration of layer thickness only occurs when config_do_restart is false, i.e. on an initial run."
+		            possible_values="'zlevel_pbcs_on', 'zlevel_pbcs_off', 'no_alteration'"
 		/>
 		<nml_option name="config_min_pbc_fraction" type="real" default_value="0.10" units="unitless"
 		            description="Determines the minimum fraction of a cell altering the initial conditions can create.  The alteration of layer thickness only occurs when config_do_restart is false, i.e. on an initial run."

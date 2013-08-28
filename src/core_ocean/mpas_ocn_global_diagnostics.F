@@ -78,7 +78,7 @@ module ocn_global_diagnostics
       integer, parameter :: kMaxVariables = 1024 ! this must be a little more than double the number of variables to be reduced
       integer, dimension(:), pointer :: maxLevelCell, maxLevelEdgeTop, maxLevelVertexBot
 
-      real (kind=RKIND) :: volumeCellGlobal, volumeEdgeGlobal, CFLNumberGlobal, localCFL, localSum, areaCellGlobal, areaEdgeGlobal, areaTriangleGlobal
+      real (kind=RKIND) :: volumeCellGlobal, volumeEdgeGlobal, CFLNumberGlobal, localCFL, localSum, areaCellGlobal, areaEdgeGlobal, areaTriangleGlobal, time_days
       real (kind=RKIND), dimension(:), pointer ::  areaCell, dcEdge, dvEdge, areaTriangle, areaEdge
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness, normalVelocity, tangentialVelocity, layerThicknessEdge, relativeVorticity, kineticEnergyCell, &
          normalizedRelativeVorticityEdge, normalizedPlanetaryVorticityEdge, pressure, montgomeryPotential, vertTransportVelocityTop, vertVelocityTop, &
@@ -384,10 +384,9 @@ module ocn_global_diagnostics
       variableIndex = 0
 
       ! time, in days, using a 360 day calendar
-      variableIndex = variableIndex + 1
       read (state % xtime % scalar, '(i4,5(a1,i2))'), timeYYYY, timeChar, timeMM, timeChar, timeDD, timeChar, timeH, timeChar, timeM, timeChar, timeS
       ! subtract 31.0 because calendar starts on 00-01-01
-      averages(variableIndex) = timeYYYY*360.0 + timeMM*30.0 + timeDD + (timeH + (timeM + timeS/60.0)/60.0)/24.0 - 31.0
+      time_days = timeYYYY*360.0 + timeMM*30.0 + timeDD + (timeH + (timeM + timeS/60.0)/60.0)/24.0 - 31.0
 
       ! layerThickness
       variableIndex = variableIndex + 1
@@ -457,16 +456,16 @@ module ocn_global_diagnostics
       if (dminfo % my_proc_id == IO_NODE) then
          fileID = getFreeUnit()
          open(fileID,file='stats_min.txt',STATUS='UNKNOWN', POSITION='append')
-            write (fileID,'(100es24.14)') mins(1:nVariables)
+            write (fileID,'(100es24.14)') time_days, mins(1:nVariables)
          close (fileID)
          open(fileID,file='stats_max.txt',STATUS='UNKNOWN', POSITION='append')
-            write (fileID,'(100es24.14)') maxes(1:nVariables)
+            write (fileID,'(100es24.14)') time_days, maxes(1:nVariables)
          close (fileID)
          open(fileID,file='stats_sum.txt',STATUS='UNKNOWN', POSITION='append')
-            write (fileID,'(100es24.14)') sums(1:nVariables)
+            write (fileID,'(100es24.14)') time_days, sums(1:nVariables)
          close (fileID)
          open(fileID,file='stats_avg.txt',STATUS='UNKNOWN', POSITION='append')
-            write (fileID,'(100es24.14)') averages(1:nVariables)
+            write (fileID,'(100es24.14)') time_days, averages(1:nVariables)
          close (fileID)
          open(fileID,file='stats_time.txt',STATUS='UNKNOWN', POSITION='append')
             write (fileID,'(i10,10x,a,100es24.14)') timeIndex, &
@@ -579,9 +578,13 @@ module ocn_global_diagnostics
 
       do elementIndex = 1, nElements
         colSum = sum(field(1:maxLevel(elementIndex),elementIndex))
-        colSumAbs = sum(abs(field(1:maxLevel(elementIndex),elementIndex)))
 
-        localSum = localSum + areas(elementIndex) * colSumAbs
+        ! This would be used for an L1-norm.  Used in both area and volume versions of this subroutine:
+        ! colSumAbs = sum(abs(field(1:maxLevel(elementIndex),elementIndex)))
+        ! localSum = localSum + areas(elementIndex) * colSumAbs
+        ! Instead, use a simple average:
+        localSum = localSum + areas(elementIndex) * colSum
+
         localMin = min(localMin,minval(field(1:maxLevel(elementIndex),elementIndex)))
         localMax = max(localMax,maxval(field(1:maxLevel(elementIndex),elementIndex)))
         localVertSumMin = min(localVertSumMin,colSum)
@@ -668,13 +671,15 @@ module ocn_global_diagnostics
       localVertSumMax = -1.0e34
 
       do elementIndex = 1, nElements
-        ! This would be used for an L1-norm:
-        ! thicknessWeightedColSumAbs = sum(layerThickness(1:maxLevel(elementIndex),elementIndex)*abs(field(1:maxLevel(elementIndex),elementIndex)))
-        ! localSum = localSum + areas(elementIndex) * thicknessWeightedColSumAbs
+        thicknessWeightedColSum = sum(layerThickness(1:maxLevel(elementIndex),elementIndex)*field(1:maxLevel(elementIndex),elementIndex))
+
+        ! This would be used for an L1-norm.  Used in both area and volume versions of this subroutine:
+        !  thicknessWeightedColSumAbs = sum(layerThickness(1:maxLevel(elementIndex),elementIndex)*abs(field(1:maxLevel(elementIndex),elementIndex)))
+        !  localSum = localSum + areas(elementIndex) * thicknessWeightedColSumAbs
 
         ! Instead, use a simple average:
-        thicknessWeightedColSum = sum(layerThickness(1:maxLevel(elementIndex),elementIndex)*field(1:maxLevel(elementIndex),elementIndex))
-        localSum = localSum + areas(elementIndex) * thicknessWeightedColSumAbs
+        localSum = localSum + areas(elementIndex) * thicknessWeightedColSum
+
         localMin = min(localMin,minval(field(1:maxLevel(elementIndex),elementIndex)))
         localMax = max(localMax,maxval(field(1:maxLevel(elementIndex),elementIndex)))
         localVertSumMin = min(localVertSumMin,thicknessWeightedColSum)
