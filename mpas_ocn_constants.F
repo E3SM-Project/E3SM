@@ -34,7 +34,8 @@ module ocn_constants
       rho_air               ,&! ambient air density (kg/m^3)
       rho_fw                ,&! density of fresh water (kg/m^3)
       rho_sw                ,&! density of salt water (kg/m^3)
-      cp_sw                 ,&! specific heat salt water
+      rho_ice               ,&! density of sea ice (kg/m^3)
+      cp_sw                 ,&! specific heat salt water (J/kg/K)
       cp_air                ,&! heat capacity of air (J/kg/K)
       sound                 ,&! speed of sound (m/s)
       vonkar                ,&! von Karman constant
@@ -93,20 +94,22 @@ contains
        !
        !-----------------------------------------------------------------------
 
-       T0_Kelvin = 273.16_RKIND             ! zero point for Celsius
-       rho_air   = 1.2_RKIND                ! ambient air density (kg/m^3)
-       rho_sw    = 4.1e3_RKIND/3.996_RKIND  ! density of salt water (kg/m^3)
-       rho_fw    = 1.0e3_RKIND              ! avg. water density (kg/m^3)
-       cp_sw     = 3.996e7_RKIND            ! specific heat salt water
-       cp_air    = 1005.0_RKIND             ! heat capacity of air (J/kg/K)
-       sound     = 1.5e2_RKIND              ! speed of sound (m/s)
-       vonkar    = 0.4_RKIND                ! von Karman constant
-       emissivity         = 1.0_RKIND       !
-       stefan_boltzmann   = 567.0e-10_RKIND !  W/m^2/K^4
-       latent_heat_vapor_mks  = 2.5e6_RKIND ! lat heat of vaporization (J/kg)
-       latent_heat_fusion = 3.34e6_RKIND    ! lat heat of fusion (erg/kg)
-       sea_ice_salinity   =  4.0_RKIND      ! (psu)
-       ocn_ref_salinity   = 34.7_RKIND      ! (psu)
+       T0_Kelvin = 273.16_RKIND               ! zero point for Celsius
+       rho_air   = 1.2_RKIND                  ! ambient air density (kg/m^3)
+       rho_sw    = 1.026e3_RKIND              ! density of salt water (kg/m^3)
+       rho_fw    = 1.0e3_RKIND                ! avg. water density (kg/m^3)
+       rho_ice   = 0.917e3_RKIND              ! density of ice (kg/m^3)
+       cp_sw     = 3.996e3_RKIND              ! specific heat salt water
+       cp_air    = 1005.0_RKIND               ! heat capacity of air (J/kg/K)
+       sound     = 1.5e2_RKIND                ! speed of sound (m/s)
+       vonkar    = 0.4_RKIND                  ! von Karman constant
+       emissivity         = 1.0_RKIND         !
+       stefan_boltzmann   = 567.0e-10_RKIND   !  W/m^2/K^4
+       latent_heat_vapor_mks  = 2.5e6_RKIND   ! lat heat of vaporization (J/kg)
+       latent_heat_fusion = 3.34e6_RKIND      ! lat heat of fusion (erg/kg)
+       latent_heat_fusion_mks = 3.337e5_RKIND ! lat heat of fusion (J/kg)
+       sea_ice_salinity   =  4.0_RKIND        ! (psu)
+       ocn_ref_salinity   = 34.7_RKIND        ! (psu)
 
 
        !-----------------------------------------------------------------------
@@ -135,6 +138,7 @@ contains
        rho_air                = SHR_CONST_RHODAIR       ! kg/m^3
        rho_sw                 = SHR_CONST_RHOSW         ! kg/m^3
        rho_fw                 = SHR_CONST_RHOFW         ! kg/m^3
+       rho_ice                = SHR_CONST_RHOICE        ! kg/m^3
        vonkar                 = SHR_CONST_KARMAN
        stefan_boltzmann       = SHR_CONST_STEBOL        ! W/m^2/K^4
        latent_heat_vapor_mks  = SHR_CONST_LATVAP        ! J/kg

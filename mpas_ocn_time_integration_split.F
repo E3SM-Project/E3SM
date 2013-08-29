@@ -37,6 +37,8 @@ module ocn_time_integration_split
    use ocn_time_average
    use ocn_time_average_coupled
 
+   use ocn_sea_ice
+
    implicit none
    private
    save
@@ -1018,6 +1020,14 @@ module ocn_time_integration_split
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! END large iteration loop 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      ! Perform Sea Ice Formation Adjustment
+      block => domain % blocklist
+      do while(associated(block))
+        call ocn_diagnostic_solve(dt, block % state % time_levs(2) % state, block % forcing, block % mesh, block % diagnostics, block % scratch)
+        call ocn_sea_ice_formation(block % mesh, block % state % time_levs(2) % state % index_temperature, block % state % time_levs(2) % state % index_salinity, block % state % time_levs(2) % state % layerThickness % array, block % state % time_levs(2) % state % tracers % array, block % forcing % seaIceEnergy % array, err)
+        block => block % next
+      end do
 
       call mpas_timer_start("se implicit vert mix")
       block => domain % blocklist
