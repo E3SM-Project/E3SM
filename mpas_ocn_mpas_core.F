@@ -728,84 +728,84 @@ module mpas_core
          !    If your input file does not include bottomDepth, the false option will
          !    initialize bottomDepth correctly for a non-pbc run.
 
-         if (.not.config_do_restart) then
+         if (.not.config_do_restart.and.config_alter_ICs_for_pbcs) then
 
-          if (config_alter_ICs_for_pbcs.eq.'zlevel_pbcs_on') then
+            if (config_pbc_alteration_type.eq.'partial_cell') then
 
-            write (0,'(a)') ' Altering bottomDepth to avoid very thin cells.'
-            write (0,'(a)') ' Altering layerThickness and tracer initial conditions to conform with partial bottom cells.'
+               write (0,'(a)') ' Altering bottomDepth to avoid very thin cells.'
+               write (0,'(a)') ' Altering layerThickness and tracer initial conditions to conform with partial bottom cells.'
 
-            allocate(minBottomDepth(nVertLevels),minBottomDepthMid(nVertLevels),zMidZLevel(nVertLevels))
+               allocate(minBottomDepth(nVertLevels),minBottomDepthMid(nVertLevels),zMidZLevel(nVertLevels))
 
-            ! min_pbc_fraction restricts pbcs from being too small.
-            ! A typical value is 10%, so pbcs must occupy at least 10% of the cell thickness.
-            ! If min_pbc_fraction = 0.0, bottomDepth gives the actual depth for that cell.
-            ! If min_pbc_fraction = 1.0, bottomDepth reverts to discrete z-level depths, same 
-            !    as partial_bottom_cells = .false.
+               ! min_pbc_fraction restricts pbcs from being too small.
+               ! A typical value is 10%, so pbcs must occupy at least 10% of the cell thickness.
+               ! If min_pbc_fraction = 0.0, bottomDepth gives the actual depth for that cell.
+               ! If min_pbc_fraction = 1.0, bottomDepth reverts to discrete z-level depths, same 
+               !    as partial_bottom_cells = .false.
 
-            minBottomDepth(1) = (1.0-config_min_pbc_fraction)*refBottomDepth(1)
-            minBottomDepthMid(1) = 0.5*(minBottomDepth(1) + refBottomDepthTopOfCell(1))
-            zMidZLevel(1) = - 0.5*(refBottomDepth(1) + refBottomDepthTopOfCell(1))
-            do k=2,nVertLevels
-               minBottomDepth(k) = refBottomDepth(k) - (1.0-config_min_pbc_fraction)*(refBottomDepth(k) - refBottomDepth(k-1))
-               minBottomDepthMid(k) = 0.5*(minBottomDepth(k) + refBottomDepthTopOfCell(k))
-               zMidZLevel(k) = - 0.5*(refBottomDepth(k) + refBottomDepthTopOfCell(k))
-            enddo
-
-            do iCell=1,nCells
-               k = maxLevelCell(iCell)
-
-                if (bottomDepth(iCell).lt.minBottomDepthMid(k)) then
-                   ! Round up to cell above
-                   maxLevelCell(iCell) = maxLevelCell(iCell) - 1
-                   bottomDepth(iCell) = refBottomDepth(maxLevelCell(iCell))
-                elseif (bottomDepth(iCell).lt.minBottomDepth(k)) then
-                   ! Round down cell to the min_pbc_fraction.
-                   bottomDepth(iCell) = minBottomDepth(k)
-                endif
-                k = maxLevelCell(iCell)
-
-               ! Alter thickness of bottom level to account for PBC
-               layerThickness(k,iCell) = bottomDepth(iCell) - refBottomDepthTopOfCell(k) 
-
-               ! Linearly interpolate the initial T&S for new location of bottom cell for PBCs
-               zMidPBC = -0.5*(bottomDepth(iCell) + refBottomDepthTopOfCell(k))
-
-               do iTracer=1,num_tracers
-                  tracers(iTracer,k,iCell) = tracers(iTracer,k,iCell) &
-                     + (tracers(iTracer,k-1,iCell) - tracers(iTracer,k,iCell)) &
-                      /(zMidZLevel(k-1)-zMidZLevel(k)) &
-                      *(zMidPBC - zMidZLevel(k))
+               minBottomDepth(1) = (1.0-config_min_pbc_fraction)*refBottomDepth(1)
+               minBottomDepthMid(1) = 0.5*(minBottomDepth(1) + refBottomDepthTopOfCell(1))
+               zMidZLevel(1) = - 0.5*(refBottomDepth(1) + refBottomDepthTopOfCell(1))
+               do k=2,nVertLevels
+                  minBottomDepth(k) = refBottomDepth(k) - (1.0-config_min_pbc_fraction)*(refBottomDepth(k) - refBottomDepth(k-1))
+                  minBottomDepthMid(k) = 0.5*(minBottomDepth(k) + refBottomDepthTopOfCell(k))
+                  zMidZLevel(k) = - 0.5*(refBottomDepth(k) + refBottomDepthTopOfCell(k))
                enddo
 
-            enddo  
+               do iCell=1,nCells
+                  k = maxLevelCell(iCell)
 
-            deallocate(minBottomDepth,zMidZLevel)
+                   if (bottomDepth(iCell).lt.minBottomDepthMid(k)) then
+                      ! Round up to cell above
+                      maxLevelCell(iCell) = maxLevelCell(iCell) - 1
+                      bottomDepth(iCell) = refBottomDepth(maxLevelCell(iCell))
+                   elseif (bottomDepth(iCell).lt.minBottomDepth(k)) then
+                      ! Round down cell to the min_pbc_fraction.
+                      bottomDepth(iCell) = minBottomDepth(k)
+                   endif
+                   k = maxLevelCell(iCell)
 
-          elseif (config_alter_ICs_for_pbcs.eq.'zlevel_pbcs_off') then
+                  ! Alter thickness of bottom level to account for PBC
+                  layerThickness(k,iCell) = bottomDepth(iCell) - refBottomDepthTopOfCell(k) 
 
-            do iCell = 1,nCells
-               bottomDepth(iCell) = refBottomDepth(maxLevelCell(iCell))
-            enddo
+                  ! Linearly interpolate the initial T&S for new location of bottom cell for PBCs
+                  zMidPBC = -0.5*(bottomDepth(iCell) + refBottomDepthTopOfCell(k))
 
-          elseif (config_alter_ICs_for_pbcs.eq.'no_alteration') then
-            ! No action taken.  This is for when no pbcs are desired,
-            !  or if ICs were already altered upon start-up.
+                  do iTracer=1,num_tracers
+                     tracers(iTracer,k,iCell) = tracers(iTracer,k,iCell) &
+                        + (tracers(iTracer,k-1,iCell) - tracers(iTracer,k,iCell)) &
+                         /(zMidZLevel(k-1)-zMidZLevel(k)) &
+                         *(zMidPBC - zMidZLevel(k))
+                  enddo
 
-          else
+               enddo  
 
-             write (0,*) ' Incorrect choice of config_alter_ICs_for_pbcs.'
-             call mpas_dmpar_abort(dminfo)
+               deallocate(minBottomDepth,zMidZLevel)
 
-          endif
+            elseif (config_pbc_alteration_type.eq.'full_cell') then
 
-           ! Layer thickness when the ocean is at rest, i.e. without SSH or internal perturbations.
-           ! This is applied only from the initial condition
-           if (config_set_restingThickness_to_IC) then
-               restingThickness = layerThickness
-           endif
+               do iCell = 1,nCells
+                  bottomDepth(iCell) = refBottomDepth(maxLevelCell(iCell))
+               enddo
+
+            else
+
+                write (0,*) ' Incorrect choice of config_pbc_alteration_type.'
+                call mpas_dmpar_abort(dminfo)
+
+            endif
 
          endif ! .not.config_do_restart
+
+         if (.not.config_do_restart) then
+
+            ! Layer thickness when the ocean is at rest, i.e. without SSH or internal perturbations.
+            ! This is applied only from the initial condition
+            if (config_set_restingThickness_to_IC) then
+                restingThickness = layerThickness
+            endif
+
+         endif ! .not.config_do_restart.and.config_alter_ICs_for_pbcs
 
          if (config_check_ssh_consistency) then
             consistentSSH = .true.
