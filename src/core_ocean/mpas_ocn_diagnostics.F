@@ -542,7 +542,7 @@ contains
 !>  cell.  
 !
 !-----------------------------------------------------------------------
-   subroutine ocn_vert_transport_velocity_top(grid, oldLayerThickness, layerThicknessEdge, &
+   subroutine ocn_vert_transport_velocity_top(mesh, verticalMesh, oldLayerThickness, layerThicknessEdge, &
      normalVelocity, oldSSH, newHighFreqThickness, dt, vertTransportVelocityTop, err)!{{{
 
       !-----------------------------------------------------------------
@@ -552,7 +552,10 @@ contains
       !-----------------------------------------------------------------
 
       type (mesh_type), intent(in) :: &
-         grid          !< Input: grid information
+         mesh           !< Input: horizonal mesh information
+
+      type (verticalMesh_type), intent(in) :: &
+         verticalMesh   !< Input: vertical mesh information
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          oldLayerThickness    !< Input: layer thickness at old time
@@ -604,16 +607,16 @@ contains
 
       err = 0
 
-      nEdgesOnCell      => grid % nEdgesOnCell % array
-      areaCell          => grid % areaCell % array
-      edgesOnCell       => grid % edgesOnCell % array
-      edgeSignOnCell    => grid % edgeSignOnCell % array
-      maxLevelCell      => grid % maxLevelCell % array
-      maxLevelEdgeBot   => grid % maxLevelEdgeBot % array
-      dvEdge            => grid % dvEdge % array
+      nEdgesOnCell      => mesh % nEdgesOnCell % array
+      areaCell          => mesh % areaCell % array
+      edgesOnCell       => mesh % edgesOnCell % array
+      edgeSignOnCell    => mesh % edgeSignOnCell % array
+      maxLevelCell      => mesh % maxLevelCell % array
+      maxLevelEdgeBot   => mesh % maxLevelEdgeBot % array
+      dvEdge            => mesh % dvEdge % array
 
-      nCells      = grid % nCells
-      nVertLevels = grid % nVertLevels
+      nCells      = mesh % nCells
+      nVertLevels = mesh % nVertLevels
 
       if (config_vert_coord_movement.eq.'impermeable_interfaces') then
         vertTransportVelocityTop=0.0
@@ -645,7 +648,7 @@ contains
       !
       ! Compute desired thickness at new time
       !
-      call ocn_ALE_thickness(grid, oldSSH, div_hu_btr, newHighFreqThickness, dt, ALE_thickness, err)!{{{
+      call ocn_ALE_thickness(mesh, verticalMesh, oldSSH, div_hu_btr, newHighFreqThickness, dt, ALE_thickness, err)
 
       !
       ! Vertical transport through layer interfaces

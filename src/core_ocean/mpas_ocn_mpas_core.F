@@ -675,7 +675,7 @@ module mpas_core
 
       integer, dimension(:), pointer :: maxLevelCell
       real (kind=RKIND), dimension(:), pointer :: refBottomDepth, &
-         refBottomDepthTopOfCell, vertCoordMovementWeights, bottomDepth
+         refBottomDepthTopOfCell, vertCoordMovementWeights, bottomDepth, refZMid, refLayerThickness
       real (kind=RKIND), dimension(:), allocatable :: minBottomDepth, minBottomDepthMid, zMidZLevel
          
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness, restingThickness
@@ -694,7 +694,10 @@ module mpas_core
          bottomDepth => block % mesh % bottomDepth % array
          vertCoordMovementWeights => block % mesh % vertCoordMovementWeights % array
          maxLevelCell => block % mesh % maxLevelCell % array
-         restingThickness => block % mesh % restingThickness % array
+
+         restingThickness => block % verticalMesh % restingThickness % array
+         refZMid => block % verticalMesh % refZMid % array
+         refLayerThickness => block % verticalMesh % refLayerThickness % array
 
          nCells      = block % mesh % nCells
          nVertLevels = block % mesh % nVertLevels
@@ -704,6 +707,8 @@ module mpas_core
          refBottomDepthTopOfCell(1) = 0.0
          do k = 1,nVertLevels
             refBottomDepthTopOfCell(k+1) = refBottomDepth(k)
+            refLayerThickness(k) = refBottomDepth(k) - refBottomDepthTopOfCell(k)
+            refZMid(k) = - refBottomDepthTopOfCell(1) - refLayerThickness(k)/2.0
          end do
 
          ! Initialization of vertCoordMovementWeights. This determines how SSH perturbations

@@ -235,7 +235,8 @@ module ocn_time_integration_split
 
            ! compute vertTransportVelocityTop.  Use u (rather than uTransport) for momentum advection.
            ! Use the most recent time level available.
-           call ocn_vert_transport_velocity_top(block % mesh, block % state % time_levs(1) % state % layerThickness % array, &
+           call ocn_vert_transport_velocity_top(block % mesh, block % verticalMesh, &
+              block % state % time_levs(1) % state % layerThickness % array, &
               block % state % time_levs(stage1_tend_time) % state % layerThicknessEdge % array, &
               block % state % time_levs(stage1_tend_time) % state % normalVelocity % array, &
               block % state % time_levs(1) % state % ssh % array, &
@@ -822,8 +823,10 @@ module ocn_time_integration_split
          do while (associated(block))
 
             ! compute vertTransportVelocityTop.  Use uTransport for advection of layerThickness and tracers.
-            ! Use time level 1 values of layerThickness and layerThicknessEdge because layerThickness has not yet been computed for time level 2.
-            call ocn_vert_transport_velocity_top(block % mesh, block % state % time_levs(1) % state % layerThickness % array, &
+            ! Use time level 1 values of layerThickness and layerThicknessEdge because 
+            ! layerThickness has not yet been computed for time level 2.
+            call ocn_vert_transport_velocity_top(block % mesh, block % verticalMesh, &
+               block % state % time_levs(1) % state % layerThickness % array, &
                block % state % time_levs(2) % state % layerThicknessEdge % array, &
                block % state % time_levs(2) % state % uTransport % array, &
                block % state % time_levs(1) % state % ssh % array, &
