@@ -54,6 +54,7 @@ module mpas_core
    use ocn_time_average
 
    use ocn_forcing
+   use ocn_sea_ice
 
    use ocn_constants
 
@@ -149,6 +150,9 @@ module mpas_core
       err = ior(err,err_tmp)
 
       call ocn_global_diagnostics_init(dminfo,err_tmp)
+      err = ior(err, err_tmp)
+
+      call ocn_sea_ice_init(domain % blocklist % mesh % nVertLevels, err_tmp)
       err = ior(err, err_tmp)
 
       call ocn_constants_init()
