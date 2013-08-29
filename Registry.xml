@@ -180,7 +180,7 @@
 		            possible_values=".true. or .false."
 		/>
 		<nml_option name="config_pbc_alteration_type" type="character" default_value="full_cell" units="unitless"
-		            description="Determines the method of initial condition alteration for partial bottom cells.  'partial_cell' alters layerThickness, interpolates all tracers in the bottom cell based on the bottomDepth variable, and alters bottomDepth to enforce the minimum pbc fraction.  'full_cell' alters bottomDepth to have full cells everwhere, based on the refBottomDepth variable."
+		            description="Determines the method of initial condition alteration for partial bottom cells.  'partial_cell' alters layerThickness, interpolates all tracers in the bottom cell based on the bottomDepth variable, and alters bottomDepth to enforce the minimum pbc fraction.  'full_cell' alters bottomDepth to have full cells everywhere, based on the refBottomDepth variable."
 		            possible_values="'full_cell' or 'partial_cell'"
 		/>
 		<nml_option name="config_min_pbc_fraction" type="real" default_value="0.10" units="unitless"
