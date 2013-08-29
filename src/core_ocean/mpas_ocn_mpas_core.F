@@ -35,6 +35,7 @@ module mpas_core
 
    use ocn_thick_hadv
    use ocn_thick_vadv
+   use ocn_thick_ale
 
    use ocn_vel_pressure_grad
    use ocn_vel_vadv
@@ -133,6 +134,8 @@ module mpas_core
       call ocn_tendency_init(err_tmp)
       err = ior(err,err_tmp)
       call ocn_diagnostics_init(err_tmp)
+      err = ior(err,err_tmp)
+      call ocn_thick_ale_init(err_tmp)
       err = ior(err,err_tmp)
 
       call ocn_tracer_advection_init(err_tmp)
