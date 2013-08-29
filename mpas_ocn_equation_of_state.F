@@ -159,8 +159,8 @@ contains
       elseif (config_eos_type.eq.'jm') then
          jmEos = .true.
       else
-         print *,'Invalid choice for config_eos_type.'
-         print *,'  Choices are: linear, jm'
+         write(6,*) 'Invalid choice for config_eos_type.'
+         write(6,*) '  Choices are: linear, jm'
          err = 1
       endif
 

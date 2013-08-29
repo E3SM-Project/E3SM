@@ -27,6 +27,7 @@ module ocn_diagnostics
 
    use ocn_gm
    use ocn_equation_of_state
+   use ocn_thick_ale
 
    implicit none
    private
@@ -59,7 +60,7 @@ module ocn_diagnostics
    !
    !--------------------------------------------------------------------
 
-   integer :: ke_cell_flag, ke_vertex_flag, use_freq_filtered_thickness, use_min_max_thickness
+   integer :: ke_cell_flag, ke_vertex_flag
    real (kind=RKIND) ::  coef_3rd_order, fCoef
 
 !***********************************************************************
@@ -538,9 +539,7 @@ contains
 !> \date    August 2013
 !> \details 
 !>  This routine computes the vertical transport through the top of each 
-!>  cell.  It uses the ALE formulation, and includes contributions
-!>  from SSH variations (z-star), high-frequency divergence (z-tilde),
-!>  and imposes a minimum layer thickness.
+!>  cell.  
 !
 !-----------------------------------------------------------------------
    subroutine ocn_vert_transport_velocity_top(grid, oldLayerThickness, layerThicknessEdge, &
@@ -590,25 +589,18 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, iCell, k, i, nCells, nEdges, nVertLevels, kMax, nCellsSolve
+      integer :: iEdge, iCell, k, i, nCells, nVertLevels
       integer, dimension(:), pointer :: nEdgesOnCell, nEdgesOnEdge, &
         maxLevelCell, maxLevelEdgeBot
       integer, dimension(:,:), pointer :: edgesOnCell, edgeSignOnCell
 
-      real (kind=RKIND) :: flux, thicknessSum, invAreaCell, newSSH, remainder, newThickness, thicknessWithRemainder
-      real (kind=RKIND), dimension(:), pointer :: dvEdge, areaCell, vertCoordMovementWeights, refBottomDepth, bottomDepth
+      real (kind=RKIND) :: flux, invAreaCell
+      real (kind=RKIND), dimension(:), pointer :: dvEdge, areaCell
       real (kind=RKIND), dimension(:), allocatable :: &
-         div_hu_btr, &  !> Local: barotropic divergence of (thickness*velocity)
-         ALE_Thickness, &     !> Local: ALE thickness at new time
-         SSH_ALE_thickness, & !> Local: ALE thickness alteration due to SSH (z-star)
-         prelim_ALE_Thickness, &     !> Local: ALE thickness at new time
-         min_ALE_thickness, & !> Local: ALE thickness alteration due to minimum thickness
-         min_ALE_thickness_down, & !> Local: ALE thickness alteration due to minimum thickness
-         min_ALE_thickness_up !> Local: ALE thickness alteration due to minimum thickness
+         div_hu_btr       !> barotropic divergence of (thickness*velocity)
       real (kind=RKIND), dimension(:,:), allocatable :: &
-         div_hu         !> Local: divergence of (thickness*velocity)
-      real (kind=RKIND), dimension(:,:), pointer :: &
-         restingThickness   !>  Layer thickness when the ocean is at rest, i.e. without SSH or internal perturbations.
+         ALE_Thickness, & !> ALE thickness at new time
+         div_hu           !> divergence of (thickness*velocity)
 
       err = 0
 
@@ -619,14 +611,8 @@ contains
       maxLevelCell      => grid % maxLevelCell % array
       maxLevelEdgeBot   => grid % maxLevelEdgeBot % array
       dvEdge            => grid % dvEdge % array
-      vertCoordMovementWeights => grid % vertCoordMovementWeights % array
-      bottomDepth => grid % bottomDepth % array
-      refBottomDepth => grid % refBottomDepth % array
-      restingThickness => grid % restingThickness % array
 
       nCells      = grid % nCells
-      nCellsSolve = grid % nCellsSolve
-      nEdges      = grid % nEdges
       nVertLevels = grid % nVertLevels
 
       if (config_vert_coord_movement.eq.'impermeable_interfaces') then
@@ -634,92 +620,50 @@ contains
         return
       end if
 
-      allocate(div_hu(nVertLevels,nCells), div_hu_btr(nCells), &
-         ALE_Thickness(nVertLevels), SSH_ALE_thickness(nVertLevels), prelim_ALE_thickness(nVertLevels), &
-         min_ALE_thickness(nVertLevels), min_ALE_thickness_down(nVertLevels), min_ALE_thickness_up(nVertLevels))
+      allocate(div_hu(nVertLevels,nCells), div_hu_btr(nCells), ALE_Thickness(nVertLevels,nCells))
 
-      min_ALE_thickness_down = 0.0
-      min_ALE_thickness_up   = 0.0
+      !
+      ! thickness-weighted divergence and barotropic divergence
+      !
+      ! See Ringler et al. (2010) jcp paper, eqn 19, 21, and fig. 3.
+      do iCell=1,nCells
+         div_hu(:,iCell) = 0.0
+         div_hu_btr(iCell) = 0.0
+         invAreaCell = 1.0 / areaCell(iCell)
+         do i = 1, nEdgesOnCell(iCell)
+            iEdge = edgesOnCell(i, iCell)
+
+            do k = 1, maxLevelEdgeBot(iEdge)
+               flux = layerThicknessEdge(k, iEdge) * normalVelocity(k, iEdge) * dvEdge(iEdge) * edgeSignOnCell(i, iCell) * invAreaCell
+               div_hu(k,iCell) = div_hu(k,iCell) - flux
+               div_hu_btr(iCell) = div_hu_btr(iCell) - flux
+            end do
+         end do
+
+      enddo
+
+      !
+      ! Compute desired thickness at new time
+      !
+      call ocn_ALE_thickness(grid, oldSSH, div_hu_btr, newHighFreqThickness, dt, ALE_thickness, err)!{{{
+
+      !
+      ! Vertical transport through layer interfaces
+      !
+      ! Vertical transport through layer interface at top and bottom is zero.
+      ! Here we are using solving the continuity equation for vertTransportVelocityTop ($w^t$),
+      ! and using ALE_Thickness for thickness at the new time.
 
       do iCell=1,nCells
-        kMax = maxLevelCell(iCell)
-
-        !
-        ! thickness-weighted divergence and barotropic divergence
-        !
-        ! See Ringler et al. (2010) jcp paper, eqn 19, 21, and fig. 3.
-        div_hu(:,iCell) = 0.0
-        div_hu_btr(iCell) = 0.0
-        invAreaCell = 1.0 / areaCell(iCell)
-        do i = 1, nEdgesOnCell(iCell)
-          iEdge = edgesOnCell(i, iCell)
-
-          do k = 1, maxLevelEdgeBot(iEdge)
-            flux = layerThicknessEdge(k, iEdge) * normalVelocity(k, iEdge) * dvEdge(iEdge) * edgeSignOnCell(i, iCell) * invAreaCell
-            div_hu(k,iCell) = div_hu(k,iCell) - flux
-            div_hu_btr(iCell) = div_hu_btr(iCell) - flux
-          end do
-        end do
-
-        !
-        ! ALE thickness alteration due to SSH (z-star)
-        !
-        newSSH = oldSSH(iCell) - dt*div_hu_btr(iCell)
-        thicknessSum = 1e-14  
-        do k = 1, kMax
-           SSH_ALE_Thickness(k) = newSSH * vertCoordMovementWeights(k) * restingThickness(k, iCell) * div_hu_btr(iCell)
-           thicknessSum = thicknessSum + vertCoordMovementWeights(k) * restingThickness(k, iCell)
-        end do
-        SSH_ALE_Thickness = SSH_ALE_Thickness / thicknessSum
-
-        !
-        ! ALE thickness alteration due to minimum thickness
-        !
-        ! go down the column:
-        ! Note we have use_min_max_thickness in loop index rather than use if statements around this section.
-        prelim_ALE_Thickness(1:kMax) = restingThickness(1:kMax,iCell) + SSH_ALE_Thickness(1:kMax) + use_freq_filtered_thickness * newHighFreqThickness(1:kMax,iCell) 
-        remainder = 0.0
-        do k = 1, kMax*use_min_max_thickness
-           newThickness = max(min(prelim_ALE_Thickness(k)+remainder,config_max_thickness_factor*restingThickness(k,iCell)),config_min_thickness)
-           min_ALE_thickness_down(k) = newThickness - prelim_ALE_Thickness(k) 
-           remainder = remainder - min_ALE_thickness_down(k)
-        end do
-
-        ! go back up the column:
-        min_ALE_thickness_up(kMax) = 0.0
-        prelim_ALE_Thickness(1:kMax) = prelim_ALE_Thickness(1:kMax) + min_ALE_thickness_down(1:kMax)
-        do k = kMax*use_min_max_thickness-1,1,-1
-           newThickness = max(min(prelim_ALE_Thickness(k)+remainder,config_max_thickness_factor*restingThickness(k,iCell)),config_min_thickness)
-           min_ALE_thickness_up(k) = newThickness - prelim_ALE_Thickness(k) 
-           remainder = remainder - min_ALE_thickness_up(k)
-        end do
-        min_ALE_thickness_up(1) = min_ALE_thickness_up(1) + remainder
-        min_ALE_thickness(1:kMax) = min_ALE_thickness_down(1:kMax) + min_ALE_thickness_up(1:kMax)
-
-        !
-        ! Add all contributions to the new ALE thickness.
-        !
-        ! Note that restingThickness is nonzero, and remaining terms are perturbations about zero.
-        ALE_Thickness(1:kMax) = restingThickness(1:kMax,iCell) + SSH_ALE_Thickness(1:kMax) &
-          + use_freq_filtered_thickness * newHighFreqThickness(1:kMax,iCell) &
-          + use_min_max_thickness * min_ALE_Thickness(1:kMax)
-
-        !
-        ! Vertical transport through layer interfaces
-        !
-        ! Vertical transport through layer interface at top and bottom is zero.
-        ! Here we are using solving the continuity equation for vertTransportVelocityTop ($w^t$),
-        ! and using ALE_Thickness for thickness at the new time.
-        vertTransportVelocityTop(1,iCell) = 0.0
-        vertTransportVelocityTop(kMax+1,iCell) = 0.0
-        do k=kMax,2,-1
-           vertTransportVelocityTop(k,iCell) = vertTransportVelocityTop(k+1,iCell) - div_hu(k,iCell) &
-             - (ALE_Thickness(k) - oldLayerThickness(k,iCell))/dt
-        end do
+         vertTransportVelocityTop(1,iCell) = 0.0
+         vertTransportVelocityTop(maxLevelCell(iCell)+1,iCell) = 0.0
+         do k=maxLevelCell(iCell),2,-1
+            vertTransportVelocityTop(k,iCell) = vertTransportVelocityTop(k+1,iCell) - div_hu(k,iCell) &
+              - (ALE_Thickness(k,iCell) - oldLayerThickness(k,iCell))/dt
+         end do
       end do
 
-      deallocate(div_hu, div_hu_btr, ALE_Thickness, SSH_ALE_Thickness, prelim_ALE_thickness, &
-         min_ALE_thickness, min_ALE_thickness_down, min_ALE_thickness_up)
+      deallocate(div_hu, div_hu_btr, ALE_Thickness)
 
    end subroutine ocn_vert_transport_velocity_top!}}}
 
@@ -923,18 +867,6 @@ contains
           ! is added separately to the momentum tendencies.
           fCoef = 0
       end if
-
-      if (config_use_freq_filtered_thickness) then
-         use_freq_filtered_thickness = 1
-      else
-         use_freq_filtered_thickness = 0
-      endif
-
-      if (config_use_min_max_thickness) then
-         use_min_max_thickness = 1
-      else
-         use_min_max_thickness = 0
-      endif
 
     end subroutine ocn_diagnostics_init!}}}
 
