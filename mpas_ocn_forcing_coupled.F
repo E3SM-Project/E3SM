@@ -171,10 +171,8 @@ contains
       end do
 
 
+      ! Build surface fluxes at cell centers
       do iCell = 1, mesh % nCells
-!       surfaceTracerFlux(index_temperature_flux, iCell) = (latentHeatFlux(iCell) + evaporationFlux(iCell) * latent_heat_vapor_mks + sensibleHeatFlux(iCell) + longWaveHeatFluxUp(iCell) + longWaveHeatFluxDown(iCell) &
-!                                                          + seaIceHeatFlux(iCell) - (snowFlux(iCell) + iceRunoffFlux(iCell)) * latent_heat_fusion_mks) * hflux_factor
-
         surfaceTracerFlux(index_temperature_flux, iCell) = (latentHeatFlux(iCell) + sensibleHeatFlux(iCell) + longWaveHeatFluxUp(iCell) + longWaveHeatFluxDown(iCell) &
                                                            + seaIceHeatFlux(iCell) - (snowFlux(iCell) + iceRunoffFlux(iCell)) * latent_heat_fusion_mks) * hflux_factor
 
