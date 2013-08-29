@@ -240,7 +240,11 @@ foreach \$suite (qw(@testsuites)){
           \$ENV{MP_PROCS} = 1;
           system("hostname > $tstdir/hostfile");
           \$ENV{MP_HOSTFILE}="$tstdir/hostfile";
+	  
         }
+	if("$host" eq "yellowstone_pgi") {
+	    $ENV{LD_PRELOAD}="/opt/ibmhpc/pe1304/ppe.pami/gnu/lib64/pami64/libpami.so";
+	}
 	system("perl ./testpio_build.pl --conopts=\\"\$confopts\\" --host=$host");
         if("$host" eq "erebus" or "$host" =~ /^yellowstone/){
           \$ENV{MP_PROCS}=\$saveprocs;

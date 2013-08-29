@@ -11,6 +11,15 @@
 !! Code added as a work around for poor rsend performance on cray systems with
 !! Gemini interconnect
 !<
+#ifdef BGP
+#define BGx
+#endif
+#ifdef BGL
+#define BGx
+#endif
+#ifdef BGQ
+#define BGx
+#endif
 #ifdef _NO_MPI_RSEND
 #define MPI_RSEND MPI_SEND
 #define mpi_rsend mpi_send
@@ -95,7 +104,7 @@ contains
     endif
 
 
-#if defined(CPRXLF) && !defined(BGL) && !defined(BGP)
+#if defined(CPRXLF) && !defined(BGx)
   close(5)    ! needed to prevent batch jobs from hanging in xl__trbk
   call xl__trbk()
 #endif

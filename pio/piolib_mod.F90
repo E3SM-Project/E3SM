@@ -6,6 +6,9 @@
 #ifdef BGL
 #define BGx
 #endif
+#ifdef BGQ
+#define BGx
+#endif
 !>
 !! @file 
 !! @brief Initialization Routines for PIO
@@ -1734,10 +1737,9 @@ contains
     call dealloc_check(iotmp2)
 
     call identity(comp_comm,iotask)
-    
 
     if (debug) print *,__PIO_FILE__,__LINE__, 'CHECK 2 (myid, n_iotasks, lstride, lbase, iotask, num_iotasks) :', &
-         iosystem%comp_rank, n_iotasks, lstride, lbase, iotask, iosystem%num_tasks	
+         iosystem%comp_rank, n_iotasks, lstride, lbase, iotask, iosystem%num_tasks
     if (debug) print *,__PIO_FILE__,__LINE__, 'IORANK CHECK for proc=:', iosystem%comp_rank, 'n_iotasks = ', &
          n_iotasks, iosystem%iomaster, iosystem%ioranks(:)
 

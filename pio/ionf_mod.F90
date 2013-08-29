@@ -94,7 +94,7 @@ contains
           ! Only io proc 0 will do writing
           if (File%iosystem%io_rank == 0) then
              ! Stores the ncid in File%fh
-             ierr = nf90_create(fname, amode, File%fh, &
+             ierr = nf90_create(fname, nmode, File%fh, &
                   info=File%iosystem%info )
 ! Set default to NOFILL for performance.  
              if(ierr==PIO_NOERR) &

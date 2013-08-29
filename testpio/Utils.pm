@@ -53,30 +53,13 @@ sub projectInfo{
    my $projectInfo;
    my $project;
 #HOST SPECIFIC START
-   if($host =~ "bluefire" or $host =~ "frost"){
-       if(defined $ENV{USE_PROJECT}){
-	   $project=$ENV{USE_PROJECT};
-       }else{
-	   open(G,"/etc/project.ncar");
-	   foreach(<G>){
-	       if($_ =~ /^$user:(\d+),?/){
-		   $project = $1;
-		   last;
-	       }
-	   }
-	   close(G);
-       }
-      if($host =~ "bluefire") {
-        $projectInfo = "#BSUB -R \"span[ptile=64]\"\n#BSUB -P $project\n";
-      }
-   }elsif($host =~ "erebus" or $host =~ "yellowstone"){
+   if($host =~ "erebus" or $host =~ "yellowstone"){
        if(defined $ENV{ACCOUNT}){
 	   $project=$ENV{ACCOUNT};
        }else{
 	   $project="P93300606";
        }
        $projectInfo = "#BSUB -R \"span[ptile=16]\"\n#BSUB -P $project\n";
-       $projectInfo .= "#BSUB -R \"select[scratch_ok > 0]\"\n" if ($host=="yellowstone");
    }elsif($host =~ "titan"){
      $project = `showproj -s $host | tail -1`;
      $projectInfo ="#PBS -A $project\n";
@@ -248,14 +231,6 @@ sub loadmodules{
         module(" load netcdf-hdf5parallel/4.2.0");
         module(" load parallel-netcdf/1.2.0");
 	module(" list");
-    }elsif($host =~ "lynx"){
-	require "/opt/modules/default/init/perl";
-	module_check($modpath,$host);
-#	module(" load netcdf");
-	module(" switch pgi pgi/11.10.0");
-        module(" load PGI/netcdf4/4.1.3_seq");
-        module(" load pnetcdf/1.2.0");
-        module("list");
     }elsif($host eq "carver"){
 	require "/usr/common/nsg/opt/Modules/default/init/perl";
 	module_check($modpath,$host);
@@ -282,7 +257,7 @@ sub loadmodules{
 	module_check($modpath,"yellowstone");
         module("rm netcdf");
         module("rm intel");
-        module("load pgi/12.5");
+        module("load pgi/13.3");
 	module("load ncarcompilers/1.0");
         module("unload netcdf");
         module("load netcdf/4.2");
@@ -308,13 +283,13 @@ sub loadmodules{
 	require "/glade/apps/opt/lmod/lmod/init/perl";    
 	module_check($modpath,$host);
 #        module("purge");
-        module("load intel/13.0.1");
+        module("load intel/13.1.2");
 	module("load ncarcompilers/1.0");
-        module("unload netcdf");
+        module("rm netcdf");
         module("load netcdf-mpi/4.2");
         module("load pnetcdf/1.3.0");
         module("load ncarenv/1.0");
-	module("load ncarbinlibs/0.0");
+	module("load ncarbinlibs/1.0");
 	module("list");
     }
 	

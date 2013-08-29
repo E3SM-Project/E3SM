@@ -3,7 +3,7 @@
 #include <string.h>
 
 
-#if defined(BGL) || defined(BGP)
+#if defined(BGL) || defined(BGP) || defined(BGQ)
 
 #include <mpi.h>
 #include <math.h>
@@ -23,8 +23,8 @@
 #define   Personality_rankInPset         BGLPersonality_rankInPset
 #define   Personality_psetNum            BGLPersonality_psetNum
 
-
-#else
+#endif
+#ifdef BGP
 
 #include <spi/kernel_interface.h>
 #include <common/bgp_personality.h>
@@ -39,6 +39,18 @@
 #define   Personality_rankInPset         BGP_Personality_rankInPset
 #define   Personality_psetNum            BGP_Personality_psetNum
 
+#endif
+
+#ifdef BGQ
+
+#include <kernel/process.h>
+#include <kernel/location.h>
+#include <firmware/include/personality.h>
+#include <mpix.h>
+
+#define   get_personality                Kernel_GetPersonality
+#define   get_processor_id               Kernel_PhysicalProcessorID
+#define   Personality                    Personality_t
 
 #endif
 
@@ -60,6 +72,11 @@ void identity(MPI_Fint *comm, int *iotask)
    MPI_Comm_size(comm2,&np);
    MPI_Get_processor_name(my_name, &my_name_len);
 
+#ifdef BGQ
+    MPIX_Hardware_t hw;
+    MPIX_Hardware(&hw);
+#endif
+
    /*  Get the personality  */
    Personality pers;
    char message[100];
@@ -70,29 +87,52 @@ void identity(MPI_Fint *comm, int *iotask)
    int *tmp;
    int i,ierr;
 
+#ifdef BGQ
+  Personality personality;
+  Kernel_GetPersonality(&pers, sizeof(pers));
+#else
    get_personality (&pers, sizeof(pers));
-   Personality_getLocationString (&pers, message);
-    
+#endif
    int numIONodes,numPsets,numNodesInPset,rankInPset;
+#if defined(BGL) || defined(BGP) 
+   Personality_getLocationString (&pers, message);
    numIONodes = Personality_numIONodes (&pers);
    numNodesInPset = Personality_numNodesInPset (&pers);
    rankInPset = Personality_rankInPset (&pers);
+#endif
+#ifdef BGQ
+   int myrank, numpsets, psetID, psetsize, psetrank;
+
+   MPI_Comm_rank(comm2,&myrank);
+   bgq_pset_info (comm2, &numpsets, &psetID, &psetsize, &psetrank);
+ 
+   numIONodes = numpsets; 
+   numNodesInPset = psetsize; 
+   rankInPset = myrank; 
+#endif
 
 #ifdef BGL
    numPsets = Personality_numPsets (&pers);
-#else
+#endif
+#ifdef BGP 
    rankInPset --;
    numPsets = BGP_Personality_numComputeNodes(&pers)/numNodesInPset;
 #endif
+#ifdef BGQ
+   numPsets = numpsets; 
+#endif
     
-
    if(rank == 0) { printf("number of IO nodes in block: %i \n",numIONodes);}
    if(rank == 0) { printf("number of Psets in block : %i \n",numPsets);}
    if(rank == 0) { printf("number of compute nodes in Pset: %i \n",numNodesInPset);}
 
-
    int psetNum;
+#ifdef BGQ
+   psetNum = psetID;
+#else
    psetNum = Personality_psetNum (&pers);
+#endif
+
 #ifdef DEBUG
    if((*iotask)>0) {
       printf( "%04i (%-50s %s) %i yes\n", rank, my_name, message, psetNum );
@@ -143,8 +183,13 @@ void determineiotasks(MPI_Fint *comm, int *numiotasks,int *base, int *stride, in
    int task_count;
    MPI_Comm comm2;
 
+#ifdef BGQ
+   MPIX_Hardware_t hw;
+   MPIX_Hardware(&hw);
+#endif
 
    comm2 = MPI_Comm_f2c(*comm);
+
 
    MPI_Comm_rank(comm2, &rank);
 
@@ -160,18 +205,30 @@ void determineiotasks(MPI_Fint *comm, int *numiotasks,int *base, int *stride, in
    /* printf("Determine io tasks: proc %i: tasks= %i numiotasks=%i stride= %i \n", rank, np, (*numiotasks), (*stride)); */
 
    if((*rearr) > 0) {
+
+#ifdef BGQ
+    Personality personality;
+    Kernel_GetPersonality(&pers, sizeof(pers));
+#else
      get_personality (&pers, sizeof(pers));
+#endif
      
      int numIONodes,numPsets,numNodesInPset,rankInPset;
      int numiotasks_per_node,remainder,numIONodes_per_pset;
      int lstride;
      
+     /* Number of computational nodes in processor set */
+     #ifdef BGQ  
+     int numpsets, psetID, psetsize, psetrank;
+    bgq_pset_info (comm2,&numpsets, &psetID, &psetsize, &psetrank);
+     numIONodes = numpsets; 
+     numNodesInPset = psetsize;
+     #else
      /* total number of IO-nodes */
      numIONodes = Personality_numIONodes (&pers);
-     
-     /* Number of computational nodes in processor set */
      numNodesInPset = Personality_numNodesInPset (&pers);
-     
+     #endif
+
      /*printf("Determine io tasks: me %i : nodes in pset= %i ionodes = %i\n", rank, numNodesInPset, numIONodes); */
 
      
@@ -221,8 +278,12 @@ void determineiotasks(MPI_Fint *comm, int *numiotasks,int *base, int *stride, in
      /* Number of processor sets */
 #ifdef BGL
      numPsets = Personality_numPsets (&pers);
-#else
+#endif
+#ifdef BGP 
      numPsets = BGP_Personality_numComputeNodes(&pers)/numNodesInPset;
+#endif
+#ifdef BGQ
+     numPsets = numpsets; 
 #endif
      
      /* number of IO nodes in processor set (I need to add
@@ -234,12 +295,17 @@ void determineiotasks(MPI_Fint *comm, int *numiotasks,int *base, int *stride, in
      coreId = get_processor_id ();
      
      /* What is the rank of this node in the processor set */
-     rankInPset = Personality_rankInPset (&pers);
-#ifdef BGP
-     rankInPset--;
-#endif
+#ifdef BGQ
+     psetNum = psetID;
+     rankInPset = psetrank;
+#else
      /* determine the processor set that this node belongs to */
      psetNum = Personality_psetNum (&pers);
+     rankInPset = Personality_rankInPset (&pers);
+#endif
+#ifdef BGP 
+     rankInPset--;
+#endif
      
      /* printf("Pset #: %i has %i nodes in Pset; base = %i\n",psetNum,numNodesInPset, *base); */
      
@@ -252,7 +318,7 @@ void determineiotasks(MPI_Fint *comm, int *numiotasks,int *base, int *stride, in
      iam = rankInPset-(*base);
      if (iam >= 0)  {
        /* mark tasks that will be IO-tasks  or IO-clients */
-       /*       printf("iam = %d lstride = %d coreID = %d\n",iam,lstride,coreId);*/
+          /*    printf("iam = %d lstride = %d coreID = %d\n",iam,lstride,coreId); */
        if((iam % lstride == 0) && (coreId == 0) ) {  /* only io tasks indicated by stride and coreId = 0 */
 	 if((iam/lstride) < numiotasks_per_node) { 
 	   /* only set the first (numiotasks_per_node - 1) tasks */
@@ -264,6 +330,7 @@ void determineiotasks(MPI_Fint *comm, int *numiotasks,int *base, int *stride, in
 	   if(psetNum < remainder) {(*iamIOtask) = 1;};   
 	 }
        }
+      /*printf("comm = %d iam = %d lstride = %d coreID = %d iamIOtask = %i \n",comm2, iam,lstride,coreId,(*iamIOtask));*/
      }
    }  
    else 
@@ -272,7 +339,7 @@ void determineiotasks(MPI_Fint *comm, int *numiotasks,int *base, int *stride, in
      (*iamIOtask) = 1;
    }
    
-   /* printf("myrank = %i iotask = %i \n", rank, (*iamIOtask)); */
+    /*printf("comm = %d myrank = %i iotask = %i \n", comm2, rank, (*iamIOtask));*/ 
    
    /* now we need to correctly determine the numiotasks */
    MPI_Allreduce(iamIOtask, &task_count, 1, MPI_INT, MPI_SUM, comm2);
@@ -280,6 +347,131 @@ void determineiotasks(MPI_Fint *comm, int *numiotasks,int *base, int *stride, in
    (*numiotasks) = task_count;
  
   
+}
+
+int bgq_ion_id (void)
+{
+  int iA,  iB,  iC,  iD,  iE;                /* The local node's coordinates  */
+  int nA,  nB,  nC,  nD,  nE;                /* Size of each torus dimension  */
+  int brA, brB, brC, brD, brE;               /* The bridge node's coordinates */
+  int io_node_route_id;
+
+  Personality_t personality;
+
+  Kernel_GetPersonality(&personality, sizeof(personality));
+
+  iA  = personality.Network_Config.Acoord;
+  iB  = personality.Network_Config.Bcoord;
+  iC  = personality.Network_Config.Ccoord;
+  iD  = personality.Network_Config.Dcoord;
+  iE  = personality.Network_Config.Ecoord;
+
+  nA  = personality.Network_Config.Anodes;
+  nB  = personality.Network_Config.Bnodes;
+  nC  = personality.Network_Config.Cnodes;
+  nD  = personality.Network_Config.Dnodes;
+  nE  = personality.Network_Config.Enodes;
+
+  brA = personality.Network_Config.cnBridge_A;
+  brB = personality.Network_Config.cnBridge_B;
+  brC = personality.Network_Config.cnBridge_C;
+  brD = personality.Network_Config.cnBridge_D;
+  brE = personality.Network_Config.cnBridge_E;
+
+/*
+* This is the bridge node, numbered in ABCDE order, E increments first.
+* It is considered the unique "io node route identifer" because each
+* bridge node only has one torus link to one io node.
+*/
+
+  io_node_route_id = brE + brD*nE + brC*nD*nE + brB*nC*nD*nE + brA*nB*nC*nD*nE;
+
+  return io_node_route_id;
+
+}
+
+
+
+int bgq_pset_info (MPI_Fint comm2, int* tot_pset, int* psetID, int* pset_size, int* rank_in_pset)
+{
+        MPI_Comm comp_comm2, pset_comm, bridge_comm;
+        int comp_rank, status, key, bridge_root, tot_bridges, cur_pset, itr, t_buf;
+        int temp_id, rem_psets;
+        MPI_Status mpi_status;
+
+        MPI_Comm_rank (comm2, &comp_rank);
+
+        status = MPI_Comm_dup ( comm2, &comp_comm2);
+    if ( MPI_SUCCESS != status)
+    {
+        printf(" Error duplicating communicator \n");
+        MPI_Abort(comm2, status);
+    }
+
+        // Compute the ION BridgeNode ID
+           key = bgq_ion_id ();
+  
+        // Create the pset_comm per bridge node
+           status = MPI_Comm_split ( comp_comm2, key, comp_rank, &pset_comm);
+           if ( MPI_SUCCESS != status)
+           {
+               printf(" Error splitting communicator \n");
+               MPI_Abort(comm2, status);
+           }
+
+        // Calculate the rank in pset and pset size
+           MPI_Comm_rank (pset_comm, rank_in_pset);
+           MPI_Comm_size (pset_comm, pset_size);
+        
+        // Create the Bridge root nodes communicator
+           bridge_root = 0;
+           if (0 == *rank_in_pset)
+                bridge_root = 1;
+
+        // Calculate the total number of bridge nodes / psets
+           tot_bridges = 0;
+           MPI_Allreduce (&bridge_root, &tot_bridges, 1, MPI_INT, MPI_SUM, comm2);
+
+           *tot_pset = tot_bridges;
+
+        // Calculate the Pset ID
+        cur_pset = 0;
+        rem_psets = tot_bridges;
+        if ((0 == comp_rank) && (bridge_root ==1))
+        {
+                *psetID = 0;
+                rem_psets = tot_bridges-1;
+                cur_pset++;
+        }
+
+        t_buf = 0; // Dummy value
+        if (0 == comp_rank)
+        {
+                for (itr = 0; itr < rem_psets; itr++)
+                {
+                        MPI_Recv (&t_buf,1, MPI_INT,  MPI_ANY_SOURCE, MPI_ANY_TAG,comm2, &mpi_status);
+                        MPI_Send (&cur_pset, 1, MPI_INT, mpi_status.MPI_SOURCE, 0, comm2);
+                        cur_pset++;
+                }
+        }
+
+        if ((1 == bridge_root) && ( 0 != comp_rank))
+        {
+                MPI_Send (&t_buf, 1, MPI_INT, 0, 0, comm2);
+                MPI_Recv (&temp_id,1, MPI_INT, 0, 0, comm2, &mpi_status);
+
+                *psetID = temp_id;
+                /*printf (" Pset ID is %d \n", *psetID);*/
+        }
+        // Broadcast the PSET ID to all ranks in the psetcomm
+        MPI_Bcast ( psetID, 1, MPI_INT, 0, pset_comm);
+        
+        // Free the split comm
+                MPI_Comm_free (&pset_comm);
+
+        MPI_Barrier (comm2);
+
+        return 0;
 }
 
 #endif
