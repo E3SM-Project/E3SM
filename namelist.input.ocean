@@ -39,7 +39,8 @@
 	config_highFreqThick_del2 = 100.0
 /
 &partial_bottom_cells
-	config_alter_ICs_for_pbcs = "zlevel_pbcs_off"
+	config_alter_ICs_for_pbcs = .false.
+	config_pbc_alteration_type = "full_cell"
 	config_min_pbc_fraction = 0.10
 	config_check_ssh_consistency = .true.
 /
