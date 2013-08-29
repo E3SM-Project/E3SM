@@ -187,14 +187,16 @@ module ocn_time_integration_rk4
         do while (associated(block))
 
            ! advection of u uses u, while advection of layerThickness and tracers use uTransport.
-           call ocn_vert_transport_velocity_top(block % mesh, block % state % time_levs(1) % state % layerThickness % array, &
+           call ocn_vert_transport_velocity_top(block % mesh, block % verticalMesh, &
+              block % state % time_levs(1) % state % layerThickness % array, &
               block % provis_state % layerThicknessEdge % array, block % provis_state % normalVelocity % array, &
               block % state % time_levs(1) % state % ssh % array, block % provis_state % highFreqThickness % array, &
               rk_substep_weights(rk_step), block % provis_state % vertTransportVelocityTop % array, err)
 
            call ocn_tend_vel(block % tend, block % provis_state, block % diagnostics, block % mesh)
 
-           call ocn_vert_transport_velocity_top(block % mesh, block % state % time_levs(1) % state % layerThickness % array, &
+           call ocn_vert_transport_velocity_top(block % mesh, block % verticalMesh, &
+              block % state % time_levs(1) % state % layerThickness % array, &
               block % provis_state % layerThicknessEdge % array, block % provis_state % uTransport % array, &
               block % state % time_levs(1) % state % ssh % array, block % provis_state % highFreqThickness % array, &
               rk_substep_weights(rk_step), block % provis_state % vertTransportVelocityTop % array, err)

@@ -70,7 +70,7 @@ contains
 !>  (z-tilde), and imposes a minimum layer thickness.
 !
 !-----------------------------------------------------------------------
-   subroutine ocn_ALE_thickness(grid, oldSSH, div_hu_btr, newHighFreqThickness, dt, ALE_thickness, err)!{{{
+   subroutine ocn_ALE_thickness(mesh, verticalMesh, oldSSH, div_hu_btr, newHighFreqThickness, dt, ALE_thickness, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -79,7 +79,10 @@ contains
       !-----------------------------------------------------------------
 
       type (mesh_type), intent(in) :: &
-         grid          !< Input: grid information
+         mesh           !< Input: horizonal mesh information
+
+      type (verticalMesh_type), intent(in) :: &
+         verticalMesh   !< Input: vertical mesh information
 
       real (kind=RKIND), dimension(:), intent(in) :: &
          oldSSH,   &!< Input: sea surface height at old time
@@ -123,12 +126,13 @@ contains
 
       err = 0
 
-      maxLevelCell      => grid % maxLevelCell % array
-      vertCoordMovementWeights => grid % vertCoordMovementWeights % array
-      restingThickness => grid % restingThickness % array
+      maxLevelCell      => mesh % maxLevelCell % array
+      vertCoordMovementWeights => mesh % vertCoordMovementWeights % array
 
-      nCells      = grid % nCells
-      nVertLevels = grid % nVertLevels
+      restingThickness => verticalMesh % restingThickness % array
+
+      nCells      = mesh % nCells
+      nVertLevels = mesh % nVertLevels
 
       allocate(SSH_ALE_thickness(nVertLevels), prelim_ALE_thickness(nVertLevels), &
          min_ALE_thickness_down(nVertLevels), min_ALE_thickness_up(nVertLevels))

@@ -1045,8 +1045,16 @@
 		<var name="seaSurfacePressure" type="real" dimensions="nCells Time" streams="ir" units="Pa"
 		     description="Pressure defined at the sea surface."
 		/>
+	</var_struct>
+	<var_struct name="verticalMesh" time_levs="0">
 		<var name="restingThickness" type="real" dimensions="nVertLevels nCells" streams="ir" units="m"
 		     description="Layer thickness when the ocean is at rest, i.e. without SSH or internal perturbations."
+		/>
+		<var name="refZMid" type="real" dimensions="nVertLevels" streams="o" units="m"
+		     description="Reference mid z-coordinate of ocean for each vertical level.  This has a negative value."
+		/>
+		<var name="refLayerThickness" type="real" dimensions="nVertLevels" streams="o" units="m"
+		     description="Reference layerThickness of ocean for each vertical level."
 		/>
 	</var_struct>
 	<var_struct name="tend" time_levs="0">
