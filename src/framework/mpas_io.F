@@ -15,7 +15,7 @@ module mpas_io
    use piolib_mod
    use pionfatt_mod
    use pio_types
-   
+
    ! File access modes
    integer, parameter :: MPAS_IO_READ  = 1, &
                          MPAS_IO_WRITE = 2
@@ -189,7 +189,8 @@ module mpas_io
    type (iosystem_desc_t), pointer, private, save :: pio_iosystem
    type (decomplist_type), pointer, private :: decomp_list => null()
    type (dm_info), private :: local_dminfo
-
+   integer, private:: master_pio_iotype = -999
+   
 
    contains
 
@@ -226,6 +227,57 @@ module mpas_io
 
    end subroutine MPAS_io_init
 
+
+!***********************************************************************
+!
+!  routine MPAS_io_set_iotype
+!
+!> \brief   Set master PIO io type
+!> \author  Doug Jacobsen
+!> \date    10/18/2013
+!> \details 
+!>  This routine sets the master io type for use with PIO.
+!
+!-----------------------------------------------------------------------
+   subroutine MPAS_io_set_iotype(io_type_in, ierr)
+
+      implicit none
+
+      integer, intent(in) :: io_type_in
+      integer, intent(out), optional :: ierr
+
+      if (present(ierr)) then
+         ierr = MPAS_IO_NOERR
+      end if
+
+      master_pio_iotype = io_type_in
+   end subroutine MPAS_io_set_iotype
+
+
+!***********************************************************************
+!
+!  routine MPAS_io_unset_iotype
+!
+!> \brief   Unset master PIO io type
+!> \author  Doug Jacobsen
+!> \date    10/18/2013
+!> \details 
+!>  This routine sets the master io type for use with PIO to it's default
+!>  "unset" value.
+!
+!-----------------------------------------------------------------------
+   subroutine MPAS_io_unset_iotype(ierr)
+
+      implicit none
+
+      integer, intent(out), optional :: ierr
+
+      if (present(ierr)) then
+         ierr = MPAS_IO_NOERR
+      end if
+
+      master_pio_iotype = -999
+   end subroutine MPAS_io_unset_iotype
    
    type (MPAS_IO_Handle_type) function MPAS_io_open(filename, mode, ioformat, ierr)
 
@@ -236,8 +288,7 @@ module mpas_io
       integer, intent(in) :: ioformat
       integer, intent(out), optional :: ierr
 
-      integer :: pio_iotype
-      integer :: pio_ierr
+      integer :: pio_ierr, pio_iotype
 
 !      write(stderrUnit,*) 'Called MPAS_io_open()'
       if (present(ierr)) ierr = MPAS_IO_NOERR
@@ -263,10 +314,14 @@ module mpas_io
       MPAS_io_open % iomode   = mode
       MPAS_io_open % ioformat = ioformat
 
-      if (ioformat == MPAS_IO_PNETCDF) then
-         pio_iotype = PIO_iotype_pnetcdf
+      if (master_pio_iotype /= -999) then
+         pio_iotype = master_pio_iotype
       else
-         pio_iotype = PIO_iotype_netcdf
+         if (ioformat == MPAS_IO_PNETCDF) then
+            pio_iotype = PIO_iotype_pnetcdf
+         else
+            pio_iotype = PIO_iotype_netcdf
+         end if
       end if
 
       if (mode == MPAS_IO_WRITE) then
