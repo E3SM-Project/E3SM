@@ -1,0 +1,77 @@
+                               CONVECT 4.3    
+
+                          Preparation Essentials
+
+The following steps should be taken to set up CONVECT for use in atmospheric models:
+
+1. Set the parameter NA in the initial PARAMETER call statement to a value
+equal to at least ND +1, where ND is the vertical dimension of the arrays
+of pressure, temperature, etc. that will be input to the subroutine.
+
+2. Set the values of the switches IPBL and MINORIG. IPBL should be set to 0
+if the calling model has a boundary layer scheme; otherwise it should be
+set to any other integer. If IPBL is not 0, then CONVECT performs dry
+adiabatic adjustment and returns altered values of the arrays T,Q,QS,U,V
+and TRA; otherwise, these arrays are unaltered. The dry adiabatic
+adjustment is useful in simple models, such as single-column models, with
+no boundary layer schemes of their own. MINORIG is the minimum level from
+which moist convection is allowed to originate.  Ordinarily, it should be
+set to 1, the lowest model level at which temperature is defined. But it
+should not be set to 1 in models with very high resolution near the bottom
+of the boundary layer.  In this case, MINORIG should be set to the lowest
+model level above the surface layer. The layer thickness in the layer
+corresponding to MINORIG should be at least 75 meters or so for a time step
+of 10 minutes, larger for larger time steps. If the layer thickness is too
+small, CONVECT will return IFLAG=4.
+
+3. Examine the values assigned to thermodynamic constants CPD, CPV, etc. in
+BOTH CONVECT and in SUBROUTINE TLIFT. Change them, if necessary, to be
+consistent with values used by the calling model.(But note that CL is artifically 
+small; please do not change this value.)
+
+4. Decide whether you want CONVECT to act on passive tracers or not. If
+not, define a dummy array TRA of dimension (ND,1) filled with 0's, to pass
+to CONVECT, and set NTRA to 0.
+
+5. Define a storage array CBMFIJ of dimensions I,J, where I and J are the
+horizontal indices of the calling model variables. (For two-dimensional
+models, CBMFI should be a one-dimensional array.) CBMFIJ should be
+initialized to zero at the beginning of the time integration. At each time
+step at each grid column, set the scalar CBMF to CBMFIJ for that column
+before passing CBMF to CONVECT. After the call to CONVECT, set CBMFIJ equal
+to the new value of CBMF returned by CONVECT. (CBMFIJ contains the cloud
+base mass fluxes at each grid column; these must be "remembered" between
+calls to CONVECT.  The scalar CBMF is therefore essential both as input to
+and output from CONVECT.)
+
+6. At each grid column at each call to convect, assign one-dimensional
+arrays of temperature (T, in Kelvin), specific humidity (Q, in gm/gm),
+saturation specific humidity (QS, in gm/gm), first horizontal velocity
+component (e.g. zonal wind) (U, in m/s) second horizontal velocity
+component (e.g. meridional wind) (V, in m/s), pressure (P, in mb) and
+pressure at layer interfaces (PH, in mb). Also assign values to the
+two-dimensional array TRA, whose second index corresponds to the tracer
+number. (Thus, if the model carries ozone and methane, for example,
+TRA(ND,1) might correspond to ozone while TRA(ND,2) corresponds to
+methane. The tracer content is defined as a mass mixing ratio.) MAKE SURE
+THAT THE FIRST VALUE OF EACH ARRAY CORRESPONDS TO THE LOWEST MODEL LEVEL.
+
+7. The values of T,Q,QS,U,V,TRA and P should all be defined at the same
+levels. But the array PH must be defined at the model half-levels, such
+that the first value of PH is LARGER than the first value of P. (For
+example, P(1) might be 1000 mb while PH(1) might be 1020 mb.) It is not
+necessary that P and PH remain exactly constant in successive calls to
+CONVECT (as will be the case, for example, in models whose vertical
+coordinate is other than pressure.)
+
+PERFORMANCE OPTIMIZATION
+
+The only internal parameter that might need to be adjusted is ALPHA, which
+controls the rate of approach to statistical equilibrium. A value of ALPHA
+should be sought such that changing it by a factor of 2 in either direction
+produces little change in the performance of the scheme. In general, when
+ALPHA is too large, detailed time series of precipitation at many grid
+points will be noisy. If ALPHA is too small, convection may be
+under-active. Some experiments should be performed to insure ALPHA lies in
+a range for which the model is relatively insensitive to its value.
+

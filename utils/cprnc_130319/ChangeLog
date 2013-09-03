@@ -1,0 +1,278 @@
+Tag name: cprnc_130319
+Originator: jamroz
+Date: Mar 19, 2013
+One-line Summary: Adding an install target
+
+M CMakeLists.txt
+
+==============================================================
+
+Tag name: cprnc_130301
+Originator: jamroz
+Date: Mar 1, 2013
+One-line Summary: Explicitly grabbing Netcdf includes and libs
+
+M CMakeLists.txt
+
+==============================================================
+
+Tag name: cprnc_130225
+Originator: jamroz
+Date: Feb 25, 2013
+One-line Summary: Adding CMake build system
+
+A CMake
+A CMake/FindNetcdf.cmake
+A CMakeLists.txt
+
+==============================================================
+
+
+Tag name: cprnc_121214
+Originator: jedwards
+Date: Dec 14, 2012
+One-line Summary: Add build script for frankfurt
+
+A MakeFrankfurt.sh
+
+==============================================================
+
+
+Tag name: cprnc_121210
+Originator: jedwards
+Date: Dec 10, 2012
+One-line Summary: Add build script for hopper
+
+A MakeHopper.sh
+
+==============================================================
+
+Tag name: cprnc_120828
+Originator: sacks
+Date: Aug 28, 2012
+One-line Summary: Allow longer attributes
+
+Increased max length of attributes, to allow handling long global
+attributes
+
+==============================================================
+Tag name: cprnc_120809
+Originator: muszala
+Date: Tue Aug  9 16:49:02 MDT 2012
+One-line Summary: Add error reporting and build mods
+
+Cprnc now exits if unlimdimid is -1.  Add small wrapper scripts to
+build on lynx and bluefire.  Make default netcdf 4.1.3 in Makefile
+
+Bug:  cprnc on Lynx will seg fault if only one file is given.
+
+==============================================================
+Tag name: cprnc_120807
+Originator: muszala
+Date: Tue Aug  7 16:44:11 MDT 2012
+One-line Summary: Fix Makefile and increase char len for file input
+
+Makefile was missing object of code gen'd file.  Added realclean
+target to clean up code gen'd file.  Pointed netcdf to use 4.1.3.
+
+Increased char length in cprnc.F90 becuase CLM directory names were
+running over the original 180 length and causing tests to fail.
+
+==============================================================
+Tag name: cprnc_120726
+Originator: sacks
+Date: July 26, 2012
+One-line Summary: fixed relative difference calculations
+
+I made two changes to the relative difference calculation; Brian Eaton
+agreed that both of these changes should be made:
+
+(1) Normalized rdbar by s2, the number of indices where both variables
+have valid values.
+
+(2) In get_rdiff_stats_{TYPE}: Deleted a factor of 2 in the
+denominator, in the computation of rdiff from vdiff. This factor of 2
+dates back to at least circa 2001 versions of cprnc. The old code had
+this cryptic comment:
+
+! Test on half of difference field rather than full field due to 0.5 factor
+! used in computation of "denom" later.
+
+But as far as I can tell, this factor of 2 shouldn't be there.
+
+
+Also renamed some variables to more accurately reflect their meaning.
+
+Also added some test cases to check the relative difference
+calculations.
+
+Also updated README file to describe avg rel diff, avg decimal digits,
+and worst decimal digits.
+
+==============================================================
+Tag name: cprnc_120405
+Originator: sacks
+Date: April 5, 2012
+One-line Summary: added more useful output when fill patterns differ
+
+For variables with fill patterns that differ, added an output line
+like:
+
+ FILLDIFF foo
+
+This allows you to grep on FILLDIFF to find all variables whose fill
+patterns differ.
+
+==============================================================
+Tag name: cprnc_120322
+Originator: sacks
+Date: March 22, 2012
+One-line Summary: fixed bug when first variable in file is non-numeric
+
+Previously, the variables idiff, ifilldiff, ierr and inotfound were
+not initialized to 0 in compare_vars, which was problematic whenever a
+non-numeric variable was encountered (and thus compare_var_{TYPE}
+wasn't called that time through the loop), and especially problematic
+if the first variable encountered was non-numeric (in which case the
+code used uninitialized variables).
+
+Also replaced use of the temporary variable d1 in compare_var_{TYPE}
+with an inline call to translate_loc within the call to get_dim_str
+(the use of the temporary variable led to problems when compiling with
+-qcheck and -qextcheck; the new way follows what is done elsewhere).
+
+==============================================================
+Tag name: cprnc_120319
+Originator: sacks
+Date: March 19, 2012
+One-line Summary: changed behavior when differences in fill patterns
+
+Changed status to DIFFERENT whenever there are fields for which there
+are differences in fill pattern between the two files.
+
+Added a count of the number of fields for which there are differences
+in fill pattern; this is output in the final summary.
+
+Updated README to be more correct.
+
+Added simple netcdf files that can be used for testing, in
+test_inputs/ (see test_inputs/README for details).
+
+==============================================================
+Tag name: cprnc_120131
+Originator: jedwards
+Date: Jan 31, 2012
+One-line Summary: updated to work with gfortran
+
+==============================================================
+Tag name: cprnc_11118
+Originator: sacks
+Date: Nov 18, 2011
+One-line Summary: modified Makefile to use correct netcdf options
+
+==============================================================
+Tag name: cprnc_111108
+Originator: sacks
+Date: Nov 08, 2011
+One-line Summary: Removed trailing char(0) from end of file names
+
+==============================================================
+Tag name: cprnc_111028
+Originator: jedwards
+Date: Oct 28, 2011
+One-line Summary: made nsteph optional (last tag forced it to be required) 
+	          modified output of case name to be compatible with older tools
+
+==============================================================
+Tag name: cprnc_111025
+Originator: jedwards
+Date: Oct 25, 2011
+One-line Summary: Added nsteph output for compatibility with cprncdf
+
+==============================================================
+
+
+Tag name:  cprnc_110310
+Originator(s):  jedwards
+Date: March 10, 2011
+One-line Summary: Corrected bug in handling vars with same name but different type
+	(one float the other double)
+	
+
+==============================================================
+Tag name:  cprnc_110307c
+Originator(s):  jedwards
+Date: March 07, 2011
+One-line Summary: Corrected bug in handling unlimdim index
+	
+
+==============================================================
+Tag name:  cprnc_110307b
+Originator(s):  jedwards
+Date: March 07, 2011
+One-line Summary: Corrected bug when variable only exists on file 1
+	
+
+==============================================================
+Tag name:  cprnc_110307a
+Originator(s):  jedwards
+Date: March 06, 2011
+One-line Summary: corrected commit issues
+	 added file utils.F90 removed file prec.f90
+
+==============================================================
+Tag name:  cprnc_110307
+Originator(s):  jedwards
+Date: March 06, 2011
+One-line Summary: rewrite
+
+Generalize to handle arbitrary numbers of dimensions and variables 
+	with different dimensions but same names.   Remove unsupported
+	command line options, add option -d which can be used to subset
+	any dimension named in the file, for example -d lon:12:4 will
+	compare variables dimensioned by lon from 12 to 15.
+
+	Noted and corrected that some statistics did not take into
+	account missing values (notably rdmax)
+	
+
+
+==============================================================
+Tag name:  cprnc_081022
+Originator(s):  tcraig
+Date: Wed Oct 22, 2008
+One-line Summary: add diagnostics
+
+Add a one line diagnostic, diff_test:  "IDENTICAL" or "DIFFERENT"
+  to make it easier to quickly grep for a result.
+Remove final stop in code for more graceful exit
+
+==============================================================
+Tag name:  cprnc_080709
+Originator(s):  erik (KLUZEK ERIK 1326 CGD)
+Date: Wed Jul  9 14:33:46 MDT 2008
+One-line Summary: Add ifort support for Linux
+
+Add option to build with ifort on Linux.
+
+==============================================================
+Tag name:  cprnc_080324
+Originator(s):  tcraig
+Date: Mon Mar 24 17:21:31 MDT 2008
+One-line Summary: Fix bugs and improve output
+
+ - Fix bug report associated with bugz #724, the code
+   was not handling time samples properly.
+ - Update output to write full variable and dimension names,
+   add time index information for each variable, and change
+   location of "NDIFFS" output in variable diff block.
+
+Tested on blueice and bangkok with bugz #724 datasets and with 
+  ccsm4 cpl history files.
+
+==============================================================
+Tag name:  cprnc_070817
+Originator(s):  erik (KLUZEK ERIK 1326 CGD)
+Date: Fri Aug 17 15:24:50 MDT 2007
+One-line Summary: Initial checkin from version that Tony Craig created
+==============================================================

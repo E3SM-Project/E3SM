@@ -1,0 +1,141 @@
+#!/bin/tcsh -f 
+# SNL batch system:
+#PBS -l nodes=30:ppn=2
+#PBS -l walltime=0:30:00
+#PBS -j oe
+#PBS -A 109710/1
+
+#NCAR batch system: 
+#BSUB -x                # exlusive use of node (not_shared)
+#BSUB -n 64             # number of tasks
+#BSUB -a poe            # select the poe elim
+#BSUB -R "span[ptile=16]"       # tasks per node
+#BSUB -J mountain        # job name
+#BSUB -o mountain.out         # output filename
+#BSUB -e mountain.out
+#BSUB -W 0:25	        #  wall clock time 
+#BSUB -P 86850055
+#BSUB -q regular        # queue
+
+
+
+
+# directores
+set HOMME = ~/homme              # location of HOMME source code and test cases
+set src = $HOMME/build.AIX
+set wdir = /ptmp/$USER/preqx
+set input = $HOMME/test/ASP/mountain   # test cases
+set vcoord = $HOMME/test/vcoord          # location of vertical coordinate files
+
+
+# resolution parameters
+set ne = 30    # setup for 8,15,30,60,120?
+
+if ( $ne == 8 ) then
+   # 3.75 degree
+   set tstep = 360        # dynamics timestep
+   set nu = 2e16
+   set resolution = low
+endif
+if ( $ne == 15 ) then
+   # 2 degree
+   set tstep = 180        # dynamics timestep
+   set nu = 1e16
+   set resolution = medium
+endif
+if ( $ne == 30 ) then
+   # 1 degree
+   set tstep = 90        # dynamics timestep
+   set nu = 9.6e14
+   set resolution = medium_high
+endif
+if ( $ne == 60 ) then
+   # 0.5 degree
+   set tstep = 40        # dynamics timestep
+   set nu = 1e14
+   set resolution = high
+endif
+if ( $ne == 120 ) then
+   # 0.25 degree
+   set tstep = 20        # dynamics timestep
+   set nu = 1.1e13
+   set resolution = ultra_high
+endif
+
+
+
+# number of hours between calls to prim_printstate
+set sfreq = 12
+@ sfreq *= 3600
+@ sfreq /= $tstep
+
+set namelist = Params.inc
+
+# construct the run name
+set name = HOMME-5-0-0-$resolution-L26
+echo runname =  $name
+
+# create working directory
+mkdir $wdir
+set wdir = $wdir/$name
+mkdir $wdir
+mkdir $wdir/movies
+
+
+# setup Params.inc (HOMME compile-time parameters)
+cp -f $input/$namelist $wdir/Params.inc
+diff  $input/$namelist $src/../Params.inc
+if ($status != 0) then
+   echo "replacing Params.inc (code will be recompiled)"
+   cp $input/$namelist $src/../Params.inc
+endif
+
+
+# create the namelist (input file) based on parameters set above
+cd $input
+rm -f $wdir/explicit.nl
+sed s/NE/$ne/ explicit26.nl.sed |\
+sed s/TSTEP/$tstep/ | sed s/SFREQ/$sfreq/ |\
+sed s/NU1/$nu/ | sed s/NU2/$nu/   > $wdir/explicit.nl
+
+
+
+set NCPU = 8
+if ( ${?PBS_NODEFILE} ) then
+    set NCPU = `wc $PBS_NODEFILE | awk '{print $1}' - `
+endif
+if ( ${?PBS_NNODES} ) then
+  set NCPU = $PBS_NNODES
+endif
+if ( ${?LSB_MCPU_HOSTS} ) then
+  set NCPU = `wc $LSB_DJOB_HOSTFILE | awk '{print $1}' - `
+endif
+echo using NCPU = $NCPU
+
+if ( AIX == `uname` ) then
+   set make = "gmake -j8 "
+   set mpirun = "mpirun.lsf "
+
+  # other stuff for blue vista: 
+  mv -f $wdir/explicit.nl $wdir/tmp.nl
+  sed  s/.littleendian//g $wdir/tmp.nl > $wdir/explicit.nl
+  ln -fs $wdir/explicit.nl $wdir/input.nl
+else
+   set make = "make"
+   set mpirun = "mpirun -np $NCPU"
+endif
+
+cd $src
+rm -f preqx
+$make preqx
+cd $wdir
+
+ln -s $vcoord vcoord
+
+
+date
+$mpirun  $src/preqx < $wdir/explicit.nl
+date
+
+ncrename -v .Q,Q1 -v .u,U -v .v,V -v .geos,PHIS -v .geo,PHI  -v .omega,OMEGA \
+ -v .ps,PS   movies/asp_mountain1.nc 

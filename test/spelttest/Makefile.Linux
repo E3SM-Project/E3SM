@@ -1,0 +1,84 @@
+# MAKEFILE written by Christoph Erath
+# NP has to be at least >=2
+NP        = 4
+# NC has to be at >=4
+NC        = 4 
+#for preqx set it to 26
+PLEV      = 1
+QUEUE        =  bsub
+#QUEUE       = cqsub -q debug or cqsub -q JumboFridays
+# EXECUTE   = preqx
+# EXECUTE   = fvm
+# EXECUTE   = sweqx
+# EXECUTE   =  preqxse
+# EXECUTE   =  primdgx
+# EXECUTE   = sweqx
+EXECUTE     = spelt
+# INPUT     = baro.nl 
+# INPUT     = fvm.nl
+# INPUT     = swtc5.nl
+INPUT      = spelt.nl
+
+HNAME     = $(shell hostname -s)
+ARCH      = $(shell uname -s)
+ADIR      = $(shell pwd)
+all:
+	@echo "********** Running HOMME-$(EXECUTE) on $(HNAME): Operating system $(ARCH) **********"
+	@echo
+	@echo "*** BUILD $(EXECUTE) in build/" 
+	cd ../../build/$(EXECUTE)/ && make -j 4
+	cd $(ADIR) 
+
+runse:
+	@echo " ************* RUN preqxse with the command $(QUEUE): -n $(NPROC) ./preqxse **********"
+	@echo " ********************************--->"
+	@echo
+	$(QUEUE) < preqxse.run
+
+runfvm:
+	@echo " ************* RUN preqxcslam with the command $(QUEUE): -n $(NPROC) ./preqxcslam **********"
+	@echo " ********************************--->"
+	@echo
+	$(QUEUE) < preqxcslam.run
+	
+run:
+	@echo " ************* RUN $(EXECUTE) with the command $(QUEUE): -n $(NPROC) ./$(EXECUTE) **********"
+	@echo " ********************************--->"
+	@echo
+	#rm spelt.out
+	#rm spelt.err
+	cp $(INPUT) input.nl 
+	@echo "*** COPY $(EXECUTE) TO $(ADIR)"
+	cp ../../build/$(EXECUTE)/$(EXECUTE) .
+	$(QUEUE) < $(EXECUTE).run
+
+cleansource:
+	@echo "*** Clean Source from $(EXECUTE) in build/$(EXECUTE)" 
+	cd ../../build/$(EXECUTE)/ && make clean
+	cd $(ADIR)
+
+depends:
+	@echo "*** RENEW DEPENDENCIES in Source from $(EXECUTE) in build/$(EXECUTE)"
+	cd ../../build/$(EXECUTE)/ && make clean-depends && make depends
+	cd $(ADIR)
+	@echo "*** DONE: RENEW DEPENDENCIES in Source from $(EXECUTE) in build/$(EXECUTE)"
+
+clean:
+	rm -rf *.err *.out *.errors *~ fort.* swtc*.* core.* sweq.*
+
+tclean:	
+	rm -rf *.txt mpi_profile.* events.trc
+
+pclean:
+	rm -rf corun.* vnrun.* debug.*
+
+dclean:
+	rm -rf ./data/*.out ./movies/*.nc debug*
+
+clear: tclean clean dclean
+
+comp:
+	@echo "**** Running everything for HOMME-$(EXECUTE) on $(HNAME): Operating system $(ARCH) ******"
+	cd ../../build/$(EXECUTE)/  && aclocal && autoconf && automake && ./configure NC=$(NC) NP=$(NP) PLEV=$(PLEV) --enable-blas --enable-lapack --with-pnetcdf=$(PNETCDF_PATH) --with-netcdf=$(NETCDF_PATH) && make clean-depends && make depends #&& echo "#define _NAMELIST_FROM_FILE 1" >>config.h   
+	make cleansource
+	make  

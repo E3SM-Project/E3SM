@@ -1,0 +1,2 @@
+../../utils/csm_share/shr_mpi_mod.o: shr_kind_mod.o
+../../utils/csm_share/shr_mpi_mod.o: mpif.h

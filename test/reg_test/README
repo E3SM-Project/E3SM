@@ -1,0 +1,272 @@
+Mark Taylor, 2010-09-23
+Mike Levy, 2011-02-01
+
+We need to create a set of "official" regression tests.
+Here we are documenting the test cases in use at Sandia 
+as unofficial regression tests.
+
+These tests should be run in both the trunk and your branch
+to ensure changes you have made have not broken existing code.
+To check for bit-for-bit (BFB), output should be identical. To
+check for rounding-error level changes, several statistics are
+highlighted.
+
+There are a couple of short BFB tests and an exact restart test
+that should be sufficient for changes to the 3D code that are
+BFB.  Non-BFB changes require verifing minimal changes in l2
+solution errors,conservation errors, energy budget errors, and
+checking plots of the vorticity field and and tracers.
+
+Each script uses the build system in build/ to compile and runs
+with an appropriate namelist, but none are queue-ready on any
+machine at this time. They can be launched individually through
+the individual_tests/ directory, or you can run all of them
+(except baro-dg, because it takes significantly longer to run)
+with the alltests.sh script. Again, these can only be run
+interactively at the moment.
+
+
+Components tested:
+
+shallow water equations:
+   explicit leapfrog    
+   explicit Runge-Kutta 
+   sign-preserving limiter
+   hyperviscosity
+   conservation (inviscid)
+   PIO_INTERP output
+
+primitive equations:
+   explicit leapfrog
+   RK w/ subcycling
+   semi-implicit
+   viscosity
+   hyper-viscosity
+   conservation (inviscid)
+   conservation (with hyper-viscosity)
+   RK-SSP tracer advection
+   exact restart
+   PIO and PIO_INTERP output
+
+ 
+=======================================================================
+SHALLOW WATER TESTS -- DETAILS
+
+swtc1.sh    Test case 1 from Williamson et al 1992 (advection)
+            Spectral Element core
+            Runge-kutta, inviscid test
+               Output using PIO_INTERP
+               NE=10, NP=8, dt=480
+            Verification:
+            verify l1,l2,max errors have not changed significantly
+            (3-4 digits?  need to estimate their sensitivity)
+            k= 1 12.00 days  l1,l2,linf=  0.5347100E-02  0.3621730E-02  0.6553164E-02
+
+
+
+swtc5.sh    Williamson et al 1992, test case 5 (isolated mtn)
+            Spectral Element core
+            Explicit leapfrog + hyper-viscosity
+            Output using PIO_INTERP
+            NE=30, NP=4, dt=90
+            Verification:
+                l1,l2,max errors have not changed (l1,l2,max errors 
+                are computed in swtc5ref.ncl, which compares against
+		NCAR's T213 reference sol)
+            geop error: l1,l2,mx = 0.000531657 0.00074751 0.00837253
+
+
+swtc6.sh   short time, low resolution Rossby wave test
+           Verification:
+           verifty mass and energy conservatin to machine precision
+           verify enstrophy dissipation rate has not changed significantly
+             (3-4 digits?).  Example output, last timestep: 
+  M-M0/M0      = 0.0000E+00 dM/dt   /M  =  0.000000E+00
+  ENS-ENS0/ENS0= 0.2010E-04 dENS/dt /ENS=  0.106396E-08
+  E-E0/E0      = 0.9579E-12 dE/dt   /E  =  0.828421E-16  (-0.1025E-08, 0.1025E-08)
+
+
+
+
+swtc1-dg.sh Test case 1 from Williamson et al 1992 (advection)
+            Discontinuous Galerkin core
+            Runge-kutta, inviscid test
+	    Output using PIO_INTERP
+            NE=10, NP=6, dt=100
+            Verification:
+            l1,l2,max errors have not changed significantly
+             (3-4 digits?  need to estimate their sensitivity)
+       12.00 days  l1,l2,linf=  0.7022180E-02  0.4124479E-02  0.3461017E-02
+
+
+swtc2-dg.sh Test case 2 from Williamson et al 1992 (steady-state)
+	    Discontinuous Galerkin core
+            Runge-kutta + viscosity
+            Output using PIO_INTERP
+            NE=6, NP=6, dt=30
+            Verification:  l1,l2,max errors have not changed significantly
+             (3-4 digits?  need to estimate their sensitivity)
+  5.00 days  l1,l2,linf=  0.1955934E-07  0.2790046E-07  0.2881657E-06
+
+
+
+swtc5-dg.sh Test case 5 from Williamson et al 1992 (isolated mtn)
+            Discontinuous Galerkin core
+            Runge-kutta + viscosity
+            Output using PIO_INTERP
+            NE=6, NP=6, dt=30
+            Verification: l1,l22,max errors have not changed (l1,l2,max errors 
+            are computed in swtc5ref.ncl, which compares against NCAR's 
+            T213 reference sol)
+            l1,l2,mx = 0.0109583 0.0154157 0.0734919
+
+
+=======================================================================
+3D PRIMITIVIE EQUATION TESTS -- DETAILS
+
+baro1a.sh   Test case from Polvani et al 2004
+            Spectral Element core
+            Explicit leapfrog + viscosity
+            Output using PIO_INTERP
+            NE=9, NP=8, PLEV=20, dt=60
+            Run the configuration in this script, visually
+            compare plots produced in baro1a.pdf (either
+            run in branch AND trunk or compare to plots in
+            baro1a-ref.pdf in this directory)
+
+baro1b.sh   Test case from Polvani et al 2004
+            Spectral Element core
+            Semi-implicit time-stepping
+            Output using PIO
+            NE=9, NP=8, PLEV=20, dt=600
+            Run the configuration in this script, visually
+            compare plots produced in baro1b.pdf (either
+            run in branch AND trunk or compare to plots in
+            baro1b-ref.pdf in this directory)
+
+            Verification: baro1[ab].sh 
+            run both tests, verify enstrophy norm has not changed significantly
+            (2-3 digits).  Plot vorticity with the NCL script provided and
+            compare with reference plots provided.  Plots should be 
+           visually identical.
+
+
+baro2a.sh   Test case from Jablonowski and Williamson 2006
+            Spectral Element core
+            No tracers
+            Explicit leapfrog + hyperviscosity
+            Output using PIO_INTERP
+            NE=15, NP=4, PLEV=26, dt=180
+
+            NOTE: tracer advection with leapfrog dynamics
+                  no longer supported. Need to update 
+                  reference plots to look at vorticty
+                  instead of tracers. (MT 2012/10)
+
+            Verification:
+            Run the configuration in this script, visually
+            compare plots produced in q.pdf (either run
+            in branch AND trunk or compare to plots in
+            baro2a-ref.pdf in this directory)
+
+            l2 error in PS against T340 EUL result
+            l2 PS error at day 9:  1.13mb
+            plot PS, zeta, compare with reference plots.  
+
+
+baro2c.sh   first runs 9 days of the JW baroclinic test case (to get to an
+            interesting flow field).  Then do a short restart run
+            with a very small timestep to measure mass and energy
+            conservation.  IE dissipation should be very small.
+            KE dissipation should be matched by heating term, resulting
+            in very small total energy dissipation.
+
+            Verification:  mass and tracer mass conservation to machine precision.
+            verify IE,KE balance to machine precision
+            verify tracer variance dissipation has not changed significantly  
+            This script will make two runs: run1: 9 days and writes a restart file
+            run2: restarts from this file and runs 3 timesteps.       
+            Example output from last timstep of run2:  
+             
+KE,d/dt,diss:  0.16556417255055E+07  0.38649033390296E-01 -0.25801357782547E-01
+IE,d/dt,diss:  0.26216763769734E+10 -0.51174783706665E-01  0.25801414962755E-01
+PE,d/dt,diss:  0.63765066746567E+03  0.12525807506476E-01  0.98007470195061E-11
+ E,dE/dt       0.26233326563496E+10  0.63578287760417E-07
+Q1,Q diss, dQ^2/dt:  0.65215821593973E+04 kg/m^2  0.0000000E+00 -0.4239988E-03
+        
+Verify that:
+  KE diss = -.25e-1
+  IE diss = +.25e-1
+  PE diss = O(e-11)
+  Q diss  = O(e-14)
+  dE/dt   = .8e-8   
+  dQ^2/dt = -.42e-3
+
+
+
+baro2b.sh   Test case from Jablonowski and Williamson 2006
+            Spectral Element core
+            (with 4 tracers, per ASP)
+            Runge-Kutta timestepping with subcycling + hyper-viscosity 
+            sign preserving limiter 
+            nu_p=nu
+            Output using PIO_INTERP
+            NE=15, NP=4, PLEV=26, dt=180
+            Run the configuration in this script, visually
+            compare plots produced in q.pdf (either run
+            in branch AND trunk or compare to plots in
+            baro2b-ref.pdf in ref_sol/)
+
+baro2d.sh   Test case from Jablonowski and Williamson 2006
+            Same as baro2b.sh, but configred to match CAM-SE
+            subcycled tracers and hyperviscosity, nu_p=nu, nu_div=3*nu
+            monotone limiter            
+            Output using PIO_INTERP
+            NE=15, NP=4, PLEV=26, dt=180
+            Run the configuration in this script, visually
+            compare plots produced in q.pdf (either run
+            in branch AND trunk or compare to plots in
+            baro2d-ref.pdf in ref_sol/)
+                           
+baro2[bd].sh Verification:
+             run both tests.  compute l2 error in PS against EUL result
+             scritp will plot PS, zeta, tracers at day 9.  
+             Compare with reference plots (should be visually identical)
+             baro2b.sh:  verifty q=1 tracer is preserved to 12 digits
+                         l2 PS error at day 9:  1.13mb
+             baro2d.sh:  verifty q=1 tracer is preserved to 12 digits
+                         l2 PS error at day 9:  1.25mb 
+             check tracer mass conservation:
+               (Q-Q0)/Q0   0.740187328509209E-14   Q1
+               (Q-Q0)/Q0   0.146454099118228E-13   Q2
+               (Q-Q0)/Q0   0.470825202983687E-14   Q3
+               (Q-Q0)/Q0   0.625678319683976E-14   Q4
+
+
+
+baro-dg.sh  Test case from Jablonowski and Williamson 2006
+            Discontinous Galerkin core
+            Runge-Kutta timestepping with viscosity
+            NE=20, NP=6, PLEV=26, dt=10
+            Run the configuration in this script, visually
+            compare plots produced in zeta.pdf (either run
+            in branch AND trunk or compare to plots in
+            baro-dg-ref.pdf in ref_sol/)
+
+
+            This test is still very noisy, so these numbers should be
+            updated when the test works :) But for now, verify final
+            output and the statistics given by the NCL scripts on the
+            last day.
+      259200 time=   30.0000000000000       days
+  u=   -0.321240342997538E+02   0.639891385662766E+02   0.316917285108628E+08
+  v=   -0.456006221384880E+02   0.363723804401733E+02   0.268096107383425E+04
+ ps=    0.896360869854064E+05   0.105148873963494E+06   0.865123395053191E+10
+temp=   0.216357094032624E+03   0.132267282279555E+04   0.103398193092533E+10
+  (0)	time = 30
+  (0)	ps min/max = 89626.2, 105149
+  (0)	zeta 850 min/max = -0.000254125, 0.000164322
+
+
+
+

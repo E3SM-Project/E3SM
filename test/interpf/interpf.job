@@ -1,0 +1,179 @@
+#!/bin/tcsh -f 
+#SBATCH --job-name interp
+#XXSBATCH -N 4
+#SBATCH -N 25
+#SBATCH --account=FY139209
+#SBATCH --time=2:00:00
+
+#
+# ne240 2kx4K:      64 works, 1 task per node.   48x2 should also work?
+# ne240 1800x3600:  48, 2 per node works.  (48x4, 36x2 fails)
+# ne120  1Kx2K:  18x8 works, 12x4 runs.   
+# ARM grid to 2Kx4K:   18 nodes is too small
+#
+set NCPU = 16
+if ( ${?PBS_NODEFILE} ) then
+    set NCPU = `wc $PBS_NODEFILE | awk '{print $1}' - `
+endif
+if ( ${?SLURM_NNODES} ) then
+    @ NCPU = 8 * $SLURM_NNODES
+endif
+echo using NCPU = $NCPU
+
+
+set HOMME = ~/codes/homme  # path to HOMME code
+#set MACH = $HOMME/cmake/machineFiles/redsky.cmake
+set MACH = $HOMME/cmake/machineFiles/climate.cmake
+set src = ~/scratch1/preqx/interp  # build directory
+
+set NPTS = 4
+set NC = 4
+set qsize = 0
+set tstep = 1
+
+#set interp_type = 0  # native
+set interp_type = 1  # bilin
+
+#set gridtype = 1  #FV  for equi angular, grids should be (n+1) x 2n.  i.e. 257x512
+set gridtype = 2   #Gauss grid (CAM Eulerian)
+#set gridtype = 3  #FV staggered velocity grid (dont use)
+
+
+
+
+
+
+set wdir = ~/scratch1/f1850c5_i1/run1-diag
+cd $wdir
+set files = "*01*climo.nc"
+
+
+
+echo checking for files:
+ls -l $files
+if ( $status ) exit
+
+
+
+# get NE from file:
+foreach file ( $files )
+   set ne = `ncdump -h $file  | grep "ne = " `
+   if ( $status ) then
+      set ne = 120
+      echo "cant guess NE.  assuming NE=$ne"
+   else
+      set ne = `ncdump -h $file  | grep "ne = " | awk '{print $3}' -`
+      echo "using NE=$ne (extraced from first file)"
+      break
+   endif
+end
+# get nlev from file:
+foreach file ( $files )
+   set nlevp1 = `ncdump -h $file  | grep "ilev = " `
+    if ( $status ) then
+      set nlev = 26
+      echo "cant guess nlev.  assuming 26"
+   else
+      set nlevp1 = `ncdump -h $file  | grep "ilev = " | awk '{print $3}' -`
+      @ nlev = $nlevp1 - 1 
+      echo "using nlev=$nlev (extraced from first file)"
+      break
+   endif
+end
+
+mkdir $src
+cd $src
+set exe = $src/preqx.interp.$nlev
+if (!( -f $exe )) then
+    rm -rf CMakeFiles CMakeCache.txt
+    cmake -C $MACH -DPREQX_PLEV=$nlev  -DPREQX_NP=$NPTS -DPREQX_NC=$NC  $HOMME 
+    make -j4 preqx
+    mv src/preqx/preqx $exe
+    exit
+endif
+
+
+
+
+
+cd $wdir
+set MPIOPT = 
+set NLAT = 256
+set NLON = 512
+set mesh = none
+if ( $ne == 0 ) then
+   set mesh = 'meshfilename goes here'
+   set NLAT = 128
+   set NLON = 256
+endif
+if ( $ne == 16 ) then
+   set NLAT = 128
+   set NLON = 256
+endif
+if ( $ne == 30 ) then
+   # use for NE=30  (360pts on equator.  1.4x = 503 pts on equator)
+   set NLAT = 256
+   set NLON = 512
+endif
+if ( $ne == 60 ) then
+   set NLAT = 512
+   set NLON = 1024
+endif
+if ( $ne == 120 ) then
+   # 25% oversample:
+   #set NLAT = 900
+   #set NLON = 1800
+
+   # 7% oversample:
+   #set NLAT = 768
+   #set NLON = 1536
+
+   # low res, to make diagnostics quicker:
+   set NLAT = 512
+   set NLON = 1024
+   #set MPIOPT = "-npernode 4"
+endif
+if ( $ne == 240 ) then
+   # use for NE=240 data  1.25% oversample
+   set NLAT = 1800
+   set NLON = 3600
+   set MPIOPT = "-npernode 2"
+endif
+
+
+
+
+
+# setup the work directory
+mkdir $wdir/movies
+
+date                                                                                                                           
+
+cd $wdir
+
+set namelist = input.$$.nl
+foreach file ( $files ) 
+   if ( -f $file ) then
+      echo interpolating: $file
+      rm -f $wdir/$namelist
+   sed s:NE:"$ne mesh_file='$mesh'": $HOMME/test/interpf/explicit${nlev}.nl.sed | sed s/TSTEP/$tstep/ |\
+   sed s/qsize.\*/"qsize = $qsize"/   |\
+   sed s/interp_nlat.\*/"interp_nlat = $NLAT"/   |\
+   sed s/interp_nlon.\*/"interp_nlon = $NLON"/   |\
+   sed s:interp_type.\*:"interp_type=$interp_type": |\
+   sed s:interp_gridtype.\*:"interp_gridtype = $gridtype": |\
+   sed s:infilenames.\*:"infilenames='$file'": |\
+   sed s:output_varnames1.\*:"output_varnames1='all'": \
+   > $wdir/$namelist
+   
+   mpirun  -np $NCPU $MPIOPT $exe < $wdir/$namelist
+   set basename = `basename $file .nc`
+   mv movies/$basename.interp1.nc movies/$basename.nc
+   chmod a+r movies/$basename.nc
+
+   rm -f $wdir/$namelist
+   else
+      echo ERROR: file does not exist
+   endif
+end
+date

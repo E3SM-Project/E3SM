@@ -1,0 +1,156 @@
+DO NOT READ THIS!!!!
+
+This is the README file with instructions for building HOMME using the
+previous (obsolete) build system.  If you prefer to use GNU Autoconf/Automake,
+please refer to the instructions in the file README.
+
+This README briefly explains how to use HOMME and the associated data
+analysis and post processing tools.
+
+Directory tree structure after unpacking looks like this:
+
+
+                    ./
+
+                       |
+       ____________________________________________
+       |              |         |       |         |
+      /physics       /libs    /src      /tests   /utils
+
+  
+
+
+./libs contains the supporting source code for utilities (timers and
+       such) and math solvers.
+
+
+./src contains the dynamics source code for primitive and shallow water equations. 
+
+This package requires the gnu make tool, it depends on features of
+that tool and may not work with other implementations of make.
+
+Supported architectures are indicated by the Makefile.ARCH files found in the top level directory, currently these are 
+
+Makefile.AIX        Makefile.Linux.ifc  Makefile.SunOS
+Makefile.Darwin     Makefile.Linux.pgi  Makefile.Linux.BGL 
+
+On Linux link the appropriate Makefile to Makefile.Linux before procedeing.  
+
+Type make to create a build.ARCH directory.  cd to that build
+directory to build the models.  Targets are sweqx for shallow water,
+preqx for PE model.  Supporting libraries are built as well.
+
+
+In the case of either model the parallel execution mode must be set in
+the following way:
+
+1) select the appropriate parallel mode flags in the toplevel file Params.inc
+
+ 	_OMP_THREADS/_NO_OMP_THREADS to control threading
+        _MPI/_NOMPI to control message passing
+        _NETCDF/_PIO/_PIO_INTERP to control analysis io library 
+
+3) make the model:
+
+      make sweqx 
+      make preqx
+      make swdgx
+
+There are several tests included with the model.  Check with model developers for the current status of the 
+tests, not all of them are working at any given model version.
+
+**************************************************************************
+**************************************************************************
+**************************************************************************
+
+Detailed instructions to build the model on Sandia's Linux/Intel/OpenMPI
+cluster and Cray XT systems:
+
+set HOMME = /path/to/homme
+
+# setup correct Linux Makefile
+# Makefile may need to be updated with paths to NETCFD and PNETCDF
+# (this makefile has links to libraries in Mark Taylor's home 
+# directory which will build on SNL ICC systems)
+cd $HOMME/bld
+ln -s Makefile.Linux.tbird Makefile.Linux
+
+# create & populate build.Linux directory
+cd $HOMME
+make -f Makefile.homme    
+
+# build necessary utilities PIO
+# note: PIO_LUSTRE_HINTS needed on older lustre systems (2009)
+cd $HOMME/utils/pio/pio
+setenv PNETCDF_PATH /projects/ccsm/pnetcdf-intel
+setenv NETCDF_PATH /projects/ccsm/netcdf-intel
+setenv CC mpicc
+setenv F90 mpif90
+./configure 
+EDIT Makefile.conf AND ADD to FOPTS:   -DPIO_LUSTRE_HINTS
+make
+
+
+# for Cray XT systems with PGI (Redstorm,Jaguar,JaguarPF)
+# start with Makefile.Linux.pgi. 
+# To build PIO, load the netcdf and pnetcdf modules and use:
+setenv PNETCDF_PATH $PNETCDF_DIR
+setenv NETCDF_PATH $NETCDF_DIR
+setenv F90 ftn
+./configure  ; make
+
+
+#
+# build the HOMME executable
+#
+cd $HOMME/build.Linux
+make sweqx
+
+
+4) run a shallow water test case
+
+Make sure the code succesfully builds (step 3 above)
+cd $HOMME/test/sw_conservative
+
+edit the job script "swtc6ref.sh" 
+update PBS job options and the variables 'wdir', 'src', 'input' 
+qsub swtc6ref.job  (or run interactively)
+It takes about 5min on 32 cores.
+
+$wdir/HommeSWTime         performance/timing info
+$wdir/movies/swtc61.nc    NETCDF output (cubed-sphere data has been
+                          interpolated to lat/lon output)
+
+
+5) Plot the results with NCL/NCAR graphics
+
+cd $wdir
+ncl $HOMME/test/sw_conservative/rossby.ncl 
+
+which will produce "rossby.pdf"
+The plot at time=15 should match $HOMME/test/sw_conservative/rossby_t15.gif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

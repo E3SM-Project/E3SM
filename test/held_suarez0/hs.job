@@ -1,0 +1,338 @@
+#!/bin/tcsh -f 
+#
+#  Held-Suzrez job "reference" submission script  (Mark Taylor 2008)
+#
+#  directories
+#        ~/scratch1    is a link to your account on the parallel filesystem  
+#        $HOMME        homme svn checkout  (see set HOMME = below)
+#        $src          $HOMME/build.Linux
+#                      (HOMME should already be setup to build here)
+#        $wdir         run and data output directory
+#                      ~/scratch1/preqx/hs-* (constructed from run parameters
+#                                             see below)
+#  files 
+#       explicit26.nl.sed   namelist template used by this script
+#                           to construct "input.nl" read by HOMME
+#
+#  this script will build the code and run a short NE=15 test. 
+#  The build can be disabled with set build=0 below, but then the user
+#  must create the executable and name it $HOMME/build/preqx/preqx.hs
+#
+#  This is a "reference" script that collects configurations needed
+#  to run on several machines and queueing systems.  
+#  Improvements are welcome but it is expected that the
+#  main use of this script is as a template to create problem specific
+#  scripts for benchmarking and production runs (which may not need to
+#  be added to SVN)
+#
+#  ** Notes for benchmarking **
+#
+#  The timing output, HommeTime, will be in $wdir.  It will be renamed
+#  HommeTime.$$, so that mutliple runs will not overwrite the previous
+#  output.  However, multiple *simultanious* runs could corrupt the
+#  HommeTime file.
+#
+#  For cost-per-timestep benchmarks, the best way is to use the
+#  "prim_run" time in the HommeTime output file, divided by nmax-1
+#  (where namx is the number of timesteps).  Use nmax-1 because the
+#  prim_run timer does not time the initial leapfrog initialization timesteps
+#  (you can verify this by noting the number of calls to prim_run listed
+#  in HommeTime is (nmax-1)*NCPU )
+#
+#  Very small nmax can produce wildly varing timings.  nmax = 25 usually 
+#  produces reasonable, repeatable timings, but this should be tested
+#  on your machine.  On jaguar, nmax=500 seems ok for NE=60,
+#  and nmax=50 for NE=240.  It seems to be important that the total time
+#  for all the timesteps takes several seconds or longer.
+#  
+#
+#  ** Notes for benchmarking semi-implict and fully implciit **
+#
+#  The number of iterations needed is flow dependent.  For the most accurate
+#  results, the benchamrks should be performed using a restart run
+#  (set runtype=1 below), restarting from a spun up previous Held-Suarez 
+#  simulation.  200 days is sufficient to spin up the Held-Suarez problem
+#
+#
+# generic PBS options
+#PBS -l walltime=0:30:00
+#PBS -j oe
+#XXX -W depend=afterany:XXXXXX
+
+# SNL PBS options
+#XXX -l nodes=2:ppn=2
+#XXX -A FY081407
+#SBATCH --job-name swirl
+#SBATCH -N 80
+#SBATCH --account=FY104068
+#SBATCH --time=1:00:00
+
+
+
+# ORNL jaguar PBS options
+#PBS -l size=16
+#PBS -A CLI017DEV
+
+# ANL intrepid
+# intrepid does not have #PBS options
+# user will run this script, and then it will qsub itself
+# with the --batch argument
+# 180min = medium que, 60min = short que.  ques:  prod, prod-devel
+set NTIME = 720
+#set NNODES=256
+#set BGPQUE = prod-devel
+set NNODES=4096
+#set NNODES=2048
+set BGPQUE = prod
+
+
+set NCPU = 24
+if ( ${?PBS_NODEFILE} ) then
+    set NCPU = `wc $PBS_NODEFILE | awk '{print $1}' - `
+endif
+if ( ${?PBS_NNODES} ) then
+  set NCPU = $PBS_NNODES
+endif
+if ( ${?LSB_MCPU_HOSTS} ) then
+  set NCPU = `wc $LSB_DJOB_HOSTFILE | awk '{print $1}' - `
+endif
+echo using NCPU = $NCPU
+set nlev=26
+set ndays = 0
+set nmax =  5       # no. of timesteps.  ignored, unless ndays=0
+set rfreq = 10000   # no. of days, or n. of timesteps if ndays=0
+
+
+# 0 = normal, 1=restart
+set runtype = 0 
+
+set ne = 15
+set NPTS = 4
+set qsize = 0         # number of tracers
+if ( $ne == 8 ) then
+   # 3.75 degree     
+   set tstep = 360   
+   set nu = 2e16
+endif
+if ( $ne == 15 ) then
+   # 2 degree   tbird 100 nodes, 1200days: 90min
+   set tstep = 180 
+   set nu = 1e16
+endif
+if ( $ne == 30 ) then
+   # 1 degree    
+   set tstep = 90        # dynamics timestep
+   set nu = 9.6e14
+endif
+if ( $ne == 60 ) then
+   # 0.5 degree     tbird 200 nodes, 560 days: 20h
+   #                encanto 25 nodes,  1 days: 5min
+   #                encanto 50 nodes, 2h: crashed at 65 days
+   set tstep = 40        # dynamics timestep      
+   set nu = 1e14
+endif
+if ( $ne == 120 ) then
+   # 0.25 degree 
+   set tstep = 20        # dynamics timestep   
+   #set nu = 1.1e13
+   set nu = 1.5e13
+endif
+if ( $ne == 240 ) then
+   # 0.25 degree   encanto 225 nodes 1 day: 1h?   150 nodes 1 day: 74min
+   #                                                        30day: 37h.  
+   set tstep = 10        # dynamics timestep   
+   set nu = 1.6e12
+endif
+
+set hypervis = 2
+set subcycle = 1
+
+# number of hours between calls to prim_printstate
+set sfreq = 120
+@ sfreq *= 3600
+@ sfreq /= $tstep
+
+if ( $ndays == 0 ) then
+  set sfreq = $nmax
+endif
+
+configure for $NPTS and #nlev
+
+if ( $NPTS == 8 ) then
+   set mesh = ne${ne}t${tstep}l${nlev}
+else
+   set mesh = ne${ne}-${NPTS}t${tstep}l${nlev}
+endif
+set name = hs-${mesh}-nu${nu}-$subcycle
+
+
+echo $name
+
+
+#
+#  default  linux workstations, SNL linux clusters
+#  aix      bluefire at NCAR
+#  jaguar   ORNL xt3
+#  encanto  SGI NMCAC machine   
+#
+set machine = default
+if ( AIX == `uname` ) set machine = aix
+if ( jaguar == `hostname | head -c 6` ) set machine = jaguar
+if ( yodjag == `hostname | head -c 6` ) set machine = jaguar
+if ( intrepid.alcf.anl.gov  == `hostname -f | tail --bytes 22` ) set machine = intrepid
+echo machine = $machine
+
+set input = `pwd`
+set HOMME = `pwd`/../..
+set src = $HOMME/build/preqx
+set wdir = ~/scratch1/preqx
+
+
+# setup the work directory
+mkdir $wdir
+ln -s $HOMME/test/vcoord $wdir/vcoord
+
+set wdir = $wdir/$name
+mkdir $wdir
+mkdir $wdir/movies
+mkdir $wdir/restart
+
+
+set build = 1
+set bigendian = 0
+set stdoutfilt = " "
+set mpirun = "mpirun"
+set mpiopts = "-np $NCPU"
+
+##########################################################
+# ORNL jaguar
+##########################################################
+if ( $machine == jaguar  ) then
+   # nodes dont have access to home directory
+   rm -f $wdir/../vcoord
+   rsync -a  $HOMME/test/vcoord/ $wdir/../vcoord
+   #needed for NE=240 on 
+   #default: setenv MPICH_MSGS_PER_PROC = 16384
+   setenv MPICH_MSGS_PER_PROC   131072
+   setenv MPICH_PTL_UNEX_EVENTS  80000
+
+   set mpirun = aprun
+   set mpiopts = "-n $NCPU"
+endif
+##########################################################
+# ANL intreped
+##########################################################
+if ( $machine == intrepid  ) then
+   set depend = " "
+   #set depend = "--dependencies 83333"
+
+   if ( "$1" != "--batch" ) then
+    # run qsub
+    echo qsub $depend -q $BGPQUE -t $NTIME -n $NNODES --mode script $0 --batch $*
+         qsub $depend -q $BGPQUE -t $NTIME -n $NNODES --mode script $0 --batch $*
+    exit
+   endif
+   @ NCPU = $NNODES * 4
+   set mpirun = cobalt-mpirun
+   set mpiopts = "-np $NCPU -mode VN"
+
+   # nodes dont have access to home directory
+   rm -f $wdir/../vcoord
+   rsync -a  $HOMME/test/vcoord/ $wdir/../vcoord
+   set bigendian = 1
+endif
+
+
+
+
+
+set rname = R0001
+if ( 1 == $runtype ) then
+   cd $wdir/restart
+   set rname = `ls -t R*[0-9] | head -1 `
+   echo $rname
+endif
+
+if ( 0 == $ndays ) then
+   set RUNLEN = "nmax = $nmax"
+   echo RUNNING $nmax timesteps
+else
+   set RUNLEN = "ndays = $ndays"
+   echo RUNNING $ndays DAYS
+endif
+
+cd $input
+rm -f $wdir/explicit.nl
+sed s/NE/$ne/ explicit${nlev}.nl.sed | sed s/TSTEP/$tstep/ | sed s/SFREQ/$sfreq/ |\
+sed s/R0001/$rname/ | sed s/RUNTYPE/$runtype/ |\
+sed s/NU1/$nu/ |\
+sed s/\ndays.\*/"$RUNLEN"/ |\
+sed s/restartfreq.\*/"restartfreq = $rfreq"/ |\
+sed s/\qsize.\*/"qsize = $qsize"/ |\
+sed s/ORDER/$hypervis/ | sed s/SUBCYCLE/$subcycle/ > $wdir/input.nl
+
+if ( $bigendian == 1 ) then
+   echo "editing input file for bigendian vertial coords"
+   mv -f $wdir/input.nl $wdir/tmp.nl
+   sed  s/.littleendian//g $wdir/tmp.nl > $wdir/input.nl
+endif
+
+
+if ( $build == 1 ) then
+  cd $src
+  ./configure --enable-blas --enable-lapack --with-netcdf=$NETCDF_PATH \
+    --with-pnetcdf=$PNETCDF_PATH NP=$NPTS PLEV=$nlev  --enable-energy-diagnostics
+  make -j4 depends; make clean
+  make -j4 preqx
+  mv -f preqx preqx.hs
+endif
+
+cd $wdir
+
+
+cat  $wdir/input.nl
+
+############################################################
+# run the code
+############################################################
+date
+set echo
+$mpirun $mpiopts $src/preqx.hs < $wdir/input.nl $stdoutfilt
+date
+
+# save timing data
+mv HommeTime HommeTime.$$
+
+############################################################
+# extract average cost per timestep, for benchmark results
+############################################################
+unset echo
+# extract prim_run time 
+if ( $ndays > 0 ) then
+   # user specified days, not nmax
+   @ nmax = $ndays * 24 * 3600  / $tstep
+endif 
+
+set rtime = `head -100 HommeTime.$$ | grep prim_run | head -1 | awk '{print $4}' - `
+
+if ( $runtype == 0) then
+   @ nmaxp1 = $nmax - 1 
+else
+   # restart runs skip the initialization and we really did time all timesteps 
+   @ nmaxp1 = $nmax
+endif
+set time_per_timestep = `echo "scale=8;$rtime / $nmaxp1" | bc`
+echo "time for $nmaxp1 timesteps = $rtime seconds"
+echo "NCPU=$NCPU average time (seconds) per timestep:  $time_per_timestep"
+
+# compute SYPD:  
+# number of timesteps per year:  360*24*3600/tstep
+# timesteps per second:           (1/$time_per_timestep)
+# years per second:     :  (1/$time_per_timestep) /  (360*24*3600/tstep)
+#                          $tstep / ( $time_per_timestep 360*24*3600 )
+# cost per day:            $tstep / ( $time_per_timestep 360 )
+
+set SYPD = `echo "scale=8; $tstep / ( $time_per_timestep * 360 )" | bc `
+echo "NCPU=$NCPU SYPD = $SYPD"
+
+

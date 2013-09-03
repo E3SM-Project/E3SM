@@ -1,0 +1,75 @@
+This directory contains simple test inputs to test cprnc.
+
+The intention is that control.nc should be compared against each of
+the other files here; each of these comparisons will test different
+behavior of cprnc.
+
+For example, run:
+
+    cprnc test_inputs/control.nc test_inputs/diffs_in_vals.nc > cprnc.out
+
+The files here are:
+
+- control.nc: control file against which others should be compared
+
+- copy.nc: copy of control file (i.e., no diffs)
+
+- diffs_in_vals.nc: one variable has differences in values
+
+- diffs_in_fill.nc: one variable has differences in fill pattern
+
+- diffs_in_vals_and_diffs_in_fill.nc: one variable has differences in
+  values, another has differences in fill pattern
+
+- diffs_in_vals_and_fill.nc: a single variable has differences in both
+  values and fill pattern
+
+- vals_differ_by_1.1.nc: testvar has values equal to 1.1 times those
+  in the control file. This is useful for testing the relative
+  difference calculation.
+
+  True values are the following (note that relative difference is
+  defined using a denominator of max(v1,v2)):
+
+  - RMS diff: 0.6204837 (printed as 6.2e-1)
+  - avg rel diff: 0.0909091 (printed as 9.1e-2)
+  - avg decimal digits: 1.041393 (printed as 1.0)
+  - worst decimal digits: 1.041393 (printed as 1.0)
+
+- vals_differ_by_1.1_somewhere.nc: similar to vals_differ_by_1.1.nc,
+  but now only a single value differs by a factor of 1.1
+
+  True values are the following (note that relative difference is
+  defined using a denominator of max(v1,v2)):
+
+  - RMS diff: 0.3162278 (printed as 3.2e-1)
+  - avg rel diff: 0.009090909 (printed as 9.1e-3)
+  - avg decimal digits: 1.041393 (printed as 1.0) [note that the
+    average here ignores the indices with no difference]
+  - worst decimal digits: 1.041393 (printed as 1.0)
+
+- vals_differ_by_varying_amounts.nc: testvar has values equal to 1,
+  1.01, 1.02, ..., 1.09 times those in the control file. This is
+  useful for testing the relative difference calculation using more
+  complex differences.
+
+  True values are the following (note that relative difference is
+  defined using a denominator of max(v1,v2)):
+
+  - RMS diff: 0.4434862 (printed as 4.4e-1)
+  - avg rel diff: 0.04233828 (printed as 4.2e-2)
+  - avg decimal digits: 1.403306 (printed as 1.4) [note that the
+    average here normalizes by 9 rather than 10, since the first index
+    has a relative difference of 0]
+  - worst decimal digits: 1.083184 (printed as 1.1)
+
+- vals_differ_by_varying_amounts2.nc: First 8 values of testvar are
+  identical to control; 9th is control * (1-1e-3), 10th is control *
+  (1-1e-5). This is the same as the example given in ../README.
+
+  True values are the following:
+
+  - RMS diff: 0.002846226 (printed as 2.8e-3)
+  - avg rel diff: 0.000101 (printed as 1.0e-4)
+  - avg decimal digits: 4.0
+  - worst decimal digits: 3.0

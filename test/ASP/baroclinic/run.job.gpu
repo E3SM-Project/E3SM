@@ -1,0 +1,126 @@
+#!/bin/tcsh -f 
+# titan -- specify number of nodes
+#PBS -A STF006
+#PBS -l nodes=6
+#PBS -l walltime=0:05:00
+#PBS -N baroclinic
+#PBS -j oe
+
+source /opt/modules/default/init/tcsh
+module rm PrgEnv-cray
+module rm PrgEnv-intel
+module rm PrgEnv-gnu
+module rm PrgEnv-pgi
+module rm PrgEnv-pathscale
+module add PrgEnv-pgi
+module add netcdf parallel-netcdf
+module add cudatoolkit
+
+setenv OMP_NUM_THREADS 16
+set executable = preqx.gpu
+set HOMME = /tmp/work/$USER/homme-trunk
+set src = $HOMME/build/preqx
+set wdir = /tmp/work/$USER/$executable   # work directory where output is stored
+set input = $HOMME/test/ASP/baroclinic   # test cases
+set vcoord = $HOMME/test/vcoord          # location of vertical coordinate files
+set qsize = 106             # number of tracers  (0 or 4)
+set u_perturb = 1         # size of perturbation (0 or 1)
+set rotate = 0            # rotation, in degrees.  0, 45 and 90
+set psurf = 0
+set npdg=0
+set nu_p = 0
+set nu_div = -1
+set smooth = 0
+set tadv = 1
+set RK2 = 5
+set qsplit = 1
+set mean_flux=1
+set limiter = 4
+set rsplit = 5
+set ne = 8    # setup for 8,15,30,60,120?
+set ndays = 2
+if ( $ne == 8 ) then
+   # 3.75 degree      # bluevista: run takes 4min on 16 processors
+   set tstep = 360        # dynamics timestep
+   set nu = 2e16
+   set nu_q = 2e16
+#  set nu_p = $nu_q
+   set resolution = low
+endif
+if ( $ne == 15 ) then
+   # 2 degree   bluevista:  run takes 8min on 64 processors
+   set tstep = 180        # dynamics timestep
+   set nu = 0.9e16
+   set nu_q = .9e16
+#  set nu_p = $nu_q
+   set resolution = medium
+endif
+if ( $ne == 30 ) then
+   # 1 degree
+   set tstep = 90        # dynamics timestep
+   set nu = 9.6e14
+   set nu_q = 9.6e14
+#  set nu_p = $nu_q
+   set resolution = medium_high
+endif
+if ( $ne == 60 ) then
+   # 0.5 degree
+   set tstep = 40        # dynamics timestep
+   set nu = 1e14
+   set nu_q = 1e14
+#  set nu_p = $nu_q
+   set resolution = high
+endif
+if ( $ne == 120 ) then
+   # 0.25 degree         # blackrose 40 nodes:  17min/day
+   set tstep = 20        # tbird 100 nodes:  15days took 3.5h
+   set nu = 1.1e13
+   set nu_q = 1.1e13
+#  set nu_p = $nu_q
+   set resolution = ultra_high
+endif
+
+set sfreq = 6
+@ sfreq *= 3600
+set sfreq = `echo "$sfreq / $tstep " | bc`
+set name = jwasp-ne${ne}-nu$nu
+echo runname =  $name
+# create working directory
+mkdir $wdir
+set wdir = $wdir/$name
+mkdir $wdir
+mkdir $wdir/movies
+# create the namelist (input file) based on parameters set above
+cd $input
+rm -f $wdir/explicit.nl
+sed s/NE/$ne/ explicit26.nl.sed |\
+sed s/TSTEP/"$tstep rsplit=$rsplit qsplit=$qsplit psurf_vis=$psurf  "/ |\
+sed s/SFREQ/$sfreq/ |\
+sed s/tracer_advection_formulation.\*/"tracer_advection_formulation=$tadv  tstep_type = $RK2  compute_mean_flux=$mean_flux  "/ |\
+sed s/NU1/$nu/ | sed s/NU2/$nu_q/                    |\
+sed s/nu_div.\*/"nu_div = $nu_div  npdg=$npdg"/      |\
+sed s/nu_p.\*/"nu_p = $nu_p"/                        |\
+sed s/u_perturb.\*/"u_perturb = $u_perturb"/         |\
+sed s/rotate_grid.\*/"rotate_grid = $rotate"/        |\
+sed s/ndays.\*/"ndays = $ndays"/                     |\
+sed s/limiter_option.\*/"limiter_option = $limiter"/ |\
+sed s/smooth.\*/"smooth = $smooth"/                  |\
+sed s/NThreads.\*/"NThreads = $OMP_NUM_THREADS"/     |\
+sed s/qsize.\*/"qsize = $qsize"/    > $wdir/input.nl
+
+@ NPER = (16 / $OMP_NUM_THREADS)
+@ NCPU = $PBS_NUM_NODES * $NPER
+set mpirun = "aprun -n $NCPU -N $NPER -d $OMP_NUM_THREADS"
+#setenv COMPUTE_PROFILE 1
+#setenv COMPUTE_PROFILE_LOG 'cuda_profile_%p.log'
+limit coredumpsize unlimited
+setenv ATP_ENABLED 1
+
+cd $wdir
+rm -f vcoord
+ln -s $vcoord vcoord
+date
+$mpirun  $src/$executable < $wdir/input.nl
+if ($status) exit
+date
+

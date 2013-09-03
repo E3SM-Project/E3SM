@@ -1,0 +1,196 @@
+#!/bin/tcsh -f 
+#PBS -l nodes=30:ppn=2
+#PBS -l walltime=0:30:00
+#PBS -j oe
+#PBS -A 109710/1
+
+#NCAR batch system: 
+#BSUB -x                # exlusive use of node (not_shared)
+#BSUB -n 24             # number of tasks
+#BSUB -a poe            # select the poe elim
+#BSUB -R "span[ptile=32]"       # tasks per node
+#BSUB -J homme          # job name
+#BSUB -o homme.out      # output filename
+#BSUB -e homme.out  
+#BSUB -W 0:15	        #  wall clock time 
+#BSUB -P 39510003
+#BSUB -q premium        # queue
+
+set NCPU = 24
+if ( ${?PBS_NODEFILE} ) then
+    set NCPU = `wc $PBS_NODEFILE | awk '{print $1}' - `
+    echo using NCPU = $NCPU
+endif
+
+#set nlev=50
+set nlev=26
+set qsize = 2
+set tadv = 1
+set u_perturb = 1
+set rotate = 0
+set test_case = 'jw_baroclinic'
+
+#set test_case = 'jw_baroclinic2'
+#set rotate = 45
+
+
+
+# requires subcycle=4 for nu=2e15
+#set ne = 11
+#set tstep = 50
+#set NPTS = 8
+
+
+#set ne = 21
+#set tstep = 120   #150 blows up.  144 runs.  lets go with 120
+#set NPTS = 4
+
+#set ne = 26
+#set tstep = 100
+#set NPTS = 4
+
+set ne = 30
+set tstep = 90
+set NPTS = 4
+
+#set ne = 19
+#set tstep = 90
+#set NPTS = 5
+
+#set ne = 39
+#set tstep = 144
+#set NPTS = 3
+
+#set ne = 45
+#set tstep = 112.5
+#set NPTS = 3
+
+#set ne = 78
+#set tstep = 120
+#set NPTS = 2
+
+
+# number of hours between calls to prim_printstate
+# @ doesn't like floating point numbers?
+set sfreq = 3
+if ( 112.5 == $tstep ) then
+   @ sfreq *= 36000
+   @ sfreq /= 1125
+else
+   @ sfreq *= 3600
+   @ sfreq /= $tstep
+endif
+
+set nu_p = 0
+# hypervis = 0   then use -nu${nu} for name.  strong form viscosity
+# hypervis = 1   then use -wnu${nu} for name.  weak form viscosity
+# hypervis = 2   then use -hnu${nu} for name.  hyper viscosity
+
+#set nu = 7e5
+#set nu_s = 7e5
+#set hypervis = 0
+#set subcycle = 1
+
+# 4e6 runs .5d   6e6 blows up .125d
+#set nu = 3e4
+#set nu_s = 3e4
+#set hypervis = 1
+#set subcycle = 1
+
+# reasonable value:  2e15-1
+set nu = 9.6e14
+set nu_s = 9.6e14
+set nu_p = 0
+set hypervis = 2
+set subcycle = 1
+set subcycle_q = 1
+
+set OSTYPE = `uname`
+
+
+set HOMME = ~/homme
+if ( -d ~/codes/homme ) then
+set HOMME = ~/codes/homme
+endif
+set src = $HOMME/build.$OSTYPE
+set input = $HOMME/test/jw_baroclinic
+set vdir = $HOMME/test/vcoord
+
+if ( $NPTS == 8 ) then
+   set namelist = Params${nlev}.inc
+   set mesh = ne${ne}t${tstep}l${nlev}
+else
+   set namelist = Params${nlev}-${NPTS}.inc
+   set mesh = ne${ne}-${NPTS}t${tstep}l${nlev}
+endif
+
+if ( $hypervis == 0 ) then
+   set name = jw-${mesh}-nu${nu}
+endif
+if ( $hypervis == 1 ) then
+   set name = jw-${mesh}-wnu${nu}-$subcycle
+endif
+if ( $hypervis == 2 ) then
+   if ( $nu_p == 0 ) then
+      set name = jw-${mesh}-hnu${nu}-$subcycle
+   else
+      set name = jw-${mesh}-hpnu${nu}-$subcycle
+   endif
+endif
+echo $name
+
+set bigendian = 0
+set mpirun = "mpirun -np $NCPU"
+if ($OSTYPE == AIX) then
+   set bigendian = 1
+   set mpirun = "mpirun.lsf launch"
+endif
+
+
+# setup the work directory
+set wdir = ~/scratch1/preqx
+#set wdir = ~/jw
+mkdir $wdir
+set wdir = $wdir/$name
+mkdir $wdir
+mkdir $wdir/movies
+rsync -a $vdir/*26* $wdir/vcoord
+
+
+# copy Params.inc into output directory to archive it
+cp -f $input/$namelist $wdir/Params.inc
+
+
+
+cd $input
+rm -f $wdir/explicit.nl
+
+
+sed s/NE/$ne/ explicit${nlev}.nl.sed | sed s/TSTEP/$tstep/ | sed s/SFREQ/$sfreq/ |\
+sed s/NU1/$nu/ | sed s/NU2/$nu_s/ | sed s/NUP/$nu_p/ |\
+sed s/u_perturb.\*/"u_perturb = $u_perturb \nrotate_grid = $rotate"/ |\
+sed s/qsize.\*/"qsize = $qsize tracer_advection_formulation=$tadv "/  |\
+sed s/test_case.\*/"test_case = '$test_case'"/  |\
+sed s/ORDER/$hypervis/ | sed s/SUBCYCLE/"$subcycle \n hypervis_subcycle_q = $subcycle_q"/ > $wdir/input.nl
+if ( $bigendian == 1 ) then
+  mv -f $wdir/input.nl $wdir/tmp.nl
+  sed  s/.littleendian//g $wdir/tmp.nl > $wdir/input.nl
+endif
+
+
+
+diff  $input/$namelist $src/../Params.inc
+if ($status != 0) then
+   echo "replacing Params.inc"
+   cp $input/$namelist $src/../Params.inc
+endif
+
+cd $src
+rm -f preqx
+gmake preqx
+cd $wdir
+
+date
+$mpirun $src/preqx < $wdir/input.nl
+date
+
