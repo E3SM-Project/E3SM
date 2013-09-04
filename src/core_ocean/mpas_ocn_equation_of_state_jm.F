@@ -78,7 +78,8 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_equation_of_state_jm_density(grid, k_displaced, displacement_type, &
-       indexT, indexS, tracers, density, err, tracersSurfaceValue, density_deriv_wrt_temperature, density_deriv_wrt_salinity)!{{{
+       indexT, indexS, tracers, density, err, &
+       tracersSurfaceValue, dDensityDT, dDensityDS)!{{{
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !  This module contains routines necessary for computing the density
    !  from model temperature and salinity using an equation of state.
@@ -110,8 +111,8 @@ contains
       integer, intent(out) :: err
       real (kind=RKIND), dimension(:,:), intent(in), optional :: tracersSurfaceValue
       real (kind=RKIND), dimension(:,:), intent(out), optional :: &
-         density_deriv_wrt_temperature,  &! derivative of density with respect to temperature
-         density_deriv_wrt_salinity    ! derivative of density with respect to salinity
+         dDensityDT,  &! derivative of density with respect to temperature
+         dDensityDS    ! derivative of density with respect to salinity
 
       type (dm_info) :: dminfo
       integer :: iEdge, iCell, iVertex, k, nCells, nEdges, nVertices, nVertLevels, k_displaced_local
@@ -352,7 +353,7 @@ contains
          end do
       end do
 
-      if (present(density_deriv_wrt_temperature)) then
+      if (present(dDensityDT)) then
          do iCell=1,nCells
             do k=1,maxLevelCell(iCell)
                DRDT0 =  unt1 + 2.0*unt2*TQ(k,iCell) +                      &
@@ -370,20 +371,20 @@ contains
                   p2(k) *(bup2s1t1 + 2.0*bup2s1t2*TQ(k,iCell)) +             &
                   SQR(k,iCell)*(bup0sqt1 + 2.0*bup0sqt2*TQ(k,iCell)))
 
-               density_deriv_wrt_temperature(k,iCell) = (DENOMK(k,iCell)*(DRDT0*BULK_MOD(k,iCell) -                    &
+               dDensityDT(k,iCell) = (DENOMK(k,iCell)*(DRDT0*BULK_MOD(k,iCell) -                    &
                   p(k)*(unt0+RHO_S(k,iCell))*DKDT*DENOMK(k,iCell)))*0.001
 
             end do
          end do
       endif
 
-      if (present(density_deriv_wrt_salinity)) then
+      if (present(dDensityDS)) then
          do iCell=1,nCells
             do k=1,maxLevelCell(iCell)
                DRDS0  = 2.0*uns2t0*SQ(k,iCell) + WORK1(k,iCell) + 1.5*WORK2(k,iCell)
                DKDS = WORK3(k,iCell) + 1.5*WORK4(k,iCell)
 
-               density_deriv_wrt_salinity(k,iCell) = DENOMK(k,iCell)*(DRDS0*BULK_MOD(k,iCell) -                    &
+               dDensityDS(k,iCell) = DENOMK(k,iCell)*(DRDS0*BULK_MOD(k,iCell) -                    &
                    p(k)*(unt0+RHO_S(k,iCell))*DKDS*DENOMK(k,iCell))
 
             end do
