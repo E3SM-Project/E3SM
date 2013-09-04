@@ -372,7 +372,7 @@ contains
                   SQR(k,iCell)*(bup0sqt1 + 2.0*bup0sqt2*TQ(k,iCell)))
 
                dDensityDT(k,iCell) = (DENOMK(k,iCell)*(DRDT0*BULK_MOD(k,iCell) -                    &
-                  p(k)*(unt0+RHO_S(k,iCell))*DKDT*DENOMK(k,iCell)))*0.001
+                  p(k)*(unt0+RHO_S(k,iCell))*DKDT*DENOMK(k,iCell)))
 
             end do
          end do
