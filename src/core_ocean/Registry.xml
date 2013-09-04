@@ -632,6 +632,12 @@
 		<var name="density" type="real" dimensions="nVertLevels nCells Time" streams="iro" units="kg m^{-3}"
 		     description="density"
 		/>
+		<var name="dDensityDT" type="real" dimensions="nVertLevels nCells Time" streams="iro" units="kg m^{-3}"
+		     description="density deriv wrt temperature"
+		/>
+		<var name="dDensityDS" type="real" dimensions="nVertLevels nCells Time" streams="iro" units="kg m^{-3}"
+		     description="density deriv wrt salinity"
+		/>
 		<var name="normalBarotropicVelocity" type="real" dimensions="nEdges Time" streams="r" units="m s^{-1}"
 		     description="barotropic velocity, used in split-explicit time-stepping"
 		/>
