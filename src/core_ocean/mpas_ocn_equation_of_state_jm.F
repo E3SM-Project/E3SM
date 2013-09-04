@@ -78,7 +78,7 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_equation_of_state_jm_density(grid, k_displaced, displacement_type, &
-       indexT, indexS, tracers, density, err, tracersSurfaceValue)!{{{
+       indexT, indexS, tracers, density, err, tracersSurfaceValue, density_deriv_wrt_temperature, density_deriv_wrt_salinity)!{{{
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !  This module contains routines necessary for computing the density
    !  from model temperature and salinity using an equation of state.
@@ -109,37 +109,33 @@ contains
       real (kind=RKIND), dimension(:,:), intent(out) :: density
       integer, intent(out) :: err
       real (kind=RKIND), dimension(:,:), intent(in), optional :: tracersSurfaceValue
+      real (kind=RKIND), dimension(:,:), intent(out), optional :: &
+         density_deriv_wrt_temperature,  &! derivative of density with respect to temperature
+         density_deriv_wrt_salinity    ! derivative of density with respect to salinity
 
       type (dm_info) :: dminfo
-      integer :: iEdge, iCell, iVertex, k
-
-      integer :: nCells, nEdges, nVertices, nVertLevels
-      integer :: k_displaced_local
+      integer :: iEdge, iCell, iVertex, k, nCells, nEdges, nVertices, nVertLevels, k_displaced_local
+      integer, dimension(:), pointer :: maxLevelCell
       character(len=60) :: displacement_type_local
 
-      real (kind=RKIND), dimension(:), pointer :: &
-        refBottomDepth, pRefEOS
-
-      integer, dimension(:), pointer :: maxLevelCell
-
-      real (kind=RKIND) :: &
-         TQ,SQ,             &! adjusted T,S
-         BULK_MOD,          &! Bulk modulus
-         density_S,             &! density at the surface
+      real (kind=RKIND) :: & 
+         depth, &
          DRDT0,             &! d(density)/d(temperature), for surface
          DRDS0,             &! d(density)/d(salinity   ), for surface
          DKDT,              &! d(bulk modulus)/d(pot. temp.)
          DKDS,              &! d(bulk modulus)/d(salinity  )
-         SQR,DENOMK,        &! work arrays
-         WORK1, WORK2, WORK3, WORK4, T2, depth
-
-      real (kind=RKIND) :: & 
          tmin, tmax,        &! valid temperature range for level k
          smin, smax          ! valid salinity    range for level k
-
+      real (kind=RKIND), dimension(:), pointer :: &
+        refBottomDepth, pRefEOS
       real (kind=RKIND), dimension(:), allocatable :: &
          p, p2 ! temporary pressure scalars
-
+      real (kind=RKIND), dimension(:,:), allocatable :: &
+         TQ,SQ,             &! adjusted T,S
+         BULK_MOD,          &! Bulk modulus
+         SQR,DENOMK,        &! work arrays
+         RHO_S,             &! density at the surface
+         WORK1, WORK2, WORK3, WORK4, T2
       real (kind=RKIND), dimension(:,:,:), allocatable :: &
          tracerTS
 
@@ -256,6 +252,9 @@ contains
 !  integrating using hydrostatic balance.
 
       allocate(pRefEOS(nVertLevels),p(nVertLevels),p2(nVertLevels))
+      allocate(TQ(nVertLevels,nCells),SQ(nVertLevels,nCells),BULK_MOD(nVertLevels,nCells),SQR(nVertLevels,nCells),DENOMK(nVertLevels,nCells), RHO_S(nVertLevels,nCells), &
+         WORK1(nVertLevels,nCells), WORK2(nVertLevels,nCells), WORK3(nVertLevels,nCells), WORK4(nVertLevels,nCells), T2(nVertLevels,nCells))
+
 
       ! This could be put in the init routine.
       ! Note I am using refBottomDepth, so pressure on top level does
@@ -310,51 +309,90 @@ contains
 
       do iCell=1,nCells
          do k=1,maxLevelCell(iCell)
-            SQ  = max(min(tracerTS(2,k,iCell),smax),smin)
-            TQ  = max(min(tracerTS(1,k,iCell),tmax),tmin)
+            SQ(k,iCell)  = max(min(tracerTS(2,k,iCell),smax),smin)
+            TQ(k,iCell)  = max(min(tracerTS(1,k,iCell),tmax),tmin)
    
-            SQR = sqrt(SQ)
-            T2  = TQ*TQ
+            SQR(k,iCell) = sqrt(SQ(k,iCell))
+            T2(k,iCell)  = TQ(k,iCell)*TQ(k,iCell)
 
             !***
             !*** first calculate surface (p=0) values from UNESCO eqns.
             !***
 
-            WORK1 = uns1t0 + uns1t1*TQ + & 
-                   (uns1t2 + uns1t3*TQ + uns1t4*T2)*T2
-            WORK2 = SQR*(unsqt0 + unsqt1*TQ + unsqt2*T2)
+            WORK1(k,iCell) = uns1t0 + uns1t1*TQ(k,iCell) + & 
+                   (uns1t2 + uns1t3*TQ(k,iCell) + uns1t4*T2(k,iCell))*T2(k,iCell)
+            WORK2(k,iCell) = SQR(k,iCell)*(unsqt0 + unsqt1*TQ(k,iCell) + unsqt2*T2(k,iCell))
 
-            density_S = unt1*TQ + (unt2 + unt3*TQ + (unt4 + unt5*TQ)*T2)*T2 &
-                            + (uns2t0*SQ + WORK1 + WORK2)*SQ
+            RHO_S(k,iCell) = unt1*TQ(k,iCell) + (unt2 + unt3*TQ(k,iCell) + (unt4 + unt5*TQ(k,iCell))*T2(k,iCell))*T2(k,iCell) &
+                            + (uns2t0*SQ(k,iCell) + WORK1(k,iCell) + WORK2(k,iCell))*SQ(k,iCell)
 
             !***
             !*** now calculate bulk modulus at pressure p from 
             !*** Jackett and McDougall formula
             !***
 
-            WORK3 = bup0s1t0 + bup0s1t1*TQ +                    &
-                    (bup0s1t2 + bup0s1t3*TQ)*T2 +                &
-                    p(k) *(bup1s1t0 + bup1s1t1*TQ + bup1s1t2*T2) + &
-                    p2(k)*(bup2s1t0 + bup2s1t1*TQ + bup2s1t2*T2)
-            WORK4 = SQR*(bup0sqt0 + bup0sqt1*TQ + bup0sqt2*T2 + &
+            WORK3(k,iCell) = bup0s1t0 + bup0s1t1*TQ(k,iCell) +                    &
+                    (bup0s1t2 + bup0s1t3*TQ(k,iCell))*T2(k,iCell) +                &
+                    p(k) *(bup1s1t0 + bup1s1t1*TQ(k,iCell) + bup1s1t2*T2(k,iCell)) + &
+                    p2(k)*(bup2s1t0 + bup2s1t1*TQ(k,iCell) + bup2s1t2*T2(k,iCell))
+            WORK4(k,iCell) = SQR(k,iCell)*(bup0sqt0 + bup0sqt1*TQ(k,iCell) + bup0sqt2*T2(k,iCell) + &
                          bup1sqt0*p(k))
    
-            BULK_MOD  = bup0s0t0 + bup0s0t1*TQ +                    &
-                        (bup0s0t2 + bup0s0t3*TQ + bup0s0t4*T2)*T2 + &
-                        p(k) *(bup1s0t0 + bup1s0t1*TQ +                &
-                        (bup1s0t2 + bup1s0t3*TQ)*T2) +           &
-                        p2(k)*(bup2s0t0 + bup2s0t1*TQ + bup2s0t2*T2) + &
-                        SQ*(WORK3 + WORK4)
+            BULK_MOD(k,iCell)  = bup0s0t0 + bup0s0t1*TQ(k,iCell) +                    &
+                        (bup0s0t2 + bup0s0t3*TQ(k,iCell) + bup0s0t4*T2(k,iCell))*T2(k,iCell) + &
+                        p(k) *(bup1s0t0 + bup1s0t1*TQ(k,iCell) +                &
+                        (bup1s0t2 + bup1s0t3*TQ(k,iCell))*T2(k,iCell)) +           &
+                        p2(k)*(bup2s0t0 + bup2s0t1*TQ(k,iCell) + bup2s0t2*T2(k,iCell)) + &
+                        SQ(k,iCell)*(WORK3(k,iCell) + WORK4(k,iCell))
   
-            DENOMK = 1.0/(BULK_MOD - p(k))
+            DENOMK(k,iCell) = 1.0/(BULK_MOD(k,iCell) - p(k))
    
-            density(k,iCell) = (unt0 + density_S)*BULK_MOD*DENOMK
+            density(k,iCell) = (unt0 + RHO_S(k,iCell))*BULK_MOD(k,iCell)*DENOMK(k,iCell)
 
          end do
       end do
 
+      if (present(density_deriv_wrt_temperature)) then
+         do iCell=1,nCells
+            do k=1,maxLevelCell(iCell)
+               DRDT0 =  unt1 + 2.0*unt2*TQ(k,iCell) +                      &
+                  (3.0*unt3 + 4.0*unt4*TQ(k,iCell) + 5.0*unt5*T2(k,iCell))*T2(k,iCell) + &
+                  (uns1t1 + 2.0*uns1t2*TQ(k,iCell) +                 &
+                   (3.0*uns1t3 + 4.0*uns1t4*TQ(k,iCell))*T2(k,iCell) +         &
+                   (unsqt1 + 2.0*unsqt2*TQ(k,iCell))*SQR(k,iCell) )*SQ(k,iCell)
+
+               DKDT  = bup0s0t1 + 2.0*bup0s0t2*TQ(k,iCell) +                       &
+                 (3.0*bup0s0t3 + 4.0*bup0s0t4*TQ(k,iCell))*T2(k,iCell) +               &
+                  p(k) *(bup1s0t1 + 2.0*bup1s0t2*TQ(k,iCell) + 3.0*bup1s0t3*T2(k,iCell)) + &
+                  p2(k)*(bup2s0t1 + 2.0*bup2s0t2*TQ(k,iCell)) +                  &
+                  SQ(k,iCell)*(bup0s1t1 + 2.0*bup0s1t2*TQ(k,iCell) + 3.0*bup0s1t3*T2(k,iCell) +  &
+                  p(k)  *(bup1s1t1 + 2.0*bup1s1t2*TQ(k,iCell)) +             &
+                  p2(k) *(bup2s1t1 + 2.0*bup2s1t2*TQ(k,iCell)) +             &
+                  SQR(k,iCell)*(bup0sqt1 + 2.0*bup0sqt2*TQ(k,iCell)))
+
+               density_deriv_wrt_temperature(k,iCell) = (DENOMK(k,iCell)*(DRDT0*BULK_MOD(k,iCell) -                    &
+                  p(k)*(unt0+RHO_S(k,iCell))*DKDT*DENOMK(k,iCell)))*0.001
+
+            end do
+         end do
+      endif
+
+      if (present(density_deriv_wrt_salinity)) then
+         do iCell=1,nCells
+            do k=1,maxLevelCell(iCell)
+               DRDS0  = 2.0*uns2t0*SQ(k,iCell) + WORK1(k,iCell) + 1.5*WORK2(k,iCell)
+               DKDS = WORK3(k,iCell) + 1.5*WORK4(k,iCell)
+
+               density_deriv_wrt_salinity(k,iCell) = DENOMK(k,iCell)*(DRDS0*BULK_MOD(k,iCell) -                    &
+                   p(k)*(unt0+RHO_S(k,iCell))*DKDS*DENOMK(k,iCell))
+
+            end do
+         end do
+      endif
+
       deallocate(pRefEOS,p,p2)
       deallocate(tracerTS)
+      deallocate(TQ,SQ,T2,BULK_MOD,SQR,DENOMK,RHO_S, WORK1, WORK2, WORK3, WORK4)
 
    end subroutine ocn_equation_of_state_jm_density!}}}
 
