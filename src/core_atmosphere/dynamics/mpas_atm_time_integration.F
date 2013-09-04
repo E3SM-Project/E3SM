@@ -2581,7 +2581,7 @@ module atm_time_integration
                   if (cell1 <= nCellsSolve .or. cell2 <= nCellsSolve) then
    
                      do k=2,nVertLevels
-                        theta_turb_flux = 0.25*(kdiff(k,cell1)+kdiff(k,cell2)+kdiff(k-1,cell1)+kdiff(k,cell2))  &
+                        theta_turb_flux = 0.25*(kdiff(k,cell1)+kdiff(k,cell2)+kdiff(k-1,cell1)+kdiff(k-1,cell2))  &
                                               *(w(k,cell2) - w(k,cell1))/dcEdge(iEdge)
                         theta_turb_flux = theta_turb_flux * meshScalingDel2(iEdge)
                         flux = 0.5*dvEdge (iEdge) * (rho_edge(k,iEdge)+rho_edge(k-1,iEdge)) * theta_turb_flux
