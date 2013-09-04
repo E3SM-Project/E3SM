@@ -29,6 +29,8 @@ module ocn_diagnostics
    use ocn_equation_of_state
    use ocn_thick_ale
 
+   use ocn_equation_of_state_jm ! temp to test density derivatives
+
    implicit none
    private
    save
@@ -426,6 +428,13 @@ contains
       call ocn_equation_of_state_density(state, diagnostics, grid, 1, 'relative', displacedDensity, err)
 
       call mpas_timer_stop("equation of state", diagEOSTimer)
+
+      ! temp, test density derivatives
+      call ocn_equation_of_state_jm_density(grid, 0, 'relative', &
+       state % index_temperature, state % index_salinity, tracers, density, err, &
+       diagnostics % tracersSurfaceValue % array, &
+       state % dDensityDT % array, state % dDensityDS % array)!{{{
+
 
       !
       ! Pressure
