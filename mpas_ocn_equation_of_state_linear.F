@@ -64,7 +64,8 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_equation_of_state_linear_density(grid, indexT, indexS, tracers, density, err)!{{{
+   subroutine ocn_equation_of_state_linear_density(grid, indexT, indexS, tracers, density, err, &
+       dDensityDT, dDensityDS)!{{{
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !  This module contains routines necessary for computing the density
    !  from model temperature and salinity using an equation of state.
@@ -82,10 +83,13 @@ contains
       implicit none
 
       type (mesh_type), intent(in) :: grid
-      real (kind=RKIND), dimension(:,:), intent(inout) :: density
-      real (kind=RKIND), dimension(:,:,:), intent(in) :: tracers
       integer, intent(in) :: indexT, indexS
+      real (kind=RKIND), dimension(:,:,:), intent(in) :: tracers
+      real (kind=RKIND), dimension(:,:), intent(inout) :: density
       integer, intent(out) :: err
+      real (kind=RKIND), dimension(:,:), intent(out), optional :: &
+         dDensityDT,  &! derivative of density with respect to temperature
+         dDensityDS    ! derivative of density with respect to salinity
 
       integer, dimension(:), pointer :: maxLevelCell
       integer :: nCells, iCell, k
@@ -104,6 +108,14 @@ contains
                   + config_eos_linear_beta  * (tracers(indexS,k,iCell)-config_eos_linear_Sref)
          end do
       end do
+
+      if (present(dDensityDT)) then
+         dDensityDT = - config_eos_linear_alpha
+      endif
+
+      if (present(dDensityDS)) then
+         dDensityDS = config_eos_linear_beta
+      endif
 
    end subroutine ocn_equation_of_state_linear_density!}}}
 
