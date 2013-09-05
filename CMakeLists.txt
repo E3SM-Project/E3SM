@@ -89,8 +89,8 @@ OPTION(BUILD_HOMME_SWDGX "Shallow water equations DG" ON)
 OPTION(BUILD_HOMME_PRIMDGX "Primitive equations DG" ON)
 OPTION(BUILD_HOMME_SWIM  "Shallow water equations implicit" OFF)
 OPTION(BUILD_HOMME_PRIM  "Primitive equations implicit" OFF)
+
 # Primitive equations FEM with separate tracer routines
-OPTION(BUILD_PREQX_FVM "Primitive equations with FVM tracers" OFF)
 OPTION(BUILD_PREQX_SPELT "Primitive euqations with SPELT tracers" OFF)
 
 # Cristoph's "standalone" executables

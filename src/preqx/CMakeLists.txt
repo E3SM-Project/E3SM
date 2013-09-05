@@ -150,13 +150,6 @@ ENDIF ()
 createTestExec(preqx preqx ${PREQX_NP} ${PREQX_NC} ${PREQX_PLEV} 
                ${PREQX_USE_PIO}  ${PREQX_USE_ENERGY})
 
-IF (${BUILD_PREQX_FVM})
-  MESSAGE(STATUS "  Also building preqx_fvm")
-  createTestExec(preqx_fvm preqx ${PREQX_NP} ${PREQX_NC} ${PREQX_PLEV} 
-                 ${PREQX_USE_PIO}  ${PREQX_USE_ENERGY})
-  SET_TARGET_PROPERTIES(preqx_fvm PROPERTIES COMPILE_DEFINITIONS "_FVM")
-ENDIF ()
-
 IF (${BUILD_PREQX_SPELT})
   MESSAGE(STATUS "  Also building preqx_spelt")
   createTestExec(preqx_spelt preqx ${PREQX_NP} ${PREQX_NC} ${PREQX_PLEV} 
