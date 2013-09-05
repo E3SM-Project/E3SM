@@ -110,10 +110,12 @@
 	config_zWidth_tanh = 100
 /
 &forcing
-	config_use_monthly_forcing = .false.
 	config_restoreTS = .false.
 	config_restoreT_timescale = 90.0
 	config_restoreS_timescale = 90.0
+	config_use_coupled_forcing = .false.
+	config_flux_attenuation_coefficient = 0.001
+	config_frazil_ice_formation = .true.
 /
 &advection
 	config_vert_tracer_adv = "stencil"

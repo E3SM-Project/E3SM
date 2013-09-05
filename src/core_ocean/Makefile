@@ -36,8 +36,7 @@ OBJS = mpas_ocn_mpas_core.o \
        mpas_ocn_equation_of_state_jm.o \
        mpas_ocn_equation_of_state_linear.o \
        mpas_ocn_global_diagnostics.o \
-       mpas_ocn_time_average.o \
-       mpas_ocn_monthly_forcing.o
+       mpas_ocn_time_average.o
 
 all: libcvmix core_hyd
 
@@ -120,8 +119,6 @@ mpas_ocn_equation_of_state_jm.o:
 
 mpas_ocn_equation_of_state_linear.o:
 
-mpas_ocn_monthly_forcing.o:
-
 mpas_ocn_mpas_core.o: mpas_ocn_thick_hadv.o \
                       mpas_ocn_gm.o \
                       mpas_ocn_thick_vadv.o \
@@ -154,8 +151,7 @@ mpas_ocn_mpas_core.o: mpas_ocn_thick_hadv.o \
                       mpas_ocn_equation_of_state_jm.o \
                       mpas_ocn_equation_of_state_linear.o \
                       mpas_ocn_global_diagnostics.o \
-                      mpas_ocn_time_average.o \
-                      mpas_ocn_monthly_forcing.o
+                      mpas_ocn_time_average.o
 
 clean:
 	if [ -d cvmix ]; then \
