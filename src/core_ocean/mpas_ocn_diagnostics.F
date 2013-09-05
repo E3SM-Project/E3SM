@@ -516,10 +516,8 @@ contains
       tracersSurfaceValue(:,:) = tracers(:,1,:)
 
       !
-      ! Compute bulk Richardson number
-      !   (note: this is a proposed new template for this subroutine
-      !     where we push the computation one level down)
-      call computeBulkRichardsonNumber(state, mesh, diagnostics, scratch)
+      !  compute fields used as intent(in) to CVMix/KPP
+      call computeKPPInputFields(state, forcing, mesh, diagnostics, scratch)
 
       !
       ! Apply the GM closure as a bolus velocity
@@ -879,25 +877,26 @@ contains
 
 !***********************************************************************
 !
-!  routine computeBulkRichardsonNumber
+!  routine computeKPPInputFields
 !
 !> \brief   
-!>    Computes the bulk Richardson number used to diagnose 
-!>      ocean boundary layer depth.
+!>    Compute fields necessary to drive the CVMix KPP module
 !> \author  Todd Ringler
 !> \date    20 August 2013
 !> \details
-!>    Adiabatically displace SST/SSS to every vertical layer in order to
-!>      to determine tendency of buoyancy to suppress mixing. 
-!>      The buoyancy restoring is compared to (i.e. divided by) the tendency
-!>      of vertical shear to enhance mixing.
+!>    CVMix/KPP requires the following fields as intent(in):
+!>       surfaceBuoyancyForcing
+!>       surfaceFrictionVelocity
+!>       bulkRichardsonNumber
+!>
 !
 !-----------------------------------------------------------------------
 
-    subroutine computeBulkRichardsonNumber(state, mesh, diagnostics, scratch)!{{{
+    subroutine computeKPPInputFields(state, forcing, mesh, diagnostics, scratch)!{{{
 
       type (state_type), intent(inout) :: state !< Input/Output: State information
-      type (mesh_type), intent(in) :: mesh !< Input: mesh information
+      type (forcing_type), intent(in) :: forcing !< Input: Forcing information
+      type (mesh_type), intent(in) :: mesh !< Input: Mesh information
       type (diagnostics_type), intent(inout) :: diagnostics !< Diagnostics information derived from State
       type (scratch_type), intent(inout) :: scratch !< Input: scratch variables
 
@@ -909,13 +908,14 @@ contains
       integer, dimension(:,:), pointer :: edgesOnCell
 
       ! real pointers
-      real (kind=RKIND), dimension(:), pointer :: dcEdge, dvEdge, areaCell
+      real (kind=RKIND), dimension(:), pointer :: dcEdge, dvEdge, areaCell, surfaceWindStressMagnitude, &
+           penetrativeTemperatureFlux, surfaceMassFlux
       real (kind=RKIND), dimension(:,:), pointer ::  &
            zMid, zTop, bulkRichardsonNumber, tracersSurfaceValues, densitySurfaceDisplaced, density, &
-           normalVelocity
+           normalVelocity, surfaceTracerFlux, thermalExpansionCoeff, salineContractionCoeff
 
       ! local
-      integer :: iCell, iEdge, i, k, err
+      integer :: iCell, iEdge, i, k, err, indexTempFlux, indexSaltFlux
       real (kind=RKIND) :: numerator, denominator, factor, deltaVelocitySquared, turbulentVelocitySquared, delU2, invAreaCell
 
       ! set the parameter turbulentVelocitySquared
@@ -924,6 +924,8 @@ contains
       ! set scalar values
       nCells      = mesh % nCells
       nVertLevels = mesh % nVertLevels
+      indexTempFlux = forcing % index_surfaceTemperatureFlux
+      indexSaltFlux = forcing % index_surfaceSalinityFlux
 
       ! set pointers into state, mesh, diagnostics and scratch
       normalVelocity => state % normalVelocity % array
@@ -941,17 +943,57 @@ contains
       bulkRichardsonNumber => diagnostics % bulkRichardsonNumber % array
       tracersSurfaceValues => diagnostics % tracersSurfaceValue  % array
 
-      ! compute EOS by displacing SST/SSS to every vertical layer in column
+      normalVelocity => state % normalVelocity % array
+
+      surfaceMassFlux            => forcing % surfaceMassFlux % array
+      surfaceTracerFlux          => forcing % surfaceTracerFlux % array
+      penetrativeTemperatureFlux => forcing % penetrativeTemperatureFlux % array 
+      surfaceWindStressMagnitude => forcing % surfaceWindStressMagnitude % array      
+
+      ! allocate scratch space displaced density computation
       call mpas_allocate_scratch_field(scratch % densitySurfaceDisplaced, .true.)
+      call mpas_allocate_scratch_field(scratch % thermalExpansionCoeff, .true.)
+      call mpas_allocate_scratch_field(scratch % salineContractionCoeff, .true.)
       densitySurfaceDisplaced => scratch % densitySurfaceDisplaced % array
+      thermalExpansionCoeff => scratch % thermalExpansionCoeff % array
+      salineContractionCoeff => scratch % salineContractionCoeff % array
+
+      ! compute EOS by displacing SST/SSS to every vertical layer in column
       call ocn_equation_of_state_density(state, diagnostics, mesh, 0, 'surfaceDisplaced', densitySurfaceDisplaced, err)
 
       ! set value to out-of-bounds
       bulkRichardsonNumber(:,:) = -1.0e34
 
       do iCell=1,nCells
-
        invAreaCell = 1.0 / areaCell(iCell)
+
+       ! compute surface buoyancy forcing based on surface fluxes of mass, temperature, salinity and frazil (frazil to be added later)
+       ! since this computation is confusing, variables, units and sign convention is repeated here
+       ! everything below should be consistent with that specified in Registry
+       ! everything below should be consistent with the CVMix/KPP documentation: https://www.dropbox.com/s/6hqgc0rsoa828nf/cvmix_20aug2013.pdf
+       !
+       !    surfaceMassFlux: surface mass flux, m/s, positive into ocean
+       !    surfaceTracerFlux(indexTempFlux): non-penetrative temperature flux, C m/s, positive into ocean
+       !    penetrativeTemperatureFlux: penetrative surface temperature flux at ocean surface, positive into ocean
+       !    surfaceTracerFlux(indexSaltFlux): salinity flux, PSU m/s, positive into ocean
+       !    penetrativeTemperatureFluxOBL: penetrative temperature flux computed at z=OBL, positive down
+       !
+       ! note: the following fields used the CVMix/KPP computation of buoyancy forcing are not included here
+       !    1. Tm: temperature associated with surfaceMassFlux, C  (here we assume Tm == temperatureSurfaceValue)
+       !    2. Sm: salinity associated with surfaceMassFlux, PSU (here we assume Sm == salinitySurfaceValue and account for salinity flux in surfaceTracerFlux array)
+       !
+       ! buoyancyForcingOBL(iCell) =  thermalExpansionCoeff (1,iCell) *
+       !       (surfaceTracerFlux(indexTempFlux,iCell) + penetrativeTemperatureFlux(iCell) - penetrativeTemperatureFluxOBL(iCell))
+       !     - salineContractionCoeff(1,iCell) *  surfaceTracerFlux(indexSaltFlux,iCell)
+       !
+       ! at this point, buoyancyForcingOBL has units of m/s 
+       ! change into units of m/s^3 (which can be thought of as units of buoyancy per second)
+       ! buoyancyForcingOBL(iCell) = buoyancyForcingOBL(iCell) * grav / max(boundaryLayerDepth(iCell,thickness(1,iCell)
+
+       ! compute surface friction velocity
+       ! surfaceFrictionVelocity(iCell) = windStressMagnitude(iCell) / config_density0
+
+       ! loop over vertical to compute bulk Richardson number
        do k=1,maxLevelCell(iCell)
 
         ! find deltaVelocitySquared defined at cell centers
@@ -966,6 +1008,7 @@ contains
         numerator = gravity * (zTop(1,iCell) - zMid(k,iCell)) * (density(k,iCell) - densitySurfaceDisplaced(k,iCell))
         denominator = config_density0 * (deltaVelocitySquared + turbulentVelocitySquared)
 
+        ! compute bulk Richardson number
         bulkRichardsonNumber(k,iCell) = numerator / denominator
 
        enddo
@@ -973,8 +1016,10 @@ contains
 
       ! deallocate scratch space
       call mpas_deallocate_scratch_field(scratch % densitySurfaceDisplaced, .true.)
+      call mpas_deallocate_scratch_field(scratch % thermalExpansionCoeff, .true.)
+      call mpas_deallocate_scratch_field(scratch % salineContractionCoeff, .true.)
 
-    end subroutine computeBulkRichardsonNumber!}}}
+    end subroutine computeKPPInputFields!}}}
 
 
 end module ocn_diagnostics

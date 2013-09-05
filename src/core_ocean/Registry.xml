@@ -1117,6 +1117,9 @@
 		<var name="surfaceBuoyancyForcing" type="real" dimensions="nCells Time" streams="o" units="m s^{-3}"
 		     description="diagnosed surface buoyancy forcing due to heat, salt and freshwater fluxes at ocean surface"
 		/>
+		<var name="buoyancyForcingOBL" type="real" dimensions="nCells Time" streams="o" units="m s^{-3}"
+			 description="diagnosed buoyancy forcing due to heat, salt and freshwater fluxes averaged over ocean boundary layer depth"
+		/>
         <var name="windStressZonalDiag" type="real" dimensions="nCells Time" streams="o" units="N m^{-2}"
              description="reconstructed surface wind stress in the eastward direction. Used for diagnostics."
         />
