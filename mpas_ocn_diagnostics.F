@@ -79,10 +79,11 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_diagnostic_solve(dt, state, grid, diagnostics, scratch)!{{{
+   subroutine ocn_diagnostic_solve(dt, state, forcing, grid, diagnostics, scratch)!{{{
 
       real (kind=RKIND), intent(in) :: dt !< Input: Time step
       type (state_type), intent(inout) :: state !< Input/Output: State information
+      type (forcing_type), intent(in) :: forcing !< Input: Forcing information
       type (mesh_type), intent(in) :: grid !< Input: Grid information
       type (diagnostics_type), intent(inout) :: diagnostics  !< Input/Output: diagnostic fields derived from State
       type (scratch_type), intent(inout) :: scratch !< Input: scratch variables
@@ -168,7 +169,7 @@ contains
       kiteIndexOnCell => grid % kiteIndexOnCell % array
       verticesOnCell => grid % verticesOnCell % array
 
-      seaSurfacePressure => grid % seaSurfacePressure % array
+      seaSurfacePressure => forcing % seaSurfacePressure % array
                   
       nCells      = grid % nCells
       nEdges      = grid % nEdges
