@@ -127,6 +127,7 @@ CONTAINS
                                                        refl_10cm
 #else
   REAL, DIMENSION(ims:ime, kms:kme, jms:jme), INTENT(INOUT)::     &  ! GT
+                                                       refl_10cm
 #endif
 !+---+-----------------------------------------------------------------+
 

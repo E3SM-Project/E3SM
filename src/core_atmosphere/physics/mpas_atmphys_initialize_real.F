@@ -81,7 +81,7 @@
  real(kind=RKIND),dimension(:),pointer:: skintemp,sst
  
 !temporary:
- integer:: icount,iSoil,nSoilLevels
+ integer:: iSoil,nSoilLevels
 
 !--------------------------------------------------------------------------------------------------
 
@@ -161,52 +161,6 @@
 
 !initialize seaice points:
  call physics_init_seaice(mesh,fg)
-
- write(0,*)
- write(0,*) '--- check xland over oceans:'
- nSoilLevels = mesh % nSoilLevels
- icount = 0
- do iCell = 1, nCellsSolve
-    if(xland(iCell) == 2._RKIND) then
-       icount = icount + 1
-       do iSoil = 1,nSoilLevels
-          write(0,102) iCell,iSoil,xland(iCell),xice(iCell),fg%tmn%array(iCell), &
-                       fg%tslb%array(iSoil,iCell),fg%smois%array(iSoil,iCell),   &
-                       fg%sh2o%array(iSoil,iCell),fg%smcrel%array(iSoil,iCell)
-       enddo
-       write(0,*)
-       if(seaice(iCell) /= 0._RKIND) stop
-    endif
- enddo
- write(0,*) '... number of ocean points = ',icount
- write(0,*)
- do iCell = 1, nCellsSolve
-    if(xland(iCell) == 1._RKIND .and. seaice(iCell) == 0._RKIND) then
-       icount = icount + 1
-       do iSoil = 1,nSoilLevels
-          write(0,102) iCell,iSoil,xland(iCell),xice(iCell),fg%tmn%array(iCell), &
-                       fg%tslb%array(iSoil,iCell),fg%smois%array(iSoil,iCell),   &
-                       fg%sh2o%array(iSoil,iCell),fg%smcrel%array(iSoil,iCell)
-       enddo
-       write(0,*)
-    endif
- enddo
- write(0,*) '... number of land points  = ',icount
- write(0,*)
- do iCell = 1, nCellsSolve
-    if(xland(iCell) == 1._RKIND .and. seaice(iCell) == 1._RKIND) then
-       icount = icount + 1
-       do iSoil = 1,nSoilLevels
-          write(0,102) iCell,iSoil,xland(iCell),xice(iCell),fg%tmn%array(iCell), &
-                       fg%tslb%array(iSoil,iCell),fg%smois%array(iSoil,iCell),   &
-                       fg%sh2o%array(iSoil,iCell),fg%smcrel%array(iSoil,iCell)
-       enddo
-       write(0,*)
-    endif
- enddo
- write(0,*) '... number of land points with ice = ',icount
- 101 format(i9,5(1x,e15.8))
- 102 format(i9,1x,i4,10(1x,e15.8))
  
  write(0,*) '--- end physics_initialize_real:'
 
