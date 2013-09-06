@@ -433,8 +433,7 @@ contains
       call ocn_equation_of_state_jm_density(grid, 0, 'relative', &
        state % index_temperature, state % index_salinity, tracers, density, err, &
        diagnostics % tracersSurfaceValue % array, &
-       state % dDensityDT % array, state % dDensityDS % array)!{{{
-
+       state % thermalExpansionCoeff % array, state % salineContractionCoeff % array)!{{{
 
       !
       ! Pressure

@@ -632,11 +632,11 @@
 		<var name="density" type="real" dimensions="nVertLevels nCells Time" streams="iro" units="kg m^{-3}"
 		     description="density"
 		/>
-		<var name="dDensityDT" type="real" dimensions="nVertLevels nCells Time" streams="iro" units="kg m^{-3}"
-		     description="density deriv wrt temperature"
+		<var name="thermalExpansionCoeff" type="real" dimensions="nVertLevels nCells Time" streams="o" units="C^{-1}"
+		     description="Thermal expansion coefficient (alpha), defined as $-1/\rho d\rho/dT$ (note negative sign)."
 		/>
-		<var name="dDensityDS" type="real" dimensions="nVertLevels nCells Time" streams="iro" units="kg m^{-3}"
-		     description="density deriv wrt salinity"
+		<var name="salineContractionCoeff" type="real" dimensions="nVertLevels nCells Time" streams="o" units=PSU^{-1}"
+		     description="Saline contraction coefficient (beta), defined as $1/\rho d\rho/dS$"
 		/>
 		<var name="normalBarotropicVelocity" type="real" dimensions="nEdges Time" streams="r" units="m s^{-1}"
 		     description="barotropic velocity, used in split-explicit time-stepping"

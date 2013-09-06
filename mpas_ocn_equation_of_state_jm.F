@@ -79,7 +79,7 @@ contains
 
    subroutine ocn_equation_of_state_jm_density(grid, k_displaced, displacement_type, &
        indexT, indexS, tracers, density, err, &
-       tracersSurfaceValue, dDensityDT, dDensityDS)!{{{
+       tracersSurfaceValue, thermalExpansionCoeff, salineContractionCoeff)!{{{
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !  This module contains routines necessary for computing the density
    !  from model temperature and salinity using an equation of state.
@@ -111,8 +111,8 @@ contains
       integer, intent(out) :: err
       real (kind=RKIND), dimension(:,:), intent(in), optional :: tracersSurfaceValue
       real (kind=RKIND), dimension(:,:), intent(out), optional :: &
-         dDensityDT,  &! derivative of density with respect to temperature
-         dDensityDS    ! derivative of density with respect to salinity
+         thermalExpansionCoeff,  &! Thermal expansion coefficient (alpha), defined as $-1/\rho d\rho/dT$ (note negative sign)
+         salineContractionCoeff   ! Saline contraction coefficient (beta), defined as $1/\rho d\rho/dS$
 
       type (dm_info) :: dminfo
       integer :: iEdge, iCell, iVertex, k, nCells, nEdges, nVertices, nVertLevels, k_displaced_local
@@ -125,6 +125,8 @@ contains
          DRDS0,             &! d(density)/d(salinity   ), for surface
          DKDT,              &! d(bulk modulus)/d(pot. temp.)
          DKDS,              &! d(bulk modulus)/d(salinity  )
+         DRHODT,            &! derivative of density with respect to temperature
+         DRHODS,            &! derivative of density with respect to salinity
          tmin, tmax,        &! valid temperature range for level k
          smin, smax          ! valid salinity    range for level k
       real (kind=RKIND), dimension(:), pointer :: &
@@ -353,7 +355,7 @@ contains
          end do
       end do
 
-      if (present(dDensityDT)) then
+      if (present(thermalExpansionCoeff)) then
          do iCell=1,nCells
             do k=1,maxLevelCell(iCell)
                DRDT0 =  unt1 + 2.0*unt2*TQ(k,iCell) +                      &
@@ -371,21 +373,26 @@ contains
                   p2(k) *(bup2s1t1 + 2.0*bup2s1t2*TQ(k,iCell)) +             &
                   SQR(k,iCell)*(bup0sqt1 + 2.0*bup0sqt2*TQ(k,iCell)))
 
-               dDensityDT(k,iCell) = (DENOMK(k,iCell)*(DRDT0*BULK_MOD(k,iCell) -                    &
+               DRHODT = (DENOMK(k,iCell)*(DRDT0*BULK_MOD(k,iCell) -                    &
                   p(k)*(unt0+RHO_S(k,iCell))*DKDT*DENOMK(k,iCell)))
+
+
+               thermalExpansionCoeff(k,iCell) = DRHODT/density(k,iCell)
 
             end do
          end do
       endif
 
-      if (present(dDensityDS)) then
+      if (present(salineContractionCoeff)) then
          do iCell=1,nCells
             do k=1,maxLevelCell(iCell)
                DRDS0  = 2.0*uns2t0*SQ(k,iCell) + WORK1(k,iCell) + 1.5*WORK2(k,iCell)
                DKDS = WORK3(k,iCell) + 1.5*WORK4(k,iCell)
 
-               dDensityDS(k,iCell) = DENOMK(k,iCell)*(DRDS0*BULK_MOD(k,iCell) -                    &
+               DRHODS = DENOMK(k,iCell)*(DRDS0*BULK_MOD(k,iCell) -                    &
                    p(k)*(unt0+RHO_S(k,iCell))*DKDS*DENOMK(k,iCell))
+
+               salineContractionCoeff(k,iCell) = DRHODS/density(k,iCell)
 
             end do
          end do
