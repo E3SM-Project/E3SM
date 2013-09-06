@@ -10,6 +10,6 @@ module params_mod
                                  KWAY       = 1, &
                                  VOLUME     = 2, &
                                  WRECURSIVE = 3, &
-				 SFCURVE    = 4
+                                 SFCURVE    = 4
 
 end module params_mod
