@@ -1496,8 +1496,6 @@ contains
   end subroutine convert_gbl_index
    
   subroutine CubeTopology(GridEdge, GridVertex)
-    use params_mod, only : RECURSIVE, SFCURVE
-    use control_mod, only: partmethod
     use gridgraph_mod, only : GridEdge_t, GridVertex_t, initgridedge, PrintGridEdge, &
          allocate_gridvertex_nbrs, deallocate_gridvertex_nbrs 
     use dimensions_mod, only : np, ne

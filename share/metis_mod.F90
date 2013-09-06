@@ -12,8 +12,8 @@ module metis_mod
 
   public  :: genmetispart
   private :: PartitionGraph
-  private :: CreateMetisGraph
-  private :: PrintMetisGraph
+  private :: CreateMeshGraph
+  private :: PrintMeshGraph
   private :: genLocal2Global
   private :: sort
 contains 
@@ -57,10 +57,12 @@ contains
     integer                       :: nelem_nl,nelem_fl,newPartition
     integer                       :: partitionmethod,numpartitions
     integer                       :: nodes_per_frame
-    logical , parameter           :: Debug = .FALSE.
+    logical , parameter           :: Debug = .true.
     real (kind=4)                 :: dummy(1) 
     nelem_edge = SIZE(GridEdge) 
 
+    print *, "nelem = ", nelem
+    print *, "nelem_edge = ", nelem_edge
     allocate(tpwgts(npart))
     allocate(part(nelem))
     allocate(xadj(nelem+1))
@@ -73,7 +75,7 @@ contains
     !   Generate Graph for METIS
     ! =============================================
     !DBG  call PrintGridVertex(GridVertex)
-    call CreateMetisGraph(GridVertex,xadj,adjncy,adjwgt)
+    call CreateMeshGraph(GridVertex,xadj,adjncy,adjwgt)
     ! Add weights to all the vertices
     vwgt(:)=VertexWeight
     if(Debug) write(iulog,*)'genmetispart: point #2'
@@ -194,7 +196,7 @@ contains
              ! ==============================
              !  Convert graph to Metis format
              ! ==============================
-             call CreateMetisGraph(SubVertex,xadj,adjncy,adjwgt)	
+             call CreateMeshGraph(SubVertex,xadj,adjncy,adjwgt)
              if(Debug) write(iulog,*)'genmetispart: point #11'
 
              ! =======================
@@ -226,7 +228,7 @@ contains
              deallocate(part_fl)
 
 
-	     call FreeGraph(SubVertex)
+             call FreeGraph(SubVertex)
              deallocate(SubVertex)
 
           enddo
@@ -237,7 +239,7 @@ contains
           deallocate(cnt)
 
           if(iam .eq. 1) write(iulog,*)'genmetispart: Partitioning after Frame partitioning: ',part
-          !JMD	call haltmp('genmetispart: After Frame based partitioning:')
+          !JMD call haltmp('genmetispart: After Frame based partitioning:')
        endif
        ! ===============================
        !  Do not partitiion for nodes 
@@ -303,9 +305,9 @@ contains
                 ! ==============================
                 !  Convert grep to Metis format
                 ! ==============================
-                call CreateMetisGraph(SubVertex,xadj_nl,adjncy_nl,adjwgt_nl)	
+                call CreateMeshGraph(SubVertex,xadj_nl,adjncy_nl,adjwgt_nl)
 
-                !debug	     call PrintMetisgraph(xadj_nl,adjncy_nl,adjwgt_nl)
+                !debug     call PrintMetisgraph(xadj_nl,adjncy_nl,adjwgt_nl)
                 ! =======================
                 ! Partition the subgraph 
                 ! =======================
@@ -349,7 +351,7 @@ contains
     else   ! else no partitioning needed
        !======================================================================
        ! It appears that Metis will set part(:) = 2 if nnodes == 1, 
-       !	which messes stuff up, so set it myself
+       ! which messes stuff up, so set it myself
        !======================================================================
        part(:)=1 
     endif
@@ -421,7 +423,7 @@ contains
     ii = 1
     do i=1,nelem
        if( part(i) .eq. newP) then 
-          local2global(ii) = i	
+          local2global(ii) = i
           ii = ii + 1
        endif
     enddo
@@ -462,16 +464,19 @@ contains
 
   end subroutine PartitionGraph
 
-  subroutine CreateMetisGraph(GridVertex,xadj,adjncy,adjwgt)
+  subroutine CreateMeshGraph(GridVertex,xadj,adjncy,adjwgt)
     use gridgraph_mod, only : GridVertex_t, num_neighbors
     use kinds, only : real_kind, int_kind
     type (GridVertex_t), intent(in) :: GridVertex(:)
-    integer,intent(inout)           :: xadj(:),adjncy(:),adjwgt(:)
+    integer,intent(out)           :: xadj(:),adjncy(:),adjwgt(:)
 
     integer                         :: i,j,k,ii,jj
     integer                         :: degree,nelem
-    integer(kind=int_kind),allocatable  :: neigh_list(:),index(:)
-    real(kind=REAL_KIND),allocatable    :: neigh_wgt(:)
+    !integer(kind=int_kind),allocatable  :: neigh_list(:),sort_indices(:)
+    !real(kind=REAL_KIND),allocatable    :: neigh_wgt(:)
+    integer(kind=int_kind) :: neigh_list(num_neighbors), &
+                              sort_indices(num_neighbors)
+    real(kind=REAL_KIND) :: neigh_wgt(num_neighbors)
     integer                         :: max_neigh
 
     integer :: start, cnt
@@ -482,47 +487,51 @@ contains
     ii     = 1
 
     max_neigh = num_neighbors
-    allocate(index(max_neigh))
-    allocate(neigh_list(max_neigh))
-    allocate(neigh_wgt(max_neigh))
 
     do i=1,nelem
+       print *, "i = ", i
        xadj(i)      = ii
-       jj=1
+       degree = 0
        neigh_list=0
 
 
        do j=1,num_neighbors
           cnt = GridVertex(i)%nbrs_ptr(j+1) -  GridVertex(i)%nbrs_ptr(j) 
           start =  GridVertex(i)%nbrs_ptr(j) 
+          print *, "j,cnt,start = ", j, cnt, start
           do k=0, cnt-1
+             print *, "k,wgt = ", k, GridVertex(i)%nbrs_wgt(start+k)
              if(GridVertex(i)%nbrs_wgt(start+k) .gt. 0) then 
-                adjncy(ii+jj-1)   = GridVertex(i)%nbrs(start+k)
-	        neigh_list(jj)    = GridVertex(i)%nbrs(start+k)
-                adjwgt(ii+jj-1)   = GridVertex(i)%nbrs_wgt(start+k)*EdgeWeight
-                neigh_wgt(jj)     = GridVertex(i)%nbrs_wgt(start+k)*EdgeWeight
-                jj=jj+1
+                degree = degree + 1
+                !adjncy(ii+degree-1)   = GridVertex(i)%nbrs(start+k)
+                neigh_list(degree)    = GridVertex(i)%nbrs(start+k)
+                !adjwgt(ii+degree-1)   = GridVertex(i)%nbrs_wgt(start+k)*EdgeWeight
+                neigh_wgt(degree)     = GridVertex(i)%nbrs_wgt(start+k)*EdgeWeight
              endif
           enddo
        enddo
-       if (max_neigh < jj+1) call abortmp( "number or neighbors foudn exceeds expected max error")
+       if (degree > max_neigh) call abortmp( "number of neighbors found exceeds expected max")
 
-       call sort(max_neigh,neigh_list,index)
-       degree       = COUNT(GridVertex(i)%nbrs_wgt(:) .gt. 0) 
+       call sort(degree,neigh_list,sort_indices)
+       !degree       = COUNT(GridVertex(i)%nbrs_wgt(:) .gt. 0) 
        ! Copy the sorted adjncy list in
        do j=1,degree
-          adjncy(ii+j-1) = neigh_list(index(j))
-          adjwgt(ii+j-1) = neigh_wgt(index(j))
+          adjncy(ii+j-1) = neigh_list(sort_indices(j))
+          adjwgt(ii+j-1) = neigh_wgt(sort_indices(j))
        enddo
+       print *, "degree = ", degree
+       !print *, "wgts = ", GridVertex(i)%nbrs_wgt(:) 
        ii           = ii + degree
     enddo
     xadj(nelem+1)     = ii
+    !open(unit=11, file="csr.txt")
+    !write(11,*) xadj
+    !write(11,*) adjncy
+    !write(11,*) adjwgt
+    !close(11)
 
-    deallocate(neigh_list)
-    deallocate(neigh_wgt)
-    deallocate(index)
+  end subroutine CreateMeshGraph
 
-  end subroutine CreateMetisGraph
   subroutine sort(n,list,index)
     use kinds, only : int_kind
     implicit none
@@ -574,7 +583,7 @@ contains
 
   end subroutine sort
   !------------------------------------------------------------------------
-  subroutine PrintMetisGraph(xadj,adjncy,adjwgt)
+  subroutine PrintMeshGraph(xadj,adjncy,adjwgt)
     integer, intent(in)       :: xadj(:),adjncy(:),adjwgt(:)
     integer  :: nelem,nadj,i,j
 
@@ -588,6 +597,6 @@ contains
        write(iulog,*)'{adjncy(i),adjwgt(i)}:=',adjncy(j),adjwgt(j)
     enddo
 
-  end subroutine PrintMetisGraph
+  end subroutine PrintMeshGraph
   !------------------------------------------------------------------------
 end module metis_mod
