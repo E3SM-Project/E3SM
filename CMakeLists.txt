@@ -159,6 +159,13 @@ IF (${HOMME_USE_TRILINOS})
   FIND_PACKAGE(Trilinos REQUIRED)
 ENDIF ()
 
+# Zoltan partitioning library
+IF (DEFINED ZOLTAN_DIR)
+  MESSAGE(STATUS "Building with Zoltan")
+  FIND_PACKAGE(Zoltan REQUIRED)
+  SET(HAVE_ZOLTAN TRUE)
+ENDIF ()
+
 # This is required in timing to set HAVE_MPI
 ADD_DEFINITIONS(-DSPMD)
 

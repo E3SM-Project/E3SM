@@ -38,3 +38,6 @@
 
 /* Element OpenMP */
 #cmakedefine ELEMENT_OPENMP
+
+/* Zoltan partitioning library */
+#cmakedefine01 HAVE_ZOLTAN
