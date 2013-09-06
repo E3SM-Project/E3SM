@@ -632,12 +632,6 @@
 		<var name="density" type="real" dimensions="nVertLevels nCells Time" streams="iro" units="kg m^{-3}"
 		     description="density"
 		/>
-		<var name="thermalExpansionCoeff" type="real" dimensions="nVertLevels nCells Time" streams="o" units="C^{-1}"
-		     description="Thermal expansion coefficient (alpha), defined as $-1/\rho d\rho/dT$ (note negative sign)."
-		/>
-		<var name="salineContractionCoeff" type="real" dimensions="nVertLevels nCells Time" streams="o" units=PSU^{-1}"
-		     description="Saline contraction coefficient (beta), defined as $1/\rho d\rho/dS$"
-		/>
 		<var name="normalBarotropicVelocity" type="real" dimensions="nEdges Time" streams="r" units="m s^{-1}"
 		     description="barotropic velocity, used in split-explicit time-stepping"
 		/>
@@ -1187,5 +1181,15 @@
                      type="real" dimensions="nVertLevels nCells Time" units="kg m^{-3}"
                      description="Density computed by displacing SST and SSS to every vertical layer within the column"
                 />
+		<var name="thermalExpansionCoeff" 
+                     persistence="scratch"
+                     type="real" dimensions="nVertLevels nCells Time" units="C^{-1}"
+		     description="Thermal expansion coefficient (alpha), defined as $-1/\rho d\rho/dT$ (note negative sign)."
+		/>
+		<var name="salineContractionCoeff" 
+                     persistence="scratch"
+                     type="real" dimensions="nVertLevels nCells Time" units=PSU^{-1}"
+		     description="Saline contraction coefficient (beta), defined as $1/\rho d\rho/dS$.  This is also called the haline contraction coefficient."
+		/>
     </var_struct>
 </registry>

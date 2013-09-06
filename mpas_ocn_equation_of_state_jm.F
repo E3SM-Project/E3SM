@@ -377,7 +377,7 @@ contains
                   p(k)*(unt0+RHO_S(k,iCell))*DKDT*DENOMK(k,iCell)))
 
 
-               thermalExpansionCoeff(k,iCell) = DRHODT/density(k,iCell)
+               thermalExpansionCoeff(k,iCell) = -DRHODT/density(k,iCell)
 
             end do
          end do
