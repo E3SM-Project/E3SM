@@ -107,7 +107,7 @@ module mpas_io_input
       if (config_do_restart) then
         ! this get followed by set is to ensure that the time is in standard format
         if(trim(config_start_time) == 'file') then
-          open(22,file='restart_timestamp',form='formatted',status='old')
+          open(22,file=trim(config_restart_timestamp_name),form='formatted',status='old')
           read(22,*) restartTimeStamp
           close(22)
 

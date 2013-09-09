@@ -248,7 +248,7 @@ module mpas_core
       integer :: ierr
 
       if(config_start_time == 'file') then
-        open(22,file='restart_timestamp',form='formatted',status='old')
+        open(22,file=config_restart_timestamp_name,form='formatted',status='old')
         read(22,*) restartTimeStamp
         close(22)
         call mpas_set_time(curr_time=startTime, dateTimeString=restartTimeStamp, ierr=ierr)

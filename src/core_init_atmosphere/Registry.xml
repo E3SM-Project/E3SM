@@ -74,6 +74,7 @@
                 <nml_option name="config_sfc_update_name"       type="character"     default_value="sfc_update.nc"/>
                 <nml_option name="config_output_name"           type="character"     default_value="init.nc"/>
                 <nml_option name="config_restart_name"          type="character"     default_value="restart.nc"/>
+                <nml_option name="config_restart_timestamp_name" type="character"     default_value="restart_timestamp"/>
                 <nml_option name="config_frames_per_outfile"    type="integer"       default_value="0"/>
                 <nml_option name="config_pio_num_iotasks"       type="integer"       default_value="0"/>
                 <nml_option name="config_pio_stride"            type="integer"       default_value="1"/>

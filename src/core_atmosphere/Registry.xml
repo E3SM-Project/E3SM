@@ -82,6 +82,7 @@
                 <nml_option name="config_output_interval"            type="character"     default_value="06:00:00"/>
                 <nml_option name="config_restart_name"               type="character"     default_value="restart.nc"/>
                 <nml_option name="config_restart_interval"           type="character"     default_value="none"/>
+                <nml_option name="config_restart_timestamp_name"     type="character"     default_value="restart_timestamp"/>
                 <nml_option name="config_sfc_update_name"            type="character"     default_value="sfc_update.nc"/>
                 <nml_option name="config_sfc_update_interval"        type="character"     default_value="none"/>
                 <nml_option name="config_hifreq_output_interval"     type="character"     default_value="none"/>

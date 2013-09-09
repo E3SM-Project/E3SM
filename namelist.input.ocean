@@ -10,6 +10,7 @@
 	config_output_name = "output.nc"
 	config_restart_name = "restart.nc"
 	config_restart_interval = "0001_00:00:00"
+	config_restart_timestamp_filename = "restart_timestamp"
 	config_output_interval = "0001_00:00:00"
 	config_stats_interval = "0000_01:00:00"
 	config_write_stats_on_startup = .true.
