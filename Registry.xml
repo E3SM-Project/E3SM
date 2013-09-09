@@ -76,6 +76,10 @@
 		            description="The template path and name to the restart file for the simulation. A time stamp is prepended to the extension of the file (.nc) both for input and output."
 		            possible_values="path/to/restart.nc"
 		/>
+		<nml_option name="config_restart_timestamp_name" type="character" default_value="restart_timestamp" units="unitless"
+					description="The name of the file timestamps for latest restart files are written to. This file is also read when config_start_time is set to 'file' and config_do_restart is set to .true."
+					possible_values="path/to/restart_timestamp"
+		/>
 		<nml_option name="config_restart_interval" type="character" default_value="0001_00:00:00" units="unitless"
 		            description="Timestamp determining how often a restart file should be written."
 		            possible_values="'DDDD_HH:MM:SS'"
