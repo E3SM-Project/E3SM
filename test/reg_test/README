@@ -146,7 +146,7 @@ baro1b.sh   Test case from Polvani et al 2004
 
             Verification: baro1[ab].sh 
             run both tests, verify enstrophy norm has not changed significantly
-            (2-3 digits).  Plot vorticity with the NCL script provided and
+            ( 0.79e-5, 2-3 digits).  Plot vorticity with the NCL script provided and
             compare with reference plots provided.  Plots should be 
            visually identical.
 
