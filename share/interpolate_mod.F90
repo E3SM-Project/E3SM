@@ -27,6 +27,7 @@ module interpolate_mod
   logical   :: debug=.false.
 
   character(len=10), public :: vector_uvars(MAX_VECVARS), vector_vvars(MAX_VECVARS)
+  logical, public :: replace_vec_by_vordiv(MAX_VECVARS)
 
   type, public :: interpolate_t
      real (kind=real_kind), dimension(:,:), pointer :: Imat  ! P_k(xj)*wj/gamma(k)

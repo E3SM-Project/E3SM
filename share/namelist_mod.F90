@@ -104,7 +104,7 @@ module namelist_mod
   use cg_mod, only : cg_no_debug
   !-----------------
 
-  use interpolate_mod, only : vector_uvars, vector_vvars, max_vecvars, interpolate_analysis
+  use interpolate_mod, only : vector_uvars, vector_vvars, max_vecvars, interpolate_analysis, replace_vec_by_vordiv
 #ifndef CAM
   use common_io_mod, only : &
        output_prefix,       &
@@ -349,6 +349,7 @@ module namelist_mod
          io_stride,           &
          num_io_procs,        &
          infilenames,         &
+         replace_vec_by_vordiv, &
          vector_uvars,        & 
          vector_vvars,        & 
          output_varnames1,    &
@@ -646,6 +647,7 @@ module namelist_mod
        interp_nlon = 0
        interp_gridtype = 2
        interp_type = 0
+       replace_vec_by_vordiv(:)=.false.
        vector_uvars(:)=''
        vector_vvars(:)=''
        vector_uvars(1:10) = (/'U       ','UBOT    ','U200    ','U250    ',&
@@ -1039,6 +1041,7 @@ module namelist_mod
     call MPI_bcast(interp_gridtype , 1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(interp_type , 1,MPIinteger_t,par%root,par%comm,ierr)
 
+    call MPI_bcast(replace_vec_by_vordiv ,MAX_VECVARS ,MPIlogical_t,par%root,par%comm,ierr)
     call MPI_bcast(vector_uvars ,10*MAX_VECVARS ,MPIChar_t,par%root,par%comm,ierr)
     call MPI_bcast(vector_vvars ,10*MAX_VECVARS ,MPIChar_t,par%root,par%comm,ierr)
 
