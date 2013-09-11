@@ -31,7 +31,7 @@ module prim_state_mod
   use fvm_control_volume_mod, only : fvm_struct
   use spelt_mod, only : spelt_struct
   ! ------------------------------
-  use viscosity_mod, only : compute_zeta_C0_2d
+  use viscosity_mod, only : compute_zeta_C0
   ! ------------------------------
   use reduction_mod, only : parallelmax,parallelmin
   ! ------------------------------
@@ -101,6 +101,7 @@ contains
     real (kind=real_kind)  :: I_vort(nlev)
 
     real (kind=real_kind)  :: tmp(np,np,nets:nete)
+    real (kind=real_kind),allocatable  :: tmp3d(:,:,:,:)
     real (kind=real_kind)  :: tmp1(nets:nete)
     real (kind=real_kind)  :: ps(np,np)
     real (kind=real_kind)  :: dp(np,np)
@@ -402,9 +403,11 @@ contains
 
     if ( test_case(1:10) == "baroclinic" ) then
        ! zeta does not need to be made continious, but we  
-       call compute_zeta_C0_2d(tmp,elem,hybrid,nets,nete,n0,nlev)
-       tmp=tmp**2
-       relvort = SQRT(global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete))
+       allocate(tmp3d(np,np,nlev,nets:nete))
+       call compute_zeta_C0(tmp3d,elem,hybrid,nets,nete,n0)
+       tmp=tmp3d(:,:,nlev,:)**2
+       relvort = SQRT(global_integral(elem, tmp,hybrid,npts,nets,nete))
+       deallocate(tmp3d)
     endif
 
     if(hybrid%par%masterproc .and. hybrid%ithr==0) then 

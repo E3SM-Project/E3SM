@@ -314,7 +314,6 @@ contains
     real (kind=real_kind)                     :: lenscale
     integer                                   :: i,j,st,en,jj,cindex
     real (kind=real_kind), dimension(np,np)   :: v1, v2
-    real (kind=real_kind), dimension(np,np,2) :: ulatlon
 
     real (kind=real_kind),pointer :: field1(:,:,:),field2(:,:,:,:)
     real (kind=real_kind) :: var3d(nxyp,nlev)
@@ -365,7 +364,7 @@ contains
 	  if(nf_selectedvar('zeta', output_varnames)) then
              if (hybrid%par%masterproc) print *,'output: zeta'
 
-             call compute_zeta_C0_2d(varptmp2, elem, hybrid, nets, nete, tl%n0)
+             call compute_zeta_C0_contra(varptmp2, elem, hybrid, nets, nete, tl%n0)
              st=1
              do ie=1,nelemd
                  en=st+elem(ie)%idxp%NumUniquePts-1
@@ -384,7 +383,7 @@ contains
 	  if(nf_selectedvar('div', output_varnames)) then
              if (hybrid%par%masterproc) print *,'output: divergence'
 
-             call compute_div_C0_2d(varptmp2, elem, hybrid, nets, nete, tl%n0)
+             call compute_div_C0_contra(varptmp2, elem, hybrid, nets, nete, tl%n0)
              st=1
              do ie=1,nelemd
                  en=st+elem(ie)%idxp%NumUniquePts-1

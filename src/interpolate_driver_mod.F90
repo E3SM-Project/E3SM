@@ -65,8 +65,7 @@ module interpolate_driver_mod
   type(dim_t) :: ewdim(maxdims), nsdim(maxdims), zdim(maxdims), ncoldim(maxdims)
   type(dim_t) :: ewdimi(maxdims), nsdimi(maxdims), zdimi(maxdims)
 
-  logical init_done
-  data init_done /.false./
+  logical :: init_done = .false.
 
   character*(pio_max_name) ewnames (maxdims)
   character*(pio_max_name) nsnames (maxdims)
@@ -479,13 +478,14 @@ contains
     use kinds, only : real_kind
     use pio_io_mod, only : nf_handle, nf_put_var ! _EXTERNAL
     use interpolate_mod, only : interpdata_t, interpolate_scalar, interpolate_vector, &
-         get_interp_parameter,var_is_vector_vvar,var_is_vector_uvar
+         get_interp_parameter,var_is_vector_vvar,var_is_vector_uvar, replace_vec_by_vordiv
     use element_mod, only : element_t
     use edge_mod, only : edgebuffer_t, edgevpack, edgevunpack, initedgebuffer, freeedgebuffer
     use dimensions_mod, only : nelemd, nlev, np
     use parallel_mod, only : parallel_t, syncmp
     use bndry_mod, only : bndry_exchangeV
     use common_io_mod, only : readystate, nf_variable
+    use viscosity_mod, only : compute_zeta_c0, compute_div_c0
 
     type(element_t), intent(inout) :: elem(:)
     type(parallel_t),intent(in) :: par
@@ -496,6 +496,7 @@ contains
     type(edgeBuffer_t) :: edge    
     real(kind=real_kind), pointer :: array(:,:), varray(:,:,:)
     real(kind=real_kind), pointer :: farray(:)	, fvarray(:,:), ftmp(:,:), fvtmp(:,:,:)
+    real(kind=real_kind), pointer :: zeta(:,:,:,:),div(:,:,:,:)
 
     integer(kind=nfsizekind) :: start(3), count(3)
     integer :: starti(3), counti(3)
@@ -606,13 +607,35 @@ contains
                       deallocate(fvtmp)
                       call edgevpack(edge, elem(ie)%state%v(:,:,:,:,1),2*lev,0,elem(ie)%desc)
                    end do
-                   call bndry_exchangeV(par, edge)
-                   st = 1
                    deallocate(fvarray)
+
+                   call bndry_exchangeV(par, edge)
+                   do ie=1,nelemd
+                      call edgeVunpack(edge, elem(ie)%state%v(:,:,:,:,1),2*lev,0,elem(ie)%desc)
+                   enddo
+
+                   ! hack to get native vorticity/divergence
+                   if ( replace_vec_by_vordiv(iuvar) ) then
+                      if(par%masterproc) print *,'VORDIV flag set. Overwriting (',&
+                           trim(infile%vars%name(i)), ',',trim(infile%vars%name(iv)),')',&
+                           ' with (vor,div)'
+                      allocate(zeta(np,np,nlev,nelemd))
+                      allocate(div(np,np,nlev,nelemd))
+                      call compute_zeta_c0(zeta,elem,par,1)
+                      call compute_div_c0(div,elem,par,1)    
+                      ! overwrite velocity with result:
+                      do ie=1,nelemd
+                         elem(ie)%state%v(:,:,1,:,1)=zeta(:,:,:,ie)
+                         elem(ie)%state%v(:,:,2,:,1)=div(:,:,:,ie)
+                      enddo
+                      deallocate(zeta)
+                      deallocate(div)
+                   endif
+
+                   st = 1
                    allocate(varray(ncnt_out,lev,2))
                    do ie=1,nelemd
                       en=st+interpdata(ie)%n_interp-1
-                      call edgeVunpack(edge, elem(ie)%state%v(:,:,:,:,1),2*lev,0,elem(ie)%desc)
                       call interpolate_vector(interpdata(ie), elem(ie), &
                            elem(ie)%state%V(:,:,:,1:lev,1),np, lev, varray(st:en,:,:), 0)
                       st=st+interpdata(ie)%n_interp
