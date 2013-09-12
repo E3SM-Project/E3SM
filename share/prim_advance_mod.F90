@@ -509,9 +509,6 @@ contains
     if (tstep_type==0) then  
        ! leapfrog special case
        call advance_hypervis_lf(edge3p1,elem,hvcoord,hybrid,deriv,nm1,n0,np1,nets,nete,dt_vis)
-    else if (tstep_type==11) then  
-       ! add later once incorporated into implicit operator
-!       call advance_hypervis_lf(edge3p1,elem,hvcoord,hybrid,deriv,nm1,n0,np1,nets,nete,dt_vis)
     else
        if (rsplit==0) then
           ! forward-in-time, maybe hypervis applied to PS

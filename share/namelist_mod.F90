@@ -508,7 +508,7 @@ module namelist_mod
 
           print *,'HYPERVIS order = ',hypervis_order
           if (hypervis_order /= 0) then
-             call abortmp("Error: hypervis_order > 0 not yet supported for fully or semi-implicit model")
+             call abortmp("Error: hypervis_order > 0 not supported for semi-implicit model")
           endif
 
           write(iulog,*)"reading solver namelist..."
