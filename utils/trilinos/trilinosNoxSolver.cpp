@@ -16,10 +16,10 @@
 //#define COMPARE_SIMPLE_BLOCK_VS_SEGGREGATED_ON
 
 //#define SIMPLE_PREC_ON
-//#define IDENTITY_PREC_ON
+#define IDENTITY_PREC_ON
 
-#define SIMPLE_PREC_CLIP_ON
-#define PRINT_DEBUG
+//#define SIMPLE_PREC_CLIP_ON
+//#define PRINT_DEBUG
 
 using namespace std;
 using Teuchos::RCP;
