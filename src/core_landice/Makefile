@@ -6,14 +6,19 @@ OBJS = 	mpas_li_mpas_core.o \
 	mpas_li_tendency.o \
 	mpas_li_setup.o \
 	mpas_li_velocity.o \
-	mpas_li_sia.o 
+	mpas_li_sia.o \
+	mpas_li_mask.o
 
-all: core_li
+all: core_landice
 
-core_sw: $(OBJS)
+core_landice: $(OBJS)
 	ar -ru libdycore.a $(OBJS)
 
-mpas_li_mpas_core.o: mpas_li_time_integration.o mpas_li_setup.o mpas_li_velocity.o mpas_li_diagnostic_vars.o
+mpas_li_mpas_core.o: mpas_li_time_integration.o \
+                     mpas_li_setup.o \
+                     mpas_li_velocity.o \
+                     mpas_li_diagnostic_vars.o \
+                     mpas_li_mask.o
 
 mpas_li_setup.o:
 
@@ -23,11 +28,13 @@ mpas_li_time_integration_fe.o: mpas_li_velocity.o mpas_tendency.o mpas_li_diagno
 
 mpas_tendency.o: 
 
-mpas_li_diagnostic_vars.o:
+mpas_li_diagnostic_vars.o: mpas_li_mask.o
 
 mpas_li_velocity.o: mpas_li_sia.o
 
-mpas_li_sia.o:
+mpas_li_sia.o: mpas_li_mask.o
+
+mpas_li_mask.o:
 
 clean:
 	$(RM) *.o *.mod *.f90 libdycore.a

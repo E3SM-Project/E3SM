@@ -20,8 +20,6 @@
 !
 !-----------------------------------------------------------------------
 
-!!!#include "mpas_land_ice_mask.inc"
-
 module li_time_integration_fe
 
    use mpas_grid_types
@@ -33,7 +31,6 @@ module li_time_integration_fe
    use li_velocity, only: li_velocity_solve
    use li_tendency
    use li_diagnostic_vars
-!!!   use li_mask
 
    implicit none
    private

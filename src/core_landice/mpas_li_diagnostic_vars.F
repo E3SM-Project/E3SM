@@ -29,6 +29,7 @@ module mpas_li_diagnostic_vars
    use mpas_timer
    use mpas_configure
    use li_velocity
+   use li_mask
 
    implicit none
    private
@@ -119,24 +120,8 @@ contains
       ! ===
 
       call mpas_timer_start("calc. diagnostic vars except vel")
-      block => domain % blocklist
-      do while (associated(block))
-         ! Mesh information
-         mesh => block % mesh
-         ! State at desired time level 
-         state => block % state % time_levs(timeLevel) % state
-
-         call diagnostic_solve_before_velocity(mesh, state, err_tmp)  ! perhaps velocity solve should move in here.
-         ierr = ior(ierr, err_tmp)
-
-         block => block % next
-      end do
-
-!!!      ! update halos on masks (margins need neighbor info, so the outermost halo levels could be wrong)
-!!!      call mpas_dmpar_exch_halo_field(domain % blocklist % state % time_levs(2) % state % vertexMask)
-!!!      call mpas_dmpar_exch_halo_field(domain % blocklist % state % time_levs(2) % state % edgeMask)
-
-
+      call diagnostic_solve_before_velocity(domain, timeLevel, err_tmp)  ! perhaps velocity solve should move in here.
+      ierr = ior(ierr, err_tmp)
 ! This information is only needed for some external dycores.  This can be added back in when they are implemented.
 ! Should make this conditional to avoid unnecessary MPI comms.
 !!!      block => domain % blocklist
@@ -273,16 +258,14 @@ contains
 !> that are needed before velocity is solved.
 !
 !-----------------------------------------------------------------------
-   subroutine diagnostic_solve_before_velocity(mesh, state, err)!{{{
+   subroutine diagnostic_solve_before_velocity(domain, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
-
-      type (mesh_type), intent(in) :: &
-         mesh          !< Input: grid information
+      integer, intent(in) :: timeLevel  !< Input: Time level on which to calculate diagnostic variables
 
       !-----------------------------------------------------------------
       !
@@ -290,8 +273,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (state_type), intent(inout) :: &
-         state         !< Input/Output: state for which to update diagnostic variables
+      type (domain_type), intent(inout) :: &
+         domain         !< Input/Output: Domain object
 
       !-----------------------------------------------------------------
       !
@@ -306,28 +289,37 @@ contains
       ! local variables
       !
       !-----------------------------------------------------------------
-      integer :: iCell, iLevel, nCells, nVertLevels
+      integer :: iCell, iLevel, nCells
       real (kind=RKIND), dimension(:), pointer :: thickness, upperSurface, &
-        lowerSurface, bedTopography, layerThicknessFractions, beta
+        lowerSurface, bedTopography, 
       integer, dimension(:), pointer :: cellMask
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness
       real (kind=RKIND) :: thisThk
-
-      nCells = mesh % nCells
-      nVertLevels = mesh % nVertLevels
-      layerThicknessFractions => mesh % layerThicknessFractions % array
-
-      thickness => state % thickness % array
-      upperSurface => state % upperSurface % array
-      lowerSurface => state % lowerSurface % array
-      bedTopography => state % bedTopography % array
-      layerThickness => state % layerThickness % array
-      beta => mesh % beta % array
-      cellMask => state % cellMask % array
+      integer :: err_tmp
 
 
-!!!      ! Calculate masks - needs to happen before calculating lower surface so we know where the ice is floating
-!!!      call land_ice_calculate_mask(mesh, state, err)
+      err = 0
+
+      block => domain % blocklist
+      do while (associated(block))
+         ! Mesh information
+         mesh => block % mesh
+         ! State at desired time level 
+         state => block % state % time_levs(timeLevel) % state
+
+         ! Calculate masks - needs to happen before calculating lower surface so we know where the ice is floating
+         call land_ice_calculate_mask(mesh, state, err)
+         err = ior(err, err_tmp)
+
+         block => block % next
+      end do
+
+      ! Update halos on masks - the outermost cells/edges/vertices may be wrong for mask components that need neighbor information
+      call mpas_timer_start("halo updates")
+      call mpas_dmpar_exch_halo_field(domain % blocklist % state % time_levs(timeLevel) % state % cellMask)
+      call mpas_dmpar_exch_halo_field(domain % blocklist % state % time_levs(timeLevel) % state % edgeMask)
+      call mpas_dmpar_exch_halo_field(domain % blocklist % state % time_levs(timeLevel) % state % vertexMask)
+      call mpas_timer_stop("halo updates")
 
 !!!      ! Update beta before the velocity solve occurs, now that we have the new state and its mask.
 !!!      !    It's ok to overwrite the beta values with 0's here, because each time step
@@ -344,25 +336,44 @@ contains
 !!!         end if
 !!!      end do
 
-      ! Lower surface is based on floatation for floating ice.  For grounded ice it is the bed.
-      where ( MASK_IS_FLOATING(cellMask) )
-         lowerSurface = config_sealevel - thickness * (config_ice_density / config_ocean_density)
-      elsewhere
-         lowerSurface = bedTopography
-      end where
-      ! Make sure lowerSurface calculation is reasonable.  This check could be deleted once this has been throroughly tested.
-      do iCell = 1, nCells
-         if (lowerSurface(iCell) < bedTopography(iCell)) then
-            write (0,*) 'lowerSurface less than bedTopography at cell:', iCell
-            err = 1
-         endif
+      block => domain % blocklist
+      do while (associated(block))
+          ! Mesh information
+          mesh => block % mesh
+          ! State at desired time level 
+          state => block % state % time_levs(timeLevel) % state
+
+          nCells = mesh % nCells
+          cellMask => state % cellMask % array
+          thickness => state % thickness % array
+          upperSurface => state % upperSurface % array
+          lowerSurface => state % lowerSurface % array
+          bedTopography => state % bedTopography % array
+          layerThickness => state % layerThickness % array
+
+          ! Lower surface is based on floatation for floating ice.  For grounded ice (and non-ice areas) it is the bed.
+          where ( li_mask_is_floating_ice(cellMask) )
+             lowerSurface = config_sealevel - thickness * (config_ice_density / config_ocean_density)
+          elsewhere
+             lowerSurface = bedTopography
+          end where
+          ! Make sure lowerSurface calculation is reasonable.  This check could be deleted once this has been throroughly tested.
+          do iCell = 1, nCells
+             if (lowerSurface(iCell) < bedTopography(iCell)) then
+                write (0,*) 'lowerSurface less than bedTopography at cell:', iCell
+                err = 1
+             endif
+          end do
+
+          ! Upper surface is the lower surface plus the thickness
+          upperSurface(:) = lowerSurface(:) + thickness(:)
+
+          ! Do vertical remapping of thickness and tracers
+          call vertical_remap(layerThickness, thickness, state % tracers % array, mesh, err)
+          err = ior(err, err_tmp)
+
+          block => block % next
       end do
-
-      ! Upper surface is the lower surface plus the thickness
-      upperSurface(:) = lowerSurface(:) + thickness(:)
-
-      ! Do vertical remapping of thickness and tracers
-      call vertical_remap(layerThickness, thickness, state % tracers % array, mesh, err)
 
    !--------------------------------------------------------------------
    end subroutine diagnostic_solve_before_velocity
@@ -455,8 +466,7 @@ contains
           !write(6,*) 'layerThicknessEdge not calculated!'
       endif
 
-      ! Note: no halo update needed on layerThicknessEdge because normalVelocity has already been halo updated.
-      ! However, the outmost layerThicknessEdge may be wrong if its upwind cell is off this block.
+      ! Note: the outmost layerThicknessEdge may be wrong if its upwind cell is off this block - halo update should be done if this variable will be used.
 
    end subroutine diagnostic_solve_after_velocity
 
