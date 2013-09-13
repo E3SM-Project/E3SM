@@ -165,7 +165,7 @@ contains
 
 !***********************************************************************
 !
-!  subroutine land_ice_sia_solve
+!  subroutine li_sia_solve
 !
 !> \brief   Computes velocity using Shallow Ice Appoximation
 !> \author  Matt Hoffman
@@ -177,7 +177,7 @@ contains
 !>  on an edge using the average of the two neighboring cells (2nd order).
 !
 !-----------------------------------------------------------------------
-   subroutine land_ice_sia_solve(mesh, state, err)
+   subroutine li_sia_solve(mesh, state, err)
       use mpas_constants, only: gravity
 
       !-----------------------------------------------------------------

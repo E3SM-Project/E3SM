@@ -21,8 +21,6 @@
 !
 !-----------------------------------------------------------------------
 
-!!!#include "mpas_land_ice_mask.inc"
-
 module li_tendency
 
    use mpas_grid_types
@@ -190,41 +188,37 @@ module li_tendency
      case default
 
 
-        ! Make some potential adjustments to SMB and BMB before applying them.
-        !    It's ok to overwrite the values with 0's here, because each time step
-        !    we get a fresh copy of the array from the annual_forcing subroutine.
-        ! 1. make adjustments for where the ice is grounded and floating.
-        !    TODO: more complicated treatment at GL?
-        where ( MASK_IS_GROUNDED(cellMask) )
-           ! Apply marineBasalMassBal to floating ice only.  
-           marineBasalMassBal = 0.0_RKIND
-        elsewhere ( MASK_IS_FLOATING(cellMask) )
-           ! Apply groundedBasalMassBal to grounded ice only.
-           ! < PLACEHOLDER >
-        end where
-        ! 2. Make adjustments for partially filled cells if CFBC is on.
-        if (config_marine_advance == 'CFBC') then
-           where ( MASK_IS_FLOATING(cellMask) .and. MASK_IS_MARGIN(cellMask) )
-              ! Adjust the SMB and BMB for partially filled cells to give the proper volume flux
-              sfcMassBal = sfcMassBal * iceArea / areaCell
-              marineBasalMassBal = marineBasalMassBal * iceArea / areaCell
-           else where (MASK_IS_NOT_ICE(cellMask) )
-              ! We don't allow a positive BMB where ice is not already present.
-              mesh % marineBasalMassBal % array = 0.0_RKIND
-           end where
-        end if
+! Commenting BMB out for now.
+!!!        ! Make some potential adjustments to BMB before applying them.
+!!!        !    It's ok to overwrite the values with 0's here, because each time step
+!!!        !    we get a fresh copy of the array from the annual_forcing subroutine.
+!!!        ! 1. make adjustments for where the ice is grounded and floating.
+!!!        !    TODO: more complicated treatment at GL?
+!!!        where ( li_mask_is_grounded_ice(cellMask) )
+!!!           ! Apply marineBasalMassBal to floating ice only.  
+!!!           marineBasalMassBal = 0.0_RKIND
+!!!        elsewhere ( li_mask_is_floating_ice(cellMask) )
+!!!           ! Currently, floating and grounded ice are mutually exclusive.
+!!!           ! This could change if the GL is parameterized, in which case this logic may need adjustment.
+!!!           ! Grounded BMB should come from the temperature solver.
+!!!           ! < PLACEHOLDER >
+!!!        elsewhere ( .not. (li_mask_is_ice(cellMask) )
+!!!              ! We don't allow a positive BMB where ice is not already present.
+!!!              mesh % marineBasalMassBal % array = 0.0_RKIND
+!!!        end where
+
 
         ! Add surface mass balance to tendency
         ! TODO: Need to decide how to deal with negative SMB that eliminates top layer or all ice (check for negative thickness?)
         layerThickness_tend(1,:) = layerThickness_tend(1,:) + sfcMassBal   ! (tendency in meters per year)
         ! TODO THIS MIGHT RESULT IN  NEGATIVE LAYER THICKNESS!
 
-        ! Add basal mass balance to tendency
-        ! TODO: Need to decide how to deal with negative BMB that eliminates top layer or all ice (check for negative thickness?)
-        layerThickness_tend(nVertLevels,:) = layerThickness_tend(nVertLevels,:) &
-                                    + mesh % marineBasalMassBal % array    ! (tendency in meters per year)
-        ! TODO Add in grounded ice basal mass balance once temperature diffusion is calculated
-        ! TODO THIS MIGHT RESULT IN  NEGATIVE LAYER THICKNESS!
+!!!        ! Add basal mass balance to tendency
+!!!        ! TODO: Need to decide how to deal with negative BMB that eliminates top layer or all ice (check for negative thickness?)
+!!!        layerThickness_tend(nVertLevels,:) = layerThickness_tend(nVertLevels,:) &
+!!!                                    + mesh % marineBasalMassBal % array    ! (tendency in meters per year)
+!!!        ! TODO Add in grounded ice basal mass balance once temperature diffusion is calculated
+!!!        ! TODO THIS MIGHT RESULT IN  NEGATIVE LAYER THICKNESS!
 
      end select
 

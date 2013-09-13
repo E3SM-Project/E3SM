@@ -437,6 +437,7 @@ module mpas_core
       use mpas_rbf_interpolation
       use mpas_vector_reconstruction
       use li_setup
+      use li_mask
    
       implicit none
    
@@ -519,9 +520,9 @@ module mpas_core
       call mpas_rbf_interp_initialize(mesh)
       call mpas_init_reconstruct(mesh)
 
-! This was needed to initialize the mask in some situations - this may change.
-!!!      call land_ice_calculate_mask_init(mesh, state, err)
-!!!      err = ior(err, err_tmp)
+      ! Mask init identifies initial ice extent
+      call land_ice_calculate_mask_init(mesh, state, err)
+      err = ior(err, err_tmp)
 
 
       ! === error check and exit
