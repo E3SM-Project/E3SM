@@ -28,6 +28,7 @@ module li_time_integration_fe
    use mpas_dmpar
    use mpas_timer
    use mpas_vector_reconstruction
+   use mpas_configure
    use li_velocity, only: li_velocity_solve
    use li_tendency
    use li_diagnostic_vars
@@ -128,14 +129,14 @@ module li_time_integration_fe
       ! (time level 1 should not be modified.)
 
       dminfo => domain % dminfo
-      procVertexMaskChanged = 0
+!!!      procVertexMaskChanged = 0
 
 ! === Implicit column physics (vertical temperature diffusion) ===========
       !call ()
 
 ! === Calculate Tendencies ========================
       call mpas_timer_start("calculate tendencies")
-      call calculate_tendencies(domain, err_tmp)
+      call calculate_tendencies(domain, dt, err_tmp)
       ierr = ior(ierr, err_tmp)
       call mpas_timer_stop("calculate tendencies")
 
@@ -143,7 +144,7 @@ module li_time_integration_fe
 ! === Compute new state for prognostic variables ==================================
 ! (once implicit column physics are added (i.e. temp diffusion), these calculations will need to be adjusted to apply to the new values as needed)
       call mpas_timer_start("calc. new prognostic vars")
-      call update_prognostics(domain, err_tmp)
+      call update_prognostics(domain, dt, err_tmp)
       ierr = ior(ierr, err_tmp)
       call mpas_timer_stop("calc. new prognostic vars")
 
@@ -154,7 +155,7 @@ module li_time_integration_fe
       ! If needed, that guess should be inserted into normalVelocity
       ! in time level 2 before calling li_calculate_diagnostic_vars.
 
-      call li_calculate_diagnostic_vars(domain, timeLevel=2, solveVelo=.true., err_tmp)
+      call li_calculate_diagnostic_vars(domain, timeLevel=2, solveVelo=.true., ierr=err_tmp)
       ierr = ior(ierr, err_tmp)
 
 
@@ -189,7 +190,7 @@ module li_time_integration_fe
 !
 !-----------------------------------------------------------------------
 
-   subroutine calculate_tendencies(domain, err)
+   subroutine calculate_tendencies(domain, dt, err)
 
       !-----------------------------------------------------------------
       !
@@ -197,7 +198,7 @@ module li_time_integration_fe
       !
       !-----------------------------------------------------------------
 
-
+      real (kind=RKIND) :: dt
 
       !-----------------------------------------------------------------
       !
@@ -225,7 +226,7 @@ module li_time_integration_fe
       type (state_type), pointer :: stateOld
       type (mesh_type), pointer :: mesh
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness_tend
-      integer :: err, allowableDtProcNumber, allowableDtMinProcNumber
+      integer :: allowableDtProcNumber, allowableDtMinProcNumber
       real (kind=RKIND) :: allowableDt, allowableDtMin
 
       err = 0
@@ -242,7 +243,7 @@ module li_time_integration_fe
          layerThickness_tend => block % tend % layerThickness % array
 
          ! Calculate thickness tendency using state at time n =========
-         call land_ice_tendency_thickness(mesh, stateOld, layerThickness_tend, dt, dminfo, allowableDt, err)
+         call li_tendency_thickness(mesh, stateOld, layerThickness_tend, dt, dminfo, allowableDt, err)
 
          block => block % next
       end do
@@ -292,13 +293,13 @@ module li_time_integration_fe
 
 !!!         ! Calculate tracer tendencies ==========
 !!!         ! There could be a negative layer thickness with SMB turned on!
-!!!         call land_ice_tendency_tracers(mesh, stateOld, layerThickness_tend, tracer_tendency, dt, dminfo, err)
+!!!         call li_tendency_tracers(mesh, stateOld, layerThickness_tend, tracer_tendency, dt, dminfo, err)
 
 !!!         block => block % next
 !!!      end do 
 
 !!!      if (err == 1) then
-!!!          call mpas_dmpar_global_abort("An error has occurred in land_ice_tendency_tracers. Aborting...")
+!!!          call mpas_dmpar_global_abort("An error has occurred in li_tendency_tracers. Aborting...")
 !!!      endif
 
 !!!      ! update halos on tracer tend 
@@ -330,7 +331,7 @@ module li_time_integration_fe
 !
 !-----------------------------------------------------------------------
 
-   subroutine update_prognostics(domain, err)
+   subroutine update_prognostics(domain, dt, err)
 
       !-----------------------------------------------------------------
       !
@@ -338,7 +339,7 @@ module li_time_integration_fe
       !
       !-----------------------------------------------------------------
 
-
+      real (kind=RKIND) :: dt
 
       !-----------------------------------------------------------------
       !
@@ -403,7 +404,7 @@ module li_time_integration_fe
          !!!stateNew % sup_thickness % array(1,:,:) = (stateOld % tracers % array(stateOld % index_temperature,:,:) * layerThicknessOld  + tracer_tendency(stateOld % index_temperature, :, :) * dt / SecondsInYear) / (layerThicknessNew+1.0e-12)
 
 
-         layerThicknessNew = layerThicknessOld + layerThickness_tend * (dt / SecondsInYear)
+         layerThicknessNew = layerThicknessOld + layerThickness_tend * dt !!!(dt / SecondsInYear)
          thicknessNew = sum(layerThicknessNew, 1)     
 
 
@@ -425,12 +426,12 @@ module li_time_integration_fe
          where (thicknessNew < 0.0_RKIND)
             masktmp = 1
             thicknessNew = 0.0_RKIND
-            stateNew % iceArea % array = 0.0_RKIND
+!!!            stateNew % iceArea % array = 0.0_RKIND
          end where
 
-         if (config_print_thickness_advection_info)
+         if (config_print_thickness_advection_info) then
             if (sum(masktmp) > 0) then
-               write(6,*) '  Cells with negative thickness (set to 0):',sum(mask)
+               write(6,*) '  Cells with negative thickness (set to 0):',sum(masktmp)
             endif
 
             ! Note how many cells have ice.
@@ -458,7 +459,7 @@ module li_time_integration_fe
 !!!         endif
 
 !!!         ! Apply calving after we have updated the new state  - TODO Is this the right place?
-!!!         call land_ice_apply_calving(mesh, stateNew, err)
+!!!         call li_apply_calving(mesh, stateNew, err)
 
 
          block => block % next

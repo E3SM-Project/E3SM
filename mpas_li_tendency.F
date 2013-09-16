@@ -74,7 +74,7 @@ module li_tendency
 !
 !-----------------------------------------------------------------------
 
-   subroutine li_tendency_thickness(mesh, state, layerThickness_tend, iceArea_tend, dt, dminfo, allowableDt, err)
+   subroutine li_tendency_thickness(mesh, state, layerThickness_tend, dt, dminfo, allowableDt, err)
 
       !-----------------------------------------------------------------
       !
@@ -104,8 +104,8 @@ module li_tendency
       real (kind=RKIND), dimension(:,:), pointer, intent(inout) :: &
          layerThickness_tend         !< Input/Output: layer thickness tendency
 
-      real (kind=RKIND), dimension(:), pointer, intent(inout) :: &
-         iceArea_tend         !< Input/Output: ice area tendency
+!!!      real (kind=RKIND), dimension(:), pointer, intent(inout) :: &
+!!!         iceArea_tend         !< Input/Output: ice area tendency
 
 
       !-----------------------------------------------------------------
@@ -123,27 +123,28 @@ module li_tendency
       !
       !-----------------------------------------------------------------
       integer nVertLevels
-      real (kind=RKIND), dimension(:), pointer :: iceArea, areaCell, marineBasalMassBal, sfcMassBal
+      real (kind=RKIND), dimension(:), pointer :: sfcMassBal
+!!!      real (kind=RKIND), dimension(:), pointer :: iceArea, areaCell, marineBasalMassBal
       integer, dimension(:), pointer :: cellMask
 
      nVertLevels = mesh % nVertLevels
-     areaCell => mesh % areaCell % array
      sfcMassBal => mesh % sfcMassBal % array
-     marineBasalMassBal => mesh % marineBasalMassBal % array
-     iceArea => state % iceArea % array
+!!!     marineBasalMassBal => mesh % marineBasalMassBal % array
+!!!     iceArea => state % iceArea % array
+!!!     areaCell => mesh % areaCell % array
      cellMask => state % cellMask % array
 
 
      ! 0 tendency
      layerThickness_tend = 0.0_RKIND
-     iceArea_tend = 0.0_RKIND
+!!!     iceArea_tend = 0.0_RKIND
 
      select case (config_thickness_advection)
      case ('fo')  !===================================================
         !print *,'Using FO Upwind for thickness advection'
 
 !!!        ! Alternate call to calculate thickness tendency for entire ice column (deprecated)
-!!!        !call land_ice_tend_h_fo_upwind(mesh, state % normalVelocity % array, &
+!!!        !call li_tend_h_fo_upwind(mesh, state % normalVelocity % array, &
 !!!        !   state % layerThickness % array, state % thickness % array, thickness_tend, dt, err)
 
         call tend_layerthickness_fo_upwind(mesh, state % normalVelocity % array, &
@@ -461,7 +462,7 @@ module li_tendency
 !!!         do 
 
 !!!         ! Update the mask before we look for the margin, since the margin may have advanced.
-!!!         call land_ice_calculate_mask(mesh, state, err)
+!!!         call li_calculate_mask(mesh, state, err)
 
 !!!         do iCell = 1, nCells
 !!!            if ( (MASK_IS_FLOATING(cellMask(iCell))) .and. (MASK_IS_MARGIN(cellMask(iCell))) ) then
@@ -511,8 +512,8 @@ module li_tendency
 !!!            end if
 !!!         end do
 
-!!!         ! Update the mask one last time (probably not needed because land_ice_diagnostic solve is coming up)
-!!!         call land_ice_calculate_mask(mesh, state, err)
+!!!         ! Update the mask one last time (probably not needed because li_diagnostic solve is coming up)
+!!!         call li_calculate_mask(mesh, state, err)
 
 !!!      !====================================
 !!!      !case ('eigencalving')
@@ -628,7 +629,8 @@ module li_tendency
             else
                maxAllowableDt = 1.0e36_RKIND
             endif
-            if ( maxAllowableDt < (dt/SecondsInYear) ) then
+!!!            if ( maxAllowableDt < (dt/SecondsInYear) ) then
+            if ( maxAllowableDt < (dt) ) then
                  write(0,*) 'CFL violation at level, edge', k, iEdge                      
                  err = err + 1
             endif
@@ -645,7 +647,7 @@ module li_tendency
          err = 1
       endif
 
-      if (config_print_thickness_advection_info == .true.) then
+      if (config_print_thickness_advection_info .eqv. .true.) then
          write(6,*) '  Maximum allowable time step (yrs) on this processor is ~', MinOfMaxAllowableDt
       endif
 
@@ -780,7 +782,7 @@ module li_tendency
 ! deprecated.
 !!***********************************************************************
 !!
-!!  subroutine land_ice_tend_h_fo_upwind
+!!  subroutine li_tend_h_fo_upwind
 !!
 !!> \brief   Computes tendency term from horizontal advection of thickness
 !!> \author  Matt Hoffman
@@ -793,7 +795,7 @@ module li_tendency
 !!
 !!-----------------------------------------------------------------------
 
-!   subroutine land_ice_tend_h_fo_upwind(grid, normalVelocity, layerThickness, thickness, thickness_tend, dt, err)!{{{
+!   subroutine li_tend_h_fo_upwind(grid, normalVelocity, layerThickness, thickness, thickness_tend, dt, err)!{{{
 
 !      !-----------------------------------------------------------------
 !      !
@@ -896,7 +898,7 @@ module li_tendency
 !      endif
 !   !--------------------------------------------------------------------
 
-!   end subroutine land_ice_tend_h_fo_upwind !}}}
+!   end subroutine li_tend_h_fo_upwind !}}}
 
 
 

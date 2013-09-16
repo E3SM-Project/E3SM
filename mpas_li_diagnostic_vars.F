@@ -23,7 +23,7 @@
 !
 !-----------------------------------------------------------------------
 
-module mpas_li_diagnostic_vars
+module li_diagnostic_vars
 
    use mpas_grid_types
    use mpas_timer
@@ -78,6 +78,8 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine li_calculate_diagnostic_vars(domain, timeLevel, solveVelo, ierr)
+
+      use mpas_vector_reconstruction
 
       !-----------------------------------------------------------------
       !
@@ -170,7 +172,7 @@ contains
 !!!             !print *, 'anyVertexMaskChanged: ', anyVertexMaskChanged
 
 
-             call land_ice_vel_solve(mesh, state, err)    ! ****** Calculate Velocity ******
+             call li_velocity_solve(mesh, state, ierr)    ! ****** Calculate Velocity ******
 
              block => block % next
           end do
@@ -216,7 +218,7 @@ contains
          mesh => block % mesh
          ! State at desired time level 
          state => block % state % time_levs(timeLevel) % state
-         call diagnostic_solve_after_velocity(mesh, state, err)  ! Some diagnostic variables require velocity to compute
+         call diagnostic_solve_after_velocity(mesh, state, ierr)  ! Some diagnostic variables require velocity to compute
          block => block % next
       end do
 
@@ -227,9 +229,9 @@ contains
       call mpas_timer_stop("calc. diagnostic vars except vel")
 
       ! === error check and exit
-      if (err == 1) then
+      if (ierr == 1) then
           print *, "An error has occurred in li_calculate_diagnostic_vars. Aborting..."
-          call mpas_dmpar_abort(dminfo)
+          !call mpas_dmpar_abort(dminfo)
       endif
 
    !--------------------------------------------------------------------
@@ -289,9 +291,12 @@ contains
       ! local variables
       !
       !-----------------------------------------------------------------
+      type (block_type), pointer :: block
+      type (mesh_type), pointer :: mesh
+      type (state_type), pointer :: state
       integer :: iCell, iLevel, nCells
       real (kind=RKIND), dimension(:), pointer :: thickness, upperSurface, &
-        lowerSurface, bedTopography, 
+        lowerSurface, bedTopography
       integer, dimension(:), pointer :: cellMask
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness
       real (kind=RKIND) :: thisThk
@@ -308,7 +313,7 @@ contains
          state => block % state % time_levs(timeLevel) % state
 
          ! Calculate masks - needs to happen before calculating lower surface so we know where the ice is floating
-         call land_ice_calculate_mask(mesh, state, err)
+         call li_calculate_mask(mesh, state, err)
          err = ior(err, err_tmp)
 
          block => block % next
@@ -348,12 +353,12 @@ contains
           thickness => state % thickness % array
           upperSurface => state % upperSurface % array
           lowerSurface => state % lowerSurface % array
-          bedTopography => state % bedTopography % array
+          bedTopography => mesh % bedTopography % array
           layerThickness => state % layerThickness % array
 
           ! Lower surface is based on floatation for floating ice.  For grounded ice (and non-ice areas) it is the bed.
           where ( li_mask_is_floating_ice(cellMask) )
-             lowerSurface = config_sealevel - thickness * (config_ice_density / config_ocean_density)
+             lowerSurface = config_sea_level - thickness * (config_ice_density / config_ocean_density)
           elsewhere
              lowerSurface = bedTopography
           end where
@@ -625,5 +630,5 @@ contains
 
 
 
-end module mpas_li_diagnostic_vars
+end module li_diagnostic_vars
 

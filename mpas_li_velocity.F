@@ -8,7 +8,7 @@
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  land_ice_velocity
+!  li_velocity
 !
 !> \MPAS land-ice velocity driver
 !> \author William Lipscomb
@@ -26,7 +26,7 @@ module li_velocity
 
    use mpas_grid_types
    use mpas_configure
-!!!   use land_ice_lifev
+!!!   use li_lifev
    use li_sia
 
    implicit none
@@ -105,25 +105,25 @@ contains
 
       err = 0
       
-      write(*,*) 'Using ', trim(config_dycore), ' dynamical core.'
-      select case (config_dycore)
+      write(*,*) 'Using ', trim(config_velocity_solver), ' dynamical core.'
+      select case (config_velocity_solver)
       case ('sia')
-          call land_ice_sia_init(domain, err)
+          call li_sia_init(domain, err)
 !!!      case ('L1L2')
-!!!          call land_ice_lifev_init(domain, err)
+!!!          call li_lifev_init(domain, err)
 !!!      case ('FO')
-!!!          call land_ice_lifev_init(domain, err)
+!!!          call li_lifev_init(domain, err)
 !!!      case ('Stokes')
-!!!          call land_ice_lifev_init(domain, err)
-!!!          call land_ice_phg_init(domain, err)
+!!!          call li_lifev_init(domain, err)
+!!!          call li_phg_init(domain, err)
       case default
-          write(*,*) trim(config_dycore), ' is not a valid land ice dycore option.'
+          write(*,*) trim(config_velocity_solver), ' is not a valid land ice velocity solver option.'
           err = 1
           return
       end select
 
    !--------------------------------------------------------------------
-   end subroutine land_ice_velocity_init
+   end subroutine li_velocity_init
 
 
 
@@ -172,17 +172,17 @@ contains
 
       err = 0
 
-      select case (config_dycore)
+      select case (config_velocity_solver)
       case ('sia')
           call li_sia_block_init(block, err)
 !!!      case ('L1L2')
-!!!          call land_ice_lifev_block_init(block, err)
+!!!          call li_lifev_block_init(block, err)
 !!!      case ('FO')
-!!!          call land_ice_lifev_block_init(block, err)
+!!!          call li_lifev_block_init(block, err)
 !!!      case ('Stokes')
-!!!          call land_ice_lifev_block_init(block, err)
+!!!          call li_lifev_block_init(block, err)
       case default
-          write(*,*) trim(config_dycore), ' is not a valid land ice dycore option.'
+          write(*,*) trim(config_velocity_solver), ' is not a valid land ice velocity solver option.'
           err = 1
           return
       end select
@@ -190,7 +190,7 @@ contains
 
    !--------------------------------------------------------------------
 
-   end subroutine land_ice_velocity_block_init
+   end subroutine li_velocity_block_init
 
 
 
@@ -206,7 +206,7 @@ contains
 !>  This routine calls velocity solvers.
 !
 !-----------------------------------------------------------------------
-   subroutine land_ice_velocity_solve(mesh, state, err)
+   subroutine li_velocity_solve(mesh, state, err)
 
       use li_sia
 
@@ -251,17 +251,17 @@ contains
       normalVelocity => state % normalVelocity % array
       edgeMask => state % edgeMask % array
 
-      select case (config_dycore)
+      select case (config_velocity_solver)
       case ('SIA')
           call li_sia_solve(mesh, state, err)
 !!!      case ('L1L2')
-!!!          call land_ice_lifev_solve(mesh, state, err)
+!!!          call li_lifev_solve(mesh, state, err)
 !!!      case ('FO')
-!!!          call land_ice_lifev_solve(mesh, state, err)
+!!!          call li_lifev_solve(mesh, state, err)
 !!!      case ('Stokes')
-!!!          call land_ice_lifev_solve(mesh, state, err)
+!!!          call li_lifev_solve(mesh, state, err)
       case default
-          write(*,*) trim(config_dycore), ' is not a valid land ice dycore option.'
+          write(*,*) trim(config_velocity_solver), ' is not a valid land ice velocity solver option.'
           err = 1
           return
       end select
@@ -279,7 +279,7 @@ contains
 !!!      end if
 
    !--------------------------------------------------------------------
-   end subroutine land_ice_velocity_solve
+   end subroutine li_velocity_solve
 
 
 
@@ -328,23 +328,23 @@ contains
 
       err = 0
 
-      select case (config_dycore)
+      select case (config_velocity_solver)
       case ('SIA')
-          call land_ice_sia_finalize(domain, err)
+          call li_sia_finalize(domain, err)
 !!!      case ('L1L2')
-!!!          call land_ice_lifev_finalize(domain, err)
+!!!          call li_lifev_finalize(domain, err)
 !!!      case ('FO')
-!!!          call land_ice_lifev_finalize(domain, err)
+!!!          call li_lifev_finalize(domain, err)
 !!!      case ('Stokes')
-!!!          call land_ice_lifev_finalize(domain, err)
+!!!          call li_lifev_finalize(domain, err)
       case default
-          write(*,*) trim(config_dycore), ' is not a valid land ice dycore option.'
+          write(*,*) trim(config_velocity_solver), ' is not a valid land ice velocity solver option.'
           err = 1
           return
       end select
 
    !--------------------------------------------------------------------
-   end subroutine land_ice_velocity_finalize
+   end subroutine li_velocity_finalize
 
 
 
