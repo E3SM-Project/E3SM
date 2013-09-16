@@ -908,10 +908,11 @@ contains
       integer, dimension(:,:), pointer :: edgesOnCell
 
       ! real pointers
-      real (kind=RKIND), dimension(:), pointer :: dcEdge, dvEdge, areaCell, surfaceWindStressMagnitude, &
-           penetrativeTemperatureFlux, surfaceMassFlux
+      real (kind=RKIND), dimension(:), pointer :: dcEdge, dvEdge, areaCell
+      real (kind=RKIND), dimension(:), pointer :: penetrativeTemperatureFlux, surfaceMassFlux, surfaceWindStressMagnitude, &
+           buoyancyForcingOBL, surfaceFrictionVelocity, boundaryLayerDepth, penetrativeTemperatureFluxOBL
       real (kind=RKIND), dimension(:,:), pointer ::  &
-           zMid, zTop, bulkRichardsonNumber, tracersSurfaceValues, densitySurfaceDisplaced, density, &
+           layerThickness, zMid, zTop, bulkRichardsonNumber, tracersSurfaceValues, densitySurfaceDisplaced, density, &
            normalVelocity, surfaceTracerFlux, thermalExpansionCoeff, salineContractionCoeff
 
       ! local
@@ -929,6 +930,7 @@ contains
 
       ! set pointers into state, mesh, diagnostics and scratch
       normalVelocity => state % normalVelocity % array
+      layerThickness => state % layerThickness % array
 
       maxLevelCell => mesh % maxLevelCell % array 
       nEdgesOnCell => mesh % nEdgesOnCell % array
@@ -937,11 +939,15 @@ contains
       dcEdge       => mesh % dcEdge % array
       dvEdge       => mesh % dvEdge % array
 
-      zMid                 => diagnostics % zMid % array
-      zTop                 => diagnostics % zTop % array
-      density              => diagnostics % density % array
-      bulkRichardsonNumber => diagnostics % bulkRichardsonNumber % array
-      tracersSurfaceValues => diagnostics % tracersSurfaceValue  % array
+      zMid                          => diagnostics % zMid % array
+      zTop                          => diagnostics % zTop % array
+      density                       => diagnostics % density % array
+      bulkRichardsonNumber          => diagnostics % bulkRichardsonNumber % array
+      tracersSurfaceValues          => diagnostics % tracersSurfaceValue  % array
+      boundaryLayerDepth            => diagnostics % boundaryLayerDepth % array
+      surfaceFrictionVelocity       => diagnostics % surfaceFrictionVelocity % array
+      penetrativeTemperatureFluxOBL => diagnostics % penetrativeTemperatureFluxOBL % array
+      buoyancyForcingOBL            => diagnostics % buoyancyForcingOBL % array
 
       normalVelocity => state % normalVelocity % array
 
@@ -959,7 +965,8 @@ contains
       salineContractionCoeff => scratch % salineContractionCoeff % array
 
       ! compute EOS by displacing SST/SSS to every vertical layer in column
-      call ocn_equation_of_state_density(state, diagnostics, mesh, 0, 'surfaceDisplaced', densitySurfaceDisplaced, err)
+      call ocn_equation_of_state_density(state, diagnostics, mesh, 0, 'surfaceDisplaced', densitySurfaceDisplaced, err, &
+              thermalExpansionCoeff, salineContractionCoeff)
 
       ! set value to out-of-bounds
       bulkRichardsonNumber(:,:) = -1.0e34
@@ -982,16 +989,16 @@ contains
        !    1. Tm: temperature associated with surfaceMassFlux, C  (here we assume Tm == temperatureSurfaceValue)
        !    2. Sm: salinity associated with surfaceMassFlux, PSU (here we assume Sm == salinitySurfaceValue and account for salinity flux in surfaceTracerFlux array)
        !
-       ! buoyancyForcingOBL(iCell) =  thermalExpansionCoeff (1,iCell) *
-       !       (surfaceTracerFlux(indexTempFlux,iCell) + penetrativeTemperatureFlux(iCell) - penetrativeTemperatureFluxOBL(iCell))
-       !     - salineContractionCoeff(1,iCell) *  surfaceTracerFlux(indexSaltFlux,iCell)
-       !
+         buoyancyForcingOBL(iCell) =  thermalExpansionCoeff (1,iCell) *  &
+               (surfaceTracerFlux(indexTempFlux,iCell) + penetrativeTemperatureFlux(iCell) - penetrativeTemperatureFluxOBL(iCell)) &
+              - salineContractionCoeff(1,iCell) *  surfaceTracerFlux(indexSaltFlux,iCell)
+        
        ! at this point, buoyancyForcingOBL has units of m/s 
        ! change into units of m/s^3 (which can be thought of as units of buoyancy per second)
-       ! buoyancyForcingOBL(iCell) = buoyancyForcingOBL(iCell) * grav / max(boundaryLayerDepth(iCell,thickness(1,iCell)
+         buoyancyForcingOBL(iCell) = buoyancyForcingOBL(iCell) * gravity / max(boundaryLayerDepth(iCell),layerThickness(1,iCell))
 
        ! compute surface friction velocity
-       ! surfaceFrictionVelocity(iCell) = windStressMagnitude(iCell) / config_density0
+         surfaceFrictionVelocity(iCell) = surfacewindStressMagnitude(iCell) / config_density0
 
        ! loop over vertical to compute bulk Richardson number
        do k=1,maxLevelCell(iCell)
