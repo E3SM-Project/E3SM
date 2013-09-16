@@ -40,7 +40,7 @@ module mpas_framework
 !>  This routine initializes the MPAS framework. It calls routines related to initializing different parts of MPAS, that are housed within the framework.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_framework_init(dminfo, domain, mpi_comm, nml_filename, io_system, stdoutUnit, stderrUnit)!{{{
+   subroutine mpas_framework_init(dminfo, domain, mpi_comm, nml_filename, io_system, calendar, stdoutUnit, stderrUnit)!{{{
 
       implicit none
 
@@ -50,6 +50,7 @@ module mpas_framework
 
       character (len=*), optional :: nml_filename
       type (iosystem_desc_t), optional, pointer :: io_system
+      character(len=*), intent(in), optional :: calendar
 
       integer, intent(in), optional :: stdoutUnit, stderrUnit
 
@@ -64,7 +65,11 @@ module mpas_framework
 
       call mpas_allocate_domain(domain, dminfo)
       
-      call mpas_timekeeping_init(config_calendar_type)
+      if(present(calendar)) then
+        call mpas_timekeeping_init(calendar)
+      else
+        call mpas_timekeeping_init(config_calendar_type)
+      end if
 
       pio_num_iotasks = config_pio_num_iotasks
       pio_stride = config_pio_stride
