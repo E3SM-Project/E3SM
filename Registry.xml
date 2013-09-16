@@ -1117,15 +1117,18 @@
 		<var name="surfaceBuoyancyForcing" type="real" dimensions="nCells Time" streams="o" units="m s^{-3}"
 		     description="diagnosed surface buoyancy forcing due to heat, salt and freshwater fluxes at ocean surface"
 		/>
+		<var name="windStressZonalDiag" type="real" dimensions="nCells Time" streams="o" units="N m^{-2}"
+			 description="reconstructed surface wind stress in the eastward direction. Used for diagnostics."
+		/>
+		<var name="windStressMeridionalDiag" type="real" dimensions="nCells Time" streams="o" units="N m^{-2}"
+			 description="reconstructed surface wind stress in the northward direction. User for diagnostics."
+		/> 
+		<var name="penetrativeTemperatureFluxOBL" type="real" dimensions="nCells Time" units="^\circ C m s^{-1}"
+			 description="Penetrative temperature flux at the bottom of boundary layer due to solar radiation. Positive is into the ocean."
+		/>
 		<var name="buoyancyForcingOBL" type="real" dimensions="nCells Time" streams="o" units="m s^{-3}"
 			 description="diagnosed buoyancy forcing due to heat, salt and freshwater fluxes averaged over ocean boundary layer depth"
 		/>
-        <var name="windStressZonalDiag" type="real" dimensions="nCells Time" streams="o" units="N m^{-2}"
-             description="reconstructed surface wind stress in the eastward direction. Used for diagnostics."
-        />
-        <var name="windStressMeridionalDiag" type="real" dimensions="nCells Time" streams="o" units="N m^{-2}"
-             description="reconstructed surface wind stress in the northward direction. User for diagnostics."
-        />
 		<var name="areaCellGlobal" type="real" dimensions="Time" streams="o" units="m^2"
 		     description="sum of the areaCell variable over the full domain, used to normalize global statistics"
 		/>
