@@ -8,7 +8,7 @@
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  land_ice_mask
+!  li_mask
 !
 !> \MPAS land-ice mask calculations
 !> \author Matt Hoffman
@@ -20,7 +20,7 @@
 !
 !-----------------------------------------------------------------------
 
-module land_ice_mask
+module li_mask
 
    use mpas_grid_types
    use mpas_configure
@@ -47,6 +47,30 @@ module land_ice_mask
    !--------------------------------------------------------------------
    ! all subroutines and functions in this module are public!
 
+   interface li_mask_is_ice
+      module procedure li_mask_is_ice_1d
+      module procedure li_mask_is_ice_0d
+   end interface
+
+
+   interface li_mask_is_dynamic_ice
+      module procedure li_mask_is_dynamic_ice_1d
+      module procedure li_mask_is_dynamic_ice_0d
+   end interface
+
+
+   interface li_mask_is_floating_ice
+      module procedure li_mask_is_floating_ice_1d
+      module procedure li_mask_is_floating_ice_0d
+   end interface
+
+
+   interface li_mask_is_grounded_ice
+      module procedure li_mask_is_grounded_ice_1d
+      module procedure li_mask_is_grounded_ice_0d
+   end interface
+
+
    !--------------------------------------------------------------------
    !
    ! Private module variables
@@ -63,7 +87,7 @@ contains
 
 !***********************************************************************
 !
-!  routine land_ice_calculate_mask_init
+!  routine li_calculate_mask_init
 !
 !> \brief   Calculates masks for land ice for info needed from initial condition only
 !> \author  Matt Hoffman
@@ -74,7 +98,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine land_ice_calculate_mask_init(mesh, state, err)
+   subroutine li_calculate_mask_init(mesh, state, err)
 
       !-----------------------------------------------------------------
       !
@@ -125,7 +149,7 @@ contains
 
    !--------------------------------------------------------------------
 
-   end subroutine land_ice_calculate_mask_init
+   end subroutine li_calculate_mask_init
 
 
 
@@ -365,65 +389,65 @@ contains
 
    function li_mask_is_ice_1d(mask)
       integer, dimension(:), pointer, intent(in) :: mask
-      logical, dimension(size(mask)) :: li_mask_is_ice
+      logical, dimension(size(mask)) :: li_mask_is_ice_1d
 
-      li_mask_is_ice = (iand(mask, li_mask_ValueIce) == li_mask_ValueIce)
+      li_mask_is_ice_1d = (iand(mask, li_mask_ValueIce) == li_mask_ValueIce)
    end function li_mask_is_ice_1d
 
    function li_mask_is_ice_0d(mask)
       integer, intent(in) :: mask
-      logical, dimension(size(mask)) :: li_mask_is_ice
+      logical :: li_mask_is_ice_0d
 
-      li_mask_is_ice = (iand(mask, li_mask_ValueIce) == li_mask_ValueIce)
+      li_mask_is_ice_0d = (iand(mask, li_mask_ValueIce) == li_mask_ValueIce)
    end function li_mask_is_ice_0d
 
 
 
    function li_mask_is_dynamic_ice_1d(mask)
       integer, dimension(:), pointer, intent(in) :: mask
-      logical, dimension(size(mask)) :: li_mask_is_dynamic_ice
+      logical, dimension(size(mask)) :: li_mask_is_dynamic_ice_1d
 
-      li_mask_is_dynamic_ice = (iand(mask, li_mask_ValueDynamicIce) == li_mask_ValueDynamicIce)
+      li_mask_is_dynamic_ice_1d = (iand(mask, li_mask_ValueDynamicIce) == li_mask_ValueDynamicIce)
    end function li_mask_is_dynamic_ice_1d
 
    function li_mask_is_dynamic_ice_0d(mask)
       integer, intent(in) :: mask
-      logical, dimension(size(mask)) :: li_mask_is_dynamic_ice
+      logical :: li_mask_is_dynamic_ice_0d
 
-      li_mask_is_dynamic_ice = (iand(mask, li_mask_ValueDynamicIce) == li_mask_ValueDynamicIce)
+      li_mask_is_dynamic_ice_0d = (iand(mask, li_mask_ValueDynamicIce) == li_mask_ValueDynamicIce)
    end function li_mask_is_dynamic_ice_0d
 
 
 
    function li_mask_is_floating_ice_1d(mask)
       integer, dimension(:), pointer, intent(in) :: mask
-      logical, dimension(size(mask)) :: li_mask_is_floating_ice
+      logical, dimension(size(mask)) :: li_mask_is_floating_ice_1d
 
-      li_mask_is_floating_ice = (iand(mask, li_mask_ValueFloating) == li_mask_ValueFloating)
+      li_mask_is_floating_ice_1d = (iand(mask, li_mask_ValueFloating) == li_mask_ValueFloating)
    end function li_mask_is_floating_ice_1d
 
    function li_mask_is_floating_ice_0d(mask)
       integer, intent(in) :: mask
-      logical, dimension(size(mask)) :: li_mask_is_floating_ice
+      logical :: li_mask_is_floating_ice_0d
 
-      li_mask_is_floating_ice = (iand(mask, li_mask_ValueFloating) == li_mask_ValueFloating)
+      li_mask_is_floating_ice_0d = (iand(mask, li_mask_ValueFloating) == li_mask_ValueFloating)
    end function li_mask_is_floating_ice_0d
 
 
 
    function li_mask_is_grounded_ice_1d(mask)
       integer, dimension(:), pointer, intent(in) :: mask
-      logical, dimension(size(mask)) :: li_mask_is_grounded_ice
+      logical, dimension(size(mask)) :: li_mask_is_grounded_ice_1d
 
-      li_mask_is_grounded_ice = ( (iand(mask, li_mask_ValueFloating) /= li_mask_ValueFloating) &
+      li_mask_is_grounded_ice_1d = ( (iand(mask, li_mask_ValueFloating) /= li_mask_ValueFloating) &
                                 .and. (li_mask_is_ice(mask)) )
    end function li_mask_is_grounded_ice_1d
 
    function li_mask_is_grounded_ice_0d(mask)
       integer, intent(in) :: mask
-      logical, dimension(size(mask)) :: li_mask_is_grounded_ice
+      logical :: li_mask_is_grounded_ice_0d
 
-      li_mask_is_grounded_ice = ( (iand(mask, li_mask_ValueFloating) /= li_mask_ValueFloating) &
+      li_mask_is_grounded_ice_0d = ( (iand(mask, li_mask_ValueFloating) /= li_mask_ValueFloating) &
                                 .and. (li_mask_is_ice(mask)) )
    end function li_mask_is_grounded_ice_0d
 
@@ -436,7 +460,7 @@ contains
 ! - no private subroutines - (module is not declared private)
 
 
-end module land_ice_mask
+end module li_mask
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 

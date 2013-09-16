@@ -20,13 +20,12 @@
 !
 !-----------------------------------------------------------------------
 
-!!!#include "mpas_land_ice_mask.inc"
-
 module li_sia
 
    use mpas_grid_types
    use mpas_configure
    use mpas_dmpar
+   use li_mask
 
    implicit none
    private
@@ -247,7 +246,7 @@ contains
       do iEdge = 1, nEdges
          ! Only calculate velocity for edges that are part of the dynamic ice sheet.(thick ice)
          ! Also, the velocity calculation should be valid for non-ice edges (i.e. returns 0).
-         if ( MASK_IS_THICK_ICE(edgeMask(iEdge)) ) then
+         if ( li_mask_is_dynamic_ice(edgeMask(iEdge)) ) then
              cell1 = cellsOnEdge(1,iEdge)
              cell2 = cellsOnEdge(2,iEdge)
              ! Calculate slope at edge

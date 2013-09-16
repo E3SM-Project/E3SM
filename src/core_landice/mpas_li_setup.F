@@ -19,7 +19,7 @@
 !>  setting up the land ice core.
 !
 !-----------------------------------------------------------------------
-module mpas_li_setup
+module li_setup
 
    use mpas_grid_types
    use mpas_kind_types
@@ -58,7 +58,7 @@ contains
 
 !***********************************************************************
 !
-!  routine li_setup_vertical_coords
+!  routine li_setup_vertical_grid
 !
 !> \brief   Initializes vertical coord system
 !> \author  Matt Hoffman
@@ -69,7 +69,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine li_setup_vertical_coords(mesh, err)
+   subroutine li_setup_vertical_grid(mesh, err)
 
       !-----------------------------------------------------------------
       !
@@ -136,7 +136,7 @@ contains
       layerInterfaceSigma(nVertLevels+1) = 1.0_RKIND
       
    !--------------------------------------------------------------------
-   end subroutine land_ice_setup_vertical_coords
+   end subroutine li_setup_vertical_grid
 
 
 
@@ -152,7 +152,7 @@ contains
 !>  This routine determines the sign for various mesh items.
 !
 !-----------------------------------------------------------------------
-   subroutine land_ice_setup_sign_and_index_fields(mesh)!{{{
+   subroutine li_setup_sign_and_index_fields(mesh)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -238,7 +238,7 @@ contains
        !end do
 
    !--------------------------------------------------------------------
-   end subroutine land_ice_setup_sign_and_index_fields!}}}
+   end subroutine li_setup_sign_and_index_fields!}}}
 
 
 
@@ -250,4 +250,4 @@ contains
 
 
 
-end module mpas_li_setup
+end module li_setup

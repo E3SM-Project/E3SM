@@ -65,7 +65,7 @@ module mpas_core
       use mpas_grid_types
       use li_velocity
 !!!      use mpas_ocn_tracer_advection
-!!!      use land_ice_global_diagnostics
+!!!      use li_global_diagnostics
    
       implicit none
    
@@ -122,7 +122,7 @@ module mpas_core
 
       call mpas_timer_init(domain)
 
-      call land_ice_velocity_init(domain, err_tmp)
+      call li_velocity_init(domain, err_tmp)
       err = ior(err, err_tmp)
 
 !!!      call mpas_ocn_tracer_advection_init(err_tmp)
@@ -133,7 +133,7 @@ module mpas_core
       ! ===
       block => domain % blocklist
       do while (associated(block))
-         call mpas_init_block(block, block % mesh, dt)
+         call mpas_init_block(block, block % mesh, dt, startTimeStamp, domain % dminfo)
 
          block => block % next
       end do
@@ -202,22 +202,22 @@ module mpas_core
       !
       !-----------------------------------------------------------------
       integer :: itimestep
-      real (kind=RKIND) :: dt
       type (block_type), pointer :: block_ptr
-
+      real (kind=RKIND) :: dt
       type (MPAS_Time_Type) :: currTime
       character(len=StrKIND) :: timeStamp
       integer :: ierr, err_tmp
       logical :: solveVelo
    
 
-      dt = config_dt
+!!!!      dt = ??????
+      dt = 1.0
 
       call mpas_timer_start("land ice core run")
       currTime = mpas_get_clock_time(clock, MPAS_NOW, err_tmp)
-      err = ior(err, err_tmp)
-      call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr_tmp)
-      err = ior(err, err_tmp)         
+      ierr = ior(ierr, err_tmp)
+      call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=err_tmp)
+      ierr = ior(ierr, err_tmp)         
       write(0,*) 'Initial timestep ', trim(timeStamp)
       write(6,*) 'Initial timestep ', trim(timeStamp)
 
@@ -241,8 +241,8 @@ module mpas_core
          solveVelo = .true.
       endif
 
-      call li_calculate_diagnostic_vars(domain, timeLevel=1, solveVelo, err_tmp)
-      err = ior(err, err_tmp)
+      call li_calculate_diagnostic_vars(domain, timeLevel=1, solveVelo=solveVelo, ierr=err_tmp)
+      ierr = ior(ierr, err_tmp)
 
       call mpas_timer_stop("initial state calculation")
 
@@ -283,7 +283,7 @@ module mpas_core
 !!!         call mpas_timer_start("assign forcing fields")
 !!!         block_ptr => domain % blocklist
 !!!         do while(associated(block_ptr))
-!!!           call land_ice_assign_annual_forcing(currTime, block_ptr % mesh, ierr)
+!!!           call li_assign_annual_forcing(currTime, block_ptr % mesh, ierr)
 !!!           block_ptr => block_ptr % next
 !!!         end do
 !!!         call mpas_timer_stop("assign forcing fields")
@@ -340,9 +340,9 @@ module mpas_core
       call mpas_timer_stop("land ice core run")
 
       ! === error check and exit
-      if(err == 1) then
+      if (ierr == 1) then
           print *, "An error has occurred in mpas_core_run. Aborting..."
-          call mpas_dmpar_abort(dminfo)
+          call mpas_dmpar_abort(domain % dminfo)
       endif
 
    !--------------------------------------------------------------------
@@ -402,9 +402,9 @@ module mpas_core
       ierr = ior(ierr, err_tmp)
 
       ! === error check and exit
-      if(err == 1) then
+      if (ierr == 1) then
           print *, "An error has occurred in mpas_core_finalize. Aborting..."
-          call mpas_dmpar_abort(dminfo)
+          call mpas_dmpar_abort(domain % dminfo)
       endif
 
    !--------------------------------------------------------------------
@@ -431,13 +431,14 @@ module mpas_core
 !>  This routine initializes blocks for the land ice core.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_init_block(block, mesh, dt)
+   subroutine mpas_init_block(block, mesh, dt, startTimeStamp, dminfo)
    
       use mpas_grid_types
       use mpas_rbf_interpolation
       use mpas_vector_reconstruction
       use li_setup
       use li_mask
+      use li_velocity
    
       implicit none
    
@@ -448,6 +449,7 @@ module mpas_core
       !-----------------------------------------------------------------
       real (kind=RKIND), intent(in) :: dt     !< Input: time step
       type (dm_info), intent(in) :: dminfo    !< Input: Domain info
+      character(len=*), intent(in) :: startTimeStamp   !< Input: time stamp at start 
 
       !-----------------------------------------------------------------
       !
@@ -473,7 +475,7 @@ module mpas_core
 
       type (state_type), pointer :: state  
 
-      integer :: iCell, iLevel
+      integer :: iCell, iLevel, i
 
 
       err = 0
@@ -491,7 +493,7 @@ module mpas_core
       ! ===
       ! === Call init routines ===
       ! ===
-      call li_setup_vertical_coords(mesh, err_tmp)
+      call li_setup_vertical_grid(mesh, err_tmp)
       err = ior(err, err_tmp)
 
       call li_setup_sign_and_index_fields(mesh)
@@ -499,7 +501,7 @@ module mpas_core
 ! This was needed for annual forcing, which may or not be implemented in the same way.
 !!!      currTime = mpas_get_clock_time(clock, MPAS_NOW, err_tmp)
 !!!      err = ior(err, err_tmp)
-!!!      call land_ice_assign_annual_forcing(currTime, mesh, err_tmp)
+!!!      call li_assign_annual_forcing(currTime, mesh, err_tmp)
 !!!      err = ior(err, err_tmp)
 
 ! This was needed to init FCT once.
@@ -521,7 +523,7 @@ module mpas_core
       call mpas_init_reconstruct(mesh)
 
       ! Mask init identifies initial ice extent
-      call land_ice_calculate_mask_init(mesh, state, err)
+      call li_calculate_mask_init(mesh, state, err)
       err = ior(err, err_tmp)
 
 
@@ -553,7 +555,7 @@ module mpas_core
       use mpas_grid_types
       use li_time_integration
       use mpas_timer
-      use li_global_diagnostics
+!!!      use li_global_diagnostics
    
       implicit none
    
@@ -588,23 +590,23 @@ module mpas_core
       integer :: ierr
    
 
-      call li_timestep(domain, dt, timeStamp, err)
+      call li_timestep(domain, dt, timeStamp, ierr)
    
-      if(config_stats_interval .gt. 0) then
-          if(mod(itimestep, config_stats_interval) == 0) then
-              block_ptr => domain % blocklist
-              if(associated(block_ptr % next)) then
-                  write(0,*) 'Error: computeGlobalDiagnostics assumes ',&
-                             'that there is only one block per processor.'
-              end if
-   
-              call mpas_timer_start("global_diagnostics")
-              call li_compute_global_diagnostics(domain % dminfo, &
-                       block_ptr % state % time_levs(2) % state, block_ptr % mesh, &
-                       itimestep, dt)
-              call mpas_timer_stop("global_diagnostics")
-          end if
-      end if
+!!!      if (config_stats_interval .gt. 0) then
+!!!          if(mod(itimestep, config_stats_interval) == 0) then
+!!!              block_ptr => domain % blocklist
+!!!              if(associated(block_ptr % next)) then
+!!!                  write(0,*) 'Error: computeGlobalDiagnostics assumes ',&
+!!!                             'that there is only one block per processor.'
+!!!              end if
+!!!   
+!!!              call mpas_timer_start("global_diagnostics")
+!!!              call li_compute_global_diagnostics(domain % dminfo, &
+!!!                       block_ptr % state % time_levs(2) % state, block_ptr % mesh, &
+!!!                       itimestep, dt)
+!!!              call mpas_timer_stop("global_diagnostics")
+!!!          end if
+!!!      end if
 
       !TODO: replace the above code block with this if we desire to convert config_stats_interval to use alarms
       !if (mpas_is_alarm_ringing(clock, statsAlarmID, ierr=ierr)) then

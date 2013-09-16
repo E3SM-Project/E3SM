@@ -108,7 +108,7 @@ module li_time_integration
       !write(*,*) 'Using ', trim(config_time_integration), ' time integration.'
       select case (config_time_integration)
       case ('forward_euler')
-         call land_ice_time_integrator_forwardeuler(domain, dt, err)
+         call li_time_integrator_forwardeuler(domain, dt, err)
       case ('rk4')
          write(0,*) trim(config_time_integration), ' is not currently supported.'
          call mpas_dmpar_abort(domain % dminfo)
