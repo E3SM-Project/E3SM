@@ -29,6 +29,7 @@ module ocn_vmix
    use ocn_vmix_coefs_const
    use ocn_vmix_coefs_tanh
    use ocn_vmix_coefs_rich
+   use ocn_vmix_cvmix
 
    implicit none
    private
@@ -117,7 +118,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: err1, err2, err3
+      integer :: err1, err2, err3, err4
 
       !-----------------------------------------------------------------
       !
@@ -133,8 +134,11 @@ contains
       call ocn_vmix_coefs_const_build(mesh, s, d, err1)
       call ocn_vmix_coefs_tanh_build(mesh, s, d, err2)
       call ocn_vmix_coefs_rich_build(mesh, s, d, err3)
+      call ocn_vmix_coefs_cvmix_build(mesh, s, d, err4)
 
-      err = ior(err1, ior(err2, err3))
+      err = ior(err1, err2)
+      err = ior(err,  err3)
+      err = ior(err,  err4)
 
    !--------------------------------------------------------------------
 
@@ -452,7 +456,7 @@ contains
 !-----------------------------------------------------------------------
 
 
-   subroutine ocn_vmix_init(err)!{{{
+   subroutine ocn_vmix_init(domain, err)!{{{
 
    !--------------------------------------------------------------------
 
@@ -462,9 +466,11 @@ contains
       !
       !-----------------------------------------------------------------
 
+      type (domain_type), intent(inout) :: domain !< Input/Output: domain information
+
       integer, intent(out) :: err !< Output: error flag
 
-      integer :: err1, err2, err3
+      integer :: err1, err2, err3, err4
 
       err = 0
 
@@ -477,9 +483,13 @@ contains
       call ocn_vmix_coefs_const_init(err1)
       call ocn_vmix_coefs_tanh_init(err2)
       call ocn_vmix_coefs_rich_init(err3)
+      call ocn_vmix_cvmix_init(domain,err4)
 
-      err = ior(err1, ior(err2, err3))
+      err = ior(err1, err2)
+      err = ior(err,  err3)
+      err = ior(err,  err4)
 
+      write(6,*) 'ocn_vmix_init complete'
    !--------------------------------------------------------------------
 
    end subroutine ocn_vmix_init!}}}
