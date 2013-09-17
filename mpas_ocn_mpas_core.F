@@ -124,7 +124,7 @@ module mpas_core
       call ocn_restoring_init(err_tmp)
       err = ior(err, err_tmp)
 
-      call ocn_vmix_init(err_tmp)
+      call ocn_vmix_init(domain,err_tmp)
       err = ior(err, err_tmp)
 
       call ocn_equation_of_state_init(err_tmp)
