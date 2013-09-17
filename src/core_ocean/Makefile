@@ -20,6 +20,7 @@ OBJS = mpas_ocn_mpas_core.o \
        mpas_ocn_vmix_coefs_const.o \
        mpas_ocn_vmix_coefs_rich.o \
        mpas_ocn_vmix_coefs_tanh.o \
+       mpas_ocn_vmix_cvmix.o \
        mpas_ocn_restoring.o \
        mpas_ocn_tendency.o \
        mpas_ocn_diagnostics.o \
@@ -105,13 +106,15 @@ mpas_ocn_high_freq_thickness_hmix_del2.o:
 
 mpas_ocn_restoring.o:
 
-mpas_ocn_vmix.o: mpas_ocn_vmix_coefs_const.o mpas_ocn_vmix_coefs_rich.o mpas_ocn_vmix_coefs_tanh.o
+mpas_ocn_vmix.o: mpas_ocn_vmix_coefs_const.o mpas_ocn_vmix_coefs_rich.o mpas_ocn_vmix_coefs_tanh.o mpas_ocn_vmix_cvmix.o
 
 mpas_ocn_vmix_coefs_const.o:
 
 mpas_ocn_vmix_coefs_rich.o: mpas_ocn_equation_of_state.o
 
 mpas_ocn_vmix_coefs_tanh.o:
+
+mpas_ocn_vmix_cvmix.o: libcvmix
 
 mpas_ocn_equation_of_state.o: mpas_ocn_equation_of_state_jm.o mpas_ocn_equation_of_state_linear.o
 
@@ -139,6 +142,7 @@ mpas_ocn_mpas_core.o: mpas_ocn_thick_hadv.o \
                       mpas_ocn_vmix_coefs_const.o \
                       mpas_ocn_vmix_coefs_rich.o \
                       mpas_ocn_vmix_coefs_tanh.o \
+                      mpas_ocn_vmix_cvmix.o \
                       mpas_ocn_restoring.o \
                       mpas_ocn_tracer_advection.o \
                       mpas_ocn_tendency.o \
@@ -162,4 +166,4 @@ clean:
 .F.o:
 	$(RM) $@ $*.mod
 	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) $< > $*.f90
-	$(FC) $(FFLAGS) -c $*.f90 $(FCINCLUDES) -I../framework -I../operators -I../external/esmf_time_f90
+	$(FC) $(FFLAGS) -c $*.f90 $(FCINCLUDES) -I../framework -I../operators -I../external/esmf_time_f90 -I./cvmix/
