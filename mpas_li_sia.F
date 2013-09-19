@@ -216,7 +216,7 @@ contains
       integer, dimension(:,:), pointer :: cellsOnEdge
       integer, dimension(:), pointer :: edgeMask
       integer :: nVertLevels, nEdges, iLevel, iEdge, cell1, cell2
-      real (kind=RKIND) :: ratefactor, basalVelocity, slopeOnEdge, &
+      real (kind=RKIND) :: rateFactor, basalVelocity, slopeOnEdge, &
                layerCenterHeightOnEdge, thicknessEdge
       real rhoi
 
