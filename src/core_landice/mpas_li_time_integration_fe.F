@@ -254,10 +254,10 @@ module li_time_integration_fe
       call mpas_dmpar_exch_halo_field(domain % blocklist % tend % layerThickness)
       call mpas_timer_stop("halo updates")
 
-      ! If we have an error (likely CFL) or we are printing advection debug information, 
+      ! If we are printing advection debug information, 
       ! then find out what the CFL limit is.  Don't do this otherwise because it
       ! is requires 2 unnecessary MPI communications.
-      if (config_print_thickness_advection_info .or. (err > 0) ) then
+      if (config_print_thickness_advection_info) then
           ! Determine CFL limit on all procs
           call mpas_dmpar_min_real(dminfo, allowableDt, allowableDtMin)
           ! Determine which processor has the limiting CFL
