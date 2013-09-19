@@ -111,7 +111,7 @@
 	</nml_record>
 
 	<nml_record name="io">
-		<nml_option name="config_input_name" type="character" default_value="grid.nc" units="unitless"
+		<nml_option name="config_input_name" type="character" default_value="landice_grid.nc" units="unitless"
 		            description="The path to the input file for the simulation."
 		            possible_values="path/to/grid.nc"
 		/>
