@@ -1099,6 +1099,7 @@ contains
   real(kind=real_kind) :: tstep_tmp,tstep_dyn
   integer :: i,ie
 
+  if(hybrid%masterthread) print *,"Leapfrog bootstrap initialization."
 
   tstep_dyn = tstep
   ! forward euler to get to tstep_dyn/2 (keep t=0 in nm1 timelevel) 
