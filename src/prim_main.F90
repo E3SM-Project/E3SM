@@ -2,277 +2,297 @@
 #include "config.h"
 #endif
 
-#if(!defined ELEMENT_OPENMP)
-#define EOMP_OFF 1
-#else
-#define EOMP_OFF 0
-#endif
-
 program prim_main
-
-  use parallel_mod,     only: parallel_t,initmp,haltmp
-  use hybrid_mod,       only: hybrid_t
-  use thread_mod,       only: nthreads,omp_get_thread_num
-  use time_mod,         only: tstep,nendstep,timelevel_t
-  use dimensions_mod,   only: nelemd
-  use control_mod,      only: restartfreq,vfile_mid,vfile_int,runtype,integration,tstep_type
-  use domain_mod,       only: domain1d_t
-  use element_mod,      only: element_t
-  use spelt_mod,        only: spelt_struct
-  use common_io_mod,    only: output_dir
-  use common_movie_mod, only: nextoutputstep
-  use restart_io_mod,   only: restartheader_t, writerestart
-  use hybrid_mod,       only: hybrid_create
-  use perf_mod,         only: t_initf,t_prf,t_finalizef,t_startf,t_stopf ! _EXTERNAL
-  use fvm_control_volume_mod, only: fvm_struct
-
+  ! -----------------------------------------------
 #ifdef _PRIM
-  ! Modules specific to preqx exectuable
-  use prim_driver_mod, only: prim_init1,prim_init2,prim_run,prim_run_subcycle,prim_finalize,leapfrog_bootstrap
-  use hybvcoord_mod,   only: hvcoord_t,hvcoord_init
+  use prim_driver_mod, only : prim_init1, prim_init2, prim_run, prim_finalize,&
+                              leapfrog_bootstrap, prim_run_subcycle
+  use hybvcoord_mod, only : hvcoord_t, hvcoord_init
+#else
+! use these for dg3d
+
 #endif
+
+  ! -----------------------------------------------
+  use parallel_mod, only : parallel_t, initmp, syncmp, haltmp, abortmp
+  ! -----------------------------------------------
+  use hybrid_mod, only : hybrid_t
+  ! -----------------------------------------------
+  use thread_mod, only : nthreads, omp_get_thread_num, omp_set_num_threads
+  ! ----------------------------------------------- 
+  use time_mod, only : tstep, nendstep, timelevel_t, TimeLevel_init
+  ! -----------------------------------------------
+  use dimensions_mod, only : nelemd, qsize, ntrac
+  ! -----------------------------------------------
+  use control_mod, only : restartfreq, vfile_mid, vfile_int, runtype, integration, statefreq, tstep_type
+  ! -----------------------------------------------
+  use domain_mod, only : domain1d_t, decompose
+  ! -----------------------------------------------
+  use element_mod, only : element_t
+  !-----------------------------------------------
+  use fvm_control_volume_mod, only : fvm_struct
+  use spelt_mod, only : spelt_struct
+  ! -----------------------------------------------
+  use common_io_mod, only:  output_dir
+  ! -----------------------------------------------
 
 #ifdef PIO_INTERP
-  ! Modules for interpolated output
-  use interp_movie_mod,       only: interp_movie_output,interp_movie_finish,interp_movie_init
-  use interpolate_driver_mod, only: interpolate_driver
+  use interp_movie_mod, only : interp_movie_output, interp_movie_finish, interp_movie_init
+  use interpolate_driver_mod, only : interpolate_driver
 #else
-  ! Modules for native grid output
-  use prim_movie_mod, only: prim_movie_output,prim_movie_finish,prim_movie_init
+  use prim_movie_mod, only : prim_movie_output, prim_movie_finish,prim_movie_init
 #endif
+  use common_movie_mod, only : nextoutputstep
+  use perf_mod, only : t_initf, t_prf, t_finalizef, t_startf, t_stopf ! _EXTERNAL
 
+  !-----------------
+  use restart_io_mod , only : restartheader_t, writerestart
+  !-----------------
+  use hybrid_mod, only : hybrid_create
+
+
+
+	
   implicit none
-
-  type (element_t),  pointer  :: elem(:)                              ! element  array pointer
-  type (domain1d_t), pointer  :: dom(:)                               ! domain1d array pointer
-  type (hybrid_t)             :: hybrid                               ! parallel struct for shared mem + distributed mem
-  type (parallel_t)           :: par                                  ! parallel struct for distributed mem
-  type (restartHeader_t)      :: restartHeader
-  type (timeLevel_t)          :: tl                                   ! main time level struct
-  type (hvcoord_t)            :: hvcoord                              ! hybrid vertical coordinate struct
-  integer                     :: nets, nete                           ! start, end element indices
-  integer                     :: ithr                                 ! thread number
-  integer                     :: ierr                                 ! error code
-  integer                     :: nstep                                ! step counter
-  logical                     :: dir_e                                ! flag: netcdf directory exists
-  logical, parameter          :: lprint = .true.                      ! print hvcoord levels
-
+  type (element_t), pointer  :: elem(:)
 #if defined(_SPELT)
-  ! Replace finite-volume structure if using SPELT transport scheme
-  type (spelt_struct),pointer :: fvm(:)                               ! let fvm = spelt structure
+    type (spelt_struct), pointer   :: fvm(:)
 #else
-  type (fvm_struct),  pointer :: fvm(:)                               ! let fvm = finite-volume structure
+     type (fvm_struct), pointer   :: fvm(:)    
 #endif
 
+  type (hybrid_t)       :: hybrid ! parallel structure for shared memory/distributed memory
+  type (parallel_t)                    :: par  ! parallel structure for distributed memory programming
+  type (domain1d_t), pointer :: dom_mt(:)
+  type (RestartHeader_t)                  :: RestartHeader
+  type (TimeLevel_t)    :: tl             ! Main time level struct
+  type (hvcoord_t)     :: hvcoord         ! hybrid vertical coordinate struct
+
+  real*8 timeit, et, st
+  integer nets,nete
+  integer ithr
+  integer ierr
+  integer nstep
+  
+  character (len=20)                          :: numproc_char
+  character (len=20)                          :: numtrac_char
+  
+  logical :: dir_e ! boolean existence of directory where output netcdf goes
+  
 #ifdef _HTRACE
   integer htype,pflag
 #endif
+  ! =====================================================
+  ! Begin executable code set distributed memory world...
+  ! =====================================================
+  par=initmp()
 
-  par = initmp()                                                      ! initialize mpi
 
-  call t_initf  ('input.nl',LogPrint=par%masterproc,mpicom=par%comm,masterTask=par%masterproc) ! init timers
-  call t_startf ('Total')                                             ! start performance timer
 
-  call t_startf ('prim_init1')                                        
-  call prim_init1(elem,  fvm, par,dom,tl)                             ! init mesh and element array
-  call t_stopf  ('prim_init1')                                        
+  ! =====================================
+  ! Set number of threads...
+  ! =====================================
+  call t_initf('input.nl',LogPrint=par%masterproc, &
+	Mpicom=par%comm, MasterTask=par%masterproc)
+  call t_startf('Total')
+  call t_startf('prim_init1')
+  call prim_init1(elem,  fvm, par,dom_mt,tl)
+  call t_stopf('prim_init1')
+
+
 
 #ifdef _HTRACE
-  htype = 19; pflag = 0; call TRACE_INIT(htype,pflag)
+  htype = 19
+  pflag = 0
+  call TRACE_INIT(htype,pflag)
 #endif
 
-  call display_proc_and_thread_ids(par)                               ! display ids for first 100 procs
+  ! =====================================
+  ! Begin threaded region so each thread can print info
+  ! =====================================
+#if (! defined ELEMENT_OPENMP)
+  !$OMP PARALLEL DEFAULT(SHARED), PRIVATE(ithr,nets,nete,hybrid)
+#endif
+  ithr=omp_get_thread_num()
+  nets=dom_mt(ithr)%start
+  nete=dom_mt(ithr)%end
 
-  call initialize_vertical_coords(hvcoord)                            ! set vertical coords (CAM inits hvcoord externally)
-
-  call interpolate_and_exit(hybrid)                                   ! interpolate netcdf file, if runtype<0
-
-  if(par%masterproc) print *,"Initializing Primitive Equation."
-
-  !$OMP if(EOMP_OFF) PARALLEL DEFAULT(SHARED), PRIVATE(ithr,hybrid)
-
-  ithr   = omp_get_thread_num()
-  hybrid = hybrid_create(par,ithr,nthreads)
-  nets   = dom(ithr)%start
-  nete   = dom(ithr)%end
-
-  call t_startf('prim_init2')                                         
-  call prim_init2(elem,fvm,hybrid,nets,nete,tl,hvcoord)               ! set initial state
-  call t_stopf('prim_init2')
-
-  !$OMP if(EOMP_OFF) END PARALLEL
-
-  ithr   = omp_get_thread_num()
-  hybrid = hybrid_create(par,ithr,1)
-  call ensure_output_dir_exists(hybrid)                               ! ensure output dir exists
-
-  call initialize_output_files()                                      ! init output files. write first output
-
-  if(integration=='semi_imp' .and. runtype/=1 ) then
-    call leapfrog_bootstrap(elem,hybrid,1,nelemd,tstep,tl,hvcoord)    ! use bootstrap to start semi-implicit runs
+  ! ================================================
+  ! Initialize thread decomposition
+  ! ================================================
+  if (par%rank<100) then 
+     write(6,9) par%rank,ithr,nets,nete 
   endif
+9 format("process: ",i2,1x,"thread: ",i2,1x,"element limits: ",i5," - ",i5)
+#if (! defined ELEMENT_OPENMP)
+  !$OMP END PARALLEL
+#endif
 
-  if(par%masterproc) print *,"Entering main timestepping loop"
+  
+! back to single threaded
+  ithr=omp_get_thread_num()
+  hybrid = hybrid_create(par,ithr,1)
+  nets=1
+  nete=nelemd
 
-  do while(tl%nstep < nEndStep)                                       ! loop until end step
 
-     !$OMP if(EOMP_OFF) PARALLEL DEFAULT(SHARED), PRIVATE(ithr,nets,nete,hybrid)
+  ! ==================================
+  ! Initialize the vertical coordinate  (cam initializes hvcoord externally)
+  ! ==================================
+  hvcoord = hvcoord_init(vfile_mid, vfile_int, .true., hybrid%masterthread, ierr)
+  if (ierr /= 0) then
+     call haltmp("error in hvcoord_init")
+  end if
 
-     ithr   = omp_get_thread_num()
-     hybrid = hybrid_create(par,ithr,nthreads)
-     nets   = dom(ithr)%start
-     nete   = dom(ithr)%end
 
-     nstep  = nextoutputstep(tl)                                      ! get next output step
-
-     do while(tl%nstep < nstep)                                       ! loop until next output step
-        call t_startf('prim_run')                                     
-
-        if (tstep_type>0) then                                        ! advance with    subcycling
-           call prim_run_subcycle(elem,fvm,hybrid,nets,nete,tstep,tl,hvcoord,1)
-        else                                                          ! advance without subcycling
-           call prim_run(elem,hybrid,nets,nete,tstep,tl,hvcoord,"leapfrog")
-        endif
-
-        call t_stopf('prim_run')                                      
-     end do
-
-     !$OMP if(EOMP_OFF) END PARALLEL
-
-     call write_data_to_file()                                        ! output interp or native data
-
-     if((restartfreq>0) .and. (MODULO(tl%nstep,restartfreq)==0)) then 
-       call writeRestart(elem,ithr,1,nelemd,tl)                       ! write restart files occasionally
-     endif
-  end do                                                              ! exit main loop
-
-  if(par%masterproc) print *,"Finished main timestepping loop",tl%nstep
-
-  call prim_finalize(hybrid)                                          ! finalize mpi
-
-  call close_data_files()                                             ! close files, flush output
-
-  call t_stopf('Total')                                               ! halt performance timer
-
-  if(par%masterproc) print *,"writing timing data"
-  call t_prf('HommeTime', par%comm)                                   ! write timer data to file
-
-  if(par%masterproc) print *,"calling t_finalizef"
-  call t_finalizef()
-
-  call haltmp("exiting program...")                                   ! exit
-
-  contains
-
-!_____________________________________________________________________
-! Interpolate data between grids if runtype <0 and PIO_INTERP is active
-
-subroutine interpolate_and_exit(hybrid)
-  type (hybrid_t) :: hybrid
-
-  if(runtype>=0) return
 
 #ifdef PIO_INTERP
-  call interpolate_driver(elem, hybrid)
-  call haltmp('interpolation complete')
+  if(runtype<0) then
+     ! Interpolate a netcdf file from one grid to another
+     call interpolate_driver(elem, hybrid)
+     call haltmp('interpolation complete')
+  end if
 #endif
 
-end subroutine
+  if(par%masterproc) print *,"Primitive Equation Initialization..."
+#if (! defined ELEMENT_OPENMP)
+  !$OMP PARALLEL DEFAULT(SHARED), PRIVATE(ithr,nets,nete,hybrid)
+#endif
+  ithr=omp_get_thread_num()
+  hybrid = hybrid_create(par,ithr,nthreads)
+  nets=dom_mt(ithr)%start
+  nete=dom_mt(ithr)%end
 
-!_____________________________________________________________________
-! Display process and thread ids for first 100 procs
+  call t_startf('prim_init2')
+  call prim_init2(elem, fvm,  hybrid,nets,nete,tl, hvcoord)
+  call t_stopf('prim_init2')
+#if (! defined ELEMENT_OPENMP)
+  !$OMP END PARALLEL
+#endif
 
-subroutine display_proc_and_thread_ids(par)
-
-  type (parallel_t), intent(in) :: par
-
-  integer :: ithr                                                     
-
-  !$OMP if(EOMP_OFF) PARALLEL DEFAULT(SHARED), PRIVATE(ithr,hybrid)
-
-  ! Display process and thread ids for first 100 procs
-  if (par%rank<100) write(6,9) par%rank, omp_get_thread_num(), dom(ithr)%start, dom(ithr)%end 
-9 format("process: ",i2,1x,"thread: ",i2,1x,"element limits: ",i5," - ",i5)
-
-  !$OMP if(EOMP_OFF) END PARALLEL
-
-end subroutine
-
-!_____________________________________________________________________
-! Ensure data output dir exists to avoid error in PIO
-
-subroutine ensure_output_dir_exists(hybrid)
-
-  type (hybrid_t), intent(in) :: hybrid
-
+  ithr=omp_get_thread_num()
+  hybrid = hybrid_create(par,ithr,1)
+  
+  ! Here we get sure the directory specified
+  ! in the input namelist file in the 
+  ! variable 'output_dir' does exist.
+  ! this avoids a abort deep within the PIO 
+  ! library (SIGABRT:signal 6) which in most
+  ! architectures produces a core dump.
   if (hybrid%masterthread) then 
      open(unit=447,file=trim(output_dir) // "/output_dir_test",iostat=ierr)
      if ( ierr==0 ) then
-        print *,'Directory ',output_dir, 'exists: initialing IO'
+        print *,'Directory ',output_dir, ' does exist: initialing IO'
         close(447)
      else
         print *,'Error creating file in directory ',output_dir
         call haltmp("Please be sure the directory exist or specify 'output_dir' in the namelist.")
      end if
   endif
-
-end subroutine
-
-!_____________________________________________________________________
-! Read vertical coordinate coefficients from interface and midpoint files
-
-subroutine initialize_vertical_coords(hvcoord)
-
-  type (hvcoord_t), intent(inout):: hvcoord
-
-  integer :: ithr
-  type (hybrid_t) :: hybrid                               
-
-  ithr    = omp_get_thread_num()
-  hybrid  = hybrid_create(par, ithr, 1)
-  hvcoord = hvcoord_init(vfile_mid, vfile_int, lprint, hybrid%masterthread, ierr)
-  if (ierr /= 0) call haltmp("error in hvcoord_init")
-
-end subroutine
-
-!_____________________________________________________________________
-! Initialize data files & output initial state for NEW runs (not restarts or branch runs)
-
-subroutine initialize_output_files()
+#if 0
+  this ALWAYS fails on lustre filesystems.  replaced with the check above
+  inquire( file=output_dir, exist=dir_e )
+  if ( dir_e ) then
+     if(hybrid%masterthread) print *,'Directory ',output_dir, ' does exist: initialing IO'
+  else
+     if(hybrid%masterthread) print *,'Directory ',output_dir, ' does not exist: stopping'
+     call haltmp("Please get sure the directory exist or specify one via output_dir in the namelist file.")
+  end if
+#endif
+  
 
 #ifdef PIO_INTERP
+  ! initialize history files.  filename constructed with restart time
+  ! so we have to do this after ReadRestart in prim_init2 above
   call interp_movie_init( elem, hybrid, 1, nelemd, hvcoord, tl )
-  if (runtype==0) call interp_movie_output(elem, tl, hybrid, 0d0, 1, nelemd,fvm=fvm, hvcoord=hvcoord)
 #else
   call prim_movie_init( elem, par, hvcoord, tl )
-  if (runtype==0) call prim_movie_output(elem, tl, hvcoord, hybrid, 1,nelemd, fvm)
 #endif
 
-end subroutine
 
-!_____________________________________________________________________
-subroutine close_data_files()
+  ! output initial state for NEW runs (not restarts or branch runs)
+  if (runtype == 0 ) then
+#ifdef PIO_INTERP
+     call interp_movie_output(elem, tl, hybrid, 0d0, 1, nelemd,fvm=fvm, hvcoord=hvcoord)
+#else
+     call prim_movie_output(elem, tl, hvcoord, hybrid, 1,nelemd, fvm)
+#endif
+  endif
 
-if(par%masterproc) print *,"closing history files"
+
+  ! advance_si not yet upgraded to be self-starting.  use leapfrog bootstrap procedure:
+  if(integration == 'semi_imp') then
+     if (runtype /= 1 ) then
+        if(hybrid%masterthread) print *,"Leapfrog bootstrap initialization..."
+        call leapfrog_bootstrap(elem, hybrid,1,nelemd,tstep,tl,hvcoord)
+     endif
+  endif
+  
+
+  if(par%masterproc) print *,"Entering main timestepping loop"
+  do while(tl%nstep < nEndStep)
+#if (! defined ELEMENT_OPENMP)
+     !$OMP PARALLEL DEFAULT(SHARED), PRIVATE(ithr,nets,nete,hybrid)
+#endif
+     ithr=omp_get_thread_num()
+     hybrid = hybrid_create(par,ithr,nthreads)
+     nets=dom_mt(ithr)%start
+     nete=dom_mt(ithr)%end
+     
+     nstep = nextoutputstep(tl)
+     do while(tl%nstep<nstep)
+        call t_startf('prim_run')
+        if (tstep_type>0) then  ! forward in time subcycled methods
+           call prim_run_subcycle(elem, fvm, hybrid,nets,nete, tstep, tl, hvcoord,1)
+        else  ! leapfrog
+           call prim_run(elem, hybrid,nets,nete, tstep, tl, hvcoord, "leapfrog")
+        endif
+        call t_stopf('prim_run')
+     end do
+#if (! defined ELEMENT_OPENMP)
+     !$OMP END PARALLEL
+#endif
+
+     ithr=omp_get_thread_num()
+     hybrid = hybrid_create(par,ithr,1)
+#ifdef PIO_INTERP
+     call interp_movie_output(elem, tl, hybrid, 0d0, 1, nelemd,fvm=fvm, hvcoord=hvcoord)
+#else
+     call prim_movie_output(elem, tl, hvcoord, hybrid, 1,nelemd, fvm)
+#endif
+     ! ============================================================
+     ! Write restart files if required 
+     ! ============================================================
+     if((restartfreq > 0) .and. (MODULO(tl%nstep,restartfreq) ==0)) then 
+        call WriteRestart(elem, ithr,1,nelemd,tl)
+     endif
+  end do
+  if(par%masterproc) print *,"Finished main timestepping loop",tl%nstep
+  call prim_finalize(hybrid)
+  if(par%masterproc) print *,"closing history files"
 #ifdef PIO_INTERP
   call interp_movie_finish
 #else
   call prim_movie_finish
 #endif
 
-end subroutine
 
-!_____________________________________________________________________
-subroutine write_data_to_file()
-
-  ithr   = omp_get_thread_num()
-  hybrid = hybrid_create(par,ithr,1)
-#ifdef PIO_INTERP
-  call interp_movie_output(elem,tl,hybrid,0d0,1,nelemd,fvm=fvm,hvcoord=hvcoord)
-#else
-  call prim_movie_output(elem,tl,hvcoord,hybrid,1,nelemd,fvm)
-#endif
-end subroutine
-
+  call t_stopf('Total')
+  if(par%masterproc) print *,"writing timing data"
+!   write(numproc_char,*) par%nprocs
+!   write(numtrac_char,*) ntrac
+!   call system('mkdir -p '//'time/'//trim(adjustl(numproc_char))//'-'//trim(adjustl(numtrac_char))) 
+!   call t_prf('time/HommeFVMTime-'//trim(adjustl(numproc_char))//'-'//trim(adjustl(numtrac_char)),par%comm)
+  call t_prf('HommeTime', par%comm)
+  if(par%masterproc) print *,"calling t_finalizef"
+  call t_finalizef()
+  call haltmp("exiting program...")
 end program prim_main
+
+
+
+
+
+
+
 
