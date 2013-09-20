@@ -307,9 +307,11 @@
 
           total_found = .false.
 
+#ifdef MPAS_SYNC_TIMERS
           if(associated(domain_info) .and. synced == 0) then
             call mpas_timer_sync()
           endif
+#endif
 
           if(present(timer_ptr) .and. (.not.present(total_ptr))) then
             print *,'timer_write :: timer_ptr valid, but total_ptr is not assigned.'
