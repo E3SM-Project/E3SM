@@ -74,14 +74,14 @@ module li_time_integration_fe
 !>  This routine performs Forward Euler time integration.
 !
 !-----------------------------------------------------------------------
-   subroutine li_time_integrator_forwardeuler(domain, dt, ierr)
+   subroutine li_time_integrator_forwardeuler(domain, deltat, ierr)
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
-      real (kind=RKIND), intent(in) :: dt  !< Input: time step
+      real (kind=RKIND), intent(in) :: deltat  !< Input: time step
 
       !-----------------------------------------------------------------
       !
@@ -136,7 +136,7 @@ module li_time_integration_fe
 
 ! === Calculate Tendencies ========================
       call mpas_timer_start("calculate tendencies")
-      call calculate_tendencies(domain, dt, err_tmp)
+      call calculate_tendencies(domain, deltat, err_tmp)
       ierr = ior(ierr, err_tmp)
       call mpas_timer_stop("calculate tendencies")
 
@@ -144,7 +144,7 @@ module li_time_integration_fe
 ! === Compute new state for prognostic variables ==================================
 ! (once implicit column physics are added (i.e. temp diffusion), these calculations will need to be adjusted to apply to the new values as needed)
       call mpas_timer_start("calc. new prognostic vars")
-      call update_prognostics(domain, dt, err_tmp)
+      call update_prognostics(domain, deltat, err_tmp)
       ierr = ior(ierr, err_tmp)
       call mpas_timer_stop("calc. new prognostic vars")
 
@@ -190,7 +190,7 @@ module li_time_integration_fe
 !
 !-----------------------------------------------------------------------
 
-   subroutine calculate_tendencies(domain, dt, err)
+   subroutine calculate_tendencies(domain, deltat, err)
 
       !-----------------------------------------------------------------
       !
@@ -198,7 +198,7 @@ module li_time_integration_fe
       !
       !-----------------------------------------------------------------
 
-      real (kind=RKIND) :: dt
+      real (kind=RKIND) :: deltat
 
       !-----------------------------------------------------------------
       !
@@ -243,7 +243,7 @@ module li_time_integration_fe
          layerThickness_tend => block % tend % layerThickness % array
 
          ! Calculate thickness tendency using state at time n =========
-         call li_tendency_thickness(mesh, stateOld, layerThickness_tend, dt, dminfo, allowableDt, err)
+         call li_tendency_thickness(mesh, stateOld, layerThickness_tend, deltat, dminfo, allowableDt, err)
 
          block => block % next
       end do
@@ -331,7 +331,7 @@ module li_time_integration_fe
 !
 !-----------------------------------------------------------------------
 
-   subroutine update_prognostics(domain, dt, err)
+   subroutine update_prognostics(domain, deltat, err)
 
       !-----------------------------------------------------------------
       !
@@ -339,7 +339,7 @@ module li_time_integration_fe
       !
       !-----------------------------------------------------------------
 
-      real (kind=RKIND) :: dt
+      real (kind=RKIND) :: deltat
 
       !-----------------------------------------------------------------
       !
@@ -404,7 +404,7 @@ module li_time_integration_fe
          !!!stateNew % sup_thickness % array(1,:,:) = (stateOld % tracers % array(stateOld % index_temperature,:,:) * layerThicknessOld  + tracer_tendency(stateOld % index_temperature, :, :) * dt / SecondsInYear) / (layerThicknessNew+1.0e-12)
 
 
-         layerThicknessNew = layerThicknessOld + layerThickness_tend * dt !!!(dt / SecondsInYear)
+         layerThicknessNew = layerThicknessOld + layerThickness_tend * deltat 
          thicknessNew = sum(layerThicknessNew, 1)     
 
 
