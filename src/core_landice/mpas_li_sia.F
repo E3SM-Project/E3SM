@@ -266,6 +266,13 @@ contains
          endif
       end do  ! edges  
       
+
+
+     ! === error check
+     if (err > 0) then
+         write (0,*) "An error has occurred in li_sia_solve."
+     endif
+
    !--------------------------------------------------------------------
 
    end subroutine li_sia_solve

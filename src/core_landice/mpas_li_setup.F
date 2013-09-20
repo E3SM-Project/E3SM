@@ -298,6 +298,8 @@ contains
       !
       !-----------------------------------------------------------------
 
+      err = 0
+
       ! If dt in years is supplied, convert it to seconds and use it.  Otherwise use dt in seconds
       ! li_deltat is a module variable
       if (config_dt_years == 0.0_RKIND) then
@@ -306,6 +308,11 @@ contains
          li_deltat = config_dt_years * (365.0 * 24.0 * 3600.0)  
          ! TODO Should seconds in a year be dependent on calendar used?
          ! TODO Should seconds in a year be a parameter/module variable somewhere
+      endif
+
+      if (li_deltat < 0.0_RKIND) then
+         err = 1
+         write(0,*) 'Error: negative time step was specified.'
       endif
 
    !--------------------------------------------------------------------

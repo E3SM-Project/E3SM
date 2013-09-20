@@ -126,6 +126,11 @@ module li_tendency
       real (kind=RKIND), dimension(:), pointer :: sfcMassBal
 !!!      real (kind=RKIND), dimension(:), pointer :: iceArea, areaCell, marineBasalMassBal
       integer, dimension(:), pointer :: cellMask
+      integer :: err_tmp
+
+
+      err = 0
+      err_tmp = 0
 
      nVertLevels = mesh % nVertLevels
      sfcMassBal => mesh % sfcMassBal % array
@@ -148,7 +153,8 @@ module li_tendency
 !!!        !   state % layerThickness % array, state % thickness % array, thickness_tend, dt, err)
 
         call tend_layerthickness_fo_upwind(mesh, state % normalVelocity % array, &
-             state % layerThicknessEdge % array, state % edgeMask % array, layerThickness_tend, dt, allowableDt, err)       
+             state % layerThicknessEdge % array, state % edgeMask % array, layerThickness_tend, dt, allowableDt, err_tmp)       
+
 
         !!! Experimental implementation of using FCT for thickness tendency calculation
         ! This requires additional work, including a separate tendency calculation for 
@@ -178,8 +184,9 @@ module li_tendency
         ! Do nothing
      case default  !===================================================
         write(0,*) trim(config_thickness_advection), ' is not a valid thickness advection option.'
-        call mpas_dmpar_abort(dminfo)
+        err_tmp = 1
      end select  !===================================================
+     err = ior(err,err_tmp)
 
 
      ! Add the MB to the tendencies
@@ -187,8 +194,6 @@ module li_tendency
      case ('None')  !===================================================
         ! Do nothing - don't add the MB
      case default
-
-
 ! Commenting BMB out for now.
 !!!        ! Make some potential adjustments to BMB before applying them.
 !!!        !    It's ok to overwrite the values with 0's here, because each time step
@@ -208,7 +213,6 @@ module li_tendency
 !!!              mesh % marineBasalMassBal % array = 0.0_RKIND
 !!!        end where
 
-
         ! Add surface mass balance to tendency
         ! TODO: Need to decide how to deal with negative SMB that eliminates top layer or all ice (check for negative thickness?)
         layerThickness_tend(1,:) = layerThickness_tend(1,:) + sfcMassBal   ! (tendency in meters per year)
@@ -220,8 +224,12 @@ module li_tendency
 !!!                                    + mesh % marineBasalMassBal % array    ! (tendency in meters per year)
 !!!        ! TODO Add in grounded ice basal mass balance once temperature diffusion is calculated
 !!!        ! TODO THIS MIGHT RESULT IN  NEGATIVE LAYER THICKNESS!
-
      end select
+
+     ! === error check
+     if (err > 0) then
+         write (0,*) "An error has occurred in li_tendency_thickness."
+     endif
 
    !--------------------------------------------------------------------
    end subroutine li_tendency_thickness
@@ -658,6 +666,10 @@ module li_tendency
       !end do
       !print *,'SUM OF VOLUME TENDENCY  ======', tendVolSum
 
+      ! === error check
+      if (err > 0) then
+          write (0,*) "An error has occurred in tend_layerThickness_fo_upwind."
+      endif
 
    !--------------------------------------------------------------------
 

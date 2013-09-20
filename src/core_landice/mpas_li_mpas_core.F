@@ -98,11 +98,13 @@ module mpas_core
       real (kind=RKIND) :: deltat
       type (block_type), pointer :: block
 
-      integer :: i, err, err_tmp
+      integer :: i, err, err_tmp, globalErr
 
 
 
       err = 0
+      err_tmp = 0
+      globalErr = 0
 
       !
       ! Initialize core
@@ -115,7 +117,8 @@ module mpas_core
       ! === Initialize modules ===
       ! ===
 
-      call simulation_clock_init(domain, deltat, startTimeStamp)
+      call simulation_clock_init(domain, deltat, startTimeStamp, err_tmp)
+      err = ior(err, err_tmp)
 
       call mpas_timer_init(domain)
 
@@ -138,8 +141,8 @@ module mpas_core
       current_outfile_frames = 0
 
       ! check for errors and exit
-      if(err == 1) then
-          print *, "An error has occurred in mpas_core_init. Aborting..."
+      call mpas_dmpar_max_int(domain % dminfo, err, globalErr)  ! Find out if any blocks got an error
+      if (globalErr > 0) then
           call mpas_dmpar_global_abort("An error has occurred in mpas_core_init. Aborting...")
       endif
 
@@ -204,16 +207,21 @@ module mpas_core
       real (kind=RKIND) :: deltat
       type (MPAS_Time_Type) :: currTime
       character(len=StrKIND) :: timeStamp
-      integer :: ierr, err_tmp
+      integer :: err, err_tmp, globalErr
       logical :: solveVelo
       ! Note: li_deltat is a module variable in li_setup   
 
 
+      err = 0
+      err_tmp = 0
+      globalErr = 0
+
+
       call mpas_timer_start("land ice core run")
       currTime = mpas_get_clock_time(clock, MPAS_NOW, err_tmp)
-      ierr = ior(ierr, err_tmp)
+      err = ior(err, err_tmp)
       call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=err_tmp)
-      ierr = ior(ierr, err_tmp)         
+      err = ior(err, err_tmp)         
       write(0,*) 'Initial timestep ', trim(timeStamp)
       write(6,*) 'Initial timestep ', trim(timeStamp)
 
@@ -236,8 +244,8 @@ module mpas_core
          solveVelo = .true.
       endif
 
-      call li_calculate_diagnostic_vars(domain, timeLevel=1, solveVelo=solveVelo, ierr=err_tmp)
-      ierr = ior(ierr, err_tmp)
+      call li_calculate_diagnostic_vars(domain, timeLevel=1, solveVelo=solveVelo, err=err_tmp)
+      err = ior(err, err_tmp)
 
       call mpas_timer_stop("initial state calculation")
 
@@ -269,8 +277,9 @@ module mpas_core
          itimestep = itimestep + 1
          call mpas_advance_clock(clock)
 
-         currTime = mpas_get_clock_time(clock, MPAS_NOW, ierr)
-         call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)         
+         currTime = mpas_get_clock_time(clock, MPAS_NOW, err_tmp)
+         call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=err_tmp)         
+         err = ior(err, err_tmp)
          write(0,*) 'Doing timestep ', trim(timeStamp)
          write(6,*) 'Doing timestep ', trim(timeStamp)
 
@@ -288,7 +297,8 @@ module mpas_core
          ! === Perform Timestep
          ! ===
          call mpas_timer_start("time integration")
-         call mpas_timestep(domain, itimestep, li_deltat, timeStamp)
+         call mpas_timestep(domain, itimestep, li_deltat, timeStamp, err_tmp)
+         err = ior(err,err_tmp)
 
          ! Move time level 2 fields back into time level 1 for next time step
          block_ptr => domain % blocklist
@@ -304,9 +314,9 @@ module mpas_core
          ! ===
          ! === Write Output, if needed
          ! ===
-         if (mpas_is_alarm_ringing(clock, outputAlarmID, ierr=ierr)) then
+         if (mpas_is_alarm_ringing(clock, outputAlarmID, ierr=err_tmp)) then
             call mpas_timer_start("write output")
-            call mpas_reset_clock_alarm(clock, outputAlarmID, ierr=ierr)
+            call mpas_reset_clock_alarm(clock, outputAlarmID, ierr=err_tmp)
             ! output_frame will always be > 1 here unless it was reset after the maximum number of frames per outfile was reached
             ! MJH: See old code for adjustments made here to deal with some obscure, specific use-cases
             if(output_frame == 1) then
@@ -316,13 +326,14 @@ module mpas_core
             call write_output_frame(output_obj, output_frame, domain)
             call mpas_timer_stop("write output")
          end if
+         err = ior(err, err_tmp)
 
          ! ===
          ! === Write Restart, if needed
          ! ===
-         if (mpas_is_alarm_ringing(clock, restartAlarmID, ierr=ierr)) then
+         if (mpas_is_alarm_ringing(clock, restartAlarmID, ierr=err_tmp)) then
             call mpas_timer_start("write restart")
-            call mpas_reset_clock_alarm(clock, restartAlarmID, ierr=ierr)
+            call mpas_reset_clock_alarm(clock, restartAlarmID, ierr=err_tmp)
 
             ! Write one restart time per file
             call mpas_output_state_init(restart_obj, domain, "RESTART", trim(timeStamp))
@@ -330,14 +341,15 @@ module mpas_core
             call mpas_output_state_finalize(restart_obj, domain % dminfo)
             call mpas_timer_stop("write restart")
          end if
+         err = ior(err, err_tmp)
 
       end do
       call mpas_timer_stop("land ice core run")
 
       ! === error check and exit
-      if (ierr == 1) then
-          print *, "An error has occurred in mpas_core_run. Aborting..."
-          call mpas_dmpar_abort(domain % dminfo)
+      call mpas_dmpar_max_int(domain % dminfo, err, globalErr)  ! Find out if any blocks got an error
+      if (globalErr > 0) then
+          call mpas_dmpar_global_abort("An error has occurred in mpas_core_run. Aborting...")
       endif
 
    !--------------------------------------------------------------------
@@ -388,18 +400,22 @@ module mpas_core
       ! local variables
       !
       !-----------------------------------------------------------------
-      integer :: ierr, err_tmp
+      integer :: err, err_tmp, globalErr
  
-      call li_velocity_finalize(domain, ierr)
-      ierr = ior(ierr, err_tmp)
+      err = 0
+      err_tmp = 0
+      globalErr = 0
 
-      call mpas_destroy_clock(clock, ierr)
-      ierr = ior(ierr, err_tmp)
+      call li_velocity_finalize(domain, err_tmp)
+      err = ior(err, err_tmp)
+
+      call mpas_destroy_clock(clock, err_tmp)
+      err = ior(err, err_tmp)
 
       ! === error check and exit
-      if (ierr == 1) then
-          print *, "An error has occurred in mpas_core_finalize. Aborting..."
-          call mpas_dmpar_abort(domain % dminfo)
+      call mpas_dmpar_max_int(domain % dminfo, err, globalErr)  ! Find out if any blocks got an error
+      if (globalErr > 0) then
+          call mpas_dmpar_global_abort("An error has occurred in mpas_core_finalize. Aborting...")
       endif
 
    !--------------------------------------------------------------------
@@ -473,6 +489,7 @@ module mpas_core
 
 
       err = 0
+      err_tmp = 0
 
       state => block % state % time_levs(1) % state  ! initial state
 
@@ -521,10 +538,9 @@ module mpas_core
       err = ior(err, err_tmp)
 
 
-      ! === error check and exit
-      if(err == 1) then
-          print *, "An error has occurred in mpas_init_block. Aborting..."
-          call mpas_dmpar_abort(dminfo)
+      ! === error check
+      if (err > 0) then
+          write (0,*) "An error has occurred in mpas_init_block."
       endif
 
    !--------------------------------------------------------------------
@@ -544,7 +560,7 @@ module mpas_core
 !>  This routine performs a time step for the land ice core.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_timestep(domain, itimestep, dt, timeStamp)
+   subroutine mpas_timestep(domain, itimestep, dt, timeStamp, err)
    
       use mpas_grid_types
       use li_time_integration
@@ -574,6 +590,7 @@ module mpas_core
       ! output variables
       !
       !-----------------------------------------------------------------
+      integer, intent(out) :: err !< Output: error flag
 
       !-----------------------------------------------------------------
       !
@@ -581,10 +598,15 @@ module mpas_core
       !
       !-----------------------------------------------------------------
       type (block_type), pointer :: block_ptr
-      integer :: ierr
-   
+      integer :: err_tmp
 
-      call li_timestep(domain, dt, timeStamp, ierr)
+   
+      err = 0
+      err_tmp = 0
+
+
+      call li_timestep(domain, dt, timeStamp, err_tmp)
+      err = ior(err,err_tmp)
    
 !!!      if (config_stats_interval .gt. 0) then
 !!!          if(mod(itimestep, config_stats_interval) == 0) then
@@ -618,6 +640,12 @@ module mpas_core
       !            timeStamp, dt)
       !   call mpas_timer_stop("global_diagnostics")
       !end if
+
+      ! === error check
+      if (err > 0) then
+          write (0,*) "An error has occurred in mpas_timestep."
+      endif
+
    
    end subroutine mpas_timestep
    
@@ -636,7 +664,7 @@ module mpas_core
 !
 !-----------------------------------------------------------------------
 
-   subroutine simulation_clock_init(domain, dt, startTimeStamp)
+   subroutine simulation_clock_init(domain, dt, startTimeStamp, ierr)
 
       implicit none
 
@@ -660,6 +688,7 @@ module mpas_core
       !
       !-----------------------------------------------------------------
       character(len=*), intent(out) :: startTimeStamp   !< Output: time stamp at start 
+      integer, intent(out) :: ierr !< Output: error flag
 
       !-----------------------------------------------------------------
       !
@@ -668,9 +697,9 @@ module mpas_core
       !-----------------------------------------------------------------
       type (MPAS_Time_Type) :: startTime, stopTime, alarmStartTime
       type (MPAS_TimeInterval_type) :: runDuration, timeStep, alarmTimeStep
-      integer :: ierr
 
 
+      ierr = 0
 
       call mpas_set_time(curr_time=startTime, dateTimeString=config_start_time, ierr=ierr)
       call mpas_set_timeInterval(timeStep, dt=dt, ierr=ierr)

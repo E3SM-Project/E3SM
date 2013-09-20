@@ -77,7 +77,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine li_calculate_diagnostic_vars(domain, timeLevel, solveVelo, ierr)
+   subroutine li_calculate_diagnostic_vars(domain, timeLevel, solveVelo, err)
 
       use mpas_vector_reconstruction
 
@@ -103,7 +103,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer, intent(out) :: ierr !< Output: error flag
+      integer, intent(out) :: err !< Output: error flag
 
       !-----------------------------------------------------------------
       !
@@ -117,13 +117,15 @@ contains
 !!!      integer :: blockVertexMaskChanged, procVertexMaskChanged, anyVertexMaskChanged
 
 
+      err = 0
+
       ! ===
       ! === Diagnostic solve of variables prior to velocity 
       ! ===
 
       call mpas_timer_start("calc. diagnostic vars except vel")
       call diagnostic_solve_before_velocity(domain, timeLevel, err_tmp)  ! perhaps velocity solve should move in here.
-      ierr = ior(ierr, err_tmp)
+      err = ior(err, err_tmp)
 ! This information is only needed for some external dycores.  This can be added back in when they are implemented.
 ! Should make this conditional to avoid unnecessary MPI comms.
 !!!      block => domain % blocklist
@@ -172,7 +174,8 @@ contains
 !!!             !print *, 'anyVertexMaskChanged: ', anyVertexMaskChanged
 
 
-             call li_velocity_solve(mesh, state, ierr)    ! ****** Calculate Velocity ******
+             call li_velocity_solve(mesh, state, err_tmp)    ! ****** Calculate Velocity ******
+             err = ior(err, err_tmp)
 
              block => block % next
           end do
@@ -218,7 +221,9 @@ contains
          mesh => block % mesh
          ! State at desired time level 
          state => block % state % time_levs(timeLevel) % state
-         call diagnostic_solve_after_velocity(mesh, state, ierr)  ! Some diagnostic variables require velocity to compute
+         call diagnostic_solve_after_velocity(mesh, state, err)  ! Some diagnostic variables require velocity to compute
+         err = ior(err, err_tmp)
+
          block => block % next
       end do
 
@@ -229,7 +234,7 @@ contains
       call mpas_timer_stop("calc. diagnostic vars except vel")
 
       ! === error check and exit
-      if (ierr == 1) then
+      if (err == 1) then
           print *, "An error has occurred in li_calculate_diagnostic_vars. Aborting..."
           !call mpas_dmpar_abort(dminfo)
       endif
@@ -304,6 +309,7 @@ contains
 
 
       err = 0
+      err_tmp = 0
 
       block => domain % blocklist
       do while (associated(block))
@@ -313,7 +319,7 @@ contains
          state => block % state % time_levs(timeLevel) % state
 
          ! Calculate masks - needs to happen before calculating lower surface so we know where the ice is floating
-         call li_calculate_mask(mesh, state, err)
+         call li_calculate_mask(mesh, state, err_tmp)
          err = ior(err, err_tmp)
 
          block => block % next
@@ -380,6 +386,12 @@ contains
           block => block % next
       end do
 
+
+      ! === error check
+      if (err > 0) then
+          write (0,*) "An error has occurred in diagnostic_solve_before_velocity."
+      endif
+
    !--------------------------------------------------------------------
    end subroutine diagnostic_solve_before_velocity
 
@@ -434,6 +446,8 @@ contains
       integer, dimension(:,:), pointer :: cellsOnEdge
       integer :: nVertLevels, iEdge, nEdges, cell1, cell2, k
       real (kind=RKIND) :: VelSign
+
+      err = 0
 
       nEdges = mesh % nEdges
       nVertLevels = mesh % nVertLevels
@@ -533,7 +547,6 @@ contains
       ! local variables
       !
       !-----------------------------------------------------------------
-
       ! pointers to mesh arrays
       real (kind=RKIND), dimension(:), pointer :: layerThicknessFractions, layerInterfaceSigma
       ! local arrays
@@ -545,6 +558,8 @@ contains
       integer :: iCell, k, k1, k2, nt
       ! stuff for making calculations
       real(kind=RKIND) :: thisThk, zhi, zlo, hOverlap
+
+      err = 0
 
       nCells = mesh % nCells
       nVertLevels = mesh % nVertLevels

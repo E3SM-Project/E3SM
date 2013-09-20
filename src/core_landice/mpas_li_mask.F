@@ -134,6 +134,8 @@ contains
       integer, dimension(:), pointer :: cellMask
       real(KIND=RKIND), dimension(:), pointer :: thickness
 
+      err = 0
+
       ! Assign pointers and variables
       cellMask => state % cellMask % array
       thickness => state % thickness % array
@@ -375,6 +377,11 @@ contains
       end do
 
       ! vertexMask and edgeMask needs halo updates before they can be used.  Halo updates need to occur outside of block loops.  
+
+      ! === error check
+      if (err > 0) then
+          write (0,*) "An error has occurred in li_calculate_mask."
+      endif
 
    !--------------------------------------------------------------------
    end subroutine li_calculate_mask
