@@ -102,20 +102,25 @@ module li_time_integration
       !-----------------------------------------------------------------
       type (block_type), pointer :: block
       type (state_type), pointer :: state
+      integer :: err_tmp
 
-      
+      err = 0
+      err_tmp = 0
 
       !write(*,*) 'Using ', trim(config_time_integration), ' time integration.'
       select case (config_time_integration)
       case ('forward_euler')
-         call li_time_integrator_forwardeuler(domain, dt, err)
+         call li_time_integrator_forwardeuler(domain, dt, err_tmp)
+         err_tmp = 1
       case ('rk4')
          write(0,*) trim(config_time_integration), ' is not currently supported.'
          call mpas_dmpar_abort(domain % dminfo)
+         err_tmp = 1
       case default
          write(0,*) trim(config_time_integration), ' is not a valid land ice time integration option.'
-         call mpas_dmpar_abort(domain % dminfo)
+         err_tmp = 1
       end select
+      err = ior(err,err_tmp)
 
       block => domain % blocklist
       do while (associated(block))
@@ -130,6 +135,11 @@ module li_time_integration
 
          block => block % next
       end do
+
+      ! === error check
+      if (err > 0) then
+          write (0,*) "An error has occurred in li_timestep."
+      endif
 
    !--------------------------------------------------------------------
    end subroutine li_timestep

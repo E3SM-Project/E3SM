@@ -74,7 +74,7 @@ module li_time_integration_fe
 !>  This routine performs Forward Euler time integration.
 !
 !-----------------------------------------------------------------------
-   subroutine li_time_integrator_forwardeuler(domain, deltat, ierr)
+   subroutine li_time_integrator_forwardeuler(domain, deltat, err)
 
       !-----------------------------------------------------------------
       !
@@ -98,7 +98,7 @@ module li_time_integration_fe
       !
       !-----------------------------------------------------------------
 
-      integer, intent(out) :: ierr !< Output: error flag
+      integer, intent(out) :: err !< Output: error flag
 
       !-----------------------------------------------------------------
       !
@@ -137,7 +137,7 @@ module li_time_integration_fe
 ! === Calculate Tendencies ========================
       call mpas_timer_start("calculate tendencies")
       call calculate_tendencies(domain, deltat, err_tmp)
-      ierr = ior(ierr, err_tmp)
+      err = ior(err, err_tmp)
       call mpas_timer_stop("calculate tendencies")
 
 
@@ -145,7 +145,7 @@ module li_time_integration_fe
 ! (once implicit column physics are added (i.e. temp diffusion), these calculations will need to be adjusted to apply to the new values as needed)
       call mpas_timer_start("calc. new prognostic vars")
       call update_prognostics(domain, deltat, err_tmp)
-      ierr = ior(ierr, err_tmp)
+      err = ior(err, err_tmp)
       call mpas_timer_stop("calc. new prognostic vars")
 
 
@@ -155,14 +155,16 @@ module li_time_integration_fe
       ! If needed, that guess should be inserted into normalVelocity
       ! in time level 2 before calling li_calculate_diagnostic_vars.
 
-      call li_calculate_diagnostic_vars(domain, timeLevel=2, solveVelo=.true., ierr=err_tmp)
-      ierr = ior(ierr, err_tmp)
+      call li_calculate_diagnostic_vars(domain, timeLevel=2, solveVelo=.true., err=err_tmp)
+      err = ior(err, err_tmp)
 
 
 ! === Cleanup & Misc. =============================
 
-
-! ================================
+      ! === error check
+      if (err == 1) then
+          write (0,*) "An error has occurred in li_time_integrator_forwardeuler."
+      endif
 
    !--------------------------------------------------------------------
    end subroutine li_time_integrator_forwardeuler
@@ -271,8 +273,7 @@ module li_time_integration_fe
       endif
 
       if (err .gt. 0) then
-           write(0,*) 'Abort: Error in calculating thickness tendency (possibly CFL violation)'
-           call mpas_dmpar_abort(dminfo)
+           write(0,*) 'Error in calculating thickness tendency (possibly CFL violation)'
       endif
 
 
@@ -311,6 +312,12 @@ module li_time_integration_fe
 !!!                                         size(tracer_tendency,dim=1), mesh % nVertLevels, mesh % nCells, &
 !!!                                         domain % blocklist % parinfo % cellsToSend, domain % blocklist % parinfo % cellsToRecv)
 !!!      end select
+
+
+      ! === error check
+      if (err > 0) then
+          write (0,*) "An error has occurred in calculate_tendencies."
+      endif
 
    !--------------------------------------------------------------------
    end subroutine calculate_tendencies
@@ -464,6 +471,13 @@ module li_time_integration_fe
 
          block => block % next
       end do
+
+
+      ! === error check
+      if (err > 0) then
+          write (0,*) "An error has occurred in update_prognostics."
+      endif
+
 
    !--------------------------------------------------------------------
    end subroutine update_prognostics

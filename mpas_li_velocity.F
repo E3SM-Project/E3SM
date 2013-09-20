@@ -102,9 +102,10 @@ contains
       ! local variables
       !
       !-----------------------------------------------------------------
+      integer :: err_tmp
 
       err = 0
-      
+
       write(*,*) 'Using ', trim(config_velocity_solver), ' dynamical core.'
       select case (config_velocity_solver)
       case ('sia')
@@ -121,6 +122,11 @@ contains
           err = 1
           return
       end select
+
+      ! === error check
+      if (err > 0) then
+          write (0,*) "An error has occurred in li_timestep."
+      endif
 
    !--------------------------------------------------------------------
    end subroutine li_velocity_init
@@ -187,6 +193,10 @@ contains
           return
       end select
 
+      ! === error check
+      if (err > 0) then
+          write (0,*) "An error has occurred in li_velocity_block_init."
+      endif
 
    !--------------------------------------------------------------------
 
@@ -278,6 +288,11 @@ contains
 !!!         err = 0  ! a hack to let the code continue until this can be fixed in the velocity solver
 !!!      end if
 
+      ! === error check
+      if (err > 0) then
+          write (0,*) "An error has occurred in li_velocity_solve."
+      endif
+
    !--------------------------------------------------------------------
    end subroutine li_velocity_solve
 
@@ -342,6 +357,11 @@ contains
           err = 1
           return
       end select
+
+      ! === error check
+      if (err > 0) then
+          write (0,*) "An error has occurred in li_velocity_finalize."
+      endif
 
    !--------------------------------------------------------------------
    end subroutine li_velocity_finalize
