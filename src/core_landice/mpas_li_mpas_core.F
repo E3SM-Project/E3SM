@@ -64,6 +64,7 @@ module mpas_core
       use mpas_configure
       use mpas_grid_types
       use li_velocity
+      use li_setup
 !!!      use mpas_ocn_tracer_advection
 !!!      use li_global_diagnostics
    
@@ -94,7 +95,7 @@ module mpas_core
       ! local variables
       !
       !-----------------------------------------------------------------
-      real (kind=RKIND) :: dt
+      real (kind=RKIND) :: deltat
       type (block_type), pointer :: block
 
       integer :: i, err, err_tmp
@@ -107,18 +108,14 @@ module mpas_core
       ! Initialize core
       !
 
-      ! If dt in years is supplied, convert it to seconds and use it.  Otherwise use dt in seconds
-      if (config_dt_years .eq. 0.0_RKIND) then
-         dt = config_dt_seconds
-      else
-         dt = config_dt_years * (365.0 * 24.0 * 3600.0)
-      endif
+      call li_setup_timestep(err_tmp)
+      err = ior(err, err_tmp)
 
       ! ===
       ! === Initialize modules ===
       ! ===
 
-      call simulation_clock_init(domain, dt, startTimeStamp)
+      call simulation_clock_init(domain, deltat, startTimeStamp)
 
       call mpas_timer_init(domain)
 
@@ -133,7 +130,7 @@ module mpas_core
       ! ===
       block => domain % blocklist
       do while (associated(block))
-         call mpas_init_block(block, block % mesh, dt, startTimeStamp, domain % dminfo)
+         call mpas_init_block(block, block % mesh, startTimeStamp, domain % dminfo)
 
          block => block % next
       end do
@@ -171,6 +168,7 @@ module mpas_core
       use mpas_io_output
       use mpas_timer
       use li_diagnostic_vars
+      use li_setup
 !!!      use li_annual_forcing
    
       implicit none
@@ -203,15 +201,13 @@ module mpas_core
       !-----------------------------------------------------------------
       integer :: itimestep
       type (block_type), pointer :: block_ptr
-      real (kind=RKIND) :: dt
+      real (kind=RKIND) :: deltat
       type (MPAS_Time_Type) :: currTime
       character(len=StrKIND) :: timeStamp
       integer :: ierr, err_tmp
       logical :: solveVelo
-   
+      ! Note: li_deltat is a module variable in li_setup   
 
-!!!!      dt = ??????
-      dt = 1.0
 
       call mpas_timer_start("land ice core run")
       currTime = mpas_get_clock_time(clock, MPAS_NOW, err_tmp)
@@ -220,7 +216,6 @@ module mpas_core
       ierr = ior(ierr, err_tmp)         
       write(0,*) 'Initial timestep ', trim(timeStamp)
       write(6,*) 'Initial timestep ', trim(timeStamp)
-
 
 
       ! ===
@@ -293,7 +288,7 @@ module mpas_core
          ! === Perform Timestep
          ! ===
          call mpas_timer_start("time integration")
-         call mpas_timestep(domain, itimestep, dt, timeStamp)
+         call mpas_timestep(domain, itimestep, li_deltat, timeStamp)
 
          ! Move time level 2 fields back into time level 1 for next time step
          block_ptr => domain % blocklist
@@ -431,7 +426,7 @@ module mpas_core
 !>  This routine initializes blocks for the land ice core.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_init_block(block, mesh, dt, startTimeStamp, dminfo)
+   subroutine mpas_init_block(block, mesh, startTimeStamp, dminfo)
    
       use mpas_grid_types
       use mpas_rbf_interpolation
@@ -447,7 +442,6 @@ module mpas_core
       ! input variables
       !
       !-----------------------------------------------------------------
-      real (kind=RKIND), intent(in) :: dt     !< Input: time step
       type (dm_info), intent(in) :: dminfo    !< Input: Domain info
       character(len=*), intent(in) :: startTimeStamp   !< Input: time stamp at start 
 
