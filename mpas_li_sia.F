@@ -240,7 +240,7 @@ contains
       basalVelocity = 0.0_RKIND  ! Assume no sliding
 
       ! Calculate ratefactor (A) at edge - TODO This should be calculated external to this subroutine and as a function of temperature 
-      ratefactor = 1.0e-16_RKIND
+      ratefactor = 6.8e-24_RKIND  ! units of s^{-1} Pa^{-3}
 
       ! Loop over edges
       do iEdge = 1, nEdges
