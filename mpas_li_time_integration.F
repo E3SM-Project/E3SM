@@ -111,7 +111,6 @@ module li_time_integration
       select case (config_time_integration)
       case ('forward_euler')
          call li_time_integrator_forwardeuler(domain, dt, err_tmp)
-         err_tmp = 1
       case ('rk4')
          write(0,*) trim(config_time_integration), ' is not currently supported.'
          call mpas_dmpar_abort(domain % dminfo)
