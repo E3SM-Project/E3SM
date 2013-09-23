@@ -262,7 +262,7 @@ contains
       edgeMask => state % edgeMask % array
 
       select case (config_velocity_solver)
-      case ('SIA')
+      case ('sia')
           call li_sia_solve(mesh, state, err)
 !!!      case ('L1L2')
 !!!          call li_lifev_solve(mesh, state, err)
@@ -344,7 +344,7 @@ contains
       err = 0
 
       select case (config_velocity_solver)
-      case ('SIA')
+      case ('sia')
           call li_sia_finalize(domain, err)
 !!!      case ('L1L2')
 !!!          call li_lifev_finalize(domain, err)
