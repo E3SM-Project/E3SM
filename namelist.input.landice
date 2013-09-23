@@ -42,7 +42,7 @@
    config_proc_decomp_file_prefix = 'graph.info.part.'
 /
 
-$debug
+&debug
    config_print_thickness_advection_info = .false.
 /
 
