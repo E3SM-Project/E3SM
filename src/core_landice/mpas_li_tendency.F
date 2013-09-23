@@ -637,9 +637,8 @@ module li_tendency
             else
                maxAllowableDt = 1.0e36_RKIND
             endif
-!!!            if ( maxAllowableDt < (dt/SecondsInYear) ) then
-            if ( maxAllowableDt < (dt) ) then
-                 write(0,*) 'CFL violation at level, edge', k, iEdge                      
+            if ( maxAllowableDt < dt ) then
+                 !write(0,*) 'CFL violation at level, edge', k, iEdge                      
                  err = err + 1
             endif
             MinOfMaxAllowableDt = min(MinOfMaxAllowableDt, maxAllowableDt)
@@ -651,12 +650,12 @@ module li_tendency
       end do
 
       if (err > 0) then
-         write(0,*) 'CFL violation on this processor on ', err, ' level-edges!  Maximum allowable time step (yrs) for this processor is ', MinOfMaxAllowableDt
+         write(0,*) 'CFL violation on this processor on ', err, ' level-edges!  Maximum allowable time step (seconds) for this processor is ', MinOfMaxAllowableDt
          err = 1
       endif
 
       if (config_print_thickness_advection_info .eqv. .true.) then
-         write(6,*) '  Maximum allowable time step (yrs) on this processor is ~', MinOfMaxAllowableDt
+         write(6,*) '  Maximum allowable time step (seconds) on this processor is ~', MinOfMaxAllowableDt
       endif
 
       ! Optional check for mass conservation
