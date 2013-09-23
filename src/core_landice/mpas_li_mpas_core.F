@@ -231,7 +231,7 @@ module mpas_core
 
       ! On a restart, we already have the exact velocity field we need, 
       ! so don't do the expensive calculation again.
-      if (.not.(config_do_restart)) then
+      if (config_do_restart) then
          solveVelo = .false.
       else
       ! Otherwise, we need to calculate velocity for the initial state
