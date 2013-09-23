@@ -95,7 +95,6 @@ module mpas_core
       ! local variables
       !
       !-----------------------------------------------------------------
-      real (kind=RKIND) :: deltat
       type (block_type), pointer :: block
 
       integer :: i, err, err_tmp, globalErr
@@ -117,7 +116,7 @@ module mpas_core
       ! === Initialize modules ===
       ! ===
 
-      call simulation_clock_init(domain, deltat, startTimeStamp, err_tmp)
+      call simulation_clock_init(domain, li_deltat, startTimeStamp, err_tmp)
       err = ior(err, err_tmp)
 
       call mpas_timer_init(domain)
@@ -204,7 +203,6 @@ module mpas_core
       !-----------------------------------------------------------------
       integer :: itimestep
       type (block_type), pointer :: block_ptr
-      real (kind=RKIND) :: deltat
       type (MPAS_Time_Type) :: currTime
       character(len=StrKIND) :: timeStamp
       integer :: err, err_tmp, globalErr
