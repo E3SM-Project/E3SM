@@ -221,7 +221,7 @@ contains
       refBottomDepth => mesh % refBottomDepth % array
 
 !  allocate local T,S tracer field
-      allocate(tracerTS(2,nVertLevels,nCells))
+      allocate(tracerTS(2,nVertLevels,nCells+1))
 
 !  fill tracerTS
       if (displacement_type == 'surfaceDisplaced') then

@@ -1104,6 +1104,9 @@
 			<var name="salinitySurfaceValue" array_group="surfaceValues" streams="o" units="PSU" name_in_code="salinitySurfaceValue"
 				description="salinity extrapolated to ocean surface"
 			/>
+			<var name="tracer1SurfaceValue" array_group="surfaceValues" streams="o" units="na"
+				description="Tracer of 1 extrapolated to ocean surface"
+			/>
 		</var_array>
 		<var_array name="surfaceVelocity" type="real" dimensions="nCells Time">
 			<var name="zonalSurfaceVelocity" array_group="vel_zonal" units="m s^{-1}"
