@@ -71,7 +71,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_pressure_grad_tend(grid, pressure, zMid, density, tend, err)!{{{
+   subroutine ocn_vel_pressure_grad_tend(mesh, pressure, zMid, density, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -85,7 +85,7 @@ contains
          density         !< Input: density
 
       type (mesh_type), intent(in) :: &
-         grid          !< Input: grid information
+         mesh          !< Input: mesh information
 
       !-----------------------------------------------------------------
       !
@@ -121,11 +121,11 @@ contains
 
       if(.not.pgradOn) return
 
-      nEdgesSolve = grid % nEdgesSolve
-      maxLevelEdgeTop => grid % maxLevelEdgeTop % array
-      cellsOnEdge => grid % cellsOnEdge % array
-      dcEdge => grid % dcEdge % array
-      edgeMask => grid % edgeMask % array
+      nEdgesSolve = mesh % nEdgesSolve
+      maxLevelEdgeTop => mesh % maxLevelEdgeTop % array
+      cellsOnEdge => mesh % cellsOnEdge % array
+      dcEdge => mesh % dcEdge % array
+      edgeMask => mesh % edgeMask % array
 
       ! pressure for generalized coordinates
       ! -1/density_0 (grad p_k + density g grad z_k^{mid})

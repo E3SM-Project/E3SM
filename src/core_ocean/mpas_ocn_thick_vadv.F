@@ -67,7 +67,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_thick_vadv_tend(grid, vertTransportVelocityTop, tend, err)!{{{
+   subroutine ocn_thick_vadv_tend(mesh, vertTransportVelocityTop, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -79,7 +79,7 @@ contains
          vertTransportVelocityTop     !< Input: vertical velocity on top layer
 
       type (mesh_type), intent(in) :: &
-         grid          !< Input: grid information
+         mesh          !< Input: mesh information
 
       !-----------------------------------------------------------------
       !
@@ -119,10 +119,10 @@ contains
 
       if(.not.thickVadvOn) return
 
-      maxLevelCell      => grid % maxLevelCell % array
+      maxLevelCell      => mesh % maxLevelCell % array
 
-      nCells = grid % nCells
-      nVertLevels = grid % nVertLevels
+      nCells = mesh % nCells
+      nVertLevels = mesh % nVertLevels
 
       do iCell=1,nCells
          do k=1,maxLevelCell(iCell)

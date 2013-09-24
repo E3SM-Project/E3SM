@@ -71,7 +71,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_hmix_del2_tend(grid, divergence, relativeVorticity, viscosity, tend, err)!{{{
+   subroutine ocn_vel_hmix_del2_tend(mesh, divergence, relativeVorticity, viscosity, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -86,7 +86,7 @@ contains
          relativeVorticity       !< Input: relative vorticity
 
       type (mesh_type), intent(in) :: &
-         grid            !< Input: grid information
+         mesh            !< Input: mesh information
 
       !-----------------------------------------------------------------
       !
@@ -132,14 +132,14 @@ contains
 
       if(.not.hmixDel2On) return
 
-      nEdgesSolve = grid % nEdgesSolve
-      maxLevelEdgeTop => grid % maxLevelEdgeTop % array
-      cellsOnEdge => grid % cellsOnEdge % array
-      verticesOnEdge => grid % verticesOnEdge % array
-      meshScalingDel2 => grid % meshScalingDel2 % array
-      edgeMask => grid % edgeMask % array
-      dcEdge => grid % dcEdge % array
-      dvEdge => grid % dvEdge % array
+      nEdgesSolve = mesh % nEdgesSolve
+      maxLevelEdgeTop => mesh % maxLevelEdgeTop % array
+      cellsOnEdge => mesh % cellsOnEdge % array
+      verticesOnEdge => mesh % verticesOnEdge % array
+      meshScalingDel2 => mesh % meshScalingDel2 % array
+      edgeMask => mesh % edgeMask % array
+      dcEdge => mesh % dcEdge % array
+      dvEdge => mesh % dvEdge % array
 
       do iEdge=1,nEdgesSolve
          cell1 = cellsOnEdge(1,iEdge)

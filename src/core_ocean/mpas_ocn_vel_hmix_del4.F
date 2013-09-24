@@ -72,7 +72,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_hmix_del4_tend(grid, divergence, relativeVorticity, tend, err)!{{{
+   subroutine ocn_vel_hmix_del4_tend(mesh, divergence, relativeVorticity, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -87,7 +87,7 @@ contains
          relativeVorticity       !< Input: relative vorticity
 
       type (mesh_type), intent(in) :: &
-         grid           !< Input: grid information
+         mesh           !< Input: mesh information
 
       !-----------------------------------------------------------------
       !
@@ -133,29 +133,29 @@ contains
 
       if(.not.hmixDel4On) return
 
-      nCells = grid % nCells
-      nEdges = grid % nEdges
-      nEdgesSolve = grid % nEdgessolve
-      nVertices = grid % nVertices
-      nVertLevels = grid % nVertLevels
-      vertexDegree = grid % vertexDegree
+      nCells = mesh % nCells
+      nEdges = mesh % nEdges
+      nEdgesSolve = mesh % nEdgessolve
+      nVertices = mesh % nVertices
+      nVertLevels = mesh % nVertLevels
+      vertexDegree = mesh % vertexDegree
 
-      maxLevelEdgeTop => grid % maxLevelEdgeTop % array
-      maxLevelVertexTop => grid % maxLevelVertexTop % array
-      maxLevelCell => grid % maxLevelCell % array
-      cellsOnEdge => grid % cellsOnEdge % array
-      verticesOnEdge => grid % verticesOnEdge % array
-      dcEdge => grid % dcEdge % array
-      dvEdge => grid % dvEdge % array
-      areaTriangle => grid % areaTriangle % array
-      areaCell => grid % areaCell % array
-      meshScalingDel4 => grid % meshScalingDel4 % array
-      edgeMask => grid % edgeMask % array
-      nEdgesOnCell => grid % nEdgesOnCell % array
-      edgesOnVertex => grid % edgesOnVertex % array
-      edgesOnCell => grid % edgesOnCell % array
-      edgeSignOnVertex => grid % edgeSignOnVertex % array
-      edgeSignOnCell => grid % edgeSignOnCell % array
+      maxLevelEdgeTop => mesh % maxLevelEdgeTop % array
+      maxLevelVertexTop => mesh % maxLevelVertexTop % array
+      maxLevelCell => mesh % maxLevelCell % array
+      cellsOnEdge => mesh % cellsOnEdge % array
+      verticesOnEdge => mesh % verticesOnEdge % array
+      dcEdge => mesh % dcEdge % array
+      dvEdge => mesh % dvEdge % array
+      areaTriangle => mesh % areaTriangle % array
+      areaCell => mesh % areaCell % array
+      meshScalingDel4 => mesh % meshScalingDel4 % array
+      edgeMask => mesh % edgeMask % array
+      nEdgesOnCell => mesh % nEdgesOnCell % array
+      edgesOnVertex => mesh % edgesOnVertex % array
+      edgesOnCell => mesh % edgesOnCell % array
+      edgeSignOnVertex => mesh % edgeSignOnVertex % array
+      edgeSignOnCell => mesh % edgeSignOnCell % array
 
       allocate(delsq_u(nVertLEvels, nEdges+1))
       allocate(delsq_divergence(nVertLevels, nCells+1))

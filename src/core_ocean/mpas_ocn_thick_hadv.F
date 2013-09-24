@@ -67,7 +67,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_thick_hadv_tend(grid, normalVelocity, layerThicknessEdge, tend, err)!{{{
+   subroutine ocn_thick_hadv_tend(mesh, normalVelocity, layerThicknessEdge, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -82,7 +82,7 @@ contains
          layerThicknessEdge     !< Input: thickness at edge
 
       type (mesh_type), intent(in) :: &
-         grid          !< Input: grid information
+         mesh          !< Input: mesh information
 
       !-----------------------------------------------------------------
       !
@@ -128,19 +128,19 @@ contains
 
       if(.not.thickHadvOn) return
 
-      nEdges = grid % nEdges
-      nCells = grid % nCells
-      nVertLevels = grid % nVertLevels
+      nEdges = mesh % nEdges
+      nCells = mesh % nCells
+      nVertLevels = mesh % nVertLevels
 
-      maxLevelCell      => grid % maxLevelCell % array
-      maxLevelEdgeBot   => grid % maxLevelEdgeBot % array
-      cellsOnEdge => grid % cellsOnEdge % array
-      dvEdge => grid % dvEdge % array
-      areaCell => grid % areaCell % array
+      maxLevelCell      => mesh % maxLevelCell % array
+      maxLevelEdgeBot   => mesh % maxLevelEdgeBot % array
+      cellsOnEdge => mesh % cellsOnEdge % array
+      dvEdge => mesh % dvEdge % array
+      areaCell => mesh % areaCell % array
 
-      nEdgesOnCell => grid % nEdgesOnCell % array
-      edgesOnCell => grid % edgesOnCell % array
-      edgeSignOnCell => grid % edgeSignOnCell % array
+      nEdgesOnCell => mesh % nEdgesOnCell % array
+      edgesOnCell => mesh % edgesOnCell % array
+      edgeSignOnCell => mesh % edgeSignOnCell % array
 
       do iCell = 1, nCells
         invAreaCell = 1.0 / areaCell(iCell)

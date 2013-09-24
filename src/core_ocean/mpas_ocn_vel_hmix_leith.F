@@ -66,7 +66,7 @@ contains
 !> based on the Leith closure.  The Leith closure is the
 !> enstrophy-cascade analogy to the Smagorinsky (1963) energy-cascade
 !> closure, i.e. Leith (1996) assumes an inertial range of enstrophy flux
-!> moving toward the grid scale. The assumption of an enstrophy cascade
+!> moving toward the mesh scale. The assumption of an enstrophy cascade
 !> and dimensional analysis produces right-hand-side dissipation,
 !> $\bf{D}$, of velocity of the form
 !> $ {\bf D} = \nabla \cdot \left( \nu_\ast \nabla {\bf u} \right) 
@@ -78,7 +78,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_hmix_leith_tend(grid, divergence, relativeVorticity, viscosity, tend, err)!{{{
+   subroutine ocn_vel_hmix_leith_tend(mesh, divergence, relativeVorticity, viscosity, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -93,7 +93,7 @@ contains
          relativeVorticity       !< Input: relative vorticity
 
       type (mesh_type), intent(in) :: &
-         grid            !< Input: grid information
+         mesh            !< Input: mesh information
 
       !-----------------------------------------------------------------
       !
@@ -139,14 +139,14 @@ contains
 
       if(.not.hmixLeithOn) return
 
-      nEdgesSolve = grid % nEdgesSolve
-      maxLevelEdgeTop => grid % maxLevelEdgeTop % array
-      cellsOnEdge => grid % cellsOnEdge % array
-      verticesOnEdge => grid % verticesOnEdge % array
-      meshScaling => grid % meshScaling % array
-      edgeMask => grid % edgeMask % array
-      dcEdge => grid % dcEdge % array
-      dvEdge => grid % dvEdge % array
+      nEdgesSolve = mesh % nEdgesSolve
+      maxLevelEdgeTop => mesh % maxLevelEdgeTop % array
+      cellsOnEdge => mesh % cellsOnEdge % array
+      verticesOnEdge => mesh % verticesOnEdge % array
+      meshScaling => mesh % meshScaling % array
+      edgeMask => mesh % edgeMask % array
+      dcEdge => mesh % dcEdge % array
+      dvEdge => mesh % dvEdge % array
 
       do iEdge=1,nEdgesSolve
          cell1 = cellsOnEdge(1,iEdge)

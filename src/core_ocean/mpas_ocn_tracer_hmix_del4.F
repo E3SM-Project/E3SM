@@ -72,7 +72,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_hmix_del4_tend(grid, layerThicknessEdge, tracers, tend, err)!{{{
+   subroutine ocn_tracer_hmix_del4_tend(mesh, layerThicknessEdge, tracers, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -84,7 +84,7 @@ contains
          layerThicknessEdge    !< Input: thickness at edge
 
       type (mesh_type), intent(in) :: &
-         grid          !< Input: grid information
+         mesh          !< Input: mesh information
 
       real (kind=RKIND), dimension(:,:,:), intent(in) :: &
         tracers !< Input: tracer quantities
@@ -137,25 +137,25 @@ contains
 
       if (.not.del4On) return
 
-      nEdges = grid % nEdges
-      nCells = grid % nCells
+      nEdges = mesh % nEdges
+      nCells = mesh % nCells
       num_tracers = size(tracers, dim=1)
-      nVertLevels = grid % nVertLevels
+      nVertLevels = mesh % nVertLevels
 
-      maxLevelEdgeTop => grid % maxLevelEdgeTop % array
-      maxLevelCell => grid % maxLevelCell % array
-      cellsOnEdge => grid % cellsOnEdge % array
+      maxLevelEdgeTop => mesh % maxLevelEdgeTop % array
+      maxLevelCell => mesh % maxLevelCell % array
+      cellsOnEdge => mesh % cellsOnEdge % array
 
-      dcEdge => grid % dcEdge % array
-      dvEdge => grid % dvEdge % array
-      areaCell => grid % areaCell % array
-      meshScalingDel4 => grid % meshScalingDel4 % array
+      dcEdge => mesh % dcEdge % array
+      dvEdge => mesh % dvEdge % array
+      areaCell => mesh % areaCell % array
+      meshScalingDel4 => mesh % meshScalingDel4 % array
 
-      edgeMask => grid % edgeMask % array
+      edgeMask => mesh % edgeMask % array
 
-      nEdgesOnCell => grid % nEdgesOnCell % array
-      edgesOnCell => grid % edgesOnCell % array
-      edgeSignOnCell => grid % edgeSignOnCell % array
+      nEdgesOnCell => mesh % nEdgesOnCell % array
+      edgesOnCell => mesh % edgesOnCell % array
+      edgeSignOnCell => mesh % edgeSignOnCell % array
 
       allocate(delsq_tracer(num_tracers,nVertLevels, nCells+1))
 

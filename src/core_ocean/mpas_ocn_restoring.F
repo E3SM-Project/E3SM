@@ -70,7 +70,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_restoring_tend(grid, layerThickness, indexT, indexS, tracers, tend, err)!{{{
+   subroutine ocn_restoring_tend(mesh, layerThickness, indexT, indexS, tracers, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -82,7 +82,7 @@ contains
          layerThickness    !< Input: thickness
 
       type (mesh_type), intent(in) :: &
-         grid          !< Input: grid information
+         mesh          !< Input: mesh information
 
       real (kind=RKIND), dimension(:,:,:), intent(in) :: &
         tracers !< Input: tracer quantities
@@ -122,10 +122,10 @@ contains
 
       if(.not.restoringOn) return
 
-      nCellsSolve = grid % nCellsSolve
+      nCellsSolve = mesh % nCellsSolve
 
-      temperatureRestore => grid % temperatureRestore % array
-      salinityRestore => grid % salinityRestore % array
+      temperatureRestore => mesh % temperatureRestore % array
+      salinityRestore => mesh % salinityRestore % array
 
       invTemp = 1.0 / (temperatureTimeScale * 86400.0)
       invSalinity = 1.0 / (salinityTimeScale * 86400.0)

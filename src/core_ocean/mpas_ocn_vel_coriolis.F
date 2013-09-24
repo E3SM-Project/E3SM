@@ -69,7 +69,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_coriolis_tend(grid, normalizedRelativeVorticityEdge, normalizedPlanetaryVorticityEdge, layerThicknessEdge, normalVelocity, kineticEnergyCell, tend, err)!{{{
+   subroutine ocn_vel_coriolis_tend(mesh, normalizedRelativeVorticityEdge, normalizedPlanetaryVorticityEdge, layerThicknessEdge, normalVelocity, kineticEnergyCell, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -85,7 +85,7 @@ contains
          kineticEnergyCell   !< Input: Kinetic Energy
 
       type (mesh_type), intent(in) :: &
-         grid          !< Input: grid information
+         mesh          !< Input: mesh information
 
       !-----------------------------------------------------------------
       !
@@ -123,18 +123,18 @@ contains
 
       if(.not.coriolisOn) return
 
-      maxLevelEdgeTop => grid % maxLevelEdgeTop % array
-      nEdgesOnEdge => grid % nEdgesOnEdge % array
-      cellsOnEdge => grid % cellsOnEdge % array
-      edgesOnEdge => grid % edgesOnEdge % array
-      weightsOnEdge => grid % weightsOnEdge % array
-      dcEdge => grid % dcEdge % array
+      maxLevelEdgeTop => mesh % maxLevelEdgeTop % array
+      nEdgesOnEdge => mesh % nEdgesOnEdge % array
+      cellsOnEdge => mesh % cellsOnEdge % array
+      edgesOnEdge => mesh % edgesOnEdge % array
+      weightsOnEdge => mesh % weightsOnEdge % array
+      dcEdge => mesh % dcEdge % array
 
-      edgeMask => grid % edgeMask % array
+      edgeMask => mesh % edgeMask % array
 
-      nEdgesSolve = grid % nEdgesSolve
+      nEdgesSolve = mesh % nEdgesSolve
 
-      do iEdge=1,grid % nEdgesSolve
+      do iEdge=1,mesh % nEdgesSolve
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
 

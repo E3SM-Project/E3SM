@@ -52,7 +52,7 @@ module ocn_global_diagnostics
       ! is preformed over blocks.
       ! dminfo is the domain info needed for global communication
       ! state contains the state variables needed to compute global diagnostics
-      ! grid conains the meta data about the grid
+      ! mesh conains the meta data about the mesh
       ! timeIndex is the current time step counter
       ! dt is the duration of each time step
       !
@@ -73,7 +73,7 @@ module ocn_global_diagnostics
       type (block_type), pointer :: block
       type (dm_info), pointer :: dminfo
       type (state_type), pointer :: state
-      type (mesh_type), pointer :: grid
+      type (mesh_type), pointer :: mesh
 
       integer :: nVertLevels, nCellsSolve, nEdgesSolve, nVerticesSolve, nCellsGlobal, nEdgesGlobal, nVerticesGlobal, iTracer
       integer :: elementIndex, variableIndex, nVariables, nSums, nMaxes, nMins
@@ -110,24 +110,24 @@ module ocn_global_diagnostics
       call mpas_timer_start("diagnostic block loop", .false., diagBlockTimer)
       do while (associated(block))
          state => block % state % time_levs(timeLevel) % state
-         grid => block % mesh
+         mesh => block % mesh
          
          num_tracers = state % num_tracers
 
-         nVertLevels = grid % nVertLevels
-         nCellsSolve = grid % nCellsSolve
-         nEdgesSolve = grid % nEdgesSolve
-         nVerticesSolve = grid % nVerticesSolve
+         nVertLevels = mesh % nVertLevels
+         nCellsSolve = mesh % nCellsSolve
+         nEdgesSolve = mesh % nEdgesSolve
+         nVerticesSolve = mesh % nVerticesSolve
 
-         areaCell => grid % areaCell % array
-         dcEdge => grid % dcEdge % array
-         dvEdge => grid % dvEdge % array
-         areaTriangle => grid % areaTriangle % array
+         areaCell => mesh % areaCell % array
+         dcEdge => mesh % dcEdge % array
+         dvEdge => mesh % dvEdge % array
+         areaTriangle => mesh % areaTriangle % array
          allocate(areaEdge(1:nEdgesSolve))
          areaEdge = dcEdge(1:nEdgesSolve)*dvEdge(1:nEdgesSolve)
-         maxLevelCell => grid % maxLevelCell % array
-         maxLevelEdgeTop => grid % maxLevelEdgeTop % array
-         maxLevelVertexBot => grid % maxLevelVertexBot % array
+         maxLevelCell => mesh % maxLevelCell % array
+         maxLevelEdgeTop => mesh % maxLevelEdgeTop % array
+         maxLevelVertexBot => mesh % maxLevelVertexBot % array
 
          layerThickness => state % layerThickness % array
          normalVelocity => state % normalVelocity % array

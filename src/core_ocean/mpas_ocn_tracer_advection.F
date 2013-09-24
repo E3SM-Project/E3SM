@@ -54,7 +54,7 @@ module ocn_tracer_advection
 !>  advection of tracers.
 !
 !-----------------------------------------------------------------------
-   subroutine ocn_tracer_advection_tend(tracers, normalThicknessFlux, w, layerThickness, verticalCellSize, dt, grid, tend_layerThickness, tend)!{{{
+   subroutine ocn_tracer_advection_tend(tracers, normalThicknessFlux, w, layerThickness, verticalCellSize, dt, mesh, tend_layerThickness, tend)!{{{
 
       real (kind=RKIND), dimension(:,:,:), intent(inout) :: tend !< Input/Output: tracer tendency
       real (kind=RKIND), dimension(:,:,:), intent(in) :: tracers !< Input/Output: tracer values
@@ -63,15 +63,15 @@ module ocn_tracer_advection
       real (kind=RKIND), dimension(:,:), intent(in) :: layerThickness  !< Input: Thickness field
       real (kind=RKIND), dimension(:,:), intent(in) :: verticalCellSize !< Input: Distance between vertical interfaces of a cell
       real (kind=RKIND), intent(in) :: dt !< Input: Time step
-      type (mesh_type), intent(in) :: grid !< Input: grid information
+      type (mesh_type), intent(in) :: mesh !< Input: mesh information
       real (kind=RKIND), dimension(:,:), intent(in) :: tend_layerThickness !< Input: Thickness tendency information
 
       if(.not. tracerAdvOn) return
 
       if(monotonicOn) then
-         call mpas_tracer_advection_mono_tend(tracers, grid % adv_coefs % array, grid % adv_coefs_3rd % array, grid % nAdvCellsForEdge % array, grid % advCellsForEdge % array, normalThicknessFlux, w, layerThickness, verticalCellSize, dt, grid, tend_layerThickness, tend, grid % maxLevelCell % array, grid % maxLevelEdgeTop % array, grid % highOrderAdvectionMask % array, edgeSignOnCell_in = grid % edgeSignOnCell % array)
+         call mpas_tracer_advection_mono_tend(tracers, mesh % adv_coefs % array, mesh % adv_coefs_3rd % array, mesh % nAdvCellsForEdge % array, mesh % advCellsForEdge % array, normalThicknessFlux, w, layerThickness, verticalCellSize, dt, mesh, tend_layerThickness, tend, mesh % maxLevelCell % array, mesh % maxLevelEdgeTop % array, mesh % highOrderAdvectionMask % array, edgeSignOnCell_in = mesh % edgeSignOnCell % array)
       else
-         call mpas_tracer_advection_std_tend(tracers, grid % adv_coefs % array, grid % adv_coefs_3rd % array, grid % nAdvCellsForEdge % array, grid % advCellsForEdge % array, normalThicknessFlux, w, layerThickness, verticalCellSize, dt, grid, tend_layerThickness, tend, grid % maxLevelCell % array, grid % maxLevelEdgeTop % array, grid % highOrderAdvectionMask % array, edgeSignOnCell_in = grid % edgeSignOnCell % array)
+         call mpas_tracer_advection_std_tend(tracers, mesh % adv_coefs % array, mesh % adv_coefs_3rd % array, mesh % nAdvCellsForEdge % array, mesh % advCellsForEdge % array, normalThicknessFlux, w, layerThickness, verticalCellSize, dt, mesh, tend_layerThickness, tend, mesh % maxLevelCell % array, mesh % maxLevelEdgeTop % array, mesh % highOrderAdvectionMask % array, edgeSignOnCell_in = mesh % edgeSignOnCell % array)
       endif
    end subroutine ocn_tracer_advection_tend!}}}
 

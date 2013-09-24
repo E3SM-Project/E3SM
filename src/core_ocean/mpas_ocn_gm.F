@@ -37,10 +37,10 @@ module ocn_gm
 
 contains
 
-   subroutine ocn_gm_compute_uBolus(s, grid)!{{{
+   subroutine ocn_gm_compute_uBolus(s, mesh)!{{{
       implicit none
       type(state_type), intent(inout)        :: s
-      type(mesh_type), intent(in)            :: grid
+      type(mesh_type), intent(in)            :: mesh
 
       real(kind=RKIND), dimension(:,:), pointer :: uBolusGM, hEddyFlux, layerThicknessEdge
 
@@ -51,11 +51,11 @@ contains
       layerThicknessEdge => s % layerThicknessEdge % array
       hEddyFlux      => s % hEddyFlux % array
 
-      maxLevelEdgeTop => grid % maxLevelEdgeTop % array
+      maxLevelEdgeTop => mesh % maxLevelEdgeTop % array
 
-      nEdges = grid % nEdges
+      nEdges = mesh % nEdges
 
-      call ocn_gm_compute_hEddyFlux(s, grid)
+      call ocn_gm_compute_hEddyFlux(s, mesh)
 
       if (config_vert_coord_movement .EQ. 'impermeable_interfaces') then
 
@@ -67,17 +67,17 @@ contains
 
       else
 
-         ! Nothing for now for all other grid types (zlevel, zstar, ztilde)
+         ! Nothing for now for all other mesh types (zlevel, zstar, ztilde)
          uBolusGM(:,:) = 0.0
 
       end if
 
    end subroutine ocn_gm_compute_uBolus!}}}
 
-   subroutine ocn_gm_compute_hEddyFlux(s, grid)!{{{
+   subroutine ocn_gm_compute_hEddyFlux(s, mesh)!{{{
       implicit none
       type(state_type), intent(inout)     :: s
-      type(mesh_type), intent(in)         :: grid
+      type(mesh_type), intent(in)         :: mesh
 
       real(kind=RKIND), dimension(:,:), pointer  :: hEddyFlux, layerThickness
       real(kind=RKIND), dimension(:), pointer    :: dcEdge
@@ -88,11 +88,11 @@ contains
       hEddyFlux      => s % hEddyFlux % array
       layerThickness => s % layerThickness % array
 
-      dcEdge         => grid % dcEdge % array
-      cellsOnEdge    => grid % cellsOnEdge % array
-      maxLevelEdgeTop => grid % maxLevelEdgeTop % array
+      dcEdge         => mesh % dcEdge % array
+      cellsOnEdge    => mesh % cellsOnEdge % array
+      maxLevelEdgeTop => mesh % maxLevelEdgeTop % array
 
-      nEdges = grid % nEdges
+      nEdges = mesh % nEdges
 
       hEddyFlux(:,:) = 0.0
 
@@ -106,16 +106,16 @@ contains
             end do
       else
 
-         !Nothing for now for all other grid types (zlevel, zstar, ztilde)
+         !Nothing for now for all other mesh types (zlevel, zstar, ztilde)
 
       end if
                   
    end subroutine ocn_gm_compute_hEddyFlux!}}}
 
-   subroutine ocn_get_h_kappa(s, grid)!{{{
+   subroutine ocn_get_h_kappa(s, mesh)!{{{
 
       type (state_type), intent(inout) :: s
-      type (mesh_type), intent(in) :: grid
+      type (mesh_type), intent(in) :: mesh
 
       real(kind=RKIND), dimension(:,:), pointer    :: h_kappa
 
@@ -127,10 +127,10 @@ contains
 
    end subroutine ocn_get_h_kappa!}}}
 
-   subroutine ocn_get_h_kappa_q(s, grid)!{{{
+   subroutine ocn_get_h_kappa_q(s, mesh)!{{{
 
       type (state_type), intent(inout) :: s
-      type (mesh_type), intent(in) :: grid
+      type (mesh_type), intent(in) :: mesh
 
       real(kind=RKIND), dimension(:,:), pointer    :: h_kappa_q
 

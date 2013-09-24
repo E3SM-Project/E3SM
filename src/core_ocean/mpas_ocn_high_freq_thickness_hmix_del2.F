@@ -59,7 +59,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_high_freq_thickness_hmix_del2_tend(grid, highFreqThickness, tend_highFreqThickness, err)!{{{
+   subroutine ocn_high_freq_thickness_hmix_del2_tend(mesh, highFreqThickness, tend_highFreqThickness, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -68,7 +68,7 @@ contains
       !-----------------------------------------------------------------
 
       type (mesh_type), intent(in) :: &
-         grid          !< Input: grid information
+         mesh          !< Input: mesh information
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          highFreqThickness !< Input: high frequency thickness
@@ -109,20 +109,20 @@ contains
 
       if(.not.config_use_highFreqThick_del2) return
 
-      nCells = grid % nCells
-      nVertLevels = grid % nVertLevels
+      nCells = mesh % nCells
+      nVertLevels = mesh % nVertLevels
 
-      maxLevelEdgeTop => grid % maxLevelEdgeTop % array
-      cellsOnEdge => grid % cellsOnEdge % array
-      edgeMask => grid % edgeMask % array
-      areaCell => grid % areaCell % array
-      dvEdge => grid % dvEdge % array
-      dcEdge => grid % dcEdge % array
-      meshScalingDel2 => grid % meshScalingDel2 % array
+      maxLevelEdgeTop => mesh % maxLevelEdgeTop % array
+      cellsOnEdge => mesh % cellsOnEdge % array
+      edgeMask => mesh % edgeMask % array
+      areaCell => mesh % areaCell % array
+      dvEdge => mesh % dvEdge % array
+      dcEdge => mesh % dcEdge % array
+      meshScalingDel2 => mesh % meshScalingDel2 % array
 
-      nEdgesOnCell => grid % nEdgesOnCell % array
-      edgesOnCell => grid % edgesOnCell % array
-      edgeSignOnCell => grid % edgeSignOnCell % array
+      nEdgesOnCell => mesh % nEdgesOnCell % array
+      edgesOnCell => mesh % edgesOnCell % array
+      edgeSignOnCell => mesh % edgeSignOnCell % array
 
       do iCell = 1, nCells
          invAreaCell = 1.0 / areaCell(iCell)

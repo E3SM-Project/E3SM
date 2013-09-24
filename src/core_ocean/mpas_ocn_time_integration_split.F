@@ -79,7 +79,7 @@ module ocn_time_integration_split
     !   Split_Explicit timestepping scheme
     !
     ! Input: domain - current model state in time level 1 (e.g., time_levs(1)state%h(:,:)) 
-    !                 plus grid meta-data
+    !                 plus mesh meta-data
     ! Output: domain - upon exit, time level 2 (e.g., time_levs(2)%state%h(:,:)) contains 
     !                  model state advanced forward in time by dt seconds
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

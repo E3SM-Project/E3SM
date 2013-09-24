@@ -565,12 +565,12 @@ module mpas_core
    
    end subroutine ocn_write_output_frame!}}}
    
-   subroutine ocn_compute_output_diagnostics(state, grid)!{{{
+   subroutine ocn_compute_output_diagnostics(state, mesh)!{{{
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! Compute diagnostic fields for a domain
    !
    ! Input: state - contains model prognostic fields
-   !        grid  - contains grid metadata
+   !        mesh  - contains mesh metadata
    !
    ! Output: state - upon returning, diagnostic fields will have be computed
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -580,7 +580,7 @@ module mpas_core
       implicit none
    
       type (state_type), intent(inout) :: state
-      type (mesh_type), intent(in) :: grid
+      type (mesh_type), intent(in) :: mesh
    
       integer :: i, eoe
       integer :: iEdge, k
@@ -672,7 +672,7 @@ module mpas_core
       integer :: nVertLevels
       logical :: consistentSSH
 
-      ! Initialize z-level grid variables from h, read in from input file.
+      ! Initialize z-level mesh variables from h, read in from input file.
       block => domain % blocklist
       do while (associated(block))
 
@@ -824,7 +824,7 @@ module mpas_core
 
          if (config_check_zlevel_consistency) then
             do iCell = 1,nCells
-               ! Check that bottomDepth and maxLevelCell match.  Some older grids do not have the bottomDepth variable.
+               ! Check that bottomDepth and maxLevelCell match.  Some older meshs do not have the bottomDepth variable.
                if (bottomDepth(iCell) > refBottomDepth(maxLevelCell(iCell)).or. &
                    bottomDepth(iCell) < refBottomDepthTopOfCell(maxLevelCell(iCell))) then
                   write (0,'(a)') ' fatal error: bottomDepth and maxLevelCell do not match:'
@@ -863,7 +863,7 @@ module mpas_core
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness
       integer :: nVertLevels
 
-      ! Initialize z-level grid variables from h, read in from input file.
+      ! Initialize z-level mesh variables from h, read in from input file.
       block => domain % blocklist
       do while (associated(block))
 
@@ -949,7 +949,7 @@ module mpas_core
    end subroutine ocn_init_split_timestep!}}}
 
 subroutine ocn_compute_max_level(domain)!{{{
-! Initialize maxLevel and bouncary grid variables.
+! Initialize maxLevel and bouncary mesh variables.
 
    use mpas_grid_types
    use mpas_configure
@@ -971,7 +971,7 @@ subroutine ocn_compute_max_level(domain)!{{{
       cellsOnEdge, cellsOnVertex, boundaryEdge, boundaryCell, &
       boundaryVertex, verticesOnEdge, edgeMask, cellMask, vertexMask
 
-   ! Initialize z-level grid variables from h, read in from input file.
+   ! Initialize z-level mesh variables from h, read in from input file.
    block => domain % blocklist
    do while (associated(block))
 

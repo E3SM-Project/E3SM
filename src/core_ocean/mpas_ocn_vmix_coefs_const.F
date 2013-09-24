@@ -75,7 +75,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vmix_coefs_const_build(grid, s, d, err)!{{{
+   subroutine ocn_vmix_coefs_const_build(mesh, s, d, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -84,7 +84,7 @@ contains
       !-----------------------------------------------------------------
 
       type (mesh_type), intent(in) :: &
-         grid          !< Input: grid information
+         mesh          !< Input: mesh information
 
       !-----------------------------------------------------------------
       !
@@ -130,8 +130,8 @@ contains
       vertViscTopOfEdge => d % vertViscTopOfEdge % array
       vertDiffTopOfCell => d % vertDiffTopOfCell % array
 
-      call ocn_vel_vmix_coefs_const(grid, vertViscTopOfEdge, err1)
-      call ocn_tracer_vmix_coefs_const(grid, vertDiffTopOfCell, err2)
+      call ocn_vel_vmix_coefs_const(mesh, vertViscTopOfEdge, err1)
+      call ocn_tracer_vmix_coefs_const(mesh, vertDiffTopOfCell, err2)
 
       err = ior(err1, err2)
 
@@ -151,7 +151,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_vmix_coefs_const(grid, vertViscTopOfEdge, err)!{{{
+   subroutine ocn_vel_vmix_coefs_const(mesh, vertViscTopOfEdge, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -160,7 +160,7 @@ contains
       !-----------------------------------------------------------------
 
       type (mesh_type), intent(in) :: &
-         grid          !< Input: grid information
+         mesh          !< Input: mesh information
 
       !-----------------------------------------------------------------
       !
@@ -206,7 +206,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_vmix_coefs_const(grid, vertDiffTopOfCell, err)!{{{
+   subroutine ocn_tracer_vmix_coefs_const(mesh, vertDiffTopOfCell, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -215,7 +215,7 @@ contains
       !-----------------------------------------------------------------
 
       type (mesh_type), intent(in) :: &
-         grid          !< Input: grid information
+         mesh          !< Input: mesh information
 
       !-----------------------------------------------------------------
       !

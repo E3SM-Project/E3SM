@@ -64,13 +64,13 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_equation_of_state_linear_density(grid, indexT, indexS, tracers, density, err, &
+   subroutine ocn_equation_of_state_linear_density(mesh, indexT, indexS, tracers, density, err, &
       thermalExpansionCoeff, salineContractionCoeff)!{{{
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !  This module contains routines necessary for computing the density
    !  from model temperature and salinity using an equation of state.
    !
-   ! Input: grid - grid metadata
+   ! Input: mesh - mesh metadata
    !        s - state: tracers
    !        k_displaced 
    !  If k_displaced<=0, state % density is returned with no displaced
@@ -82,7 +82,7 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       implicit none
 
-      type (mesh_type), intent(in) :: grid
+      type (mesh_type), intent(in) :: mesh
       integer, intent(in) :: indexT, indexS
       real (kind=RKIND), dimension(:,:,:), intent(in) :: tracers
       real (kind=RKIND), dimension(:,:), intent(inout) :: density
@@ -95,8 +95,8 @@ contains
       integer :: nCells, iCell, k
       type (dm_info) :: dminfo
 
-      maxLevelCell  => grid % maxLevelCell % array
-      nCells        =  grid % nCells
+      maxLevelCell  => mesh % maxLevelCell % array
+      nCells        =  mesh % nCells
 
       err = 0
 

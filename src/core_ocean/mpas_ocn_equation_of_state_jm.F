@@ -77,7 +77,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_equation_of_state_jm_density(grid, k_displaced, displacement_type, &
+   subroutine ocn_equation_of_state_jm_density(mesh, k_displaced, displacement_type, &
        indexT, indexS, tracers, density, err, &
        tracersSurfaceValue, thermalExpansionCoeff, salineContractionCoeff)!{{{
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -88,7 +88,7 @@ contains
    !  potential-temperature-based bulk modulus from Jackett and
    !  McDougall, JTECH, Vol.12, pp 381-389, April, 1995.
    !
-   ! Input: grid - grid metadata
+   ! Input: mesh - mesh metadata
    !        s - state: tracers
    !        k_displaced 
 
@@ -103,7 +103,7 @@ contains
 
       implicit none
 
-      type (mesh_type), intent(in) :: grid
+      type (mesh_type), intent(in) :: mesh
       integer, intent(in) :: k_displaced, indexT, indexS
       character(len=*), intent(in) :: displacement_type
       real (kind=RKIND), dimension(:,:,:), intent(in) :: tracers
@@ -215,10 +215,10 @@ contains
    
       err = 0
    
-      nCells      = grid % nCells
-      maxLevelCell      => grid % maxLevelCell % array
-      nVertLevels = grid % nVertLevels
-      refBottomDepth => grid % refBottomDepth % array
+      nCells      = mesh % nCells
+      maxLevelCell      => mesh % maxLevelCell % array
+      nVertLevels = mesh % nVertLevels
+      refBottomDepth => mesh % refBottomDepth % array
 
 !  allocate local T,S tracer field
       allocate(tracerTS(2,nVertLevels,nCells))
