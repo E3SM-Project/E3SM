@@ -79,12 +79,12 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_diagnostic_solve(dt, state, forcing, grid, diagnostics, scratch)!{{{
+   subroutine ocn_diagnostic_solve(dt, state, forcing, mesh, diagnostics, scratch)!{{{
 
       real (kind=RKIND), intent(in) :: dt !< Input: Time step
       type (state_type), intent(inout) :: state !< Input/Output: State information
       type (forcing_type), intent(in) :: forcing !< Input: Forcing information
-      type (mesh_type), intent(in) :: grid !< Input: Grid information
+      type (mesh_type), intent(in) :: mesh !< Input: mesh information
       type (diagnostics_type), intent(inout) :: diagnostics  !< Input/Output: diagnostic fields derived from State
       type (scratch_type), intent(inout) :: scratch !< Input: scratch variables
 
@@ -145,42 +145,42 @@ contains
       vertVelocityTop => state % vertVelocityTop % array
       BruntVaisalaFreqTop => state % BruntVaisalaFreqTop % array
 
-      weightsOnEdge     => grid % weightsOnEdge % array
-      kiteAreasOnVertex => grid % kiteAreasOnVertex % array
-      cellsOnEdge       => grid % cellsOnEdge % array
-      cellsOnVertex     => grid % cellsOnVertex % array
-      verticesOnEdge    => grid % verticesOnEdge % array
-      nEdgesOnCell      => grid % nEdgesOnCell % array
-      nEdgesOnEdge      => grid % nEdgesOnEdge % array
-      edgesOnCell       => grid % edgesOnCell % array
-      edgesOnEdge       => grid % edgesOnEdge % array
-      edgesOnVertex     => grid % edgesOnVertex % array
-      dcEdge            => grid % dcEdge % array
-      dvEdge            => grid % dvEdge % array
-      areaCell          => grid % areaCell % array
-      areaTriangle      => grid % areaTriangle % array
-      bottomDepth       => grid % bottomDepth % array
-      fVertex           => grid % fVertex % array
-      deriv_two         => grid % deriv_two % array
-      maxLevelCell      => grid % maxLevelCell % array
-      maxLevelEdgeTop   => grid % maxLevelEdgeTop % array
-      maxLevelEdgeBot   => grid % maxLevelEdgeBot % array
-      maxLevelVertexBot => grid % maxLevelVertexBot % array
-      kiteIndexOnCell => grid % kiteIndexOnCell % array
-      verticesOnCell => grid % verticesOnCell % array
+      weightsOnEdge     => mesh % weightsOnEdge % array
+      kiteAreasOnVertex => mesh % kiteAreasOnVertex % array
+      cellsOnEdge       => mesh % cellsOnEdge % array
+      cellsOnVertex     => mesh % cellsOnVertex % array
+      verticesOnEdge    => mesh % verticesOnEdge % array
+      nEdgesOnCell      => mesh % nEdgesOnCell % array
+      nEdgesOnEdge      => mesh % nEdgesOnEdge % array
+      edgesOnCell       => mesh % edgesOnCell % array
+      edgesOnEdge       => mesh % edgesOnEdge % array
+      edgesOnVertex     => mesh % edgesOnVertex % array
+      dcEdge            => mesh % dcEdge % array
+      dvEdge            => mesh % dvEdge % array
+      areaCell          => mesh % areaCell % array
+      areaTriangle      => mesh % areaTriangle % array
+      bottomDepth       => mesh % bottomDepth % array
+      fVertex           => mesh % fVertex % array
+      deriv_two         => mesh % deriv_two % array
+      maxLevelCell      => mesh % maxLevelCell % array
+      maxLevelEdgeTop   => mesh % maxLevelEdgeTop % array
+      maxLevelEdgeBot   => mesh % maxLevelEdgeBot % array
+      maxLevelVertexBot => mesh % maxLevelVertexBot % array
+      kiteIndexOnCell => mesh % kiteIndexOnCell % array
+      verticesOnCell => mesh % verticesOnCell % array
 
       seaSurfacePressure => forcing % seaSurfacePressure % array
                   
-      nCells      = grid % nCells
-      nEdges      = grid % nEdges
-      nVertices   = grid % nVertices
-      nVertLevels = grid % nVertLevels
-      vertexDegree = grid % vertexDegree
+      nCells      = mesh % nCells
+      nEdges      = mesh % nEdges
+      nVertices   = mesh % nVertices
+      nVertLevels = mesh % nVertLevels
+      vertexDegree = mesh % vertexDegree
 
-      boundaryCell => grid % boundaryCell % array
+      boundaryCell => mesh % boundaryCell % array
 
-      edgeSignOnVertex => grid % edgeSignOnVertex % array
-      edgeSignOnCell => grid % edgeSignOnCell % array
+      edgeSignOnVertex => mesh % edgeSignOnVertex % array
+      edgeSignOnCell => mesh % edgeSignOnCell % array
 
       tracersSurfaceValue  => diagnostics % tracersSurfaceValue % array(:,:)
 
@@ -417,14 +417,14 @@ contains
       call mpas_timer_start("equation of state", .false., diagEOSTimer)
 
       ! compute in-place density
-      call ocn_equation_of_state_density(state, diagnostics, grid, 0, 'relative', density, err)
+      call ocn_equation_of_state_density(state, diagnostics, mesh, 0, 'relative', density, err)
 
       ! compute potentialDensity, the density displaced adiabatically to the mid-depth of top layer.
-      call ocn_equation_of_state_density(state, diagnostics, grid, 1, 'absolute', potentialDensity, err)
+      call ocn_equation_of_state_density(state, diagnostics, mesh, 1, 'absolute', potentialDensity, err)
 
       ! compute displacedDensity, density displaced adiabatically to the mid-depth one layer deeper.  
       ! That is, layer k has been displaced to the depth of layer k+1.
-      call ocn_equation_of_state_density(state, diagnostics, grid, 1, 'relative', displacedDensity, err)
+      call ocn_equation_of_state_density(state, diagnostics, mesh, 1, 'relative', displacedDensity, err)
 
       call mpas_timer_stop("equation of state", diagEOSTimer)
 
@@ -518,13 +518,13 @@ contains
       ! Compute bulk Richardson number
       !   (note: this is a proposed new template for this subroutine
       !     where we push the computation one level down)
-      call computeBulkRichardsonNumber(state, grid, diagnostics, scratch)
+      call computeBulkRichardsonNumber(state, mesh, diagnostics, scratch)
 
       !
       ! Apply the GM closure as a bolus velocity
       !
       if (config_h_kappa .GE. epsilon(0D0)) then
-         call ocn_gm_compute_uBolus(state, grid)
+         call ocn_gm_compute_uBolus(state, mesh)
       else
          uBolusGM = 0.0
       end if
@@ -683,10 +683,10 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_fuperp(state, grid)!{{{
+   subroutine ocn_fuperp(state, mesh)!{{{
 
       type (state_type), intent(inout) :: state !< Input/Output: State information
-      type (mesh_type), intent(in) :: grid !< Input: Grid information
+      type (mesh_type), intent(in) :: mesh !< Input: mesh information
 
       integer :: iEdge, cell1, cell2, eoe, i, j, k
       integer :: nEdgesSolve
@@ -701,16 +701,16 @@ contains
 
       normalVelocity           => state % normalVelocity % array
       normalBaroclinicVelocity        => state % normalBaroclinicVelocity % array
-      weightsOnEdge     => grid % weightsOnEdge % array
-      fEdge             => grid % fEdge % array
-      maxLevelEdgeTop      => grid % maxLevelEdgeTop % array
-      cellsOnEdge       => grid % cellsOnEdge % array
-      nEdgesOnEdge      => grid % nEdgesOnEdge % array
-      edgesOnEdge       => grid % edgesOnEdge % array
+      weightsOnEdge     => mesh % weightsOnEdge % array
+      fEdge             => mesh % fEdge % array
+      maxLevelEdgeTop      => mesh % maxLevelEdgeTop % array
+      cellsOnEdge       => mesh % cellsOnEdge % array
+      nEdgesOnEdge      => mesh % nEdgesOnEdge % array
+      edgesOnEdge       => mesh % edgesOnEdge % array
 
-      fEdge       => grid % fEdge % array
+      fEdge       => mesh % fEdge % array
 
-      nEdgesSolve = grid % nEdgesSolve
+      nEdgesSolve = mesh % nEdgesSolve
 
       !
       ! Put f*normalBaroclinicVelocity^{perp} in u as a work variable
@@ -744,10 +744,10 @@ contains
 !>  This routine filters barotropic mode out of the velocity variable.
 !
 !-----------------------------------------------------------------------
-   subroutine ocn_filter_btr_mode_vel(state, grid)!{{{
+   subroutine ocn_filter_btr_mode_vel(state, mesh)!{{{
 
       type (state_type), intent(inout) :: state
-      type (mesh_type), intent(in) :: grid
+      type (mesh_type), intent(in) :: mesh
 
       integer :: iEdge, k, nEdges
       real (kind=RKIND) :: vertSum, normalThicknessFluxSum, thicknessSum
@@ -758,8 +758,8 @@ contains
 
       normalVelocity => state % normalVelocity % array
       layerThicknessEdge => state % layerThicknessEdge % array
-      maxLevelEdgeTop => grid % maxLevelEdgeTop % array
-      nEdges      = grid % nEdges
+      maxLevelEdgeTop => mesh % maxLevelEdgeTop % array
+      nEdges      = mesh % nEdges
 
       do iEdge=1,nEdges
 
@@ -795,11 +795,11 @@ contains
 !>  This routine filters barotropic mode out of the velocity tendency.
 !
 !-----------------------------------------------------------------------
-   subroutine ocn_filter_btr_mode_tend_vel(tend, state, grid)!{{{
+   subroutine ocn_filter_btr_mode_tend_vel(tend, state, mesh)!{{{
 
       type (tend_type), intent(inout) :: tend
       type (state_type), intent(in) :: state
-      type (mesh_type), intent(in) :: grid
+      type (mesh_type), intent(in) :: mesh
 
       integer :: iEdge, k, nEdges
       real (kind=RKIND) :: vertSum, normalThicknessFluxSum, thicknessSum
@@ -811,8 +811,8 @@ contains
 
       tend_normalVelocity      => tend % normalVelocity % array
       layerThicknessEdge      => state % layerThicknessEdge % array
-      maxLevelEdgeTop => grid % maxLevelEdgeTop % array
-      nEdges      = grid % nEdges
+      maxLevelEdgeTop => mesh % maxLevelEdgeTop % array
+      nEdges      = mesh % nEdges
 
       do iEdge=1,nEdges
 
@@ -891,10 +891,10 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    subroutine computeBulkRichardsonNumber(state, grid, diagnostics, scratch)!{{{
+    subroutine computeBulkRichardsonNumber(state, mesh, diagnostics, scratch)!{{{
 
       type (state_type), intent(inout) :: state !< Input/Output: State information
-      type (mesh_type), intent(in) :: grid !< Input: Grid information
+      type (mesh_type), intent(in) :: mesh !< Input: mesh information
       type (diagnostics_type), intent(inout) :: diagnostics !< Diagnostics information derived from State
       type (scratch_type), intent(inout) :: scratch !< Input: scratch variables
 
@@ -919,19 +919,19 @@ contains
       turbulentVelocitySquared = 0.001
 
       ! set scalar values
-      nCells      = grid % nCells
-      nVertLevels = grid % nVertLevels
+      nCells      = mesh % nCells
+      nVertLevels = mesh % nVertLevels
 
-      ! set pointers into state, grid, diagnostics and scratch
+      ! set pointers into state, mesh, diagnostics and scratch
       normalVelocity => state % normalVelocity % array
       zMid => state % zMid % array
       zTop => state % zTop % array
-      maxLevelCell => grid % maxLevelCell % array 
-      nEdgesOnCell => grid % nEdgesOnCell % array
-      edgesOnCell => grid % edgesOnCell % array
-      areaCell => grid % areaCell % array
-      dcEdge => grid % dcEdge % array
-      dvEdge => grid % dvEdge % array
+      maxLevelCell => mesh % maxLevelCell % array 
+      nEdgesOnCell => mesh % nEdgesOnCell % array
+      edgesOnCell => mesh % edgesOnCell % array
+      areaCell => mesh % areaCell % array
+      dcEdge => mesh % dcEdge % array
+      dvEdge => mesh % dvEdge % array
       density => state % density % array
       bulkRichardsonNumber => diagnostics % bulkRichardsonNumber % array
       tracersSurfaceValues => diagnostics % tracersSurfaceValue  % array
@@ -939,7 +939,7 @@ contains
       ! compute EOS by displacing SST/SSS to every vertical layer in column
       call mpas_allocate_scratch_field(scratch % densitySurfaceDisplaced, .true.)
       densitySurfaceDisplaced => scratch % densitySurfaceDisplaced % array
-      call ocn_equation_of_state_density(state, diagnostics, grid, 0, 'surfaceDisplaced', densitySurfaceDisplaced, err)
+      call ocn_equation_of_state_density(state, diagnostics, mesh, 0, 'surfaceDisplaced', densitySurfaceDisplaced, err)
 
       ! set value to out-of-bounds
       bulkRichardsonNumber(:,:) = -1.0e34

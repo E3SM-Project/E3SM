@@ -69,7 +69,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_forcing_rayleigh_tend(grid, normalVelocity, tend, err)!{{{
+   subroutine ocn_vel_forcing_rayleigh_tend(mesh, normalVelocity, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -81,7 +81,7 @@ contains
          normalVelocity    !< Input: velocity 
 
       type (mesh_type), intent(in) :: &
-         grid          !< Input: grid information
+         mesh          !< Input: mesh information
 
       !-----------------------------------------------------------------
       !
@@ -121,8 +121,8 @@ contains
 
       if(.not.rayleighFrictionOn) return
 
-      nEdgesSolve = grid % nEdgesSolve
-      maxLevelEdgeTop => grid % maxLevelEdgeTop % array
+      nEdgesSolve = mesh % nEdgesSolve
+      maxLevelEdgeTop => mesh % maxLevelEdgeTop % array
 
       do iEdge=1,nEdgesSolve
         do k=1,maxLevelEdgeTop(iEdge)

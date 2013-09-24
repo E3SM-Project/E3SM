@@ -67,7 +67,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_forcing_windstress_tend(grid, normalVelocityForcing, layerThicknessEdge, tend, err)!{{{
+   subroutine ocn_vel_forcing_windstress_tend(mesh, normalVelocityForcing, layerThicknessEdge, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -82,7 +82,7 @@ contains
          layerThicknessEdge     !< Input: thickness at edge
 
       type (mesh_type), intent(in) :: &
-         grid          !< Input: grid information
+         mesh          !< Input: mesh information
 
       !-----------------------------------------------------------------
       !
@@ -123,9 +123,9 @@ contains
 
       if(.not.windStressOn) return
 
-      nEdgesSolve = grid % nEdgesSolve
-      maxLevelEdgeTop => grid % maxLevelEdgeTop % array
-      edgeMask => grid % edgeMask % array
+      nEdgesSolve = mesh % nEdgesSolve
+      maxLevelEdgeTop => mesh % maxLevelEdgeTop % array
+      edgeMask => mesh % edgeMask % array
 
       do iEdge=1,nEdgesSolve
         ! efficiency note: it would be nice to avoid this

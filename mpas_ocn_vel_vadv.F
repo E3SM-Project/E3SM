@@ -69,7 +69,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_vadv_tend(grid, u, layerThicknessEdge, vertTransportVelocityTop, tend, err)!{{{
+   subroutine ocn_vel_vadv_tend(mesh, u, layerThicknessEdge, vertTransportVelocityTop, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -84,7 +84,7 @@ contains
          vertTransportVelocityTop  !< Input: Vertical velocity on top layer
 
       type (mesh_type), intent(in) :: &
-         grid          !< Input: grid information
+         mesh          !< Input: mesh information
 
       !-----------------------------------------------------------------
       !
@@ -121,11 +121,11 @@ contains
 
       err = 0
 
-      nVertLevels = grid % nVertLevels
-      nEdgesSolve = grid % nEdgesSolve
-      maxLevelEdgeTop => grid % maxLevelEdgeTop % array
-      cellsOnEdge => grid % cellsOnEdge % array
-      edgeMask => grid % edgeMask % array
+      nVertLevels = mesh % nVertLevels
+      nEdgesSolve = mesh % nEdgesSolve
+      maxLevelEdgeTop => mesh % maxLevelEdgeTop % array
+      cellsOnEdge => mesh % cellsOnEdge % array
+      edgeMask => mesh % edgeMask % array
 
       allocate(w_dudzTopEdge(nVertLevels+1))
       w_dudzTopEdge = 0.0

@@ -70,13 +70,13 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_equation_of_state_density(state, diagnostics, grid, k_displaced, displacement_type, density, err, &
+   subroutine ocn_equation_of_state_density(state, diagnostics, mesh, k_displaced, displacement_type, density, err, &
       thermalExpansionCoeff, salineContractionCoeff)!{{{
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !  This module contains routines necessary for computing the density
    !  from model temperature and salinity using an equation of state.
    !
-   ! Input: grid - grid metadata
+   ! Input: mesh - mesh metadata
    !        s - state: tracers
    !        k_displaced 
    !
@@ -93,7 +93,7 @@ contains
 
       type (state_type), intent(inout) :: state
       type (diagnostics_type), intent(inout) :: diagnostics
-      type (mesh_type), intent(in) :: grid
+      type (mesh_type), intent(in) :: mesh
       integer :: k_displaced
       character(len=*), intent(in) :: displacement_type
       real (kind=RKIND), dimension(:,:), intent(out) :: density
@@ -117,12 +117,12 @@ contains
 
       if (linearEos) then
 
-         call ocn_equation_of_state_linear_density(grid, indexT, indexS, tracers, density, err, &
+         call ocn_equation_of_state_linear_density(mesh, indexT, indexS, tracers, density, err, &
             thermalExpansionCoeff, salineContractionCoeff)
 
       elseif (jmEos) then
 
-         call ocn_equation_of_state_jm_density(grid, k_displaced, displacement_type, indexT, indexS, tracers, density, err, &
+         call ocn_equation_of_state_jm_density(mesh, k_displaced, displacement_type, indexT, indexS, tracers, density, err, &
             tracersSurfaceValue, thermalExpansionCoeff, salineContractionCoeff)
 
       endif

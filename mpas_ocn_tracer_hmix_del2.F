@@ -72,7 +72,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_hmix_del2_tend(grid, layerThicknessEdge, tracers, tend, err)!{{{
+   subroutine ocn_tracer_hmix_del2_tend(mesh, layerThicknessEdge, tracers, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -84,7 +84,7 @@ contains
          layerThicknessEdge    !< Input: thickness at edge
 
       type (mesh_type), intent(in) :: &
-         grid          !< Input: grid information
+         mesh          !< Input: mesh information
 
       real (kind=RKIND), dimension(:,:,:), intent(in) :: &
         tracers !< Input: tracer quantities
@@ -126,21 +126,21 @@ contains
 
       if (.not.del2On) return
 
-      nCells = grid % nCells
-      nVertLevels = grid % nVertLevels
+      nCells = mesh % nCells
+      nVertLevels = mesh % nVertLevels
       num_tracers = size(tracers, dim=1)
 
-      maxLevelEdgeTop => grid % maxLevelEdgeTop % array
-      cellsOnEdge => grid % cellsOnEdge % array
-      edgeMask => grid % edgeMask % array
-      areaCell => grid % areaCell % array
-      dvEdge => grid % dvEdge % array
-      dcEdge => grid % dcEdge % array
-      meshScalingDel2 => grid % meshScalingDel2 % array
+      maxLevelEdgeTop => mesh % maxLevelEdgeTop % array
+      cellsOnEdge => mesh % cellsOnEdge % array
+      edgeMask => mesh % edgeMask % array
+      areaCell => mesh % areaCell % array
+      dvEdge => mesh % dvEdge % array
+      dcEdge => mesh % dcEdge % array
+      meshScalingDel2 => mesh % meshScalingDel2 % array
 
-      nEdgesOnCell => grid % nEdgesOnCell % array
-      edgesOnCell => grid % edgesOnCell % array
-      edgeSignOnCell => grid % edgeSignOnCell % array
+      nEdgesOnCell => mesh % nEdgesOnCell % array
+      edgesOnCell => mesh % edgesOnCell % array
+      edgeSignOnCell => mesh % edgeSignOnCell % array
 
       do iCell = 1, nCells
         invAreaCell = 1.0 / areaCell(iCell)

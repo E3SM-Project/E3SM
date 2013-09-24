@@ -69,7 +69,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vmix_coefs_tanh_build(grid, s, d, err)!{{{
+   subroutine ocn_vmix_coefs_tanh_build(mesh, s, d, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -78,7 +78,7 @@ contains
       !-----------------------------------------------------------------
 
       type (mesh_type), intent(in) :: &
-         grid          !< Input: grid information
+         mesh          !< Input: mesh information
 
       !-----------------------------------------------------------------
       !
@@ -124,8 +124,8 @@ contains
       vertViscTopOfEdge => d % vertViscTopOfEdge % array
       vertDiffTopOfCell => d % vertDiffTopOfCell % array
 
-      call ocn_vel_vmix_coefs_tanh(grid, vertViscTopOfEdge, err1)
-      call ocn_tracer_vmix_coefs_tanh(grid, vertDiffTopOfCell, err2)
+      call ocn_vel_vmix_coefs_tanh(mesh, vertViscTopOfEdge, err1)
+      call ocn_tracer_vmix_coefs_tanh(mesh, vertDiffTopOfCell, err2)
 
       err = ior(err1, err2)
 
@@ -145,7 +145,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_vmix_coefs_tanh(grid, vertViscTopOfEdge, err)!{{{
+   subroutine ocn_vel_vmix_coefs_tanh(mesh, vertViscTopOfEdge, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -154,7 +154,7 @@ contains
       !-----------------------------------------------------------------
 
       type (mesh_type), intent(in) :: &
-         grid          !< Input: grid information
+         mesh          !< Input: mesh information
 
       !-----------------------------------------------------------------
       !
@@ -186,8 +186,8 @@ contains
 
       if(.not.tanhViscOn) return
 
-      nVertLevels = grid % nVertLevels
-      refBottomDepth => grid % refBottomDepth % array
+      nVertLevels = mesh % nVertLevels
+      refBottomDepth => mesh % refBottomDepth % array
 
       ! refBottomDepth is used here for simplicity.  Using zMid and h, which 
       ! vary in time, would give the exact location of the top, but it
@@ -216,7 +216,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_vmix_coefs_tanh(grid, vertDiffTopOfCell, err)!{{{
+   subroutine ocn_tracer_vmix_coefs_tanh(mesh, vertDiffTopOfCell, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -225,7 +225,7 @@ contains
       !-----------------------------------------------------------------
 
       type (mesh_type), intent(in) :: &
-         grid          !< Input: grid information
+         mesh          !< Input: mesh information
 
       !-----------------------------------------------------------------
       !
@@ -257,8 +257,8 @@ contains
 
       if(.not.tanhDiffOn) return
 
-      nVertLevels = grid % nVertLevels
-      refBottomDepth => grid % refBottomDepth % array
+      nVertLevels = mesh % nVertLevels
+      refBottomDepth => mesh % refBottomDepth % array
 
       ! refBottomDepth is used here for simplicity.  Using zMid and h, which 
       ! vary in time, would give the exact location of the top, but it
