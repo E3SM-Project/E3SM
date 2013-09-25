@@ -114,7 +114,7 @@ contains
         density, displacedDensity, potentialDensity, temperature, salinity, kineticEnergyVertex, kineticEnergyVertexOnCells, uBolusGM, uTransport, &
         vertVelocityTop, BruntVaisalaFreqTop, &
         vorticityGradientNormalComponent, vorticityGradientTangentialComponent
-      real (kind=RKIND), dimension(:,:,:), pointer :: tracers, deriv_two
+      real (kind=RKIND), dimension(:,:,:), pointer :: tracers, derivTwo
       character :: c1*6
 
       real (kind=RKIND), dimension(:,:), pointer :: tracersSurfaceValue ! => diagnostics % tracersSurfaceValue % array
@@ -162,7 +162,7 @@ contains
       areaTriangle      => mesh % areaTriangle % array
       bottomDepth       => mesh % bottomDepth % array
       fVertex           => mesh % fVertex % array
-      deriv_two         => mesh % deriv_two % array
+      derivTwo          => mesh % derivTwo % array
       maxLevelCell      => mesh % maxLevelCell % array
       maxLevelEdgeTop   => mesh % maxLevelEdgeTop % array
       maxLevelEdgeBot   => mesh % maxLevelEdgeBot % array
