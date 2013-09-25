@@ -149,10 +149,10 @@ module ocn_time_integration_rk4
 ! ---  update halos for diagnostic variables
 
         call mpas_timer_start("RK4-diagnostic halo update")
-        call mpas_dmpar_exch_halo_field(domain % blocklist % provis_state % normalizedRelativeVorticityEdge)
+        call mpas_dmpar_exch_halo_field(domain % blocklist % diagnostics % normalizedRelativeVorticityEdge)
         if (config_mom_del4 > 0.0) then
-           call mpas_dmpar_exch_halo_field(domain % blocklist % provis_state % divergence)
-           call mpas_dmpar_exch_halo_field(domain % blocklist % provis_state % relativeVorticity)
+           call mpas_dmpar_exch_halo_field(domain % blocklist % diagnostics % divergence)
+           call mpas_dmpar_exch_halo_field(domain % blocklist % diagnostics % relativeVorticity)
         end if
         call mpas_timer_stop("RK4-diagnostic halo update")
 
@@ -162,7 +162,7 @@ module ocn_time_integration_rk4
            call mpas_timer_start("RK4-tendency computations")
            block => domain % blocklist
            do while (associated(block))
-              call ocn_tend_freq_filtered_thickness(block % tend, block % provis_state, block % mesh)
+              call ocn_tend_freq_filtered_thickness(block % tend, block % provis_state, block % diagnostics, block % mesh)
               block => block % next
            end do
            call mpas_timer_stop("RK4-tendency computations")
@@ -189,22 +189,22 @@ module ocn_time_integration_rk4
            ! advection of u uses u, while advection of layerThickness and tracers use uTransport.
            call ocn_vert_transport_velocity_top(block % mesh, block % verticalMesh, &
               block % state % time_levs(1) % state % layerThickness % array, &
-              block % provis_state % layerThicknessEdge % array, block % provis_state % normalVelocity % array, &
+              block % diagnostics % layerThicknessEdge % array, block % provis_state % normalVelocity % array, &
               block % state % time_levs(1) % state % ssh % array, block % provis_state % highFreqThickness % array, &
-              rk_substep_weights(rk_step), block % provis_state % vertTransportVelocityTop % array, err)
+              rk_substep_weights(rk_step), block % diagnostics % vertTransportVelocityTop % array, err)
 
            call ocn_tend_vel(block % tend, block % provis_state, block % diagnostics, block % mesh)
 
            call ocn_vert_transport_velocity_top(block % mesh, block % verticalMesh, &
               block % state % time_levs(1) % state % layerThickness % array, &
-              block % provis_state % layerThicknessEdge % array, block % provis_state % uTransport % array, &
+              block % diagnostics % layerThicknessEdge % array, block % diagnostics % uTransport % array, &
               block % state % time_levs(1) % state % ssh % array, block % provis_state % highFreqThickness % array, &
-              rk_substep_weights(rk_step), block % provis_state % vertTransportVelocityTop % array, err)
+              rk_substep_weights(rk_step), block % diagnostics % vertTransportVelocityTop % array, err)
 
-           call ocn_tend_thick(block % tend, block % provis_state, block % mesh)
+           call ocn_tend_thick(block % tend, block % provis_state, block % diagnostics, block % mesh)
 
            if (config_filter_btr_mode) then
-               call ocn_filter_btr_mode_tend_vel(block % tend, block % provis_state, block % mesh)
+               call ocn_filter_btr_mode_tend_vel(block % tend, block % provis_state, block % diagnostics, block % mesh)
            endif
 
            call ocn_tend_tracer(block % tend, block % provis_state, block % diagnostics, block % mesh, dt)
@@ -261,9 +261,9 @@ module ocn_time_integration_rk4
               call ocn_diagnostic_solve(dt, block % provis_state, block % forcing, block % mesh, block % diagnostics, block % scratch)
 
               ! Compute velocity transport, used in advection terms of layerThickness and tracer tendency
-              block % provis_state % uTransport % array(:,:) &
+              block % diagnostics % uTransport % array(:,:) &
                     = block % provis_state % normalVelocity % array(:,:) &
-                    + block % provis_state % uBolusGM   % array(:,:)
+                    + block % diagnostics % uBolusGM   % array(:,:)
 
               block => block % next
            end do
@@ -366,19 +366,19 @@ module ocn_time_integration_rk4
          call ocn_diagnostic_solve(dt, block % state % time_levs(2) % state, block % forcing, block % mesh, block % diagnostics, block % scratch)
 
          ! Compute velocity transport, used in advection terms of layerThickness and tracer tendency
-            block % state % time_levs(2) % state % uTransport % array(:,:) &
-          = block % state % time_levs(2) % state % normalVelocity % array(:,:) &
-          + block % state % time_levs(2) % state % uBolusGM % array(:,:)
+         block % diagnostics % uTransport % array(:,:) &
+               = block % state % time_levs(2) % state % normalVelocity % array(:,:) &
+               + block % diagnostics % uBolusGM % array(:,:)
 
          call mpas_reconstruct(block % mesh, block % state % time_levs(2) % state % normalVelocity % array,          &
-                          block % state % time_levs(2) % state % normalVelocityX % array,            &
-                          block % state % time_levs(2) % state % normalVelocityY % array,            &
-                          block % state % time_levs(2) % state % normalVelocityZ % array,            &
-                          block % state % time_levs(2) % state % normalVelocityZonal % array,        &
-                          block % state % time_levs(2) % state % normalVelocityMeridional % array    &
+                          block % diagnostics % normalVelocityX % array,            &
+                          block % diagnostics % normalVelocityY % array,            &
+                          block % diagnostics % normalVelocityZ % array,            &
+                          block % diagnostics % normalVelocityZonal % array,        &
+                          block % diagnostics % normalVelocityMeridional % array    &
                          )
 
-         call ocn_time_average_accumulate(block % state % time_levs(2) % state, block % state % time_levs(1) % state)
+         call ocn_time_average_accumulate(block % average, block % state % time_levs(2) % state, block % diagnostics)
 
          block => block % next
       end do

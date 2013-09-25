@@ -412,14 +412,14 @@ contains
 
       err = 0
 
-      normalVelocity => state % normalVelocity % array
-      tracers     => state % tracers % array
-      layerThickness  => state % layerThickness % array
-      layerThicknessEdge      => state % layerThicknessEdge % array
-      kineticEnergyCell     => state % kineticEnergyCell % array
-      vertViscTopOfEdge => diagnostics % vertViscTopOfEdge % array
-      vertDiffTopOfCell => diagnostics % vertDiffTopOfCell % array
-      maxLevelCell    => mesh % maxLevelCell % array
+      normalVelocity     => state % normalVelocity % array
+      tracers            => state % tracers % array
+      layerThickness     => state % layerThickness % array
+      kineticEnergyCell  => diagnostics % kineticEnergyCell % array
+      layerThicknessEdge => diagnostics % layerThicknessEdge % array
+      vertViscTopOfEdge  => diagnostics % vertViscTopOfEdge % array
+      vertDiffTopOfCell  => diagnostics % vertDiffTopOfCell % array
+      maxLevelCell       => mesh % maxLevelCell % array
                
       nCells      = mesh % nCells
 

@@ -103,7 +103,8 @@ module ocn_time_integration
 
      block => domain % blocklist
      do while (associated(block))
-        block % state % time_levs(2) % state % xtime % scalar = timeStamp
+!       block % state % time_levs(2) % state % xtime % scalar = timeStamp
+        block % diagnostics % xtime % scalar = timeStamp
 
         nanCheck = sum(block % state % time_levs(2) % state % normalVelocity % array)
 

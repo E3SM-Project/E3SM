@@ -37,25 +37,26 @@ module ocn_gm
 
 contains
 
-   subroutine ocn_gm_compute_uBolus(s, mesh)!{{{
+   subroutine ocn_gm_compute_uBolus(state, diagnostics, mesh)!{{{
       implicit none
-      type(state_type), intent(inout)        :: s
-      type(mesh_type), intent(in)            :: mesh
+      type(state_type), intent(inout)        :: state !< Input/Output: State information
+      type(diagnostics_type), intent(inout)  :: diagnostics !< Input/Output: Diagnostics information
+      type(mesh_type), intent(in)            :: mesh !< Input: Mesh information
 
       real(kind=RKIND), dimension(:,:), pointer :: uBolusGM, hEddyFlux, layerThicknessEdge
 
       integer, dimension(:), pointer   :: maxLevelEdgeTop
       integer                          :: k, iEdge, nEdges
 
-      uBolusGM         => s % uBolusGM % array
-      layerThicknessEdge => s % layerThicknessEdge % array
-      hEddyFlux      => s % hEddyFlux % array
+      uBolusGM           => diagnostics % uBolusGM % array
+      hEddyFlux          => diagnostics % hEddyFlux % array
+      layerThicknessEdge => diagnostics % layerThicknessEdge % array
 
       maxLevelEdgeTop => mesh % maxLevelEdgeTop % array
 
       nEdges = mesh % nEdges
 
-      call ocn_gm_compute_hEddyFlux(s, mesh)
+      call ocn_gm_compute_hEddyFlux(state, diagnostics, mesh)
 
       if (config_vert_coord_movement .EQ. 'impermeable_interfaces') then
 
@@ -74,10 +75,11 @@ contains
 
    end subroutine ocn_gm_compute_uBolus!}}}
 
-   subroutine ocn_gm_compute_hEddyFlux(s, mesh)!{{{
+   subroutine ocn_gm_compute_hEddyFlux(state, diagnostics, mesh)!{{{
       implicit none
-      type(state_type), intent(inout)     :: s
-      type(mesh_type), intent(in)         :: mesh
+      type(state_type), intent(inout)     :: state !< Input/Output: State information
+      type(diagnostics_type), intent(in)  :: diagnostics !< Input: Diagnostics information
+      type(mesh_type), intent(in)         :: mesh !< Input: Mesh information
 
       real(kind=RKIND), dimension(:,:), pointer  :: hEddyFlux, layerThickness
       real(kind=RKIND), dimension(:), pointer    :: dcEdge
@@ -85,8 +87,8 @@ contains
       integer, dimension(:), pointer             :: maxLevelEdgeTop
       integer                                    :: k, cell1, cell2, iEdge, nEdges
 
-      hEddyFlux      => s % hEddyFlux % array
-      layerThickness => s % layerThickness % array
+      hEddyFlux      => diagnostics % hEddyFlux % array
+      layerThickness => state % layerThickness % array
 
       dcEdge         => mesh % dcEdge % array
       cellsOnEdge    => mesh % cellsOnEdge % array
@@ -112,32 +114,32 @@ contains
                   
    end subroutine ocn_gm_compute_hEddyFlux!}}}
 
-   subroutine ocn_get_h_kappa(s, mesh)!{{{
+   subroutine ocn_get_h_kappa(diagnostics, mesh)!{{{
 
-      type (state_type), intent(inout) :: s
-      type (mesh_type), intent(in) :: mesh
+      type (diagnostics_type), intent(inout) :: diagnostics !< Input/Output: Diagnostics information
+      type (mesh_type), intent(in) :: mesh !< Input: Mesh information
 
-      real(kind=RKIND), dimension(:,:), pointer    :: h_kappa
+      real(kind=RKIND), dimension(:,:), pointer    :: hKappa
 
 
-      h_kappa  => s % h_kappa % array
+      hKappa  => diagnostics % hKappa % array
 
-      h_kappa(:,:) = config_h_kappa
+      hKappa(:,:) = config_h_kappa
 
 
    end subroutine ocn_get_h_kappa!}}}
 
-   subroutine ocn_get_h_kappa_q(s, mesh)!{{{
+   subroutine ocn_get_h_kappa_q(diagnostics, mesh)!{{{
 
-      type (state_type), intent(inout) :: s
-      type (mesh_type), intent(in) :: mesh
+      type (diagnostics_type), intent(inout) :: diagnostics !< Input/Output: Diagnostics information
+      type (mesh_type), intent(in) :: mesh !< Input: Mesh information
 
-      real(kind=RKIND), dimension(:,:), pointer    :: h_kappa_q
+      real(kind=RKIND), dimension(:,:), pointer    :: hKappaQ
 
 
-      h_kappa_q  => s % h_kappa_q % array
+      hKappaQ  => diagnostics % hKappaQ % array
 
-      h_kappa_q(:,:) = config_h_kappa_q
+      hKappaQ(:,:) = config_h_kappa_q
 
 
    end subroutine ocn_get_h_kappa_q!}}}

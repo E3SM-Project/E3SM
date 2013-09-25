@@ -619,29 +619,27 @@
 			     description="tracer"
 			/>
 		</var_array>
-		<var name="xtime" type="text" dimensions="Time" streams="ro" units="unitless"
-		     description="model time, with format 'YYYY-MM-DD_HH:MM:SS'"
-		/>
 		<var name="normalVelocity" type="real" dimensions="nVertLevels nEdges Time" streams="ir" units="m s^{-1}"
 		     description="horizonal velocity, normal component to an edge"
 		/>
 		<var name="layerThickness" type="real" dimensions="nVertLevels nCells Time" streams="iro" units="m"
 		     description="layer thickness"
 		/>
+		<var name="ssh" type="real" dimensions="nCells Time" streams="o" units="m"
+		     description="sea surface height"
+		/>
+
+		<!-- FIELDS FOR FREQUENCY FILTERED THICKNESS -->
 		<var name="highFreqThickness" type="real" dimensions="nVertLevels nCells Time" streams="ir" units="m"
 		     description="high frequency-filtered layer thickness"
 		/>
 		<var name="lowFreqDivergence" type="real" dimensions="nVertLevels nCells Time" streams="ir" units="s^{-1}"
 		     description="low frequency-filtered divergence"
 		/>
-		<var name="density" type="real" dimensions="nVertLevels nCells Time" streams="iro" units="kg m^{-3}"
-		     description="density"
-		/>
+
+		<!-- FIELDS FOR SPLIT EXPLICIT TIME INTEGRATOR -->
 		<var name="normalBarotropicVelocity" type="real" dimensions="nEdges Time" streams="r" units="m s^{-1}"
 		     description="barotropic velocity, used in split-explicit time-stepping"
-		/>
-		<var name="ssh" type="real" dimensions="nCells Time" streams="o" units="m"
-		     description="sea surface height"
 		/>
 		<var name="normalBarotropicVelocitySubcycle" type="real" dimensions="nEdges Time" units="m s^{-1}"
 		     description="barotropic velocity, used in subcycling in stage 2 of split-explicit time-stepping"
@@ -649,189 +647,9 @@
 		<var name="sshSubcycle" type="real" dimensions="nCells Time" units="m"
 		     description="sea surface height, used in subcycling in stage 2 of split-explicit time-stepping"
 		/>
-		<var name="barotropicThicknessFlux" type="real" dimensions="nEdges Time" units="m^2 s^{-1}"
-		     description="Barotropic thickness flux at each edge, used to advance sea surface height in each subcycle of stage 2 of the split-explicit algorithm."
-		/>
-		<var name="barotropicForcing" type="real" dimensions="nEdges Time" units="m s^{-2}"
-		     description="Barotropic tendency computed from the baroclinic equations in stage 1 of the split-explicit algorithm."
-		/>
 		<var name="normalBaroclinicVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
 		     description="baroclinic velocity, used in split-explicit time-stepping"
 		/>
-		<var name="zMid" type="real" dimensions="nVertLevels nCells Time" streams="o" units="m"
-		     description="z-coordinate of the mid-depth of the layer"
-		/>
-		<var name="zTop" type="real" dimensions="nVertLevels nCells Time" streams="o" units="m"
-			description="z-coordinate of the top of the layer"
-		/>
-		<var name="tangentialVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
-		     description="horizontal velocity, tangential to an edge"
-		/>
-		<var name="uTransport" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
-		     description="horizontal velocity used to transport mass and tracers"
-		/>
-		<var name="uBolusGM" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
-		     description="Bolus velocity in Gent-McWilliams eddy parameterization"
-		/>
-		<var name="uBolusGMX" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
-		     description="Bolus velocity in Gent-McWilliams eddy parameterization, x-direction"
-		/>
-		<var name="uBolusGMY" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
-		     description="Bolus velocity in Gent-McWilliams eddy parameterization, y-direction"
-		/>
-		<var name="uBolusGMZ" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
-		     description="Bolus velocity in Gent-McWilliams eddy parameterization, z-direction"
-		/>
-		<var name="uBolusGMZonal" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
-		     description="Bolus velocity in Gent-McWilliams eddy parameterization, zonal-direction"
-		/>
-		<var name="uBolusGMMeridional" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
-		     description="Bolus velocity in Gent-McWilliams eddy parameterization, meridional-direction"
-		/>
-		<var name="hEddyFlux" type="real" dimensions="nVertLevels nEdges Time" units=""
-		     description="Eddy flux in Gent-McWilliams eddy parameterization"
-		/>
-		<var name="h_kappa" type="real" dimensions="nVertLevels nEdges Time" units=""
-		     description="kappa parameter for Gent-McWilliams eddy parameterization"
-		/>
-		<var name="h_kappa_q" type="real" dimensions="nVertLevels nEdges Time" units=""
-		     description="kappa_q parameter for Gent-McWilliams eddy parameterization"
-		/>
-		<var name="divergence" type="real" dimensions="nVertLevels nCells Time" streams="o" units="s^{-1}"
-		     description="divergence of horizonal velocity"
-		/>
-		<var name="relativeVorticity" type="real" dimensions="nVertLevels nVertices Time" streams="" units="s^{-1}"
-		     description="curl of horizontal velocity, defined at vertices"
-		/>
-		<var name="relativeVorticityCell" type="real" dimensions="nVertLevels nCells Time" streams="o" units="s^{-1}"
-		     description="curl of horizontal velocity, averaged from vertices to cell centers"
-		/>
-		<var name="normalizedRelativeVorticityEdge" type="real" dimensions="nVertLevels nEdges Time" units="s^{-1}"
-		     description="curl of horizontal velocity divided by layer thickness, averaged from vertices to edges"
-		/>
-		<var name="normalizedPlanetaryVorticityEdge" type="real" dimensions="nVertLevels nEdges Time" units="s^{-1}"
-		     description="earth's rotational rate (Coriolis parameter, f) divided by layer thickness, averaged from vertices to edges"
-		/>
-		<var name="normalizedRelativeVorticityCell" type="real" dimensions="nVertLevels nCells Time" units="s^{-1}"
-		     description="curl of horizontal velocity divided by layer thickness, averaged from vertices to cell centers"
-		/>
-		<var name="layerThicknessEdge" type="real" dimensions="nVertLevels nEdges Time" units="m"
-		     description="layer thickness averaged from cell center to edges"
-		/>
-		<var name="layerThicknessVertex" type="real" dimensions="nVertLevels nVertices Time" units="m"
-		     description="layer thickness averaged from cell center to vertices"
-		/>
-		<var name="kineticEnergyCell" type="real" dimensions="nVertLevels nCells Time" streams="o" units="m^2 s^{-2}"
-		     description="kinetic energy of horizonal velocity on cells"
-		/>
-		<var name="normalVelocityX" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
-		     description="component of horizontal velocity in the x-direction (cartesian)"
-		/>
-		<var name="normalVelocityY" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
-		     description="component of horizontal velocity in the y-direction (cartesian)"
-		/>
-		<var name="normalVelocityZ" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
-		     description="component of horizontal velocity in the z-direction (cartesian)"
-		/>
-		<var name="normalVelocityZonal" type="real" dimensions="nVertLevels nCells Time" streams="o" units="m s^{-1}"
-		     description="component of horizontal velocity in the eastward direction"
-		/>
-		<var name="normalVelocityMeridional" type="real" dimensions="nVertLevels nCells Time" streams="o" units="m s^{-1}"
-		     description="component of horizontal velocity in the northward"
-		/>
-		<var name="montgomeryPotential" type="real" dimensions="nVertLevels nCells Time" units="m^2 s^{-2}"
-		     description="Montgomery potential, may be used as the pressure for isopycnal coordinates."
-		/>
-		<var name="pressure" type="real" dimensions="nVertLevels nCells Time" streams="o" units="N m^{-2}"
-		     description="pressure used in the momentum equation"
-		/>
-		<var name="vertTransportVelocityTop" type="real" dimensions="nVertLevelsP1 nCells Time" streams="o" units="m s^{-1}"
-		     description="vertical transport through the layer interface at the top of the cell"
-		/>
-		<var name="vertVelocityTop" type="real" dimensions="nVertLevelsP1 nCells Time" streams="o" units="m s^{-1}"
-		     description="vertical velocity defined at center (horizonally) and top (vertically) of cell"
-		/>
-		<var name="displacedDensity" type="real" dimensions="nVertLevels nCells Time" streams="o" units="kg m^{-3}"
-		     description="Density displaced adiabatically to the mid-depth one layer deeper.  That is, layer k has been displaced to the depth of layer k+1."
-		/>
-		<var name="potentialDensity" type="real" dimensions="nVertLevels nCells Time" streams="o" units="kg m^{-3}"
-		     description="potential density: density displaced adiabatically to the mid-depth of top layer"
-		/>
-		<var name="BruntVaisalaFreqTop" type="real" dimensions="nVertLevels nCells Time" streams="o" units="s^{-2}"
-		     description="Brunt Vaisala frequency defined at the center (horizontally) and top (vertically) of cell"
-		/>
-		<var name="viscosity" type="real" dimensions="nVertLevels nEdges Time" streams="o" units="m^2 s^{-1}"
-		     description="horizontal viscosity"
-		/>
-		<var name="circulation" type="real" dimensions="nVertLevels nVertices Time" units="m^2 s^{-1}"
-		     description="area-integrated vorticity"
-		/>
-		<var name="areaCellGlobal" type="real" dimensions="Time" streams="o" units="m^2"
-		     description="sum of the areaCell variable over the full domain, used to normalize global statistics"
-		/>
-		<var name="areaEdgeGlobal" type="real" dimensions="Time" streams="o" units="m^2"
-		     description="sum of the areaEdge variable over the full domain, used to normalize global statistics"
-		/>
-		<var name="areaTriangleGlobal" type="real" dimensions="Time" streams="o" units="m^2"
-		     description="sum of the areaTriangle variable over the full domain, used to normalize global statistics"
-		/>
-		<var name="volumeCellGlobal" type="real" dimensions="Time" streams="o" units="m^3"
-		     description="sum of the volumeCell variable over the full domain, used to normalize global statistics"
-		/>
-		<var name="volumeEdgeGlobal" type="real" dimensions="Time" streams="o" units="m^3"
-		     description="sum of the volumeEdge variable over the full domain, used to normalize global statistics"
-		/>
-		<var name="CFLNumberGlobal" type="real" dimensions="Time" streams="o" units="unitless"
-		     description="maximum CFL number over the full domain"
-		/>
-		<var name="nAverage" type="real" dimensions="Time" streams="o" units="unitless"
-		     description="number of timesteps in time-averaged variables"
-		/>
-		<var name="avgSsh" type="real" dimensions="nCells Time" streams="o" units="m"
-		     description="time-averaged sea surface height"
-		/>
-		<var name="varSsh" type="real" dimensions="nCells Time" streams="o" units="m"
-		     description="variance of sea surface height"
-		/>
-		<var name="avgVelocityZonal" type="real" dimensions="nVertLevels nCells Time" streams="o" units="m s^{-1}"
-		     description="time-averaged velocity in the eastward direction"
-		/>
-		<var name="avgVelocityMeridional" type="real" dimensions="nVertLevels nCells Time" streams="o" units="m s^{-1}"
-		     description="time-averaged velocity in the northward direction"
-		/>
-		<var name="varVelocityZonal" type="real" dimensions="nVertLevels nCells Time" streams="o" units="m s^{-1}"
-		     description="variance of velocity in the eastward direction"
-		/>
-		<var name="varVelocityMeridional" type="real" dimensions="nVertLevels nCells Time" streams="o" units="m s^{-1}"
-		     description="variance of velocity in the northward direction"
-		/>
-		<var name="avgNormalVelocity" type="real" dimensions="nVertLevels nEdges Time" streams="o" units="m s^{-1}"
-		     description="time-averaged velocity, normal to cell edge"
-		/>
-		<var name="varNormalVelocity" type="real" dimensions="nVertLevels nEdges Time" streams="o" units="m s^{-1}"
-		     description="variance of velocity, normal to cell edge"
-		/>
-		<var name="avgVertVelocityTop" type="real" dimensions="nVertLevelsP1 nCells Time" streams="o" units="m s^{-1}"
-		     description="time-averaged vertical velocity at top of cell"
-		/>
-        <var name="gradSSH" type="real" dimensions="nVertLevels nEdges Time" units=""
-             description="Gradient of sea surface height at edges."
-        />
-        <var name="gradSSHX" type="real" dimensions="nVertLevels nCells Time" units=""
-             description="X Component of the gradient of sea surface height at cell centers."
-        />
-        <var name="gradSSHY" type="real" dimensions="nVertLevels nCells Time" units=""
-             description="Y Component of the gradient of sea surface height at cell centers."
-        />
-        <var name="gradSSHZ" type="real" dimensions="nVertLevels nCells Time" units=""
-             description="Z Component of the gradient of sea surface height at cell centers."
-        />
-        <var name="gradSSHZonal" type="real" dimensions="nVertLevels nCells Time" units=""
-             description="Zonal Component of the gradient of sea surface height at cell centers."
-        />
-        <var name="gradSSHMeridional" type="real" dimensions="nVertLevels nCells Time" units=""
-             description="Meridional Component of the gradient of sea surface height at cell centers."
-        />
 	</var_struct>
 	<var_struct name="mesh" time_levs="0">
 		<var name="latCell" type="real" dimensions="nCells" streams="iro" units="radians"
@@ -1097,6 +915,9 @@
 		/>
 	</var_struct>
 	<var_struct name="diagnostics" time_levs="0">
+		<var name="xtime" type="text" dimensions="Time" streams="ro" units="unitless"
+		     description="model time, with format 'YYYY-MM-DD_HH:MM:SS'"
+		/>
 		<var_array name="tracersSurfaceValue" type="real" dimensions="nCells Time">
 			<var name="temperatureSurfaceValue" array_group="surfaceValues" streams="o" units="degrees Celsius" name_in_code="temperatureSurfaceValue"
 				description="potential temperature extrapolated to ocean surface"
@@ -1124,6 +945,152 @@
 				 description="Meridional gradient of SSH reconstructed at cell centers"
 			/>
 		</var_array>
+		<var name="zMid" type="real" dimensions="nVertLevels nCells Time" streams="o" units="m"
+		     description="z-coordinate of the mid-depth of the layer"
+		/>
+		<var name="zTop" type="real" dimensions="nVertLevels nCells Time" streams="o" units="m"
+			description="z-coordinate of the top of the layer"
+		/>
+
+		<var name="density" type="real" dimensions="nVertLevels nCells Time" streams="o" units="kg m^{-3}"
+		     description="density"
+		/>
+		<var name="displacedDensity" type="real" dimensions="nVertLevels nCells Time" streams="o" units="kg m^{-3}"
+		     description="Density displaced adiabatically to the mid-depth one layer deeper.  That is, layer k has been displaced to the depth of layer k+1."
+		/>
+		<var name="potentialDensity" type="real" dimensions="nVertLevels nCells Time" streams="o" units="kg m^{-3}"
+		     description="potential density: density displaced adiabatically to the mid-depth of top layer"
+		/>
+		<var name="BruntVaisalaFreqTop" type="real" dimensions="nVertLevels nCells Time" streams="o" units="s^{-2}"
+		     description="Brunt Vaisala frequency defined at the center (horizontally) and top (vertically) of cell"
+		/>
+
+		<var name="montgomeryPotential" type="real" dimensions="nVertLevels nCells Time" units="m^2 s^{-2}"
+		     description="Montgomery potential, may be used as the pressure for isopycnal coordinates."
+		/>
+		<var name="pressure" type="real" dimensions="nVertLevels nCells Time" streams="o" units="N m^{-2}"
+		     description="pressure used in the momentum equation"
+		/>
+
+		<var name="uTransport" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+		     description="horizontal velocity used to transport mass and tracers"
+		/>
+		<var name="vertTransportVelocityTop" type="real" dimensions="nVertLevelsP1 nCells Time" streams="o" units="m s^{-1}"
+		     description="vertical transport through the layer interface at the top of the cell"
+		/>
+		<var name="vertVelocityTop" type="real" dimensions="nVertLevelsP1 nCells Time" streams="o" units="m s^{-1}"
+		     description="vertical velocity defined at center (horizonally) and top (vertically) of cell"
+		/>
+		<var name="tangentialVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+		     description="horizontal velocity, tangential to an edge"
+		/>
+
+		<var name="layerThicknessEdge" type="real" dimensions="nVertLevels nEdges Time" units="m"
+		     description="layer thickness averaged from cell center to edges"
+		/>
+		<var name="layerThicknessVertex" type="real" dimensions="nVertLevels nVertices Time" units="m"
+		     description="layer thickness averaged from cell center to vertices"
+		/>
+
+		<var name="kineticEnergyCell" type="real" dimensions="nVertLevels nCells Time" streams="o" units="m^2 s^{-2}"
+		     description="kinetic energy of horizonal velocity on cells"
+		/>
+
+		<var name="hEddyFlux" type="real" dimensions="nVertLevels nEdges Time" units=""
+		     description="Eddy flux in Gent-McWilliams eddy parameterization"
+		/>
+		<var name="hKappa" type="real" dimensions="nVertLevels nEdges Time" units=""
+		     description="kappa parameter for Gent-McWilliams eddy parameterization"
+		/>
+		<var name="hKappaQ" type="real" dimensions="nVertLevels nEdges Time" units=""
+		     description="kappaQ parameter for Gent-McWilliams eddy parameterization"
+		/>
+
+		<var name="viscosity" type="real" dimensions="nVertLevels nEdges Time" streams="o" units="m^2 s^{-1}"
+		     description="horizontal viscosity"
+		/>
+		<var name="divergence" type="real" dimensions="nVertLevels nCells Time" streams="o" units="s^{-1}"
+		     description="divergence of horizonal velocity"
+		/>
+		<var name="circulation" type="real" dimensions="nVertLevels nVertices Time" units="m^2 s^{-1}"
+		     description="area-integrated vorticity"
+		/>
+		<var name="relativeVorticity" type="real" dimensions="nVertLevels nVertices Time" streams="" units="s^{-1}"
+		     description="curl of horizontal velocity, defined at vertices"
+		/>
+		<var name="relativeVorticityCell" type="real" dimensions="nVertLevels nCells Time" streams="o" units="s^{-1}"
+		     description="curl of horizontal velocity, averaged from vertices to cell centers"
+		/>
+		<var name="normalizedRelativeVorticityEdge" type="real" dimensions="nVertLevels nEdges Time" units="s^{-1}"
+		     description="curl of horizontal velocity divided by layer thickness, averaged from vertices to edges"
+		/>
+		<var name="normalizedPlanetaryVorticityEdge" type="real" dimensions="nVertLevels nEdges Time" units="s^{-1}"
+		     description="earth's rotational rate (Coriolis parameter, f) divided by layer thickness, averaged from vertices to edges"
+		/>
+		<var name="normalizedRelativeVorticityCell" type="real" dimensions="nVertLevels nCells Time" units="s^{-1}"
+		     description="curl of horizontal velocity divided by layer thickness, averaged from vertices to cell centers"
+		/>
+
+		<var name="barotropicForcing" type="real" dimensions="nEdges Time" units="m s^{-2}"
+		     description="Barotropic tendency computed from the baroclinic equations in stage 1 of the split-explicit algorithm."
+		/>
+		<var name="barotropicThicknessFlux" type="real" dimensions="nEdges Time" units="m^2 s^{-1}"
+		     description="Barotropic thickness flux at each edge, used to advance sea surface height in each subcycle of stage 2 of the split-explicit algorithm."
+		/>
+
+		<var name="normalVelocityX" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+		     description="component of horizontal velocity in the x-direction (cartesian)"
+		/>
+		<var name="normalVelocityY" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+		     description="component of horizontal velocity in the y-direction (cartesian)"
+		/>
+		<var name="normalVelocityZ" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+		     description="component of horizontal velocity in the z-direction (cartesian)"
+		/>
+		<var name="normalVelocityZonal" type="real" dimensions="nVertLevels nCells Time" streams="o" units="m s^{-1}"
+		     description="component of horizontal velocity in the eastward direction"
+		/>
+		<var name="normalVelocityMeridional" type="real" dimensions="nVertLevels nCells Time" streams="o" units="m s^{-1}"
+		     description="component of horizontal velocity in the northward"
+		/>
+
+        <var name="gradSSH" type="real" dimensions="nVertLevels nEdges Time" units=""
+             description="Gradient of sea surface height at edges."
+        />
+        <var name="gradSSHX" type="real" dimensions="nVertLevels nCells Time" units=""
+             description="X Component of the gradient of sea surface height at cell centers."
+        />
+        <var name="gradSSHY" type="real" dimensions="nVertLevels nCells Time" units=""
+             description="Y Component of the gradient of sea surface height at cell centers."
+        />
+        <var name="gradSSHZ" type="real" dimensions="nVertLevels nCells Time" units=""
+             description="Z Component of the gradient of sea surface height at cell centers."
+        />
+        <var name="gradSSHZonal" type="real" dimensions="nVertLevels nCells Time" units=""
+             description="Zonal Component of the gradient of sea surface height at cell centers."
+        />
+        <var name="gradSSHMeridional" type="real" dimensions="nVertLevels nCells Time" units=""
+             description="Meridional Component of the gradient of sea surface height at cell centers."
+        />
+
+		<var name="uBolusGM" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+		     description="Bolus velocity in Gent-McWilliams eddy parameterization"
+		/>
+		<var name="uBolusGMX" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+		     description="Bolus velocity in Gent-McWilliams eddy parameterization, x-direction"
+		/>
+		<var name="uBolusGMY" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+		     description="Bolus velocity in Gent-McWilliams eddy parameterization, y-direction"
+		/>
+		<var name="uBolusGMZ" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+		     description="Bolus velocity in Gent-McWilliams eddy parameterization, z-direction"
+		/>
+		<var name="uBolusGMZonal" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+		     description="Bolus velocity in Gent-McWilliams eddy parameterization, zonal-direction"
+		/>
+		<var name="uBolusGMMeridional" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+		     description="Bolus velocity in Gent-McWilliams eddy parameterization, meridional-direction"
+		/>
 
 		<var name="RiTopOfCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="nondimensional"
 		     description="gradient Richardson number defined at the center (horizontally) and top (vertically)"
@@ -1158,6 +1125,56 @@
         <var name="windStressMeridionalDiag" type="real" dimensions="nCells Time" streams="o" units="N m^{-2}"
              description="reconstructed surface wind stress in the northward direction. User for diagnostics."
         />
+		<var name="areaCellGlobal" type="real" dimensions="Time" streams="o" units="m^2"
+		     description="sum of the areaCell variable over the full domain, used to normalize global statistics"
+		/>
+		<var name="areaEdgeGlobal" type="real" dimensions="Time" streams="o" units="m^2"
+		     description="sum of the areaEdge variable over the full domain, used to normalize global statistics"
+		/>
+		<var name="areaTriangleGlobal" type="real" dimensions="Time" streams="o" units="m^2"
+		     description="sum of the areaTriangle variable over the full domain, used to normalize global statistics"
+		/>
+		<var name="volumeCellGlobal" type="real" dimensions="Time" streams="o" units="m^3"
+		     description="sum of the volumeCell variable over the full domain, used to normalize global statistics"
+		/>
+		<var name="volumeEdgeGlobal" type="real" dimensions="Time" streams="o" units="m^3"
+		     description="sum of the volumeEdge variable over the full domain, used to normalize global statistics"
+		/>
+		<var name="CFLNumberGlobal" type="real" dimensions="Time" streams="o" units="unitless"
+		     description="maximum CFL number over the full domain"
+		/>
+	</var_struct>
+	<var_struct name="average" time_levs="0">
+		<var name="nAverage" type="real" dimensions="Time" streams="o" units="unitless"
+		     description="number of timesteps in time-averaged variables"
+		/>
+		<var name="avgSsh" type="real" dimensions="nCells Time" streams="o" units="m"
+		     description="time-averaged sea surface height"
+		/>
+		<var name="varSsh" type="real" dimensions="nCells Time" streams="o" units="m"
+		     description="variance of sea surface height"
+		/>
+		<var name="avgVelocityZonal" type="real" dimensions="nVertLevels nCells Time" streams="o" units="m s^{-1}"
+		     description="time-averaged velocity in the eastward direction"
+		/>
+		<var name="avgVelocityMeridional" type="real" dimensions="nVertLevels nCells Time" streams="o" units="m s^{-1}"
+		     description="time-averaged velocity in the northward direction"
+		/>
+		<var name="varVelocityZonal" type="real" dimensions="nVertLevels nCells Time" streams="o" units="m s^{-1}"
+		     description="variance of velocity in the eastward direction"
+		/>
+		<var name="varVelocityMeridional" type="real" dimensions="nVertLevels nCells Time" streams="o" units="m s^{-1}"
+		     description="variance of velocity in the northward direction"
+		/>
+		<var name="avgNormalVelocity" type="real" dimensions="nVertLevels nEdges Time" streams="o" units="m s^{-1}"
+		     description="time-averaged velocity, normal to cell edge"
+		/>
+		<var name="varNormalVelocity" type="real" dimensions="nVertLevels nEdges Time" streams="o" units="m s^{-1}"
+		     description="variance of velocity, normal to cell edge"
+		/>
+		<var name="avgVertVelocityTop" type="real" dimensions="nVertLevelsP1 nCells Time" streams="o" units="m s^{-1}"
+		     description="time-averaged vertical velocity at top of cell"
+		/>
 	</var_struct>
     <var_struct name="forcing" time_levs="0">
         <var name="surfaceWindStress" type="real" dimensions="nEdges Time" units="N m^{-2}"
@@ -1348,7 +1365,7 @@
 		/>
 		<var name="salineContractionCoeff" 
                      persistence="scratch"
-                     type="real" dimensions="nVertLevels nCells Time" units=PSU^{-1}"
+                     type="real" dimensions="nVertLevels nCells Time" units="PSU^{-1}"
 		     description="Saline contraction coefficient (beta), defined as $1/\rho d\rho/dS$.  This is also called the haline contraction coefficient."
 		/>
     </var_struct>

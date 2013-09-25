@@ -121,29 +121,30 @@ contains
 
       layerThickness => state % layerThickness % array
       normalVelocity => state % normalVelocity % array
-      uTransport  => state % uTransport % array
-      uBolusGM    => state % uBolusGM % array
-      tangentialVelocity => state % tangentialVelocity % array
-      layerThicknessEdge => state % layerThicknessEdge % array
-      circulation => state % circulation % array
-      divergence  => state % divergence % array
-      kineticEnergyCell      => state % kineticEnergyCell % array
-      relativeVorticity      => state % relativeVorticity % array
-      relativeVorticityCell  => state % relativeVorticityCell % array
-      normalizedPlanetaryVorticityEdge   => state % normalizedPlanetaryVorticityEdge % array
-      normalizedRelativeVorticityEdge    => state % normalizedRelativeVorticityEdge % array
-      normalizedRelativeVorticityCell    => state % normalizedRelativeVorticityCell % array
-      density         => state % density % array
-      displacedDensity=> state % displacedDensity % array
-      potentialDensity=> state % potentialDensity % array
-      montgomeryPotential     => state % montgomeryPotential % array
-      pressure    => state % pressure % array
-      zMid        => state % zMid % array
-      zTop        => state % zTop % array
-      ssh         => state % ssh % array
-      tracers     => state % tracers % array
-      vertVelocityTop => state % vertVelocityTop % array
-      BruntVaisalaFreqTop => state % BruntVaisalaFreqTop % array
+      tracers        => state % tracers % array
+      ssh            => state % ssh % array
+
+      zMid                             => diagnostics % zMid % array
+      zTop                             => diagnostics % zTop % array
+      divergence                       => diagnostics % divergence % array
+      circulation                      => diagnostics % circulation % array
+      relativeVorticity                => diagnostics % relativeVorticity % array
+      relativeVorticityCell            => diagnostics % relativeVorticityCell % array
+      normalizedPlanetaryVorticityEdge => diagnostics % normalizedPlanetaryVorticityEdge % array
+      normalizedRelativeVorticityEdge  => diagnostics % normalizedRelativeVorticityEdge % array
+      normalizedRelativeVorticityCell  => diagnostics % normalizedRelativeVorticityCell % array
+      density                          => diagnostics % density % array
+      displacedDensity                 => diagnostics % displacedDensity % array
+      potentialDensity                 => diagnostics % potentialDensity % array
+      montgomeryPotential              => diagnostics % montgomeryPotential % array
+      pressure                         => diagnostics % pressure % array
+      BruntVaisalaFreqTop              => diagnostics % BruntVaisalaFreqTop % array
+      tangentialVelocity               => diagnostics % tangentialVelocity % array
+      layerThicknessEdge               => diagnostics % layerThicknessEdge % array
+      kineticEnergyCell                => diagnostics % kineticEnergyCell % array
+      vertVelocityTop                  => diagnostics % vertVelocityTop % array
+      uBolusGM                         => diagnostics % uBolusGM % array
+      uTransport                       => diagnostics % uTransport % array
 
       weightsOnEdge     => mesh % weightsOnEdge % array
       kiteAreasOnVertex => mesh % kiteAreasOnVertex % array
@@ -166,8 +167,8 @@ contains
       maxLevelEdgeTop   => mesh % maxLevelEdgeTop % array
       maxLevelEdgeBot   => mesh % maxLevelEdgeBot % array
       maxLevelVertexBot => mesh % maxLevelVertexBot % array
-      kiteIndexOnCell => mesh % kiteIndexOnCell % array
-      verticesOnCell => mesh % verticesOnCell % array
+      kiteIndexOnCell   => mesh % kiteIndexOnCell % array
+      verticesOnCell    => mesh % verticesOnCell % array
 
       seaSurfacePressure => forcing % seaSurfacePressure % array
                   
@@ -524,7 +525,7 @@ contains
       ! Apply the GM closure as a bolus velocity
       !
       if (config_h_kappa .GE. epsilon(0D0)) then
-         call ocn_gm_compute_uBolus(state, mesh)
+         call ocn_gm_compute_uBolus(state, diagnostics, mesh)
       else
          uBolusGM = 0.0
       end if
@@ -744,10 +745,11 @@ contains
 !>  This routine filters barotropic mode out of the velocity variable.
 !
 !-----------------------------------------------------------------------
-   subroutine ocn_filter_btr_mode_vel(state, mesh)!{{{
+   subroutine ocn_filter_btr_mode_vel(state, diagnostics, mesh)!{{{
 
-      type (state_type), intent(inout) :: state
-      type (mesh_type), intent(in) :: mesh
+      type (state_type), intent(inout) :: state !< Input/Output: State information
+      type (diagnostics_type), intent(in) :: diagnostics !< Input: Diagnostics information
+      type (mesh_type), intent(in) :: mesh !< Input: Mesh information
 
       integer :: iEdge, k, nEdges
       real (kind=RKIND) :: vertSum, normalThicknessFluxSum, thicknessSum
@@ -757,7 +759,7 @@ contains
       call mpas_timer_start("ocn_filter_btr_mode_vel")
 
       normalVelocity => state % normalVelocity % array
-      layerThicknessEdge => state % layerThicknessEdge % array
+      layerThicknessEdge => diagnostics % layerThicknessEdge % array
       maxLevelEdgeTop => mesh % maxLevelEdgeTop % array
       nEdges      = mesh % nEdges
 
@@ -795,11 +797,12 @@ contains
 !>  This routine filters barotropic mode out of the velocity tendency.
 !
 !-----------------------------------------------------------------------
-   subroutine ocn_filter_btr_mode_tend_vel(tend, state, mesh)!{{{
+   subroutine ocn_filter_btr_mode_tend_vel(tend, state, diagnostics, mesh)!{{{
 
-      type (tend_type), intent(inout) :: tend
-      type (state_type), intent(in) :: state
-      type (mesh_type), intent(in) :: mesh
+      type (tend_type), intent(inout) :: tend !< Input/Output: Tendency information
+      type (state_type), intent(in) :: state !< Input: State information
+      type (diagnostics_type), intent(in) :: diagnostics !< Input: Diagnostics information
+      type (mesh_type), intent(in) :: mesh !< Input: Mesh information
 
       integer :: iEdge, k, nEdges
       real (kind=RKIND) :: vertSum, normalThicknessFluxSum, thicknessSum
@@ -809,8 +812,8 @@ contains
 
       call mpas_timer_start("ocn_filter_btr_mode_tend_vel")
 
-      tend_normalVelocity      => tend % normalVelocity % array
-      layerThicknessEdge      => state % layerThicknessEdge % array
+      tend_normalVelocity => tend % normalVelocity % array
+      layerThicknessEdge => diagnostics % layerThicknessEdge % array
       maxLevelEdgeTop => mesh % maxLevelEdgeTop % array
       nEdges      = mesh % nEdges
 
@@ -924,15 +927,17 @@ contains
 
       ! set pointers into state, mesh, diagnostics and scratch
       normalVelocity => state % normalVelocity % array
-      zMid => state % zMid % array
-      zTop => state % zTop % array
+
       maxLevelCell => mesh % maxLevelCell % array 
       nEdgesOnCell => mesh % nEdgesOnCell % array
-      edgesOnCell => mesh % edgesOnCell % array
-      areaCell => mesh % areaCell % array
-      dcEdge => mesh % dcEdge % array
-      dvEdge => mesh % dvEdge % array
-      density => state % density % array
+      edgesOnCell  => mesh % edgesOnCell % array
+      areaCell     => mesh % areaCell % array
+      dcEdge       => mesh % dcEdge % array
+      dvEdge       => mesh % dvEdge % array
+
+      zMid                 => diagnostics % zMid % array
+      zTop                 => diagnostics % zTop % array
+      density              => diagnostics % density % array
       bulkRichardsonNumber => diagnostics % bulkRichardsonNumber % array
       tracersSurfaceValues => diagnostics % tracersSurfaceValue  % array
 

@@ -208,7 +208,7 @@ module mpas_core
          if(err.eq.1) then
              call mpas_dmpar_abort(dminfo)
          endif
-         block % state % time_levs(1) % state % xtime % scalar = startTimeStamp 
+         block % diagnostics % xtime % scalar = startTimeStamp 
          block => block % next
       end do
 
@@ -338,27 +338,27 @@ module mpas_core
           mesh % boundaryCell % array)
       err = ior(err, err1)
 
-      call ocn_time_average_init(block % state % time_levs(1) % state)
+      call ocn_time_average_init(block % average)
    
       call mpas_timer_start("diagnostic solve", .false., initDiagSolveTimer)
       call ocn_diagnostic_solve(dt,  block % state % time_levs(1) % state, block % forcing, mesh, block % diagnostics, block % scratch)
       call mpas_timer_stop("diagnostic solve", initDiagSolveTimer)
 
       ! Compute velocity transport, used in advection terms of layerThickness and tracer tendency
-        block % state % time_levs(1) % state % uTransport % array(:,:) &
-      = block % state % time_levs(1) % state % normalVelocity % array(:,:) &
-      + block % state % time_levs(1) % state % uBolusGM % array(:,:)
+      block % diagnostics % uTransport % array(:,:) &
+            = block % state % time_levs(1) % state % normalVelocity % array(:,:) &
+            + block % diagnostics % uBolusGM % array(:,:)
 
       call ocn_compute_mesh_scaling(mesh)
  
       call mpas_rbf_interp_initialize(mesh)
       call mpas_init_reconstruct(mesh)
       call mpas_reconstruct(mesh, block % state % time_levs(1) % state % normalVelocity % array,                  &
-                       block % state % time_levs(1) % state % normalVelocityX % array,            &
-                       block % state % time_levs(1) % state % normalVelocityY % array,            &
-                       block % state % time_levs(1) % state % normalVelocityZ % array,            &
-                       block % state % time_levs(1) % state % normalVelocityZonal % array,        &
-                       block % state % time_levs(1) % state % normalVelocityMeridional % array    &
+                       block % diagnostics % normalVelocityX % array,            &
+                       block % diagnostics % normalVelocityY % array,            &
+                       block % diagnostics % normalVelocityZ % array,            &
+                       block % diagnostics % normalVelocityZonal % array,        &
+                       block % diagnostics % normalVelocityMeridional % array    &
                       )
 
       ! initialize velocities and tracers on land to be zero.
@@ -436,7 +436,7 @@ module mpas_core
       block_ptr => domain % blocklist
 
       do while(associated(block_ptr))
-        call ocn_time_average_init(block_ptr % state % time_levs(1) % state)
+        call ocn_time_average_init(block_ptr % average)
         block_ptr => block_ptr % next
       end do
 
@@ -474,7 +474,7 @@ module mpas_core
 
             block_ptr => domain % blocklist
             do while (associated(block_ptr))
-                call ocn_time_average_normalize(block_ptr % state % time_levs(1) % state)
+                call ocn_time_average_normalize(block_ptr % average)
                 block_ptr => block_ptr % next
             end do
 
@@ -482,7 +482,7 @@ module mpas_core
 
             block_ptr => domain % blocklist
             do while (associated(block_ptr))
-                call ocn_time_average_init(block_ptr % state % time_levs(1) % state)
+                call ocn_time_average_init(block_ptr % average)
                 block_ptr => block_ptr % next
             end do
          end if

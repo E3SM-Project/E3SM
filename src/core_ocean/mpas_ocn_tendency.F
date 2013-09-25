@@ -91,12 +91,14 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tend_thick(tend, s, mesh)!{{{
+   subroutine ocn_tend_thick(tend, state, diagnostics, mesh)!{{{
       implicit none
 
       type (tend_type), intent(inout) :: tend !< Input/Output: Tendency structure
-      type (state_type), intent(in) :: s !< Input: State information
-      type (mesh_type), intent(in) :: mesh !< Input: mesh information
+      !DWJ 09/25/2013: Remove State if it's really not needed here.
+      type (state_type), intent(in) :: state !< Input: State information
+      type (diagnostics_type), intent(in) :: diagnostics !< Input: Diagnostics information
+      type (mesh_type), intent(in) :: mesh !< Input: Mesh information
 
       real (kind=RKIND), dimension(:,:), pointer :: layerThicknessEdge, vertTransportVelocityTop, tend_layerThickness, uTransport
 
@@ -104,11 +106,11 @@ contains
 
       call mpas_timer_start("ocn_tend_thick")
 
-      uTransport  => s % uTransport % array
-      vertTransportVelocityTop        => s % vertTransportVelocityTop % array
-      layerThicknessEdge      => s % layerThicknessEdge % array
+      uTransport                => diagnostics % uTransport % array
+      layerThicknessEdge        => diagnostics % layerThicknessEdge % array
+      vertTransportVelocityTop  => diagnostics % vertTransportVelocityTop % array
 
-      tend_layerThickness      => tend % layerThickness % array
+      tend_layerThickness       => tend % layerThickness % array
                   
       !
       ! height tendency: start accumulating tendency terms
@@ -152,13 +154,13 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tend_vel(tend, s, d, mesh)!{{{
+   subroutine ocn_tend_vel(tend, state, diagnostics, mesh)!{{{
       implicit none
 
       type (tend_type), intent(inout) :: tend !< Input/Output: Tendency structure
-      type (state_type), intent(in) :: s !< Input: State information
-      type (diagnostics_type), intent(in) :: d !< Input: Diagnostic information
-      type (mesh_type), intent(in) :: mesh !< Input: mesh information
+      type (state_type), intent(in) :: state !< Input: State information
+      type (diagnostics_type), intent(in) :: diagnostics !< Input: Diagnostic information
+      type (mesh_type), intent(in) :: mesh !< Input: Mesh information
 
       real (kind=RKIND), dimension(:,:), pointer :: &
         layerThicknessEdge, h, normalVelocity, density, zMid, pressure, &
@@ -172,20 +174,21 @@ contains
 
       call mpas_timer_start("ocn_tend_vel")
 
-      normalVelocity => s % normalVelocity % array
-      density         => s % density % array
-      vertTransportVelocityTop        => s % vertTransportVelocityTop % array
-      zMid        => s % zMid % array
-      layerThicknessEdge      => s % layerThicknessEdge % array
-      viscosity   => s % viscosity % array
-      relativeVorticity   => s % relativeVorticity % array
-      divergence  => s % divergence % array
-      kineticEnergyCell          => s % kineticEnergyCell % array
-      normalizedRelativeVorticityEdge     => s % normalizedRelativeVorticityEdge % array
-      normalizedPlanetaryVorticityEdge     => s % normalizedPlanetaryVorticityEdge % array
-      montgomeryPotential     => s % montgomeryPotential % array
-      pressure    => s % pressure % array
-      vertViscTopOfEdge => d % vertViscTopOfEdge % array
+      normalVelocity        => state % normalVelocity % array
+
+      kineticEnergyCell                 => diagnostics % kineticEnergyCell % array
+      layerThicknessEdge                => diagnostics % layerThicknessEdge % array
+      vertTransportVelocityTop          => diagnostics % vertTransportVelocityTop % array
+      zMid                              => diagnostics % zMid % array
+      relativeVorticity                 => diagnostics % relativeVorticity % array
+      normalizedRelativeVorticityEdge   => diagnostics % normalizedRelativeVorticityEdge % array
+      normalizedPlanetaryVorticityEdge  => diagnostics % normalizedPlanetaryVorticityEdge % array
+      divergence                        => diagnostics % divergence % array
+      viscosity                         => diagnostics % viscosity % array
+      montgomeryPotential               => diagnostics % montgomeryPotential % array
+      pressure                          => diagnostics % pressure % array
+      vertViscTopOfEdge                 => diagnostics % vertViscTopOfEdge % array
+      density                           => diagnostics % density % array
 
       tend_normalVelocity      => tend % normalVelocity % array
                   
@@ -259,13 +262,13 @@ contains
 !>  This routine computes tracer tendencies for the ocean
 !
 !-----------------------------------------------------------------------
-   subroutine ocn_tend_tracer(tend, s, d, mesh, dt)!{{{
+   subroutine ocn_tend_tracer(tend, state, diagnostics, mesh, dt)!{{{
       implicit none
 
       type (tend_type), intent(inout) :: tend !< Input/Output: Tendency structure
-      type (state_type), intent(in) :: s !< Input: State information
-      type (diagnostics_type), intent(in) :: d !< Input: Diagnostic information
-      type (mesh_type), intent(in) :: mesh !< Input: mesh information
+      type (state_type), intent(in) :: state !< Input: State information
+      type (diagnostics_type), intent(in) :: diagnostics !< Input: Diagnostic information
+      type (mesh_type), intent(in) :: mesh !< Input: Mesh information
       real (kind=RKIND), intent(in) :: dt !< Input: Time step
 
       real (kind=RKIND), dimension(:,:), pointer :: &
@@ -277,12 +280,13 @@ contains
 
       call mpas_timer_start("ocn_tend_tracer")
 
-      uTransport  => s % uTransport % array
-      layerThickness           => s % layerThickness % array
-      vertTransportVelocityTop        => s % vertTransportVelocityTop % array
-      tracers     => s % tracers % array
-      layerThicknessEdge      => s % layerThicknessEdge % array
-      vertDiffTopOfCell => d % vertDiffTopOfCell % array
+      layerThickness          => state % layerThickness % array
+      tracers                 => state % tracers % array
+
+      uTransport                => diagnostics % uTransport % array
+      layerThicknessEdge        => diagnostics % layerThicknessEdge % array
+      vertDiffTopOfCell         => diagnostics % vertDiffTopOfCell % array
+      vertTransportVelocityTop  => diagnostics % vertTransportVelocityTop % array
 
       tend_tr     => tend % tracers % array
       tend_layerThickness      => tend % layerThickness % array
@@ -325,7 +329,7 @@ contains
       !
       call mpas_timer_start("restoring", .false., tracerRestoringTimer)
 
-      call ocn_restoring_tend(mesh, layerThickness, s%index_temperature, s%index_salinity, tracers, tend_tr, err)
+      call ocn_restoring_tend(mesh, layerThickness, state % index_temperature, state % index_salinity, tracers, tend_tr, err)
 
       call mpas_timer_stop("restoring", tracerRestoringTimer)
 
@@ -348,12 +352,12 @@ contains
 !>  config_freq_filtered_thickness is true (z-tilde)
 !
 !-----------------------------------------------------------------------
+   subroutine ocn_tend_freq_filtered_thickness(tend, state, diagnostics, mesh)!{{{
 
-   subroutine ocn_tend_freq_filtered_thickness(tend, s, mesh)!{{{
-
-      type (tend_type), intent(inout) :: tend
-      type (state_type), intent(in) :: s
-      type (mesh_type), intent(in) :: mesh
+      type (tend_type), intent(inout) :: tend !< Input/Output: Tendency information
+      type (state_type), intent(in) :: state !< Input: State information
+      type (diagnostics_type), intent(in) :: diagnostics !< Input: Diagnostics information
+      type (mesh_type), intent(in) :: mesh !< Input: Mesh information
 
       integer :: err, nCells, nVertLevels, iCell, i, k, iEdge
       integer, dimension(:), pointer :: maxLevelCell, maxLevelEdgeBot, nEdgesOnCell
@@ -382,11 +386,13 @@ contains
       maxLevelEdgeBot   => mesh % maxLevelEdgeBot % array
       dvEdge            => mesh % dvEdge % array
 
-      normalVelocity => s % normalVelocity % array
-      layerThickness => s % layerThickness % array
-      layerThicknessEdge => s % layerThicknessEdge % array
-      lowFreqDivergence => s % lowFreqDivergence % array
-      highFreqThickness => s % highFreqThickness % array
+      normalVelocity      => state % normalVelocity % array
+      layerThickness      => state % layerThickness % array
+      lowFreqDivergence   => state % lowFreqDivergence % array
+      highFreqThickness   => state % highFreqThickness % array
+
+      layerThicknessEdge  => diagnostics % layerThicknessEdge % array
+
       tend_lowFreqDivergence => tend % lowFreqDivergence % array
       tend_highFreqThickness => tend % highFreqThickness % array
 
@@ -461,7 +467,7 @@ contains
         integer, intent(out) :: err !< Output: Error flag
 
         err = 0
-	if (config_use_highFreqThick_restore) then
+        if (config_use_highFreqThick_restore) then
            use_highFreqThick_restore = 1
         else
            use_highFreqThick_restore = 0
