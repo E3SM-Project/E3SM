@@ -15,8 +15,8 @@ module ocn_time_average
 
     contains 
 
-    subroutine ocn_time_average_init(state)!{{{
-        type (state_type), intent(inout) :: state
+    subroutine ocn_time_average_init(average)!{{{
+        type (average_type), intent(inout) :: average
 
         real (kind=RKIND), pointer :: nAverage
 
@@ -24,17 +24,17 @@ module ocn_time_average
         real (kind=RKIND), dimension(:,:), pointer :: avgVelocityZonal, avgVelocityMeridional, varVelocityZonal, varVelocityMeridional
         real (kind=RKIND), dimension(:,:), pointer :: avgNormalVelocity, varNormalVelocity, avgVertVelocityTop
 
-        nAverage => state % nAverage % scalar
+        nAverage => average % nAverage % scalar
 
-        avgSSH => state % avgSSH % array
-        varSSH => state % varSSH % array
-        avgVelocityZonal => state % avgVelocityZonal % array
-        avgVelocityMeridional => state % avgVelocityMeridional % array
-        varVelocityZonal => state % varVelocityZonal % array
-        varVelocityMeridional => state % varVelocityMeridional % array
-        avgNormalVelocity => state % avgNormalVelocity % array
-        varNormalVelocity => state % varNormalVelocity % array
-        avgVertVelocityTop => state % avgVertVelocityTop % array
+        avgSSH                => average % avgSSH % array
+        varSSH                => average % varSSH % array
+        avgVelocityZonal      => average % avgVelocityZonal % array
+        avgVelocityMeridional => average % avgVelocityMeridional % array
+        varVelocityZonal      => average % varVelocityZonal % array
+        varVelocityMeridional => average % varVelocityMeridional % array
+        avgNormalVelocity     => average % avgNormalVelocity % array
+        varNormalVelocity     => average % varNormalVelocity % array
+        avgVertVelocityTop    => average % avgVertVelocityTop % array
 
         nAverage = 0
 
@@ -50,9 +50,10 @@ module ocn_time_average
 
     end subroutine ocn_time_average_init!}}}
 
-    subroutine ocn_time_average_accumulate(state, old_state)!{{{
-        type (state_type), intent(inout) :: state
-        type (state_type), intent(in) :: old_state
+    subroutine ocn_time_average_accumulate(average, state, diagnostics)!{{{
+        type (average_type), intent(inout) :: average
+        type (state_type), intent(in) :: state
+        type (diagnostics_type), intent(in) :: diagnostics
 
         real (kind=RKIND), pointer :: nAverage, old_nAverage
 
@@ -67,50 +68,40 @@ module ocn_time_average
         real (kind=RKIND), dimension(:,:), pointer :: old_avgVelocityZonal, old_avgVelocityMeridional, old_varVelocityZonal, old_varVelocityMeridional
         real (kind=RKIND), dimension(:), pointer :: old_avgSSH, old_varSSH
 
-        old_nAverage => old_state % nAverage  % scalar
-        nAverage => state % nAverage  % scalar
+        nAverage     => average % nAverage  % scalar
 
-        ssh => state % ssh % array
-        normalVelocityZonal => state % normalVelocityZonal % array
-        normalVelocityMeridional => state % normalVelocityMeridional % array
-        normalVelocity => state % normalVelocity % array
-        vertVelocityTop => state % vertVelocityTop % array
+        normalVelocity  => state % normalVelocity % array
+        ssh             => state % ssh % array
 
-        avgSSH => state % avgSSH % array
-        varSSH => state % varSSH % array
-        avgVelocityZonal => state % avgVelocityZonal % array
-        avgVelocityMeridional => state % avgVelocityMeridional % array
-        varVelocityZonal => state % varVelocityZonal % array
-        varVelocityMeridional => state % varVelocityMeridional % array
-        avgNormalVelocity => state % avgNormalVelocity % array
-        varNormalVelocity => state % varNormalVelocity % array
-        avgVertVelocityTop => state % avgVertVelocityTop % array
+        normalVelocityZonal      => diagnostics % normalVelocityZonal % array
+        normalVelocityMeridional => diagnostics % normalVelocityMeridional % array
+        vertVelocityTop          => diagnostics % vertVelocityTop % array
 
-        old_avgSSH => old_state % avgSSH % array
-        old_varSSH => old_state % varSSH % array
-        old_avgVelocityZonal => old_state % avgVelocityZonal % array
-        old_avgVelocityMeridional => old_state % avgVelocityMeridional % array
-        old_varVelocityZonal => old_state % varVelocityZonal % array
-        old_varVelocityMeridional => old_state % varVelocityMeridional % array
-        old_avgNormalVelocity => old_state % avgNormalVelocity % array
-        old_varNormalVelocity => old_state % varNormalVelocity % array
-        old_avgVertVelocityTop => old_state % avgVertVelocityTop % array
+        avgSSH                   => average % avgSSH % array
+        varSSH                   => average % varSSH % array
+        avgVelocityZonal         => average % avgVelocityZonal % array
+        avgVelocityMeridional    => average % avgVelocityMeridional % array
+        varVelocityZonal         => average % varVelocityZonal % array
+        varVelocityMeridional    => average % varVelocityMeridional % array
+        avgNormalVelocity        => average % avgNormalVelocity % array
+        varNormalVelocity        => average % varNormalVelocity % array
+        avgVertVelocityTop       => average % avgVertVelocityTop % array
 
-        avgSSH = old_avgSSH + ssh
-        varSSH = old_varSSH + ssh**2
-        avgVelocityZonal = old_avgVelocityZonal + normalVelocityZonal
-        avgVelocityMeridional = old_avgVelocityMeridional + normalVelocityMeridional
-        varVelocityZonal = old_varVelocityZonal + normalVelocityZonal**2
-        varVelocityMeridional = old_varVelocityMeridional + normalVelocityMeridional**2
-        avgNormalVelocity = old_avgNormalVelocity + normalVelocity
-        varNormalVelocity = old_varNormalVelocity + normalVelocity**2
-        avgVertVelocityTop = old_avgVertVelocityTop + vertVelocityTop
+        avgSSH = avgSSH + ssh
+        varSSH = varSSH + ssh**2
+        avgVelocityZonal = avgVelocityZonal + normalVelocityZonal
+        avgVelocityMeridional = avgVelocityMeridional + normalVelocityMeridional
+        varVelocityZonal = varVelocityZonal + normalVelocityZonal**2
+        varVelocityMeridional = varVelocityMeridional + normalVelocityMeridional**2
+        avgNormalVelocity = avgNormalVelocity + normalVelocity
+        varNormalVelocity = varNormalVelocity + normalVelocity**2
+        avgVertVelocityTop = avgVertVelocityTop + vertVelocityTop
 
-        nAverage = old_nAverage + 1
+        nAverage = nAverage + 1
     end subroutine ocn_time_average_accumulate!}}}
 
-    subroutine ocn_time_average_normalize(state)!{{{
-        type (state_type), intent(inout) :: state
+    subroutine ocn_time_average_normalize(average)!{{{
+        type (average_type), intent(inout) :: average
 
         real (kind=RKIND), pointer :: nAverage
 
@@ -118,17 +109,17 @@ module ocn_time_average
         real (kind=RKIND), dimension(:,:), pointer :: avgVelocityZonal, avgVelocityMeridional, varVelocityZonal, varVelocityMeridional
         real (kind=RKIND), dimension(:,:), pointer :: avgNormalVelocity, varNormalVelocity, avgVertVelocityTop
 
-        nAverage => state % nAverage  % scalar
+        nAverage => average % nAverage  % scalar
 
-        avgSSH => state % avgSSH % array
-        varSSH => state % varSSH % array
-        avgVelocityZonal => state % avgVelocityZonal % array
-        avgVelocityMeridional => state % avgVelocityMeridional % array
-        varVelocityZonal => state % varVelocityZonal % array
-        varVelocityMeridional => state % varVelocityMeridional % array
-        avgNormalVelocity => state % avgNormalVelocity % array
-        varNormalVelocity => state % varNormalVelocity % array
-        avgVertVelocityTop => state % avgVertVelocityTop % array
+        avgSSH                => average % avgSSH % array
+        varSSH                => average % varSSH % array
+        avgVelocityZonal      => average % avgVelocityZonal % array
+        avgVelocityMeridional => average % avgVelocityMeridional % array
+        varVelocityZonal      => average % varVelocityZonal % array
+        varVelocityMeridional => average % varVelocityMeridional % array
+        avgNormalVelocity     => average % avgNormalVelocity % array
+        varNormalVelocity     => average % varNormalVelocity % array
+        avgVertVelocityTop    => average % avgVertVelocityTop % array
 
         if(nAverage > 0) then
           avgSSH = avgSSH / nAverage
@@ -140,6 +131,8 @@ module ocn_time_average
           avgNormalVelocity = avgNormalVelocity / nAverage
           varNormalVelocity = varNormalVelocity / nAverage
           avgVertVelocityTop = avgVertVelocityTop / nAverage
+
+          nAverage = 0
         end if
     end subroutine ocn_time_average_normalize!}}}
 

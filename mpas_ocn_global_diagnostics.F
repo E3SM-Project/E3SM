@@ -74,6 +74,7 @@ module ocn_global_diagnostics
       type (dm_info), pointer :: dminfo
       type (state_type), pointer :: state
       type (mesh_type), pointer :: mesh
+      type (diagnostics_type), pointer :: diagnostics
 
       integer :: nVertLevels, nCellsSolve, nEdgesSolve, nVerticesSolve, nCellsGlobal, nEdgesGlobal, nVerticesGlobal, iTracer
       integer :: elementIndex, variableIndex, nVariables, nSums, nMaxes, nMins
@@ -111,6 +112,7 @@ module ocn_global_diagnostics
       do while (associated(block))
          state => block % state % time_levs(timeLevel) % state
          mesh => block % mesh
+         diagnostics => block % diagnostics
          
          num_tracers = state % num_tracers
 
@@ -119,32 +121,34 @@ module ocn_global_diagnostics
          nEdgesSolve = mesh % nEdgesSolve
          nVerticesSolve = mesh % nVerticesSolve
 
-         areaCell => mesh % areaCell % array
-         dcEdge => mesh % dcEdge % array
-         dvEdge => mesh % dvEdge % array
-         areaTriangle => mesh % areaTriangle % array
-         allocate(areaEdge(1:nEdgesSolve))
-         areaEdge = dcEdge(1:nEdgesSolve)*dvEdge(1:nEdgesSolve)
-         maxLevelCell => mesh % maxLevelCell % array
-         maxLevelEdgeTop => mesh % maxLevelEdgeTop % array
+         areaCell          => mesh % areaCell % array
+         dcEdge            => mesh % dcEdge % array
+         dvEdge            => mesh % dvEdge % array
+         areaTriangle      => mesh % areaTriangle % array
+         maxLevelCell      => mesh % maxLevelCell % array
+         maxLevelEdgeTop   => mesh % maxLevelEdgeTop % array
          maxLevelVertexBot => mesh % maxLevelVertexBot % array
 
-         layerThickness => state % layerThickness % array
-         normalVelocity => state % normalVelocity % array
-         density => state % density % array
-         tracers => state % tracers % array
-         tangentialVelocity => state % tangentialVelocity % array
-         vertTransportVelocityTop => state % vertTransportVelocityTop % array
-         vertVelocityTop => state % vertVelocityTop % array
-         layerThicknessEdge => state % layerThicknessEdge % array
-         relativeVorticity => state % relativeVorticity % array
-         kineticEnergyCell => state % kineticEnergyCell % array
-         normalizedRelativeVorticityEdge => state % normalizedRelativeVorticityEdge % array
-         normalizedPlanetaryVorticityEdge => state % normalizedPlanetaryVorticityEdge % array
-         montgomeryPotential => state % montgomeryPotential % array
-         pressure => state % pressure % array
+         allocate(areaEdge(1:nEdgesSolve))
+         areaEdge = dcEdge(1:nEdgesSolve)*dvEdge(1:nEdgesSolve)
+
+         layerThickness    => state % layerThickness % array
+         normalVelocity    => state % normalVelocity % array
+         tracers           => state % tracers % array
          lowFreqDivergence => state % lowFreqDivergence % array
          highFreqThickness => state % highFreqThickness % array
+
+         density                          => diagnostics % density % array
+         montgomeryPotential              => diagnostics % montgomeryPotential % array
+         pressure                         => diagnostics % pressure % array
+         relativeVorticity                => diagnostics % relativeVorticity % array
+         normalizedRelativeVorticityEdge  => diagnostics % normalizedRelativeVorticityEdge % array
+         normalizedPlanetaryVorticityEdge => diagnostics % normalizedPlanetaryVorticityEdge % array
+         vertTransportVelocityTop         => diagnostics % vertTransportVelocityTop % array
+         vertVelocityTop                  => diagnostics % vertVelocityTop % array
+         tangentialVelocity               => diagnostics % tangentialVelocity % array
+         layerThicknessEdge               => diagnostics % layerThicknessEdge % array
+         kineticEnergyCell                => diagnostics % kineticEnergyCell % array
 
          variableIndex = 0
          ! layerThickness
@@ -407,7 +411,7 @@ module ocn_global_diagnostics
       variableIndex = 0
 
       ! time, in days, using a 360 day calendar
-      read (state % xtime % scalar, '(i4,5(a1,i2))'), timeYYYY, timeChar, timeMM, timeChar, timeDD, timeChar, timeH, timeChar, timeM, timeChar, timeS
+      read (diagnostics % xtime % scalar, '(i4,5(a1,i2))'), timeYYYY, timeChar, timeMM, timeChar, timeDD, timeChar, timeH, timeChar, timeM, timeChar, timeS
       ! subtract 31.0 because calendar starts on 00-01-01
       time_days = timeYYYY*360.0 + timeMM*30.0 + timeDD + (timeH + (timeM + timeS/60.0)/60.0)/24.0 - 31.0
 
@@ -510,7 +514,7 @@ module ocn_global_diagnostics
          close (fileID)
          open(fileID,file='stats_time.txt',STATUS='UNKNOWN', POSITION='append')
             write (fileID,'(i10,10x,a,100es24.14)') timeIndex, &
-               trim(state % xtime % scalar), dt, &
+               trim(diagnostics % xtime % scalar), dt, &
                CFLNumberGlobal
          close (fileID)
          open(fileID,file='stats_colmin.txt',STATUS='UNKNOWN', POSITION='append')
@@ -521,13 +525,13 @@ module ocn_global_diagnostics
          close (fileID)
       end if
 
-      state % areaCellGlobal % scalar = areaCellGlobal
-      state % areaEdgeGlobal % scalar = areaEdgeGlobal
-      state % areaTriangleGlobal % scalar = areaTriangleGlobal
+      diagnostics % areaCellGlobal % scalar = areaCellGlobal
+      diagnostics % areaEdgeGlobal % scalar = areaEdgeGlobal
+      diagnostics % areaTriangleGlobal % scalar = areaTriangleGlobal
 
-      state % volumeCellGlobal % scalar = volumeCellGlobal
-      state % volumeEdgeGlobal % scalar = volumeEdgeGlobal
-      state % CFLNumberGlobal % scalar = CFLNumberGlobal
+      diagnostics % volumeCellGlobal % scalar = volumeCellGlobal
+      diagnostics % volumeEdgeGlobal % scalar = volumeEdgeGlobal
+      diagnostics % CFLNumberGlobal % scalar = CFLNumberGlobal
       deallocate(areaEdge)
 
    end subroutine ocn_compute_global_diagnostics!}}}

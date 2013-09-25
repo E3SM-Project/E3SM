@@ -136,8 +136,8 @@ module ocn_time_integration_split
                  block % state % time_levs(2) % state % normalBaroclinicVelocity % array(k,iEdge) &
                = block % state % time_levs(1) % state % normalBaroclinicVelocity % array(k,iEdge)
 
-                 block % state % time_levs(2) % state % layerThicknessEdge % array(k,iEdge) &
-               = block % state % time_levs(1) % state % layerThicknessEdge % array(k,iEdge)
+                 block % diagnostics % layerThicknessEdge % array(k,iEdge) &
+               = block % diagnostics % layerThicknessEdge % array(k,iEdge)
 
             end do 
          end do 
@@ -183,10 +183,10 @@ module ocn_time_integration_split
 
          ! ---  update halos for diagnostic variables
          call mpas_timer_start("se halo diag", .false., timer_halo_diagnostic)
-         call mpas_dmpar_exch_halo_field(domain % blocklist % state % time_levs(2) % state % normalizedRelativeVorticityEdge)
+         call mpas_dmpar_exch_halo_field(domain % blocklist % diagnostics % normalizedRelativeVorticityEdge)
          if (config_mom_del4 > 0.0) then
-           call mpas_dmpar_exch_halo_field(domain % blocklist % state % time_levs(2) % state % divergence)
-           call mpas_dmpar_exch_halo_field(domain % blocklist % state % time_levs(2) % state % relativeVorticity)
+           call mpas_dmpar_exch_halo_field(domain % blocklist % diagnostics % divergence)
+           call mpas_dmpar_exch_halo_field(domain % blocklist % diagnostics % relativeVorticity)
          end if
          call mpas_timer_stop("se halo diag", timer_halo_diagnostic)
 
@@ -201,7 +201,7 @@ module ocn_time_integration_split
             block => domain % blocklist
             do while (associated(block))
                call ocn_tend_freq_filtered_thickness(block % tend, &
-                  block % state % time_levs(stage1_tend_time) % state, block % mesh)
+                  block % state % time_levs(stage1_tend_time) % state, block % diagnostics, block % mesh)
                block => block % next
             end do
             call mpas_timer_stop("se freq-filtered-thick computations")
@@ -237,11 +237,11 @@ module ocn_time_integration_split
            ! Use the most recent time level available.
            call ocn_vert_transport_velocity_top(block % mesh, block % verticalMesh, &
               block % state % time_levs(1) % state % layerThickness % array, &
-              block % state % time_levs(stage1_tend_time) % state % layerThicknessEdge % array, &
+              block % diagnostics % layerThicknessEdge % array, &
               block % state % time_levs(stage1_tend_time) % state % normalVelocity % array, &
               block % state % time_levs(1) % state % ssh % array, &
               block % state % time_levs(2) % state % highFreqThickness % array, dt, &
-              block % state % time_levs(stage1_tend_time) % state % vertTransportVelocityTop % array, err)
+              block % diagnostics % vertTransportVelocityTop % array, err)
 
             call ocn_tend_vel(block % tend, block % state % time_levs(stage1_tend_time) % state, block % diagnostics, block % mesh)
 
@@ -287,14 +287,14 @@ module ocn_time_integration_split
                   ! thicknessSum is initialized outside the loop because on land boundaries 
                   ! maxLevelEdgeTop=0, but I want to initialize thicknessSum with a 
                   ! nonzero value to avoid a NaN.
-                  normalThicknessFluxSum = block % state % time_levs(2) % state % layerThicknessEdge % array(1,iEdge) * uTemp(1)
-                  thicknessSum  = block % state % time_levs(2) % state % layerThicknessEdge % array(1,iEdge)
+                  normalThicknessFluxSum = block % diagnostics % layerThicknessEdge % array(1,iEdge) * uTemp(1)
+                  thicknessSum  = block % diagnostics % layerThicknessEdge % array(1,iEdge)
 
                   do k=2,block % mesh % maxLevelEdgeTop % array(iEdge)
-                     normalThicknessFluxSum = normalThicknessFluxSum + block % state % time_levs(2) % state % layerThicknessEdge % array(k,iEdge) * uTemp(k)
-                     thicknessSum  =  thicknessSum + block % state % time_levs(2) % state % layerThicknessEdge % array(k,iEdge)
+                     normalThicknessFluxSum = normalThicknessFluxSum + block % diagnostics % layerThicknessEdge % array(k,iEdge) * uTemp(k)
+                     thicknessSum  =  thicknessSum + block % diagnostics % layerThicknessEdge % array(k,iEdge)
                   enddo
-                  block % state % time_levs(1) % state % barotropicForcing % array(iEdge) = split*normalThicknessFluxSum/thicknessSum/dt
+                  block % diagnostics % barotropicForcing % array(iEdge) = split*normalThicknessFluxSum/thicknessSum/dt
 
 
                   do k=1,block % mesh % maxLevelEdgeTop % array(iEdge)
@@ -305,7 +305,7 @@ module ocn_time_integration_split
                        block % state % time_levs(2) % state % normalBaroclinicVelocity % array(k,iEdge) &
                      = 0.5*( &
                        block % state % time_levs(1) % state % normalBaroclinicVelocity % array(k,iEdge) &
-                     + uTemp(k) - dt * block % state % time_levs(1) % state % barotropicForcing % array(iEdge))
+                     + uTemp(k) - dt * block % diagnostics % barotropicForcing % array(iEdge))
 
                   enddo
  
@@ -355,10 +355,10 @@ module ocn_time_integration_split
                      ! uTranport = normalBaroclinicVelocity + uBolus 
                      ! This is u used in advective terms for layerThickness and tracers 
                      ! in tendency calls in stage 3.
-                       block % state % time_levs(2) % state % uTransport % array(k,iEdge) &
-                     = block % mesh % edgeMask % array(k,iEdge) &
-                     *(  block % state % time_levs(2) % state % normalBaroclinicVelocity       % array(k,iEdge) &
-                       + block % state % time_levs(1) % state % uBolusGM   % array(k,iEdge) )
+                     block % diagnostics % uTransport % array(k,iEdge) &
+                           = block % mesh % edgeMask % array(k,iEdge) &
+                           *(  block % state % time_levs(2) % state % normalBaroclinicVelocity       % array(k,iEdge) &
+                           + block % diagnostics % uBolusGM   % array(k,iEdge) )
 
                   enddo
                end do  ! iEdge
@@ -373,7 +373,7 @@ module ocn_time_integration_split
             do while (associated(block))
 
                if (config_filter_btr_mode) then
-                  block % state % time_levs(1) % state % barotropicForcing % array(:) = 0.0
+                  block % diagnostics % barotropicForcing % array(:) = 0.0
                endif
 
                do iCell=1,block % mesh % nCells
@@ -393,7 +393,7 @@ module ocn_time_integration_split
                   = block % state % time_levs(1) % state % normalBarotropicVelocity % array(iEdge) 
 
                   ! barotropicThicknessFlux = 0  
-                  block % state % time_levs(1) % state % barotropicThicknessFlux % array(iEdge) = 0.0
+                  block % diagnostics % barotropicThicknessFlux % array(iEdge) = 0.0
                end do
 
                block => block % next
@@ -435,7 +435,7 @@ module ocn_time_integration_split
                           * (block % state % time_levs(oldBtrSubcycleTime) % state % sshSubcycle % array(cell2) &
                            - block % state % time_levs(oldBtrSubcycleTime) % state % sshSubcycle % array(cell1) ) &
                           / block % mesh % dcEdge % array(iEdge) &
-                          + block % state % time_levs(1) % state % barotropicForcing % array(iEdge))) * block % mesh % edgeMask % array(1, iEdge)
+                          + block % diagnostics % barotropicForcing % array(iEdge))) * block % mesh % edgeMask % array(1, iEdge)
                      end do
 
                      block => block % next
@@ -525,7 +525,7 @@ module ocn_time_integration_split
                           + config_btr_gam1_velWt1 * block % state % time_levs(newBtrSubcycleTime) % state % normalBarotropicVelocitySubcycle % array(iEdge)) &
                           * thicknessSum 
 
-                   block % state % time_levs(1) % state % barotropicThicknessFlux % array(iEdge) = block % state % time_levs(1) % state % barotropicThicknessFlux % array(iEdge) &
+                   block % diagnostics % barotropicThicknessFlux % array(iEdge) = block % diagnostics % barotropicThicknessFlux % array(iEdge) &
                      + barotropicThicknessFlux_coeff*flux
                 end do
       
@@ -581,7 +581,7 @@ module ocn_time_integration_split
                      block % state % time_levs(newBtrSubcycleTime) % state % normalBarotropicVelocitySubcycle % array(iEdge) & 
                          = (block % state % time_levs(oldBtrSubcycleTime) % state % normalBarotropicVelocitySubcycle % array(iEdge) & 
                          + dt/config_n_btr_subcycles *(CoriolisTerm - gravity *(sshCell2 - sshCell1) /block % mesh % dcEdge % array(iEdge) &
-                         + block % state % time_levs(1) % state % barotropicForcing % array(iEdge))) * block % mesh % edgeMask % array(1,iEdge)
+                         + block % diagnostics % barotropicForcing % array(iEdge))) * block % mesh % edgeMask % array(1,iEdge)
                    end do
                    deallocate(uTemp)
       
@@ -673,7 +673,7 @@ module ocn_time_integration_split
                             + config_btr_gam3_velWt2 * block % state % time_levs(newBtrSubcycleTime) % state % normalBarotropicVelocitySubcycle % array(iEdge)) &
                             * thicknessSum
       
-                     block % state % time_levs(1) % state % barotropicThicknessFlux % array(iEdge) = block % state % time_levs(1) % state % barotropicThicknessFlux % array(iEdge) + flux
+                     block % diagnostics % barotropicThicknessFlux % array(iEdge) = block % diagnostics % barotropicThicknessFlux % array(iEdge) + flux
                   end do
       
                   ! SSHnew = SSHold + dt/J*(-div(Flux))
@@ -727,7 +727,7 @@ module ocn_time_integration_split
             do while (associated(block))
       
                do iEdge=1,block % mesh % nEdges
-                  block % state % time_levs(1) % state % barotropicThicknessFlux % array(iEdge) = block % state % time_levs(1) % state % barotropicThicknessFlux % array(iEdge) &
+                  block % diagnostics % barotropicThicknessFlux % array(iEdge) = block % diagnostics % barotropicThicknessFlux % array(iEdge) &
                       / (config_n_btr_subcycles*config_btr_subcycle_loop_factor)
       
                   block % state % time_levs(2) % state % normalBarotropicVelocity % array(iEdge) = block % state % time_levs(2) % state % normalBarotropicVelocity % array(iEdge) & 
@@ -740,7 +740,7 @@ module ocn_time_integration_split
       
             ! boundary update on F
             call mpas_timer_start("se halo F", .false., timer_halo_f)
-            call mpas_dmpar_exch_halo_field(domain % blocklist % state % time_levs(1) % state % barotropicThicknessFlux)
+            call mpas_dmpar_exch_halo_field(domain % blocklist % diagnostics % barotropicThicknessFlux)
             call mpas_timer_stop("se halo F", timer_halo_f)
 
 
@@ -769,34 +769,34 @@ module ocn_time_integration_split
 
                   ! velocity for uCorrection is normalBarotropicVelocity + normalBaroclinicVelocity + uBolus
                   uTemp(:) &
-                     = block % state % time_levs(2) % state % normalBarotropicVelocity     % array(  iEdge) &
-                     + block % state % time_levs(2) % state % normalBaroclinicVelocity     % array(:,iEdge) &
-                     + block % state % time_levs(1) % state % uBolusGM % array(:,iEdge)
+                     = block % state % time_levs(2) % state % normalBarotropicVelocity % array(  iEdge) &
+                     + block % state % time_levs(2) % state % normalBaroclinicVelocity % array(:,iEdge) &
+                     + block % diagnostics % uBolusGM % array(:,iEdge)
 
                   ! thicknessSum is initialized outside the loop because on land boundaries 
                   ! maxLevelEdgeTop=0, but I want to initialize thicknessSum with a 
                   ! nonzero value to avoid a NaN.
-                  normalThicknessFluxSum = block % state % time_levs(2) % state % layerThicknessEdge % array(1,iEdge) * uTemp(1)
-                  thicknessSum  = block % state % time_levs(2) % state % layerThicknessEdge % array(1,iEdge)
+                  normalThicknessFluxSum = block % diagnostics % layerThicknessEdge % array(1,iEdge) * uTemp(1)
+                  thicknessSum  = block % diagnostics % layerThicknessEdge % array(1,iEdge)
 
                   do k=2,block % mesh % maxLevelEdgeTop % array(iEdge)
-                     normalThicknessFluxSum = normalThicknessFluxSum + block % state % time_levs(2) % state % layerThicknessEdge % array(k,iEdge) * uTemp(k)
-                     thicknessSum  =  thicknessSum + block % state % time_levs(2) % state % layerThicknessEdge % array(k,iEdge)
+                     normalThicknessFluxSum = normalThicknessFluxSum + block % diagnostics % layerThicknessEdge % array(k,iEdge) * uTemp(k)
+                     thicknessSum  =  thicknessSum + block % diagnostics % layerThicknessEdge % array(k,iEdge)
                   enddo
 
-                  uCorr =   ucorr_coef*(( block % state % time_levs(1) % state % barotropicThicknessFlux % array(iEdge) - normalThicknessFluxSum)/thicknessSum)
+                  uCorr =   ucorr_coef*(( block % diagnostics % barotropicThicknessFlux % array(iEdge) - normalThicknessFluxSum)/thicknessSum)
 
                   do k=1,block % mesh % nVertLevels
 
                      ! uTranport = normalBarotropicVelocity + normalBaroclinicVelocity + uBolus + uCorrection
                      ! This is u used in advective terms for layerThickness and tracers 
                      ! in tendency calls in stage 3.
-                       block % state % time_levs(2) % state % uTransport % array(k,iEdge) &
-                     = block % mesh % edgeMask % array(k,iEdge) &
-                     *(  block % state % time_levs(2) % state % normalBarotropicVelocity       % array(  iEdge) &
-                       + block % state % time_levs(2) % state % normalBaroclinicVelocity       % array(k,iEdge) &
-                       + block % state % time_levs(1) % state % uBolusGM   % array(k,iEdge) &
-                       + uCorr )
+                     block % diagnostics % uTransport % array(k,iEdge) &
+                           = block % mesh % edgeMask % array(k,iEdge) &
+                           *(  block % state % time_levs(2) % state % normalBarotropicVelocity % array(  iEdge) &
+                           + block % state % time_levs(2) % state % normalBaroclinicVelocity % array(k,iEdge) &
+                           + block % diagnostics % uBolusGM   % array(k,iEdge) &
+                           + uCorr )
 
                   enddo
 
@@ -827,13 +827,13 @@ module ocn_time_integration_split
             ! layerThickness has not yet been computed for time level 2.
             call ocn_vert_transport_velocity_top(block % mesh, block % verticalMesh, &
                block % state % time_levs(1) % state % layerThickness % array, &
-               block % state % time_levs(2) % state % layerThicknessEdge % array, &
-               block % state % time_levs(2) % state % uTransport % array, &
+               block % diagnostics % layerThicknessEdge % array, &
+               block % diagnostics % uTransport % array, &
                block % state % time_levs(1) % state % ssh % array, &
                block % state % time_levs(2) % state % highFreqThickness % array, dt, &
-               block % state % time_levs(2) % state % vertTransportVelocityTop % array, err)
+               block % diagnostics % vertTransportVelocityTop % array, err)
 
-            call ocn_tend_thick(block % tend, block % state % time_levs(2) % state, block % mesh)
+            call ocn_tend_thick(block % tend, block % state % time_levs(2) % state, block % diagnostics, block % mesh)
 
             block => block % next
          end do
@@ -1060,19 +1060,19 @@ module ocn_time_integration_split
          call ocn_diagnostic_solve(dt, block % state % time_levs(2) % state, block % forcing, block % mesh, block % diagnostics, block % scratch)
 
          ! Compute velocity transport, used in advection terms of layerThickness and tracer tendency
-            block % state % time_levs(2) % state % uTransport % array(:,:) &
-          = block % state % time_levs(2) % state % normalVelocity % array(:,:) &
-          + block % state % time_levs(2) % state % uBolusGM % array(:,:)
+         block % diagnostics % uTransport % array(:,:) &
+               = block % state % time_levs(2) % state % normalVelocity % array(:,:) &
+               + block % diagnostics % uBolusGM % array(:,:)
 
          call mpas_reconstruct(block % mesh, block % state % time_levs(2) % state % normalVelocity % array,          &
-                          block % state % time_levs(2) % state % normalVelocityX % array,            &
-                          block % state % time_levs(2) % state % normalVelocityY % array,            &
-                          block % state % time_levs(2) % state % normalVelocityZ % array,            &
-                          block % state % time_levs(2) % state % normalVelocityZonal % array,        &
-                          block % state % time_levs(2) % state % normalVelocityMeridional % array    &
+                          block % diagnostics % normalVelocityX % array,            &
+                          block % diagnostics % normalVelocityY % array,            &
+                          block % diagnostics % normalVelocityZ % array,            &
+                          block % diagnostics % normalVelocityZonal % array,        &
+                          block % diagnostics % normalVelocityMeridional % array    &
                          )
 
-         call ocn_time_average_accumulate(block % state % time_levs(2) % state, block % state % time_levs(1) % state)
+         call ocn_time_average_accumulate(block % average, block % state % time_levs(2) % state, block % diagnostics)
 
          block => block % next
       end do

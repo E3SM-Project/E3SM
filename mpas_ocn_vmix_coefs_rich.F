@@ -73,8 +73,7 @@ contains
 !>  and tracers based user choices of mixing parameterization.
 !
 !-----------------------------------------------------------------------
-
-   subroutine ocn_vmix_coefs_rich_build(mesh, s, d, err)!{{{
+   subroutine ocn_vmix_coefs_rich_build(mesh, state, diagnostics, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -92,10 +91,10 @@ contains
       !-----------------------------------------------------------------
 
       type (state_type), intent(inout) :: &
-         s             !< Input/Output: state information
+         state             !< Input/Output: state information
 
       type (diagnostics_type), intent(inout) :: &
-         d             !< Input/Output: diagnostic information
+         diagnostics             !< Input/Output: diagnostic information
 
       !-----------------------------------------------------------------
       !
@@ -130,29 +129,29 @@ contains
 
       err = 0
 
-      indexT = s%index_temperature
-      indexS = s%index_salinity
+      indexT = state % index_temperature
+      indexS = state % index_salinity
 
-      vertViscTopOfEdge => d % vertViscTopOfEdge % array
-      vertDiffTopOfCell => d % vertDiffTopOfCell % array
-      RiTopOfEdge => d % RiTopOfEdge % array
-      RiTopOfCell => d % RiTopOfCell % array
+      vertViscTopOfEdge => diagnostics % vertViscTopOfEdge % array
+      vertDiffTopOfCell => diagnostics % vertDiffTopOfCell % array
+      RiTopOfEdge => diagnostics % RiTopOfEdge % array
+      RiTopOfCell => diagnostics % RiTopOfCell % array
+      density => diagnostics % density % array
+      displacedDensity => diagnostics % displacedDensity % array
+      layerThicknessEdge => diagnostics % layerThicknessEdge % array
 
-      normalVelocity => s % normalVelocity % array
-      layerThickness => s % layerThickness % array
-      layerThicknessEdge => s % layerThicknessEdge % array
-      density => s % density % array
-      displacedDensity => s % displacedDensity % array
-      tracers => s % tracers % array
+      normalVelocity => state % normalVelocity % array
+      layerThickness => state % layerThickness % array
+      tracers => state % tracers % array
 
       call mpas_timer_start("eos rich", .false., richEOSTimer)
 
-         ! compute in-place density
-         call ocn_equation_of_state_density(s, d, mesh, 0, 'relative', density, err)
+      ! compute in-place density
+      call ocn_equation_of_state_density(state, diagnostics, mesh, 0, 'relative', density, err)
 
-         ! compute displacedDensity, density displaced adiabatically to the mid-depth one layer deeper.  
-         ! That is, layer k has been displaced to the depth of layer k+1.
-         call ocn_equation_of_state_density(s, d, mesh, 1, 'relative', displacedDensity, err)
+      ! compute displacedDensity, density displaced adiabatically to the mid-depth one layer deeper.  
+      ! That is, layer k has been displaced to the depth of layer k+1.
+      call ocn_equation_of_state_density(state, diagnostics, mesh, 1, 'relative', displacedDensity, err)
 
       call mpas_timer_stop("eos rich", richEOSTimer)
 
