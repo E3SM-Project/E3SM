@@ -70,6 +70,9 @@ module interpolate_mod
   public :: minmax_tracers
   public :: interpolate_2d
   public :: interpolate_create
+  public :: parametric_coordinates_corners
+  public :: point_inside_quad
+
 
 
   interface interpolate_scalar
@@ -694,6 +697,48 @@ subroutine interpol_spelt_latlon(interpdata,f, spelt,corners, flatlon)
 end subroutine interpol_spelt_latlon
 
 
+   function parametric_coordinates_corners(sphere, corners) result (ref)
+     use cube_mod, only : ref2sphere_corners, Dmap_corners
+     implicit none
+     type (spherical_polar_t), intent(in) :: sphere
+     type (cartesian3D_t)    , intent(in) :: corners(4)
+     type (cartesian2D_t)                 :: ref
+ 
+     ! local
+     integer               :: face_no, i, MAX_NR_ITER=10
+     real(kind=real_kind)  :: D(2,2),Dinv(2,2),detD,a,b,resa,resb,dela,delb,costh
+     real(kind=real_kind)  :: tol_sq=1e-26
+     type (spherical_polar_t) :: sphere1, sphere_tmp
+     costh=cos(sphere%lat)
+     a=0
+     b=0
+     i=0
+     do
+        sphere1 = ref2sphere_corners(a,b,corners)
+        resa = sphere1%lon - sphere%lon
+        if (resa>dd_pi) resa=resa-2*dd_pi
+        if (resa<-dd_pi) resa=resa+2*dd_pi
+ 
+        resb = sphere1%lat - sphere%lat 
+ 
+        call Dmap_corners(D,corners,a,b)
+        detD = D(1,1)*D(2,2) - D(1,2)*D(2,1)      
+        Dinv(1,1) =  D(2,2)/detD
+        Dinv(1,2) = -D(1,2)/detD
+        Dinv(2,1) = -D(2,1)/detD
+        Dinv(2,2) =  D(1,1)/detD
+        
+        dela =  Dinv(1,1)*costh*resa + Dinv(1,2)*resb 
+        delb =  Dinv(2,1)*costh*resa + Dinv(2,2)*resb 
+        a = a - dela
+        b = b - delb
+        i=i+1
+        if ( (costh*resa)**2 + resb**2 < tol_sq .or. MAX_NR_ITER < i) exit
+     end do
+     ref%x=a
+     ref%y=b
+   end function parametric_coordinates_corners
+
 
   function parametric_coordinates(sphere, elem) result (ref)
     implicit none
@@ -842,6 +887,56 @@ end subroutine interpol_spelt_latlon
     inside=.true.
   end function point_inside_equiangular
 
+
+!
+! find if quad contains given point, with quad edges assumed to be great circle arcs
+! this will work with any map where straight lines are mapped to great circle arcs.
+! (thus it will fail on unstructured grids using the equi-angular gnomonic map)
+!
+  function point_inside_quad(corners_xyz, sphere_xyz) result(inside)
+    implicit none
+    type (cartesian3D_t),     intent(in)    :: sphere_xyz
+    type (cartesian3D_t)    , intent(in)    :: corners_xyz(4)
+    logical                              :: inside, inside2
+    integer               :: i,j,ii
+    type (cartesian2D_t) :: corners(4),sphere_xy,cart
+    type (cartesian3D_t) :: center,a,b,cross(4)
+    real (kind=real_kind) :: yp(4), y, elem_diam,dotprod
+    real (kind=real_kind) :: xp(4), x
+    real (kind=real_kind) :: d1,d2, tol_inside = 1e-12
+
+    type (spherical_polar_t)   :: sphere  ! debug
+
+    inside = .false.
+
+    ! first check if point is near the corners:
+    elem_diam = max( distance(corners_xyz(1),corners_xyz(3)), &
+         distance(corners_xyz(2),corners_xyz(4)) )
+
+    center%x = sum(corners_xyz(1:4)%x)/4
+    center%y = sum(corners_xyz(1:4)%y)/4
+    center%z = sum(corners_xyz(1:4)%z)/4
+    if ( distance(center,sphere_xyz) > 1.0*elem_diam ) return
+
+    j = 4
+    do i=1,4
+      ! outward normal to plane containing j->i edge:  corner(i) x corner(j)
+      ! sphere dot (corner(i) x corner(j) ) = negative if inside
+       cross(i)%x =  corners_xyz(i)%y*corners_xyz(j)%z - corners_xyz(i)%z*corners_xyz(j)%y
+       cross(i)%y =-(corners_xyz(i)%x*corners_xyz(j)%z - corners_xyz(i)%z*corners_xyz(j)%x)
+       cross(i)%z =  corners_xyz(i)%x*corners_xyz(j)%y - corners_xyz(i)%y*corners_xyz(j)%x
+       dotprod = cross(i)%x*sphere_xyz%x + cross(i)%y*sphere_xyz%y +&
+               cross(i)%z*sphere_xyz%z
+       j = i  ! within this loopk j = i-1
+
+       ! dot product is proportional to elem_diam. positive means outside,
+       ! but allow machine precision tolorence: 
+       if (dotprod > tol_inside*elem_diam) return 
+       !if (dotprod > 0) return 
+    end do
+    inside=.true.
+    return
+  end function point_inside_quad
 
 !
 ! find element containing given point, with element edges assumed to be great circle arcs
