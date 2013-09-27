@@ -9,6 +9,7 @@ module edge_mod
   use parallel_mod, only : haltmp
   use thread_mod, only: omp_get_num_threads, omp_get_thread_num
   use parallel_mod,   only : abortmp
+  use coordinate_systems_mod, only : cartesian3D_t
 
 
 
@@ -32,6 +33,7 @@ module edge_mod
      integer(kind=int_kind), pointer  :: getmapP_ghost(:) => null()
      integer(kind=int_kind), pointer  :: globalID(:) => null()
      integer(kind=int_kind), pointer  :: loc2buf(:) => null()
+     type (cartesian3D_t)  , pointer  :: neigh_corners(:,:) => null()
      integer                          :: actual_neigh_edges
      logical(kind=log_kind), pointer  :: reverse(:) => null()
      type (rotation_t), dimension(:), pointer :: rot => null() ! Identifies list of edges

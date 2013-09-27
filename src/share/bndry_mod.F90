@@ -761,11 +761,9 @@ contains
 
   real (kind=real_kind) :: cin(2,2,4,nets:nete)                    ! 1x1 element input data
   real (kind=real_kind) :: cout(2,2,4,max_neigh_edges,nets:nete)   ! 1x1 element output data
-  integer :: i,j,ie,kptr,np1,np2,nc,k,nlev,actual_neigh_edges,l,l2,sum1,sum2
+  integer :: i,j,ie,kptr,np1,np2,nc,k,nlev,actual_neigh_edges,l,l2,sum1,sum2,m
   logical :: fail,fail1,fail2
-  real (kind=real_kind) :: tol=.1
-
-  type (cartesian3D_t)     :: neigh_corners(4,max_neigh_edges,nelemd)  
+  real (kind=real_kind) :: tol=.1,gid
 
   call syncmp(hybrid%par)
   if (hybrid%par%masterproc) print *,'checking ghost cell neighbor buffer sorting...'
@@ -854,17 +852,28 @@ contains
         call abortmp( 'ghost exchange unoriented failure 3')        
      endif
 
+     ALLOCATE(elem(ie)%desc%neigh_corners(4,actual_neigh_edges+1))
      ! unpack corner data into array
-     do l=1,elem(ie)%desc%actual_neigh_edges
-     k=0
-     do i=1,nc
-     do j=1,nc
-        k=k+1
-        neigh_corners(k,l,ie)%x=cout(i,j,1,l,ie) 
-        neigh_corners(k,l,ie)%y=cout(i,j,2,l,ie) 
-        neigh_corners(k,l,ie)%z=cout(i,j,3,l,ie) 
-     enddo
-     enddo
+     gid = elem(ie)%GlobalID
+     m=0
+     do l=1,elem(ie)%desc%actual_neigh_edges+1
+        if (m==elem(ie)%desc%actual_neigh_edges .OR. cout(1,1,nlev,m+1,ie) < gid) then
+           gid = -1
+           do k=1,nc*nc
+              elem(ie)%desc%neigh_corners(k,l) = elem(ie)%corners3D(k)
+           enddo
+        else
+           m=m+1
+           k=0
+           do i=1,nc
+           do j=1,nc
+              k=k+1
+              elem(ie)%desc%neigh_corners(k,l)%x = cout(i,j,1,m,ie) 
+              elem(ie)%desc%neigh_corners(k,l)%y = cout(i,j,2,m,ie) 
+              elem(ie)%desc%neigh_corners(k,l)%z = cout(i,j,3,m,ie) 
+           enddo
+           enddo
+        endif
      enddo
   enddo
 

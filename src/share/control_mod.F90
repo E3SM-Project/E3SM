@@ -16,6 +16,7 @@ module control_mod
   integer, public, parameter :: TRACERADV_UGRADQ=0            !  u grad(Q) formulation
   integer, public, parameter :: TRACERADV_TOTAL_DIVERGENCE=1   ! div(u dp/dn Q ) formulation
   integer, public  :: tracer_advection_formulation  = TRACERADV_TOTAL_DIVERGENCE
+  logical, public  :: use_semi_lagrange_transport   = .false.
 
 !shallow water advection tests:
 !kmass points to a level with density.  other levels contain test tracers
