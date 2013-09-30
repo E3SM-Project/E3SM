@@ -68,6 +68,10 @@ macro(createTestExec execName execType macroNP macroNC
     ADD_DEPENDENCIES(${execName} blas lapack)
   ENDIF()
 
+  IF (HAVE_EXTRAE)
+    TARGET_LINK_LIBRARIES(${execName} ${Extrae_LIBRARY})
+  ENDIF ()
+
   INSTALL(TARGETS ${execName} RUNTIME DESTINATION tests)
 
   # Restore the original the cmake variables
