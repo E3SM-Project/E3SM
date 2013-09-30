@@ -60,9 +60,6 @@ else
   runTestsStd
 fi
 
-# parse the stdout to grab only the relevant info
-#parseStdout
-
 if [ "${SUBMIT_ALL_AT_ONCE}" == true ] ; then
 
   # Do nothing for now

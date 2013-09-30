@@ -1,27 +1,3 @@
-setTestDirs() {
-
-  # Determine some locations
-  DIR_NAME=$(cd `dirname "${BASH_SOURCE[0]}"` && pwd -P)
-
-  # Determine the location of the tests results (for yellowstone)
-  RESULT_DIR=$(cd "${DIR_NAME}/../../results/yellowstone" && pwd -P)
-
-  # Set the location of the "build" base directory
-  if [ -n "$1" -a -d "$1" ]; then
-    # Use this location as the base of the file structure for the tests
-    BUILD_DIR=$1
-  else
-    # Set the build directory from the set file structure
-    BUILD_DIR=$(cd `dirname $DIR_NAME/../../../../..` && pwd -P)/build
-  fi
-
-}
-
-# Strip the end of the stdout file which contains lsf dump
-stripAppendage() {
-  sed -i -e '/^ exiting/,/^ number of MPI/{/^ exiting/!{/^ number of MPI/!d}}' -e '/^process/d' $1
-}
-
 createLSFHeader() {
 
   RUN_SCRIPT=$1
@@ -203,38 +179,6 @@ queueWait() {
 
 }
 
-#diffStdOut() {
-#
-#  # Should be a unique file
-#  diffFile="diff.${SUBMIT_JOB_ID[0]}"
-#  echo "Concatenating all diff output into $diffFile"
-#
-#  # Then diff with the stored results (yellowstone only)
-#  for i in $(seq 0 $(( ${#SUBMIT_TEST[@]} - 1)))
-#  do
-#    THIS_TEST=${SUBMIT_TEST[$i]}
-#
-#    # Need to remove "-run" from the test name
-#    #   This is an ugly hack but otherwise this takes a lot of reformatting
-#    THIS_TEST=`echo $THIS_TEST | sed 's/-run//'`
-#
-#    # The following is not very clean
-#    NEW_RESULT=${HOMME_TESTING_DIR}/${THIS_TEST}.stdout.${SUBMIT_JOB_ID[$i]}
-#    SAVED_RESULT=${HOMME_TEST_RESULTS}/${THIS_TEST}/${THIS_TEST}.stdout
-#
-#    # TODO: make sure these files exist
-#    if [ -f $NEW_RESULT ]; then
-#      stripAppendage $NEW_RESULT
-#      echo "diff $NEW_RESULT $SAVED_RESULT" >> $diffFile
-#      # append the output to 
-#      diff $NEW_RESULT $SAVED_RESULT >> $diffFile
-#    else
-#      echo "Result $NEW_RESULT does not exist. Perhaps job ${SUBMIT_JOB_ID[$i]} crashed or was killed"
-#    fi
-#
-#  done
-#}
-
 submitToQueue() {
   # submit the job to the queue
   if [ "$HOMME_Submission_Type" = lsf ]; then
@@ -342,24 +286,17 @@ runTestsStd() {
     echo -n "Running test ${subJobName} ... "
     #echo "${subFile} > $THIS_STDOUT 2> $THIS_STDERR"
     chmod u+x ${subFile}
-    # Don't want this to run in the background
-    #cmd='${subFile} > $THIS_STDOUT 2> $THIS_STDERR &'
     cmd="${subFile} > $THIS_STDOUT 2> $THIS_STDERR"
     echo "$cmd"
     $cmd
-    RUN_PID=$?
-    echo "PID=$RUN_PID"
-    RUN_STAT=${RUN_PID}
-    #wait $RUN_PID
-    #RUN_STAT=$?
-    # Technically the PID is incorrect but it really doesn't matter
-    #RUN_PID=$!
+    # Get the status of the run
+    RUN_STAT=$?
     # Do some error checking
     if [ $RUN_STAT = 0 ]; then
       # the command was succesful
       echo "test ${subJobName} was run successfully"
       SUBMIT_TEST+=( "${subJobName}" )
-      SUBMIT_JOB_ID+=( "$RUN_PID" )
+      SUBMIT_JOB_ID+=( "${RUN_PID}" )
     else 
       echo "failed with message:"
       cat $THIS_STDERR
@@ -745,29 +682,6 @@ diffCprncOutput() {
       exit -13
     fi
     
-  done
-}
-
-parseStdout() {
-
-  # Then diff with the stored results (yellowstone only)
-  for i in $(seq 0 $(( ${#SUBMIT_TEST[@]} - 1)))
-  do
-    THIS_TEST=${SUBMIT_TEST[$i]}
-
-    # Need to remove "-run" from the test name
-    #   This is an ugly hack but otherwise this takes a lot of reformatting
-    THIS_TEST=`echo $THIS_TEST | sed 's/-run//'`
-
-    # The following is not very clean
-    NEW_RESULT=${HOMME_TESTING_DIR}/${THIS_TEST}.stdout.${SUBMIT_JOB_ID[$i]}
-    PARSE_RESULT=${HOMME_TESTING_DIR}/${THIS_TEST}.stdout
-
-    if [ "$HOMME_Submission_Type" = lsf ]; then
-      stripAppendage $NEW_RESULT
-    fi
-    grep -e '=' ${NEW_RESULT} | grep -iv bsub | grep -ive 't_init' > ${PARSE_RESULT}
-
   done
 }
 
