@@ -836,12 +836,13 @@ module mpas_core
 !
 !  routine compute_output_diagnostics
 !
-!> \brief   unknown
+!> \brief   Computes diagnostic fields only needed for output
 !> \author  ??
 !> \date    ??
 !> \version SVN:$Id$
 !> \details
-!>  This routine does nothing?.
+!>  This routine is a placeholder for the calculation of any
+!>  fields that are only needed for diagnostic output.
 !
 !-----------------------------------------------------------------------
    subroutine compute_output_diagnostics(state, grid)
