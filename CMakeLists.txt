@@ -209,4 +209,8 @@ ENDIF()
 
 ADD_SUBDIRECTORY(test_execs)
 
-
+# Create a "make clean-all" target to delete CMake cache and the cprnc build
+ADD_CUSTOM_TARGET(clean-all
+   COMMAND ${CMAKE_BUILD_TOOL} clean
+   COMMAND ${CMAKE_COMMAND} -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/clean-cmake-files.cmake"
+)
