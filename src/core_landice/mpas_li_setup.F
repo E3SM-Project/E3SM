@@ -262,7 +262,7 @@ contains
 !
 !> \brief   Initializes time step
 !> \author  Matt Hoffman
-!> \date    20 April 2012
+!> \date    24 September 2013
 !> \version SVN:$Id$
 !> \details
 !>  This routine initializes the time step based on whether

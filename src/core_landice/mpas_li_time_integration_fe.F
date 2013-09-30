@@ -114,13 +114,7 @@ module li_time_integration_fe
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocityOld, normalVelocityNew, layerThicknessOld, layerThicknessNew, layerThickness_tend
       real (kind=RKIND), dimension(:,:,:), pointer :: tracer_tendency, tracersNew, tracersOld
       integer, dimension(:), pointer :: cellMaskOld
-
-
-
-
-
       integer :: nVertLevels, k, iEdge, iTracer
-
       integer :: err_tmp
       
 

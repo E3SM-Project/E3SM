@@ -180,7 +180,7 @@ module li_tendency
          ! assign to the thickness tend i actually use
         ! layerThickness_tend = block % tend % sup_thickness % array(1,:,:)
 
-     case ('None')  !===================================================
+     case ('none')  !===================================================
         ! Do nothing
      case default  !===================================================
         write(0,*) trim(config_thickness_advection), ' is not a valid thickness advection option.'
