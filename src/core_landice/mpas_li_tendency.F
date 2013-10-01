@@ -28,7 +28,7 @@ module li_tendency
    use mpas_constants
    use mpas_dmpar
 !!!   use li_mask
-!!!   use mpas_ocn_tracer_advection
+!!!   use mpas_tracer_advection
 
    implicit none
    private
@@ -163,12 +163,13 @@ module li_tendency
         ! MJH TEMP TRYING IT WITH THICKNESS
         !      stateOld % sup_thickness % array(1,:,:) = stateOld % layerThickness % array  !!!!!  MJH TEMP
         !      block % tend % sup_thickness % array = 0.0
-        !         call mpas_ocn_tracer_advection_tend(stateOld % sup_thickness % array, uh , &
+!!! NOTE FOR FUTURE: These two calls to tracer_advection have changed since this code was written - they are now in framework and the calling signature has changed!
+        !         call mpas_tracer_advection_tend(stateOld % sup_thickness % array, uh , &
         !                  wTop,   stateOld % sup_thickness % array(1,:,:), stateOld % sup_thickness % array(1,:,:), &
         !                  dt/SecondsInYear  , mesh,   0.0*layerThickness_tend,    block % tend % sup_thickness % array)
  
         ! Doug suggested actually doing it this way:
-        !         call mpas_ocn_tracer_advection_tend(stateOld % sup_thickness % array, normalVelocity , &
+        !         call mpas_tracer_advection_tend(stateOld % sup_thickness % array, normalVelocity , &
         !                  wTop,   stateOld % sup_thickness % array(1,:,:) * 0.0 + 1.0 , stateOld % sup_thickness % array(1,:,:) * 0.0 + 1.0, &
         !                  dt/SecondsInYear  , mesh,   0.0*layerThickness_tend,    block % tend % sup_thickness % array)
 

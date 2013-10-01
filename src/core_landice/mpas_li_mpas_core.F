@@ -65,7 +65,7 @@ module mpas_core
       use mpas_grid_types
       use li_velocity
       use li_setup
-!!!      use mpas_ocn_tracer_advection
+!!!      use mpas_tracer_advection
 !!!      use li_global_diagnostics
    
       implicit none
@@ -124,7 +124,7 @@ module mpas_core
       call li_velocity_init(domain, err_tmp)
       err = ior(err, err_tmp)
 
-!!!      call mpas_ocn_tracer_advection_init(err_tmp)
+!!!      call mpas_tracer_advection_init(err_tmp)  ! Calling signature may be incorrect here.
 !!!      err = ior(err,err_tmp)
 
       ! ===
