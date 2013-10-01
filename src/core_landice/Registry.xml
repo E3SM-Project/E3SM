@@ -100,15 +100,15 @@
 		            description="Timestamp describing the initial time of the simulation."
 		            possible_values="'YYYY-MM-DD_HH:MM:SS'"
 		/>
-		<nml_option name="config_stop_time" type="character" default_value="none" units="unitless"
-		            description="Timestamp descriping the final time of the simulation. If it is set to 'none' the final time is determined from config_start_time and config_run_duration."
+		<nml_option name="config_stop_time" type="character" default_value="0000-01-01_00:00:00" units="unitless"
+		            description="Timestamp describing the final time of the simulation. If it is set to 'none' the final time is determined from config_start_time and config_run_duration.  If config_run_duration is also specified, it takes precedence over config_stop_time.  Set config_stop_time to be equal to config_start_time (and config_run_duration to 'none') to perform a diagnostic solve of velocity."
 		            possible_values="'YYYY-MM-DD_HH:MM:SS' or 'none'"
 		/>
-		<nml_option name="config_run_duration" type="character" default_value="0000-00-00_00:00:00" units="unitless"
-		            description="Timestamp describing the length of the simulation. If it is set to 'none' the duration is determined from config_start_time and config_stop_time. config_run_duration overrides inconsistent values of config_stop_time.  The default of 0 duration performs a diagnostic solve only."
+		<nml_option name="config_run_duration" type="character" default_value="none" units="unitless"
+		            description="Timestamp describing the length of the simulation. If it is set to 'none' the duration is determined from config_start_time and config_stop_time. config_run_duration overrides inconsistent values of config_stop_time. If a time value is specified for config_run_duration, it must be greater than 0."
 		            possible_values="'DDDD_HH:MM:SS' or 'none'"
 		/>
-		<nml_option name="config_calendar_type" type="character" default_value="360gregorian_noleap" units="unitless"
+		<nml_option name="config_calendar_type" type="character" default_value="gregorian_noleap" units="unitless"
 		            description="Selection of the type of calendar that should be used in the simulation."
 		            possible_values="'gregorian', 'gregorian_noleap', or '360day'"
 		/>
