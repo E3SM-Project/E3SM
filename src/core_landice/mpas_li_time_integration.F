@@ -67,7 +67,7 @@ module li_time_integration
 !> \details
 !>  This routine advances model state forward in time by the specified time step.
 !> Input: domain - current model state in time level 1 (e.g., time_levs(1)state%h(:,:)) 
-!>                 plus grid meta-data
+!>                 plus mesh data
 !> Output: domain - upon exit, time level 2 (e.g., time_levs(2)%state%h(:,:)) contains 
 !>                  model state advanced forward in time by dt seconds
 !-----------------------------------------------------------------------

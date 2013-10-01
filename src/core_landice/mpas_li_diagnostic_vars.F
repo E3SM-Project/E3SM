@@ -418,7 +418,7 @@ contains
       !-----------------------------------------------------------------
 
       type (mesh_type), intent(in) :: &
-         mesh          !< Input: grid information
+         mesh          !< Input: mesh information
 
       !-----------------------------------------------------------------
       !
@@ -520,7 +520,7 @@ contains
          thickness    !< Input: 
 
       type (mesh_type), intent(in) :: &
-         mesh          !< Input: grid information
+         mesh          !< Input: mesh information
 
       !-----------------------------------------------------------------
       !
