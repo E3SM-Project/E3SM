@@ -10,14 +10,12 @@
 
 &time_integration
    config_dt_years = 1.0
-!   config_dt_seconds = ??
    config_time_integration = 'forward_euler'
 /
 
 &time_management
    config_start_time = '0000-01-01_00:00:00'
    config_stop_time  = '0000-01-01_00:00:00'
-!   config_run_duration = '15_00:00:00'
    config_do_restart = .false.
    config_calendar_type = 'gregorian_noleap'
 /
@@ -28,7 +26,6 @@
    config_restart_name = 'restart.nc'
    config_output_interval  = '0001-00-00_00:00:00'
    config_restart_interval = '0010-00-00_00:00:00'
-!   config_stats_interval   = ???
    config_frames_per_outfile = 0
    config_pio_num_iotasks = 0
    config_pio_stride      = 1
