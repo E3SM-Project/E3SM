@@ -83,7 +83,7 @@ module li_tendency
       !-----------------------------------------------------------------
 
       type (mesh_type), intent(in) :: &
-         mesh          !< Input: grid information
+         mesh          !< Input: mesh information
 
       real (kind=RKIND), intent(in) :: &
          dt       !< Input: dt
@@ -261,7 +261,7 @@ module li_tendency
       !-----------------------------------------------------------------
 
       type (mesh_type), intent(in) :: &
-         mesh          !< Input: grid information
+         mesh          !< Input: mesh information
 
       type (state_type), intent(in) :: &
          state         !< Input: state to use to calculate tendency
@@ -409,7 +409,7 @@ module li_tendency
       !-----------------------------------------------------------------
 
       type (mesh_type), intent(in) :: &
-         mesh          !< Input: grid information
+         mesh          !< Input: mesh information
 
       !-----------------------------------------------------------------
       !
@@ -559,7 +559,7 @@ module li_tendency
 !>  results.  
 !
 !-----------------------------------------------------------------------
-   subroutine tend_layerThickness_fo_upwind(grid, normalVelocity, layerThicknessEdge, edgeMask, tend, dt, MinOfMaxAllowableDt, err)!{{{
+   subroutine tend_layerThickness_fo_upwind(mesh, normalVelocity, layerThicknessEdge, edgeMask, tend, dt, MinOfMaxAllowableDt, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -568,7 +568,7 @@ module li_tendency
       !-----------------------------------------------------------------
 
       type (mesh_type), intent(in) :: &
-         grid          !< Input: grid information
+         mesh          !< Input: mesh information
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          normalVelocity    !< Input: velocity
@@ -616,14 +616,14 @@ module li_tendency
 
       err = 0
 
-      nCells = grid % nCells
-      nVertLevels = grid % nVertLevels
-      nEdgesOnCell => grid % nEdgesOnCell % array
-      edgesOnCell => grid % edgesOnCell % array
-      edgeSignOnCell => grid % edgeSignOnCell % array
-      dvEdge => grid % dvEdge % array
-      dcEdge => grid % dcEdge % array
-      areaCell => grid % areaCell % array
+      nCells = mesh % nCells
+      nVertLevels = mesh % nVertLevels
+      nEdgesOnCell => mesh % nEdgesOnCell % array
+      edgesOnCell => mesh % edgesOnCell % array
+      edgeSignOnCell => mesh % edgeSignOnCell % array
+      dvEdge => mesh % dvEdge % array
+      dcEdge => mesh % dcEdge % array
+      areaCell => mesh % areaCell % array
 
       MinOfMaxAllowableDt = 1.0e36_RKIND
 
@@ -661,7 +661,7 @@ module li_tendency
 
       ! Optional check for mass conservation
       !tendVolSum = 0.0_RKIND
-      !do iCell=1, grid % nCells
+      !do iCell=1, mesh % nCells
       !     tendVolSum  = tendVolSum + sum(tend(:,iCell)) * areaCell(iCell)
       !end do
       !print *,'SUM OF VOLUME TENDENCY  ======', tendVolSum
@@ -698,7 +698,7 @@ module li_tendency
       !-----------------------------------------------------------------
 
       type (mesh_type), intent(in) :: &
-         mesh          !< Input: grid information
+         mesh          !< Input: mesh information
 
       real (kind=RKIND), dimension(:,:,:), intent(in) :: &
          tracers    !< Input: 
@@ -807,7 +807,7 @@ module li_tendency
 !!
 !!-----------------------------------------------------------------------
 
-!   subroutine li_tend_h_fo_upwind(grid, normalVelocity, layerThickness, thickness, thickness_tend, dt, err)!{{{
+!   subroutine li_tend_h_fo_upwind(mesh, normalVelocity, layerThickness, thickness, thickness_tend, dt, err)!{{{
 
 !      !-----------------------------------------------------------------
 !      !
@@ -825,7 +825,7 @@ module li_tendency
 !         thickness    !< Input: thickness
 
 !      type (mesh_type), intent(in) :: &
-!         grid          !< Input: grid information
+!         mesh          !< Input: mesh information
 
 !      real (kind=RKIND) :: dt
 
@@ -862,12 +862,12 @@ module li_tendency
 !      err = 0
 !      maxAllowableDt = 1.0e36
 
-!      nEdges = grid % nEdges
-!      nVertLevels = grid % nVertLevels
-!      cellsOnEdge => grid % cellsOnEdge % array
-!      dvEdge => grid % dvEdge % array
-!      dcEdge => grid % dcEdge % array
-!      areaCell => grid % areaCell % array
+!      nEdges = mesh % nEdges
+!      nVertLevels = mesh % nVertLevels
+!      cellsOnEdge => mesh % cellsOnEdge % array
+!      dvEdge => mesh % dvEdge % array
+!      dcEdge => mesh % dcEdge % array
+!      areaCell => mesh % areaCell % array
 
 !      !print *,'Max velocity magn.:', maxval(abs(normalVelocity))
 

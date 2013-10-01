@@ -845,12 +845,12 @@ module mpas_core
 !>  fields that are only needed for diagnostic output.
 !
 !-----------------------------------------------------------------------
-   subroutine compute_output_diagnostics(state, grid)
+   subroutine compute_output_diagnostics(state, mesh)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! Compute diagnostic fields for a domain
    !
    ! Input: state - contains model prognostic fields
-   !        grid  - contains grid metadata
+   !        mesh  - contains mesh metadata
    !
    ! Output: state - upon returning, diagnostic fields will have be computed
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -860,7 +860,7 @@ module mpas_core
       implicit none
    
       type (state_type), intent(inout) :: state
-      type (mesh_type), intent(in) :: grid
+      type (mesh_type), intent(in) :: mesh
    
       integer :: i, eoe
       integer :: iEdge, k
