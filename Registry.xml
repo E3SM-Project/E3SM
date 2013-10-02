@@ -199,7 +199,7 @@
 		<var name="thickness" type="real" dimensions="nCells Time" streams="iro" units="m"
 		     description="ice thickness"
 		/>
-		<var name="layerThickness" type="real" dimensions="nVertLevels nCells Time" streams="" units="m"
+		<var name="layerThickness" type="real" dimensions="nVertLevels nCells Time" streams="o" units="m"
 		     description="layer thickness"
 		/>
 		<var_array name="tracers" type="real" dimensions="nVertLevels nCells Time">
