@@ -379,8 +379,8 @@ contains
           ! Upper surface is the lower surface plus the thickness
           upperSurface(:) = lowerSurface(:) + thickness(:)
 
-          ! Do vertical remapping of thickness and tracers
-          call vertical_remap(layerThickness, thickness, state % tracers % array, mesh, err)
+          ! Do vertical remapping of layerThickness and tracers
+          call vertical_remap(thickness, cellMask, mesh, layerThickness, state % tracers % array, err)
           err = ior(err, err_tmp)
 
           block => block % next
@@ -493,7 +493,7 @@ contains
 
 !***********************************************************************
 !
-!  subroutine vertical_remap
+!  subroutine vertical_remap_cism_loops
 !
 !> \brief   Vertical remapping of thickness and tracers
 !> \author  Matt Hoffman
@@ -506,10 +506,15 @@ contains
 !>  This uses code from the CISM glissade_transport.F90 module written by Bill Lipscomb.  
 !>  I have altered the array structures to work with MPAS.  Indexing/looping order is a bit
 !>  of a hodgepodge at the moment and should be optimized.
-
+!>
+!>  NOTE: This version (with _cism_loops suffix) uses the looping with minimal changes
+!>  from the CISM code.  The other version has been refactored to be more efficient
+!>  for MPAS.  This version is intended to be deleted once tracer advection is
+!>  added to the model and the two versions can be compared.  (I can't test the new
+!>  version until tracer advection exists!)
 !
 !-----------------------------------------------------------------------
-   subroutine vertical_remap(layerThickness, thickness, tracers, mesh, err)
+   subroutine vertical_remap_cism_loops(layerThickness, thickness, tracers, mesh, err)
       !-----------------------------------------------------------------
       !
       ! input variables
@@ -638,6 +643,161 @@ contains
        enddo            ! k
 
       deallocate(recipThickness)
+      deallocate(layerInterfaceSigma_Input)
+      deallocate(hTsum)
+
+   end subroutine vertical_remap_cism_loops
+
+
+
+
+!***********************************************************************
+!
+!  subroutine vertical_remap
+!
+!> \brief   Vertical remapping of thickness and tracers
+!> \author  Matt Hoffman
+!> \date    02 October 2013
+!> \version SVN:$Id$
+!> \details 
+!>  This routine performs vertical remapping of thickness and tracers from one vertical
+!>  coordinate system to another, as is required for our sigma coordinate system.
+!>  The remapping is first-order accurate.
+!>  This uses code from the CISM glissade_transport.F90 module written by Bill Lipscomb.
+!>  I have altered the array structures to work with MPAS and refactored it.
+!>  It now does all calculations column-wise, so it can be vectorized using
+!>  OpenMP over either blocks or cells.
+!>  I have dealt with 0 thickness in non-ice cells using eps and the cellMask,
+!>  rather than using if/where-statements.
+!
+!-----------------------------------------------------------------------
+   subroutine vertical_remap(thickness, cellMask, mesh, layerThickness, tracers, err)
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:), intent(in) :: &
+         thickness    !< Input: ice thickness (already updated)
+
+      integer, dimension(:), intent(in) :: &
+         cellMask    !< Input: mask for cells (needed for determining presence/absence of ice)
+
+      type (mesh_type), intent(in) :: &
+         mesh          !< Input: mesh information
+
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:,:), intent(inout) :: &
+         layerThickness    !< Input/Output: thickness of layers (to be updated)
+
+      real (kind=RKIND), dimension(:,:,:), intent(inout) :: &
+         tracers    !< Input/Output: tracer values (to be updated)
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+      ! pointers to mesh arrays
+      real (kind=RKIND), dimension(:), pointer :: layerThicknessFractions, layerInterfaceSigma
+      ! local arrays
+      real (kind=RKIND), dimension(:), allocatable :: layerInterfaceSigma_Input
+      real (kind=RKIND), dimension(:,:), allocatable :: hTsum
+      ! counters, mesh variables, index variables
+      integer :: nTracers, nCells, nVertLevels
+      integer :: iCell, k, k1, k2, nt
+      ! stuff for making calculations
+      real(kind=RKIND) :: thisThk, zhi, zlo, hOverlap
+      real(kind=RKIND), parameter :: eps = 1.0d-30  ! Make a tiny value so we don't corrupt any cells with ice
+
+      err = 0
+
+      nCells = mesh % nCells
+      nVertLevels = mesh % nVertLevels
+      nTracers = size(tracers, 1)
+
+      layerThicknessFractions => mesh % layerThicknessFractions % array
+      layerInterfaceSigma => mesh % layerInterfaceSigma % array
+
+
+      allocate(layerInterfaceSigma_Input(nVertLevels+1))
+      allocate(hTsum(nTracers, nVertLevels))
+
+
+      do iCell = 1, nCells  ! Do all calculations column-wise
+
+         thisThk = thickness(iCell)
+
+         ! *** Calculate vertical sigma coordinates of each layer interface for the input non-sigma state 
+         !     (we already have the desired new sigma-based state as mesh % layerInterfaceSigma)
+         layerInterfaceSigma_Input(1) = 0.0_RKIND
+         do k = 2, nVertLevels
+            layerInterfaceSigma_Input(k) = layerInterfaceSigma_Input(k-1) + layerThickness(k-1, iCell) / (thisThk + eps)
+            ! Note: including eps to avoid divide by 0, but need to mask out cells with no ice below in calculating
+            !       layerThickness and tracer values.
+         end do
+         layerInterfaceSigma_Input(nVertLevels+1) = 1.0_RKIND
+
+         ! *** Compute new layer thicknesses (layerInterfaceSigma coordinates)
+
+         do k = 1, nVertLevels
+            layerThickness(k,iCell) = layerThicknessFractions(k) * (thisThk + eps)
+            ! Note: layerThickness will have garbage values in non-ice cells due to eps
+         end do
+         ! Check for conservation of mass.  Put any residual in the top layer.
+         layerThickness(1,iCell) = layerThickness(1,iCell) + (thisThk - sum(layerThickness(:,iCell)) )
+         ! TODO This conservation check may make layerThicknesses inconsistent with the sigma levels (which are used below in tracer remapping.
+
+         !-----------------------------------------------------------------
+         ! Compute sum of h*T for each new layer (k2) by integrating
+         ! over the regions of overlap with old layers (k1).
+         ! Note: It might be worth trying a more efficient
+         !       search algorithm if the number of layers is large.
+         !       This algorithm scales as nlyr^2.
+         !-----------------------------------------------------------------
+
+         do k2 = 1, nVertLevels
+            hTsum(:,k2) = 0.d0
+            do k1 = 1, nVertLevels
+               do nt = 1, nTracers
+                  zhi = min (layerInterfaceSigma_Input(k1+1), layerInterfaceSigma(k2+1))
+                  zlo = max (layerInterfaceSigma_Input(k1), layerInterfaceSigma(k2))
+                  hOverlap = max (zhi-zlo, 0.d0) * thisThk
+                  hTsum(nt,k2) = htsum(nt,k2) + tracers(nt,k1,iCell) * hOverlap
+               enddo         ! nt
+            enddo            ! k1
+         enddo               ! k2
+
+         !-----------------------------------------------------------------
+         ! Compute tracer values in new layers
+         !-----------------------------------------------------------------
+
+         do k = 1, nVertLevels
+            do nt = 1, nTracers
+               tracers(nt,k,iCell) = hTsum(nt,k) / layerThickness(k, iCell) * real(li_mask_is_ice_int(cellMask(iCell)), RKIND)
+               layerThickness(k,iCell) = layerThickness(k,iCell) * real(li_mask_is_ice_int(cellMask(iCell)), RKIND)
+               ! Note: the last term is used to multiply by 0 where there is no ice in order to clear out garbage introduced by eps
+            enddo         ! nt
+         enddo            ! k
+
+      enddo ! nCells
+
+
       deallocate(layerInterfaceSigma_Input)
       deallocate(hTsum)
 

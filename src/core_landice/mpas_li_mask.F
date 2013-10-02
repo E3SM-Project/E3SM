@@ -47,27 +47,38 @@ module li_mask
    !--------------------------------------------------------------------
    ! all subroutines and functions in this module are public!
 
+
+   ! interfaces without a suffix return logicals
+   ! interfaces with names that end with '_int' return 0/1
+   ! TODO Eventually we may decide to only keep and maintain one of these return types.
+
    interface li_mask_is_ice
-      module procedure li_mask_is_ice_1d
-      module procedure li_mask_is_ice_0d
+      module procedure li_mask_is_ice_logout_1d
+      module procedure li_mask_is_ice_logout_0d
+   end interface
+
+
+   interface li_mask_is_ice_int
+      module procedure li_mask_is_ice_intout_1d
+      module procedure li_mask_is_ice_intout_0d
    end interface
 
 
    interface li_mask_is_dynamic_ice
-      module procedure li_mask_is_dynamic_ice_1d
-      module procedure li_mask_is_dynamic_ice_0d
+      module procedure li_mask_is_dynamic_ice_logout_1d
+      module procedure li_mask_is_dynamic_ice_logout_0d
    end interface
 
 
    interface li_mask_is_floating_ice
-      module procedure li_mask_is_floating_ice_1d
-      module procedure li_mask_is_floating_ice_0d
+      module procedure li_mask_is_floating_ice_logout_1d
+      module procedure li_mask_is_floating_ice_logout_0d
    end interface
 
 
    interface li_mask_is_grounded_ice
-      module procedure li_mask_is_grounded_ice_1d
-      module procedure li_mask_is_grounded_ice_0d
+      module procedure li_mask_is_grounded_ice_logout_1d
+      module procedure li_mask_is_grounded_ice_logout_0d
    end interface
 
 
@@ -392,71 +403,94 @@ contains
    ! Functions for decoding bitmasks - will work with cellMask, edgeMask, or vertexMask
    ! ===================================
    ! Only adding the minimum needed for now.  These should be added as needed.
+   ! functions with names that include '_logout' return logical types
+   !    -- these should be used with 'if' and 'where' statements
+   ! functions with names that include '_intout' return integers types with 0 for false, 1 for true.
+   !    -- these should be used when multiplying against numeric arrays
 
 
-   function li_mask_is_ice_1d(mask)
-      integer, dimension(:), pointer, intent(in) :: mask
-      logical, dimension(size(mask)) :: li_mask_is_ice_1d
+   ! -- Functions that check for presence of ice --
+   function li_mask_is_ice_logout_1d(mask)
+      integer, dimension(:), intent(in) :: mask
+      logical, dimension(size(mask)) :: li_mask_is_ice_logout_1d
 
-      li_mask_is_ice_1d = (iand(mask, li_mask_ValueIce) == li_mask_ValueIce)
-   end function li_mask_is_ice_1d
+      li_mask_is_ice_logout_1d = (iand(mask, li_mask_ValueIce) == li_mask_ValueIce)
+   end function li_mask_is_ice_logout_1d
 
-   function li_mask_is_ice_0d(mask)
+   function li_mask_is_ice_logout_0d(mask)
       integer, intent(in) :: mask
-      logical :: li_mask_is_ice_0d
+      logical :: li_mask_is_ice_logout_0d
 
-      li_mask_is_ice_0d = (iand(mask, li_mask_ValueIce) == li_mask_ValueIce)
-   end function li_mask_is_ice_0d
+      li_mask_is_ice_logout_0d = (iand(mask, li_mask_ValueIce) == li_mask_ValueIce)
+   end function li_mask_is_ice_logout_0d
 
 
+   function li_mask_is_ice_intout_1d(mask)
+      integer, dimension(:), intent(in) :: mask
+      integer, dimension(size(mask)) :: li_mask_is_ice_intout_1d
 
-   function li_mask_is_dynamic_ice_1d(mask)
-      integer, dimension(:), pointer, intent(in) :: mask
-      logical, dimension(size(mask)) :: li_mask_is_dynamic_ice_1d
+      li_mask_is_ice_intout_1d = iand(mask, li_mask_ValueIce) / li_mask_ValueIce
+   end function li_mask_is_ice_intout_1d
 
-      li_mask_is_dynamic_ice_1d = (iand(mask, li_mask_ValueDynamicIce) == li_mask_ValueDynamicIce)
-   end function li_mask_is_dynamic_ice_1d
-
-   function li_mask_is_dynamic_ice_0d(mask)
+   function li_mask_is_ice_intout_0d(mask)
       integer, intent(in) :: mask
-      logical :: li_mask_is_dynamic_ice_0d
+      integer :: li_mask_is_ice_intout_0d
 
-      li_mask_is_dynamic_ice_0d = (iand(mask, li_mask_ValueDynamicIce) == li_mask_ValueDynamicIce)
-   end function li_mask_is_dynamic_ice_0d
+      li_mask_is_ice_intout_0d = iand(mask, li_mask_ValueIce) / li_mask_ValueIce
+   end function li_mask_is_ice_intout_0d
 
 
+   ! -- Functions that check for presence of dynamic ice --
+   function li_mask_is_dynamic_ice_logout_1d(mask)
+      integer, dimension(:), intent(in) :: mask
+      logical, dimension(size(mask)) :: li_mask_is_dynamic_ice_logout_1d
 
-   function li_mask_is_floating_ice_1d(mask)
-      integer, dimension(:), pointer, intent(in) :: mask
-      logical, dimension(size(mask)) :: li_mask_is_floating_ice_1d
+      li_mask_is_dynamic_ice_logout_1d = (iand(mask, li_mask_ValueDynamicIce) == li_mask_ValueDynamicIce)
+   end function li_mask_is_dynamic_ice_logout_1d
 
-      li_mask_is_floating_ice_1d = (iand(mask, li_mask_ValueFloating) == li_mask_ValueFloating)
-   end function li_mask_is_floating_ice_1d
-
-   function li_mask_is_floating_ice_0d(mask)
+   function li_mask_is_dynamic_ice_logout_0d(mask)
       integer, intent(in) :: mask
-      logical :: li_mask_is_floating_ice_0d
+      logical :: li_mask_is_dynamic_ice_logout_0d
 
-      li_mask_is_floating_ice_0d = (iand(mask, li_mask_ValueFloating) == li_mask_ValueFloating)
-   end function li_mask_is_floating_ice_0d
+      li_mask_is_dynamic_ice_logout_0d = (iand(mask, li_mask_ValueDynamicIce) == li_mask_ValueDynamicIce)
+   end function li_mask_is_dynamic_ice_logout_0d
 
 
+   ! -- Functions that check for presence of floating ice --
+   function li_mask_is_floating_ice_logout_1d(mask)
+      integer, dimension(:), intent(in) :: mask
+      logical, dimension(size(mask)) :: li_mask_is_floating_ice_logout_1d
 
-   function li_mask_is_grounded_ice_1d(mask)
-      integer, dimension(:), pointer, intent(in) :: mask
-      logical, dimension(size(mask)) :: li_mask_is_grounded_ice_1d
+      li_mask_is_floating_ice_logout_1d = (iand(mask, li_mask_ValueFloating) == li_mask_ValueFloating)
+   end function li_mask_is_floating_ice_logout_1d
 
-      li_mask_is_grounded_ice_1d = ( (iand(mask, li_mask_ValueFloating) /= li_mask_ValueFloating) &
+   function li_mask_is_floating_ice_logout_0d(mask)
+      integer, intent(in) :: mask
+      logical :: li_mask_is_floating_ice_logout_0d
+
+      li_mask_is_floating_ice_logout_0d = (iand(mask, li_mask_ValueFloating) == li_mask_ValueFloating)
+   end function li_mask_is_floating_ice_logout_0d
+
+
+   ! -- Functions that check for presence of grounded ice --
+   function li_mask_is_grounded_ice_logout_1d(mask)
+      integer, dimension(:), intent(in) :: mask
+      logical, dimension(size(mask)) :: li_mask_is_grounded_ice_logout_1d
+
+      li_mask_is_grounded_ice_logout_1d = ( (iand(mask, li_mask_ValueFloating) /= li_mask_ValueFloating) &
                                 .and. (li_mask_is_ice(mask)) )
-   end function li_mask_is_grounded_ice_1d
+   end function li_mask_is_grounded_ice_logout_1d
 
-   function li_mask_is_grounded_ice_0d(mask)
+   function li_mask_is_grounded_ice_logout_0d(mask)
       integer, intent(in) :: mask
-      logical :: li_mask_is_grounded_ice_0d
+      logical :: li_mask_is_grounded_ice_logout_0d
 
-      li_mask_is_grounded_ice_0d = ( (iand(mask, li_mask_ValueFloating) /= li_mask_ValueFloating) &
+      li_mask_is_grounded_ice_logout_0d = ( (iand(mask, li_mask_ValueFloating) /= li_mask_ValueFloating) &
                                 .and. (li_mask_is_ice(mask)) )
-   end function li_mask_is_grounded_ice_0d
+   end function li_mask_is_grounded_ice_logout_0d
+
+
+
 
 
 
