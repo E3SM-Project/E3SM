@@ -58,7 +58,7 @@
 		            description="sea level to use for calculating floatation"
 		            possible_values="Any real value"
 		/>
-		<nml_option name="config_dynamic_thickness" type="real" default_value="0.0" units="m of ice"
+		<nml_option name="config_dynamic_thickness" type="real" default_value="100.0" units="m of ice"
 		            description="Defines the ice thickness below which dynamics are not calculated."
 		            possible_values="Any positive real value"
 		/>
@@ -77,12 +77,12 @@
 	</nml_record>
 
 	<nml_record name="time_integration">
-		<nml_option name="config_dt_years" type="real" default_value="0.0" units="yr"
-		            description="Length of model time-step in years.  Will be used instead of config_dt_seconds if greater than zero."
+		<nml_option name="config_dt_years" type="real" default_value="0.5" units="yr"
+		            description="Length of model time-step in years.  Will be used instead of config_dt_seconds if greater than zero.  Currently the model assumes there are 365.0 * 24.0 * 3600.0 seconds in a year and the calendar type is not considered for this conversion."
 		            possible_values="Any positive real value, but limited by CFL condition."
 		/>
-		<nml_option name="config_dt_seconds" type="real" default_value="31536000.0" units="s"
-		            description="Length of model time-step in seconds.  This value will only be used if config_dt_years is less than or equal to zero (or is not supplied)."
+		<nml_option name="config_dt_seconds" type="real" default_value="0.0" units="s"
+		            description="Length of model time-step in seconds.  This value will only be used if config_dt_years is less than or equal to zero."
 		            possible_values="Any positive real value, but limited by CFL condition."
 		/>
 		<nml_option name="config_time_integration" type="character" default_value="forward_euler" units="unitless"
