@@ -117,6 +117,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: windStressZonal, windStressMeridional
       real (kind=RKIND), dimension(:), pointer :: latentHeatFlux, sensibleHeatFlux, longWaveHeatFluxUp, longWaveHeatFluxDown, evaporationFlux, seaIceHeatFlux, snowFlux
       real (kind=RKIND), dimension(:), pointer :: seaIceFreshWaterFlux, seaIceSalinityFlux, riverRunoffFlux, iceRunoffFlux
+      real (kind=RKIND), dimension(:), pointer :: shortWaveHeatFlux, penetrativeTemperatureFlux
 
       real (kind=RKIND), dimension(:), pointer :: rainFlux
       real (kind=RKIND), dimension(:), pointer :: seaSurfacePressure, iceFraction
@@ -145,6 +146,7 @@ contains
       evaporationFlux      => forcing % evaporationFlux % array
       seaIceHeatFlux       => forcing % seaIceHeatFlux % array
       snowFlux             => forcing % snowFlux % array
+      shortWaveHeatFlux    => forcing % shortWaveHeatFlux % array
 
       seaIceFreshWaterFlux => forcing % seaIceFreshWaterFlux % array
       seaIceSalinityFlux   => forcing % seaIceSalinityFlux % array
@@ -158,6 +160,7 @@ contains
 
       surfaceMassFlux      => forcing % surfaceMassFlux % array
       surfaceTracerFlux    => forcing % surfaceTracerFlux % array
+      penetrativeTemperatureFlux  => forcing % penetrativeTemperatureFlux % array
 
       ! Convert CESM wind stress to MPAS-O windstress
       do iEdge = 1, mesh % nEdges
@@ -180,7 +183,8 @@ contains
 
         surfaceMassFlux(iCell) = snowFlux(iCell) + rainFlux(iCell) + evaporationFlux(iCell) + seaIceFreshWaterFlux(iCell) + iceRunoffFlux(iCell) + riverRunoffFlux(iCell)
       end do
-   !--------------------------------------------------------------------
+
+      penetrativeTemperatureFlux = shortWaveHeatFlux * hflux_factor
 
    end subroutine ocn_forcing_coupled_build_arrays!}}}
 
