@@ -68,8 +68,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_surface_flux_tend(mesh, layerThickness, surfaceTracerFlux, tend, err)!{{{
-
+   subroutine ocn_tracer_surface_flux_tend(mesh, transmissionCoefficients, layerThickness, surfaceTracerFlux, tend, err)!{{{
       !-----------------------------------------------------------------
       !
       ! input variables
@@ -84,6 +83,9 @@ contains
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
         surfaceTracerFlux !< Input: surface tracer fluxes
+
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+        transmissionCoefficients !< Input: Coefficients for the application of surface fluxes
 
       !-----------------------------------------------------------------
       !
@@ -112,7 +114,7 @@ contains
       integer, dimension(:), pointer :: maxLevelCell
       integer, dimension(:,:), pointer :: cellMask
 
-      real (kind=RKIND) :: transmissionCoeffTop, transmissionCoeffBot, zTop, zBot, remainingFlux
+      real (kind=RKIND) :: remainingFlux
 
 
       err = 0
@@ -125,19 +127,12 @@ contains
       cellMask => mesh % cellMask % array
 
       do iCell = 1, nCells
-        zTop = 0.0_RKIND
-        zBot = 0.0_RKIND
         remainingFlux = 1.0_RKIND
         do k = 1, maxLevelCell(iCell)
-          zTop = zBot
-          zBot = zTop - layerThickness(k, iCell)
-          transmissionCoeffTop = ocn_forcing_transmission(zTop)
-          transmissionCoeffBot = ocn_forcing_transmission(zBot)
-
-          remainingFlux = remainingFlux - (transmissionCoeffTop - transmissionCoeffBot)
+          remainingFlux = remainingFlux - transmissionCoefficients(k, iCell)
 
           do iTracer = 1, nTracers
-            tend(iTracer, k, iCell) = tend(iTracer, k, iCell) + cellMask(k, icell) * surfaceTracerFlux(iTracer, iCell) * (transmissionCoeffTop - transmissionCoeffBot)
+            tend(iTracer, k, iCell) = tend(iTracer, k, iCell) + cellMask(k, icell) * surfaceTracerFlux(iTracer, iCell) * transmissionCoefficients(k, iCell)
           end do
         end do
 

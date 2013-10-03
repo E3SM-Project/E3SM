@@ -105,7 +105,7 @@ contains
       type (mesh_type), intent(in) :: mesh !< Input: Mesh information
 
       real (kind=RKIND), dimension(:), pointer :: surfaceMassFlux
-      real (kind=RKIND), dimension(:,:), pointer :: layerThickness, layerThicknessEdge, vertTransportVelocityTop, tend_layerThickness, uTransport
+      real (kind=RKIND), dimension(:,:), pointer :: layerThickness, layerThicknessEdge, vertTransportVelocityTop, tend_layerThickness, uTransport, transmissionCoefficients
 
       integer :: err
 
@@ -118,6 +118,7 @@ contains
       tend_layerThickness       => tend % layerThickness % array
 
       surfaceMassFlux           => forcing % surfaceMassFlux % array
+      transmissionCoefficients  => forcing % transmissionCoefficients % array
                   
       !
       ! height tendency: start accumulating tendency terms
@@ -149,7 +150,7 @@ contains
       ! surface flux tendency
       !
       call mpas_timer_start("surface flux", .false.)
-      call ocn_thick_surface_flux_tend(mesh, layerThickness, surfaceMassFlux, tend_layerThickness, err)
+      call ocn_thick_surface_flux_tend(mesh, transmissionCoefficients, layerThickness, surfaceMassFlux, tend_layerThickness, err)
       call mpas_timer_stop("surface flux")
 
       call mpas_timer_stop("ocn_tend_thick")
@@ -213,7 +214,7 @@ contains
                   
       normalVelocityForcing => mesh % normalVelocityForcing % array
 
-      surfaceWindStress => forcing % surfaceWindStress % array
+      surfaceWindStress        => forcing % surfaceWindStress % array
 
       !
       ! velocity tendency: start accumulating tendency terms
@@ -297,7 +298,7 @@ contains
 
       real (kind=RKIND), dimension(:), pointer :: penetrativeTemperatureFlux
       real (kind=RKIND), dimension(:,:), pointer :: &
-        uTransport, layerThickness,vertTransportVelocityTop, layerThicknessEdge, vertDiffTopOfCell, tend_layerThickness, normalThicknessFlux, surfaceTracerFlux
+        uTransport, layerThickness,vertTransportVelocityTop, layerThicknessEdge, vertDiffTopOfCell, tend_layerThickness, normalThicknessFlux, surfaceTracerFlux, transmissionCoefficients
       real (kind=RKIND), dimension(:,:,:), pointer :: &
         tracers, tend_tr
 
@@ -315,6 +316,7 @@ contains
 
       penetrativeTemperatureFlux => forcing % penetrativeTemperatureFlux % array
       surfaceTracerFlux          => forcing % surfaceTracerFlux % array
+      transmissionCoefficients   => forcing % transmissionCoefficients % array
 
       tend_tr     => tend % tracers % array
       tend_layerThickness      => tend % layerThickness % array
@@ -363,7 +365,7 @@ contains
       ! Perform forcing from surface fluxes
       !
       call mpas_timer_start("surface_flux", .false.)
-      call ocn_tracer_surface_flux_tend(mesh, layerThickness, surfaceTracerFlux, tend_tr, err)
+      call ocn_tracer_surface_flux_tend(mesh, transmissionCoefficients, layerThickness, surfaceTracerFlux, tend_tr, err)
       call mpas_timer_stop("surface_flux")
 
       !
