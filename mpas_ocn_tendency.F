@@ -26,6 +26,7 @@ module ocn_tendency
    use mpas_timer
 
    use ocn_tracer_advection
+   use ocn_tracer_short_wave_absorption
 
    use ocn_thick_hadv
    use ocn_thick_vadv
@@ -294,6 +295,7 @@ contains
       type (mesh_type), intent(in) :: mesh !< Input: Mesh information
       real (kind=RKIND), intent(in) :: dt !< Input: Time step
 
+      real (kind=RKIND), dimension(:), pointer :: penetrativeTemperatureFlux
       real (kind=RKIND), dimension(:,:), pointer :: &
         uTransport, layerThickness,vertTransportVelocityTop, layerThicknessEdge, vertDiffTopOfCell, tend_layerThickness, normalThicknessFlux, surfaceTracerFlux
       real (kind=RKIND), dimension(:,:,:), pointer :: &
@@ -311,7 +313,8 @@ contains
       vertDiffTopOfCell         => diagnostics % vertDiffTopOfCell % array
       vertTransportVelocityTop  => diagnostics % vertTransportVelocityTop % array
 
-      surfaceTracerFlux         => forcing % surfaceTracerFlux % array
+      penetrativeTemperatureFlux => forcing % penetrativeTemperatureFlux % array
+      surfaceTracerFlux          => forcing % surfaceTracerFlux % array
 
       tend_tr     => tend % tracers % array
       tend_layerThickness      => tend % layerThickness % array
@@ -362,6 +365,13 @@ contains
       call mpas_timer_start("surface_flux", .false.)
       call ocn_tracer_surface_flux_tend(mesh, layerThickness, surfaceTracerFlux, tend_tr, err)
       call mpas_timer_stop("surface_flux")
+
+      !
+      ! Performing shortwave absorption
+      !
+      call mpas_timer_start("short wave", .false.)
+      call ocn_tracer_short_wave_absorption_tend(mesh, state % index_temperature, layerThickness, penetrativeTemperatureFlux, tend_tr, err)
+      call mpas_timer_stop("short wave")
 
       call mpas_timer_stop("ocn_tend_tracer")
 

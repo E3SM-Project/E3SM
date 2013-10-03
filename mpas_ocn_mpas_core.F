@@ -44,6 +44,7 @@ module mpas_core
    use ocn_vel_coriolis
 
    use ocn_tracer_hmix
+   use ocn_tracer_short_wave_absorption
    use ocn_gm
    use ocn_restoring
 
@@ -147,6 +148,9 @@ module mpas_core
       err = ior(err,err_tmp)
 
       call ocn_tracer_advection_init(err_tmp)
+      err = ior(err,err_tmp)
+
+      call ocn_tracer_short_wave_absorption_init(err_tmp)
       err = ior(err,err_tmp)
 
       call ocn_global_diagnostics_init(dminfo,err_tmp)

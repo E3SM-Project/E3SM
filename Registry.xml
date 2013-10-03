@@ -481,6 +481,18 @@
 					description="Logical flag that determines if the formation of frazil ice is allowed."
 					possible_values=".true. or .false."
 		/>
+        <nml_option name="config_sw_absorption_type" type="character" default_value="jerlov" units="unitless"
+                    description="Name of shortwave absorption type used in simulation."
+                    possible_values="'jerlov'"
+        />
+        <nml_option name="config_jerlov_water_type" type="integer" default_value="3" units="unitless"
+                    description="Integer value defining the water type used in Jerlov short wave absorption."
+                    possible_values="Integer values between 1 and 5"
+        />
+        <nml_option name="config_fixed_jerlov_weights" type="logical" default_value=".true." units="unitless"
+                    description="Logical value determining if the weights for Jerlov absorption are based off of reference depths (.true.), or the layerThickness variable (.false.)."
+                    possible_values=".true. or .false."
+        />
 	</nml_record>
 	<nml_record name="advection">
 		<nml_option name="config_vert_tracer_adv" type="character" default_value="stencil" units="unitless"
@@ -1273,9 +1285,9 @@
 			 description="time-averaged vertical velocity at top of cell"
 		/>
 	</var_struct>
-	<var_struct name="forcing" time_levs="0">
+    <var_struct name="forcing" time_levs="0">
 		<var name="surfaceWindStress" type="real" dimensions="nEdges Time" units="N m^{-2}" streams="o"
-			 description="Wind stress at the surface of the ocean defined at edge midpoints."
+			 description="Wind stress at the surface of the ocean defined at edge midpoints. Magintude in direction of edge normal."
 		/>
 		<var name="surfaceWindStressMagnitude" type="real" dimensions="nCells Time" units="N m^{-2}" streams="o"
 			 description="Magnitude of wind stress at the surface of the ocean, at cell centers."
@@ -1304,64 +1316,64 @@
 		<!-- Input fields for coupling -->
 		<!-- Coupling fields associated with wind stress -->
 		<var name="windStressZonal" type="real" dimensions="nCells Time" units="N m^{-2}" streams="o"
-			 description="Zonal (eastward) component of wind stress at cell centers from coupler."
+			 description="Zonal (eastward) component of wind stress at cell centers from coupler. Positive eastward."
 		/>
 		<var name="windStressMeridional" type="real" dimensions="nCells Time" units="N m^{-2}" streams="o"
-			 description="Meridional (northward) component of wind stress at cell centers from coupler."
+			 description="Meridional (northward) component of wind stress at cell centers from coupler. Positive northward."
 		/>
 
 		<!-- Coupling fields associated with heat fluxes -->
 		<var name="latentHeatFlux" type="real" dimensions="nCells Time" units="W m^{-2}" streams="o"
-			 description="Latent heat flux at cell centers from coupler."
+			 description="Latent heat flux at cell centers from coupler. Positive into the ocean."
 		/>
 		<var name="sensibleHeatFlux" type="real" dimensions="nCells Time" units="W m^{-2}" streams="o"
-			 description="Sensible heat flux at cell centers from coupler."
+			 description="Sensible heat flux at cell centers from coupler. Positive into the ocean."
 		/>
 		<var name="longWaveHeatFluxUp" type="real" dimensions="nCells Time" units="W m^{-2}" streams="o"
-			 description="Upward long wave heat flux at cell centers from coupler."
+			 description="Upward long wave heat flux at cell centers from coupler. Positive into the ocean."
 		/>
 		<var name="longWaveHeatFluxDown" type="real" dimensions="nCells Time" units="W m^{-2}" streams="o"
-			 description="Downward long wave heat flux at cell centers from coupler."
+			 description="Downward long wave heat flux at cell centers from coupler. Positive into the ocean."
 		/>
 		<var name="seaIceHeatFlux" type="real" dimensions="nCells Time" units="W m^{-2}" streams="o"
-			 description="Sea ice heat flux at cell centers from coupler."
+			 description="Sea ice heat flux at cell centers from coupler. Positive into the ocean."
 		/>
 		<var name="shortWaveHeatFlux" type="real" dimensions="nCells Time" units="W m^{-2}" streams="o"
-			 description="Short wave flux at cell centers from coupler."
+			 description="Short wave flux at cell centers from coupler. Positive into the ocean."
 		/>
 
 		<!-- Coupling fields associated with mass or salinity fluxes -->
 		<var name="evaporationFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}" streams="o"
-			 description="Evaporation flux at cell centers from coupler."
+			 description="Evaporation flux at cell centers from coupler. Positive into the ocean."
 		/>
 		<var name="seaIceSalinityFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}" streams="o"
-			 description="Sea ice salinity flux at cell centers from coupler."
+			 description="Sea ice salinity flux at cell centers from coupler. Positive into the ocean."
 		/>
 		<var name="seaIceFreshWaterFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}" streams="o"
-			 description="Fresh water flux from sea ice at cell centers from coupler."
+			 description="Fresh water flux from sea ice at cell centers from coupler. Positive into the ocean."
 		/>
 		<var name="riverRunoffFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}" streams="o"
-			 description="Fresh water flux from river runoff at cell centers from coupler."
+			 description="Fresh water flux from river runoff at cell centers from coupler. Positive into the ocean."
 		/>
 		<var name="iceRunoffFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}" streams="o"
-			 description="Fresh water flux from ice runoff at cell centers from coupler."
+			 description="Fresh water flux from ice runoff at cell centers from coupler. Positive into the ocean."
 		/>
 		<var name="rainFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}" streams="o"
-			 description="Fresh water flux from rain at cell centers from coupler."
+			 description="Fresh water flux from rain at cell centers from coupler. Positive into the ocean."
 		/>
 		<var name="snowFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}" streams="o"
-			 description="Fresh water flux from snow at cell centers from coupler."
+			 description="Fresh water flux from snow at cell centers from coupler. Positive into the ocean."
 		/>
 
 		<!-- Misc. coupling fields -->
 		<var name="iceFraction" type="real" dimensions="nCells Time" units="percent" streams="o"
-			 description="Fraction of sea ice coverage at cell centers from coupler."
+			 description="Fraction of sea ice coverage at cell centers from coupler. Positive into the ocean."
 		/>
 		<var name="prognosticCO2" type="real" dimensions="nCells Time" units="1e-6 mol mol^{-1}" streams="o"
-			 description="Prognostic CO2 at cell centers from coupler."
+			 description="Prognostic CO2 at cell centers from coupler. Positive into the ocean."
 		/>
 		<var name="diagnosticCO2" type="real" dimensions="nCells Time" units="1e-6 mol mol^{-1}" streams="o"
-			 description="Diagnostic CO2 at cell centers from coupler."
+			 description="Diagnostic CO2 at cell centers from coupler. Positive into the ocean."
 		/>
 		<var name="squaredWindSpeed10Meter" type="real" dimensions="nCells Time" units="m^2 s^{-2}" streams="o"
 			 description="Squared wind speed at 10 meters at cell centers from coupler."
@@ -1388,17 +1400,17 @@
 		/>
 		</var_array>
 		<var_array name="avgSSHGradient" type="real" dimensions="nCells Time">
-			<var name="avgZonalSSHGradient" array_group="ssh_zonal" streams="o" units="m m^{-1}"
+			<var name="avgZonalSSHGradient" array_group="ssh_zonal" units="m m^{-1}" streams="o"
 				 description="Time averaged zonal gradient of SSH"
 			/>
-			<var name="avgMeridionalSSHGradient" array_group="ssh_meridional" streams="o" units="m m^{-1}"
+			<var name="avgMeridionalSSHGradient" array_group="ssh_meridional" units="m m^{-1}" streams="o"
 				 description="Time averaged meridional gradient of SSH"
 			/>
 		</var_array>
-		<var name="CO2Flux" type="real" dimensions="nCells Time" streams="o" units="mol m^{-2} s^{-1}"
+		<var name="CO2Flux" type="real" dimensions="nCells Time" units="mol m^{-2} s^{-1}" streams="o"
 			 description="CO2 Flux."
 		/>
-		<var name="DMSFlux" type="real" dimensions="nCells Time" streams="o" units="mol m^{-2} s^{-1}"
+		<var name="DMSFlux" type="real" dimensions="nCells Time" units="mol m^{-2} s^{-1}" streams="o"
 			 description="DMS Flux."
 		/>
 	</var_struct>
