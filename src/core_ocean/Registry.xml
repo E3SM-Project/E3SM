@@ -1312,6 +1312,9 @@
 		<var name="penetrativeTemperatureFlux" type="real" dimensions="nCells Time" units="^\circ C m s^{-1}" streams="o"
 			 description="Penetrative temperature flux at the surface due to solar radiation. Positive is into the ocean."
 		/>
+		<var name="transmissionCoefficients" type="real" dimensions="nVertLevels nCells Time" units="percent" streams="o"
+			 description="Divergence of transmission through interfaces of surface fluxes below the surface layer at cell centers. These are not applied to short wave."
+		/>
 
 		<!-- Input fields for coupling -->
 		<!-- Coupling fields associated with wind stress -->

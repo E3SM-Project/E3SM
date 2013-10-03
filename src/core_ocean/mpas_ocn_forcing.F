@@ -44,6 +44,7 @@ module ocn_forcing
 
    public :: ocn_forcing_build_arrays, &
              ocn_forcing_init, &
+             ocn_forcing_build_transmission_array, &
              ocn_forcing_transmission
 
    !--------------------------------------------------------------------
@@ -140,6 +141,67 @@ contains
       err = ior(err,err1)
 
    end subroutine ocn_forcing_init!}}}
+
+!***********************************************************************
+!
+!  routine ocn_forcing_build_transmission_array
+!
+!> \brief   Transmission coefficient array for surface forcing.
+!> \author  Doug Jacobsen
+!> \date    10/03/2013
+!> \version SVN:$Id$
+!> \details 
+!>  This subroutine builds the transmission coefficient array for use in
+!>  applying surface fluxes deeper than the surface layer.
+!
+!-----------------------------------------------------------------------
+
+    subroutine ocn_forcing_build_transmission_array(mesh, state, forcing, err)!{{{
+        type (mesh_type), intent(in) :: mesh !< Input: Mesh information
+        type (state_type), intent(in) :: state !< Input: State information
+        type (forcing_type), intent(inout) :: forcing !< Input/Output: Forcing information
+        integer, intent(out) :: err !< Output: Error code
+
+        !************************************************
+        !
+        ! Local Variables
+        !
+        !************************************************
+
+        real (kind=RKIND) :: zTop, zBot, transmissionCoeffTop, transmissionCoeffBot
+
+        real (kind=RKIND), dimension(:,:), pointer :: layerThickness, transmissionCoefficients
+
+        integer :: iCell, k
+        integer :: nCells
+
+        integer, dimension(:), pointer :: maxLevelCell
+
+        err = 0
+
+        nCells = mesh % nCells
+
+        maxLevelCell             => mesh % maxLevelCell % array
+
+        layerThickness           => state % layerThickness % array
+
+        transmissionCoefficients => forcing % transmissionCoefficients % array
+
+        do iCell = 1, nCells
+           zTop = 0.0_RKIND
+           transmissionCoeffTop = ocn_forcing_transmission(zTop)
+           do k = 1, maxLevelCell(iCell)
+              zBot = zTop - layerThickness(k,iCell)
+              transmissionCoeffBot = ocn_forcing_transmission(zBot)
+
+              transmissionCoefficients(k, iCell) = transmissionCoeffTop - transmissionCoeffBot
+
+              zTop = zBot
+              transmissionCoeffTop = transmissionCoeffBot
+           end do
+        end do
+
+    end subroutine ocn_forcing_build_transmission_array!}}}
 
 !***********************************************************************
 !

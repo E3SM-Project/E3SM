@@ -139,18 +139,19 @@ contains
         ! tend(k,iEdge) =  tend(k,iEdge) + edgeMask(k, iEdge) * surfaceWindStress(iEdge) / config_density0 / layerThicknessEdge(k, iEdge)
 
         zTop = 0.0_RKIND
-        zBot = 0.0_RKIND
+        transmissionCoeffTop = ocn_forcing_transmission(zTop)
         remainingStress = 1.0_RKIND
         do k = 1,maxLevelEdgeTop(iEdge)
-           zTop = zBot
            zBot = zTop - layerThicknessEdge(k, iEdge)
 
-           transmissionCoeffTop = ocn_forcing_transmission(zTop)
            transmissionCoeffBot = ocn_forcing_transmission(zBot)
 
            remainingStress = remainingStress - (transmissionCoeffTop - transmissionCoeffBot)
 
            tend(k,iEdge) =  tend(k,iEdge) + edgeMask(k, iEdge) * (normalVelocityForcing(k,iEdge) + surfaceWindStress(iEdge) * (transmissionCoeffTop - transmissionCoeffBot)) / config_density0 / layerThicknessEdge(k,iEdge)
+
+           zTop = zBot
+           transmissionCoeffTop = transmissionCoeffBot
         enddo
 
         if ( maxLevelEdgeTop(iEdge) > 0 .and. remainingStress > 0.0_RKIND) then

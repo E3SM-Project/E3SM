@@ -70,7 +70,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_thick_surface_flux_tend(mesh, layerThickness, surfaceMassFlux, tend, err)!{{{
+   subroutine ocn_thick_surface_flux_tend(mesh, transmissionCoefficients, layerThickness, surfaceMassFlux, tend, err)!{{{
       !-----------------------------------------------------------------
       !
       ! input variables
@@ -79,6 +79,9 @@ contains
 
       type (mesh_type), intent(in) :: &
          mesh              !< Input: mesh information
+
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+         transmissionCoefficients !< Input: Coefficients for the transmission of surface fluxes
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          layerThickness   !< Input: Layer thickness
@@ -114,7 +117,7 @@ contains
       integer, dimension(:), pointer :: maxLevelCell
       integer, dimension(:,:), pointer :: cellMask
 
-      real (kind=RKIND) :: transmissionCoeffTop, transmissionCoeffBot, zTop, zBot, remainingFlux
+      real (kind=RKIND) :: remainingFlux
 
       err = 0
 
@@ -125,17 +128,10 @@ contains
 
       do iCell = 1, nCells
         remainingFlux = 1.0_RKIND
-        zTop = 0.0_RKIND
-        zBot = 0.0_RKIND
         do k = 1, maxLevelCell(iCell)
-          zTop = zBot
-          zBot = zTop - layerThickness(k, iCell)
-          transmissionCoeffTop = ocn_forcing_transmission(zTop)
-          transmissionCoeffBot = ocn_forcing_transmission(zBot)
+          remainingFlux = remainingFlux - transmissionCoefficients(k, iCell)
 
-          remainingFlux = remainingFlux - (transmissionCoeffTop - transmissionCoeffBot)
-
-          tend(k, iCell) = tend(k, iCell) + cellMask(k, iCell) * (surfaceMassFlux(iCell)/config_density0) * (transmissionCoeffTop - transmissionCoeffBot)
+          tend(k, iCell) = tend(k, iCell) + cellMask(k, iCell) * (surfaceMassFlux(iCell)/config_density0) * transmissionCoefficients(k, iCell)
         end do
 
         if(maxLevelCell(iCell) > 0 .and. remainingFlux > 0.0_RKIND) then
