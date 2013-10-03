@@ -410,3 +410,33 @@ macro(testQuadPrec HOMME_QUAD_PREC)
     MESSAGE(STATUS "Quadruple-precision not supported")
   ENDIF ()
 endmacro(testQuadPrec)
+
+
+macro(setCustomCompilerFlags CUSTOM_FLAGS_FILE SRCS_ALL)
+
+  # Locally reset the compiler flags
+  #   This only changes the flags for preqx
+  #   these variables get reset outside of this subdir
+  SET(CMAKE_Fortran_FLAGS_ORIG "${CMAKE_Fortran_FLAGS}")
+  SET(CMAKE_Fortran_FLAGS "")
+
+  # This file should declare the list of files to be exclude
+  #   from default compilation and declare compiler options for them
+  INCLUDE(${${CUSTOM_FLAGS_FILE}})
+
+  # Remove the custom files from the list of all files
+  FOREACH (CUSTOM_FILE ${CUSTOM_FLAG_FILES})
+    MESSAGE(STATUS "Applying custom compiler flags to ${CUSTOM_FILE}")
+    GET_SOURCE_FILE_PROPERTY(THIS_CUSTOM_FLAGS ${CUSTOM_FILE} COMPILE_FLAGS)
+    MESSAGE(STATUS "  ${THIS_CUSTOM_FLAGS}")
+    LIST(REMOVE_ITEM ${SRCS_ALL} ${CUSTOM_FILE})
+  ENDFOREACH()
+
+  # Compile the rest of the files with the original flags
+  SET_SOURCE_FILES_PROPERTIES(${${SRCS_ALL}} PROPERTIES COMPILE_FLAGS
+                              "${CMAKE_Fortran_FLAGS_ORIG}")
+  
+  # Add the custom files back in to the list of all files
+  SET(${SRCS_ALL} ${${SRCS_ALL}} ${CUSTOM_FLAG_FILES})
+
+endmacro(setCustomCompilerFlags)
