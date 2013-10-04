@@ -420,6 +420,18 @@ macro(setCustomCompilerFlags CUSTOM_FLAGS_FILE SRCS_ALL)
   SET(CMAKE_Fortran_FLAGS_ORIG "${CMAKE_Fortran_FLAGS}")
   SET(CMAKE_Fortran_FLAGS "")
 
+  # Need to put the OpenMP flag back on the compile line since it
+  #   is used for linking
+  IF (${ENABLE_OPENMP})
+    SET(CMAKE_Fortran_FLAGS "${OpenMP_Fortran_FLAGS}")
+  ENDIF ()
+
+  # Need to put the -mmic flag back on the compile line since it
+  #   is used for linking
+  IF (${ENABLE_INTEL_PHI})
+    SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${INTEL_PHI_FLAGS}")
+  ENDIF ()
+
   # This file should declare the list of files to be exclude
   #   from default compilation and declare compiler options for them
   INCLUDE(${${CUSTOM_FLAGS_FILE}})
