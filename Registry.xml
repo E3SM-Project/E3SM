@@ -870,10 +870,10 @@
 			 description="Area of each cell (triangle) in the dual grid."
 		/>
 		<var name="edgeNormalVectors" type="real" dimensions="R3 nEdges" streams="o" units="unitless"
-			 description="Normal vector defined at an edge."
+			 description="Normal unit vector defined at an edge."
 		/>
 		<var name="edgeTangentVectors" type="real" dimensions="R3 nEdges" streams="o" units="unitless"
-		     description="Tangent vector defined at an edge."
+                         description="Tangent unit vector defined at an edge."
 		/>
 		<var name="localVerticalUnitVectors" type="real" dimensions="R3 nCells" streams="o" units="unitless"
 			 description="Unit surface normal vectors defined at cell centers."
