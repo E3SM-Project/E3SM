@@ -1,0 +1,523 @@
+#!/usr/bin/env perl
+#
+# Summarize cprnc output from all tests in a CESM test suite.
+# See usage message for details.
+#
+# Bill Sacks
+# 4-10-13
+
+use strict;
+use Getopt::Long;
+use File::Basename;
+use List::Util qw(max sum);
+
+#----------------------------------------------------------------------
+# Get arguments and check them
+#----------------------------------------------------------------------
+
+my %opts;
+GetOptions(
+           "basedir=s"       => \$opts{'basedir'},
+           "testid=s"        => \$opts{'testid'},
+           "in_rundir"       => \$opts{'in_rundir'},
+           "narrow"          => \$opts{'narrow'},
+           "h|help"          => \$opts{'help'},
+)  or usage();
+
+usage() if $opts{'help'};
+
+if (@ARGV) {
+   print "ERROR: unrecognized arguments: @ARGV\n";
+   usage();
+}
+
+if (!$opts{'basedir'}) {
+   print "ERROR: -basedir must be provided\n";
+   usage();
+}
+if (!$opts{'testid'}) {
+   print "ERROR: -testid must be provided\n";
+   usage();
+}
+
+if ($opts{'in_rundir'}) {
+   $opts{'in_rundir'} = 'true';
+}
+else {
+   $opts{'in_rundir'} = 'false';
+}
+
+#----------------------------------------------------------------------
+# Main script
+#----------------------------------------------------------------------
+
+# Create hash containing summary of cprnc differences. This is a reference to a hash, with:
+# Keys: "Directory Filename Variable"
+# Values: Reference to a hash containing:
+#    Dir => directory (gives test name)
+#    Filename  => cprnc filename
+#    Variable  => variable
+#    RMS       => normalized rms value [may or may not be present]
+#    FILLDIFF  => ' '                  [may or may not be present]
+my ($summary_hash) =
+   process_cprnc_output($opts{'basedir'}, $opts{'testid'}, $opts{'in_rundir'});
+
+my $outbase="cprnc.summary.$opts{'testid'}";
+if ($opts{'in_rundir'} eq 'true') {
+   $outbase = "$outbase.in_rundir";
+}
+
+# set widths of output strings
+my $widths_hash;
+if ($opts{'narrow'}) {
+   $widths_hash = { Dir => 40, Filename => 40, Variable => 40 };
+}
+else {
+   $widths_hash = max_widths($summary_hash);
+}
+   
+
+print_results_by_test("${outbase}.by_test", $summary_hash, $widths_hash);
+print_results_by_varname("${outbase}.by_varname", $summary_hash, $widths_hash);
+print_results_by_rms("${outbase}.by_rms", $summary_hash, $widths_hash);
+
+
+
+#----------------------------------------------------------------------
+# Subroutines
+#----------------------------------------------------------------------
+
+sub usage {
+   die <<EOF;
+SYNOPSIS
+    summarize_cprnc_diffs -basedir <basedir> -testid <testid> [OPTIONS]
+
+    <basedir> is the base directory in which test results can be found
+              (specifically, the location of the cprnc output files)
+
+    <testid> is the testid of the tests to summarize
+
+    The script looks for cprnc output in all directories in basedir whose
+    name ends with the given testid. Summaries of cprnc differences
+    (normalized RMS differences and FILLDIFFs) are placed in three output
+    files beginning with the name 'cprnc.summary', in the current directory.
+    These files contain the same information, but one is sorted by test
+    name, one is sorted by variable name, and is one sorted from largest to
+    smallest normalized RMS differences.
+
+    This is intended to be used to post-process baseline comparison output
+    from a CESM test suite -- either from the main tests (which compare
+    cpl hist files) or from component_gen_comp.
+
+
+OPTIONS
+    -in_rundir           If specified, look for cprnc output files in the run subdirectory
+                         of each test directory. If not specified (default), look for
+                         cprnc output files directly in the test directories. This should
+                         generally be specified when looking at output from component_gen_comp,
+                         which puts its output in the run subdirectory.
+
+    -narrow              Use generally-narrower output field widths to aid readability,
+                         at the expense of truncated strings
+
+    -help [or -h]        Display this help
+
+EOF
+}
+
+
+# process_cprnc_output
+# Read through all cprnc files, and build hashes of instances of RMS and FILLDIFF
+# Inputs:
+#  - basedir
+#  - testid
+#  - in_rundir (true/false)
+# Output: hash reference
+# Dies with an error if no cprnc output files are found
+sub process_cprnc_output {
+   my ($basedir, $testid, $in_rundir) = @_;
+
+   die if ($in_rundir ne "true" && $in_rundir ne "false");
+
+   my %diffs;
+   my $num_files = 0;
+
+   my @test_dirs = glob "${basedir}/*${testid}";
+
+   foreach my $test_dir (@test_dirs) {
+      my $test_dir_base = basename($test_dir);
+
+      my @cprnc_files;
+      if ($in_rundir eq "true") {
+         @cprnc_files = glob "${test_dir}/run/*cprnc.out";
+      }
+      else {
+         @cprnc_files = glob "${test_dir}/*cprnc.out";
+      }
+
+      foreach my $cprnc_file (@cprnc_files) {
+         my $cprnc_file_base = basename($cprnc_file);
+         $num_files++;
+
+         open IN, "<", $cprnc_file or die "ERROR opening ${cprnc_file}";
+         
+         while (my $line = <IN>) {
+            chomp $line;
+
+            process_line($line, $test_dir_base, $cprnc_file_base, \%diffs);
+         }  # while <IN>
+
+         close IN;
+      }  # foreach cprnc_file
+
+   }  # foreach test_dir
+
+   if ($num_files == 0) {
+      die "ERROR: no cprnc.out files found (consider whether or not -in_rundir should be specified)\n";
+   }
+
+   return \%diffs;
+}
+
+
+# process_line: Process one line from one file
+# Inputs:
+#  - line
+#  - test_dir
+#  - cprnc_file
+#  - diffs hash reference (MODIFIED)
+sub process_line {
+   my ($line, $test_dir, $cprnc_file, $diffs) = @_;
+
+   my $diff_type;
+   my $varname;
+   my $rms;
+   my $ignore;
+   my $rms_normalized;
+   
+   if ($line =~ /^ *RMS /) {
+      ($diff_type, $varname, $rms, $ignore, $rms_normalized) = split " ", $line;
+   } elsif ($line =~ /^ *FILLDIFF /) {
+      ($diff_type, $varname) = split " ", $line;
+      $rms = "";
+      $rms_normalized = "";
+   } else {
+      $diff_type = "";
+   }
+
+   if ($diff_type eq 'RMS' || $diff_type eq 'FILLDIFF') {
+      # We have found a cprnc difference
+
+      my $key = "$test_dir $cprnc_file $varname";
+      if (exists $diffs->{$key} && exists $diffs->{$key}{$diff_type}) {
+         warn "WARNING: Replacing existing entry: $key : $diff_type\n";
+      }
+
+      # If the diffs hash doesn't already contain information about this
+      # directory/filename/variable combo, then we need to create a hash
+      # reference with the appropriate basic metadata.
+      if (!exists $diffs->{$key}) {
+         $diffs->{$key} = {
+                         Dir      => $test_dir,
+                         Filename => $cprnc_file,
+                         Variable => $varname,
+                        };
+      }
+
+      # Whether or not the hash already contained the given key, we need to add the value
+      # of interest -- either the normalized RMS error or the fact that there is a
+      # FILLDIFF; in the latter case, note that $rms_normalized is irrelevant, but we use
+      # it as the value of the hash anyway for simplicity.
+      $diffs->{$key}{$diff_type} = $rms_normalized;
+   } elsif ($diff_type ne '') {
+      die "Unexpected diff_type: $diff_type";
+   }
+}
+
+
+# max_widths
+# Inputs:
+#  - summary_hash (hash reference)
+# Output: reference to a hash containing the maximum width of each of
+# the following in the summary hash:
+#  - Dir
+#  - Filename
+#  - Variable
+sub max_widths {
+   my $summary_hash = shift;
+
+   my %maxes;
+
+   foreach my $var ('Dir','Filename','Variable') {
+      $maxes{$var} = max (map { length($summary_hash->{$_}{$var}) } keys %$summary_hash);
+   }
+
+   return \%maxes;
+}
+
+
+# print_results_by_test: Print sorted hash entries to a file, sorted by test name
+# Inputs:
+#  - outfile: name of output file
+#  - summary_hash: hash reference containing results to print
+#  - widths: hash reference giving widths of output strings
+sub print_results_by_test {
+   my ($outfile, $summary_hash, $widths) = @_;
+
+   open OUT, ">", "$outfile" or die "ERROR opening $outfile";
+
+   my @sorted_keys = sort{ $summary_hash->{$a}{'Dir'}      cmp $summary_hash->{$b}{'Dir'}
+                        or $summary_hash->{$a}{'Filename'} cmp $summary_hash->{$b}{'Filename'}
+                        or $summary_hash->{$a}{'Variable'} cmp $summary_hash->{$b}{'Variable'} }
+      keys %$summary_hash;
+
+   my $last_dir;
+   my $last_filename;
+
+   my $separator_width = sum(values %$widths) + 30;
+   
+   for my $key (@sorted_keys) {
+
+      # Print a separator line between different files
+      if ($summary_hash->{$key}{'Dir'}      ne $last_dir || 
+          $summary_hash->{$key}{'Filename'} ne $last_filename) {
+         if ($last_dir && $last_filename) {
+            print OUT "=" x $separator_width . "\n";
+         }
+         $last_dir      = $summary_hash->{$key}{'Dir'};
+         $last_filename = $summary_hash->{$key}{'Filename'};
+      }
+
+      my $line = format_line($summary_hash->{$key}, $widths);
+
+      print OUT "$line\n";
+   }
+
+   close OUT;
+}
+
+
+# print_results_by_varname: Print sorted hash entries to a file, sorted by variable name
+# Inputs:
+#  - outfile: name of output file
+#  - summary_hash: hash reference containing results to print
+#  - widths: hash reference giving widths of output strings
+sub print_results_by_varname {
+   my ($outfile, $summary_hash, $widths) = @_;
+
+   open OUT, ">", "$outfile" or die "ERROR opening $outfile";
+
+   my @sorted_keys = sort{ $summary_hash->{$a}{'Variable'} cmp $summary_hash->{$b}{'Variable'}
+                        or $summary_hash->{$a}{'Dir'}      cmp $summary_hash->{$b}{'Dir'}
+                        or $summary_hash->{$a}{'Filename'} cmp $summary_hash->{$b}{'Filename'} }
+      keys %$summary_hash;
+
+   my $last_variable;
+   
+   my $separator_width = sum(values %$widths) + 30;
+
+   for my $key (@sorted_keys) {
+
+      # Print a separator line between different variables
+      if ($summary_hash->{$key}{'Variable'} ne $last_variable) {
+         if ($last_variable) {
+            print OUT "=" x $separator_width . "\n";
+         }
+         $last_variable = $summary_hash->{$key}{'Variable'};
+      }
+
+      my $line = format_line($summary_hash->{$key}, $widths);
+
+      print OUT "$line\n";
+   }
+
+   close OUT;
+}
+
+
+
+# print_results_by_rms: Print sorted hash entries to a file, sorted by RMS
+# Inputs:
+#  - outfile: name of output file
+#  - summary_hash: hash reference containing results to print
+#  - widths: hash reference giving widths of output strings
+sub print_results_by_rms {
+   my ($outfile, $summary_hash, $widths) = @_;
+
+   open OUT, ">", "$outfile" or die "ERROR opening $outfile";
+
+   my @sorted_keys = sort {$summary_hash->{$b}{'RMS'}      <=> $summary_hash->{$a}{'RMS'}
+                        or $summary_hash->{$a}{'Dir'}      cmp $summary_hash->{$b}{'Dir'}
+                        or $summary_hash->{$a}{'Filename'} cmp $summary_hash->{$b}{'Filename'}
+                        or $summary_hash->{$a}{'Variable'} cmp $summary_hash->{$b}{'Variable'} }
+      keys %$summary_hash;
+
+   for my $key (@sorted_keys) {
+      my $line = format_line($summary_hash->{$key}, $widths);
+
+      print OUT "$line\n";
+   } 
+
+   close OUT;
+}
+
+
+# Inputs:
+# - reference to a hash containing:
+#   - Dir
+#   - Filename
+#   - Variable
+#   - RMS (optional)
+#   - FILLDIFF (optional)
+# - widths: hash reference giving widths of output strings
+# Return a formatted line for printing
+sub format_line {
+   my ($hash_ref, $widths) = @_;
+
+   my $dir = $hash_ref->{'Dir'};
+   my $filename = $hash_ref->{'Filename'};
+   my $variable = $hash_ref->{'Variable'};
+   my $rms = "";
+   my $filldiff = "";
+   if (exists $hash_ref->{'RMS'}) {
+      $rms = sprintf(" : RMS %-16g", $hash_ref->{'RMS'});
+   }
+   if (exists $hash_ref->{'FILLDIFF'}) {
+      $filldiff = " : FILLDIFF";
+   }
+
+   # for width=40, the format string will contain '%-40.40s'
+   my $format = '%-' . $widths->{'Dir'} . '.' . $widths->{'Dir'} . 's : ' .
+                '%-' . $widths->{'Filename'} . '.' . $widths->{'Filename'} . 's : ' .
+                '%-' . $widths->{'Variable'} . '.' . $widths->{'Variable'} . 's' .
+                '%s%s';
+
+   sprintf($format, $dir, $filename, $variable, $filldiff, $rms);
+}
+
+#=======================================================================
+# Notes about testing: unit tests
+#=======================================================================
+
+#-----------------------------------------------------------------------
+# Testing process_line
+#-----------------------------------------------------------------------
+
+# use Data::Dumper;
+#
+# my %diffs;
+#
+# # shouldn't do anything
+# process_line("hello", "test_dir1", "file_a", \%diffs);
+#
+# # test basic filldiff
+# process_line("FILLDIFF var1", "test_dir1", "file_b", \%diffs);
+#
+# # add an RMS to existing filldiff
+# process_line("RMS var1 99 NORMALIZED 42", "test_dir1", "file_b", \%diffs);
+#
+# # test basic rms error
+# process_line("RMS var17 99 NORMALIZED 3.14", "test_dir1", "file_b", \%diffs);
+#
+# # add a filldiff to existing rms error
+# process_line("FILLDIFF var17", "test_dir1", "file_b", \%diffs);
+#
+# # add a filldiff without RMS
+# process_line("FILLDIFF var42", "test_dir2", "file_c", \%diffs);
+#
+# # add an RMS error without filldiff
+# process_line("RMS var100 99 NORMALIZED 100", "test_dir2", "file_d", \%diffs);
+#
+# # test a warning: should issue a warning and replace the above setting
+# process_line("RMS var100 99 NORMALIZED 200", "test_dir2", "file_d", \%diffs);
+#
+# print Dumper(\%diffs);
+
+
+# THE ABOVE SHOULD PRINT:
+
+# WARNING: Replacing existing entry: test_dir2 file_d var100 : RMS
+# $VAR1 = {
+#           'test_dir1 file_b var17' => {
+#                                         'FILLDIFF' => '',
+#                                         'RMS' => '3.14',
+#                                         'Filename' => 'file_b',
+#                                         'Variable' => 'var17',
+#                                         'Dir' => 'test_dir1'
+#                                       },
+#           'test_dir2 file_c var42' => {
+#                                         'FILLDIFF' => '',
+#                                         'Filename' => 'file_c',
+#                                         'Variable' => 'var42',
+#                                         'Dir' => 'test_dir2'
+#                                       },
+#           'test_dir1 file_b var1' => {
+#                                        'FILLDIFF' => '',
+#                                        'RMS' => '42',
+#                                        'Filename' => 'file_b',
+#                                        'Variable' => 'var1',
+#                                        'Dir' => 'test_dir1'
+#                                      },
+#           'test_dir2 file_d var100' => {
+#                                          'RMS' => '200',
+#                                          'Filename' => 'file_d',
+#                                          'Variable' => 'var100',
+#                                          'Dir' => 'test_dir2'
+#                                        }
+#         };
+
+
+
+#-----------------------------------------------------------------------
+# Testing the print routines
+#-----------------------------------------------------------------------
+
+# Add the following to the above test code:
+
+# my $widths_hash = { Dir => 40, Filename => 40, Variable => 40 };
+# print_results_by_test("testout.by_test", \%diffs, $widths_hash);
+# print_results_by_rms("testout.by_rms", \%diffs, $widths_hash);
+
+# This should give:
+
+# $ cat testout.by_rms 
+# test_dir2                                : file_d                                   : var100                                   : RMS 200             
+# test_dir1                                : file_b                                   : var1                                     : FILLDIFF : RMS 42              
+# test_dir1                                : file_b                                   : var17                                    : FILLDIFF : RMS 3.14            
+# test_dir2                                : file_c                                   : var42                                    : FILLDIFF
+# $ cat testout.by_test
+# test_dir1                                : file_b                                   : var1                                     : FILLDIFF : RMS 42              
+# test_dir1                                : file_b                                   : var17                                    : FILLDIFF : RMS 3.14            
+# ======================================================================================================================================================
+# test_dir2                                : file_c                                   : var42                                    : FILLDIFF
+# ======================================================================================================================================================
+# test_dir2                                : file_d                                   : var100                                   : RMS 200             
+
+
+
+#=======================================================================
+# Notes about testing: integration tests
+#=======================================================================
+
+# Test the following
+
+# Note: can do these tests by running the cprnc tests and organizing
+# outputs into particular directories.
+#
+# For each of these tests, sort the different output files and compare
+# the sorted files to make sure the same info is in all output files;
+# then look at one of the output files.
+#
+# - no RMS or FILLDIFFs at all (testid that just contains output from
+#   comparing control & copy)
+#
+# - some RMS and some FILLDIFFs, split across 2 directories, each with
+#   2 cprnc files (this can be done by comparing the control file with
+#   diffs_in_fill.nc, diffs_in_vals.nc, diffs_in_vals_and_diffs_in_fill.nc
+#   and diffs_in_vals_and_fill.nc)
+#
+# - multiple RMS errors to test RMS sorting, split across 2 directories
+#   (this can be done by comparing the control file with four of the
+#   vals_differ_by_* files)
+#
+# - same as above, but with -in_rundir

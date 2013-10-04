@@ -1,7 +1,7 @@
 
 find_path(Netcdf_INCLUDE_DIR 
           NAMES netcdf.h
-          PATHS ${NETCDF_DIR} ${Homme_NETCDF_DIR}
+          PATHS ${NETCDF_DIR} ${Homme_NETCDF_DIR} ${NETCDF_INCLUDE_DIR}
           PATH_SUFFIXES include
           NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
 
@@ -19,12 +19,12 @@ GET_FILENAME_COMPONENT(CPRNC_NETCDF_DIR ${Netcdf_INCLUDE_DIRS}/.. ABSOLUTE)
 IF (${PREFER_SHARED})
   find_library(Netcdf_LIBRARY 
                NAMES netcdf
-               HINTS ${Netcdf_INCLUDE_DIR}/../lib
+               HINTS ${Netcdf_INCLUDE_DIR}/../lib ${NETCDF_LIB_DIR}
                NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
 ELSE ()
   find_library(Netcdf_LIBRARY 
                NAMES libnetcdf.a netcdf
-               HINTS ${Netcdf_INCLUDE_DIR}/../lib
+               HINTS ${Netcdf_INCLUDE_DIR}/../lib ${NETCDF_LIB_DIR}
                NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
 ENDIF ()
 
@@ -36,12 +36,12 @@ ENDIF ()
 IF (${PREFER_SHARED})
   find_library(NetcdfF_LIBRARY 
                NAMES netcdff 
-               HINTS ${Netcdf_INCLUDE_DIR}/../lib
+               HINTS ${Netcdf_INCLUDE_DIR}/../lib ${NETCDF_LIB_DIR}
                NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
 ELSE ()
   find_library(NetcdfF_LIBRARY 
                NAMES libnetcdff.a netcdff
-               HINTS ${Netcdf_INCLUDE_DIR}/../lib
+               HINTS ${Netcdf_INCLUDE_DIR}/../lib ${NETCDF_LIB_DIR}
                NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
 ENDIF ()
 
@@ -73,7 +73,7 @@ ELSE ()
 
   find_path(Netcdf_NC_CONFIG_BIN
             NAMES nc-config
-            HINTS ${Netcdf_INCLUDE_DIR}/../bin
+            HINTS ${Netcdf_INCLUDE_DIR}/../bin ${NETCDF_BIN_DIR}
             NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
 
   IF (NOT ${Netcdf_NC_CONFIG_BIN} STREQUAL Netcdf_NC_CONFIG_BIN-NOTFOUND)

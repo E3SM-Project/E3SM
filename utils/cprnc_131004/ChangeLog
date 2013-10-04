@@ -1,3 +1,135 @@
+==============================================================
+Tag name: cprnc_131004
+Originator: jamroz
+Date: Oct 4, 2013
+One-line Summary: Allow bypassing the search for netcdf if 
+  it has already been found by another project.
+
+M       CMakeLists.txt
+
+==============================================================
+Tag name: cprnc_130529
+Originator: sacks
+Date: May 29, 2013
+One-line Summary: Allow comparisons on files without unlimited (time) dimension; 
+                  add test driver script and some new tests
+
+=== Allow comparisons on files without unlimited (time) dimension; 
+    also, remove some duplicated code
+M       compare_vars_mod.F90.in
+M       README
+
+=== Add test driver script
+A       run_tests
+
+=== Add new tests
+A       test_inputs/clm2.h0.subset.test.nc
+A       test_inputs/clm2.h0.subset.control.nc
+A       test_inputs/clm2.h1.subset.test.nc
+A       test_inputs/control_multipleTimes_someTimeless.nc
+A       test_inputs/clm2.h1.subset.control.nc
+A       test_inputs/control_noTime.nc
+A       test_inputs/cpl.hi.subset.test.nc
+A       test_inputs/cpl.hi.subset.control.nc
+A       test_inputs/multipleTimes_someTimeless_diffs_in_vals_and_fill.nc
+A       test_inputs/noTime_diffs_in_vals_and_fill.nc
+M       test_inputs/README
+
+==============================================================
+Tag name: cprnc_130514
+Originator: sacks
+Date: May 14, 2013
+One-line Summary: Add normalized RMS output
+
+Whenever there are RMS errors, add a field giving the normalized RMS
+output. The result looks like this:
+
+ RMS testvar                          3.1623E-01            NORMALIZED  5.6978E-02
+
+The point of this is mostly to allow more useful sorting by RMS errors
+in summarize_cprnc_diffs. Along those lines, summarize_cprnc_diffs has
+been updated to use this normalized RMS value rather than the absolute
+RMS value. 
+
+Note that the normalization is done using the avg abs field
+values. This differs from the definition of normalized RMSE that I
+have found in some references, but seems good enough for these
+purposes (and better in some cases, in that it is less sensitive to
+outliers than, say [max - min]).
+
+M       compare_vars_mod.F90.in
+M       summarize_cprnc_diffs
+
+==============================================================
+Tag name: cprnc_130425
+Originator: sacks
+Date: Apr 25, 2013
+One-line Summary: Allow longer file names
+
+M       cprnc.F90
+
+==============================================================
+Tag name: cprnc_130411
+Originator: sacks
+Date: Apr 11, 2013
+One-line Summary: Add tool for summarizing cprnc output
+
+This post-processing script is meant to be run after you run a CESM
+test suite. Example usage is the following - assuming the case
+directories for your tests are in /glade/scratch/$USER/tests:
+
+summarize_cprnc_diffs -basedir /glade/scratch/$USER/tests -testid 123456
+
+The above command will generate three formatted reports in the current
+directory. Each report contains the same information, but they are
+sorted by different criteria: one is sorted by test name, one by
+variable name, and one from highest to lowest RMS difference.
+
+A       summarize_cprnc_diffs
+
+==============================================================
+
+Tag name: cprnc_130410
+Originator: sacks
+Date: Apr 10, 2013
+One-line Summary: Increase allowed variable name length on RMS and
+                  FILLDIFF lines
+
+M       compare_vars_mod.F90.in
+
+==============================================================
+
+Tag name: cprnc_130403
+Originator: jedwards
+Date: Apr 03, 2013
+One-line Summary: Update genf90.pl external 
+
+M SVN_EXTERNAL_DIRECTORIES
+
+==============================================================
+
+Tag name: cprnc_130321
+Originator: jamroz
+Date: Mar 21, 2013
+One-line Summary: Remove dtyps.h from CMakeLists.txt
+
+M CMakeLists.txt
+
+==============================================================
+
+Tag name: cprnc_130320
+Originator: jedwards
+Date: Mar 20, 2013
+One-line Summary: Make genf90.pl an external
+
+M CMakeLists.txt
+M Makefile
+A SVN_EXTERNAL_DIRECTORIES
+D genf90.pl
+D dtypes.h
+
+==============================================================
+
 Tag name: cprnc_130319
 Originator: jamroz
 Date: Mar 19, 2013

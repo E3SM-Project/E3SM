@@ -166,3 +166,5 @@ the output analysis.  In compare mode, fields with a time axis
 and a timestamp that are not common between the two files are
 ignored.
 
+It is also possible to compare files that don't have an unlimited
+dimension; in this case, the '-m' flag must be given.

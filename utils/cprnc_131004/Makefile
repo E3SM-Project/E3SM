@@ -39,7 +39,7 @@ INC_NETCDF := $(NETCDF)/include
 UNAMES := $(shell uname -s)
 SNAME := $(shell uname -n | cut -c1-2)
 
-GENF90 = ./genf90.pl
+GENF90 = ./genf90/genf90.pl
 
 # Architecture-specific flags and rules
 #------------------------------------------------------------------------
@@ -142,7 +142,7 @@ ifeq ($(UNAMES),Linux)
   ifeq ($(FC),gfortran)
     FFLAGS = -c -I$(INC_NETCDF) -O -ffree-form -ffree-line-length-none
   endif
-  LDFLAGS = $(shell $(NETCDF)/bin/nc-config --flibs)
+  LDFLAGS = -L$(LIB_NETCDF) -lnetcdff -lnetcdf
 
 
 endif

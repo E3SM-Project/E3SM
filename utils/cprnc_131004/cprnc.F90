@@ -5,8 +5,8 @@ program piocprnc
   implicit none
 
   integer :: nargs, n
-  character(len=300) :: arg                     ! cmd-line argument
-  character(len=300) :: fname(2) = ' '          ! input filenames
+  character(len=1024) :: arg                     ! cmd-line argument
+  character(len=1024) :: fname(2) = ' '          ! input filenames
   integer :: nchars
   integer :: numcases=1
   integer :: ierr

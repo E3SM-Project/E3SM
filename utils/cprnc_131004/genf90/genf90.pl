@@ -1,4 +1,4 @@
-#!/bin/perl
+#!/usr/bin/env perl
 use strict;
 
 my $outfile;
@@ -9,7 +9,7 @@ my $vtype = {'text' => 'character(len=*)',
 	     'real' => 'real(r4)', 
 	     'double' => 'real(r8)',
 	     'int'    => 'integer(i4)',
-	     'long'   => 'integer(kind=PIO_OFFSET)'};
+	     'long'   => 'integer(i8)'};
 my $itype = {'text' => 100, 
 	     'real' => 101, 
 	     'double' => 102,
@@ -27,7 +27,7 @@ my $mpitype = {'text' => 'MPI_CHARACTER',
 
 my @dims =(0..5);
 
-
+my $write_dtypes = "no";
 # begin
 
 foreach(@ARGV){
@@ -74,12 +74,18 @@ foreach(@ARGV){
     my $dimmodifier;
     my $typemodifier;
     my $itypeflag;
-
+    my $typeblock;
+    my $cppunit;
     foreach $line (@parsetext){
 # skip parser comments
 	next if($line =~ /\s*!pl/);
 
 	$itypeflag=1 if($line =~ /{ITYPE}/);
+	$itypeflag=1 if($line =~ /TYPETEXT/);
+	$itypeflag=1 if($line =~ /TYPEREAL/);
+	$itypeflag=1 if($line =~ /TYPEDOUBLE/);
+	$itypeflag=1 if($line =~ /TYPEINT/);
+	$itypeflag=1 if($line =~ /TYPELONG/);
 
 	
         if($contains==0){	
@@ -91,14 +97,25 @@ foreach(@ARGV){
 		$typemodifier=$line;
 		next;
 	    }
-
+	    if($line=~/^\s*type\s+.*\{DIMS\}/i or $line=~/^\s*type\s+.*\{TYPE\}/i){
+		$typeblock=$line;
+		next;
+	    }
+	    if($line=~/^\s*end\s+type\s+.*\{DIMS\}/i or $line=~/^\s*end\s+type\s+.*\{TYPE\}/i){
+		$line = $typeblock.$line;
+		undef $typeblock;
+	    }
+	    if(defined $typeblock){
+		$typeblock = $typeblock.$line;
+		next;
+	    }
 	    if(defined $dimmodifier){
 		$line = $dimmodifier.$line;
-		undef $dimmodifier;
+		undef $dimmodifier ;
 	    } 
 	    if(defined $typemodifier){
 		$line = $typemodifier.$line;
-		undef $typemodifier;
+		undef $typemodifier unless($typeblock==1);
 	    } 
 	    
 	    push(@output, buildout($line));
@@ -115,11 +132,12 @@ foreach(@ARGV){
 
 	if($contains==1){
 	    # first parse into functions or subroutines
-            if(! defined($unit[$unitcnt])){
+            if($cppunit || !(defined($unit[$unitcnt]))){
 		# Make cpp lines between routines units
 		if($line =~ /^\s*\#/){
 		    push(@{$unit[$unitcnt]},$line);
 		    $unitcnt++;
+		    $cppunit=1;
 		    next;
 		}
 	    }
@@ -129,12 +147,19 @@ foreach(@ARGV){
 	    if($line =~ /\s*end function/i or $line =~ /\s*end subroutine/i){
 		$unitcnt++;
 	    }
+	    $cppunit = 0 unless($line =~ /^\s*\#/ || $line =~/^\s*$/ || $line=~/^\s*!/);
 
 	}
     }
     my $i;
+
+
     for($i=0;$i<$unitcnt;$i++){
 	my $func = join('',@{$unit[$i]});
+
+#    print "unitcnt = $i  $func\n" ;
+
+
 	push(@output, buildout($func));
     }
     push(@output,@{$unit[$#unit]}) if($unitcnt==$#unit);
@@ -142,17 +167,48 @@ foreach(@ARGV){
     if($itypeflag==1){
 	my $str;
 	$str.="#include \"dtypes.h\"\n";
-#	foreach (keys %$itype){
-#	    $str.="#define $itypename->{$_} $itype->{$_}\n";
-#	}
-	unshift(@output,$str);
+	$write_dtypes = "yes";
+	print $str;
     }
     print @output;
+    writedtypes() if(!(-e "dtypes.h") && $write_dtypes == "yes");
+
+
 }
 
 
 sub usage{
     die("$0 Expected input filename of the form .*.F90.in");
+}
+
+sub build_repeatstr{
+    my($dims) = @_;
+   # Create regex to repeat expression DIMS times.
+    my $repeatstr;
+    for(my $i=1;$i<=$dims;$i++){
+	$repeatstr .="\$\{1\}$i\$\{2\},&\n";
+    }
+    if(defined $repeatstr){
+	$repeatstr="\"$repeatstr";
+	chop $repeatstr;
+	chop $repeatstr;
+	chop $repeatstr;
+	$repeatstr.="\"";
+    }else{
+	$repeatstr='';
+    }
+}
+
+sub writedtypes{
+    open(F,">dtypes.h");
+    print F 
+"#define TYPEDOUBLE 102
+#define TYPEINT 103
+#define TYPETEXT 100
+#define TYPELONG 104
+#define TYPEREAL 101	
+";
+    close(F);
 }
 
 sub buildout{
@@ -189,6 +245,8 @@ sub buildout{
 		}else{
 		    $dimstr='';
 		}
+
+		my $repeatstr = build_repeatstr($dims);
 		
 		my $str = $func;
 		$str =~ s/{TYPE}/$type/g;
@@ -197,6 +255,7 @@ sub buildout{
 		$str =~ s/{MPITYPE}/$mpitype->{$type}/g;
 		$str =~ s/{DIMS}/$dims/g;
 		$str =~ s/{DIMSTR}/$dimstr/g;
+                $str =~ s/{REPEAT:([^#}]*)#([^#}]*)}/$repeatstr/eeg;
 		$outstr .= $str;
 	    }
 	}
@@ -215,9 +274,12 @@ sub buildout{
 		$dimstr='';
 	    }
 		
+	    my $repeatstr = build_repeatstr($dims);
+		
 	    my $str = $func;
 	    $str =~ s/{DIMS}/$dims/g;
 	    $str =~ s/{DIMSTR}/$dimstr/g;
+            $str =~ s/{REPEAT:([^#}]*)#([^#}]*)}/$repeatstr/eeg;
 	    $outstr .= $str;
 	}
     }elsif($func =~ /{TYPE}/){

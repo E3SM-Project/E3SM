@@ -1,0 +1,101 @@
+#!/usr/bin/env perl
+#
+# Run all cprnc tests
+# See usage message for details
+#
+# Bill Sacks
+# 5-28-13
+
+use strict;
+use Getopt::Long;
+
+#----------------------------------------------------------------------
+# Define parameters
+#----------------------------------------------------------------------
+
+# Hash giving info about each test. Key is the test file; value is a
+# hash reference containing at least the associated control file (key:
+# control), and possibly extra arguments to cprnc (key: extra_args)
+my %tests = ('copy.nc' => {control => 'control.nc'},
+             'diffs_in_vals.nc' => {control => 'control.nc'},
+             'diffs_in_fill.nc' => {control => 'control.nc'},
+             'diffs_in_vals_and_diffs_in_fill.nc' => {control => 'control.nc'},
+             'diffs_in_vals_and_fill.nc' => {control => 'control.nc'},
+             'vals_differ_by_1.1.nc' => {control => 'control.nc'},
+             'vals_differ_by_1.1_somewhere.nc' => {control => 'control.nc'},
+             'vals_differ_by_varying_amounts.nc' => {control => 'control.nc'},
+             'vals_differ_by_varying_amounts2.nc' => {control => 'control.nc'},
+             
+             'multipleTimes_someTimeless_diffs_in_vals_and_fill.nc' => {control => 'control_multipleTimes_someTimeless.nc'},
+
+             'noTime_diffs_in_vals_and_fill.nc' => {control => 'control_noTime.nc',
+                                                    extra_args => '-m'},
+
+             'cpl.hi.subset.test.nc' => {control => 'cpl.hi.subset.control.nc'},
+             'clm2.h0.subset.test.nc' => {control => 'clm2.h0.subset.control.nc'},
+             'clm2.h1.subset.test.nc' => {control => 'clm2.h1.subset.control.nc'},
+             );
+
+#----------------------------------------------------------------------
+# Get arguments and check them
+#----------------------------------------------------------------------
+
+my %opts;
+GetOptions(
+           "outdir=s"    => \$opts{'outdir'},
+           "h|help"      => \$opts{'help'},
+) or usage();
+
+usage() if $opts{'help'};
+
+if (@ARGV) {
+   print "ERROR: unrecognized arguments: @ARGV\n";
+   usage();
+}
+
+if (!$opts{'outdir'}) {
+   print "ERROR: -outdir must be provided\n";
+   usage();
+}
+
+
+#----------------------------------------------------------------------
+# Main script
+#----------------------------------------------------------------------
+
+mkdir $opts{'outdir'} or die "ERROR creating directory $opts{'outdir'};
+note that this directory should NOT exist before running this script\n";
+
+my $num_tests = keys %tests;
+print "Running $num_tests tests...\n";
+
+foreach my $test (keys %tests) {
+   my $test_file = $test;
+   my $control_file = $tests{$test}{'control'};
+   my $outfile = "$opts{'outdir'}/${test}.out";
+
+   my $extra_args = $tests{$test}{'extra_args'};
+
+   open (my $file, ">", "$outfile") or die "ERROR opening $outfile";
+   print $file `cprnc $extra_args test_inputs/$control_file test_inputs/$test_file`;
+   close $file;
+}
+
+#----------------------------------------------------------------------
+# Subroutines
+#----------------------------------------------------------------------
+
+sub usage {
+   die <<EOF;
+SYNOPSIS
+    run_tests -outdir <outdir> [OPTIONS]
+
+    Run all cprnc tests, putting output in directory given by <outdir>.
+    <outdir> should NOT exist before running this script.
+
+
+OPTIONS
+    -help [or -h]        Display this help
+
+EOF
+}
