@@ -403,6 +403,10 @@ contains
           do i=1,np
              pv(i,j,ie) = penst(i,j,ie) + elem(ie)%fcor(i,j)
              hstar         = (elem(ie)%state%p(i,j,1,n0) + pmean)/g
+             ! For swtc1 p = -pmean and penst is not well defined
+             if (hstar .eq. 0.0) then
+               hstar = 1.0
+             endif
              penst(i,j,ie) = (0.5D0*(penst(i,j,ie) + elem(ie)%fcor(i,j))**2) / hstar
           end do
        end do
@@ -410,7 +414,7 @@ contains
 
 
     do k=1,nlev
-	Imass(k)   = global_integral(elem,mass(:,:,k,nets:nete),hybrid,np,nets,nete)
+      Imass(k)   = global_integral(elem,mass(:,:,k,nets:nete),hybrid,np,nets,nete)
     enddo
     Ikenergy = global_integral(elem,kenergy(:,:,nets:nete),hybrid,np,nets,nete)
     Ipenergy = global_integral(elem,penergy(:,:,nets:nete),hybrid,np,nets,nete)
@@ -418,7 +422,7 @@ contains
     Ipenst  = global_integral(elem,penst(:,:,nets:nete),hybrid,np,nets,nete)
     Ipv  = global_integral(elem,pv(:,:,nets:nete),hybrid,np,nets,nete)
     Idiv  = global_integral(elem,div(:,:,nets:nete),hybrid,np,nets,nete)
-    dissE  =  global_integral(elem,diss_p(:,:,k,nets:nete),hybrid,np,nets,nete)
+    dissE  =  global_integral(elem,diss_p(:,:,1,nets:nete),hybrid,np,nets,nete)
     if (hypervis_order==2) dissE=-dissE  ! biharmonic is applied with a minus sign
 
     rms_div = global_integral(elem,div(:,:,nets:nete)**2,hybrid,np,nets,nete)
