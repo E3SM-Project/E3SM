@@ -159,7 +159,8 @@ contains
 
       type (tend_type), intent(inout) :: tend !< Input/Output: Tendency structure
       type (state_type), intent(in) :: state !< Input: State information
-      type (diagnostics_type), intent(in) :: diagnostics !< Input: Diagnostic information
+! mrp had to change to inout for tend diagnostic
+      type (diagnostics_type), intent(inout) :: diagnostics !< Input: Diagnostic information
       type (mesh_type), intent(in) :: mesh !< Input: Mesh information
       type (scratch_type), intent(inout) :: scratch !< Input: Scratch structure
 
@@ -235,9 +236,17 @@ contains
       !   strictly only valid for config_mom_del2 == constant
       !
       call mpas_timer_start("hmix", .false., velHmixTimer)
-      call ocn_vel_hmix_tend(mesh, divergence, relativeVorticity, normalVelocity, tangentialVelocity, viscosity, tend_normalVelocity, err)
+! mrp original
+!      call ocn_vel_hmix_tend(mesh, divergence, relativeVorticity, normalVelocity, tangentialVelocity, viscosity, tend_normalVelocity, err)
+      call ocn_vel_hmix_tend(mesh, divergence, relativeVorticity, normalVelocity, tangentialVelocity, viscosity, &
+         viscosity, diagnostics % del2_tend_diagnostic % array, diagnostics % del2_tensor_tend_diagnostic % array, &
+         tend_normalVelocity, scratch, err)
       call mpas_timer_stop("hmix", velHmixTimer)
 
+! mrp comment lines
+print '(a,100es12.2)','normalVelocity min,max',minval(normalVelocity),maxval(normalVelocity)
+print '(a,100es12.2)','del2_tend_diagnostic min,max',minval(diagnostics % del2_tend_diagnostic % array),maxval(diagnostics % del2_tend_diagnostic % array)
+print '(a,100es12.2)','del2_tensor_tend_diagnostic min,max',minval(diagnostics % del2_tensor_tend_diagnostic % array),maxval(diagnostics % del2_tensor_tend_diagnostic % array)
       !
       ! velocity tendency: forcing and bottom drag
       !
@@ -245,6 +254,9 @@ contains
       call mpas_timer_start("forcings", .false., velForceTimer)
       call ocn_vel_forcing_tend(mesh, normalVelocity, normalVelocityForcing, layerThicknessEdge, tend_normalVelocity, err)
       call mpas_timer_stop("forcings", velForceTimer)
+
+! mrp testing only
+      tend_normalVelocity(:,:) = 0.0
 
       !
       ! velocity tendency: vertical mixing d/dz( nu_v du/dz))

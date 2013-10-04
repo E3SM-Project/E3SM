@@ -75,7 +75,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_hmix_del2_tend(mesh, divergence, relativeVorticity, viscosity, tend, err)!{{{
+   subroutine ocn_vel_hmix_del2_tend(mesh, divergence, relativeVorticity, viscosity, del2_tend_diagnostic, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -100,6 +100,9 @@ contains
 
       real (kind=RKIND), dimension(:,:), intent(inout) :: &
          viscosity       !< Input: viscosity
+
+      real (kind=RKIND), dimension(:,:), intent(inout) :: &
+         del2_tend_diagnostic       !< Input: del2_tend_diagnostic
 
       real (kind=RKIND), dimension(:,:), intent(inout) :: &
          tend             !< Input/Output: velocity tendency
@@ -167,6 +170,9 @@ contains
 
             tend(k,iEdge) = tend(k,iEdge) + edgeMask(k, iEdge) * visc2 * u_diffusion
 
+            ! mrp added for debugging only:
+            del2_tend_diagnostic(k,iEdge) = edgeMask(k, iEdge) * visc2 * u_diffusion   
+
             viscosity(k,iEdge) = viscosity(k,iEdge) + visc2
 
          end do
@@ -190,7 +196,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_hmix_del2_tensor_tend(grid, normalVelocity, tangentialVelocity, viscosity, scratch, tend, err)!{{{
+   subroutine ocn_vel_hmix_del2_tensor_tend(grid, normalVelocity, tangentialVelocity, viscosity, del2_tensor_tend_diagnostic, scratch, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -215,6 +221,9 @@ contains
 
       real (kind=RKIND), dimension(:,:), intent(inout) :: &
          viscosity       !< Input/Output: viscosity
+
+      real (kind=RKIND), dimension(:,:), intent(inout) :: &
+         del2_tensor_tend_diagnostic       !< Input: del2_tensor_tend_diagnostic
 
       type (scratch_type), intent(inout) :: &
          scratch !< Input/Output: Scratch structure
@@ -302,7 +311,12 @@ contains
 
       do iEdge=1,nEdges  !Solve?
          do k=1,maxLevelEdgeTop(iEdge)
-            tend(k,iEdge) = tend(k,iEdge) + edgeMask(k, iEdge) * normalVectorEdge(k,iEdge)
+            ! mrp turn off for debugging only:
+            !tend(k,iEdge) = tend(k,iEdge) + edgeMask(k, iEdge) * normalVectorEdge(k,iEdge)
+
+            ! mrp added for debugging only:
+            del2_tensor_tend_diagnostic(k,iEdge) = edgeMask(k, iEdge) * normalVectorEdge(k,iEdge)
+
          end do
       end do
 
