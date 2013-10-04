@@ -21,6 +21,7 @@ module mpas_tracer_advection_helpers
    use mpas_kind_types
    use mpas_grid_types
    use mpas_configure
+   use mpas_sort
    use mpas_geometry_utils
 
    implicit none
