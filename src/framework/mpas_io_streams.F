@@ -368,6 +368,10 @@ contains
          return
       end if
 
+      if(.not. field % isPersistent .or. .not. field % isActive) then
+        return
+      end if
+
 !write(stderrUnit,*) '... Adding field '//trim(field % fieldName)//' to stream'
 
       ndims = size(field % dimSizes)
@@ -467,6 +471,10 @@ contains
          return
       end if
 
+      if(.not. field % isPersistent .or. .not. field % isActive) then
+        return
+      end if
+
 !write(stderrUnit,*) '... Adding field '//trim(field % fieldName)//' to stream'
 
       ndims = size(field % dimSizes)
@@ -564,6 +572,10 @@ contains
       if (.not. stream % isInitialized) then
          if (present(ierr)) ierr = MPAS_STREAM_NOT_INITIALIZED
          return
+      end if
+
+      if(.not. field % isPersistent .or. .not. field % isActive) then
+        return
       end if
 
 !write(stderrUnit,*) '... Adding field '//trim(field % fieldName)//' to stream'
@@ -744,6 +756,10 @@ contains
          return
       end if
 
+      if(.not. field % isPersistent .or. .not. field % isActive) then
+        return
+      end if
+
 !write(stderrUnit,*) '... Adding field '//trim(field % fieldName)//' to stream'
 
       ndims = size(field % dimSizes)
@@ -843,6 +859,10 @@ contains
          return
       end if
 
+      if(.not. field % isPersistent .or. .not. field % isActive) then
+        return
+      end if
+
 !write(stderrUnit,*) '... Adding field '//trim(field % fieldName)//' to stream'
 
       ndims = size(field % dimSizes)
@@ -940,6 +960,10 @@ contains
       if (.not. stream % isInitialized) then
          if (present(ierr)) ierr = MPAS_STREAM_NOT_INITIALIZED
          return
+      end if
+
+      if(.not. field % isPersistent .or. .not. field % isActive) then
+        return
       end if
 
 !write(stderrUnit,*) '... Adding field '//trim(field % fieldName)//' to stream'
@@ -1043,6 +1067,10 @@ contains
          return
       end if
 
+      if(.not. field % isPersistent .or. .not. field % isActive) then
+        return
+      end if
+
 !write(stderrUnit,*) '... Adding field '//trim(field % fieldName)//' to stream'
 
       ndims = size(field % dimSizes)
@@ -1142,6 +1170,10 @@ contains
       if (.not. stream % isInitialized) then
          if (present(ierr)) ierr = MPAS_STREAM_NOT_INITIALIZED
          return
+      end if
+
+      if(.not. field % isPersistent .or. .not. field % isActive) then
+        return
       end if
 
 !write(stderrUnit,*) '... Adding field '//trim(field % fieldName)//' to stream'

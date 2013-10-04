@@ -21,7 +21,6 @@ module mpas_framework
    use mpas_grid_types
    use mpas_io_input
    use mpas_io_output
-   use mpas_configure
    use mpas_timer
    use mpas_timekeeping
    use mpas_io

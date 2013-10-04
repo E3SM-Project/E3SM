@@ -16,10 +16,12 @@ int getword(FILE *, char *);
 int is_integer_constant(char *);
 void sort_vars(struct variable *);
 void sort_group_vars(struct group_list *);
-int parse_reg_xml(ezxml_t registry, struct namelist **nls, struct dimension ** dims, struct variable ** vars, struct group_list ** groups, char * modelname, char * corename, char * version);
+int parse_reg_xml(ezxml_t registry, struct namelist **nls, struct dimension ** dims, struct variable ** vars, struct group_list ** groups, struct package ** pkgs, char * modelname, char * corename, char * version);
 int validate_reg_xml(ezxml_t registry);
+char * check_packages(ezxml_t registry, char * dims);
 char * check_dimensions(ezxml_t registry, char * dims);
 char * check_streams(char * streams);
+int check_persistence(const char * persistence);
 
 int main(int argc, char ** argv)
 {
@@ -28,6 +30,7 @@ int main(int argc, char ** argv)
    struct dimension * dims;
    struct variable * vars;
    struct group_list * groups;
+   struct package * pkgs;
 
    char *modelname, *corename, *version;
 
@@ -51,10 +54,12 @@ int main(int argc, char ** argv)
    ezxml_t registry = ezxml_parse_fp(regfile);
 
    if (validate_reg_xml(registry)) {
+      fprintf(stderr, "Validation failed.....\n");
       return 1;
    }
   
-   if (parse_reg_xml(registry, &nls, &dims, &vars, &groups, modelname, corename, version)) {
+   if (parse_reg_xml(registry, &nls, &dims, &vars, &groups, &pkgs, modelname, corename, version)) {
+      fprintf(stderr, "Parsing failed.....\n");
       return 1;
    }
   
@@ -66,6 +71,7 @@ int main(int argc, char ** argv)
    gen_field_defs(groups, vars, dims);
    gen_reads(groups, vars, dims);
    gen_writes(groups, vars, dims, nls);
+   gen_packages(pkgs);
 
    free(modelname);
    free(corename);
@@ -82,9 +88,9 @@ int validate_reg_xml(ezxml_t registry)
 
 	const char *dimname, *dimunits, *dimdesc, *dimdef;
 	const char *nmlrecname, *nmloptname, *nmlopttype, *nmloptval, *nmloptunits, *nmloptdesc, *nmloptposvals;
-	const char *structname, *structlevs;
-	const char *vararrname, *vararrtype, *vararrdims, *vararrpersistence;
-	const char *varname, *varpersistence, *vartype, *vardims, *varunits, *vardesc, *vararrgroup, *varstreams;
+	const char *structname, *structlevs, *structpackages;
+	const char *vararrname, *vararrtype, *vararrdims, *vararrpersistence, *vararrpackages;
+	const char *varname, *varpersistence, *vartype, *vardims, *varunits, *vardesc, *vararrgroup, *varstreams, *varpackages;
 	const char *varname_in_code;
 	const char *const_model, *const_core, *const_version;
 
@@ -92,6 +98,7 @@ int validate_reg_xml(ezxml_t registry)
 	char name_holder[1024];
 
 	int found;
+	int persistence;
 
 	// Get model information
 	const_model = ezxml_attr(registry, "model");
@@ -192,6 +199,7 @@ int validate_reg_xml(ezxml_t registry)
 	for(structs_xml = ezxml_child(registry, "var_struct"); structs_xml; structs_xml = structs_xml->next){
 		structname = ezxml_attr(structs_xml, "name");
 		structlevs = ezxml_attr(structs_xml, "time_levs");
+		structpackages = ezxml_attr(structs_xml, "packages");
 
 		if (structname == NULL){
 			fprintf(stderr,"ERROR: Name missing for var_struct.\n");
@@ -203,12 +211,24 @@ int validate_reg_xml(ezxml_t registry)
 			return 1;
 		}
 
+		if (structpackages != NULL) {
+			string = strdup(structpackages);
+			err_string = check_packages(registry, string);
+			free(string);
+
+			if (err_string != NULL){
+				fprintf(stderr, "ERROR: Package %s used on var_struct %s is not defined.\n", err_string, structname);
+				return 1;
+			}
+		}
+
 		// Validate variable arrays
 		for(var_arr_xml = ezxml_child(structs_xml, "var_array"); var_arr_xml; var_arr_xml = var_arr_xml->next){
 			vararrname = ezxml_attr(var_arr_xml, "name");
 			vararrtype = ezxml_attr(var_arr_xml, "type");
 			vararrdims = ezxml_attr(var_arr_xml, "dimensions");
 			vararrpersistence = ezxml_attr(var_arr_xml, "persistence");
+			vararrpackages = ezxml_attr(var_arr_xml, "packages");
 
 			if (vararrname == NULL){
 				fprintf(stderr,"ERROR: Name attribute missing for var_array in var_struct %s.\n", structname);
@@ -238,12 +258,33 @@ int validate_reg_xml(ezxml_t registry)
 				}
 			}
 
-			if (vararrpersistence != NULL) {
-				if (strcasecmp(vararrpersistence, "persistent") != 0 && strcasecmp(vararrpersistence, "scratch") != 0) {
-					fprintf(stderr,"ERROR: Persistence attribute on var_array %s in var_struct %s is not equal to one of persistent or scratch.\n", vararrname, structname);
+			persistence = PERSISTENT;
+			if (vararrpersistence != NULL){
+				persistence = check_persistence(vararrpersistence);
+
+				if(persistence == -1) {
+					fprintf(stderr, "\ton var_array %s in var_struct %s.\n", vararrname, structname);
+					return -1;
+				}
+			}
+
+			if(persistence == SCRATCH && vararrpackages != NULL){
+				fprintf(stderr, "ERROR: Packages attribute not allowed on scratch var_array %s in var_struct %s.\n", vararrname, structname);
+				return -1;
+			} else if (persistence == SCRATCH && vararrpackages == NULL && structpackages != NULL) {
+				fprintf(stderr, "ERROR: Packages attribute inherited from var_struct %s not allowed on scratch var_array %s in var_struct %s.\n", structname, vararrname, structname);
+				return -1;
+			} else if (persistence == PERSISTENT && vararrpackages != NULL){
+				string = strdup(vararrpackages);
+				err_string = check_packages(registry, string);
+				free(string);
+
+				if (err_string != NULL){
+					fprintf(stderr, "ERROR: Package %s used on var_array %s in var_struct %s is not defined.\n", err_string, vararrname, structname);
 					return 1;
 				}
 			}
+
 
 			// Validate variables in variable arrays
 			for(var_xml = ezxml_child(var_arr_xml, "var"); var_xml; var_xml = var_xml->next){
@@ -253,6 +294,7 @@ int validate_reg_xml(ezxml_t registry)
 				varstreams = ezxml_attr(var_xml, "streams");
 				vararrgroup = ezxml_attr(var_xml, "array_group");
 				varname_in_code = ezxml_attr(var_xml, "name_in_code");
+				varpackages = ezxml_attr(var_xml, "packages");
 
 				if (varname == NULL) {
 					fprintf(stderr,"ERROR: Name missing for constituent variable in var_array %s in var_struct %s.\n", vararrname, structname);
@@ -273,6 +315,23 @@ int validate_reg_xml(ezxml_t registry)
 						return 1;
 					}
 				}
+
+				if (persistence == SCRATCH && vararrpackages != NULL) {
+					fprintf(stderr, "ERROR: Packages attribute not allowed on constituent variable %s within scratch var_srray %s in var_struct %s.\n", varname, vararrname, structname);
+					return 1;
+				}
+
+				if(varpackages != NULL){
+					string = strdup(varpackages);
+					err_string = check_packages(registry, string);
+					free(string);
+
+					if (err_string != NULL){
+						fprintf(stderr, "ERROR: Package %s used on constituent variable %s in var_array %s var_struct %s is not defined.\n", err_string, varname, vararrname, structname);
+						return 1;
+					}
+				}
+
 			}
 		}
 
@@ -285,6 +344,7 @@ int validate_reg_xml(ezxml_t registry)
 			vardesc = ezxml_attr(var_xml, "description");
 			varstreams = ezxml_attr(var_xml, "streams");
 			varname_in_code = ezxml_attr(var_xml, "name_in_code");
+			varpackages = ezxml_attr(var_xml, "packages");
 
 			if (varname == NULL) {
 				fprintf(stderr,"ERROR: Variable name missing in var_struct %s\n.", structname);
@@ -316,12 +376,33 @@ int validate_reg_xml(ezxml_t registry)
                 }
 			}
 
+			persistence = PERSISTENT;
 			if (varpersistence != NULL) {
-				if (strcasecmp(varpersistence, "persistent") != 0 && strcasecmp(varpersistence, "scratch") != 0) {
-					fprintf(stderr,"ERROR: Persistence attribute on variable %s in var_struct %s not equal to one of persistence or scratch.\n", varname, structname);
-					return 1;
+				persistence = check_persistence(varpersistence);
+
+				if(persistence == -1){
+					fprintf(stderr, "\ton varaible %s in var_struct %s.\n", varname, structname);
+					return -1;
 				}
 			}
+
+			if(varpackages != NULL && persistence == PERSISTENT){
+				string = strdup(varpackages);
+				err_string = check_packages(registry, string);
+				free(string);
+
+				if (err_string != NULL){
+					fprintf(stderr, "ERROR: Package %s used on variable %s in var_struct %s is not defined.\n", err_string, varname, structname);
+					return 1;
+				}
+			} else if ( persistence == SCRATCH && varpackages != NULL ) {
+				fprintf(stderr, "ERROR: Packages attribute not allowed on scratch variable %s in var_struct %s.\n", varname, structname);
+				return -1;
+			} else if ( persistence == SCRATCH && varpackages == NULL && structpackages != NULL) {
+				fprintf(stderr, "ERROR: Packages attribute inherited from var_struct %s not allowed on scratch var %s in var_struct %s.\n", structname, varname, structname);
+				return -1;
+			}
+		
 
 			if (varstreams != NULL) {
 				string = strdup(varstreams);
@@ -338,7 +419,7 @@ int validate_reg_xml(ezxml_t registry)
 	return 0;
 }
 
-int parse_reg_xml(ezxml_t registry, struct namelist **nls, struct dimension ** dims, struct variable ** vars, struct group_list ** groups, char * modelname, char * corename, char * version)
+int parse_reg_xml(ezxml_t registry, struct namelist **nls, struct dimension ** dims, struct variable ** vars, struct group_list ** groups, struct package ** pkgs, char * modelname, char * corename, char * version)
 {
 	struct namelist * nls_ptr, *nls_ptr2;
 	struct namelist * nls_chk_ptr;
@@ -348,16 +429,19 @@ int parse_reg_xml(ezxml_t registry, struct namelist **nls, struct dimension ** d
 	struct dimension * dimlist_cursor;
 	struct group_list * grouplist_ptr;
 	struct variable_list * vlist_cursor;
+	struct package * pkg_ptr;
 
 	ezxml_t dims_xml, dim_xml;
 	ezxml_t structs_xml, var_arr_xml, var_xml;
 	ezxml_t nmlrecs_xml, nmlopt_xml;
+	ezxml_t packages_xml, package_xml;
 
 	const char *dimname, *dimunits, *dimdesc, *dimdef;
 	const char *nmlrecname, *nmloptname, *nmlopttype, *nmloptval, *nmloptunits, *nmloptdesc, *nmloptposvals;
-	const char *structname, *structlevs;
-	const char *vararrname, *vararrtype, *vararrdims, *vararrpersistence, *vararrdefaultval;
-	const char *varname, *varpersistence, *vartype, *vardims, *varunits, *vardesc, *vararrgroup, *varstreams, *vardefaultval;
+	const char *structname, *structlevs, *structpackages;
+	const char *vararrname, *vararrtype, *vararrdims, *vararrpersistence, *vararrdefaultval, *vararrpackages;
+	const char *varname, *varpersistence, *vartype, *vardims, *varunits, *vardesc, *vararrgroup, *varstreams, *vardefaultval, *varpackages;
+	const char *packagename, *packagedesc;
 	const char *varname_in_code;
 	const char *const_model, *const_core, *const_version;
 
@@ -367,14 +451,20 @@ int parse_reg_xml(ezxml_t registry, struct namelist **nls, struct dimension ** d
 	char streams_buffer[128];
 	char default_value[1024];
 
+	char *string, *tofree, *token;
+
 	NEW_NAMELIST(nls_ptr)
 	NEW_DIMENSION(dim_ptr)
 	NEW_VARIABLE(var_ptr)
 	NEW_GROUP_LIST(grouplist_ptr);
+	NEW_PACKAGE(pkg_ptr);
 	*nls = nls_ptr;
 	*dims = dim_ptr;
 	*vars = var_ptr;
 	*groups = grouplist_ptr;
+	*pkgs = pkg_ptr;
+
+	snprintf(pkg_ptr->name, 1024, "%c", '\0');
 
 	// Get model information
 	const_model = ezxml_attr(registry, "model");
@@ -448,6 +538,22 @@ int parse_reg_xml(ezxml_t registry, struct namelist **nls, struct dimension ** d
 	if(nls_ptr2->next) free(nls_ptr2->next);
 	nls_ptr2->next = NULL;
 
+	// Parse Packages
+	for (packages_xml = ezxml_child(registry, "packages"); packages_xml; packages_xml = packages_xml->next){
+		for (package_xml = ezxml_child(packages_xml, "package"); package_xml; package_xml = package_xml->next){
+			packagename = ezxml_attr(package_xml, "name");
+			packagedesc = ezxml_attr(package_xml, "description");
+
+			if (strlen(pkg_ptr->name) == 0) {
+				snprintf(pkg_ptr->name, 1024, "%s", packagename);
+			} else {
+				NEW_PACKAGE(pkg_ptr->next);
+				pkg_ptr = pkg_ptr->next;
+				snprintf(pkg_ptr->name, 1024, "%s", packagename);
+			}
+		}
+	}
+
 	// Parse Dimensions
 	for (dims_xml = ezxml_child(registry, "dims"); dims_xml; dims_xml = dims_xml->next){
 		for (dim_xml = ezxml_child(dims_xml, "dim"); dim_xml; dim_xml = dim_xml->next){
@@ -503,6 +609,7 @@ int parse_reg_xml(ezxml_t registry, struct namelist **nls, struct dimension ** d
 	for(structs_xml = ezxml_child(registry, "var_struct"); structs_xml; structs_xml = structs_xml->next){
 		structname = ezxml_attr(structs_xml, "name");
 		structlevs = ezxml_attr(structs_xml, "time_levs");
+		structpackages = ezxml_attr(structs_xml, "packages");
 
 		grouplist_ptr = *groups;
 		while(grouplist_ptr->next) grouplist_ptr = grouplist_ptr->next;
@@ -519,6 +626,7 @@ int parse_reg_xml(ezxml_t registry, struct namelist **nls, struct dimension ** d
 			vararrdims = ezxml_attr(var_arr_xml, "dimensions");
 			vararrpersistence = ezxml_attr(var_arr_xml, "persistence");
 			vararrdefaultval = ezxml_attr(var_arr_xml, "default_value");
+			vararrpackages = ezxml_attr(var_arr_xml, "packages");
 
 			//Parse variables in variable arrays
 			for(var_xml = ezxml_child(var_arr_xml, "var"); var_xml; var_xml = var_xml->next){
@@ -528,6 +636,7 @@ int parse_reg_xml(ezxml_t registry, struct namelist **nls, struct dimension ** d
 				varstreams = ezxml_attr(var_xml, "streams");
 				vararrgroup = ezxml_attr(var_xml, "array_group");
 				varname_in_code = ezxml_attr(var_xml, "name_in_code");
+				varpackages = ezxml_attr(var_xml, "packages");
 
 				if(vlist_cursor == NULL){
 					NEW_VARIABLE_LIST(grouplist_ptr->vlist);
@@ -546,13 +655,40 @@ int parse_reg_xml(ezxml_t registry, struct namelist **nls, struct dimension ** d
 
 				snprintf(var_ptr->name_in_file, 1024, "%s", varname);
 
-				if(vararrpersistence == NULL){
-					var_ptr->persistence = PERSISTENT;
-				} else {
-					if(strncmp(vararrpersistence, "persistent", 1024) == 0){
-						var_ptr->persistence = PERSISTENT;
-					} else if(strncmp(vararrpersistence, "scratch", 1024) == 0){
-						var_ptr->persistence = SCRATCH;
+				var_ptr->persistence = PERSISTENT;
+				if(vararrpersistence != NULL){
+					var_ptr->persistence = check_persistence(vararrpersistence);
+					if (var_ptr->persistence == -1) return 1;
+				}
+
+				/* Check var_arr packages attribute */
+				if(varpackages == NULL) {
+					varpackages = ezxml_attr(var_arr_xml, "packages");
+				}
+
+				/* Check var_struct packages attribute */
+				if(varpackages == NULL) {
+					varpackages = ezxml_attr(structs_xml, "packages");
+				}
+
+				if(varpackages != NULL && var_ptr->persistence == PERSISTENT){
+					var_ptr->persistence = PACKAGE;
+				}
+
+				if(var_ptr->persistence == PACKAGE) {
+					NEW_PACKAGE(var_ptr->package_name);
+
+					string = strdup(varpackages);
+					tofree = string;
+					token = strsep(&string, ";");
+
+					snprintf(var_ptr->package_name->name, 1024, "%s", token);
+					pkg_ptr = var_ptr->package_name;
+
+					while( (token = strsep(&string, ";")) != NULL) {
+						NEW_PACKAGE(pkg_ptr->next);						
+						pkg_ptr = pkg_ptr->next;
+						snprintf(pkg_ptr->name, 1024, "%s", token);
 					}
 				}
 
@@ -641,6 +777,7 @@ int parse_reg_xml(ezxml_t registry, struct namelist **nls, struct dimension ** d
 			varstreams = ezxml_attr(var_xml, "streams");
 			varname_in_code = ezxml_attr(var_xml, "name_in_code");
 			vardefaultval = ezxml_attr(var_xml, "default_value");
+			varpackages = ezxml_attr(var_xml, "packages");
 
 			if(vlist_cursor == NULL){
 				NEW_VARIABLE_LIST(grouplist_ptr->vlist);
@@ -659,15 +796,38 @@ int parse_reg_xml(ezxml_t registry, struct namelist **nls, struct dimension ** d
 
 			snprintf(var_ptr->name_in_file, 1024, "%s", varname);
 
-			if(varpersistence == NULL){
-				var_ptr->persistence = PERSISTENT;
-			} else {
-				if(strncmp(varpersistence, "persistent", 1024) == 0){
-					var_ptr->persistence = PERSISTENT;
-				} else if(strncmp(varpersistence, "scratch", 1024) == 0){
-					var_ptr->persistence = SCRATCH;
+			var_ptr->persistence = PERSISTENT;
+			if(varpersistence != NULL){
+				var_ptr->persistence = check_persistence(varpersistence);
+				if(var_ptr->persistence == -1) return 1;
+			}
+
+			/* Check packages attribute on var_struct */
+			if(varpackages == NULL){
+				varpackages = ezxml_attr(structs_xml, "packages");
+			}
+
+			if(varpackages != NULL && var_ptr->persistence == PERSISTENT){
+				var_ptr->persistence = PACKAGE;
+			}
+
+			if(var_ptr->persistence == PACKAGE) {
+				NEW_PACKAGE(var_ptr->package_name);
+
+				string = strdup(varpackages);
+				tofree = string;
+				token = strsep(&string, ";");
+
+				snprintf(var_ptr->package_name->name, 1024, "%s", token);
+				pkg_ptr = var_ptr->package_name;
+
+				while( (token = strsep(&string, ";")) != NULL) {
+					NEW_PACKAGE(pkg_ptr->next);						
+					pkg_ptr = pkg_ptr->next;
+					snprintf(pkg_ptr->name, 1024, "%s", token);
 				}
 			}
+
 
 			if(strncmp(vartype, "real", 1024) == 0){
 				var_ptr->vtype = REAL;
@@ -944,6 +1104,41 @@ void sort_group_vars(struct group_list * groups)
    }
 }
 
+char * check_packages(ezxml_t registry, char * packages){
+	ezxml_t packages_xml, package_xml;
+
+	const char *packagename;
+
+	char *string, *tofree, *token;
+	char *failed;
+	int missing_package;
+
+	string = strdup(packages);
+	tofree = string;
+	failed = NULL;
+
+	while( (token = strsep(&string, ";")) != NULL) {
+		missing_package = 1;
+		for (packages_xml = ezxml_child(registry, "packages"); packages_xml; packages_xml = packages_xml->next){
+			for (package_xml = ezxml_child(packages_xml, "package"); package_xml; package_xml = package_xml->next){
+				packagename = ezxml_attr(package_xml, "name");
+
+				if(strcasecmp(packagename, token) == 0){
+					missing_package = 0;
+				}
+			}
+		}
+
+		if (missing_package) {
+			failed = strdup(token);
+			free(tofree);
+			return failed;
+		}
+	}
+	free(tofree);
+	return failed;
+}
+
 char * check_dimensions(ezxml_t registry, char * dims){
 	ezxml_t dims_xml, dim_xml;
 
@@ -1000,4 +1195,15 @@ char * check_streams(char * streams){
 	}
 
 	return NULL;
+}
+
+int check_persistence(const char * persistence){
+	if(strncmp(persistence, "persistent", 1024) == 0){
+		return PERSISTENT;
+	} else if(strncmp(persistence, "scratch", 1024) == 0){
+		return SCRATCH;
+	} else {
+		fprintf(stderr, "ERROR: In check_persistence. Persistence not equal to persistent or scratch.\n");
+		return -1;
+	}
 }

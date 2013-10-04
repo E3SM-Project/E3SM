@@ -57,6 +57,18 @@ void split_derived_dim_string(char * dim, char ** p1, char ** p2)
    sprintf(*p2, "%s", dim+n);
 }
 
+void write_package_options(FILE *fd, struct package * pkgs){
+	struct package * pkg_ptr;
+
+	pkg_ptr = pkgs;
+
+	fortprintf(fd, "%sActive", pkg_ptr->name);
+
+	for (pkg_ptr = pkgs->next; pkg_ptr; pkg_ptr = pkg_ptr->next){
+		fortprintf(fd, " .or. %sActive", pkg_ptr->name);
+	}
+}
+
 void gen_namelists(struct namelist * nls)
 {
    struct namelist * nls_ptr;
@@ -202,7 +214,7 @@ void gen_field_defs(struct group_list * groups, struct variable * vars, struct d
    char var_array[1024];
    char array_class[1024];
    char outer_dim[1024];
-   int i;
+   int i, new_class;
    int class_start, class_end;
    int vtype;
    char type_str[7];
@@ -390,7 +402,7 @@ void gen_field_defs(struct group_list * groups, struct variable * vars, struct d
                memcpy(var_array, var_list_ptr->var->var_array, 1024);
                i = 1;
              }
-            if (strncmp(var_list_ptr->var->array_class, "-", 1024) != 0) fortprintf(fd, "      integer :: index_%s = %i\n", var_list_ptr->var->name_in_code, i++);
+            if (strncmp(var_list_ptr->var->array_class, "-", 1024) != 0) fortprintf(fd, "      integer :: index_%s = -1\n", var_list_ptr->var->name_in_code);
             var_list_ptr = var_list_ptr->next;
          }
 
@@ -403,21 +415,21 @@ void gen_field_defs(struct group_list * groups, struct variable * vars, struct d
          while (var_list_ptr) {
             if (strncmp(var_list_ptr->var->var_array, "-", 1024) != 0) {
                if (strncmp(var_array, var_list_ptr->var->var_array, 1024) != 0) {
-                  if (strncmp(var_array, "-", 1024) != 0) fortprintf(fd, "      integer :: %s_end = %i\n", array_class, class_end);
-                  if (strncmp(var_array, "-", 1024) != 0) fortprintf(fd, "      integer :: num_%s = %i\n", var_array, i);
+                  if (strncmp(var_array, "-", 1024) != 0) fortprintf(fd, "      integer :: %s_end = -1\n", array_class);
+                  if (strncmp(var_array, "-", 1024) != 0) fortprintf(fd, "      integer :: num_%s = -1\n", var_array);
                   class_start = 1;
                   class_end = 1;
                   i = 1;
                   memcpy(var_array, var_list_ptr->var->var_array, 1024);
                   memcpy(array_class, var_list_ptr->var->array_class, 1024);
-                  fortprintf(fd, "      integer :: %s_start = %i\n", array_class, class_start);
+                  fortprintf(fd, "      integer :: %s_start = -1\n", array_class);
                }
                else if (strncmp(array_class, var_list_ptr->var->array_class, 1024) != 0) {
-                  fortprintf(fd, "      integer :: %s_end = %i\n", array_class, class_end);
+                  fortprintf(fd, "      integer :: %s_end = -1\n", array_class);
                   class_start = class_end+1;
                   class_end = class_start;
                   memcpy(array_class, var_list_ptr->var->array_class, 1024);
-                  fortprintf(fd, "      integer :: %s_start = %i\n", array_class, class_start);
+                  fortprintf(fd, "      integer :: %s_start = -1\n", array_class);
                   i++;
                }
                else {
@@ -427,8 +439,8 @@ void gen_field_defs(struct group_list * groups, struct variable * vars, struct d
             }
             var_list_ptr = var_list_ptr->next;
          }
-         if (strncmp(var_array, "-", 1024) != 0) fortprintf(fd, "      integer :: %s_end = %i\n", array_class, class_end);
-         if (strncmp(var_array, "-", 1024) != 0) fortprintf(fd, "      integer :: num_%s = %i\n", var_array, i);
+         if (strncmp(var_array, "-", 1024) != 0) fortprintf(fd, "      integer :: %s_end = -1\n", array_class);
+         if (strncmp(var_array, "-", 1024) != 0) fortprintf(fd, "      integer :: num_%s = -1\n", var_array);
 
          var_list_ptr = group_ptr->vlist;
          while (var_list_ptr) {
@@ -475,7 +487,7 @@ void gen_field_defs(struct group_list * groups, struct variable * vars, struct d
                   memcpy(var_array, var_list_ptr->var->var_array, 1024);
                   i = 1;
                 }
-               if (strncmp(var_list_ptr->var->array_class, "-", 1024) != 0) fortprintf(fd, "      integer :: index_%s = %i\n", var_list_ptr->var->name_in_code, i++);
+               if (strncmp(var_list_ptr->var->array_class, "-", 1024) != 0) fortprintf(fd, "      integer :: index_%s = -1\n", var_list_ptr->var->name_in_code);
                var_list_ptr = var_list_ptr->next;
             }
 
@@ -495,23 +507,23 @@ void gen_field_defs(struct group_list * groups, struct variable * vars, struct d
                   if (strncmp(var_array, var_list_ptr->var->var_array, 1024) != 0) {
                      /* Finish off the previous super array? */
                      if (strncmp(var_array, "-", 1024) != 0) {
-                        fortprintf(fd, "      integer :: %s_end = %i\n", array_class, class_end);
-                        fortprintf(fd, "      integer :: num_%s = %i\n", var_array, i);
+                        fortprintf(fd, "      integer :: %s_end = -1\n", array_class);
+                        fortprintf(fd, "      integer :: num_%s = -1\n", var_array);
                      }
                      class_start = 1;
                      class_end = 1;
                      i = 1;
                      memcpy(var_array, var_list_ptr->var->var_array, 1024);
                      memcpy(array_class, var_list_ptr->var->array_class, 1024);
-                     fortprintf(fd, "      integer :: %s_start = %i\n", array_class, class_start);
+                     fortprintf(fd, "      integer :: %s_start = -1\n", array_class);
                   }
                   /* Or have we hit the beginning of a new array class? */
                   else if (strncmp(array_class, var_list_ptr->var->array_class, 1024) != 0) {
-                     fortprintf(fd, "      integer :: %s_end = %i\n", array_class, class_end);
+                     fortprintf(fd, "      integer :: %s_end = -1\n", array_class);
                      class_start = class_end+1;
                      class_end = class_start;
                      memcpy(array_class, var_list_ptr->var->array_class, 1024);
-                     fortprintf(fd, "      integer :: %s_start = %i\n", array_class, class_start);
+                     fortprintf(fd, "      integer :: %s_start = -1\n", array_class);
                      i++;
                   }
                   else {
@@ -523,8 +535,8 @@ void gen_field_defs(struct group_list * groups, struct variable * vars, struct d
                var_list_ptr = var_list_ptr->next;
 
             }
-            if (strncmp(var_array, "-", 1024) != 0) fortprintf(fd, "      integer :: %s_end = %i\n", array_class, class_end);
-            if (strncmp(var_array, "-", 1024) != 0) fortprintf(fd, "      integer :: num_%s = %i\n", var_array, i);
+            if (strncmp(var_array, "-", 1024) != 0) fortprintf(fd, "      integer :: %s_end = -1\n", array_class);
+            if (strncmp(var_array, "-", 1024) != 0) fortprintf(fd, "      integer :: num_%s = -1\n", var_array);
 
             var_list_ptr = group_ptr->vlist;
             while (var_list_ptr) {
@@ -690,6 +702,10 @@ void gen_field_defs(struct group_list * groups, struct variable * vars, struct d
       fortprintf(fd, "\n");
       fortprintf(fd, "      type (block_type), pointer :: b\n");
       fortprintf(fd, "      type (%s_type), intent(inout) :: %s\n", group_ptr->name, group_ptr->name);
+      fortprintf(fd, "      logical :: group_started\n");
+      fortprintf(fd, "      integer :: index_counter\n");
+      fortprintf(fd, "      integer :: group_counter\n");
+      fortprintf(fd, "      integer :: group_start\n");
       fortprintf(fd, "#include \"dim_dummy_decls.inc\"\n");
       fortprintf(fd, "\n");
 
@@ -720,25 +736,95 @@ void gen_field_defs(struct group_list * groups, struct variable * vars, struct d
                var_list_ptr = var_list_ptr->next;
             }
             var_ptr2 = var_list_ptr2->var;
+            fortprintf(fd, "      index_counter = 0\n");
+            fortprintf(fd, "      group_counter = -1\n");
+            fortprintf(fd, "      group_start = -1\n");
+            fortprintf(fd, "      group_started = .false.\n");
             fortprintf(fd, "      allocate(%s %% %s)\n", group_ptr->name, var_ptr2->var_array);
             fortprintf(fd, "      allocate(%s %% %s %% ioinfo)\n", group_ptr->name, var_ptr2->var_array);
             fortprintf(fd, "      %s %% %s %% fieldName = \'%s\'\n", group_ptr->name, var_ptr2->var_array, var_ptr2->var_array);
             fortprintf(fd, "      %s %% %s %% isVarArray = .true.\n", group_ptr->name, var_ptr2->var_array);
-            fortprintf(fd, "      allocate(%s %% %s %% constituentNames(%i))\n", group_ptr->name, var_ptr2->var_array, i);
+			/* Initialization of indices and size */
+			i = 0;
+			new_class = 0;
+            var_list_ptr3 = group_ptr->vlist;
+            memcpy(array_class, "-", 1024);
+            while (var_list_ptr3) {
+               if (strncmp(var_array, var_list_ptr3->var->var_array, 1024) == 0) {
+			      if (strncmp(array_class, var_list_ptr3->var->array_class, 1024) != 0) {
+					  if (strncmp(array_class, "-", 1024) != 0) {
+						  fortprintf(fd, "      if (group_counter >= 0) then\n");
+						  fortprintf(fd, "         %s %% %s_start = group_start\n", group_ptr->name, array_class);
+						  fortprintf(fd, "         %s %% %s_end = group_start + group_counter\n", group_ptr->name, array_class);
+						  fortprintf(fd, "      end if\n");
+						  fortprintf(fd, "      group_counter = -1\n");
+						  fortprintf(fd, "      group_started = .false.\n");
+					  }
+					  memcpy(array_class, var_list_ptr3->var->array_class, 1024);
+				  }
+
+			      if(var_list_ptr3->var->persistence != PACKAGE){
+					  fortprintf(fd, "      index_counter = index_counter + 1\n");
+					  fortprintf(fd, "      group_counter = group_counter + 1\n");
+					  fortprintf(fd, "      %s %% index_%s = index_counter\n", group_ptr->name, var_list_ptr3->var->name_in_code);
+					  fortprintf(fd, "      if (.not. group_started) then\n");
+					  fortprintf(fd, "         group_start = index_counter\n");
+					  fortprintf(fd, "         group_started = .true.\n");
+					  fortprintf(fd, "      end if\n");
+				  } else {
+					  fortprintf(fd, "      if (");
+					  write_package_options(fd, var_list_ptr3->var->package_name);
+					  fortprintf(fd, ") then\n");
+
+					  fortprintf(fd, "         index_counter = index_counter + 1\n");
+					  fortprintf(fd, "         group_counter = group_counter + 1\n");
+					  fortprintf(fd, "         %s %% index_%s = index_counter\n", group_ptr->name, var_list_ptr3->var->name_in_code);
+					  fortprintf(fd, "         if (.not. group_started) then\n");
+					  fortprintf(fd, "            group_start = index_counter\n");
+					  fortprintf(fd, "            group_started = .true.\n");
+					  fortprintf(fd, "         end if\n");
+					  fortprintf(fd, "      end if\n");
+				  }
+               }
+               var_list_ptr3 = var_list_ptr3->next;
+            }
+
+			fortprintf(fd, "      if (group_counter > 0) then\n");
+			fortprintf(fd, "         %s %% %s_start = group_start\n", group_ptr->name, array_class);
+			fortprintf(fd, "         %s %% %s_end = group_start + group_counter\n", group_ptr->name, array_class);
+			fortprintf(fd, "      end if\n");
+			fortprintf(fd, "      %s %% num_%s = index_counter\n", group_ptr->name, var_array);
+			fortprintf(fd, "      if ( %s %% num_%s > 0 ) then\n", group_ptr->name, var_array);
+			fortprintf(fd, "         allocate(%s %% %s %% constituentNames(%s %% num_%s))\n", group_ptr->name, var_array, group_ptr->name, var_array);
+			fortprintf(fd, "      end if\n");
 
             /* Initialization for constituent names */
             i = 0;
             var_list_ptr3 = group_ptr->vlist;
             while (var_list_ptr3) {
                if (strncmp(var_array, var_list_ptr3->var->var_array, 1024) == 0) {
-                  i++;
-                  fortprintf(fd, "      %s %% %s %% constituentNames(%i) = \'%s\'\n", group_ptr->name, var_ptr2->var_array, i, var_list_ptr3->var->name_in_file);
+			      if(var_list_ptr3->var->persistence != PACKAGE) {
+					  fortprintf(fd, "      %s %% %s %% constituentNames(%s %% index_%s) = \'%s\'\n", group_ptr->name, var_array, group_ptr->name, var_list_ptr3->var->name_in_code, var_list_ptr3->var->name_in_file);
+				  } else {
+					  fortprintf(fd, "      if (%s %% index_%s > 0) then\n", group_ptr->name, var_list_ptr3->var->name_in_code);
+					  fortprintf(fd, "         %s %% %s %% constituentNames(%s %% index_%s) = \'%s\'\n", group_ptr->name, var_array, group_ptr->name, var_list_ptr3->var->name_in_code, var_list_ptr3->var->name_in_file);
+					  fortprintf(fd, "      end if\n");
+
+				  }
                }
                var_list_ptr3 = var_list_ptr3->next;
             }
 
-			if(var_ptr2->persistence == PERSISTENT){
-               fortprintf(fd, "      allocate(%s %% %s %% array(%i, ", group_ptr->name, var_ptr2->var_array, i);
+			if(var_ptr2->persistence == PERSISTENT || var_ptr2->persistence == PACKAGE){
+			   fortprintf(fd, "      %s %% %s %% isPersistent = .true.\n", group_ptr->name, var_ptr2->var_array);
+			   if(var_ptr2->persistence == PACKAGE){
+                 fortprintf(fd, "      if (%s %% num_%s > 0) then\n", group_ptr->name, var_ptr2->var_array);
+				 fortprintf(fd, "         %s %% %s %% isActive = .true.\n", group_ptr->name, var_ptr2->var_array);
+				 fortprintf(fd, "         allocate(%s %% %s %% array(%s %% num_%s, ", group_ptr->name, var_ptr2->var_array, group_ptr->name, var_ptr2->var_array);
+			   } else {
+				 fortprintf(fd, "      %s %% %s %% isActive = .true.\n", group_ptr->name, var_ptr2->var_array);
+				 fortprintf(fd, "      allocate(%s %% %s %% array(%s %% num_%s, ", group_ptr->name, var_ptr2->var_array, group_ptr->name, var_ptr2->var_array);
+			   }
                dimlist_ptr = var_ptr2->dimlist;
                if (!strncmp(dimlist_ptr->dim->name_in_file, "nCells", 1024) ||
                    !strncmp(dimlist_ptr->dim->name_in_file, "nEdges", 1024) ||
@@ -761,10 +847,21 @@ void gen_field_defs(struct group_list * groups, struct variable * vars, struct d
                   dimlist_ptr = dimlist_ptr->next;
                }
                fortprintf(fd, "))\n");
-               fortprintf(fd, "      %s %% %s %% array = %s\n", group_ptr->name, var_ptr2->var_array, var_ptr2->default_value ); /* initialize field */
+			   if (var_ptr2->persistence == PACKAGE) {
+				  fortprintf(fd, "         %s %% %s %% array = %s\n", group_ptr->name, var_ptr2->var_array, var_ptr2->default_value ); /* initialize field */
+                  fortprintf(fd, "      else\n");
+			      fortprintf(fd, "         %s %% %s %% isActive = .false.\n", group_ptr->name, var_ptr2->var_array);
+                  fortprintf(fd, "         nullify(%s %% %s %% array)\n", group_ptr->name, var_ptr2->var_array);
+                  fortprintf(fd, "      end if\n");
+			   } else {
+				  fortprintf(fd, "      %s %% %s %% array = %s\n", group_ptr->name, var_ptr2->var_array, var_ptr2->default_value ); /* initialize field */
+			   }
+			} else {
+               fortprintf(fd, "      %s %% %s %% isPersistent = .false.\n", group_ptr->name, var_ptr2->var_array);
+               fortprintf(fd, "      %s %% %s %% isActive = .false.\n", group_ptr->name, var_ptr2->var_array);
 			}
 
-            fortprintf(fd, "      %s %% %s %% dimSizes(1) = %i\n", group_ptr->name, var_ptr2->var_array, i);
+            fortprintf(fd, "      %s %% %s %% dimSizes(1) = %s %% num_%s\n", group_ptr->name, var_ptr2->var_array, group_ptr->name, var_ptr2->var_array);
             fortprintf(fd, "      %s %% %s %% dimNames(1) = \'num_%s\'\n", group_ptr->name, var_ptr2->var_array, var_ptr2->var_array);
             dimlist_ptr = var_ptr2->dimlist;
             i = 2;
@@ -773,7 +870,7 @@ void gen_field_defs(struct group_list * groups, struct variable * vars, struct d
                    !strncmp(dimlist_ptr->dim->name_in_file, "nEdges", 1024) ||
                    !strncmp(dimlist_ptr->dim->name_in_file, "nVertices", 1024))
                   if (!dimlist_ptr->dim->namelist_defined) {
-					 if (var_ptr2->persistence == PERSISTENT){
+					 if (var_ptr2->persistence == PERSISTENT || var_ptr2->persistence == PACKAGE){
                         fortprintf(fd, "      %s %% %s %% dimSizes(%i) = %s\n", group_ptr->name, var_ptr2->var_array, i, dimlist_ptr->dim->name_in_code);
                         fortprintf(fd, "      %s %% %s %% dimNames(%i) = \'%s\'\n", group_ptr->name, var_ptr2->var_array, i, dimlist_ptr->dim->name_in_file);
 					 } 
@@ -837,9 +934,11 @@ void gen_field_defs(struct group_list * groups, struct variable * vars, struct d
             if (var_ptr->ndims > 0) {
 	  		  if(var_ptr->persistence == SCRATCH){
 				  fortprintf(fd, "      %s %% %s %% isPersistent = .false.\n", group_ptr->name, var_ptr->name_in_code);
+				  fortprintf(fd, "      %s %% %s %% isActive = .false.\n", group_ptr->name, var_ptr->name_in_code);
 				  fortprintf(fd, "      nullify(%s %% %s %% array)\n", group_ptr->name, var_ptr->name_in_code); 
 			  } else if(var_ptr->persistence == PERSISTENT){
-				  fortprintf(fd, "      %s %% %s %% isPersistent = .true.\n", group_ptr->name, var_ptr->name_in_code);
+			   fortprintf(fd, "      %s %% %s %% isPersistent = .true.\n", group_ptr->name, var_ptr->name_in_code);
+			   fortprintf(fd, "      %s %% %s %% isActive = .true.\n", group_ptr->name, var_ptr->name_in_code);
                fortprintf(fd, "      allocate(%s %% %s %% array(", group_ptr->name, var_ptr->name_in_code);
                dimlist_ptr = var_ptr->dimlist;
                if (!strncmp(dimlist_ptr->dim->name_in_file, "nCells", 1024) ||
@@ -864,6 +963,46 @@ void gen_field_defs(struct group_list * groups, struct variable * vars, struct d
                }
                fortprintf(fd, "))\n");
                fortprintf(fd, "      %s %% %s %% array = %s\n", group_ptr->name, var_ptr->name_in_code, var_ptr->default_value ); /* initialize field */
+			  } else if(var_ptr->persistence == PACKAGE){
+			   fortprintf(fd, "      %s %% %s %% isPersistent = .true.\n", group_ptr->name, var_ptr->name_in_code);
+               fortprintf(fd, "      if (");
+			   write_package_options(fd, var_ptr->package_name);
+			   fortprintf(fd, ") then\n");
+			   fortprintf(fd, "         %s %% %s %% isActive = .true.\n", group_ptr->name, var_ptr->name_in_code);
+               fortprintf(fd, "         allocate(%s %% %s %% array(", group_ptr->name, var_ptr->name_in_code);
+               dimlist_ptr = var_ptr->dimlist;
+               if (!strncmp(dimlist_ptr->dim->name_in_file, "nCells", 1024) ||
+                   !strncmp(dimlist_ptr->dim->name_in_file, "nEdges", 1024) ||
+                   !strncmp(dimlist_ptr->dim->name_in_file, "nVertices", 1024))
+                  if (!dimlist_ptr->dim->namelist_defined) fortprintf(fd, "%s + 1", dimlist_ptr->dim->name_in_code);
+                  else fortprintf(fd, "%s + 1", dimlist_ptr->dim->name_in_file);
+               else
+                  if (dimlist_ptr->dim->namelist_defined) fortprintf(fd, "%s", dimlist_ptr->dim->name_in_file);
+                  else fortprintf(fd, "%s", dimlist_ptr->dim->name_in_code);
+               dimlist_ptr = dimlist_ptr->next;
+               while (dimlist_ptr) {
+                  if (!strncmp(dimlist_ptr->dim->name_in_file, "nCells", 1024) ||
+                      !strncmp(dimlist_ptr->dim->name_in_file, "nEdges", 1024) ||
+                      !strncmp(dimlist_ptr->dim->name_in_file, "nVertices", 1024))
+                     if (!dimlist_ptr->dim->namelist_defined) fortprintf(fd, ", %s + 1", dimlist_ptr->dim->name_in_code);
+                     else fortprintf(fd, ", %s + 1", dimlist_ptr->dim->name_in_file);
+                  else
+                     if (dimlist_ptr->dim->namelist_defined) fortprintf(fd, ", %s", dimlist_ptr->dim->name_in_file);
+                     else fortprintf(fd, ", %s", dimlist_ptr->dim->name_in_code);
+                  dimlist_ptr = dimlist_ptr->next;
+               }
+               fortprintf(fd, "))\n");
+               if (var_ptr->vtype == INTEGER)
+                  fortprintf(fd, "         %s %% %s %% array = 0\n", group_ptr->name, var_ptr->name_in_code ); /* initialize field to zero */
+               else if (var_ptr->vtype == REAL)
+                  fortprintf(fd, "         %s %% %s %% array = 0.0\n", group_ptr->name, var_ptr->name_in_code ); /* initialize field to zero */
+               else if (var_ptr->vtype == CHARACTER)
+                  fortprintf(fd, "         %s %% %s %% array = \'\'\n", group_ptr->name, var_ptr->name_in_code ); /* initialize field to zero */
+			   fortprintf(fd, "      else\n");
+			   fortprintf(fd, "         %s %% %s %% isActive = .false.\n", group_ptr->name, var_ptr->name_in_code);
+               fortprintf(fd, "         nullify(%s %% %s %% array)\n", group_ptr->name, var_ptr->name_in_code);
+			   fortprintf(fd, "      endif\n");
+
 			  }
                dimlist_ptr = var_ptr->dimlist;
                i = 1;
@@ -872,7 +1011,7 @@ void gen_field_defs(struct group_list * groups, struct variable * vars, struct d
                       !strncmp(dimlist_ptr->dim->name_in_file, "nEdges", 1024) ||
                       !strncmp(dimlist_ptr->dim->name_in_file, "nVertices", 1024))
                      if (!dimlist_ptr->dim->namelist_defined) {
-						if(var_ptr->persistence == PERSISTENT){
+						if(var_ptr->persistence == PERSISTENT || var_ptr->persistence == PACKAGE){
                           fortprintf(fd, "      %s %% %s %% dimSizes(%i) = %s\n", group_ptr->name, var_ptr->name_in_code, i, dimlist_ptr->dim->name_in_code); 
                           fortprintf(fd, "      %s %% %s %% dimNames(%i) = \'%s\'\n", group_ptr->name, var_ptr->name_in_code, i, dimlist_ptr->dim->name_in_file); 
 						}
@@ -1016,16 +1155,20 @@ void gen_field_defs(struct group_list * groups, struct variable * vars, struct d
                var_list_ptr = var_list_ptr->next;
             }
             var_ptr2 = var_list_ptr2->var;
-            if (var_ptr2->ndims > 0) 
-               fortprintf(fd, "      dest %% %s %% array = src %% %s %% array\n", var_ptr2->var_array, var_ptr2->var_array);
-            else
+            if (var_ptr2->ndims > 0)  {
+			   fortprintf(fd, "      if (associated(dest %% %s %% array) .and. associated(src %% %s %% array)) then\n", var_ptr2->var_array, var_ptr2->var_array);
+               fortprintf(fd, "         dest %% %s %% array = src %% %s %% array\n", var_ptr2->var_array, var_ptr2->var_array);
+			   fortprintf(fd, "      end if\n");
+            } else {
                fortprintf(fd, "      dest %% %s %% scalar = src %% %s %% scalar\n", var_ptr2->var_array, var_ptr2->var_array);
+			}
          }
          else {
-			if (var_ptr->persistence == PERSISTENT){
-            if (var_ptr->ndims > 0) 
-               fortprintf(fd, "      dest %% %s %% array = src %% %s %% array\n", var_ptr->name_in_code, var_ptr->name_in_code);
-            else
+            if (var_ptr->ndims > 0) {
+			   fortprintf(fd, "      if (associated(dest %% %s %% array) .and. associated(src %% %s %% array)) then\n", var_ptr->name_in_code, var_ptr->name_in_code);
+               fortprintf(fd, "         dest %% %s %% array = src %% %s %% array\n", var_ptr->name_in_code, var_ptr->name_in_code);
+			   fortprintf(fd, "      end if\n");
+            } else {
                fortprintf(fd, "      dest %% %s %% scalar = src %% %s %% scalar\n", var_ptr->name_in_code, var_ptr->name_in_code);
 			}
             var_list_ptr = var_list_ptr->next;
@@ -1421,7 +1564,7 @@ void gen_reads(struct group_list * groups, struct variable * vars, struct dimens
 
          dimlist_ptr = var_ptr->dimlist;
          i = 1;
-		 if(var_ptr->persistence == PERSISTENT){
+		 if(var_ptr->persistence == PERSISTENT || var_ptr->persistence == PACKAGE){
          while (dimlist_ptr) {
             if (i == var_ptr->ndims) { 
 
@@ -1436,12 +1579,13 @@ void gen_reads(struct group_list * groups, struct variable * vars, struct dimens
                    !strncmp(dimlist_ptr->dim->name_in_file, "nVertices", 1024)) {
                   
                   if (strncmp(var_ptr->var_array, "-", 1024) != 0) {
-                     fortprintf(fd, "      if ((%s %% %s %% ioinfo %% input .and. input_obj %% stream == STREAM_INPUT) .or. &\n", struct_deref, var_ptr->var_array);
-                     fortprintf(fd, "          (%s %% %s %% ioinfo %% restart .and. input_obj %% stream == STREAM_RESTART) .or. &\n", struct_deref, var_ptr->var_array);
-                     fortprintf(fd, "          (%s %% %s %% ioinfo %% sfc .and. input_obj %% stream == STREAM_SFC)) then\n", struct_deref, var_ptr->var_array);
+                     fortprintf(fd, "      if (%s %% %s %% isPersistent .and. %s %% %s %% isActive) then\n", struct_deref, var_ptr->var_array, struct_deref, var_ptr->var_array);
+                     fortprintf(fd, "         if ((%s %% %s %% ioinfo %% input .and. input_obj %% stream == STREAM_INPUT) .or. &\n", struct_deref, var_ptr->var_array);
+                     fortprintf(fd, "             (%s %% %s %% ioinfo %% restart .and. input_obj %% stream == STREAM_RESTART) .or. &\n", struct_deref, var_ptr->var_array);
+                     fortprintf(fd, "             (%s %% %s %% ioinfo %% sfc .and. input_obj %% stream == STREAM_SFC)) then\n", struct_deref, var_ptr->var_array);
                      memcpy(var_array, var_ptr->var_array, 1024);
-/*                     fortprintf(fd, "         write(0,*) \'exchange halo for %s\'\n", var_ptr->var_array); */
-                     fortprintf(fd, "         call mpas_dmpar_exch_halo_field(%s %% %s)\n", struct_deref, var_ptr->var_array);
+/*                     fortprintf(fd, "            write(0,*) \'exchange halo for %s\'\n", var_ptr->var_array); */
+                     fortprintf(fd, "            call mpas_dmpar_exch_halo_field(%s %% %s)\n", struct_deref, var_ptr->var_array);
                      while (var_list_ptr && strncmp(var_array, var_list_ptr->var->var_array, 1024) == 0) {
 						var_list_ptr2 = var_list_ptr;
                         var_list_ptr = var_list_ptr->next;
@@ -1449,20 +1593,24 @@ void gen_reads(struct group_list * groups, struct variable * vars, struct dimens
 					 var_list_ptr = var_list_ptr2;
                   }
                   else {
-                     fortprintf(fd, "      if ((%s %% %s %% ioinfo %% input .and. input_obj %% stream == STREAM_INPUT) .or. &\n", struct_deref, var_ptr->name_in_code);
-                     fortprintf(fd, "          (%s %% %s %% ioinfo %% restart .and. input_obj %% stream == STREAM_RESTART) .or. &\n", struct_deref, var_ptr->name_in_code);
-                     fortprintf(fd, "          (%s %% %s %% ioinfo %% sfc .and. input_obj %% stream == STREAM_SFC)) then\n", struct_deref, var_ptr->name_in_code);
-/*                     fortprintf(fd, "         write(0,*) \'exchange halo for %s\'\n", var_ptr->name_in_code); */
-                     fortprintf(fd, "         call mpas_dmpar_exch_halo_field(%s %% %s)\n", struct_deref, var_ptr->name_in_code);
+                     fortprintf(fd, "      if (%s %% %s %% isPersistent .and. %s %% %s %% isActive) then\n", struct_deref, var_ptr->name_in_code, struct_deref, var_ptr->name_in_code);
+                     fortprintf(fd, "         if ((%s %% %s %% ioinfo %% input .and. input_obj %% stream == STREAM_INPUT) .or. &\n", struct_deref, var_ptr->name_in_code);
+                     fortprintf(fd, "             (%s %% %s %% ioinfo %% restart .and. input_obj %% stream == STREAM_RESTART) .or. &\n", struct_deref, var_ptr->name_in_code);
+                     fortprintf(fd, "             (%s %% %s %% ioinfo %% sfc .and. input_obj %% stream == STREAM_SFC)) then\n", struct_deref, var_ptr->name_in_code);
+/*                     fortprintf(fd, "            write(0,*) \'exchange halo for %s\'\n", var_ptr->name_in_code); */
+                     fortprintf(fd, "            call mpas_dmpar_exch_halo_field(%s %% %s)\n", struct_deref, var_ptr->name_in_code);
                   }
             
+                  fortprintf(fd, "         end if\n\n");
                   fortprintf(fd, "      end if\n\n");
    
                } else {
-                  fortprintf(fd2, "      if ((%s %% %s %% ioinfo %% input .and. input_obj %% stream == STREAM_INPUT) .or. &\n", struct_deref, var_ptr->name_in_code);
-                  fortprintf(fd2, "          (%s %% %s %% ioinfo %% restart .and. input_obj %% stream == STREAM_RESTART) .or. &\n", struct_deref, var_ptr->name_in_code);
-                  fortprintf(fd2, "          (%s %% %s %% ioinfo %% sfc .and. input_obj %% stream == STREAM_SFC)) then\n", struct_deref, var_ptr->name_in_code);
-				  fortprintf(fd2, "          call mpas_dmpar_copy_field(%s %% %s)\n", struct_deref, var_ptr->name_in_code);
+                  fortprintf(fd2, "      if (%s %% %s %% isPersistent .and. %s %% %s %% isActive) then\n", struct_deref, var_ptr->name_in_code, struct_deref, var_ptr->name_in_code);
+                  fortprintf(fd2, "         if ((%s %% %s %% ioinfo %% input .and. input_obj %% stream == STREAM_INPUT) .or. &\n", struct_deref, var_ptr->name_in_code);
+                  fortprintf(fd2, "             (%s %% %s %% ioinfo %% restart .and. input_obj %% stream == STREAM_RESTART) .or. &\n", struct_deref, var_ptr->name_in_code);
+                  fortprintf(fd2, "             (%s %% %s %% ioinfo %% sfc .and. input_obj %% stream == STREAM_SFC)) then\n", struct_deref, var_ptr->name_in_code);
+				  fortprintf(fd2, "             call mpas_dmpar_copy_field(%s %% %s)\n", struct_deref, var_ptr->name_in_code);
+                  fortprintf(fd2, "         end if\n\n");
                   fortprintf(fd2, "      end if\n\n");
 			   }
             }
@@ -1480,6 +1628,21 @@ void gen_reads(struct group_list * groups, struct variable * vars, struct dimens
    fclose(fd);
    fclose(fd2);
 
+}
+
+void gen_packages(struct package * pkgs){
+	FILE * fd;
+	struct package * pkg_ptr;
+
+	fd = fopen("define_packages.inc", "w");
+
+	for (pkg_ptr = pkgs; pkg_ptr; pkg_ptr = pkg_ptr->next) {
+		if (strlen(pkg_ptr->name) > 0) { 
+			fortprintf(fd, "         logical :: %sActive = .false.\n", pkg_ptr->name);
+		}
+	}
+
+	fclose(fd);
 }
 
 

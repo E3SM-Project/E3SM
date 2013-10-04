@@ -74,6 +74,8 @@
 												<xs:attribute name="units"  type="xs:string" use="optional"/>
 												<!-- The description attribute describes the particular variable -->
 												<xs:attribute name="description"  type="xs:string" use="optional"/>
+												<!-- The packages attribute defines the packages the particular variable belongs to -->
+												<xs:attribute name="packages"  type="xs:string" use="optional"/>
 											</xs:complexType>
 										</xs:element>
 									</xs:sequence>
@@ -83,10 +85,12 @@
 									<xs:attribute name="type"  type="xs:string" use="required"/>
 									<!-- The dimensions attribute defines the dimensions of each individual constituent. This does not include the collapsed dimension. -->
 									<xs:attribute name="dimensions"  type="xs:string" use="required"/>
-									<!-- The persistence attribute determines if the var_array is persistence or scratch. Valid options are persistent, and scratch. -->
+									<!-- The persistence attribute determines if the var_array is persistence or scratch. Valid options are persistent and scratch. -->
 									<xs:attribute name="persistence"  type="xs:string" use="optional"/>
 									<!-- The default_value attribute determines the default value for the var_array. Reals default to 0.0_RKIND, integers to 0, logicals to .false. and characters to ''-->
 									<xs:attribute name="default_value"  type="xs:string" use="optional"/>
+									<!-- The packages attribute defines the packages that control allocation of this variable -->
+									<xs:attribute name="packages"  type="xs:string" use="optional"/>
 								</xs:complexType>
 							</xs:element>
 							<!-- This var element defines a variable that does not live within a var_array group. -->
@@ -108,6 +112,10 @@
 									<xs:attribute name="description"  type="xs:string" use="optional"/>
 									<!-- The default_value attribute determines the default value for the var. Reals default to 0.0_RKIND, integers to 0, logicals to .false. and characters to ''-->
 									<xs:attribute name="default_value"  type="xs:string" use="optional"/>
+									<!-- The persistence attribute determines if the var is persistence or scratch. Valid options are persistent and scratch. -->
+									<xs:attribute name="persistence"  type="xs:string" use="optional"/>
+									<!-- The packages attribute defines the packages that control allocation of this variable -->
+									<xs:attribute name="packages"  type="xs:string" use="optional"/>
 								</xs:complexType>
 							</xs:element>
 						</xs:sequence>
@@ -115,6 +123,8 @@
 						<xs:attribute name="name"  type="xs:string" use="required"/>
 						<!-- The time_levs attribute defines the number of time levels this var_struct contains. -->
 						<xs:attribute name="time_levs"  type="xs:int" use="required"/>
+						<!-- The packages attribute defines the packages that control allocation of variables in this struct -->
+						<xs:attribute name="packages"  type="xs:string" use="optional"/>
 					</xs:complexType>
 				</xs:element>
 			</xs:sequence>
