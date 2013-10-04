@@ -263,8 +263,8 @@ contains
     
     if(present(mindxout)) then
         ! min_len now based on norm(Dinv)
-        mindxout=1000_real_kind*min_len
         min_len = 0.002d0*rearth/(dble(np-1)*max_max_eig)
+        mindxout=1000_real_kind*min_len
     end if
 
   end subroutine test_global_integral
