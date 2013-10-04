@@ -17,7 +17,7 @@ module mpas_io_streams
       integer :: field_type = -999
       logical :: isDecomposed
       integer :: totalDimSize     ! Total size of outer dimension across all blocks for decomposed fields
-      logical, dimension(:), pointer :: isAvailable => null() ! Used for reading super-arrays where one or more 
+      logical, dimension(:), pointer :: isAvailable => null() ! Used for reading var-arrays where one or more 
                                                               !   constitutent arrays may not be present in the input file
       type (field0dInteger), pointer :: int0dField => null()
       type (field1dInteger), pointer :: int1dField => null()
@@ -382,7 +382,7 @@ contains
 
       
       any_success = .false.
-      if (field % isSuperArray) then
+      if (field % isVarArray) then
          allocate(isAvailable(size(field % constituentNames)))
          isAvailable(:) = .false.
          do i=1,size(field % constituentNames)
@@ -409,7 +409,7 @@ contains
           return
       end if
 
-      if (field % isSuperArray) then
+      if (field % isVarArray) then
          do i=1,size(field % constituentNames)
             call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % constituentNames(i)), field % attList)
          end do
@@ -481,7 +481,7 @@ contains
 
       
       any_success = .false.
-      if (field % isSuperArray) then
+      if (field % isVarArray) then
          allocate(isAvailable(size(field % constituentNames)))
          isAvailable(:) = .false.
          do i=1,size(field % constituentNames)
@@ -508,7 +508,7 @@ contains
           return
       end if
 
-      if (field % isSuperArray) then
+      if (field % isVarArray) then
          do i=1,size(field % constituentNames)
             call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % constituentNames(i)), field % attList)
          end do
@@ -579,7 +579,7 @@ contains
 #include "add_field_indices.inc"
       
       any_success = .false.
-      if (field % isSuperArray) then
+      if (field % isVarArray) then
          allocate(isAvailable(size(field % constituentNames)))
          isAvailable(:) = .false.
          do i=1,size(field % constituentNames)
@@ -606,7 +606,7 @@ contains
           return
       end if
 
-      if (field % isSuperArray) then
+      if (field % isVarArray) then
          do i=1,size(field % constituentNames)
             call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % constituentNames(i)), field % attList)
          end do
@@ -758,7 +758,7 @@ contains
 
       
       any_success = .false.
-      if (field % isSuperArray) then
+      if (field % isVarArray) then
          allocate(isAvailable(size(field % constituentNames)))
          isAvailable(:) = .false.
          do i=1,size(field % constituentNames)
@@ -785,7 +785,7 @@ contains
           return
       end if
 
-      if (field % isSuperArray) then
+      if (field % isVarArray) then
          do i=1,size(field % constituentNames)
             call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % constituentNames(i)), field % attList)
          end do
@@ -857,7 +857,7 @@ contains
 
       
       any_success = .false.
-      if (field % isSuperArray) then
+      if (field % isVarArray) then
          allocate(isAvailable(size(field % constituentNames)))
          isAvailable(:) = .false.
          do i=1,size(field % constituentNames)
@@ -884,7 +884,7 @@ contains
           return
       end if
 
-      if (field % isSuperArray) then
+      if (field % isVarArray) then
          do i=1,size(field % constituentNames)
             call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % constituentNames(i)), field % attList)
          end do
@@ -956,8 +956,8 @@ contains
 
       
       any_success = .false.
-      if (field % isSuperArray) then
-!write(stderrUnit,*) '^^^^^^^^^^^^^^^^^^^^^^^^^^^ we are adding a super-array'
+      if (field % isVarArray) then
+!write(stderrUnit,*) '^^^^^^^^^^^^^^^^^^^^^^^^^^^ we are adding a var-array'
          allocate(isAvailable(size(field % constituentNames)))
          isAvailable(:) = .false.
          do i=1,size(field % constituentNames)
@@ -984,7 +984,7 @@ contains
           return
       end if
 
-      if (field % isSuperArray) then
+      if (field % isVarArray) then
          do i=1,size(field % constituentNames)
             call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % constituentNames(i)), field % attList)
          end do
@@ -1057,8 +1057,8 @@ contains
 
       
       any_success = .false.
-      if (field % isSuperArray) then
-!write(stderrUnit,*) '^^^^^^^^^^^^^^^^^^^^^^^^^^^ we are adding a super-array'
+      if (field % isVarArray) then
+!write(stderrUnit,*) '^^^^^^^^^^^^^^^^^^^^^^^^^^^ we are adding a var-array'
          allocate(isAvailable(size(field % constituentNames)))
          isAvailable(:) = .false.
          do i=1,size(field % constituentNames)
@@ -1085,7 +1085,7 @@ contains
           return
       end if
 
-      if (field % isSuperArray) then
+      if (field % isVarArray) then
          do i=1,size(field % constituentNames)
             call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % constituentNames(i)), field % attList)
          end do
@@ -1158,8 +1158,8 @@ contains
 
       
       any_success = .false.
-      if (field % isSuperArray) then
-!write(stderrUnit,*) '^^^^^^^^^^^^^^^^^^^^^^^^^^^ we are adding a super-array'
+      if (field % isVarArray) then
+!write(stderrUnit,*) '^^^^^^^^^^^^^^^^^^^^^^^^^^^ we are adding a var-array'
          allocate(isAvailable(size(field % constituentNames)))
          isAvailable(:) = .false.
          do i=1,size(field % constituentNames)
@@ -1186,7 +1186,7 @@ contains
           return
       end if
 
-      if (field % isSuperArray) then
+      if (field % isVarArray) then
          do i=1,size(field % constituentNames)
             call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % constituentNames(i)), field % attList)
          end do
@@ -1264,7 +1264,7 @@ contains
       totalDimSize = 64
 
       
-      if (field % isSuperArray) then
+      if (field % isVarArray) then
          do i=1,size(field % constituentNames)
             call MPAS_streamAddField_generic(stream, trim(field % constituentNames(i)), MPAS_IO_CHAR, dimNames(1:1), &
                                              dimSizes, field % hasTimeDimension, isDecomposed, totalDimSize, globalDimSize, &
@@ -1282,7 +1282,7 @@ contains
           return
       end if
 
-      if (field % isSuperArray) then
+      if (field % isVarArray) then
          do i=1,size(field % constituentNames)
             call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % constituentNames(i)), field % attList)
          end do
@@ -1599,7 +1599,7 @@ contains
          else if (field_cursor % field_type == FIELD_1D_INT) then
 !write(stderrUnit,*) 'DEBUGGING : *************** '//trim(field_cursor % int1dField % fieldName)
 
-            if (field_cursor % int1dField % isSuperArray) then
+            if (field_cursor % int1dField % isVarArray) then
                ncons = size(field_cursor % int1dField % constituentNames)
             else
                ncons = 1
@@ -1607,7 +1607,7 @@ contains
             end if
 
             do j=1,ncons
-               if (field_cursor % int1dField % isSuperArray) then
+               if (field_cursor % int1dField % isVarArray) then
                   if (.not. field_cursor % isAvailable(j)) cycle
                   call MPAS_io_get_var(stream % fileHandle, field_cursor % int1dField % constituentNames(j), int0d_temp, io_err)
                else
@@ -1616,7 +1616,7 @@ contains
                call MPAS_io_err_mesg(io_err, .false.)
                if (io_err /= MPAS_IO_NOERR) then
                    if (present(ierr)) ierr = MPAS_IO_ERR
-                   if (.not. field_cursor % int1dField % isSuperArray) then
+                   if (.not. field_cursor % int1dField % isVarArray) then
                       deallocate(int1d_temp)
                    end if
                    return
@@ -1637,7 +1637,7 @@ contains
                         ownedSize = field_1dint_ptr % dimSizes(1)
                      end if
 
-                     if (field_cursor % int1dField % isSuperArray) then
+                     if (field_cursor % int1dField % isVarArray) then
                         field_1dint_ptr % array(j) = int0d_temp
                      else
                         field_1dint_ptr % array(1:ownedSize) = int1d_temp(i:i+ownedSize-1)
@@ -1648,7 +1648,7 @@ contains
 
                else
    
-                  if (field_cursor % int1dField % isSuperArray) then
+                  if (field_cursor % int1dField % isVarArray) then
                      call mpas_dmpar_bcast_int(field_cursor % int1dField % block % domain % dminfo, int0d_temp)
                      field_1dint_ptr => field_cursor % int1dField
                      do while (associated(field_1dint_ptr))
@@ -1666,14 +1666,14 @@ contains
                end if
             end do
 
-            if (.not. field_cursor % int1dField % isSuperArray) then
+            if (.not. field_cursor % int1dField % isVarArray) then
                deallocate(int1d_temp)
             end if
 
          else if (field_cursor % field_type == FIELD_2D_INT) then
 
 !write(stderrUnit,*) 'DEBUGGING : *************** '//trim(field_cursor % int2dField % fieldName)
-            if (field_cursor % int2dField % isSuperArray) then
+            if (field_cursor % int2dField % isVarArray) then
                ncons = size(field_cursor % int2dField % constituentNames)
                allocate(int1d_temp(field_cursor % totalDimSize))
             else
@@ -1683,7 +1683,7 @@ contains
             end if
 
             do j=1,ncons
-               if (field_cursor % int2dField % isSuperArray) then
+               if (field_cursor % int2dField % isVarArray) then
                   if (.not. field_cursor % isAvailable(j)) cycle
                   call MPAS_io_get_var(stream % fileHandle, field_cursor % int2dField % constituentNames(j), int1d_temp, io_err)
                else
@@ -1692,7 +1692,7 @@ contains
                call MPAS_io_err_mesg(io_err, .false.)
                if (io_err /= MPAS_IO_NOERR) then
                    if (present(ierr)) ierr = MPAS_IO_ERR
-                   if (field_cursor % int2dField % isSuperArray) then
+                   if (field_cursor % int2dField % isVarArray) then
                       deallocate(int1d_temp)
                    else
                       deallocate(int2d_temp)
@@ -1715,7 +1715,7 @@ contains
                         ownedSize = field_2dint_ptr % dimSizes(2)
                      end if
 
-                     if (field_cursor % int2dField % isSuperArray) then
+                     if (field_cursor % int2dField % isVarArray) then
                         field_2dint_ptr % array(j,1:ownedSize) = int1d_temp(i:i+ownedSize-1)
                      else
                         field_2dint_ptr % array(:,1:ownedSize) = int2d_temp(:,i:i+ownedSize-1)
@@ -1726,7 +1726,7 @@ contains
 
                else
    
-                  if (field_cursor % int2dField % isSuperArray) then
+                  if (field_cursor % int2dField % isVarArray) then
                      call mpas_dmpar_bcast_ints(field_cursor % int2dField % block % domain % dminfo, size(int1d_temp), int1d_temp(:))
                      field_2dint_ptr => field_cursor % int2dField
                      do while (associated(field_2dint_ptr))
@@ -1744,7 +1744,7 @@ contains
                end if
             end do
 
-            if (field_cursor % int2dField % isSuperArray) then
+            if (field_cursor % int2dField % isVarArray) then
                deallocate(int1d_temp)
             else
                deallocate(int2d_temp)
@@ -1753,7 +1753,7 @@ contains
          else if (field_cursor % field_type == FIELD_3D_INT) then
 
 !write(stderrUnit,*) 'DEBUGGING : *************** '//trim(field_cursor % int3dField % fieldName)
-            if (field_cursor % int3dField % isSuperArray) then
+            if (field_cursor % int3dField % isVarArray) then
                ncons = size(field_cursor % int3dField % constituentNames)
                allocate(int2d_temp(field_cursor % int3dField % dimSizes(2), &
                                    field_cursor % totalDimSize))
@@ -1765,7 +1765,7 @@ contains
             end if
 
             do j=1,ncons
-               if (field_cursor % int3dField % isSuperArray) then
+               if (field_cursor % int3dField % isVarArray) then
                   if (.not. field_cursor % isAvailable(j)) cycle
                   call MPAS_io_get_var(stream % fileHandle, field_cursor % int3dField % constituentNames(j), int2d_temp, io_err)
                else
@@ -1774,7 +1774,7 @@ contains
                call MPAS_io_err_mesg(io_err, .false.)
                if (io_err /= MPAS_IO_NOERR) then
                    if (present(ierr)) ierr = MPAS_IO_ERR
-                   if (field_cursor % int3dField % isSuperArray) then
+                   if (field_cursor % int3dField % isVarArray) then
                       deallocate(int2d_temp)
                    else
                       deallocate(int3d_temp)
@@ -1797,7 +1797,7 @@ contains
                         ownedSize = field_3dint_ptr % dimSizes(3)
                      end if
 
-                     if (field_cursor % int3dField % isSuperArray) then
+                     if (field_cursor % int3dField % isVarArray) then
                         field_3dint_ptr % array(j,:,1:ownedSize) = int2d_temp(:,i:i+ownedSize-1)
                      else
                         field_3dint_ptr % array(:,:,1:ownedSize) = int3d_temp(:,:,i:i+ownedSize-1)
@@ -1808,7 +1808,7 @@ contains
 
                else
    
-                  if (field_cursor % int3dField % isSuperArray) then
+                  if (field_cursor % int3dField % isVarArray) then
                      call mpas_dmpar_bcast_ints(field_cursor % int3dField % block % domain % dminfo, size(int2d_temp), int2d_temp(:,1))
                      field_3dint_ptr => field_cursor % int3dField
                      do while (associated(field_3dint_ptr))
@@ -1826,7 +1826,7 @@ contains
                end if
             end do
 
-            if (field_cursor % int3dField % isSuperArray) then
+            if (field_cursor % int3dField % isVarArray) then
                deallocate(int2d_temp)
             else
                deallocate(int3d_temp)
@@ -1859,7 +1859,7 @@ contains
          else if (field_cursor % field_type == FIELD_1D_REAL) then
 
 !write(stderrUnit,*) 'DEBUGGING : *************** '//trim(field_cursor % real1dField % fieldName)
-            if (field_cursor % real1dField % isSuperArray) then
+            if (field_cursor % real1dField % isVarArray) then
                ncons = size(field_cursor % real1dField % constituentNames)
             else
                ncons = 1
@@ -1867,7 +1867,7 @@ contains
             end if
 
             do j=1,ncons
-               if (field_cursor % real1dField % isSuperArray) then
+               if (field_cursor % real1dField % isVarArray) then
                   if (.not. field_cursor % isAvailable(j)) cycle
                   call MPAS_io_get_var(stream % fileHandle, field_cursor % real1dField % constituentNames(j), real0d_temp, io_err)
                else
@@ -1876,7 +1876,7 @@ contains
                call MPAS_io_err_mesg(io_err, .false.)
                if (io_err /= MPAS_IO_NOERR) then
                    if (present(ierr)) ierr = MPAS_IO_ERR
-                   if (.not. field_cursor % real1dField % isSuperArray) then
+                   if (.not. field_cursor % real1dField % isVarArray) then
                       deallocate(real1d_temp)
                    end if
                    return
@@ -1898,7 +1898,7 @@ contains
                         ownedSize = field_1dreal_ptr % dimSizes(1)
                      end if
 
-                     if (field_cursor % real1dField % isSuperArray) then
+                     if (field_cursor % real1dField % isVarArray) then
                         field_1dreal_ptr % array(j) = real0d_temp
                      else
                         field_1dreal_ptr % array(1:ownedSize) = real1d_temp(i:i+ownedSize-1)
@@ -1909,7 +1909,7 @@ contains
 
                else
    
-                  if (field_cursor % real1dField % isSuperArray) then
+                  if (field_cursor % real1dField % isVarArray) then
                      call mpas_dmpar_bcast_real(field_cursor % real1dField % block % domain % dminfo, real0d_temp)
                      field_1dreal_ptr => field_cursor % real1dField
                      do while (associated(field_1dreal_ptr))
@@ -1927,14 +1927,14 @@ contains
                end if
             end do
 
-            if (.not. field_cursor % real1dField % isSuperArray) then
+            if (.not. field_cursor % real1dField % isVarArray) then
                deallocate(real1d_temp)
             end if
 
          else if (field_cursor % field_type == FIELD_2D_REAL) then
 
 !write(stderrUnit,*) 'DEBUGGING : *************** '//trim(field_cursor % real2dField % fieldName)
-            if (field_cursor % real2dField % isSuperArray) then
+            if (field_cursor % real2dField % isVarArray) then
                ncons = size(field_cursor % real2dField % constituentNames)
                allocate(real1d_temp(field_cursor % totalDimSize))
             else
@@ -1944,7 +1944,7 @@ contains
             end if
 
             do j=1,ncons
-               if (field_cursor % real2dField % isSuperArray) then
+               if (field_cursor % real2dField % isVarArray) then
                   if (.not. field_cursor % isAvailable(j)) cycle
                   call MPAS_io_get_var(stream % fileHandle, field_cursor % real2dField % constituentNames(j), real1d_temp, io_err)
                else
@@ -1953,7 +1953,7 @@ contains
                call MPAS_io_err_mesg(io_err, .false.)
                if (io_err /= MPAS_IO_NOERR) then
                    if (present(ierr)) ierr = MPAS_IO_ERR
-                   if (field_cursor % real2dField % isSuperArray) then
+                   if (field_cursor % real2dField % isVarArray) then
                       deallocate(real1d_temp)
                    else
                       deallocate(real2d_temp)
@@ -1976,7 +1976,7 @@ contains
                         ownedSize = field_2dreal_ptr % dimSizes(2)
                      end if
 
-                     if (field_cursor % real2dField % isSuperArray) then
+                     if (field_cursor % real2dField % isVarArray) then
                         field_2dreal_ptr % array(j,1:ownedSize) = real1d_temp(i:i+ownedSize-1)
                      else
                         field_2dreal_ptr % array(:,1:ownedSize) = real2d_temp(:,i:i+ownedSize-1)
@@ -1987,7 +1987,7 @@ contains
 
                else
    
-                  if (field_cursor % real2dField % isSuperArray) then
+                  if (field_cursor % real2dField % isVarArray) then
                      call mpas_dmpar_bcast_reals(field_cursor % real2dField % block % domain % dminfo, size(real1d_temp), real1d_temp(:))
                      field_2dreal_ptr => field_cursor % real2dField
                      do while (associated(field_2dreal_ptr))
@@ -2005,7 +2005,7 @@ contains
                end if
             end do
 
-            if (field_cursor % real2dField % isSuperArray) then
+            if (field_cursor % real2dField % isVarArray) then
                deallocate(real1d_temp)
             else
                deallocate(real2d_temp)
@@ -2015,8 +2015,8 @@ contains
 
 !write(stderrUnit,*) 'DEBUGGING : *************** '//trim(field_cursor % real3dField % fieldName)
 !write(stderrUnit,*) 'DEBUGGING : reading a 3d real array'
-            if (field_cursor % real3dField % isSuperArray) then
-!write(stderrUnit,*) 'DEBUGGING : reading a 3d real super-array'
+            if (field_cursor % real3dField % isVarArray) then
+!write(stderrUnit,*) 'DEBUGGING : reading a 3d real var-array'
                ncons = size(field_cursor % real3dField % constituentNames)
                allocate(real2d_temp(field_cursor % real3dField % dimSizes(2), &
                                     field_cursor % totalDimSize))
@@ -2028,7 +2028,7 @@ contains
             end if
 
             do j=1,ncons
-               if (field_cursor % real3dField % isSuperArray) then
+               if (field_cursor % real3dField % isVarArray) then
                   if (.not. field_cursor % isAvailable(j)) cycle
 !write(stderrUnit,*) 'DEBUGGING : calling get_var for a constitutent'
                   call MPAS_io_get_var(stream % fileHandle, field_cursor % real3dField % constituentNames(j), real2d_temp, io_err)
@@ -2038,7 +2038,7 @@ contains
                call MPAS_io_err_mesg(io_err, .false.)
                if (io_err /= MPAS_IO_NOERR) then
                    if (present(ierr)) ierr = MPAS_IO_ERR
-                   if (field_cursor % real3dField % isSuperArray) then
+                   if (field_cursor % real3dField % isVarArray) then
                       deallocate(real2d_temp)
                    else
                       deallocate(real3d_temp)
@@ -2061,7 +2061,7 @@ contains
                         ownedSize = field_3dreal_ptr % dimSizes(3)
                      end if
 
-                     if (field_cursor % real3dField % isSuperArray) then
+                     if (field_cursor % real3dField % isVarArray) then
 !write(stderrUnit,*) 'DEBUGGING : copying the temporary array'
                         field_3dreal_ptr % array(j,:,1:ownedSize) = real2d_temp(:,i:i+ownedSize-1)
                      else
@@ -2073,7 +2073,7 @@ contains
 
                else
    
-                  if (field_cursor % real3dField % isSuperArray) then
+                  if (field_cursor % real3dField % isVarArray) then
                      call mpas_dmpar_bcast_reals(field_cursor % real3dField % block % domain % dminfo, size(real2d_temp), real2d_temp(:,1))
                      field_3dreal_ptr => field_cursor % real3dField
                      do while (associated(field_3dreal_ptr))
@@ -2091,7 +2091,7 @@ contains
                end if
             end do
 
-            if (field_cursor % real3dField % isSuperArray) then
+            if (field_cursor % real3dField % isVarArray) then
                deallocate(real2d_temp)
             else
                deallocate(real3d_temp)
@@ -2100,8 +2100,8 @@ contains
 
 !write(stderrUnit,*) 'DEBUGGING : *************** '//trim(field_cursor % real3dField % fieldName)
 !write(stderrUnit,*) 'DEBUGGING : reading a 4d real array'
-            if (field_cursor % real4dField % isSuperArray) then
-!write(stderrUnit,*) 'DEBUGGING : reading a 4d real super-array'
+            if (field_cursor % real4dField % isVarArray) then
+!write(stderrUnit,*) 'DEBUGGING : reading a 4d real var-array'
                ncons = size(field_cursor % real4dField % constituentNames)
                allocate(real3d_temp(field_cursor % real4dField % dimSizes(2), &
                                     field_cursor % real4dField % dimSizes(3), &
@@ -2115,7 +2115,7 @@ contains
             end if
 
             do j=1,ncons
-               if (field_cursor % real4dField % isSuperArray) then
+               if (field_cursor % real4dField % isVarArray) then
                   if (.not. field_cursor % isAvailable(j)) cycle
 !write(stderrUnit,*) 'DEBUGGING : calling get_var for a constitutent'
                   call MPAS_io_get_var(stream % fileHandle, field_cursor % real4dField % constituentNames(j), real3d_temp, io_err)
@@ -2125,7 +2125,7 @@ contains
                call MPAS_io_err_mesg(io_err, .false.)
                if (io_err /= MPAS_IO_NOERR) then
                    if (present(ierr)) ierr = MPAS_IO_ERR
-                   if (field_cursor % real4dField % isSuperArray) then
+                   if (field_cursor % real4dField % isVarArray) then
                       deallocate(real3d_temp)
                    else
                       deallocate(real4d_temp)
@@ -2148,7 +2148,7 @@ contains
                         ownedSize = field_4dreal_ptr % dimSizes(4)
                      end if
 
-                     if (field_cursor % real4dField % isSuperArray) then
+                     if (field_cursor % real4dField % isVarArray) then
 !write(stderrUnit,*) 'DEBUGGING : copying the temporary array'
                         field_4dreal_ptr % array(j, :,:,1:ownedSize) = real3d_temp(:,:,i:i+ownedSize-1)
                      else
@@ -2160,7 +2160,7 @@ contains
 
                else
    
-                  if (field_cursor % real3dField % isSuperArray) then
+                  if (field_cursor % real3dField % isVarArray) then
                      call mpas_dmpar_bcast_reals(field_cursor % real4dField % block % domain % dminfo, size(real3d_temp), real3d_temp(:,1,1))
                      field_4dreal_ptr => field_cursor % real4dField
                      do while (associated(field_4dreal_ptr))
@@ -2178,7 +2178,7 @@ contains
                end if
             end do
 
-            if (field_cursor % real4dField % isSuperArray) then
+            if (field_cursor % real4dField % isVarArray) then
                deallocate(real3d_temp)
             else
                deallocate(real4d_temp)
@@ -2188,8 +2188,8 @@ contains
 
 !write(stderrUnit,*) 'DEBUGGING : *************** '//trim(field_cursor % real3dField % fieldName)
 !write(stderrUnit,*) 'DEBUGGING : reading a 4d real array'
-            if (field_cursor % real5dField % isSuperArray) then
-!write(stderrUnit,*) 'DEBUGGING : reading a 4d real super-array'
+            if (field_cursor % real5dField % isVarArray) then
+!write(stderrUnit,*) 'DEBUGGING : reading a 4d real var-array'
                ncons = size(field_cursor % real5dField % constituentNames)
                allocate(real4d_temp(field_cursor % real5dField % dimSizes(2), &
                                     field_cursor % real5dField % dimSizes(3), &
@@ -2205,7 +2205,7 @@ contains
             end if
 
             do j=1,ncons
-               if (field_cursor % real5dField % isSuperArray) then
+               if (field_cursor % real5dField % isVarArray) then
                   if (.not. field_cursor % isAvailable(j)) cycle
 !write(stderrUnit,*) 'DEBUGGING : calling get_var for a constitutent'
                   call MPAS_io_get_var(stream % fileHandle, field_cursor % real5dField % constituentNames(j), real4d_temp, io_err)
@@ -2215,7 +2215,7 @@ contains
                call MPAS_io_err_mesg(io_err, .false.)
                if (io_err /= MPAS_IO_NOERR) then
                    if (present(ierr)) ierr = MPAS_IO_ERR
-                   if (field_cursor % real5dField % isSuperArray) then
+                   if (field_cursor % real5dField % isVarArray) then
                       deallocate(real4d_temp)
                    else
                       deallocate(real5d_temp)
@@ -2238,7 +2238,7 @@ contains
                         ownedSize = field_5dreal_ptr % dimSizes(5)
                      end if
 
-                     if (field_cursor % real5dField % isSuperArray) then
+                     if (field_cursor % real5dField % isVarArray) then
 !write(stderrUnit,*) 'DEBUGGING : copying the temporary array'
                         field_5dreal_ptr % array(j,:,:,:,1:ownedSize) = real4d_temp(:,:,:,i:i+ownedSize-1)
                      else
@@ -2250,7 +2250,7 @@ contains
 
                else
    
-                  if (field_cursor % real5dField % isSuperArray) then
+                  if (field_cursor % real5dField % isVarArray) then
                      call mpas_dmpar_bcast_reals(field_cursor % real5dField % block % domain % dminfo, size(real4d_temp), real4d_temp(:,1,1,1))
                      field_5dreal_ptr => field_cursor % real5dField
                      do while (associated(field_5dreal_ptr))
@@ -2268,7 +2268,7 @@ contains
                end if
             end do
 
-            if (field_cursor % real5dField % isSuperArray) then
+            if (field_cursor % real5dField % isVarArray) then
                deallocate(real4d_temp)
             else
                deallocate(real5d_temp)
@@ -2385,7 +2385,7 @@ contains
 
          else if (field_cursor % field_type == FIELD_1D_INT) then
 
-            if (field_cursor % int1dField % isSuperArray) then
+            if (field_cursor % int1dField % isVarArray) then
                ncons = size(field_cursor % int1dField % constituentNames)
             else
                ncons = 1
@@ -2408,7 +2408,7 @@ contains
                         ownedSize = field_1dint_ptr % dimSizes(1)
                      end if
 
-                     if (field_cursor % int1dField % isSuperArray) then
+                     if (field_cursor % int1dField % isVarArray) then
 ! I suspect we will never hit this code, as it doesn't make sense, really
                         int0d_temp = field_1dint_ptr % array(j)
                      else
@@ -2418,14 +2418,14 @@ contains
                      field_1dint_ptr => field_1dint_ptr % next
                   end do
                else
-                  if (field_cursor % int1dField % isSuperArray) then
+                  if (field_cursor % int1dField % isVarArray) then
                      int0d_temp = field_cursor % int1dField % array(j)
                   else
                      int1d_temp(:) = field_cursor % int1dField % array(:)
                   end if
                end if
 
-               if (field_cursor % int1dField % isSuperArray) then
+               if (field_cursor % int1dField % isVarArray) then
                   call MPAS_io_put_var(stream % fileHandle, field_cursor % int1dField % constituentNames(j), int0d_temp, io_err)
                else
                   call MPAS_io_put_var(stream % fileHandle, field_cursor % int1dField % fieldName, int1d_temp, io_err)
@@ -2434,13 +2434,13 @@ contains
                if (io_err /= MPAS_IO_NOERR .and. present(ierr)) ierr = MPAS_IO_ERR
             end do
 
-            if (.not. field_cursor % int1dField % isSuperArray) then
+            if (.not. field_cursor % int1dField % isVarArray) then
                deallocate(int1d_temp)
             end if
 
          else if (field_cursor % field_type == FIELD_2D_INT) then
 
-            if (field_cursor % int2dField % isSuperArray) then
+            if (field_cursor % int2dField % isVarArray) then
                ncons = size(field_cursor % int2dField % constituentNames)
                allocate(int1d_temp(field_cursor % totalDimSize))
             else
@@ -2465,7 +2465,7 @@ contains
                         ownedSize = field_2dint_ptr % dimSizes(2)
                      end if
 
-                     if (field_cursor % int2dField % isSuperArray) then
+                     if (field_cursor % int2dField % isVarArray) then
                         int1d_temp(i:i+ownedSize-1) = field_2dint_ptr % array(j,1:ownedSize)
                      else
                         int2d_temp(:,i:i+ownedSize-1) = field_2dint_ptr % array(:,1:ownedSize)
@@ -2474,14 +2474,14 @@ contains
                      field_2dint_ptr => field_2dint_ptr % next
                   end do
                else
-                  if (field_cursor % int2dField % isSuperArray) then
+                  if (field_cursor % int2dField % isVarArray) then
                      int1d_temp(:) = field_cursor % int2dField % array(j,:)
                   else
                      int2d_temp(:,:) = field_cursor % int2dField % array(:,:)
                   end if
                end if
 
-               if (field_cursor % int2dField % isSuperArray) then
+               if (field_cursor % int2dField % isVarArray) then
                   call MPAS_io_put_var(stream % fileHandle, field_cursor % int2dField % constituentNames(j), int1d_temp, io_err)
                else
                   call MPAS_io_put_var(stream % fileHandle, field_cursor % int2dField % fieldName, int2d_temp, io_err)
@@ -2490,7 +2490,7 @@ contains
                if (io_err /= MPAS_IO_NOERR .and. present(ierr)) ierr = MPAS_IO_ERR
             end do
 
-            if (field_cursor % int2dField % isSuperArray) then
+            if (field_cursor % int2dField % isVarArray) then
                deallocate(int1d_temp)
             else
                deallocate(int2d_temp)
@@ -2498,7 +2498,7 @@ contains
 
          else if (field_cursor % field_type == FIELD_3D_INT) then
 
-            if (field_cursor % int3dField % isSuperArray) then
+            if (field_cursor % int3dField % isVarArray) then
                ncons = size(field_cursor % int3dField % constituentNames)
                allocate(int2d_temp(field_cursor % int3dField % dimSizes(2), &
                                    field_cursor % totalDimSize))
@@ -2525,7 +2525,7 @@ contains
                         ownedSize = field_3dint_ptr % dimSizes(3)
                      end if
 
-                     if (field_cursor % int3dField % isSuperArray) then
+                     if (field_cursor % int3dField % isVarArray) then
                         int2d_temp(:,i:i+ownedSize-1) = field_3dint_ptr % array(j,:,1:ownedSize)
                      else
                         int3d_temp(:,:,i:i+ownedSize-1) = field_3dint_ptr % array(:,:,1:ownedSize)
@@ -2534,14 +2534,14 @@ contains
                      field_3dint_ptr => field_3dint_ptr % next
                   end do
                else
-                  if (field_cursor % int3dField % isSuperArray) then
+                  if (field_cursor % int3dField % isVarArray) then
                      int2d_temp(:,:) = field_cursor % int3dField % array(j,:,:)
                   else
                      int3d_temp(:,:,:) = field_cursor % int3dField % array(:,:,:)
                   end if
                end if
 
-               if (field_cursor % int3dField % isSuperArray) then
+               if (field_cursor % int3dField % isVarArray) then
                   call MPAS_io_put_var(stream % fileHandle, field_cursor % int3dField % constituentNames(j), int2d_temp, io_err)
                else
                   call MPAS_io_put_var(stream % fileHandle, field_cursor % int3dField % fieldName, int3d_temp, io_err)
@@ -2550,7 +2550,7 @@ contains
                if (io_err /= MPAS_IO_NOERR .and. present(ierr)) ierr = MPAS_IO_ERR
             end do
 
-            if (field_cursor % int3dField % isSuperArray) then
+            if (field_cursor % int3dField % isVarArray) then
                deallocate(int2d_temp)
             else
                deallocate(int3d_temp)
@@ -2572,7 +2572,7 @@ contains
 
          else if (field_cursor % field_type == FIELD_1D_REAL) then
 
-            if (field_cursor % real1dField % isSuperArray) then
+            if (field_cursor % real1dField % isVarArray) then
                ncons = size(field_cursor % real1dField % constituentNames)
             else
                ncons = 1
@@ -2595,7 +2595,7 @@ contains
                         ownedSize = field_1dreal_ptr % dimSizes(1)
                      end if
 
-                     if (field_cursor % real1dField % isSuperArray) then
+                     if (field_cursor % real1dField % isVarArray) then
 ! I suspect we will never hit this code, as it doesn't make sense, really
                         real0d_temp = field_1dreal_ptr % array(j)
                      else
@@ -2605,14 +2605,14 @@ contains
                      field_1dreal_ptr => field_1dreal_ptr % next
                   end do
                else
-                  if (field_cursor % real1dField % isSuperArray) then
+                  if (field_cursor % real1dField % isVarArray) then
                      real0d_temp = field_cursor % real1dField % array(j)
                   else
                      real1d_temp(:) = field_cursor % real1dField % array(:)
                   end if
                end if
 
-               if (field_cursor % real1dField % isSuperArray) then
+               if (field_cursor % real1dField % isVarArray) then
                   call MPAS_io_put_var(stream % fileHandle, field_cursor % real1dField % constituentNames(j), real0d_temp, io_err)
                else
                   call MPAS_io_put_var(stream % fileHandle, field_cursor % real1dField % fieldName, real1d_temp, io_err)
@@ -2621,13 +2621,13 @@ contains
                if (io_err /= MPAS_IO_NOERR .and. present(ierr)) ierr = MPAS_IO_ERR
             end do
 
-            if (.not. field_cursor % real1dField % isSuperArray) then
+            if (.not. field_cursor % real1dField % isVarArray) then
                deallocate(real1d_temp)
             end if
 
          else if (field_cursor % field_type == FIELD_2D_REAL) then
 
-            if (field_cursor % real2dField % isSuperArray) then
+            if (field_cursor % real2dField % isVarArray) then
                ncons = size(field_cursor % real2dField % constituentNames)
                allocate(real1d_temp(field_cursor % totalDimSize))
             else
@@ -2652,7 +2652,7 @@ contains
                         ownedSize = field_2dreal_ptr % dimSizes(2)
                      end if
 
-                     if (field_cursor % real2dField % isSuperArray) then
+                     if (field_cursor % real2dField % isVarArray) then
                         real1d_temp(i:i+ownedSize-1) = field_2dreal_ptr % array(j,1:ownedSize)
                      else
                         real2d_temp(:,i:i+ownedSize-1) = field_2dreal_ptr % array(:,1:ownedSize)
@@ -2661,14 +2661,14 @@ contains
                      field_2dreal_ptr => field_2dreal_ptr % next
                   end do
                else
-                  if (field_cursor % real2dField % isSuperArray) then
+                  if (field_cursor % real2dField % isVarArray) then
                      real1d_temp(:) = field_cursor % real2dField % array(j,:)
                   else
                      real2d_temp(:,:) = field_cursor % real2dField % array(:,:)
                   end if
                end if
 
-               if (field_cursor % real2dField % isSuperArray) then
+               if (field_cursor % real2dField % isVarArray) then
                   call MPAS_io_put_var(stream % fileHandle, field_cursor % real2dField % constituentNames(j), real1d_temp, io_err)
                else
                   call MPAS_io_put_var(stream % fileHandle, field_cursor % real2dField % fieldName, real2d_temp, io_err)
@@ -2677,7 +2677,7 @@ contains
                if (io_err /= MPAS_IO_NOERR .and. present(ierr)) ierr = MPAS_IO_ERR
             end do
 
-            if (field_cursor % real2dField % isSuperArray) then
+            if (field_cursor % real2dField % isVarArray) then
                deallocate(real1d_temp)
             else
                deallocate(real2d_temp)
@@ -2685,7 +2685,7 @@ contains
 
          else if (field_cursor % field_type == FIELD_3D_REAL) then
 
-            if (field_cursor % real3dField % isSuperArray) then
+            if (field_cursor % real3dField % isVarArray) then
                ncons = size(field_cursor % real3dField % constituentNames)
                allocate(real2d_temp(field_cursor % real3dField % dimSizes(2), &
                                     field_cursor % totalDimSize))
@@ -2712,7 +2712,7 @@ contains
                         ownedSize = field_3dreal_ptr % dimSizes(3)
                      end if
 
-                     if (field_cursor % real3dField % isSuperArray) then
+                     if (field_cursor % real3dField % isVarArray) then
                         real2d_temp(:,i:i+ownedSize-1) = field_3dreal_ptr % array(j,:,1:ownedSize)
                      else
                         real3d_temp(:,:,i:i+ownedSize-1) = field_3dreal_ptr % array(:,:,1:ownedSize)
@@ -2721,14 +2721,14 @@ contains
                      field_3dreal_ptr => field_3dreal_ptr % next
                   end do
                else
-                  if (field_cursor % real3dField % isSuperArray) then
+                  if (field_cursor % real3dField % isVarArray) then
                      real2d_temp(:,:) = field_cursor % real3dField % array(j,:,:)
                   else
                      real3d_temp(:,:,:) = field_cursor % real3dField % array(:,:,:)
                   end if
                end if
 
-               if (field_cursor % real3dField % isSuperArray) then
+               if (field_cursor % real3dField % isVarArray) then
                   call MPAS_io_put_var(stream % fileHandle, field_cursor % real3dField % constituentNames(j), real2d_temp, io_err)
                else
                   call MPAS_io_put_var(stream % fileHandle, field_cursor % real3dField % fieldName, real3d_temp, io_err)
@@ -2737,7 +2737,7 @@ contains
                if (io_err /= MPAS_IO_NOERR .and. present(ierr)) ierr = MPAS_IO_ERR
             end do
 
-            if (field_cursor % real3dField % isSuperArray) then
+            if (field_cursor % real3dField % isVarArray) then
                deallocate(real2d_temp)
             else
                deallocate(real3d_temp)
@@ -2745,7 +2745,7 @@ contains
 
          else if (field_cursor % field_type == FIELD_4D_REAL) then
 
-            if (field_cursor % real4dField % isSuperArray) then
+            if (field_cursor % real4dField % isVarArray) then
                ncons = size(field_cursor % real4dField % constituentNames)
                allocate(real3d_temp(field_cursor % real4dField % dimSizes(2), &
                                     field_cursor % real4dField % dimSizes(3), &
@@ -2774,7 +2774,7 @@ contains
                         ownedSize = field_4dreal_ptr % dimSizes(4)
                      end if
 
-                     if (field_cursor % real4dField % isSuperArray) then
+                     if (field_cursor % real4dField % isVarArray) then
                         real3d_temp(:,:,i:i+ownedSize-1) = field_4dreal_ptr % array(j,:,:,1:ownedSize)
                      else
                         real4d_temp(:,:,:,i:i+ownedSize-1) = field_4dreal_ptr % array(:,:,:,1:ownedSize)
@@ -2783,14 +2783,14 @@ contains
                      field_4dreal_ptr => field_4dreal_ptr % next
                   end do
                else
-                  if (field_cursor % real4dField % isSuperArray) then
+                  if (field_cursor % real4dField % isVarArray) then
                      real3d_temp(:,:,:) = field_cursor % real4dField % array(j,:,:,:)
                   else
                      real4d_temp(:,:,:,:) = field_cursor % real4dField % array(:,:,:,:)
                   end if
                end if
 
-               if (field_cursor % real4dField % isSuperArray) then
+               if (field_cursor % real4dField % isVarArray) then
                   call MPAS_io_put_var(stream % fileHandle, field_cursor % real4dField % constituentNames(j), real3d_temp, io_err)
                else
                   call MPAS_io_put_var(stream % fileHandle, field_cursor % real4dField % fieldName, real4d_temp, io_err)
@@ -2799,7 +2799,7 @@ contains
                if (io_err /= MPAS_IO_NOERR .and. present(ierr)) ierr = MPAS_IO_ERR
             end do
 
-            if (field_cursor % real4dField % isSuperArray) then
+            if (field_cursor % real4dField % isVarArray) then
                deallocate(real3d_temp)
             else
                deallocate(real4d_temp)
@@ -2807,7 +2807,7 @@ contains
 
          else if (field_cursor % field_type == FIELD_5D_REAL) then
 
-            if (field_cursor % real5dField % isSuperArray) then
+            if (field_cursor % real5dField % isVarArray) then
                ncons = size(field_cursor % real5dField % constituentNames)
                allocate(real4d_temp(field_cursor % real5dField % dimSizes(2), &
                                     field_cursor % real5dField % dimSizes(3), &
@@ -2838,7 +2838,7 @@ contains
                         ownedSize = field_5dreal_ptr % dimSizes(5)
                      end if
 
-                     if (field_cursor % real5dField % isSuperArray) then
+                     if (field_cursor % real5dField % isVarArray) then
                         real4d_temp(:,:,:,i:i+ownedSize-1) = field_5dreal_ptr % array(j,:,:,:,1:ownedSize)
                      else
                         real5d_temp(:,:,:,:,i:i+ownedSize-1) = field_5dreal_ptr % array(:,:,:,:,1:ownedSize)
@@ -2847,14 +2847,14 @@ contains
                      field_5dreal_ptr => field_5dreal_ptr % next
                   end do
                else
-                  if (field_cursor % real5dField % isSuperArray) then
+                  if (field_cursor % real5dField % isVarArray) then
                      real4d_temp(:,:,:,:) = field_cursor % real5dField % array(j,:,:,:,:)
                   else
                      real5d_temp(:,:,:,:,:) = field_cursor % real5dField % array(:,:,:,:,:)
                   end if
                end if
 
-               if (field_cursor % real5dField % isSuperArray) then
+               if (field_cursor % real5dField % isVarArray) then
                   call MPAS_io_put_var(stream % fileHandle, field_cursor % real5dField % constituentNames(j), real4d_temp, io_err)
                else
                   call MPAS_io_put_var(stream % fileHandle, field_cursor % real5dField % fieldName, real5d_temp, io_err)
@@ -2863,7 +2863,7 @@ contains
                if (io_err /= MPAS_IO_NOERR .and. present(ierr)) ierr = MPAS_IO_ERR
             end do
 
-            if (field_cursor % real5dField % isSuperArray) then
+            if (field_cursor % real5dField % isVarArray) then
                deallocate(real4d_temp)
             else
                deallocate(real5d_temp)

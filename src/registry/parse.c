@@ -622,7 +622,7 @@ int parse_reg_xml(ezxml_t registry, struct namelist **nls, struct dimension ** d
 					snprintf(var_ptr->default_value, 1024, "%s", vararrdefaultval);
 				}
 
-				snprintf(var_ptr->super_array, 1024, "%s", vararrname);
+				snprintf(var_ptr->var_array, 1024, "%s", vararrname);
 				snprintf(var_ptr->array_class, 1024, "%s", vararrgroup);
 
 				NEW_VARIABLE(var_ptr->next);
@@ -737,7 +737,7 @@ int parse_reg_xml(ezxml_t registry, struct namelist **nls, struct dimension ** d
 				snprintf(var_ptr->name_in_code, 1024, "%s", varname_in_code);
 			}
 
-			snprintf(var_ptr->super_array, 1024, "-");
+			snprintf(var_ptr->var_array, 1024, "-");
 			snprintf(var_ptr->array_class, 1024, "-");
 
 			if(vardefaultval == NULL){
@@ -804,21 +804,21 @@ void sort_vars(struct variable * vars)
    struct variable * var_ptr;
    struct variable * var_ptr2;
    struct variable * var_ptr2_prev;
-   char super_array[1024];
+   char var_array[1024];
    char array_class[1024];
 
    var_ptr = vars;
 
 /* Attempt at sorting first on super-array, then on class in the same loop
    while (var_ptr) {
-      memcpy(super_array, var_ptr->super_array, 1024);
+      memcpy(var_array, var_ptr->var_array, 1024);
       memcpy(array_class, var_ptr->array_class, 1024);
       var_ptr2_prev = var_ptr;
       var_ptr2 = var_ptr->next;
       if (var_ptr2 && 
-          (strncmp(super_array, var_ptr2->super_array, 1024) != 0 || strncmp(array_class, var_ptr2->array_class, 1024) != 0)) {
+          (strncmp(var_array, var_ptr2->var_array, 1024) != 0 || strncmp(array_class, var_ptr2->array_class, 1024) != 0)) {
          while (var_ptr2) {
-            if (strncmp(super_array, var_ptr2->super_array, 1024) == 0 && strncmp(array_class, var_ptr2->array_class, 1024) == 0) {
+            if (strncmp(var_array, var_ptr2->var_array, 1024) == 0 && strncmp(array_class, var_ptr2->array_class, 1024) == 0) {
                var_ptr2_prev->next = var_ptr2->next;
                var_ptr2->next = var_ptr->next;
                var_ptr->next = var_ptr2;
@@ -835,12 +835,12 @@ void sort_vars(struct variable * vars)
 */
 
    while (var_ptr) {
-      memcpy(super_array, var_ptr->super_array, 1024);
+      memcpy(var_array, var_ptr->var_array, 1024);
       var_ptr2_prev = var_ptr;
       var_ptr2 = var_ptr->next;
-      if (var_ptr2 && strncmp(super_array, var_ptr2->super_array, 1024) != 0) {
+      if (var_ptr2 && strncmp(var_array, var_ptr2->var_array, 1024) != 0) {
          while (var_ptr2) {
-            if (strncmp(super_array, var_ptr2->super_array, 1024) == 0) {
+            if (strncmp(var_array, var_ptr2->var_array, 1024) == 0) {
                var_ptr2_prev->next = var_ptr2->next;
                var_ptr2->next = var_ptr->next;
                var_ptr->next = var_ptr2;
@@ -887,7 +887,7 @@ void sort_group_vars(struct group_list * groups)
    struct variable_list * var_ptr2;
    struct variable_list * var_ptr2_prev;
    struct group_list * group_ptr;
-   char super_array[1024];
+   char var_array[1024];
    char array_class[1024];
 
    group_ptr = groups;
@@ -897,12 +897,12 @@ void sort_group_vars(struct group_list * groups)
       var_ptr = group_ptr->vlist;
    
       while (var_ptr) {
-         memcpy(super_array, var_ptr->var->super_array, 1024);
+         memcpy(var_array, var_ptr->var->var_array, 1024);
          var_ptr2_prev = var_ptr;
          var_ptr2 = var_ptr->next;
-         if (var_ptr2 != NULL && strncmp(super_array, var_ptr2->var->super_array, 1024) != 0) {
+         if (var_ptr2 != NULL && strncmp(var_array, var_ptr2->var->var_array, 1024) != 0) {
             while (var_ptr2) {
-               if (strncmp(super_array, var_ptr2->var->super_array, 1024) == 0) {
+               if (strncmp(var_array, var_ptr2->var->var_array, 1024) == 0) {
                   var_ptr2_prev->next = var_ptr2->next;
                   var_ptr2->next = var_ptr->next;
                   var_ptr->next = var_ptr2;

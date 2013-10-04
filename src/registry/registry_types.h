@@ -64,6 +64,7 @@ struct group_list {
    char name[1024];
    struct variable_list * vlist; 
    struct group_list * next; 
+   int persistence;
    int ntime_levs;
 };
 
@@ -71,7 +72,7 @@ struct variable {
    char name_in_file[1024];
    char name_in_code[1024];
    char struct_group[1024];
-   char super_array[1024];
+   char var_array[1024];
    char array_class[1024];
    char default_value[1024];
    int persistence;
