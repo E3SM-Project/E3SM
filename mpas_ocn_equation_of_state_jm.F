@@ -23,6 +23,7 @@ module ocn_equation_of_state_jm
    use mpas_kind_types
    use mpas_grid_types
    use mpas_configure
+   use mpas_dmpar
 
    implicit none
    private
