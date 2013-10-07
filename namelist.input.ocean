@@ -9,8 +9,8 @@
 	config_input_name = "grid.nc"
 	config_output_name = "output.nc"
 	config_restart_name = "restart.nc"
+	config_restart_timestamp_name = "restart_timestamp"
 	config_restart_interval = "0001_00:00:00"
-	config_restart_timestamp_filename = "restart_timestamp"
 	config_output_interval = "0001_00:00:00"
 	config_stats_interval = "0000_01:00:00"
 	config_write_stats_on_startup = .true.
@@ -64,16 +64,18 @@
 	config_tracer_del2 = 10.0
 /
 &hmix_del2_tensor
-	config_use_mom_del2_tensor = .true.
-	config_use_tracer_del2_tensor = .false.
+	config_use_mom_del2_tensor = .false.
 	config_mom_del2_tensor = 10.0
-	config_tracer_del2_tensor = 10.0
 /
 &hmix_del4
 	config_use_mom_del4 = .false.
 	config_use_tracer_del4 = .false.
 	config_mom_del4 = 5.0e13
 	config_tracer_del4 = 0.0
+/
+&hmix_del4_tensor
+	config_use_mom_del4_tensor = .false.
+	config_mom_del4_tensor = 5.0e13
 /
 &hmix_Leith
 	config_use_Leith_del2 = .false.
@@ -161,6 +163,10 @@
 	config_btr_gam2_SSHWt1 = 1.0
 	config_btr_gam3_velWt2 = 1.0
 	config_btr_solve_SSH2 = .false.
+/
+&testing
+	config_test_tensors = .false.
+	config_tensor_test_function = "sin_arb_rot"
 /
 &debug
 	config_check_zlevel_consistency = .false.

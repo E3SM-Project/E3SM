@@ -31,6 +31,7 @@ module mpas_core
    use ocn_time_integration
    use ocn_tendency
    use ocn_diagnostics
+   use ocn_test
 
    use ocn_thick_hadv
    use ocn_thick_vadv
@@ -214,9 +215,7 @@ module mpas_core
          block => block % next
       end do
 
-      ! mrp added just to test stress tensor ops:
-      ! call mpas_prep_test_tensor(domain)
-      ! mrp added just to test stress tensor ops end
+      call ocn_test_init(domain,err)
 
       if (config_write_stats_on_startup) then
           call mpas_timer_start("global diagnostics", .false., globalDiagTimer)
@@ -362,15 +361,16 @@ module mpas_core
       call mpas_initialize_tangent_vectors(mesh, mesh % edgeTangentVectors % array)
 
 ! mrp for testing of del2 operators only.  Initialize normalVelocity
+!!!!!!!!!!!!!!!!!!!!!!!! remove before pushing to develop !!!!!!!!!!!!!1
            ! normal component at edge: take dot products with unit vectors at edge
 !           normalVectorEdge(k,iEdge) = sum(vectorR3Edge(:)*edgeNormalVectors(:,iEdge))
 !           tangentialVectorEdge(k,iEdge) = sum(vectorR3Edge(:)*edgeTangentVectors(:,iEdge))
 
-     do iEdge=1,block % mesh % nEdges
+!     do iEdge=1,block % mesh % nEdges
           ! constant
-          block % state % time_levs(1) % state % normalVelocity % array(:,iEdge) = &
-             1.0 * mesh % edgeNormalVectors % array(1,iEdge) &  ! 1 in x direction
-           + 0.0 * mesh % edgeNormalVectors % array(2,iEdge)   ! 0 in y direction
+!          block % state % time_levs(1) % state % normalVelocity % array(:,iEdge) = &
+!             1.0 * mesh % edgeNormalVectors % array(1,iEdge) &  ! 1 in x direction
+!           + 0.0 * mesh % edgeNormalVectors % array(2,iEdge)   ! 0 in y direction
 
           ! linear
 !          block % state % time_levs(1) % state % normalVelocity % array(:,iEdge) = &
@@ -382,7 +382,7 @@ module mpas_core
 !             0.5*(1-cos(mesh % yEdge % array(iEdge)/500.0e3*2*pii)) * mesh % edgeNormalVectors % array(1,iEdge) &  ! sin y in x direction
 !           + 0.0 * mesh % edgeNormalVectors % array(2,iEdge)   ! 0 in y direction
 
-     enddo
+!     enddo
 ! mrp for testing of del2 operators only.  Initialize normalVelocity end
 
       call mpas_init_reconstruct(mesh)
@@ -1222,71 +1222,6 @@ end subroutine ocn_compute_max_level!}}}
        end do
 
    end subroutine ocn_setup_sign_and_index_fields!}}}
-
-!***********************************************************************
-!
-!  routine mpas_prep_test_tensor
-!
-!> \brief   set up scratch variables to test strain rate and tensor divergence operators
-!> \author  Mark Petersen
-!> \date    May 2013
-!> \details 
-!>  This routine sets up scratch variables to test strain rate and tensor divergence operators.
-!
-!-----------------------------------------------------------------------
-
-   subroutine mpas_prep_test_tensor(domain)!{{{
-
-      !-----------------------------------------------------------------
-      !
-      ! input/output variables
-      !
-      !-----------------------------------------------------------------
-
-      type (domain_type), intent(inout) :: domain
-
-      call mpas_allocate_scratch_field(domain % blocklist % scratch % strainRateR3Cell, .false.)
-      call mpas_allocate_scratch_field(domain % blocklist % scratch % strainRateR3CellSolution, .false.)
-      call mpas_allocate_scratch_field(domain % blocklist % scratch % strainRateR3Edge, .false.)
-      call mpas_allocate_scratch_field(domain % blocklist % scratch % strainRateLonLatRCell, .false.)
-      call mpas_allocate_scratch_field(domain % blocklist % scratch % strainRateLonLatRCellSolution, .false.)
-      call mpas_allocate_scratch_field(domain % blocklist % scratch % strainRateLonLatREdge, .false.)
-      call mpas_allocate_scratch_field(domain % blocklist % scratch % divTensorR3Cell, .false.)
-      call mpas_allocate_scratch_field(domain % blocklist % scratch % divTensorR3CellSolution, .false.)
-      call mpas_allocate_scratch_field(domain % blocklist % scratch % divTensorLonLatRCell, .false.)
-      call mpas_allocate_scratch_field(domain % blocklist % scratch % divTensorLonLatRCellSolution, .false.)
-      call mpas_allocate_scratch_field(domain % blocklist % scratch % outerProductEdge, .false.)
-
-      call mpas_test_tensor(domain, config_tensor_test_function, &
-         domain % blocklist % mesh % edgeSignOnCell, &
-         domain % blocklist % mesh % edgeTangentVectors, &
-         domain % blocklist % state % time_levs(1) % state % normalVelocity, &
-         domain % blocklist % diagnostics % tangentialVelocity, &
-         domain % blocklist % scratch % strainRateR3Cell, &
-         domain % blocklist % scratch % strainRateR3CellSolution, &
-         domain % blocklist % scratch % strainRateR3Edge, &
-         domain % blocklist % scratch % strainRateLonLatRCell, &
-         domain % blocklist % scratch % strainRateLonLatRCellSolution, &
-         domain % blocklist % scratch % strainRateLonLatREdge, &
-         domain % blocklist % scratch % divTensorR3Cell, &
-         domain % blocklist % scratch % divTensorR3CellSolution, &
-         domain % blocklist % scratch % divTensorLonLatRCell, &
-         domain % blocklist % scratch % divTensorLonLatRCellSolution, &
-         domain % blocklist % scratch % outerProductEdge )
-
-      call mpas_deallocate_scratch_field(domain % blocklist % scratch % strainRateR3Cell, .false.)
-      call mpas_deallocate_scratch_field(domain % blocklist % scratch % strainRateR3CellSolution, .false.)
-      call mpas_deallocate_scratch_field(domain % blocklist % scratch % strainRateR3Edge, .false.)
-      call mpas_deallocate_scratch_field(domain % blocklist % scratch % strainRateLonLatRCell, .false.)
-      call mpas_deallocate_scratch_field(domain % blocklist % scratch % strainRateLonLatRCellSolution, .false.)
-      call mpas_deallocate_scratch_field(domain % blocklist % scratch % strainRateLonLatREdge, .false.)
-      call mpas_deallocate_scratch_field(domain % blocklist % scratch % divTensorR3Cell, .false.)
-      call mpas_deallocate_scratch_field(domain % blocklist % scratch % divTensorR3CellSolution, .false.)
-      call mpas_deallocate_scratch_field(domain % blocklist % scratch % divTensorLonLatRCell, .false.)
-      call mpas_deallocate_scratch_field(domain % blocklist % scratch % divTensorLonLatRCellSolution, .false.)
-      call mpas_deallocate_scratch_field(domain % blocklist % scratch % outerProductEdge, .false.)
-
-   end subroutine mpas_prep_test_tensor!}}}
 
 end module mpas_core
 
