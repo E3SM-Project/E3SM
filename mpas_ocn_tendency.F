@@ -239,7 +239,7 @@ contains
 ! mrp original
 !      call ocn_vel_hmix_tend(mesh, divergence, relativeVorticity, normalVelocity, tangentialVelocity, viscosity, tend_normalVelocity, err)
       call ocn_vel_hmix_tend(mesh, divergence, relativeVorticity, normalVelocity, tangentialVelocity, viscosity, &
-         viscosity, diagnostics % del2_tend_diagnostic % array, diagnostics % del2_tensor_tend_diagnostic % array, &
+         diagnostics % del2_tend_diagnostic % array, diagnostics % del2_tensor_tend_diagnostic % array, &
          tend_normalVelocity, scratch, err)
       call mpas_timer_stop("hmix", velHmixTimer)
 
