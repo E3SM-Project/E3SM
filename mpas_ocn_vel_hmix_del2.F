@@ -263,7 +263,7 @@ contains
 
       err = 0
 
-      if(.not.config_use_mom_del2_tensor) return
+      if (.not.config_use_mom_del2_tensor) return
 
       nEdges = grid % nEdges
       nVertLevels = grid % nVertLevels

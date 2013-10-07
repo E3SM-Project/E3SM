@@ -251,7 +251,7 @@
 		/>
 	</nml_record>
 	<nml_record name="hmix_del2_tensor">
-		<nml_option name="config_use_mom_del2_tensor" type="logical" default_value=".true." units="unitless"
+		<nml_option name="config_use_mom_del2_tensor" type="logical" default_value=".false." units="unitless"
 		            description="If true, tensor-based Laplacian horizontal mixing is used on the momentum equation."
 		            possible_values=".true. or .false."
 		/>
@@ -475,7 +475,7 @@
 		/>
 		<nml_option name="config_flux_attenuation_coefficient" type="real" default_value="0.001" units="m"
 					description="Coefficient used to determine transmission of surface fluxes. Fluxes are defined with $e^{z/\gamma}$ where this coefficient is $\gamma$."
-					possible_values="Any real number $0.0 < \gamma <= 1.0$"
+					possible_values="Any real number $\gamma>0.0$ and $\gamma \le 1.0$."
 		/>
 		<nml_option name="config_frazil_ice_formation" type="logical" default_value=".true." units="unitless"
 					description="Logical flag that determines if the formation of frazil ice is allowed."
@@ -598,6 +598,16 @@
 					possible_values=".true. or .false."
 		/>
 	</nml_record>
+	<nml_record name="testing">
+		<nml_option name="config_test_tensors" type="logical" default_value=".false." units="unitless"
+		            description="If true, tensor operations are tested upon start-up."
+		            possible_values=".true. or .false."
+		/>
+		<nml_option name="config_tensor_test_function" type="character" default_value="sin_arb_rot" units="unitless"
+		            description="Character string to choose tensor test fuction"
+		            possible_values="'constant', 'linear_x', 'linear_y', 'linear_arb_rot', 'sin_arb_rot', 'power_x', 'power_y', 'power_arb_rot', 'spherical_sinx', 'spherical_u1', 'spherical_v1', 'spherical_solid', 'spherical'"
+		/>
+	</nml_record>
 	<nml_record name="debug">
 		<nml_option name="config_check_zlevel_consistency" type="logical" default_value=".false." units="unitless"
 					description="Enables a run-time check for consistency for a zlevel grid. Ensures relevant variables correctly define the bottom of the ocean."
@@ -678,12 +688,6 @@
 		<nml_option name="config_disable_tr_vmix" type="logical" default_value=".false." units="unitless"
 					description="Disables tendencies on tracer fields from vertical mixing."
 					possible_values=".true. or .false."
-		/>
-	</nml_record>
-	<nml_record name="tensors">
-		<nml_option name="config_tensor_test_function" type="character" default_value="'sin_arb_rot'" units="unitless"
-		            description="Character string to choose tensor test fuction"
-		            possible_values="'constant', 'linear_x', 'linear_y', 'linear_arb_rot', 'sin_arb_rot', 'power_x', 'power_y', 'power_arb_rot', 'spherical_sinx', 'spherical_u1', 'spherical_v1', 'spherical_solid', 'spherical'"
 		/>
 	</nml_record>
 	<var_struct name="state" time_levs="2">

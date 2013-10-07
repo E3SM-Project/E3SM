@@ -255,8 +255,8 @@ print '(a,100es12.2)','del2_tensor_tend_diagnostic min,max',minval(diagnostics %
       call ocn_vel_forcing_tend(mesh, normalVelocity, normalVelocityForcing, layerThicknessEdge, tend_normalVelocity, err)
       call mpas_timer_stop("forcings", velForceTimer)
 
-! mrp testing only
-      tend_normalVelocity(:,:) = 0.0
+! mrp testing only !!!!!!!!!!!!!! REMOVE FOR PULL REQUEST
+!      tend_normalVelocity(:,:) = 0.0
 
       !
       ! velocity tendency: vertical mixing d/dz( nu_v du/dz))
