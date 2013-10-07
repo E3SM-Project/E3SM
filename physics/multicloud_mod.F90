@@ -53,9 +53,11 @@ module multicloud_mod
 
 contains
 
-  subroutine Multicloud_Init()
+  subroutine Multicloud_Init(par)
 
-    call Prim_Advance_Multicloud_init()
+    use parallel_mod, only : parallel_t
+    type(parallel_t) :: par
+    call Prim_Advance_Multicloud_init(par)
 
   end subroutine Multicloud_Init
 
@@ -333,19 +335,25 @@ contains
 
   ! PRIVATE
 
-  subroutine Prim_Advance_Multicloud_Init()
+  subroutine Prim_Advance_Multicloud_Init(par)
 
-    call initEdgeBuffer(edgeMc,2)
-    call Diffusion_Multicloud_init()
+    use parallel_mod, only : parallel_t
+    type(parallel_t) :: par
+
+    call initEdgeBuffer(par,edgeMc,2)
+    call Diffusion_Multicloud_init(par)
 
   end subroutine Prim_Advance_Multicloud_Init
 
-  subroutine diffusion_Multicloud_init()
+  subroutine diffusion_Multicloud_init(par)
 
-       call initEdgeBuffer(edgeS1,2)
-       call initEdgeBuffer(edgeS2,4)
-       call initEdgeBuffer(edge3, 6)
-       call initEdgeBuffer(edge4, 8)
+    use parallel_mod, only : parallel_t
+    type(parallel_t) :: par
+
+       call initEdgeBuffer(par,edgeS1,2)
+       call initEdgeBuffer(par,edgeS2,4)
+       call initEdgeBuffer(par,edge3, 6)
+       call initEdgeBuffer(par,edge4, 8)
 
   end subroutine diffusion_Multicloud_init
 

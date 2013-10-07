@@ -667,7 +667,7 @@ subroutine fvm_init1(par)
 
   call initghostbufferTR(cellghostbuf,nlev,ntrac,nhc,nc) !+1 for the air_density, which comes from SE
   
-  call initEdgebuffer(edgeveloc,2*nlev)
+  call initEdgebuffer(par,edgeveloc,2*nlev)
 end subroutine fvm_init1
 
 

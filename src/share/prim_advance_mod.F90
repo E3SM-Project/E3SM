@@ -10,7 +10,7 @@ module prim_advance_mod
   use edge_mod, only : EdgeBuffer_t
   use kinds, only : real_kind, iulog
   use perf_mod, only: t_startf, t_stopf, t_barrierf ! _EXTERNAL
-  use parallel_mod, only : abortmp
+  use parallel_mod, only : abortmp, parallel_t
   implicit none
   private
   save
@@ -28,23 +28,24 @@ module prim_advance_mod
 
 contains
 
-  subroutine prim_advance_init(integration)
+  subroutine prim_advance_init(par,integration)
     use edge_mod, only : initEdgeBuffer
     use dimensions_mod, only : nlev
     use control_mod, only : qsplit,rsplit
+    type(parallel_t) :: par
     character(len=*)    , intent(in) :: integration
     integer :: i
 
     if (rsplit==0) then
-       call initEdgeBuffer(edge3p1,3*nlev+1)
+       call initEdgeBuffer(par,edge3p1,3*nlev+1)
     else
        ! need extra buffer space for dp3d
-       call initEdgeBuffer(edge3p1,4*nlev+1)
+       call initEdgeBuffer(par,edge3p1,4*nlev+1)
     endif
 
     if(integration == 'semi_imp') then
-       call initEdgeBuffer(edge1,nlev)
-       call initEdgeBuffer(edge2,2*nlev)
+       call initEdgeBuffer(par,edge1,nlev)
+       call initEdgeBuffer(par,edge2,2*nlev)
     end if
 
     ! compute averaging weights for RK+LF (tstep_type=1) timestepping:

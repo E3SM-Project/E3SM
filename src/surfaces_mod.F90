@@ -101,12 +101,14 @@ contains
     vol => cvlist(elemid)%vol
 
   end function GetVolumeLocal
-  subroutine InitControlVolumesData(nelemd)
+  subroutine InitControlVolumesData(par,nelemd)
     use edge_mod, only :   initedgebuffer, initGhostBuffer3d
+    use parallel_mod, only : parallel_t
+    type(parallel_t) :: par
     integer, intent(in) :: nelemd
     ! Cannot be done in a threaded region
     allocate(cvlist(nelemd))
-    call initedgebuffer(edge1,3)
+    call initedgebuffer(par,edge1,3)
     call initGhostBuffer3d(ghost_buf, 3, np+1, 1)
   end subroutine InitControlVolumesData
 

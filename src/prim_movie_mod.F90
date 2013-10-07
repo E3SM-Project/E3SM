@@ -287,7 +287,7 @@ contains
             (nf_selectedvar('cv_lon', output_varnames)) ) then
           if (.not. allocated(cvlist)) then
              if (par%masterproc) print *,'computing GLL dual grid for  control volumes:'
-             call InitControlVolumesData(nelemd)
+             call InitControlVolumesData(par,nelemd)
              ! single thread
              hybrid = hybrid_create(par,0,1)
              call InitControlVolumes(elem,hybrid,1,nelemd)

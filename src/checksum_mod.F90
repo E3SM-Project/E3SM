@@ -29,7 +29,8 @@ contains
          edgedgvunpack, edgebuffer_t
     use bndry_mod, only : bndry_exchangev
     use kinds, only : real_kind
-    use schedule_mod, only : schedule_t, schedule, checkschedule
+    use schedtype_mod, only : schedule_t, schedule
+    use schedule_mod, only : checkschedule
     use dimensions_mod, only : np, nlev, nelem, nelemd
 
     implicit none
@@ -107,7 +108,7 @@ contains
     !  Allocate the communication Buffers
     !=======================================
 
-    call initEdgeBuffer(buffer,nlev)
+    call initEdgeBuffer(par,buffer,nlev)
 
     !=======================================
     !  Synch everybody up

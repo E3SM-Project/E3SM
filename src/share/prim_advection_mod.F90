@@ -78,7 +78,7 @@ module vertremap_mod
   use fvm_control_volume_mod, only : fvm_struct
   use spelt_mod, only              : spelt_struct
   use perf_mod, only               : t_startf, t_stopf  ! _EXTERNAL
-  use parallel_mod, only           : abortmp
+  use parallel_mod, only           : abortmp, parallel_t
   use control_mod, only : vert_remap_q_alg
 
   public remap1                  ! remap any field, splines, monotone
@@ -880,8 +880,10 @@ module prim_advection_mod
 
 contains
 
-  subroutine Prim_Advec_Init()
+  subroutine Prim_Advec_Init(par)
     use dimensions_mod, only : nlev, qsize, nelemd
+    use parallel_mod, only : parallel_t
+    type(parallel_t) :: par
 
     ! Shared buffer pointers.
     ! Using "=> null()" in a subroutine is usually bad, because it makes
@@ -894,15 +896,15 @@ contains
     ! allocate largest one first
     ! Currently this is never freed. If it was, only this first one should
     ! be freed, as only it knows the true size of the buffer.
-    call initEdgeBuffer(edgeAdvQ3,max(nlev,qsize*nlev*3), buf_ptr, receive_ptr)  ! Qtens,Qmin, Qmax
+    call initEdgeBuffer(par,edgeAdvQ3,max(nlev,qsize*nlev*3), buf_ptr, receive_ptr)  ! Qtens,Qmin, Qmax
 
     ! remaining edge buffers can share %buf and %receive with edgeAdvQ3
     ! (This is done through the optional 1D pointer arguments.)
-    call initEdgeBuffer(edgeAdv1,nlev,buf_ptr,receive_ptr)
-    call initEdgeBuffer(edgeAdv,qsize*nlev,buf_ptr,receive_ptr)
-    call initEdgeBuffer(edgeAdv_p1,qsize*nlev + nlev,buf_ptr,receive_ptr)
-    call initEdgeBuffer(edgeAdvQ2,qsize*nlev*2,buf_ptr,receive_ptr)  ! Qtens,Qmin, Qmax
-    call initEdgeBuffer(edgeveloc,2*nlev)
+    call initEdgeBuffer(par,edgeAdv1,nlev,buf_ptr,receive_ptr)
+    call initEdgeBuffer(par,edgeAdv,qsize*nlev,buf_ptr,receive_ptr)
+    call initEdgeBuffer(par,edgeAdv_p1,qsize*nlev + nlev,buf_ptr,receive_ptr)
+    call initEdgeBuffer(par,edgeAdvQ2,qsize*nlev*2,buf_ptr,receive_ptr)  ! Qtens,Qmin, Qmax
+    call initEdgeBuffer(par,edgeveloc,2*nlev)
 
     ! Don't actually want these saved, if this is ever called twice.
     nullify(buf_ptr)

@@ -53,7 +53,9 @@ contains
     ! --------------------------------
     use gridgraph_mod, only : gridvertex_t, gridedge_t, PrintGridEdge, PrintGridVertex, allocate_gridvertex_nbrs
     ! --------------------------------
-    use schedule_mod, only : schedule, genEdgeSched
+    use schedule_mod, only : genEdgeSched
+    ! --------------------------------
+    use schedtype_mod, only : schedule
     ! --------------------------------
     use state_mod, only : printstate_init
     ! --------------------------------
@@ -364,13 +366,13 @@ contains
     ! Initialize shared boundary_exchange and reduction buffers
     ! =================================================================
 
-    call initEdgeBuffer(edge1,nlev)
+    call initEdgeBuffer(par,edge1,nlev)
 #ifdef _PRIMDG
-    call initEdgeBuffer(edge2,4*nlev)
-    call initEdgeBuffer(edge3,11*nlev)
+    call initEdgeBuffer(par,edge2,4*nlev)
+    call initEdgeBuffer(par,edge3,11*nlev)
 #else
-    call initEdgeBuffer(edge2,2*nlev)
-    call initEdgeBuffer(edge3,11*nlev)
+    call initEdgeBuffer(par,edge2,2*nlev)
+    call initEdgeBuffer(par,edge3,11*nlev)
 #endif
     allocate(global_shared_buf(nelemd,nrepro_vars))
     call InitReductionBuffer(red,3*nlev,nthreads)

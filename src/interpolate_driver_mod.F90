@@ -515,8 +515,8 @@ contains
     ncnt_in = sum(elem(1:nelemd)%idxp%numUniquePts)
     ncnt_out = sum(interpdata(1:nelemd)%n_interp)
 
-!    call initedgebuffer(edge,2*nlev)
-    call initedgebuffer(edge,4*nlev)
+!    call initedgebuffer(par,edge,2*nlev)
+    call initedgebuffer(par,edge,4*nlev)
 
 
     VARLOOP: do i=nvars,1,-1
