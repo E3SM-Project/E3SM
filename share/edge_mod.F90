@@ -2,14 +2,20 @@
 #include "config.h"
 #endif
 
+#undef MPI_PERSISTENT 
+
 module edge_mod
   use kinds, only : int_kind, log_kind, real_kind
   use dimensions_mod, only : max_neigh_edges, nelemd
   use perf_mod, only: t_startf, t_stopf ! _EXTERNAL
-  use parallel_mod, only : haltmp
   use thread_mod, only: omp_get_num_threads, omp_get_thread_num
-  use parallel_mod,   only : abortmp
   use coordinate_systems_mod, only : cartesian3D_t
+#ifdef MPI_PERSISTENT
+  use parallel_mod, only : abortmp, haltmp, MPIreal_t, iam,parallel_t
+  use schedtype_mod, only : cycle_t, schedule_t, schedule
+#else
+  use parallel_mod,   only : abortmp, haltmp, parallel_t
+#endif
 
 
 
@@ -46,6 +52,10 @@ module edge_mod
      real (kind=real_kind), dimension(:,:), pointer :: receive => null()
      integer :: nlyr ! Number of layers
      integer :: nbuf ! size of the horizontal dimension of the buffers.
+#ifdef MPI_PERSISTENT
+     integer, public, pointer :: Rrequest(:)
+     integer, public, pointer :: Srequest(:)
+#endif
   end type EdgeBuffer_t
 
   type, public :: LongEdgeBuffer_t
@@ -206,9 +216,10 @@ contains
   !
   ! create an Real based communication buffer
   ! =========================================
-  subroutine initEdgeBuffer(edge,nlyr, buf_ptr,receive_ptr)
+  subroutine initEdgeBuffer(par,edge,nlyr, buf_ptr,receive_ptr)
     use dimensions_mod, only : np, nelemd, max_corner_elem
     implicit none
+    type (parallel_t), intent(in) :: par
     integer,intent(in)                :: nlyr
     type (EdgeBuffer_t),intent(out), target :: edge
     real(kind=real_kind), optional, pointer :: buf_ptr(:), receive_ptr(:)
@@ -236,6 +247,13 @@ contains
 
     ! Local variables
     integer :: nbuf,ith
+#ifdef MPI_PERSISTENT
+    integer :: nSendCycles, nRecvCycles
+    integer :: icycle, ierr
+    type (Cycle_t), pointer :: pCycle
+    type (Schedule_t), pointer :: pSchedule
+    integer :: dest, source, length, tag, iptr
+#endif
 
     nbuf=4*(np+max_corner_elem)*nelemd
     edge%nlyr=nlyr
@@ -287,6 +305,36 @@ contains
     endif
     edge%buf    (:,:)=0.0D0
     edge%receive(:,:)=0.0D0
+
+#ifdef MPI_PERSISTENT
+
+    pSchedule => Schedule(1)
+    nSendCycles = pSchedule%nSendCycles
+    nRecvCycles = pSchedule%nRecvCycles
+!    print *,'iam: ',iam, ' nSendCycles: ',nSendCycles, ' nRecvCycles: ',
+!    nRecvCycles
+    allocate(edge%Rrequest(nRecvCycles))
+    allocate(edge%Srequest(nSendCycles))
+    do icycle=1,nSendCycles
+       pCycle => pSchedule%SendCycle(icycle)
+       dest   = pCycle%dest -1
+       length = nlyr * pCycle%lengthP
+       tag    = pCycle%tag
+       iptr   = pCycle%ptrP
+!       print *,'IAM: ',iam, ' length: ',length,' dest: ',dest,' tag: ',tag
+       call MPI_Send_init(edge%buf(1,iptr),length,MPIreal_t,dest,tag,par%comm, edge%Srequest(icycle),ierr)
+    enddo
+    do icycle=1,nRecvCycles
+       pCycle => pSchedule%RecvCycle(icycle)
+       source   = pCycle%source -1
+       length = nlyr * pCycle%lengthP
+       tag    = pCycle%tag
+       iptr   = pCycle%ptrP
+!       print *,'IAM: ',iam, 'length: ',length,' dest: ',source,' tag: ',tag
+       call MPI_Recv_init(edge%receive(1,iptr),length,MPIreal_t,source,tag,par%comm, edge%Rrequest(icycle),ierr)
+    enddo
+#endif
+
 #if (! defined ELEMENT_OPENMP)
 !$OMP END MASTER
 #endif

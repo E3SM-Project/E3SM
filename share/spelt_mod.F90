@@ -1941,7 +1941,7 @@ subroutine spelt_init1(par)
   call initghostbufferTR(cellghostbuf,nlev,ntrac,nipm,nep)
   ! use the tracer entry, have R plus and R minus factor (for positivity on only one)
   call initghostbufferTR(factorR,2*nlev,ntrac,nhe,nc)
-  call initEdgebuffer(edgeveloc,2*nlev)
+  call initEdgebuffer(par,edgeveloc,2*nlev)
 end subroutine spelt_init1
 
 ! initialization that can be done in threaded regions

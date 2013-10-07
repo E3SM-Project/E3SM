@@ -479,7 +479,7 @@ real (kind=real_kind), dimension(np,np,nlev,nets:nete) :: zeta
 integer :: k,i,j,ie,ic,kptr
 
 
-call initEdgeBuffer(edge1,nlev)
+call initEdgeBuffer(hybrid%par,edge1,nlev)
 
 do ie=nets,nete
 #if (defined ELEMENT_OPENMP)
@@ -523,7 +523,7 @@ integer :: k,i,j,ie,ic,kptr
 type (EdgeBuffer_t)          :: edge2
 
 
-call initEdgeBuffer(edge2,2*nlev)
+call initEdgeBuffer(hybrid%par,edge2,2*nlev)
 
 do ie=nets,nete
 #if (defined ELEMENT_OPENMP)
@@ -885,7 +885,7 @@ integer :: ie,k,q
 
 
     ! create edge buffer for 3 fields
-    call initEdgeBuffer(edgebuf,3*nlev)
+    call initEdgeBuffer(hybrid%par,edgebuf,3*nlev)
 
 
     ! compute p min, max

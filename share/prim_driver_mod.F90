@@ -83,7 +83,9 @@ contains
     ! --------------------------------
     use gridgraph_mod, only : gridvertex_t, gridedge_t, allocate_gridvertex_nbrs, deallocate_gridvertex_nbrs
     ! --------------------------------
-    use schedule_mod, only : schedule, genEdgeSched,  PrintSchedule
+    use schedtype_mod, only : schedule
+    ! --------------------------------
+    use schedule_mod, only : genEdgeSched,  PrintSchedule
     ! --------------------------------
     use prim_advection_mod, only: prim_advec_init
     ! --------------------------------
@@ -521,9 +523,9 @@ contains
 #endif
     allocate(deriv(0:n_domains-1))
     allocate(cg(0:n_domains-1))
-    call prim_advance_init(integration)
-    call Prim_Advec_Init()
-    call diffusion_init()
+    call prim_advance_init(par,integration)
+    call Prim_Advec_Init(par)
+    call diffusion_init(par)
     if (ntrac>0) then
 #if defined(_SPELT)
       call spelt_init1(par)

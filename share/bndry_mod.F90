@@ -2,6 +2,7 @@
 #include "config.h"
 #endif
 
+#undef MPI_PERSISTENT 
 module bndry_mod
   use parallel_mod, only : abortmp
   implicit none
@@ -22,7 +23,7 @@ contains
   subroutine bndry_exchangeV_nonth(par,buffer)
     use kinds, only : log_kind
     use edge_mod, only : Edgebuffer_t
-    use schedule_mod, only : schedule_t, cycle_t, schedule
+    use schedtype_mod, only : schedule_t, cycle_t, schedule
     use thread_mod, only : omp_in_parallel
 #ifdef _MPI
     use parallel_mod, only : parallel_t, abortmp, status, srequest, rrequest, &
@@ -128,7 +129,7 @@ contains
   subroutine long_bndry_exchangeV_nonth(par,buffer)
     use kinds, only : log_kind
     use edge_mod, only : LongEdgebuffer_t
-    use schedule_mod, only : schedule_t, cycle_t, schedule
+    use schedtype_mod, only : schedule_t, cycle_t, schedule
     use thread_mod, only : omp_in_parallel
 #ifdef _MPI
     use parallel_mod, only : parallel_t, abortmp, status, srequest, rrequest, &
@@ -237,7 +238,7 @@ contains
     use hybrid_mod, only : hybrid_t
     use kinds, only : log_kind
     use edge_mod, only : Edgebuffer_t
-    use schedule_mod, only : schedule_t, cycle_t, schedule
+    use schedtype_mod, only : schedule_t, cycle_t, schedule
     use dimensions_mod, only: nelemd, np
     use perf_mod, only: t_startf, t_stopf ! _EXTERNAL
 #ifdef _MPI
@@ -272,6 +273,20 @@ contains
 
 #ifdef _MPI
        ! Setup the pointer to proper Schedule
+#ifdef MPI_PERSISTENT
+      pSchedule => Schedule(1)
+      nlyr = buffer%nlyr
+      nSendCycles = SIZE(buffer%Srequest)
+      nRecvCycles = SIZE(buffer%Rrequest)
+!      print *,'bndry_exchange: nSendCycles: ',nSendCycles, ' nRecvCycles:
+!      ',nRecvCycles
+      call MPI_startall(nRecvCycles,buffer%Rrequest,ierr)
+      call MPI_startall(nSendCycles,buffer%Srequest,ierr)
+
+      call MPI_Waitall(nSendCycles,buffer%Srequest,status,ierr)
+      call MPI_Waitall(nRecvCycles,buffer%Rrequest,status,ierr)
+
+#else
 #ifdef _PREDICT
        pSchedule => Schedule(iam)
 #else
@@ -328,6 +343,8 @@ contains
        call MPI_Waitall(nSendCycles,Srequest,status,ierr)
        call MPI_Waitall(nRecvCycles,Rrequest,status,ierr)
 
+#endif
+
        do icycle=1,nRecvCycles
           pCycle         => pSchedule%RecvCycle(icycle)
           length             = pCycle%lengthP
@@ -360,7 +377,7 @@ contains
     use hybrid_mod, only : hybrid_t
     use kinds, only : log_kind
     use edge_mod, only : Ghostbuffer3D_t
-    use schedule_mod, only : schedule_t, cycle_t, schedule
+    use schedtype_mod, only : schedule_t, cycle_t, schedule
     use dimensions_mod, only: nelemd
 #ifdef _MPI
     use parallel_mod, only : abortmp, status, srequest, rrequest, &
@@ -482,7 +499,7 @@ contains
     use hybrid_mod, only : hybrid_t
     use kinds, only : log_kind
     use edge_mod, only : Ghostbuffertr_t
-    use schedule_mod, only : schedule_t, cycle_t, schedule
+    use schedtype_mod, only : schedule_t, cycle_t, schedule
     use dimensions_mod, only: nelemd
 #ifdef _MPI
     use parallel_mod, only : abortmp, status, srequest, rrequest, &
