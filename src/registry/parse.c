@@ -84,8 +84,8 @@ int parse_reg_xml(FILE * regfile, struct namelist **nls, struct dimension ** dim
 	const char *dimname, *dimunits, *dimdesc, *dimdef;
 	const char *nmlrecname, *nmloptname, *nmlopttype, *nmloptval, *nmloptunits, *nmloptdesc, *nmloptposvals;
 	const char *structname, *structlevs;
-	const char *vararrname, *vararrtype, *vararrdims, *vararrpersistence;
-	const char *varname, *varpersistence, *vartype, *vardims, *varunits, *vardesc, *vararrgroup, *varstreams;
+	const char *vararrname, *vararrtype, *vararrdims, *vararrpersistence, *vararrdefaultval;
+	const char *varname, *varpersistence, *vartype, *vardims, *varunits, *vardesc, *vararrgroup, *varstreams, *vardefaultval;
 	const char *varname_in_code;
 	const char *const_model, *const_core, *const_version;
 
@@ -93,6 +93,7 @@ int parse_reg_xml(FILE * regfile, struct namelist **nls, struct dimension ** dim
 	char *dimension_list;
 	char dimension_buffer[128];
 	char streams_buffer[128];
+	char default_value[1024];
 
 	NEW_NAMELIST(nls_ptr)
 	NEW_DIMENSION(dim_ptr)
@@ -245,6 +246,7 @@ int parse_reg_xml(FILE * regfile, struct namelist **nls, struct dimension ** dim
 			vararrtype = ezxml_attr(var_arr_xml, "type");
 			vararrdims = ezxml_attr(var_arr_xml, "dimensions");
 			vararrpersistence = ezxml_attr(var_arr_xml, "persistence");
+			vararrdefaultval = ezxml_attr(var_arr_xml, "default_value");
 
 			//Parse variables in variable arrays
 			for(var_xml = ezxml_child(var_arr_xml, "var"); var_xml; var_xml = var_xml->next){
@@ -284,12 +286,16 @@ int parse_reg_xml(FILE * regfile, struct namelist **nls, struct dimension ** dim
 
 				if(strncmp(vararrtype, "real", 1024) == 0){
 					var_ptr->vtype = REAL;
+					snprintf(default_value, 1024, "0.0_RKIND");
 				} else if(strncmp(vararrtype, "integer", 1024) == 0){
 					var_ptr->vtype = INTEGER;
+					snprintf(default_value, 1024, "0");
 				} else if(strncmp(vararrtype, "logical", 1024) == 0){
 					var_ptr->vtype = LOGICAL;
+					snprintf(default_value, 1024, ".false.");
 				} else if(strncmp(vararrtype, "text", 1024) == 0){
 					var_ptr->vtype = CHARACTER;
+					snprintf(default_value, 1024, "''");
 				}
 
 				NEW_DIMENSION_LIST(dimlist_ptr)
@@ -337,6 +343,12 @@ int parse_reg_xml(FILE * regfile, struct namelist **nls, struct dimension ** dim
 				} else {
 					snprintf(var_ptr->name_in_code, 1024, "%s", varname_in_code);
 				}
+				
+				if(vararrdefaultval == NULL){
+					snprintf(var_ptr->default_value, 1024, "%s", default_value);
+				} else {
+					snprintf(var_ptr->default_value, 1024, "%s", vararrdefaultval);
+				}
 
 				snprintf(var_ptr->super_array, 1024, "%s", vararrname);
 				snprintf(var_ptr->array_class, 1024, "%s", vararrgroup);
@@ -356,6 +368,7 @@ int parse_reg_xml(FILE * regfile, struct namelist **nls, struct dimension ** dim
 			vardesc = ezxml_attr(var_xml, "description");
 			varstreams = ezxml_attr(var_xml, "streams");
 			varname_in_code = ezxml_attr(var_xml, "name_in_code");
+			vardefaultval = ezxml_attr(var_xml, "default_value");
 
 			if(vlist_cursor == NULL){
 				NEW_VARIABLE_LIST(grouplist_ptr->vlist);
@@ -386,12 +399,16 @@ int parse_reg_xml(FILE * regfile, struct namelist **nls, struct dimension ** dim
 
 			if(strncmp(vartype, "real", 1024) == 0){
 				var_ptr->vtype = REAL;
+				snprintf(default_value, 1024, "0.0_RKIND");
 			} else if(strncmp(vartype, "integer", 1024) == 0){
 				var_ptr->vtype = INTEGER;
+				snprintf(default_value, 1024, "0");
 			} else if(strncmp(vartype, "logical", 1024) == 0){
 				var_ptr->vtype = LOGICAL;
+				snprintf(default_value, 1024, ".false.");
 			} else if(strncmp(vartype, "text", 1024) == 0){
 				var_ptr->vtype = CHARACTER;
+				snprintf(default_value, 1024, "''");
 			}
 
 			NEW_DIMENSION_LIST(dimlist_ptr)
@@ -450,6 +467,12 @@ int parse_reg_xml(FILE * regfile, struct namelist **nls, struct dimension ** dim
 
 			snprintf(var_ptr->super_array, 1024, "-");
 			snprintf(var_ptr->array_class, 1024, "-");
+
+			if(vardefaultval == NULL){
+				snprintf(var_ptr->default_value, 1024, "%s", default_value);
+			} else {
+				snprintf(var_ptr->default_value, 1024, "%s", vardefaultval);
+			}
 
 			NEW_VARIABLE(var_ptr->next);
 			var_ptr2 = var_ptr;

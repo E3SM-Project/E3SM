@@ -85,6 +85,8 @@
 									<xs:attribute name="dimensions"  type="xs:string" use="required"/>
 									<!-- The persistence attribute determines if the var_array is persistence or scratch. Valid options are persistent, and scratch. -->
 									<xs:attribute name="persistence"  type="xs:string" use="optional"/>
+									<!-- The default_value attribute determines the default value for the var_array. Reals default to 0.0_RKIND, integers to 0, logicals to .false. and characters to ''-->
+									<xs:attribute name="default_value"  type="xs:string" use="optional"/>
 								</xs:complexType>
 							</xs:element>
 							<!-- This var element defines a variable that does not live within a var_array group. -->
@@ -104,6 +106,8 @@
 									<xs:attribute name="units"  type="xs:string" use="optional"/>
 									<!-- The description attribute provides a brief description of the variable. -->
 									<xs:attribute name="description"  type="xs:string" use="optional"/>
+									<!-- The default_value attribute determines the default value for the var. Reals default to 0.0_RKIND, integers to 0, logicals to .false. and characters to ''-->
+									<xs:attribute name="default_value"  type="xs:string" use="optional"/>
 								</xs:complexType>
 							</xs:element>
 						</xs:sequence>

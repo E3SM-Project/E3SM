@@ -761,12 +761,7 @@ void gen_field_defs(struct group_list * groups, struct variable * vars, struct d
                   dimlist_ptr = dimlist_ptr->next;
                }
                fortprintf(fd, "))\n");
-               if (var_ptr->vtype == INTEGER)
-                  fortprintf(fd, "      %s %% %s %% array = 0\n", group_ptr->name, var_ptr2->super_array ); /* initialize field to zero */
-               else if (var_ptr->vtype == REAL)
-                  fortprintf(fd, "      %s %% %s %% array = 0.0\n", group_ptr->name, var_ptr2->super_array ); /* initialize field to zero */
-               else if (var_ptr->vtype == CHARACTER)
-                  fortprintf(fd, "      %s %% %s %% array = \'\'\n", group_ptr->name, var_ptr2->super_array ); /* initialize field to zero */
+               fortprintf(fd, "      %s %% %s %% array = %s\n", group_ptr->name, var_ptr2->super_array, var_ptr2->default_value ); /* initialize field */
 			}
 
             fortprintf(fd, "      %s %% %s %% dimSizes(1) = %i\n", group_ptr->name, var_ptr2->super_array, i);
@@ -868,13 +863,7 @@ void gen_field_defs(struct group_list * groups, struct variable * vars, struct d
                   dimlist_ptr = dimlist_ptr->next;
                }
                fortprintf(fd, "))\n");
-               if (var_ptr->vtype == INTEGER)
-                  fortprintf(fd, "      %s %% %s %% array = 0\n", group_ptr->name, var_ptr->name_in_code ); /* initialize field to zero */
-               else if (var_ptr->vtype == REAL)
-                  fortprintf(fd, "      %s %% %s %% array = 0.0\n", group_ptr->name, var_ptr->name_in_code ); /* initialize field to zero */
-               else if (var_ptr->vtype == CHARACTER)
-                  fortprintf(fd, "      %s %% %s %% array = \'\'\n", group_ptr->name, var_ptr->name_in_code ); /* initialize field to zero */
-
+               fortprintf(fd, "      %s %% %s %% array = %s\n", group_ptr->name, var_ptr->name_in_code, var_ptr->default_value ); /* initialize field */
 			  }
                dimlist_ptr = var_ptr->dimlist;
                i = 1;

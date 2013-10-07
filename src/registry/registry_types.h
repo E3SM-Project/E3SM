@@ -73,6 +73,7 @@ struct variable {
    char struct_group[1024];
    char super_array[1024];
    char array_class[1024];
+   char default_value[1024];
    int persistence;
    int vtype;
    int ndims;
