@@ -1261,7 +1261,7 @@ end subroutine ocn_compute_max_level!}}}
          domain % blocklist % mesh % edgeSignOnCell, &
          domain % blocklist % mesh % edgeTangentVectors, &
          domain % blocklist % state % time_levs(1) % state % normalVelocity, &
-         domain % blocklist % state % time_levs(1) % state % tangentialVelocity, &
+         domain % blocklist % diagnostics % tangentialVelocity, &
          domain % blocklist % scratch % strainRateR3Cell, &
          domain % blocklist % scratch % strainRateR3CellSolution, &
          domain % blocklist % scratch % strainRateR3Edge, &
