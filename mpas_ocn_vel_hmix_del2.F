@@ -196,7 +196,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_hmix_del2_tensor_tend(grid, normalVelocity, tangentialVelocity, viscosity, del2_tensor_tend_diagnostic, scratch, tend, err)!{{{
+   subroutine ocn_vel_hmix_del2_tensor_tend(mesh, normalVelocity, tangentialVelocity, viscosity, del2_tensor_tend_diagnostic, scratch, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -211,7 +211,7 @@ contains
          tangentialVelocity     !< Input: velocity, tangent to an edge
 
       type (mesh_type), intent(in) :: &
-         grid            !< Input: grid information
+         mesh            !< Input: mesh information
 
       !-----------------------------------------------------------------
       !
@@ -265,14 +265,14 @@ contains
 
       if (.not.config_use_mom_del2_tensor) return
 
-      nEdges = grid % nEdges
-      nVertLevels = grid % nVertLevels
-      nEdgesSolve = grid % nEdgesSolve
-      maxLevelEdgeTop => grid % maxLevelEdgeTop % array
-      meshScalingDel2 => grid % meshScalingDel2 % array
-      edgeMask => grid % edgeMask % array
-      edgeSignOnCell => grid % edgeSignOnCell % array
-      edgeTangentVectors => grid % edgeTangentVectors % array
+      nEdges = mesh % nEdges
+      nVertLevels = mesh % nVertLevels
+      nEdgesSolve = mesh % nEdgesSolve
+      maxLevelEdgeTop => mesh % maxLevelEdgeTop % array
+      meshScalingDel2 => mesh % meshScalingDel2 % array
+      edgeMask => mesh % edgeMask % array
+      edgeSignOnCell => mesh % edgeSignOnCell % array
+      edgeTangentVectors => mesh % edgeTangentVectors % array
 
       call mpas_allocate_scratch_field(scratch % strainRateR3Cell, .true.)
       call mpas_allocate_scratch_field(scratch % strainRateR3Edge, .true.)
@@ -287,10 +287,10 @@ contains
       normalVectorEdge => scratch % normalVectorEdge % array
 
       call mpas_strain_rate_R3Cell(normalVelocity, tangentialVelocity, &
-         grid, edgeSignOnCell, edgeTangentVectors, .true., &
+         mesh, edgeSignOnCell, edgeTangentVectors, .true., &
          outerProductEdge, strainRateR3Cell)
 
-      call mpas_matrix_cell_to_edge(strainRateR3Cell, grid, .true., strainRateR3Edge)
+      call mpas_matrix_cell_to_edge(strainRateR3Cell, mesh, .true., strainRateR3Edge)
 
       do iEdge=1,nEdges  ! nEdgesSolve?
          visc2 = config_mom_del2_tensor * meshScalingDel2(iEdge)
@@ -305,14 +305,13 @@ contains
       end do
 
      ! may change boundaries to false later
-     call mpas_divergence_of_tensor_R3Cell(strainRateR3Edge, grid, edgeSignOnCell, .true., divTensorR3Cell)
+     call mpas_divergence_of_tensor_R3Cell(strainRateR3Edge, mesh, edgeSignOnCell, .true., divTensorR3Cell)
 
-     call mpas_vector_R3Cell_to_normalVectorEdge(divTensorR3Cell, grid, .true., normalVectorEdge)
+     call mpas_vector_R3Cell_to_normalVectorEdge(divTensorR3Cell, mesh, .true., normalVectorEdge)
 
       do iEdge=1,nEdges  !Solve?
          do k=1,maxLevelEdgeTop(iEdge)
-            ! mrp turn off for debugging only:
-            !tend(k,iEdge) = tend(k,iEdge) + edgeMask(k, iEdge) * normalVectorEdge(k,iEdge)
+            tend(k,iEdge) = tend(k,iEdge) + edgeMask(k, iEdge) * normalVectorEdge(k,iEdge)
 
             ! mrp added for debugging only:
             del2_tensor_tend_diagnostic(k,iEdge) = edgeMask(k, iEdge) * normalVectorEdge(k,iEdge)

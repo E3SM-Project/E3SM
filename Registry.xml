@@ -603,9 +603,9 @@
 		            description="If true, tensor operations are tested upon start-up."
 		            possible_values=".true. or .false."
 		/>
-		<nml_option name="config_tensor_test_function" type="character" default_value="sin_arb_rot" units="unitless"
+		<nml_option name="config_tensor_test_function" type="character" default_value="sph_uCosCos" units="unitless"
 		            description="Character string to choose tensor test fuction"
-		            possible_values="'constant', 'linear_x', 'linear_y', 'linear_arb_rot', 'sin_arb_rot', 'power_x', 'power_y', 'power_arb_rot', 'spherical_sinx', 'spherical_u1', 'spherical_v1', 'spherical_solid', 'spherical'"
+		            possible_values="'linear_x', 'linear_y', 'linear_arb_rot', 'power_x', 'power_y', 'power_arb_rot', 'sin_arb_rot', 'spherical_solid', 'sph_Williamson', 'sph_uCosCos', 'sph_vCosCos', 'sph_ELonLon_CosCos', 'sph_ELatLat_CosCos', 'sph_ELonLat_CosCos'"
 		/>
 	</nml_record>
 	<nml_record name="debug">
@@ -733,45 +733,7 @@
 		<var name="normalBaroclinicVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
 			 description="baroclinic velocity, used in split-explicit time-stepping"
 		/>
-		<var name="strainRateR3Cell" type="real" dimensions="SIX nVertLevels nCells Time" streams="o" units="s^{-1}"
-		     description="strain rate tensor at cell center, R3, in symmetric 6-index form"
-		/>
-		<var name="strainRateR3CellSolution" type="real" dimensions="SIX nVertLevels nCells Time" streams="o" units="s^{-1}"
-		     description="strain rate solution tensor at cell center, R3, in symmetric 6-index form"
-		/>
-		<var name="strainRateR3Edge" type="real" dimensions="SIX nVertLevels nEdges Time" streams="o" units="s^{-1}"
-		     description="strain rate tensor at edge, R3, in symmetric 6-index form"
-		/>
-		<var name="strainRateLonLatRCell" type="real" dimensions="SIX nVertLevels nCells Time" streams="o" units="s^{-1}"
-		     description="strain rate tensor at cell center, 3D, lon-lat-r in symmetric 6-index form, {\color{red}Temporary only}"
-		/>
-		<var name="strainRateLonLatRCellSolution" type="real" dimensions="SIX nVertLevels nCells Time" streams="o" units="s^{-1}"
-		     description="strain rate tensor at cell center, 3D, lon-lat-r in symmetric 6-index form, {\color{red}Temporary only}"
-		/>
-		<var name="strainRateLonLatRCellDiff" type="real" dimensions="SIX nVertLevels nCells Time" streams="o" units="s^{-1}"
-		     description="strain rate difference between solution and computed tensor at cell center, R3, in symmetric 6-index form"
-		/>
-		<var name="strainRateLonLatREdge" type="real" dimensions="SIX nVertLevels nEdges Time" streams="o" units="s^{-1}"
-		     description="strain rate tensor at edge, 3D, lon-lat-r in symmetric 6-index form, {\color{red}Temporary only}"
-		/>
-		<var name="divTensorR3Cell" type="real" dimensions="R3 nVertLevels nCells Time" streams="o" units="s^{-2}"
-		     description="divergence of the tensor at cell center, as an R3 vector"
-		/>
-		<var name="divTensorR3CellSolution" type="real" dimensions="R3 nVertLevels nCells Time" streams="o" units="s^{-2}"
-		     description="divergence of the tensor solution at cell center, as an R3 vector"
-		/>
-		<var name="divTensorLonLatRCell" type="real" dimensions="R3 nVertLevels nCells Time" streams="o" units="s^{-2}"
-		     description="divergence of the tensor at cell center, as a lon-lat-r vector"
-		/>
-		<var name="divTensorLonLatRCellSolution" type="real" dimensions="R3 nVertLevels nCells Time" streams="o" units="s^{-2}"
-		     description="divergence of the tensor at cell center, as a lon-lat-r vector, solution"
-		/>
-		<var name="divTensorLonLatRCellDiff" type="real" dimensions="R3 nVertLevels nCells Time" streams="o" units="s^{-2}"
-		     description="divergence of the tensor difference between solution and computed at cell center, as an R3 vector"
-		/>
-		<var name="outerProductEdge" type="real" dimensions="SIX nVertLevels nEdges Time" streams="o" units="m^2 s^{-1}"
-		     description="Outer product, u_e \cross n_e, at each edge."
-		/>
+
 	</var_struct>
 	<var_struct name="mesh" time_levs="0">
 		<var name="latCell" type="real" dimensions="nCells" streams="iro" units="radians"
@@ -1499,69 +1461,81 @@
 			 type="real" dimensions="nVertLevels nCells Time" streams="o" units="PSU^{-1}"
 			 description="Saline contraction coefficient (beta), defined as $1/\rho d\rho/dS$.  This is also called the haline contraction coefficient."
 		/>
+
+		<!-- FIELDS FOR TENSOR OPERATIONS -->
+		<var name="normalVelocityTest" 
+                     persistence="scratch" 
+                     type="real" dimensions="nVertLevels nEdges" units="m s^{-1}"
+		     description="horizonal velocity, normal component to an edge, for testing"
+		/>
+		<var name="tangentialVelocityTest"
+                     persistence="scratch" 
+                     type="real" dimensions="nVertLevels nEdges" units="m s^{-1}"
+		     description="horizonal velocity, tangential component to an edge, for testing"
+		/>
 		<var name="strainRateR3Cell" 
                      persistence="scratch" 
-                     type="real" dimensions="SIX nVertLevels nCells Time" units="s^{-1}"
+                     type="real" dimensions="SIX nVertLevels nCells" units="s^{-1}"
 		     description="strain rate tensor at cell center, R3, in symmetric 6-index form"
 		/>
 		<var name="strainRateR3CellSolution" 
                      persistence="scratch" 
-                     type="real" dimensions="SIX nVertLevels nCells Time" units="s^{-1}"
+                     type="real" dimensions="SIX nVertLevels nCells" units="s^{-1}"
 		     description="strain rate solution tensor at cell center, R3, in symmetric 6-index form"
 		/>
 		<var name="strainRateR3Edge" 
                      persistence="scratch" 
-                     type="real" dimensions="SIX nVertLevels nEdges Time" units="s^{-1}"
+                     type="real" dimensions="SIX nVertLevels nEdges" units="s^{-1}"
 		     description="strain rate tensor at edge, R3, in symmetric 6-index form"
 		/>
 		<var name="strainRateLonLatRCell" 
                      persistence="scratch" 
-                     type="real" dimensions="SIX nVertLevels nCells Time" units="s^{-1}"
+                     type="real" dimensions="SIX nVertLevels nCells" units="s^{-1}"
 		     description="strain rate tensor at cell center, 3D, lon-lat-r in symmetric 6-index form, {\color{red}Temporary only}"
 		/>
 		<var name="strainRateLonLatRCellSolution" 
                      persistence="scratch" 
-                     type="real" dimensions="SIX nVertLevels nCells Time" units="s^{-1}"
+                     type="real" dimensions="SIX nVertLevels nCells" units="s^{-1}"
 		     description="strain rate tensor at cell center, 3D, lon-lat-r in symmetric 6-index form, {\color{red}Temporary only}"
 		/>
 		<var name="strainRateLonLatREdge" 
                      persistence="scratch" 
-                     type="real" dimensions="SIX nVertLevels nEdges Time" units="s^{-1}"
+                     type="real" dimensions="SIX nVertLevels nEdges" units="s^{-1}"
 		     description="strain rate tensor at edge, 3D, lon-lat-r in symmetric 6-index form, {\color{red}Temporary only}"
 		/>
 		<var name="divTensorR3Cell" 
                      persistence="scratch" 
-                     type="real" dimensions="R3 nVertLevels nCells Time" units="s^{-2}"
+                     type="real" dimensions="R3 nVertLevels nCells" units="s^{-2}"
 		     description="divergence of the tensor at cell center, as an R3 vector"
 		/>
 		<var name="divTensorR3CellSolution" 
                      persistence="scratch" 
-                     type="real" dimensions="R3 nVertLevels nCells Time" units="s^{-2}"
+                     type="real" dimensions="R3 nVertLevels nCells" units="s^{-2}"
 		     description="divergence of the tensor solution at cell center, as an R3 vector"
 		/>
 		<var name="divTensorLonLatRCell" 
                      persistence="scratch" 
-                     type="real" dimensions="R3 nVertLevels nCells Time" units="s^{-2}"
+                     type="real" dimensions="R3 nVertLevels nCells" units="s^{-2}"
 		     description="divergence of the tensor at cell center, as a lon-lat-r vector"
 		/>
 		<var name="divTensorLonLatRCellSolution" 
                      persistence="scratch" 
-                     type="real" dimensions="R3 nVertLevels nCells Time" units="s^{-2}"
+                     type="real" dimensions="R3 nVertLevels nCells" units="s^{-2}"
 		     description="divergence of the tensor at cell center, as a lon-lat-r vector, solution"
 		/>
 		<var name="outerProductEdge" 
                      persistence="scratch" 
-                     type="real" dimensions="SIX nVertLevels nEdges Time" units="m^2 s^{-1}"
+                     type="real" dimensions="SIX nVertLevels nEdges" units="m^2 s^{-1}"
 		     description="Outer product, u_e \cross n_e, at each edge."
 		/>
 		<var name="normalVectorEdge" 
                      persistence="scratch" 
-                     type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+                     type="real" dimensions="nVertLevels nEdges" units="m s^{-1}"
 		     description="Vector component normal to an edge."
 		/>
 		<var name="tangentialVectorEdge" 
                      persistence="scratch" 
-                     type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+                     type="real" dimensions="nVertLevels nEdges" units="m s^{-1}"
 		     description="Vector component tangent to an edge."
 		/>
     </var_struct>
