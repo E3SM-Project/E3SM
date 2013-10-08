@@ -88,13 +88,13 @@ module ocn_global_diagnostics
       real (kind=RKIND), dimension(:), pointer ::  areaCell, dcEdge, dvEdge, areaTriangle, areaEdge
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness, normalVelocity, tangentialVelocity, layerThicknessEdge, relativeVorticity, kineticEnergyCell, &
          normalizedRelativeVorticityEdge, normalizedPlanetaryVorticityEdge, pressure, montgomeryPotential, vertTransportVelocityTop, vertVelocityTop, &
-         lowFreqDivergence, highFreqThickness, density, tracerTemp
+         lowFreqDivergence, highFreqThickness, density
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers
       
       real (kind=RKIND), dimension(kMaxVariables) :: sums, sumSquares, mins, maxes, averages, rms, verticalSumMins, verticalSumMaxes, reductions
       real (kind=RKIND), dimension(kMaxVariables) :: sums_tmp, sumSquares_tmp, mins_tmp, maxes_tmp, averages_tmp, verticalSumMins_tmp, verticalSumMaxes_tmp
 
-      real (kind=RKIND), dimension(:,:), allocatable :: enstrophy, normalizedAbsoluteVorticity
+      real (kind=RKIND), dimension(:,:), allocatable :: enstrophy, normalizedAbsoluteVorticity, workArray
 
       block => domain % blocklist
       dminfo => domain % dminfo
@@ -149,6 +149,8 @@ module ocn_global_diagnostics
          tangentialVelocity               => diagnostics % tangentialVelocity % array
          layerThicknessEdge               => diagnostics % layerThicknessEdge % array
          kineticEnergyCell                => diagnostics % kineticEnergyCell % array
+
+         allocate(workArray(nVertLevels,nCellsSolve))
 
          variableIndex = 0
          ! layerThickness
@@ -276,8 +278,9 @@ module ocn_global_diagnostics
 
          ! vertVelocityTop vertical velocity
          variableIndex = variableIndex + 1
+         workArray = vertVelocityTop(1:nVertLevels,1:nCellsSolve)
          call ocn_compute_field_volume_weighted_local_stats_max_level(dminfo, nVertLevels, nCellsSolve, maxLevelCell(1:nCellsSolve), areaCell(1:nCellsSolve), layerThickness(:,1:nCellsSolve), &
-            vertVelocityTop(1:nVertLevels,1:nCellsSolve), sums_tmp(variableIndex), sumSquares_tmp(variableIndex), mins_tmp(variableIndex), maxes_tmp(variableIndex), verticalSumMins_tmp(variableIndex), &
+            workArray, sums_tmp(variableIndex), sumSquares_tmp(variableIndex), mins_tmp(variableIndex), maxes_tmp(variableIndex), verticalSumMins_tmp(variableIndex), &
             verticalSumMaxes_tmp(variableIndex))
          sums(variableIndex) = sums(variableIndex) + sums_tmp(variableIndex)
          sumSquares(variableIndex) = sumSquares(variableIndex) + sumSquares_tmp(variableIndex)
@@ -288,8 +291,9 @@ module ocn_global_diagnostics
 
          ! vertTransportVelocityTop vertical velocity
          variableIndex = variableIndex + 1
+         workArray = vertTransportVelocityTop(1:nVertLevels,1:nCellsSolve)
          call ocn_compute_field_volume_weighted_local_stats_max_level(dminfo, nVertLevels, nCellsSolve, maxLevelCell(1:nCellsSolve), areaCell(1:nCellsSolve), layerThickness(:,1:nCellsSolve), &
-            vertTransportVelocityTop(1:nVertLevels,1:nCellsSolve), sums_tmp(variableIndex), sumSquares_tmp(variableIndex), mins_tmp(variableIndex), maxes_tmp(variableIndex), verticalSumMins_tmp(variableIndex), &
+            workArray, sums_tmp(variableIndex), sumSquares_tmp(variableIndex), mins_tmp(variableIndex), maxes_tmp(variableIndex), verticalSumMins_tmp(variableIndex), &
             verticalSumMaxes_tmp(variableIndex))
          sums(variableIndex) = sums(variableIndex) + sums_tmp(variableIndex)
          sumSquares(variableIndex) = sumSquares(variableIndex) + sumSquares_tmp(variableIndex)
@@ -323,12 +327,11 @@ module ocn_global_diagnostics
          verticalSumMaxes(variableIndex) = max(verticalSumMaxes(variableIndex), verticalSumMaxes_tmp(variableIndex))
 
          ! Tracers
-         allocate(tracerTemp(nVertLevels,nCellsSolve))
          do iTracer=1,num_tracers
             variableIndex = variableIndex + 1
-            tracerTemp = Tracers(iTracer,:,1:nCellsSolve)
+            workArray = Tracers(iTracer,:,1:nCellsSolve)
             call ocn_compute_field_volume_weighted_local_stats_max_level(dminfo, nVertLevels, nCellsSolve, maxLevelCell(1:nCellsSolve), areaCell(1:nCellsSolve), layerThickness(:,1:nCellsSolve), &
-               tracerTemp, sums_tmp(variableIndex), sumSquares_tmp(variableIndex), mins_tmp(variableIndex), maxes_tmp(variableIndex), verticalSumMins_tmp(variableIndex), &
+               workArray, sums_tmp(variableIndex), sumSquares_tmp(variableIndex), mins_tmp(variableIndex), maxes_tmp(variableIndex), verticalSumMins_tmp(variableIndex), &
                verticalSumMaxes_tmp(variableIndex))
             sums(variableIndex) = sums(variableIndex) + sums_tmp(variableIndex)
             sumSquares(variableIndex) = sumSquares(variableIndex) + sumSquares_tmp(variableIndex)
@@ -337,7 +340,7 @@ module ocn_global_diagnostics
             verticalSumMins(variableIndex) = min(verticalSumMins(variableIndex), verticalSumMins_tmp(variableIndex))
             verticalSumMaxes(variableIndex) = max(verticalSumMaxes(variableIndex), verticalSumMaxes_tmp(variableIndex))
          enddo
-         deallocate(tracerTemp)
+         deallocate(workArray)
 
          nVariables = variableIndex
          nSums = nVariables
