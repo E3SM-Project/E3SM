@@ -229,8 +229,6 @@ contains
          end do
       end do
 
-print *, 'del4 tend min/max',minval(tend), maxval(tend)
-
       deallocate(delsq_u)
       deallocate(delsq_divergence)
       deallocate(delsq_relativeVorticity)
@@ -248,6 +246,7 @@ print *, 'del4 tend min/max',minval(tend), maxval(tend)
 !> \date    July 2013
 !> \details 
 !>  This routine computes the horizontal mixing tendency for momentum
+!>  using tensor operations, 
 !>  based on a Laplacian form for the mixing, 
 !>  \f$-\nabla\cdot( \sqrt{\nu_4} \nabla(\nabla\cdot( \sqrt{\nu_4} \nabla(u))))\f$
 !>  where \f$\nu_4\f$ is the del4 viscosity.
@@ -351,7 +350,8 @@ print *, 'del4 tend min/max',minval(tend), maxval(tend)
 
       call mpas_matrix_cell_to_edge(strainRateR3Cell, mesh, .true., strainRateR3Edge)
 
-      do iEdge=1,nEdges  ! nEdgesSolve?
+      ! The following loop could possibly be reduced to nEdgesSolve
+      do iEdge=1,nEdges 
          visc4_sqrt = sqrt(config_mom_del4_tensor * meshScalingDel4(iEdge))
          do k=1,maxLevelEdgeTop(iEdge)
             strainRateR3Edge(:,k,iEdge) = visc4_sqrt * strainRateR3Edge(:,k,iEdge) 
@@ -375,7 +375,8 @@ print *, 'del4 tend min/max',minval(tend), maxval(tend)
 
       call mpas_matrix_cell_to_edge(strainRateR3Cell, mesh, .true., strainRateR3Edge)
 
-      do iEdge=1,nEdges  ! nEdgesSolve?
+      ! The following loop could possibly be reduced to nEdgesSolve
+      do iEdge=1,nEdges  
          visc4_sqrt = sqrt(config_mom_del4_tensor * meshScalingDel4(iEdge))
          viscosity(:,iEdge) = viscosity(:,iEdge) + config_mom_del4_tensor * meshScalingDel4(iEdge)
          do k=1,maxLevelEdgeTop(iEdge)
@@ -387,12 +388,13 @@ print *, 'del4 tend min/max',minval(tend), maxval(tend)
          end do
       end do
 
-     ! may change boundaries to false later
-     call mpas_divergence_of_tensor_R3Cell(strainRateR3Edge, mesh, edgeSignOnCell, .true., divTensorR3Cell)
+      ! may change boundaries to false later
+      call mpas_divergence_of_tensor_R3Cell(strainRateR3Edge, mesh, edgeSignOnCell, .true., divTensorR3Cell)
 
-     call mpas_vector_R3Cell_to_normalVectorEdge(divTensorR3Cell, mesh, .true., normalVectorEdge)
+      call mpas_vector_R3Cell_to_normalVectorEdge(divTensorR3Cell, mesh, .true., normalVectorEdge)
 
-      do iEdge=1,nEdges  !Solve?
+      ! The following loop could possibly be reduced to nEdgesSolve
+      do iEdge=1,nEdges
          do k=1,maxLevelEdgeTop(iEdge)
             tend(k,iEdge) = tend(k,iEdge) - edgeMask(k, iEdge) * normalVectorEdge(k,iEdge)
          end do

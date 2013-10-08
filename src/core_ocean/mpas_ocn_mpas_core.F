@@ -360,31 +360,6 @@ module mpas_core
       call mpas_rbf_interp_initialize(mesh)
       call mpas_initialize_tangent_vectors(mesh, mesh % edgeTangentVectors % array)
 
-! mrp for testing of del2 operators only.  Initialize normalVelocity
-!!!!!!!!!!!!!!!!!!!!!!!! remove before pushing to develop !!!!!!!!!!!!!1
-           ! normal component at edge: take dot products with unit vectors at edge
-!           normalVectorEdge(k,iEdge) = sum(vectorR3Edge(:)*edgeNormalVectors(:,iEdge))
-!           tangentialVectorEdge(k,iEdge) = sum(vectorR3Edge(:)*edgeTangentVectors(:,iEdge))
-
-!     do iEdge=1,block % mesh % nEdges
-          ! constant
-!          block % state % time_levs(1) % state % normalVelocity % array(:,iEdge) = &
-!             1.0 * mesh % edgeNormalVectors % array(1,iEdge) &  ! 1 in x direction
-!           + 0.0 * mesh % edgeNormalVectors % array(2,iEdge)   ! 0 in y direction
-
-          ! linear
-!          block % state % time_levs(1) % state % normalVelocity % array(:,iEdge) = &
-!             mesh % yEdge % array(iEdge)/500.0e3 * mesh % edgeNormalVectors % array(1,iEdge) &  ! sin y in x direction
-!          + 0.0 * mesh % edgeNormalVectors % array(2,iEdge)   ! 0 in y direction
-
-          ! cos in y
-!          block % state % time_levs(1) % state % normalVelocity % array(:,iEdge) = &
-!             0.5*(1-cos(mesh % yEdge % array(iEdge)/500.0e3*2*pii)) * mesh % edgeNormalVectors % array(1,iEdge) &  ! sin y in x direction
-!           + 0.0 * mesh % edgeNormalVectors % array(2,iEdge)   ! 0 in y direction
-
-!     enddo
-! mrp for testing of del2 operators only.  Initialize normalVelocity end
-
       call mpas_init_reconstruct(mesh)
       call mpas_reconstruct(mesh, block % state % time_levs(1) % state % normalVelocity % array,                  &
                        block % diagnostics % normalVelocityX % array,            &
@@ -689,7 +664,7 @@ module mpas_core
       type (domain_type), intent(inout) :: domain
       type (dm_info) :: dminfo
 
-      integer :: i, iCell, iEdge, iVertex, k, nCells, num_tracers
+      integer :: i, iCell, iEdge, iVertex, k, km1, nCells, num_tracers
       type (block_type), pointer :: block
 
       integer :: iTracer, cell, cell1, cell2
@@ -780,17 +755,15 @@ module mpas_core
                enddo
 
                do iCell=1,nCells
-                  k = maxLevelCell(iCell)
-
-                   if (bottomDepth(iCell).lt.minBottomDepthMid(k)) then
-                      ! Round up to cell above
-                      maxLevelCell(iCell) = maxLevelCell(iCell) - 1
-                      bottomDepth(iCell) = refBottomDepth(maxLevelCell(iCell))
-                   elseif (bottomDepth(iCell).lt.minBottomDepth(k)) then
-                      ! Round down cell to the min_pbc_fraction.
-                      bottomDepth(iCell) = minBottomDepth(k)
-                   endif
-                   k = maxLevelCell(iCell)
+                  k = max(maxLevelCell(iCell),1)
+                  if (bottomDepth(iCell).lt.minBottomDepthMid(k)) then
+                     ! Round up to cell above
+                     maxLevelCell(iCell) = maxLevelCell(iCell) - 1
+                     bottomDepth(iCell) = refBottomDepth(maxLevelCell(iCell))
+                  elseif (bottomDepth(iCell).lt.minBottomDepth(k)) then
+                     ! Round down cell to the min_pbc_fraction.
+                     bottomDepth(iCell) = minBottomDepth(k)
+                  endif
 
                   ! Alter thickness of bottom level to account for PBC
                   layerThickness(k,iCell) = bottomDepth(iCell) - refBottomDepthTopOfCell(k) 
@@ -798,10 +771,11 @@ module mpas_core
                   ! Linearly interpolate the initial T&S for new location of bottom cell for PBCs
                   zMidPBC = -0.5*(bottomDepth(iCell) + refBottomDepthTopOfCell(k))
 
+                  km1 = max(k-1,1)
                   do iTracer=1,num_tracers
                      tracers(iTracer,k,iCell) = tracers(iTracer,k,iCell) &
-                        + (tracers(iTracer,k-1,iCell) - tracers(iTracer,k,iCell)) &
-                         /(zMidZLevel(k-1)-zMidZLevel(k)) &
+                        + (tracers(iTracer,km1,iCell) - tracers(iTracer,k,iCell)) &
+                         /(zMidZLevel(km1)-zMidZLevel(k)+1.0e-16) &
                          *(zMidPBC - zMidZLevel(k))
                   enddo
 
