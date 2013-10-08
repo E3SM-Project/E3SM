@@ -166,7 +166,7 @@
 /
 &testing
 	config_test_tensors = .false.
-	config_tensor_test_function = "sin_arb_rot"
+	config_tensor_test_function = "sph_uCosCos"
 /
 &debug
 	config_check_zlevel_consistency = .false.

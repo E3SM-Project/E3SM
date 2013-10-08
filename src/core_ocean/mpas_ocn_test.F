@@ -137,6 +137,8 @@ contains
 
       if (.not.config_test_tensors) return
 
+      call mpas_allocate_scratch_field(domain % blocklist % scratch % normalVelocityTest, .false.)
+      call mpas_allocate_scratch_field(domain % blocklist % scratch % tangentialVelocityTest, .false.)
       call mpas_allocate_scratch_field(domain % blocklist % scratch % strainRateR3Cell, .false.)
       call mpas_allocate_scratch_field(domain % blocklist % scratch % strainRateR3CellSolution, .false.)
       call mpas_allocate_scratch_field(domain % blocklist % scratch % strainRateR3Edge, .false.)
@@ -152,8 +154,8 @@ contains
       call mpas_test_tensor(domain, config_tensor_test_function, &
          domain % blocklist % mesh % edgeSignOnCell, &
          domain % blocklist % mesh % edgeTangentVectors, &
-         domain % blocklist % state % time_levs(1) % state % normalVelocity, &
-         domain % blocklist % diagnostics % tangentialVelocity, &
+         domain % blocklist % scratch % normalVelocityTest, &
+         domain % blocklist % scratch % tangentialVelocityTest, &
          domain % blocklist % scratch % strainRateR3Cell, &
          domain % blocklist % scratch % strainRateR3CellSolution, &
          domain % blocklist % scratch % strainRateR3Edge, &
@@ -166,6 +168,8 @@ contains
          domain % blocklist % scratch % divTensorLonLatRCellSolution, &
          domain % blocklist % scratch % outerProductEdge )
 
+      call mpas_deallocate_scratch_field(domain % blocklist % scratch % normalVelocityTest, .false.)
+      call mpas_deallocate_scratch_field(domain % blocklist % scratch % tangentialVelocityTest, .false.)
       call mpas_deallocate_scratch_field(domain % blocklist % scratch % strainRateR3Cell, .false.)
       call mpas_deallocate_scratch_field(domain % blocklist % scratch % strainRateR3CellSolution, .false.)
       call mpas_deallocate_scratch_field(domain % blocklist % scratch % strainRateR3Edge, .false.)
