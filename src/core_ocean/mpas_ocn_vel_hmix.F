@@ -80,7 +80,7 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_vel_hmix_tend(mesh, divergence, relativeVorticity, normalVelocity, tangentialVelocity, viscosity, &
-     del2_tend_diagnostic, del2_tensor_tend_diagnostic, tend, scratch, err)!{{{
+      tend, scratch, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -118,12 +118,6 @@ contains
       type (scratch_type), intent(inout) :: &
          scratch !< Input: Scratch structure
 
-      real (kind=RKIND), dimension(:,:), intent(inout) :: &
-         del2_tend_diagnostic       !< Input: del2_tend_diagnostic
-
-      real (kind=RKIND), dimension(:,:), intent(inout) :: &
-         del2_tensor_tend_diagnostic       !< Input: del2_tensor_tend_diagnostic
-
       !-----------------------------------------------------------------
       !
       ! output variables
@@ -138,7 +132,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: err1, err2, err3
+      integer :: err1
 
       !-----------------------------------------------------------------
       !
@@ -151,28 +145,32 @@ contains
       if(.not.hmixOn) return
 
       viscosity = 0.0
+      err = 0
 
       call mpas_timer_start("del2", .false., del2Timer)
-      call ocn_vel_hmix_del2_tend(mesh, divergence, relativeVorticity, viscosity, del2_tend_diagnostic, tend, err1)
+      call ocn_vel_hmix_del2_tend(mesh, divergence, relativeVorticity, viscosity, tend, err1)
       call mpas_timer_stop("del2", del2Timer)
+      err = ior(err1, err)
 
       call mpas_timer_start("del2_tensor", .false., del2TensorTimer)
-      call ocn_vel_hmix_del2_tensor_tend(mesh, normalVelocity, tangentialVelocity, viscosity, del2_tensor_tend_diagnostic, scratch, tend, err1)
+      call ocn_vel_hmix_del2_tensor_tend(mesh, normalVelocity, tangentialVelocity, viscosity, scratch, tend, err1)
       call mpas_timer_stop("del2_tensor", del2TensorTimer)
+      err = ior(err1, err)
 
       call mpas_timer_start("leith", .false., leithTimer)
-      call ocn_vel_hmix_leith_tend(mesh, divergence, relativeVorticity, viscosity, tend, err2)
+      call ocn_vel_hmix_leith_tend(mesh, divergence, relativeVorticity, viscosity, tend, err1)
       call mpas_timer_stop("leith", leithTimer)
+      err = ior(err1, err)
 
       call mpas_timer_start("del4", .false., del4Timer)
-      call ocn_vel_hmix_del4_tend(mesh, divergence, relativeVorticity, tend, err3)
+      call ocn_vel_hmix_del4_tend(mesh, divergence, relativeVorticity, tend, err1)
       call mpas_timer_stop("del4", del4Timer)
+      err = ior(err1, err)
 
       call mpas_timer_start("del4_tensor", .false., del4TensorTimer)
       call ocn_vel_hmix_del4_tensor_tend(mesh, normalVelocity, tangentialVelocity, viscosity, scratch, tend, err1)
       call mpas_timer_stop("del4_tensor", del4TensorTimer)
-
-      err = ior(ior(err1, err2),err3)
+      err = ior(err1, err)
 
    !--------------------------------------------------------------------
 

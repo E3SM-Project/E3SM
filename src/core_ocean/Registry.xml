@@ -250,16 +250,6 @@
 					possible_values="any positive real"
 		/>
 	</nml_record>
-	<nml_record name="hmix_del2_tensor">
-		<nml_option name="config_use_mom_del2_tensor" type="logical" default_value=".false." units="unitless"
-		            description="If true, tensor-based Laplacian horizontal mixing is used on the momentum equation."
-		            possible_values=".true. or .false."
-		/>
-		<nml_option name="config_mom_del2_tensor" type="real" default_value="10.0" units="m^2 s^{-1}"
-		            description="Horizonal viscosity, $\nu_h$."
-		            possible_values="any positive real"
-		/>
-	</nml_record>
 	<nml_record name="hmix_del4">
 		<nml_option name="config_use_mom_del4" type="logical" default_value=".false." units="unitless"
 					description="If true, biharmonic horizontal mixing is used on the momentum equation."
@@ -276,16 +266,6 @@
 		<nml_option name="config_tracer_del4" type="real" default_value="0.0" units="m^4 s^{-1}"
 					description="Coefficient for horizontal biharmonic operator on tracers."
 					possible_values="any positive real"
-		/>
-	</nml_record>
-	<nml_record name="hmix_del4_tensor">
-		<nml_option name="config_use_mom_del4_tensor" type="logical" default_value=".false." units="unitless"
-		            description="If true, tensor-based biharmonic horizontal mixing is used on the momentum equation."
-		            possible_values=".true. or .false."
-		/>
-		<nml_option name="config_mom_del4_tensor" type="real" default_value="5.0e13" units="m^4 s^{-1}"
-		            description="Coefficient for horizontal biharmonic operator on momentum."
-		            possible_values="any positive real"
 		/>
 	</nml_record>
 	<nml_record name="hmix_Leith">
@@ -314,6 +294,26 @@
 		<nml_option name="config_h_kappa_q" type="real" default_value="0.0" units=""
 					description="kappa-q parameter for Gent-McWilliams eddy parameterization"
 					possible_values="Any positive real value."
+		/>
+	</nml_record>
+	<nml_record name="hmix_del2_tensor">
+		<nml_option name="config_use_mom_del2_tensor" type="logical" default_value=".false." units="unitless"
+		            description="If true, tensor-based Laplacian horizontal mixing is used on the momentum equation.  The tensor-based mixing operations are provided to show the functionality of the tensor subroutines.  Tensor-based del2 mixing is not fully vetted and not recommended for production simulations."
+		            possible_values=".true. or .false."
+		/>
+		<nml_option name="config_mom_del2_tensor" type="real" default_value="10.0" units="m^2 s^{-1}"
+		            description="Horizonal viscosity, $\nu_h$."
+		            possible_values="any positive real"
+		/>
+	</nml_record>
+	<nml_record name="hmix_del4_tensor">
+		<nml_option name="config_use_mom_del4_tensor" type="logical" default_value=".false." units="unitless"
+		            description="If true, tensor-based biharmonic horizontal mixing is used on the momentum equation.  The tensor-based mixing operations are provided to show the functionality of the tensor subroutines.  Tensor-based del4 mixing is not fully vetted and not recommended for production simulations."
+		            possible_values=".true. or .false."
+		/>
+		<nml_option name="config_mom_del4_tensor" type="real" default_value="5.0e13" units="m^4 s^{-1}"
+		            description="Coefficient for horizontal biharmonic operator on momentum."
+		            possible_values="any positive real"
 		/>
 	</nml_record>
 	<nml_record name="Rayleigh_damping">
