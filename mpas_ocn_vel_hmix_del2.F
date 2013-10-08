@@ -185,6 +185,7 @@ contains
 !> \date    July 2013
 !> \details 
 !>  This routine computes the horizontal mixing tendency for momentum
+!>  using tensor operations, 
 !>  based on a Laplacian form for the mixing, \f$\nabla\cdot( \nu_2 \nabla(u))\f$
 !>  where \f$\nu_2\f$ is a viscosity.
 !
@@ -283,7 +284,8 @@ contains
 
       call mpas_matrix_cell_to_edge(strainRateR3Cell, mesh, .true., strainRateR3Edge)
 
-      do iEdge=1,nEdges  ! nEdgesSolve?
+      ! The following loop could possibly be reduced to nEdgesSolve
+      do iEdge=1,nEdges  
          visc2 = config_mom_del2_tensor * meshScalingDel2(iEdge)
          do k=1,maxLevelEdgeTop(iEdge)
             strainRateR3Edge(:,k,iEdge) = visc2 * strainRateR3Edge(:,k,iEdge) 
@@ -295,12 +297,13 @@ contains
          end do
       end do
 
-     ! may change boundaries to false later
-     call mpas_divergence_of_tensor_R3Cell(strainRateR3Edge, mesh, edgeSignOnCell, .true., divTensorR3Cell)
+      ! may change boundaries to false later
+      call mpas_divergence_of_tensor_R3Cell(strainRateR3Edge, mesh, edgeSignOnCell, .true., divTensorR3Cell)
 
-     call mpas_vector_R3Cell_to_normalVectorEdge(divTensorR3Cell, mesh, .true., normalVectorEdge)
+      call mpas_vector_R3Cell_to_normalVectorEdge(divTensorR3Cell, mesh, .true., normalVectorEdge)
 
-      do iEdge=1,nEdges  !Solve?
+      ! The following loop could possibly be reduced to nEdgesSolve
+      do iEdge=1,nEdges 
          do k=1,maxLevelEdgeTop(iEdge)
             tend(k,iEdge) = tend(k,iEdge) + edgeMask(k, iEdge) * normalVectorEdge(k,iEdge)
          end do
