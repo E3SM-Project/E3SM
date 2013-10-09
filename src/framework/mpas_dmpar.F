@@ -1395,6 +1395,217 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 
    end subroutine mpas_dmpar_get_exch_list!}}}
 
+
+
+!***********************************************************************
+!
+!  routine mpas_dmpar_build_comm_lists
+!
+!> \brief   Builds send and receive comm lists templates for populating with buffer data
+!> \author  Matt Hoffman
+!> \date    8 October 2013
+!> \details
+!>  This routine builds the templates for send and receive communication lists
+!>  that can subsequently be populated with buffer data.  Specifically, it
+!>  creates all elements of send and receive linked lists of type
+!>  mpas_communication_list and fills in the procID and nlist attributes.
+!>  Other dmpar routines can then add data to the rbuffer and/or ibuffer arrays
+!>  of these send/receive lists.  This initial step is needed by all of the
+!>  various halo-exchange subroutines, so encapsulating these
+!>  initial steps here allows significant code-reuse and shortening of those
+!>  subroutines.  This implementation avoids the use of 'field' because there are
+!>  more than 10 different field types, which prevents the ability to generalize
+!>  this routine.  However, since we need to traverse blocks, the subroutine
+!>  required adding next/prev pointers to the mpas_multihalo_exchange_list type
+!>  (since we can't rely on the field to traverse blocks).  This subroutine
+!>  has been made public, so cores have access to it.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_dmpar_build_comm_lists(sendExchList, recvExchList, haloLayers, dimsizes, sendCommList, recvCommList, err)
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+      type (mpas_multihalo_exchange_list), pointer, intent(in) :: &
+         sendExchList  !< Input: the send exchange list from the variable for which communication lists are desired
+      type (mpas_multihalo_exchange_list), pointer, intent(in) :: &
+         recvExchList  !< Input: the receive exchange list from the variable for which communication lists are desired
+      integer, dimension(:), pointer :: haloLayers !< Input: list of halo layers to be communicated.
+      integer, dimension(:), pointer :: dimSizes !< array of sizes of the dimensions of the variable being communicated
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+      type (mpas_communication_list), pointer, intent(inout) :: &
+         sendCommList  !< Input/Output: the send communication list, unallocated on input, partially filled out on output
+      type (mpas_communication_list), pointer, intent(inout) :: &
+         recvCommList  !< Input/Output: the receive communication list, unallocated on input, partially filled out on output
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      type (mpas_multihalo_exchange_list), pointer :: sendListCursor, recvListCursor
+      type (mpas_exchange_list), pointer :: exchListPtr, exchListPtr2
+      type (mpas_communication_list), pointer :: commListPtr, commListPtr2
+      logical :: comm_list_found
+      integer :: nAdded, bufferOffset
+      integer :: iHalo
+      integer :: nHaloLayers
+      integer :: iDimen
+      integer :: dimSizeProduct  ! the product of the size of all dimensions
+
+      err = 0
+
+      ! We only need the product of all dimension sizes (except the last), so calculate that now
+      dimSizeProduct = 1
+      do iDimen = 1, size(dimsizes)
+         dimSizeProduct = dimSizeProduct * dimsizes(iDimen)
+      enddo
+
+      ! Get size of haloLayers array
+      nHaloLayers = size(haloLayers)
+
+      ! Allocate communication lists, and setup dead header node.
+      allocate(sendCommList)
+      nullify(sendCommList % next)
+      sendCommList % procID = -1
+      sendCommList % nList = 0
+
+      allocate(recvCommList)
+      nullify(recvCommList % next)
+      recvCommList % procID = -1
+      recvCommList % nList = 0
+
+
+      ! Determine size of buffers for communication lists
+      sendListCursor => sendExchList
+      recvListCursor => recvExchList  ! We need to traverse the send and recv exchange lists together in this loop
+      do while(associated(sendListCursor))
+
+        ! Need to aggregate across halo layers
+        do iHalo = 1, nHaloLayers
+
+          ! Determine size from send lists & build the send list
+          exchListPtr => sendListCursor % halos(haloLayers(iHalo)) % exchList
+          do while(associated(exchListPtr))  ! loop through items representing different endPoint Id's
+            comm_list_found = .false.
+
+            commListPtr => sendCommList
+            do while(associated(commListPtr))  ! Loop through items representing different procs being sent to
+              if(commListPtr % procID == exchListPtr % endPointId) then
+                comm_list_found = .true.
+                commListPtr % nList = commListPtr % nList + exchListPtr % nList
+                exit
+              end if
+
+              commListPtr => commListPtr % next
+            end do
+
+            if(.not. comm_list_found) then  ! Add an item to the sendCommList for this endpoint
+              commListPtr => sendCommList
+              commListPtr2 => commListPtr % next
+              do while(associated(commListPtr2))
+                commListPtr => commListPtr % next
+                commListPtr2 => commListPtr % next
+              end do
+
+              allocate(commListPtr % next)
+              commListPtr => commListPtr % next
+              nullify(commListPtr % next)
+              commListPtr % procID = exchListPtr % endPointID
+              commListPtr % nList = exchListPtr % nList
+            end if
+
+            exchListPtr => exchListPtr % next
+          end do
+
+          ! Setup recv lists
+          exchListPtr => recvListCursor % halos(haloLayers(iHalo)) % exchList
+          do while(associated(exchListPtr))
+            comm_list_found = .false.
+
+            commListPtr => recvCommList
+            do while(associated(commListPtr))
+              if(commListPtr % procID == exchListPtr % endPointId) then
+                comm_list_found = .true.
+                exit
+              end if
+
+              commListPtr => commListPtr % next
+            end do
+
+            if(.not. comm_list_found) then
+              commListPtr => recvCommList
+              commListPtr2 => commListPtr % next
+              do while(associated(commListPtr2))
+                commListPtr => commListPtr % next
+                commListPtr2 => commListPtr % next
+              end do
+
+              allocate(commListPtr % next)
+              commListPtr => commListPtr % next
+              nullify(commListPtr % next)
+              commListPtr % procID = exchListPtr % endPointID
+            end if
+
+            exchListPtr => exchListPtr % next
+          end do
+        end do   ! halo loop
+
+        sendListCursor => sendListCursor % next  ! Advance to next block (only happens if more than 1 block per proc)
+        recvListCursor => recvListCursor % next  ! Advance to next block (only happens if more than 1 block per proc)
+        ! We need to traverse the send and recv exchange lists together in this loop (since we cannot traverse the field itself)
+      end do  ! sendListCursor (block loop)
+
+      ! Remove the dead head pointer on send and recv list
+      commListPtr => sendCommList
+      sendCommList => sendCommList % next
+      deallocate(commListPtr)
+
+      commListPtr => recvCommList
+      recvCommList => recvCommList % next
+      deallocate(commListPtr)
+
+      ! Determine size of receive lists
+      commListPtr => recvCommList
+      do while(associated(commListPtr))
+        bufferOffset = 0
+        do iHalo = 1, nHaloLayers
+          nAdded = 0
+
+          recvListCursor => recvExchList
+          do while(associated(recvListCursor))
+            exchListPtr => recvListCursor % halos(haloLayers(iHalo)) % exchList
+            do while(associated(exchListPtr))
+              if(exchListPtr % endPointID == commListPtr % procID) then
+                nAdded = max(nAdded, maxval(exchListPtr % srcList))
+              end if
+              exchListPtr => exchListPtr % next
+            end do
+
+            recvListCursor => recvListCursor % next
+          end do
+          bufferOffset = bufferOffset + nAdded
+        end do
+        commListPtr % nList = bufferOffset
+
+        commListPtr => commListPtr % next
+      end do  ! commListPtr
+
+      deallocate(sendListCursor)
+      deallocate(recvListCursor)
+
+
+   !--------------------------------------------------------------------
+   end subroutine mpas_dmpar_build_comm_lists
+
+
+
 !-----------------------------------------------------------------------
 !  routine mpas_dmpar_alltoall_field1d_integer
 !
