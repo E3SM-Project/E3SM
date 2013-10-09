@@ -1133,7 +1133,7 @@ contains
            divTensorR3CellSolution(2,:,iCell) = -pi2l**2*f*(sin(rot)**2*g2 + 0.5*(cos(rot)**2*g2 + sin(rot)*cos(rot)*g1) )
         end do
 
-     elseif (tensor_test_function.eq.'spherical_solid') then
+     elseif (tensor_test_function.eq.'sph_solid_body') then
 
         write (*,'(a)') 'Test case:  solid body rotation on the sphere'
         write (*,'(a)') 'Note: This tensor test requires a spherical domain.'

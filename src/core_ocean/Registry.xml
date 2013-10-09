@@ -600,7 +600,7 @@
 	</nml_record>
 	<nml_record name="testing">
 		<nml_option name="config_conduct_tests" type="logical" default_value=".false." units="unitless"
-		            description="If true, run testing suite.  This the overarching control on the test suite.  Individual flags must be set to true below to conduct each test."
+		            description="If true, run testing suite.  This is the overarching control on the test suite.  Individual flags must be set to true below to conduct each test."
 		            possible_values=".true. or .false."
 		/>
 		<nml_option name="config_test_tensors" type="logical" default_value=".false." units="unitless"
@@ -609,7 +609,7 @@
 		/>
 		<nml_option name="config_tensor_test_function" type="character" default_value="sph_uCosCos" units="unitless"
 		            description="Character string to choose tensor test fuction"
-		            possible_values="'linear_x', 'linear_y', 'linear_arb_rot', 'power_x', 'power_y', 'power_arb_rot', 'sin_arb_rot', 'spherical_solid', 'sph_Williamson', 'sph_uCosCos', 'sph_vCosCos', 'sph_ELonLon_CosCos', 'sph_ELatLat_CosCos', 'sph_ELonLat_CosCos'"
+		            possible_values="'linear_x', 'linear_y', 'linear_arb_rot', 'power_x', 'power_y', 'power_arb_rot', 'sin_arb_rot', 'sph_solid_body', 'sph_Williamson', 'sph_uCosCos', 'sph_vCosCos', 'sph_ELonLon_CosCos', 'sph_ELatLat_CosCos', 'sph_ELonLat_CosCos'"
 		/>
 	</nml_record>
 	<nml_record name="debug">
@@ -1530,7 +1530,7 @@
 		<var name="outerProductEdge" 
                      persistence="scratch" 
                      type="real" dimensions="SIX nVertLevels nEdges" units="m^2 s^{-1}"
-		     description="Outer product, u_e \ocross n_e, at each edge."
+		     description="Outer product, $u_e \otimes n_e$, at each edge."
 		/>
 		<var name="normalVectorEdge" 
                      persistence="scratch" 
