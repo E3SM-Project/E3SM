@@ -64,7 +64,7 @@ module mpas_core
    integer, parameter :: restartAlarmID = 2
    integer, parameter :: statsAlarmID = 3
 
-   type (timer_node), pointer :: globalDiagTimer, timeIntTimer
+   type (timer_node), pointer :: globalDiagTimer, timeIntTimer, testSuiteTimer
    type (timer_node), pointer :: initDiagSolveTimer
 
    contains
@@ -215,12 +215,16 @@ module mpas_core
          block => block % next
       end do
 
-      call ocn_test_init(domain,err)
+      if (config_conduct_tests) then
+         call mpas_timer_start("test suite", .false., testSuiteTimer)
+         call ocn_test_suite(domain,err)
+         call mpas_timer_stop("test suite", testSuiteTimer)
+      endif
 
       if (config_write_stats_on_startup) then
-          call mpas_timer_start("global diagnostics", .false., globalDiagTimer)
-          call ocn_compute_global_diagnostics(domain, 1 , 0, dt)
-          call mpas_timer_stop("global diagnostics", globalDiagTimer)
+         call mpas_timer_start("global diagnostics", .false., globalDiagTimer)
+         call ocn_compute_global_diagnostics(domain, 1 , 0, dt)
+         call mpas_timer_stop("global diagnostics", globalDiagTimer)
       endif
 
       current_outfile_frames = 0

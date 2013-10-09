@@ -63,19 +63,11 @@
 	config_mom_del2 = 10.0
 	config_tracer_del2 = 10.0
 /
-&hmix_del2_tensor
-	config_use_mom_del2_tensor = .false.
-	config_mom_del2_tensor = 10.0
-/
 &hmix_del4
 	config_use_mom_del4 = .false.
 	config_use_tracer_del4 = .false.
 	config_mom_del4 = 5.0e13
 	config_tracer_del4 = 0.0
-/
-&hmix_del4_tensor
-	config_use_mom_del4_tensor = .false.
-	config_mom_del4_tensor = 5.0e13
 /
 &hmix_Leith
 	config_use_Leith_del2 = .false.
@@ -86,6 +78,14 @@
 &standard_GM
 	config_h_kappa = 0.0
 	config_h_kappa_q = 0.0
+/
+&hmix_del2_tensor
+	config_use_mom_del2_tensor = .false.
+	config_mom_del2_tensor = 10.0
+/
+&hmix_del4_tensor
+	config_use_mom_del4_tensor = .false.
+	config_mom_del4_tensor = 5.0e13
 /
 &Rayleigh_damping
 	config_Rayleigh_friction = .false.
@@ -165,6 +165,7 @@
 	config_btr_solve_SSH2 = .false.
 /
 &testing
+	config_conduct_tests = .false.
 	config_test_tensors = .false.
 	config_tensor_test_function = "sph_uCosCos"
 /

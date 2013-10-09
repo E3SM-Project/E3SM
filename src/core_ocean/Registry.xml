@@ -599,6 +599,10 @@
 		/>
 	</nml_record>
 	<nml_record name="testing">
+		<nml_option name="config_conduct_tests" type="logical" default_value=".false." units="unitless"
+		            description="If true, run testing suite.  This the overarching control on the test suite.  Individual flags must be set to true below to conduct each test."
+		            possible_values=".true. or .false."
+		/>
 		<nml_option name="config_test_tensors" type="logical" default_value=".false." units="unitless"
 		            description="If true, tensor operations are tested upon start-up."
 		            possible_values=".true. or .false."
@@ -1526,7 +1530,7 @@
 		<var name="outerProductEdge" 
                      persistence="scratch" 
                      type="real" dimensions="SIX nVertLevels nEdges" units="m^2 s^{-1}"
-		     description="Outer product, u_e \cross n_e, at each edge."
+		     description="Outer product, u_e \ocross n_e, at each edge."
 		/>
 		<var name="normalVectorEdge" 
                      persistence="scratch" 
