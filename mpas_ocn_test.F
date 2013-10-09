@@ -43,7 +43,7 @@ module ocn_test
    !
    !--------------------------------------------------------------------
 
-   public :: ocn_test_init
+   public :: ocn_test_suite
 
    !--------------------------------------------------------------------
    !
@@ -61,7 +61,7 @@ contains
 
 !***********************************************************************
 !
-!  routine ocn_test_init
+!  routine ocn_test_suite
 !
 !> \brief   Call all internal start-up tests
 !> \author  Mark Petersen, Doug Jacobsen, Todd Ringler
@@ -71,7 +71,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_test_init(domain, err)!{{{
+   subroutine ocn_test_suite(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -97,12 +97,12 @@ contains
 
       integer :: err1
 
+      err=0
+
       call ocn_prep_test_tensor(domain,err1)
+      err = ior(err1,err)
 
-
-      err = err1
-
-   end subroutine ocn_test_init!}}}
+   end subroutine ocn_test_suite!}}}
 
 
 !***********************************************************************
