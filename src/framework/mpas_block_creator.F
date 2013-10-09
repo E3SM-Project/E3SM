@@ -104,7 +104,7 @@ module mpas_block_creator
          allocate(fieldCursor % next)
  
          blockCursor % next % prev => blockCursor
-  
+
          blockCursor => blockCursor % next
          fieldCursor => fieldCursor % next
        end if
@@ -1076,6 +1076,38 @@ module mpas_block_creator
        nullify(indexToVertexCursor % sendList)
        nullify(indexToVertexCursor % recvList)
        nullify(indexToVertexCursor % copyList)
+
+       ! Setup next/prev multihalo exchange list pointers
+       !   (block 'next' pointers should be setup by now, but setting up 'next' pointers indirectly here)
+       if ( associated(block_ptr % prev) ) then
+          ! == Setup this block's 'prev' pointers ==
+          ! 1. For Cell exchange lists
+          block_ptr % parinfo % cellsToSend % prev => block_ptr % prev % parinfo % cellsToSend
+          block_ptr % parinfo % cellsToRecv % prev => block_ptr % prev % parinfo % cellsToRecv
+          block_ptr % parinfo % cellsToCopy % prev => block_ptr % prev % parinfo % cellsToCopy
+          ! 2. For Edge exchange lists
+          block_ptr % parinfo % edgesToSend % prev => block_ptr % prev % parinfo % edgesToSend
+          block_ptr % parinfo % edgesToRecv % prev => block_ptr % prev % parinfo % edgesToRecv
+          block_ptr % parinfo % edgesToCopy % prev => block_ptr % prev % parinfo % edgesToCopy
+          ! 3. For Vertex exchange lists
+          block_ptr % parinfo % verticesToSend % prev => block_ptr % prev % parinfo % verticesToSend
+          block_ptr % parinfo % verticesToRecv % prev => block_ptr % prev % parinfo % verticesToRecv
+          block_ptr % parinfo % verticesToCopy % prev => block_ptr % prev % parinfo % verticesToCopy
+          ! == Setup the previous block's 'next' pointers ==
+          ! 1. For Cell exchange lists
+          block_ptr % prev % parinfo % cellsToSend % next => block_ptr % parinfo % cellsToSend
+          block_ptr % prev % parinfo % cellsToRecv % next => block_ptr % parinfo % cellsToRecv
+          block_ptr % prev % parinfo % cellsToCopy % next => block_ptr % parinfo % cellsToCopy
+          ! 2. For Edge exchange lists
+          block_ptr % prev % parinfo % edgesToSend % next => block_ptr % parinfo % edgesToSend
+          block_ptr % prev % parinfo % edgesToRecv % next => block_ptr % parinfo % edgesToRecv
+          block_ptr % prev % parinfo % edgesToCopy % next => block_ptr % parinfo % edgesToCopy
+          ! 3. For Vertex exchange lists
+          block_ptr % prev % parinfo % verticesToSend % next => block_ptr % parinfo % verticesToSend
+          block_ptr % prev % parinfo % verticesToRecv % next => block_ptr % parinfo % verticesToRecv
+          block_ptr % prev % parinfo % verticesToCopy % next => block_ptr % parinfo % verticesToCopy
+          ! (the final block's 'next' pointer does not need to be dealt with because it was alredy nullified in mpas_dmpar_init_multihalo_exchange_list)
+       end if
 
        ! Advance cursors
        block_ptr => block_ptr % next

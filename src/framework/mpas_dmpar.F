@@ -6185,6 +6185,8 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
      do i = 1, nHalos
        nullify(exchList % halos(i) % exchList)
      end do
+     nullify(exchList % next)
+     nullify(exchList % prev)
    end subroutine mpas_dmpar_init_multihalo_exchange_list!}}}
 
 !-----------------------------------------------------------------------

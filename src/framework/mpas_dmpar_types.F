@@ -41,6 +41,8 @@ module mpas_dmpar_types
 
    type mpas_multihalo_exchange_list
      type (mpas_exchange_list_pointer), dimension(:), pointer :: halos
+     ! Pointers to the mulithalo exchange lists for this variable on the prev and next blocks on this processor
+     type (mpas_multihalo_exchange_list), pointer :: prev, next
    end type mpas_multihalo_exchange_list
 
 
