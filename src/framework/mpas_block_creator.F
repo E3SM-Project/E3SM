@@ -89,9 +89,9 @@ module mpas_block_creator
        nullify(fieldCursor % ioinfo)
  
        ! Initialize exchange lists
-       call mpas_dmpar_init_mulithalo_exchange_list(fieldCursor % sendList, nHalos)
-       call mpas_dmpar_init_mulithalo_exchange_list(fieldCursor % recvList, nHalos)
-       call mpas_dmpar_init_mulithalo_exchange_list(fieldCursor % copyList, nHalos)
+       call mpas_dmpar_init_multihalo_exchange_list(fieldCursor % sendList, nHalos)
+       call mpas_dmpar_init_multihalo_exchange_list(fieldCursor % recvList, nHalos)
+       call mpas_dmpar_init_multihalo_exchange_list(fieldCursor % copyList, nHalos)
  
        ! Allocate array, and copy indices into array
        allocate(fieldCursor % array(fieldCursor % dimSizes(1)))
@@ -266,7 +266,7 @@ module mpas_block_creator
 !>  This routine uses the previously setup 0 halo cell fields, and the blocks of
 !>  data read in by other routhers to determine which edges are in a blocks
 !>  0 and 1 halo for all blocks on a processor.
-!>  NOTE: This routine can be used on either edges or edges
+!>  NOTE: This routine can be used on either edges or vertices
 !
 !-----------------------------------------------------------------------
 
@@ -339,9 +339,9 @@ module mpas_block_creator
        allocate(cellsOnEdgeCursor % array(cellsOnEdgeCursor % dimSizes(1), cellsOnEdgeCursor % dimSizes(2)))
 
        ! Setup exchange lists
-       call mpas_dmpar_init_mulithalo_exchange_list(indexToEdgeCursor % sendList, nHalos+1)
-       call mpas_dmpar_init_mulithalo_exchange_list(indexToEdgeCursor % recvList, nHalos+1)
-       call mpas_dmpar_init_mulithalo_exchange_list(indexToEdgeCursor % copyList, nHalos+1)
+       call mpas_dmpar_init_multihalo_exchange_list(indexToEdgeCursor % sendList, nHalos+1)
+       call mpas_dmpar_init_multihalo_exchange_list(indexToEdgeCursor % recvList, nHalos+1)
+       call mpas_dmpar_init_multihalo_exchange_list(indexToEdgeCursor % copyList, nHalos+1)
 
        ! Link exchange lists
        cellsOnEdgeCursor % sendList => indexToEdgeCursor % sendList

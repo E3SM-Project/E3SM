@@ -505,9 +505,9 @@ module mpas_io_input
      call mpas_io_get_var(inputHandle, 'indexToCellID', indexToCellID % array, ierr)
      indexToCellID % dimSizes(1) = nReadCells
      indexToCellID % block => readingBlock
-     call mpas_dmpar_init_mulithalo_exchange_list(indexToCellID % sendList, nHalos)
-     call mpas_dmpar_init_mulithalo_exchange_list(indexToCellID % recvList, nHalos)
-     call mpas_dmpar_init_mulithalo_exchange_list(indexToCellID % copyList, nHalos)
+     call mpas_dmpar_init_multihalo_exchange_list(indexToCellID % sendList, nHalos)
+     call mpas_dmpar_init_multihalo_exchange_list(indexToCellID % recvList, nHalos)
+     call mpas_dmpar_init_multihalo_exchange_list(indexToCellID % copyList, nHalos)
      nullify(indexToCellID % next)
    
 
@@ -631,9 +631,9 @@ module mpas_io_input
      call mpas_io_get_var(inputHandle, 'indexToEdgeID', indexToEdgeID % array, ierr)
      indexToEdgeID % dimSizes(1) = nREadEdges
      indexToEdgeID % block => readingBlock
-     call mpas_dmpar_init_mulithalo_exchange_list(indexToEdgeID % sendList, nHalos+1)
-     call mpas_dmpar_init_mulithalo_exchange_list(indexToEdgeID % recvList, nHalos+1)
-     call mpas_dmpar_init_mulithalo_exchange_list(indexToEdgeID % copyList, nHalos+1)
+     call mpas_dmpar_init_multihalo_exchange_list(indexToEdgeID % sendList, nHalos+1)
+     call mpas_dmpar_init_multihalo_exchange_list(indexToEdgeID % recvList, nHalos+1)
+     call mpas_dmpar_init_multihalo_exchange_list(indexToEdgeID % copyList, nHalos+1)
      nullify(indexToEdgeID % next)
    
    
@@ -696,9 +696,9 @@ module mpas_io_input
      call mpas_io_get_var(inputHandle, 'indexToVertexID', indexToVertexID % array, ierr)
      indexToVertexID % dimSizes(1) = nReadVertices
      indexToVertexID % block => readingBlock
-     call mpas_dmpar_init_mulithalo_exchange_list(indexToVertexID % sendList, nHalos+1)
-     call mpas_dmpar_init_mulithalo_exchange_list(indexToVertexID % recvList, nHalos+1)
-     call mpas_dmpar_init_mulithalo_exchange_list(indexToVertexID % copyList, nHalos+1)
+     call mpas_dmpar_init_multihalo_exchange_list(indexToVertexID % sendList, nHalos+1)
+     call mpas_dmpar_init_multihalo_exchange_list(indexToVertexID % recvList, nHalos+1)
+     call mpas_dmpar_init_multihalo_exchange_list(indexToVertexID % copyList, nHalos+1)
      nullify(indexToVertexID % next)
    
    

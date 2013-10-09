@@ -1403,7 +1403,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 !> \date   03/26/13
 !> \details
 !>  This routine handles the all-to-all communication of an input field into an output field across all processors.
-!>  It requries exchange lists to be created prior to calling this routine.
+!>  It requires exchange lists to be created prior to calling this routine.
 !
 !-----------------------------------------------------------------------
    subroutine mpas_dmpar_alltoall_field1d_integer(fieldIn, fieldout, haloLayersIn)!{{{
@@ -1448,7 +1448,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
      nullify(sendList)
      nullify(recvList)
 
-     ! Setup recieve lists.
+     ! Setup receive lists.
      do iHalo = 1, nHaloLayers
        fieldOutPtr => fieldOut
        do while(associated(fieldOutPtr))
@@ -1522,7 +1522,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
        commListPtr => commListPtr % next
      end do
 
-     ! Allocate buffers for recieves, and initiate mpi_irecv calls.
+     ! Allocate buffers for receives, and initiate mpi_irecv calls.
      commListPtr => recvList
      do while(associated(commListPtr))
        allocate(commListPtr % ibuffer(commListPtr % nList))
@@ -1694,7 +1694,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 !> \date   03/26/13
 !> \details
 !>  This routine handles the all-to-all communication of an input field into an output field across all processors.
-!>  It requries exchange lists to be created prior to calling this routine.
+!>  It requires exchange lists to be created prior to calling this routine.
 !
 !-----------------------------------------------------------------------
    subroutine mpas_dmpar_alltoall_field2d_integer(fieldIn, fieldout, haloLayersIn)!{{{
@@ -1739,7 +1739,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
      nullify(sendList)
      nullify(recvList)
 
-     ! Setup recieve lists
+     ! Setup receive lists
      do iHalo = 1, nHaloLayers
        fieldOutPtr => fieldOut
        do while(associated(fieldOutPtr))
@@ -1812,7 +1812,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
        commListPtr => commListPtr % next
      end do
 
-     ! Allocate buffers for recieves, and initiate mpi_irecv calls.
+     ! Allocate buffers for receives, and initiate mpi_irecv calls.
      commListPtr => recvList
      do while(associated(commListPtr))
        allocate(commListPtr % ibuffer(commListPtr % nList))
@@ -1986,7 +1986,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 !> \date   03/26/13
 !> \details
 !>  This routine handles the all-to-all communication of an input field into an output field across all processors.
-!>  It requries exchange lists to be created prior to calling this routine.
+!>  It requires exchange lists to be created prior to calling this routine.
 !
 !-----------------------------------------------------------------------
    subroutine mpas_dmpar_alltoall_field3d_integer(fieldIn, fieldout, haloLayersIn)!{{{
@@ -2031,7 +2031,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
      nullify(sendList)
      nullify(recvList)
 
-     ! Setup recieve lists.
+     ! Setup receive lists.
      do iHalo = 1, nHaloLayers
        fieldOutPtr => fieldOut
        do while(associated(fieldOutPtr))
@@ -2106,7 +2106,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
        commListPtr => commListPtr % next
      end do
 
-     ! Allocate buffers for recieves, and initiate mpi_irecv calls.
+     ! Allocate buffers for receives, and initiate mpi_irecv calls.
      commListPtr => recvList
      do while(associated(commListPtr))
        allocate(commListPtr % ibuffer(commListPtr % nList))
@@ -2285,7 +2285,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 !> \date   03/26/13
 !> \details
 !>  This routine handles the all-to-all communication of an input field into an output field across all processors.
-!>  It requries exchange lists to be created prior to calling this routine.
+!>  It requires exchange lists to be created prior to calling this routine.
 !
 !-----------------------------------------------------------------------
    subroutine mpas_dmpar_alltoall_field1d_real(fieldIn, fieldout, haloLayersIn)!{{{
@@ -2330,7 +2330,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
      nullify(sendList)
      nullify(recvList)
 
-     ! Setup recieve lists.
+     ! Setup receive lists.
      do iHalo = 1, nHaloLayers
        fieldOutPtr => fieldOut
        do while(associated(fieldOutPtr))
@@ -2403,7 +2403,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
        commListPtr => commListPtr % next
      end do
 
-     ! Allocate buffers for recieves, and initiate mpi_irecv calls.
+     ! Allocate buffers for receives, and initiate mpi_irecv calls.
      commListPtr => recvList
      do while(associated(commListPtr))
        allocate(commListPtr % rbuffer(commListPtr % nList))
@@ -2574,7 +2574,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 !> \date   03/26/13
 !> \details
 !>  This routine handles the all-to-all communication of an input field into an output field across all processors.
-!>  It requries exchange lists to be created prior to calling this routine.
+!>  It requires exchange lists to be created prior to calling this routine.
 !
 !-----------------------------------------------------------------------
    subroutine mpas_dmpar_alltoall_field2d_real(fieldIn, fieldout, haloLayersIn)!{{{
@@ -2619,7 +2619,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
      nullify(sendList)
      nullify(recvList)
 
-     ! Setup recieve lists, and determine the size of their buffers.
+     ! Setup receive lists, and determine the size of their buffers.
      do iHalo = 1, nHaloLayers
        fieldOutPtr => fieldOut
        do while(associated(fieldOutPtr))
@@ -2692,7 +2692,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
        commListPtr => commListPtr % next
      end do
 
-     ! Allocate buffers for recieves, and initiate mpi_irecv calls.
+     ! Allocate buffers for receives, and initiate mpi_irecv calls.
      commListPtr => recvList
      do while(associated(commListPtr))
        allocate(commListPtr % rbuffer(commListPtr % nList))
@@ -2867,7 +2867,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 !> \date   03/26/13
 !> \details
 !>  This routine handles the all-to-all communication of an input field into an output field across all processors.
-!>  It requries exchange lists to be created prior to calling this routine.
+!>  It requires exchange lists to be created prior to calling this routine.
 !
 !-----------------------------------------------------------------------
    subroutine mpas_dmpar_alltoall_field3d_real(fieldIn, fieldout, haloLayersIn)!{{{
@@ -2912,7 +2912,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
      nullify(sendList)
      nullify(recvList)
 
-     ! Setup recieve lists.
+     ! Setup receive lists.
      do iHalo = 1, nHaloLayers
        fieldOutPtr => fieldOut
        do while(associated(fieldOutPtr))
@@ -2989,7 +2989,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
        commListPtr => commListPtr % next
      end do
 
-     ! Allocate buffers for recieves, and initiate mpi_irecv calls.
+     ! Allocate buffers for receives, and initiate mpi_irecv calls.
      commListPtr => recvList
      do while(associated(commListPtr))
        allocate(commListPtr % rbuffer(commListPtr % nList))
@@ -3168,7 +3168,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 !> \date   03/26/13
 !> \details
 !>  This routine handles the all-to-all communication of an input field into an output field across all processors.
-!>  It requries exchange lists to be created prior to calling this routine.
+!>  It requires exchange lists to be created prior to calling this routine.
 !
 !-----------------------------------------------------------------------
    subroutine mpas_dmpar_alltoall_field4d_real(fieldIn, fieldout, haloLayersIn)!{{{
@@ -3213,7 +3213,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
      nullify(sendList)
      nullify(recvList)
 
-     ! Setup recieve lists.
+     ! Setup receive lists.
      do iHalo = 1, nHaloLayers
        fieldOutPtr => fieldOut
        do while(associated(fieldOutPtr))
@@ -3290,7 +3290,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
        commListPtr => commListPtr % next
      end do
 
-     ! Allocate buffers for recieves, and initiate mpi_irecv calls.
+     ! Allocate buffers for receives, and initiate mpi_irecv calls.
      commListPtr => recvList
      do while(associated(commListPtr))
        allocate(commListPtr % rbuffer(commListPtr % nList))
@@ -3477,7 +3477,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 !> \date   03/26/13
 !> \details
 !>  This routine handles the all-to-all communication of an input field into an output field across all processors.
-!>  It requries exchange lists to be created prior to calling this routine.
+!>  It requires exchange lists to be created prior to calling this routine.
 !
 !-----------------------------------------------------------------------
    subroutine mpas_dmpar_alltoall_field5d_real(fieldIn, fieldout, haloLayersIn)!{{{
@@ -3522,7 +3522,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
      nullify(sendList)
      nullify(recvList)
 
-     ! Setup recieve lists.
+     ! Setup receive lists.
      do iHalo = 1, nHaloLayers
        fieldOutPtr => fieldOut
        do while(associated(fieldOutPtr))
@@ -3599,7 +3599,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
        commListPtr => commListPtr % next
      end do
 
-     ! Allocate buffers for recieves, and initiate mpi_irecv calls.
+     ! Allocate buffers for receives, and initiate mpi_irecv calls.
      commListPtr => recvList
      do while(associated(commListPtr))
        allocate(commListPtr % rbuffer(commListPtr % nList))
@@ -3792,7 +3792,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 !> \date   03/26/13
 !> \details
 !>  This routine handles the halo exchange communication of an input field across all processors.
-!>  It requries exchange lists to be created prior to calling this routine.
+!>  It requires exchange lists to be created prior to calling this routine.
 !
 !-----------------------------------------------------------------------
    subroutine mpas_dmpar_exch_halo_field1d_integer(field, haloLayersIn)!{{{
@@ -3935,7 +3935,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       recvList => recvList % next
       deallocate(commListPtr)
 
-      ! Determine size of recieve lists
+      ! Determine size of receive lists
       commListPtr => recvList
       do while(associated(commListPtr))
         bufferOffset = 0
@@ -4083,7 +4083,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 !> \date   03/26/13
 !> \details
 !>  This routine handles the halo exchange communication of an input field across all processors.
-!>  It requries exchange lists to be created prior to calling this routine.
+!>  It requires exchange lists to be created prior to calling this routine.
 !
 !-----------------------------------------------------------------------
    subroutine mpas_dmpar_exch_halo_field2d_integer(field, haloLayersIn)!{{{
@@ -4226,7 +4226,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       recvList => recvList % next
       deallocate(commListPtr)
 
-      ! Determine size of recieve list buffers
+      ! Determine size of receive list buffers
       commListPtr => recvList
       do while(associated(commListPtr))
         bufferOffset = 0
@@ -4375,7 +4375,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 !> \date   03/26/13
 !> \details
 !>  This routine handles the halo exchange communication of an input field across all processors.
-!>  It requries exchange lists to be created prior to calling this routine.
+!>  It requires exchange lists to be created prior to calling this routine.
 !
 !-----------------------------------------------------------------------
    subroutine mpas_dmpar_exch_halo_field3d_integer(field, haloLayersIn)!{{{
@@ -4673,7 +4673,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 !> \date   03/26/13
 !> \details
 !>  This routine handles the halo exchange communication of an input field across all processors.
-!>  It requries exchange lists to be created prior to calling this routine.
+!>  It requires exchange lists to be created prior to calling this routine.
 !
 !-----------------------------------------------------------------------
    subroutine mpas_dmpar_exch_halo_field1d_real(field, haloLayersIn)!{{{
@@ -4962,7 +4962,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 !> \date   03/26/13
 !> \details
 !>  This routine handles the halo exchange communication of an input field across all processors.
-!>  It requries exchange lists to be created prior to calling this routine.
+!>  It requires exchange lists to be created prior to calling this routine.
 !
 !-----------------------------------------------------------------------
    subroutine mpas_dmpar_exch_halo_field2d_real(field, haloLayersIn)!{{{
@@ -5256,7 +5256,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 !> \date   03/26/13
 !> \details
 !>  This routine handles the halo exchange communication of an input field across all processors.
-!>  It requries exchange lists to be created prior to calling this routine.
+!>  It requires exchange lists to be created prior to calling this routine.
 !
 !-----------------------------------------------------------------------
    subroutine mpas_dmpar_exch_halo_field3d_real(field, haloLayersIn)!{{{
@@ -5554,7 +5554,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 !> \date   03/26/13
 !> \details
 !>  This routine handles the halo exchange communication of an input field across all processors.
-!>  It requries exchange lists to be created prior to calling this routine.
+!>  It requires exchange lists to be created prior to calling this routine.
 !
 !-----------------------------------------------------------------------
    subroutine mpas_dmpar_exch_halo_field4d_real(field, haloLayersIn)!{{{
@@ -5860,7 +5860,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 !> \date   03/26/13
 !> \details
 !>  This routine handles the halo exchange communication of an input field across all processors.
-!>  It requries exchange lists to be created prior to calling this routine.
+!>  It requires exchange lists to be created prior to calling this routine.
 !
 !-----------------------------------------------------------------------
    subroutine mpas_dmpar_exch_halo_field5d_real(field, haloLayersIn)!{{{
@@ -6165,7 +6165,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
    end subroutine mpas_dmpar_exch_halo_field5d_real!}}}
 
 !-----------------------------------------------------------------------
-!  routine mpas_dmpar_init_mulithalo_exchange_list
+!  routine mpas_dmpar_init_multihalo_exchange_list
 !
 !> \brief MPAS dmpar initialize muiltihalo exchange list routine.
 !> \author Doug Jacobsen
@@ -6174,7 +6174,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
 !>  This routine initializes the multihalo exchange lists, based on a number of halo layers.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_dmpar_init_mulithalo_exchange_list(exchList, nHalos)!{{{
+   subroutine mpas_dmpar_init_multihalo_exchange_list(exchList, nHalos)!{{{
      type (mpas_multihalo_exchange_list), pointer :: exchList !< Input: Exchange list to initialize
      integer, intent(in) :: nHalos !< Input: Number of halo layers for exchange list
 
@@ -6185,7 +6185,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
      do i = 1, nHalos
        nullify(exchList % halos(i) % exchList)
      end do
-   end subroutine mpas_dmpar_init_mulithalo_exchange_list!}}}
+   end subroutine mpas_dmpar_init_multihalo_exchange_list!}}}
 
 !-----------------------------------------------------------------------
 !  routine mpas_dmpar_destroy_mulithalo_exchange_list
