@@ -529,11 +529,11 @@ contains
       end if
 
 #ifdef MPAS_CESM
-      do iEdge = 1, grid % nEdgesSolve
+      do iEdge = 1, mesh % nEdgesSolve
          cell1 = cellsOnEdge(1, iEdge)
          cell2 = cellsOnEdge(2, iEdge)
 
-         s % gradSSH % array(1, iEdge) = (ssh(cell2) - ssh(cell1)) / dcEdge(iEdge)
+         diagnostics % gradSSH % array(1, iEdge) = (ssh(cell2) - ssh(cell1)) / dcEdge(iEdge)
       end do
 #endif
 
