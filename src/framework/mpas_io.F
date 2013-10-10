@@ -222,8 +222,9 @@ module mpas_io
                       PIO_rearr_box,             &     ! rearr
                       pio_iosystem)                    ! iosystem
   
-        call pio_seterrorhandling(pio_iosystem, PIO_BCAST_ERROR)
       end if
+
+      call pio_seterrorhandling(pio_iosystem, PIO_BCAST_ERROR)
 
    end subroutine MPAS_io_init
 
