@@ -551,7 +551,7 @@ contains
          s_bv, topology,columnpackage, moisture, precon_method, rsplit, qsplit, rk_stage_user,&
          sub_case, &
          limiter_option, nu, nu_q, nu_div, tstep_type, hypervis_subcycle, &
-         hypervis_subcycle_q, use_semi_lagrange_transport
+         hypervis_subcycle_q, use_semi_lagrange_transport, pertlim
     use prim_si_ref_mod, only: prim_si_refstate_init, prim_set_mass
     use bndry_mod, only : sort_neighbor_buffer_mapping
 #ifdef TRILINOS
@@ -826,10 +826,9 @@ contains
           ! copy prognostic variables:  tl%n0 into tl%nm1
           do ie=nets,nete
              elem(ie)%state%v(:,:,:,:,tl%nm1)=elem(ie)%state%v(:,:,:,:,tl%n0)
-             elem(ie)%state%T(:,:,:,tl%nm1)=elem(ie)%state%T(:,:,:,tl%n0)
+             elem(ie)%state%T(:,:,:,tl%nm1)=elem(ie)%state%T(:,:,:,tl%n0) 
              elem(ie)%state%ps_v(:,:,tl%nm1)=elem(ie)%state%ps_v(:,:,tl%n0)
              elem(ie)%state%lnps(:,:,tl%nm1)=elem(ie)%state%lnps(:,:,tl%n0)
-
           enddo
        endif ! runtype==2
     else  ! initial run  RUNTYPE=0
@@ -910,7 +909,6 @@ contains
        ! ========================================
        ! Print state and movie output
        ! ========================================
-
     end if  ! runtype
 
 !$OMP MASTER
@@ -935,6 +933,13 @@ contains
     if (runtype==0 .or. runtype==2) then
        do ie=nets,nete
           elem(ie)%derived%omega_p(:,:,:) = 0D0
+#ifndef CAM
+          elem(ie)%state%T(:,:,:,tl%nm1)=elem(ie)%state%T(:,:,:,tl%n0) &
+                * (1.0 + pertlim)
+            if(ie==nets) print *, "pertlim = ", pertlim
+#else
+          elem(ie)%state%T(:,:,:,tl%nm1)=elem(ie)%state%T(:,:,:,tl%n0) 
+#endif
        end do
 
        call TimeLevel_Qdp( tl, qsplit, n0_qdp)

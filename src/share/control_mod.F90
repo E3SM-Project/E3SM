@@ -8,7 +8,7 @@
 module control_mod
   use kinds, only : real_kind
 
-  integer, public, parameter :: MAX_STRING_LEN=80
+  integer, public, parameter :: MAX_STRING_LEN=240
   integer, public, parameter :: MAX_FILE_LEN=240
   character(len=MAX_STRING_LEN)    , public :: integration    ! time integration (explicit, semi_imp, or full imp)
 
@@ -169,7 +169,9 @@ module control_mod
 
   real (kind=real_kind), public :: initial_total_mass = 0    ! initial perturbation in JW test case
   real (kind=real_kind), public :: u_perturb   = 0         ! initial perturbation in JW test case
-
+#ifndef CAM
+  real (kind=real_kind), public :: pertlim = 0          !pertibation to temperature [like CESM]
+#endif
   integer, public, parameter :: west  = 1
   integer, public, parameter :: east  = 2
   integer, public, parameter :: south = 3
