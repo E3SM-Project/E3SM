@@ -86,7 +86,11 @@ module namelist_mod
        tol,           &
        debug_level,   &
        vert_remap_q_alg, &
+#ifndef CAM
+       pertlim,      &
+#endif
        test_cfldep
+      
 
   !-----------------
   use thread_mod, only : nthreads, omp_get_max_threads
@@ -229,6 +233,7 @@ module namelist_mod
                      limiter_option, &
                      smooth,        &        ! Timestep Filter
                      omega,         &
+                     pertlim,        &        !temperature initial perturbation
 #endif
                      npart,         &
                      uselapi,       &
@@ -313,7 +318,7 @@ module namelist_mod
                         p_bv,          &
                         s_bv,          &
                         wght_fm,       &
-                        kcut_fm
+                        kcut_fm       
 
 #ifndef CAM
     namelist /vert_nl/vform,           &
@@ -414,6 +419,7 @@ module namelist_mod
     se_ftype = ftype   ! MNL: For non-CAM runs, ftype=0 in control_mod
     phys_tscale=0
     nsplit = 1
+    pertlim = 0.
 #endif
     sub_case      = 1
     numnodes      = -1
@@ -809,10 +815,12 @@ module namelist_mod
     nsplit = se_nsplit
 #else
     call MPI_bcast(omega     ,1,MPIreal_t   ,par%root,par%comm,ierr)
+    call MPI_bcast(pertlim   ,1,MPIreal_t   ,par%root,par%comm,ierr)
     call MPI_bcast(tstep     ,1,MPIreal_t   ,par%root,par%comm,ierr)
     call MPI_bcast(nmax      ,1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(NTHREADS  ,1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(ndays     ,1,MPIinteger_t,par%root,par%comm,ierr)
+
     nEndStep = nmax
 #endif
     call MPI_bcast(smooth    ,1,MPIreal_t   ,par%root,par%comm,ierr)
