@@ -56,6 +56,7 @@ module namelist_mod
        nu_p,          &
        nu_top,        &
        hypervis_scaling,   & ! use tensor HV instead of scalar coefficient
+       disable_diagnostics, & ! Use to disable diagnostics for timing reasons
        psurf_vis,    &
        hypervis_order,    &
        hypervis_power,    &
@@ -255,6 +256,7 @@ module namelist_mod
                      physics, &             ! The type of physics, 0=none, 1=multicloud or 2= emanuel.
                      rk_stage_user, &
                      LFTfreq,       &
+                     disable_diagnostics, &
                      prescribed_wind, &
                      se_ftype,        &       ! forcing type
                      energy_fixer,        &       ! forcing type
@@ -435,6 +437,8 @@ module namelist_mod
     tracer_advection_formulation  = TRACERADV_UGRADQ
 #endif
     use_semi_lagrange_transport   = .false.
+!    pertlim = 0.0_real_kind
+    disable_diagnostics = .false.
 
 
     ! =======================
@@ -831,6 +835,8 @@ module namelist_mod
     call MPI_bcast(nu_div       ,1,MPIreal_t   ,par%root,par%comm,ierr)
     call MPI_bcast(nu_p         ,1,MPIreal_t   ,par%root,par%comm,ierr)
     call MPI_bcast(nu_top   ,1,MPIreal_t   ,par%root,par%comm,ierr)
+!    call MPI_bcast(pertlim, 1, MPIreal_t, par%root,par%comm,ierr)
+    call MPI_bcast(disable_diagnostics,1,MPIlogical_t,par%root,par%comm,ierr)
     call MPI_bcast(psurf_vis,1,MPIinteger_t   ,par%root,par%comm,ierr)
     call MPI_bcast(hypervis_order,1,MPIinteger_t   ,par%root,par%comm,ierr)
     call MPI_bcast(hypervis_power,1,MPIreal_t   ,par%root,par%comm,ierr)

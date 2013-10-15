@@ -5,7 +5,7 @@
 module edge_mod
   use kinds, only : int_kind, log_kind, real_kind
   use dimensions_mod, only : max_neigh_edges, nelemd
-  use perf_mod, only: t_startf, t_stopf ! _EXTERNAL
+  use perf_mod, only: t_startf, t_stopf, t_adj_detailf ! _EXTERNAL
   use thread_mod, only: omp_get_num_threads, omp_get_thread_num
   use coordinate_systems_mod, only : cartesian3D_t
 #ifdef MPI_PERSISTENT
@@ -504,6 +504,7 @@ contains
 
     integer :: is,ie,in,iw
 
+    call t_adj_detailf(+2)
     call t_startf('edge_pack')
     if(.not. threadsafe) then
 #if (! defined ELEMENT_OPENMP)
@@ -644,6 +645,7 @@ contains
     end do
 
     call t_stopf('edge_pack')
+    call t_adj_detailf(-2)
 
   end subroutine edgeVpack
   ! =========================================
@@ -810,6 +812,7 @@ contains
     integer :: i,k,ll
     integer :: is,ie,in,iw
 
+    call t_adj_detailf(+2)
     call t_startf('edge_unpack')
     threadsafe=.false.
 
@@ -885,6 +888,7 @@ contains
     end do
 
     call t_stopf('edge_unpack')
+    call t_adj_detailf(-2)
 
   end subroutine edgeVunpack
   subroutine edgeVunpackVert(edge,v,desc)

@@ -239,7 +239,7 @@ contains
     use edge_mod, only : Edgebuffer_t
     use schedtype_mod, only : schedule_t, cycle_t, schedule
     use dimensions_mod, only: nelemd, np
-    use perf_mod, only: t_startf, t_stopf ! _EXTERNAL
+    use perf_mod, only: t_startf, t_stopf, t_adj_detailf ! _EXTERNAL
 #ifdef _MPI
     use parallel_mod, only : abortmp, status, srequest, rrequest, &
          mpireal_t, mpiinteger_t, mpi_success
@@ -264,6 +264,7 @@ contains
     logical(kind=log_kind),parameter      :: Debug = .FALSE.
 
 
+    call t_adj_detailf(+2)
     call t_startf('bndry_exchange')
 #if (! defined ELEMENT_OPENMP)
     !$OMP BARRIER
@@ -360,6 +361,7 @@ contains
     !$OMP BARRIER
 #endif
     call t_stopf('bndry_exchange')
+    call t_adj_detailf(-2)
 
   end subroutine bndry_exchangeV_thsave
 
