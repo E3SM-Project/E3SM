@@ -35,3 +35,6 @@
 
 /* Enable FVM */
 #define _FVM 1
+
+/* Enable persistent MPI comm */
+#cmakedefine MPI_PERSISTENT

@@ -2,8 +2,6 @@
 #include "config.h"
 #endif
 
-#undef MPI_PERSISTENT 
-
 module edge_mod
   use kinds, only : int_kind, log_kind, real_kind
   use dimensions_mod, only : max_neigh_edges, nelemd

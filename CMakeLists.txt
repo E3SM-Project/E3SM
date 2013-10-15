@@ -130,6 +130,11 @@ MESSAGE(STATUS "CXX Flags = ${CMAKE_CXX_FLAGS}")
 MESSAGE(STATUS "Linker Flags = ${CMAKE_EXE_LINKER_FLAGS}")
 ##############################################################################
 
+OPTION(ENABLE_PERSISTENT_MPI "Enable persistent MPI" OFF)
+IF (${ENABLE_PERSISTENT_MPI})
+  SET(MPI_PERSISTENT TRUE)
+ENDIF ()
+
 OPTION(HOMME_FIND_BLASLAPACK "Whether to use system blas/lapack" FALSE)
 MESSAGE(STATUS "HOMME_FIND_BLASLAPACK=${HOMME_FIND_BLASLAPACK}")
 
