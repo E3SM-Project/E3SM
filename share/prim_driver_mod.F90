@@ -1130,7 +1130,7 @@ contains
   subroutine prim_run(elem, hybrid,nets,nete, dt, tl, hvcoord, advance_name)
     use hybvcoord_mod, only : hvcoord_t
     use time_mod, only : TimeLevel_t, timelevel_update, smooth
-    use control_mod, only: statefreq, integration, ftype, qsplit
+    use control_mod, only: statefreq, integration, ftype, qsplit, disable_diagnostics
     use prim_advance_mod, only : prim_advance_exp, prim_advance_si, preq_robert3
     use prim_state_mod, only : prim_printstate, prim_diag_scalars, prim_energy_halftimes
     use parallel_mod, only : abortmp
@@ -1161,10 +1161,12 @@ contains
     ! compute diagnostics and energy for STDOUT
     ! compute energy if we are using an energy fixer
 
-    compute_diagnostics=.false.
     if (MODULO(tl%nstep+1,statefreq)==0 .or. tl%nstep+1==tl%nstep0) then
-       compute_diagnostics=.true.
+        compute_diagnostics=.true.
     endif
+
+    if(disable_diagnostics) compute_diagnostics=.false.
+
     tot_iter=0.0
 
 

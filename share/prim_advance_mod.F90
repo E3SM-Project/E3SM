@@ -9,7 +9,7 @@
 module prim_advance_mod
   use edge_mod, only : EdgeBuffer_t
   use kinds, only : real_kind, iulog
-  use perf_mod, only: t_startf, t_stopf, t_barrierf ! _EXTERNAL
+  use perf_mod, only: t_startf, t_stopf, t_barrierf, t_adj_detailf ! _EXTERNAL
   use parallel_mod, only : abortmp, parallel_t
   implicit none
   private
@@ -146,7 +146,8 @@ contains
 
 #endif
 
-    call t_barrierf('sync_prim_advance_exp', hybrid%par%comm)
+!JMD    call t_barrierf('sync_prim_advance_exp', hybrid%par%comm)
+    call t_adj_detailf(+1)
     call t_startf('prim_advance_exp')
     nm1   = tl%nm1
     n0    = tl%n0
@@ -254,6 +255,7 @@ contains
           enddo
        end do
        call t_stopf('prim_advance_exp')
+       call t_adj_detailf(-1)
        return
     endif
 
@@ -537,6 +539,7 @@ contains
 #endif
 
     call t_stopf('prim_advance_exp')
+    call t_adj_detailf(-1)
     end subroutine prim_advance_exp
 
 
@@ -677,7 +680,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
        integer              :: nstep
        integer              :: i,j,k,l,ie,kptr
 
-       call t_barrierf('sync_prim_advance_si', hybrid%par%comm)
+!JMD       call t_barrierf('sync_prim_advance_si', hybrid%par%comm)
+       call t_adj_detailf(+1)
        call t_startf('prim_advance_si')
 
        nm1   = tl%nm1
@@ -1383,6 +1387,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
        call prim_diffusion(elem, nets,nete,np1,deriv,dt2,cg%hybrid)
 #endif
        call t_stopf('prim_advance_si')
+       call t_adj_detailf(-1)
   end subroutine prim_advance_si
 
 
@@ -1404,6 +1409,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   logical :: filter_ps = .false.
   if (integration == "explicit") filter_ps = .true.
 
+  call t_adj_detailf(+1)
   call t_startf('preq_robert')
   do ie=nets,nete
      if (filter_ps) then
@@ -1423,6 +1429,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
   end do
   call t_stopf('preq_robert')
+  call t_adj_detailf(-1)
 
   end subroutine preq_robert3
 
@@ -1627,7 +1634,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
 
   if (nu_s == 0 .and. nu == 0 .and. nu_p==0 ) return;
-  call t_barrierf('sync_advance_hypervis', hybrid%par%comm)
+!JMD  call t_barrierf('sync_advance_hypervis', hybrid%par%comm)
+  call t_adj_detailf(+1)
   call t_startf('advance_hypervis')
 
 
@@ -1849,6 +1857,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   endif
 
   call t_stopf('advance_hypervis')
+  call t_adj_detailf(-1)
 
   end subroutine advance_hypervis
 
@@ -1911,7 +1920,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
 
   if (nu_s == 0 .and. nu == 0 .and. nu_p==0 ) return;
-  call t_barrierf('sync_advance_hypervis', hybrid%par%comm)
+!JMD  call t_barrierf('sync_advance_hypervis', hybrid%par%comm)
+  call t_adj_detailf(+1) 
   call t_startf('advance_hypervis_dp')
 
 
@@ -2111,6 +2121,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   endif
 
   call t_stopf('advance_hypervis_dp')
+  call t_adj_detailf(-1)
 
   end subroutine advance_hypervis_dp
 
@@ -2174,7 +2185,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
 
   if (nu_s == 0 .and. nu == 0 .and. nu_p==0 ) return;
-  call t_barrierf('sync_advance_hypervis_lf', hybrid%par%comm)
+!JMD  call t_barrierf('sync_advance_hypervis_lf', hybrid%par%comm)
+  call t_adj_detailf(+1)
   call t_startf('advance_hypervis_lf')
 
 ! for non-leapfrog,nt=n0=nmt
@@ -2387,6 +2399,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   endif
 
   call t_stopf('advance_hypervis_lf')
+  call t_adj_detailf(-1)
 
   end subroutine advance_hypervis_lf
 
@@ -2476,7 +2489,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   real (kind=real_kind) ::  glnps1,glnps2,gpterm
   integer :: i,j,k,kptr,ie
 
-  call t_barrierf('sync_compute_and_apply_rhs', hybrid%par%comm)
+!JMD  call t_barrierf('sync_compute_and_apply_rhs', hybrid%par%comm)
+  call t_adj_detailf(+1)
   call t_startf('compute_and_apply_rhs')
   do ie=nets,nete
      !ps => elem(ie)%state%ps_v(:,:,n0)
@@ -3010,6 +3024,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 #endif
 #endif
   call t_stopf('compute_and_apply_rhs')
+  call t_adj_detailf(-1)
+
   end subroutine compute_and_apply_rhs
 #ifdef TRILINOS
   subroutine residual(xstate, fx, nelemd, c_ptr_to_object) bind(C,name='calc_f')
@@ -3130,7 +3146,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
     eta_ave_w  = fptr%eta_ave_w
 !    elem       = fptr%base
 
-  call t_barrierf('sync_residual', hybrid%par%comm)
+!JMD  call t_barrierf('sync_residual', hybrid%par%comm)
+  call t_adj_detailf(+1)
   call t_startf('residual')
 
        fvtens = 0.0d0
@@ -3707,6 +3724,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 #endif
 #endif
   call t_stopf('residual')
+  call t_adj_detailf(-1)
+
   end subroutine residual
 
 ! placeholder for precon routines
