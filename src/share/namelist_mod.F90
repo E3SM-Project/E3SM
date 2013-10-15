@@ -1109,6 +1109,7 @@ module namelist_mod
        write(iulog,*)"readnl: sub_case      = ",sub_case
        write(iulog,*)"readnl: ndays         = ",ndays
        write(iulog,*)"readnl: nmax          = ",nmax
+       write(iulog,*)"readnl: pertlim       = ",pertlim
 
        write(iulog,*)"readnl: qsize,qsize_d = ",qsize,qsize_d
        if (qsize>qsize_d) then
