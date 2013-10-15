@@ -2,7 +2,6 @@
 #include "config.h"
 #endif
 
-#undef MPI_PERSISTENT 
 module bndry_mod
   use parallel_mod, only : abortmp
   implicit none

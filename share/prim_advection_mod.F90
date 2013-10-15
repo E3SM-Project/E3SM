@@ -1159,7 +1159,7 @@ contains
 
 
   type(cartesian3D_t)                           :: dep_points  (np,np)
-  integer                                       :: elem_numbers(np,np)
+  integer                                       :: elem_indexes(np,np)
   type(cartesian2D_t)                           :: para_coords (np,np)
   real(kind=real_kind)                          :: rho         (np,np,nets:nete,nlev,qsize)
   real(kind=real_kind)                          :: rhot        (np,np,nets:nete,nlev,qsize)
@@ -1170,7 +1170,7 @@ contains
   real(kind=real_kind)                          :: mass                        (nlev,qsize)
   real(kind=real_kind)                          :: rowsum      (np,np,nets:nete)
 
-  real(kind=real_kind)                          :: neigh_q     (np,np,qsize,max_neigh_edges)
+  real(kind=real_kind)                          :: neigh_q     (np,np,qsize,max_neigh_edges+1)
 
   integer                                       :: i,j,k,l,n,q,ie,kptr, n0_qdp, np1_qdp
   integer                                       :: num_neighbors
@@ -1196,7 +1196,6 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
   do ie=nets,nete
-
      kptr=0
      do k=1,nlev
      do q=1,qsize
@@ -1217,27 +1216,27 @@ contains
         call ALE_departure_from_gll     (dep_points, elem(ie)%derived%vstar(:,:,:,k), elem(ie), dt)
 
         ! find element containing departure point
-        call ALE_elems_with_dep_points  (elem_numbers, dep_points, num_neighbors, elem(ie)%desc%neigh_corners)
+        call ALE_elems_with_dep_points  (elem_indexes, dep_points, num_neighbors, elem(ie)%desc%neigh_corners)
 
         ! compute the parametric points
-        call ALE_parametric_coords      (para_coords, elem_numbers, dep_points, num_neighbors, elem(ie)%desc%neigh_corners)
+        call ALE_parametric_coords      (para_coords, elem_indexes, dep_points, num_neighbors, elem(ie)%desc%neigh_corners)
 
         ! for each level k, unpack all tracer neighbor data on that level
         kptr=(k-1)*qsize
+        neigh_q=0
         call ghostVunpack_unoriented (ghostbuf_tr, neigh_q,np, qsize, kptr, elem(ie)%desc)
 
         do i=1,np
         do j=1,np
           ! interpolate tracers to deperature grid
-          call interpolate_tracers     (para_coords(i,j), neigh_q(:,:,:,elem_numbers(i,j)),f)
+          call interpolate_tracers     (para_coords(i,j), neigh_q(:,:,:,elem_indexes(i,j)),f)
           elem(ie)%state%Q(i,j,k,:) = f;
           ! interpolate tracers to deperature grid
-!          call minmax_tracers          (para_coords(i,j), neigh_q(:,:,:,elem_numbers(i,j)),f,g)
+!          call minmax_tracers          (para_coords(i,j), neigh_q(:,:,:,elem_indexes(i,j)),f,g)
 !          minq(i,j,ie,k,:) = f;
 !          maxq(i,j,ie,k,:) = g;
         enddo
         enddo
-
      end do
   end do
 
@@ -1428,10 +1427,10 @@ end subroutine ALE_departure_from_gll
 
 
 
-subroutine ALE_elems_with_dep_points (elem_numbers, dep_points, num_neighbors, ngh_corners)
+subroutine ALE_elems_with_dep_points (elem_indexes, dep_points, num_neighbors, ngh_corners)
 
   use element_mod,            only : element_t
-  use dimensions_mod,         only : np, max_neigh_edges
+  use dimensions_mod,         only : np
   use coordinate_systems_mod, only : cartesian3D_t, change_coordinates
   use interpolate_mod,        only : point_inside_quad
 
@@ -1440,14 +1439,14 @@ subroutine ALE_elems_with_dep_points (elem_numbers, dep_points, num_neighbors, n
   ! The ngh_corners array is a list of corners of both elem and all of it's
   ! neighor elements all sorted by global id.
   type(cartesian3D_t),intent(in)                   :: ngh_corners(4,num_neighbors)
-  integer              , intent(out)               :: elem_numbers(np,np)
+  integer              , intent(out)               :: elem_indexes(np,np)
   integer              , intent(in)                :: num_neighbors
   type(cartesian3D_t)  , intent(in)                :: dep_points(np,np)
 
   integer                                          :: i,j,n
   logical                                          :: inside
 
-  elem_numbers = -1
+  elem_indexes = -1
   do i=1,np
     do j=1,np
 ! Just itererate the neighbors in global id order to get the same result on every processor.
@@ -1455,18 +1454,18 @@ subroutine ALE_elems_with_dep_points (elem_numbers, dep_points, num_neighbors, n
 ! Mark Taylor's handy dandy point_inside_gc check.
        inside = point_inside_quad (ngh_corners(:,n), dep_points(i,j))
        if (inside) then
-         elem_numbers(i,j) = n
+         elem_indexes(i,j) = n
          exit
        end if
      end do
     end do
   end do
 
-  if (MINVAL(elem_numbers(:,:))==-1) then
+  if (MINVAL(elem_indexes(:,:))==-1) then
     write (*,*) __FILE__,__LINE__,"Aborting because point not found in neighbor list. Info:"
     do i=1,np
       do j=1,np
-        if (elem_numbers(i,j)==-1) then
+        if (elem_indexes(i,j)==-1) then
           write (*,*)   " departure point ",dep_points(i,j)
           do n = 1, num_neighbors
             write (*,*) " quad checked    ",ngh_corners(1,n)
@@ -1484,7 +1483,7 @@ subroutine ALE_elems_with_dep_points (elem_numbers, dep_points, num_neighbors, n
 end subroutine ALE_elems_with_dep_points
 
 
-subroutine  ALE_parametric_coords (parametric_coord, elem_numbers, dep_points, num_neighbors, ngh_corners)
+subroutine  ALE_parametric_coords (parametric_coord, elem_indexes, dep_points, num_neighbors, ngh_corners)
   use coordinate_systems_mod, only : cartesian2d_t, cartesian3D_t, spherical_polar_t, change_coordinates
   use interpolate_mod,        only : parametric_coordinates_corners
   use dimensions_mod,         only : np
@@ -1493,7 +1492,7 @@ subroutine  ALE_parametric_coords (parametric_coord, elem_numbers, dep_points, n
 
   type(cartesian2D_t)       , intent(out)       :: parametric_coord(np,np)
   type(cartesian3D_t)       , intent(in)        :: dep_points(np,np)
-  integer                   , intent(in)        :: elem_numbers(np,np)
+  integer                   , intent(in)        :: elem_indexes(np,np)
   integer                   , intent(in)        :: num_neighbors
   type(cartesian3D_t)       , intent(in)        :: ngh_corners(4,num_neighbors)
 
@@ -1502,7 +1501,7 @@ subroutine  ALE_parametric_coords (parametric_coord, elem_numbers, dep_points, n
 
   do i=1,np
     do j=1,np
-      n = elem_numbers(i,j)
+      n = elem_indexes(i,j)
       sphere = change_coordinates(dep_points(i,j))
       ! Mark will fill in  parametric_coordinates for corners.
       parametric_coord(i,j) = parametric_coordinates_corners(sphere,ngh_corners(:,n))
