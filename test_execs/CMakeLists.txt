@@ -37,11 +37,19 @@ IF (USE_QUEUING)
     ENDIF ()
   ENDIF ()
   IF (NOT DEFINED HOMME_SUBMISSION_TYPE)
-    # pbs uses qsub
+    # moab uses msub
     FIND_PROGRAM(MSUB_PATH msub) # Note this searches the environment
     IF (MSUB_PATH)
       MESSAGE(STATUS "Using MOAB queuing")
       SET(HOMME_SUBMISSION_TYPE moab)
+    ENDIF ()
+  ENDIF ()
+  IF (NOT DEFINED HOMME_SUBMISSION_TYPE)
+    # slurm uses squeue
+    FIND_PROGRAM(SQUEUE_PATH squeue) # Note this searches the environment
+    IF (SQUEUE_PATH)
+      MESSAGE(STATUS "Using SLURM queuing")
+      SET(HOMME_SUBMISSION_TYPE slurm)
     ENDIF ()
   ENDIF ()
   IF (NOT DEFINED HOMME_SUBMISSION_TYPE)

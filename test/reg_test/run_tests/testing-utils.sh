@@ -131,7 +131,7 @@ examineJobStat() {
     else
       jobStat="completed" 
     fi
-  elif [ "$HOMME_Submission_Type" = moab ]; then
+  elif [ "$HOMME_Submission_Type" = moab ] || [ "$HOMME_Submission_Type" = slurm ] ; then
     jobStat=`squeue -j $jobID 2>&1 | tail -n 1 | awk '{print $5}'`
     if [ -n "$jobStat" ] ; then
       if [ "$jobStat" == "PD" ] ; then
@@ -187,6 +187,8 @@ submitToQueue() {
     qsub ${subFile} > $THIS_STDOUT 2> $THIS_STDERR
   elif [ "$HOMME_Submission_Type" = moab ]; then
     msub ${subFile} > $THIS_STDOUT 2> $THIS_STDERR
+  elif [ "$HOMME_Submission_Type" = slurm ]; then
+    sbatch ${subFile} > $THIS_STDOUT 2> $THIS_STDERR
   else
     echo "Error: queue type not recognized"
     exit -4
@@ -201,6 +203,8 @@ getJobID() {
     SUB_ID=`cat $THIS_STDOUT | awk '{print $1}'`
   elif [ "$HOMME_Submission_Type" = moab ]; then
     SUB_ID=`cat $THIS_STDOUT | awk '{print $1}'`
+  elif [ "$HOMME_Submission_Type" = slurm ]; then
+    SUB_ID=`cat $THIS_STDOUT | tail -n 1 | awk '{print $4}'`
   else
     echo "Error: queue type not recognized"
     exit -5
