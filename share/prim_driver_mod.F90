@@ -906,6 +906,12 @@ contains
        ! scale PS to achieve prescribed dry mass
        call prim_set_mass(elem, tl,hybrid,hvcoord,nets,nete)
 
+       do ie=nets,nete
+
+          elem(ie)%state%T=elem(ie)%state%T &
+                * (1.0 + pertlim)
+       enddo
+ 
        ! ========================================
        ! Print state and movie output
        ! ========================================
@@ -933,15 +939,7 @@ contains
     if (runtype==0 .or. runtype==2) then
        do ie=nets,nete
           elem(ie)%derived%omega_p(:,:,:) = 0D0
-#ifndef CAM
-          elem(ie)%state%T(:,:,:,tl%nm1)=elem(ie)%state%T(:,:,:,tl%n0) &
-                * (1.0 + pertlim)
-            if(ie==nets) print *, "pertlim = ", pertlim
-#else
-          elem(ie)%state%T(:,:,:,tl%nm1)=elem(ie)%state%T(:,:,:,tl%n0) 
-#endif
        end do
-
        call TimeLevel_Qdp( tl, qsplit, n0_qdp)
        do ie=nets,nete
 #if (defined ELEMENT_OPENMP)
