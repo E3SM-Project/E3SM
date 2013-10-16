@@ -211,7 +211,7 @@ contains
           enddo
        enddo
 
-
+       
 
 
        elem(ie)%vertex     = MetaVertex%members(ie)
@@ -1018,8 +1018,8 @@ contains
           dir = (dir - loc)/max_corner_elem !this is the direction (1-8)
           loc = dir + (dir-5)*(max_corner_elem-1)+loc
           if(loc>max_neigh_edges) then
-             print *,__FILE__,__LINE__,iam,face,i,max_corner_elem,max_neigh_edges,edge%members(i)%head_face
-             call abortmp('max_neigh_edges set too low.')
+             print *,__FILE__,__LINE__,iam,face,i,max_corner_elem,edge%members(i)%head_face
+             call abortmp('Face value out of bounds')
           end if
        else
           loc = face
