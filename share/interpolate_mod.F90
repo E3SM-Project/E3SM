@@ -70,7 +70,6 @@ module interpolate_mod
   public :: minmax_tracers
   public :: interpolate_2d
   public :: interpolate_create
-  public :: parametric_coordinates_corners
   public :: point_inside_quad
 
 
@@ -697,57 +696,18 @@ subroutine interpol_spelt_latlon(interpdata,f, spelt,corners, flatlon)
 end subroutine interpol_spelt_latlon
 
 
-   function parametric_coordinates_corners(sphere, corners) result (ref)
-     use cube_mod, only : ref2sphere_corners, Dmap_corners
-     implicit none
-     type (spherical_polar_t), intent(in) :: sphere
-     type (cartesian3D_t)    , intent(in) :: corners(4)
-     type (cartesian2D_t)                 :: ref
- 
-     ! local
-     integer               :: face_no, i, MAX_NR_ITER=10
-     real(kind=real_kind)  :: D(2,2),Dinv(2,2),detD,a,b,resa,resb,dela,delb,costh
-     real(kind=real_kind)  :: tol_sq=1e-26
-     type (spherical_polar_t) :: sphere1, sphere_tmp
-     costh=cos(sphere%lat)
-     a=0
-     b=0
-     i=0
-     do
-        sphere1 = ref2sphere_corners(a,b,corners)
-        resa = sphere1%lon - sphere%lon
-        if (resa>dd_pi) resa=resa-2*dd_pi
-        if (resa<-dd_pi) resa=resa+2*dd_pi
- 
-        resb = sphere1%lat - sphere%lat 
- 
-        call Dmap_corners(D,corners,a,b)
-        detD = D(1,1)*D(2,2) - D(1,2)*D(2,1)      
-        Dinv(1,1) =  D(2,2)/detD
-        Dinv(1,2) = -D(1,2)/detD
-        Dinv(2,1) = -D(2,1)/detD
-        Dinv(2,2) =  D(1,1)/detD
-        
-        dela =  Dinv(1,1)*costh*resa + Dinv(1,2)*resb 
-        delb =  Dinv(2,1)*costh*resa + Dinv(2,2)*resb 
-        a = a - dela
-        b = b - delb
-        i=i+1
-        if ( (costh*resa)**2 + resb**2 < tol_sq .or. MAX_NR_ITER < i) exit
-     end do
-     ref%x=a
-     ref%y=b
-   end function parametric_coordinates_corners
-
-
-  function parametric_coordinates(sphere, elem) result (ref)
+  function parametric_coordinates(sphere, corners3D,corners,u2qmap,facenum) result (ref)
     implicit none
     type (spherical_polar_t), intent(in) :: sphere
-    type (element_t), intent(in) :: elem
     type (cartesian2D_t) :: ref
 
+    type (cartesian3D_t)   :: corners3D(4)  !x,y,z coords of element corners
+    type (cartesian2D_t),optional   :: corners(4)    ! gnomonic coords of element corners
+    real (kind=real_kind),optional  :: u2qmap(4,2)   
+    integer,optional  :: facenum
+
     ! local
-    integer               :: face_no, i, MAX_NR_ITER=10
+    integer               :: i, MAX_NR_ITER=10
     real(kind=real_kind)  :: D(2,2),Dinv(2,2),detD,a,b,resa,resb,dela,delb,costh
     real(kind=real_kind)  :: tol_sq=1e-26
     type (spherical_polar_t) :: sphere1, sphere_tmp
@@ -772,14 +732,14 @@ end subroutine interpol_spelt_latlon
     b=0
     i=0
     do
-       sphere1 = ref2sphere(a,b,elem)
+       sphere1 = ref2sphere(a,b,corners3D,corners,facenum)
        resa = sphere1%lon - sphere%lon
        if (resa>dd_pi) resa=resa-2*dd_pi
        if (resa<-dd_pi) resa=resa+2*dd_pi
 
        resb = sphere1%lat - sphere%lat 
 
-       call Dmap(D,elem,a,b)
+       call Dmap(D,a,b,corners3D,corners,u2qmap,facenum)
        detD = D(1,1)*D(2,2) - D(1,2)*D(2,1)      
        Dinv(1,1) =  D(2,2)/detD
        Dinv(1,2) = -D(1,2)/detD
@@ -1147,7 +1107,8 @@ end subroutine interpol_spelt_latlon
 
        if (found) then
           number = ii
-          cart = parametric_coordinates(sphere, elem(ii))
+          cart = parametric_coordinates(sphere, elem(ii)%corners3D,&
+               elem(ii)%corners,elem(ii)%u2qmap,elem(ii)%facenum)
           exit
        end if
     end do
@@ -1358,7 +1319,7 @@ end subroutine interpol_spelt_latlon
           if (ii /= -1) then
              ! compute error: map 'cart' back to sphere and compare with original
              ! interpolation point:
-             sphere2_xyz = spherical_to_cart( ref2sphere(cart%x,cart%y,elem(ii)))
+             sphere2_xyz = spherical_to_cart( ref2sphere(cart%x,cart%y,elem(ii)%corners3D,elem(ii)%corners,elem(ii)%facenum ))
              sphere_xyz = spherical_to_cart(sphere)
              err=max(err,distance(sphere2_xyz,sphere_xyz))
           endif
@@ -1722,7 +1683,8 @@ end subroutine interpolate_ce
     endif
     do i=1,interpdata%n_interp
        ! convert fld from contra->latlon
-       call dmap(D,elem,interpdata%interp_xy(i)%x,interpdata%interp_xy(i)%y)
+       call dmap(D,interpdata%interp_xy(i)%x,interpdata%interp_xy(i)%y,&
+            elem%corners3D,elem%corners,elem%u2qmap,elem%facenum)
        ! convert fld from contra->latlon
        v1 = fld(i,1)
        v2 = fld(i,2)
@@ -1816,7 +1778,8 @@ end subroutine interpolate_ce
 
     do i=1,interpdata%n_interp
        ! compute D(:,:) at the point elem%interp_cube(i)
-       call dmap(D,elem,interpdata%interp_xy(i)%x,interpdata%interp_xy(i)%y)
+       call dmap(D,interpdata%interp_xy(i)%x,interpdata%interp_xy(i)%y,&
+            elem%corners3D,elem%corners,elem%u2qmap,elem%facenum)
        do k=1,nlev
           ! convert fld from contra->latlon
           v1 = fld(i,k,1)
