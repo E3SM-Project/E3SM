@@ -14,7 +14,7 @@ module mpas_io_streams
    use mpas_io_units
 
    type field_list_type
-      integer :: field_type
+      integer :: field_type = -999
       logical :: isDecomposed
       integer :: totalDimSize     ! Total size of outer dimension across all blocks for decomposed fields
       logical, dimension(:), pointer :: isAvailable => null() ! Used for reading super-arrays where one or more 
