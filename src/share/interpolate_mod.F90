@@ -65,6 +65,7 @@ module interpolate_mod
   public :: var_is_vector_uvar, var_is_vector_vvar
   public :: cube_facepoint_ne
   public :: cube_facepoint_unstructured
+  public :: parametric_coordinates
 
   public :: interpolate_tracers
   public :: minmax_tracers
