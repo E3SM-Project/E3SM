@@ -2086,7 +2086,7 @@ subroutine spelt_grid_init(elem,spelt,nets,nete,tl)
             iel=ic+(i-1)*nipm
             jel=jc+(j-1)*nipm
             !define the arrival grid in spherical coordinates
-            spelt(ie)%asphere(iel,jel)=ref2sphere(xref,yref,elem(ie)) 
+            spelt(ie)%asphere(iel,jel)=ref2sphere(xref,yref,elem(ie)%corners3D,elem(ie)%corners,elem(ie)%facenum) 
             alphabeta=sphere2cubedsphere(spelt(ie)%asphere(iel,jel), elem(ie)%FaceNum)
             tmpab(iel,jel)=alphabeta
             spelt(ie)%sga(iel,jel)=metric_term(alphabeta)
