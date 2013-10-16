@@ -551,7 +551,7 @@ contains
          s_bv, topology,columnpackage, moisture, precon_method, rsplit, qsplit, rk_stage_user,&
          sub_case, &
          limiter_option, nu, nu_q, nu_div, tstep_type, hypervis_subcycle, &
-         hypervis_subcycle_q, use_semi_lagrange_transport
+         hypervis_subcycle_q, use_semi_lagrange_transport, pertlim
     use prim_si_ref_mod, only: prim_si_refstate_init, prim_set_mass
     use bndry_mod, only : sort_neighbor_buffer_mapping
 #ifdef TRILINOS
@@ -826,10 +826,9 @@ contains
           ! copy prognostic variables:  tl%n0 into tl%nm1
           do ie=nets,nete
              elem(ie)%state%v(:,:,:,:,tl%nm1)=elem(ie)%state%v(:,:,:,:,tl%n0)
-             elem(ie)%state%T(:,:,:,tl%nm1)=elem(ie)%state%T(:,:,:,tl%n0)
+             elem(ie)%state%T(:,:,:,tl%nm1)=elem(ie)%state%T(:,:,:,tl%n0) 
              elem(ie)%state%ps_v(:,:,tl%nm1)=elem(ie)%state%ps_v(:,:,tl%n0)
              elem(ie)%state%lnps(:,:,tl%nm1)=elem(ie)%state%lnps(:,:,tl%n0)
-
           enddo
        endif ! runtype==2
     else  ! initial run  RUNTYPE=0
@@ -907,10 +906,15 @@ contains
        ! scale PS to achieve prescribed dry mass
        call prim_set_mass(elem, tl,hybrid,hvcoord,nets,nete)
 
+       do ie=nets,nete
+
+          elem(ie)%state%T=elem(ie)%state%T &
+                * (1.0 + pertlim)
+       enddo
+ 
        ! ========================================
        ! Print state and movie output
        ! ========================================
-
     end if  ! runtype
 
 !$OMP MASTER
@@ -936,7 +940,6 @@ contains
        do ie=nets,nete
           elem(ie)%derived%omega_p(:,:,:) = 0D0
        end do
-
        call TimeLevel_Qdp( tl, qsplit, n0_qdp)
        do ie=nets,nete
 #if (defined ELEMENT_OPENMP)
