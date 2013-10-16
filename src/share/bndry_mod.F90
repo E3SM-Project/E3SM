@@ -778,10 +778,11 @@ contains
   type (ghostBuffer3D_t)   :: ghostbuf_cv
 
   real (kind=real_kind) :: cin(2,2,4,nets:nete)                    ! 1x1 element input data
-  real (kind=real_kind) :: cout(2,2,4,max_neigh_edges,nets:nete)   ! 1x1 element output data
-  integer :: i,j,ie,kptr,np1,np2,nc,k,nlev,actual_neigh_edges,l,l2,sum1,sum2,m
+  real (kind=real_kind) :: cout(2,2,4,max_neigh_edges+1,nets:nete)   ! 1x1 element output data
+  real (kind=real_kind) :: u   (2,2,4)   
+  integer :: i,j,ie,kptr,np1,np2,nc,k,nlev,patch_size,l,l2,sum1,sum2,m
   logical :: fail,fail1,fail2
-  real (kind=real_kind) :: tol=.1,gid
+  real (kind=real_kind) :: tol=.1
 
   call syncmp(hybrid%par)
   if (hybrid%par%masterproc) print *,'checking ghost cell neighbor buffer sorting...'
@@ -827,42 +828,41 @@ contains
 
   do ie=nets,nete
      kptr=0
-     call ghostVunpack_unoriented(ghostbuf_cv, cout(:,:,:,:,ie),nc,nlev, kptr, elem(ie)%desc)
+
+     call ghostVunpack_unoriented(ghostbuf_cv, cout(:,:,:,:,ie),nc,nlev, kptr, elem(ie),cin(:,:,:,ie))
 
      ! check that we get the count of real neighbors correct
-     actual_neigh_edges=0
+     patch_size=0
 
-     do l=1,max_neigh_edges
+     do l=1,max_neigh_edges+1
         if (int(cout(1,1,nlev,l,ie)) /= -1 ) then
-           actual_neigh_edges = actual_neigh_edges + 1
+           patch_size = patch_size + 1
         endif
      enddo
 
-     if (elem(ie)%desc%actual_neigh_edges /= actual_neigh_edges) then
+     if (elem(ie)%desc%actual_neigh_edges+1 /= patch_size) then
         print *,'desc  actual_neigh_edges: ',elem(ie)%desc%actual_neigh_edges
-        print *,'check actual_neigh_edges: ',actual_neigh_edges
+        print *,'check patch_size: ',patch_size
         call abortmp( 'ghost exchange unoriented failure 1')
      endif
 
      ! check that all non-neighbors stayed -1
-     if ( actual_neigh_edges < max_neigh_edges ) then
-        do l=actual_neigh_edges+1,max_neigh_edges
-        if (int(cout(1,1,nlev,l,ie)) /= -1 ) then
-           call abortmp( 'ghost exchange unoriented failure 2')
-        endif
-        enddo
+     do l=patch_size+1,max_neigh_edges+1
+     if (int(cout(1,1,nlev,l,ie)) /= -1 ) then
+        call abortmp( 'ghost exchange unoriented failure 2')
      endif
+     enddo
 
      ! i am too lazy to check if all id's are identical since they are in
      ! different order.  check if there sum is identical
-     sum1 = sum(int(cout(1,1,nlev,1:actual_neigh_edges,ie)))
-     sum2=0
+     sum1 = sum(int(cout(1,1,nlev,1:patch_size,ie)))
+     sum2 = elem(ie)%globalID
      do l=1,max_neigh_edges
         if (elem(ie)%desc%globalID(l)>0) sum2 = sum2 + elem(ie)%desc%globalID(l)
      enddo
      if (sum1 /= sum2 ) then
-        print *,int(cin(1,1,nlev,ie)),elem(ie)%desc%actual_neigh_edges,actual_neigh_edges
-        write(*,'(a,99i5)') 'ghost=',int(cout(1,1,nlev,1:actual_neigh_edges,ie))
+        print *,int(cin(1,1,nlev,ie)),elem(ie)%desc%actual_neigh_edges,patch_size
+        write(*,'(a,99i5)') 'ghost=',int(cout(1,1,nlev,1:patch_size,ie))
         write(*,'(a,99i5)') 'desc =',elem(ie)%desc%globalID(:)
 
         print *,'cout sum of all neighbor global ids:',sum1 
@@ -870,28 +870,18 @@ contains
         call abortmp( 'ghost exchange unoriented failure 3')        
      endif
 
-     ALLOCATE(elem(ie)%desc%neigh_corners(4,actual_neigh_edges+1))
+     ALLOCATE(elem(ie)%desc%neigh_corners(4,patch_size))
      ! unpack corner data into array
-     gid = elem(ie)%GlobalID
-     m=0
-     do l=1,elem(ie)%desc%actual_neigh_edges+1
-        if (m==elem(ie)%desc%actual_neigh_edges .OR. cout(1,1,nlev,m+1,ie) < gid) then
-           gid = -1
-           do k=1,nc*nc
-              elem(ie)%desc%neigh_corners(k,l) = elem(ie)%corners3D(k)
-           enddo
-        else
-           m=m+1
-           k=0
-           do i=1,nc
-           do j=1,nc
-              k=k+1
-              elem(ie)%desc%neigh_corners(k,l)%x = cout(i,j,1,m,ie) 
-              elem(ie)%desc%neigh_corners(k,l)%y = cout(i,j,2,m,ie) 
-              elem(ie)%desc%neigh_corners(k,l)%z = cout(i,j,3,m,ie) 
-           enddo
-           enddo
-        endif
+     do l=1,patch_size
+        k=0
+        do i=1,nc
+        do j=1,nc
+           k=k+1
+           elem(ie)%desc%neigh_corners(k,l)%x = cout(i,j,1,l,ie) 
+           elem(ie)%desc%neigh_corners(k,l)%y = cout(i,j,2,l,ie) 
+           elem(ie)%desc%neigh_corners(k,l)%z = cout(i,j,3,l,ie) 
+        enddo
+        enddo
      enddo
   enddo
 

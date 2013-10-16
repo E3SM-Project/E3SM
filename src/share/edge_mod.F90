@@ -38,7 +38,7 @@ module edge_mod
      integer(kind=int_kind), pointer  :: globalID(:) => null()
      integer(kind=int_kind), pointer  :: loc2buf(:) => null()
      type (cartesian3D_t)  , pointer  :: neigh_corners(:,:) => null()
-     integer                          :: actual_neigh_edges
+     integer                          :: actual_neigh_edges  
      logical(kind=log_kind), pointer  :: reverse(:) => null()
      type (rotation_t), dimension(:), pointer :: rot => null() ! Identifies list of edges
      !  that must be rotated, and how
@@ -1838,20 +1838,13 @@ contains
   !! data will be located.
   ! =========================================
   subroutine GhostVpack_unoriented(edge,v,nc,vlyr,kptr,desc)
-    use dimensions_mod, only : max_corner_elem
-    use control_mod, only : north, south, east, west, neast, nwest, seast, swest
-
-
-
-    type (Ghostbuffer3D_t)                      :: edge
+    type (Ghostbuffer3D_t),intent(inout) :: edge
+    real (kind=real_kind),intent(in)   :: v(nc,nc,vlyr)
     integer,              intent(in)   :: vlyr
     integer,              intent(in)   :: nc,kptr
-    real (kind=real_kind),intent(in)   :: v(nc,nc,vlyr)
     type (EdgeDescriptor_t),intent(in) :: desc
 
-    ! Local variables
-    integer :: i,k,ir,l,e, l_local
-    integer :: is,ie,in,iw
+    integer :: k,l,l_local,is
 
     if(.not. threadsafe) then
 #if (! defined ELEMENT_OPENMP)
@@ -1860,24 +1853,13 @@ contains
        threadsafe=.true.
     end if
 
-#if 0
-    do l=1,max_neigh_edges
-       is = desc%putmapP_ghost(l)
-       if (is  /= -1) then       
-          do k=1,vlyr
-             edge%buf(:,:,kptr+k,is)   = v(:,:,k)
-          enddo
-       endif
-    end do
-#else
     do l_local=1,desc%actual_neigh_edges
        l=desc%loc2buf(l_local)
        is = desc%putmapP_ghost(l)
        do k=1,vlyr
-          edge%buf(:,:,kptr+k,is) =v(:,:,k)  
+          edge%buf(:,:,kptr+k,is) = v(:,:,k)  
        enddo
     end do
-#endif
 
   end subroutine GhostVpack_unoriented
 
@@ -1887,41 +1869,37 @@ contains
   !
   ! Unpack edges from edge buffer into v...
   ! ========================================
-  subroutine GhostVunpack_unoriented(edge,v,nc,vlyr,kptr,desc)
-    use dimensions_mod, only : max_corner_elem
-    use control_mod, only : north, south, east, west, neast, nwest, seast, swest
-    type (Ghostbuffer3D_t),         intent(in)  :: edge
+  subroutine GhostVunpack_unoriented(edge,v,nc,vlyr,kptr,elem,u)
+    use element_mod, only : element_t
 
-    integer,               intent(in)  :: vlyr
-    integer,               intent(in)  :: kptr,nc
-    real (kind=real_kind), intent(inout) :: v(nc,nc,vlyr,*)
-    type (EdgeDescriptor_t)            :: desc
+    implicit none
 
-    ! Local
-    logical, parameter :: UseUnroll = .TRUE.
-    integer :: i,k,l,e,is
-    integer :: l_local
+    type (Ghostbuffer3D_t),intent(inout)  :: edge
+    real (kind=real_kind), intent(out)    :: v(nc,nc,vlyr,*)
+    integer,               intent(in)     :: vlyr
+    integer,               intent(in)     :: kptr,nc
+    type (element_t),      intent(in)     :: elem
+    real (kind=real_kind), intent(in)     :: u(nc,nc,vlyr)
 
+    integer :: k,l,n,is,m,pid,gid
 
     threadsafe=.false.
-#if 0
-    do l=1,max_neigh_edges
-       is = desc%getmapP_ghost(l)
-       if (is  /= -1) then       
-          l_local = l
-          do k=1,vlyr
-             v(:,:,k,l_local ) = edge%buf(:,:,kptr+k,is) 
-          enddo
-       endif
-    end do
-#endif
 
-    do l_local=1,desc%actual_neigh_edges
-       l=desc%loc2buf(l_local)
-       is = desc%getmapP_ghost(l)
-       do k=1,vlyr
-          v(:,:,k,l_local ) = edge%buf(:,:,kptr+k,is) 
-       enddo
+    m=0
+    gid = elem%GlobalID
+    do n=1,elem%desc%actual_neigh_edges+1
+       pid = elem%desc%globalID(elem%desc%loc2buf((m+1)))
+       if (m==elem%desc%actual_neigh_edges .OR. pid < gid) then
+          gid = -1
+          v(:,:,:,n) = u(:,:,:)
+       else
+          m = m+1
+          l = elem%desc%loc2buf(m)
+          is = elem%desc%getmapP_ghost(l)
+          do k=1,vlyr
+             v(:,:,k,n) = edge%buf(:,:,kptr+k,is) 
+          enddo
+       end if
     end do
 
 
