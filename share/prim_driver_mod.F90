@@ -1613,18 +1613,31 @@ contains
             hybrid, dt, tl, nets, nete, .false.)
        ! defer final timelevel update until after Q update.
     enddo
+    ! current dynamics state variables:
+    !    derived%dp              =  dp at start of timestep
+    !    derived%vstar           =  velocity at start of tracer timestep
+    !    derived%vn0             =  mean horiz. flux:   U*dp
+    ! rsplit=0
+    !        state%v(:,:,:,np1)      = velocity on reference levels
+    !        state%ps_v(:,:,:,np1)   = ps
+    ! rsplit>0
+    !        state%v(:,:,:,np1)      = velocity on lagrangian levels 
+    !        state%dp3d(:,:,:,np1)   = dp3d
+    !
+
 
     ! ===============
-    ! Tracer Advection.  SE advection uses mean flux variables:
-    !        derived%dp              =  dp at start of timestep
-    !        derived%vn0             =  mean horiz. flux:   U*dp
+    ! Tracer Advection.  
     ! in addition, this routine will apply the DSS to:
     !        derived%eta_dot_dpdn    =  mean vertical velocity (used for remap below)
     !        derived%omega           =
+    ! Tracers are always vertically lagrangian.  
+    ! For rsplit=0: 
+    !   if tracer scheme needs v on lagrangian levels it has to vertically interpolate
+    !   if tracer scheme needs dp3d, it needs to derive it from ps_v
     ! ===============
     if (qsize>0) call Prim_Advec_Tracers_remap(elem, deriv(hybrid%ithr),hvcoord,flt_advection,hybrid,&
          dt_q,tl,nets,nete)
-
 
     if (ntrac>0) then
       if ( n_Q /= tl%n0 ) then

@@ -1485,7 +1485,7 @@ end subroutine ALE_elems_with_dep_points
 
 subroutine  ALE_parametric_coords (parametric_coord, elem_indexes, dep_points, num_neighbors, ngh_corners)
   use coordinate_systems_mod, only : cartesian2d_t, cartesian3D_t, spherical_polar_t, change_coordinates
-  use interpolate_mod,        only : parametric_coordinates_corners
+  use interpolate_mod,        only : parametric_coordinates
   use dimensions_mod,         only : np
 
   implicit none
@@ -1504,7 +1504,7 @@ subroutine  ALE_parametric_coords (parametric_coord, elem_indexes, dep_points, n
       n = elem_indexes(i,j)
       sphere = change_coordinates(dep_points(i,j))
       ! Mark will fill in  parametric_coordinates for corners.
-      parametric_coord(i,j) = parametric_coordinates_corners(sphere,ngh_corners(:,n))
+      parametric_coord(i,j) = parametric_coordinates(sphere,ngh_corners(:,n))
     end do
   end do
 end subroutine ALE_parametric_coords
