@@ -135,8 +135,8 @@ module ocn_time_integration
           splitOn = .true.
       else
           err = 1
-          write(*,*) 'Incorrect choice for config_time_integrator:', trim(config_time_integrator)
-          write(*,*) '   choices are: RK4, split_explicit, unsplit_explicit'
+          write (stderrUnit,*) 'Incorrect choice for config_time_integrator:', trim(config_time_integrator)
+          write (stderrUnit,*) '   choices are: RK4, split_explicit, unsplit_explicit'
       endif
 
 

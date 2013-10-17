@@ -25,6 +25,7 @@ module ocn_equation_of_state
    use mpas_configure
    use ocn_equation_of_state_linear
    use ocn_equation_of_state_jm
+   use mpas_io_units
 
    implicit none
    private
@@ -165,8 +166,8 @@ contains
       elseif (config_eos_type.eq.'jm') then
          jmEos = .true.
       else
-         write(6,*) 'Invalid choice for config_eos_type.'
-         write(6,*) '  Choices are: linear, jm'
+         write (stderrUnit,*) 'Invalid choice for config_eos_type.'
+         write (stderrUnit,*) '  Choices are: linear, jm'
          err = 1
       endif
 
