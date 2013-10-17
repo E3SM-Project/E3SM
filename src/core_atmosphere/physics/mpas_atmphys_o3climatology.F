@@ -167,7 +167,7 @@
        if(dlat == 0.) then
           ozmixm(m,k,iCell) = ozmixin(j,k,i1,m)
        else
-          ozmixm(m,k,iCell) = ozmixin(j,k,i1,m) \
+          ozmixm(m,k,iCell) = ozmixin(j,k,i1,m) &
                      + (ozmixin(j,k,i2,m)-ozmixin(j,k,i1,m))*dlatCell/dlat
        endif
     enddo 
