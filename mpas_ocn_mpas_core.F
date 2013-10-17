@@ -759,7 +759,9 @@ module mpas_core
                enddo
 
                do iCell=1,nCells
-                  k = max(maxLevelCell(iCell),1)
+
+                  ! Change value of maxLevelCell for partial bottom cells
+                  k = maxLevelCell(iCell)
                   if (bottomDepth(iCell).lt.minBottomDepthMid(k)) then
                      ! Round up to cell above
                      maxLevelCell(iCell) = maxLevelCell(iCell) - 1
@@ -768,13 +770,14 @@ module mpas_core
                      ! Round down cell to the min_pbc_fraction.
                      bottomDepth(iCell) = minBottomDepth(k)
                   endif
+                  ! reset k to new value of maxLevelCell
+                  k = maxLevelCell(iCell)
 
                   ! Alter thickness of bottom level to account for PBC
                   layerThickness(k,iCell) = bottomDepth(iCell) - refBottomDepthTopOfCell(k) 
 
                   ! Linearly interpolate the initial T&S for new location of bottom cell for PBCs
                   zMidPBC = -0.5*(bottomDepth(iCell) + refBottomDepthTopOfCell(k))
-
                   km1 = max(k-1,1)
                   do iTracer=1,num_tracers
                      tracers(iTracer,k,iCell) = tracers(iTracer,k,iCell) &
