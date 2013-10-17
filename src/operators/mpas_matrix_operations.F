@@ -21,6 +21,7 @@ module mpas_matrix_operations
 
    use mpas_grid_types
    use mpas_constants
+   use mpas_io_units
 
    implicit none
    private
@@ -422,7 +423,7 @@ contains
 
       ! mrp: find out how to do correct error check.
       if (size(A,1).ne.n.or.size(A,2).ne.m) then
-        write(*,*) 'error, mpas_outer_product: size of A must match u and v'
+        write(stderrUnit,*) 'error, mpas_outer_product: size of A must match u and v'
         stop
       endif
 

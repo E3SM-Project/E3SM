@@ -235,7 +235,7 @@ contains
           displacement_type_local = 'relative'
           k_displaced_local = 0
         else
-          write(0,*) 'Abort: tracersSurfaceValue must be present'
+          write (stderrUnit,*) 'Abort: tracersSurfaceValue must be present'
           call mpas_dmpar_abort(dminfo)
         endif
       else
@@ -287,7 +287,7 @@ contains
       if (displacement_type_local == 'absolute' .and.   &
          (k_displaced_local <= 0 .or. k_displaced_local > nVertLevels) ) then
 
-         write(stderrUnit,*) 'Abort: In equation_of_state_jm', &
+         write (stderrUnit,*) 'Abort: In equation_of_state_jm', &
              ' k_displaced must be between 1 and nVertLevels for ', &
              'displacement_type = absolute'
          call mpas_dmpar_abort(dminfo)

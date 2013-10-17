@@ -27,6 +27,7 @@ module mpas_tensor_operations
    use mpas_vector_operations
    use mpas_matrix_operations
    use mpas_dmpar
+   use mpas_io_units
 
    implicit none
    private
@@ -957,11 +958,11 @@ contains
       R = block % mesh % sphere_radius
       computeStrainRate = .true.
 
-     write (*,*) 'Executing tensor test using test function: ',trim(tensor_test_function)
+     write (stdoutUnit,*) 'Executing tensor test using test function: ',trim(tensor_test_function)
      if (tensor_test_function.eq.'constant') then
 
-        write (*,'(a)') 'Test case: constant in x and y'
-        write (*,'(a)') 'Note: This tensor test requires a planar Cartesian domain'
+        write (stdoutUnit,'(a)') 'Test case: constant in x and y'
+        write (stdoutUnit,'(a)') 'Note: This tensor test requires a planar Cartesian domain'
         do iEdge = 1,nEdges
            xVelocity = cn
            yVelocity = cs
@@ -974,9 +975,9 @@ contains
 
      elseif (tensor_test_function.eq.'linear_x') then
 
-        write (*,'(a)') 'Test case:  linear function in x on a plane'
-        write (*,'(a)') 'Note: This tensor test requires a planar Cartesian domain.'
-        write (*,'(a)') 'Computed solution will not match analytic solution at periodic edges'
+        write (stdoutUnit,'(a)') 'Test case:  linear function in x on a plane'
+        write (stdoutUnit,'(a)') 'Note: This tensor test requires a planar Cartesian domain.'
+        write (stdoutUnit,'(a)') 'Computed solution will not match analytic solution at periodic edges'
         do iEdge = 1,nEdges
            xVelocity = cn*xEdge(iEdge)
            yVelocity = cs*xEdge(iEdge)
@@ -992,9 +993,9 @@ contains
 
      elseif (tensor_test_function.eq.'linear_y') then
 
-        write (*,'(a)') 'Test case:  linear function in y on a plane'
-        write (*,'(a)') 'Note: This tensor test requires a planar Cartesian domain'
-        write (*,'(a)') 'Computed solution will not match analytic solution at periodic edges'
+        write (stdoutUnit,'(a)') 'Test case:  linear function in y on a plane'
+        write (stdoutUnit,'(a)') 'Note: This tensor test requires a planar Cartesian domain'
+        write (stdoutUnit,'(a)') 'Computed solution will not match analytic solution at periodic edges'
         do iEdge = 1,nEdges
           xVelocity = -cs*yEdge(iEdge)
           yVelocity =  cn*yEdge(iEdge)
@@ -1010,9 +1011,9 @@ contains
 
      elseif (tensor_test_function.eq.'linear_arb_rot') then
 
-        write (*,'(a)') 'Test case:  linear function, arbitrary rotation, on a plane'
-        write (*,'(a)') 'Note: This tensor test requires a planar Cartesian domain'
-        write (*,'(a)') 'Computed solution will not match analytic solution at periodic edges'
+        write (stdoutUnit,'(a)') 'Test case:  linear function, arbitrary rotation, on a plane'
+        write (stdoutUnit,'(a)') 'Note: This tensor test requires a planar Cartesian domain'
+        write (stdoutUnit,'(a)') 'Computed solution will not match analytic solution at periodic edges'
         do iEdge = 1,nEdges
            r = sqrt(xEdge(iEdge)**2 + yEdge(iEdge)**2)
            theta = atan(yEdge(iEdge)/xEdge(iEdge))
@@ -1034,9 +1035,9 @@ contains
 
      elseif (tensor_test_function.eq.'power_x') then
 
-        write (*,'(a)') 'Test case: power function in x: x^p'
-        write (*,'(a)') 'Note: This tensor test requires a planar Cartesian domain'
-        write (*,'(a)') 'Computed solution will not match analytic solution at periodic edges'
+        write (stdoutUnit,'(a)') 'Test case: power function in x: x^p'
+        write (stdoutUnit,'(a)') 'Note: This tensor test requires a planar Cartesian domain'
+        write (stdoutUnit,'(a)') 'Computed solution will not match analytic solution at periodic edges'
         do iEdge = 1,nEdges
            xVelocity = cn*xEdge(iEdge)**p
            yVelocity = cs*xEdge(iEdge)**p
@@ -1055,9 +1056,9 @@ contains
 
      elseif (tensor_test_function.eq.'power_y') then
 
-        write (*,'(a)') 'Test case:  power function in y: y^n'
-        write (*,'(a)') 'Note: This tensor test requires a planar Cartesian domain'
-        write (*,'(a)') 'Computed solution will not match analytic solution at periodic edges'
+        write (stdoutUnit,'(a)') 'Test case:  power function in y: y^n'
+        write (stdoutUnit,'(a)') 'Note: This tensor test requires a planar Cartesian domain'
+        write (stdoutUnit,'(a)') 'Computed solution will not match analytic solution at periodic edges'
         do iEdge = 1,nEdges
            xVelocity = -cs*yEdge(iEdge)**p
            yVelocity =  cn*yEdge(iEdge)**p
@@ -1076,9 +1077,9 @@ contains
 
      elseif (tensor_test_function.eq.'power_arb_rot') then
 
-        write (*,'(a)') 'Test case: power function, arbitrary rotation'
-        write (*,'(a)') 'Note: This tensor test requires a planar Cartesian domain'
-        write (*,'(a)') 'Computed solution will not match analytic solution at periodic edges'
+        write (stdoutUnit,'(a)') 'Test case: power function, arbitrary rotation'
+        write (stdoutUnit,'(a)') 'Note: This tensor test requires a planar Cartesian domain'
+        write (stdoutUnit,'(a)') 'Computed solution will not match analytic solution at periodic edges'
         do iEdge = 1,nEdges
            r = sqrt(xEdge(iEdge)**2 + yEdge(iEdge)**2)
            theta = atan(yEdge(iEdge)/xEdge(iEdge))
@@ -1105,9 +1106,9 @@ contains
 
      elseif (tensor_test_function.eq.'sin_arb_rot') then
 
-        write (*,'(a)') 'Test case:  sine function, arbitrary rotation'
-        write (*,'(a)') 'Note: This tensor test requires a planar Cartesian domain'
-        write (*,'(a)') 'Computed solution will not match analytic solution at periodic edges'
+        write (stdoutUnit,'(a)') 'Test case:  sine function, arbitrary rotation'
+        write (stdoutUnit,'(a)') 'Note: This tensor test requires a planar Cartesian domain'
+        write (stdoutUnit,'(a)') 'Computed solution will not match analytic solution at periodic edges'
         do iEdge = 1,nEdges
            r = sqrt(xEdge(iEdge)**2 + yEdge(iEdge)**2)
            theta = atan(yEdge(iEdge)/xEdge(iEdge))
@@ -1135,9 +1136,9 @@ contains
 
      elseif (tensor_test_function.eq.'sph_solid_body') then
 
-        write (*,'(a)') 'Test case:  solid body rotation on the sphere'
-        write (*,'(a)') 'Note: This tensor test requires a spherical domain.'
-        write (*,'(a)') 'Computed solution will not match analytic solution beside land boundaries, if present.'
+        write (stdoutUnit,'(a)') 'Test case:  solid body rotation on the sphere'
+        write (stdoutUnit,'(a)') 'Note: This tensor test requires a spherical domain.'
+        write (stdoutUnit,'(a)') 'Computed solution will not match analytic solution beside land boundaries, if present.'
         do iEdge = 1,nEdges
            lon = lonEdge(iEdge)
            lat = latEdge(iEdge)
@@ -1173,9 +1174,9 @@ contains
 
      elseif (tensor_test_function.eq.'sph_Williamson') then
 
-        write (*,'(a)') 'Test case:  Solid body rotation at an arbitrary angle.  See Williamson et al. 1992 JCP, eqn 75-76.'
-        write (*,'(a)') 'Note: This tensor test requires a spherical domain.'
-        write (*,'(a)') 'Computed solution will not match analytic solution beside land boundaries, if present.'
+        write (stdoutUnit,'(a)') 'Test case:  Solid body rotation at an arbitrary angle.  See Williamson et al. 1992 JCP, eqn 75-76.'
+        write (stdoutUnit,'(a)') 'Note: This tensor test requires a spherical domain.'
+        write (stdoutUnit,'(a)') 'Computed solution will not match analytic solution beside land boundaries, if present.'
         rotAngle=pii/4
         do iEdge = 1,nEdges
            lon = lonEdge(iEdge)
@@ -1212,9 +1213,9 @@ contains
 
      elseif (tensor_test_function.eq.'sph_uCosCos') then
 
-        write (*,'(a)') 'Test case: u_\lambda = cos(lon)*(1+cos(2*lat)), u_\phi = 0'
-        write (*,'(a)') 'Note: This tensor test requires a spherical domain.'
-        write (*,'(a)') 'Computed solution will not match analytic solution beside land boundaries, if present.'
+        write (stdoutUnit,'(a)') 'Test case: u_\lambda = cos(lon)*(1+cos(2*lat)), u_\phi = 0'
+        write (stdoutUnit,'(a)') 'Note: This tensor test requires a spherical domain.'
+        write (stdoutUnit,'(a)') 'Computed solution will not match analytic solution beside land boundaries, if present.'
         do iEdge = 1,nEdges
            lon = lonEdge(iEdge)
            lat = latEdge(iEdge)
@@ -1250,9 +1251,9 @@ contains
 
      elseif (tensor_test_function.eq.'sph_vCosCos') then
 
-        write (*,'(a)') 'Test case: u_\lambda = 0, u_\phi = cos(lon)*(1+cos(2*lat))'
-        write (*,'(a)') 'Note: This tensor test requires a spherical domain.'
-        write (*,'(a)') 'Computed solution will not match analytic solution beside land boundaries, if present.'
+        write (stdoutUnit,'(a)') 'Test case: u_\lambda = 0, u_\phi = cos(lon)*(1+cos(2*lat))'
+        write (stdoutUnit,'(a)') 'Note: This tensor test requires a spherical domain.'
+        write (stdoutUnit,'(a)') 'Computed solution will not match analytic solution beside land boundaries, if present.'
         do iEdge = 1,nEdges
            lon = lonEdge(iEdge)
            lat = latEdge(iEdge)
@@ -1288,9 +1289,9 @@ contains
 
      elseif (tensor_test_function.eq.'sph_ELonLon_CosCos') then
 
-        write (*,'(a)') 'Test case: set tensor component \sigma_{\lambda \lambda}=cos(lon)*(1+cos(2*lat)), \sigma=0 elsewhere'
-        write (*,'(a)') 'Note: This tensor test requires a spherical domain.'
-        write (*,'(a)') 'Computed solution will not match analytic solution beside land boundaries, if present.'
+        write (stdoutUnit,'(a)') 'Test case: set tensor component \sigma_{\lambda \lambda}=cos(lon)*(1+cos(2*lat)), \sigma=0 elsewhere'
+        write (stdoutUnit,'(a)') 'Note: This tensor test requires a spherical domain.'
+        write (stdoutUnit,'(a)') 'Computed solution will not match analytic solution beside land boundaries, if present.'
         computeStrainRate = .false.
         strainRateLonLatRIndex = 1
         strainRateLonLatREdge = 0.0
@@ -1314,9 +1315,9 @@ contains
 
      elseif (tensor_test_function.eq.'sph_ELatLat_CosCos') then
 
-        write (*,'(a)') 'Test case: set tensor component \sigma_{\phi \phi}=cos(lon)*(1+cos(2*lat)), \sigma=0 elsewhere'
-        write (*,'(a)') 'Note: This tensor test requires a spherical domain.'
-        write (*,'(a)') 'Computed solution will not match analytic solution beside land boundaries, if present.'
+        write (stdoutUnit,'(a)') 'Test case: set tensor component \sigma_{\phi \phi}=cos(lon)*(1+cos(2*lat)), \sigma=0 elsewhere'
+        write (stdoutUnit,'(a)') 'Note: This tensor test requires a spherical domain.'
+        write (stdoutUnit,'(a)') 'Computed solution will not match analytic solution beside land boundaries, if present.'
         computeStrainRate = .false.
         strainRateLonLatRIndex = 2
         strainRateLonLatREdge = 0.0
@@ -1340,9 +1341,9 @@ contains
 
      elseif (tensor_test_function.eq.'sph_ELonLat_CosCos') then
 
-        write (*,'(a)') 'Test case: set tensor component \sigma_{\phi \lambda}=cos(lon)*(1+cos(2*lat)), \sigma=0 elsewhere'
-        write (*,'(a)') 'Note: This tensor test requires a spherical domain.'
-        write (*,'(a)') 'Computed solution will not match analytic solution beside land boundaries, if present.'
+        write (stdoutUnit,'(a)') 'Test case: set tensor component \sigma_{\phi \lambda}=cos(lon)*(1+cos(2*lat)), \sigma=0 elsewhere'
+        write (stdoutUnit,'(a)') 'Note: This tensor test requires a spherical domain.'
+        write (stdoutUnit,'(a)') 'Computed solution will not match analytic solution beside land boundaries, if present.'
         computeStrainRate = .false.
         computeStrainRate = .false.
         strainRateLonLatRIndex = 4
@@ -1366,7 +1367,7 @@ contains
         end do
 
      else
-       write (*,*) 'bad choice of tensor_test_function: ',tensor_test_function
+       write (stderrUnit,*) 'bad choice of tensor_test_function: ',tensor_test_function
        stop
      endif
 
