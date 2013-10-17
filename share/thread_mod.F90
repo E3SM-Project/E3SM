@@ -6,7 +6,7 @@ module thread_mod
   implicit none
   private
 
-  integer, public :: NThreads
+  integer, public :: NThreads, nthreads_accel
 
 #ifdef _OPENMP
   interface omp_get_thread_num
