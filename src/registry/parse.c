@@ -16,7 +16,10 @@ int getword(FILE *, char *);
 int is_integer_constant(char *);
 void sort_vars(struct variable *);
 void sort_group_vars(struct group_list *);
-int parse_reg_xml(FILE * regfile, struct namelist **nls, struct dimension ** dims, struct variable ** vars, struct group_list ** groups, char * modelname, char * corename, char * version);
+int parse_reg_xml(ezxml_t registry, struct namelist **nls, struct dimension ** dims, struct variable ** vars, struct group_list ** groups, char * modelname, char * corename, char * version);
+int validate_reg_xml(ezxml_t registry);
+char * check_dimensions(ezxml_t registry, char * dims);
+char * check_streams(char * streams);
 
 int main(int argc, char ** argv)
 {
@@ -44,8 +47,14 @@ int main(int argc, char ** argv)
    nls = NULL;
    dims = NULL;
    vars = NULL;
+
+   ezxml_t registry = ezxml_parse_fp(regfile);
+
+   if (validate_reg_xml(registry)) {
+      return 1;
+   }
   
-   if (parse_reg_xml(regfile, &nls, &dims, &vars, &groups, modelname, corename, version)) {
+   if (parse_reg_xml(registry, &nls, &dims, &vars, &groups, modelname, corename, version)) {
       return 1;
    }
   
@@ -65,7 +74,271 @@ int main(int argc, char ** argv)
    return 0;
 }
 
-int parse_reg_xml(FILE * regfile, struct namelist **nls, struct dimension ** dims, struct variable ** vars, struct group_list ** groups, char * modelname, char * corename, char * version)
+int validate_reg_xml(ezxml_t registry)
+{
+	ezxml_t dims_xml, dim_xml;
+	ezxml_t structs_xml, var_arr_xml, var_xml;
+	ezxml_t nmlrecs_xml, nmlopt_xml;
+
+	const char *dimname, *dimunits, *dimdesc, *dimdef;
+	const char *nmlrecname, *nmloptname, *nmlopttype, *nmloptval, *nmloptunits, *nmloptdesc, *nmloptposvals;
+	const char *structname, *structlevs;
+	const char *vararrname, *vararrtype, *vararrdims, *vararrpersistence;
+	const char *varname, *varpersistence, *vartype, *vardims, *varunits, *vardesc, *vararrgroup, *varstreams;
+	const char *varname_in_code;
+	const char *const_model, *const_core, *const_version;
+
+	char *string, *err_string;
+	char name_holder[1024];
+
+	int found;
+
+	// Get model information
+	const_model = ezxml_attr(registry, "model");
+	const_core = ezxml_attr(registry, "core");
+	const_version = ezxml_attr(registry, "version");
+
+	if(const_model == NULL)
+		fprintf(stderr,"Warning: Model attribute missing in registry declaration.\n");
+
+	if(const_core == NULL)
+		fprintf(stderr,"Warning: Core attribute missing in registry declaration.\n");
+
+	if(const_version == NULL)
+		fprintf(stderr,"Warning: Version attribute missing in registry declaration.\n");
+
+	// Validate Namelist Records
+	for (nmlrecs_xml = ezxml_child(registry, "nml_record"); nmlrecs_xml; nmlrecs_xml = nmlrecs_xml->next){
+		nmlrecname = ezxml_attr(nmlrecs_xml, "name");
+
+		if (nmlrecname == NULL){
+			fprintf(stderr,"ERROR: Namelist record missing name attribute.\n");
+			return 1;
+		}
+
+		for (nmlopt_xml = ezxml_child(nmlrecs_xml, "nml_option"); nmlopt_xml; nmlopt_xml = nmlopt_xml->next){
+			nmloptname = ezxml_attr(nmlopt_xml, "name");
+			nmlopttype = ezxml_attr(nmlopt_xml, "type");
+			nmloptval = ezxml_attr(nmlopt_xml, "default_value");
+			nmloptunits = ezxml_attr(nmlopt_xml, "units");
+			nmloptdesc = ezxml_attr(nmlopt_xml, "description");
+			nmloptposvals = ezxml_attr(nmlopt_xml, "possible_values");
+
+			if (nmloptname == NULL){
+				fprintf(stderr,"ERROR: Namelist option missing name attribute in record %s.\n", nmlrecname);
+				return 1;
+			}
+
+			if (nmlopttype == NULL){
+				fprintf(stderr,"ERROR: Namelist option %s missing type attribute.\n", nmloptname);
+				return 1;
+			} else if (strcasecmp("logical", nmlopttype) != 0 && strcasecmp("real", nmlopttype) != 0 &&
+					   strcasecmp("integer", nmlopttype) != 0 && strcasecmp("character", nmlopttype) != 0) {
+				fprintf(stderr,"ERROR: Type of namelist option %s doesn't equal one of logical, real, character, or integer.\n", nmloptname);
+				return 1;
+			}
+
+			if (nmloptval == NULL){
+				fprintf(stderr,"ERROR: Default value missing for namelist option %s.\n", nmloptname);
+				return 1;
+			}
+		}
+	}
+
+	// Validate Dimensions
+	for (dims_xml = ezxml_child(registry, "dims"); dims_xml; dims_xml = dims_xml->next){
+		for (dim_xml = ezxml_child(dims_xml, "dim"); dim_xml; dim_xml = dim_xml->next){
+			dimname = ezxml_attr(dim_xml, "name");
+			dimdef = ezxml_attr(dim_xml, "definition");	
+			dimunits = ezxml_attr(dim_xml, "units");
+			dimdesc = ezxml_attr(dim_xml, "description");
+
+			if (dimname == NULL){
+				fprintf(stderr,"ERROR: Name missing for dimension.\n");
+				return 1;
+			}
+
+			if (dimdef != NULL){
+				if (strncmp(dimdef, "namelist:", 9) == 0){
+					found = 0;
+					snprintf(name_holder, 1024, "%s",dimdef);
+					snprintf(name_holder, 1024, "%s",(name_holder)+9);
+					for (nmlrecs_xml = ezxml_child(registry, "nml_record"); nmlrecs_xml; nmlrecs_xml = nmlrecs_xml->next){
+						for (nmlopt_xml = ezxml_child(nmlrecs_xml, "nml_option"); nmlopt_xml; nmlopt_xml = nmlopt_xml->next){
+							nmloptname = ezxml_attr(nmlopt_xml, "name");
+							nmlopttype = ezxml_attr(nmlopt_xml, "type");
+
+							if (strncmp(name_holder, nmloptname, 1024) == 0){
+								if (strcasecmp("integer", nmlopttype) != 0){
+									fprintf(stderr, "ERROR: Namelist variable %s must be an integer for namelist-derived dimension %s.\n", nmloptname, dimname);
+									return 1;
+								}
+
+								found = 1;
+							}
+						}
+					}
+
+					if (!found){
+						fprintf(stderr, "ERROR: Namelist variable %s not found for namelist-derived dimension %s\n", name_holder, dimname);
+						return 1;
+					}
+				}
+			}
+		}
+	}
+
+	// Validate Variable Structures
+	for(structs_xml = ezxml_child(registry, "var_struct"); structs_xml; structs_xml = structs_xml->next){
+		structname = ezxml_attr(structs_xml, "name");
+		structlevs = ezxml_attr(structs_xml, "time_levs");
+
+		if (structname == NULL){
+			fprintf(stderr,"ERROR: Name missing for var_struct.\n");
+			return 1;
+		}
+
+		if (structlevs == NULL){
+			fprintf(stderr,"ERROR: time_levs attribute missing for var_struct %s.\n", structname);
+			return 1;
+		}
+
+		// Validate variable arrays
+		for(var_arr_xml = ezxml_child(structs_xml, "var_array"); var_arr_xml; var_arr_xml = var_arr_xml->next){
+			vararrname = ezxml_attr(var_arr_xml, "name");
+			vararrtype = ezxml_attr(var_arr_xml, "type");
+			vararrdims = ezxml_attr(var_arr_xml, "dimensions");
+			vararrpersistence = ezxml_attr(var_arr_xml, "persistence");
+
+			if (vararrname == NULL){
+				fprintf(stderr,"ERROR: Name attribute missing for var_array in var_struct %s.\n", structname);
+				return 1;
+			}
+
+			if (vararrtype == NULL){
+				fprintf(stderr,"ERROR: Type attribute missing for var_array %s in var_struct %s.\n", vararrname, structname);
+				return 1;
+			} else if (strcasecmp("logical", vararrtype) != 0 && strcasecmp("real", vararrtype) != 0 &&
+					   strcasecmp("integer", vararrtype) != 0 && strcasecmp("text", vararrtype) != 0) {
+				fprintf(stderr,"ERROR: Type attribute on var_array %s in var_struct %s is not equal to one of logical, real, integer, or text.\n", vararrname, structname);
+				return 1;
+			}
+
+			if (vararrdims == NULL){
+				fprintf(stderr,"ERROR: Dimensions attribute missing for var_array %s in var_struct %s.\n", vararrname, structname);
+				return 1;
+			} else { 
+				string = strdup(vararrdims);
+				err_string = check_dimensions(registry, string);
+				free(string);
+
+				if (err_string != NULL){
+					fprintf(stderr,"ERROR: Dimension %s on var_array %s in var_struct %s is not defined.\n", err_string, vararrname, structname);
+					return 1;
+				}
+			}
+
+			if (vararrpersistence != NULL) {
+				if (strcasecmp(vararrpersistence, "persistent") != 0 && strcasecmp(vararrpersistence, "scratch") != 0) {
+					fprintf(stderr,"ERROR: Persistence attribute on var_array %s in var_struct %s is not equal to one of persistent or scratch.\n", vararrname, structname);
+					return 1;
+				}
+			}
+
+			// Validate variables in variable arrays
+			for(var_xml = ezxml_child(var_arr_xml, "var"); var_xml; var_xml = var_xml->next){
+				varname = ezxml_attr(var_xml, "name");
+				varunits = ezxml_attr(var_xml, "units");
+				vardesc = ezxml_attr(var_xml, "description");
+				varstreams = ezxml_attr(var_xml, "streams");
+				vararrgroup = ezxml_attr(var_xml, "array_group");
+				varname_in_code = ezxml_attr(var_xml, "name_in_code");
+
+				if (varname == NULL) {
+					fprintf(stderr,"ERROR: Name missing for constituent variable in var_array %s in var_struct %s.\n", vararrname, structname);
+					return 1;
+				}
+
+				if (vararrgroup == NULL){
+					fprintf(stderr,"ERROR: Array group attribute missing for constituent variable %s in var_array %s in var_struct %s.\n", varname, vararrname, structname);
+					return 1;
+				}
+
+				if (varstreams != NULL) {
+					string = strdup(varstreams);
+					err_string = check_streams(string);
+
+					if (err_string != NULL){
+						fprintf(stderr,"ERROR: Stream %s defined on variable %s in var_array %s in var_struct %s is not a valid stream.\n", err_string, varname, vararrname, structname);
+						return 1;
+					}
+				}
+			}
+		}
+
+		for(var_xml = ezxml_child(structs_xml, "var"); var_xml; var_xml = var_xml->next){
+			varname = ezxml_attr(var_xml, "name");
+			varpersistence = ezxml_attr(var_xml, "persistence");
+			vartype = ezxml_attr(var_xml, "type");
+			vardims = ezxml_attr(var_xml, "dimensions");
+			varunits = ezxml_attr(var_xml, "units");
+			vardesc = ezxml_attr(var_xml, "description");
+			varstreams = ezxml_attr(var_xml, "streams");
+			varname_in_code = ezxml_attr(var_xml, "name_in_code");
+
+			if (varname == NULL) {
+				fprintf(stderr,"ERROR: Variable name missing in var_struct %s\n.", structname);
+				return 1;
+			}
+
+			if(vartype == NULL) {
+				fprintf(stderr,"ERROR: Type attribute missing on variable %s in var_struct %s\n.", varname, structname);
+				return 1;
+			} else if (strcasecmp("logical", vartype) != 0 && strcasecmp("real", vartype) != 0 &&
+					   strcasecmp("integer", vartype) != 0 && strcasecmp("text", vartype) != 0) {
+				fprintf(stderr,"ERROR: Type attribute on variable %s in var_struct %s is not equal to one of logical, real, integer, or text.\n", varname, structname);
+				return 1;
+			}
+
+			if (vardims == NULL) {
+				fprintf(stderr,"ERROR: Dimensions attribute missing for variable %s in var_struct %s.\n", varname, structname);
+				return 1;
+			} else {
+                if (strcasecmp("", vardims) != 0) {
+                    string = strdup(vardims);
+                    err_string = check_dimensions(registry, string);
+                    free(string);
+
+                    if(err_string != NULL) {
+                        fprintf(stderr,"ERROR: Dimension %s on variable %s in var_struct %s not defined.\n", err_string, varname, structname); 
+                        return 1;
+                    }
+                }
+			}
+
+			if (varpersistence != NULL) {
+				if (strcasecmp(varpersistence, "persistent") != 0 && strcasecmp(varpersistence, "scratch") != 0) {
+					fprintf(stderr,"ERROR: Persistence attribute on variable %s in var_struct %s not equal to one of persistence or scratch.\n", varname, structname);
+					return 1;
+				}
+			}
+
+			if (varstreams != NULL) {
+				string = strdup(varstreams);
+				err_string = check_streams(string);
+
+				if (err_string != NULL){
+					fprintf(stderr,"ERROR: Stream %s defined on variable %s in var_struct %s is not a valid stream.\n", err_string, varname, structname);
+					return 1;
+				}
+			}
+		}
+	}
+
+	return 0;
+}
+
+int parse_reg_xml(ezxml_t registry, struct namelist **nls, struct dimension ** dims, struct variable ** vars, struct group_list ** groups, char * modelname, char * corename, char * version)
 {
 	struct namelist * nls_ptr, *nls_ptr2;
 	struct namelist * nls_chk_ptr;
@@ -76,7 +349,6 @@ int parse_reg_xml(FILE * regfile, struct namelist **nls, struct dimension ** dim
 	struct group_list * grouplist_ptr;
 	struct variable_list * vlist_cursor;
 
-	ezxml_t registry = ezxml_parse_fp(regfile);
 	ezxml_t dims_xml, dim_xml;
 	ezxml_t structs_xml, var_arr_xml, var_xml;
 	ezxml_t nmlrecs_xml, nmlopt_xml;
@@ -203,7 +475,7 @@ int parse_reg_xml(FILE * regfile, struct namelist **nls, struct dimension ** dim
 					while (nls_chk_ptr) {
 						if (strncmp(nls_chk_ptr->name, dim_ptr->name_in_code, 1024) == 0) {
 							if (nls_chk_ptr->vtype != INTEGER) {
-								printf("\nRegistry error: Namelist variable %s must be an integer for namelist-derived dimension %s\n\n", nls_chk_ptr->name, dim_ptr->name_in_file);
+								fprintf(stderr,"\nRegistry error: Namelist variable %s must be an integer for namelist-derived dimension %s\n\n", nls_chk_ptr->name, dim_ptr->name_in_file);
 								return 1;
 							}
 							break;
@@ -211,7 +483,7 @@ int parse_reg_xml(FILE * regfile, struct namelist **nls, struct dimension ** dim
 						nls_chk_ptr = nls_chk_ptr->next;
 					}
 					if (!nls_chk_ptr) {
-						printf("\nRegistry error: Namelist variable %s not defined for namelist-derived dimension %s\n\n", dim_ptr->name_in_code, dim_ptr->name_in_file);
+						fprintf(stderr,"\nRegistry error: Namelist variable %s not defined for namelist-derived dimension %s\n\n", dim_ptr->name_in_code, dim_ptr->name_in_file);
 						return 1;
 					}
 
@@ -670,4 +942,62 @@ void sort_group_vars(struct group_list * groups)
 
       group_ptr = group_ptr->next;
    }
+}
+
+char * check_dimensions(ezxml_t registry, char * dims){
+	ezxml_t dims_xml, dim_xml;
+
+	const char *dimname;
+
+	char *string, *tofree, *token;
+	int missing_dim;
+
+	string = strdup(dims);
+	tofree = string;
+
+	while( (token = strsep(&string, " ")) != NULL) {
+		if (strcasecmp(token, "Time") != 0){
+			missing_dim = 1;
+			for (dims_xml = ezxml_child(registry, "dims"); dims_xml; dims_xml = dims_xml->next){
+				for (dim_xml = ezxml_child(dims_xml, "dim"); dim_xml; dim_xml = dim_xml->next){
+					dimname = ezxml_attr(dim_xml, "name");
+
+					if(strcasecmp(dimname, token) == 0){
+						missing_dim = 0;
+					}
+				}
+			}
+
+			if (missing_dim) {
+				free(tofree);
+				return token;
+			}
+		}
+	}
+	free(tofree);
+	return NULL;
+}
+
+char * check_streams(char * streams){
+	char * stream;
+	int length, i, bad_streams;
+	
+	length = strlen(streams);
+
+	stream = (char *)malloc(2*sizeof(char));
+	stream[1] = '\0';
+
+	for (i = 0; i < length; i++){
+		bad_streams = 1;	
+		stream[0] = streams[i];
+		if(strcmp(stream, "i") == 0 || strcmp(stream, "r") == 0 || strcmp(stream, "o") == 0 || strcmp(stream, "s") == 0){
+			bad_streams = 0;
+		}
+
+		if (bad_streams == 1){
+			return stream;
+		}
+	}
+
+	return NULL;
 }
