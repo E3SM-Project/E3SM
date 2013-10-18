@@ -33,11 +33,14 @@
 		/>
 	</dims>
 
-	<nml_record name="li_model">
+	<nml_record name="velocity_solver">
 		<nml_option name="config_velocity_solver" type="character" default_value="sia" units="unitless"
 		            description="Selection of the method for solving ice velocity."
 		            possible_values="'sia'"
 		/>
+	</nml_record>
+
+	<nml_record name="advection">
 		<nml_option name="config_thickness_advection" type="character" default_value="fo" units="unitless"
 		            description="Selection of the method for advecting thickness."
 		            possible_values="'fo', 'none'"
@@ -46,6 +49,15 @@
 		            description="Selection of the method for advecting tracers."
 		            possible_values="'none'"
 		/>
+<!-- This option to be implemented in the future.
+		<nml_option name="config_allow_additional_advance" type="logical" default_value=".true." units="none"
+		            description="Determines whether ice can advance beyond its initial extent"
+		            possible_values=".true. or .false."
+		/>
+-->
+	</nml_record>
+
+	<nml_record name="physical_parameters">
 		<nml_option name="config_ice_density" type="real" default_value="900.0" units="kg m^{-3}"
 		            description="ice density to use"
 		            possible_values="Any positive real value"
@@ -58,31 +70,28 @@
 		            description="sea level to use for calculating floatation"
 		            possible_values="Any real value"
 		/>
+		<nml_option name="config_default_flowParamA" type="real" default_value="4.3905866e-24" units="s^{-1} Pa^{-n}"
+		            description="Defines the default value of the flow law parameter A to be used if it is not being calculated from ice temperature."
+		            possible_values="Any positive real value"
+		/>
+		<nml_option name="config_flowLawExponent" type="real" default_value="3.0" units="none"
+		            description="Defines the value of the Glen flow law exponent, n."
+		            possible_values="Any real value"
+		/>
 		<nml_option name="config_dynamic_thickness" type="real" default_value="100.0" units="m of ice"
 		            description="Defines the ice thickness below which dynamics are not calculated."
 		            possible_values="Any positive real value"
 		/>
-                <nml_option name="config_default_flowParamA" type="real" default_value="4.3905866e-24" units="s^{-1} Pa^{-n}"
-		            description="Defines the default value of the flow law parameter A to be used if it is not being calculated from ice temperature."
-		            possible_values="Any positive real value"
-		/>
-                <nml_option name="config_flowLawExponent" type="real" default_value="3.0" units="none"
-		            description="Defines the value of the Glen flow law exponent, n."
-		            possible_values="Any real value"
-		/>
+	</nml_record>
+
 <!-- This option to be implemented in the future.
+	<nml_record name="forcing">
 		<nml_option name="config_forcing_frequency" type="real" default_value="0.0" units="?"
 		            description="not implemented"
 		            possible_values="Any positive real value"
 		/>
--->
-<!-- This option to be implemented in the future.
-		<nml_option name="config_allow_additional_advance" type="logical" default_value=".true." units="none"
-		            description="Determines whether ice can advance beyond its initial extent"
-		            possible_values=".true. or .false."
-		/>
--->
 	</nml_record>
+-->
 
 	<nml_record name="time_integration">
 		<nml_option name="config_dt_years" type="real" default_value="0.5" units="yr"
@@ -105,7 +114,7 @@
 		            possible_values=".true. or .false."
 		/>
 		<nml_option name="config_start_time" type="character" default_value="0000-01-01_00:00:00" units="unitless"
-		            description="Timestamp describing the initial time of the simulation."
+		            description="Timestamp describing the initial time of the simulation.  If it is set to 'file', the initial time is read from restart_timestamp"
 		            possible_values="'YYYY-MM-DD_HH:MM:SS'"
 		/>
 		<nml_option name="config_stop_time" type="character" default_value="0000-01-01_00:00:00" units="unitless"
@@ -134,6 +143,10 @@
 		<nml_option name="config_restart_name" type="character" default_value="restart.nc" units="unitless"
 		            description="The template path and name to the restart file for the simulation. A time stamp is prepended to the extension of the file (.nc) both for input and output."
 		            possible_values="path/to/restart.nc"
+		/>
+		<nml_option name="config_restart_timestamp_name" type="character" default_value="restart_timestamp" units="unitless"
+		            description="The name of the file to which the timestamp of the latest restart file is written. This file is subsequently used to set the start time when config_start_time is set to 'file' and config_do_restart is set to .true."
+		            possible_values="path/to/restart_timestamp"
 		/>
 		<nml_option name="config_restart_interval" type="character" default_value="3650_00:00:00" units="unitless"
 		            description="Timestamp determining how often a restart file should be written.  Currently years and months are not supported, so you have to specify the restart interval in units of days! **  We could eventually propose a change to framework to fix this in subroutine mpas_set_timeInterval in mpas_timekeeping module."

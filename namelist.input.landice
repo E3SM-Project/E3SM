@@ -1,10 +1,16 @@
-&li_model
+&velocity_solver
 	config_velocity_solver = "sia"
+/
+&advection
 	config_thickness_advection = "fo"
 	config_tracer_advection = "none"
+/
+&physical_parameters
 	config_ice_density = 900.0
 	config_ocean_density = 1028.0
 	config_sea_level = 0.0
+	config_default_flowParamA = 4.3905866e-24
+	config_flowLawExponent = 3.0
 	config_dynamic_thickness = 100.0
 /
 &time_integration
@@ -23,6 +29,7 @@
 	config_input_name = "landice_grid.nc"
 	config_output_name = "output.nc"
 	config_restart_name = "restart.nc"
+	config_restart_timestamp_name = "restart_timestamp"
 	config_restart_interval = "3650_00:00:00"
 	config_output_interval = "0001_00:00:00"
 	config_stats_interval = "0000_01:00:00"
