@@ -1171,6 +1171,7 @@ contains
   real(kind=real_kind)                          :: rowsum      (np,np,nets:nete)
 
   real(kind=real_kind)                          :: neigh_q     (np,np,qsize,max_neigh_edges+1)
+  real(kind=real_kind)                          :: u           (np,np,qsize)
 
   integer                                       :: i,j,k,l,n,q,ie,kptr, n0_qdp, np1_qdp
   integer                                       :: num_neighbors
@@ -1224,7 +1225,8 @@ contains
         ! for each level k, unpack all tracer neighbor data on that level
         kptr=(k-1)*qsize
         neigh_q=0
-        call ghostVunpack_unoriented (ghostbuf_tr, neigh_q,np, qsize, kptr, elem(ie)%desc)
+        u(:,:,:) = elem(ie)%state%Q(:,:,k,:)
+        call ghostVunpack_unoriented (ghostbuf_tr, neigh_q, np, qsize, kptr, elem(ie)%desc, elem(ie)%GlobalId, u)
 
         do i=1,np
         do j=1,np
