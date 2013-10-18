@@ -947,16 +947,6 @@ module namelist_mod
     call MPI_bcast(output_type , 9,MPIChar_t,par%root,par%comm,ierr)
     call MPI_bcast(infilenames ,160*MAX_INFILES ,MPIChar_t,par%root,par%comm,ierr)
 
-    ! change NThreads if this rank is on an accelerator
-    parse_arg: do i = 1, iargc()
-        call getarg(i, arg)
-        if (arg .eq. "-accel" ) then
-            NThreads = nthreads_accel
-            print *, "Rank: ",par%rank, "NThreads=",NThreads
-            exit parse_arg
-        end if
-    end do parse_arg
-
     ! sanity check on thread count
     ! HOMME will run if if nthreads > max, but gptl will print out GB of warnings.
     if (NThreads > omp_get_max_threads()) then
