@@ -36,11 +36,10 @@ set NPTS = 4
 set NC = 4  
 set ne = 0 ; 
 
-set HOMME = ~/codes/homme
 set HOMME = ~/codes/homme  # path to HOMME code
-#set MACH = $HOMME/cmake/machineFiles/redsky.cmake
+set MACH = $HOMME/cmake/machineFiles/redsky.cmake
 #set MACH = $HOMME/cmake/machineFiles/climate.cmake
-set MACH = $HOMME/cmake/machineFiles/rhel5.cmake
+#set MACH = $HOMME/cmake/machineFiles/rhel5.cmake
 
 set input = $HOMME/test/template
 set output = jw_baroclinic1.nc
@@ -58,13 +57,17 @@ set exe = preqx.template.nc$NC
 
 
 if ( $ne == 0 ) then
-    # unstructured grid from file
-    #set meshname = ARM_30_x8_s1.g
-    set meshname = ARM_30_x8.g
+#    set meshname = ARM_30_x8.g
+#    set meshfile=~/codes/mapping/grids/$meshname
+    set meshname = arm_30_x8_lowconn.g
     set meshfile=~/codes/mapping/grids/$meshname
 
-    set meshname = uniform_16.g
-    set meshfile=$HOMME/test/mesh_refine/grids/mountain_10_x8.g
+#    set meshname = mountain_10_x8.g
+#    set meshfile=$HOMME/test/mesh_refine/grids/mountain_10_x8.g
+#    set meshname = neale2_15_x8.g
+#    set meshfile=~/codes/mapping/grids/$meshname
+#    set meshname = ncar16_x8_lowconV2.g
+#    set meshfile=~/codes/mapping/grids/$meshname
 
     set nu = 1.1e12
     dtime=600 nsplit=19  qsplit=5   tstep=6.3
@@ -182,6 +185,7 @@ endif
 
 # make hypervisocity grid plot:
 # ncl $input/plot_hypervis.ncl
+
 
 exit
 
