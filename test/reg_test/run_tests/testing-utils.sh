@@ -21,7 +21,7 @@ createLSFHeader() {
   echo "" >> $RUN_SCRIPT # newline
 
   echo "#BSUB -q small" >> $RUN_SCRIPT
-  echo "#BSUB -W 0:20" >> $RUN_SCRIPT
+  echo "#BSUB -W 0:40" >> $RUN_SCRIPT
 
   echo "" >> $RUN_SCRIPT # newline
 
