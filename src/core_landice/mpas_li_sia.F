@@ -216,9 +216,11 @@ contains
       integer, dimension(:,:), pointer :: cellsOnEdge
       integer, dimension(:), pointer :: edgeMask
       integer :: nVertLevels, nEdges, iLevel, iEdge, cell1, cell2
-      real (kind=RKIND) :: rateFactor, basalVelocity, slopeOnEdge, &
+      real (kind=RKIND) :: basalVelocity, slopeOnEdge, &
                layerCenterHeightOnEdge, thicknessEdge
-      real rhoi
+      real (kind=RKIND) :: rhoi         ! ice density
+      real (kind=RKIND) :: ratefactor   ! flow law parameter, A
+      real (kind=RKIND) :: n            ! flow law exponent, n
 
       err = 0
 
@@ -234,13 +236,14 @@ contains
       thickness => state % thickness % array
       edgeMask => state % edgeMask % array
 
-
+      ! Get parameters specified in the namelist
       rhoi = config_ice_density
+      n = config_flowLawExponent
+      ! Calculate ratefactor (A) at edge - TODO This should be calculated external to this subroutine and as a function of temperature
+      ratefactor = config_default_flowParamA  ! units of s^{-1} Pa^{-n}
 
       basalVelocity = 0.0_RKIND  ! Assume no sliding
 
-      ! Calculate ratefactor (A) at edge - TODO This should be calculated external to this subroutine and as a function of temperature 
-      ratefactor = 6.8e-24_RKIND  ! units of s^{-1} Pa^{-3}
 
       ! Loop over edges
       do iEdge = 1, nEdges
@@ -260,8 +263,8 @@ contains
                 layerCenterHeightOnEdge = thicknessEdge * (1.0_RKIND - layerCenterSigma(iLevel) )
                 ! Calculate SIA velocity
                 normalVelocity(iLevel,iEdge) = basalVelocity + &
-                    0.5_RKIND * ratefactor * (rhoi * gravity)**3 * slopeOnEdge**3 * &
-                    (thicknessEdge**4 - (thicknessEdge - layerCenterHeightOnEdge)**4)
+                    0.5_RKIND * ratefactor * (rhoi * gravity)**n * slopeOnEdge**n * &
+                    (thicknessEdge**(n+1) - (thicknessEdge - layerCenterHeightOnEdge)**(n+1))
              end do  ! Levels
          endif
       end do  ! edges  
