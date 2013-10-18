@@ -1839,8 +1839,8 @@ contains
   ! =========================================
   subroutine GhostVpack_unoriented(edge,v,nc,vlyr,kptr,desc)
     type (Ghostbuffer3D_t),intent(inout) :: edge
-    real (kind=real_kind),intent(in)   :: v(nc,nc,vlyr)
     integer,              intent(in)   :: vlyr
+    real (kind=real_kind),intent(in)   :: v(nc,nc,vlyr)
     integer,              intent(in)   :: nc,kptr
     type (EdgeDescriptor_t),intent(in) :: desc
 
@@ -1874,8 +1874,8 @@ contains
     implicit none
 
     type (Ghostbuffer3D_t),intent(inout)  :: edge
-    real (kind=real_kind), intent(out)    :: v(nc,nc,vlyr,*)
     integer,               intent(in)     :: vlyr
+    real (kind=real_kind), intent(out)    :: v(nc,nc,vlyr,*)
     integer,               intent(in)     :: kptr,nc
     type (EdgeDescriptor_t),intent(in)    :: desc
     integer(kind=int_kind),intent(in)     :: GlobalId
