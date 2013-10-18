@@ -29,6 +29,14 @@
 !> split_date_char       : used to extract actual date from input string.
 !> monthly_interp_to_date: interpolates monthly-mean data to current julian day.
 !> monthly_min_max       : looks for min and max values from monthly-mean data set (greenfrac,...)
+!>
+!> add-ons and modifications to sourcecode:
+!> ----------------------------------------
+!>    * in subroutine monthly_interp_to_date, change the length of variables day15 and mon from
+!>      StrKIND to 2 to input correctly the reference date to subroutine get_julgmt_date.
+!>    * in subroutines get_julgmt_date and split_date_char, changed the declaration of date_str
+!>      from StrKIND to *.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-10-18.
 
 
  contains
@@ -38,7 +46,7 @@
 !==================================================================================================
 
 !input arguments:
- character(len=StrKIND),intent(in):: date_str
+ character(len=*),intent(in):: date_str
 
 !output arguments:
  integer,intent(out):: julyr
@@ -74,7 +82,7 @@
 !==================================================================================================
    
 !input arguments:
- character(len=StrKIND),intent(in):: date
+ character(len=*),intent(in):: date
 
 !output arguments:
  integer,intent(out):: century_year,month,day,hour,minute,second,ten_thousandth
@@ -104,7 +112,7 @@
  real(kind=RKIND),intent(out),dimension(npoints):: field_out
 
 !local variables:
- character(len=StrKIND):: day15,mon
+ character(len=2):: day15,mon
 
  integer:: l,n
  integer:: julyr,julday,int_month,month1,month2
@@ -117,7 +125,7 @@
 
 !write(0,*)
 !write(0,*) '--- enter subroutine monthly_interp_to_date:'
-!write(0,*) '--- current_date  = ',date_str
+!write(0,*) '--- current_date  = ',trim(date_str)
 
  write(day15,fmt='(I2.2)') 15
  do l = 1 , 12

@@ -69,6 +69,8 @@
 !>      - xland is now initialized in physics_initialize_real and updated in physics_update_sst if
 !>        needed.
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-08-24. 
+!>    * added initialization of the background surface albedo over snow.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-10-19.
 
 
  contains
@@ -236,6 +238,7 @@
     sfc_albedo(iCell) = albbck(iCell)
 
     if(snowc(iCell) .gt. 0.5) then
+       albbck(iCell) = albd(isice,isn) / 100.
        if(config_sfc_albedo) then
           sfc_albedo(iCell) = snoalb(iCell)
        else
