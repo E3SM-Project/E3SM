@@ -7,6 +7,14 @@
 !     implicit none
       save
 
+#ifdef SINGLE_PRECISION
+#define RWORDSIZE 4
+#define IWORDSIZE 4
+#else
+#define RWORDSIZE 8
+#define IWORDSIZE 4
+#endif
+
 !------------------------------------------------------------------
 ! rrtmg_sw main parameters
 !

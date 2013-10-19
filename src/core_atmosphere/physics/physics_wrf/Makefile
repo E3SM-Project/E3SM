@@ -79,8 +79,8 @@ clean:
 
 .F.o:
 ifeq "$(GEN_F90)" "true"
-	$(CPP) $(CPPFLAGS) $(COREDEF) $(CPPINCLUDES) -DIWORDSIZE=4 -DRWORDSIZE=4 $< > $*.f90
+	$(CPP) $(CPPFLAGS) $(COREDEF) $(CPPINCLUDES) $< > $*.f90
 	$(FC) $(FFLAGS) -c $*.f90 $(FCINCLUDES) -I../../../framework -I../../../operators -I..
 else
-	$(FC) $(CPPFLAGS) $(COREDEF) -DIWORDSIZE=4 -DRWORDSIZE=4 $(FFLAGS) -c $*.F $(CPPINCLUDES) $(FCINCLUDES) -I../../../framework -I../../../operators -I..
+	$(FC) $(CPPFLAGS) $(COREDEF) $(FFLAGS) -c $*.F $(CPPINCLUDES) $(FCINCLUDES) -I../../../framework -I../../../operators -I..
 endif

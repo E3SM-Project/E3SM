@@ -30,6 +30,14 @@
 !      integer, parameter :: kind_rm = selected_real_kind(6)  ! 4 byte real
 !      integer, parameter :: kind_rn = kind(1.0)              ! native real
 
+#ifdef SINGLE_PRECISION
+#define RWORDSIZE 4
+#define IWORDSIZE 4
+#else
+#define RWORDSIZE 8
+#define IWORDSIZE 4
+#endif
+
 #if 0
 ! Modified for WRF:
 #if (RWORDSIZE == 8)
