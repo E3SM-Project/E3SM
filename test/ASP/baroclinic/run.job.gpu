@@ -16,7 +16,9 @@ module add PrgEnv-pgi
 module add netcdf parallel-netcdf
 module add cudatoolkit
 
-setenv OMP_NUM_THREADS 16
+setenv CRAY_CUDA_PROXY 1
+setenv OMP_NUM_THREADS 4
+setenv NPER 4
 set executable = preqx.gpu
 set HOMME = /tmp/work/$USER/homme-trunk
 set src = $HOMME/build/preqx
@@ -108,7 +110,6 @@ sed s/smooth.\*/"smooth = $smooth"/                  |\
 sed s/NThreads.\*/"NThreads = $OMP_NUM_THREADS"/     |\
 sed s/qsize.\*/"qsize = $qsize"/    > $wdir/input.nl
 
-@ NPER = (16 / $OMP_NUM_THREADS)
 @ NCPU = $PBS_NUM_NODES * $NPER
 set mpirun = "aprun -n $NCPU -N $NPER -d $OMP_NUM_THREADS"
 #setenv COMPUTE_PROFILE 1
