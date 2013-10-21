@@ -38,7 +38,7 @@ libesmf_time.a : $(OBJS)
 Test1_ESMF.f : Test1.F90
 	$(RM) Test1_ESMF.b Test1_ESMF.f
 	cp Test1.F90 Test1_ESMF.b
-	$(CPP) -C -P -I. Test1_ESMF.b > Test1_ESMF.f
+	$(CPP) -P -I. Test1_ESMF.b > Test1_ESMF.f
 
 Test1_ESMF.exe : libesmf_time.a Test1_ESMF.o
 	$(FC) -o Test1_ESMF.exe Test1_ESMF.o libesmf_time.a
@@ -46,7 +46,7 @@ Test1_ESMF.exe : libesmf_time.a Test1_ESMF.o
 Test1_WRFU.f : Test1.F90
 	$(RM) Test1_WRFU.b Test1_WRFU.f
 	sed -e "s/ESMF_Mod/module_utility/g" -e "s/ESMF_/WRFU_/g" Test1.F90 > Test1_WRFU.b
-	$(CPP) -C -P -I. Test1_WRFU.b > Test1_WRFU.f
+	$(CPP) -P -I. Test1_WRFU.b > Test1_WRFU.f
 
 Test1_WRFU.exe : libesmf_time.a Test1_WRFU.o
 	$(FC) -o Test1_WRFU.exe Test1_WRFU.o libesmf_time.a
@@ -55,7 +55,7 @@ Test1_WRFU.exe : libesmf_time.a Test1_WRFU.o
 	$(RM) $@
 	$(SED_FTN) $*.F90 > $*.b
 ifeq "$(GEN_F90)" "true"
-	$(CPP) -C -P -I. $*.b > $*.f
+	$(CPP) -P -I. $*.b > $*.f
 	$(FC) -o $@ -c $*.f
 else
 	$(FC) -o $@ -c $*.F90 -I.
@@ -65,7 +65,7 @@ endif
 .F90.f :
 	$(RM) $@
 	$(SED_FTN) $*.F90 > $*.b
-	$(CPP) -C -P -I. $*.b > $*.f
+	$(CPP) -P -I. $*.b > $*.f
 	$(RM) $*.b
 
 .f.o :

@@ -243,7 +243,7 @@ endif # CHECK FOR NETCDF4
 LIBS += $(NCLIB)
 
 RM = rm -f
-CPP = cpp -C -P -traditional
+CPP = cpp -P -traditional
 RANLIB = ranlib
 
 
