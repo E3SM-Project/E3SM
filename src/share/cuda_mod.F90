@@ -169,16 +169,18 @@ contains
   !The point of this is to initialize any data required in other routines of this module as well
   !as to run one initial CUDA kernel just to get those overheads out of the way so that subsequent
   !timing routines are accurage.
-  subroutine cuda_mod_init(elem,deriv,hvcoord)
+  subroutine cuda_mod_init(elem,hybrid,deriv,hvcoord)
     use edge_mod      , only: initEdgeBuffer
-    use schedule_mod  , only: schedule_t, cycle_t, schedule
+    use schedtype_mod  , only: schedule_t, cycle_t, schedule
     use edge_mod      , only: Edgebuffer_t
     use element_mod   , only: element_t
     use derivative_mod, only: derivative_t
     use hybvcoord_mod, only: hvcoord_t
     use physical_constants, only: rrearth_mod => rrearth
+    use hybrid_mod, only: hybrid_t
     implicit none
     type(element_t)   , intent(in) :: elem(:)
+    type(hybrid_t), intent(in) :: hybrid
     type(derivative_t), intent(in) :: deriv
     type(hvcoord_t)   , intent(in) :: hvcoord
 
@@ -215,7 +217,6 @@ contains
 #else
     pSchedule => Schedule(1)
 #endif
-    nlyr = edgeAdv%nlyr
     nSendCycles = pSchedule%nSendCycles
     nRecvCycles = pSchedule%nRecvCycles
     mx_send_len = 0
@@ -336,10 +337,10 @@ contains
     write(*,*) "edgebuffers"
     !These have to be in a threaded region or they complain and die
 !$OMP END MASTER
-    call initEdgeBuffer(edgeAdv   ,qsize_d*nlev  )
-    call initEdgeBuffer(edgeAdvDSS,      nlev  )
-    call initEdgeBuffer(edgeAdvQ2 ,qsize_d*nlev*2)
-    call initEdgeBuffer(edgeAdvQ3 ,qsize_d*nlev*3)
+    call initEdgeBuffer(hybrid%par,edgeAdv   ,qsize_d*nlev  )
+    call initEdgeBuffer(hybrid%par,edgeAdvDSS,        nlev  )
+    call initEdgeBuffer(hybrid%par,edgeAdvQ2 ,qsize_d*nlev*2)
+    call initEdgeBuffer(hybrid%par,edgeAdvQ3 ,qsize_d*nlev*3)
 !$OMP MASTER
 
     write(*,*) "initial kernel"
@@ -991,7 +992,7 @@ end subroutine euler_hypervis_kernel_last
 
 subroutine pack_exchange_unpack_stage(np1,hybrid,array_in,tl_in)
   use hybrid_mod, only : hybrid_t
-  use schedule_mod, only : schedule_t, schedule, cycle_t
+  use schedtype_mod, only : schedule_t, schedule, cycle_t
   use parallel_mod, only : abortmp, status, srequest, rrequest, mpireal_t, mpiinteger_t, iam
   use perf_mod, only: t_startf, t_stopf
   implicit none

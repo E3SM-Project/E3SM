@@ -1071,7 +1071,7 @@ contains
 
 #if USE_CUDA_FORTRAN
     !Inside this routine, we enforce an OMP BARRIER and an OMP MASTER. It's left out of here because it's ugly
-    call cuda_mod_init(elem,deriv(hybrid%ithr),hvcoord)
+    call cuda_mod_init(elem,hybrid,deriv(hybrid%ithr),hvcoord)
 #endif
     if (hybrid%masterthread) write(iulog,*) "initial state:"
     call prim_printstate(elem, tl, hybrid,hvcoord,nets,nete, fvm)
