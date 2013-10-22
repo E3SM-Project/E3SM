@@ -1091,6 +1091,16 @@ module ocn_time_integration_split
                           block % diagnostics % gradSSHMeridional % array    &
                          )
 
+         block % diagnostics % surfaceVelocity % array(block % diagnostics % index_zonalSurfaceVelocity, :) = &
+               block % diagnostics % normalVelocityZonal % array(1, :)
+         block % diagnostics % surfaceVelocity % array(block % diagnostics % index_meridionalSurfaceVelocity, :) = &
+               block % diagnostics % normalVelocityMeridional % array(1, :)
+
+         block % diagnostics % SSHGradient % array(block % diagnostics % index_zonalSSHGradient, :) = &
+               block % diagnostics % gradSSHZonal % array(1, :)
+         block % diagnostics % SSHGradient % array(block % diagnostics % index_meridionalSSHGradient, :) = &
+               block % diagnostics % gradSSHMeridional % array(1, :)
+
          call ocn_time_average_accumulate(block % average, block % state % time_levs(2) % state, block % diagnostics)
          call ocn_time_average_coupled_accumulate(block % diagnostics, block % forcing)
 

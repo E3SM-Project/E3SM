@@ -122,7 +122,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: rainFlux
       real (kind=RKIND), dimension(:), pointer :: seaSurfacePressure, iceFraction
 
-      real (kind=RKIND), dimension(:), pointer :: surfaceMassFlux, surfaceWindStress
+      real (kind=RKIND), dimension(:), pointer :: surfaceMassFlux, surfaceWindStress, surfaceWindStressMagnitude
       real (kind=RKIND), dimension(:,:), pointer :: surfaceTracerFlux
 
       if(.not.coupledForcingOn) return
@@ -136,17 +136,18 @@ contains
       index_temperature_flux = forcing % index_surfaceTemperatureFlux
       index_salinity_flux = forcing % index_surfaceSalinityFlux
 
-      surfaceWindStress    => forcing % surfaceWindStress % array
-      windStressZonal      => forcing % windStressZonal % array
-      windStressMeridional => forcing % windStressMeridional % array
-      latentHeatFlux       => forcing % latentHeatFlux % array
-      sensibleHeatFlux     => forcing % sensibleHeatFlux % array
-      longWaveHeatFluxUp   => forcing % longWaveHeatFluxUp % array
-      longWaveHeatFluxDown => forcing % longWaveHeatFluxDown % array
-      evaporationFlux      => forcing % evaporationFlux % array
-      seaIceHeatFlux       => forcing % seaIceHeatFlux % array
-      snowFlux             => forcing % snowFlux % array
-      shortWaveHeatFlux    => forcing % shortWaveHeatFlux % array
+      surfaceWindStress          => forcing % surfaceWindStress % array
+      surfaceWindStressMagnitude => forcing % surfaceWindStressMagnitude % array
+      windStressZonal            => forcing % windStressZonal % array
+      windStressMeridional       => forcing % windStressMeridional % array
+      latentHeatFlux             => forcing % latentHeatFlux % array
+      sensibleHeatFlux           => forcing % sensibleHeatFlux % array
+      longWaveHeatFluxUp         => forcing % longWaveHeatFluxUp % array
+      longWaveHeatFluxDown       => forcing % longWaveHeatFluxDown % array
+      evaporationFlux            => forcing % evaporationFlux % array
+      seaIceHeatFlux             => forcing % seaIceHeatFlux % array
+      snowFlux                   => forcing % snowFlux % array
+      shortWaveHeatFlux          => forcing % shortWaveHeatFlux % array
 
       seaIceFreshWaterFlux => forcing % seaIceFreshWaterFlux % array
       seaIceSalinityFlux   => forcing % seaIceSalinityFlux % array
@@ -176,6 +177,7 @@ contains
 
       ! Build surface fluxes at cell centers
       do iCell = 1, mesh % nCells
+        surfaceWindStressMagnitude(iCell) = sqrt(windStressZonal(iCell)**2 + windStressMeridional(iCell)**2)
         surfaceTracerFlux(index_temperature_flux, iCell) = (latentHeatFlux(iCell) + sensibleHeatFlux(iCell) + longWaveHeatFluxUp(iCell) + longWaveHeatFluxDown(iCell) &
                                                            + seaIceHeatFlux(iCell) - (snowFlux(iCell) + iceRunoffFlux(iCell)) * latent_heat_fusion_mks) * hflux_factor
 
