@@ -339,7 +339,7 @@
  if(dminfo % my_proc_id == IO_NODE) then
 
 #ifdef SINGLE_PRECISION
-    open(cam_abs_unit,file='CAM_ABS_DATA.TBL',form='UNFORMATTED',status='OLD',iostat=istat)
+    open(cam_abs_unit,file='CAM_ABS_DATA',form='UNFORMATTED',status='OLD',iostat=istat)
 #else
     open(cam_abs_unit,file='CAM_ABS_DATA.DBL',form='UNFORMATTED',status='OLD',iostat=istat)
 #endif
@@ -596,7 +596,7 @@
  if(dminfo % my_proc_id == IO_NODE) then
 
 #ifdef SINGLE_PRECISION
-    open(cam_aer_unit,file='CAM_AEROPT_DATA.TBL',form='UNFORMATTED',status='OLD',iostat=istat)
+    open(cam_aer_unit,file='CAM_AEROPT_DATA',form='UNFORMATTED',status='OLD',iostat=istat)
 #else
     open(cam_aer_unit,file='CAM_AEROPT_DATA.DBL',form='UNFORMATTED',status='OLD',iostat=istat)
 #endif

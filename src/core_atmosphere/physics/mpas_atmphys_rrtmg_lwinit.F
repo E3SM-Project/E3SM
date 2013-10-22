@@ -92,7 +92,7 @@
 !open init file:
  if(dminfo % my_proc_id == IO_NODE) then
 #ifdef SINGLE_PRECISION
-    open(rrtmg_unit,file='RRTMG_LW_DATA.TBL',form='UNFORMATTED',status='OLD',iostat=istat)
+    open(rrtmg_unit,file='RRTMG_LW_DATA',form='UNFORMATTED',status='OLD',iostat=istat)
 #else
     open(rrtmg_unit,file='RRTMG_LW_DATA.DBL',form='UNFORMATTED',status='OLD',iostat=istat)
 #endif
