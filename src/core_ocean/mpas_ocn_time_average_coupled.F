@@ -20,6 +20,7 @@
 
 module ocn_time_average_coupled
 
+    use mpas_kind_types
     use mpas_grid_types
     use ocn_constants
 
@@ -76,7 +77,7 @@ module ocn_time_average_coupled
         real (kind=RKIND), dimension(:,:), pointer :: tracersSurfaceValue, avgTracersSurfaceValue
         real (kind=RKIND), dimension(:,:), pointer :: avgSSHGradient
         real (kind=RKIND), dimension(:,:), pointer :: gradSSHZonal, gradSSHMeridional
-        integer :: index_temperature, index_zonalSSH, index_meridionalSSH
+        integer :: index_temperature, index_zonalSSH, index_meridionalSSH, nAccumulatedCoupled
 
         tracersSurfaceValue => diagnostics % tracersSurfaceValue % array
         surfaceVelocity     => diagnostics % surfaceVelocity % array
@@ -85,19 +86,22 @@ module ocn_time_average_coupled
 
         avgTracersSurfaceValue => forcing % avgTracersSurfaceValue % array
         avgSurfaceVelocity => forcing % avgSurfaceVelocity % array
-        avgSurfaceVelocity => forcing % avgSurfaceVelocity % array
+        avgSSHGradient => forcing % avgSSHGradient % array
 
         index_temperature = forcing % index_temperatureSurfaceValue
         index_zonalSSH = forcing % index_avgZonalSSHGradient
         index_meridionalSSH = forcing % index_avgMeridionalSSHGradient
 
-        avgTracersSurfaceValue(:,:) = avgTracersSurfaceValue(:,:) + tracersSurfaceValue(:,:)
-        avgSurfaceVelocity(:,:) = avgSurfaceVelocity(:,:) + surfaceVelocity(:,:)
+        nAccumulatedCoupled = forcing % nAccumulatedCoupled % scalar
 
-        avgTracersSurfaceValue(index_temperature,:) = avgTracersSurfaceValue(index_temperature,:) + tracersSurfaceValue(index_temperature,:) + T0_Kelvin
+        avgTracersSurfaceValue(:,:) = avgTracersSurfaceValue(:,:) * nAccumulatedCoupled + tracersSurfaceValue(:,:)
+        avgTracersSurfaceValue(index_temperature,:) = avgTracersSurfaceValue(index_temperature,:) + T0_Kelvin
+        avgTracersSurfaceValue(:,:) = avgTracersSurfaceValue(:,:) / ( nAccumulatedCoupled + 1 )
 
-        avgSSHGradient(index_zonalSSH,:) = avgSSHGradient(index_zonalSSH,:) + gradSSHZonal(1,:)
-        avgSSHGradient(index_meridionalSSH,:) = avgSSHGradient(index_meridionalSSH,:) + gradSSHMeridional(1,:)
+        avgSurfaceVelocity(:,:)     = ( avgSurfaceVelocity(:,:)     * nAccumulatedCoupled + surfaceVelocity(:,:)     ) / ( nAccumulatedCoupled + 1 )
+
+        avgSSHGradient(index_zonalSSH,:)      = ( avgSSHGradient(index_zonalSSH,:)      * nAccumulatedCoupled + gradSSHZonal(1,:) ) / ( nAccumulatedCoupled + 1 )
+        avgSSHGradient(index_meridionalSSH,:) = ( avgSSHGradient(index_meridionalSSH,:) * nAccumulatedCoupled + gradSSHMeridional(1,:) ) / ( nAccumulatedCoupled + 1 )
 
         forcing % nAccumulatedCoupled % scalar = forcing % nAccumulatedCoupled % scalar + 1
 
@@ -118,18 +122,18 @@ module ocn_time_average_coupled
 
         type (forcing_type), intent(inout) :: forcing
 
-        real (kind=RKIND), dimension(:,:), pointer :: avgTracersSurfaceValue, avgSurfaceVelocity, avgSSHGradient
+!       real (kind=RKIND), dimension(:,:), pointer :: avgTracersSurfaceValue, avgSurfaceVelocity, avgSSHGradient
 
-        avgTracersSurfaceValue => forcing % avgTracersSurfaceValue % array
-        avgSurfaceVelocity => forcing % avgSurfaceVelocity % array
-        avgSSHGradient => forcing % avgSSHGradient % array
+!       avgTracersSurfaceValue => forcing % avgTracersSurfaceValue % array
+!       avgSurfaceVelocity => forcing % avgSurfaceVelocity % array
+!       avgSSHGradient => forcing % avgSSHGradient % array
 
-        if(forcing % nAccumulatedCoupled % scalar > 0) then
-           avgTracersSurfaceValue = avgTracersSurfaceValue / forcing % nAccumulatedCoupled % scalar
-           avgSurfaceVelocity = avgSurfaceVelocity / forcing % nAccumulatedCoupled % scalar
-           avgSSHGradient = avgSSHGradient / forcing % nAccumulatedCoupled % scalar
-           forcing % nAccumulatedCoupled % scalar = 0
-        end if
+!       if(forcing % nAccumulatedCoupled % scalar > 0) then
+!          avgTracersSurfaceValue = avgTracersSurfaceValue / forcing % nAccumulatedCoupled % scalar
+!          avgSurfaceVelocity = avgSurfaceVelocity / forcing % nAccumulatedCoupled % scalar
+!          avgSSHGradient = avgSSHGradient / forcing % nAccumulatedCoupled % scalar
+!          forcing % nAccumulatedCoupled % scalar = 0
+!       end if
 
     end subroutine ocn_time_average_coupled_normalize!}}}
 
