@@ -510,7 +510,6 @@ module namelist_mod
        end if
        nEndStep = nmax
 #endif
-        print *, "Here past previous"
 
        if ((integration == "semi_imp").or.(integration == "full_imp")) then
           ! =========================
