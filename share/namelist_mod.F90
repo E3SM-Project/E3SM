@@ -423,7 +423,7 @@ module namelist_mod
     se_ftype = ftype   ! MNL: For non-CAM runs, ftype=0 in control_mod
     phys_tscale=0
     nsplit = 1
-    pertlim = 0.
+    pertlim = 0.0_real_kind
 #endif
     sub_case      = 1
     numnodes      = -1
@@ -445,7 +445,6 @@ module namelist_mod
     tracer_advection_formulation  = TRACERADV_UGRADQ
 #endif
     use_semi_lagrange_transport   = .false.
-!    pertlim = 0.0_real_kind
     disable_diagnostics = .false.
 
 
@@ -846,7 +845,6 @@ module namelist_mod
     call MPI_bcast(nu_div       ,1,MPIreal_t   ,par%root,par%comm,ierr)
     call MPI_bcast(nu_p         ,1,MPIreal_t   ,par%root,par%comm,ierr)
     call MPI_bcast(nu_top   ,1,MPIreal_t   ,par%root,par%comm,ierr)
-!    call MPI_bcast(pertlim, 1, MPIreal_t, par%root,par%comm,ierr)
     call MPI_bcast(disable_diagnostics,1,MPIlogical_t,par%root,par%comm,ierr)
     call MPI_bcast(psurf_vis,1,MPIinteger_t   ,par%root,par%comm,ierr)
     call MPI_bcast(hypervis_order,1,MPIinteger_t   ,par%root,par%comm,ierr)

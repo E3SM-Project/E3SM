@@ -909,7 +909,7 @@ contains
        do ie=nets,nete
 
           elem(ie)%state%T=elem(ie)%state%T &
-                * (1.0 + pertlim)
+                * (1.0_real_kind + pertlim)
        enddo
  
        ! ========================================
