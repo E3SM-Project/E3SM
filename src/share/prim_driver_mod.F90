@@ -551,7 +551,10 @@ contains
          s_bv, topology,columnpackage, moisture, precon_method, rsplit, qsplit, rk_stage_user,&
          sub_case, &
          limiter_option, nu, nu_q, nu_div, tstep_type, hypervis_subcycle, &
-         hypervis_subcycle_q, use_semi_lagrange_transport, pertlim
+         hypervis_subcycle_q, use_semi_lagrange_transport
+#ifndef CAM
+    use control_mod, only : pertlim                     !used for homme temperature perturbations
+#endif
     use prim_si_ref_mod, only: prim_si_refstate_init, prim_set_mass
     use bndry_mod, only : sort_neighbor_buffer_mapping
 #ifdef TRILINOS
@@ -909,7 +912,9 @@ contains
        do ie=nets,nete
 
           elem(ie)%state%T=elem(ie)%state%T &
-                * (1.0_real_kind + pertlim)
+                * (1.0_real_kind + pertlim)  ! set perlim in ctl_nl namelist for
+                                             ! temperature field initial
+                                             ! perterbation
        enddo
  
        ! ========================================
