@@ -6,10 +6,10 @@
 	config_tracer_advection = "none"
 /
 &physical_parameters
-	config_ice_density = 900.0
+	config_ice_density = 910.0
 	config_ocean_density = 1028.0
 	config_sea_level = 0.0
-	config_default_flowParamA = 4.3905866e-24
+	config_default_flowParamA = 3.1709792e-24
 	config_flowLawExponent = 3.0
 	config_dynamic_thickness = 100.0
 /
@@ -35,7 +35,7 @@
 	config_stats_interval = "0000_01:00:00"
 	config_write_stats_on_startup = .true.
 	config_write_output_on_startup = .true.
-	config_frames_per_outfile = 1000
+	config_frames_per_outfile = 0
 	config_pio_num_iotasks = 0
 	config_pio_stride = 1
 /
