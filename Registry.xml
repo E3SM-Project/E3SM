@@ -58,7 +58,7 @@
 	</nml_record>
 
 	<nml_record name="physical_parameters">
-		<nml_option name="config_ice_density" type="real" default_value="900.0" units="kg m^{-3}"
+		<nml_option name="config_ice_density" type="real" default_value="910.0" units="kg m^{-3}"
 		            description="ice density to use"
 		            possible_values="Any positive real value"
 		/>
@@ -70,8 +70,8 @@
 		            description="sea level to use for calculating floatation"
 		            possible_values="Any real value"
 		/>
-		<nml_option name="config_default_flowParamA" type="real" default_value="4.3905866e-24" units="s^{-1} Pa^{-n}"
-		            description="Defines the default value of the flow law parameter A to be used if it is not being calculated from ice temperature."
+		<nml_option name="config_default_flowParamA" type="real" default_value="3.1709792e-24" units="s^{-1} Pa^{-n}"
+		            description="Defines the default value of the flow law parameter A to be used if it is not being calculated from ice temperature.  Defaults to the SI representation of 1.0e-16 yr^{-1} Pa^{-3}."
 		            possible_values="Any positive real value"
 		/>
 		<nml_option name="config_flowLawExponent" type="real" default_value="3.0" units="none"
@@ -168,9 +168,9 @@
 		            description="Logical flag determining if an output file should be written prior to the first time step."
 		            possible_values=".true. or .false."
 		/>
-		<nml_option name="config_frames_per_outfile" type="integer" default_value="1000" units="unitless"
-		            description="Integer specifying how many time frames should be included in an output file. Once the maximum is reached, a new output file is created."
-		            possible_values="Any positive integer value greater than 0"
+		<nml_option name="config_frames_per_outfile" type="integer" default_value="0" units="unitless"
+		            description="Integer specifying how many time frames should be included in an output file. Once the maximum is reached, a new output file is created.  If 0 (or less) is specified then all time frames are included in a single file called 'output.nc'."
+		            possible_values="Any integer value"
 		/>
 		<nml_option name="config_pio_num_iotasks" type="integer" default_value="0" units="unitless"
 		            description="Integer specifying how many IO tasks should be used within the PIO library. A value of 0 causes all MPI tasks to also be IO tasks. IO tasks are required to write contiguous blocks of data to a file."
