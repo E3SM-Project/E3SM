@@ -216,7 +216,7 @@ module li_tendency
 
         ! Add surface mass balance to tendency
         ! TODO: Need to decide how to deal with negative SMB that eliminates top layer or all ice (check for negative thickness?)
-        layerThickness_tend(1,:) = layerThickness_tend(1,:) + sfcMassBal   ! (tendency in meters per year)
+        layerThickness_tend(1,:) = layerThickness_tend(1,:) + sfcMassBal / config_ice_density  ! (tendency in meters per year)
         ! TODO THIS MIGHT RESULT IN  NEGATIVE LAYER THICKNESS!
 
 !!!        ! Add basal mass balance to tendency
