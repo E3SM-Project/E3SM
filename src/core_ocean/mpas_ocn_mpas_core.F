@@ -568,6 +568,25 @@ module mpas_core
          call mpas_allocate_scratch_field(block_ptr % scratch % normalVelocityForcingZ, .true.)
          call mpas_allocate_scratch_field(block_ptr % scratch % normalVelocityForcingZonal, .true.)
          call mpas_allocate_scratch_field(block_ptr % scratch % normalVelocityForcingMeridional, .true.)
+         call mpas_allocate_scratch_field(block_ptr % scratch % windStressFull, .true.)
+         call mpas_allocate_scratch_field(block_ptr % scratch % windStressX, .true.)
+         call mpas_allocate_scratch_field(block_ptr % scratch % windStressY, .true.)
+         call mpas_allocate_scratch_field(block_ptr % scratch % windStressZ, .true.)
+         call mpas_allocate_scratch_field(block_ptr % scratch % windStressZonal, .true.)
+         call mpas_allocate_scratch_field(block_ptr % scratch % windStressMeridional, .true.)
+
+         block_ptr % scratch % windStressFull % array = 0.0_RKIND
+         block_ptr % scratch % windStressFull % array(1,:) = block_ptr % forcing % surfaceWindStress % array
+
+         call mpas_reconstruct(block_ptr % mesh, block_ptr % scratch % windStressFull % array, &
+                               block_ptr % scratch % windStressX % array, &
+                               block_ptr % scratch % windStressY % array, &
+                               block_ptr % scratch % windStressZ % array, &
+                               block_ptr % scratch % windStressZonal % array, &
+                               block_ptr % scratch % windStressMeridional % array)
+
+         block_ptr % diagnostics % windStressZonalDiag % array(:) = block_ptr % scratch % windStressZonal % array(1,:)
+         block_ptr % diagnostics % windStressMeridionalDiag % array(:) = block_ptr % scratch % windStressMeridional % array(1,:)
 
          call mpas_reconstruct(block_ptr % mesh, block_ptr % mesh % normalVelocityForcing % array, &
                                block_ptr % scratch % normalVelocityForcingX % array, &
@@ -576,8 +595,13 @@ module mpas_core
                                block_ptr % scratch % normalVelocityForcingZonal % array, &
                                block_ptr % scratch % normalVelocityForcingMeridional % array)
 
-         block_ptr % diagnostics % windStressZonalDiag % array = block_ptr % scratch % normalVelocityForcingZonal % array(1,:)
-         block_ptr % diagnostics % windStressMeridionalDiag % array = block_ptr % scratch % normalVelocityForcingMeridional % array(1,:)
+         call mpas_deallocate_scratch_field(block_ptr % scratch % windStressFull, .true.)
+         call mpas_deallocate_scratch_field(block_ptr % scratch % windStressX, .true.)
+         call mpas_deallocate_scratch_field(block_ptr % scratch % windStressY, .true.)
+         call mpas_deallocate_scratch_field(block_ptr % scratch % windStressZ, .true.)
+         call mpas_deallocate_scratch_field(block_ptr % scratch % windStressZonal, .true.)
+         call mpas_deallocate_scratch_field(block_ptr % scratch % windStressMeridional, .true.)
+
          call mpas_deallocate_scratch_field(block_ptr % scratch % normalVelocityForcingX, .true.)
          call mpas_deallocate_scratch_field(block_ptr % scratch % normalVelocityForcingY, .true.)
          call mpas_deallocate_scratch_field(block_ptr % scratch % normalVelocityForcingZ, .true.)
