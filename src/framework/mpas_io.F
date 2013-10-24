@@ -16,6 +16,12 @@ module mpas_io
    use pionfatt_mod
    use pio_types
 
+#ifdef SINGLE_PRECISION
+   integer, parameter :: PIO_REALKIND = PIO_REAL
+#else
+   integer, parameter :: PIO_REALKIND = PIO_DOUBLE
+#endif
+
    ! File access modes
    integer, parameter :: MPAS_IO_READ  = 1, &
                          MPAS_IO_WRITE = 2
@@ -2355,7 +2361,7 @@ module mpas_io
          if (present(ierr)) ierr = MPAS_IO_ERR_PIO
          return
       end if
-      if (xtype /= PIO_double) then
+      if (xtype /= PIO_REALKIND) then
          if (present(ierr)) ierr=MPAS_IO_ERR_WRONG_ATT_TYPE
          return
       end if
@@ -2492,7 +2498,7 @@ module mpas_io
          return
       end if
 
-      if (xtype /= PIO_double) then
+      if (xtype /= PIO_REALKIND) then
          if (present(ierr)) ierr=MPAS_IO_ERR_WRONG_ATT_TYPE
          return
       end if
