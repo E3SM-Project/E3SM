@@ -146,7 +146,7 @@ contains
          newSSH = oldSSH(iCell) - dt*div_hu_btr(iCell)
          thicknessSum = 1e-14  
          do k = 1, kMax
-            SSH_ALE_Thickness(k) = newSSH * vertCoordMovementWeights(k) * restingThickness(k, iCell) * div_hu_btr(iCell)
+            SSH_ALE_Thickness(k) = newSSH * vertCoordMovementWeights(k) * restingThickness(k, iCell)
             thicknessSum = thicknessSum + vertCoordMovementWeights(k) * restingThickness(k, iCell)
          end do
          SSH_ALE_Thickness = SSH_ALE_Thickness / thicknessSum
