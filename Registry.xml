@@ -1031,17 +1031,21 @@
 		<var_array name="surfaceVelocity" type="real" dimensions="nCells Time">
 			<var name="zonalSurfaceVelocity" array_group="vel_zonal" units="m s^{-1}"
 				 description="Zonal surface velocity reconstructed at cell centers"
+				 streams="o"
 			/>
 			<var name="meridionalSurfaceVelocity" array_group="vel_meridional" units="m s^{-1}"
 				 description="Meridional surface velocity reconstructed at cell centers"
+				 streams="o"
 			/>
 		</var_array>
 		<var_array name="SSHGradient" type="real" dimensions="nCells Time">
 			<var name="zonalSSHGradient" array_group="ssh_zonal" streams="o" units="m m^{-1}"
 				 description="Zonal gradient of SSH reconstructed at cell centers"
+				 streams="o"
 			/>
 			<var name="meridionalSSHGradient" array_group="ssh_meridional" streams="o" units="m m^{-1}"
 				 description="Meridional gradient of SSH reconstructed at cell centers"
+				 streams="o"
 			/>
 		</var_array>
 		<var name="zMid" type="real" dimensions="nVertLevels nCells Time" streams="o" units="m"
@@ -1303,7 +1307,8 @@
 				 description="Flux of salinity through the ocean surface. Positive into ocean."
 			/>
 		</var_array>
-		<var name="seaSurfacePressure" type="real" dimensions="nCells Time" streams="r" units="Pa" streams="o"
+
+		<var name="seaSurfacePressure" type="real" dimensions="nCells Time" streams="or" units="Pa"
 			 description="Pressure defined at the sea surface."
 		/>
 		<var name="seaIceEnergy" type="real" dimensions="nCells Time" units="J m^{-2}" streams="o"
@@ -1557,5 +1562,30 @@
                      type="real" dimensions="nVertLevels nEdges" units="m s^{-1}"
 		     description="Vector component tangent to an edge."
 		/>
+		<var name="windStressFull" type="real" dimensions="nVertLevels nEdges Time" units="N m^{-2}"
+			 persistence="scratch"
+			 description="Wind stress used for reconstructing diagnostic output fields."
+		/>
+		<var name="windStressX" type="real" dimensions="nVertLevels nCells Time" units="N m^{-2}"
+			 persistence="scratch"
+			 description="reconstructed surface wind stress in the x direction. Used for diagnostics."
+		/>
+		<var name="windStressY" type="real" dimensions="nVertLevels nCells Time" units="N m^{-2}"
+			 persistence="scratch"
+			 description="reconstructed surface wind stress in the y direction. User for diagnostics."
+		/>
+		<var name="windStressZ" type="real" dimensions="nVertLevels nCells Time" units="N m^{-2}"
+			 persistence="scratch"
+			 description="reconstructed surface wind stress in the z direction. User for diagnostics."
+		/>
+		<var name="windStressZonal" type="real" dimensions="nVertLevels nCells Time" units="N m^{-2}"
+			 persistence="scratch"
+			 description="reconstructed surface wind stress in the eastward direction. Used for diagnostics."
+		/>
+		<var name="windStressMeridional" type="real" dimensions="nVertLevels nCells Time" units="N m^{-2}"
+			 persistence="scratch"
+			 description="reconstructed surface wind stress in the northward direction. User for diagnostics."
+		/>
+
     </var_struct>
 </registry>
