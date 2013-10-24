@@ -419,7 +419,7 @@ module namelist_mod
     ndays         = 0
     nmax          = 12
     nthreads = 1
-    nthreads_accel = 1
+    nthreads_accel = -1
     se_ftype = ftype   ! MNL: For non-CAM runs, ftype=0 in control_mod
     phys_tscale=0
     nsplit = 1
@@ -944,6 +944,12 @@ module namelist_mod
     call MPI_bcast(num_io_procs , 1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(output_type , 9,MPIChar_t,par%root,par%comm,ierr)
     call MPI_bcast(infilenames ,160*MAX_INFILES ,MPIChar_t,par%root,par%comm,ierr)
+
+#ifdef IS_ACCELERATOR
+    if (nthreads_accel > 0) then
+        nthreads = nthreads_accel
+    end if
+#endif
 
     ! sanity check on thread count
     ! HOMME will run if if nthreads > max, but gptl will print out GB of warnings.
