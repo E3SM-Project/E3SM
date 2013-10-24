@@ -10,7 +10,7 @@ module ref_state_mod
   ! ------------------
   use parallel_mod, only : parallel_t, iam, syncmp, abortmp
   ! ------------------
-  use schedule_mod, only : Schedule
+  use schedtype_mod, only : Schedule
   ! ------------------
 !  use dimensions_mod
   ! ------------------

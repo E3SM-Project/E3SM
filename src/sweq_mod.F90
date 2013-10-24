@@ -197,7 +197,7 @@ contains
     call t_startf('sweq')
 
     hybrid = hybrid_create(par,ithr,NThreads)
-
+    simday=0
     if (topology == "cube") then
        call test_global_integral(elem,hybrid,nets,nete)
 
