@@ -8,7 +8,7 @@
 module control_mod
   use kinds, only : real_kind
 
-  integer, public, parameter :: MAX_STRING_LEN=80
+  integer, public, parameter :: MAX_STRING_LEN=240
   integer, public, parameter :: MAX_FILE_LEN=240
   character(len=MAX_STRING_LEN)    , public :: integration    ! time integration (explicit, semi_imp, or full imp)
 
@@ -16,6 +16,7 @@ module control_mod
   integer, public, parameter :: TRACERADV_UGRADQ=0            !  u grad(Q) formulation
   integer, public, parameter :: TRACERADV_TOTAL_DIVERGENCE=1   ! div(u dp/dn Q ) formulation
   integer, public  :: tracer_advection_formulation  = TRACERADV_TOTAL_DIVERGENCE
+  logical, public  :: use_semi_lagrange_transport   = .false.
 
 !shallow water advection tests:
 !kmass points to a level with density.  other levels contain test tracers
@@ -139,6 +140,7 @@ module control_mod
   real (kind=real_kind), public :: hypervis_power=0     ! if not 0, use variable hyperviscosity based on element area          
   real (kind=real_kind), public :: hypervis_scaling=0      ! use tensor hyperviscosity
 
+!
 !three types of hyper viscosity are supported right now:
 ! (1) const hv:    nu * del^2 del^2
 ! (2) scalar hv:   nu(lat,lon) * del^2 del^2
@@ -168,7 +170,9 @@ module control_mod
 
   real (kind=real_kind), public :: initial_total_mass = 0    ! initial perturbation in JW test case
   real (kind=real_kind), public :: u_perturb   = 0         ! initial perturbation in JW test case
-
+#ifndef CAM
+  real (kind=real_kind), public :: pertlim = 0          !pertibation to temperature [like CESM]
+#endif
   integer, public, parameter :: west  = 1
   integer, public, parameter :: east  = 2
   integer, public, parameter :: south = 3
@@ -181,6 +185,7 @@ module control_mod
   
   logical, public            :: test_cfldep=.FALSE.
 
+  logical, public :: disable_diagnostics = .FALSE. 
 
 
 

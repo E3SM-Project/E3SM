@@ -470,8 +470,6 @@ contains
     integer ::w_west, w_east, w_south, w_north, w_swest, w_seast, w_nwest, w_neast
     integer ::n, print_buf(90), nbr(8), j, k, start, cnt, nbrs_cnt(8)
 
-    integer, pointer :: np(:)
-
     nbr = (/ west, east, south, north, swest, seast, nwest, neast/)
 
     nvert = SIZE(Vertex)
@@ -481,11 +479,10 @@ contains
 
        print_buf(:) = 0
        nbrs_cnt(:) = 0
-       np =>  Vertex(i)%nbrs_ptr !alias
        cnt = 1
        do j = 1,num_neighbors
-          n = np(nbr(j)+1) - np(nbr(j)) !num neigbors in that directions
-          start =  np(nbr(j)) !start in array
+          n = Vertex(i)%nbrs_ptr(nbr(j)+1) - Vertex(i)%nbrs_ptr(nbr(j)) !num neigbors in that directions
+          start =  Vertex(i)%nbrs_ptr(nbr(j)) !start in array
           nbrs_cnt(j) = n
           do k = 1, n
              print_buf(cnt) = Vertex(i)%nbrs(start+k-1)

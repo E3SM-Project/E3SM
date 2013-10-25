@@ -10,6 +10,8 @@ module diffusion_mod
   ! =======================
   use derivative_mod,     only : gradient, vorticity, derivative_t, divergence
   ! =======================
+  use parallel_mod, only : parallel_t
+  ! =======================
   use edge_mod, only : EdgeBuffer_t, edgevpack, edgerotate, edgevunpack, initedgebuffer
   ! =======================
   private
@@ -20,12 +22,13 @@ module diffusion_mod
   type (EdgeBuffer_t) :: edge4
 
 contains
-  subroutine diffusion_init()
+  subroutine diffusion_init(par)
+    type(parallel_t) :: par
 
-       call initEdgeBuffer(edgeS1,qsize*nlev)
-       call initEdgeBuffer(edgeS2,2*qsize*nlev)
-       call initEdgeBuffer(edge3, 3*nlev)
-       call initEdgeBuffer(edge4, 4*nlev)
+       call initEdgeBuffer(par,edgeS1,qsize*nlev)
+       call initEdgeBuffer(par,edgeS2,2*qsize*nlev)
+       call initEdgeBuffer(par,edge3, 3*nlev)
+       call initEdgeBuffer(par,edge4, 4*nlev)
 
   end subroutine diffusion_init
 

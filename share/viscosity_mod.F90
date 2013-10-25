@@ -13,8 +13,9 @@ module viscosity_mod
 !
 use thread_mod
 use kinds, only : real_kind, iulog
-use dimensions_mod, only : np, nlev,qsize
-use hybrid_mod, only : hybrid_t
+use dimensions_mod, only : np, nlev,qsize,nelemd
+use hybrid_mod, only : hybrid_t, hybrid_create
+use parallel_mod, only : parallel_t
 use element_mod, only : element_t
 use derivative_mod, only : derivative_t, laplace_sphere_wk, vlaplace_sphere_wk, vorticity_sphere, derivinit, divergence_sphere
 use edge_mod, only : EdgeBuffer_t, edgevpack, edgerotate, edgevunpack, edgevunpackmin, &
@@ -30,21 +31,25 @@ public :: biharmonic_wk
 public :: biharmonic_wk_scalar
 public :: biharmonic_wk_scalar_minmax
 #endif
+
+!
+! compute vorticity/divergence and then project to make continious
+! high-level routines uses only for I/O
 public :: compute_zeta_C0
 public :: compute_div_C0
-public :: compute_zeta_C0_2d
-public :: compute_div_C0_2d
+interface compute_zeta_C0
+    module procedure compute_zeta_C0_hybrid       ! hybrid version
+    module procedure compute_zeta_C0_par          ! single threaded
+end interface
+interface compute_div_C0
+    module procedure compute_div_C0_hybrid
+    module procedure compute_div_C0_par
+end interface
+
+public :: compute_zeta_C0_contra    ! for older versions of sweq which carry
+public :: compute_div_C0_contra     ! velocity around in contra-coordinates
+
 public :: test_ibyp
-
-interface compute_zeta_C0_2d
-    module procedure compute_zeta_C0_2d_sphere
-    module procedure compute_zeta_C0_2d_contra
-end interface
-
-interface compute_div_C0_2d
-    module procedure compute_div_C0_2d_sphere
-    module procedure compute_div_C0_2d_contra
-end interface
 
 
 type (EdgeBuffer_t)          :: edge1
@@ -465,36 +470,6 @@ end subroutine
 
 
 
-subroutine make_C0_2d(zeta,elem,hybrid,nets,nete)
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! apply DSS (aka assembly procedure) to zeta.  
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-type (hybrid_t)      , intent(in) :: hybrid
-type (element_t)     , intent(in), target :: elem(:)
-integer :: nets,nete
-real (kind=real_kind), dimension(np,np,nets:nete) :: zeta
-
-! local
-integer :: k,i,j,ie,ic,kptr
-
-
-call initEdgeBuffer(edge1,1)
-
-do ie=nets,nete
-   zeta(:,:,ie)=zeta(:,:,ie)*elem(ie)%spheremp(:,:)
-   kptr=0
-   call edgeVpack(edge1, zeta(1,1,ie),1,kptr,elem(ie)%desc)
-enddo
-call bndry_exchangeV(hybrid,edge1)
-do ie=nets,nete
-   kptr=0
-   call edgeVunpack(edge1, zeta(1,1,ie),1,kptr,elem(ie)%desc)
-   zeta(:,:,ie)=zeta(:,:,ie)*elem(ie)%rspheremp(:,:)
-enddo
-
-call FreeEdgeBuffer(edge1) 
-end subroutine
 
 
 subroutine make_C0(zeta,elem,hybrid,nets,nete)
@@ -511,7 +486,7 @@ real (kind=real_kind), dimension(np,np,nlev,nets:nete) :: zeta
 integer :: k,i,j,ie,ic,kptr
 
 
-call initEdgeBuffer(edge1,nlev)
+call initEdgeBuffer(hybrid%par,edge1,nlev)
 
 do ie=nets,nete
 #if (defined VERT_OPENMP)
@@ -555,7 +530,7 @@ integer :: k,i,j,ie,ic,kptr
 type (EdgeBuffer_t)          :: edge2
 
 
-call initEdgeBuffer(edge2,2*nlev)
+call initEdgeBuffer(hybrid%par,edge2,2*nlev)
 
 do ie=nets,nete
 #if (defined VERT_OPENMP)
@@ -593,37 +568,8 @@ end subroutine
 
 
 
-subroutine compute_zeta_C0_2d_sphere(zeta,elem,hybrid,nets,nete,nt,k)
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! compute C0 vorticity.  That is, solve:  
-!     < PHI, zeta > = <PHI, curl(elem%state%v >
-!
-!    input:  v (stored in elem()%, in lat-lon coordinates)
-!    output: zeta(:,:,:,:)   
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-type (hybrid_t)      , intent(in) :: hybrid
-type (element_t)     , intent(in), target :: elem(:)
-integer :: nt,nets,nete,k
-real (kind=real_kind), dimension(np,np,nets:nete) :: zeta
-
-! local
-integer :: i,j,ie,ic
-type (derivative_t)          :: deriv
-
-call derivinit(deriv)
-
-do ie=nets,nete
-   !    zeta(:,:,k,ie)=elem(ie)%state%zeta(:,:,k)
-   zeta(:,:,ie)=vorticity_sphere(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie))
-enddo
-
-call make_C0_2d(zeta,elem,hybrid,nets,nete)
-
-end subroutine
-
-subroutine compute_zeta_C0_2d_contra(zeta,elem,hybrid,nets,nete,nt)
+subroutine compute_zeta_C0_contra(zeta,elem,hybrid,nets,nete,nt)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! compute C0 vorticity.  That is, solve:  
 !     < PHI, zeta > = <PHI, curl(elem%state%v >
@@ -662,37 +608,8 @@ call make_C0(zeta,elem,hybrid,nets,nete)
 end subroutine
 
 
-subroutine compute_div_C0_2d_sphere(zeta,elem,hybrid,nets,nete,nt,k)
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! compute C0 divergence. That is, solve:  
-!     < PHI, zeta > = <PHI, div(elem%state%v >
-!
-!    input:  v (stored in elem()%, in lat-lon coordinates)
-!    output: zeta(:,:,:,:)   
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-type (hybrid_t)      , intent(in) :: hybrid
-type (element_t)     , intent(in), target :: elem(:)
-integer :: nt,nets,nete,k
-real (kind=real_kind), dimension(np,np,nets:nete) :: zeta
-
-! local
-integer :: i,j,ie,ic
-type (derivative_t)          :: deriv
-
-call derivinit(deriv)
-
-do ie=nets,nete
-   !    zeta(:,:,k,ie)=elem(ie)%state%zeta(:,:,k)
-   zeta(:,:,ie)=divergence_sphere(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie))
-enddo
-
-call make_C0_2d(zeta,elem,hybrid,nets,nete)
-
-end subroutine
-
-subroutine compute_div_C0_2d_contra(zeta,elem,hybrid,nets,nete,nt)
+subroutine compute_div_C0_contra(zeta,elem,hybrid,nets,nete,nt)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! compute C0 divergence. That is, solve:  
 !     < PHI, zeta > = <PHI, div(elem%state%v >
@@ -730,7 +647,63 @@ call make_C0(zeta,elem,hybrid,nets,nete)
 
 end subroutine
 
-subroutine compute_zeta_C0(zeta,elem,hybrid,nets,nete,nt)
+subroutine compute_zeta_C0_par(zeta,elem,par,nt)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! compute C0 vorticity.  That is, solve:  
+!     < PHI, zeta > = <PHI, curl(elem%state%v >
+!
+!    input:  v (stored in elem()%, in lat-lon coordinates)
+!    output: zeta(:,:,:,:)   
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+type (parallel_t) :: par
+type (element_t)     , intent(in), target :: elem(:)
+real (kind=real_kind), dimension(np,np,nlev,nelemd) :: zeta
+integer :: nt
+
+! local
+type (hybrid_t)              :: hybrid
+integer :: k,i,j,ie,ic
+type (derivative_t)          :: deriv
+
+! single thread
+hybrid = hybrid_create(par,0,1)
+
+call compute_zeta_C0_hybrid(zeta,elem,hybrid,1,nelemd,nt)
+
+end subroutine
+
+
+subroutine compute_div_C0_par(zeta,elem,par,nt)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! compute C0 divergence. That is, solve:  
+!     < PHI, zeta > = <PHI, div(elem%state%v >
+!
+!    input:  v (stored in elem()%, in lat-lon coordinates)
+!    output: zeta(:,:,:,:)   
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+type (parallel_t) :: par
+type (element_t)     , intent(in), target :: elem(:)
+real (kind=real_kind), dimension(np,np,nlev,nelemd) :: zeta
+integer :: nt
+
+! local
+type (hybrid_t)              :: hybrid
+integer :: k,i,j,ie,ic
+type (derivative_t)          :: deriv
+
+! single thread
+hybrid = hybrid_create(par,0,1)
+
+call compute_div_C0_hybrid(zeta,elem,hybrid,1,nelemd,nt)
+
+end subroutine
+
+
+
+subroutine compute_zeta_C0_hybrid(zeta,elem,hybrid,nets,nete,nt)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! compute C0 vorticity.  That is, solve:  
 !     < PHI, zeta > = <PHI, curl(elem%state%v >
@@ -766,7 +739,7 @@ call make_C0(zeta,elem,hybrid,nets,nete)
 end subroutine
 
 
-subroutine compute_div_C0(zeta,elem,hybrid,nets,nete,nt)
+subroutine compute_div_C0_hybrid(zeta,elem,hybrid,nets,nete,nt)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! compute C0 divergence. That is, solve:  
 !     < PHI, zeta > = <PHI, div(elem%state%v >
@@ -919,7 +892,7 @@ integer :: ie,k,q
 
 
     ! create edge buffer for 3 fields
-    call initEdgeBuffer(edgebuf,3*nlev)
+    call initEdgeBuffer(hybrid%par,edgebuf,3*nlev)
 
 
     ! compute p min, max

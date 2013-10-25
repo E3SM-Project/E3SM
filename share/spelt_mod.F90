@@ -13,7 +13,7 @@ module spelt_mod
 
   use kinds, only : real_kind, int_kind
   use dimensions_mod, only: ne, nlev, ntrac, np, ntrac_d, nc, nhe, nip, nipm, nep
-  use edge_mod, only : ghostBuffertr_t,edgebuffer_t,ghostbuffer_t
+  use edge_mod, only : ghostBuffertr_t,edgebuffer_t
   use time_mod, only : timelevel_t
   use coordinate_systems_mod, only : spherical_polar_t, cartesian2D_t
   use element_mod, only : element_t, timelevels
@@ -1911,7 +1911,7 @@ end subroutine get_Ainv
 
 ! initialize global buffers shared by all threads
 subroutine spelt_init1(par)
-  use edge_mod, only : initghostbuffer,initEdgebuffer
+  use edge_mod, only : initghostbufferTR,initEdgebuffer
   use parallel_mod, only : parallel_t, haltmp
   
   implicit none
@@ -1938,10 +1938,10 @@ subroutine spelt_init1(par)
   endif
 
   !+1 for the air_density, which comes from SE
-  call initghostbuffer(cellghostbuf,nlev,ntrac,nipm,nep)
+  call initghostbufferTR(cellghostbuf,nlev,ntrac,nipm,nep)
   ! use the tracer entry, have R plus and R minus factor (for positivity on only one)
-  call initghostbuffer(factorR,2*nlev,ntrac,nhe,nc)
-  call initEdgebuffer(edgeveloc,2*nlev)
+  call initghostbufferTR(factorR,2*nlev,ntrac,nhe,nc)
+  call initEdgebuffer(par,edgeveloc,2*nlev)
 end subroutine spelt_init1
 
 ! initialization that can be done in threaded regions
@@ -1966,7 +1966,7 @@ subroutine spelt_init3(elem,spelt,hybrid,nets,nete,tnp0)
   use edge_mod, only :  ghostVpack2d, ghostVunpack2d
   ! ---------------------------------------------------------------------------------
   use bndry_mod, only: ghost_exchangeV
-  use edge_mod, only :  ghostVpack2d_single, ghostVunpack2d_single,initghostbuffer,freeghostbuffertr
+  use edge_mod, only :  ghostVpack2d_single, ghostVunpack2d_single,initghostbufferTR,freeghostbuffertr
   
   implicit none
   
@@ -2012,7 +2012,7 @@ subroutine spelt_init3(elem,spelt,hybrid,nets,nete,tnp0)
 !     enddo
 !   enddo
 
-  call initghostbuffer(buf,1,1,nipm,nep)
+  call initghostbufferTR(buf,1,1,nipm,nep)
   do ie=nets,nete
     call ghostVpack2d_single(buf,spelt(ie)%sga,nipm, nep,elem(ie)%desc)
   end do
@@ -2086,7 +2086,7 @@ subroutine spelt_grid_init(elem,spelt,nets,nete,tl)
             iel=ic+(i-1)*nipm
             jel=jc+(j-1)*nipm
             !define the arrival grid in spherical coordinates
-            spelt(ie)%asphere(iel,jel)=ref2sphere(xref,yref,elem(ie)) 
+            spelt(ie)%asphere(iel,jel)=ref2sphere(xref,yref,elem(ie)%corners3D,elem(ie)%corners,elem(ie)%facenum) 
             alphabeta=sphere2cubedsphere(spelt(ie)%asphere(iel,jel), elem(ie)%FaceNum)
             tmpab(iel,jel)=alphabeta
             spelt(ie)%sga(iel,jel)=metric_term(alphabeta)

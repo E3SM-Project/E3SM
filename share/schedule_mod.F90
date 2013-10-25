@@ -6,34 +6,10 @@
 module schedule_mod 
   use metagraph_mod, only : MetaEdge_t
   use kinds, only : int_kind, iulog
+  use schedtype_mod, only : Cycle_t, Schedule_t, schedule 
 
   implicit none 
   private 
-  type, public :: Cycle_t
-     integer                    :: tag
-     integer                    :: dest
-     integer                    :: source
-     integer                    :: lengthP
-     integer                    :: lengthP_ghost
-     integer                    :: type 
-     integer                    :: ptrP
-     integer                    :: ptrP_ghost
-     type (MetaEdge_t),pointer  :: edge
-  end type Cycle_t
-
-  type, public :: Schedule_t 
-     integer                     ::  ncycles
-     integer                     ::  nelemd
-     integer                     :: placeholder  ! total integer count should be even
-     integer                     :: nSendCycles
-     integer                     :: nRecvCycles
-     integer			    :: padding
-     integer,pointer             :: Local2Global(:)
-     type (Cycle_t), pointer     ::   Cycle(:)     	
-     type (Cycle_t), pointer :: SendCycle(:)
-     type (Cycle_t), pointer :: RecvCycle(:)
-     type (Cycle_t), pointer :: MoveCycle(:)
-  end type Schedule_t
 
   type, public :: GraphStats_t
      integer(kind=int_kind) :: offnode
@@ -41,10 +17,6 @@ module schedule_mod
      integer(kind=int_kind) :: LB
      integer(kind=int_kind) :: padding 
   end type GraphStats_t
-
-  type (Schedule_t), public, allocatable, target  :: Schedule(:)
-  type (Schedule_t), public, allocatable, target  :: gSchedule(:) 
-  type (Schedule_t), public, allocatable, target  :: sSchedule(:) 
 
   integer,public,parameter :: BNDRY_EXCHANGE_MESSAGE=10
   integer,private,allocatable,target  :: Global2Local(:)
@@ -64,7 +36,7 @@ contains
   subroutine genEdgeSched(elem, PartNumber,LSchedule,MetaVertex)
     use element_mod, only : element_t
     use metagraph_mod, only : metavertex_t
-    use dimensions_mod, only : nelem
+    use dimensions_mod, only : nelem, max_neigh_edges
     use gridgraph_mod, only : gridvertex_t, gridedge_t, assignment ( = )
 #ifdef _MPI
     use parallel_mod, only : nComPoints, iam, mpi_status_size, rrequest, srequest, &
@@ -93,7 +65,9 @@ contains
     integer			  :: iSched
     logical, parameter            :: VerbosePrint=.FALSE.
     logical, parameter            :: Debug=.false.
-	integer :: ierr
+    integer :: ierr
+    integer :: l1,l2,l1id,l2id
+
 
     nSched=SIZE(schedule)
     ! ================================================
@@ -210,9 +184,36 @@ contains
     deallocate(tmpP)
     deallocate(tmpP_ghost)
 
-    
+
 
     do ie=1,nelemd0
+       ! compute number of neighbers for each element
+       elem(ie)%desc%actual_neigh_edges=0
+       do i=1,max_neigh_edges
+          if (elem(ie)%desc%globalID(i)>0) then
+             elem(ie)%desc%actual_neigh_edges=elem(ie)%desc%actual_neigh_edges+1
+          endif
+       enddo
+
+       ! normally, we loop over max_neigh_edges, checking if there is an edge
+       ! let's create a mapping so that we can loop over actual_neigh_edges
+       ! sort in REVERSE global id order (so the ones with globalID=0 are last)
+       do l1 = 1,max_neigh_edges-1
+          do l2=l1+1,max_neigh_edges
+             l1id=elem(ie)%desc%loc2buf(l1)
+             l2id=elem(ie)%desc%loc2buf(l2)
+             if (elem(ie)%desc%globalID(l2id) > elem(ie)%desc%globalID(l1id)) then
+                ! swap index:
+                l1id=elem(ie)%desc%loc2buf(l2)
+                elem(ie)%desc%loc2buf(l2)=elem(ie)%desc%loc2buf(l1)
+                elem(ie)%desc%loc2buf(l1)=l1id
+             endif
+          enddo
+       enddo
+
+
+
+
        elem(ie)%vertex     = MetaVertex%members(ie)
        ig                  = MetaVertex%members(ie)%number
        elem(ie)%GlobalId   = ig
@@ -1017,8 +1018,8 @@ contains
           dir = (dir - loc)/max_corner_elem !this is the direction (1-8)
           loc = dir + (dir-5)*(max_corner_elem-1)+loc
           if(loc>max_neigh_edges) then
-             print *,__FILE__,__LINE__,iam,face,i,max_corner_elem,edge%members(i)%head_face
-             call abortmp('Face value out of bounds')
+             print *,__FILE__,__LINE__,iam,face,i,max_corner_elem,max_neigh_edges,edge%members(i)%head_face
+             call abortmp('max_neigh_edges set too low.')
           end if
        else
           loc = face
@@ -1027,6 +1028,7 @@ contains
        if(il .gt. 0) then 
           elem(il)%desc%getmapP(loc) = Edge%edgeptrP(i) + Cycle%ptrP - 1
           elem(il)%desc%getmapP_ghost(loc) = Edge%edgeptrP_ghost(i) + Cycle%ptrP_ghost 
+          elem(il)%desc%globalID(loc) = Edge%members(i)%tail%number
        endif
 
 
