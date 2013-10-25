@@ -13,7 +13,6 @@
 !> \MPAS land-ice SIA velocity driver
 !> \author Matt Hoffman
 !> \date   16 March 2012
-!> \version SVN:$Id:$
 !> \details
 !>  This module contains the routines for calculating velocity using the shallow ice approximation.
 !>
@@ -65,7 +64,6 @@ contains
 !> \brief   Initializes SIA velocity solver
 !> \author  Matt Hoffman/Xylar Asay-Davis
 !> \date    16 March 2012
-!> \version SVN:$Id$
 !> \details
 !>  This routine initializes the SIA ice velocity solver.
 !
@@ -118,7 +116,6 @@ contains
 !> \brief   Initializes blocks for SIA velocity solver
 !> \author  Matt Hoffman/Xylar Asay-Davis
 !> \date    16 March 2012
-!> \version SVN:$Id$
 !> \details 
 !>  This routine initializes each block of the SIA ice velocity solver.
 !
@@ -169,7 +166,6 @@ contains
 !> \brief   Computes velocity using Shallow Ice Appoximation
 !> \author  Matt Hoffman
 !> \date    21 May 2012
-!> \version SVN:$Id$
 !> \details 
 !>  This routine computes the normal velocity on edges for each layer 
 !>  using the Shallow Ice Approximation.  It calculates ice thickness on 
@@ -290,7 +286,6 @@ contains
 !> \brief   finalizes SIA velocity solver
 !> \author  Matt Hoffman/Xylar Asay-Davis
 !> \date    16 March 2012
-!> \version SVN:$Id$
 !> \details
 !>  This routine initializes the SIA ice velocity solver.
 !

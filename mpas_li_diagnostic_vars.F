@@ -13,7 +13,6 @@
 !> \brief MPAS land ice module for calculating diagnostic variables
 !> \author Matt Hoffman
 !> \date   17 April 2011
-!> \version SVN:$Id:$
 !> \details
 !>  This module contains various subroutines for
 !>  calculating diagnostic (time-independent) variables
@@ -66,7 +65,6 @@ contains
 !> \brief   Calculates diagnostic variables 
 !> \author  Matthew Hoffman
 !> \date    12 September 2013
-!> \version SVN:$Id$
 !> \details
 !>  This routine calculates diagnostic variables using the current prognostic
 !>  variables.  This is done in 3 parts:
@@ -259,7 +257,6 @@ contains
 !> \brief   Computes diagnostic variables prior to velocity
 !> \author  Matt Hoffman
 !> \date    19 April 2012
-!> \version SVN:$Id$
 !> \details 
 !> This routine computes the diagnostic variables for land ice
 !> that are needed before velocity is solved.
@@ -404,7 +401,6 @@ contains
 !> \brief   Computes diagnostic variables that require knowing velocity
 !> \author  Matt Hoffman
 !> \date    19 April 2012
-!> \version SVN:$Id$
 !> \details 
 !> This routine computes the diagnostic variables that require knowing velocity for land ice
 !
@@ -498,7 +494,6 @@ contains
 !> \brief   Vertical remapping of thickness and tracers
 !> \author  Matt Hoffman
 !> \date    06 February 2013
-!> \version SVN:$Id$
 !> \details 
 !>  This routine performs vertical remapping of thickness and tracers from one vertical
 !>  coordinate system to another, as is required for our sigma coordinate system.  
@@ -658,7 +653,6 @@ contains
 !> \brief   Vertical remapping of thickness and tracers
 !> \author  Matt Hoffman
 !> \date    02 October 2013
-!> \version SVN:$Id$
 !> \details 
 !>  This routine performs vertical remapping of thickness and tracers from one vertical
 !>  coordinate system to another, as is required for our sigma coordinate system.

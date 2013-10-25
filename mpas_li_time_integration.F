@@ -13,7 +13,6 @@
 !> \brief MPAS land ice time integration driver
 !> \author Matt Hoffman
 !> \date   17 April 2011
-!> \version SVN:$Id:$
 !> \details
 !>  This module contains the main driver routine for calling
 !>  time integration schemes
@@ -63,7 +62,6 @@ module li_time_integration
 !> \brief   Advance model state forward in time by the specified time step
 !> \author  Matt Hoffman
 !> \date    20 April 2012
-!> \version SVN:$Id$
 !> \details
 !>  This routine advances model state forward in time by the specified time step.
 !> Input: domain - current model state in time level 1 (e.g., time_levs(1)state%h(:,:)) 

@@ -14,7 +14,6 @@
 !> \brief MPAS land ice Forward Euler time integration scheme
 !> \author Matt Hoffman
 !> \date   17 April 2011
-!> \version SVN:$Id:$
 !> \details
 !>  This module contains the Forward Euler time integration scheme
 !
@@ -69,7 +68,6 @@ module li_time_integration_fe
 !> \brief   Forward Euler time integration scheme 
 !> \author  Matthew Hoffman
 !> \date    10 January 2012
-!> \version SVN:$Id$
 !> \details 
 !>  This routine performs Forward Euler time integration.
 !
@@ -179,7 +177,6 @@ module li_time_integration_fe
 !> \brief   Calculates tendencies 
 !> \author  Matthew Hoffman
 !> \date    12 September 2013
-!> \version SVN:$Id$
 !> \details
 !>  This routine calculates tendencies of thickness (and eventually tracers)
 !>  to use with the Forward Euler time integrator.
@@ -325,7 +322,6 @@ module li_time_integration_fe
 !> \brief   Updates prognostic variables 
 !> \author  Matthew Hoffman
 !> \date    12 September 2013
-!> \version SVN:$Id$
 !> \details
 !>  This routine updates prognostic variables using a 
 !>  Forward Euler time integrator.

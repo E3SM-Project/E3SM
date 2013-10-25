@@ -13,7 +13,6 @@
 !> \MPAS land-ice velocity driver
 !> \author William Lipscomb
 !> \date   10 January 2012
-!> \version SVN:$Id:$
 !> \details
 !>  This module contains the routines for calling dycores
 !>  for calculating ice velocity. 
@@ -67,7 +66,6 @@ contains
 !> \brief   Initializes velocity solver
 !> \author  Xylar Asay-Davis
 !> \date    18 January 2012
-!> \version SVN:$Id$
 !> \details
 !>  This routine initializes the ice velocity solver.
 !
@@ -140,7 +138,6 @@ contains
 !> \brief   Initializes velocity solver
 !> \author  William Lipscomb
 !> \date    10 January 2012
-!> \version SVN:$Id$
 !> \details 
 !>  This routine initializes each block of the ice velocity solver.
 !
@@ -211,7 +208,6 @@ contains
 !> \brief   Solver for calculating ice velocity 
 !> \author  William Lipscomb
 !> \date    10 January 2012
-!> \version SVN:$Id$
 !> \details 
 !>  This routine calls velocity solvers.
 !
@@ -305,7 +301,6 @@ contains
 !> \brief   Finalizes velocity solver
 !> \author  Xylar Asay-Davis
 !> \date    18 January 2012
-!> \version SVN:$Id$
 !> \details
 !>  This routine finalizes the ice velocity solver.
 !

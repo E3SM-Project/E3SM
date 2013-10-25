@@ -13,7 +13,6 @@
 !> \brief MPAS land ice tendency driver
 !> \author Matt Hoffman
 !> \date   17 April 2011
-!> \version SVN:$Id:$
 !> \details
 !>  This module contains the routines for computing
 !>  various tendencies for land ice. As well as routines
@@ -66,7 +65,6 @@ module li_tendency
 !> \brief   Computes tendency term from horizontal advection of thickness
 !> \author  Matt Hoffman
 !> \date    16 April 2012
-!> \version SVN:$Id$
 !> \details 
 !>  This routine computes the horizontal advection tendency for
 !>  thickness based on current state and user choices of forcings. Based on
@@ -244,7 +242,6 @@ module li_tendency
 !> \brief   Computes tendency term from horizontal advection of thickness
 !> \author  Matt Hoffman
 !> \date    16 April 2012
-!> \version SVN:$Id$
 !> \details 
 !>  This routine computes the horizontal advection tendency for
 !>  thickness based on current state and user choices of forcings. Based on
@@ -394,7 +391,6 @@ module li_tendency
 !> \brief   Applies a calving 'law' to any marine-terminating ice
 !> \author  Matt Hoffman
 !> \date    19 February 2013
-!> \version SVN:$Id$
 !> \details 
 !> This routine is a driver for applying various calving laws to any
 !> marine-terminating ice.
@@ -549,7 +545,6 @@ module li_tendency
 !> \brief   Computes tendency term from horizontal advection of thickness layers
 !> \author  Matt Hoffman
 !> \date    16 April 2012
-!> \version SVN:$Id$
 !> \details 
 !>  This routine computes the horizontal advection tendency for each
 !>  thickness layer using first-order upwinding. Based on
@@ -684,7 +679,6 @@ module li_tendency
 !> \brief   tracer_advection_tend_fo
 !> \author  Matt Hoffman
 !> \date    06 February 2013
-!> \version SVN:$Id$
 !> \details 
 !>  
 
@@ -799,7 +793,6 @@ module li_tendency
 !!> \brief   Computes tendency term from horizontal advection of thickness
 !!> \author  Matt Hoffman
 !!> \date    16 April 2012
-!!> \version SVN:$Id$
 !!> \details 
 !!>  This routine computes the horizontal advection tendency for
 !!>  thickness based on current state and user choices of forcings. Based on
