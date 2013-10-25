@@ -44,3 +44,6 @@
 
 /* Enable persistent MPI comm */
 #cmakedefine MPI_PERSISTENT
+
+/* Using Accelerator */
+#cmakedefine IS_ACCELERATOR
