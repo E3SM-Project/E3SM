@@ -112,7 +112,7 @@ contains
       if (present(thermalExpansionCoeff)) then
          do iCell=1,nCells
             do k=1,maxLevelCell(iCell)
-               thermalExpansionCoeff(k,iCell) = -config_eos_linear_alpha/density(k,iCell)
+               thermalExpansionCoeff(k,iCell) = config_eos_linear_alpha/density(k,iCell)
             end do
          end do
       endif
