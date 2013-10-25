@@ -35,21 +35,23 @@
        call write_netcdf_coord_file(fname,nlev,p0,a,b,amid,bmid)
 #else       
 
-       fname="sabi-"//TRIM(ADJUSTL(charlev))//".fbin"
-       open(UNIT=11,FILE=fname,form='unformatted',status='unknown',iostat=ios)
+       fname="sabi-"//TRIM(ADJUSTL(charlev))//".ascii"
+       open(UNIT=11,FILE=fname,form='formatted',status='unknown',&
+       iostat=ios)
 
-       fname="sabm-"//TRIM(ADJUSTL(charlev))//".fbin"
-       open(UNIT=12,FILE=fname,form='unformatted',status='unknown',iostat=ios)
+       fname="sabm-"//TRIM(ADJUSTL(charlev))//".ascii"
+       open(UNIT=12,FILE=fname,form='formatted',status='unknown',&
+       iostat=ios)
 
-       do k=1,nlev+1
-          write(11) A(k)
-          write(11) B(k)
-       end do
+       write(11,'(i4)') nlev+1
+       write(11,'(e25.16)') (A(k),k=1,nlev+1)
+       write(11,'(i4)') nlev+1
+       write(11,'(e25.16)') (B(k),k=1,nlev+1)
 
-       do k=1,nlev
-          write(12) Amid(k)
-          write(12) Bmid(k)
-       end do
+       write(12,'(i4)') nlev
+       write(12,'(e25.16)') (Amid(k),k=1,nlev)
+       write(12,'(i4)') nlev
+       write(12,'(e25.16)') (Bmid(k),k=1,nlev)
 
        close(11)
        close(12)

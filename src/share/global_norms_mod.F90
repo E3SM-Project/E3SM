@@ -505,7 +505,7 @@ contains
         max_eig_hypervis = ParallelMax(max_eig_hypervis, hybrid)
 
         ! apply DSS (aka assembly procedure) to variable_hyperviscosity (makes continuous)
-        call initEdgeBuffer(edgebuf,1)
+        call initEdgeBuffer(hybrid%par,edgebuf,1)
         do ie=nets,nete
             zeta(:,:,ie) = elem(ie)%variable_hyperviscosity(:,:)*elem(ie)%spheremp(:,:)
             call edgeVpack(edgebuf,zeta(1,1,ie),1,0,elem(ie)%desc)
@@ -556,7 +556,7 @@ contains
 
 !IF DSSED V NEEDED
 #if 1
-    call initEdgeBuffer(edgebuf,1)
+    call initEdgeBuffer(hybrid%par,edgebuf,1)
     do rowind=1,2
       do colind=1,2
 	do ie=nets,nete

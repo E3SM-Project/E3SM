@@ -138,8 +138,15 @@ subroutine fvm_mesh_ari(elem, fvm, tl)
         fvm%cubeboundary=j
         corner=.TRUE.
       else
-        print *,'Error in fvm_CONTROL_VOLUME_MOD - Subroutine fvm_MESH_ARI: '
-        call abortmp('Do not allow one element per face for fvm, please increase ne!')
+         if ( ne == 0 ) then
+            ! dont check this condition.  note that we call these code
+            ! generate phys grid template files, so we need to be able
+            ! to call create_ari() to create the subcells even though
+            ! cslam cant run with the unstructed ne=0 case
+         else
+            print *,'Error in fvm_CONTROL_VOLUME_MOD - Subroutine fvm_MESH_ARI: '
+            call abortmp('Do not allow one element per face for fvm, please increase ne!')
+         endif
       endif
     end if
   end do
@@ -1354,8 +1361,11 @@ subroutine interpolation_point(gnom,gnom1d,face1,face2,xy,except, point,ida,ide,
   else
     ibaseref=iref-2  
   end if
-
-  point=point-gnom1d(ibaseref)
+  if (ibaseref < 1-nhc ) then
+     print *,'ERROR: ibaseref out of range: ',ibaseref,ida,ide,iref
+  else
+     point=point-gnom1d(ibaseref)
+  endif
   
 end subroutine interpolation_point
 !END SUBROUTINE INTERPOLATION_POINT---------------------------------------CE-for FVM!

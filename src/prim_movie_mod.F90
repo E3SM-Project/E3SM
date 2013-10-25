@@ -21,6 +21,8 @@ module prim_movie_mod
   ! ---------------------
   use element_mod, only : element_t
   use fvm_control_volume_mod, only : fvm_struct
+  use spelt_mod, only : spelt_struct
+
   ! ---------------------
   use cube_mod, only : cube_assemble
   ! ---------------------
@@ -285,7 +287,7 @@ contains
             (nf_selectedvar('cv_lon', output_varnames)) ) then
           if (.not. allocated(cvlist)) then
              if (par%masterproc) print *,'computing GLL dual grid for  control volumes:'
-             call InitControlVolumesData(nelemd)
+             call InitControlVolumesData(par,nelemd)
              ! single thread
              hybrid = hybrid_create(par,0,1)
              call InitControlVolumes(elem,hybrid,1,nelemd)
@@ -544,7 +546,12 @@ contains
     use netcdf_io_mod, only : iodesc3d_nc
 
     type (element_t)    :: elem(:)
-    type (fvm_struct), optional   :: fvm(:)
+#if defined(_SPELT)
+    type (spelt_struct), optional  :: fvm(:)
+#else
+     type (fvm_struct), optional   :: fvm(:)    
+#endif
+
     type (TimeLevel_t)  :: tl
     type (hvcoord_t)    :: hvcoord
     type (hybrid_t)      , intent(in) :: hybrid

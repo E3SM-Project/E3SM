@@ -76,6 +76,7 @@ module cuda_mod
   real (kind=real_kind),device,allocatable,dimension(:,:,:,:,:)   :: qtens_d
   real (kind=real_kind),device,allocatable,dimension(:,:,:,:,:)   :: qtens_biharmonic_d
   real (kind=real_kind),device,allocatable,dimension(:,:,:)       :: spheremp_d
+  real (kind=real_kind),device,allocatable,dimension(:,:,:,:)     :: dpdiss_ave_d
   real (kind=real_kind),device,allocatable,dimension(:,:,:)       :: rspheremp_d
   real (kind=real_kind),device,allocatable,dimension(:,:,:,:,:)   :: dinv_d
   real (kind=real_kind),device,allocatable,dimension(:,:)         :: deriv_dvv_d
@@ -95,10 +96,6 @@ module cuda_mod
   real (kind=real_kind),device,allocatable,dimension(:,:,:,:)     :: dp_star_d
   real (kind=real_kind),device,allocatable,dimension(:,:,:)       :: qmin_d
   real (kind=real_kind),device,allocatable,dimension(:,:,:)       :: qmax_d
-  integer              ,device,allocatable,dimension(:)           :: send_nelem_d
-  integer              ,device,allocatable,dimension(:)           :: recv_nelem_d
-  integer              ,device,allocatable,dimension(:,:)         :: send_indices_d
-  integer              ,device,allocatable,dimension(:,:)         :: recv_indices_d
   integer              ,device,allocatable,dimension(:)           :: recv_internal_indices_d
   integer              ,device,allocatable,dimension(:)           :: recv_external_indices_d
   real (kind=real_kind),device,allocatable,dimension(:,:,:)       :: recvbuf_d
@@ -117,6 +114,7 @@ module cuda_mod
   real(kind=real_kind),pinned,allocatable,dimension(:,:,:,:)     :: divdp_h
   real(kind=real_kind),pinned,allocatable,dimension(:,:,:,:)     :: dp_star_h
   real(kind=real_kind),pinned,allocatable,dimension(:,:,:,:)     :: dp_np1_h
+  real(kind=real_kind),pinned,allocatable,dimension(:,:,:,:)     :: dpdiss_ave_h
   real(kind=real_kind),pinned,allocatable,dimension(:,:,:)       :: sendbuf_h
   real(kind=real_kind),pinned,allocatable,dimension(:,:,:)       :: recvbuf_h
   real(kind=real_kind),pinned,allocatable,dimension(:,:,:,:,:)   :: qtens_biharmonic
@@ -167,16 +165,18 @@ contains
   !The point of this is to initialize any data required in other routines of this module as well
   !as to run one initial CUDA kernel just to get those overheads out of the way so that subsequent
   !timing routines are accurage.
-  subroutine cuda_mod_init(elem,deriv,hvcoord)
+  subroutine cuda_mod_init(elem,hybrid,deriv,hvcoord)
     use edge_mod      , only: initEdgeBuffer
-    use schedule_mod  , only: schedule_t, cycle_t, schedule
+    use schedtype_mod  , only: schedule_t, cycle_t, schedule
     use edge_mod      , only: Edgebuffer_t
     use element_mod   , only: element_t
     use derivative_mod, only: derivative_t
     use hybvcoord_mod, only: hvcoord_t
     use physical_constants, only: rrearth_mod => rrearth
+    use hybrid_mod, only: hybrid_t
     implicit none
     type(element_t)   , intent(in) :: elem(:)
+    type(hybrid_t), intent(in) :: hybrid
     type(derivative_t), intent(in) :: deriv
     type(hvcoord_t)   , intent(in) :: hvcoord
 
@@ -213,7 +213,6 @@ contains
 #else
     pSchedule => Schedule(1)
 #endif
-    nlyr = edgeAdv%nlyr
     nSendCycles = pSchedule%nSendCycles
     nRecvCycles = pSchedule%nRecvCycles
     mx_send_len = 0
@@ -231,6 +230,7 @@ contains
     allocate( qmax_d                   (nlev,qsize_d                 ,nelemd) , stat = ierr ); _CHECK(__LINE__)
     allocate( qdp_d                    (np,np,nlev,qsize_d,timelevels,nelemd) , stat = ierr ); _CHECK(__LINE__)
     allocate( qdp1_d                   (np,np,nlev                   ,nelemd) , stat = ierr ); _CHECK(__LINE__)
+    allocate( dpdiss_ave_d             (np,np,nlev                   ,nelemd) , stat = ierr ); _CHECK(__LINE__)
     allocate( qtens_d                  (np,np,nlev,qsize_d           ,nelemd) , stat = ierr ); _CHECK(__LINE__)
     allocate( qtens_biharmonic_d       (np,np,nlev,qsize_d           ,nelemd) , stat = ierr ); _CHECK(__LINE__)
     allocate( spheremp_d               (np,np                        ,nelemd) , stat = ierr ); _CHECK(__LINE__)
@@ -261,6 +261,7 @@ contains
 
     allocate( qdp_h                    (np,np,nlev,qsize_d,timelevels,nelemd) , stat = ierr ); _CHECK(__LINE__)
     allocate( qdp1_h                   (np,np,nlev                   ,nelemd) , stat = ierr ); _CHECK(__LINE__)
+    allocate( dpdiss_ave_h             (np,np,nlev                   ,nelemd) , stat = ierr ); _CHECK(__LINE__)
     allocate( qmin                     (nlev,qsize_d                 ,nelemd) , stat = ierr ); _CHECK(__LINE__)
     allocate( qmax                     (nlev,qsize_d                 ,nelemd) , stat = ierr ); _CHECK(__LINE__)
     allocate( vstar_h                  (np,np,nlev,2                 ,nelemd) , stat = ierr ); _CHECK(__LINE__)
@@ -280,8 +281,6 @@ contains
     ! The PGI compiler with cuda enabled errors when allocating arrays of zero
     !   size - here when using only one MPI task
     if (nSendCycles > 0) then
-      allocate( send_nelem_d             (       nSendCycles                  ) , stat = ierr ); _CHECK(__LINE__)
-      allocate( send_indices_d           (nelemd,nSendCycles                  ) , stat = ierr ); _CHECK(__LINE__)
       allocate( sendbuf_h                (nlev*qsize_d,mx_send_len,nSendCycles) , stat = ierr ); _CHECK(__LINE__)
       allocate( send_elem_mask           (nelemd,nSendCycles                  ) , stat = ierr ); _CHECK(__LINE__)
       allocate( send_nelem               (       nSendCycles                  ) , stat = ierr ); _CHECK(__LINE__)
@@ -292,8 +291,6 @@ contains
     endif
 
     if (nRecvCycles > 0) then
-      allocate( recv_nelem_d             (       nRecvCycles                  ) , stat = ierr ); _CHECK(__LINE__)
-      allocate( recv_indices_d           (nelemd,nRecvCycles                  ) , stat = ierr ); _CHECK(__LINE__)
       allocate( recvbuf_h                (nlev*qsize_d,mx_recv_len,nRecvCycles) , stat = ierr ); _CHECK(__LINE__)
       allocate( recvbuf_d                (nlev*qsize_d,mx_recv_len,nRecvCycles) , stat = ierr ); _CHECK(__LINE__)
       allocate( recv_elem_mask           (nelemd,nRecvCycles                  ) , stat = ierr ); _CHECK(__LINE__)
@@ -332,10 +329,10 @@ contains
     write(*,*) "edgebuffers"
     !These have to be in a threaded region or they complain and die
 !$OMP END MASTER
-    call initEdgeBuffer(edgeAdv   ,qsize_d*nlev  )
-    call initEdgeBuffer(edgeAdvDSS,      nlev  )
-    call initEdgeBuffer(edgeAdvQ2 ,qsize_d*nlev*2)
-    call initEdgeBuffer(edgeAdvQ3 ,qsize_d*nlev*3)
+    call initEdgeBuffer(hybrid%par,edgeAdv   ,qsize_d*nlev  )
+    call initEdgeBuffer(hybrid%par,edgeAdvDSS,        nlev  )
+    call initEdgeBuffer(hybrid%par,edgeAdvQ2 ,qsize_d*nlev*2)
+    call initEdgeBuffer(hybrid%par,edgeAdvQ3 ,qsize_d*nlev*3)
 !$OMP MASTER
 
     write(*,*) "initial kernel"
@@ -357,15 +354,6 @@ contains
     !For efficient MPI, PCI-e, packing, and unpacking, we need to separate out the cycles by dependence. Once on cycle has packed, then stage the PCI-e D2H, MPI, PCI-e H2D, & internal unpack
     !We begin by testing what elements contribute to packing in what cycle's MPI data.
     do ie = 1,nelemd
-      send_elem_mask(ie,:) = .false.
-      do icycle = 1 , nSendCycles
-        do n = 1 , max_neigh_edges
-          if ( elem(ie)%desc%putmapP(n) >= pSchedule%SendCycle(icycle)%ptrP .and. &
-               elem(ie)%desc%putmapP(n) <= pSchedule%SendCycle(icycle)%ptrP + pSchedule%SendCycle(icycle)%lengthP-1 ) then
-            send_elem_mask(ie,icycle) = .true.
-          endif
-        enddo
-      enddo
       recv_elem_mask(ie,:) = .false.
       do icycle = 1 , nRecvCycles
         do n = 1 , max_neigh_edges
@@ -377,33 +365,6 @@ contains
       enddo
     enddo
     edgebuf_d = 0.
-
-    elem_computed = .false.   !elem_computed tells us whether an element has been touched by a cycle
-    !This pass accumulates for each cycle incides participating in the MPI_Isend
-    do icycle = 1 , nSendCycles
-      send_nelem(icycle) = 0
-      do ie = 1 , nelemd
-        if ( send_elem_mask(ie,icycle) ) then
-          send_nelem(icycle) = send_nelem(icycle) + 1
-          send_indices(send_nelem(icycle),icycle) = ie
-          elem_computed(ie) = .true.
-        endif
-      enddo
-    enddo
-    total_work = sum(send_nelem)
-    do ie = 1 , nelemd
-      if (.not. elem_computed(ie)) total_work = total_work + 1
-    enddo
-    !This pass adds to each cycle the internal elements not participating in MPI_Isend, so as to even distribute them across cycles.
-    do icycle = 1 , nSendCycles
-      do ie = 1 , nelemd
-        if ( .not. elem_computed(ie) .and. send_nelem(icycle) < int(ceiling(total_work/dble(nSendCycles))) ) then
-          send_nelem(icycle) = send_nelem(icycle) + 1
-          send_indices(send_nelem(icycle),icycle) = ie
-          elem_computed(ie) = .true.
-        endif
-      enddo
-    enddo
 
     elem_computed = .false.
     !This pass accumulates for each cycle incides participating in the MPI_Irecv
@@ -433,30 +394,8 @@ contains
         recv_internal_indices(recv_internal_nelem) = ie
       endif
     enddo
-    !This pass adds to each cycle the internal elements not participating in MPI_Irecv, so as to even distribute them across cycles.
-    do icycle = 1 , nRecvCycles
-      do ie = 1 , nelemd
-        if ( .not. elem_computed(ie) .and. recv_nelem(icycle) < int(ceiling(nelemd/dble(nRecvCycles))) ) then
-          recv_nelem(icycle) = recv_nelem(icycle) + 1
-          recv_indices(recv_nelem(icycle),icycle) = ie
-          elem_computed(ie) = .true.
-        endif
-      enddo
-    enddo
-
-    old_peu = .false.
-    do icycle = 1 , nSendCycles
-      if (send_nelem(icycle) == 0) then
-        write(*,*) 'WARNING: ZERO ELEMENT CYCLES EXIST. A BETTER DECOMPOSITION WILL RUN FASTER IN THE PACK-EXCHANGE-UNPACK.'
-        old_peu = .true.
-      endif
-    enddo
 
     write(*,*) "Sending element & cycle informationt to device"
-    ierr = cudaMemcpy(send_nelem_d           ,send_nelem           ,size(send_nelem           ),cudaMemcpyHostToDevice); _CHECK(__LINE__)
-    ierr = cudaMemcpy(recv_nelem_d           ,recv_nelem           ,size(recv_nelem           ),cudaMemcpyHostToDevice); _CHECK(__LINE__)
-    ierr = cudaMemcpy(send_indices_d         ,send_indices         ,size(send_indices         ),cudaMemcpyHostToDevice); _CHECK(__LINE__)
-    ierr = cudaMemcpy(recv_indices_d         ,recv_indices         ,size(recv_indices         ),cudaMemcpyHostToDevice); _CHECK(__LINE__)
     ierr = cudaMemcpy(recv_internal_indices_d,recv_internal_indices,size(recv_internal_indices),cudaMemcpyHostToDevice); _CHECK(__LINE__)
     ierr = cudaMemcpy(recv_external_indices_d,recv_external_indices,size(recv_external_indices),cudaMemcpyHostToDevice); _CHECK(__LINE__)
 
@@ -484,30 +423,44 @@ contains
 
   subroutine copy_qdp_h2d( elem , nt )
     use element_mod, only: element_t
+    use perf_mod, only: t_startf, t_stopf
     implicit none
     type(element_t), intent(in   ) :: elem(:)
     integer        , intent(in   ) :: nt
     integer :: ierr , ie
+    !$OMP BARRIER
     !$OMP MASTER
+    ierr = cudaThreadSynchronize()
+    call t_startf('CUDA QDP H2D')
     do ie = 1,nelemd
-      ierr = cudaMemcpyAsync( qdp_d(1,1,1,1,nt,ie) , elem(ie)%state%qdp(1,1,1,1,nt) , size(elem(ie)%state%qdp(:,:,:,:,nt)) , cudaMemcpyHostToDevice , streams(1) ); _CHECK(__LINE__)
+      ierr = cudaMemcpy( qdp_d(1,1,1,1,nt,ie) , elem(ie)%state%qdp(1,1,1,1,nt) , size(elem(ie)%state%qdp(:,:,:,:,nt)) , cudaMemcpyHostToDevice ); _CHECK(__LINE__)
     enddo
+    ierr = cudaThreadSynchronize()
+    call t_stopf('CUDA QDP H2D')
     !$OMP END MASTER
+    !$OMP BARRIER
   end subroutine copy_qdp_h2d
 
 
 
   subroutine copy_qdp_d2h( elem , nt )
     use element_mod, only: element_t
+    use perf_mod, only: t_startf, t_stopf
     implicit none
     type(element_t), intent(in   ) :: elem(:)
     integer        , intent(in   ) :: nt
     integer :: ierr , ie
+    !$OMP BARRIER
     !$OMP MASTER
+    ierr = cudaThreadSynchronize()
+    call t_startf('CUDA QDP D2H')
     do ie = 1,nelemd
       ierr = cudaMemcpy( elem(ie)%state%qdp(1,1,1,1,nt) , qdp_d(1,1,1,1,nt,ie) , size(elem(ie)%state%qdp(:,:,:,:,nt)) , cudaMemcpyDeviceToHost ); _CHECK(__LINE__)
     enddo
+    ierr = cudaThreadSynchronize()
+    call t_stopf('CUDA QDP D2H')
     !$OMP END MASTER
+    !$OMP BARRIER
   end subroutine copy_qdp_d2h
 
 
@@ -678,7 +631,7 @@ subroutine advance_hypervis_scalar_cuda( edgeAdv , elem , hvcoord , hybrid , der
   use edge_mod       , only : EdgeBuffer_t, edgevpack, edgevunpack
   use bndry_mod      , only : bndry_exchangev
   use perf_mod       , only : t_startf, t_stopf, t_barrierf
-  use control_mod    , only : rsplit, nu_q, hypervis_order, hypervis_subcycle_q
+  use control_mod    , only : rsplit, nu_q, hypervis_order, hypervis_subcycle_q , nu_p
   use parallel_mod   , only : iam
   implicit none
   type (EdgeBuffer_t)  , intent(inout)         :: edgeAdv
@@ -709,15 +662,18 @@ subroutine advance_hypervis_scalar_cuda( edgeAdv , elem , hvcoord , hybrid , der
     do ie = nets , nete
       do k = 1 , nlev
         dp_h(:,:,k,ie) = elem(ie)%derived%dp(:,:,k) - dt2*elem(ie)%derived%divdp_proj(:,:,k)
+        dpdiss_ave_h(:,:,k,ie) = elem(ie)%derived%dpdiss_ave(:,:,k)
       enddo
     enddo
 !$OMP BARRIER
 !$OMP MASTER
-    ierr = cudaMemcpyAsync( dp_d , dp_h , size( dp_h ) , cudaMemcpyHostToDevice , streams(1) ); _CHECK(__LINE__)
+    ierr = cudaMemcpyAsync( dpdiss_ave_d , dpdiss_ave_h , size( dpdiss_ave_h ) , cudaMemcpyHostToDevice , streams(1) ); _CHECK(__LINE__)
+    ierr = cudaMemcpyAsync( dp_d         , dp_h         , size( dp_h )         , cudaMemcpyHostToDevice , streams(1) ); _CHECK(__LINE__)
     !KERNEL 1
     blockdim = dim3( np     , np , nlev )
     griddim  = dim3( nelemd , 1  , 1    )
-    call hypervis_kernel1<<<griddim,blockdim,0,streams(1)>>>( qdp_d , qtens_d , dp_d , dinv_d , variable_hyperviscosity_d , spheremp_d , deriv_dvv_d , nets , nete , dt , nt_qdp ); _CHECK(__LINE__)
+    call hypervis_kernel1<<<griddim,blockdim,0,streams(1)>>>( qdp_d , qtens_d , dp_d , dinv_d , variable_hyperviscosity_d , dpdiss_ave_d , spheremp_d , &
+                                                              deriv_dvv_d , hyai_d , hybi_d , hvcoord%ps0 , nets , nete , dt , nt_qdp , nu_p ); _CHECK(__LINE__)
     ierr = cudaThreadSynchronize()
 
     call pack_exchange_unpack_stage(1,hybrid,qtens_d,1)
@@ -726,7 +682,7 @@ subroutine advance_hypervis_scalar_cuda( edgeAdv , elem , hvcoord , hybrid , der
     !KERNEL 2
     blockdim = dim3( np     , np , nlev )
     griddim  = dim3( nelemd , 1  , 1    )
-    call hypervis_kernel2<<<griddim,blockdim,0,streams(1)>>>( qdp_d , qtens_d , dp_d , dinv_d , variable_hyperviscosity_d , spheremp_d , rspheremp_d , deriv_dvv_d , hyai_d , hybi_d , hvcoord%ps0 , &
+    call hypervis_kernel2<<<griddim,blockdim,0,streams(1)>>>( qdp_d , qtens_d , dp_d , dinv_d , variable_hyperviscosity_d , spheremp_d , rspheremp_d , deriv_dvv_d , &
                                                               nu_q , nets , nete , dt , nt_qdp ); _CHECK(__LINE__)
     blockdim = dim3( np, np, nlev )
     griddim  = dim3( qsize_d, nelemd , 1 )
@@ -970,7 +926,7 @@ end subroutine euler_hypervis_kernel_last
 
 subroutine pack_exchange_unpack_stage(np1,hybrid,array_in,tl_in)
   use hybrid_mod, only : hybrid_t
-  use schedule_mod, only : schedule_t, schedule, cycle_t
+  use schedtype_mod, only : schedule_t, schedule, cycle_t
   use parallel_mod, only : abortmp, status, srequest, rrequest, mpireal_t, mpiinteger_t, iam
   use perf_mod, only: t_startf, t_stopf
   implicit none
@@ -1009,18 +965,18 @@ subroutine pack_exchange_unpack_stage(np1,hybrid,array_in,tl_in)
     griddim6  = dim3( qsize_d , recv_external_nelem , 1    )
     call edgeVpack_kernel_stage<<<griddim6,blockdim6,0,streams(1)>>>(edgebuf_d,array_in,putmapP_d,reverse_d,nbuf,0,1,nelemd,np1,recv_external_indices_d,tl_in); _CHECK(__LINE__)
   endif
+  do icycle = 1 , nSendCycles
+    pCycle => pSchedule%SendCycle(icycle)
+    iptr   =  pCycle%ptrP
+    ierr = cudaMemcpyAsync(sendbuf_h(1,1,icycle),edgebuf_d(1,iptr),size(sendbuf_h(1:nlyr,1:pCycle%lengthP,icycle)),cudaMemcpyDeviceToHost,streams(1)); _CHECK(__LINE__)
+  enddo
   if ( recv_internal_nelem > 0 ) then
     blockdim6 = dim3( np      , np     , nlev )
     griddim6  = dim3( qsize_d , recv_internal_nelem , 1    )
     call edgeVpack_kernel_stage<<<griddim6,blockdim6,0,streams(2)>>>(edgebuf_d,array_in,putmapP_d,reverse_d,nbuf,0,1,nelemd,np1,recv_internal_indices_d,tl_in); _CHECK(__LINE__)
     call edgeVunpack_kernel_stage<<<griddim6,blockdim6,0,streams(2)>>>(edgebuf_d,array_in,getmapP_d,nbuf,0,1,nelemd,np1,recv_internal_indices_d,tl_in); _CHECK(__LINE__)
   endif
-  do icycle = 1 , nSendCycles
-    pCycle => pSchedule%SendCycle(icycle)
-    iptr   =  pCycle%ptrP
-    ierr = cudaMemcpyAsync(sendbuf_h(1,1,icycle),edgebuf_d(1,iptr),size(sendbuf_h(1:nlyr,1:pCycle%lengthP,icycle)),cudaMemcpyDeviceToHost,streams(1)); _CHECK(__LINE__)
-  enddo
-  ierr = cudaThreadSynchronize()
+  ierr = cudaStreamSynchronize(streams(1))
   do icycle = 1 , nSendCycles
     pCycle => pSchedule%SendCycle(icycle)
     dest   =  pCycle%dest - 1
@@ -1030,13 +986,13 @@ subroutine pack_exchange_unpack_stage(np1,hybrid,array_in,tl_in)
     call MPI_Isend(sendbuf_h(1,1,icycle),length,MPIreal_t,dest,tag,hybrid%par%comm,Srequest(icycle),ierr)
   enddo
   call MPI_WaitAll(nRecvCycles,Rrequest,status,ierr)
-  call MPI_WaitAll(nSendCycles,Srequest,status,ierr)
   !When this cycle's MPI transfer is compliete, then call the D2H memcopy asynchronously
   do icycle = 1 , nRecvCycles
     pCycle => pSchedule%RecvCycle(icycle)
     iptr   =  pCycle%ptrP
     ierr = cudaMemcpyAsync(edgebuf_d(1,iptr),recvbuf_h(1,1,icycle),size(recvbuf_h(1:nlyr,1:pCycle%lengthP,icycle)),cudaMemcpyHostToDevice,streams(1)); _CHECK(__LINE__)
   enddo
+  call MPI_WaitAll(nSendCycles,Srequest,status,ierr)
   if ( recv_external_nelem > 0 ) then
     blockdim6 = dim3( np      , np                  , nlev )
     griddim6  = dim3( qsize_d , recv_external_nelem , 1    )
@@ -1328,21 +1284,25 @@ end subroutine edgeVunpack_kernel
 
 
 
-attributes(global) subroutine hypervis_kernel1( Qdp , qtens , dp , dinv , variable_hyperviscosity , spheremp , deriv_dvv , nets , nete , dt , nt )
+attributes(global) subroutine hypervis_kernel1( Qdp , qtens , dp , dinv , variable_hyperviscosity , dpdiss_ave , spheremp , deriv_dvv , hyai , hybi , ps0 , nets , nete , dt , nt , nu_p )
   implicit none
   real(kind=real_kind), dimension(np,np,nlev,qsize_d,timelevels,nets:nete), intent(in   ) :: Qdp
   real(kind=real_kind), dimension(np,np,nlev,qsize_d           ,nets:nete), intent(  out) :: Qtens
   real(kind=real_kind), dimension(np,np,nlev                   ,nets:nete), intent(in   ) :: dp
   real(kind=real_kind), dimension(np,np,4                      ,nets:nete), intent(in   ) :: dinv
   real(kind=real_kind), dimension(np,np                                  ), intent(in   ) :: deriv_dvv
+  real(kind=real_kind), dimension(      nlev+1                           ), intent(in   ) :: hyai
+  real(kind=real_kind), dimension(      nlev+1                           ), intent(in   ) :: hybi
   real(kind=real_kind), dimension(np,np                        ,nets:nete), intent(in   ) :: variable_hyperviscosity
+  real(kind=real_kind), dimension(np,np,nlev                   ,nets:nete), intent(in   ) :: dpdiss_ave
   real(kind=real_kind), dimension(np,np                        ,nets:nete), intent(in   ) :: spheremp
-  real(kind=real_kind), value                                             , intent(in   ) :: dt
+  real(kind=real_kind), value                                             , intent(in   ) :: dt , ps0 , nu_p
   integer, value                                                          , intent(in   ) :: nets , nete , nt
   real(kind=real_kind), dimension(np,np,2,nlev), shared :: s
   real(kind=real_kind), dimension(np,np,4  ), shared :: dinv_s
   real(kind=real_kind), dimension(np,np), shared :: variable_hyperviscosity_s
   real(kind=real_kind), dimension(np,np), shared :: spheremp_s
+  real(kind=real_kind) :: dp0
   integer :: i, j, k, q, ie, iz
   i  = threadidx%x
   j  = threadidx%y
@@ -1355,7 +1315,12 @@ attributes(global) subroutine hypervis_kernel1( Qdp , qtens , dp , dinv , variab
     spheremp_s(i,j) = spheremp(i,j,ie)
   endif
   do q = 1 , qsize_d
-    s(i,j,1,iz) = Qdp(i,j,k,q,nt,ie) / dp(i,j,k,ie)
+    if (nu_p>0) then
+      s(i,j,1,iz) = dpdiss_ave(i,j,k,ie) * Qdp(i,j,k,q,nt,ie) / dp(i,j,k,ie)
+    else
+      dp0 = ( ( hyai(k+1) - hyai(k) )*ps0 + ( hybi(k+1) - hybi(k) )*ps0 )
+      s(i,j,1,iz) = dp0 * Qdp(i,j,k,q,nt,ie) / dp(i,j,k,ie)
+    endif
     call syncthreads()
     qtens(i,j,k,q,ie) = laplace_sphere_wk(i,j,ie,iz,s,dinv_s,spheremp_s,variable_hyperviscosity_s,deriv_dvv,nets,nete)
   enddo
@@ -1363,26 +1328,23 @@ end subroutine hypervis_kernel1
 
 
 
-attributes(global) subroutine hypervis_kernel2( Qdp , qtens , dp , dinv , variable_hyperviscosity , spheremp , rspheremp , deriv_dvv , hyai , hybi , ps0 , nu_q , nets , nete , dt , nt )
+attributes(global) subroutine hypervis_kernel2( Qdp , qtens , dp , dinv , variable_hyperviscosity , spheremp , rspheremp , deriv_dvv , nu_q , nets , nete , dt , nt )
   implicit none
   real(kind=real_kind), dimension(np,np,nlev,qsize_d,timelevels,nets:nete), intent(inout) :: Qdp
   real(kind=real_kind), dimension(np,np,nlev,qsize_d           ,nets:nete), intent(in   ) :: Qtens
   real(kind=real_kind), dimension(np,np,nlev                   ,nets:nete), intent(in   ) :: dp
   real(kind=real_kind), dimension(np,np                                  ), intent(in   ) :: deriv_dvv
-  real(kind=real_kind), dimension(      nlev+1                           ), intent(in   ) :: hyai
-  real(kind=real_kind), dimension(      nlev+1                           ), intent(in   ) :: hybi
   real(kind=real_kind), dimension(np,np,4                      ,nets:nete), intent(in   ) :: dinv
   real(kind=real_kind), dimension(np,np                        ,nets:nete), intent(in   ) :: variable_hyperviscosity
   real(kind=real_kind), dimension(np,np                        ,nets:nete), intent(in   ) :: spheremp
   real(kind=real_kind), dimension(np,np                        ,nets:nete), intent(in   ) :: rspheremp
-  real(kind=real_kind), value                                             , intent(in   ) :: dt, ps0, nu_q
+  real(kind=real_kind), value                                             , intent(in   ) :: dt, nu_q
   integer, value                                                          , intent(in   ) :: nets , nete , nt
   real(kind=real_kind), dimension(np,np,2,nlev), shared :: s
   real(kind=real_kind), dimension(np,np,4  ), shared :: dinv_s
   real(kind=real_kind), dimension(np,np), shared :: variable_hyperviscosity_s
   real(kind=real_kind), dimension(np,np), shared :: spheremp_s
   real(kind=real_kind), dimension(np,np), shared :: rspheremp_s
-  real(kind=real_kind) :: dp0
   integer :: i, j, k, q, ie, iz
   i  = threadidx%x
   j  = threadidx%y
@@ -1396,11 +1358,10 @@ attributes(global) subroutine hypervis_kernel2( Qdp , qtens , dp , dinv , variab
     rspheremp_s(i,j) = rspheremp(i,j,ie)
   endif
   call syncthreads()
-  dp0 = dt*nu_q*( ( hyai(k+1) - hyai(k) )*ps0 + ( hybi(k+1) - hybi(k) )*ps0 )
   do q = 1 , qsize_d
     s(i,j,1,iz) = rspheremp_s(i,j)*qtens(i,j,k,q,ie)
     call syncthreads()
-    Qdp(i,j,k,q,nt,ie) = Qdp(i,j,k,q,nt,ie)*spheremp_s(i,j)-dp0*laplace_sphere_wk(i,j,ie,iz,s,dinv_s,spheremp_s,variable_hyperviscosity_s,deriv_dvv,nets,nete)
+    Qdp(i,j,k,q,nt,ie) = Qdp(i,j,k,q,nt,ie)*spheremp_s(i,j)-dt*nu_q*laplace_sphere_wk(i,j,ie,iz,s,dinv_s,spheremp_s,variable_hyperviscosity_s,deriv_dvv,nets,nete)
   enddo
 end subroutine hypervis_kernel2
 
@@ -1514,6 +1475,17 @@ subroutine vertical_remap_cuda(elem,fvm,hvcoord,dt,np1,np1_qdp,nets,nete)
         dp_star_h(:,:,k,ie) = elem(ie)%state%dp3d(:,:,k,np1)
       enddo
       if (minval(dp_star_h(:,:,:,ie))<0) call abortmp('negative layer thickness.  timestep or remap time too large')
+    endif
+  enddo
+!$OMP BARRIER
+!$OMP MASTER
+  do ie=1,nelemd
+    ! remap the tracers from lagrangian levels (dp_star)  to REF levels dp
+    if (qsize>0) call remap_Q_ppm_cuda(elem,np,qsize,dp_star_h(:,:,:,ie),dp_h(:,:,:,ie),np1_qdp,ie)
+  enddo
+!$OMP END MASTER
+  do ie=nets,nete
+    if (rsplit/=0) then
       ! remap the dynamics:  
 #undef REMAP_TE
 #ifdef REMAP_TE
@@ -1536,18 +1508,10 @@ subroutine vertical_remap_cuda(elem,fvm,hvcoord,dt,np1,np1_qdp,nets,nete)
 #endif
     endif
   enddo
-!$OMP BARRIER
 !$OMP MASTER
-  do ie=1,nelemd
-    ! remap the tracers from lagrangian levels (dp_star)  to REF levels dp
-    if (qsize>0) call remap_Q_ppm_cuda(elem,np,qsize,dp_star_h(:,:,:,ie),dp_h(:,:,:,ie),np1_qdp,ie)
-  enddo
   ierr = cudaThreadSynchronize()
 !$OMP END MASTER
 !$OMP BARRIER
-  do ie = nets , nete
-    elem(ie)%state%qdp(:,:,:,:,np1_qdp) = qdp_h(:,:,:,:,np1_qdp,ie)
-  enddo
   call t_stopf('vertical_remap_cuda')  
 end subroutine vertical_remap_cuda
 
@@ -1644,7 +1608,6 @@ subroutine remap_Q_ppm_cuda(elem,nx,qsize,dp1,dp2,np1_qdp,ie)
   ierr = cudaMemcpyAsync( kid_d(:,:,:,ie)     , kid_h(:,:,:,ie)     , size(kid_h(:,:,:,ie)    ) , cudaMemcpyHostToDevice , streams(ie) ); _CHECK(__LINE__)
   call remap_Q_ppm_cuda_kernel<<<griddim,blockdim,0,streams(ie)>>>( Qdp_d(:,:,:,:,np1_qdp,ie) , dpo_d(:,:,:,ie) , ppmdx_d(:,:,:,:,ie) , z1_d(:,:,:,ie) , z2_d(:,:,:,ie) , &
                                                                     kid_d(:,:,:,ie) , vert_remap_q_alg ); _CHECK(__LINE__)
-  ierr = cudaMemcpyAsync( qdp_h(:,:,:,:,np1_qdp,ie) , qdp_d(:,:,:,:,np1_qdp,ie) , size(elem(ie)%state%qdp(:,:,:,:,np1_qdp) ) , cudaMemcpyDeviceToHost , streams(ie) ); _CHECK(__LINE__)
   call t_stopf('remap_Q_ppm_cuda')
 end subroutine remap_Q_ppm_cuda
 

@@ -52,17 +52,17 @@ class  Block_Precon_Interface :
 		// Only ApplyInverse is non-trivial -- first 9 satisfied here in header
 
 		int SetUseTranspose(bool UseTranspose)
-		{ cerr<<"ERROR: No noxlocainterface::SetUseTranspose"<<endl; return -1;};
+		{ std::cerr<<"ERROR: No noxlocainterface::SetUseTranspose"<<std::endl; return -1;};
 		int ApplyInverse(const Epetra_MultiVector& X, Epetra_MultiVector& Y)const
-		{ cerr<<"ERROR: ApplyInverse"<<endl; return -1;};
+		{ std::cerr<<"ERROR: ApplyInverse"<<std::endl; return -1;};
 		int Apply(const Epetra_MultiVector& X, Epetra_MultiVector& Y) const;
-		double NormInf() const { cerr<<"norminf"<<endl; return 1.0;};
+		double NormInf() const { std::cerr<<"norminf"<<std::endl; return 1.0;};
 		const char* Label() const { return "noxlocainterface::user preconditioner";};
 		bool UseTranspose() const { return false;};
 		bool HasNormInf() const { return false;};
 		const Epetra_Comm& Comm() const {return comm;};
-		const Epetra_Map& OperatorDomainMap() const {cout<<"returning domain map"<<endl; return *globalMap;};
-		const Epetra_Map& OperatorRangeMap() const {cout<<"returning range map"<<endl; return *globalMap;};
+		const Epetra_Map& OperatorDomainMap() const {std::cout<<"returning domain map"<<std::endl; return *globalMap;};
+		const Epetra_Map& OperatorRangeMap() const {std::cout<<"returning range map"<<std::endl; return *globalMap;};
 
 	private:
 		int N;

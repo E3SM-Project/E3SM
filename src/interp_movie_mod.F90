@@ -454,8 +454,8 @@ contains
     use hybrid_mod, only : hybrid_t
     use pio, only : pio_setdebuglevel, pio_syncfile ! _EXTERNAL
 
-    use viscosity_mod, only : compute_zeta_C0, make_c0, compute_zeta_c0_2d,&
-                              compute_div_c0,compute_div_c0_2d
+    use viscosity_mod, only : compute_zeta_C0, make_c0, compute_zeta_c0_contra,&
+                              compute_div_c0,compute_div_c0_contra
     use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
     ! ---------------------    
     type (element_t),target    :: elem(:)
@@ -560,11 +560,11 @@ contains
                 if (hybrid%par%masterproc) print *,'writing zeta...'
                 allocate(datall(ncnt,nlev))
                 allocate(var3d(np,np,nlev,nets:nete))
-#if defined(_PRIM)
+#ifdef V_IS_LATLON
                 ! velocities are on sphere for primitive equations
                 call compute_zeta_C0(var3d,elem,hybrid,nets,nete,n0)
 #else
-                call compute_zeta_C0_2d(var3d,elem,hybrid,nets,nete,n0)
+                call compute_zeta_C0_contra(var3d,elem,hybrid,nets,nete,n0)
 #endif
                 st=1
                 do ie=nets,nete
@@ -581,11 +581,11 @@ contains
                 if (hybrid%par%masterproc) print *,'writing div...'
                 allocate(datall(ncnt,nlev))
                 allocate(var3d(np,np,nlev,nets:nete))
-#if defined(_PRIM)
+#ifdef V_IS_LATLON
                 ! velocities are on sphere for primitive equations
                 call compute_div_C0(var3d,elem,hybrid,nets,nete,n0)
 #else
-                call compute_div_C0_2d(var3d,elem,hybrid,nets,nete,n0)
+                call compute_div_C0_contra(var3d,elem,hybrid,nets,nete,n0)
 #endif
                 st=1
                 do ie=nets,nete

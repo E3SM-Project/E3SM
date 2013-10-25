@@ -34,28 +34,49 @@ echo using NCPU = $NCPU
 set NPTS = 4
 # CSLAM points points within each element:
 set NC = 4  
+set ne = 0 ; 
 
-set ne = 4 ; 
+set HOMME = ~/codes/homme  # path to HOMME code
+set MACH = $HOMME/cmake/machineFiles/redsky.cmake
+#set MACH = $HOMME/cmake/machineFiles/climate.cmake
+#set MACH = $HOMME/cmake/machineFiles/rhel5.cmake
+
+set input = $HOMME/test/template
+set output = jw_baroclinic1.nc
+
+set wdir = ~/scratch1
+mkdir $wdir/preqx
+mkdir $wdir/preqx/template
+mkdir $wdir/preqx/template/movies
+mkdir $wdir/preqx/vcoord
+set src = $wdir/preqx
+set wdir = $wdir/preqx/template
+
+set exe = preqx.template.nc$NC
+
+
 
 if ( $ne == 0 ) then
-    # unstructured grid from file
-    #set meshname = ARM_30_x8_s1.g
-    set meshname = ARM_30_x8.g
+#    set meshname = ARM_30_x8.g
+#    set meshfile=~/codes/mapping/grids/$meshname
+    set meshname = arm_30_x8_lowconn.g
     set meshfile=~/codes/mapping/grids/$meshname
 
-    set meshname = uniform_16.g
-    set meshfile=~/tmp/$meshname
+#    set meshname = mountain_10_x8.g
+#    set meshfile=$HOMME/test/mesh_refine/grids/mountain_10_x8.g
+#    set meshname = neale2_15_x8.g
+#    set meshfile=~/codes/mapping/grids/$meshname
+#    set meshname = ncar16_x8_lowconV2.g
+#    set meshfile=~/codes/mapping/grids/$meshname
 
     set nu = 1.1e12
     dtime=600 nsplit=19  qsplit=5   tstep=6.3
     set tstep = 6
-    set MESHREFINE = --enable-mesh-refine
     set hypervis_subcycle = 1
     set HYPERVIS_OPTS = 'hypervis_power=3.2  fine_ne=240 max_hypervis_courant=9991.9 qsplit=5'
 else
    # UNIFORM grids
    set HYPERVIS_OPTS = 
-   set MESHREFINE = 
    set tstep = 1  
    set nu = 0
    set hypervis_subcycle = 1
@@ -66,7 +87,7 @@ endif
 
 
 
-set name = template
+
 set nlev=20
 set qsize = 0
 
@@ -76,56 +97,22 @@ else
    set outnames = "'area','corners','phys_lat','phys_lon','phys_cv_lat','phys_cv_lon','phys_area','hypervis'"
 endif
 
-set src = ~/codes/homme/build/preqx
-set input = ~/codes/homme/test/template
-set mesh = ne${ne}-${NPTS}t${tstep}l${nlev}
-set output = jw_baroclinic1.nc
-
-set exe = preqx.template.nc$NC
-if ( $ne == 0 ) set exe = preqx.template.ne$ne.nc$NC
-
-
-# setup the work directory
-# NOTE: PIO + older Lustre (as on blackrose) will output only zeros!
-set wdir = ~/scratch1
-#set wdir = ~/scratch3
-
-mkdir $wdir/preqx
-mkdir $wdir/preqx/$name
-mkdir $wdir/preqx/$name/movies
-mkdir $wdir/preqx/vcoord
-rsync -a $src/../../test/vcoord/*ascii $wdir/preqx/vcoord
-
-set wdir = $wdir/preqx/$name
-
 
 cd $src
-set build = 1
-set make = 0
-#set make = 1 # for debugging - rebuild code every run but dont re-configure
-if ( -f $exe ) set build = 0
-
-
-if ( $build == 1  ) then
-  ./configure $MESHREFINE --enable-pio --enable-blas --enable-lapack --with-netcdf=$NETCDF_PATH \
-   --enable-cslam \
-    --with-pnetcdf=$PNETCDF_PATH NC=$NC NP=$NPTS PLEV=$nlev  
-  if ( $status ) exit
-  make -j4 depends
-  make clean
-  make -j4 preqx
-  mv preqx $exe
-exit
-endif
-if ( $make == 1 ) then
+if (!( -f $exe )) then
+    rm -rf CMakeFiles CMakeCache.txt
+    cmake -C $MACH -DPREQX_PLEV=$nlev -DPREQX_USE_PIO=TRUE  -DPREQX_NP=$NPTS -DPREQX_NC=$NC  $HOMME 
+    make -j4 clean
     make -j4 preqx
-    if ( $status ) exit
-    set exe = preqx
+    mv src/preqx/preqx $exe
+    exit
 endif
+
+make -j4 preqx
+if ( $status ) exit
+mv src/preqx/preqx $exe
 
 cd $wdir
-
-
 
 rm -f $wdir/input.nl
 sed s/NE/$ne/ $input/explicit20.nl.sed | sed s/TSTEP/$tstep/ |\
@@ -141,6 +128,8 @@ sed s:output_varnames1.\*:"output_varnames1=$outnames": \
 > $wdir/input.nl
 
 if ( $status ) exit
+
+rsync -a $HOMME/test/vcoord/*ascii $wdir/../vcoord
 
 set echo
 rm -Rf $wdir/movies/jw*
@@ -195,20 +184,19 @@ endif
 
 
 # make hypervisocity grid plot:
-ncl $input/plot_hypervis.ncl
-
-
-
-
-exit
-rm -f new.out
-ncdump ne${ne}np4.nc > new.out
-diff new.out  ne${ne}np4.nc.orig.out
-
-ncdump  ne$ne-4_latlon.nc > new.out
-diff new.out ne$ne-4_latlon.nc.orig.out
-
+# ncl $input/plot_hypervis.ncl
 
 
 exit
+
+set t1 = ${meshname}_latlon.nc
+set t2 = ${meshname}_scrip.nc
+
+rm -f $t1.out.new $t2.out.new
+ncdump $t1 > $t1.out.new
+diff  $t1.out.new $t1.out
+
+ncdump $t2 > $t2.out.new
+diff  $t2.out.new $t2.out
+
 

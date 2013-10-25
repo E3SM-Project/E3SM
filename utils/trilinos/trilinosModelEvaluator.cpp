@@ -12,7 +12,7 @@
 
 #include <BelosLinearProblem.hpp>
 #include <BelosBlockGmresSolMgr.hpp>
-#include <AztecOO.h>
+//#include <AztecOO.h>
 #include "precon_interface.hpp"
 #include "block_precon_interface.hpp"
 
@@ -26,7 +26,7 @@
 #include "BelosEpetraAdapter.hpp"
 #include "BelosBlockGmresSolMgr.hpp"
 
-#define DEBUG_PRINT_ON 
+//#define DEBUG_PRINT_ON 
 
 /*******************************************************************************/
 /*******************************************************************************/
@@ -108,6 +108,51 @@ trilinosModelEvaluator::trilinosModelEvaluator(int nelems, double* statevector,
                                                  precFunctionblock21_, precFunctionblock22_,
                                                  precUpdateFunction) );
 }
+
+
+
+//SIMPLE preconditioner:  SIMPLE_PREC_CLIP_ON
+trilinosModelEvaluator::trilinosModelEvaluator(int nelems, double* statevector,
+		const Epetra_Comm& comm_,
+		void* blackbox_res_, void* precdata_, void* jacdata_,
+		void (*residualFunction_)(double *, double *, int, void *),
+		void (*precFunctionblock11_)(double *, int, double*, void *),
+		void (*precFunctionblock12_)(double *, int, double*, int, void *),
+		void (*precFunctionblock21_)(double *, int, double*, int, void *),
+		void (*precFunctionblock22_)(double *, int, double*, void *),
+		void (*jacFunction_)(double *, int, double*, void *),
+		void (*precUpdateFunction_)(double *, int, void *),
+		void (*getJacVector_)(double *, int, void *),
+                const RCP<ParameterList>&  FSolvePL_,
+                const RCP<ParameterList>&  SchurSolvePL_,
+                int* FTotalIt_,
+                int* SchurTotalIt_
+		):
+	N(nelems),
+	comm(comm_),
+	blackbox_res(blackbox_res_),
+        precdata(precdata_),
+        jacdata(jacdata_),
+	residualFunction(residualFunction_),
+	jacFunction(jacFunction_),
+	precUpdateFunction(precUpdateFunction_),
+	getJacVector(getJacVector_)
+{ 
+
+  initialize(statevector);
+
+  precOp = Teuchos::rcp(new simpleClipPreconditioner(N, xVec, xMap, blackbox_res,
+                                                 precdata, 
+                                                 precFunctionblock11_, precFunctionblock12_,
+                                                 precFunctionblock21_, precFunctionblock22_,
+                                                 precUpdateFunction, FSolvePL_,SchurSolvePL_,FTotalIt_,SchurTotalIt_) );
+}
+
+
+
+
+
+
 
 /* This interface is just for testing... comparing two block preconditioner formulations */
 
@@ -207,6 +252,7 @@ void trilinosModelEvaluator::initialize(double* statevector)
     pMap = Teuchos::rcp(new Epetra_LocalMap(1, 0, comm));
     pVec = Teuchos::rcp(new Epetra_Vector(*pMap));
 
+
     if (comm.MyPID()==0) printproc=true;
     else                 printproc=false;
   }
@@ -305,12 +351,12 @@ void trilinosModelEvaluator::evalModel(const InArgs& inArgs, const OutArgs& outA
     // int ispert =0; if  (f.getType() == EpetraExt::ModelEvaluator::EVAL_TYPE_APPROX_DERIV) ispert=1;
 
     f->PutScalar(0.0);
-    //double nrm; x->Norm2(&nrm); cout << "EvalModel Norm x = " << nrm << endl;
+    //double nrm; x->Norm2(&nrm); std::cout << "EvalModel Norm x = " << nrm << std::endl;
     residualFunction(x->Values(), f->Values(), N, blackbox_res);
   }
 
   if (preconditionerRequested) {
-    precOp->computePreconditioner(x);
+    precOp->computePreconditioner(x,precdata);
   }
 }
 /*******************************************************************************/
@@ -328,10 +374,10 @@ identityPreconditioner::identityPreconditioner (
 {
   bool printproc = false;
   if (xVec->Comm().MyPID() == 0) printproc=true;
-  if (printproc) cout << "Constructing preconditioner:  identityPreconditioner" << endl;
+  if (printproc) std::cout << "Constructing preconditioner:  identityPreconditioner" << std::endl;
 }
 
-int identityPreconditioner::computePreconditioner(RCP<const Epetra_Vector> xVecNew)
+int identityPreconditioner::computePreconditioner(RCP<const Epetra_Vector> xVecNew, void* precdata_)
 {
   // Update state in preconditioner code
   precUpdateFunction(xVecNew->Values(), N, precdata);
@@ -370,16 +416,23 @@ simplePreconditioner::simplePreconditioner (
   if (comm.MyPID()==0) printproc=true;
   else                 printproc=false;
 
-  if (printproc) cout << "Constructing preconditioner:  simplePreconditioner" << endl;
+  if (printproc) std::cout << "Constructing preconditioner:  simplePreconditioner" << std::endl;
 
   F=Teuchos::rcp ( new Precon_Interface(N,xMap,comm,precdata,precFunctionblock11));
   S=Teuchos::rcp ( new Precon_Interface(N,xMap,comm,precdata,precFunctionblock22));
 }
 
-int simplePreconditioner::computePreconditioner(RCP<const Epetra_Vector> xVecNew)
+int simplePreconditioner::computePreconditioner(RCP<const Epetra_Vector> xVecNew, void* precdata_)
 {
-  // Update state in preconditioner code
-  precUpdateFunction(xVecNew->Values(), N, precdata);
+    precdata = precdata_;
+      // Update state in preconditioner code
+     precUpdateFunction(xVecNew->Values(), N, precdata);
+     const Epetra_Comm& comm = xVec->Comm();
+     F=Teuchos::rcp ( new Precon_Interface(N,xMap,comm,precdata,precFunctionblock11));
+     S=Teuchos::rcp ( new Precon_Interface(N,xMap,comm,precdata,precFunctionblock22));
+
+
+
 
   return 0;
 }
@@ -421,7 +474,7 @@ int simplePreconditioner::ApplyInverse(const Epetra_MultiVector& X, Epetra_Multi
 {
 
 #ifdef DEBUG_PRINT_ON
-          if (printproc) cout << "In ApplyInverse" << flush<<endl;
+          if (printproc) std::cout << "In ApplyInverse" << std::flush<<std::endl;
 #endif
 //X  RHS
 //Y=Ainv*X Solution
@@ -430,7 +483,7 @@ int numv= X.NumVectors();
 
 	double n8; X(0)->Norm2(&n8); 
 #ifdef DEBUG_PRINT_ON
-if(printproc) cout << "Norm of RHS="<<n8<<endl;
+if(printproc) std::cout << "Norm of RHS="<<n8<<std::endl;
 #endif
 
 
@@ -462,7 +515,7 @@ if(printproc) cout << "Norm of RHS="<<n8<<endl;
 
 
 #ifdef DEBUG_PRINT_ON
-if(printproc) cout << "Set Preonditioner Parameterlist"<<flush<<endl;
+if(printproc) std::cout << "Set Preonditioner Parameterlist"<<std::flush<<std::endl;
 #endif
 //tmp rhs malloc
 	Epetra_MultiVector B1(X);
@@ -471,7 +524,7 @@ if(printproc) cout << "Set Preonditioner Parameterlist"<<flush<<endl;
         for (int i=2*(N+1)/3;i<N; i++) B1[0][i] = 0.0;
 
 #ifdef DEBUG_PRINT_ON
-if(printproc) cout << "Initialized B1"<<flush<<endl;
+if(printproc) std::cout << "Initialized B1"<<std::flush<<std::endl;
 #endif
 
 
@@ -479,7 +532,7 @@ if(printproc) cout << "Initialized B1"<<flush<<endl;
 	Teuchos::RCP<const MV>Fb=Teuchos::rcp ( new MV(B1));
         double nfrhs; Fb->Norm2(&nfrhs);
 #ifdef DEBUG_PRINT_ON
-        if(printproc) cout << "normfrhs="<<nfrhs<<flush<<endl;
+        if(printproc) std::cout << "normfrhs="<<nfrhs<<std::flush<<std::endl;
 #endif
 
 //temp soln malloc
@@ -494,17 +547,17 @@ if(printproc) cout << "Initialized B1"<<flush<<endl;
         B1.Norm1(&sum);
 
 #ifdef DEBUG_PRINT_ON
-if(printproc) cout << "Set sum"<<flush<<endl;
+if(printproc) std::cout << "Set sum"<<std::flush<<std::endl;
 #endif
 
         if(sum<1.e-8){//if rhs is zero then don't solve
 #ifdef DEBUG_PRINT_ON
-          if(printproc)cout<<"rhs sum="<<sum<<" returning 0 solution "<<flush<<endl;
+          if(printproc)std::cout<<"rhs sum="<<sum<<" returning 0 solution "<<std::flush<<std::endl;
 #endif
          }
         else{
 #ifdef DEBUG_PRINT_ON
-          if(printproc)cout<<"rhs sum="<<sum<<"solving with GMRES"<<flush<<endl;
+          if(printproc)std::cout<<"rhs sum="<<sum<<"solving with GMRES"<<std::flush<<std::endl;
 #endif
          
 //temp soln rcp
@@ -523,10 +576,10 @@ if(printproc) cout << "Set sum"<<flush<<endl;
 #ifdef DEBUG_PRINT_ON
           if (printproc) {
             if (Fret == true) {
-             cout << "Belos F Linear Problem Set" << flush<<std::endl;
+             std::cout << "Belos F Linear Problem Set" << std::flush<<std::endl;
              } 
             else {
-             cout << "Error setting Belos F Linear Problem" << std::endl;
+             std::cout << "Error setting Belos F Linear Problem" << std::endl;
             }
           }
 
@@ -536,16 +589,16 @@ if(printproc) cout << "Set sum"<<flush<<endl;
 	  Belos::BlockGmresSolMgr<ST,MV,OP> FSolver( FProblem, rcp(&myPL,false) );
 
 #ifdef DEBUG_PRINT_ON
-          if(printproc) cout << "GMRES Solver Manager set"<<flush<<endl;
+          if(printproc) std::cout << "GMRES Solver Manager set"<<std::flush<<std::endl;
 #endif
           Belos::ReturnType FsolverRet = FSolver.solve();
 
 #ifdef DEBUG_PRINT_ON
 if (printproc) {
     if (FsolverRet == Belos::Converged) {
-      cout << "Belos F converged."<<flush << std::endl;
+      std::cout << "Belos F converged."<<std::flush << std::endl;
     } else {
-      cout << "Belos F did not converge." <<flush<< std::endl;
+      std::cout << "Belos F did not converge." <<std::flush<< std::endl;
     }
   }
 #endif
@@ -558,14 +611,14 @@ if (printproc) {
 Epetra_Vector tempx1a(*x1(0));
      double npva; tempx1a.Norm2(&npva);
 #ifdef DEBUG_PRINT_ON
-if(printproc) cout << "fsolnorm="<<npva<<endl;
+if(printproc) std::cout << "fsolnorm="<<npva<<std::endl;
 #endif
 
 //temp malloc
 Epetra_Vector tempy1a(*y1(0));
      double npya; tempy1a.Norm2(&npya);
 #ifdef DEBUG_PRINT_ON
-if(printproc) cout << "frhsnorm="<<npya<<endl;
+if(printproc) std::cout << "frhsnorm="<<npya<<std::endl;
 #endif
 
         }
@@ -587,7 +640,7 @@ if(printproc) cout << "frhsnorm="<<npya<<endl;
 
      double nB21; bx1.Norm2(&nB21);
 #ifdef DEBUG_PRINT_ON
-if(printproc) cout << "normB21="<<nB21<<endl;
+if(printproc) std::cout << "normB21="<<nB21<<std::endl;
 #endif
 
 // Then set Sproblos::RCP< Belos::LinearProblem<ST,MV,OP> > FProblem= Teuchos::rcp( new Belos::LinearProblem<ST,MV,OP>(F,x,b) );
@@ -605,7 +658,7 @@ if(printproc) cout << "normB21="<<nB21<<endl;
 
 	double nsa; b2(0)->Norm2(&nsa); 
 #ifdef DEBUG_PRINT_ON
-if(printproc) cout << "Norm of RHS Schur A="<<nsa<<endl;
+if(printproc) std::cout << "Norm of RHS Schur A="<<nsa<<std::endl;
 #endif
 
 
@@ -614,13 +667,13 @@ if(printproc) cout << "Norm of RHS Schur A="<<nsa<<endl;
 
 	double nsb; b2(0)->Norm2(&nsb); 
 #ifdef DEBUG_PRINT_ON
-if(printproc) cout << "Norm of RHS Schur B="<<nsb<<flush<<endl;
+if(printproc) std::cout << "Norm of RHS Schur B="<<nsb<<std::flush<<std::endl;
 #endif
 
 	Teuchos::RCP<const MV>Schurb=Teuchos::rcp ( new MV(b2));
 
 #ifdef DEBUG_PRINT_ON
-if(printproc) cout << "Schur rhs set="<<flush<<endl;
+if(printproc) std::cout << "Schur rhs set="<<std::flush<<std::endl;
 #endif
 
 //temp rcp
@@ -628,13 +681,13 @@ if(printproc) cout << "Schur rhs set="<<flush<<endl;
         //We initialized Y to zero and now have based Schurx on Y //Schurx.PutScalar(0.0);
 
 #ifdef DEBUG_PRINT_ON
-if(printproc) cout << "Schur solution initialized "<<flush<<endl;
+if(printproc) std::cout << "Schur solution initialized "<<std::flush<<std::endl;
 #endif
         Teuchos::RCP< Belos::LinearProblem<ST,MV,OP> > SchurProblem= Teuchos::rcp( new Belos::LinearProblem<ST,MV,OP>(S,Schurx,Schurb) );
 
 
 #ifdef DEBUG_PRINT_ON
-if(printproc) cout << "Schur Problem initialized"<<flush<<endl;
+if(printproc) std::cout << "Schur Problem initialized"<<std::flush<<std::endl;
 #endif
 
 
@@ -644,16 +697,16 @@ if(printproc) cout << "Schur Problem initialized"<<flush<<endl;
 #ifdef DEBUG_PRINT_ON
 if (printproc) {
     if (Sret == true) {
-      cout << "Belos S Linear Problem Set"<<flush<< std::endl;
+      std::cout << "Belos S Linear Problem Set"<<std::flush<< std::endl;
     } else {
-      cout << "Error setting Belos S Linear Problem" <<flush<< std::endl;
+      std::cout << "Error setting Belos S Linear Problem" <<std::flush<< std::endl;
     }
   }
 #endif
 
         Belos::BlockGmresSolMgr<ST,MV,OP> SchurSolver( SchurProblem, rcp(&myPL,false) );
 #ifdef DEBUG_PRINT_ON
-if(printproc) cout << "Schur GMRES Solver Set"<<flush<<endl;
+if(printproc) std::cout << "Schur GMRES Solver Set"<<std::flush<<std::endl;
 #endif
         Belos::ReturnType SchursolverRet = SchurSolver.solve();
 
@@ -662,9 +715,9 @@ if(printproc) cout << "Schur GMRES Solver Set"<<flush<<endl;
 #ifdef DEBUG_PRINT_ON
 if (printproc) {
     if (SchursolverRet == Belos::Converged) {
-      cout << "Belos Schur converged." <<flush<< std::endl;
+      std::cout << "Belos Schur converged." <<std::flush<< std::endl;
     } else {
-      cout << "Belos Schur did not converge." << flush<<std::endl;
+      std::cout << "Belos Schur did not converge." << std::flush<<std::endl;
     }
   }
 #endif
@@ -684,7 +737,7 @@ if (printproc) {
 
      double nBt; dFinvBt.Norm2(&nBt);
 #ifdef DEBUG_PRINT_ON
-if(printproc) cout << "normBt="<<nBt<<flush<<endl;
+if(printproc) std::cout << "normBt="<<nBt<<std::flush<<std::endl;
 #endif
 
 
@@ -722,12 +775,12 @@ double alphainv=1.0/alpha;
 
      double npvf; tempx1.Norm2(&npvf);
 #ifdef DEBUG_PRINT_ON
-if(printproc) cout << "Diagonal components"<<flush<<endl;
-if(printproc) cout << "factoredprecnormvec1="<<npvf<<flush<<endl;
+if(printproc) std::cout << "Diagonal components"<<std::flush<<std::endl;
+if(printproc) std::cout << "factoredprecnormvec1="<<npvf<<std::flush<<std::endl;
 #endif
 double npvs; tempx2.Norm2(&npvs);
 #ifdef DEBUG_PRINT_ON
-if(printproc) cout << "factoredprecnormvec2="<<npvs<<flush<<endl;
+if(printproc) std::cout << "factoredprecnormvec2="<<npvs<<std::flush<<std::endl;
 #endif
 
 
@@ -742,13 +795,355 @@ if(printproc) cout << "factoredprecnormvec2="<<npvs<<flush<<endl;
 
      double npv; tempx1.Norm2(&npv);
 #ifdef DEBUG_PRINT_ON
-if(printproc) cout << "factoredprecnorm="<<npv<<endl;
+if(printproc) std::cout << "factoredprecnorm="<<npv<<std::endl;
 #endif
 Y=tempx1;
 
 
 return 0;
 }
+
+
+
+
+
+
+/*******************************************************************************/
+/*******************************************************************************/
+/*******************************************************************************/
+simpleClipPreconditioner::simpleClipPreconditioner (
+       int N_, RCP<Epetra_Vector> xVec_, RCP<Epetra_Map> xMap_,
+       void* blackbox_res_, void* precdata_,
+       void (*precFunctionblock11_)(double *, int, double*, void *),
+       void (*precFunctionblock12_)(double *,int,double*,int, void *),
+       void (*precFunctionblock21_)(double *,int,double*,int, void *),
+       void (*precFunctionblock22_)(double *, int, double*, void *),
+       void (*precUpdateFunction_)(double *, int, void *),
+       const RCP<ParameterList>&  FSolvePL_,
+       const RCP<ParameterList>&  SchurSolvePL_,
+       int* FTotalIt_,
+       int* SchurTotalIt_
+       )
+       : hommePreconditionerBase(xMap_), //Required Base Class construction
+         N(N_), xVec(xVec_), xMap(xMap_),
+         blackbox_res(blackbox_res_), precdata(precdata_),
+         precFunctionblock11(precFunctionblock11_),
+         precFunctionblock12(precFunctionblock12_),
+         precFunctionblock21(precFunctionblock21_),
+         precFunctionblock22(precFunctionblock22_),
+         precUpdateFunction(precUpdateFunction_),
+	 FSolvePL(FSolvePL_),
+	 SchurSolvePL(SchurSolvePL_),
+	 FTotalIt(FTotalIt_),
+	 SchurTotalIt(SchurTotalIt_)
+{
+  const Epetra_Comm& comm = xVec->Comm();
+  if (comm.MyPID()==0) printproc=true;
+  else                 printproc=false;
+
+  if (printproc) std::cout << "Constructing preconditioner:  simpleClipPreconditioner" << std::endl;
+
+
+  UVMap = Teuchos::rcp(new Epetra_Map(-1, 2*N/3, 0, comm));
+  HMap = Teuchos::rcp(new Epetra_Map(-1, N/3, 0, comm));
+
+  bool zeroout=true;
+  workvector4 = Teuchos::rcp(new Epetra_Vector(*HMap,zeroout ));
+
+  dFinvBt = Teuchos::rcp(new Epetra_Vector(*UVMap,zeroout ));
+
+  bx1 = Teuchos::rcp(new Epetra_Vector(*HMap,zeroout ));
+
+  Fb= Teuchos::rcp(new Epetra_Vector(*UVMap,zeroout )); //uv workvector
+  Fx= Teuchos::rcp(new Epetra_Vector(*UVMap,zeroout )); //uv workvector
+
+  Schurb= Teuchos::rcp(new Epetra_Vector(*HMap,zeroout )); //h workvector
+  Schurx= Teuchos::rcp(new Epetra_Vector(*HMap,zeroout )); //h workvector
+ 
+  F=Teuchos::rcp ( new Precon_Interface(2*N/3,UVMap,comm,precdata,precFunctionblock11_));
+  S=Teuchos::rcp ( new Precon_Interface(N/3,HMap,comm,precdata,precFunctionblock22_));
+
+
+
+#ifdef DEBUG_PRINT_ON      
+       if(printproc) std::cout<<"F Solver Precon Parameters"<<std::endl;
+       if(printproc) std::cout<<"Block Size "<<FSolvePL->get<int>("Block Size")<<std::endl;
+       if(printproc) std::cout<<"Num Blocks "<<FSolvePL->get<int>("Num Blocks")<<std::endl;
+       if(printproc) std::cout<<"Maximum Iterations "<<FSolvePL->get<int>("Maximum Iterations")<<std::endl;
+       if(printproc) std::cout<<"Convergence Tolerance "<<FSolvePL->get<double>("Convergence Tolerance")<<std::endl;
+       if(printproc) std::cout<<"Output Frequency "<<FSolvePL->get<int>("Output Frequency")<<std::endl;
+
+       if(printproc) std::cout<<"Schur Solver Precon Parameters"<<std::endl;
+       if(printproc) std::cout<<"Block Size "<<SchurSolvePL->get<int>("Block Size")<<std::endl;
+       if(printproc) std::cout<<"Num Blocks "<<SchurSolvePL->get<int>("Num Blocks")<<std::endl;
+       if(printproc) std::cout<<"Maximum Iterations "<<SchurSolvePL->get<int>("Maximum Iterations")<<std::endl;
+       if(printproc) std::cout<<"Convergence Tolerance "<<SchurSolvePL->get<double>("Convergence Tolerance")<<std::endl;
+       if(printproc) std::cout<<"Output Frequency "<<SchurSolvePL->get<int>("Output Frequency")<<std::endl;
+#endif
+
+
+
+
+  FProblem= Teuchos::rcp( new Belos::LinearProblem<ST,MV,OP>(F,Fx,Fb) );
+  FSolver = Teuchos::rcp( new Belos::BlockGmresSolMgr<double,MV,OP>( FProblem, FSolvePL ) );
+  SchurProblem= Teuchos::rcp( new Belos::LinearProblem<ST,MV,OP>(S,Schurx,Schurb) );
+  SchurSolver = Teuchos::rcp( new Belos::BlockGmresSolMgr<double,MV,OP>( SchurProblem, SchurSolvePL ) );
+
+
+
+}
+
+int simpleClipPreconditioner::computePreconditioner(RCP<const Epetra_Vector> xVecNew, void* precdata_)
+{
+  precdata = precdata_;
+  // Update state in preconditioner code
+  precUpdateFunction(xVecNew->Values(), N, precdata);
+  const Epetra_Comm& comm = xVec->Comm();
+
+
+  F=Teuchos::rcp ( new Precon_Interface(2*N/3,UVMap,comm,precdata,precFunctionblock11));
+  S=Teuchos::rcp ( new Precon_Interface(N/3,HMap,comm,precdata,precFunctionblock22));
+
+  return 0;
+}
+
+
+int simpleClipPreconditioner::ApplyInverse(const Epetra_MultiVector& X, Epetra_MultiVector& Y) const
+{
+
+// const Epetra_Vector & x_v = dynamic_cast<const Epetra_Vector&> (X);
+
+#ifdef DEBUG_PRINT_ON
+          if (printproc) std::cout << "In ApplyInverse" << std::flush<<std::endl;
+#endif
+//X  RHS
+//Y=Ainv*X Solution
+
+int numv= X.NumVectors();
+
+	double n8; X(0)->Norm2(&n8); 
+#ifdef DEBUG_PRINT_ON
+if(printproc) std::cout << "Norm of RHS="<<n8<<std::endl;
+#endif
+
+       Y.PutScalar(0.0);
+
+#ifdef DEBUG_PRINT_ON
+if(printproc) std::cout << "Set Preconditioner Parameterlist"<<std::flush<<std::endl;
+#endif
+
+
+
+       Fb->PutScalar(0.0);
+
+
+        for (int i=0;i<2*(N+1)/3; i++) (*Fb)[i] = X[0][i];
+
+
+        double nfrhs; Fb->Norm2(&nfrhs);
+#ifdef DEBUG_PRINT_ON
+        if(printproc) std::cout << "normfrhs="<<nfrhs<<std::flush<<std::endl;
+#endif
+
+        double sum; Fb->Norm2(&sum);
+
+#ifdef DEBUG_PRINT_ON
+if(printproc) std::cout << "Set sum"<<std::flush<<std::endl;
+#endif
+
+        if(sum<1.e-8){//if rhs is zero then don't solve
+#ifdef DEBUG_PRINT_ON
+          if(printproc)std::cout<<"rhs sum="<<sum<<" returning 0 solution "<<std::flush<<std::endl;
+#endif
+         }
+        else{
+#ifdef DEBUG_PRINT_ON
+          if(printproc)std::cout<<"rhs sum="<<sum<<"solving with GMRES"<<std::flush<<std::endl;
+#endif
+         
+//temp soln rcp
+	 // Teuchos::RCP<MV>Fx=Teuchos::rcp ( new MV(Y));
+          Fx->PutScalar(0.0);
+          
+	  
+	  //We initialized Y to zero and now have based Fx on Y //Fx.PutScalar(0.0);
+
+// FProblem->reset( F,Fx,Fb );
+	  FProblem->setOperator( F);
+	  FProblem->setLHS( Fx);
+	  FProblem->setRHS( Fb);
+
+
+	  FSolver->reset( Belos::Problem );
+
+          Belos::ReturnType FSolverRet = FSolver->solve();
+
+#ifdef DEBUG_PRINT_ON
+if (printproc) {
+    if (FSolverRet == Belos::Converged) {
+      std::cout << "Belos F converged."<<std::flush << std::endl;
+    } else {
+      std::cout << "Belos F did not converge." <<std::flush<< std::endl;
+    }
+  }
+#endif
+
+	*FTotalIt+=FSolver->getNumIters();
+     double npva; Fx->Norm2(&npva);
+#ifdef DEBUG_PRINT_ON
+if(printproc) std::cout << "fsolnorm="<<npva<<std::endl;
+#endif
+
+        }//end FSolve
+
+
+// Next apply B to x1 and store in Bx1
+// We don't need to make B and DFinvBt Epetra Operators, only F and S, these other two can be applied directly as functions 
+
+//temp rhs malloc
+        bx1->PutScalar(0.0);
+
+        precFunctionblock21((*Fx).Values(),2*(N+1)/3, (*bx1).Values(),(N+1)/3, precdata);
+
+     double nB21; bx1->Norm2(&nB21);
+#ifdef DEBUG_PRINT_ON
+if(printproc) std::cout << "normB21="<<nB21<<std::endl;
+#endif
+
+        workvector4->PutScalar(0.0);
+        
+	for (int i=2*(N+1)/3;i<N;i++) (*workvector4)[i-2*(N+1)/3] = X[0][i];
+
+	double nsa; workvector4->Norm2(&nsa); 
+#ifdef DEBUG_PRINT_ON
+if(printproc) std::cout << "Norm of RHS Schur A="<<nsa<<std::endl;
+#endif
+        Schurb->PutScalar(0.0);
+        Schurx->PutScalar(0.0);
+
+   //for (int i=2*(N+1)/3; i<N; i++) (*Schurb)[i] = (*workvector4)[i]-(*bx1)[i]; // Lower block
+
+   for (int i=0; i<(N+1)/3; i++) (*Schurb)[i] = (*workvector4)[i]-(*bx1)[i]; // Lower block
+
+
+	double nsb; Schurb->Norm2(&nsb); 
+#ifdef DEBUG_PRINT_ON
+if(printproc) std::cout << "Norm of RHS Schur B="<<nsb<<std::flush<<std::endl;
+#endif
+
+
+#ifdef DEBUG_PRINT_ON
+if(printproc) std::cout << "Schur rhs set="<<std::flush<<std::endl;
+#endif
+
+
+#ifdef DEBUG_PRINT_ON
+if(printproc) std::cout << "Schur solution initialized "<<std::flush<<std::endl;
+#endif
+
+	  SchurProblem->setOperator( S);
+	  SchurProblem->setLHS( Schurx);
+	  SchurProblem->setRHS( Schurb);
+
+#ifdef DEBUG_PRINT_ON
+if(printproc) std::cout << "Schur Problem initialized"<<std::flush<<std::endl;
+#endif
+
+
+	bool Sret = SchurProblem->setProblem(); 
+
+
+#ifdef DEBUG_PRINT_ON
+if (printproc) {
+    if (Sret == true) {
+      std::cout << "Belos S Linear Problem Set"<<std::flush<< std::endl;
+    } else {
+      std::cout << "Error setting Belos S Linear Problem" <<std::flush<< std::endl;
+    }
+  }
+#endif
+
+	
+
+	  SchurSolver->reset( Belos::Problem );
+	  //SchurSolver->setProblem( SchurProblem );
+
+
+#ifdef DEBUG_PRINT_ON
+if(printproc) std::cout << "Schur GMRES Solver Set"<<std::flush<<std::endl;
+#endif
+        Belos::ReturnType SchursolverRet = SchurSolver->solve();
+
+#ifdef DEBUG_PRINT_ON
+if(printproc) std::cout << "Schur GMRES Solved "<<std::flush<<std::endl;
+#endif
+
+	*SchurTotalIt+=SchurSolver->getNumIters();
+
+#ifdef DEBUG_PRINT_ON
+if(printproc) std::cout << "SchurTotalIt="<<*SchurTotalIt<<std::flush<<std::endl;
+#endif
+
+#ifdef DEBUG_PRINT_ON
+if (printproc) {
+    if (SchursolverRet == Belos::Converged) {
+      std::cout << "Belos Schur converged." <<std::flush<< std::endl;
+    } else {
+      std::cout << "Belos Schur did not converge." << std::flush<<std::endl;
+    }
+  }
+#endif
+
+
+//Next apply dDinvBt to x1 and store in Bx1
+
+     //   Epetra_Vector dFinvBt(*Y(0));
+        dFinvBt->PutScalar(0.0);
+
+	precFunctionblock12((*Schurx).Values(),(N+1)/3, (*dFinvBt).Values(),2*(N+1)/3, precdata);
+
+     double nBt; dFinvBt->Norm2(&nBt);
+#ifdef DEBUG_PRINT_ON
+if(printproc) std::cout << "normBt="<<nBt<<std::flush<<std::endl;
+#endif
+
+
+
+
+double alpha=1.0;
+double alphainv=1.0/alpha;
+
+
+// for (int i=0; i<N; i++) tempx1[i] = (tempx1[i]) +(alphainv*tempx2[i]); //Diagonal Block Preconditioner
+  //  for (int i=0; i<N; i++) tempx1[i] = (tempx1[i]-alphainv*(*dFinvBt)[i]) +(alphainv*tempx2[i]); //Upper
+ //  for (int i=0; i<N; i++) tempx1[i] = (tempx1[i]-0.0*dFinvBt[i]) +(alphainv*tempx2[i]);//Diagonal and also DU
+//   for (int i=0; i<N; i++) tempx1[i] = tempx1[i]+(alphainv*tempx2[i]);//Diagonal and also DU
+
+    for (int i=0; i<2*(N+1)/3; i++) Y[0][i] = ((*Fx)[i]-alphainv*(*dFinvBt)[i]);
+	    
+    for (int i=2*(N+1)/3; i<N; i++) Y[0][i] = (alphainv*(*Schurx)[i-2*(N+1)/3]); 
+	    
+
+
+
+     double npv;Y.Norm2(&npv);
+#ifdef DEBUG_PRINT_ON
+if(printproc) std::cout << "factoredprecnorm="<<npv<<std::endl;
+#endif
+
+return 0;
+}
+
+
+
+
+
+
+
+
+
+
+
 /*******************************************************************************/
 /*******************************************************************************/
 /*******************************************************************************/

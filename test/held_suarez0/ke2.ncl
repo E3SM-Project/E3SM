@@ -1,6 +1,6 @@
-load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_code.ncl"
-load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_csm.ncl"
-load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/contributed.ncl"
+load "$NCARG_NCARG/nclscripts/csm/gsn_code.ncl"
+load "$NCARG_NCARG/nclscripts/csm/gsn_csm.ncl"
+load "$NCARG_NCARG/nclscripts/csm/contributed.ncl"
 ;
 ;  read spectra.nc  (computed from history output with ke.ncl)
 ;  plot from spectra.nc with ke2.ncl
@@ -38,7 +38,7 @@ begin
 
 ;fnames =  systemfunc("ls held_suarez0-nhu1.6e12-*.nc spectra_ape240.nc")
 ;fnames =  systemfunc("ls held_suarez0-nhu1.6e12-*.nc")
-fnames =  systemfunc("ls held_suarez0-nhu*-750.nc")
+fnames =  systemfunc("ls held_suarez0-nhu*-500.nc")
 avespc   = addfiles(fnames,"r")       ; Open netCDF files.	
 print("fnames = "+fnames)
 ;output_format = "ncgm"
@@ -59,7 +59,7 @@ legends=new( (/10/), "string")
 ;legends(2)=(/":F21:0.125:F34:0  :F21:750mb "/)
 
 xi=(/1,0,2/)
-  subtitle = "HS 750mb"
+  subtitle = "HS 500mb"
 legends(0)=(/":F21:0.125:F34:0  :F33:n:F21: = 5.0e11"/)
 legends(1)=(/":F21:0.125:F34:0  :F33:n:F21: = 1.6e12"/)
 legends(2)=(/":F21:0.125:F34:0  :F33:n:F21: = 5.0e12"/)
@@ -243,10 +243,12 @@ end do
 
 ;spc=spc/2
   plot  = gsn_xy (wks,x,spc,res) ; create plot
-;  res@xyDashPattern = 2
+
+  res@xyDashPattern = 2
+; DIV COMPONENT
 ;  plot  = gsn_xy (wks,x,spc_dv,res) ; create plot
 ; VORTICITY COMPONENT
-;  plot  = gsn_xy (wks,x,spc_vr,res) ; create plot
+  plot  = gsn_xy (wks,x,spc_vr,res) ; create plot
   res@xyDashPattern = 0
 
   xref = (/10.,300./)
@@ -259,7 +261,7 @@ end do
   ypos=6000.
   do fk=0,fcnt-1
     ypos = ypos/3
-    xx = (/15,25/)
+    xx = (/15.,25./)
     yy = (/ypos,ypos/)
     polyres@gsLineThicknessF = lthick
     polyres@gsLineColor = res@xyLineColors(fk)
@@ -296,33 +298,42 @@ end do
     frame(wks)                                     ; now advance 
   end if
 
-  spc2=spc
-  do n1=0,tmax-1
-    spc2(:,n1) = spc(:,n1)*(n1^(5./3.))
-  end do
-  res@tiYAxisString          = ":F21:Compensated Kinetic Energy"
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;  Compensatned 5/3 spectra
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  pexp=5./3.
   res@trYMinF = 1e0
   res@trYMaxF = 1e4
-  plot  = gsn_xy (wks,x,spc2,res) ; create plot
 
-  res@xyDashPattern = 2
+  spc2=spc
   do n1=0,tmax-1
-    spc2(:,n1) = spc_vr(:,n1)*(n1^(5./3.))
+    spc2(:,n1) = spc(:,n1)*(n1^pexp)
+  end do
+  res@tiYAxisString          = ":F21:Compensated Kinetic Energy"
+;  plot  = gsn_xy (wks,x,spc2,res) ; create plot
+
+
+  do n1=0,tmax-1
+    spc2(:,n1) = spc_vr(:,n1)*(n1^pexp)
   end do
 ; VORTICITY COMPONENT
-;  plot  = gsn_xy (wks,x,spc2,res) ; create plot
+;  res@xyDashPattern = 2
+  plot  = gsn_xy (wks,x,spc2,res) ; create plot
 
   do n1=0,tmax-1
-    spc2(:,n1) = spc_dv(:,n1)*(n1^(5./3.))
+    spc2(:,n1) = spc_dv(:,n1)*(n1^pexp)
   end do
 ; DIV COMPONENT
-;  plot  = gsn_xy (wks,x,spc2,res) ; create plot
+  res@xyDashPattern = 2
+  plot  = gsn_xy (wks,x,spc2,res) ; create plot
   res@xyDashPattern = 0
 
   ypos=10000.
   do fk=0,fcnt-1
     ypos = ypos/1.6
-    xx = (/15,25/)
+    xx = (/15.,25./)
     yy = (/ypos,ypos/)
     polyres@gsLineThicknessF = lthick
     polyres@gsLineColor = res@xyLineColors(fk)
@@ -341,13 +352,82 @@ end do
 
 
   xref = (/10.,70./)
-  spc_ref = (xref^(5./3.))*50*(xref/10)^(-3) ; make it 6 @ k=15
+  spc_ref = (xref^pexp)*50*(xref/10)^(-3) ; make it 6 @ k=15
   polyres@gsLineThicknessF = 2.0
   polyres@gsLineColor = "black"
   gsn_polyline(wks,plot,xref,spc_ref,polyres)              ; add polyline
 
   xref = (/90.,500./)
-  spc_ref = (xref^(5./3.))*3*(xref/10)^(-5./3.) ; make it 6 @ k=15
+  spc_ref = (xref^pexp)*3*(xref/10)^(-5./3.) ; make it 6 @ k=15
+  polyres@gsLineThicknessF = 2.0
+  polyres@gsLineColor = "black"
+  gsn_polyline(wks,plot,xref,spc_ref,polyres)              ; add polyline
+  frame(wks)                                     ; now advance 
+
+
+
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;  Compensatned 2/3 spectra
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  pexp=2./3.
+  res@trYMinF = 1e-2
+  res@trYMaxF = 1e2
+
+  spc2=spc
+  do n1=0,tmax-1
+    spc2(:,n1) = spc(:,n1)*(n1^pexp)
+  end do
+  res@tiYAxisString          = ":F21:Compensated Kinetic Energy"
+;  plot  = gsn_xy (wks,x,spc2,res) ; create plot
+
+
+  do n1=0,tmax-1
+    spc2(:,n1) = spc_vr(:,n1)*(n1^pexp)
+  end do
+; VORTICITY COMPONENT
+;  res@xyDashPattern = 2
+  plot  = gsn_xy (wks,x,spc2,res) ; create plot
+
+  do n1=0,tmax-1
+    spc2(:,n1) = spc_dv(:,n1)*(n1^pexp)
+  end do
+; DIV COMPONENT
+  res@xyDashPattern = 2
+  plot  = gsn_xy (wks,x,spc2,res) ; create plot
+  res@xyDashPattern = 0
+
+  ypos=100.
+  do fk=0,fcnt-1
+    ypos = ypos/1.6
+    xx = (/35.,55./)
+    yy = (/ypos,ypos/)
+    polyres@gsLineThicknessF = lthick
+    polyres@gsLineColor = res@xyLineColors(fk)
+    gsn_polyline(wks,plot,xx,yy,polyres)              ; add polyline
+    polytext = True
+    polytext@txFontHeightF      = 0.020                 ; change text size
+    polytext@txJust             = "CenterLeft"          ; text justification
+    gsn_text(wks,plot,legends(fk),60,ypos,polytext); add text
+    print(fk+" legend = "+legends(fk))
+  end do 
+  gsn_text(wks,plot,":F21:-3",55,8,polytext); add text
+  gsn_text(wks,plot,":F21:-2/3",250,.2,polytext); add text
+
+  polytext@txJust             = "BottomCenter"          ; text justification
+  gsn_text_ndc(wks,subtitle,.5,.805,polytext); add text
+
+
+  xref = (/20.,100./)
+  spc_ref = (xref^pexp)*30*(xref/10)^(-3) ; make it 6 @ k=15
+  polyres@gsLineThicknessF = 2.0
+  polyres@gsLineColor = "black"
+  gsn_polyline(wks,plot,xref,spc_ref,polyres)              ; add polyline
+
+  xref = (/20.,500./)
+  spc_ref = (xref^pexp)*.03*(xref/10)^(-2./3.) ; make it 6 @ k=15
   polyres@gsLineThicknessF = 2.0
   polyres@gsLineColor = "black"
   gsn_polyline(wks,plot,xref,spc_ref,polyres)              ; add polyline

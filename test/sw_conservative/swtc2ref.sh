@@ -14,7 +14,8 @@
 set wdir = ~/scratch1/swtc2
 set HOMME = ~/codes/homme
 #set MACH = $HOMME/cmake/machineFiles/redsky.cmake
-set MACH = $HOMME/cmake/machineFiles/darwin.cmake
+#set MACH = $HOMME/cmake/machineFiles/darwin.cmake
+set MACH = $HOMME/cmake/machineFiles/rhel5.cmake
 set src = $HOMME/build/sweqx
 set input = $HOMME/test/sw_conservative
 mkdir $wdir
@@ -121,6 +122,8 @@ mv -f swtc2.l1.errors  $name.l1.errors
 mv -f swtc2.l2.errors  $name.l2.errors
 mv -f swtc2.linf.errors  $name.linf.errors
 
-tail -1 $name.l*.errors
+echo "day,l1 error: "  `tail -1 $name.l1.errors`
+echo "day,l2 error: "  `tail -1 $name.l2.errors`
+echo "day,l8 error: "  `tail -1 $name.linf.errors`
 
 

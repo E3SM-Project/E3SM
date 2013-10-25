@@ -44,3 +44,12 @@
 
 /* Nested OpenMP (both horizontal and vertical) */
 #cmakedefine NESTED_OPENMP
+
+/* Zoltan partitioning library */
+#cmakedefine01 HAVE_ZOLTAN
+
+/* Enable persistent MPI comm */
+#cmakedefine MPI_PERSISTENT
+
+/* Using Accelerator */
+#cmakedefine IS_ACCELERATOR

@@ -66,7 +66,8 @@ contains
          tstep_type
     use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
     use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
-    use bndry_mod, only : compute_ghost_corner_orientation
+    use bndry_mod, only : compute_ghost_corner_orientation, &
+         sort_neighbor_buffer_mapping
     use checksum_mod, only : test_ghost
 
     use fvm_control_volume_mod, only : fvm_struct
@@ -196,7 +197,7 @@ contains
     call t_startf('sweq')
 
     hybrid = hybrid_create(par,ithr,NThreads)
-
+    simday=0
     if (topology == "cube") then
        call test_global_integral(elem,hybrid,nets,nete)
 
@@ -204,14 +205,12 @@ contains
        call print_cfl(elem,hybrid,nets,nete,dtnu)
 
        if (MeshUseMeshFile .EQV. .FALSE.) then
-          ! MNL: there are abort calls in edge_mod::ghostVpackfull that
-          !      require ne>0 / don't allow these calls when reading a
-          !      mesh from file
-          ! used by fvm:
-          !TODO: should fix these function for meshes
+          ! orientation code assumes only one corner element neighbor
+          ! orientation algorithm only works for cubed-sphere meshes
           call compute_ghost_corner_orientation(hybrid,elem,nets,nete)
           call test_ghost(hybrid,elem,nets,nete)
        endif
+       call sort_neighbor_buffer_mapping(hybrid,elem,nets,nete)
     end if
 
     if(Debug) print *,'homme: point #2'

@@ -29,7 +29,7 @@ Block_Precon_Interface::Block_Precon_Interface(int nelems,Teuchos::RCP<Epetra_Ma
 { 
   if (comm.MyPID()==0) printproc=true;
         else   printproc=false;
-//if(printproc)cout<<"mypid_precon="<<comm.MyPID()<<endl;
+//if(printproc)std::cout<<"mypid_precon="<<comm.MyPID()<<std::endl;
 }
 
 Block_Precon_Interface::Block_Precon_Interface(int nelems,Teuchos::RCP<Epetra_Map> gmap,const Epetra_Comm& comm_, void* precdata_, 
@@ -48,7 +48,7 @@ void (*precFunctionblock22_)(double *,int,double*,void *)):
 { 
   if (comm.MyPID()==0) printproc=true;
         else   printproc=false;
-//if(printproc)cout<<"mypid_precon="<<comm.MyPID()<<endl;
+//if(printproc)std::cout<<"mypid_precon="<<comm.MyPID()<<std::endl;
 }
 
 
@@ -61,22 +61,22 @@ int Precon_Interface::Apply(const Epetra_MultiVector &X,Epetra_MultiVector &Y)co
 
        Y.PutScalar(0.0);
 
-//if(printproc)cout<<"mypid_precon="<<comm.MyPID()<<endl;
+//if(printproc)std::cout<<"mypid_precon="<<comm.MyPID()<<std::endl;
 
 
 //double n0; X(0)->Norm2(&n0);
-//if(printproc) cout << "ApplyPrec Norm of x in="<<n0<<endl;
+//if(printproc) std::cout << "ApplyPrec Norm of x in="<<n0<<std::endl;
 
-// cout<<"Applying Preconditioning Operator"<<endl;
-//if (printproc) cout << "PX address in:  " << &X << "   PY address in:  " << &Y << endl;
+// std::cout<<"Applying Preconditioning Operator"<<std::endl;
+//if (printproc) std::cout << "PX address in:  " << &X << "   PY address in:  " << &Y << std::endl;
 //Y=X;
-//if (printproc) cout << "PX address out:  " << &X << "   PY address out:  " << &Y << endl;
+//if (printproc) std::cout << "PX address out:  " << &X << "   PY address out:  " << &Y << std::endl;
 
 //double n1; Y(0)->Norm2(&n1);
-//if(printproc) cout << "ApplyPrec Norm of y="<<n1<<endl;
+//if(printproc) std::cout << "ApplyPrec Norm of y="<<n1<<std::endl;
 
 //double n2; X(0)->Norm2(&n2);
-//if(printproc) cout << "ApplyPrec Norm of x out="<<n2<<endl;
+//if(printproc) std::cout << "ApplyPrec Norm of x out="<<n2<<std::endl;
 
 //       Y.PutScalar(0.0);
 

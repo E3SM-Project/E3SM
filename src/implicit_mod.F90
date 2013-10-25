@@ -108,35 +108,51 @@ contains
     nstep = tl%nstep
 
     comm = par%comm
-    call t_startf('implicit header')
-
 ! n+1 guess is result at n - need this to match up with time_mod bootstrap style
-       do ie=nets,nete
-             elem(ie)%state%v(:,:,1,:,np1)= elem(ie)%state%v(:,:,1,:,n0)
-             elem(ie)%state%v(:,:,2,:,np1)= elem(ie)%state%v(:,:,2,:,n0)
-             elem(ie)%state%p(:,:,:,np1)= elem(ie)%state%p(:,:,:,n0)
-       end do !ie
+     call t_startf('implicit header')
+     call t_startf('implicit_pre_noxsolve')
 
-       lx = 0
-       do n=1,nvar
-        do ie=nets,nete
-        do k=1,nlev
-          do j=1,np
-            do i=1,np
+!Moved conditionals out of do loops
+     lx = 0
+     do ie=nets,nete
+       do k=1,nlev
+         do j=1,np
+           do i=1,np
              lx = lx+1
-             if (n==1) xstate(lx) = elem(ie)%state%v(i,j,1,k,np1)
-             if (n==2) xstate(lx) = elem(ie)%state%v(i,j,2,k,np1)
-             if (n==3) xstate(lx) = elem(ie)%state%p(i,j,k,np1)
-!             write(6,*)'xs=',xstate(lx),''
-            end do  !np
-          end do  !np
-        end do  !nlev
-       end do !ie
-       end do !nvar
+             xstate(lx) = elem(ie)%state%v(i,j,1,k,n0)
+           end do  !np
+         end do  !np
+       end do  !nlev
+     end do !ie
 
-       pc_elem=elem
-       jac_elem=elem
+     do ie=nets,nete
+       do k=1,nlev
+         do j=1,np
+           do i=1,np
+             lx = lx+1
+             xstate(lx) = elem(ie)%state%v(i,j,2,k,n0)
+           end do  !np
+         end do  !np
+       end do  !nlev
+     end do !ie
 
+     do ie=nets,nete
+       do k=1,nlev
+         do j=1,np
+           do i=1,np
+             lx = lx+1
+             xstate(lx) = elem(ie)%state%p(i,j,k,n0)
+           end do  !np
+         end do  !np
+       end do  !nlev
+     end do !ie
+
+     call t_stopf('implicit_pre_noxsolve')
+
+     call t_startf('implicit_init')
+
+     pc_elem=elem
+     jac_elem=elem
 
     call initialize(state_object, lenx, elem, pmean, edge1,edge2,edge3, &
         hybrid, deriv, dt, tl, nets, nete)
@@ -159,56 +175,67 @@ contains
 
     jptr => ajac_object
     c_ptr_to_jac =  c_loc(jptr)
+    call t_stopf('implicit_init')
 
 ! ForTrilinos interface to use nox and loca, and returns xstate(n+1)
 
-   call noxsolve(size(xstate), xstate, c_ptr_to_object, c_ptr_to_pre,c_ptr_to_jac)
+    call t_startf('noxsolve')
+    call noxsolve(size(xstate), xstate, c_ptr_to_object, c_ptr_to_pre,c_ptr_to_jac)
+    call t_stopf('noxsolve')
+    call t_startf('implicit_post_noxsolve')
 
-       lx = 0
-       do n=1,nvar
-        do ie=nets,nete
+!Moved conditionals out of do loops
+      lx = 0
+      do ie=nets,nete
         do k=1,nlev
           do j=1,np
             do i=1,np
-             lx = lx+1
-             if (n==1) then 
-                elem(ie)%state%v(i,j,1,k,np1)=xstate(lx)
-                pc_elem(ie)%state%v(i,j,1,k,np1)=xstate(lx)
-                jac_elem(ie)%state%v(i,j,1,k,np1)=xstate(lx)
-             else if (n==2) then
-                elem(ie)%state%v(i,j,2,k,np1)=xstate(lx)
-                pc_elem(ie)%state%v(i,j,2,k,np1)=xstate(lx)
-                jac_elem(ie)%state%v(i,j,2,k,np1)=xstate(lx)
-             else if (n==3)then
-                elem(ie)%state%p(i,j,k,np1)=xstate(lx)
-                pc_elem(ie)%state%p(i,j,k,np1)=xstate(lx)
-                jac_elem(ie)%state%p(i,j,k,np1)=xstate(lx)
-             end if
+              lx = lx+1
+              elem(ie)%state%v(i,j,1,k,np1)=xstate(lx)
             end do  !np
           end do  !np
         end do  !nlev
-       end do !ie
-       end do !nvar
+      end do !ie
 
+      do ie=nets,nete
+        do k=1,nlev
+          do j=1,np
+            do i=1,np
+              lx = lx+1
+              elem(ie)%state%v(i,j,2,k,np1)=xstate(lx)
+            end do  !np
+          end do  !np
+        end do  !nlev
+      end do !ie
 
+      do ie=nets,nete
+        do k=1,nlev
+          do j=1,np
+            do i=1,np
+              lx = lx+1
+              elem(ie)%state%p(i,j,k,np1)=xstate(lx)
+            end do  !np
+          end do  !np
+        end do  !nlev
+      end do !ie
 
-!stopping after first nox solve for debugging
-!       stop
+     call t_stopf('implicit_post_noxsolve')
+
        ! ==========================================
        ! If SW test case 1, velocity is prescribed.
        ! reset v back to initial values
        ! ==========================================
 
        ! TODO update with vortex and swirl possibly using set_prescribed_velocity
-!       do ie=nets,nete
-!       if (topology == "cube" .and. test_case=="swtc1") then
-!          do k=1,nlev
-!             elem(ie)%state%v(:,:,:,k,np1)=tc1_velocity(elem(ie)%spherep,elem(ie)%Dinv)
-!             elem(ie)%state%v(:,:,:,k,n0 )=elem(ie)%state%v(:,:,:,k,np1)
-!             elem(ie)%state%v(:,:,:,k,nm1)=elem(ie)%state%v(:,:,:,k,np1)
-!          end do
-!       end if
-!       end do !ie
+       do ie=nets,nete
+       if (topology == "cube" .and. test_case=="swtc1") then
+          do k=1,nlev
+             elem(ie)%state%v(:,:,:,k,np1)=tc1_velocity(elem(ie)%spherep,elem(ie)%Dinv)
+             elem(ie)%state%v(:,:,:,k,n0 )=elem(ie)%state%v(:,:,:,k,np1)
+             elem(ie)%state%v(:,:,:,k,nm1)=elem(ie)%state%v(:,:,:,k,np1)
+          end do
+       end if
+       end do !ie
 
     call t_stopf('implicit header')
 
@@ -267,6 +294,7 @@ contains
     integer    :: lenx,lenp, lx
 
     call t_startf('FE implicit')
+    call t_startf('FE_implicit_init')
 
     call c_f_pointer(c_ptr_to_object,fptr) ! convert C ptr to F ptr
 
@@ -281,21 +309,44 @@ contains
     pmean      = fptr%pmean
     gam        = 0.5
 
-    lx = 0
-     do n=1,nvar
+!Moved conditionals out of do loops
+      lx = 0
       do ie=ns,ne
         do k=1,nlev
           do j=1,np
             do i=1,np
-             lx = lx+1
-             if (n==1) fptr%base(ie)%state%v(i,j,1,k,np1) = xstate(lx)
-             if (n==2) fptr%base(ie)%state%v(i,j,2,k,np1) = xstate(lx)
-             if (n==3) fptr%base(ie)%state%p(i,j,k,np1)  = xstate(lx)
+              lx = lx+1
+              fptr%base(ie)%state%v(i,j,1,k,np1) = xstate(lx)
             end do  !np
           end do  !np
         end do  !nlev
       end do !ie
-     end do !nvar
+
+      do ie=ns,ne
+        do k=1,nlev
+          do j=1,np
+            do i=1,np
+              lx = lx+1
+              fptr%base(ie)%state%v(i,j,2,k,np1) = xstate(lx)
+            end do  !np
+          end do  !np
+        end do  !nlev
+       end do !ie
+
+       do ie=ns,ne
+         do k=1,nlev
+           do j=1,np
+             do i=1,np
+               lx = lx+1
+               fptr%base(ie)%state%p(i,j,k,np1)  = xstate(lx)
+             end do  !np
+           end do  !np
+         end do  !nlev
+       end do !ie
+
+       call t_stopf('FE_implicit_init')
+
+       call t_startf('FE_implicit_KE_resid_calc')
 
     do ie=ns,ne
       do j=1,np
@@ -459,9 +510,26 @@ contains
        call edgeVpack(fptr%edge3, vtens(1,1,1,1,ie),2*nlev,kptr,fptr%base(ie)%desc)
    end do
 
+   !pw++
+   call t_stopf('FE_implicit_KE_resid_calc')
+   !pw--
+
    !$OMP BARRIER
-    call bndry_exchangeV(fptr%hybrid,fptr%edge3)
+   !pw++
+   call t_startf('FE_implicit_bndry_ex')
+   !pw--
    !$OMP BARRIER
+   call bndry_exchangeV(fptr%hybrid,fptr%edge3)
+   !$OMP BARRIER
+   !pw++
+   call t_stopf('FE_implicit_bndry_ex')
+   !pw--
+   !$OMP BARRIER
+
+   !pw++
+   call t_startf('FE_implicit_bndry_unpack')
+   !pw--
+   
 
     do ie=ns,ne
 
@@ -475,33 +543,91 @@ contains
        call edgeVunpack(fptr%edge3, vtens(1,1,1,1,ie), 2*nlev, kptr, fptr%base(ie)%desc)
 
      end do !ie
-       ! ===========================================================
-       ! Compute velocity and pressure tendencies for all levels
-       ! ===========================================================
-      lx = 0
-    do n=1,nvar
-    do ie=ns,ne
-      do k=1,nlev
-         do j=1,np
-            do i=1,np
-              lx = lx+1
-           if (topology == "cube" .and. test_case=="swtc1") then
-              if (n==1) fx(lx) = 0.0
-              if (n==2) fx(lx) = 0.0
-           else 
 
-              if(n==1) fx(lx)=fptr%base(ie)%rspheremp(i,j)*vtens(i,j,1,k,ie)
-              if(n==2) fx(lx)=fptr%base(ie)%rspheremp(i,j)*vtens(i,j,2,k,ie)
+         call t_stopf('FE_implicit_bndry_unpack')
 
-           end if
-              if (n==3) fx(lx) = fptr%base(ie)%rspheremp(i,j)*ptens(i,j,k,ie) 
-            end do
-          end do
-       end do
-     end do !ie
-     end do
+         ! ===========================================================
+         ! Compute velocity and pressure tendencies for all levels
+         ! ===========================================================
 
-    call t_stopf('FE implicit')
+         call t_startf('FE_implicit_vel_pres')
+ 
+
+!Moved conditionals out of do loops
+       lx = 0
+ if (topology == "cube" .and. test_case=="swtc1") then
+       do ie=ns,ne
+         do k=1,nlev
+           do j=1,np
+             do i=1,np
+               lx = lx+1
+               fx(lx) = 0.0
+             end do
+           end do
+         end do
+       end do !ie
+
+       do ie=ns,ne
+         do k=1,nlev
+           do j=1,np
+             do i=1,np
+               lx = lx+1
+               fx(lx) = 0.0
+             end do
+           end do
+         end do
+       end do !ie
+
+       do ie=ns,ne
+         do k=1,nlev
+           do j=1,np
+             do i=1,np
+               lx = lx+1
+               fx(lx) = fptr%base(ie)%rspheremp(i,j)*ptens(i,j,k,ie)
+             end do
+           end do
+         end do
+       end do !ie
+
+ else
+
+       do ie=ns,ne
+         do k=1,nlev
+           do j=1,np
+             do i=1,np
+               lx = lx+1
+               fx(lx)=fptr%base(ie)%rspheremp(i,j)*vtens(i,j,1,k,ie)
+             end do
+           end do
+         end do
+       end do !ie
+
+       do ie=ns,ne
+         do k=1,nlev
+           do j=1,np
+             do i=1,np
+               lx = lx+1
+               fx(lx)=fptr%base(ie)%rspheremp(i,j)*vtens(i,j,2,k,ie)
+             end do
+           end do
+         end do
+       end do !ie
+
+       do ie=ns,ne
+         do k=1,nlev
+           do j=1,np
+             do i=1,np
+               lx = lx+1
+               fx(lx) = fptr%base(ie)%rspheremp(i,j)*ptens(i,j,k,ie)
+             end do
+           end do
+         end do
+       end do !ie
+     end if
+
+     call t_stopf('FE_implicit_vel_pres')
+
+     call t_stopf('FE implicit')
 
   end subroutine residual
 
@@ -1890,28 +2016,6 @@ ptens=0.0d0
 
   end subroutine sw_picard_simple_op
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   subroutine sw_picard_op(xs, nelemd,fx, c_ptr_to_object) bind(C,name='sw_picard')
 
     use ,intrinsic :: iso_c_binding 
@@ -2175,43 +2279,34 @@ ptens=0.0d0
        kptr=nlev
        call edgeVunpack(fptr%edge3, vtens(1,1,1,1,ie), 2*nlev, kptr, fptr%base(ie)%desc)
 
-     end do !ie
+    end do !ie
       ! ===========================================================
        ! Compute velocity and pressure tendencies for all levels
        ! ===========================================================
 
-      lx = 0
+  lx = 0
 
-    do n=1,nvar
+  do n=1,nvar
     do ie=ns,ne
       do k=1,nlev
-         do j=1,np
-            do i=1,np
-              lx = lx+1
-           if (topology == "cube" .and. test_case=="swtc1") then
+        do j=1,np
+          do i=1,np
+            lx = lx+1
+            if (topology == "cube" .and. test_case=="swtc1") then
               if (n==1) fx(lx) = 0.0
               if (n==2) fx(lx) = 0.0
-              
-           else 
-
+            else 
               if(n==1) fx(lx)=fptr%base(ie)%rspheremp(i,j)*vtens(i,j,1,k,ie)
               if(n==2) fx(lx)=fptr%base(ie)%rspheremp(i,j)*vtens(i,j,2,k,ie)
-
-           end if
-              if (n==3) fx(lx) = fptr%base(ie)%rspheremp(i,j)*ptens(i,j,k,ie) 
-            end do
+            end if
+            if (n==3) fx(lx) = fptr%base(ie)%rspheremp(i,j)*ptens(i,j,k,ie) 
           end do
-       end do
-     end do !ie
-     end do
-
+        end do
+      end do
+    end do !ie
+  end do
 
   end subroutine sw_picard_op
-
-
-
-
-
 
   subroutine sw_picard_alphaschur_op(xs, nelemd,fx, c_ptr_to_object) bind(C,name='sw_picard_alphaschur')
 
@@ -2294,7 +2389,6 @@ alpha=1.0d0
 
 !    call t_startf('sw jacobian op')
 
-
     call c_f_pointer(c_ptr_to_object,fptr) ! convert C ptr to F ptr
 
 
@@ -2310,9 +2404,8 @@ alpha=1.0d0
     pmean      = fptr%pmean
     gam        = 0.5
 
-vtens=0.0d0
-ptens=0.0d0
-
+    vtens=0.0d0
+    ptens=0.0d0
 
     lx = 0
      do n=1,nvar
@@ -2330,9 +2423,7 @@ ptens=0.0d0
       end do !ie
      end do !nvar
 
-    do ie=ns,ne
-
-
+  do ie=ns,ne
 
       do j=1,np
        do i=1,np
@@ -2345,8 +2436,6 @@ ptens=0.0d0
        end do !np
       end do !np
 
-
-
      do k=1,nlev
 
      grade_n3 = gradient_sphere(fptr%base(ie)%state%p(:,:,k,np1),fptr%deriv,fptr%base(ie)%Dinv)  ! scalar -> latlon vector        (grad)del phi
@@ -2355,22 +2444,17 @@ ptens=0.0d0
           ! Compute residual terms
           ! ==============================================
 
-      do j=1,np
+     do j=1,np
         do i=1,np
-
 !vtens is in latlon coordinates
-
           vtens(i,j,1,k,ie)= spheremp(i,j)*( &
             grade_n3(i,j,1)) ! + d(delp)/dx
-
            vtens(i,j,2,k,ie)= spheremp(i,j)*( &
              grade_n3(i,j,2))!d(delp)/dy
+        end do !np
+      end do !np
 
-
-            end do !np
-          end do !np
-       end do !nlev
-
+     end do !nlev
 
       ! ===================================================
       ! Pack cube edges of tendencies, rotate velocities
@@ -2378,7 +2462,6 @@ ptens=0.0d0
        kptr=0
        call edgeVpack(fptr%edge2, vtens(1,1,1,1,ie),2*nlev,kptr,fptr%base(ie)%desc)
   end do !ie
-
 
    !$OMP BARRIER
     call bndry_exchangeV(fptr%hybrid,fptr%edge2)
@@ -2443,10 +2526,364 @@ ptens=0.0d0
      end do !ie
      end do
 
+  lx = 0
+     do n=1,nvar
+      do ie=ns,ne
+        do k=1,nlev
+          do j=1,np
+            do i=1,np
+             lx = lx+1
+             if (n==1) fptr%base(ie)%state%v(i,j,1,k,np1) = fxtemp(lx)
+             if (n==2) fptr%base(ie)%state%v(i,j,2,k,np1) = fxtemp(lx)
+            end do  !np
+          end do  !np
+        end do  !nlev
+      end do !ie
+     end do !nvar
+
+! we now need to apply B to vtens, as well as G to dh (a.k.a. fptr%base(ie)%state%p(:,:,k,np1), and sum these two quantities
+! now compute Gdp -BF_diag_inv(B'p) 
+!
+     do ie=ns,ne
+         do j=1,np
+           do i=1,np
+             spheremp(i,j)=fptr%base(ie)%spheremp(i,j)
+             rspheremp(i,j)=fptr%base(ie)%rspheremp(i,j)
+           end do !np
+         end do !np
+
+       do k=1,nlev
+!
+!         ! ==============================================
+!         ! Compute kinetic energy term at each time level
+!         ! ==============================================
+!
+         do j=1,np
+           do i=1,np
+! set u
+             ulatlon(i,j,1)       = fptr%base(ie)%state%v(i,j,1,k,n0)   ! 
+             ulatlon(i,j,2)       = fptr%base(ie)%state%v(i,j,2,k,n0)   !  
+! set du
+             up(i,j,1)      = fptr%base(ie)%state%v(i,j,1,k,np1)   ! 
+             up(i,j,2)      = fptr%base(ie)%state%v(i,j,2,k,np1)   !  
+
+             dh_n(i,j) = fptr%base(ie)%state%p(i,j,k,n0)+pmean +ps(i,j)
+             dh(i,j) = fptr%base(ie)%state%p(i,j,k,np1)
+
+             pv1(i,j,1) = up(i,j,1)
+             pv1(i,j,2) = 0.d00
+             pv2(i,j,1) = 0.d00
+             pv2(i,j,2) = up(i,j,2)
+
+             dpv(i,j,1) = ulatlon(i,j,1)*( fptr%base(ie)%state%p(i,j,k,np1) )  
+             dpv(i,j,2) = ulatlon(i,j,2)*( fptr%base(ie)%state%p(i,j,k,np1) )   
+
+        !  pv1(i,j,1) = vtens(i,j,1,k,ie)
+        !  pv1(i,j,2) = 0.d00
+!
+!          pv2(i,j,1) = 0.d00
+!          pv2(i,j,2) = vtens(i,j,2,k,ie)
+
+             dpv(i,j,1) = ulatlon(i,j,1)*( fptr%base(ie)%state%p(i,j,k,np1) )
+             dpv(i,j,2) = ulatlon(i,j,2)*( fptr%base(ie)%state%p(i,j,k,np1) )
+           end do !np
+         end do !np
+!! create operators for full residual calc
+!
+     divpv1 = divergence_sphere(pv1,fptr%deriv,fptr%base(ie)) ! latlon vector -> scalar 
+     divpv2 = divergence_sphere(pv2,fptr%deriv,fptr%base(ie)) ! latlon vector -> scalar 
+     divdpv = divergence_sphere(dpv,fptr%deriv,fptr%base(ie)) ! latlon vector -> scalar 
+
+          ! ==============================================
+          ! Compute residual terms
+          ! ==============================================
+
+      do j=1,np
+        do i=1,np
+
+         ptens(i,j,k,ie) = spheremp(i,j)*(&
+             !alpha*G
+             alpha*( &
+             dh(i,j)*dti+&                         !delp/dt
+             divdpv(i,j)) + &
+             !(1-alpha)*B(inv(diagF))B'
+             (1.0d0-alpha )*(  ( fptr%pmean + fptr%base(ie)%state%p(i,j,k,n0) )*&
+             (divpv1(i,j)+divpv2(i,j))))
+
+            end do !np
+          end do !np
+       end do !nlev
+
+!
+!      ! ===================================================
+      ! Pack cube edges of tendencies, rotate velocities
+      ! ===================================================
+       kptr=0
+       call edgeVpack(fptr%edge1, ptens(1,1,1,ie),nlev,kptr,fptr%base(ie)%desc)
+  end do !ie
+
+
+
+   !$OMP BARRIER
+    call bndry_exchangeV(fptr%hybrid,fptr%edge1)
+   !$OMP BARRIER
+
+
+     do ie=ns,ne
+
+       ! ===========================================================
+       ! Unpack the edges for vgradp and vtens
+       ! ===========================================================
+       kptr=0
+       call edgeVunpack(fptr%edge1, ptens(1,1,1,ie), nlev, kptr, fptr%base(ie)%desc)
+     end do !ie
+
+       ! ===========================================================
+       ! Compute velocity and pressure tendencies for all levels
+       ! ===========================================================
+
+      lx = 0
+
+    do n=1,nvar
+    do ie=ns,ne
+      do k=1,nlev
+         do j=1,np
+            do i=1,np
+              lx = lx+1
+              if (n==1) fx(lx) = 0.0d0
+              if (n==2) fx(lx) = 0.0d0
+              if (n==3) fx(lx) = fptr%base(ie)%rspheremp(i,j)*ptens(i,j,k,ie) 
+!              !if (n==3) fx(lx) = ptens(i,j,k,ie) 
+!              if (n==3) fx(lx) = 0.0d0
+            end do
+          end do
+       end do
+     end do !ie
+     end do
+!
+
+  end subroutine sw_picard_alphaschur_op
+
+
+  subroutine sw_picard_schur_op_clip(xs, nelemd,fx, c_ptr_to_object) bind(C,name='sw_picard_schur_clip')
+
+    use ,intrinsic :: iso_c_binding 
+    use kinds, only : real_kind
+    use dimensions_mod, only : np, nlev, nvar, nelem
+    use element_mod, only : element_t
+    use edge_mod, only : EdgeBuffer_t, edgevpack, edgerotate, edgevunpack
+    use hybrid_mod, only : hybrid_t
+    use derivative_mod, only : derivative_t, gradient_sphere, &
+          divergence_sphere, vorticity_sphere, divergence_sphere_wk
+    use time_mod, only : timelevel_t
+    use control_mod, only :  topology, test_case,tstep_type
+    use bndry_mod, only : bndry_exchangev
+    use derived_type_mod, only : derived_type
+    use perf_mod, only : t_startf, t_stopf
+    use physical_constants, only : g
+
+    implicit none
+!Aaron fix this after testing should be intent in
+    real (c_double)        :: xs(nelemd)
+    !real (c_double) ,intent(in)        :: xs(nelemd)
+!end fix
+    integer(c_int) ,intent(in) ,value  :: nelemd
+    real (c_double) ,intent(out)       :: fx(nelemd)
+    !real (c_double)       :: fxtemp(nelemd)
+    real (c_double)       :: fxtemp(2*nelemd)
+    type(derived_type) ,pointer        :: fptr=>NULL()
+    type(c_ptr)                        :: c_ptr_to_object
+    integer              :: ns
+    integer              :: ne
+
+    real (kind=real_kind), dimension(np,np) :: fcor,spheremp,rspheremp,ps,mv
+    real (kind=real_kind), dimension(np,np,2,nlev,nelem)  :: vtens
+    real (kind=real_kind), dimension(np,np,2,nlev,nelem)  :: vtens_n
+    real (kind=real_kind), dimension(np,np,2,nlev,nelem) :: diagf ! basic schur complement
+    real (kind=real_kind), dimension(np,np,2,nlev,nelem) :: diagf_n ! basic schur complement
+    real (kind=real_kind), dimension(np,np,nlev,nelem) :: ptens ! at t=n+1
+    real (kind=real_kind), dimension(np,np,nlev,nelem) :: ptens_n ! at t=n
+
+    real (kind=real_kind), dimension(np,np,2)  :: schur,schur_n 
+    real (kind=real_kind), dimension(np,np,2)  :: grade,grade_n1,grade_n2,grade_n3 ! strong KE gradient
+    real (kind=real_kind), dimension(np,np,2)  :: newton_grade,newton_grade_n1,newton_grade_n2,newton_grade_n3 ! strong KE gradient
+    real (kind=real_kind), dimension(np,np,2)  :: gradef,gradef_n ! strong KE gradient
+    real (kind=real_kind), dimension(np,np,2)  :: pv,pv_n     ! p*v lat-lon at t=n+1,n
+    real (kind=real_kind), dimension(np,np)    :: E,Ef,E_n,Ef_n       ! kinetic energy term
+    real (kind=real_kind), dimension(np,np)    :: dh,dh_n       ! kinetic energy term
+    real (kind=real_kind), dimension(np,np)    :: zeta,zeta_n ! relative vorticity
+    real (kind=real_kind), dimension(np,np)    :: newton_vortdelv1,newton_vortdelv2 ! relative vorticity
+    real (kind=real_kind), dimension(np,np)    :: zetaf,zetaf_n ! relative vorticity
+
+    real (kind=real_kind), dimension(np,np)    :: div,div_n   ! at t=n+1,n  
+    real (kind=real_kind), dimension(np,np)    :: divpv1,divpv2,divdpv
+    real (kind=real_kind), dimension(np,np)    :: div_h,div_hn   ! at t=n+1,n  
+    real (kind=real_kind), dimension(np,np,2)  :: ulatlon, up, um, utmpx, utmpy,uco,upco
+    real (kind=real_kind), dimension(np,np,2)  :: pv1,pv2,dpv,delv1,delv2
+    real (kind=real_kind), dimension(np,np,2,nlev,nelem)  :: dv
+    real (kind=real_kind), dimension(np,np,nlev,nelem)  :: dp
+
+    real (kind=real_kind) ::  v1, v2, v1p, v2p, v1m, v2m
+    real (kind=real_kind) ::  vtens1, vtens2
+    real (kind=real_kind) ::  dt,dti, pmean
+    real (kind=real_kind) ::  gam, usum1, usum2, psum, tot_nv
+
+    integer    :: i,j,k,n,ie
+    integer    :: kptr
+    integer    :: nm1,n0,np1
+    integer    :: nstep
+    integer    :: lenx,lenp, lx
+
+    call t_startf('Precon Schur')
+
+    call c_f_pointer(c_ptr_to_object,fptr) ! convert C ptr to F ptr
+
+    n0         = fptr%tl%n0
+    np1        = fptr%tl%np1
+    nm1        = fptr%tl%nm1
+    nstep      = fptr%tl%nstep
+    dti        = 1.0d0/fptr%dt
+    dt         = fptr%dt
+    lenx       = fptr%n 
+    ns         = fptr%nets 
+    ne         = fptr%nete 
+    pmean      = fptr%pmean
+    gam        = 0.5
+
+    if (tstep_type==12) then !crank nicholson
+            dti=2*dti !crank nicholson has a factor of 2 in the time step coefficient
+    endif
+
+vtens=0.0d0
+ptens=0.0d0
+
+    lx = 0
+!     do n=1,nvar
+      do ie=ns,ne
+        do k=1,nlev
+          do j=1,np
+            do i=1,np
+             lx = lx+1
+!             if (n==1) fptr%base(ie)%state%v(i,j,1,k,np1) = xs(lx)
+!             if (n==2) fptr%base(ie)%state%v(i,j,2,k,np1) = xs(lx)
+!             if (n==3) fptr%base(ie)%state%p(i,j,k,np1)  = xs(lx)!p =g*h in notes
+             fptr%base(ie)%state%p(i,j,k,np1)  = xs(lx)!p =g*h in notes
+            end do  !np
+          end do  !np
+        end do  !nlev
+      end do !ie
+!     end do !nvar
+
+    do ie=ns,ne
+
+
+
+      do j=1,np
+       do i=1,np
+        fcor(i,j)        = fptr%base(ie)%fcor(i,j)
+        mv(i,j)          = fptr%base(ie)%mp(i,j)
+        spheremp(i,j)    = fptr%base(ie)%spheremp(i,j)
+        rspheremp(i,j)   = fptr%base(ie)%rspheremp(i,j)
+        ps(i,j)          = fptr%base(ie)%state%ps(i,j)! surface height g*h_s in notes
+       end do !np
+      end do !np
+
+
+
+     do k=1,nlev
+
+     grade_n3 = gradient_sphere(fptr%base(ie)%state%p(:,:,k,np1),fptr%deriv,fptr%base(ie)%Dinv)  ! scalar -> latlon vector        (grad)del phi
+
+          ! ==============================================
+          ! Compute residual terms
+          ! ==============================================
+
+      do j=1,np
+        do i=1,np
+
+
+          vtens(i,j,1,k,ie)= spheremp(i,j)*( &
+            grade_n3(i,j,1)) ! + d(delp)/dx
+
+           vtens(i,j,2,k,ie)= spheremp(i,j)*( &
+             grade_n3(i,j,2))!d(delp)/dy
+
+
+            end do !np
+          end do !np
+       end do !nlev
+
+
+      ! ===================================================
+      ! Pack cube edges of tendencies, rotate velocities
+      ! ===================================================
+       kptr=0
+       call edgeVpack(fptr%edge2, vtens(1,1,1,1,ie),2*nlev,kptr,fptr%base(ie)%desc)
+  end do !ie
+
+
+   !$OMP BARRIER
+    call bndry_exchangeV(fptr%hybrid,fptr%edge2)
+   !$OMP BARRIER
+
+     do ie=ns,ne
+
+       ! ===========================================================
+       ! Unpack the edges for vgradp and vtens
+       ! ===========================================================
+       kptr=0
+       call edgeVunpack(fptr%edge2, vtens(1,1,1,1,ie), 2*nlev, kptr, fptr%base(ie)%desc)
+
+     end do !ie
+
+
+!!apply rspheremp
+!
+    do ie=ns,ne
+      do k=1,nlev
+         do j=1,np
+            do i=1,np
+                vtens(i,j,1,k,ie)=fptr%base(ie)%rspheremp(i,j)*vtens(i,j,1,k,ie)
+                vtens(i,j,2,k,ie)=fptr%base(ie)%rspheremp(i,j)*vtens(i,j,2,k,ie)
+            end do
+          end do
+       end do
+     end do !ie
+! end of Bt cal
+
+
+       ! ===========================================================
+       ! Compute velocity and pressure tendencies for all levels
+       ! ===========================================================
+!F_diag_inv(B'p) (B'p is in vtens and matches along element interfaces so F_diag_inv can be applied locally )
+
+!  ApplyFDiagInv 
+      lx = 0
+
+    do n=1,2
+    do ie=ns,ne
+      do k=1,nlev
+         do j=1,np
+            do i=1,np
+              lx = lx+1
+           if (topology == "cube" .and. test_case=="swtc1") then
+              if (n==1) fxtemp(lx) = 0.0
+              if (n==2) fxtemp(lx) = 0.0
+
+           else
+              if(n==1) fxtemp(lx)=dt*vtens(i,j,1,k,ie)
+              if(n==2) fxtemp(lx)=dt*vtens(i,j,2,k,ie)
+           end if
+            end do
+          end do
+       end do
+     end do !ie
+     end do
+
 
 
   lx = 0
-     do n=1,nvar
+     do n=1,2
       do ie=ns,ne
         do k=1,nlev
           do j=1,np
@@ -2507,11 +2944,6 @@ ptens=0.0d0
           dpv(i,j,1) = ulatlon(i,j,1)*( fptr%base(ie)%state%p(i,j,k,np1) )  
           dpv(i,j,2) = ulatlon(i,j,2)*( fptr%base(ie)%state%p(i,j,k,np1) )   
 
-        !  pv1(i,j,1) = vtens(i,j,1,k,ie)
-        !  pv1(i,j,2) = 0.d00
-!
-!          pv2(i,j,1) = 0.d00
-!          pv2(i,j,2) = vtens(i,j,2,k,ie)
 
           dpv(i,j,1) = ulatlon(i,j,1)*( fptr%base(ie)%state%p(i,j,k,np1) )
           dpv(i,j,2) = ulatlon(i,j,2)*( fptr%base(ie)%state%p(i,j,k,np1) )
@@ -2534,12 +2966,11 @@ ptens=0.0d0
         do i=1,np
 !
          ptens(i,j,k,ie) = spheremp(i,j)*(&
-             !alpha*G
-             alpha*( &
+             !G
              dh(i,j)*dti+&                         !delp/dt
-             divdpv(i,j)) + &
-             !(1-alpha)*B(inv(diagF))B'
-             (1.0d0-alpha )*(  ( fptr%pmean + fptr%base(ie)%state%p(i,j,k,n0) )*&
+             divdpv(i,j) - &
+             !-BdiagFinvB'
+             (  ( fptr%pmean + fptr%base(ie)%state%p(i,j,k,n0) )*&
              (divpv1(i,j)+divpv2(i,j))))
 
             end do !np
@@ -2576,7 +3007,7 @@ ptens=0.0d0
 
       lx = 0
 
-    do n=1,nvar
+!    do n=1,nvar
     do ie=ns,ne
       do k=1,nlev
          do j=1,np
@@ -2584,24 +3015,21 @@ ptens=0.0d0
               lx = lx+1
               
         
-              if (n==1) fx(lx) = 0.0d0
-              if (n==2) fx(lx) = 0.0d0
-              if (n==3) fx(lx) = fptr%base(ie)%rspheremp(i,j)*ptens(i,j,k,ie) 
-!              !if (n==3) fx(lx) = ptens(i,j,k,ie) 
-!              if (n==3) fx(lx) = 0.0d0
+!              if (n==1) fx(lx) = 0.0d0
+!              if (n==2) fx(lx) = 0.0d0
+              fx(lx) = fptr%base(ie)%rspheremp(i,j)*ptens(i,j,k,ie) 
             end do
           end do
        end do
      end do !ie
-     end do
+!     end do
 !
 
 
+    call t_stopf('Precon Schur')
 
 
-  end subroutine sw_picard_alphaschur_op
-
-
+  end subroutine sw_picard_schur_op_clip
 
 
 
@@ -3388,6 +3816,225 @@ ptens=0.0d0
 
   end subroutine sw_picard_FDFinvBt2_op
 
+
+ subroutine sw_picard_DFinvBt_op_clip(xs, nelemd,fx,nret, c_ptr_to_object) bind(C,name='sw_picard_DFinvBt_clip')
+
+    use ,intrinsic :: iso_c_binding 
+    use kinds, only : real_kind
+    use dimensions_mod, only : np, nlev, nvar, nelem
+    use element_mod, only : element_t
+    use edge_mod, only : EdgeBuffer_t, edgevpack, edgerotate, edgevunpack
+    use hybrid_mod, only : hybrid_t
+    use derivative_mod, only : derivative_t, gradient_sphere, &
+          divergence_sphere, vorticity_sphere, divergence_sphere_wk
+    use time_mod, only : timelevel_t
+    use control_mod, only :  topology, test_case
+    use bndry_mod, only : bndry_exchangev
+    use derived_type_mod, only : derived_type
+    use perf_mod, only : t_startf, t_stopf
+    use physical_constants, only : g
+
+    implicit none
+!Aaron fix this after testing should be intent in
+    real (c_double)        :: xs(nelemd)
+    !real (c_double) ,intent(in)        :: xs(nelemd)
+!end fix
+    integer(c_int) ,intent(in) ,value  :: nelemd
+    integer(c_int) ,intent(in) ,value  :: nret
+    real (c_double) ,intent(out)       :: fx(nret)
+    type(derived_type) ,pointer        :: fptr=>NULL()
+    type(c_ptr)                        :: c_ptr_to_object
+    integer              :: ns
+    integer              :: ne
+
+    real (kind=real_kind), dimension(np,np) :: fcor,spheremp,rspheremp,ps,mv
+    real (kind=real_kind), dimension(np,np,2,nlev,nelem)  :: vtens
+    real (kind=real_kind), dimension(np,np,2,nlev,nelem)  :: vtens_n
+    real (kind=real_kind), dimension(np,np,2,nlev,nelem) :: diagf ! basic schur complement
+    real (kind=real_kind), dimension(np,np,2,nlev,nelem) :: diagf_n ! basic schur complement
+    real (kind=real_kind), dimension(np,np,nlev,nelem) :: ptens ! at t=n+1
+    real (kind=real_kind), dimension(np,np,nlev,nelem) :: ptens_n ! at t=n
+
+    real (kind=real_kind), dimension(np,np,2)  :: schur,schur_n 
+    real (kind=real_kind), dimension(np,np,2)  :: grade,grade_n1,grade_n2,grade_n3 ! strong KE gradient
+    real (kind=real_kind), dimension(np,np,2)  :: newton_grade,newton_grade_n1,newton_grade_n2,newton_grade_n3 ! strong KE gradient
+    real (kind=real_kind), dimension(np,np,2)  :: gradef,gradef_n ! strong KE gradient
+    real (kind=real_kind), dimension(np,np,2)  :: pv,pv_n     ! p*v lat-lon at t=n+1,n
+    real (kind=real_kind), dimension(np,np)    :: E,Ef,E_n,Ef_n       ! kinetic energy term
+    real (kind=real_kind), dimension(np,np)    :: dh,dh_n       ! kinetic energy term
+    real (kind=real_kind), dimension(np,np)    :: zeta,zeta_n ! relative vorticity
+    real (kind=real_kind), dimension(np,np)    :: newton_vortdelv1,newton_vortdelv2 ! relative vorticity
+    real (kind=real_kind), dimension(np,np)    :: zetaf,zetaf_n ! relative vorticity
+
+    real (kind=real_kind), dimension(np,np)    :: div,div_n   ! at t=n+1,n  
+    real (kind=real_kind), dimension(np,np)    :: divpv1,divpv2,divdpv
+    real (kind=real_kind), dimension(np,np)    :: div_h,div_hn   ! at t=n+1,n  
+    real (kind=real_kind), dimension(np,np,2)  :: ulatlon, up, um, utmpx, utmpy,uco,upco
+    real (kind=real_kind), dimension(np,np,2)  :: pv1,pv2,dpv,delv1,delv2
+    real (kind=real_kind), dimension(np,np,2,nlev,nelem)  :: dv
+    real (kind=real_kind), dimension(np,np,nlev,nelem)  :: dp
+
+    real (kind=real_kind) ::  v1, v2, v1p, v2p, v1m, v2m
+    real (kind=real_kind) ::  vtens1, vtens2
+    real (kind=real_kind) ::  dt,dti, pmean
+    real (kind=real_kind) ::  gam, usum1, usum2, psum, tot_nv
+
+    integer    :: i,j,k,n,ie
+    integer    :: kptr
+    integer    :: nm1,n0,np1
+    integer    :: nstep
+    integer    :: lenx,lenp, lx
+
+    call t_startf('Precon DFinvBt_clip')
+
+
+    call c_f_pointer(c_ptr_to_object,fptr) ! convert C ptr to F ptr
+
+
+    n0         = fptr%tl%n0
+    np1        = fptr%tl%np1
+    nm1        = fptr%tl%nm1
+    nstep      = fptr%tl%nstep
+    dti        = 1.0d0/fptr%dt
+    dt         = fptr%dt
+    lenx       = fptr%n 
+    ns         = fptr%nets 
+    ne         = fptr%nete 
+    pmean      = fptr%pmean
+    gam        = 0.5
+
+vtens=0.0d0
+ptens=0.0d0
+
+
+    lx = 0
+!     do n=1,nvar
+      do ie=ns,ne
+        do k=1,nlev
+          do j=1,np
+            do i=1,np
+             lx = lx+1
+      !       if (n==1) fptr%base(ie)%state%v(i,j,1,k,np1) = xs(lx)
+      !       if (n==2) fptr%base(ie)%state%v(i,j,2,k,np1) = xs(lx)
+      !       if (n==3) fptr%base(ie)%state%p(i,j,k,np1)  = xs(lx)!p =g*h in notes
+             fptr%base(ie)%state%p(i,j,k,np1)  = xs(lx)!p =g*h in notes
+            end do  !np
+          end do  !np
+        end do  !nlev
+      end do !ie
+!     end do !nvar
+
+    do ie=ns,ne
+
+
+
+      do j=1,np
+       do i=1,np
+        fcor(i,j)        = fptr%base(ie)%fcor(i,j)
+        mv(i,j)          = fptr%base(ie)%mp(i,j)
+        spheremp(i,j)    = fptr%base(ie)%spheremp(i,j)
+        rspheremp(i,j)   = fptr%base(ie)%rspheremp(i,j)
+        ps(i,j)          = fptr%base(ie)%state%ps(i,j)! surface height g*h_s in notes
+       end do !np
+      end do !np
+
+
+
+     do k=1,nlev
+
+     grade_n3 = gradient_sphere(fptr%base(ie)%state%p(:,:,k,np1),fptr%deriv,fptr%base(ie)%Dinv)  ! scalar -> latlon vector        (grad)del phi
+
+          ! ==============================================
+          ! Compute residual terms
+          ! ==============================================
+
+      do j=1,np
+        do i=1,np
+
+
+          vtens(i,j,1,k,ie)= spheremp(i,j)*( &
+            grade_n3(i,j,1)) ! + d(delp)/dx
+
+           vtens(i,j,2,k,ie)= spheremp(i,j)*( &
+             grade_n3(i,j,2))!d(delp)/dy
+
+
+            end do !np
+          end do !np
+       end do !nlev
+
+
+      ! ===================================================
+      ! Pack cube edges of tendencies, rotate velocities
+      ! ===================================================
+       kptr=0
+       call edgeVpack(fptr%edge2, vtens(1,1,1,1,ie),2*nlev,kptr,fptr%base(ie)%desc)
+  end do !ie
+
+
+   !$OMP BARRIER
+    call bndry_exchangeV(fptr%hybrid,fptr%edge2)
+   !$OMP BARRIER
+
+     do ie=ns,ne
+
+       ! ===========================================================
+       ! Unpack the edges for vgradp and vtens
+       ! ===========================================================
+       kptr=0
+       call edgeVunpack(fptr%edge2, vtens(1,1,1,1,ie), 2*nlev, kptr, fptr%base(ie)%desc)
+
+     end do !ie
+
+
+!!apply rspheremp
+!
+    do ie=ns,ne
+      do k=1,nlev
+         do j=1,np
+            do i=1,np
+                vtens(i,j,1,k,ie)=fptr%base(ie)%rspheremp(i,j)*vtens(i,j,1,k,ie)
+                vtens(i,j,2,k,ie)=fptr%base(ie)%rspheremp(i,j)*vtens(i,j,2,k,ie)
+
+            end do
+          end do
+       end do
+     end do !ie
+! end of Bt cal
+
+
+       ! ===========================================================
+       ! Compute velocity and pressure tendencies for all levels
+       ! ===========================================================
+
+
+      lx = 0
+
+    do n=1,2
+    do ie=ns,ne
+      do k=1,nlev
+         do j=1,np
+            do i=1,np
+              lx = lx+1
+           if (topology == "cube" .and. test_case=="swtc1") then
+              if (n==1) fx(lx) = 0.0
+              if (n==2) fx(lx) = 0.0
+
+           else
+
+              if(n==1) fx(lx)=dt*vtens(i,j,1,k,ie)
+              if(n==2) fx(lx)=dt*vtens(i,j,2,k,ie)
+           end if
+
+            end do
+          end do
+       end do
+     end do !ie
+     end do
+
+    call t_stopf('Precon DFinvBt_clip')
+
+  end subroutine sw_picard_DFinvBt_op_clip
 
 
 
@@ -5181,6 +5828,257 @@ ptens=0.0d0
 
 
 
+ subroutine sw_picard_block_11_clip(xs, nelemd,fx, c_ptr_to_object) bind(C,name='sw_picard_block_11_clip')
+
+    use ,intrinsic :: iso_c_binding 
+    use kinds, only : real_kind
+    use dimensions_mod, only : np, nlev, nvar, nelem
+    use element_mod, only : element_t
+    use edge_mod, only : EdgeBuffer_t, edgevpack, edgerotate, edgevunpack
+    use hybrid_mod, only : hybrid_t
+    use derivative_mod, only : derivative_t, gradient_sphere, &
+          divergence_sphere, vorticity_sphere, divergence_sphere_wk
+    use time_mod, only : timelevel_t
+    use control_mod, only :  topology, test_case,tstep_type
+    use bndry_mod, only : bndry_exchangev
+    use derived_type_mod, only : derived_type
+    use perf_mod, only : t_startf, t_stopf
+    use physical_constants, only : g
+
+    implicit none
+!Aaron fix this after testing should be intent in
+    real (c_double)        :: xs(nelemd)
+    !real (c_double) ,intent(in)        :: xs(nelemd)
+!end fix
+    integer(c_int) ,intent(in) ,value  :: nelemd
+    real (c_double) ,intent(out)       :: fx(nelemd)
+    type(derived_type) ,pointer        :: fptr=>NULL()
+    type(c_ptr)                        :: c_ptr_to_object
+    integer              :: ns
+    integer              :: ne
+
+    real (kind=real_kind), dimension(np,np) :: fcor,spheremp,rspheremp,ps,mv
+    real (kind=real_kind), dimension(np,np,2,nlev,nelem)  :: vtens
+    real (kind=real_kind), dimension(np,np,2,nlev,nelem)  :: vtens_n
+    real (kind=real_kind), dimension(np,np,2,nlev,nelem) :: diagf ! basic schur complement
+    real (kind=real_kind), dimension(np,np,2,nlev,nelem) :: diagf_n ! basic schur complement
+    real (kind=real_kind), dimension(np,np,nlev,nelem) :: ptens ! at t=n+1
+    real (kind=real_kind), dimension(np,np,nlev,nelem) :: ptens_n ! at t=n
+
+    real (kind=real_kind), dimension(np,np,2)  :: schur,schur_n 
+    real (kind=real_kind), dimension(np,np,2)  :: grade,grade_n1,grade_n2,grade_n3 ! strong KE gradient
+    real (kind=real_kind), dimension(np,np,2)  :: newton_grade,newton_grade_n1,newton_grade_n2,newton_grade_n3 ! strong KE gradient
+    real (kind=real_kind), dimension(np,np,2)  :: gradef,gradef_n ! strong KE gradient
+    real (kind=real_kind), dimension(np,np,2)  :: pv,pv_n     ! p*v lat-lon at t=n+1,n
+    real (kind=real_kind), dimension(np,np)    :: E,Ef,E_n,Ef_n       ! kinetic energy term
+    real (kind=real_kind), dimension(np,np)    :: dh,dh_n       ! kinetic energy term
+    real (kind=real_kind), dimension(np,np)    :: zeta,zeta_n ! relative vorticity
+    real (kind=real_kind), dimension(np,np)    :: newton_vortdelv1,newton_vortdelv2 ! relative vorticity
+    real (kind=real_kind), dimension(np,np)    :: zetaf,zetaf_n ! relative vorticity
+
+    real (kind=real_kind), dimension(np,np)    :: div,div_n   ! at t=n+1,n  
+    real (kind=real_kind), dimension(np,np)    :: divpv1,divpv2,divdpv
+    real (kind=real_kind), dimension(np,np)    :: div_h,div_hn   ! at t=n+1,n  
+    real (kind=real_kind), dimension(np,np,2)  :: ulatlon, up, um, utmpx, utmpy,uco,upco
+    real (kind=real_kind), dimension(np,np,2)  :: pv1,pv2,dpv,delv1,delv2
+    real (kind=real_kind), dimension(np,np,2,nlev,nelem)  :: dv
+    real (kind=real_kind), dimension(np,np,nlev,nelem)  :: dp
+
+    real (kind=real_kind) ::  v1, v2, v1p, v2p, v1m, v2m
+    real (kind=real_kind) ::  vtens1, vtens2
+    real (kind=real_kind) ::  dti, pmean
+    real (kind=real_kind) ::  gam, usum1, usum2, psum, tot_nv
+
+    integer    :: i,j,k,n,ie
+    integer    :: kptr
+    integer    :: nm1,n0,np1
+    integer    :: nstep
+    integer    :: lenx,lenp, lx
+
+    call t_startf('precon 11')
+
+
+    call c_f_pointer(c_ptr_to_object,fptr) ! convert C ptr to F ptr
+
+
+    n0         = fptr%tl%n0
+    np1        = fptr%tl%np1
+    nm1        = fptr%tl%nm1
+    nstep      = fptr%tl%nstep
+    dti        = 1.0d0/fptr%dt
+    lenx       = fptr%n 
+    ns         = fptr%nets 
+    ne         = fptr%nete 
+    pmean      = fptr%pmean
+    gam        = 0.5
+    
+    if (tstep_type==12) then !crank nicholson
+
+            dti=2*dti !crank nicholson has a factor of 2 in the time step coefficient
+    endif
+
+
+vtens=0.0d0
+ptens=0.0d0
+
+
+    lx = 0
+     !do n=1,nvar
+     do n=1,2 !only need the u and v blocks
+      do ie=ns,ne
+        do k=1,nlev
+          do j=1,np
+            do i=1,np
+             lx = lx+1
+             if (n==1) fptr%base(ie)%state%v(i,j,1,k,np1) = xs(lx)
+             if (n==2) fptr%base(ie)%state%v(i,j,2,k,np1) = xs(lx)
+            ! if (n==3) fptr%base(ie)%state%p(i,j,k,np1)  = xs(lx)!p =g*h in notes
+            end do  !np
+          end do  !np
+        end do  !nlev
+      end do !ie
+     end do !nvar
+
+    do ie=ns,ne
+
+
+
+      do j=1,np
+       do i=1,np
+        fcor(i,j)        = fptr%base(ie)%fcor(i,j)
+        mv(i,j)          = fptr%base(ie)%mp(i,j)
+        spheremp(i,j)    = fptr%base(ie)%spheremp(i,j)
+        rspheremp(i,j)   = fptr%base(ie)%rspheremp(i,j)
+        ps(i,j)          = fptr%base(ie)%state%ps(i,j)! surface height g*h_s in notes
+       end do !np
+      end do !np
+
+
+
+     do k=1,nlev
+
+         ! ==============================================
+         ! Compute kinetic energy term at each time level
+         ! ==============================================
+
+      do j=1,np
+       do i=1,np
+
+! set u
+          ulatlon(i,j,1)       = fptr%base(ie)%state%v(i,j,1,k,n0)   ! 
+          ulatlon(i,j,2)       = fptr%base(ie)%state%v(i,j,2,k,n0)   !  
+! set du
+          up(i,j,1)      = fptr%base(ie)%state%v(i,j,1,k,np1)   ! 
+          up(i,j,2)      = fptr%base(ie)%state%v(i,j,2,k,np1)   !  
+
+
+          delv1(i,j,1)=up(i,j,1)
+          delv1(i,j,2)=0.0d0
+          delv2(i,j,1)=0.0d0
+          delv2(i,j,2)=up(i,j,2)
+
+
+       end do !np
+      end do !np
+
+! create operators for full residual calc
+
+     zeta_n = vorticity_sphere(ulatlon,fptr%deriv,fptr%base(ie)) ! latlon vector -> scalar  w
+     newton_vortdelv2 = vorticity_sphere(delv2,fptr%deriv,fptr%base(ie)) ! latlon vector -> scalar  w
+     newton_vortdelv1 = vorticity_sphere(delv1,fptr%deriv,fptr%base(ie)) ! latlon vector -> scalar  w
+
+
+
+          ! ==============================================
+          ! Compute residual terms
+          ! ==============================================
+
+      do j=1,np
+        do i=1,np
+
+!picard linearization of 11 block 
+!note this 11 block is representing a 2x2 system for up1 and up2 
+
+
+          vtens(i,j,1,k,ie)= spheremp(i,j)*( &
+            up(i,j,1)*dti - &                 !delv1/dt
+            ulatlon(i,j,2)*newton_vortdelv1(i,j)-& !u2*d(delv1)/dy & dx
+            up(i,j,2)*(zeta_n(i,j)+fcor(i,j))-& !delv2*(w+f)
+            ulatlon(i,j,2)*newton_vortdelv2(i,j)) !v2*d(delv2)/dx &dy
+
+           vtens(i,j,2,k,ie)= spheremp(i,j)*( &
+             up(i,j,1)*(zeta_n(i,j)+fcor(i,j))+& !delu1*(w+f)
+             ulatlon(i,j,1)*newton_vortdelv1(i,j)+&  !u1*d(delu1)/dx & dy
+             up(i,j,2)*dti +&                !delu2/dt
+             ulatlon(i,j,1)*newton_vortdelv2(i,j)) !u1*d(delu2)/dy & dx
+
+
+
+            end do !np
+          end do !np
+       end do !nlev
+
+
+      ! ===================================================
+      ! Pack cube edges of tendencies, rotate velocities
+      ! ===================================================
+       kptr=0
+       call edgeVpack(fptr%edge3, ptens(1,1,1,ie),nlev,kptr,fptr%base(ie)%desc)
+       kptr=nlev
+       call edgeVpack(fptr%edge3, vtens(1,1,1,1,ie),2*nlev,kptr,fptr%base(ie)%desc)
+  end do !ie
+
+
+   !$OMP BARRIER
+    call bndry_exchangeV(fptr%hybrid,fptr%edge3)
+   !$OMP BARRIER
+
+    do ie=ns,ne
+
+       ! ===========================================================
+       ! Unpack the edges for vgradp and vtens
+       ! ===========================================================
+       kptr=0
+       call edgeVunpack(fptr%edge3, ptens(1,1,1,ie), nlev, kptr, fptr%base(ie)%desc)
+       kptr=nlev
+       call edgeVunpack(fptr%edge3, vtens(1,1,1,1,ie), 2*nlev, kptr, fptr%base(ie)%desc)
+
+     end do !ie
+      ! ===========================================================
+       ! Compute velocity and pressure tendencies for all levels
+       ! ===========================================================
+
+      lx = 0
+
+    do n=1,2 !only u and v blocks
+    do ie=ns,ne
+      do k=1,nlev
+         do j=1,np
+            do i=1,np
+              lx = lx+1
+           if (topology == "cube" .and. test_case=="swtc1") then
+              if (n==1) fx(lx) = 0.0
+              if (n==2) fx(lx) = 0.0
+              
+           else 
+
+              if(n==1) fx(lx)=fptr%base(ie)%rspheremp(i,j)*vtens(i,j,1,k,ie)
+              if(n==2) fx(lx)=fptr%base(ie)%rspheremp(i,j)*vtens(i,j,2,k,ie)
+
+           end if
+            end do
+          end do
+       end do
+     end do !ie
+     end do
+
+
+    call t_stopf('precon 11')
+
+  end subroutine sw_picard_block_11_clip
+
+
+
 
 
 
@@ -5727,6 +6625,241 @@ ptens=0.0d0
 
 
   end subroutine sw_picard_block_12
+
+
+
+
+  subroutine sw_picard_block_21_clip(xs, nelemd,fx, nret, c_ptr_to_object) bind(C,name='sw_picard_block_21_clip')
+
+    use ,intrinsic :: iso_c_binding 
+    use kinds, only : real_kind
+    use dimensions_mod, only : np, nlev, nvar, nelem
+    use element_mod, only : element_t
+    use edge_mod, only : EdgeBuffer_t, edgevpack, edgerotate, edgevunpack
+    use hybrid_mod, only : hybrid_t
+    use derivative_mod, only : derivative_t, gradient_sphere, &
+          divergence_sphere, vorticity_sphere, divergence_sphere_wk
+    use time_mod, only : timelevel_t
+    use control_mod, only :  topology, test_case
+    use bndry_mod, only : bndry_exchangev
+    use derived_type_mod, only : derived_type
+    use perf_mod, only : t_startf, t_stopf
+    use physical_constants, only : g
+
+    implicit none
+!Aaron fix this after testing should be intent in
+    real (c_double) ,intent(in)        :: xs(nelemd)
+!end fix
+    integer(c_int) ,intent(in) ,value  :: nelemd
+    integer(c_int) ,intent(in) ,value  :: nret
+    real (c_double) ,intent(out)       :: fx(nret)
+    type(derived_type) ,pointer        :: fptr=>NULL()
+    type(c_ptr)                        :: c_ptr_to_object
+    integer              :: ns
+    integer              :: ne
+
+    real (kind=real_kind), dimension(np,np) :: fcor,spheremp,rspheremp,ps,mv
+    real (kind=real_kind), dimension(np,np,2,nlev,nelem)  :: vtens
+    real (kind=real_kind), dimension(np,np,2,nlev,nelem)  :: vtens_n
+    real (kind=real_kind), dimension(np,np,2,nlev,nelem) :: diagf ! basic schur complement
+    real (kind=real_kind), dimension(np,np,2,nlev,nelem) :: diagf_n ! basic schur complement
+    real (kind=real_kind), dimension(np,np,nlev,nelem) :: ptens ! at t=n+1
+    real (kind=real_kind), dimension(np,np,nlev,nelem) :: ptens_n ! at t=n
+
+    real (kind=real_kind), dimension(np,np,2)  :: schur,schur_n 
+    real (kind=real_kind), dimension(np,np,2)  :: grade,grade_n1,grade_n2,grade_n3 ! strong KE gradient
+    real (kind=real_kind), dimension(np,np,2)  :: newton_grade,newton_grade_n1,newton_grade_n2,newton_grade_n3 ! strong KE gradient
+    real (kind=real_kind), dimension(np,np,2)  :: gradef,gradef_n ! strong KE gradient
+    real (kind=real_kind), dimension(np,np,2)  :: pv,pv_n     ! p*v lat-lon at t=n+1,n
+    real (kind=real_kind), dimension(np,np)    :: E,Ef,E_n,Ef_n       ! kinetic energy term
+    real (kind=real_kind), dimension(np,np)    :: dh,dh_n       ! kinetic energy term
+    real (kind=real_kind), dimension(np,np)    :: zeta,zeta_n ! relative vorticity
+    real (kind=real_kind), dimension(np,np)    :: newton_vortdelv1,newton_vortdelv2 ! relative vorticity
+    real (kind=real_kind), dimension(np,np)    :: zetaf,zetaf_n ! relative vorticity
+
+    real (kind=real_kind), dimension(np,np)    :: div,div_n   ! at t=n+1,n  
+    real (kind=real_kind), dimension(np,np)    :: divpv1,divpv2,divdpv
+    real (kind=real_kind), dimension(np,np)    :: div_h,div_hn   ! at t=n+1,n  
+    real (kind=real_kind), dimension(np,np,2)  :: ulatlon, up, um, utmpx, utmpy,uco,upco
+    real (kind=real_kind), dimension(np,np,2)  :: pv1,pv2,dpv,delv1,delv2
+    real (kind=real_kind), dimension(np,np,2,nlev,nelem)  :: dv
+    real (kind=real_kind), dimension(np,np,nlev,nelem)  :: dp
+
+    real (kind=real_kind) ::  v1, v2, v1p, v2p, v1m, v2m
+    real (kind=real_kind) ::  vtens1, vtens2
+    real (kind=real_kind) ::  dti, pmean
+    real (kind=real_kind) ::  gam, usum1, usum2, psum, tot_nv
+
+    integer    :: i,j,k,n,ie
+    integer    :: kptr
+    integer    :: nm1,n0,np1
+    integer    :: nstep
+    integer    :: lenx,lenp, lx
+
+
+    call t_startf('picard 21_clip')
+
+
+    call c_f_pointer(c_ptr_to_object,fptr) ! convert C ptr to F ptr
+
+
+    n0         = fptr%tl%n0
+    np1        = fptr%tl%np1
+    nm1        = fptr%tl%nm1
+    nstep      = fptr%tl%nstep
+    dti        = 1.0d0/fptr%dt
+    lenx       = fptr%n 
+    ns         = fptr%nets 
+    ne         = fptr%nete 
+    pmean      = fptr%pmean
+    gam        = 0.5
+
+vtens=0.0d0
+ptens=0.0d0
+
+
+    lx = 0
+     do n=1,2
+      do ie=ns,ne
+        do k=1,nlev
+          do j=1,np
+            do i=1,np
+             lx = lx+1
+             if (n==1) fptr%base(ie)%state%v(i,j,1,k,np1) = xs(lx)
+             if (n==2) fptr%base(ie)%state%v(i,j,2,k,np1) = xs(lx)
+            end do  !np
+          end do  !np
+        end do  !nlev
+      end do !ie
+     end do !nvar
+
+    do ie=ns,ne
+
+
+
+      do j=1,np
+       do i=1,np
+        fcor(i,j)        = fptr%base(ie)%fcor(i,j)
+        mv(i,j)          = fptr%base(ie)%mp(i,j)
+        spheremp(i,j)    = fptr%base(ie)%spheremp(i,j)
+        rspheremp(i,j)   = fptr%base(ie)%rspheremp(i,j)
+        ps(i,j)          = fptr%base(ie)%state%ps(i,j)! surface height g*h_s in notes
+       end do !np
+      end do !np
+
+
+
+     do k=1,nlev
+
+         ! ==============================================
+         ! Compute kinetic energy term at each time level
+         ! ==============================================
+
+      do j=1,np
+       do i=1,np
+
+! set u
+          ulatlon(i,j,1)       = fptr%base(ie)%state%v(i,j,1,k,n0)   ! 
+          ulatlon(i,j,2)       = fptr%base(ie)%state%v(i,j,2,k,n0)   !  
+! set du
+          up(i,j,1)      = fptr%base(ie)%state%v(i,j,1,k,np1)   ! 
+          up(i,j,2)      = fptr%base(ie)%state%v(i,j,2,k,np1)   !  
+
+
+
+! set dh_n=p_notes=g(h+hmean)=phi
+!          dh_n(i,j) = fptr%base(ie)%state%p(i,j,k,n0)+pmean +ps(i,j)
+!          dh(i,j) = fptr%base(ie)%state%p(i,j,k,np1)
+
+
+          pv1(i,j,1) = up(i,j,1)
+          pv1(i,j,2) = 0.d00
+          pv2(i,j,1) = 0.d00
+          pv2(i,j,2) = up(i,j,2)
+
+
+       end do !np
+      end do !np
+
+! create operators for full residual calc
+
+     divpv1 = divergence_sphere(pv1,fptr%deriv,fptr%base(ie)) ! latlon vector -> scalar 
+     divpv2 = divergence_sphere(pv2,fptr%deriv,fptr%base(ie)) ! latlon vector -> scalar 
+
+          ! ==============================================
+          ! Compute residual terms
+          ! ==============================================
+
+      do j=1,np
+        do i=1,np
+
+         ptens(i,j,k,ie) = spheremp(i,j)*(&
+             ( fptr%pmean + fptr%base(ie)%state%p(i,j,k,n0) )*&
+             (divpv1(i,j)+divpv2(i,j)))
+
+
+            end do !np
+          end do !np
+       end do !nlev
+
+
+      ! ===================================================
+      ! Pack cube edges of tendencies, rotate velocities
+      ! ===================================================
+       kptr=0
+       call edgeVpack(fptr%edge3, ptens(1,1,1,ie),nlev,kptr,fptr%base(ie)%desc)
+!       kptr=nlev
+!       call edgeVpack(fptr%edge3, vtens(1,1,1,1,ie),2*nlev,kptr,fptr%base(ie)%desc)
+  end do !ie
+
+
+   !$OMP BARRIER
+    call bndry_exchangeV(fptr%hybrid,fptr%edge3)
+   !$OMP BARRIER
+
+    do ie=ns,ne
+
+       ! ===========================================================
+       ! Unpack the edges for vgradp and vtens
+       ! ===========================================================
+       kptr=0
+       call edgeVunpack(fptr%edge3, ptens(1,1,1,ie), nlev, kptr, fptr%base(ie)%desc)
+!       kptr=nlev
+!       call edgeVunpack(fptr%edge3, vtens(1,1,1,1,ie), 2*nlev, kptr, fptr%base(ie)%desc)
+
+     end do !ie
+      ! ===========================================================
+       ! Compute velocity and pressure tendencies for all levels
+       ! ===========================================================
+
+      lx = 0
+
+    do ie=ns,ne
+      do k=1,nlev
+         do j=1,np
+            do i=1,np
+              lx = lx+1
+!           if (topology == "cube" .and. test_case=="swtc1") then
+!              if (n==1) fx(lx) = 0.0
+!              if (n==2) fx(lx) = 0.0
+!              
+!           else 
+!
+!             if (n==1) fx(lx) = 0.0
+!             if (n==2) fx(lx) = 0.0
+!           end if
+              !if (n==3) fx(lx) = fptr%base(ie)%rspheremp(i,j)*ptens(i,j,k,ie) 
+               fx(lx) = fptr%base(ie)%rspheremp(i,j)*ptens(i,j,k,ie) 
+            end do
+          end do
+       end do
+     end do !ie
+
+    call t_stopf('picard 21_clip')
+
+  end subroutine sw_picard_block_21_clip
+
+
 
 
   subroutine sw_picard_block_21(xs, nelemd,fx, c_ptr_to_object) bind(C,name='sw_picard_block_21')

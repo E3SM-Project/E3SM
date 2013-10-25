@@ -44,7 +44,7 @@ contains
     ! begin code
     ! ===================
 
-    call initEdgeBuffer(edge,1)
+    call initEdgeBuffer(par,edge,1)
 
     ! =================================================
     ! mass matrix on the velocity grid

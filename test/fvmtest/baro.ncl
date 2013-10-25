@@ -1,6 +1,5 @@
-
-load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_code.ncl"
-load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_csm.ncl"
+load "$NCARG_NCARG/nclscripts/csm/gsn_code.ncl"
+load "$NCARG_NCARG/nclscripts/csm/gsn_csm.ncl"
 
 begin
   fname =  "movies/asp_baroclinic2.nc"
@@ -13,7 +12,7 @@ begin
   ; field = (/"C4", "C2", "C3", "C"/)
   ; field = (/"C4","C2","C3","C"/)
   ; field = (/"Q","Q2","Q3"/)
-  output_format = "ps"
+  output_format = "pdf"
 
 
   vcnt = getfiledimsizes(f)

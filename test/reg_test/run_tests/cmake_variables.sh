@@ -1,6 +1,5 @@
 # These variables are set by CMake
 HOMME_DIR=@Homme_Build_DIR@
-HOMME_TEST_RESULTS=@Homme_Results_DIR@
 
 # The location of the baseline results
 HOMME_BASELINE_DIR=@Homme_Baseline_DIR@
@@ -35,3 +34,5 @@ MPI_EXEC=@USE_MPIEXEC@
 # User defined MPI options
 MPI_OPTIONS="@USE_MPI_OPTIONS@"
 
+# User provided header for submission
+HOMME_Submission_Header=@SUBMISSION_HEADER@

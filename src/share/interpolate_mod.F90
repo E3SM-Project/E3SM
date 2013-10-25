@@ -27,6 +27,7 @@ module interpolate_mod
   logical   :: debug=.false.
 
   character(len=10), public :: vector_uvars(MAX_VECVARS), vector_vvars(MAX_VECVARS)
+  logical, public :: replace_vec_by_vordiv(MAX_VECVARS)
 
   type, public :: interpolate_t
      real (kind=real_kind), dimension(:,:), pointer :: Imat  ! P_k(xj)*wj/gamma(k)
@@ -64,11 +65,14 @@ module interpolate_mod
   public :: var_is_vector_uvar, var_is_vector_vvar
   public :: cube_facepoint_ne
   public :: cube_facepoint_unstructured
+  public :: parametric_coordinates
 
   public :: interpolate_tracers
   public :: minmax_tracers
   public :: interpolate_2d
   public :: interpolate_create
+  public :: point_inside_quad
+
 
 
   interface interpolate_scalar
@@ -693,15 +697,18 @@ subroutine interpol_spelt_latlon(interpdata,f, spelt,corners, flatlon)
 end subroutine interpol_spelt_latlon
 
 
-
-  function parametric_coordinates(sphere, elem) result (ref)
+  function parametric_coordinates(sphere, corners3D,corners,u2qmap,facenum) result (ref)
     implicit none
     type (spherical_polar_t), intent(in) :: sphere
-    type (element_t), intent(in) :: elem
     type (cartesian2D_t) :: ref
 
+    type (cartesian3D_t)   :: corners3D(4)  !x,y,z coords of element corners
+    type (cartesian2D_t),optional   :: corners(4)    ! gnomonic coords of element corners
+    real (kind=real_kind),optional  :: u2qmap(4,2)   
+    integer,optional  :: facenum
+
     ! local
-    integer               :: face_no, i, MAX_NR_ITER=10
+    integer               :: i, MAX_NR_ITER=10
     real(kind=real_kind)  :: D(2,2),Dinv(2,2),detD,a,b,resa,resb,dela,delb,costh
     real(kind=real_kind)  :: tol_sq=1e-26
     type (spherical_polar_t) :: sphere1, sphere_tmp
@@ -726,14 +733,14 @@ end subroutine interpol_spelt_latlon
     b=0
     i=0
     do
-       sphere1 = ref2sphere(a,b,elem)
+       sphere1 = ref2sphere(a,b,corners3D,corners,facenum)
        resa = sphere1%lon - sphere%lon
        if (resa>dd_pi) resa=resa-2*dd_pi
        if (resa<-dd_pi) resa=resa+2*dd_pi
 
        resb = sphere1%lat - sphere%lat 
 
-       call Dmap(D,elem,a,b)
+       call Dmap(D,a,b,corners3D,corners,u2qmap,facenum)
        detD = D(1,1)*D(2,2) - D(1,2)*D(2,1)      
        Dinv(1,1) =  D(2,2)/detD
        Dinv(1,2) = -D(1,2)/detD
@@ -841,6 +848,56 @@ end subroutine interpol_spelt_latlon
     inside=.true.
   end function point_inside_equiangular
 
+
+!
+! find if quad contains given point, with quad edges assumed to be great circle arcs
+! this will work with any map where straight lines are mapped to great circle arcs.
+! (thus it will fail on unstructured grids using the equi-angular gnomonic map)
+!
+  function point_inside_quad(corners_xyz, sphere_xyz) result(inside)
+    implicit none
+    type (cartesian3D_t),     intent(in)    :: sphere_xyz
+    type (cartesian3D_t)    , intent(in)    :: corners_xyz(4)
+    logical                              :: inside, inside2
+    integer               :: i,j,ii
+    type (cartesian2D_t) :: corners(4),sphere_xy,cart
+    type (cartesian3D_t) :: center,a,b,cross(4)
+    real (kind=real_kind) :: yp(4), y, elem_diam,dotprod
+    real (kind=real_kind) :: xp(4), x
+    real (kind=real_kind) :: d1,d2, tol_inside = 1e-12
+
+    type (spherical_polar_t)   :: sphere  ! debug
+
+    inside = .false.
+
+    ! first check if point is near the corners:
+    elem_diam = max( distance(corners_xyz(1),corners_xyz(3)), &
+         distance(corners_xyz(2),corners_xyz(4)) )
+
+    center%x = sum(corners_xyz(1:4)%x)/4
+    center%y = sum(corners_xyz(1:4)%y)/4
+    center%z = sum(corners_xyz(1:4)%z)/4
+    if ( distance(center,sphere_xyz) > 1.0*elem_diam ) return
+
+    j = 4
+    do i=1,4
+      ! outward normal to plane containing j->i edge:  corner(i) x corner(j)
+      ! sphere dot (corner(i) x corner(j) ) = negative if inside
+       cross(i)%x =  corners_xyz(i)%y*corners_xyz(j)%z - corners_xyz(i)%z*corners_xyz(j)%y
+       cross(i)%y =-(corners_xyz(i)%x*corners_xyz(j)%z - corners_xyz(i)%z*corners_xyz(j)%x)
+       cross(i)%z =  corners_xyz(i)%x*corners_xyz(j)%y - corners_xyz(i)%y*corners_xyz(j)%x
+       dotprod = cross(i)%x*sphere_xyz%x + cross(i)%y*sphere_xyz%y +&
+               cross(i)%z*sphere_xyz%z
+       j = i  ! within this loopk j = i-1
+
+       ! dot product is proportional to elem_diam. positive means outside,
+       ! but allow machine precision tolorence: 
+       if (dotprod > tol_inside*elem_diam) return 
+       !if (dotprod > 0) return 
+    end do
+    inside=.true.
+    return
+  end function point_inside_quad
 
 !
 ! find element containing given point, with element edges assumed to be great circle arcs
@@ -1051,7 +1108,8 @@ end subroutine interpol_spelt_latlon
 
        if (found) then
           number = ii
-          cart = parametric_coordinates(sphere, elem(ii))
+          cart = parametric_coordinates(sphere, elem(ii)%corners3D,&
+               elem(ii)%corners,elem(ii)%u2qmap,elem(ii)%facenum)
           exit
        end if
     end do
@@ -1262,7 +1320,7 @@ end subroutine interpol_spelt_latlon
           if (ii /= -1) then
              ! compute error: map 'cart' back to sphere and compare with original
              ! interpolation point:
-             sphere2_xyz = spherical_to_cart( ref2sphere(cart%x,cart%y,elem(ii)))
+             sphere2_xyz = spherical_to_cart( ref2sphere(cart%x,cart%y,elem(ii)%corners3D,elem(ii)%corners,elem(ii)%facenum ))
              sphere_xyz = spherical_to_cart(sphere)
              err=max(err,distance(sphere2_xyz,sphere_xyz))
           endif
@@ -1626,7 +1684,8 @@ end subroutine interpolate_ce
     endif
     do i=1,interpdata%n_interp
        ! convert fld from contra->latlon
-       call dmap(D,elem,interpdata%interp_xy(i)%x,interpdata%interp_xy(i)%y)
+       call dmap(D,interpdata%interp_xy(i)%x,interpdata%interp_xy(i)%y,&
+            elem%corners3D,elem%corners,elem%u2qmap,elem%facenum)
        ! convert fld from contra->latlon
        v1 = fld(i,1)
        v2 = fld(i,2)
@@ -1720,7 +1779,8 @@ end subroutine interpolate_ce
 
     do i=1,interpdata%n_interp
        ! compute D(:,:) at the point elem%interp_cube(i)
-       call dmap(D,elem,interpdata%interp_xy(i)%x,interpdata%interp_xy(i)%y)
+       call dmap(D,interpdata%interp_xy(i)%x,interpdata%interp_xy(i)%y,&
+            elem%corners3D,elem%corners,elem%u2qmap,elem%facenum)
        do k=1,nlev
           ! convert fld from contra->latlon
           v1 = fld(i,k,1)

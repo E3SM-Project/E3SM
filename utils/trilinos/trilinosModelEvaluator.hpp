@@ -15,9 +15,22 @@
 #include "LOCA_Epetra.H"
 #include <NOX_Abstract_PrePostOperator.H>
 
+
+#include "BelosLinearProblem.hpp"
+#include "BelosConfigDefs.hpp"
+#include "BelosEpetraAdapter.hpp"
+#include "BelosBlockGmresSolMgr.hpp" 
+
+
 using Teuchos::RCP;
+using Teuchos::ParameterList;
+typedef double ST;
+typedef Epetra_MultiVector MV;
+typedef Epetra_Operator OP;
 typedef void (*residFnPtr)(double *, double *, int, void *);
+
 class hommePreconditionerBase;
+
 
 
 class trilinosModelEvaluator : public EpetraExt::ModelEvaluator {
@@ -51,6 +64,24 @@ public:
         void (*jacFunction)(double *,int,double*,void *),
         void (*precUpdateFunction)(double *,int,void *),
         void (*getJacVector)(double *, int, void *));
+
+
+  trilinosModelEvaluator(int nelems, double* statevector_,
+        const Epetra_Comm& comm_,
+        void* blackbox_res, void* precdata,void * jacdata,
+        void (*residualFunction)(double *, double *, int, void *),
+        void (*precFunctionblock11)(double *,int,double*,void *),
+        void (*precFunctionblock12)(double *,int,double*,int, void *),
+        void (*precFunctionblock21)(double *,int,double*,int, void *),
+        void (*precFunctionblock22)(double *,int,double*,void *),
+        void (*jacFunction)(double *,int,double*,void *),
+        void (*precUpdateFunction)(double *,int,void *),
+        void (*getJacVector)(double *, int, void *),
+        const RCP<ParameterList>&  FSolvePL_, 
+        const RCP<ParameterList>&  SchurSolvePL_, 
+        int *FTotalIt, 
+        int *SchurTotalIt);
+
 
   /* interface for comparing two block preconditioner formulations */
   trilinosModelEvaluator(int nelems, double* statevector_,
@@ -143,6 +174,10 @@ private:
   void (*precFunctionblock12)(double *,int,double*,void *);
   void (*precFunctionblock21)(double *,int,double*,void *);
   void (*precFunctionblock22)(double *,int,double*,void *);
+
+//  void (*precFunctionblock12_clip)(double *,int,double*,int,void *);
+//  void (*precFunctionblock21_clip)(double *,int,double*,int,void *);
+
   void (*auxprecFunctionblock11)(double *,int,double*,void *);
   void (*auxprecFunctionblock12)(double *,int,double*,void *);
   void (*auxprecFunctionblock21)(double *,int,double*,void *);
@@ -155,6 +190,53 @@ private:
   Teuchos::RCP<Epetra_Operator>DFinvBt;
   Teuchos::RCP<Epetra_Operator>B;
   Teuchos::RCP<Epetra_Operator>S;
+
+
+
+//  RCP<Epetra_Operator>F;
+ // RCP<Epetra_Operator>S;
+
+//  int *FTotalIt;
+// int *SchurTotalIt;
+
+
+//  Teuchos::RCP< Belos::SolverManager<ST,MV,OP> > FSolver;
+//  Teuchos::RCP< Belos::SolverManager<ST,MV,OP> > SchurSolver;
+
+//  Teuchos::RCP<Epetra_Map> UVMap;
+//  Teuchos::RCP<Epetra_Map> HMap;
+
+//  Teuchos::RCP<ParameterList>  FSolvePL;
+//  Teuchos::RCP<ParameterList>  SchurSolvePL;
+
+//  Teuchos::RCP<Epetra_Vector> workvector4;
+//  Teuchos::RCP<Epetra_Vector> dFinvBt;
+//  Teuchos::RCP<Epetra_Vector> bx1;
+
+//  Teuchos::RCP< Belos::LinearProblem<ST,MV,OP> > FProblem;
+//  Teuchos::RCP< Belos::LinearProblem<ST,MV,OP> > SchurProblem;
+
+//  Teuchos::RCP<Epetra_Vector> Fb; //uv workvector
+//  Teuchos::RCP<Epetra_Vector> Fx; //uv workvector
+
+//  Teuchos::RCP<Epetra_Vector> Schurb; //height workvector
+//  Teuchos::RCP<Epetra_Vector> Schurx; //height workvector
+
+
+/*
+
+  int *FTotalIt;
+  int *SchurTotalIt;
+
+  RCP< Belos::SolverManager<ST,MV,OP> > FSolver;
+  RCP< Belos::SolverManager<ST,MV,OP> > SchurSolver;
+
+
+  RCP<ParameterList>  FSolvePL;
+  RCP<ParameterList>  SchurSolvePL;
+*/
+
+
 };
 
 
@@ -169,7 +251,7 @@ public:
   hommePreconditionerBase(RCP<Epetra_Map> xMap) : xMap_(xMap) {};
 
   // Methods that MUST be implemented for preconditioner
-  virtual int computePreconditioner(RCP<const Epetra_Vector> xVec) = 0;
+  virtual int computePreconditioner(RCP<const Epetra_Vector> xVec, void* precdata_) = 0;
   virtual int ApplyInverse(const Epetra_MultiVector& V, Epetra_MultiVector& Y) const = 0;
 
   // Trivial implemetations set in this base class
@@ -205,7 +287,7 @@ public:
                          void* blackbox_res, void* precdata,
                          void (*precUpdateFunction)(double *,int,void *) );
   int ApplyInverse(const Epetra_MultiVector& V, Epetra_MultiVector& Y) const;
-  int computePreconditioner(RCP<const Epetra_Vector> xVec);
+  int computePreconditioner(RCP<const Epetra_Vector> xVec,  void* precdata_);
 
 private:
   int N;
@@ -229,7 +311,7 @@ public:
                        void (*precUpdateFunction)(double *,int,void *) );
 
   int ApplyInverse(const Epetra_MultiVector& V, Epetra_MultiVector& Y) const;
-  int computePreconditioner(RCP<const Epetra_Vector> xVec);
+  int computePreconditioner(RCP<const Epetra_Vector> xVec, void* precdata_);
 
 private:
   int N;
@@ -247,6 +329,67 @@ private:
   RCP<Epetra_Operator>S;
 
 };
+/*******************************************************************************/
+/*******************************************************************************/
+/*******************************************************************************/
+class simpleClipPreconditioner : public hommePreconditionerBase {
+public:
+  simpleClipPreconditioner(int N, RCP<Epetra_Vector> xVec, RCP<Epetra_Map> xMap,
+                       void* blackbox_res, void* precdata,
+                       void (*precFunctionblock11)(double *,int,double*,void *),
+                       void (*precFunctionblock12)(double *,int,double*,int, void *),
+                       void (*precFunctionblock21)(double *,int,double*,int, void *),
+                       void (*precFunctionblock22)(double *,int,double*,void *),
+                       void (*precUpdateFunction)(double *,int,void *),
+		       const RCP<ParameterList>&  FSolvePL_,
+		       const RCP<ParameterList>&  SchurSolvePL_,
+		       int* FTotalIt_,
+		       int* SchurTotalIt_ );
+
+  int ApplyInverse(const Epetra_MultiVector& V, Epetra_MultiVector& Y) const;
+  int computePreconditioner(RCP<const Epetra_Vector> xVec, void* precdata_);
+
+private:
+  int N;
+  bool printproc;
+  RCP<Epetra_Vector> xVec;
+  RCP<Epetra_Map> xMap;
+  void* blackbox_res;
+  void* precdata;
+  void (*precFunctionblock11)(double *,int,double*,void *);
+  void (*precFunctionblock12)(double *,int,double*,int, void *);
+  void (*precFunctionblock21)(double *,int,double*,int, void *);
+  void (*precFunctionblock22)(double *,int,double*,void *);
+  void (*precUpdateFunction)(double *,int,void *);
+  RCP<Epetra_Operator>F;
+  RCP<Epetra_Operator>S;
+
+  int *FTotalIt;
+  int *SchurTotalIt;
+
+
+  Teuchos::RCP< Belos::SolverManager<ST,MV,OP> > FSolver;
+  Teuchos::RCP< Belos::SolverManager<ST,MV,OP> > SchurSolver;
+
+  Teuchos::RCP<Epetra_Map> UVMap;
+  Teuchos::RCP<Epetra_Map> HMap;
+
+  Teuchos::RCP<ParameterList>  FSolvePL;
+  Teuchos::RCP<ParameterList>  SchurSolvePL;
+
+  Teuchos::RCP<Epetra_Vector> workvector4;
+  Teuchos::RCP<Epetra_Vector> dFinvBt;
+  Teuchos::RCP<Epetra_Vector> bx1;
+
+  Teuchos::RCP< Belos::LinearProblem<ST,MV,OP> > FProblem;
+  Teuchos::RCP< Belos::LinearProblem<ST,MV,OP> > SchurProblem;
+
+  Teuchos::RCP<Epetra_Vector> Fb; //uv workvector
+  Teuchos::RCP<Epetra_Vector> Fx; //uv workvector
+
+  Teuchos::RCP<Epetra_Vector> Schurb; //height workvector
+  Teuchos::RCP<Epetra_Vector> Schurx; //height workvector
+
+};
 
 #endif
-

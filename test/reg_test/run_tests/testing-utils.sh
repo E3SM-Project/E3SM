@@ -1,27 +1,3 @@
-setTestDirs() {
-
-  # Determine some locations
-  DIR_NAME=$(cd `dirname "${BASH_SOURCE[0]}"` && pwd -P)
-
-  # Determine the location of the tests results (for yellowstone)
-  RESULT_DIR=$(cd "${DIR_NAME}/../../results/yellowstone" && pwd -P)
-
-  # Set the location of the "build" base directory
-  if [ -n "$1" -a -d "$1" ]; then
-    # Use this location as the base of the file structure for the tests
-    BUILD_DIR=$1
-  else
-    # Set the build directory from the set file structure
-    BUILD_DIR=$(cd `dirname $DIR_NAME/../../../../..` && pwd -P)/build
-  fi
-
-}
-
-# Strip the end of the stdout file which contains lsf dump
-stripAppendage() {
-  sed -i -e '/^ exiting/,/^ number of MPI/{/^ exiting/!{/^ number of MPI/!d}}' -e '/^process/d' $1
-}
-
 createLSFHeader() {
 
   RUN_SCRIPT=$1
@@ -45,7 +21,7 @@ createLSFHeader() {
   echo "" >> $RUN_SCRIPT # newline
 
   echo "#BSUB -q small" >> $RUN_SCRIPT
-  echo "#BSUB -W 0:20" >> $RUN_SCRIPT
+  echo "#BSUB -W 0:40" >> $RUN_SCRIPT
 
   echo "" >> $RUN_SCRIPT # newline
 
@@ -103,7 +79,6 @@ createPBSHeader() {
 
 }
 
-
 createStdHeader() {
 
   RUN_SCRIPT=$1
@@ -111,13 +86,6 @@ createStdHeader() {
   echo "#!/bin/bash " >> $RUN_SCRIPT
 
   echo "" >> $RUN_SCRIPT
-
-}
-
-yellowstoneExec() {
-  RUN_SCRIPT=$1
-  EXEC=$2
-  echo "mpirun.lsf $EXEC" >> $RUN_SCRIPT
 
 }
 
@@ -163,6 +131,17 @@ examineJobStat() {
     else
       jobStat="completed" 
     fi
+  elif [ "$HOMME_Submission_Type" = moab ] || [ "$HOMME_Submission_Type" = slurm ] ; then
+    jobStat=`squeue -j $jobID 2>&1 | tail -n 1 | awk '{print $5}'`
+    if [ -n "$jobStat" ] ; then
+      if [ "$jobStat" == "PD" ] ; then
+        jobStat="pending" 
+      elif [ "$jobStat" == "R" ]; then
+        jobStat="running" 
+      fi
+    else
+      jobStat="completed" 
+    fi
   else
     echo "Error: queue type not recognized"
     exit -3
@@ -200,44 +179,16 @@ queueWait() {
 
 }
 
-#diffStdOut() {
-#
-#  # Should be a unique file
-#  diffFile="diff.${SUBMIT_JOB_ID[0]}"
-#  echo "Concatenating all diff output into $diffFile"
-#
-#  # Then diff with the stored results (yellowstone only)
-#  for i in $(seq 0 $(( ${#SUBMIT_TEST[@]} - 1)))
-#  do
-#    THIS_TEST=${SUBMIT_TEST[$i]}
-#
-#    # Need to remove "-run" from the test name
-#    #   This is an ugly hack but otherwise this takes a lot of reformatting
-#    THIS_TEST=`echo $THIS_TEST | sed 's/-run//'`
-#
-#    # The following is not very clean
-#    NEW_RESULT=${HOMME_TESTING_DIR}/${THIS_TEST}.stdout.${SUBMIT_JOB_ID[$i]}
-#    SAVED_RESULT=${HOMME_TEST_RESULTS}/${THIS_TEST}/${THIS_TEST}.stdout
-#
-#    # TODO: make sure these files exist
-#    if [ -f $NEW_RESULT ]; then
-#      stripAppendage $NEW_RESULT
-#      echo "diff $NEW_RESULT $SAVED_RESULT" >> $diffFile
-#      # append the output to 
-#      diff $NEW_RESULT $SAVED_RESULT >> $diffFile
-#    else
-#      echo "Result $NEW_RESULT does not exist. Perhaps job ${SUBMIT_JOB_ID[$i]} crashed or was killed"
-#    fi
-#
-#  done
-#}
-
 submitToQueue() {
   # submit the job to the queue
   if [ "$HOMME_Submission_Type" = lsf ]; then
     bsub < ${subFile} > $THIS_STDOUT 2> $THIS_STDERR
   elif [ "$HOMME_Submission_Type" = pbs ]; then
     qsub ${subFile} > $THIS_STDOUT 2> $THIS_STDERR
+  elif [ "$HOMME_Submission_Type" = moab ]; then
+    msub ${subFile} > $THIS_STDOUT 2> $THIS_STDERR
+  elif [ "$HOMME_Submission_Type" = slurm ]; then
+    sbatch ${subFile} > $THIS_STDOUT 2> $THIS_STDERR
   else
     echo "Error: queue type not recognized"
     exit -4
@@ -250,6 +201,10 @@ getJobID() {
     SUB_ID=`cat $THIS_STDOUT | awk '{print $2}' | sed  's/<//' | sed -e 's/>//'`
   elif [ "$HOMME_Submission_Type" = pbs ]; then
     SUB_ID=`cat $THIS_STDOUT | awk '{print $1}'`
+  elif [ "$HOMME_Submission_Type" = moab ]; then
+    SUB_ID=`cat $THIS_STDOUT | awk '{print $1}'`
+  elif [ "$HOMME_Submission_Type" = slurm ]; then
+    SUB_ID=`cat $THIS_STDOUT | tail -n 1 | awk '{print $4}'`
   else
     echo "Error: queue type not recognized"
     exit -5
@@ -335,24 +290,17 @@ runTestsStd() {
     echo -n "Running test ${subJobName} ... "
     #echo "${subFile} > $THIS_STDOUT 2> $THIS_STDERR"
     chmod u+x ${subFile}
-    # Don't want this to run in the background
-    #cmd='${subFile} > $THIS_STDOUT 2> $THIS_STDERR &'
     cmd="${subFile} > $THIS_STDOUT 2> $THIS_STDERR"
     echo "$cmd"
     $cmd
-    RUN_PID=$?
-    echo "PID=$RUN_PID"
-    RUN_STAT=${RUN_PID}
-    #wait $RUN_PID
-    #RUN_STAT=$?
-    # Technically the PID is incorrect but it really doesn't matter
-    #RUN_PID=$!
+    # Get the status of the run
+    RUN_STAT=$?
     # Do some error checking
     if [ $RUN_STAT = 0 ]; then
       # the command was succesful
       echo "test ${subJobName} was run successfully"
       SUBMIT_TEST+=( "${subJobName}" )
-      SUBMIT_JOB_ID+=( "$RUN_PID" )
+      SUBMIT_JOB_ID+=( "${RUN_PID}" )
     else 
       echo "failed with message:"
       cat $THIS_STDERR
@@ -405,7 +353,6 @@ createAllRunScripts() {
       testExec=test${testNum}
       echo "# Pure MPI test ${testNum}" >> $thisRunScript
       #echo "mpiexec -n $num_cpus ${!testExec} > $testName.out 2> $testName.err" >> $thisRunScript
-      #yellowstoneExec $thisRunScript "${!testExec}"
       execLine $thisRunScript "${!testExec}" $num_cpus
       echo "" >> $thisRunScript # new line
     done
@@ -419,7 +366,6 @@ createAllRunScripts() {
          testExec=omp_test${testNum}
          echo "# Hybrid test ${testNum}" >> $thisRunScript
          #echo "mpiexec -n $omp_num_mpi ${!testExec} > $testName.out 2> $testName.err" >> $thisRunScript
-         #yellowstoneExec $thisRunScript "${!testExec}"
          execLine $thisRunScript "${!testExec}" $omp_num_mpi
          echo "" >> $thisRunScript # new line
       done
@@ -546,16 +492,33 @@ createRunScript() {
 
 }
 
+parseHeader() {
+  cat $1 | \
+  sed -e "s/\${testName}/${testName}/g" \
+      -e "s;\${testDir};${outputDir};g" \
+      -e "s;\${HOMME_PROJID};${HOMME_ACCOUNT};g" > $2
+  echo ""  >> $2 # newline
+  echo "########################################"  >> $2
+  echo "# Above is header, below is run data"  >> $2
+  echo "########################################"  >> $2
+  echo ""  >> $2 # newline
+}
 
 submissionHeader() {
   RUN_SCRIPT=$1
 
-  if [ "$HOMME_Submission_Type" = lsf ]; then
-    createLSFHeader $RUN_SCRIPT
-  elif [ "$HOMME_Submission_Type" = pbs ]; then
-    echo "creating PBS header"
-    createPBSHeader $RUN_SCRIPT
-    echo "finishd creating PBS header"
+  if [ "$HOMME_Submission_Type" != none ]; then 
+    # Use a user defined header
+    if [ -n "$HOMME_Submission_Header" ]; then
+      parseHeader ${HOMME_Submission_Header} ${RUN_SCRIPT}
+    else
+      # Build a header for lsf or pbs
+      if [ "$HOMME_Submission_Type" = lsf ]; then
+        createLSFHeader $RUN_SCRIPT
+      elif [ "$HOMME_Submission_Type" = pbs ]; then
+        createPBSHeader $RUN_SCRIPT
+      fi
+    fi
   else
     createStdHeader $RUN_SCRIPT
   fi
@@ -595,14 +558,14 @@ serExecLine() {
   if [ -n "${MPI_EXEC}" ]; then
     # mpirun.lsf is a special case
     if [ "${MPI_EXEC}" = "mpirun.lsf" ] ; then
-      echo "mpirun.lsf -pam \"-n 1\" ${MPI_OPTIONS} $EXEC" >> $RUN_SCRIPT
+      echo "$EXEC" >> $RUN_SCRIPT
     else
       echo "${MPI_EXEC} -n 1 ${MPI_OPTIONS} $EXEC" >> $RUN_SCRIPT
     fi
 
   else
     if [ "$HOMME_Submission_Type" = lsf ]; then
-      echo "mpirun.lsf -pam \"-n 1\"  ${MPI_OPTIONS} $EXEC" >> $RUN_SCRIPT
+      echo "$EXEC" >> $RUN_SCRIPT
     elif [ "$HOMME_Submission_Type" = pbs ]; then
       echo "aprun -n 1 ${MPI_OPTIONS} $EXEC" >> $RUN_SCRIPT
     else
@@ -723,79 +686,6 @@ diffCprncOutput() {
       exit -13
     fi
     
-  done
-}
-
-diffStdout() {
-
-  PARSE_RESULT=${HOMME_TESTING_DIR}/${TEST_NAME}.stdout
-  SAVED_RESULT=${HOMME_TEST_RESULTS}/${TEST_NAME}/${TEST_NAME}.stdout
-
-  cmd="${PYTHON_EXECUTABLE} diffTol.py --maxTol=1.e-12 ${PARSE_RESULT} ${SAVED_RESULT}"
-
-  echo $cmd
-
-  diffOutput=$( $cmd )
-  diffCode=$?
-
-  if [ "$diffCode" == 0 ] ; then
-    # parse output to get status
-    fileDifference=`echo $diffOutput | awk  '{print $3}'`
-
-    if [ "${fileDifference}" == identical ]; then
-      echo "${diffOutput}"
-    elif [ "${fileDifference}" == similar ]; then 
-      echo "${diffOutput}"
-    elif [ "${fileDifference}" == different ]; then
-      echo "${diffOutput}"
-      echo "diff of output: "
-      diffCmd="diff ${PARSE_RESULT} ${SAVED_RESULT}"
-      $diffCmd
-      exit -14
-    else
-      echo "File comparison failed to yield expected result (identical,simlar,different)"
-      echo "diffTol Output: ${diffOutput}"
-      exit -15
-    fi
-
-  else
-    echo "$cmd failed with error code $diffCode"
-    echo "diffTol Output: ${diffOutput}"
-    echo "############################################################################"
-    diffOutputFile=`dirname ${PARSE_RESULT}`/`basename ${PARSE_RESULT}`.diff
-    diffCmd="diff ${PARSE_RESULT} ${SAVED_RESULT}"
-    $diffCmd > $diffOutputFile
-    echo "The full diff of the two files is available in"
-    echo "${diffOutputFile}"
-    echo "here are the first 50 lines"
-    #echo `head -n 50 $diffOutputFile`
-    head -n 50 $diffOutputFile
-    echo "############################################################################"
-    exit -16
-  fi
-
-}
-
-parseStdout() {
-
-  # Then diff with the stored results (yellowstone only)
-  for i in $(seq 0 $(( ${#SUBMIT_TEST[@]} - 1)))
-  do
-    THIS_TEST=${SUBMIT_TEST[$i]}
-
-    # Need to remove "-run" from the test name
-    #   This is an ugly hack but otherwise this takes a lot of reformatting
-    THIS_TEST=`echo $THIS_TEST | sed 's/-run//'`
-
-    # The following is not very clean
-    NEW_RESULT=${HOMME_TESTING_DIR}/${THIS_TEST}.stdout.${SUBMIT_JOB_ID[$i]}
-    PARSE_RESULT=${HOMME_TESTING_DIR}/${THIS_TEST}.stdout
-
-    if [ "$HOMME_Submission_Type" = lsf ]; then
-      stripAppendage $NEW_RESULT
-    fi
-    grep -e '=' ${NEW_RESULT} | grep -iv bsub | grep -ive 't_init' > ${PARSE_RESULT}
-
   done
 }
 

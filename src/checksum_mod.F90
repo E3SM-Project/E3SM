@@ -3,7 +3,7 @@
 #endif
 
 module checksum_mod
-  use edge_mod, only : ghostbuffer_t, edgebuffer_t, ghostbuffer3d_t
+  use edge_mod, only : ghostbuffer3D_t, edgebuffer_t, ghostbuffer3d_t
   implicit none
 
   private
@@ -11,13 +11,13 @@ module checksum_mod
 
   ! test_ghost is called from within a openMP parrallel region,
   ! and these buffers have to be thread-shared
-  type (ghostBuffer_t)   :: ghostbuf,ghostbuf_cv
+  type (ghostBuffer3D_t)   :: ghostbuf,ghostbuf_cv
   type (ghostBuffer3d_t) :: ghostbuf3d
   type (edgeBuffer_t)    :: edge1
 
   public  :: testchecksum, test_ghost
   private :: genchecksum
-
+  private :: ghostbuf,ghostbuf_cv,ghostbuf3d
 
 contains
   !===============================================================================
@@ -29,7 +29,8 @@ contains
          edgedgvunpack, edgebuffer_t
     use bndry_mod, only : bndry_exchangev
     use kinds, only : real_kind
-    use schedule_mod, only : schedule_t, schedule, checkschedule
+    use schedtype_mod, only : schedule_t, schedule
+    use schedule_mod, only : checkschedule
     use dimensions_mod, only : np, nlev, nelem, nelemd
 
     implicit none
@@ -107,7 +108,7 @@ contains
     !  Allocate the communication Buffers
     !=======================================
 
-    call initEdgeBuffer(buffer,nlev)
+    call initEdgeBuffer(par,buffer,nlev)
 
     !=======================================
     !  Synch everybody up
@@ -357,11 +358,11 @@ contains
   use dimensions_mod, only : np, nlev, max_corner_elem
   use hybrid_mod, only : hybrid_t
   use element_mod, only : element_t
-  use bndry_mod, only : ghost_exchangevfull, bndry_exchangev, ghost_exchangev3d
-  use edge_mod, only : ghostbuffer_t, ghostvpackfull, ghostvunpackfull, initghostbufferfull,&
-       freeghostbuffer, edgebuffer_t, freeedgebuffer, initedgebuffer,&
-       edgevpack,edgevunpack, &
-       initghostbuffer3d, ghostvpack3d, ghostvunpack3d
+  use bndry_mod, only : ghost_exchangevfull, bndry_exchangev
+  use edge_mod, only : ghostvpackfull, ghostvunpackfull, &
+       edgebuffer_t, freeedgebuffer, initedgebuffer,&
+       edgevpack,edgevunpack, initghostbuffer3d, ghostvpack3d, ghostvunpack3d, &
+       freeghostbuffer3d
 
   use control_mod, only : north,south,east,west,neast, nwest, seast, swest
 
@@ -403,9 +404,9 @@ contains
   np1=1-np
   np2=np+np
 
-  call initghostbufferfull(ghostbuf,   nlev,np)
-  call initghostbufferfull(ghostbuf_cv,nlev,nc)
-  call initghostbuffer3d(ghostbuf3d,   nlev,np, NHC)
+  call initghostbuffer3D(ghostbuf,   nlev,np)
+  call initghostbuffer3D(ghostbuf_cv,nlev,nc)
+  call initghostbuffer3d(ghostbuf3d, nlev,np, NHC)
 
   do k=1,nlev
   do ie=nets,nete
@@ -449,8 +450,8 @@ contains
      call ghostVpackfull(ghostbuf_cv, cin(:,:,:,ie),1,nc,nc,nlev,kptr,elem(ie)%desc)
   end do
 
-  call ghost_exchangeVfull(hybrid,ghostbuf,np)
-  call ghost_exchangeVfull(hybrid,ghostbuf_cv,nc)
+  call ghost_exchangeVfull(hybrid,ghostbuf)
+  call ghost_exchangeVfull(hybrid,ghostbuf_cv)
 
   !call syncmp(hybrid%par)
   do ie=nets,nete
@@ -614,7 +615,7 @@ contains
      call ghostVpack3d(ghostbuf3d, pin(:,:,:,ie), nlev, kptr, elem(ie)%desc)
   end do
 
-  call ghost_exchangeV3d(hybrid, ghostbuf3d)
+  call ghost_exchangeVfull(hybrid, ghostbuf3d)
 
   do ie=nets,nete
      kptr=0
@@ -668,8 +669,9 @@ contains
   if (hybrid%masterthread) print *, "Check passed: Results of ghostVunpack3d and ghostVunpackfull match."
 
 #endif
-  call freeghostbuffer(ghostbuf)
-  call freeghostbuffer(ghostbuf_cv)
+  call freeghostbuffer3D(ghostbuf)
+  call freeghostbuffer3D(ghostbuf_cv)
+  call freeghostbuffer3d(ghostbuf3d)
   call syncmp(hybrid%par)
   if (hybrid%par%masterproc) print *,'done'
 end subroutine

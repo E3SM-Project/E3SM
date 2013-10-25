@@ -35,7 +35,7 @@ module restart_io_mod
    use physics_types_mod, only : physics_state_t, pelem
 #endif
    !------------------
-   use schedule_mod, only : Schedule
+   use schedtype_mod, only : Schedule
    !------------------
    implicit none
 

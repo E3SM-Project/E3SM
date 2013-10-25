@@ -19,18 +19,6 @@ ENDIF ()
 
 MESSAGE(STATUS "Setting HOMME_BASELINE_DIR as ${Homme_Baseline_DIR}")
 
-# Host specific
-IF (Homme_Hostname STREQUAL "Yellowstone") 
-
-  # Modify the results directory to point to the yellowstone results
-  SET(Homme_Results_DIR ${Homme_Results_DIR}/yellowstone)
-
-ELSEIF (Homme_OS STREQUAL "Darwin") 
-
-  SET(Homme_Results_DIR ${Homme_Results_DIR}/darwin)
-
-ENDIF ()
-
 # Determine if there is a submission system
 OPTION(USE_QUEUING "" TRUE)
 IF (USE_QUEUING)
@@ -39,16 +27,34 @@ IF (USE_QUEUING)
   IF (BSUB_PATH)
     MESSAGE(STATUS "Using LSF queuing")
     SET(HOMME_SUBMISSION_TYPE lsf)
-  ELSE ()
+  ENDIF ()
+  IF (NOT DEFINED HOMME_SUBMISSION_TYPE)
     # pbs uses qsub
     FIND_PROGRAM(QSUB_PATH qsub) # Note this searches the environment
     IF (QSUB_PATH)
       MESSAGE(STATUS "Using PBS queuing")
       SET(HOMME_SUBMISSION_TYPE pbs)
-    ELSE ()
-      MESSAGE(STATUS "No queuing system found")
-      SET(HOMME_SUBMISSION_TYPE none)
     ENDIF ()
+  ENDIF ()
+  IF (NOT DEFINED HOMME_SUBMISSION_TYPE)
+    # moab uses msub
+    FIND_PROGRAM(MSUB_PATH msub) # Note this searches the environment
+    IF (MSUB_PATH)
+      MESSAGE(STATUS "Using MOAB queuing")
+      SET(HOMME_SUBMISSION_TYPE moab)
+    ENDIF ()
+  ENDIF ()
+  IF (NOT DEFINED HOMME_SUBMISSION_TYPE)
+    # slurm uses squeue
+    FIND_PROGRAM(SQUEUE_PATH squeue) # Note this searches the environment
+    IF (SQUEUE_PATH)
+      MESSAGE(STATUS "Using SLURM queuing")
+      SET(HOMME_SUBMISSION_TYPE slurm)
+    ENDIF ()
+  ENDIF ()
+  IF (NOT DEFINED HOMME_SUBMISSION_TYPE)
+    MESSAGE(STATUS "No queuing system found")
+    SET(HOMME_SUBMISSION_TYPE none)
   ENDIF ()
 ELSE ()
   MESSAGE(STATUS "Not searching for queuing system")
@@ -83,6 +89,15 @@ ELSE ()
   ENDIF ()
   # We have queuing
   SET(HOMME_QUEUING TRUE)
+
+  # Now check if a user specified a header for us to use
+  IF (DEFINED SUBMISSION_HEADER)
+    IF (EXISTS ${SUBMISSION_HEADER})
+      MESSAGE(STATUS "USING SUBMISSION_HEADER: ${SUBMISSION_HEADER}")
+    ELSE ()
+      MESSAGE(FATAL_ERROR "SUBMISSION_HEADER set but file not found at: ${SUBMISSION_HEADER}")
+    ENDIF ()
+  ENDIF ()
 ENDIF ()
 
 # Set up the CPRNC build
@@ -154,11 +169,26 @@ ENDIF()
 
 # Read the test-list.cmake file to get the HOMME_TESTS list
 INCLUDE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/test-list.cmake)
+# Need a properly scoped variable to store the test directories for the
+#  replaceBaselineResults target
+SET(TEST_DIR_LIST "")
 createTests(HOMME_TESTS)
 
 # End the file with the total number of test files
 FILE (APPEND ${HOMME_TEST_LIST} "\n")
 FILE (APPEND ${HOMME_TEST_LIST} "num_test_files=${NUM_TEST_FILES}\n")
+
+# Create a target for making the reference data
+ADD_CUSTOM_TARGET(replaceBaselineResults)
+FOREACH(TEST_DIR ${TEST_DIR_LIST})
+  GET_FILENAME_COMPONENT(TEST_BASE_NAME ${TEST_DIR} NAME)
+  ADD_CUSTOM_COMMAND(TARGET replaceBaselineResults PRE_BUILD
+           COMMAND ${CMAKE_COMMAND} -E copy_directory 
+           ${TEST_DIR} ${Homme_Baseline_DIR}/${TEST_BASE_NAME})
+  ADD_CUSTOM_COMMAND(TARGET replaceBaselineResults PRE_BUILD
+           COMMAND ${CMAKE_COMMAND} -E echo 
+           "Copying test results ${TEST_DIR} to baseline directory ${Homme_Baseline_DIR}/${TEST_BASE_NAME}")
+ENDFOREACH()
 
 # Now create the submission-list.sh
 EXECUTE_PROCESS(

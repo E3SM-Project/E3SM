@@ -101,12 +101,14 @@ contains
     vol => cvlist(elemid)%vol
 
   end function GetVolumeLocal
-  subroutine InitControlVolumesData(nelemd)
+  subroutine InitControlVolumesData(par,nelemd)
     use edge_mod, only :   initedgebuffer, initGhostBuffer3d
+    use parallel_mod, only : parallel_t
+    type(parallel_t) :: par
     integer, intent(in) :: nelemd
     ! Cannot be done in a threaded region
     allocate(cvlist(nelemd))
-    call initedgebuffer(edge1,3)
+    call initedgebuffer(par,edge1,3)
     call initGhostBuffer3d(ghost_buf, 3, np+1, 1)
   end subroutine InitControlVolumesData
 
@@ -311,9 +313,13 @@ function  make_unique(a, n) result(m)
     real (kind=real_kind),intent(inout)    :: a(n) 
     integer                                :: m
     integer                                :: i,j
+    real (kind=real_kind) :: delta
     do i=1,n-1
       do j=i+1,n
-        if (ABS(a(j)-a(i)).lt. 1e-6)  a(j) = 9999
+!        if (ABS(a(j)-a(i)).lt. 1e-6)  a(j) = 9999
+        delta = abs(a(j)-a(i))
+        if (delta.lt. 1e-6)  a(j) = 9999
+        if (abs(2*dd_pi-delta).lt. 1e-6)  a(j) = 9999
       enddo
     enddo
     m = 0
@@ -322,7 +328,7 @@ function  make_unique(a, n) result(m)
     enddo
     if (mod(m,2).ne.0) then
        do i=1,n
-          print *,'angle with centroid: ',i,mod(a(i)+dd_pi,dd_pi)
+          print *,'angle with centroid: ',i,a(i),mod(a(i),2*dd_pi)
        enddo
        call abortmp("Error: Found an odd number or nodes for cv element. Should be even.")
     endif
@@ -378,7 +384,7 @@ subroutine construct_cv_duel(elem,hybrid,nets,nete)
 !
 ! 10/2009: added option to make hexagon control volumes at cube edges and corners
 !
-    use bndry_mod,    only : ghost_exchangev3d
+    use bndry_mod,    only : ghost_exchangevfull
     use element_mod,  only : element_t
     use hybrid_mod,   only : hybrid_t
     use edge_mod,     only : ghostVpack3d, ghostVunpack3d
@@ -443,7 +449,7 @@ subroutine construct_cv_duel(elem,hybrid,nets,nete)
        call ghostVpack3d(ghost_buf, vertpack2, 3, 0, elem(ie)%desc)
     enddo
 
-    call ghost_exchangev3d (hybrid, ghost_buf)
+    call ghost_exchangevfull (hybrid, ghost_buf)
 
 
     do ie=nets,nete

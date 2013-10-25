@@ -26,8 +26,8 @@ smooth                       = 0
 nu                           = 1e16
 nu_s                         = -1        ! use same value as nu
 nu_q                         = 1e16    
-nu_p                         = 0
-limiter_option               = 8 
+nu_p                         = 1e16
+limiter_option               = 4 
 energy_fixer                 = -1
 hypervis_order               = 2
 hypervis_subcycle            = -1
@@ -69,9 +69,8 @@ output_timeunits  = 1,1
 output_frequency  = 9,9
 output_start_time = 0,0
 output_end_time   = 30,30
-output_varnames1  = 'u', 'v', 'ps', 'T', 'DIFFT'
-output_varnames2  = 'Q', 'Q2', 'Q3', 'Q4','C', 'C2', 'C3', 'C4'
+output_varnames1  = 'u', 'v', 'ps', 'T'
+output_varnames2  = 'Q', 'Q2', 'Q3', 'Q4','C', 'C2', 'C3', 'C4','phys_lat','phys_lon'
 io_stride         = 8
 output_type       = 'netcdf' 
 /
-

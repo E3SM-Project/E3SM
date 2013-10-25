@@ -34,3 +34,6 @@
 
 /* Quadruple-precision */
 #cmakedefine01 HOMME_QUAD_PREC
+
+/* Enable persistent MPI comm */
+#cmakedefine MPI_PERSISTENT

@@ -35,3 +35,6 @@
 
 /* Enable SPELT */
 #define _SPELT 1
+
+/* Enable persistent MPI comm */
+#cmakedefine MPI_PERSISTENT
