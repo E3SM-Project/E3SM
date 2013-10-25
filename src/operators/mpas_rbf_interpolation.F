@@ -469,16 +469,11 @@ module mpas_rbf_interpolation
     integer :: i, j
     integer :: matrixSize
 
-    real(kind=RKIND), dimension(:,:), pointer :: dirichletMatrix
-    real(kind=RKIND), dimension(:), pointer :: rhs, coeffs
-    integer, dimension(:), pointer :: pivotIndices
+    real(kind=RKIND), dimension(pointCount+1, pointCount+1) :: dirichletMatrix
+    real(kind=RKIND), dimension(pointCount+1) :: rhs, coeffs
+    integer, dimension(pointCount+1) :: pivotIndices
 
     matrixSize = pointCount+1 !! 1 extra space for constant 
-
-    allocate(dirichletMatrix(matrixSize,matrixSize))  
-    allocate(rhs(matrixSize))  
-    allocate(coeffs(matrixSize))  
-    allocate(pivotIndices(matrixSize))  
 
     dirichletMatrix = 0.0
     rhs = 0.0
@@ -497,11 +492,6 @@ module mpas_rbf_interpolation
     ! solve each linear system
     call mpas_legs(dirichletMatrix, matrixSize, rhs, coeffs, pivotIndices)
     coefficients = coeffs(1:pointCount)
-
-    deallocate(dirichletMatrix)  
-    deallocate(rhs)  
-    deallocate(coeffs)  
-    deallocate(pivotIndices) 
 
   end subroutine mpas_rbf_interp_func_3D_sca_const_dir_comp_coeffs!}}}
 
@@ -554,16 +544,11 @@ module mpas_rbf_interpolation
     integer :: i, j
     integer :: matrixSize
 
-    real(kind=RKIND), dimension(:,:), pointer :: dirichletMatrix
-    real(kind=RKIND), dimension(:), pointer :: rhs, coeffs
-    integer, dimension(:), pointer :: pivotIndices
+    real(kind=RKIND), dimension(pointCount+3, pointCount+3) :: dirichletMatrix
+    real(kind=RKIND), dimension(pointCount+3) :: rhs, coeffs
+    integer, dimension(pointCount+3) :: pivotIndices
 
     matrixSize = pointCount+3 !! 3 extra space for constant and 2 planar dimensions
-
-    allocate(dirichletMatrix(matrixSize,matrixSize))  
-    allocate(rhs(matrixSize))  
-    allocate(coeffs(matrixSize))  
-    allocate(pivotIndices(matrixSize))  
 
     dirichletMatrix = 0.0
     rhs = 0.0
@@ -587,11 +572,6 @@ module mpas_rbf_interpolation
     ! solve each linear system
     call mpas_legs(dirichletMatrix, matrixSize, rhs, coeffs, pivotIndices)
     coefficients = coeffs(1:pointCount)
-
-    deallocate(dirichletMatrix)  
-    deallocate(rhs)  
-    deallocate(coeffs)  
-    deallocate(pivotIndices) 
 
   end subroutine mpas_rbf_interp_func_3D_plane_sca_lin_dir_comp_coeffs!}}}
 
@@ -637,16 +617,11 @@ module mpas_rbf_interpolation
     integer :: i, j
     integer :: matrixSize
 
-    real(kind=RKIND), dimension(:,:), pointer :: dirichletMatrix
-    real(kind=RKIND), dimension(:), pointer :: rhs, coeffs
-    integer, dimension(:), pointer :: pivotIndices
+    real(kind=RKIND), dimension(pointCount+4, pointCount+4) :: dirichletMatrix
+    real(kind=RKIND), dimension(pointCount+4) :: rhs, coeffs
+    integer, dimension(pointCount+4) :: pivotIndices
 
     matrixSize = pointCount+4 !! 4 extra space for constant and linear in 3D
-
-    allocate(dirichletMatrix(matrixSize,matrixSize))  
-    allocate(rhs(matrixSize))  
-    allocate(coeffs(matrixSize))  
-    allocate(pivotIndices(matrixSize))  
 
     dirichletMatrix = 0.0
     rhs = 0.0
@@ -668,11 +643,6 @@ module mpas_rbf_interpolation
     ! solve each linear system
     call mpas_legs(dirichletMatrix, matrixSize, rhs, coeffs, pivotIndices)
     coefficients = coeffs(1:pointCount)
-
-    deallocate(dirichletMatrix)  
-    deallocate(rhs)  
-    deallocate(coeffs)  
-    deallocate(pivotIndices) 
 
   end subroutine mpas_rbf_interp_func_3D_sca_lin_dir_comp_coeffs!}}}
 
@@ -731,18 +701,11 @@ module mpas_rbf_interpolation
     integer :: i, j
     integer :: matrixSize
 
-    real(kind=RKIND), dimension(:,:), pointer :: dirichletMatrix, neumannMatrix
-    real(kind=RKIND), dimension(:), pointer :: rhs, rhsCopy, coeffs
-    integer, dimension(:), pointer :: pivotIndices
+    real(kind=RKIND), dimension(pointCount+1, pointCount+1) :: dirichletMatrix, neumannMatrix
+    real(kind=RKIND), dimension(pointcount+1) :: rhs, rhsCopy, coeffs
+    integer, dimension(pointCount+1) :: pivotIndices
 
     matrixSize = pointCount+1 !! 1 extra space for constant 
-
-    allocate(dirichletMatrix(matrixSize,matrixSize))  
-    allocate(neumannMatrix(matrixSize,matrixSize))  
-    allocate(rhs(matrixSize))  
-    allocate(rhsCopy(matrixSize))  
-    allocate(coeffs(matrixSize))  
-    allocate(pivotIndices(matrixSize))  
 
     dirichletMatrix = 0.0
     neumannMatrix = 0.0
@@ -775,13 +738,6 @@ module mpas_rbf_interpolation
 
     call mpas_legs(neumannMatrix, matrixSize, rhsCopy, coeffs, pivotIndices)
     neumannCoefficients = coeffs(1:pointCount)
-
-    deallocate(dirichletMatrix)  
-    deallocate(neumannMatrix)  
-    deallocate(rhs)  
-    deallocate(rhsCopy)  
-    deallocate(coeffs)  
-    deallocate(pivotIndices) 
 
   end subroutine mpas_rbf_interp_func_3D_sca_const_dir_neu_comp_coeffs!}}}
 
@@ -846,18 +802,11 @@ module mpas_rbf_interpolation
     integer :: i, j
     integer :: matrixSize
 
-    real(kind=RKIND), dimension(:,:), pointer :: dirichletMatrix, neumannMatrix
-    real(kind=RKIND), dimension(:), pointer :: rhs, rhsCopy, coeffs
-    integer, dimension(:), pointer :: pivotIndices
+    real(kind=RKIND), dimension(pointCount+3, pointCount+3) :: dirichletMatrix, neumannMatrix
+    real(kind=RKIND), dimension(pointCount+3) :: rhs, rhsCopy, coeffs
+    integer, dimension(pointCount+3) :: pivotIndices
 
     matrixSize = pointCount+3 !! 3 extra space for constant and 2 planar dimensions
-
-    allocate(dirichletMatrix(matrixSize,matrixSize))  
-    allocate(neumannMatrix(matrixSize,matrixSize))  
-    allocate(rhs(matrixSize))  
-    allocate(rhsCopy(matrixSize))  
-    allocate(coeffs(matrixSize))  
-    allocate(pivotIndices(matrixSize))  
 
     dirichletMatrix = 0.0
     neumannMatrix = 0.0
@@ -899,13 +848,6 @@ module mpas_rbf_interpolation
 
     call mpas_legs(neumannMatrix, matrixSize, rhsCopy, coeffs, pivotIndices)
     neumannCoefficients = coeffs(1:pointCount)
-
-    deallocate(dirichletMatrix)  
-    deallocate(neumannMatrix)  
-    deallocate(rhs)  
-    deallocate(rhsCopy)  
-    deallocate(coeffs)  
-    deallocate(pivotIndices) 
 
   end subroutine mpas_rbf_interp_func_3D_plane_sca_lin_dir_neu_comp_coeffs!}}}
 
@@ -964,18 +906,11 @@ module mpas_rbf_interpolation
     integer :: i, j
     integer :: matrixSize
 
-    real(kind=RKIND), dimension(:,:), pointer :: dirichletMatrix, neumannMatrix
-    real(kind=RKIND), dimension(:), pointer :: rhs, rhsCopy, coeffs
-    integer, dimension(:), pointer :: pivotIndices
+    real(kind=RKIND), dimension(pointCount+4, pointCount+4) :: dirichletMatrix, neumannMatrix
+    real(kind=RKIND), dimension(pointCount+4) :: rhs, rhsCopy, coeffs
+    integer, dimension(pointCount+4) :: pivotIndices
 
     matrixSize = pointCount+4 !! 4 extra space for constant and linear in 3D
-
-    allocate(dirichletMatrix(matrixSize,matrixSize))  
-    allocate(neumannMatrix(matrixSize,matrixSize))  
-    allocate(rhs(matrixSize))  
-    allocate(rhsCopy(matrixSize))  
-    allocate(coeffs(matrixSize))  
-    allocate(pivotIndices(matrixSize))  
 
     dirichletMatrix = 0.0
     neumannMatrix = 0.0
@@ -1014,13 +949,6 @@ module mpas_rbf_interpolation
 
     call mpas_legs(neumannMatrix, matrixSize, rhsCopy, coeffs, pivotIndices)
     neumannCoefficients = coeffs(1:pointCount)
-
-    deallocate(dirichletMatrix)  
-    deallocate(neumannMatrix)  
-    deallocate(rhs)  
-    deallocate(rhsCopy)  
-    deallocate(coeffs)  
-    deallocate(pivotIndices) 
 
   end subroutine mpas_rbf_interp_func_3D_sca_lin_dir_neu_comp_coeffs!}}}
 
@@ -1072,19 +1000,13 @@ module mpas_rbf_interpolation
     integer :: i, j
     integer :: matrixSize
 
-    real(kind=RKIND), dimension(:,:), pointer :: matrix, matrixWork, matrixCopy
-    real(kind=RKIND), dimension(:,:), pointer :: rhs, rhsWork, coeffs
-    integer, dimension(:), pointer :: pivotIndices
+    real(kind=RKIND), dimension(pointCount+3,pointCount+3) :: matrix, matrixCopy
+    real(kind=RKIND), dimension(pointCount,pointCount) :: matrixWork
+    real(kind=RKIND), dimension(pointCount+3, 3) :: rhs, coeffs
+    real(kind=RKIND), dimension(pointCount, 3) :: rhsWork
+    integer, dimension(pointCount+3) :: pivotIndices
 
     matrixSize = pointCount+3 ! extra space for constant vector 
-
-    allocate(matrix(matrixSize,matrixSize))  
-    allocate(matrixWork(pointCount,pointCount))  
-    allocate(matrixCopy(matrixSize,matrixSize))  
-    allocate(rhs(matrixSize,3))  
-    allocate(rhsWork(pointCount,3))  
-    allocate(coeffs(matrixSize,3))  
-    allocate(pivotIndices(matrixSize))  
 
     matrix = 0.0
     rhs = 0.0
@@ -1112,12 +1034,6 @@ module mpas_rbf_interpolation
       call mpas_legs(matrixCopy, matrixSize, rhs(:,i), coeffs(:,i), pivotIndices)
     end do
     coefficients = coeffs(1:pointCount,:)
-
-    deallocate(matrix)  
-    deallocate(matrixCopy)  
-    deallocate(rhs)  
-    deallocate(coeffs)  
-    deallocate(pivotIndices) 
 
   end subroutine mpas_rbf_interp_func_3D_vec_const_dir_comp_coeffs !}}}
 
@@ -1181,19 +1097,13 @@ module mpas_rbf_interpolation
     real(kind=RKIND), dimension(pointCount,2) :: planarUnitVectors
     real(kind=RKIND), dimension(2) :: planarDestinationPoint
 
-    real(kind=RKIND), dimension(:,:), pointer :: matrix, matrixWork, matrixCopy
-    real(kind=RKIND), dimension(:,:), pointer :: rhs, rhsWork, coeffs
-    integer, dimension(:), pointer :: pivotIndices
+    real(kind=RKIND), dimension(pointCount+2, pointCount+2) :: matrix, matrixCopy
+    real(kind=RKIND), dimension(pointCount, pointCount) :: matrixWork
+    real(kind=RKIND), dimension(pointCount+2, 2) :: rhs, coeffs
+    real(kind=RKIND), dimension(pointCount,2) :: rhsWork
+    integer, dimension(pointCount+2) :: pivotIndices
 
     matrixSize = pointCount+2 ! space for constant vector in plane
-
-    allocate(matrix(matrixSize,matrixSize))  
-    allocate(matrixWork(pointCount,pointCount))  
-    allocate(matrixCopy(matrixSize,matrixSize))  
-    allocate(rhs(matrixSize,2))  
-    allocate(rhsWork(pointCount,2))  
-    allocate(coeffs(matrixSize,2))  
-    allocate(pivotIndices(matrixSize)) 
 
     matrix = 0.0
     rhs = 0.0
@@ -1233,12 +1143,6 @@ module mpas_rbf_interpolation
       coefficients(:,i) = planeBasisVectors(1,i)*coeffs(1:pointCount,1) &
         + planeBasisVectors(2,i)*coeffs(1:pointCount,2) 
     end do
-
-    deallocate(matrix)  
-    deallocate(matrixCopy)  
-    deallocate(rhs)  
-    deallocate(coeffs)  
-    deallocate(pivotIndices)
 
   end subroutine mpas_rbf_interp_func_3D_plane_vec_const_dir_comp_coeffs !}}}
 
@@ -1300,17 +1204,11 @@ module mpas_rbf_interpolation
     integer :: i, j
     integer :: matrixSize
 
-    real(kind=RKIND), dimension(:,:), pointer :: matrix, matrixCopy
-    real(kind=RKIND), dimension(:,:), pointer :: rhs, coeffs
-    integer, dimension(:), pointer :: pivotIndices
+    real(kind=RKIND), dimension(pointCount+3, pointCount+3) :: matrix, matrixCopy
+    real(kind=RKIND), dimension(pointCount+3, 3) :: rhs, coeffs
+    integer, dimension(pointCount+3) :: pivotIndices
 
     matrixSize = pointCount+3 ! extra space for constant vector 
-
-    allocate(matrix(matrixSize,matrixSize))  
-    allocate(matrixCopy(matrixSize,matrixSize))  
-    allocate(rhs(matrixSize,3))  
-    allocate(coeffs(matrixSize,3))  
-    allocate(pivotIndices(matrixSize))  
 
     matrix = 0.0
     rhs = 0.0
@@ -1336,12 +1234,6 @@ module mpas_rbf_interpolation
       call mpas_legs(matrixCopy, matrixSize, rhs(:,i), coeffs(:,i), pivotIndices)
     end do
     coefficients = coeffs(1:pointCount,:)
-
-    deallocate(matrix)  
-    deallocate(matrixCopy)  
-    deallocate(rhs)  
-    deallocate(coeffs)  
-    deallocate(pivotIndices)
 
   end subroutine mpas_rbf_interp_func_3D_vec_const_tan_neu_comp_coeffs !}}}
 
@@ -1414,17 +1306,11 @@ module mpas_rbf_interpolation
     real(kind=RKIND), dimension(pointCount,2) :: planarUnitVectors
     real(kind=RKIND), dimension(2) :: planarDestinationPoint
 
-    real(kind=RKIND), dimension(:,:), pointer :: matrix, matrixCopy
-    real(kind=RKIND), dimension(:,:), pointer :: rhs, coeffs
-    integer, dimension(:), pointer :: pivotIndices
+    real(kind=RKIND), dimension(pointCount+2, pointCount+2) :: matrix, matrixCopy
+    real(kind=RKIND), dimension(pointCount+2, 2) :: rhs, coeffs
+    integer, dimension(pointCount+2) :: pivotIndices
 
     matrixSize = pointCount+2 ! space for constant vector in plane
-
-    allocate(matrix(matrixSize,matrixSize))  
-    allocate(matrixCopy(matrixSize,matrixSize))  
-    allocate(rhs(matrixSize,2))  
-    allocate(coeffs(matrixSize,2))  
-    allocate(pivotIndices(matrixSize)) 
 
     matrix = 0.0
     rhs = 0.0
@@ -1464,12 +1350,6 @@ module mpas_rbf_interpolation
       + planeBasisVectors(2,2)*coeffs(1:pointCount,2) 
     coefficients(:,3) = planeBasisVectors(1,3)*coeffs(1:pointCount,1) &
       + planeBasisVectors(2,3)*coeffs(1:pointCount,2) 
-
-    deallocate(matrix)  
-    deallocate(matrixCopy)  
-    deallocate(rhs)  
-    deallocate(coeffs)  
-    deallocate(pivotIndices)
 
    end subroutine mpas_rbf_interp_func_3D_plane_vec_const_tan_neu_comp_coeffs !}}}
 
