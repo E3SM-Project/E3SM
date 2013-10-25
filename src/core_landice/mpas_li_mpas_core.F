@@ -53,7 +53,6 @@ module mpas_core
 !> \brief   Initializes land ice core
 !> \author  Matt Hoffman
 !> \date    11 September 2013
-!> \version SVN:$Id$
 !> \details
 !>  This routine initializes the land ice core.
 !
@@ -157,7 +156,6 @@ module mpas_core
 !> \brief   Runs the land ice core
 !> \author  Matt Hoffman
 !> \date    11 September 2013
-!> \version SVN:$Id$
 !> \details
 !>  This routine runs the land ice core.
 !
@@ -371,7 +369,6 @@ module mpas_core
 !> \brief   Finalizes the land ice core
 !> \author  Matt Hoffman
 !> \date    11 September 2013
-!> \version SVN:$Id$
 !> \details
 !>  This routine finalizes the land ice core.
 !
@@ -444,7 +441,6 @@ module mpas_core
 !> \brief   Initializes blocks for the land ice core
 !> \author  Matt Hoffman
 !> \date    11 September 2013
-!> \version SVN:$Id$
 !> \details
 !>  This routine initializes blocks for the land ice core.
 !
@@ -562,7 +558,6 @@ module mpas_core
 !> \brief   Performs a time step
 !> \author  Matt Hoffman
 !> \date    11 September 2013
-!> \version SVN:$Id$
 !> \details
 !>  This routine performs a time step for the land ice core.
 !
@@ -665,7 +660,6 @@ module mpas_core
 !> \brief   Initializes the simulation clock
 !> \author  ??
 !> \date    ??
-!> \version SVN:$Id$
 !> \details
 !>  This routine initializes the simulation clock.
 !
@@ -783,7 +777,6 @@ module mpas_core
 !> \brief   Writes an output frame
 !> \author  ??
 !> \date    ??
-!> \version SVN:$Id$
 !> \details
 !>  This routine writes an output frame.
 !
@@ -839,7 +832,6 @@ module mpas_core
 !> \brief   Computes diagnostic fields only needed for output
 !> \author  ??
 !> \date    ??
-!> \version SVN:$Id$
 !> \details
 !>  This routine is a placeholder for the calculation of any
 !>  fields that are only needed for diagnostic output.

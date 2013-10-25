@@ -13,7 +13,6 @@
 !> \brief MPAS land ice setup module
 !> \author Matt Hoffman
 !> \date   17 April 2011
-!> \version SVN:$Id:$
 !> \details
 !>  This module contains various subroutines for
 !>  setting up the land ice core.
@@ -77,7 +76,6 @@ contains
 !> \brief   Initializes vertical coord system
 !> \author  Matt Hoffman
 !> \date    20 April 2012
-!> \version SVN:$Id$
 !> \details
 !>  This routine initializes the vertical coord system.
 !
@@ -161,7 +159,6 @@ contains
 !> \brief   Determines signs for various mesh items
 !> \author  Matt Hoffman - based on code by Doug Jacobsen
 !> \date    20 April 2012
-!> \version SVN:$Id$
 !> \details
 !>  This routine determines the sign for various mesh items.
 !
@@ -263,7 +260,6 @@ contains
 !> \brief   Initializes time step
 !> \author  Matt Hoffman
 !> \date    24 September 2013
-!> \version SVN:$Id$
 !> \details
 !>  This routine initializes the time step based on whether
 !>   config_dt or config_dt_years has been set in the namelist.

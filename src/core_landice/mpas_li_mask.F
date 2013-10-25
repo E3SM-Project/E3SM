@@ -13,7 +13,6 @@
 !> \MPAS land-ice mask calculations
 !> \author Matt Hoffman
 !> \date   10 May 2012
-!> \version SVN:$Id:$
 !> \details
 !>  This module contains the routines for calculating masks for land ice
 !>
@@ -103,7 +102,6 @@ contains
 !> \brief   Calculates masks for land ice for info needed from initial condition only
 !> \author  Matt Hoffman
 !> \date    25 June 2012
-!> \version SVN:$Id$
 !> \details
 !>  This routine Calculates masks for land ice for info needed from initial condition only.
 !
@@ -173,7 +171,6 @@ contains
 !> \brief   Calculates masks for land ice
 !> \author  Matt Hoffman
 !> \date    10 May 2012
-!> \version SVN:$Id$
 !> \details
 !>  This routine Calculates masks for land ice.
 !
