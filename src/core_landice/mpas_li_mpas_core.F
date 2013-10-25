@@ -26,7 +26,8 @@ module mpas_core
 
    public :: mpas_core_init, &
              mpas_core_run, &
-             mpas_core_finalize
+             mpas_core_finalize, &
+             mpas_core_setup_packages
 
    !--------------------------------------------------------------------
    !
@@ -859,6 +860,30 @@ module mpas_core
    
    end subroutine compute_output_diagnostics
    
-   
+!***********************************************************************
+!
+!  routine mpas_core_setup_packages
+!
+!> \brief   Pacakge setup routine
+!> \author  Doug Jacobsen
+!> \date    September 2011
+!> \details 
+!>  This routine is intended to correctly configure the packages for this MPAS
+!>   core. It can use any Fortran logic to properly configure packages, and it
+!>   can also make use of any namelist options. All variables in the model are
+!>   *not* allocated until after this routine is called.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_core_setup_packages(ierr)!{{{
+
+      use mpas_packages
+
+      implicit none
+
+      integer, intent(out) :: ierr
+
+      ierr = 0
+
+   end subroutine mpas_core_setup_packages!}}}  
 
 end module mpas_core

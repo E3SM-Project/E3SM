@@ -22,6 +22,7 @@ module mpas_grid_types
    use mpas_kind_types
    use mpas_dmpar_types
    use mpas_attlist
+   use mpas_packages
 
    integer, parameter :: nTimeLevs = 2
 

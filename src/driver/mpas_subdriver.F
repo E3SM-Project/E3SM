@@ -26,11 +26,13 @@ module mpas_subdriver
 
       real (kind=RKIND) :: dt
       character(len=StrKIND) :: timeStamp
+      integer :: ierr
 
       !
       ! Initialize infrastructure
       !
       call mpas_framework_init(dminfo, domain)
+      call mpas_core_setup_packages(ierr)
 
       call mpas_timer_start("total time")
       call mpas_timer_start("initialize")
