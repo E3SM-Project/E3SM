@@ -52,8 +52,6 @@ module ocn_forcing_coupled
    !
    !--------------------------------------------------------------------
 
-   logical :: coupledForcingOn !< Flag to turn on/off coupled forcing
-
 !***********************************************************************
 
 contains
@@ -124,8 +122,6 @@ contains
 
       real (kind=RKIND), dimension(:), pointer :: surfaceMassFlux, surfaceWindStress, surfaceWindStressMagnitude
       real (kind=RKIND), dimension(:,:), pointer :: surfaceTracerFlux
-
-      if(.not.coupledForcingOn) return
 
       angleEdge => mesh % angleEdge % array
       cellsOnEdge => mesh % cellsOnEdge % array
@@ -208,12 +204,6 @@ contains
       integer, intent(out) :: err !< Output: error flag
 
       err = 0
-
-      coupledForcingOn = .false.
-
-      if(config_use_coupled_forcing) then
-        coupledForcingOn = .true.
-      end if
 
    end subroutine ocn_forcing_coupled_init!}}}
 
