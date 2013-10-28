@@ -457,9 +457,9 @@
 		/>
 	</nml_record>
 	<nml_record name="forcing">
-		<nml_option name="config_restoreTS" type="logical" default_value=".false." units="unitless"
-					description="If true, the restoring term is activated in the tracer equation for temperature and salinity."
-					possible_values=".true. or .false."
+		<nml_option name="config_forcing_type" type="character" default_value="'restoring'" units="unitless"
+					description="Defines the forcing type for the simulation."
+					possible_values="'restoring' or 'bluk'"
 		/>
 		<nml_option name="config_restoreT_timescale" type="real" default_value="90.0" units="days"
 					description="Restoring time scale for temperature, $\tau_r.$"
@@ -469,10 +469,16 @@
 					description="Restoring time scale for salinity, $\tau_r$."
 					possible_values="any positive real value, but typically between 30 and 90 days."
 		/>
-		<nml_option name="config_use_coupled_forcing" type="logical" default_value=".false." units="unitless"
-					description="Logical flag that determines if forcing from a coupler should be used."
-					possible_values=".true. or .false."
+		<nml_option name="config_restoreT_lengthscale" type="real" default_value="50.0" units="m"
+					description="Restoring length scale for temperature."
+					possible_values="any positive real value, but typically about 50 meters."
 		/>
+		<nml_option name="config_restoreS_lengthscale" type="real" default_value="50.0" units="m"
+					description="Restoring length scale for salinity."
+					possible_values="any positive real value, but typically about 50 meters."
+		/>
+
+
 		<nml_option name="config_flux_attenuation_coefficient" type="real" default_value="0.001" units="m"
 					description="Coefficient used to determine transmission of surface fluxes. Fluxes are defined with $e^{z/\gamma}$ where this coefficient is $\gamma$."
 					possible_values="Any real number $\gamma>0.0$ and $\gamma \le 1.0$."

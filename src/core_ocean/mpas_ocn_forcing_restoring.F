@@ -7,18 +7,17 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  ocn_restoring
+!  ocn_forcing_restoring
 !
 !> \brief MPAS ocean restoring
 !> \author Doug Jacobsen
-!> \date   19 September 2011
+!> \date   10/28/2013
 !> \details
-!>  This module contains the main driver routine for computing 
-!>  tendencies for restoring.
+!>  This module contains routines for building surface flux arrays based on restoring.
 !
 !-----------------------------------------------------------------------
 
-module ocn_restoring
+module ocn_forcing_restoring
 
    use mpas_grid_types
    use mpas_configure
@@ -39,8 +38,8 @@ module ocn_restoring
    !
    !--------------------------------------------------------------------
 
-   public :: ocn_restoring_tend, &
-             ocn_restoring_init
+   public :: ocn_forcing_restoring_build_arrays, &
+             ocn_forcing_restoring_init
 
    !--------------------------------------------------------------------
    !
@@ -48,9 +47,8 @@ module ocn_restoring
    !
    !--------------------------------------------------------------------
 
-   logical :: restoringOn !< Flag to turn on/off resotring
-
    real (kind=RKIND) :: temperatureTimeScale, salinityTimeScale !< restoring timescales
+   real (kind=RKIND) :: temperatureLengthScale, salinityLengthScale !< restoring timescales
 
 
 !***********************************************************************
@@ -59,18 +57,17 @@ contains
 
 !***********************************************************************
 !
-!  routine ocn_restoring_tend
+!  routine ocn_forcing_restoring_build_arrays
 !
-!> \brief   Computes tendency term for restoring
+!> \brief   Builds the forcing array for restoring
 !> \author  Doug Jacobsen
-!> \date    19 September 2011
+!> \date    10/29/2013
 !> \details 
-!>  This routine computes the restoring tendency for tracers
-!>  based on current state.
+!>  This routine builds the forcing array based on surface restoring.
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_restoring_tend(mesh, layerThickness, indexT, indexS, tracers, tend, err)!{{{
+   subroutine ocn_forcing_restoring_build_arrays(mesh, indexT, indexS, indexTFlux, indexSFlux, tracers, temperatureRestoring, salinityRestoring, surfaceFluxes, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -78,17 +75,20 @@ contains
       !
       !-----------------------------------------------------------------
 
-      real (kind=RKIND), dimension(:,:), intent(in) :: &
-         layerThickness    !< Input: thickness
-
       type (mesh_type), intent(in) :: &
          mesh          !< Input: mesh information
 
       real (kind=RKIND), dimension(:,:,:), intent(in) :: &
         tracers !< Input: tracer quantities
 
+      real (kind=RKIND), dimension(:), intent(in) :: &
+        temperatureRestoring, & !< Input: Restoring values for temperature
+        salinityRestoring !< Input: Restoring values for salinity
+
       integer, intent(in) :: indexT !< Input: index for temperature
       integer, intent(in) :: indexS !< Input: index for salinity
+      integer, intent(in) :: indexTFlux !< Input: index for temperature flux
+      integer, intent(in) :: indexSFlux !< Input: index for salinity flux
 
       !-----------------------------------------------------------------
       !
@@ -96,8 +96,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      real (kind=RKIND), dimension(:,:,:), intent(inout) :: &
-         tend          !< Input/Output: velocity tendency
+      real (kind=RKIND), dimension(:,:), intent(out) :: &
+        surfaceFluxes !< Input: tracer quantities
 
       !-----------------------------------------------------------------
       !
@@ -115,70 +115,56 @@ contains
 
       integer :: iCell, nCellsSolve, k
 
-      real (kind=RKIND), dimension(:), pointer :: temperatureRestore, salinityRestore
       real (kind=RKIND) :: invTemp, invSalinity
 
       err = 0
 
-      if(.not.restoringOn) return
-
       nCellsSolve = mesh % nCellsSolve
-
-      temperatureRestore => mesh % temperatureRestore % array
-      salinityRestore => mesh % salinityRestore % array
 
       invTemp = 1.0 / (temperatureTimeScale * 86400.0)
       invSalinity = 1.0 / (salinityTimeScale * 86400.0)
 
       k = 1  ! restoring only in top layer
       do iCell=1,nCellsSolve
-        tend(indexT, k, iCell) = tend(indexT, k, iCell) - layerThickness(k,iCell)*(tracers(indexT, k, iCell) - temperatureRestore(iCell)) * invTemp
-        tend(indexS, k, iCell) = tend(indexS, k, iCell) - layerThickness(k,iCell)*(tracers(indexS, k, iCell) - salinityRestore(iCell)) * invSalinity
-
-!       write(6,10) iCell, tracers(indexT, k, iCell), &
-!              temperatureRestore(iCell), tracers(indexT, k, iCell), &
-!             (tracers(indexT, k, iCell) - temperatureRestore(iCell)) &
-!             / (config_restoreT_timescale * 86400.0)
-
+        surfaceFluxes(indexTFlux, iCell) = - temperatureLengthScale * (tracers(indexT, k, iCell) - salinityRestoring(iCell)) * invTemp
+        surfaceFluxes(indexSFlux, iCell) = - salinityLengthScale * (tracers(indexS, k, iCell) - salinityRestoring(iCell)) * invSalinity
       enddo
 
    !--------------------------------------------------------------------
 
-   end subroutine ocn_restoring_tend!}}}
+   end subroutine ocn_forcing_restoring_build_arrays!}}}
 
 !***********************************************************************
 !
-!  routine ocn_restoring_init
+!  routine ocn_forcing_restoring_init
 !
-!> \brief   Initializes ocean tracer restoring
+!> \brief   Initializes ocean surface restoring
 !> \author  Doug Jacobsen
-!> \date    19 September 2011
+!> \date    10/29/2013
 !> \details 
 !>  This routine initializes a variety of quantities related to 
 !>  restoring in the ocean. 
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_restoring_init(err)!{{{
+   subroutine ocn_forcing_restoring_init(err)!{{{
 
       integer, intent(out) :: err !< Output: error flag
 
       err = 0
-      restoringOn = .false.
 
-      if(config_restoreTS) then
-          restoringOn = .true.
-          temperatureTimeScale = config_restoreT_timescale
-          salinityTimeScale = config_restoreS_timescale
-      endif
+      temperatureTimeScale = config_restoreT_timescale
+      salinityTimeScale = config_restoreS_timescale
+      temperatureLengthScale = config_restoreT_lengthscale
+      salinityLengthScale = config_restoreS_lengthscale
 
    !--------------------------------------------------------------------
 
-   end subroutine ocn_restoring_init!}}}
+   end subroutine ocn_forcing_restoring_init!}}}
 
 !***********************************************************************
 
-end module ocn_restoring
+end module ocn_forcing_restoring
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 ! vim: foldmethod=marker

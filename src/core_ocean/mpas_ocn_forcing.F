@@ -24,7 +24,10 @@ module ocn_forcing
    use mpas_grid_types
    use mpas_configure
    use mpas_timekeeping
+   use mpas_io_units
+   use mpas_dmpar
    use ocn_forcing_coupled
+   use ocn_forcing_restoring
 
    implicit none
    private
@@ -55,6 +58,8 @@ module ocn_forcing
 
    real (kind=RKIND) :: attenuationCoefficient
 
+   logical :: restoringOn, coupledOn
+
 !***********************************************************************
 
 contains
@@ -72,7 +77,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_forcing_build_arrays(timeStamp, mesh, forcing, err)!{{{
+   subroutine ocn_forcing_build_arrays(timeStamp, mesh, state, forcing, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -82,14 +87,17 @@ contains
 
       type(MPAS_Time_type), intent(in) :: timeStamp
 
+      type (state_type), intent(in) :: &
+         state          !< Input: State information
+
+      type (mesh_type), intent(in) :: &
+         mesh          !< Input: mesh information
+
       !-----------------------------------------------------------------
       !
       ! input/output variables
       !
       !-----------------------------------------------------------------
-
-      type (mesh_type), intent(inout) :: &
-         mesh          !< Input: mesh information
 
       type (forcing_type), intent(inout) :: forcing !< Input: Forcing information
 
@@ -107,7 +115,16 @@ contains
       !
       !-----------------------------------------------------------------
 
-      call ocn_forcing_coupled_build_arrays(timeStamp, mesh, forcing, err)
+      if ( coupledOn ) then
+         call ocn_forcing_coupled_build_arrays(timeStamp, mesh, forcing, err)
+      end if
+
+      if ( restoringOn ) then
+         call ocn_forcing_restoring_build_arrays(mesh, state % index_temperature, state % index_salinity, &
+              forcing % index_surfaceTemperatureFlux, forcing % index_surfaceSalinityFlux, &
+              state % tracers % array, mesh % temperatureRestore % array, mesh % salinityRestore % array, &
+              forcing % surfaceTracerFlux % array, err)
+      end if
 
    !--------------------------------------------------------------------
 
@@ -136,7 +153,17 @@ contains
 
       attenuationCoefficient = config_flux_attenuation_coefficient
 
-      call ocn_forcing_coupled_init(err1)
+      if ( config_forcing_type == trim('coupled') ) then
+         call ocn_forcing_coupled_init(err1)
+         coupledOn = .true.
+      else if ( config_forcing_type == trim('restoring') ) then
+         call ocn_forcing_restoring_init(err1)
+         restoringOn = .true.
+      else
+         write(stderrUnit, *) "ERROR: config_forcing_type not one of 'coupled' or 'restoring'."
+         err = 1
+         call mpas_dmpar_global_abort("ERROR: config_forcing_type not one of 'coupled' or 'restoring'.")
+      end if
 
       err = ior(err,err1)
 

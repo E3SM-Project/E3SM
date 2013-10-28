@@ -22,7 +22,6 @@ OBJS = mpas_ocn_mpas_core.o \
        mpas_ocn_vmix_coefs_rich.o \
        mpas_ocn_vmix_coefs_tanh.o \
        mpas_ocn_vmix_cvmix.o \
-       mpas_ocn_restoring.o \
        mpas_ocn_tendency.o \
        mpas_ocn_diagnostics.o \
        mpas_ocn_thick_ale.o \
@@ -45,6 +44,7 @@ OBJS = mpas_ocn_mpas_core.o \
        mpas_ocn_constants.o \
        mpas_ocn_forcing.o \
        mpas_ocn_forcing_coupled.o \
+       mpas_ocn_forcing_restoring.o \
        mpas_ocn_time_average.o \
        mpas_ocn_time_average_coupled.o \
        mpas_ocn_sea_ice.o
@@ -124,8 +124,6 @@ mpas_ocn_tracer_short_wave_absorption.o: mpas_ocn_tracer_short_wave_absorption_j
 
 mpas_ocn_tracer_short_wave_absorption_jerlov.o:
 
-mpas_ocn_restoring.o:
-
 mpas_ocn_vmix.o: mpas_ocn_vmix_coefs_const.o mpas_ocn_vmix_coefs_rich.o mpas_ocn_vmix_coefs_tanh.o mpas_ocn_vmix_cvmix.o
 
 mpas_ocn_vmix_coefs_const.o:
@@ -146,9 +144,11 @@ mpas_ocn_test.o:
 
 mpas_ocn_constants.o:
 
-mpas_ocn_forcing.o: mpas_ocn_constants.o mpas_ocn_forcing_coupled.o
+mpas_ocn_forcing.o: mpas_ocn_constants.o mpas_ocn_forcing_coupled.o mpas_ocn_forcing_restoring.o
 
 mpas_ocn_forcing_coupled.o:
+
+mpas_ocn_forcing_restoring.o:
 
 mpas_ocn_sea_ice.o:
 
@@ -174,7 +174,6 @@ mpas_ocn_mpas_core.o: mpas_ocn_thick_hadv.o \
                       mpas_ocn_vmix_coefs_rich.o \
                       mpas_ocn_vmix_coefs_tanh.o \
                       mpas_ocn_vmix_cvmix.o \
-                      mpas_ocn_restoring.o \
                       mpas_ocn_tracer_advection.o \
                       mpas_ocn_tracer_surface_flux.o \
 					  mpas_ocn_tracer_short_wave_absorption.o \
@@ -193,6 +192,7 @@ mpas_ocn_mpas_core.o: mpas_ocn_thick_hadv.o \
                       mpas_ocn_constants.o \
                       mpas_ocn_forcing.o \
                       mpas_ocn_forcing_coupled.o \
+                      mpas_ocn_forcing_restoring.o \
                       mpas_ocn_time_average.o \
                       mpas_ocn_time_average_coupled.o \
 					  mpas_ocn_sea_ice.o

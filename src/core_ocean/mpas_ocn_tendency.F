@@ -42,7 +42,6 @@ module ocn_tendency
    use ocn_tracer_hmix
    use ocn_high_freq_thickness_hmix_del2
    use ocn_tracer_surface_flux
-   use ocn_restoring
 
    implicit none
    private
@@ -353,13 +352,6 @@ contains
       call mpas_timer_start("hmix", .false., tracerHmixTimer)
       call ocn_tracer_hmix_tend(mesh, layerThicknessEdge, tracers, tend_tr, err)
       call mpas_timer_stop("hmix", tracerHmixTimer)
-
-      !
-      ! add restoring to T and S in top model layer
-      !
-      call mpas_timer_start("restoring", .false., tracerRestoringTimer)
-      call ocn_restoring_tend(mesh, layerThickness, state % index_temperature, state % index_salinity, tracers, tend_tr, err)
-      call mpas_timer_stop("restoring", tracerRestoringTimer)
 
       !
       ! Perform forcing from surface fluxes
