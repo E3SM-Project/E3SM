@@ -12,7 +12,7 @@ physcore:
 	( cd physics; $(MAKE) all )
 	( mkdir libphys; cd libphys; ar -x ../physics/libphys.a )
 	( cd ../..; ln -sf ./src/core_atmosphere/physics/physics_wrf/files/*TBL .)
-	( cd ../..; ln -sf ./src/core_atmosphere/physics/physics_wrf/files/*DBL .)
+	( cd ../..; ln -sf ./src/core_atmosphere/physics/physics_wrf/files/*DATA* .)
 
 dycore:
 	( cd dynamics; $(MAKE) all PHYSICS="$(PHYSICS)" )
@@ -26,7 +26,7 @@ clean:
 	( cd physics; $(MAKE) clean )
 	( cd dynamics; $(MAKE) clean )
 	( cd ../..; rm -f *TBL )
-	( cd ../..; rm -f *DBL )
+	( cd ../..; rm -f *DATA* )
 	$(RM) -r libphys
 	$(RM) *.o *.mod *.f90 libdycore.a
 
