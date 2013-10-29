@@ -23,7 +23,7 @@ module fvm_line_integrals_mod
   real (kind=real_kind),parameter           :: fuzzy_width = 10.0*tiny
   ! turn on/off EOC (Enforcement of Consistency) -> Erath et al. MWR, 2013
   logical                                   :: EOC=.FALSE.
-  public :: compute_weights, compute_weights_cell, gauss_points
+  public :: compute_weights, compute_weights_cell, gauss_points, getdep_cellboundariesxyvec
 contains
 ! ----------------------------------------------------------------------------------!
 !SUBROUTINE COMPUTE_WEIGHTS-----------------------------------------------CE-for FVM!
