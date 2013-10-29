@@ -2485,7 +2485,7 @@ module atm_time_integration
                   end do
                end do
 
-               do k=1,nVertLevels
+               do k=2,nVertLevels
                   tend_w(k,cell1) = tend_w(k,cell1) - ru_edge_w(k)*flux_arr(k)
                   tend_w(k,cell2) = tend_w(k,cell2) + ru_edge_w(k)*flux_arr(k)
                end do
