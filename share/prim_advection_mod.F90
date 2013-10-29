@@ -1102,9 +1102,10 @@ contains
 !     call t_stopf('fvm_depalg')
 
 !------------------------------------------------------------------------------------
-
+    
     ! fvm departure calcluation should use vstar.
     ! from c(n0) compute c(np1):
+!    call cslam_runflux(elem,fvm,hybrid,deriv,dt,tl,nets,nete)
     call cslam_runairdensity(elem,fvm,hybrid,deriv,dt,tl,nets,nete)
 !     call cslam_run(elem,fvm,hybrid,deriv,dt,tl,nets,nete)
 
