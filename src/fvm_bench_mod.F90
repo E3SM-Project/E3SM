@@ -250,10 +250,10 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
     
     
 ! ! end mcgregordss   
-!     call cslam_runflux(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
-    call cslam_runairdensity(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
+     call cslam_runflux(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
+!phl    call cslam_runairdensity(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
 !     call cslam_runtest(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
-!     call cslam_run(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
+!     call cslam_run(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)!phl
     
     call TimeLevel_update(tl,"forward")
      
