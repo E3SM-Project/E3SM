@@ -22,8 +22,11 @@ module fvm_line_integrals_flux_mod
 contains
   ! ----------------------------------------------------------------------------------!
   !SUBROUTINE COMPUTE_WEIGHTS_FLUXFORM------------------------------------------------!
-  ! AUTHOR: PETER HJORT LAURITZEN, October 2013                                       !
-  ! DESCRIPTION: 
+  !                                                                                   !
+  ! THIS CODE IS BASED ON COMPUTE_WEIGHTS CODED BY CHRISTOPH ERATH AND MODIFIED FOR   !
+  ! FLUX-FORM CSLAM BY PETER HJORT LAURITZEN                                          !
+  !                                                                                   !
+  ! DESCRIPTION:                                                                      !
   !-----------------------------------------------------------------------------------!
   subroutine compute_weights_fluxform(fvm,nreconstruction,weights_all,weights_eul_index_all, &
        weights_lgr_index_all,klev,jall)  
@@ -895,18 +898,6 @@ contains
     integer (kind=int_kind),  &
          dimension(jmax_segments,2,2), intent(out)      :: weights_eul_index
     
-
-    !
-    ! x-flux
-    !
-    !
-    !  *-------*
-    !  |       |
-    !  |       |
-    !  |       |
-    !  *-------*
-    !
-
 
     call compute_weights_cell(4,lexact_horizontal_line_integrals,&
          xcell_in,ycell_in,jx,jy,nreconstruction,xgno,ygno,&
