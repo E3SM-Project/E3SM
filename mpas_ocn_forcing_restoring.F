@@ -126,7 +126,7 @@ contains
 
       k = 1  ! restoring only in top layer
       do iCell=1,nCellsSolve
-        surfaceFluxes(indexTFlux, iCell) = - temperatureLengthScale * (tracers(indexT, k, iCell) - salinityRestoring(iCell)) * invTemp
+        surfaceFluxes(indexTFlux, iCell) = - temperatureLengthScale * (tracers(indexT, k, iCell) - temperatureRestoring(iCell)) * invTemp
         surfaceFluxes(indexSFlux, iCell) = - salinityLengthScale * (tracers(indexS, k, iCell) - salinityRestoring(iCell)) * invSalinity
       enddo
 

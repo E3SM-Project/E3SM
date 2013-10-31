@@ -459,7 +459,7 @@
 	<nml_record name="forcing">
 		<nml_option name="config_forcing_type" type="character" default_value="off" units="unitless"
 					description="Defines the forcing type for the simulation."
-					possible_values="'restoring', 'bluk', or 'off'"
+					possible_values="'restoring', 'bulk', or 'off'"
 		/>
 		<nml_option name="config_restoreT_timescale" type="real" default_value="90.0" units="days"
 					description="Restoring time scale for temperature, $\tau_r.$"
@@ -477,8 +477,6 @@
 					description="Restoring length scale for salinity."
 					possible_values="any positive real value, but typically about 50 meters."
 		/>
-
-
 		<nml_option name="config_flux_attenuation_coefficient" type="real" default_value="0.001" units="m"
 					description="Coefficient used to determine transmission of surface fluxes. Fluxes are defined with $e^{z/\gamma}$ where this coefficient is $\gamma$."
 					possible_values="Any real number $\gamma>0.0$ and $\gamma \le 1.0$."
@@ -487,18 +485,18 @@
 					description="Logical flag that determines if the formation of frazil ice is allowed."
 					possible_values=".true. or .false."
 		/>
-        <nml_option name="config_sw_absorption_type" type="character" default_value="jerlov" units="unitless"
-                    description="Name of shortwave absorption type used in simulation."
-                    possible_values="'jerlov'"
-        />
-        <nml_option name="config_jerlov_water_type" type="integer" default_value="3" units="unitless"
-                    description="Integer value defining the water type used in Jerlov short wave absorption."
-                    possible_values="Integer values between 1 and 5"
-        />
-        <nml_option name="config_fixed_jerlov_weights" type="logical" default_value=".true." units="unitless"
-                    description="Logical value determining if the weights for Jerlov absorption are based off of reference depths (.true.), or the layerThickness variable (.false.)."
-                    possible_values=".true. or .false."
-        />
+		<nml_option name="config_sw_absorption_type" type="character" default_value="jerlov" units="unitless"
+					description="Name of shortwave absorption type used in simulation."
+					possible_values="'jerlov'"
+		/>
+		<nml_option name="config_jerlov_water_type" type="integer" default_value="3" units="unitless"
+					description="Integer value defining the water type used in Jerlov short wave absorption."
+					possible_values="Integer values between 1 and 5"
+		/>
+		<nml_option name="config_fixed_jerlov_weights" type="logical" default_value=".true." units="unitless"
+					description="Logical value determining if the weights for Jerlov absorption are based off of reference depths (.true.), or the layerThickness variable (.false.)."
+					possible_values=".true. or .false."
+		/>
 	</nml_record>
 	<nml_record name="advection">
 		<nml_option name="config_vert_tracer_adv" type="character" default_value="stencil" units="unitless"
