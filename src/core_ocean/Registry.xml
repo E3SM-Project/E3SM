@@ -457,9 +457,9 @@
 		/>
 	</nml_record>
 	<nml_record name="forcing">
-		<nml_option name="config_forcing_type" type="character" default_value="'restoring'" units="unitless"
+		<nml_option name="config_forcing_type" type="character" default_value="off" units="unitless"
 					description="Defines the forcing type for the simulation."
-					possible_values="'restoring' or 'bluk'"
+					possible_values="'restoring', 'bluk', or 'off'"
 		/>
 		<nml_option name="config_restoreT_timescale" type="real" default_value="90.0" units="days"
 					description="Restoring time scale for temperature, $\tau_r.$"
@@ -1047,11 +1047,9 @@
 		<var_array name="SSHGradient" type="real" dimensions="nCells Time">
 			<var name="zonalSSHGradient" array_group="ssh_zonal" streams="o" units="m m^{-1}"
 				 description="Zonal gradient of SSH reconstructed at cell centers"
-				 streams="o"
 			/>
 			<var name="meridionalSSHGradient" array_group="ssh_meridional" streams="o" units="m m^{-1}"
 				 description="Meridional gradient of SSH reconstructed at cell centers"
-				 streams="o"
 			/>
 		</var_array>
 		<var name="zMid" type="real" dimensions="nVertLevels nCells Time" streams="o" units="m"
@@ -1318,7 +1316,7 @@
 			 description="Pressure defined at the sea surface."
 		/>
 		<var name="seaIceEnergy" type="real" dimensions="nCells Time" units="J m^{-2}" streams="o"
-			 description="Energy per unit area trapped in frazil ice formation. Always \ge 0.0."
+			 description="Energy per unit area trapped in frazil ice formation. Always $\ge$ 0.0."
 		/>
 		<var name="penetrativeTemperatureFlux" type="real" dimensions="nCells Time" units="^\circ C m s^{-1}" streams="o"
 			 description="Penetrative temperature flux at the surface due to solar radiation. Positive is into the ocean."

@@ -43,7 +43,7 @@ OBJS = mpas_ocn_mpas_core.o \
        mpas_ocn_test.o \
        mpas_ocn_constants.o \
        mpas_ocn_forcing.o \
-       mpas_ocn_forcing_coupled.o \
+       mpas_ocn_forcing_bulk.o \
        mpas_ocn_forcing_restoring.o \
        mpas_ocn_time_average.o \
        mpas_ocn_time_average_coupled.o \
@@ -144,9 +144,9 @@ mpas_ocn_test.o:
 
 mpas_ocn_constants.o:
 
-mpas_ocn_forcing.o: mpas_ocn_constants.o mpas_ocn_forcing_coupled.o mpas_ocn_forcing_restoring.o
+mpas_ocn_forcing.o: mpas_ocn_constants.o mpas_ocn_forcing_bulk.o mpas_ocn_forcing_restoring.o
 
-mpas_ocn_forcing_coupled.o:
+mpas_ocn_forcing_bulk.o:
 
 mpas_ocn_forcing_restoring.o:
 
@@ -191,7 +191,7 @@ mpas_ocn_mpas_core.o: mpas_ocn_thick_hadv.o \
                       mpas_ocn_test.o \
                       mpas_ocn_constants.o \
                       mpas_ocn_forcing.o \
-                      mpas_ocn_forcing_coupled.o \
+                      mpas_ocn_forcing_bulk.o \
                       mpas_ocn_forcing_restoring.o \
                       mpas_ocn_time_average.o \
                       mpas_ocn_time_average_coupled.o \

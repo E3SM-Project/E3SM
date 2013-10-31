@@ -118,13 +118,30 @@
 	config_zMid_tanh = -100
 	config_zWidth_tanh = 100
 /
+&cvmix
+	config_use_cvmix = .false.
+	config_cvmix_prandtl_number = 1.0
+	config_use_cvmix_background = .false.
+	config_cvmix_background_diffusion = 1.0e-5
+	config_cvmix_background_viscosity = 1.0e-4
+	config_use_cvmix_convection = .false.
+	config_cvmix_convective_diffusion = 1.0
+	config_cvmix_convective_viscosity = 1.0
+	config_use_cvmix_kpp = .false.
+	config_cvmix_kpp_criticalBulkRichardsonNumber = 0.25
+	config_cvmix_kpp_interpolationOMLType = "quadratic"
+/
 &forcing
-	config_restoreTS = .false.
+	config_forcing_type = "off"
 	config_restoreT_timescale = 90.0
 	config_restoreS_timescale = 90.0
-	config_use_coupled_forcing = .false.
+	config_restoreT_lengthscale = 50.0
+	config_restoreS_lengthscale = 50.0
 	config_flux_attenuation_coefficient = 0.001
 	config_frazil_ice_formation = .true.
+	config_sw_absorption_type = "jerlov"
+	config_jerlov_water_type = 3
+	config_fixed_jerlov_weights = .true.
 /
 &advection
 	config_vert_tracer_adv = "stencil"

@@ -26,7 +26,7 @@ module ocn_forcing
    use mpas_timekeeping
    use mpas_io_units
    use mpas_dmpar
-   use ocn_forcing_coupled
+   use ocn_forcing_bulk
    use ocn_forcing_restoring
 
    implicit none
@@ -58,7 +58,7 @@ module ocn_forcing
 
    real (kind=RKIND) :: attenuationCoefficient
 
-   logical :: restoringOn, coupledOn
+   logical :: restoringOn, bulkOn
 
 !***********************************************************************
 
@@ -77,15 +77,13 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_forcing_build_arrays(timeStamp, mesh, state, forcing, err)!{{{
+   subroutine ocn_forcing_build_arrays(mesh, state, forcing, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
-
-      type(MPAS_Time_type), intent(in) :: timeStamp
 
       type (state_type), intent(in) :: &
          state          !< Input: State information
@@ -115,8 +113,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      if ( coupledOn ) then
-         call ocn_forcing_coupled_build_arrays(timeStamp, mesh, forcing, err)
+      if ( bulkOn ) then
+         call ocn_forcing_bulk_build_arrays(mesh, forcing, err)
       end if
 
       if ( restoringOn ) then
@@ -153,16 +151,21 @@ contains
 
       attenuationCoefficient = config_flux_attenuation_coefficient
 
-      if ( config_forcing_type == trim('coupled') ) then
-         call ocn_forcing_coupled_init(err1)
-         coupledOn = .true.
+      if ( config_forcing_type == trim('bulk') ) then
+         call ocn_forcing_bulk_init(err1)
+         bulkOn = .true.
+         restoringOn = .false.
       else if ( config_forcing_type == trim('restoring') ) then
          call ocn_forcing_restoring_init(err1)
          restoringOn = .true.
+         bulkOn = .false.
+      else if ( config_forcing_type == trim('off') ) then
+         restoringOn = .false.
+         bulkOn = .false.
       else
-         write(stderrUnit, *) "ERROR: config_forcing_type not one of 'coupled' or 'restoring'."
+         write(stderrUnit, *) "ERROR: config_forcing_type not one of 'bulk' or 'restoring'."
          err = 1
-         call mpas_dmpar_global_abort("ERROR: config_forcing_type not one of 'coupled' or 'restoring'.")
+         call mpas_dmpar_global_abort("ERROR: config_forcing_type not one of 'bulk' or 'restoring'.")
       end if
 
       err = ior(err,err1)
