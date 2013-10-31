@@ -7,19 +7,19 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  ocn_forcing_coupled
+!  ocn_forcing_bulk
 !
-!> \brief MPAS ocean coupled forcing
+!> \brief MPAS ocean bulk forcing
 !> \author Doug Jacobsen
 !> \date   04/25/12
 !> \version SVN:$Id:$
 !> \details
 !>  This module contains routines for building the forcing arrays,
-!>  if coupled forcing is used.
+!>  if bulk forcing is used.
 !
 !-----------------------------------------------------------------------
 
-module ocn_forcing_coupled
+module ocn_forcing_bulk
 
    use mpas_kind_types
    use mpas_grid_types
@@ -43,8 +43,8 @@ module ocn_forcing_coupled
    !
    !--------------------------------------------------------------------
 
-   public :: ocn_forcing_coupled_build_arrays, &
-             ocn_forcing_coupled_init
+   public :: ocn_forcing_bulk_build_arrays, &
+             ocn_forcing_bulk_init
 
    !--------------------------------------------------------------------
    !
@@ -60,7 +60,7 @@ contains
 !
 !  routine ocn_build_forcing_arrays
 !
-!> \brief   Determines the forcing array used for the coupled forcing.
+!> \brief   Determines the forcing array used for the bulk forcing.
 !> \author  Doug Jacobsen
 !> \date    04/25/12
 !> \version SVN:$Id$
@@ -69,15 +69,13 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_forcing_coupled_build_arrays(timeStamp, mesh, forcing, err)!{{{
+   subroutine ocn_forcing_bulk_build_arrays(mesh, forcing, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
-
-      type(MPAS_Time_type), intent(in) :: timeStamp
 
       !-----------------------------------------------------------------
       !
@@ -184,32 +182,32 @@ contains
 
       penetrativeTemperatureFlux = shortWaveHeatFlux * hflux_factor
 
-   end subroutine ocn_forcing_coupled_build_arrays!}}}
+   end subroutine ocn_forcing_bulk_build_arrays!}}}
 
 !***********************************************************************
 !
-!  routine ocn_forcing_coupled_init
+!  routine ocn_forcing_bulk_init
 !
-!> \brief   Initializes coupled forcing module
+!> \brief   Initializes bulk forcing module
 !> \author  Doug Jacobsen
 !> \date    04/25/12
 !> \version SVN:$Id$
 !> \details 
-!>  This routine initializes the coupled forcing module.
+!>  This routine initializes the bulk forcing module.
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_forcing_coupled_init(err)!{{{
+   subroutine ocn_forcing_bulk_init(err)!{{{
 
       integer, intent(out) :: err !< Output: error flag
 
       err = 0
 
-   end subroutine ocn_forcing_coupled_init!}}}
+   end subroutine ocn_forcing_bulk_init!}}}
 
 !***********************************************************************
 
-end module ocn_forcing_coupled
+end module ocn_forcing_bulk
 
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
