@@ -1105,25 +1105,33 @@ subroutine ocn_compute_max_level(domain)!{{{
       ! Find cells and vertices that have an edge on the boundary
       !
       boundaryCell(:,1:nCells+1) = 0
-      cellMask(:,1:nCells+1) = 1
+      cellMask(:,1:nCells+1) = 0
       boundaryVertex(:,1:nVertices+1) = 0
-      vertexMask(:,1:nVertices+1) = 1
+      vertexMask(:,1:nVertices+1) = 0
       do iEdge=1,nEdges
          do k=1,nVertLevels
             if (boundaryEdge(k,iEdge).eq.1) then
                boundaryCell(k,cellsOnEdge(1,iEdge)) = 1
                boundaryCell(k,cellsOnEdge(2,iEdge)) = 1
-               if(maxLevelCell(cellsOnEdge(1,iEdge)) > k) then
-                   cellMask(k, cellsOnEdge(1,iEdge)) = 0
-               end if
-               if(maxLevelCell(cellsOnEdge(2,iEdge)) > k) then
-                   cellMask(k, cellsOnEdge(2,iEdge)) = 0
-               end if
                boundaryVertex(k,verticesOnEdge(1,iEdge)) = 1
                boundaryVertex(k,verticesOnEdge(2,iEdge)) = 1
-               vertexMask(k,verticesOnEdge(1,iEdge)) = 0
-               vertexMask(k,verticesOnEdge(2,iEdge)) = 0
             endif
+         end do
+      end do
+
+      do iCell = 1, nCells
+         do k = 1, nVertLevels
+            if ( maxLevelCell(iCell) >= k ) then
+               cellMask(k, iCell) = 1
+            end if
+         end do
+      end do
+
+      do iVertex = 1, nVertices
+         do k = 1, nVertLevels
+            if ( maxLevelVertexBot(iVertex) >= k ) then
+               vertexMask(k, iVertex) = 1
+            end if
          end do
       end do
 
