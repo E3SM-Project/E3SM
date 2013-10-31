@@ -571,7 +571,7 @@ module init_atm_hinterp
             icx = end_x
          end if
 
-         if (yy > real(start_y)-0.5 .and. ifx < start_y) then
+         if (yy > real(start_y)-0.5 .and. ify < start_y) then
             ify = start_y
             icy = start_y
          else if (yy < real(end_y)+0.5 .and. icy > end_y) then

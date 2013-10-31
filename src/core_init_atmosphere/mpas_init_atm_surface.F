@@ -317,7 +317,7 @@
        lat = latPoints(i) * DEG_PER_RAD
        lon = lonPoints(i) * DEG_PER_RAD
        call latlon_to_ij(proj, lat, lon, x, y)
-       if(y < 0.5) then
+       if(y <= 0.5) then
           y = 1.0
        elseif(y >= real(field%ny)+0.5) then
           y = real(field % ny)
