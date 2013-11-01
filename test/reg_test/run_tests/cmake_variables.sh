@@ -35,4 +35,4 @@ MPI_EXEC=@USE_MPIEXEC@
 MPI_OPTIONS="@USE_MPI_OPTIONS@"
 
 # User provided header for submission
-HOMME_Submission_Header=@SUBMISSION_HEADER@
+HOMME_Submission_Header=@HOMME_SUBMISSION_HEADER@

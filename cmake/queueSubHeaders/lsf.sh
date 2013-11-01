@@ -4,14 +4,14 @@
 #BSUB -P ${HOMME_PROJID}
 
 #BSUB -q small
-#BSUB -W 0:20
+#BSUB -W 0:40
 #BSUB -x
 
-#BSUB -J ${testName}
+#BSUB -J ${TEST_NAME}
 
-#BSUB -o ${testName}.stdout.%J
-#BSUB -e ${testName}.stderr.%J
+#BSUB -o ${TEST_NAME}.stdout.%J
+#BSUB -e ${TEST_NAME}.stderr.%J
 
-#BSUB -n 16
-#BSUB -R "span[ptile=16]" 
+#BSUB -n ${NUM_CPUS}
+#BSUB -R "span[ptile=${NUM_CPUS}]" 
 

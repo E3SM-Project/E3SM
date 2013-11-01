@@ -3,8 +3,8 @@
 #MSUB -A ${HOMME_PROJID}
 #MSUB -l nodes=1:ppn=12,walltime=00:45:00
 #MSUB -q pdebug
-#MSUB -d ${testDir}
+#MSUB -d ${TEST_DIR}
 #MSUB -j
-#MSUB -o ${testName}.stdout.${SLURM_JOB_ID}
-#MSUB -e ${testName}.stderr.${SLURM_JOB_ID}
+#MSUB -o ${TEST_NAME}.stdout.${SLURM_JOB_ID}
+#MSUB -e ${TEST_NAME}.stderr.${SLURM_JOB_ID}
 

@@ -156,16 +156,16 @@ macro (setUpTestDir TEST_DIR)
       SET(NUM_CPUS ${MAX_NUM_PROCS})
     ENDIF ()
   ENDIF ()
-  FILE(APPEND ${THIS_TEST_SCRIPT} "num_cpus=${NUM_CPUS}\n") # new line
+  FILE(APPEND ${THIS_TEST_SCRIPT} "NUM_CPUS=${NUM_CPUS}\n") # new line
   FILE(APPEND ${THIS_TEST_SCRIPT} "\n") # new line
   SET (TEST_INDEX 1)
   FOREACH (singleFile ${NAMELIST_FILES}) 
-    FILE(APPEND ${THIS_TEST_SCRIPT} "test${TEST_INDEX}=\"${CMAKE_CURRENT_BINARY_DIR}/${EXEC_NAME}/${EXEC_NAME} < ${singleFile}\"\n")
+    FILE(APPEND ${THIS_TEST_SCRIPT} "TEST_${TEST_INDEX}=\"${CMAKE_CURRENT_BINARY_DIR}/${EXEC_NAME}/${EXEC_NAME} < ${singleFile}\"\n")
     FILE(APPEND ${THIS_TEST_SCRIPT} "\n") # new line
     MATH(EXPR TEST_INDEX "${TEST_INDEX} + 1")
   ENDFOREACH ()
   MATH(EXPR TEST_INDEX "${TEST_INDEX} - 1")
-  FILE(APPEND ${THIS_TEST_SCRIPT} "num_tests=${TEST_INDEX}\n") # new line
+  FILE(APPEND ${THIS_TEST_SCRIPT} "NUM_TESTS=${TEST_INDEX}\n") # new line
   FILE(APPEND ${THIS_TEST_SCRIPT} "\n") # new line
 
   # openMP runs
@@ -180,17 +180,17 @@ macro (setUpTestDir TEST_DIR)
         MESSAGE(FATAL_ERROR "In test ${TEST_NAME} NUM_CPUS not divisible by OMP_NUM_THREADS. Quitting.")
       ENDIF ()
       MATH(EXPR OMP_NUM_MPI "${NUM_CPUS} / ${OMP_NUM_THREADS}")
-      FILE(APPEND ${THIS_TEST_SCRIPT} "omp_num_mpi=${OMP_NUM_MPI}\n") # new line
-      FILE(APPEND ${THIS_TEST_SCRIPT} "omp_number_threads=${OMP_NUM_THREADS}\n") # new line
+      FILE(APPEND ${THIS_TEST_SCRIPT} "OMP_NUM_MPI=${OMP_NUM_MPI}\n") # new line
+      FILE(APPEND ${THIS_TEST_SCRIPT} "OMP_NUMBER_THREADS=${OMP_NUM_THREADS}\n") # new line
       FILE(APPEND ${THIS_TEST_SCRIPT} "\n") # new line
       SET (TEST_INDEX 1)
       FOREACH (singleFile ${OMP_NAMELIST_FILES}) 
-        FILE(APPEND ${THIS_TEST_SCRIPT} "omp_test${TEST_INDEX}=\"${CMAKE_CURRENT_BINARY_DIR}/${EXEC_NAME}/${EXEC_NAME} < ${singleFile}\"\n")
+        FILE(APPEND ${THIS_TEST_SCRIPT} "OMP_TEST_${TEST_INDEX}=\"${CMAKE_CURRENT_BINARY_DIR}/${EXEC_NAME}/${EXEC_NAME} < ${singleFile}\"\n")
         FILE(APPEND ${THIS_TEST_SCRIPT} "\n") # new line
         MATH(EXPR TEST_INDEX "${TEST_INDEX} + 1")
       ENDFOREACH () 
       MATH(EXPR TEST_INDEX "${TEST_INDEX} - 1")
-      FILE(APPEND ${THIS_TEST_SCRIPT} "omp_num_tests=${TEST_INDEX}\n") # new line
+      FILE(APPEND ${THIS_TEST_SCRIPT} "OMP_NUM_TESTS=${TEST_INDEX}\n") # new line
     ELSE ()
       MESSAGE(STATUS "  Not including OpenMP tests")
     ENDIF()
@@ -198,12 +198,12 @@ macro (setUpTestDir TEST_DIR)
 
   # Add this test to the list of tests
   MATH(EXPR NUM_TEST_FILES "${NUM_TEST_FILES} + 1")
-  FILE (APPEND ${HOMME_TEST_LIST} "test_file${NUM_TEST_FILES}=${THIS_TEST_SCRIPT}\n")
+  FILE (APPEND ${HOMME_TEST_LIST} "TEST_FILE_${NUM_TEST_FILES}=${THIS_TEST_SCRIPT}\n")
 
   FILE(APPEND ${THIS_TEST_SCRIPT} "\n") # new line
 
   # Deal with the Netcdf output files
-  FILE(APPEND ${THIS_TEST_SCRIPT} "nc_output_files=\"")
+  FILE(APPEND ${THIS_TEST_SCRIPT} "NC_OUTPUT_FILES=\"")
   FOREACH (singleFile ${NC_OUTPUT_FILES}) 
     FILE(APPEND ${THIS_TEST_SCRIPT} "${singleFile} ")
   ENDFOREACH ()
