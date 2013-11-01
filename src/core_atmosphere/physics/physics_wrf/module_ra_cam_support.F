@@ -6,11 +6,7 @@ MODULE module_ra_cam_support
   use mpas_atmphys_utilities
 #endif
   implicit none
-#ifdef SINGLE_PRECISION
-      integer, parameter :: r8 = 4
-#else
       integer, parameter :: r8 = 8
-#endif
       real(r8), parameter:: inf = 1.e20 ! CAM sets this differently in infnan.F90
       integer, parameter:: bigint = O'17777777777'           ! largest possible 32-bit integer 
 

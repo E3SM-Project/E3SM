@@ -336,6 +336,57 @@ include 'mpif.h'
    end subroutine mpas_dmpar_bcast_reals!}}}
 
 !-----------------------------------------------------------------------
+!  routine mpas_dmpar_bcast_double
+!
+!> \brief MPAS dmpar broadcast double routine.
+!> \author Michael Duda
+!> \date   11/04/13
+!> \details
+!>  This routine broadcasts a double to all processors in the communicator.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_dmpar_bcast_double(dminfo, r)!{{{
+
+      implicit none
+
+      type (dm_info), intent(in) :: dminfo !< Input: Domain information
+      double precision, intent(inout) :: r !< Input/Output: Double to be broadcast
+
+#ifdef _MPI
+      integer :: mpi_ierr
+
+      call MPI_Bcast(r, 1, MPI_DOUBLE_PRECISION, IO_NODE, dminfo % comm, mpi_ierr)
+#endif
+
+   end subroutine mpas_dmpar_bcast_double!}}}
+
+!-----------------------------------------------------------------------
+!  routine mpas_dmpar_bcast_doubles
+!
+!> \brief MPAS dmpar broadcast doubles routine.
+!> \author Michael Duda
+!> \date   11/04/13
+!> \details
+!>  This routine broadcasts an array of doubles to all processors in the communicator.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_dmpar_bcast_doubles(dminfo, n, rarray)!{{{
+
+      implicit none
+
+      type (dm_info), intent(in) :: dminfo !< Input: Domain information
+      integer, intent(in) :: n !< Input: Length of array
+      double precision, dimension(n), intent(inout) :: rarray !< Input/Output: Array of doubles to be broadcast
+
+#ifdef _MPI
+      integer :: mpi_ierr
+
+      call MPI_Bcast(rarray, n, MPI_DOUBLE_PRECISION, IO_NODE, dminfo % comm, mpi_ierr)
+#endif
+
+   end subroutine mpas_dmpar_bcast_doubles!}}}
+
+!-----------------------------------------------------------------------
 !  routine mpas_dmpar_bcast_logical
 !
 !> \brief MPAS dmpar broadcast logical routine.

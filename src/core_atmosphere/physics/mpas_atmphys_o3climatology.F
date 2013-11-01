@@ -14,7 +14,7 @@
  use mpas_atmphys_utilities
 
 !wrf physics:
- use module_ra_cam_support, only: getfactors
+ use module_ra_cam_support, only: r8, getfactors
 
  implicit none
  private
@@ -243,8 +243,9 @@
  integer, dimension(12) ::  date_oz
  data date_oz/16, 45, 75, 105, 136, 166, 197, 228, 258, 289, 319, 350/
 
- real(kind=RKIND):: intjulian
- real(kind=RKIND):: cdayozp,cdayozm
+ real(kind=r8):: intjulian_r8
+ real(kind=r8):: cdayozp_r8, cdayozm_r8
+ real(kind=r8):: fact1_r8, fact2_r8
  real(kind=RKIND):: fact1,fact2
 
 !--------------------------------------------------------------------------------------------------
@@ -260,36 +261,39 @@
  ozncyc = .true.
 
 !julian starts from 0.0 at 0Z on 1 Jan.
- intjulian = julian + 1.0_RKIND    ! offset by one day
+ intjulian_r8 = real(julian + 1.0_RKIND, r8)    ! offset by one day
 
 !jan 1st 00z is julian=1.0 here
- ijul=int(intjulian)
+ ijul=int(intjulian_r8)
 !note that following will drift. need to use actual month/day info to compute julian.
- intjulian = intjulian-float(ijul)
+ intjulian_r8 = intjulian_r8 - real(ijul, r8)
  ijul = mod(ijul,365)
  if(ijul .eq. 0) ijul=365
- intjulian = intjulian + ijul
+ intjulian_r8 = intjulian_r8 + real(ijul, r8)
  np1=1
 
  finddate=.false.
  do m = 1, nMonths
-    if(date_oz(m).gt.intjulian .and. .not.finddate) then
+    if(date_oz(m).gt.intjulian_r8 .and. .not.finddate) then
        np1 = m
        finddate = .true.
     endif
  enddo
- cdayozp=date_oz(np1)
+ cdayozp_r8=date_oz(np1)
 
  if(np1 .gt. 1) then
-    cdayozm = date_oz(np1-1)
+    cdayozm_r8 = date_oz(np1-1)
     np = np1
     nm = np-1
  else
-    cdayozm=date_oz(12)
+    cdayozm_r8 = date_oz(12)
     np = np1
     nm = nMonths
  endif
- call getfactors(ozncyc,np1,cdayozm,cdayozp,intjulian,fact1,fact2) 
+ call getfactors(ozncyc,np1,cdayozm_r8,cdayozp_r8,intjulian_r8,fact1_r8,fact2_r8) 
+ fact1 = real(fact1_r8, RKIND)
+ fact2 = real(fact2_r8, RKIND)
+ 
 !write(0,*) '--- end subroutine getfactors:'
 !write(0,*) 'fact1 =', fact1
 !write(0,*) 'fact2 =', fact2 
