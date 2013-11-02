@@ -584,11 +584,11 @@ diffCprnc() {
     exit -8
   fi
 
-  # source the test.sh file to get the names of the nc_output_files
+  # source the test.sh file to get the names of the NC_OUTPUT_FILES
   source ${HOMME_TESTING_DIR}/${TEST_NAME}/${TEST_NAME}.sh
 
-  # nc_output_files is defined in the .sh file
-  FILES="${nc_output_files}"
+  # NC_OUTPUT_FILES is defined in the .sh file
+  FILES="${NC_OUTPUT_FILES}"
 
   if [ -z "${FILES}" ] ; then
       echo "Test ${TEST_NAME} doesn't have Netcdf output files"
@@ -649,11 +649,11 @@ diffCprnc() {
 
 diffCprncOutput() {
 
-  # source the test.sh file to get the names of the nc_output_files
+  # source the test.sh file to get the names of the NC_OUTPUT_FILES
   source ${HOMME_TESTING_DIR}/${TEST_NAME}/${TEST_NAME}.sh
 
-  # nc_output_files is defined in the .sh file
-  FILES="${nc_output_files}"
+  # NC_OUTPUT_FILES is defined in the .sh file
+  FILES="${NC_OUTPUT_FILES}"
 
   if [ -z "${FILES}" ] ; then
       echo "Test ${TEST_NAME} doesn't have Netcdf output files"
@@ -706,11 +706,11 @@ moveBaseline() {
     baselineDir=${HOMME_BASELINE_DIR}/$subBaseName
     mkdir -p $baselineDir
 
-    # source the test.sh file to get the name of the nc_output_files
+    # source the test.sh file to get the name of the NC_OUTPUT_FILES
     source ${subFile}
 
-    # nc_output_files is defined in the .sh file
-    FILES="${nc_output_files}"
+    # NC_OUTPUT_FILES is defined in the .sh file
+    FILES="${NC_OUTPUT_FILES}"
 
     if [ -z "${FILES}" ] ; then
       : # pass for now
