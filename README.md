@@ -28,6 +28,8 @@ core's user's guide, which can be found at the following web sites:
 
 [MPAS-Atmosphere](http://mpas-dev.github.io/atmosphere/atmosphere_download.html)
 
+[MPAS-Land Ice](http://mpas-dev.github.io/land_ice/download.html)
+
 [MPAS-Ocean](http://mpas-dev.github.io/ocean/releases.html)
 
 Code Layout
