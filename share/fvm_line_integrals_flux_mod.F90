@@ -3,7 +3,6 @@
 #endif
 
 !MODULE FVM_LINE_INTEGRALS_MOD_FLUX-------------------------------------------------!
-! AUTHOR: PETER HJORT LAURITZEN, October 2013                                       !
 !                                                                                   !
 !-----------------------------------------------------------------------------------!
 module fvm_line_integrals_flux_mod
@@ -77,7 +76,39 @@ contains
     real (kind=real_kind)   , dimension(nhe*50,nreconstruction,2)   :: weights_flux_cell
     integer (kind=int_kind),  dimension(nhe*50,2,2)                 :: weights_eul_index_cell
     integer (kind=int_kind)                                         :: jcollect_cell
-    
+    !
+    !
+    !    x--x--x--x--x
+    !    |  |  |  |  |
+    !    x--x--x--x--x
+    !    |  |  |  |  |
+    !    x--x--x--x--x
+    !    |  |  |  |  |
+    !    x--x--x--x--x
+    !    |  |  |  |  |
+    !    x--x--x--x--x
+    !
+    !
+    !            =========
+    !            |       |
+    !            |       |
+    !            |       |
+    !            |       |
+    !            |       |
+    !    =================================
+    !    |       |       |       |       |
+    !    |       |       |       |       |
+    !    |       |       |       |       |
+    !    |       |       |       |       |
+    !    |       |       |       |       |
+    !    =================================
+    !            |       |
+    !            |       |
+    !            |       |
+    !            |       |
+    !            |       |
+    !            =========
+    !
     jx_min=fvm%jx_min; jx_max=fvm%jx_max; 
     jy_min=fvm%jy_min; jy_max=fvm%jy_max;
     !
@@ -87,6 +118,7 @@ contains
        !
        ! element is on panel side
        !
+       write(*,*) "element is on panel side"!dbg
        jx_min1=fvm%jx_min1; jx_max1=fvm%jx_max1; 
        jy_min1=fvm%jy_min1; jy_max1=fvm%jy_max1;
        swap1=fvm%swap1
@@ -94,6 +126,7 @@ contains
           !
           ! element is on a panel corner
           !
+          write(*,*) "element is on panel corner"!dbg
           jx_min2=fvm%jx_min2; jx_max2=fvm%jx_max2;
           jy_min2=fvm%jy_min2; jy_max2=fvm%jy_max2;
           swap2=fvm%swap2
@@ -107,13 +140,14 @@ contains
     jall = 1
     ! 
     ! calculate xy Cartesian on the cube of departure points on the corresponding face  
-    do jy=-1,nc+3
-       do jx=-1,nc+3  
+    do jy=1,nc+1
+       do jx=1,nc+1
           call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy,klev)),&
                fvm%faceno,dcart(jx,jy))  
        end do
     end do
     
+    write(*,*) "doing interior from/to [1:nc]x[1:nc]",1,nc!dbg
     do jy=1, nc
        do jx=1, nc            
           !
@@ -138,16 +172,28 @@ contains
     
     !WEST SIDE
     if (fvm%cubeboundary == west) then
+       !
+       !    x--x--x--x--W-  jy=nc+1
+       !    |  |  |  |  |
+       !    x--x--x--x--W-  jy=nc
+       !    |  |  |  |  | 
+       !    x--x--x--x--W-  ...
+       !    |  |  |  |  |
+       !    x--x--x--x--W-  jy=2
+       !    |  |  |  |  |
+       !    x--x--x--x--W-  jy=1
+       !
+       !
        ! calculate xy Cartesian on the cube of departure points on the corresponding face
-       do jx=-1,2      
-          do jy=-1,nc+3
-             call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy,klev)),&
-                  fvm%nbrsface(west),dcart(jx,jy))                  
-          end do
-       end do
+
        jx=1
+       do jy=1,nc+1
+          call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy,klev)),&
+               fvm%nbrsface(west),dcart(jx,jy))                  
+          call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx+1,jy,klev)),&
+               fvm%nbrsface(west),dcart(jx+1,jy))                  
+       end do
        do jy=1,nc
-          !       call getdep_cellboundaries(xcell,ycell,jx,jy,fvm%nbrsface(west),fvm%dsphere) 
           call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)     
           
           if(swap1) then  !flip orientation
@@ -191,14 +237,31 @@ contains
     endif
     !EAST SIDE
     if (fvm%cubeboundary == east) then
+       !
+       ! no "swapping case"
+       !
+       !
+       ! jy=nc+1  -E--x--x--x--x
+       !           |  |  |  |  |
+       ! jy=nc    -E--x--x--x--x
+       !           |  |  |  |  |
+       ! ...      -E--x--x--x--x
+       !           |  |  |  |  |
+       ! jy=2     -E--x--x--x--x
+       !           |  |  |  |  |
+       ! jy=1     -E--x--x--x--x
+       !
+       !        
+       !
        ! calculate xy Cartesian on the cube of departure points on the corresponding face 
-       do jx=nc,nc+3 
-          do jy=-1,nc+3
-             call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy,klev)),&
-                  fvm%nbrsface(east),dcart(jx,jy))                  
-          end do
-       end do
        jx=nc
+       do jy=1,nc+1
+          call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy,klev)),&
+               fvm%nbrsface(east),dcart(jx,jy))                  
+          call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx+1,jy,klev)),&
+               fvm%nbrsface(east),dcart(jx+1,jy))                  
+       end do
+
        do jy=1,nc
           call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)     
           if(swap1) then !flip orientation
@@ -244,14 +307,33 @@ contains
     
     !NORTH SIDE 
     if (fvm%cubeboundary == north) then
-       ! calculate xy Cartesian on the cube of departure points on the corresponding face  
-       do jy=nc,nc+3
-          do jx=-1,nc+3
-             call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy,klev)),&
-                  fvm%nbrsface(north),dcart(jx,jy))                  
-          end do
-       end do
+       !
+       ! no "swapping case"
+       !
+       !
+       !  jx=1   ...  jx=nc+1
+       !     jx=2  jx=nc
+       !
+       !    N--N--N--N--N
+       !    |  |  |  |  |
+       !    x--x--x--x--x
+       !    |  |  |  |  |
+       !    x--x--x--x--x
+       !    |  |  |  |  |
+       !    x--x--x--x--x
+       !    |  |  |  |  |
+       !    x--x--x--x--x
+       !
+       ! calculate xy Cartesian on the cube of departure points on the corresponding face
+       !
        jy=nc
+       do jx=1,nc+1
+          call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy,klev)),&
+               fvm%nbrsface(north),dcart(jx,jy))                  
+          call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy+1,klev)),&
+               fvm%nbrsface(north),dcart(jx,jy+1))                  
+       end do
+
        do jx=1,nc
           call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)     
           if(swap1) then !flip orientation
@@ -311,14 +393,34 @@ contains
     endif
     !SOUTH SIDE
     if (fvm%cubeboundary == south) then
-       ! calculate xy Cartesian on the cube of departure points on the corresponding face  
-       do jy=-1,2
-          do jx=-1,nc+3
-             call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy,klev)),&
-                  fvm%nbrsface(south),dcart(jx,jy))                   
-          end do
-       end do
+       !
+       ! no "swapping case"
+       !
+       !
+       !    x--x--x--x--x
+       !    |  |  |  |  |
+       !    x--x--x--x--x
+       !    |  |  |  |  |
+       !    x--x--x--x--x
+       !    |  |  |  |  |
+       !    x--x--x--x--x
+       !    |  |  |  |  |
+       !    S--S--S--S--S
+       ! 
+       !  jx=1   ...  jx=nc+1
+       !     jx=2  jx=nc
+       !
+       !
+       ! calculate xy Cartesian on the cube of departure points on the corresponding face
+       !
        jy=1
+       do jx=1,nc+1
+          call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy,klev)),&
+               fvm%nbrsface(south),dcart(jx,jy))                   
+          call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy+1,klev)),&
+               fvm%nbrsface(south),dcart(jx,jy+1))                   
+       end do
+
        do jx=1,nc
           call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)      
           if(swap1) then !flip orientation
@@ -378,17 +480,30 @@ contains
     endif
     !SOUTHWEST Corner
     if (fvm%cubeboundary == swest) then
-       ! calculate xy Cartesian on the cube of departure points on the corresponding face  
-       do jy=-1,2
-          do jx=-1,nc+3
-             if ((jy<1) .and. (jx<1)) then   ! in the southwest corner are no values!!!
-                cycle
-             end if
-             call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy,klev)),&
-                  fvm%nbrsface(south),dcart(jx,jy))                  
-          end do
-       end do
+       !
+       ! no "swapping case"
+       !
+       !
+       !    x--x--x--x--x
+       !    |  |  |  |  |
+       !    x--x--x--x--x
+       !    |  |  |  |  |
+       !    x--x--x--x--x
+       !    |  |  |  |  |
+       !    x--x--x--x--x
+       !    |  |  |  |  |
+       !   SW-SW-SW-SW-SW--
+       !                |
+       !
+       ! calculate xy Cartesian on the cube of departure points on the corresponding face
        jy=1
+       do jx=1,nc+1
+          call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy,klev)),&
+               fvm%nbrsface(south),dcart(jx,jy))                  
+          call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy+1,klev)),&
+               fvm%nbrsface(south),dcart(jx,jy+1))                  
+       end do
+
        do jx=1,nc
           call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)      
           if(swap1) then !flip orientation
@@ -438,17 +553,15 @@ contains
        end do
        
        
-       ! calculate xy Cartesian on the cube of departure points on the corresponding face  
-       do jx=-1,2
-          do jy=-1,nc+3
-             if ((jy<1) .and. (jx<1)) then
-                cycle
-             end if
-             call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy,klev)),&
-                  fvm%nbrsface(west),dcart(jx,jy))                  
-          end do
-       end do
+       ! calculate xy Cartesian on the cube of departure points on the corresponding face
        jx=1
+       do jy=1,nc+1
+          call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy,klev)),&
+               fvm%nbrsface(west),dcart(jx,jy))                  
+          call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx+1,jy,klev)),&
+               fvm%nbrsface(west),dcart(jx+1,jy))                  
+       end do
+
        do jy=1,nc
           call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)      
           if(swap2) then !flip orientation
@@ -493,17 +606,30 @@ contains
     
     ! SOUTHEAST Corner
     if (fvm%cubeboundary == seast) then
-       ! calculate xy Cartesian on the cube of departure points on the corresponding face  
-       do jy=-1,2
-          do jx=-1,nc+3
-             if ((jy<1) .and. (jx>nc+1)) then   ! in the southwest corner are no values!!!
-                cycle
-             end if
-             call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy,klev)),&
-                  fvm%nbrsface(south),dcart(jx,jy))  
-          end do
-       end do
+       !
+       ! no "swapping case"
+       !
+       !
+       !    x--x--x--x--x
+       !    |  |  |  |  |
+       !    x--x--x--x--x
+       !    |  |  |  |  |
+       !    x--x--x--x--x
+       !    |  |  |  |  |
+       !    x--x--x--x--x
+       !    |  |  |  |  |
+       !  -SE-SE-SE-SE-SE
+       !    |            
+       !
+       ! calculate xy Cartesian on the cube of departure points on the corresponding face 
+       !
        jy=1
+       do jx=1,nc+1
+          call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy,klev)),&
+               fvm%nbrsface(south),dcart(jx,jy))  
+          call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy+1,klev)),&
+               fvm%nbrsface(south),dcart(jx,jy+1))  
+       end do
        do jx=1,nc
           call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)      
           if(swap1) then !flip orientation
@@ -562,16 +688,14 @@ contains
        end do
        
        ! calculate xy Cartesian on the cube of departure points on the corresponding face  
-       do jx=nc,nc+3
-          do jy=-1,nc+3
-             if ((jy<1) .and. (jx>nc+1)) then
-                cycle
-             end if
-             call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy,klev)),&
-                  fvm%nbrsface(east),dcart(jx,jy))                   
-          end do
-       end do
        jx=nc
+       do jy=1,nc+1
+          call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy,klev)),&
+               fvm%nbrsface(east),dcart(jx,jy))                   
+          call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx+1,jy,klev)),&
+               fvm%nbrsface(east),dcart(jx+1,jy))                   
+       end do
+
        do jy=1,nc
           call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)     
           if(swap2) then !flip orientation
@@ -615,17 +739,28 @@ contains
     
     !NORTHEAST Corner
     if (fvm%cubeboundary == neast) then
+       !
+       !    |
+       ! --NE-NE-NE-NE-NE
+       !    |  |  |  |  |
+       !    x--x--x--x--x
+       !    |  |  |  |  |
+       !    x--x--x--x--x
+       !    |  |  |  |  |
+       !    x--x--x--x--x
+       !    |  |  |  |  |
+       !    x--x--x--x--x
+       !
+       !
        ! calculate xy Cartesian on the cube of departure points on the corresponding face  
-       do jy=nc,nc+3
-          do jx=-1,nc+3
-             if ((jy>nc+1) .and. (jx>nc+1)) then   ! in the southwest corner are no values!!!
-                cycle
-             end if
+       jy=nc
+       do jx=1,nc+1
              call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy,klev)),&
                   fvm%nbrsface(north),dcart(jx,jy))                
-          end do
+             call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy+1,klev)),&
+                  fvm%nbrsface(north),dcart(jx,jy+1))                
        end do
-       jy=nc
+
        do jx=1,nc
           call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)      
           if(swap1) then !flip orientation
@@ -683,14 +818,12 @@ contains
        end do
        
        ! calculate xy Cartesian on the cube of departure points on the corresponding face  
-       do jx=nc,nc+3
-          do jy=-1,nc+3
-             if ((jy>nc+1) .and. (jx>nc+1)) then
-                cycle
-             end if
-             call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy,klev)),&
-                  fvm%nbrsface(east),dcart(jx,jy))                  
-          end do
+       jx=nc
+       do jy=1,nc+1
+          call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy,klev)),&
+               fvm%nbrsface(east),dcart(jx,jy))                  
+          call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx+1,jy,klev)),&
+               fvm%nbrsface(east),dcart(jx+1,jy))                  
        end do
        jx=nc
        do jy=1,nc
@@ -737,17 +870,28 @@ contains
     
     !NORTH WEST CORNER 
     if (fvm%cubeboundary == nwest) then
-       ! calculate xy Cartesian on the cube of departure points on the corresponding face  
-       do jy=nc, nc+3
-          do jx=-1,nc+3
-             if ((jy>nc+1) .and. (jx<1)) then   ! in the southwest corner are no values!!!
-                cycle
-             end if
-             call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy,klev)),&
-                  fvm%nbrsface(north),dcart(jx,jy))                   
-          end do
-       end do
+       !
+       !
+       !                |
+       !   NW-NW-NW-NW-NW--
+       !    |  |  |  |  |
+       !    x--x--x--x--x
+       !    |  |  |  |  |
+       !    x--x--x--x--x
+       !    |  |  |  |  |
+       !    x--x--x--x--x
+       !    |  |  |  |  |
+       !    x--x--x--x--x
+       !
+       !
+       ! calculate xy Cartesian on the cube of departure points on the corresponding face
        jy=nc
+       do jx=1,nc+1
+          call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy,klev)),&
+               fvm%nbrsface(north),dcart(jx,jy))                   
+          call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy+1,klev)),&
+               fvm%nbrsface(north),dcart(jx,jy+1))                   
+       end do
        do jx=1,nc
           call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)      
           if(swap1) then !flip orientation
@@ -804,17 +948,14 @@ contains
           endif
        end do
        
-       ! calculate xy Cartesian on the cube of departure points on the corresponding face  
-       do jx=-1,2
-          do jy=-1,nc+3
-             if ((jy>nc+1) .and. (jx<1)) then
-                cycle
-             end if
-             call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy,klev)),&
-                  fvm%nbrsface(west),dcart(jx,jy))                  
-          end do
-       end do
+       ! calculate xy Cartesian on the cube of departure points on the corresponding face
        jx=1
+       do jy=1,nc+1
+          call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy,klev)),&
+               fvm%nbrsface(west),dcart(jx,jy))                  
+          call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx+1,jy,klev)),&
+               fvm%nbrsface(west),dcart(jx+1,jy))                  
+       end do
        do jy=1,nc
           call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)      
           if(swap2) then !flip orientation
@@ -897,7 +1038,48 @@ contains
          dimension(jmax_segments,nreconstruction,2), intent(out) :: weights
     integer (kind=int_kind),  &
          dimension(jmax_segments,2,2), intent(out)      :: weights_eul_index
+    integer :: i,j
+
     
+!    write(*,*) "y isolines"
+!    do j=jy_min,jy_max
+!       do i=jx_min,jx_max-1
+!          write(*,*) xgno(i  ),ygno(j)
+!          write(*,*) xgno(i+1),ygno(j)
+!          write(*,*) "  "
+!       end do
+!    end do
+!    write(*,*) "x isolines"
+!    do j=jy_min,jy_max-1
+!       do i=jx_min,jx_max
+!          write(*,*) xgno(i),ygno(j)
+!          write(*,*) xgno(i),ygno(j+1)
+!          write(*,*) "  "
+!       end do
+!    end do
+!    stop
+
+    !
+    ! figure out how to loop over flux-edges (in calling routine)
+    !
+    ! pseudo-code:
+    !
+    ! if (zero_flux_area) return 
+    !
+    ! zero_flux should be determined from trajectories; can not use area since flux-area may be bowtie
+    !
+    ! if (triangle flux_area) nvertex=3
+    !
+    ! triangle flux-area determined from trajctories
+    !
+    ! if (non_self_intersecting)
+    !
+    ! self-intersection can be computed through line-integral area computations!
+    !
+    !
+    !
+    !
+
 
     call compute_weights_cell(4,lexact_horizontal_line_integrals,&
          xcell_in,ycell_in,jx,jy,nreconstruction,xgno,ygno,&
@@ -906,6 +1088,9 @@ contains
 
 
     weights(:,:,2) = -99.9E9
+
+
+
 
   end subroutine compute_weights_flux_cell
 end module fvm_line_integrals_flux_mod
