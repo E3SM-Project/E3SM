@@ -205,8 +205,8 @@ sub loadmodules{
     }elsif($host =~ "hopper"){
 	require "/opt/modules/default/init/perl";
 	module_check($modpath,$host);
-	module(" load netcdf-hdf5parallel/4.2.0");      
-	module(" load parallel-netcdf/1.2.0");
+	module(" load cray-netcdf-hdf5parallel/4.3.0");      
+	module(" load cray-parallel-netcdf/1.3.1.1");
         module("list");
     }elsif($host =~ "pleiades"){
         module(" load netcdf/4.0-i10.1");
@@ -242,14 +242,14 @@ sub loadmodules{
     }elsif($host eq "erebus"){
 	require "/glade/apps/opt/lmod/lmod/init/perl";    
 	module_check($modpath,$host);
-        module("load intel/12.1.4");
+        module("load intel/13.1.2");
 	module("load ncarcompilers/1.0");
         module("rm netcdf");
         module("load netcdf-mpi/4.2");
 #        module("load netcdf/4.2");
         module("load pnetcdf/1.3.0");
-        module("load ncarenv/0.0");
-	module("load ncarbinlibs/0.0");
+        module("load ncarenv/1.0");
+	module("load ncarbinlibs/1.1");
 	module("list");
     }elsif($host eq "yellowstone_pgi"){
 	print "Loading modules for $host\n";
@@ -257,13 +257,13 @@ sub loadmodules{
 	module_check($modpath,"yellowstone");
         module("rm netcdf");
         module("rm intel");
-        module("load pgi/13.3");
+        module("load pgi/13.9");
 	module("load ncarcompilers/1.0");
         module("unload netcdf");
         module("load netcdf/4.2");
         module("load pnetcdf/1.3.0");
         module("load ncarenv/1.0");
-	module("load ncarbinlibs/0.0");
+	module("load ncarbinlibs/1.1");
 	module("list");
     }elsif($host eq "yellowstone_gnu"){
 	print "Loading modules for $host\n";

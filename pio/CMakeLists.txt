@@ -1,4 +1,11 @@
+PROJECT(PIO C Fortran)
+ENABLE_LANGUAGE(Fortran)
+INCLUDE(FortranCInterface)
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8.5)
+
 SET(pio_include_dirs_  ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
+SET(PIO_LIB_DIR  ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
+
 
 OPTION(PIO_BIG_ENDIAN "Specify that the machine is big endian" "test")
 IF ("${PIO_BIG_ENDIAN}" STREQUAL "test") 
@@ -88,7 +95,8 @@ SET(SRCS_C topology.c)
 
 SET(SRCS_F90 pio.F90 pio_kinds.F90 nf_mod.F90  ionf_mod.F90 pio_types.F90
              piolib_mod.F90 pio_mpi_utils.F90 pio_nf_utils.F90 pio_utils.F90
-             pio_quicksort.F90 pio_msg_mod.F90 pio_msg_callbacks.F90)
+             pio_support.F90                                calcdisplace_mod.F90
+	     calcdecomp.F90 pio_msg_mod.F90 pio_msg_callbacks.F90)
 
 SET(TEMPSRCF90    pionfatt_mod.F90
          	                pionfread_mod.F90
@@ -98,14 +106,19 @@ SET(TEMPSRCF90    pionfatt_mod.F90
 	                        alloc_mod.F90
                                 box_rearrange.F90
                                 rearrange.F90
-                                pio_support.F90
          	                iompi_mod.F90
            	                piodarray.F90
 	                        pio_spmd_utils.F90
 	                        pio_msg_getput_callbacks.F90
-                                calcdisplace_mod.F90
-                                calcdecomp.F90
         )
+
+FOREACH(tempfile IN LISTS TEMPSRCF90)
+ADD_CUSTOM_COMMAND(
+	OUTPUT ${tempfile}
+	COMMAND ${GENF90_PATH}/genf90.pl ${tempfile}.in > ${tempfile}
+	DEPENDS  ${tempfile}.in
+)
+ENDFOREACH()
 
 ADD_LIBRARY(pio ${SRCS_F90} ${SRC_C} ${TEMPSRCF90})
 TARGET_LINK_LIBRARIES(pio ${Pnetcdf_LIBRARIES})

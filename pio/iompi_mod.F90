@@ -476,6 +476,7 @@ contains
     call t_stopf("pio_read_mpiio_text")
 #endif
  end function read_mpiio_text
+# 245 "iompi_mod.F90.in"
  integer function read_mpiio_real (File,IOBUF,varDesc, iodesc) result(ierr)
    
     type (File_desc_t), intent(inout)          :: File     ! file descriptor
@@ -544,6 +545,7 @@ contains
     call t_stopf("pio_read_mpiio_real")
 #endif
  end function read_mpiio_real
+# 245 "iompi_mod.F90.in"
  integer function read_mpiio_double (File,IOBUF,varDesc, iodesc) result(ierr)
    
     type (File_desc_t), intent(inout)          :: File     ! file descriptor
@@ -612,6 +614,7 @@ contains
     call t_stopf("pio_read_mpiio_double")
 #endif
  end function read_mpiio_double
+# 245 "iompi_mod.F90.in"
  integer function read_mpiio_int (File,IOBUF,varDesc, iodesc) result(ierr)
    
     type (File_desc_t), intent(inout)          :: File     ! file descriptor

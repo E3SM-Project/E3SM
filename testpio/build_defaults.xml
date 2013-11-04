@@ -42,7 +42,7 @@
   ENV_MP_MPILIB="mpich2"
   CXX="mpiicpc"
   CC="mpcc"
-  FC="mpfort"
+  FC="mpif90"
   MPIFC="mpif90"
   MPICC="mpicc"
   MPICXX="mpiicpc"
@@ -53,7 +53,7 @@
   submit="bsub &lt; "
   run = "mpirun.lsf"
   corespernode="32"
-  conopts="--enable-filesystem-hints=gpfs --with-piovdc=/glade/p/work/jedwards/libpiovdc/1.0/intel"
+  conopts="--disable-timing --enable-filesystem-hints=gpfs "
   netcdf4="true"
   preamble = '
 #BSUB -q small
@@ -80,7 +80,7 @@
   MPICXX="mpiCC"
   FFLAGS = "  "
   CFLAGS = " "
-  CPPDEFS= "-DFORTRANUNDERSCORE  "
+  CPPDEFS= "-DFORTRANUNDERSCORE  -DNO_MPIMOD"
   workdir="/glade/scratch/${USER}/testpio_pgi"
   submit="bsub &lt; "
   run = "mpirun.lsf"
