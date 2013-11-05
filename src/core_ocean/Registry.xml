@@ -444,6 +444,14 @@
 					description="Convective vertical viscosity applied to horizontal velocity"
 					possible_values="Any positive real value."
 		/>
+                <nml_option name="config_cvmix_convective_basedOnBVF" type="logical" default_value=".false." units="NA"
+                                        description="If true, convective is triggered based on value of config_cvmix_convective_triggerBVF"
+                                        possible_values="True or False"
+                />
+                <nml_option name="config_cvmix_convective_triggerBVF" type="real" default_value="0.0" units="s^{-2}"
+                                        description="Value below which convective mixing is triggered"
+                                        possible_values="Any real value."
+                />
 		<nml_option name="config_use_cvmix_kpp" type="logical" default_value=".false." units="NA"
 					description="If true, diffusivity and viscosity is computed using CVMix KPP"
 					possible_values="True or False"
