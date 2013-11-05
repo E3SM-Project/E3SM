@@ -148,6 +148,7 @@ contains
       integer :: err1
 
       err = 0
+      err1 = 0
 
       attenuationCoefficient = config_flux_attenuation_coefficient
 
@@ -163,9 +164,9 @@ contains
          restoringOn = .false.
          bulkOn = .false.
       else
-         write(stderrUnit, *) "ERROR: config_forcing_type not one of 'bulk' or 'restoring'."
+         write(stderrUnit, *) "ERROR: config_forcing_type not one of 'bulk' 'restoring', or 'off'."
          err = 1
-         call mpas_dmpar_global_abort("ERROR: config_forcing_type not one of 'bulk' or 'restoring'.")
+         call mpas_dmpar_global_abort("ERROR: config_forcing_type not one of 'bulk', 'restoring', or 'off'.")
       end if
 
       err = ior(err,err1)
