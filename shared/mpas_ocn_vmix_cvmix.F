@@ -216,6 +216,7 @@ contains
         cvmix_variables % ocn_depth = mesh % bottomDepth % array(iCell)
         cvmix_variables % dens => diagnostics % displacedDensity % array(:,iCell)
         cvmix_variables % dens_lwr => diagnostics % density % array(:,iCell)
+        cvmix_variables % buoy_iface => diagnostics % BruntVaisalaFreqTop % array(:,iCell)
 
         ! call convective mixing scheme
         ! (NOTE: cvmix_coeffs_conv might be incorrect)
@@ -390,6 +391,8 @@ contains
         call cvmix_init_conv( &
                convect_diff = config_cvmix_convective_diffusion,  &
                convect_visc = config_cvmix_convective_viscosity,  &
+               lBruntVaisala = config_cvmix_convective_basedOnBVF, &
+               BVsqr_convect = config_cvmix_convective_triggerBVF, &
                CVmix_conv_params_user = cvmix_conv_params)
 !       write(stdoutUnit,*) 'cvmix_init_conv',config_use_cvmix_convection
       endif
