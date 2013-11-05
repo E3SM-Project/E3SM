@@ -25,7 +25,7 @@ int nbuf = 0;
 
 int fortprintf(FILE * fd, char * str, ...)
 {
-   int i, nl, sp, inquotes;
+   int i, nl, sp, inquotes, q;
    int lastchar;
    int errorcode;
    va_list ap;
@@ -46,6 +46,8 @@ int fortprintf(FILE * fd, char * str, ...)
    nbuf = nbuf + i;
 
    inquotes = 0;
+   q = -1;
+
    do {
 
       nl = sp = -1;
@@ -53,7 +55,10 @@ int fortprintf(FILE * fd, char * str, ...)
       /* Scan through the max line length - 1 (since we may have to add an & character) or the end of the buffer, whichever comes first */
       for (i=0; i<MAX_LINE_LEN-1 && i<nbuf; i++) {
          lastchar = (i == nbuf-1) ? 1 : 0;
-         if (fbuffer[i] == '\'' && (fbuffer[i+1] != '\'' || lastchar)) inquotes = (inquotes + 1) % 2;  /* Whether we are inside a quoted string */
+         if (fbuffer[i] == '\'' && (fbuffer[i+1] != '\'' || lastchar)) {                               /* Whether we are inside a quoted string */
+            inquotes = (inquotes + 1) % 2;
+            q = inquotes ? i : -1;
+         }
          if (fbuffer[i] == '\n') nl = i;                                                               /* The last occurrence of a newline */
          if (fbuffer[i] == ' ' && !lastchar && fbuffer[i+1] != '&') sp = i;                            /* The last occurrence of a space */
       }
@@ -94,14 +99,14 @@ int fortprintf(FILE * fd, char * str, ...)
       else if (sp >= 0) {
          snprintf(printbuf, sp+2, "%s", fbuffer);
          i = sp+1;
-         if (inquotes) printbuf[i++] = '\'';
+         if (inquotes && (sp > q)) printbuf[i++] = '\'';
          printbuf[i++] = '&';
          printbuf[i++] = '\n';
          printbuf[i++] = '\0';
          fprintf(fd, "%s", printbuf);
          sp++;
          i = 0;
-         if (inquotes) {
+         if (inquotes && (sp > q)) {
             inquotes = (inquotes + 1) % 2;
             fbuffer[i++] = '/';
             fbuffer[i++] = '/';
