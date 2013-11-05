@@ -2,9 +2,20 @@ PROJECT(PIO C Fortran)
 ENABLE_LANGUAGE(Fortran)
 INCLUDE(FortranCInterface)
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8.5)
+SET (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 SET(pio_include_dirs_  ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
 SET(PIO_LIB_DIR  ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
+
+# Netcdf is required
+FIND_PACKAGE(Netcdf REQUIRED)
+# PNetcdf is optional but used by default
+OPTION(WITH_PNETCDF "Whether to build with PNetcdf" TRUE)
+IF (${WITH_PNETCDF})
+  FIND_PACKAGE(Pnetcdf REQUIRED)
+ELSE ()
+  MESSAGE(WARNING "Warning: Not building with PNetcdf - cannot run all regression tests.")
+ENDIF ()
 
 
 OPTION(PIO_BIG_ENDIAN "Specify that the machine is big endian" "test")
@@ -115,11 +126,11 @@ SET(TEMPSRCF90    pionfatt_mod.F90
 FOREACH(tempfile IN LISTS TEMPSRCF90)
 ADD_CUSTOM_COMMAND(
 	OUTPUT ${tempfile}
-	COMMAND ${GENF90_PATH}/genf90.pl ${tempfile}.in > ${tempfile}
+	COMMAND ${GENF90_PATH}/genf90.pl ${CMAKE_CURRENT_SOURCE_DIR}/${tempfile}.in > ${tempfile}
 	DEPENDS  ${tempfile}.in
 )
 ENDFOREACH()
 
-ADD_LIBRARY(pio ${SRCS_F90} ${SRC_C} ${TEMPSRCF90})
+ADD_LIBRARY(pio ${SRCS_F90} ${SRCS_C} ${TEMPSRCF90})
 TARGET_LINK_LIBRARIES(pio ${Pnetcdf_LIBRARIES})
 TARGET_LINK_LIBRARIES(pio ${Netcdf_LIBRARIES})

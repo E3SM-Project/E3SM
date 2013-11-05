@@ -4,8 +4,8 @@
 !===================================================
 !>
 !! @file 
-!! $Revision: 751 $
-!! $LastChangedDate: 2013-04-02 10:01:13 -0600 (Tue, 02 Apr 2013) $
+!! $Revision: 840 $
+!! $LastChangedDate: 2013-11-04 22:48:39 +0000 (Mon, 04 Nov 2013) $
 !! @brief Decomposed Write interface to NetCDF
 !<
 module pionfwrite_mod
@@ -48,8 +48,10 @@ contains
     use pio_support, only : Debug, DebugIO, piodie, checkmpireturn 
 
 #ifdef _NETCDF
-    use netcdf, only : nf90_put_var, nf90_inquire_variable, nf90_collective, &  !_EXTERNAL
-         nf90_var_par_access 
+    use netcdf, only : nf90_put_var, nf90_inquire_variable   !_EXTERNAL
+#endif
+#ifdef _NETCDF4
+    use netcdf, only : nf90_var_par_access, nf90_collective
 #endif
 #ifdef TIMING
     use perf_mod, only : t_startf, t_stopf  !_EXTERNAL
@@ -115,9 +117,11 @@ contains
 #endif
 
 #ifdef _NETCDF
+#ifdef _NETCDF4
        case(PIO_iotype_netcdf4p)	
           ierr=nf90_var_par_access(File%fh, vardesc%varid, NF90_COLLECTIVE)
           ierr=nf90_put_var(File%fh, vardesc%varid, iobuf,start=int(start),count=int(count))
+#endif
        case(pio_iotype_netcdf,pio_iotype_netcdf4c)
           ! allocate space on root for copy of iobuf etc.
           iobuf_size=size(IOBUF)
@@ -269,8 +273,10 @@ contains
     use pio_support, only : Debug, DebugIO, piodie, checkmpireturn 
 
 #ifdef _NETCDF
-    use netcdf, only : nf90_put_var, nf90_inquire_variable, nf90_collective, &  !_EXTERNAL
-         nf90_var_par_access 
+    use netcdf, only : nf90_put_var, nf90_inquire_variable   !_EXTERNAL
+#endif
+#ifdef _NETCDF4
+    use netcdf, only : nf90_var_par_access, nf90_collective
 #endif
 #ifdef TIMING
     use perf_mod, only : t_startf, t_stopf  !_EXTERNAL
@@ -336,9 +342,11 @@ contains
 #endif
 
 #ifdef _NETCDF
+#ifdef _NETCDF4
        case(PIO_iotype_netcdf4p)	
           ierr=nf90_var_par_access(File%fh, vardesc%varid, NF90_COLLECTIVE)
           ierr=nf90_put_var(File%fh, vardesc%varid, iobuf,start=int(start),count=int(count))
+#endif
        case(pio_iotype_netcdf,pio_iotype_netcdf4c)
           ! allocate space on root for copy of iobuf etc.
           iobuf_size=size(IOBUF)
@@ -490,8 +498,10 @@ contains
     use pio_support, only : Debug, DebugIO, piodie, checkmpireturn 
 
 #ifdef _NETCDF
-    use netcdf, only : nf90_put_var, nf90_inquire_variable, nf90_collective, &  !_EXTERNAL
-         nf90_var_par_access 
+    use netcdf, only : nf90_put_var, nf90_inquire_variable   !_EXTERNAL
+#endif
+#ifdef _NETCDF4
+    use netcdf, only : nf90_var_par_access, nf90_collective
 #endif
 #ifdef TIMING
     use perf_mod, only : t_startf, t_stopf  !_EXTERNAL
@@ -557,9 +567,11 @@ contains
 #endif
 
 #ifdef _NETCDF
+#ifdef _NETCDF4
        case(PIO_iotype_netcdf4p)	
           ierr=nf90_var_par_access(File%fh, vardesc%varid, NF90_COLLECTIVE)
           ierr=nf90_put_var(File%fh, vardesc%varid, iobuf,start=int(start),count=int(count))
+#endif
        case(pio_iotype_netcdf,pio_iotype_netcdf4c)
           ! allocate space on root for copy of iobuf etc.
           iobuf_size=size(IOBUF)
