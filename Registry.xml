@@ -858,7 +858,7 @@
 			 description="Normal unit vector defined at an edge."
 		/>
 		<var name="edgeTangentVectors" type="real" dimensions="R3 nEdges" streams="o" units="unitless"
-                         description="Tangent unit vector defined at an edge."
+			 description="Tangent unit vector defined at an edge."
 		/>
 		<var name="localVerticalUnitVectors" type="real" dimensions="R3 nCells" streams="o" units="unitless"
 			 description="Unit surface normal vectors defined at cell centers."
@@ -1308,6 +1308,9 @@
 			<var name="surfaceSalinityFlux" array_group="dynamics" units="PSU m s^{-1}" streams="o"
 				 description="Flux of salinity through the ocean surface. Positive into ocean."
 			/>
+			<var name="surfaceTracer1Flux" array_group="testing" units="percent"
+				 description="Flux of tracer1 through the ocean surface. Positive into ocean."
+			/>
 		</var_array>
 
 		<var name="seaSurfacePressure" type="real" dimensions="nCells Time" streams="or" units="Pa"
@@ -1399,6 +1402,9 @@
 			/>
 			<var name="avgSalinitySurfaceValue" array_group="surfaceValues" units="PSU" name_in_code="salinitySurfaceValue" streams="o"
 				 description="Time averaged salinity extrapolated to ocean surface"
+			/>
+			<var name="avgTracer1SurfaceValue" array_group="surfaceValues" units="percent"
+				 description="Time averaged tracer1 extrapolated to ocean surface"
 			/>
 		</var_array>
 		<var_array name="avgSurfaceVelocity" type="real" dimensions="nCells Time">
