@@ -221,7 +221,7 @@ contains
         ! call convective mixing scheme
         ! (NOTE: cvmix_coeffs_conv might be incorrect)
         if (config_use_cvmix_convection) then
-          call cvmix_coeffs_conv(cvmix_variables)
+          call cvmix_coeffs_conv(CVmix_vars = cvmix_variables, CVmix_conv_params_user = cvmix_conv_params)
 
           ! add convective mixing to vertical viscosity/diffusivity
           vertViscTopOfCell(:,iCell) = vertViscTopOfCell(:,iCell) + cvmix_variables % visc_iface(:)
