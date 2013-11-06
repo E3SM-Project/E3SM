@@ -910,7 +910,7 @@ end subroutine camrad
 #endif
 
    END SUBROUTINE camradinit
-#endif !ldf (05-01-2011)
+#endif
 #if !defined(MAC_KLUDGE)
 
 
