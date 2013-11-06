@@ -1,5 +1,12 @@
 MODULE module_sf_bep_bem
 
+#ifdef mpas
+ USE mpas_dmpar, only : mpas_dmpar_global_abort
+#define FATAL_ERROR(M) call mpas_dmpar_global_abort( M )
+#else 
+#define FATAL_ERROR(M) write(0,*) M ; stop
+#endif
+
 !USE module_model_constants
  USE module_sf_urban
  USE module_sf_bem
@@ -2938,7 +2945,7 @@ MODULE module_sf_bep_bem
                         icol=k
                      endif
                   elseif(ipiv(k).gt.1)then
-                     pause 'singular matrix in gaussj'
+                     FATAL_ERROR('singular matrix in gaussj')
                   endif
                enddo
             endif
@@ -2959,7 +2966,7 @@ MODULE module_sf_bep_bem
           
          endif
          
-         if(a(icol,icol).eq.0)pause 'singular matrix in gaussj'
+         if(a(icol,icol).eq.0) FATAL_ERROR('singular matrix in gaussj')
          
          pivinv=1./a(icol,icol)
          a(icol,icol)=1
