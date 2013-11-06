@@ -378,8 +378,8 @@
 
  real(kind=RKIND):: min_theta,min_thp,min_tp
  real(kind=RKIND):: max_theta,max_thp,max_tp
- real(kind=RKIND):: min_qv,min_qc,min_qr,min_qi,min_qs,min_qg,min_qnr,min_qni
- real(kind=RKIND):: max_qv,max_qc,max_qr,max_qi,max_qs,max_qg,max_qnr,max_qni
+ real(kind=RKIND):: min_qv,min_qc,min_qr,min_qi,min_qs,min_qg
+ real(kind=RKIND):: max_qv,max_qc,max_qr,max_qi,max_qs,max_qg
 
  real(kind=RKIND),dimension(:,:),pointer:: zgrid
  real(kind=RKIND),dimension(:,:),pointer:: zz,exner,pressure_b,rtheta_p,rtheta_b
@@ -479,8 +479,8 @@
 
  real(kind=RKIND):: min_theta,min_thp,min_tp
  real(kind=RKIND):: max_theta,max_thp,max_tp
- real(kind=RKIND):: min_qv,min_qc,min_qr,min_qi,min_qs,min_qg,min_qnr,min_qni
- real(kind=RKIND):: max_qv,max_qc,max_qr,max_qi,max_qs,max_qg,max_qnr,max_qni
+ real(kind=RKIND):: min_qv,min_qc,min_qr,min_qi,min_qs,min_qg
+ real(kind=RKIND):: max_qv,max_qc,max_qr,max_qi,max_qs,max_qg
 
 !local variables:
  integer:: icount

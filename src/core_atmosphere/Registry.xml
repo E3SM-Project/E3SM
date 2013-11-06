@@ -225,8 +225,6 @@
                         <var name="qi"      array_group="moist"       streams="iro"/>
                         <var name="qs"      array_group="moist"       streams="iro"/>
                         <var name="qg"      array_group="moist"       streams="iro"/>
-                        <var name="qnr"     array_group="number"      streams="iro"/>
-                        <var name="qni"     array_group="number"      streams="iro"/>
                 </var_array>
 
                 <var_array name="aerosols" type="real" dimensions="nAerLevels nCells Time">
@@ -376,8 +374,6 @@
                         <var name="tend_qi"    name_in_code="qi"        array_group="moist"       streams="o"/>
                         <var name="tend_qs"    name_in_code="qs"        array_group="moist"       streams="o"/>
                         <var name="tend_qg"    name_in_code="qg"        array_group="moist"       streams="o"/>
-                        <var name="tend_qnr"   name_in_code="qnr"       array_group="number"      streams="o"/>
-                        <var name="tend_qni"   name_in_code="qni"       array_group="number"      streams="o"/>
                 </var_array>
         </var_struct>
 

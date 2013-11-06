@@ -117,10 +117,6 @@
     qs_p,             &!snow mixing ratio                                                   [kg/kg]
     qg_p               !graupel mixing ratio                                                [kg/kg]
  
- real(kind=RKIND),dimension(:,:,:),allocatable:: &
-    qni_p,            &!number concentration for cloud ice                                   [#/kg]
-    qnr_p              !number concentration for rain                                        [#/kg]
-
 !... arrays located at w (vertical velocity) points, or at interface between layers:
  real(kind=RKIND),dimension(:,:,:),allocatable:: &
     w_p,              &!vertical velocity                                                     [m/s]
