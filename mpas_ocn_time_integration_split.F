@@ -1025,7 +1025,9 @@ module ocn_time_integration_split
       block => domain % blocklist
       do while(associated(block))
         call ocn_diagnostic_solve(dt, block % state % time_levs(2) % state, block % forcing, block % mesh, block % diagnostics, block % scratch)
-        call ocn_sea_ice_formation(block % mesh, block % state % time_levs(2) % state % index_temperature, block % state % time_levs(2) % state % index_salinity, block % state % time_levs(2) % state % layerThickness % array, block % state % time_levs(2) % state % tracers % array, block % forcing % seaIceEnergy % array, err)
+        call ocn_sea_ice_formation(block % mesh, block % state % time_levs(2) % state % index_temperature, &
+                                   block % state % time_levs(2) % state % index_salinity, block % state % time_levs(2) % state % layerThickness % array, &
+                                   block % state % time_levs(2) % state % tracers % array, block % forcing % seaIceEnergy % array, err)
         block => block % next
       end do
 
