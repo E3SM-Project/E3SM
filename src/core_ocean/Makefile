@@ -58,6 +58,7 @@ libcvmix:
 	if [ -d cvmix ]; then \
 		(cd cvmix; svn update; make all FC="$(FC)" FFLAGS="$(FFLAGS)" FINCLUDES="$(FINCLUDES)") \
 	fi
+	ln -sf cvmix/*.mod .
 
 core_hyd: $(OBJS)
 	ar -ru libdycore.a $(OBJS) cvmix/*.o
