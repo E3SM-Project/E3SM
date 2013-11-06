@@ -665,6 +665,10 @@
 					description="Disables tendencies on the thickness field from vertical advection."
 					possible_values=".true. or .false."
 		/>
+		<nml_option name="config_disable_thick_sflux" type="logical" default_value=".false." units="unitless"
+					description="Disables tendencies on the thickness field from surface fluxes."
+					possible_values=".true. or .false."
+		/>
 		<nml_option name="config_disable_vel_all_tend" type="logical" default_value=".false." units="unitless"
 					description="Disables all tendencies on the velocity field."
 					possible_values=".true. or .false."
@@ -707,6 +711,10 @@
 		/>
 		<nml_option name="config_disable_tr_vmix" type="logical" default_value=".false." units="unitless"
 					description="Disables tendencies on tracer fields from vertical mixing."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_disable_tr_sflux" type="logical" default_value=".false." units="unitless"
+					description="Disables tendencies on tracer fields from surface fluxes."
 					possible_values=".true. or .false."
 		/>
 	</nml_record>

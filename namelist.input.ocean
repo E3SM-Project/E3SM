@@ -196,6 +196,7 @@
 	config_disable_thick_all_tend = .false.
 	config_disable_thick_hadv = .false.
 	config_disable_thick_vadv = .false.
+	config_disable_thick_sflux = .false.
 	config_disable_vel_all_tend = .false.
 	config_disable_vel_coriolis = .false.
 	config_disable_vel_pgrad = .false.
@@ -207,4 +208,5 @@
 	config_disable_tr_adv = .false.
 	config_disable_tr_hmix = .false.
 	config_disable_tr_vmix = .false.
+	config_disable_tr_sflux = .false.
 /
