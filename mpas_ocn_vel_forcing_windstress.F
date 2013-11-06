@@ -188,6 +188,11 @@ contains
 
       if(config_disable_vel_windstress) windStressOn = .false.
 
+      if (config_forcing_type == trim('off')) then
+         windStressOn = .false.
+      end if
+
+
       err = 0
 
    !--------------------------------------------------------------------

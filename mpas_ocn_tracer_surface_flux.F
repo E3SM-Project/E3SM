@@ -51,6 +51,8 @@ module ocn_tracer_surface_flux
    !
    !--------------------------------------------------------------------
 
+   logical :: surfaceFluxOn
+
 !***********************************************************************
 
 contains
@@ -116,8 +118,9 @@ contains
 
       real (kind=RKIND) :: remainingFlux
 
-
       err = 0
+
+      if (.not. surfaceFluxOn) return
 
       nCells = mesh % nCells
       nVertLevels = mesh % nVertLevels
@@ -167,6 +170,16 @@ contains
       integer, intent(out) :: err !< Output: error flag
 
       err = 0
+
+      surfaceFluxOn = .true.
+
+      if (config_disable_tr_sflux) then
+         surfaceFluxOn = .false.
+      end if
+
+      if (config_forcing_type == trim('off')) then
+         surfaceFluxOn = .false.
+      end if
 
    end subroutine ocn_tracer_surface_flux_init!}}}
 
