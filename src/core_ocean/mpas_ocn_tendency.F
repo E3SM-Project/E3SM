@@ -186,8 +186,6 @@ contains
         normalizedRelativeVorticityEdge, normalizedPlanetaryVorticityEdge, &
         montgomeryPotential, vertTransportVelocityTop, divergence, vertViscTopOfEdge
 
-      real (kind=RKIND), dimension(:,:), pointer :: normalVelocityForcing
-
       integer :: err
 
       call mpas_timer_start("ocn_tend_vel")
@@ -211,8 +209,6 @@ contains
 
       tend_normalVelocity      => tend % normalVelocity % array
                   
-      normalVelocityForcing => mesh % normalVelocityForcing % array
-
       surfaceWindStress        => forcing % surfaceWindStress % array
 
       !
@@ -264,7 +260,7 @@ contains
       !
 
       call mpas_timer_start("forcings", .false., velForceTimer)
-      call ocn_vel_forcing_tend(mesh, normalVelocity, normalVelocityForcing, surfaceWindStress, layerThicknessEdge, tend_normalVelocity, err)
+      call ocn_vel_forcing_tend(mesh, normalVelocity, surfaceWindStress, layerThicknessEdge, tend_normalVelocity, err)
       call mpas_timer_stop("forcings", velForceTimer)
 
       !

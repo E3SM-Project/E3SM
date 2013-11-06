@@ -75,7 +75,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_forcing_tend(mesh, normalVelocity, normalVelocityForcing, surfaceWindStress, layerThicknessEdge, tend, err)!{{{
+   subroutine ocn_vel_forcing_tend(mesh, normalVelocity, surfaceWindStress, layerThicknessEdge, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -85,9 +85,6 @@ contains
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          normalVelocity    !< Input: Normal velocity at edges
-
-      real (kind=RKIND), dimension(:,:), intent(in) :: &
-         normalVelocityForcing     !< Input: Forcing of normal velocity at edges
 
       real (kind=RKIND), dimension(:), intent(in) :: &
          surfaceWindStress     !< Input: Wind stress at surface of normal velocity at edges
@@ -131,7 +128,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      call ocn_vel_forcing_windstress_tend(mesh, normalVelocityForcing, surfaceWindStress, layerThicknessEdge, tend, err1)
+      call ocn_vel_forcing_windstress_tend(mesh, surfaceWindStress, layerThicknessEdge, tend, err1)
       call ocn_vel_forcing_rayleigh_tend(mesh, normalVelocity, tend, err2)
 
       err = ior(err1, err2)

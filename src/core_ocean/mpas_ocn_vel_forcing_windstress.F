@@ -69,16 +69,13 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_forcing_windstress_tend(mesh, normalVelocityForcing, surfaceWindStress, layerThicknessEdge, tend, err)!{{{
+   subroutine ocn_vel_forcing_windstress_tend(mesh, surfaceWindStress, layerThicknessEdge, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
-
-      real (kind=RKIND), dimension(:,:), intent(in) :: &
-         normalVelocityForcing    !< Input: Normal velocity forcing at edges
 
       real (kind=RKIND), dimension(:), intent(in) :: &
          surfaceWindStress    !< Input: Wind stress at surface
@@ -135,9 +132,6 @@ contains
       edgeMask => mesh % edgeMask % array
 
       do iEdge=1,nEdgesSolve
-        ! k = min(maxLevelEdgeTop(iEdge), 1)
-        ! tend(k,iEdge) =  tend(k,iEdge) + edgeMask(k, iEdge) * surfaceWindStress(iEdge) / config_density0 / layerThicknessEdge(k, iEdge)
-
         zTop = 0.0_RKIND
         transmissionCoeffTop = ocn_forcing_transmission(zTop)
         remainingStress = 1.0_RKIND
@@ -148,7 +142,7 @@ contains
 
            remainingStress = remainingStress - (transmissionCoeffTop - transmissionCoeffBot)
 
-           tend(k,iEdge) =  tend(k,iEdge) + edgeMask(k, iEdge) * (normalVelocityForcing(k,iEdge) + surfaceWindStress(iEdge) * (transmissionCoeffTop - transmissionCoeffBot)) / config_density0 / layerThicknessEdge(k,iEdge)
+           tend(k,iEdge) =  tend(k,iEdge) + edgeMask(k, iEdge) * surfaceWindStress(iEdge) * (transmissionCoeffTop - transmissionCoeffBot) / config_density0 / layerThicknessEdge(k,iEdge)
 
            zTop = zBot
            transmissionCoeffTop = transmissionCoeffBot
