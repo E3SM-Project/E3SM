@@ -7,8 +7,19 @@ SET (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 SET(pio_include_dirs_  ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
 SET(PIO_LIB_DIR  ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
 
+SET(bld_PIO_DEFINITIONS)
+
 # Netcdf is required
+SET (NETCDF_FIND_COMPONENTS F90)
 FIND_PACKAGE(Netcdf REQUIRED)
+IF (${NETCDF_FOUND})
+  MESSAGE("Building PIO with netcdf support") 
+  SET(bld_PIO_DEFINITIONS ${bld_PIO_DEFINITIONS} -D_NETCDF)
+  IF (${NETCDF_IS_PARALLEL})
+    MESSAGE("Building PIO with netcdf4 parallel support") 
+    SET(bld_PIO_DEFINITIONS ${bld_PIO_DEFINITIONS} -D_NETCDF4)
+  ENDIF ()
+ENDIF ()
 # PNetcdf is optional but used by default
 OPTION(WITH_PNETCDF "Whether to build with PNetcdf" TRUE)
 IF (${WITH_PNETCDF})
@@ -31,7 +42,6 @@ ELSE()
   SET(PIO_BIG_ENDIAN ${PIO_BIG_ENDIAN} CACHE BOOL "")
 ENDIF()                                            
 
-SET(bld_PIO_DEFINITIONS)
 
 IF (PIO_FILESYSTEM_HINTS STREQUAL "lustre")
   MESSAGE(STATUS "PIO using lustre filesystem hints")
@@ -43,8 +53,8 @@ ELSEIF(NOT "${PIO_FILESYSTEM_HINTS}" STREQUAL "")
   MESSAGE(WARNING "${PIO_FILESYSTEM_HINTS} not valid option for PIO_FILESYSTEM_HINTS; use gpfs or lustre.")
 ENDIF()
 
-IF(Netcdf_FOUND) 
-  SET(pio_include_dirs_ ${pio_include_dirs_} ${Netcdf_INCLUDE_DIR})
+IF(NETCDF_FOUND) 
+  SET(pio_include_dirs_ ${pio_include_dirs_} ${NETCDF_INCLUDE_DIR})
   SET(bld_PIO_DEFINITIONS ${bld_PIO_DEFINITIONS} -D_NETCDF)
 ELSE()
   SET(bld_PIO_DEFINITIONS ${bld_PIO_DEFINITIONS} -D_NONETCDF)

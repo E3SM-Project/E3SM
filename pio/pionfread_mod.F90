@@ -6,7 +6,7 @@
 !>
 !! @file 
 !! $Revision: 751 $
-!! $LastChangedDate: 2013-04-02 10:01:13 -0600 (Tue, 02 Apr 2013) $
+!! $LastChangedDate: 2013-04-02 09:01:13 -0700 (Tue, 02 Apr 2013) $
 !! @brief Decomposed Read interface to NetCDF
 !<
 module pionfread_mod
@@ -18,7 +18,7 @@ module pionfread_mod
 !! @private
 !<
   public :: read_nf
-# 17 "pionfread_mod.F90.in"
+# 17 "/global/homes/j/jedwards/pio_trunk/pio/pionfread_mod.F90.in"
   interface read_nf
      ! TYPE real,double,int
      module procedure read_nfdarray_real
@@ -30,14 +30,14 @@ module pionfread_mod
 
   character(len=*), parameter :: modName='pionfread_mod'
 
-# 24 "pionfread_mod.F90.in"
+# 24 "/global/homes/j/jedwards/pio_trunk/pio/pionfread_mod.F90.in"
 contains
 
   ! TYPE real,double,int
 !>
 !! @private
 !<
-# 30 "pionfread_mod.F90.in"
+# 30 "/global/homes/j/jedwards/pio_trunk/pio/pionfread_mod.F90.in"
   integer function read_nfdarray_real (File,IOBUF,varDesc,IODesc, start,count) result(ierr)
     use pio_types, only : file_desc_t, var_desc_t, io_desc_t, pio_real, pio_double, pio_int, &
 	pio_noerr, pio_iotype_netcdf4p, pio_iotype_netcdf4c, pio_iotype_pnetcdf, pio_iotype_netcdf, &
@@ -219,7 +219,7 @@ contains
 !>
 !! @private
 !<
-# 30 "pionfread_mod.F90.in"
+# 30 "/global/homes/j/jedwards/pio_trunk/pio/pionfread_mod.F90.in"
   integer function read_nfdarray_double (File,IOBUF,varDesc,IODesc, start,count) result(ierr)
     use pio_types, only : file_desc_t, var_desc_t, io_desc_t, pio_real, pio_double, pio_int, &
 	pio_noerr, pio_iotype_netcdf4p, pio_iotype_netcdf4c, pio_iotype_pnetcdf, pio_iotype_netcdf, &
@@ -401,7 +401,7 @@ contains
 !>
 !! @private
 !<
-# 30 "pionfread_mod.F90.in"
+# 30 "/global/homes/j/jedwards/pio_trunk/pio/pionfread_mod.F90.in"
   integer function read_nfdarray_int (File,IOBUF,varDesc,IODesc, start,count) result(ierr)
     use pio_types, only : file_desc_t, var_desc_t, io_desc_t, pio_real, pio_double, pio_int, &
 	pio_noerr, pio_iotype_netcdf4p, pio_iotype_netcdf4c, pio_iotype_pnetcdf, pio_iotype_netcdf, &

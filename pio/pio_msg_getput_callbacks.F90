@@ -7,11 +7,11 @@
 !>
 !! @file 
 !! $Revision: 757 $
-!! $LastChangedDate: 2013-04-02 13:55:15 -0600 (Tue, 02 Apr 2013) $
-# 6 "pio_msg_getput_callbacks.F90.in"
+!! $LastChangedDate: 2013-04-02 12:55:15 -0700 (Tue, 02 Apr 2013) $
+# 6 "/global/homes/j/jedwards/pio_trunk/pio/pio_msg_getput_callbacks.F90.in"
 !! @brief Callback functions for Asyncronous IO 
 !<
-# 8 "pio_msg_getput_callbacks.F90.in"
+# 8 "/global/homes/j/jedwards/pio_trunk/pio/pio_msg_getput_callbacks.F90.in"
 subroutine string_handler_for_var1(file, varid, index, ndims, strlen, msg)
   use pio, only : file_desc_t, pio_get_var, pio_put_var
   use pio_msg_mod, only : pio_msg_getvar1
@@ -29,7 +29,7 @@ subroutine string_handler_for_var1(file, varid, index, ndims, strlen, msg)
   end if
 end subroutine string_handler_for_var1
 
-# 25 "pio_msg_getput_callbacks.F90.in"
+# 25 "/global/homes/j/jedwards/pio_trunk/pio/pio_msg_getput_callbacks.F90.in"
 subroutine var1_handler(ios, msg)
   use pio, only : iosystem_desc_t, file_desc_t, pio_get_var, pio_put_var
   use pio_kinds, only : i4, r4, r8, pio_offset
@@ -91,7 +91,7 @@ subroutine var1_handler(ios, msg)
 end subroutine var1_handler
 
 ! DIMS 1,2,3,4,5
-# 86 "pio_msg_getput_callbacks.F90.in"
+# 86 "/global/homes/j/jedwards/pio_trunk/pio/pio_msg_getput_callbacks.F90.in"
 subroutine vara_1d_handler(ios, msg)
   use pio, only : iosystem_desc_t, file_desc_t, pio_get_var, pio_put_var
   use pio_kinds, only : i4, r4, r8, pio_offset
@@ -192,7 +192,7 @@ subroutine vara_1d_handler(ios, msg)
 end subroutine vara_1d_handler
 
 ! DIMS 1,2,3,4,5
-# 86 "pio_msg_getput_callbacks.F90.in"
+# 86 "/global/homes/j/jedwards/pio_trunk/pio/pio_msg_getput_callbacks.F90.in"
 subroutine vara_2d_handler(ios, msg)
   use pio, only : iosystem_desc_t, file_desc_t, pio_get_var, pio_put_var
   use pio_kinds, only : i4, r4, r8, pio_offset
@@ -293,7 +293,7 @@ subroutine vara_2d_handler(ios, msg)
 end subroutine vara_2d_handler
 
 ! DIMS 1,2,3,4,5
-# 86 "pio_msg_getput_callbacks.F90.in"
+# 86 "/global/homes/j/jedwards/pio_trunk/pio/pio_msg_getput_callbacks.F90.in"
 subroutine vara_3d_handler(ios, msg)
   use pio, only : iosystem_desc_t, file_desc_t, pio_get_var, pio_put_var
   use pio_kinds, only : i4, r4, r8, pio_offset
@@ -394,7 +394,7 @@ subroutine vara_3d_handler(ios, msg)
 end subroutine vara_3d_handler
 
 ! DIMS 1,2,3,4,5
-# 86 "pio_msg_getput_callbacks.F90.in"
+# 86 "/global/homes/j/jedwards/pio_trunk/pio/pio_msg_getput_callbacks.F90.in"
 subroutine vara_4d_handler(ios, msg)
   use pio, only : iosystem_desc_t, file_desc_t, pio_get_var, pio_put_var
   use pio_kinds, only : i4, r4, r8, pio_offset
@@ -495,7 +495,7 @@ subroutine vara_4d_handler(ios, msg)
 end subroutine vara_4d_handler
 
 ! DIMS 1,2,3,4,5
-# 86 "pio_msg_getput_callbacks.F90.in"
+# 86 "/global/homes/j/jedwards/pio_trunk/pio/pio_msg_getput_callbacks.F90.in"
 subroutine vara_5d_handler(ios, msg)
   use pio, only : iosystem_desc_t, file_desc_t, pio_get_var, pio_put_var
   use pio_kinds, only : i4, r4, r8, pio_offset
@@ -595,7 +595,7 @@ subroutine vara_5d_handler(ios, msg)
   deallocate(start,count)
 end subroutine vara_5d_handler
 
-# 185 "pio_msg_getput_callbacks.F90.in"
+# 185 "/global/homes/j/jedwards/pio_trunk/pio/pio_msg_getput_callbacks.F90.in"
 subroutine string_handler_for_var_0d(file, varid, strlen, msg)
   use pio, only : file_desc_t, pio_get_var, pio_put_var
   use pio_msg_mod, only : PIO_MSG_GETVAR_0D
@@ -612,7 +612,7 @@ subroutine string_handler_for_var_0d(file, varid, strlen, msg)
   end if
 end subroutine string_handler_for_var_0d
   
-# 201 "pio_msg_getput_callbacks.F90.in"
+# 201 "/global/homes/j/jedwards/pio_trunk/pio/pio_msg_getput_callbacks.F90.in"
 subroutine var_0d_handler (ios, msg)
   use pio, only : iosystem_desc_t, file_desc_t, pio_get_var, pio_put_var
   use pio_kinds, only : i4, r4, r8, pio_offset
@@ -668,7 +668,7 @@ subroutine var_0d_handler (ios, msg)
 end subroutine var_0d_handler
 
 ! DIMS 1,2,3,4,5
-# 256 "pio_msg_getput_callbacks.F90.in"
+# 256 "/global/homes/j/jedwards/pio_trunk/pio/pio_msg_getput_callbacks.F90.in"
 subroutine string_handler_for_var_1d (file, varid, strlen, dims, msg)
   use pio, only : file_desc_t, pio_get_var, pio_put_var
   use pio_msg_mod, only : pio_msg_getvar_1D
@@ -700,7 +700,7 @@ subroutine string_handler_for_var_1d (file, varid, strlen, dims, msg)
 end subroutine string_handler_for_var_1d
 
 ! DIMS 1,2,3,4,5
-# 256 "pio_msg_getput_callbacks.F90.in"
+# 256 "/global/homes/j/jedwards/pio_trunk/pio/pio_msg_getput_callbacks.F90.in"
 subroutine string_handler_for_var_2d (file, varid, strlen, dims, msg)
   use pio, only : file_desc_t, pio_get_var, pio_put_var
   use pio_msg_mod, only : pio_msg_getvar_2D
@@ -732,7 +732,7 @@ subroutine string_handler_for_var_2d (file, varid, strlen, dims, msg)
 end subroutine string_handler_for_var_2d
 
 ! DIMS 1,2,3,4,5
-# 256 "pio_msg_getput_callbacks.F90.in"
+# 256 "/global/homes/j/jedwards/pio_trunk/pio/pio_msg_getput_callbacks.F90.in"
 subroutine string_handler_for_var_3d (file, varid, strlen, dims, msg)
   use pio, only : file_desc_t, pio_get_var, pio_put_var
   use pio_msg_mod, only : pio_msg_getvar_3D
@@ -764,7 +764,7 @@ subroutine string_handler_for_var_3d (file, varid, strlen, dims, msg)
 end subroutine string_handler_for_var_3d
 
 ! DIMS 1,2,3,4,5
-# 256 "pio_msg_getput_callbacks.F90.in"
+# 256 "/global/homes/j/jedwards/pio_trunk/pio/pio_msg_getput_callbacks.F90.in"
 subroutine string_handler_for_var_4d (file, varid, strlen, dims, msg)
   use pio, only : file_desc_t, pio_get_var, pio_put_var
   use pio_msg_mod, only : pio_msg_getvar_4D
@@ -796,7 +796,7 @@ subroutine string_handler_for_var_4d (file, varid, strlen, dims, msg)
 end subroutine string_handler_for_var_4d
 
 ! DIMS 1,2,3,4,5
-# 256 "pio_msg_getput_callbacks.F90.in"
+# 256 "/global/homes/j/jedwards/pio_trunk/pio/pio_msg_getput_callbacks.F90.in"
 subroutine string_handler_for_var_5d (file, varid, strlen, dims, msg)
   use pio, only : file_desc_t, pio_get_var, pio_put_var
   use pio_msg_mod, only : pio_msg_getvar_5D
@@ -828,7 +828,7 @@ subroutine string_handler_for_var_5d (file, varid, strlen, dims, msg)
 end subroutine string_handler_for_var_5d
   
 ! DIMS 1,2,3,4,5
-# 287 "pio_msg_getput_callbacks.F90.in"
+# 287 "/global/homes/j/jedwards/pio_trunk/pio/pio_msg_getput_callbacks.F90.in"
 subroutine string_handler_for_vara_1d (file, varid, start, count, strlen, dims, msg)
   use pio_msg_mod, only : pio_msg_getvara_1d
   use pio, only : file_desc_t, pio_get_var, pio_put_var
@@ -861,7 +861,7 @@ subroutine string_handler_for_vara_1d (file, varid, start, count, strlen, dims, 
 end subroutine string_handler_for_vara_1d
   
 ! DIMS 1,2,3,4,5
-# 287 "pio_msg_getput_callbacks.F90.in"
+# 287 "/global/homes/j/jedwards/pio_trunk/pio/pio_msg_getput_callbacks.F90.in"
 subroutine string_handler_for_vara_2d (file, varid, start, count, strlen, dims, msg)
   use pio_msg_mod, only : pio_msg_getvara_2d
   use pio, only : file_desc_t, pio_get_var, pio_put_var
@@ -894,7 +894,7 @@ subroutine string_handler_for_vara_2d (file, varid, start, count, strlen, dims, 
 end subroutine string_handler_for_vara_2d
   
 ! DIMS 1,2,3,4,5
-# 287 "pio_msg_getput_callbacks.F90.in"
+# 287 "/global/homes/j/jedwards/pio_trunk/pio/pio_msg_getput_callbacks.F90.in"
 subroutine string_handler_for_vara_3d (file, varid, start, count, strlen, dims, msg)
   use pio_msg_mod, only : pio_msg_getvara_3d
   use pio, only : file_desc_t, pio_get_var, pio_put_var
@@ -927,7 +927,7 @@ subroutine string_handler_for_vara_3d (file, varid, start, count, strlen, dims, 
 end subroutine string_handler_for_vara_3d
   
 ! DIMS 1,2,3,4,5
-# 287 "pio_msg_getput_callbacks.F90.in"
+# 287 "/global/homes/j/jedwards/pio_trunk/pio/pio_msg_getput_callbacks.F90.in"
 subroutine string_handler_for_vara_4d (file, varid, start, count, strlen, dims, msg)
   use pio_msg_mod, only : pio_msg_getvara_4d
   use pio, only : file_desc_t, pio_get_var, pio_put_var
@@ -960,7 +960,7 @@ subroutine string_handler_for_vara_4d (file, varid, start, count, strlen, dims, 
 end subroutine string_handler_for_vara_4d
   
 ! DIMS 1,2,3,4,5
-# 287 "pio_msg_getput_callbacks.F90.in"
+# 287 "/global/homes/j/jedwards/pio_trunk/pio/pio_msg_getput_callbacks.F90.in"
 subroutine string_handler_for_vara_5d (file, varid, start, count, strlen, dims, msg)
   use pio_msg_mod, only : pio_msg_getvara_5d
   use pio, only : file_desc_t, pio_get_var, pio_put_var
@@ -994,7 +994,7 @@ end subroutine string_handler_for_vara_5d
   
 
 ! DIMS 1,2,3,4,5
-# 320 "pio_msg_getput_callbacks.F90.in"
+# 320 "/global/homes/j/jedwards/pio_trunk/pio/pio_msg_getput_callbacks.F90.in"
 subroutine var_1d_handler (ios, msg)
   use pio, only : iosystem_desc_t, file_desc_t, pio_get_var, pio_put_var
   use pio_kinds, only : i4, r4, r8, pio_offset
@@ -1093,7 +1093,7 @@ end subroutine var_1d_handler
   
 
 ! DIMS 1,2,3,4,5
-# 320 "pio_msg_getput_callbacks.F90.in"
+# 320 "/global/homes/j/jedwards/pio_trunk/pio/pio_msg_getput_callbacks.F90.in"
 subroutine var_2d_handler (ios, msg)
   use pio, only : iosystem_desc_t, file_desc_t, pio_get_var, pio_put_var
   use pio_kinds, only : i4, r4, r8, pio_offset
@@ -1192,7 +1192,7 @@ end subroutine var_2d_handler
   
 
 ! DIMS 1,2,3,4,5
-# 320 "pio_msg_getput_callbacks.F90.in"
+# 320 "/global/homes/j/jedwards/pio_trunk/pio/pio_msg_getput_callbacks.F90.in"
 subroutine var_3d_handler (ios, msg)
   use pio, only : iosystem_desc_t, file_desc_t, pio_get_var, pio_put_var
   use pio_kinds, only : i4, r4, r8, pio_offset
@@ -1291,7 +1291,7 @@ end subroutine var_3d_handler
   
 
 ! DIMS 1,2,3,4,5
-# 320 "pio_msg_getput_callbacks.F90.in"
+# 320 "/global/homes/j/jedwards/pio_trunk/pio/pio_msg_getput_callbacks.F90.in"
 subroutine var_4d_handler (ios, msg)
   use pio, only : iosystem_desc_t, file_desc_t, pio_get_var, pio_put_var
   use pio_kinds, only : i4, r4, r8, pio_offset
@@ -1390,7 +1390,7 @@ end subroutine var_4d_handler
   
 
 ! DIMS 1,2,3,4,5
-# 320 "pio_msg_getput_callbacks.F90.in"
+# 320 "/global/homes/j/jedwards/pio_trunk/pio/pio_msg_getput_callbacks.F90.in"
 subroutine var_5d_handler (ios, msg)
   use pio, only : iosystem_desc_t, file_desc_t, pio_get_var, pio_put_var
   use pio_kinds, only : i4, r4, r8, pio_offset

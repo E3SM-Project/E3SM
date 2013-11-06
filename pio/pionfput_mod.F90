@@ -7,7 +7,7 @@
 !>
 !! @file 
 !! $Revision: 788 $
-!! $LastChangedDate: 2013-05-08 12:52:45 -0600 (Wed, 08 May 2013) $
+!! $LastChangedDate: 2013-05-08 11:52:45 -0700 (Wed, 08 May 2013) $
 !! @brief Write Routines for non-decomposed NetCDF data.
 !<
 module pionfput_mod
@@ -51,7 +51,7 @@ module pionfput_mod
 !! 
 !<
   public :: put_var
-# 49 "pionfput_mod.F90.in"
+# 49 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   interface put_var
      !  DIMS 0,1,2,3,4,5
      module procedure put_var_0d_text, put_var_vdesc_0d_text
@@ -146,7 +146,7 @@ module pionfput_mod
      module procedure put_var1_double, put_var1_vdesc_double
      module procedure put_var1_int, put_var1_vdesc_int
   end interface
-# 56 "pionfput_mod.F90.in"
+# 56 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
 contains
 
 !>
@@ -160,7 +160,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 69 "pionfput_mod.F90.in"
+# 69 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var1_text (File,varid, index, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, index(:)
@@ -261,7 +261,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 169 "pionfput_mod.F90.in"
+# 169 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var1_int (File,varid, index, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, index(:)
@@ -356,7 +356,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 169 "pionfput_mod.F90.in"
+# 169 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var1_real (File,varid, index, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, index(:)
@@ -451,7 +451,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 169 "pionfput_mod.F90.in"
+# 169 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var1_double (File,varid, index, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, index(:)
@@ -546,7 +546,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 263 "pionfput_mod.F90.in"
+# 263 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var1_vdesc_text (File,vardesc, start, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -567,7 +567,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 263 "pionfput_mod.F90.in"
+# 263 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var1_vdesc_real (File,vardesc, start, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -588,7 +588,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 263 "pionfput_mod.F90.in"
+# 263 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var1_vdesc_double (File,vardesc, start, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -609,7 +609,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 263 "pionfput_mod.F90.in"
+# 263 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var1_vdesc_int (File,vardesc, start, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -632,7 +632,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 285 "pionfput_mod.F90.in"
+# 285 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var_0d_text (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -703,7 +703,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 355 "pionfput_mod.F90.in"
+# 355 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
           if (Ios%io_rank == 0) then
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
@@ -721,7 +721,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 372 "pionfput_mod.F90.in"
+# 372 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -755,7 +755,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 285 "pionfput_mod.F90.in"
+# 285 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var_1d_text (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -826,7 +826,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 355 "pionfput_mod.F90.in"
+# 355 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
           if (Ios%io_rank == 0) then
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
@@ -844,7 +844,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 372 "pionfput_mod.F90.in"
+# 372 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -878,7 +878,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 285 "pionfput_mod.F90.in"
+# 285 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var_2d_text (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -949,7 +949,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 355 "pionfput_mod.F90.in"
+# 355 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
           if (Ios%io_rank == 0) then
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
@@ -967,7 +967,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 372 "pionfput_mod.F90.in"
+# 372 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -1001,7 +1001,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 285 "pionfput_mod.F90.in"
+# 285 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var_3d_text (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -1072,7 +1072,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 355 "pionfput_mod.F90.in"
+# 355 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
           if (Ios%io_rank == 0) then
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
@@ -1090,7 +1090,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 372 "pionfput_mod.F90.in"
+# 372 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -1124,7 +1124,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 285 "pionfput_mod.F90.in"
+# 285 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var_4d_text (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -1195,7 +1195,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 355 "pionfput_mod.F90.in"
+# 355 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
           if (Ios%io_rank == 0) then
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
@@ -1213,7 +1213,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 372 "pionfput_mod.F90.in"
+# 372 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -1247,7 +1247,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 285 "pionfput_mod.F90.in"
+# 285 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var_5d_text (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -1318,7 +1318,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 355 "pionfput_mod.F90.in"
+# 355 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
           if (Ios%io_rank == 0) then
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
@@ -1336,7 +1336,7 @@ contains
 ! This is a workaround for a bug in the netcdf f90 interface
 ! The netcdf bug is that when you use nf90_put_var
 ! to write a scalar string the trailing blanks are stripped by the specific
-# 372 "pionfput_mod.F90.in"
+# 372 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
 ! function nf90_put_var_text before it calls nf_put_vars_text. 
              ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
 #else
@@ -1370,7 +1370,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 405 "pionfput_mod.F90.in"
+# 405 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var_1d_int (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -1469,7 +1469,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 405 "pionfput_mod.F90.in"
+# 405 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var_2d_int (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -1568,7 +1568,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 405 "pionfput_mod.F90.in"
+# 405 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var_3d_int (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -1667,7 +1667,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 405 "pionfput_mod.F90.in"
+# 405 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var_4d_int (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -1766,7 +1766,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 405 "pionfput_mod.F90.in"
+# 405 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var_5d_int (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -1865,7 +1865,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 405 "pionfput_mod.F90.in"
+# 405 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var_1d_real (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -1964,7 +1964,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 405 "pionfput_mod.F90.in"
+# 405 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var_2d_real (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -2063,7 +2063,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 405 "pionfput_mod.F90.in"
+# 405 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var_3d_real (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -2162,7 +2162,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 405 "pionfput_mod.F90.in"
+# 405 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var_4d_real (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -2261,7 +2261,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 405 "pionfput_mod.F90.in"
+# 405 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var_5d_real (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -2360,7 +2360,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 405 "pionfput_mod.F90.in"
+# 405 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var_1d_double (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -2459,7 +2459,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 405 "pionfput_mod.F90.in"
+# 405 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var_2d_double (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -2558,7 +2558,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 405 "pionfput_mod.F90.in"
+# 405 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var_3d_double (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -2657,7 +2657,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 405 "pionfput_mod.F90.in"
+# 405 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var_4d_double (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -2756,7 +2756,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 405 "pionfput_mod.F90.in"
+# 405 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var_5d_double (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -2854,7 +2854,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 502 "pionfput_mod.F90.in"
+# 502 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var_0d_int (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -2931,7 +2931,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 502 "pionfput_mod.F90.in"
+# 502 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var_0d_real (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -3008,7 +3008,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 502 "pionfput_mod.F90.in"
+# 502 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var_0d_double (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -3084,7 +3084,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 577 "pionfput_mod.F90.in"
+# 577 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var_vdesc_0d_text (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3105,7 +3105,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 577 "pionfput_mod.F90.in"
+# 577 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var_vdesc_1d_text (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3126,7 +3126,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 577 "pionfput_mod.F90.in"
+# 577 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var_vdesc_2d_text (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3147,7 +3147,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 577 "pionfput_mod.F90.in"
+# 577 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var_vdesc_3d_text (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3168,7 +3168,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 577 "pionfput_mod.F90.in"
+# 577 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var_vdesc_4d_text (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3189,7 +3189,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 577 "pionfput_mod.F90.in"
+# 577 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var_vdesc_5d_text (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3210,7 +3210,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 577 "pionfput_mod.F90.in"
+# 577 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var_vdesc_0d_real (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3231,7 +3231,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 577 "pionfput_mod.F90.in"
+# 577 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var_vdesc_1d_real (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3252,7 +3252,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 577 "pionfput_mod.F90.in"
+# 577 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var_vdesc_2d_real (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3273,7 +3273,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 577 "pionfput_mod.F90.in"
+# 577 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var_vdesc_3d_real (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3294,7 +3294,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 577 "pionfput_mod.F90.in"
+# 577 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var_vdesc_4d_real (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3315,7 +3315,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 577 "pionfput_mod.F90.in"
+# 577 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var_vdesc_5d_real (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3336,7 +3336,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 577 "pionfput_mod.F90.in"
+# 577 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var_vdesc_0d_double (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3357,7 +3357,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 577 "pionfput_mod.F90.in"
+# 577 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var_vdesc_1d_double (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3378,7 +3378,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 577 "pionfput_mod.F90.in"
+# 577 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var_vdesc_2d_double (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3399,7 +3399,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 577 "pionfput_mod.F90.in"
+# 577 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var_vdesc_3d_double (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3420,7 +3420,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 577 "pionfput_mod.F90.in"
+# 577 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var_vdesc_4d_double (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3441,7 +3441,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 577 "pionfput_mod.F90.in"
+# 577 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var_vdesc_5d_double (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3462,7 +3462,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 577 "pionfput_mod.F90.in"
+# 577 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var_vdesc_0d_int (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3483,7 +3483,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 577 "pionfput_mod.F90.in"
+# 577 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var_vdesc_1d_int (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3504,7 +3504,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 577 "pionfput_mod.F90.in"
+# 577 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var_vdesc_2d_int (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3525,7 +3525,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 577 "pionfput_mod.F90.in"
+# 577 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var_vdesc_3d_int (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3546,7 +3546,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 577 "pionfput_mod.F90.in"
+# 577 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var_vdesc_4d_int (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3567,7 +3567,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 577 "pionfput_mod.F90.in"
+# 577 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_var_vdesc_5d_int (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3591,7 +3591,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 600 "pionfput_mod.F90.in"
+# 600 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_vara_1d_text (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -3713,7 +3713,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 600 "pionfput_mod.F90.in"
+# 600 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_vara_2d_text (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -3835,7 +3835,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 600 "pionfput_mod.F90.in"
+# 600 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_vara_3d_text (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -3957,7 +3957,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 600 "pionfput_mod.F90.in"
+# 600 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_vara_4d_text (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -4079,7 +4079,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 600 "pionfput_mod.F90.in"
+# 600 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_vara_5d_text (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -4200,7 +4200,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 720 "pionfput_mod.F90.in"
+# 720 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_vara_1d_int (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -4316,7 +4316,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 720 "pionfput_mod.F90.in"
+# 720 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_vara_2d_int (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -4432,7 +4432,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 720 "pionfput_mod.F90.in"
+# 720 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_vara_3d_int (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -4548,7 +4548,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 720 "pionfput_mod.F90.in"
+# 720 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_vara_4d_int (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -4664,7 +4664,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 720 "pionfput_mod.F90.in"
+# 720 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_vara_5d_int (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -4780,7 +4780,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 720 "pionfput_mod.F90.in"
+# 720 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_vara_1d_real (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -4896,7 +4896,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 720 "pionfput_mod.F90.in"
+# 720 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_vara_2d_real (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -5012,7 +5012,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 720 "pionfput_mod.F90.in"
+# 720 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_vara_3d_real (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -5128,7 +5128,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 720 "pionfput_mod.F90.in"
+# 720 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_vara_4d_real (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -5244,7 +5244,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 720 "pionfput_mod.F90.in"
+# 720 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_vara_5d_real (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -5360,7 +5360,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 720 "pionfput_mod.F90.in"
+# 720 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_vara_1d_double (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -5476,7 +5476,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 720 "pionfput_mod.F90.in"
+# 720 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_vara_2d_double (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -5592,7 +5592,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 720 "pionfput_mod.F90.in"
+# 720 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_vara_3d_double (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -5708,7 +5708,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 720 "pionfput_mod.F90.in"
+# 720 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_vara_4d_double (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -5824,7 +5824,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 720 "pionfput_mod.F90.in"
+# 720 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_vara_5d_double (File,varid, start, count, ival) result(ierr)
     use nf_mod, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
@@ -5940,7 +5940,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 835 "pionfput_mod.F90.in"
+# 835 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_vara_vdesc_1d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5965,7 +5965,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 835 "pionfput_mod.F90.in"
+# 835 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_vara_vdesc_2d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5990,7 +5990,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 835 "pionfput_mod.F90.in"
+# 835 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_vara_vdesc_3d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6015,7 +6015,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 835 "pionfput_mod.F90.in"
+# 835 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_vara_vdesc_4d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6040,7 +6040,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 835 "pionfput_mod.F90.in"
+# 835 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_vara_vdesc_5d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6065,7 +6065,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 835 "pionfput_mod.F90.in"
+# 835 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_vara_vdesc_1d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6090,7 +6090,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 835 "pionfput_mod.F90.in"
+# 835 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_vara_vdesc_2d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6115,7 +6115,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 835 "pionfput_mod.F90.in"
+# 835 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_vara_vdesc_3d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6140,7 +6140,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 835 "pionfput_mod.F90.in"
+# 835 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_vara_vdesc_4d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6165,7 +6165,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 835 "pionfput_mod.F90.in"
+# 835 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_vara_vdesc_5d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6190,7 +6190,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 835 "pionfput_mod.F90.in"
+# 835 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_vara_vdesc_1d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6215,7 +6215,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 835 "pionfput_mod.F90.in"
+# 835 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_vara_vdesc_2d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6240,7 +6240,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 835 "pionfput_mod.F90.in"
+# 835 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_vara_vdesc_3d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6265,7 +6265,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 835 "pionfput_mod.F90.in"
+# 835 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_vara_vdesc_4d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6290,7 +6290,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 835 "pionfput_mod.F90.in"
+# 835 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_vara_vdesc_5d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6315,7 +6315,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 835 "pionfput_mod.F90.in"
+# 835 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_vara_vdesc_1d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6340,7 +6340,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 835 "pionfput_mod.F90.in"
+# 835 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_vara_vdesc_2d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6365,7 +6365,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 835 "pionfput_mod.F90.in"
+# 835 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_vara_vdesc_3d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6390,7 +6390,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 835 "pionfput_mod.F90.in"
+# 835 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_vara_vdesc_4d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6415,7 +6415,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 835 "pionfput_mod.F90.in"
+# 835 "/global/homes/j/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
   integer function put_vara_vdesc_5d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
