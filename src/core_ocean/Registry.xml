@@ -452,6 +452,38 @@
                                         description="Value below which convective mixing is triggered"
                                         possible_values="Any real value."
                 />
+                <nml_option name="config_use_cvmix_shear" type="logical" default_value=".false." units="NA"
+                                        description="If true, shear-based mixing is computed using CVMix"
+                                        possible_values="True or False"
+                />
+                <nml_option name="config_cvmix_shear_mixing_scheme" type="character" default_value="PP" units="NA"
+                                        description="Choose between Pacanowski/Philander or Large et al. shear mixing."
+                                        possible_values="PP or KPP"
+                />
+                <nml_option name="config_cvmix_shear_PP_nu_zero" type="real" default_value="0.005" units="m^2 s^{-1}"
+                                        description="Numerator of PP Eq (xx)"
+                                        possible_values="Any positive real value."
+                />
+                <nml_option name="config_cvmix_shear_PP_alpha" type="real" default_value="5.0" units="unitless"
+                                        description="Alpha values used in PP Eq (yy)"
+                                        possible_values="Any positive real value"
+                />
+                <nml_option name="config_cvmix_shear_PP_exp" type="real" default_value="2.0" units="unitless"
+                                        description="Exponent used in denominator of PP Eq (zz)"
+                                        possible_values="Any positive real value"
+                />
+                <nml_option name="config_cvmix_shear_KPP_nu_zero" type="real" default_value="xxy" units="m^2 s^{-1}"
+                                        description="yy"
+                                        possible_values="zz"
+                />
+                <nml_option name="config_cvmix_shear_KPP_Ri_zero" type="real" default_value="xxy" units="unitless"
+                                        description="yy"
+                                        possible_values="zz"
+                />
+                <nml_option name="config_cvmix_shear_KPP_exp" type="real" default_value="xxy" units="unitless"
+                                        description="yy"
+                                        possible_values="zz"
+                />
 		<nml_option name="config_use_cvmix_kpp" type="logical" default_value=".false." units="NA"
 					description="If true, diffusivity and viscosity is computed using CVMix KPP"
 					possible_values="True or False"
