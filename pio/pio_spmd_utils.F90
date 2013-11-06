@@ -5,7 +5,7 @@
 !>
 !! @file 
 !! $Revision: 777 $
-!! $LastChangedDate: 2013-05-01 05:39:51 -0700 (Wed, 01 May 2013) $
+!! $LastChangedDate: 2013-05-01 06:39:51 -0600 (Wed, 01 May 2013) $
 !! @brief SPMD helper routines
 !<
 #define __PIO_FILE__ "pio_spmd_utils.F90"
@@ -46,7 +46,7 @@ module pio_spmd_utils
 
   public :: pio_swapm
 
-# 45 "/global/homes/j/jedwards/pio_trunk/pio/pio_spmd_utils.F90.in"
+# 45 "/glade/u/home/jedwards/pio_trunk/pio/pio_spmd_utils.F90.in"
   interface pio_swapm
      ! TYPE int,real,double,long
      module procedure pio_swapm_int
@@ -61,12 +61,12 @@ module pio_spmd_utils
 
   character(len=*), parameter :: modName='pio_spmd_utils'
 
-# 53 "/global/homes/j/jedwards/pio_trunk/pio/pio_spmd_utils.F90.in"
+# 53 "/glade/u/home/jedwards/pio_trunk/pio/pio_spmd_utils.F90.in"
 contains
 !========================================================================
 !
 
-# 57 "/global/homes/j/jedwards/pio_trunk/pio/pio_spmd_utils.F90.in"
+# 57 "/glade/u/home/jedwards/pio_trunk/pio/pio_spmd_utils.F90.in"
    integer function pair(np,p,k)
 
       integer np,p,k,q
@@ -84,7 +84,7 @@ contains
 !========================================================================
 !
 
-# 74 "/global/homes/j/jedwards/pio_trunk/pio/pio_spmd_utils.F90.in"
+# 74 "/glade/u/home/jedwards/pio_trunk/pio/pio_spmd_utils.F90.in"
   integer function ceil2(n)
      integer n,p
      p=1
@@ -99,7 +99,7 @@ contains
 !========================================================================
 !
 ! TYPE int,real,double,long
-# 88 "/global/homes/j/jedwards/pio_trunk/pio/pio_spmd_utils.F90.in"
+# 88 "/glade/u/home/jedwards/pio_trunk/pio/pio_spmd_utils.F90.in"
    subroutine pio_swapm_int ( nprocs, mytask,   &
       sndbuf, sbuf_siz, sndlths, sdispls, stypes,  &
       rcvbuf, rbuf_siz, rcvlths, rdispls, rtypes,  &
@@ -629,7 +629,7 @@ contains
 !========================================================================
 !
 ! TYPE int,real,double,long
-# 88 "/global/homes/j/jedwards/pio_trunk/pio/pio_spmd_utils.F90.in"
+# 88 "/glade/u/home/jedwards/pio_trunk/pio/pio_spmd_utils.F90.in"
    subroutine pio_swapm_real ( nprocs, mytask,   &
       sndbuf, sbuf_siz, sndlths, sdispls, stypes,  &
       rcvbuf, rbuf_siz, rcvlths, rdispls, rtypes,  &
@@ -1159,7 +1159,7 @@ contains
 !========================================================================
 !
 ! TYPE int,real,double,long
-# 88 "/global/homes/j/jedwards/pio_trunk/pio/pio_spmd_utils.F90.in"
+# 88 "/glade/u/home/jedwards/pio_trunk/pio/pio_spmd_utils.F90.in"
    subroutine pio_swapm_double ( nprocs, mytask,   &
       sndbuf, sbuf_siz, sndlths, sdispls, stypes,  &
       rcvbuf, rbuf_siz, rcvlths, rdispls, rtypes,  &
@@ -1689,7 +1689,7 @@ contains
 !========================================================================
 !
 ! TYPE int,real,double,long
-# 88 "/global/homes/j/jedwards/pio_trunk/pio/pio_spmd_utils.F90.in"
+# 88 "/glade/u/home/jedwards/pio_trunk/pio/pio_spmd_utils.F90.in"
    subroutine pio_swapm_long ( nprocs, mytask,   &
       sndbuf, sbuf_siz, sndlths, sdispls, stypes,  &
       rcvbuf, rbuf_siz, rcvlths, rdispls, rtypes,  &

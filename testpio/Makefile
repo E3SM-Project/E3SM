@@ -16,9 +16,6 @@ SUFFIXES =
 
 .SUFFIXES: .hpux_make_needs_suffix_list
 
-# Produce verbose output by default.
-VERBOSE = 1
-
 # Suppress display of executed commands.
 $(VERBOSE).SILENT:
 
@@ -33,22 +30,22 @@ cmake_force:
 SHELL = /bin/sh
 
 # The CMake executable.
-CMAKE_COMMAND = /global/common/edison/usg/cmake/2.8.11.2/bin/cmake
+CMAKE_COMMAND = /glade/u/apps/opt/cmake/2.8.10.2/gnu/4.7.2/bin/cmake
 
 # The command to remove a file.
-RM = /global/common/edison/usg/cmake/2.8.11.2/bin/cmake -E remove -f
+RM = /glade/u/apps/opt/cmake/2.8.10.2/gnu/4.7.2/bin/cmake -E remove -f
 
 # Escaping for special characters.
 EQUALS = =
 
 # The program to use to edit the cache.
-CMAKE_EDIT_COMMAND = /global/common/edison/usg/cmake/2.8.11.2/bin/ccmake
+CMAKE_EDIT_COMMAND = /glade/u/apps/opt/cmake/2.8.10.2/gnu/4.7.2/bin/ccmake
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /global/homes/j/jedwards/pio_trunk
+CMAKE_SOURCE_DIR = /glade/u/home/jedwards/pio_trunk
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /global/homes/j/jedwards/pio_trunk
+CMAKE_BINARY_DIR = /glade/u/home/jedwards/pio_trunk
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -56,7 +53,7 @@ CMAKE_BINARY_DIR = /global/homes/j/jedwards/pio_trunk
 # Special rule for the target edit_cache
 edit_cache:
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Running CMake cache editor..."
-	/global/common/edison/usg/cmake/2.8.11.2/bin/ccmake -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
+	/glade/u/apps/opt/cmake/2.8.10.2/gnu/4.7.2/bin/ccmake -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
 .PHONY : edit_cache
 
 # Special rule for the target edit_cache
@@ -66,7 +63,7 @@ edit_cache/fast: edit_cache
 # Special rule for the target rebuild_cache
 rebuild_cache:
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Running CMake to regenerate build system..."
-	/global/common/edison/usg/cmake/2.8.11.2/bin/cmake -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
+	/glade/u/apps/opt/cmake/2.8.10.2/gnu/4.7.2/bin/cmake -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
 .PHONY : rebuild_cache
 
 # Special rule for the target rebuild_cache
@@ -75,14 +72,14 @@ rebuild_cache/fast: rebuild_cache
 
 # The main all target
 all: cmake_check_build_system
-	cd /global/homes/j/jedwards/pio_trunk && $(CMAKE_COMMAND) -E cmake_progress_start /global/homes/j/jedwards/pio_trunk/CMakeFiles /global/homes/j/jedwards/pio_trunk/testpio/CMakeFiles/progress.marks
-	cd /global/homes/j/jedwards/pio_trunk && $(MAKE) -f CMakeFiles/Makefile2 testpio/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /global/homes/j/jedwards/pio_trunk/CMakeFiles 0
+	cd /glade/u/home/jedwards/pio_trunk && $(CMAKE_COMMAND) -E cmake_progress_start /glade/u/home/jedwards/pio_trunk/CMakeFiles /glade/u/home/jedwards/pio_trunk/testpio/CMakeFiles/progress.marks
+	cd /glade/u/home/jedwards/pio_trunk && $(MAKE) -f CMakeFiles/Makefile2 testpio/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /glade/u/home/jedwards/pio_trunk/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
 clean:
-	cd /global/homes/j/jedwards/pio_trunk && $(MAKE) -f CMakeFiles/Makefile2 testpio/clean
+	cd /glade/u/home/jedwards/pio_trunk && $(MAKE) -f CMakeFiles/Makefile2 testpio/clean
 .PHONY : clean
 
 # The main clean target
@@ -91,22 +88,22 @@ clean/fast: clean
 
 # Prepare targets for installation.
 preinstall: all
-	cd /global/homes/j/jedwards/pio_trunk && $(MAKE) -f CMakeFiles/Makefile2 testpio/preinstall
+	cd /glade/u/home/jedwards/pio_trunk && $(MAKE) -f CMakeFiles/Makefile2 testpio/preinstall
 .PHONY : preinstall
 
 # Prepare targets for installation.
 preinstall/fast:
-	cd /global/homes/j/jedwards/pio_trunk && $(MAKE) -f CMakeFiles/Makefile2 testpio/preinstall
+	cd /glade/u/home/jedwards/pio_trunk && $(MAKE) -f CMakeFiles/Makefile2 testpio/preinstall
 .PHONY : preinstall/fast
 
 # clear depends
 depend:
-	cd /global/homes/j/jedwards/pio_trunk && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
+	cd /glade/u/home/jedwards/pio_trunk && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
 .PHONY : depend
 
 # Convenience name for target.
 testpio/CMakeFiles/testpio.dir/rule:
-	cd /global/homes/j/jedwards/pio_trunk && $(MAKE) -f CMakeFiles/Makefile2 testpio/CMakeFiles/testpio.dir/rule
+	cd /glade/u/home/jedwards/pio_trunk && $(MAKE) -f CMakeFiles/Makefile2 testpio/CMakeFiles/testpio.dir/rule
 .PHONY : testpio/CMakeFiles/testpio.dir/rule
 
 # Convenience name for target.
@@ -115,7 +112,7 @@ testpio: testpio/CMakeFiles/testpio.dir/rule
 
 # fast build rule for target.
 testpio/fast:
-	cd /global/homes/j/jedwards/pio_trunk && $(MAKE) -f testpio/CMakeFiles/testpio.dir/build.make testpio/CMakeFiles/testpio.dir/build
+	cd /glade/u/home/jedwards/pio_trunk && $(MAKE) -f testpio/CMakeFiles/testpio.dir/build.make testpio/CMakeFiles/testpio.dir/build
 .PHONY : testpio/fast
 
 check_mod.o: check_mod.F90.o
@@ -123,7 +120,7 @@ check_mod.o: check_mod.F90.o
 
 # target to build an object file
 check_mod.F90.o:
-	cd /global/homes/j/jedwards/pio_trunk && $(MAKE) -f testpio/CMakeFiles/testpio.dir/build.make testpio/CMakeFiles/testpio.dir/check_mod.F90.o
+	cd /glade/u/home/jedwards/pio_trunk && $(MAKE) -f testpio/CMakeFiles/testpio.dir/build.make testpio/CMakeFiles/testpio.dir/check_mod.F90.o
 .PHONY : check_mod.F90.o
 
 gdecomp_mod.o: gdecomp_mod.F90.o
@@ -131,7 +128,7 @@ gdecomp_mod.o: gdecomp_mod.F90.o
 
 # target to build an object file
 gdecomp_mod.F90.o:
-	cd /global/homes/j/jedwards/pio_trunk && $(MAKE) -f testpio/CMakeFiles/testpio.dir/build.make testpio/CMakeFiles/testpio.dir/gdecomp_mod.F90.o
+	cd /glade/u/home/jedwards/pio_trunk && $(MAKE) -f testpio/CMakeFiles/testpio.dir/build.make testpio/CMakeFiles/testpio.dir/gdecomp_mod.F90.o
 .PHONY : gdecomp_mod.F90.o
 
 kinds_mod.o: kinds_mod.F90.o
@@ -139,7 +136,7 @@ kinds_mod.o: kinds_mod.F90.o
 
 # target to build an object file
 kinds_mod.F90.o:
-	cd /global/homes/j/jedwards/pio_trunk && $(MAKE) -f testpio/CMakeFiles/testpio.dir/build.make testpio/CMakeFiles/testpio.dir/kinds_mod.F90.o
+	cd /glade/u/home/jedwards/pio_trunk && $(MAKE) -f testpio/CMakeFiles/testpio.dir/build.make testpio/CMakeFiles/testpio.dir/kinds_mod.F90.o
 .PHONY : kinds_mod.F90.o
 
 namelist_mod.o: namelist_mod.F90.o
@@ -147,7 +144,7 @@ namelist_mod.o: namelist_mod.F90.o
 
 # target to build an object file
 namelist_mod.F90.o:
-	cd /global/homes/j/jedwards/pio_trunk && $(MAKE) -f testpio/CMakeFiles/testpio.dir/build.make testpio/CMakeFiles/testpio.dir/namelist_mod.F90.o
+	cd /glade/u/home/jedwards/pio_trunk && $(MAKE) -f testpio/CMakeFiles/testpio.dir/build.make testpio/CMakeFiles/testpio.dir/namelist_mod.F90.o
 .PHONY : namelist_mod.F90.o
 
 testpio.o: testpio.F90.o
@@ -155,7 +152,7 @@ testpio.o: testpio.F90.o
 
 # target to build an object file
 testpio.F90.o:
-	cd /global/homes/j/jedwards/pio_trunk && $(MAKE) -f testpio/CMakeFiles/testpio.dir/build.make testpio/CMakeFiles/testpio.dir/testpio.F90.o
+	cd /glade/u/home/jedwards/pio_trunk && $(MAKE) -f testpio/CMakeFiles/testpio.dir/build.make testpio/CMakeFiles/testpio.dir/testpio.F90.o
 .PHONY : testpio.F90.o
 
 utils_mod.o: utils_mod.F90.o
@@ -163,7 +160,7 @@ utils_mod.o: utils_mod.F90.o
 
 # target to build an object file
 utils_mod.F90.o:
-	cd /global/homes/j/jedwards/pio_trunk && $(MAKE) -f testpio/CMakeFiles/testpio.dir/build.make testpio/CMakeFiles/testpio.dir/utils_mod.F90.o
+	cd /glade/u/home/jedwards/pio_trunk && $(MAKE) -f testpio/CMakeFiles/testpio.dir/build.make testpio/CMakeFiles/testpio.dir/utils_mod.F90.o
 .PHONY : utils_mod.F90.o
 
 # Help Target
@@ -192,6 +189,6 @@ help:
 # No rule that depends on this can have commands that come from listfiles
 # because they might be regenerated.
 cmake_check_build_system:
-	cd /global/homes/j/jedwards/pio_trunk && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
+	cd /glade/u/home/jedwards/pio_trunk && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
 .PHONY : cmake_check_build_system
 

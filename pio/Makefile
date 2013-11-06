@@ -16,9 +16,6 @@ SUFFIXES =
 
 .SUFFIXES: .hpux_make_needs_suffix_list
 
-# Produce verbose output by default.
-VERBOSE = 1
-
 # Suppress display of executed commands.
 $(VERBOSE).SILENT:
 
@@ -33,22 +30,22 @@ cmake_force:
 SHELL = /bin/sh
 
 # The CMake executable.
-CMAKE_COMMAND = /global/common/edison/usg/cmake/2.8.11.2/bin/cmake
+CMAKE_COMMAND = /glade/u/apps/opt/cmake/2.8.10.2/gnu/4.7.2/bin/cmake
 
 # The command to remove a file.
-RM = /global/common/edison/usg/cmake/2.8.11.2/bin/cmake -E remove -f
+RM = /glade/u/apps/opt/cmake/2.8.10.2/gnu/4.7.2/bin/cmake -E remove -f
 
 # Escaping for special characters.
 EQUALS = =
 
 # The program to use to edit the cache.
-CMAKE_EDIT_COMMAND = /global/common/edison/usg/cmake/2.8.11.2/bin/ccmake
+CMAKE_EDIT_COMMAND = /glade/u/apps/opt/cmake/2.8.10.2/gnu/4.7.2/bin/ccmake
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /global/homes/j/jedwards/pio_trunk
+CMAKE_SOURCE_DIR = /glade/u/home/jedwards/pio_trunk
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /global/homes/j/jedwards/pio_trunk
+CMAKE_BINARY_DIR = /glade/u/home/jedwards/pio_trunk
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -56,7 +53,7 @@ CMAKE_BINARY_DIR = /global/homes/j/jedwards/pio_trunk
 # Special rule for the target edit_cache
 edit_cache:
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Running CMake cache editor..."
-	/global/common/edison/usg/cmake/2.8.11.2/bin/ccmake -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
+	/glade/u/apps/opt/cmake/2.8.10.2/gnu/4.7.2/bin/ccmake -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
 .PHONY : edit_cache
 
 # Special rule for the target edit_cache
@@ -66,7 +63,7 @@ edit_cache/fast: edit_cache
 # Special rule for the target rebuild_cache
 rebuild_cache:
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Running CMake to regenerate build system..."
-	/global/common/edison/usg/cmake/2.8.11.2/bin/cmake -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
+	/glade/u/apps/opt/cmake/2.8.10.2/gnu/4.7.2/bin/cmake -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
 .PHONY : rebuild_cache
 
 # Special rule for the target rebuild_cache
@@ -75,14 +72,14 @@ rebuild_cache/fast: rebuild_cache
 
 # The main all target
 all: cmake_check_build_system
-	cd /global/homes/j/jedwards/pio_trunk && $(CMAKE_COMMAND) -E cmake_progress_start /global/homes/j/jedwards/pio_trunk/CMakeFiles /global/homes/j/jedwards/pio_trunk/pio/CMakeFiles/progress.marks
-	cd /global/homes/j/jedwards/pio_trunk && $(MAKE) -f CMakeFiles/Makefile2 pio/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /global/homes/j/jedwards/pio_trunk/CMakeFiles 0
+	cd /glade/u/home/jedwards/pio_trunk && $(CMAKE_COMMAND) -E cmake_progress_start /glade/u/home/jedwards/pio_trunk/CMakeFiles /glade/u/home/jedwards/pio_trunk/pio/CMakeFiles/progress.marks
+	cd /glade/u/home/jedwards/pio_trunk && $(MAKE) -f CMakeFiles/Makefile2 pio/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /glade/u/home/jedwards/pio_trunk/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
 clean:
-	cd /global/homes/j/jedwards/pio_trunk && $(MAKE) -f CMakeFiles/Makefile2 pio/clean
+	cd /glade/u/home/jedwards/pio_trunk && $(MAKE) -f CMakeFiles/Makefile2 pio/clean
 .PHONY : clean
 
 # The main clean target
@@ -91,22 +88,22 @@ clean/fast: clean
 
 # Prepare targets for installation.
 preinstall: all
-	cd /global/homes/j/jedwards/pio_trunk && $(MAKE) -f CMakeFiles/Makefile2 pio/preinstall
+	cd /glade/u/home/jedwards/pio_trunk && $(MAKE) -f CMakeFiles/Makefile2 pio/preinstall
 .PHONY : preinstall
 
 # Prepare targets for installation.
 preinstall/fast:
-	cd /global/homes/j/jedwards/pio_trunk && $(MAKE) -f CMakeFiles/Makefile2 pio/preinstall
+	cd /glade/u/home/jedwards/pio_trunk && $(MAKE) -f CMakeFiles/Makefile2 pio/preinstall
 .PHONY : preinstall/fast
 
 # clear depends
 depend:
-	cd /global/homes/j/jedwards/pio_trunk && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
+	cd /glade/u/home/jedwards/pio_trunk && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
 .PHONY : depend
 
 # Convenience name for target.
 pio/CMakeFiles/pio.dir/rule:
-	cd /global/homes/j/jedwards/pio_trunk && $(MAKE) -f CMakeFiles/Makefile2 pio/CMakeFiles/pio.dir/rule
+	cd /glade/u/home/jedwards/pio_trunk && $(MAKE) -f CMakeFiles/Makefile2 pio/CMakeFiles/pio.dir/rule
 .PHONY : pio/CMakeFiles/pio.dir/rule
 
 # Convenience name for target.
@@ -115,7 +112,7 @@ pio: pio/CMakeFiles/pio.dir/rule
 
 # fast build rule for target.
 pio/fast:
-	cd /global/homes/j/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/build
+	cd /glade/u/home/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/build
 .PHONY : pio/fast
 
 alloc_mod.o: alloc_mod.F90.o
@@ -123,7 +120,7 @@ alloc_mod.o: alloc_mod.F90.o
 
 # target to build an object file
 alloc_mod.F90.o:
-	cd /global/homes/j/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/alloc_mod.F90.o
+	cd /glade/u/home/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/alloc_mod.F90.o
 .PHONY : alloc_mod.F90.o
 
 box_rearrange.o: box_rearrange.F90.o
@@ -131,7 +128,7 @@ box_rearrange.o: box_rearrange.F90.o
 
 # target to build an object file
 box_rearrange.F90.o:
-	cd /global/homes/j/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/box_rearrange.F90.o
+	cd /glade/u/home/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/box_rearrange.F90.o
 .PHONY : box_rearrange.F90.o
 
 calcdecomp.o: calcdecomp.F90.o
@@ -139,7 +136,7 @@ calcdecomp.o: calcdecomp.F90.o
 
 # target to build an object file
 calcdecomp.F90.o:
-	cd /global/homes/j/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/calcdecomp.F90.o
+	cd /glade/u/home/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/calcdecomp.F90.o
 .PHONY : calcdecomp.F90.o
 
 calcdisplace_mod.o: calcdisplace_mod.F90.o
@@ -147,7 +144,7 @@ calcdisplace_mod.o: calcdisplace_mod.F90.o
 
 # target to build an object file
 calcdisplace_mod.F90.o:
-	cd /global/homes/j/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/calcdisplace_mod.F90.o
+	cd /glade/u/home/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/calcdisplace_mod.F90.o
 .PHONY : calcdisplace_mod.F90.o
 
 iompi_mod.o: iompi_mod.F90.o
@@ -155,7 +152,7 @@ iompi_mod.o: iompi_mod.F90.o
 
 # target to build an object file
 iompi_mod.F90.o:
-	cd /global/homes/j/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/iompi_mod.F90.o
+	cd /glade/u/home/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/iompi_mod.F90.o
 .PHONY : iompi_mod.F90.o
 
 ionf_mod.o: ionf_mod.F90.o
@@ -163,7 +160,7 @@ ionf_mod.o: ionf_mod.F90.o
 
 # target to build an object file
 ionf_mod.F90.o:
-	cd /global/homes/j/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/ionf_mod.F90.o
+	cd /glade/u/home/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/ionf_mod.F90.o
 .PHONY : ionf_mod.F90.o
 
 nf_mod.o: nf_mod.F90.o
@@ -171,7 +168,7 @@ nf_mod.o: nf_mod.F90.o
 
 # target to build an object file
 nf_mod.F90.o:
-	cd /global/homes/j/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/nf_mod.F90.o
+	cd /glade/u/home/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/nf_mod.F90.o
 .PHONY : nf_mod.F90.o
 
 pio.o: pio.F90.o
@@ -179,7 +176,7 @@ pio.o: pio.F90.o
 
 # target to build an object file
 pio.F90.o:
-	cd /global/homes/j/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/pio.F90.o
+	cd /glade/u/home/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/pio.F90.o
 .PHONY : pio.F90.o
 
 pio_kinds.o: pio_kinds.F90.o
@@ -187,7 +184,7 @@ pio_kinds.o: pio_kinds.F90.o
 
 # target to build an object file
 pio_kinds.F90.o:
-	cd /global/homes/j/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/pio_kinds.F90.o
+	cd /glade/u/home/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/pio_kinds.F90.o
 .PHONY : pio_kinds.F90.o
 
 pio_mpi_utils.o: pio_mpi_utils.F90.o
@@ -195,7 +192,7 @@ pio_mpi_utils.o: pio_mpi_utils.F90.o
 
 # target to build an object file
 pio_mpi_utils.F90.o:
-	cd /global/homes/j/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/pio_mpi_utils.F90.o
+	cd /glade/u/home/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/pio_mpi_utils.F90.o
 .PHONY : pio_mpi_utils.F90.o
 
 pio_msg_callbacks.o: pio_msg_callbacks.F90.o
@@ -203,7 +200,7 @@ pio_msg_callbacks.o: pio_msg_callbacks.F90.o
 
 # target to build an object file
 pio_msg_callbacks.F90.o:
-	cd /global/homes/j/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/pio_msg_callbacks.F90.o
+	cd /glade/u/home/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/pio_msg_callbacks.F90.o
 .PHONY : pio_msg_callbacks.F90.o
 
 pio_msg_getput_callbacks.o: pio_msg_getput_callbacks.F90.o
@@ -211,7 +208,7 @@ pio_msg_getput_callbacks.o: pio_msg_getput_callbacks.F90.o
 
 # target to build an object file
 pio_msg_getput_callbacks.F90.o:
-	cd /global/homes/j/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/pio_msg_getput_callbacks.F90.o
+	cd /glade/u/home/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/pio_msg_getput_callbacks.F90.o
 .PHONY : pio_msg_getput_callbacks.F90.o
 
 pio_msg_mod.o: pio_msg_mod.F90.o
@@ -219,7 +216,7 @@ pio_msg_mod.o: pio_msg_mod.F90.o
 
 # target to build an object file
 pio_msg_mod.F90.o:
-	cd /global/homes/j/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/pio_msg_mod.F90.o
+	cd /glade/u/home/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/pio_msg_mod.F90.o
 .PHONY : pio_msg_mod.F90.o
 
 pio_nf_utils.o: pio_nf_utils.F90.o
@@ -227,7 +224,7 @@ pio_nf_utils.o: pio_nf_utils.F90.o
 
 # target to build an object file
 pio_nf_utils.F90.o:
-	cd /global/homes/j/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/pio_nf_utils.F90.o
+	cd /glade/u/home/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/pio_nf_utils.F90.o
 .PHONY : pio_nf_utils.F90.o
 
 pio_spmd_utils.o: pio_spmd_utils.F90.o
@@ -235,7 +232,7 @@ pio_spmd_utils.o: pio_spmd_utils.F90.o
 
 # target to build an object file
 pio_spmd_utils.F90.o:
-	cd /global/homes/j/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/pio_spmd_utils.F90.o
+	cd /glade/u/home/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/pio_spmd_utils.F90.o
 .PHONY : pio_spmd_utils.F90.o
 
 pio_support.o: pio_support.F90.o
@@ -243,7 +240,7 @@ pio_support.o: pio_support.F90.o
 
 # target to build an object file
 pio_support.F90.o:
-	cd /global/homes/j/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/pio_support.F90.o
+	cd /glade/u/home/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/pio_support.F90.o
 .PHONY : pio_support.F90.o
 
 pio_types.o: pio_types.F90.o
@@ -251,7 +248,7 @@ pio_types.o: pio_types.F90.o
 
 # target to build an object file
 pio_types.F90.o:
-	cd /global/homes/j/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/pio_types.F90.o
+	cd /glade/u/home/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/pio_types.F90.o
 .PHONY : pio_types.F90.o
 
 pio_utils.o: pio_utils.F90.o
@@ -259,7 +256,7 @@ pio_utils.o: pio_utils.F90.o
 
 # target to build an object file
 pio_utils.F90.o:
-	cd /global/homes/j/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/pio_utils.F90.o
+	cd /glade/u/home/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/pio_utils.F90.o
 .PHONY : pio_utils.F90.o
 
 piodarray.o: piodarray.F90.o
@@ -267,7 +264,7 @@ piodarray.o: piodarray.F90.o
 
 # target to build an object file
 piodarray.F90.o:
-	cd /global/homes/j/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/piodarray.F90.o
+	cd /glade/u/home/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/piodarray.F90.o
 .PHONY : piodarray.F90.o
 
 piolib_mod.o: piolib_mod.F90.o
@@ -275,7 +272,7 @@ piolib_mod.o: piolib_mod.F90.o
 
 # target to build an object file
 piolib_mod.F90.o:
-	cd /global/homes/j/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/piolib_mod.F90.o
+	cd /glade/u/home/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/piolib_mod.F90.o
 .PHONY : piolib_mod.F90.o
 
 pionfatt_mod.o: pionfatt_mod.F90.o
@@ -283,7 +280,7 @@ pionfatt_mod.o: pionfatt_mod.F90.o
 
 # target to build an object file
 pionfatt_mod.F90.o:
-	cd /global/homes/j/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/pionfatt_mod.F90.o
+	cd /glade/u/home/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/pionfatt_mod.F90.o
 .PHONY : pionfatt_mod.F90.o
 
 pionfget_mod.o: pionfget_mod.F90.o
@@ -291,7 +288,7 @@ pionfget_mod.o: pionfget_mod.F90.o
 
 # target to build an object file
 pionfget_mod.F90.o:
-	cd /global/homes/j/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/pionfget_mod.F90.o
+	cd /glade/u/home/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/pionfget_mod.F90.o
 .PHONY : pionfget_mod.F90.o
 
 pionfput_mod.o: pionfput_mod.F90.o
@@ -299,7 +296,7 @@ pionfput_mod.o: pionfput_mod.F90.o
 
 # target to build an object file
 pionfput_mod.F90.o:
-	cd /global/homes/j/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/pionfput_mod.F90.o
+	cd /glade/u/home/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/pionfput_mod.F90.o
 .PHONY : pionfput_mod.F90.o
 
 pionfread_mod.o: pionfread_mod.F90.o
@@ -307,7 +304,7 @@ pionfread_mod.o: pionfread_mod.F90.o
 
 # target to build an object file
 pionfread_mod.F90.o:
-	cd /global/homes/j/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/pionfread_mod.F90.o
+	cd /glade/u/home/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/pionfread_mod.F90.o
 .PHONY : pionfread_mod.F90.o
 
 pionfwrite_mod.o: pionfwrite_mod.F90.o
@@ -315,7 +312,7 @@ pionfwrite_mod.o: pionfwrite_mod.F90.o
 
 # target to build an object file
 pionfwrite_mod.F90.o:
-	cd /global/homes/j/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/pionfwrite_mod.F90.o
+	cd /glade/u/home/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/pionfwrite_mod.F90.o
 .PHONY : pionfwrite_mod.F90.o
 
 rearrange.o: rearrange.F90.o
@@ -323,7 +320,7 @@ rearrange.o: rearrange.F90.o
 
 # target to build an object file
 rearrange.F90.o:
-	cd /global/homes/j/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/rearrange.F90.o
+	cd /glade/u/home/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/rearrange.F90.o
 .PHONY : rearrange.F90.o
 
 topology.o: topology.c.o
@@ -331,7 +328,7 @@ topology.o: topology.c.o
 
 # target to build an object file
 topology.c.o:
-	cd /global/homes/j/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/topology.c.o
+	cd /glade/u/home/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/topology.c.o
 .PHONY : topology.c.o
 
 topology.i: topology.c.i
@@ -339,7 +336,7 @@ topology.i: topology.c.i
 
 # target to preprocess a source file
 topology.c.i:
-	cd /global/homes/j/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/topology.c.i
+	cd /glade/u/home/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/topology.c.i
 .PHONY : topology.c.i
 
 topology.s: topology.c.s
@@ -347,7 +344,7 @@ topology.s: topology.c.s
 
 # target to generate assembly for a file
 topology.c.s:
-	cd /global/homes/j/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/topology.c.s
+	cd /glade/u/home/jedwards/pio_trunk && $(MAKE) -f pio/CMakeFiles/pio.dir/build.make pio/CMakeFiles/pio.dir/topology.c.s
 .PHONY : topology.c.s
 
 # Help Target
@@ -399,6 +396,6 @@ help:
 # No rule that depends on this can have commands that come from listfiles
 # because they might be regenerated.
 cmake_check_build_system:
-	cd /global/homes/j/jedwards/pio_trunk && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
+	cd /glade/u/home/jedwards/pio_trunk && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
 .PHONY : cmake_check_build_system
 

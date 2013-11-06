@@ -93,6 +93,7 @@ mark_as_advanced( NETCDF_CONFIG_EXECUTABLE )
 set(output "no")
 _NETCDF_CONFIG (--has-hdf5 output return)
 set(HAS_HDF5 FALSE)
+set(NETCDF_IS_PARALLEL FALSE)
 
 if(${output} STREQUAL yes)
   set(HAS_HDF5 TRUE)
@@ -104,7 +105,7 @@ if(${output} STREQUAL yes)
 #        list( APPEND NETCDF_LIBRARIES_DEBUG
 #            ${HDF5_LIBRARIES_DEBUG} )
 #        list( APPEND NETCDF_LIBRARIES_RELEASE
-#            ${HDF5_LIBRARIES_RELEASE} )
+#            ${HDF5_LIBRARIES_RELEASE} 
   set (NETCDF_IS_PARALLEL ${HDF5_IS_PARALLEL})
 endif()
 _NETCDF_CONFIG (--has-pnetcdf output return)
