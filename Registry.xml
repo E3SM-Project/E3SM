@@ -1005,6 +1005,7 @@
 			<var name="avgZonalSSHGradient"/>
 			<var name="avgMeridionalSSHGradient"/>
 			<var name="surfaceWindStressMagnitude"/>
+			<var name="surfaceWindStress"/>
 			<var name="surfaceMassFlux"/>
 			<var name="seaSurfacePressure"/>
 			<var name="seaIceEnergy"/>
