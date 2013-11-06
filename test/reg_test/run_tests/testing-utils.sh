@@ -15,101 +15,16 @@ submissionHeader() {
   RUN_SCRIPT=$1
 
   if [ "$HOMME_Submission_Type" != none ]; then 
-    # Use a user defined header
+    # Use a provided or user defined header
     if [ -n "$HOMME_Submission_Header" ]; then
       parseHeader ${HOMME_Submission_Header} ${RUN_SCRIPT}
     else
-      # Build a header for lsf or pbs
-      if [ "$HOMME_Submission_Type" = lsf ]; then
-        createLSFHeader $RUN_SCRIPT
-      elif [ "$HOMME_Submission_Type" = pbs ]; then
-        createPBSHeader $RUN_SCRIPT
-      fi
+      echo "Error: No queue subimission header supplied"
+      exit -19
     fi
   else
     createStdHeader $RUN_SCRIPT
   fi
-
-}
-
-createLSFHeader() {
-
-  RUN_SCRIPT=$1
-
-  #delete the file if it exists
-  rm -f $RUN_SCRIPT
-
-  # Set up some yellowstone boiler plate
-  echo "#!/bin/bash" >> $RUN_SCRIPT
-  echo ""  >> $RUN_SCRIPT # newlines
-
-  echo "#BSUB -a poe" >> $RUN_SCRIPT
-
-  if [ -n "$HOMME_ACCOUNT" ]; then
-    echo "#BSUB -P $HOMME_ACCOUNT" >> $RUN_SCRIPT
-  else
-    echo "PROJECT CHARGE ID (HOMME_PROJID) not set"
-    exit -1
-  fi 
-
-  echo "" >> $RUN_SCRIPT # newline
-
-  echo "#BSUB -q small" >> $RUN_SCRIPT
-  echo "#BSUB -W 0:40" >> $RUN_SCRIPT
-
-  echo "" >> $RUN_SCRIPT # newline
-
-  echo "#BSUB -x" >> $RUN_SCRIPT
-
-  echo "" >> $RUN_SCRIPT # newline
-
-  # Set the job name
-  echo "#BSUB -J ${TEST_NAME}" >> $RUN_SCRIPT
-  echo "" >> $RUN_SCRIPT
-
-  # Set the output and error filenames
-  echo "#BSUB -o ${TEST_NAME}.stdout.%J" >> $RUN_SCRIPT
-  echo "#BSUB -e ${TEST_NAME}.stderr.%J" >> $RUN_SCRIPT
-  echo "" >> $RUN_SCRIPT
-
-  # Set the ncpus and ranks per MPI
-  echo "#BSUB -n ${NUM_CPUS}" >> $RUN_SCRIPT
-  echo '#BSUB -R "span[ptile='${NUM_CPUS}']" ' >> $RUN_SCRIPT
-
-  echo "" >> $RUN_SCRIPT
-
-}
-
-createPBSHeader() {
-
-  RUN_SCRIPT=$1
-
-  #delete the file if it exists
-  rm -f $RUN_SCRIPT
-
-  # Set up some yellowstone boiler plate
-  echo "#!/bin/bash -l" >> $RUN_SCRIPT
-  echo ""  >> $RUN_SCRIPT # newlines
-  
-  if [ -n "$HOMME_ACCOUNT" ]; then
-    echo "#PBS -A $HOMME_ACCOUNT" >> $RUN_SCRIPT
-  else
-    echo "PROJECT CHARGE ID (HOMME_PROJID) not set"
-    exit -2
-  fi 
-
-  # Set the output and error filenames
-  echo "#PBS -o ${TEST_NAME}.stdout.\${PBS_JOBID}" >> $RUN_SCRIPT
-  echo "#PBS -e ${TEST_NAME}.stderr.\${PBS_JOBID}" >> $RUN_SCRIPT
-
-  echo "#PBS -N ${TEST_NAME}" >> $RUN_SCRIPT
-
-  echo "#PBS -l nodes=1" >> $RUN_SCRIPT
-  echo "#PBS -l walltime=0:40:00" >> $RUN_SCRIPT
-  # Not sure how to make the following portable
-  #echo "#PBS -l gres=widow1" >> $RUN_SCRIPT
-
-  echo "" >> $RUN_SCRIPT
 
 }
 
