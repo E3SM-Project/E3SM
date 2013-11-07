@@ -59,6 +59,8 @@
 !>    * added subroutine compute_relhum to calculate the relative humidity using the functions
 !>      rslf and rsif from the Thompson cloud microphysics scheme.
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-07-12. 
+!>    * removed the argument tend from the call to microphysics_from_MPAS (not needed).
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-11-07.
 
 
  contains
@@ -215,7 +217,7 @@
  call precip_from_MPAS(diag_physics,mesh)
 
 !... initialization of soundings for non-hydrostatic dynamical cores.
- call microphysics_from_MPAS(mesh,state,tend,diag)
+ call microphysics_from_MPAS(mesh,state,diag)
 
 !--------------------------------------------------------------------------------------------------
 

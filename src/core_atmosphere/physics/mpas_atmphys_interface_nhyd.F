@@ -23,7 +23,6 @@
 
  integer:: i,j,k
 
-
 !>\brief interface for conversion between variables used in the MPAS dynamical core and variables
 !> needed in the physics parameterizations.  
 !>\author Laura D. Fowler (send comments to laura@ucar.edu).
@@ -206,24 +205,6 @@
  u => diag  % uReconstructZonal % array
  v => diag  % uReconstructMeridional % array
 
-!calculation of the surface pressure using hydrostatic assumption down to the surface::
- do i = its,ite
-    tem1 = zgrid(2,i)-zgrid(1,i)
-    tem2 = zgrid(3,i)-zgrid(2,i)
-    rho1 = rho_zz(1,i) * zz(1,i) * (1. + qv(1,i))
-    rho2 = rho_zz(2,i) * zz(2,i) * (1. + qv(2,i))
-    sfc_pressure(i) = 0.5*g*(zgrid(2,i)-zgrid(1,i)) &
-                    * (rho1 + 0.5*(rho2-rho1)*tem1/(tem1+tem2))
-    sfc_pressure(i) = sfc_pressure(i) + pressure_p(1,i) + pressure_b(1,i)
- enddo
-
-!arrays located at theta points:
-!do j = jts, jte
-!do i = its, ite
-!   psfc_p(i,j) = diag % surface_pressure % array(i)
-!enddo
-!enddo
-
  do j = jts, jte
  do k = kts, kte
  do i = its, ite
@@ -254,6 +235,19 @@
     dz_p(i,k,j)   = zgrid(k+1,i)-zgrid(k,i)
 
  enddo
+ enddo
+ enddo
+
+!calculation of the surface pressure using hydrostatic assumption down to the surface::
+ do j = jts,jte
+ do i = its,ite
+    tem1 = zgrid(2,i)-zgrid(1,i)
+    tem2 = zgrid(3,i)-zgrid(2,i)
+    rho1 = rho_zz(1,i) * zz(1,i) * (1. + qv_p(i,1,j))
+    rho2 = rho_zz(2,i) * zz(2,i) * (1. + qv_p(i,2,j))
+    sfc_pressure(i) = 0.5*g*(zgrid(2,i)-zgrid(1,i)) &
+                    * (rho1 + 0.5*(rho2-rho1)*tem1/(tem1+tem2))
+    sfc_pressure(i) = sfc_pressure(i) + pressure_p(1,i) + pressure_b(1,i)
  enddo
  enddo
 
@@ -384,15 +378,7 @@
 
 !local variables:
  integer:: i,k,j
-<<<<<<< HEAD
 
- real(kind=RKIND):: min_theta,min_thp,min_tp
- real(kind=RKIND):: max_theta,max_thp,max_tp
- real(kind=RKIND):: min_qv,min_qc,min_qr,min_qi,min_qs,min_qg
- real(kind=RKIND):: max_qv,max_qc,max_qr,max_qi,max_qs,max_qg
-
-=======
->>>>>>> * In subroutine MPAS_to_physics, moved the calculation of the local arrays qv_p,qc_p, and
  real(kind=RKIND),dimension(:,:),pointer:: zgrid
  real(kind=RKIND),dimension(:,:),pointer:: zz,exner,pressure_b,rtheta_p,rtheta_b
  real(kind=RKIND),dimension(:,:),pointer:: rho_zz,theta_m,pressure_p
@@ -556,7 +542,7 @@
     tem1 = zgrid(2,i)-zgrid(1,i)
     tem2 = zgrid(3,i)-zgrid(2,i)
     rho1 = rho_zz(1,i) * zz(1,i) * (1. + qv_p(i,1,j))
-    rho2 = rho_zz(2,i) * zz(2,i) * (1. + qv_P(i,2,j))
+    rho2 = rho_zz(2,i) * zz(2,i) * (1. + qv_p(i,2,j))
     sfc_pressure(i) = 0.5*g*(zgrid(2,i)-zgrid(1,i)) &
                     * (rho1 + 0.5*(rho2-rho1)*tem1/(tem1+tem2))
     sfc_pressure(i) = sfc_pressure(i) + pressure_p(1,i) + pressure_b(1,i)
