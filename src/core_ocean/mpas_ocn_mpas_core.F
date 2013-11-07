@@ -36,6 +36,7 @@ module mpas_core
    use ocn_thick_hadv
    use ocn_thick_vadv
    use ocn_thick_ale
+   use ocn_thick_surface_flux
 
    use ocn_vel_pressure_grad
    use ocn_vel_vadv
@@ -44,6 +45,7 @@ module mpas_core
    use ocn_vel_coriolis
 
    use ocn_tracer_hmix
+   use ocn_tracer_surface_flux
    use ocn_tracer_short_wave_absorption
    use ocn_gm
 
@@ -111,9 +113,12 @@ module mpas_core
 
       call ocn_thick_hadv_init(err_tmp)
       err = ior(err, err_tmp)
-
       call ocn_thick_vadv_init(err_tmp)
       err = ior(err, err_tmp)
+      call ocn_thick_surface_flux_init(err_tmp)
+      err = ior(err, err_tmp)
+      call ocn_thick_ale_init(err_tmp)
+      err = ior(err,err_tmp)
 
       call ocn_vel_coriolis_init(err_tmp)
       err = ior(err, err_tmp)
@@ -128,6 +133,12 @@ module mpas_core
 
       call ocn_tracer_hmix_init(err_tmp)
       err = ior(err, err_tmp)
+      call ocn_tracer_surface_flux_init(err_tmp)
+      err = ior(err, err_tmp)
+      call ocn_tracer_advection_init(err_tmp)
+      err = ior(err,err_tmp)
+      call ocn_tracer_short_wave_absorption_init(err_tmp)
+      err = ior(err,err_tmp)
 
       call ocn_vmix_init(domain,err_tmp)
       err = ior(err, err_tmp)
@@ -139,17 +150,10 @@ module mpas_core
       err = ior(err,err_tmp)
       call ocn_diagnostics_init(err_tmp)
       err = ior(err,err_tmp)
-      call ocn_thick_ale_init(err_tmp)
-      err = ior(err,err_tmp)
 
       call ocn_forcing_init(err_tmp)
       err = ior(err,err_tmp)
 
-      call ocn_tracer_advection_init(err_tmp)
-      err = ior(err,err_tmp)
-
-      call ocn_tracer_short_wave_absorption_init(err_tmp)
-      err = ior(err,err_tmp)
 
       call ocn_global_diagnostics_init(dminfo,err_tmp)
       err = ior(err, err_tmp)
