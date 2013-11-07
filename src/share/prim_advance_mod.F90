@@ -422,30 +422,45 @@ contains
        np1 = n0
 
        lx = 1
-       do n=1,nvar
-       do ie=nets,nete
-       if (n.le.3) then
-        do k=1,nlev
-          do j=1,np
-            do i=1,np
-             if (n==1) xstate(lx) = elem(ie)%state%v(i,j,1,k,n0)
-             if (n==2) xstate(lx) = elem(ie)%state%v(i,j,2,k,n0)
-             if (n==3) xstate(lx) = elem(ie)%state%T(i,j,k,n0)
-             lx = lx+1
-            end do  !np
-          end do  !np
-         end do  !nlev
-        else
-          do j=1,np
-            do i=1,np
-              if (n==4) xstate(lx) = elem(ie)%state%ps_v(i,j,n0)
-              lx = lx+1
-            end do  !np
-          end do  !np
-        end if ! nvar
-       end do !ie
-       end do !nvar
-
+	   do ie=nets,nete
+		   do k=1,nlev
+			   do j=1,np
+				   do i=1,np
+					   xstate(lx) = elem(ie)%state%v(i,j,1,k,n0)
+					   lx = lx+1
+				   end do
+			   end do
+		   end do
+	   end do
+	   do ie=nets,nete
+		   do k=1,nlev
+			   do j=1,np
+				   do i=1,np
+					   xstate(lx) = elem(ie)%state%v(i,j,2,k,n0)
+					   lx = lx+1
+				   end do
+			   end do
+		   end do
+	   end do
+	   do ie=nets,nete
+		   do k=1,nlev
+			   do j=1,np
+				   do i=1,np
+					   xstate(lx) = elem(ie)%state%T(i,j,k,n0)
+					   lx = lx+1
+				   end do
+			   end do
+		   end do
+	   end do
+	   do ie=nets,nete
+		   do j=1,np
+			   do i=1,np
+				   xstate(lx) = elem(ie)%state%ps_v(i,j,n0)
+				   lx = lx+1
+			   end do
+		   end do
+	   end do
+       
 ! activate these lines to test infrastructure and still solve with explicit code
 !       ! RK2
 !       ! forward euler to u(dt/2) = u(0) + (dt/2) RHS(0)  (store in u(np1))
@@ -461,31 +476,45 @@ contains
       call c_f_pointer(c_ptr_to_object, fptr) ! convert C ptr to F ptr
       elem = fptr%base
 
-       lx = 1
-       do n=1,nvar
-       do ie=nets,nete
-       if (n.le.3) then
-        do k=1,nlev
-          do j=1,np
-            do i=1,np
-             if (n==1) elem(ie)%state%v(i,j,1,k,np1) = xstate(lx)
-             if (n==2) elem(ie)%state%v(i,j,2,k,np1) = xstate(lx)
-             if (n==3) elem(ie)%state%T(i,j,k,np1) = xstate(lx)
-             lx = lx+1
-            end do  !np
-          end do  !np
-         end do  !nlev
-        else
-          do j=1,np
-            do i=1,np
-              if (n==4) elem(ie)%state%ps_v(i,j,np1) = xstate(lx)
-              lx = lx+1
-            end do  !np
-          end do  !np
-        end if ! nvar
-       end do !ie
-       end do !nvar
-
+	  lx = 1
+	  do ie=nets,nete
+		  do k=1,nlev
+			  do j=1,np
+				  do i=1,np
+					  elem(ie)%state%v(i,j,1,k,np1) = xstate(lx)
+					  lx = lx+1
+				  end do
+			  end do
+		  end do
+	  end do
+	  do ie=nets,nete
+		  do k=1,nlev
+			  do j=1,np
+				  do i=1,np
+					  elem(ie)%state%v(i,j,2,k,np1) = xstate(lx) 
+					  lx = lx+1
+				  end do
+			  end do
+		  end do
+	  end do
+	  do ie=nets,nete
+		  do k=1,nlev
+			  do j=1,np
+				  do i=1,np
+					  elem(ie)%state%T(i,j,k,np1) = xstate(lx)
+					  lx = lx+1
+				  end do
+			  end do
+		  end do
+	  end do
+	  do ie=nets,nete
+		  do j=1,np
+			  do i=1,np
+				  elem(ie)%state%ps_v(i,j,np1) = xstate(lx)
+				  lx = lx+1
+			  end do
+		  end do
+	  end do
 #endif
 
     else
@@ -3149,36 +3178,55 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 !JMD  call t_barrierf('sync_residual', hybrid%par%comm)
   call t_adj_detailf(+1)
   call t_startf('residual')
-
+		
+		call t_startf('residual_int')
        fvtens = 0.0d0
        fttens = 0.0d0
        fpstens = 0.0d0
        fdptens = 0.0d0
 
        lx = 1
-       do n=1,nvar
-       do ie=nets,nete
-       if (n.le.3) then
-        do k=1,nlev
-          do j=1,np
-            do i=1,np
-             if (n==1) fptr%base(ie)%state%v(i,j,1,k,np1) = xstate(lx)
-             if (n==2) fptr%base(ie)%state%v(i,j,2,k,np1) = xstate(lx)
-             if (n==3) fptr%base(ie)%state%T(i,j,k,np1) = xstate(lx)
-             lx = lx+1
-            end do  !np
-          end do  !np
-         end do  !nlev
-        else
-          do j=1,np
-            do i=1,np
-              if (n==4) fptr%base(ie)%state%ps_v(i,j,np1) = xstate(lx)
-              lx = lx+1
-            end do  !np
-          end do  !np
-        end if ! nvar
-       end do !ie
-       end do !nvar
+	   do ie=nets,nete
+		   do k=1,nlev
+			   do j=1,np
+				   do i=1,np
+					   fptr%base(ie)%state%v(i,j,1,k,np1) = xstate(lx)
+					   lx = lx+1
+				   end do
+			   end do
+		   end do
+	   end do
+	   do ie=nets,nete
+		   do k=1,nlev
+			   do j=1,np
+				   do i=1,np
+					   fptr%base(ie)%state%v(i,j,2,k,np1) = xstate(lx)
+					   lx = lx+1
+				   end do
+			   end do
+		   end do
+	   end do
+	   do ie=nets,nete
+		   do k=1,nlev
+			   do j=1,np
+				   do i=1,np
+					   fptr%base(ie)%state%T(i,j,k,np1) = xstate(lx)
+					   lx = lx+1
+				   end do
+			   end do
+		   end do
+	   end do
+	   do ie=nets,nete
+		   do j=1,np
+			   do i=1,np
+				   fptr%base(ie)%state%ps_v(i,j,np1) = xstate(lx)
+				   lx = lx+1
+			   end do
+		   end do
+	   end do
+	   call t_stopf('residual_int')
+       
+	   call t_startf('residual_cal')
 
   do ie=nets,nete
 !     ps => fptr%base(ie)%state%ps_v(:,:,n0)
@@ -3690,31 +3738,49 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      endif
 
   end do
-
-       lx = 1
-       do n=1,nvar
-        do ie=nets,nete
-        if (n.le.3) then
-        do k=1,nlev
-          do j=1,np
-            do i=1,np
-             if (n==1) fx(lx) = fvtens(i,j,1,k,ie)
-             if (n==2) fx(lx) = fvtens(i,j,2,k,ie)
-             if (n==3) fx(lx) = fttens(i,j,k,ie)
-             lx = lx+1
-            end do  !np
-          end do  !np
-        end do  !nlev
-        else
-          do j=1,np
-            do i=1,np
-              if (n==4) fx(lx) = fpstens(i,j,ie)
-              lx = lx+1
-            end do  !np
-          end do  !np
-        end if ! nlev
-       end do !ie
-       end do !nvar
+  
+  call t_stopf('residual_cal')
+  call t_startf('residual_fin')
+	  lx = 1
+	  do ie=nets,nete
+		  do k=1,nlev
+			  do j=1,np
+				  do i=1,np
+					  fx(lx) = fvtens(i,j,1,k,ie)
+					  lx = lx+1
+				  end do
+			  end do
+		  end do
+	  end do
+	  do ie=nets,nete
+		  do k=1,nlev
+			  do j=1,np
+				  do i=1,np
+					  fx(lx) = fvtens(i,j,2,k,ie)
+					  lx = lx+1
+				  end do
+			  end do
+		  end do
+	  end do
+	  do ie=nets,nete
+		  do k=1,nlev
+			  do j=1,np
+				  do i=1,np
+					  fx(lx) = fttens(i,j,k,ie)
+					  lx = lx+1
+				  end do
+			  end do
+		  end do
+	  end do
+	  do ie=nets,nete
+		  do j=1,np
+			  do i=1,np
+				  fx(lx) = fpstens(i,j,ie)
+				  lx = lx+1
+			  end do
+		  end do
+	  end do
+      call t_stopf('residual_fin')
 
 !       if (hybrid%masterthread) print*, "F(u,v,t,p)",NORM2(fvtens),NORM2(fttens),NORM2(fpstens)
 

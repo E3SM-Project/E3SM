@@ -2016,6 +2016,28 @@ ptens=0.0d0
 
   end subroutine sw_picard_simple_op
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   subroutine sw_picard_op(xs, nelemd,fx, c_ptr_to_object) bind(C,name='sw_picard')
 
     use ,intrinsic :: iso_c_binding 
@@ -2279,34 +2301,43 @@ ptens=0.0d0
        kptr=nlev
        call edgeVunpack(fptr%edge3, vtens(1,1,1,1,ie), 2*nlev, kptr, fptr%base(ie)%desc)
 
-    end do !ie
+     end do !ie
       ! ===========================================================
        ! Compute velocity and pressure tendencies for all levels
        ! ===========================================================
 
-  lx = 0
+      lx = 0
 
-  do n=1,nvar
-    do ie=ns,ne
-      do k=1,nlev
-        do j=1,np
-          do i=1,np
-            lx = lx+1
-            if (topology == "cube" .and. test_case=="swtc1") then
-              if (n==1) fx(lx) = 0.0
-              if (n==2) fx(lx) = 0.0
-            else 
-              if(n==1) fx(lx)=fptr%base(ie)%rspheremp(i,j)*vtens(i,j,1,k,ie)
-              if(n==2) fx(lx)=fptr%base(ie)%rspheremp(i,j)*vtens(i,j,2,k,ie)
-            end if
-            if (n==3) fx(lx) = fptr%base(ie)%rspheremp(i,j)*ptens(i,j,k,ie) 
-          end do
-        end do
-      end do
-    end do !ie
-  end do
+	  do n=1,nvar
+		  do ie=ns,ne
+			  do k=1,nlev
+				  do j=1,np
+					  do i=1,np
+						  lx = lx+1
+						  if (topology == "cube" .and. test_case=="swtc1") then
+							  if (n==1) fx(lx) = 0.0
+							  if (n==2) fx(lx) = 0.0
+              
+						  else 
+
+							  if(n==1) fx(lx)=fptr%base(ie)%rspheremp(i,j)*vtens(i,j,1,k,ie)
+							  if(n==2) fx(lx)=fptr%base(ie)%rspheremp(i,j)*vtens(i,j,2,k,ie)
+
+						  end if
+						  if (n==3) fx(lx) = fptr%base(ie)%rspheremp(i,j)*ptens(i,j,k,ie) 
+					  end do
+				  end do
+			  end do
+		  end do !ie
+	  end do
+
 
   end subroutine sw_picard_op
+
+
+
+
+
 
   subroutine sw_picard_alphaschur_op(xs, nelemd,fx, c_ptr_to_object) bind(C,name='sw_picard_alphaschur')
 
@@ -2389,6 +2420,7 @@ alpha=1.0d0
 
 !    call t_startf('sw jacobian op')
 
+
     call c_f_pointer(c_ptr_to_object,fptr) ! convert C ptr to F ptr
 
 
@@ -2404,8 +2436,9 @@ alpha=1.0d0
     pmean      = fptr%pmean
     gam        = 0.5
 
-    vtens=0.0d0
-    ptens=0.0d0
+vtens=0.0d0
+ptens=0.0d0
+
 
     lx = 0
      do n=1,nvar
@@ -2423,7 +2456,9 @@ alpha=1.0d0
       end do !ie
      end do !nvar
 
-  do ie=ns,ne
+    do ie=ns,ne
+
+
 
       do j=1,np
        do i=1,np
@@ -2436,6 +2471,8 @@ alpha=1.0d0
        end do !np
       end do !np
 
+
+
      do k=1,nlev
 
      grade_n3 = gradient_sphere(fptr%base(ie)%state%p(:,:,k,np1),fptr%deriv,fptr%base(ie)%Dinv)  ! scalar -> latlon vector        (grad)del phi
@@ -2444,17 +2481,22 @@ alpha=1.0d0
           ! Compute residual terms
           ! ==============================================
 
-     do j=1,np
+      do j=1,np
         do i=1,np
+
 !vtens is in latlon coordinates
+
           vtens(i,j,1,k,ie)= spheremp(i,j)*( &
             grade_n3(i,j,1)) ! + d(delp)/dx
+
            vtens(i,j,2,k,ie)= spheremp(i,j)*( &
              grade_n3(i,j,2))!d(delp)/dy
-        end do !np
-      end do !np
 
-     end do !nlev
+
+            end do !np
+          end do !np
+       end do !nlev
+
 
       ! ===================================================
       ! Pack cube edges of tendencies, rotate velocities
@@ -2462,6 +2504,7 @@ alpha=1.0d0
        kptr=0
        call edgeVpack(fptr%edge2, vtens(1,1,1,1,ie),2*nlev,kptr,fptr%base(ie)%desc)
   end do !ie
+
 
    !$OMP BARRIER
     call bndry_exchangeV(fptr%hybrid,fptr%edge2)
@@ -2526,6 +2569,8 @@ alpha=1.0d0
      end do !ie
      end do
 
+
+
   lx = 0
      do n=1,nvar
       do ie=ns,ne
@@ -2541,42 +2586,52 @@ alpha=1.0d0
       end do !ie
      end do !nvar
 
+
+
+
+
 ! we now need to apply B to vtens, as well as G to dh (a.k.a. fptr%base(ie)%state%p(:,:,k,np1), and sum these two quantities
 ! now compute Gdp -BF_diag_inv(B'p) 
 !
-     do ie=ns,ne
-         do j=1,np
-           do i=1,np
-             spheremp(i,j)=fptr%base(ie)%spheremp(i,j)
-             rspheremp(i,j)=fptr%base(ie)%rspheremp(i,j)
-           end do !np
-         end do !np
+   do ie=ns,ne
+     do j=1,np
+       do i=1,np
+         spheremp(i,j)=fptr%base(ie)%spheremp(i,j)
+         rspheremp(i,j)=fptr%base(ie)%rspheremp(i,j)
+       end do !np
+     end do !np
 
-       do k=1,nlev
+     do k=1,nlev
 !
 !         ! ==============================================
 !         ! Compute kinetic energy term at each time level
 !         ! ==============================================
 !
-         do j=1,np
-           do i=1,np
+      do j=1,np
+       do i=1,np
+
+
 ! set u
-             ulatlon(i,j,1)       = fptr%base(ie)%state%v(i,j,1,k,n0)   ! 
-             ulatlon(i,j,2)       = fptr%base(ie)%state%v(i,j,2,k,n0)   !  
+          ulatlon(i,j,1)       = fptr%base(ie)%state%v(i,j,1,k,n0)   ! 
+          ulatlon(i,j,2)       = fptr%base(ie)%state%v(i,j,2,k,n0)   !  
 ! set du
-             up(i,j,1)      = fptr%base(ie)%state%v(i,j,1,k,np1)   ! 
-             up(i,j,2)      = fptr%base(ie)%state%v(i,j,2,k,np1)   !  
+          up(i,j,1)      = fptr%base(ie)%state%v(i,j,1,k,np1)   ! 
+          up(i,j,2)      = fptr%base(ie)%state%v(i,j,2,k,np1)   !  
 
-             dh_n(i,j) = fptr%base(ie)%state%p(i,j,k,n0)+pmean +ps(i,j)
-             dh(i,j) = fptr%base(ie)%state%p(i,j,k,np1)
 
-             pv1(i,j,1) = up(i,j,1)
-             pv1(i,j,2) = 0.d00
-             pv2(i,j,1) = 0.d00
-             pv2(i,j,2) = up(i,j,2)
+          dh_n(i,j) = fptr%base(ie)%state%p(i,j,k,n0)+pmean +ps(i,j)
+          dh(i,j) = fptr%base(ie)%state%p(i,j,k,np1)
 
-             dpv(i,j,1) = ulatlon(i,j,1)*( fptr%base(ie)%state%p(i,j,k,np1) )  
-             dpv(i,j,2) = ulatlon(i,j,2)*( fptr%base(ie)%state%p(i,j,k,np1) )   
+
+          pv1(i,j,1) = up(i,j,1)
+          pv1(i,j,2) = 0.d00
+          pv2(i,j,1) = 0.d00
+          pv2(i,j,2) = up(i,j,2)
+
+
+
+          dpv(i,j,1) = ulatlon(i,j,1)*( fptr%base(ie)%state%p(i,j,k,np1) )  
+          dpv(i,j,2) = ulatlon(i,j,2)*( fptr%base(ie)%state%p(i,j,k,np1) )   
 
         !  pv1(i,j,1) = vtens(i,j,1,k,ie)
         !  pv1(i,j,2) = 0.d00
@@ -2584,23 +2639,26 @@ alpha=1.0d0
 !          pv2(i,j,1) = 0.d00
 !          pv2(i,j,2) = vtens(i,j,2,k,ie)
 
-             dpv(i,j,1) = ulatlon(i,j,1)*( fptr%base(ie)%state%p(i,j,k,np1) )
-             dpv(i,j,2) = ulatlon(i,j,2)*( fptr%base(ie)%state%p(i,j,k,np1) )
-           end do !np
-         end do !np
+          dpv(i,j,1) = ulatlon(i,j,1)*( fptr%base(ie)%state%p(i,j,k,np1) )
+          dpv(i,j,2) = ulatlon(i,j,2)*( fptr%base(ie)%state%p(i,j,k,np1) )
+       end do !np
+      end do !np
 !! create operators for full residual calc
 !
      divpv1 = divergence_sphere(pv1,fptr%deriv,fptr%base(ie)) ! latlon vector -> scalar 
      divpv2 = divergence_sphere(pv2,fptr%deriv,fptr%base(ie)) ! latlon vector -> scalar 
      divdpv = divergence_sphere(dpv,fptr%deriv,fptr%base(ie)) ! latlon vector -> scalar 
-
-          ! ==============================================
-          ! Compute residual terms
-          ! ==============================================
-
+!
+!
+!          ! ==============================================
+!          ! Compute residual terms
+!          ! ==============================================
+!
+!
+!
       do j=1,np
         do i=1,np
-
+!
          ptens(i,j,k,ie) = spheremp(i,j)*(&
              !alpha*G
              alpha*( &
@@ -2650,6 +2708,8 @@ alpha=1.0d0
          do j=1,np
             do i=1,np
               lx = lx+1
+              
+        
               if (n==1) fx(lx) = 0.0d0
               if (n==2) fx(lx) = 0.0d0
               if (n==3) fx(lx) = fptr%base(ie)%rspheremp(i,j)*ptens(i,j,k,ie) 
@@ -2662,7 +2722,14 @@ alpha=1.0d0
      end do
 !
 
+
+
+
   end subroutine sw_picard_alphaschur_op
+
+
+
+
 
 
   subroutine sw_picard_schur_op_clip(xs, nelemd,fx, c_ptr_to_object) bind(C,name='sw_picard_schur_clip')
@@ -2736,7 +2803,9 @@ alpha=1.0d0
 
     call t_startf('Precon Schur')
 
+
     call c_f_pointer(c_ptr_to_object,fptr) ! convert C ptr to F ptr
+
 
     n0         = fptr%tl%n0
     np1        = fptr%tl%np1
@@ -2750,12 +2819,15 @@ alpha=1.0d0
     pmean      = fptr%pmean
     gam        = 0.5
 
+    
     if (tstep_type==12) then !crank nicholson
             dti=2*dti !crank nicholson has a factor of 2 in the time step coefficient
     endif
 
+
 vtens=0.0d0
 ptens=0.0d0
+
 
     lx = 0
 !     do n=1,nvar
