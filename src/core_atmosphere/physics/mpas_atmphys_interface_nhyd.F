@@ -1,4 +1,4 @@
-! Copyright (c) 2013,  Los Alamos National Security, LLC (LANS)
+! Copyright (c) 2013,  Los Alamos National Security, LLC (LANS) (LA-CC-13-047)
 ! and the University Corporation for Atmospheric Research (UCAR).
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
@@ -38,7 +38,19 @@
 !> MPAS_to_physics          : conversion of input "MPAS" variables to "physics" variables.
 !> microphysics_from_MPAS   : initialize local arrays needed in cloud microphysics schemes.
 !> microphysics_to_MPAS     : copy local arrays needed in cloud microphysics schemesto MPAS arrays.
-
+!>
+!> add-ons and modifications to sourcecode:
+!> ----------------------------------------
+!>    * In subroutine MPAS_to_physics, moved the calculation of the local arrays qv_p,qc_p, and
+!>      qr_p above the calculation of th_p so that we do not need to use the pointer qv.
+!>    * In subroutine microphysics_from_MPAS, moved the calculation of the local arrays qv_p,qc_p,
+!>      and qr_p above the calculation of th_p so that we do not need to use the pointer qv.
+!>    * In subroutine microphysics_to_MPAS, since microphysics schemes update the temperature and
+!>      water vapor mixing ratio, we first update the total pressure and exner functions. Then, we
+!>      update the modified potential temperature and calculate the diabatic tendency due to cloud
+!>      microphysics processes.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-11-07.
+ 
 
  contains
 
@@ -154,7 +166,7 @@
  real(kind=RKIND),dimension(:),pointer  :: sfc_pressure
  real(kind=RKIND),dimension(:,:),pointer:: zgrid
  real(kind=RKIND),dimension(:,:),pointer:: zz,exner,pressure_b,rtheta_p,rtheta_b
- real(kind=RKIND),dimension(:,:),pointer:: rho_zz,theta_m,qv,pressure_p,u,v,w
+ real(kind=RKIND),dimension(:,:),pointer:: rho_zz,theta_m,pressure_p,u,v,w
  real(kind=RKIND),dimension(:,:),pointer:: qvs,rh
 
  real(kind=RKIND):: rho_a,rho1,rho2,tem1,tem2
@@ -189,7 +201,6 @@
 
  rho_zz  => state % rho_zz % array
  theta_m => state % theta_m % array
- qv      => state % scalars % array(state%index_qv,:,:)
 
  w => state % w % array
  u => diag  % uReconstructZonal % array
@@ -217,7 +228,7 @@
  do k = kts, kte
  do i = its, ite
 
-    !moist arrays:
+    !water vapor and moist arrays:
     qv_p(i,k,j) = max(0.,state % scalars % array(state%index_qv,k,i))
     qc_p(i,k,j) = max(0.,state % scalars % array(state%index_qc,k,i))
     qr_p(i,k,j) = max(0.,state % scalars % array(state%index_qr,k,i))
@@ -231,9 +242,9 @@
 
     zz_p(i,k,j)  = zz(k,i)
     rho_p(i,k,j) = zz(k,i) * rho_zz(k,i)
-    rho_p(i,k,j) = rho_p(i,k,j)*(1.+qv_p(i,k,j))
-    th_p(i,k,j)  = theta_m(k,i) / (1. + R_v/R_d * qv(k,i))
-    t_p(i,k,j)   = theta_m(k,i) * exner(k,i) / (1. + R_v/R_d * qv(k,i))
+    rho_p(i,k,j) = rho_p(i,k,j)*(1._RKIND + qv_p(i,k,j))
+    th_p(i,k,j)  = theta_m(k,i) / (1._RKIND + R_v/R_d * qv_p(i,k,j))
+    t_p(i,k,j)   = th_p(i,k,j)*exner(k,i)
 
     pi_p(i,k,j)   = exner(k,i)
     pres_p(i,k,j) = pressure_p(k,i) + pressure_b(k,i)
@@ -363,7 +374,7 @@
  end subroutine MPAS_to_physics
 
 !==================================================================================================
- subroutine microphysics_from_MPAS(mesh,state,tend,diag)
+ subroutine microphysics_from_MPAS(mesh,state,diag)
 !==================================================================================================
 
 !input variables:
@@ -371,20 +382,20 @@
  type(diag_type) ,intent(in):: diag
  type(mesh_type) ,intent(in):: mesh
 
- type(tend_type),intent(inout):: tend
-
 !local variables:
  integer:: i,k,j
+<<<<<<< HEAD
 
  real(kind=RKIND):: min_theta,min_thp,min_tp
  real(kind=RKIND):: max_theta,max_thp,max_tp
  real(kind=RKIND):: min_qv,min_qc,min_qr,min_qi,min_qs,min_qg
  real(kind=RKIND):: max_qv,max_qc,max_qr,max_qi,max_qs,max_qg
 
+=======
+>>>>>>> * In subroutine MPAS_to_physics, moved the calculation of the local arrays qv_p,qc_p, and
  real(kind=RKIND),dimension(:,:),pointer:: zgrid
  real(kind=RKIND),dimension(:,:),pointer:: zz,exner,pressure_b,rtheta_p,rtheta_b
- real(kind=RKIND),dimension(:,:),pointer:: rho_zz,theta_m,qv,rh,pressure_p
- real(kind=RKIND),dimension(:,:),pointer:: rt_diabatic_tend
+ real(kind=RKIND),dimension(:,:),pointer:: rho_zz,theta_m,pressure_p
 
 !--------------------------------------------------------------------------------------------------
 
@@ -394,46 +405,30 @@
 
  zgrid => mesh % zgrid % array
  zz    => mesh % zz % array
-
  exner      => diag % exner % array
  pressure_b => diag % pressure_base % array
  pressure_p => diag % pressure_p % array
  rtheta_p   => diag % rtheta_p % array
  rtheta_b   => diag % rtheta_base % array
- 
  rho_zz     => state % rho_zz % array
  theta_m    => state % theta_m % array
- rh         => diag % rh % array
 
- rt_diabatic_tend => tend % rt_diabatic_tend % array
-
- qv => state % scalars % array(state%index_qv,:,:)
-
- do k = kts,kte
- do i = its,ite
-    rt_diabatic_tend(k,i) = 0.
- enddo
- enddo
-
-!copy sounding variables from the geodesic grid to the wrf-physics grid:
+!initialize variables needed in the cloud microphysics schemes:
  do j = jts, jte
  do k = kts, kte
  do i = its, ite
+    qv_p(i,k,j) = state % scalars % array(state%index_qv,k,i)
+    qc_p(i,k,j) = state % scalars % array(state%index_qc,k,i)
+    qr_p(i,k,j) = state % scalars % array(state%index_qr,k,i)
+
     rho_p(i,k,j)  = zz(k,i) * rho_zz(k,i)
-    th_p(i,k,j)   = theta_m(k,i) / (1. + R_v/R_d * max(0.,qv(k,i)))
+    th_p(i,k,j)   = theta_m(k,i) / (1._RKIND + R_v/R_d * max(0._RKIND,qv_p(i,k,j)))
 
     pi_p(i,k,j)   = exner(k,i)
     pres_p(i,k,j) = pressure_b(k,i) + pressure_p(k,i)
 
     z_p(i,k,j)    = zgrid(k,i)
     dz_p(i,k,j)   = zgrid(k+1,i) - zgrid(k,i)
-
-!   qv_p(i,k,j) = max(0.,state % scalars % array(state%index_qv,k,i))
-!   qc_p(i,k,j) = max(0.,state % scalars % array(state%index_qc,k,i))
-!   qr_p(i,k,j) = max(0.,state % scalars % array(state%index_qr,k,i))
-    qv_p(i,k,j) = state % scalars % array(state%index_qv,k,i)
-    qc_p(i,k,j) = state % scalars % array(state%index_qc,k,i)
-    qr_p(i,k,j) = state % scalars % array(state%index_qr,k,i)
  enddo
  enddo
  enddo
@@ -445,9 +440,6 @@
        do j = jts, jte
        do k = kts, kte
        do i = its, ite
-!         qi_p(i,k,j) = max(0.,vars % scalars % array(vars%index_qi,k,i))
-!         qs_p(i,k,j) = max(0.,vars % scalars % array(vars%index_qs,k,i))
-!         qg_p(i,k,j) = max(0.,vars % scalars % array(vars%index_qg,k,i))
           qi_p(i,k,j) = state % scalars % array(state%index_qi,k,i)
           qs_p(i,k,j) = state % scalars % array(state%index_qs,k,i)
           qg_p(i,k,j) = state % scalars % array(state%index_qg,k,i)
@@ -459,8 +451,15 @@
 
  end select microp_select_init
 
+ j=1;i=12
+ do k = kts,kte
+    write(0,201) i,k,pres_p(i,k,j),theta_m(k,i),th_p(i,k,j),th_p(i,k,j)*pi_p(i,k,j), &
+                 qv_p(i,k,j),qc_p(i,k,j),qi_p(i,k,j)
+ enddo
+ write(0,*) '--- end subroutine microphysics_from_MPAS.'
+
 !formats:
- 201 format(3i6,10(1x,e15.8))
+ 201 format(2i6,10(1x,e15.8))
 
  end subroutine microphysics_from_MPAS
 
@@ -477,14 +476,10 @@
  type(diag_type),intent(inout):: diag
  type(tend_type),intent(inout):: tend
 
- real(kind=RKIND):: min_theta,min_thp,min_tp
- real(kind=RKIND):: max_theta,max_thp,max_tp
- real(kind=RKIND):: min_qv,min_qc,min_qr,min_qi,min_qs,min_qg
- real(kind=RKIND):: max_qv,max_qc,max_qr,max_qi,max_qs,max_qg
-
 !local variables:
  integer:: icount
  integer:: i,k,j
+ real(kind=RKIND):: acoef
  real(kind=RKIND),dimension(:,:),pointer:: zz,exner,exner_b,pressure_b,rtheta_p,rtheta_b
  real(kind=RKIND),dimension(:,:),pointer:: rho_zz,theta_m,pressure_p
  real(kind=RKIND),dimension(:,:),pointer:: rt_diabatic_tend
@@ -521,36 +516,39 @@
  sfc_pressure => diag % surface_pressure % array
 !ldf end.
 
-!variables common to all cloud microphysics schemes:
-
- do j = jts, jte
- do k = kts, kte
- do i = its, ite
-
-    !potential temperature and diabatic forcing:
-    rt_diabatic_tend(k,i) = theta_m(k,i)
-    theta_m(k,i) = th_p(i,k,j) * (1. + R_v/R_d * qv_p(i,k,j))
-    rt_diabatic_tend(k,i) = (theta_m(k,i) - rt_diabatic_tend(k,i)) / dt_dyn
-!   rt_diabatic_tend(k,i) = 0.
-
-    !density-weigthed perturbation potential temperature:
-    rtheta_p(k,i) = rho_zz(k,i) * theta_m(k,i) - rtheta_b(k,i)
-
-    !exner function:
-    exner(k,i) = (zz(k,i)*(R_d/P0)*(rtheta_p(k,i)+rtheta_b(k,i)))**rcv
-
-    !pertubation pressure:
-    pressure_p(k,i) = zz(k,i)*R_d*(exner(k,i)*rtheta_p(k,i) &
-                  + (exner(k,i)-exner_b(k,i))*rtheta_b(k,i))
-
-    !mass mixing ratios:
+!update variables needed in the dynamical core:
+ if(.not.allocated(t_p)) allocate(t_p(ims:ime,kms:kme,jms:jme))
+ acoef = (cp-R_d)/cp
+ do j = jts,jte
+ do k = kts,kte
+ do i = its,ite
     state % scalars % array(state%index_qv,k,i) = qv_p(i,k,j)
     state % scalars % array(state%index_qc,k,i) = qc_p(i,k,j)
     state % scalars % array(state%index_qr,k,i) = qr_p(i,k,j)
 
+    !perturbation pressure and exner function using the equation of state:
+    t_p(i,k,j)    = th_p(i,k,j)*pi_p(i,k,j)
+    rho_p(i,k,j)  = zz(k,i)*rho_zz(k,i)*(1._RKIND+R_v/R_d*qv_p(i,k,j))
+
+    pres_p(i,k,j) = R_d*rho_p(i,k,j)*t_p(i,k,j)
+    pressure_p(k,i) = pres_p(i,k,j)-pressure_b(k,i)
+    exner(k,i) = (pres_p(i,k,j)/P0)**rcp
+
+    !perturbation modified potential temperature and tendency of modified
+    !potential temperature due to cloud microphysics processes:
+    rt_diabatic_tend(k,i) = theta_m(k,i)
+    theta_m(k,i) = (pres_p(i,k,j)/P0)**acoef
+    theta_m(k,i) = theta_m(k,i)*P0/(R_d*zz(k,i)*rho_zz(k,i))
+    rt_diabatic_tend(k,i) = (theta_m(k,i)-rt_diabatic_tend(k,i)) / dt_dyn
+    rtheta_p(k,i) = rho_zz(k,i)*theta_m(k,i)-rtheta_b(k,i)
+
+    !updated potential temperature and recalculate the dry air density:
+    th_p(i,k,j)  = t_p(i,k,j)/exner(k,i)
+    rho_p(i,k,j) = zz(k,i)*rho_zz(k,i) 
  enddo
  enddo
  enddo
+ if(allocated(t_p)) deallocate(t_p)
 
 !updates the surface pressure.
  do j = jts,jte
@@ -564,10 +562,8 @@
     sfc_pressure(i) = sfc_pressure(i) + pressure_p(1,i) + pressure_b(1,i)
  enddo
  enddo
-!ldf end.
 
 !variables specific to different cloud microphysics schemes:
-
  microp_select_init: select case(microp_scheme)
 
     case ("wsm6")
@@ -575,12 +571,10 @@
        do j = jts, jte
        do k = kts, kte
        do i = its, ite
-
           !mass mixing ratios:
           state % scalars % array(state%index_qi,k,i) = qi_p(i,k,j)
           state % scalars % array(state%index_qs,k,i) = qs_p(i,k,j)
           state % scalars % array(state%index_qg,k,i) = qg_p(i,k,j)
-
        enddo
        enddo
        enddo
@@ -590,7 +584,9 @@
  end select microp_select_init
 
 !formats:
- 201 format(3i6,10(1x,e15.8))
+ 201 format(2i6,10(1x,e15.8))
+
+ write(0,*) '--- end subroutine microphysics_to_MPAS'
 
  end subroutine microphysics_to_MPAS
 
