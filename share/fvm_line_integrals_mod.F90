@@ -24,6 +24,7 @@ module fvm_line_integrals_mod
   ! turn on/off EOC (Enforcement of Consistency) -> Erath et al. MWR, 2013
   logical                                   :: EOC=.FALSE.
   public :: compute_weights, compute_weights_cell, gauss_points, getdep_cellboundariesxyvec
+  public :: compute_slope,y_cross_eul_lon,x_cross_eul_lat
 contains
 ! ----------------------------------------------------------------------------------!
 !SUBROUTINE COMPUTE_WEIGHTS-----------------------------------------------CE-for FVM!
@@ -1763,7 +1764,7 @@ end subroutine getdep_cellboundariesxyvec
     integer (kind=int_kind), intent(in) :: nvertex
     logical, intent(in) :: lexact_horizontal_line_integrals
     integer (kind=int_kind)                  , intent(in):: nreconstruction, jx,jy,ngauss,jmax_segments
-    real (kind=real_kind)   ,  dimension(0:5), intent(in):: xcell_in,ycell_in
+    real (kind=real_kind)   ,  dimension(nvertex), intent(in):: xcell_in,ycell_in
     !
     integer (kind=int_kind), intent(in)               :: jx_min, jy_min, jx_max, jy_max
     real (kind=real_kind), dimension(-nhe:nc+2+nhe), intent(in) :: xgno
@@ -1865,8 +1866,8 @@ end subroutine getdep_cellboundariesxyvec
       enddo
 
       IF (abs(tmp)>0.04) THEN
-        WRITE(*,*) "sum of weights too large",tmp
-        stop
+        WRITE(*,*) "sum of weights seems too large",tmp
+!dbg        stop
       END IF
       IF (tmp<-1.0E-9) THEN
         WRITE(*,*) "sum of weights is negative - negative area?",tmp,jx,jy
@@ -2395,15 +2396,11 @@ end subroutine getdep_cellboundariesxyvec
   real (kind=real_kind) function compute_slope(x,y)
     implicit none
     real (kind=real_kind), dimension(2), intent(in) :: x,y
-!    if (fuzzy(ABS(y(2)-y(1)),fuzzy_width)==0) then
-!      compute_slope = 0.0
-!    else
     if (fuzzy(ABS(x(2)-x(1)),fuzzy_width)>0) THEN
       compute_slope = (y(2)-y(1))/(x(2)-x(1))
     else
       compute_slope = bignum
     end if
-!  end if
   end function compute_slope
 
   real (kind=real_kind) function y_cross_eul_lon(x,y,xeul,slope)
