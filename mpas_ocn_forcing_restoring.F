@@ -67,7 +67,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_forcing_restoring_build_arrays(mesh, indexT, indexS, indexTFlux, indexSFlux, tracers, temperatureRestoring, salinityRestoring, surfaceFluxes, err)!{{{
+   subroutine ocn_forcing_restoring_build_arrays(mesh, indexT, indexS, indexTFlux, indexSFlux, tracers, temperatureRestoring, salinityRestoring, surfaceTracerFluxes, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -97,7 +97,7 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:), intent(out) :: &
-        surfaceFluxes !< Input: tracer quantities
+        surfaceTracerFluxes !< Input: tracer quantities
 
       !-----------------------------------------------------------------
       !
@@ -126,8 +126,8 @@ contains
 
       k = 1  ! restoring only in top layer
       do iCell=1,nCellsSolve
-        surfaceFluxes(indexTFlux, iCell) = - temperatureLengthScale * (tracers(indexT, k, iCell) - temperatureRestoring(iCell)) * invTemp
-        surfaceFluxes(indexSFlux, iCell) = - salinityLengthScale * (tracers(indexS, k, iCell) - salinityRestoring(iCell)) * invSalinity
+        surfaceTracerFluxes(indexTFlux, iCell) = - temperatureLengthScale * (tracers(indexT, k, iCell) - temperatureRestoring(iCell)) * invTemp
+        surfaceTracerFluxes(indexSFlux, iCell) = - salinityLengthScale * (tracers(indexS, k, iCell) - salinityRestoring(iCell)) * invSalinity
       enddo
 
    !--------------------------------------------------------------------

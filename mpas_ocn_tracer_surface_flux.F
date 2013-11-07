@@ -51,7 +51,7 @@ module ocn_tracer_surface_flux
    !
    !--------------------------------------------------------------------
 
-   logical :: surfaceFluxOn
+   logical :: surfaceTracerFluxOn
 
 !***********************************************************************
 
@@ -120,7 +120,7 @@ contains
 
       err = 0
 
-      if (.not. surfaceFluxOn) return
+      if (.not. surfaceTracerFluxOn) return
 
       nCells = mesh % nCells
       nVertLevels = mesh % nVertLevels
@@ -171,14 +171,14 @@ contains
 
       err = 0
 
-      surfaceFluxOn = .true.
+      surfaceTracerFluxOn = .true.
 
       if (config_disable_tr_sflux) then
-         surfaceFluxOn = .false.
+         surfaceTracerFluxOn = .false.
       end if
 
       if (config_forcing_type == trim('off')) then
-         surfaceFluxOn = .false.
+         surfaceTracerFluxOn = .false.
       end if
 
    end subroutine ocn_tracer_surface_flux_init!}}}

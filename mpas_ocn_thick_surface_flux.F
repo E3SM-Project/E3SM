@@ -51,7 +51,7 @@ module ocn_thick_surface_flux
    !
    !--------------------------------------------------------------------
 
-   logical :: surfaceFluxOn
+   logical :: surfaceMassFluxOn
 
 
 !***********************************************************************
@@ -123,7 +123,7 @@ contains
 
       err = 0
 
-      if (.not. surfaceFluxOn) return
+      if (.not. surfaceMassFluxOn) return
 
       maxLevelCell => mesh % maxLevelCell % array
       cellMask => mesh % cellMask % array
@@ -175,14 +175,14 @@ contains
 
       err = 0
 
-      surfaceFluxOn = .true.
+      surfaceMassFluxOn = .true.
 
       if (config_disable_thick_sflux) then
-         surfaceFluxOn = .false.
+         surfaceMassFluxOn = .false.
       end if
 
       if (config_forcing_type == trim('off')) then
-         surfaceFluxOn = .false.
+         surfaceMassFluxOn = .false.
       end if
 
 
