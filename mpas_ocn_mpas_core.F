@@ -852,12 +852,10 @@ module mpas_core
                ! Check if abs(ssh)>2m.  If so, print warning.
                if (abs(sum(layerThickness(1:maxLevelCell(iCell),iCell))-bottomDepth(iCell))>2.0) then
                   consistentSSH = .false.
-#ifdef MPAS_DEBUG
                   write (stderrUnit,'(a)') ' Warning: abs(sum(h)-bottomDepth)>2m.  Most likely, initial layerThickness does not match bottomDepth.'
                   write (stderrUnit,*) ' iCell, K=maxLevelCell(iCell), bottomDepth(iCell),sum(h),bottomDepth: ', &
                                 iCell, maxLevelCell(iCell), bottomDepth(iCell),sum(layerThickness(1:maxLevelCell(iCell),iCell)),bottomDepth(iCell), &
                                 layerThickness(maxLevelCell(iCell),iCell)
-#endif                            
                endif
             enddo
 

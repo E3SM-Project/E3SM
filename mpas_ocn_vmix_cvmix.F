@@ -17,6 +17,7 @@ module ocn_vmix_cvmix
    use mpas_grid_types
    use mpas_configure
    use mpas_timer
+   use mpas_io_units
 
    use cvmix_kinds_and_types
    use cvmix_put_get
@@ -139,7 +140,7 @@ contains
       !
       err=0
 
-      write(6,*) 'TDR: ocn_vmix_coefs_cvmix_build enter'
+!     write(stdoutUnit,*) 'TDR: ocn_vmix_coefs_cvmix_build enter'
 
       !
       ! only build up viscosity/diffusivity if CVMix is turned on
@@ -196,7 +197,7 @@ contains
       if (config_use_cvmix_background) then
         vertViscTopOfCell(:,:) = vertViscTopOfCell(:,:) + config_cvmix_background_viscosity
         vertDiffTopOfCell(:,:) = vertDiffTopOfCell(:,:) + config_cvmix_background_diffusion
-        write(6,*) 'TDR: config_use_cvmix_background',config_use_cvmix_background,maxval(vertViscTopOfCell(:,:))
+!       write(stdoutUnit,*) 'TDR: config_use_cvmix_background',config_use_cvmix_background,maxval(vertViscTopOfCell(:,:))
       endif
 
       !
@@ -232,7 +233,7 @@ contains
         ! call kpp ocean mixed layer scheme
         if (config_use_cvmix_kpp) then
 
-          write(6,*) 'TDR: config_use_cvmix_kpp enter',config_use_cvmix_kpp
+!         write(stdoutUnit,*) 'TDR: config_use_cvmix_kpp enter',config_use_cvmix_kpp
 
           ! set cvmix viscosity/diffusity to current total values to be used for matching
           cvmix_variables % visc_iface(1:nVertLevels)=vertViscTopOfCell(1:nVertLevels,iCell)
@@ -245,8 +246,8 @@ contains
           cvmix_variables % diff_iface(1,:) = 0.0
           cvmix_variables % diff_iface(nVertLevels+1,:) = 0.0
 
-          write(6,*) 'TDR: cvmix_variables % visc_iface',maxval(cvmix_variables % visc_iface)
-          write(6,*) 'TDR: cvmix_variables % diff_iface',maxval(cvmix_variables % diff_iface)
+!         write(stdoutUnit,*) 'TDR: cvmix_variables % visc_iface',maxval(cvmix_variables % visc_iface)
+!         write(stdoutUnit,*) 'TDR: cvmix_variables % diff_iface',maxval(cvmix_variables % diff_iface)
 
           ! set integer and real
           cvmix_variables % surf_hgt = state % ssh % array(iCell)
@@ -256,14 +257,14 @@ contains
           cvmix_variables % surf_fric = diagnostics % surfaceFrictionVelocity % array(iCell)
           cvmix_variables % surf_buoy = diagnostics % buoyancyForcingOBL % array(iCell)
 
-          write(6,*) 'TDR: zTop',maxval(diagnostics % zTop % array(1:nVertLevels,iCell))
-          write(6,*) 'TDR: bottomDepth',maxval(mesh % bottomDepth % array(:))
+!         write(stdoutUnit,*) 'TDR: zTop',maxval(diagnostics % zTop % array(1:nVertLevels,iCell))
+!         write(stdoutUnit,*) 'TDR: bottomDepth',maxval(mesh % bottomDepth % array(:))
 
           ! fill zw_iface with interface coordinates
           cvmix_variables % zw_iface(1:nVertLevels) =  diagnostics % zTop % array(1:nVertLevels,iCell)
           cvmix_variables % zw_iface(nVertLevels+1) = -mesh % bottomDepth % array(iCell)
 
-          write(6,*) 'TDR: zw_iface',cvmix_variables % zw_iface(:)
+!         write(stdoutUnit,*) 'TDR: zw_iface',cvmix_variables % zw_iface(:)
 
           ! point remainder of cvmix_variables to MPAS arrays
           cvmix_variables % zt =>  diagnostics % zMid % array(1:nVertLevels,iCell)
@@ -271,22 +272,22 @@ contains
           cvmix_variables % Rib => diagnostics % BulkRichardsonNumber % array(1:nVertLevels,iCell)
 
           ! compute the boundary layer depth
-          write(6,*) 'TDR: calling cvmix_kpp_compute_OBL_depth'
+!         write(stdoutUnit,*) 'TDR: calling cvmix_kpp_compute_OBL_depth'
           call cvmix_kpp_compute_OBL_depth( cvmix_variables )
-          write(6,*) 'TDR: return cvmix_kpp_compute_OBL_depth'
+!         write(stdoutUnit,*) 'TDR: return cvmix_kpp_compute_OBL_depth'
 
-          write(6,*) 'TDR: OBL_depth, kOBL_depth',cvmix_variables % OBL_depth,cvmix_variables % kOBL_depth
+!         write(stdoutUnit,*) 'TDR: OBL_depth, kOBL_depth',cvmix_variables % OBL_depth,cvmix_variables % kOBL_depth
 
           ! intent out of OBL_depth is boundary layer depth measured in meters and vertical index
           diagnostics % boundaryLayerDepth % array(iCell) = cvmix_variables % OBL_depth
           diagnostics % indexBoundaryLayerDepth % array(iCell) = cvmix_variables % kOBL_depth
 
-          write(6,*) 'TDR: OBL_depth',diagnostics % boundaryLayerDepth % array(iCell)
+!         write(stdoutUnit,*) 'TDR: OBL_depth',diagnostics % boundaryLayerDepth % array(iCell)
 
           ! given OBL and vertical profile of visc/diff, compute boundary layer mixing
-          write(6,*) 'TDR: calling cvmix_coeffs_kpp'
+!         write(stdoutUnit,*) 'TDR: calling cvmix_coeffs_kpp'
           call cvmix_coeffs_kpp( cvmix_variables )
-          write(6,*) 'TDR: return cvmix_coeffs_kpp'
+!         write(stdoutUnit,*) 'TDR: return cvmix_coeffs_kpp'
 
           ! add convective mixing to vertical viscosity/diffusivity
           vertViscTopOfCell(:,iCell) = vertViscTopOfCell(:,iCell) + cvmix_variables % visc_iface(:)
@@ -299,7 +300,7 @@ contains
       deallocate(cvmix_variables % diff_iface)
       deallocate(cvmix_variables % zw_iface)
 
-      write(6,*) 'TDR: exiting ocn_vmix_coefs_cvmix_build'
+!     write(stdoutUnit,*) 'TDR: exiting ocn_vmix_coefs_cvmix_build'
 
    !--------------------------------------------------------------------
 
@@ -382,7 +383,7 @@ contains
                bkgnd_diff = config_cvmix_background_diffusion, &
                bkgnd_visc = config_cvmix_background_viscosity, &
                CVmix_bkgnd_params_user = cvmix_background_params)
-        write(6,*) 'cvmix_init_bkgnd',config_use_cvmix_background
+!       write(stdoutUnit,*) 'cvmix_init_bkgnd',config_use_cvmix_background
       endif
 
       !
@@ -393,7 +394,7 @@ contains
                convect_diff = config_cvmix_convective_diffusion,  &
                convect_visc = config_cvmix_convective_viscosity,  &
                CVmix_conv_params_user = cvmix_conv_params)
-        write(6,*) 'cvmix_init_conv',config_use_cvmix_convection
+!       write(stdoutUnit,*) 'cvmix_init_conv',config_use_cvmix_convection
       endif
 
       !
@@ -401,10 +402,10 @@ contains
       !
       if (config_use_cvmix_kpp) then
         call cvmix_init_kpp ( CVmix_kpp_params_user = cvmix_kpp_params )
-        write(6,*) 'cvmix_init_kpp',config_use_cvmix_kpp
+!       write(stdoutUnit,*) 'cvmix_init_kpp',config_use_cvmix_kpp
       endif
 
-      write(6,*) 'ocn_vmix_cvmix_init complete'
+!     write(stdoutUnit,*) 'ocn_vmix_cvmix_init complete'
 
    !--------------------------------------------------------------------
 
