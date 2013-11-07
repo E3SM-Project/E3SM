@@ -38,6 +38,7 @@
  type(dm_info),pointer :: dminfo
 
  character(len=StrKIND):: fname
+ character(len=StrKIND+1):: geog_data_path      ! same as config_geog_data_path, but guaranteed to have a trailing slash
 
  integer:: nx,ny,nz
  integer:: endian,isigned,istatus,wordsize
@@ -64,6 +65,12 @@
 
  write(0,*)
  write(0,*) '--- enter subroutine init_atm_static:'
+
+ write(geog_data_path, '(a)') config_geog_data_path
+ i = len_trim(geog_data_path)
+ if (geog_data_path(i:i) /= '/') then
+    geog_data_path(i+1:i+1) = '/'
+ end if
 
 !
 ! Scale all distances and areas from a unit sphere to one with radius sphere_radius
@@ -127,7 +134,7 @@
 
     do iTileStart=1,42001,nx-6
        iTileEnd = iTileStart + nx - 1 - 6
-       write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(config_geog_data_path)// &
+       write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)// &
              'topo_30s/',iTileStart,'-',iTileEnd,'.',jTileStart,'-',jTileEnd
        write(0,*) trim(fname)
 
@@ -182,8 +189,8 @@
 
     do iTileStart = 1,42001,nx
        iTileEnd = iTileStart + nx - 1
-       write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(config_geog_data_path)// &
-             '/landuse_30s/',iTileStart,'-',iTileEnd,'.',jTileStart,'-',jTileEnd
+       write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)// &
+             'landuse_30s/',iTileStart,'-',iTileEnd,'.',jTileStart,'-',jTileEnd
        write(0,*) trim(fname)
 
        call read_geogrid(fname,len_trim(fname),rarray,nx,ny,nz,isigned,endian, &
@@ -241,8 +248,8 @@
 
     do iTileStart = 1,42001,nx
        iTileEnd = iTileStart + nx - 1
-       write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(config_geog_data_path)// &
-             '/soiltype_top_30s/',iTileStart,'-',iTileEnd,'.',jTileStart,'-',jTileEnd
+       write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)// &
+             'soiltype_top_30s/',iTileStart,'-',iTileEnd,'.',jTileStart,'-',jTileEnd
        write(0,*) trim(fname)
 
        call read_geogrid(fname,len_trim(fname),rarray,nx,ny,nz,isigned,endian, &
@@ -300,8 +307,8 @@
 
     do iTileStart = 1,42001,nx
        iTileEnd = iTileStart + nx - 1
-       write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(config_geog_data_path)// &
-             '/soiltype_bot_30s/',iTileStart,'-',iTileEnd,'.',jTileStart,'-',jTileEnd
+       write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)// &
+             'soiltype_bot_30s/',iTileStart,'-',iTileEnd,'.',jTileStart,'-',jTileEnd
        write(0,*) trim(fname)
 
        call read_geogrid(fname,len_trim(fname),rarray,nx,ny,nz,isigned,endian, &
@@ -400,7 +407,7 @@
               lat1 = -89.5_RKIND, &
               lon1 = -179.5_RKIND)
 
- write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(config_geog_data_path)// &
+ write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)// &
        'soiltemp_1deg/',1,'-',180,'.',1,'-',180
  write(0,*) trim(fname)
 
@@ -409,7 +416,7 @@
  call init_atm_check_read_error(istatus, fname, dminfo)
  soiltemp_1deg(-2:180,-2:183) = rarray(1:183,1:186,1)
 
- write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(config_geog_data_path)// &
+ write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)// &
             'soiltemp_1deg/',181,'-',360,'.',1,'-',180
  write(0,*) trim(fname)
 
@@ -473,7 +480,7 @@
               lat1 = -89.5_RKIND, &
               lon1 = -179.5_RKIND)
 
- write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(config_geog_data_path)// &
+ write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)// &
        'maxsnowalb/',1,'-',180,'.',1,'-',180
  write(0,*) trim(fname)
 
@@ -482,7 +489,7 @@
  call init_atm_check_read_error(istatus,fname,dminfo)
  maxsnowalb(-2:180,-2:183) = rarray(1:183,1:186,1)
 
- write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(config_geog_data_path)// &
+ write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)// &
        'maxsnowalb/',181,'-',360,'.',1,'-',180
  write(0,*) trim(fname)
 
@@ -547,7 +554,7 @@
               lat1 = -89.928_RKIND, &
               lon1 = -179.928_RKIND)
 
- write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(config_geog_data_path)// &
+ write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)// &
        'greenfrac/',1,'-',1250,'.',1,'-',1250
  write(0,*) trim(fname)
 
@@ -556,7 +563,7 @@
  call init_atm_check_read_error(istatus,fname,dminfo)
  vegfra(-2:1250,-2:1253,1:12) = rarray(1:1253,1:1256,1:12)
 
- write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(config_geog_data_path)// &
+ write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)// &
        'greenfrac/',1251,'-',2500,'.',1,'-',1250
  write(0,*) trim(fname)
 
@@ -618,7 +625,7 @@
               lat1 = -89.928_RKIND, &
               lon1 = -179.928_RKIND)
 
- write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(config_geog_data_path)// &
+ write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)// &
        'albedo_ncep/',1,'-',1250,'.',1,'-',1250
  write(0,*) trim(fname)
 
@@ -627,7 +634,7 @@
  call init_atm_check_read_error(istatus,fname, dminfo)
  vegfra(-2:1250,-2:1253,1:12) = rarray(1:1253,1:1256,1:12)
 
- write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(config_geog_data_path)// &
+ write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)// &
        'albedo_ncep/',1251,'-',2500,'.',1,'-',1250
  write(0,*) trim(fname)
 
@@ -680,6 +687,7 @@
  character(len=StrKIND):: mess
  character(len=StrKIND):: fname
  character(len=StrKIND):: dir_gwdo
+ character(len=StrKIND+1):: geog_data_path      ! same as config_geog_data_path, but guaranteed to have a trailing slash
 
  integer:: nx,ny,nz
  integer:: endian,isigned,istatus,wordsize
@@ -705,6 +713,12 @@
 
  write(0,*)
  write(0,*) '--- enter subroutine init_atm_static_orogwd:'
+
+ write(geog_data_path, '(a)') config_geog_data_path
+ i = len_trim(geog_data_path)
+ if (geog_data_path(i:i) /= '/') then
+    geog_data_path(i+1:i+1) = '/'
+ end if
 
 !
 ! Interpolate VARSSO:
@@ -733,7 +747,7 @@
 
     do iTileStart = 1,42601,nx
        iTileEnd = iTileStart + nx -1
-       write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(config_geog_data_path)//'varsso/', &
+       write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') trim(geog_data_path)//'varsso/', &
              iTileStart,'-',iTileEnd,'.',jTileStart,'-',jTileEnd
        write(0,*) trim(fname)
 
@@ -874,7 +888,7 @@
  end select con_select
 
  write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') &
-       trim(config_geog_data_path)//trim(dir_gwdo)//'/con/',1,'-',nx,'.',1,'-',ny
+       trim(geog_data_path)//trim(dir_gwdo)//'/con/',1,'-',nx,'.',1,'-',ny
  write(0,*) trim(fname)
 
  allocate(xarray(nx,ny))
@@ -977,7 +991,7 @@
  end select oa1_select
 
  write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') &
-       trim(config_geog_data_path)//trim(dir_gwdo)//'/oa1/',1,'-',nx,'.',1,'-',ny
+       trim(geog_data_path)//trim(dir_gwdo)//'/oa1/',1,'-',nx,'.',1,'-',ny
  write(0,*) trim(fname)
 
  allocate(xarray(nx,ny))
@@ -1079,7 +1093,7 @@
  end select oa2_select
 
  write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') &
-       trim(config_geog_data_path)//trim(dir_gwdo)//'/oa2/',1,'-',nx,'.',1,'-',ny
+       trim(geog_data_path)//trim(dir_gwdo)//'/oa2/',1,'-',nx,'.',1,'-',ny
  write(0,*) trim(fname)
 
  allocate(xarray(nx,ny))
@@ -1182,7 +1196,7 @@
  end select oa3_select
 
  write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') &
-       trim(config_geog_data_path)//trim(dir_gwdo)//'/oa3/',1,'-',nx,'.',1,'-',ny
+       trim(geog_data_path)//trim(dir_gwdo)//'/oa3/',1,'-',nx,'.',1,'-',ny
  write(0,*) trim(fname)
 
  allocate(xarray(nx,ny))
@@ -1285,7 +1299,7 @@
  end select oa4_select
 
  write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') &
-       trim(config_geog_data_path)//trim(dir_gwdo)//'/oa4/',1,'-',nx,'.',1,'-',ny
+       trim(geog_data_path)//trim(dir_gwdo)//'/oa4/',1,'-',nx,'.',1,'-',ny
  write(0,*) trim(fname)
 
  allocate(xarray(nx,ny))
@@ -1388,7 +1402,7 @@
  end select ol1_select
 
  write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') &
-       trim(config_geog_data_path)//trim(dir_gwdo)//'/ol1/',1,'-',nx,'.',1,'-',ny
+       trim(geog_data_path)//trim(dir_gwdo)//'/ol1/',1,'-',nx,'.',1,'-',ny
  write(0,*) trim(fname)
 
  allocate(xarray(nx,ny))
@@ -1491,7 +1505,7 @@
  end select ol2_select
 
  write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') &
-       trim(config_geog_data_path)//trim(dir_gwdo)//'/ol2/',1,'-',nx,'.',1,'-',ny
+       trim(geog_data_path)//trim(dir_gwdo)//'/ol2/',1,'-',nx,'.',1,'-',ny
  write(0,*) trim(fname)
 
  allocate(xarray(nx,ny))
@@ -1594,7 +1608,7 @@
  end select ol3_select
 
  write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') &
-       trim(config_geog_data_path)//trim(dir_gwdo)//'/ol3/',1,'-',nx,'.',1,'-',ny
+       trim(geog_data_path)//trim(dir_gwdo)//'/ol3/',1,'-',nx,'.',1,'-',ny
  write(0,*) trim(fname)
 
  allocate(xarray(nx,ny))
@@ -1697,7 +1711,7 @@
  end select ol4_select
 
  write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') &
-       trim(config_geog_data_path)//trim(dir_gwdo)//'/ol4/',1,'-',nx,'.',1,'-',ny
+       trim(geog_data_path)//trim(dir_gwdo)//'/ol4/',1,'-',nx,'.',1,'-',ny
  write(0,*) trim(fname)
 
  allocate(xarray(nx,ny))
@@ -1800,7 +1814,7 @@
  end select var2d_select
 
  write(fname,'(a,i5.5,a1,i5.5,a1,i5.5,a1,i5.5)') &
-       trim(config_geog_data_path)//trim(dir_gwdo)//'/var/',1,'-',nx,'.',1,'-',ny
+       trim(geog_data_path)//trim(dir_gwdo)//'/var/',1,'-',nx,'.',1,'-',ny
  write(0,*) trim(fname)
 
 
