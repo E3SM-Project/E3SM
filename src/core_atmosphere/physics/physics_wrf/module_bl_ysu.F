@@ -395,8 +395,8 @@ contains
 !-------------------------------------------------------------------
 !
    real,parameter    ::  xkzmin = 0.01,xkzmax = 1000.,rimin = -100.
-   real,parameter    ::  rlam = 150.,prmin = 0.25,prmax = 4.
-!  real,parameter    ::  rlam = 30.,prmin = 0.25,prmax = 4.
+!  real,parameter    ::  rlam = 150.,prmin = 0.25,prmax = 4.
+   real,parameter    ::  rlam = 30.,prmin = 0.25,prmax = 4.
    real,parameter    ::  brcr_ub = 0.0,brcr_sb = 0.25,cori = 1.e-4
    real,parameter    ::  afac = 6.8,bfac = 6.8,pfac = 2.0,pfac_q = 2.0
    real,parameter    ::  phifac = 8.,sfcfrac = 0.1
