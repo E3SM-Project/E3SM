@@ -68,8 +68,8 @@ subroutine cslam_runflux(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
  
   real (kind=real_kind)   , dimension(10*(nc+2*nhe)*(nc+2*nhe),6,2)  :: weights_all
   integer (kind=int_kind),  dimension(10*(nc+2*nhe)*(nc+2*nhe),2,2)  :: weights_eul_index_all
-  integer (kind=int_kind),  dimension(10*(nc+2*nhe)*(nc+2*nhe),2)  :: weights_lgr_index_all
-  integer (kind=int_kind)                                          :: jall
+  integer (kind=int_kind),  dimension(10*(nc+2*nhe)*(nc+2*nhe),2,2)  :: weights_lgr_index_all
+  integer (kind=int_kind), dimension(2)                            :: jall
     
   real (kind=real_kind), dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe)      :: recons
   
@@ -110,6 +110,19 @@ subroutine cslam_runflux(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
   
   do ie=nets, nete
     do k=1,nlev
+
+       !
+       ! zero velocity - for debugging
+       !
+!       do j=1,nc+1
+!          do i=1,nc+1               
+!             if (i==1.or.j==1.or.i==nc+1.or.j==nc+1) then
+!                
+!                fvm%dsphere(i,j,k)=fvm%asphere(i,j) !zero velocity
+!             end if
+!          end do
+!       end do
+
       !-Departure fvm Meshes, initialization done                                                               
       call compute_weights_fluxform(fvm(ie),6,weights_all,weights_eul_index_all, &
              weights_lgr_index_all,k,jall)     
@@ -121,9 +134,9 @@ subroutine cslam_runflux(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
       
       tracer_air1=0.0D0   
 
-      call cslam_remap(tracer_air0,tracer_air1,weights_all(:,:,1), recons_air, &
-                 fvm(ie)%spherecentroid, weights_eul_index_all(:,:,1),&
-                 weights_lgr_index_all, jall)             
+      call cslam_remap(tracer_air0,tracer_air1,weights_all(:,:,2), recons_air, &
+                 fvm(ie)%spherecentroid, weights_eul_index_all(:,:,2),&
+                 weights_lgr_index_all(:,:,2), jall(2))             
       ! finish scheme
       do j=1,nc
         do i=1,nc
@@ -140,10 +153,10 @@ subroutine cslam_runflux(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
         tracer1=0.0D0   
         
 !         call cslam_remap(tracer0,tracer1,weights_all(:,:,1), recons, &
-!                    fvm(ie)%spherecentroid, weights_eul_index_all, weights_lgr_index_all, jall)                   
-        call cslam_remap_air(tracer0,tracer1,tracer_air0,weights_all(:,:,1), recons,recons_air,&
-                       fvm(ie)%spherecentroid,weights_eul_index_all(:,:,1),&
-                       weights_lgr_index_all, jall)
+!                    fvm(ie)%spherecentroid, weights_eul_index_all, weights_lgr_index_all(:,:,1), jall(1))                   
+        call cslam_remap_air(tracer0,tracer1,tracer_air0,weights_all(:,:,2), recons,recons_air,&
+                       fvm(ie)%spherecentroid,weights_eul_index_all(:,:,2),&
+                       weights_lgr_index_all(:,:,2), jall(2))
                        
         ! finish scheme
         do j=1,nc
@@ -798,14 +811,6 @@ subroutine fvm_mesh_dep(elem, deriv, fvm, dt, tl, klev)
   call fvm_dep_from_gll(elem, deriv, fvm%asphere,fvm%dsphere,dt,tl,klev)
 
 
-!
-! zero velocity - for debugging
-!
-!  do j=1,nc+1
-!     do i=1,nc+1               
-!        fvm%dsphere(i,j,klev)=fvm%asphere(i,j) !zero velocity
-!     end do
-!  end do
 #endif
 
    if (test_cfldep) then
