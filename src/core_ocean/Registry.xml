@@ -1229,9 +1229,6 @@
 		<var name="surfaceFrictionVelocity" type="real" dimensions="nCells Time" streams="o" units="m s^{-1}"
 			 description="diagnosed surface friction velocity defined as square root of (mag(wind stress) / reference density)"
 		/>
-		<var name="surfaceBuoyancyForcing" type="real" dimensions="nCells Time" streams="o" units="m s^{-3}"
-			 description="diagnosed surface buoyancy forcing due to heat, salt and freshwater fluxes at ocean surface"
-		/>
 		<var name="windStressZonalDiag" type="real" dimensions="nCells Time" streams="o" units="N m^{-2}"
 			 description="reconstructed surface wind stress in the eastward direction. Used for diagnostics."
 		/>
@@ -1297,7 +1294,7 @@
 		/>
 	</var_struct>
     <var_struct name="forcing" time_levs="0">
-		<var name="surfaceWindStress" type="real" dimensions="nEdges Time" units="N m^{-2}" streams="o"
+		<var name="surfaceWindStress" type="real" dimensions="nEdges Time" units="N m^{-2}" streams="ir"
 			 description="Wind stress at the surface of the ocean defined at edge midpoints. Magintude in direction of edge normal."
 		/>
 		<var name="surfaceWindStressMagnitude" type="real" dimensions="nCells Time" units="N m^{-2}" streams="o"
@@ -1313,7 +1310,7 @@
 			<var name="surfaceSalinityFlux" array_group="dynamics" units="PSU m s^{-1}" streams="o"
 				 description="Flux of salinity through the ocean surface. Positive into ocean."
 			/>
-			<var name="surfaceTracer1Flux" array_group="testing" units="percent"
+			<var name="surfaceTracer1Flux" array_group="testing" units="percent" streams="o"
 				 description="Flux of tracer1 through the ocean surface. Positive into ocean."
 			/>
 		</var_array>

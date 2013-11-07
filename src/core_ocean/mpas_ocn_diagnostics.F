@@ -894,7 +894,7 @@ contains
 !> \date    20 August 2013
 !> \details
 !>    CVMix/KPP requires the following fields as intent(in):
-!>       surfaceBuoyancyForcing
+!>       buoyancyForcingOBL
 !>       surfaceFrictionVelocity
 !>       bulkRichardsonNumber
 !>
