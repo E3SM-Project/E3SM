@@ -27,8 +27,8 @@
 #define read_geogrid read_geogrid__
 #endif
 
-#define BIG_ENDIAN    0
-#define LITTLE_ENDIAN 1
+#define GEOG_BIG_ENDIAN    0
+#define GEOG_LITTLE_ENDIAN 1
 
 int read_geogrid(
       char * fname,            /* The name of the file to read from */
@@ -83,7 +83,7 @@ int read_geogrid(
       A, B, C, D give the offsets of the LSB through MSB (i.e., for 
       word ABCD, A=MSB, D=LSB) in the array from the beginning of a word 
    */
-   if (*endian == BIG_ENDIAN) {
+   if (*endian == GEOG_BIG_ENDIAN) {
       A2 = 0; B2 = 1;
       A3 = 0; B3 = 1; C3 = 2;
       A4 = 0; B4 = 1; C4 = 2; D4 = 3;
@@ -127,7 +127,7 @@ int read_geogrid(
          for(i=0; i<narray; i++)
          {
             ival = (int)((c[4*i+A4]<<24) | (c[4*i+B4]<<16) | (c[4*i+C4]<<8) | c[4*i+D4]);      
-            if ((*isigned) && (ival > (1 << 31))) ival -= (1 << 32);
+            if ((*isigned) && (ival > (1 << 31))) ival = -(~ival + 1);
             rarray[i] = (float)ival;
          }
          break;
