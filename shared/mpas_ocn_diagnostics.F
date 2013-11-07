@@ -91,6 +91,7 @@ contains
 
       integer :: iEdge, iCell, iVertex, k, cell1, cell2, vertex1, vertex2, eoe, i, j
       integer :: boundaryMask, velMask, nCells, nEdges, nVertices, nVertLevels, vertexDegree, err
+      real (kind=RKIND) :: shearMean, shearSquared, factor, delU2
 
       integer, dimension(:), pointer :: nEdgesOnCell, nEdgesOnEdge, &
         maxLevelCell, maxLevelEdgeTop, maxLevelEdgeBot, &
@@ -113,7 +114,7 @@ contains
         normalizedPlanetaryVorticityEdge, normalizedPlanetaryVorticityVertex, &
         normalizedRelativeVorticityEdge, normalizedRelativeVorticityVertex, normalizedRelativeVorticityCell, &
         density, displacedDensity, potentialDensity, temperature, salinity, kineticEnergyVertex, kineticEnergyVertexOnCells, uBolusGM, uTransport, &
-        vertVelocityTop, BruntVaisalaFreqTop, &
+        vertVelocityTop, BruntVaisalaFreqTop, RiTopOfCell, &
         vorticityGradientNormalComponent, vorticityGradientTangentialComponent
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers, derivTwo
       character :: c1*6
@@ -140,6 +141,7 @@ contains
       montgomeryPotential              => diagnostics % montgomeryPotential % array
       pressure                         => diagnostics % pressure % array
       BruntVaisalaFreqTop              => diagnostics % BruntVaisalaFreqTop % array
+      RiTopOfCell                      => diagnostics % RiTopOfCell % array
       tangentialVelocity               => diagnostics % tangentialVelocity % array
       layerThicknessEdge               => diagnostics % layerThicknessEdge % array
       kineticEnergyCell                => diagnostics % kineticEnergyCell % array
@@ -488,7 +490,7 @@ contains
       endif
 
       !
-      ! Brunt-Vaisala frequency
+      ! Brunt-Vaisala frequency (this has units of s^{-2})
       !
       coef = -gravity/config_density0
       do iCell=1,nCells
@@ -496,6 +498,26 @@ contains
          do k=2,maxLevelCell(iCell)
             BruntVaisalaFreqTop(k,iCell) = coef * (displacedDensity(k-1,iCell) - density(k,iCell)) & 
               / (zMid(k-1,iCell) - zMid(k,iCell))
+          end do
+      end do
+
+      !
+      ! Gradient Richardson number
+      !
+      RiTopOfCell = 100.0
+      do iCell=1,nCells
+         invAreaCell1 = 1.0 / areaCell(iCell)
+         do k=2,maxLevelCell(iCell)
+           shearSquared = 0.0
+           do i = 1, nEdgesOnCell(iCell)
+             iEdge = edgesOnCell(i, iCell)
+             factor = 0.5 * dcEdge(iEdge) * dvEdge(iEdge) * invAreaCell1
+             delU2 = (normalVelocity(k-1,iEdge) - normalVelocity(k,iEdge))**2
+             shearSquared = shearSquared + factor * delU2
+           enddo 
+           shearMean = sqrt(shearSquared)
+           shearMean = shearMean / (zMid(k-1,iCell) - zMid(k,iCell))
+           RiTopOfCell(k,iCell) = BruntVaisalaFreqTop(k,iCell) / (shearMean**2 + 1.0e-10)
           end do
       end do
 
@@ -916,7 +938,7 @@ contains
 
       ! local
       integer :: iCell, iEdge, i, k, err, indexTempFlux, indexSaltFlux
-      real (kind=RKIND) :: numerator, denominator, factor, deltaVelocitySquared, turbulentVelocitySquared, delU2, invAreaCell
+      real (kind=RKIND) :: numerator, denominator, factor, deltaVelocitySquaredRefSfc, turbulentVelocitySquared, delU2, invAreaCell
 
       ! set the parameter turbulentVelocitySquared
       turbulentVelocitySquared = 0.001
@@ -1002,22 +1024,23 @@ contains
        ! loop over vertical to compute bulk Richardson number
        do k=1,maxLevelCell(iCell)
 
-        ! find deltaVelocitySquared defined at cell centers
-        deltaVelocitySquared = 0.0
+        ! find deltaVelocitySquaredRefSfc defined at cell centers based on velocity at levels 1 and k
+        deltaVelocitySquaredRefSfc = 0.0
         do i = 1, nEdgesOnCell(iCell)
           iEdge = edgesOnCell(i, iCell)
           factor = 0.5 * dcEdge(iEdge) * dvEdge(iEdge) * invAreaCell
           delU2 = (normalVelocity(1,iEdge) - normalVelocity(k,iEdge))**2 
-          deltaVelocitySquared = deltaVelocitySquared + factor * delU2
+          deltaVelocitySquaredRefSfc = deltaVelocitySquaredRefSfc + factor * delU2
         enddo
 
         numerator = gravity * (zTop(1,iCell) - zMid(k,iCell)) * (density(k,iCell) - densitySurfaceDisplaced(k,iCell))
-        denominator = config_density0 * (deltaVelocitySquared + turbulentVelocitySquared)
+        denominator = config_density0 * (deltaVelocitySquaredRefSfc + turbulentVelocitySquared)
 
         ! compute bulk Richardson number
         bulkRichardsonNumber(k,iCell) = numerator / denominator
 
        enddo
+
       enddo
 
       ! deallocate scratch space
