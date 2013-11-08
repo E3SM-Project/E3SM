@@ -57,7 +57,8 @@ contains
     !-----------------
     use, intrinsic :: iso_c_binding 
     !-----------------
-    use derived_type_mod ,only : derived_type, precon_type, initialize, init_precon
+    use derived_type_mod ,only : derived_type, initialize
+    use precon_type_mod ,only : precon_type, init_precon
 #endif
     !-----------------
     use control_mod, only : integration, filter_mu, filter_type, transfer_type, debug_level,  &

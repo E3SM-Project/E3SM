@@ -132,6 +132,7 @@ SET(SRCS_SWIM
                   ${SRC_TRIL}/block_precon_interface.cpp
                   ${SRC_TRIL}/precon_interface.cpp
                   ${SRC_BASE}/derived_type_mod.F90
+                  ${SRC_BASE}/precon_type_mod.F90
                   ${SRC_BASE}/implicit_mod.F90
                   ${SRC_BASE}/precon_mod.F90
 )

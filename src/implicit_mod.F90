@@ -24,7 +24,8 @@ contains
     use precon_mod, only : pcg_presolver_nonstag
     use solver_mod, only : blkjac_t
     use reduction_mod, only : reductionbuffer_ordered_1d_t
-    use derived_type_mod ,only : derived_type, precon_type, initialize, init_precon
+    use derived_type_mod ,only : derived_type, initialize
+    use precon_type_mod ,only : precon_type, init_precon
     use ,intrinsic :: iso_c_binding 
     use global_norms_mod
     use perf_mod, only : t_startf, t_stopf
@@ -650,7 +651,8 @@ contains
     use bndry_mod, only : bndry_exchangev
     use cg_mod, only : cg_t
     use reduction_mod, only : reductionbuffer_ordered_1d_t
-    use derived_type_mod ,only : derived_type, precon_type
+    use derived_type_mod ,only : derived_type
+    use precon_type_mod ,only : precon_type
 !    use global_norms_mod
     use perf_mod, only : t_startf, t_stopf
 
@@ -691,7 +693,6 @@ contains
 !      type(c_ptr)                   :: p_container 
 !    end subroutine precon_solve
 
-! Aaron! 
 !   subroutine precon_solve_wgmres(vectorSize,vector,rhs,v_container,p_container) &
 !     bind(C,name='precon_wgmres')
 !    use ,intrinsic :: iso_c_binding ,only : c_double ,c_int ,c_ptr
@@ -714,7 +715,7 @@ contains
 
 ! ForTrilinos interface to use applyJacobianInverse with F_l(x)=residual_lin(x)
 !    call precon_solve(size(xstate), xt, zt, c_ptr_to_object, c_ptr_to_pre)
-! Aaron! this will point to a GMRES solve by trilinos
+! This will point to a GMRES solve by trilinos
 !    call precon_precon_wgmres(size(xstate), xt, zt, c_ptr_to_object, c_ptr_to_pre)
 
     vv = zt
@@ -1147,7 +1148,8 @@ contains
     use solver_mod, only : blkjac_t
     use precon_mod, only : pcg_presolver_nonstag
     use bndry_mod, only : bndry_exchangev
-    use derived_type_mod ,only : derived_type, precon_type
+    use derived_type_mod ,only : derived_type
+    use precon_type_mod ,only : precon_type
     use perf_mod, only : t_startf, t_stopf
 
     implicit none
@@ -1427,7 +1429,7 @@ contains
     use time_mod, only : timelevel_t
     use control_mod, only :  topology, test_case
     use bndry_mod, only : bndry_exchangev
-    use derived_type_mod, only : precon_type,derived_type
+    use derived_type_mod, only : derived_type
     use perf_mod, only : t_startf, t_stopf
     use physical_constants, only : g
 
@@ -1438,7 +1440,6 @@ contains
 !end fix
     integer(c_int) ,intent(in) ,value  :: nelemd
     real (c_double) ,intent(out)       :: fx(nelemd)
-    !type(precon_type) ,pointer        :: fptr=>NULL()
     type(derived_type) ,pointer        :: fptr=>NULL()
     type(c_ptr)                        :: c_ptr_to_object
 !    real (c_double)        :: base_vector(nelemd)
@@ -1729,7 +1730,7 @@ ptens=0.0d0
     use time_mod, only : timelevel_t
     use control_mod, only :  topology, test_case
     use bndry_mod, only : bndry_exchangev
-    use derived_type_mod, only : precon_type,derived_type
+    use derived_type_mod, only : derived_type
     use perf_mod, only : t_startf, t_stopf
     use physical_constants, only : g
 
@@ -1740,7 +1741,6 @@ ptens=0.0d0
 !end fix
     integer(c_int) ,intent(in) ,value  :: nelemd
     real (c_double) ,intent(out)       :: fx(nelemd)
-    !type(precon_type) ,pointer        :: fptr=>NULL()
     type(derived_type) ,pointer        :: fptr=>NULL()
     type(c_ptr)                        :: c_ptr_to_object
 !    real (c_double)        :: base_vector(nelemd)
@@ -2052,7 +2052,7 @@ ptens=0.0d0
     use time_mod, only : timelevel_t
     use control_mod, only :  topology, test_case
     use bndry_mod, only : bndry_exchangev
-    use derived_type_mod, only : precon_type,derived_type
+    use derived_type_mod, only : derived_type
     use perf_mod, only : t_startf, t_stopf
     use physical_constants, only : g
 
@@ -2063,7 +2063,6 @@ ptens=0.0d0
 !end fix
     integer(c_int) ,intent(in) ,value  :: nelemd
     real (c_double) ,intent(out)       :: fx(nelemd)
-    !type(precon_type) ,pointer        :: fptr=>NULL()
     type(derived_type) ,pointer        :: fptr=>NULL()
     type(c_ptr)                        :: c_ptr_to_object
 !    real (c_double)        :: base_vector(nelemd)
@@ -2353,7 +2352,7 @@ ptens=0.0d0
     use time_mod, only : timelevel_t
     use control_mod, only :  topology, test_case
     use bndry_mod, only : bndry_exchangev
-    use derived_type_mod, only : precon_type,derived_type
+    use derived_type_mod, only : derived_type
     use perf_mod, only : t_startf, t_stopf
     use physical_constants, only : g
 
@@ -2365,7 +2364,6 @@ ptens=0.0d0
     integer(c_int) ,intent(in) ,value  :: nelemd
     real (c_double) ,intent(out)       :: fx(nelemd)
     real (c_double)       :: fxtemp(nelemd)
-    !type(precon_type) ,pointer        :: fptr=>NULL()
     type(derived_type) ,pointer        :: fptr=>NULL()
     type(c_ptr)                        :: c_ptr_to_object
 !    real (c_double)        :: base_vector(nelemd)
@@ -3119,7 +3117,7 @@ ptens=0.0d0
     use time_mod, only : timelevel_t
     use control_mod, only :  topology, test_case
     use bndry_mod, only : bndry_exchangev
-    use derived_type_mod, only : precon_type,derived_type
+    use derived_type_mod, only : derived_type
     use perf_mod, only : t_startf, t_stopf
     use physical_constants, only : g
 
@@ -3131,7 +3129,6 @@ ptens=0.0d0
     integer(c_int) ,intent(in) ,value  :: nelemd
     real (c_double) ,intent(out)       :: fx(nelemd)
     real (c_double)       :: fxtemp(nelemd)
-    !type(precon_type) ,pointer        :: fptr=>NULL()
     type(derived_type) ,pointer        :: fptr=>NULL()
     type(c_ptr)                        :: c_ptr_to_object
 !    real (c_double)        :: base_vector(nelemd)
@@ -3510,7 +3507,7 @@ ptens=0.0d0
     use time_mod, only : timelevel_t
     use control_mod, only :  topology, test_case
     use bndry_mod, only : bndry_exchangev
-    use derived_type_mod, only : precon_type,derived_type
+    use derived_type_mod, only : derived_type
     use perf_mod, only : t_startf, t_stopf
     use physical_constants, only : g
 
@@ -3522,7 +3519,6 @@ ptens=0.0d0
     integer(c_int) ,intent(in) ,value  :: nelemd
     real (c_double) ,intent(out)       :: fx(nelemd)
     real (c_double)       :: fxtemp(nelemd)
-    !type(precon_type) ,pointer        :: fptr=>NULL()
     type(derived_type) ,pointer        :: fptr=>NULL()
     type(c_ptr)                        :: c_ptr_to_object
 !    real (c_double)        :: base_vector(nelemd)
@@ -4125,7 +4121,7 @@ ptens=0.0d0
     use time_mod, only : timelevel_t
     use control_mod, only :  topology, test_case
     use bndry_mod, only : bndry_exchangev
-    use derived_type_mod, only : precon_type,derived_type
+    use derived_type_mod, only : derived_type
     use perf_mod, only : t_startf, t_stopf
     use physical_constants, only : g
 
@@ -4136,7 +4132,6 @@ ptens=0.0d0
 !end fix
     integer(c_int) ,intent(in) ,value  :: nelemd
     real (c_double) ,intent(out)       :: fx(nelemd)
-    !type(precon_type) ,pointer        :: fptr=>NULL()
     type(derived_type) ,pointer        :: fptr=>NULL()
     type(c_ptr)                        :: c_ptr_to_object
 !    real (c_double)        :: base_vector(nelemd)
@@ -4356,7 +4351,7 @@ ptens=0.0d0
     use time_mod, only : timelevel_t
     use control_mod, only :  topology, test_case
     use bndry_mod, only : bndry_exchangev
-    use derived_type_mod, only : precon_type,derived_type
+    use derived_type_mod, only : derived_type
     use perf_mod, only : t_startf, t_stopf
     use physical_constants, only : g
 
@@ -4367,7 +4362,6 @@ ptens=0.0d0
 !end fix
     integer(c_int) ,intent(in) ,value  :: nelemd
     real (c_double) ,intent(out)       :: fx(nelemd)
-    !type(precon_type) ,pointer        :: fptr=>NULL()
     type(derived_type) ,pointer        :: fptr=>NULL()
     type(c_ptr)                        :: c_ptr_to_object
 !    real (c_double)        :: base_vector(nelemd)
@@ -4717,7 +4711,7 @@ ptens=0.0d0
     use time_mod, only : timelevel_t
     use control_mod, only :  topology, test_case
     use bndry_mod, only : bndry_exchangev
-    use derived_type_mod, only : precon_type,derived_type
+    use derived_type_mod, only : derived_type
     use perf_mod, only : t_startf, t_stopf
     use physical_constants, only : g
 
@@ -4728,7 +4722,6 @@ ptens=0.0d0
 !end fix
     integer(c_int) ,intent(in) ,value  :: nelemd
     real (c_double) ,intent(out)       :: fx(nelemd)
-    !type(precon_type) ,pointer        :: fptr=>NULL()
     type(derived_type) ,pointer        :: fptr=>NULL()
     type(c_ptr)                        :: c_ptr_to_object
 !    real (c_double)        :: base_vector(nelemd)
@@ -5051,7 +5044,7 @@ ptens=0.0d0
     use time_mod, only : timelevel_t
     use control_mod, only :  topology, test_case
     use bndry_mod, only : bndry_exchangev
-    use derived_type_mod, only : precon_type,derived_type
+    use derived_type_mod, only : derived_type
     use perf_mod, only : t_startf, t_stopf
     use physical_constants, only : g
 
@@ -5062,7 +5055,6 @@ ptens=0.0d0
 !end fix
     integer(c_int) ,intent(in) ,value  :: nelemd
     real (c_double) ,intent(out)       :: fx(nelemd)
-    !type(precon_type) ,pointer        :: fptr=>NULL()
     type(derived_type) ,pointer        :: fptr=>NULL()
     type(c_ptr)                        :: c_ptr_to_object
 !    real (c_double)        :: base_vector(nelemd)
@@ -5324,7 +5316,7 @@ ptens=0.0d0
     use time_mod, only : timelevel_t
     use control_mod, only :  topology, test_case
     use bndry_mod, only : bndry_exchangev
-    use derived_type_mod, only : precon_type,derived_type
+    use derived_type_mod, only : derived_type
     use perf_mod, only : t_startf, t_stopf
     use physical_constants, only : g
 
@@ -5335,7 +5327,6 @@ ptens=0.0d0
 !end fix
     integer(c_int) ,intent(in) ,value  :: nelemd
     real (c_double) ,intent(out)       :: fx(nelemd)
-    !type(precon_type) ,pointer        :: fptr=>NULL()
     type(derived_type) ,pointer        :: fptr=>NULL()
     type(c_ptr)                        :: c_ptr_to_object
 !    real (c_double)        :: base_vector(nelemd)
@@ -5592,7 +5583,7 @@ ptens=0.0d0
     use time_mod, only : timelevel_t
     use control_mod, only :  topology, test_case
     use bndry_mod, only : bndry_exchangev
-    use derived_type_mod, only : precon_type,derived_type
+    use derived_type_mod, only : derived_type
     use perf_mod, only : t_startf, t_stopf
     use physical_constants, only : g
 
@@ -5603,7 +5594,6 @@ ptens=0.0d0
 !end fix
     integer(c_int) ,intent(in) ,value  :: nelemd
     real (c_double) ,intent(out)       :: fx(nelemd)
-    !type(precon_type) ,pointer        :: fptr=>NULL()
     type(derived_type) ,pointer        :: fptr=>NULL()
     type(c_ptr)                        :: c_ptr_to_object
 !    real (c_double)        :: base_vector(nelemd)
@@ -6179,7 +6169,7 @@ ptens=0.0d0
     use time_mod, only : timelevel_t
     use control_mod, only :  topology, test_case
     use bndry_mod, only : bndry_exchangev
-    use derived_type_mod, only : precon_type,derived_type
+    use derived_type_mod, only : derived_type
     use perf_mod, only : t_startf, t_stopf
     use physical_constants, only : g
 
@@ -6190,7 +6180,6 @@ ptens=0.0d0
 !end fix
     integer(c_int) ,intent(in) ,value  :: nelemd
     real (c_double) ,intent(out)       :: fx(nelemd)
-    !type(precon_type) ,pointer        :: fptr=>NULL()
     type(derived_type) ,pointer        :: fptr=>NULL()
     type(c_ptr)                        :: c_ptr_to_object
 !    real (c_double)        :: base_vector(nelemd)
@@ -6438,7 +6427,7 @@ ptens=0.0d0
     use time_mod, only : timelevel_t
     use control_mod, only :  topology, test_case
     use bndry_mod, only : bndry_exchangev
-    use derived_type_mod, only : precon_type,derived_type
+    use derived_type_mod, only : derived_type
     use perf_mod, only : t_startf, t_stopf
     use physical_constants, only : g
 
@@ -6449,7 +6438,6 @@ ptens=0.0d0
 !end fix
     integer(c_int) ,intent(in) ,value  :: nelemd
     real (c_double) ,intent(out)       :: fx(nelemd)
-    !type(precon_type) ,pointer        :: fptr=>NULL()
     type(derived_type) ,pointer        :: fptr=>NULL()
     type(c_ptr)                        :: c_ptr_to_object
 !    real (c_double)        :: base_vector(nelemd)
@@ -6948,7 +6936,7 @@ ptens=0.0d0
     use time_mod, only : timelevel_t
     use control_mod, only :  topology, test_case
     use bndry_mod, only : bndry_exchangev
-    use derived_type_mod, only : precon_type,derived_type
+    use derived_type_mod, only : derived_type
     use perf_mod, only : t_startf, t_stopf
     use physical_constants, only : g
 
@@ -6959,7 +6947,6 @@ ptens=0.0d0
 !end fix
     integer(c_int) ,intent(in) ,value  :: nelemd
     real (c_double) ,intent(out)       :: fx(nelemd)
-    !type(precon_type) ,pointer        :: fptr=>NULL()
     type(derived_type) ,pointer        :: fptr=>NULL()
     type(c_ptr)                        :: c_ptr_to_object
 !    real (c_double)        :: base_vector(nelemd)
@@ -7206,7 +7193,7 @@ ptens=0.0d0
     use time_mod, only : timelevel_t
     use control_mod, only :  topology, test_case
     use bndry_mod, only : bndry_exchangev
-    use derived_type_mod, only : precon_type,derived_type
+    use derived_type_mod, only : derived_type
     use perf_mod, only : t_startf, t_stopf
     use physical_constants, only : g
 
@@ -7217,7 +7204,6 @@ ptens=0.0d0
 !end fix
     integer(c_int) ,intent(in) ,value  :: nelemd
     real (c_double) ,intent(out)       :: fx(nelemd)
-    !type(precon_type) ,pointer        :: fptr=>NULL()
     type(derived_type) ,pointer        :: fptr=>NULL()
     type(c_ptr)                        :: c_ptr_to_object
 !    real (c_double)        :: base_vector(nelemd)
@@ -7445,7 +7431,7 @@ ptens=0.0d0
     use time_mod, only : timelevel_t
     use control_mod, only :  topology, test_case
     use bndry_mod, only : bndry_exchangev
-    use derived_type_mod, only : precon_type,derived_type
+    use derived_type_mod, only : derived_type
     use perf_mod, only : t_startf, t_stopf
     use physical_constants, only : g
 
@@ -7456,7 +7442,6 @@ ptens=0.0d0
 !end fix
     integer(c_int) ,intent(in) ,value  :: nelemd
     real (c_double) ,intent(out)       :: fx(nelemd)
-    !type(precon_type) ,pointer        :: fptr=>NULL()
     type(derived_type) ,pointer        :: fptr=>NULL()
     type(c_ptr)                        :: c_ptr_to_object
 !    real (c_double)        :: base_vector(nelemd)
@@ -7807,7 +7792,7 @@ ptens=0.0d0
     use time_mod, only : timelevel_t
     use control_mod, only :  topology, test_case
     use bndry_mod, only : bndry_exchangev
-    use derived_type_mod, only : precon_type,derived_type
+    use derived_type_mod, only : derived_type
     use perf_mod, only : t_startf, t_stopf
     use physical_constants, only : g
 
@@ -7815,7 +7800,6 @@ ptens=0.0d0
 
     real (c_double) ,intent(in)        :: xs(nelemd)
     integer(c_int) ,intent(in) ,value  :: nelemd
-    !type(precon_type) ,pointer        :: fptr=>NULL()
     type(derived_type) ,pointer        :: fptr=>NULL()
     type(c_ptr)                        :: c_ptr_to_object
     integer              :: ns
@@ -7877,7 +7861,7 @@ ptens=0.0d0
     use time_mod, only : timelevel_t
     use control_mod, only :  topology, test_case
     use bndry_mod, only : bndry_exchangev
-    use derived_type_mod, only : precon_type,derived_type
+    use derived_type_mod, only : derived_type
     use perf_mod, only : t_startf, t_stopf
     use physical_constants, only : g
 
@@ -7940,7 +7924,7 @@ ptens=0.0d0
     use time_mod, only : timelevel_t
     use control_mod, only :  topology, test_case
     use bndry_mod, only : bndry_exchangev
-    use derived_type_mod, only : precon_type,derived_type
+    use derived_type_mod, only : derived_type
     use perf_mod, only : t_startf, t_stopf
     use physical_constants, only : g
 
@@ -7951,7 +7935,6 @@ ptens=0.0d0
 !end fix
     integer(c_int) ,intent(in) ,value  :: nelemd
     real (c_double) ,intent(out)       :: fx(nelemd)
-    !type(precon_type) ,pointer        :: fptr=>NULL()
     type(derived_type) ,pointer        :: fptr=>NULL()
     type(c_ptr)                        :: c_ptr_to_object
 !    real (c_double)        :: base_vector(nelemd)
@@ -8221,7 +8204,7 @@ ptens=0.0d0
     use time_mod, only : timelevel_t
     use control_mod, only :  topology, test_case
     use bndry_mod, only : bndry_exchangev
-    use derived_type_mod, only : precon_type,derived_type
+    use derived_type_mod, only : derived_type
     use perf_mod, only : t_startf, t_stopf
     use physical_constants, only : g
 
@@ -8232,7 +8215,6 @@ ptens=0.0d0
 !end fix
     integer(c_int) ,intent(in) ,value  :: nelemd
     real (c_double) ,intent(out)       :: fx(nelemd)
-    !type(precon_type) ,pointer        :: fptr=>NULL()
     type(derived_type) ,pointer        :: fptr=>NULL()
     type(c_ptr)                        :: c_ptr_to_object
 !    real (c_double)        :: base_vector(nelemd)
@@ -8494,7 +8476,7 @@ ptens=0.0d0
     use time_mod, only : timelevel_t
     use control_mod, only :  topology, test_case
     use bndry_mod, only : bndry_exchangev
-    use derived_type_mod, only : precon_type,derived_type
+    use derived_type_mod, only : derived_type
     use perf_mod, only : t_startf, t_stopf
     use physical_constants, only : g
 
@@ -8505,7 +8487,6 @@ ptens=0.0d0
 !end fix
     integer(c_int) ,intent(in) ,value  :: nelemd
     real (c_double) ,intent(out)       :: fx(nelemd)
-    !type(precon_type) ,pointer        :: fptr=>NULL()
     type(derived_type) ,pointer        :: fptr=>NULL()
     type(c_ptr)                        :: c_ptr_to_object
 !    real (c_double)        :: base_vector(nelemd)
@@ -8754,14 +8735,13 @@ ptens=0.0d0
     use time_mod, only : timelevel_t
     use control_mod, only :  topology, test_case
     use bndry_mod, only : bndry_exchangev
-    use derived_type_mod, only : precon_type,derived_type
+    use derived_type_mod, only : derived_type
     use perf_mod, only : t_startf, t_stopf
     use physical_constants, only : g
 
     integer(c_int) ,intent(in) ,value  :: nelemd
     real (c_double) ,intent(in)        :: xs(nelemd)
     real (c_double) ,intent(out)       :: fx(nelemd)
-    !type(precon_type) ,pointer        :: fptr=>NULL()
     type(derived_type) ,pointer        :: fptr=>NULL()
     type(c_ptr)                        :: c_ptr_to_object
     integer              :: ns
@@ -8850,7 +8830,7 @@ ptens=0.0d0
     use time_mod, only : timelevel_t
     use control_mod, only :  topology, test_case
     use bndry_mod, only : bndry_exchangev
-    use derived_type_mod, only : precon_type,derived_type
+    use derived_type_mod, only : derived_type
     use perf_mod, only : t_startf, t_stopf
     use physical_constants, only : g
 
@@ -8859,7 +8839,6 @@ ptens=0.0d0
     real (c_double) ,intent(in)        :: xs(nelemd)
     integer(c_int) ,intent(in) ,value  :: nelemd
     real (c_double) ,intent(out)       :: fx(nelemd)
-    !type(precon_type) ,pointer        :: fptr=>NULL()
     type(derived_type) ,pointer        :: fptr=>NULL()
     type(c_ptr)                        :: c_ptr_to_object
     integer              :: ns
@@ -9198,7 +9177,8 @@ ptens=0.0d0
     use time_mod, only : timelevel_t
     use control_mod, only :  topology, test_case
     use bndry_mod, only : bndry_exchangev
-    use derived_type_mod, only : precon_type
+! Aaron is this right or should it be derived type?
+    use precon_type_mod, only : precon_type
     use perf_mod, only : t_startf, t_stopf
     use physical_constants, only : g
 
@@ -9207,6 +9187,7 @@ ptens=0.0d0
     real (c_double) ,intent(in)        :: xs(nelemd)
     integer(c_int) ,intent(in) ,value  :: nelemd
     real (c_double) ,intent(out)       :: fx(nelemd)
+! Aaron is this right or should it be derived type?
     type(precon_type) ,pointer        :: fptr=>NULL()
     type(c_ptr)                        :: c_ptr_to_object
     integer              :: ns
@@ -9456,7 +9437,7 @@ ptens=0.0d0
     use time_mod, only : timelevel_t
     use control_mod, only :  topology, test_case
     use bndry_mod, only : bndry_exchangev
-    use derived_type_mod, only : precon_type,derived_type
+    use derived_type_mod, only : derived_type
     use perf_mod, only : t_startf, t_stopf
     use physical_constants, only : g
 
@@ -9465,7 +9446,6 @@ ptens=0.0d0
     real (c_double) ,intent(in)        :: xs(nelemd)
     integer(c_int) ,intent(in) ,value  :: nelemd
     real (c_double) ,intent(out)       :: fx(nelemd)
-    !type(precon_type) ,pointer        :: fptr=>NULL()
     type(derived_type) ,pointer        :: fptr=>NULL()
     type(c_ptr)                        :: c_ptr_to_object
     integer              :: ns
@@ -9704,7 +9684,7 @@ ptens=0.0d0
     use time_mod, only : timelevel_t
     use control_mod, only :  topology, test_case
     use bndry_mod, only : bndry_exchangev
-    use derived_type_mod, only : precon_type,derived_type
+    use derived_type_mod, only : derived_type
     use perf_mod, only : t_startf, t_stopf
     use physical_constants, only : g
 
@@ -9713,7 +9693,6 @@ ptens=0.0d0
     real (c_double) ,intent(in)        :: xs(nelemd)
     integer(c_int) ,intent(in) ,value  :: nelemd
     real (c_double) ,intent(out)       :: fx(nelemd)
-    !type(precon_type) ,pointer        :: fptr=>NULL()
     type(derived_type) ,pointer        :: fptr=>NULL()
     type(c_ptr)                        :: c_ptr_to_object
     integer              :: ns
@@ -9978,7 +9957,7 @@ write(6,*)'picard diag\n'
     use time_mod, only : timelevel_t
     use control_mod, only :  topology, test_case
     use bndry_mod, only : bndry_exchangev
-    use derived_type_mod, only : precon_type,derived_type
+    use derived_type_mod, only : derived_type
     use perf_mod, only : t_startf, t_stopf
     use physical_constants, only : g
 
@@ -9989,7 +9968,6 @@ write(6,*)'picard diag\n'
 !end fix
     integer(c_int) ,intent(in) ,value  :: nelemd
     real (c_double) ,intent(out)       :: fx(nelemd)
-    !type(precon_type) ,pointer        :: fptr=>NULL()
     type(derived_type) ,pointer        :: fptr=>NULL()
     type(c_ptr)                        :: c_ptr_to_object
 !    real (c_double)        :: base_vector(nelemd)

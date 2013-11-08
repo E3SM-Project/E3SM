@@ -33,7 +33,7 @@ contains
   function pcg_presolver_nonstag(pptr, rhs) result(x) 
     use dimensions_mod, only : nlev, np, npsq, nelemd
     use element_mod, only : element_t
-    use derived_type_mod, only : precon_type
+    use precon_type_mod, only : precon_type
     use reduction_mod, only : reductionbuffer_ordered_1d_t
     use cg_mod, only : cg_t, congrad
     use edge_mod, only : edgebuffer_t, edgevpack, edgerotate, edgevunpack
