@@ -271,8 +271,8 @@ module init_atm_cases
       real (kind=RKIND) :: dlat, hx_1d
       real (kind=RKIND) :: z_edge, z_edge3, d2fdx2_cell1, d2fdx2_cell2
 
-      logical, parameter :: moisture = .true.
-!      logical, parameter :: moisture = .false.
+!      logical, parameter :: moisture = .true.
+      logical, parameter :: moisture = .false.
 
       !
       ! Scale all distances and areas from a unit sphere to one with radius sphere_radius
