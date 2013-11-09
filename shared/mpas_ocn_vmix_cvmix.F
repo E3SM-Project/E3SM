@@ -268,14 +268,18 @@ contains
           cvmix_variables % diff_iface(:,:)=0.0
 
           ! compute the boundary layer depth
-          call cvmix_kpp_compute_OBL_depth( cvmix_variables )
+          call cvmix_kpp_compute_OBL_depth( &
+                 CVmix_vars = cvmix_variables, &
+                 CVmix_kpp_params_user = cvmix_kpp_params )
 
           ! intent out of OBL_depth is boundary layer depth measured in meters and vertical index
           diagnostics % boundaryLayerDepth % array(iCell) = cvmix_variables % OBL_depth
           diagnostics % indexBoundaryLayerDepth % array(iCell) = cvmix_variables % kOBL_depth
 
           ! given OBL and vertical profile of visc/diff, compute boundary layer mixing
-          call cvmix_coeffs_kpp( cvmix_variables )
+          call cvmix_coeffs_kpp( &
+                 CVmix_vars = cvmix_variables, &
+                 CVmix_kpp_params_user = cvmix_kpp_params )
 
           ! add KPP mixing to vertical viscosity/diffusivity
           ! TDR: need to be sure of think through the merging in the OBL region
