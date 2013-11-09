@@ -930,15 +930,16 @@ contains
 
       ! real pointers
       real (kind=RKIND), dimension(:), pointer :: dcEdge, dvEdge, areaCell
-      real (kind=RKIND), dimension(:), pointer :: penetrativeTemperatureFlux, surfaceMassFlux, surfaceWindStressMagnitude, &
+      real (kind=RKIND), dimension(:), pointer :: penetrativeTemperatureFlux, surfaceMassFlux, &
            buoyancyForcingOBL, surfaceFrictionVelocity, boundaryLayerDepth, penetrativeTemperatureFluxOBL
+      real (kind=RKIND), dimension(:), pointer :: surfaceWindStress, surfaceWindStressMagnitude
       real (kind=RKIND), dimension(:,:), pointer ::  &
            layerThickness, zMid, zTop, bulkRichardsonNumber, tracersSurfaceValues, densitySurfaceDisplaced, density, &
            normalVelocity, surfaceTracerFlux, thermalExpansionCoeff, salineContractionCoeff
 
       ! local
       integer :: iCell, iEdge, i, k, err, indexTempFlux, indexSaltFlux
-      real (kind=RKIND) :: numerator, denominator, factor, deltaVelocitySquaredRefSfc, turbulentVelocitySquared, delU2, invAreaCell
+      real (kind=RKIND) :: numerator, denominator, factor, deltaVelocitySquared, turbulentVelocitySquared, delU2, invAreaCell
 
       ! set the parameter turbulentVelocitySquared
       turbulentVelocitySquared = 0.001
@@ -975,6 +976,7 @@ contains
       surfaceMassFlux            => forcing % surfaceMassFlux % array
       surfaceTracerFlux          => forcing % surfaceTracerFlux % array
       penetrativeTemperatureFlux => forcing % penetrativeTemperatureFlux % array 
+      surfaceWindStress          => forcing % surfaceWindStress % array
       surfaceWindStressMagnitude => forcing % surfaceWindStressMagnitude % array      
 
       ! allocate scratch space displaced density computation
@@ -1018,35 +1020,45 @@ contains
        ! change into units of m/s^3 (which can be thought of as units of buoyancy per second)
          buoyancyForcingOBL(iCell) = buoyancyForcingOBL(iCell) * gravity / max(boundaryLayerDepth(iCell),layerThickness(1,iCell))
 
+       ! compute magnitude of surface windstress
+        deltaVelocitySquared = 0.0
+        do i = 1, nEdgesOnCell(iCell)
+          iEdge = edgesOnCell(i, iCell)
+          factor = 0.5 * dcEdge(iEdge) * dvEdge(iEdge) * invAreaCell
+          delU2 =  (surfaceWindStress(iEdge))**2
+          deltaVelocitySquared = deltaVelocitySquared + factor * delU2
+        enddo
+        surfacewindStressMagnitude(iCell) = sqrt(deltaVelocitySquared)
+
        ! compute surface friction velocity
          surfaceFrictionVelocity(iCell) = surfacewindStressMagnitude(iCell) / config_density0
 
        ! loop over vertical to compute bulk Richardson number
-       do k=1,maxLevelCell(iCell)
+        do k=1,maxLevelCell(iCell)
 
-        ! find deltaVelocitySquaredRefSfc defined at cell centers based on velocity at levels 1 and k
-        deltaVelocitySquaredRefSfc = 0.0
-        do i = 1, nEdgesOnCell(iCell)
-          iEdge = edgesOnCell(i, iCell)
-          factor = 0.5 * dcEdge(iEdge) * dvEdge(iEdge) * invAreaCell
-          delU2 = (normalVelocity(1,iEdge) - normalVelocity(k,iEdge))**2 
-          deltaVelocitySquaredRefSfc = deltaVelocitySquaredRefSfc + factor * delU2
-        enddo
+        ! find deltaVelocitySquared defined at cell centers based on velocity at levels 1 and k
+         deltaVelocitySquared = 0.0
+         do i = 1, nEdgesOnCell(iCell)
+           iEdge = edgesOnCell(i, iCell)
+           factor = 0.5 * dcEdge(iEdge) * dvEdge(iEdge) * invAreaCell
+           delU2 = (normalVelocity(1,iEdge) - normalVelocity(k,iEdge))**2 
+           deltaVelocitySquared = deltaVelocitySquared + factor * delU2
+         enddo
 
-        numerator = gravity * (zTop(1,iCell) - zMid(k,iCell)) * (density(k,iCell) - densitySurfaceDisplaced(k,iCell))
-        denominator = config_density0 * (deltaVelocitySquaredRefSfc + turbulentVelocitySquared)
+         numerator = gravity * (zTop(1,iCell) - zMid(k,iCell)) * (density(k,iCell) - densitySurfaceDisplaced(k,iCell))
+         denominator = config_density0 * (deltaVelocitySquared + turbulentVelocitySquared)
 
         ! compute bulk Richardson number
-        bulkRichardsonNumber(k,iCell) = numerator / denominator
+         bulkRichardsonNumber(k,iCell) = numerator / denominator
 
        enddo
 
       enddo
 
       ! deallocate scratch space
-      call mpas_deallocate_scratch_field(scratch % densitySurfaceDisplaced, .true.)
-      call mpas_deallocate_scratch_field(scratch % thermalExpansionCoeff, .true.)
-      call mpas_deallocate_scratch_field(scratch % salineContractionCoeff, .true.)
+       call mpas_deallocate_scratch_field(scratch % densitySurfaceDisplaced, .true.)
+       call mpas_deallocate_scratch_field(scratch % thermalExpansionCoeff, .true.)
+       call mpas_deallocate_scratch_field(scratch % salineContractionCoeff, .true.)
 
     end subroutine computeKPPInputFields!}}}
 
