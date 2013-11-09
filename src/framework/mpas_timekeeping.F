@@ -537,8 +537,6 @@ module mpas_timekeeping
 
       type (MPAS_Alarm_type), pointer :: alarmPtr
 
-      type (MPAS_TimeInterval_type) :: alarmTimeInterval
-      type (MPAS_Time_type) :: alarmTime
       character (len=StrKIND) :: printString
 
       ierr = 0
@@ -749,7 +747,6 @@ module mpas_timekeeping
       type (MPAS_Time_type) :: previousRingTime
       type (MPAS_Time_type) :: negativeNeighborRingTime
       type (MPAS_Time_type) :: positiveNeighborRingTime
-      type (MPAS_TimeInterval_type) :: ringTimeInterval 
       type (MPAS_Alarm_type), pointer :: alarmPtr
 
       now = mpas_get_clock_time(clock, MPAS_NOW, ierr)
@@ -1007,7 +1004,7 @@ module mpas_timekeeping
       integer, intent(out), optional :: ierr
 
       integer, parameter :: integerMaxDigits = 8
-      integer :: days, hours, minutes, seconds
+!      integer :: days, hours, minutes, seconds
       integer :: numerator, denominator, denominatorPower
       type (MPAS_TimeInterval_type) :: zeroInterval
 

@@ -201,7 +201,7 @@ subroutine mpas_integrate_cubic_spline(x,y,y2ndDer,n,x1,x2,y_integral)  !{{{
 
 !  local variables:
   
-  integer :: i,j,k
+  integer :: j
   real(kind=RKIND) :: h,h2, A2,B2, F1,F2, eps1
 
   if (x1<x(1).or.x2>x(n).or.x1>x2) then
@@ -291,7 +291,7 @@ subroutine mpas_integrate_cubic_spline(x,y,y2ndDer,n,x1,x2,y_integral)  !{{{
 
 !  local variables:
 
-  integer :: i,j,k
+  integer :: j,k
   real(kind=RKIND) :: h,h2, A2,B2, F1,F2, eps1
 
   y_integral = 0.0

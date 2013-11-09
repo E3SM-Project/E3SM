@@ -224,7 +224,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, iCell, nCellsCompute, i,j,k,p,q, nVertLevels
+      integer :: iEdge, iCell, nCellsCompute, i,k,p,q, nVertLevels
 
       integer, dimension(:), pointer :: nEdgesOnCell
       integer, dimension(:,:), pointer :: edgesOnCell
@@ -513,9 +513,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: i,j,k,p,q
+      integer :: i,j,p,q
 
-      real (kind=RKIND) :: determinant
       real (kind=RKIND), dimension(3) :: zonalUnitVector, meridionalUnitVector, verticalUnitVector
       real (kind=RKIND), dimension(3,3) :: rotationMatrix, strainRateR3_3x3, strainRateLonLat3x3
 
@@ -593,11 +592,10 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: i,j,k,p,q
+      integer :: i,j,p,q
 
-      real (kind=RKIND) :: determinant
       real (kind=RKIND), dimension(3) :: zonalUnitVector, meridionalUnitVector, verticalUnitVector
-      real (kind=RKIND), dimension(3,3) :: rotationMatrix, strainRateR3_3x3, tensorLonLatR3x3, A
+      real (kind=RKIND), dimension(3,3) :: rotationMatrix, strainRateR3_3x3, tensorLonLatR3x3
 
       call mpas_zonal_meridional_vectors(lon, lat, zonalUnitVector, meridionalUnitVector, verticalUnitVector)
 
@@ -667,7 +665,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: i,j,k,p,q
+      integer :: i,j,p,q
 
       real (kind=RKIND), dimension(3) :: zonalUnitVector, meridionalUnitVector, verticalUnitVector
       real (kind=RKIND), dimension(3,3) :: rotationMatrix, strainRateR3_3x3, strainRateLonLat3x3
@@ -743,7 +741,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: i,j,k,p,q
+      integer :: i,j,p,q
 
       real (kind=RKIND), dimension(3) :: zonalUnitVector, meridionalUnitVector, verticalUnitVector
       real (kind=RKIND), dimension(3,3) :: rotationMatrix, strainRateR3_3x3, strainRateLonLat3x3
@@ -840,7 +838,7 @@ contains
       type (block_type), pointer :: block
       type (dm_info), pointer :: dminfo
 
-      integer :: nCells, nCellsSolve, nCellsSolveSum, nCellsGlobal, nEdges, nVertices, nVertLevels, iCell, iEdge, k, i, p, strainRateLonLatRIndex
+      integer :: nCells, nCellsSolve, nCellsSolveSum, nCellsGlobal, nEdges, nVertices, nVertLevels, iCell, iEdge, p, strainRateLonLatRIndex
       integer, dimension(:,:), pointer :: edgeSignOnCell
 
       real (kind=RKIND) :: xVelocity, yVelocity, cn, cs, r, theta, rot, f, g1, g2, fcos, pi2l, ld, &

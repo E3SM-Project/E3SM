@@ -1379,10 +1379,6 @@ module mpas_io
       integer, intent(out) :: val
       integer, intent(out), optional :: ierr
 
-      integer :: pio_ierr
-      integer, dimension(1) :: start
-      type (fieldlist_type), pointer :: field_cursor
-
 !      write(stderrUnit,*) 'Called MPAS_io_get_var_int0d()'
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
@@ -1399,9 +1395,6 @@ module mpas_io
       character (len=*), intent(in) :: fieldname
       integer, dimension(:), intent(out) :: array
       integer, intent(out), optional :: ierr
-
-      integer :: pio_ierr
-      type (fieldlist_type), pointer :: field_cursor
 
 !      write(stderrUnit,*) 'Called MPAS_io_get_var_int1d()'
       if (present(ierr)) ierr = MPAS_IO_NOERR
@@ -1420,9 +1413,6 @@ module mpas_io
       integer, dimension(:,:), intent(out) :: array
       integer, intent(out), optional :: ierr
 
-      integer :: pio_ierr
-      type (fieldlist_type), pointer :: field_cursor
-
 !      write(stderrUnit,*) 'Called MPAS_io_get_var_int2d()'
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
@@ -1439,9 +1429,6 @@ module mpas_io
       character (len=*), intent(in) :: fieldname
       integer, dimension(:,:,:), intent(out) :: array
       integer, intent(out), optional :: ierr
-
-      integer :: pio_ierr
-      type (fieldlist_type), pointer :: field_cursor
 
 !      write(stderrUnit,*) 'Called MPAS_io_get_var_int3d()'
       if (present(ierr)) ierr = MPAS_IO_NOERR
@@ -1460,9 +1447,6 @@ module mpas_io
       integer, dimension(:,:,:,:), intent(out) :: array
       integer, intent(out), optional :: ierr
 
-      integer :: pio_ierr
-      type (fieldlist_type), pointer :: field_cursor
-
 !      write(stderrUnit,*) 'Called MPAS_io_get_var_int4d()'
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
@@ -1479,10 +1463,6 @@ module mpas_io
       character (len=*), intent(in) :: fieldname
       real (kind=RKIND), intent(out) :: val
       integer, intent(out), optional :: ierr
-
-      integer :: pio_ierr
-      integer, dimension(1) :: start
-      type (fieldlist_type), pointer :: field_cursor
 
 !      write(stderrUnit,*) 'Called MPAS_io_get_var_real0d()'
       if (present(ierr)) ierr = MPAS_IO_NOERR
@@ -1501,9 +1481,6 @@ module mpas_io
       real (kind=RKIND), dimension(:), intent(out) :: array
       integer, intent(out), optional :: ierr
 
-      integer :: pio_ierr
-      type (fieldlist_type), pointer :: field_cursor
-
 !      write(stderrUnit,*) 'Called MPAS_io_get_var_real1d()'
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
@@ -1520,9 +1497,6 @@ module mpas_io
       character (len=*), intent(in) :: fieldname
       real (kind=RKIND), dimension(:,:), intent(out) :: array
       integer, intent(out), optional :: ierr
-
-      integer :: pio_ierr
-      type (fieldlist_type), pointer :: field_cursor
 
 !      write(stderrUnit,*) 'Called MPAS_io_get_var_real2d()'
       if (present(ierr)) ierr = MPAS_IO_NOERR
@@ -1541,9 +1515,6 @@ module mpas_io
       real (kind=RKIND), dimension(:,:,:), intent(out) :: array
       integer, intent(out), optional :: ierr
 
-      integer :: pio_ierr
-      type (fieldlist_type), pointer :: field_cursor
-
 !      write(stderrUnit,*) 'Called MPAS_io_get_var_real3d()'
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
@@ -1560,9 +1531,6 @@ module mpas_io
       character (len=*), intent(in) :: fieldname
       real (kind=RKIND), dimension(:,:,:,:), intent(out) :: array
       integer, intent(out), optional :: ierr
-
-      integer :: pio_ierr
-      type (fieldlist_type), pointer :: field_cursor
 
 !      write(stderrUnit,*) 'Called MPAS_io_get_var_real4d()'
       if (present(ierr)) ierr = MPAS_IO_NOERR
@@ -1581,9 +1549,6 @@ module mpas_io
       real (kind=RKIND), dimension(:,:,:,:,:), intent(out) :: array
       integer, intent(out), optional :: ierr
 
-      integer :: pio_ierr
-      type (fieldlist_type), pointer :: field_cursor
-
 !      write(stderrUnit,*) 'Called MPAS_io_get_var_real5d()'
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
@@ -1600,9 +1565,6 @@ module mpas_io
       character (len=*), intent(in) :: fieldname
       character (len=*), intent(out) :: val
       integer, intent(out), optional :: ierr
-
-      integer :: pio_ierr
-      type (fieldlist_type), pointer :: field_cursor
 
 !      write(stderrUnit,*) 'Called MPAS_io_get_var_char0d()'
       if (present(ierr)) ierr = MPAS_IO_NOERR
@@ -1765,10 +1727,6 @@ module mpas_io
       integer, intent(in) :: val
       integer, intent(out), optional :: ierr
 
-      integer :: pio_ierr
-      integer, dimension(1) :: start
-      type (fieldlist_type), pointer :: field_cursor
-
 !      write(stderrUnit,*) 'Called MPAS_io_put_var_int0d()'
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
@@ -1785,9 +1743,6 @@ module mpas_io
       character (len=*), intent(in) :: fieldname
       integer, dimension(:), intent(in) :: array
       integer, intent(out), optional :: ierr
-
-      integer :: pio_ierr
-      type (fieldlist_type), pointer :: field_cursor
 
 !      write(stderrUnit,*) 'Called MPAS_io_put_var_int1d()'
       if (present(ierr)) ierr = MPAS_IO_NOERR
@@ -1806,9 +1761,6 @@ module mpas_io
       integer, dimension(:,:), intent(in) :: array
       integer, intent(out), optional :: ierr
 
-      integer :: pio_ierr
-      type (fieldlist_type), pointer :: field_cursor
-
 !      write(stderrUnit,*) 'Called MPAS_io_put_var_int2d()'
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
@@ -1825,9 +1777,6 @@ module mpas_io
       character (len=*), intent(in) :: fieldname
       integer, dimension(:,:,:), intent(in) :: array
       integer, intent(out), optional :: ierr
-
-      integer :: pio_ierr
-      type (fieldlist_type), pointer :: field_cursor
 
 !      write(stderrUnit,*) 'Called MPAS_io_put_var_int3d()'
       if (present(ierr)) ierr = MPAS_IO_NOERR
@@ -1846,9 +1795,6 @@ module mpas_io
       integer, dimension(:,:,:,:), intent(in) :: array
       integer, intent(out), optional :: ierr
 
-      integer :: pio_ierr
-      type (fieldlist_type), pointer :: field_cursor
-
 !      write(stderrUnit,*) 'Called MPAS_io_put_var_int4d()'
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
@@ -1865,10 +1811,6 @@ module mpas_io
       character (len=*), intent(in) :: fieldname
       real (kind=RKIND), intent(in) :: val
       integer, intent(out), optional :: ierr
-
-      integer :: pio_ierr
-      integer, dimension(1) :: start
-      type (fieldlist_type), pointer :: field_cursor
 
 !      write(stderrUnit,*) 'Called MPAS_io_put_var_real0d()'
       if (present(ierr)) ierr = MPAS_IO_NOERR
@@ -1887,9 +1829,6 @@ module mpas_io
       real (kind=RKIND), dimension(:), intent(in) :: array
       integer, intent(out), optional :: ierr
 
-      integer :: pio_ierr
-      type (fieldlist_type), pointer :: field_cursor
-
 !      write(stderrUnit,*) 'Called MPAS_io_put_var_real1d()'
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
@@ -1906,9 +1845,6 @@ module mpas_io
       character (len=*), intent(in) :: fieldname
       real (kind=RKIND), dimension(:,:), intent(in) :: array
       integer, intent(out), optional :: ierr
-
-      integer :: pio_ierr
-      type (fieldlist_type), pointer :: field_cursor
 
 !      write(stderrUnit,*) 'Called MPAS_io_put_var_real2d()'
       if (present(ierr)) ierr = MPAS_IO_NOERR
@@ -1927,9 +1863,6 @@ module mpas_io
       real (kind=RKIND), dimension(:,:,:), intent(in) :: array
       integer, intent(out), optional :: ierr
 
-      integer :: pio_ierr
-      type (fieldlist_type), pointer :: field_cursor
-
 !      write(stderrUnit,*) 'Called MPAS_io_put_var_real3d()'
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
@@ -1946,9 +1879,6 @@ module mpas_io
       character (len=*), intent(in) :: fieldname
       real (kind=RKIND), dimension(:,:,:,:), intent(in) :: array
       integer, intent(out), optional :: ierr
-
-      integer :: pio_ierr
-      type (fieldlist_type), pointer :: field_cursor
 
 !      write(stderrUnit,*) 'Called MPAS_io_put_var_real4d()'
       if (present(ierr)) ierr = MPAS_IO_NOERR
@@ -1967,9 +1897,6 @@ module mpas_io
       real (kind=RKIND), dimension(:,:,:,:,:), intent(in) :: array
       integer, intent(out), optional :: ierr
 
-      integer :: pio_ierr
-      type (fieldlist_type), pointer :: field_cursor
-
 !      write(stderrUnit,*) 'Called MPAS_io_put_var_real5d()'
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
@@ -1986,9 +1913,6 @@ module mpas_io
       character (len=*), intent(in) :: fieldname
       character (len=*), intent(in) :: val
       integer, intent(out), optional :: ierr
-
-      integer :: pio_ierr
-      type (fieldlist_type), pointer :: field_cursor
 
 !      write(stderrUnit,*) 'Called MPAS_io_put_var_char0d()'
       if (present(ierr)) ierr = MPAS_IO_NOERR

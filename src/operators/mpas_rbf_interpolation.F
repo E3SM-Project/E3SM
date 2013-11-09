@@ -466,7 +466,7 @@ module mpas_rbf_interpolation
     real(kind=RKIND), intent(in) :: alpha !< Input: Characteristic length scale of RBFs
     real(kind=RKIND), dimension(pointCount), intent(out) :: coefficients !< Output: List of coefficients
 
-    integer :: i, j
+    integer :: i
     integer :: matrixSize
 
     real(kind=RKIND), dimension(pointCount+1, pointCount+1) :: dirichletMatrix
@@ -541,7 +541,7 @@ module mpas_rbf_interpolation
     real(kind=RKIND), dimension(2,3) :: planeBasisVectors !< Input: Basis vectors for the interpolation plane
     real(kind=RKIND), dimension(pointCount), intent(out) :: coefficients !< Output: List of coefficients
 
-    integer :: i, j
+    integer :: i
     integer :: matrixSize
 
     real(kind=RKIND), dimension(pointCount+3, pointCount+3) :: dirichletMatrix
@@ -614,7 +614,7 @@ module mpas_rbf_interpolation
     real(kind=RKIND), intent(in) :: alpha !< Input: Characteristic length scale for RBFs
     real(kind=RKIND), dimension(pointCount), intent(out) :: coefficients !< Output: List of coefficients
 
-    integer :: i, j
+    integer :: i
     integer :: matrixSize
 
     real(kind=RKIND), dimension(pointCount+4, pointCount+4) :: dirichletMatrix
@@ -698,7 +698,7 @@ module mpas_rbf_interpolation
     real(kind=RKIND), dimension(pointCount), intent(out) :: dirichletCoefficients !< Output: Coefficients with Dirichlet BCs
     real(kind=RKIND), dimension(pointCount), intent(out) :: neumannCoefficients !< Output: Coefficients with Neumann BCs
 
-    integer :: i, j
+    integer :: i
     integer :: matrixSize
 
     real(kind=RKIND), dimension(pointCount+1, pointCount+1) :: dirichletMatrix, neumannMatrix
@@ -799,7 +799,7 @@ module mpas_rbf_interpolation
     real(kind=RKIND), dimension(pointCount), intent(out) :: dirichletCoefficients !< Output: List of Dirichlet coefficients
     real(kind=RKIND), dimension(pointCount), intent(out) :: neumannCoefficients !< Output: List of Neumann coefficients
 
-    integer :: i, j
+    integer :: i
     integer :: matrixSize
 
     real(kind=RKIND), dimension(pointCount+3, pointCount+3) :: dirichletMatrix, neumannMatrix
@@ -903,7 +903,7 @@ module mpas_rbf_interpolation
     real(kind=RKIND), dimension(pointCount), intent(out) :: dirichletCoefficients !< Output: List of Dirichlet coefficients
     real(kind=RKIND), dimension(pointCount), intent(out) :: neumannCoefficients !< Outut: List of Neumann coefficients
 
-    integer :: i, j
+    integer :: i
     integer :: matrixSize
 
     real(kind=RKIND), dimension(pointCount+4, pointCount+4) :: dirichletMatrix, neumannMatrix
@@ -997,7 +997,7 @@ module mpas_rbf_interpolation
     real(kind=RKIND), intent(in) :: alpha !< Input: Characteristic length scale of RBFs
     real(kind=RKIND), dimension(pointCount, 3), intent(out) :: coefficients !< Output: List of coefficients
 
-    integer :: i, j
+    integer :: i
     integer :: matrixSize
 
     real(kind=RKIND), dimension(pointCount+3,pointCount+3) :: matrix, matrixCopy
@@ -1088,10 +1088,8 @@ module mpas_rbf_interpolation
     real(kind=RKIND), dimension(2,3) :: planeBasisVectors !< Input: Basis vectors for interpolation plane
     real(kind=RKIND), dimension(pointCount, 3), intent(out) :: coefficients !< Output: List of coefficients
 
-    integer :: i, j
+    integer :: i
     integer :: matrixSize
-
-    real(kind=RKIND) :: rSquared, rbfValue, unitVectorDotProduct
 
     real(kind=RKIND), dimension(pointCount,2) :: planarSourcePoints
     real(kind=RKIND), dimension(pointCount,2) :: planarUnitVectors
@@ -1201,7 +1199,7 @@ module mpas_rbf_interpolation
     real(kind=RKIND), intent(in) :: alpha !< Input: Characteristic length scale of RBFs
     real(kind=RKIND), dimension(pointCount, 3), intent(out) :: coefficients !< Output: List of coefficients
 
-    integer :: i, j
+    integer :: i
     integer :: matrixSize
 
     real(kind=RKIND), dimension(pointCount+3, pointCount+3) :: matrix, matrixCopy
@@ -1299,7 +1297,7 @@ module mpas_rbf_interpolation
     real(kind=RKIND), dimension(2,3), intent(in) :: planeBasisVectors !< Input: Basis vectors for interpolation plane
     real(kind=RKIND), dimension(pointCount, 3), intent(out) :: coefficients !< Output: List of coefficients
 
-    integer :: i, j
+    integer :: i
     integer :: matrixSize
 
     real(kind=RKIND), dimension(pointCount,2) :: planarSourcePoints

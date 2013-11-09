@@ -59,7 +59,7 @@ module mpas_block_creator
      type (block_type), pointer :: blockCursor
      type (field1dInteger), pointer :: fieldCursor
  
-     integer :: i, iHalo
+     integer :: i
      integer :: nBlocks
  
      nBlocks = size(blockID)
@@ -147,10 +147,7 @@ module mpas_block_creator
 
      integer, dimension(:), pointer :: sendingHaloLayers
 
-     type (mpas_exchange_list), pointer :: exchListPtr
-
      integer :: nCellsInBlock, maxEdges, nHalos
-     integer :: i, iHalo
 
      nHalos = config_num_halos
 
@@ -285,15 +282,12 @@ module mpas_block_creator
 
      type (field0dInteger), pointer :: offSetCursor, edgeLimitCursor
      type (field1dInteger), pointer :: indexToCellCursor, indexToEdgeCursor, nEdgesCursor, haloCursor, nEdgesSolveCursor
-     type (field2dInteger), pointer :: edgesOnCellCursor, cellsOnEdgeCursor, cellsOnCellCursor
-
-     type (mpas_exchange_list), pointer :: exchListPtr
+     type (field2dInteger), pointer :: edgesOnCellCursor, cellsOnEdgeCursor
 
      integer, dimension(:), pointer :: localEdgeList
      integer, dimension(:), pointer :: sendingHaloLayers
      integer :: nEdgesLocal, nCellsInBlock, maxEdges, edgeDegree, nHalos
      integer :: haloStart
-     integer :: iBlock, i, j, k
 
      ! Setup sendingHaloLayers
      allocate(sendingHaloLayers(1))
@@ -510,10 +504,8 @@ module mpas_block_creator
 
      type (graph), pointer :: blockGraph, blockGraphWithHalo
 
-     type (mpas_exchange_list), pointer :: exchListPtr
-
      integer :: nHalos, nCellsInBlock, nCellsInHalo, maxEdges
-     integer :: iHalo, iBlock, i
+     integer :: iHalo
 
      nHalos = config_num_halos
      dminfo => indexToCellID % block % domain % dminfo
@@ -768,15 +760,15 @@ module mpas_block_creator
      type (field1dInteger), pointer :: haloIndices
 
      type (field0dInteger), pointer :: offSetCursor, edgeLimitCursor
-     type (field1dInteger), pointer :: indexToCellCursor, nEdgesCursor, nCellsSolveCursor, indexToEdgeCursor, nEdgesSolveCursor, haloCursor
+     type (field1dInteger), pointer :: nEdgesCursor, nCellsSolveCursor, indexToEdgeCursor, nEdgesSolveCursor, haloCursor
      type (field2dInteger), pointer :: edgesOnCellCursor, cellsOnEdgeCursor
 
      integer, dimension(:), pointer :: sendingHaloLayers
      integer, dimension(:), pointer :: array1dHolder, localEdgeList
      integer, dimension(:,:), pointer :: array2dHolder
 
-     integer :: iHalo, iBlock, i, j, k
-     integer :: nHalos, nBlocks, nCellsInBlock, nEdgesLocal, haloStart, haloEnd, haloSize
+     integer :: iHalo, iBlock, i, j
+     integer :: nHalos, nBlocks, nCellsInBlock, nEdgesLocal, haloSize
      integer :: maxEdges, edgeDegree
 
      type (hashtable), dimension(:), pointer :: edgeList

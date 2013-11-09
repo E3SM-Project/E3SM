@@ -24,7 +24,6 @@ module mpas_subdriver
  
       implicit none
 
-      real (kind=RKIND) :: dt
       character(len=StrKIND) :: timeStamp
       integer :: ierr
 

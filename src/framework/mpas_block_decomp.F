@@ -74,7 +74,7 @@ module mpas_block_decomp
       integer, dimension(:), allocatable :: local_block_list
       integer, dimension(:,:), allocatable :: sorted_local_cell_list
 
-      integer :: i, j, global_block_id, local_block_id, owning_proc, iunit, istatus
+      integer :: i, global_block_id, local_block_id, owning_proc, iunit, istatus
       integer :: blocks_per_proc
       integer, dimension(:), pointer :: local_nvertices
       character (len=StrKIND) :: filename

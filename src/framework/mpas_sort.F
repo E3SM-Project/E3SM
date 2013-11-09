@@ -124,7 +124,7 @@ module mpas_sort
       integer, intent(in) :: nArray !< Input: Array size
       integer, dimension(nArray), intent(inout) :: array !< Input/Output: Array to be sorted
 
-      integer :: i, j, top, l, r, pivot, s
+      integer :: i, top, l, r, pivot, s
       integer :: pivot_value
       integer, dimension(1) :: temp
       integer, dimension(1000) :: lstack, rstack
@@ -197,7 +197,7 @@ if (top > 1000) write(stderrUnit,*) 'Error: Quicksort exhausted its stack.'
       integer, intent(in) :: nArray !< Input: Array size
       real (kind=RKIND), dimension(nArray), intent(inout) :: array !< Input/Output: Array to be sorted
 
-      integer :: i, j, top, l, r, pivot, s
+      integer :: i, top, l, r, pivot, s
       real (kind=RKIND) :: pivot_value
       real (kind=RKIND), dimension(1) :: temp
       integer, dimension(1000) :: lstack, rstack
@@ -270,7 +270,7 @@ if (top > 1000) write(stderrUnit,*) 'Error: Quicksort exhausted its stack.'
       integer, intent(in) :: nArray !< Input: Array size
       integer, dimension(2,nArray), intent(inout) :: array !< Input/Output: Array to be sorted
 
-      integer :: i, j, top, l, r, pivot, s
+      integer :: i, top, l, r, pivot, s
       integer :: pivot_value
       integer, dimension(2) :: temp
       integer, dimension(1000) :: lstack, rstack
@@ -343,7 +343,7 @@ if (top > 1000) write(stderrUnit,*) 'Error: Quicksort exhausted its stack.'
       integer, intent(in) :: nArray !< Input: Array size
       real (kind=RKIND), dimension(2,nArray), intent(inout) :: array !< Input/Output: Array to be sorted
 
-      integer :: i, j, top, l, r, pivot, s
+      integer :: i, top, l, r, pivot, s
       real (kind=RKIND) :: pivot_value
       real (kind=RKIND), dimension(2) :: temp
       integer, dimension(1000) :: lstack, rstack

@@ -106,8 +106,7 @@ module mpas_tracer_advection_helpers
 
       integer, dimension(:), pointer :: cell_indices 
       integer, dimension(:,:), pointer :: sorted_cell_indices
-      integer :: cell1, cell2, iEdge, n, i, j, j_in, iCell, k, nVertLevels
-      logical :: addcell, highOrderAdvection
+      integer :: cell1, cell2, iEdge, n, i, iCell, k, nVertLevels
 
       type (hashtable) :: cell_hash
 
@@ -307,29 +306,26 @@ module mpas_tracer_advection_helpers
 !  local variables
 
       real (kind=RKIND), dimension(2, grid % nEdges) :: thetae
-      real (kind=RKIND), dimension(grid % nEdges) :: xe, ye
+!      real (kind=RKIND), dimension(grid % nEdges) :: xe, ye
       real (kind=RKIND), dimension(grid % nCells) :: theta_abs
 
       real (kind=RKIND), dimension(25) :: xc, yc, zc ! cell center coordinates
       real (kind=RKIND), dimension(25) :: thetav, thetat, dl_sphere
-      real (kind=RKIND) :: xm, ym, zm, dl, xec, yec, zec
-      real (kind=RKIND) :: thetae_tmp, xe_tmp, ye_tmp
+      real (kind=RKIND) :: xec, yec, zec
+      real (kind=RKIND) :: thetae_tmp
       real (kind=RKIND) :: xv1, xv2, yv1, yv2, zv1, zv2
-      integer :: i, j, k, ip1, ip2, m, n, ip1a, ii
+      integer :: i, j, k, ip1, ip2, n
       integer :: iCell, iEdge
       real (kind=RKIND) :: pii
-      real (kind=RKIND) :: x0, y0, x1, y1, x2, y2, x3, y3, x4, y4, x5, y5
-      real (kind=RKIND) :: pdx1, pdx2, pdx3, pdy1, pdy2, pdy3, dx1, dx2, dy1, dy2
-      real (kind=RKIND) :: angv1, angv2, dl1, dl2
-      real (kind=RKIND), dimension(25) :: dxe, dye, x2v, y2v, xp, yp
+!      real (kind=RKIND) :: y1, x2, y2, x3, y3, x4, y4, x5, y5
+      real (kind=RKIND), dimension(25) :: xp, yp
       
       real (kind=RKIND) :: amatrix(25,25), bmatrix(25,25), wmatrix(25,25)
       real (kind=RKIND) :: length_scale
-      integer :: ma,na, cell_add, mw, nn
+      integer :: ma,na, cell_add, mw
       integer, dimension(25) :: cell_list
 
 
-      integer :: cell1, cell2
       integer, parameter :: polynomial_order = 2
       logical, parameter :: debug = .false.
       logical, parameter :: least_squares = .true.
@@ -337,7 +333,7 @@ module mpas_tracer_advection_helpers
 
       logical, parameter :: reset_poly = .true.
 
-      real (kind=RKIND) :: rcell, cos2t, costsint, sin2t
+      real (kind=RKIND) :: cos2t, costsint, sin2t
       real (kind=RKIND), dimension(grid%maxEdges) :: angle_2d
 
 !---    

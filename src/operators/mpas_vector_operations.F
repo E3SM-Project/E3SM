@@ -556,7 +556,7 @@ contains
 
     integer :: nCells, nEdges
     integer, dimension(:,:), pointer :: cellsOnEdge, verticesOnEdge, edgesOnCell
-    integer :: iEdge, iCell, cell1, cell2, vertex1, vertex2
+    integer :: iEdge, iCell, cell1, cell2
     real(kind=RKIND), dimension(:), pointer :: xCell, yCell, zCell, xEdge, yEdge, zEdge
     real(kind=RKIND), dimension(:,:), pointer :: localVerticalUnitVectors, edgeNormalVectors
     real(kind=RKIND), dimension(:,:,:), pointer :: cellTangentPlane

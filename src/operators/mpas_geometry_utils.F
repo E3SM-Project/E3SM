@@ -30,9 +30,7 @@ module mpas_geometry_utils
       real (kind=RKIND) :: a, b, c          ! Side lengths of spherical triangle ABC
    
       real (kind=RKIND) :: ABx, ABy, ABz    ! The components of the vector AB
-      real (kind=RKIND) :: mAB              ! The magnitude of AB
       real (kind=RKIND) :: ACx, ACy, ACz    ! The components of the vector AC
-      real (kind=RKIND) :: mAC              ! The magnitude of AC
    
       real (kind=RKIND) :: Dx               ! The i-components of the cross product AB x AC
       real (kind=RKIND) :: Dy               ! The j-components of the cross product AB x AC
@@ -201,9 +199,10 @@ module mpas_geometry_utils
       real (kind=RKIND), dimension(n,m)  :: b
       real (kind=RKIND), dimension(m,m)  :: w,wt,h
       real (kind=RKIND), dimension(n,m)  :: at, ath
-      real (kind=RKIND), dimension(n,n)  :: ata, ata_inv, atha, atha_inv
+!      real (kind=RKIND), dimension(n,n)  :: ata, ata_inv, atha, atha_inv
+      real (kind=RKIND), dimension(n,n)  :: ata, atha, atha_inv
       integer, dimension(n) :: indx
-      integer :: i,j
+!      integer :: i,j
    
       if ( (ne<n) .or. (ne<m) ) then
          write(stdoutUnit,*) ' error in poly_fit_2 inversion ',m,n,ne

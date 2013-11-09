@@ -910,8 +910,8 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       type (dm_info), pointer :: dminfo
 
       integer :: i, j, k, kk, iBlock
-      integer :: totalSize, nMesgRecv, nMesgSend, recvNeighbor, sendNeighbor, currentProc, offset
-      integer :: totalSent, totalRecv
+      integer :: totalSize, nMesgRecv, nMesgSend, recvNeighbor, sendNeighbor, currentProc
+      integer :: totalSent
       integer, allocatable, dimension(:) :: numToSend, numToRecv
       integer, allocatable, dimension(:) :: ownedList, ownedListIndex, ownedBlock, neededList, neededListIndex, neededBlock
       integer, allocatable, dimension(:) :: offsetList, ownedLimitList
@@ -1500,7 +1500,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       ! local variables
       !-----------------------------------------------------------------
       type (mpas_multihalo_exchange_list), pointer :: sendListCursor, recvListCursor
-      type (mpas_exchange_list), pointer :: exchListPtr, exchListPtr2
+      type (mpas_exchange_list), pointer :: exchListPtr
       type (mpas_communication_list), pointer :: commListPtr, commListPtr2
       logical :: comm_list_found
       integer :: nAdded, bufferOffset
@@ -1673,13 +1673,12 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
      integer, dimension(:), pointer, optional :: haloLayersIn !< Input: Halo layers to communicated. Defaults to all.
 
      type (field1dInteger), pointer :: fieldInPtr, fieldOutPtr
-     type (mpas_exchange_list), pointer :: exchListPtr, exchListPtr2
+     type (mpas_exchange_list), pointer :: exchListPtr
      type (mpas_communication_list), pointer :: sendList, recvList, commListPtr, commListPtr2
      type (dm_info), pointer :: dminfo
 
      logical :: comm_list_found
 
-     integer :: lastPackedIdx, lastUnpackedIdx, nPacked, nUnpacked
      integer :: nAdded, bufferOffset
      integer :: mpi_ierr
      integer :: iHalo, iBuffer, i
@@ -1964,13 +1963,12 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
      integer, dimension(:), pointer, optional :: haloLayersIn !< Input: List of halo layers to communicate. Defaults to all
 
      type (field2dInteger), pointer :: fieldInPtr, fieldOutPtr
-     type (mpas_exchange_list), pointer :: exchListPtr, exchListPtr2
+     type (mpas_exchange_list), pointer :: exchListPtr
      type (mpas_communication_list), pointer :: sendList, recvList, commListPtr, commListPtr2
      type (dm_info), pointer :: dminfo
 
      logical :: comm_list_found
 
-     integer :: lastPackedIdx, lastUnpackedIdx, nPacked, nUnpacked
      integer :: nAdded, bufferOffset
      integer :: mpi_ierr
      integer :: iHalo, iBuffer, i, j
@@ -2256,13 +2254,12 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
      integer, dimension(:), pointer, optional :: haloLayersIn !< Input: List of halo layers to communicate. Defaults to all
 
      type (field3dInteger), pointer :: fieldInPtr, fieldOutPtr
-     type (mpas_exchange_list), pointer :: exchListPtr, exchListPtr2
+     type (mpas_exchange_list), pointer :: exchListPtr
      type (mpas_communication_list), pointer :: sendList, recvList, commListPtr, commListPtr2
      type (dm_info), pointer :: dminfo
 
      logical :: comm_list_found
 
-     integer :: lastPackedIdx, lastUnpackedIdx, nPacked, nUnpacked
      integer :: nAdded, bufferOffset
      integer :: mpi_ierr
      integer :: iHalo, iBuffer, i, j, k
@@ -2555,13 +2552,12 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
      integer, dimension(:), pointer, optional :: haloLayersIn !< Input: List of halo layers to communicate. Defaults to all
 
      type (field1dReal), pointer :: fieldInPtr, fieldOutPtr
-     type (mpas_exchange_list), pointer :: exchListPtr, exchListPtr2
+     type (mpas_exchange_list), pointer :: exchListPtr
      type (mpas_communication_list), pointer :: sendList, recvList, commListPtr, commListPtr2
      type (dm_info), pointer :: dminfo
 
      logical :: comm_list_found
 
-     integer :: lastPackedIdx, lastUnpackedIdx, nPacked, nUnpacked
      integer :: nAdded, bufferOffset
      integer :: mpi_ierr
      integer :: iHalo, iBuffer, i
@@ -2844,13 +2840,12 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
      integer, dimension(:), pointer, optional :: haloLayersIn !< Input: List of halo layers to communicate. Defaults to all
 
      type (field2dReal), pointer :: fieldInPtr, fieldOutPtr
-     type (mpas_exchange_list), pointer :: exchListPtr, exchListPtr2
+     type (mpas_exchange_list), pointer :: exchListPtr
      type (mpas_communication_list), pointer :: sendList, recvList, commListPtr, commListPtr2
      type (dm_info), pointer :: dminfo
 
      logical :: comm_list_found
 
-     integer :: lastPackedIdx, lastUnpackedIdx, nPacked, nUnpacked
      integer :: nAdded, bufferOffset
      integer :: mpi_ierr
      integer :: iHalo, iBuffer, i, j
@@ -3137,13 +3132,12 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
      integer, dimension(:), pointer, optional :: haloLayersIn !< Input: List of halo layers to communicate. Defaults to all
 
      type (field3dReal), pointer :: fieldInPtr, fieldOutPtr
-     type (mpas_exchange_list), pointer :: exchListPtr, exchListPtr2
+     type (mpas_exchange_list), pointer :: exchListPtr
      type (mpas_communication_list), pointer :: sendList, recvList, commListPtr, commListPtr2
      type (dm_info), pointer :: dminfo
 
      logical :: comm_list_found
 
-     integer :: lastPackedIdx, lastUnpackedIdx, nPacked, nUnpacked
      integer :: nAdded, bufferOffset
      integer :: mpi_ierr
      integer :: iHalo, iBuffer, i, j, k
@@ -3438,13 +3432,12 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
      integer, dimension(:), pointer, optional :: haloLayersIn !< Input: List of halo layers to communicate. Defaults to all
 
      type (field4dReal), pointer :: fieldInPtr, fieldOutPtr
-     type (mpas_exchange_list), pointer :: exchListPtr, exchListPtr2
+     type (mpas_exchange_list), pointer :: exchListPtr
      type (mpas_communication_list), pointer :: sendList, recvList, commListPtr, commListPtr2
      type (dm_info), pointer :: dminfo
 
      logical :: comm_list_found
 
-     integer :: lastPackedIdx, lastUnpackedIdx, nPacked, nUnpacked
      integer :: nAdded, bufferOffset
      integer :: mpi_ierr
      integer :: iHalo, iBuffer, i, j, k, l
@@ -3747,13 +3740,12 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
      integer, dimension(:), pointer, optional :: haloLayersIn !< Input: List of halo layers to communicate. Defaults to all.
 
      type (field5dReal), pointer :: fieldInPtr, fieldOutPtr
-     type (mpas_exchange_list), pointer :: exchListPtr, exchListPtr2
+     type (mpas_exchange_list), pointer :: exchListPtr
      type (mpas_communication_list), pointer :: sendList, recvList, commListPtr, commListPtr2
      type (dm_info), pointer :: dminfo
 
      logical :: comm_list_found
 
-     integer :: lastPackedIdx, lastUnpackedIdx, nPacked, nUnpacked
      integer :: nAdded, bufferOffset
      integer :: mpi_ierr
      integer :: iHalo, iBuffer, i, j, k, l, m
@@ -4063,13 +4055,11 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       type (dm_info), pointer :: dminfo
       type (field1DInteger), pointer :: fieldCursor, fieldCursor2
       type (mpas_exchange_list), pointer :: exchListPtr
-      type (mpas_communication_list), pointer :: sendList, recvList, commListPtr, commListPtr2
+      type (mpas_communication_list), pointer :: sendList, recvList, commListPtr
       integer :: mpi_ierr
       integer :: nHaloLayers, iHalo, i
       integer :: bufferOffset, nAdded
       integer, dimension(:), pointer :: haloLayers
-
-      logical :: comm_list_found
 
       do i = 1, 1
         if(field % dimSizes(i) <= 0) then
@@ -4233,13 +4223,11 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       type (dm_info), pointer :: dminfo
       type (field2DInteger), pointer :: fieldCursor, fieldCursor2
       type (mpas_exchange_list), pointer :: exchListPtr
-      type (mpas_communication_list), pointer :: sendList, recvList, commListPtr, commListPtr2
+      type (mpas_communication_list), pointer :: sendList, recvList, commListPtr
       integer :: mpi_ierr
       integer :: nHaloLayers, iHalo, i, j
       integer :: bufferOffset, nAdded
       integer, dimension(:), pointer :: haloLayers
-
-      logical :: comm_list_found
 
       do i = 1, 2
         if(field % dimSizes(i) <= 0) then
@@ -4405,13 +4393,11 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       type (dm_info), pointer :: dminfo
       type (field3DInteger), pointer :: fieldCursor, fieldCursor2
       type (mpas_exchange_list), pointer :: exchListPtr
-      type (mpas_communication_list), pointer :: sendList, recvList, commListPtr, commListPtr2
+      type (mpas_communication_list), pointer :: sendList, recvList, commListPtr
       integer :: mpi_ierr
       integer :: nHaloLayers, iHalo, i, j, k
       integer :: bufferOffset, nAdded
       integer, dimension(:), pointer :: haloLayers
-
-      logical :: comm_list_found
 
       do i = 1, 3
         if(field % dimSizes(i) <= 0) then
@@ -4583,13 +4569,11 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       type (dm_info), pointer :: dminfo
       type (field1dReal), pointer :: fieldCursor, fieldCursor2
       type (mpas_exchange_list), pointer :: exchListPtr
-      type (mpas_communication_list), pointer :: sendList, recvList, commListPtr, commListPtr2
+      type (mpas_communication_list), pointer :: sendList, recvList, commListPtr
       integer :: mpi_ierr
       integer :: nHaloLayers, iHalo, i
       integer :: bufferOffset, nAdded
       integer, dimension(:), pointer :: haloLayers
-
-      logical :: comm_list_found
 
       do i = 1, 1
         if(field % dimSizes(i) <= 0) then
@@ -4751,13 +4735,11 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       type (dm_info), pointer :: dminfo
       type (field2dReal), pointer :: fieldCursor, fieldCursor2
       type (mpas_exchange_list), pointer :: exchListPtr
-      type (mpas_communication_list), pointer :: sendList, recvList, commListPtr, commListPtr2
+      type (mpas_communication_list), pointer :: sendList, recvList, commListPtr
       integer :: mpi_ierr
       integer :: nHaloLayers, iHalo, i, j
       integer :: bufferOffset, nAdded
       integer, dimension(:), pointer :: haloLayers
-
-      logical :: comm_list_found
 
       do i = 1, 2
         if(field % dimSizes(i) <= 0) then
@@ -4922,13 +4904,11 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       type (dm_info), pointer :: dminfo
       type (field3dReal), pointer :: fieldCursor, fieldCursor2
       type (mpas_exchange_list), pointer :: exchListPtr
-      type (mpas_communication_list), pointer :: sendList, recvList, commListPtr, commListPtr2
+      type (mpas_communication_list), pointer :: sendList, recvList, commListPtr
       integer :: mpi_ierr
       integer :: nHaloLayers, iHalo, i, j, k
       integer :: bufferOffset, nAdded
       integer, dimension(:), pointer :: haloLayers
-
-      logical :: comm_list_found
 
       do i = 1, 3
         if(field % dimSizes(i) <= 0) then
@@ -5099,13 +5079,11 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       type (dm_info), pointer :: dminfo
       type (field4dReal), pointer :: fieldCursor, fieldCursor2
       type (mpas_exchange_list), pointer :: exchListPtr
-      type (mpas_communication_list), pointer :: sendList, recvList, commListPtr, commListPtr2
+      type (mpas_communication_list), pointer :: sendList, recvList, commListPtr
       integer :: mpi_ierr
       integer :: nHaloLayers, iHalo, i, j, k, l
       integer :: bufferOffset, nAdded
       integer, dimension(:), pointer :: haloLayers
-
-      logical :: comm_list_found
 
       do i = 1, 4
         if(field % dimSizes(i) <= 0) then
@@ -5285,13 +5263,11 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       type (dm_info), pointer :: dminfo
       type (field5dReal), pointer :: fieldCursor, fieldCursor2
       type (mpas_exchange_list), pointer :: exchListPtr
-      type (mpas_communication_list), pointer :: sendList, recvList, commListPtr, commListPtr2
+      type (mpas_communication_list), pointer :: sendList, recvList, commListPtr
       integer :: mpi_ierr
       integer :: nHaloLayers, iHalo, i, j, k, l, m
       integer :: bufferOffset, nAdded
       integer, dimension(:), pointer :: haloLayers
-
-      logical :: comm_list_found
 
       do i = 1, 5
         if(field % dimSizes(i) <= 0) then

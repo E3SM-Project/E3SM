@@ -89,7 +89,7 @@ module mpas_hash
      type (hashtable), intent(inout) :: h !< Input/Output: Hashtable
  
      ! Local variables
-     integer :: hashval, i
+     integer :: hashval
      type (hashnode), pointer :: hn 
  
      hashval = mod(key, TABLESIZE) + 1  
@@ -123,7 +123,7 @@ module mpas_hash
       type (hashtable), intent(inout) :: h !< Input/Output: Hashtable
   
       ! Local variables
-      integer :: hashval, i
+      integer :: hashval
       type (hashnode), pointer :: cursor 
   
       mpas_hash_search = .false.
