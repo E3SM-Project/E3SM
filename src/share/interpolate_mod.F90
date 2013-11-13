@@ -321,6 +321,8 @@ contains
     end do 
     if (1 < i) i = i-1
     if (1 < j) j = j-1
+    if (np==i) i = i-1
+    if (np==j) j = j-1
     mint(:) = minval(minval(tracers(i:i+1,j:j+1,:),1),1)
     maxt(:) = maxval(maxval(tracers(i:i+1,j:j+1,:),1),1)
   end subroutine minmax_tracers

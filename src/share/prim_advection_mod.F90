@@ -1139,36 +1139,39 @@ contains
 
 
 
-  subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets , nete )
-    use coordinate_systems_mod, only : cartesian3D_t, cartesian2D_t
-    use dimensions_mod,         only : max_neigh_edges
-    use edge_mod,               only : initghostbuffer3D, ghostVpack_unoriented, ghostVunpack_unoriented
-    use bndry_mod,              only : ghost_exchangevfull
-    use interpolate_mod,        only : interpolate_tracers
-    use control_mod   ,         only : qsplit
+subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets , nete )
+  use coordinate_systems_mod, only : cartesian3D_t, cartesian2D_t
+  use dimensions_mod,         only : max_neigh_edges
+  use edge_mod,               only : initghostbuffer3D, ghostVpack_unoriented, ghostVunpack_unoriented
+  use bndry_mod,              only : ghost_exchangevfull
+  use interpolate_mod,        only : interpolate_tracers, minmax_tracers
+  use control_mod   ,         only : qsplit
+  use global_norms_mod,       only: wrap_repro_sum
+  use parallel_mod,           only: global_shared_buf, global_shared_sum
 
 
-    implicit none
-    type (element_t)     , intent(inout) :: elem(:)
-    type (derivative_t)  , intent(in   ) :: deriv
-    type (hybrid_t)      , intent(in   ) :: hybrid
-    real(kind=real_kind) , intent(in   ) :: dt
-    type (TimeLevel_t)   , intent(in   ) :: tl
-    integer              , intent(in   ) :: nets
-    integer              , intent(in   ) :: nete
+
+  implicit none
+  type (element_t)     , intent(inout) :: elem(:)
+  type (derivative_t)  , intent(in   ) :: deriv
+  type (hybrid_t)      , intent(in   ) :: hybrid
+  real(kind=real_kind) , intent(in   ) :: dt
+  type (TimeLevel_t)   , intent(in   ) :: tl
+  integer              , intent(in   ) :: nets
+  integer              , intent(in   ) :: nete
 
 
   type(cartesian3D_t)                           :: dep_points  (np,np)
   integer                                       :: elem_indexes(np,np)
   type(cartesian2D_t)                           :: para_coords (np,np)
-  real(kind=real_kind)                          :: rho         (np,np,nets:nete,nlev,qsize)
-  real(kind=real_kind)                          :: rhot        (np,np,nets:nete,nlev,qsize)
+  real(kind=real_kind)                          :: Que         (np,np,nets:nete,nlev,qsize)
+  real(kind=real_kind)                          :: Que_t       (np,np,nets:nete,nlev,qsize)
   real(kind=real_kind)                          :: minq        (np,np,nets:nete,nlev,qsize)
   real(kind=real_kind)                          :: maxq        (np,np,nets:nete,nlev,qsize)
   real(kind=real_kind)                          :: f                                (qsize)
   real(kind=real_kind)                          :: g                                (qsize)
   real(kind=real_kind)                          :: mass                        (nlev,qsize)
-  real(kind=real_kind)                          :: rowsum      (np,np,nets:nete)
+  real(kind=real_kind)                          :: rho         (np,np,nets:nete,nlev)
 
   real(kind=real_kind)                          :: neigh_q     (np,np,qsize,max_neigh_edges+1)
   real(kind=real_kind)                          :: u           (np,np,qsize)
@@ -1233,58 +1236,82 @@ contains
           ! interpolate tracers to deperature grid
           call interpolate_tracers     (para_coords(i,j), neigh_q(:,:,:,elem_indexes(i,j)),f)
           elem(ie)%state%Q(i,j,k,:) = f;
-          ! interpolate tracers to deperature grid
-!          call minmax_tracers          (para_coords(i,j), neigh_q(:,:,:,elem_indexes(i,j)),f,g)
-!          minq(i,j,ie,k,:) = f;
-!          maxq(i,j,ie,k,:) = g;
+
+          call minmax_tracers          (para_coords(i,j), neigh_q(:,:,:,elem_indexes(i,j)),f,g)
+          minq(i,j,ie,k,:) = f;
+          maxq(i,j,ie,k,:) = g;
         enddo
         enddo
      end do
   end do
 
-  do ie=nets,nete
-     do k=1,nlev
-     do q=1,qsize
-        ! note: pack so that tracers per level are contiguous so we can unpack into
-        ! array neigh_q()
-        elem(ie)%state%Qdp(:,:,k,q,np1_qdp) = elem(ie)%state%Q(:,:,k,q) * elem(ie)%state%dp3d(:,:,k,tl%np1)
-     enddo
-     enddo
-  end do
-
-#if 0
   ! compute original mass, at tl_1%n0
-  ! NOTE: global_shared_buf was allocated outside threaded region
-  ! probably assuming n<=10.
-  n=0
+  ! NOTE: global_shared_buf was allocated outside threaded region probably assuming n<=10.
   do ie=nets,nete
+    n=0
     do k=1,nlev
-      do q=1,qsize
-        n=n+1
-        global_shared_buf(ie,n) = DOT_PRODUCT(elem(ie)%state%Qdp(:,:,k,q,tl_q%n0), elem(ie)%spheremp(:,:))
+    do q=1,qsize
+      n=n+1
+      global_shared_buf(ie,n) = 0
+      do j=1,np
+        global_shared_buf(ie,n) = global_shared_buf(ie,n) + DOT_PRODUCT(elem(ie)%state%Qdp(:,j,k,q,tl%n0),elem(ie)%spheremp(:,j))
       end do
+    end do
     end do
   end do
   call wrap_repro_sum(nvars=n, comm=hybrid%par%comm)
-  do n=1,nmax
-     mass(q,k) = global_shared_sum(n)
+  n=0
+  do k=1,nlev
+  do q=1,qsize
+    n=n+1
+    mass(q,k) = global_shared_sum(n)
+  enddo
   enddo
 
   do ie=nets,nete
-    do k=1,nlev
-      rowsum(:,:,ie-nets+1) = elem(ie)%spheremp(:,:)*elem(ie)%state%dp3d(:,:,k,tl%np1)
-    end do
+  do k=1,nlev
+    rho(:,:,ie-nets+1,k) = elem(ie)%spheremp(:,:)*elem(ie)%state%dp3d(:,:,k,tl%np1)
   end do
-
-  call Cobra_SLBQP(rho, rhot, rowsum, minq, maxq, mass, hybrid)
+  end do
 
   do ie=nets,nete
-    elem(ie)%state%Q(:,:,:,:) =  rho (:,:,ie-nets+1,:,:)
+    Que_t(:,:,ie,:,:) = elem(ie)%state%Q(:,:,:,:)
   end do
-#endif
+
+  call Cobra_SLBQP(Que, Que_t, rho, minq, maxq, mass, hybrid, nets, nete)
+
+  do ie=nets,nete
+    elem(ie)%state%Q(:,:,:,:) =  Que(:,:,ie,:,:)
+  end do
+
+  do ie=nets,nete
+  do k=1,nlev
+  do q=1,qsize
+     ! note: pack so that tracers per level are contiguous so we can unpack into
+     ! array neigh_q()
+     elem(ie)%state%Qdp(:,:,k,q,np1_qdp) = elem(ie)%state%Q(:,:,k,q) * elem(ie)%state%dp3d(:,:,k,tl%np1)
+  enddo
+  enddo
+  end do
+
+end subroutine Prim_Advec_Tracers_remap_ALE
+
+subroutine Cobra_SLBQP(Que, Que_t, rho, minq, maxq, mass, hybrid, nets, nete) 
 
 
-  end subroutine Prim_Advec_Tracers_remap_ALE
+  real(kind=real_kind), intent(out)             :: Que         (np,np,nets:nete,nlev,qsize)
+  real(kind=real_kind), intent(in)              :: Que_t       (np,np,nets:nete,nlev,qsize)
+  real(kind=real_kind), intent(in)              :: rho         (np,np,nets:nete,nlev)
+  real(kind=real_kind), intent(in)              :: minq        (np,np,nets:nete,nlev,qsize)
+  real(kind=real_kind), intent(in)              :: maxq        (np,np,nets:nete,nlev,qsize)
+  real(kind=real_kind), intent(in)              :: mass                        (nlev,qsize)
+  type (hybrid_t)     , intent(in)              :: hybrid
+  integer             , intent(in)              :: nets
+  integer             , intent(in)              :: nete
+
+  Que = Que_t
+  
+end subroutine Cobra_SLBQP
 
 ! ----------------------------------------------------------------------------------!
 !SUBROUTINE ALE_RKDSS-----------------------------------------------CE-for FVM!
