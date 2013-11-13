@@ -9,12 +9,13 @@
 !
 !  mpas_core
 !
-!> \brief Main driver for MPAS ocean core
-!> \author Doug Jacobsen, Mark Petersen, Todd Ringler
-!> \date   September 2011
+!> \brief Main driver for MPAS ocean analysis core in post-processing mode
+!> \author Mark Petersen
+!> \date   November 2013
 !> \details
-!>  This module contains initialization and timestep drivers for 
-!>  the MPAS ocean core.
+!>  This module contains the drivers for the MPAS ocean analysis core in 
+!>  post-processing mode.  None of these routines are used in run-time mode
+!>  by the ocean core.
 !
 !-----------------------------------------------------------------------
 
@@ -26,41 +27,6 @@ module mpas_core
    use mpas_dmpar
    use mpas_timer
    use mpas_io_units
-
-   use oac_driver
-
-   use ocn_global_diagnostics
-   use ocn_time_integration
-   use ocn_tendency
-   use ocn_diagnostics
-   use ocn_test
-
-   use ocn_thick_hadv
-   use ocn_thick_vadv
-   use ocn_thick_ale
-   use ocn_thick_surface_flux
-
-   use ocn_vel_pressure_grad
-   use ocn_vel_vadv
-   use ocn_vel_hmix
-   use ocn_vel_forcing
-   use ocn_vel_coriolis
-
-   use ocn_tracer_hmix
-   use ocn_tracer_surface_flux
-   use ocn_tracer_short_wave_absorption
-   use ocn_gm
-
-   use ocn_equation_of_state
-
-   use ocn_vmix
-
-   use ocn_time_average
-
-   use ocn_forcing
-   use ocn_sea_ice
-
-   use ocn_constants
 
    type (io_output_object), save :: restart_obj
 
@@ -82,9 +48,9 @@ module mpas_core
 !
 !  routine mpas_core_init
 !
-!> \brief   Initialize MPAS-Ocean core
-!> \author  Doug Jacobsen, Mark Petersen, Todd Ringler
-!> \date    September 2011
+!> \brief   Initialize MPAS-Ocean analysis post-processing core
+!> \author  Mark Petersen
+!> \date    November 2013
 !> \details 
 !>  This routine calls all initializations required to begin a
 !>  simulation with MPAS-Ocean
@@ -115,12 +81,9 @@ module mpas_core
 
       call ocn_thick_hadv_init(err_tmp)
       err = ior(err, err_tmp)
+
       call ocn_thick_vadv_init(err_tmp)
       err = ior(err, err_tmp)
-      call ocn_thick_surface_flux_init(err_tmp)
-      err = ior(err, err_tmp)
-      call ocn_thick_ale_init(err_tmp)
-      err = ior(err,err_tmp)
 
       call ocn_vel_coriolis_init(err_tmp)
       err = ior(err, err_tmp)
@@ -135,12 +98,6 @@ module mpas_core
 
       call ocn_tracer_hmix_init(err_tmp)
       err = ior(err, err_tmp)
-      call ocn_tracer_surface_flux_init(err_tmp)
-      err = ior(err, err_tmp)
-      call ocn_tracer_advection_init(err_tmp)
-      err = ior(err,err_tmp)
-      call ocn_tracer_short_wave_absorption_init(err_tmp)
-      err = ior(err,err_tmp)
 
       call ocn_vmix_init(domain,err_tmp)
       err = ior(err, err_tmp)
@@ -152,18 +109,22 @@ module mpas_core
       err = ior(err,err_tmp)
       call ocn_diagnostics_init(err_tmp)
       err = ior(err,err_tmp)
+      call ocn_thick_ale_init(err_tmp)
+      err = ior(err,err_tmp)
 
       call ocn_forcing_init(err_tmp)
       err = ior(err,err_tmp)
 
+      call ocn_tracer_advection_init(err_tmp)
+      err = ior(err,err_tmp)
+
+      call ocn_tracer_short_wave_absorption_init(err_tmp)
+      err = ior(err,err_tmp)
 
       call ocn_global_diagnostics_init(dminfo,err_tmp)
       err = ior(err, err_tmp)
 
       call ocn_sea_ice_init(domain % blocklist % mesh % nVertLevels, err_tmp)
-      err = ior(err, err_tmp)
-
-      call oac_driver_init(err_tmp)
       err = ior(err, err_tmp)
 
       call ocn_constants_init()
@@ -259,8 +220,8 @@ module mpas_core
 !  routine mpas_simulation_clock_init
 !
 !> \brief   Initialize timer variables
-!> \author  Doug Jacobsen, Mark Petersen, Todd Ringler
-!> \date    September 2011
+!> \author  Mark Petersen
+!> \date    November 2013
 !> \details 
 !>  This routine initializes all timer variables
 !
@@ -336,9 +297,9 @@ module mpas_core
 !
 !  routine mpas_init_block
 !
-!> \brief   Initialize blocks within MPAS-Ocean core
-!> \author  Doug Jacobsen, Mark Petersen, Todd Ringler
-!> \date    September 2011
+!> \brief   Initialize blocks within MPAS-Ocean analysis post-processing core
+!> \author  Mark Petersen
+!> \date    November 2013
 !> \details 
 !>  This routine calls all block-level initializations required to begin a
 !>  simulation with MPAS-Ocean
@@ -429,8 +390,8 @@ module mpas_core
 !  routine mpas_core_run
 !
 !> \brief   Main driver for MPAS-Ocean time-stepping
-!> \author  Doug Jacobsen, Mark Petersen, Todd Ringler
-!> \date    September 2011
+!> \author  Mark Petersen
+!> \date    November 2013
 !> \details 
 !>  This routine includes the time-stepping loop, and calls timer
 !>  routines to write output and restart files.
@@ -450,7 +411,7 @@ module mpas_core
       type (io_output_object), intent(inout) :: output_obj
       integer, intent(inout) :: output_frame
    
-      integer :: itimestep, err
+      integer :: itimestep
       real (kind=RKIND) :: dt
       type (block_type), pointer :: block_ptr
 
@@ -466,11 +427,10 @@ module mpas_core
       write(stderrUnit,*) 'Initial time ', trim(timeStamp)
 
       if (config_write_output_on_startup) then
-         call oac_driver_compute(domain, err) 
          call ocn_write_output_frame(output_obj, output_frame, domain)
       endif
-
       block_ptr => domain % blocklist
+
       do while(associated(block_ptr))
         call ocn_time_average_init(block_ptr % average)
         block_ptr => block_ptr % next
@@ -518,7 +478,6 @@ module mpas_core
             block_ptr => domain % blocklist
             do while (associated(block_ptr))
                 call ocn_time_average_normalize(block_ptr % average)
-                call oac_driver_compute(domain, err) ! add state and analysisInput later mrp
                 block_ptr => block_ptr % next
             end do
 
@@ -538,8 +497,6 @@ module mpas_core
             call mpas_output_state_init(restart_obj, domain, "RESTART", trim(timeStamp))
             call mpas_output_state_for_domain(restart_obj, domain, 1)
             call mpas_output_state_finalize(restart_obj, domain % dminfo)
-
-            call oac_driver_restart(err) ! add state and analysisInput later mrp
          end if
 
       end do
@@ -573,6 +530,11 @@ module mpas_core
       do while (associated(block_ptr))
          call ocn_compute_output_diagnostics(block_ptr % state % time_levs(1) % state, block_ptr % mesh)
 
+         call mpas_allocate_scratch_field(block_ptr % scratch % normalVelocityForcingX, .true.)
+         call mpas_allocate_scratch_field(block_ptr % scratch % normalVelocityForcingY, .true.)
+         call mpas_allocate_scratch_field(block_ptr % scratch % normalVelocityForcingZ, .true.)
+         call mpas_allocate_scratch_field(block_ptr % scratch % normalVelocityForcingZonal, .true.)
+         call mpas_allocate_scratch_field(block_ptr % scratch % normalVelocityForcingMeridional, .true.)
          call mpas_allocate_scratch_field(block_ptr % scratch % windStressFull, .true.)
          call mpas_allocate_scratch_field(block_ptr % scratch % windStressX, .true.)
          call mpas_allocate_scratch_field(block_ptr % scratch % windStressY, .true.)
@@ -593,12 +555,25 @@ module mpas_core
          block_ptr % diagnostics % windStressZonalDiag % array(:) = block_ptr % scratch % windStressZonal % array(1,:)
          block_ptr % diagnostics % windStressMeridionalDiag % array(:) = block_ptr % scratch % windStressMeridional % array(1,:)
 
+         call mpas_reconstruct(block_ptr % mesh, block_ptr % mesh % normalVelocityForcing % array, &
+                               block_ptr % scratch % normalVelocityForcingX % array, &
+                               block_ptr % scratch % normalVelocityForcingY % array, &
+                               block_ptr % scratch % normalVelocityForcingZ % array, &
+                               block_ptr % scratch % normalVelocityForcingZonal % array, &
+                               block_ptr % scratch % normalVelocityForcingMeridional % array)
+
          call mpas_deallocate_scratch_field(block_ptr % scratch % windStressFull, .true.)
          call mpas_deallocate_scratch_field(block_ptr % scratch % windStressX, .true.)
          call mpas_deallocate_scratch_field(block_ptr % scratch % windStressY, .true.)
          call mpas_deallocate_scratch_field(block_ptr % scratch % windStressZ, .true.)
          call mpas_deallocate_scratch_field(block_ptr % scratch % windStressZonal, .true.)
          call mpas_deallocate_scratch_field(block_ptr % scratch % windStressMeridional, .true.)
+
+         call mpas_deallocate_scratch_field(block_ptr % scratch % normalVelocityForcingX, .true.)
+         call mpas_deallocate_scratch_field(block_ptr % scratch % normalVelocityForcingY, .true.)
+         call mpas_deallocate_scratch_field(block_ptr % scratch % normalVelocityForcingZ, .true.)
+         call mpas_deallocate_scratch_field(block_ptr % scratch % normalVelocityForcingZonal, .true.)
+         call mpas_deallocate_scratch_field(block_ptr % scratch % normalVelocityForcingMeridional, .true.)
 
          block_ptr => block_ptr % next
       end do
@@ -644,8 +619,8 @@ module mpas_core
 !  routine mpas_core_run
 !
 !> \brief   Sub-driver for MPAS-Ocean time-stepping
-!> \author  Doug Jacobsen, Mark Petersen, Todd Ringler
-!> \date    September 2011
+!> \author  Mark Petersen
+!> \date    November 2013
 !> \details 
 !>  This routine calls the time integration routine within a time-stepping loop.
 !
@@ -861,10 +836,12 @@ module mpas_core
                ! Check if abs(ssh)>2m.  If so, print warning.
                if (abs(sum(layerThickness(1:maxLevelCell(iCell),iCell))-bottomDepth(iCell))>2.0) then
                   consistentSSH = .false.
+#ifdef MPAS_DEBUG
                   write (stderrUnit,'(a)') ' Warning: abs(sum(h)-bottomDepth)>2m.  Most likely, initial layerThickness does not match bottomDepth.'
                   write (stderrUnit,*) ' iCell, K=maxLevelCell(iCell), bottomDepth(iCell),sum(h),bottomDepth: ', &
                                 iCell, maxLevelCell(iCell), bottomDepth(iCell),sum(layerThickness(1:maxLevelCell(iCell),iCell)),bottomDepth(iCell), &
                                 layerThickness(maxLevelCell(iCell),iCell)
+#endif                            
                endif
             enddo
 
@@ -894,111 +871,6 @@ module mpas_core
       end do
 
    end subroutine ocn_init_vert_coord!}}}
-
-   subroutine ocn_init_split_timestep(domain)!{{{
-   ! Initialize splitting variables
-
-      use mpas_grid_types
-      use mpas_configure
-
-      implicit none
-
-      type (domain_type), intent(inout) :: domain
-
-      integer :: i, iCell, iEdge, iVertex, k
-      type (block_type), pointer :: block
-
-      integer :: iTracer, cell, cell1, cell2
-      real (kind=RKIND) :: normalThicknessFluxSum, layerThicknessSum, layerThicknessEdge1
-      real (kind=RKIND), dimension(:), pointer :: refBottomDepth
-         
-      real (kind=RKIND), dimension(:,:), pointer :: layerThickness
-      integer :: nVertLevels
-
-      ! Initialize z-level mesh variables from h, read in from input file.
-      block => domain % blocklist
-      do while (associated(block))
-
-         layerThickness          => block % state % time_levs(1) % state % layerThickness % array
-         refBottomDepth => block % mesh % refBottomDepth % array
-         nVertLevels = block % mesh % nVertLevels
-
-         ! Compute barotropic velocity at first timestep
-         ! This is only done upon start-up.
-         if (trim(config_time_integrator) == 'unsplit_explicit') then
-            block % state % time_levs(1) % state % normalBarotropicVelocity % array(:) = 0.0
-
-              block % state % time_levs(1) % state % normalBaroclinicVelocity % array(:,:) &
-            = block % state % time_levs(1) % state % normalVelocity % array(:,:) 
-
-         elseif (trim(config_time_integrator) == 'split_explicit') then
-
-            if (config_filter_btr_mode) then
-               do iCell=1,block % mesh % nCells
-                  block % state % time_levs(1) % state % layerThickness % array(1,iCell) & 
-                = block % mesh % refBottomDepth % array(1)
-               enddo
-            endif 
-
-            do iEdge=1,block % mesh % nEdges
-               cell1 = block % mesh % cellsOnEdge % array(1,iEdge)
-               cell2 = block % mesh % cellsOnEdge % array(2,iEdge)
-
-               ! normalBarotropicVelocity = sum(u)/sum(h) on each column
-               ! ocn_diagnostic_solve has not yet been called, so compute hEdge 
-               ! just for this edge.
-
-               ! thicknessSum is initialized outside the loop because on land boundaries 
-               ! maxLevelEdgeTop=0, but I want to initialize thicknessSum with a 
-               ! nonzero value to avoid a NaN.
-               layerThicknessEdge1 = 0.5*( &
-                   block % state % time_levs(1) % state % layerThickness % array(1,cell1) & 
-                 + block % state % time_levs(1) % state % layerThickness % array(1,cell2) ) 
-               normalThicknessFluxSum = layerThicknessEdge1*block % state % time_levs(1) % state % normalVelocity % array(1,iEdge)
-               layerThicknessSum = layerThicknessEdge1
-
-               do k=2,block % mesh % maxLevelEdgeTop % array(iEdge)
-                  ! ocn_diagnostic_solve has not yet been called, so compute hEdge 
-                  ! just for this edge.
-                  layerThicknessEdge1 = 0.5*( &
-                      block % state % time_levs(1) % state % layerThickness % array(k,cell1) & 
-                    + block % state % time_levs(1) % state % layerThickness % array(k,cell2) ) 
-
-                  normalThicknessFluxSum = normalThicknessFluxSum &
-                     + layerThicknessEdge1*block % state % time_levs(1) % state % normalVelocity % array(k,iEdge)
-                  layerThicknessSum = layerThicknessSum + layerThicknessEdge1
-
-               enddo
-               block % state % time_levs(1) % state % normalBarotropicVelocity % array(iEdge) = normalThicknessFluxSum/layerThicknessSum
-
-               ! normalBaroclinicVelocity(k,iEdge) = normalVelocity(k,iEdge) - normalBarotropicVelocity(iEdge)
-               do k=1,block % mesh % maxLevelEdgeTop % array(iEdge)
-                 block % state % time_levs(1) % state % normalBaroclinicVelocity % array(k,iEdge) &
-                 = block % state % time_levs(1) % state % normalVelocity % array(k,iEdge) &
-                 - block % state % time_levs(1) % state % normalBarotropicVelocity % array(iEdge)
-               enddo
-
-               ! normalBaroclinicVelocity=0, normalVelocity=0 on land cells
-               do k=block % mesh % maxLevelEdgeTop % array(iEdge)+1, block % mesh % nVertLevels
-                 block % state % time_levs(1) % state % normalBaroclinicVelocity % array(k,iEdge) = 0.0
-                 block % state % time_levs(1) % state % normalVelocity % array(k,iEdge) = 0.0
-               enddo
-            enddo
-
-            if (config_filter_btr_mode) then
-               ! filter normalBarotropicVelocity out of initial condition
-                block % state % time_levs(1) % state % normalVelocity % array(:,:) &
-              = block % state % time_levs(1) % state % normalBaroclinicVelocity % array(:,:)
-
-               block % state % time_levs(1) % state % normalBarotropicVelocity % array(:) = 0.0
-            endif 
-
-         endif
-
-      block => block % next
-      end do
-
-   end subroutine ocn_init_split_timestep!}}}
 
 subroutine ocn_compute_max_level(domain)!{{{
 ! Initialize maxLevel and boundary mesh variables.
@@ -1145,8 +1017,6 @@ end subroutine ocn_compute_max_level!}}}
       type (domain_type), intent(inout) :: domain 
       integer :: ierr
 
-      call oac_driver_finalize(ierr) 
-
       call mpas_destroy_clock(clock, ierr)
 
    end subroutine mpas_core_finalize!}}}
@@ -1259,7 +1129,7 @@ end subroutine ocn_compute_max_level!}}}
 !
 !> \brief   Pacakge setup routine
 !> \author  Doug Jacobsen
-!> \date    September 2011
+!> \date    November 2013
 !> \details 
 !>  This routine is intended to correctly configure the packages for this MPAS
 !>   core. It can use any Fortran logic to properly configure packages, and it
@@ -1276,26 +1146,6 @@ end subroutine ocn_compute_max_level!}}}
       integer, intent(out) :: ierr
 
       ierr = 0
-
-      if (config_use_freq_filtered_thickness) then
-         thicknessFilterActive = .true.
-      end if
-
-      if (config_time_integrator == trim('split_explicit') &
-         .or. config_time_integrator == trim('unsplit_explicit') ) then
-
-         splitTimeIntegratorActive = .true.
-      end if
-
-      if (config_forcing_type == trim('restoring')) then
-         surfaceRestoringActive = .true.
-      else if (config_forcing_type == trim('bulk')) then
-         bulkForcingActive = .true.
-      end if
-
-      if (config_frazil_ice_formation) then
-         frazilIceActive = .true.
-      end if
 
    end subroutine mpas_core_setup_packages!}}}
 

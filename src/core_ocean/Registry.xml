@@ -1741,7 +1741,18 @@
 			/>
 		</var_array>
 	</var_struct>
-    <var_struct name="scratch" time_levs="0">
+	<var_struct name="amGlobalStats" time_levs="0">
+		<var name="avgKineticEnergy" type="real" dimensions="Time" streams="o" units="m^2 s^{-2}"
+			description="average kinetic energy over the domain"
+		/>
+		<var name="minKineticEnergy" type="real" dimensions="Time" streams="o" units="m^2 s^{-2}"
+			description="minimum kinetic energy over the domain"
+		/>
+		<var name="maxKineticEnergy" type="real" dimensions="Time" streams="o" units="m^2 s^{-2}"
+			description="maximum kinetic energy over the domain"
+		/>
+	</var_struct>
+	<var_struct name="scratch" time_levs="0">
 		<var name="vorticityGradientTangentialComponent" 
 			persistence="scratch" 
 			type="real" dimensions="nVertLevels nEdges Time" 
