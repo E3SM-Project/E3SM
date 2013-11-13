@@ -27,6 +27,8 @@ module mpas_core
    use mpas_timer
    use mpas_io_units
 
+   use oac_driver
+
    use ocn_global_diagnostics
    use ocn_time_integration
    use ocn_tendency
@@ -159,6 +161,9 @@ module mpas_core
       err = ior(err, err_tmp)
 
       call ocn_sea_ice_init(domain % blocklist % mesh % nVertLevels, err_tmp)
+      err = ior(err, err_tmp)
+
+      call oac_driver_init(err_tmp)
       err = ior(err, err_tmp)
 
       call ocn_constants_init()
@@ -445,7 +450,7 @@ module mpas_core
       type (io_output_object), intent(inout) :: output_obj
       integer, intent(inout) :: output_frame
    
-      integer :: itimestep
+      integer :: itimestep, err
       real (kind=RKIND) :: dt
       type (block_type), pointer :: block_ptr
 
@@ -461,10 +466,11 @@ module mpas_core
       write(stderrUnit,*) 'Initial time ', trim(timeStamp)
 
       if (config_write_output_on_startup) then
+         call oac_driver_compute(domain, err) 
          call ocn_write_output_frame(output_obj, output_frame, domain)
       endif
-      block_ptr => domain % blocklist
 
+      block_ptr => domain % blocklist
       do while(associated(block_ptr))
         call ocn_time_average_init(block_ptr % average)
         block_ptr => block_ptr % next
@@ -512,6 +518,7 @@ module mpas_core
             block_ptr => domain % blocklist
             do while (associated(block_ptr))
                 call ocn_time_average_normalize(block_ptr % average)
+                call oac_driver_compute(domain, err) ! add state and analysisInput later mrp
                 block_ptr => block_ptr % next
             end do
 
@@ -531,6 +538,8 @@ module mpas_core
             call mpas_output_state_init(restart_obj, domain, "RESTART", trim(timeStamp))
             call mpas_output_state_for_domain(restart_obj, domain, 1)
             call mpas_output_state_finalize(restart_obj, domain % dminfo)
+
+            call oac_driver_restart(err) ! add state and analysisInput later mrp
          end if
 
       end do
@@ -1135,6 +1144,8 @@ end subroutine ocn_compute_max_level!}}}
 
       type (domain_type), intent(inout) :: domain 
       integer :: ierr
+
+      call oac_driver_finalize(ierr) 
 
       call mpas_destroy_clock(clock, ierr)
 
