@@ -112,8 +112,8 @@ contains
                '  IAM: ',File%iosystem%io_rank,' start: ',start,' count: ',count,&
                ' size :',iodesc%Write%n_ElemTYPE, ' error: ',ierr, &
                iodesc%Write%ElemTYPE, request
-          if(Debug.or.ierr/=PIO_noerr) print *,subname,__LINE__, &
-               '  IAM: ',File%iosystem%io_rank,'minval: ',minval(IOBUF),'maxval: ',maxval(IOBUF)
+!          if(Debug.or.ierr/=PIO_noerr) print *,subname,__LINE__, &
+!               '  IAM: ',File%iosystem%io_rank,'minval: ',minval(IOBUF),'maxval: ',maxval(IOBUF)
 #endif
 
 #ifdef _NETCDF
@@ -337,8 +337,8 @@ contains
                '  IAM: ',File%iosystem%io_rank,' start: ',start,' count: ',count,&
                ' size :',iodesc%Write%n_ElemTYPE, ' error: ',ierr, &
                iodesc%Write%ElemTYPE, request
-          if(Debug.or.ierr/=PIO_noerr) print *,subname,__LINE__, &
-               '  IAM: ',File%iosystem%io_rank,'minval: ',minval(IOBUF),'maxval: ',maxval(IOBUF)
+!          if(Debug.or.ierr/=PIO_noerr) print *,subname,__LINE__, &
+!               '  IAM: ',File%iosystem%io_rank,'minval: ',minval(IOBUF),'maxval: ',maxval(IOBUF)
 #endif
 
 #ifdef _NETCDF
@@ -562,8 +562,8 @@ contains
                '  IAM: ',File%iosystem%io_rank,' start: ',start,' count: ',count,&
                ' size :',iodesc%Write%n_ElemTYPE, ' error: ',ierr, &
                iodesc%Write%ElemTYPE, request
-          if(Debug.or.ierr/=PIO_noerr) print *,subname,__LINE__, &
-               '  IAM: ',File%iosystem%io_rank,'minval: ',minval(IOBUF),'maxval: ',maxval(IOBUF)
+!          if(Debug.or.ierr/=PIO_noerr) print *,subname,__LINE__, &
+!               '  IAM: ',File%iosystem%io_rank,'minval: ',minval(IOBUF),'maxval: ',maxval(IOBUF)
 #endif
 
 #ifdef _NETCDF

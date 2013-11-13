@@ -58,21 +58,18 @@ contains
 #ifdef _PNETCDF
        case(PIO_iotype_pnetcdf)
           ierr  = nfmpi_create(File%iosystem%IO_comm,fname,nmode ,File%iosystem%info,File%fh)
-! Set default to NOFILL for performance.  
-!   pnetcdf is nofill by default and doesn't support a fill mode
-!	  ierr = nfmpi_set_fill(File%fh, NF_NOFILL, nmode)
 #endif
 #ifdef _NETCDF
 #ifdef _NETCDF4
        case(PIO_iotype_netcdf4p)
 !         The 64 bit option is not compatable with hdf5 format files
-
+          
           if(iand(PIO_64BIT_OFFSET,amode)==PIO_64BIT_OFFSET) then
              nmode = ieor(amode,PIO_64bit_OFFSET)
           else
              nmode=amode
           end if
-
+          
           nmode = ior(nmode,NF90_NETCDF4)
 #ifdef _MPISERIAL
           ierr = nf90_create(fname, nmode , File%fh)
@@ -82,7 +79,7 @@ contains
                comm=File%iosystem%io_comm, info=File%iosystem%info)
 #endif
 ! Set default to NOFILL for performance.  
-          if(ierr==PIO_NOERR) ierr = nf90_set_fill(File%fh, NF90_NOFILL, nmode)
+!          if(ierr==PIO_NOERR) ierr = nf90_set_fill(File%fh, NF90_NOFILL, nmode)
        case(PIO_iotype_netcdf4c)
           if(iand(PIO_64BIT_OFFSET,amode)==PIO_64BIT_OFFSET) then
              nmode = ieor(amode,PIO_64bit_OFFSET)
@@ -97,8 +94,8 @@ contains
              ierr = nf90_create(fname, nmode, File%fh, &
                   info=File%iosystem%info )
 ! Set default to NOFILL for performance.  
-             if(ierr==PIO_NOERR) &
-                  ierr = nf90_set_fill(File%fh, NF90_NOFILL, nmode)
+!             if(ierr==PIO_NOERR) &
+!                  ierr = nf90_set_fill(File%fh, NF90_NOFILL, nmode)
           endif
 #endif          
        case(PIO_iotype_netcdf)
@@ -148,7 +145,7 @@ contains
     character(len=*), intent(in)      :: fname
     integer(i4), optional, intent(in) :: mode
     integer(i4) :: iotype, amode , mpierr, ier2
-    integer :: tmpfh
+    integer :: tmpfh, format
 
 
     ierr=PIO_noerr
@@ -176,7 +173,6 @@ contains
              amode = NF_NOWRITE
           end if
           ierr  = nfmpi_open(File%iosystem%IO_comm,fname,amode,File%iosystem%info,File%fh)
-
 #ifdef _NETCDF
 #ifdef _NETCDF4
           if(ierr /= PIO_NOERR) then    ! try hdf5 format
@@ -192,13 +188,17 @@ contains
 #ifdef _NETCDF
 #ifdef _NETCDF4
         if(iotype==PIO_iotype_netcdf4p .or. iotype ==pio_iotype_netcdf4c) then
-#ifdef _MPISERIAL
+! we need to go through some contortions to make sure a file we are opening is okay for parallel access
            ierr = nf90_open(fname,amode,File%fh)           
-#else
-           ierr = nf90_open(fname,  ior(amode,ior(NF90_NETCDF4,NF90_MPIIO)), File%fh, &
-                comm=File%iosystem%io_comm, info=File%iosystem%info)
-           if(ierr==nf90_enotnc4 .or. ierr==nf90_einval) then
-              ierr = nf90_open(fname, amode, File%fh,info=File%iosystem%info)
+	   ierr = nf90_inquire(File%fh,formatnum=format)
+#ifndef MPI_SERIAL
+           if(format == nf90_format_netcdf4) then
+              ierr = nf90_close(File%fh)	     
+              ierr = nf90_open(fname,  ior(amode,ior(NF90_NETCDF4,NF90_MPIIO)), File%fh, &
+                   comm=File%iosystem%io_comm, info=File%iosystem%info)
+              if(ierr==nf90_enotnc4 .or. ierr==nf90_einval) then
+                 ierr = nf90_open(fname, amode, File%fh,info=File%iosystem%info)
+              end if
            end if
 #endif
         end if
@@ -251,12 +251,10 @@ contains
 #ifdef _NETCDF
        case(PIO_iotype_netcdf, pio_iotype_netcdf4c, pio_iotype_netcdf4p)
           if (File%fh>0) then
-             ierr= nf90_sync(File%fh)
-             if(ierr==PIO_NOERR) then
-                ierr= nf90_close(File%fh)
-             else
-                if(Debug) print *,__PIO_FILE__,__LINE__,ierr
-             end if
+             ierr = nf90_sync(File%fh)
+             if(Debug) print *,__FILE__,__LINE__,ierr
+             ierr= nf90_close(File%fh)
+             if(Debug) print *,__FILE__,__LINE__,ierr
           endif
 #endif
        case default
@@ -287,8 +285,8 @@ contains
           ierr=nfmpi_sync(file%fh)
 #endif
 #ifdef _NETCDF
-       case(PIO_iotype_netcdf)
-          if (File%iosystem%io_rank==0) then
+       case(PIO_iotype_netcdf, pio_iotype_netcdf4c,PIO_IOTYPE_NETCDF4P)
+          if (File%fh>0) then
              ierr= nf90_sync(File%fh)
           endif
 #endif
