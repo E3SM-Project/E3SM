@@ -150,19 +150,18 @@ contains
       !-----------------------------------------------------------------
 
       integer :: err_tmp
-      type (block_type), pointer :: block
+      type (state_type), pointer :: state_ptr
+      type (mesh_type), pointer :: mesh_ptr
 
       err = 0
 
-      block => domain % blocklist
-      do while(associated(block))
+      state_ptr => domain % blocklist % state % time_levs(1) % state
+      mesh_ptr  => domain % blocklist % mesh
 
-         call oac_compute_am_global_stats(block % amGlobalStats, &
-            block % mesh, block % state % time_levs(1) % state, err_tmp)
-         err = ior(err, err_tmp)
-
-         block => block % next
-      end do
+      ! need to add timer around each am
+      call oac_compute_am_global_stats(domain % blocklist % amGlobalStats, &
+         mesh_ptr, state_ptr, err_tmp)
+      err = ior(err, err_tmp)
 
    end subroutine oac_driver_compute!}}}
 
@@ -170,7 +169,7 @@ contains
 !
 !  routine oac_driver_restart
 !
-!> \brief   Restartialize MPAS-Ocean analysis driver
+!> \brief   Save restart for MPAS-Ocean analysis driver
 !> \author  Mark Petersen
 !> \date    November 2013
 !> \details 

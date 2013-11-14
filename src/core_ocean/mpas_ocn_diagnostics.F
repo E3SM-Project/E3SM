@@ -28,6 +28,7 @@ module ocn_diagnostics
    use ocn_gm
    use ocn_equation_of_state
    use ocn_thick_ale
+   use ocn_diagnostics_routines
 
    implicit none
    private
@@ -211,24 +212,13 @@ contains
       tracers(state % index_temperature,:,nCells+1) = -1e34
       tracers(state % index_salinity,:,nCells+1) = -1e34
 
-      circulation(:,:) = 0.0
-      relativeVorticity(:,:) = 0.0
       divergence(:,:) = 0.0
       vertVelocityTop(:,:)=0.0
       kineticEnergyCell(:,:) = 0.0
       tangentialVelocity(:,:) = 0.0
-      do iVertex = 1, nVertices
-         invAreaTri1 = 1.0 / areaTriangle(iVertex)
-         do i = 1, vertexDegree
-            iEdge = edgesOnVertex(i, iVertex)
-            do k = 1, maxLevelVertexBot(iVertex)
-              r_tmp = dcEdge(iEdge) * normalVelocity(k, iEdge)
 
-              circulation(k, iVertex) = circulation(k, iVertex) + edgeSignOnVertex(i, iVertex) * r_tmp 
-              relativeVorticity(k, iVertex) = relativeVorticity(k, iVertex) + edgeSignOnVertex(i, iVertex) * r_tmp * invAreaTri1
-            end do
-         end do
-      end do
+      call ocn_relativeVorticity_circulation(diagnostics % relativeVorticity % array, diagnostics % circulation % array, &
+         mesh, state % normalVelocity % array, err)
 
       relativeVorticityCell(:,:) = 0.0
       do iCell = 1, nCells

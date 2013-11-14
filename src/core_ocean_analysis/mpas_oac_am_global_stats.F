@@ -22,6 +22,8 @@ module oac_am_global_stats
 
    use mpas_grid_types
 
+!   use ocn_diagnostics_routines
+
    implicit none
    private
    save
@@ -116,7 +118,7 @@ print *, 'oac_init_am_global_stats'
 !
 !-----------------------------------------------------------------------
 
-   subroutine oac_compute_am_global_stats(amGlobalStats, mesh, state, err)!{{{
+   subroutine oac_compute_am_global_stats(amGlobalStats, mesh_ptr, state_ptr, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -124,8 +126,8 @@ print *, 'oac_init_am_global_stats'
       !
       !-----------------------------------------------------------------
 
-      type (mesh_type), intent(inout) :: mesh
-      type (state_type), intent(inout) :: state
+      type (mesh_type), intent(inout) :: mesh_ptr
+      type (state_type), intent(inout) :: state_ptr
 
       !-----------------------------------------------------------------
       !
@@ -152,7 +154,26 @@ print *, 'oac_init_am_global_stats'
 
       err = 0
 
-print *, 'oac_compute_am_global_stats'
+!      call ocn_relativeVorticity_circulation(diagnostics % relativeVorticity % array, diagnostics % circulation % array, &
+!         mesh, state % normalVelocity % array, err_tmp)
+!         err = ior(err, err_tmp)
+
+
+
+!      sums = 0.0
+!      sumSquares = 0.0
+!      mins = 1.0e34
+!      maxes = -1.0e34
+!      averages = 0.0
+
+!      do while (associated(state_ptr))
+
+
+!         state_ptr => state_ptr % block % next
+!         mesh_ptr => mesh_ptr % next
+!      end do
+
+
 
    end subroutine oac_compute_am_global_stats!}}}
 
@@ -160,7 +181,7 @@ print *, 'oac_compute_am_global_stats'
 !
 !  routine oac_restart_am_global_stats
 !
-!> \brief   Restartialize MPAS-Ocean analysis member
+!> \brief   Save restart for MPAS-Ocean analysis member
 !> \author  Mark Petersen
 !> \date    November 2013
 !> \details 
