@@ -108,7 +108,7 @@ module mpas_core
 
       use cice_dynamics, only: init_dynamics
 
-      use cice_testing, only: plot_cells_spherical, plot_pop_grid_cells, init_spherical_test_case
+      use cice_testing, only: plot_pop_grid_cells, init_spherical_test_case
 
       use cice_forcing, only: init_forcing, get_forcing
 
@@ -123,10 +123,6 @@ module mpas_core
       call mpas_rbf_interp_initialize(mesh)
       call mpas_init_reconstruct(mesh)
 
-      !call init_semtner_forcing()
-
-      !call init_semtner_test_case(mesh, block % icestate)
-
       call init_forcing(mesh, &
            block % atmos_forcing)
 
@@ -139,9 +135,10 @@ module mpas_core
            block % icestate % surfaceTemperature % array, &
            block % atmos_forcing % airTemperature % array)
 
-      !call plot_cells_spherical(mesh, block % atmos_forcing % airTemperature % array)
+      call init_dynamics(block, dt)
 
-      !call init_dynamics(block, dt)
+      call plot_pop_grid_cells(mesh, block % icestate % iceAreaCell % array, "iceAreaCell_ic.txt")
+      call plot_pop_grid_cells(mesh, block % icestate % iceVolumeCell % array, "iceVolumeCell_ic.txt")
 
    end subroutine mpas_init_block
    
@@ -167,7 +164,7 @@ module mpas_core
       type (MPAS_Time_Type) :: currTime
       character(len=StrKIND) :: timeStamp
       integer :: ierr
-   
+
       ! Eventually, dt should be domain specific
       dt = config_dt
 
@@ -308,8 +305,6 @@ module mpas_core
       character(len=*), intent(in) :: timeStamp
 
       type (block_type), pointer :: block
-
-      !write(*,*) trim(timeStamp)
 
       block => domain % blocklist
       do while (associated(block))

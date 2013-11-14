@@ -94,6 +94,7 @@ contains
          tridyn % airStressV % array,          &
          atmos_forcing % uAirVelocity % array, & 
          atmos_forcing % vAirVelocity % array, &
+         atmos_forcing % airDensity % array,   &
          icestate % iceAreaCell % array)
 
     call ocean_stress(& 
@@ -276,7 +277,7 @@ contains
          tridyn % oceanStressU % array,      &
          tridyn % oceanStressV % array,      &
          tridyn % oceanStressCoeff % array,  &
-         dtElastic)
+         dtElastic,mesh)
 
   end subroutine single_subcycle_dynamics
 

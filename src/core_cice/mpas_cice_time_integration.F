@@ -35,22 +35,7 @@ contains
     nstep = nstep + 1
     time = nstep * dt
 
-    call therm_zerolayer( &
-         block % mesh, &
-         block % icestate, &
-         block % atmos_forcing, &
-         block % ocean_forcing, &
-         dt, &
-         time)
-
-    call plot_state( &
-         block % mesh, &
-         block % icestate, &
-         block % atmos_forcing, &
-         time, &
-         dt)
-
-    !call run_dynamics(block, dt)
+    call run_dynamics(block, dt, nstep)
 
   end subroutine cice_timestep
 

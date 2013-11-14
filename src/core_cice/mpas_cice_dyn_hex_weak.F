@@ -137,10 +137,17 @@ contains
                   uVelocityEdge * normalVectorPolygon(2,iEdgeOnCell,iCell) + &
                   vVelocityEdge * normalVectorPolygon(1,iEdgeOnCell,iCell) ) * mesh % dvEdge % array(iEdge)
 
+             !write(72,*) mesh % POPindxi % array(iCell), mesh % POPindxj % array(iCell), iEdgeOnCell, &
+             !     uVelocityEdge, normalVectorPolygon(1,iEdgeOnCell,iCell), mesh % dvEdge % array(iEdge), &
+             !     uVelocityEdge * normalVectorPolygon(1,iEdgeOnCell,iCell) * mesh % dvEdge % array(iEdge)
+
           enddo ! iEdgeOnCell
 
           uCellCentre = uCellCentre / real(mesh % nEdgesOnCell % array(iCell), RKIND)
           vCellCentre = vCellCentre / real(mesh % nEdgesOnCell % array(iCell), RKIND)
+
+          !write(72,*) mesh % POPindxi % array(iCell), mesh % POPindxj % array(iCell), 0, &
+          !     strain11(iCell), strain11(iCell) / mesh % areaCell % array(iCell), mesh % areaCell % array(iCell)
 
           strain11(iCell) = strain11(iCell) / mesh % areaCell % array(iCell)
           strain22(iCell) = strain22(iCell) / mesh % areaCell % array(iCell)
@@ -149,6 +156,9 @@ contains
           ! metric terms
           strain11(iCell) = strain11(iCell) - (vCellCentre * tan(latCellRotated(iCell))) / mesh % sphere_radius
           strain12(iCell) = strain12(iCell) + (uCellCentre * tan(latCellRotated(iCell)) * 0.5_RKIND) / mesh % sphere_radius
+
+          if (abs(strain11(iCell)) < 1e-10_RKIND) strain11(iCell) = 0.0_RKIND
+          write(71,*) mesh % POPindxi % array(iCell), mesh % POPindxj % array(iCell), strain11(iCell), strain22(iCell), strain12(iCell)
 
        endif ! solveStress
 
@@ -176,7 +186,7 @@ contains
          stress12, &
          replacementPressure
 
-    real(kind=RKIND), dimension(:), intent(in) :: &
+    real(kind=RKIND), dimension(:), intent(inout) :: &
          strain11, &
          strain22, &
          strain12, &
@@ -197,14 +207,25 @@ contains
 
        if (solveStress(iCell) == 1) then
 
+          stress11(iCell) = 0.0_RKIND
+          stress22(iCell) = 0.0_RKIND
+          stress12(iCell) = 0.0_RKIND
+          
+          strain11(iCell) = 1.0_RKIND
+          strain22(iCell) = 0.0_RKIND
+          strain12(iCell) = 0.0_RKIND
+
+
           call evp_constitutive_relation(stress11(iCell),    stress22(iCell),    stress12(iCell), &
                                          strain11(iCell),    strain22(iCell),    strain12(iCell), &
                                          icePressure(iCell), replacementPressure(iCell),          &
                                          mesh % areaCell % array(iCell),                          &
                                          dtElastic,          evpDamping)
 
+          write(*,*) stress11(iCell), stress22(iCell), stress12(iCell) ; stop
+
           !call linear_constitutive_relation(stress11(iCell), stress22(iCell), stress12(iCell), &
-          !                                  strain11(iCell), strain22(iCell), strain12(iCell))
+          !                                 strain11(iCell), strain22(iCell), strain12(iCell))
 
        else
 
@@ -309,6 +330,9 @@ contains
                   (stress22Edge * normalVectorTriangle(2,iVertexDegree,iVertex) + &
                    stress12Edge * normalVectorTriangle(1,iVertexDegree,iVertex)) * mesh % dcEdge % array(iEdge)
 
+             write(70,*) mesh % POPindxiv % array(iVertex), mesh % POPindxjv % array(iVertex), &
+                  -1, iVertexDegree, stress11Edge, normalVectorTriangle(1,iVertexDegree,iVertex), stress12Edge, normalVectorTriangle(2,iVertexDegree,iVertex), mesh % dcEdge % array(iEdge)
+
           enddo ! iVertexDegree
 
           stress11Vertex = stress11Vertex / real(mesh % vertexDegree, RKIND)
@@ -318,11 +342,17 @@ contains
           stressDivergenceU(iVertex) = stressDivergenceU(iVertex) / mesh % areaTriangle % array(iVertex)
           stressDivergenceV(iVertex) = stressDivergenceV(iVertex) / mesh % areaTriangle % array(iVertex)
 
+          write(70,*) mesh % POPindxiv % array(iVertex), mesh % POPindxjv % array(iVertex), &
+               0, stressDivergenceU(iVertex)
+
           ! metric terms
           stressDivergenceU(iVertex) = stressDivergenceU(iVertex) - &
                (tan(latVertexRotated(iVertex)) * stress12Vertex * 2.0_RKIND) / mesh % sphere_radius
           stressDivergenceV(iVertex) = stressDivergenceV(iVertex) + &
                (tan(latVertexRotated(iVertex)) * (stress11Vertex - stress22Vertex)) / mesh % sphere_radius
+
+          write(70,*) mesh % POPindxiv % array(iVertex), mesh % POPindxjv % array(iVertex), &
+               1, stressDivergenceU(iVertex)
 
        endif ! solveVelocity
 

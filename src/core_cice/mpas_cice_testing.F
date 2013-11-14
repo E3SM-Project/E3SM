@@ -5,38 +5,39 @@ module cice_testing
   implicit none
 
   private
-  public :: divergence_stress_test_velocity_set, &
-            divergence_stress_test_stress_set_hex, &
-            divergence_stress_test_stress_set_tri, &
-            divergence_stress_test_stress_set_weak, &
-            gnuplot_cell, &
-            gnuplot_triangle, &
-            matlab_jet, &
-            plot_boundary_triangles, &
-            boundary_locations, &
-            labels_verticesOnCell, &
-            labels_verticesDegreeOnVertex, &
-            writeout_minmax, &
-            writeout_on_cell_real, &
-            writeout_on_vertex_real, &
-            writeout_on_vertex_on_cell_real, &
-            writeout_array, &
-            writeout_edgecell, &
-            writeout_edgeedgecell, &
-            rotate_ninety, &
-            reverse_grids, &
-            gnuplot_vertexvector, &
-            find_nearest_cell, &
-            init_square_test_case_hex, &
-            plot_cells_spherical, &
-            plot_vertices_spherical, &
-            plot_pop_grid_cells, &
-            plot_pop_grid_vertices, &
-            spherical_test_strain, &
-            spherical_test_divergence_stress, &
-            rms_difference, &
-            init_spherical_test_case, &
-            plot_state
+  public :: &
+       divergence_stress_test_velocity_set, &
+       divergence_stress_test_stress_set_hex, &
+       divergence_stress_test_stress_set_tri, &
+       divergence_stress_test_stress_set_weak, &
+       gnuplot_cell, &
+       gnuplot_triangle, &
+       matlab_jet, &
+       plot_boundary_triangles, &
+       boundary_locations, &
+       labels_verticesOnCell, &
+       labels_verticesDegreeOnVertex, &
+       writeout_minmax, &
+       writeout_on_cell_real, &
+       writeout_on_vertex_real, &
+       writeout_on_vertex_on_cell_real, &
+       writeout_array, &
+       writeout_edgecell, &
+       writeout_edgeedgecell, &
+       rotate_ninety, &
+       reverse_grids, &
+       gnuplot_vertexvector, &
+       find_nearest_cell, &
+       init_square_test_case_hex, &
+       plot_cells_spherical, &
+       plot_vertices_spherical, &
+       plot_pop_grid_cells, &
+       plot_pop_grid_vertices, &
+       spherical_test_strain, &
+       spherical_test_divergence_stress, &
+       rms_difference, &
+       init_spherical_test_case, &
+       plot_state
 
   integer, public :: iCellTest
 
@@ -67,6 +68,8 @@ contains
   
   subroutine init_spherical_test_case(mesh, iceAreaCell, iceVolumeCell, totalMassCell, surfaceTemperature, airTemperature)
 
+    use mpas_constants, only: omega
+
     type(mesh_type), intent(inout) :: mesh
 
     real(kind=RKIND), dimension(:), intent(out) :: &
@@ -84,25 +87,36 @@ contains
     integer :: &
          iCell
 
+    real(kind=RKIND), parameter :: &  
+         pi = 3.14159265359_RKIND, &
+         degreesToRadians = pi / 180.0_RKIND, &
+         initialIceEdgeLatitudeNorthernHemisphere =  70.0_RKIND * degreesToRadians, &
+         initialIceEdgeLatitudeSouthernHemisphere = -60.0_RKIND * degreesToRadians
+
+    call init_ijpop_from_ivertex(mesh)
+
+    mesh % fVertex % array = 2.0_RKIND * omega * sin(mesh % latVertex % array)
+
     do iCell = 1, mesh % nCells
 
-       if (airTemperature(iCell) < 273.15_RKIND) then
+       !if (mesh % latCell % array(iCell) > initialIceEdgeLatitudeNorthernHemisphere .or. &
+       !    mesh % latCell % array(iCell) < initialIceEdgeLatitudeSouthernHemisphere) then
 
-          ! below freezing air temperature
+          ! ice present
           iceAreaCell(iCell)        = 1.0_RKIND
           iceVolumeCell(iCell)      = iceAreaCell(iCell) * iceHeightCell
           totalMassCell(iCell)      = iceVolumeCell(iCell) * rhoi
           surfaceTemperature(iCell) = 0.0_RKIND
 
-       else
+       !else
 
-          ! above freezing
-          iceAreaCell(iCell)   = 0.0_RKIND
-          iceVolumeCell(iCell) = 0.0_RKIND
-          totalMassCell(iCell) = 0.0_RKIND
-          surfaceTemperature(iCell) = 0.0_RKIND
+          ! no ice
+       !   iceAreaCell(iCell)   = 0.0_RKIND
+       !   iceVolumeCell(iCell) = 0.0_RKIND
+       !   totalMassCell(iCell) = 0.0_RKIND
+       !   surfaceTemperature(iCell) = 0.0_RKIND
 
-       endif
+       !endif
 
     end do ! iCell
     
@@ -2187,8 +2201,6 @@ contains
 
     do iVertex = 1, mesh % nVertices
 
-       write(*,*) "v:", iVertex, interiorVertex(iVertex)
-
        if (interiorVertex(iVertex) == 1) then
 
           xc = mesh % xVertex % array(iVertex)
@@ -2201,8 +2213,6 @@ contains
              
              fValue = (cellArray(iVertex) - fMin_use) / (fMax_use - fMin_use)
              !fValue = (real(iCell,RKIND) - fMin_use) / (fMax_use - fMin_use)
-             
-             write(*,*) iVertex, iObject, fValue, cellArray(iVertex)
              
              write(strout,fmt='(a,i5,a)') "set object ",iObject," polygon from "
              
@@ -2371,7 +2381,7 @@ contains
     write(strout,fmt='(a,f15.3,a,f15.3,a,f15.3,a,f15.3,a)') &
          "set xrange [",-mesh % sphere_radius*1.1_RKIND,":",mesh % sphere_radius*1.1_RKIND,&
          "] ; set yrange [",-mesh % sphere_radius*1.1_RKIND,":",mesh % sphere_radius*1.1_RKIND,"]"
-    write(*,*) trim(strout)
+    !write(*,*) trim(strout)
 
   end subroutine plot_vertices_spherical
 
@@ -2713,7 +2723,7 @@ contains
 
   !-------------------------------------------------------------
 
-  subroutine plot_pop_grid_cells(mesh, cellArray, filename)
+  subroutine plot_pop_grid_cells(mesh, cellArray, filename, tag)
 
     type(mesh_type), intent(in) :: mesh
     
@@ -2723,15 +2733,32 @@ contains
     character(len=*), optional, intent(in) :: &
          filename
 
+    integer, optional, intent(in) :: &
+         tag
+
     integer :: &
          i, j, iCell
 
     logical :: lfound
 
+    character(len=5) :: &
+         strtag
+
+    character(len=200) :: &
+         filename_use
+
     if (present(filename)) then
-       open(55,file=trim(filename),action='write')
+
+       if (present(tag)) then
+          write(strtag,fmt='(i5.5)') tag
+          filename_use = filename(1:len(trim(filename))-4)//"_"//trim(strtag)//filename(len(trim(filename))-3:)
+          open(55,file='history/'//trim(filename_use),action='write')
+       else
+          open(55,file='history/'//trim(filename),action='write')
+       endif
+
     else
-       open(55,file='pop_grid.txt',action='write')
+       open(55,file='history/'//'pop_grid.txt',action='write')
     endif
 
     do i = 1, mesh % POP_nx
@@ -2768,7 +2795,7 @@ contains
 
   !-------------------------------------------------------------
 
-  subroutine plot_pop_grid_vertices(mesh, vertexArray, interiorVertex, filename)
+  subroutine plot_pop_grid_vertices(mesh, vertexArray, interiorVertex, filename, tag)
 
     type(mesh_type), intent(in) :: mesh
     
@@ -2781,54 +2808,168 @@ contains
     character(len=*), optional, intent(in) :: &
          filename
 
+    integer, optional, intent(in) :: &
+         tag
+
     integer :: &
          iVertex, &
          iVertexDegree, &
          iCell, &
          i, &
-         j, &
-         imin, &
-         jmin
+         j
+
+    character(len=5) :: &
+         strtag
+
+    character(len=200) :: &
+         filename_use
+
+    real(kind=RKIND), dimension(:,:,:), allocatable :: &
+         arrayOrdered
+
+    allocate(arrayOrdered(mesh % POP_nx,mesh % POP_ny,2))
+    arrayOrdered = 0.0_RKIND
 
     if (present(filename)) then
-       open(55,file=trim(filename),action='write')
+
+       if (present(tag)) then
+          write(strtag,fmt='(i5.5)') tag
+          filename_use = filename(1:len(trim(filename))-4)//"_"//trim(strtag)//filename(len(trim(filename))-3:)
+          open(55,file='history/'//trim(filename_use),action='write')
+       else
+          open(55,file='history/'//trim(filename),action='write')
+       endif
+
     else
-       open(55,file='pop_grid.txt',action='write')
+       open(55,file='history/'//'pop_grid.txt',action='write')
     endif
 
     do iVertex = 1, mesh % nVertices
 
        if (interiorVertex(iVertex) == 1) then
-          
-          imin = 10000000
-          jmin = 10000000
 
-          do iVertexDegree = 1, mesh % vertexDegree
-             
-             iCell = mesh % cellsOnVertex % array(iVertexDegree,iVertex)
-             
-             i = mesh % POPindxi % array(iCell)
-             j = mesh % POPindxj % array(iCell)
+          i = mesh % POPindxiv % array(iVertex)
+          j = mesh % POPindxjv % array(iVertex)
 
-             imin = min(imin,i)
-             jmin = min(jmin,j)
-             
-          enddo ! iVertexDegree
-
-          write(55,*) &
-               real(imin,RKIND), &
-               real(imin,RKIND)+1.0_RKIND,  &
-               real(jmin,RKIND),  &
-               real(jmin,RKIND)+1.0_RKIND,  &
-               vertexArray(iVertex)
+          arrayOrdered(i,j,1) = 1.0_RKIND
+          arrayOrdered(i,j,2) = vertexArray(iVertex)
 
        endif ! interiorVertex
 
     enddo ! iVertex
 
+    do i = 1, mesh % POP_nx
+       do j = 1, mesh % POP_ny
+
+          if (arrayOrdered(i,j,1) == 1.0_RKIND) then
+
+             write(55,*) &
+                  real(i,RKIND)-0.5_RKIND, real(i,RKIND)+0.5_RKIND, &
+                  real(j,RKIND)-0.5_RKIND, real(j,RKIND)+0.5_RKIND, &
+                  arrayOrdered(i,j,2)
+
+          endif
+
+       enddo! j
+    enddo ! i
+
     close(55)
-stop
+
+    deallocate(arrayOrdered)
+
   end subroutine plot_pop_grid_vertices
+
+  !-------------------------------------------------------------
+
+  subroutine init_ijpop_from_ivertex(mesh)
+
+    type(mesh_type), intent(inout) :: mesh
+
+    integer :: &
+         iVertex, &
+         iVertexDegree, &
+         iCell, &
+         i, j, &
+         imin, jmin, &
+         imax, jmax, &
+         POP_nx_2
+
+    logical :: l_boundary
+
+    do iVertex = 1, mesh % nVertices
+
+       imin = 1000000000
+       jmin = 1000000000
+
+       imax = -1000000000
+       jmax = -1000000000
+
+       ! first we find the minimum and maximum POP i value of a cell surrounding the vertex point
+       do iVertexDegree = 1, mesh % vertexDegree
+
+          iCell = mesh % cellsOnVertex % array(iVertexDegree,iVertex)
+
+          i = mesh % POPindxi % array(iCell)
+          j = mesh % POPindxj % array(iCell)
+
+          imin = min(imin,i)
+          jmin = min(jmin,j)
+
+          imax = max(imax,i)
+          jmax = max(jmax,j)
+
+       enddo ! iVertexDegree
+
+       ! decide if at border
+       POP_nx_2 = nint(real(mesh % POP_nx) / 2.0)
+
+       l_boundary = .false.
+       if (imin < POP_nx_2 .and. imax > POP_nx_2) l_boundary = .true.    
+
+       do iVertexDegree = 1, mesh % vertexDegree
+
+          iCell = mesh % cellsOnVertex % array(iVertexDegree,iVertex)
+
+          i = mesh % POPindxi % array(iCell)
+          j = mesh % POPindxj % array(iCell)
+
+          if (l_boundary .and. i > POP_nx_2) i = i - mesh % POP_nx
+          imin = min(imin,i)
+
+          jmin = min(jmin,j)
+
+       enddo ! iVertexDegree
+
+       if (l_boundary .and. imin < 1) imin = imin + mesh % POP_nx
+
+       mesh % POPindxiv % array(iVertex) = imin
+       mesh % POPindxjv % array(iVertex) = jmin
+
+    enddo ! iVertex
+    
+    open(11,file="vertexareas.txt")
+    do iVertex = 1, mesh % nVertices
+       write(11,*) mesh % POPindxiv % array(iVertex), mesh % POPindxjv % array(iVertex), &
+            mesh % areaTriangle % array(iVertex)
+    enddo
+    close(11)
+    
+    open(11,file="cellareas.txt")
+    do iCell = 1, mesh % nCells
+       write(11,*) mesh % POPindxi % array(iCell), mesh % POPindxj % array(iCell), &
+            mesh % areaCell % array(iCell)
+    enddo
+    close(11)
+
+    open(11,file="vertexlat.txt")
+    do iVertex = 1, mesh % nVertices
+       write(11,*) mesh % POPindxiv % array(iVertex), mesh % POPindxjv % array(iVertex), &
+            mesh % latVertex % array(iVertex)
+    enddo
+    close(11)
+
+
+  end subroutine init_ijpop_from_ivertex
 
   !-------------------------------------------------------------
   ! spherical tests - strain

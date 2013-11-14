@@ -94,7 +94,7 @@ contains
     atmosForcingFields % nForcingFields = 8
     allocate(atmosForcingFields % forcingFieldsArray(atmosForcingFields % nForcingFields))
 
-    atmosForcingFields % forcingDirectory = "/Users/akt/Work/MPAS-CICE/forcing/DATA/atm/gx3v2m/NCAR_bulk"
+    atmosForcingFields % forcingDirectory = "/Users/akt/Work/Forcing/gx3/atm/gx3v2m/NCAR_bulk/"
 
     ! air temperature
     call init_forcing_field(mesh, atmosForcingFields % forcingFieldsArray(1), "interval", &

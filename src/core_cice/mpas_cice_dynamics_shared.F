@@ -146,17 +146,16 @@ contains
 
           iCell = mesh % cellsOnVertex % array(iVertexDegree,iVertex) 
 
-          write(*,*) iVertex, iVertexDegree, iCell, variableCell(iCell), mesh % areaCell % array(iCell)
+          !variableVertex(iVertex) = variableVertex(iVertex) + mesh % kiteAreasOnVertex % array(iVertexDegree, iVertex) * variableCell(iCell)
 
           variableVertex(iVertex) = variableVertex(iVertex) + mesh % areaCell % array(iCell) * variableCell(iCell)
-
           totalArea = totalArea + mesh % areaCell % array(iCell)
 
        enddo ! iVertexDegree
 
-       write(*,*) iVertex, variableVertex(iVertex), totalArea, variableVertex(iVertex) / totalArea
-
        variableVertex(iVertex) = variableVertex(iVertex) / totalArea
+
+       !variableVertex(iVertex) = variableVertex(iVertex) / mesh % areaTriangle % array(iVertex)
 
     enddo ! iVertex    
 
@@ -231,6 +230,9 @@ contains
     stress12 = (stress12 + pressureCoefficient * strainShearing * 0.5_RKIND) / &
                (1.0_RKIND + (0.5_RKIND * dtElastic * eccentricity**2) / dampingTimescale)
 
+    write(*,*) pressureCoefficient, strainTension, (1.0_RKIND + (0.5_RKIND * dtElastic * eccentricity**2) / dampingTimescale)
+    write(*,*) stress1, stress2, stress12 ; stop
+
     ! convert back
     stress11 = 0.5_RKIND * (stress1 + stress2)
     stress22 = 0.5_RKIND * (stress1 - stress2)
@@ -246,7 +248,7 @@ contains
                             airStressU,        airStressV,        &
                             surfaceTiltForceU, surfaceTiltForceV, &
                             oceanStressU,      oceanStressV,      &
-                            oceanStressCoeff,  dtElastic)
+                            oceanStressCoeff,  dtElastic,mesh)
 
     integer, intent(in) :: &
          nPoints
@@ -273,7 +275,7 @@ contains
 
     real(kind=RKIND), intent(in) :: &
          dtElastic
-
+    type(mesh_type), intent(in) :: mesh
     real(kind=RKIND), dimension(2) :: &
          rightHandSide
 
@@ -284,7 +286,7 @@ contains
          solutionDenominator
 
     integer :: &
-         iPoint
+         iPoint,i,j
 
     do iPoint = 1, nPoints
 
@@ -311,6 +313,9 @@ contains
           uVelocity(iPoint) = (leftMatrix(2,2) * rightHandSide(1) - leftMatrix(1,2) * rightHandSide(2)) / solutionDenominator
           vVelocity(iPoint) = (leftMatrix(1,1) * rightHandSide(2) - leftMatrix(2,1) * rightHandSide(1)) / solutionDenominator
 
+          write(70,*) mesh % POPindxiv % array(iPoint), mesh % POPindxjv % array(iPoint), &
+               uVelocity(iPoint), coriolisParameter(iPoint)
+
        else
 
           uVelocity(iPoint) = 0.0_RKIND
@@ -324,7 +329,7 @@ contains
 
   !-------------------------------------------------------------
 
-  subroutine air_stress(airStressU, airStressV, uAirVelocity, vAirVelocity, iceArea)
+  subroutine air_stress(airStressU, airStressV, uAirVelocity, vAirVelocity, airDensity, iceArea)
 
     real(kind=RKIND), dimension(:), intent(out) :: &
          airStressU, &
@@ -333,6 +338,7 @@ contains
     real(kind=RKIND), dimension(:), intent(in) :: &
          uAirVelocity, &
          vAirVelocity, &
+         airDensity, &
          iceArea
 
     real(kind=RKIND) :: &
@@ -343,8 +349,7 @@ contains
          iPoint
 
     real(kind=RKIND), parameter :: &
-         airStressCoeff = 0.0012_RKIND, &
-         densityAir     = 1.3_RKIND 
+         airStressCoeff = 0.0012_RKIND 
     
     nPoints = size(airStressU,1)
 
@@ -352,8 +357,8 @@ contains
 
        windSpeed = sqrt(uAirVelocity(iPoint)**2 + vAirVelocity(iPoint)**2)
 
-       airStressU(iPoint) = densityAir * windSpeed * airStressCoeff * uAirVelocity(iPoint) * iceArea(iPoint)
-       airStressV(iPoint) = densityAir * windSpeed * airStressCoeff * vAirVelocity(iPoint) * iceArea(iPoint)
+       airStressU(iPoint) = airDensity(iPoint) * windSpeed * airStressCoeff * uAirVelocity(iPoint) * iceArea(iPoint)
+       airStressV(iPoint) = airDensity(iPoint) * windSpeed * airStressCoeff * vAirVelocity(iPoint) * iceArea(iPoint)
 
     enddo ! iPoint
 
@@ -1635,6 +1640,30 @@ contains
   ! rotated lat-lon grid
   !-------------------------------------------------------------
 
+  subroutine grid_rotation_forward(xp, yp, zp, x, y, z)
+
+    ! rotate xyz coordinates from geographical grid to rotated grid with poles on real equator
+
+    real(kind=RKIND), intent(out) :: &
+         xp, & ! x position of point on rotated grid
+         yp, & ! y position of point on rotated grid
+         zp    ! z position of point on rotated grid
+
+    real(kind=RKIND), intent(in) :: &
+         x,  & ! x position of point on geographical grid
+         y,  & ! y position of point on geographical grid
+         z     ! z position of point on geographical grid
+
+    call grid_rotation_forward_nochange(xp, yp, zp, x, y, z)
+
+    !xp = -z
+    !yp = y
+    !zp = x
+
+  end subroutine grid_rotation_forward
+
+  !-------------------------------------------------------------
+
   subroutine grid_rotation_forward_nochange(xp, yp, zp, x, y, z)
 
     ! leave the grid unchanged - for testing
@@ -1657,28 +1686,6 @@ contains
 
   !-------------------------------------------------------------
 
-  subroutine grid_rotation_forward(xp, yp, zp, x, y, z)
-
-    ! rotate xyz coordinates from geographical grid to rotated grid with poles on real equator
-
-    real(kind=RKIND), intent(out) :: &
-         xp, & ! x position of point on rotated grid
-         yp, & ! y position of point on rotated grid
-         zp    ! z position of point on rotated grid
-
-    real(kind=RKIND), intent(in) :: &
-         x,  & ! x position of point on geographical grid
-         y,  & ! y position of point on geographical grid
-         z     ! z position of point on geographical grid
-
-    xp = -z
-    yp = y
-    zp = x
-
-  end subroutine grid_rotation_forward
-
-  !-------------------------------------------------------------
-
   subroutine grid_rotation_backward(x, y, z, xp, yp, zp)
 
     ! rotate xyz coordinates from rotated grid with poles on real equator to geographical grid
@@ -1693,11 +1700,35 @@ contains
          yp, & ! y position of point on rotated grid
          zp    ! z position of point on rotated grid
 
-    x = zp
-    y = yp
-    z = -xp
+    call grid_rotation_backward_nochange(x, y, z, xp, yp, zp)
+
+    !x = zp
+    !y = yp
+    !z = -xp
 
   end subroutine grid_rotation_backward
+
+  !-------------------------------------------------------------
+
+  subroutine grid_rotation_backward_nochange(x, y, z, xp, yp, zp)
+
+    ! rotate xyz coordinates from rotated grid with poles on real equator to geographical grid
+
+    real(kind=RKIND), intent(out) :: &
+         x,  & ! x position of point on geographical grid
+         y,  & ! y position of point on geographical grid
+         z     ! z position of point on geographical grid
+
+    real(kind=RKIND), intent(in) :: &
+         xp, & ! x position of point on rotated grid
+         yp, & ! y position of point on rotated grid
+         zp    ! z position of point on rotated grid
+
+    x = xp
+    y = yp
+    z = zp
+
+  end subroutine grid_rotation_backward_nochange
 
   !-------------------------------------------------------------
 
@@ -1715,11 +1746,35 @@ contains
          vy,  & ! y component of velocity vector on geographical grid
          vz     ! z component of velocity vector on geographical grid
     
-    vxp = -vz
-    vyp =  vy
-    vzp =  vx
+    call xyz_vector_rotation_forward_nochange(vxp, vyp, vzp, vx, vy, vz) 
+
+    !vxp = -vz
+    !vyp =  vy
+    !vzp =  vx
 
   end subroutine xyz_vector_rotation_forward
+
+  !-------------------------------------------------------------
+
+  subroutine xyz_vector_rotation_forward_nochange(vxp, vyp, vzp, vx, vy, vz)
+
+    ! rotate a xyz vector from geographical grid to rotated grid with poles on real equator
+
+    real(kind=RKIND), intent(out) :: &
+         vxp, & ! x component of velocity vector on rotated grid
+         vyp, & ! y component of velocity vector on rotated grid
+         vzp    ! z component of velocity vector on rotated grid
+
+    real(kind=RKIND), intent(in) :: &
+         vx,  & ! x component of velocity vector on geographical grid
+         vy,  & ! y component of velocity vector on geographical grid
+         vz     ! z component of velocity vector on geographical grid
+    
+    vxp = vx
+    vyp = vy
+    vzp = vz
+
+  end subroutine xyz_vector_rotation_forward_nochange
 
   !-------------------------------------------------------------
 
@@ -1737,11 +1792,35 @@ contains
          vyp, & ! y component of velocity vector on rotated grid
          vzp    ! z component of velocity vector on rotated grid
 
-    vx =  vzp
-    vy =  vyp
-    vz = -vxp
+    call xyz_vector_rotation_backward_nochange(vx, vy, vz, vxp, vyp, vzp)
+
+    !vx =  vzp
+    !vy =  vyp
+    !vz = -vxp
 
   end subroutine xyz_vector_rotation_backward
+
+  !-------------------------------------------------------------
+
+  subroutine xyz_vector_rotation_backward_nochange(vx, vy, vz, vxp, vyp, vzp)
+
+    ! rotate xyz vector from rotated grid with poles on real equator to geographical grid
+
+    real(kind=RKIND), intent(out) :: &
+         vx,  & ! x component of velocity vector on geographical grid
+         vy,  & ! y component of velocity vector on geographical grid
+         vz     ! z component of velocity vector on geographical grid
+
+    real(kind=RKIND), intent(in) :: &
+         vxp, & ! x component of velocity vector on rotated grid
+         vyp, & ! y component of velocity vector on rotated grid
+         vzp    ! z component of velocity vector on rotated grid
+
+    vx = vxp
+    vy = vyp
+    vz = vzp
+
+  end subroutine xyz_vector_rotation_backward_nochange
 
   !-------------------------------------------------------------
 

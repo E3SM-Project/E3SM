@@ -105,6 +105,8 @@
 		<var name="u_src"                             type="real"     dimensions="nVertLevels nEdges"          streams="iro"/>
 		<var name="POPindxi"                          type="integer"  dimensions="nCells"                      streams="iro"/>
 		<var name="POPindxj"                          type="integer"  dimensions="nCells"                      streams="iro"/>
+		<var name="POPindxiv"                         type="integer"  dimensions="nVertices"                   streams=""/>
+		<var name="POPindxjv"                         type="integer"  dimensions="nVertices"                   streams=""/>
 	</var_struct>
 
 

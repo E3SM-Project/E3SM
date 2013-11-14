@@ -22,8 +22,8 @@ module cice_dynamics
   !character(len=200), parameter :: divergenceFormulation = "pwl"
 
   ! EVP Damping - ".false." or ".true."
-  !logical, parameter :: evpDamping = .true.
-  logical, parameter :: evpDamping = .false.
+  logical, parameter :: evpDamping = .true.
+  !logical, parameter :: evpDamping = .false.
 
   ! Grid curvature - "planar" or "spherical"
   !character(len=200), parameter :: gridCurvature = "planar"
@@ -67,13 +67,14 @@ contains
 
   !--------------------------------------------------------------------------
 
-  subroutine run_dynamics(block, dt)
+  subroutine run_dynamics(block, dt, nstep)
 
     use cice_dynamics_hex, only: run_dynamics_hex
     use cice_dynamics_tri, only: run_dynamics_tri
 
     type (block_type), intent(inout) :: block
     real (kind=RKIND), intent(in) :: dt
+    integer, intent(in) :: nstep
 
     if (trim(dynamicsGridType) == "hex") then
 
@@ -89,7 +90,8 @@ contains
             block % hexpwl,        &
             block % hexfor,        &
             dt, divergenceFormulation, &
-            evpDamping)
+            evpDamping, &
+            nstep)
        
     else if (trim(dynamicsGridType) == "tri") then
        
