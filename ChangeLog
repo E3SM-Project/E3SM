@@ -1,3 +1,20 @@
+================================================================================
+SVN $Id: ChangeLog 45058 2013-03-20 16:12:21Z jedwards $
+SVN $URL: https://parallelio.googlecode.com/svn/trunk $
+================================================================================
+This file describes what tags were created and why
+===========================
+Originator: jedwards
+Date: Nov 13, 2013
+Model: pio
+Version: pio1_8_0
+One-line summary:  switch to a cmake build, updates for mira, fixes for netcdf4p
+
+	remove all autoconf support files, add cmake support files. 
+	it is currently required to run tests by hand, a cmake implimentation
+	of tests is planned but incomplete.   CESM tests have been run 
+	on this tag.   
+
 ===============================================================
 *** You must run 'make predist' in the pio subdirectory before committing. ***
 

@@ -97,11 +97,11 @@ set(NETCDF_IS_PARALLEL FALSE)
 
 if(${output} STREQUAL yes)
   set(HAS_HDF5 TRUE)
-  if(NETCDF_FIND_QUIETLY OR NOT NETCDF_FIND_REQUIRED)
-    find_package(HDF5)
-  else()
-    find_package(HDF5 REQUIRED)
-  endif()
+#  if(NETCDF_FIND_QUIETLY OR NOT NETCDF_FIND_REQUIRED)
+#    find_package(HDF5)
+#  else()
+#    find_package(HDF5 REQUIRED)
+#  endif()
 #        list( APPEND NETCDF_LIBRARIES_DEBUG
 #            ${HDF5_LIBRARIES_DEBUG} )
 #        list( APPEND NETCDF_LIBRARIES_RELEASE
@@ -109,13 +109,10 @@ if(${output} STREQUAL yes)
 
   TRY_COMPILE(NC4_SUPPORT ${CMAKE_CURRENT_BINARY_DIR}/tryNC4
                           ${CMAKE_CURRENT_SOURCE_DIR}/cmake/TryNC4.f90)
-  IF( ${NC4_SUPPORT})
-    set (NETCDF_IS_PARALLEL ${HDF5_IS_PARALLEL})
-  else()
-    set (NETCDF_IS_PARALLEL FALSE)
-  endif()
-endif()
 
+  set (NETCDF_IS_PARALLEL ${NC4_SUPPORT})
+endif()
+message ("NETCDF_IS_PARALLEL ${NETCDF_IS_PARALLEL} ")
 #_NETCDF_CONFIG (--has-pnetcdf output return)
 #if(${output} STREQUAL yes)
 #  set (NETCDF_IS_PARALLEL TRUE)
@@ -270,7 +267,6 @@ else()
         set( NETCDF_LIBRARIES ${NETCDF_LIBRARIES_RELEASE} )
     endif()
 endif()
-message ("NETCDF_IS_PARALLEL ${NETCDF_IS_PARALLEL} here")
 find_package_handle_standard_args( NETCDF DEFAULT_MSG
     NETCDF_LIBRARIES
     NETCDF_INCLUDE_DIRS
