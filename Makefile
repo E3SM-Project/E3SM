@@ -49,7 +49,7 @@ OBJS = mpas_ocn_mpas_core.o \
        mpas_ocn_time_average_coupled.o \
        mpas_ocn_sea_ice.o
 
-all: libcvmix oac core_ocean
+all: libcvmix sharedocean oac core_ocean
 
 libcvmix:
 	if [ ! -d cvmix ]; then \
@@ -60,12 +60,16 @@ libcvmix:
 	fi
 	ln -sf cvmix/*.mod .
 
+sharedocean:
+	( cd shared_ocean; $(MAKE) CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" all ) 
+	ln -sf shared_ocean/libsharedocn.a .
+
 oac:
 	( cd ../core_ocean_analysis; $(MAKE) CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" all ) 
 	ln -sf ../core_ocean_analysis/liboac.a liboac.a
 
-core_ocean: $(OBJS) oac
-	ar -ru libdycore.a $(OBJS) cvmix/*.o ../core_ocean_analysis/*.o
+core_ocean: $(OBJS) 
+	ar -ru libdycore.a $(OBJS) cvmix/*.o ../core_ocean_analysis/*.o shared_ocean/*.o
 
 core_reg:
 	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) Registry.xml > Registry_processed.xml
@@ -220,7 +224,7 @@ clean:
 	$(RM) $@ $*.mod
 ifeq "$(GEN_F90)" "true"
 	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) $< > $*.f90
-	$(FC) $(FFLAGS) -c $*.f90 $(FCINCLUDES) -I../framework -I../operators -I../external/esmf_time_f90 -I./cvmix/ -I../core_ocean_analysis
+	$(FC) $(FFLAGS) -c $*.f90 $(FCINCLUDES) -I../framework -I../operators -I../external/esmf_time_f90 -I./cvmix/ -I../core_ocean_analysis -Ishared_ocean
 else
-	$(FC) $(CPPFLAGS) $(FFLAGS) -c $*.F $(CPPINCLUDES) $(FCINCLUDES) -I../framework -I../operators -I../external/esmf_time_f90 -I./cvmix/ -I../core_ocean_analysis
+	$(FC) $(CPPFLAGS) $(FFLAGS) -c $*.F $(CPPINCLUDES) $(FCINCLUDES) -I../framework -I../operators -I../external/esmf_time_f90 -I./cvmix/ -I../core_ocean_analysis -Ishared_ocean
 endif

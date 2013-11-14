@@ -1742,6 +1742,15 @@
 		</var_array>
 	</var_struct>
 	<var_struct name="amGlobalStats" time_levs="0">
+		<var name="avgRelativeVorticity" type="real" dimensions="Time" streams="o" units="s^{-1}"
+			description="average relative vorticity over the domain"
+		/>
+		<var name="minRelativeVorticity" type="real" dimensions="Time" streams="o" units="s^{-1}"
+			description="minimum relative vorticity over the domain"
+		/>
+		<var name="maxRelativeVorticity" type="real" dimensions="Time" streams="o" units="s^{-1}"
+			description="maximum relative vorticity over the domain"
+		/>
 		<var name="avgKineticEnergy" type="real" dimensions="Time" streams="o" units="m^2 s^{-2}"
 			description="average kinetic energy over the domain"
 		/>
