@@ -62,10 +62,12 @@ contains
 #ifdef _NETCDF
 #ifdef _NETCDF4
        case(PIO_iotype_netcdf4p)
-!         The 64 bit option is not compatable with hdf5 format files
+!         The 64 bit options are not compatable with hdf5 format files
           
           if(iand(PIO_64BIT_OFFSET,amode)==PIO_64BIT_OFFSET) then
-             nmode = ieor(amode,PIO_64bit_OFFSET)
+             nmode = ieor(amode,PIO_64BIT_OFFSET)
+          else if(iand(PIO_64BIT_DATA,amode)==PIO_64BIT_DATA) then
+             nmode = ieor(amode,PIO_64BIT_DATA)
           else
              nmode=amode
           end if
@@ -82,10 +84,13 @@ contains
 !          if(ierr==PIO_NOERR) ierr = nf90_set_fill(File%fh, NF90_NOFILL, nmode)
        case(PIO_iotype_netcdf4c)
           if(iand(PIO_64BIT_OFFSET,amode)==PIO_64BIT_OFFSET) then
-             nmode = ieor(amode,PIO_64bit_OFFSET)
+             nmode = ieor(amode,PIO_64BIT_OFFSET)
+          else if(iand(PIO_64BIT_DATA,amode)==PIO_64BIT_DATA) then
+             nmode = ieor(amode,PIO_64BIT_DATA)
           else
              nmode=amode
           end if
+
           nmode = ior(nmode,NF90_NETCDF4)
 
           ! Only io proc 0 will do writing
