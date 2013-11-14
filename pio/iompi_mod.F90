@@ -6,7 +6,7 @@
 !>
 !! @file 
 !! $Revision: 766 $
-!! $LastChangedDate: 2013-04-22 16:42:31 -0600 (Mon, 22 Apr 2013) $
+!! $LastChangedDate: 2013-04-22 22:42:31 +0000 (Mon, 22 Apr 2013) $
 !! @brief The MPI-IO direct binary interface to PIO
 !<
 module iompi_mod
@@ -44,7 +44,7 @@ module iompi_mod
 !>
 !! @private
 !<
-# 43 "/glade/u/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
+# 43 "/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
   interface write_mpiio
 ! TYPE int,real,double
        module procedure write_mpiio_int
@@ -54,7 +54,7 @@ module iompi_mod
        module procedure write_mpiio_double
     end interface
 
-# 48 "/glade/u/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
+# 48 "/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
     interface read_mpiio
 ! TYPE int,real,double
        module procedure read_mpiio_int
@@ -66,10 +66,10 @@ module iompi_mod
 
 character(len=*), parameter :: modName='iompi_mod'
 
-# 55 "/glade/u/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
+# 55 "/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
 contains 
 
-# 57 "/glade/u/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
+# 57 "/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
  integer function close_mpiio(File) result(ierr)
 
      type (File_desc_t), intent(inout) :: File ! file descriptor
@@ -100,9 +100,10 @@ contains
         call piodie(__PIO_FILE__,__LINE__,'PIO was not built with -DUSEMPIIO')
 #endif
      end if
+# 87 "/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
  end function close_mpiio
 
-# 89 "/glade/u/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
+# 89 "/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
  integer function create_mpiio(File,fname) result(ierr)
 
      type (File_desc_t), intent(inout) :: File ! file descriptor
@@ -144,9 +145,10 @@ contains
      call piodie(__PIO_FILE__,__LINE__,'PIO was not built with -DUSEMPIIO')
      ierr=0
 #endif
+# 130 "/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
  end function create_mpiio
 
-# 132 "/glade/u/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
+# 132 "/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
  integer function open_mpiio(File,fname) result(ierr)
 
      type (File_desc_t), intent(inout) :: File ! file descriptor
@@ -187,11 +189,12 @@ contains
      call piodie(__PIO_FILE__,__LINE__,'PIO was not built with -DUSEMPIIO')
      ierr=0
 #endif
+# 172 "/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
  end function open_mpiio
 
 
 ! TYPE int,real,double
-# 176 "/glade/u/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
+# 176 "/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
  integer function write_mpiio_int (File,IOBUF,varDesc, iodesc) result(ierr)
     type (File_desc_t), intent(inout)          :: File     ! file descriptor
     integer(i4), intent(in)                    :: IOBUF(:) ! IO buffer
@@ -260,11 +263,10 @@ contains
     call t_stopf("pio_write_mpiio_int")
 #endif
 
+# 244 "/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
  end function write_mpiio_int
-
-
 ! TYPE int,real,double
-# 176 "/glade/u/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
+# 176 "/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
  integer function write_mpiio_real (File,IOBUF,varDesc, iodesc) result(ierr)
     type (File_desc_t), intent(inout)          :: File     ! file descriptor
     real(r4), intent(in)                    :: IOBUF(:) ! IO buffer
@@ -333,11 +335,10 @@ contains
     call t_stopf("pio_write_mpiio_real")
 #endif
 
+# 244 "/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
  end function write_mpiio_real
-
-
 ! TYPE int,real,double
-# 176 "/glade/u/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
+# 176 "/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
  integer function write_mpiio_double (File,IOBUF,varDesc, iodesc) result(ierr)
     type (File_desc_t), intent(inout)          :: File     ! file descriptor
     real(r8), intent(in)                    :: IOBUF(:) ! IO buffer
@@ -406,8 +407,9 @@ contains
     call t_stopf("pio_write_mpiio_double")
 #endif
 
+# 244 "/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
  end function write_mpiio_double
-# 245 "/glade/u/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
+# 245 "/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
  integer function read_mpiio_text (File,IOBUF,varDesc, iodesc) result(ierr)
    
     type (File_desc_t), intent(inout)          :: File     ! file descriptor
@@ -475,8 +477,9 @@ contains
 #ifdef TIMING
     call t_stopf("pio_read_mpiio_text")
 #endif
+# 312 "/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
  end function read_mpiio_text
-# 245 "/glade/u/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
+# 245 "/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
  integer function read_mpiio_real (File,IOBUF,varDesc, iodesc) result(ierr)
    
     type (File_desc_t), intent(inout)          :: File     ! file descriptor
@@ -544,8 +547,9 @@ contains
 #ifdef TIMING
     call t_stopf("pio_read_mpiio_real")
 #endif
+# 312 "/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
  end function read_mpiio_real
-# 245 "/glade/u/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
+# 245 "/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
  integer function read_mpiio_double (File,IOBUF,varDesc, iodesc) result(ierr)
    
     type (File_desc_t), intent(inout)          :: File     ! file descriptor
@@ -613,8 +617,9 @@ contains
 #ifdef TIMING
     call t_stopf("pio_read_mpiio_double")
 #endif
+# 312 "/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
  end function read_mpiio_double
-# 245 "/glade/u/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
+# 245 "/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
  integer function read_mpiio_int (File,IOBUF,varDesc, iodesc) result(ierr)
    
     type (File_desc_t), intent(inout)          :: File     ! file descriptor
@@ -682,10 +687,11 @@ contains
 #ifdef TIMING
     call t_stopf("pio_read_mpiio_int")
 #endif
+# 312 "/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
  end function read_mpiio_int
 
           
-# 315 "/glade/u/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
+# 315 "/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
  subroutine Write_FORTRAN_CntrlWord(File,reclen)
            
       type (File_desc_t), intent(inout) :: File
@@ -723,9 +729,10 @@ contains
      call piodie(__PIO_FILE__,__LINE__,'PIO was not built with -DUSEMPIIO')
 #endif
 
+# 352 "/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
  end subroutine Write_FORTRAN_CntrlWord
 !***********************************************************************
-# 354 "/glade/u/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
+# 354 "/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
  subroutine Read_FORTRAN_CntrlWord(File,reclen)
 
       type (File_desc_t), intent(inout) :: File
@@ -759,6 +766,7 @@ contains
 #else
      call piodie(__PIO_FILE__,__LINE__,'PIO was not built with -DUSEMPIIO')
 #endif
+# 387 "/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
  end subroutine Read_FORTRAN_CntrlWord
 
 end module iompi_mod

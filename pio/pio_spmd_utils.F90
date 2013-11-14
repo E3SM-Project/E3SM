@@ -5,7 +5,7 @@
 !>
 !! @file 
 !! $Revision: 777 $
-!! $LastChangedDate: 2013-05-01 06:39:51 -0600 (Wed, 01 May 2013) $
+!! $LastChangedDate: 2013-05-01 12:39:51 +0000 (Wed, 01 May 2013) $
 !! @brief SPMD helper routines
 !<
 #define __PIO_FILE__ "pio_spmd_utils.F90"
@@ -46,7 +46,7 @@ module pio_spmd_utils
 
   public :: pio_swapm
 
-# 45 "/glade/u/home/jedwards/pio_trunk/pio/pio_spmd_utils.F90.in"
+# 45 "/home/jedwards/pio_trunk/pio/pio_spmd_utils.F90.in"
   interface pio_swapm
      ! TYPE int,real,double,long
      module procedure pio_swapm_int
@@ -61,12 +61,12 @@ module pio_spmd_utils
 
   character(len=*), parameter :: modName='pio_spmd_utils'
 
-# 53 "/glade/u/home/jedwards/pio_trunk/pio/pio_spmd_utils.F90.in"
+# 53 "/home/jedwards/pio_trunk/pio/pio_spmd_utils.F90.in"
 contains
 !========================================================================
 !
 
-# 57 "/glade/u/home/jedwards/pio_trunk/pio/pio_spmd_utils.F90.in"
+# 57 "/home/jedwards/pio_trunk/pio/pio_spmd_utils.F90.in"
    integer function pair(np,p,k)
 
       integer np,p,k,q
@@ -78,13 +78,14 @@ contains
       endif
       return
 
+# 68 "/home/jedwards/pio_trunk/pio/pio_spmd_utils.F90.in"
    end function pair
 
 !
 !========================================================================
 !
 
-# 74 "/glade/u/home/jedwards/pio_trunk/pio/pio_spmd_utils.F90.in"
+# 74 "/home/jedwards/pio_trunk/pio/pio_spmd_utils.F90.in"
   integer function ceil2(n)
      integer n,p
      p=1
@@ -93,13 +94,14 @@ contains
      enddo
      ceil2=p
      return
+# 82 "/home/jedwards/pio_trunk/pio/pio_spmd_utils.F90.in"
   end function ceil2
 
 !
 !========================================================================
 !
 ! TYPE int,real,double,long
-# 88 "/glade/u/home/jedwards/pio_trunk/pio/pio_spmd_utils.F90.in"
+# 88 "/home/jedwards/pio_trunk/pio/pio_spmd_utils.F90.in"
    subroutine pio_swapm_int ( nprocs, mytask,   &
       sndbuf, sbuf_siz, sndlths, sdispls, stypes,  &
       rcvbuf, rbuf_siz, rcvlths, rdispls, rtypes,  &
@@ -623,13 +625,10 @@ contains
 
    return
 
+# 611 "/home/jedwards/pio_trunk/pio/pio_spmd_utils.F90.in"
    end subroutine pio_swapm_int
-
-!
-!========================================================================
-!
 ! TYPE int,real,double,long
-# 88 "/glade/u/home/jedwards/pio_trunk/pio/pio_spmd_utils.F90.in"
+# 88 "/home/jedwards/pio_trunk/pio/pio_spmd_utils.F90.in"
    subroutine pio_swapm_real ( nprocs, mytask,   &
       sndbuf, sbuf_siz, sndlths, sdispls, stypes,  &
       rcvbuf, rbuf_siz, rcvlths, rdispls, rtypes,  &
@@ -1153,13 +1152,10 @@ contains
 
    return
 
+# 611 "/home/jedwards/pio_trunk/pio/pio_spmd_utils.F90.in"
    end subroutine pio_swapm_real
-
-!
-!========================================================================
-!
 ! TYPE int,real,double,long
-# 88 "/glade/u/home/jedwards/pio_trunk/pio/pio_spmd_utils.F90.in"
+# 88 "/home/jedwards/pio_trunk/pio/pio_spmd_utils.F90.in"
    subroutine pio_swapm_double ( nprocs, mytask,   &
       sndbuf, sbuf_siz, sndlths, sdispls, stypes,  &
       rcvbuf, rbuf_siz, rcvlths, rdispls, rtypes,  &
@@ -1683,13 +1679,10 @@ contains
 
    return
 
+# 611 "/home/jedwards/pio_trunk/pio/pio_spmd_utils.F90.in"
    end subroutine pio_swapm_double
-
-!
-!========================================================================
-!
 ! TYPE int,real,double,long
-# 88 "/glade/u/home/jedwards/pio_trunk/pio/pio_spmd_utils.F90.in"
+# 88 "/home/jedwards/pio_trunk/pio/pio_spmd_utils.F90.in"
    subroutine pio_swapm_long ( nprocs, mytask,   &
       sndbuf, sbuf_siz, sndlths, sdispls, stypes,  &
       rcvbuf, rbuf_siz, rcvlths, rdispls, rtypes,  &
@@ -2213,6 +2206,7 @@ contains
 
    return
 
+# 611 "/home/jedwards/pio_trunk/pio/pio_spmd_utils.F90.in"
    end subroutine pio_swapm_long
 
 !

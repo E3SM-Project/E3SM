@@ -4,8 +4,8 @@
 !===================================================
 !>
 !! @file 
-!! $Revision: 841 $
-!! $LastChangedDate: 2013-11-05 13:42:48 -0700 (Tue, 05 Nov 2013) $
+!! $Revision: 847 $
+!! $LastChangedDate: 2013-11-13 22:41:51 +0000 (Wed, 13 Nov 2013) $
 !! @brief Decomposed Write interface to NetCDF
 !<
 module pionfwrite_mod
@@ -16,7 +16,7 @@ module pionfwrite_mod
 !! @private
 !<
   public :: write_nf
-# 15 "/glade/u/home/jedwards/pio_trunk/pio/pionfwrite_mod.F90.in"
+# 15 "/home/jedwards/pio_trunk/pio/pionfwrite_mod.F90.in"
   interface write_nf
      ! TYPE real,int,double
      module procedure write_nfdarray_real
@@ -29,7 +29,7 @@ module pionfwrite_mod
   character(len=*), parameter :: modName='pionfwrite_mod'
 
 
-# 23 "/glade/u/home/jedwards/pio_trunk/pio/pionfwrite_mod.F90.in"
+# 23 "/home/jedwards/pio_trunk/pio/pionfwrite_mod.F90.in"
 contains
   ! note: IOBUF may actually point to the original data
   ! array, and cannot be modified (which is why it is intent(in))
@@ -38,7 +38,7 @@ contains
 !>
 !! @private
 !<
-# 31 "/glade/u/home/jedwards/pio_trunk/pio/pionfwrite_mod.F90.in"
+# 31 "/home/jedwards/pio_trunk/pio/pionfwrite_mod.F90.in"
   integer function write_nfdarray_real (File,IOBUF,varDesc,iodesc,start,count, request) result(ierr)
     use nf_mod
     use pio_types, only : io_desc_t, var_desc_t, file_desc_t, iosystem_desc_t, pio_noerr, &
@@ -255,15 +255,13 @@ contains
 !  call mpi_barrier(file%iosystem%comp_comm, mpierr)
 !  call CheckMPIReturn(subName,mpierr)
 
+# 247 "/home/jedwards/pio_trunk/pio/pionfwrite_mod.F90.in"
   end function WRITE_NFDARRAY_real
-  ! note: IOBUF may actually point to the original data
-  ! array, and cannot be modified (which is why it is intent(in))
-
   ! TYPE real,int,double
 !>
 !! @private
 !<
-# 31 "/glade/u/home/jedwards/pio_trunk/pio/pionfwrite_mod.F90.in"
+# 31 "/home/jedwards/pio_trunk/pio/pionfwrite_mod.F90.in"
   integer function write_nfdarray_int (File,IOBUF,varDesc,iodesc,start,count, request) result(ierr)
     use nf_mod
     use pio_types, only : io_desc_t, var_desc_t, file_desc_t, iosystem_desc_t, pio_noerr, &
@@ -480,15 +478,13 @@ contains
 !  call mpi_barrier(file%iosystem%comp_comm, mpierr)
 !  call CheckMPIReturn(subName,mpierr)
 
+# 247 "/home/jedwards/pio_trunk/pio/pionfwrite_mod.F90.in"
   end function WRITE_NFDARRAY_int
-  ! note: IOBUF may actually point to the original data
-  ! array, and cannot be modified (which is why it is intent(in))
-
   ! TYPE real,int,double
 !>
 !! @private
 !<
-# 31 "/glade/u/home/jedwards/pio_trunk/pio/pionfwrite_mod.F90.in"
+# 31 "/home/jedwards/pio_trunk/pio/pionfwrite_mod.F90.in"
   integer function write_nfdarray_double (File,IOBUF,varDesc,iodesc,start,count, request) result(ierr)
     use nf_mod
     use pio_types, only : io_desc_t, var_desc_t, file_desc_t, iosystem_desc_t, pio_noerr, &
@@ -705,6 +701,7 @@ contains
 !  call mpi_barrier(file%iosystem%comp_comm, mpierr)
 !  call CheckMPIReturn(subName,mpierr)
 
+# 247 "/home/jedwards/pio_trunk/pio/pionfwrite_mod.F90.in"
   end function WRITE_NFDARRAY_double
 
 

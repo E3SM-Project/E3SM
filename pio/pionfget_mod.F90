@@ -7,7 +7,7 @@
 !>
 !! @file 
 !! $Revision: 788 $
-!! $LastChangedDate: 2013-05-08 12:52:45 -0600 (Wed, 08 May 2013) $
+!! $LastChangedDate: 2013-05-08 18:52:45 +0000 (Wed, 08 May 2013) $
 !! @brief Read Routines for non-decomposed NetCDF data.
 !<
 module pionfget_mod
@@ -44,7 +44,7 @@ module pionfget_mod
 !!  root IO task and broadcast in its entirety to all tasks.  
 !<
   public :: get_var
-# 42 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 42 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   interface get_var
      module procedure get_var_0d_text, get_var_vdesc_0d_text
      module procedure get_var_1d_text, get_var_vdesc_1d_text
@@ -118,7 +118,7 @@ module pionfget_mod
 
  character(len=*), parameter :: modName='pionfget_mod'
 
-# 51 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 51 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
 CONTAINS
 
 !>
@@ -132,7 +132,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 64 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 64 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var1_text (File,varid, index, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar1
     use pio_types, only : pio_max_var_dims
@@ -220,20 +220,9 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_var1_text")
 #endif
+# 151 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var1_text
-
-!>
-!! @public
-!! @ingroup PIO_get_var
-!! @brief Reads non-decomposed fields from a NetCDF file
-!! @details
-!! @param File @ref file_desc_t
-!! @param varid : The netcdf variable identifier
-!! @param index :  a multidimensional index that specifies which value to get
-!! @param ival : The value for the netcdf metadata
-!! @retval ierr @ref error_return
-!<
-# 64 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 64 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var1_real (File,varid, index, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar1
     use pio_types, only : pio_max_var_dims
@@ -321,20 +310,9 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_var1_real")
 #endif
+# 151 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var1_real
-
-!>
-!! @public
-!! @ingroup PIO_get_var
-!! @brief Reads non-decomposed fields from a NetCDF file
-!! @details
-!! @param File @ref file_desc_t
-!! @param varid : The netcdf variable identifier
-!! @param index :  a multidimensional index that specifies which value to get
-!! @param ival : The value for the netcdf metadata
-!! @retval ierr @ref error_return
-!<
-# 64 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 64 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var1_double (File,varid, index, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar1
     use pio_types, only : pio_max_var_dims
@@ -422,20 +400,9 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_var1_double")
 #endif
+# 151 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var1_double
-
-!>
-!! @public
-!! @ingroup PIO_get_var
-!! @brief Reads non-decomposed fields from a NetCDF file
-!! @details
-!! @param File @ref file_desc_t
-!! @param varid : The netcdf variable identifier
-!! @param index :  a multidimensional index that specifies which value to get
-!! @param ival : The value for the netcdf metadata
-!! @retval ierr @ref error_return
-!<
-# 64 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 64 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var1_int (File,varid, index, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar1
     use pio_types, only : pio_max_var_dims
@@ -523,6 +490,7 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_var1_int")
 #endif
+# 151 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var1_int
 
 !>
@@ -536,7 +504,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 164 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 164 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var1_vdesc_text (File,vardesc, index, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -547,20 +515,9 @@ CONTAINS
 
     ierr = get_var1_text (File, vardesc%varid, index, ival)
 
+# 174 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var1_vdesc_text
-
-!>
-!! @public
-!! @ingroup PIO_get_var
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @ref file_desc_t
-!! @param vardesc @ref var_desc_t
-!! @param index :  a multidimensional index that specifies which value to get
-!! @param ival : The value for the netcdf metadata
-!! @retval ierr @ref error_return
-!<
-# 164 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 164 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var1_vdesc_real (File,vardesc, index, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -571,20 +528,9 @@ CONTAINS
 
     ierr = get_var1_real (File, vardesc%varid, index, ival)
 
+# 174 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var1_vdesc_real
-
-!>
-!! @public
-!! @ingroup PIO_get_var
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @ref file_desc_t
-!! @param vardesc @ref var_desc_t
-!! @param index :  a multidimensional index that specifies which value to get
-!! @param ival : The value for the netcdf metadata
-!! @retval ierr @ref error_return
-!<
-# 164 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 164 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var1_vdesc_double (File,vardesc, index, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -595,20 +541,9 @@ CONTAINS
 
     ierr = get_var1_double (File, vardesc%varid, index, ival)
 
+# 174 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var1_vdesc_double
-
-!>
-!! @public
-!! @ingroup PIO_get_var
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @ref file_desc_t
-!! @param vardesc @ref var_desc_t
-!! @param index :  a multidimensional index that specifies which value to get
-!! @param ival : The value for the netcdf metadata
-!! @retval ierr @ref error_return
-!<
-# 164 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 164 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var1_vdesc_int (File,vardesc, index, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -619,6 +554,7 @@ CONTAINS
 
     ierr = get_var1_int (File, vardesc%varid, index, ival)
 
+# 174 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var1_vdesc_int
 
 
@@ -647,12 +583,11 @@ CONTAINS
 !!   the variable's dimensions. Hence, if the variable is a record
 !!   variable, the first element of count corresponds to a count of the
 !!   number of records to read.
-# 202 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
 !! Note: setting any element of the count array to zero causes the function to exit without error, and without doing anything. 
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 206 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 206 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_vara_1d_text (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -742,9 +677,8 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_vara_1d_text")
 #endif
+# 295 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_vara_1d_text
-
-
 ! DIMS 1,2,3,4,5
 !>
 !! @public
@@ -770,12 +704,11 @@ CONTAINS
 !!   the variable's dimensions. Hence, if the variable is a record
 !!   variable, the first element of count corresponds to a count of the
 !!   number of records to read.
-# 202 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
 !! Note: setting any element of the count array to zero causes the function to exit without error, and without doing anything. 
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 206 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 206 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_vara_2d_text (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -865,9 +798,8 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_vara_2d_text")
 #endif
+# 295 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_vara_2d_text
-
-
 ! DIMS 1,2,3,4,5
 !>
 !! @public
@@ -893,12 +825,11 @@ CONTAINS
 !!   the variable's dimensions. Hence, if the variable is a record
 !!   variable, the first element of count corresponds to a count of the
 !!   number of records to read.
-# 202 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
 !! Note: setting any element of the count array to zero causes the function to exit without error, and without doing anything. 
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 206 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 206 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_vara_3d_text (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -988,9 +919,8 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_vara_3d_text")
 #endif
+# 295 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_vara_3d_text
-
-
 ! DIMS 1,2,3,4,5
 !>
 !! @public
@@ -1016,12 +946,11 @@ CONTAINS
 !!   the variable's dimensions. Hence, if the variable is a record
 !!   variable, the first element of count corresponds to a count of the
 !!   number of records to read.
-# 202 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
 !! Note: setting any element of the count array to zero causes the function to exit without error, and without doing anything. 
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 206 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 206 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_vara_4d_text (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -1111,9 +1040,8 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_vara_4d_text")
 #endif
+# 295 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_vara_4d_text
-
-
 ! DIMS 1,2,3,4,5
 !>
 !! @public
@@ -1139,12 +1067,11 @@ CONTAINS
 !!   the variable's dimensions. Hence, if the variable is a record
 !!   variable, the first element of count corresponds to a count of the
 !!   number of records to read.
-# 202 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
 !! Note: setting any element of the count array to zero causes the function to exit without error, and without doing anything. 
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 206 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 206 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_vara_5d_text (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -1234,9 +1161,8 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_vara_5d_text")
 #endif
+# 295 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_vara_5d_text
-
-
 ! DIMS 1,2,3,4,5
 !>
 !! @public
@@ -1262,12 +1188,11 @@ CONTAINS
 !!   the variable's dimensions. Hence, if the variable is a record
 !!   variable, the first element of count corresponds to a count of the
 !!   number of records to read.
-# 202 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
 !! Note: setting any element of the count array to zero causes the function to exit without error, and without doing anything. 
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 206 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 206 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_vara_1d_real (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -1357,9 +1282,8 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_vara_1d_real")
 #endif
+# 295 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_vara_1d_real
-
-
 ! DIMS 1,2,3,4,5
 !>
 !! @public
@@ -1385,12 +1309,11 @@ CONTAINS
 !!   the variable's dimensions. Hence, if the variable is a record
 !!   variable, the first element of count corresponds to a count of the
 !!   number of records to read.
-# 202 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
 !! Note: setting any element of the count array to zero causes the function to exit without error, and without doing anything. 
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 206 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 206 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_vara_2d_real (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -1480,9 +1403,8 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_vara_2d_real")
 #endif
+# 295 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_vara_2d_real
-
-
 ! DIMS 1,2,3,4,5
 !>
 !! @public
@@ -1508,12 +1430,11 @@ CONTAINS
 !!   the variable's dimensions. Hence, if the variable is a record
 !!   variable, the first element of count corresponds to a count of the
 !!   number of records to read.
-# 202 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
 !! Note: setting any element of the count array to zero causes the function to exit without error, and without doing anything. 
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 206 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 206 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_vara_3d_real (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -1603,9 +1524,8 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_vara_3d_real")
 #endif
+# 295 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_vara_3d_real
-
-
 ! DIMS 1,2,3,4,5
 !>
 !! @public
@@ -1631,12 +1551,11 @@ CONTAINS
 !!   the variable's dimensions. Hence, if the variable is a record
 !!   variable, the first element of count corresponds to a count of the
 !!   number of records to read.
-# 202 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
 !! Note: setting any element of the count array to zero causes the function to exit without error, and without doing anything. 
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 206 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 206 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_vara_4d_real (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -1726,9 +1645,8 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_vara_4d_real")
 #endif
+# 295 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_vara_4d_real
-
-
 ! DIMS 1,2,3,4,5
 !>
 !! @public
@@ -1754,12 +1672,11 @@ CONTAINS
 !!   the variable's dimensions. Hence, if the variable is a record
 !!   variable, the first element of count corresponds to a count of the
 !!   number of records to read.
-# 202 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
 !! Note: setting any element of the count array to zero causes the function to exit without error, and without doing anything. 
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 206 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 206 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_vara_5d_real (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -1849,9 +1766,8 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_vara_5d_real")
 #endif
+# 295 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_vara_5d_real
-
-
 ! DIMS 1,2,3,4,5
 !>
 !! @public
@@ -1877,12 +1793,11 @@ CONTAINS
 !!   the variable's dimensions. Hence, if the variable is a record
 !!   variable, the first element of count corresponds to a count of the
 !!   number of records to read.
-# 202 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
 !! Note: setting any element of the count array to zero causes the function to exit without error, and without doing anything. 
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 206 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 206 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_vara_1d_double (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -1972,9 +1887,8 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_vara_1d_double")
 #endif
+# 295 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_vara_1d_double
-
-
 ! DIMS 1,2,3,4,5
 !>
 !! @public
@@ -2000,12 +1914,11 @@ CONTAINS
 !!   the variable's dimensions. Hence, if the variable is a record
 !!   variable, the first element of count corresponds to a count of the
 !!   number of records to read.
-# 202 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
 !! Note: setting any element of the count array to zero causes the function to exit without error, and without doing anything. 
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 206 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 206 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_vara_2d_double (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -2095,9 +2008,8 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_vara_2d_double")
 #endif
+# 295 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_vara_2d_double
-
-
 ! DIMS 1,2,3,4,5
 !>
 !! @public
@@ -2123,12 +2035,11 @@ CONTAINS
 !!   the variable's dimensions. Hence, if the variable is a record
 !!   variable, the first element of count corresponds to a count of the
 !!   number of records to read.
-# 202 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
 !! Note: setting any element of the count array to zero causes the function to exit without error, and without doing anything. 
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 206 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 206 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_vara_3d_double (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -2218,9 +2129,8 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_vara_3d_double")
 #endif
+# 295 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_vara_3d_double
-
-
 ! DIMS 1,2,3,4,5
 !>
 !! @public
@@ -2246,12 +2156,11 @@ CONTAINS
 !!   the variable's dimensions. Hence, if the variable is a record
 !!   variable, the first element of count corresponds to a count of the
 !!   number of records to read.
-# 202 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
 !! Note: setting any element of the count array to zero causes the function to exit without error, and without doing anything. 
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 206 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 206 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_vara_4d_double (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -2341,9 +2250,8 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_vara_4d_double")
 #endif
+# 295 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_vara_4d_double
-
-
 ! DIMS 1,2,3,4,5
 !>
 !! @public
@@ -2369,12 +2277,11 @@ CONTAINS
 !!   the variable's dimensions. Hence, if the variable is a record
 !!   variable, the first element of count corresponds to a count of the
 !!   number of records to read.
-# 202 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
 !! Note: setting any element of the count array to zero causes the function to exit without error, and without doing anything. 
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 206 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 206 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_vara_5d_double (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -2464,9 +2371,8 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_vara_5d_double")
 #endif
+# 295 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_vara_5d_double
-
-
 ! DIMS 1,2,3,4,5
 !>
 !! @public
@@ -2492,12 +2398,11 @@ CONTAINS
 !!   the variable's dimensions. Hence, if the variable is a record
 !!   variable, the first element of count corresponds to a count of the
 !!   number of records to read.
-# 202 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
 !! Note: setting any element of the count array to zero causes the function to exit without error, and without doing anything. 
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 206 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 206 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_vara_1d_int (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -2587,9 +2492,8 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_vara_1d_int")
 #endif
+# 295 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_vara_1d_int
-
-
 ! DIMS 1,2,3,4,5
 !>
 !! @public
@@ -2615,12 +2519,11 @@ CONTAINS
 !!   the variable's dimensions. Hence, if the variable is a record
 !!   variable, the first element of count corresponds to a count of the
 !!   number of records to read.
-# 202 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
 !! Note: setting any element of the count array to zero causes the function to exit without error, and without doing anything. 
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 206 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 206 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_vara_2d_int (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -2710,9 +2613,8 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_vara_2d_int")
 #endif
+# 295 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_vara_2d_int
-
-
 ! DIMS 1,2,3,4,5
 !>
 !! @public
@@ -2738,12 +2640,11 @@ CONTAINS
 !!   the variable's dimensions. Hence, if the variable is a record
 !!   variable, the first element of count corresponds to a count of the
 !!   number of records to read.
-# 202 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
 !! Note: setting any element of the count array to zero causes the function to exit without error, and without doing anything. 
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 206 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 206 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_vara_3d_int (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -2833,9 +2734,8 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_vara_3d_int")
 #endif
+# 295 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_vara_3d_int
-
-
 ! DIMS 1,2,3,4,5
 !>
 !! @public
@@ -2861,12 +2761,11 @@ CONTAINS
 !!   the variable's dimensions. Hence, if the variable is a record
 !!   variable, the first element of count corresponds to a count of the
 !!   number of records to read.
-# 202 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
 !! Note: setting any element of the count array to zero causes the function to exit without error, and without doing anything. 
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 206 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 206 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_vara_4d_int (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -2956,9 +2855,8 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_vara_4d_int")
 #endif
+# 295 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_vara_4d_int
-
-
 ! DIMS 1,2,3,4,5
 !>
 !! @public
@@ -2984,12 +2882,11 @@ CONTAINS
 !!   the variable's dimensions. Hence, if the variable is a record
 !!   variable, the first element of count corresponds to a count of the
 !!   number of records to read.
-# 202 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
 !! Note: setting any element of the count array to zero causes the function to exit without error, and without doing anything. 
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 206 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 206 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_vara_5d_int (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -3079,6 +2976,7 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_vara_5d_int")
 #endif
+# 295 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_vara_5d_int
 
 ! DIMS 1,2,3,4,5
@@ -3106,12 +3004,11 @@ CONTAINS
 !!   the variable's dimensions. Hence, if the variable is a record
 !!   variable, the first element of count corresponds to a count of the
 !!   number of records to read.
-# 322 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
 !! Note: setting any element of the count array to zero causes the function to exit without error, and without doing anything. 
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 326 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 326 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_vara_vdesc_1d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3122,8 +3019,8 @@ CONTAINS
 
     ierr = get_vara_1d_text (File, vardesc%varid, start, count, ival)
 
+# 336 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_vara_vdesc_1d_text
-
 ! DIMS 1,2,3,4,5
 !>
 !! @public
@@ -3149,12 +3046,11 @@ CONTAINS
 !!   the variable's dimensions. Hence, if the variable is a record
 !!   variable, the first element of count corresponds to a count of the
 !!   number of records to read.
-# 322 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
 !! Note: setting any element of the count array to zero causes the function to exit without error, and without doing anything. 
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 326 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 326 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_vara_vdesc_2d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3165,8 +3061,8 @@ CONTAINS
 
     ierr = get_vara_2d_text (File, vardesc%varid, start, count, ival)
 
+# 336 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_vara_vdesc_2d_text
-
 ! DIMS 1,2,3,4,5
 !>
 !! @public
@@ -3192,12 +3088,11 @@ CONTAINS
 !!   the variable's dimensions. Hence, if the variable is a record
 !!   variable, the first element of count corresponds to a count of the
 !!   number of records to read.
-# 322 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
 !! Note: setting any element of the count array to zero causes the function to exit without error, and without doing anything. 
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 326 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 326 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_vara_vdesc_3d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3208,8 +3103,8 @@ CONTAINS
 
     ierr = get_vara_3d_text (File, vardesc%varid, start, count, ival)
 
+# 336 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_vara_vdesc_3d_text
-
 ! DIMS 1,2,3,4,5
 !>
 !! @public
@@ -3235,12 +3130,11 @@ CONTAINS
 !!   the variable's dimensions. Hence, if the variable is a record
 !!   variable, the first element of count corresponds to a count of the
 !!   number of records to read.
-# 322 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
 !! Note: setting any element of the count array to zero causes the function to exit without error, and without doing anything. 
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 326 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 326 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_vara_vdesc_4d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3251,8 +3145,8 @@ CONTAINS
 
     ierr = get_vara_4d_text (File, vardesc%varid, start, count, ival)
 
+# 336 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_vara_vdesc_4d_text
-
 ! DIMS 1,2,3,4,5
 !>
 !! @public
@@ -3278,12 +3172,11 @@ CONTAINS
 !!   the variable's dimensions. Hence, if the variable is a record
 !!   variable, the first element of count corresponds to a count of the
 !!   number of records to read.
-# 322 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
 !! Note: setting any element of the count array to zero causes the function to exit without error, and without doing anything. 
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 326 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 326 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_vara_vdesc_5d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3294,8 +3187,8 @@ CONTAINS
 
     ierr = get_vara_5d_text (File, vardesc%varid, start, count, ival)
 
+# 336 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_vara_vdesc_5d_text
-
 ! DIMS 1,2,3,4,5
 !>
 !! @public
@@ -3321,12 +3214,11 @@ CONTAINS
 !!   the variable's dimensions. Hence, if the variable is a record
 !!   variable, the first element of count corresponds to a count of the
 !!   number of records to read.
-# 322 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
 !! Note: setting any element of the count array to zero causes the function to exit without error, and without doing anything. 
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 326 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 326 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_vara_vdesc_1d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3337,8 +3229,8 @@ CONTAINS
 
     ierr = get_vara_1d_real (File, vardesc%varid, start, count, ival)
 
+# 336 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_vara_vdesc_1d_real
-
 ! DIMS 1,2,3,4,5
 !>
 !! @public
@@ -3364,12 +3256,11 @@ CONTAINS
 !!   the variable's dimensions. Hence, if the variable is a record
 !!   variable, the first element of count corresponds to a count of the
 !!   number of records to read.
-# 322 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
 !! Note: setting any element of the count array to zero causes the function to exit without error, and without doing anything. 
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 326 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 326 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_vara_vdesc_2d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3380,8 +3271,8 @@ CONTAINS
 
     ierr = get_vara_2d_real (File, vardesc%varid, start, count, ival)
 
+# 336 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_vara_vdesc_2d_real
-
 ! DIMS 1,2,3,4,5
 !>
 !! @public
@@ -3407,12 +3298,11 @@ CONTAINS
 !!   the variable's dimensions. Hence, if the variable is a record
 !!   variable, the first element of count corresponds to a count of the
 !!   number of records to read.
-# 322 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
 !! Note: setting any element of the count array to zero causes the function to exit without error, and without doing anything. 
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 326 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 326 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_vara_vdesc_3d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3423,8 +3313,8 @@ CONTAINS
 
     ierr = get_vara_3d_real (File, vardesc%varid, start, count, ival)
 
+# 336 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_vara_vdesc_3d_real
-
 ! DIMS 1,2,3,4,5
 !>
 !! @public
@@ -3450,12 +3340,11 @@ CONTAINS
 !!   the variable's dimensions. Hence, if the variable is a record
 !!   variable, the first element of count corresponds to a count of the
 !!   number of records to read.
-# 322 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
 !! Note: setting any element of the count array to zero causes the function to exit without error, and without doing anything. 
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 326 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 326 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_vara_vdesc_4d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3466,8 +3355,8 @@ CONTAINS
 
     ierr = get_vara_4d_real (File, vardesc%varid, start, count, ival)
 
+# 336 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_vara_vdesc_4d_real
-
 ! DIMS 1,2,3,4,5
 !>
 !! @public
@@ -3493,12 +3382,11 @@ CONTAINS
 !!   the variable's dimensions. Hence, if the variable is a record
 !!   variable, the first element of count corresponds to a count of the
 !!   number of records to read.
-# 322 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
 !! Note: setting any element of the count array to zero causes the function to exit without error, and without doing anything. 
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 326 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 326 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_vara_vdesc_5d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3509,8 +3397,8 @@ CONTAINS
 
     ierr = get_vara_5d_real (File, vardesc%varid, start, count, ival)
 
+# 336 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_vara_vdesc_5d_real
-
 ! DIMS 1,2,3,4,5
 !>
 !! @public
@@ -3536,12 +3424,11 @@ CONTAINS
 !!   the variable's dimensions. Hence, if the variable is a record
 !!   variable, the first element of count corresponds to a count of the
 !!   number of records to read.
-# 322 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
 !! Note: setting any element of the count array to zero causes the function to exit without error, and without doing anything. 
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 326 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 326 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_vara_vdesc_1d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3552,8 +3439,8 @@ CONTAINS
 
     ierr = get_vara_1d_double (File, vardesc%varid, start, count, ival)
 
+# 336 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_vara_vdesc_1d_double
-
 ! DIMS 1,2,3,4,5
 !>
 !! @public
@@ -3579,12 +3466,11 @@ CONTAINS
 !!   the variable's dimensions. Hence, if the variable is a record
 !!   variable, the first element of count corresponds to a count of the
 !!   number of records to read.
-# 322 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
 !! Note: setting any element of the count array to zero causes the function to exit without error, and without doing anything. 
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 326 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 326 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_vara_vdesc_2d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3595,8 +3481,8 @@ CONTAINS
 
     ierr = get_vara_2d_double (File, vardesc%varid, start, count, ival)
 
+# 336 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_vara_vdesc_2d_double
-
 ! DIMS 1,2,3,4,5
 !>
 !! @public
@@ -3622,12 +3508,11 @@ CONTAINS
 !!   the variable's dimensions. Hence, if the variable is a record
 !!   variable, the first element of count corresponds to a count of the
 !!   number of records to read.
-# 322 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
 !! Note: setting any element of the count array to zero causes the function to exit without error, and without doing anything. 
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 326 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 326 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_vara_vdesc_3d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3638,8 +3523,8 @@ CONTAINS
 
     ierr = get_vara_3d_double (File, vardesc%varid, start, count, ival)
 
+# 336 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_vara_vdesc_3d_double
-
 ! DIMS 1,2,3,4,5
 !>
 !! @public
@@ -3665,12 +3550,11 @@ CONTAINS
 !!   the variable's dimensions. Hence, if the variable is a record
 !!   variable, the first element of count corresponds to a count of the
 !!   number of records to read.
-# 322 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
 !! Note: setting any element of the count array to zero causes the function to exit without error, and without doing anything. 
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 326 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 326 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_vara_vdesc_4d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3681,8 +3565,8 @@ CONTAINS
 
     ierr = get_vara_4d_double (File, vardesc%varid, start, count, ival)
 
+# 336 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_vara_vdesc_4d_double
-
 ! DIMS 1,2,3,4,5
 !>
 !! @public
@@ -3708,12 +3592,11 @@ CONTAINS
 !!   the variable's dimensions. Hence, if the variable is a record
 !!   variable, the first element of count corresponds to a count of the
 !!   number of records to read.
-# 322 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
 !! Note: setting any element of the count array to zero causes the function to exit without error, and without doing anything. 
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 326 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 326 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_vara_vdesc_5d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3724,8 +3607,8 @@ CONTAINS
 
     ierr = get_vara_5d_double (File, vardesc%varid, start, count, ival)
 
+# 336 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_vara_vdesc_5d_double
-
 ! DIMS 1,2,3,4,5
 !>
 !! @public
@@ -3751,12 +3634,11 @@ CONTAINS
 !!   the variable's dimensions. Hence, if the variable is a record
 !!   variable, the first element of count corresponds to a count of the
 !!   number of records to read.
-# 322 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
 !! Note: setting any element of the count array to zero causes the function to exit without error, and without doing anything. 
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 326 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 326 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_vara_vdesc_1d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3767,8 +3649,8 @@ CONTAINS
 
     ierr = get_vara_1d_int (File, vardesc%varid, start, count, ival)
 
+# 336 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_vara_vdesc_1d_int
-
 ! DIMS 1,2,3,4,5
 !>
 !! @public
@@ -3794,12 +3676,11 @@ CONTAINS
 !!   the variable's dimensions. Hence, if the variable is a record
 !!   variable, the first element of count corresponds to a count of the
 !!   number of records to read.
-# 322 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
 !! Note: setting any element of the count array to zero causes the function to exit without error, and without doing anything. 
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 326 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 326 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_vara_vdesc_2d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3810,8 +3691,8 @@ CONTAINS
 
     ierr = get_vara_2d_int (File, vardesc%varid, start, count, ival)
 
+# 336 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_vara_vdesc_2d_int
-
 ! DIMS 1,2,3,4,5
 !>
 !! @public
@@ -3837,12 +3718,11 @@ CONTAINS
 !!   the variable's dimensions. Hence, if the variable is a record
 !!   variable, the first element of count corresponds to a count of the
 !!   number of records to read.
-# 322 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
 !! Note: setting any element of the count array to zero causes the function to exit without error, and without doing anything. 
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 326 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 326 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_vara_vdesc_3d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3853,8 +3733,8 @@ CONTAINS
 
     ierr = get_vara_3d_int (File, vardesc%varid, start, count, ival)
 
+# 336 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_vara_vdesc_3d_int
-
 ! DIMS 1,2,3,4,5
 !>
 !! @public
@@ -3880,12 +3760,11 @@ CONTAINS
 !!   the variable's dimensions. Hence, if the variable is a record
 !!   variable, the first element of count corresponds to a count of the
 !!   number of records to read.
-# 322 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
 !! Note: setting any element of the count array to zero causes the function to exit without error, and without doing anything. 
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 326 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 326 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_vara_vdesc_4d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3896,8 +3775,8 @@ CONTAINS
 
     ierr = get_vara_4d_int (File, vardesc%varid, start, count, ival)
 
+# 336 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_vara_vdesc_4d_int
-
 ! DIMS 1,2,3,4,5
 !>
 !! @public
@@ -3923,12 +3802,11 @@ CONTAINS
 !!   the variable's dimensions. Hence, if the variable is a record
 !!   variable, the first element of count corresponds to a count of the
 !!   number of records to read.
-# 322 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
 !! Note: setting any element of the count array to zero causes the function to exit without error, and without doing anything. 
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 326 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 326 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_vara_vdesc_5d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3939,6 +3817,7 @@ CONTAINS
 
     ierr = get_vara_5d_int (File, vardesc%varid, start, count, ival)
 
+# 336 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_vara_vdesc_5d_int
 
 !>
@@ -3951,7 +3830,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 348 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 348 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var_0d_text (File,varid, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar_0d
     type (File_desc_t), intent(in) :: File
@@ -4033,19 +3912,9 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_var_0d_text")
 #endif
+# 429 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var_0d_text
-
-!>
-!! @public
-!! @ingroup PIO_get_var
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @ref file_desc_t
-!! @param varid : The netcdf variable identifier
-!! @param ival : The value for the netcdf metadata
-!! @retval ierr @ref error_return
-!<
-# 348 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 348 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var_1d_text (File,varid, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar_1d
     type (File_desc_t), intent(in) :: File
@@ -4127,19 +3996,9 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_var_1d_text")
 #endif
+# 429 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var_1d_text
-
-!>
-!! @public
-!! @ingroup PIO_get_var
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @ref file_desc_t
-!! @param varid : The netcdf variable identifier
-!! @param ival : The value for the netcdf metadata
-!! @retval ierr @ref error_return
-!<
-# 348 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 348 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var_2d_text (File,varid, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar_2d
     type (File_desc_t), intent(in) :: File
@@ -4221,19 +4080,9 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_var_2d_text")
 #endif
+# 429 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var_2d_text
-
-!>
-!! @public
-!! @ingroup PIO_get_var
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @ref file_desc_t
-!! @param varid : The netcdf variable identifier
-!! @param ival : The value for the netcdf metadata
-!! @retval ierr @ref error_return
-!<
-# 348 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 348 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var_3d_text (File,varid, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar_3d
     type (File_desc_t), intent(in) :: File
@@ -4315,19 +4164,9 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_var_3d_text")
 #endif
+# 429 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var_3d_text
-
-!>
-!! @public
-!! @ingroup PIO_get_var
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @ref file_desc_t
-!! @param varid : The netcdf variable identifier
-!! @param ival : The value for the netcdf metadata
-!! @retval ierr @ref error_return
-!<
-# 348 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 348 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var_4d_text (File,varid, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar_4d
     type (File_desc_t), intent(in) :: File
@@ -4409,19 +4248,9 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_var_4d_text")
 #endif
+# 429 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var_4d_text
-
-!>
-!! @public
-!! @ingroup PIO_get_var
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @ref file_desc_t
-!! @param varid : The netcdf variable identifier
-!! @param ival : The value for the netcdf metadata
-!! @retval ierr @ref error_return
-!<
-# 348 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 348 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var_5d_text (File,varid, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar_5d
     type (File_desc_t), intent(in) :: File
@@ -4503,19 +4332,9 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_var_5d_text")
 #endif
+# 429 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var_5d_text
-
-!>
-!! @public
-!! @ingroup PIO_get_var
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @ref file_desc_t
-!! @param varid : The netcdf variable identifier
-!! @param ival : The value for the netcdf metadata
-!! @retval ierr @ref error_return
-!<
-# 348 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 348 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var_0d_real (File,varid, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar_0d
     type (File_desc_t), intent(in) :: File
@@ -4597,19 +4416,9 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_var_0d_real")
 #endif
+# 429 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var_0d_real
-
-!>
-!! @public
-!! @ingroup PIO_get_var
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @ref file_desc_t
-!! @param varid : The netcdf variable identifier
-!! @param ival : The value for the netcdf metadata
-!! @retval ierr @ref error_return
-!<
-# 348 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 348 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var_1d_real (File,varid, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar_1d
     type (File_desc_t), intent(in) :: File
@@ -4691,19 +4500,9 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_var_1d_real")
 #endif
+# 429 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var_1d_real
-
-!>
-!! @public
-!! @ingroup PIO_get_var
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @ref file_desc_t
-!! @param varid : The netcdf variable identifier
-!! @param ival : The value for the netcdf metadata
-!! @retval ierr @ref error_return
-!<
-# 348 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 348 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var_2d_real (File,varid, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar_2d
     type (File_desc_t), intent(in) :: File
@@ -4785,19 +4584,9 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_var_2d_real")
 #endif
+# 429 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var_2d_real
-
-!>
-!! @public
-!! @ingroup PIO_get_var
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @ref file_desc_t
-!! @param varid : The netcdf variable identifier
-!! @param ival : The value for the netcdf metadata
-!! @retval ierr @ref error_return
-!<
-# 348 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 348 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var_3d_real (File,varid, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar_3d
     type (File_desc_t), intent(in) :: File
@@ -4879,19 +4668,9 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_var_3d_real")
 #endif
+# 429 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var_3d_real
-
-!>
-!! @public
-!! @ingroup PIO_get_var
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @ref file_desc_t
-!! @param varid : The netcdf variable identifier
-!! @param ival : The value for the netcdf metadata
-!! @retval ierr @ref error_return
-!<
-# 348 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 348 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var_4d_real (File,varid, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar_4d
     type (File_desc_t), intent(in) :: File
@@ -4973,19 +4752,9 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_var_4d_real")
 #endif
+# 429 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var_4d_real
-
-!>
-!! @public
-!! @ingroup PIO_get_var
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @ref file_desc_t
-!! @param varid : The netcdf variable identifier
-!! @param ival : The value for the netcdf metadata
-!! @retval ierr @ref error_return
-!<
-# 348 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 348 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var_5d_real (File,varid, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar_5d
     type (File_desc_t), intent(in) :: File
@@ -5067,19 +4836,9 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_var_5d_real")
 #endif
+# 429 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var_5d_real
-
-!>
-!! @public
-!! @ingroup PIO_get_var
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @ref file_desc_t
-!! @param varid : The netcdf variable identifier
-!! @param ival : The value for the netcdf metadata
-!! @retval ierr @ref error_return
-!<
-# 348 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 348 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var_0d_double (File,varid, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar_0d
     type (File_desc_t), intent(in) :: File
@@ -5161,19 +4920,9 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_var_0d_double")
 #endif
+# 429 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var_0d_double
-
-!>
-!! @public
-!! @ingroup PIO_get_var
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @ref file_desc_t
-!! @param varid : The netcdf variable identifier
-!! @param ival : The value for the netcdf metadata
-!! @retval ierr @ref error_return
-!<
-# 348 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 348 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var_1d_double (File,varid, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar_1d
     type (File_desc_t), intent(in) :: File
@@ -5255,19 +5004,9 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_var_1d_double")
 #endif
+# 429 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var_1d_double
-
-!>
-!! @public
-!! @ingroup PIO_get_var
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @ref file_desc_t
-!! @param varid : The netcdf variable identifier
-!! @param ival : The value for the netcdf metadata
-!! @retval ierr @ref error_return
-!<
-# 348 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 348 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var_2d_double (File,varid, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar_2d
     type (File_desc_t), intent(in) :: File
@@ -5349,19 +5088,9 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_var_2d_double")
 #endif
+# 429 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var_2d_double
-
-!>
-!! @public
-!! @ingroup PIO_get_var
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @ref file_desc_t
-!! @param varid : The netcdf variable identifier
-!! @param ival : The value for the netcdf metadata
-!! @retval ierr @ref error_return
-!<
-# 348 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 348 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var_3d_double (File,varid, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar_3d
     type (File_desc_t), intent(in) :: File
@@ -5443,19 +5172,9 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_var_3d_double")
 #endif
+# 429 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var_3d_double
-
-!>
-!! @public
-!! @ingroup PIO_get_var
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @ref file_desc_t
-!! @param varid : The netcdf variable identifier
-!! @param ival : The value for the netcdf metadata
-!! @retval ierr @ref error_return
-!<
-# 348 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 348 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var_4d_double (File,varid, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar_4d
     type (File_desc_t), intent(in) :: File
@@ -5537,19 +5256,9 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_var_4d_double")
 #endif
+# 429 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var_4d_double
-
-!>
-!! @public
-!! @ingroup PIO_get_var
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @ref file_desc_t
-!! @param varid : The netcdf variable identifier
-!! @param ival : The value for the netcdf metadata
-!! @retval ierr @ref error_return
-!<
-# 348 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 348 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var_5d_double (File,varid, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar_5d
     type (File_desc_t), intent(in) :: File
@@ -5631,19 +5340,9 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_var_5d_double")
 #endif
+# 429 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var_5d_double
-
-!>
-!! @public
-!! @ingroup PIO_get_var
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @ref file_desc_t
-!! @param varid : The netcdf variable identifier
-!! @param ival : The value for the netcdf metadata
-!! @retval ierr @ref error_return
-!<
-# 348 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 348 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var_0d_int (File,varid, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar_0d
     type (File_desc_t), intent(in) :: File
@@ -5725,19 +5424,9 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_var_0d_int")
 #endif
+# 429 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var_0d_int
-
-!>
-!! @public
-!! @ingroup PIO_get_var
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @ref file_desc_t
-!! @param varid : The netcdf variable identifier
-!! @param ival : The value for the netcdf metadata
-!! @retval ierr @ref error_return
-!<
-# 348 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 348 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var_1d_int (File,varid, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar_1d
     type (File_desc_t), intent(in) :: File
@@ -5819,19 +5508,9 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_var_1d_int")
 #endif
+# 429 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var_1d_int
-
-!>
-!! @public
-!! @ingroup PIO_get_var
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @ref file_desc_t
-!! @param varid : The netcdf variable identifier
-!! @param ival : The value for the netcdf metadata
-!! @retval ierr @ref error_return
-!<
-# 348 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 348 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var_2d_int (File,varid, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar_2d
     type (File_desc_t), intent(in) :: File
@@ -5913,19 +5592,9 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_var_2d_int")
 #endif
+# 429 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var_2d_int
-
-!>
-!! @public
-!! @ingroup PIO_get_var
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @ref file_desc_t
-!! @param varid : The netcdf variable identifier
-!! @param ival : The value for the netcdf metadata
-!! @retval ierr @ref error_return
-!<
-# 348 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 348 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var_3d_int (File,varid, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar_3d
     type (File_desc_t), intent(in) :: File
@@ -6007,19 +5676,9 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_var_3d_int")
 #endif
+# 429 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var_3d_int
-
-!>
-!! @public
-!! @ingroup PIO_get_var
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @ref file_desc_t
-!! @param varid : The netcdf variable identifier
-!! @param ival : The value for the netcdf metadata
-!! @retval ierr @ref error_return
-!<
-# 348 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 348 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var_4d_int (File,varid, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar_4d
     type (File_desc_t), intent(in) :: File
@@ -6101,19 +5760,9 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_var_4d_int")
 #endif
+# 429 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var_4d_int
-
-!>
-!! @public
-!! @ingroup PIO_get_var
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @ref file_desc_t
-!! @param varid : The netcdf variable identifier
-!! @param ival : The value for the netcdf metadata
-!! @retval ierr @ref error_return
-!<
-# 348 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 348 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var_5d_int (File,varid, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar_5d
     type (File_desc_t), intent(in) :: File
@@ -6195,6 +5844,7 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_var_5d_int")
 #endif
+# 429 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var_5d_int
 
 !>
@@ -6207,7 +5857,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 441 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 441 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var_vdesc_0d_text (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6217,19 +5867,9 @@ CONTAINS
 
     ierr = get_var_0d_text (File, vardesc%varid, ival)
 
+# 450 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var_vdesc_0d_text
-
-!>
-!! @public
-!! @ingroup PIO_get_var
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @ref file_desc_t
-!! @param vardesc @ref var_desc_t
-!! @param ival : The value for the netcdf metadata
-!! @retval ierr @ref error_return
-!<
-# 441 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 441 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var_vdesc_1d_text (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6239,19 +5879,9 @@ CONTAINS
 
     ierr = get_var_1d_text (File, vardesc%varid, ival)
 
+# 450 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var_vdesc_1d_text
-
-!>
-!! @public
-!! @ingroup PIO_get_var
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @ref file_desc_t
-!! @param vardesc @ref var_desc_t
-!! @param ival : The value for the netcdf metadata
-!! @retval ierr @ref error_return
-!<
-# 441 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 441 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var_vdesc_2d_text (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6261,19 +5891,9 @@ CONTAINS
 
     ierr = get_var_2d_text (File, vardesc%varid, ival)
 
+# 450 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var_vdesc_2d_text
-
-!>
-!! @public
-!! @ingroup PIO_get_var
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @ref file_desc_t
-!! @param vardesc @ref var_desc_t
-!! @param ival : The value for the netcdf metadata
-!! @retval ierr @ref error_return
-!<
-# 441 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 441 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var_vdesc_3d_text (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6283,19 +5903,9 @@ CONTAINS
 
     ierr = get_var_3d_text (File, vardesc%varid, ival)
 
+# 450 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var_vdesc_3d_text
-
-!>
-!! @public
-!! @ingroup PIO_get_var
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @ref file_desc_t
-!! @param vardesc @ref var_desc_t
-!! @param ival : The value for the netcdf metadata
-!! @retval ierr @ref error_return
-!<
-# 441 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 441 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var_vdesc_4d_text (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6305,19 +5915,9 @@ CONTAINS
 
     ierr = get_var_4d_text (File, vardesc%varid, ival)
 
+# 450 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var_vdesc_4d_text
-
-!>
-!! @public
-!! @ingroup PIO_get_var
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @ref file_desc_t
-!! @param vardesc @ref var_desc_t
-!! @param ival : The value for the netcdf metadata
-!! @retval ierr @ref error_return
-!<
-# 441 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 441 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var_vdesc_5d_text (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6327,19 +5927,9 @@ CONTAINS
 
     ierr = get_var_5d_text (File, vardesc%varid, ival)
 
+# 450 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var_vdesc_5d_text
-
-!>
-!! @public
-!! @ingroup PIO_get_var
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @ref file_desc_t
-!! @param vardesc @ref var_desc_t
-!! @param ival : The value for the netcdf metadata
-!! @retval ierr @ref error_return
-!<
-# 441 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 441 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var_vdesc_0d_real (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6349,19 +5939,9 @@ CONTAINS
 
     ierr = get_var_0d_real (File, vardesc%varid, ival)
 
+# 450 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var_vdesc_0d_real
-
-!>
-!! @public
-!! @ingroup PIO_get_var
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @ref file_desc_t
-!! @param vardesc @ref var_desc_t
-!! @param ival : The value for the netcdf metadata
-!! @retval ierr @ref error_return
-!<
-# 441 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 441 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var_vdesc_1d_real (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6371,19 +5951,9 @@ CONTAINS
 
     ierr = get_var_1d_real (File, vardesc%varid, ival)
 
+# 450 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var_vdesc_1d_real
-
-!>
-!! @public
-!! @ingroup PIO_get_var
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @ref file_desc_t
-!! @param vardesc @ref var_desc_t
-!! @param ival : The value for the netcdf metadata
-!! @retval ierr @ref error_return
-!<
-# 441 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 441 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var_vdesc_2d_real (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6393,19 +5963,9 @@ CONTAINS
 
     ierr = get_var_2d_real (File, vardesc%varid, ival)
 
+# 450 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var_vdesc_2d_real
-
-!>
-!! @public
-!! @ingroup PIO_get_var
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @ref file_desc_t
-!! @param vardesc @ref var_desc_t
-!! @param ival : The value for the netcdf metadata
-!! @retval ierr @ref error_return
-!<
-# 441 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 441 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var_vdesc_3d_real (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6415,19 +5975,9 @@ CONTAINS
 
     ierr = get_var_3d_real (File, vardesc%varid, ival)
 
+# 450 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var_vdesc_3d_real
-
-!>
-!! @public
-!! @ingroup PIO_get_var
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @ref file_desc_t
-!! @param vardesc @ref var_desc_t
-!! @param ival : The value for the netcdf metadata
-!! @retval ierr @ref error_return
-!<
-# 441 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 441 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var_vdesc_4d_real (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6437,19 +5987,9 @@ CONTAINS
 
     ierr = get_var_4d_real (File, vardesc%varid, ival)
 
+# 450 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var_vdesc_4d_real
-
-!>
-!! @public
-!! @ingroup PIO_get_var
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @ref file_desc_t
-!! @param vardesc @ref var_desc_t
-!! @param ival : The value for the netcdf metadata
-!! @retval ierr @ref error_return
-!<
-# 441 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 441 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var_vdesc_5d_real (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6459,19 +5999,9 @@ CONTAINS
 
     ierr = get_var_5d_real (File, vardesc%varid, ival)
 
+# 450 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var_vdesc_5d_real
-
-!>
-!! @public
-!! @ingroup PIO_get_var
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @ref file_desc_t
-!! @param vardesc @ref var_desc_t
-!! @param ival : The value for the netcdf metadata
-!! @retval ierr @ref error_return
-!<
-# 441 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 441 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var_vdesc_0d_double (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6481,19 +6011,9 @@ CONTAINS
 
     ierr = get_var_0d_double (File, vardesc%varid, ival)
 
+# 450 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var_vdesc_0d_double
-
-!>
-!! @public
-!! @ingroup PIO_get_var
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @ref file_desc_t
-!! @param vardesc @ref var_desc_t
-!! @param ival : The value for the netcdf metadata
-!! @retval ierr @ref error_return
-!<
-# 441 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 441 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var_vdesc_1d_double (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6503,19 +6023,9 @@ CONTAINS
 
     ierr = get_var_1d_double (File, vardesc%varid, ival)
 
+# 450 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var_vdesc_1d_double
-
-!>
-!! @public
-!! @ingroup PIO_get_var
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @ref file_desc_t
-!! @param vardesc @ref var_desc_t
-!! @param ival : The value for the netcdf metadata
-!! @retval ierr @ref error_return
-!<
-# 441 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 441 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var_vdesc_2d_double (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6525,19 +6035,9 @@ CONTAINS
 
     ierr = get_var_2d_double (File, vardesc%varid, ival)
 
+# 450 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var_vdesc_2d_double
-
-!>
-!! @public
-!! @ingroup PIO_get_var
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @ref file_desc_t
-!! @param vardesc @ref var_desc_t
-!! @param ival : The value for the netcdf metadata
-!! @retval ierr @ref error_return
-!<
-# 441 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 441 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var_vdesc_3d_double (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6547,19 +6047,9 @@ CONTAINS
 
     ierr = get_var_3d_double (File, vardesc%varid, ival)
 
+# 450 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var_vdesc_3d_double
-
-!>
-!! @public
-!! @ingroup PIO_get_var
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @ref file_desc_t
-!! @param vardesc @ref var_desc_t
-!! @param ival : The value for the netcdf metadata
-!! @retval ierr @ref error_return
-!<
-# 441 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 441 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var_vdesc_4d_double (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6569,19 +6059,9 @@ CONTAINS
 
     ierr = get_var_4d_double (File, vardesc%varid, ival)
 
+# 450 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var_vdesc_4d_double
-
-!>
-!! @public
-!! @ingroup PIO_get_var
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @ref file_desc_t
-!! @param vardesc @ref var_desc_t
-!! @param ival : The value for the netcdf metadata
-!! @retval ierr @ref error_return
-!<
-# 441 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 441 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var_vdesc_5d_double (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6591,19 +6071,9 @@ CONTAINS
 
     ierr = get_var_5d_double (File, vardesc%varid, ival)
 
+# 450 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var_vdesc_5d_double
-
-!>
-!! @public
-!! @ingroup PIO_get_var
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @ref file_desc_t
-!! @param vardesc @ref var_desc_t
-!! @param ival : The value for the netcdf metadata
-!! @retval ierr @ref error_return
-!<
-# 441 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 441 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var_vdesc_0d_int (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6613,19 +6083,9 @@ CONTAINS
 
     ierr = get_var_0d_int (File, vardesc%varid, ival)
 
+# 450 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var_vdesc_0d_int
-
-!>
-!! @public
-!! @ingroup PIO_get_var
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @ref file_desc_t
-!! @param vardesc @ref var_desc_t
-!! @param ival : The value for the netcdf metadata
-!! @retval ierr @ref error_return
-!<
-# 441 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 441 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var_vdesc_1d_int (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6635,19 +6095,9 @@ CONTAINS
 
     ierr = get_var_1d_int (File, vardesc%varid, ival)
 
+# 450 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var_vdesc_1d_int
-
-!>
-!! @public
-!! @ingroup PIO_get_var
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @ref file_desc_t
-!! @param vardesc @ref var_desc_t
-!! @param ival : The value for the netcdf metadata
-!! @retval ierr @ref error_return
-!<
-# 441 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 441 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var_vdesc_2d_int (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6657,19 +6107,9 @@ CONTAINS
 
     ierr = get_var_2d_int (File, vardesc%varid, ival)
 
+# 450 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var_vdesc_2d_int
-
-!>
-!! @public
-!! @ingroup PIO_get_var
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @ref file_desc_t
-!! @param vardesc @ref var_desc_t
-!! @param ival : The value for the netcdf metadata
-!! @retval ierr @ref error_return
-!<
-# 441 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 441 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var_vdesc_3d_int (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6679,19 +6119,9 @@ CONTAINS
 
     ierr = get_var_3d_int (File, vardesc%varid, ival)
 
+# 450 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var_vdesc_3d_int
-
-!>
-!! @public
-!! @ingroup PIO_get_var
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @ref file_desc_t
-!! @param vardesc @ref var_desc_t
-!! @param ival : The value for the netcdf metadata
-!! @retval ierr @ref error_return
-!<
-# 441 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 441 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var_vdesc_4d_int (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6701,19 +6131,9 @@ CONTAINS
 
     ierr = get_var_4d_int (File, vardesc%varid, ival)
 
+# 450 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var_vdesc_4d_int
-
-!>
-!! @public
-!! @ingroup PIO_get_var
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @ref file_desc_t
-!! @param vardesc @ref var_desc_t
-!! @param ival : The value for the netcdf metadata
-!! @retval ierr @ref error_return
-!<
-# 441 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 441 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   integer function get_var_vdesc_5d_int (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6723,5 +6143,6 @@ CONTAINS
 
     ierr = get_var_5d_int (File, vardesc%varid, ival)
 
+# 450 "/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
   end function get_var_vdesc_5d_int
 end module pionfget_mod

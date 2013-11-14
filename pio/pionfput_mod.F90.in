@@ -128,15 +128,16 @@ contains
           end if
 #else
              ierr = nfmpi_put_vara_all (File%fh, varid, int(index,kind=PIO_OFFSET), &
-                  int(count,kind=PIO_OFFSET), &
-                  ival, int(count,kind=PIO_OFFSET), MPI_CHARACTER)
+                  int(count,kind=PIO_OFFSET), ival)
 #endif
 
 #endif
 #ifdef _NETCDF
+#ifdef _NETCDF4
        case (pio_iotype_netcdf4p)
           ierr=nf90_var_par_access(File%fh, varid, NF90_COLLECTIVE)
           ierr = nf90_put_var(File%fh, varid, ival, start=index)
+#endif
        case( pio_iotype_netcdf,pio_iotype_netcdf4c)
           ! Only io proc 0 will do writing
           if (Ios%io_rank == 0) then
@@ -224,15 +225,17 @@ contains
           end if
 #else
           ierr = nfmpi_put_vara_all (File%fh, varid, int(index,kind=PIO_OFFSET), int(count,kind=PIO_OFFSET), &
-               ival, int(count,kind=PIO_OFFSET), {MPITYPE})
+               ival)
 
 #endif
           deallocate(count)
 #endif
 #ifdef _NETCDF
+#ifdef _NETCDF4
        case (pio_iotype_netcdf4p) 
           ierr=nf90_var_par_access(File%fh, varid, NF90_COLLECTIVE)
           ierr = nf90_put_var(File%fh, varid, ival, start=index)
+#endif
        case( pio_iotype_netcdf,pio_iotype_netcdf4c)
           ! Only io proc 0 will do writing
           if (Ios%io_rank == 0) then
@@ -675,14 +678,14 @@ contains
           ierr = nfmpi_begin_indep_data(File%fh)
           if(Ios%io_rank==0 .and. (ierr==NF_EINDEP .or. ierr==PIO_NOERR)) then
              ierr = nfmpi_put_vara_{TYPE} (File%fh, varid, pstart, &
-                  pcount, ival, clen, {MPITYPE})
+                  pcount, ival)
           end if
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
 #else
              ierr = nfmpi_put_vara_{TYPE}_all (File%fh, varid, pstart, &
-                  pcount, ival, clen, {MPITYPE})
+                  pcount, ival)
 
 #endif
 #endif
@@ -799,15 +802,17 @@ contains
           end if
 #else
           ierr = nfmpi_put_vara_{TYPE}_all (File%fh, varid, pstart, &
-               pcount, ival, clen, {MPITYPE})
+               pcount, ival)
 
 #endif
           deallocate(pstart, pcount)
 #endif
 #ifdef _NETCDF
+#ifdef _NETCDF4
        case(pio_iotype_netcdf4p)
           ierr=nf90_var_par_access(File%fh, varid, NF90_COLLECTIVE)
           ierr = nf90_put_var(File%fh, varid, ival, start=start, count=count)
+#endif
        case(pio_iotype_netcdf, pio_iotype_netcdf4c)
           ! Only io proc 0 will do writing
           if (Ios%io_rank == 0) then

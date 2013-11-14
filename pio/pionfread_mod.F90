@@ -6,7 +6,7 @@
 !>
 !! @file 
 !! $Revision: 751 $
-!! $LastChangedDate: 2013-04-02 10:01:13 -0600 (Tue, 02 Apr 2013) $
+!! $LastChangedDate: 2013-04-02 16:01:13 +0000 (Tue, 02 Apr 2013) $
 !! @brief Decomposed Read interface to NetCDF
 !<
 module pionfread_mod
@@ -18,7 +18,7 @@ module pionfread_mod
 !! @private
 !<
   public :: read_nf
-# 17 "/glade/u/home/jedwards/pio_trunk/pio/pionfread_mod.F90.in"
+# 17 "/home/jedwards/pio_trunk/pio/pionfread_mod.F90.in"
   interface read_nf
      ! TYPE real,double,int
      module procedure read_nfdarray_real
@@ -30,14 +30,14 @@ module pionfread_mod
 
   character(len=*), parameter :: modName='pionfread_mod'
 
-# 24 "/glade/u/home/jedwards/pio_trunk/pio/pionfread_mod.F90.in"
+# 24 "/home/jedwards/pio_trunk/pio/pionfread_mod.F90.in"
 contains
 
   ! TYPE real,double,int
 !>
 !! @private
 !<
-# 30 "/glade/u/home/jedwards/pio_trunk/pio/pionfread_mod.F90.in"
+# 30 "/home/jedwards/pio_trunk/pio/pionfread_mod.F90.in"
   integer function read_nfdarray_real (File,IOBUF,varDesc,IODesc, start,count) result(ierr)
     use pio_types, only : file_desc_t, var_desc_t, io_desc_t, pio_real, pio_double, pio_int, &
 	pio_noerr, pio_iotype_netcdf4p, pio_iotype_netcdf4c, pio_iotype_pnetcdf, pio_iotype_netcdf, &
@@ -213,13 +213,13 @@ contains
     call t_stopf("pio_read_nfdarray_real")
 #endif
 
+# 205 "/home/jedwards/pio_trunk/pio/pionfread_mod.F90.in"
   end function read_nfdarray_real
-
   ! TYPE real,double,int
 !>
 !! @private
 !<
-# 30 "/glade/u/home/jedwards/pio_trunk/pio/pionfread_mod.F90.in"
+# 30 "/home/jedwards/pio_trunk/pio/pionfread_mod.F90.in"
   integer function read_nfdarray_double (File,IOBUF,varDesc,IODesc, start,count) result(ierr)
     use pio_types, only : file_desc_t, var_desc_t, io_desc_t, pio_real, pio_double, pio_int, &
 	pio_noerr, pio_iotype_netcdf4p, pio_iotype_netcdf4c, pio_iotype_pnetcdf, pio_iotype_netcdf, &
@@ -395,13 +395,13 @@ contains
     call t_stopf("pio_read_nfdarray_double")
 #endif
 
+# 205 "/home/jedwards/pio_trunk/pio/pionfread_mod.F90.in"
   end function read_nfdarray_double
-
   ! TYPE real,double,int
 !>
 !! @private
 !<
-# 30 "/glade/u/home/jedwards/pio_trunk/pio/pionfread_mod.F90.in"
+# 30 "/home/jedwards/pio_trunk/pio/pionfread_mod.F90.in"
   integer function read_nfdarray_int (File,IOBUF,varDesc,IODesc, start,count) result(ierr)
     use pio_types, only : file_desc_t, var_desc_t, io_desc_t, pio_real, pio_double, pio_int, &
 	pio_noerr, pio_iotype_netcdf4p, pio_iotype_netcdf4c, pio_iotype_pnetcdf, pio_iotype_netcdf, &
@@ -577,5 +577,6 @@ contains
     call t_stopf("pio_read_nfdarray_int")
 #endif
 
+# 205 "/home/jedwards/pio_trunk/pio/pionfread_mod.F90.in"
   end function read_nfdarray_int
 end module pionfread_mod

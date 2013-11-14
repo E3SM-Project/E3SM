@@ -7,7 +7,7 @@
 !>
 !! @file 
 !! $Revision: 788 $
-!! $LastChangedDate: 2013-05-08 12:52:45 -0600 (Wed, 08 May 2013) $
+!! $LastChangedDate: 2013-05-08 18:52:45 +0000 (Wed, 08 May 2013) $
 !! @brief Read and write Routines for decomposed data.
 !<
 module piodarray
@@ -56,7 +56,7 @@ module piodarray
 !! @defgroup PIO_write_darray PIO_write_darray
 !! @brief The overloaded PIO_write_darray writes a distributed array to disk.
 !<
-# 54 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 54 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   interface PIO_write_darray
 ! TYPE real,int,double
 ! DIMS 1,2,3,4,5,6,7
@@ -126,10 +126,9 @@ module piodarray
 
 !> 
 !! @defgroup PIO_read_darray PIO_read_darray
-# 63 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
 !! @brief The overloaded PIO_read_darray function reads a distributed array from disk.
 !<
-# 65 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 65 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   interface PIO_read_darray
 ! TYPE real,int,double
 ! DIMS 1,2,3,4,5,6,7
@@ -199,7 +198,7 @@ module piodarray
 !>
 !! @private
 !<
-# 74 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 74 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   interface add_data_to_buffer
 ! TYPE real,int,double
      module procedure add_data_to_buffer_real
@@ -210,26 +209,28 @@ module piodarray
   end interface
 
 #ifdef _COMPRESSION
-# 80 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 80 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   interface 
-# 81 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 81 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
      subroutine WriteVDC2Var(iobuf, start, kount, iocomm, ts, lod, reflevel, iotasks, name ) bind(C)
        use, intrinsic :: iso_c_binding
        type(c_ptr), intent(in), value :: iobuf
        integer(c_int), intent(in) :: start(3), kount(3)
        integer(c_int), intent(in), value :: iocomm, ts, lod, reflevel, iotasks
        type(c_ptr), intent(in), value :: name
+# 87 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
      end subroutine WriteVDC2Var
   end interface
-# 89 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 89 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   interface
-# 90 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 90 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
      subroutine ReadVDC2Var(iobuf, start, kount, iocomm, ts, lod, reflevel, iotasks, name) bind(C)
        use, intrinsic :: iso_c_binding
        type(c_ptr), intent(in), value :: iobuf
        integer(c_int), intent(in) :: start(3), kount(3)
        integer(c_int), intent(in), value :: iocomm, ts, lod, reflevel, iotasks
        type(c_ptr), intent(in), value :: name
+# 96 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
      end subroutine ReadVDC2Var
   end interface
 #endif
@@ -242,10 +243,10 @@ module piodarray
 integer :: msize, rss, mshare, mtext, mstack, lastrss=0
 #endif
 
-# 108 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 108 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
 contains
 
-# 110 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 110 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine pio_set_buffer_size_limit(limit)
     integer, intent(in) :: limit 
 
@@ -254,6 +255,7 @@ contains
     end if
     pio_buffer_size_limit=limit
 
+# 118 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine pio_set_buffer_size_limit
 
 ! TYPE real,int,double
@@ -269,7 +271,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 133 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 133 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine write_darray_1d_real (File,varDesc,ioDesc, array, iostat, fillval)
     use pio_msg_mod, only : pio_msg_writedarray
     ! !DESCRIPTION:
@@ -352,8 +354,8 @@ contains
 #endif
     end select
     
+# 215 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine write_darray_1d_real
-
 ! TYPE real,int,double
 !> 
 !! @public
@@ -367,7 +369,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 133 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 133 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine write_darray_1d_int (File,varDesc,ioDesc, array, iostat, fillval)
     use pio_msg_mod, only : pio_msg_writedarray
     ! !DESCRIPTION:
@@ -450,8 +452,8 @@ contains
 #endif
     end select
     
+# 215 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine write_darray_1d_int
-
 ! TYPE real,int,double
 !> 
 !! @public
@@ -465,7 +467,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 133 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 133 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine write_darray_1d_double (File,varDesc,ioDesc, array, iostat, fillval)
     use pio_msg_mod, only : pio_msg_writedarray
     ! !DESCRIPTION:
@@ -548,6 +550,7 @@ contains
 #endif
     end select
     
+# 215 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine write_darray_1d_double
 
 ! TYPE real,int,double
@@ -564,7 +567,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 231 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 231 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine write_darray_2d_real (File,varDesc,ioDesc, array, iostat, fillval)
     ! !INPUT PARAMETERS:
 
@@ -601,7 +604,6 @@ contains
     deallocate(acopy)
     return
 #else
-# 267 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
 ! cannot call transfer function with a 0 sized array
     if(size(array)==0) then
        call write_darray_1d_real (File, varDesc, iodesc, dumbvar, iostat)
@@ -611,8 +613,8 @@ contains
        call write_darray_1d_real (File, varDesc, iodesc, transfer(array,transvar), iostat)
     end if
 #endif
+# 276 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine write_darray_2d_real
-
 ! TYPE real,int,double
 ! DIMS 2,3,4,5,6,7
 !> 
@@ -627,7 +629,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 231 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 231 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine write_darray_3d_real (File,varDesc,ioDesc, array, iostat, fillval)
     ! !INPUT PARAMETERS:
 
@@ -664,7 +666,6 @@ contains
     deallocate(acopy)
     return
 #else
-# 267 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
 ! cannot call transfer function with a 0 sized array
     if(size(array)==0) then
        call write_darray_1d_real (File, varDesc, iodesc, dumbvar, iostat)
@@ -674,8 +675,8 @@ contains
        call write_darray_1d_real (File, varDesc, iodesc, transfer(array,transvar), iostat)
     end if
 #endif
+# 276 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine write_darray_3d_real
-
 ! TYPE real,int,double
 ! DIMS 2,3,4,5,6,7
 !> 
@@ -690,7 +691,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 231 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 231 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine write_darray_4d_real (File,varDesc,ioDesc, array, iostat, fillval)
     ! !INPUT PARAMETERS:
 
@@ -727,7 +728,6 @@ contains
     deallocate(acopy)
     return
 #else
-# 267 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
 ! cannot call transfer function with a 0 sized array
     if(size(array)==0) then
        call write_darray_1d_real (File, varDesc, iodesc, dumbvar, iostat)
@@ -737,8 +737,8 @@ contains
        call write_darray_1d_real (File, varDesc, iodesc, transfer(array,transvar), iostat)
     end if
 #endif
+# 276 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine write_darray_4d_real
-
 ! TYPE real,int,double
 ! DIMS 2,3,4,5,6,7
 !> 
@@ -753,7 +753,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 231 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 231 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine write_darray_5d_real (File,varDesc,ioDesc, array, iostat, fillval)
     ! !INPUT PARAMETERS:
 
@@ -790,7 +790,6 @@ contains
     deallocate(acopy)
     return
 #else
-# 267 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
 ! cannot call transfer function with a 0 sized array
     if(size(array)==0) then
        call write_darray_1d_real (File, varDesc, iodesc, dumbvar, iostat)
@@ -800,8 +799,8 @@ contains
        call write_darray_1d_real (File, varDesc, iodesc, transfer(array,transvar), iostat)
     end if
 #endif
+# 276 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine write_darray_5d_real
-
 ! TYPE real,int,double
 ! DIMS 2,3,4,5,6,7
 !> 
@@ -816,7 +815,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 231 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 231 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine write_darray_6d_real (File,varDesc,ioDesc, array, iostat, fillval)
     ! !INPUT PARAMETERS:
 
@@ -853,7 +852,6 @@ contains
     deallocate(acopy)
     return
 #else
-# 267 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
 ! cannot call transfer function with a 0 sized array
     if(size(array)==0) then
        call write_darray_1d_real (File, varDesc, iodesc, dumbvar, iostat)
@@ -863,8 +861,8 @@ contains
        call write_darray_1d_real (File, varDesc, iodesc, transfer(array,transvar), iostat)
     end if
 #endif
+# 276 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine write_darray_6d_real
-
 ! TYPE real,int,double
 ! DIMS 2,3,4,5,6,7
 !> 
@@ -879,7 +877,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 231 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 231 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine write_darray_7d_real (File,varDesc,ioDesc, array, iostat, fillval)
     ! !INPUT PARAMETERS:
 
@@ -916,7 +914,6 @@ contains
     deallocate(acopy)
     return
 #else
-# 267 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
 ! cannot call transfer function with a 0 sized array
     if(size(array)==0) then
        call write_darray_1d_real (File, varDesc, iodesc, dumbvar, iostat)
@@ -926,8 +923,8 @@ contains
        call write_darray_1d_real (File, varDesc, iodesc, transfer(array,transvar), iostat)
     end if
 #endif
+# 276 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine write_darray_7d_real
-
 ! TYPE real,int,double
 ! DIMS 2,3,4,5,6,7
 !> 
@@ -942,7 +939,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 231 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 231 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine write_darray_2d_int (File,varDesc,ioDesc, array, iostat, fillval)
     ! !INPUT PARAMETERS:
 
@@ -979,7 +976,6 @@ contains
     deallocate(acopy)
     return
 #else
-# 267 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
 ! cannot call transfer function with a 0 sized array
     if(size(array)==0) then
        call write_darray_1d_int (File, varDesc, iodesc, dumbvar, iostat)
@@ -989,8 +985,8 @@ contains
        call write_darray_1d_int (File, varDesc, iodesc, transfer(array,transvar), iostat)
     end if
 #endif
+# 276 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine write_darray_2d_int
-
 ! TYPE real,int,double
 ! DIMS 2,3,4,5,6,7
 !> 
@@ -1005,7 +1001,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 231 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 231 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine write_darray_3d_int (File,varDesc,ioDesc, array, iostat, fillval)
     ! !INPUT PARAMETERS:
 
@@ -1042,7 +1038,6 @@ contains
     deallocate(acopy)
     return
 #else
-# 267 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
 ! cannot call transfer function with a 0 sized array
     if(size(array)==0) then
        call write_darray_1d_int (File, varDesc, iodesc, dumbvar, iostat)
@@ -1052,8 +1047,8 @@ contains
        call write_darray_1d_int (File, varDesc, iodesc, transfer(array,transvar), iostat)
     end if
 #endif
+# 276 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine write_darray_3d_int
-
 ! TYPE real,int,double
 ! DIMS 2,3,4,5,6,7
 !> 
@@ -1068,7 +1063,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 231 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 231 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine write_darray_4d_int (File,varDesc,ioDesc, array, iostat, fillval)
     ! !INPUT PARAMETERS:
 
@@ -1105,7 +1100,6 @@ contains
     deallocate(acopy)
     return
 #else
-# 267 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
 ! cannot call transfer function with a 0 sized array
     if(size(array)==0) then
        call write_darray_1d_int (File, varDesc, iodesc, dumbvar, iostat)
@@ -1115,8 +1109,8 @@ contains
        call write_darray_1d_int (File, varDesc, iodesc, transfer(array,transvar), iostat)
     end if
 #endif
+# 276 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine write_darray_4d_int
-
 ! TYPE real,int,double
 ! DIMS 2,3,4,5,6,7
 !> 
@@ -1131,7 +1125,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 231 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 231 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine write_darray_5d_int (File,varDesc,ioDesc, array, iostat, fillval)
     ! !INPUT PARAMETERS:
 
@@ -1168,7 +1162,6 @@ contains
     deallocate(acopy)
     return
 #else
-# 267 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
 ! cannot call transfer function with a 0 sized array
     if(size(array)==0) then
        call write_darray_1d_int (File, varDesc, iodesc, dumbvar, iostat)
@@ -1178,8 +1171,8 @@ contains
        call write_darray_1d_int (File, varDesc, iodesc, transfer(array,transvar), iostat)
     end if
 #endif
+# 276 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine write_darray_5d_int
-
 ! TYPE real,int,double
 ! DIMS 2,3,4,5,6,7
 !> 
@@ -1194,7 +1187,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 231 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 231 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine write_darray_6d_int (File,varDesc,ioDesc, array, iostat, fillval)
     ! !INPUT PARAMETERS:
 
@@ -1231,7 +1224,6 @@ contains
     deallocate(acopy)
     return
 #else
-# 267 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
 ! cannot call transfer function with a 0 sized array
     if(size(array)==0) then
        call write_darray_1d_int (File, varDesc, iodesc, dumbvar, iostat)
@@ -1241,8 +1233,8 @@ contains
        call write_darray_1d_int (File, varDesc, iodesc, transfer(array,transvar), iostat)
     end if
 #endif
+# 276 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine write_darray_6d_int
-
 ! TYPE real,int,double
 ! DIMS 2,3,4,5,6,7
 !> 
@@ -1257,7 +1249,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 231 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 231 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine write_darray_7d_int (File,varDesc,ioDesc, array, iostat, fillval)
     ! !INPUT PARAMETERS:
 
@@ -1294,7 +1286,6 @@ contains
     deallocate(acopy)
     return
 #else
-# 267 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
 ! cannot call transfer function with a 0 sized array
     if(size(array)==0) then
        call write_darray_1d_int (File, varDesc, iodesc, dumbvar, iostat)
@@ -1304,8 +1295,8 @@ contains
        call write_darray_1d_int (File, varDesc, iodesc, transfer(array,transvar), iostat)
     end if
 #endif
+# 276 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine write_darray_7d_int
-
 ! TYPE real,int,double
 ! DIMS 2,3,4,5,6,7
 !> 
@@ -1320,7 +1311,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 231 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 231 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine write_darray_2d_double (File,varDesc,ioDesc, array, iostat, fillval)
     ! !INPUT PARAMETERS:
 
@@ -1357,7 +1348,6 @@ contains
     deallocate(acopy)
     return
 #else
-# 267 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
 ! cannot call transfer function with a 0 sized array
     if(size(array)==0) then
        call write_darray_1d_double (File, varDesc, iodesc, dumbvar, iostat)
@@ -1367,8 +1357,8 @@ contains
        call write_darray_1d_double (File, varDesc, iodesc, transfer(array,transvar), iostat)
     end if
 #endif
+# 276 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine write_darray_2d_double
-
 ! TYPE real,int,double
 ! DIMS 2,3,4,5,6,7
 !> 
@@ -1383,7 +1373,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 231 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 231 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine write_darray_3d_double (File,varDesc,ioDesc, array, iostat, fillval)
     ! !INPUT PARAMETERS:
 
@@ -1420,7 +1410,6 @@ contains
     deallocate(acopy)
     return
 #else
-# 267 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
 ! cannot call transfer function with a 0 sized array
     if(size(array)==0) then
        call write_darray_1d_double (File, varDesc, iodesc, dumbvar, iostat)
@@ -1430,8 +1419,8 @@ contains
        call write_darray_1d_double (File, varDesc, iodesc, transfer(array,transvar), iostat)
     end if
 #endif
+# 276 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine write_darray_3d_double
-
 ! TYPE real,int,double
 ! DIMS 2,3,4,5,6,7
 !> 
@@ -1446,7 +1435,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 231 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 231 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine write_darray_4d_double (File,varDesc,ioDesc, array, iostat, fillval)
     ! !INPUT PARAMETERS:
 
@@ -1483,7 +1472,6 @@ contains
     deallocate(acopy)
     return
 #else
-# 267 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
 ! cannot call transfer function with a 0 sized array
     if(size(array)==0) then
        call write_darray_1d_double (File, varDesc, iodesc, dumbvar, iostat)
@@ -1493,8 +1481,8 @@ contains
        call write_darray_1d_double (File, varDesc, iodesc, transfer(array,transvar), iostat)
     end if
 #endif
+# 276 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine write_darray_4d_double
-
 ! TYPE real,int,double
 ! DIMS 2,3,4,5,6,7
 !> 
@@ -1509,7 +1497,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 231 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 231 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine write_darray_5d_double (File,varDesc,ioDesc, array, iostat, fillval)
     ! !INPUT PARAMETERS:
 
@@ -1546,7 +1534,6 @@ contains
     deallocate(acopy)
     return
 #else
-# 267 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
 ! cannot call transfer function with a 0 sized array
     if(size(array)==0) then
        call write_darray_1d_double (File, varDesc, iodesc, dumbvar, iostat)
@@ -1556,8 +1543,8 @@ contains
        call write_darray_1d_double (File, varDesc, iodesc, transfer(array,transvar), iostat)
     end if
 #endif
+# 276 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine write_darray_5d_double
-
 ! TYPE real,int,double
 ! DIMS 2,3,4,5,6,7
 !> 
@@ -1572,7 +1559,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 231 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 231 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine write_darray_6d_double (File,varDesc,ioDesc, array, iostat, fillval)
     ! !INPUT PARAMETERS:
 
@@ -1609,7 +1596,6 @@ contains
     deallocate(acopy)
     return
 #else
-# 267 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
 ! cannot call transfer function with a 0 sized array
     if(size(array)==0) then
        call write_darray_1d_double (File, varDesc, iodesc, dumbvar, iostat)
@@ -1619,8 +1605,8 @@ contains
        call write_darray_1d_double (File, varDesc, iodesc, transfer(array,transvar), iostat)
     end if
 #endif
+# 276 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine write_darray_6d_double
-
 ! TYPE real,int,double
 ! DIMS 2,3,4,5,6,7
 !> 
@@ -1635,7 +1621,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 231 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 231 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine write_darray_7d_double (File,varDesc,ioDesc, array, iostat, fillval)
     ! !INPUT PARAMETERS:
 
@@ -1672,7 +1658,6 @@ contains
     deallocate(acopy)
     return
 #else
-# 267 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
 ! cannot call transfer function with a 0 sized array
     if(size(array)==0) then
        call write_darray_1d_double (File, varDesc, iodesc, dumbvar, iostat)
@@ -1682,6 +1667,7 @@ contains
        call write_darray_1d_double (File, varDesc, iodesc, transfer(array,transvar), iostat)
     end if
 #endif
+# 276 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine write_darray_7d_double
 
 ! TYPE real,int,double
@@ -1696,7 +1682,7 @@ contains
 !! @param array  : The read data
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 290 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 290 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine read_darray_1d_real (File,varDesc, ioDesc, array, iostat)
     use pio_msg_mod, only : pio_msg_readdarray
     ! !DESCRIPTION:
@@ -1759,8 +1745,8 @@ contains
        print *, subName,': IO type not supported'
     end select
 
+# 352 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine read_darray_1d_real
-
 ! TYPE real,int,double
 !> 
 !! @public
@@ -1773,7 +1759,7 @@ contains
 !! @param array  : The read data
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 290 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 290 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine read_darray_1d_int (File,varDesc, ioDesc, array, iostat)
     use pio_msg_mod, only : pio_msg_readdarray
     ! !DESCRIPTION:
@@ -1836,8 +1822,8 @@ contains
        print *, subName,': IO type not supported'
     end select
 
+# 352 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine read_darray_1d_int
-
 ! TYPE real,int,double
 !> 
 !! @public
@@ -1850,7 +1836,7 @@ contains
 !! @param array  : The read data
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 290 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 290 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine read_darray_1d_double (File,varDesc, ioDesc, array, iostat)
     use pio_msg_mod, only : pio_msg_readdarray
     ! !DESCRIPTION:
@@ -1913,6 +1899,7 @@ contains
        print *, subName,': IO type not supported'
     end select
 
+# 352 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine read_darray_1d_double
  
 ! TYPE real,int,double
@@ -1928,7 +1915,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 367 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 367 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine read_darray_2d_real (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -1952,8 +1939,8 @@ contains
     array = reshape(tmpvar,shape(array))
     call dealloc_check(tmpvar)
 
+# 390 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine read_darray_2d_real
- 
 ! TYPE real,int,double
 ! DIMS 2,3,4,5,6,7
 !> 
@@ -1967,7 +1954,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 367 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 367 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine read_darray_3d_real (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -1991,8 +1978,8 @@ contains
     array = reshape(tmpvar,shape(array))
     call dealloc_check(tmpvar)
 
+# 390 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine read_darray_3d_real
- 
 ! TYPE real,int,double
 ! DIMS 2,3,4,5,6,7
 !> 
@@ -2006,7 +1993,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 367 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 367 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine read_darray_4d_real (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -2030,8 +2017,8 @@ contains
     array = reshape(tmpvar,shape(array))
     call dealloc_check(tmpvar)
 
+# 390 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine read_darray_4d_real
- 
 ! TYPE real,int,double
 ! DIMS 2,3,4,5,6,7
 !> 
@@ -2045,7 +2032,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 367 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 367 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine read_darray_5d_real (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -2069,8 +2056,8 @@ contains
     array = reshape(tmpvar,shape(array))
     call dealloc_check(tmpvar)
 
+# 390 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine read_darray_5d_real
- 
 ! TYPE real,int,double
 ! DIMS 2,3,4,5,6,7
 !> 
@@ -2084,7 +2071,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 367 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 367 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine read_darray_6d_real (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -2108,8 +2095,8 @@ contains
     array = reshape(tmpvar,shape(array))
     call dealloc_check(tmpvar)
 
+# 390 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine read_darray_6d_real
- 
 ! TYPE real,int,double
 ! DIMS 2,3,4,5,6,7
 !> 
@@ -2123,7 +2110,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 367 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 367 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine read_darray_7d_real (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -2147,8 +2134,8 @@ contains
     array = reshape(tmpvar,shape(array))
     call dealloc_check(tmpvar)
 
+# 390 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine read_darray_7d_real
- 
 ! TYPE real,int,double
 ! DIMS 2,3,4,5,6,7
 !> 
@@ -2162,7 +2149,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 367 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 367 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine read_darray_2d_int (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -2186,8 +2173,8 @@ contains
     array = reshape(tmpvar,shape(array))
     call dealloc_check(tmpvar)
 
+# 390 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine read_darray_2d_int
- 
 ! TYPE real,int,double
 ! DIMS 2,3,4,5,6,7
 !> 
@@ -2201,7 +2188,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 367 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 367 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine read_darray_3d_int (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -2225,8 +2212,8 @@ contains
     array = reshape(tmpvar,shape(array))
     call dealloc_check(tmpvar)
 
+# 390 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine read_darray_3d_int
- 
 ! TYPE real,int,double
 ! DIMS 2,3,4,5,6,7
 !> 
@@ -2240,7 +2227,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 367 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 367 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine read_darray_4d_int (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -2264,8 +2251,8 @@ contains
     array = reshape(tmpvar,shape(array))
     call dealloc_check(tmpvar)
 
+# 390 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine read_darray_4d_int
- 
 ! TYPE real,int,double
 ! DIMS 2,3,4,5,6,7
 !> 
@@ -2279,7 +2266,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 367 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 367 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine read_darray_5d_int (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -2303,8 +2290,8 @@ contains
     array = reshape(tmpvar,shape(array))
     call dealloc_check(tmpvar)
 
+# 390 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine read_darray_5d_int
- 
 ! TYPE real,int,double
 ! DIMS 2,3,4,5,6,7
 !> 
@@ -2318,7 +2305,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 367 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 367 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine read_darray_6d_int (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -2342,8 +2329,8 @@ contains
     array = reshape(tmpvar,shape(array))
     call dealloc_check(tmpvar)
 
+# 390 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine read_darray_6d_int
- 
 ! TYPE real,int,double
 ! DIMS 2,3,4,5,6,7
 !> 
@@ -2357,7 +2344,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 367 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 367 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine read_darray_7d_int (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -2381,8 +2368,8 @@ contains
     array = reshape(tmpvar,shape(array))
     call dealloc_check(tmpvar)
 
+# 390 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine read_darray_7d_int
- 
 ! TYPE real,int,double
 ! DIMS 2,3,4,5,6,7
 !> 
@@ -2396,7 +2383,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 367 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 367 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine read_darray_2d_double (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -2420,8 +2407,8 @@ contains
     array = reshape(tmpvar,shape(array))
     call dealloc_check(tmpvar)
 
+# 390 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine read_darray_2d_double
- 
 ! TYPE real,int,double
 ! DIMS 2,3,4,5,6,7
 !> 
@@ -2435,7 +2422,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 367 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 367 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine read_darray_3d_double (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -2459,8 +2446,8 @@ contains
     array = reshape(tmpvar,shape(array))
     call dealloc_check(tmpvar)
 
+# 390 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine read_darray_3d_double
- 
 ! TYPE real,int,double
 ! DIMS 2,3,4,5,6,7
 !> 
@@ -2474,7 +2461,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 367 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 367 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine read_darray_4d_double (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -2498,8 +2485,8 @@ contains
     array = reshape(tmpvar,shape(array))
     call dealloc_check(tmpvar)
 
+# 390 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine read_darray_4d_double
- 
 ! TYPE real,int,double
 ! DIMS 2,3,4,5,6,7
 !> 
@@ -2513,7 +2500,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 367 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 367 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine read_darray_5d_double (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -2537,8 +2524,8 @@ contains
     array = reshape(tmpvar,shape(array))
     call dealloc_check(tmpvar)
 
+# 390 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine read_darray_5d_double
- 
 ! TYPE real,int,double
 ! DIMS 2,3,4,5,6,7
 !> 
@@ -2552,7 +2539,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 367 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 367 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine read_darray_6d_double (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -2576,8 +2563,8 @@ contains
     array = reshape(tmpvar,shape(array))
     call dealloc_check(tmpvar)
 
+# 390 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine read_darray_6d_double
- 
 ! TYPE real,int,double
 ! DIMS 2,3,4,5,6,7
 !> 
@@ -2591,7 +2578,7 @@ contains
 !! @param array  : The read data  
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 367 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 367 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine read_darray_7d_double (File,varDesc,ioDesc, array, iostat)
     ! !INPUT PARAMETERS:
 
@@ -2615,6 +2602,7 @@ contains
     array = reshape(tmpvar,shape(array))
     call dealloc_check(tmpvar)
 
+# 390 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine read_darray_7d_double
 
 ! TYPE real,int,double
@@ -2629,7 +2617,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<
-# 404 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 404 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine write_darray_nf_real (File,varDesc,ioDesc,array, iostat, fillval)
 
     ! !DESCRIPTION:
@@ -2856,8 +2844,8 @@ contains
 #ifdef TIMING
     call t_stopf("pio_write_darray")
 #endif
+# 630 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine write_darray_nf_real
-
 ! TYPE real,int,double
 !>
 !! @private
@@ -2870,7 +2858,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<
-# 404 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 404 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine write_darray_nf_int (File,varDesc,ioDesc,array, iostat, fillval)
 
     ! !DESCRIPTION:
@@ -3097,8 +3085,8 @@ contains
 #ifdef TIMING
     call t_stopf("pio_write_darray")
 #endif
+# 630 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine write_darray_nf_int
-
 ! TYPE real,int,double
 !>
 !! @private
@@ -3111,7 +3099,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<
-# 404 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 404 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine write_darray_nf_double (File,varDesc,ioDesc,array, iostat, fillval)
 
     ! !DESCRIPTION:
@@ -3338,6 +3326,7 @@ contains
 #ifdef TIMING
     call t_stopf("pio_write_darray")
 #endif
+# 630 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine write_darray_nf_double
 
 ! TYPE real,int,double
@@ -3352,7 +3341,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 644 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 644 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine write_darray_bin_real(File,varDesc,ioDesc,array, iostat, fillval)
 
     ! !DESCRIPTION:
@@ -3523,8 +3512,8 @@ contains
 #ifdef TIMING
     call t_stopf("pio_write_darray")
 #endif
+# 814 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine write_darray_bin_real
-
 ! TYPE real,int,double
 !>
 !! @private
@@ -3537,7 +3526,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 644 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 644 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine write_darray_bin_int(File,varDesc,ioDesc,array, iostat, fillval)
 
     ! !DESCRIPTION:
@@ -3708,8 +3697,8 @@ contains
 #ifdef TIMING
     call t_stopf("pio_write_darray")
 #endif
+# 814 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine write_darray_bin_int
-
 ! TYPE real,int,double
 !>
 !! @private
@@ -3722,7 +3711,7 @@ contains
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
-# 644 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 644 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine write_darray_bin_double(File,varDesc,ioDesc,array, iostat, fillval)
 
     ! !DESCRIPTION:
@@ -3893,6 +3882,7 @@ contains
 #ifdef TIMING
     call t_stopf("pio_write_darray")
 #endif
+# 814 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine write_darray_bin_double
 
 
@@ -3908,7 +3898,7 @@ contains
 !! @param array  : The read data
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 829 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 829 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine read_darray_nf_real (File,varDesc,ioDesc,array, iostat)
     !
     ! !DESCRIPTION:
@@ -4085,9 +4075,8 @@ contains
     call t_stopf("pio_read_darray")
 #endif
 
+# 1005 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine read_darray_nf_real
-
-
 ! TYPE real,int,double
 !> 
 !! @private
@@ -4100,7 +4089,7 @@ contains
 !! @param array  : The read data
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 829 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 829 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine read_darray_nf_int (File,varDesc,ioDesc,array, iostat)
     !
     ! !DESCRIPTION:
@@ -4277,9 +4266,8 @@ contains
     call t_stopf("pio_read_darray")
 #endif
 
+# 1005 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine read_darray_nf_int
-
-
 ! TYPE real,int,double
 !> 
 !! @private
@@ -4292,7 +4280,7 @@ contains
 !! @param array  : The read data
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 829 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 829 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine read_darray_nf_double (File,varDesc,ioDesc,array, iostat)
     !
     ! !DESCRIPTION:
@@ -4469,6 +4457,7 @@ contains
     call t_stopf("pio_read_darray")
 #endif
 
+# 1005 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine read_darray_nf_double
 
 ! TYPE real,int,double
@@ -4483,7 +4472,7 @@ contains
 !! @param array  : The read data
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 1019 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 1019 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine read_darray_bin_real (File,varDesc,ioDesc,array, iostat)
     !
     ! !DESCRIPTION:
@@ -4639,8 +4628,8 @@ contains
     call t_stopf("pio_read_darray")
 #endif
 
+# 1174 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine read_darray_bin_real
-
 ! TYPE real,int,double
 !> 
 !! @private
@@ -4653,7 +4642,7 @@ contains
 !! @param array  : The read data
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 1019 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 1019 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine read_darray_bin_int (File,varDesc,ioDesc,array, iostat)
     !
     ! !DESCRIPTION:
@@ -4809,8 +4798,8 @@ contains
     call t_stopf("pio_read_darray")
 #endif
 
+# 1174 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine read_darray_bin_int
-
 ! TYPE real,int,double
 !> 
 !! @private
@@ -4823,7 +4812,7 @@ contains
 !! @param array  : The read data
 !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
 !<
-# 1019 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 1019 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine read_darray_bin_double (File,varDesc,ioDesc,array, iostat)
     !
     ! !DESCRIPTION:
@@ -4979,10 +4968,11 @@ contains
     call t_stopf("pio_read_darray")
 #endif
 
+# 1174 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine read_darray_bin_double
 
   ! TYPE real,int,double  
-# 1177 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 1177 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine add_data_to_buffer_real (File, IOBUF, request)
     use pio_types, only : io_data_list
     type(file_desc_t) :: File
@@ -5019,10 +5009,10 @@ contains
 
     if(debug) print *,__FILE__,__LINE__,'buffsize = ',file%buffsize,file%request_cnt
 
+# 1213 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine add_data_to_buffer_real
-
   ! TYPE real,int,double  
-# 1177 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 1177 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine add_data_to_buffer_int (File, IOBUF, request)
     use pio_types, only : io_data_list
     type(file_desc_t) :: File
@@ -5059,10 +5049,10 @@ contains
 
     if(debug) print *,__FILE__,__LINE__,'buffsize = ',file%buffsize,file%request_cnt
 
+# 1213 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine add_data_to_buffer_int
-
   ! TYPE real,int,double  
-# 1177 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 1177 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine add_data_to_buffer_double (File, IOBUF, request)
     use pio_types, only : io_data_list
     type(file_desc_t) :: File
@@ -5099,11 +5089,12 @@ contains
 
     if(debug) print *,__FILE__,__LINE__,'buffsize = ',file%buffsize,file%request_cnt
 
+# 1213 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine add_data_to_buffer_double
 
 
 
-# 1217 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 1217 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   subroutine darray_write_complete(File)
     use pio_types, only : io_data_list
 #ifdef _PNETCDF
@@ -5167,12 +5158,13 @@ contains
        print *,__PIO_FILE__,__LINE__,'mem=',rss
     end if
 #endif
+# 1280 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine darray_write_complete
     
 
 #ifdef _COMPRESSION
 
-# 1285 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 1285 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
  subroutine write_vdc2_real(File, Vardesc, iodesc, array, iostat)
     use pio_support, only : piodie
     use, intrinsic :: iso_c_binding
@@ -5283,9 +5275,10 @@ contains
        print *,__PIO_FILE__,__LINE__,'mem=',rss
     end if
 #endif
+# 1395 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine write_vdc2_real
 
-# 1397 "/glade/u/home/jedwards/pio_trunk/pio/piodarray.F90.in"
+# 1397 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
 subroutine read_vdc2_real(File, Vardesc, iodesc, array, iostat)
     use pio_support, only : piodie
     use, intrinsic :: iso_c_binding
@@ -5372,6 +5365,7 @@ subroutine read_vdc2_real(File, Vardesc, iodesc, array, iostat)
     if(UseRearranger) call dealloc_check(IOBUF)
 
 
+# 1483 "/home/jedwards/pio_trunk/pio/piodarray.F90.in"
   end subroutine read_vdc2_real
 #endif
 

@@ -105,17 +105,26 @@ if(${output} STREQUAL yes)
 #        list( APPEND NETCDF_LIBRARIES_DEBUG
 #            ${HDF5_LIBRARIES_DEBUG} )
 #        list( APPEND NETCDF_LIBRARIES_RELEASE
-#            ${HDF5_LIBRARIES_RELEASE} 
-  set (NETCDF_IS_PARALLEL ${HDF5_IS_PARALLEL})
+#            ${HDF5_LIBRARIES_RELEASE}
+
+  TRY_COMPILE(NC4_SUPPORT ${CMAKE_CURRENT_BINARY_DIR}/tryNC4
+                          ${CMAKE_CURRENT_SOURCE_DIR}/cmake/TryNC4.f90)
+  IF( ${NC4_SUPPORT})
+    set (NETCDF_IS_PARALLEL ${HDF5_IS_PARALLEL})
+  else()
+    set (NETCDF_IS_PARALLEL FALSE)
+  endif()
 endif()
-_NETCDF_CONFIG (--has-pnetcdf output return)
-if(${output} STREQUAL yes)
-  set (NETCDF_IS_PARALLEL TRUE)
-else()
+
+#_NETCDF_CONFIG (--has-pnetcdf output return)
+#if(${output} STREQUAL yes)
+#  set (NETCDF_IS_PARALLEL TRUE)
+#else()
 #   set(NETCDF_IS_PARALLEL FALSE)
-endif()
-set( NETCDF_IS_PARALLEL TRUE CACHE BOOL
-    "NETCDF library compiled with parallel IO support" )
+#endif()
+#set( NETCDF_IS_PARALLEL TRUE CACHE BOOL
+#    "NETCDF library compiled with parallel IO support" )
+
 
 if( NETCDF_INCLUDE_DIRS AND NETCDF_LIBRARIES )
     # Do nothing: we already have NETCDF_INCLUDE_PATH and NETCDF_LIBRARIES in the
@@ -261,7 +270,7 @@ else()
         set( NETCDF_LIBRARIES ${NETCDF_LIBRARIES_RELEASE} )
     endif()
 endif()
-
+message ("NETCDF_IS_PARALLEL ${NETCDF_IS_PARALLEL} here")
 find_package_handle_standard_args( NETCDF DEFAULT_MSG
     NETCDF_LIBRARIES
     NETCDF_INCLUDE_DIRS
