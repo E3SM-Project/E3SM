@@ -299,8 +299,8 @@ contains
 
     type (cartesian2D_t), intent(in)  :: r
     real (kind=real_kind),intent(in)  :: tracers(np,np,qsize)
-    real (kind=real_kind),intent(out) :: mint(qsize)
-    real (kind=real_kind),intent(out) :: maxt(qsize)
+    real (kind=real_kind),intent(out) :: mint         (qsize)
+    real (kind=real_kind),intent(out) :: maxt         (qsize)
 
     type (quadrature_t        )       :: gll        
     integer                           :: i,j,k
