@@ -1164,14 +1164,14 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
   type(cartesian3D_t)                           :: dep_points  (np,np)
   integer                                       :: elem_indexes(np,np)
   type(cartesian2D_t)                           :: para_coords (np,np)
-  real(kind=real_kind)                          :: Que         (np,np,nets:nete,nlev,qsize)
-  real(kind=real_kind)                          :: Que_t       (np,np,nets:nete,nlev,qsize)
-  real(kind=real_kind)                          :: minq        (np,np,nets:nete,nlev,qsize)
-  real(kind=real_kind)                          :: maxq        (np,np,nets:nete,nlev,qsize)
-  real(kind=real_kind)                          :: f                                (qsize)
-  real(kind=real_kind)                          :: g                                (qsize)
-  real(kind=real_kind)                          :: mass                        (nlev,qsize)
-  real(kind=real_kind)                          :: rho         (np,np,nets:nete,nlev)
+  real(kind=real_kind)                          :: Que         (np,np,nlev,qsize,nets:nete)
+  real(kind=real_kind)                          :: Que_t       (np,np,nlev,qsize,nets:nete)
+  real(kind=real_kind)                          :: minq        (np,np,nlev,qsize,nets:nete)
+  real(kind=real_kind)                          :: maxq        (np,np,nlev,qsize,nets:nete)
+  real(kind=real_kind)                          :: f                      (qsize)
+  real(kind=real_kind)                          :: g                      (qsize)
+  real(kind=real_kind)                          :: mass              (nlev,qsize)
+  real(kind=real_kind)                          :: rho         (np,np,nlev,      nets:nete)
 
   real(kind=real_kind)                          :: neigh_q     (np,np,qsize,max_neigh_edges+1)
   real(kind=real_kind)                          :: u           (np,np,qsize)
@@ -1238,8 +1238,8 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
           elem(ie)%state%Q(i,j,k,:) = f;
 
           call minmax_tracers          (para_coords(i,j), neigh_q(:,:,:,elem_indexes(i,j)),f,g)
-          minq(i,j,ie,k,:) = f;
-          maxq(i,j,ie,k,:) = g;
+          minq(i,j,k,:,ie) = f;
+          maxq(i,j,k,:,ie) = g;
         enddo
         enddo
      end do
@@ -1264,24 +1264,24 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
   do k=1,nlev
   do q=1,qsize
     n=n+1
-    mass(q,k) = global_shared_sum(n)
+    mass(k,q) = global_shared_sum(n)
   enddo
   enddo
 
   do ie=nets,nete
   do k=1,nlev
-    rho(:,:,ie-nets+1,k) = elem(ie)%spheremp(:,:)*elem(ie)%state%dp3d(:,:,k,tl%np1)
+    rho(:,:,k,ie) = elem(ie)%spheremp(:,:)*elem(ie)%state%dp3d(:,:,k,tl%np1)
   end do
   end do
 
   do ie=nets,nete
-    Que_t(:,:,ie,:,:) = elem(ie)%state%Q(:,:,:,:)
+    Que_t(:,:,:,:,ie) = elem(ie)%state%Q(:,:,:,:)
   end do
 
   call Cobra_SLBQP(Que, Que_t, rho, minq, maxq, mass, hybrid, nets, nete)
 
   do ie=nets,nete
-    elem(ie)%state%Q(:,:,:,:) =  Que(:,:,ie,:,:)
+    elem(ie)%state%Q(:,:,:,:) =  Que(:,:,:,:,ie)
   end do
 
   do ie=nets,nete
@@ -1296,21 +1296,138 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
 
 end subroutine Prim_Advec_Tracers_remap_ALE
 
-subroutine Cobra_SLBQP(Que, Que_t, rho, minq, maxq, mass, hybrid, nets, nete) 
+subroutine VDOT(rp,Que,rho,mass,hybrid,nets,nete)
+  use parallel_mod,        only: global_shared_buf, global_shared_sum
+  use global_norms_mod,    only: wrap_repro_sum
 
-
-  real(kind=real_kind), intent(out)             :: Que         (np,np,nets:nete,nlev,qsize)
-  real(kind=real_kind), intent(in)              :: Que_t       (np,np,nets:nete,nlev,qsize)
-  real(kind=real_kind), intent(in)              :: rho         (np,np,nets:nete,nlev)
-  real(kind=real_kind), intent(in)              :: minq        (np,np,nets:nete,nlev,qsize)
-  real(kind=real_kind), intent(in)              :: maxq        (np,np,nets:nete,nlev,qsize)
-  real(kind=real_kind), intent(in)              :: mass                        (nlev,qsize)
+  implicit none
+  real(kind=real_kind), intent(out)             :: rp                (nlev,qsize)
+  real(kind=real_kind), intent(in)              :: Que         (np*np,nlev,qsize,nets:nete)
+  real(kind=real_kind), intent(in)              :: rho         (np*np,nlev,      nets:nete)
+  real(kind=real_kind), intent(in)              :: mass              (nlev,qsize)
   type (hybrid_t)     , intent(in)              :: hybrid
   integer             , intent(in)              :: nets
   integer             , intent(in)              :: nete
 
-  Que = Que_t
+  integer                                       :: k,n,q,ie
+
+  global_shared_buf = 0 
+  do ie=nets,nete
+    n=0
+    do q=1,qsize
+    do k=1,nlev
+      n=n+1
+      global_shared_buf(ie,n) = global_shared_buf(ie,n) + DOT_PRODUCT(rho(:,k,ie), Que(:,k,q,ie))
+    end do
+    end do
+  end do
+
+  call wrap_repro_sum(nvars=n, comm=hybrid%par%comm)
+
+  n=0
+  do q=1,qsize
+  do k=1,nlev
+    n=n+1
+    rp(k,q) = global_shared_sum(n) - mass(k,q)
+  enddo
+  enddo
   
+end subroutine VDOT
+
+subroutine Cobra_SLBQP(Que, Que_t, rho, minq, maxq, mass, hybrid, nets, nete) 
+
+  use parallel_mod,        only: global_shared_buf, global_shared_sum
+  use global_norms_mod,    only: wrap_repro_sum
+
+  implicit none
+  real(kind=real_kind), intent(out)             :: Que         (np*np,nlev,qsize,nets:nete)
+  real(kind=real_kind), intent(in)              :: Que_t       (np*np,nlev,qsize,nets:nete)
+  real(kind=real_kind), intent(in)              :: rho         (np*np,nlev,      nets:nete)
+  real(kind=real_kind), intent(in)              :: minq        (np*np,nlev,qsize,nets:nete)
+  real(kind=real_kind), intent(in)              :: maxq        (np*np,nlev,qsize,nets:nete)
+  real(kind=real_kind), intent(in)              :: mass              (nlev,qsize)
+  type (hybrid_t)     , intent(in)              :: hybrid
+  integer             , intent(in)              :: nets
+  integer             , intent(in)              :: nete
+
+  real(kind=real_kind),               parameter :: eta = 1D-10           
+  real(kind=real_kind),               parameter :: hfd = 1D-8              
+  real(kind=real_kind)                          :: lambda            (nlev,qsize)
+  real(kind=real_kind)                          :: lambda_p          (nlev,qsize)
+  real(kind=real_kind)                          :: lambda_c          (nlev,qsize)
+  real(kind=real_kind)                          :: rp                (nlev,qsize)
+  real(kind=real_kind)                          :: rc                (nlev,qsize)
+  real(kind=real_kind)                          :: rd                (nlev,qsize)
+  real(kind=real_kind)                          :: alpha             (nlev,qsize)
+  integer                                       :: j,k,n,q,ie
+  integer                                       :: nclip
+
+  lambda = 0
+  nclip = 0
+
+  do ie=nets,nete
+  do q=1,qsize
+  do k=1,nlev
+     Que(:,k,q,ie) = lambda(k,q) * rho(:,k,ie) + Que_t(:,k,q,ie)
+  enddo
+  enddo
+  enddo
+  Que = MIN(MAX(Que,minq),maxq)
+
+  do ie=nets,nete
+  enddo
+
+  call VDOT(rp,Que,rho,mass,hybrid,nets,nete)
+  nclip = nclip + 1
+
+  if (MAXVAL(ABS(rp)).lt.eta) return
+
+  do ie=nets,nete
+  do q=1,qsize
+  do k=1,nlev
+     Que(:,k,q,ie) = (lambda(k,q) + hfd) * rho(:,k,ie) + Que_t(:,k,q,ie)
+  enddo
+  enddo
+  enddo
+
+  Que = MIN(MAX(Que,minq),maxq)
+
+  call VDOT(rc,Que,rho,mass,hybrid,nets,nete)
+
+  rd = rc-rp
+  if (MAXVAL(ABS(rd)).eq.0) return 
+  
+  alpha = 0
+  WHERE (rd.ne.0) alpha = hfd / rd 
+
+  lambda_p = lambda
+  lambda_c = lambda - alpha * rp
+
+  do while (MAXVAL(ABS(rc)).gt.eta)
+
+    do ie=nets,nete
+    do q=1,qsize
+    do k=1,nlev
+       Que(:,k,q,ie) = (lambda(k,q) + hfd) * rho(:,k,ie) + Que_t(:,k,q,ie)
+    enddo
+    enddo
+    enddo
+    Que = MIN(MAX(Que,minq),maxq)
+
+    call VDOT(rc,Que,rho,mass,hybrid,nets,nete)
+    nclip = nclip + 1
+
+    rd = rc-rp
+    if (MAXVAL(ABS(rd)).eq.0) exit
+
+    alpha = 0
+    WHERE (rd.ne.0) alpha = (lambda_p - lambda_c) / rd 
+    rp = rc
+    
+    lambda_p = lambda_c
+    lambda_c = lambda_c -  alpha * rc
+
+  enddo
 end subroutine Cobra_SLBQP
 
 ! ----------------------------------------------------------------------------------!
