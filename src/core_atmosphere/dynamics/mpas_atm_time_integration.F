@@ -1912,6 +1912,7 @@ module atm_time_integration
       real (kind=RKIND), dimension(:,:), pointer :: defc_a, defc_b
       logical :: delsq_horiz_mixing, newpx
 
+      real(kind=RKIND),dimension(:,:),pointer:: tend_w_pgf,tend_w_buoy
 
       real (kind=RKIND) :: coef_3rd_order
 
@@ -1988,6 +1989,9 @@ module atm_time_integration
       tend_u_euler      => tend % u_euler % array
       tend_theta_euler  => tend % theta_euler % array
       tend_w_euler      => tend % w_euler % array
+
+      tend_w_pgf  => tend % w_pgf  % array
+      tend_w_buoy => tend % w_buoy % array
 
       t_init      => grid % t_init % array
       qv_init     => grid % qv_init % array
@@ -2460,6 +2464,10 @@ module atm_time_integration
 !----------- rhs for w
 
       tend_w(:,:) = 0.
+      if(rk_step .eq. 1) then
+         tend_w_pgf(:,:)  = 0.
+         tend_w_buoy(:,:) = 0.
+      endif
 
       !
       !  horizontal advection for w
@@ -2711,6 +2719,16 @@ module atm_time_integration
                                              rr(k,iCell)*(1.+qtot(k,iCell)))                  &
                                     +fzp(k)*(rb(k-1,iCell)*(qtot(k-1,iCell))  +  &
                                              rr(k-1,iCell)*(1.+qtot(k-1,iCell))) ))
+
+            if(rk_step == 1) then
+               tend_w_pgf(k,iCell)  = cqw(k,iCell)*(rdzu(k)*(pp(k,iCell)-pp(k-1,iCell))) 
+               tend_w_buoy(k,iCell) = cqw(k,iCell)*gravity* &
+                                   ( fzm(k)*(rb(k,iCell)*(qtot(k,iCell)) +       &
+                                             rr(k,iCell)*(1.+qtot(k,iCell)))     &
+                                    +fzp(k)*(rb(k-1,iCell)*(qtot(k-1,iCell))  +  &
+                                             rr(k-1,iCell)*(1.+qtot(k-1,iCell))) )
+            endif
+
          end do
       end do
 
