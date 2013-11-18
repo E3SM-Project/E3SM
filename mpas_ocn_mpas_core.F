@@ -1266,6 +1266,26 @@ end subroutine ocn_compute_max_level!}}}
 
       ierr = 0
 
+      if (config_use_freq_filtered_thickness) then
+         thicknessFilterActive = .true.
+      end if
+
+      if (config_time_integrator == trim('split_explicit') &
+         .or. config_time_integrator == trim('unsplit_explicit') ) then
+
+         splitTimeIntegratorActive = .true.
+      end if
+
+      if (config_forcing_type == trim('restoring')) then
+         surfaceRestoringActive = .true.
+      else if (config_forcing_type == trim('bulk')) then
+         bulkForcingActive = .true.
+      end if
+
+      if (config_frazil_ice_formation) then
+         frazilIceActive = .true.
+      end if
+
    end subroutine mpas_core_setup_packages!}}}
 
 end module mpas_core

@@ -24,6 +24,7 @@ module ocn_thick_ale
    use mpas_configure
    use mpas_constants
    use mpas_timer
+   use mpas_packages
 
    implicit none
    private
@@ -49,8 +50,6 @@ module ocn_thick_ale
    ! Private module variables
    !
    !--------------------------------------------------------------------
-
-   integer :: use_freq_filtered_thickness
 
 !***********************************************************************
 
@@ -154,10 +153,18 @@ contains
          ! Note that restingThickness is nonzero, and remaining terms are perturbations about zero.
          ALE_Thickness(1:kMax, iCell) = & 
              restingThickness(1:kMax,iCell) &
-           + SSH_ALE_Thickness(1:kMax) &
-           + use_freq_filtered_thickness * newHighFreqThickness(1:kMax,iCell)
-
+           + SSH_ALE_Thickness(1:kMax)
       enddo
+
+      if (thicknessFilterActive) then
+         do iCell=1,nCells
+            kMax = maxLevelCell(iCell)
+   
+            ALE_Thickness(1:kMax, iCell) = &
+                ALE_Thickness(1:kMax, iCell) &
+              + newHighFreqThickness(1:kMax,iCell)
+         enddo
+      end if
 
       !
       ! ALE thickness alteration due to minimum and maximum thickness
@@ -213,12 +220,6 @@ contains
       integer, intent(out) :: err !< Output: Error flag
 
       err = 0
-
-      if (config_use_freq_filtered_thickness) then
-         use_freq_filtered_thickness = 1
-      else
-         use_freq_filtered_thickness = 0
-      endif
 
     end subroutine ocn_thick_ale_init!}}}
 
