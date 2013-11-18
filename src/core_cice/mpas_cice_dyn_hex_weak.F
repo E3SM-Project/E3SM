@@ -207,25 +207,14 @@ contains
 
        if (solveStress(iCell) == 1) then
 
-          stress11(iCell) = 0.0_RKIND
-          stress22(iCell) = 0.0_RKIND
-          stress12(iCell) = 0.0_RKIND
-          
-          strain11(iCell) = 1.0_RKIND
-          strain22(iCell) = 0.0_RKIND
-          strain12(iCell) = 0.0_RKIND
-
-
           call evp_constitutive_relation(stress11(iCell),    stress22(iCell),    stress12(iCell), &
                                          strain11(iCell),    strain22(iCell),    strain12(iCell), &
                                          icePressure(iCell), replacementPressure(iCell),          &
                                          mesh % areaCell % array(iCell),                          &
                                          dtElastic,          evpDamping)
 
-          write(*,*) stress11(iCell), stress22(iCell), stress12(iCell) ; stop
-
           !call linear_constitutive_relation(stress11(iCell), stress22(iCell), stress12(iCell), &
-          !                                 strain11(iCell), strain22(iCell), strain12(iCell))
+          !                                  strain11(iCell), strain22(iCell), strain12(iCell))
 
        else
 

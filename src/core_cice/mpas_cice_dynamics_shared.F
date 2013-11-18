@@ -41,6 +41,7 @@ module cice_dynamics_shared
   
   real(kind=RKIND), parameter :: &
        eccentricity = 2.0_RKIND, &
+       eccentricitySquared = eccentricity**2, &
        dampingTimescaleParameter = 0.36_RKIND, &
        puny = 1.0e-11_RKIND
 
@@ -190,13 +191,14 @@ contains
          evpDamping
 
     real(kind=RKIND) :: &
-         strainDivergence,   &
-         strainTension,      &
-         strainShearing,     &
-         stress1,            &
-         stress2,            &
-         Delta,              &
-         pressureCoefficient
+         strainDivergence,    &
+         strainTension,       &
+         strainShearing,      &
+         stress1,             &
+         stress2,             &
+         Delta,               &
+         pressureCoefficient, &
+         denominator
     
     ! convert from stress11 to stress1 etc
     strainDivergence = strain11 + strain22
@@ -208,7 +210,7 @@ contains
 
     ! perform the constituitive relation
     Delta = sqrt(strainDivergence**2 + &
-         (strainTension**2 + strainShearing**2) / eccentricity**2)
+         (strainTension**2 + strainShearing**2) / eccentricitySquared)
 
     if (evpDamping) then
        pressureCoefficient = icePressure  / max(Delta,4.0_RKIND*puny)
@@ -221,17 +223,13 @@ contains
 
     pressureCoefficient = (pressureCoefficient * dtElastic) / (2.0_RKIND * dampingTimescale)
 
-    stress1  = (stress1  + pressureCoefficient * (strainDivergence - Delta)) / &
-               (1.0_RKIND + (0.5_RKIND * dtElastic) / dampingTimescale)
+    denominator = 1.0_RKIND + (0.5_RKIND * dtElastic) / dampingTimescale
 
-    stress2  = (stress2  + pressureCoefficient * strainTension) / &
-               (1.0_RKIND + (0.5_RKIND * dtElastic * eccentricity**2) / dampingTimescale)
+    stress1  = (stress1  +  pressureCoefficient                        * (strainDivergence - Delta))  / denominator
 
-    stress12 = (stress12 + pressureCoefficient * strainShearing * 0.5_RKIND) / &
-               (1.0_RKIND + (0.5_RKIND * dtElastic * eccentricity**2) / dampingTimescale)
+    stress2  = (stress2  + (pressureCoefficient / eccentricitySquared) *  strainTension             ) / denominator
 
-    write(*,*) pressureCoefficient, strainTension, (1.0_RKIND + (0.5_RKIND * dtElastic * eccentricity**2) / dampingTimescale)
-    write(*,*) stress1, stress2, stress12 ; stop
+    stress12 = (stress12 + (pressureCoefficient / eccentricitysquared) *  strainShearing * 0.5_RKIND) / denominator
 
     ! convert back
     stress11 = 0.5_RKIND * (stress1 + stress2)

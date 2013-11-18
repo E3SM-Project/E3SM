@@ -32,6 +32,7 @@
 		<nml_option name="config_frames_per_outfile"         type="integer"       default_value="0"/>
 		<nml_option name="config_pio_num_iotasks"            type="integer"       default_value="0"/>
 		<nml_option name="config_pio_stride"                 type="integer"       default_value="1"/>
+		<nml_option name="config_restart_timestamp_name"     type="character"     default_value="restart_timestamp"/>
 	</nml_record>
 	<nml_record name="decomposition">
 		<nml_option name="config_block_decomp_file_prefix"   type="character"     default_value="graph.info.part."/>
@@ -93,7 +94,7 @@
 		<var name="fVertex"                           type="real"     dimensions="nVertices"                   streams="iro"/>
 		<var name="fCell"                             type="real"     dimensions="nCells"                      streams="iro"/>
 		<var name="h_s"                               type="real"     dimensions="nCells"                      streams="iro"/>
-		<var name="deriv_two"                         type="real"     dimensions="FIFTEEN TWO nEdges"          streams="o"/>
+		<var name="derivTwo"                         type="real"     dimensions="FIFTEEN TWO nEdges"          streams="o"/>
 		<var name="advCells"                          type="integer"  dimensions="TWENTYONE nCells"/>
 		<var name="defc_a"                            type="real"     dimensions="maxEdges nCells"/>
 		<var name="defc_b"                            type="real"     dimensions="maxEdges nCells"/>
@@ -107,6 +108,11 @@
 		<var name="POPindxj"                          type="integer"  dimensions="nCells"                      streams="iro"/>
 		<var name="POPindxiv"                         type="integer"  dimensions="nVertices"                   streams=""/>
 		<var name="POPindxjv"                         type="integer"  dimensions="nVertices"                   streams=""/>
+		<var name="advCoefs"                          type="real"     dimensions="nAdvectionCells nEdges"      streams=""/>
+		<var name="advCoefs3rd"                       type="real"     dimensions="nAdvectionCells nEdges"      streams=""/>
+		<var name="advCellsForEdge"                   type="integer"  dimensions="nAdvectionCells nEdges"      streams=""/>
+		<var name="nAdvCellsForEdge"                  type="integer"  dimensions="nEdges"                      streams=""/>
+		<var name="highOrderAdvectionMask"            type="integer"  dimensions="nVertLevels nEdges"          streams=""/>
 	</var_struct>
 
 

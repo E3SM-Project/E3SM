@@ -12,6 +12,7 @@ contains
   subroutine cice_timestep(block, clock, dt)
 
     use cice_dynamics, only: run_dynamics
+    use cice_advection, only: run_advection
     use cice_forcing, only: get_forcing
 
     use cice_testing, only: plot_cells_spherical, plot_pop_grid_cells, plot_state
@@ -35,7 +36,11 @@ contains
     nstep = nstep + 1
     time = nstep * dt
 
+    ! velocity solve
     call run_dynamics(block, dt, nstep)
+
+    ! advection
+    call run_advection(block, dt, nstep)
 
   end subroutine cice_timestep
 

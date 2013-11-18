@@ -283,7 +283,7 @@ contains
     integer :: &
          iElasticSubcycle
 
-    do iElasticSubcycle = 1, 10!nElasticSubcycle
+    do iElasticSubcycle = 1, nElasticSubcycle
 
        write(*,*) "subcycle: ", iElasticSubcycle
        call single_subcycle_dynamics_hex(mesh, &
@@ -362,21 +362,21 @@ contains
 
     character(len=*), intent(in) :: divergenceFormulation
 
-    do iVertex = 1, mesh % nVertices
+    !do iVertex = 1, mesh % nVertices
     
-       if (boundary % interiorVertex % array(iVertex) == 1) then
+    !   if (boundary % interiorVertex % array(iVertex) == 1) then
        
-          hexdyn % uVelocity % array(iVertex) = sin(4.0_RKIND * mesh % latVertex % array(iVertex) + 2.0_RKIND * 3.142_RKIND * sin(2.0_RKIND * mesh % lonVertex % array(iVertex)))
-          hexdyn % vVelocity % array(iVertex) = 0.0_RKIND
+    !      hexdyn % uVelocity % array(iVertex) = sin(4.0_RKIND * mesh % latVertex % array(iVertex) + 2.0_RKIND * 3.142_RKIND * sin(2.0_RKIND * mesh % lonVertex % array(iVertex)))
+    !      hexdyn % vVelocity % array(iVertex) = 0.0_RKIND
           
-       else
+    !   else
 
-          hexdyn % uVelocity % array(iVertex) = 0.0_RKIND
-          hexdyn % vVelocity % array(iVertex) = 0.0_RKIND
+    !      hexdyn % uVelocity % array(iVertex) = 0.0_RKIND
+    !      hexdyn % vVelocity % array(iVertex) = 0.0_RKIND
 
-       endif
+    !   endif
 
-    enddo ! iVertex
+    !enddo ! iVertex
 
     if (trim(divergenceFormulation) == "weak") then
 
@@ -406,6 +406,10 @@ contains
             hexdyn % solveStress % array,          &       
             dtElastic, evpDamping)
 
+       call plot_pop_grid_cells(mesh, hexweak % stress11 % array, "stress11.txt", iElasticSubcycle)
+       call plot_pop_grid_cells(mesh, hexweak % stress22 % array, "stress22.txt", iElasticSubcycle)
+       call plot_pop_grid_cells(mesh, hexweak % stress12 % array, "stress12.txt", iElasticSubcycle)
+
        call stress_divergence_hex_weak(mesh, &
             hexdyn % stressDivergenceU % array,    &
             hexdyn % stressDivergenceV % array,    &
@@ -418,6 +422,9 @@ contains
 
        call plot_pop_grid_vertices(mesh, hexdyn % stressDivergenceU % array, boundary % interiorVertex % array, "divstressu.txt", iElasticSubcycle)
        call plot_pop_grid_vertices(mesh, hexdyn % stressDivergenceV % array, boundary % interiorVertex % array, "divstressv.txt", iElasticSubcycle)
+
+       !hexdyn % stressDivergenceU % array = 0.0_RKIND
+       !hexdyn % stressDivergenceU % array = 0.0_RKIND
 
     else if (trim(divergenceFormulation) == "variational") then
 
@@ -501,22 +508,22 @@ contains
          icestate % iceAreaVertex % array,  &
          hexdyn % solveVelocity % array)
 
-    !call solve_velocity(mesh % nVertices, &
-    !     hexdyn % solveVelocity % array,      &
-    !     hexdyn % uVelocity % array,         &   
-    !     hexdyn % vVelocity % array,         &
-    !     icestate % totalMassVertex % array, & 
-    !     mesh % fVertex % array,             &
-    !     hexdyn % stressDivergenceU % array, & 
-    !     hexdyn % stressDivergenceV % array, &
-    !     hexdyn % airStressVertexU % array,  & 
-    !     hexdyn % airStressVertexV % array,  &
-    !     hexdyn % surfaceTiltForceU % array, &
-    !     hexdyn % surfaceTiltForceV % array, &
-    !     hexdyn % oceanStressU % array,      &
-    !     hexdyn % oceanStressV % array,      &
-    !     hexdyn % oceanStressCoeff % array,  &
-    !     dtElastic,mesh)
+    call solve_velocity(mesh % nVertices, &
+         hexdyn % solveVelocity % array,      &
+         hexdyn % uVelocity % array,         &   
+         hexdyn % vVelocity % array,         &
+         icestate % totalMassVertex % array, & 
+         mesh % fVertex % array,             &
+         hexdyn % stressDivergenceU % array, & 
+         hexdyn % stressDivergenceV % array, &
+         hexdyn % airStressVertexU % array,  & 
+         hexdyn % airStressVertexV % array,  &
+         hexdyn % surfaceTiltForceU % array, &
+         hexdyn % surfaceTiltForceV % array, &
+         hexdyn % oceanStressU % array,      &
+         hexdyn % oceanStressV % array,      &
+         hexdyn % oceanStressCoeff % array,  &
+         dtElastic,mesh)
 
     call plot_pop_grid_vertices(mesh, hexdyn % uVelocity % array, boundary % interiorVertex % array, "uvel.txt", iElasticSubcycle)
     call plot_pop_grid_vertices(mesh, hexdyn % vVelocity % array, boundary % interiorVertex % array, "vvel.txt", iElasticSubcycle)

@@ -106,6 +106,8 @@ module mpas_core
       use mpas_rbf_interpolation
       use mpas_vector_reconstruction
 
+      use cice_advection, only: init_advection
+
       use cice_dynamics, only: init_dynamics
 
       use cice_testing, only: plot_pop_grid_cells, init_spherical_test_case
@@ -123,6 +125,10 @@ module mpas_core
       call mpas_rbf_interp_initialize(mesh)
       call mpas_init_reconstruct(mesh)
 
+      ! init advection
+      call init_advection()
+
+      ! init forcing
       call init_forcing(mesh, &
            block % atmos_forcing)
 
@@ -328,6 +334,20 @@ module mpas_core
      call mpas_destroy_clock(clock, ierr)
 
    end subroutine mpas_core_finalize
+
+!--------------------------------------------------------------------------
+
+   subroutine mpas_core_setup_packages(ierr)
+
+      use mpas_packages
+
+      implicit none
+
+      integer, intent(out) :: ierr
+
+      ierr = 0
+
+   end subroutine mpas_core_setup_packages
 
 !--------------------------------------------------------------------------
 
