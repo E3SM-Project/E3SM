@@ -149,18 +149,16 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: err_tmp
-      type (state_type), pointer :: state_ptr
-      type (mesh_type), pointer :: mesh_ptr
+      integer :: timeLevel, err_tmp
+      type (state_type), pointer :: state
 
       err = 0
 
-      state_ptr => domain % blocklist % state % time_levs(1) % state
-      mesh_ptr  => domain % blocklist % mesh
+      state => domain % blocklist % state % time_levs(1) % state
 
-      ! need to add timer around each am
+      timeLevel=1
       call oac_compute_am_global_stats(domain % blocklist % amGlobalStats, &
-         mesh_ptr, state_ptr, err_tmp)
+         state, domain % dminfo, timeLevel, err_tmp)
       err = ior(err, err_tmp)
 
    end subroutine oac_driver_compute!}}}
