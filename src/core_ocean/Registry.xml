@@ -718,6 +718,13 @@
 					possible_values=".true. or .false."
 		/>
 	</nml_record>
+	<packages>
+		<package name="splitTimeIntegrator" description="This package includes variables required for either the split or unsplit explicit time integrators."/>
+		<package name="thicknessFilter" description="This package includes variables required for frequency filtered thickness."/>
+		<package name="surfaceRestoring" description="This package includes variables required for surface tracer restoring."/>
+		<package name="bulkForcing" description="This package includes varibles required for bulk surface forcing."/>
+		<package name="frazilIce" description="This package includes variables required for frazil ice formation."/>
+	</packages>
 	<var_struct name="state" time_levs="2">
 		<var_array name="tracers" type="real" dimensions="nVertLevels nCells Time">
 			<var name="temperature" array_group="dynamics" streams="iro" units="degrees Celsius"
@@ -743,23 +750,29 @@
 		<!-- FIELDS FOR FREQUENCY FILTERED THICKNESS -->
 		<var name="highFreqThickness" type="real" dimensions="nVertLevels nCells Time" streams="ir" units="m"
 			 description="high frequency-filtered layer thickness"
+			 packages="thicknessFilter"
 		/>
 		<var name="lowFreqDivergence" type="real" dimensions="nVertLevels nCells Time" streams="ir" units="s^{-1}"
 			 description="low frequency-filtered divergence"
+			 packages="thicknessFilter"
 		/>
 
 		<!-- FIELDS FOR SPLIT EXPLICIT TIME INTEGRATOR -->
 		<var name="normalBarotropicVelocity" type="real" dimensions="nEdges Time" streams="r" units="m s^{-1}"
 			 description="barotropic velocity, used in split-explicit time-stepping"
+			 packages="splitTimeIntegrator"
 		/>
 		<var name="normalBarotropicVelocitySubcycle" type="real" dimensions="nEdges Time" units="m s^{-1}"
 			 description="barotropic velocity, used in subcycling in stage 2 of split-explicit time-stepping"
+			 packages="splitTimeIntegrator"
 		/>
 		<var name="sshSubcycle" type="real" dimensions="nCells Time" units="m"
 			 description="sea surface height, used in subcycling in stage 2 of split-explicit time-stepping"
+			 packages="splitTimeIntegrator"
 		/>
 		<var name="normalBaroclinicVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
 			 description="baroclinic velocity, used in split-explicit time-stepping"
+			 packages="splitTimeIntegrator"
 		/>
 	</var_struct>
 	<var_struct name="mesh" time_levs="0">
@@ -969,9 +982,11 @@
 		/>
 		<var name="temperatureRestore" type="real" dimensions="nCells" streams="ir" units="^\circ C"
 			 description="Temperature restoring field, for restoring temperature at the surface."
+			 packages="surfaceRestoring"
 		/>
 		<var name="salinityRestore" type="real" dimensions="nCells" streams="ir" units="PSU"
 			 description="Salinity restoring field, for restoring salinity at the surface."
+			 packages="surfaceRestoring"
 		/>
 		<var name="edgeSignOnCell" type="integer" dimensions="maxEdges nCells" units="unitless"
 			 description="Sign of edge contributions to a cell for each edge on cell. Used for bit-reproducible loops. Represents directionality of vector connecting cells."
@@ -1017,9 +1032,11 @@
 		/>
 		<var name="tendHighFreqThickness" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}" name_in_code="highFreqThickness"
 			 description="time tendency of high frequency-filtered layer thickness"
+			 packages="thicknessFilter"
 		/>
 		<var name="tendLowFreqDivergence" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}" name_in_code="lowFreqDivergence"
 			 description="time tendency of low frequency-filtered divergence"
+			 packages="thicknessFilter"
 		/>
 	</var_struct>
 	<var_struct name="diagnostics" time_levs="0">
@@ -1320,6 +1337,7 @@
 		/>
 		<var name="seaIceEnergy" type="real" dimensions="nCells Time" units="J m^{-2}" streams="o"
 			 description="Energy per unit area trapped in frazil ice formation. Always $\ge$ 0.0."
+			 packages="frazilIce"
 		/>
 		<var name="penetrativeTemperatureFlux" type="real" dimensions="nCells Time" units="^\circ C m s^{-1}" streams="o"
 			 description="Penetrative temperature flux at the surface due to solar radiation. Positive is into the ocean."
@@ -1332,66 +1350,93 @@
 		<!-- Coupling fields associated with wind stress -->
 		<var name="windStressZonal" type="real" dimensions="nCells Time" units="N m^{-2}" streams="o"
 			 description="Zonal (eastward) component of wind stress at cell centers from coupler. Positive eastward."
+			 packages="bulkForcing"
 		/>
 		<var name="windStressMeridional" type="real" dimensions="nCells Time" units="N m^{-2}" streams="o"
 			 description="Meridional (northward) component of wind stress at cell centers from coupler. Positive northward."
+			 packages="bulkForcing"
 		/>
 
 		<!-- Coupling fields associated with heat fluxes -->
 		<var name="latentHeatFlux" type="real" dimensions="nCells Time" units="W m^{-2}" streams="o"
 			 description="Latent heat flux at cell centers from coupler. Positive into the ocean."
+			 packages="bulkForcing"
 		/>
 		<var name="sensibleHeatFlux" type="real" dimensions="nCells Time" units="W m^{-2}" streams="o"
 			 description="Sensible heat flux at cell centers from coupler. Positive into the ocean."
+			 packages="bulkForcing"
 		/>
 		<var name="longWaveHeatFluxUp" type="real" dimensions="nCells Time" units="W m^{-2}" streams="o"
 			 description="Upward long wave heat flux at cell centers from coupler. Positive into the ocean."
+			 packages="bulkForcing"
 		/>
 		<var name="longWaveHeatFluxDown" type="real" dimensions="nCells Time" units="W m^{-2}" streams="o"
 			 description="Downward long wave heat flux at cell centers from coupler. Positive into the ocean."
+			 packages="bulkForcing"
 		/>
 		<var name="seaIceHeatFlux" type="real" dimensions="nCells Time" units="W m^{-2}" streams="o"
 			 description="Sea ice heat flux at cell centers from coupler. Positive into the ocean."
+			 packages="bulkForcing"
 		/>
 		<var name="shortWaveHeatFlux" type="real" dimensions="nCells Time" units="W m^{-2}" streams="o"
 			 description="Short wave flux at cell centers from coupler. Positive into the ocean."
+			 packages="bulkForcing"
 		/>
 
 		<!-- Coupling fields associated with mass or salinity fluxes -->
 		<var name="evaporationFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}" streams="o"
 			 description="Evaporation flux at cell centers from coupler. Positive into the ocean."
+			 packages="bulkForcing"
 		/>
 		<var name="seaIceSalinityFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}" streams="o"
 			 description="Sea ice salinity flux at cell centers from coupler. Positive into the ocean."
+			 packages="bulkForcing"
 		/>
 		<var name="seaIceFreshWaterFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}" streams="o"
 			 description="Fresh water flux from sea ice at cell centers from coupler. Positive into the ocean."
+			 packages="bulkForcing"
 		/>
 		<var name="riverRunoffFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}" streams="o"
 			 description="Fresh water flux from river runoff at cell centers from coupler. Positive into the ocean."
+			 packages="bulkForcing"
 		/>
 		<var name="iceRunoffFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}" streams="o"
 			 description="Fresh water flux from ice runoff at cell centers from coupler. Positive into the ocean."
+			 packages="bulkForcing"
 		/>
 		<var name="rainFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}" streams="o"
 			 description="Fresh water flux from rain at cell centers from coupler. Positive into the ocean."
+			 packages="bulkForcing"
 		/>
 		<var name="snowFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}" streams="o"
 			 description="Fresh water flux from snow at cell centers from coupler. Positive into the ocean."
+			 packages="bulkForcing"
 		/>
 
 		<!-- Misc. coupling fields -->
 		<var name="iceFraction" type="real" dimensions="nCells Time" units="percent" streams="o"
 			 description="Fraction of sea ice coverage at cell centers from coupler. Positive into the ocean."
+			 packages="bulkForcing"
 		/>
 		<var name="prognosticCO2" type="real" dimensions="nCells Time" units="1e-6 mol mol^{-1}" streams="o"
 			 description="Prognostic CO2 at cell centers from coupler. Positive into the ocean."
+			 packages="bulkForcing"
 		/>
 		<var name="diagnosticCO2" type="real" dimensions="nCells Time" units="1e-6 mol mol^{-1}" streams="o"
 			 description="Diagnostic CO2 at cell centers from coupler. Positive into the ocean."
+			 packages="bulkForcing"
 		/>
 		<var name="squaredWindSpeed10Meter" type="real" dimensions="nCells Time" units="m^2 s^{-2}" streams="o"
 			 description="Squared wind speed at 10 meters at cell centers from coupler."
+			 packages="bulkForcing"
+		/>
+		<var name="CO2Flux" type="real" dimensions="nCells Time" units="mol m^{-2} s^{-1}" streams="o"
+			 description="CO2 Flux."
+			 packages="bulkForcing"
+		/>
+		<var name="DMSFlux" type="real" dimensions="nCells Time" units="mol m^{-2} s^{-1}" streams="o"
+			 description="DMS Flux."
+			 packages="bulkForcing"
 		/>
 
 		<!-- Output fields for coupling -->
@@ -1425,12 +1470,6 @@
 				 description="Time averaged meridional gradient of SSH"
 			/>
 		</var_array>
-		<var name="CO2Flux" type="real" dimensions="nCells Time" units="mol m^{-2} s^{-1}" streams="o"
-			 description="CO2 Flux."
-		/>
-		<var name="DMSFlux" type="real" dimensions="nCells Time" units="mol m^{-2} s^{-1}" streams="o"
-			 description="DMS Flux."
-		/>
 	</var_struct>
     <var_struct name="scratch" time_levs="0">
 		<var name="vorticityGradientTangentialComponent" 
