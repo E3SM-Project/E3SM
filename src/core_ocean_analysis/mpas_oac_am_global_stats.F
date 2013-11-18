@@ -24,7 +24,7 @@ module oac_am_global_stats
    use mpas_timer
    use mpas_dmpar
 
-!   use ocn_diagnostics_routines
+   use ocn_diagnostics_routines
 
    implicit none
    private
@@ -160,6 +160,7 @@ print *, 'oac_init_am_global_stats'
 
       type (state_type), pointer :: state
       type (mesh_type), pointer :: mesh
+      type (scratch_type), pointer :: scratch
       ! mrp remove diagnostics links later
       type (diagnostics_type), pointer :: diagnostics
 
@@ -173,7 +174,7 @@ print *, 'oac_init_am_global_stats'
 
       real (kind=RKIND) :: volumeCellGlobal, volumeEdgeGlobal, CFLNumberGlobal, localCFL, localSum, areaCellGlobal, areaEdgeGlobal, areaTriangleGlobal, time_days
       real (kind=RKIND), dimension(:), pointer ::  areaCell, dcEdge, dvEdge, areaTriangle, areaEdge
-      real (kind=RKIND), dimension(:,:), pointer :: layerThickness, normalVelocity, tangentialVelocity, layerThicknessEdge, relativeVorticity, kineticEnergyCell, &
+      real (kind=RKIND), dimension(:,:), pointer :: layerThickness, normalVelocity, tangentialVelocity, layerThicknessEdge, kineticEnergyCell, &
          normalizedRelativeVorticityEdge, normalizedPlanetaryVorticityEdge, pressure, montgomeryPotential, vertTransportVelocityTop, vertVelocityTop, &
          lowFreqDivergence, highFreqThickness, density
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers
@@ -188,11 +189,6 @@ print *, 'oac_init_am_global_stats'
 
       call mpas_timer_start("compute_am_global_stats", .false., amGlobalStatsTimer)
 
-!      call ocn_relativeVorticity_circulation(diagnostics % relativeVorticity % array, diagnostics % circulation % array, &
-!         mesh, state % normalVelocity % array, err_tmp)
-!         err = ior(err, err_tmp)
-
-
       sums = 0.0
       sumSquares = 0.0
       mins = 1.0e34
@@ -206,6 +202,7 @@ print *, 'oac_init_am_global_stats'
       do while (associated(block))
          state => block % state % time_levs(timeLevel) % state
          mesh => block % mesh
+         scratch => block % scratch
          ! mrp remove diagnostics links later
          diagnostics => block % diagnostics
          
@@ -233,10 +230,16 @@ print *, 'oac_init_am_global_stats'
          lowFreqDivergence => state % lowFreqDivergence % array
          highFreqThickness => state % highFreqThickness % array
 
+         call mpas_allocate_scratch_field(scratch % workArray1Cell3D, .true.)
+         call mpas_allocate_scratch_field(scratch % workArray2Cell3D, .true.)
+         call mpas_allocate_scratch_field(scratch % workArray1Vertex3D, .true.)
+         call mpas_allocate_scratch_field(scratch % workArray2Vertex3D, .true.)
+         call mpas_allocate_scratch_field(scratch % workArray1Edge3D, .true.)
+         call mpas_allocate_scratch_field(scratch % workArray2Edge3D, .true.)
+
          density                          => diagnostics % density % array
          montgomeryPotential              => diagnostics % montgomeryPotential % array
          pressure                         => diagnostics % pressure % array
-         relativeVorticity                => diagnostics % relativeVorticity % array
          normalizedRelativeVorticityEdge  => diagnostics % normalizedRelativeVorticityEdge % array
          normalizedPlanetaryVorticityEdge => diagnostics % normalizedPlanetaryVorticityEdge % array
          vertTransportVelocityTop         => diagnostics % vertTransportVelocityTop % array
@@ -295,8 +298,12 @@ print *, 'oac_init_am_global_stats'
          verticalSumMaxes(variableIndex) = max(verticalSumMaxes(variableIndex), verticalSumMaxes_tmp(variableIndex))
 
          ! relativeVorticity
+         call ocn_relativeVorticity_circulation(scratch % workArray1Vertex3D % array, scratch % workArray2Vertex3D % array, &
+            mesh, state % normalVelocity % array, err_tmp)
+            err = ior(err, err_tmp)
          variableIndex = variableIndex + 1
-         call ocn_compute_field_area_weighted_local_stats_max_level(dminfo, nVertLevels, nVerticesSolve, maxLevelVertexBot(1:nVerticesSolve), areaTriangle(1:nVerticesSolve), relativeVorticity(:,1:nVerticesSolve), &
+         call ocn_compute_field_area_weighted_local_stats_max_level(dminfo, nVertLevels, nVerticesSolve, maxLevelVertexBot(1:nVerticesSolve), areaTriangle(1:nVerticesSolve), &
+            scratch % workArray1Vertex3D % array(:,1:nVerticesSolve), &
             sums_tmp(variableIndex), sumSquares_tmp(variableIndex), mins_tmp(variableIndex), maxes_tmp(variableIndex), verticalSumMins_tmp(variableIndex), verticalSumMaxes_tmp(variableIndex))
          sums(variableIndex) = sums(variableIndex) + sums_tmp(variableIndex)
          sumSquares(variableIndex) = sumSquares(variableIndex) + sumSquares_tmp(variableIndex)
@@ -305,9 +312,10 @@ print *, 'oac_init_am_global_stats'
          verticalSumMins(variableIndex) = min(verticalSumMins(variableIndex), verticalSumMins_tmp(variableIndex))
          verticalSumMaxes(variableIndex) = max(verticalSumMaxes(variableIndex), verticalSumMaxes_tmp(variableIndex))
 
-         ! enstrophy
+         ! enstrophy 
+         ! Note: enstrophy uses the value in workArray1Vertex3D for relative vorticity, computed directly above.
          allocate(enstrophy(nVertLevels,nVerticesSolve))
-         enstrophy(:,:)=relativeVorticity(:,1:nVerticesSolve)**2
+         enstrophy(:,:)=scratch % workArray1Vertex3D % array(:,1:nVerticesSolve)**2
          variableIndex = variableIndex + 1
          call ocn_compute_field_area_weighted_local_stats_max_level(dminfo, nVertLevels, nVerticesSolve, maxLevelVertexBot(1:nVerticesSolve), areaTriangle(1:nVerticesSolve), &
             enstrophy(:,:), sums_tmp(variableIndex), sumSquares_tmp(variableIndex), mins_tmp(variableIndex), maxes_tmp(variableIndex), &
@@ -475,6 +483,13 @@ print *, 'oac_init_am_global_stats'
 
          nMins = nMins + nVariables
          nMaxes = nMaxes + nVariables
+
+         call mpas_deallocate_scratch_field(scratch % workArray1Cell3D, .true.)
+         call mpas_deallocate_scratch_field(scratch % workArray2Cell3D, .true.)
+         call mpas_deallocate_scratch_field(scratch % workArray1Vertex3D, .true.)
+         call mpas_deallocate_scratch_field(scratch % workArray2Vertex3D, .true.)
+         call mpas_deallocate_scratch_field(scratch % workArray1Edge3D, .true.)
+         call mpas_deallocate_scratch_field(scratch % workArray2Edge3D, .true.)
 
          block => block % next
       end do
