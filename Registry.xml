@@ -1742,23 +1742,26 @@
 		</var_array>
 	</var_struct>
 	<var_struct name="amGlobalStats" time_levs="0">
-		<var name="avgRelativeVorticity" type="real" dimensions="Time" streams="o" units="s^{-1}"
-			description="average relative vorticity over the domain"
+		<var name="minGlobalStats" type="real" dimensions="TWENTYONE Time" streams="o" units="varies"
+			description="minimum over the domain of global statistics variables"
 		/>
-		<var name="minRelativeVorticity" type="real" dimensions="Time" streams="o" units="s^{-1}"
-			description="minimum relative vorticity over the domain"
+		<var name="maxGlobalStats" type="real" dimensions="TWENTYONE Time" streams="o" units="varies"
+			description="maximum over the domain of global statistics variables"
 		/>
-		<var name="maxRelativeVorticity" type="real" dimensions="Time" streams="o" units="s^{-1}"
-			description="maximum relative vorticity over the domain"
+		<var name="sumGlobalStats" type="real" dimensions="TWENTYONE Time" streams="o" units="varies"
+			description="summation over the domain of global statistics variables"
 		/>
-		<var name="avgKineticEnergy" type="real" dimensions="Time" streams="o" units="m^2 s^{-2}"
-			description="average kinetic energy over the domain"
+		<var name="rmsGlobalStats" type="real" dimensions="TWENTYONE Time" streams="o" units="varies"
+			description="root mean square over the domain of global statistics variables"
 		/>
-		<var name="minKineticEnergy" type="real" dimensions="Time" streams="o" units="m^2 s^{-2}"
-			description="minimum kinetic energy over the domain"
+		<var name="avgGlobalStats" type="real" dimensions="TWENTYONE Time" streams="o" units="varies"
+			description="average over the domain of global statistics variables"
 		/>
-		<var name="maxKineticEnergy" type="real" dimensions="Time" streams="o" units="m^2 s^{-2}"
-			description="maximum kinetic energy over the domain"
+		<var name="vertSumMinGlobalStats" type="real" dimensions="TWENTYONE Time" streams="o" units="varies"
+			description="minimum vertical sum over the domain of global statistics variables"
+		/>
+		<var name="vertSumMaxGlobalStats" type="real" dimensions="TWENTYONE Time" streams="o" units="varies"
+			description="maximum vertical sum over the domain of global statistics variables"
 		/>
 	</var_struct>
 	<var_struct name="scratch" time_levs="0">
