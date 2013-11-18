@@ -1035,6 +1035,10 @@
 			<var name="nAccumulatedCoupled"/>
 			<var name="thermalExpansionCoeff"/>
 			<var name="salineContractionCoeff"/>
+			<var name="vertNonLocalTransTemp"/>
+			<var name="vertNonLocalTransSalt"/>
+			<var name="vertNonLocalTransZonalVel"/>
+			<var name="vertNonLocalTransMeridVel"/>
 		</stream>
 	</streams>
 	<var_struct name="state" time_levs="2">
@@ -1403,14 +1407,12 @@
 		<var name="BruntVaisalaFreqTop" type="real" dimensions="nVertLevels nCells Time" units="s^{-2}"
 			 description="Brunt Vaisala frequency defined at the center (horizontally) and top (vertically) of cell"
 		/>
-
 		<var name="montgomeryPotential" type="real" dimensions="nVertLevels nCells Time" units="m^2 s^{-2}"
 			 description="Montgomery potential, may be used as the pressure for isopycnal coordinates."
 		/>
 		<var name="pressure" type="real" dimensions="nVertLevels nCells Time" units="N m^{-2}"
 			 description="pressure used in the momentum equation"
 		/>
-
 		<var name="uTransport" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
 			 description="horizontal velocity used to transport mass and tracers"
 		/>
@@ -1423,7 +1425,6 @@
 		<var name="tangentialVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
 			 description="horizontal velocity, tangential to an edge"
 		/>
-
 		<var name="layerThicknessEdge" type="real" dimensions="nVertLevels nEdges Time" units="m"
 			 description="layer thickness averaged from cell center to edges"
 		/>
@@ -1434,7 +1435,6 @@
 		<var name="kineticEnergyCell" type="real" dimensions="nVertLevels nCells Time" units="m^2 s^{-2}"
 			 description="kinetic energy of horizonal velocity on cells"
 		/>
-
 		<var name="hEddyFlux" type="real" dimensions="nVertLevels nEdges Time" units=""
 			 description="Eddy flux in Gent-McWilliams eddy parameterization"
 		/>
@@ -1469,14 +1469,12 @@
 		<var name="normalizedRelativeVorticityCell" type="real" dimensions="nVertLevels nCells Time" units="s^{-1}"
 			 description="curl of horizontal velocity divided by layer thickness, averaged from vertices to cell centers"
 		/>
-
 		<var name="barotropicForcing" type="real" dimensions="nEdges Time" units="m s^{-2}"
 			 description="Barotropic tendency computed from the baroclinic equations in stage 1 of the split-explicit algorithm."
 		/>
 		<var name="barotropicThicknessFlux" type="real" dimensions="nEdges Time" units="m^2 s^{-1}"
 			 description="Barotropic thickness flux at each edge, used to advance sea surface height in each subcycle of stage 2 of the split-explicit algorithm."
 		/>
-
 		<var name="normalVelocityX" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="component of horizontal velocity in the x-direction (cartesian)"
 		/>
@@ -1492,7 +1490,6 @@
 		<var name="normalVelocityMeridional" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="component of horizontal velocity in the northward"
 		/>
-
 		<var name="gradSSH" type="real" dimensions="nVertLevels nEdges Time" units=""
 			 description="Gradient of sea surface height at edges."
 		/>
@@ -1511,7 +1508,6 @@
 		<var name="gradSSHMeridional" type="real" dimensions="nVertLevels nCells Time" units=""
 			 description="Meridional Component of the gradient of sea surface height at cell centers."
 		/>
-
 		<var name="uBolusGM" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
 			 description="Bolus velocity in Gent-McWilliams eddy parameterization"
 		/>
@@ -1552,7 +1548,21 @@
 		<var name="boundaryLayerDepth" type="real" dimensions="nCells Time" units="m"
 			 description="diagnosed depth of the ocean surface boundary layer"
 		/>
-		<var name="indexBoundaryLayerDepth" type="real" dimensions="nCells Time" units="none"
+		<var_array name="vertNonLocalTrans" type="real" dimensions="nVertLevelsP1 nCells Time">
+			<var name="vertNonLocalTransTemp" array_group="vertNonLocalTrans" streams="o" units="nondimensional" name_in_code="vertNonLocalTransTemp"
+				 description="nonlocal boundary layer mixing term for temperature"
+			/>
+			<var name="vertNonLocalTransSalt" array_group="vertNonLocalTrans" streams="o" units="nondimensional" name_in_code="vertNonLocalTransSalt"
+				 description="nonlocal boundary layer mixing term for salinity"
+			/>
+			<var name="vertNonLocalTransZonalVel" array_group="vertNonLocalTrans" streams="o" units="nondimensional" name_in_code="vertNonLocalTransZonalVel"
+				 description="nonlocal boundary layer mixing term for zonal velocity"
+			/>
+			<var name="vertNonLocalTransMeridVel" array_group="vertNonLocalTrans" streams="o" units="nondimensional" name_in_code="vertNonLocalTransMeridVel"
+				 description="nonlocal boundary layer mixing term for meridional velocity"
+			/>
+		</var_array>
+		<var name="indexBoundaryLayerDepth" type="real" dimensions="nCells Time" streams="o" units="none"
 			 description="int(indexBoundaryLayerDepth) is vertical layer within which boundaryLayerDepth resides. mod(indexBoundaryLayerDepth) is fractional position within that layer."
 		/>
 		<var name="surfaceFrictionVelocity" type="real" dimensions="nCells Time" units="m s^{-1}"

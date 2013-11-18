@@ -124,6 +124,9 @@ contains
         vertViscTopOfCell, vertDiffTopOfCell, layerThickness, &
         bulkRichardsonNumber, zMid, zTop, density, displacedDensity, potentialDensity
 
+      real (kind=RKIND), dimension(:,:,:), pointer :: vertNonLocalTrans
+      integer :: index_nonLocalTemp, index_nonLocalSalt, index_nonLocalZonalVel, index_nonLocalMeridVel
+
       integer :: iCell, nVertLevels
 
       !-----------------------------------------------------------------
@@ -189,6 +192,17 @@ contains
       vertDiffTopOfCell = 0.0
 
       !
+      ! set pointer for nonlocal transport and intialize to zero
+      !
+      vertNonLocalTrans = diagnostics % vertNonLocalTrans % array(:,:,:)
+      index_nonLocalTemp = diagnostics % index_vertNonLocalTransTemp
+      index_nonLocalSalt = diagnostics % index_vertNonLocalTransSalt
+      index_nonLocalZonalVel = diagnostics % index_vertNonLocalTransZonalVel
+      index_nonLocalMeridVel = diagnostics % index_vertNonLocalTransMeridVel
+
+      vertNonLocalTrans = 0.0
+
+      !
       ! start by setting visocity/diffusivity to there mininum background values
       !
       if (config_use_cvmix_background) then
@@ -202,6 +216,7 @@ contains
       allocate(cvmix_variables % visc_iface(nVertLevels+1))
       allocate(cvmix_variables % diff_iface(nVertLevels+1,2))
       allocate(cvmix_variables % zw_iface(nVertLevels+1))
+      allocate(cvmix_variables % kpp_transport_iface(nVertLevels+1,4))
 
       do iCell=1,mesh%nCellsSolve
 
@@ -216,12 +231,10 @@ contains
         cvmix_variables % dzt => state % layerThickness % array(1:nVertLevels,iCell)
 
         ! fill the intent(in) for shear mixing
-        ! TDR: nVertLevels+1 undefined for Ri_iface
         cvmix_variables%Ri_iface => diagnostics % RiTopOfCell % array(:,iCell)
 
         ! fill the intent(in) convective adjustment
         ! TDR: check density
-        ! TDR: nVertLevels+1 undefined for buoy_iface
         cvmix_variables % nlev = mesh % maxLevelCell % array(iCell)
         cvmix_variables % ocn_depth = mesh % bottomDepth % array(iCell)
         cvmix_variables % dens => diagnostics % displacedDensity % array(:,iCell)
@@ -233,7 +246,7 @@ contains
         cvmix_variables % surf_buoy = diagnostics % buoyancyForcingOBL % array(iCell)
         cvmix_variables % Rib => diagnostics % BulkRichardsonNumber % array(1:nVertLevels,iCell)
 
-        ! call convective mixing scheme
+        ! call shear-based mixing scheme
         if (config_use_cvmix_shear) then
           cvmix_variables % visc_iface(:)=0.0
           cvmix_variables % diff_iface(:,:)=0.0
@@ -247,7 +260,6 @@ contains
           vertDiffTopOfCell(:,iCell) = vertDiffTopOfCell(:,iCell) + cvmix_variables % diff_iface(:,1)
 
         endif
-
 
         ! call convective mixing scheme
         if (config_use_cvmix_convection) then
@@ -266,6 +278,7 @@ contains
         if (config_use_cvmix_kpp) then
           cvmix_variables % visc_iface(:)=0.0
           cvmix_variables % diff_iface(:,:)=0.0
+          cvmix_variables % kpp_transport_iface(:,:)=0.0
 
           ! compute the boundary layer depth
           call cvmix_kpp_compute_OBL_depth( &
@@ -285,6 +298,10 @@ contains
           ! TDR: need to be sure of think through the merging in the OBL region
           vertViscTopOfCell(:,iCell) = vertViscTopOfCell(:,iCell) + cvmix_variables % visc_iface(:)
           vertDiffTopOfCell(:,iCell) = vertDiffTopOfCell(:,iCell) + cvmix_variables % diff_iface(:,1)
+          vertNonLocalTrans(index_nonLocalTemp,:,iCell) = cvmix_variables % kpp_transport_iface(:,1)
+          vertNonLocalTrans(index_nonLocalSalt,:,iCell) = cvmix_variables % kpp_transport_iface(:,2)
+          vertNonLocalTrans(index_nonLocalZonalVel,:,iCell) = cvmix_variables % kpp_transport_iface(:,3)
+          vertNonLocalTrans(index_nonLocalMeridVel,:,iCell) = cvmix_variables % kpp_transport_iface(:,4)
 
         endif
 
@@ -292,6 +309,7 @@ contains
       deallocate(cvmix_variables % visc_iface)
       deallocate(cvmix_variables % diff_iface)
       deallocate(cvmix_variables % zw_iface)
+      deallocate(cvmix_variables % kpp_transport_iface)
 
    !--------------------------------------------------------------------
 
