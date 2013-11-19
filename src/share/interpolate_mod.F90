@@ -302,9 +302,9 @@ contains
     real (kind=real_kind),intent(out) :: mint         (qsize)
     real (kind=real_kind),intent(out) :: maxt         (qsize)
 
-    type (quadrature_t        )       :: gll        
-    integer                           :: i,j,k
-    logical                           :: first_time=.true.
+    type (quadrature_t), save         :: gll        
+    integer                           :: i,j
+    logical            , save         :: first_time=.true.
     
     save gll
    
