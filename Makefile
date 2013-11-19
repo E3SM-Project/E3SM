@@ -63,6 +63,9 @@ libcvmix:
 core_hyd: $(OBJS)
 	ar -ru libdycore.a $(OBJS) cvmix/*.o
 
+core_reg:
+	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) Registry.xml > Registry_processed.xml
+
 mpas_ocn_time_integration.o: mpas_ocn_time_integration_rk4.o mpas_ocn_time_integration_split.o
 
 mpas_ocn_time_integration_rk4.o: mpas_ocn_tendency.o mpas_ocn_diagnostics.o mpas_ocn_time_average_coupled.o mpas_ocn_sea_ice.o
@@ -203,6 +206,7 @@ clean:
 		(cd cvmix; make clean) \
 	fi
 	$(RM) *.o *.mod *.f90 libdycore.a
+	$(RM) Registry_processed.xml
 
 .F.o:
 	$(RM) $@ $*.mod
