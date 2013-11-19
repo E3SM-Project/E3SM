@@ -105,8 +105,6 @@ contains
 
       err = 0
 
-print *, 'oac_init_am_global_stats'
-
    end subroutine oac_init_am_global_stats!}}}
 
 !***********************************************************************
@@ -518,6 +516,9 @@ print *, 'oac_init_am_global_stats'
 
       volumeCellGlobal = sums(1)
       volumeEdgeGlobal = sums(4)
+! mrp change to volumeCellGlobal for now just to get it to run
+      volumeEdgeGlobal = volumeCellGlobal
+
 
       ! compute the averages (slightly different depending on how the sum was computed)
       variableIndex = 0

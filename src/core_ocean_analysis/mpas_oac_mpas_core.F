@@ -30,7 +30,6 @@ module mpas_core
 
    use oac_driver
 
-
    type (io_output_object), save :: restart_obj
 
    integer :: current_outfile_frames
@@ -74,7 +73,11 @@ module mpas_core
 
       integer :: err, err_tmp
 
+      ! remove dt later
+      real (kind=RKIND) :: dt
+
       dminfo = domain % dminfo
+      err = 0
 
       call oac_driver_init(err_tmp)
       err = ior(err, err_tmp)
@@ -218,11 +221,9 @@ module mpas_core
           mesh % boundaryCell % array)
       err = ior(err, err1)
 
-      call ocn_time_average_init(block % average)
-   
-      call mpas_timer_start("diagnostic solve", .false., initDiagSolveTimer)
-      call ocn_diagnostic_solve(dt,  block % state % time_levs(1) % state, block % forcing, mesh, block % diagnostics, block % scratch)
-      call mpas_timer_stop("diagnostic solve", initDiagSolveTimer)
+!      call mpas_timer_start("diagnostic solve", .false., initDiagSolveTimer)
+!      call ocn_diagnostic_solve(dt,  block % state % time_levs(1) % state, block % forcing, mesh, block % diagnostics, block % scratch)
+!      call mpas_timer_stop("diagnostic solve", initDiagSolveTimer)
 
       ! Compute velocity transport, used in advection terms of layerThickness and tracer tendency
       block % diagnostics % uTransport % array(:,:) &
@@ -303,9 +304,9 @@ module mpas_core
 
       type (MPAS_Time_Type) :: currTime
       character(len=StrKIND) :: timeStamp
-      integer :: ierr
+      integer :: err, ierr
    
-      ! Eventually, dt should be domain specific
+      ! mrp remove dt from oac core later
       dt = config_dt
 
       currTime = mpas_get_clock_time(clock, MPAS_NOW, ierr)
@@ -316,7 +317,6 @@ module mpas_core
          call oac_driver_compute(domain, err) 
          call ocn_write_output_frame(output_obj, output_frame, domain)
       endif
-
 
    end subroutine mpas_core_run!}}}
    
@@ -347,11 +347,6 @@ module mpas_core
       do while (associated(block_ptr))
          call ocn_compute_output_diagnostics(block_ptr % state % time_levs(1) % state, block_ptr % mesh)
 
-         call mpas_allocate_scratch_field(block_ptr % scratch % normalVelocityForcingX, .true.)
-         call mpas_allocate_scratch_field(block_ptr % scratch % normalVelocityForcingY, .true.)
-         call mpas_allocate_scratch_field(block_ptr % scratch % normalVelocityForcingZ, .true.)
-         call mpas_allocate_scratch_field(block_ptr % scratch % normalVelocityForcingZonal, .true.)
-         call mpas_allocate_scratch_field(block_ptr % scratch % normalVelocityForcingMeridional, .true.)
          call mpas_allocate_scratch_field(block_ptr % scratch % windStressFull, .true.)
          call mpas_allocate_scratch_field(block_ptr % scratch % windStressX, .true.)
          call mpas_allocate_scratch_field(block_ptr % scratch % windStressY, .true.)
@@ -372,25 +367,12 @@ module mpas_core
          block_ptr % diagnostics % windStressZonalDiag % array(:) = block_ptr % scratch % windStressZonal % array(1,:)
          block_ptr % diagnostics % windStressMeridionalDiag % array(:) = block_ptr % scratch % windStressMeridional % array(1,:)
 
-         call mpas_reconstruct(block_ptr % mesh, block_ptr % mesh % normalVelocityForcing % array, &
-                               block_ptr % scratch % normalVelocityForcingX % array, &
-                               block_ptr % scratch % normalVelocityForcingY % array, &
-                               block_ptr % scratch % normalVelocityForcingZ % array, &
-                               block_ptr % scratch % normalVelocityForcingZonal % array, &
-                               block_ptr % scratch % normalVelocityForcingMeridional % array)
-
          call mpas_deallocate_scratch_field(block_ptr % scratch % windStressFull, .true.)
          call mpas_deallocate_scratch_field(block_ptr % scratch % windStressX, .true.)
          call mpas_deallocate_scratch_field(block_ptr % scratch % windStressY, .true.)
          call mpas_deallocate_scratch_field(block_ptr % scratch % windStressZ, .true.)
          call mpas_deallocate_scratch_field(block_ptr % scratch % windStressZonal, .true.)
          call mpas_deallocate_scratch_field(block_ptr % scratch % windStressMeridional, .true.)
-
-         call mpas_deallocate_scratch_field(block_ptr % scratch % normalVelocityForcingX, .true.)
-         call mpas_deallocate_scratch_field(block_ptr % scratch % normalVelocityForcingY, .true.)
-         call mpas_deallocate_scratch_field(block_ptr % scratch % normalVelocityForcingZ, .true.)
-         call mpas_deallocate_scratch_field(block_ptr % scratch % normalVelocityForcingZonal, .true.)
-         call mpas_deallocate_scratch_field(block_ptr % scratch % normalVelocityForcingMeridional, .true.)
 
          block_ptr => block_ptr % next
       end do
@@ -408,7 +390,7 @@ module mpas_core
       end if
    
    end subroutine ocn_write_output_frame!}}}
-   
+
    subroutine ocn_compute_output_diagnostics(state, mesh)!{{{
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! Compute diagnostic fields for a domain

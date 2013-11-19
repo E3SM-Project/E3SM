@@ -17,6 +17,7 @@ oacdriver: $(DRIVEROBJS)
 	ar -ru liboac.a $(DRIVEROBJS)
 
 oaccore: $(COREOBJS)
+	ar -ru libdycore.a  $(COREOBJS) $(DRIVEROBJS) ../core_ocean/shared_ocean/*.o
 
 mpas_oac_am_global_stats.o:
 
@@ -31,7 +32,7 @@ clean:
 	$(RM) $@ $*.mod
 ifeq "$(GEN_F90)" "true"
 	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) $< > $*.f90
-	$(FC) $(FFLAGS) -c $*.f90 $(FCINCLUDES) -I../framework -I../core_ocean/shared_ocean
+	$(FC) $(FFLAGS) -c $*.f90 $(FCINCLUDES) -I../framework -I../operators -I../external/esmf_time_f90 -I../core_ocean/shared_ocean
 else
-	$(FC) $(CPPFLAGS) $(FFLAGS) -c $*.F $(CPPINCLUDES) $(FCINCLUDES) -I../framework -I../core_ocean/shared_ocean
+	$(FC) $(CPPFLAGS) $(FFLAGS) -c $*.F $(CPPINCLUDES) $(FCINCLUDES) -I../framework -I../operators -I../external/esmf_time_f90 -I../core_ocean/shared_ocean
 endif
