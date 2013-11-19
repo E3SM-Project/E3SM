@@ -5,6 +5,19 @@ SVN $URL: https://parallelio.googlecode.com/svn/trunk $
 This file describes what tags were created and why
 ===========================
 Originator: jedwards
+Date: Nov 19, 2013
+Model: pio
+Version: pio1_8_1
+One-line summary: Fixes for problems found in the build of cesm1_3_alpha06c
+
+  M pio_types.F90
+  M pio.F90
+  M nf_mod.F90
+
+
+
+===========================
+Originator: jedwards
 Date: Nov 13, 2013
 Model: pio
 Version: pio1_8_0
