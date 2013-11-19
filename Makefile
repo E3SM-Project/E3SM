@@ -15,6 +15,9 @@ all: core_landice
 core_landice: $(OBJS)
 	ar -ru libdycore.a $(OBJS)
 
+core_reg:
+	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) Registry.xml > Registry_processed.xml
+
 mpas_li_mpas_core.o: mpas_li_time_integration.o \
                      mpas_li_setup.o \
                      mpas_li_velocity.o \
@@ -42,6 +45,7 @@ mpas_li_mask.o:
 
 clean:
 	$(RM) *.o *.mod *.f90 libdycore.a
+	$(RM) Registry_processed.xml
 
 .F.o:
 	$(RM) $@ $*.mod
