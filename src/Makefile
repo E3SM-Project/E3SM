@@ -26,9 +26,12 @@ drver:  $(AUTOCLEAN_DEPS) reg_includes externals frame ops dycore
 	( cd driver; $(MAKE) CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" all ) 
 endif
 
-reg_includes: $(AUTOCLEAN_DEPS)  
+reg_includes: core_reg $(AUTOCLEAN_DEPS)  
 	( cd registry; $(MAKE) CC="$(SCC)" )
-	( cd inc; $(CPP) $(CPPFLAGS) $(CPPINCLUDES) ../core_$(CORE)/Registry.xml | ../registry/parse )
+	( cd inc; ../registry/parse < ../core_$(CORE)/Registry_processed.xml)
+
+core_reg:
+	(cd core_$(CORE); $(MAKE) core_reg )
 
 frame: $(AUTOCLEAN_DEPS) reg_includes externals
 	( cd framework; $(MAKE) CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" all ) 

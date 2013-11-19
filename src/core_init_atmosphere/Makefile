@@ -20,6 +20,9 @@ all: core_hyd
 core_hyd: $(OBJS)
 	ar -ru libdycore.a $(OBJS)
 
+core_reg:
+	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) Registry.xml > Registry_processed.xml
+
 mpas_init_atm_cases.o: \
 	read_geogrid.o \
 	mpas_atm_advection.o \
@@ -60,6 +63,7 @@ mpas_atmphys_initialize_real.o:  \
 
 clean:
 	$(RM) *.o *.mod *.f90 libdycore.a
+	$(RM) Registry_processed.xml
 
 .F.o:
 	$(RM) $@ $*.mod

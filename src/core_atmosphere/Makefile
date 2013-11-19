@@ -8,6 +8,9 @@ OBJS = mpas_atm_mpas_core.o \
 
 all: physcore dycore atmcore
 
+core_reg:
+	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) Registry.xml > Registry_processed.xml
+
 physcore:
 	( cd physics; $(MAKE) all )
 	( mkdir libphys; cd libphys; ar -x ../physics/libphys.a )
@@ -29,6 +32,7 @@ clean:
 	( cd ../..; rm -f *DATA* )
 	$(RM) -r libphys
 	$(RM) *.o *.mod *.f90 libdycore.a
+	$(RM) Registry_processed.xml
 
 .F.o:
 	$(RM) $@ $*.mod

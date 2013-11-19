@@ -1,6 +1,7 @@
 # Ignore Files in the MPAS Direcory
 
 # All pre-processed Fortran files in MPAS specific directories
+src/core_*/Registry_processed.xml
 src/core_*/*.f90
 src/framework/*.f90
 src/driver/*.f90
