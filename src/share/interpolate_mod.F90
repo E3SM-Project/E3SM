@@ -290,6 +290,52 @@ contains
     f = MATMUL(xy,tracers)
   end subroutine interpolate_tracers
 
+  function linear_interpolate_2d(x,y,s) result(v)
+    use dimensions_mod, only : np, qsize
+    use kinds, only : longdouble_kind
+
+    implicit none
+    real (kind=longdouble_kind),intent(in)  :: x(np)
+    real (kind=real_kind),intent(in)  :: y(np,np,qsize)
+    type (cartesian2D_t), intent(in)  :: s        
+
+    integer                           :: i,j,q
+    real (kind=real_kind)  dx, dy(qsize), dydx(qsize), v(qsize)
+    real (kind=real_kind)  y0(qsize), y1(qsize)
+    type (cartesian2D_t)              :: r
+ 
+    r = s
+    if (r%x < -1) r%x = -1
+    if (r%y < -1) r%y = -1
+    if ( 1 < r%x) r%x =  1
+    if ( 1 < r%y) r%y =  1
+    do i=1,np  
+      if (r%x < x(i)) exit
+    end do 
+    do j=1,np  
+      if (r%y < x(j)) exit
+    end do 
+    if (1 < i) i = i-1
+    if (1 < j) j = j-1
+    if (np==i) i = i-1
+    if (np==j) j = j-1
+
+    dx = x(i+1)     - x(i)
+    dy = y(i+1,j,:) - y(i,j,:)
+    dydx = dy/dx
+    y0 = y(i,j,:) + (r%x-x(i))*dydx 
+    
+    dy = y(i+1,j+1,:) - y(i,j+1,:)
+    dydx = dy/dx
+    y1 = y(i,j+1,:) + (r%x-x(i))*dydx 
+
+    dx = x(j+1)     - x(j)
+    dy = y1         - y0          
+    dydx = dy/dx
+    v  = y0         + (r%y-x(j))*dydx 
+
+  end function linear_interpolate_2d
+
   subroutine minmax_tracers(r, tracers, mint, maxt) 
     use dimensions_mod, only : np, qsize
     use quadrature_mod, only : quadrature_t, gausslobatto
@@ -305,7 +351,14 @@ contains
     type (quadrature_t), save         :: gll        
     integer                           :: i,j
     logical            , save         :: first_time=.true.
+    real (kind=real_kind)             :: y1           (qsize)
+    real (kind=real_kind)             :: y2           (qsize)
+    real (kind=real_kind)             :: q_interp     (4,qsize)
+    type (cartesian2D_t)              :: s
+    real (kind=real_kind)             :: delta
     
+    delta = 1.D0/8.D0
+
     if (first_time) then
       first_time = .false.
       gll=gausslobatto(np)
@@ -321,8 +374,30 @@ contains
     if (1 < j) j = j-1
     if (np==i) i = i-1
     if (np==j) j = j-1
-    mint(:) = minval(minval(tracers(i:i+1,j:j+1,:),1),1)
-    maxt(:) = maxval(maxval(tracers(i:i+1,j:j+1,:),1),1)
+
+!   mint(:) = minval(minval(tracers(i:i+1,j:j+1,:),1),1)
+!   maxt(:) = maxval(maxval(tracers(i:i+1,j:j+1,:),1),1)
+
+! Or check this out:
+    s   = r
+    s%x = s%x - delta
+    s%y = s%y - delta
+    q_interp(1,:) = linear_interpolate_2d(gll%points,tracers,s)
+    s   = r
+    s%x = s%x + delta
+    s%y = s%y - delta
+    q_interp(2,:) = linear_interpolate_2d(gll%points,tracers,s)
+    s   = r
+    s%x = s%x - delta
+    s%y = s%y + delta
+    q_interp(3,:) = linear_interpolate_2d(gll%points,tracers,s)
+    s   = r
+    s%x = s%x + delta
+    s%y = s%y + delta
+    q_interp(4,:) = linear_interpolate_2d(gll%points,tracers,s)
+
+    mint(:) = minval(q_interp(:,:),1)
+    maxt(:) = maxval(q_interp(:,:),1)
   end subroutine minmax_tracers
 
   function interpolate_2d(cart, f, interp, npts, fillvalue) result(fxy)
