@@ -1254,7 +1254,7 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
       n=n+1
       global_shared_buf(ie,n) = 0
       do j=1,np
-        global_shared_buf(ie,n) = global_shared_buf(ie,n) + DOT_PRODUCT(elem(ie)%state%Qdp(:,j,k,q,tl%n0),elem(ie)%spheremp(:,j))
+        global_shared_buf(ie,n) = global_shared_buf(ie,n) + DOT_PRODUCT(elem(ie)%state%Qdp(:,j,k,q,n0_qdp),elem(ie)%spheremp(:,j))
       end do
     end do
     end do
@@ -1317,7 +1317,7 @@ subroutine VDOT(rp,Que,rho,mass,hybrid,nets,nete)
     do q=1,qsize
     do k=1,nlev
       n=n+1
-      global_shared_buf(ie,n) = global_shared_buf(ie,n) + DOT_PRODUCT(rho(:,k,ie), Que(:,k,q,ie))
+      global_shared_buf(ie,n) = global_shared_buf(ie,n) + DOT_PRODUCT(Que(:,k,q,ie), rho(:,k,ie))
     end do
     end do
   end do
@@ -1352,7 +1352,6 @@ subroutine Cobra_SLBQP(Que, Que_t, rho, minq, maxq, mass, hybrid, nets, nete)
 
   real(kind=real_kind),               parameter :: eta = 1D-10           
   real(kind=real_kind),               parameter :: hfd = 1D-8              
-  real(kind=real_kind)                          :: lambda            (nlev,qsize)
   real(kind=real_kind)                          :: lambda_p          (nlev,qsize)
   real(kind=real_kind)                          :: lambda_c          (nlev,qsize)
   real(kind=real_kind)                          :: rp                (nlev,qsize)
@@ -1362,20 +1361,11 @@ subroutine Cobra_SLBQP(Que, Que_t, rho, minq, maxq, mass, hybrid, nets, nete)
   integer                                       :: j,k,n,q,ie
   integer                                       :: nclip
 
-  lambda = 0
   nclip = 0
 
-  do ie=nets,nete
-  do q=1,qsize
-  do k=1,nlev
-     Que(:,k,q,ie) = lambda(k,q) * rho(:,k,ie) + Que_t(:,k,q,ie)
-  enddo
-  enddo
-  enddo
-  Que = MIN(MAX(Que,minq),maxq)
+  Que(:,:,:,:) = Que_t(:,:,:,:)
 
-  do ie=nets,nete
-  enddo
+  Que = MIN(MAX(Que,minq),maxq)
 
   call VDOT(rp,Que,rho,mass,hybrid,nets,nete)
   nclip = nclip + 1
@@ -1385,7 +1375,7 @@ subroutine Cobra_SLBQP(Que, Que_t, rho, minq, maxq, mass, hybrid, nets, nete)
   do ie=nets,nete
   do q=1,qsize
   do k=1,nlev
-     Que(:,k,q,ie) = (lambda(k,q) + hfd) * rho(:,k,ie) + Que_t(:,k,q,ie)
+     Que(:,k,q,ie) = hfd * rho(:,k,ie) + Que_t(:,k,q,ie)
   enddo
   enddo
   enddo
@@ -1400,15 +1390,15 @@ subroutine Cobra_SLBQP(Que, Que_t, rho, minq, maxq, mass, hybrid, nets, nete)
   alpha = 0
   WHERE (rd.ne.0) alpha = hfd / rd 
 
-  lambda_p = lambda
-  lambda_c = lambda - alpha * rp
+  lambda_p = 0
+  lambda_c =  -alpha*rp
 
   do while (MAXVAL(ABS(rc)).gt.eta)
 
     do ie=nets,nete
     do q=1,qsize
     do k=1,nlev
-       Que(:,k,q,ie) = (lambda(k,q) + hfd) * rho(:,k,ie) + Que_t(:,k,q,ie)
+       Que(:,k,q,ie) = (lambda_c(k,q) + hfd) * rho(:,k,ie) + Que_t(:,k,q,ie)
     enddo
     enddo
     enddo
@@ -1417,14 +1407,16 @@ subroutine Cobra_SLBQP(Que, Que_t, rho, minq, maxq, mass, hybrid, nets, nete)
     call VDOT(rc,Que,rho,mass,hybrid,nets,nete)
     nclip = nclip + 1
 
-    rd = rc-rp
+    rd = rp-rc
+
     if (MAXVAL(ABS(rd)).eq.0) exit
 
     alpha = 0
     WHERE (rd.ne.0) alpha = (lambda_p - lambda_c) / rd 
-    rp = rc
-    
+
+    rp       = rc
     lambda_p = lambda_c
+
     lambda_c = lambda_c -  alpha * rc
 
   enddo
