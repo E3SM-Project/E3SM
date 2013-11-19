@@ -13,110 +13,110 @@ int hashstring(char *);
 
 void dict_alloc(struct dtable ** dict)
 {
-   int i;
+	int i;
 
-   *dict = (struct dtable *)malloc(sizeof(struct dtable));
-   
-   for(i=0; i<TABLESIZE; i++)
-      (*dict)->table[i] = NULL;
-  
-   (*dict)->size = 0;
+	*dict = (struct dtable *)malloc(sizeof(struct dtable));
+
+	for(i=0; i<TABLESIZE; i++)
+		(*dict)->table[i] = NULL;
+
+	(*dict)->size = 0;
 }
 
 
 void dict_insert(struct dtable * dict, char * word)
 {
-   int hval;
-   struct dnode * dptr;
+	int hval;
+	struct dnode * dptr;
 
-   hval = hashstring(word) % TABLESIZE;
+	hval = hashstring(word) % TABLESIZE;
 
-   dptr = (struct dnode *)malloc(sizeof(struct dnode));
-   strncpy(dptr->key, word, 1024);
-   dptr->next = dict->table[hval];
-   dict->table[hval] = dptr;
+	dptr = (struct dnode *)malloc(sizeof(struct dnode));
+	strncpy(dptr->key, word, 1024);
+	dptr->next = dict->table[hval];
+	dict->table[hval] = dptr;
 
-   dict->size++;
+	dict->size++;
 }
 
 
 void dict_remove(struct dtable * dict, char * word)
 {
-   int hval;
-   struct dnode * dptr_prev;
-   struct dnode * dptr;
+	int hval;
+	struct dnode * dptr_prev;
+	struct dnode * dptr;
 
-   hval = hashstring(word) % TABLESIZE;
+	hval = hashstring(word) % TABLESIZE;
 
-   dptr_prev = 0;
-   dptr = dict->table[hval];
+	dptr_prev = 0;
+	dptr = dict->table[hval];
 
-   while (dptr && strncmp(dptr->key, word, 1024) != 0) {
-      dptr_prev = dptr;
-      dptr = dptr->next;
-   }
+	while (dptr && strncmp(dptr->key, word, 1024) != 0) {
+		dptr_prev = dptr;
+		dptr = dptr->next;
+	}
 
-   if (dptr) {
-      if (dptr_prev)
-         dptr_prev->next = dptr->next;
-      else
-         dict->table[hval] = dict->table[hval]->next;
-      free(dptr);
-      dict->size--;
-   }
+	if (dptr) {
+		if (dptr_prev)
+			dptr_prev->next = dptr->next;
+		else
+			dict->table[hval] = dict->table[hval]->next;
+		free(dptr);
+		dict->size--;
+	}
 }
 
 
 int dict_search(struct dtable * dict, char * word)
 {
-   int hval;
-   struct dnode * dptr;
+	int hval;
+	struct dnode * dptr;
 
-   hval = hashstring(word) % TABLESIZE;
+	hval = hashstring(word) % TABLESIZE;
 
-   dptr = dict->table[hval];
-   while (dptr && strncmp(dptr->key, word, 1024) != 0)
-      dptr = dptr->next;
-   
-   if (!dptr) return 0;
+	dptr = dict->table[hval];
+	while (dptr && strncmp(dptr->key, word, 1024) != 0)
+		dptr = dptr->next;
 
-   return 1;
+	if (!dptr) return 0;
+
+	return 1;
 }
 
 
 int dict_size(struct dtable * dict)
 {
-   return dict->size;
+	return dict->size;
 }
 
 
 void dict_free(struct dtable ** dict)
 {
-   int i;
-   struct dnode * dptr;
+	int i;
+	struct dnode * dptr;
 
-   for(i=0; i<TABLESIZE; i++) {
-      while ((*dict)->table[i]) {
-         dptr = (*dict)->table[i];
-         (*dict)->table[i] = (*dict)->table[i]->next;
-         free(dptr);
-      }
-   }
+	for(i=0; i<TABLESIZE; i++) {
+		while ((*dict)->table[i]) {
+			dptr = (*dict)->table[i];
+			(*dict)->table[i] = (*dict)->table[i]->next;
+			free(dptr);
+		}
+	}
 
-   free(*dict);
+	free(*dict);
 }
 
 
 int hashstring(char * word)
 {
-   int i;
-   int hval;
+	int i;
+	int hval;
 
-   hval = 0;
-  
-   for(i=0; i<1024 && word[i] != '\0'; i++) {
-      hval = hval + (int)word[i];
-   }
+	hval = 0;
 
-   return hval;
+	for(i=0; i<1024 && word[i] != '\0'; i++) {
+		hval = hval + (int)word[i];
+	}
+
+	return hval;
 }

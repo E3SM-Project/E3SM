@@ -9,13 +9,13 @@
 #define TABLESIZE 271
 
 struct dnode {
-   char key[1024];
-   struct dnode * next;
+	char key[1024];
+	struct dnode * next;
 };
 
 struct dtable {
-   int size;
-   struct dnode * table[TABLESIZE];
+	int size;
+	struct dnode * table[TABLESIZE];
 };
 
 void dict_alloc(struct dtable **);

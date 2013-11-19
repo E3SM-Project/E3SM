@@ -25,59 +25,59 @@ int check_persistence(const char * persistence);
 
 int main(int argc, char ** argv)
 {
-   FILE * regfile;
-   struct namelist * nls;
-   struct dimension * dims;
-   struct variable * vars;
-   struct group_list * groups;
-   struct package * pkgs;
+	FILE * regfile;
+	struct namelist * nls;
+	struct dimension * dims;
+	struct variable * vars;
+	struct group_list * groups;
+	struct package * pkgs;
 
-   char *modelname, *corename, *version;
+	char *modelname, *corename, *version;
 
-   modelname = (char *)malloc(sizeof(char)*1024);
-   corename = (char *)malloc(sizeof(char)*1024);
-   version = (char *)malloc(sizeof(char)*1024);
+	modelname = (char *)malloc(sizeof(char)*1024);
+	corename = (char *)malloc(sizeof(char)*1024);
+	version = (char *)malloc(sizeof(char)*1024);
 
-   if (argc != 2) {
-      fprintf(stderr,"Reading registry file from standard input\n");
-      regfile = stdin;
-   }
-   else if (!(regfile = fopen(argv[1], "r"))) {
-      fprintf(stderr,"\nError: Could not open file %s for reading.\n\n", argv[1]);
-      return 1;
-   }   
+	if (argc != 2) {
+		fprintf(stderr,"Reading registry file from standard input\n");
+		regfile = stdin;
+	}
+	else if (!(regfile = fopen(argv[1], "r"))) {
+		fprintf(stderr,"\nError: Could not open file %s for reading.\n\n", argv[1]);
+		return 1;
+	}   
 
-   nls = NULL;
-   dims = NULL;
-   vars = NULL;
+	nls = NULL;
+	dims = NULL;
+	vars = NULL;
 
-   ezxml_t registry = ezxml_parse_fp(regfile);
+	ezxml_t registry = ezxml_parse_fp(regfile);
 
-   if (validate_reg_xml(registry)) {
-      fprintf(stderr, "Validation failed.....\n");
-      return 1;
-   }
-  
-   if (parse_reg_xml(registry, &nls, &dims, &vars, &groups, &pkgs, modelname, corename, version)) {
-      fprintf(stderr, "Parsing failed.....\n");
-      return 1;
-   }
-  
-   sort_vars(vars);
-   sort_group_vars(groups);
+	if (validate_reg_xml(registry)) {
+		fprintf(stderr, "Validation failed.....\n");
+		return 1;
+	}
 
-   gen_history_attributes(modelname, corename, version);
-   gen_namelists(nls);
-   gen_field_defs(groups, vars, dims);
-   gen_reads(groups, vars, dims);
-   gen_writes(groups, vars, dims, nls);
-   gen_packages(pkgs);
+	if (parse_reg_xml(registry, &nls, &dims, &vars, &groups, &pkgs, modelname, corename, version)) {
+		fprintf(stderr, "Parsing failed.....\n");
+		return 1;
+	}
 
-   free(modelname);
-   free(corename);
-   free(version);
+	sort_vars(vars);
+	sort_group_vars(groups);
 
-   return 0;
+	gen_history_attributes(modelname, corename, version);
+	gen_namelists(nls);
+	gen_field_defs(groups, vars, dims);
+	gen_reads(groups, vars, dims);
+	gen_writes(groups, vars, dims, nls);
+	gen_packages(pkgs);
+
+	free(modelname);
+	free(corename);
+	free(version);
+
+	return 0;
 }
 
 int validate_reg_xml(ezxml_t registry)
@@ -140,7 +140,7 @@ int validate_reg_xml(ezxml_t registry)
 				fprintf(stderr,"ERROR: Namelist option %s missing type attribute.\n", nmloptname);
 				return 1;
 			} else if (strcasecmp("logical", nmlopttype) != 0 && strcasecmp("real", nmlopttype) != 0 &&
-					   strcasecmp("integer", nmlopttype) != 0 && strcasecmp("character", nmlopttype) != 0) {
+					strcasecmp("integer", nmlopttype) != 0 && strcasecmp("character", nmlopttype) != 0) {
 				fprintf(stderr,"ERROR: Type of namelist option %s doesn't equal one of logical, real, character, or integer.\n", nmloptname);
 				return 1;
 			}
@@ -239,7 +239,7 @@ int validate_reg_xml(ezxml_t registry)
 				fprintf(stderr,"ERROR: Type attribute missing for var_array %s in var_struct %s.\n", vararrname, structname);
 				return 1;
 			} else if (strcasecmp("logical", vararrtype) != 0 && strcasecmp("real", vararrtype) != 0 &&
-					   strcasecmp("integer", vararrtype) != 0 && strcasecmp("text", vararrtype) != 0) {
+					strcasecmp("integer", vararrtype) != 0 && strcasecmp("text", vararrtype) != 0) {
 				fprintf(stderr,"ERROR: Type attribute on var_array %s in var_struct %s is not equal to one of logical, real, integer, or text.\n", vararrname, structname);
 				return 1;
 			}
@@ -355,7 +355,7 @@ int validate_reg_xml(ezxml_t registry)
 				fprintf(stderr,"ERROR: Type attribute missing on variable %s in var_struct %s\n.", varname, structname);
 				return 1;
 			} else if (strcasecmp("logical", vartype) != 0 && strcasecmp("real", vartype) != 0 &&
-					   strcasecmp("integer", vartype) != 0 && strcasecmp("text", vartype) != 0) {
+					strcasecmp("integer", vartype) != 0 && strcasecmp("text", vartype) != 0) {
 				fprintf(stderr,"ERROR: Type attribute on variable %s in var_struct %s is not equal to one of logical, real, integer, or text.\n", varname, structname);
 				return 1;
 			}
@@ -364,16 +364,16 @@ int validate_reg_xml(ezxml_t registry)
 				fprintf(stderr,"ERROR: Dimensions attribute missing for variable %s in var_struct %s.\n", varname, structname);
 				return 1;
 			} else {
-                if (strcasecmp("", vardims) != 0) {
-                    string = strdup(vardims);
-                    err_string = check_dimensions(registry, string);
-                    free(string);
+				if (strcasecmp("", vardims) != 0) {
+					string = strdup(vardims);
+					err_string = check_dimensions(registry, string);
+					free(string);
 
-                    if(err_string != NULL) {
-                        fprintf(stderr,"ERROR: Dimension %s on variable %s in var_struct %s not defined.\n", err_string, varname, structname); 
-                        return 1;
-                    }
-                }
+					if(err_string != NULL) {
+						fprintf(stderr,"ERROR: Dimension %s on variable %s in var_struct %s not defined.\n", err_string, varname, structname); 
+						return 1;
+					}
+				}
 			}
 
 			persistence = PERSISTENT;
@@ -402,7 +402,7 @@ int validate_reg_xml(ezxml_t registry)
 				fprintf(stderr, "ERROR: Packages attribute inherited from var_struct %s not allowed on scratch var %s in var_struct %s.\n", structname, varname, structname);
 				return -1;
 			}
-		
+
 
 			if (varstreams != NULL) {
 				string = strdup(varstreams);
@@ -454,9 +454,9 @@ int parse_reg_xml(ezxml_t registry, struct namelist **nls, struct dimension ** d
 	char *string, *tofree, *token;
 
 	NEW_NAMELIST(nls_ptr)
-	NEW_DIMENSION(dim_ptr)
-	NEW_VARIABLE(var_ptr)
-	NEW_GROUP_LIST(grouplist_ptr);
+		NEW_DIMENSION(dim_ptr)
+		NEW_VARIABLE(var_ptr)
+		NEW_GROUP_LIST(grouplist_ptr);
 	NEW_PACKAGE(pkg_ptr);
 	*nls = nls_ptr;
 	*dims = dim_ptr;
@@ -530,7 +530,7 @@ int parse_reg_xml(ezxml_t registry, struct namelist **nls, struct dimension ** d
 			}
 
 			NEW_NAMELIST(nls_ptr->next)
-			nls_ptr2 = nls_ptr;
+				nls_ptr2 = nls_ptr;
 			nls_ptr = nls_ptr->next;
 		}
 	}
@@ -597,7 +597,7 @@ int parse_reg_xml(ezxml_t registry, struct namelist **nls, struct dimension ** d
 			}
 
 			NEW_DIMENSION(dim_ptr->next)
-			dim_ptr2 = dim_ptr;
+				dim_ptr2 = dim_ptr;
 			dim_ptr = dim_ptr->next;
 		}   
 	}
@@ -707,7 +707,7 @@ int parse_reg_xml(ezxml_t registry, struct namelist **nls, struct dimension ** d
 				}
 
 				NEW_DIMENSION_LIST(dimlist_ptr)
-				var_ptr->dimlist = dimlist_ptr;
+					var_ptr->dimlist = dimlist_ptr;
 
 				snprintf(dimensions,2048, "%s", vararrdims);
 				dimension_list = strtok(dimensions, " ");
@@ -717,7 +717,7 @@ int parse_reg_xml(ezxml_t registry, struct namelist **nls, struct dimension ** d
 						var_ptr->timedim = 1;
 					} else {
 						NEW_DIMENSION_LIST(dimlist_ptr->next)
-						dimlist_ptr->next->prev = dimlist_ptr;
+							dimlist_ptr->next->prev = dimlist_ptr;
 						dimlist_ptr = dimlist_ptr->next;
 
 						dimlist_cursor = (*dims);
@@ -751,7 +751,7 @@ int parse_reg_xml(ezxml_t registry, struct namelist **nls, struct dimension ** d
 				} else {
 					snprintf(var_ptr->name_in_code, 1024, "%s", varname_in_code);
 				}
-				
+
 				if(vararrdefaultval == NULL){
 					snprintf(var_ptr->default_value, 1024, "%s", default_value);
 				} else {
@@ -844,7 +844,7 @@ int parse_reg_xml(ezxml_t registry, struct namelist **nls, struct dimension ** d
 			}
 
 			NEW_DIMENSION_LIST(dimlist_ptr)
-			var_ptr->dimlist = dimlist_ptr;
+				var_ptr->dimlist = dimlist_ptr;
 
 			snprintf(dimensions, 2048, "%s", vardims);
 			dimension_list = strtok(dimensions, " ");
@@ -854,7 +854,7 @@ int parse_reg_xml(ezxml_t registry, struct namelist **nls, struct dimension ** d
 					var_ptr->timedim = 1;
 				} else {
 					NEW_DIMENSION_LIST(dimlist_ptr->next)
-					dimlist_ptr->next->prev = dimlist_ptr;
+						dimlist_ptr->next->prev = dimlist_ptr;
 					dimlist_ptr = dimlist_ptr->next;
 
 					dimlist_cursor = (*dims);
@@ -924,184 +924,184 @@ int parse_reg_xml(ezxml_t registry, struct namelist **nls, struct dimension ** d
 
 int getword(FILE * regfile, char * word)
 {
-   int i;
-   int c;
+	int i;
+	int c;
 
-   i = 0;
-   
-   do { c = getc(regfile); } while (((char)c == ' ' || (char)c == '\n' || (char)c == '\t') && c != EOF);
+	i = 0;
 
-   while ((char)c == '%') {
-      do { c = getc(regfile); } while ((char)c != '\n' && c != EOF);
-      do { c = getc(regfile); } while (((char)c == ' ' || (char)c == '\n' || (char)c == '\t') && c != EOF);
-   };
-   while((char)c != ' ' && (char)c != '\n' && (char)c != '\t' && c != EOF && (char)c != '%') {
-      word[i++] = (char)c; 
-      c = (char)getc(regfile);
-   } 
-   word[i] = '\0';
+	do { c = getc(regfile); } while (((char)c == ' ' || (char)c == '\n' || (char)c == '\t') && c != EOF);
 
-   if ((char)c == '%') do { c = getc(regfile); } while ((char)c != '\n' && c != EOF);
+	while ((char)c == '%') {
+		do { c = getc(regfile); } while ((char)c != '\n' && c != EOF);
+		do { c = getc(regfile); } while (((char)c == ' ' || (char)c == '\n' || (char)c == '\t') && c != EOF);
+	};
+	while((char)c != ' ' && (char)c != '\n' && (char)c != '\t' && c != EOF && (char)c != '%') {
+		word[i++] = (char)c; 
+		c = (char)getc(regfile);
+	} 
+	word[i] = '\0';
 
-   fprintf(stdout,"%s ",word);
-   return c;
+	if ((char)c == '%') do { c = getc(regfile); } while ((char)c != '\n' && c != EOF);
+
+	fprintf(stdout,"%s ",word);
+	return c;
 }
 
 int is_integer_constant(char * c) {
-   int i;
+	int i;
 
-   i = 0;
-   while (c[i] != '\0') {
-      if (c[i] < '0' || c[i] > '9') return -1;
-      i++;
-   }
+	i = 0;
+	while (c[i] != '\0') {
+		if (c[i] < '0' || c[i] > '9') return -1;
+		i++;
+	}
 
-   return atoi(c);
+	return atoi(c);
 }
 
 void sort_vars(struct variable * vars)
 {
-   struct variable * var_ptr;
-   struct variable * var_ptr2;
-   struct variable * var_ptr2_prev;
-   char var_array[1024];
-   char array_class[1024];
+	struct variable * var_ptr;
+	struct variable * var_ptr2;
+	struct variable * var_ptr2_prev;
+	char var_array[1024];
+	char array_class[1024];
 
-   var_ptr = vars;
+	var_ptr = vars;
 
-/* Attempt at sorting first on super-array, then on class in the same loop
-   while (var_ptr) {
-      memcpy(var_array, var_ptr->var_array, 1024);
-      memcpy(array_class, var_ptr->array_class, 1024);
-      var_ptr2_prev = var_ptr;
-      var_ptr2 = var_ptr->next;
-      if (var_ptr2 && 
-          (strncmp(var_array, var_ptr2->var_array, 1024) != 0 || strncmp(array_class, var_ptr2->array_class, 1024) != 0)) {
-         while (var_ptr2) {
-            if (strncmp(var_array, var_ptr2->var_array, 1024) == 0 && strncmp(array_class, var_ptr2->array_class, 1024) == 0) {
-               var_ptr2_prev->next = var_ptr2->next;
-               var_ptr2->next = var_ptr->next;
-               var_ptr->next = var_ptr2;
-               var_ptr2 = var_ptr2_prev->next;
-            }
-            else {
-               var_ptr2_prev = var_ptr2_prev->next;
-               var_ptr2 = var_ptr2->next;
-            }
-         }
-      } 
-      var_ptr = var_ptr->next;
-   }
-*/
+	/* Attempt at sorting first on super-array, then on class in the same loop
+	   while (var_ptr) {
+	   memcpy(var_array, var_ptr->var_array, 1024);
+	   memcpy(array_class, var_ptr->array_class, 1024);
+	   var_ptr2_prev = var_ptr;
+	   var_ptr2 = var_ptr->next;
+	   if (var_ptr2 && 
+	   (strncmp(var_array, var_ptr2->var_array, 1024) != 0 || strncmp(array_class, var_ptr2->array_class, 1024) != 0)) {
+	   while (var_ptr2) {
+	   if (strncmp(var_array, var_ptr2->var_array, 1024) == 0 && strncmp(array_class, var_ptr2->array_class, 1024) == 0) {
+	   var_ptr2_prev->next = var_ptr2->next;
+	   var_ptr2->next = var_ptr->next;
+	   var_ptr->next = var_ptr2;
+	   var_ptr2 = var_ptr2_prev->next;
+	   }
+	   else {
+	   var_ptr2_prev = var_ptr2_prev->next;
+	   var_ptr2 = var_ptr2->next;
+	   }
+	   }
+	   } 
+	   var_ptr = var_ptr->next;
+	   }
+	   */
 
-   while (var_ptr) {
-      memcpy(var_array, var_ptr->var_array, 1024);
-      var_ptr2_prev = var_ptr;
-      var_ptr2 = var_ptr->next;
-      if (var_ptr2 && strncmp(var_array, var_ptr2->var_array, 1024) != 0) {
-         while (var_ptr2) {
-            if (strncmp(var_array, var_ptr2->var_array, 1024) == 0) {
-               var_ptr2_prev->next = var_ptr2->next;
-               var_ptr2->next = var_ptr->next;
-               var_ptr->next = var_ptr2;
-               var_ptr2 = var_ptr2_prev->next;
-            }
-            else {
-               var_ptr2_prev = var_ptr2_prev->next;
-               var_ptr2 = var_ptr2->next;
-            }
-         }
-      } 
-      var_ptr = var_ptr->next;
-   }
+	while (var_ptr) {
+		memcpy(var_array, var_ptr->var_array, 1024);
+		var_ptr2_prev = var_ptr;
+		var_ptr2 = var_ptr->next;
+		if (var_ptr2 && strncmp(var_array, var_ptr2->var_array, 1024) != 0) {
+			while (var_ptr2) {
+				if (strncmp(var_array, var_ptr2->var_array, 1024) == 0) {
+					var_ptr2_prev->next = var_ptr2->next;
+					var_ptr2->next = var_ptr->next;
+					var_ptr->next = var_ptr2;
+					var_ptr2 = var_ptr2_prev->next;
+				}
+				else {
+					var_ptr2_prev = var_ptr2_prev->next;
+					var_ptr2 = var_ptr2->next;
+				}
+			}
+		} 
+		var_ptr = var_ptr->next;
+	}
 
-   var_ptr = vars;
+	var_ptr = vars;
 
-   while (var_ptr) {
-      memcpy(array_class, var_ptr->array_class, 1024);
-      var_ptr2_prev = var_ptr;
-      var_ptr2 = var_ptr->next;
-      if (var_ptr2 && strncmp(array_class, var_ptr2->array_class, 1024) != 0) {
-         while (var_ptr2) {
-            if (strncmp(array_class, var_ptr2->array_class, 1024) == 0) {
-               var_ptr2_prev->next = var_ptr2->next;
-               var_ptr2->next = var_ptr->next;
-               var_ptr->next = var_ptr2;
-               var_ptr2 = var_ptr2_prev->next;
-            }
-            else {
-               var_ptr2_prev = var_ptr2_prev->next;
-               var_ptr2 = var_ptr2->next;
-            }
-         }
-      } 
-      var_ptr = var_ptr->next;
-   }
+	while (var_ptr) {
+		memcpy(array_class, var_ptr->array_class, 1024);
+		var_ptr2_prev = var_ptr;
+		var_ptr2 = var_ptr->next;
+		if (var_ptr2 && strncmp(array_class, var_ptr2->array_class, 1024) != 0) {
+			while (var_ptr2) {
+				if (strncmp(array_class, var_ptr2->array_class, 1024) == 0) {
+					var_ptr2_prev->next = var_ptr2->next;
+					var_ptr2->next = var_ptr->next;
+					var_ptr->next = var_ptr2;
+					var_ptr2 = var_ptr2_prev->next;
+				}
+				else {
+					var_ptr2_prev = var_ptr2_prev->next;
+					var_ptr2 = var_ptr2->next;
+				}
+			}
+		} 
+		var_ptr = var_ptr->next;
+	}
 }
 
 
 void sort_group_vars(struct group_list * groups)
 {
-   struct variable_list * var_list;
-   struct variable_list * var_ptr;
-   struct variable_list * var_ptr2;
-   struct variable_list * var_ptr2_prev;
-   struct group_list * group_ptr;
-   char var_array[1024];
-   char array_class[1024];
+	struct variable_list * var_list;
+	struct variable_list * var_ptr;
+	struct variable_list * var_ptr2;
+	struct variable_list * var_ptr2_prev;
+	struct group_list * group_ptr;
+	char var_array[1024];
+	char array_class[1024];
 
-   group_ptr = groups;
+	group_ptr = groups;
 
-   while (group_ptr) {
+	while (group_ptr) {
 
-      var_ptr = group_ptr->vlist;
-   
-      while (var_ptr) {
-         memcpy(var_array, var_ptr->var->var_array, 1024);
-         var_ptr2_prev = var_ptr;
-         var_ptr2 = var_ptr->next;
-         if (var_ptr2 != NULL && strncmp(var_array, var_ptr2->var->var_array, 1024) != 0) {
-            while (var_ptr2) {
-               if (strncmp(var_array, var_ptr2->var->var_array, 1024) == 0) {
-                  var_ptr2_prev->next = var_ptr2->next;
-                  var_ptr2->next = var_ptr->next;
-                  var_ptr->next = var_ptr2;
-                  var_ptr2 = var_ptr2_prev->next;
-               }
-               else {
-                  var_ptr2_prev = var_ptr2_prev->next;
-                  var_ptr2 = var_ptr2->next;
-               }
-            }
-         } 
-         var_ptr = var_ptr->next;
-      }
-   
-      var_ptr = group_ptr->vlist;
-   
-      while (var_ptr) {
-         memcpy(array_class, var_ptr->var->array_class, 1024);
-         var_ptr2_prev = var_ptr;
-         var_ptr2 = var_ptr->next;
-         if (var_ptr2 && strncmp(array_class, var_ptr2->var->array_class, 1024) != 0) {
-            while (var_ptr2) {
-               if (strncmp(array_class, var_ptr2->var->array_class, 1024) == 0) {
-                  var_ptr2_prev->next = var_ptr2->next;
-                  var_ptr2->next = var_ptr->next;
-                  var_ptr->next = var_ptr2;
-                  var_ptr2 = var_ptr2_prev->next;
-               }
-               else {
-                  var_ptr2_prev = var_ptr2_prev->next;
-                  var_ptr2 = var_ptr2->next;
-               }
-            }
-         } 
-         var_ptr = var_ptr->next;
-      }
+		var_ptr = group_ptr->vlist;
 
-      group_ptr = group_ptr->next;
-   }
+		while (var_ptr) {
+			memcpy(var_array, var_ptr->var->var_array, 1024);
+			var_ptr2_prev = var_ptr;
+			var_ptr2 = var_ptr->next;
+			if (var_ptr2 != NULL && strncmp(var_array, var_ptr2->var->var_array, 1024) != 0) {
+				while (var_ptr2) {
+					if (strncmp(var_array, var_ptr2->var->var_array, 1024) == 0) {
+						var_ptr2_prev->next = var_ptr2->next;
+						var_ptr2->next = var_ptr->next;
+						var_ptr->next = var_ptr2;
+						var_ptr2 = var_ptr2_prev->next;
+					}
+					else {
+						var_ptr2_prev = var_ptr2_prev->next;
+						var_ptr2 = var_ptr2->next;
+					}
+				}
+			} 
+			var_ptr = var_ptr->next;
+		}
+
+		var_ptr = group_ptr->vlist;
+
+		while (var_ptr) {
+			memcpy(array_class, var_ptr->var->array_class, 1024);
+			var_ptr2_prev = var_ptr;
+			var_ptr2 = var_ptr->next;
+			if (var_ptr2 && strncmp(array_class, var_ptr2->var->array_class, 1024) != 0) {
+				while (var_ptr2) {
+					if (strncmp(array_class, var_ptr2->var->array_class, 1024) == 0) {
+						var_ptr2_prev->next = var_ptr2->next;
+						var_ptr2->next = var_ptr->next;
+						var_ptr->next = var_ptr2;
+						var_ptr2 = var_ptr2_prev->next;
+					}
+					else {
+						var_ptr2_prev = var_ptr2_prev->next;
+						var_ptr2 = var_ptr2->next;
+					}
+				}
+			} 
+			var_ptr = var_ptr->next;
+		}
+
+		group_ptr = group_ptr->next;
+	}
 }
 
 char * check_packages(ezxml_t registry, char * packages){
@@ -1176,7 +1176,7 @@ char * check_dimensions(ezxml_t registry, char * dims){
 char * check_streams(char * streams){
 	char * stream;
 	int length, i, bad_streams;
-	
+
 	length = strlen(streams);
 
 	stream = (char *)malloc(2*sizeof(char));

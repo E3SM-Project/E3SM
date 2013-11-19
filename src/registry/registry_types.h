@@ -28,64 +28,64 @@
 #define NEW_PACKAGE(X) X = (struct package *)malloc(sizeof(struct package)); X->next = NULL;
 
 union default_val {
-   int ival;
-   float rval;
-   int lval;
-   char cval[32];
+	int ival;
+	float rval;
+	int lval;
+	char cval[32];
 };
 
 struct namelist {
-   char name[1024];
-   char record[1024];
-   int vtype;
-   union default_val defval;
-   struct namelist * next;
+	char name[1024];
+	char record[1024];
+	int vtype;
+	union default_val defval;
+	struct namelist * next;
 };
 
 struct dimension {
-   char name_in_file[1024];
-   char name_in_code[1024];
-   int constant_value;
-   int namelist_defined;
-   struct dimension * next;
+	char name_in_file[1024];
+	char name_in_code[1024];
+	int constant_value;
+	int namelist_defined;
+	struct dimension * next;
 };
 
 struct dimension_list {
-   struct dimension * dim;
-   struct dimension_list * prev;
-   struct dimension_list * next;
+	struct dimension * dim;
+	struct dimension_list * prev;
+	struct dimension_list * next;
 };
 
 struct variable_list {
-   struct variable * var;
-   struct variable_list * prev;
-   struct variable_list * next;
+	struct variable * var;
+	struct variable_list * prev;
+	struct variable_list * next;
 };
 
 struct group_list {
-   char name[1024];
-   struct package * package_name;
-   struct variable_list * vlist; 
-   struct group_list * next; 
-   int ntime_levs;
+	char name[1024];
+	struct package * package_name;
+	struct variable_list * vlist; 
+	struct group_list * next; 
+	int ntime_levs;
 };
 
 struct variable {
-   char name_in_file[1024];
-   char name_in_code[1024];
-   char struct_group[1024];
-   char var_array[1024];
-   char array_class[1024];
-   char default_value[1024];
-   struct package * package_name;
-   int persistence;
-   int vtype;
-   int ndims;
-   int timedim;
-   int iostreams;
-   int decomposed;
-   struct dimension_list * dimlist;
-   struct variable * next;
+	char name_in_file[1024];
+	char name_in_code[1024];
+	char struct_group[1024];
+	char var_array[1024];
+	char array_class[1024];
+	char default_value[1024];
+	struct package * package_name;
+	int persistence;
+	int vtype;
+	int ndims;
+	int timedim;
+	int iostreams;
+	int decomposed;
+	struct dimension_list * dimlist;
+	struct variable * next;
 };
 
 struct package {
