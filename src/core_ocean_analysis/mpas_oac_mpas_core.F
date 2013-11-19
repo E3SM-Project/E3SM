@@ -28,6 +28,9 @@ module mpas_core
    use mpas_timer
    use mpas_io_units
 
+   use oac_driver
+
+
    type (io_output_object), save :: restart_obj
 
    integer :: current_outfile_frames
@@ -60,131 +63,26 @@ module mpas_core
    subroutine mpas_core_init(domain, startTimeStamp)!{{{
 
       use mpas_grid_types
-      use ocn_tracer_advection
 
       implicit none
 
       type (domain_type), intent(inout) :: domain
       character(len=*), intent(out) :: startTimeStamp
 
-      real (kind=RKIND) :: dt
       type (block_type), pointer :: block
       type (dm_info) :: dminfo
 
       integer :: err, err_tmp
-      real (kind=RKIND) :: maxDensity, maxDensity_global
 
       dminfo = domain % dminfo
 
-      ! Initialize submodules before initializing blocks.
-      call ocn_timestep_init(err)
-
-      call ocn_thick_hadv_init(err_tmp)
+      call oac_driver_init(err_tmp)
       err = ior(err, err_tmp)
-
-      call ocn_thick_vadv_init(err_tmp)
-      err = ior(err, err_tmp)
-
-      call ocn_vel_coriolis_init(err_tmp)
-      err = ior(err, err_tmp)
-      call ocn_vel_pressure_grad_init(err_tmp)
-      err = ior(err, err_tmp)
-      call ocn_vel_vadv_init(err_tmp)
-      err = ior(err, err_tmp)
-      call ocn_vel_hmix_init(err_tmp)
-      err = ior(err, err_tmp)
-      call ocn_vel_forcing_init(err_tmp)
-      err = ior(err, err_tmp)
-
-      call ocn_tracer_hmix_init(err_tmp)
-      err = ior(err, err_tmp)
-
-      call ocn_vmix_init(domain,err_tmp)
-      err = ior(err, err_tmp)
-
-      call ocn_equation_of_state_init(err_tmp)
-      err = ior(err, err_tmp)
-
-      call ocn_tendency_init(err_tmp)
-      err = ior(err,err_tmp)
-      call ocn_diagnostics_init(err_tmp)
-      err = ior(err,err_tmp)
-      call ocn_thick_ale_init(err_tmp)
-      err = ior(err,err_tmp)
-
-      call ocn_forcing_init(err_tmp)
-      err = ior(err,err_tmp)
-
-      call ocn_tracer_advection_init(err_tmp)
-      err = ior(err,err_tmp)
-
-      call ocn_tracer_short_wave_absorption_init(err_tmp)
-      err = ior(err,err_tmp)
-
-      call ocn_global_diagnostics_init(dminfo,err_tmp)
-      err = ior(err, err_tmp)
-
-      call ocn_sea_ice_init(domain % blocklist % mesh % nVertLevels, err_tmp)
-      err = ior(err, err_tmp)
-
-      call ocn_constants_init()
-
-      call mpas_timer_init(domain)
-
-      if(err.eq.1) then
-          call mpas_dmpar_abort(dminfo)
-      endif
 
       call ocn_init_vert_coord(domain)
 
       call ocn_compute_max_level(domain)
 
-      if (.not.config_do_restart) call ocn_init_split_timestep(domain)
-
-      write (stdoutUnit,'(a,a)') ' Vertical coordinate movement is: ',trim(config_vert_coord_movement)
-
-      if (config_vert_coord_movement.ne.'fixed'.and. &
-          config_vert_coord_movement.ne.'uniform_stretching'.and. &
-          config_vert_coord_movement.ne.'impermeable_interfaces'.and. &
-          config_vert_coord_movement.ne.'user_specified') then
-         write (stderrUnit,*) ' Incorrect choice of config_vert_coord_movement.'
-         call mpas_dmpar_abort(dminfo)
-      endif
-
-      write (stdoutUnit,'(a,a)') ' Pressure type is: ',trim(config_pressure_gradient_type)
-      if (config_pressure_gradient_type.ne.'pressure_and_zmid'.and. &
-          config_pressure_gradient_type.ne.'MontgomeryPotential') then
-         write (stderrUnit,*) ' Incorrect choice of config_pressure_gradient_type.'
-         call mpas_dmpar_abort(dminfo)
-      endif
-
-      if(config_vert_coord_movement .ne. 'impermeable_interfaces' .and. config_pressure_gradient_type .eq. 'MontgomeryPotential') then
-         write (stderrUnit,*) ' Incorrect combination of config_vert_coord_movement and config_pressure_gradient_type'
-         call mpas_dmpar_abort(dminfo)
-      end if
-
-      if (config_filter_btr_mode.and. &
-          config_vert_coord_movement.ne.'fixed')then
-         write (stderrUnit,*) 'filter_btr_mode has only been tested with'// &
-            ' config_vert_coord_movement=fixed.'
-         call mpas_dmpar_abort(dminfo)
-      endif
-
-      ! find the maximum value of the meshDensity
-      if (config_maxMeshDensity < 0.0) then
-        maxDensity=-1
-        block => domain % blocklist
-        do while (associated(block))
-          maxDensity = max(maxDensity, maxval(block % mesh % meshDensity % array))
-          block => block % next
-        end do
-        call mpas_dmpar_max_real(domain % dminfo, maxDensity, maxDensity_global)
-        config_maxMeshDensity = maxDensity_global
-      endif
-
-      !
-      ! Initialize core
-      !
       dt = config_dt
 
       call ocn_simulation_clock_init(domain, dt, startTimeStamp)
@@ -198,18 +96,6 @@ module mpas_core
          block % diagnostics % xtime % scalar = startTimeStamp 
          block => block % next
       end do
-
-      if (config_conduct_tests) then
-         call mpas_timer_start("test suite", .false., testSuiteTimer)
-         call ocn_test_suite(domain,err)
-         call mpas_timer_stop("test suite", testSuiteTimer)
-      endif
-
-      if (config_write_stats_on_startup) then
-         call mpas_timer_start("global diagnostics", .false., globalDiagTimer)
-         call ocn_compute_global_diagnostics(domain, 1 , 0, dt)
-         call mpas_timer_stop("global diagnostics", globalDiagTimer)
-      endif
 
       current_outfile_frames = 0
 
@@ -427,79 +313,10 @@ module mpas_core
       write(stderrUnit,*) 'Initial time ', trim(timeStamp)
 
       if (config_write_output_on_startup) then
+         call oac_driver_compute(domain, err) 
          call ocn_write_output_frame(output_obj, output_frame, domain)
       endif
-      block_ptr => domain % blocklist
 
-      do while(associated(block_ptr))
-        call ocn_time_average_init(block_ptr % average)
-        block_ptr => block_ptr % next
-      end do
-
-      ! During integration, time level 1 stores the model state at the beginning of the
-      !   time step, and time level 2 stores the state advanced dt in time by timestep(...)
-      itimestep = 0
-      do while (.not. mpas_is_clock_stop_time(clock))
-
-         itimestep = itimestep + 1
-         call mpas_advance_clock(clock)
-
-         currTime = mpas_get_clock_time(clock, MPAS_NOW, ierr)
-         call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
-         write(stderrUnit,*) 'Doing timestep ', trim(timeStamp)
-   
-         block_ptr => domain % blocklist
-         do while(associated(block_ptr))
-           call ocn_forcing_build_arrays(block_ptr % mesh, block_ptr % state % time_levs(1) % state, block_ptr % forcing, ierr)
-           call ocn_forcing_build_transmission_array(block_ptr % mesh, block_ptr % state % time_levs(1) % state, block_ptr % forcing, ierr)
-           block_ptr => block_ptr % next
-         end do
-
-         call mpas_timer_start("time integration", .false., timeIntTimer)
-         call mpas_timestep(domain, itimestep, dt, timeStamp)
-         call mpas_timer_stop("time integration", timeIntTimer)
-   
-         ! Move time level 2 fields back into time level 1 for next time step
-         block_ptr => domain % blocklist
-         do while(associated(block_ptr))
-            call mpas_shift_time_levels_state(block_ptr % state)
-            block_ptr => block_ptr % next
-         end do
-      
-         if (mpas_is_alarm_ringing(clock, outputAlarmID, ierr=ierr)) then
-            call mpas_reset_clock_alarm(clock, outputAlarmID, ierr=ierr)
-            ! output_frame will always be > 1 here unless it was reset after the 
-            ! maximum number of frames per outfile was reached.
-            if(output_frame == 1) then
-               call mpas_output_state_finalize(output_obj, domain % dminfo)
-               call mpas_output_state_init(output_obj, domain, "OUTPUT", trim(timeStamp))
-            end if
-
-            block_ptr => domain % blocklist
-            do while (associated(block_ptr))
-                call ocn_time_average_normalize(block_ptr % average)
-                block_ptr => block_ptr % next
-            end do
-
-            call ocn_write_output_frame(output_obj, output_frame, domain)
-
-            block_ptr => domain % blocklist
-            do while (associated(block_ptr))
-                call ocn_time_average_init(block_ptr % average)
-                block_ptr => block_ptr % next
-            end do
-         end if
-
-         if (mpas_is_alarm_ringing(clock, restartAlarmID, ierr=ierr)) then
-            call mpas_reset_clock_alarm(clock, restartAlarmID, ierr=ierr)
-
-            ! Write one restart time per file
-            call mpas_output_state_init(restart_obj, domain, "RESTART", trim(timeStamp))
-            call mpas_output_state_for_domain(restart_obj, domain, 1)
-            call mpas_output_state_finalize(restart_obj, domain % dminfo)
-         end if
-
-      end do
 
    end subroutine mpas_core_run!}}}
    
@@ -613,63 +430,6 @@ module mpas_core
       integer :: iEdge, k
    
    end subroutine ocn_compute_output_diagnostics!}}}
-   
-!***********************************************************************
-!
-!  routine mpas_core_run
-!
-!> \brief   Sub-driver for MPAS-Ocean time-stepping
-!> \author  Mark Petersen
-!> \date    November 2013
-!> \details 
-!>  This routine calls the time integration routine within a time-stepping loop.
-!
-!-----------------------------------------------------------------------
-
-   subroutine mpas_timestep(domain, itimestep, dt, timeStamp)!{{{
-   
-      use mpas_kind_types
-      use mpas_grid_types
-   
-      implicit none
-   
-      type (domain_type), intent(inout) :: domain 
-      integer, intent(in) :: itimestep
-      real (kind=RKIND), intent(in) :: dt
-      character(len=*), intent(in) :: timeStamp
-
-      type (block_type), pointer :: block_ptr
-      integer :: ierr
-   
-      call ocn_timestep(domain, dt, timeStamp)
-
-      !if (config_stats_interval > 0) then
-      !    if (mod(itimestep, config_stats_interval) == 0) then
-      !       call mpas_timer_start("global diagnostics", .false., globalDiagTimer)
-      !       call ocn_compute_global_diagnostics(domain, 2, itimestep, dt);
-      !       call mpas_timer_stop("global diagnostics", globalDiagTimer)
-      !    end if
-      !end if
-
-      !TODO: replace the above code block with this if we desire to convert config_stats_interval to use alarms
-      if (mpas_is_alarm_ringing(clock, statsAlarmID, ierr=ierr)) then
-         call mpas_reset_clock_alarm(clock, statsAlarmID, ierr=ierr)
-
-!        block_ptr => domain % blocklist
-!        if (associated(block_ptr % next)) then
-!           write(stderrUnit,*) 'Error: computeGlobalDiagnostics assumes ',&
-!                      'that there is only one block per processor.'
-!        end if
-   
-         call mpas_timer_start("global diagnostics")
-         call ocn_compute_global_diagnostics(domain, 2, itimestep, dt);
-      !  call ocn_compute_global_diagnostics(domain % dminfo, &
-      !           block_ptr % state % time_levs(2) % state, block_ptr % mesh, &
-      !           timeStamp, dt)
-         call mpas_timer_stop("global diagnostics")
-      end if
-
-   end subroutine mpas_timestep!}}}
 
    subroutine ocn_init_vert_coord(domain)!{{{
    ! Initialize zlevel-type variables and adjust initial conditions for

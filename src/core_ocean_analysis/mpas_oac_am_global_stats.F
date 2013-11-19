@@ -237,6 +237,7 @@ print *, 'oac_init_am_global_stats'
          call mpas_allocate_scratch_field(scratch % workArray1Edge3D, .true.)
          call mpas_allocate_scratch_field(scratch % workArray2Edge3D, .true.)
 
+      ! mrp remove diagnostics links later
          density                          => diagnostics % density % array
          montgomeryPotential              => diagnostics % montgomeryPotential % array
          pressure                         => diagnostics % pressure % array
@@ -518,10 +519,10 @@ print *, 'oac_init_am_global_stats'
       volumeCellGlobal = sums(1)
       volumeEdgeGlobal = sums(4)
 
-
       ! compute the averages (slightly different depending on how the sum was computed)
       variableIndex = 0
 
+      ! mrp remove diagnostics links later
       ! time, in days, using a 360 day calendar
       read (diagnostics % xtime % scalar, '(i4,5(a1,i2))'), timeYYYY, timeChar, timeMM, timeChar, timeDD, timeChar, timeH, timeChar, timeM, timeChar, timeS
       ! subtract 31.0 because calendar starts on 00-01-01
@@ -604,37 +605,8 @@ print *, 'oac_init_am_global_stats'
         rms(variableIndex) = sqrt(sumSquares(variableIndex)/volumeCellGlobal)
       enddo
 
-      ! write out the data to files
-!       if (dminfo % my_proc_id == IO_NODE) then
-!          fileID = getFreeUnit()
-!          open(fileID,file='stats_min.txt',STATUS='UNKNOWN', POSITION='append')
-!             write (fileID,'(100es24.14)') time_days, mins(1:nVariables)
-!          close (fileID)
-!          open(fileID,file='stats_max.txt',STATUS='UNKNOWN', POSITION='append')
-!             write (fileID,'(100es24.14)') time_days, maxes(1:nVariables)
-!          close (fileID)
-!          open(fileID,file='stats_sum.txt',STATUS='UNKNOWN', POSITION='append')
-!             write (fileID,'(100es24.14)') time_days, sums(1:nVariables)
-!          close (fileID)
-!          open(fileID,file='stats_rms.txt',STATUS='UNKNOWN', POSITION='append')
-!             write (fileID,'(100es24.14)') time_days, rms(1:nVariables)
-!          close (fileID)
-!          open(fileID,file='stats_avg.txt',STATUS='UNKNOWN', POSITION='append')
-!             write (fileID,'(100es24.14)') time_days, averages(1:nVariables)
-!          close (fileID)
-!          open(fileID,file='stats_time.txt',STATUS='UNKNOWN', POSITION='append')
-!             write (fileID,'(i10,10x,a,100es24.14)') timeIndex, &
-!                trim(diagnostics % xtime % scalar), dt, &
-!                CFLNumberGlobal
-!          close (fileID)
-!          open(fileID,file='stats_colmin.txt',STATUS='UNKNOWN', POSITION='append')
-!             write (fileID,'(100es24.14)') verticalSumMins(1:nVariables)
-!          close (fileID)
-!          open(fileID,file='stats_colmax.txt',STATUS='UNKNOWN', POSITION='append')
-!             write (fileID,'(100es24.14)') verticalSumMaxes(1:nVariables)
-!          close (fileID)
-!       end if
-
+      ! write out data to Analysis Member output
+      ! mrp  Does this need to go into a block loop?
       amGlobalStats % minGlobalStats % array(1:nVariables) =  mins(1:nVariables)
       amGlobalStats % maxGlobalStats % array(1:nVariables) =  maxes(1:nVariables)
       amGlobalStats % sumGlobalStats % array(1:nVariables) =  sums(1:nVariables)
@@ -643,14 +615,6 @@ print *, 'oac_init_am_global_stats'
       amGlobalStats % vertSumMinGlobalStats % array(1:nVariables) =  verticalSumMins(1:nVariables)
       amGlobalStats % vertSumMaxGlobalStats % array(1:nVariables) =  verticalSumMaxes(1:nVariables)
 
-
-      diagnostics % areaCellGlobal % scalar = areaCellGlobal
-      diagnostics % areaEdgeGlobal % scalar = areaEdgeGlobal
-      diagnostics % areaTriangleGlobal % scalar = areaTriangleGlobal
-
-      diagnostics % volumeCellGlobal % scalar = volumeCellGlobal
-      diagnostics % volumeEdgeGlobal % scalar = volumeEdgeGlobal
-      diagnostics % CFLNumberGlobal % scalar = CFLNumberGlobal
       deallocate(areaEdge)
 
       call mpas_timer_stop("am_global_stats", amGlobalStatsTimer)

@@ -518,10 +518,10 @@ module mpas_core
             block_ptr => domain % blocklist
             do while (associated(block_ptr))
                 call ocn_time_average_normalize(block_ptr % average)
-                call oac_driver_compute(domain, err) ! add state and analysisInput later mrp
                 block_ptr => block_ptr % next
             end do
 
+            call oac_driver_compute(domain, err) 
             call ocn_write_output_frame(output_obj, output_frame, domain)
 
             block_ptr => domain % blocklist

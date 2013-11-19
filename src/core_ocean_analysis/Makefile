@@ -1,16 +1,28 @@
 .SUFFIXES: .F .o
 
-OBJS = mpas_oac_driver.o \
+COREOBJS = mpas_oac_mpas_core.o
+
+DRIVEROBJS = mpas_oac_driver.o \
        mpas_oac_am_global_stats.o  
 
-all: core_ocean_analysis
+all: sharedocean oacdriver oaccore
 
-core_ocean_analysis: $(OBJS)
-	ar -ru liboac.a $(OBJS)
+run_time_mode: oacdriver
+
+sharedocean:
+	( cd ../core_ocean/shared_ocean; $(MAKE) CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" all ) 
+	ln -sf ../core_ocean/shared_ocean/libsharedocn.a .
+
+oacdriver: $(DRIVEROBJS)
+	ar -ru liboac.a $(DRIVEROBJS)
+
+oaccore: $(COREOBJS)
 
 mpas_oac_am_global_stats.o:
 
 mpas_oac_driver.o: mpas_oac_am_global_stats.o
+
+mpas_ocn_mpas_core.o: mpas_oac_driver.o
 
 clean:
 	$(RM) *.o *.mod *.f90 liboac.a
