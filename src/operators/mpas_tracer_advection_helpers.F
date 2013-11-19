@@ -84,12 +84,12 @@ module mpas_tracer_advection_helpers
 !>  advection of tracers.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_tracer_advection_coefficients( grid, horiz_adv_order, deriv_two, adv_coefs, adv_coefs_3rd, nAdvCellsForEdge, advCellsForEdge, err, maxLevelCell_in, highOrderAdvectionMask_in, boundaryCell_in )!{{{
+   subroutine mpas_tracer_advection_coefficients( mesh, horiz_adv_order, deriv_two, adv_coefs, adv_coefs_3rd, nAdvCellsForEdge, advCellsForEdge, err, maxLevelCell_in, highOrderAdvectionMask_in, boundaryCell_in )!{{{
 
       use mpas_hash
 
       implicit none
-      type (mesh_type) :: grid !< Input: Grid information
+      type (mesh_type) :: mesh !< Input: Mesh information
       integer, intent(in) :: horiz_adv_order !< Input: Order of horizontal advection
       real (kind=RKIND), dimension(:,:,:), intent(in) :: deriv_two !< Input: 2nd derivative values for polynomial fit to tracers
       real (kind=RKIND), dimension(:,:), intent(inout) :: adv_coefs !< Input/Output: Advection coefficients for 2nd order advection
@@ -110,21 +110,21 @@ module mpas_tracer_advection_helpers
 
       type (hashtable) :: cell_hash
 
-      cellsOnCell => grid % cellsOnCell % array
-      cellsOnEdge => grid % cellsOnEdge % array
-      nEdgesOnCell => grid % nEdgesOnCell % array
+      cellsOnCell => mesh % cellsOnCell % array
+      cellsOnEdge => mesh % cellsOnEdge % array
+      nEdgesOnCell => mesh % nEdgesOnCell % array
 
-      nVertLevels = grid % nVertLevels
+      nVertLevels = mesh % nVertLevels
 
-      allocate(cell_indices(grid % maxEdges2 + 2))
-      allocate(sorted_cell_indices(2, grid % maxEdges2 + 2))
+      allocate(cell_indices(mesh % maxEdges2 + 2))
+      allocate(sorted_cell_indices(2, mesh % maxEdges2 + 2))
 
       err = 0
 
       if(present(maxLevelCell_in)) then
         maxLevelCell => maxLevelCell_in
       else
-        allocate(maxLevelCell(grid % nCells+1))
+        allocate(maxLevelCell(mesh % nCells+1))
         maxLevelCell(:) = nVertLevels
       end if
 
@@ -136,11 +136,11 @@ module mpas_tracer_advection_helpers
       if(present(boundaryCell_in)) then
         boundaryCell => boundaryCell_in
       else
-        allocate(boundaryCell(nVertLevels, grid % nCells+1))
+        allocate(boundaryCell(nVertLevels, mesh % nCells+1))
         boundaryCell(:,:) = 0
       end if
 
-      do iEdge = 1, grid % nEdges
+      do iEdge = 1, mesh % nEdges
         nAdvCellsForEdge(iEdge) = 0
         cell1 = cellsOnEdge(1,iEdge)
         cell2 = cellsOnEdge(2,iEdge)
@@ -158,16 +158,16 @@ module mpas_tracer_advection_helpers
         !
         ! do only if this edge flux is needed to update owned cells
         !
-        if (cell1 <= grid % nCells .and. cell2 <= grid % nCells) then
+        if (cell1 <= mesh % nCells .and. cell2 <= mesh % nCells) then
            ! Insert cellsOnEdge to list of advection cells
            call mpas_hash_init(cell_hash)
            call mpas_hash_insert(cell_hash, cell1)
            call mpas_hash_insert(cell_hash, cell2)
            cell_indices(1) = cell1
            cell_indices(2) = cell2
-           sorted_cell_indices(1, 1) = grid % indexToCellID % array(cell1)
+           sorted_cell_indices(1, 1) = mesh % indexToCellID % array(cell1)
            sorted_cell_indices(2, 1) = cell1
-           sorted_cell_indices(1, 2) = grid % indexToCellID % array(cell2)
+           sorted_cell_indices(1, 2) = mesh % indexToCellID % array(cell2)
            sorted_cell_indices(2, 2) = cell2
            n = 2
 
@@ -176,7 +176,7 @@ module mpas_tracer_advection_helpers
              if(.not. mpas_hash_search(cell_hash, cellsOnCell(i, cell1))) then
                n = n + 1
                cell_indices(n) = cellsOnCell(i, cell1)
-               sorted_cell_indices(1, n) = grid % indexToCellID % array(cellsOnCell(i, cell1))
+               sorted_cell_indices(1, n) = mesh % indexToCellID % array(cellsOnCell(i, cell1))
                sorted_cell_indices(2, n) = cellsOnCell(i, cell1)
                call mpas_hash_insert(cell_hash, cellsOnCell(i, cell1))
              end if
@@ -186,7 +186,7 @@ module mpas_tracer_advection_helpers
              if(.not. mpas_hash_search(cell_hash, cellsOnCell(i, cell2))) then
                n = n + 1
                cell_indices(n) = cellsOnCell(i, cell2)
-               sorted_cell_indices(1, n) = grid % indexToCellID % array(cellsOnCell(i, cell2))
+               sorted_cell_indices(1, n) = mesh % indexToCellID % array(cellsOnCell(i, cell2))
                sorted_cell_indices(2, n) = cellsOnCell(i, cell2)
                call mpas_hash_insert(cell_hash, cellsOnCell(i, cell2))
              end if
@@ -204,28 +204,28 @@ module mpas_tracer_advection_helpers
            adv_coefs(:,iEdge) = 0.
            adv_coefs_3rd(:,iEdge) = 0.
 
-           k = mpas_binary_search(sorted_cell_indices, 2, 1, nAdvCellsForEdge(iEdge), grid % indexToCellID % array(cell1))
+           k = mpas_binary_search(sorted_cell_indices, 2, 1, nAdvCellsForEdge(iEdge), mesh % indexToCellID % array(cell1))
            if(k <= nAdvCellsForEdge(iEdge)) then
              adv_coefs(k, iEdge) = adv_coefs(k, iEdge) + deriv_two(1,1,iEdge)
              adv_coefs_3rd(k, iEdge) = adv_coefs_3rd(k, iEdge) + deriv_two(1,1,iEdge)
            end if
 
            do iCell = 1, nEdgesOnCell(cell1)
-             k = mpas_binary_search(sorted_cell_indices, 2, 1, nAdvCellsForEdge(iEdge), grid % indexToCellID % array(cellsOnCell(iCell,cell1)))
+             k = mpas_binary_search(sorted_cell_indices, 2, 1, nAdvCellsForEdge(iEdge), mesh % indexToCellID % array(cellsOnCell(iCell,cell1)))
              if(k <= nAdvCellsForEdge(iEdge)) then
                adv_coefs(k, iEdge) = adv_coefs(k, iEdge) + deriv_two(iCell+1, 1, iEdge)
                adv_coefs_3rd(k, iEdge) = adv_coefs_3rd(k, iEdge) + deriv_two(iCell+1, 1, iEdge)
              end if
            end do ! loop over iCell
 
-           k = mpas_binary_search(sorted_cell_indices, 2, 1, nAdvCellsForEdge(iEdge), grid % indexToCellID % array(cell2))
+           k = mpas_binary_search(sorted_cell_indices, 2, 1, nAdvCellsForEdge(iEdge), mesh % indexToCellID % array(cell2))
            if(k <= nAdvCellsForEdge(iEdge)) then
              adv_coefs(k, iEdge) = adv_coefs(k, iEdge) + deriv_two(1,2,iEdge)
              adv_coefs_3rd(k, iEdge) = adv_coefs_3rd(k, iEdge) + deriv_two(1,2,iEdge)
            end if
 
            do iCell = 1, nEdgesOnCell(cell2)
-             k = mpas_binary_search(sorted_cell_indices, 2, 1, nAdvCellsForEdge(iEdge), grid % indexToCellID % array(cellsOnCell(iCell,cell2)))
+             k = mpas_binary_search(sorted_cell_indices, 2, 1, nAdvCellsForEdge(iEdge), mesh % indexToCellID % array(cellsOnCell(iCell,cell2)))
              if(k <= nAdvCellsForEdge(iEdge)) then
                adv_coefs(k, iEdge) = adv_coefs(k, iEdge) + deriv_two(iCell+1, 2, iEdge)
                adv_coefs_3rd(k, iEdge) = adv_coefs_3rd(k, iEdge) + deriv_two(iCell+1, 2, iEdge)
@@ -233,23 +233,23 @@ module mpas_tracer_advection_helpers
            end do ! loop over iCell
 
            do iCell = 1,nAdvCellsForEdge(iEdge)
-             adv_coefs    (iCell,iEdge) = - (grid % dcEdge % array (iEdge) **2) * adv_coefs    (iCell,iEdge) / 12.
-             adv_coefs_3rd(iCell,iEdge) = - (grid % dcEdge % array (iEdge) **2) * adv_coefs_3rd(iCell,iEdge) / 12.
+             adv_coefs    (iCell,iEdge) = - (mesh % dcEdge % array (iEdge) **2) * adv_coefs    (iCell,iEdge) / 12.
+             adv_coefs_3rd(iCell,iEdge) = - (mesh % dcEdge % array (iEdge) **2) * adv_coefs_3rd(iCell,iEdge) / 12.
            end do ! loop over iCell
 
-           k = mpas_binary_search(sorted_cell_indices, 2, 1, nAdvCellsForEdge(iEdge), grid % indexToCellID % array(cell1))
+           k = mpas_binary_search(sorted_cell_indices, 2, 1, nAdvCellsForEdge(iEdge), mesh % indexToCellID % array(cell1))
            if(k <= nAdvCellsForEdge(iEdge)) then
              adv_coefs(k, iEdge) = adv_coefs(k, iEdge) + 0.5
            end if
 
-           k = mpas_binary_search(sorted_cell_indices, 2, 1, nAdvCellsForEdge(iEdge), grid % indexToCellID % array(cell2))
+           k = mpas_binary_search(sorted_cell_indices, 2, 1, nAdvCellsForEdge(iEdge), mesh % indexToCellID % array(cell2))
            if(k <= nAdvCellsForEdge(iEdge)) then
              adv_coefs(k, iEdge) = adv_coefs(k, iEdge) + 0.5
            end if
 
            do iCell=1,nAdvCellsForEdge(iEdge)
-             adv_coefs    (iCell,iEdge) = grid % dvEdge % array(iEdge) * adv_coefs    (iCell,iEdge)
-             adv_coefs_3rd(iCell,iEdge) = grid % dvEdge % array(iEdge) * adv_coefs_3rd(iCell,iEdge)
+             adv_coefs    (iCell,iEdge) = mesh % dvEdge % array(iEdge) * adv_coefs    (iCell,iEdge)
+             adv_coefs_3rd(iCell,iEdge) = mesh % dvEdge % array(iEdge) * adv_coefs_3rd(iCell,iEdge)
            end do ! loop over iCell
         end if
       end do ! end loop over edges
@@ -283,7 +283,7 @@ module mpas_tracer_advection_helpers
 !>  This routine precomputes the second derivative values for tracer advection.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_initialize_deriv_two( grid, deriv_two, err )!{{{
+   subroutine mpas_initialize_deriv_two( mesh, deriv_two, err )!{{{
                                       
 !
 ! compute the cell coefficients for the polynomial fit.
@@ -292,12 +292,12 @@ module mpas_tracer_advection_helpers
 !
 ! Described in:
 ! Skamarock, W. C., & Gassmann, A. (2011). 
-! Conservative Transport Schemes for Spherical Geodesic Grids: High-Order Flux Operators for ODE-Based Time Integration. 
+! Conservative Transport Schemes for Spherical Geodesic Meshs: High-Order Flux Operators for ODE-Based Time Integration. 
 ! Monthly Weather Review, 139(9), 2962-2975. doi:10.1175/MWR-D-10-05056.1
 !
       implicit none
 
-      type (mesh_type), intent(in) :: grid
+      type (mesh_type), intent(in) :: mesh
       real (kind=RKIND), dimension(:,:,:), intent(inout) :: deriv_two !< Input/Output: 2nd derivative values of polynomial for tracer fit.
       integer, intent(out) :: err
 
@@ -305,9 +305,9 @@ module mpas_tracer_advection_helpers
 
 !  local variables
 
-      real (kind=RKIND), dimension(2, grid % nEdges) :: thetae
-!      real (kind=RKIND), dimension(grid % nEdges) :: xe, ye
-      real (kind=RKIND), dimension(grid % nCells) :: theta_abs
+      real (kind=RKIND), dimension(2, mesh % nEdges) :: thetae
+!      real (kind=RKIND), dimension(mesh % nEdges) :: xe, ye
+      real (kind=RKIND), dimension(mesh % nCells) :: theta_abs
 
       real (kind=RKIND), dimension(25) :: xc, yc, zc ! cell center coordinates
       real (kind=RKIND), dimension(25) :: thetav, thetat, dl_sphere
@@ -334,7 +334,7 @@ module mpas_tracer_advection_helpers
       logical, parameter :: reset_poly = .true.
 
       real (kind=RKIND) :: cos2t, costsint, sin2t
-      real (kind=RKIND), dimension(grid%maxEdges) :: angle_2d
+      real (kind=RKIND), dimension(mesh%maxEdges) :: angle_2d
 
 !---    
       err = 0
@@ -347,22 +347,22 @@ module mpas_tracer_advection_helpers
 
       pii = 2.*asin(1.0)
 
-!     advCells => grid % advCells % array
-      allocate(advCells(grid % maxEdges2))
+!     advCells => mesh % advCells % array
+      allocate(advCells(mesh % maxEdges2))
       deriv_two(:,:,:) = 0.
 
-      do iCell = 1, grid % nCells !  is this correct? - we need first halo cell also...
+      do iCell = 1, mesh % nCells !  is this correct? - we need first halo cell also...
 
          cell_list(1) = iCell
-         do i=2, grid % nEdgesOnCell % array(iCell)+1
-            cell_list(i) = grid % CellsOnCell % array(i-1,iCell)
+         do i=2, mesh % nEdgesOnCell % array(iCell)+1
+            cell_list(i) = mesh % CellsOnCell % array(i-1,iCell)
          end do
-         n = grid % nEdgesOnCell % array(iCell) + 1
+         n = mesh % nEdgesOnCell % array(iCell) + 1
 
          if ( polynomial_order > 2 ) then
-            do i=2,grid % nEdgesOnCell % array(iCell) + 1
-               do j=1,grid % nEdgesOnCell % array ( cell_list(i) )
-                  cell_add = grid % CellsOnCell % array (j,cell_list(i))
+            do i=2,mesh % nEdgesOnCell % array(iCell) + 1
+               do j=1,mesh % nEdgesOnCell % array ( cell_list(i) )
+                  cell_add = mesh % CellsOnCell % array (j,cell_list(i))
                   add_the_cell = .true.
                   do k=1,n
                      if ( cell_add == cell_list(k) ) add_the_cell = .false.
@@ -381,7 +381,7 @@ module mpas_tracer_advection_helpers
 
          do_the_cell = .true.
          do i=1,n
-            if (cell_list(i) > grid % nCells) do_the_cell = .false.
+            if (cell_list(i) > mesh % nCells) do_the_cell = .false.
          end do
 
 
@@ -389,13 +389,13 @@ module mpas_tracer_advection_helpers
 
 
 !  compute poynomial fit for this cell if all needed neighbors exist
-         if ( grid % on_a_sphere ) then
+         if ( mesh % on_a_sphere ) then
 
             do i=1,n
                advCells(i+1) = cell_list(i)
-               xc(i) = grid % xCell % array(advCells(i+1))/grid % sphere_radius
-               yc(i) = grid % yCell % array(advCells(i+1))/grid % sphere_radius
-               zc(i) = grid % zCell % array(advCells(i+1))/grid % sphere_radius
+               xc(i) = mesh % xCell % array(advCells(i+1))/mesh % sphere_radius
+               yc(i) = mesh % yCell % array(advCells(i+1))/mesh % sphere_radius
+               zc(i) = mesh % zCell % array(advCells(i+1))/mesh % sphere_radius
             end do
 
             if ( zc(1) == 1.0_RKIND) then
@@ -417,7 +417,7 @@ module mpas_tracer_advection_helpers
                                          xc(i+1), yc(i+1), zc(i+1),  &
                                          xc(ip2), yc(ip2), zc(ip2)   )
 
-               dl_sphere(i) = grid % sphere_radius*mpas_arc_length( xc(1),   yc(1),   zc(1),  &
+               dl_sphere(i) = mesh % sphere_radius*mpas_arc_length( xc(1),   yc(1),   zc(1),  &
                                             xc(i+1), yc(i+1), zc(i+1) )
             end do
 
@@ -441,16 +441,16 @@ module mpas_tracer_advection_helpers
 
             do i=1,n-1
 
-               angle_2d(i) = grid%angleEdge%array(grid % EdgesOnCell % array(i,iCell))
-               iEdge = grid % EdgesOnCell % array(i,iCell)
-               if ( iCell .ne. grid % CellsOnEdge % array(1,iEdge)) &
+               angle_2d(i) = mesh%angleEdge%array(mesh % EdgesOnCell % array(i,iCell))
+               iEdge = mesh % EdgesOnCell % array(i,iCell)
+               if ( iCell .ne. mesh % CellsOnEdge % array(1,iEdge)) &
                   angle_2d(i) = angle_2d(i) - pii
 
-!              xp(i) = grid % xCell % array(cell_list(i)) - grid % xCell % array(iCell)
-!              yp(i) = grid % yCell % array(cell_list(i)) - grid % yCell % array(iCell)
+!              xp(i) = mesh % xCell % array(cell_list(i)) - mesh % xCell % array(iCell)
+!              yp(i) = mesh % yCell % array(cell_list(i)) - mesh % yCell % array(iCell)
 
-               xp(i) = grid % dcEdge % array(grid % EdgesOnCell % array(i,iCell)) * cos(angle_2d(i))
-               yp(i) = grid % dcEdge % array(grid % EdgesOnCell % array(i,iCell)) * sin(angle_2d(i))
+               xp(i) = mesh % dcEdge % array(mesh % EdgesOnCell % array(i,iCell)) * cos(angle_2d(i))
+               yp(i) = mesh % dcEdge % array(mesh % EdgesOnCell % array(i,iCell)) * sin(angle_2d(i))
 
             end do
 
@@ -458,7 +458,7 @@ module mpas_tracer_advection_helpers
 
 
          ma = n-1
-         mw = grid % nEdgesOnCell % array (iCell)
+         mw = mesh % nEdgesOnCell % array (iCell)
 
          bmatrix = 0.
          amatrix = 0.
@@ -543,29 +543,29 @@ module mpas_tracer_advection_helpers
  
          call mpas_poly_fit_2( amatrix, bmatrix, wmatrix, ma, na, 25 )
 
-         do i=1,grid % nEdgesOnCell % array (iCell)
+         do i=1,mesh % nEdgesOnCell % array (iCell)
             ip1 = i+1
             if (ip1 > n-1) ip1 = 1
   
-            iEdge = grid % EdgesOnCell % array (i,iCell)
+            iEdge = mesh % EdgesOnCell % array (i,iCell)
 
-            if(grid % on_a_sphere) then
-              xv1 = grid % xVertex % array(grid % verticesOnEdge % array (1,iedge))/grid % sphere_radius
-              yv1 = grid % yVertex % array(grid % verticesOnEdge % array (1,iedge))/grid % sphere_radius
-              zv1 = grid % zVertex % array(grid % verticesOnEdge % array (1,iedge))/grid % sphere_radius
-              xv2 = grid % xVertex % array(grid % verticesOnEdge % array (2,iedge))/grid % sphere_radius
-              yv2 = grid % yVertex % array(grid % verticesOnEdge % array (2,iedge))/grid % sphere_radius
-              zv2 = grid % zVertex % array(grid % verticesOnEdge % array (2,iedge))/grid % sphere_radius
+            if(mesh % on_a_sphere) then
+              xv1 = mesh % xVertex % array(mesh % verticesOnEdge % array (1,iedge))/mesh % sphere_radius
+              yv1 = mesh % yVertex % array(mesh % verticesOnEdge % array (1,iedge))/mesh % sphere_radius
+              zv1 = mesh % zVertex % array(mesh % verticesOnEdge % array (1,iedge))/mesh % sphere_radius
+              xv2 = mesh % xVertex % array(mesh % verticesOnEdge % array (2,iedge))/mesh % sphere_radius
+              yv2 = mesh % yVertex % array(mesh % verticesOnEdge % array (2,iedge))/mesh % sphere_radius
+              zv2 = mesh % zVertex % array(mesh % verticesOnEdge % array (2,iedge))/mesh % sphere_radius
             else
-              xv1 = grid % xVertex % array(grid % verticesOnEdge % array (1,iedge))
-              yv1 = grid % yVertex % array(grid % verticesOnEdge % array (1,iedge))
-              zv1 = grid % zVertex % array(grid % verticesOnEdge % array (1,iedge))
-              xv2 = grid % xVertex % array(grid % verticesOnEdge % array (2,iedge))
-              yv2 = grid % yVertex % array(grid % verticesOnEdge % array (2,iedge))
-              zv2 = grid % zVertex % array(grid % verticesOnEdge % array (2,iedge))
+              xv1 = mesh % xVertex % array(mesh % verticesOnEdge % array (1,iedge))
+              yv1 = mesh % yVertex % array(mesh % verticesOnEdge % array (1,iedge))
+              zv1 = mesh % zVertex % array(mesh % verticesOnEdge % array (1,iedge))
+              xv2 = mesh % xVertex % array(mesh % verticesOnEdge % array (2,iedge))
+              yv2 = mesh % yVertex % array(mesh % verticesOnEdge % array (2,iedge))
+              zv2 = mesh % zVertex % array(mesh % verticesOnEdge % array (2,iedge))
             end if
   
-            if ( grid % on_a_sphere ) then
+            if ( mesh % on_a_sphere ) then
                call mpas_arc_bisect( xv1, yv1, zv1,  &
                                 xv2, yv2, zv2,  &
                                 xec, yec, zec   )
@@ -574,15 +574,15 @@ module mpas_tracer_advection_helpers
                                           xc(i+1), yc(i+1), zc(i+1),  &
                                           xec,     yec,     zec       )
                thetae_tmp = thetae_tmp + thetat(i)
-               if (iCell == grid % cellsOnEdge % array(1,iEdge)) then
-                  thetae(1,grid % EdgesOnCell % array (i,iCell)) = thetae_tmp
+               if (iCell == mesh % cellsOnEdge % array(1,iEdge)) then
+                  thetae(1,mesh % EdgesOnCell % array (i,iCell)) = thetae_tmp
                else
-                  thetae(2,grid % EdgesOnCell % array (i,iCell)) = thetae_tmp
+                  thetae(2,mesh % EdgesOnCell % array (i,iCell)) = thetae_tmp
                end if
 !            else
 !
-!               xe(grid % EdgesOnCell % array (i,iCell)) = 0.5 * (xv1 + xv2)
-!               ye(grid % EdgesOnCell % array (i,iCell)) = 0.5 * (yv1 + yv2)
+!               xe(mesh % EdgesOnCell % array (i,iCell)) = 0.5 * (xv1 + xv2)
+!               ye(mesh % EdgesOnCell % array (i,iCell)) = 0.5 * (yv1 + yv2)
 
             end if
   
@@ -590,15 +590,15 @@ module mpas_tracer_advection_helpers
 
 !  fill second derivative stencil for rk advection 
 
-         do i=1, grid % nEdgesOnCell % array (iCell)
-            iEdge = grid % EdgesOnCell % array (i,iCell)
+         do i=1, mesh % nEdgesOnCell % array (iCell)
+            iEdge = mesh % EdgesOnCell % array (i,iCell)
   
   
-            if ( grid % on_a_sphere ) then
-               if (iCell == grid % cellsOnEdge % array(1,iEdge)) then
+            if ( mesh % on_a_sphere ) then
+               if (iCell == mesh % cellsOnEdge % array(1,iEdge)) then
   
-                  cos2t = cos(thetae(1,grid % EdgesOnCell % array (i,iCell)))
-                  sin2t = sin(thetae(1,grid % EdgesOnCell % array (i,iCell)))
+                  cos2t = cos(thetae(1,mesh % EdgesOnCell % array (i,iCell)))
+                  sin2t = sin(thetae(1,mesh % EdgesOnCell % array (i,iCell)))
                   costsint = cos2t*sin2t
                   cos2t = cos2t**2
                   sin2t = sin2t**2
@@ -610,8 +610,8 @@ module mpas_tracer_advection_helpers
                   end do
                else
      
-                  cos2t = cos(thetae(2,grid % EdgesOnCell % array (i,iCell)))
-                  sin2t = sin(thetae(2,grid % EdgesOnCell % array (i,iCell)))
+                  cos2t = cos(thetae(2,mesh % EdgesOnCell % array (i,iCell)))
+                  sin2t = sin(thetae(2,mesh % EdgesOnCell % array (i,iCell)))
                   costsint = cos2t*sin2t
                   cos2t = cos2t**2
                   sin2t = sin2t**2
@@ -638,7 +638,7 @@ module mpas_tracer_advection_helpers
 !                                         + 2.*ye(iEdge)*ye(iEdge)*bmatrix(6,j)
 !               end do
 
-               if (iCell == grid % cellsOnEdge % array(1,iEdge)) then
+               if (iCell == mesh % cellsOnEdge % array(1,iEdge)) then
                   do j=1,n
                      deriv_two(j,1,iEdge) =   2.*cos2t*bmatrix(4,j)  &
                                             + 2.*costsint*bmatrix(5,j)  &
@@ -664,17 +664,17 @@ module mpas_tracer_advection_helpers
 !
 !      iEdge = 4
 !      j = 1
-!      iCell = grid % cellsOnEdge % array(1,iEdge)
+!      iCell = mesh % cellsOnEdge % array(1,iEdge)
 !      write(stderrUnit,*) ' j, icell, coef ',j,iCell,deriv_two(j,1,iEdge)
 !      do j=2,7
-!         write(stderrUnit,*) ' j, icell, coef ',j,grid % CellsOnCell % array(j-1,iCell),deriv_two(j,1,iEdge)
+!         write(stderrUnit,*) ' j, icell, coef ',j,mesh % CellsOnCell % array(j-1,iCell),deriv_two(j,1,iEdge)
 !      end do
 !
 !      j = 1
-!      iCell = grid % cellsOnEdge % array(2,iEdge)
+!      iCell = mesh % cellsOnEdge % array(2,iEdge)
 !      write(stderrUnit,*) ' j, icell, coef ',j,iCell,deriv_two(j,2,iEdge)
 !      do j=2,7
-!         write(stderrUnit,*) ' j, icell, coef ',j,grid % CellsOnCell % array(j-1,iCell),deriv_two(j,2,iEdge)
+!         write(stderrUnit,*) ' j, icell, coef ',j,mesh % CellsOnCell % array(j-1,iCell),deriv_two(j,2,iEdge)
 !      end do
 !      stop
 
