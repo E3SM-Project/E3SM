@@ -65,7 +65,7 @@ sharedocean:
 	ln -sf shared_ocean/libsharedocn.a .
 
 oac:
-	( cd ../core_ocean_analysis; $(MAKE) CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" all ) 
+	( cd ../core_ocean_analysis; $(MAKE) CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" run_time_mode ) 
 	ln -sf ../core_ocean_analysis/liboac.a liboac.a
 
 core_ocean: $(OBJS) 
