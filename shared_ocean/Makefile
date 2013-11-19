@@ -7,8 +7,6 @@ all: sharedocn
 sharedocn: $(OBJS)
 	ar -ru libsharedocn.a $(OBJS)
 
-
-
 clean:
 	$(RM) *.o *.mod *.f90 libsharedocn.a
 
