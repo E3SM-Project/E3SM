@@ -23,7 +23,7 @@ int nbuf = 0;
  *       than worrying about splitting strings at spaces
  */
 
-int fortprintf(FILE * fd, char * str, ...)
+int fortprintf(FILE * fd, char * str, ...)/*{{{*/
 {
 	int i, nl, sp, inquotes, q;
 	int lastchar;
@@ -127,26 +127,26 @@ int fortprintf(FILE * fd, char * str, ...)
 	} while (nl >= 0 || sp >= 0);
 
 	return errorcode;
-}
+}/*}}}*/
 
-void fortprint_flush(FILE * fd)
+void fortprint_flush(FILE * fd)/*{{{*/
 {
 	snprintf(printbuf, nbuf+1, "%s", fbuffer);
 	fprintf(fd, "%s", printbuf);
 	nbuf = 0;
-}
+}/*}}}*/
 
 #ifdef FORTPRINTF_TESTING
-void print_result(int test_num, int err_code)
+void print_result(int test_num, int err_code)/*{{{*/
 {
 	if(err_code == 0){
 		printf("Test %02d:   PASSED\n", test_num);
 	} else {
 		printf("Test %02d: **FAILED\n", test_num);
 	}
-}
+}/*}}}*/
 
-int main()
+int main()/*{{{*/
 {
 	FILE * foo;
 	int err;
@@ -290,5 +290,5 @@ int main()
 	fclose(foo);
 
 	return 0;
-}
+}/*}}}*/
 #endif

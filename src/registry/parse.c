@@ -23,7 +23,7 @@ char * check_dimensions(ezxml_t registry, char * dims);
 char * check_streams(char * streams);
 int check_persistence(const char * persistence);
 
-int main(int argc, char ** argv)
+int main(int argc, char ** argv)/*{{{*/
 {
 	FILE * regfile;
 	struct namelist * nls;
@@ -78,9 +78,9 @@ int main(int argc, char ** argv)
 	free(version);
 
 	return 0;
-}
+}/*}}}*/
 
-int validate_reg_xml(ezxml_t registry)
+int validate_reg_xml(ezxml_t registry)/*{{{*/
 {
 	ezxml_t dims_xml, dim_xml;
 	ezxml_t structs_xml, var_arr_xml, var_xml;
@@ -417,9 +417,9 @@ int validate_reg_xml(ezxml_t registry)
 	}
 
 	return 0;
-}
+}/*}}}*/
 
-int parse_reg_xml(ezxml_t registry, struct namelist **nls, struct dimension ** dims, struct variable ** vars, struct group_list ** groups, struct package ** pkgs, char * modelname, char * corename, char * version)
+int parse_reg_xml(ezxml_t registry, struct namelist **nls, struct dimension ** dims, struct variable ** vars, struct group_list ** groups, struct package ** pkgs, char * modelname, char * corename, char * version)/*{{{*/
 {
 	struct namelist * nls_ptr, *nls_ptr2;
 	struct namelist * nls_chk_ptr;
@@ -920,9 +920,9 @@ int parse_reg_xml(ezxml_t registry, struct namelist **nls, struct dimension ** d
 	if (grouplist_ptr) free(grouplist_ptr);
 
 	return 0;
-}
+}/*}}}*/
 
-int getword(FILE * regfile, char * word)
+int getword(FILE * regfile, char * word)/*{{{*/
 {
 	int i;
 	int c;
@@ -945,9 +945,9 @@ int getword(FILE * regfile, char * word)
 
 	fprintf(stdout,"%s ",word);
 	return c;
-}
+}/*}}}*/
 
-int is_integer_constant(char * c) {
+int is_integer_constant(char * c) {/*{{{*/
 	int i;
 
 	i = 0;
@@ -957,9 +957,9 @@ int is_integer_constant(char * c) {
 	}
 
 	return atoi(c);
-}
+}/*}}}*/
 
-void sort_vars(struct variable * vars)
+void sort_vars(struct variable * vars)/*{{{*/
 {
 	struct variable * var_ptr;
 	struct variable * var_ptr2;
@@ -1037,10 +1037,9 @@ void sort_vars(struct variable * vars)
 		} 
 		var_ptr = var_ptr->next;
 	}
-}
+}/*}}}*/
 
-
-void sort_group_vars(struct group_list * groups)
+void sort_group_vars(struct group_list * groups)/*{{{*/
 {
 	struct variable_list * var_list;
 	struct variable_list * var_ptr;
@@ -1102,9 +1101,9 @@ void sort_group_vars(struct group_list * groups)
 
 		group_ptr = group_ptr->next;
 	}
-}
+}/*}}}*/
 
-char * check_packages(ezxml_t registry, char * packages){
+char * check_packages(ezxml_t registry, char * packages){/*{{{*/
 	ezxml_t packages_xml, package_xml;
 
 	const char *packagename;
@@ -1137,9 +1136,9 @@ char * check_packages(ezxml_t registry, char * packages){
 	}
 	free(tofree);
 	return failed;
-}
+}/*}}}*/
 
-char * check_dimensions(ezxml_t registry, char * dims){
+char * check_dimensions(ezxml_t registry, char * dims){/*{{{*/
 	ezxml_t dims_xml, dim_xml;
 
 	const char *dimname;
@@ -1171,9 +1170,9 @@ char * check_dimensions(ezxml_t registry, char * dims){
 	}
 	free(tofree);
 	return NULL;
-}
+}/*}}}*/
 
-char * check_streams(char * streams){
+char * check_streams(char * streams){/*{{{*/
 	char * stream;
 	int length, i, bad_streams;
 
@@ -1195,9 +1194,9 @@ char * check_streams(char * streams){
 	}
 
 	return NULL;
-}
+}/*}}}*/
 
-int check_persistence(const char * persistence){
+int check_persistence(const char * persistence){/*{{{*/
 	if(strncmp(persistence, "persistent", 1024) == 0){
 		return PERSISTENT;
 	} else if(strncmp(persistence, "scratch", 1024) == 0){
@@ -1206,4 +1205,4 @@ int check_persistence(const char * persistence){
 		fprintf(stderr, "ERROR: In check_persistence. Persistence not equal to persistent or scratch.\n");
 		return -1;
 	}
-}
+}/*}}}*/

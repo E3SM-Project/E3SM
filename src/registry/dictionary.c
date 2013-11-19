@@ -11,7 +11,7 @@
 
 int hashstring(char *);
 
-void dict_alloc(struct dtable ** dict)
+void dict_alloc(struct dtable ** dict)/*{{{*/
 {
 	int i;
 
@@ -21,10 +21,9 @@ void dict_alloc(struct dtable ** dict)
 		(*dict)->table[i] = NULL;
 
 	(*dict)->size = 0;
-}
+}/*}}}*/
 
-
-void dict_insert(struct dtable * dict, char * word)
+void dict_insert(struct dtable * dict, char * word)/*{{{*/
 {
 	int hval;
 	struct dnode * dptr;
@@ -37,10 +36,9 @@ void dict_insert(struct dtable * dict, char * word)
 	dict->table[hval] = dptr;
 
 	dict->size++;
-}
+}/*}}}*/
 
-
-void dict_remove(struct dtable * dict, char * word)
+void dict_remove(struct dtable * dict, char * word)/*{{{*/
 {
 	int hval;
 	struct dnode * dptr_prev;
@@ -64,10 +62,9 @@ void dict_remove(struct dtable * dict, char * word)
 		free(dptr);
 		dict->size--;
 	}
-}
+}/*}}}*/
 
-
-int dict_search(struct dtable * dict, char * word)
+int dict_search(struct dtable * dict, char * word)/*{{{*/
 {
 	int hval;
 	struct dnode * dptr;
@@ -81,16 +78,14 @@ int dict_search(struct dtable * dict, char * word)
 	if (!dptr) return 0;
 
 	return 1;
-}
+}/*}}}*/
 
-
-int dict_size(struct dtable * dict)
+int dict_size(struct dtable * dict)/*{{{*/
 {
 	return dict->size;
-}
+}/*}}}*/
 
-
-void dict_free(struct dtable ** dict)
+void dict_free(struct dtable ** dict)/*{{{*/
 {
 	int i;
 	struct dnode * dptr;
@@ -104,10 +99,9 @@ void dict_free(struct dtable ** dict)
 	}
 
 	free(*dict);
-}
+}/*}}}*/
 
-
-int hashstring(char * word)
+int hashstring(char * word)/*{{{*/
 {
 	int i;
 	int hval;
@@ -119,4 +113,4 @@ int hashstring(char * word)
 	}
 
 	return hval;
-}
+}/*}}}*/

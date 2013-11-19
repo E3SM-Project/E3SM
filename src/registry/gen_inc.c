@@ -13,16 +13,15 @@
 #include "gen_inc.h"
 #include "fortprintf.h"
 
-int is_derived_dim(char * d)
+int is_derived_dim(char * d)/*{{{*/
 {
 	if (strchr(d, (int)'+')) return 1;
 	if (strchr(d, (int)'-')) return 1;
 
 	return 0;
-}
+}/*}}}*/
 
-
-void get_outer_dim(struct variable * var, char * last_dim)
+void get_outer_dim(struct variable * var, char * last_dim)/*{{{*/
 {
 	struct dimension_list * dimlist_ptr;
 
@@ -31,9 +30,9 @@ void get_outer_dim(struct variable * var, char * last_dim)
 	while (dimlist_ptr->next) dimlist_ptr = dimlist_ptr->next;
 
 	strcpy(last_dim, dimlist_ptr->dim->name_in_file);
-}
+}/*}}}*/
 
-void split_derived_dim_string(char * dim, char ** p1, char ** p2)
+void split_derived_dim_string(char * dim, char ** p1, char ** p2)/*{{{*/
 {
 	char * cp, * cm, * c;
 	int n;
@@ -55,9 +54,9 @@ void split_derived_dim_string(char * dim, char ** p1, char ** p2)
 
 	*p2 = (char *)malloc((strlen(dim)-n+1)*sizeof(char));
 	sprintf(*p2, "%s", dim+n);
-}
+}/*}}}*/
 
-void write_package_options(FILE *fd, struct package * pkgs){
+void write_package_options(FILE *fd, struct package * pkgs){/*{{{*/
 	struct package * pkg_ptr;
 
 	pkg_ptr = pkgs;
@@ -67,9 +66,9 @@ void write_package_options(FILE *fd, struct package * pkgs){
 	for (pkg_ptr = pkgs->next; pkg_ptr; pkg_ptr = pkg_ptr->next){
 		fortprintf(fd, " .or. %sActive", pkg_ptr->name);
 	}
-}
+}/*}}}*/
 
-void gen_namelists(struct namelist * nls)
+void gen_namelists(struct namelist * nls)/*{{{*/
 {
 	struct namelist * nls_ptr;
 	struct dtable * dictionary;
@@ -186,9 +185,9 @@ void gen_namelists(struct namelist * nls)
 	}
 	fortprintf(fd, "\n");
 	fclose(fd);
-}
+}/*}}}*/
 
-void gen_history_attributes(char * modelname, char * corename, char * version)
+void gen_history_attributes(char * modelname, char * corename, char * version)/*{{{*/
 {
 	FILE *fd;
 
@@ -197,10 +196,9 @@ void gen_history_attributes(char * modelname, char * corename, char * version)
 	fortprintf(fd, "       character (len=StrKIND) :: coreName = '%s' !< Constant: Name of core\n", corename);
 	fortprintf(fd, "       character (len=StrKIND) :: modelVersion = '%s' !< Constant: Version number\n", version);
 	fclose(fd);
-}
+}/*}}}*/
 
-
-void gen_field_defs(struct group_list * groups, struct variable * vars, struct dimension * dims)
+void gen_field_defs(struct group_list * groups, struct variable * vars, struct dimension * dims)/*{{{*/
 {
 	struct variable * var_ptr;
 	struct variable * var_ptr2;
@@ -1488,10 +1486,9 @@ void gen_field_defs(struct group_list * groups, struct variable * vars, struct d
 	}
 	fclose(fd);
 
-}
+}/*}}}*/
 
-
-void gen_reads(struct group_list * groups, struct variable * vars, struct dimension * dims)
+void gen_reads(struct group_list * groups, struct variable * vars, struct dimension * dims)/*{{{*/
 {
 	struct variable * var_ptr;
 	struct variable_list * var_list_ptr, *var_list_ptr2;
@@ -1628,9 +1625,9 @@ void gen_reads(struct group_list * groups, struct variable * vars, struct dimens
 	fclose(fd);
 	fclose(fd2);
 
-}
+}/*}}}*/
 
-void gen_packages(struct package * pkgs){
+void gen_packages(struct package * pkgs){/*{{{*/
 	FILE * fd;
 	struct package * pkg_ptr;
 
@@ -1643,10 +1640,9 @@ void gen_packages(struct package * pkgs){
 	}
 
 	fclose(fd);
-}
+}/*}}}*/
 
-
-void gen_writes(struct group_list * groups, struct variable * vars, struct dimension * dims, struct namelist * namelists)
+void gen_writes(struct group_list * groups, struct variable * vars, struct dimension * dims, struct namelist * namelists)/*{{{*/
 {
 	struct variable * var_ptr;
 	struct variable_list * var_list_ptr, *var_list_ptr2;
@@ -1726,4 +1722,4 @@ void gen_writes(struct group_list * groups, struct variable * vars, struct dimen
 
 	fclose(fd);
 
-}
+}/*}}}*/
