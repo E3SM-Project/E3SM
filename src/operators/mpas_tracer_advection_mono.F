@@ -59,11 +59,11 @@ module mpas_tracer_advection_mono
       real (kind=RKIND), dimension(:,:), intent(in) :: adv_coefs_3rd !< Input: Advection coefficients for blending in 3rd or 4th order advection
       integer, dimension(:), intent(in) :: nAdvCellsForEdge !< Input: Number of advection cells for each edge
       integer, dimension(:,:), intent(in) :: advCellsForEdge !< Input: List of advection cells for each edge
-      real (kind=RKIND), dimension(:,:), intent(in) :: normalThicknessFlux !< Input: Thichness weighted velocitiy
-      real (kind=RKIND), dimension(:,:), intent(in) :: w !< Input: Vertical velocitiy
-      real (kind=RKIND), dimension(:,:), intent(in) :: layerThickness !< Input: Thickness
-      real (kind=RKIND), dimension(:,:), intent(in) :: verticalCellSize !< Input: Distance between vertical interfaces of a cell
-      real (kind=RKIND), dimension(:,:), intent(in) :: tend_layerThickness !< Input: Tendency for thickness field
+      real (kind=RKIND), dimension(:,:), intent(in) :: normalThicknessFlux !< Input: Thichness weighted velocitiy - (nVertLevels, nEdge)
+      real (kind=RKIND), dimension(:,:), intent(in) :: w !< Input: Vertical velocitiy - (nVertLevels+1, nEdges)
+      real (kind=RKIND), dimension(:,:), intent(in) :: layerThickness !< Input: Thickness - (nVertLevels, nCells)
+      real (kind=RKIND), dimension(:,:), intent(in) :: verticalCellSize !< Input: Distance between vertical interfaces of a cell - (nVertLevels, nCells)
+      real (kind=RKIND), dimension(:,:), intent(in) :: tend_layerThickness !< Input: Tendency for thickness field - (nVertLevels, nCells)
       real (kind=RKIND), intent(in) :: dt !< Input: Timestep
       type (mesh_type), intent(in) :: mesh !< Input: Mesh information
       real (kind=RKIND), dimension(:,:,:), intent(inout) :: tend !< Input/Output: Tracer tendency
@@ -92,7 +92,7 @@ module mpas_tracer_advection_mono
       nCellsSolve = mesh % nCellsSolve
       nEdges = mesh % nEdges
       maxEdges = mesh % maxEdges
-      nVertLevels = mesh % nVertLevels
+      nVertLevels = size(tracers,dim=2)
       num_tracers = size(tracers,dim=1)
 
       ! Initialize pointers
