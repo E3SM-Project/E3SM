@@ -1350,8 +1350,8 @@ subroutine Cobra_SLBQP(Que, Que_t, rho, minq, maxq, mass, hybrid, nets, nete)
   integer             , intent(in)              :: nets
   integer             , intent(in)              :: nete
 
-  real(kind=real_kind),               parameter :: eta = 1D-10           
-  real(kind=real_kind),               parameter :: hfd = 1D-8              
+  real(kind=real_kind),               parameter :: eta = 1D-12           
+  real(kind=real_kind),               parameter :: hfd = 1D-12             
   real(kind=real_kind)                          :: lambda_p          (nlev,qsize)
   real(kind=real_kind)                          :: lambda_c          (nlev,qsize)
   real(kind=real_kind)                          :: rp                (nlev,qsize)
