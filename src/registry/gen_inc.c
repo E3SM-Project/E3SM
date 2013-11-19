@@ -21,6 +21,7 @@ int is_derived_dim(char * d)/*{{{*/
 	return 0;
 }/*}}}*/
 
+
 void get_outer_dim(struct variable * var, char * last_dim)/*{{{*/
 {
 	struct dimension_list * dimlist_ptr;
@@ -31,6 +32,7 @@ void get_outer_dim(struct variable * var, char * last_dim)/*{{{*/
 
 	strcpy(last_dim, dimlist_ptr->dim->name_in_file);
 }/*}}}*/
+
 
 void split_derived_dim_string(char * dim, char ** p1, char ** p2)/*{{{*/
 {
@@ -56,6 +58,9 @@ void split_derived_dim_string(char * dim, char ** p1, char ** p2)/*{{{*/
 	sprintf(*p2, "%s", dim+n);
 }/*}}}*/
 
+
+
+/* *** Namelist related write functions *** {{{*/
 void write_package_options(FILE *fd, struct package * pkgs){/*{{{*/
 	struct package * pkg_ptr;
 
@@ -68,19 +73,13 @@ void write_package_options(FILE *fd, struct package * pkgs){/*{{{*/
 	}
 }/*}}}*/
 
-void gen_namelists(struct namelist * nls)/*{{{*/
-{
-	struct namelist * nls_ptr;
-	struct dtable * dictionary;
-	int done;
-	char nlrecord[1024];
-	FILE * fd;
+
+void write_config_defs(FILE *fd, struct namelist *nls){/*{{{*/
+	struct namelist *nls_ptr;
 
 	/*
 	 *  Generate config_type.inc
 	 */
-	fd = fopen("config_defs.inc", "w");
-
 	nls_ptr = nls;
 	while (nls_ptr) {
 		if (nls_ptr->vtype == INTEGER)   fortprintf(fd, "   integer :: %s\n",nls_ptr->name);
@@ -90,14 +89,18 @@ void gen_namelists(struct namelist * nls)/*{{{*/
 
 		nls_ptr = nls_ptr->next;
 	}
+}/*}}}*/
 
-	fclose(fd);
 
+void write_config_namelist_defs(FILE *fd, struct namelist *nls){/*{{{*/
+	struct dtable *dictionary;
+	struct namelist *nls_ptr;
+	char nlrecord[1024];
+	int done;
 
 	/*
 	 *  Generate namelist_defs.inc
 	 */
-	fd = fopen("config_namelist_defs.inc", "w");
 	dict_alloc(&dictionary);
 
 	done = 0;
@@ -123,15 +126,16 @@ void gen_namelists(struct namelist * nls)/*{{{*/
 			done = 1;
 	}
 
-
 	dict_free(&dictionary);
-	fclose(fd);
+}/*}}}*/
 
+
+void write_config_set_defaults(FILE *fd, struct namelist *nls){/*{{{*/
+	struct namelist *nls_ptr;
 
 	/*
 	 *  Generate namelist_reads.inc
 	 */
-	fd = fopen("config_set_defaults.inc", "w");
 	nls_ptr = nls;
 	while (nls_ptr) {
 		if (nls_ptr->vtype == INTEGER) fortprintf(fd, "      %s = %i\n", nls_ptr->name, nls_ptr->defval.ival);
@@ -147,10 +151,13 @@ void gen_namelists(struct namelist * nls)/*{{{*/
 		nls_ptr = nls_ptr->next;
 	}
 	fortprintf(fd, "\n");
-	fclose(fd);
+}/*}}}*/
 
 
-	fd = fopen("config_namelist_reads.inc", "w");
+void write_config_namelist_reads(FILE *fd, struct namelist *nls){/*{{{*/
+	struct dtable *dictionary;
+	struct namelist *nls_ptr;
+
 	dict_alloc(&dictionary);
 	nls_ptr = nls;
 	while (nls_ptr) {
@@ -171,10 +178,12 @@ void gen_namelists(struct namelist * nls)/*{{{*/
 	fortprintf(fd, "\n");
 
 	dict_free(&dictionary);
-	fclose(fd);
+}/*}}}*/
 
 
-	fd = fopen("config_bcast_namelist.inc", "w");
+void write_config_bcast_namelist(FILE *fd, struct namelist *nls){/*{{{*/
+	struct namelist *nls_ptr;
+
 	nls_ptr = nls;
 	while (nls_ptr) {
 		if (nls_ptr->vtype == INTEGER)   fortprintf(fd, "      call mpas_dmpar_bcast_int(dminfo, %s)\n", nls_ptr->name);
@@ -184,44 +193,46 @@ void gen_namelists(struct namelist * nls)/*{{{*/
 		nls_ptr = nls_ptr->next;
 	}
 	fortprintf(fd, "\n");
-	fclose(fd);
 }/*}}}*/
 
-void gen_history_attributes(char * modelname, char * corename, char * version)/*{{{*/
-{
-	FILE *fd;
 
-	fd = fopen("model_variables.inc","w");
+void write_add_output_atts(FILE *fd, struct namelist *namelists){/*{{{*/
+	struct namelist *nl;
+
+	nl = namelists;
+	while (nl) {
+		if (nl->vtype == LOGICAL) {
+			fortprintf(fd, "      if (%s) then\n", nl->name);
+			fortprintf(fd, "         call MPAS_writeStreamAtt(output_obj %% io_stream, \'%s\', 'T', ierr)\n", nl->name);
+			fortprintf(fd, "      else\n");
+			fortprintf(fd, "         call MPAS_writeStreamAtt(output_obj %% io_stream, \'%s\', 'F', ierr)\n", nl->name);
+			fortprintf(fd, "      end if\n");
+		}
+		else {
+			fortprintf(fd, "      call MPAS_writeStreamAtt(output_obj %% io_stream, \'%s\', %s, ierr)\n", nl->name, nl->name);
+		}
+		nl = nl->next;
+	}
+}/*}}}*/
+/*}}}*/
+
+
+/* *** History attribute related write functions *** {{{ */
+void write_model_variables(FILE *fd, char *modelname, char *corename, char *version){/*{{{*/
 	fortprintf(fd, "       character (len=StrKIND) :: modelName = '%s' !< Constant: Name of model\n", modelname);
 	fortprintf(fd, "       character (len=StrKIND) :: coreName = '%s' !< Constant: Name of core\n", corename);
 	fortprintf(fd, "       character (len=StrKIND) :: modelVersion = '%s' !< Constant: Version number\n", version);
-	fclose(fd);
 }/*}}}*/
+/*}}}*/
 
-void gen_field_defs(struct group_list * groups, struct variable * vars, struct dimension * dims)/*{{{*/
-{
-	struct variable * var_ptr;
-	struct variable * var_ptr2;
-	struct variable_list * var_list_ptr;
-	struct variable_list * var_list_ptr2;
-	struct variable_list * var_list_ptr3;
-	struct dimension * dim_ptr;
-	struct dimension_list * dimlist_ptr;
-	struct group_list * group_ptr;
-	FILE * fd, *fd2;
-	char var_array[1024];
-	char array_class[1024];
-	char outer_dim[1024];
-	int i, new_class;
-	int class_start, class_end;
-	int vtype;
-	char type_str[7];
 
+/* *** Dimension related write functions *** {{{ */
+void write_field_dimensions(FILE *fd, struct dimension *dims){/*{{{*/
+	struct dimension *dim_ptr;
 
 	/*
 	 *  Generate declarations of dimensions
 	 */
-	fd = fopen("field_dimensions.inc", "w");
 	dim_ptr = dims;
 	while (dim_ptr) {
 		if (dim_ptr->constant_value < 0 && !dim_ptr->namelist_defined && !is_derived_dim(dim_ptr->name_in_code)) fortprintf(fd, "      integer :: %s\n", dim_ptr->name_in_code);
@@ -239,13 +250,15 @@ void gen_field_defs(struct group_list * groups, struct variable * vars, struct d
 		}
 		dim_ptr = dim_ptr->next;
 	}
+}/*}}}*/
 
-	fclose(fd);
+
+void write_dim_dummy_args(FILE *fd, struct dimension *dims){/*{{{*/
+	struct dimension *dim_ptr;
 
 	/*
 	 *  Generate dummy dimension argument list
 	 */
-	fd = fopen("dim_dummy_args.inc", "w");
 	dim_ptr = dims;
 	if (dim_ptr && dim_ptr->constant_value < 0 && !dim_ptr->namelist_defined && !is_derived_dim(dim_ptr->name_in_code)) {
 		fortprintf(fd, "                            %s", dim_ptr->name_in_code);
@@ -261,13 +274,15 @@ void gen_field_defs(struct group_list * groups, struct variable * vars, struct d
 		dim_ptr = dim_ptr->next;
 	}
 	fortprintf(fd, " &\n");
+}/*}}}*/
 
-	fclose(fd);
+
+void write_dim_dummy_decls(FILE *fd, struct dimension *dims){/*{{{*/
+	struct dimension *dim_ptr;
 
 	/*
 	 *  Generate dummy dimension argument declaration list
 	 */
-	fd = fopen("dim_dummy_decls.inc", "w");
 	dim_ptr = dims;
 	if (dim_ptr && dim_ptr->constant_value < 0 && !dim_ptr->namelist_defined && !is_derived_dim(dim_ptr->name_in_code)) {
 		fortprintf(fd, "      integer, intent(in) :: %s", dim_ptr->name_in_code);
@@ -284,12 +299,15 @@ void gen_field_defs(struct group_list * groups, struct variable * vars, struct d
 	}
 	fortprintf(fd, "\n");
 
-	fclose(fd);
+}/*}}}*/
+
+
+void write_dim_dummy_decls_inout(FILE *fd, struct dimension *dims){/*{{{*/
+	struct dimension *dim_ptr;	
 
 	/*
 	 *  Generate dummy dimension argument declaration list
 	 */
-	fd = fopen("dim_dummy_decls_inout.inc", "w");
 	dim_ptr = dims;
 	if (dim_ptr && dim_ptr->constant_value < 0 && !dim_ptr->namelist_defined && !is_derived_dim(dim_ptr->name_in_code)) {
 		fortprintf(fd, "      integer, intent(inout) :: %s", dim_ptr->name_in_code);
@@ -305,13 +323,15 @@ void gen_field_defs(struct group_list * groups, struct variable * vars, struct d
 		dim_ptr = dim_ptr->next;
 	}
 	fortprintf(fd, "\n");
+}/*}}}*/
 
-	fclose(fd);
+
+void write_dim_dummy_decls_noinput(FILE *fd, struct dimension *dims){/*{{{*/
+	struct dimension *dim_ptr;
 
 	/*
 	 *  Generate non-input dummy dimension argument declaration list
 	 */
-	fd = fopen("dim_dummy_decls_noinput.inc", "w");
 	dim_ptr = dims;
 	if (dim_ptr && dim_ptr->constant_value < 0 && !dim_ptr->namelist_defined && !is_derived_dim(dim_ptr->name_in_code)) {
 		fortprintf(fd, "      integer :: %s", dim_ptr->name_in_code);
@@ -328,14 +348,15 @@ void gen_field_defs(struct group_list * groups, struct variable * vars, struct d
 	}
 	fortprintf(fd, "\n");
 
-	fclose(fd);
+}/*}}}*/
 
 
+void write_dim_dummy_assigns(FILE *fd, struct dimension *dims){/*{{{*/
+	struct dimension *dim_ptr;
 
 	/*
 	 *  Generate dummy dimension assignment instructions
 	 */
-	fd = fopen("dim_dummy_assigns.inc", "w");
 	dim_ptr = dims;
 	if (dim_ptr && dim_ptr->constant_value < 0 && !dim_ptr->namelist_defined && !is_derived_dim(dim_ptr->name_in_code)) {
 		fortprintf(fd, "      %s = block %% mesh %% %s\n", dim_ptr->name_in_code, dim_ptr->name_in_code);
@@ -351,42 +372,52 @@ void gen_field_defs(struct group_list * groups, struct variable * vars, struct d
 		dim_ptr = dim_ptr->next;
 	}
 	fortprintf(fd, "\n");
+}/*}}}*/
 
-	fclose(fd);
 
+void write_dim_decls(FILE *fd, struct dimension *dims){/*{{{*/
+	struct dimension *dim_ptr;
 
 	/*
 	 *  Generate declarations of dimensions
 	 */
-	fd = fopen("dim_decls.inc", "w");
 	dim_ptr = dims;
 	while (dim_ptr) {
 		if (dim_ptr->constant_value < 0 && !dim_ptr->namelist_defined && !is_derived_dim(dim_ptr->name_in_code)) fortprintf(fd, "      integer :: %s\n", dim_ptr->name_in_code);
 		if (dim_ptr->constant_value < 0 && dim_ptr->namelist_defined && !is_derived_dim(dim_ptr->name_in_code)) fortprintf(fd, "      integer :: %s\n", dim_ptr->name_in_file);
 		dim_ptr = dim_ptr->next;
 	}
+}/*}}}*/
 
-	fclose(fd);
 
+void write_read_dims(FILE *fd, struct dimension *dims){/*{{{*/
+	struct dimension *dim_ptr;
 
 	/*
 	 *  Generate calls to read dimensions from input file
 	 */
-	fd = fopen("read_dims.inc", "w");
 	dim_ptr = dims;
 	while (dim_ptr) {
 		if (dim_ptr->constant_value < 0 && !dim_ptr->namelist_defined && !is_derived_dim(dim_ptr->name_in_code)) fortprintf(fd, "      call MPAS_io_inq_dim(inputHandle, \'%s\', %s, ierr)\n", dim_ptr->name_in_file, dim_ptr->name_in_code);
 		else if (dim_ptr->constant_value < 0 && dim_ptr->namelist_defined && !is_derived_dim(dim_ptr->name_in_code)) fortprintf(fd, "      %s = %s\n", dim_ptr->name_in_file, dim_ptr->name_in_code);
 		dim_ptr = dim_ptr->next;
 	}
+}/*}}}*/
+/* }}} */
 
-	fclose(fd);
 
+/* *** Variable related write functions *** {{{*/
+void write_time_invariant_fields(FILE *fd, struct group_list *groups){/*{{{*/
+	struct group_list *group_ptr;
+	struct variable_list *var_list_ptr;
+	struct variable *var_ptr;
+	int i, class_start, class_end;
+	char var_array[1024];
+	char array_class[1024];
 
 	/*
 	 *  Generate declarations of mesh group
 	 */
-	fd = fopen("time_invariant_fields.inc", "w");
 	group_ptr = groups;
 	while (group_ptr) {
 
@@ -460,15 +491,20 @@ void gen_field_defs(struct group_list * groups, struct variable * vars, struct d
 		}
 		group_ptr = group_ptr->next;
 	}
+}/*}}}*/
 
-	fclose(fd);
 
+void write_variable_groups(FILE *fd, struct group_list *groups){/*{{{*/
+	struct group_list *group_ptr;
+	struct variable_list *var_list_ptr;
+	struct variable *var_ptr;
+	int i, class_start, class_end;
+	char var_array[1024];
+	char array_class[1024];
 
 	/*
 	 *  Generate declarations of non-mesh groups
 	 */
-	fd = fopen("variable_groups.inc", "w");
-
 	group_ptr = groups;
 	while (group_ptr) {
 		if (strncmp(group_ptr->name, "mesh", 1024)) {
@@ -570,13 +606,15 @@ void gen_field_defs(struct group_list * groups, struct variable * vars, struct d
 		group_ptr = group_ptr->next;
 	}
 
-	fclose(fd);
+}/*}}}*/
+
+
+void write_block_group_members(FILE *fd, struct group_list *groups){/*{{{*/
+	struct group_list *group_ptr;
 
 	/*
 	 *  Generate instantiations of variable groups in block_type
 	 */
-	fd = fopen("block_group_members.inc", "w");
-
 	group_ptr = groups;
 	while (group_ptr) {
 		if (group_ptr->ntime_levs > 1) {
@@ -587,15 +625,15 @@ void gen_field_defs(struct group_list * groups, struct variable * vars, struct d
 		}
 		group_ptr = group_ptr->next;
 	}
+}/*}}}*/
 
-	fclose(fd);
 
+void write_provis_alloc_routines(FILE *fd, struct group_list *groups){/*{{{*/
+	struct group_list *group_ptr;
 
 	/*
 	 *  Generate routines for allocating provisional types
 	 */
-	fd = fopen("provis_alloc_routines.inc", "w");
-
 	group_ptr = groups;
 	while (group_ptr) {
 		if (group_ptr->ntime_levs > 1) {
@@ -640,12 +678,14 @@ void gen_field_defs(struct group_list * groups, struct variable * vars, struct d
 		}
 		group_ptr = group_ptr->next;
 	}
-	fclose(fd);
+
+}/*}}}*/
 
 
+void write_block_allocs(FILE *fd, struct group_list *groups){/*{{{*/
+	struct group_list *group_ptr;
 
 	/* To be included in allocate_block */
-	fd = fopen("block_allocs.inc", "w");
 	group_ptr = groups;
 	while (group_ptr) {
 		fortprintf(fd, "      allocate(b %% %s)\n", group_ptr->name);
@@ -666,11 +706,13 @@ void gen_field_defs(struct group_list * groups, struct variable * vars, struct d
 		}
 		group_ptr = group_ptr->next;
 	}
-	fclose(fd);
+}/*}}}*/
 
+
+void write_block_deallocs(FILE *fd, struct group_list *groups){/*{{{*/
+	struct group_list *group_ptr;
 
 	/* To be included in deallocate_block */
-	fd = fopen("block_deallocs.inc", "w");
 	group_ptr = groups;
 	while (group_ptr) {
 		if (group_ptr->ntime_levs > 1) {
@@ -686,10 +728,20 @@ void gen_field_defs(struct group_list * groups, struct variable * vars, struct d
 		fortprintf(fd, "      deallocate(b %% %s)\n\n", group_ptr->name);
 		group_ptr = group_ptr->next;
 	}
-	fclose(fd);
+}/*}}}*/
+
+
+void write_group_alloc_routines(FILE *fd, struct group_list *groups, struct dimension *dims){/*{{{*/
+	struct group_list *group_ptr;
+	struct variable_list *var_list_ptr, *var_list_ptr2, *var_list_ptr3;
+	struct variable *var_ptr, *var_ptr2;
+	struct dimension_list *dimlist_ptr;
+	struct dimension *dim_ptr;
+	int i, new_class;
+	char var_array[1024];
+	char array_class[1024];
 
 	/* Definitions of allocate subroutines */
-	fd = fopen("group_alloc_routines.inc", "w");
 	group_ptr = groups;
 	while (group_ptr) {
 		fortprintf(fd, "   subroutine mpas_allocate_%s(b, %s, &\n", group_ptr->name, group_ptr->name);
@@ -1074,10 +1126,19 @@ void gen_field_defs(struct group_list * groups, struct variable * vars, struct d
 		fortprintf(fd, "   end subroutine mpas_allocate_%s\n\n\n", group_ptr->name);
 		group_ptr = group_ptr->next;
 	}
-	fclose(fd);
+
+}/*}}}*/
+
+
+void write_group_dealloc_routines(FILE *fd, struct group_list *groups){/*{{{*/
+	struct group_list *group_ptr;
+	struct variable_list *var_list_ptr, *var_list_ptr2;
+	struct variable *var_ptr;
+	char var_array[1024];
+	char array_class[1024];
+	int i;
 
 	/* Definitions of deallocate subroutines */
-	fd = fopen("group_dealloc_routines.inc", "w");
 	group_ptr = groups;
 	while (group_ptr) {
 		fortprintf(fd, "   subroutine mpas_deallocate_%s(%s)\n", group_ptr->name, group_ptr->name);
@@ -1127,10 +1188,19 @@ void gen_field_defs(struct group_list * groups, struct variable * vars, struct d
 		fortprintf(fd, "   end subroutine mpas_deallocate_%s\n\n\n", group_ptr->name);
 		group_ptr = group_ptr->next;
 	}
-	fclose(fd);
+
+}/*}}}*/
+
+
+void write_group_copy_routines(FILE *fd, struct group_list *groups){/*{{{*/
+	struct group_list *group_ptr;
+	struct variable_list *var_list_ptr, *var_list_ptr2;
+	struct variable *var_ptr, *var_ptr2;
+	char var_array[1024];
+	char array_class[1024];
+	int i;
 
 	/* Definitions of copy subroutines */
-	fd = fopen("group_copy_routines.inc", "w");
 	group_ptr = groups;
 	while (group_ptr) {
 		fortprintf(fd, "   subroutine mpas_copy_%s(dest, src)\n", group_ptr->name);
@@ -1176,10 +1246,18 @@ void gen_field_defs(struct group_list * groups, struct variable * vars, struct d
 		fortprintf(fd, "   end subroutine mpas_copy_%s\n\n\n", group_ptr->name);
 		group_ptr = group_ptr->next;
 	}
-	fclose(fd);
+
+}/*}}}*/
+
+
+void write_group_shift_level_routines(FILE *fd, struct group_list *groups){/*{{{*/
+	struct group_list *group_ptr;
+	struct variable_list *var_list_ptr, *var_list_ptr2;
+	struct variable *var_ptr, *var_ptr2;
+	char var_array[1024];
+	char type_str[7];
 
 	/* Definitions of shift_time_level subroutines */
-	fd = fopen("group_shift_level_routines.inc", "w");
 	group_ptr = groups;
 	while (group_ptr) {
 		if (group_ptr->vlist != NULL && group_ptr->ntime_levs > 1) {
@@ -1259,11 +1337,18 @@ void gen_field_defs(struct group_list * groups, struct variable * vars, struct d
 		}
 		group_ptr = group_ptr->next;
 	}
-	fclose(fd);
+
+}/*}}}*/
 
 
-	/* Definitions of deallocate subroutines */
-	fd = fopen("field_links.inc", "w");
+void write_field_links(FILE *fd, struct group_list *groups){/*{{{*/
+	struct group_list *group_ptr;
+	struct variable_list *var_list_ptr, *var_list_ptr2;
+	struct variable *var_ptr, *var_ptr2;
+	int i;
+	char var_array[1024];
+	char array_class[1024];
+	char outer_dim[1024];
 
 	/* subroutine to call link subroutine for every field type */
 	fortprintf(fd, "   subroutine mpas_create_field_links(b)\n\n");
@@ -1484,29 +1569,16 @@ void gen_field_defs(struct group_list * groups, struct variable * vars, struct d
 
 		group_ptr = group_ptr->next;
 	}
-	fclose(fd);
 
 }/*}}}*/
 
-void gen_reads(struct group_list * groups, struct variable * vars, struct dimension * dims)/*{{{*/
-{
-	struct variable * var_ptr;
-	struct variable_list * var_list_ptr, *var_list_ptr2;
-	struct dimension * dim_ptr;
-	struct dimension_list * dimlist_ptr, * lastdim;
-	struct group_list * group_ptr;
-	struct dtable * dictionary;
-	FILE * fd, *fd2;
-	char vtype[5];
-	char fname[32];
-	char var_array[1024];
+
+void write_add_input_fields(FILE *fd, struct group_list *groups){/*{{{*/
+	struct group_list *group_ptr;
+	struct variable_list *var_list_ptr, *var_list_ptr2;
+	struct variable *var_ptr;
 	char struct_deref[1024];
-	char * cp1, * cp2;
-	int i, j;
-	int ivtype;
-
-
-	fd = fopen("add_input_fields.inc", "w");
+	char var_array[1024];
 
 	group_ptr = groups;
 	while (group_ptr) {
@@ -1547,11 +1619,17 @@ void gen_reads(struct group_list * groups, struct variable * vars, struct dimens
 		group_ptr = group_ptr->next;
 	}
 
-	fclose(fd);
+}/*}}}*/
 
 
-	fd = fopen("exchange_input_field_halos.inc", "w");
-	fd2 = fopen("non_decomp_copy_input_fields.inc", "w");
+void write_exchange_input_field_halos(FILE *fd, struct group_list *groups){/*{{{*/
+	struct group_list *group_ptr;
+	struct variable_list *var_list_ptr, *var_list_ptr2;
+	struct dimension_list *dimlist_ptr;
+	struct variable *var_ptr;
+	char var_array[1024];
+	char struct_deref[1024];
+	int i;
 
 	group_ptr = groups;
 	while (group_ptr) {
@@ -1600,15 +1678,6 @@ void gen_reads(struct group_list * groups, struct variable * vars, struct dimens
 
 							fortprintf(fd, "         end if\n\n");
 							fortprintf(fd, "      end if\n\n");
-
-						} else {
-							fortprintf(fd2, "      if (%s %% %s %% isPersistent .and. %s %% %s %% isActive) then\n", struct_deref, var_ptr->name_in_code, struct_deref, var_ptr->name_in_code);
-							fortprintf(fd2, "         if ((%s %% %s %% ioinfo %% input .and. input_obj %% stream == STREAM_INPUT) .or. &\n", struct_deref, var_ptr->name_in_code);
-							fortprintf(fd2, "             (%s %% %s %% ioinfo %% restart .and. input_obj %% stream == STREAM_RESTART) .or. &\n", struct_deref, var_ptr->name_in_code);
-							fortprintf(fd2, "             (%s %% %s %% ioinfo %% sfc .and. input_obj %% stream == STREAM_SFC)) then\n", struct_deref, var_ptr->name_in_code);
-							fortprintf(fd2, "             call mpas_dmpar_copy_field(%s %% %s)\n", struct_deref, var_ptr->name_in_code);
-							fortprintf(fd2, "         end if\n\n");
-							fortprintf(fd2, "      end if\n\n");
 						}
 					}
 
@@ -1622,46 +1691,69 @@ void gen_reads(struct group_list * groups, struct variable * vars, struct dimens
 		group_ptr = group_ptr->next;
 	}
 
-	fclose(fd);
-	fclose(fd2);
-
 }/*}}}*/
 
-void gen_packages(struct package * pkgs){/*{{{*/
-	FILE * fd;
-	struct package * pkg_ptr;
 
-	fd = fopen("define_packages.inc", "w");
+void write_non_decomp_copy_input_fields(FILE *fd, struct group_list *groups){/*{{{*/
+	struct group_list *group_ptr;
+	struct variable_list *var_list_ptr, *var_list_ptr2;
+	struct dimension_list *dimlist_ptr;
+	struct variable *var_ptr;
+	char var_array[1024];
+	char struct_deref[1024];
+	int i;
 
-	for (pkg_ptr = pkgs; pkg_ptr; pkg_ptr = pkg_ptr->next) {
-		if (strlen(pkg_ptr->name) > 0) { 
-			fortprintf(fd, "         logical :: %sActive = .false.\n", pkg_ptr->name);
+	group_ptr = groups;
+	while (group_ptr) {
+		var_list_ptr = group_ptr->vlist;
+		while (var_list_ptr) {
+			var_ptr = var_list_ptr->var;
+
+			dimlist_ptr = var_ptr->dimlist;
+			i = 1;
+			if(var_ptr->persistence == PERSISTENT || var_ptr->persistence == PACKAGE){
+				while (dimlist_ptr) {
+					if (i == var_ptr->ndims) { 
+
+						if (group_ptr->ntime_levs > 1) {
+							snprintf(struct_deref, 1024, "domain %% blocklist %% %s %% time_levs(1) %% %s", group_ptr->name, group_ptr->name);
+						} else {
+							snprintf(struct_deref, 1024, "domain %% blocklist %% %s", group_ptr->name);
+						}
+
+						if (strncmp(dimlist_ptr->dim->name_in_file, "nCells", 1024) &&
+								strncmp(dimlist_ptr->dim->name_in_file, "nEdges", 1024) &&
+								strncmp(dimlist_ptr->dim->name_in_file, "nVertices", 1024)) {
+
+							fortprintf(fd, "      if (%s %% %s %% isPersistent .and. %s %% %s %% isActive) then\n", struct_deref, var_ptr->name_in_code, struct_deref, var_ptr->name_in_code);
+							fortprintf(fd, "         if ((%s %% %s %% ioinfo %% input .and. input_obj %% stream == STREAM_INPUT) .or. &\n", struct_deref, var_ptr->name_in_code);
+							fortprintf(fd, "             (%s %% %s %% ioinfo %% restart .and. input_obj %% stream == STREAM_RESTART) .or. &\n", struct_deref, var_ptr->name_in_code);
+							fortprintf(fd, "             (%s %% %s %% ioinfo %% sfc .and. input_obj %% stream == STREAM_SFC)) then\n", struct_deref, var_ptr->name_in_code);
+							fortprintf(fd, "             call mpas_dmpar_copy_field(%s %% %s)\n", struct_deref, var_ptr->name_in_code);
+							fortprintf(fd, "         end if\n\n");
+							fortprintf(fd, "      end if\n\n");
+						}
+					}
+
+					i++;
+					dimlist_ptr = dimlist_ptr -> next;
+				}
+			}
+
+			if (var_list_ptr) var_list_ptr = var_list_ptr->next;
 		}
+		group_ptr = group_ptr->next;
 	}
 
-	fclose(fd);
 }/*}}}*/
 
-void gen_writes(struct group_list * groups, struct variable * vars, struct dimension * dims, struct namelist * namelists)/*{{{*/
-{
-	struct variable * var_ptr;
-	struct variable_list * var_list_ptr, *var_list_ptr2;
-	struct dimension * dim_ptr;
-	struct dimension_list * dimlist_ptr, * lastdim;
-	struct group_list * group_ptr;
-	struct dtable * dictionary;
-	struct namelist * nl;
-	FILE * fd;
-	char vtype[5];
-	char fname[32];
+
+void write_add_output_fields(FILE *fd, struct group_list *groups){/*{{{*/
+	struct group_list *group_ptr;
+	struct variable_list *var_list_ptr, *var_list_ptr2;
+	struct variable *var_ptr;
 	char struct_deref[1024];
 	char var_array[1024];
-	char * cp1, * cp2;
-	int i, j;
-	int ivtype;
-
-
-	fd = fopen("add_output_fields.inc", "w");
 
 	group_ptr = groups;
 	while (group_ptr) {
@@ -1700,26 +1792,176 @@ void gen_writes(struct group_list * groups, struct variable * vars, struct dimen
 		group_ptr = group_ptr->next;
 	}
 
+}/*}}}*/
+/* }}} */
+
+
+void gen_namelists(struct namelist * nls)/*{{{*/
+{
+	FILE * fd;
+
+	fd = fopen("config_defs.inc", "w");
+	write_config_defs(fd, nls);
 	fclose(fd);
 
+	fd = fopen("config_namelist_defs.inc", "w");
+	write_config_namelist_defs(fd, nls);
+	fclose(fd);
 
-	fd = fopen("add_output_atts.inc", "w");
+	fd = fopen("config_set_defaults.inc", "w");
+	write_config_set_defaults(fd, nls);
+	fclose(fd);
 
-	nl = namelists;
-	while (nl) {
-		if (nl->vtype == LOGICAL) {
-			fortprintf(fd, "      if (%s) then\n", nl->name);
-			fortprintf(fd, "         call MPAS_writeStreamAtt(output_obj %% io_stream, \'%s\', 'T', ierr)\n", nl->name);
-			fortprintf(fd, "      else\n");
-			fortprintf(fd, "         call MPAS_writeStreamAtt(output_obj %% io_stream, \'%s\', 'F', ierr)\n", nl->name);
-			fortprintf(fd, "      end if\n");
+	fd = fopen("config_namelist_reads.inc", "w");
+	write_config_namelist_reads(fd, nls);
+	fclose(fd);
+
+	fd = fopen("config_bcast_namelist.inc", "w");
+	write_config_bcast_namelist(fd, nls);
+	fclose(fd);
+}/*}}}*/
+
+
+void gen_history_attributes(char * modelname, char * corename, char * version)/*{{{*/
+{
+	FILE *fd;
+
+	fd = fopen("model_variables.inc","w");
+	write_model_variables(fd, modelname, corename, version);
+	fclose(fd);
+}/*}}}*/
+
+
+void gen_field_defs(struct group_list * groups, struct variable * vars, struct dimension * dims)/*{{{*/
+{
+	FILE *fd;
+
+	/* *** Write dimension files *** {{{*/
+	fd = fopen("field_dimensions.inc", "w");
+	write_field_dimensions(fd, dims);
+	fclose(fd);
+
+	fd = fopen("dim_dummy_args.inc", "w");
+	write_dim_dummy_args(fd, dims);
+	fclose(fd);
+
+	fd = fopen("dim_dummy_decls.inc", "w");
+	write_dim_dummy_decls(fd, dims);
+	fclose(fd);
+
+	fd = fopen("dim_dummy_decls_inout.inc", "w");
+	write_dim_dummy_decls_inout(fd, dims);
+	fclose(fd);
+
+	fd = fopen("dim_dummy_decls_noinput.inc", "w");
+	write_dim_dummy_decls_noinput(fd, dims);
+	fclose(fd);
+
+	fd = fopen("dim_dummy_assigns.inc", "w");
+	write_dim_dummy_assigns(fd, dims);
+	fclose(fd);
+
+	fd = fopen("dim_decls.inc", "w");
+	write_dim_decls(fd, dims);
+	fclose(fd);
+
+	fd = fopen("read_dims.inc", "w");
+	write_read_dims(fd, dims);
+	fclose(fd);
+	/*}}}*/
+
+	/* *** Write variable files *** {{{*/
+	fd = fopen("time_invariant_fields.inc", "w");
+	write_time_invariant_fields(fd, groups);
+	fclose(fd);
+
+	fd = fopen("variable_groups.inc", "w");
+	write_variable_groups(fd, groups);
+	fclose(fd);
+
+	fd = fopen("block_group_members.inc", "w");
+	write_block_group_members(fd, groups);
+	fclose(fd);
+
+	fd = fopen("provis_alloc_routines.inc", "w");
+	write_provis_alloc_routines(fd, groups);
+	fclose(fd);
+
+	fd = fopen("block_allocs.inc", "w");
+	write_block_allocs(fd, groups);
+	fclose(fd);
+
+	fd = fopen("block_deallocs.inc", "w");
+	write_block_deallocs(fd, groups);
+	fclose(fd);
+
+	fd = fopen("group_alloc_routines.inc", "w");
+	write_group_alloc_routines(fd, groups, dims);
+	fclose(fd);
+
+	fd = fopen("group_dealloc_routines.inc", "w");
+	write_group_dealloc_routines(fd, groups);
+	fclose(fd);
+
+	fd = fopen("group_copy_routines.inc", "w");
+	write_group_copy_routines(fd, groups);
+	fclose(fd);
+
+	fd = fopen("group_shift_level_routines.inc", "w");
+	write_group_shift_level_routines(fd, groups);
+	fclose(fd);
+
+	fd = fopen("field_links.inc", "w");
+	write_field_links(fd, groups);
+	fclose(fd);
+	/*}}}*/
+}/*}}}*/
+
+
+void gen_reads(struct group_list * groups, struct variable * vars, struct dimension * dims)/*{{{*/
+{
+	FILE *fd;
+
+	fd = fopen("add_input_fields.inc", "w");
+	write_add_input_fields(fd, groups);
+	fclose(fd);
+
+	fd = fopen("exchange_input_field_halos.inc", "w");
+	write_exchange_input_field_halos(fd, groups);
+	fclose(fd);
+
+	fd = fopen("non_decomp_copy_input_fields.inc", "w");
+	write_non_decomp_copy_input_fields(fd, groups);
+	fclose(fd);
+}/*}}}*/
+
+
+void gen_packages(struct package * pkgs){/*{{{*/
+	FILE * fd;
+	struct package * pkg_ptr;
+
+	fd = fopen("define_packages.inc", "w");
+
+	for (pkg_ptr = pkgs; pkg_ptr; pkg_ptr = pkg_ptr->next) {
+		if (strlen(pkg_ptr->name) > 0) { 
+			fortprintf(fd, "         logical :: %sActive = .false.\n", pkg_ptr->name);
 		}
-		else {
-			fortprintf(fd, "      call MPAS_writeStreamAtt(output_obj %% io_stream, \'%s\', %s, ierr)\n", nl->name, nl->name);
-		}
-		nl = nl->next;
 	}
 
 	fclose(fd);
-
 }/*}}}*/
+
+
+void gen_writes(struct group_list * groups, struct variable * vars, struct dimension * dims, struct namelist * namelists)/*{{{*/
+{
+	FILE * fd;
+
+	fd = fopen("add_output_fields.inc", "w");
+	write_add_output_fields(fd, groups);
+	fclose(fd);
+
+	fd = fopen("add_output_atts.inc", "w");
+	write_add_output_atts(fd, namelists);
+	fclose(fd);
+}/*}}}*/
+
