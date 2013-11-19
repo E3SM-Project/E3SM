@@ -306,8 +306,6 @@ contains
     integer                           :: i,j
     logical            , save         :: first_time=.true.
     
-    save gll
-   
     if (first_time) then
       first_time = .false.
       gll=gausslobatto(np)
