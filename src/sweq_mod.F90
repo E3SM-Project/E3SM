@@ -59,6 +59,7 @@ contains
     !-----------------
     use derived_type_mod ,only : derived_type, initialize
     use precon_type_mod ,only : precon_type, init_precon
+    use solver_mod, only : solver_test, solver_test_ml
 #endif
     !-----------------
     use control_mod, only : integration, filter_mu, filter_type, transfer_type, debug_level,  &
@@ -305,14 +306,17 @@ contains
 
 !   some test code
 #if 0
-    if (hybrid%masterthread) print *,'running CG solver test'
-    call solver_test(elem,edge1,red,hybrid,deriv,nets,nete)
-    stop
-    if (hybrid%masterthread) print *,'running global integration-by-parts checks'
-    call test_ibyp(elem,hybrid,nets,nete)
-    if (hybrid%masterthread) print *,'running element divergence/edge flux checks'
-    call check_edge_flux(elem,deriv,nets,nete)
-    stop
+!#if 1
+!#ifdef TRILINOS
+!    if (hybrid%masterthread) print *,'running CG solver test'
+!    call solver_test(elem,edge1,red,hybrid,deriv,nets,nete)
+!    call solver_test_ml(elem,edge1,red,hybrid,deriv,nets,nete)
+!    stop
+!    if (hybrid%masterthread) print *,'running global integration-by-parts checks'
+!    call test_ibyp(elem,hybrid,nets,nete)
+!    if (hybrid%masterthread) print *,'running element divergence/edge flux checks'
+!    call check_edge_flux(elem,deriv,nets,nete)
+!    stop
 #endif
 
 
