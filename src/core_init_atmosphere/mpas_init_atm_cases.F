@@ -2854,11 +2854,19 @@ write(0,*) 'minval, maxval of LANDSEA = ', minval(maskslab), maxval(maskslab)
              index(field % field, 'SM040100') /= 0 .or. &
              index(field % field, 'SM100200') /= 0 .or. &
              index(field % field, 'SM010200') /= 0 .or. &
+             index(field % field, 'SM000007') /= 0 .or. &
+             index(field % field, 'SM007028') /= 0 .or. &
+             index(field % field, 'SM028100') /= 0 .or. &
+             index(field % field, 'SM100255') /= 0 .or. &
              index(field % field, 'ST000010') /= 0 .or. &
              index(field % field, 'ST010040') /= 0 .or. &
              index(field % field, 'ST040100') /= 0 .or. &
              index(field % field, 'ST100200') /= 0 .or. &
              index(field % field, 'ST010200') /= 0 .or. &
+             index(field % field, 'ST000007') /= 0 .or. &
+             index(field % field, 'ST007028') /= 0 .or. &
+             index(field % field, 'ST028100') /= 0 .or. &
+             index(field % field, 'ST100255') /= 0 .or. &
              index(field % field, 'PRES') /= 0 .or. &
              index(field % field, 'SNOW') /= 0 .or. &
              index(field % field, 'SEAICE') /= 0 .or. &
@@ -2869,11 +2877,19 @@ write(0,*) 'minval, maxval of LANDSEA = ', minval(maskslab), maxval(maskslab)
                 index(field % field, 'SM040100') /= 0 .or. &
                 index(field % field, 'SM100200') /= 0 .or. &
                 index(field % field, 'SM010200') /= 0 .or. &
+                index(field % field, 'SM000007') /= 0 .or. &
+                index(field % field, 'SM007028') /= 0 .or. &
+                index(field % field, 'SM028100') /= 0 .or. &
+                index(field % field, 'SM100255') /= 0 .or. &
                 index(field % field, 'ST000010') /= 0 .or. &
                 index(field % field, 'ST010040') /= 0 .or. &
                 index(field % field, 'ST040100') /= 0 .or. &
                 index(field % field, 'ST100200') /= 0 .or. &
                 index(field % field, 'ST010200') /= 0 .or. &
+                index(field % field, 'ST000007') /= 0 .or. &
+                index(field % field, 'ST007028') /= 0 .or. &
+                index(field % field, 'ST028100') /= 0 .or. &
+                index(field % field, 'ST100255') /= 0 .or. &
                 index(field % field, 'SNOW') /= 0 .or. &
                 index(field % field, 'SEAICE') /= 0 .or. &
                 index(field % field, 'SKINTEMP') /= 0) then
@@ -3091,6 +3107,86 @@ write(0,*) 'Interpolating SM100200'
                ndims = 2
                fg % dzs_fg % array(k,:) = 200.-100.
                fg % zs_fg  % array(k,:) = 200.
+            else if (index(field % field, 'SM000007') /= 0) then
+write(0,*) 'Interpolating SM000007'
+
+               interp_list(1) = FOUR_POINT
+               interp_list(2) = W_AVERAGE4
+               interp_list(3) = SEARCH
+               interp_list(4) = 0
+
+               maskval = 0.0
+               masked = 0
+               fillval = 1.0
+
+               nInterpPoints = grid % nCells
+               latPoints => grid % latCell % array
+               lonPoints => grid % lonCell % array
+               destField2d => fg % sm_fg % array
+               k = 1
+               ndims = 2
+               fg % dzs_fg % array(k,:) = 7.
+               fg % zs_fg  % array(k,:) = 7.
+            else if (index(field % field, 'SM007028') /= 0) then
+write(0,*) 'Interpolating SM007028'
+
+               interp_list(1) = FOUR_POINT
+               interp_list(2) = W_AVERAGE4
+               interp_list(3) = SEARCH
+               interp_list(4) = 0
+
+               maskval = 0.0
+               masked = 0
+               fillval = 1.0
+
+               nInterpPoints = grid % nCells
+               latPoints => grid % latCell % array
+               lonPoints => grid % lonCell % array
+               destField2d => fg % sm_fg % array
+               k = 2
+               ndims = 2
+               fg % dzs_fg % array(k,:) = 28.-7.
+               fg % zs_fg  % array(k,:) = 28.
+            else if (index(field % field, 'SM028100') /= 0) then
+write(0,*) 'Interpolating SM028100'
+
+               interp_list(1) = FOUR_POINT
+               interp_list(2) = W_AVERAGE4
+               interp_list(3) = SEARCH
+               interp_list(4) = 0
+
+               maskval = 0.0
+               masked = 0
+               fillval = 1.0
+
+               nInterpPoints = grid % nCells
+               latPoints => grid % latCell % array
+               lonPoints => grid % lonCell % array
+               destField2d => fg % sm_fg % array
+               k = 3
+               ndims = 2
+               fg % dzs_fg % array(k,:) = 100.-28.
+               fg % zs_fg  % array(k,:) = 100.
+            else if (index(field % field, 'SM100255') /= 0) then
+write(0,*) 'Interpolating SM100255'
+
+               interp_list(1) = FOUR_POINT
+               interp_list(2) = W_AVERAGE4
+               interp_list(3) = SEARCH
+               interp_list(4) = 0
+
+               maskval = 0.0
+               masked = 0
+               fillval = 1.0
+
+               nInterpPoints = grid % nCells
+               latPoints => grid % latCell % array
+               lonPoints => grid % lonCell % array
+               destField2d => fg % sm_fg % array
+               k = 4
+               ndims = 2
+               fg % dzs_fg % array(k,:) = 255.-100.
+               fg % zs_fg  % array(k,:) = 255.
             else if (index(field % field, 'ST000010') /= 0) then
 write(0,*) 'Interpolating ST000010'
 
@@ -3196,6 +3292,90 @@ write(0,*) 'Interpolating ST100200'
                ndims = 2
                fg % dzs_fg % array(k,:) = 200.-100.
                fg % zs_fg  % array(k,:) = 200.
+            else if (index(field % field, 'ST000007') /= 0) then
+write(0,*) 'Interpolating ST000007'
+
+               interp_list(1) = SIXTEEN_POINT
+               interp_list(2) = FOUR_POINT
+               interp_list(3) = W_AVERAGE4
+               interp_list(4) = SEARCH
+               interp_list(5) = 0
+
+               maskval = 0.0
+               masked = 0
+               fillval = 285.0
+
+               nInterpPoints = grid % nCells
+               latPoints => grid % latCell % array
+               lonPoints => grid % lonCell % array
+               destField2d => fg % st_fg % array
+               k = 1
+               ndims = 2
+               fg % dzs_fg % array(k,:) = 7.
+               fg % zs_fg  % array(k,:) = 7.
+            else if (index(field % field, 'ST007028') /= 0) then
+write(0,*) 'Interpolating ST007028'
+
+               interp_list(1) = SIXTEEN_POINT
+               interp_list(2) = FOUR_POINT
+               interp_list(3) = W_AVERAGE4
+               interp_list(4) = SEARCH
+               interp_list(5) = 0
+
+               maskval = 0.0
+               masked = 0
+               fillval = 285.0
+
+               nInterpPoints = grid % nCells
+               latPoints => grid % latCell % array
+               lonPoints => grid % lonCell % array
+               destField2d => fg % st_fg % array
+               k = 2
+               ndims = 2
+               fg % dzs_fg % array(k,:) = 28.-7.
+               fg % zs_fg  % array(k,:) = 28.
+            else if (index(field % field, 'ST028100') /= 0) then
+write(0,*) 'Interpolating ST028100'
+
+               interp_list(1) = SIXTEEN_POINT
+               interp_list(2) = FOUR_POINT
+               interp_list(3) = W_AVERAGE4
+               interp_list(4) = SEARCH
+               interp_list(5) = 0
+
+               maskval = 0.0
+               masked = 0
+               fillval = 285.0
+
+               nInterpPoints = grid % nCells
+               latPoints => grid % latCell % array
+               lonPoints => grid % lonCell % array
+               destField2d => fg % st_fg % array
+               k = 3
+               ndims = 2
+               fg % dzs_fg % array(k,:) = 100.-28.
+               fg % zs_fg  % array(k,:) = 100.
+            else if (index(field % field, 'ST100255') /= 0) then
+write(0,*) 'Interpolating ST100255'
+
+               interp_list(1) = SIXTEEN_POINT
+               interp_list(2) = FOUR_POINT
+               interp_list(3) = W_AVERAGE4
+               interp_list(4) = SEARCH
+               interp_list(5) = 0
+
+               maskval = 0.0
+               masked = 0
+               fillval = 285.0
+
+               nInterpPoints = grid % nCells
+               latPoints => grid % latCell % array
+               lonPoints => grid % lonCell % array
+               destField2d => fg % st_fg % array
+               k = 4
+               ndims = 2
+               fg % dzs_fg % array(k,:) = 255.-100.
+               fg % zs_fg  % array(k,:) = 255.
             else if (index(field % field, 'SNOW') /= 0) then
 write(0,*) 'Interpolating SNOW'
 
