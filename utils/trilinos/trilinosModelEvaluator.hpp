@@ -300,38 +300,6 @@ private:
 /*******************************************************************************/
 /*******************************************************************************/
 /*******************************************************************************/
-class simplePreconditioner : public hommePreconditionerBase {
-public:
-  simplePreconditioner(int N, RCP<Epetra_Vector> xVec, RCP<Epetra_Map> xMap,
-                       void* blackbox_res, void* precdata,
-                       void (*precFunctionblock11)(double *,int,double*,void *),
-                       void (*precFunctionblock12)(double *,int,double*,void *),
-                       void (*precFunctionblock21)(double *,int,double*,void *),
-                       void (*precFunctionblock22)(double *,int,double*,void *),
-                       void (*precUpdateFunction)(double *,int,void *) );
-
-  int ApplyInverse(const Epetra_MultiVector& V, Epetra_MultiVector& Y) const;
-  int computePreconditioner(RCP<const Epetra_Vector> xVec, void* precdata_);
-
-private:
-  int N;
-  bool printproc;
-  RCP<Epetra_Vector> xVec;
-  RCP<Epetra_Map> xMap;
-  void* blackbox_res;
-  void* precdata;
-  void (*precFunctionblock11)(double *,int,double*,void *);
-  void (*precFunctionblock12)(double *,int,double*,void *);
-  void (*precFunctionblock21)(double *,int,double*,void *);
-  void (*precFunctionblock22)(double *,int,double*,void *);
-  void (*precUpdateFunction)(double *,int,void *);
-  RCP<Epetra_Operator>F;
-  RCP<Epetra_Operator>S;
-
-};
-/*******************************************************************************/
-/*******************************************************************************/
-/*******************************************************************************/
 class simpleClipPreconditioner : public hommePreconditionerBase {
 public:
   simpleClipPreconditioner(int N, RCP<Epetra_Vector> xVec, RCP<Epetra_Map> xMap,
