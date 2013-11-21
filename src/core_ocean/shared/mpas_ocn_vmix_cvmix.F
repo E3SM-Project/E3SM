@@ -127,7 +127,7 @@ contains
       real (kind=RKIND), dimension(:,:,:), pointer :: vertNonLocalTrans
       integer :: index_nonLocalTemp, index_nonLocalSalt, index_nonLocalZonalVel, index_nonLocalMeridVel
 
-      integer :: iCell, nVertLevels
+      integer :: k, iCell, nVertLevels
 
       !-----------------------------------------------------------------
       !
@@ -276,8 +276,9 @@ contains
 
         ! call kpp ocean mixed layer scheme
         if (config_use_cvmix_kpp) then
-          cvmix_variables % visc_iface(:)=0.0
-          cvmix_variables % diff_iface(:,:)=0.0
+          cvmix_variables % visc_iface(:)=vertViscTopOfCell(:,iCell)
+          cvmix_variables % diff_iface(:,1)=vertDiffTopOfCell(:,iCell)
+          cvmix_variables % diff_iface(:,2)=vertDiffTopOfCell(:,iCell)
           cvmix_variables % kpp_transport_iface(:,:)=0.0
 
           ! compute the boundary layer depth
@@ -294,10 +295,12 @@ contains
                  CVmix_vars = cvmix_variables, &
                  CVmix_kpp_params_user = cvmix_kpp_params )
 
-          ! add KPP mixing to vertical viscosity/diffusivity
-          ! TDR: need to be sure of think through the merging in the OBL region
-          vertViscTopOfCell(:,iCell) = vertViscTopOfCell(:,iCell) + cvmix_variables % visc_iface(:)
-          vertDiffTopOfCell(:,iCell) = vertDiffTopOfCell(:,iCell) + cvmix_variables % diff_iface(:,1)
+          ! overwrite viscosity/diffusivity from surface through OBL depth
+          do k=1,cvmix_variables % kOBL_depth
+            vertViscTopOfCell(:,iCell) = cvmix_variables % visc_iface(:)
+            vertDiffTopOfCell(:,iCell) = cvmix_variables % diff_iface(:,1)
+          enddo
+
           vertNonLocalTrans(index_nonLocalTemp,:,iCell) = cvmix_variables % kpp_transport_iface(:,1)
           vertNonLocalTrans(index_nonLocalSalt,:,iCell) = cvmix_variables % kpp_transport_iface(:,2)
           vertNonLocalTrans(index_nonLocalZonalVel,:,iCell) = cvmix_variables % kpp_transport_iface(:,3)
@@ -391,7 +394,6 @@ contains
                bkgnd_diff = config_cvmix_background_diffusion, &
                bkgnd_visc = config_cvmix_background_viscosity, &
                CVmix_bkgnd_params_user = cvmix_background_params)
-!       write(stdoutUnit,*) 'cvmix_init_bkgnd',config_use_cvmix_background
       endif
 
       !
@@ -420,18 +422,21 @@ contains
                lBruntVaisala = config_cvmix_convective_basedOnBVF, &
                BVsqr_convect = config_cvmix_convective_triggerBVF, &
                CVmix_conv_params_user = cvmix_conv_params)
-!       write(stdoutUnit,*) 'cvmix_init_conv',config_use_cvmix_convection
       endif
 
       !
       ! if using the KPP boundary layer scheme, put parameters into cvmix_kpp_params
       !
       if (config_use_cvmix_kpp) then
-        call cvmix_init_kpp ( CVmix_kpp_params_user = cvmix_kpp_params )
-!       write(stdoutUnit,*) 'cvmix_init_kpp',config_use_cvmix_kpp
+        call cvmix_init_kpp ( &
+               ri_crit = config_cvmix_kpp_criticalBulkRichardsonNumber, &
+               interp_type = config_cvmix_kpp_interpolationOMLType, &
+               lEkman = config_cvmix_kpp_EkmanOBL, &
+               lMonOb = config_cvmix_kpp_MonObOBL, &
+               MatchTechnique = config_cvmix_kpp_matching, &
+               CVmix_kpp_params_user = cvmix_kpp_params )
       endif
 
-!     write(stdoutUnit,*) 'ocn_vmix_cvmix_init complete'
 
    !--------------------------------------------------------------------
 
