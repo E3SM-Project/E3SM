@@ -56,7 +56,6 @@ module ocn_vmix_cvmix
    type(cvmix_bkgnd_params_type)  :: cvmix_background_params
    type(cvmix_conv_params_type) :: cvmix_conv_params
    type(cvmix_shear_params_type) :: cvmix_shear_params
-   type(cvmix_kpp_params_type) :: cvmix_kpp_params
    type(cvmix_data_type) :: cvmix_variables
 
 
@@ -259,20 +258,13 @@ contains
           vertViscTopOfCell(:,iCell) = vertViscTopOfCell(:,iCell) + cvmix_variables % visc_iface(:)
           vertDiffTopOfCell(:,iCell) = vertDiffTopOfCell(:,iCell) + cvmix_variables % diff_iface(:,1)
 
-        endif
+          ! NOTE: at present, cvmix_coeffs_shear add in the background viscosity/diffusivity
+          ! NOTE: the following two source code lines remove this double counting of the background
+          ! NOTE: the following two source code lines should be deleted with cvmix_coeffs_shear is "fixed"
+          vertViscTopOfCell(:,iCell) = vertViscTopOfCell(:,iCell) - config_cvmix_background_viscosity
+          vertDiffTopOfCell(:,iCell) = vertDiffTopOfCell(:,iCell) - config_cvmix_background_diffusion
 
-        ! call convective mixing scheme
-        if (config_use_cvmix_convection) then
-          cvmix_variables % visc_iface(:)=0.0
-          cvmix_variables % diff_iface(:,:)=0.0
-          call cvmix_coeffs_conv( & 
-                 CVmix_vars = cvmix_variables,  &
-                 CVmix_conv_params_user = cvmix_conv_params)
-
-          ! add convective mixing to vertical viscosity/diffusivity
-          vertViscTopOfCell(:,iCell) = vertViscTopOfCell(:,iCell) + cvmix_variables % visc_iface(:)
-          vertDiffTopOfCell(:,iCell) = vertDiffTopOfCell(:,iCell) + cvmix_variables % diff_iface(:,1)
-        endif
+        endif ! if (config_use_cvmix_shear)
 
         ! call kpp ocean mixed layer scheme
         if (config_use_cvmix_kpp) then
@@ -283,32 +275,58 @@ contains
 
           ! compute the boundary layer depth
           call cvmix_kpp_compute_OBL_depth( &
-                 CVmix_vars = cvmix_variables, &
-                 CVmix_kpp_params_user = cvmix_kpp_params )
+                 CVmix_vars = cvmix_variables)
 
           ! intent out of OBL_depth is boundary layer depth measured in meters and vertical index
           diagnostics % boundaryLayerDepth % array(iCell) = cvmix_variables % OBL_depth
           diagnostics % indexBoundaryLayerDepth % array(iCell) = cvmix_variables % kOBL_depth
 
           ! given OBL and vertical profile of visc/diff, compute boundary layer mixing
-          call cvmix_coeffs_kpp( &
-                 CVmix_vars = cvmix_variables, &
-                 CVmix_kpp_params_user = cvmix_kpp_params )
+          call cvmix_coeffs_kpp( CVmix_vars = cvmix_variables )
 
-          ! overwrite viscosity/diffusivity from surface through OBL depth
-          do k=1,cvmix_variables % kOBL_depth
+          ! if using KPP with "MatchBoth"   matching, then the output from KPP is the full viscosity/diffusivity
+          ! if using KPP with "SimpleShape" matching, then the output from KPP needs to be added to current viscosity/diffusivity
+          if(config_cvmix_kpp_matching.eq."MatchBoth") then
             vertViscTopOfCell(:,iCell) = cvmix_variables % visc_iface(:)
             vertDiffTopOfCell(:,iCell) = cvmix_variables % diff_iface(:,1)
-          enddo
+          elseif(config_cvmix_kpp_matching.eq."SimpleShapes") then
+            vertViscTopOfCell(:,iCell) = vertViscTopOfCell(:,iCell) + cvmix_variables % visc_iface(:)
+            vertDiffTopOfCell(:,iCell) = vertDiffTopOfCell(:,iCell) + cvmix_variables % diff_iface(:,1)
+          else
+            stop
+          endif
 
+          ! store non-local transport terms
           vertNonLocalTrans(index_nonLocalTemp,:,iCell) = cvmix_variables % kpp_transport_iface(:,1)
           vertNonLocalTrans(index_nonLocalSalt,:,iCell) = cvmix_variables % kpp_transport_iface(:,2)
           vertNonLocalTrans(index_nonLocalZonalVel,:,iCell) = cvmix_variables % kpp_transport_iface(:,3)
           vertNonLocalTrans(index_nonLocalMeridVel,:,iCell) = cvmix_variables % kpp_transport_iface(:,4)
 
-        endif
+        endif ! if (config_use_cvmix_kpp)
 
-      enddo
+        ! call convective mixing scheme
+        if (config_use_cvmix_convection) then
+          cvmix_variables % visc_iface(:)=0.0
+          cvmix_variables % diff_iface(:,:)=0.0
+          call cvmix_coeffs_conv( &
+                 CVmix_vars = cvmix_variables,  &
+                 CVmix_conv_params_user = cvmix_conv_params)
+
+          ! add convective mixing to vertical viscosity/diffusivity
+          ! if using KPP, then do not apply convective mixing within the ocean boundary layer
+          if(config_use_cvmix_kpp) then
+            do k=int(diagnostics % indexBoundaryLayerDepth % array(iCell))+1,mesh % maxLevelCell % array(iCell)
+              vertViscTopOfCell(:,iCell) = vertViscTopOfCell(:,iCell) + cvmix_variables % visc_iface(:)
+              vertDiffTopOfCell(:,iCell) = vertDiffTopOfCell(:,iCell) + cvmix_variables % diff_iface(:,1)
+            enddo
+          else
+            vertViscTopOfCell(:,iCell) = vertViscTopOfCell(:,iCell) + cvmix_variables % visc_iface(:)
+            vertDiffTopOfCell(:,iCell) = vertDiffTopOfCell(:,iCell) + cvmix_variables % diff_iface(:,1)
+          endif
+        endif  ! if (config_use_cvmix_convection)
+
+      enddo  ! do iCell=1,mesh%nCellsSolve
+
       deallocate(cvmix_variables % visc_iface)
       deallocate(cvmix_variables % diff_iface)
       deallocate(cvmix_variables % zw_iface)
@@ -434,7 +452,7 @@ contains
                lEkman = config_cvmix_kpp_EkmanOBL, &
                lMonOb = config_cvmix_kpp_MonObOBL, &
                MatchTechnique = config_cvmix_kpp_matching, &
-               CVmix_kpp_params_user = cvmix_kpp_params )
+               surf_layer_ext = config_cvmix_kpp_surface_layer_extent) 
       endif
 
 
@@ -449,4 +467,5 @@ end module ocn_vmix_cvmix
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 
 ! vim: foldmethod=marker
+
 

@@ -496,7 +496,6 @@
 					description="determines how the KPP diffusivities are matched to values at base of boundary layer"
 					possible_values="MatchBoth, MatchGradient, SimpleShapes"
 		/>
-
                 <nml_option name="config_cvmix_kpp_EkmanOBL" type="logical" default_value=".false." units="NA"
                                         description="If true, boundary layer depth is limited by Ekman layer depth"
                                         possible_values="True or False"
@@ -508,6 +507,10 @@
                 <nml_option name="config_cvmix_kpp_interpolationOMLType" type="character" default_value="quadratic" units="unitless"
                                         description="determine bottom of ocean mixed layer using linear, quadratic or cubic interpolation"
                                         possible_values="linear, quadratic, cubic"
+                />
+                <nml_option name="config_cvmix_kpp_surface_layer_extent" type="real" default_value="0.1" units="non-dimensional"
+                                        description="The non-dimensional extent of the surface layer, measured as fraction of boundary layer depth"
+                                        possible_values="Any positive real value between 0 and 1"
                 />
 	</nml_record>
 	<nml_record name="forcing" in_defaults="true">
