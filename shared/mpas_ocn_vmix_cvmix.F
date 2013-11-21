@@ -193,7 +193,7 @@ contains
       !
       ! set pointer for nonlocal transport and intialize to zero
       !
-      vertNonLocalTrans = diagnostics % vertNonLocalTrans % array(:,:,:)
+      vertNonLocalTrans => diagnostics % vertNonLocalTrans % array
       index_nonLocalTemp = diagnostics % index_vertNonLocalTransTemp
       index_nonLocalSalt = diagnostics % index_vertNonLocalTransSalt
       index_nonLocalZonalVel = diagnostics % index_vertNonLocalTransZonalVel
@@ -301,6 +301,9 @@ contains
           vertNonLocalTrans(index_nonLocalSalt,:,iCell) = cvmix_variables % kpp_transport_iface(:,2)
           vertNonLocalTrans(index_nonLocalZonalVel,:,iCell) = cvmix_variables % kpp_transport_iface(:,3)
           vertNonLocalTrans(index_nonLocalMeridVel,:,iCell) = cvmix_variables % kpp_transport_iface(:,4)
+
+          ! TDR
+          write(6,*) ' TDR max :', maxval(cvmix_variables % kpp_transport_iface(:,1))
 
         endif ! if (config_use_cvmix_kpp)
 
