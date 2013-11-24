@@ -106,19 +106,21 @@ contains
 
     if(Ios%IOProc) then
        allocate(count(size(index)))
-       if(Ios%io_rank == 0) then
+!       if(Ios%io_rank == 0) then
           count(:) = 1
           count(1) = len(ival)
-       else
-          count(:) = 0
-       end if
+!       else
+!          count(:) = 0
+!       end if
 
        select case (iotype) 
 #ifdef _PNETCDF
        case(pio_iotype_pnetcdf)
-#ifdef USE_INDEP_WRITE
+!#ifdef USE_INDEP_WRITE
           ierr = nfmpi_begin_indep_data(File%fh)
+          
           if(Ios%io_rank==0 .and. (ierr==NF_EINDEP .or. ierr==PIO_NOERR)) then
+             print *,__FILE__,__LINE__,index,count,trim(ival)
              ierr = nfmpi_put_vara (File%fh, varid, int(index,kind=PIO_OFFSET), &
                   int(count,kind=PIO_OFFSET), ival, int(count,kind=PIO_OFFSET), &
                   MPI_CHARACTER)
@@ -126,10 +128,11 @@ contains
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
-#else
-             ierr = nfmpi_put_vara_all (File%fh, varid, int(index,kind=PIO_OFFSET), &
-                  int(count,kind=PIO_OFFSET), ival)
-#endif
+!#else
+!          print *,__FILE__,__LINE__,index,count,trim(ival)
+!            ierr = nfmpi_put_vara_all (File%fh, varid, int(index,kind=PIO_OFFSET), &
+!                  int(count,kind=PIO_OFFSET), ival)
+!#endif
 
 #endif
 #ifdef _NETCDF
@@ -214,7 +217,7 @@ contains
           else
              count(:) = 0
           end if
-#ifdef USE_INDEP_WRITE
+!#ifdef USE_INDEP_WRITE
           ierr = nfmpi_begin_indep_data(File%fh)
           if(Ios%io_rank==0 .and. (ierr==NF_EINDEP .or. ierr==PIO_NOERR)) then
              ierr = nfmpi_put_vara (File%fh, varid, int(index,kind=PIO_OFFSET), int(count,kind=PIO_OFFSET), &
@@ -223,11 +226,10 @@ contains
           if(ierr==PIO_NOERR) then
              ierr = nfmpi_end_indep_data(File%fh)
           end if
-#else
-          ierr = nfmpi_put_vara_all (File%fh, varid, int(index,kind=PIO_OFFSET), int(count,kind=PIO_OFFSET), &
-               ival)
-
-#endif
+!#else
+!          ierr = nfmpi_put_vara_all (File%fh, varid, int(index,kind=PIO_OFFSET), int(count,kind=PIO_OFFSET), &
+!               ival)
+!#endif
           deallocate(count)
 #endif
 #ifdef _NETCDF
