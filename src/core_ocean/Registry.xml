@@ -841,6 +841,7 @@
 			<var name="salinityRestore"/>
 			<var name="restingThickness"/>
 			<var name="surfaceWindStress"/>
+			<var name="boundaryLayerDepth"/>
 			<var name="indexBoundaryLayerDepth"/>
 		</stream>
 		<stream name="restart" type="restart">
@@ -904,6 +905,7 @@
 			<var name="xtime"/>
 			<var name="surfaceWindStress"/>
 			<var name="seaSurfacePressure"/>
+			<var name="boundaryLayerDepth"/>
 			<var name="indexBoundaryLayerDepth"/>
 		</stream>
 		<stream name="output" type="output">
@@ -1000,7 +1002,7 @@
 			<var name="surfaceFrictionVelocity"/>
 			<var name="windStressZonalDiag"/>
 			<var name="windStressMeridionalDiag"/>
-			<var name="buoyancyForcingOBL"/>
+			<var name="surfaceBuoyancyForcing"/>
 			<var name="areaCellGlobal"/>
 			<var name="areaEdgeGlobal"/>
 			<var name="areaTriangleGlobal"/>
@@ -1567,7 +1569,7 @@
 		<var name="bulkRichardsonNumber" type="real" dimensions="nVertLevels nCells Time" units="nondimensional"
 			 description="bulk Richardson number"
 		/>
-		<var name="boundaryLayerDepth" type="real" dimensions="nCells Time" streams="iro" units="m"
+		<var name="boundaryLayerDepth" type="real" dimensions="nCells Time" units="m"
 			 description="diagnosed depth of the ocean surface boundary layer"
 		/>
 		<var_array name="vertNonLocalFlux" type="real" dimensions="nVertLevelsP1 nCells Time">
@@ -1599,8 +1601,8 @@
 		<var name="penetrativeTemperatureFluxOBL" type="real" dimensions="nCells Time" units="^\circ C m s^{-1}"
 			 description="Penetrative temperature flux at the bottom of boundary layer due to solar radiation. Positive is into the ocean."
 		/>
-		<var name="buoyancyForcingOBL" type="real" dimensions="nCells Time" units="m s^{-3}"
-			 description="diagnosed buoyancy forcing due to heat, salt and freshwater fluxes averaged over ocean boundary layer depth"
+		<var name="surfaceBuoyancyForcing" type="real" dimensions="nCells Time" units="m^2 s^{-3}"
+			 description="diagnosed surface buoyancy flux due to heat, salt and freshwater fluxes. Positive flux increases buoyancy."
 		/>
 
 		<var name="areaCellGlobal" type="real" dimensions="Time" units="m^2"
