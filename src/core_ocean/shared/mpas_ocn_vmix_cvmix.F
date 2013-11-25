@@ -123,7 +123,7 @@ contains
         vertViscTopOfCell, vertDiffTopOfCell, layerThickness, &
         bulkRichardsonNumber, zMid, zTop, density, displacedDensity, potentialDensity
 
-      real (kind=RKIND), dimension(:,:,:), pointer :: vertNonLocalTrans
+      real (kind=RKIND), dimension(:,:,:), pointer :: vertNonLocalFlux
       integer :: index_nonLocalTemp, index_nonLocalSalt, index_nonLocalZonalVel, index_nonLocalMeridVel
 
       integer :: k, iCell, nVertLevels
@@ -191,15 +191,15 @@ contains
       vertDiffTopOfCell = 0.0
 
       !
-      ! set pointer for nonlocal transport and intialize to zero
+      ! set pointer for nonlocal Flux and intialize to zero
       !
-      vertNonLocalTrans => diagnostics % vertNonLocalTrans % array
-      index_nonLocalTemp = diagnostics % index_vertNonLocalTransTemp
-      index_nonLocalSalt = diagnostics % index_vertNonLocalTransSalt
-      index_nonLocalZonalVel = diagnostics % index_vertNonLocalTransZonalVel
-      index_nonLocalMeridVel = diagnostics % index_vertNonLocalTransMeridVel
+      vertNonLocalFlux => diagnostics % vertNonLocalFlux % array
+      index_nonLocalTemp = diagnostics % index_vertNonLocalFluxTemp
+      index_nonLocalSalt = diagnostics % index_vertNonLocalFluxSalt
+      index_nonLocalZonalVel = diagnostics % index_vertNonLocalFluxZonalVel
+      index_nonLocalMeridVel = diagnostics % index_vertNonLocalFluxMeridVel
 
-      vertNonLocalTrans = 0.0
+      vertNonLocalFlux = 0.0
 
       !
       ! start by setting visocity/diffusivity to there mininum background values
@@ -296,14 +296,11 @@ contains
             stop
           endif
 
-          ! store non-local transport terms
-          vertNonLocalTrans(index_nonLocalTemp,:,iCell) = cvmix_variables % kpp_transport_iface(:,1)
-          vertNonLocalTrans(index_nonLocalSalt,:,iCell) = cvmix_variables % kpp_transport_iface(:,2)
-          vertNonLocalTrans(index_nonLocalZonalVel,:,iCell) = cvmix_variables % kpp_transport_iface(:,3)
-          vertNonLocalTrans(index_nonLocalMeridVel,:,iCell) = cvmix_variables % kpp_transport_iface(:,4)
-
-          ! TDR
-          write(6,*) ' TDR max :', maxval(cvmix_variables % kpp_transport_iface(:,1))
+          ! store non-local flux terms
+          vertNonLocalFlux(index_nonLocalTemp,:,iCell) = cvmix_variables % kpp_transport_iface(:,1)
+          vertNonLocalFlux(index_nonLocalSalt,:,iCell) = cvmix_variables % kpp_transport_iface(:,2)
+          vertNonLocalFlux(index_nonLocalZonalVel,:,iCell) = cvmix_variables % kpp_transport_iface(:,3)
+          vertNonLocalFlux(index_nonLocalMeridVel,:,iCell) = cvmix_variables % kpp_transport_iface(:,4)
 
         endif ! if (config_use_cvmix_kpp)
 
