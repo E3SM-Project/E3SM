@@ -492,7 +492,7 @@
 					description="critical bulk Richardson number used to determine bottom of ocean mixed layer"
 					possible_values="Any positive real value."
 		/>
-		<nml_option name="config_cvmix_kpp_matching" type="character" default_value="MatchBoth" units="unitless"
+		<nml_option name="config_cvmix_kpp_matching" type="character" default_value="SimpleShapes" units="unitless"
 					description="determines how the KPP diffusivities are matched to values at base of boundary layer"
 					possible_values="MatchBoth, MatchGradient, SimpleShapes"
 		/>
