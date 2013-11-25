@@ -841,6 +841,7 @@
 			<var name="salinityRestore"/>
 			<var name="restingThickness"/>
 			<var name="surfaceWindStress"/>
+			<var name="indexBoundaryLayerDepth"/>
 		</stream>
 		<stream name="restart" type="restart">
 			<var name="temperature"/>
@@ -903,6 +904,7 @@
 			<var name="xtime"/>
 			<var name="surfaceWindStress"/>
 			<var name="seaSurfacePressure"/>
+			<var name="indexBoundaryLayerDepth"/>
 		</stream>
 		<stream name="output" type="output">
 			<var name="temperature"/>

@@ -318,8 +318,8 @@ contains
           ! if using KPP, then do not apply convective mixing within the ocean boundary layer
           if(config_use_cvmix_kpp) then
             do k=int(diagnostics % indexBoundaryLayerDepth % array(iCell))+1,mesh % maxLevelCell % array(iCell)
-              vertViscTopOfCell(:,iCell) = vertViscTopOfCell(:,iCell) + cvmix_variables % visc_iface(:)
-              vertDiffTopOfCell(:,iCell) = vertDiffTopOfCell(:,iCell) + cvmix_variables % diff_iface(:,1)
+              vertViscTopOfCell(k,iCell) = vertViscTopOfCell(k,iCell) + cvmix_variables % visc_iface(k)
+              vertDiffTopOfCell(k,iCell) = vertDiffTopOfCell(k,iCell) + cvmix_variables % diff_iface(k,1)
             enddo
           else
             vertViscTopOfCell(:,iCell) = vertViscTopOfCell(:,iCell) + cvmix_variables % visc_iface(:)
@@ -462,7 +462,6 @@ contains
                KPP_nu_zero = config_cvmix_shear_KPP_nu_zero, &
                KPP_Ri_zero = config_cvmix_shear_KPP_Ri_zero, &
                KPP_exp = config_cvmix_shear_KPP_exp)
-        write(6,*) 'cvmix_init_shear',config_use_cvmix_shear
       endif
 
       !
