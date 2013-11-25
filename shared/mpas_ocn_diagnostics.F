@@ -906,7 +906,7 @@ contains
 !> \date    20 August 2013
 !> \details
 !>    CVMix/KPP requires the following fields as intent(in):
-!>       buoyancyForcingOBL
+!>       surfaceBuoyancyForcing
 !>       surfaceFrictionVelocity
 !>       bulkRichardsonNumber
 !>
@@ -931,7 +931,7 @@ contains
       ! real pointers
       real (kind=RKIND), dimension(:), pointer :: dcEdge, dvEdge, areaCell
       real (kind=RKIND), dimension(:), pointer :: penetrativeTemperatureFlux, surfaceMassFlux, &
-           buoyancyForcingOBL, surfaceFrictionVelocity, boundaryLayerDepth, penetrativeTemperatureFluxOBL
+           surfaceBuoyancyForcing, surfaceFrictionVelocity, boundaryLayerDepth, penetrativeTemperatureFluxOBL
       real (kind=RKIND), dimension(:), pointer :: surfaceWindStress, surfaceWindStressMagnitude
       real (kind=RKIND), dimension(:,:), pointer ::  &
            layerThickness, zMid, zTop, bulkRichardsonNumber, tracersSurfaceValues, densitySurfaceDisplaced, density, &
@@ -969,7 +969,7 @@ contains
       boundaryLayerDepth            => diagnostics % boundaryLayerDepth % array
       surfaceFrictionVelocity       => diagnostics % surfaceFrictionVelocity % array
       penetrativeTemperatureFluxOBL => diagnostics % penetrativeTemperatureFluxOBL % array
-      buoyancyForcingOBL            => diagnostics % buoyancyForcingOBL % array
+      surfaceBuoyancyForcing            => diagnostics % surfaceBuoyancyForcing % array
 
       normalVelocity => state % normalVelocity % array
 
@@ -1012,13 +1012,13 @@ contains
        !    1. Tm: temperature associated with surfaceMassFlux, C  (here we assume Tm == temperatureSurfaceValue)
        !    2. Sm: salinity associated with surfaceMassFlux, PSU (here we assume Sm == salinitySurfaceValue and account for salinity flux in surfaceTracerFlux array)
        !
-         buoyancyForcingOBL(iCell) =  thermalExpansionCoeff (1,iCell) *  &
+         surfaceBuoyancyForcing(iCell) =  thermalExpansionCoeff (1,iCell) *  &
                (surfaceTracerFlux(indexTempFlux,iCell) + penetrativeTemperatureFlux(iCell) - penetrativeTemperatureFluxOBL(iCell)) &
               - salineContractionCoeff(1,iCell) *  surfaceTracerFlux(indexSaltFlux,iCell)
         
-       ! at this point, buoyancyForcingOBL has units of m/s 
-       ! change into units of m/s^3 (which can be thought of as units of buoyancy per second)
-         buoyancyForcingOBL(iCell) = buoyancyForcingOBL(iCell) * gravity / max(boundaryLayerDepth(iCell),layerThickness(1,iCell))
+       ! at this point, surfaceBuoyancyForcing has units of m/s 
+       ! change into units of m^2/s^3 (which can be thought of as the flux of buoyancy, units of buoyancy * velocity )
+         surfaceBuoyancyForcing(iCell) = surfaceBuoyancyForcing(iCell) * gravity
 
        ! compute magnitude of surface windstress
         deltaVelocitySquared = 0.0

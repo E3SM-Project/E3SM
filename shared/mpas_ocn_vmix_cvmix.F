@@ -117,7 +117,7 @@ contains
         maxLevelCell
 
       real (kind=RKIND), dimension(:), pointer :: &
-        latCell, lonCell, bottomDepth, buoyancyForcingOBL, surfaceFrictionVelocity, fCell 
+        latCell, lonCell, bottomDepth, surfaceBuoyancyForcing, surfaceFrictionVelocity, fCell 
         
       real (kind=RKIND), dimension(:,:), pointer :: &
         vertViscTopOfCell, vertDiffTopOfCell, layerThickness, &
@@ -180,7 +180,7 @@ contains
       ! set pointers for fields related ocean forcing at surface
       !
       surfaceFrictionVelocity => diagnostics % surfaceFrictionVelocity % array(:)
-      buoyancyForcingOBL => diagnostics % buoyancyForcingOBL % array(:)
+      surfaceBuoyancyForcing => diagnostics % surfaceBuoyancyForcing % array(:)
 
       !
       ! set pointers for viscosity/diffusivity and intialize to zero
@@ -243,7 +243,7 @@ contains
 
         ! fill the intent(in) KPP
         cvmix_variables % surf_fric = diagnostics % surfaceFrictionVelocity % array(iCell)
-        cvmix_variables % surf_buoy = diagnostics % buoyancyForcingOBL % array(iCell)
+        cvmix_variables % surf_buoy = diagnostics % surfaceBuoyancyForcing % array(iCell)
         cvmix_variables % Rib => diagnostics % BulkRichardsonNumber % array(1:nVertLevels,iCell)
 
         ! call shear-based mixing scheme
@@ -335,10 +335,40 @@ contains
       if (config_use_cvmix_kpp) then
         do iCell=1,mesh%nCells
   
-         ! compute the boundary layer depth based on model state at current time step
-         ! boundaryLayerDepth is then smoothed and a halo update is applied elsewhere
-         call cvmix_kpp_compute_OBL_depth( CVmix_vars = cvmix_variables)
-  
+       ! sigma(1) = 0.0
+       ! layerSum = 0.0
+       ! do k=2,maxLevelCell(iCell)
+       !   layerSum = layerSum + layerThickness(k-1,iCell)
+       !   sigma(k) = layerSum / diagnostics % boundaryLayerDepth % array(iCell)
+       ! enddo
+       ! do k=maxLevelCell(iCell),nVertLevels
+       !   sigma(k) = sigma(maxLevelCell(iCell))
+       ! enddo
+
+         ! the computation of the boundary layer depth is iterative
+       ! do iter=1,2
+
+           ! compute the turbulent scales in order to compute the bulk Richardson number
+       !   call cvmix_kpp_compute_turbulent_scales( &
+       !     sigma = sigma, &
+       !     OBL_depth = diagnostics % boundaryLayerDepth % array(iCell), &
+       !     surf_buoy = diagnostics % surfaceBuoyancyForcing % array(iCell), &
+       !     surf_fric = diagnostics % surfaceFrictionVelocity % array(iCell),  &
+       !     w_s = turbulentVelocityScale )
+
+       !   cvmix_variables % Rib = cvmix_kpp_compute_bulk_Richardson( &
+       !     zt_cntr = diagnostics % zMid % array(1:nVertLevels,iCell), & 
+       !     delta_buoy_cntr = , &
+       !     delta_Vsqr_cntr,    &
+       !     ws_cntr = w_s , &
+       !     Nsqr_iface = diagnostics % BruntVaisalaFreqTop % array(:,iCell) )
+
+           ! compute the boundary layer depth based on model state at current time step
+           ! boundaryLayerDepth is then smoothed and a halo update is applied elsewhere
+           call cvmix_kpp_compute_OBL_depth( CVmix_vars = cvmix_variables)
+
+       ! enddo
+
          ! intent out of OBL_depth is boundary layer depth measured in meters and vertical index
          diagnostics % boundaryLayerDepth % array(iCell) = cvmix_variables % OBL_depth
          diagnostics % indexBoundaryLayerDepth % array(iCell) = cvmix_variables % kOBL_depth
