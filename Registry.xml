@@ -1051,10 +1051,10 @@
 			<var name="nAccumulatedCoupled"/>
 			<var name="thermalExpansionCoeff"/>
 			<var name="salineContractionCoeff"/>
-			<var name="vertNonLocalTransTemp"/>
-			<var name="vertNonLocalTransSalt"/>
-			<var name="vertNonLocalTransZonalVel"/>
-			<var name="vertNonLocalTransMeridVel"/>
+			<var name="vertNonLocalFluxTemp"/>
+			<var name="vertNonLocalFluxSalt"/>
+			<var name="vertNonLocalFluxZonalVel"/>
+			<var name="vertNonLocalFluxMeridVel"/>
 		</stream>
 	</streams>
 	<var_struct name="state" time_levs="2">
@@ -1561,25 +1561,25 @@
 		<var name="bulkRichardsonNumber" type="real" dimensions="nVertLevels nCells Time" units="nondimensional"
 			 description="bulk Richardson number"
 		/>
-		<var name="boundaryLayerDepth" type="real" dimensions="nCells Time" units="m"
+		<var name="boundaryLayerDepth" type="real" dimensions="nCells Time" streams="iro" units="m"
 			 description="diagnosed depth of the ocean surface boundary layer"
 		/>
-		<var_array name="vertNonLocalTrans" type="real" dimensions="nVertLevelsP1 nCells Time">
-			<var name="vertNonLocalTransTemp" array_group="vertNonLocalTrans" streams="o" units="nondimensional" name_in_code="vertNonLocalTransTemp"
+		<var_array name="vertNonLocalFlux" type="real" dimensions="nVertLevelsP1 nCells Time">
+			<var name="vertNonLocalFluxTemp" array_group="vertNonLocalFlux" units="nondimensional" name_in_code="vertNonLocalFluxTemp"
 				 description="nonlocal boundary layer mixing term for temperature"
 			/>
-			<var name="vertNonLocalTransSalt" array_group="vertNonLocalTrans" streams="o" units="nondimensional" name_in_code="vertNonLocalTransSalt"
+			<var name="vertNonLocalFluxSalt" array_group="vertNonLocalFlux" units="nondimensional" name_in_code="vertNonLocalFluxSalt"
 				 description="nonlocal boundary layer mixing term for salinity"
 			/>
-			<var name="vertNonLocalTransZonalVel" array_group="vertNonLocalTrans" streams="o" units="nondimensional" name_in_code="vertNonLocalTransZonalVel"
+			<var name="vertNonLocalFluxZonalVel" array_group="vertNonLocalFlux" units="nondimensional" name_in_code="vertNonLocalFluxZonalVel"
 				 description="nonlocal boundary layer mixing term for zonal velocity"
 			/>
-			<var name="vertNonLocalTransMeridVel" array_group="vertNonLocalTrans" streams="o" units="nondimensional" name_in_code="vertNonLocalTransMeridVel"
+			<var name="vertNonLocalFluxMeridVel" array_group="vertNonLocalFlux" units="nondimensional" name_in_code="vertNonLocalFluxMeridVel"
 				 description="nonlocal boundary layer mixing term for meridional velocity"
 			/>
 		</var_array>
-		<var name="indexBoundaryLayerDepth" type="real" dimensions="nCells Time" streams="o" units="none"
-			 description="int(indexBoundaryLayerDepth) is vertical layer within which boundaryLayerDepth resides. mod(indexBoundaryLayerDepth) is fractional position within that layer."
+		<var name="indexBoundaryLayerDepth" type="real" dimensions="nCells Time"  units="none"
+			 description="int(indexBoundaryLayerDepth) is vertical layer within which boundaryLayerDepth resides. mod(indexBoundaryLayerDepth) indicates whether boundaryLayerDepth resides above layer center (value = 0.25) or below layer center (value=0.75)"
 		/>
 		<var name="surfaceFrictionVelocity" type="real" dimensions="nCells Time" units="m s^{-1}"
 			 description="diagnosed surface friction velocity defined as square root of (mag(wind stress) / reference density)"
