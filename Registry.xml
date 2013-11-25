@@ -774,6 +774,10 @@
 					description="Disables tendencies on tracer fields from surface fluxes."
 					possible_values=".true. or .false."
 		/>
+                <nml_option name="config_disable_tr_nonlocalflux" type="logical" default_value=".false." units="unitless"
+                                        description="Disables tendencies on the tracer fields from CVMix/KPP nonlocal fluxes."
+                                        possible_values=".true. or .false."
+                />
 	</nml_record>
 	<packages>
 		<package name="splitTimeIntegrator" description="This package includes variables required for either the split or unsplit explicit time integrators."/>

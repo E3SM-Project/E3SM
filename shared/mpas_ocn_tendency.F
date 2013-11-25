@@ -27,6 +27,7 @@ module ocn_tendency
 
    use ocn_tracer_advection
    use ocn_tracer_short_wave_absorption
+   use ocn_tracer_nonlocalflux
 
    use ocn_thick_hadv
    use ocn_thick_vadv
@@ -295,7 +296,7 @@ contains
       real (kind=RKIND), dimension(:,:), pointer :: &
         uTransport, layerThickness,vertTransportVelocityTop, layerThicknessEdge, vertDiffTopOfCell, tend_layerThickness, normalThicknessFlux, surfaceTracerFlux, transmissionCoefficients
       real (kind=RKIND), dimension(:,:,:), pointer :: &
-        tracers, tend_tr
+        tracers, tend_tr, vertNonLocalFlux
 
       integer :: err, iEdge, k
 
@@ -308,6 +309,7 @@ contains
       layerThicknessEdge        => diagnostics % layerThicknessEdge % array
       vertDiffTopOfCell         => diagnostics % vertDiffTopOfCell % array
       vertTransportVelocityTop  => diagnostics % vertTransportVelocityTop % array
+      vertNonLocalFlux          => diagnostics % vertNonLocalFlux % array
 
       penetrativeTemperatureFlux => forcing % penetrativeTemperatureFlux % array
       surfaceTracerFlux          => forcing % surfaceTracerFlux % array
@@ -362,6 +364,13 @@ contains
       call mpas_timer_start("short wave", .false.)
       call ocn_tracer_short_wave_absorption_tend(mesh, state % index_temperature, layerThickness, penetrativeTemperatureFlux, tend_tr, err)
       call mpas_timer_stop("short wave")
+
+      !
+      ! Compute tracer tendency due to non-local flux computed in KPP
+      !
+      call mpas_timer_start("non-local flux from KPP", .false.)
+      call ocn_tracer_nonlocalflux_tend(mesh, layerThickness, vertNonLocalFlux, surfaceTracerFlux, tend_tr, err)
+      call mpas_timer_stop("non-local flux from KPP")
 
       call mpas_timer_stop("ocn_tend_tracer")
 
