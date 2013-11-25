@@ -50,6 +50,7 @@ module mpas_core
    use ocn_tracer_hmix
    use ocn_tracer_surface_flux
    use ocn_tracer_short_wave_absorption
+   use ocn_tracer_nonlocalflux
    use ocn_gm
 
    use ocn_equation_of_state
@@ -141,6 +142,8 @@ module mpas_core
       call ocn_tracer_advection_init(err_tmp)
       err = ior(err,err_tmp)
       call ocn_tracer_short_wave_absorption_init(err_tmp)
+      err = ior(err,err_tmp)
+      call ocn_tracer_nonlocalflux_init(err_tmp)
       err = ior(err,err_tmp)
 
       call ocn_vmix_init(domain,err_tmp)

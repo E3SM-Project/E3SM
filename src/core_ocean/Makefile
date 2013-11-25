@@ -76,8 +76,6 @@ error_tail: error_head error_msg
 exit: error_head error_msg error_tail
 	@exit 1
 
-
-
 clean:
 	if [ -d cvmix ]; then \
 		(cd cvmix; make clean) \

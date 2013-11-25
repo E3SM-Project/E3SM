@@ -184,6 +184,13 @@ module ocn_time_integration_split
       do split_explicit_step = 1, config_n_ts_iter
          stage1_tend_time = min(split_explicit_step,2)
 
+         ! ---  update halos for diagnostic ocean boundayr layer depth
+         call mpas_timer_start("se halo diag obd", .false., timer_halo_diagnostic)
+         if (config_use_cvmix_kpp) then
+            call mpas_dmpar_exch_halo_field(domain % blocklist % diagnostics % boundaryLayerDepth)
+         end if
+         call mpas_timer_stop("se halo diag obd")
+
          ! ---  update halos for diagnostic variables
          call mpas_timer_start("se halo diag", .false., timer_halo_diagnostic)
          call mpas_dmpar_exch_halo_field(domain % blocklist % diagnostics % normalizedRelativeVorticityEdge)
