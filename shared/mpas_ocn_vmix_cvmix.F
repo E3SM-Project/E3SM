@@ -126,7 +126,8 @@ contains
       real (kind=RKIND), dimension(:,:,:), pointer :: vertNonLocalFlux
       integer :: index_nonLocalTemp, index_nonLocalSalt, index_nonLocalZonalVel, index_nonLocalMeridVel
 
-      integer :: k, iCell, nVertLevels
+      integer :: k, iCell, nVertLevels, jCell, iNeighbor
+      real (kind=RKIND) :: r
 
       !-----------------------------------------------------------------
       !
@@ -273,15 +274,11 @@ contains
           cvmix_variables % diff_iface(:,2)=vertDiffTopOfCell(:,iCell)
           cvmix_variables % kpp_transport_iface(:,:)=0.0
 
-          ! compute the boundary layer depth
-          call cvmix_kpp_compute_OBL_depth( &
-                 CVmix_vars = cvmix_variables)
+          ! copy boundary layer depth from previous time step into cvmix variables
+          cvmix_variables % OBL_depth = diagnostics % boundaryLayerDepth % array(iCell)
+          cvmix_variables % kOBL_depth = diagnostics % indexBoundaryLayerDepth % array(iCell)
 
-          ! intent out of OBL_depth is boundary layer depth measured in meters and vertical index
-          diagnostics % boundaryLayerDepth % array(iCell) = cvmix_variables % OBL_depth
-          diagnostics % indexBoundaryLayerDepth % array(iCell) = cvmix_variables % kOBL_depth
-
-          ! given OBL and vertical profile of visc/diff, compute boundary layer mixing
+          ! given (old time level) OBL and vertical profile of visc/diff, compute boundary layer mixing
           call cvmix_coeffs_kpp( CVmix_vars = cvmix_variables )
 
           ! if using KPP with "MatchBoth"   matching, then the output from KPP is the full viscosity/diffusivity
@@ -297,6 +294,11 @@ contains
           endif
 
           ! store non-local flux terms
+          ! these flux terms must be multiplied by the surfaceTracerFlux field
+          ! the tracer tendency is then the vertical divergence of vertNonLocalFlux*surfaceTracerFlux
+          ! both of these operations are done in ocn_tracer_nonlocalflux_tend
+          ! NOTE: at present CVMix KPP stores four flux profiles (temperature, tracers, u velocity and v velocity)
+          ! NOTE: at some point we might end up with only one flux profile (and thereby reduce storage of 3D arrays)
           vertNonLocalFlux(index_nonLocalTemp,:,iCell) = cvmix_variables % kpp_transport_iface(:,1)
           vertNonLocalFlux(index_nonLocalSalt,:,iCell) = cvmix_variables % kpp_transport_iface(:,2)
           vertNonLocalFlux(index_nonLocalZonalVel,:,iCell) = cvmix_variables % kpp_transport_iface(:,3)
@@ -327,6 +329,39 @@ contains
 
       enddo  ! do iCell=1,mesh%nCellsSolve
 
+      ! 
+      ! compute and smooth CVMix/KPP computed ocean boundary layer depth
+      !
+      if (config_use_cvmix_kpp) then
+        do iCell=1,mesh%nCells
+  
+         ! compute the boundary layer depth based on model state at current time step
+         ! boundaryLayerDepth is then smoothed and a halo update is applied elsewhere
+         call cvmix_kpp_compute_OBL_depth( CVmix_vars = cvmix_variables)
+  
+         ! intent out of OBL_depth is boundary layer depth measured in meters and vertical index
+         diagnostics % boundaryLayerDepth % array(iCell) = cvmix_variables % OBL_depth
+         diagnostics % indexBoundaryLayerDepth % array(iCell) = cvmix_variables % kOBL_depth
+  
+        end do  ! do iCell=1,mesh%nCells
+  
+        do iCell=1,mesh%nCells
+  
+          ! loop over all cell neighbors and add up boundary layer depth
+          r = 0.0
+          do iNeighbor=1,mesh%nEdgesOnCell%array(iCell)
+            jCell = mesh%CellsOnCell%array(iNeighbor,iCell)
+            r = r + diagnostics % boundaryLayerDepth % array(jCell)
+          end do
+
+          ! replace boundary layer depth with average of itself and neigbhbors
+          diagnostics % boundaryLayerDepth % array(iCell) = &
+             0.5*(diagnostics % boundaryLayerDepth % array(iCell)+r/mesh%nEdgesOnCell%array(iCell))
+  
+        end do  ! do iCell=1,mesh%nCells
+      end if ! if (config_use_cvmix_kpp)
+
+      ! dellocate cmvix variables
       deallocate(cvmix_variables % visc_iface)
       deallocate(cvmix_variables % diff_iface)
       deallocate(cvmix_variables % zw_iface)
