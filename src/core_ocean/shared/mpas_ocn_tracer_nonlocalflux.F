@@ -113,6 +113,7 @@ contains
       integer :: iCell, nCells, k, iTracer, nTracers, nVertLevels
       integer, dimension(:), pointer :: maxLevelCell
       integer, dimension(:,:), pointer :: cellMask
+      real (kind=RKIND) :: invLayerThickness, fluxTopOfCell, fluxBottomOfCell
 
       err = 0
 
@@ -126,13 +127,36 @@ contains
       cellMask => mesh % cellMask % array
 
       do iCell = 1, nCells
-        do k = 1, maxLevelCell(iCell)
+        do k = 2, maxLevelCell(iCell)-1
+
+          invLayerThickness = 1.0 / layerThickness(k,iCell)
 
           ! NOTE: at the moment, all tracers are based on the flux-profile used for temperature, i.e. vertNonLocalFlux(1,:,:)
           do iTracer = 1, nTracers
-            tend(iTracer, k, iCell) = tend(iTracer, k, iCell) + cellMask(k, icell) * surfaceTracerFlux(iTracer, iCell) * vertNonLocalFlux(1, k, iCell)
+            fluxTopOfCell = surfaceTracerFlux(iTracer, iCell) * vertNonLocalFlux(1, k, iCell)
+            fluxBottomOfCell = surfaceTracerFlux(iTracer, iCell) * vertNonLocalFlux(1, k+1, iCell)
+            tend(iTracer, k, iCell) = tend(iTracer, k, iCell) + cellMask(k, icell) * (fluxTopOfCell-fluxBottomOfCell) * invLayerThickness
           end do
         end do
+
+        ! enforce boundary conditions at bottom of column
+        k = maxLevelCell(iCell)
+        invLayerThickness = 1.0 / layerThickness(k,iCell)
+        do iTracer = 1, nTracers
+          fluxTopOfCell = surfaceTracerFlux(iTracer, iCell) * vertNonLocalFlux(1, k, iCell)
+          fluxBottomOfCell = 0.0
+          tend(iTracer, k, iCell) = tend(iTracer, k, iCell) + cellMask(k, icell) * (fluxTopOfCell-fluxBottomOfCell) * invLayerThickness
+        end do
+
+        ! enforce boundary conditions at top of column
+        k = 1
+        invLayerThickness = 1.0 / layerThickness(k,iCell)
+        do iTracer = 1, nTracers
+          fluxTopOfCell = 0.0
+          fluxBottomOfCell = surfaceTracerFlux(iTracer, iCell) * vertNonLocalFlux(1, k+1, iCell)
+          tend(iTracer, k, iCell) = tend(iTracer, k, iCell) + cellMask(k, icell) * (fluxTopOfCell-fluxBottomOfCell) * invLayerThickness
+        end do
+
       end do
 
    !--------------------------------------------------------------------
