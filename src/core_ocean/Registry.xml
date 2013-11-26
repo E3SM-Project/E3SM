@@ -1406,15 +1406,25 @@
                         />
                 </var_array>
 		<var_array name="surfaceVelocity" type="real" dimensions="nCells Time">
-			<var name="zonalSurfaceVelocity" array_group="vel_zonal" units="m s^{-1}"
+			<var name="zonalSurfaceVelocity" array_group="surfaceVelocity" units="m s^{-1}" name_in_code="zonalSurfaceVelocity"
 				 description="Zonal surface velocity reconstructed at cell centers"
 				
 			/>
-			<var name="meridionalSurfaceVelocity" array_group="vel_meridional" units="m s^{-1}"
+			<var name="meridionalSurfaceVelocity" array_group="surfaceVelocity" units="m s^{-1}" name_in_code="meridionalSurfaceVelocity"
 				 description="Meridional surface velocity reconstructed at cell centers"
 				
 			/>
 		</var_array>
+                <var_array name="surfaceLayerVelocity" type="real" dimensions="nCells Time">
+                        <var name="zonalSurfaceLayerVelocity" array_group="surfaceLayerVelocity" units="m s^{-1}" name_in_code="zonalSurfaceLayerVelocity"
+                                 description="Zonal surface velocity reconstructed at cell centers and averaged over ocean surface layer"
+                                 streams="o"
+                        />
+                        <var name="meridionalSurfaceLayerVelocity" array_group="surfaceLayerVelocity" units="m s^{-1}" name_in_code="meridionalSurfaceLayerVelocity"
+                                 description="Meridional surface velocity reconstructed at cell centers and averaged over ocean surface layer"
+                                 streams="o"
+                        />
+                </var_array>
 		<var_array name="SSHGradient" type="real" dimensions="nCells Time">
 			<var name="zonalSSHGradient" array_group="ssh_zonal" units="m m^{-1}"
 				 description="Zonal gradient of SSH reconstructed at cell centers"
