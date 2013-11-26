@@ -1031,7 +1031,7 @@ contains
         surfacewindStressMagnitude(iCell) = sqrt(deltaVelocitySquared)
 
        ! compute surface friction velocity
-         surfaceFrictionVelocity(iCell) = surfacewindStressMagnitude(iCell) / config_density0
+         surfaceFrictionVelocity(iCell) = sqrt(surfacewindStressMagnitude(iCell) / config_density0)
 
        ! loop over vertical to compute bulk Richardson number
         do k=1,maxLevelCell(iCell)
