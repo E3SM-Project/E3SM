@@ -998,6 +998,7 @@
 			<var name="vertDiffTopOfCell"/>
 			<var name="bulkRichardsonNumber"/>
 			<var name="boundaryLayerDepth"/>
+			<var name="boundaryLayerDepthEdge"/>
 			<var name="indexBoundaryLayerDepth"/>
 			<var name="surfaceFrictionVelocity"/>
 			<var name="windStressZonalDiag"/>
@@ -1405,6 +1406,9 @@
                                 description="Tracer of 1 averaged over ocean surface layer (generally 0.1 of the ocean boundary layer)"
                         />
                 </var_array>
+                <var name="normalVelocitySurfaceLayer" type="real" dimensions="nEdges Time" streams="" units="m s^{-1}"
+                         description="normal velocity averaged over ocean surface layer (generally 0.1 of the ocean boundary layer)"
+                />
 		<var_array name="surfaceVelocity" type="real" dimensions="nCells Time">
 			<var name="zonalSurfaceVelocity" array_group="surfaceVelocity" units="m s^{-1}" name_in_code="zonalSurfaceVelocity"
 				 description="Zonal surface velocity reconstructed at cell centers"
@@ -1415,16 +1419,6 @@
 				
 			/>
 		</var_array>
-                <var_array name="surfaceLayerVelocity" type="real" dimensions="nCells Time">
-                        <var name="zonalSurfaceLayerVelocity" array_group="surfaceLayerVelocity" units="m s^{-1}" name_in_code="zonalSurfaceLayerVelocity"
-                                 description="Zonal surface velocity reconstructed at cell centers and averaged over ocean surface layer"
-                                 streams="o"
-                        />
-                        <var name="meridionalSurfaceLayerVelocity" array_group="surfaceLayerVelocity" units="m s^{-1}" name_in_code="meridionalSurfaceLayerVelocity"
-                                 description="Meridional surface velocity reconstructed at cell centers and averaged over ocean surface layer"
-                                 streams="o"
-                        />
-                </var_array>
 		<var_array name="SSHGradient" type="real" dimensions="nCells Time">
 			<var name="zonalSSHGradient" array_group="ssh_zonal" units="m m^{-1}"
 				 description="Zonal gradient of SSH reconstructed at cell centers"
@@ -1592,6 +1586,9 @@
 		/>
 		<var name="boundaryLayerDepth" type="real" dimensions="nCells Time" units="m"
 			 description="diagnosed depth of the ocean surface boundary layer"
+		/>
+		<var name="boundaryLayerDepthEdge" type="real" dimensions="nEdges Time" units="m"
+			 description="diagnosed depth of the ocean surface boundary layer averaged to cell edges"
 		/>
 		<var_array name="vertNonLocalFlux" type="real" dimensions="nVertLevelsP1 nCells Time">
 			<var name="vertNonLocalFluxTemp" array_group="vertNonLocalFlux" units="nondimensional" name_in_code="vertNonLocalFluxTemp"
