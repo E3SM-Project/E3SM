@@ -90,8 +90,8 @@ contains
       type (scratch_type), intent(inout) :: scratch !< Input: scratch variables
 
       integer :: iEdge, iCell, iVertex, k, cell1, cell2, vertex1, vertex2, eoe, i, j
-      integer :: boundaryMask, velMask, nCells, nEdges, nVertices, nVertLevels, vertexDegree, err
-      real (kind=RKIND) :: shearMean, shearSquared, factor, delU2
+      integer :: boundaryMask, velMask, nCells, nEdges, nVertices, nVertLevels, vertexDegree, err, nSurfaceLayer
+      real (kind=RKIND) :: shearMean, shearSquared, factor, delU2, sumSurfaceLayer, surfaceLayerDepth
 
       integer, dimension(:), pointer :: nEdgesOnCell, nEdgesOnEdge, &
         maxLevelCell, maxLevelEdgeTop, maxLevelEdgeBot, &
@@ -120,6 +120,8 @@ contains
       character :: c1*6
 
       real (kind=RKIND), dimension(:,:), pointer :: tracersSurfaceValue ! => diagnostics % tracersSurfaceValue % array
+      real (kind=RKIND), dimension(:,:), pointer :: tracersSurfaceLayerValue ! => diagnostics % tracersSurfaceLayerValue % array
+      real (kind=RKIND), dimension(:), pointer :: boundaryLayerDepth
 
       layerThickness => state % layerThickness % array
       normalVelocity => state % normalVelocity % array
@@ -187,6 +189,8 @@ contains
       edgeSignOnCell => mesh % edgeSignOnCell % array
 
       tracersSurfaceValue  => diagnostics % tracersSurfaceValue % array(:,:)
+      tracersSurfaceLayerValue  => diagnostics % tracersSurfaceLayerValue % array(:,:)
+      boundaryLayerDepth => diagnostics % boundaryLayerDepth % array(:)
 
       !
       ! Compute height on cell edges at velocity locations
@@ -525,7 +529,31 @@ contains
       ! extrapolate tracer values to ocean surface
       ! this eventually be a modelled process
       ! at present, just copy k=1 tracer values onto surface values
+      !
       tracersSurfaceValue(:,:) = tracers(:,1,:)
+
+      !
+      ! average tracer values over the ocean surface layer
+      ! the ocean surface layer is generally assumed to be about 0.1 of the boundary layer depth
+      !
+      tracersSurfaceLayerValue(:,:) = 0.0
+      do iCell=1,nCells
+        surfaceLayerDepth = boundaryLayerDepth(iCell) * config_cvmix_kpp_surface_layer_extent
+        sumSurfaceLayer=0.0
+        do k=1,maxLevelCell(iCell)
+         sumSurfaceLayer = sumSurfaceLayer + layerThickness(k,iCell)
+         if(sumSurfaceLayer.gt.surfaceLayerDepth) then
+           nSurfaceLayer = k
+           exit
+         endif
+        end do
+        sumSurfaceLayer = 0.0
+        do k=1,nSurfaceLayer
+          sumSurfaceLayer = sumSurfaceLayer + layerThickness(k,iCell)
+          tracersSurfaceLayerValue(:,iCell) = tracersSurfaceLayerValue(:,iCell) + tracers(:,k,iCell)*layerThickness(k,iCell)
+        enddo
+        tracersSurfaceLayerValue(:,iCell) = tracersSurfaceLayerValue(:,iCell) / sumSurfaceLayer
+      enddo
 
       !
       !  compute fields used as intent(in) to CVMix/KPP

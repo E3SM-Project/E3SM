@@ -1394,6 +1394,17 @@
 				description="Tracer of 1 extrapolated to ocean surface"
 			/>
 		</var_array>
+                <var_array name="tracersSurfaceLayerValue" type="real" dimensions="nCells Time">
+                        <var name="temperatureSurfaceLayerValue" array_group="surfaceLayerValues" streams="o" units="degrees Celsius" name_in_code="temperatureSurfaceLayerValue"
+                                description="potential temperature averaged over ocean surface layer (generally 0.1 of the ocean boundary layer)"
+                        />
+                        <var name="salinitySurfaceLayerValue" array_group="surfaceLayerValues" streams="o" units="PSU" name_in_code="salinitySurfaceLayerValue"
+                                description="salinity averaged over ocean surface layer (generally 0.1 of the ocean boundary layer)"
+                        />
+                        <var name="tracer1SurfaceLayerValue" array_group="surfaceLayerValues" streams="o" units="na"
+                                description="Tracer of 1 averaged over ocean surface layer (generally 0.1 of the ocean boundary layer)"
+                        />
+                </var_array>
 		<var_array name="surfaceVelocity" type="real" dimensions="nCells Time">
 			<var name="zonalSurfaceVelocity" array_group="vel_zonal" units="m s^{-1}"
 				 description="Zonal surface velocity reconstructed at cell centers"
