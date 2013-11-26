@@ -12,9 +12,8 @@ module cice_dynamics
   ! Dynamics options
   !--------------------------------------------------------------------------
   
-  ! "hex" or "tri"
+  ! "hex" or ??
   character(len=200), parameter :: dynamicsGridType = "hex";
-  !character(len=200), parameter :: dynamicsGridType = "tri";
 
   ! "weak", "variational" or "pwl" 
   character(len=200), parameter :: divergenceFormulation = "weak"
@@ -36,7 +35,6 @@ contains
   subroutine init_dynamics(block, dt)
 
     use cice_dynamics_hex, only: init_dynamics_hex
-    use cice_dynamics_tri, only: init_dynamics_tri
 
     type (block_type), intent(inout) :: block
     real (kind=RKIND), intent(in) :: dt
@@ -53,13 +51,10 @@ contains
             divergenceFormulation, &
             gridCurvature)
 
-    else if (trim(dynamicsGridType) == "tri") then
-    
-       call init_dynamics_tri(&
-            block % mesh, &
-            block % boundary, &
-            block % normal, &
-            dt, divergenceFormulation)
+    else
+
+       write(*,*) "init_dynamics: Unsupported grid type"
+       stop
 
     end if
 
@@ -70,7 +65,6 @@ contains
   subroutine run_dynamics(block, dt, nstep)
 
     use cice_dynamics_hex, only: run_dynamics_hex
-    use cice_dynamics_tri, only: run_dynamics_tri
 
     type (block_type), intent(inout) :: block
     real (kind=RKIND), intent(in) :: dt
@@ -92,21 +86,7 @@ contains
             dt, divergenceFormulation, &
             evpDamping, &
             nstep)
-       
-    else if (trim(dynamicsGridType) == "tri") then
-       
-       call run_dynamics_tri(&
-            block % mesh,          &
-            block % icestate,      &
-            block % boundary,      &
-            block % normal,        &
-            block % atmos_forcing, &
-            block % tridyn,        &   
-            block % triweak,       &
-            block % trifor,        &
-            dt, divergenceFormulation, &
-            evpDamping)
-       
+  
     end if
 
   end subroutine run_dynamics

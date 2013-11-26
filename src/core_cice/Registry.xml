@@ -5,7 +5,9 @@
 		<dim name="nEdges"/>
 		<dim name="maxEdges"/>
 		<dim name="maxEdges2"/>
+		<dim name="nAdvectionCells" definition="maxEdges2+0"/>
 		<dim name="nVertices"/>
+		<dim name="ONE"                definition="1"/>
 		<dim name="TWO"                definition="2"/>
 		<dim name="R3"                 definition="3"/>
 		<dim name="FIFTEEN"            definition="15"/>
@@ -44,6 +46,32 @@
 		<nml_option name="config_do_restart"                 type="logical"       default_value="false"/>
 		<nml_option name="config_restart_interval"           type="character"     default_value="none"/>
 	</nml_record>
+
+
+	<nml_record name="advection">
+		<nml_option name="config_vert_tracer_adv" type="character" default_value="stencil" units="unitless"
+					description="Method for interpolating tracer values from layer centers to layer edges"
+					possible_values="'spline' and 'stencil'"
+		/>
+		<nml_option name="config_vert_tracer_adv_order" type="integer" default_value="3" units="unitless"
+					description="Order of polynomial used for tracer reconstruction at layer edges"
+					possible_values="2, 3 and 4"
+		/>
+		<nml_option name="config_horiz_tracer_adv_order" type="integer" default_value="3" units="unitless"
+					description="Order of polynomial used for tracer reconstruction at cell edges"
+					possible_values="2, 3 and 4"
+		/>
+		<nml_option name="config_coef_3rd_order" type="real" default_value="0.25" units="non-dimensional"
+					description="Reconstruction of 3rd-order reconstruction to blend with 4th-order reconstuction"
+					possible_values="any real between 0 and 1"
+		/>
+		<nml_option name="config_monotonic" type="logical" default_value=".true." units="unitless"
+					description="If .true. then fluxes are limited to produce a monotonic advection scheme"
+					possible_values=".true. and .false."
+		/>
+	</nml_record>
+
+
 	<var_struct name="state" time_levs="2">
 		<var name="xtime"                             type="text"     dimensions="Time"                        streams="ro"/>
 		<var name="somevar"                           type="integer"  dimensions="TWO"                         streams=""/>
@@ -113,15 +141,21 @@
 		<var name="advCellsForEdge"                   type="integer"  dimensions="nAdvectionCells nEdges"      streams=""/>
 		<var name="nAdvCellsForEdge"                  type="integer"  dimensions="nEdges"                      streams=""/>
 		<var name="highOrderAdvectionMask"            type="integer"  dimensions="nVertLevels nEdges"          streams=""/>
+		<var name="maxLevelCell"                      type="integer"  dimensions="nCells"                      streams="iro"/>
 	</var_struct>
 
 
 	<!-- ice state -->
 	<var_struct name="icestate" time_levs="0">
-		<var name="iceAreaCell"                       type="real"     dimensions="nCells"              name_in_code="iceAreaCell"/>
+                <var_array name="tracers" type="real" dimensions="ONE nCells">
+			<var name="iceAreaCell"    array_group="tracers" streams="iro"/>
+			<var name="iceVolumeCell"  array_group="tracers" streams="iro"/>
+			<var name="snowVolumeCell" array_group="tracers" streams="iro"/>
+		</var_array>
+		<!-- <var name="iceAreaCell"                       type="real"     dimensions="nCells"              name_in_code="iceAreaCell"/>-->
 		<var name="iceAreaVertex"                     type="real"     dimensions="nVertices"           name_in_code="iceAreaVertex"/>
-		<var name="iceVolumeCell"                     type="real"     dimensions="nCells"              name_in_code="iceVolumeCell"/>
-		<var name="snowVolumeCell"                    type="real"     dimensions="nCells"              name_in_code="snowVolumeCell"/>
+		<!-- <var name="iceVolumeCell"                     type="real"     dimensions="nCells"              name_in_code="iceVolumeCell"/>-->
+		<!-- <var name="snowVolumeCell"                    type="real"     dimensions="nCells"              name_in_code="snowVolumeCell"/>-->
 		<var name="totalMassCell"                     type="real"     dimensions="nCells"              name_in_code="totalMassCell"/>
 		<var name="totalMassVertex"                   type="real"     dimensions="nVertices"           name_in_code="totalMassVertex"/>
 		<var name="surfaceTemperature"                type="real"     dimensions="nVertices"           name_in_code="surfaceTemperature"/>

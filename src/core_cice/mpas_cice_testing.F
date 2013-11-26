@@ -295,13 +295,13 @@ contains
 
        x = mesh % xCell % array(iCell)
 
-       icestate % iceAreaCell % array(iCell) = &!0.95_RKIND!&
+       icestate % tracers % array(icestate % index_iceAreaCell, 1, iCell) = &!0.95_RKIND!&
             max(min(x / Lx, 1.0_RKIND), 0.0_RKIND)
 
-       icestate % iceVolumeCell % array(iCell) = &
-            iceThickness * icestate % iceAreaCell % array(iCell)
+       icestate % tracers % array(icestate % index_iceVolumeCell, 1, :) = &
+            iceThickness * icestate % tracers % array(icestate % index_iceAreaCell, 1, iCell)
 
-       icestate % totalMassCell % array(iCell) = icestate % iceVolumeCell % array(iCell) * rhoi
+       icestate % totalMassCell % array(iCell) = icestate % tracers % array(icestate % index_iceVolumeCell, 1, iCell) * rhoi
           
     enddo ! iCell
 
@@ -2073,11 +2073,11 @@ contains
 
        do iCell = 1, mesh % nCells
 
-          if (icestate % iceAreaCell % array(iCell) > 0.0_RKIND) then
-             iceThickness(iCell)  = icestate % iceVolumeCell % array(iCell) / &
-                                    icestate % iceAreaCell % array(iCell)
-             snowThickness(iCell) = icestate % snowVolumeCell % array(iCell) / &
-                                    icestate % iceAreaCell % array(iCell)
+          if (icestate % tracers % array(icestate % index_iceAreaCell, 1, iCell) > 0.0_RKIND) then
+             iceThickness(iCell)  = icestate % tracers % array(icestate % index_iceVolumeCell, 1, iCell) / &
+                                    icestate % tracers % array(icestate % index_iceAreaCell, 1, iCell)
+             snowThickness(iCell) = icestate % tracers % array(icestate % index_snowVolumeCell, 1, iCell) / &
+                                    icestate % tracers % array(icestate % index_iceAreaCell, 1, iCell)
           else
              iceThickness(iCell)  = 0.0_RKIND
              snowThickness(iCell) = 0.0_RKIND
@@ -2094,7 +2094,7 @@ contains
        call plot_cells_spherical(mesh, atmos_forcing % airPotentialTemperature % array, "movie/data/airTemperature"//trim(suffix), -50.0_RKIND, 50.0_RKIND)
        call plot_cells_spherical(mesh, atmos_forcing % longwaveDown % array, "movie/data/longwave"//trim(suffix), 0.0_RKIND, 1000.0_RKIND)
 
-       call plot_cells_spherical(mesh, icestate % iceAreaCell % array,        "movie/data/iceAreaCell"//trim(suffix),          0.0_RKIND, 1.0_RKIND)
+       call plot_cells_spherical(mesh, icestate % tracers % array(icestate % index_iceAreaCell, 1, :),        "movie/data/iceAreaCell"//trim(suffix),          0.0_RKIND, 1.0_RKIND)
        call plot_cells_spherical(mesh, iceThickness,                          "movie/data/iceThickness"//trim(suffix),         0.0_RKIND, 2.0_RKIND)
        call plot_cells_spherical(mesh, snowThickness,                         "movie/data/snowThickness"//trim(suffix),        0.0_RKIND, 2.0_RKIND)
        call plot_cells_spherical(mesh, icestate % surfaceTemperature % array, "movie/data/surfaceTemperature"//trim(suffix), -60.0_RKIND, 0.1_RKIND)

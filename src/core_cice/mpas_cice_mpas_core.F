@@ -135,16 +135,16 @@ module mpas_core
       call get_forcing(block % mesh, clock, block % atmos_forcing)
 
       call init_spherical_test_case(block % mesh, &
-           block % icestate % iceAreaCell % array, &
-           block % icestate % iceVolumeCell % array, &
+           block % icestate % tracers % array(index_iceAreaCell, 1, :), &
+           block % icestate % tracers % array(index_iceVolumeCell, 1, :), &
            block % icestate % totalMassCell % array, &
            block % icestate % surfaceTemperature % array, &
            block % atmos_forcing % airTemperature % array)
 
       call init_dynamics(block, dt)
 
-      call plot_pop_grid_cells(mesh, block % icestate % iceAreaCell % array, "iceAreaCell_ic.txt")
-      call plot_pop_grid_cells(mesh, block % icestate % iceVolumeCell % array, "iceVolumeCell_ic.txt")
+      call plot_pop_grid_cells(mesh, block % icestate % tracers % array(index_iceAreaCell, 1, :), "iceAreaCell_ic.txt")
+      call plot_pop_grid_cells(mesh, block % icestate % tracers % array(index_iceVolumeCell, 1, :), "iceVolumeCell_ic.txt")
 
    end subroutine mpas_init_block
    

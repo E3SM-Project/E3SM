@@ -4,11 +4,9 @@ OBJS = 	mpas_cice_mpas_core.o \
 	mpas_cice_time_integration.o \
 	mpas_cice_dynamics.o \
 	mpas_cice_dynamics_hex.o \
-	mpas_cice_dynamics_tri.o \
 	mpas_cice_dyn_hex_weak.o \
 	mpas_cice_dyn_hex_variational.o \
 	mpas_cice_dyn_hex_pwl.o \
-	mpas_cice_dyn_tri_weak.o \
 	mpas_cice_dynamics_shared.o \
 	mpas_cice_advection.o \
 	mpas_cice_forcing.o \
@@ -38,11 +36,7 @@ mpas_cice_dyn_hex_pwl.o: mpas_cice_testing.o mpas_cice_dynamics_shared.o
 
 mpas_cice_dynamics_hex.o: mpas_cice_testing.o mpas_cice_dyn_hex_pwl.o mpas_cice_dyn_hex_variational.o mpas_cice_dyn_hex_weak.o mpas_cice_dynamics_shared.o
 
-mpas_cice_dyn_tri_weak.o: mpas_cice_testing.o mpas_cice_dynamics_shared.o
-
-mpas_cice_dynamics_tri.o: mpas_cice_testing.o mpas_cice_dyn_tri_weak.o mpas_cice_dynamics_shared.o
-
-mpas_cice_dynamics.o: mpas_cice_dynamics_tri.o mpas_cice_dynamics_hex.o mpas_cice_dynamics_shared.o
+mpas_cice_dynamics.o: mpas_cice_dynamics_hex.o mpas_cice_dynamics_shared.o
 
 mpas_cice_time_integration.o: mpas_cice_dynamics.o mpas_cice_advection.o mpas_cice_forcing.o mpas_cice_therm_zerolayer.o
 

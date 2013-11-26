@@ -114,10 +114,20 @@ contains
     integer, intent(in) :: &
          nstep
 
+    real(kind=RKIND), dimension(:), allocatable :: &
+         iceAreaCell, &
+         iceVolumeCell
+
+    allocate(iceAreaCell(1:mesh % nCells))
+    allocate(iceVolumeCell(1:mesh % nCells))
+
+    iceAreaCell   = icestate % tracers % array(icestate % index_iceAreaCell, 1, :)
+    iceVolumeCell = icestate % tracers % array(icestate % index_iceVolumeCell, 1, :)
+
     ! interpolate area and mass from cells to vertices
     call interpolate_cell_to_vertex(mesh, &
          icestate % iceAreaVertex % array, &
-         icestate % iceAreaCell % array)
+         iceAreaCell)
 
     call interpolate_cell_to_vertex(mesh, &
          icestate % totalMassVertex % array, &
@@ -129,7 +139,7 @@ contains
     ! calculate computational masks
     call stress_calculation_mask_hex(mesh, &
          hexdyn % solveStress % array, &
-         icestate % iceAreaCell % array, &
+         iceAreaCell, &
          icestate % totalMassCell % array)
 
     call velocity_calculation_mask_hex(mesh, &
@@ -143,8 +153,8 @@ contains
     ! calculate the ice strength
     call ice_strength(mesh, &     
          hexdyn % icePressure % array,     &
-         icestate % iceAreaCell % array,   &
-         icestate % iceVolumeCell % array, &
+         iceAreaCell,   &
+         iceVolumeCell, &
          hexdyn % solveStress % array)
 
     call plot_pop_grid_cells(mesh, hexdyn % icePressure % array, "strength.txt", nstep)
@@ -156,7 +166,7 @@ contains
          atmos_forcing % uAirVelocity % array, & 
          atmos_forcing % vAirVelocity % array, &
          atmos_forcing % airDensity % array,   &
-         icestate % iceAreaCell % array)
+         iceAreaCell)
 
     call plot_pop_grid_cells(mesh, atmos_forcing % uAirVelocity % array, "uAirVelocity.txt", nstep)
     call plot_pop_grid_cells(mesh, atmos_forcing % vAirVelocity % array, "vAirVelocity.txt", nstep)
@@ -240,6 +250,9 @@ contains
             hexdyn % replacementPressure % array)
 
     endif
+
+    deallocate(iceAreaCell)
+    deallocate(iceVolumeCell)
 
   end subroutine run_dynamics_hex
 

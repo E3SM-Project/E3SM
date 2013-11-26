@@ -145,18 +145,31 @@ contains
     integer :: &
          iCell
 
+    real(kind=RKIND), dimension(:), allocatable :: &
+         iceAreaCell, &
+         iceVolumeCell, &
+         snowVolumeCell
+
+    allocate(iceAreaCell(1:mesh % nCells))
+    allocate(iceVolumeCell(1:mesh % nCells))
+    allocate(snowVolumeCell(1:mesh % nCells))
+
+    iceAreaCell    = icestate % tracers % array(index_iceAreaCell, 1, :)
+    iceVolumeCell  = icestate % tracers % array(index_iceVolumeCell, 1, :)
+    snowVolumeCell = icestate % tracers % array(index_snowVolumeCell, 1, :)
+
     !call run_semtner_test_case()
 
     do iCell = 1, mesh % nCells
 
-       if (icestate % iceAreaCell % array(iCell) > 0.0_RKIND) then
+       if (iceAreaCell(iCell) > 0.0_RKIND) then
 
           if (iCell == 7134 .or. iCell == 7133) ltest = .true.
 
           call therm_zerolayer_column( &
-               icestate % iceAreaCell % array(iCell), &
-               icestate % iceVolumeCell % array(iCell), &
-               icestate % snowVolumeCell % array(iCell), &
+               iceAreaCell(iCell), &
+               iceVolumeCell(iCell), &
+               snowVolumeCell(iCell), &
                icestate % surfaceTemperature % array(iCell), &
                atmos_forcing % shortwaveDown % array(iCell), &
                atmos_forcing % longwaveDown % array(iCell), &
@@ -180,9 +193,9 @@ contains
        else
 
           call add_new_ice( &
-               icestate % iceAreaCell % array(iCell), &
-               icestate % iceVolumeCell % array(iCell), &
-               icestate % snowVolumeCell % array(iCell), &
+               iceAreaCell(iCell), &
+               iceVolumeCell(iCell), &
+               snowVolumeCell(iCell), &
                icestate % surfaceTemperature % array(iCell), &
                atmos_forcing % airPotentialTemperature % array(iCell))
           
@@ -193,6 +206,11 @@ contains
     !write(*,*) minloc(icestate % surfaceTemperature % array), minval(icestate % surfaceTemperature % array)
 
 !stop
+
+    deallocate(iceAreaCell)
+    deallocate(iceVolumeCell)
+    deallocate(snowVolumeCell)
+
   end subroutine therm_zerolayer
 
   !-------------------------------------------------------------
@@ -1318,12 +1336,12 @@ contains
 
     do iCell = 1, mesh % nCells
 
-       icestate % iceAreaCell % array(iCell) = 1.0_RKIND
+       icestate % tracers % array(index_iceAreaCell, 1, :) = 1.0_RKIND
        
        icestate % surfaceTemperature % array(iCell) = -1.0_RKIND
        
-       icestate % iceVolumeCell % array(iCell) = 0.1_RKIND
-       icestate % snowVolumeCell % array(iCell) = 0.0_RKIND
+       icestate % tracers % array(index_iceVolumeCell, 1, :)  = 0.1_RKIND
+       icestate % tracers % array(index_snowVolumeCell, 1, :) = 0.0_RKIND
 
     enddo ! iCell
 
