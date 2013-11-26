@@ -90,8 +90,8 @@ contains
       type (scratch_type), intent(inout) :: scratch !< Input: scratch variables
 
       integer :: iEdge, iCell, iVertex, k, cell1, cell2, vertex1, vertex2, eoe, i, j
-      integer :: boundaryMask, velMask, nCells, nEdges, nVertices, nVertLevels, vertexDegree, err, nSurfaceLayer
-      real (kind=RKIND) :: shearMean, shearSquared, factor, delU2, sumSurfaceLayer, surfaceLayerDepth
+      integer :: boundaryMask, velMask, nCells, nEdges, nVertices, nVertLevels, vertexDegree, err
+      real (kind=RKIND) :: shearMean, shearSquared, factor, delU2, sumSurfaceLayer, surfaceLayerDepth, rSurfaceLayer
 
       integer, dimension(:), pointer :: nEdgesOnCell, nEdgesOnEdge, &
         maxLevelCell, maxLevelEdgeTop, maxLevelEdgeBot, &
@@ -121,7 +121,8 @@ contains
 
       real (kind=RKIND), dimension(:,:), pointer :: tracersSurfaceValue ! => diagnostics % tracersSurfaceValue % array
       real (kind=RKIND), dimension(:,:), pointer :: tracersSurfaceLayerValue ! => diagnostics % tracersSurfaceLayerValue % array
-      real (kind=RKIND), dimension(:), pointer :: boundaryLayerDepth
+      real (kind=RKIND), dimension(:),   pointer :: boundaryLayerDepth, boundaryLayerDepthEdge
+      real (kind=RKIND), dimension(:),   pointer :: normalVelocitySurfaceLayer
 
       layerThickness => state % layerThickness % array
       normalVelocity => state % normalVelocity % array
@@ -191,6 +192,8 @@ contains
       tracersSurfaceValue  => diagnostics % tracersSurfaceValue % array(:,:)
       tracersSurfaceLayerValue  => diagnostics % tracersSurfaceLayerValue % array(:,:)
       boundaryLayerDepth => diagnostics % boundaryLayerDepth % array(:)
+      boundaryLayerDepthEdge => diagnostics % boundaryLayerDepthEdge % array(:)
+      normalVelocitySurfaceLayer => diagnostics % normalVelocitySurfaceLayer % array(:)
 
       !
       ! Compute height on cell edges at velocity locations
@@ -543,16 +546,53 @@ contains
         do k=1,maxLevelCell(iCell)
          sumSurfaceLayer = sumSurfaceLayer + layerThickness(k,iCell)
          if(sumSurfaceLayer.gt.surfaceLayerDepth) then
-           nSurfaceLayer = k
+           sumSurfaceLayer = sumSurfaceLayer - layerThickness(k,iCell)
+           rSurfaceLayer = int(k-1) + (surfaceLayerDepth-sumSurfaceLayer)/layerThickness(k,iCell)
            exit
          endif
         end do
         sumSurfaceLayer = 0.0
-        do k=1,nSurfaceLayer
+        do k=1,int(rSurfaceLayer)
           sumSurfaceLayer = sumSurfaceLayer + layerThickness(k,iCell)
           tracersSurfaceLayerValue(:,iCell) = tracersSurfaceLayerValue(:,iCell) + tracers(:,k,iCell)*layerThickness(k,iCell)
         enddo
+        k=int(rSurfaceLayer)+1
+        sumSurfaceLayer = sumSurfaceLayer + fraction(rSurfaceLayer)*layerThickness(k,iCell)
+        tracersSurfaceLayerValue(:,iCell) = tracersSurfaceLayerValue(:,iCell) + fraction(rSurfaceLayer)*tracers(:,k,iCell)*layerThickness(k,iCell)
         tracersSurfaceLayerValue(:,iCell) = tracersSurfaceLayerValue(:,iCell) / sumSurfaceLayer
+      enddo
+
+      !
+      ! average normal velocity values over the ocean surface layer
+      ! the ocean surface layer is generally assumed to be about 0.1 of the boundary layer depth
+      !
+      normalVelocitySurfaceLayer(:) = 0.0
+      do iEdge=1,nEdges
+        cell1=cellsOnEdge(1,iEdge)
+        cell2=cellsOnEdge(2,iEdge)
+        boundaryLayerDepthEdge(iEdge) = 0.5*( boundaryLayerDepth(cell1)+boundaryLayerDepth(cell2) )
+        surfaceLayerDepth = boundaryLayerDepthEdge(iEdge) * config_cvmix_kpp_surface_layer_extent
+        sumSurfaceLayer=0.0
+        do k=1,maxLevelEdgeTop(iEdge)
+         rSurfaceLayer = k
+         sumSurfaceLayer = sumSurfaceLayer + layerThicknessEdge(k,iEdge)
+         if(sumSurfaceLayer.gt.surfaceLayerDepth) then
+           sumSurfaceLayer = sumSurfaceLayer - layerThicknessEdge(k,iCell)
+           rSurfaceLayer = int(k-1) + (surfaceLayerDepth-sumSurfaceLayer)/layerThicknessEdge(k,iCell)
+           exit
+         endif
+        end do
+        sumSurfaceLayer = 0.0
+        do k=1,int(rSurfaceLayer)
+          sumSurfaceLayer = sumSurfaceLayer + layerThicknessEdge(k,iEdge)
+          normalVelocitySurfaceLayer(iEdge) = normalVelocitySurfaceLayer(iEdge) + normalVelocity(k,iEdge)*layerThicknessEdge(k,iEdge)
+        enddo
+        k=int(rSurfaceLayer)+1
+        if(k.le.maxLevelEdgeTop(iEdge)) then
+          sumSurfaceLayer = sumSurfaceLayer + fraction(rSurfaceLayer)*layerThickness(k,iCell)
+          normalVelocitySurfaceLayer(iEdge) = normalVelocitySurfaceLayer(iEdge) + fraction(rSurfaceLayer)*normalVelocity(k,iEdge)*layerThicknessEdge(k,iEdge)
+        endif
+        normalVelocitySurfaceLayer(iEdge) = normalVelocitySurfaceLayer(iEdge) / sumSurfaceLayer
       enddo
 
       !
@@ -959,7 +999,8 @@ contains
       ! real pointers
       real (kind=RKIND), dimension(:), pointer :: dcEdge, dvEdge, areaCell
       real (kind=RKIND), dimension(:), pointer :: penetrativeTemperatureFlux, surfaceMassFlux, &
-           surfaceBuoyancyForcing, surfaceFrictionVelocity, boundaryLayerDepth, penetrativeTemperatureFluxOBL
+           surfaceBuoyancyForcing, surfaceFrictionVelocity, boundaryLayerDepth, penetrativeTemperatureFluxOBL, &
+           normalVelocitySurfaceLayer
       real (kind=RKIND), dimension(:), pointer :: surfaceWindStress, surfaceWindStressMagnitude
       real (kind=RKIND), dimension(:,:), pointer ::  &
            layerThickness, zMid, zTop, bulkRichardsonNumber, tracersSurfaceValues, densitySurfaceDisplaced, density, &
@@ -997,7 +1038,8 @@ contains
       boundaryLayerDepth            => diagnostics % boundaryLayerDepth % array
       surfaceFrictionVelocity       => diagnostics % surfaceFrictionVelocity % array
       penetrativeTemperatureFluxOBL => diagnostics % penetrativeTemperatureFluxOBL % array
-      surfaceBuoyancyForcing            => diagnostics % surfaceBuoyancyForcing % array
+      surfaceBuoyancyForcing        => diagnostics % surfaceBuoyancyForcing % array
+      normalVelocitySurfaceLayer    => diagnostics % normalVelocitySurfaceLayer % array
 
       normalVelocity => state % normalVelocity % array
 
@@ -1069,7 +1111,7 @@ contains
          do i = 1, nEdgesOnCell(iCell)
            iEdge = edgesOnCell(i, iCell)
            factor = 0.5 * dcEdge(iEdge) * dvEdge(iEdge) * invAreaCell
-           delU2 = (normalVelocity(1,iEdge) - normalVelocity(k,iEdge))**2 
+           delU2 = (normalVelocitySurfaceLayer(iEdge) - normalVelocity(k,iEdge))**2 
            deltaVelocitySquared = deltaVelocitySquared + factor * delU2
          enddo
 
