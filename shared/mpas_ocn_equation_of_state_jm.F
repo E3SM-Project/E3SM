@@ -75,13 +75,13 @@ contains
 !>      can be computed using displacement_type = 'surfaceDisplaced'.
 !>
 !>  When using displacement_type = 'surfaceDisplaced', k_displaced is 
-!>      ignored and tracersSurfaceValue must be present.
+!>      ignored and tracersSurfaceLayerValue must be present.
 !
 !-----------------------------------------------------------------------
 
    subroutine ocn_equation_of_state_jm_density(mesh, k_displaced, displacement_type, &
        indexT, indexS, tracers, density, err, &
-       tracersSurfaceValue, thermalExpansionCoeff, salineContractionCoeff)!{{{
+       tracersSurfaceLayerValue, thermalExpansionCoeff, salineContractionCoeff)!{{{
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !  This module contains routines necessary for computing the density
    !  from model temperature and salinity using an equation of state.
@@ -111,7 +111,7 @@ contains
       real (kind=RKIND), dimension(:,:,:), intent(in) :: tracers
       real (kind=RKIND), dimension(:,:), intent(out) :: density
       integer, intent(out) :: err
-      real (kind=RKIND), dimension(:,:), intent(in), optional :: tracersSurfaceValue
+      real (kind=RKIND), dimension(:,:), intent(in), optional :: tracersSurfaceLayerValue
       real (kind=RKIND), dimension(:,:), intent(out), optional :: &
          thermalExpansionCoeff,  &! Thermal expansion coefficient (alpha), defined as $-1/\rho d\rho/dT$ (note negative sign)
          salineContractionCoeff   ! Saline contraction coefficient (beta), defined as $1/\rho d\rho/dS$
@@ -227,15 +227,15 @@ contains
 
 !  fill tracerTS
       if (displacement_type == 'surfaceDisplaced') then
-        if(present(tracersSurfaceValue)) then
+        if(present(tracersSurfaceLayerValue)) then
           do k=1,nVertLevels
-            tracerTS(1,k,:) = tracersSurfaceValue(indexT,:)
-            tracerTS(2,k,:) = tracersSurfaceValue(indexS,:)
+            tracerTS(1,k,:) = tracersSurfaceLayerValue(indexT,:)
+            tracerTS(2,k,:) = tracersSurfaceLayerValue(indexS,:)
           enddo
           displacement_type_local = 'relative'
           k_displaced_local = 0
         else
-          write (stderrUnit,*) 'Abort: tracersSurfaceValue must be present'
+          write (stderrUnit,*) 'Abort: tracersSurfaceLayerValue must be present'
           call mpas_dmpar_abort(dminfo)
         endif
       else

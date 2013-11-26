@@ -104,14 +104,14 @@ contains
          salineContractionCoeff   ! Saline contraction coefficient (beta), defined as $1/\rho d\rho/dS$
 
       integer, dimension(:), pointer :: maxLevelCell
-      real (kind=RKIND), dimension(:,:), pointer :: tracersSurfaceValue
+      real (kind=RKIND), dimension(:,:), pointer :: tracersSurfaceLayerValue
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers
       integer :: nCells, iCell, k, indexT, indexS
       type (dm_info) :: dminfo
 
       err = 0
 
-      tracersSurfaceValue => diagnostics % tracersSurfaceValue % array
+      tracersSurfaceLayerValue => diagnostics % tracersSurfaceLayerValue % array
       tracers => state % tracers % array
       indexT = state % index_temperature
       indexS = state % index_salinity
@@ -124,7 +124,7 @@ contains
       elseif (jmEos) then
 
          call ocn_equation_of_state_jm_density(mesh, k_displaced, displacement_type, indexT, indexS, tracers, density, err, &
-            tracersSurfaceValue, thermalExpansionCoeff, salineContractionCoeff)
+            tracersSurfaceLayerValue, thermalExpansionCoeff, salineContractionCoeff)
 
       endif
 
