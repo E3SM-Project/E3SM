@@ -5,7 +5,6 @@
 !> \brief MPAS ocean vertical mixing interface to CVMix
 !> \author Todd Ringler
 !> \date   04 February 2013
-!> \version SVN:$Id:$
 !> \details
 !>  This module contains the routines for calls into CVMix
 !>
@@ -71,7 +70,6 @@ contains
 !> \brief   Computes mixing coefficients using CVMix
 !> \author  Todd Ringler
 !> \date    04 February 2013
-!> \version SVN:$Id$
 !> \details 
 !>  This routine computes the vertical mixing coefficients for momentum
 !>  and tracers by calling CVMix routines.
@@ -314,7 +312,6 @@ contains
 !> \ get and puts into CVMix
 !> \author  Todd Ringler
 !> \date    04 February 2013
-!> \version SVN:$Id$
 !> \details 
 !>  This routine initializes a variety of quantities related to 
 !>  vertical mixing in the ocean. Parameters are set by calling into CVMix

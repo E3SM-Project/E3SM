@@ -12,7 +12,6 @@
 !> \brief MPAS ocean surface fluxes for thickness
 !> \author Doug Jacobsen
 !> \date   12/17/12
-!> \version SVN:$Id:$
 !> \details
 !>  This module contains the routine for computing 
 !>  tendencies for thickness from surface fluxes
@@ -65,7 +64,6 @@ contains
 !> \brief   Computes tendency term from horizontal advection of thickness
 !> \author  Doug Jacobsen
 !> \date    15 September 2011
-!> \version SVN:$Id$
 !> \details 
 !>  This routine computes the horizontal advection tendency for
 !>  thicknes based on current state and user choices of forcings.
@@ -154,7 +152,6 @@ contains
 !> \brief   Initializes ocean horizontal thickness surface fluxes
 !> \author  Doug Jacobsen
 !> \date    12/17/12
-!> \version SVN:$Id$
 !> \details 
 !>  This routine initializes quantities related to thickness 
 !>  surface fluxes in the ocean. 
