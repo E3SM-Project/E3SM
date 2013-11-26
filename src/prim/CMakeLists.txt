@@ -39,6 +39,7 @@ SET(PRIM_SRCS ${SRC_SHARE_DIR}/kinds.F90
 					     ${SRC_SHARE_DIR}/thread_mod.F90
 					     ${SRC_SHARE_DIR}/bndry_mod.F90
 					     ${SRC_SHARE_DIR}/derivative_mod.F90
+					     ${SRC_DIR}/derived_type_mod.F90
 					     ${SRC_SHARE_DIR}/viscosity_mod.F90
 					     ${SRC_SHARE_DIR}/spacecurve_mod.F90
 					     ${SRC_SHARE_DIR}/cube_mod.F90
