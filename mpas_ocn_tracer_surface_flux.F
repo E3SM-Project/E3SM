@@ -12,7 +12,6 @@
 !> \brief MPAS ocean tracer surface flux
 !> \author Doug Jacobsen
 !> \date   12/17/12
-!> \version SVN:$Id:$
 !> \details
 !>  This module contains the routine for computing 
 !>  surface flux tendencies.  
@@ -64,7 +63,6 @@ contains
 !> \brief   Computes tendency term for surface fluxes
 !> \author  Doug Jacobsen
 !> \date    12/17/12
-!> \version SVN:$Id$
 !> \details 
 !>  This routine computes the tendency for tracers based on surface fluxes.
 !
@@ -157,7 +155,6 @@ contains
 !> \brief   Initializes ocean tracer surface flux quantities
 !> \author  Doug Jacobsen
 !> \date    12/17/12
-!> \version SVN:$Id$
 !> \details 
 !>  This routine initializes quantities related to surface fluxes in the ocean.
 !

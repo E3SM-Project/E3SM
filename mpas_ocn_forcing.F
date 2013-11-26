@@ -12,7 +12,6 @@
 !> \brief MPAS ocean forcing
 !> \author Doug Jacobsen
 !> \date   04/25/12
-!> \version SVN:$Id:$
 !> \details
 !>  This module contains driver routines for building the forcing arrays.
 !
@@ -71,7 +70,6 @@ contains
 !> \brief   Determines the forcing arrays.
 !> \author  Doug Jacobsen
 !> \date    12/13/12
-!> \version SVN:$Id$
 !> \details 
 !>  This routine computes the forcing arrays used later in MPAS.
 !
@@ -135,7 +133,6 @@ contains
 !> \brief   Initializes forcing module
 !> \author  Doug Jacobsen
 !> \date    12/13/12
-!> \version SVN:$Id$
 !> \details 
 !>  This routine initializes the forcing modules.
 !
@@ -180,7 +177,6 @@ contains
 !> \brief   Transmission coefficient array for surface forcing.
 !> \author  Doug Jacobsen
 !> \date    10/03/2013
-!> \version SVN:$Id$
 !> \details 
 !>  This subroutine builds the transmission coefficient array for use in
 !>  applying surface fluxes deeper than the surface layer.
@@ -241,7 +237,6 @@ contains
 !> \brief   Transmission coefficient for surface forcing.
 !> \author  Doug Jacobsen
 !> \date    05/03/2013
-!> \version SVN:$Id$
 !> \details 
 !>  This function computes and returns the transmission coefficient for surface
 !>  forcing based on depth. It uses an exponential decay function to determine the

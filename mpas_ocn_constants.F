@@ -12,7 +12,6 @@
 !> \brief MPAS ocean specific constants
 !> \author Doug Jacobsen
 !> \date   04/25/12
-!> \version SVN:$Id:$
 !> \details
 !>  This module contains constants specific to the ocean model.
 !
@@ -77,7 +76,6 @@ contains
 !> \brief   Initializes the ocean constants
 !> \author  Doug Jacobsen
 !> \date    04/25/12
-!> \version SVN:$Id$
 !> \details 
 !>  This routine sets up constants for use in the ocean model.
 !

@@ -12,7 +12,6 @@
 !> \brief MPAS ocean sea ice formation module
 !> \author Doug Jacobsen
 !> \date   08/19/2013
-!> \version SVN:$Id:$
 !> \details
 !>  This module contains routines for the formation of sea ice.
 !
@@ -65,7 +64,6 @@ contains
 !> \brief   Performs the formation of Sea Ice within the ocean.
 !> \author  Doug Jacobsen
 !> \date    08/19/2013
-!> \version SVN:$Id$
 !> \details 
 !>   ocn_sea_ice_formation performs the adjustment of tracer values
 !>   and layerThickness based on the formation of frazil ice within the ocean.
@@ -245,7 +243,6 @@ contains
 !> \brief   Computes the freezing temperature of the ocean.
 !> \author  Doug Jacobsen
 !> \date    08/29/2013
-!> \version SVN:$Id$
 !> \details 
 !>  This routine computes the freezing temperature of the ocean at a given
 !>  salinity value.
@@ -265,7 +262,6 @@ contains
 !> \brief   Initializes ocean sea ice module.
 !> \author  Doug Jacobsen
 !> \date    08/19/2013
-!> \version SVN:$Id$
 !> \details 
 !>  This routine initializes the ocean sea ice module and variables..
 !

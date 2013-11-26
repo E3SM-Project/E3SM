@@ -12,7 +12,6 @@
 !> \brief MPAS ocean bulk forcing
 !> \author Doug Jacobsen
 !> \date   04/25/12
-!> \version SVN:$Id:$
 !> \details
 !>  This module contains routines for building the forcing arrays,
 !>  if bulk forcing is used.
@@ -63,7 +62,6 @@ contains
 !> \brief   Determines the forcing array used for the bulk forcing.
 !> \author  Doug Jacobsen
 !> \date    04/25/12
-!> \version SVN:$Id$
 !> \details 
 !>  This routine computes the forcing arrays used later in MPAS.
 !
@@ -191,7 +189,6 @@ contains
 !> \brief   Initializes bulk forcing module
 !> \author  Doug Jacobsen
 !> \date    04/25/12
-!> \version SVN:$Id$
 !> \details 
 !>  This routine initializes the bulk forcing module.
 !
