@@ -123,6 +123,7 @@ contains
       real (kind=RKIND), dimension(:,:), pointer :: tracersSurfaceLayerValue ! => diagnostics % tracersSurfaceLayerValue % array
       real (kind=RKIND), dimension(:),   pointer :: boundaryLayerDepth, boundaryLayerDepthEdge
       real (kind=RKIND), dimension(:),   pointer :: normalVelocitySurfaceLayer
+      real (kind=RKIND), dimension(:),   pointer :: indexSurfaceLayerDepth
 
       layerThickness => state % layerThickness % array
       normalVelocity => state % normalVelocity % array
@@ -194,6 +195,7 @@ contains
       boundaryLayerDepth => diagnostics % boundaryLayerDepth % array(:)
       boundaryLayerDepthEdge => diagnostics % boundaryLayerDepthEdge % array(:)
       normalVelocitySurfaceLayer => diagnostics % normalVelocitySurfaceLayer % array(:)
+      indexSurfaceLayerDepth => diagnostics % indexSurfaceLayerDepth % array(:)
 
       !
       ! Compute height on cell edges at velocity locations
@@ -540,6 +542,7 @@ contains
       ! the ocean surface layer is generally assumed to be about 0.1 of the boundary layer depth
       !
       tracersSurfaceLayerValue(:,:) = 0.0
+      indexSurfaceLayerDepth(:) = -9.e30
       do iCell=1,nCells
         surfaceLayerDepth = boundaryLayerDepth(iCell) * config_cvmix_kpp_surface_layer_extent
         sumSurfaceLayer=0.0
@@ -548,6 +551,7 @@ contains
          if(sumSurfaceLayer.gt.surfaceLayerDepth) then
            sumSurfaceLayer = sumSurfaceLayer - layerThickness(k,iCell)
            rSurfaceLayer = int(k-1) + (surfaceLayerDepth-sumSurfaceLayer)/layerThickness(k,iCell)
+           indexSurfaceLayerDepth(iCell) = rSurfaceLayer
            exit
          endif
         end do
@@ -1003,15 +1007,18 @@ contains
            normalVelocitySurfaceLayer
       real (kind=RKIND), dimension(:), pointer :: surfaceWindStress, surfaceWindStressMagnitude
       real (kind=RKIND), dimension(:,:), pointer ::  &
-           layerThickness, zMid, zTop, bulkRichardsonNumber, tracersSurfaceValues, densitySurfaceDisplaced, density, &
+           layerThickness, zMid, zTop, tracersSurfaceValues, densitySurfaceDisplaced, density, &
            normalVelocity, surfaceTracerFlux, thermalExpansionCoeff, salineContractionCoeff
+
+      real (kind=RKIND), dimension(:), pointer :: &
+           indexSurfaceLayerDepth
+
+      real (kind=RKIND), dimension(:,:), pointer ::  & 
+           bulkRichardsonNumber, bulkRichardsonNumberBuoy, bulkRichardsonNumberShear
 
       ! local
       integer :: iCell, iEdge, i, k, err, indexTempFlux, indexSaltFlux
-      real (kind=RKIND) :: numerator, denominator, factor, deltaVelocitySquared, turbulentVelocitySquared, delU2, invAreaCell
-
-      ! set the parameter turbulentVelocitySquared
-      turbulentVelocitySquared = 0.001
+      real (kind=RKIND) :: buoyContribution, shearContribution, factor, deltaVelocitySquared, delU2, invAreaCell
 
       ! set scalar values
       nCells      = mesh % nCells
@@ -1034,6 +1041,9 @@ contains
       zTop                          => diagnostics % zTop % array
       density                       => diagnostics % density % array
       bulkRichardsonNumber          => diagnostics % bulkRichardsonNumber % array
+      bulkRichardsonNumberBuoy      => diagnostics % bulkRichardsonNumberBuoy % array
+      bulkRichardsonNumberShear     => diagnostics % bulkRichardsonNumberShear % array
+      indexSurfaceLayerDepth        => diagnostics % indexSurfaceLayerDepth % array
       tracersSurfaceValues          => diagnostics % tracersSurfaceValue  % array
       boundaryLayerDepth            => diagnostics % boundaryLayerDepth % array
       surfaceFrictionVelocity       => diagnostics % surfaceFrictionVelocity % array
@@ -1103,8 +1113,15 @@ contains
        ! compute surface friction velocity
          surfaceFrictionVelocity(iCell) = sqrt(surfacewindStressMagnitude(iCell) / config_density0)
 
+       ! zero the bulk Richardson number within the ocean surface layer
+       ! this prevent CVMix/KPP from mis-diagnosing the OBL to be within the surface layer
+        k = indexSurfaceLayerDepth(iCell)+1
+        bulkRichardsonNumber(1:k,iCell) = 0.0
+        bulkRichardsonNumberBuoy(1:k,iCell) = 0.0
+        bulkRichardsonNumberShear(1:k,iCell) = 1.0
+
        ! loop over vertical to compute bulk Richardson number
-        do k=1,maxLevelCell(iCell)
+        do k=indexSurfaceLayerDepth(iCell)+2,maxLevelCell(iCell)
 
         ! find deltaVelocitySquared defined at cell centers based on velocity at levels 1 and k
          deltaVelocitySquared = 0.0
@@ -1115,11 +1132,13 @@ contains
            deltaVelocitySquared = deltaVelocitySquared + factor * delU2
          enddo
 
-         numerator = gravity * (zTop(1,iCell) - zMid(k,iCell)) * (density(k,iCell) - densitySurfaceDisplaced(k,iCell))
-         denominator = config_density0 * (deltaVelocitySquared + turbulentVelocitySquared)
+         buoyContribution = gravity * (density(k,iCell) - densitySurfaceDisplaced(k,iCell)) / config_density0
+         shearContribution = deltaVelocitySquared
 
         ! compute bulk Richardson number
-         bulkRichardsonNumber(k,iCell) = numerator / denominator
+         bulkRichardsonNumber(k,iCell) = (zTop(1,iCell) - zMid(k,iCell)) * buoyContribution / (shearContribution + 1.0e-10)
+         bulkRichardsonNumberBuoy(k,iCell) = buoyContribution
+         bulkRichardsonNumberShear(k,iCell) = shearContribution
 
        enddo
 

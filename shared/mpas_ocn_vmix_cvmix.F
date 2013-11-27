@@ -121,13 +121,17 @@ contains
         
       real (kind=RKIND), dimension(:,:), pointer :: &
         vertViscTopOfCell, vertDiffTopOfCell, layerThickness, &
-        bulkRichardsonNumber, zMid, zTop, density, displacedDensity, potentialDensity
+        zMid, zTop, density, displacedDensity, potentialDensity
+
+      real (kind=RKIND), dimension(:,:), pointer :: &
+        bulkRichardsonNumber, bulkRichardsonNumberCVMix
 
       real (kind=RKIND), dimension(:,:,:), pointer :: vertNonLocalFlux
       integer :: index_nonLocalTemp, index_nonLocalSalt, index_nonLocalZonalVel, index_nonLocalMeridVel
 
       integer :: k, iCell, nVertLevels, jCell, iNeighbor
-      real (kind=RKIND) :: r
+      real (kind=RKIND) :: r, layerSum, iter
+      real (kind=RKIND), dimension(:), allocatable :: sigma, turbulentScalarVelocityScale
 
       !-----------------------------------------------------------------
       !
@@ -175,12 +179,13 @@ contains
       displacedDensity => diagnostics % displacedDensity % array(:,:)
       potentialDensity => diagnostics % potentialDensity % array(:,:)
       bulkRichardsonNumber => diagnostics % bulkRichardsonNumber % array(:,:)
+      bulkRichardsonNumberCVMix => diagnostics % bulkRichardsonNumberCVMix % array(:,:)
 
       !
       ! set pointers for fields related ocean forcing at surface
       !
       surfaceFrictionVelocity => diagnostics % surfaceFrictionVelocity % array(:)
-      surfaceBuoyancyForcing => diagnostics % surfaceBuoyancyForcing % array(:)
+      surfaceBuoyancyForcing  => diagnostics % surfaceBuoyancyForcing % array(:)
 
       !
       ! set pointers for viscosity/diffusivity and intialize to zero
@@ -217,6 +222,7 @@ contains
       allocate(cvmix_variables % diff_iface(nVertLevels+1,2))
       allocate(cvmix_variables % zw_iface(nVertLevels+1))
       allocate(cvmix_variables % kpp_transport_iface(nVertLevels+1,4))
+      allocate(cvmix_variables % Rib(nVertLevels))
 
       do iCell=1,mesh%nCellsSolve
 
@@ -244,7 +250,6 @@ contains
         ! fill the intent(in) KPP
         cvmix_variables % surf_fric = diagnostics % surfaceFrictionVelocity % array(iCell)
         cvmix_variables % surf_buoy = diagnostics % surfaceBuoyancyForcing % array(iCell)
-        cvmix_variables % Rib => diagnostics % BulkRichardsonNumber % array(1:nVertLevels,iCell)
 
         ! call shear-based mixing scheme
         if (config_use_cvmix_shear) then
@@ -333,45 +338,51 @@ contains
       ! compute and smooth CVMix/KPP computed ocean boundary layer depth
       !
       if (config_use_cvmix_kpp) then
+
+        allocate(sigma(nVertLevels))
+        allocate(turbulentScalarVelocityScale(nVertLevels))
+
         do iCell=1,mesh%nCells
   
-       ! sigma(1) = 0.0
-       ! layerSum = 0.0
-       ! do k=2,maxLevelCell(iCell)
-       !   layerSum = layerSum + layerThickness(k-1,iCell)
-       !   sigma(k) = layerSum / diagnostics % boundaryLayerDepth % array(iCell)
-       ! enddo
-       ! do k=maxLevelCell(iCell),nVertLevels
-       !   sigma(k) = sigma(maxLevelCell(iCell))
-       ! enddo
+         ! compute sigma at cell center
+         sigma(1) = 0.0
+         layerSum = 0.0
+         do k=2,maxLevelCell(iCell)
+           layerSum = layerSum + 0.5*(layerThickness(k-1,iCell)+layerThickness(k,iCell))
+           sigma(k) = layerSum / diagnostics % boundaryLayerDepth % array(iCell)
+         enddo
+         do k=maxLevelCell(iCell),nVertLevels
+           sigma(k) = sigma(maxLevelCell(iCell))
+         enddo
 
          ! the computation of the boundary layer depth is iterative
-       ! do iter=1,2
+         do iter=1,config_cvmix_kpp_niteratorOBL_solver
 
            ! compute the turbulent scales in order to compute the bulk Richardson number
-       !   call cvmix_kpp_compute_turbulent_scales( &
-       !     sigma = sigma, &
-       !     OBL_depth = diagnostics % boundaryLayerDepth % array(iCell), &
-       !     surf_buoy = diagnostics % surfaceBuoyancyForcing % array(iCell), &
-       !     surf_fric = diagnostics % surfaceFrictionVelocity % array(iCell),  &
-       !     w_s = turbulentVelocityScale )
+           call cvmix_kpp_compute_turbulent_scales( &
+             sigma(:), &
+             diagnostics % boundaryLayerDepth % array(iCell), &
+             diagnostics % surfaceBuoyancyForcing % array(iCell), &
+             diagnostics % surfaceFrictionVelocity % array(iCell),  &
+             w_s = turbulentScalarVelocityScale(:) )
 
-       !   cvmix_variables % Rib = cvmix_kpp_compute_bulk_Richardson( &
-       !     zt_cntr = diagnostics % zMid % array(1:nVertLevels,iCell), & 
-       !     delta_buoy_cntr = , &
-       !     delta_Vsqr_cntr,    &
-       !     ws_cntr = w_s , &
-       !     Nsqr_iface = diagnostics % BruntVaisalaFreqTop % array(:,iCell) )
+           cvmix_variables % Rib  = cvmix_kpp_compute_bulk_Richardson( &
+             diagnostics % zMid % array(1:nVertLevels,iCell), & 
+             diagnostics % bulkRichardsonNumberBuoy % array(1:nVertLevels,iCell), &
+             diagnostics % bulkRichardsonNumberShear % array(1:nVertLevels,iCell), &
+             ws_cntr = turbulentScalarVelocityScale(:), &
+             Nsqr_iface = diagnostics % BruntVaisalaFreqTop % array(:,iCell) )
 
            ! compute the boundary layer depth based on model state at current time step
            ! boundaryLayerDepth is then smoothed and a halo update is applied elsewhere
            call cvmix_kpp_compute_OBL_depth( CVmix_vars = cvmix_variables)
 
-       ! enddo
+         enddo
 
          ! intent out of OBL_depth is boundary layer depth measured in meters and vertical index
          diagnostics % boundaryLayerDepth % array(iCell) = cvmix_variables % OBL_depth
          diagnostics % indexBoundaryLayerDepth % array(iCell) = cvmix_variables % kOBL_depth
+         diagnostics % bulkRichardsonNumberCVMix % array(:,iCell) = cvmix_variables % Rib(:)
   
         end do  ! do iCell=1,mesh%nCells
   
@@ -389,6 +400,10 @@ contains
              0.5*(diagnostics % boundaryLayerDepth % array(iCell)+r/mesh%nEdgesOnCell%array(iCell))
   
         end do  ! do iCell=1,mesh%nCells
+
+        deallocate(sigma)
+        deallocate(turbulentScalarVelocityScale)
+
       end if ! if (config_use_cvmix_kpp)
 
       ! dellocate cmvix variables
@@ -396,6 +411,7 @@ contains
       deallocate(cvmix_variables % diff_iface)
       deallocate(cvmix_variables % zw_iface)
       deallocate(cvmix_variables % kpp_transport_iface)
+      deallocate(cvmix_variables % Rib)
 
    !--------------------------------------------------------------------
 
@@ -513,6 +529,7 @@ contains
         call cvmix_init_kpp ( &
                ri_crit = config_cvmix_kpp_criticalBulkRichardsonNumber, &
                interp_type = config_cvmix_kpp_interpolationOMLType, &
+               interp_type2 = config_cvmix_kpp_interpolationOMLType, &
                lEkman = config_cvmix_kpp_EkmanOBL, &
                lMonOb = config_cvmix_kpp_MonObOBL, &
                MatchTechnique = config_cvmix_kpp_matching, &
