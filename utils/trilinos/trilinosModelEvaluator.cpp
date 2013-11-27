@@ -107,7 +107,7 @@ trilinosModelEvaluator::trilinosModelEvaluator(int nelems, double* statevector,
 
   initialize(statevector);
 
-  precOp = Teuchos::rcp(new simpleClipPreconditioner(N, xVec, xMap, blackbox_res,
+  precOp = Teuchos::rcp(new simplePreconditioner(N, xVec, xMap, blackbox_res,
                                                  precdata, 
                                                  precFunctionblock11_, precFunctionblock12_,
                                                  precFunctionblock21_, precFunctionblock22_,
@@ -362,7 +362,7 @@ int identityPreconditioner::ApplyInverse(const Epetra_MultiVector& X, Epetra_Mul
 /*******************************************************************************/
 /*******************************************************************************/
 /*******************************************************************************/
-simpleClipPreconditioner::simpleClipPreconditioner (
+simplePreconditioner::simplePreconditioner (
        int N_, RCP<Epetra_Vector> xVec_, RCP<Epetra_Map> xMap_,
        void* blackbox_res_, void* precdata_,
        void (*precFunctionblock11_)(double *, int, double*, void *),
@@ -392,7 +392,7 @@ simpleClipPreconditioner::simpleClipPreconditioner (
   if (comm.MyPID()==0) printproc=true;
   else                 printproc=false;
 
-  if (printproc) std::cout << "Constructing preconditioner:  simpleClipPreconditioner" << std::endl;
+  if (printproc) std::cout << "Constructing preconditioner:  simplePreconditioner" << std::endl;
 
 
   UVMap = Teuchos::rcp(new Epetra_Map(-1, 2*N/3, 0, comm));
@@ -444,7 +444,7 @@ simpleClipPreconditioner::simpleClipPreconditioner (
 
 }
 
-int simpleClipPreconditioner::computePreconditioner(RCP<const Epetra_Vector> xVecNew, void* precdata_)
+int simplePreconditioner::computePreconditioner(RCP<const Epetra_Vector> xVecNew, void* precdata_)
 {
   precdata = precdata_;
   // Update state in preconditioner code
@@ -459,7 +459,7 @@ int simpleClipPreconditioner::computePreconditioner(RCP<const Epetra_Vector> xVe
 }
 
 
-int simpleClipPreconditioner::ApplyInverse(const Epetra_MultiVector& X, Epetra_MultiVector& Y) const
+int simplePreconditioner::ApplyInverse(const Epetra_MultiVector& X, Epetra_MultiVector& Y) const
 {
 
 // const Epetra_Vector & x_v = dynamic_cast<const Epetra_Vector&> (X);
