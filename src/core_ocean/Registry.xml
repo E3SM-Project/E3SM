@@ -488,6 +488,10 @@
 					description="If true, diffusivity and viscosity is computed using CVMix KPP"
 					possible_values="True or False"
 		/>
+                <nml_option name="config_cvmix_kpp_niteratorOBL_solver" type="integer" default_value="2" units="NA"
+                                        description="number of iteration to solve for KPP ocean boundary layer depth"
+                                        possible_values="Any positive integer"
+                />
 		<nml_option name="config_cvmix_kpp_criticalBulkRichardsonNumber" type="real" default_value="0.25" units="non-dimensional"
 					description="critical bulk Richardson number used to determine bottom of ocean mixed layer"
 					possible_values="Any positive real value."
@@ -997,9 +1001,11 @@
 			<var name="vertViscTopOfCell"/>
 			<var name="vertDiffTopOfCell"/>
 			<var name="bulkRichardsonNumber"/>
+			<var name="bulkRichardsonNumberCVMix"/>
 			<var name="boundaryLayerDepth"/>
 			<var name="boundaryLayerDepthEdge"/>
 			<var name="indexBoundaryLayerDepth"/>
+			<var name="indexSurfaceLayerDepth"/>
 			<var name="surfaceFrictionVelocity"/>
 			<var name="windStressZonalDiag"/>
 			<var name="windStressMeridionalDiag"/>
@@ -1581,8 +1587,17 @@
 		<var name="vertDiffTopOfCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^{-1}"
 			 description="vertical diffusion defined at the cell center (horizontally) and top (vertically)"
 		/>
+		<var name="bulkRichardsonNumberCVMix" type="real" dimensions="nVertLevels nCells Time" units="nondimensional"
+			 description="bulk Richardson number"
+		/>
 		<var name="bulkRichardsonNumber" type="real" dimensions="nVertLevels nCells Time" units="nondimensional"
 			 description="bulk Richardson number"
+		/>
+		<var name="bulkRichardsonNumberBuoy" type="real" dimensions="nVertLevels nCells Time" units="nondimensional"
+			 description="contribution of buoyancy to bulk Richardson number"
+		/>
+		<var name="bulkRichardsonNumberShear" type="real" dimensions="nVertLevels nCells Time" units="nondimensional"
+			 description="contribution of shear to bulk Richardson number"
 		/>
 		<var name="boundaryLayerDepth" type="real" dimensions="nCells Time" units="m"
 			 description="diagnosed depth of the ocean surface boundary layer"
@@ -1607,7 +1622,10 @@
 		<var name="indexBoundaryLayerDepth" type="real" dimensions="nCells Time"  units="none"
 			 description="int(indexBoundaryLayerDepth) is vertical layer within which boundaryLayerDepth resides. mod(indexBoundaryLayerDepth) indicates whether boundaryLayerDepth resides above layer center (value = 0.25) or below layer center (value=0.75)"
 		/>
-		<var name="surfaceFrictionVelocity" type="real" dimensions="nCells Time" units="m s^{-1}"
+		<var name="indexSurfaceLayerDepth" type="real" dimensions="nCells Time" streams="o" units="none"
+			 description="surface layer entirely encompasses int(indexSurfaceLayerDepth) vertical layers and fraction(indexSurfaceLayerDepth) of the int(indexSurfaceLayerDepth)+1 layer."
+		/>
+		<var name="surfaceFrictionVelocity" type="real" dimensions="nCells Time"  units="m s^{-1}"
 			 description="diagnosed surface friction velocity defined as square root of (mag(wind stress) / reference density)"
 		/>
 		<var name="windStressZonalDiag" type="real" dimensions="nCells Time" units="N m^{-2}"
