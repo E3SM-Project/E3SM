@@ -425,11 +425,11 @@
 					possible_values="True or False"
 		/>
 		<nml_option name="config_cvmix_background_diffusion" type="real" default_value="1.0e-5" units="m^2 s^{-1}"
-					description="Backround vertical diffusion applied to tracer quantities"
+					description="Background vertical diffusion applied to tracer quantities"
 					possible_values="Any positive real value."
 		/>
 		<nml_option name="config_cvmix_background_viscosity" type="real" default_value="1.0e-4" units="m^2 s^{-1}"
-					description="Backround vertical viscosity applied to horizontal velocity"
+					description="Background vertical viscosity applied to horizontal velocity"
 					possible_values="Any positive real value."
 		/>
 		<nml_option name="config_use_cvmix_convection" type="logical" default_value=".false." units="NA"
@@ -441,63 +441,63 @@
 					possible_values="Any positive real value."
 		/>
 		<nml_option name="config_cvmix_convective_viscosity" type="real" default_value="1.0" units="m^2 s^{-1}"
-					description="Convective vertical viscosity applied to horizontal velocity"
+					description="Convective vertical viscosity applied to horizontal velocity components"
 					possible_values="Any positive real value."
 		/>
                 <nml_option name="config_cvmix_convective_basedOnBVF" type="logical" default_value=".false." units="NA"
-                                        description="If true, convective is triggered based on value of config_cvmix_convective_triggerBVF"
+                                        description="If true, convection is triggered based on value of config_cvmix_convective_triggerBVF"
                                         possible_values="True or False"
                 />
                 <nml_option name="config_cvmix_convective_triggerBVF" type="real" default_value="0.0" units="s^{-2}"
-                                        description="Value below which convective mixing is triggered"
-                                        possible_values="Any real value."
+                                        description="Value of Brunt Viasala frequency squared below which convective mixing is triggered"
+                                        possible_values="Any real value"
                 />
                 <nml_option name="config_use_cvmix_shear" type="logical" default_value=".false." units="NA"
                                         description="If true, shear-based mixing is computed using CVMix"
                                         possible_values="True or False"
                 />
                 <nml_option name="config_cvmix_shear_mixing_scheme" type="character" default_value="PP" units="NA"
-                                        description="Choose between Pacanowski/Philander or Large et al. shear mixing."
+                                        description="Choose between Pacanowski/Philander or Large et al. shear mixing"
                                         possible_values="PP or KPP"
                 />
                 <nml_option name="config_cvmix_shear_PP_nu_zero" type="real" default_value="0.005" units="m^2 s^{-1}"
-                                        description="Numerator of PP Eq (xx)"
-                                        possible_values="Any positive real value."
+                                        description="Numerator of Pacanowski and Philander (1981) Eq (1)"
+                                        possible_values="Any positive real value"
                 />
                 <nml_option name="config_cvmix_shear_PP_alpha" type="real" default_value="5.0" units="unitless"
-                                        description="Alpha values used in PP Eq (yy)"
+                                        description="Alpha values used in Pacanowski and Philander (1981) Eqs (1) and (2)"
                                         possible_values="Any positive real value"
                 />
                 <nml_option name="config_cvmix_shear_PP_exp" type="real" default_value="2.0" units="unitless"
-                                        description="Exponent used in denominator of PP Eq (zz)"
+                                        description="Exponent used in denominator of Pacanowski and Philander (1981) Eqs (1)"
                                         possible_values="Any positive real value"
                 />
-                <nml_option name="config_cvmix_shear_KPP_nu_zero" type="real" default_value="xxy" units="m^2 s^{-1}"
-                                        description="yy"
-                                        possible_values="zz"
+                <nml_option name="config_cvmix_shear_KPP_nu_zero" type="real" default_value="0.005" units="m^2 s^{-1}"
+                                        description="Maximum diffusivity produced by shear-generated mixing"
+                                        possible_values="Any positive real value"
                 />
-                <nml_option name="config_cvmix_shear_KPP_Ri_zero" type="real" default_value="xxy" units="unitless"
-                                        description="yy"
-                                        possible_values="zz"
+                <nml_option name="config_cvmix_shear_KPP_Ri_zero" type="real" default_value="0.7" units="non-dimensional"
+                                        description="Theshold gradient Richardson number to produced enhanced diffusivities, See Large et al. (1994) Eq (28a,b,c)"
+                                        possible_values="Any positive real value"
                 />
-                <nml_option name="config_cvmix_shear_KPP_exp" type="real" default_value="xxy" units="unitless"
-                                        description="yy"
-                                        possible_values="zz"
+                <nml_option name="config_cvmix_shear_KPP_exp" type="real" default_value="3" units="NA"
+                                        description="Exponent relating diffusivities to $Ri_g$. Referred to as $p_1$ in Large et al. (1994) Eq (28b)"
+                                        possible_values="Any positive real value"
                 />
 		<nml_option name="config_use_cvmix_kpp" type="logical" default_value=".false." units="NA"
 					description="If true, diffusivity and viscosity is computed using CVMix KPP"
 					possible_values="True or False"
 		/>
                 <nml_option name="config_cvmix_kpp_niteratorOBL_solver" type="integer" default_value="2" units="NA"
-                                        description="number of iteration to solve for KPP ocean boundary layer depth"
+                                        description="Number of iteration to solve for KPP ocean boundary layer depth"
                                         possible_values="Any positive integer"
                 />
 		<nml_option name="config_cvmix_kpp_criticalBulkRichardsonNumber" type="real" default_value="0.25" units="non-dimensional"
-					description="critical bulk Richardson number used to determine bottom of ocean mixed layer"
+					description="Critical bulk Richardson number used to determine bottom of ocean mixed layer"
 					possible_values="Any positive real value."
 		/>
-		<nml_option name="config_cvmix_kpp_matching" type="character" default_value="SimpleShapes" units="unitless"
-					description="determines how the KPP diffusivities are matched to values at base of boundary layer"
+		<nml_option name="config_cvmix_kpp_matching" type="character" default_value="SimpleShapes" units="NA"
+					description="Determines how the KPP diffusivities are matched to values at base of boundary layer"
 					possible_values="MatchBoth, MatchGradient, SimpleShapes"
 		/>
                 <nml_option name="config_cvmix_kpp_EkmanOBL" type="logical" default_value=".false." units="NA"
@@ -508,13 +508,13 @@
                                         description="If true, boundary layer depth is limited by Monin-Obukhov layer depth"
                                         possible_values="True or False"
                 />
-                <nml_option name="config_cvmix_kpp_interpolationOMLType" type="character" default_value="quadratic" units="unitless"
-                                        description="determine bottom of ocean mixed layer using linear, quadratic or cubic interpolation"
+                <nml_option name="config_cvmix_kpp_interpolationOMLType" type="character" default_value="quadratic" units="NA"
+                                        description="Determine bottom of ocean mixed layer using linear, quadratic or cubic interpolation"
                                         possible_values="linear, quadratic, cubic"
                 />
                 <nml_option name="config_cvmix_kpp_surface_layer_extent" type="real" default_value="0.1" units="non-dimensional"
                                         description="The non-dimensional extent of the surface layer, measured as fraction of boundary layer depth"
-                                        possible_values="Any positive real value between 0 and 1"
+                                        possible_values="Any value between 0 and 1"
                 />
 	</nml_record>
 	<nml_record name="forcing" in_defaults="true">
