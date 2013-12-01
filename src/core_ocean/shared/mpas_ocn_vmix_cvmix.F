@@ -54,8 +54,8 @@ module ocn_vmix_cvmix
 
    type(cvmix_global_params_type) :: cvmix_global_params
    type(cvmix_bkgnd_params_type)  :: cvmix_background_params
-   type(cvmix_conv_params_type) :: cvmix_conv_params
-   type(cvmix_shear_params_type) :: cvmix_shear_params
+   type(cvmix_shear_params_type)  :: cvmix_shear_params
+   type(cvmix_tidal_params_type)  :: cvmix_tidal_params
    type(cvmix_data_type) :: cvmix_variables
 
 
@@ -121,9 +121,7 @@ contains
         
       real (kind=RKIND), dimension(:,:), pointer :: &
         vertViscTopOfCell, vertDiffTopOfCell, layerThickness, &
-        zMid, zTop, density, displacedDensity, potentialDensity
-
-      real (kind=RKIND), dimension(:,:), pointer :: &
+        zMid, zTop, density, displacedDensity, potentialDensity, &
         bulkRichardsonNumber
 
       real (kind=RKIND), dimension(:,:,:), pointer :: vertNonLocalFlux
@@ -137,7 +135,7 @@ contains
       !
       ! call relevant routines for computing mixing-related fields
       ! note that the user can choose multiple options and the 
-      !   mixing fields have to be merged together
+      !   mixing fields have to be added/merged together
       !
       !-----------------------------------------------------------------
 
@@ -181,7 +179,7 @@ contains
       bulkRichardsonNumber => diagnostics % bulkRichardsonNumber % array(:,:)
 
       !
-      ! set pointers for fields related ocean forcing at surface
+      ! set pointers for fields related forcing at ocean surface
       !
       surfaceFrictionVelocity => diagnostics % surfaceFrictionVelocity % array(:)
       surfaceBuoyancyForcing  => diagnostics % surfaceBuoyancyForcing % array(:)
@@ -196,7 +194,7 @@ contains
       vertDiffTopOfCell = 0.0
 
       !
-      ! set pointer for nonlocal Flux and intialize to zero
+      ! set pointers for nonlocal Flux and intialize to zero
       !
       vertNonLocalFlux => diagnostics % vertNonLocalFlux % array
       index_nonLocalTemp = diagnostics % index_vertNonLocalFluxTemp
@@ -207,7 +205,7 @@ contains
       vertNonLocalFlux = 0.0
 
       !
-      ! start by setting visocity/diffusivity to there mininum background values
+      ! start by adding the mininum background values to the visocity/diffusivity arrays
       !
       if (config_use_cvmix_background) then
         vertViscTopOfCell(:,:) = vertViscTopOfCell(:,:) + config_cvmix_background_viscosity
@@ -239,11 +237,10 @@ contains
         cvmix_variables%Ri_iface => diagnostics % RiTopOfCell % array(:,iCell)
 
         ! fill the intent(in) convective adjustment
-        ! TDR: check density
         cvmix_variables % nlev = mesh % maxLevelCell % array(iCell)
         cvmix_variables % ocn_depth = mesh % bottomDepth % array(iCell)
-        cvmix_variables % dens => diagnostics % displacedDensity % array(:,iCell)
-        cvmix_variables % dens_lwr => diagnostics % density % array(:,iCell)
+        cvmix_variables % dens => diagnostics % density % array(:,iCell)
+        cvmix_variables % dens_lwr => diagnostics % displacedDensity % array(:,iCell)
         cvmix_variables % buoy_iface => diagnostics % BruntVaisalaFreqTop % array(:,iCell)
 
         ! fill the intent(in) KPP
@@ -259,17 +256,23 @@ contains
                  CVmix_shear_params = cvmix_shear_params, &
                  CVmix_bkgnd_params = cvmix_background_params )
 
-          ! add convective mixing to vertical viscosity/diffusivity
+          ! add shear mixing to vertical viscosity/diffusivity
           vertViscTopOfCell(:,iCell) = vertViscTopOfCell(:,iCell) + cvmix_variables % visc_iface(:)
           vertDiffTopOfCell(:,iCell) = vertDiffTopOfCell(:,iCell) + cvmix_variables % diff_iface(:,1)
 
+          ! The following pertains to the 'PP' option of shear-generated mixing
           ! NOTE: at present, cvmix_coeffs_shear add in the background viscosity/diffusivity
           ! NOTE: the following two source code lines remove this double counting of the background
           ! NOTE: the following two source code lines should be deleted with cvmix_coeffs_shear is "fixed"
-          vertViscTopOfCell(:,iCell) = vertViscTopOfCell(:,iCell) - config_cvmix_background_viscosity
-          vertDiffTopOfCell(:,iCell) = vertDiffTopOfCell(:,iCell) - config_cvmix_background_diffusion
+          if(config_cvmix_shear_mixing_scheme.eq.'PP') then
+            vertViscTopOfCell(:,iCell) = vertViscTopOfCell(:,iCell) - config_cvmix_background_viscosity
+            vertDiffTopOfCell(:,iCell) = vertDiffTopOfCell(:,iCell) - config_cvmix_background_diffusion
+          endif
 
         endif ! if (config_use_cvmix_shear)
+
+        ! TDR: put tidal here
+        ! TDR: put ddiff here
 
         ! call kpp ocean mixed layer scheme
         if (config_use_cvmix_kpp) then
@@ -300,7 +303,7 @@ contains
           ! store non-local flux terms
           ! these flux terms must be multiplied by the surfaceTracerFlux field
           ! the tracer tendency is then the vertical divergence of vertNonLocalFlux*surfaceTracerFlux
-          ! both of these operations are done in ocn_tracer_nonlocalflux_tend
+          ! both of these operations are done in ocn_tracer_nonlocalflux_tend routine
           ! NOTE: at present CVMix KPP stores four flux profiles (temperature, tracers, u velocity and v velocity)
           ! NOTE: at some point we might end up with only one flux profile (and thereby reduce storage of 3D arrays)
           vertNonLocalFlux(index_nonLocalTemp,:,iCell) = cvmix_variables % kpp_transport_iface(:,1)
@@ -314,9 +317,7 @@ contains
         if (config_use_cvmix_convection) then
           cvmix_variables % visc_iface(:)=0.0
           cvmix_variables % diff_iface(:,:)=0.0
-          call cvmix_coeffs_conv( &
-                 CVmix_vars = cvmix_variables,  &
-                 CVmix_conv_params_user = cvmix_conv_params)
+          call cvmix_coeffs_conv( CVmix_vars = cvmix_variables )
 
           ! add convective mixing to vertical viscosity/diffusivity
           ! if using KPP, then do not apply convective mixing within the ocean boundary layer
@@ -343,19 +344,19 @@ contains
 
         do iCell=1,mesh%nCells
   
-         ! compute sigma at cell center
-         sigma(1) = 0.0
-         layerSum = 0.0
-         do k=2,maxLevelCell(iCell)
-           layerSum = layerSum + 0.5*(layerThickness(k-1,iCell)+layerThickness(k,iCell))
-           sigma(k) = layerSum / diagnostics % boundaryLayerDepth % array(iCell)
-         enddo
-         do k=maxLevelCell(iCell),nVertLevels
-           sigma(k) = sigma(maxLevelCell(iCell))
-         enddo
-
          ! the computation of the boundary layer depth is iterative
          do iter=1,config_cvmix_kpp_niteratorOBL_solver
+
+           ! compute sigma at cell center
+           sigma(1) = 0.0
+           layerSum = 0.0
+           do k=2,maxLevelCell(iCell)
+             layerSum = layerSum + 0.5*(layerThickness(k-1,iCell)+layerThickness(k,iCell))
+             sigma(k) = layerSum / diagnostics % boundaryLayerDepth % array(iCell)
+           enddo
+           do k=maxLevelCell(iCell),nVertLevels
+             sigma(k) = sigma(maxLevelCell(iCell))
+           enddo
 
            ! compute the turbulent scales in order to compute the bulk Richardson number
            call cvmix_kpp_compute_turbulent_scales( &
@@ -375,6 +376,9 @@ contains
            ! compute the boundary layer depth based on model state at current time step
            ! boundaryLayerDepth is then smoothed and a halo update is applied elsewhere
            call cvmix_kpp_compute_OBL_depth( CVmix_vars = cvmix_variables)
+
+           ! update boundary layer depth for sigma computation
+           diagnostics % boundaryLayerDepth % array(iCell) = cvmix_variables % OBL_depth
 
          enddo
 
@@ -485,7 +489,7 @@ contains
       call cvmix_put(cvmix_global_params,  'prandtl',  config_cvmix_prandtl_number)
 
       !
-      ! if using background mixing, put parameters into cvmix_background_params
+      ! initialize background mixing
       !
       if (config_use_cvmix_background) then
         call cvmix_init_bkgnd( &
@@ -495,7 +499,7 @@ contains
       endif
 
       !
-      ! if using shear-based mixing, put parameters into cvmix_shear_params
+      ! initialize shear-based mixing
       !
       if (config_use_cvmix_shear) then
         call cvmix_init_shear( &
@@ -510,19 +514,34 @@ contains
       endif
 
       !
-      ! if using CVMix convection, put parameters into cvmix_conv_params
+      ! initialize convective mixing
       !
       if (config_use_cvmix_convection) then
         call cvmix_init_conv( &
                convect_diff = config_cvmix_convective_diffusion,  &
                convect_visc = config_cvmix_convective_viscosity,  &
                lBruntVaisala = config_cvmix_convective_basedOnBVF, &
-               BVsqr_convect = config_cvmix_convective_triggerBVF, &
-               CVmix_conv_params_user = cvmix_conv_params)
+               BVsqr_convect = config_cvmix_convective_triggerBVF )
       endif
 
       !
-      ! if using the KPP boundary layer scheme, put parameters into cvmix_kpp_params
+      ! initialize tidal mixing
+      !  (at present, tidal mixing can only use CVMix default parameter settings)
+      !
+      if (config_use_cvmix_tidal_mixing) then
+        call cvmix_init_tidal(cvmix_tidal_params,'Simmons')
+      endif
+
+      !
+      ! initialize double diffusion
+      !  (at present, double diffusion can only use CVMix default parameter settings)
+      !
+      if (config_use_cvmix_double_diffusion) then
+        call cvmix_init_ddiff( )
+      endif
+
+      !
+      ! initialize KPP boundary layer scheme
       !
       if (config_use_cvmix_kpp) then
         call cvmix_init_kpp ( &
