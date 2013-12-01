@@ -484,6 +484,14 @@
                                         description="Exponent relating diffusivities to $Ri_g$. Referred to as $p_1$ in Large et al. (1994) Eq (28b)"
                                         possible_values="Any positive real value"
                 />
+                <nml_option name="config_use_cvmix_tidal_mixing" type="logical" default_value=".false." units="NA"
+                                        description="If true, diffusivity and viscosity is computed using CVMix tidal mixing"
+                                        possible_values="True or False"
+                />
+                <nml_option name="config_use_cvmix_double_diffusion" type="logical" default_value=".false." units="NA"
+                                        description="If true, diffusivity and viscosity is computed using CVMix double diffusion"
+                                        possible_values="True or False"
+                />
 		<nml_option name="config_use_cvmix_kpp" type="logical" default_value=".false." units="NA"
 					description="If true, diffusivity and viscosity is computed using CVMix KPP"
 					possible_values="True or False"
