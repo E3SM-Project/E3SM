@@ -1587,9 +1587,6 @@
 		<var name="vertDiffTopOfCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^{-1}"
 			 description="vertical diffusion defined at the cell center (horizontally) and top (vertically)"
 		/>
-		<var name="bulkRichardsonNumberCVMix" type="real" dimensions="nVertLevels nCells Time" units="nondimensional"
-			 description="bulk Richardson number"
-		/>
 		<var name="bulkRichardsonNumber" type="real" dimensions="nVertLevels nCells Time" units="nondimensional"
 			 description="bulk Richardson number"
 		/>

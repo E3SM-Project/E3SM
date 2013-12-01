@@ -1136,6 +1136,8 @@ contains
          shearContribution = deltaVelocitySquared
 
         ! compute bulk Richardson number
+        ! we estimate the bulk Richardson number here, but its value will be updated
+        ! in the ocn_vmix_coefs_cvmix_build when we have access to the turbulent velocity scale and unresolved shear
          bulkRichardsonNumber(k,iCell) = (zTop(1,iCell) - zMid(k,iCell)) * buoyContribution / (shearContribution + 1.0e-10)
          bulkRichardsonNumberBuoy(k,iCell) = buoyContribution
          bulkRichardsonNumberShear(k,iCell) = shearContribution

@@ -124,7 +124,7 @@ contains
         zMid, zTop, density, displacedDensity, potentialDensity
 
       real (kind=RKIND), dimension(:,:), pointer :: &
-        bulkRichardsonNumber, bulkRichardsonNumberCVMix
+        bulkRichardsonNumber
 
       real (kind=RKIND), dimension(:,:,:), pointer :: vertNonLocalFlux
       integer :: index_nonLocalTemp, index_nonLocalSalt, index_nonLocalZonalVel, index_nonLocalMeridVel
@@ -179,7 +179,6 @@ contains
       displacedDensity => diagnostics % displacedDensity % array(:,:)
       potentialDensity => diagnostics % potentialDensity % array(:,:)
       bulkRichardsonNumber => diagnostics % bulkRichardsonNumber % array(:,:)
-      bulkRichardsonNumberCVMix => diagnostics % bulkRichardsonNumberCVMix % array(:,:)
 
       !
       ! set pointers for fields related ocean forcing at surface
@@ -382,7 +381,7 @@ contains
          ! intent out of OBL_depth is boundary layer depth measured in meters and vertical index
          diagnostics % boundaryLayerDepth % array(iCell) = cvmix_variables % OBL_depth
          diagnostics % indexBoundaryLayerDepth % array(iCell) = cvmix_variables % kOBL_depth
-         diagnostics % bulkRichardsonNumberCVMix % array(:,iCell) = cvmix_variables % Rib(:)
+         diagnostics % bulkRichardsonNumber % array(:,iCell) = cvmix_variables % Rib(:)
   
         end do  ! do iCell=1,mesh%nCells
   
