@@ -64,9 +64,11 @@ static int *my_GlobalIDs;
 static Teuchos::RCP<Epetra_Map> ParMatrixMap;
 
 static Teuchos::RCP<Epetra_Map> MatrixMap; 
-static Teuchos::RCP<Epetra_Export::Epetra_Export> exporter;
-static Teuchos::RCP<Epetra_Import::Epetra_Import> importer;
+//static Teuchos::RCP<Epetra_Export::Epetra_Export> exporter;
+//static Teuchos::RCP<Epetra_Import::Epetra_Import> importer;
 
+static Teuchos::RCP<Epetra_Export> exporter;
+static Teuchos::RCP<Epetra_Import> importer;
 static Teuchos::RCP<ML_Epetra::MultiLevelPreconditioner> MLPrec;
 static Teuchos::RCP<Epetra_InvOperator> MLPI;
 
