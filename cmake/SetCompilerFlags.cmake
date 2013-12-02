@@ -105,17 +105,17 @@ ENDIF ()
 # OpenMP
 # Two flavors:
 #   1) HORIZ_OPENMP OpenMP over elements (standard OPENMP)
-#   2) VERT_OPENMP OpenMP within an element (ELEMENT_OPENMP)
+#   2) COLUMN_OPENMP OpenMP within an element (previously called ELEMENT_OPENMP)
 ##############################################################################
 OPTION(ENABLE_OPENMP "OpenMP across elements" FALSE)
 OPTION(ENABLE_HORIZ_OPENMP "OpenMP across elements" FALSE)
-OPTION(ENABLE_VERT_OPENMP "OpenMP within an element" FALSE)
+OPTION(ENABLE_COLUMN_OPENMP "OpenMP within an element" FALSE)
 ##############################################################################
 IF (${ENABLE_OPENMP})
   SET (ENABLE_HORIZ_OPENMP TRUE)
 ENDIF ()
 
-IF (ENABLE_HORIZ_OPENMP OR ENABLE_VERT_OPENMP)
+IF (ENABLE_HORIZ_OPENMP OR ENABLE_COLUMN_OPENMP)
   FIND_PACKAGE(OpenMP)
   IF(OPENMP_FOUND)
     MESSAGE(STATUS "Found OpenMP Flags")

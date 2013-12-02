@@ -113,7 +113,7 @@ program prim_main
   ! =====================================
   ! Begin threaded region so each thread can print info
   ! =====================================
-#if (defined HORIZ_OPENMP && defined VERT_OPENMP)
+#if (defined HORIZ_OPENMP && defined COLUMN_OPENMP)
    if (omp_get_nested() == 0) then
      call haltmp("Nested threading required but not available. Set OMP_NSETED=true")
    endif

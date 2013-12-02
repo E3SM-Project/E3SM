@@ -521,7 +521,7 @@ contains
        call haltmp('edgeVpack: Buffer overflow: size of the vertical dimension must be increased!')
     endif
     if(MODULO(np,2) == 0 .and. UseUnroll) then 
-#if (defined VERT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i)
 #endif
        do k=1,vlyr
@@ -538,7 +538,7 @@ contains
           enddo
        end do
     else
-#if (defined VERT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i)
 #endif
        do k=1,vlyr
@@ -557,7 +557,7 @@ contains
 
     if(desc%reverse(south)) then
        is = desc%putmapP(south)
-#if (defined VERT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,ir)
 #endif
        do k=1,vlyr
@@ -570,7 +570,7 @@ contains
 
     if(desc%reverse(east)) then
        ie = desc%putmapP(east)
-#if (defined VERT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,ir)
 #endif
        do k=1,vlyr
@@ -583,7 +583,7 @@ contains
 
     if(desc%reverse(north)) then
        in = desc%putmapP(north)
-#if (defined VERT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,ir)
 #endif
        do k=1,vlyr
@@ -596,7 +596,7 @@ contains
 
     if(desc%reverse(west)) then
        iw = desc%putmapP(west)
-#if (defined VERT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,ir)
 #endif
        do k=1,vlyr
@@ -822,7 +822,7 @@ contains
     iw=desc%getmapP(west)
 
     if(MODULO(np,2) == 0 .and. UseUnroll) then 
-#if (defined VERT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i)
 #endif
        do k=1,vlyr
@@ -838,7 +838,7 @@ contains
           end do
        end do
     else
-#if (defined VERT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i)
 #endif
        do k=1,vlyr

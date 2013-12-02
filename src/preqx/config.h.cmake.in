@@ -40,7 +40,7 @@
 #cmakedefine HORIZ_OPENMP
 
 /* Vertical OpenMP (within elements) */
-#cmakedefine VERT_OPENMP
+#cmakedefine COLUMN_OPENMP
 
 /* Nested OpenMP (both horizontal and vertical) */
 #cmakedefine NESTED_OPENMP
