@@ -513,7 +513,7 @@ module namelist_mod
        nEndStep = nmax
 #endif
 
-       if ((integration == "semi_imp").or.(integration == "full_imp")) then
+       if (integration == "semi_imp") then
           ! =========================
           ! set solver defaults
           ! =========================
@@ -546,7 +546,8 @@ module namelist_mod
 #else
           read(*,nml=solver_nl)
 #endif
-       else if((integration .ne. "explicit").and.(integration .ne. "runge_kutta")) then
+       else if((integration .ne. "explicit").and.(integration .ne. "runge_kutta").and. &
+                    (integration .ne. "full_imp")) then
           call abortmp('integration must be explicit, semi_imp, full_imp, or runge_kutta')
        end if
 

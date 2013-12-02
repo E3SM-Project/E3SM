@@ -18,7 +18,6 @@
 //#define SIMPLE_PREC_ON
 #define IDENTITY_PREC_ON
 
-//#define SIMPLE_PREC_CLIP_ON
 //#define PRINT_DEBUG
 
 using namespace std;
@@ -58,7 +57,6 @@ extern "C" {
 
 /*Defining external functions for finite difference Jacobian*/
   void calc_f(double *, double *, int, void *);
-  void calc_f_lin(double *, double *, int, void *);
   
 
   void test_id(double *, int, double *, void *);
@@ -69,15 +67,9 @@ extern "C" {
   void get_jac_vector(double *, int, void *); 
 
   void sw_picard_block_11(double *, int, double *, void *); 
-  void sw_picard_block_21(double *, int, double *, void *); 
-  void sw_picard_DFinvBt(double *, int, double *, void *); 
+  void sw_picard_block_21(double *, int, double *, int, void *); 
+  void sw_picard_DFinvBt(double *, int, double *, int, void *);
   void sw_picard_schur(double *, int, double *, void *); 
-
-
-  void sw_picard_block_11_clip(double *, int, double *, void *); 
-  void sw_picard_DFinvBt_clip(double *, int, double *, int, void *);
-  void sw_picard_block_21_clip(double *, int, double *, int, void *); 
-  void sw_picard_schur_clip(double *, int, double *, void *); 
 
 
 
@@ -108,7 +100,6 @@ extern "C" {
     
     void (*precFunction)(double *, int, double*,  void *) = test_id;
     
-    
     void (*precUpdateFunction)(double *, int, void *)=update_prec_state;
     void (*getJacVector)(double *, int, void *)=get_jac_vector;
 
@@ -118,20 +109,12 @@ extern "C" {
     21 block is B
     22 block is S=G-Bdiag(F)^{-1}B' */
     
-    //void (*precFunctionblock11)(double *, int, double*,  void *) = sw_picard_block_11alt;
+
       #ifdef SIMPLE_PREC_ON
     void (*precFunctionblock11)(double *, int, double*,  void *) = sw_picard_block_11;
-    void (*precFunctionblock12)(double *, int, double*,  void *) = sw_picard_DFinvBt;
-    void (*precFunctionblock21)(double *, int, double*,  void *) = sw_picard_block_21;
+    void (*precFunctionblock12)(double *, int, double*,int,  void *) = sw_picard_DFinvBt;
+    void (*precFunctionblock21)(double *, int, double*,int,  void *) = sw_picard_block_21;
     void (*precFunctionblock22)(double *, int, double*,  void *) = sw_picard_schur;
-    #endif
-
-
-      #ifdef SIMPLE_PREC_CLIP_ON
-    void (*precFunctionblock11_clip)(double *, int, double*,  void *) = sw_picard_block_11_clip;
-    void (*precFunctionblock12_clip)(double *, int, double*,int,  void *) = sw_picard_DFinvBt_clip;
-    void (*precFunctionblock21_clip)(double *, int, double*,int,  void *) = sw_picard_block_21_clip;
-    void (*precFunctionblock22_clip)(double *, int, double*,  void *) = sw_picard_schur_clip;
       #endif
 
 
@@ -184,35 +167,14 @@ extern "C" {
                              precFunction, jacFunction, precUpdateFunction, getJacVector));
       #endif
 
-      /* Interface for SIMPLE preconditioner */
+
+      /* Interface for SIMPLE preconditioner*/
       #ifdef SIMPLE_PREC_ON
-        model = Teuchos::rcp(new trilinosModelEvaluator(N, statevector, Comm, 
-                             blackbox_res, blackbox_prec, jac_data, residualFunction, 
-                             precFunctionblock11,precFunctionblock12, 
-                             precFunctionblock21,precFunctionblock22, 
-                             jacFunction,precUpdateFunction,getJacVector)); 
-      #endif
-
-      /* model for comparing two different formulations of SIMPLE  */
-      #ifdef COMPARE_SIMPLE_BLOCK_VS_SEGGREGATED_ON
-      model = Teuchos::rcp(new trilinosModelEvaluator(N, statevector, Comm, 
-                           blackbox_res, blackbox_prec,jac_data, residualFunction, 
-                           precFunctionblock11,precFunctionblock12, 
-                           precFunctionblock21,precFunctionblock22, 
-                           auxprecFunctionblock11,auxprecFunctionblock12, 
-                           auxprecFunctionblock21,auxprecFunctionblock22, 
-                           jacFunction,precUpdateFunction,getJacVector));
-      #endif
-
-
-
-      /* Interface for SIMPLE preconditioner with clipped vectors */
-      #ifdef SIMPLE_PREC_CLIP_ON
       model = Teuchos::rcp(new trilinosModelEvaluator(N, statevector, Comm, 
 			      blackbox_res, blackbox_prec,jac_data, 
 			      residualFunction, 
-			      precFunctionblock11_clip,precFunctionblock12_clip, 
-			      precFunctionblock21_clip,precFunctionblock22_clip, 
+			      precFunctionblock11,precFunctionblock12, 
+			      precFunctionblock21,precFunctionblock22, 
 			      jacFunction,precUpdateFunction,getJacVector,
 			      FSolvePL,SchurSolvePL,
 			      FTotalIt,SchurTotalIt

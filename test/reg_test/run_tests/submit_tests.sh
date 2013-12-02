@@ -40,7 +40,7 @@ else
   # Only running one test
   num_submissions=1
   subFile1=$1
-  testName=$2
+  TEST_NAME=$2
 
   # To Do: make sure the above file exists
 
@@ -72,7 +72,7 @@ if [ "${SUBMIT_ALL_AT_ONCE}" == true ] ; then
 
 else
 
-  ${HOMME_TESTING_DIR}/diff_output.sh ${testName}
+  ${HOMME_TESTING_DIR}/diff_output.sh ${TEST_NAME}
 
 fi
 

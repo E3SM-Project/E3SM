@@ -175,8 +175,6 @@ private:
   void (*precFunctionblock21)(double *,int,double*,void *);
   void (*precFunctionblock22)(double *,int,double*,void *);
 
-//  void (*precFunctionblock12_clip)(double *,int,double*,int,void *);
-//  void (*precFunctionblock21_clip)(double *,int,double*,int,void *);
 
   void (*auxprecFunctionblock11)(double *,int,double*,void *);
   void (*auxprecFunctionblock12)(double *,int,double*,void *);
@@ -190,51 +188,6 @@ private:
   Teuchos::RCP<Epetra_Operator>DFinvBt;
   Teuchos::RCP<Epetra_Operator>B;
   Teuchos::RCP<Epetra_Operator>S;
-
-
-
-//  RCP<Epetra_Operator>F;
- // RCP<Epetra_Operator>S;
-
-//  int *FTotalIt;
-// int *SchurTotalIt;
-
-
-//  Teuchos::RCP< Belos::SolverManager<ST,MV,OP> > FSolver;
-//  Teuchos::RCP< Belos::SolverManager<ST,MV,OP> > SchurSolver;
-
-//  Teuchos::RCP<Epetra_Map> UVMap;
-//  Teuchos::RCP<Epetra_Map> HMap;
-
-//  Teuchos::RCP<ParameterList>  FSolvePL;
-//  Teuchos::RCP<ParameterList>  SchurSolvePL;
-
-//  Teuchos::RCP<Epetra_Vector> workvector4;
-//  Teuchos::RCP<Epetra_Vector> dFinvBt;
-//  Teuchos::RCP<Epetra_Vector> bx1;
-
-//  Teuchos::RCP< Belos::LinearProblem<ST,MV,OP> > FProblem;
-//  Teuchos::RCP< Belos::LinearProblem<ST,MV,OP> > SchurProblem;
-
-//  Teuchos::RCP<Epetra_Vector> Fb; //uv workvector
-//  Teuchos::RCP<Epetra_Vector> Fx; //uv workvector
-
-//  Teuchos::RCP<Epetra_Vector> Schurb; //height workvector
-//  Teuchos::RCP<Epetra_Vector> Schurx; //height workvector
-
-
-/*
-
-  int *FTotalIt;
-  int *SchurTotalIt;
-
-  RCP< Belos::SolverManager<ST,MV,OP> > FSolver;
-  RCP< Belos::SolverManager<ST,MV,OP> > SchurSolver;
-
-
-  RCP<ParameterList>  FSolvePL;
-  RCP<ParameterList>  SchurSolvePL;
-*/
 
 
 };
@@ -303,38 +256,6 @@ private:
 class simplePreconditioner : public hommePreconditionerBase {
 public:
   simplePreconditioner(int N, RCP<Epetra_Vector> xVec, RCP<Epetra_Map> xMap,
-                       void* blackbox_res, void* precdata,
-                       void (*precFunctionblock11)(double *,int,double*,void *),
-                       void (*precFunctionblock12)(double *,int,double*,void *),
-                       void (*precFunctionblock21)(double *,int,double*,void *),
-                       void (*precFunctionblock22)(double *,int,double*,void *),
-                       void (*precUpdateFunction)(double *,int,void *) );
-
-  int ApplyInverse(const Epetra_MultiVector& V, Epetra_MultiVector& Y) const;
-  int computePreconditioner(RCP<const Epetra_Vector> xVec, void* precdata_);
-
-private:
-  int N;
-  bool printproc;
-  RCP<Epetra_Vector> xVec;
-  RCP<Epetra_Map> xMap;
-  void* blackbox_res;
-  void* precdata;
-  void (*precFunctionblock11)(double *,int,double*,void *);
-  void (*precFunctionblock12)(double *,int,double*,void *);
-  void (*precFunctionblock21)(double *,int,double*,void *);
-  void (*precFunctionblock22)(double *,int,double*,void *);
-  void (*precUpdateFunction)(double *,int,void *);
-  RCP<Epetra_Operator>F;
-  RCP<Epetra_Operator>S;
-
-};
-/*******************************************************************************/
-/*******************************************************************************/
-/*******************************************************************************/
-class simpleClipPreconditioner : public hommePreconditionerBase {
-public:
-  simpleClipPreconditioner(int N, RCP<Epetra_Vector> xVec, RCP<Epetra_Map> xMap,
                        void* blackbox_res, void* precdata,
                        void (*precFunctionblock11)(double *,int,double*,void *),
                        void (*precFunctionblock12)(double *,int,double*,int, void *),

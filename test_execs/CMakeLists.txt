@@ -20,13 +20,14 @@ ENDIF ()
 MESSAGE(STATUS "Setting HOMME_BASELINE_DIR as ${Homme_Baseline_DIR}")
 
 # Determine if there is a submission system
-OPTION(USE_QUEUING "" TRUE)
+OPTION(USE_QUEUING "Whether run tests through the queue" TRUE)
 IF (USE_QUEUING)
   # lsf uses bsub
   FIND_PROGRAM(BSUB_PATH bsub) # Note this searches the environment
   IF (BSUB_PATH)
     MESSAGE(STATUS "Using LSF queuing")
     SET(HOMME_SUBMISSION_TYPE lsf)
+    SET(HOMME_SUBMISSION_HEADER ${CMAKE_SOURCE_DIR}/cmake/queueSubHeaders/lsf.sh)
   ENDIF ()
   IF (NOT DEFINED HOMME_SUBMISSION_TYPE)
     # pbs uses qsub
@@ -34,6 +35,7 @@ IF (USE_QUEUING)
     IF (QSUB_PATH)
       MESSAGE(STATUS "Using PBS queuing")
       SET(HOMME_SUBMISSION_TYPE pbs)
+      SET(HOMME_SUBMISSION_HEADER ${CMAKE_SOURCE_DIR}/cmake/queueSubHeaders/pbs.sh)
     ENDIF ()
   ENDIF ()
   IF (NOT DEFINED HOMME_SUBMISSION_TYPE)
@@ -42,6 +44,7 @@ IF (USE_QUEUING)
     IF (MSUB_PATH)
       MESSAGE(STATUS "Using MOAB queuing")
       SET(HOMME_SUBMISSION_TYPE moab)
+      SET(HOMME_SUBMISSION_HEADER ${CMAKE_SOURCE_DIR}/cmake/queueSubHeaders/moab.sh)
     ENDIF ()
   ENDIF ()
   IF (NOT DEFINED HOMME_SUBMISSION_TYPE)
@@ -50,6 +53,7 @@ IF (USE_QUEUING)
     IF (SQUEUE_PATH)
       MESSAGE(STATUS "Using SLURM queuing")
       SET(HOMME_SUBMISSION_TYPE slurm)
+      SET(HOMME_SUBMISSION_HEADER ${CMAKE_SOURCE_DIR}/cmake/queueSubHeaders/slurm.sh)
     ENDIF ()
   ENDIF ()
   IF (NOT DEFINED HOMME_SUBMISSION_TYPE)
@@ -90,14 +94,18 @@ ELSE ()
   # We have queuing
   SET(HOMME_QUEUING TRUE)
 
-  # Now check if a user specified a header for us to use
+  # Allow use to override the HOMME_SUBMISSION_HEADER
   IF (DEFINED SUBMISSION_HEADER)
     IF (EXISTS ${SUBMISSION_HEADER})
-      MESSAGE(STATUS "USING SUBMISSION_HEADER: ${SUBMISSION_HEADER}")
+      SET(HOMME_SUBMISSION_HEADER ${SUBMISSION_HEADER})
     ELSE ()
       MESSAGE(FATAL_ERROR "SUBMISSION_HEADER set but file not found at: ${SUBMISSION_HEADER}")
     ENDIF ()
   ENDIF ()
+  IF (DEFINED HOMME_SUBMISSION_HEADER)
+    MESSAGE(STATUS "Using submission header ${HOMME_SUBMISSION_HEADER}")
+  ENDIF ()
+
 ENDIF ()
 
 # Set up the CPRNC build
@@ -176,7 +184,7 @@ createTests(HOMME_TESTS)
 
 # End the file with the total number of test files
 FILE (APPEND ${HOMME_TEST_LIST} "\n")
-FILE (APPEND ${HOMME_TEST_LIST} "num_test_files=${NUM_TEST_FILES}\n")
+FILE (APPEND ${HOMME_TEST_LIST} "NUM_TEST_FILES=${NUM_TEST_FILES}\n")
 
 # Create a target for making the reference data
 ADD_CUSTOM_TARGET(replaceBaselineResults)
