@@ -129,11 +129,6 @@ program prim_main
   ithr=omp_get_thread_num()
   nets=dom_mt(ithr)%start
   nete=dom_mt(ithr)%end
-  if (ithr == 0) then
-    write(*,*) "there are ", omp_get_num_threads(), " in the current team in parallel region"
-    write(*,*) "there are ", omp_get_max_threads(), " available in parallel region"
-    !call haltmp("BFJ: debug")
-  endif
   ! ================================================
   ! Initialize thread decomposition
   ! ================================================
@@ -144,8 +139,6 @@ program prim_main
 #if (defined HORIZ_OPENMP)
   !$OMP END PARALLEL
 #endif
-
-  write(*,*) "there are ", omp_get_max_threads(), " available in parallel region"
   
 ! back to single threaded
   ithr=omp_get_thread_num()
