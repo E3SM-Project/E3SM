@@ -101,7 +101,7 @@ contains
     real (kind=real_kind) :: T_v(np,np,nlev)
     integer :: i, j, k
 
-#if (defined VERT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j)
 #endif
     do k=1,nlev
@@ -118,7 +118,7 @@ contains
     real(kind=real_kind) :: ks(np,np,nlev)
     integer i,j,k
 
-#if (defined VERT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j)
 #endif
     do k=1,nlev

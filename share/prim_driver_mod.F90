@@ -942,7 +942,7 @@ contains
        end do
        call TimeLevel_Qdp( tl, qsplit, n0_qdp)
        do ie=nets,nete
-#if (defined VERT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do default(shared), private(k, t, q, i, j, dp)
 #endif
           do k=1,nlev    !  Loop inversion (AAM)
@@ -1027,7 +1027,7 @@ contains
     if (runtype==1) then
        call TimeLevel_Qdp( tl, qsplit, n0_qdp)
        do ie=nets,nete
-#if (defined VERT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do default(shared), private(k, t, q, i, j, dp)
 #endif
           do k=1,nlev    !  Loop inversion (AAM)
@@ -1454,7 +1454,7 @@ contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     do ie=nets,nete
        elem(ie)%state%lnps(:,:,tl%np1)= LOG(elem(ie)%state%ps_v(:,:,tl%np1))
-#if (defined VERT_OPENMP)
+#if (defined COLUMN_OPENMP)
        !$omp parallel do default(shared), private(k,q,dp_np1)
 #endif
        do k=1,nlev    !  Loop inversion (AAM)
@@ -1593,7 +1593,7 @@ contains
 
       if (rsplit==0) then
         ! save dp at time t for use in tracers
-#if (defined VERT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do default(shared), private(k)
 #endif
          do k=1,nlev
@@ -1792,7 +1792,7 @@ contains
     psum = 0
     do ie=nets,nete
 
-#if (defined VERT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do default(shared), private(k)
 #endif
        do k=1,nlev
@@ -1800,7 +1800,7 @@ contains
                ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,t2)
        enddo
        suml=0
-#if (defined VERT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do default(shared), private(k, i, j)
 #endif
        do k=1,nlev
