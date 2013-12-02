@@ -5,7 +5,7 @@ module parallel_mod
          ! ---------------------------
          use kinds, only : real_kind, int_kind, iulog
          ! ---------------------------
-	 use dimensions_mod, only : nmpi_per_node
+	 use dimensions_mod, only : nmpi_per_node, nlev, qsize_d
 
 
        implicit none
@@ -54,7 +54,7 @@ public
 #ifdef CAM
        type (parallel_t)    :: par              ! parallel structure for distributed memory programming
 #endif
-       integer, parameter :: nrepro_vars=10
+       integer, parameter :: nrepro_vars=MAX(10,nlev*qsize_d)
        real(kind=8), public, allocatable :: global_shared_buf(:,:)
        real(kind=8), public :: global_shared_sum(nrepro_vars)
 
