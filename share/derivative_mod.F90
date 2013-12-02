@@ -537,7 +537,6 @@ end do
     real(kind=real_kind) :: vtemp(np,np,2)
     
 
-    !write(*,*) "divergence_stag"
 #ifdef DEBUG
     print *, "divergence_stag"
 #endif
@@ -775,7 +774,6 @@ if(modulo(np,2) .eq. 0 .and. UseUnroll) then
 
     real(kind=real_kind)  :: vtempt(np,np,2)
 
-    !write(*,*) "gradient_wk_stag"
 #ifdef DEBUG
     print *, "gradient_wk_stag"
 #endif
@@ -926,7 +924,6 @@ endif
     !JMD 2*np*np*np Flops 
     !JMD ================================
 
-    !write(*,*) "gradient_wk_nonstag"
 !   print *, "gradient_wk_nonstag"
     if(modulo(np,2) .eq. 0 .and. UseUnroll) then
 ! this is just loop unrolling - a good compiler should do it for you jpe
@@ -1092,7 +1089,6 @@ endif
     real(kind=real_kind)  sumy10,sumy11
 
     real(kind=real_kind)  :: vtempt(np,np,2)
-    !write(*,*) "gradient_str_stag"
 #ifdef DEBUG
     print *, "gradient_str_stag"
 #endif
@@ -1321,7 +1317,6 @@ endif
     real(kind=real_kind) ::  dudy10,dudy11
 
     real(kind=real_kind)  :: vvtemp(np,np)
-    !write(*,*) "vorticity"
 if(MODULO(np,2) == 0 .and. UseUnroll) then 
     do j=1,np,2
        do l=1,np,2
@@ -2445,7 +2440,7 @@ endif
 
     ! Local
     real(kind=real_kind) :: grads(np,np,2), oldgrads(np,np,2)
-    !write(*,*) "laplace_sphere_wk"
+
     grads=gradient_sphere(s,deriv,elem%Dinv)
  
     if (var_coef) then
@@ -2492,7 +2487,6 @@ endif
     real(kind=real_kind), optional :: nu_ratio
     real(kind=real_kind) :: laplace(np,np,2)
 
-    !write(*,*) "vlaplace_sphere_wk"
 
     if (hypervis_scaling/=0 .and. var_coef) then
        ! tensorHV is turned on - requires cartesian formulation
@@ -2526,7 +2520,6 @@ endif
     integer component
     real(kind=real_kind) :: dum_cart(np,np,3)
 
-    !write(*,*) "vlaplace_sphere_wk_cartesian"
 
     ! latlon -> cartesian
     do component=1,3
@@ -2569,8 +2562,6 @@ endif
     integer i,j,l,m,n
     real(kind=real_kind) :: vor(np,np),div(np,np)
     real(kind=real_kind) :: v1,v2,div1,div2,vor1,vor2,phi_x,phi_y
-
-    !write(*,*) "vlaplace_sphere_wk_contra"
 
     div=divergence_sphere(v,deriv,elem)
     vor=vorticity_sphere(v,deriv,elem)

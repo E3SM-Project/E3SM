@@ -246,18 +246,12 @@ logical var_coef1
    endif
 
 
-
-   !write(*,*) "there are ", omp_get_num_threads(), " in the current team in parallel region"
-   !write(*,*) "there are ", omp_get_max_threads(), " available in parallel region"
    do ie=nets,nete
 
 #if (defined COLUMN_OPENMP)
 !$omp parallel do default(shared), private(k,tmp)
 #endif
       do k=1,nlev
-         !if (k == 1) then
-         !  write(*,*) "k=1 there are ", omp_get_num_threads(), " in the current team in parallel region"
-         !endif
          tmp=elem(ie)%state%T(:,:,k,nt) 
          ptens(:,:,k,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),var_coef=var_coef1)
          tmp=elem(ie)%state%dp3d(:,:,k,nt) 
@@ -287,7 +281,6 @@ logical var_coef1
       call edgeVunpack(edge3, dptens(1,1,1,ie), nlev, kptr, elem(ie)%desc)
       
       ! apply inverse mass matrix, then apply laplace again
-! I'm not sure why but the following produces sigabrt with num_vert_threads > 1
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,v,tmp)
 #endif
