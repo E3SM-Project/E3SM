@@ -9,6 +9,24 @@ SET(PIO_LIB_DIR  ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
 
 #SET(bld_PIO_DEFINITIONS)
 
+TRY_COMPILE(WITH_CSIZEOF ${CMAKE_CURRENT_BINARY_DIR}/tryCompileCSIZEOF
+                            ${CMAKE_CURRENT_SOURCE_DIR}/cmake/TryCSizeOf.f90)
+#MESSAGE(STATUS "c_sizeof test ${WITH_CSIZEOF}")
+IF(${WITH_CSIZEOF} STREQUAL FALSE)
+    MESSAGE(STATUS "Fortran compiler does not support c_sizeof function")
+    SET(bld_PIO_DEFINITIONS ${bld_PIO_DEFINITIONS} -DNO_C_SIZEOF)
+endif()
+
+
+TRY_COMPILE(WITHOUT_MPISERIAL ${CMAKE_CURRENT_BINARY_DIR}/tryCompileMPISERIAL
+                            ${CMAKE_CURRENT_SOURCE_DIR}/cmake/TryMPISERIAL.f90)
+
+IF(${WITHOUT_MPISERIAL} STREQUAL FALSE)
+    MESSAGE("Building PIO with mpi serial stubs library")
+    SET(bld_PIO_DEFINITIONS ${bld_PIO_DEFINITIONS} -D_MPISERIAL)
+ENDIF()
+
+
 # Netcdf is required
 
 SET (NETCDF_FIND_COMPONENTS F90)
@@ -16,11 +34,14 @@ FIND_PACKAGE(Netcdf REQUIRED)
 IF (${NETCDF_FOUND})
   MESSAGE("Building PIO with netcdf support ") 
   SET(bld_PIO_DEFINITIONS ${bld_PIO_DEFINITIONS} -D_NETCDF)
-  IF (${NETCDF_IS_PARALLEL})
+  IF (${WITHOUT_MPISERIAL} AND ${NETCDF_IS_PARALLEL})
     MESSAGE("Building PIO with netcdf4 parallel support") 
     SET(bld_PIO_DEFINITIONS ${bld_PIO_DEFINITIONS} -D_NETCDF4)
   ENDIF ()
 ENDIF ()
+
+
+
 # PNetcdf is optional but used by default
 OPTION(WITH_PNETCDF "Whether to build with PNetcdf" TRUE)
 IF (${WITH_PNETCDF})
@@ -30,7 +51,7 @@ ELSE ()
 ENDIF ()
 
 
-OPTION(PIO_BIG_ENDIAN "Specify that the machine is big endian" "test")
+OPTION(PIO_BIG_ENDIAN "Specify that the machine is big endian" test)
 IF ("${PIO_BIG_ENDIAN}" STREQUAL "test") 
   INCLUDE(TestBigEndian)
   TestBigEndian(PIO_BIG_ENDIAN_TEST)
