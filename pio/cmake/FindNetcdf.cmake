@@ -112,7 +112,7 @@ if(${output} STREQUAL yes)
 
   set (NETCDF_IS_PARALLEL ${NC4_SUPPORT})
 endif()
-message ("NETCDF_IS_PARALLEL ${NETCDF_IS_PARALLEL} ")
+
 #_NETCDF_CONFIG (--has-pnetcdf output return)
 #if(${output} STREQUAL yes)
 #  set (NETCDF_IS_PARALLEL TRUE)
