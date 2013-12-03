@@ -5,6 +5,28 @@ SVN $URL: https://parallelio.googlecode.com/svn/trunk $
 This file describes what tags were created and why
 ===========================
 Originator: jedwards
+Date: Dec 03, 2013
+Model: pio
+Version: pio1_8_3
+One-line summary: cmake updates
+
+M pio/cmake/TryCSizeOf.f90
+M pio/cmake/TryMPISERIAL.f90
+M pio/CMakeLists.txt
+
+
+===========================
+Originator: jedwards
+Date: Nov 24, 2013
+Model: pio
+Version: pio1_8_2
+One-line summary: fix issues with put in pnetcdf
+
+M   pionfput_mod.F90.in
+M   pionfput_mod.F90
+
+===========================
+Originator: jedwards
 Date: Nov 19, 2013
 Model: pio
 Version: pio1_8_1
