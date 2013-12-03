@@ -786,7 +786,7 @@ contains
 
        end do
 #ifdef DEBUGOMP
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -947,11 +947,11 @@ contains
  
     if (flt%type == "bv") then
 
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
        !$OMP BARRIER
 #endif
        if (hybrid%ithr==0) call syncmp(hybrid%par)
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
        !$OMP BARRIER
 #endif
 
@@ -968,7 +968,7 @@ contains
 
           elem(ie)%state%lnps(:,:,nfilt) = mp*elem(ie)%state%lnps(:,:,nfilt)
 
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j)
 #endif
           do k=1,nlev
@@ -1032,7 +1032,7 @@ contains
           elem(ie)%state%lnps(:,:,nfilt) = LOG(elem(ie)%state%lnps(:,:,nfilt))
 #endif
 
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j)
 #endif
           do k=1,nlev
@@ -1047,7 +1047,7 @@ contains
 
        end do
 #ifdef DEBUGOMP
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -1067,7 +1067,7 @@ contains
 #else
           elem(ie)%state%lnps(:,:,nfilt) = LOG(elem(ie)%state%lnps(:,:,nfilt))
 #endif
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j,v1,v2,u,v)
 #endif
           do k=1,nlev

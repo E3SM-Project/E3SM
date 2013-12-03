@@ -814,6 +814,7 @@ function  divergence_cov(deriv,mterm,couv) result(div)
     real (kind=real_kind) :: term,delm
     integer i,j,k,l    
     logical, parameter :: UseUnroll = .TRUE.
+    real (kind=real_kind) :: vvtemp(np,np)
 !=======================================================================================================!
    !  Covariant vorticity
    !
@@ -853,10 +854,10 @@ if(MODULO(np,2) == 0 .and. UseUnroll) then
           cdiv(l  ,j+1) = dvdx10
           cdiv(l+1,j+1) = dvdx11
 
-          deriv%vvtemp(j  ,l  ) = dudy00
-          deriv%vvtemp(j  ,l+1) = dudy01
-          deriv%vvtemp(j+1,l  ) = dudy10
-          deriv%vvtemp(j+1,l+1) = dudy11
+          vvtemp(j  ,l  ) = dudy00
+          vvtemp(j  ,l+1) = dudy01
+          vvtemp(j+1,l  ) = dudy10
+          vvtemp(j+1,l+1) = dudy11
 
         end do
     end do
@@ -870,13 +871,13 @@ else
              dudy00 = dudy00 + deriv%Dvv(i,l  )* couv(j  ,i,2)
           end do
           cdiv(l  ,j  ) = dvdx00
-          deriv%vvtemp(j  ,l  ) = dudy00
+          vvtemp(j  ,l  ) = dudy00
         end do
     end do
 endif
    do j=1,np
        do i=1,np
-           div(i,j)= rrearth*(cdiv(i,j) + deriv%vvtemp(i,j))  / mterm(i,j)
+           div(i,j)= rrearth*(cdiv(i,j) + vvtemp(i,j))  / mterm(i,j)
        end do
    end do
 
@@ -1278,6 +1279,7 @@ end function cube_laplacian
     real(kind=real_kind) ::  dudy00,dudy01
     real(kind=real_kind) ::  dudy10,dudy11    
     logical, parameter :: UseUnroll = .TRUE.
+    real (kind=real_kind) :: vvtemp(np,np)
 !=======================================================================================================!
     !  divergence
     !
@@ -1319,10 +1321,10 @@ if(MODULO(np,2) == 0 .and. UseUnroll) then
           div(l  ,j+1) = dvdx10
           div(l+1,j+1) = dvdx11
 
-          deriv%vvtemp(j  ,l  ) = dudy00
-          deriv%vvtemp(j  ,l+1) = dudy01
-          deriv%vvtemp(j+1,l  ) = dudy10
-          deriv%vvtemp(j+1,l+1) = dudy11
+          vvtemp(j  ,l  ) = dudy00
+          vvtemp(j  ,l+1) = dudy01
+          vvtemp(j+1,l  ) = dudy10
+          vvtemp(j+1,l+1) = dudy11
 
        end do
     end do
@@ -1336,14 +1338,14 @@ else
              dudy00 = dudy00 + deriv%Dvv(i,l  )* fuv(j  ,i,2)
           end do
           div(l  ,j  ) = dvdx00
-          deriv%vvtemp(j  ,l  ) = dudy00
+          vvtemp(j  ,l  ) = dudy00
        end do
     end do
 endif
 
     do j=1,np
        do i=1,np
-          div(i,j)=(div(i,j) + deriv%vvtemp(i,j))*rrearth
+          div(i,j)=(div(i,j) + vvtemp(i,j))*rrearth
        end do
     end do
 !=======================================================================================================!
@@ -1366,70 +1368,71 @@ endif
     real(kind=real_kind) ::  dudy00,dudy01
     real(kind=real_kind) ::  dudy10,dudy11    
     logical, parameter :: UseUnroll = .TRUE.
+    real (kind=real_kind) :: vvtemp(np,np)
 !=======================================================================================================!
     !  Covariant vorticity
     !
     !  vor = [(u2)_x - (u1)_y] / G
     !
     !
-if(MODULO(np,2) == 0 .and. UseUnroll) then 
-    do j=1,np,2
-       do l=1,np,2
+    if(MODULO(np,2) == 0 .and. UseUnroll) then 
+       do j=1,np,2
+          do l=1,np,2
 
-          dudy00=zero
-          dudy01=zero
-          dudy10=zero
-          dudy11=zero
+             dudy00=zero
+             dudy01=zero
+             dudy10=zero
+             dudy11=zero
 
-          dvdx00=zero
-          dvdx01=zero
-          dvdx10=zero
-          dvdx11=zero
+             dvdx00=zero
+             dvdx01=zero
+             dvdx10=zero
+             dvdx11=zero
 
-          do i=1,np
+             do i=1,np
 
-             dvdx00 = dvdx00 + deriv%Dvv(i,l  )* couv(i  ,j,2)
-             dvdx01 = dvdx01 + deriv%Dvv(i,l+1)* couv(i  ,j,2)
-             dvdx10 = dvdx10 + deriv%Dvv(i,l  )* couv(i,j+1,2)
-             dvdx11 = dvdx11 + deriv%Dvv(i,l+1)* couv(i,j+1,2)
+                dvdx00 = dvdx00 + deriv%Dvv(i,l  )* couv(i  ,j,2)
+                dvdx01 = dvdx01 + deriv%Dvv(i,l+1)* couv(i  ,j,2)
+                dvdx10 = dvdx10 + deriv%Dvv(i,l  )* couv(i,j+1,2)
+                dvdx11 = dvdx11 + deriv%Dvv(i,l+1)* couv(i,j+1,2)
 
-             dudy00 = dudy00 + deriv%Dvv(i,l  )* couv(j  ,i,1)
-             dudy01 = dudy01 + deriv%Dvv(i,l+1)* couv(j  ,i,1)
-             dudy10 = dudy10 + deriv%Dvv(i,l  )* couv(j+1,i,1)
-             dudy11 = dudy11 + deriv%Dvv(i,l+1)* couv(j+1,i,1)
+                dudy00 = dudy00 + deriv%Dvv(i,l  )* couv(j  ,i,1)
+                dudy01 = dudy01 + deriv%Dvv(i,l+1)* couv(j  ,i,1)
+                dudy10 = dudy10 + deriv%Dvv(i,l  )* couv(j+1,i,1)
+                dudy11 = dudy11 + deriv%Dvv(i,l+1)* couv(j+1,i,1)
+
+             end do
+
+             vor(l  ,j  ) = dvdx00
+             vor(l+1,j  ) = dvdx01
+             vor(l  ,j+1) = dvdx10
+             vor(l+1,j+1) = dvdx11
+
+             vvtemp(j  ,l  ) = dudy00
+             vvtemp(j  ,l+1) = dudy01
+             vvtemp(j+1,l  ) = dudy10
+             vvtemp(j+1,l+1) = dudy11
 
           end do
-
-          vor(l  ,j  ) = dvdx00
-          vor(l+1,j  ) = dvdx01
-          vor(l  ,j+1) = dvdx10
-          vor(l+1,j+1) = dvdx11
-
-          deriv%vvtemp(j  ,l  ) = dudy00
-          deriv%vvtemp(j  ,l+1) = dudy01
-          deriv%vvtemp(j+1,l  ) = dudy10
-          deriv%vvtemp(j+1,l+1) = dudy11
-
        end do
-    end do
-else
-    do j=1,np
-       do l=1,np
-          dudy00=zero
-	  dvdx00=zero
-	  do i=1,np
-             dvdx00 = dvdx00 + deriv%Dvv(i,l  )* couv(i  ,j,2)
-	     dudy00 = dudy00 + deriv%Dvv(i,l  )* couv(j  ,i,1)
- 	  end do
-          vor(l  ,j  ) = dvdx00
-	  deriv%vvtemp(j  ,l  ) = dudy00
+    else
+       do j=1,np
+          do l=1,np
+             dudy00=zero
+             dvdx00=zero
+             do i=1,np
+                dvdx00 = dvdx00 + deriv%Dvv(i,l  )* couv(i  ,j,2)
+                dudy00 = dudy00 + deriv%Dvv(i,l  )* couv(j  ,i,1)
+             end do
+             vor(l  ,j  ) = dvdx00
+             vvtemp(j  ,l  ) = dudy00
+          end do
        end do
-    end do
-endif
+    endif
 
     do j=1,np
        do i=1,np
-          vor(i,j)=(vor(i,j)-deriv%vvtemp(i,j))*rrearth
+          vor(i,j)=(vor(i,j)-vvtemp(i,j))*rrearth
        end do
     end do
 !=======================================================================================================!
@@ -1550,6 +1553,7 @@ subroutine source_term(elem,deriv,dx,dy,gcori,contrauv,couv,prg,source)
     real (kind=real_kind) :: term,delm
     integer i,j,k,l    
     logical, parameter :: UseUnroll = .TRUE.
+    real (kind=real_kind) :: vvtemp(np,np)
 !=======================================================================================================!
 if(MODULO(np,2) == 0 .and. UseUnroll) then 
     do j=1,np,2
@@ -1584,10 +1588,10 @@ if(MODULO(np,2) == 0 .and. UseUnroll) then
           vor(l  ,j+1) = dvdx10
           vor(l+1,j+1) = dvdx11
 
-          deriv%vvtemp(j  ,l  ) = dudy00
-          deriv%vvtemp(j  ,l+1) = dudy01
-          deriv%vvtemp(j+1,l  ) = dudy10
-          deriv%vvtemp(j+1,l+1) = dudy11
+          vvtemp(j  ,l  ) = dudy00
+          vvtemp(j  ,l+1) = dudy01
+          vvtemp(j+1,l  ) = dudy10
+          vvtemp(j+1,l+1) = dudy11
 
         end do
     end do
@@ -1595,20 +1599,20 @@ else
     do j=1,np
        do l=1,np
           dudy00=zero
-	  dvdx00=zero
+          dvdx00=zero
           do i=1,np
              dvdx00 = dvdx00 + deriv%Dvv(i,l  )* couv(i  ,j,2)
-	     dudy00 = dudy00 + deriv%Dvv(i,l  )* couv(j  ,i,1)
+             dudy00 = dudy00 + deriv%Dvv(i,l  )* couv(j  ,i,1)
           end do
           vor(l  ,j  ) = dvdx00
-	  deriv%vvtemp(j  ,l  ) = dudy00
+          vvtemp(j  ,l  ) = dudy00
         end do
     end do
 endif
 
     do j=1,np
        do i=1,np
-           vor(i,j)=(vor(i,j)*dy - deriv%vvtemp(i,j)*dx) 
+           vor(i,j)=(vor(i,j)*dy - vvtemp(i,j)*dx) 
        end do
     end do
 
@@ -1656,6 +1660,7 @@ function gradient_mass(deriv,dx,dy,uvflx)  result(gradf)
     real(kind=real_kind)  sumy00,sumy01
     real(kind=real_kind)  sumx10,sumx11
     real(kind=real_kind)  sumy10,sumy11
+    real (kind=real_kind) :: vvtempt(np,np,2)
 !=======================================================================================================!
 
     do j=1,np
@@ -1668,8 +1673,8 @@ function gradient_mass(deriv,dx,dy,uvflx)  result(gradf)
              sumy00 = sumy00 + deriv%mvv_twt(i,l) * uvflx(i,j,2)
           end do
 
-          deriv%vvtempt(j  ,l  ,1) = sumx00
-          deriv%vvtempt(j  ,l  ,2) = sumy00
+          vvtempt(j  ,l  ,1) = sumx00
+          vvtempt(j  ,l  ,2) = sumy00
 
        end do
     end do
@@ -1680,8 +1685,8 @@ function gradient_mass(deriv,dx,dy,uvflx)  result(gradf)
           sumy00=zero
 
           do l=1,np
-             sumx00 = sumx00 +  deriv%mvv_twt(l,j  )*deriv%vvtempt(l,i,1)
-             sumy00 = sumy00 +  deriv%Dvv_twt(l,j  )*deriv%vvtempt(l,i,2)
+             sumx00 = sumx00 +  deriv%mvv_twt(l,j  )*vvtempt(l,i,1)
+             sumy00 = sumy00 +  deriv%Dvv_twt(l,j  )*vvtempt(l,i,2)
           end do
 
            gradf(i,j) = dy*sumx00 + dx*sumy00
@@ -1713,6 +1718,7 @@ subroutine gradient_mom(deriv,dx,dy,energy,gradu1,gradu2)
     real(kind=real_kind)  sumy00,sumy01
     real(kind=real_kind)  sumx10,sumx11
     real(kind=real_kind)  sumy10,sumy11
+    real (kind=real_kind) :: vvtempt(np,np,2)
 !=======================================================================================================!
 
    !Grad-u 
@@ -1725,7 +1731,7 @@ subroutine gradient_mom(deriv,dx,dy,energy,gradu1,gradu2)
              sumx00 = sumx00 + deriv%Dvv_twt(i,l) * energy(i,j)
           end do
 
-          deriv%vvtempt(j  ,l  ,1) = sumx00
+          vvtempt(j  ,l  ,1) = sumx00
 
        end do
     end do
@@ -1734,7 +1740,7 @@ subroutine gradient_mom(deriv,dx,dy,energy,gradu1,gradu2)
        do i=1,np
           sumx00=zero
           do l=1,np
-             sumx00 = sumx00 +  deriv%mvv_twt(l,j  )*deriv%vvtempt(l,i,1)
+             sumx00 = sumx00 +  deriv%mvv_twt(l,j  )*vvtempt(l,i,1)
           end do
            gradu1(i,j) = dy*sumx00 
        end do
@@ -1748,7 +1754,7 @@ subroutine gradient_mom(deriv,dx,dy,energy,gradu1,gradu2)
           do i=1,np
              sumy00 = sumy00 + deriv%mvv_twt(i,l) * energy(i,j)
           end do
-          deriv%vvtempt(j  ,l  ,2) = sumy00
+          vvtempt(j  ,l  ,2) = sumy00
        end do
     end do
 
@@ -1756,7 +1762,7 @@ subroutine gradient_mom(deriv,dx,dy,energy,gradu1,gradu2)
        do i=1,np
           sumy00=zero
           do l=1,np
-             sumy00 = sumy00 +  deriv%Dvv_twt(l,j  )*deriv%vvtempt(l,i,2)
+             sumy00 = sumy00 +  deriv%Dvv_twt(l,j  )*vvtempt(l,i,2)
           end do
            gradu2(i,j) = dx*sumy00
        end do

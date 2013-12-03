@@ -1,3 +1,7 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 module repro_sum_mod
 #define SPMD
 !----------------------------------------------------------------------- 

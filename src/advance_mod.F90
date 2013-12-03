@@ -193,7 +193,7 @@ contains
 
     call t_stopf('advance_nonstag')
 
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
   end subroutine advance_nonstag
@@ -564,13 +564,13 @@ contains
 
        if(Debug) print *,'homme: adv.._rk 2'
 
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
        !$OMP BARRIER
 #endif
 
        call bndry_exchangeV(hybrid,edge3)
 
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
        !$OMP BARRIER
 #endif
        
@@ -708,7 +708,7 @@ contains
     tl%np1  = tl%n0
     tl%n0   = ntmp
 
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
   end subroutine advance_nonstag_rk
@@ -1801,7 +1801,7 @@ contains
 
     !DBG print *,'advance_si: point #1'
 
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
 
@@ -1840,12 +1840,12 @@ contains
        end do
 
        !DBG print *,'advance_si: point #8'
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
        !$OMP BARRIER
 #endif
 
        call bndry_exchangeV(cg%hybrid,edge3)
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
        !$OMP BARRIER
 #endif
 
@@ -1872,7 +1872,7 @@ contains
 
        end do
 
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
        !$OMP BARRIER
 #endif
 
@@ -2017,7 +2017,7 @@ contains
     ! =============================================================
 
     call bndry_exchangeV(cg%hybrid,edge3)
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
 
@@ -2107,7 +2107,7 @@ contains
     end do
 
     call bndry_exchangeV(cg%hybrid,edge1)
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
 
@@ -2137,7 +2137,7 @@ contains
 #endif
 ! --- endif _HTRACE
 
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
 
@@ -2201,11 +2201,11 @@ contains
        call edgeVpack(edge2, grad_dp(1,1,1,1,ie),2*nlev,kptr,elem(ie)%desc)
     end do
 
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
     call bndry_exchangeV(cg%hybrid,edge2)
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
     do ie=nets,nete
@@ -2261,7 +2261,7 @@ contains
 
     call t_stopf('advance_si_nonstag')
 
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
 
@@ -2422,11 +2422,11 @@ contains
   end do
   
   
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
   !$OMP BARRIER
 #endif
   call bndry_exchangeV(hybrid,edge3)
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
   !$OMP BARRIER
 #endif
   

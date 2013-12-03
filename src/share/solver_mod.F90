@@ -70,7 +70,7 @@ contains
     type (ReductionBuffer_ordered_1d_t)  :: red         ! CG reduction buffer   (shared memory)
     type (EdgeBuffer_t)               :: edge2          ! Laplacian edge buffer (shared memory)
     real (kind=real_kind)             :: lambdasq(nlev) ! Helmholtz lengthscale (private)
-    type (derivative_t)          :: deriv          ! Staggered derivative struct     (private)
+    type (derivative_t), intent(in) :: deriv          ! Staggered derivative struct     (private)
     type (blkjac_t)		      :: blkjac(nets:nete)
     real (kind=real_kind)             :: x(np,np,nlev,nets:nete)     ! solution (result)
 
@@ -117,7 +117,7 @@ contains
     !DBG print *,'pcg_solver: point #1'
     do ie=nets,nete
        ieptr=ie-nets+1
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,iptr,i,j)
 #endif
        do k=1,nlev
@@ -148,8 +148,8 @@ contains
           metinv => elem(ie)%metinv
           metdet => elem(ie)%metdet
 
-#if (defined ELEMENT_OPENMP)
-!$omp parallel do private(k,Trans,inc,deriv,i,j,gradp1,gradp2)
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(k,Trans,inc,i,j,gradp1,gradp2)
 #endif
           do k=1,nlev
              if (.not.cg%converged(k)) then
@@ -247,8 +247,8 @@ contains
           kptr=0
           call edgeVunpack(edge2, gradp(1,1,1,1,ie), 2*nlev, kptr, elem(ie)%desc)
 
-#if (defined ELEMENT_OPENMP)
-!$omp parallel do private(k,i,j,gradp1,gradp2,div,deriv,iptr)
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(k,i,j,gradp1,gradp2,div,iptr)
 #endif
           do k=1,nlev
              if (.not.cg%converged(k)) then
@@ -292,7 +292,7 @@ contains
           end do
        end do
 #ifdef DEBUGOMP
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -307,7 +307,7 @@ contains
 
     do ie=nets,nete
        ieptr=ie-nets+1
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j,iptr)
 #endif
        do k=1,nlev
@@ -370,7 +370,7 @@ contains
     type (EdgeBuffer_t)               :: edge1          ! Laplacian divergence edge buffer (shared memory)
     type (EdgeBuffer_t)               :: edge2          ! Laplacian gradient edge buffer (shared memory)
     real (kind=real_kind), intent(in) :: lambdasq(nlev) ! Helmholtz lengthscale (private)
-    type (derivative_t)               :: deriv          ! non staggered derivative struct     (private)
+    type (derivative_t), intent(in) :: deriv          ! non staggered derivative struct     (private)
     type (blkjac_t)		      :: blkjac(nets:nete)
 
     real (kind=real_kind)             :: x(np,np,nlev,nets:nete)     ! solution (result)
@@ -411,7 +411,7 @@ contains
 
     do ie=nets,nete
        ieptr=ie-nets+1
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j,iptr)
 #endif
        do k=1,nlev
@@ -436,8 +436,8 @@ contains
           metdet => elem(ie)%metdet
           rmetdet  => elem(ie)%rmetdet
 
-#if (defined ELEMENT_OPENMP)
-!$omp parallel do private(k,i,j,deriv,iptr,gradp1,gradp2)
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(k,i,j,iptr,gradp1,gradp2)
 #endif
           do k=1,nlev
              if (.not.cg%converged(k)) then
@@ -537,12 +537,12 @@ contains
           kptr=0
           call edgeVunpack(edge2, gradp(1,1,1,1,ie), 2*nlev, kptr, elem(ie)%desc)
 #ifdef DEBUGOMP
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
-#if (defined ELEMENT_OPENMP)
-!$omp parallel do private(k,i,j,gradp1,gradp2,deriv)
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(k,i,j,gradp1,gradp2)
 #endif
           do k=1,nlev
              if (.not.cg%converged(k)) then
@@ -601,7 +601,7 @@ contains
           kptr=0
           call edgeVunpack(edge1, div(1,1,1,ie), nlev, kptr, elem(ie)%desc)
 
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j,iptr)
 #endif
           do k=1,nlev
@@ -619,7 +619,7 @@ contains
           end do
        end do
 #ifdef DEBUGOMP
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -633,7 +633,7 @@ contains
 
     do ie=nets,nete
        ieptr=ie-nets+1
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j,iptr)
 #endif
        do k=1,nlev
@@ -658,7 +658,7 @@ contains
     use dimensions_mod, only : nlev, np
     use parallel_mod, only : haltmp
     type(element_t), intent(in), target :: elem(:)
-    type (derivative_t)                  :: deriv
+    type (derivative_t), intent(in) :: deriv
     real (kind=real_kind), intent(in)    :: lambdasq(nlev)
     integer(kind=int_kind), intent(in) :: nets
     integer(kind=int_kind), intent(in) :: nete
@@ -732,8 +732,8 @@ contains
           rmp     => elem(ie)%rmp
           mp      => elem(ie)%mp          
 
-#if (defined ELEMENT_OPENMP)
-!$omp parallel do private(kk,p,gradp,gradp1,gradp2,deriv,i,j,div,iptr)
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(kk,p,gradp,gradp1,gradp2,i,j,div,iptr)
 #endif
           do kk = 1, npsq     ! delta fn excitation index
 
@@ -1647,7 +1647,7 @@ tol=1.e-12
     integer, intent(in)  :: nets,nete
     type(element_t), intent(in), target :: elem(:)
     type (ReductionBuffer_ordered_1d_t)  :: red         ! CG reduction buffer   (shared memory)
-    type (derivative_t)               :: deriv          ! non staggered derivative struct     (private)
+    type (derivative_t), intent(in) :: deriv          ! non staggered derivative struct     (private)
     type (hybrid_t)             :: hybrid
     type (EdgeBuffer_t)               :: edge1          ! Laplacian divergence edge buffer (shared memory)
 

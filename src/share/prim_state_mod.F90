@@ -773,7 +773,7 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     !        [Cp + (Cpv-Cp) Q(n)] *dpdn(n)*T(n+1) 
     do ie=nets,nete
 
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
 #endif
        do k=1,nlev
@@ -783,7 +783,7 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
                ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,t2)
        enddo
 
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j,cp_star1,cp_star2,qval_t1,qval_t2)
 #endif
        do k=1,nlev
@@ -824,7 +824,7 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
 
     
     !   KE   .5 dp/dn U^2
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,E)
 #endif
        do k=1,nlev
@@ -940,7 +940,7 @@ subroutine prim_diag_scalars(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     if (tstep_type>0) then
 
        do ie=nets,nete
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
           !$omp parallel do private(q,k,suml)
 #endif
           do q=1,qsize
@@ -953,7 +953,7 @@ subroutine prim_diag_scalars(elem,hvcoord,tl,n,t_before_advance,nets,nete)
        enddo
        
        do ie=nets,nete
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
           !$omp parallel do private(q,k,suml)
 #endif
           do q=1,qsize

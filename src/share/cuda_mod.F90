@@ -3,7 +3,7 @@
 !activated when -Mcuda is specified during compilation with a PGI compiler. Thus, it will be ignored unless explicitly
 !activated by the user
 !
-!As a general rule, all of the routines in here will be called within a threaded context (assuming ELEMENT_OPENMP is not
+!As a general rule, all of the routines in here will be called within a threaded context (assuming COLUMN_OPENMP is not
 !deifned), and therefore, we enforce BARRIERS, MASTERS, and SINGLES from within these routines rather than outside them.
 !This is to minimize the visible code impacts on the existing CPU code.
 
@@ -199,8 +199,8 @@ contains
     allocate(streams (0:cuda_streams))
     allocate(streams2(0:cuda_streams))
 
-#if (defined ELEMENT_OPENMP)
-    write(*,*) 'ERROR: Do not use ELEMENT_OPENMP and CUDA FORTRAN'
+#if (defined COLUMN_OPENMP)
+    write(*,*) 'ERROR: Do not use COLUMN_OPENMP and CUDA FORTRAN'
     stop
 #endif
 !$OMP BARRIER

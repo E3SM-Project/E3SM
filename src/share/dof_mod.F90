@@ -114,7 +114,7 @@ contains
        call LongEdgeVunpackMIN(edge,ldofP(:,:,ie),1,kptr,elem(ie)%desc)
        elem(ie)%gdofP(:,:)=ldofP(:,:,ie)
     end do
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
     call FreeLongEdgeBuffer(edge)

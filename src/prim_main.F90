@@ -18,7 +18,9 @@ program prim_main
   ! -----------------------------------------------
   use hybrid_mod, only : hybrid_t
   ! -----------------------------------------------
-  use thread_mod, only : nthreads, omp_get_thread_num, omp_set_num_threads
+  use thread_mod, only : nthreads, vert_num_threads, omp_get_thread_num, &
+                         omp_set_num_threads, omp_get_nested, &
+                         omp_get_num_threads, omp_get_max_threads
   ! ----------------------------------------------- 
   use time_mod, only : tstep, nendstep, timelevel_t, TimeLevel_init
   ! -----------------------------------------------
@@ -107,16 +109,27 @@ program prim_main
   call TRACE_INIT(htype,pflag)
 #endif
 
+
   ! =====================================
   ! Begin threaded region so each thread can print info
   ! =====================================
-#if (! defined ELEMENT_OPENMP)
-  !$OMP PARALLEL DEFAULT(SHARED), PRIVATE(ithr,nets,nete,hybrid)
+#if (defined HORIZ_OPENMP && defined COLUMN_OPENMP)
+   call omp_set_nested(.true.)
+   if (omp_get_nested() == 0) then
+     call haltmp("Nested threading required but not available. Set OMP_NESTED=true")
+   endif
+#endif
+
+  ! =====================================
+  ! Begin threaded region so each thread can print info
+  ! =====================================
+#if (defined HORIZ_OPENMP)
+  !$OMP PARALLEL NUM_THREADS(nthreads), DEFAULT(SHARED), PRIVATE(ithr,nets,nete,hybrid)
+  call omp_set_num_threads(vert_num_threads)
 #endif
   ithr=omp_get_thread_num()
   nets=dom_mt(ithr)%start
   nete=dom_mt(ithr)%end
-
   ! ================================================
   ! Initialize thread decomposition
   ! ================================================
@@ -124,10 +137,9 @@ program prim_main
      write(6,9) par%rank,ithr,nets,nete 
   endif
 9 format("process: ",i2,1x,"thread: ",i2,1x,"element limits: ",i5," - ",i5)
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
   !$OMP END PARALLEL
 #endif
-
   
 ! back to single threaded
   ithr=omp_get_thread_num()
@@ -155,8 +167,9 @@ program prim_main
 #endif
 
   if(par%masterproc) print *,"Primitive Equation Initialization..."
-#if (! defined ELEMENT_OPENMP)
-  !$OMP PARALLEL DEFAULT(SHARED), PRIVATE(ithr,nets,nete,hybrid)
+#if (defined HORIZ_OPENMP)
+  !$OMP PARALLEL NUM_THREADS(nthreads), DEFAULT(SHARED), PRIVATE(ithr,nets,nete,hybrid)
+  call omp_set_num_threads(vert_num_threads)
 #endif
   ithr=omp_get_thread_num()
   hybrid = hybrid_create(par,ithr,nthreads)
@@ -166,7 +179,7 @@ program prim_main
   call t_startf('prim_init2')
   call prim_init2(elem, fvm,  hybrid,nets,nete,tl, hvcoord)
   call t_stopf('prim_init2')
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
   !$OMP END PARALLEL
 #endif
 
@@ -231,8 +244,9 @@ program prim_main
 
   if(par%masterproc) print *,"Entering main timestepping loop"
   do while(tl%nstep < nEndStep)
-#if (! defined ELEMENT_OPENMP)
-     !$OMP PARALLEL DEFAULT(SHARED), PRIVATE(ithr,nets,nete,hybrid)
+#if (defined HORIZ_OPENMP)
+     !$OMP PARALLEL NUM_THREADS(nthreads), DEFAULT(SHARED), PRIVATE(ithr,nets,nete,hybrid)
+     call omp_set_num_threads(vert_num_threads)
 #endif
      ithr=omp_get_thread_num()
      hybrid = hybrid_create(par,ithr,nthreads)
@@ -249,7 +263,7 @@ program prim_main
         endif
         call t_stopf('prim_run')
      end do
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
      !$OMP END PARALLEL
 #endif
 

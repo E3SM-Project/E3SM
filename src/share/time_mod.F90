@@ -114,7 +114,7 @@ contains
     ! Local Variable
 
     integer :: ntmp
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 !$OMP MASTER
 #endif
@@ -132,7 +132,7 @@ contains
     end if
        
     tl%nstep = tl%nstep+1
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP END MASTER
 !$OMP BARRIER    
 #endif

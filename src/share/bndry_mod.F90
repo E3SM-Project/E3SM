@@ -266,7 +266,7 @@ contains
 
     call t_adj_detailf(+2)
     call t_startf('bndry_exchange')
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
     if(hybrid%ithr == 0) then 
@@ -357,7 +357,7 @@ contains
 
 #endif
     endif  ! if (hybrid%ithr == 0)
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
     call t_stopf('bndry_exchange')
@@ -404,7 +404,7 @@ contains
     logical(kind=log_kind),parameter      :: Debug = .FALSE.
 
 
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
     if(hybrid%ithr == 0) then 
@@ -478,7 +478,7 @@ contains
 
 #endif
     endif  ! if (hybrid%ithr == 0)
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
 
@@ -527,7 +527,7 @@ contains
     logical(kind=log_kind),parameter      :: Debug = .FALSE.
 
 
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
     if(hybrid%ithr == 0) then 
@@ -605,15 +605,11 @@ contains
 
 #endif
     endif  ! if (hybrid%ithr == 0)
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
 
   end subroutine ghost_exchangeV
-
-
-
-
 
   subroutine compute_ghost_corner_orientation(hybrid,elem,nets,nete)
 !
