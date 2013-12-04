@@ -80,7 +80,7 @@ contains
     type (EdgeBuffer_t)               :: edge2          ! Laplacian gradient edge buffer (shared memory)
     real (kind=real_kind), intent(in) :: lambdasq(nlev) ! Helmholtz lengthscale (private)
     type (derivative_t), intent(in) :: deriv          ! non staggered derivative struct     (private)
-    type (blkjac_t)                 :: blkjac(nets:nete)
+    type (blkjac_t)                   :: blkjac(:)
 
     real (kind=real_kind)             :: x(np,np,nlev,nets:nete)     ! solution (result)
 
