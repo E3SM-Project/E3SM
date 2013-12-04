@@ -747,6 +747,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
           call cg_create(cg, np*np, nlev, nete-nets+1, hybrid, debug_level, solver_wts)
           deallocate(solver_wts)
           if (precon_method == "block_jacobi") then
+             if (.not. allocated(blkjac)) then
+                allocate(blkjac(nets:nete))
+             endif
              call blkjac_init(elem, deriv,refstate%Lambda,nets,nete,blkjac)
           end if
           initialized_for_dt = dt
