@@ -596,7 +596,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
        integer, intent(in)               :: nets,nete
        type (element_t), intent(inout), target :: elem(:)
-       type (blkjac_t)                   :: blkjac(nets:nete)
+       type (blkjac_t), allocatable      :: blkjac(:)
 
        type (cg_t)                       :: cg
 
