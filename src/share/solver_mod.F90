@@ -33,303 +33,12 @@ module solver_mod
   public  :: solver_test_ml
 #endif
 
+  ! Leaving this an interface for extensibility
   interface pcg_solver
-     module procedure pcg_solver_stag
      module procedure pcg_solver_nonstag
   end interface
 
 contains
-
-  function pcg_solver_stag(elem,  & 
-       rhs,      &
-       cg,       &
-       red,      &
-       edge2,    &   
-       lambdasq, &   
-       deriv,    &   
-       nets,     & 
-       nete,     &
-       blkjac) result(x) 
-    use dimensions_mod, only : nlev, np, npsq
-    use element_mod, only : element_t
-    use reduction_mod, only : reductionbuffer_ordered_1d_t
-    use cg_mod, only : cg_t, congrad
-    use edge_mod, only : edgebuffer_t, edgevpack, edgevunpack!,edgerotate
-    use derivative_mod, only : derivative_t, gradient_wk, gradient, divergence, derivative_stag_t
-    use control_mod, only : maxits, while_iter, tol, precon_method
-    use physical_constants, only : rrearth
-    use bndry_mod, only : bndry_exchangeV
-    use linear_algebra_mod, only : matvec
-    use parallel_mod, only : syncmp, haltmp
-
-
-    type(element_t), intent(in), target :: elem(:)
-    integer, intent(in)  :: nets,nete
-    real (kind=real_kind), intent(in) :: rhs(np,np,nlev,nets:nete) ! right hand side of operator
-    type (cg_t)                       :: cg             ! conjugate gradient    (private)
-    type (ReductionBuffer_ordered_1d_t)  :: red         ! CG reduction buffer   (shared memory)
-    type (EdgeBuffer_t)               :: edge2          ! Laplacian edge buffer (shared memory)
-    real (kind=real_kind)             :: lambdasq(nlev) ! Helmholtz lengthscale (private)
-    type (derivative_t), intent(in) :: deriv          ! Staggered derivative struct     (private)
-    type (blkjac_t)		      :: blkjac(nets:nete)
-    real (kind=real_kind)             :: x(np,np,nlev,nets:nete)     ! solution (result)
-
-#ifdef CAM
-    call haltmp('semi-implicit method not yet supported in cam')
-#else
-
-    ! ===========
-    ! Local
-    ! ===========
-
-    real (kind=real_kind),pointer :: metinv(:,:,:,:), Dinv(:,:,:,:)
-    real (kind=real_kind),pointer :: metdet(:,:)
-    real (kind=real_kind),pointer :: rmp(:,:)
-    real (kind=real_kind),pointer :: mp(:,:)
-
-    real (kind=real_kind) :: gradp(np,np,2,nlev,nets:nete)
-    real (kind=real_kind) :: div(np,np)
-    real (kind=real_kind) :: p(np,np)
-    real (kind=real_kind) :: r(npsq)
-    real (kind=real_kind) :: z(npsq)
-
-    real (kind=real_kind) :: gradp1
-    real (kind=real_kind) :: gradp2
-
-    integer :: ie
-    integer :: i,j,k
-    integer :: kptr
-    integer :: iptr
-    integer :: ieptr
-
-    character(len=1) :: Trans
-    real(kind=real_kind) :: one,zero
-    integer(kind=int_kind) :: inc
-
-    call t_startf('pcg_solver_stag')
-
-    ! ========================================
-    ! Load the rhs in the cg struct...
-    ! ========================================
-
-#ifndef CAM
-
-    !DBG print *,'pcg_solver: point #1'
-    do ie=nets,nete
-       ieptr=ie-nets+1
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,iptr,i,j)
-#endif
-       do k=1,nlev
-          iptr=1
-          do j=1,np
-             do i=1,np
-                cg%state(ieptr)%r(iptr,k) = rhs(i,j,k,ie)
-                iptr=iptr+1
-             end do
-          end do
-       end do
-    end do
-    !DBG print *,'pcg_solver: point #2'
-
-    Trans='N'
-    one=1.0D0
-    zero=0.0D0
-    inc=1
-
-    ! cg%debug_level = 3
-    do while (congrad(cg,red,maxits,tol))
-       call t_startf('timer_helm')
-
-!       print *,'CG inter = ',cg%iter
-       do ie=nets,nete
-          ieptr=ie-nets+1
-          Dinv   => elem(ie)%Dinv
-          metinv => elem(ie)%metinv
-          metdet => elem(ie)%metdet
-
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,Trans,inc,i,j,gradp1,gradp2)
-#endif
-          do k=1,nlev
-             if (.not.cg%converged(k)) then
-
-                ! ========================================
-                ! Apply preconditioner: wrk2 = (M^-1) * wrk1 
-                ! ========================================
-
-                if (precon_method == "block_jacobi") then
-
-                   if (blkjac_storage == "LUfactor") then
-                      call abortmp('dgesl needs linpack')
-!                      call dgesl(cg%state(ieptr)%r(:,k), &
-!                                 cg%state(ieptr)%z(:,k), &
-!                                 blkjac(ie)%E(:,:,k),    &
-!                                 blkjac(ie)%ipvt(:,k)) 
-                   else if (blkjac_storage == "inverse") then
-#ifdef _DGEMV
-                      call dgemv(Trans,npsq,npsq,one,blkjac(ie)%E(:,:,k),npsq,&
-                           cg%state(ieptr)%r(:,k),inc,zero,cg%state(ieptr)%z(:,k),inc)
-#else
-                      call matvec(cg%state(ieptr)%r(:,k),cg%state(ieptr)%z(:,k),blkjac(ie)%E(:,:,k),npsq)
-#endif
-                   end if
-
-                else if (precon_method == "identity") then
-
-                   do j=1,npsq
-                      cg%state(ieptr)%z(j,k)=cg%state(ieptr)%r(j,k)
-                   end do
-
-                end if
-
-
-                !JMD===========================================
-                !JMD   2*np*np*(np + np) Flops 
-   		!JMD  SR = (4*np*np + 2*np*np + np*np)*Ld
-   		!JMD  SUM(WS) = (6*np*np + 2*np*np + np*np
-                !JMD===========================================
-#ifdef _WK_GRAD
-#ifdef _NEWSTRUCT
-                gradp(:,:,:,k,ie)=gradient_wk(cg%state(ieptr,k)%z(:),deriv)*rrearth
-#else
-                !JPE temp solution get rid of reshape!
-                gradp(:,:,:,k,ie)=gradient_wk(reshape(cg%state(ieptr)%z(:,k),(/np,np/)),deriv)*rrearth
-#endif
-#else
-#ifdef _NEWSTRUCT
-                gradp(:,:,:,k,ie)=gradient(cg%state(ieptr,k)%z(:),deriv)*rrearth
-#else
-                !JPE temp solution get rid of reshape!
-                gradp(:,:,:,k,ie)=gradient(reshape(cg%state(ieptr)%z(:,k),(/np,np/)),deriv)*rrearth
-#endif
-#endif
-
-                ! =======================================
-                ! rotate gradient to form contravariant
-                !JMD  4*np*np Flops
-                ! =======================================
-
-                do j=1,np
-                   do i=1,np
-                      gradp1       = gradp(i,j,1,k,ie)
-                      gradp2       = gradp(i,j,2,k,ie)
-                      gradp(i,j,1,k,ie) = metdet(i,j)*(Dinv(1,1,i,j)*gradp1 + &
-                           Dinv(2,1,i,j)*gradp2)
-                      gradp(i,j,2,k,ie) = metdet(i,j)*(Dinv(1,2,i,j)*gradp1 + &
-                           Dinv(2,2,i,j)*gradp2)
-                   end do
-                end do
-
-             end if
-          end do
-
-          kptr=0
-          call edgeVpack(edge2,gradp(1,1,1,1,ie),2*nlev,kptr,elem(ie)%desc)
-
-          !DBG print *,'pcg_solver: point #11'
-          kptr=0
-          !call edgerotate(edge2,2*nlev,kptr,elem(ie)%desc)
-
-       end do
-       while_iter = while_iter + 1 
-
-       call bndry_exchangeV(cg%hybrid,edge2)
-
-       do ie=nets,nete
-          ieptr=ie-nets+1
-
-          rmp     => elem(ie)%rmp
-          Dinv    => elem(ie)%Dinv
-          metdet => elem(ie)%metdet
-          mp      => elem(ie)%mp
-
-          kptr=0
-          call edgeVunpack(edge2, gradp(1,1,1,1,ie), 2*nlev, kptr, elem(ie)%desc)
-
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,i,j,gradp1,gradp2,div,iptr)
-#endif
-          do k=1,nlev
-             if (.not.cg%converged(k)) then
-
-                ! ====================
-                ! 2*np*np Flops
-                ! ====================
-
-                do j=1,np
-                   do i=1,np
-                      gradp1 = gradp(i,j,1,k,ie)
-                      gradp2 = gradp(i,j,2,k,ie)
-                      gradp(i,j,1,k,ie) = rmp(i,j)*&
-                                   (Dinv(1,1,i,j)*gradp1+Dinv(1,2,i,j)*gradp2)
-                      gradp(i,j,2,k,ie) = rmp(i,j)*&
-                                   (Dinv(2,1,i,j)*gradp1+Dinv(2,2,i,j)*gradp2)
-                   end do
-                end do
-
-                ! ================================================
-                ! Compute  Pseudo Laplacian(p), store in div
-                !JMD   2*np*np*(np + np) Flops 
-                ! ================================================
-
-                div(:,:) = divergence(gradp(:,:,:,k,ie),deriv)*rrearth
-
-                ! ==========================================
-                ! compute Helmholtz operator, store in wrk3
-                !  4*np*np Flops
-                ! ==========================================
-
-                iptr=1
-                do j=1,np
-                   do i=1,np
-                      cg%state(ieptr)%s(iptr,k) = mp(i,j)*(metdet(i,j)*cg%state(ieptr)%z(iptr,k) + lambdasq(k)*div(i,j))
-                      iptr=iptr+1
-                   end do
-                end do
-
-             end if
-          end do
-       end do
-#ifdef DEBUGOMP
-#if (defined HORIZ_OPENMP)
-!$OMP BARRIER
-#endif
-#endif
-       call t_stopf('timer_helm')
-
-    end do  ! CG solver while loop
-
-
-    ! ===============================
-    ! Converged! unpack wrk3 into x
-    ! ===============================
-
-    do ie=nets,nete
-       ieptr=ie-nets+1
-#if (defined COLUMN_OPENMP)
-!$omp parallel do private(k,i,j,iptr)
-#endif
-       do k=1,nlev
-          iptr=1
-          do j=1,np
-             do i=1,np
-#ifdef _NEWSTRUCT
-                x(i,j,k,ie)=cg%state(ieptr,k)%x(iptr)
-#else
-                x(i,j,k,ie)=cg%state(ieptr)%x(iptr,k)
-#endif
-                iptr=iptr+1
-             end do
-          end do
-       end do
-    end do
-
-#endif
-    call t_stopf('pcg_solver_stag')
-! CAM
-#endif 
-  end function pcg_solver_stag
 
   ! ================================================
   ! pcg_solver_nonstag:
@@ -371,7 +80,7 @@ contains
     type (EdgeBuffer_t)               :: edge2          ! Laplacian gradient edge buffer (shared memory)
     real (kind=real_kind), intent(in) :: lambdasq(nlev) ! Helmholtz lengthscale (private)
     type (derivative_t), intent(in) :: deriv          ! non staggered derivative struct     (private)
-    type (blkjac_t)		      :: blkjac(nets:nete)
+    type (blkjac_t)                 :: blkjac(nets:nete)
 
     real (kind=real_kind)             :: x(np,np,nlev,nets:nete)     ! solution (result)
 
@@ -483,8 +192,8 @@ contains
 
                 !JMD===========================================
                 !JMD   2*np*np*(np + np) Flops 
-   		!JMD  SR = (4*np*np + 2*np*np + np*np)*Ld
-   		!JMD  SUM(WS) = (6*np*np + 2*np*np + np*np
+                !JMD  SR = (4*np*np + 2*np*np + np*np)*Ld
+                !JMD  SUM(WS) = (6*np*np + 2*np*np + np*np
                 !JMD===========================================
 
 #ifdef _WK_GRAD
@@ -662,7 +371,7 @@ contains
     real (kind=real_kind), intent(in)    :: lambdasq(nlev)
     integer(kind=int_kind), intent(in) :: nets
     integer(kind=int_kind), intent(in) :: nete
-    type (blkjac_t)      , intent(inout) :: blkjac(nets:nete)
+    type (blkjac_t), allocatable, intent(out) :: blkjac(:)
 #if 0
     !JMD    real (kind=real_kind)             :: E(npsq,npsq,nlev,nets:nete)
     !JMD    integer                           :: ipvt(npsq,nlev,nets:nete)
@@ -698,6 +407,10 @@ contains
     real (kind=real_kind) :: det(2)
 
     real (kind=real_kind) :: lsq
+
+    if (.not. allocated(blkjac)) then
+       allocate(blkjac(nets:nete))
+    endif
 
     ! =================================
     ! Begin executable code

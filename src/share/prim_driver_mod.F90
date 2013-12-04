@@ -738,9 +738,6 @@ contains
 #endif
     if (integration == "semi_imp") then
        refstate = prim_si_refstate_init(.false.,hybrid%masterthread,hvcoord)
-       if (precon_method == "block_jacobi") then
-          allocate(blkjac(nets:nete))
-       endif
     endif
 #if (defined HORIZ_OPENMP)
 !$OMP END MASTER

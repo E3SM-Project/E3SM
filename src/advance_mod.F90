@@ -1715,7 +1715,7 @@ contains
 
     integer              , intent(in) :: nets
     integer              , intent(in) :: nete
-    type (blkjac_t)                   :: blkjac(nets:nete)
+    type (blkjac_t), allocatable      :: blkjac(:)
 
     real (kind=real_kind), intent(in) :: dt
     real (kind=real_kind), intent(in) :: pmean
@@ -2143,7 +2143,7 @@ contains
 
 
     dp(:,:,:,nets:nete) = pcg_solver(elem, &
-	 Rs(:,:,:,nets:nete),  &     ! rhs of Helmholtz problem
+         Rs(:,:,:,nets:nete),  &     ! rhs of Helmholtz problem
          cg,              &     ! cg struct
          red,             &     ! reduction buffer
          edge1 ,          &     ! single vector edge exchange buffer

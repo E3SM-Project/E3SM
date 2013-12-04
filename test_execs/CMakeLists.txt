@@ -175,6 +175,11 @@ IF(${BUILD_HOMME_PREQX})
   ADD_SUBDIRECTORY(baroC)
 ENDIF()
 
+# Add a standard executable for performance testing
+IF(${ENABLE_PERFTEST})
+  ADD_SUBDIRECTORY(perfTest)
+ENDIF()
+
 # Read the test-list.cmake file to get the HOMME_TESTS list
 INCLUDE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/test-list.cmake)
 # Need a properly scoped variable to store the test directories for the

@@ -27,6 +27,9 @@
 /* Number of POINTS in the element (Default value is 1) */
 #define PLEV @NUM_PLEV@
 
+/* Number of tracers (Default value 4 if not specified) */
+#cmakedefine QSIZE_D @QSIZE_D@
+
 /* Basic PIO */
 #cmakedefine PIO
 
