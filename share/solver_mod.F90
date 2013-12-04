@@ -80,7 +80,7 @@ contains
     type (EdgeBuffer_t)               :: edge2          ! Laplacian gradient edge buffer (shared memory)
     real (kind=real_kind), intent(in) :: lambdasq(nlev) ! Helmholtz lengthscale (private)
     type (derivative_t), intent(in) :: deriv          ! non staggered derivative struct     (private)
-    type (blkjac_t)                   :: blkjac(:)
+    type (blkjac_t)                   :: blkjac(nets:) ! This is safe if blkjac is not allocated (identity precon)
 
     real (kind=real_kind)             :: x(np,np,nlev,nets:nete)     ! solution (result)
 
@@ -371,7 +371,7 @@ contains
     real (kind=real_kind), intent(in)    :: lambdasq(nlev)
     integer(kind=int_kind), intent(in) :: nets
     integer(kind=int_kind), intent(in) :: nete
-    type (blkjac_t), allocatable, intent(out) :: blkjac(:)
+    type (blkjac_t), intent(out) :: blkjac(nets:nete)
 #if 0
     !JMD    real (kind=real_kind)             :: E(npsq,npsq,nlev,nets:nete)
     !JMD    integer                           :: ipvt(npsq,nlev,nets:nete)
@@ -407,10 +407,6 @@ contains
     real (kind=real_kind) :: det(2)
 
     real (kind=real_kind) :: lsq
-
-    if (.not. allocated(blkjac)) then
-       allocate(blkjac(nets:nete))
-    endif
 
     ! =================================
     ! Begin executable code
