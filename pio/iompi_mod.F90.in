@@ -242,6 +242,8 @@ contains
 #endif
 
  end function write_mpiio_{TYPE}
+
+! TYPE int,real,double
  integer function read_mpiio_{TYPE} (File,IOBUF,varDesc, iodesc) result(ierr)
    
     type (File_desc_t), intent(inout)          :: File     ! file descriptor
