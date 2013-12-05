@@ -401,6 +401,10 @@ contains
           ! replace boundary layer depth with average of itself and neigbhbors
           diagnostics % boundaryLayerDepth % array(iCell) = &
              0.5*(diagnostics % boundaryLayerDepth % array(iCell)+r/mesh%nEdgesOnCell%array(iCell))
+
+          ! make sure that boundary layer is not thicker than entire ocean column
+          diagnostics % boundaryLayerDepth % array(iCell) = &
+             min(bottomDepth(iCell), diagnostics % boundaryLayerDepth % array(iCell))
   
         end do  ! do iCell=1,mesh%nCells
 
