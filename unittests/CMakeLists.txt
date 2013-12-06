@@ -12,3 +12,5 @@ LINK_DIRECTORIES(${PIO_LIB_DIR} )
 
 ADD_EXECUTABLE(piotest ${SRC})
 TARGET_LINK_LIBRARIES(piotest pio)
+
+ADD_TEST(piotest piotest)
