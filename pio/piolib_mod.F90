@@ -2564,7 +2564,7 @@ contains
 !! variables, and attributes, or deleting attributes.) 
 !! @retval ierr @copydoc error_return
 !<
-  integer function PIO_openfile(iosystem, file, iotype, fname,mode) result(ierr)
+  integer function PIO_openfile(iosystem, file, iotype, fname,mode, CheckMPI) result(ierr)
 #ifdef _COMPRESSION
     use pio_types, only : pio_iotype_vdc2
 #endif
@@ -2573,6 +2573,7 @@ contains
     integer, intent(in) :: iotype
     character(len=*), intent(in)  :: fname
     integer, optional, intent(in) :: mode
+    logical, optional, intent(in) :: CheckMPI
     ! ===================
     !  local variables
     ! ================
@@ -2655,7 +2656,11 @@ contains
        if(amode /=0) then
           print *, 'warning, the mode argument is currently ignored for binary file operations'
        end if
-       ierr = open_mpiio(file,myfname)
+       if (present(CheckMPI)) then
+         ierr = open_mpiio(file,myfname, CheckMPI)
+       else
+         ierr = open_mpiio(file,myfname)
+       end if
     case( pio_iotype_pnetcdf, pio_iotype_netcdf, pio_iotype_netcdf4c, pio_iotype_netcdf4p)
        ierr = open_nf(file,myfname,amode)
        if(debug .and. iosystem%io_rank==0)print *,__PIO_FILE__,__LINE__,' open: ', myfname, file%fh

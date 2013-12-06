@@ -129,10 +129,11 @@ contains
 #endif
  end function create_mpiio
 
- integer function open_mpiio(File,fname) result(ierr)
+ integer function open_mpiio(File,fname, CheckMPI) result(ierr)
 
      type (File_desc_t), intent(inout) :: File ! file descriptor
-     character(len=*), intent(in)      :: fname
+     character(len=*),   intent(in)    :: fname
+     logical, optional,  intent(in)    :: CheckMPI
 
      ! ===================
      !  Local variables
@@ -141,8 +142,9 @@ contains
      integer    :: amode,iotype
      integer    :: ierrl
 
-     logical, parameter :: Check = .TRUE.
+     logical :: Check = .True.
 #ifdef USEMPIIO
+     if (present(CheckMPI)) Check = CheckMPI
      ierr = PIO_noerr
      if(File%iosystem%ioproc) then
         iotype = File%iotype

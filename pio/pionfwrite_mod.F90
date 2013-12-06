@@ -5,7 +5,7 @@
 !>
 !! @file 
 !! $Revision: 847 $
-!! $LastChangedDate: 2013-11-13 22:41:51 +0000 (Wed, 13 Nov 2013) $
+!! $LastChangedDate: 2013-11-13 15:41:51 -0700 (Wed, 13 Nov 2013) $
 !! @brief Decomposed Write interface to NetCDF
 !<
 module pionfwrite_mod
@@ -16,7 +16,7 @@ module pionfwrite_mod
 !! @private
 !<
   public :: write_nf
-# 15 "/home/jedwards/pio_trunk/pio/pionfwrite_mod.F90.in"
+# 15 "/glade/u/home/jedwards/pio_trunk/pio/pionfwrite_mod.F90.in"
   interface write_nf
      ! TYPE real,int,double
      module procedure write_nfdarray_real
@@ -29,7 +29,7 @@ module pionfwrite_mod
   character(len=*), parameter :: modName='pionfwrite_mod'
 
 
-# 23 "/home/jedwards/pio_trunk/pio/pionfwrite_mod.F90.in"
+# 23 "/glade/u/home/jedwards/pio_trunk/pio/pionfwrite_mod.F90.in"
 contains
   ! note: IOBUF may actually point to the original data
   ! array, and cannot be modified (which is why it is intent(in))
@@ -38,7 +38,7 @@ contains
 !>
 !! @private
 !<
-# 31 "/home/jedwards/pio_trunk/pio/pionfwrite_mod.F90.in"
+# 31 "/glade/u/home/jedwards/pio_trunk/pio/pionfwrite_mod.F90.in"
   integer function write_nfdarray_real (File,IOBUF,varDesc,iodesc,start,count, request) result(ierr)
     use nf_mod
     use pio_types, only : io_desc_t, var_desc_t, file_desc_t, iosystem_desc_t, pio_noerr, &
@@ -126,10 +126,11 @@ contains
           ! allocate space on root for copy of iobuf etc.
           iobuf_size=size(IOBUF)
           if(File%iosystem%num_iotasks>1) then
+             if(Debug) print *,__FILE__,__LINE__
              call MPI_ALLREDUCE(iobuf_size,max_iobuf_size, &
                   1,MPI_INTEGER,MPI_MAX,File%iosystem%IO_comm,mpierr)
              call CheckMPIReturn(subName, mpierr)
-
+             if(Debug) print *,__FILE__,__LINE__,iobuf_size
              if (File%iosystem%io_rank==0) then
                    call alloc_check(temp_iobuf,max_iobuf_size)
              else
@@ -156,43 +157,43 @@ contains
           if (File%iosystem%io_rank>0) then
              ! Wait for io_rank 0 to indicate that its ready before sending
              ! this handshaking is nessasary for jaguar
-             call MPI_RECV( i, 1, MPI_INTEGER, 0, file%iosystem%io_rank, &
+             call MPI_RECV( ierr, 1, MPI_INTEGER, 0, file%iosystem%io_rank, &
                   file%iosystem%io_comm, status, mpierr)
              call CheckMPIReturn(subName, mpierr)
+             if(ierr==pio_NOERR) then
+                if (Debug) print *, subName,': File%iosystem%comp_rank:',File%iosystem%comp_rank, &
+                     ': relaying IOBUF for write size=',size(IOBUF), temp_start(1:ndims),temp_count(1:ndims), i
 
-             if (Debug) print *, subName,': File%iosystem%comp_rank:',File%iosystem%comp_rank, &
-                  ': relaying IOBUF for write size=',size(IOBUF), temp_start(1:ndims),temp_count(1:ndims), i
 
+                call MPI_SEND( temp_IOBUF,max_iobuf_size, &
+                     MPI_REAL4, &
+                     0,File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
+                call CheckMPIReturn(subName, mpierr)
+                
+                call MPI_SEND( temp_start,ndims,MPI_INTEGER, &
+                     0,File%iosystem%num_iotasks+File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
+                call CheckMPIReturn(subName, mpierr)
+                
+                call MPI_SEND( temp_count,ndims,MPI_INTEGER, &
+                     0,2*File%iosystem%num_iotasks+File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
 
-             call MPI_SEND( temp_IOBUF,max_iobuf_size, &
-                  MPI_REAL4, &
-                  0,File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
-             call CheckMPIReturn(subName, mpierr)
-
-             call MPI_SEND( temp_start,ndims,MPI_INTEGER, &
-                  0,File%iosystem%num_iotasks+File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
-             call CheckMPIReturn(subName, mpierr)
-
-             call MPI_SEND( temp_count,ndims,MPI_INTEGER, &
-                  0,2*File%iosystem%num_iotasks+File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
-
-             call CheckMPIReturn(subName, mpierr)
-
+                call CheckMPIReturn(subName, mpierr)
+             endif
           endif
 
           if (File%iosystem%io_rank==0) then 
              fh = file%fh
              vid = vardesc%varid
              ierr=nf90_put_var( fh, vid,IOBUF,temp_start(1:ndims),temp_count(1:ndims))
-             if(ierr==pio_noerr) then
-                if (Debug) print *, subName,': 0: done writing for self',ndims
+             if (Debug) print *, subName,': 0: done writing for self',ndims
 
-                do i=1,File%iosystem%num_iotasks-1
+             do i=1,File%iosystem%num_iotasks-1
 
-                   ! Send a signal indicating ready to recv
-                   call MPI_SEND( i, 1, MPI_INTEGER, i, i, &
-                        file%iosystem%io_comm, mpierr)
-                   call CheckMPIReturn(subName,mpierr)
+                ! Send a signal indicating ready to recv
+                call MPI_SEND( ierr, 1, MPI_INTEGER, i, i, &
+                     file%iosystem%io_comm, mpierr)
+                call CheckMPIReturn(subName,mpierr)
+                if(ierr==pio_noerr) then
                    ! receive IOBUF, temp_start, temp_count from io_rank i
                    if(Debug) print *,subName, ' 1 receiving from ',i, max_iobuf_size
 
@@ -230,8 +231,8 @@ contains
                    end if
 
 
-                end do ! i=1,File%iosystem%num_iotasks-1
-             end if ! ierr==pio_noerr
+                end if ! ierr==pio_noerr
+             end do ! i=1,File%iosystem%num_iotasks-1
           endif  ! File%iosystem%io_rank==0
 
           if (File%iosystem%num_iotasks>1) then
@@ -255,13 +256,13 @@ contains
 !  call mpi_barrier(file%iosystem%comp_comm, mpierr)
 !  call CheckMPIReturn(subName,mpierr)
 
-# 247 "/home/jedwards/pio_trunk/pio/pionfwrite_mod.F90.in"
+# 248 "/glade/u/home/jedwards/pio_trunk/pio/pionfwrite_mod.F90.in"
   end function WRITE_NFDARRAY_real
   ! TYPE real,int,double
 !>
 !! @private
 !<
-# 31 "/home/jedwards/pio_trunk/pio/pionfwrite_mod.F90.in"
+# 31 "/glade/u/home/jedwards/pio_trunk/pio/pionfwrite_mod.F90.in"
   integer function write_nfdarray_int (File,IOBUF,varDesc,iodesc,start,count, request) result(ierr)
     use nf_mod
     use pio_types, only : io_desc_t, var_desc_t, file_desc_t, iosystem_desc_t, pio_noerr, &
@@ -349,10 +350,11 @@ contains
           ! allocate space on root for copy of iobuf etc.
           iobuf_size=size(IOBUF)
           if(File%iosystem%num_iotasks>1) then
+             if(Debug) print *,__FILE__,__LINE__
              call MPI_ALLREDUCE(iobuf_size,max_iobuf_size, &
                   1,MPI_INTEGER,MPI_MAX,File%iosystem%IO_comm,mpierr)
              call CheckMPIReturn(subName, mpierr)
-
+             if(Debug) print *,__FILE__,__LINE__,iobuf_size
              if (File%iosystem%io_rank==0) then
                    call alloc_check(temp_iobuf,max_iobuf_size)
              else
@@ -379,43 +381,43 @@ contains
           if (File%iosystem%io_rank>0) then
              ! Wait for io_rank 0 to indicate that its ready before sending
              ! this handshaking is nessasary for jaguar
-             call MPI_RECV( i, 1, MPI_INTEGER, 0, file%iosystem%io_rank, &
+             call MPI_RECV( ierr, 1, MPI_INTEGER, 0, file%iosystem%io_rank, &
                   file%iosystem%io_comm, status, mpierr)
              call CheckMPIReturn(subName, mpierr)
+             if(ierr==pio_NOERR) then
+                if (Debug) print *, subName,': File%iosystem%comp_rank:',File%iosystem%comp_rank, &
+                     ': relaying IOBUF for write size=',size(IOBUF), temp_start(1:ndims),temp_count(1:ndims), i
 
-             if (Debug) print *, subName,': File%iosystem%comp_rank:',File%iosystem%comp_rank, &
-                  ': relaying IOBUF for write size=',size(IOBUF), temp_start(1:ndims),temp_count(1:ndims), i
 
+                call MPI_SEND( temp_IOBUF,max_iobuf_size, &
+                     MPI_INTEGER, &
+                     0,File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
+                call CheckMPIReturn(subName, mpierr)
+                
+                call MPI_SEND( temp_start,ndims,MPI_INTEGER, &
+                     0,File%iosystem%num_iotasks+File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
+                call CheckMPIReturn(subName, mpierr)
+                
+                call MPI_SEND( temp_count,ndims,MPI_INTEGER, &
+                     0,2*File%iosystem%num_iotasks+File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
 
-             call MPI_SEND( temp_IOBUF,max_iobuf_size, &
-                  MPI_INTEGER, &
-                  0,File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
-             call CheckMPIReturn(subName, mpierr)
-
-             call MPI_SEND( temp_start,ndims,MPI_INTEGER, &
-                  0,File%iosystem%num_iotasks+File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
-             call CheckMPIReturn(subName, mpierr)
-
-             call MPI_SEND( temp_count,ndims,MPI_INTEGER, &
-                  0,2*File%iosystem%num_iotasks+File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
-
-             call CheckMPIReturn(subName, mpierr)
-
+                call CheckMPIReturn(subName, mpierr)
+             endif
           endif
 
           if (File%iosystem%io_rank==0) then 
              fh = file%fh
              vid = vardesc%varid
              ierr=nf90_put_var( fh, vid,IOBUF,temp_start(1:ndims),temp_count(1:ndims))
-             if(ierr==pio_noerr) then
-                if (Debug) print *, subName,': 0: done writing for self',ndims
+             if (Debug) print *, subName,': 0: done writing for self',ndims
 
-                do i=1,File%iosystem%num_iotasks-1
+             do i=1,File%iosystem%num_iotasks-1
 
-                   ! Send a signal indicating ready to recv
-                   call MPI_SEND( i, 1, MPI_INTEGER, i, i, &
-                        file%iosystem%io_comm, mpierr)
-                   call CheckMPIReturn(subName,mpierr)
+                ! Send a signal indicating ready to recv
+                call MPI_SEND( ierr, 1, MPI_INTEGER, i, i, &
+                     file%iosystem%io_comm, mpierr)
+                call CheckMPIReturn(subName,mpierr)
+                if(ierr==pio_noerr) then
                    ! receive IOBUF, temp_start, temp_count from io_rank i
                    if(Debug) print *,subName, ' 1 receiving from ',i, max_iobuf_size
 
@@ -453,8 +455,8 @@ contains
                    end if
 
 
-                end do ! i=1,File%iosystem%num_iotasks-1
-             end if ! ierr==pio_noerr
+                end if ! ierr==pio_noerr
+             end do ! i=1,File%iosystem%num_iotasks-1
           endif  ! File%iosystem%io_rank==0
 
           if (File%iosystem%num_iotasks>1) then
@@ -478,13 +480,13 @@ contains
 !  call mpi_barrier(file%iosystem%comp_comm, mpierr)
 !  call CheckMPIReturn(subName,mpierr)
 
-# 247 "/home/jedwards/pio_trunk/pio/pionfwrite_mod.F90.in"
+# 248 "/glade/u/home/jedwards/pio_trunk/pio/pionfwrite_mod.F90.in"
   end function WRITE_NFDARRAY_int
   ! TYPE real,int,double
 !>
 !! @private
 !<
-# 31 "/home/jedwards/pio_trunk/pio/pionfwrite_mod.F90.in"
+# 31 "/glade/u/home/jedwards/pio_trunk/pio/pionfwrite_mod.F90.in"
   integer function write_nfdarray_double (File,IOBUF,varDesc,iodesc,start,count, request) result(ierr)
     use nf_mod
     use pio_types, only : io_desc_t, var_desc_t, file_desc_t, iosystem_desc_t, pio_noerr, &
@@ -572,10 +574,11 @@ contains
           ! allocate space on root for copy of iobuf etc.
           iobuf_size=size(IOBUF)
           if(File%iosystem%num_iotasks>1) then
+             if(Debug) print *,__FILE__,__LINE__
              call MPI_ALLREDUCE(iobuf_size,max_iobuf_size, &
                   1,MPI_INTEGER,MPI_MAX,File%iosystem%IO_comm,mpierr)
              call CheckMPIReturn(subName, mpierr)
-
+             if(Debug) print *,__FILE__,__LINE__,iobuf_size
              if (File%iosystem%io_rank==0) then
                    call alloc_check(temp_iobuf,max_iobuf_size)
              else
@@ -602,43 +605,43 @@ contains
           if (File%iosystem%io_rank>0) then
              ! Wait for io_rank 0 to indicate that its ready before sending
              ! this handshaking is nessasary for jaguar
-             call MPI_RECV( i, 1, MPI_INTEGER, 0, file%iosystem%io_rank, &
+             call MPI_RECV( ierr, 1, MPI_INTEGER, 0, file%iosystem%io_rank, &
                   file%iosystem%io_comm, status, mpierr)
              call CheckMPIReturn(subName, mpierr)
+             if(ierr==pio_NOERR) then
+                if (Debug) print *, subName,': File%iosystem%comp_rank:',File%iosystem%comp_rank, &
+                     ': relaying IOBUF for write size=',size(IOBUF), temp_start(1:ndims),temp_count(1:ndims), i
 
-             if (Debug) print *, subName,': File%iosystem%comp_rank:',File%iosystem%comp_rank, &
-                  ': relaying IOBUF for write size=',size(IOBUF), temp_start(1:ndims),temp_count(1:ndims), i
 
+                call MPI_SEND( temp_IOBUF,max_iobuf_size, &
+                     MPI_REAL8, &
+                     0,File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
+                call CheckMPIReturn(subName, mpierr)
+                
+                call MPI_SEND( temp_start,ndims,MPI_INTEGER, &
+                     0,File%iosystem%num_iotasks+File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
+                call CheckMPIReturn(subName, mpierr)
+                
+                call MPI_SEND( temp_count,ndims,MPI_INTEGER, &
+                     0,2*File%iosystem%num_iotasks+File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
 
-             call MPI_SEND( temp_IOBUF,max_iobuf_size, &
-                  MPI_REAL8, &
-                  0,File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
-             call CheckMPIReturn(subName, mpierr)
-
-             call MPI_SEND( temp_start,ndims,MPI_INTEGER, &
-                  0,File%iosystem%num_iotasks+File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
-             call CheckMPIReturn(subName, mpierr)
-
-             call MPI_SEND( temp_count,ndims,MPI_INTEGER, &
-                  0,2*File%iosystem%num_iotasks+File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
-
-             call CheckMPIReturn(subName, mpierr)
-
+                call CheckMPIReturn(subName, mpierr)
+             endif
           endif
 
           if (File%iosystem%io_rank==0) then 
              fh = file%fh
              vid = vardesc%varid
              ierr=nf90_put_var( fh, vid,IOBUF,temp_start(1:ndims),temp_count(1:ndims))
-             if(ierr==pio_noerr) then
-                if (Debug) print *, subName,': 0: done writing for self',ndims
+             if (Debug) print *, subName,': 0: done writing for self',ndims
 
-                do i=1,File%iosystem%num_iotasks-1
+             do i=1,File%iosystem%num_iotasks-1
 
-                   ! Send a signal indicating ready to recv
-                   call MPI_SEND( i, 1, MPI_INTEGER, i, i, &
-                        file%iosystem%io_comm, mpierr)
-                   call CheckMPIReturn(subName,mpierr)
+                ! Send a signal indicating ready to recv
+                call MPI_SEND( ierr, 1, MPI_INTEGER, i, i, &
+                     file%iosystem%io_comm, mpierr)
+                call CheckMPIReturn(subName,mpierr)
+                if(ierr==pio_noerr) then
                    ! receive IOBUF, temp_start, temp_count from io_rank i
                    if(Debug) print *,subName, ' 1 receiving from ',i, max_iobuf_size
 
@@ -676,8 +679,8 @@ contains
                    end if
 
 
-                end do ! i=1,File%iosystem%num_iotasks-1
-             end if ! ierr==pio_noerr
+                end if ! ierr==pio_noerr
+             end do ! i=1,File%iosystem%num_iotasks-1
           endif  ! File%iosystem%io_rank==0
 
           if (File%iosystem%num_iotasks>1) then
@@ -701,7 +704,7 @@ contains
 !  call mpi_barrier(file%iosystem%comp_comm, mpierr)
 !  call CheckMPIReturn(subName,mpierr)
 
-# 247 "/home/jedwards/pio_trunk/pio/pionfwrite_mod.F90.in"
+# 248 "/glade/u/home/jedwards/pio_trunk/pio/pionfwrite_mod.F90.in"
   end function WRITE_NFDARRAY_double
 
 

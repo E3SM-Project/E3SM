@@ -115,10 +115,11 @@ contains
           ! allocate space on root for copy of iobuf etc.
           iobuf_size=size(IOBUF)
           if(File%iosystem%num_iotasks>1) then
+             if(Debug) print *,__FILE__,__LINE__
              call MPI_ALLREDUCE(iobuf_size,max_iobuf_size, &
                   1,MPI_INTEGER,MPI_MAX,File%iosystem%IO_comm,mpierr)
              call CheckMPIReturn(subName, mpierr)
-
+             if(Debug) print *,__FILE__,__LINE__,iobuf_size
              if (File%iosystem%io_rank==0) then
                    call alloc_check(temp_iobuf,max_iobuf_size)
              else
@@ -145,43 +146,43 @@ contains
           if (File%iosystem%io_rank>0) then
              ! Wait for io_rank 0 to indicate that its ready before sending
              ! this handshaking is nessasary for jaguar
-             call MPI_RECV( i, 1, MPI_INTEGER, 0, file%iosystem%io_rank, &
+             call MPI_RECV( ierr, 1, MPI_INTEGER, 0, file%iosystem%io_rank, &
                   file%iosystem%io_comm, status, mpierr)
              call CheckMPIReturn(subName, mpierr)
+             if(ierr==pio_NOERR) then
+                if (Debug) print *, subName,': File%iosystem%comp_rank:',File%iosystem%comp_rank, &
+                     ': relaying IOBUF for write size=',size(IOBUF), temp_start(1:ndims),temp_count(1:ndims), i
 
-             if (Debug) print *, subName,': File%iosystem%comp_rank:',File%iosystem%comp_rank, &
-                  ': relaying IOBUF for write size=',size(IOBUF), temp_start(1:ndims),temp_count(1:ndims), i
 
+                call MPI_SEND( temp_IOBUF,max_iobuf_size, &
+                     {MPITYPE}, &
+                     0,File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
+                call CheckMPIReturn(subName, mpierr)
+                
+                call MPI_SEND( temp_start,ndims,MPI_INTEGER, &
+                     0,File%iosystem%num_iotasks+File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
+                call CheckMPIReturn(subName, mpierr)
+                
+                call MPI_SEND( temp_count,ndims,MPI_INTEGER, &
+                     0,2*File%iosystem%num_iotasks+File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
 
-             call MPI_SEND( temp_IOBUF,max_iobuf_size, &
-                  {MPITYPE}, &
-                  0,File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
-             call CheckMPIReturn(subName, mpierr)
-
-             call MPI_SEND( temp_start,ndims,MPI_INTEGER, &
-                  0,File%iosystem%num_iotasks+File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
-             call CheckMPIReturn(subName, mpierr)
-
-             call MPI_SEND( temp_count,ndims,MPI_INTEGER, &
-                  0,2*File%iosystem%num_iotasks+File%iosystem%io_rank,File%iosystem%IO_comm,mpierr )
-
-             call CheckMPIReturn(subName, mpierr)
-
+                call CheckMPIReturn(subName, mpierr)
+             endif
           endif
 
           if (File%iosystem%io_rank==0) then 
              fh = file%fh
              vid = vardesc%varid
              ierr=nf90_put_var( fh, vid,IOBUF,temp_start(1:ndims),temp_count(1:ndims))
-             if(ierr==pio_noerr) then
-                if (Debug) print *, subName,': 0: done writing for self',ndims
+             if (Debug) print *, subName,': 0: done writing for self',ndims
 
-                do i=1,File%iosystem%num_iotasks-1
+             do i=1,File%iosystem%num_iotasks-1
 
-                   ! Send a signal indicating ready to recv
-                   call MPI_SEND( i, 1, MPI_INTEGER, i, i, &
-                        file%iosystem%io_comm, mpierr)
-                   call CheckMPIReturn(subName,mpierr)
+                ! Send a signal indicating ready to recv
+                call MPI_SEND( ierr, 1, MPI_INTEGER, i, i, &
+                     file%iosystem%io_comm, mpierr)
+                call CheckMPIReturn(subName,mpierr)
+                if(ierr==pio_noerr) then
                    ! receive IOBUF, temp_start, temp_count from io_rank i
                    if(Debug) print *,subName, ' 1 receiving from ',i, max_iobuf_size
 
@@ -219,8 +220,8 @@ contains
                    end if
 
 
-                end do ! i=1,File%iosystem%num_iotasks-1
-             end if ! ierr==pio_noerr
+                end if ! ierr==pio_noerr
+             end do ! i=1,File%iosystem%num_iotasks-1
           endif  ! File%iosystem%io_rank==0
 
           if (File%iosystem%num_iotasks>1) then

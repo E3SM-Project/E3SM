@@ -5,8 +5,8 @@
 #define __PIO_FILE__ "iompi_mod.F90"
 !>
 !! @file 
-!! $Revision: 766 $
-!! $LastChangedDate: 2013-04-22 22:42:31 +0000 (Mon, 22 Apr 2013) $
+!! $Revision: 876 $
+!! $LastChangedDate: 2013-12-05 14:47:47 -0700 (Thu, 05 Dec 2013) $
 !! @brief The MPI-IO direct binary interface to PIO
 !<
 module iompi_mod
@@ -44,7 +44,7 @@ module iompi_mod
 !>
 !! @private
 !<
-# 43 "/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
+# 43 "/glade/u/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
   interface write_mpiio
 ! TYPE int,real,double
        module procedure write_mpiio_int
@@ -54,7 +54,7 @@ module iompi_mod
        module procedure write_mpiio_double
     end interface
 
-# 48 "/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
+# 48 "/glade/u/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
     interface read_mpiio
 ! TYPE int,real,double
        module procedure read_mpiio_int
@@ -66,10 +66,10 @@ module iompi_mod
 
 character(len=*), parameter :: modName='iompi_mod'
 
-# 55 "/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
+# 55 "/glade/u/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
 contains 
 
-# 57 "/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
+# 57 "/glade/u/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
  integer function close_mpiio(File) result(ierr)
 
      type (File_desc_t), intent(inout) :: File ! file descriptor
@@ -100,10 +100,10 @@ contains
         call piodie(__PIO_FILE__,__LINE__,'PIO was not built with -DUSEMPIIO')
 #endif
      end if
-# 87 "/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
+# 87 "/glade/u/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
  end function close_mpiio
 
-# 89 "/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
+# 89 "/glade/u/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
  integer function create_mpiio(File,fname) result(ierr)
 
      type (File_desc_t), intent(inout) :: File ! file descriptor
@@ -145,14 +145,15 @@ contains
      call piodie(__PIO_FILE__,__LINE__,'PIO was not built with -DUSEMPIIO')
      ierr=0
 #endif
-# 130 "/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
+# 130 "/glade/u/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
  end function create_mpiio
 
-# 132 "/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
- integer function open_mpiio(File,fname) result(ierr)
+# 132 "/glade/u/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
+ integer function open_mpiio(File,fname, CheckMPI) result(ierr)
 
      type (File_desc_t), intent(inout) :: File ! file descriptor
-     character(len=*), intent(in)      :: fname
+     character(len=*),   intent(in)    :: fname
+     logical, optional,  intent(in)    :: CheckMPI
 
      ! ===================
      !  Local variables
@@ -161,8 +162,9 @@ contains
      integer    :: amode,iotype
      integer    :: ierrl
 
-     logical, parameter :: Check = .TRUE.
+     logical :: Check = .True.
 #ifdef USEMPIIO
+     if (present(CheckMPI)) Check = CheckMPI
      ierr = PIO_noerr
      if(File%iosystem%ioproc) then
         iotype = File%iotype
@@ -189,12 +191,12 @@ contains
      call piodie(__PIO_FILE__,__LINE__,'PIO was not built with -DUSEMPIIO')
      ierr=0
 #endif
-# 172 "/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
+# 174 "/glade/u/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
  end function open_mpiio
 
 
 ! TYPE int,real,double
-# 176 "/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
+# 178 "/glade/u/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
  integer function write_mpiio_int (File,IOBUF,varDesc, iodesc) result(ierr)
     type (File_desc_t), intent(inout)          :: File     ! file descriptor
     integer(i4), intent(in)                    :: IOBUF(:) ! IO buffer
@@ -263,10 +265,10 @@ contains
     call t_stopf("pio_write_mpiio_int")
 #endif
 
-# 244 "/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
+# 246 "/glade/u/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
  end function write_mpiio_int
 ! TYPE int,real,double
-# 176 "/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
+# 178 "/glade/u/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
  integer function write_mpiio_real (File,IOBUF,varDesc, iodesc) result(ierr)
     type (File_desc_t), intent(inout)          :: File     ! file descriptor
     real(r4), intent(in)                    :: IOBUF(:) ! IO buffer
@@ -335,10 +337,10 @@ contains
     call t_stopf("pio_write_mpiio_real")
 #endif
 
-# 244 "/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
+# 246 "/glade/u/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
  end function write_mpiio_real
 ! TYPE int,real,double
-# 176 "/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
+# 178 "/glade/u/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
  integer function write_mpiio_double (File,IOBUF,varDesc, iodesc) result(ierr)
     type (File_desc_t), intent(inout)          :: File     ! file descriptor
     real(r8), intent(in)                    :: IOBUF(:) ! IO buffer
@@ -407,219 +409,11 @@ contains
     call t_stopf("pio_write_mpiio_double")
 #endif
 
-# 244 "/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
+# 246 "/glade/u/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
  end function write_mpiio_double
-# 245 "/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
- integer function read_mpiio_text (File,IOBUF,varDesc, iodesc) result(ierr)
-   
-    type (File_desc_t), intent(inout)          :: File     ! file descriptor
-    character(len=*), intent(out)                      :: IOBUF(:) ! IO buffer
-    type (VAR_desc_t), intent(in)               :: varDesc
-    type (IO_desc_t), intent(in)               :: IODesc
 
-    character(len=*), parameter :: subName=modName//'::read_mpiio_text'
-    character(len=10) :: datarep
-    integer(kind=PIO_OFFSET) :: reclen
-    integer(i4) :: iotype
-    integer(i4) :: cnt
-    integer(kind=pio_offset)                   :: glen     ! global length of IO request
-
-    integer(kind=PIO_OFFSET) :: offset   ! local offset
-    integer :: fstatus(MPI_STATUS_SIZE)
-
-    logical, parameter :: Debug = .FALSE.
-    logical, parameter :: Check = .TRUE.
-
-     datarep   = 'native'
-     iotype    = File%iotype
-     glen      = iodesc%glen
-     offset    = iodesc%IOmap%start
-#ifdef TIMING
-    call t_startf("pio_read_mpiio_text")
-#endif
-#ifdef USEMPIIO
-     reclen=glen*c_sizeof(iobuf(1))
-
-     if(Debug) print *, subName,':: IAM: ',File%iosystem%io_rank,' read_real8_mpiio: SIZE(IOBUF),n_RelemTYPE: ', &
-                SIZE(IOBUF),iodesc%Read%n_elemTYPE
-
-     if(iotype == iotype_direct_pbinary) then
-	File%offset = INT(varDesc%rec-1,kind=PIO_OFFSET)*reclen
-     endif
-     !-------------------------------------
-     ! Set file view for distributed array
-     !-------------------------------------
-     if(Debug) print *,__PIO_FILE__,__LINE__,'IAM: ',File%iosystem%io_rank,' before set_view iodesc%Read%fileTYPE: ', &
-          iodesc%Read%FileTYPE
-     call MPI_File_set_view(File%fh,File%offset, iodesc%Read%elemTYPE, iodesc%Read%fileType, 'native',File%iosystem%info,ierr)
-     if(Check) call CheckMPIreturn('read_mpiio_text: after call to file_set_view: ',ierr)
-!DBG     if(Debug) print *,__PIO_FILE__,__LINE__,'IAM: ',File%iosystem%io_rank,' after set_view IODesc%Read%fileTYPE: ', &
-!DBG     iodesc%Read%fileTYPE
-
-     !-----------------------------
-     ! Read out distributed array
-     !-----------------------------
-     call MPI_file_read_all(File%fh,IOBUF,int(iodesc%Read%n_elemTYPE),iodesc%Read%elemTYPE,fstatus,ierr)
-     if(Check) call CheckMPIreturn('read_mpiio_text: after call to file_read_all: ',ierr)
-     if(Debug) call MPI_get_count(fstatus,iodesc%Read%elemTYPE,cnt,ierr)
-     if(Debug) print *,__PIO_FILE__,__LINE__,'IAM: ',File%iosystem%io_rank,'read_mpiio_text: cnt is: ',iodesc%Read%n_elemTYPE, cnt
-     if(Debug) print *,__PIO_FILE__,__LINE__,'IAM: ',File%iosystem%io_rank,'read_mpio_text: reclen is: ',reclen
-
-
-     !-----------------------------------
-     ! increment the file  offset pointer
-     !-----------------------------------
-     File%Offset = File%Offset + reclen
-#else
-     call piodie(__PIO_FILE__,__LINE__,'PIO was not built with -DUSEMPIIO')
-     ierr=0
-#endif
-#ifdef TIMING
-    call t_stopf("pio_read_mpiio_text")
-#endif
-# 312 "/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
- end function read_mpiio_text
-# 245 "/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
- integer function read_mpiio_real (File,IOBUF,varDesc, iodesc) result(ierr)
-   
-    type (File_desc_t), intent(inout)          :: File     ! file descriptor
-    real(r4), intent(out)                      :: IOBUF(:) ! IO buffer
-    type (VAR_desc_t), intent(in)               :: varDesc
-    type (IO_desc_t), intent(in)               :: IODesc
-
-    character(len=*), parameter :: subName=modName//'::read_mpiio_real'
-    character(len=10) :: datarep
-    integer(kind=PIO_OFFSET) :: reclen
-    integer(i4) :: iotype
-    integer(i4) :: cnt
-    integer(kind=pio_offset)                   :: glen     ! global length of IO request
-
-    integer(kind=PIO_OFFSET) :: offset   ! local offset
-    integer :: fstatus(MPI_STATUS_SIZE)
-
-    logical, parameter :: Debug = .FALSE.
-    logical, parameter :: Check = .TRUE.
-
-     datarep   = 'native'
-     iotype    = File%iotype
-     glen      = iodesc%glen
-     offset    = iodesc%IOmap%start
-#ifdef TIMING
-    call t_startf("pio_read_mpiio_real")
-#endif
-#ifdef USEMPIIO
-     reclen=glen*c_sizeof(iobuf(1))
-
-     if(Debug) print *, subName,':: IAM: ',File%iosystem%io_rank,' read_real8_mpiio: SIZE(IOBUF),n_RelemTYPE: ', &
-                SIZE(IOBUF),iodesc%Read%n_elemTYPE
-
-     if(iotype == iotype_direct_pbinary) then
-	File%offset = INT(varDesc%rec-1,kind=PIO_OFFSET)*reclen
-     endif
-     !-------------------------------------
-     ! Set file view for distributed array
-     !-------------------------------------
-     if(Debug) print *,__PIO_FILE__,__LINE__,'IAM: ',File%iosystem%io_rank,' before set_view iodesc%Read%fileTYPE: ', &
-          iodesc%Read%FileTYPE
-     call MPI_File_set_view(File%fh,File%offset, iodesc%Read%elemTYPE, iodesc%Read%fileType, 'native',File%iosystem%info,ierr)
-     if(Check) call CheckMPIreturn('read_mpiio_real: after call to file_set_view: ',ierr)
-!DBG     if(Debug) print *,__PIO_FILE__,__LINE__,'IAM: ',File%iosystem%io_rank,' after set_view IODesc%Read%fileTYPE: ', &
-!DBG     iodesc%Read%fileTYPE
-
-     !-----------------------------
-     ! Read out distributed array
-     !-----------------------------
-     call MPI_file_read_all(File%fh,IOBUF,int(iodesc%Read%n_elemTYPE),iodesc%Read%elemTYPE,fstatus,ierr)
-     if(Check) call CheckMPIreturn('read_mpiio_real: after call to file_read_all: ',ierr)
-     if(Debug) call MPI_get_count(fstatus,iodesc%Read%elemTYPE,cnt,ierr)
-     if(Debug) print *,__PIO_FILE__,__LINE__,'IAM: ',File%iosystem%io_rank,'read_mpiio_real: cnt is: ',iodesc%Read%n_elemTYPE, cnt
-     if(Debug) print *,__PIO_FILE__,__LINE__,'IAM: ',File%iosystem%io_rank,'read_mpio_real: reclen is: ',reclen
-
-
-     !-----------------------------------
-     ! increment the file  offset pointer
-     !-----------------------------------
-     File%Offset = File%Offset + reclen
-#else
-     call piodie(__PIO_FILE__,__LINE__,'PIO was not built with -DUSEMPIIO')
-     ierr=0
-#endif
-#ifdef TIMING
-    call t_stopf("pio_read_mpiio_real")
-#endif
-# 312 "/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
- end function read_mpiio_real
-# 245 "/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
- integer function read_mpiio_double (File,IOBUF,varDesc, iodesc) result(ierr)
-   
-    type (File_desc_t), intent(inout)          :: File     ! file descriptor
-    real(r8), intent(out)                      :: IOBUF(:) ! IO buffer
-    type (VAR_desc_t), intent(in)               :: varDesc
-    type (IO_desc_t), intent(in)               :: IODesc
-
-    character(len=*), parameter :: subName=modName//'::read_mpiio_double'
-    character(len=10) :: datarep
-    integer(kind=PIO_OFFSET) :: reclen
-    integer(i4) :: iotype
-    integer(i4) :: cnt
-    integer(kind=pio_offset)                   :: glen     ! global length of IO request
-
-    integer(kind=PIO_OFFSET) :: offset   ! local offset
-    integer :: fstatus(MPI_STATUS_SIZE)
-
-    logical, parameter :: Debug = .FALSE.
-    logical, parameter :: Check = .TRUE.
-
-     datarep   = 'native'
-     iotype    = File%iotype
-     glen      = iodesc%glen
-     offset    = iodesc%IOmap%start
-#ifdef TIMING
-    call t_startf("pio_read_mpiio_double")
-#endif
-#ifdef USEMPIIO
-     reclen=glen*c_sizeof(iobuf(1))
-
-     if(Debug) print *, subName,':: IAM: ',File%iosystem%io_rank,' read_real8_mpiio: SIZE(IOBUF),n_RelemTYPE: ', &
-                SIZE(IOBUF),iodesc%Read%n_elemTYPE
-
-     if(iotype == iotype_direct_pbinary) then
-	File%offset = INT(varDesc%rec-1,kind=PIO_OFFSET)*reclen
-     endif
-     !-------------------------------------
-     ! Set file view for distributed array
-     !-------------------------------------
-     if(Debug) print *,__PIO_FILE__,__LINE__,'IAM: ',File%iosystem%io_rank,' before set_view iodesc%Read%fileTYPE: ', &
-          iodesc%Read%FileTYPE
-     call MPI_File_set_view(File%fh,File%offset, iodesc%Read%elemTYPE, iodesc%Read%fileType, 'native',File%iosystem%info,ierr)
-     if(Check) call CheckMPIreturn('read_mpiio_double: after call to file_set_view: ',ierr)
-!DBG     if(Debug) print *,__PIO_FILE__,__LINE__,'IAM: ',File%iosystem%io_rank,' after set_view IODesc%Read%fileTYPE: ', &
-!DBG     iodesc%Read%fileTYPE
-
-     !-----------------------------
-     ! Read out distributed array
-     !-----------------------------
-     call MPI_file_read_all(File%fh,IOBUF,int(iodesc%Read%n_elemTYPE),iodesc%Read%elemTYPE,fstatus,ierr)
-     if(Check) call CheckMPIreturn('read_mpiio_double: after call to file_read_all: ',ierr)
-     if(Debug) call MPI_get_count(fstatus,iodesc%Read%elemTYPE,cnt,ierr)
-     if(Debug) print *,__PIO_FILE__,__LINE__,'IAM: ',File%iosystem%io_rank,'read_mpiio_double: cnt is: ',iodesc%Read%n_elemTYPE, cnt
-     if(Debug) print *,__PIO_FILE__,__LINE__,'IAM: ',File%iosystem%io_rank,'read_mpio_double: reclen is: ',reclen
-
-
-     !-----------------------------------
-     ! increment the file  offset pointer
-     !-----------------------------------
-     File%Offset = File%Offset + reclen
-#else
-     call piodie(__PIO_FILE__,__LINE__,'PIO was not built with -DUSEMPIIO')
-     ierr=0
-#endif
-#ifdef TIMING
-    call t_stopf("pio_read_mpiio_double")
-#endif
-# 312 "/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
- end function read_mpiio_double
-# 245 "/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
+! TYPE int,real,double
+# 249 "/glade/u/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
  integer function read_mpiio_int (File,IOBUF,varDesc, iodesc) result(ierr)
    
     type (File_desc_t), intent(inout)          :: File     ! file descriptor
@@ -687,11 +481,153 @@ contains
 #ifdef TIMING
     call t_stopf("pio_read_mpiio_int")
 #endif
-# 312 "/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
+# 316 "/glade/u/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
  end function read_mpiio_int
+! TYPE int,real,double
+# 249 "/glade/u/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
+ integer function read_mpiio_real (File,IOBUF,varDesc, iodesc) result(ierr)
+   
+    type (File_desc_t), intent(inout)          :: File     ! file descriptor
+    real(r4), intent(out)                      :: IOBUF(:) ! IO buffer
+    type (VAR_desc_t), intent(in)               :: varDesc
+    type (IO_desc_t), intent(in)               :: IODesc
+
+    character(len=*), parameter :: subName=modName//'::read_mpiio_real'
+    character(len=10) :: datarep
+    integer(kind=PIO_OFFSET) :: reclen
+    integer(i4) :: iotype
+    integer(i4) :: cnt
+    integer(kind=pio_offset)                   :: glen     ! global length of IO request
+
+    integer(kind=PIO_OFFSET) :: offset   ! local offset
+    integer :: fstatus(MPI_STATUS_SIZE)
+
+    logical, parameter :: Debug = .FALSE.
+    logical, parameter :: Check = .TRUE.
+
+     datarep   = 'native'
+     iotype    = File%iotype
+     glen      = iodesc%glen
+     offset    = iodesc%IOmap%start
+#ifdef TIMING
+    call t_startf("pio_read_mpiio_real")
+#endif
+#ifdef USEMPIIO
+     reclen=glen*c_sizeof(iobuf(1))
+
+     if(Debug) print *, subName,':: IAM: ',File%iosystem%io_rank,' read_real8_mpiio: SIZE(IOBUF),n_RelemTYPE: ', &
+                SIZE(IOBUF),iodesc%Read%n_elemTYPE
+
+     if(iotype == iotype_direct_pbinary) then
+	File%offset = INT(varDesc%rec-1,kind=PIO_OFFSET)*reclen
+     endif
+     !-------------------------------------
+     ! Set file view for distributed array
+     !-------------------------------------
+     if(Debug) print *,__PIO_FILE__,__LINE__,'IAM: ',File%iosystem%io_rank,' before set_view iodesc%Read%fileTYPE: ', &
+          iodesc%Read%FileTYPE
+     call MPI_File_set_view(File%fh,File%offset, iodesc%Read%elemTYPE, iodesc%Read%fileType, 'native',File%iosystem%info,ierr)
+     if(Check) call CheckMPIreturn('read_mpiio_real: after call to file_set_view: ',ierr)
+!DBG     if(Debug) print *,__PIO_FILE__,__LINE__,'IAM: ',File%iosystem%io_rank,' after set_view IODesc%Read%fileTYPE: ', &
+!DBG     iodesc%Read%fileTYPE
+
+     !-----------------------------
+     ! Read out distributed array
+     !-----------------------------
+     call MPI_file_read_all(File%fh,IOBUF,int(iodesc%Read%n_elemTYPE),iodesc%Read%elemTYPE,fstatus,ierr)
+     if(Check) call CheckMPIreturn('read_mpiio_real: after call to file_read_all: ',ierr)
+     if(Debug) call MPI_get_count(fstatus,iodesc%Read%elemTYPE,cnt,ierr)
+     if(Debug) print *,__PIO_FILE__,__LINE__,'IAM: ',File%iosystem%io_rank,'read_mpiio_real: cnt is: ',iodesc%Read%n_elemTYPE, cnt
+     if(Debug) print *,__PIO_FILE__,__LINE__,'IAM: ',File%iosystem%io_rank,'read_mpio_real: reclen is: ',reclen
+
+
+     !-----------------------------------
+     ! increment the file  offset pointer
+     !-----------------------------------
+     File%Offset = File%Offset + reclen
+#else
+     call piodie(__PIO_FILE__,__LINE__,'PIO was not built with -DUSEMPIIO')
+     ierr=0
+#endif
+#ifdef TIMING
+    call t_stopf("pio_read_mpiio_real")
+#endif
+# 316 "/glade/u/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
+ end function read_mpiio_real
+! TYPE int,real,double
+# 249 "/glade/u/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
+ integer function read_mpiio_double (File,IOBUF,varDesc, iodesc) result(ierr)
+   
+    type (File_desc_t), intent(inout)          :: File     ! file descriptor
+    real(r8), intent(out)                      :: IOBUF(:) ! IO buffer
+    type (VAR_desc_t), intent(in)               :: varDesc
+    type (IO_desc_t), intent(in)               :: IODesc
+
+    character(len=*), parameter :: subName=modName//'::read_mpiio_double'
+    character(len=10) :: datarep
+    integer(kind=PIO_OFFSET) :: reclen
+    integer(i4) :: iotype
+    integer(i4) :: cnt
+    integer(kind=pio_offset)                   :: glen     ! global length of IO request
+
+    integer(kind=PIO_OFFSET) :: offset   ! local offset
+    integer :: fstatus(MPI_STATUS_SIZE)
+
+    logical, parameter :: Debug = .FALSE.
+    logical, parameter :: Check = .TRUE.
+
+     datarep   = 'native'
+     iotype    = File%iotype
+     glen      = iodesc%glen
+     offset    = iodesc%IOmap%start
+#ifdef TIMING
+    call t_startf("pio_read_mpiio_double")
+#endif
+#ifdef USEMPIIO
+     reclen=glen*c_sizeof(iobuf(1))
+
+     if(Debug) print *, subName,':: IAM: ',File%iosystem%io_rank,' read_real8_mpiio: SIZE(IOBUF),n_RelemTYPE: ', &
+                SIZE(IOBUF),iodesc%Read%n_elemTYPE
+
+     if(iotype == iotype_direct_pbinary) then
+	File%offset = INT(varDesc%rec-1,kind=PIO_OFFSET)*reclen
+     endif
+     !-------------------------------------
+     ! Set file view for distributed array
+     !-------------------------------------
+     if(Debug) print *,__PIO_FILE__,__LINE__,'IAM: ',File%iosystem%io_rank,' before set_view iodesc%Read%fileTYPE: ', &
+          iodesc%Read%FileTYPE
+     call MPI_File_set_view(File%fh,File%offset, iodesc%Read%elemTYPE, iodesc%Read%fileType, 'native',File%iosystem%info,ierr)
+     if(Check) call CheckMPIreturn('read_mpiio_double: after call to file_set_view: ',ierr)
+!DBG     if(Debug) print *,__PIO_FILE__,__LINE__,'IAM: ',File%iosystem%io_rank,' after set_view IODesc%Read%fileTYPE: ', &
+!DBG     iodesc%Read%fileTYPE
+
+     !-----------------------------
+     ! Read out distributed array
+     !-----------------------------
+     call MPI_file_read_all(File%fh,IOBUF,int(iodesc%Read%n_elemTYPE),iodesc%Read%elemTYPE,fstatus,ierr)
+     if(Check) call CheckMPIreturn('read_mpiio_double: after call to file_read_all: ',ierr)
+     if(Debug) call MPI_get_count(fstatus,iodesc%Read%elemTYPE,cnt,ierr)
+     if(Debug) print *,__PIO_FILE__,__LINE__,'IAM: ',File%iosystem%io_rank,'read_mpiio_double: cnt is: ',iodesc%Read%n_elemTYPE, cnt
+     if(Debug) print *,__PIO_FILE__,__LINE__,'IAM: ',File%iosystem%io_rank,'read_mpio_double: reclen is: ',reclen
+
+
+     !-----------------------------------
+     ! increment the file  offset pointer
+     !-----------------------------------
+     File%Offset = File%Offset + reclen
+#else
+     call piodie(__PIO_FILE__,__LINE__,'PIO was not built with -DUSEMPIIO')
+     ierr=0
+#endif
+#ifdef TIMING
+    call t_stopf("pio_read_mpiio_double")
+#endif
+# 316 "/glade/u/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
+ end function read_mpiio_double
 
           
-# 315 "/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
+# 319 "/glade/u/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
  subroutine Write_FORTRAN_CntrlWord(File,reclen)
            
       type (File_desc_t), intent(inout) :: File
@@ -729,10 +665,10 @@ contains
      call piodie(__PIO_FILE__,__LINE__,'PIO was not built with -DUSEMPIIO')
 #endif
 
-# 352 "/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
+# 356 "/glade/u/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
  end subroutine Write_FORTRAN_CntrlWord
 !***********************************************************************
-# 354 "/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
+# 358 "/glade/u/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
  subroutine Read_FORTRAN_CntrlWord(File,reclen)
 
       type (File_desc_t), intent(inout) :: File
@@ -766,7 +702,7 @@ contains
 #else
      call piodie(__PIO_FILE__,__LINE__,'PIO was not built with -DUSEMPIIO')
 #endif
-# 387 "/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
+# 391 "/glade/u/home/jedwards/pio_trunk/pio/iompi_mod.F90.in"
  end subroutine Read_FORTRAN_CntrlWord
 
 end module iompi_mod

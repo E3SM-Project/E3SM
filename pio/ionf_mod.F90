@@ -192,7 +192,7 @@ contains
 
 #ifdef _NETCDF
 #ifdef _NETCDF4
-        if(iotype==PIO_iotype_netcdf4p .or. iotype ==pio_iotype_netcdf4c) then
+        if(iotype==PIO_iotype_netcdf4p) then
 ! we need to go through some contortions to make sure a file we are opening is okay for parallel access
            ierr = nf90_open(fname,amode,File%fh)           
 	   ierr = nf90_inquire(File%fh,formatnum=format)
@@ -209,13 +209,13 @@ contains
         end if
 #endif
 
-       if(iotype==PIO_iotype_netcdf) then
+       if(iotype==PIO_iotype_netcdf .or. iotype==PIO_IOTYPE_NETCDF4C) then
           if (File%iosystem%io_rank == 0) then
              ! Stores the ncid in File%fh
              ierr = nf90_open(fname,amode,File%fh)
              if(Debug .or. Debugasync) print *,__PIO_FILE__,__LINE__,file%fh, ierr
              ! Set default to NOFILL for performance.  
-             if(ierr .eq. NF90_NOERR .and. iand(amode, NF90_WRITE) > 0) then
+             if(iotype==pio_iotype_netcdf .and. ierr .eq. NF90_NOERR .and. iand(amode, NF90_WRITE) > 0) then
                 ierr = nf90_set_fill(File%fh, NF90_NOFILL, ier2)
              end if
           endif
