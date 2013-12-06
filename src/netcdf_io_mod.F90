@@ -451,6 +451,8 @@ contains
 
 
     integer :: ios
+    logical :: isInit
+    isInit = .false.
 
     !
     ! Loop through output_streams, identify which will be used and open files for them
@@ -460,8 +462,12 @@ contains
        if((output_frequency(ios) .gt. 0) .and. (output_start_time(ios) .lt. output_end_time(ios))) then 
           ncdf(ios)%iframe=1
 
-          call PIO_Init(rank,comm,num_io_procs,num_agg,io_stride,&
-		PIO_REARR_BOX,pio_subsystem)
+          if (.not. isInit) then
+            ! Only initialize PIO once
+            call PIO_Init(rank,comm,num_io_procs,num_agg,io_stride,&
+                      PIO_REARR_BOX,pio_subsystem)
+            isInit = .true.
+          endif
 
           call nf_open_file(masterproc,nprocs,comm,rank,ios,&
                output_prefix,file_prefix,runtype,ncdf(ios)%ncFileID, ncdf(ios)%FileID)
@@ -593,10 +599,12 @@ contains
   subroutine nf_close_all(ncdf_list)
     type(nf_handle), intent(inout) :: ncdf_list(:)
     integer :: ios
+    integer :: ierr
 
     do ios=1,max_output_streams
        call nf_close(ncdf_list(ios))
     end do
+    call PIO_finalize(pio_subsystem, ierr)
 
   end subroutine nf_close_all
 
