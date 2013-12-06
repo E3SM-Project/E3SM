@@ -127,8 +127,8 @@ contains
       real (kind=RKIND), dimension(:,:,:), pointer :: vertNonLocalFlux
       integer :: index_nonLocalTemp, index_nonLocalSalt, index_nonLocalZonalVel, index_nonLocalMeridVel
 
-      integer :: k, iCell, nVertLevels, jCell, iNeighbor
-      real (kind=RKIND) :: r, layerSum, iter
+      integer :: k, iCell, nVertLevels, jCell, iNeighbor, iter
+      real (kind=RKIND) :: r, layerSum
       real (kind=RKIND), dimension(:), allocatable :: sigma, turbulentScalarVelocityScale
 
       !-----------------------------------------------------------------

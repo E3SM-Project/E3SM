@@ -596,7 +596,9 @@ contains
           sumSurfaceLayer = sumSurfaceLayer + fraction(rSurfaceLayer)*layerThickness(k,iCell)
           normalVelocitySurfaceLayer(iEdge) = normalVelocitySurfaceLayer(iEdge) + fraction(rSurfaceLayer)*normalVelocity(k,iEdge)*layerThicknessEdge(k,iEdge)
         endif
-        normalVelocitySurfaceLayer(iEdge) = normalVelocitySurfaceLayer(iEdge) / sumSurfaceLayer
+        if (maxLevelEdgeTop(iEdge) .gt. 0) then
+           normalVelocitySurfaceLayer(iEdge) = normalVelocitySurfaceLayer(iEdge) / sumSurfaceLayer
+        end if
       enddo
 
       !
@@ -1115,13 +1117,13 @@ contains
 
        ! zero the bulk Richardson number within the ocean surface layer
        ! this prevent CVMix/KPP from mis-diagnosing the OBL to be within the surface layer
-        k = indexSurfaceLayerDepth(iCell)+1
+        k = int(indexSurfaceLayerDepth(iCell))+1
         bulkRichardsonNumber(1:k,iCell) = 0.0
         bulkRichardsonNumberBuoy(1:k,iCell) = 0.0
         bulkRichardsonNumberShear(1:k,iCell) = 1.0
 
        ! loop over vertical to compute bulk Richardson number
-        do k=indexSurfaceLayerDepth(iCell)+2,maxLevelCell(iCell)
+        do k=int(indexSurfaceLayerDepth(iCell))+2,maxLevelCell(iCell)
 
         ! find deltaVelocitySquared defined at cell centers based on velocity at levels 1 and k
          deltaVelocitySquared = 0.0
