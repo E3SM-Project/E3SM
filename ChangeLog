@@ -7,6 +7,17 @@ This file describes what tags were created and why
 Originator: jedwards
 Date: Dec 06, 2013
 Model: pio
+Version: pio1_8_5
+One-line summary: Get cmake utilities from external repository
+
+D pio/cmake
+D SVN_EXTERNAL_DIRECTORIES
+A pio/SVN_EXTERNAL_DIRECTORIES
+ 
+===========================
+Originator: jedwards
+Date: Dec 06, 2013
+Model: pio
 Version: pio1_8_4
 One-line summary: added unittests - tested on yellowstone_intel and hopper_pgi - these tests must be run from an
   interative login session
