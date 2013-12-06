@@ -1009,7 +1009,6 @@
 			<var name="vertViscTopOfCell"/>
 			<var name="vertDiffTopOfCell"/>
 			<var name="bulkRichardsonNumber"/>
-			<var name="bulkRichardsonNumberCVMix"/>
 			<var name="boundaryLayerDepth"/>
 			<var name="boundaryLayerDepthEdge"/>
 			<var name="indexBoundaryLayerDepth"/>
