@@ -409,7 +409,7 @@ contains
       type (state_type), intent(inout) :: state
       integer, intent(out) :: err
 
-      integer :: nCells, nEdgesSolve, k, cell1, cell2, iEdge
+      integer :: nCells, nEdges, k, cell1, cell2, iEdge
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, layerThickness, layerThicknessEdge
       real (kind=RKIND), dimension(:,:), pointer :: vertViscTopOfEdge, vertDiffTopOfCell, kineticEnergyCell, vertViscTopOfCell
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers
@@ -431,17 +431,17 @@ contains
       cellsOnEdge        => mesh % cellsOnEdge % array
                
       nCells      = mesh % nCells
-      nEdgesSolve = mesh % nEdgesSolve
+      nEdges = mesh % nEdges
 
       call ocn_vmix_coefs(mesh, state, diagnostics, err)
 
       ! if using CVMix, then viscosity has to be averaged from cell centers to cell edges
       if ( config_use_cvmix ) then
       vertViscTopOfEdge(:,:) = 0.0
-      do iEdge=1,nEdgesSolve
+      do iEdge=1,nEdges
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
-         do k=2,maxLevelEdgeTop(iEdge)
+         do k=1,maxLevelEdgeTop(iEdge)
            vertViscTopOfEdge(k,iEdge) = 0.5*(vertViscTopOfCell(k,cell2)+vertViscTopOfCell(k,cell1))
          enddo
       enddo

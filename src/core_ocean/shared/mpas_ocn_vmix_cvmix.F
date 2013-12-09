@@ -221,7 +221,7 @@ contains
       allocate(cvmix_variables % kpp_transport_iface(nVertLevels+1,4))
       allocate(cvmix_variables % Rib(nVertLevels))
 
-      do iCell=1,mesh%nCellsSolve
+      do iCell=1,mesh%nCells
 
         ! specify geometry/location
         cvmix_variables % surf_hgt = state % ssh % array(iCell)
@@ -332,7 +332,7 @@ contains
           endif
         endif  ! if (config_use_cvmix_convection)
 
-      enddo  ! do iCell=1,mesh%nCellsSolve
+      enddo  ! do iCell=1,mesh%nCells
 
       ! 
       ! compute and smooth CVMix/KPP computed ocean boundary layer depth
@@ -568,7 +568,3 @@ contains
 end module ocn_vmix_cvmix
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-
-! vim: foldmethod=marker
-
-
