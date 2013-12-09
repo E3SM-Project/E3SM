@@ -175,6 +175,11 @@ IF(${BUILD_HOMME_PREQX})
   ADD_SUBDIRECTORY(baroC)
 ENDIF()
 
+# Add the test exec subdirs for the swim executable
+IF(${BUILD_HOMME_SWIM})
+  ADD_SUBDIRECTORY(swim5)
+ENDIF()
+
 # Add a standard executable for performance testing
 IF(${ENABLE_PERFTEST})
   ADD_SUBDIRECTORY(perfTest)
