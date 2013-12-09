@@ -60,10 +60,10 @@ contains
 
 #endif
     case(iotype_netcdf,pio_iotype_netcdf4p,pio_iotype_netcdf4c)
+#ifdef _NETCDF
        if(status /= nf90_noerr) then
           print *,trim(nf90_strerror(status))
        endif
-#ifdef _NETCDF
        if(File%iosystem%error_handling==PIO_INTERNAL_ERROR) then
           if(status /= nf90_noerr) then
              call piodie(filestr,line,trim(nf90_strerror(status)))
