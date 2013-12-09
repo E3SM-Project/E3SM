@@ -8,44 +8,15 @@ LINK_DIRECTORIES    ( ${Trilinos_LIBRARY_DIRS} ${Trilinos_TPL_LIBRARY_DIRS} )
 SET(UTILS_SHARE_DIR  ${HOMME_SOURCE_DIR}/utils/csm_share)
 SET(SRC_DIR          ${HOMME_SOURCE_DIR}/src)
 SET(SRC_SHARE_DIR    ${HOMME_SOURCE_DIR}/src/share)
-SET(PHYSICS_DIR      ${HOMME_SOURCE_DIR}/physics)
 SET(UTILS_TIMING_DIR ${HOMME_SOURCE_DIR}/utils/timing)
 SET(UTILS_TRILINOS_DIR ${HOMME_SOURCE_DIR}/utils/trilinos)
 
-#SET(SRC_BASE    ${CMAKE_CURRENT_SOURCE_DIR}/..)    ??????????
-#SET(SRC_SHARE   ${SRC_BASE}/share)
-#SET(SRC_UTILS   ${SRC_BASE}/../utils/csm_share)
-#SET(SRC_TRIL    ${SRC_BASE}/../utils/trilinos)
-
+# Make INCLUDE_DIRS global so the tests can access it
 SET (SWIM_INCLUDE_DIRS ${PIO_INCLUDE_DIRS}
                        ${TIMING_INCLUDE_DIRS}
                        ${SRC_SHARE_DIR} CACHE INTERNAL "include directories for swim") 
 
-#INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR}
-#                    ${CMAKE_CURRENT_BINARY_DIR}/share
-#                    ${PIO_INCLUDE_DIRS}
-#                    ${TIMING_INCLUDE_DIRS})
-#INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}
-#                    ${CMAKE_CURRENT_SOURCE_DIR}/share)
-
-# For the configuration
-#SET(NUM_POINTS ${SWIM_NP})
-#SET(NUM_CELLS ${SWIM_NC})
-#SET(NUM_PLEV ${SWIM_PLEV})
-
-#IF (${macroUSE_PIO})
-#  SET(PIO TRUE)
-#  SET(PIO_INTERP)
-#ELSE ()
-#  SET(PIO)
-#  SET(PIO_INTERP TRUE)
-#ENDIF ()
-
-#SET(ENERGY_DIAGNOSTICS ${macroWITH_ENERGY})
-
-#CONFIGURE_FILE(config.h.cmake.in config.h)
-#ADD_DEFINITIONS(-DHAVE_CONFIG_H)
-
+# Make SRCS global so the tests can access it
 SET(SWIM_SRCS ${SRC_SHARE_DIR}/kinds.F90
                ${SRC_DIR}/advance_mod.F90
                ${SRC_DIR}/checksum_mod.F90
@@ -129,11 +100,8 @@ SET(SWIM_SRCS ${SRC_SHARE_DIR}/kinds.F90
                ${UTILS_TRILINOS_DIR}/belos_helm.cpp
 )
 
-#                  ${SRC_TRIL}/donoxloca.cpp
-#                  ${SRC_TRIL}/noxlocainterface.cpp
 
 SET(SWIM_SRCS ${SWIM_SRCS} ${SRC_DIR}/main.F90 CACHE INTERNAL "Sources for swim")
-#ADD_LIBRARY(homme_swim ${SRCS_F90} ${SRCS_SWIM})
 
 #Set up defaults
 IF (NOT SWIM_NP)
@@ -159,14 +127,13 @@ MESSAGE(STATUS "  PLEV = ${SWIM_PLEV}")
 MESSAGE(STATUS "  PIO = ${SWIM_USE_PIO}")
 MESSAGE(STATUS "  ENERGY = ${SWIM_USE_ENERGY}")
 
+# The following macro handles the compilation with the appropriate variables
+############################################################################
+# createTestExec(exec_name exec_type NP PLEV USE_PIO USE_ENERGY)
+############################################################################
 createTestExec(swim swim ${SWIM_NP} ${SWIM_NC} ${SWIM_PLEV} ${SWIM_USE_PIO} ${SWIM_USE_ENERGY})
+
 SET_PROPERTY(TARGET swim PROPERTY LINKER_LANGUAGE Fortran)
 
 TARGET_LINK_LIBRARIES(swim ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES})
 
-#TARGET_LINK_LIBRARIES(homme_swim pio timing  ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES})
-
-#ADD_EXECUTABLE(swim ${SRC_BASE}/main.F90)
-#TARGET_LINK_LIBRARIES(swim homme_swim ${CMAKE_Fortran_IMPLICIT_LINK_LIBRARIES})
-#INSTALL(TARGETS swim
-#        RUNTIME DESTINATION bin)

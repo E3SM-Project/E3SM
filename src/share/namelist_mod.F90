@@ -554,9 +554,9 @@ module namelist_mod
        if (integration == "full_imp") then
           if (tstep_type<10) then
              ! namelist did not set a valid tstep_type. pick one:
-             tstep_type=11   ! backward euler
+             !tstep_type=11   ! backward euler
              !tstep_type=12  ! Crank Nicolson
-             !tstep_type=13  ! BDF2 with BE bootstrap
+             tstep_type=13  ! BDF2 with BE bootstrap
           endif
        endif
 
