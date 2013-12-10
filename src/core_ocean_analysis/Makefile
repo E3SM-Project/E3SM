@@ -1,38 +1,32 @@
 .SUFFIXES: .F .o
 
-COREOBJS = mpas_oac_mpas_core.o
+OBJS = mpas_oac_mpas_core.o
 
-DRIVEROBJS = mpas_oac_driver.o \
-       mpas_oac_am_global_stats.o  
+all: shared_ocn shared_oac core_oac
 
-all: sharedocean oacdriver oaccore
+shared_ocn:
+	( cd ../core_ocean/shared_ocn; $(MAKE) CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" all ) 
+	ln -sf ../core_ocean/shared_ocn/libshared_ocn.a .
+	ln -sf ../core_ocean/shared_ocn/*.mod .
+	( cd shared_oac; $(MAKE) CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" all ) 
+	ln -sf shared_oac/libshared_oac.a libshared_oac.a
+	ln -sf shared_oac/*.mod .
 
-run_time_mode: oacdriver
+core_oac: $(OBJS)
+	ar -ru libdycore.a  $(OBJS) ../core_ocean/shared_ocn/*.o
 
-sharedocean:
-	( cd ../core_ocean/shared_ocean; $(MAKE) CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" all ) 
-	ln -sf ../core_ocean/shared_ocean/libsharedocn.a .
-
-oacdriver: $(DRIVEROBJS)
-	ar -ru liboac.a $(DRIVEROBJS)
-
-oaccore: $(COREOBJS)
-	ar -ru libdycore.a  $(COREOBJS) $(DRIVEROBJS) ../core_ocean/shared_ocean/*.o
-
-mpas_oac_am_global_stats.o:
-
-mpas_oac_driver.o: mpas_oac_am_global_stats.o
-
-mpas_ocn_mpas_core.o: mpas_oac_driver.o
+mpas_ocn_mpas_core.o: 
 
 clean:
-	$(RM) *.o *.mod *.f90 liboac.a
+	$(RM) *.o *.mod *.f90 lib*.a 
+	(cd shared_oac; make clean)
+	(cd ../core_ocean/shared_ocn; make clean)
 
 .F.o:
 	$(RM) $@ $*.mod
 ifeq "$(GEN_F90)" "true"
 	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) $< > $*.f90
-	$(FC) $(FFLAGS) -c $*.f90 $(FCINCLUDES) -I../framework -I../operators -I../external/esmf_time_f90 -I../core_ocean/shared_ocean
+	$(FC) $(FFLAGS) -c $*.f90 $(FCINCLUDES) -I../framework -I../operators -I../external/esmf_time_f90 -Ishared_oac -I../core_ocean/shared_ocn 
 else
-	$(FC) $(CPPFLAGS) $(FFLAGS) -c $*.F $(CPPINCLUDES) $(FCINCLUDES) -I../framework -I../operators -I../external/esmf_time_f90 -I../core_ocean/shared_ocean
+	$(FC) $(CPPFLAGS) $(FFLAGS) -c $*.F $(CPPINCLUDES) $(FCINCLUDES) -I../framework -I../operators -I../external/esmf_time_f90 -Ishared_oac -I../core_ocean/shared_ocn 
 endif

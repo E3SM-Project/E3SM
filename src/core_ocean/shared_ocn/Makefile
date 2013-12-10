@@ -2,13 +2,13 @@
 
 OBJS = mpas_ocn_diagnostics_routines.o
 
-all: sharedocn
+all: shared_ocn
 
-sharedocn: $(OBJS)
-	ar -ru libsharedocn.a $(OBJS)
+shared_ocn: $(OBJS)
+	ar -ru libshared_ocn.a $(OBJS)
 
 clean:
-	$(RM) *.o *.mod *.f90 libsharedocn.a
+	$(RM) *.o *.mod *.f90 lib*.a 
 
 .F.o:
 	$(RM) $@ $*.mod

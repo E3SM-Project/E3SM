@@ -49,7 +49,7 @@ OBJS = mpas_ocn_mpas_core.o \
        mpas_ocn_time_average_coupled.o \
        mpas_ocn_sea_ice.o
 
-all: libcvmix sharedocean oac core_ocean
+all: libcvmix shared_ocn shared_oac core_ocean
 
 libcvmix:
 	if [ ! -d cvmix ]; then \
@@ -60,16 +60,17 @@ libcvmix:
 	fi
 	ln -sf cvmix/*.mod .
 
-sharedocean:
-	( cd shared_ocean; $(MAKE) CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" all ) 
-	ln -sf shared_ocean/libsharedocn.a .
+shared_ocn:
+	( cd shared_ocn; $(MAKE) CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" all ) 
+	ln -sf shared_ocn/libshared_ocn.a .
 
-oac:
-	( cd ../core_ocean_analysis; $(MAKE) CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" run_time_mode ) 
-	ln -sf ../core_ocean_analysis/liboac.a liboac.a
+shared_oac:
+	( cd ../core_ocean_analysis/shared_oac; $(MAKE) CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" all ) 
+	ln -sf ../core_ocean_analysis/shared_oac/*.mod .
+	ln -sf ../core_ocean_analysis/shared_oac/libshared_oac.a libshared_oac.a
 
 core_ocean: $(OBJS) 
-	ar -ru libdycore.a $(OBJS) cvmix/*.o ../core_ocean_analysis/*.o shared_ocean/*.o
+	ar -ru libdycore.a $(OBJS) cvmix/*.o ../core_ocean_analysis/shared_oac/*.o shared_ocn/*.o
 
 core_reg:
 	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) Registry.xml > Registry_processed.xml
@@ -224,7 +225,7 @@ clean:
 	$(RM) $@ $*.mod
 ifeq "$(GEN_F90)" "true"
 	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) $< > $*.f90
-	$(FC) $(FFLAGS) -c $*.f90 $(FCINCLUDES) -I../framework -I../operators -I../external/esmf_time_f90 -I./cvmix/ -I../core_ocean_analysis -Ishared_ocean
+	$(FC) $(FFLAGS) -c $*.f90 $(FCINCLUDES) -I../framework -I../operators -I../external/esmf_time_f90 -Ishared_ocn -I./cvmix/ -I../core_ocean_analysis/shared_oac 
 else
-	$(FC) $(CPPFLAGS) $(FFLAGS) -c $*.F $(CPPINCLUDES) $(FCINCLUDES) -I../framework -I../operators -I../external/esmf_time_f90 -I./cvmix/ -I../core_ocean_analysis -Ishared_ocean
+	$(FC) $(CPPFLAGS) $(FFLAGS) -c $*.F $(CPPINCLUDES) $(FCINCLUDES) -I../framework -I../operators -I../external/esmf_time_f90 -Ishared_ocn -I./cvmix/ -I../core_ocean_analysis/shared_oac 
 endif

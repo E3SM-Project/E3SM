@@ -196,7 +196,7 @@ contains
       verticalSumMaxes = -1.0e34
       reductions = 0.0
 
-      block => state_ptr % block
+      block => state_ptr % block 
       do while (associated(block))
          state => block % state % time_levs(timeLevel) % state
          mesh => block % mesh
@@ -225,8 +225,10 @@ contains
          layerThickness    => state % layerThickness % array
          normalVelocity    => state % normalVelocity % array
          tracers           => state % tracers % array
-         lowFreqDivergence => state % lowFreqDivergence % array
-         highFreqThickness => state % highFreqThickness % array
+         if(thicknessFilterActive) then
+            lowFreqDivergence => state % lowFreqDivergence % array
+            highFreqThickness => state % highFreqThickness % array
+         end if
 
          call mpas_allocate_scratch_field(scratch % workArray1Cell3D, .true.)
          call mpas_allocate_scratch_field(scratch % workArray2Cell3D, .true.)
@@ -406,27 +408,31 @@ contains
 
          ! lowFreqDivergence
          variableIndex = variableIndex + 1
-         call ocn_compute_field_volume_weighted_local_stats_max_level(dminfo, nVertLevels, nCellsSolve, maxLevelCell(1:nCellsSolve), areaCell(1:nCellsSolve), layerThickness(:,1:nCellsSolve), &
-            lowFreqDivergence(:,1:nCellsSolve), sums_tmp(variableIndex), sumSquares_tmp(variableIndex), mins_tmp(variableIndex), maxes_tmp(variableIndex), verticalSumMins_tmp(variableIndex), &
-            verticalSumMaxes_tmp(variableIndex))
-         sums(variableIndex) = sums(variableIndex) + sums_tmp(variableIndex)
-         sumSquares(variableIndex) = sumSquares(variableIndex) + sumSquares_tmp(variableIndex)
-         mins(variableIndex) = min(mins(variableIndex), mins_tmp(variableIndex))
-         maxes(variableIndex) = max(maxes(variableIndex), maxes_tmp(variableIndex))
-         verticalSumMins(variableIndex) = min(verticalSumMins(variableIndex), verticalSumMins_tmp(variableIndex))
-         verticalSumMaxes(variableIndex) = max(verticalSumMaxes(variableIndex), verticalSumMaxes_tmp(variableIndex))
-
+         if (thicknessFilterActive) then
+            call ocn_compute_field_volume_weighted_local_stats_max_level(dminfo, nVertLevels, nCellsSolve, maxLevelCell(1:nCellsSolve), areaCell(1:nCellsSolve), layerThickness(:,1:nCellsSolve), &
+               lowFreqDivergence(:,1:nCellsSolve), sums_tmp(variableIndex), sumSquares_tmp(variableIndex), mins_tmp(variableIndex), maxes_tmp(variableIndex), verticalSumMins_tmp(variableIndex), &
+               verticalSumMaxes_tmp(variableIndex))
+            sums(variableIndex) = sums(variableIndex) + sums_tmp(variableIndex)
+            sumSquares(variableIndex) = sumSquares(variableIndex) + sumSquares_tmp(variableIndex)
+            mins(variableIndex) = min(mins(variableIndex), mins_tmp(variableIndex))
+            maxes(variableIndex) = max(maxes(variableIndex), maxes_tmp(variableIndex))
+            verticalSumMins(variableIndex) = min(verticalSumMins(variableIndex), verticalSumMins_tmp(variableIndex))
+            verticalSumMaxes(variableIndex) = max(verticalSumMaxes(variableIndex), verticalSumMaxes_tmp(variableIndex))
+         endif
+   
          ! highFreqThickness
          variableIndex = variableIndex + 1
-         call ocn_compute_field_volume_weighted_local_stats_max_level(dminfo, nVertLevels, nCellsSolve, maxLevelCell(1:nCellsSolve), areaCell(1:nCellsSolve), layerThickness(:,1:nCellsSolve), &
-            highFreqThickness(:,1:nCellsSolve), sums_tmp(variableIndex), sumSquares_tmp(variableIndex), mins_tmp(variableIndex), maxes_tmp(variableIndex), verticalSumMins_tmp(variableIndex), &
-            verticalSumMaxes_tmp(variableIndex))
-         sums(variableIndex) = sums(variableIndex) + sums_tmp(variableIndex)
-         sumSquares(variableIndex) = sumSquares(variableIndex) + sumSquares_tmp(variableIndex)
-         mins(variableIndex) = min(mins(variableIndex), mins_tmp(variableIndex))
-         maxes(variableIndex) = max(maxes(variableIndex), maxes_tmp(variableIndex))
-         verticalSumMins(variableIndex) = min(verticalSumMins(variableIndex), verticalSumMins_tmp(variableIndex))
-         verticalSumMaxes(variableIndex) = max(verticalSumMaxes(variableIndex), verticalSumMaxes_tmp(variableIndex))
+         if (thicknessFilterActive) then
+            call ocn_compute_field_volume_weighted_local_stats_max_level(dminfo, nVertLevels, nCellsSolve, maxLevelCell(1:nCellsSolve), areaCell(1:nCellsSolve), layerThickness(:,1:nCellsSolve), &
+               highFreqThickness(:,1:nCellsSolve), sums_tmp(variableIndex), sumSquares_tmp(variableIndex), mins_tmp(variableIndex), maxes_tmp(variableIndex), verticalSumMins_tmp(variableIndex), &
+               verticalSumMaxes_tmp(variableIndex))
+            sums(variableIndex) = sums(variableIndex) + sums_tmp(variableIndex)
+            sumSquares(variableIndex) = sumSquares(variableIndex) + sumSquares_tmp(variableIndex)
+            mins(variableIndex) = min(mins(variableIndex), mins_tmp(variableIndex))
+            maxes(variableIndex) = max(maxes(variableIndex), maxes_tmp(variableIndex))
+            verticalSumMins(variableIndex) = min(verticalSumMins(variableIndex), verticalSumMins_tmp(variableIndex))
+            verticalSumMaxes(variableIndex) = max(verticalSumMaxes(variableIndex), verticalSumMaxes_tmp(variableIndex))
+         end if
 
          ! Tracers
          do iTracer=1,num_tracers
@@ -515,10 +521,8 @@ contains
       verticalSumMaxes(1:nVariables) = reductions(nMaxes-nVariables+1:nMaxes)
 
       volumeCellGlobal = sums(1)
+! mrp note: if diagnostics are disconnected, the following line will be incorrect.
       volumeEdgeGlobal = sums(4)
-! mrp change to volumeCellGlobal for now just to get it to run
-      volumeEdgeGlobal = volumeCellGlobal
-
 
       ! compute the averages (slightly different depending on how the sum was computed)
       variableIndex = 0
@@ -589,15 +593,27 @@ contains
       averages(variableIndex) = sums(variableIndex)/volumeCellGlobal
       rms(variableIndex) = sqrt(sumSquares(variableIndex)/volumeCellGlobal)
 
-      ! lowFreqDivergence
-      variableIndex = variableIndex + 1
-      averages(variableIndex) = sums(variableIndex)/volumeCellGlobal
-      rms(variableIndex) = sqrt(sumSquares(variableIndex)/volumeCellGlobal)
-
-      ! highFreqThickness
-      variableIndex = variableIndex + 1
-      averages(variableIndex) = sums(variableIndex)/volumeCellGlobal
-      rms(variableIndex) = sqrt(sumSquares(variableIndex)/volumeCellGlobal)
+      if (thicknessFilterActive) then
+         ! lowFreqDivergence
+         variableIndex = variableIndex + 1
+         averages(variableIndex) = sums(variableIndex)/volumeCellGlobal
+         rms(variableIndex) = sqrt(sumSquares(variableIndex)/volumeCellGlobal)
+   
+         ! highFreqThickness
+         variableIndex = variableIndex + 1
+         averages(variableIndex) = sums(variableIndex)/volumeCellGlobal
+         rms(variableIndex) = sqrt(sumSquares(variableIndex)/volumeCellGlobal)
+      else
+         ! lowFreqDivergence
+         variableIndex = variableIndex + 1
+         averages(variableIndex) = 0.0_RKIND
+         rms(variableIndex) = 0.0_RKIND
+   
+         ! highFreqThickness
+         variableIndex = variableIndex + 1
+         averages(variableIndex) = 0.0_RKIND
+         rms(variableIndex) = 0.0_RKIND
+      end if
 
       ! Tracers
       do iTracer=1,num_tracers

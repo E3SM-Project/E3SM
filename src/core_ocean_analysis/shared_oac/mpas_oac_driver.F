@@ -154,9 +154,9 @@ contains
 
       err = 0
 
-      state => domain % blocklist % state % time_levs(1) % state
-
       timeLevel=1
+      state => domain % blocklist % state % time_levs(timeLevel) % state
+
       call oac_compute_am_global_stats(domain % blocklist % amGlobalStats, &
          state, domain % dminfo, timeLevel, err_tmp)
       err = ior(err, err_tmp)
