@@ -49,7 +49,7 @@ OBJS = mpas_ocn_mpas_core.o \
        mpas_ocn_time_average_coupled.o \
        mpas_ocn_sea_ice.o
 
-all: libcvmix shared_ocn shared_oac core_ocean
+all: libcvmix ocean_shared oac_shared core_ocean
 
 libcvmix:
 	if [ ! -d cvmix ]; then \
@@ -60,16 +60,14 @@ libcvmix:
 	fi
 	ln -sf cvmix/*.mod .
 
-shared_ocn:
-	( cd shared_ocn; $(MAKE) CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" all ) 
-	ln -sf shared_ocn/libshared_ocn.a .
-
-shared_oac:
+oac_shared: ocean_shared
 	( cd ../core_ocean_analysis/shared_oac; $(MAKE) CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" all ) 
 	ln -sf ../core_ocean_analysis/shared_oac/*.mod .
-	ln -sf ../core_ocean_analysis/shared_oac/libshared_oac.a libshared_oac.a
 
-core_ocean: $(OBJS) 
+ocean_shared:
+	( cd shared_ocn; $(MAKE) CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" all ) 
+
+core_ocean: libcvmix ocean_shared oac_shared $(OBJS) 
 	ar -ru libdycore.a $(OBJS) cvmix/*.o ../core_ocean_analysis/shared_oac/*.o shared_ocn/*.o
 
 core_reg:

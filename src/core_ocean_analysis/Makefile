@@ -2,23 +2,23 @@
 
 OBJS = mpas_oac_mpas_core.o
 
-all: shared_ocn shared_oac core_oac
+all: oac_shared ocean_shared core_oac
 
-shared_ocn:
+ocean_shared:
 	( cd ../core_ocean/shared_ocn; $(MAKE) CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" all ) 
-	ln -sf ../core_ocean/shared_ocn/libshared_ocn.a .
 	ln -sf ../core_ocean/shared_ocn/*.mod .
+
+oac_shared: ocean_shared
 	( cd shared_oac; $(MAKE) CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" all ) 
-	ln -sf shared_oac/libshared_oac.a libshared_oac.a
 	ln -sf shared_oac/*.mod .
 
 core_oac: $(OBJS)
-	ar -ru libdycore.a  $(OBJS) ../core_ocean/shared_ocn/*.o
+	ar -ru libdycore.a  $(OBJS) ../core_ocean/shared_ocn/*.o shared_oac/*.o
 
-mpas_ocn_mpas_core.o: 
+mpas_ocn_mpas_core.o: ocean_shared oac_shared
 
 clean:
-	$(RM) *.o *.mod *.f90 lib*.a 
+	$(RM) *.o *.mod *.f90
 	(cd shared_oac; make clean)
 	(cd ../core_ocean/shared_ocn; make clean)
 
