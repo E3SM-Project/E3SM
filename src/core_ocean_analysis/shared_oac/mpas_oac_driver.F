@@ -22,7 +22,7 @@ module oac_driver
 
    use mpas_grid_types
 
-   use oac_am_global_stats
+   use oac_global_stats
 
    implicit none
    private
@@ -101,7 +101,7 @@ contains
 
       err = 0
 
-      call oac_init_am_global_stats(err_tmp)
+      call oac_init_global_stats(err_tmp)
       err = ior(err, err_tmp)
 
    end subroutine oac_driver_init!}}}
@@ -157,7 +157,7 @@ contains
       timeLevel=1
       state => domain % blocklist % state % time_levs(timeLevel) % state
 
-      call oac_compute_am_global_stats(domain % blocklist % amGlobalStats, &
+      call oac_compute_global_stats(domain % blocklist % amGlobalStats, &
          state, domain % dminfo, timeLevel, err_tmp)
       err = ior(err, err_tmp)
 
@@ -208,7 +208,7 @@ contains
 
       err = 0
 
-      call oac_restart_am_global_stats(err_tmp)
+      call oac_restart_global_stats(err_tmp)
       err = ior(err, err_tmp)
 
    end subroutine oac_driver_restart!}}}
@@ -260,7 +260,7 @@ contains
 
       err = 0
 
-      call oac_write_am_global_stats(err_tmp)
+      call oac_write_global_stats(err_tmp)
       err = ior(err, err_tmp)
 
    end subroutine oac_driver_write!}}}
@@ -310,7 +310,7 @@ contains
 
       err = 0
 
-      call oac_finalize_am_global_stats(err_tmp)
+      call oac_finalize_global_stats(err_tmp)
       err = ior(err, err_tmp)
 
    end subroutine oac_driver_finalize!}}}

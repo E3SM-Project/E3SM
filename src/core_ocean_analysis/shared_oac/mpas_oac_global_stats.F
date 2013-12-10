@@ -7,7 +7,7 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  oac_am_global_stats
+!  oac_global_stats
 !
 !> \brief Driver for MPAS ocean analysis core
 !> \author Mark Petersen
@@ -18,7 +18,7 @@
 !
 !-----------------------------------------------------------------------
 
-module oac_am_global_stats
+module oac_global_stats
 
    use mpas_grid_types
    use mpas_timer
@@ -42,11 +42,11 @@ module oac_am_global_stats
    !
    !--------------------------------------------------------------------
 
-   public :: oac_init_am_global_stats, &
-             oac_compute_am_global_stats, &
-             oac_write_am_global_stats, &
-             oac_restart_am_global_stats, &
-             oac_finalize_am_global_stats
+   public :: oac_init_global_stats, &
+             oac_compute_global_stats, &
+             oac_write_global_stats, &
+             oac_restart_global_stats, &
+             oac_finalize_global_stats
 
    !--------------------------------------------------------------------
    !
@@ -62,7 +62,7 @@ contains
 
 !***********************************************************************
 !
-!  routine oac_init_am_global_stats
+!  routine oac_init_global_stats
 !
 !> \brief   Initialize MPAS-Ocean analysis member
 !> \author  Mark Petersen
@@ -73,7 +73,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine oac_init_am_global_stats(err)!{{{
+   subroutine oac_init_global_stats(err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -105,11 +105,11 @@ contains
 
       err = 0
 
-   end subroutine oac_init_am_global_stats!}}}
+   end subroutine oac_init_global_stats!}}}
 
 !***********************************************************************
 !
-!  routine oac_compute_am_global_stats
+!  routine oac_compute_global_stats
 !
 !> \brief   Computeialize MPAS-Ocean analysis member
 !> \author  Mark Petersen
@@ -120,7 +120,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine oac_compute_am_global_stats(amGlobalStats, state_ptr, dminfo, timeLevel, err)!{{{
+   subroutine oac_compute_global_stats(amGlobalStats, state_ptr, dminfo, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -185,7 +185,7 @@ contains
 
       err = 0
 
-      call mpas_timer_start("compute_am_global_stats", .false., amGlobalStatsTimer)
+      call mpas_timer_start("compute_global_stats", .false., amGlobalStatsTimer)
 
       sums = 0.0
       sumSquares = 0.0
@@ -634,13 +634,13 @@ contains
 
       deallocate(areaEdge)
 
-      call mpas_timer_stop("am_global_stats", amGlobalStatsTimer)
+      call mpas_timer_stop("global_stats", amGlobalStatsTimer)
 
-   end subroutine oac_compute_am_global_stats!}}}
+   end subroutine oac_compute_global_stats!}}}
 
 !***********************************************************************
 !
-!  routine oac_restart_am_global_stats
+!  routine oac_restart_global_stats
 !
 !> \brief   Save restart for MPAS-Ocean analysis member
 !> \author  Mark Petersen
@@ -651,7 +651,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine oac_restart_am_global_stats(err)!{{{
+   subroutine oac_restart_global_stats(err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -683,11 +683,11 @@ contains
 
       err = 0
 
-   end subroutine oac_restart_am_global_stats!}}}
+   end subroutine oac_restart_global_stats!}}}
 
 !***********************************************************************
 !
-!  routine oac_write_am_global_stats
+!  routine oac_write_global_stats
 !
 !> \brief   Driver for MPAS-Ocean analysis output
 !> \author  Mark Petersen
@@ -699,7 +699,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine oac_write_am_global_stats(err)!{{{
+   subroutine oac_write_global_stats(err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -731,11 +731,11 @@ contains
 
       err = 0
 
-   end subroutine oac_write_am_global_stats!}}}
+   end subroutine oac_write_global_stats!}}}
 
 !***********************************************************************
 !
-!  routine oac_finalize_am_global_stats
+!  routine oac_finalize_global_stats
 !
 !> \brief   Finalize MPAS-Ocean analysis member
 !> \author  Mark Petersen
@@ -746,7 +746,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine oac_finalize_am_global_stats(err)!{{{
+   subroutine oac_finalize_global_stats(err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -778,9 +778,9 @@ contains
 
       err = 0
 
-print *, 'oac_finalize_am_global_stats'
+print *, 'oac_finalize_global_stats'
 
-   end subroutine oac_finalize_am_global_stats!}}}
+   end subroutine oac_finalize_global_stats!}}}
 
    subroutine ocn_compute_field_area_weighted_local_stats_max_level(dminfo, nVertLevels, nElements, maxLevel, areas, field, &!{{{
       localSum, localRMS, localMin, localMax, localVertSumMin, localVertSumMax)
@@ -857,6 +857,6 @@ print *, 'oac_finalize_am_global_stats'
    end subroutine ocn_compute_field_volume_weighted_local_stats_max_level!}}}
 
 
-end module oac_am_global_stats
+end module oac_global_stats
 
 ! vim: foldmethod=marker

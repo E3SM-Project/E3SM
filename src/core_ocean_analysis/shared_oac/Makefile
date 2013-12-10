@@ -1,16 +1,16 @@
 .SUFFIXES: .F .o
 
 OBJS = mpas_oac_driver.o \
-       mpas_oac_am_global_stats.o
+       mpas_oac_global_stats.o
 
 all: shared_oac
 
 shared_oac: $(OBJS)
 	ar -ru libshared_oac.a $(OBJS)
 
-mpas_oac_driver.o: mpas_oac_am_global_stats.o
+mpas_oac_driver.o: mpas_oac_global_stats.o
 
-mpas_oac_am_global_stats.o:
+mpas_oac_global_stats.o:
 
 clean:
 	$(RM) *.o *.mod *.f90 lib*.a 
