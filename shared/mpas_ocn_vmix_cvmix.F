@@ -243,6 +243,10 @@ contains
         enddo
         k = maxLevelCell(iCell)+1
         cvmix_variables % zw_iface(k) = cvmix_variables % zw_iface(k-1) - state % layerThickness % array(k-1,iCell)
+        do k=maxLevelCell(iCell)+1,nVertLevels
+          cvmix_variables % zw_iface(k+1) = cvmix_variables % zw_iface(k)
+          cvmix_variables % zt(k) = cvmix_variables % zt(k-1)
+        enddo
 
         ! fill the intent(in) for shear mixing
         cvmix_variables%Ri_iface => diagnostics % RiTopOfCell % array(:,iCell)
@@ -283,6 +287,12 @@ contains
           cvmix_variables % diff_iface(:,1)=vertDiffTopOfCell(:,iCell)
           cvmix_variables % diff_iface(:,2)=vertDiffTopOfCell(:,iCell)
           cvmix_variables % kpp_transport_iface(:,:)=0.0
+
+          if(diagnostics % boundaryLayerDepth % array(iCell).lt.layerThickness(1,iCell)/2.0) then
+            write(6,*) 'OBL too small'
+            write(6,*) iCell, diagnostics % boundaryLayerDepth % array(iCell), layerThickness(1,iCell)/2.0
+            diagnostics % boundaryLayerDepth % array(iCell) = layerThickness(1,iCell)/2.0 + 0.01
+          endif
 
           ! copy boundary layer depth from previous time step into cvmix variables
           cvmix_variables % OBL_depth = diagnostics % boundaryLayerDepth % array(iCell)
