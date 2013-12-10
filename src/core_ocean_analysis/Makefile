@@ -15,10 +15,14 @@ oac_shared: ocean_shared
 core_oac: $(OBJS)
 	ar -ru libdycore.a  $(OBJS) ../core_ocean/shared_ocn/*.o shared_oac/*.o
 
+core_reg:
+	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) Registry.xml > Registry_processed.xml
+
 mpas_ocn_mpas_core.o: ocean_shared oac_shared
 
 clean:
 	$(RM) *.o *.mod *.f90
+	$(RM) Registry_processed.xml
 	(cd shared_oac; make clean)
 	(cd ../core_ocean/shared_ocn; make clean)
 

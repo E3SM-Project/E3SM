@@ -521,8 +521,11 @@ contains
       verticalSumMaxes(1:nVariables) = reductions(nMaxes-nVariables+1:nMaxes)
 
       volumeCellGlobal = sums(1)
-! mrp note: if diagnostics are disconnected, the following line will be incorrect.
       volumeEdgeGlobal = sums(4)
+! mrp note: when CORE= ocean_analysis, we don't have edge volumes, so we need to fill it in.
+      if (volumeEdgeGlobal<1e-16) then
+         volumeEdgeGlobal = volumeCellGlobal
+      endif
 
       ! compute the averages (slightly different depending on how the sum was computed)
       variableIndex = 0
