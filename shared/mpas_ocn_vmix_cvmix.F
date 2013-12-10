@@ -367,7 +367,7 @@ contains
 
            ! compute sigma at cell center
            do k=1,maxLevelCell(iCell)
-             sigma(k) = -cvmix_variables % zt(k) / diagnostics % boundaryLayerDepth % array(iCell)
+             sigma(k) = -cvmix_variables % zt(k) / max(1.0, diagnostics % boundaryLayerDepth % array(iCell))
            enddo
 
            ! compute the turbulent scales in order to compute the bulk Richardson number
