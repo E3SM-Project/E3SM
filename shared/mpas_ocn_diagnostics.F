@@ -1117,13 +1117,14 @@ contains
 
        ! zero the bulk Richardson number within the ocean surface layer
        ! this prevent CVMix/KPP from mis-diagnosing the OBL to be within the surface layer
-        k = int(indexSurfaceLayerDepth(iCell))+1
-        bulkRichardsonNumber(1:k,iCell) = 0.0
-        bulkRichardsonNumberBuoy(1:k,iCell) = 0.0
-        bulkRichardsonNumberShear(1:k,iCell) = 1.0
+    !   k = int(indexSurfaceLayerDepth(iCell))+1
+    !   bulkRichardsonNumber(1:k,iCell) = 0.0
+        bulkRichardsonNumberBuoy (:,iCell) = 1.0e8
+        bulkRichardsonNumberShear(:,iCell) = 1.0
 
        ! loop over vertical to compute bulk Richardson number
-        do k=int(indexSurfaceLayerDepth(iCell))+2,maxLevelCell(iCell)
+    !   do k=int(indexSurfaceLayerDepth(iCell))+2,maxLevelCell(iCell)
+        do k=1,maxLevelCell(iCell)
 
         ! find deltaVelocitySquared defined at cell centers based on velocity at levels 1 and k
          deltaVelocitySquared = 0.0
@@ -1140,7 +1141,7 @@ contains
         ! compute bulk Richardson number
         ! we estimate the bulk Richardson number here, but its value will be updated
         ! in the ocn_vmix_coefs_cvmix_build when we have access to the turbulent velocity scale and unresolved shear
-         bulkRichardsonNumber(k,iCell) = (zTop(1,iCell) - zMid(k,iCell)) * buoyContribution / (shearContribution + 1.0e-10)
+         bulkRichardsonNumber(k,iCell) = (zMid(1,iCell) - zMid(k,iCell)) * buoyContribution / (shearContribution + 1.0e-10)
          bulkRichardsonNumberBuoy(k,iCell) = buoyContribution
          bulkRichardsonNumberShear(k,iCell) = shearContribution
 
