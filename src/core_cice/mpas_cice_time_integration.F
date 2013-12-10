@@ -15,7 +15,7 @@ contains
     use cice_advection, only: run_advection
     use cice_forcing, only: get_forcing
 
-    use cice_testing, only: plot_cells_spherical, plot_pop_grid_cells, plot_state
+    use cice_diagnostics, only: plot_cells_spherical, plot_pop_grid_cells, plot_state
 
     use cice_therm_zerolayer, only: therm_zerolayer
 
@@ -28,16 +28,16 @@ contains
     real(kind=RKIND) :: &
          time
 
-    call get_forcing( &
-         block % mesh, &
-         clock, &
-         block % atmos_forcing)
+    !call get_forcing( &
+    !     block % mesh, &
+    !     clock, &
+    !     block % atmos_forcing)
 
     nstep = nstep + 1
     time = nstep * dt
 
     ! velocity solve
-    call run_dynamics(block, dt, nstep)
+    !call run_dynamics(block, dt, nstep)
 
     ! advection
     call run_advection(block, dt, nstep)

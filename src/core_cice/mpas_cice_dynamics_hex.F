@@ -25,7 +25,7 @@ contains
     use cice_dyn_hex_variational, only: init_dynamics_hex_variational
     use cice_dyn_hex_pwl, only: init_dynamics_hex_pwl
 
-    use cice_testing, only: plot_pop_grid_vertices
+    use cice_diagnostics, only: plot_pop_grid_vertices
 
     type(mesh_type), intent(inout) :: mesh
 
@@ -85,7 +85,7 @@ contains
                                     dtElastic, &
                                     elapsedTime
 
-    use cice_testing, only: gnuplot_triangle, gnuplot_cell, writeout_minmax, plot_pop_grid_cells, &
+    use cice_diagnostics, only: gnuplot_triangle, gnuplot_cell, writeout_minmax, plot_pop_grid_cells, &
          plot_cells_spherical, &
          plot_vertices_spherical, &
          plot_pop_grid_vertices
@@ -343,7 +343,7 @@ contains
     use cice_dyn_hex_pwl, only: strain_tensor_hex_pwl, &
                                 stress_divergence_hex_pwl
 
-    use cice_testing, only: &
+    use cice_diagnostics, only: &
          plot_cells_spherical, &
          plot_vertices_spherical, &
          plot_pop_grid_vertices, &

@@ -893,7 +893,7 @@ contains
     use cice_dynamics_shared, only: evp_constitutive_relation, &
                                     linear_constitutive_relation
 
-    use cice_testing, only: iCellTest
+    use cice_diagnostics, only: iCellTest
 
     type(mesh_type), intent(in) :: mesh
 
@@ -1145,7 +1145,7 @@ stop
   
   subroutine plot_subtriangle(nEdgesOnCell, iSubTriangle, iVertex, wachspressKappa, wachspressA, wachspressB, mapping, x0, y0)
 
-    use cice_testing, only: matlab_jet
+    use cice_diagnostics, only: matlab_jet
 
     integer, intent(in) :: &
          nEdgesOnCell, &

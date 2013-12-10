@@ -154,9 +154,9 @@ contains
     allocate(iceVolumeCell(1:mesh % nCells))
     allocate(snowVolumeCell(1:mesh % nCells))
 
-    iceAreaCell    = icestate % tracers % array(index_iceAreaCell, 1, :)
-    iceVolumeCell  = icestate % tracers % array(index_iceVolumeCell, 1, :)
-    snowVolumeCell = icestate % tracers % array(index_snowVolumeCell, 1, :)
+    iceAreaCell    = icestate % tracers % array(icestate % index_iceAreaCell, 1, :)
+    iceVolumeCell  = icestate % tracers % array(icestate % index_iceVolumeCell, 1, :)
+    snowVolumeCell = icestate % tracers % array(icestate % index_snowVolumeCell, 1, :)
 
     !call run_semtner_test_case()
 
@@ -1336,12 +1336,12 @@ contains
 
     do iCell = 1, mesh % nCells
 
-       icestate % tracers % array(index_iceAreaCell, 1, :) = 1.0_RKIND
+       icestate % tracers % array(icestate % index_iceAreaCell, 1, :) = 1.0_RKIND
        
        icestate % surfaceTemperature % array(iCell) = -1.0_RKIND
        
-       icestate % tracers % array(index_iceVolumeCell, 1, :)  = 0.1_RKIND
-       icestate % tracers % array(index_snowVolumeCell, 1, :) = 0.0_RKIND
+       icestate % tracers % array(icestate % index_iceVolumeCell, 1, :)  = 0.1_RKIND
+       icestate % tracers % array(icestate % index_snowVolumeCell, 1, :) = 0.0_RKIND
 
     enddo ! iCell
 

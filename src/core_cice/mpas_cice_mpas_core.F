@@ -110,7 +110,8 @@ module mpas_core
 
       use cice_dynamics, only: init_dynamics
 
-      use cice_testing, only: plot_pop_grid_cells, init_spherical_test_case
+      use cice_testing, only: init_spherical_test_case
+      use cice_diagnostics, only: plot_pop_grid_cells, output_meridonal_strip
 
       use cice_forcing, only: init_forcing, get_forcing
 
@@ -125,26 +126,35 @@ module mpas_core
       call mpas_rbf_interp_initialize(mesh)
       call mpas_init_reconstruct(mesh)
 
-      ! init advection
-      call init_advection()
-
-      ! init forcing
-      call init_forcing(mesh, &
-           block % atmos_forcing)
-
-      call get_forcing(block % mesh, clock, block % atmos_forcing)
-
       call init_spherical_test_case(block % mesh, &
-           block % icestate % tracers % array(index_iceAreaCell, 1, :), &
-           block % icestate % tracers % array(index_iceVolumeCell, 1, :), &
+           block % icestate % tracers % array(block % icestate % index_iceAreaCell, 1, :), &
+           block % icestate % tracers % array(block % icestate % index_iceVolumeCell, 1, :), &
            block % icestate % totalMassCell % array, &
            block % icestate % surfaceTemperature % array, &
-           block % atmos_forcing % airTemperature % array)
+           block % atmos_forcing % airTemperature % array, &
+           block % hexdyn % uVelocity % array, &
+           block % hexdyn % vVelocity % array, &
+           block % boundary % interiorVertex % array)
 
+      ! init dynamics
       call init_dynamics(block, dt)
 
-      call plot_pop_grid_cells(mesh, block % icestate % tracers % array(index_iceAreaCell, 1, :), "iceAreaCell_ic.txt")
-      call plot_pop_grid_cells(mesh, block % icestate % tracers % array(index_iceVolumeCell, 1, :), "iceVolumeCell_ic.txt")
+      ! init advection
+      call init_advection(block, mesh)
+
+      ! init forcing
+      !call init_forcing(mesh, &
+      !     block % atmos_forcing)
+
+      !call get_forcing(block % mesh, clock, block % atmos_forcing)
+
+
+
+      call output_meridonal_strip(mesh, block % icestate % tracers % array(block % icestate % index_iceAreaCell, 1, :), &
+           "area_strip.txt", 10, 0, 1)
+
+      !call plot_pop_grid_cells(mesh, block % icestate % tracers % array(block % icestate % index_iceAreaCell, 1, :), "iceAreaCell_ic.txt")
+      !call plot_pop_grid_cells(mesh, block % icestate % tracers % array(block % icestate % index_iceVolumeCell, 1, :), "iceVolumeCell_ic.txt")
 
    end subroutine mpas_init_block
    

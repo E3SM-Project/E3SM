@@ -569,7 +569,8 @@ contains
 
   subroutine spherical_test_strain_weak(mesh, hexdyn, hexweak, normal)
 
-    use cice_testing, only: spherical_test_strain, plot_pop_grid_cells, rms_difference
+    use cice_testing, only: spherical_test_strain
+    use cice_diagnostics, only: plot_pop_grid_cells, rms_difference
 
     use cice_dynamics_shared, only: latlon_from_xyz, grid_rotation_forward, grid_rotation_forward_nochange
     
@@ -767,7 +768,8 @@ contains
 
   subroutine spherical_test_divergence_stress_weak(mesh, hexdyn, hexweak, normal)
 
-    use cice_testing, only: spherical_test_divergence_stress, rms_difference
+    use cice_testing, only: spherical_test_divergence_stress
+    use cice_diagnostics, only: rms_difference
 
     use cice_dynamics_shared, only: grid_rotation_forward, latlon_from_xyz
 
@@ -936,7 +938,8 @@ contains
 
   subroutine spherical_test_divergence_stress_weak_polygon(mesh, hexdyn, hexweak, normal)
 
-    use cice_testing, only: spherical_test_divergence_stress, rms_difference
+    use cice_testing, only: spherical_test_divergence_stress
+    use cice_diagnostics, only: rms_difference
 
     use cice_dynamics_shared, only: grid_rotation_forward, latlon_from_xyz
 

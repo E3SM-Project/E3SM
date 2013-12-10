@@ -159,7 +159,7 @@ contains
 
   subroutine get_atmos_forcing(mesh, atmos_forcing, forcingTime, forcingTimeEpoch, year, month, dayOfMonth)
 
-    use cice_testing, only: plot_pop_grid_cells, plot_cells_spherical
+    use cice_diagnostics, only: plot_pop_grid_cells, plot_cells_spherical
     
     type(mesh_type), intent(in) :: mesh
     type (atmos_forcing_type), pointer :: atmos_forcing
