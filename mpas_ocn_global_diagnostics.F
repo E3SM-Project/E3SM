@@ -305,9 +305,9 @@ module ocn_global_diagnostics
          verticalSumMins(variableIndex) = min(verticalSumMins(variableIndex), verticalSumMins_tmp(variableIndex))
          verticalSumMaxes(variableIndex) = max(verticalSumMaxes(variableIndex), verticalSumMaxes_tmp(variableIndex))
 
+         ! lowFreqDivergence
+         variableIndex = variableIndex + 1
          if (thicknessFilterActive) then
-            ! lowFreqDivergence
-            variableIndex = variableIndex + 1
             call ocn_compute_field_volume_weighted_local_stats_max_level(dminfo, nVertLevels, nCellsSolve, maxLevelCell(1:nCellsSolve), areaCell(1:nCellsSolve), layerThickness(:,1:nCellsSolve), &
                lowFreqDivergence(:,1:nCellsSolve), sums_tmp(variableIndex), sumSquares_tmp(variableIndex), mins_tmp(variableIndex), maxes_tmp(variableIndex), verticalSumMins_tmp(variableIndex), &
                verticalSumMaxes_tmp(variableIndex))
@@ -317,9 +317,11 @@ module ocn_global_diagnostics
             maxes(variableIndex) = max(maxes(variableIndex), maxes_tmp(variableIndex))
             verticalSumMins(variableIndex) = min(verticalSumMins(variableIndex), verticalSumMins_tmp(variableIndex))
             verticalSumMaxes(variableIndex) = max(verticalSumMaxes(variableIndex), verticalSumMaxes_tmp(variableIndex))
+         end if
    
-            ! highFreqThickness
-            variableIndex = variableIndex + 1
+         ! highFreqThickness
+         variableIndex = variableIndex + 1
+         if (thicknessFilterActive) then
             call ocn_compute_field_volume_weighted_local_stats_max_level(dminfo, nVertLevels, nCellsSolve, maxLevelCell(1:nCellsSolve), areaCell(1:nCellsSolve), layerThickness(:,1:nCellsSolve), &
                highFreqThickness(:,1:nCellsSolve), sums_tmp(variableIndex), sumSquares_tmp(variableIndex), mins_tmp(variableIndex), maxes_tmp(variableIndex), verticalSumMins_tmp(variableIndex), &
                verticalSumMaxes_tmp(variableIndex))
