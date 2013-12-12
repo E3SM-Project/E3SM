@@ -244,8 +244,8 @@ contains
         k = maxLevelCell(iCell)+1
         cvmix_variables % zw_iface(k) = cvmix_variables % zw_iface(k-1) - state % layerThickness % array(k-1,iCell)
         do k=maxLevelCell(iCell)+1,nVertLevels
-          cvmix_variables % zw_iface(k+1) = cvmix_variables % zw_iface(k)
-          cvmix_variables % zt(k) = cvmix_variables % zt(k-1)
+          cvmix_variables % zw_iface(k+1) = cvmix_variables % zw_iface(maxLevelCell(iCell)+1)
+          cvmix_variables % zt(k) = cvmix_variables % zw_iface(maxLevelCell(iCell)+1)
         enddo
 
         ! fill the intent(in) for shear mixing
