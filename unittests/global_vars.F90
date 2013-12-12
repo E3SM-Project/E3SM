@@ -9,7 +9,6 @@ module global_vars
 
   Implicit None
   public
-  save
 
   include 'mpif.h' ! _EXTERNAL
 
@@ -31,12 +30,13 @@ module global_vars
   type(file_desc_t)     :: pio_file
 
   ! Arguments for the different tests
-  character(len=str_len), dimension(ntest) :: fnames = (/"piotest_bin.ieee  ", &
-                                                         "piotest_bin2.ieee ", &
-                                                         "piotest_netcdf.nc ", &
+  character(len=str_len), dimension(ntest) :: fnames = (/&
+                                                         "piotest_bin.ieee    ", &
+                                                         "piotest_bin2.ieee   ", &
+                                                         "piotest_netcdf.nc   ", &
                                                          "piotest_netcdf4p.nc ", &
                                                          "piotest_netcdf4c.nc ", &
-                                                         "piotest_pnetcdf.nc"/)
+                                                         "piotest_pnetcdf.nc  "/)
   integer, dimension(ntest) :: iotypes = (/PIO_iotype_pbinary,        &
                                            PIO_iotype_direct_pbinary, &
                                            PIO_iotype_netcdf,         &
