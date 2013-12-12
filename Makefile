@@ -56,7 +56,8 @@ libcvmix:
 		(svn checkout $(CVMIX_REPO_ADDRESS) cvmix) \
 	fi
 	if [ -d cvmix ]; then \
-		(cd cvmix; svn update; make all FC="$(FC)" FFLAGS="$(FFLAGS)" FINCLUDES="$(FINCLUDES)") \
+#		(cd cvmix; svn update; make all FC="$(FC)" FFLAGS="$(FFLAGS)" FINCLUDES="$(FINCLUDES)") \
+		(cd cvmix; make all FC="$(FC)" FFLAGS="$(FFLAGS)" FINCLUDES="$(FINCLUDES)") \
 	fi
 	ln -sf cvmix/*.mod .
 
@@ -66,6 +67,7 @@ oac_shared: ocean_shared
 
 ocean_shared:
 	( cd shared_ocn; $(MAKE) CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" all ) 
+	ln -sf shared_ocn/*.mod .
 
 core_ocean: libcvmix ocean_shared oac_shared $(OBJS) 
 	ar -ru libdycore.a $(OBJS) cvmix/*.o ../core_ocean_analysis/shared_oac/*.o shared_ocn/*.o

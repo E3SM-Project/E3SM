@@ -1,6 +1,7 @@
 .SUFFIXES: .F .o
 
-OBJS = mpas_ocn_diagnostics_routines.o
+OBJS = mpas_ocn_diagnostics_routines.o \
+       mpas_ocn_init.o 
 
 all: shared_ocn
 

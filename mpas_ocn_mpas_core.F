@@ -28,6 +28,7 @@ module mpas_core
    use mpas_io_units
 
    use oac_driver
+   use ocn_init
 
    use ocn_global_diagnostics
    use ocn_time_integration
@@ -1185,73 +1186,6 @@ end subroutine ocn_compute_max_level!}}}
       end if
 
    end subroutine ocn_compute_mesh_scaling!}}}
-
-   subroutine ocn_setup_sign_and_index_fields(mesh)!{{{
-
-       type (mesh_type), intent(inout) :: mesh
-
-       integer, dimension(:), pointer :: nEdgesOnCell
-       integer, dimension(:,:), pointer :: edgesOnCell, edgesOnVertex, cellsOnVertex, cellsOnEdge, verticesOnCell, verticesOnEdge
-       integer, dimension(:,:), pointer :: edgeSignOnCell, edgeSignOnVertex, kiteIndexOnCell
-
-       integer :: nCells, nEdges, nVertices, vertexDegree
-       integer :: iCell, iEdge, iVertex, i, j, k
-
-       nCells = mesh % nCells
-       nEdges = mesh % nEdges
-       nVertices = mesh % nVertices
-       vertexDegree = mesh % vertexDegree
-
-       nEdgesOnCell => mesh % nEdgesOnCell % array
-       edgesOnCell => mesh % edgeSOnCell % array
-       edgesOnVertex => mesh % edgesOnVertex % array
-       cellsOnVertex => mesh % cellsOnVertex % array
-       cellsOnEdge => mesh % cellsOnEdge % array
-       verticesOnCell => mesh % verticesOnCell % array
-       verticesOnEdge => mesh % verticesOnEdge % array
-       edgeSignOnCell => mesh % edgeSignOnCell % array
-       edgeSignOnVertex => mesh % edgeSignOnVertex % array
-       kiteIndexOnCell => mesh % kiteIndexOnCell % array
-
-       edgeSignOnCell = 0.0_RKIND
-       edgeSignOnVertex = 0.0_RKIND
-       kiteIndexOnCell = 0.0_RKIND
-
-       do iCell = 1, nCells
-         do i = 1, nEdgesOnCell(iCell) 
-           iEdge = edgesOnCell(i, iCell)
-           iVertex = verticesOnCell(i, iCell)
-
-           ! Vector points from cell 1 to cell 2
-           if(iCell == cellsOnEdge(1, iEdge)) then
-             edgeSignOnCell(i, iCell) = -1
-           else
-             edgeSignOnCell(i, iCell) =  1
-           end if
-
-           do j = 1, vertexDegree
-             if(cellsOnVertex(j, iVertex) == iCell) then
-               kiteIndexOnCell(i, iCell) = j
-             end if
-           end do
-         end do
-       end do
-
-       do iVertex = 1, nVertices
-         do i = 1, vertexDegree
-           iEdge = edgesOnVertex(i, iVertex)
-
-           ! Vector points from vertex 1 to vertex 2
-           if(iVertex == verticesOnEdge(1, iEdge)) then
-             edgeSignOnVertex(i, iVertex) = -1
-           else
-             edgeSignOnVertex(i, iVertex) =  1
-           end if
-         end do
-       end do
-
-   end subroutine ocn_setup_sign_and_index_fields!}}}
-
 
 !***********************************************************************
 !
