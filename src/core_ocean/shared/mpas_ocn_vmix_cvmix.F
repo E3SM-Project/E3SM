@@ -294,6 +294,12 @@ contains
             diagnostics % boundaryLayerDepth % array(iCell) = layerThickness(1,iCell)/2.0 + 0.01
           endif
 
+          if(diagnostics % boundaryLayerDepth % array(iCell).gt.abs(cvmix_variables%zt(maxLevelCell(iCell)))) then
+            write(6,*) 'OBL too big for CVMix to handle correctly'
+            write(6,*) iCell, diagnostics % boundaryLayerDepth % array(iCell), abs(cvmix_variables%zt(maxLevelCell(iCell)))
+            diagnostics % boundaryLayerDepth % array(iCell) = abs(cvmix_variables%zt(maxLevelCell(iCell))) + 0.01
+          endif
+
           ! copy boundary layer depth from previous time step into cvmix variables
           cvmix_variables % OBL_depth = diagnostics % boundaryLayerDepth % array(iCell)
           cvmix_variables % kOBL_depth = cvmix_kpp_compute_kOBL_depth(cvmix_variables%zw_iface, cvmix_variables%zt, cvmix_variables%OBL_depth)
