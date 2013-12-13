@@ -24,10 +24,15 @@ module pionfput_mod
 #ifndef NO_MPIMOD
   use mpi   ! _EXTERNAL
 #endif
+#ifdef USE_PNETCDF_MOD
+  use pnetcdf
+#endif
   implicit none
   private
 #ifdef _PNETCDF
-#include <pnetcdf.inc>  /* _EXTERNAL */
+#ifndef USE_PNETCDF_MOD
+#include <pnetcdf.inc>
+#endif
 #endif
 #ifdef _NETCDF
 ! Required for netcdf bug workaround

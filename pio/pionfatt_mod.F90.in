@@ -17,10 +17,14 @@ module pionfatt_mod
 #ifdef _NETCDF
     use netcdf      ! _EXTERNAL
 #endif
-  
+#ifdef USE_PNETCDF_MOD
+  use pnetcdf
+#endif  
   implicit none
 #ifdef _PNETCDF
+#ifndef USE_PNETCDF_MOD
 #  include <pnetcdf.inc>  /* _EXTERNAL */
+#endif
 #endif
   include 'mpif.h'  ! _EXTERNAL 
 
@@ -139,7 +143,11 @@ contains
           end if
 #endif             
 #undef DEBUG
+#ifdef USE_PNETCDF_MOD
+          ierr =nf90mpi_put_att (File%fh,varid,name,value)
+#else
           ierr= nfmpi_put_att_{TYPE} (File%fh,varid,name, nf_{TYPE} , int(clen,kind=PIO_OFFSET),value)
+#endif
 #endif
 #endif
 

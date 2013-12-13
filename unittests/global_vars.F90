@@ -25,9 +25,9 @@ module global_vars
   logical :: master_task
 
   ! PIO Variables
-  integer               :: stride, niotasks
-  type(iosystem_desc_t) :: pio_iosystem
-  type(file_desc_t)     :: pio_file
+  integer                     :: stride, niotasks
+  type(iosystem_desc_t), save :: pio_iosystem
+  type(file_desc_t), save     :: pio_file
 
   ! Arguments for the different tests
   character(len=str_len), dimension(ntest) :: fnames = (/&

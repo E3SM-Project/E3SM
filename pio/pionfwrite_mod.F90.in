@@ -48,12 +48,17 @@ contains
 #ifndef NO_MPIMOD
     use mpi !_EXTERNAL
 #endif
+#ifdef USE_PNETCDF_MOD
+    use pnetcdf
+#endif
     implicit none
 #ifdef NO_MPIMOD
     include 'mpif.h'   !_EXTERNAL
 #endif
 #ifdef _PNETCDF
+#ifndef USE_PNETCDF_MOD
 #   include <pnetcdf.inc>   /* _EXTERNAL */
+#endif
 #endif
 
     type (File_desc_t), intent(inout) :: File

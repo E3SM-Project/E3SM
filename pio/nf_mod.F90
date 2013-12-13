@@ -33,13 +33,18 @@ module nf_mod
 #ifndef NO_MPIMOD
   use mpi ! _EXTERNAL
 #endif
+#ifdef USE_PNETCDF_MOD
+  use pnetcdf
+#endif
   implicit none
   private
 #ifdef NO_MPIMOD
   include 'mpif.h' ! _EXTERNAL
 #endif
 #ifdef _PNETCDF
+#ifndef USE_PNETCDF_MOD
 #include <pnetcdf.inc>   /* _EXTERNAL */
+#endif
 #endif
 
   !

@@ -14,11 +14,13 @@ module ionf_mod
   use netcdf            ! _EXTERNAL
 #endif
   use pio_support, only : CheckMPIReturn
-
+#ifdef USE_PNETCDF_MOD
+  use pnetcdf
+#endif
   implicit none
   private
 
-#ifdef _PNETCDF
+#if defined(_PNETCDF) && ! (USE_PNETCDF_MOD)
 #include <pnetcdf.inc>   /* _EXTERNAL */
 #endif
  

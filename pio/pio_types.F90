@@ -15,6 +15,9 @@ module pio_types
 #ifndef NO_MPIMOD
     use mpi, only : MPI_COMM_NULL, MPI_INFO_NULL ! _EXTERNAL
 #endif
+#ifdef USE_PNETCDF_MOD
+    use pnetcdf
+#endif
     implicit none
     private 
 #ifdef NO_MPIMOD
@@ -288,7 +291,9 @@ module pio_types
 !!  - PIO_char : character
 !<
 #ifdef _PNETCDF
+#ifndef USE_PNETCDF_MOD
 #include <pnetcdf.inc>   /* _EXTERNAL */
+#endif
    integer, public, parameter :: PIO_global = nf_global
    integer, public, parameter :: PIO_unlimited = nf_unlimited
    integer, public, parameter :: PIO_double = nf_double
