@@ -9,13 +9,13 @@
 !
 !  mpas_init
 !
-!> \brief Main driver for MPAS ocean analysis core in post-processing mode
+!> \brief MPAS-ocean initialization routines.
 !> \author Mark Petersen
-!> \date   November 2013
+!> \date   December 2013
 !> \details
-!>  This module contains the drivers for the MPAS ocean analysis core in 
-!>  post-processing mode.  None of these routines are used in run-time mode
-!>  by the ocean core.
+!>  This module contains routines to initialize variables at the 
+!>    beginning of an MPAS-Ocean simulation, or when starting the
+!>    ocean analysis core.
 !
 !-----------------------------------------------------------------------
 
@@ -38,10 +38,10 @@ module ocn_init
    !--------------------------------------------------------------------
 
    public :: & 
+      ocn_compute_mesh_scaling, &
       ocn_setup_sign_and_index_fields
 !      ocn_init_vert_coord, &
 !      ocn_compute_max_level, &
-!      ocn_compute_mesh_scaling, &
       
 
    !--------------------------------------------------------------------
@@ -54,6 +54,18 @@ module ocn_init
 
 contains
 
+!***********************************************************************
+!
+!  routine ocn_setup_sign_and_index_fields
+!
+!> \brief   set up sign and index fields
+!> \author Doug Jacobsen, Mark Petersen, Todd Ringler
+!> \date   September 2011
+!> \details 
+!>  This routine initializes edgeSignOnCell, edgeSignOnVertex, and 
+!>   kiteIndexOnCell.
+!
+!-----------------------------------------------------------------------
    subroutine ocn_setup_sign_and_index_fields(mesh)!{{{
 
        type (mesh_type), intent(inout) :: mesh
@@ -120,6 +132,52 @@ contains
 
    end subroutine ocn_setup_sign_and_index_fields!}}}
 
+!***********************************************************************
+!
+!  routine ocn_compute_mesh_scaling
+!
+!> \brief   set up mesh scaling variables
+!> \author Doug Jacobsen, Mark Petersen, Todd Ringler
+!> \date   September 2011
+!> \details 
+!>  This routine initializes meshScaling, meshScalingDel2, and
+!>   meshScalingDel4
+!
+!-----------------------------------------------------------------------
+   subroutine ocn_compute_mesh_scaling(mesh)!{{{
+
+      use mpas_grid_types
+      use mpas_configure
+
+      implicit none
+
+      type (mesh_type), intent(inout) :: mesh
+
+      integer :: iEdge, cell1, cell2
+      real (kind=RKIND), dimension(:), pointer :: meshDensity, meshScalingDel2, meshScalingDel4, meshScaling
+
+      meshDensity => mesh % meshDensity % array
+      meshScalingDel2 => mesh % meshScalingDel2 % array
+      meshScalingDel4 => mesh % meshScalingDel4 % array
+      meshScaling     => mesh % meshScaling     % array
+
+      !
+      ! Compute the scaling factors to be used in the del2 and del4 dissipation
+      !
+      meshScalingDel2(:) = 1.0
+      meshScalingDel4(:) = 1.0
+      meshScaling(:)     = 1.0
+      if (config_hmix_ScaleWithMesh) then
+         do iEdge=1,mesh%nEdges
+            cell1 = mesh % cellsOnEdge % array(1,iEdge)
+            cell2 = mesh % cellsOnEdge % array(2,iEdge)
+            meshScalingDel2(iEdge) = 1.0 / ( ((meshDensity(cell1) + meshDensity(cell2) )/2.0)/config_maxMeshDensity)**(3.0/4.0)  ! goes as dc**3
+            meshScalingDel4(iEdge) = 1.0 / ( ((meshDensity(cell1) + meshDensity(cell2) )/2.0)/config_maxMeshDensity)**(3.0/4.0)  ! goes as dc**3
+            meshScaling(iEdge)     = 1.0 / ( ((meshDensity(cell1) + meshDensity(cell2) )/2.0)/config_maxMeshDensity)**(1.0/4.0)
+         end do
+      end if
+
+   end subroutine ocn_compute_mesh_scaling!}}}
 
 end module ocn_init
 

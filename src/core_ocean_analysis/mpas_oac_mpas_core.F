@@ -764,46 +764,11 @@ end subroutine ocn_compute_max_level!}}}
 
    end subroutine mpas_core_finalize!}}}
 
-   subroutine ocn_compute_mesh_scaling(mesh)!{{{
-
-      use mpas_grid_types
-      use mpas_configure
-
-      implicit none
-
-      type (mesh_type), intent(inout) :: mesh
-
-      integer :: iEdge, cell1, cell2
-      real (kind=RKIND), dimension(:), pointer :: meshDensity, meshScalingDel2, meshScalingDel4, meshScaling
-
-      meshDensity => mesh % meshDensity % array
-      meshScalingDel2 => mesh % meshScalingDel2 % array
-      meshScalingDel4 => mesh % meshScalingDel4 % array
-      meshScaling     => mesh % meshScaling     % array
-
-      !
-      ! Compute the scaling factors to be used in the del2 and del4 dissipation
-      !
-      meshScalingDel2(:) = 1.0
-      meshScalingDel4(:) = 1.0
-      meshScaling(:)     = 1.0
-      if (config_hmix_ScaleWithMesh) then
-         do iEdge=1,mesh%nEdges
-            cell1 = mesh % cellsOnEdge % array(1,iEdge)
-            cell2 = mesh % cellsOnEdge % array(2,iEdge)
-            meshScalingDel2(iEdge) = 1.0 / ( ((meshDensity(cell1) + meshDensity(cell2) )/2.0)/config_maxMeshDensity)**(3.0/4.0)  ! goes as dc**3
-            meshScalingDel4(iEdge) = 1.0 / ( ((meshDensity(cell1) + meshDensity(cell2) )/2.0)/config_maxMeshDensity)**(3.0/4.0)  ! goes as dc**3
-            meshScaling(iEdge)     = 1.0 / ( ((meshDensity(cell1) + meshDensity(cell2) )/2.0)/config_maxMeshDensity)**(1.0/4.0)
-         end do
-      end if
-
-   end subroutine ocn_compute_mesh_scaling!}}}
-
 !***********************************************************************
 !
 !  routine mpas_core_setup_packages
 !
-!> \brief   Pacakge setup routine
+!> \brief   Package setup routine
 !> \author  Doug Jacobsen
 !> \date    November 2013
 !> \details 
