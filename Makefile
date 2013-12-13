@@ -56,8 +56,7 @@ libcvmix:
 		(svn checkout $(CVMIX_REPO_ADDRESS) cvmix) \
 	fi
 	if [ -d cvmix ]; then \
-#		(cd cvmix; svn update; make all FC="$(FC)" FFLAGS="$(FFLAGS)" FINCLUDES="$(FINCLUDES)") \
-		(cd cvmix; make all FC="$(FC)" FFLAGS="$(FFLAGS)" FINCLUDES="$(FINCLUDES)") \
+		(cd cvmix; svn update; make all FC="$(FC)" FFLAGS="$(FFLAGS)" FINCLUDES="$(FINCLUDES)") \
 	fi
 	ln -sf cvmix/*.mod .
 
