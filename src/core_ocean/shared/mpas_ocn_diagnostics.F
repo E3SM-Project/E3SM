@@ -1136,7 +1136,7 @@ contains
          enddo
 
          buoyContribution = gravity * (density(k,iCell) - densitySurfaceDisplaced(k,iCell)) / config_density0
-         shearContribution = deltaVelocitySquared
+         shearContribution = max(deltaVelocitySquared,1.0e-5)
 
         ! compute bulk Richardson number
         ! we estimate the bulk Richardson number here, but its value will be updated
