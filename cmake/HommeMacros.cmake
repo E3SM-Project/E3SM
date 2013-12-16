@@ -100,6 +100,10 @@ macro (copyDirFiles testDir)
   FOREACH (singleFile ${MESH_FILES}) 
     FILE(COPY ${singleFile} DESTINATION ${testDir})
   ENDFOREACH () 
+  FOREACH (singleFile ${TRILINOS_XML_FILE}) 
+    FILE(COPY ${singleFile} DESTINATION ${testDir})
+  ENDFOREACH () 
+
 
 
 
@@ -231,7 +235,7 @@ macro(resetTestVariables)
   SET(NUM_CPUS)
   SET(OMP_NAMELIST_FILES)
   SET(OMP_NUM_THREADS)
-
+  SET(TRILINOS_XML_FILE)
 endmacro(resetTestVariables)
 
 macro(printTestSummary)
@@ -285,6 +289,13 @@ macro(printTestSummary)
       MESSAGE(STATUS "    ${singleFile}")
     ENDFOREACH () 
   ENDIF ()
+  IF (NOT "${TRILINOS_XML_FILE}" STREQUAL "")
+    MESSAGE(STATUS "  trilinos_xml_file=")
+    FOREACH (singleFile ${TRILINOS_XML_FILE}) 
+      MESSAGE(STATUS "    ${singleFile}")
+    ENDFOREACH () 
+  ENDIF ()
+ 
 endmacro(printTestSummary)
 
 # Macro to create the individual tests
@@ -307,6 +318,7 @@ macro(createTest testFile)
   FILE(GLOB REFSOLN_FILES ${REFSOLN_FILES})
   FILE(GLOB MESH_FILES ${MESH_FILES})
   FILE(GLOB OMP_NAMELIST_FILES ${OMP_NAMELIST_FILES})
+  FILE(GLOB TRILINOS_XML_FILE ${TRILINOS_XML_FILE})
 
   # Determine if the executable this tests depeds upon is built
   LIST(FIND EXEC_LIST ${EXEC_NAME} FIND_INDEX)
