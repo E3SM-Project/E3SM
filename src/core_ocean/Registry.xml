@@ -44,7 +44,7 @@
 			 description="The number of interfaces in the vertical direction."
 		/>
 	</dims>
-	<nml_record name="time_management">
+	<nml_record name="time_management" in_defaults="true">
 		<nml_option name="config_do_restart" type="logical" default_value=".false." units="unitless"
 					description="Determines if the initial conditions should be read from a restart file, or an input file."
 					possible_values=".true. or .false."
@@ -66,7 +66,7 @@
 					possible_values="'gregorian', 'gregorian_noleap', or '360day'"
 		/>
 	</nml_record>
-	<nml_record name="io">
+	<nml_record name="io" in_defaults="true">
 		<nml_option name="config_input_name" type="character" default_value="grid.nc" units="unitless"
 					description="The path to the input file for the simulation."
 					possible_values="path/to/grid.nc"
@@ -116,7 +116,7 @@
 					possible_values="Any positive integer value greater than 0."
 		/>
 	</nml_record>
-	<nml_record name="time_integration">
+	<nml_record name="time_integration" in_defaults="true">
 		<nml_option name="config_dt" type="real" default_value="300.0" units="s"
 					description="Length of model time-step."
 					possible_values="Any positive real value, but limited by CFL condition."
@@ -126,7 +126,7 @@
 					possible_values="'split_explicit', 'RK4', 'unsplit_explicit'"
 		/>
 	</nml_record>
-	<nml_record name="ALE_vertical_grid">
+	<nml_record name="ALE_vertical_grid" in_defaults="true">
 		<nml_option name="config_vert_coord_movement" type="character" default_value="uniform_stretching" units="unitless"
 					description="Determines the vertical coordinate movement type. 'uniform_stretching' distributes SSH perturbations through all vertical levels (z-star vertical coordinate); 'fixed' places them all in the top level (z-level vertical coordinate); 'user_specified' allows the input file to determine the distribution using the variable vertCoordMovementWeights (weighted z-star vertical coordinate); and 'impermeable_interfaces' makes the vertical transport between layers zero, i.e. $w^t=0$ in (\ref{ocean:vert tranport}) (idealized isopycnal)."
 					possible_values="'uniform_stretching', 'fixed', 'user_specified', 'impermeable_interfaces'"
@@ -152,7 +152,7 @@
 					possible_values=".true. or .false."
 		/>
 	</nml_record>
-	<nml_record name="ALE_frequency_filtered_thickness">
+	<nml_record name="ALE_frequency_filtered_thickness" in_defaults="true">
 		<nml_option name="config_use_freq_filtered_thickness" type="logical" default_value=".false." units="unitless"
 					description="If true, $h^{hf}$ is included in the desired ALE thickness in \ref{ocean:desired thickness}, and the prognostic equations \ref{ocean:Dlf} and \ref{ocean:hhf} are integrated in the code."
 					possible_values=".true. or .false."
@@ -178,7 +178,7 @@
 					possible_values="any positive real"
 		/>
 	</nml_record>
-	<nml_record name="partial_bottom_cells">
+	<nml_record name="partial_bottom_cells" in_defaults="true">
 		<nml_option name="config_alter_ICs_for_pbcs" type="logical" default_value=".false." units="unitless"
 					description="If true, initial conditions are altered according to the config_pbc_alteration_type flag.  The alteration of layer thickness only occurs when config_do_restart is false, i.e. on an initial run."
 					possible_values=".true. or .false."
@@ -196,7 +196,7 @@
 					possible_values=".true. or .false."
 		/>
 	</nml_record>
-	<nml_record name="decomposition">
+	<nml_record name="decomposition" in_defaults="true">
 		<nml_option name="config_num_halos" type="integer" default_value="3" units="unitless"
 					description="Determines the number of halo cells extending from a blocks owned cells (Called the 0-Halo). The default of 3 is the minimum that can be used with monotonic advection."
 					possible_values="Any positive interger value."
@@ -218,7 +218,7 @@
 					possible_values="Any path/prefix to a processor decomposition file."
 		/>
 	</nml_record>
-	<nml_record name="hmix">
+	<nml_record name="hmix" in_defaults="true">
 		<nml_option name="config_hmix_ScaleWithMesh" type="logical" default_value=".false." units="unitless"
 					description="If false, del2 and del4 coefficients are constant throughout the mesh (equivalent to setting $\rho_m=1$ throughout the mesh).  If true, these coefficients scale as mesh density to the -3/4 power."
 					possible_values=".true. or .false."
@@ -232,7 +232,7 @@
 					possible_values="Any non-negative number, typically between zero and one."
 		/>
 	</nml_record>
-	<nml_record name="hmix_del2">
+	<nml_record name="hmix_del2" in_defaults="true">
 		<nml_option name="config_use_mom_del2" type="logical" default_value=".true." units="unitless"
 					description="If true, Laplacian horizontal mixing is used on the momentum equation."
 					possible_values=".true. or .false."
@@ -250,7 +250,7 @@
 					possible_values="any positive real"
 		/>
 	</nml_record>
-	<nml_record name="hmix_del4">
+	<nml_record name="hmix_del4" in_defaults="true">
 		<nml_option name="config_use_mom_del4" type="logical" default_value=".false." units="unitless"
 					description="If true, biharmonic horizontal mixing is used on the momentum equation."
 					possible_values=".true. or .false."
@@ -268,7 +268,7 @@
 					possible_values="any positive real"
 		/>
 	</nml_record>
-	<nml_record name="hmix_Leith">
+	<nml_record name="hmix_Leith" in_defaults="true">
 		<nml_option name="config_use_Leith_del2" type="logical" default_value=".false." units="unitless"
 					description="If true, the Leith enstrophy-cascade closure is turned on"
 					possible_values=".true. or .false."
@@ -286,7 +286,7 @@
 					possible_values="any positive real"
 		/>
 	</nml_record>
-	<nml_record name="standard_GM">
+	<nml_record name="standard_GM" in_defaults="true">
 		<nml_option name="config_h_kappa" type="real" default_value="0.0" units=""
 					description="kappa parameter for Gent-McWilliams eddy parameterization"
 					possible_values="Any positive real value."
@@ -296,7 +296,7 @@
 					possible_values="Any positive real value."
 		/>
 	</nml_record>
-	<nml_record name="hmix_del2_tensor">
+	<nml_record name="hmix_del2_tensor" in_defaults="true">
 		<nml_option name="config_use_mom_del2_tensor" type="logical" default_value=".false." units="unitless"
 		            description="If true, tensor-based Laplacian horizontal mixing is used on the momentum equation.  The tensor-based mixing operations are provided to show the functionality of the tensor subroutines.  Tensor-based del2 mixing is not fully vetted and not recommended for production simulations."
 		            possible_values=".true. or .false."
@@ -306,7 +306,7 @@
 		            possible_values="any positive real"
 		/>
 	</nml_record>
-	<nml_record name="hmix_del4_tensor">
+	<nml_record name="hmix_del4_tensor" in_defaults="true">
 		<nml_option name="config_use_mom_del4_tensor" type="logical" default_value=".false." units="unitless"
 		            description="If true, tensor-based biharmonic horizontal mixing is used on the momentum equation.  The tensor-based mixing operations are provided to show the functionality of the tensor subroutines.  Tensor-based del4 mixing is not fully vetted and not recommended for production simulations."
 		            possible_values=".true. or .false."
@@ -316,7 +316,7 @@
 		            possible_values="any positive real"
 		/>
 	</nml_record>
-	<nml_record name="Rayleigh_damping">
+	<nml_record name="Rayleigh_damping" in_defaults="true">
 		<nml_option name="config_Rayleigh_friction" type="logical" default_value=".false." units="unitless"
 					description="If true, Rayleigh friction is included in the momentum equation."
 					possible_values=".true. or .false."
@@ -326,7 +326,7 @@
 					possible_values="Any positive real value."
 		/>
 	</nml_record>
-	<nml_record name="vmix">
+	<nml_record name="vmix" in_defaults="true">
 		<nml_option name="config_convective_visc" type="real" default_value="1.0" units="m^2 s^{-1}"
 					description="Value of vertical viscosity to be used in unstable conditions (i.e. Richardson number less than zero)"
 					possible_values="Any positive real value."
@@ -336,7 +336,7 @@
 					possible_values="Any positive real value."
 		/>
 	</nml_record>
-	<nml_record name="vmix_const">
+	<nml_record name="vmix_const" in_defaults="true">
 		<nml_option name="config_use_const_visc" type="logical" default_value=".true." units="unitless"
 					description="If true, constant vertical viscosity is included in the momentum equation"
 					possible_values=".true. or .false."
@@ -354,7 +354,7 @@
 					possible_values="Any positive real value."
 		/>
 	</nml_record>
-	<nml_record name="vmix_rich">
+	<nml_record name="vmix_rich" in_defaults="true">
 		<nml_option name="config_use_rich_visc" type="logical" default_value=".true." units="unitless"
 					description="If true, Richardson-number based vertical viscosity is included in the momentum equation"
 					possible_values=".true. or .false."
@@ -376,7 +376,7 @@
 					possible_values="Any positive real value."
 		/>
 	</nml_record>
-	<nml_record name="vmix_tanh">
+	<nml_record name="vmix_tanh" in_defaults="true">
 		<nml_option name="config_use_tanh_visc" type="logical" default_value=".false." units="unitless"
 					description="If true, tanh-based vertical viscosity is included in the momentum equation"
 					possible_values=".true. or .false."
@@ -410,7 +410,7 @@
 					possible_values="Any positive real value."
 		/>
 	</nml_record>
-	<nml_record name="cvmix">
+	<nml_record name="cvmix" in_defaults="true">
 		<nml_option name="config_use_cvmix" type="logical" default_value=".false." units="NA"
 					description="If true, use the Community Vertical MIXing routines to compute vertical diffusivity and viscosity"
 					possible_values="True or False"
@@ -456,7 +456,7 @@
 					possible_values="linear, quadratic, cubic"
 		/>
 	</nml_record>
-	<nml_record name="forcing">
+	<nml_record name="forcing" in_defaults="true">
 		<nml_option name="config_forcing_type" type="character" default_value="off" units="unitless"
 					description="Defines the forcing type for the simulation."
 					possible_values="'restoring', 'bulk', or 'off'"
@@ -498,7 +498,7 @@
 					possible_values=".true. or .false."
 		/>
 	</nml_record>
-	<nml_record name="advection">
+	<nml_record name="advection" in_defaults="true">
 		<nml_option name="config_vert_tracer_adv" type="character" default_value="stencil" units="unitless"
 					description="Method for interpolating tracer values from layer centers to layer edges"
 					possible_values="'spline' and 'stencil'"
@@ -520,13 +520,13 @@
 					possible_values=".true. and .false."
 		/>
 	</nml_record>
-	<nml_record name="bottom_drag">
+	<nml_record name="bottom_drag" in_defaults="true">
 		<nml_option name="config_bottom_drag_coeff" type="real" default_value="1.0e-2" units="unitless"
 					description="Dimensionless bottom drag coefficient, $c_{drag}$."
 					possible_values="any positive real, typically 1.0e-3"
 		/>
 	</nml_record>
-	<nml_record name="pressure_gradient">
+	<nml_record name="pressure_gradient" in_defaults="true">
 		<nml_option name="config_pressure_gradient_type" type="character" default_value="pressure_and_zmid" units="unitless"
 					description="Form of pressure gradient terms in momentum equation. For most applications, the gradient of pressure and layer mid-depth are appropriate.  For isopycnal coordinates, one may use the gradient of the Montgomery potential."
 					possible_values="'pressure_and_zmid' or 'MontgomeryPotential'"
@@ -536,13 +536,13 @@
 					possible_values="any positive real, but typically 1000-1035"
 		/>
 	</nml_record>
-	<nml_record name="eos">
+	<nml_record name="eos" in_defaults="true">
 		<nml_option name="config_eos_type" type="character" default_value="linear" units="unitless"
 					description="Character string to choose EOS formulation"
 					possible_values="Jackett McDougall EOS = 'jm' and Linear EOS = 'linear'"
 		/>
 	</nml_record>
-	<nml_record name="eos_linear">
+	<nml_record name="eos_linear" in_defaults="true">
 		<nml_option name="config_eos_linear_alpha" type="real" default_value="2.55e-1" units="kg m^{-3} C^{-1}"
 					description="Linear thermal expansion coefficient"
 					possible_values="any positive real"
@@ -564,7 +564,7 @@
 					possible_values="any positive real"
 		/>
 	</nml_record>
-	<nml_record name="split_explicit_ts">
+	<nml_record name="split_explicit_ts" in_defaults="true">
 		<nml_option name="config_n_ts_iter" type="integer" default_value="2" units="unitless"
 					description="number of large iterations over stages 1-3"
 					possible_values="any positive integer, but typically 1, 2, or 3"
@@ -614,7 +614,7 @@
 					possible_values=".true. or .false."
 		/>
 	</nml_record>
-	<nml_record name="testing">
+	<nml_record name="testing" in_defaults="true">
 		<nml_option name="config_conduct_tests" type="logical" default_value=".false." units="unitless"
 		            description="If true, run testing suite.  This is the overarching control on the test suite.  Individual flags must be set to true below to conduct each test."
 		            possible_values=".true. or .false."
@@ -628,7 +628,7 @@
 		            possible_values="'linear_x', 'linear_y', 'linear_arb_rot', 'power_x', 'power_y', 'power_arb_rot', 'sin_arb_rot', 'sph_solid_body', 'sph_Williamson', 'sph_uCosCos', 'sph_vCosCos', 'sph_ELonLon_CosCos', 'sph_ELatLat_CosCos', 'sph_ELonLat_CosCos'"
 		/>
 	</nml_record>
-	<nml_record name="debug">
+	<nml_record name="debug" in_defaults="true">
 		<nml_option name="config_check_zlevel_consistency" type="logical" default_value=".false." units="unitless"
 					description="Enables a run-time check for consistency for a zlevel grid. Ensures relevant variables correctly define the bottom of the ocean."
 					possible_values=".true. or .false."

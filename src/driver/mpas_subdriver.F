@@ -12,7 +12,8 @@ module mpas_subdriver
    use mpas_kind_types
 
    type (dm_info), pointer :: dminfo
-   type (domain_type), pointer :: domain
+   type (domain_type), save, target :: domain
+   type (domain_type), pointer :: domain_ptr
    type (io_output_object), save :: output_obj
    integer :: output_frame
 
@@ -27,22 +28,24 @@ module mpas_subdriver
       character(len=StrKIND) :: timeStamp
       integer :: ierr
 
+      domain_ptr => domain
+
       !
       ! Initialize infrastructure
       !
-      call mpas_framework_init(dminfo, domain)
+      call mpas_framework_init(dminfo, domain_ptr)
       call mpas_core_setup_packages(ierr)
 
       call mpas_timer_start("total time")
       call mpas_timer_start("initialize")
 
-      call mpas_input_state_for_domain(domain)
+      call mpas_input_state_for_domain(domain_ptr)
 
 
       !
       ! Initialize core
       !
-      call mpas_core_init(domain, timeStamp)
+      call mpas_core_init(domain_ptr, timeStamp)
 
       call mpas_timer_stop("initialize")
 
@@ -53,9 +56,9 @@ module mpas_subdriver
       output_frame = 1
 
       if(config_frames_per_outfile > 0) then
-         call mpas_output_state_init(output_obj, domain, "OUTPUT", trim(timeStamp))
+         call mpas_output_state_init(output_obj, domain_ptr, "OUTPUT", trim(timeStamp))
       else
-         call mpas_output_state_init(output_obj, domain, "OUTPUT")         
+         call mpas_output_state_init(output_obj, domain_ptr, "OUTPUT")         
       end if
 
 
@@ -66,7 +69,7 @@ module mpas_subdriver
 
       implicit none
 
-      call mpas_core_run(domain, output_obj, output_frame)
+      call mpas_core_run(domain_ptr, output_obj, output_frame)
 
    end subroutine mpas_run
 
@@ -78,13 +81,13 @@ module mpas_subdriver
       !
       ! Finalize output streams
       !
-      call mpas_output_state_finalize(output_obj, domain % dminfo)
+      call mpas_output_state_finalize(output_obj, domain_ptr % dminfo)
 
 
       !
       ! Finalize core
       !
-      call mpas_core_finalize(domain)
+      call mpas_core_finalize(domain_ptr)
 
       call mpas_timer_stop("total time")
       call mpas_timer_write()
@@ -93,7 +96,7 @@ module mpas_subdriver
       !
       ! Finalize infrastructure
       !
-      call mpas_framework_finalize(dminfo, domain)
+      call mpas_framework_finalize(dminfo, domain_ptr)
 
    end subroutine mpas_finalize
 

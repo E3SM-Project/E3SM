@@ -66,6 +66,7 @@ int main(int argc, char ** argv)/*{{{*/
 	sort_vars(vars);
 	sort_group_vars(groups);
 
+	write_default_namelist(nls, corename);
 	gen_history_attributes(modelname, corename, version);
 	gen_namelists(nls);
 	gen_field_defs(groups, vars, dims);
@@ -87,7 +88,8 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 	ezxml_t nmlrecs_xml, nmlopt_xml;
 
 	const char *dimname, *dimunits, *dimdesc, *dimdef;
-	const char *nmlrecname, *nmloptname, *nmlopttype, *nmloptval, *nmloptunits, *nmloptdesc, *nmloptposvals;
+	const char *nmlrecname, *nmlrecindef;
+	const char *nmloptname, *nmlopttype, *nmloptval, *nmloptunits, *nmloptdesc, *nmloptposvals, *nmloptindef;
 	const char *structname, *structlevs, *structpackages;
 	const char *vararrname, *vararrtype, *vararrdims, *vararrpersistence, *vararrpackages;
 	const char *varname, *varpersistence, *vartype, *vardims, *varunits, *vardesc, *vararrgroup, *varstreams, *varpackages;
@@ -171,9 +173,24 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 					snprintf(name_holder, 1024, "%s",dimdef);
 					snprintf(name_holder, 1024, "%s",(name_holder)+9);
 					for (nmlrecs_xml = ezxml_child(registry, "nml_record"); nmlrecs_xml; nmlrecs_xml = nmlrecs_xml->next){
+						nmlrecindef = ezxml_attr(nmlrecs_xml, "in_defaults");
+
+						if(nmlrecindef != NULL){
+							if(strncmp(nmlrecindef, "true", 1024) != 0 && strncmp(nmlrecindef, "false", 1024) != 0){
+								fprintf(stderr, "ERROR: Namelist record %s has an invalid value for in_defaults attribute. Valide values are true or false.\n", nmlrecname);
+							}
+						}
 						for (nmlopt_xml = ezxml_child(nmlrecs_xml, "nml_option"); nmlopt_xml; nmlopt_xml = nmlopt_xml->next){
 							nmloptname = ezxml_attr(nmlopt_xml, "name");
 							nmlopttype = ezxml_attr(nmlopt_xml, "type");
+							nmloptindef = ezxml_attr(nmlopt_xml, "in_defaults");
+
+
+							if(nmloptindef != NULL){
+								if(strncmp(nmloptindef, "true", 1024) != 0 && strncmp(nmloptindef, "false", 1024) != 0){
+									fprintf(stderr, "ERROR: Namelist option %s in record %s has an invalid value for in_defaults attribute. Valide values are true or false.\n", nmloptname, nmlrecname);
+								}
+							}
 
 							if (strncmp(name_holder, nmloptname, 1024) == 0){
 								if (strcasecmp("integer", nmlopttype) != 0){
@@ -437,7 +454,8 @@ int parse_reg_xml(ezxml_t registry, struct namelist **nls, struct dimension ** d
 	ezxml_t packages_xml, package_xml;
 
 	const char *dimname, *dimunits, *dimdesc, *dimdef;
-	const char *nmlrecname, *nmloptname, *nmlopttype, *nmloptval, *nmloptunits, *nmloptdesc, *nmloptposvals;
+	const char *nmlrecname, *nmlrecindef;
+	const char *nmloptname, *nmlopttype, *nmloptval, *nmloptunits, *nmloptdesc, *nmloptposvals, *nmloptindef;
 	const char *structname, *structlevs, *structpackages;
 	const char *vararrname, *vararrtype, *vararrdims, *vararrpersistence, *vararrdefaultval, *vararrpackages;
 	const char *varname, *varpersistence, *vartype, *vardims, *varunits, *vardesc, *vararrgroup, *varstreams, *vardefaultval, *varpackages;
@@ -489,6 +507,7 @@ int parse_reg_xml(ezxml_t registry, struct namelist **nls, struct dimension ** d
 	// Parse Namelist Records
 	for (nmlrecs_xml = ezxml_child(registry, "nml_record"); nmlrecs_xml; nmlrecs_xml = nmlrecs_xml->next){
 		nmlrecname = ezxml_attr(nmlrecs_xml, "name");
+		nmlrecindef = ezxml_attr(nmlrecs_xml, "in_defaults");
 		for (nmlopt_xml = ezxml_child(nmlrecs_xml, "nml_option"); nmlopt_xml; nmlopt_xml = nmlopt_xml->next){
 			nmloptname = ezxml_attr(nmlopt_xml, "name");
 			nmlopttype = ezxml_attr(nmlopt_xml, "type");
@@ -496,6 +515,7 @@ int parse_reg_xml(ezxml_t registry, struct namelist **nls, struct dimension ** d
 			nmloptunits = ezxml_attr(nmlopt_xml, "units");
 			nmloptdesc = ezxml_attr(nmlopt_xml, "description");
 			nmloptposvals = ezxml_attr(nmlopt_xml, "possible_values");
+			nmloptindef = ezxml_attr(nmlopt_xml, "in_defaults");
 
 			snprintf(nls_ptr->record, 1024, "%s", nmlrecname);
 			snprintf(nls_ptr->name, 1024, "%s", nmloptname);
@@ -527,6 +547,24 @@ int parse_reg_xml(ezxml_t registry, struct namelist **nls, struct dimension ** d
 				case CHARACTER:
 					snprintf(nls_ptr->defval.cval, 32, "%s", nmloptval);
 					break;
+			}
+
+			if(nmloptindef == NULL){
+				if(nmlrecindef == NULL){
+					nls_ptr->write_in_default = 0;
+				} else {
+					if(strncmp(nmlrecindef, "true", 1024) == 0){
+						nls_ptr->write_in_default = 1;
+					} else if (strncmp(nmlrecindef, "false", 1024) == 0){
+						nls_ptr->write_in_default = 0;
+					}
+				}
+			} else {
+				if(strncmp(nmloptindef, "true", 1024) == 0){
+					nls_ptr->write_in_default = 1;
+				} else if (strncmp(nmloptindef, "false", 1024) == 0){
+					nls_ptr->write_in_default = 0;
+				}
 			}
 
 			NEW_NAMELIST(nls_ptr->next)

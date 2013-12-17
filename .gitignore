@@ -45,3 +45,6 @@ src/registry/parse
 
 # Ignore MPAS core build files.
 .mpas_core_*
+
+# Ignore all namelist files.
+namelist.*

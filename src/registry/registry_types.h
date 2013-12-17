@@ -38,6 +38,7 @@ struct namelist {
 	char name[1024];
 	char record[1024];
 	int vtype;
+	int write_in_default;
 	union default_val defval;
 	struct namelist * next;
 };

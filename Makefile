@@ -326,6 +326,12 @@ else
 	CONTINUE=true
 endif # END IF BUILT CORE CHECK
 
+ifneq ($(wildcard namelist.$(CORE)), ) # Check for generated namelist file.
+	NAMELIST_MESSAGE="A default namelist file (namelist.$(CORE).defaults) has been generated, but namelist.$(CORE) has not been modified."
+else
+	NAMELIST_MESSAGE="A default namelist file (namelist.$(CORE).defaults) has been generated and copied to namelist.$(CORE)."
+endif
+
 ifeq "$(findstring clean, $(MAKECMDGOALS))" "clean" # CHECK FOR CLEAN TARGET
 	override AUTOCLEAN=false
 endif # END OF CLEAN TARGET CHECK
@@ -379,7 +385,8 @@ endif
                  GEN_F90="$(GEN_F90)"
 	@echo "$(CORE)" > .mpas_core_$(CORE)
 	if [ -e src/$(CORE)_model ]; then mv src/$(CORE)_model .; fi
-	@echo ""
+	if [ -e src/inc/namelist.$(CORE).defaults ]; then mv src/inc/namelist.$(CORE).defaults .; fi
+	if [ ! -e namelist.$(CORE) ]; then cp namelist.$(CORE).defaults namelist.$(CORE); fi
 	@echo "*******************************************************************************"
 	@echo $(DEBUG_MESSAGE)
 	@echo $(PARALLEL_MESSAGE)
@@ -389,11 +396,13 @@ ifeq "$(AUTOCLEAN)" "true"
 	@echo $(AUTOCLEAN_MESSAGE)
 endif
 	@echo $(GEN_F90_MESSAGE)
+	@echo $(NAMELIST_MESSAGE)
 	@echo "*******************************************************************************"
 clean:
 	$(RM) .mpas_core_*
 	cd src; $(MAKE) clean RM="$(RM)" CORE="$(CORE)"
 	$(RM) $(CORE)_model
+	$(RM) namelist.$(CORE).defaults
 core_error:
 	@echo ""
 	@echo "*******************************************************************************"

@@ -60,7 +60,11 @@ module mpas_framework
       call mpas_io_units_init(stdoutUnit, stderrUnit)
       call mpas_dmpar_init(dminfo, mpi_comm)
 
-      call mpas_read_namelist(dminfo, nml_filename)
+      if (.not.present(nml_filename)) then
+        call mpas_read_namelist(dminfo, domain % namelist_filename)
+      else
+        call mpas_read_namelist(dminfo, nml_filename)
+      end if
 
       call mpas_allocate_domain(domain, dminfo)
       

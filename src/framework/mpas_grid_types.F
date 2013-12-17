@@ -523,7 +523,6 @@ module mpas_grid_types
       type (domain_type), pointer :: dom !< Input/Output: Domain structure
       type (dm_info), pointer :: dminfo !< Input: Domain Information
 
-      allocate(dom)
       nullify(dom % blocklist)
       dom % dminfo => dminfo
 
@@ -596,8 +595,6 @@ module mpas_grid_types
          call mpas_deallocate_block(block_ptr)
          block_ptr => block_ptr % next
       end do
-
-      deallocate(dom) 
 
    end subroutine mpas_deallocate_domain!}}}
 

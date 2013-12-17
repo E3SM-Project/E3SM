@@ -33,14 +33,14 @@
 		/>
 	</dims>
 
-	<nml_record name="velocity_solver">
+	<nml_record name="velocity_solver" in_defaults="true">
 		<nml_option name="config_velocity_solver" type="character" default_value="sia" units="unitless"
 		            description="Selection of the method for solving ice velocity."
 		            possible_values="'sia'"
 		/>
 	</nml_record>
 
-	<nml_record name="advection">
+	<nml_record name="advection" in_defaults="true">
 		<nml_option name="config_thickness_advection" type="character" default_value="fo" units="unitless"
 		            description="Selection of the method for advecting thickness."
 		            possible_values="'fo', 'none'"
@@ -57,7 +57,7 @@
 -->
 	</nml_record>
 
-	<nml_record name="physical_parameters">
+	<nml_record name="physical_parameters" in_defaults="true">
 		<nml_option name="config_ice_density" type="real" default_value="910.0" units="kg m^{-3}"
 		            description="ice density to use"
 		            possible_values="Any positive real value"
@@ -85,7 +85,7 @@
 	</nml_record>
 
 <!-- This option to be implemented in the future.
-	<nml_record name="forcing">
+	<nml_record name="forcing" in_defaults="true">
 		<nml_option name="config_forcing_frequency" type="real" default_value="0.0" units="?"
 		            description="not implemented"
 		            possible_values="Any positive real value"
@@ -93,7 +93,7 @@
 	</nml_record>
 -->
 
-	<nml_record name="time_integration">
+	<nml_record name="time_integration" in_defaults="true">
 		<nml_option name="config_dt_years" type="real" default_value="0.5" units="yr"
 		            description="Length of model time-step in years.  Will be used instead of config_dt_seconds if greater than zero.  Currently the model assumes there are 365.0 * 24.0 * 3600.0 seconds in a year and the calendar type is not considered for this conversion."
 		            possible_values="Any positive real value, but limited by CFL condition."
@@ -108,7 +108,7 @@
 		/>
 	</nml_record>
 
-	<nml_record name="time_management">
+	<nml_record name="time_management" in_defaults="true">
 		<nml_option name="config_do_restart" type="logical" default_value=".false." units="unitless"
 		            description="Determines if the initial conditions should be read from a restart file, or an input file.  To perform a restart, simply set this to true in the namelist.input file and modify the start time to be the time you want restart from.  A restart will read the grid information from the input field, and the restart state from the restart file.  It will perform a run normally, i.e. do all the same init."
 		            possible_values=".true. or .false."
@@ -131,7 +131,7 @@
 		/>
 	</nml_record>
 
-	<nml_record name="io">
+	<nml_record name="io" in_defaults="true">
 		<nml_option name="config_input_name" type="character" default_value="landice_grid.nc" units="unitless"
 		            description="The path to the input file for the simulation."
 		            possible_values="path/to/grid.nc"
@@ -182,7 +182,7 @@
 		/>
 	</nml_record>
 
-	<nml_record name="decomposition">
+	<nml_record name="decomposition" in_defaults="true">
 		<nml_option name="config_num_halos" type="integer" default_value="3" units="unitless"
 		            description="Determines the number of halo cells extending from a blocks owned cells (Called the 0-Halo). The default of 3 is the minimum that can be used with monotonic advection."
 		            possible_values="Any positive interger value."
@@ -205,7 +205,7 @@
 		/>
 	</nml_record>
 
-	<nml_record name="debug">
+	<nml_record name="debug" in_defaults="true">
 		<nml_option name="config_print_thickness_advection_info" type="logical" default_value=".false." units="unitless"
 		            description="Prints additional information about thickness advection."
 		            possible_values=".true. or .false."

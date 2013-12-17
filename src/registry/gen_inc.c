@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include "dictionary.h"
 #include "registry_types.h"
 #include "gen_inc.h"
@@ -72,6 +73,7 @@ void write_package_options(FILE *fd, struct package * pkgs){/*{{{*/
 		fortprintf(fd, " .or. %sActive", pkg_ptr->name);
 	}
 }/*}}}*/
+
 
 
 void write_config_defs(FILE *fd, struct namelist *nls){/*{{{*/
@@ -222,6 +224,7 @@ void write_model_variables(FILE *fd, char *modelname, char *corename, char *vers
 	fortprintf(fd, "       character (len=StrKIND) :: modelName = '%s' !< Constant: Name of model\n", modelname);
 	fortprintf(fd, "       character (len=StrKIND) :: coreName = '%s' !< Constant: Name of core\n", corename);
 	fortprintf(fd, "       character (len=StrKIND) :: modelVersion = '%s' !< Constant: Version number\n", version);
+	fortprintf(fd, "       character (len=StrKIND) :: namelist_filename = 'namelist.%s' !< Constant: Name of namelist file\n", corename);
 }/*}}}*/
 /*}}}*/
 
@@ -1794,6 +1797,65 @@ void write_add_output_fields(FILE *fd, struct group_list *groups){/*{{{*/
 
 }/*}}}*/
 /* }}} */
+
+
+void write_default_namelist(struct namelist *nls, char *corename){/*{{{*/
+	struct namelist *nls_ptr, *nls_ptr2, *nls_ptr3;
+	char current_record[1024];
+	int record_complete;
+	int record_started;
+	FILE *fd;
+	char filename[1024];
+
+	sprintf(filename, "namelist.%s.defaults", corename);
+	fd = fopen(filename, "w+");
+
+	nls_ptr = nls;
+	while(nls_ptr){
+
+		// Check to see if record has been written already
+		record_complete = 0;
+		nls_ptr2 = nls;
+		while(nls_ptr2 && nls_ptr2 != nls_ptr){
+			if(strncmp(nls_ptr2->record, nls_ptr->record, 1024) == 0) record_complete = 1;
+			nls_ptr2 = nls_ptr2->next;
+		}
+
+		// If record hasn't been written yet, write complete record.
+		if(!record_complete){
+			nls_ptr2 = nls_ptr;
+			record_started = 0;
+			while(nls_ptr2){
+				if(strncmp(nls_ptr2->record, nls_ptr->record, 1024) == 0 && nls_ptr2->write_in_default){
+					if(!record_started){
+						fortprintf(fd, "&%s\n", nls_ptr->record);
+						record_started = 1;
+					}
+					if (nls_ptr2->vtype == INTEGER) fortprintf(fd, "\t%s = %i\n", nls_ptr2->name, nls_ptr2->defval.ival);
+					if (nls_ptr2->vtype == REAL) {
+							fortprintf(fd, "\t%s = %G\n", nls_ptr2->name, nls_ptr2->defval.rval);
+					}
+					if (nls_ptr2->vtype == LOGICAL) {
+						if (nls_ptr2->defval.lval == 0) 
+							fortprintf(fd, "\t%s = .false.\n", nls_ptr2->name);
+						else
+							fortprintf(fd, "\t%s = .true.\n", nls_ptr2->name);
+					}
+					if (nls_ptr2->vtype == CHARACTER)
+						fortprintf(fd, "\t%s = \"%s\"\n", nls_ptr2->name, nls_ptr2->defval.cval);
+
+				}
+				nls_ptr2 = nls_ptr2->next;
+			}
+			if(record_started){
+				fortprintf(fd, "/\n");
+			}
+		}
+		nls_ptr = nls_ptr->next;
+	}
+
+	fclose(fd);
+}/*}}}*/
 
 
 void gen_namelists(struct namelist * nls)/*{{{*/

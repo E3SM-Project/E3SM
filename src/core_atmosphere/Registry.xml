@@ -33,7 +33,7 @@
 <!-- ************************************** Namelists *************************************** -->
 <!-- **************************************************************************************** -->
 
-        <nml_record name="nhyd_model">
+        <nml_record name="nhyd_model" in_defaults="true">
                 <nml_option name="config_time_integration"           type="character"     default_value="SRK3"/>
                 <nml_option name="config_dt"                         type="real"          default_value="600.0"/>
                 <nml_option name="config_calendar_type"              type="character"     default_value="gregorian"/>
@@ -71,12 +71,12 @@
                 <nml_option name="config_num_halos"                  type="integer"       default_value="2"/>
         </nml_record>
 
-        <nml_record name="damping">
+        <nml_record name="damping" in_defaults="true">
                 <nml_option name="config_zd"                         type="real"          default_value="22000.0"/>
                 <nml_option name="config_xnutr"                      type="real"          default_value="0.0"/>
         </nml_record>
 
-        <nml_record name="io">
+        <nml_record name="io" in_defaults="true">
                 <nml_option name="config_input_name"                 type="character"     default_value="init.nc"/>
                 <nml_option name="config_output_name"                type="character"     default_value="output.nc"/>
                 <nml_option name="config_output_interval"            type="character"     default_value="06:00:00"/>
@@ -92,14 +92,14 @@
                 <nml_option name="config_pio_format"                 type="character"     default_value="pnetcdf"/>
         </nml_record>
 
-        <nml_record name="decomposition">
+        <nml_record name="decomposition" in_defaults="true">
                 <nml_option name="config_block_decomp_file_prefix"   type="character"     default_value="graph.info.part."/>
                 <nml_option name="config_number_of_blocks"           type="integer"       default_value="0"/>
                 <nml_option name="config_explicit_proc_decomp"       type="logical"       default_value="false"/>
                 <nml_option name="config_proc_decomp_file_prefix"    type="character"     default_value="graph.info.part."/>
         </nml_record>
 
-        <nml_record name="restart">
+        <nml_record name="restart" in_defaults="true">
                 <nml_option name="config_do_restart"                 type="logical"       default_value="false"/>
                 <nml_option name="config_do_DAcycling"               type="logical"       default_value="false"/>
         </nml_record>
@@ -385,7 +385,7 @@
 <!-- ================================================================================================== -->
 
 
-        <nml_record name="physics">
+        <nml_record name="physics" in_defaults="true">
                 <!-- NAMELIST VARIABLES ADDED FOR INITIALIZATION OF SURFACE CHARACTERISTICS: -->
                 <nml_option name="input_landuse_data"                type="character"     default_value="USGS"/>
                 <nml_option name="input_soil_data"                   type="character"     default_value="STAS"/>

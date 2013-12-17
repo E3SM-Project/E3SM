@@ -5,6 +5,7 @@
 // Additional copyright and license information can be found in the LICENSE file
 // distributed with this code, or at http://mpas-dev.github.com/license.html
 //
+void write_default_namelist(struct namelist *, char *corename);
 void gen_namelists(struct namelist *);
 void gen_history_attributes(char * modelname, char * corename, char * version);
 void gen_field_defs(struct group_list * groups, struct variable *, struct dimension *);
