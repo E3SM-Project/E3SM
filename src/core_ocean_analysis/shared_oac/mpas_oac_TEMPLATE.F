@@ -7,22 +7,41 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  oac_driver
+!  oac_TEMPLATE
 !
-!> \brief Driver for MPAS ocean analysis core
-!> \author Mark Petersen
-!> \date   November 2013
+!> \brief MPAS ocean analysis core member: TEMPLATE
+!> \author FILL_IN_AUTHOR
+!> \date   FILL_IN_DATE
 !> \details
-!>  This is the driver for the MPAS ocean core.
+!>  MPAS ocean analysis core member: TEMPLATE
+!>  In order to add a new analysis member, do the following:
+!>  1. Copy these to your new analysis member name:
+!>     mpas_oac_TEMPLATE.F
+!>     Registry_oac_TEMPLATE.xml
+!>  
+!>  2. In those two new files, replace the following text:
+!>     TEMPLATE, amTemplate, FILL_IN_AUTHOR, FILL_IN_DATE
+!>  
+!>  3. Add a line for your registry to
+!>     Registry_shared_oac.xml
+!>  
+!>  4. In mpas_oac_driver.F, add calls for your analysis member
+!>     by copying lines with TEMPLATE.
+!>  
+!>  5. In src/core_ocean_analysis/shared_oac/Makefile, add your
+!>     new analysis member everywhere you see
+!>     mpas_oac_global_stats.o
+!>  
 !
 !-----------------------------------------------------------------------
 
-module oac_driver
+module oac_TEMPLATE
 
    use mpas_grid_types
+   use mpas_timer
+   use mpas_dmpar
 
-   use oac_global_stats
-!   use oac_TEMPLATE
+   use ocn_diagnostics_routines
 
    implicit none
    private
@@ -40,11 +59,11 @@ module oac_driver
    !
    !--------------------------------------------------------------------
 
-   public :: oac_driver_init, &
-             oac_driver_compute, &
-             oac_driver_write, &
-             oac_driver_restart, &
-             oac_driver_finalize
+   public :: oac_init_TEMPLATE, &
+             oac_compute_TEMPLATE, &
+             oac_write_TEMPLATE, &
+             oac_restart_TEMPLATE, &
+             oac_finalize_TEMPLATE
 
    !--------------------------------------------------------------------
    !
@@ -52,24 +71,26 @@ module oac_driver
    !
    !--------------------------------------------------------------------
 
+   type (timer_node), pointer :: amTemplateTimer
+
 !***********************************************************************
 
 contains
 
 !***********************************************************************
 !
-!  routine oac_driver_init
+!  routine oac_init_TEMPLATE
 !
-!> \brief   Initialize MPAS-Ocean analysis driver
-!> \author  Mark Petersen
-!> \date    November 2013
+!> \brief   Initialize MPAS-Ocean analysis member
+!> \author  FILL_IN_AUTHOR
+!> \date    FILL_IN_DATE
 !> \details 
-!>  This routine calls all initializations required for the 
-!>  MPAS-Ocean analysis driver.
+!>  This routine conducts all initializations required for the 
+!>  MPAS-Ocean analysis member.
 !
 !-----------------------------------------------------------------------
 
-   subroutine oac_driver_init(err)!{{{
+   subroutine oac_init_TEMPLATE(err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -101,32 +122,22 @@ contains
 
       err = 0
 
-      if (config_oac_global_stats)
-         call oac_init_global_stats(err_tmp)
-         err = ior(err, err_tmp)
-      endif
-
-!      if (config_oac_TEMPLATE)
-!         call oac_init_TEMPLATE(err_tmp)
-!         err = ior(err, err_tmp)
-!      endif
-
-   end subroutine oac_driver_init!}}}
+   end subroutine oac_init_TEMPLATE!}}}
 
 !***********************************************************************
 !
-!  routine oac_driver_compute
+!  routine oac_compute_TEMPLATE
 !
-!> \brief   Driver for MPAS-Ocean analysis computations
-!> \author  Mark Petersen
-!> \date    November 2013
+!> \brief   Computeialize MPAS-Ocean analysis member
+!> \author  FILL_IN_AUTHOR
+!> \date    FILL_IN_DATE
 !> \details 
-!>  This routine calls all computation subroutines required for the 
-!>  MPAS-Ocean analysis driver.
+!>  This routine conducts all computation required for this
+!>  MPAS-Ocean analysis member.
 !
 !-----------------------------------------------------------------------
 
-   subroutine oac_driver_compute(domain, err)!{{{
+   subroutine oac_compute_TEMPLATE(amTemplate, state_ptr, dminfo, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -134,13 +145,15 @@ contains
       !
       !-----------------------------------------------------------------
 
+      type (state_type), intent(in), pointer :: state_ptr
+      type (dm_info), intent(in), pointer :: dminfo
+      integer, intent(in) :: timeLevel
+
       !-----------------------------------------------------------------
       !
       ! input/output variables
       !
       !-----------------------------------------------------------------
-
-      type (domain_type), intent(inout) :: domain
 
       !-----------------------------------------------------------------
       !
@@ -148,6 +161,7 @@ contains
       !
       !-----------------------------------------------------------------
 
+      type (amTemplate_type), intent(inout) :: amTemplate
       integer, intent(out) :: err !< Output: error flag
 
       !-----------------------------------------------------------------
@@ -156,40 +170,48 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: timeLevel, err_tmp
+      integer :: err_tmp
+      type (block_type), pointer :: block
+
       type (state_type), pointer :: state
+      type (mesh_type), pointer :: mesh
+      type (scratch_type), pointer :: scratch
 
       err = 0
 
-      timeLevel=1
-      state => domain % blocklist % state % time_levs(timeLevel) % state
+      call mpas_timer_start("compute_TEMPLATE", .false., amTemplateTimer)
 
-      if (config_oac_global_stats)
-         call oac_compute_global_stats(domain % blocklist % amGlobalStats, state, domain % dminfo, timeLevel, err_tmp)
-         err = ior(err, err_tmp)
-      endif
+      block => state_ptr % block 
+      do while (associated(block))
+         state => block % state % time_levs(timeLevel) % state
+         mesh => block % mesh
+         scratch => block % scratch
 
-!      if (config_oac_TEMPLATE)
-!         call oac_compute_TEMPLATE(domain % blocklist % amTemplate, state, domain % dminfo, err_tmp)
-!         err = ior(err, err_tmp)
-!      endif
+         ! block calculations may be placed here
 
-   end subroutine oac_driver_compute!}}}
+         block => block % next
+      end do
+
+      ! mpi gather/scatter calls may be placed here
+
+      call mpas_timer_stop("TEMPLATE", amTemplateTimer)
+
+   end subroutine oac_compute_TEMPLATE!}}}
 
 !***********************************************************************
 !
-!  routine oac_driver_restart
+!  routine oac_restart_TEMPLATE
 !
-!> \brief   Save restart for MPAS-Ocean analysis driver
-!> \author  Mark Petersen
-!> \date    November 2013
+!> \brief   Save restart for MPAS-Ocean analysis member
+!> \author  FILL_IN_AUTHOR
+!> \date    FILL_IN_DATE
 !> \details 
-!>  This routine calls all subroutines required to prepare to save
-!>  the restart state for the MPAS-Ocean analysis driver.
+!>  This routine conducts computation required to save a restart state
+!>  for the MPAS-Ocean analysis member.
 !
 !-----------------------------------------------------------------------
 
-   subroutine oac_driver_restart(err)!{{{
+   subroutine oac_restart_TEMPLATE(err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -221,34 +243,23 @@ contains
 
       err = 0
 
-      if (config_oac_global_stats)
-         call oac_restart_global_stats(err_tmp)
-         err = ior(err, err_tmp)
-      endif
-
-!      if (config_oac_TEMPLATE)
-!         call oac_restart_TEMPLATE(err_tmp)
-!         err = ior(err, err_tmp)
-!      endif
-
-   end subroutine oac_driver_restart!}}}
+   end subroutine oac_restart_TEMPLATE!}}}
 
 !***********************************************************************
 !
-!  routine oac_driver_write
+!  routine oac_write_TEMPLATE
 !
 !> \brief   Driver for MPAS-Ocean analysis output
-!> \author  Mark Petersen
-!> \date    November 2013
+!> \author  FILL_IN_AUTHOR
+!> \date    FILL_IN_DATE
 !> \details 
-!>  This routine calls all output writing subroutines required for the 
-!>  MPAS-Ocean analysis driver.
+!>  This routine writes all output for this MPAS-Ocean analysis member.
 !>  At this time this is just a stub, and all analysis output is written
 !>  to the output file specified by config_output_name.
 !
 !-----------------------------------------------------------------------
 
-   subroutine oac_driver_write(err)!{{{
+   subroutine oac_write_TEMPLATE(err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -280,32 +291,22 @@ contains
 
       err = 0
 
-      if (config_oac_global_stats)
-         call oac_write_global_stats(err_tmp)
-         err = ior(err, err_tmp)
-      endif
-
-!      if (config_oac_TEMPLATE)
-!         call oac_write_TEMPLATE(err_tmp)
-!         err = ior(err, err_tmp)
-!      endif
-
-   end subroutine oac_driver_write!}}}
+   end subroutine oac_write_TEMPLATE!}}}
 
 !***********************************************************************
 !
-!  routine oac_driver_finalize
+!  routine oac_finalize_TEMPLATE
 !
-!> \brief   Finalize MPAS-Ocean analysis driver
-!> \author  Mark Petersen
-!> \date    November 2013
+!> \brief   Finalize MPAS-Ocean analysis member
+!> \author  FILL_IN_AUTHOR
+!> \date    FILL_IN_DATE
 !> \details 
-!>  This routine calls all finalize routines required for the 
-!>  MPAS-Ocean analysis driver.
+!>  This routine conducts all finalizations required for this
+!>  MPAS-Ocean analysis member.
 !
 !-----------------------------------------------------------------------
 
-   subroutine oac_driver_finalize(err)!{{{
+   subroutine oac_finalize_TEMPLATE(err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -337,18 +338,10 @@ contains
 
       err = 0
 
-      if (config_oac_global_stats)
-         call oac_finalize_global_stats(err_tmp)
-         err = ior(err, err_tmp)
-      endif
+print *, 'oac_finalize_TEMPLATE'
 
-!      if (config_oac_TEMPLATE)
-!         call oac_finalize_TEMPLATE(err_tmp)
-!         err = ior(err, err_tmp)
-!      endif
+   end subroutine oac_finalize_TEMPLATE!}}}
 
-   end subroutine oac_driver_finalize!}}}
-
-end module oac_driver
+end module oac_TEMPLATE
 
 ! vim: foldmethod=marker

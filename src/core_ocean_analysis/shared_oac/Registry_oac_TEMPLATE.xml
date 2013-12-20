@@ -1,0 +1,11 @@
+	<nml_record name="oac_TEMPLATE">
+		<nml_option name="config_oac_TEMPLATE" type="logical" default_value=".false." units="unitless"
+					description="If true, ocean analysis member TEMPLATE is called."
+					possible_values=".true. or .false."
+		/>
+	</nml_record>
+	<var_struct name="amTemplate" time_levs="0">
+		<var name="example_variable" type="real" dimensions="nVertLevels nCells Time" streams="o" units="UNITS HERE"
+			description="DESCRIPTION HERE"
+		/>
+	</var_struct>

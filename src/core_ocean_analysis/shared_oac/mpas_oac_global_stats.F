@@ -9,12 +9,11 @@
 !
 !  oac_global_stats
 !
-!> \brief Driver for MPAS ocean analysis core
+!> \brief MPAS ocean analysis core member: global statistics
 !> \author Mark Petersen
 !> \date   November 2013
 !> \details
-!>  This is the driver for the 
-!>  the MPAS ocean core.
+!>  MPAS ocean analysis core member: global statistics
 !
 !-----------------------------------------------------------------------
 
