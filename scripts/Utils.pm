@@ -18,8 +18,8 @@ sub host{
 	$host = "intrepid";
     }elsif($host =~ /^fr\d+en/){
 	$host = "frost";
-    }elsif($host =~ /^be\d+en/){
-	$host = "bluefire";
+    }elsif($host =~ /^eos/){
+	$host = "eos";
     }elsif($host =~ /^titan/){
 	$host = "titan";
     }elsif($host =~ /^ath/ ){
@@ -150,6 +150,7 @@ sub loadmodules{
 		   yellowstone_pgi => "/glade/apps/opt/modulefiles",
 		   yellowstone_gnu => "/glade/apps/opt/modulefiles",
 		   titan  => "/opt/modules/default/",
+		   eos  => "/opt/modules/default/",
 		   athena => "/opt/modules/default/",
 		   kraken => "/opt/modules/default/",
 		   hopper => "/opt/modules/default/",
@@ -175,6 +176,18 @@ sub loadmodules{
 	module(" load netcdf-hdf5parallel/4.2.0");      
 	module(" load parallel-netcdf/1.3.1");
         module("list");
+    }elsif($host eq "eos"){
+	require "/opt/modules/default/init/perl";
+	module_check($modpath,$host);
+	module("rm netcdf");
+	module("rm cray-netcdf");
+	module("rm cray-netcdf-hdf5parallel");
+	module("rm pnetcdf");
+	module("switch cray-mpich cray-mpich/6.0.2");
+	module("switch intel      intel/13.1.3.192");
+	module("load cray-netcdf-hdf5parallel/4.3.0");
+	module("load  cray-parallel-netcdf/1.3.1.1");
+	module("load cmake/2.8.11.2");
     }elsif($host =~ "athena"){
 #	require "/opt/modules/default/init/perl";
 	module_check($modpath,$host);
@@ -331,7 +344,7 @@ sub module_check{
 
 sub hostmods{
     my($self,$host,$mpi) = @_;
-    my ($scratch,$netcdf,$pnetcdf,$cc,$fc);
+    my ($scratch,$netcdf,$pnetcdf,$cc,$fc,$filesystem);
     print "host = $host\n";
     if($host =~ /yellowstone/){
 	$scratch = "/glade/scratch/$ENV{USER}/piotest";
@@ -342,6 +355,14 @@ sub hostmods{
 	    $cc = "mpicc";
 	    $fc  = "mpif90";
 	}
+    }
+    if($host =~ /^eos/){
+	$scratch = "$ENV{WORKDIR}/$ENV{PROJECT}/testpio";
+	$netcdf = $ENV{NETCDF_DIR};
+	$pnetcdf = $ENV{PARALLEL_NETCDF_DIR};
+	$filesystem = "lustre";
+	$cc = "cc";
+	$fc = "ftn";
     }
     return ($scratch,$netcdf,$pnetcdf,$cc,$fc,$filesystem);
 }

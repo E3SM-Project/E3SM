@@ -17,9 +17,15 @@ Utils->loadmodules("$host");
 
 $build="all" unless(defined($build));
 
-my ($scratch,$netcdf,$pnetcdf,$mpi,$cc,$fc);
+my ($scratch,$netcdf,$pnetcdf,$mpi,$cc,$fc,$filesystem);
 
-($scratch,$netcdf,$pnetcdf,$filesystem,$cc,$fc) = Utils->hostmods($host,$mpi);
+($scratch,$netcdf,$pnetcdf,$cc,$fc,$filesystem) = Utils->hostmods($host,$mpi);
+
+print "$scratch\n";
+print "$cc\n";
+print "$filesystem\n";
+print "$fc\n";
+
 
 my $piosrc = `pwd`;
 chomp $piosrc;
