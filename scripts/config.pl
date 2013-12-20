@@ -19,7 +19,7 @@ $build="all" unless(defined($build));
 
 my ($scratch,$netcdf,$pnetcdf,$mpi,$cc,$fc);
 
-($scratch,$netcdf,$pnetcdf,$cc,$fc) = Utils->hostmods($host,$mpi);
+($scratch,$netcdf,$pnetcdf,$filesystem,$cc,$fc) = Utils->hostmods($host,$mpi);
 
 my $piosrc = `pwd`;
 chomp $piosrc;
@@ -36,9 +36,8 @@ if($build eq "netcdf" or $build eq "all"){
 if($build eq "pnetcdf" or $build eq "all"){
     $cmake_opts .= "  -DPNETCDF_DIR=$pnetcdf ";
 }
-
-if($host =~ /yellowstone/){
-    $cmake_opts .= " -DPIO_FILESYSTEM_HINTS=gpfs ";
+if(defined($filesystem)){
+    $cmake_opts .= " -DPIO_FILESYSTEM_HINTS=$filesystem ";
 }
 
 mkdir "$scratch";

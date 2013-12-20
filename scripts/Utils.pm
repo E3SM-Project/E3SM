@@ -337,12 +337,13 @@ sub hostmods{
 	$scratch = "/glade/scratch/$ENV{USER}/piotest";
 	$netcdf = $ENV{NETCDF};
 	$pnetcdf = $ENV{PNETCDF};
+	$filesystem = "gpfs";
 	if($mpi ne "mpi-serial") {
 	    $cc = "mpicc";
 	    $fc  = "mpif90";
 	}
     }
-    return ($scratch,$netcdf,$pnetcdf,$cc,$fc);
+    return ($scratch,$netcdf,$pnetcdf,$cc,$fc,$filesystem);
 }
 
 1;
