@@ -167,22 +167,13 @@ sub loadmodules{
     if($host =~ "titan"){
 	require "/opt/modules/default/init/perl";
 	module_check($modpath,$host);
-#	module(" purge");
-#        module(" load xt-mpt/4.0.0");
-#	module(" load PrgEnv-pgi");
-#	module(" load xtpe-interlagos");
         module("switch cray-mpich2    cray-mpich2/5.6.3");
         module(" switch xt-libsci xt-libsci/12.0.00");
         module(" swap xt-asyncpe xt-asyncpe/5.16");
         module("load szip/2.1");
-#        module("load hdf5-parallel/1.8.8");
 	module(" switch pgi pgi/12.10.0");
 	module(" load netcdf-hdf5parallel/4.2.0");      
 	module(" load parallel-netcdf/1.3.1");
-#	module(" load para");
-#	module(" swap xt-asyncpe xt-asyncpe/1.0c");
-#	module(" load xt-binutils-quadcore/2.0.1");
-        
         module("list");
     }elsif($host =~ "athena"){
 #	require "/opt/modules/default/init/perl";
@@ -286,10 +277,11 @@ sub loadmodules{
         module("load intel/13.1.2");
 	module("load ncarcompilers/1.0");
         module("rm netcdf");
-        module("load netcdf-mpi/4.2");
+        module("load netcdf-mpi/4.3.0");
         module("load pnetcdf/1.3.0");
         module("load ncarenv/1.0");
 	module("load ncarbinlibs/1.0");
+	module("load cmake");
 	module("list");
     }
 	
@@ -337,5 +329,20 @@ sub module_check{
     print "module path = $ENV{MODULEPATH}\n";
 }
 
+sub hostmods{
+    my($self,$host,$mpi) = @_;
+    my ($scratch,$netcdf,$pnetcdf,$cc,$fc);
+    print "host = $host\n";
+    if($host =~ /yellowstone/){
+	$scratch = "/glade/scratch/$ENV{USER}/piotest";
+	$netcdf = $ENV{NETCDF};
+	$pnetcdf = $ENV{PNETCDF};
+	if($mpi ne "mpi-serial") {
+	    $cc = "mpicc";
+	    $fc  = "mpif90";
+	}
+    }
+    return ($scratch,$netcdf,$pnetcdf,$cc,$fc);
+}
 
 1;
