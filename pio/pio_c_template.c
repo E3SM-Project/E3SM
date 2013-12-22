@@ -1,4 +1,4 @@
-int PIO_function(struct file_desc_t *file)
+int PIO_function()
 {
   int ierr;
   int msg;
@@ -7,11 +7,12 @@ int PIO_function(struct file_desc_t *file)
   ierr = PIO_NOERR;
 
   ios = file->iosystem;
+  msg = 0;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(iosys->comp_rank==0) 
-      mpierr = mpi_send(msg, 1 mpi_integer, ios%ioroot, 1, ios%union_comm);
-    mpierr = mpi_bcast(file->fh,1, mpi_integer, ios->compmaster, ios->intercomm);
+    if(ios->comp_rank==0) 
+      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -42,5 +43,5 @@ int PIO_function(struct file_desc_t *file)
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
-
+  return ierr;
 }
