@@ -148,7 +148,7 @@ ADD_DEFINITIONS(${PIO_DEFINITIONS})
 SET(PIO_INCLUDE_DIRS   ${pio_include_dirs_} CACHE STRING "")
 INCLUDE_DIRECTORIES(${PIO_INCLUDE_DIRS})
 
-SET(SRCS_C topology.c)
+SET(SRCS_C topology.c pio_nc.c )
 
 SET(SRCS_F90 pio.F90 pio_kinds.F90 nf_mod.F90  ionf_mod.F90 pio_types.F90
              piolib_mod.F90 pio_mpi_utils.F90 pio_nf_utils.F90 pio_utils.F90
