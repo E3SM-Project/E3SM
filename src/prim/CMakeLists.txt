@@ -39,7 +39,6 @@ SET(PRIM_SRCS ${SRC_SHARE_DIR}/kinds.F90
 					     ${SRC_SHARE_DIR}/thread_mod.F90
 					     ${SRC_SHARE_DIR}/bndry_mod.F90
 					     ${SRC_SHARE_DIR}/derivative_mod.F90
-					     ${SRC_DIR}/derived_type_mod.F90
 					     ${SRC_SHARE_DIR}/viscosity_mod.F90
 					     ${SRC_SHARE_DIR}/spacecurve_mod.F90
 					     ${SRC_SHARE_DIR}/cube_mod.F90
@@ -115,6 +114,8 @@ SET(PRIM_SRCS ${SRC_SHARE_DIR}/kinds.F90
 					     ${UTILS_TRILINOS_DIR}/trilinosModelEvaluator.cpp 
 					     ${UTILS_TRILINOS_DIR}/block_precon_interface.cpp 
 					     ${UTILS_TRILINOS_DIR}/precon_interface.cpp 
+					     ${UTILS_TRILINOS_DIR}/belos_helm.cpp 
+					     ${SRC_DIR}/derived_type_mod.F90 
 )
 
 
