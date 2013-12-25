@@ -18,7 +18,8 @@ subroutine pio_callback_handler(iosystem, msg)
   integer fh, ierr
 
 
-  integer :: len, id, dimids(PIO_MAX_VAR_DIMS), type, info(4)
+  integer ::  len, id, dimids(PIO_MAX_VAR_DIMS), type, info(4)
+  integer(pio_offset) :: llen
   character(len=pio_max_name) :: name
   type(var_desc_t) :: vardesc
 
@@ -33,7 +34,7 @@ subroutine pio_callback_handler(iosystem, msg)
      call pio_closefile(file)
      deallocate(file)
   case (PIO_MSG_DEF_DIM)
-     ierr = pio_def_dim(file, name, len, id)   
+     ierr = pio_def_dim(file, name, llen, id)   
   case (PIO_MSG_DEF_VAR)
      ierr = pio_def_var(file, name, type, dimids, vardesc)
   case (PIO_MSG_ENDDEF)
@@ -55,7 +56,7 @@ subroutine pio_callback_handler(iosystem, msg)
   case (PIO_MSG_INQ_DIMID)
      ierr = pio_inq_dimid(file, name, id)
   case (PIO_MSG_INQ_DIMLEN)
-     ierr = pio_inq_dimlen(file, id, len)
+     ierr = pio_inq_dimlen(file, id, llen)
   case (PIO_MSG_INQ_DIMNAME)
      ierr = pio_inq_dimname(file, id, name)
   case(PIO_MSG_INQUIRE)

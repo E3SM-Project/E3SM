@@ -29,7 +29,7 @@ contains
 !! @private
 !<
   integer function write_nfdarray_{TYPE} (File,IOBUF,varDesc,iodesc,start,count, request) result(ierr)
-    use nf_mod
+    use pio_nf
     use pio_types, only : io_desc_t, var_desc_t, file_desc_t, iosystem_desc_t, pio_noerr, &
 	pio_iotype_netcdf, pio_iotype_pnetcdf, pio_iotype_netcdf4p, pio_iotype_netcdf4c, pio_max_var_dims
     use pio_utils, only : check_netcdf, bad_iotype

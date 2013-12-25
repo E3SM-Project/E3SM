@@ -35,7 +35,7 @@ module pio
 
   use piodarray, only : pio_read_darray, pio_write_darray, pio_set_buffer_size_limit  
 
-  use nf_mod, only:        &
+  use pio_nf, only:        &
        PIO_enddef,            &
        PIO_inquire ,          &
        PIO_inq_attname ,  &

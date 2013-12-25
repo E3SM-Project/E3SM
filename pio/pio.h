@@ -3,7 +3,7 @@
 #include <mpi.h>
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <stdbool.h>
 #ifdef _NETCDF
 #include <netcdf.h>
 #endif
@@ -55,13 +55,6 @@ typedef struct file_desc_t
   int iotype;
   struct file_desc_t *next;
 } file_desc_t;
-
-
-enum bool{ 
-  false=0,
-  true
-};
-
 
 enum PIO_IOTYPE{
   PIO_IOTYPE_PBINARY,

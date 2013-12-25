@@ -1,16 +1,7 @@
-#include <mpi.h>
 #include <pio.h>
-#include <string.h>
-#include <stdio.h>
+#include <pio_internal.h>
 
-#ifdef _NETCDF
-#include <netcdf.h>
-#endif
-#ifdef _PNETCDF
-#include <pnetcdf.h>
-#endif
-
-int check_netcdf(file_desc_t *file,const int status, const char *fname, const int line){
+int check_netcdf(file_desc_t *file,int status, const char *fname, const int line){
   iosystem_desc_t *ios;
   int ierr;
 
@@ -31,7 +22,7 @@ int check_netcdf(file_desc_t *file,const int status, const char *fname, const in
       if(ios->error_handler == PIO_INTERNAL_ERROR){
 	// abort
       }else if(ios->error_handler==PIO_BCAST_ERROR){
-	ierr = mpi_bcast(status, 1, MPI_INT, ios->iomaster, ios->my_comm);
+	ierr =MPI_Bcast(&status, 1, MPI_INT, ios->iomaster, ios->my_comm);
       }
     }
     break;
@@ -45,7 +36,7 @@ int check_netcdf(file_desc_t *file,const int status, const char *fname, const in
       if(ios->error_handler == PIO_INTERNAL_ERROR){
 	// abort
       }else if(ios->error_handler==PIO_BCAST_ERROR){
-	ierr = mpi_bcast(status, 1, MPI_INT, ios->iomaster, ios->my_comm);
+	ierr = MPI_Bcast(&status, 1, MPI_INT, ios->iomaster, ios->my_comm);
 	  }
     }
     break;

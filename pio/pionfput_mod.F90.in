@@ -611,7 +611,7 @@ contains
 !! @retval ierr @copydoc error_return
 !<
   integer function put_vara_{DIMS}d_text (File,varid, start, count, ival) result(ierr)
-    use nf_mod, only : pio_inq_varndims
+    use pio_nf, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
 
@@ -732,7 +732,7 @@ contains
 !! @retval ierr @copydoc error_return
 !<
   integer function put_vara_{DIMS}d_{TYPE} (File,varid, start, count, ival) result(ierr)
-    use nf_mod, only : pio_inq_varndims
+    use pio_nf, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
 

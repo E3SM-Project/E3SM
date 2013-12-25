@@ -417,7 +417,7 @@ CONTAINS
           end if
           if(.not. ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
              call MPI_BCAST(ival,int(isize), {MPITYPE} ,0,ios%IO_comm, mpierr)
-             call CheckMPIReturn('nf_mod',mpierr)
+             call CheckMPIReturn('nfget_mod',mpierr)
           end if
 
 #endif

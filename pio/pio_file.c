@@ -2,6 +2,7 @@
 #include <pio_internal.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdbool.h>
 
 int PIOc_OpenFile(const int iosysid, int *ncidp, const int iotype,
 		  char *fname, const int mode, const _Bool *checkmpi)
