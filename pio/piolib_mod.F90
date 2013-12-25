@@ -32,10 +32,6 @@ module piolib_mod
   use ionf_mod, only : create_nf, open_nf,close_nf, sync_nf
   use pionfread_mod, only : read_nf
   use pionfwrite_mod, only : write_nf
-#ifdef _COMPRESSION
-    use piovdc
-    use C_interface_mod, only : F_C_STRING_DUP
-#endif
   use pio_mpi_utils, only : PIO_type_to_mpi_type 
   use iompi_mod
   use rearrange
@@ -180,8 +176,8 @@ module piolib_mod
      module procedure initdecomp_2dof_nf_i8
      module procedure initdecomp_2dof_bin_i4
      module procedure initdecomp_2dof_bin_i8
-     module procedure PIO_initdecomp_bc
-     module procedure PIO_initdecomp_dof_dof
+!     module procedure PIO_initdecomp_bc
+!     module procedure PIO_initdecomp_dof_dof
   end interface
 
 !> 
@@ -258,16 +254,6 @@ module piolib_mod
 
   !eoc
   !***********************************************************************
-#ifdef _COMPRESSION
-  interface
-     subroutine createvdf(vdc_dims, vdc_bsize, vdc_ts, restart , fname) bind(C)
-       use, intrinsic :: iso_c_binding
-       integer(c_int), intent(in) :: vdc_dims(3), vdc_bsize(3)
-       integer(c_int), intent(in), value :: vdc_ts, restart
-       type(c_ptr), intent(in), value :: fname
-     end subroutine createvdf
-  end interface
-#endif
 
 contains
 !> 
@@ -279,7 +265,22 @@ contains
 !<
   logical function PIO_FILE_IS_OPEN(File)
     type(file_desc_t), intent(in) :: file
-    pio_file_is_open = file%file_is_open
+    interface
+       integer(C_INT) function PIOc_File_is_Open(ncid) &
+            bind(C,NAME="PIOc_File_is_Open")
+         use iso_c_binding
+         implicit none
+         integer(c_int), value :: ncid
+       end function PIOc_File_is_Open
+    end interface
+
+    if(PIOc_File_is_Open(file%fh)==1) then
+       PIO_FILE_IS_OPEN = .true.
+    else
+       PIO_FILE_IS_OPEN = .false.
+    endif
+
+
   end function PIO_FILE_IS_OPEN
 
 
@@ -390,93 +391,22 @@ contains
 !! @copydoc PIO_error_method
 !<
   subroutine seterrorhandlingi(ios, method)
-    use pio_types, only : pio_internal_error, pio_return_error
-    use pio_msg_mod, only : pio_msg_seterrorhandling
     type(iosystem_desc_t), intent(inout) :: ios
     integer, intent(in) :: method
-    integer :: msg, ierr
 
-    if(ios%async_interface .and. .not. ios%ioproc ) then
-       msg=PIO_MSG_SETERRORHANDLING
-       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
-       call MPI_BCAST(method,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , ierr)
-    end if
-    if(Debugasync) print *,__PIO_FILE__,__LINE__,method
-    ios%error_handling=method
+    interface
+       integer(c_int) function PIOc_Set_IOSystem_Error_Handling(ios, method) &
+            bind(C,name="PIOc_Set_IOSystem_Error_Handling")
+         use iso_c_binding
+         integer(c_int), value :: ios
+         integer(c_int), value :: method
+       end function PIOc_Set_IOSystem_Error_Handling
+    end interface
+    integer :: ierr
 
-    if(method > PIO_internal_error .or. method < PIO_return_error) then
-       call piodie(__PIO_FILE__,__LINE__,'invalid error handling method requested')
-    end if
+    ierr = PIOc_Set_IOSystem_Error_Handling(ios%iosysid, method)
+
   end subroutine seterrorhandlingi
-
-!> 
-!! @public 
-!! @ingroup PIO_initdecomp
-!! @brief Implements the @ref decomp_bc for PIO_initdecomp
-!! @details  This provides the ability to describe a computational 
-!! decomposition in PIO that has a block-cyclic form.  That is 
-!! something that can be described using start and count arrays.
-!! Optional parameters for this subroutine allows for the specification
-!! of io decomposition using iostart and iocount arrays.  If iostart
-!! and iocount arrays are not specified by the user, and rearrangement 
-!! is turned on then PIO will calculate a suitable IO decomposition
-!! @param iosystem @copydoc iosystem_desc_t
-!! @param basepiotype @copydoc use_PIO_kinds
-!! @param dims An array of the global length of each dimesion of the variable(s)
-!! @param compstart The start index into the block-cyclic computational decomposition
-!! @param compcount The count for the block-cyclic computational decomposition
-!! @param iodesc @copydoc iodesc_generate
-!! @param iostart   The start index for the block-cyclic io decomposition
-!! @param iocount   The count for the block-cyclic io decomposition
-!<
-  subroutine PIO_initdecomp_bc(iosystem,basepiotype,dims,compstart,compcount,iodesc,iostart,iocount)
-    type (iosystem_desc_t), intent(inout) :: iosystem
-    integer(i4), intent(in)               :: basepiotype
-    integer(i4), intent(in)               :: dims(:)
-    integer (kind=PIO_OFFSET)             :: compstart(:)  
-    integer (kind=PIO_OFFSET)             :: compcount(:)    
-    type (IO_desc_t), intent(out)         :: iodesc
-    integer (kind=PIO_OFFSET),optional    :: iostart(:)  
-    integer (kind=PIO_OFFSET),optional    :: iocount(:)    
-
-!    character(len=*), parameter :: '::PIO_initdecomp_bc'
-
-    call piodie(__PIO_FILE__,__LINE__,'subroutine not yet implemented')
-
-  end subroutine PIO_initdecomp_bc
-
-!>
-!! @public
-!! @ingroup PIO_initdecomp
-!! @brief Implements the @ref decomp_dof for PIO_initdecomp
-!! @details  This provides the ability to describe a computational
-!! decomposition in PIO using degrees of freedom method. This is  
-!! a decomposition that can not be easily described using a start  
-!! and count metehod (see @ref decomp_dof).  This subroutine also 
-!! requires the user to specify the IO decomposition using the 
-!! degree of freedom method.  This version of the subroutine 
-!! is most suitable for those who want complete control over 
-!! the actions of PIO.
-!! @param iosystem @copydoc iosystem_desc_t
-!! @param basepiotype @copydoc use_PIO_kinds
-!! @param dims An array of the global length of each dimesion of the variable(s)
-!! @param compdof Mapping of the storage order for the computatinal decomposition to its memory order
-!! @param iodesc @copydoc iodesc_generate
-!! @param iodof Mapping of the storage order for the IO decomposition its memory order
-!<
-  subroutine PIO_initdecomp_dof_dof(iosystem,basepiotype,dims,compdof,iodesc,iodof)
-    type (iosystem_desc_t), intent(inout)          :: iosystem
-    integer(i4), intent(in)                        :: basepiotype
-    integer(i4), intent(in)                        :: dims(:)
-    integer(i4), intent(in)                        :: compdof(:)
-    type (IO_desc_t), intent(out)                   :: iodesc
-    integer(i4), intent(in)                        :: iodof(:)
-
-!    character(len=*), parameter :: subName=modName//'::PIO_initdecomp_dof_dof'
-
-!    call piodie(subname,__LINE__,'subroutine not yet implemented')
-
-  end subroutine PIO_initdecomp_dof_dof
 
 !> 
 !! @public 
@@ -1337,26 +1267,6 @@ contains
     iodesc%count=0
 
     if (iosystem%ioproc) then
-#ifdef _COMPRESSION
-       if(.not. present(bsize)) then
-          vdc_bsize = (/64, 64, 64/) !default bsize of 64^3 if none is given
-       else
-          vdc_bsize = bsize
-       endif
-       vdc_ts = num_ts
-       
-       iosystem%num_aiotasks = iosystem%num_iotasks
-
-       call init_vdc2(iosystem%io_rank, dims, vdc_bsize, vdc_iostart, vdc_iocount, iosystem%num_aiotasks)
-          
-       if(debug) then
-          print *, 'rank: ', iosystem%comp_rank, ' pio_init iostart: ' , vdc_iostart, ' iocount: ', vdc_iocount
-       endif
-          
-       vdc_dims = dims	
-       iodesc%start = vdc_iostart
-       iodesc%count = vdc_iocount
-#endif	
 
        iosize=1
        do i=1,ndims
@@ -2393,126 +2303,28 @@ contains
 !! @retval ierr @copydoc error_return
 !<
   integer function createfile(iosystem, file,iotype, fname, amode_in) result(ierr)
-#ifdef _COMPRESSION
-    use pio_types, only : pio_clobber, pio_noclobber, pio_iotype_vdc2
-#endif
     type (iosystem_desc_t), intent(inout), target :: iosystem
     type (file_desc_t), intent(out) :: file
     integer, intent(in) :: iotype
     character(len=*), intent(in)  :: fname
     integer, optional, intent(in) :: amode_in
     
-    ! ===================
-    !  local variables
-    ! ===================
-    logical :: iscallback
-    integer    :: amode
-    integer :: msg
-    logical, parameter :: check = .true.
-    character(len=9) :: rd_buffer
-    character(len=4) :: stripestr
-    character(len=9) :: stripestr2
-    character(len=char_len)  :: myfname
-#ifdef _COMPRESSION
-    integer :: restart
-
-
-
-#endif
+    interface
+       integer(C_INT) function PIOc_CreateFile(iosysid, fh, iotype, fname,mode) &
+         bind(C,NAME='PIOc_CreateFile')
+         use iso_c_binding
+         implicit none
+         integer(c_int), value :: iosysid
+         integer(c_int) :: fh
+         integer(c_int), value :: iotype
+         character(kind=c_char) :: fname
+         integer(c_int), value :: mode
+       end function PIOc_CreateFile
+    end interface
 #ifdef TIMING
     call t_startf("PIO_createfile")
 #endif
-
-    if(debug.or.debugasync) print *,'createfile: {comp,io}_rank:',iosystem%comp_rank,iosystem%io_rank, &
-         'io proc: ',iosystem%ioproc,iosystem%async_interface, iotype
-    ierr=PIO_noerr
-    
-
-    if(present(amode_in)) then
-       amode = amode_in
-    else	
-       amode = 0
-    end if
-
-    file%iotype = iotype 
-    myfname = fname
-
-    if(.not. (iosystem%async_interface .and. iosystem%ioproc)) then
-       call mpi_bcast(amode, 1, MPI_INTEGER, 0, iosystem%comp_comm, ierr)
-       call mpi_bcast(file%iotype, 1, MPI_INTEGER, 0, iosystem%comp_comm, ierr)
-
-       if(len(fname) > char_len) then
-          print *,'Length of filename exceeds compile time max, increase char_len in pio_kinds and recompile', len(fname), char_len
-          call piodie( __PIO_FILE__,__LINE__)
-       end if
-
-       call mpi_bcast(myfname, len(fname), mpi_character, 0, iosystem%comp_comm, ierr)
-    end if
-
-    file%iosystem => iosystem
-
-    !--------------------------------
-    ! set some iotype specific stuff
-    !--------------------------------
-
-#if defined(USEMPIIO) 
-    if ( (file%iotype==pio_iotype_pbinary .or. file%iotype==pio_iotype_direct_pbinary) &
-         .and. (.not. iosystem%userearranger) ) then
-       write(rd_buffer,('(i9)')) 16*1024*1024
-       call PIO_set_hint(iosystem, "cb_buffer_size",trim(adjustl(rd_buffer)))
-    endif
-#endif
-#ifdef PIO_LUSTRE_HINTS
-    write(stripestr,('(i3)')) min(iosystem%num_iotasks,iosystem%numOST)
-    call PIO_set_hint(iosystem,"striping_factor",trim(adjustl(stripestr)))
-    write(stripestr2,('(i9)')) 1024*1024
-    call PIO_set_hint(iosystem,"striping_unit",trim(adjustl(stripestr2)))
-#endif
-
-#ifndef _NETCDF4
-    if(file%iotype==pio_iotype_netcdf4p .or. file%iotype==pio_iotype_netcdf4c) then
-       print *, 'WARNING: PIO was not built with NETCDF 4 support changing iotype to netcdf'
-       file%iotype = pio_iotype_netcdf
-    end if
-#endif
-    if(iosystem%async_interface .and. .not. iosystem%ioproc) then
-       msg = PIO_MSG_CREATE_FILE
-       if(iosystem%comp_rank==0) then
-          call mpi_send(msg, 1, mpi_integer, iosystem%ioroot, 1, iosystem%union_comm, ierr)
-       end if
-
-       call mpi_bcast(myfname, char_len, mpi_character, iosystem%compmaster, iosystem%intercomm, ierr)
-       call mpi_bcast(iotype, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
-       call mpi_bcast(amode, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
-
-    end if
-    select case(iotype)
-    case(pio_iotype_pbinary, pio_iotype_direct_pbinary)
-       if(present(amode_in) .and. iosystem%io_rank==0) then
-          print *, 'warning, the mode argument is currently ignored for binary file operations'
-       end if
-       ierr = create_mpiio(file,myfname)
-    case( pio_iotype_pnetcdf, pio_iotype_netcdf, pio_iotype_netcdf4p, pio_iotype_netcdf4c)
-       if(debug) print *,__PIO_FILE__,__LINE__,' open: ', trim(myfname), amode
-       ierr = create_nf(file,trim(myfname), amode)	
-       if(debug .and. iosystem%io_rank==0)print *,__PIO_FILE__,__LINE__,' open: ', myfname, file%fh, ierr
-    case(pio_iotype_binary)
-       print *,'createfile: io type not supported'
-#ifdef _COMPRESSION
-    case(pio_iotype_vdc2)
-       restart=0
-       if(iosystem%io_rank==0) then
-          restart = 1
-          call createvdf(vdc_dims, vdc_bsize, vdc_ts, restart , F_C_String_dup(trim(fname)) )
-       else if(iosystem%io_rank>0) then
-          call createvdf(vdc_dims, vdc_bsize, vdc_ts, restart , F_C_String_dup(trim(fname)))
-       endif
-#endif
-    end select
-    if(ierr==0) file%file_is_open=.true.
-	
-    if(debug .and. file%iosystem%io_rank==0) print *,__PIO_FILE__,__LINE__,'open: ',file%fh, myfname
-
+    ierr = PIOc_CreateFile(iosystem%iosysid, file%fh, iotype, fname, amode_in)
 #ifdef TIMING
     call t_stopf("PIO_createfile")
 #endif
@@ -2565,118 +2377,41 @@ contains
 !! @retval ierr @copydoc error_return
 !<
   integer function PIO_openfile(iosystem, file, iotype, fname,mode, CheckMPI) result(ierr)
-#ifdef _COMPRESSION
-    use pio_types, only : pio_iotype_vdc2
-#endif
     type (iosystem_desc_t), intent(inout), target :: iosystem
     type (file_desc_t), intent(out) :: file
     integer, intent(in) :: iotype
     character(len=*), intent(in)  :: fname
     integer, optional, intent(in) :: mode
     logical, optional, intent(in) :: CheckMPI
-    ! ===================
-    !  local variables
-    ! ================
-    integer    :: amode, msg
-    logical, parameter :: check = .true.
-    character(len=9) :: rd_buffer
-    character(len=char_len) :: myfname
+
+    interface
+       integer(C_INT) function PIOc_OpenFile(iosysid, fh, iotype, fname,mode, CheckMPI) &
+         bind(C,NAME='PIOc_OpenFile')
+         use iso_c_binding
+         implicit none
+         integer(c_int), value :: iosysid
+         integer(c_int) :: fh
+         integer(c_int), value :: iotype
+         character(kind=c_char) :: fname
+         integer(c_int), value :: mode
+         logical(c_bool) :: CheckMPI
+       end function PIOc_OpenFile
+    end interface
+         
 
 #ifdef TIMING
     call t_startf("PIO_openfile")
 #endif
 
+    ierr = PIOc_OpenFile( iosystem%iosysid, file%fh, iotype, &
+         fname, mode, CheckMPI)
 
 
-    if(Debug .or. Debugasync) print *,'PIO_openfile: {comp,io}_rank:',iosystem%comp_rank,iosystem%io_rank,&
-         'io proc: ',iosystem%ioproc
-    ierr=PIO_noerr
-
-    file%iosystem => iosystem
-
-    if(present(mode)) then
-       amode = mode
-    else	
-       amode = 0
-    end if
-    !--------------------------------
-    ! set some iotype specific stuff
-    !--------------------------------
-
-    if(iosystem%num_iotasks.eq.1.and.iotype.eq.pio_iotype_pnetcdf) then	
-#if defined(_NETCDF)
-       file%iotype=pio_iotype_netcdf
-#else
-       file%iotype = iotype 
-#endif       
-    else
-       file%iotype = iotype 
-    end if
-
-
-    myfname = fname
-
-#if defined(USEMPIIO)
-    if ( (file%iotype==pio_iotype_pbinary .or. file%iotype==pio_iotype_direct_pbinary) &
-         .and. (.not. iosystem%userearranger) ) then
-       write(rd_buffer,('(i9)')) 16*1024*1024
-       call PIO_set_hint(iosystem, "cb_buffer_size",trim(adjustl(rd_buffer)))
-    endif
-#endif
-#ifndef _NETCDF4
-    if(file%iotype==pio_iotype_netcdf4p .or. file%iotype==pio_iotype_netcdf4c) then
-       print *, 'WARNING: PIO was not built with NETCDF 4 support changing iotype to netcdf'
-       file%iotype = pio_iotype_netcdf
-    end if
-#endif
-    if(.not. (iosystem%ioproc .and. iosystem%async_interface)) then
-       call mpi_bcast(amode, 1, MPI_INTEGER, 0, iosystem%comp_comm, ierr)
-       call mpi_bcast(file%iotype, 1, MPI_INTEGER, 0, iosystem%comp_comm, ierr)
-       if(len(fname) > char_len) then
-          print *,'Length of filename exceeds compile time max, increase char_len in pio_kinds and recompile'
-          call piodie( __PIO_FILE__,__LINE__)
-       end if
-
-       call mpi_bcast(myfname, len(fname), mpi_character, 0, iosystem%comp_comm, ierr)
-    end if
-
-    if(iosystem%async_interface .and. .not. iosystem%ioproc) then
-       msg = PIO_MSG_OPEN_FILE
-       if(iosystem%comp_rank==0) then
-          call mpi_send(msg, 1, mpi_integer, iosystem%ioroot, 1, iosystem%union_comm, ierr)
-       end if
-       
-       call mpi_bcast(myfname, char_len, mpi_character, iosystem%compmaster, iosystem%intercomm, ierr)
-       call mpi_bcast(iotype, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
-       call mpi_bcast(amode, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
-    end if
-
-    select case(iotype)
-    case(pio_iotype_pbinary, pio_iotype_direct_pbinary)
-       if(amode /=0) then
-          print *, 'warning, the mode argument is currently ignored for binary file operations'
-       end if
-       if (present(CheckMPI)) then
-         ierr = open_mpiio(file,myfname, CheckMPI)
-       else
-         ierr = open_mpiio(file,myfname)
-       end if
-    case( pio_iotype_pnetcdf, pio_iotype_netcdf, pio_iotype_netcdf4c, pio_iotype_netcdf4p)
-       ierr = open_nf(file,myfname,amode)
-       if(debug .and. iosystem%io_rank==0)print *,__PIO_FILE__,__LINE__,' open: ', myfname, file%fh
-    case(pio_iotype_binary)   ! appears to be a no-op
-#ifdef _COMPRESSION
-    case(pio_iotype_vdc2) !equivalent to calling create def without clobbering the file, arguments dont matter
-       if(iosystem%io_rank>=0) then
-          call createvdf(vdc_dims, vdc_bsize, vdc_ts, 0 , F_C_STRING_DUP(trim(myfname)))
-       end if
-#endif
-    end select
-    if(Debug .and. file%iosystem%io_rank==0) print *,__PIO_FILE__,__LINE__,'open: ',file%fh, myfname
-    if(ierr==0) file%file_is_open=.true.
 #ifdef TIMING
     call t_stopf("PIO_openfile")
 #endif
+
+    
 
   end function PIO_openfile
 

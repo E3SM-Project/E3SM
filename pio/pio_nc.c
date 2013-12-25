@@ -1,26 +1,24 @@
-#include <mpi.h>
 #include <pio.h>
-#ifdef _NETCDF
-#include <netcdf.h>
-#endif
-#ifdef _PNETCDF
-#include <pnetcdf.h>
-#endif
-int PIO_inq_att (struct file_desc_t *file, int varid, const char *name, nc_type *xtypep, PIO_Offset *lenp) 
+#include <pio_internal.h>
+int PIOc_inq_att (int ncid, int varid, const char *name, nc_type *xtypep, PIO_Offset *lenp) 
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_INQ_ATT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -34,7 +32,7 @@ int PIO_inq_att (struct file_desc_t *file, int varid, const char *name, nc_type 
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_inq_att(file->fh, varid, name, xtypep, (size_t *)lenp);;
       }
       break;
@@ -53,21 +51,25 @@ int PIO_inq_att (struct file_desc_t *file, int varid, const char *name, nc_type 
 
   return ierr;
 }
-int PIO_inq_format (struct file_desc_t *file, int *formatp) 
+int PIOc_inq_format (int ncid, int *formatp) 
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_INQ_FORMAT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -81,7 +83,7 @@ int PIO_inq_format (struct file_desc_t *file, int *formatp)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_inq_format(file->fh, formatp);;
       }
       break;
@@ -100,21 +102,25 @@ int PIO_inq_format (struct file_desc_t *file, int *formatp)
 
   return ierr;
 }
-int PIO_inq_varid (struct file_desc_t *file, const char *name, int *varidp) 
+int PIOc_inq_varid (int ncid, const char *name, int *varidp) 
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_INQ_VARID;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -128,7 +134,7 @@ int PIO_inq_varid (struct file_desc_t *file, const char *name, int *varidp)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_inq_varid(file->fh, name, varidp);;
       }
       break;
@@ -147,21 +153,25 @@ int PIO_inq_varid (struct file_desc_t *file, const char *name, int *varidp)
 
   return ierr;
 }
-int PIO_inq_varnatts (struct file_desc_t *file, int varid, int *nattsp) 
+int PIOc_inq_varnatts (int ncid, int varid, int *nattsp) 
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_INQ_VARNATTS;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -175,7 +185,7 @@ int PIO_inq_varnatts (struct file_desc_t *file, int varid, int *nattsp)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_inq_varnatts(file->fh, varid, nattsp);;
       }
       break;
@@ -194,21 +204,25 @@ int PIO_inq_varnatts (struct file_desc_t *file, int varid, int *nattsp)
 
   return ierr;
 }
-int PIO_def_var (struct file_desc_t *file, const char *name, nc_type xtype,  int ndims, const int *dimidsp, int *varidp) 
+int PIOc_def_var (int ncid, const char *name, nc_type xtype,  int ndims, const int *dimidsp, int *varidp) 
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_DEF_VAR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -222,7 +236,7 @@ int PIO_def_var (struct file_desc_t *file, const char *name, nc_type xtype,  int
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_def_var(file->fh, name, xtype, ndims, dimidsp, varidp);;
       }
       break;
@@ -241,21 +255,25 @@ int PIO_def_var (struct file_desc_t *file, const char *name, nc_type xtype,  int
 
   return ierr;
 }
-int PIO_inq_var (struct file_desc_t *file, int varid, char *name, nc_type *xtypep, int *ndimsp, int *dimidsp, int *nattsp) 
+int PIOc_inq_var (int ncid, int varid, char *name, nc_type *xtypep, int *ndimsp, int *dimidsp, int *nattsp) 
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_INQ_VAR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -269,7 +287,7 @@ int PIO_inq_var (struct file_desc_t *file, int varid, char *name, nc_type *xtype
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_inq_var(file->fh, varid, name, xtypep, ndimsp, dimidsp, nattsp);;
       }
       break;
@@ -288,21 +306,25 @@ int PIO_inq_var (struct file_desc_t *file, int varid, char *name, nc_type *xtype
 
   return ierr;
 }
-int PIO_inq_varname (struct file_desc_t *file, int varid, char *name) 
+int PIOc_inq_varname (int ncid, int varid, char *name) 
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_INQ_VARNAME;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -316,7 +338,7 @@ int PIO_inq_varname (struct file_desc_t *file, int varid, char *name)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_inq_varname(file->fh, varid, name);;
       }
       break;
@@ -335,21 +357,25 @@ int PIO_inq_varname (struct file_desc_t *file, int varid, char *name)
 
   return ierr;
 }
-int PIO_put_att_double (struct file_desc_t *file, int varid, const char *name, nc_type xtype, PIO_Offset len, const double *op) 
+int PIOc_put_att_double (int ncid, int varid, const char *name, nc_type xtype, PIO_Offset len, const double *op) 
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_PUT_ATT_DOUBLE;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -363,7 +389,7 @@ int PIO_put_att_double (struct file_desc_t *file, int varid, const char *name, n
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_put_att_double(file->fh, varid, name, xtype, (size_t)len, op);;
       }
       break;
@@ -382,21 +408,25 @@ int PIO_put_att_double (struct file_desc_t *file, int varid, const char *name, n
 
   return ierr;
 }
-int PIO_put_att_int (struct file_desc_t *file, int varid, const char *name, nc_type xtype, PIO_Offset len, const int *op) 
+int PIOc_put_att_int (int ncid, int varid, const char *name, nc_type xtype, PIO_Offset len, const int *op) 
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_PUT_ATT_INT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -410,7 +440,7 @@ int PIO_put_att_int (struct file_desc_t *file, int varid, const char *name, nc_t
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_put_att_int(file->fh, varid, name, xtype, (size_t)len, op);;
       }
       break;
@@ -429,21 +459,25 @@ int PIO_put_att_int (struct file_desc_t *file, int varid, const char *name, nc_t
 
   return ierr;
 }
-int PIO_rename_att (struct file_desc_t *file, int varid, const char *name, const char *newname) 
+int PIOc_rename_att (int ncid, int varid, const char *name, const char *newname) 
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_RENAME_ATT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -457,7 +491,7 @@ int PIO_rename_att (struct file_desc_t *file, int varid, const char *name, const
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_rename_att(file->fh, varid, name, newname);;
       }
       break;
@@ -476,21 +510,25 @@ int PIO_rename_att (struct file_desc_t *file, int varid, const char *name, const
 
   return ierr;
 }
-int PIO_del_att (struct file_desc_t *file, int varid, const char *name) 
+int PIOc_del_att (int ncid, int varid, const char *name) 
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_DEL_ATT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -504,7 +542,7 @@ int PIO_del_att (struct file_desc_t *file, int varid, const char *name)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_del_att(file->fh, varid, name);;
       }
       break;
@@ -523,21 +561,25 @@ int PIO_del_att (struct file_desc_t *file, int varid, const char *name)
 
   return ierr;
 }
-int PIO_inq_natts (struct file_desc_t *file, int *ngattsp) 
+int PIOc_inq_natts (int ncid, int *ngattsp) 
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_INQ_NATTS;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -551,7 +593,7 @@ int PIO_inq_natts (struct file_desc_t *file, int *ngattsp)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_inq_natts(file->fh, ngattsp);;
       }
       break;
@@ -570,21 +612,25 @@ int PIO_inq_natts (struct file_desc_t *file, int *ngattsp)
 
   return ierr;
 }
-int PIO_inq (struct file_desc_t *file, int *ndimsp, int *nvarsp, int *ngattsp, int *unlimdimidp)  
+int PIOc_inq (int ncid, int *ndimsp, int *nvarsp, int *ngattsp, int *unlimdimidp)  
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_INQ;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -598,7 +644,7 @@ int PIO_inq (struct file_desc_t *file, int *ndimsp, int *nvarsp, int *ngattsp, i
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_inq(file->fh, ndimsp, nvarsp, ngattsp, unlimdimidp);;
       }
       break;
@@ -617,21 +663,25 @@ int PIO_inq (struct file_desc_t *file, int *ndimsp, int *nvarsp, int *ngattsp, i
 
   return ierr;
 }
-int PIO_get_att_text (struct file_desc_t *file, int varid, const char *name, char *ip) 
+int PIOc_get_att_text (int ncid, int varid, const char *name, char *ip) 
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_GET_ATT_TEXT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -645,7 +695,7 @@ int PIO_get_att_text (struct file_desc_t *file, int varid, const char *name, cha
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_get_att_text(file->fh, varid, name, ip);;
       }
       break;
@@ -664,21 +714,25 @@ int PIO_get_att_text (struct file_desc_t *file, int varid, const char *name, cha
 
   return ierr;
 }
-int PIO_get_att_short (struct file_desc_t *file, int varid, const char *name, short *ip) 
+int PIOc_get_att_short (int ncid, int varid, const char *name, short *ip) 
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_GET_ATT_SHORT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -692,7 +746,7 @@ int PIO_get_att_short (struct file_desc_t *file, int varid, const char *name, sh
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_get_att_short(file->fh, varid, name, ip);;
       }
       break;
@@ -711,21 +765,25 @@ int PIO_get_att_short (struct file_desc_t *file, int varid, const char *name, sh
 
   return ierr;
 }
-int PIO_put_att_long (struct file_desc_t *file, int varid, const char *name, nc_type xtype, PIO_Offset len, const long *op) 
+int PIOc_put_att_long (int ncid, int varid, const char *name, nc_type xtype, PIO_Offset len, const long *op) 
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_PUT_ATT_LONG;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -739,7 +797,7 @@ int PIO_put_att_long (struct file_desc_t *file, int varid, const char *name, nc_
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_put_att_long(file->fh, varid, name, xtype, (size_t)len, op);;
       }
       break;
@@ -758,21 +816,25 @@ int PIO_put_att_long (struct file_desc_t *file, int varid, const char *name, nc_
 
   return ierr;
 }
-int PIO_redef (struct file_desc_t *file) 
+int PIOc_redef (int ncid) 
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_REDEF;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -786,7 +848,7 @@ int PIO_redef (struct file_desc_t *file)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_redef(file->fh);;
       }
       break;
@@ -805,21 +867,25 @@ int PIO_redef (struct file_desc_t *file)
 
   return ierr;
 }
-int PIO_set_fill (struct file_desc_t *file, int fillmode, int *old_modep) 
+int PIOc_set_fill (int ncid, int fillmode, int *old_modep) 
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_SET_FILL;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -833,7 +899,7 @@ int PIO_set_fill (struct file_desc_t *file, int fillmode, int *old_modep)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_set_fill(file->fh, fillmode, old_modep);;
       }
       break;
@@ -852,21 +918,25 @@ int PIO_set_fill (struct file_desc_t *file, int fillmode, int *old_modep)
 
   return ierr;
 }
-int PIO_enddef (struct file_desc_t *file) 
+int PIOc_enddef (int ncid) 
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_ENDDEF;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -880,7 +950,7 @@ int PIO_enddef (struct file_desc_t *file)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_enddef(file->fh);;
       }
       break;
@@ -899,21 +969,25 @@ int PIO_enddef (struct file_desc_t *file)
 
   return ierr;
 }
-int PIO_rename_var (struct file_desc_t *file, int varid, const char *name) 
+int PIOc_rename_var (int ncid, int varid, const char *name) 
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_RENAME_VAR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -927,7 +1001,7 @@ int PIO_rename_var (struct file_desc_t *file, int varid, const char *name)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_rename_var(file->fh, varid, name);;
       }
       break;
@@ -946,21 +1020,25 @@ int PIO_rename_var (struct file_desc_t *file, int varid, const char *name)
 
   return ierr;
 }
-int PIO_put_att_short (struct file_desc_t *file, int varid, const char *name, nc_type xtype, PIO_Offset len, const short *op) 
+int PIOc_put_att_short (int ncid, int varid, const char *name, nc_type xtype, PIO_Offset len, const short *op) 
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_PUT_ATT_SHORT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -974,7 +1052,7 @@ int PIO_put_att_short (struct file_desc_t *file, int varid, const char *name, nc
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_put_att_short(file->fh, varid, name, xtype, (size_t)len, op);;
       }
       break;
@@ -993,21 +1071,25 @@ int PIO_put_att_short (struct file_desc_t *file, int varid, const char *name, nc
 
   return ierr;
 }
-int PIO_put_att_text (struct file_desc_t *file, int varid, const char *name, PIO_Offset len, const char *op) 
+int PIOc_put_att_text (int ncid, int varid, const char *name, PIO_Offset len, const char *op) 
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_PUT_ATT_TEXT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -1021,7 +1103,7 @@ int PIO_put_att_text (struct file_desc_t *file, int varid, const char *name, PIO
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_put_att_text(file->fh, varid, name, (size_t)len, op);;
       }
       break;
@@ -1040,21 +1122,25 @@ int PIO_put_att_text (struct file_desc_t *file, int varid, const char *name, PIO
 
   return ierr;
 }
-int PIO_inq_attname (struct file_desc_t *file, int varid, int attnum, char *name) 
+int PIOc_inq_attname (int ncid, int varid, int attnum, char *name) 
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_INQ_ATTNAME;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -1068,7 +1154,7 @@ int PIO_inq_attname (struct file_desc_t *file, int varid, int attnum, char *name
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_inq_attname(file->fh, varid, attnum, name);;
       }
       break;
@@ -1087,21 +1173,25 @@ int PIO_inq_attname (struct file_desc_t *file, int varid, int attnum, char *name
 
   return ierr;
 }
-int PIO_get_att_ulonglong (struct file_desc_t *file, int varid, const char *name, unsigned long long *ip) 
+int PIOc_get_att_ulonglong (int ncid, int varid, const char *name, unsigned long long *ip) 
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_GET_ATT_ULONGLONG;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -1115,7 +1205,7 @@ int PIO_get_att_ulonglong (struct file_desc_t *file, int varid, const char *name
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_get_att_ulonglong(file->fh, varid, name, ip);;
       }
       break;
@@ -1134,21 +1224,25 @@ int PIO_get_att_ulonglong (struct file_desc_t *file, int varid, const char *name
 
   return ierr;
 }
-int PIO_get_att_ushort (struct file_desc_t *file, int varid, const char *name, unsigned short *ip) 
+int PIOc_get_att_ushort (int ncid, int varid, const char *name, unsigned short *ip) 
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_GET_ATT_USHORT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -1162,7 +1256,7 @@ int PIO_get_att_ushort (struct file_desc_t *file, int varid, const char *name, u
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_get_att_ushort(file->fh, varid, name, ip);;
       }
       break;
@@ -1181,21 +1275,25 @@ int PIO_get_att_ushort (struct file_desc_t *file, int varid, const char *name, u
 
   return ierr;
 }
-int PIO_put_att_ulonglong (struct file_desc_t *file, int varid, const char *name, nc_type xtype, PIO_Offset len, const unsigned long long *op) 
+int PIOc_put_att_ulonglong (int ncid, int varid, const char *name, nc_type xtype, PIO_Offset len, const unsigned long long *op) 
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_PUT_ATT_ULONGLONG;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -1209,7 +1307,7 @@ int PIO_put_att_ulonglong (struct file_desc_t *file, int varid, const char *name
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_put_att_ulonglong(file->fh, varid, name, xtype, (size_t)len, op);;
       }
       break;
@@ -1228,21 +1326,25 @@ int PIO_put_att_ulonglong (struct file_desc_t *file, int varid, const char *name
 
   return ierr;
 }
-int PIO_inq_dimlen (struct file_desc_t *file, int dimid, PIO_Offset *lenp) 
+int PIOc_inq_dimlen (int ncid, int dimid, PIO_Offset *lenp) 
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_INQ_DIMLEN;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -1256,7 +1358,7 @@ int PIO_inq_dimlen (struct file_desc_t *file, int dimid, PIO_Offset *lenp)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_inq_dimlen(file->fh, dimid, (size_t *)lenp);;
       }
       break;
@@ -1275,21 +1377,25 @@ int PIO_inq_dimlen (struct file_desc_t *file, int dimid, PIO_Offset *lenp)
 
   return ierr;
 }
-int PIO_get_att_uint (struct file_desc_t *file, int varid, const char *name, unsigned int *ip) 
+int PIOc_get_att_uint (int ncid, int varid, const char *name, unsigned int *ip) 
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_GET_ATT_UINT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -1303,7 +1409,7 @@ int PIO_get_att_uint (struct file_desc_t *file, int varid, const char *name, uns
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_get_att_uint(file->fh, varid, name, ip);;
       }
       break;
@@ -1322,21 +1428,25 @@ int PIO_get_att_uint (struct file_desc_t *file, int varid, const char *name, uns
 
   return ierr;
 }
-int PIO_get_att_longlong (struct file_desc_t *file, int varid, const char *name, long long *ip) 
+int PIOc_get_att_longlong (int ncid, int varid, const char *name, long long *ip) 
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_GET_ATT_LONGLONG;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -1350,7 +1460,7 @@ int PIO_get_att_longlong (struct file_desc_t *file, int varid, const char *name,
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_get_att_longlong(file->fh, varid, name, ip);;
       }
       break;
@@ -1369,21 +1479,25 @@ int PIO_get_att_longlong (struct file_desc_t *file, int varid, const char *name,
 
   return ierr;
 }
-int PIO_put_att_schar (struct file_desc_t *file, int varid, const char *name, nc_type xtype, PIO_Offset len, const signed char *op) 
+int PIOc_put_att_schar (int ncid, int varid, const char *name, nc_type xtype, PIO_Offset len, const signed char *op) 
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_PUT_ATT_SCHAR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -1397,7 +1511,7 @@ int PIO_put_att_schar (struct file_desc_t *file, int varid, const char *name, nc
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_put_att_schar(file->fh, varid, name, xtype, (size_t)len, op);;
       }
       break;
@@ -1416,21 +1530,25 @@ int PIO_put_att_schar (struct file_desc_t *file, int varid, const char *name, nc
 
   return ierr;
 }
-int PIO_put_att_float (struct file_desc_t *file, int varid, const char *name, nc_type xtype, PIO_Offset len, const float *op) 
+int PIOc_put_att_float (int ncid, int varid, const char *name, nc_type xtype, PIO_Offset len, const float *op) 
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_PUT_ATT_FLOAT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -1444,7 +1562,7 @@ int PIO_put_att_float (struct file_desc_t *file, int varid, const char *name, nc
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_put_att_float(file->fh, varid, name, xtype, (size_t)len, op);;
       }
       break;
@@ -1463,21 +1581,25 @@ int PIO_put_att_float (struct file_desc_t *file, int varid, const char *name, nc
 
   return ierr;
 }
-int PIO_inq_nvars (struct file_desc_t *file, int *nvarsp) 
+int PIOc_inq_nvars (int ncid, int *nvarsp) 
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_INQ_NVARS;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -1491,7 +1613,7 @@ int PIO_inq_nvars (struct file_desc_t *file, int *nvarsp)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_inq_nvars(file->fh, nvarsp);;
       }
       break;
@@ -1510,21 +1632,25 @@ int PIO_inq_nvars (struct file_desc_t *file, int *nvarsp)
 
   return ierr;
 }
-int PIO_rename_dim (struct file_desc_t *file, int dimid, const char *name) 
+int PIOc_rename_dim (int ncid, int dimid, const char *name) 
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_RENAME_DIM;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -1538,7 +1664,7 @@ int PIO_rename_dim (struct file_desc_t *file, int dimid, const char *name)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_rename_dim(file->fh, dimid, name);;
       }
       break;
@@ -1557,21 +1683,25 @@ int PIO_rename_dim (struct file_desc_t *file, int dimid, const char *name)
 
   return ierr;
 }
-int PIO_inq_varndims (struct file_desc_t *file, int varid, int *ndimsp) 
+int PIOc_inq_varndims (int ncid, int varid, int *ndimsp) 
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_INQ_VARNDIMS;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -1585,7 +1715,7 @@ int PIO_inq_varndims (struct file_desc_t *file, int varid, int *ndimsp)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_inq_varndims(file->fh, varid, ndimsp);;
       }
       break;
@@ -1604,21 +1734,25 @@ int PIO_inq_varndims (struct file_desc_t *file, int varid, int *ndimsp)
 
   return ierr;
 }
-int PIO_get_att_long (struct file_desc_t *file, int varid, const char *name, long *ip) 
+int PIOc_get_att_long (int ncid, int varid, const char *name, long *ip) 
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_GET_ATT_LONG;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -1632,7 +1766,7 @@ int PIO_get_att_long (struct file_desc_t *file, int varid, const char *name, lon
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_get_att_long(file->fh, varid, name, ip);;
       }
       break;
@@ -1651,21 +1785,25 @@ int PIO_get_att_long (struct file_desc_t *file, int varid, const char *name, lon
 
   return ierr;
 }
-int PIO_inq_dim (struct file_desc_t *file, int dimid, char *name, PIO_Offset *lenp) 
+int PIOc_inq_dim (int ncid, int dimid, char *name, PIO_Offset *lenp) 
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_INQ_DIM;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -1679,7 +1817,7 @@ int PIO_inq_dim (struct file_desc_t *file, int dimid, char *name, PIO_Offset *le
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_inq_dim(file->fh, dimid, name, (size_t *)lenp);;
       }
       break;
@@ -1698,21 +1836,25 @@ int PIO_inq_dim (struct file_desc_t *file, int dimid, char *name, PIO_Offset *le
 
   return ierr;
 }
-int PIO_inq_dimid (struct file_desc_t *file, const char *name, int *idp) 
+int PIOc_inq_dimid (int ncid, const char *name, int *idp) 
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_INQ_DIMID;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -1726,7 +1868,7 @@ int PIO_inq_dimid (struct file_desc_t *file, const char *name, int *idp)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_inq_dimid(file->fh, name, idp);;
       }
       break;
@@ -1745,21 +1887,25 @@ int PIO_inq_dimid (struct file_desc_t *file, const char *name, int *idp)
 
   return ierr;
 }
-int PIO_inq_unlimdim (struct file_desc_t *file, int *unlimdimidp) 
+int PIOc_inq_unlimdim (int ncid, int *unlimdimidp) 
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_INQ_UNLIMDIM;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -1773,7 +1919,7 @@ int PIO_inq_unlimdim (struct file_desc_t *file, int *unlimdimidp)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_inq_unlimdim(file->fh, unlimdimidp);;
       }
       break;
@@ -1792,21 +1938,25 @@ int PIO_inq_unlimdim (struct file_desc_t *file, int *unlimdimidp)
 
   return ierr;
 }
-int PIO_inq_vardimid (struct file_desc_t *file, int varid, int *dimidsp) 
+int PIOc_inq_vardimid (int ncid, int varid, int *dimidsp) 
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_INQ_VARDIMID;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -1820,7 +1970,7 @@ int PIO_inq_vardimid (struct file_desc_t *file, int varid, int *dimidsp)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_inq_vardimid(file->fh, varid, dimidsp);;
       }
       break;
@@ -1839,21 +1989,25 @@ int PIO_inq_vardimid (struct file_desc_t *file, int varid, int *dimidsp)
 
   return ierr;
 }
-int PIO_inq_attlen (struct file_desc_t *file, int varid, const char *name, PIO_Offset *lenp) 
+int PIOc_inq_attlen (int ncid, int varid, const char *name, PIO_Offset *lenp) 
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_INQ_ATTLEN;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -1867,7 +2021,7 @@ int PIO_inq_attlen (struct file_desc_t *file, int varid, const char *name, PIO_O
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_inq_attlen(file->fh, varid, name, (size_t *)lenp);;
       }
       break;
@@ -1886,21 +2040,25 @@ int PIO_inq_attlen (struct file_desc_t *file, int varid, const char *name, PIO_O
 
   return ierr;
 }
-int PIO_inq_dimname (struct file_desc_t *file, int dimid, char *name) 
+int PIOc_inq_dimname (int ncid, int dimid, char *name) 
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_INQ_DIMNAME;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -1914,7 +2072,7 @@ int PIO_inq_dimname (struct file_desc_t *file, int dimid, char *name)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_inq_dimname(file->fh, dimid, name);;
       }
       break;
@@ -1933,21 +2091,25 @@ int PIO_inq_dimname (struct file_desc_t *file, int dimid, char *name)
 
   return ierr;
 }
-int PIO_put_att_ushort (struct file_desc_t *file, int varid, const char *name, nc_type xtype, PIO_Offset len, const unsigned short *op) 
+int PIOc_put_att_ushort (int ncid, int varid, const char *name, nc_type xtype, PIO_Offset len, const unsigned short *op) 
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_PUT_ATT_USHORT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -1961,7 +2123,7 @@ int PIO_put_att_ushort (struct file_desc_t *file, int varid, const char *name, n
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_put_att_ushort(file->fh, varid, name, xtype, (size_t)len, op);;
       }
       break;
@@ -1980,21 +2142,25 @@ int PIO_put_att_ushort (struct file_desc_t *file, int varid, const char *name, n
 
   return ierr;
 }
-int PIO_get_att_float (struct file_desc_t *file, int varid, const char *name, float *ip) 
+int PIOc_get_att_float (int ncid, int varid, const char *name, float *ip) 
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_GET_ATT_FLOAT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -2008,7 +2174,7 @@ int PIO_get_att_float (struct file_desc_t *file, int varid, const char *name, fl
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_get_att_float(file->fh, varid, name, ip);;
       }
       break;
@@ -2027,21 +2193,25 @@ int PIO_get_att_float (struct file_desc_t *file, int varid, const char *name, fl
 
   return ierr;
 }
-int PIO_sync (struct file_desc_t *file) 
+int PIOc_sync (int ncid) 
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_SYNC;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -2055,7 +2225,7 @@ int PIO_sync (struct file_desc_t *file)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_sync(file->fh);;
       }
       break;
@@ -2074,21 +2244,25 @@ int PIO_sync (struct file_desc_t *file)
 
   return ierr;
 }
-int PIO_put_att_longlong (struct file_desc_t *file, int varid, const char *name, nc_type xtype, PIO_Offset len, const long long *op) 
+int PIOc_put_att_longlong (int ncid, int varid, const char *name, nc_type xtype, PIO_Offset len, const long long *op) 
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_PUT_ATT_LONGLONG;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -2102,7 +2276,7 @@ int PIO_put_att_longlong (struct file_desc_t *file, int varid, const char *name,
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_put_att_longlong(file->fh, varid, name, xtype, (size_t)len, op);;
       }
       break;
@@ -2121,21 +2295,25 @@ int PIO_put_att_longlong (struct file_desc_t *file, int varid, const char *name,
 
   return ierr;
 }
-int PIO_put_att_uint (struct file_desc_t *file, int varid, const char *name, nc_type xtype, PIO_Offset len, const unsigned int *op) 
+int PIOc_put_att_uint (int ncid, int varid, const char *name, nc_type xtype, PIO_Offset len, const unsigned int *op) 
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_PUT_ATT_UINT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -2149,7 +2327,7 @@ int PIO_put_att_uint (struct file_desc_t *file, int varid, const char *name, nc_
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_put_att_uint(file->fh, varid, name, xtype, (size_t)len, op);;
       }
       break;
@@ -2168,21 +2346,25 @@ int PIO_put_att_uint (struct file_desc_t *file, int varid, const char *name, nc_
 
   return ierr;
 }
-int PIO_get_att_schar (struct file_desc_t *file, int varid, const char *name, signed char *ip) 
+int PIOc_get_att_schar (int ncid, int varid, const char *name, signed char *ip) 
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_GET_ATT_SCHAR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -2196,7 +2378,7 @@ int PIO_get_att_schar (struct file_desc_t *file, int varid, const char *name, si
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_get_att_schar(file->fh, varid, name, ip);;
       }
       break;
@@ -2215,21 +2397,25 @@ int PIO_get_att_schar (struct file_desc_t *file, int varid, const char *name, si
 
   return ierr;
 }
-int PIO_inq_attid (struct file_desc_t *file, int varid, const char *name, int *idp) 
+int PIOc_inq_attid (int ncid, int varid, const char *name, int *idp) 
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_INQ_ATTID;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -2243,7 +2429,7 @@ int PIO_inq_attid (struct file_desc_t *file, int varid, const char *name, int *i
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_inq_attid(file->fh, varid, name, idp);;
       }
       break;
@@ -2262,21 +2448,25 @@ int PIO_inq_attid (struct file_desc_t *file, int varid, const char *name, int *i
 
   return ierr;
 }
-int PIO_def_dim (struct file_desc_t *file, const char *name, PIO_Offset len, int *idp) 
+int PIOc_def_dim (int ncid, const char *name, PIO_Offset len, int *idp) 
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_DEF_DIM;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -2290,7 +2480,7 @@ int PIO_def_dim (struct file_desc_t *file, const char *name, PIO_Offset len, int
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_def_dim(file->fh, name, (size_t)len, idp);;
       }
       break;
@@ -2309,21 +2499,25 @@ int PIO_def_dim (struct file_desc_t *file, const char *name, PIO_Offset len, int
 
   return ierr;
 }
-int PIO_inq_ndims (struct file_desc_t *file, int *ndimsp) 
+int PIOc_inq_ndims (int ncid, int *ndimsp) 
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_INQ_NDIMS;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -2337,7 +2531,7 @@ int PIO_inq_ndims (struct file_desc_t *file, int *ndimsp)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_inq_ndims(file->fh, ndimsp);;
       }
       break;
@@ -2356,21 +2550,25 @@ int PIO_inq_ndims (struct file_desc_t *file, int *ndimsp)
 
   return ierr;
 }
-int PIO_inq_vartype (struct file_desc_t *file, int varid, nc_type *xtypep) 
+int PIOc_inq_vartype (int ncid, int varid, nc_type *xtypep) 
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_INQ_VARTYPE;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -2384,7 +2582,7 @@ int PIO_inq_vartype (struct file_desc_t *file, int varid, nc_type *xtypep)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_inq_vartype(file->fh, varid, xtypep);;
       }
       break;
@@ -2403,21 +2601,25 @@ int PIO_inq_vartype (struct file_desc_t *file, int varid, nc_type *xtypep)
 
   return ierr;
 }
-int PIO_get_att_int (struct file_desc_t *file, int varid, const char *name, int *ip) 
+int PIOc_get_att_int (int ncid, int varid, const char *name, int *ip) 
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_GET_ATT_INT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -2431,7 +2633,7 @@ int PIO_get_att_int (struct file_desc_t *file, int varid, const char *name, int 
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_get_att_int(file->fh, varid, name, ip);;
       }
       break;
@@ -2450,21 +2652,25 @@ int PIO_get_att_int (struct file_desc_t *file, int varid, const char *name, int 
 
   return ierr;
 }
-int PIO_get_att_double (struct file_desc_t *file, int varid, const char *name, double *ip) 
+int PIOc_get_att_double (int ncid, int varid, const char *name, double *ip) 
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_GET_ATT_DOUBLE;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -2478,7 +2684,7 @@ int PIO_get_att_double (struct file_desc_t *file, int varid, const char *name, d
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_get_att_double(file->fh, varid, name, ip);;
       }
       break;
@@ -2497,21 +2703,25 @@ int PIO_get_att_double (struct file_desc_t *file, int varid, const char *name, d
 
   return ierr;
 }
-int PIO_inq_atttype (struct file_desc_t *file, int varid, const char *name, nc_type *xtypep) 
+int PIOc_inq_atttype (int ncid, int varid, const char *name, nc_type *xtypep) 
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_INQ_ATTTYPE;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -2525,7 +2735,7 @@ int PIO_inq_atttype (struct file_desc_t *file, int varid, const char *name, nc_t
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_inq_atttype(file->fh, varid, name, xtypep);;
       }
       break;
@@ -2544,21 +2754,25 @@ int PIO_inq_atttype (struct file_desc_t *file, int varid, const char *name, nc_t
 
   return ierr;
 }
-int PIO_put_att_uchar (struct file_desc_t *file, int varid, const char *name, nc_type xtype, PIO_Offset len, const unsigned char *op) 
+int PIOc_put_att_uchar (int ncid, int varid, const char *name, nc_type xtype, PIO_Offset len, const unsigned char *op) 
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_PUT_ATT_UCHAR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -2572,7 +2786,7 @@ int PIO_put_att_uchar (struct file_desc_t *file, int varid, const char *name, nc
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_put_att_uchar(file->fh, varid, name, xtype, (size_t)len, op);;
       }
       break;
@@ -2591,21 +2805,25 @@ int PIO_put_att_uchar (struct file_desc_t *file, int varid, const char *name, nc
 
   return ierr;
 }
-int PIO_get_att_uchar (struct file_desc_t *file, int varid, const char *name, unsigned char *ip) 
+int PIOc_get_att_uchar (int ncid, int varid, const char *name, unsigned char *ip) 
 {
   int ierr;
   int msg;
   int mpierr;
-  struct iosystem_desc_t *ios;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
   ierr = PIO_NOERR;
 
+  file = pio_get_file_from_id(ncid);
+
   ios = file->iosystem;
-  msg = 0;
+  msg = PIO_MSG_GET_ATT_UCHAR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
-      mpierr = mpi_send(msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = mpi_bcast(file->fh,1, MPI_INT, ios->compmaster, ios->intercomm);
+    if(ios->compmaster) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
 
@@ -2619,7 +2837,7 @@ int PIO_get_att_uchar (struct file_desc_t *file, int varid, const char *name, un
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->io_rank==0){
+      if(ios->iomaster){
 	ierr = nc_get_att_uchar(file->fh, varid, name, ip);;
       }
       break;

@@ -61,20 +61,12 @@ foreach my $line (@nfmod){
     }
 
 }
-
+  
 
 
 open(F,">pio_nc.c");
-print F "#include <mpi.h>\n";
-print F "#include <pio.h>\n";
-print F "#ifdef _NETCDF
-#include <netcdf.h>
-#endif\n";
-print F "#ifdef _PNETCDF
-#include <pnetcdf.h>
-#endif\n";
-
-
+print F "#include <pio.h>
+#include <pio_internal.h>\n";
 print "$functions->{inq}{pnetcdf}\n";
 print "$functions->{inq}{netcdf}\n";
 #print "$functions->{inquire}{pio}\n";
@@ -104,47 +96,53 @@ foreach my $func (keys %{$functions}){
   if(defined ($functions->{$func}{pnetcdf}) && defined($functions->{$func}{netcdf})){
 #      && defined($functions->{$func}{pio})){
 
-    foreach my $line (@tmptmp){
-      if($line =~/function/){
-	  if($line =~ s/PIO_function/PIO_$func/){
-	      $line =~ s/\(\)/ $functions->{$func}{pnetcdf} / ; 
-	      $line =~ s/int ncid/struct file_desc_t *file/;
-	      $line =~ s/MPI_Offset/PIO_Offset/g;
-	      $line =~ s/\;//;
-	  }else{
-	      my $args;
-	      if($line =~ s/ncmpi_function/ncmpi_$func/){
-		  $args = $functions->{$func}{pnetcdf} ;
-	      }
-	      if($line =~ s/nc_function/nc_$func/){
-		  $args = $functions->{$func}{netcdf}  ; 
-	      }
-	      $args =~ s/int ncid/file->fh/;
-#      $args =~ s/int varid/vdesc->varid/;
-	      $args =~ s/const //g;
-	      $args =~ s/unsigned //g;
-	      $args =~ s/signed //g;
-	      $args =~ s/char //g;
-	      $args =~ s/nc_type //g;
-	      $args =~ s/MPI_Offset //g;
-	      $args =~ s/int //g;
-	      $args =~ s/short //g;
-	      $args =~ s/long //g;
-	      $args =~ s/float //g;
-	      $args =~ s/double //g;
-	      $args =~ s/void//g;
-	      $args =~ s/MPI_Info //g;
-	      $args =~ s/,\s+\*/, /g;
-	      if($args =~ s/size_t \*/\(size_t \*\)/g){
-	      }else{
-		  $args =~ s/size_t /\(size_t\)/g;
-	      }
-	      
-	      $line =~ s/\(\)/$args/;
+      foreach my $line (@tmptmp){
+	  if($line =~ /msg = 0/){
+	      my $msg = "PIO_MSG_".$func;
+	      $msg =~ tr/a-z/A-Z/;
+	      $line =~ s/msg = 0/msg = $msg/;
+#	      print "  $msg,\n";
 	  }
+	  if($line =~/function/){
+	      if($line =~ s/PIO_function/PIOc_$func/){
+		  $line =~ s/\(\)/ $functions->{$func}{pnetcdf} / ; 
+#	      $line =~ s/int ncid/file_desc_t *file/;
+		  $line =~ s/MPI_Offset/PIO_Offset/g;
+		  $line =~ s/\;//;
+	      }else{
+		  my $args;
+		  if($line =~ s/ncmpi_function/ncmpi_$func/){
+		      $args = $functions->{$func}{pnetcdf} ;
+		  }
+		  if($line =~ s/nc_function/nc_$func/){
+		      $args = $functions->{$func}{netcdf}  ; 
+		  }
+		  $args =~ s/int ncid/file->fh/;
+#      $args =~ s/int varid/vdesc->varid/;
+		  $args =~ s/const //g;
+		  $args =~ s/unsigned //g;
+		  $args =~ s/signed //g;
+		  $args =~ s/char //g;
+		  $args =~ s/nc_type //g;
+		  $args =~ s/MPI_Offset //g;
+		  $args =~ s/int //g;
+		  $args =~ s/short //g;
+		  $args =~ s/long //g;
+		  $args =~ s/float //g;
+		  $args =~ s/double //g;
+		  $args =~ s/void//g;
+		  $args =~ s/MPI_Info //g;
+		  $args =~ s/,\s+\*/, /g;
+		  if($args =~ s/size_t \*/\(size_t \*\)/g){
+		  }else{
+		      $args =~ s/size_t /\(size_t\)/g;
+		  }
+		  
+		  $line =~ s/\(\)/$args/;
+	      }
+	  }
+	  print F $line;
       }
-      print F $line;
-    }
     
 #    print "$func  $functions->{$func}{pnetcdf} $functions->{$func}{netcdf}\n";
   }

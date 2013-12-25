@@ -8,7 +8,7 @@
 !<
 module pio_types
     use pio_kinds
-
+    use iso_c_binding
 #ifdef _NETCDF
      use netcdf                                  ! _EXTERNAL
 #endif
@@ -34,7 +34,6 @@ module pio_types
         integer(i4) :: length
     end type
 
-
     !------------------------------------
     !  a file descriptor data structure
     !------------------------------------
@@ -47,6 +46,7 @@ module pio_types
 #ifdef SEQUENCE
 	sequence
 #endif
+        integer(kind=c_int) :: iosysid
         
         integer(i4)              :: union_comm=MPI_COMM_NULL ! The intracomm union of comp and io communicators (for async only)
         integer(i4)              :: IO_comm=MPI_COMM_NULL            ! The IO communicator
@@ -113,11 +113,11 @@ module pio_types
 !! 
 !>
     type, public :: File_desc_t
+       integer(kind=c_int) :: fh
        type(iosystem_desc_t), pointer :: iosystem => null()
        type(io_data_list), pointer :: data_list_top  => null()  ! used for non-blocking pnetcdf calls
        integer :: buffsize=0
        integer :: request_cnt=0
-       integer(i4) :: fh
        integer(kind=PIO_OFFSET) :: offset             ! offset into file
        integer(i4)              :: iotype             ! Type of IO to perform see parameter statement below     
        logical                  :: file_is_open = .false.
