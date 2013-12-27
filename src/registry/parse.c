@@ -86,6 +86,7 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 	ezxml_t dims_xml, dim_xml;
 	ezxml_t structs_xml, var_arr_xml, var_xml;
 	ezxml_t nmlrecs_xml, nmlopt_xml;
+	ezxml_t streams_xml, stream_xml;
 
 	const char *dimname, *dimunits, *dimdesc, *dimdef;
 	const char *nmlrecname, *nmlrecindef;
@@ -95,6 +96,8 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 	const char *varname, *varpersistence, *vartype, *vardims, *varunits, *vardesc, *vararrgroup, *varstreams, *varpackages;
 	const char *varname_in_code;
 	const char *const_model, *const_core, *const_version;
+	const char *streamname;
+	const char *streamtype;
 
 	char *string, *err_string;
 	char name_holder[1024];
@@ -115,6 +118,31 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 
 	if(const_version == NULL)
 		fprintf(stderr,"Warning: Version attribute missing in registry declaration.\n");
+
+	// Validate default streams
+	for (streams_xml = ezxml_child(registry, "streams"); streams_xml; streams_xml = streams_xml->next) {
+		for (stream_xml = ezxml_child(streams_xml, "stream"); stream_xml; stream_xml = stream_xml->next) {
+			streamname = ezxml_attr(stream_xml, "name");
+			streamtype = ezxml_attr(stream_xml, "type");
+			if (streamname == NULL) {
+				fprintf(stderr,"ERROR: Stream specification missing \"name\" attribute.\n");
+				return 1;
+			}
+			else if (streamtype == NULL) {
+				fprintf(stderr,"ERROR: Stream specification missing \"type\" attribute.\n");
+				return 1;
+			}
+			else {
+				for (var_xml = ezxml_child(stream_xml, "var"); var_xml; var_xml = var_xml->next) {
+					varname = ezxml_attr(var_xml, "name");
+					if (varname == NULL) {
+						fprintf(stderr,"ERROR: Variable field in stream \"%s\" specification missing \"name\" attribute.\n", streamname);
+						return 1;
+					}
+				}
+			}
+		}
+	}
 
 	// Validate Namelist Records
 	for (nmlrecs_xml = ezxml_child(registry, "nml_record"); nmlrecs_xml; nmlrecs_xml = nmlrecs_xml->next){
@@ -308,7 +336,9 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 				varname = ezxml_attr(var_xml, "name");
 				varunits = ezxml_attr(var_xml, "units");
 				vardesc = ezxml_attr(var_xml, "description");
+#ifdef OLD_STREAMS
 				varstreams = ezxml_attr(var_xml, "streams");
+#endif
 				vararrgroup = ezxml_attr(var_xml, "array_group");
 				varname_in_code = ezxml_attr(var_xml, "name_in_code");
 				varpackages = ezxml_attr(var_xml, "packages");
@@ -323,6 +353,7 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 					return 1;
 				}
 
+#ifdef OLD_STREAMS
 				if (varstreams != NULL) {
 					string = strdup(varstreams);
 					err_string = check_streams(string);
@@ -332,6 +363,7 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 						return 1;
 					}
 				}
+#endif
 
 				if (persistence == SCRATCH && vararrpackages != NULL) {
 					fprintf(stderr, "ERROR: Packages attribute not allowed on constituent variable %s within scratch var_srray %s in var_struct %s.\n", varname, vararrname, structname);
@@ -359,7 +391,9 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 			vardims = ezxml_attr(var_xml, "dimensions");
 			varunits = ezxml_attr(var_xml, "units");
 			vardesc = ezxml_attr(var_xml, "description");
+#ifdef OLD_STREAMS
 			varstreams = ezxml_attr(var_xml, "streams");
+#endif
 			varname_in_code = ezxml_attr(var_xml, "name_in_code");
 			varpackages = ezxml_attr(var_xml, "packages");
 
@@ -421,6 +455,7 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 			}
 
 
+#ifdef OLD_STREAMS
 			if (varstreams != NULL) {
 				string = strdup(varstreams);
 				err_string = check_streams(string);
@@ -430,6 +465,7 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 					return 1;
 				}
 			}
+#endif
 		}
 	}
 
@@ -452,6 +488,7 @@ int parse_reg_xml(ezxml_t registry, struct namelist **nls, struct dimension ** d
 	ezxml_t structs_xml, var_arr_xml, var_xml;
 	ezxml_t nmlrecs_xml, nmlopt_xml;
 	ezxml_t packages_xml, package_xml;
+	ezxml_t streams_xml, stream_xml;
 
 	const char *dimname, *dimunits, *dimdesc, *dimdef;
 	const char *nmlrecname, *nmlrecindef;
@@ -462,11 +499,14 @@ int parse_reg_xml(ezxml_t registry, struct namelist **nls, struct dimension ** d
 	const char *packagename, *packagedesc;
 	const char *varname_in_code;
 	const char *const_model, *const_core, *const_version;
+	const char *streamname;
 
 	char dimensions[2048];
 	char *dimension_list;
 	char dimension_buffer[128];
+#ifdef OLD_STREAMS
 	char streams_buffer[128];
+#endif
 	char default_value[1024];
 
 	char *string, *tofree, *token;
@@ -671,7 +711,9 @@ int parse_reg_xml(ezxml_t registry, struct namelist **nls, struct dimension ** d
 				varname = ezxml_attr(var_xml, "name");
 				varunits = ezxml_attr(var_xml, "units");
 				vardesc = ezxml_attr(var_xml, "description");
+#ifdef OLD_STREAMS
 				varstreams = ezxml_attr(var_xml, "streams");
+#endif
 				vararrgroup = ezxml_attr(var_xml, "array_group");
 				varname_in_code = ezxml_attr(var_xml, "name_in_code");
 				varpackages = ezxml_attr(var_xml, "packages");
@@ -776,6 +818,7 @@ int parse_reg_xml(ezxml_t registry, struct namelist **nls, struct dimension ** d
 				if(var_ptr->dimlist) var_ptr->dimlist = var_ptr->dimlist->next;
 				free(dimlist_ptr);
 
+#ifdef OLD_STREAMS
 				if(varstreams != NULL){
 					snprintf(streams_buffer, 128, "%s", varstreams);
 					if(strchr(streams_buffer, (int)'i')) var_ptr->iostreams |= INPUT0;
@@ -783,6 +826,7 @@ int parse_reg_xml(ezxml_t registry, struct namelist **nls, struct dimension ** d
 					if(strchr(streams_buffer, (int)'r')) var_ptr->iostreams |= RESTART0;
 					if(strchr(streams_buffer, (int)'o')) var_ptr->iostreams |= OUTPUT0;
 				}
+#endif
 
 				if(varname_in_code == NULL){
 					snprintf(var_ptr->name_in_code, 1024, "%s", varname);
@@ -812,7 +856,9 @@ int parse_reg_xml(ezxml_t registry, struct namelist **nls, struct dimension ** d
 			vardims = ezxml_attr(var_xml, "dimensions");
 			varunits = ezxml_attr(var_xml, "units");
 			vardesc = ezxml_attr(var_xml, "description");
+#ifdef OLD_STREAMS
 			varstreams = ezxml_attr(var_xml, "streams");
+#endif
 			varname_in_code = ezxml_attr(var_xml, "name_in_code");
 			vardefaultval = ezxml_attr(var_xml, "default_value");
 			varpackages = ezxml_attr(var_xml, "packages");
@@ -913,6 +959,7 @@ int parse_reg_xml(ezxml_t registry, struct namelist **nls, struct dimension ** d
 			if(var_ptr->dimlist) var_ptr->dimlist = var_ptr->dimlist->next;
 			free(dimlist_ptr);
 
+#ifdef OLD_STREAMS
 			if(varstreams != NULL){
 				snprintf(streams_buffer, 128, "%s", varstreams);
 				if(strchr(streams_buffer, (int)'i')) {
@@ -928,6 +975,7 @@ int parse_reg_xml(ezxml_t registry, struct namelist **nls, struct dimension ** d
 					var_ptr->iostreams |= OUTPUT0;
 				}
 			}
+#endif
 
 			if(varname_in_code == NULL){
 				snprintf(var_ptr->name_in_code, 1024, "%s", varname);
@@ -956,6 +1004,88 @@ int parse_reg_xml(ezxml_t registry, struct namelist **nls, struct dimension ** d
 	grouplist_ptr = *groups;
 	if ((*groups)->next) *groups = (*groups)->next;
 	if (grouplist_ptr) free(grouplist_ptr);
+
+	// Parse streams
+	for (streams_xml = ezxml_child(registry, "streams"); streams_xml; streams_xml = streams_xml->next) {
+		for (stream_xml = ezxml_child(streams_xml, "stream"); stream_xml; stream_xml = stream_xml->next) {
+			streamname = ezxml_attr(stream_xml, "name");
+			if (streamname != NULL) {     /* this should be assured by validate_reg_xml() */
+				for (var_xml = ezxml_child(stream_xml, "var"); var_xml; var_xml = var_xml->next) {
+					varname = ezxml_attr(var_xml, "name");
+					if (varname != NULL) {     /* this should be assured by validate_reg_xml() */
+						var_ptr = *vars;
+						while (var_ptr) {
+							if (strcmp(var_ptr->name_in_file, varname) == 0) {
+								if (strcmp(streamname, "output") == 0) {
+									var_ptr->iostreams |= OUTPUT0;
+								}
+								else if (strcmp(streamname, "surface") == 0) {
+									var_ptr->iostreams |= SFC0;
+								}
+								else if (strcmp(streamname, "input") == 0) {
+									var_ptr->iostreams |= INPUT0;
+								}
+								else if (strcmp(streamname, "restart") == 0) {
+									var_ptr->iostreams |= RESTART0;
+								}
+								break;
+							}
+							var_ptr = var_ptr->next;
+						}
+					}
+					if (var_ptr == NULL) printf("did not find match for %s\n", varname);
+				}
+			}
+		}
+	}
+
+#ifdef OLD_STREAMS
+/******** Temporary code to print out stream definitions for a core to use in its Registry.xml file ********/
+	printf("\t<streams>\n");
+
+	printf("\t\t<stream name=\"input\" type=\"input\">\n");
+	var_ptr = *vars;
+	while (var_ptr) {
+		if (var_ptr->iostreams & INPUT0) {
+			printf("\t\t\t<var name=\"%s\"/>\n", var_ptr->name_in_file);
+		}
+		var_ptr = var_ptr->next;
+	}
+	printf("\t\t</stream>\n");
+
+	printf("\t\t<stream name=\"restart\" type=\"restart\">\n");
+	var_ptr = *vars;
+	while (var_ptr) {
+		if (var_ptr->iostreams & RESTART0) {
+			printf("\t\t\t<var name=\"%s\"/>\n", var_ptr->name_in_file);
+		}
+		var_ptr = var_ptr->next;
+	}
+	printf("\t\t</stream>\n");
+
+	printf("\t\t<stream name=\"output\" type=\"output\">\n");
+	var_ptr = *vars;
+	while (var_ptr) {
+		if (var_ptr->iostreams & OUTPUT0) {
+			printf("\t\t\t<var name=\"%s\"/>\n", var_ptr->name_in_file);
+		}
+		var_ptr = var_ptr->next;
+	}
+	printf("\t\t</stream>\n");
+
+	printf("\t\t<stream name=\"surface\" type=\"input;output\">\n");
+	var_ptr = *vars;
+	while (var_ptr) {
+		if (var_ptr->iostreams & SFC0) {
+			printf("\t\t\t<var name=\"%s\"/>\n", var_ptr->name_in_file);
+		}
+		var_ptr = var_ptr->next;
+	}
+	printf("\t\t</stream>\n");
+
+	printf("\t</streams>\n");
+/****************/
+#endif
 
 	return 0;
 }/*}}}*/
