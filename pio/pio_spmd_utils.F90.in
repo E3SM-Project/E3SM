@@ -27,9 +27,10 @@
 #endif
 
 module pio_spmd_utils
-
+#ifndef TESTSWAPM
   use pio_kinds
   use pio_support, only: CheckMPIReturn
+#endif
 #ifndef NO_MPIMOD
   use mpi ! _EXTERNAL
 #endif
@@ -38,6 +39,13 @@ module pio_spmd_utils
   private
 #ifdef NO_MPIMOD
   include 'mpif.h'  ! _EXTERNAL
+#endif
+#ifdef TESTSWAPM
+  integer, parameter :: &
+      i4        = selected_int_kind(6)   ,&
+      i8        = selected_int_kind(13)  ,&
+      r4        = selected_real_kind(6)  ,&
+      r8        = selected_real_kind(13)
 #endif
 
   public :: pio_swapm
@@ -609,11 +617,62 @@ contains
    return
 
    end subroutine pio_swapm_{TYPE}
-
 !
 !========================================================================
 !
-
-
-
+#ifdef TESTSWAPM
+   subroutine CheckMPIReturn(string, err)
+     character(len=*) :: string
+     integer :: err
+   end subroutine CheckMPIReturn
+#endif
 end module pio_spmd_utils
+
+
+#ifdef TESTSWAPM
+program testswapm
+  use mpi
+  implicit none
+  integer :: ierr
+  integer, allocatable :: sbuf(:), rbuf(:), sendcounts(:), recvcounts(:), rdispls(:), sdispls(:), sendtypes(:), recvtypes(:)
+  integer :: i,j, comm, p
+  integer :: mytasks, rank
+
+  call mpi_init(ierr)
+  comm = MPI_COMM_WORLD;
+  call mpi_comm_size(comm, mytasks, ierr)
+  call mpi_comm_rank(comm, rank, ierr)
+  
+  allocate(sbuf(mytasks*mytasks), rbuf(mytasks*mytasks))
+
+  allocate(sendcounts(mytasks), recvcounts(mytasks), rdispls(mytasks), sdispls(mytasks), sendtypes(mytasks), recvtypes(mytasks))
+  
+  do i=1,mytasks
+     sendcounts(i) = i;
+     recvcounts(i) = rank+1;
+     rdispls(i) = i * (rank+1) * 4;
+     sdispls(i) = (((i) *(i-1))/2) *4;
+     sendtypes(i) = MPI_INTEGER;
+     recvtypes(i) = MPI_INTEGER;
+  end do
+  
+  do i=1,mytasks*mytasks
+     sbuf(i) = (i-1) + 100* rank
+     rbuf(i) = -i + 1;
+  end do
+
+  call MPI_ALLTOALLW( sbuf, sendcounts, sdispls, sendtypes, rbuf, recvcounts, rdispls, recvtypes, comm, ierr)
+
+  do i=1,mytasks
+     p = rdispls(i)/4;
+     do j=1,rank
+        if(rbuf(p+j) /= (i-1)*100 + (rank*(rank+1))/2 + j-1) then
+           print *, '[',rank,']',' got ',rbuf(p+j),' expected ',((i-1)*i)/2+j-1,' for ',j-1
+        end if
+     end do
+  end do
+
+  call mpi_finalize(ierr)
+
+end program testswapm
+#endif

@@ -31,9 +31,10 @@
 #endif
 
 module pio_spmd_utils
-
+#ifndef TESTSWAPM
   use pio_kinds
   use pio_support, only: CheckMPIReturn
+#endif
 #ifndef NO_MPIMOD
   use mpi ! _EXTERNAL
 #endif
@@ -43,10 +44,17 @@ module pio_spmd_utils
 #ifdef NO_MPIMOD
   include 'mpif.h'  ! _EXTERNAL
 #endif
+#ifdef TESTSWAPM
+  integer, parameter :: &
+      i4        = selected_int_kind(6)   ,&
+      i8        = selected_int_kind(13)  ,&
+      r4        = selected_real_kind(6)  ,&
+      r8        = selected_real_kind(13)
+#endif
 
   public :: pio_swapm
 
-# 45 "/glade/u/home/jedwards/pio_trunk/pio/pio_spmd_utils.F90.in"
+# 53 "pio_spmd_utils.F90.in"
   interface pio_swapm
      ! TYPE int,real,double,long
      module procedure pio_swapm_int
@@ -61,12 +69,12 @@ module pio_spmd_utils
 
   character(len=*), parameter :: modName='pio_spmd_utils'
 
-# 53 "/glade/u/home/jedwards/pio_trunk/pio/pio_spmd_utils.F90.in"
+# 61 "pio_spmd_utils.F90.in"
 contains
 !========================================================================
 !
 
-# 57 "/glade/u/home/jedwards/pio_trunk/pio/pio_spmd_utils.F90.in"
+# 65 "pio_spmd_utils.F90.in"
    integer function pair(np,p,k)
 
       integer np,p,k,q
@@ -78,14 +86,14 @@ contains
       endif
       return
 
-# 68 "/glade/u/home/jedwards/pio_trunk/pio/pio_spmd_utils.F90.in"
+# 76 "pio_spmd_utils.F90.in"
    end function pair
 
 !
 !========================================================================
 !
 
-# 74 "/glade/u/home/jedwards/pio_trunk/pio/pio_spmd_utils.F90.in"
+# 82 "pio_spmd_utils.F90.in"
   integer function ceil2(n)
      integer n,p
      p=1
@@ -94,14 +102,14 @@ contains
      enddo
      ceil2=p
      return
-# 82 "/glade/u/home/jedwards/pio_trunk/pio/pio_spmd_utils.F90.in"
+# 90 "pio_spmd_utils.F90.in"
   end function ceil2
 
 !
 !========================================================================
 !
 ! TYPE int,real,double,long
-# 88 "/glade/u/home/jedwards/pio_trunk/pio/pio_spmd_utils.F90.in"
+# 96 "pio_spmd_utils.F90.in"
    subroutine pio_swapm_int ( nprocs, mytask,   &
       sndbuf, sbuf_siz, sndlths, sdispls, stypes,  &
       rcvbuf, rbuf_siz, rcvlths, rdispls, rtypes,  &
@@ -625,10 +633,10 @@ contains
 
    return
 
-# 611 "/glade/u/home/jedwards/pio_trunk/pio/pio_spmd_utils.F90.in"
+# 619 "pio_spmd_utils.F90.in"
    end subroutine pio_swapm_int
 ! TYPE int,real,double,long
-# 88 "/glade/u/home/jedwards/pio_trunk/pio/pio_spmd_utils.F90.in"
+# 96 "pio_spmd_utils.F90.in"
    subroutine pio_swapm_real ( nprocs, mytask,   &
       sndbuf, sbuf_siz, sndlths, sdispls, stypes,  &
       rcvbuf, rbuf_siz, rcvlths, rdispls, rtypes,  &
@@ -1152,10 +1160,10 @@ contains
 
    return
 
-# 611 "/glade/u/home/jedwards/pio_trunk/pio/pio_spmd_utils.F90.in"
+# 619 "pio_spmd_utils.F90.in"
    end subroutine pio_swapm_real
 ! TYPE int,real,double,long
-# 88 "/glade/u/home/jedwards/pio_trunk/pio/pio_spmd_utils.F90.in"
+# 96 "pio_spmd_utils.F90.in"
    subroutine pio_swapm_double ( nprocs, mytask,   &
       sndbuf, sbuf_siz, sndlths, sdispls, stypes,  &
       rcvbuf, rbuf_siz, rcvlths, rdispls, rtypes,  &
@@ -1679,10 +1687,10 @@ contains
 
    return
 
-# 611 "/glade/u/home/jedwards/pio_trunk/pio/pio_spmd_utils.F90.in"
+# 619 "pio_spmd_utils.F90.in"
    end subroutine pio_swapm_double
 ! TYPE int,real,double,long
-# 88 "/glade/u/home/jedwards/pio_trunk/pio/pio_spmd_utils.F90.in"
+# 96 "pio_spmd_utils.F90.in"
    subroutine pio_swapm_long ( nprocs, mytask,   &
       sndbuf, sbuf_siz, sndlths, sdispls, stypes,  &
       rcvbuf, rbuf_siz, rcvlths, rdispls, rtypes,  &
@@ -2206,13 +2214,73 @@ contains
 
    return
 
-# 611 "/glade/u/home/jedwards/pio_trunk/pio/pio_spmd_utils.F90.in"
+# 619 "pio_spmd_utils.F90.in"
    end subroutine pio_swapm_long
-
 !
 !========================================================================
 !
-
-
-
+#ifdef TESTSWAPM
+# 624 "pio_spmd_utils.F90.in"
+   subroutine CheckMPIReturn(string, err)
+     character(len=*) :: string
+     integer :: err
+# 627 "pio_spmd_utils.F90.in"
+   end subroutine CheckMPIReturn
+#endif
 end module pio_spmd_utils
+#ifdef TESTSWAPM
+program testswapm
+  use mpi
+  use pio_spmd_utils
+  implicit none
+  integer :: ierr
+  integer, allocatable :: sbuf(:), rbuf(:), sendcounts(:), recvcounts(:), rdispls(:), sdispls(:), sendtypes(:), recvtypes(:)
+  integer :: i,j, comm, p
+  integer :: mytasks, rank
+  integer :: itest
+  call mpi_init(ierr)
+  comm = MPI_COMM_WORLD;
+  call mpi_comm_size(comm, mytasks, ierr)
+  call mpi_comm_rank(comm, rank, ierr)
+  
+  allocate(sbuf(mytasks*mytasks), rbuf(mytasks*mytasks))
+
+  allocate(sendcounts(mytasks), recvcounts(mytasks), rdispls(mytasks), sdispls(mytasks), sendtypes(mytasks), recvtypes(mytasks))
+  
+  do i=1,mytasks
+     sendcounts(i) = i;
+     recvcounts(i) = rank+1;
+     rdispls(i) = (i-1) * (rank+1) * 4;
+     sdispls(i) = (((i) *(i-1))/2) *4;
+     sendtypes(i) = MPI_INTEGER;
+     recvtypes(i) = MPI_INTEGER;
+  end do
+
+  do itest=1,2
+  
+     do i=1,mytasks*mytasks
+        sbuf(i) = (i-1) + 100* rank
+        rbuf(i) = -i + 1;
+     end do
+     if(itest==1) then
+        call MPI_ALLTOALLW( sbuf, sendcounts, sdispls, sendtypes, rbuf, recvcounts, rdispls, recvtypes, comm, ierr)
+     else if(itest==2) then
+        call pio_swapm( mytasks, rank, sbuf, size(sbuf) , sendcounts, sdispls, sendtypes, rbuf,size(rbuf), recvcounts, rdispls, recvtypes, comm, .true., .true., 64)
+     end if
+
+     do i=1,mytasks
+        p = rdispls(i)/4;
+        do j=1,rank
+           if(rbuf(p+j) /= (i-1)*100 + (rank*(rank+1))/2 + j-1) then
+              print *, '[',rank,']',' got ',rbuf(p+j),' expected ',((i-1)*i)/2+j-1,' for ',j-1
+           end if
+        end do
+     end do
+     if(rank==0) print *,'Test complete ',ierr
+  end do
+  call mpi_finalize(ierr)
+
+end program testswapm
+
+
+#endif
