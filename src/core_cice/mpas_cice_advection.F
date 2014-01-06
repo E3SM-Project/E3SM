@@ -14,7 +14,7 @@ contains
 
   !--------------------------------------------------------------------------
   
-  subroutine init_advection(block, mesh)
+  subroutine init_advection(mesh)
 
     use mpas_tracer_advection_helpers, only: &
          mpas_initialize_deriv_two, &
@@ -23,7 +23,6 @@ contains
     use mpas_configure, only: &
          config_horiz_tracer_adv_order
     
-    type (block_type), intent(inout) :: block
     type (mesh_type), intent(inout) :: mesh
 
     integer :: &
@@ -41,26 +40,26 @@ contains
     !   enddo
     !enddo
 
-    call mpas_initialize_deriv_two(&
-         mesh, &
-         mesh % derivTwo % array, &
-         err)
+    !call mpas_initialize_deriv_two(&
+    !     mesh, &
+    !     mesh % derivTwo % array, &
+    !     err)
 
     !FIFTEEN TWO nEdges
-    write(*,*) &
-         size(mesh % derivTwo % array,1), &
-         size(mesh % derivTwo % array,2), &
-         size(mesh % derivTwo % array,3), &
-         mesh % maxEdges2, &
-         mesh % nEdges
+    !write(*,*) &
+    !     size(mesh % derivTwo % array,1), &
+    !     size(mesh % derivTwo % array,2), &
+    !     size(mesh % derivTwo % array,3), &
+    !     mesh % maxEdges2, &
+    !     mesh % nEdges
 
-    do i1 = 1, mesh % maxEdges2
-       do i2 = 1, 2
-          do i3 = 1, mesh % nEdges
-             write(*,*) i1, i2, i3, mesh % derivTwo % array(i1,i2,i3)
-          enddo
-       enddo
-    enddo
+    !do i1 = 1, mesh % maxEdges2
+    !   do i2 = 1, 2
+    !      do i3 = 1, mesh % nEdges
+    !         write(*,*) i1, i2, i3, mesh % derivTwo % array(i1,i2,i3)
+    !      enddo
+    !   enddo
+    !enddo
 
     call mpas_tracer_advection_coefficients(&
          mesh, &
@@ -75,8 +74,7 @@ contains
          mesh % highOrderAdvectionMask % array, &
          mesh % boundaryCell % array)
 
-    stop
-
+    !stop
 
   end subroutine init_advection
 
@@ -181,16 +179,14 @@ contains
        verticalVelocity, &
        verticalCellSize)
 
-
-
     ! diagnostic output
     call plot_pop_grid_cells(mesh, tracers(index_iceAreaCell,1,:), "iceAreaCell.txt", nstep)
 
     call plot_pop_grid_cells(mesh, tendency(index_iceAreaCell,1,:), "iceAreaCellTend.txt", nstep)
 
-    call output_meridonal_strip(mesh, tracers(index_iceAreaCell,1,:), "area_strip.txt", 10, nstep, 1)
+    !call output_meridonal_strip(mesh, tracers(index_iceAreaCell,1,:), "area_strip.txt", 10, nstep, 1)
 
-    call output_meridonal_strip(mesh, tendency(index_iceAreaCell,1,:), "tend_strip.txt", 10, nstep, 1)
+    !call output_meridonal_strip(mesh, tendency(index_iceAreaCell,1,:), "tend_strip.txt", 10, nstep, 1)
 
 
     deallocate(tendency)
@@ -203,7 +199,7 @@ contains
          verticalVelocity, &
          verticalCellSize)
 
-    stop
+    !stop
 
   end subroutine run_advection
 
@@ -221,8 +217,8 @@ contains
        verticalVelocity, &
        verticalCellSize)
 
-    use mpas_tracer_advection_std, only: &
-         mpas_tracer_advection_std_tend
+    use mpas_tracer_advection_mono, only: &
+         mpas_tracer_advection_mono_tend
 
     type (mesh_type), intent(in) :: mesh
 
@@ -271,94 +267,30 @@ contains
     allocate(edgeFlux(nVertLevels, mesh % nEdges))
 
     do iEdge = 1, mesh % nEdges
-       do iVertLevel = 1, nVertLevels
 
-          iCell1 = mesh % cellsOnEdge % array(1,iEdge)
-          iCell2 = mesh % cellsOnEdge % array(2,iEdge)
-          
-          edgeFlux(iVertLevel,iEdge) = edgeVelocity(iEdge) * &
-               0.5_RKIND * (previousTracer(iVertLevel,iCell1) + previousTracer(iVertLevel,iCell2))
+       iCell1 = mesh % cellsOnEdge % array(1,iEdge)
+       iCell2 = mesh % cellsOnEdge % array(2,iEdge)
 
-       enddo ! iVertLevel
-    enddo ! iEdge
+       if (iCell1 > mesh % nCells .or. iCell2 > mesh % nCells) then
 
-    write(*,*) "-----------------------------"
-    write(*,*) "perform_advection"
+          ! edge of domain
+          do iVertLevel = 1, nVertLevels
+             edgeFlux(iVertLevel,iEdge) = 0.0_RKIND
+          enddo ! iVertLevel
 
-    do iCell = 1, mesh % nCells
-       do iVertLevel = 1, nVertLevels
-          do iTracer = 1, nTracers
-             write(*,*) iCell, iVertLevel, iTracer, &
-                  tracers(iTracer,iVertLevel,iCell), &
-                  tendency(iTracer,iVertLevel,iCell)
-          enddo ! iTracer
-       enddo ! iVertLevel
-    enddo ! iCell
+       else
 
-    write(*,*) "-----------------------------"
-    nAdvectionCells = size(mesh % advCoefs % array,1)
-    write(*,*) nAdvectionCells
+          do iVertLevel = 1, nVertLevels
+             edgeFlux(iVertLevel,iEdge) = edgeVelocity(iEdge) * &
+                  0.5_RKIND * (previousTracer(iVertLevel,iCell1) + previousTracer(iVertLevel,iCell2))
+          enddo ! iVertLevel
 
-    do iEdge = 1, mesh % nEdges
-       do iAdvectionCell = 1, nAdvectionCells
-
-          write(*,*) iEdge, iAdvectionCell, &
-               mesh % advCoefs % array(iAdvectionCell,iEdge), &
-               mesh % advCoefs3rd % array(iAdvectionCell,iEdge), &
-               mesh % advCellsForEdge % array(iAdvectionCell,iEdge)
-
-       enddo ! iAdvectionCell
-    enddo ! iEdge
-
-    write(*,*) "-----------------------------"
-
-    do iEdge = 1, mesh % nEdges
-
-       write(*,*) iEdge, mesh % nAdvCellsForEdge % array(iEdge)
+       endif
 
     enddo ! iEdge
-
-    write(*,*) "-----------------------------"
-
-    do iEdge = 1, mesh % nEdges
-       do iVertLevel = 1, nVertLevels
-
-          write(*,*) iEdge, iVertLevel, &
-               edgeFlux(iVertLevel,iEdge), &
-               mesh % highOrderAdvectionMask % array(iVertLevel,iEdge)
-
-       enddo ! iVertLevel
-    enddo ! iEdge
-
-    write(*,*) "-----------------------------"
-    write(*,*) "vertical velocity"
-
-    do iEdge = 1, mesh % nEdges
-       do iVertLevel = 1, nVertLevels+1
-
-          write(*,*) iEdge, iVertLevel, &
-               verticalVelocity(iVertLevel,iEdge)
-
-       enddo ! iVertLevel
-    enddo ! iEdge
-
-    write(*,*) "-----------------------------"
-
-    do iCell = 1, mesh % nCells
-       do iVertLevel = 1, nVertLevels
-
-          write(*,*) iCell, iVertLevel, &
-               previousTracer(iVertLevel,iCell), &
-               verticalCellSize(iVertLevel,iCell), &
-               previousTendency(iVertLevel,iCell)
-
-       enddo ! iVertLevel
-    enddo ! iCell
-
-    write(*,*) "-----------------------------"
 
     ! run the advection routine
-    call mpas_tracer_advection_std_tend(&
+    call mpas_tracer_advection_mono_tend(&
          tracers,                         & ! (nTracers, nVertLevels, nCells)
          mesh % advCoefs % array,         & ! (nAdvectionCells nEdges)
          mesh % advCoefs3rd % array,      & ! (nAdvectionCells nEdges)

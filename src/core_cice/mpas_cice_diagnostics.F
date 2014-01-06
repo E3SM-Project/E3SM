@@ -2190,8 +2190,12 @@ contains
           i = mesh % POPindxiv % array(iVertex)
           j = mesh % POPindxjv % array(iVertex)
 
-          arrayOrdered(i,j,1) = 1.0_RKIND
-          arrayOrdered(i,j,2) = vertexArray(iVertex)
+          if (i > 0 .and. i <= size(arrayOrdered,1) .and. j > 0 .and. j <= size(arrayOrdered,2)) then
+
+             arrayOrdered(i,j,1) = 1.0_RKIND
+             arrayOrdered(i,j,2) = vertexArray(iVertex)
+
+          endif
 
        endif ! interiorVertex
 
@@ -2336,7 +2340,8 @@ contains
          stripval
 
     integer, allocatable, dimension(:) :: &
-         stripmask
+         stripmask, &
+         stripcell
 
     if (mod(istep,step_freq) == 0) then
        
@@ -2344,6 +2349,7 @@ contains
 
        allocate(stripval(ny))
        allocate(stripmask(ny))
+       allocate(stripcell(ny))
 
        stripval  = -999.0_RKIND
        stripmask = 0
@@ -2356,6 +2362,7 @@ contains
 
              stripval(j) = array(iCell)
              stripmask(j) = 1
+             stripcell(j) = iCell
 
           endif
 
@@ -2367,7 +2374,7 @@ contains
 
           if (stripmask(j) == 1) then
 
-             write(55,*) j, stripval(j)
+             write(55,*) j, stripcell(j), stripval(j)
 
           endif
 
@@ -2379,6 +2386,7 @@ contains
 
        deallocate(stripval)
        deallocate(stripmask)
+       deallocate(stripcell)
 
     endif
 

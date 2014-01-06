@@ -33,9 +33,6 @@ contains
 
     character(len=*), intent(in) :: gridCurvature
 
-    call interior_vertices(mesh, &
-         boundary % interiorVertex % array)
-
     call normal_vectors(mesh, &
          normal % normalVectorPolygon % array,         &
          normal % normalVectorTriangle % array,        &

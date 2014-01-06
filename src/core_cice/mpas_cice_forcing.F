@@ -9,7 +9,8 @@ module cice_forcing
 
   public :: &
        init_forcing, &
-       get_forcing
+       get_forcing, &
+       forcing_file_comparison
          
   integer, parameter :: &
        epoch = 1900
@@ -100,6 +101,9 @@ contains
     call init_forcing_field(mesh, atmosForcingFields % forcingFieldsArray(1), "interval", &
          "/NCEP/4XDAILY/STATES/", "t_10.", ".dat", "binaryPOP", 1460, 1.0_RKIND)
 
+    !call init_forcing_field(mesh, atmosForcingFields % forcingFieldsArray(1), "interval", &
+    !     "/NCEP/4XDAILY/STATES/", "t_10_mpas.", ".dat", "binaryMPAS", 1460, 1.0_RKIND)
+
     ! u air velocity
     call init_forcing_field(mesh, atmosForcingFields % forcingFieldsArray(2), "interval", &
          "/NCEP/4XDAILY/STATES/", "u_10.", ".dat", "binaryPOP", 1460, 1.0_RKIND)
@@ -180,49 +184,49 @@ contains
     call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
          atmosForcingFields % forcingDirectory, &
          atmosForcingFields % forcingFieldsArray(1), &
-         atmos_forcing % airTemperature % array)
+         atmos_forcing % airTemperature % array(1:mesh % nCells))
 
     ! u air velocity
     call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
          atmosForcingFields % forcingDirectory, &
          atmosForcingFields % forcingFieldsArray(2), &
-         atmos_forcing % uAirVelocityPOP % array)
+         atmos_forcing % uAirVelocityPOP % array(1:mesh % nCells))
 
     ! v air velocity
     call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
          atmosForcingFields % forcingDirectory, &
          atmosForcingFields % forcingFieldsArray(3), &
-         atmos_forcing % vAirVelocityPOP % array)
+         atmos_forcing % vAirVelocityPOP % array(1:mesh % nCells))
 
     ! air density
     call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
          atmosForcingFields % forcingDirectory, &
          atmosForcingFields % forcingFieldsArray(4), &
-         atmos_forcing % airDensity % array)
+         atmos_forcing % airDensity % array(1:mesh % nCells))
 
     ! air humidity
     call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
          atmosForcingFields % forcingDirectory, &
          atmosForcingFields % forcingFieldsArray(5), &
-         atmos_forcing % airSpecificHumidity % array)
+         atmos_forcing % airSpecificHumidity % array(1:mesh % nCells))
 
     ! shortwave down
     call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
          atmosForcingFields % forcingDirectory, &
          atmosForcingFields % forcingFieldsArray(6), &
-         atmos_forcing % shortwaveDown % array)
+         atmos_forcing % shortwaveDown % array(1:mesh % nCells))
 
     ! cloudFraction
     call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
          atmosForcingFields % forcingDirectory, &
          atmosForcingFields % forcingFieldsArray(7), &
-         atmos_forcing % cloudFraction % array)
+         atmos_forcing % cloudFraction % array(1:mesh % nCells))
 
     ! precipitation
     call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
          atmosForcingFields % forcingDirectory, &
          atmosForcingFields % forcingFieldsArray(8), &
-         atmos_forcing % precipitationRate % array)
+         atmos_forcing % precipitationRate % array(1:mesh % nCells))
 
     !iCell = POPiCell(mesh,69,59)
     !write(56,*) elapsed_time_forcing/3600.0_RKIND, &
@@ -820,6 +824,10 @@ contains
     
        call read_data_binaryPOP(mesh, forcingDirectory, forcingField, slot, desiredYear, desiredRecordNumber, position)
 
+    else if (forcingField % filetype == trim("binaryMPAS")) then
+
+       call read_data_binaryMPAS(mesh, forcingDirectory, forcingField, slot, desiredYear, desiredRecordNumber, position)
+
     endif
 
   end subroutine read_data
@@ -862,7 +870,7 @@ contains
  
     close(55)
 
-    forcingField % data(:,slot) = 273.15_RKIND!1.0e30_RKIND
+    forcingField % data(:,slot) = 1.0e30_RKIND
     
     do iCell = 1, mesh % nCells
 
@@ -875,6 +883,58 @@ contains
     deallocate(arrayPOP)
 
   end subroutine read_data_binaryPOP
+
+  !-------------------------------------------------------------
+
+  subroutine read_data_binaryMPAS(mesh, forcingDirectory, forcingField, slot, desiredYear, desiredRecordNumber, position)
+
+    type(mesh_type), intent(in) :: mesh
+
+    character(len=*), intent(in) :: forcingDirectory
+
+    type (forcing_field), intent(inout) :: forcingField
+
+    integer, intent(in) :: &
+         slot, &
+         desiredYear, &
+         desiredRecordNumber, &
+         position
+
+    character(len=404) :: filename
+
+    real(kind=RKIND), dimension(:), allocatable :: arrayMPAS
+
+    integer :: iCell, recordLength, usedRecordNumber
+
+    logical :: lexist
+
+    allocate(arrayMPAS(1:mesh % nCells))
+
+    recordLength = mesh % nCells * 8
+
+    usedRecordNumber = desiredRecordNumber
+
+    call get_filename(filename, usedRecordNumber, forcingDirectory, forcingField, desiredYear, position)
+
+    open(55,file=trim(filename),form='unformatted',access='direct',recl=recordLength,action='read',status='old')
+
+    read(55,rec=usedRecordNumber) arrayMPAS
+ 
+    close(55)
+
+    forcingField % data(:,slot) = 1.0e30_RKIND
+    
+    do iCell = 1, mesh % nCells
+
+       forcingField % data(iCell,slot) = arrayMPAS(iCell)
+
+       !write(*,*) iCell, mesh % POPindxi % array(iCell),mesh % POPindxj % array(iCell)
+
+    enddo ! iCell
+
+    deallocate(arrayMPAS)
+
+  end subroutine read_data_binaryMPAS
 
   !-------------------------------------------------------------
 
@@ -1183,6 +1243,103 @@ contains
     !stop
 
   end subroutine POP_grid_basis
+
+  !-------------------------------------------------------------
+
+  subroutine forcing_file_comparison(mesh)
+
+    type(mesh_type), intent(in) :: mesh
+
+    ! POP input
+    character(len=200), parameter :: filein_POP = &
+         '/Users/akt/Work/Forcing/gx3/atm/gx3v2m/NCAR_bulk/NCEP/4XDAILY/STATES/t_10.1997.dat'
+
+    real(kind=RKIND), dimension(mesh % POP_nx, mesh % POP_ny) :: &
+         array_POP
+
+
+    ! MPAS input
+    character(len=200), parameter :: filein_MPAS = &
+         '/Users/akt/Work/Forcing/gx3/atm/gx3v2m/NCAR_bulk/NCEP/4XDAILY/STATES/t_10_mpas.1997.dat'
+
+    real(kind=RKIND), dimension(mesh % nCells) :: &
+         array_MPAS
+
+    ! comparison
+    real(kind=RKIND), dimension(mesh % POP_nx, mesh % POP_ny) :: &
+         array_POP_out, &
+         array_MPAS_out, &
+         array_comp
+
+    integer :: &
+         iCell, &
+         i, &
+         j, &
+         recl
+
+    ! read in POP data
+    recl = 8 * mesh % POP_nx * mesh % POP_ny
+
+    open(55,file=trim(filein_POP),form="unformatted",access="direct",recl=recl)
+
+    read(55,rec=1) array_POP
+
+    close(55)
+
+    ! read in MPAS data
+    recl = 8 * mesh % nCells
+
+    open(55,file=trim(filein_MPAS),form="unformatted",access="direct",recl=recl)
+
+    read(55,rec=1) array_MPAS
+
+    close(55)
+
+    ! convert inputs
+    array_POP_out  = 0.0_RKIND
+    array_MPAS_out = 0.0_RKIND
+    
+    do iCell = 1, mesh % nCells
+
+       i = mesh % POPindxi % array(iCell)
+       j = mesh % POPindxj % array(iCell)
+       
+       array_POP_out(i,j)  = array_POP(i,j)
+       array_MPAS_out(i,j) = array_MPAS(iCell)
+
+    enddo ! iCell
+
+    ! compare
+    array_comp = 0.0_RKIND
+
+    do j = 1, mesh % POP_ny
+    do i = 1, mesh % POP_nx
+
+       array_comp(i,j) = array_MPAS_out(i,j) - array_POP_out(i,j)
+
+    enddo ! i
+    enddo ! j
+
+    ! output
+    open(55,file="comp_POP.txt")
+    open(56,file="comp_MPAS.txt")
+    open(57,file="comp_MPAS-POP.txt")
+
+    do j = 1, mesh % POP_ny
+    do i = 1, mesh % POP_nx
+
+       write(55,*) i, i+1, j, j+1, array_POP_out(i,j)
+       write(56,*) i, i+1, j, j+1, array_MPAS_out(i,j)
+       write(57,*) i, i+1, j, j+1, array_comp(i,j)
+
+    enddo ! i
+    enddo ! j
+
+    close(55)
+    close(56)
+    close(57)
+
+  end subroutine forcing_file_comparison
 
   !-------------------------------------------------------------
 

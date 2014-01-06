@@ -39,7 +39,7 @@ contains
     character(len=*), intent(in) :: &
          divergenceFormulation, &
          gridCurvature
-
+    
     call init_evp(dt)
 
     if (trim(divergenceFormulation) == "weak") then

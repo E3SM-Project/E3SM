@@ -1040,15 +1040,25 @@ contains
        latCellRotated(iCell) = asin(cellCentreRotated(3) / mesh % sphere_radius)
 
        ! rotate the cell centre onto the rotated equator
-       yRotationMatrix(1,1) =  cos(latCellRotated(iCell))
-       yRotationMatrix(1,3) =  sin(latCellRotated(iCell))
-       yRotationMatrix(3,1) = -sin(latCellRotated(iCell))
-       yRotationMatrix(3,3) =  cos(latCellRotated(iCell))
+       !yRotationMatrix(1,1) =  cos(latCellRotated(iCell))
+       !yRotationMatrix(1,3) =  sin(latCellRotated(iCell))
+       !yRotationMatrix(3,1) = -sin(latCellRotated(iCell))
+       !yRotationMatrix(3,3) =  cos(latCellRotated(iCell))
 
-       zRotationMatrix(1,1) =  cos(-lonCellRotated)
-       zRotationMatrix(1,2) = -sin(-lonCellRotated)
-       zRotationMatrix(2,1) =  sin(-lonCellRotated)
-       zRotationMatrix(2,2) =  cos(-lonCellRotated)
+       !zRotationMatrix(1,1) =  cos(-lonCellRotated)
+       !zRotationMatrix(1,2) = -sin(-lonCellRotated)
+       !zRotationMatrix(2,1) =  sin(-lonCellRotated)
+       !zRotationMatrix(2,2) =  cos(-lonCellRotated)
+
+       yRotationMatrix(1,1) = 1.0_RKIND
+       yRotationMatrix(1,3) = 0.0_RKIND
+       yRotationMatrix(3,1) = 0.0_RKIND
+       yRotationMatrix(3,3) = 1.0_RKIND
+
+       zRotationMatrix(1,1) = 1.0_RKIND
+       zRotationMatrix(1,2) = 0.0_RKIND
+       zRotationMatrix(2,1) = 0.0_RKIND
+       zRotationMatrix(2,2) = 1.0_RKIND
 
        ! this should be (r, 0, 0)
        !cellCentreEquator = matmul(yRotationMatrix, matmul(zRotationMatrix, cellCentreRotated))

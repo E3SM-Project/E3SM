@@ -53,11 +53,11 @@
 					description="Method for interpolating tracer values from layer centers to layer edges"
 					possible_values="'spline' and 'stencil'"
 		/>
-		<nml_option name="config_vert_tracer_adv_order" type="integer" default_value="3" units="unitless"
+		<nml_option name="config_vert_tracer_adv_order" type="integer" default_value="2" units="unitless"
 					description="Order of polynomial used for tracer reconstruction at layer edges"
 					possible_values="2, 3 and 4"
 		/>
-		<nml_option name="config_horiz_tracer_adv_order" type="integer" default_value="3" units="unitless"
+		<nml_option name="config_horiz_tracer_adv_order" type="integer" default_value="2" units="unitless"
 					description="Order of polynomial used for tracer reconstruction at cell edges"
 					possible_values="2, 3 and 4"
 		/>

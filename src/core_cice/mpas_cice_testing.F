@@ -70,19 +70,68 @@ contains
          pi = 3.14159265359_RKIND, &
          degreesToRadians = pi / 180.0_RKIND, &
          initialIceEdgeLatitudeNorthernHemisphere =  70.0_RKIND * degreesToRadians, &
-         initialIceEdgeLatitudeSouthernHemisphere = -60.0_RKIND * degreesToRadians
+         initialIceEdgeLatitudeSouthernHemisphere = -60.0_RKIND * degreesToRadians, &
+         circle_radius = 1.0e6_RKIND
+
+
+
+    real(kind=RKIND) :: &
+         x, y, z
+         
 
     call init_ijpop_from_ivertex(mesh)
 
     mesh % fVertex % array = 2.0_RKIND * omega * sin(mesh % latVertex % array)
 
-    do iCell = 1, mesh % nCells
+    !do iCell = 1, mesh % nCells
 
        !if (mesh % latCell % array(iCell) > initialIceEdgeLatitudeNorthernHemisphere .or. &
        !    mesh % latCell % array(iCell) < initialIceEdgeLatitudeSouthernHemisphere) then
-       if (mesh % latCell % array(iCell) < initialIceEdgeLatitudeSouthernHemisphere) then
+    !   if (mesh % latCell % array(iCell) < initialIceEdgeLatitudeSouthernHemisphere) then
 
           ! ice present
+    !      iceAreaCell(iCell)        = 1.0_RKIND
+    !      iceVolumeCell(iCell)      = iceAreaCell(iCell) * iceHeightCell
+    !      totalMassCell(iCell)      = iceVolumeCell(iCell) * rhoi
+    !      surfaceTemperature(iCell) = 0.0_RKIND
+
+    !   else
+
+    !      ! no ice
+    !      iceAreaCell(iCell)   = 0.0_RKIND
+    !      iceVolumeCell(iCell) = 0.0_RKIND
+    !      totalMassCell(iCell) = 0.0_RKIND
+    !      surfaceTemperature(iCell) = 0.0_RKIND
+
+    !   endif
+
+    !end do ! iCell
+
+    !do iVertex = 1, mesh % nVertices
+
+    !   if (interiorVertex(iVertex) == 1) then
+
+    !      uVelocity(iVertex) = 0.0_RKIND
+    !      vVelocity(iVertex) = 1.0_RKIND
+          
+    !   else
+
+    !      uVelocity(iVertex) = 0.0_RKIND
+    !      vVelocity(iVertex) = 0.0_RKIND
+
+    !   endif
+
+    !enddo ! iVertex
+
+    ! circle of ice at equator
+    do iCell = 1, mesh % nCells
+    
+       x = mesh % xCell % array(iCell)
+       y = mesh % yCell % array(iCell)
+       z = mesh % zCell % array(iCell)
+
+       if (sqrt(x**2+z**2) < circle_radius .and. y > 0.0_RKIND) then
+
           iceAreaCell(iCell)        = 1.0_RKIND
           iceVolumeCell(iCell)      = iceAreaCell(iCell) * iceHeightCell
           totalMassCell(iCell)      = iceVolumeCell(iCell) * rhoi
@@ -98,14 +147,14 @@ contains
 
        endif
 
-    end do ! iCell
-
+    enddo ! iCell
+    
     do iVertex = 1, mesh % nVertices
 
        if (interiorVertex(iVertex) == 1) then
 
-          uVelocity(iVertex) = 0.0_RKIND
-          vVelocity(iVertex) = 1.0_RKIND
+          uVelocity(iVertex) = 1.0_RKIND
+          vVelocity(iVertex) = 0.0_RKIND
           
        else
 
@@ -115,7 +164,7 @@ contains
        endif
 
     enddo ! iVertex
-    
+
   end subroutine init_spherical_test_case
 
   !-------------------------------------------------------------

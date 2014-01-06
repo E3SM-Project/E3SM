@@ -105,17 +105,8 @@ module mpas_core
       use mpas_grid_types
       use mpas_rbf_interpolation
       use mpas_vector_reconstruction
-
-      use cice_advection, only: init_advection
-
-      use cice_dynamics, only: init_dynamics
-
-      use cice_testing, only: init_spherical_test_case
-      use cice_diagnostics, only: plot_pop_grid_cells, output_meridonal_strip
-
-      use cice_forcing, only: init_forcing, get_forcing
-
-      use cice_therm_zerolayer, only: init_semtner_forcing, init_semtner_test_case
+      
+      use cice_initialize, only: cice_init
 
       implicit none
 
@@ -126,35 +117,8 @@ module mpas_core
       call mpas_rbf_interp_initialize(mesh)
       call mpas_init_reconstruct(mesh)
 
-      call init_spherical_test_case(block % mesh, &
-           block % icestate % tracers % array(block % icestate % index_iceAreaCell, 1, :), &
-           block % icestate % tracers % array(block % icestate % index_iceVolumeCell, 1, :), &
-           block % icestate % totalMassCell % array, &
-           block % icestate % surfaceTemperature % array, &
-           block % atmos_forcing % airTemperature % array, &
-           block % hexdyn % uVelocity % array, &
-           block % hexdyn % vVelocity % array, &
-           block % boundary % interiorVertex % array)
-
-      ! init dynamics
-      call init_dynamics(block, dt)
-
-      ! init advection
-      call init_advection(block, mesh)
-
-      ! init forcing
-      !call init_forcing(mesh, &
-      !     block % atmos_forcing)
-
-      !call get_forcing(block % mesh, clock, block % atmos_forcing)
-
-
-
-      call output_meridonal_strip(mesh, block % icestate % tracers % array(block % icestate % index_iceAreaCell, 1, :), &
-           "area_strip.txt", 10, 0, 1)
-
-      !call plot_pop_grid_cells(mesh, block % icestate % tracers % array(block % icestate % index_iceAreaCell, 1, :), "iceAreaCell_ic.txt")
-      !call plot_pop_grid_cells(mesh, block % icestate % tracers % array(block % icestate % index_iceVolumeCell, 1, :), "iceVolumeCell_ic.txt")
+      ! initialize general stuff
+      call cice_init(block, clock, dt)
 
    end subroutine mpas_init_block
    

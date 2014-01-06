@@ -11,6 +11,7 @@ OBJS = 	mpas_cice_mpas_core.o \
 	mpas_cice_advection.o \
 	mpas_cice_forcing.o \
 	mpas_cice_therm_zerolayer.o \
+	mpas_cice_initialize.o \
 	mpas_cice_testing.o \
 	mpas_cice_diagnostics.o
 
@@ -43,7 +44,9 @@ mpas_cice_dynamics.o: mpas_cice_dynamics_hex.o mpas_cice_dynamics_shared.o
 
 mpas_cice_time_integration.o: mpas_cice_dynamics.o mpas_cice_advection.o mpas_cice_forcing.o mpas_cice_therm_zerolayer.o
 
-mpas_cice_mpas_core.o: mpas_cice_time_integration.o mpas_cice_dynamics.o mpas_cice_forcing.o mpas_cice_therm_zerolayer.o
+mpas_cice_initialize.o: mpas_cice_dynamics_shared.o mpas_cice_advection.o mpas_cice_dynamics.o mpas_cice_testing.o mpas_cice_diagnostics.o mpas_cice_forcing.o mpas_cice_therm_zerolayer.o
+
+mpas_cice_mpas_core.o: mpas_cice_time_integration.o mpas_cice_dynamics.o mpas_cice_forcing.o mpas_cice_therm_zerolayer.o mpas_cice_initialize.o
 
 clean:
 	$(RM) *.o *.mod *.f90 libdycore.a
