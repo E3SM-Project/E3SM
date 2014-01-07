@@ -1,7 +1,7 @@
 	<nml_record name="oac_global_stats">
 		<nml_option name="config_oac_global_stats" type="logical" default_value=".false." units="unitless"
-					description="If true, ocean analysis member global_stats is called."
-					possible_values=".true. or .false."
+			description="If true, ocean analysis member global_stats is called."
+			possible_values=".true. or .false."
 		/>
 	</nml_record>
 	<var_struct name="amGlobalStats" time_levs="0">

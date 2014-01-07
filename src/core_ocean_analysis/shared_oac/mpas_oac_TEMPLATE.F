@@ -37,6 +37,7 @@
 
 module oac_TEMPLATE
 
+   use mpas_configure
    use mpas_grid_types
    use mpas_timer
    use mpas_dmpar
