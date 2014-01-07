@@ -21,8 +21,10 @@
 !>  
 !>  2. In those two new files, replace the following text:
 !>     TEMPLATE, amTemplate, FILL_IN_AUTHOR, FILL_IN_DATE
+!>     Note TEMPLATE uses underscores, like global_stats, while
+!>     amTemplate uses caps, e.g. amGlobalStats.
 !>  
-!>  3. Add a line for your registry to
+!>  3. Add a #include line for your registry to
 !>     Registry_shared_oac.xml
 !>  
 !>  4. In mpas_oac_driver.F, add calls for your analysis member
@@ -60,7 +62,8 @@ module oac_TEMPLATE
    !
    !--------------------------------------------------------------------
 
-   public :: oac_init_TEMPLATE, &
+   public :: oac_setup_packages_TEMPLATE, &
+             oac_init_TEMPLATE, &
              oac_compute_TEMPLATE, &
              oac_write_TEMPLATE, &
              oac_restart_TEMPLATE, &
@@ -80,18 +83,20 @@ contains
 
 !***********************************************************************
 !
-!  routine oac_init_TEMPLATE
+!  routine oac_setup_packages_TEMPLATE
 !
-!> \brief   Initialize MPAS-Ocean analysis member
-!> \author  FILL_IN_AUTHOR
-!> \date    FILL_IN_DATE
+!> \brief   Set up packages for MPAS-Ocean analysis member
+!> \author  Mark Petersen
+!> \date    November 2013
 !> \details 
-!>  This routine conducts all initializations required for the 
-!>  MPAS-Ocean analysis member.
+!>  This routine is intended to configure the packages for this MPAS
+!>   ocean analysis member
 !
 !-----------------------------------------------------------------------
 
-   subroutine oac_init_TEMPLATE(err)!{{{
+   subroutine oac_setup_packages_TEMPLATE(err)!{{{
+
+      use mpas_packages
 
       !-----------------------------------------------------------------
       !
@@ -122,6 +127,62 @@ contains
       integer :: err_tmp
 
       err = 0
+
+      ! turn on package for this analysis member
+      amTemplate = .true.
+
+   end subroutine oac_setup_packages_TEMPLATE!}}}
+
+
+!***********************************************************************
+!
+!  routine oac_init_TEMPLATE
+!
+!> \brief   Initialize MPAS-Ocean analysis member
+!> \author  FILL_IN_AUTHOR
+!> \date    FILL_IN_DATE
+!> \details 
+!>  This routine conducts all initializations required for the 
+!>  MPAS-Ocean analysis member.
+!
+!-----------------------------------------------------------------------
+
+   subroutine oac_init_TEMPLATE(err)!{{{
+
+      use mpas_packages
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      integer :: err_tmp
+
+      err = 0
+
+      ! turn on package for this analysis member
+      TEMPLATEActive = .true.
 
    end subroutine oac_init_TEMPLATE!}}}
 

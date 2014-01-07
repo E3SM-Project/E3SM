@@ -4,8 +4,12 @@
 			possible_values=".true. or .false."
 		/>
 	</nml_record>
+	<packages>
+		<package name="amTemplate" description="This package includes variables required for the amTemplate analysis member."/>
+	</packages>
 	<var_struct name="amTemplate" time_levs="0">
 		<var name="example_variable" type="real" dimensions="nVertLevels nCells Time" streams="o" units="UNITS HERE"
 			description="DESCRIPTION HERE"
+			packages="amTemplate"
 		/>
 	</var_struct>

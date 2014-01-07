@@ -41,7 +41,8 @@ module oac_driver
    !
    !--------------------------------------------------------------------
 
-   public :: oac_driver_init, &
+   public :: oac_driver_setup_packages, &
+             oac_driver_init, &
              oac_driver_compute, &
              oac_driver_write, &
              oac_driver_restart, &
@@ -56,6 +57,63 @@ module oac_driver
 !***********************************************************************
 
 contains
+
+!***********************************************************************
+!
+!  routine oac_driver_setup_packages
+!
+!> \brief   Setup packages for MPAS-Ocean analysis driver
+!> \author  Mark Petersen
+!> \date    November 2013
+!> \details 
+!>  This routine is intended to configure the packages for all
+!>   ocean analysis members.
+!
+!-----------------------------------------------------------------------
+
+   subroutine oac_driver_setup_packages(err)!{{{
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      integer :: err_tmp
+
+      err = 0
+
+     if (config_oac_global_stats) then
+         call oac_setup_packages_global_stats(err_tmp)
+         err = ior(err, err_tmp)
+     endif
+
+!      if (config_oac_TEMPLATE) then
+!         call oac_setup_packages_TEMPLATE(err_tmp)
+!         err = ior(err, err_tmp)
+!      endif
+
+   end subroutine oac_driver_setup_packages!}}}
 
 !***********************************************************************
 !

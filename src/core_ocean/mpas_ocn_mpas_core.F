@@ -839,6 +839,8 @@ module mpas_core
 
       integer, intent(out) :: ierr
 
+      integer :: err_tmp
+
       ierr = 0
 
       if (config_use_freq_filtered_thickness) then
@@ -860,6 +862,9 @@ module mpas_core
       if (config_frazil_ice_formation) then
          frazilIceActive = .true.
       end if
+
+      call oac_driver_setup_packages(err_tmp)
+      ierr = ior(ierr, err_tmp)
 
    end subroutine mpas_core_setup_packages!}}}
 

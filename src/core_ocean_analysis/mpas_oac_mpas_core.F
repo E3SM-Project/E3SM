@@ -449,7 +449,12 @@ module mpas_core
 
       integer, intent(out) :: ierr
 
+      integer :: err_tmp
+
       ierr = 0
+
+      call oac_driver_setup_packages(err_tmp)
+      ierr = ior(ierr, err_tmp)
 
    end subroutine mpas_core_setup_packages!}}}
 

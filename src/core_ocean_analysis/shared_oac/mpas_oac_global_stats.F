@@ -42,7 +42,8 @@ module oac_global_stats
    !
    !--------------------------------------------------------------------
 
-   public :: oac_init_global_stats, &
+   public :: oac_setup_packages_global_stats, &
+             oac_init_global_stats, &
              oac_compute_global_stats, &
              oac_write_global_stats, &
              oac_restart_global_stats, &
@@ -62,6 +63,59 @@ contains
 
 !***********************************************************************
 !
+!  routine oac_setup_packages_global_stats
+!
+!> \brief   Set up packages for MPAS-Ocean analysis member
+!> \author  Mark Petersen
+!> \date    November 2013
+!> \details 
+!>  This routine is intended to configure the packages for this MPAS
+!>   ocean analysis member
+!
+!-----------------------------------------------------------------------
+
+   subroutine oac_setup_packages_global_stats(err)!{{{
+
+      use mpas_packages
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      integer :: err_tmp
+
+      err = 0
+
+      ! turn on package for this analysis member
+      amGlobalStatsActive = .true.
+
+   end subroutine oac_setup_packages_global_stats!}}}
+
+
+!***********************************************************************
+!
 !  routine oac_init_global_stats
 !
 !> \brief   Initialize MPAS-Ocean analysis member
@@ -74,6 +128,8 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine oac_init_global_stats(err)!{{{
+
+      use mpas_packages
 
       !-----------------------------------------------------------------
       !
