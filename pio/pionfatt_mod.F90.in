@@ -7,15 +7,13 @@
 !<
 module pionfatt_mod
   use pio_kinds, only : r4, r8, i4
-  use pio_types, only : iotype_netcdf, iotype_pnetcdf, pio_noerr
-  use pio_types, only : pio_iotype_netcdf4p, pio_iotype_netcdf4c
-  use pio_types, only : file_desc_t, var_desc_t, iosystem_desc_t
+  use pio_types
   use pio_kinds, only : pio_offset
   use pio_support, only : piodie, checkmpireturn, debug, debugasync
   use pio_utils, only : check_netcdf, bad_iotype
 
 #ifdef _NETCDF
-    use netcdf      ! _EXTERNAL
+  use netcdf      ! _EXTERNAL
 #endif
 #ifdef USE_PNETCDF_MOD
   use pnetcdf
@@ -29,20 +27,20 @@ module pionfatt_mod
   include 'mpif.h'  ! _EXTERNAL 
 
 
-!>
-!! @private
-!<
+  !>
+  !! @private
+  !<
   public :: put_att
   interface put_att
-     module procedure put_att_{TYPE}, put_att_desc_{TYPE}
+     module procedure put_att_id_{TYPE}, put_att_desc_{TYPE}, put_att_vid_{TYPE}
      ! TYPE real,int,double
      module procedure put_att_1d_{TYPE}, put_att_desc_1d_{TYPE}
   end interface
 
 
-!>
-!! @private
-!<
+  !>
+  !! @private
+  !<
   public :: get_att
   interface get_att
      module procedure get_att_{TYPE}, get_att_desc_{TYPE}
@@ -50,139 +48,111 @@ module pionfatt_mod
      module procedure get_att_1d_{TYPE}, get_att_desc_1d_{TYPE}
   end interface
 
-!>
-!!  @public 
-!!  @defgroup PIO_put_att PIO_put_att
-!!  @brief Writes an netcdf attribute to a file 
-!<
-!>
-!! @public 
-!! @defgroup PIO_get_att PIO_get_att
-!! @brief Reads  an netcdf attribute from a file 
-!<
+  !>
+  !!  @public 
+  !!  @defgroup PIO_put_att PIO_put_att
+  !!  @brief Writes an netcdf attribute to a file 
+  !<
+  !>
+  !! @public 
+  !! @defgroup PIO_get_att PIO_get_att
+  !! @brief Reads  an netcdf attribute from a file 
+  !<
 
   private :: modName
   character(len=*), parameter :: modName='pionfatt_mod'
 
 contains
 
-!>
-!! @public 
-!! @ingroup PIO_put_att
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @copydoc file_desc_t
-!! @param varid : The netcdf variable identifier
-!! @param name : name of the attribute to add
-!! @param value : The value for the netcdf attribute 
-!! @retval ierr @copydoc error_return
-!<
-  integer function put_att_{TYPE} (File, varid, name, value) result(ierr)
-    use pio_msg_mod, only : pio_msg_putatt
-    type (File_desc_t), intent(inout) , target :: File
+  !>
+  !! @public 
+  !! @ingroup PIO_put_att
+  !! @brief Writes an netcdf attribute to a file
+  !! @details
+  !! @param File @copydoc file_desc_t
+  !! @param varid : The netcdf variable identifier
+  !! @param name : name of the attribute to add
+  !! @param value : The value for the netcdf attribute 
+  !! @retval ierr @copydoc error_return
+  !<
+  integer function put_att_desc_{TYPE} (File, vdesc, name, value) result(ierr)
+    type (File_desc_t), intent(in) :: File
+    type(var_desc_t), intent(in)  :: vdesc
+    character(len=*), intent(in)  :: name
+    {VTYPE}, intent(in) :: value
+
+    ierr = put_att_id_{TYPE} (File%fh,vdesc%varid,name,value)
+
+  end function put_att_desc_{TYPE}
+  integer function put_att_vid_{TYPE} (File, varid, name, value) result(ierr)
+    type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
     character(len=*), intent(in) :: name
     {VTYPE}, intent(in) :: value
-    
-    type(iosystem_desc_t), pointer :: ios
-#if ({ITYPE} != TYPETEXT)
-#ifdef DEBUG
-    {VTYPE} :: chkval
-#endif
-#endif
-    !------------------
-    ! Local variables
-    !------------------
-    character(len=*), parameter :: subName=modName//'::put_att_{TYPE}'
-    integer :: iotype, mpierr, msg, itype
-    integer ::  clen=1, nlen
 
-    iotype = File%iotype
-    ierr=PIO_noerr
+    ierr = put_att_id_{TYPE} (File%fh,varid,name,value)
 
-#if ({ITYPE} == TYPETEXT)
-    clen = len_trim(value)
-#else
-    clen = 1
-#endif
-    ios => file%iosystem
-    if(ios%async_interface .and. .not. ios%ioproc ) then
-       msg=PIO_MSG_PUTATT
-       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
-       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       itype = {ITYPE}
-       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       nlen=len_trim(name)
-       call MPI_BCAST(nlen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(name,nlen,MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
-#if ({ITYPE} == TYPETEXT)	
-       call MPI_BCAST(clen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)	
-#endif
-    end if
+  end function put_att_vid_{TYPE}
+  ! TYPE int,real,double
+  integer function put_att_id_{TYPE} (ncid, varid, name, value) result(ierr)
+    use iso_c_binding
+    integer, intent(in) :: ncid
+    integer, intent(in) :: varid
+    character(len=*), intent(in) :: name
+    {VTYPE}, intent(in) :: value
 
-    if(ios%async_interface) then
-       call MPI_BCAST(value, clen, {MPITYPE}, ios%compmaster, ios%my_comm, mpierr)
-    end if
-	
-    if(Ios%IOproc) then
-       select case(iotype)
-#ifdef _PNETCDF
-       case(iotype_pnetcdf)
-#if ({ITYPE} == TYPETEXT)
-          ierr= nfmpi_put_att_text (File%fh,varid,name,int(clen,kind=PIO_OFFSET),value)
-#else
+    interface
+       integer(C_INT) function PIOc_put_att_{NCTYPE} (ncid, varid, name, xtype, len, op) &
+            bind(C,name="PIOc_put_att_{NCTYPE}")
+         use iso_c_binding
+         integer(C_INT), value :: ncid
+         integer(C_INT), value :: varid
+         character(C_CHAR) :: name
+         integer(C_INT), value :: xtype
+         integer(C_LONG), value :: len
+         type(C_PTR) :: op
+       end function PIOc_put_att_{NCTYPE}
+    end interface
 
-#ifdef DEBUG
-          print *, __PIO_FILE__,__LINE__,value
-          call MPI_ALLREDUCE(value, chkval, 1, {MPITYPE}, MPI_MAX ,Ios%io_comm, mpierr)
-          call CheckMPIReturn(subName, mpierr)
-          if(chkval /= value) then
-             print *,__PIO_FILE__,__LINE__,chkval,value, mpierr
-             call piodie(__PIO_FILE__,__LINE__,'attributes do not match')
-          end if
-#endif             
-#undef DEBUG
-#ifdef USE_PNETCDF_MOD
-          ierr =nf90mpi_put_att (File%fh,varid,name,value)
-#else
-          ierr= nfmpi_put_att_{TYPE} (File%fh,varid,name, nf_{TYPE} , int(clen,kind=PIO_OFFSET),value)
-#endif
-#endif
-#endif
 
-#ifdef _NETCDF
-!       case(iotype_netcdf,PIO_iotype_netcdf4c,PIO_iotype_netcdf4p)
-       case(iotype_netcdf,PIO_iotype_netcdf4c)
-          if (Ios%io_rank==0) then
-             if(debug) print *,__FILE__,__LINE__,name,value
-             ierr=nf90_put_att(File%fh,varid,name,value)
-          endif
-       case(PIO_iotype_netcdf4p)
-          ierr=nf90_put_att(File%fh,varid,name,value)
-#endif
+    ierr = PIOc_put_att_{NCTYPE} (ncid,varid,name, PIO_{TYPE}, c_sizeof(value), C_LOC(value))
 
-       case default
-          call bad_iotype(iotype,__PIO_FILE__,__LINE__)
+  end function put_att_id_{TYPE}
+  integer function put_att_id_text (ncid, varid, name, value) result(ierr)
+    use iso_c_binding
+    integer, intent(in) :: ncid
+    integer, intent(in) :: varid
+    character(len=*), intent(in) :: name
+    character(len=*), intent(in) :: value
+    interface
+       integer(C_INT) function PIOc_put_att_text (ncid, varid, name, len, op) &
+            bind(C,name="PIOc_put_att_text")
+         use iso_c_binding
+         integer(C_INT), value :: ncid
+         integer(C_INT), value :: varid
+         character(C_CHAR) :: name
+         integer(C_LONG), value :: len
+         character(C_char) :: op
+       end function PIOc_put_att_text
+    end interface
 
-       end select
-    endif
-    call check_netcdf(File, ierr,__PIO_FILE__,__LINE__)
-  end function put_att_{TYPE}
+    ierr = PIOc_put_att_text (ncid,varid,name, int(len(value),C_LONG), value)
 
-!pl The next line is needed by genf90.pl, do not remove it.
-! TYPE real,double,int
-!>
-!! @public 
-!! @ingroup PIO_put_att
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @copydoc file_desc_t
-!! @param varid : The netcdf variable identifier
-!! @param name : name of the attribute to add
-!! @param value : The value for the netcdf attribute 
-!! @retval ierr @copydoc error_return
-!<
+  end function put_att_id_text
+
+  !pl The next line is needed by genf90.pl, do not remove it.
+  ! TYPE real,double,int
+  !>
+  !! @public 
+  !! @ingroup PIO_put_att
+  !! @brief Writes an netcdf attribute to a file
+  !! @details
+  !! @param File @copydoc file_desc_t
+  !! @param varid : The netcdf variable identifier
+  !! @param name : name of the attribute to add
+  !! @param value : The value for the netcdf attribute 
+  !! @retval ierr @copydoc error_return
+  !<
   integer function put_att_1d_{TYPE} (File, varid, name, value) result(ierr)
     use pio_msg_mod, only : pio_msg_putatt_1D
     type (File_desc_t), intent(inout) , target :: File
@@ -190,7 +160,7 @@ contains
     character(len=*), intent(in) :: name
     {VTYPE}, intent(in) :: value(:)
     type(iosystem_desc_t), pointer :: ios
-	
+
 #ifdef DEBUG
     {VTYPE} :: chkval
 #endif
@@ -219,7 +189,7 @@ contains
        call MPI_BCAST(name,nlen,MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(clen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)	
     end if
-    
+
     call mpi_barrier(ios%union_comm, mpierr)
 
     if(ios%async_interface) then
@@ -262,40 +232,19 @@ contains
     call check_netcdf(File, ierr,__PIO_FILE__,__LINE__)
   end function put_att_1d_{TYPE}
 
-!>
-!! @public 
-!! @ingroup PIO_put_att
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @copydoc file_desc_t
-!! @param varDesc @copydoc var_desc_t
-!! @param name : name of the attribute to add
-!! @param value : The value for the netcdf attribute 
-!! @retval ierr @copydoc error_return
-!<
-  integer function put_att_desc_{TYPE} (File,varDesc,name,value) result(ierr)
 
-    type (File_desc_t), intent(inout) , target :: File
-    type (VAR_desc_t), intent(in)     :: varDesc
-    character(len=*), intent(in)      :: name
-    {VTYPE}, intent(in)      :: value
-
-    ierr = put_att_{TYPE} (File,varDesc%varid,name,value)
-
-  end function put_att_desc_{TYPE}
-
-! TYPE real,int,double
-!>
-!! @public 
-!! @ingroup PIO_put_att
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @copydoc file_desc_t
-!! @param varDesc @copydoc var_desc_t
-!! @param name : name of the attribute to add
-!! @param value : The value for the netcdf attribute 
-!! @retval ierr @copydoc error_return
-!<
+  ! TYPE real,int,double
+  !>
+  !! @public 
+  !! @ingroup PIO_put_att
+  !! @brief Writes an netcdf attribute to a file
+  !! @details
+  !! @param File @copydoc file_desc_t
+  !! @param varDesc @copydoc var_desc_t
+  !! @param name : name of the attribute to add
+  !! @param value : The value for the netcdf attribute 
+  !! @retval ierr @copydoc error_return
+  !<
   integer function put_att_desc_1d_{TYPE} (File,varDesc,name,value) result(ierr)
 
     type (File_desc_t), intent(inout) , target :: File
@@ -310,17 +259,17 @@ contains
   end function put_att_desc_1d_{TYPE}
 
 
-!>
-!! @public 
-!! @ingroup PIO_get_att
-!! @brief Reads an netcdf attribute from a  file
-!! @details
-!! @param File @copydoc file_desc_t
-!! @param varDesc @copydoc var_desc_t
-!! @param name : name of the attribute to get
-!! @param value : The value for the netcdf attribute 
-!! @retval ierr @copydoc error_return
-!<
+  !>
+  !! @public 
+  !! @ingroup PIO_get_att
+  !! @brief Reads an netcdf attribute from a  file
+  !! @details
+  !! @param File @copydoc file_desc_t
+  !! @param varDesc @copydoc var_desc_t
+  !! @param name : name of the attribute to get
+  !! @param value : The value for the netcdf attribute 
+  !! @retval ierr @copydoc error_return
+  !<
   integer function get_att_desc_{TYPE} (File,varDesc,name,value) result(ierr)
 
     type (File_desc_t), intent(inout) , target :: File
@@ -334,18 +283,18 @@ contains
 
   end function get_att_desc_{TYPE}
 
-! TYPE real,int,double
-!>
-!! @public 
-!! @ingroup PIO_get_att
-!! @brief Reads an netcdf attribute from a  file
-!! @details
-!! @param File @copydoc file_desc_t
-!! @param varDesc @copydoc var_desc_t
-!! @param name : name of the attribute to get
-!! @param value : The value for the netcdf attribute 
-!! @retval ierr @copydoc error_return
-!<
+  ! TYPE real,int,double
+  !>
+  !! @public 
+  !! @ingroup PIO_get_att
+  !! @brief Reads an netcdf attribute from a  file
+  !! @details
+  !! @param File @copydoc file_desc_t
+  !! @param varDesc @copydoc var_desc_t
+  !! @param name : name of the attribute to get
+  !! @param value : The value for the netcdf attribute 
+  !! @retval ierr @copydoc error_return
+  !<
   integer function get_att_desc_1d_{TYPE} (File,varDesc,name,value) result(ierr)
 
     type (File_desc_t), intent(inout) , target :: File
@@ -359,17 +308,17 @@ contains
 
   end function get_att_desc_1d_{TYPE}
 
-!>
-!! @public 
-!! @ingroup PIO_get_att
-!! @brief Reads an netcdf attribute from a  file
-!! @details
-!! @param File @copydoc file_desc_t
-!! @param varid : The netcdf variable identifier
-!! @param name : name of the attribute to get
-!! @param value : The value for the netcdf attribute 
-!! @retval ierr @copydoc error_return
-!<
+  !>
+  !! @public 
+  !! @ingroup PIO_get_att
+  !! @brief Reads an netcdf attribute from a  file
+  !! @details
+  !! @param File @copydoc file_desc_t
+  !! @param varid : The netcdf variable identifier
+  !! @param name : name of the attribute to get
+  !! @param value : The value for the netcdf attribute 
+  !! @retval ierr @copydoc error_return
+  !<
   integer function get_att_{TYPE} (File,varid,name,value) result(ierr)
     use pio_msg_mod, only : pio_msg_getatt	
     type (File_desc_t), intent(in) , target :: File
@@ -439,18 +388,18 @@ contains
     end if
   end function get_att_{TYPE}
 
-! TYPE real,int,double
-!>
-!! @public 
-!! @ingroup PIO_get_att
-!! @brief Reads an netcdf attribute from a  file
-!! @details
-!! @param File @copydoc file_desc_t
-!! @param varid : The netcdf variable identifier
-!! @param name : name of the attribute to get
-!! @param value : The value for the netcdf attribute 
-!! @retval ierr @copydoc error_return
-!<
+  ! TYPE real,int,double
+  !>
+  !! @public 
+  !! @ingroup PIO_get_att
+  !! @brief Reads an netcdf attribute from a  file
+  !! @details
+  !! @param File @copydoc file_desc_t
+  !! @param varid : The netcdf variable identifier
+  !! @param name : name of the attribute to get
+  !! @param value : The value for the netcdf attribute 
+  !! @retval ierr @copydoc error_return
+  !<
   integer function get_att_1d_{TYPE} (File,varid,name,value) result(ierr)
     use pio_msg_mod, only : pio_msg_getatt_1d
 

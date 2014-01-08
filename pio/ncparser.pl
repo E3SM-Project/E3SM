@@ -45,22 +45,21 @@ foreach my $line (@file){
 close(NF);
 
 my $func="";
-open(PIO,"nf_mod.F90") or die "Could not open file nf_mod.F90";
-my @nfmod = <PIO>;
-close(PIO);
-foreach my $line (@nfmod){
-    if ($line =~ /\s*integer\s+function\s+pio_([^\(]+)\(/i){
-	$func = $1;
-	$func =~ tr/A-Z/a-z/;
-	$functions->{$func}{pio} = $line;
-    }
-    elsif ($line =~ /\s*integer\s+function\s+([^\(]+)\(/i){
-	$func = $1;
-	$func =~ tr/A-Z/a-z/;
-	$functions->{$func}{pio} = $line;
-    }
-
-}
+#open(PIO,"nf_mod.F90") or die "Could not open file nf_mod.F90";
+#my @nfmod = <PIO>;
+#close(PIO);
+#foreach my $line (@nfmod){
+#    if ($line =~ /\s*integer\s+function\s+pio_([^\(]+)\(/i){
+#	$func = $1;
+#	$func =~ tr/A-Z/a-z/;
+#	$functions->{$func}{pio} = $line;
+#    }
+#    elsif ($line =~ /\s*integer\s+function\s+([^\(]+)\(/i){
+#	$func = $1;
+#	$func =~ tr/A-Z/a-z/;
+#	$functions->{$func}{pio} = $line;
+#    }
+#}
   
 
 

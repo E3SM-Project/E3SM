@@ -6,11 +6,35 @@
 #include <stdbool.h>
 #ifdef _NETCDF
 #include <netcdf.h>
+#ifdef _NETCDF4
+#include <netcdf_par.h>
+#endif
 #endif
 #ifdef _PNETCDF
 #include <pnetcdf.h>
 #endif
+#define PIO_Offset MPI_Offset
 
+typedef struct io_desc_t
+{
+  int ioid;
+  int basetype;
+  int *dest_ioproc;
+  int *rfrom;
+  int *rtype;
+  int *scount;
+  int *stype;
+  int async_id;
+  int nrecvs;
+  int compsize;
+  int maxiobuflen;
+  int ndof;
+  PIO_Offset *start;
+  PIO_Offset *count;
+  PIO_Offset glen;
+  PIO_Offset *dest_ioindex;
+
+} io_desc_t;
 
 
 typedef struct iosystem_desc_t 
@@ -30,8 +54,8 @@ typedef struct iosystem_desc_t
   int comp_rank;
   int io_rank;
 
-  _Bool iomaster;
-  _Bool compmaster;
+  int iomaster;
+  int compmaster;
 
   int ioroot;
   int comproot;
@@ -39,8 +63,8 @@ typedef struct iosystem_desc_t
 
   int error_handler;
 
-  _Bool async_interface;
-  _Bool ioproc;
+  bool async_interface;
+  bool ioproc;
   
   MPI_Info info;
   struct iosystem_desc_t *next;
@@ -57,12 +81,12 @@ typedef struct file_desc_t
 } file_desc_t;
 
 enum PIO_IOTYPE{
-  PIO_IOTYPE_PBINARY,
-  PIO_IOYTPE_DIRECT_PBINARY,
-  PIO_IOTYPE_PNETCDF,
-  PIO_IOTYPE_NETCDF,
-  PIO_IOTYPE_NETCDF4C,
-  PIO_IOTYPE_NETCDF4P
+  PIO_IOTYPE_PBINARY=1,
+  PIO_IOYTPE_DIRECT_PBINARY=2,
+  PIO_IOTYPE_PNETCDF=5,
+  PIO_IOTYPE_NETCDF=6,
+  PIO_IOTYPE_NETCDF4C=7,
+  PIO_IOTYPE_NETCDF4P=8
 };
 
 enum PIO_MSG{
@@ -127,16 +151,16 @@ enum PIO_MSG{
 };
 
 enum PIO_ERROR_HANDLERS{
-  PIO_INTERNAL_ERROR,
-  PIO_BCAST_ERROR,
-  PIO_RETURN_ERROR
+  PIO_INTERNAL_ERROR=(-51),
+  PIO_BCAST_ERROR=(-52),
+  PIO_RETURN_ERROR=(-53)
 };
 
 #if defined( _PNETCDF) || defined(_NETCDF)
 #define PIO_GLOBAL NC_GLOBAL
 #define PIO_UNLIMITED NC_UNLIMITED
 #define PIO_DOUBLE NC_DOUBLE
-#define PIO_REAL   NC_REAL
+#define PIO_REAL   NC_FLOAT
 #define PIO_INT    NC_INT
 #define PIO_CHAR   NC_CHAR
 #define PIO_NOERR  NC_NOERR
@@ -226,5 +250,5 @@ enum PIO_ERROR_HANDLERS{
 
 
 #endif
-#define PIO_Offset MPI_Offset
+
 #endif  _PIO_H_

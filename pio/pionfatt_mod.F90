@@ -6,8 +6,8 @@
 #define __PIO_FILE__ "pionfatt_mod.F90"
 !>
 !! @file 
-!! $Revision: 847 $
-!! $LastChangedDate: 2013-11-13 15:41:51 -0700 (Wed, 13 Nov 2013) $
+!! $Revision: 894 $
+!! $LastChangedDate: 2013-12-13 15:04:58 -0700 (Fri, 13 Dec 2013) $
 !! @brief NetCDF attribute interface to PIO
 !<
 module pionfatt_mod
@@ -20,21 +20,25 @@ module pionfatt_mod
   use pio_utils, only : check_netcdf, bad_iotype
 
 #ifdef _NETCDF
-    use netcdf      ! _EXTERNAL
+  use netcdf      ! _EXTERNAL
 #endif
-  
+#ifdef USE_PNETCDF_MOD
+  use pnetcdf
+#endif  
   implicit none
 #ifdef _PNETCDF
+#ifndef USE_PNETCDF_MOD
 #  include <pnetcdf.inc>  /* _EXTERNAL */
+#endif
 #endif
   include 'mpif.h'  ! _EXTERNAL 
 
 
-!>
-!! @private
-!<
+  !>
+  !! @private
+  !<
   public :: put_att
-# 32 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
+# 36 "pionfatt_mod.F90.in"
   interface put_att
      module procedure put_att_text, put_att_desc_text
      module procedure put_att_real, put_att_desc_real
@@ -49,11 +53,11 @@ module pionfatt_mod
   end interface
 
 
-!>
-!! @private
-!<
+  !>
+  !! @private
+  !<
   public :: get_att
-# 43 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
+# 47 "pionfatt_mod.F90.in"
   interface get_att
      module procedure get_att_text, get_att_desc_text
      module procedure get_att_real, get_att_desc_real
@@ -67,408 +71,252 @@ module pionfatt_mod
      module procedure get_att_1d_double, get_att_desc_1d_double
   end interface
 
-!>
-!!  @public 
-!!  @defgroup PIO_put_att PIO_put_att
-!!  @brief Writes an netcdf attribute to a file 
-!<
-!>
-!! @public 
-!! @defgroup PIO_get_att PIO_get_att
-!! @brief Reads  an netcdf attribute from a file 
-!<
+  !>
+  !!  @public 
+  !!  @defgroup PIO_put_att PIO_put_att
+  !!  @brief Writes an netcdf attribute to a file 
+  !<
+  !>
+  !! @public 
+  !! @defgroup PIO_get_att PIO_get_att
+  !! @brief Reads  an netcdf attribute from a file 
+  !<
 
   private :: modName
   character(len=*), parameter :: modName='pionfatt_mod'
 
-# 63 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
+# 67 "pionfatt_mod.F90.in"
 contains
 
-!>
-!! @public 
-!! @ingroup PIO_put_att
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @copydoc file_desc_t
-!! @param varid : The netcdf variable identifier
-!! @param name : name of the attribute to add
-!! @param value : The value for the netcdf attribute 
-!! @retval ierr @copydoc error_return
-!<
-# 76 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
-  integer function put_att_text (File, varid, name, value) result(ierr)
-    use pio_msg_mod, only : pio_msg_putatt
-    type (File_desc_t), intent(inout) , target :: File
+  !>
+  !! @public 
+  !! @ingroup PIO_put_att
+  !! @brief Writes an netcdf attribute to a file
+  !! @details
+  !! @param File @copydoc file_desc_t
+  !! @param varid : The netcdf variable identifier
+  !! @param name : name of the attribute to add
+  !! @param value : The value for the netcdf attribute 
+  !! @retval ierr @copydoc error_return
+  !<
+# 80 "pionfatt_mod.F90.in"
+  integer function put_att_vid_text (File, vdesc, name, value) result(ierr)
+    type (File_desc_t), intent(in) :: File
+    type(var_desc_t), intent(in)  :: vdesc
+    character(len=*), intent(in)  :: name
+    character(len=*), intent(in) :: value
+
+    ierr = put_att_id_text (File%fh,vdesc%varid,name,value)
+
+# 88 "pionfatt_mod.F90.in"
+  end function put_att_vid_text
+# 80 "pionfatt_mod.F90.in"
+  integer function put_att_vid_real (File, vdesc, name, value) result(ierr)
+    type (File_desc_t), intent(in) :: File
+    type(var_desc_t), intent(in)  :: vdesc
+    character(len=*), intent(in)  :: name
+    real(r4), intent(in) :: value
+
+    ierr = put_att_id_real (File%fh,vdesc%varid,name,value)
+
+# 88 "pionfatt_mod.F90.in"
+  end function put_att_vid_real
+# 80 "pionfatt_mod.F90.in"
+  integer function put_att_vid_double (File, vdesc, name, value) result(ierr)
+    type (File_desc_t), intent(in) :: File
+    type(var_desc_t), intent(in)  :: vdesc
+    character(len=*), intent(in)  :: name
+    real(r8), intent(in) :: value
+
+    ierr = put_att_id_double (File%fh,vdesc%varid,name,value)
+
+# 88 "pionfatt_mod.F90.in"
+  end function put_att_vid_double
+# 80 "pionfatt_mod.F90.in"
+  integer function put_att_vid_int (File, vdesc, name, value) result(ierr)
+    type (File_desc_t), intent(in) :: File
+    type(var_desc_t), intent(in)  :: vdesc
+    character(len=*), intent(in)  :: name
+    integer(i4), intent(in) :: value
+
+    ierr = put_att_id_int (File%fh,vdesc%varid,name,value)
+
+# 88 "pionfatt_mod.F90.in"
+  end function put_att_vid_int
+# 89 "pionfatt_mod.F90.in"
+  integer function put_att_vid_text (File, varid, name, value) result(ierr)
+    type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
     character(len=*), intent(in) :: name
     character(len=*), intent(in) :: value
-    
-    type(iosystem_desc_t), pointer :: ios
-#if (100 != TYPETEXT)
-#ifdef DEBUG
-    character(len=*) :: chkval
-#endif
-#endif
-    !------------------
-    ! Local variables
-    !------------------
-    character(len=*), parameter :: subName=modName//'::put_att_text'
-    integer :: iotype, mpierr, msg, itype
-    integer ::  clen=1, nlen
 
-    iotype = File%iotype
-    ierr=PIO_noerr
+    ierr = put_att_id_text (File%fh,varid,name,value)
 
-#if (100 == TYPETEXT)
-    clen = len_trim(value)
-#else
-    clen = 1
-#endif
-    ios => file%iosystem
-    if(ios%async_interface .and. .not. ios%ioproc ) then
-       msg=PIO_MSG_PUTATT
-       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
-       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       itype = 100
-       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       nlen=len_trim(name)
-       call MPI_BCAST(nlen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(name,nlen,MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
-#if (100 == TYPETEXT)	
-       call MPI_BCAST(clen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)	
-#endif
-    end if
-
-    if(ios%async_interface) then
-       call MPI_BCAST(value, clen, MPI_CHARACTER, ios%compmaster, ios%my_comm, mpierr)
-    end if
-	
-    if(Ios%IOproc) then
-       select case(iotype)
-#ifdef _PNETCDF
-       case(iotype_pnetcdf)
-#if (100 == TYPETEXT)
-          ierr= nfmpi_put_att_text (File%fh,varid,name,int(clen,kind=PIO_OFFSET),value)
-#else
-
-#ifdef DEBUG
-          print *, __PIO_FILE__,__LINE__,value
-          call MPI_ALLREDUCE(value, chkval, 1, MPI_CHARACTER, MPI_MAX ,Ios%io_comm, mpierr)
-          call CheckMPIReturn(subName, mpierr)
-          if(chkval /= value) then
-             print *,__PIO_FILE__,__LINE__,chkval,value, mpierr
-             call piodie(__PIO_FILE__,__LINE__,'attributes do not match')
-          end if
-#endif             
-#undef DEBUG
-          ierr= nfmpi_put_att_text (File%fh,varid,name, nf_text , int(clen,kind=PIO_OFFSET),value)
-#endif
-#endif
-
-#ifdef _NETCDF
-!       case(iotype_netcdf,PIO_iotype_netcdf4c,PIO_iotype_netcdf4p)
-       case(iotype_netcdf,PIO_iotype_netcdf4c)
-          if (Ios%io_rank==0) then
-             if(debug) print *,__FILE__,__LINE__,name,value
-             ierr=nf90_put_att(File%fh,varid,name,value)
-          endif
-       case(PIO_iotype_netcdf4p)
-          ierr=nf90_put_att(File%fh,varid,name,value)
-#endif
-
-       case default
-          call bad_iotype(iotype,__PIO_FILE__,__LINE__)
-
-       end select
-    endif
-    call check_netcdf(File, ierr,__PIO_FILE__,__LINE__)
-# 163 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
-  end function put_att_text
-# 76 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
-  integer function put_att_real (File, varid, name, value) result(ierr)
-    use pio_msg_mod, only : pio_msg_putatt
-    type (File_desc_t), intent(inout) , target :: File
+# 97 "pionfatt_mod.F90.in"
+  end function put_att_vid_text
+# 89 "pionfatt_mod.F90.in"
+  integer function put_att_vid_real (File, varid, name, value) result(ierr)
+    type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
     character(len=*), intent(in) :: name
     real(r4), intent(in) :: value
-    
-    type(iosystem_desc_t), pointer :: ios
-#if (101 != TYPETEXT)
-#ifdef DEBUG
-    real(r4) :: chkval
-#endif
-#endif
-    !------------------
-    ! Local variables
-    !------------------
-    character(len=*), parameter :: subName=modName//'::put_att_real'
-    integer :: iotype, mpierr, msg, itype
-    integer ::  clen=1, nlen
 
-    iotype = File%iotype
-    ierr=PIO_noerr
+    ierr = put_att_id_real (File%fh,varid,name,value)
 
-#if (101 == TYPETEXT)
-    clen = len_trim(value)
-#else
-    clen = 1
-#endif
-    ios => file%iosystem
-    if(ios%async_interface .and. .not. ios%ioproc ) then
-       msg=PIO_MSG_PUTATT
-       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
-       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       itype = 101
-       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       nlen=len_trim(name)
-       call MPI_BCAST(nlen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(name,nlen,MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
-#if (101 == TYPETEXT)	
-       call MPI_BCAST(clen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)	
-#endif
-    end if
-
-    if(ios%async_interface) then
-       call MPI_BCAST(value, clen, MPI_REAL4, ios%compmaster, ios%my_comm, mpierr)
-    end if
-	
-    if(Ios%IOproc) then
-       select case(iotype)
-#ifdef _PNETCDF
-       case(iotype_pnetcdf)
-#if (101 == TYPETEXT)
-          ierr= nfmpi_put_att_text (File%fh,varid,name,int(clen,kind=PIO_OFFSET),value)
-#else
-
-#ifdef DEBUG
-          print *, __PIO_FILE__,__LINE__,value
-          call MPI_ALLREDUCE(value, chkval, 1, MPI_REAL4, MPI_MAX ,Ios%io_comm, mpierr)
-          call CheckMPIReturn(subName, mpierr)
-          if(chkval /= value) then
-             print *,__PIO_FILE__,__LINE__,chkval,value, mpierr
-             call piodie(__PIO_FILE__,__LINE__,'attributes do not match')
-          end if
-#endif             
-#undef DEBUG
-          ierr= nfmpi_put_att_real (File%fh,varid,name, nf_real , int(clen,kind=PIO_OFFSET),value)
-#endif
-#endif
-
-#ifdef _NETCDF
-!       case(iotype_netcdf,PIO_iotype_netcdf4c,PIO_iotype_netcdf4p)
-       case(iotype_netcdf,PIO_iotype_netcdf4c)
-          if (Ios%io_rank==0) then
-             if(debug) print *,__FILE__,__LINE__,name,value
-             ierr=nf90_put_att(File%fh,varid,name,value)
-          endif
-       case(PIO_iotype_netcdf4p)
-          ierr=nf90_put_att(File%fh,varid,name,value)
-#endif
-
-       case default
-          call bad_iotype(iotype,__PIO_FILE__,__LINE__)
-
-       end select
-    endif
-    call check_netcdf(File, ierr,__PIO_FILE__,__LINE__)
-# 163 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
-  end function put_att_real
-# 76 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
-  integer function put_att_double (File, varid, name, value) result(ierr)
-    use pio_msg_mod, only : pio_msg_putatt
-    type (File_desc_t), intent(inout) , target :: File
+# 97 "pionfatt_mod.F90.in"
+  end function put_att_vid_real
+# 89 "pionfatt_mod.F90.in"
+  integer function put_att_vid_double (File, varid, name, value) result(ierr)
+    type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
     character(len=*), intent(in) :: name
     real(r8), intent(in) :: value
-    
-    type(iosystem_desc_t), pointer :: ios
-#if (102 != TYPETEXT)
-#ifdef DEBUG
-    real(r8) :: chkval
-#endif
-#endif
-    !------------------
-    ! Local variables
-    !------------------
-    character(len=*), parameter :: subName=modName//'::put_att_double'
-    integer :: iotype, mpierr, msg, itype
-    integer ::  clen=1, nlen
 
-    iotype = File%iotype
-    ierr=PIO_noerr
+    ierr = put_att_id_double (File%fh,varid,name,value)
 
-#if (102 == TYPETEXT)
-    clen = len_trim(value)
-#else
-    clen = 1
-#endif
-    ios => file%iosystem
-    if(ios%async_interface .and. .not. ios%ioproc ) then
-       msg=PIO_MSG_PUTATT
-       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
-       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       itype = 102
-       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       nlen=len_trim(name)
-       call MPI_BCAST(nlen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(name,nlen,MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
-#if (102 == TYPETEXT)	
-       call MPI_BCAST(clen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)	
-#endif
-    end if
-
-    if(ios%async_interface) then
-       call MPI_BCAST(value, clen, MPI_REAL8, ios%compmaster, ios%my_comm, mpierr)
-    end if
-	
-    if(Ios%IOproc) then
-       select case(iotype)
-#ifdef _PNETCDF
-       case(iotype_pnetcdf)
-#if (102 == TYPETEXT)
-          ierr= nfmpi_put_att_text (File%fh,varid,name,int(clen,kind=PIO_OFFSET),value)
-#else
-
-#ifdef DEBUG
-          print *, __PIO_FILE__,__LINE__,value
-          call MPI_ALLREDUCE(value, chkval, 1, MPI_REAL8, MPI_MAX ,Ios%io_comm, mpierr)
-          call CheckMPIReturn(subName, mpierr)
-          if(chkval /= value) then
-             print *,__PIO_FILE__,__LINE__,chkval,value, mpierr
-             call piodie(__PIO_FILE__,__LINE__,'attributes do not match')
-          end if
-#endif             
-#undef DEBUG
-          ierr= nfmpi_put_att_double (File%fh,varid,name, nf_double , int(clen,kind=PIO_OFFSET),value)
-#endif
-#endif
-
-#ifdef _NETCDF
-!       case(iotype_netcdf,PIO_iotype_netcdf4c,PIO_iotype_netcdf4p)
-       case(iotype_netcdf,PIO_iotype_netcdf4c)
-          if (Ios%io_rank==0) then
-             if(debug) print *,__FILE__,__LINE__,name,value
-             ierr=nf90_put_att(File%fh,varid,name,value)
-          endif
-       case(PIO_iotype_netcdf4p)
-          ierr=nf90_put_att(File%fh,varid,name,value)
-#endif
-
-       case default
-          call bad_iotype(iotype,__PIO_FILE__,__LINE__)
-
-       end select
-    endif
-    call check_netcdf(File, ierr,__PIO_FILE__,__LINE__)
-# 163 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
-  end function put_att_double
-# 76 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
-  integer function put_att_int (File, varid, name, value) result(ierr)
-    use pio_msg_mod, only : pio_msg_putatt
-    type (File_desc_t), intent(inout) , target :: File
+# 97 "pionfatt_mod.F90.in"
+  end function put_att_vid_double
+# 89 "pionfatt_mod.F90.in"
+  integer function put_att_vid_int (File, varid, name, value) result(ierr)
+    type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
     character(len=*), intent(in) :: name
     integer(i4), intent(in) :: value
-    
-    type(iosystem_desc_t), pointer :: ios
-#if (103 != TYPETEXT)
-#ifdef DEBUG
-    integer(i4) :: chkval
-#endif
-#endif
-    !------------------
-    ! Local variables
-    !------------------
-    character(len=*), parameter :: subName=modName//'::put_att_int'
-    integer :: iotype, mpierr, msg, itype
-    integer ::  clen=1, nlen
 
-    iotype = File%iotype
-    ierr=PIO_noerr
+    ierr = put_att_id_int (File%fh,varid,name,value)
 
-#if (103 == TYPETEXT)
-    clen = len_trim(value)
-#else
-    clen = 1
-#endif
-    ios => file%iosystem
-    if(ios%async_interface .and. .not. ios%ioproc ) then
-       msg=PIO_MSG_PUTATT
-       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
-       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       itype = 103
-       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       nlen=len_trim(name)
-       call MPI_BCAST(nlen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(name,nlen,MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
-#if (103 == TYPETEXT)	
-       call MPI_BCAST(clen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)	
-#endif
-    end if
+# 97 "pionfatt_mod.F90.in"
+  end function put_att_vid_int
+  ! TYPE int,real,double
+# 99 "pionfatt_mod.F90.in"
+  integer function put_att_id_int (ncid, varid, name, value) result(ierr)
+    use iso_c_binding
+    integer, intent(in) :: ncid
+    integer, intent(in) :: varid
+    character(len=*), intent(in) :: name
+    integer(i4), intent(in) :: value
 
-    if(ios%async_interface) then
-       call MPI_BCAST(value, clen, MPI_INTEGER, ios%compmaster, ios%my_comm, mpierr)
-    end if
-	
-    if(Ios%IOproc) then
-       select case(iotype)
-#ifdef _PNETCDF
-       case(iotype_pnetcdf)
-#if (103 == TYPETEXT)
-          ierr= nfmpi_put_att_text (File%fh,varid,name,int(clen,kind=PIO_OFFSET),value)
-#else
+# 106 "pionfatt_mod.F90.in"
+    interface
+# 107 "pionfatt_mod.F90.in"
+       integer(C_INT) function PIOc_put_att_int (ncid, varid, name, xtype, len, op) &
+            bind(C,name="PIOc_put_att_int")
+         use iso_c_binding
+         integer(C_INT), value :: ncid
+         integer(C_INT), value :: varid
+         character(C_CHAR) :: name
+         integer(C_INT), value :: xtype
+         integer(C_LONG), value :: len
+         type(C_PTR) :: op
+# 116 "pionfatt_mod.F90.in"
+       end function PIOc_put_att_int
+    end interface
 
-#ifdef DEBUG
-          print *, __PIO_FILE__,__LINE__,value
-          call MPI_ALLREDUCE(value, chkval, 1, MPI_INTEGER, MPI_MAX ,Ios%io_comm, mpierr)
-          call CheckMPIReturn(subName, mpierr)
-          if(chkval /= value) then
-             print *,__PIO_FILE__,__LINE__,chkval,value, mpierr
-             call piodie(__PIO_FILE__,__LINE__,'attributes do not match')
-          end if
-#endif             
-#undef DEBUG
-          ierr= nfmpi_put_att_int (File%fh,varid,name, nf_int , int(clen,kind=PIO_OFFSET),value)
-#endif
-#endif
 
-#ifdef _NETCDF
-!       case(iotype_netcdf,PIO_iotype_netcdf4c,PIO_iotype_netcdf4p)
-       case(iotype_netcdf,PIO_iotype_netcdf4c)
-          if (Ios%io_rank==0) then
-             if(debug) print *,__FILE__,__LINE__,name,value
-             ierr=nf90_put_att(File%fh,varid,name,value)
-          endif
-       case(PIO_iotype_netcdf4p)
-          ierr=nf90_put_att(File%fh,varid,name,value)
-#endif
+    ierr = PIOc_put_att_int (ncid,varid,name, PIO_int, len(value), C_LOC(value))
 
-       case default
-          call bad_iotype(iotype,__PIO_FILE__,__LINE__)
+# 122 "pionfatt_mod.F90.in"
+  end function put_att_id_int
+  ! TYPE int,real,double
+# 99 "pionfatt_mod.F90.in"
+  integer function put_att_id_real (ncid, varid, name, value) result(ierr)
+    use iso_c_binding
+    integer, intent(in) :: ncid
+    integer, intent(in) :: varid
+    character(len=*), intent(in) :: name
+    real(r4), intent(in) :: value
 
-       end select
-    endif
-    call check_netcdf(File, ierr,__PIO_FILE__,__LINE__)
-# 163 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
-  end function put_att_int
+# 106 "pionfatt_mod.F90.in"
+    interface
+# 107 "pionfatt_mod.F90.in"
+       integer(C_INT) function PIOc_put_att_real (ncid, varid, name, xtype, len, op) &
+            bind(C,name="PIOc_put_att_real")
+         use iso_c_binding
+         integer(C_INT), value :: ncid
+         integer(C_INT), value :: varid
+         character(C_CHAR) :: name
+         integer(C_INT), value :: xtype
+         integer(C_LONG), value :: len
+         type(C_PTR) :: op
+# 116 "pionfatt_mod.F90.in"
+       end function PIOc_put_att_real
+    end interface
 
-! TYPE real,double,int
-!>
-!! @public 
-!! @ingroup PIO_put_att
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @copydoc file_desc_t
-!! @param varid : The netcdf variable identifier
-!! @param name : name of the attribute to add
-!! @param value : The value for the netcdf attribute 
-!! @retval ierr @copydoc error_return
-!<
-# 178 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
+
+    ierr = PIOc_put_att_real (ncid,varid,name, PIO_real, len(value), C_LOC(value))
+
+# 122 "pionfatt_mod.F90.in"
+  end function put_att_id_real
+  ! TYPE int,real,double
+# 99 "pionfatt_mod.F90.in"
+  integer function put_att_id_double (ncid, varid, name, value) result(ierr)
+    use iso_c_binding
+    integer, intent(in) :: ncid
+    integer, intent(in) :: varid
+    character(len=*), intent(in) :: name
+    real(r8), intent(in) :: value
+
+# 106 "pionfatt_mod.F90.in"
+    interface
+# 107 "pionfatt_mod.F90.in"
+       integer(C_INT) function PIOc_put_att_double (ncid, varid, name, xtype, len, op) &
+            bind(C,name="PIOc_put_att_double")
+         use iso_c_binding
+         integer(C_INT), value :: ncid
+         integer(C_INT), value :: varid
+         character(C_CHAR) :: name
+         integer(C_INT), value :: xtype
+         integer(C_LONG), value :: len
+         type(C_PTR) :: op
+# 116 "pionfatt_mod.F90.in"
+       end function PIOc_put_att_double
+    end interface
+
+
+    ierr = PIOc_put_att_double (ncid,varid,name, PIO_double, len(value), C_LOC(value))
+
+# 122 "pionfatt_mod.F90.in"
+  end function put_att_id_double
+# 123 "pionfatt_mod.F90.in"
+  integer function put_att_id_text (ncid, varid, name, value) result(ierr)
+    use iso_c_binding
+    integer, intent(in) :: ncid
+    integer, intent(in) :: varid
+    character(len=*), intent(in) :: name
+    character(len=*), intent(in) :: value
+# 129 "pionfatt_mod.F90.in"
+    interface
+# 130 "pionfatt_mod.F90.in"
+       integer(C_INT) function PIOc_put_att_text (ncid, varid, name, len, op) &
+            bind(C,name="PIOc_put_att_text")
+         use iso_c_binding
+         integer(C_INT), value :: ncid
+         integer(C_INT), value :: varid
+         character(C_CHAR) :: name
+         integer(C_LONG), value :: len
+         character(C_char) :: op
+# 138 "pionfatt_mod.F90.in"
+       end function PIOc_put_att_text
+    end interface
+
+    ierr = PIOc_put_att_text (ncid,varid,name, len(value), C_LOC(value))
+
+# 143 "pionfatt_mod.F90.in"
+  end function put_att_id_text
+
+  ! TYPE real,double,int
+  !>
+  !! @public 
+  !! @ingroup PIO_put_att
+  !! @brief Writes an netcdf attribute to a file
+  !! @details
+  !! @param File @copydoc file_desc_t
+  !! @param varid : The netcdf variable identifier
+  !! @param name : name of the attribute to add
+  !! @param value : The value for the netcdf attribute 
+  !! @retval ierr @copydoc error_return
+  !<
+# 158 "pionfatt_mod.F90.in"
   integer function put_att_1d_real (File, varid, name, value) result(ierr)
     use pio_msg_mod, only : pio_msg_putatt_1D
     type (File_desc_t), intent(inout) , target :: File
@@ -476,7 +324,7 @@ contains
     character(len=*), intent(in) :: name
     real(r4), intent(in) :: value(:)
     type(iosystem_desc_t), pointer :: ios
-	
+
 #ifdef DEBUG
     real(r4) :: chkval
 #endif
@@ -505,7 +353,7 @@ contains
        call MPI_BCAST(name,nlen,MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(clen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)	
     end if
-    
+
     call mpi_barrier(ios%union_comm, mpierr)
 
     if(ios%async_interface) then
@@ -546,21 +394,21 @@ contains
        end select
     endif
     call check_netcdf(File, ierr,__PIO_FILE__,__LINE__)
-# 255 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
+# 235 "pionfatt_mod.F90.in"
   end function put_att_1d_real
-! TYPE real,double,int
-!>
-!! @public 
-!! @ingroup PIO_put_att
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @copydoc file_desc_t
-!! @param varid : The netcdf variable identifier
-!! @param name : name of the attribute to add
-!! @param value : The value for the netcdf attribute 
-!! @retval ierr @copydoc error_return
-!<
-# 178 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
+  ! TYPE real,double,int
+  !>
+  !! @public 
+  !! @ingroup PIO_put_att
+  !! @brief Writes an netcdf attribute to a file
+  !! @details
+  !! @param File @copydoc file_desc_t
+  !! @param varid : The netcdf variable identifier
+  !! @param name : name of the attribute to add
+  !! @param value : The value for the netcdf attribute 
+  !! @retval ierr @copydoc error_return
+  !<
+# 158 "pionfatt_mod.F90.in"
   integer function put_att_1d_double (File, varid, name, value) result(ierr)
     use pio_msg_mod, only : pio_msg_putatt_1D
     type (File_desc_t), intent(inout) , target :: File
@@ -568,7 +416,7 @@ contains
     character(len=*), intent(in) :: name
     real(r8), intent(in) :: value(:)
     type(iosystem_desc_t), pointer :: ios
-	
+
 #ifdef DEBUG
     real(r8) :: chkval
 #endif
@@ -597,7 +445,7 @@ contains
        call MPI_BCAST(name,nlen,MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(clen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)	
     end if
-    
+
     call mpi_barrier(ios%union_comm, mpierr)
 
     if(ios%async_interface) then
@@ -638,21 +486,21 @@ contains
        end select
     endif
     call check_netcdf(File, ierr,__PIO_FILE__,__LINE__)
-# 255 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
+# 235 "pionfatt_mod.F90.in"
   end function put_att_1d_double
-! TYPE real,double,int
-!>
-!! @public 
-!! @ingroup PIO_put_att
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @copydoc file_desc_t
-!! @param varid : The netcdf variable identifier
-!! @param name : name of the attribute to add
-!! @param value : The value for the netcdf attribute 
-!! @retval ierr @copydoc error_return
-!<
-# 178 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
+  ! TYPE real,double,int
+  !>
+  !! @public 
+  !! @ingroup PIO_put_att
+  !! @brief Writes an netcdf attribute to a file
+  !! @details
+  !! @param File @copydoc file_desc_t
+  !! @param varid : The netcdf variable identifier
+  !! @param name : name of the attribute to add
+  !! @param value : The value for the netcdf attribute 
+  !! @retval ierr @copydoc error_return
+  !<
+# 158 "pionfatt_mod.F90.in"
   integer function put_att_1d_int (File, varid, name, value) result(ierr)
     use pio_msg_mod, only : pio_msg_putatt_1D
     type (File_desc_t), intent(inout) , target :: File
@@ -660,7 +508,7 @@ contains
     character(len=*), intent(in) :: name
     integer(i4), intent(in) :: value(:)
     type(iosystem_desc_t), pointer :: ios
-	
+
 #ifdef DEBUG
     integer(i4) :: chkval
 #endif
@@ -689,7 +537,7 @@ contains
        call MPI_BCAST(name,nlen,MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
        call MPI_BCAST(clen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)	
     end if
-    
+
     call mpi_barrier(ios%union_comm, mpierr)
 
     if(ios%async_interface) then
@@ -730,21 +578,21 @@ contains
        end select
     endif
     call check_netcdf(File, ierr,__PIO_FILE__,__LINE__)
-# 255 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
+# 235 "pionfatt_mod.F90.in"
   end function put_att_1d_int
 
-!>
-!! @public 
-!! @ingroup PIO_put_att
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @copydoc file_desc_t
-!! @param varDesc @copydoc var_desc_t
-!! @param name : name of the attribute to add
-!! @param value : The value for the netcdf attribute 
-!! @retval ierr @copydoc error_return
-!<
-# 268 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
+  !>
+  !! @public 
+  !! @ingroup PIO_put_att
+  !! @brief Writes an netcdf attribute to a file
+  !! @details
+  !! @param File @copydoc file_desc_t
+  !! @param varDesc @copydoc var_desc_t
+  !! @param name : name of the attribute to add
+  !! @param value : The value for the netcdf attribute 
+  !! @retval ierr @copydoc error_return
+  !<
+# 248 "pionfatt_mod.F90.in"
   integer function put_att_desc_text (File,varDesc,name,value) result(ierr)
 
     type (File_desc_t), intent(inout) , target :: File
@@ -754,9 +602,9 @@ contains
 
     ierr = put_att_text (File,varDesc%varid,name,value)
 
-# 277 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
+# 257 "pionfatt_mod.F90.in"
   end function put_att_desc_text
-# 268 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
+# 248 "pionfatt_mod.F90.in"
   integer function put_att_desc_real (File,varDesc,name,value) result(ierr)
 
     type (File_desc_t), intent(inout) , target :: File
@@ -766,9 +614,9 @@ contains
 
     ierr = put_att_real (File,varDesc%varid,name,value)
 
-# 277 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
+# 257 "pionfatt_mod.F90.in"
   end function put_att_desc_real
-# 268 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
+# 248 "pionfatt_mod.F90.in"
   integer function put_att_desc_double (File,varDesc,name,value) result(ierr)
 
     type (File_desc_t), intent(inout) , target :: File
@@ -778,9 +626,9 @@ contains
 
     ierr = put_att_double (File,varDesc%varid,name,value)
 
-# 277 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
+# 257 "pionfatt_mod.F90.in"
   end function put_att_desc_double
-# 268 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
+# 248 "pionfatt_mod.F90.in"
   integer function put_att_desc_int (File,varDesc,name,value) result(ierr)
 
     type (File_desc_t), intent(inout) , target :: File
@@ -790,22 +638,22 @@ contains
 
     ierr = put_att_int (File,varDesc%varid,name,value)
 
-# 277 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
+# 257 "pionfatt_mod.F90.in"
   end function put_att_desc_int
 
-! TYPE real,int,double
-!>
-!! @public 
-!! @ingroup PIO_put_att
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @copydoc file_desc_t
-!! @param varDesc @copydoc var_desc_t
-!! @param name : name of the attribute to add
-!! @param value : The value for the netcdf attribute 
-!! @retval ierr @copydoc error_return
-!<
-# 291 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
+  ! TYPE real,int,double
+  !>
+  !! @public 
+  !! @ingroup PIO_put_att
+  !! @brief Writes an netcdf attribute to a file
+  !! @details
+  !! @param File @copydoc file_desc_t
+  !! @param varDesc @copydoc var_desc_t
+  !! @param name : name of the attribute to add
+  !! @param value : The value for the netcdf attribute 
+  !! @retval ierr @copydoc error_return
+  !<
+# 271 "pionfatt_mod.F90.in"
   integer function put_att_desc_1d_real (File,varDesc,name,value) result(ierr)
 
     type (File_desc_t), intent(inout) , target :: File
@@ -817,21 +665,21 @@ contains
 
     ierr = put_att_1d_real (File,varDesc%varid,name,value)
 
-# 302 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
+# 282 "pionfatt_mod.F90.in"
   end function put_att_desc_1d_real
-! TYPE real,int,double
-!>
-!! @public 
-!! @ingroup PIO_put_att
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @copydoc file_desc_t
-!! @param varDesc @copydoc var_desc_t
-!! @param name : name of the attribute to add
-!! @param value : The value for the netcdf attribute 
-!! @retval ierr @copydoc error_return
-!<
-# 291 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
+  ! TYPE real,int,double
+  !>
+  !! @public 
+  !! @ingroup PIO_put_att
+  !! @brief Writes an netcdf attribute to a file
+  !! @details
+  !! @param File @copydoc file_desc_t
+  !! @param varDesc @copydoc var_desc_t
+  !! @param name : name of the attribute to add
+  !! @param value : The value for the netcdf attribute 
+  !! @retval ierr @copydoc error_return
+  !<
+# 271 "pionfatt_mod.F90.in"
   integer function put_att_desc_1d_int (File,varDesc,name,value) result(ierr)
 
     type (File_desc_t), intent(inout) , target :: File
@@ -843,21 +691,21 @@ contains
 
     ierr = put_att_1d_int (File,varDesc%varid,name,value)
 
-# 302 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
+# 282 "pionfatt_mod.F90.in"
   end function put_att_desc_1d_int
-! TYPE real,int,double
-!>
-!! @public 
-!! @ingroup PIO_put_att
-!! @brief Writes an netcdf attribute to a file
-!! @details
-!! @param File @copydoc file_desc_t
-!! @param varDesc @copydoc var_desc_t
-!! @param name : name of the attribute to add
-!! @param value : The value for the netcdf attribute 
-!! @retval ierr @copydoc error_return
-!<
-# 291 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
+  ! TYPE real,int,double
+  !>
+  !! @public 
+  !! @ingroup PIO_put_att
+  !! @brief Writes an netcdf attribute to a file
+  !! @details
+  !! @param File @copydoc file_desc_t
+  !! @param varDesc @copydoc var_desc_t
+  !! @param name : name of the attribute to add
+  !! @param value : The value for the netcdf attribute 
+  !! @retval ierr @copydoc error_return
+  !<
+# 271 "pionfatt_mod.F90.in"
   integer function put_att_desc_1d_double (File,varDesc,name,value) result(ierr)
 
     type (File_desc_t), intent(inout) , target :: File
@@ -869,22 +717,22 @@ contains
 
     ierr = put_att_1d_double (File,varDesc%varid,name,value)
 
-# 302 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
+# 282 "pionfatt_mod.F90.in"
   end function put_att_desc_1d_double
 
 
-!>
-!! @public 
-!! @ingroup PIO_get_att
-!! @brief Reads an netcdf attribute from a  file
-!! @details
-!! @param File @copydoc file_desc_t
-!! @param varDesc @copydoc var_desc_t
-!! @param name : name of the attribute to get
-!! @param value : The value for the netcdf attribute 
-!! @retval ierr @copydoc error_return
-!<
-# 316 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
+  !>
+  !! @public 
+  !! @ingroup PIO_get_att
+  !! @brief Reads an netcdf attribute from a  file
+  !! @details
+  !! @param File @copydoc file_desc_t
+  !! @param varDesc @copydoc var_desc_t
+  !! @param name : name of the attribute to get
+  !! @param value : The value for the netcdf attribute 
+  !! @retval ierr @copydoc error_return
+  !<
+# 296 "pionfatt_mod.F90.in"
   integer function get_att_desc_text (File,varDesc,name,value) result(ierr)
 
     type (File_desc_t), intent(inout) , target :: File
@@ -896,9 +744,9 @@ contains
 
     ierr = get_att_text (File,varDesc%varid,name,value)
 
-# 327 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
+# 307 "pionfatt_mod.F90.in"
   end function get_att_desc_text
-# 316 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
+# 296 "pionfatt_mod.F90.in"
   integer function get_att_desc_real (File,varDesc,name,value) result(ierr)
 
     type (File_desc_t), intent(inout) , target :: File
@@ -910,9 +758,9 @@ contains
 
     ierr = get_att_real (File,varDesc%varid,name,value)
 
-# 327 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
+# 307 "pionfatt_mod.F90.in"
   end function get_att_desc_real
-# 316 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
+# 296 "pionfatt_mod.F90.in"
   integer function get_att_desc_double (File,varDesc,name,value) result(ierr)
 
     type (File_desc_t), intent(inout) , target :: File
@@ -924,9 +772,9 @@ contains
 
     ierr = get_att_double (File,varDesc%varid,name,value)
 
-# 327 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
+# 307 "pionfatt_mod.F90.in"
   end function get_att_desc_double
-# 316 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
+# 296 "pionfatt_mod.F90.in"
   integer function get_att_desc_int (File,varDesc,name,value) result(ierr)
 
     type (File_desc_t), intent(inout) , target :: File
@@ -938,22 +786,22 @@ contains
 
     ierr = get_att_int (File,varDesc%varid,name,value)
 
-# 327 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
+# 307 "pionfatt_mod.F90.in"
   end function get_att_desc_int
 
-! TYPE real,int,double
-!>
-!! @public 
-!! @ingroup PIO_get_att
-!! @brief Reads an netcdf attribute from a  file
-!! @details
-!! @param File @copydoc file_desc_t
-!! @param varDesc @copydoc var_desc_t
-!! @param name : name of the attribute to get
-!! @param value : The value for the netcdf attribute 
-!! @retval ierr @copydoc error_return
-!<
-# 341 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
+  ! TYPE real,int,double
+  !>
+  !! @public 
+  !! @ingroup PIO_get_att
+  !! @brief Reads an netcdf attribute from a  file
+  !! @details
+  !! @param File @copydoc file_desc_t
+  !! @param varDesc @copydoc var_desc_t
+  !! @param name : name of the attribute to get
+  !! @param value : The value for the netcdf attribute 
+  !! @retval ierr @copydoc error_return
+  !<
+# 321 "pionfatt_mod.F90.in"
   integer function get_att_desc_1d_real (File,varDesc,name,value) result(ierr)
 
     type (File_desc_t), intent(inout) , target :: File
@@ -965,21 +813,21 @@ contains
 
     ierr = get_att_1d_real (File,varDesc%varid,name,value)
 
-# 352 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
+# 332 "pionfatt_mod.F90.in"
   end function get_att_desc_1d_real
-! TYPE real,int,double
-!>
-!! @public 
-!! @ingroup PIO_get_att
-!! @brief Reads an netcdf attribute from a  file
-!! @details
-!! @param File @copydoc file_desc_t
-!! @param varDesc @copydoc var_desc_t
-!! @param name : name of the attribute to get
-!! @param value : The value for the netcdf attribute 
-!! @retval ierr @copydoc error_return
-!<
-# 341 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
+  ! TYPE real,int,double
+  !>
+  !! @public 
+  !! @ingroup PIO_get_att
+  !! @brief Reads an netcdf attribute from a  file
+  !! @details
+  !! @param File @copydoc file_desc_t
+  !! @param varDesc @copydoc var_desc_t
+  !! @param name : name of the attribute to get
+  !! @param value : The value for the netcdf attribute 
+  !! @retval ierr @copydoc error_return
+  !<
+# 321 "pionfatt_mod.F90.in"
   integer function get_att_desc_1d_int (File,varDesc,name,value) result(ierr)
 
     type (File_desc_t), intent(inout) , target :: File
@@ -991,21 +839,21 @@ contains
 
     ierr = get_att_1d_int (File,varDesc%varid,name,value)
 
-# 352 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
+# 332 "pionfatt_mod.F90.in"
   end function get_att_desc_1d_int
-! TYPE real,int,double
-!>
-!! @public 
-!! @ingroup PIO_get_att
-!! @brief Reads an netcdf attribute from a  file
-!! @details
-!! @param File @copydoc file_desc_t
-!! @param varDesc @copydoc var_desc_t
-!! @param name : name of the attribute to get
-!! @param value : The value for the netcdf attribute 
-!! @retval ierr @copydoc error_return
-!<
-# 341 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
+  ! TYPE real,int,double
+  !>
+  !! @public 
+  !! @ingroup PIO_get_att
+  !! @brief Reads an netcdf attribute from a  file
+  !! @details
+  !! @param File @copydoc file_desc_t
+  !! @param varDesc @copydoc var_desc_t
+  !! @param name : name of the attribute to get
+  !! @param value : The value for the netcdf attribute 
+  !! @retval ierr @copydoc error_return
+  !<
+# 321 "pionfatt_mod.F90.in"
   integer function get_att_desc_1d_double (File,varDesc,name,value) result(ierr)
 
     type (File_desc_t), intent(inout) , target :: File
@@ -1017,21 +865,21 @@ contains
 
     ierr = get_att_1d_double (File,varDesc%varid,name,value)
 
-# 352 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
+# 332 "pionfatt_mod.F90.in"
   end function get_att_desc_1d_double
 
-!>
-!! @public 
-!! @ingroup PIO_get_att
-!! @brief Reads an netcdf attribute from a  file
-!! @details
-!! @param File @copydoc file_desc_t
-!! @param varid : The netcdf variable identifier
-!! @param name : name of the attribute to get
-!! @param value : The value for the netcdf attribute 
-!! @retval ierr @copydoc error_return
-!<
-# 365 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
+  !>
+  !! @public 
+  !! @ingroup PIO_get_att
+  !! @brief Reads an netcdf attribute from a  file
+  !! @details
+  !! @param File @copydoc file_desc_t
+  !! @param varid : The netcdf variable identifier
+  !! @param name : name of the attribute to get
+  !! @param value : The value for the netcdf attribute 
+  !! @retval ierr @copydoc error_return
+  !<
+# 345 "pionfatt_mod.F90.in"
   integer function get_att_text (File,varid,name,value) result(ierr)
     use pio_msg_mod, only : pio_msg_getatt	
     type (File_desc_t), intent(in) , target :: File
@@ -1099,9 +947,9 @@ contains
        call MPI_BCAST(value, clen, MPI_CHARACTER,Ios%iomaster,Ios%my_comm, mpierr)
        call CheckMPIReturn(subName, mpierr)
     end if
-# 432 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
+# 412 "pionfatt_mod.F90.in"
   end function get_att_text
-# 365 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
+# 345 "pionfatt_mod.F90.in"
   integer function get_att_real (File,varid,name,value) result(ierr)
     use pio_msg_mod, only : pio_msg_getatt	
     type (File_desc_t), intent(in) , target :: File
@@ -1169,9 +1017,9 @@ contains
        call MPI_BCAST(value, clen, MPI_REAL4,Ios%iomaster,Ios%my_comm, mpierr)
        call CheckMPIReturn(subName, mpierr)
     end if
-# 432 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
+# 412 "pionfatt_mod.F90.in"
   end function get_att_real
-# 365 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
+# 345 "pionfatt_mod.F90.in"
   integer function get_att_double (File,varid,name,value) result(ierr)
     use pio_msg_mod, only : pio_msg_getatt	
     type (File_desc_t), intent(in) , target :: File
@@ -1239,9 +1087,9 @@ contains
        call MPI_BCAST(value, clen, MPI_REAL8,Ios%iomaster,Ios%my_comm, mpierr)
        call CheckMPIReturn(subName, mpierr)
     end if
-# 432 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
+# 412 "pionfatt_mod.F90.in"
   end function get_att_double
-# 365 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
+# 345 "pionfatt_mod.F90.in"
   integer function get_att_int (File,varid,name,value) result(ierr)
     use pio_msg_mod, only : pio_msg_getatt	
     type (File_desc_t), intent(in) , target :: File
@@ -1309,22 +1157,22 @@ contains
        call MPI_BCAST(value, clen, MPI_INTEGER,Ios%iomaster,Ios%my_comm, mpierr)
        call CheckMPIReturn(subName, mpierr)
     end if
-# 432 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
+# 412 "pionfatt_mod.F90.in"
   end function get_att_int
 
-! TYPE real,int,double
-!>
-!! @public 
-!! @ingroup PIO_get_att
-!! @brief Reads an netcdf attribute from a  file
-!! @details
-!! @param File @copydoc file_desc_t
-!! @param varid : The netcdf variable identifier
-!! @param name : name of the attribute to get
-!! @param value : The value for the netcdf attribute 
-!! @retval ierr @copydoc error_return
-!<
-# 446 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
+  ! TYPE real,int,double
+  !>
+  !! @public 
+  !! @ingroup PIO_get_att
+  !! @brief Reads an netcdf attribute from a  file
+  !! @details
+  !! @param File @copydoc file_desc_t
+  !! @param varid : The netcdf variable identifier
+  !! @param name : name of the attribute to get
+  !! @param value : The value for the netcdf attribute 
+  !! @retval ierr @copydoc error_return
+  !<
+# 426 "pionfatt_mod.F90.in"
   integer function get_att_1d_real (File,varid,name,value) result(ierr)
     use pio_msg_mod, only : pio_msg_getatt_1d
 
@@ -1391,21 +1239,21 @@ contains
        call CheckMPIReturn(subName, mpierr)
     end if
 
-# 512 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
+# 492 "pionfatt_mod.F90.in"
   end function get_att_1d_real
-! TYPE real,int,double
-!>
-!! @public 
-!! @ingroup PIO_get_att
-!! @brief Reads an netcdf attribute from a  file
-!! @details
-!! @param File @copydoc file_desc_t
-!! @param varid : The netcdf variable identifier
-!! @param name : name of the attribute to get
-!! @param value : The value for the netcdf attribute 
-!! @retval ierr @copydoc error_return
-!<
-# 446 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
+  ! TYPE real,int,double
+  !>
+  !! @public 
+  !! @ingroup PIO_get_att
+  !! @brief Reads an netcdf attribute from a  file
+  !! @details
+  !! @param File @copydoc file_desc_t
+  !! @param varid : The netcdf variable identifier
+  !! @param name : name of the attribute to get
+  !! @param value : The value for the netcdf attribute 
+  !! @retval ierr @copydoc error_return
+  !<
+# 426 "pionfatt_mod.F90.in"
   integer function get_att_1d_int (File,varid,name,value) result(ierr)
     use pio_msg_mod, only : pio_msg_getatt_1d
 
@@ -1472,21 +1320,21 @@ contains
        call CheckMPIReturn(subName, mpierr)
     end if
 
-# 512 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
+# 492 "pionfatt_mod.F90.in"
   end function get_att_1d_int
-! TYPE real,int,double
-!>
-!! @public 
-!! @ingroup PIO_get_att
-!! @brief Reads an netcdf attribute from a  file
-!! @details
-!! @param File @copydoc file_desc_t
-!! @param varid : The netcdf variable identifier
-!! @param name : name of the attribute to get
-!! @param value : The value for the netcdf attribute 
-!! @retval ierr @copydoc error_return
-!<
-# 446 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
+  ! TYPE real,int,double
+  !>
+  !! @public 
+  !! @ingroup PIO_get_att
+  !! @brief Reads an netcdf attribute from a  file
+  !! @details
+  !! @param File @copydoc file_desc_t
+  !! @param varid : The netcdf variable identifier
+  !! @param name : name of the attribute to get
+  !! @param value : The value for the netcdf attribute 
+  !! @retval ierr @copydoc error_return
+  !<
+# 426 "pionfatt_mod.F90.in"
   integer function get_att_1d_double (File,varid,name,value) result(ierr)
     use pio_msg_mod, only : pio_msg_getatt_1d
 
@@ -1553,7 +1401,7 @@ contains
        call CheckMPIReturn(subName, mpierr)
     end if
 
-# 512 "/glade/u/home/jedwards/pio_trunk/pio/pionfatt_mod.F90.in"
+# 492 "pionfatt_mod.F90.in"
   end function get_att_1d_double
 
 

@@ -5,7 +5,7 @@ module pio_nf
 #endif
   use pio_kinds, only: pio_offset
   use pio_types, only: file_desc_t, iosystem_desc_t, var_desc_t
-  use iso_c_binding, only : c_loc
+  use iso_c_binding, only : c_loc, C_NULL_CHAR
   private
   public :: &
        pio_def_var,   &
@@ -192,7 +192,7 @@ contains
          integer(c_int) :: dimid
        end function PIOc_inq_dimid
     end interface
-    ierr = PIOc_inq_dimid(ncid,name,dimid)
+    ierr = PIOc_inq_dimid(ncid,trim(name)//C_NULL_CHAR,dimid)
   end function inq_dimid_id
 
 
@@ -483,8 +483,7 @@ contains
          integer(C_INT) :: dimid
        end function PIOc_def_dim
     end interface
-    ierr = PIOc_def_dim(ncid,name,len,dimid)
-
+    ierr = PIOc_def_dim(ncid,trim(name)//C_NULL_CHAR,len,dimid)
   end function def_dim_id
 
 
@@ -803,7 +802,7 @@ contains
          integer(C_INT) :: varid
        end function PIOc_inq_varid
     end interface
-    ierr = PIOc_inq_varid(ncid, name, varid)
+    ierr = PIOc_inq_varid(ncid, trim(name)//C_NULL_CHAR, varid)
   end function inq_varid_id
 
 
@@ -854,7 +853,7 @@ contains
        end function PIOc_inq_attlen
     end interface
 
-    ierr = PIOc_inq_attlen(ncid,varid,name,len)
+    ierr = PIOc_inq_attlen(ncid,varid,trim(name)//C_NULL_CHAR,len)
   end function inq_attlen_id
 
 
@@ -913,7 +912,7 @@ contains
        end function PIOc_inq_att
     end interface
     
-    ierr = PIOc_inq_att(ncid,varid,name,xtype,len)
+    ierr = PIOc_inq_att(ncid,varid,trim(name)//C_NULL_CHAR,xtype,len)
 
   end function inq_att_id
 
@@ -1036,7 +1035,7 @@ contains
        end function PIOc_def_var
     end interface
 
-    ierr = PIOc_def_var(ncid, name, xtype, size(dimids), c_loc(dimids),varid)
+    ierr = PIOc_def_var(ncid, trim(name)//C_NULL_CHAR, xtype, size(dimids), c_loc(dimids),varid)
   end function def_var_md_id
 
 

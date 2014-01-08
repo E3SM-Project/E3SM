@@ -190,7 +190,7 @@ module pio_types
 	integer(i4)         :: compsize   ! size of expected comp buffer
         integer(i4)         :: maxiobuflen   ! size of largest iobuffer
         integer(i4)         :: ndof
-        integer(i4)         :: padding
+        integer(i4)         :: ioid
     end type
 
 !>

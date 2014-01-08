@@ -1047,6 +1047,76 @@ end subroutine box_rearrange_io2comp_{TYPE}
 
   end subroutine box_rearrange_create
 
+
+  subroutine create_mpi_datatypes(basetype, msgcnt, mindex, mcount, mtype)
+    use calcdisplace_mod, only : calcdisplace,GCDblocksize,gcd
+    integer, intent(in) :: basetype
+    integer, intent(in) :: msgcnt
+    integer, pointer :: mtype(:)
+    integer, intent(in) :: mcount(:)
+    integer(kind=pio_offset),intent(inout) :: mindex(:)
+
+    integer :: newTYPE
+    integer :: i, pos, ii, ierror
+    integer, pointer :: rtype(:)
+    integer :: blocksize, len
+    integer(kind=pio_offset) :: i8blocksize
+    integer(kind=pio_offset),allocatable :: displace(:)
+    integer(kind=pio_offset),allocatable :: bsizeT(:)
+    character(len=*), parameter :: subName=modName//'::create_mpi_datatypes'
+
+    !need to cache
+    call alloc_check(mtype, msgcnt, 'mpi msg types')
+    pos = 1
+    ii = 1
+    allocate(bsizeT(msgcnt))
+    do i=1,msgcnt
+       if(mcount(i) > 0) then 
+          call GCDblocksize(mindex(pos:pos+mcount(i)-1),i8blocksize)
+          bsizeT(ii)=int(i8blocksize)
+          ii = ii + 1
+       endif
+       pos = pos + mcount(i)
+    enddo
+    blocksize = gcd(bsizeT(1:ii-1))
+    !       print *,'gcd: receive block lengths: ', bsizeT(1:ii-1)
+    deallocate(bsizeT)
+    !       print *,'GCD calculated for receive loop blocksize: ',blocksize
+
+    call MPI_TYPE_CONTIGUOUS(blocksize,baseTYPE,newTYPE,ierror)
+    call CheckMPIReturn(subName,ierror)
+    call MPI_TYPE_COMMIT(newTYPE,ierror)
+    call CheckMPIReturn(subName,ierror)
+
+    pos = 1
+    do i=1,msgcnt
+       if(mcount(i)>0) then
+          len = mcount(i)/blocksize        
+          allocate(displace(len))
+          if(blocksize == 1) then 
+             displace(:) = mindex(pos:pos+mcount(i)-1)
+          else
+             mindex(pos:pos+mcount(i)-1) = mindex(pos:pos+mcount(i)-1)+1
+             call calcdisplace(blocksize,mindex(pos:pos+mcount(i)-1),displace)
+          endif
+          !DBG call alloc_print_usage(iosystem%comp_comm,80,'l2629')
+          ! need rindex to contain 0-based displacements here
+          call MPI_TYPE_CREATE_INDEXED_BLOCK( &
+               len, 1, int(displace), &               ! count,blen, disp
+               newTYPE, mtype(i), ierror )       ! oldtype, newtype
+          call CheckMPIReturn(subName,ierror)
+          call MPI_TYPE_COMMIT(mtype(i), ierror)
+          call CheckMPIReturn(subName,ierror)
+
+          deallocate(displace)
+          pos = pos + mcount(i)
+       endif
+    end do
+    call MPI_TYPE_FREE(newTYPE,ierror)
+
+  end subroutine create_mpi_datatypes
+
+
 !>
 !! @private compute_counts
 !! @brief Define comp <-> IO communications patterns
@@ -1054,7 +1124,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
 !<
 #ifndef _MPISERIAL
   subroutine compute_counts(Iosystem, ioDesc, niodof)
-    
+
     use calcdisplace_mod, only : calcdisplace,GCDblocksize,gcd
 
 
@@ -1074,7 +1144,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
     integer :: iorank             ! i/o task id in i/o communicator + 1
     integer :: io_comprank        ! i/o task id in comp communicator
     integer :: nrecvs             ! if i/o task, number of comp tasks sending 
-                                  !   to/receiving from this task (cached)
+    !   to/receiving from this task (cached)
     integer(kind=pio_offset) :: ioindex            ! offset for data to be sent to i/o task
     integer :: pos                ! array offset
     integer :: ierror             ! MPI error return
@@ -1196,13 +1266,6 @@ end subroutine box_rearrange_io2comp_{TYPE}
        do i=1,num_tasks
           recv_displs(i) = i-1
        end do
-#ifdef MEMCHK	
-    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
-    if(rss>lastrss) then
-       lastrss=rss
-       print *,__PIO_FILE__,__LINE__,'mem=',rss
-    end if
-#endif
     else
 
        ! for non-i/o processes
@@ -1224,9 +1287,9 @@ end subroutine box_rearrange_io2comp_{TYPE}
     endif
 
     call pio_swapm( num_tasks, myrank,                           &
-      scount,   num_iotasks, send_counts, send_displs, sr_types, &
-      recv_buf, rbuf_size,   recv_counts, recv_displs, sr_types, &
-      IOsystem%union_comm, pio_hs, pio_isend, pio_maxreq          )
+         scount,   num_iotasks, send_counts, send_displs, sr_types, &
+         recv_buf, rbuf_size,   recv_counts, recv_displs, sr_types, &
+         IOsystem%union_comm, pio_hs, pio_isend, pio_maxreq          )
 
     ! determine nrecvs, rcount, and rfrom
     nrecvs = 0
@@ -1253,13 +1316,7 @@ end subroutine box_rearrange_io2comp_{TYPE}
              rfrom(nrecvs)  = i-1             
           endif
        enddo
-#ifdef MEMCHK	
-    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
-    if(rss>lastrss) then
-       lastrss=rss
-       print *,__PIO_FILE__,__LINE__,'mem=',rss
-    end if
-#endif
+
     endif
     ioDesc%nrecvs = nrecvs
 
@@ -1345,13 +1402,6 @@ end subroutine box_rearrange_io2comp_{TYPE}
        do i=2,nrecvs
           recv_displs(rfrom(i)+1) = recv_displs(rfrom(i-1)+1) + rcount(i-1)
        enddo
-#ifdef MEMCHK	
-    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
-    if(rss>lastrss) then
-       lastrss=rss
-       print *,__PIO_FILE__,__LINE__,'mem=',rss
-    end if
-#endif
     else
 
        ! for non-i/o processes
@@ -1370,16 +1420,16 @@ end subroutine box_rearrange_io2comp_{TYPE}
     endif
     sr_types = MPI_INTEGER8
     call pio_swapm( num_tasks, myrank,                         &
-      s2rindex, ndof,      send_counts, send_displs, sr_types, &
-      rindex,   rbuf_size, recv_counts, recv_displs, sr_types, &
-      IOsystem%union_comm, pio_hs, pio_isend, pio_maxreq        )
+         s2rindex, ndof,      send_counts, send_displs, sr_types, &
+         rindex,   rbuf_size, recv_counts, recv_displs, sr_types, &
+         IOsystem%union_comm, pio_hs, pio_isend, pio_maxreq        )
 
-   call dealloc_check(s2rindex,    's2rindex temp')
-   call dealloc_check(sr_types,    'sr_types temp')
-   call dealloc_check(send_counts, 'send_counts temp')
-   call dealloc_check(send_displs, 'send_displs temp')
-   call dealloc_check(recv_counts, 'recv_counts temp')
-   call dealloc_check(recv_displs, 'recv_displs temp')
+    call dealloc_check(s2rindex,    's2rindex temp')
+    call dealloc_check(sr_types,    'sr_types temp')
+    call dealloc_check(send_counts, 'send_counts temp')
+    call dealloc_check(send_displs, 'send_displs temp')
+    call dealloc_check(recv_counts, 'recv_counts temp')
+    call dealloc_check(recv_displs, 'recv_displs temp')
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -1388,178 +1438,17 @@ end subroutine box_rearrange_io2comp_{TYPE}
     !
 
     if (Iosystem%IOproc .and. nrecvs>0) then
-#ifdef MEMCHK	
-    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
-    if(rss>lastrss) then
-       lastrss=rss
-       print *,__PIO_FILE__,__LINE__,'mem=',rss
-    end if
-#endif 
-      !need to cache
-       call alloc_check(ioDesc%rtype, nrecvs, 'mpi recv types')
-       rtype=>ioDesc%rtype
-       pos = 1
-       ii = 1
-          allocate(bsizeT(nrecvs))
-          do i=1,nrecvs
-             call GCDblocksize(rindex(pos:pos+rcount(i)-1),i8blocksize)
-             if(rcount(i) > 0) then 
-                bsizeT(ii)=int(i8blocksize)
-                ii = ii + 1
-             endif
-             pos = pos + rcount(i)
-          enddo
-          blocksize = gcd(bsizeT(1:ii-1))
-          !       print *,'gcd: receive block lengths: ', bsizeT(1:ii-1)
-          deallocate(bsizeT)
-          !       print *,'GCD calculated for receive loop blocksize: ',blocksize
-#ifdef MEMCHK	
-    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
-    if(rss>lastrss) then
-       lastrss=rss
-       print *,__PIO_FILE__,__LINE__,'mem=',rss
-    end if
-#endif  
-          call MPI_TYPE_CONTIGUOUS(blocksize,ioDesc%baseTYPE,newTYPEr,ierror)
-          call CheckMPIReturn(subName,ierror)
-          call MPI_TYPE_COMMIT(newTYPEr,ierror)
-          call CheckMPIReturn(subName,ierror)
-#ifdef MEMCHK	
-          call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
-          if(rss>lastrss) then
-             lastrss=rss
-             print *,__PIO_FILE__,__LINE__,'mem=',rss
-          end if
-#endif 
-          pos = 1
-          do i=1,nrecvs
-
-#if DEBUG
-#if DEBUG_INDICES
-             print *, subName,':: myrank=',myrank,': recv indices from ',rfrom(i), &
-                  ' count=',rcount(i),' value=',rindex(pos:pos+rcount(i)-1)
-#else
-             print *, subName,':: myrank=',myrank,': recv indices from ',rfrom(i), &
-                  ' count=',rcount(i)
-#endif
-#endif
-	
-             len = rcount(i)/blocksize        
-             allocate(displace(len))
-             if(blocksize == 1) then 
-                displace(:) = rindex(pos:pos+rcount(i)-1)
-             else
-                rindex(pos:pos+rcount(i)-1) = rindex(pos:pos+rcount(i)-1)+1
-                call calcdisplace(blocksize,rindex(pos:pos+rcount(i)-1),displace)
-             endif
-#ifdef MEMCHK	
-    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
-    if(rss>lastrss) then
-       lastrss=rss
-       print *,__PIO_FILE__,__LINE__,'mem=',rss
-    end if
-#endif 
-             !DBG call alloc_print_usage(iosystem%comp_comm,80,'l2629')
-             ! need rindex to contain 0-based displacements here
-             call MPI_TYPE_CREATE_INDEXED_BLOCK( &
-                  len, 1, int(displace), &               ! count,blen, disp
-                  newTYPEr, rtype(i), ierror )       ! oldtype, newtype
-             call CheckMPIReturn(subName,ierror)
-#ifdef MEMCHK	
-    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
-    if(rss>lastrss) then
-       lastrss=rss
-       print *,__PIO_FILE__,__LINE__,'mem=',rss
-    end if
-#endif              
-             call MPI_TYPE_COMMIT(rtype(i), ierror)
-             call CheckMPIReturn(subName,ierror)
-             
-             deallocate(displace)
-             pos = pos + rcount(i)
-          end do
-          call MPI_TYPE_FREE(newTYPEr,ierror)
-
+       call create_mpi_datatypes(iodesc%basetype, nrecvs, rindex, rcount, iodesc%rtype)
     endif
     !
     ! Create the mpi types for the comp proc sends
-#ifdef MEMCHK	
-    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
-    if(rss>lastrss) then
-       lastrss=rss
-       print *,__PIO_FILE__,__LINE__,'mem=',rss
-    end if
-#endif
-
     !need to cache
-    call alloc_check(ioDesc%stype, num_iotasks, 'mpi send types')
-    stype=>ioDesc%stype
+    call create_mpi_datatypes(iodesc%basetype, num_iotasks, sindex, scount, iodesc%stype)
 
-    pos = 1
-    allocate(bsizeT(num_iotasks))
-    ii = 1
-    do i=1,num_iotasks
-       if(scount(i) /= 0) then 
-          call GCDblocksize(sindex(pos:pos+scount(i)-1),i8blocksize)
-          bsizeT(ii)=int(i8blocksize)
-	  pos = pos + scount(i)
-	  ii = ii+1
-       endif
-    enddo
-    blocksize = gcd(bsizeT(1:ii-1))
-    deallocate(bsizeT)
-!    print *,'GCD calculated for send loop blocksize: ',blocksize
-    call MPI_TYPE_CONTIGUOUS(blocksize,ioDesc%baseTYPE,newTYPEs,ierror)
-    call CheckMPIReturn(subName,ierror)
-    call MPI_TYPE_COMMIT(newTYPEs,ierror)
-    call CheckMPIReturn(subName,ierror)
-
-#ifdef MEMCHK	
-    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
-    if(rss>lastrss) then
-       lastrss=rss
-       print *,__PIO_FILE__,__LINE__,'mem=',rss
-    end if
-#endif
-
-    pos = 1
-    do i=1,num_iotasks
- 
-       if (scount(i) /= 0) then
-          len = scount(i)/blocksize        
-          allocate(displace(len))
-          if(blocksize == 1) then 
-             displace(:) = sindex(pos:pos+scount(i)-1)
-          else
-             sindex(pos:pos+scount(i)-1) = sindex(pos:pos+scount(i)-1)+1
-             call calcdisplace(blocksize,sindex(pos:pos+scount(i)-1),displace)
-          endif
-          call MPI_TYPE_CREATE_INDEXED_BLOCK( &
-               len, 1, int(displace), &        ! count, blen, disp
-               newTYPEs, stype(i), ierror )       ! oldtype, newtype
-          call CheckMPIReturn(subName,ierror)
-          
-          call MPI_TYPE_COMMIT(stype(i), ierror)
-          call CheckMPIReturn(subName,ierror)
- 
-          deallocate(displace)
-          pos = pos + scount(i)
-       endif
-
-    end do
-
-    call MPI_TYPE_FREE(newTYPEs,ierror)
 
     !
     ! clean up
     !
-#ifdef MEMCHK	
-    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
-    if(rss>lastrss) then
-       lastrss=rss
-       print *,__PIO_FILE__,__LINE__,'mem=',rss
-    end if
-#endif
     if (Iosystem%IOproc) then
        call dealloc_check(rcount, 'rcount temp')
        call dealloc_check(rindex, 'rindex temp')

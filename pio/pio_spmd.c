@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <string.h>
 #define PIO_NOERR 0
 #define min(a,b) \
    ({ __typeof__ (a) _a = (a); \
@@ -14,7 +15,7 @@
 #include <pio_internal.h>
 #endif
 
-#define MAX_GATHER_BLOCK_SIZE 64
+#define MAX_GATHER_BLOCK_SIZE 32
 
 
 void CheckMPIReturn(const int ierr,const char file[],const int line)
@@ -44,6 +45,7 @@ int pio_fc_gather( void *sendbuf, const int sendcnt, const MPI_Datatype sendtype
   int ierr;
   int hs;
   int displs;
+  int dsize;
   
 
 
@@ -65,39 +67,54 @@ int pio_fc_gather( void *sendbuf, const int sendcnt, const MPI_Datatype sendtype
       int preposts = min(nprocs-1, gather_block_size);
       int head=0;
       int count=0;
+      int tail = 0;
       MPI_Request *rcvid = (MPI_Request *) malloc(gather_block_size * sizeof(MPI_Request));
+
+      CheckMPIReturn(MPI_Type_size(recvtype, &dsize), __FILE__,__LINE__);
       
       for(int p=0;p<nprocs;p++){
 	if(p != root){
 	  if(recvcnt > 0){
-	    if(count++ > preposts){
-	      int tail = head % preposts +1;
+	    count++;
+	    if(count > preposts){
 	      CheckMPIReturn(MPI_Wait(rcvid+tail, &status), __FILE__,__LINE__);
+	      tail = (tail+1) % preposts;
 	    }
-	    head = head % preposts + 1;
-	    displs = p*recvcnt;
+	    displs = p*recvcnt*dsize;
 
-	    char *ptr = (char *) recvbuf + p;
+	    char *ptr = (char *) recvbuf + displs;
+
 	    CheckMPIReturn(MPI_Irecv(  ptr, recvcnt, recvtype, p, mtag, comm, rcvid+head), __FILE__,__LINE__);
-	    CheckMPIReturn(MPI_Send( &hs, 1, recvtype, p, mtag, comm), __FILE__,__LINE__);
+	    head= (head+1) % preposts;
+	    //	    if(handshake)
+	      CheckMPIReturn(MPI_Send( &hs, 1, MPI_INT, p, mtag, comm), __FILE__,__LINE__);
 	  }
 	}
       }
-      displs = mytask*recvcnt;
-      
+
+      // copy local data
+      CheckMPIReturn(MPI_Type_size(sendtype, &dsize), __FILE__,__LINE__);      
+      memcpy(recvbuf, sendbuf, sendcnt*dsize );
+
       count = min(count, preposts);
+      //      for(int i=0;i<count;i++){
+      //CheckMPIReturn(MPI_Wait( rcvid+i, &status), __FILE__,__LINE__);
+      //      }
       if(count>0)
-	CheckMPIReturn(MPI_Waitall( count, rcvid, MPI_STATUSES_IGNORE), __FILE__,__LINE__);
+	CheckMPIReturn(MPI_Waitall( count, rcvid, MPI_STATUSES_IGNORE),__FILE__,__LINE__);
+      
       free(rcvid);
     }else{
       if(sendcnt > 0){
-	CheckMPIReturn(MPI_Recv( &hs, 1, sendtype, root, mtag, comm, &status), __FILE__,__LINE__);
+	//	if(handshake)
+	CheckMPIReturn(MPI_Recv( &hs, 1, MPI_INT, root, mtag, comm, &status), __FILE__,__LINE__);
 	CheckMPIReturn(MPI_Rsend( sendbuf, sendcnt, sendtype, root, mtag, comm), __FILE__,__LINE__);
       }
     }
   }else{
     CheckMPIReturn(MPI_Gather ( sendbuf, sendcnt, sendtype, recvbuf, recvcnt, recvtype, root, comm), __FILE__,__LINE__);
   }
+
   return PIO_NOERR;
 }
   
@@ -139,6 +156,12 @@ int pio_swapm(const int nprocs, const int mytask, void *sndbuf, const int sbuf_s
   int hs;
   char *ptr;
 
+
+  if(max_requests == 0) {
+    CheckMPIReturn(MPI_Alltoallw( sndbuf, sndlths, sdispls, stypes, rcvbuf, rcvlths, rdispls, rtypes, comm),__FILE__,__LINE__);
+    return PIO_NOERR;
+  }
+      
   offset_t = nprocs;
   // send to self
   if(sndlths[mytask] > 0){
@@ -270,7 +293,7 @@ int main( int argc, char **argv )
     int i, j, *p, err;
     MPI_Datatype *sendtypes, *recvtypes;
     struct timeval t1, t2;
-
+    int msg_cnt;
 
     MPI_Init( &argc, &argv );
     err = 0;
@@ -285,8 +308,52 @@ int main( int argc, char **argv )
         fflush(stderr);
         MPI_Abort( comm, 1 );
     }
+    /* Test pio_fc_gather */
+    
+    msg_cnt=0;
+    while(msg_cnt<= MAX_GATHER_BLOCK_SIZE){
+      /* Load up the buffers */
+      for (i=0; i<size*size; i++) {
+        sbuf[i] = i + 100*rank;
+        rbuf[i] = -i;
+      }
 
-    /* Create and load the arguments to alltoallv */
+      MPI_Barrier(comm);
+      if(rank==0) printf("Start gather test %d\n",msg_cnt);
+      if(rank == 0) gettimeofday(&t1, NULL);
+      
+      err = pio_fc_gather( sbuf, size, MPI_INT, rbuf, size, MPI_INT, 0, comm, msg_cnt);
+
+
+      if(rank == 0){
+	gettimeofday(&t2, NULL);
+	printf("time = %f\n",t2.tv_sec - t1.tv_sec + 1.e-6*( t2.tv_usec - t1.tv_usec));
+      }
+      if(rank==0){
+	for(j=0;j<size;j++){
+	  for(i=0;i<size;i++){
+	    if(rbuf[i + j*size] != i + 100*j){ 
+	      printf("got %d expected %d\n",rbuf[i+j*size] , i+100*j);
+	    }
+	  }
+	}
+      }
+
+      MPI_Barrier(comm);
+
+
+      if(msg_cnt==0)
+	msg_cnt=1;
+      else
+	msg_cnt*=2;
+
+
+
+
+    }
+
+
+    /* Test pio_swapm Create and load the arguments to alltoallv */
     sendcounts = (int *)malloc( size * sizeof(int) );
     recvcounts = (int *)malloc( size * sizeof(int) );
     rdispls = (int *)malloc( size * sizeof(int) );
@@ -306,14 +373,13 @@ int main( int argc, char **argv )
         sdispls[i] = (((i+1) * (i))/2) * sizeof(int) ;
         sendtypes[i] = recvtypes[i] = MPI_INT;
     }
-
-
+    
+    for(int msg_cnt=4; msg_cnt<size; msg_cnt*=2){
+      if(rank==0) printf("message count %d\n",msg_cnt);
+      
     for(int itest=0;itest<5; itest++){
-      bool hs; 
-      bool isend;
-      //      int msg_cnt = MAX_GATHER_BLOCK_SIZE;
-      int msg_cnt = 1;
-
+      bool hs=false; 
+      bool isend=false;
       /* Load up the buffers */
       for (i=0; i<size*size; i++) {
         sbuf[i] = i + 100*rank;
@@ -325,8 +391,8 @@ int main( int argc, char **argv )
       if(rank == 0) gettimeofday(&t1, NULL);
 
       if(itest==0){
-	MPI_Alltoallw( sbuf, sendcounts, sdispls, sendtypes,
-		       rbuf, recvcounts, rdispls, recvtypes, comm );
+	err = pio_swapm( size, rank, sbuf, size*size, sendcounts, sdispls, sendtypes, 
+			 rbuf, size*size, recvcounts, rdispls, recvtypes, comm, hs, isend, 0);
       }else if(itest==1){
 	hs = true;
 	isend = true;
@@ -350,12 +416,11 @@ int main( int argc, char **argv )
 	err = pio_swapm( size, rank, sbuf, size*size, sendcounts, sdispls, sendtypes, 
 			 rbuf, size*size, recvcounts, rdispls, recvtypes, comm, hs, isend, msg_cnt);
 
-      }	
-
+      }
 
       if(rank == 0){
 	gettimeofday(&t2, NULL);
-	printf("itest = %d time = %ld\n",itest,t2.tv_usec - t1.tv_usec);
+	printf("itest = %d time = %f\n",itest,t2.tv_sec - t1.tv_sec + 1.e-6*( t2.tv_usec - t1.tv_usec));
       }
       /*
       printf("scnt: %d %d %d %d\n",sendcounts[0],sendcounts[1],sendcounts[2],sendcounts[3]);
@@ -372,15 +437,11 @@ int main( int argc, char **argv )
 	printf("%d ",rbuf[i]);
       printf("\n");
       */
-
-
-
       MPI_Barrier(comm);
-
       /* Check rbuf */
       for (i=0; i<size; i++) {
-        p = rbuf + rdispls[i]/sizeof(int);
-        for (j=0; j<rank+1; j++) {
+	p = rbuf + rdispls[i]/sizeof(int);
+	for (j=0; j<rank+1; j++) {
 	  if (p[j] != i * 100 + (rank*(rank+1))/2 + j) {
 	    fprintf( stderr, "[%d] got %d expected %d for %d %dth in itest=%d\n",
 		     rank, p[j],(i*100 + (rank*(rank+1))/2+j), i, j, itest);
@@ -389,10 +450,9 @@ int main( int argc, char **argv )
 	  }
 	}
       }
-
     }
 
-
+    }
 
     free( sendtypes );
     free( recvtypes );

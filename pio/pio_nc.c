@@ -5,18 +5,20 @@ int PIOc_inq_att (int ncid, int varid, const char *name, nc_type *xtypep, PIO_Of
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_INQ_ATT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -32,7 +34,7 @@ int PIOc_inq_att (int ncid, int varid, const char *name, nc_type *xtypep, PIO_Of
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_inq_att(file->fh, varid, name, xtypep, (size_t *)lenp);;
       }
       break;
@@ -47,7 +49,7 @@ int PIOc_inq_att (int ncid, int varid, const char *name, nc_type *xtypep, PIO_Of
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }
@@ -56,18 +58,20 @@ int PIOc_inq_format (int ncid, int *formatp)
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_INQ_FORMAT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -83,7 +87,7 @@ int PIOc_inq_format (int ncid, int *formatp)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_inq_format(file->fh, formatp);;
       }
       break;
@@ -98,7 +102,7 @@ int PIOc_inq_format (int ncid, int *formatp)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }
@@ -107,18 +111,20 @@ int PIOc_inq_varid (int ncid, const char *name, int *varidp)
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_INQ_VARID;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -134,7 +140,7 @@ int PIOc_inq_varid (int ncid, const char *name, int *varidp)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_inq_varid(file->fh, name, varidp);;
       }
       break;
@@ -149,7 +155,7 @@ int PIOc_inq_varid (int ncid, const char *name, int *varidp)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }
@@ -158,18 +164,20 @@ int PIOc_inq_varnatts (int ncid, int varid, int *nattsp)
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_INQ_VARNATTS;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -185,7 +193,7 @@ int PIOc_inq_varnatts (int ncid, int varid, int *nattsp)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_inq_varnatts(file->fh, varid, nattsp);;
       }
       break;
@@ -200,7 +208,7 @@ int PIOc_inq_varnatts (int ncid, int varid, int *nattsp)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }
@@ -209,18 +217,20 @@ int PIOc_def_var (int ncid, const char *name, nc_type xtype,  int ndims, const i
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_DEF_VAR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -236,7 +246,7 @@ int PIOc_def_var (int ncid, const char *name, nc_type xtype,  int ndims, const i
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_def_var(file->fh, name, xtype, ndims, dimidsp, varidp);;
       }
       break;
@@ -251,7 +261,7 @@ int PIOc_def_var (int ncid, const char *name, nc_type xtype,  int ndims, const i
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }
@@ -260,18 +270,20 @@ int PIOc_inq_var (int ncid, int varid, char *name, nc_type *xtypep, int *ndimsp,
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_INQ_VAR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -287,7 +299,7 @@ int PIOc_inq_var (int ncid, int varid, char *name, nc_type *xtypep, int *ndimsp,
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_inq_var(file->fh, varid, name, xtypep, ndimsp, dimidsp, nattsp);;
       }
       break;
@@ -302,7 +314,7 @@ int PIOc_inq_var (int ncid, int varid, char *name, nc_type *xtypep, int *ndimsp,
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }
@@ -311,18 +323,20 @@ int PIOc_inq_varname (int ncid, int varid, char *name)
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_INQ_VARNAME;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -338,7 +352,7 @@ int PIOc_inq_varname (int ncid, int varid, char *name)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_inq_varname(file->fh, varid, name);;
       }
       break;
@@ -353,7 +367,7 @@ int PIOc_inq_varname (int ncid, int varid, char *name)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }
@@ -362,18 +376,20 @@ int PIOc_put_att_double (int ncid, int varid, const char *name, nc_type xtype, P
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_PUT_ATT_DOUBLE;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -389,7 +405,7 @@ int PIOc_put_att_double (int ncid, int varid, const char *name, nc_type xtype, P
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_put_att_double(file->fh, varid, name, xtype, (size_t)len, op);;
       }
       break;
@@ -404,7 +420,7 @@ int PIOc_put_att_double (int ncid, int varid, const char *name, nc_type xtype, P
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }
@@ -413,18 +429,20 @@ int PIOc_put_att_int (int ncid, int varid, const char *name, nc_type xtype, PIO_
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_PUT_ATT_INT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -440,7 +458,7 @@ int PIOc_put_att_int (int ncid, int varid, const char *name, nc_type xtype, PIO_
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_put_att_int(file->fh, varid, name, xtype, (size_t)len, op);;
       }
       break;
@@ -455,7 +473,7 @@ int PIOc_put_att_int (int ncid, int varid, const char *name, nc_type xtype, PIO_
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }
@@ -464,18 +482,20 @@ int PIOc_rename_att (int ncid, int varid, const char *name, const char *newname)
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_RENAME_ATT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -491,7 +511,7 @@ int PIOc_rename_att (int ncid, int varid, const char *name, const char *newname)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_rename_att(file->fh, varid, name, newname);;
       }
       break;
@@ -506,7 +526,7 @@ int PIOc_rename_att (int ncid, int varid, const char *name, const char *newname)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }
@@ -515,18 +535,20 @@ int PIOc_del_att (int ncid, int varid, const char *name)
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_DEL_ATT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -542,7 +564,7 @@ int PIOc_del_att (int ncid, int varid, const char *name)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_del_att(file->fh, varid, name);;
       }
       break;
@@ -557,7 +579,7 @@ int PIOc_del_att (int ncid, int varid, const char *name)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }
@@ -566,18 +588,20 @@ int PIOc_inq_natts (int ncid, int *ngattsp)
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_INQ_NATTS;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -593,7 +617,7 @@ int PIOc_inq_natts (int ncid, int *ngattsp)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_inq_natts(file->fh, ngattsp);;
       }
       break;
@@ -608,7 +632,7 @@ int PIOc_inq_natts (int ncid, int *ngattsp)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }
@@ -617,18 +641,20 @@ int PIOc_inq (int ncid, int *ndimsp, int *nvarsp, int *ngattsp, int *unlimdimidp
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_INQ;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -644,7 +670,7 @@ int PIOc_inq (int ncid, int *ndimsp, int *nvarsp, int *ngattsp, int *unlimdimidp
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_inq(file->fh, ndimsp, nvarsp, ngattsp, unlimdimidp);;
       }
       break;
@@ -659,7 +685,7 @@ int PIOc_inq (int ncid, int *ndimsp, int *nvarsp, int *ngattsp, int *unlimdimidp
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }
@@ -668,18 +694,20 @@ int PIOc_get_att_text (int ncid, int varid, const char *name, char *ip)
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_GET_ATT_TEXT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -695,7 +723,7 @@ int PIOc_get_att_text (int ncid, int varid, const char *name, char *ip)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_get_att_text(file->fh, varid, name, ip);;
       }
       break;
@@ -710,7 +738,7 @@ int PIOc_get_att_text (int ncid, int varid, const char *name, char *ip)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }
@@ -719,18 +747,20 @@ int PIOc_get_att_short (int ncid, int varid, const char *name, short *ip)
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_GET_ATT_SHORT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -746,7 +776,7 @@ int PIOc_get_att_short (int ncid, int varid, const char *name, short *ip)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_get_att_short(file->fh, varid, name, ip);;
       }
       break;
@@ -761,7 +791,7 @@ int PIOc_get_att_short (int ncid, int varid, const char *name, short *ip)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }
@@ -770,18 +800,20 @@ int PIOc_put_att_long (int ncid, int varid, const char *name, nc_type xtype, PIO
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_PUT_ATT_LONG;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -797,7 +829,7 @@ int PIOc_put_att_long (int ncid, int varid, const char *name, nc_type xtype, PIO
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_put_att_long(file->fh, varid, name, xtype, (size_t)len, op);;
       }
       break;
@@ -812,7 +844,7 @@ int PIOc_put_att_long (int ncid, int varid, const char *name, nc_type xtype, PIO
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }
@@ -821,18 +853,20 @@ int PIOc_redef (int ncid)
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_REDEF;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -848,7 +882,7 @@ int PIOc_redef (int ncid)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_redef(file->fh);;
       }
       break;
@@ -863,7 +897,7 @@ int PIOc_redef (int ncid)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }
@@ -872,18 +906,20 @@ int PIOc_set_fill (int ncid, int fillmode, int *old_modep)
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_SET_FILL;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -899,7 +935,7 @@ int PIOc_set_fill (int ncid, int fillmode, int *old_modep)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_set_fill(file->fh, fillmode, old_modep);;
       }
       break;
@@ -914,7 +950,7 @@ int PIOc_set_fill (int ncid, int fillmode, int *old_modep)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }
@@ -923,18 +959,20 @@ int PIOc_enddef (int ncid)
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_ENDDEF;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -950,7 +988,7 @@ int PIOc_enddef (int ncid)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_enddef(file->fh);;
       }
       break;
@@ -965,7 +1003,7 @@ int PIOc_enddef (int ncid)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }
@@ -974,18 +1012,20 @@ int PIOc_rename_var (int ncid, int varid, const char *name)
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_RENAME_VAR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -1001,7 +1041,7 @@ int PIOc_rename_var (int ncid, int varid, const char *name)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_rename_var(file->fh, varid, name);;
       }
       break;
@@ -1016,7 +1056,7 @@ int PIOc_rename_var (int ncid, int varid, const char *name)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }
@@ -1025,18 +1065,20 @@ int PIOc_put_att_short (int ncid, int varid, const char *name, nc_type xtype, PI
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_PUT_ATT_SHORT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -1052,7 +1094,7 @@ int PIOc_put_att_short (int ncid, int varid, const char *name, nc_type xtype, PI
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_put_att_short(file->fh, varid, name, xtype, (size_t)len, op);;
       }
       break;
@@ -1067,7 +1109,7 @@ int PIOc_put_att_short (int ncid, int varid, const char *name, nc_type xtype, PI
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }
@@ -1076,18 +1118,20 @@ int PIOc_put_att_text (int ncid, int varid, const char *name, PIO_Offset len, co
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_PUT_ATT_TEXT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -1103,7 +1147,7 @@ int PIOc_put_att_text (int ncid, int varid, const char *name, PIO_Offset len, co
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_put_att_text(file->fh, varid, name, (size_t)len, op);;
       }
       break;
@@ -1118,7 +1162,7 @@ int PIOc_put_att_text (int ncid, int varid, const char *name, PIO_Offset len, co
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }
@@ -1127,18 +1171,20 @@ int PIOc_inq_attname (int ncid, int varid, int attnum, char *name)
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_INQ_ATTNAME;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -1154,7 +1200,7 @@ int PIOc_inq_attname (int ncid, int varid, int attnum, char *name)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_inq_attname(file->fh, varid, attnum, name);;
       }
       break;
@@ -1169,7 +1215,7 @@ int PIOc_inq_attname (int ncid, int varid, int attnum, char *name)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }
@@ -1178,18 +1224,20 @@ int PIOc_get_att_ulonglong (int ncid, int varid, const char *name, unsigned long
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_GET_ATT_ULONGLONG;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -1205,7 +1253,7 @@ int PIOc_get_att_ulonglong (int ncid, int varid, const char *name, unsigned long
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_get_att_ulonglong(file->fh, varid, name, ip);;
       }
       break;
@@ -1220,7 +1268,7 @@ int PIOc_get_att_ulonglong (int ncid, int varid, const char *name, unsigned long
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }
@@ -1229,18 +1277,20 @@ int PIOc_get_att_ushort (int ncid, int varid, const char *name, unsigned short *
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_GET_ATT_USHORT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -1256,7 +1306,7 @@ int PIOc_get_att_ushort (int ncid, int varid, const char *name, unsigned short *
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_get_att_ushort(file->fh, varid, name, ip);;
       }
       break;
@@ -1271,7 +1321,7 @@ int PIOc_get_att_ushort (int ncid, int varid, const char *name, unsigned short *
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }
@@ -1280,18 +1330,20 @@ int PIOc_put_att_ulonglong (int ncid, int varid, const char *name, nc_type xtype
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_PUT_ATT_ULONGLONG;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -1307,7 +1359,7 @@ int PIOc_put_att_ulonglong (int ncid, int varid, const char *name, nc_type xtype
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_put_att_ulonglong(file->fh, varid, name, xtype, (size_t)len, op);;
       }
       break;
@@ -1322,7 +1374,7 @@ int PIOc_put_att_ulonglong (int ncid, int varid, const char *name, nc_type xtype
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }
@@ -1331,18 +1383,20 @@ int PIOc_inq_dimlen (int ncid, int dimid, PIO_Offset *lenp)
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_INQ_DIMLEN;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -1358,7 +1412,7 @@ int PIOc_inq_dimlen (int ncid, int dimid, PIO_Offset *lenp)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_inq_dimlen(file->fh, dimid, (size_t *)lenp);;
       }
       break;
@@ -1373,7 +1427,7 @@ int PIOc_inq_dimlen (int ncid, int dimid, PIO_Offset *lenp)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }
@@ -1382,18 +1436,20 @@ int PIOc_get_att_uint (int ncid, int varid, const char *name, unsigned int *ip)
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_GET_ATT_UINT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -1409,7 +1465,7 @@ int PIOc_get_att_uint (int ncid, int varid, const char *name, unsigned int *ip)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_get_att_uint(file->fh, varid, name, ip);;
       }
       break;
@@ -1424,7 +1480,7 @@ int PIOc_get_att_uint (int ncid, int varid, const char *name, unsigned int *ip)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }
@@ -1433,18 +1489,20 @@ int PIOc_get_att_longlong (int ncid, int varid, const char *name, long long *ip)
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_GET_ATT_LONGLONG;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -1460,7 +1518,7 @@ int PIOc_get_att_longlong (int ncid, int varid, const char *name, long long *ip)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_get_att_longlong(file->fh, varid, name, ip);;
       }
       break;
@@ -1475,7 +1533,7 @@ int PIOc_get_att_longlong (int ncid, int varid, const char *name, long long *ip)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }
@@ -1484,18 +1542,20 @@ int PIOc_put_att_schar (int ncid, int varid, const char *name, nc_type xtype, PI
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_PUT_ATT_SCHAR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -1511,7 +1571,7 @@ int PIOc_put_att_schar (int ncid, int varid, const char *name, nc_type xtype, PI
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_put_att_schar(file->fh, varid, name, xtype, (size_t)len, op);;
       }
       break;
@@ -1526,7 +1586,7 @@ int PIOc_put_att_schar (int ncid, int varid, const char *name, nc_type xtype, PI
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }
@@ -1535,18 +1595,20 @@ int PIOc_put_att_float (int ncid, int varid, const char *name, nc_type xtype, PI
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_PUT_ATT_FLOAT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -1562,7 +1624,7 @@ int PIOc_put_att_float (int ncid, int varid, const char *name, nc_type xtype, PI
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_put_att_float(file->fh, varid, name, xtype, (size_t)len, op);;
       }
       break;
@@ -1577,7 +1639,7 @@ int PIOc_put_att_float (int ncid, int varid, const char *name, nc_type xtype, PI
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }
@@ -1586,18 +1648,20 @@ int PIOc_inq_nvars (int ncid, int *nvarsp)
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_INQ_NVARS;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -1613,7 +1677,7 @@ int PIOc_inq_nvars (int ncid, int *nvarsp)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_inq_nvars(file->fh, nvarsp);;
       }
       break;
@@ -1628,7 +1692,7 @@ int PIOc_inq_nvars (int ncid, int *nvarsp)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }
@@ -1637,18 +1701,20 @@ int PIOc_rename_dim (int ncid, int dimid, const char *name)
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_RENAME_DIM;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -1664,7 +1730,7 @@ int PIOc_rename_dim (int ncid, int dimid, const char *name)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_rename_dim(file->fh, dimid, name);;
       }
       break;
@@ -1679,7 +1745,7 @@ int PIOc_rename_dim (int ncid, int dimid, const char *name)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }
@@ -1688,18 +1754,20 @@ int PIOc_inq_varndims (int ncid, int varid, int *ndimsp)
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_INQ_VARNDIMS;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -1715,7 +1783,7 @@ int PIOc_inq_varndims (int ncid, int varid, int *ndimsp)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_inq_varndims(file->fh, varid, ndimsp);;
       }
       break;
@@ -1730,7 +1798,7 @@ int PIOc_inq_varndims (int ncid, int varid, int *ndimsp)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }
@@ -1739,18 +1807,20 @@ int PIOc_get_att_long (int ncid, int varid, const char *name, long *ip)
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_GET_ATT_LONG;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -1766,7 +1836,7 @@ int PIOc_get_att_long (int ncid, int varid, const char *name, long *ip)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_get_att_long(file->fh, varid, name, ip);;
       }
       break;
@@ -1781,7 +1851,7 @@ int PIOc_get_att_long (int ncid, int varid, const char *name, long *ip)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }
@@ -1790,18 +1860,20 @@ int PIOc_inq_dim (int ncid, int dimid, char *name, PIO_Offset *lenp)
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_INQ_DIM;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -1817,7 +1889,7 @@ int PIOc_inq_dim (int ncid, int dimid, char *name, PIO_Offset *lenp)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_inq_dim(file->fh, dimid, name, (size_t *)lenp);;
       }
       break;
@@ -1832,7 +1904,7 @@ int PIOc_inq_dim (int ncid, int dimid, char *name, PIO_Offset *lenp)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }
@@ -1841,18 +1913,20 @@ int PIOc_inq_dimid (int ncid, const char *name, int *idp)
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_INQ_DIMID;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -1868,7 +1942,7 @@ int PIOc_inq_dimid (int ncid, const char *name, int *idp)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_inq_dimid(file->fh, name, idp);;
       }
       break;
@@ -1883,7 +1957,7 @@ int PIOc_inq_dimid (int ncid, const char *name, int *idp)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }
@@ -1892,18 +1966,20 @@ int PIOc_inq_unlimdim (int ncid, int *unlimdimidp)
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_INQ_UNLIMDIM;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -1919,7 +1995,7 @@ int PIOc_inq_unlimdim (int ncid, int *unlimdimidp)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_inq_unlimdim(file->fh, unlimdimidp);;
       }
       break;
@@ -1934,7 +2010,7 @@ int PIOc_inq_unlimdim (int ncid, int *unlimdimidp)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }
@@ -1943,18 +2019,20 @@ int PIOc_inq_vardimid (int ncid, int varid, int *dimidsp)
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_INQ_VARDIMID;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -1970,7 +2048,7 @@ int PIOc_inq_vardimid (int ncid, int varid, int *dimidsp)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_inq_vardimid(file->fh, varid, dimidsp);;
       }
       break;
@@ -1985,7 +2063,7 @@ int PIOc_inq_vardimid (int ncid, int varid, int *dimidsp)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }
@@ -1994,18 +2072,20 @@ int PIOc_inq_attlen (int ncid, int varid, const char *name, PIO_Offset *lenp)
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_INQ_ATTLEN;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -2021,7 +2101,7 @@ int PIOc_inq_attlen (int ncid, int varid, const char *name, PIO_Offset *lenp)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_inq_attlen(file->fh, varid, name, (size_t *)lenp);;
       }
       break;
@@ -2036,7 +2116,7 @@ int PIOc_inq_attlen (int ncid, int varid, const char *name, PIO_Offset *lenp)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }
@@ -2045,18 +2125,20 @@ int PIOc_inq_dimname (int ncid, int dimid, char *name)
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_INQ_DIMNAME;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -2072,7 +2154,7 @@ int PIOc_inq_dimname (int ncid, int dimid, char *name)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_inq_dimname(file->fh, dimid, name);;
       }
       break;
@@ -2087,7 +2169,7 @@ int PIOc_inq_dimname (int ncid, int dimid, char *name)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }
@@ -2096,18 +2178,20 @@ int PIOc_put_att_ushort (int ncid, int varid, const char *name, nc_type xtype, P
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_PUT_ATT_USHORT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -2123,7 +2207,7 @@ int PIOc_put_att_ushort (int ncid, int varid, const char *name, nc_type xtype, P
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_put_att_ushort(file->fh, varid, name, xtype, (size_t)len, op);;
       }
       break;
@@ -2138,7 +2222,7 @@ int PIOc_put_att_ushort (int ncid, int varid, const char *name, nc_type xtype, P
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }
@@ -2147,18 +2231,20 @@ int PIOc_get_att_float (int ncid, int varid, const char *name, float *ip)
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_GET_ATT_FLOAT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -2174,7 +2260,7 @@ int PIOc_get_att_float (int ncid, int varid, const char *name, float *ip)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_get_att_float(file->fh, varid, name, ip);;
       }
       break;
@@ -2189,7 +2275,7 @@ int PIOc_get_att_float (int ncid, int varid, const char *name, float *ip)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }
@@ -2198,18 +2284,20 @@ int PIOc_sync (int ncid)
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_SYNC;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -2225,7 +2313,7 @@ int PIOc_sync (int ncid)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_sync(file->fh);;
       }
       break;
@@ -2240,7 +2328,7 @@ int PIOc_sync (int ncid)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }
@@ -2249,18 +2337,20 @@ int PIOc_put_att_longlong (int ncid, int varid, const char *name, nc_type xtype,
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_PUT_ATT_LONGLONG;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -2276,7 +2366,7 @@ int PIOc_put_att_longlong (int ncid, int varid, const char *name, nc_type xtype,
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_put_att_longlong(file->fh, varid, name, xtype, (size_t)len, op);;
       }
       break;
@@ -2291,7 +2381,7 @@ int PIOc_put_att_longlong (int ncid, int varid, const char *name, nc_type xtype,
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }
@@ -2300,18 +2390,20 @@ int PIOc_put_att_uint (int ncid, int varid, const char *name, nc_type xtype, PIO
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_PUT_ATT_UINT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -2327,7 +2419,7 @@ int PIOc_put_att_uint (int ncid, int varid, const char *name, nc_type xtype, PIO
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_put_att_uint(file->fh, varid, name, xtype, (size_t)len, op);;
       }
       break;
@@ -2342,7 +2434,7 @@ int PIOc_put_att_uint (int ncid, int varid, const char *name, nc_type xtype, PIO
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }
@@ -2351,18 +2443,20 @@ int PIOc_get_att_schar (int ncid, int varid, const char *name, signed char *ip)
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_GET_ATT_SCHAR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -2378,7 +2472,7 @@ int PIOc_get_att_schar (int ncid, int varid, const char *name, signed char *ip)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_get_att_schar(file->fh, varid, name, ip);;
       }
       break;
@@ -2393,7 +2487,7 @@ int PIOc_get_att_schar (int ncid, int varid, const char *name, signed char *ip)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }
@@ -2402,18 +2496,20 @@ int PIOc_inq_attid (int ncid, int varid, const char *name, int *idp)
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_INQ_ATTID;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -2429,7 +2525,7 @@ int PIOc_inq_attid (int ncid, int varid, const char *name, int *idp)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_inq_attid(file->fh, varid, name, idp);;
       }
       break;
@@ -2444,7 +2540,7 @@ int PIOc_inq_attid (int ncid, int varid, const char *name, int *idp)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }
@@ -2453,18 +2549,20 @@ int PIOc_def_dim (int ncid, const char *name, PIO_Offset len, int *idp)
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_DEF_DIM;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -2480,7 +2578,7 @@ int PIOc_def_dim (int ncid, const char *name, PIO_Offset len, int *idp)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_def_dim(file->fh, name, (size_t)len, idp);;
       }
       break;
@@ -2495,7 +2593,7 @@ int PIOc_def_dim (int ncid, const char *name, PIO_Offset len, int *idp)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }
@@ -2504,18 +2602,20 @@ int PIOc_inq_ndims (int ncid, int *ndimsp)
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_INQ_NDIMS;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -2531,7 +2631,7 @@ int PIOc_inq_ndims (int ncid, int *ndimsp)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_inq_ndims(file->fh, ndimsp);;
       }
       break;
@@ -2546,7 +2646,7 @@ int PIOc_inq_ndims (int ncid, int *ndimsp)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }
@@ -2555,18 +2655,20 @@ int PIOc_inq_vartype (int ncid, int varid, nc_type *xtypep)
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_INQ_VARTYPE;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -2582,7 +2684,7 @@ int PIOc_inq_vartype (int ncid, int varid, nc_type *xtypep)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_inq_vartype(file->fh, varid, xtypep);;
       }
       break;
@@ -2597,7 +2699,7 @@ int PIOc_inq_vartype (int ncid, int varid, nc_type *xtypep)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }
@@ -2606,18 +2708,20 @@ int PIOc_get_att_int (int ncid, int varid, const char *name, int *ip)
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_GET_ATT_INT;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -2633,7 +2737,7 @@ int PIOc_get_att_int (int ncid, int varid, const char *name, int *ip)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_get_att_int(file->fh, varid, name, ip);;
       }
       break;
@@ -2648,7 +2752,7 @@ int PIOc_get_att_int (int ncid, int varid, const char *name, int *ip)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }
@@ -2657,18 +2761,20 @@ int PIOc_get_att_double (int ncid, int varid, const char *name, double *ip)
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_GET_ATT_DOUBLE;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -2684,7 +2790,7 @@ int PIOc_get_att_double (int ncid, int varid, const char *name, double *ip)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_get_att_double(file->fh, varid, name, ip);;
       }
       break;
@@ -2699,7 +2805,7 @@ int PIOc_get_att_double (int ncid, int varid, const char *name, double *ip)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }
@@ -2708,18 +2814,20 @@ int PIOc_inq_atttype (int ncid, int varid, const char *name, nc_type *xtypep)
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_INQ_ATTTYPE;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -2735,7 +2843,7 @@ int PIOc_inq_atttype (int ncid, int varid, const char *name, nc_type *xtypep)
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_inq_atttype(file->fh, varid, name, xtypep);;
       }
       break;
@@ -2750,7 +2858,7 @@ int PIOc_inq_atttype (int ncid, int varid, const char *name, nc_type *xtypep)
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }
@@ -2759,18 +2867,20 @@ int PIOc_put_att_uchar (int ncid, int varid, const char *name, nc_type xtype, PI
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_PUT_ATT_UCHAR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -2786,7 +2896,7 @@ int PIOc_put_att_uchar (int ncid, int varid, const char *name, nc_type xtype, PI
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_put_att_uchar(file->fh, varid, name, xtype, (size_t)len, op);;
       }
       break;
@@ -2801,7 +2911,7 @@ int PIOc_put_att_uchar (int ncid, int varid, const char *name, nc_type xtype, PI
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }
@@ -2810,18 +2920,20 @@ int PIOc_get_att_uchar (int ncid, int varid, const char *name, unsigned char *ip
   int ierr;
   int msg;
   int mpierr;
+  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
   ierr = PIO_NOERR;
 
   file = pio_get_file_from_id(ncid);
-
+  if(file == NULL)
+    return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_GET_ATT_UCHAR;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->compmaster) 
+    if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
@@ -2837,7 +2949,7 @@ int PIOc_get_att_uchar (int ncid, int varid, const char *name, unsigned char *ip
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      if(ios->iomaster){
+      if(ios->io_rank==0){
 	ierr = nc_get_att_uchar(file->fh, varid, name, ip);;
       }
       break;
@@ -2852,7 +2964,7 @@ int PIOc_get_att_uchar (int ncid, int varid, const char *name, unsigned char *ip
     }
   }
 
-  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }

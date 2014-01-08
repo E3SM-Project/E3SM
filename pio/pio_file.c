@@ -2,10 +2,9 @@
 #include <pio_internal.h>
 #include <string.h>
 #include <stdio.h>
-#include <stdbool.h>
 
 int PIOc_OpenFile(const int iosysid, int *ncidp, const int iotype,
-		  char *fname, const int mode, const _Bool *checkmpi)
+		  char *fname, const int mode, _Bool checkmpi)
 {
   int ierr;
   int msg;
@@ -19,12 +18,18 @@ int PIOc_OpenFile(const int iosysid, int *ncidp, const int iotype,
 
   msg = PIO_MSG_OPEN_FILE;
   amode = mode;
+
   ios = pio_get_iosystem_from_id(iosysid);
+  if(ios==NULL){
+    printf("bad iosysid %d\n",iosysid);
+    return PIO_EBADID;
+  }
+
   file = (file_desc_t *) malloc(sizeof(file_desc_t));
   file->next = NULL;
   file->iotype = iotype;
   file->iosystem = ios;
-
+  
 #ifdef _NETCDF
   if(ios->num_iotasks==1 && file->iotype==PIO_IOTYPE_PNETCDF) {
     fprintf(stderr,"WARNING: only 1 iotask - changing iotype to netcdf\n");
@@ -33,7 +38,7 @@ int PIOc_OpenFile(const int iosysid, int *ncidp, const int iotype,
 #ifndef _NETCDF4
   if(iotype==PIO_IOTYPE_NETCDF4P || iotype==PIO_IOTYPE_NETCDF4C){
     if(ios->io_rank==0)
-      printf(stderr,"WARNING: PIO was not built with NETCDF 4 support, changing iotype to netcdf\n");
+      fprintf(stderr,"WARNING: PIO was not built with NETCDF 4 support, changing iotype to netcdf\n");
     file->iotype = PIO_IOTYPE_NETCDF;
   }
 #endif
@@ -49,7 +54,6 @@ int PIOc_OpenFile(const int iosysid, int *ncidp, const int iotype,
     mpierr = MPI_Bcast(&checkmpi, 1, MPI_INT,  ios->compmaster, ios->intercomm);
   }
   
-
   if(ios->ioproc){
     switch(file->iotype){
     case PIO_IOYTPE_DIRECT_PBINARY:
@@ -70,6 +74,7 @@ int PIOc_OpenFile(const int iosysid, int *ncidp, const int iotype,
     case PIO_IOTYPE_NETCDF:
       if(ios->io_rank==0){
 	ierr = nc_open(fname, amode, &(file->fh));
+	printf("Openc %d %d\n",file->fh,ierr);
       }
       break;
 #endif
@@ -83,11 +88,17 @@ int PIOc_OpenFile(const int iosysid, int *ncidp, const int iotype,
     }
   }
 
-  pio_add_to_file_list(file);
-  
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
-
+  if(ierr==PIO_NOERR){
+    *ncidp = file->fh;
+    mpierr = MPI_Bcast(ncidp, 1, MPI_INT, ios->iomaster, ios->my_comm);
+    if((*ncidp) != file->fh) {
+      *ncidp = -(*ncidp);
+      file->fh = (*ncidp);
+    }
+    pio_add_to_file_list(file);
+  }
 
   return ierr;
 }
@@ -95,12 +106,13 @@ int PIOc_OpenFile(const int iosysid, int *ncidp, const int iotype,
 
 
 int PIOc_CreateFile(const int iosysid, int *ncidp, const int iotype,
-		 const char *fname, const int mode, const _Bool checkmpi)
+		 const char *fname, const int mode)
 {
   int ierr;
   int msg;
   int mpierr;
   int amode;
+  
   size_t len;
   iosystem_desc_t *ios;
   file_desc_t *file;
@@ -137,7 +149,6 @@ int PIOc_CreateFile(const int iosysid, int *ncidp, const int iotype,
     mpierr = MPI_Bcast((void *) fname,len, MPI_CHAR, ios->compmaster, ios->intercomm);
     mpierr = MPI_Bcast(&(file->iotype), 1, MPI_INT,  ios->compmaster, ios->intercomm);
     mpierr = MPI_Bcast(&amode, 1, MPI_INT,  ios->compmaster, ios->intercomm);
-    mpierr = MPI_Bcast(&checkmpi, 1, MPI_INT,  ios->compmaster, ios->intercomm);
   }
   
 
@@ -145,7 +156,7 @@ int PIOc_CreateFile(const int iosysid, int *ncidp, const int iotype,
     switch(iotype){
     case PIO_IOYTPE_DIRECT_PBINARY:
     case PIO_IOTYPE_PBINARY:
-      //      ierr = pio_create_mpiio(file, fname, checkmpi);
+      //      ierr = pio_create_mpiio(file, fname);
       break;
 #ifdef _NETCDF
 #ifdef _NETCDF4
@@ -173,9 +184,71 @@ int PIOc_CreateFile(const int iosysid, int *ncidp, const int iotype,
       ierr = iotype_error(iotype,__FILE__,__LINE__);
     }
   }
-  pio_add_to_file_list(file);
-
+  
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
+  if(ierr == PIO_NOERR){
+    *ncidp = file->fh;
+    mpierr = MPI_Bcast(ncidp, 1, MPI_INT, ios->iomaster, ios->my_comm);
+    if((*ncidp) != file->fh) {
+      *ncidp = -(*ncidp);
+      file->fh = (*ncidp);
+    }
+    pio_add_to_file_list(file);
+  }
+
+  return ierr;
+}
+
+int PIOc_CloseFile(int ncid)
+{
+  int ierr;
+  int msg;
+  int mpierr;
+  iosystem_desc_t *ios;
+  file_desc_t *file;
+
+  ierr = PIO_NOERR;
+
+  file = pio_get_file_from_id(ncid);
+  if(file == NULL)
+    return PIO_EBADID;
+  ios = file->iosystem;
+  msg = 0;
+
+  if(ios->async_interface && ! ios->ioproc){
+    if(ios->comp_rank==0) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
+  }
+
+
+  if(ios->ioproc){
+    switch(file->iotype){
+#ifdef _NETCDF
+#ifdef _NETCDF4
+    case PIO_IOTYPE_NETCDF4P:
+      ierr = nc_close(file->fh);
+      break;
+    case PIO_IOTYPE_NETCDF4C:
+#endif
+    case PIO_IOTYPE_NETCDF:
+      if(ios->io_rank==0){
+	ierr = nc_close(file->fh);
+      }
+      break;
+#endif
+#ifdef _PNETCDF
+    case PIO_IOTYPE_PNETCDF:
+      ierr = ncmpi_close(file->fh);
+      break;
+#endif
+    default:
+      ierr = iotype_error(file->iotype,__FILE__,__LINE__);
+    }
+  }
+
+  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  int iret =  pio_delete_file_from_list(ncid);
   return ierr;
 }

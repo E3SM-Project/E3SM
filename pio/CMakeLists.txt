@@ -148,7 +148,8 @@ ADD_DEFINITIONS(${PIO_DEFINITIONS})
 SET(PIO_INCLUDE_DIRS   ${pio_include_dirs_} CACHE STRING "")
 INCLUDE_DIRECTORIES(${PIO_INCLUDE_DIRS})
 
-SET(SRCS_C topology.c pio_nc.c pio_file.c pio_support.c pio_lists.c pio.c)
+SET(SRCS_C topology.c pio_nc.c pio_file.c pio_support.c pio_lists.c pioc.c
+	   pioc_sc.c pio_spmd.c pio_box.c )
 
 SET(SRCS_F90 pio_nf.F90 pio.F90 pio_kinds.F90 ionf_mod.F90 pio_types.F90
              piolib_mod.F90 pio_mpi_utils.F90 pio_nf_utils.F90 pio_utils.F90
@@ -179,7 +180,8 @@ ENDFOREACH()
 if("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "GNU")
   SET(CMAKE_Fortran_FLAGS	"${CMAKE_Fortran_FLAGS} -ffree-line-length-none")
 endif()
-SET(CMAKE_C_FLAGS	"${CMAKE_C_FLAGS} -std=c99")
+SET(CMAKE_C_FLAGS	"${CMAKE_C_FLAGS} -std=c99 -g")
+SET(CMAKE_Fortran_FLAGS	"${CMAKE_Fortran_FLAGS} -g")
 
 ADD_LIBRARY(pio ${SRCS_F90} ${SRCS_C} ${TEMPSRCF90})
 if(PNETCDF_LIBRARY)
