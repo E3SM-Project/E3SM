@@ -32,7 +32,7 @@ int PIOc_Set_File_Error_Handling(int ncid, int method)
 }  
 
 
-int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const int *dims, 
+int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const int dims[], 
 		    const int maplen, const PIO_Offset *compmap, int *ioidp, PIO_Offset *iostart,PIO_Offset *iocount)
 {
   iosystem_desc_t *ios;
@@ -53,8 +53,24 @@ int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const
     return PIO_EBADID;
 
   iodesc = (io_desc_t *) malloc(sizeof(io_desc_t));
-				
-  iodesc->basetype=basetype;				
+
+  switch(basetype){
+  case PIO_REAL:			
+    iodesc->basetype=MPI_FLOAT;
+    break;
+  case PIO_DOUBLE:
+    iodesc->basetype=MPI_DOUBLE;
+    break;
+  case PIO_CHAR:
+    iodesc->basetype=MPI_CHAR;
+    break;
+  case PIO_INT:   
+  defaut:
+    iodesc->basetype = MPI_INT;
+    break;
+  }    
+
+
   iodesc->start = (PIO_Offset *) malloc(sizeof(PIO_Offset)*ndims);
   iodesc->count = (PIO_Offset *) malloc(sizeof(PIO_Offset)*ndims);
   for(int i=0;i<ndims;i++){
@@ -63,25 +79,29 @@ int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const
   }
   
   if(ios->ioproc){
-    if(iostart != NULL && iocount != NULL){ 
+    
+    if((iostart != NULL) && (iocount != NULL)){ 
       for(int i=0;i<ndims;i++){
 	iodesc->start[i] = iostart[i];
 	iodesc->count[i] = iocount[i];
       }
+      ios->num_aiotasks = ios->num_iotasks;
     }else{
       ios->num_aiotasks = CalcStartandCount(basetype, ndims, dims, ios->num_iotasks, ios->io_rank,
 					    iodesc->start, iodesc->count);
-    }
-  }
-  iosize=1;
-  for(int i=0;i<ndims;i++)
-    iosize*=iodesc->count[i];
 
-  CheckMPIReturn(MPI_Allreduce(&iosize, &(iodesc->maxiobuflen), 1, MPI_INT, MPI_MAX, ios->io_comm),__FILE__,__LINE__);
+    }
+    iosize=1;
+    for(int i=0;i<ndims;i++)
+      iosize*=iodesc->count[i];
+
+    CheckMPIReturn(MPI_Allreduce(&iosize, &(iodesc->maxiobuflen), 1, MPI_INT, MPI_MAX, ios->io_comm),__FILE__,__LINE__);
+  }
 
   CheckMPIReturn(MPI_Bcast(&(ios->num_aiotasks), 1, MPI_INT, ios->iomaster,ios->my_comm),__FILE__,__LINE__);
 
-  //  ierr = box_rearrange_create( ios, compmap, dims, ndims, iodesc);
+
+  ierr = box_rearrange_create( ios, maplen, compmap, dims, ndims, ios->num_aiotasks, iodesc);
 
 
   lenblocks=1;
@@ -117,6 +137,8 @@ int PIOc_Init_Intracomm(const MPI_Comm comp_comm,
 #ifndef _MPISERIAL
   iosys->info = MPI_INFO_NULL;
 #endif
+  iosys->num_iotasks = num_iotasks;
+  iosys->num_aiotasks = num_iotasks;
 
   CheckMPIReturn(MPI_Comm_rank(comp_comm, &(iosys->comp_rank)),__FILE__,__LINE__);
   CheckMPIReturn(MPI_Comm_size(comp_comm, &(iosys->num_comptasks)),__FILE__,__LINE__);
@@ -127,7 +149,6 @@ int PIOc_Init_Intracomm(const MPI_Comm comp_comm,
 #ifndef _MPISERIAL
   CheckMPIReturn(MPI_Info_create(&(iosys->info)),__FILE__,__LINE__);
 #endif
-
   iosys->ioranks = (int *) calloc(sizeof(int), iosys->num_iotasks);
   for(int i=0;i< num_iotasks; i++){
     iosys->ioranks[i] = (base + i*stride) % iosys->num_comptasks;
@@ -148,9 +169,9 @@ int PIOc_Init_Intracomm(const MPI_Comm comp_comm,
   else
     iosys->io_rank = -1;
 
-  
+  iosys->union_rank = iosys->comp_rank;
 
-  iosys->num_aiotasks = iosys->num_iotasks;
+
   
   *iosysidp = pio_add_to_iosystem_list(iosys);
 

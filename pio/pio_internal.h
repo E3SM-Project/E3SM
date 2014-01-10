@@ -11,7 +11,7 @@
    ({ __typeof__ (a) _a = (a); \
        __typeof__ (b) _b = (b); \
      _a < _b ? _a : _b; })
-
+#define MAX_GATHER_BLOCK_SIZE 32
 
 file_desc_t *pio_get_file_from_id(int ncid);
 int pio_delete_file_from_list(int ncid);
@@ -32,4 +32,16 @@ int pio_swapm(const int nprocs, const int mytask, void *sndbuf, const int sbuf_s
 	      const int sdispls[], const int stypes[], void *rcvbuf, const int rbuf_size, const int rcvlths[], 
 	      const int rdispls[], const int rtypes[], MPI_Comm comm, const bool handshake, const bool isend, 
 	      const int max_requests);
+long long lgcd_array(int nain, long long*ain);
+PIO_Offset GCDblocksize(const int arrlen, const PIO_Offset arr_in[]);
+
+int box_rearrange_create(iosystem_desc_t *ios,const int maplen, const PIO_Offset compmap[], const int gsize[],
+			 const int ndim, const int nioproc, io_desc_t *iodesc);
+int box_rearrange_io2comp(iosystem_desc_t *ios, io_desc_t *iodesc, const int slen, void *sbuf,const int rlen,
+			  void *rbuf, const int comm_option, const int fc_options);
+int box_rearrange_comp2io(iosystem_desc_t *ios, io_desc_t *iodesc, const int slen, void *sbuf,const int rlen,
+			  void *rbuf, const int comm_option, const int fc_options);
+
+
+
 #endif

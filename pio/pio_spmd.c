@@ -9,13 +9,13 @@
    ({ __typeof__ (a) _a = (a); \
        __typeof__ (b) _b = (b); \
      _a < _b ? _a : _b; })
-
+#define MAX_GATHER_BLOCK_SIZE 32
 #else
 #include <pio.h>
 #include <pio_internal.h>
 #endif
 
-#define MAX_GATHER_BLOCK_SIZE 32
+
 
 
 void CheckMPIReturn(const int ierr,const char file[],const int line)
@@ -86,8 +86,7 @@ int pio_fc_gather( void *sendbuf, const int sendcnt, const MPI_Datatype sendtype
 
 	    CheckMPIReturn(MPI_Irecv(  ptr, recvcnt, recvtype, p, mtag, comm, rcvid+head), __FILE__,__LINE__);
 	    head= (head+1) % preposts;
-	    //	    if(handshake)
-	      CheckMPIReturn(MPI_Send( &hs, 1, MPI_INT, p, mtag, comm), __FILE__,__LINE__);
+	    CheckMPIReturn(MPI_Send( &hs, 1, MPI_INT, p, mtag, comm), __FILE__,__LINE__);
 	  }
 	}
       }
@@ -97,16 +96,13 @@ int pio_fc_gather( void *sendbuf, const int sendcnt, const MPI_Datatype sendtype
       memcpy(recvbuf, sendbuf, sendcnt*dsize );
 
       count = min(count, preposts);
-      //      for(int i=0;i<count;i++){
-      //CheckMPIReturn(MPI_Wait( rcvid+i, &status), __FILE__,__LINE__);
-      //      }
+
       if(count>0)
 	CheckMPIReturn(MPI_Waitall( count, rcvid, MPI_STATUSES_IGNORE),__FILE__,__LINE__);
       
       free(rcvid);
     }else{
       if(sendcnt > 0){
-	//	if(handshake)
 	CheckMPIReturn(MPI_Recv( &hs, 1, MPI_INT, root, mtag, comm, &status), __FILE__,__LINE__);
 	CheckMPIReturn(MPI_Rsend( sendbuf, sendcnt, sendtype, root, mtag, comm), __FILE__,__LINE__);
       }
@@ -155,13 +151,13 @@ int pio_swapm(const int nprocs, const int mytask, void *sndbuf, const int sbuf_s
   int maxreqh;
   int hs;
   char *ptr;
-
+  int cnt;
 
   if(max_requests == 0) {
     CheckMPIReturn(MPI_Alltoallw( sndbuf, sndlths, sdispls, stypes, rcvbuf, rcvlths, rdispls, rtypes, comm),__FILE__,__LINE__);
     return PIO_NOERR;
   }
-      
+
   offset_t = nprocs;
   // send to self
   if(sndlths[mytask] > 0){
@@ -173,7 +169,6 @@ int pio_swapm(const int nprocs, const int mytask, void *sndbuf, const int sbuf_s
     ptr = (char *) sndbuf + sdispls[mytask]; 
     CheckMPIReturn(MPI_Send(ptr, sndlths[mytask], stypes[mytask], mytask, tag, comm), __FILE__,__LINE__);
     CheckMPIReturn(MPI_Wait(rcvids, &status), __FILE__,__LINE__);
-
   }
   for(int i=0;i<nprocs;i++){
     swapids[i]=0;
@@ -181,7 +176,6 @@ int pio_swapm(const int nprocs, const int mytask, void *sndbuf, const int sbuf_s
     sndids[i]=MPI_REQUEST_NULL;
     hs_rcvids[i]=MPI_REQUEST_NULL;
   }
-
   steps = 0;
   for(istep=0;istep<ceil2(nprocs)-1;istep++){
     p = pair(nprocs, istep, mytask) ;
@@ -192,8 +186,7 @@ int pio_swapm(const int nprocs, const int mytask, void *sndbuf, const int sbuf_s
 
   if(steps == 0)
     return PIO_NOERR;
-  
- 
+   
   if(steps == 1){
     maxreq = 1;
     maxreqh = 1;
@@ -201,12 +194,12 @@ int pio_swapm(const int nprocs, const int mytask, void *sndbuf, const int sbuf_s
     if(max_requests > 1 && max_requests<steps){
       maxreq = max_requests;
       maxreqh = maxreq/2;
-    }else if(max_requests>0){
-      maxreq = 2;
-      maxreqh = 1;
-    }else{
+    }else if(max_requests>=steps){
       maxreq = steps;
       maxreqh = steps;
+    }else{
+      maxreq = 2;
+      maxreqh = 1;
     }
   } 
   if(handshake){
@@ -235,12 +228,15 @@ int pio_swapm(const int nprocs, const int mytask, void *sndbuf, const int sbuf_s
     p = swapids[istep];
     if(sndlths[p] > 0){
       tag = mytask + offset_t;
-      if(handshake)
+      if(handshake){
 	CheckMPIReturn(MPI_Wait ( hs_rcvids+istep, &status), __FILE__,__LINE__);
-      
+      }
       ptr = (char *) sndbuf + sdispls[p];
-
-      CheckMPIReturn(MPI_Rsend(ptr, sndlths[p], stypes[p], p, tag, comm), __FILE__,__LINE__);
+      if(isend){
+	CheckMPIReturn(MPI_Irsend(ptr, sndlths[p], stypes[p], p, tag, comm,sndids+istep), __FILE__,__LINE__);
+      }
+      else
+	CheckMPIReturn(MPI_Rsend(ptr, sndlths[p], stypes[p], p, tag, comm), __FILE__,__LINE__);
     }
     if(istep > maxreqh){
       p = swapids[istep - maxreqh];
@@ -266,13 +262,9 @@ int pio_swapm(const int nprocs, const int mytask, void *sndbuf, const int sbuf_s
       }
     }
   }
-  for(istep=steps-maxreqh;istep<steps;istep++){
-    p = swapids[istep];
-    if(rcvlths[p] > 0)
-      CheckMPIReturn(MPI_Wait( rcvids+istep, &status), __FILE__,__LINE__);
-    if(isend && sndlths[p] > 0)
-      CheckMPIReturn(MPI_Wait( sndids+istep, &status), __FILE__,__LINE__);
-  }
+  CheckMPIReturn(MPI_Waitall(steps, rcvids, MPI_STATUSES_IGNORE), __FILE__,__LINE__);
+
+  CheckMPIReturn(MPI_Waitall(steps, sndids, MPI_STATUSES_IGNORE), __FILE__,__LINE__);
 
   return PIO_NOERR;
 }

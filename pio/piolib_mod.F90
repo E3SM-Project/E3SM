@@ -929,12 +929,12 @@ contains
          integer(C_INT), value :: iosysid
          integer(C_INT), value :: basetype
          integer(C_INT), value :: ndims
-         type(C_PTR) :: dims
+         integer(C_INT) :: dims(*)
          integer(C_INT), value :: maplen
-         type(C_PTR) :: compmap
+         integer(C_SIZE_T) :: compmap(*)
          integer(C_INT) :: ioidp
-         type(C_PTR) :: iostart
-         type(C_PTR) :: iocount
+         type(C_PTR), value :: iostart
+         type(C_PTR), value :: iocount
        end function PIOc_InitDecomp
     end interface
     integer :: ierr
@@ -944,11 +944,11 @@ contains
 #endif
 
     if(present(iostart) .and. present(iocount)) then
-       ierr = PIOc_InitDecomp(iosystem%iosysid, basepiotype, size(dims), C_LOC(dims), &
-            size(compdof), C_LOC(compdof), iodesc%ioid, C_LOC(iostart), C_LOC(iocount))
+       ierr = PIOc_InitDecomp(iosystem%iosysid, basepiotype, size(dims), dims, &
+            size(compdof), compdof, iodesc%ioid, C_LOC(iostart), C_LOC(iocount))
     else
-       ierr = PIOc_InitDecomp(iosystem%iosysid, basepiotype, size(dims), C_LOC(dims), &
-            size(compdof), C_LOC(compdof), iodesc%ioid, C_NULL_PTR, C_NULL_PTR)
+       ierr = PIOc_InitDecomp(iosystem%iosysid, basepiotype, size(dims), dims, &
+            size(compdof), compdof, iodesc%ioid, C_NULL_PTR, C_NULL_PTR)
     endif
 #ifdef TIMING
     call t_stopf("PIO_initdecomp_dof")

@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <string.h> // memcpy
 #ifdef _NETCDF
 #include <netcdf.h>
 #ifdef _NETCDF4
@@ -18,7 +19,7 @@
 typedef struct io_desc_t
 {
   int ioid;
-  int basetype;
+  MPI_Datatype basetype;
   int *dest_ioproc;
   int *rfrom;
   int *rtype;
