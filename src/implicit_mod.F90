@@ -2422,6 +2422,35 @@ ptens=0.0d0
 
 
 
+  subroutine get_discrete_params(cnets,cnete,cnp,cnlev, c_ptr_to_object) bind(C,name='get_discrete_params')
+
+    use ,intrinsic :: iso_c_binding
+    use kinds, only : real_kind
+    use dimensions_mod, only :  np, nlev, nvar, nelem
+    use element_mod, only : element_t
+    use derived_type_mod, only : derived_type
+    use perf_mod, only : t_startf, t_stopf
+
+    implicit none
+
+    integer (c_int)        :: cnets
+    integer (c_int)        :: cnete
+    integer (c_int)        :: cnp
+    integer (c_int)        :: cnlev
+    type(derived_type) ,pointer        :: fptr=>NULL()
+    type(c_ptr)                        :: c_ptr_to_object
+
+
+    call c_f_pointer(c_ptr_to_object,fptr) ! convert C ptr to F ptr
+
+    cnets         = fptr%nets
+    cnete         = fptr%nete
+
+    cnp=np
+    cnlev=nlev
+
+ end subroutine get_discrete_params
+
 
 end module implicit_mod
 

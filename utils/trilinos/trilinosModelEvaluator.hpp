@@ -22,6 +22,17 @@
 #include "BelosBlockGmresSolMgr.hpp" 
 
 
+
+#include "Epetra_InvOperator.h"
+#include "Epetra_Util.h"
+#include "Epetra_Export.h"
+#include "Epetra_Import.h"
+
+#include "ml_include.h"
+#include "ml_MultiLevelPreconditioner.h"
+#include "Teuchos_ParameterList.hpp"
+
+
 using Teuchos::RCP;
 using Teuchos::ParameterList;
 typedef double ST;
@@ -29,6 +40,11 @@ typedef Epetra_MultiVector MV;
 typedef Epetra_Operator OP;
 typedef void (*residFnPtr)(double *, double *, int, void *);
 
+  extern "C" {
+    void homme_globalIDs(int, int* ,void *);
+    void helm_mat(int, int, double *, int *, void *);
+    void helm_map(int, int, int *, void *);
+  }
 class hommePreconditionerBase;
 
 
@@ -38,34 +54,15 @@ public:
   
   // 1. Constructors. Different interfaces for different preconditioners
 
+/* Identity Preconditioner interface */
   trilinosModelEvaluator(int nelems, double* statevector_,
         const Epetra_Comm& comm_,
         void* blackbox_res, void* precdata,
         void (*residualFunction)(double *, double *, int, void *),
         void (*precUpdateFunction)(double *,int,void *));
 
-  trilinosModelEvaluator(int nelems, double* statevector_,
-        const Epetra_Comm& comm_,
-        void* blackbox_res, void* precdata,void * jacdata,
-        void (*residualFunction)(double *, double *, int, void *),
-        void (*precFunction)(double *,int,double*,void *),
-        void (*jacFunction)(double *,int,double*,void *),
-        void (*precUpdateFunction)(double *,int,void *),
-        void (*getJacVector)(double *, int, void *));
 
-  trilinosModelEvaluator(int nelems, double* statevector_,
-        const Epetra_Comm& comm_,
-        void* blackbox_res, void* precdata,void * jacdata,
-        void (*residualFunction)(double *, double *, int, void *),
-        void (*precFunctionblock11)(double *,int,double*,void *),
-        void (*precFunctionblock12)(double *,int,double*,void *),
-        void (*precFunctionblock21)(double *,int,double*,void *),
-        void (*precFunctionblock22)(double *,int,double*,void *),
-        void (*jacFunction)(double *,int,double*,void *),
-        void (*precUpdateFunction)(double *,int,void *),
-        void (*getJacVector)(double *, int, void *));
-
-
+/* SIMPLE */
   trilinosModelEvaluator(int nelems, double* statevector_,
         const Epetra_Comm& comm_,
         void* blackbox_res, void* precdata,void * jacdata,
@@ -82,30 +79,35 @@ public:
         int *FTotalIt, 
         int *SchurTotalIt);
 
-
-  /* interface for comparing two block preconditioner formulations */
+/* SIMPLE ML */
   trilinosModelEvaluator(int nelems, double* statevector_,
         const Epetra_Comm& comm_,
         void* blackbox_res, void* precdata,void * jacdata,
         void (*residualFunction)(double *, double *, int, void *),
         void (*precFunctionblock11)(double *,int,double*,void *),
-        void (*precFunctionblock12)(double *,int,double*,void *),
-        void (*precFunctionblock21)(double *,int,double*,void *),
+        void (*precFunctionblock12)(double *,int,double*,int, void *),
+        void (*precFunctionblock21)(double *,int,double*,int, void *),
         void (*precFunctionblock22)(double *,int,double*,void *),
-        void (*auxprecFunctionblock11)(double *,int,double*,void *),
-        void (*auxprecFunctionblock12)(double *,int,double*,void *),
-        void (*auxprecFunctionblock21)(double *,int,double*,void *),
-        void (*auxprecFunctionblock22)(double *,int,double*,void *),
         void (*jacFunction)(double *,int,double*,void *),
         void (*precUpdateFunction)(double *,int,void *),
-        void (*getJacVector)(double *, int, void *));
+        void (*getJacVector)(double *, int, void *),
+        const RCP<ParameterList>&  FSolvePL_, 
+        const RCP<ParameterList>&  SchurSolvePL_, 
+        int *FTotalIt, 
+        int *SchurTotalIt,
+        void (*homme_globalIDs)(int, int* ,void *),
+       	void (*helm_mat)(int, int, double *, int *, void *),
+       	void (*helm_map)(int, int, int *, void *),
+	const RCP<ParameterList>&  HelmSolvePL_,
+        int* HelmTotalIt_,
+        int nets_,
+        int nete_,
+        int np_,
+        int nlev_
+	);
 
-  trilinosModelEvaluator(int nelems, double* statevector_,
-        const Epetra_Comm& comm_,
-        void* blackbox_res, void* precdata,
-        void (*residualFunction)(double *, double *, int, void *),
-        void (*precFunction)(double *,int,double*,void *),
-        void (*precUpdateFunction)(double *,int,void *));
+
+
 
     ~trilinosModelEvaluator();
  
@@ -151,6 +153,7 @@ public:
   // 4. Utility functions not accessible from outside this class.
 private:
   void initialize(double* statevector);
+//  void initializeMatrixMaps();
 
 
 private:
@@ -310,6 +313,160 @@ private:
 
   Teuchos::RCP<Epetra_Vector> Schurb; //height workvector
   Teuchos::RCP<Epetra_Vector> Schurx; //height workvector
+
+};
+
+/*******************************************************************************/
+/*******************************************************************************/
+/*******************************************************************************/
+class simpleMLPreconditioner : public hommePreconditionerBase {
+public:
+  simpleMLPreconditioner(int N, RCP<Epetra_Vector> xVec, RCP<Epetra_Map> xMap,
+                       void* blackbox_res, void* precdata,
+                       void (*precFunctionblock11)(double *,int,double*,void *),
+                       void (*precFunctionblock12)(double *,int,double*,int, void *),
+                       void (*precFunctionblock21)(double *,int,double*,int, void *),
+                       void (*precFunctionblock22)(double *,int,double*,void *),
+                       void (*precUpdateFunction)(double *,int,void *),
+		       const RCP<ParameterList>&  FSolvePL_,
+		       const RCP<ParameterList>&  SchurSolvePL_,
+		       int* FTotalIt_,
+		       int* SchurTotalIt_,
+		       void (*homme_globalIDs)(int, int* ,void *),
+		       void (*helm_mat)(int, int, double *, int *, void *),
+		       void (*helm_map)(int, int, int *, void *),
+		       const RCP<ParameterList>&  HelmSolvePL_,
+		       int* HelmTotalIt_,
+		       int nets_, int nete_, int np_, int nlev_
+			);
+
+
+
+
+
+
+
+
+
+
+		 
+  void initializeMatrixMaps(const Epetra_Comm & comm );
+  int ApplyInverse(const Epetra_MultiVector& V, Epetra_MultiVector& Y) const;
+  int computePreconditioner(RCP<const Epetra_Vector> xVec, void* precdata_);
+// void BuildMaps(int* nelems, int* nets, int* nete, int* np, int* nlev, void* data);
+  void BuildMatrix( void* data ) ;
+  void BuildRHS(double* rhsVector, void* data );
+  void SetProblem();
+  void HelmholtzSolve(double* statevector);
+  void belosfinish();
+  
+ 
+/*
+  extern "C" {
+    void homme_globalIDs(int, int* ,void *);
+    void helm_mat(int, int, double *, int *, void *);
+    void helm_map(int, int, int *, void *);
+  }
+
+  */
+
+
+
+private:
+
+  int N;
+  bool printproc;
+  RCP<Epetra_Vector> xVec;
+  RCP<Epetra_Map> xMap;
+  void* blackbox_res;
+  void* precdata;
+  void (*precFunctionblock11)(double *,int,double*,void *);
+  void (*precFunctionblock12)(double *,int,double*,int, void *);
+  void (*precFunctionblock21)(double *,int,double*,int, void *);
+  void (*precFunctionblock22)(double *,int,double*,void *);
+  void (*precUpdateFunction)(double *,int,void *);
+  RCP<Epetra_Operator>F;
+  RCP<Epetra_Operator>S;
+
+  int *FTotalIt;
+  int *SchurTotalIt;
+
+
+  Teuchos::RCP< Belos::SolverManager<ST,MV,OP> > FSolver;
+  Teuchos::RCP< Belos::SolverManager<ST,MV,OP> > SchurSolver;
+
+  Teuchos::RCP<Epetra_Map> UVMap;
+  Teuchos::RCP<Epetra_Map> HMap;
+
+  Teuchos::RCP<ParameterList>  FSolvePL;
+  Teuchos::RCP<ParameterList>  SchurSolvePL;
+
+  Teuchos::RCP<Epetra_Vector> workvector4;
+  Teuchos::RCP<Epetra_Vector> dFinvBt;
+  Teuchos::RCP<Epetra_Vector> bx1;
+
+  Teuchos::RCP< Belos::LinearProblem<ST,MV,OP> > FProblem;
+  Teuchos::RCP< Belos::LinearProblem<ST,MV,OP> > SchurProblem;
+
+  Teuchos::RCP<Epetra_Vector> Fb; //uv workvector
+  Teuchos::RCP<Epetra_Vector> Fx; //uv workvector
+
+  Teuchos::RCP<Epetra_Vector> Schurb; //height workvector
+  Teuchos::RCP<Epetra_Vector> Schurx; //height workvector
+
+
+  /*
+   * ML and matrix assembly specific parameters
+   *
+   */
+
+  void (*homme_globalIDs)(int, int* ,void *);
+  void (*helm_mat)(int, int, double *, int *, void *);
+  void (*helm_map)(int, int, int *, void *);
+
+  int nets;
+  int nete;
+  int np;
+  int nlev;
+
+  
+Teuchos::RCP<Epetra_Comm> MatrixComm;
+Teuchos::RCP<Teuchos::ParameterList> paramList;
+Teuchos::RCP<Teuchos::ParameterList> HelmSolvePL;
+Teuchos::RCP<Teuchos::ParameterList> MLList;
+int* HelmTotalIt;
+int HelmTotalIts;
+int OutputStep;
+
+int *my_GlobalIDs;
+Teuchos::RCP<Epetra_Map> ParMatrixMap;
+
+Teuchos::RCP<Epetra_Map> MatrixMap;
+Teuchos::RCP<Epetra_Export::Epetra_Export> exporter;
+Teuchos::RCP<Epetra_Import::Epetra_Import> importer;
+
+Teuchos::RCP<ML_Epetra::MultiLevelPreconditioner> MLPrec;
+Teuchos::RCP<Epetra_InvOperator> MLPI;
+
+int *bincount;
+int **bin;
+
+Teuchos::RCP< Belos::LinearProblem<ST,MV,OP> > HelmProblem;
+Teuchos::RCP< Belos::SolverManager<ST,MV,OP> > HelmSolver;
+Teuchos::RCP<Epetra_Vector>   HelmSolution;
+Teuchos::RCP<Epetra_Vector>   ParHelmSolution;
+
+Teuchos::RCP<Epetra_Vector>   ParHelmRHS;
+Teuchos::RCP<Epetra_Vector>   HelmRHS;
+Teuchos::RCP<Epetra_FECrsMatrix> HelmMatrix;
+Teuchos::RCP<Epetra_FECrsMatrix> ParHelmMatrix;
+
+bool StaticProfile;
+int NPPP; //Number of Points Per Processor (unique to processor but not across processors) 
+
+
+
+
 
 };
 

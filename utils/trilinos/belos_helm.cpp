@@ -49,7 +49,6 @@ typedef Belos::OperatorTraits<ST,MV,OP>  OPT;
 
 // Define some variables that are Global to the file that
 // allow Belos to be called in 3 stages (init, solve, finalize)
-//static Teuchos::RCP<Epetra_MpiComm> Comm;
 static Teuchos::RCP<Epetra_Comm> Comm;
 static bool printproc;
 static Teuchos::RCP<Teuchos::ParameterList> paramList;
@@ -64,11 +63,13 @@ static int *my_GlobalIDs;
 static Teuchos::RCP<Epetra_Map> ParMatrixMap;
 
 static Teuchos::RCP<Epetra_Map> MatrixMap; 
-//static Teuchos::RCP<Epetra_Export::Epetra_Export> exporter;
-//static Teuchos::RCP<Epetra_Import::Epetra_Import> importer;
+
 
 static Teuchos::RCP<Epetra_Export> exporter;
 static Teuchos::RCP<Epetra_Import> importer;
+
+
+
 static Teuchos::RCP<ML_Epetra::MultiLevelPreconditioner> MLPrec;
 static Teuchos::RCP<Epetra_InvOperator> MLPI;
 
@@ -89,7 +90,6 @@ static bool StaticProfile=false;
 static int N; //number of points on each processor (unique to processor but not across processors) 
 
 extern "C" {
-/*Defining external functions for finite difference Jacobian*/
   void homme_globalIDs(int, int* ,void *);
   void helm_mat(int, int, double *, int *, void *);
   void helm_map(int, int, int *, void *);
@@ -211,8 +211,6 @@ void BuildMatrix(int* nelems, int* nets, int* nete, int* np, int* nlev,  void* d
 
      Epetra_DataAccess copy = ::Copy;
      const std::size_t approximate_indices_per_row = (*nelems);
-    // HelmMatrix=Teuchos::null;
-    // ParHelmMatrix=Teuchos::null;
 
      HelmMatrix = Teuchos::rcp(new Epetra_FECrsMatrix(copy, *MatrixMap,approximate_indices_per_row,StaticProfile));
      ParHelmMatrix = Teuchos::rcp(new Epetra_FECrsMatrix(copy, *ParMatrixMap,approximate_indices_per_row,StaticProfile));
@@ -342,10 +340,10 @@ void SetProblem(){
      HelmProblem->setRHS( ParHelmRHS);
 
 // Begin Preconditioner Set
-    double factor=4.0/3.0;
 
      MLList = Teuchos::rcp(new Teuchos::ParameterList);
      ML_Epetra::SetDefaults("SA",*MLList);
+     //Other Default ML options
      //ML_Epetra::SetDefaults("DD",*MLList);
      //ML_Epetra::SetDefaults("DD-ML",*MLList);
       
@@ -366,10 +364,6 @@ void SetProblem(){
      const int cycles=1;
      comp= MLPrec->AnalyzeCycle(cycles);
 
-     // MLPrec->PrintUnused(0);
-     //
-     //
-     //
     
 
 
@@ -409,7 +403,6 @@ void HelmholtzSolve(int *nelems, double* statevector){
      HelmProblem->setLHS( ParHelmSolution);
      HelmProblem->setRHS( ParHelmRHS);
 
-//     HelmProblem->Reset( ParHelmSolution, ParHelmRHS );
 
      HelmSolver->reset( Belos::Problem );
 
