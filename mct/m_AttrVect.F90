@@ -124,6 +124,8 @@
       public :: indexRA		! index the real attributes
       public :: getIList        ! return list of integer attributes
       public :: getRList        ! return list of real attributes
+      public :: getIListtoChar  ! return list of integer attributes as Char
+      public :: getRListtoChar  ! return list of real attributes as Char
       public :: exportIList     ! export INTEGER attibute List
       public :: exportRList     ! export REAL attibute List
       public :: exportIListToChar ! export INTEGER attibute List as Char
@@ -164,6 +166,8 @@
     interface indexRA; module procedure indexRA_; end interface
     interface getIList; module procedure getIList_; end interface
     interface getRList; module procedure getRList_; end interface
+    interface getIListToChar; module procedure getIListToChar_; end interface
+    interface getRListToChar; module procedure getRListToChar_; end interface
     interface exportIList; module procedure exportIList_; end interface
     interface exportRList; module procedure exportRList_; end interface
     interface exportIListToChar
@@ -240,6 +244,7 @@
 !           subroutines
 ! 10Apr12 - W.J. Sacks <sacks@ucar.edu> - modified AVSharedIndices code
 !           to be Fortran-90 compliant
+! 10Jan13 - T.Craig <tcraig@ucar.edu> - add getRListToChar and getIListToChar
 !EOP ___________________________________________________________________
 
   character(len=*),parameter :: myname='MCT::m_AttrVect'
@@ -1016,6 +1021,98 @@
   call get(item,ith,aVect%rList)
 
  end subroutine getRList_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!     Math and Computer Science Division, Argonne National Laboratory  !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: getIListToChar_ - Retrieve the Name of a Numbered Integer Attribute
+!
+! !DESCRIPTION:
+! This routine returns the name of the {\tt ith} integer attribute of
+! the input {\tt AttrVect} argument {\tt aVect}.  The name is returned
+! in the function {\tt char} argument.
+!
+! !INTERFACE:
+
+ function getIListToChar_(ith, aVect)
+!
+! !USES:
+!
+      use m_String, only : String
+      use m_String, only : String_ToChar => ToChar
+      use m_String, only : String_clean => clean
+      use m_List,   only : get
+
+      implicit none
+
+! !INPUT PARAMETERS:
+!
+      integer,     intent(in)  :: ith
+      type(AttrVect),intent(in) :: aVect
+
+! !OUTPUT PARAMETERS:
+!
+      character(len=size(aVect%iList%bf,1)) :: getIListToChar_
+
+! !REVISION HISTORY:
+! 10Jan13 - T. Craig <tcraig@ucar.edu> - initial prototype/prolog/code
+!EOP ___________________________________________________________________
+
+  type(String) :: item
+  character(len=*),parameter :: myname_=myname//'::getIListToChar_'
+
+  call get(item, ith, aVect%iList)
+  getIListToChar_ = String_toChar(item)
+  call String_clean(item)
+
+ end function getIListToChar_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!     Math and Computer Science Division, Argonne National Laboratory  !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: getRListToChar_ - Retrieve the Name of a Numbered Integer Attribute
+!
+! !DESCRIPTION:
+! This routine returns the name of the {\tt ith} integer attribute of
+! the input {\tt AttrVect} argument {\tt aVect}.  The name is returned
+! in the function {\tt char} argument.
+!
+! !INTERFACE:
+
+ function getRListToChar_(ith, aVect)
+!
+! !USES:
+!
+      use m_String, only : String
+      use m_String, only : String_ToChar => ToChar
+      use m_String, only : String_clean => clean
+      use m_List,   only : get
+
+      implicit none
+
+! !INPUT PARAMETERS:
+!
+      integer,     intent(in)  :: ith
+      type(AttrVect),intent(in) :: aVect
+
+! !OUTPUT PARAMETERS:
+!
+      character(len=size(aVect%rList%bf,1)) :: getRListToChar_
+
+! !REVISION HISTORY:
+! 10Jan13 - T. Craig <tcraig@ucar.edu> - initial prototype/prolog/code
+!EOP ___________________________________________________________________
+
+  type(String) :: item
+  character(len=*),parameter :: myname_=myname//'::getRListToChar_'
+
+  call get(item, ith, aVect%rList)
+  getRListToChar_ = String_toChar(item)
+  call String_clean(item)
+
+ end function getRListToChar_
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !     Math and Computer Science Division, Argonne National Laboratory  !
