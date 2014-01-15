@@ -506,6 +506,7 @@ int parse_reg_xml(ezxml_t registry, struct namelist **nls, struct dimension ** d
 	char default_value[1024];
 
 	char *string, *tofree, *token;
+	int found;
 
 	NEW_NAMELIST(nls_ptr)
 		NEW_DIMENSION(dim_ptr)
@@ -685,13 +686,28 @@ int parse_reg_xml(ezxml_t registry, struct namelist **nls, struct dimension ** d
 		structlevs = ezxml_attr(structs_xml, "time_levs");
 		structpackages = ezxml_attr(structs_xml, "packages");
 
+		found = 0;
 		grouplist_ptr = *groups;
-		while(grouplist_ptr->next) grouplist_ptr = grouplist_ptr->next;
-		NEW_GROUP_LIST(grouplist_ptr->next);
-		grouplist_ptr = grouplist_ptr->next;
-		snprintf(grouplist_ptr->name, 1024, "%s", structname);
-		grouplist_ptr->ntime_levs = atoi(structlevs);
-		vlist_cursor = NULL;
+		while(!found){
+			if(strncmp(grouplist_ptr->name, structname, 1024) == 0){
+				found = 1;
+				printf("Found %s\n", structname);
+			} else if (grouplist_ptr->next){
+				grouplist_ptr = grouplist_ptr->next;
+			} else {
+				break;
+			}
+		}
+		if(!found){
+			NEW_GROUP_LIST(grouplist_ptr->next);
+			grouplist_ptr = grouplist_ptr->next;
+			snprintf(grouplist_ptr->name, 1024, "%s", structname);
+			grouplist_ptr->ntime_levs = atoi(structlevs);
+			vlist_cursor = NULL;
+		} else {
+			vlist_cursor = grouplist_ptr->vlist;
+			while(vlist_cursor->next) vlist_cursor = vlist_cursor->next;
+		}
 
 		// Parse variable arrays
 		for(var_arr_xml = ezxml_child(structs_xml, "var_array"); var_arr_xml; var_arr_xml = var_arr_xml->next){
