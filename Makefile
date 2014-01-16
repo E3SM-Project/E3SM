@@ -336,6 +336,15 @@ ifeq "$(findstring clean, $(MAKECMDGOALS))" "clean" # CHECK FOR CLEAN TARGET
 	override AUTOCLEAN=false
 endif # END OF CLEAN TARGET CHECK
 
+VER=$(shell git describe --dirty 2> /dev/null)
+#override CPPFLAGS += -DMPAS_GIT_VERSION=$(VER)
+
+ifeq "$(findstring v, $(VER))" "v"
+	override CPPFLAGS += -DMPAS_GIT_VERSION=$(VER)
+else
+	override CPPFLAGS += -DMPAS_GIT_VERSION="unknown"
+endif # END OF GIT DESCRIBE VERSION
+
 ####################################################
 # Section for adding external libraries and includes
 ####################################################

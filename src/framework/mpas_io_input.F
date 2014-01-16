@@ -268,6 +268,34 @@ module mpas_io_input
       domain % history = "cesm_run"
 #endif
 
+      call MPAS_readStreamAtt(input_obj % io_stream, 'mesh_id', domain % mesh_id, ierr)
+      if (ierr /= MPAS_STREAM_NOERR) then
+        write(stderrUnit,*) 'Warning: Attribute mesh_id not found in '//trim(input_obj % filename)
+        write(stderrUnit,*) '   Setting mesh_id to ''Unknown'''
+        domain % mesh_id = "Unknown"
+      end if
+
+      call MPAS_readStreamAtt(input_obj % io_stream, 'Conventions', domain % Conventions, ierr)
+      if (ierr /= MPAS_STREAM_NOERR) then
+        write(stderrUnit,*) 'Warning: Attribute Conventions not found in '//trim(input_obj % filename)
+        write(stderrUnit,*) '   Setting Conventions to ''MPAS'''
+        domain % Conventions = "MPAS"
+      end if
+
+      call MPAS_readStreamAtt(input_obj % io_stream, 'source', domain % source, ierr)
+      if (ierr /= MPAS_STREAM_NOERR) then
+        write(stderrUnit,*) 'Warning: Attribute source not found in '//trim(input_obj % filename)
+        write(stderrUnit,*) '   Setting source to ''MPAS'''
+        domain % source = "MPAS"
+      end if
+
+      call MPAS_readStreamAtt(input_obj % io_stream, 'mesh_spec', domain % mesh_spec, ierr)
+      if (ierr /= MPAS_STREAM_NOERR) then
+        write(stderrUnit,*) 'Warning: Attribute mesh_spec not found in '//trim(input_obj % filename)
+        write(stderrUnit,*) '   Setting mesh_spec to ''Unknown'''
+        domain % mesh_spec = "Unknown"
+      end if
+
       block_ptr => domain % blocklist % next
       do while (associated(block_ptr))
         block_ptr % mesh % sphere_radius = domain % blocklist % mesh % sphere_radius
