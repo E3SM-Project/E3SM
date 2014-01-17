@@ -120,7 +120,7 @@ Program pio_unit_test_driver
        0,              & ! num_aggregator (?)
        stride,         & ! Stride
        PIO_rearr_box,  & ! rearr
-       pio_iosystem)     ! iosystem
+       pio_iosystem, base=1)     ! iosystem
 
   call PIO_seterrorhandling(pio_iosystem, PIO_BCAST_ERROR)
 
@@ -163,9 +163,15 @@ Program pio_unit_test_driver
         call parse(err_msg, fail_cnt)
 
         ! test_open()
+
         if (master_task) write(*,"(3x,A,x)", advance="no") "testing PIO_openfile...",test_id
         call test_open(test_id, err_msg)
         call parse(err_msg, fail_cnt)
+
+        call mpi_barrier(mpi_comm_world,ierr)
+        call mpi_abort(mpi_comm_world)
+
+
 
         ! netcdf-specific tests
         if (is_netcdf(iotypes(test_id))) then

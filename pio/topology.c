@@ -54,7 +54,15 @@
 
 #endif
 
-#define min(a,b) a<b?a:b
+#define max(a,b) \
+   ({ __typeof__ (a) _a = (a); \
+       __typeof__ (b) _b = (b); \
+     _a > _b ? _a : _b; })
+
+#define min(a,b) \
+   ({ __typeof__ (a) _a = (a); \
+       __typeof__ (b) _b = (b); \
+     _a < _b ? _a : _b; })
 
 
 int rank;
@@ -101,14 +109,13 @@ void identity(MPI_Fint *comm, int *iotask)
    rankInPset = Personality_rankInPset (&pers);
 #endif
 #ifdef BGQ
-   int myrank, numpsets, psetID, psetsize, psetrank;
+   int numpsets, psetID, psetsize, psetrank;
 
-   MPI_Comm_rank(comm2,&myrank);
    bgq_pset_info (comm2, &numpsets, &psetID, &psetsize, &psetrank);
  
    numIONodes = numpsets; 
    numNodesInPset = psetsize; 
-   rankInPset = myrank; 
+   rankInPset = rank; 
 #endif
 
 #ifdef BGL
@@ -229,7 +236,7 @@ void determineiotasks(MPI_Fint *comm, int *numiotasks,int *base, int *stride, in
      numNodesInPset = Personality_numNodesInPset (&pers);
      #endif
 
-     /*printf("Determine io tasks: me %i : nodes in pset= %i ionodes = %i\n", rank, numNodesInPset, numIONodes); */
+     /*     printf("Determine io tasks: me %i : nodes in pset= %i ionodes = %i\n", rank, numNodesInPset, numIONodes); */
 
      
      if((*numiotasks) < 0 ) { 
@@ -315,10 +322,10 @@ void determineiotasks(MPI_Fint *comm, int *numiotasks,int *base, int *stride, in
 
 
      /* start stridding MPI tasks from base task */ 
-     iam = rankInPset-(*base);
+     iam = max(0,rankInPset-(*base));
      if (iam >= 0)  {
        /* mark tasks that will be IO-tasks  or IO-clients */
-          /*    printf("iam = %d lstride = %d coreID = %d\n",iam,lstride,coreId); */
+       /*    printf("iam = %d lstride = %d coreID = %d\n",iam,lstride,coreId); */
        if((iam % lstride == 0) && (coreId == 0) ) {  /* only io tasks indicated by stride and coreId = 0 */
 	 if((iam/lstride) < numiotasks_per_node) { 
 	   /* only set the first (numiotasks_per_node - 1) tasks */
@@ -327,19 +334,18 @@ void determineiotasks(MPI_Fint *comm, int *numiotasks,int *base, int *stride, in
 	   /*  If there is an uneven number of io-clients to io-nodes 
 	       allocate the first remainder - 1 processor sets to 
 	       have a total of numiotasks_per_node */
-	   if(psetNum < remainder) {(*iamIOtask) = 1;};   
+	   if(psetNum < remainder) {(*iamIOtask) = 1;
+	   };   
 	 }
        }
-      /*printf("comm = %d iam = %d lstride = %d coreID = %d iamIOtask = %i \n",comm2, iam,lstride,coreId,(*iamIOtask));*/
+       /*       printf("comm = %d iam = %d lstride = %d coreID = %d iamIOtask = %i \n",comm2, iam,lstride,coreId,(*iamIOtask)); */
      }
-   }  
-   else 
-  {
-     /* We are not doing rearrangement.... so all tasks are io-tasks */
-     (*iamIOtask) = 1;
-   }
+   }else{ 
+       /* We are not doing rearrangement.... so all tasks are io-tasks */
+       (*iamIOtask) = 1;
+     }
    
-    /*printf("comm = %d myrank = %i iotask = %i \n", comm2, rank, (*iamIOtask));*/ 
+   /*printf("comm = %d myrank = %i iotask = %i \n", comm2, rank, (*iamIOtask));*/ 
    
    /* now we need to correctly determine the numiotasks */
    MPI_Allreduce(iamIOtask, &task_count, 1, MPI_INT, MPI_SUM, comm2);

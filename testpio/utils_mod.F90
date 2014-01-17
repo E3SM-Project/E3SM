@@ -38,17 +38,17 @@ subroutine WriteHeader(File,nx,ny,nz,dimid_x,dimid_y,dimid_z)
           write(*,*) 'testPIO:  Error writing iVALUE to netCDF file'
        endif
 
-       iostat = PIO_def_dim(File,'X',nx,dimid_x)
+       iostat = PIO_def_dim(File,'X',int(nx,pio_offset),dimid_x)
        if(iostat /= pio_noerr) then
           write(*,*) 'testPIO:  Error defining dimension X for netCDF file'
        endif
 
-       iostat = PIO_def_dim(File,'Y',ny,dimid_y)
+       iostat = PIO_def_dim(File,'Y',int(ny,pio_offset),dimid_y)
        if(iostat /= pio_noerr) then
           write(*,*) 'testPIO:  Error defining dimension Y for netCDF file'
        endif
 
-       iostat = PIO_def_dim(File,'Z',nz,dimid_z)
+       iostat = PIO_def_dim(File,'Z',int(nz,pio_offset),dimid_z)
        if(iostat /= pio_noerr) then
           write(*,*) 'testPIO:  Error defining dimension Z for netCDF file'
        endif

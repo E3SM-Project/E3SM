@@ -41,7 +41,9 @@ module basic_tests
       iotype   = iotypes(test_id)
 
       ! Delete file before initial create
-      if (master_task) call system("rm -f " // trim(filename))
+!      if (master_task) call system("rm -f " // trim(filename))
+
+      call PIO_deletefile(pio_iosystem, filename)
 
       ! Original file creation
       ret_val = PIO_createfile(pio_iosystem, pio_file, iotype, filename)
@@ -50,7 +52,7 @@ module basic_tests
         err_msg = "Could not create " // trim(filename)
         return
       end if
-
+      
 
       ! netcdf files need to end define mode before closing
       if (is_netcdf(iotype)) then
@@ -63,6 +65,7 @@ module basic_tests
         end if
       end if
       call PIO_closefile(pio_file)
+
 
       ! Test opening of file
       ret_val = PIO_openfile(pio_iosystem, pio_file, iotype, filename, PIO_nowrite)

@@ -1554,9 +1554,11 @@ contains
 #ifdef TIMING
     call t_startf("PIO_init")
 #endif
+
     lbase=0
     if(present(base)) lbase=base
     ierr = PIOc_Init_Intracomm_from_F90(comp_comm,num_iotasks,stride,lbase,iosystem%iosysid)
+
 #ifdef TIMING
     call t_stopf("PIO_init")
 #endif
@@ -1902,7 +1904,7 @@ contains
         msg = PIO_MSG_EXIT
         call mpi_send(msg, 1, mpi_integer, iosystem%ioroot, 1, iosystem%union_comm, ierr)
      end if
-
+     If (associated (iosystem%ioranks)) deallocate (iosystem%ioranks)
 #ifndef _MPISERIAL
      if(iosystem%info .ne. mpi_info_null) then 
         call mpi_info_free(iosystem%info,ierr) 

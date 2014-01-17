@@ -71,7 +71,7 @@ module ncdf_tests
       end if
 
       ! Define a new dimension M (already has 'N' from previous tests)
-      ret_val = PIO_def_dim(pio_file, 'M', 2*ntasks, pio_dim)
+      ret_val = PIO_def_dim(pio_file, 'M', int(2*ntasks,pio_offset), pio_dim)
       if (ret_val.ne.0) then
         err_msg = "Could not define dimension M"
         call PIO_closefile(pio_file)
@@ -117,6 +117,7 @@ module ncdf_tests
       ret_val = PIO_enddef(pio_file)
       if (ret_val.ne.0) then
         ! Error in PIO_enddef
+        print *,__FILE__,__LINE__,ret_val
         err_msg = "Could not end define mode"
         return
       end if
@@ -207,6 +208,7 @@ module ncdf_tests
       ret_val = PIO_enddef(pio_file)
       if (ret_val.ne.0) then
         ! Error in PIO_enddef
+        print *,__FILE__,__LINE__,ret_val
         err_msg = "Could not end define mode"
         call PIO_closefile(pio_file)
         return

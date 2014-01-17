@@ -12,14 +12,17 @@ ELSE()
   SET (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 ENDIF()
 
+find_file( TESTFILE NAMES TryCSizeOf.f90 PATHS ${CMAKE_MODULE_PATH} NO_DEFAULT_PATH)
+get_filename_component( TESTFILEPATH ${TESTFILE} PATH)
+
 
 SET(pio_include_dirs_  ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
 SET(PIO_LIB_DIR  ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR} CACHE STRING "")
 
 #SET(bld_PIO_DEFINITIONS)
 
-TRY_COMPILE(WITH_CSIZEOF ${CMAKE_CURRENT_BINARY_DIR}/tryCompileCSIZEOF
-                            ${CMAKE_CURRENT_SOURCE_DIR}/cmake/TryCSizeOf.f90)
+TRY_COMPILE(WITH_CSIZEOF ${CMAKE_CURRENT_BINARY_DIR}/tryCompileCSIZEOF 
+                        ${TESTFILEPATH}/TryCSizeOf.f90)
 #MESSAGE(STATUS "c_sizeof test ${WITH_CSIZEOF}")
 IF(${WITH_CSIZEOF} STREQUAL FALSE)
     MESSAGE(STATUS "Fortran compiler does not support c_sizeof function")
@@ -28,7 +31,7 @@ endif()
 
 
 TRY_COMPILE(WITHOUT_MPISERIAL ${CMAKE_CURRENT_BINARY_DIR}/tryCompileMPISERIAL
-                            ${CMAKE_CURRENT_SOURCE_DIR}/cmake/TryMPISERIAL.f90)
+                            ${TESTFILEPATH}/TryMPISERIAL.f90)
 
 IF(${WITHOUT_MPISERIAL} STREQUAL FALSE)
     MESSAGE("Building PIO with mpi serial stubs library")
@@ -94,10 +97,6 @@ ENDIF()
 IF(PNETCDF_FOUND)
   SET(pio_include_dirs_ ${pio_include_dirs_} ${PNETCDF_INCLUDE_DIR})
   SET(bld_PIO_DEFINITIONS ${bld_PIO_DEFINITIONS} -D_PNETCDF)
-  IF(PNETCDF_MOD)
-    MESSAGE(STATUS "Using pnetcdf.mod")
-    SET(bld_PIO_DEFINITIONS ${bld_PIO_DEFINITIONS} -DUSE_PNETCDF_MOD)
-  ENDIF()
 ELSE()
   SET(bld_PIO_DEFINITIONS ${bld_PIO_DEFINITIONS} -D_NOPNETCDF)
 ENDIF()
@@ -105,7 +104,7 @@ ENDIF()
 OPTION(PIO_USE_MPIIO "Enable support for MPI-IO (default auto detect)" ON)
 IF (PIO_USE_MPIIO) 
   TRY_COMPILE(MPIIO_SUCCESS ${CMAKE_CURRENT_BINARY_DIR}/tryCompileMPIIO 
-                            ${CMAKE_CURRENT_SOURCE_DIR}/cmake/TryMPIIO.f90)
+                            ${TESTFILEPATH}/TryMPIIO.f90)
   IF (${MPIIO_SUCCESS})
     MESSAGE(STATUS "MPIIO detected and enabled.")
   ELSE()
@@ -129,7 +128,7 @@ endif()
 OPTION(PIO_USE_MPIMOD "Use Fortran MPI module (default auto detect)" ON)
 IF (PIO_USE_MPIMOD)
   TRY_COMPILE(MPIMOD_SUCCESS ${CMAKE_CURRENT_BINARY_DIR}/tryCompileMPIMod
-                             ${CMAKE_CURRENT_SOURCE_DIR}/cmake/TryMPIMod.f90)
+                             ${TESTFILEPATH}/TryMPIMod.f90)
   IF (${MPIMOD_SUCCESS})
     MESSAGE(STATUS "MPI Fortran module detected and enabled.")
   ELSE()
@@ -178,7 +177,7 @@ ADD_CUSTOM_COMMAND(
 )
 ENDFOREACH()
 if("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "GNU")
-  SET(CMAKE_Fortran_FLAGS	"${CMAKE_Fortran_FLAGS} -ffree-line-length-none")
+   SET(CMAKE_Fortran_FLAGS	"${CMAKE_Fortran_FLAGS} -ffree-line-length-none")
 endif()
 SET(CMAKE_C_FLAGS	"${CMAKE_C_FLAGS} -O0 -traceback -ftrapuv -debug all -std=c99 -g")
 SET(CMAKE_Fortran_FLAGS	"${CMAKE_Fortran_FLAGS} -g")
