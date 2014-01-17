@@ -278,10 +278,11 @@ sub loadmodules{
         module("load gnu/4.8.0");
 	module("load ncarcompilers/1.0");
         module("unload netcdf");
-        module("load netcdf/4.3.0-rc4");
+        module("load netcdf/4.3.0");
         module("load pnetcdf/1.3.0");
         module("load ncarenv/1.0");
-	module("load ncarbinlibs/0.0");
+	module("load ncarbinlibs/1.1");
+	module("load cmake/2.8.10.2");
 	module("list");
     }elsif($host eq "yellowstone"){
 	require "/glade/apps/opt/lmod/lmod/init/perl";    
@@ -293,7 +294,7 @@ sub loadmodules{
         module("load netcdf-mpi/4.3.0");
         module("load pnetcdf/1.3.0");
         module("load ncarenv/1.0");
-	module("load ncarbinlibs/1.0");
+	module("load ncarbinlibs/1.1");
 	module("load cmake");
 	module("list");
     }
@@ -347,7 +348,7 @@ sub hostmods{
     my ($scratch,$netcdf,$pnetcdf,$cc,$fc,$filesystem);
     print "host = $host\n";
     if($host =~ /yellowstone/){
-	$scratch = "/glade/scratch/$ENV{USER}/piotest";
+	$scratch = "/glade/scratch/$ENV{USER}/pio2test";
 	$netcdf = $ENV{NETCDF};
 	$pnetcdf = $ENV{PNETCDF};
 	$filesystem = "gpfs";

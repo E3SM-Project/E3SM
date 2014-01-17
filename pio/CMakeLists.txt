@@ -179,8 +179,12 @@ ENDFOREACH()
 if("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "GNU")
    SET(CMAKE_Fortran_FLAGS	"${CMAKE_Fortran_FLAGS} -ffree-line-length-none")
 endif()
-SET(CMAKE_C_FLAGS	"${CMAKE_C_FLAGS} -O0 -traceback -ftrapuv -debug all -std=c99 -g")
+if("${CMAKE_C_COMPILER_ID}" STREQUAL "INTEL")
+  SET(CMAKE_C_FLAGS	"${CMAKE_C_FLAGS} -O0 -traceback -ftrapuv -debug all  ")
+endif()
+
 SET(CMAKE_Fortran_FLAGS	"${CMAKE_Fortran_FLAGS} -g")
+SET(CMAKE_C_FLAGS	"${CMAKE_C_FLAGS} -std=c99 -g")
 
 ADD_LIBRARY(pio ${SRCS_F90} ${SRCS_C} ${TEMPSRCF90})
 if(PNETCDF_LIBRARY)

@@ -17,7 +17,7 @@
 !! $LastChangedDate$
 !<
 module piolib_mod
-  use iso_c_binding, only : C_LOC, C_NULL_CHAR, C_NULL_PTR
+  use iso_c_binding
   !--------------
   use pio_kinds
   !--------------
@@ -922,6 +922,8 @@ contains
     integer (kind=pio_offset), intent(in)          :: compdof(:)   ! global degrees of freedom for computational decomposition
     integer (kind=PIO_offset), optional :: iostart(:), iocount(:)
     type (io_desc_t), intent(inout)     :: iodesc
+    type (c_ptr) :: cstart, ccount
+
     interface
        integer(C_INT) function PIOc_InitDecomp(iosysid,basetype,ndims,dims, &
             maplen, compmap, ioidp, iostart,iocount)  &
@@ -945,12 +947,15 @@ contains
 #endif
 
     if(present(iostart) .and. present(iocount)) then
-       ierr = PIOc_InitDecomp(iosystem%iosysid, basepiotype, size(dims), dims, &
-            size(compdof), compdof, iodesc%ioid, C_LOC(iostart), C_LOC(iocount))
+       cstart = transfer(iostart,cstart)
+       ccount = transfer(iocount,ccount)
     else
-       ierr = PIOc_InitDecomp(iosystem%iosysid, basepiotype, size(dims), dims, &
-            size(compdof), compdof, iodesc%ioid, C_NULL_PTR, C_NULL_PTR)
+       cstart = C_NULL_PTR
+       ccount = C_NULL_PTR
     endif
+    ierr = PIOc_InitDecomp(iosystem%iosysid, basepiotype, size(dims), dims, &
+         size(compdof), compdof, iodesc%ioid, cstart, ccount)
+
 #ifdef TIMING
     call t_stopf("PIO_initdecomp_dof")
 #endif
@@ -2206,12 +2211,12 @@ contains
          logical(c_bool), value :: CheckMPI
        end function PIOc_OpenFile
     end interface
-    logical :: iCheckMPI=.true.
+    logical(c_bool) :: iCheckMPI=.true.
     integer :: imode=0
 #ifdef TIMING
     call t_startf("PIO_openfile")
 #endif
-    if(present(Checkmpi)) icheckmpi=Checkmpi
+    if(present(Checkmpi)) icheckmpi=logical(Checkmpi,c_bool)
     if(present(mode)) imode = mode
     ierr = PIOc_OpenFile( iosystem%iosysid, file%fh, iotype, &
          trim(fname)//C_NULL_CHAR, imode, iCheckMPI)
@@ -2413,7 +2418,7 @@ contains
     integer :: ierr
     interface
        integer(c_int) function PIOc_deletefile(iosid, fname) &
-            bind(C,name="PIOc_CloseFile")
+            bind(C,name="PIOc_deletefile")
          use iso_c_binding
          integer(C_INT), value :: iosid
          character(kind=c_char) :: fname         

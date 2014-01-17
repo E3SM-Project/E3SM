@@ -130,9 +130,9 @@ contains
     {VTYPE}, dimension(:), target, intent(in) ::  &
          array                 ! array to be written
 
-    {VTYPE}, optional, intent(in) :: fillval    ! rearrange receiver fill value
+    {VTYPE}, optional, target, intent(in) :: fillval    ! rearrange receiver fill value
     type(iosystem_desc_t), pointer :: ios
-
+    type(C_PTR), pointer :: carray
     integer(i4), intent(out) :: iostat
     integer :: msg, ierr
     integer :: hasfill, itype
@@ -151,11 +151,13 @@ contains
          type(C_PTR), value :: fillvalue
        end function PIOc_write_darray
     end interface
-
+    carray = transfer(array,carray)
     if(present(fillval)) then
-       ierr = PIOc_write_darray(file%fh, varDesc%varid, iodesc%ioid, size(array), C_LOC(array), C_LOC(fillval))
+       ierr = PIOc_write_darray(file%fh, varDesc%varid, iodesc%ioid, int(size(array),C_SIZE_T), &
+            carray, C_LOC(fillval))
     else
-       ierr = PIOc_write_darray(file%fh, varDesc%varid, iodesc%ioid, size(array), C_LOC(array), C_NULL_PTR)
+       ierr = PIOc_write_darray(file%fh, varDesc%varid, iodesc%ioid, int(size(array),C_SIZE_T), &
+            carray, C_NULL_PTR)
     endif
 
   end subroutine write_darray_1d_{TYPE}

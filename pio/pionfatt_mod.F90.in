@@ -110,12 +110,12 @@ contains
          character(C_CHAR) :: name
          integer(C_INT), value :: xtype
          integer(C_LONG), value :: len
-         type(C_PTR) :: op
+         {CTYPE} :: op
        end function PIOc_put_att_{NCTYPE}
     end interface
 
 
-    ierr = PIOc_put_att_{NCTYPE} (ncid,varid,name, PIO_{TYPE}, c_sizeof(value), C_LOC(value))
+    ierr = PIOc_put_att_{NCTYPE} (ncid,varid,name, PIO_{TYPE}, 1_C_LONG, value)
 
   end function put_att_id_{TYPE}
   integer function put_att_id_text (ncid, varid, name, value) result(ierr)

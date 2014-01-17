@@ -17,7 +17,7 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, con
   int ndims;
 
   ios = file->iosystem;
-  vdesc = (file->vardesc)+vid;
+  vdesc = (file->varlist)+vid;
   ndims = iodesc->ndims;
   if(ios->ioproc){
     // this is a time dependent multidimensional array
@@ -40,9 +40,9 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, con
     }else{
       start = (PIO_Offset *) calloc(ndims, sizeof(PIO_Offset));
       count = (PIO_Offset *) calloc(ndims, sizeof(PIO_Offset));
-      
+    }      
 
-
+  }
 
   return PIO_NOERR;
 }

@@ -53,7 +53,7 @@ module pio
        PIO_def_dim   ,        &
        PIO_def_var   ,        &
        PIO_redef     ,          &
-       PIO_copy_att  ,       &
+!       PIO_copy_att  ,       &   
        PIO_inquire_variable , &
        PIO_inquire_dimension 
 

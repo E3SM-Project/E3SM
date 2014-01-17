@@ -98,8 +98,8 @@ int PIOc_OpenFile(const int iosysid, int *ncidp, const int iotype,
       file->fh = (*ncidp);
     }
     for(int i=0; i<PIO_MAX_VARS;i++){
-      file->vardesc[i].record = -1;
-      file->vardesc[i].buffer = NULL;
+      file->varlist[i].record = -1;
+      file->varlist[i].buffer = NULL;
     }
 
     pio_add_to_file_list(file);
@@ -201,8 +201,8 @@ int PIOc_CreateFile(const int iosysid, int *ncidp, const int iotype,
       file->fh = (*ncidp);
     }
     for(int i=0; i<PIO_MAX_VARS;i++){
-      file->vardesc[i].record = -1;
-      file->vardesc[i].buffer = NULL;
+      file->varlist[i].record = -1;
+      file->varlist[i].buffer = NULL;
     }
 
     pio_add_to_file_list(file);

@@ -4,9 +4,12 @@ module pio_nf
   use perf_mod, only : t_startf, t_stopf      ! _EXTERNAL
 #endif
   use pio_kinds, only: pio_offset
-  use pio_types, only: file_desc_t, iosystem_desc_t, var_desc_t
-  use iso_c_binding, only : c_loc, C_NULL_CHAR
+  use pio_types, only: file_desc_t, iosystem_desc_t, var_desc_t, PIO_MAX_VAR_DIMS
+  use iso_c_binding
+
+  implicit none
   private
+
   public :: &
        pio_def_var,   &
        pio_def_dim,  &
@@ -26,8 +29,8 @@ module pio_nf
        pio_inq_dimid, &
        pio_inquire, &
        pio_enddef, &
-       pio_redef, &
-       pio_copy_att
+       pio_redef
+!       pio_copy_att    to be done
 
   interface pio_def_var
      module procedure &
@@ -92,6 +95,12 @@ module pio_nf
           inq_varnatts_vid,    &
           inq_varnatts_id
   end interface
+  interface pio_inquire_dimension
+     module procedure &
+          inquire_dimension_desc, &
+          inquire_dimension_id
+  end interface
+
   interface pio_inquire_variable
      module procedure &
           inquire_variable_desc, &
@@ -171,7 +180,7 @@ contains
 !! @param dimid : The netcdf dimension id.
 !! @retval ierr @copydoc error_return
 !!
-!! Note that we do not want internal error checking for this funtion.
+!! Note that we do not want internal error checking for this function.
 !>
   integer function inq_dimid_desc(File,name,dimid) result(ierr)
     type (File_desc_t), intent(in) :: File
@@ -568,7 +577,17 @@ contains
   integer function inq_vardimid_id(ncid,varid,dimids) result(ierr)
     integer, intent(in) :: ncid
     integer, intent(in) :: varid
-    integer, intent(out)    :: dimids(:)
+    integer, intent(out) :: dimids(:)
+
+    ierr = internal_inq_vardimid(ncid, varid, size(dimids), dimids)
+  end function inq_vardimid_id
+
+  integer function internal_inq_vardimid(ncid, varid, ndims, dimids) result(ierr)
+    integer, intent(in) :: ncid
+    integer, intent(in) :: varid
+    integer, intent(in) :: ndims
+    integer, intent(out) :: dimids(:)
+    integer(C_INT) :: cdimids(ndims)
 
     interface
        integer(C_INT) function PIOc_inq_vardimid(ncid,varid,dimids) &
@@ -576,11 +595,14 @@ contains
          use iso_c_binding
          integer(C_INT), value :: ncid
          integer(C_INT), value :: varid
-         type(C_PTR) :: dimids
+         integer(C_INT) :: dimids(*)
        end function PIOc_inq_vardimid
     end interface
-    ierr = PIOc_inq_vardimid(ncid,varid,C_LOC(dimids))
-  end function inq_vardimid_id
+
+    ierr = PIOc_inq_vardimid(ncid,varid,cdimids)
+    dimids(1:ndims) =  cdimids(1:ndims)
+    
+  end function internal_inq_vardimid
     
 
 
@@ -1019,9 +1041,10 @@ contains
     integer,intent(in) :: ncid
     character(len=*), intent(in)    :: name
     integer, intent(in)             :: type
-    integer, intent(in)             :: dimids(:)
+    integer, intent(in)   :: dimids(:)
     integer, intent(out) :: varid
-
+    integer(C_INT) :: cdimids(PIO_MAX_VAR_DIMS)
+    integer :: ndims
     interface
        integer (C_INT) function PIOc_def_var(ncid,name,xtype,ndims,dimidsp,varidp) &
             bind(c,name="PIOc_def_var")
@@ -1030,12 +1053,15 @@ contains
          character(c_char) :: name
          integer(c_int), value :: xtype
          integer(c_int), value :: ndims
-         type(c_ptr),value :: dimidsp
+         integer(c_int) :: dimidsp(*)
          integer(c_int) :: varidp
        end function PIOc_def_var
     end interface
+    ndims = size(dimids)
+    cdimids(1:ndims) = dimids
 
-    ierr = PIOc_def_var(ncid, trim(name)//C_NULL_CHAR, xtype, size(dimids), c_loc(dimids),varid)
+    ierr = PIOc_def_var(ncid, trim(name)//C_NULL_CHAR, type, ndims, cdimids,varid)
+
   end function def_var_md_id
 
 
