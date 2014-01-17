@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <malloc.h>
 
+static io_desc_t *pio_iodesc_list=NULL;
+static io_desc_t *current_iodesc=NULL;
 static iosystem_desc_t *pio_iosystem_list = NULL;
 static file_desc_t *pio_file_list = NULL;
 static file_desc_t *current_file=NULL;
@@ -111,4 +113,61 @@ iosystem_desc_t *pio_get_iosystem_from_id(int iosysid)
   }
   return NULL;
   
+}
+
+int pio_add_to_iodesc_list(io_desc_t *iodesc)
+{
+  io_desc_t *ciodesc;
+  int imax=511;
+  //  assert(file != NULL);
+
+  iodesc->next = NULL;
+  if(pio_iodesc_list == NULL)
+    pio_iodesc_list = iodesc;
+  else{
+    for(ciodesc = pio_iodesc_list; ciodesc->next != NULL; ciodesc=ciodesc->next, imax=max(ciodesc->ioid,imax));
+    ciodesc->next = iodesc;
+  }
+  iodesc->ioid = imax+1;
+  current_iodesc = iodesc;
+  return iodesc->ioid;
+}
+
+     
+io_desc_t *pio_get_iodesc_from_id(int ioid)
+{
+  io_desc_t *ciodesc;
+
+  ciodesc = NULL;
+
+  if(current_iodesc != NULL && current_iodesc->ioid == ioid)
+    ciodesc=current_iodesc;
+  for(ciodesc=pio_iodesc_list; ciodesc != NULL; ciodesc=ciodesc->next){
+    if(ciodesc->ioid == ioid){
+      current_iodesc = ciodesc;
+      break;
+    }
+  }
+  return ciodesc;
+}
+  
+int pio_delete_iodesc_from_list(int ioid)
+{
+
+  io_desc_t *ciodesc, *piodesc;
+
+  piodesc = NULL;
+  for(ciodesc=pio_iodesc_list; ciodesc != NULL; ciodesc=ciodesc->next){
+    if(ciodesc->ioid == ioid){
+      if(piodesc == NULL){
+	pio_iodesc_list = ciodesc->next;
+      }else{
+	piodesc->next = ciodesc->next;
+      }
+      free(ciodesc);
+      return PIO_NOERR;
+    }
+    piodesc = ciodesc;
+  }
+  return PIO_EBADID;
 }

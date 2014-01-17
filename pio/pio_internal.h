@@ -13,11 +13,17 @@
      _a < _b ? _a : _b; })
 #define MAX_GATHER_BLOCK_SIZE 32
 
+int  pio_add_to_iodesc_list(io_desc_t *iodesc);
+io_desc_t *pio_get_iodesc_from_id(int ioid);
+int pio_delete_iodesc_from_list(int ioid);
+
 file_desc_t *pio_get_file_from_id(int ncid);
 int pio_delete_file_from_list(int ncid);
 void pio_add_to_file_list(file_desc_t *file);
+
 iosystem_desc_t *pio_get_iosystem_from_id(int iosysid);
 int pio_add_to_iosystem_list(iosystem_desc_t *ios);
+
 int check_netcdf(file_desc_t *file,const int status, const char *fname, const int line);
 int iotype_error(const int iotype, const char *fname, const int line);
 void piodie(const char *msg,const char *fname, const int line);

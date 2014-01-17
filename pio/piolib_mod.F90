@@ -71,7 +71,8 @@ module piolib_mod
        PIO_set_hint,      &
        PIO_getnum_OST,    &
        PIO_setnum_OST,    &
-       PIO_FILE_IS_OPEN
+       PIO_FILE_IS_OPEN, &
+       PIO_deletefile
 
 #ifdef MEMCHK
 !> this is an internal variable for memory leak debugging 
@@ -2403,6 +2404,24 @@ contains
     close(lun)
 
   end subroutine read_ascii
+
+  subroutine pio_deletefile(ios, fname)
+    type(iosystem_desc_t) :: ios
+    character(len=*) :: fname
+    integer :: ierr
+    interface
+       integer(c_int) function PIOc_deletefile(iosid, fname) &
+            bind(C,name="PIOc_CloseFile")
+         use iso_c_binding
+         integer(C_INT), value :: iosid
+         character(kind=c_char) :: fname         
+       end function PIOc_deletefile
+    end interface
+
+    ierr = PIOc_deletefile(ios%iosysid, trim(fname)//C_NULL_CHAR)
+
+  end subroutine pio_deletefile
+
 
 
 

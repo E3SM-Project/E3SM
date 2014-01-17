@@ -15,6 +15,14 @@
 #include <pnetcdf.h>
 #endif
 #define PIO_Offset MPI_Offset
+#define PIO_MAX_VARS 8192
+
+typedef struct var_desc_t
+{
+  int record;
+  void *buffer;
+} var_desc_t;
+
 
 typedef struct io_desc_t
 {
@@ -30,11 +38,13 @@ typedef struct io_desc_t
   int compsize;
   int maxiobuflen;
   int ndof;
+  int ndims;
   PIO_Offset *start;
   PIO_Offset *count;
+  PIO_Offset llen;
   PIO_Offset glen;
   PIO_Offset *dest_ioindex;
-
+  struct io_desc_t *next;
 } io_desc_t;
 
 
@@ -78,6 +88,7 @@ typedef struct file_desc_t
   int request_cnt;
   int fh;
   int iotype;
+  struct var_desc_t varlist[PIO_MAX_VARS];
   struct file_desc_t *next;
 } file_desc_t;
 

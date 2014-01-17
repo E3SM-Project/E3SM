@@ -45,29 +45,12 @@ foreach my $line (@file){
 close(NF);
 
 my $func="";
-#open(PIO,"nf_mod.F90") or die "Could not open file nf_mod.F90";
-#my @nfmod = <PIO>;
-#close(PIO);
-#foreach my $line (@nfmod){
-#    if ($line =~ /\s*integer\s+function\s+pio_([^\(]+)\(/i){
-#	$func = $1;
-#	$func =~ tr/A-Z/a-z/;
-#	$functions->{$func}{pio} = $line;
-#    }
-#    elsif ($line =~ /\s*integer\s+function\s+([^\(]+)\(/i){
-#	$func = $1;
-#	$func =~ tr/A-Z/a-z/;
-#	$functions->{$func}{pio} = $line;
-#    }
-#}
-  
-
 
 open(F,">pio_nc.c");
 print F "#include <pio.h>
-#include <pio_internal.h>\n";
-print "$functions->{inq}{pnetcdf}\n";
-print "$functions->{inq}{netcdf}\n";
+#include <pio_internal.h>\n\n";
+#print "$functions->{inq}{pnetcdf}\n";
+#print "$functions->{inq}{netcdf}\n";
 #print "$functions->{inquire}{pio}\n";
   open(T,"pio_c_template.c") or die "Could not open file pio_c_template.c";
   my @template = <T>;
@@ -140,10 +123,15 @@ foreach my $func (keys %{$functions}){
 		  $line =~ s/\(\)/$args/;
 	      }
 	  }
+#	  if($line =~ /chkerr =/ && $func =~ /def_var/){
+#	      print F "  file->varlist[*varidp].record=-1;\n";
+#	      print F "  file->varlist[*varidp].buffer=NULL;\n";
+#	  }
 	  print F $line;
       }
     
 #    print "$func  $functions->{$func}{pnetcdf} $functions->{$func}{netcdf}\n";
+      print F "\n";
   }
 }
 close(F);

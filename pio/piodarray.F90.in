@@ -24,11 +24,6 @@ module piodarray
 #endif
 
 
-
-
-#ifdef _COMPRESSION
-  use piovdc
-#endif
 #ifdef TIMING
   use perf_mod, only : t_startf, t_stopf   !_EXTERNAL
 #endif
@@ -80,27 +75,6 @@ module piodarray
      module procedure add_data_to_buffer_{TYPE}
   end interface
 
-#ifdef _COMPRESSION
-  interface 
-     subroutine WriteVDC2Var(iobuf, start, kount, iocomm, ts, lod, reflevel, iotasks, name ) bind(C)
-       use, intrinsic :: iso_c_binding
-       type(c_ptr), intent(in), value :: iobuf
-       integer(c_int), intent(in) :: start(3), kount(3)
-       integer(c_int), intent(in), value :: iocomm, ts, lod, reflevel, iotasks
-       type(c_ptr), intent(in), value :: name
-     end subroutine WriteVDC2Var
-  end interface
-  interface
-     subroutine ReadVDC2Var(iobuf, start, kount, iocomm, ts, lod, reflevel, iotasks, name) bind(C)
-       use, intrinsic :: iso_c_binding
-       type(c_ptr), intent(in), value :: iobuf
-       integer(c_int), intent(in) :: start(3), kount(3)
-       integer(c_int), intent(in), value :: iocomm, ts, lod, reflevel, iotasks
-       type(c_ptr), intent(in), value :: name
-     end subroutine ReadVDC2Var
-  end interface
-#endif
-
   character(len=*), parameter, private  :: modName='piodarray'
   integer :: total_buffsize=0
   integer :: pio_buffer_size_limit= 100000000   ! 100MB default
@@ -135,7 +109,7 @@ contains
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
   subroutine write_darray_1d_{TYPE} (File,varDesc,ioDesc, array, iostat, fillval)
-    use pio_msg_mod, only : pio_msg_writedarray
+    use iso_c_binding
     ! !DESCRIPTION:
     !  Writes a 2-d slab of TYPE to a netcdf file.
     !
@@ -165,57 +139,25 @@ contains
 
     character(len=*), parameter :: subName=modName//'::write_darray_{TYPE}'
 
-    ios => file%iosystem
-    if(ios%async_interface .and. .not. ios%ioproc) then
-       msg = PIO_MSG_WRITEDARRAY
+    interface
+       integer(C_INT) function PIOc_write_darray(ncid, vid, ioid, arraylen, array, fillvalue) &
+            bind(C,name="PIOc_write_darray")
+         use iso_c_binding
+         integer(C_INT), value :: ncid
+         integer(C_INT), value :: vid
+         integer(C_INT), value :: ioid
+         integer(C_SIZE_T), value :: arraylen
+         type(C_PTR) :: array
+         type(C_PTR), value :: fillvalue
+       end function PIOc_write_darray
+    end interface
 
-       if(debugasync) print *,__PIO_FILE__,__LINE__, iodesc%async_id
-       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
-       call mpi_bcast(file%fh, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
-       call mpi_bcast(vardesc%varid, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
-       call mpi_bcast(vardesc%rec, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
-       call mpi_bcast(vardesc%ndims, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
-       call mpi_bcast(iodesc%async_id, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
-       itype = {MPITYPE}  
-       call mpi_bcast(itype, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
-       if(debugasync) print *,__PIO_FILE__,__LINE__, {MPITYPE}
-       
-       if(present(fillval)) then
-          hasfill = 1
-          call mpi_bcast(hasfill, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
-          call mpi_bcast(fillval, 1, {MPITYPE}, ios%compmaster, ios%intercomm, ierr)
-       else
-          hasfill=0
-          call mpi_bcast(hasfill, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
-       end if
-       if(debugasync) print *,__PIO_FILE__,__LINE__
+    if(present(fillval)) then
+       ierr = PIOc_write_darray(file%fh, varDesc%varid, iodesc%ioid, size(array), C_LOC(array), C_LOC(fillval))
+    else
+       ierr = PIOc_write_darray(file%fh, varDesc%varid, iodesc%ioid, size(array), C_LOC(array), C_NULL_PTR)
     endif
 
-    if(debugasync .and. ios%ioproc) print *,__FILE__,__LINE__,iodesc%async_id
-
-    select case(File%iotype)
-    case(pio_iotype_pbinary, pio_iotype_direct_pbinary)
-       if (present(fillval)) then
-          call write_darray_bin_{TYPE}(File,varDesc,iodesc, array, iostat, fillval)
-       else
-          call write_darray_bin_{TYPE}(File,varDesc,iodesc, array, iostat)
-       endif
-    case(pio_iotype_pnetcdf, pio_iotype_netcdf, pio_iotype_netcdf4c, pio_iotype_netcdf4p)
-       if (present(fillval)) then
-          call write_darray_nf_{TYPE}(File,varDesc,iodesc, array, iostat, fillval)
-       else
-          call write_darray_nf_{TYPE}(File,varDesc,iodesc, array, iostat)
-       endif
-    case(pio_iotype_binary)
-       print *, subName,': IO type not supported'
-#ifdef _COMPRESSION
-    case(pio_iotype_vdc2)
-#if ( {ITYPE} == TYPEREAL )
-       call write_vdc2_real(File, Vardesc, iodesc, array, iostat)
-#endif
-#endif
-    end select
-    
   end subroutine write_darray_1d_{TYPE}
 
 ! TYPE real,int,double
@@ -260,21 +202,15 @@ contains
     isize= size(array)
     allocate(acopy(isize))
     acopy = reshape(array,(/isize/))
-    if(present(fillval)) then
-       call write_darray_1d_{TYPE} (File, varDesc, iodesc, acopy, iostat, fillval)
-    else
-       call write_darray_1d_{TYPE} (File, varDesc, iodesc, acopy, iostat)
-    end if
+    call write_darray_1d_{TYPE} (File, varDesc, iodesc, acopy, iostat, fillval)
     deallocate(acopy)
     return
 #else
 ! cannot call transfer function with a 0 sized array
     if(size(array)==0) then
        call write_darray_1d_{TYPE} (File, varDesc, iodesc, dumbvar, iostat)
-    else if(present(fillval)) then
+    else 
        call write_darray_1d_{TYPE} (File, varDesc, iodesc, transfer(array,transvar), iostat, fillval)
-    else
-       call write_darray_1d_{TYPE} (File, varDesc, iodesc, transfer(array,transvar), iostat)
     end if
 #endif
   end subroutine write_darray_{DIMS}d_{TYPE}
@@ -343,12 +279,6 @@ contains
        call read_darray_bin_{TYPE} (File,varDesc,iodesc,array, iostat)
     case(pio_iotype_pnetcdf, pio_iotype_netcdf, pio_iotype_netcdf4c, pio_iotype_netcdf4p)
        call read_darray_nf_{TYPE} (File,varDesc,iodesc,array, iostat)
-#ifdef _COMPRESSION
-    case(pio_iotype_vdc2)
-#if ( {ITYPE} == TYPEREAL )
-       call read_vdc2_real(File, Vardesc, iodesc, array, iostat)
-#endif
-#endif
     case(pio_iotype_binary)
        print *, subName,': IO type not supported'
     end select
@@ -469,7 +399,6 @@ contains
     IOproc     = File%iosystem%IOproc
     iotype     = File%iotype
     UseRearranger  = File%iosystem%UseRearranger
-
 
     ! ---------------------------------------------------------
     ! pull information out of the decomposition data structure 
@@ -1285,210 +1214,6 @@ contains
 #endif
   end subroutine darray_write_complete
     
-
-#ifdef _COMPRESSION
-
- subroutine write_vdc2_real(File, Vardesc, iodesc, array, iostat)
-    use pio_support, only : piodie
-    use, intrinsic :: iso_c_binding
-    use C_interface_mod, only : F_C_STRING_DUP
-    ! !DESCRIPTION:
-    !  Writes a VDC2 vapor data collection
-    !
-    ! !REVISION HISTORY:
-    !  same as module
-
-    ! !INPUT PARAMETERS:
-    type (File_desc_t), intent(inout) :: &
-         File                   ! file information
-
-    type (var_desc_t), intent(inout) :: &
-         varDesc                ! varable descriptor
-
-    type (io_desc_t), intent(inout) :: &
-         ioDesc                 ! IO decomp descriptor
-
-    real(r4), dimension(:), intent(in), target ::  &
-         array                  ! array to be written
-
-    integer (i4), intent(out)   :: iostat
-
-    !EOP
-    !BOC
-
-    !!!!!!!!!!! locals !!!!!!!!!!!!!!!!!!!!!
-    real(r4), dimension(:), pointer ::  &
-         IOBUF                        ! local IO buffer
-
-    logical(log_kind)  :: UseRearranger
-    logical (log_kind) :: IOproc     ! true if IO processor
-    integer (i4) ::  len,           &! length of IO decomp segmap
-         iotype,                    &! type of IO to perform
-         ndims                       ! number of variable dimensions
-    integer(4), pointer :: start(:), count(:)
-    double precision    :: timer;
-    integer :: vlen
-
-    type(c_ptr) :: cptr
-
-
-    ! pull information from file_desc_t data structure
-    IOproc     = File%iosystem%IOproc
-    iotype     = File%iotype
-    UseRearranger  = File%iosystem%UseRearranger
-
-#ifdef MEMCHK	
-    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
-    if(rss>lastrss) then
-       lastrss=rss
-       print *,__PIO_FILE__,__LINE__,'mem=',rss
-    end if
-#endif
-
-    ! pull information out of the decomposition data structure 
-    len        = iodesc%IOmap%length
-    ndims      = size(iodesc%start)
-    call alloc_check(start,ndims)
-    call alloc_check(count,ndims)
-    start      = iodesc%start
-    count      = iodesc%count
-
-
-
-    if(UseRearranger) then 
-       if (IOproc) then 
-
-          if(Debug) print *, 'write_vdc2_real: IAM: ',File%iosystem%comp_rank,'Before call to allocate(IOBUF): ',len
-          call alloc_check(IOBUF,len,' TYPE :IOBUF')
-          IOBUF= -1.0_r8
-
-       else
-          call alloc_check(IOBUF,0)
-          IOBUF= -1.0_r8
-       endif
-
-       !------------------------------------
-       ! Rearrange data from comp->io decomp
-       !------------------------------------
-       ! "array" is comp data
-       call rearrange_comp2io(File%iosystem, iodesc, array, iobuf)
-
-       !--------------------------------------------
-       ! End data rearrange
-       !--------------------------------------------
-    else
-       iobuf=>array
-    endif   ! if(UseRearranger) 
-
-
-    if (IOproc) then
-       vlen = len_trim(vardesc%name)
-       cptr = c_loc(iobuf(1))
-       call WriteVDC2Var(cptr, start, count,  File%iosystem%IO_comm, Vardesc%rec, -1, -1, File%iosystem%num_iotasks, &
-            F_C_STRING_DUP(varDesc%name(1:vlen)))
-    endif
-
-    if(UseRearranger) call dealloc_check(IOBUF)
-
-
-#ifdef MEMCHK	
-    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
-    if(rss>lastrss) then
-       lastrss=rss
-       print *,__PIO_FILE__,__LINE__,'mem=',rss
-    end if
-#endif
-  end subroutine write_vdc2_real
-
-subroutine read_vdc2_real(File, Vardesc, iodesc, array, iostat)
-    use pio_support, only : piodie
-    use, intrinsic :: iso_c_binding
-    use C_interface_mod, only : F_C_STRING_DUP
-    ! !DESCRIPTION:
-    !  Writes a VDC2 vapor data collection
-    !
-    ! !REVISION HISTORY:
-    !  same as module
-
-    ! !INPUT PARAMETERS:
-    type (File_desc_t), intent(inout) :: &
-         File                   ! file information
-
-    type (var_desc_t), intent(inout) :: &
-         varDesc                ! varable descriptor
-
-    type (io_desc_t), intent(inout) :: &
-         ioDesc                 ! IO decomp descriptor
-
-    real(r4), dimension(:), intent(inout), target ::  &
-         array                  ! array to be written
-
-    integer (i4), intent(out)   :: iostat
-
-    !EOP
-    !BOC
-
-    !!!!!!!!!!! locals !!!!!!!!!!!!!!!!!!!!!
-    real(r4), dimension(:), pointer ::  &
-         IOBUF                        ! local IO buffer
-
-    logical(log_kind)  :: UseRearranger
-    logical (log_kind) :: IOproc     ! true if IO processor
-    integer (i4) ::  len,           &! length of IO decomp segmap
-         iotype,                    &! type of IO to perform
-         ndims                       ! number of variable dimensions
-    integer(4), pointer :: start(:), count(:)
-
-    double precision    :: timer;
-    type(c_ptr) :: cptr
-
-
-    ! pull information from file_desc_t data structure
-    IOproc     = File%iosystem%IOproc
-    iotype     = File%iotype
-    UseRearranger  = File%iosystem%UseRearranger
-
-    ! pull information out of the decomposition data structure 
-    len        = iodesc%IOmap%length
-    ndims      = size(iodesc%start)
-    call alloc_check(start,ndims)
-    call alloc_check(count,ndims)
-    start      = iodesc%start
-    count      = iodesc%count
-
-    if(UseRearranger) then 
-       if (IOproc) then 
-
-          if(Debug) print *, 'read_vdc2_real: IAM: ',File%iosystem%comp_rank,'Before call to allocate(IOBUF): ',len
-          call alloc_check(IOBUF,len,' TYPE :IOBUF')
-          IOBUF= -1.0_r8
-          cptr = c_loc(iobuf(1))
-  	  call ReadVDC2Var(cptr, start, count,  File%iosystem%IO_comm, vardesc%rec, -1, -1, File%iosystem%num_iotasks, &
-          F_C_String_dup(varDesc%name))
-       else
-          call alloc_check(IOBUF,0)
-          IOBUF= -1.0_r8
-       endif
-
-       !------------------------------------
-       ! Rearrange data from comp->io decomp
-       !------------------------------------
-       ! "array" is comp data
-       call rearrange_io2comp(File%iosystem, iodesc, iobuf, array)
-
-       !--------------------------------------------
-       ! End data rearrange
-       !--------------------------------------------
-    else
-       iobuf=>array
-    endif   ! if(UseRearranger) 
-
-    if(UseRearranger) call dealloc_check(IOBUF)
-
-
-  end subroutine read_vdc2_real
-#endif
-
 
 end module piodarray
 

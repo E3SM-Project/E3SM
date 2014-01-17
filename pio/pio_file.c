@@ -97,6 +97,11 @@ int PIOc_OpenFile(const int iosysid, int *ncidp, const int iotype,
       *ncidp = -(*ncidp);
       file->fh = (*ncidp);
     }
+    for(int i=0; i<PIO_MAX_VARS;i++){
+      file->vardesc[i].record = -1;
+      file->vardesc[i].buffer = NULL;
+    }
+
     pio_add_to_file_list(file);
   }
 
@@ -172,6 +177,7 @@ int PIOc_CreateFile(const int iosysid, int *ncidp, const int iotype,
     case PIO_IOTYPE_NETCDF:
       if(ios->io_rank==0){
 	ierr = nc_create(fname, amode, &(file->fh));
+	printf("create %s mode %d fh %d rc %d\n",fname,amode,file->fh,ierr);
       }
       break;
 #endif
@@ -194,6 +200,11 @@ int PIOc_CreateFile(const int iosysid, int *ncidp, const int iotype,
       *ncidp = -(*ncidp);
       file->fh = (*ncidp);
     }
+    for(int i=0; i<PIO_MAX_VARS;i++){
+      file->vardesc[i].record = -1;
+      file->vardesc[i].buffer = NULL;
+    }
+
     pio_add_to_file_list(file);
   }
 
@@ -235,6 +246,7 @@ int PIOc_CloseFile(int ncid)
     case PIO_IOTYPE_NETCDF:
       if(ios->io_rank==0){
 	ierr = nc_close(file->fh);
+	printf("close file %d rc %d\n",file->fh, ierr);
       }
       break;
 #endif
@@ -250,5 +262,45 @@ int PIOc_CloseFile(int ncid)
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
   int iret =  pio_delete_file_from_list(ncid);
+  return ierr;
+}
+
+int PIOc_deletefile(const int iosysid, const char fname[])
+{
+  int ierr;
+  int msg;
+  int mpierr;
+  int chkerr;
+  iosystem_desc_t *ios;
+
+  ierr = PIO_NOERR;
+  ios = pio_get_iosystem_from_id(iosysid);
+
+  if(ios == NULL)
+    return PIO_EBADID;
+
+  msg = 0;
+
+  if(ios->async_interface && ! ios->ioproc){
+    if(ios->comp_rank==0) 
+      mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
+    //    mpierr = MPI_Bcast(iosysid,1, MPI_INT, ios->compmaster, ios->intercomm);
+  }
+  // The barriers are needed to assure that no task is trying to operate on the file while it is being deleted.
+  if(ios->ioproc){
+    MPI_Barrier(ios->io_comm);
+#ifdef _NETCDF
+    if(ios->io_rank==0)
+      ierr = nc_delete(fname);
+#else
+#ifdef _PNETCDF
+    ierr = ncmpi_delete(fname);
+#endif
+#endif
+    MPI_Barrier(ios->io_comm);
+  }
+      
+
+
   return ierr;
 }

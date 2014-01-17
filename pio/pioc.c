@@ -70,7 +70,7 @@ int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const
     break;
   }    
 
-
+  iodesc->ndims = ndims;
   iodesc->start = (PIO_Offset *) malloc(sizeof(PIO_Offset)*ndims);
   iodesc->count = (PIO_Offset *) malloc(sizeof(PIO_Offset)*ndims);
   for(int i=0;i<ndims;i++){
@@ -95,7 +95,9 @@ int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const
     for(int i=0;i<ndims;i++)
       iosize*=iodesc->count[i];
 
+    iodesc->llen = iosize;
     CheckMPIReturn(MPI_Allreduce(&iosize, &(iodesc->maxiobuflen), 1, MPI_INT, MPI_MAX, ios->io_comm),__FILE__,__LINE__);
+    
   }
 
   CheckMPIReturn(MPI_Bcast(&(ios->num_aiotasks), 1, MPI_INT, ios->iomaster,ios->my_comm),__FILE__,__LINE__);
@@ -112,6 +114,9 @@ int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const
       break;
     }
   }
+
+  *ioidp = pio_add_to_iodesc_list(iodesc);
+
   
   return PIO_NOERR;
 }
