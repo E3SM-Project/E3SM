@@ -21,6 +21,7 @@ typedef struct var_desc_t
 {
   int record;
   void *buffer;
+  MPI_Request request;
 } var_desc_t;
 
 
