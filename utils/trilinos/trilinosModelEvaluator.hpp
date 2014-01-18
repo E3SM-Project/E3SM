@@ -442,8 +442,8 @@ int *my_GlobalIDs;
 Teuchos::RCP<Epetra_Map> ParMatrixMap;
 
 Teuchos::RCP<Epetra_Map> MatrixMap;
-Teuchos::RCP<Epetra_Export::Epetra_Export> exporter;
-Teuchos::RCP<Epetra_Import::Epetra_Import> importer;
+Teuchos::RCP<Epetra_Export> exporter;
+Teuchos::RCP<Epetra_Import> importer;
 
 Teuchos::RCP<ML_Epetra::MultiLevelPreconditioner> MLPrec;
 Teuchos::RCP<Epetra_InvOperator> MLPI;
