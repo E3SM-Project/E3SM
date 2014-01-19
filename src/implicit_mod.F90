@@ -63,7 +63,7 @@ contains
 !    type (element_t)  :: pc_elem(nets-nete+1)
 !    type (element_t)  :: jac_elem(nets-nete+1)
 
-    integer    :: i,j,k,n,ie
+    integer    :: i,j,k,n,ie,shiftv,shiftp
     integer    :: kptr
     integer    :: nm1,n0,np1
     integer    :: nstep
@@ -113,7 +113,8 @@ contains
      call t_startf('implicit header')
      call t_startf('implicit_pre_noxsolve')
 
-!Moved conditionals out of do loops
+     shiftv = np*np*nlev*(nete-nets+1)
+     shiftp = 2*np*np*nlev*(nete-nets+1)
      lx = 0
      do ie=nets,nete
        do k=1,nlev
@@ -121,28 +122,8 @@ contains
            do i=1,np
              lx = lx+1
              xstate(lx) = elem(ie)%state%v(i,j,1,k,n0)
-           end do  !np
-         end do  !np
-       end do  !nlev
-     end do !ie
-
-     do ie=nets,nete
-       do k=1,nlev
-         do j=1,np
-           do i=1,np
-             lx = lx+1
-             xstate(lx) = elem(ie)%state%v(i,j,2,k,n0)
-           end do  !np
-         end do  !np
-       end do  !nlev
-     end do !ie
-
-     do ie=nets,nete
-       do k=1,nlev
-         do j=1,np
-           do i=1,np
-             lx = lx+1
-             xstate(lx) = elem(ie)%state%p(i,j,k,n0)
+             xstate(lx+shiftv) = elem(ie)%state%v(i,j,2,k,n0)
+             xstate(lx+shiftp) = elem(ie)%state%p(i,j,k,n0)
            end do  !np
          end do  !np
        end do  !nlev
@@ -193,33 +174,13 @@ contains
             do i=1,np
               lx = lx+1
               elem(ie)%state%v(i,j,1,k,np1)=xstate(lx)
+              elem(ie)%state%v(i,j,2,k,np1) = xstate(lx+shiftv)
+              elem(ie)%state%p(i,j,k,np1) = xstate(lx+shiftp)
             end do  !np
           end do  !np
         end do  !nlev
       end do !ie
-
-      do ie=nets,nete
-        do k=1,nlev
-          do j=1,np
-            do i=1,np
-              lx = lx+1
-              elem(ie)%state%v(i,j,2,k,np1)=xstate(lx)
-            end do  !np
-          end do  !np
-        end do  !nlev
-      end do !ie
-
-      do ie=nets,nete
-        do k=1,nlev
-          do j=1,np
-            do i=1,np
-              lx = lx+1
-              elem(ie)%state%p(i,j,k,np1)=xstate(lx)
-            end do  !np
-          end do  !np
-        end do  !nlev
-      end do !ie
-
+      
      call t_stopf('implicit_post_noxsolve')
 
        ! ==========================================
@@ -270,7 +231,7 @@ contains
     integer              :: ns
     integer              :: ne
 
-    real (kind=real_kind), dimension(np,np) :: fcor,spheremp,ps
+    real (kind=real_kind), dimension(np,np) :: fcor,spheremp,ps,px
     real (kind=real_kind), dimension(np,np,2,nlev,nelem)  :: vtens
     real (kind=real_kind), dimension(np,np,2,nlev,nelem)  :: vtens_n
     real (kind=real_kind), dimension(np,np,nlev,nelem) :: ptens ! at t=n+1
@@ -286,11 +247,11 @@ contains
     real (kind=real_kind) ::  dti, pmean
     real (kind=real_kind) ::  gam
 
-    integer    :: i,j,k,n,ie
+    integer    :: i,j,k,n,ie,shiftv,shiftp
     integer    :: kptr
     integer    :: nm1,n0,np1
     integer    :: nstep
-    integer    :: lenx,lenp, lx
+    integer    :: lx
 
     call t_startf('FE implicit')
     call t_startf('FE_implicit_init')
@@ -302,212 +263,188 @@ contains
     nm1        = fptr%tl%nm1
     nstep      = fptr%tl%nstep
     dti        = 1.0d0/fptr%dt
-    lenx       = fptr%n 
     ns         = fptr%nets 
     ne         = fptr%nete 
     pmean      = fptr%pmean
     gam        = 0.5
 
 !Moved conditionals out of do loops
-      lx = 0
-      do ie=ns,ne
-        do k=1,nlev
-          do j=1,np
-            do i=1,np
-              lx = lx+1
-              fptr%base(ie)%state%v(i,j,1,k,np1) = xstate(lx)
-            end do  !np
-          end do  !np
-        end do  !nlev
-      end do !ie
-
-      do ie=ns,ne
-        do k=1,nlev
-          do j=1,np
-            do i=1,np
-              lx = lx+1
-              fptr%base(ie)%state%v(i,j,2,k,np1) = xstate(lx)
-            end do  !np
-          end do  !np
-        end do  !nlev
-       end do !ie
-
-       do ie=ns,ne
-         do k=1,nlev
-           do j=1,np
-             do i=1,np
-               lx = lx+1
-               fptr%base(ie)%state%p(i,j,k,np1)  = xstate(lx)
-             end do  !np
-           end do  !np
-         end do  !nlev
-       end do !ie
+	shiftv = np*np*nlev*(ne-ns+1)
+	shiftp = 2*np*np*nlev*(ne-ns+1)
 
        call t_stopf('FE_implicit_init')
-
        call t_startf('FE_implicit_KE_resid_calc')
+	lx = 0
+	do ie=ns,ne
+		do j=1,np
+			do i=1,np
+				fcor(i,j)        = fptr%base(ie)%fcor(i,j)
+				spheremp(i,j)    = fptr%base(ie)%spheremp(i,j)
+				ps(i,j)          = fptr%base(ie)%state%ps(i,j)
+			end do
+		end do
+		do k=1,nlev
 
-    do ie=ns,ne
-      do j=1,np
-       do i=1,np
-        fcor(i,j)        = fptr%base(ie)%fcor(i,j)
-        spheremp(i,j)    = fptr%base(ie)%spheremp(i,j)
-        ps(i,j)          = fptr%base(ie)%state%ps(i,j)
-       end do
-      end do
-     do k=1,nlev
+			! ==============================================
+			! Compute kinetic energy term at each time level
+			! ==============================================
 
-         ! ==============================================
-         ! Compute kinetic energy term at each time level
-         ! ==============================================
+			do j=1,np
+				do i=1,np
 
-      do j=1,np
-       do i=1,np
+					! set u
+					ulatlon(i,j,1)       = fptr%base(ie)%state%v(i,j,1,k,n0)   !
+					ulatlon(i,j,2)       = fptr%base(ie)%state%v(i,j,2,k,n0)   !
 
-! set u
-          ulatlon(i,j,1)       = fptr%base(ie)%state%v(i,j,1,k,n0)   !
-          ulatlon(i,j,2)       = fptr%base(ie)%state%v(i,j,2,k,n0)   !
-
-! set du
-          up(i,j,1)      = fptr%base(ie)%state%v(i,j,1,k,np1)   !
-          up(i,j,2)      = fptr%base(ie)%state%v(i,j,2,k,np1)   ! 
-
-! set un-1
-          um(i,j,1)      = fptr%base(ie)%state%v(i,j,1,k,nm1)   ! 
-          um(i,j,2)      = fptr%base(ie)%state%v(i,j,2,k,nm1)   !  
+					! set du
+					lx = lx+1
+					up(i,j,1)      = xstate(lx)   !
+					up(i,j,2)      = xstate(lx+shiftv)   ! 
+					px(i,j) 		  = xstate(lx+shiftp)
+					! set un-1
+					um(i,j,1)      = fptr%base(ie)%state%v(i,j,1,k,nm1)   ! 
+					um(i,j,2)      = fptr%base(ie)%state%v(i,j,2,k,nm1)   !  
 
 
-          E(i,j)   = 0.5D0*(up(i,j,1)**2 + up(i,j,2)**2)  + &
-                         fptr%base(ie)%state%p(i,j,k,np1) + ps(i,j)
-          if (tstep_type==12) then  !compute extra terms needed for CN
-             E_n(i,j) = 0.5D0*(ulatlon(i,j,1)**2 + ulatlon(i,j,2)**2)  + &
-                         fptr%base(ie)%state%p(i,j,k,n0) + ps(i,j)
-             pv_n(i,j,1) = ulatlon(i,j,1)*( fptr%pmean + fptr%base(ie)%state%p(i,j,k,n0) )
-             pv_n(i,j,2) = ulatlon(i,j,2)*( fptr%pmean + fptr%base(ie)%state%p(i,j,k,n0) )
-          endif
+					E(i,j)   = 0.5D0*(up(i,j,1)**2 + up(i,j,2)**2)  + &
+					px(i,j) + ps(i,j)
+					if (tstep_type==12) then  !compute extra terms needed for CN
+						E_n(i,j) = 0.5D0*(ulatlon(i,j,1)**2 + ulatlon(i,j,2)**2)  + &
+						fptr%base(ie)%state%p(i,j,k,n0) + ps(i,j)
+						pv_n(i,j,1) = ulatlon(i,j,1)*( fptr%pmean + fptr%base(ie)%state%p(i,j,k,n0) )
+						pv_n(i,j,2) = ulatlon(i,j,2)*( fptr%pmean + fptr%base(ie)%state%p(i,j,k,n0) )
+					endif
 
-          pv(i,j,1) = up(i,j,1)*( fptr%pmean + fptr%base(ie)%state%p(i,j,k,np1) )
-          pv(i,j,2) = up(i,j,2)*( fptr%pmean + fptr%base(ie)%state%p(i,j,k,np1) )
+					pv(i,j,1) = up(i,j,1)*( fptr%pmean + px(i,j) )
+					pv(i,j,2) = up(i,j,2)*( fptr%pmean + px(i,j) )
 
-       end do
-      end do
+				end do
+			end do
 
-!call flush(6)
-!stop
+			!call flush(6)
+			!stop
+			grade = gradient_sphere(E,fptr%deriv,fptr%base(ie)%Dinv)  ! scalar -> latlon vector
+			zeta = vorticity_sphere(up,fptr%deriv,fptr%base(ie)) ! latlon vector -> scalar 
+			div = divergence_sphere(pv,fptr%deriv,fptr%base(ie)) ! latlon vector -> scalar 
+			! residual time level n
+			if (tstep_type==12) then  
+				!compute extra terms needed for CN
+				grade_n = gradient_sphere(E_n,fptr%deriv,fptr%base(ie)%Dinv)  ! scalar -> latlon vector
+				zeta_n = vorticity_sphere(ulatlon,fptr%deriv,fptr%base(ie)) ! latlon vector -> scalar 
+				div_n = divergence_sphere(pv_n,fptr%deriv,fptr%base(ie)) ! latlon vector -> scalar 
+				do j=1,np
+					do i=1,np
+					   vtens_n(i,j,1,k,ie)=spheremp(i,j)* &
+					   (ulatlon(i,j,2)*(fcor(i,j) + zeta_n(i,j)) - grade_n(i,j,1))
+					   vtens_n(i,j,2,k,ie)=spheremp(i,j)* &
+					   (-ulatlon(i,j,1)*(fcor(i,j) + zeta_n(i,j)) - grade_n(i,j,2))
+					   ptens_n(i,j,k,ie) =  -spheremp(i,j)*div_n(i,j)
+					   vtens(i,j,1,k,ie)=spheremp(i,j)* &
+					   (up(i,j,2)*(fcor(i,j) + zeta(i,j)) - grade(i,j,1))
+					   vtens(i,j,2,k,ie)=spheremp(i,j)* &
+					   (-up(i,j,1)*(fcor(i,j) + zeta(i,j)) - grade(i,j,2))
 
-! residual time level n
-     if (tstep_type==12) then  !compute extra terms needed for CN
-        grade_n = gradient_sphere(E_n,fptr%deriv,fptr%base(ie)%Dinv)  ! scalar -> latlon vector
-        zeta_n = vorticity_sphere(ulatlon,fptr%deriv,fptr%base(ie)) ! latlon vector -> scalar 
-        div_n = divergence_sphere(pv_n,fptr%deriv,fptr%base(ie)) ! latlon vector -> scalar 
-     endif 
-     grade = gradient_sphere(E,fptr%deriv,fptr%base(ie)%Dinv)  ! scalar -> latlon vector
-     zeta = vorticity_sphere(up,fptr%deriv,fptr%base(ie)) ! latlon vector -> scalar 
-     div = divergence_sphere(pv,fptr%deriv,fptr%base(ie)) ! latlon vector -> scalar 
-          ! ==============================================
-          ! Compute residual terms
-          ! ==============================================
-          do j=1,np
-             do i=1,np
+					   ptens(i,j,k,ie) =  -spheremp(i,j)*div(i,j)
+					   
+					   ptens(i,j,k,ie) = spheremp(i,j)*(px(i,j)- &
+					   fptr%base(ie)%state%p(i,j,k,n0))*dti - 0.5*ptens(i,j,k,ie) &
+					   - 0.5*ptens_n(i,j,k,ie)
 
-           if (tstep_type==12) then  !compute extra terms needed for CN
-               vtens_n(i,j,1,k,ie)=spheremp(i,j)* &
-                  (ulatlon(i,j,2)*(fcor(i,j) + zeta_n(i,j)) - grade_n(i,j,1))
-               vtens_n(i,j,2,k,ie)=spheremp(i,j)* &
-                  (-ulatlon(i,j,1)*(fcor(i,j) + zeta_n(i,j)) - grade_n(i,j,2))
-               ptens_n(i,j,k,ie) =  -spheremp(i,j)*div_n(i,j)
-           endif
+					   vtens(i,j,1,k,ie) = spheremp(i,j)* &
+					   (up(i,j,1)-ulatlon(i,j,1))*dti - 0.5*vtens(i,j,1,k,ie) &
+					   - 0.5*vtens_n(i,j,1,k,ie)
 
-            vtens(i,j,1,k,ie)=spheremp(i,j)* &
-               (up(i,j,2)*(fcor(i,j) + zeta(i,j)) - grade(i,j,1))
-            vtens(i,j,2,k,ie)=spheremp(i,j)* &
-               (-up(i,j,1)*(fcor(i,j) + zeta(i,j)) - grade(i,j,2))
+					   vtens(i,j,2,k,ie) = spheremp(i,j)* &
+					   (up(i,j,2)-ulatlon(i,j,2))*dti - 0.5*vtens(i,j,2,k,ie) &
+					   - 0.5*vtens_n(i,j,2,k,ie)
+						   
+					end do
+				end do
+			else if (tstep_type==13) then !BDF2 2nd order
+				do j=1,np
+					do i=1,np
+ 					   vtens(i,j,1,k,ie)=spheremp(i,j)* &
+ 					   (up(i,j,2)*(fcor(i,j) + zeta(i,j)) - grade(i,j,1))
+ 					   vtens(i,j,2,k,ie)=spheremp(i,j)* &
+ 					   (-up(i,j,1)*(fcor(i,j) + zeta(i,j)) - grade(i,j,2))
 
-            ptens(i,j,k,ie) =  -spheremp(i,j)*div(i,j)
+ 					   ptens(i,j,k,ie) =  -spheremp(i,j)*div(i,j)
+					   if (nstep==0) then ! BE bootstrap
+						   ptens(i,j,k,ie)   = spheremp(i,j)*(px(i,j)- &
+						   fptr%base(ie)%state%p(i,j,k,n0))*dti - ptens(i,j,k,ie)
 
-! calculate nonlinear residual 
-    if (tstep_type==12) then !Crank Nicolson 2nd order
+						   vtens(i,j,1,k,ie) = spheremp(i,j)* &
+						   (up(i,j,1)-ulatlon(i,j,1))*dti - vtens(i,j,1,k,ie)
 
-       ptens(i,j,k,ie) = spheremp(i,j)*(fptr%base(ie)%state%p(i,j,k,np1)- &
-          fptr%base(ie)%state%p(i,j,k,n0))*dti - 0.5*ptens(i,j,k,ie) &
-          - 0.5*ptens_n(i,j,k,ie)
+						   vtens(i,j,2,k,ie) = spheremp(i,j)* &
+						   (up(i,j,2)-ulatlon(i,j,2))*dti - vtens(i,j,2,k,ie)
 
-      vtens(i,j,1,k,ie) = spheremp(i,j)* &
-        (up(i,j,1)-ulatlon(i,j,1))*dti - 0.5*vtens(i,j,1,k,ie) &
-          - 0.5*vtens_n(i,j,1,k,ie)
+						   !      if (nstep==0) then ! CN bootstrap
+						   !       ptens(i,j,k,ie) = spheremp(i,j)*(px(i,j)- &
+						   !          fptr%base(ie)%state%p(i,j,k,n0))*dti - 0.5*ptens(i,j,k,ie) &
+						   !          - 0.5*ptens_n(i,j,k,ie)
+						   !
+						   !       vtens(i,j,1,k,ie) = spheremp(i,j)* &
+						   !         (up(i,j,1)-ulatlon(i,j,1))*dti - 0.5*vtens(i,j,1,k,ie) &
+						   !          - 0.5*vtens_n(i,j,1,k,ie)
+						   !
+						   !       vtens(i,j,2,k,ie) = spheremp(i,j)* &
+						   !         (up(i,j,2)-ulatlon(i,j,2))*dti - 0.5*vtens(i,j,2,k,ie) &
+						   !          - 0.5*vtens_n(i,j,2,k,ie)
 
-       vtens(i,j,2,k,ie) = spheremp(i,j)* &
-         (up(i,j,2)-ulatlon(i,j,2))*dti - 0.5*vtens(i,j,2,k,ie) &
-          - 0.5*vtens_n(i,j,2,k,ie)
+					   else 
 
-    else if (tstep_type==13) then !BDF2 2nd order
+						   ptens(i,j,k,ie) = &
+						   (1+gam)*spheremp(i,j)*(px(i,j) - &
+						   fptr%base(ie)%state%p(i,j,k,n0))*dti - &
+						   gam*spheremp(i,j)*(fptr%base(ie)%state%p(i,j,k,n0) - &
+						   fptr%base(ie)%state%p(i,j,k,nm1))*dti - &
+						   ptens(i,j,k,ie) 
 
-      if (nstep==0) then ! BE bootstrap
-       ptens(i,j,k,ie)   = spheremp(i,j)*(fptr%base(ie)%state%p(i,j,k,np1)- &
-          fptr%base(ie)%state%p(i,j,k,n0))*dti - ptens(i,j,k,ie)
+						   vtens(i,j,1,k,ie) = &
+						   (1+gam)*spheremp(i,j)*(up(i,j,1)-ulatlon(i,j,1))*dti - &
+						   gam*spheremp(i,j)*(ulatlon(i,j,1)-um(i,j,1))*dti - &
+						   vtens(i,j,1,k,ie)
 
-       vtens(i,j,1,k,ie) = spheremp(i,j)* &
-         (up(i,j,1)-ulatlon(i,j,1))*dti - vtens(i,j,1,k,ie)
+						   vtens(i,j,2,k,ie) = &
+						   (1+gam)*spheremp(i,j)*(up(i,j,2)-ulatlon(i,j,2))*dti - &
+						   gam*spheremp(i,j)*(ulatlon(i,j,2)-um(i,j,2))*dti - &
+						   vtens(i,j,2,k,ie)
+					   end if
+					end do
+				end do
+		   
+			else ! Backward Euler 1st order method   
+				do j=1,np
+					do i=1,np
+ 					   vtens(i,j,1,k,ie)=spheremp(i,j)* &
+ 					   (up(i,j,2)*(fcor(i,j) + zeta(i,j)) - grade(i,j,1))
+ 					   vtens(i,j,2,k,ie)=spheremp(i,j)* &
+ 					   (-up(i,j,1)*(fcor(i,j) + zeta(i,j)) - grade(i,j,2))
 
-       vtens(i,j,2,k,ie) = spheremp(i,j)* &
-         (up(i,j,2)-ulatlon(i,j,2))*dti - vtens(i,j,2,k,ie)
+ 					   ptens(i,j,k,ie) =  -spheremp(i,j)*div(i,j)
+					   
+					   ptens(i,j,k,ie)   = spheremp(i,j)*(px(i,j)- &
+					   fptr%base(ie)%state%p(i,j,k,n0))*dti - ptens(i,j,k,ie)
 
-!      if (nstep==0) then ! CN bootstrap
-!       ptens(i,j,k,ie) = spheremp(i,j)*(fptr%base(ie)%state%p(i,j,k,np1)- &
-!          fptr%base(ie)%state%p(i,j,k,n0))*dti - 0.5*ptens(i,j,k,ie) &
-!          - 0.5*ptens_n(i,j,k,ie)
-!
-!       vtens(i,j,1,k,ie) = spheremp(i,j)* &
-!         (up(i,j,1)-ulatlon(i,j,1))*dti - 0.5*vtens(i,j,1,k,ie) &
-!          - 0.5*vtens_n(i,j,1,k,ie)
-!
-!       vtens(i,j,2,k,ie) = spheremp(i,j)* &
-!         (up(i,j,2)-ulatlon(i,j,2))*dti - 0.5*vtens(i,j,2,k,ie) &
-!          - 0.5*vtens_n(i,j,2,k,ie)
+					   vtens(i,j,1,k,ie) = spheremp(i,j)* &
+					   (up(i,j,1)-ulatlon(i,j,1))*dti - vtens(i,j,1,k,ie)
 
-      else 
+					   vtens(i,j,2,k,ie) = spheremp(i,j)* &
+					   (up(i,j,2)-ulatlon(i,j,2))*dti - vtens(i,j,2,k,ie)
+					end do
+				end do
+			endif 
+		end do
 
-       ptens(i,j,k,ie) = &
-       (1+gam)*spheremp(i,j)*(fptr%base(ie)%state%p(i,j,k,np1) - &
-          fptr%base(ie)%state%p(i,j,k,n0))*dti - &
-          gam*spheremp(i,j)*(fptr%base(ie)%state%p(i,j,k,n0) - &
-          fptr%base(ie)%state%p(i,j,k,nm1))*dti - &
-            ptens(i,j,k,ie) 
-
-       vtens(i,j,1,k,ie) = &
-       (1+gam)*spheremp(i,j)*(up(i,j,1)-ulatlon(i,j,1))*dti - &
-          gam*spheremp(i,j)*(ulatlon(i,j,1)-um(i,j,1))*dti - &
-          vtens(i,j,1,k,ie)
-
-       vtens(i,j,2,k,ie) = &
-       (1+gam)*spheremp(i,j)*(up(i,j,2)-ulatlon(i,j,2))*dti - &
-          gam*spheremp(i,j)*(ulatlon(i,j,2)-um(i,j,2))*dti - &
-          vtens(i,j,2,k,ie)
-       end if 
-
-    else ! Backward Euler 1st order method
-       ptens(i,j,k,ie)   = spheremp(i,j)*(fptr%base(ie)%state%p(i,j,k,np1)- &
-          fptr%base(ie)%state%p(i,j,k,n0))*dti - ptens(i,j,k,ie)
-
-       vtens(i,j,1,k,ie) = spheremp(i,j)* &
-         (up(i,j,1)-ulatlon(i,j,1))*dti - vtens(i,j,1,k,ie)
-
-       vtens(i,j,2,k,ie) = spheremp(i,j)* &
-         (up(i,j,2)-ulatlon(i,j,2))*dti - vtens(i,j,2,k,ie)
-
-    end if
-            end do
-          end do
-       end do
-
-      ! ===================================================
-      ! Pack cube edges of tendencies, rotate velocities
-      ! ===================================================
-       kptr=0
-       call edgeVpack(fptr%edge3, ptens(1,1,1,ie),nlev,kptr,fptr%base(ie)%desc)
-       kptr=nlev
-       call edgeVpack(fptr%edge3, vtens(1,1,1,1,ie),2*nlev,kptr,fptr%base(ie)%desc)
-   end do
+		! ===================================================
+		! Pack cube edges of tendencies, rotate velocities
+		! ===================================================
+		kptr=0
+		call edgeVpack(fptr%edge3, ptens(1,1,1,ie),nlev,kptr,fptr%base(ie)%desc)
+		kptr=nlev
+		call edgeVpack(fptr%edge3, vtens(1,1,1,1,ie),2*nlev,kptr,fptr%base(ie)%desc)
+	end do
 
    !pw++
    call t_stopf('FE_implicit_KE_resid_calc')
@@ -530,102 +467,59 @@ contains
    !pw--
    
 
-    do ie=ns,ne
+   do ie=ns,ne
 
-       ! ===========================================================
-       ! Unpack the edges for vgradp and vtens
-       ! ===========================================================
-       kptr=0
-       call edgeVunpack(fptr%edge3, ptens(1,1,1,ie), nlev, kptr, fptr%base(ie)%desc)
+	   ! ===========================================================
+	   ! Unpack the edges for vgradp and vtens
+	   ! ===========================================================
+	   kptr=0
+	   call edgeVunpack(fptr%edge3, ptens(1,1,1,ie), nlev, kptr, fptr%base(ie)%desc)
 
-       kptr=nlev
-       call edgeVunpack(fptr%edge3, vtens(1,1,1,1,ie), 2*nlev, kptr, fptr%base(ie)%desc)
+	   kptr=nlev
+	   call edgeVunpack(fptr%edge3, vtens(1,1,1,1,ie), 2*nlev, kptr, fptr%base(ie)%desc)
 
-     end do !ie
+   end do !ie
 
-         call t_stopf('FE_implicit_bndry_unpack')
+   call t_stopf('FE_implicit_bndry_unpack')
 
-         ! ===========================================================
-         ! Compute velocity and pressure tendencies for all levels
-         ! ===========================================================
+   ! ===========================================================
+   ! Compute velocity and pressure tendencies for all levels
+   ! ===========================================================
 
-         call t_startf('FE_implicit_vel_pres')
+   call t_startf('FE_implicit_vel_pres')
  
 
-!Moved conditionals out of do loops
-       lx = 0
- if (topology == "cube" .and. test_case=="swtc1") then
-       do ie=ns,ne
-         do k=1,nlev
-           do j=1,np
-             do i=1,np
-               lx = lx+1
-               fx(lx) = 0.0
-             end do
-           end do
-         end do
-       end do !ie
-
-       do ie=ns,ne
-         do k=1,nlev
-           do j=1,np
-             do i=1,np
-               lx = lx+1
-               fx(lx) = 0.0
-             end do
-           end do
-         end do
-       end do !ie
-
-       do ie=ns,ne
-         do k=1,nlev
-           do j=1,np
-             do i=1,np
-               lx = lx+1
-               fx(lx) = fptr%base(ie)%rspheremp(i,j)*ptens(i,j,k,ie)
-             end do
-           end do
-         end do
-       end do !ie
-
- else
-
-       do ie=ns,ne
-         do k=1,nlev
-           do j=1,np
-             do i=1,np
-               lx = lx+1
-               fx(lx)=fptr%base(ie)%rspheremp(i,j)*vtens(i,j,1,k,ie)
-             end do
-           end do
-         end do
-       end do !ie
-
-       do ie=ns,ne
-         do k=1,nlev
-           do j=1,np
-             do i=1,np
-               lx = lx+1
-               fx(lx)=fptr%base(ie)%rspheremp(i,j)*vtens(i,j,2,k,ie)
-             end do
-           end do
-         end do
-       end do !ie
-
-       do ie=ns,ne
-         do k=1,nlev
-           do j=1,np
-             do i=1,np
-               lx = lx+1
-               fx(lx) = fptr%base(ie)%rspheremp(i,j)*ptens(i,j,k,ie)
-             end do
-           end do
-         end do
-       end do !ie
-     end if
+   !Moved conditionals out of do loops
+   lx = 0
+   if (topology == "cube" .and. test_case=="swtc1") then
+	   do ie=ns,ne
+		   do k=1,nlev
+			   do j=1,np
+				   do i=1,np
+					   lx = lx+1
+					   fx(lx) = 0.0
+					   fx(lx+shiftv) = 0.0
+					   fx(lx+shiftp) = fptr%base(ie)%rspheremp(i,j)*ptens(i,j,k,ie)
+				   end do
+			   end do
+		   end do
+	   end do !ie
+   else
+	   do ie=ns,ne
+		   do k=1,nlev
+			   do j=1,np
+				   do i=1,np
+					   lx = lx+1
+					   fx(lx)=fptr%base(ie)%rspheremp(i,j)*vtens(i,j,1,k,ie)
+					   fx(lx+shiftv)=fptr%base(ie)%rspheremp(i,j)*vtens(i,j,2,k,ie)
+					   fx(lx+shiftp) = fptr%base(ie)%rspheremp(i,j)*ptens(i,j,k,ie)
+				   end do
+			   end do
+		   end do
+	   end do !ie
+   end if
 
      call t_stopf('FE_implicit_vel_pres')
-
      call t_stopf('FE implicit')
 
   end subroutine residual
@@ -801,7 +695,7 @@ contains
     real (kind=real_kind) ::  time_adv
 
     real*8  :: et,st
-    integer i,j,k,ie, lenx
+    integer i,j,k,ie,shiftv,shiftp
     integer kptr
     integer point
     integer iptr, ieptr
@@ -816,7 +710,6 @@ contains
     n0         = pptr%tl%n0
     np1        = pptr%tl%np1
     nm1        = pptr%tl%nm1
-    lenx       = pptr%n 
     ns         = pptr%nets 
     ne         = pptr%nete 
     pmean      = pptr%pmean
@@ -824,21 +717,21 @@ contains
     lenscale=rearth
     call t_startf('precon_si')
 
-    lx = 0
-     do nn=1,nvar
-      do ie=ns,ne
-        do k=1,nlev
-          do j=1,np
-            do i=1,np
-             lx = lx+1
-             if (nn==1) zv(i,j,1,k,ie) = z(lx)
-             if (nn==2) zv(i,j,2,k,ie) = z(lx)
-             if (nn==3) zp(i,j,k,ie)   = z(lx)
-            end do  !np
-          end do  !np
-        end do  !nlev
-      end do !ie
-     end do !nvar
+	shiftv = np*np*nlev*(ne-ns+1)
+	shiftp = 2*np*np*nlev*(ne-ns+1)
+	lx = 0
+	do ie=ns,ne
+		do k=1,nlev
+			do j=1,np
+				do i=1,np
+					lx = lx+1
+					zv(i,j,1,k,ie) = z(lx)
+					zv(i,j,2,k,ie) = z(lx+shiftv)
+					zp(i,j,k,ie)   = z(lx+shiftp)
+				end do  !np
+			end do  !np
+		end do  !nlev
+	end do !ie
 
     !$OMP BARRIER
 
@@ -985,34 +878,37 @@ contains
     end do ! ie loop
 
     lx = 0
-     do nn=1,nvar
-      do ie=ns,ne
-        do k=1,nlev
-          do j=1,np
-            do i=1,np
-             lx = lx+1
-! identity precondioner test
-!              vv(lx) = z(lx)
-           if (topology == "cube" .and. test_case=="swtc1") then
-             if (nn.ne.3) vv(lx) = zv(i,j,nn,k,ie)
-             if (nn==3)   vv(lx) = dp(i,j,k,ie)
-           else 
-             if (nn.ne.3) vv(lx) = dv(i,j,nn,k,ie)
-             if (nn==3)   vv(lx) = dp(i,j,k,ie)
-           end if
-            end do  !np
-          end do  !np
-        end do  !nlev
-      end do !ie
-     end do !nvar
+	if (topology == "cube" .and. test_case=="swtc1") then
+		do ie=ns,ne
+			do k=1,nlev
+				do j=1,np
+					do i=1,np
+						lx = lx+1
+						vv(lx) = zv(i,j,1,k,ie)
+						vv(lx+shiftv) = zv(i,j,2,k,ie)
+						vv(lx+shiftp) = dp(i,j,k,ie)
+					end do  !np
+				end do  !np
+			end do  !nlev
+		end do !ie  
+	else
+		do ie=ns,ne
+			do k=1,nlev
+				do j=1,np
+					do i=1,np
+						lx = lx+1
+						vv(lx) = dv(i,j,1,k,ie)
+						vv(lx+shiftv) = dv(i,j,2,k,ie)
+						vv(lx+shiftp) = dp(i,j,k,ie)
+					end do  !np
+				end do  !np
+			end do  !nlev
+		end do !ie
+   end if
     !$OMP BARRIER
     call t_stopf('precon_si')
 
   end subroutine precon_si
-
-
-
-
 
   subroutine sw_picard_schur_op(xs, nelemd,fx, c_ptr_to_object) bind(C,name='sw_picard_schur')
 
@@ -1058,8 +954,7 @@ contains
     integer    :: i,j,k,n,ie
     integer    :: kptr
     integer    :: nm1,n0,np1
-    integer    :: nstep
-    integer    :: lenx,lenp, lx
+    integer    :: lx
 
     call t_startf('Precon Schur')
 
@@ -1070,45 +965,30 @@ contains
     n0         = fptr%tl%n0
     np1        = fptr%tl%np1
     nm1        = fptr%tl%nm1
-    nstep      = fptr%tl%nstep
     dti        = 1.0d0/fptr%dt
     dt         = fptr%dt
-    lenx       = fptr%n 
     ns         = fptr%nets 
     ne         = fptr%nete 
     pmean      = fptr%pmean
     gam        = 0.5
-
     
     if (tstep_type==12) then !crank nicholson
             dti=2*dti !crank nicholson has a factor of 2 in the time step coefficient
     endif
 
-
-vtens=0.0d0
-ptens=0.0d0
-
-
     lx = 0
-!     do n=1,nvar
       do ie=ns,ne
         do k=1,nlev
           do j=1,np
             do i=1,np
              lx = lx+1
-!             if (n==1) fptr%base(ie)%state%v(i,j,1,k,np1) = xs(lx)
-!             if (n==2) fptr%base(ie)%state%v(i,j,2,k,np1) = xs(lx)
-!             if (n==3) fptr%base(ie)%state%p(i,j,k,np1)  = xs(lx)!p =g*h in notes
              fptr%base(ie)%state%p(i,j,k,np1)  = xs(lx)!p =g*h in notes
             end do  !np
           end do  !np
         end do  !nlev
       end do !ie
-!     end do !nvar
 
     do ie=ns,ne
-
-
 
       do j=1,np
        do i=1,np
@@ -1119,11 +999,10 @@ ptens=0.0d0
        end do !np
       end do !np
 
-
-
      do k=1,nlev
 
-     grade_n3 = gradient_sphere(fptr%base(ie)%state%p(:,:,k,np1),fptr%deriv,fptr%base(ie)%Dinv)  ! scalar -> latlon vector        (grad)del phi
+! scalar -> latlon vector        (grad)del phi
+     grade_n3 = gradient_sphere(fptr%base(ie)%state%p(:,:,k,np1),fptr%deriv,fptr%base(ie)%Dinv)  
 
           ! ==============================================
           ! Compute residual terms
@@ -1191,45 +1070,32 @@ ptens=0.0d0
 !  ApplyFDiagInv 
       lx = 0
 
-    do n=1,2
-    do ie=ns,ne
-      do k=1,nlev
-         do j=1,np
-            do i=1,np
-              lx = lx+1
-           if (topology == "cube" .and. test_case=="swtc1") then
-              if (n==1) fxtemp(lx) = 0.0
-              if (n==2) fxtemp(lx) = 0.0
-
-           else
-              if(n==1) fxtemp(lx)=dt*vtens(i,j,1,k,ie)
-              if(n==2) fxtemp(lx)=dt*vtens(i,j,2,k,ie)
-           end if
-            end do
-          end do
-       end do
-     end do !ie
-     end do
-
-
-
-  lx = 0
-     do n=1,2
-      do ie=ns,ne
-        do k=1,nlev
-          do j=1,np
-            do i=1,np
-             lx = lx+1
-             if (n==1) fptr%base(ie)%state%v(i,j,1,k,np1) = fxtemp(lx)
-             if (n==2) fptr%base(ie)%state%v(i,j,2,k,np1) = fxtemp(lx)
-            end do  !np
-          end do  !np
-        end do  !nlev
-      end do !ie
-     end do !nvar
-
-
-
+	  if (topology == "cube" .and. test_case=="swtc1") then
+	      do ie=ns,ne
+	        do k=1,nlev
+	           do j=1,np
+	              do i=1,np
+	                lx = lx+1
+					fptr%base(ie)%state%v(i,j,1,k,np1) = 0.0
+					fptr%base(ie)%state%v(i,j,2,k,np1)= 0.0
+	            end do
+	          end do
+	       end do
+	     end do
+	  
+	  else
+	      do ie=ns,ne
+	        do k=1,nlev
+	           do j=1,np
+	              do i=1,np
+	                lx = lx+1
+					fptr%base(ie)%state%v(i,j,1,k,np1)=dt*vtens(i,j,1,k,ie)
+					fptr%base(ie)%state%v(i,j,2,k,np1)=dt*vtens(i,j,2,k,ie)
+	            end do
+	          end do
+	       end do
+	     end do  
+	  end if
 
 
 ! we now need to apply B to vtens, as well as G to dh (a.k.a. fptr%base(ie)%state%p(:,:,k,np1), and sum these two quantities
@@ -1406,11 +1272,10 @@ ptens=0.0d0
     real (kind=real_kind) ::  dt,dti, pmean
     real (kind=real_kind) ::  gam, tot_nv
 
-    integer    :: i,j,k,n,ie
+    integer    :: i,j,k,n,ie, shiftv
     integer    :: kptr
     integer    :: nm1,n0,np1
-    integer    :: nstep
-    integer    :: lenx,lenp, lx
+    integer    :: lx
 
     call t_startf('Precon DFinvBt')
 
@@ -1421,34 +1286,27 @@ ptens=0.0d0
     n0         = fptr%tl%n0
     np1        = fptr%tl%np1
     nm1        = fptr%tl%nm1
-    nstep      = fptr%tl%nstep
     dti        = 1.0d0/fptr%dt
     dt         = fptr%dt
-    lenx       = fptr%n 
     ns         = fptr%nets 
     ne         = fptr%nete 
     pmean      = fptr%pmean
     gam        = 0.5
 
-vtens=0.0d0
-
 
     lx = 0
+	shiftv = np*np*nlev*(ne-ns+1)
 !     do n=1,nvar
       do ie=ns,ne
         do k=1,nlev
           do j=1,np
             do i=1,np
              lx = lx+1
-      !       if (n==1) fptr%base(ie)%state%v(i,j,1,k,np1) = xs(lx)
-      !       if (n==2) fptr%base(ie)%state%v(i,j,2,k,np1) = xs(lx)
-      !       if (n==3) fptr%base(ie)%state%p(i,j,k,np1)  = xs(lx)!p =g*h in notes
              fptr%base(ie)%state%p(i,j,k,np1)  = xs(lx)!p =g*h in notes
             end do  !np
           end do  !np
         end do  !nlev
       end do !ie
-!     end do !nvar
 
     do ie=ns,ne
 
@@ -1534,27 +1392,31 @@ vtens=0.0d0
 
       lx = 0
 
-    do n=1,2
-    do ie=ns,ne
-      do k=1,nlev
-         do j=1,np
-            do i=1,np
-              lx = lx+1
-           if (topology == "cube" .and. test_case=="swtc1") then
-              if (n==1) fx(lx) = 0.0
-              if (n==2) fx(lx) = 0.0
-
-           else
-
-              if(n==1) fx(lx)=dt*vtens(i,j,1,k,ie)
-              if(n==2) fx(lx)=dt*vtens(i,j,2,k,ie)
-           end if
-
-            end do
-          end do
-       end do
-     end do !ie
-     end do
+	  if (topology == "cube" .and. test_case=="swtc1") then
+	      do ie=ns,ne
+	        do k=1,nlev
+	           do j=1,np
+	              do i=1,np
+	                lx = lx+1
+					fx(lx) = 0.0
+					fx(lx+shiftv) = 0.0
+	            end do
+	          end do
+	       end do
+	     end do !ie
+	  else
+	      do ie=ns,ne
+	        do k=1,nlev
+	           do j=1,np
+	              do i=1,np
+	                lx = lx+1
+					fx(lx)=dt*vtens(i,j,1,k,ie)
+					fx(lx+shiftv)=dt*vtens(i,j,2,k,ie)
+	            end do
+	          end do
+	       end do
+	     end do !ie 
+	  end if
 
     call t_stopf('Precon DFinvBt')
 
@@ -1603,11 +1465,10 @@ vtens=0.0d0
     real (kind=real_kind) ::  dti, pmean
     real (kind=real_kind) ::  gam, tot_nv
 
-    integer    :: i,j,k,n,ie
+    integer    :: i,j,k,n,ie,shiftv
     integer    :: kptr
     integer    :: nm1,n0,np1
-    integer    :: nstep
-    integer    :: lenx,lenp, lx
+    integer    :: lx
 
     call t_startf('precon 11')
 
@@ -1618,9 +1479,7 @@ vtens=0.0d0
     n0         = fptr%tl%n0
     np1        = fptr%tl%np1
     nm1        = fptr%tl%nm1
-    nstep      = fptr%tl%nstep
     dti        = 1.0d0/fptr%dt
-    lenx       = fptr%n 
     ns         = fptr%nets 
     ne         = fptr%nete 
     pmean      = fptr%pmean
@@ -1632,26 +1491,20 @@ vtens=0.0d0
     endif
 
 
-vtens=0.0d0
-ptens=0.0d0
-
-
     lx = 0
-     !do n=1,nvar
-     do n=1,2 !only need the u and v blocks
-      do ie=ns,ne
-        do k=1,nlev
-          do j=1,np
-            do i=1,np
-             lx = lx+1
-             if (n==1) fptr%base(ie)%state%v(i,j,1,k,np1) = xs(lx)
-             if (n==2) fptr%base(ie)%state%v(i,j,2,k,np1) = xs(lx)
-            ! if (n==3) fptr%base(ie)%state%p(i,j,k,np1)  = xs(lx)!p =g*h in notes
-            end do  !np
-          end do  !np
-        end do  !nlev
-      end do !ie
-     end do !nvar
+	shiftv = np*np*nlev*(ne-ns+1)
+
+	do ie=ns,ne
+		do k=1,nlev
+			do j=1,np
+				do i=1,np
+					lx = lx+1
+					fptr%base(ie)%state%v(i,j,1,k,np1) = xs(lx)
+					fptr%base(ie)%state%v(i,j,2,k,np1) = xs(lx+shiftv)
+				end do  !np
+			end do  !np
+		end do  !nlev
+	end do !ie
 
     do ie=ns,ne
 
@@ -1763,28 +1616,31 @@ ptens=0.0d0
 
       lx = 0
 
-    do n=1,2 !only u and v blocks
-    do ie=ns,ne
-      do k=1,nlev
-         do j=1,np
-            do i=1,np
-              lx = lx+1
-           if (topology == "cube" .and. test_case=="swtc1") then
-              if (n==1) fx(lx) = 0.0
-              if (n==2) fx(lx) = 0.0
-              
-           else 
-
-              if(n==1) fx(lx)=fptr%base(ie)%rspheremp(i,j)*vtens(i,j,1,k,ie)
-              if(n==2) fx(lx)=fptr%base(ie)%rspheremp(i,j)*vtens(i,j,2,k,ie)
-
-           end if
-            end do
-          end do
-       end do
-     end do !ie
-     end do
-
+	  if (topology == "cube" .and. test_case=="swtc1") then
+	      do ie=ns,ne
+	        do k=1,nlev
+	           do j=1,np
+	              do i=1,np
+	                lx = lx+1
+		  		    fx(lx) = 0.0
+		  		    fx(lx+shiftv) = 0.0
+	            end do
+	          end do
+	       end do
+	     end do
+	  else
+	      do ie=ns,ne
+	        do k=1,nlev
+	           do j=1,np
+	              do i=1,np
+	                lx = lx+1
+		  		  	fx(lx)=fptr%base(ie)%rspheremp(i,j)*vtens(i,j,1,k,ie)
+		  		  	fx(lx+shiftv)=fptr%base(ie)%rspheremp(i,j)*vtens(i,j,2,k,ie)
+	            end do
+	          end do
+	       end do
+	     end do
+	  end if
 
     call t_stopf('precon 11')
 
@@ -1835,11 +1691,10 @@ ptens=0.0d0
     real (kind=real_kind) ::  dti, pmean
     real (kind=real_kind) ::  gam, tot_nv
 
-    integer    :: i,j,k,n,ie
+    integer    :: i,j,k,n,ie, shiftv
     integer    :: kptr
     integer    :: nm1,n0,np1
-    integer    :: nstep
-    integer    :: lenx,lenp, lx
+    integer    :: lx
 
 
     call t_startf('picard 21')
@@ -1851,35 +1706,27 @@ ptens=0.0d0
     n0         = fptr%tl%n0
     np1        = fptr%tl%np1
     nm1        = fptr%tl%nm1
-    nstep      = fptr%tl%nstep
     dti        = 1.0d0/fptr%dt
-    lenx       = fptr%n 
     ns         = fptr%nets 
     ne         = fptr%nete 
     pmean      = fptr%pmean
     gam        = 0.5
 
-ptens=0.0d0
-
-
     lx = 0
-     do n=1,2
-      do ie=ns,ne
-        do k=1,nlev
-          do j=1,np
-            do i=1,np
-             lx = lx+1
-             if (n==1) fptr%base(ie)%state%v(i,j,1,k,np1) = xs(lx)
-             if (n==2) fptr%base(ie)%state%v(i,j,2,k,np1) = xs(lx)
-            end do  !np
-          end do  !np
-        end do  !nlev
-      end do !ie
-     end do !nvar
+	shiftv = np*np*nlev*(ne-ns+1)
+	do ie=ns,ne
+		do k=1,nlev
+			do j=1,np
+				do i=1,np
+					lx = lx+1
+					fptr%base(ie)%state%v(i,j,1,k,np1) = xs(lx)
+					fptr%base(ie)%state%v(i,j,2,k,np1) = xs(lx+shiftv)
+				end do  !np
+			end do  !np
+		end do  !nlev
+	end do !ie
 
     do ie=ns,ne
-
-
 
       do j=1,np
        do i=1,np
@@ -2038,11 +1885,10 @@ ptens=0.0d0
     real (kind=real_kind) ::  dti, pmean
     real (kind=real_kind) ::  gam, tot_nv
 
-    integer    :: i,j,k,n,ie
+    integer    :: i,j,k,n,ie, shiftv, shiftp
     integer    :: kptr
     integer    :: nm1,n0,np1
-    integer    :: nstep
-    integer    :: lenx,lenp, lx
+    integer    :: lx
 
 !call flush(6)
 !write(6,*)'sw startf'
@@ -2057,37 +1903,30 @@ ptens=0.0d0
     n0         = fptr%tl%n0
     np1        = fptr%tl%np1
     nm1        = fptr%tl%nm1
-    nstep      = fptr%tl%nstep
     dti        = 1.0d0/fptr%dt
-    lenx       = fptr%n 
     ns         = fptr%nets 
     ne         = fptr%nete 
     pmean      = fptr%pmean
     gam        = 0.5
 
-vtens=0.0d0
-ptens=0.0d0
-
 
     lx = 0
-     do n=1,nvar
-      do ie=ns,ne
-        do k=1,nlev
-          do j=1,np
-            do i=1,np
-             lx = lx+1
-             if (n==1) fptr%base(ie)%state%v(i,j,1,k,np1) = xs(lx)
-             if (n==2) fptr%base(ie)%state%v(i,j,2,k,np1) = xs(lx)
-             if (n==3) fptr%base(ie)%state%p(i,j,k,np1)  = xs(lx)!p =g*h in notes
-            end do  !np
-          end do  !np
-        end do  !nlev
-      end do !ie
-     end do !nvar
+	shiftv = np*np*nlev*(ne-ns+1)
+	shiftp = 2*np*np*nlev*(ne-ns+1)
+	do ie=ns,ne
+		do k=1,nlev
+			do j=1,np
+				do i=1,np
+					lx = lx+1
+					fptr%base(ie)%state%v(i,j,1,k,np1) = xs(lx)
+					fptr%base(ie)%state%v(i,j,2,k,np1) = xs(lx+shiftv)
+					fptr%base(ie)%state%p(i,j,k,np1)  = xs(lx+shiftp)
+				end do  !np
+			end do  !np
+		end do  !nlev
+	end do !ie
 
     do ie=ns,ne
-
-
 
       do j=1,np
        do i=1,np
@@ -2263,41 +2102,34 @@ ptens=0.0d0
        ! ===========================================================
 
       lx = 0
-
-    do n=1,nvar
-    do ie=ns,ne
-      do k=1,nlev
-         do j=1,np
-            do i=1,np
-              lx = lx+1
-           if (topology == "cube" .and. test_case=="swtc1") then
-              if (n==1) fx(lx) = 0.0
-              if (n==2) fx(lx) = 0.0
-              
-!test unit base vector
-           else 
-
-              if(n==1) fx(lx)=fptr%base(ie)%rspheremp(i,j)*vtens(i,j,1,k,ie)
-              if(n==2) fx(lx)=fptr%base(ie)%rspheremp(i,j)*vtens(i,j,2,k,ie)
-
-           end if
-              if (n==3) fx(lx) = fptr%base(ie)%rspheremp(i,j)*ptens(i,j,k,ie) 
-            end do
-          end do
-       end do
-     end do !ie
-     end do
-
+	  if (topology == "cube" .and. test_case=="swtc1") then
+	      do ie=ns,ne
+	        do k=1,nlev
+	           do j=1,np
+	              do i=1,np
+	                lx = lx+1
+					fx(lx) = 0.0
+					fx(lx+shiftv) = 0.0
+	            end do
+	          end do
+	       end do
+	     end do 
+	  else
+	      do ie=ns,ne
+	        do k=1,nlev
+	           do j=1,np
+	              do i=1,np
+	                lx = lx+1
+					fx(lx)=fptr%base(ie)%rspheremp(i,j)*vtens(i,j,1,k,ie)
+					fx(lx+shiftv)=fptr%base(ie)%rspheremp(i,j)*vtens(i,j,2,k,ie)
+					fx(lx+shiftp) = fptr%base(ie)%rspheremp(i,j)*ptens(i,j,k,ie)
+	            end do
+	          end do
+	       end do
+	     end do 
+	  end if	
 
   end subroutine sw_jacobian_op
-
-
-
-
-
-
-
-
 
 
 
@@ -2319,9 +2151,9 @@ ptens=0.0d0
     integer              :: ns
     integer              :: ne
    
-    integer    :: i,j,k,n,ie
+    integer    :: i,j,k,n,ie, shiftv, shiftp
     integer    :: nm1,n0,np1
-    integer    :: lenx,lenp, lx
+    integer    :: lx
 
 !write(6,*)'update prec state\n'
 !    call t_startf('residual lin')
@@ -2335,24 +2167,22 @@ ptens=0.0d0
     ne         = fptr%nete 
 
     lx = 0
-     do n=1,nvar
+	shiftv = np*np*nlev*(ne-ns+1)
+	shiftp = 2*np*np*nlev*(ne-ns+1)
       do ie=ns,ne
         do k=1,nlev
           do j=1,np
             do i=1,np
              lx = lx+1
-             !hack to put current point
-             if (n==1) fptr%base(ie)%state%v(i,j,1,k,n0) = xs(lx)
-             if (n==2) fptr%base(ie)%state%v(i,j,2,k,n0) = xs(lx)
-             if (n==3) fptr%base(ie)%state%p(i,j,k,n0)  = xs(lx)
-           !  write(6,*)'xs=',xs(lx),''
+			 fptr%base(ie)%state%v(i,j,1,k,n0) = xs(lx)
+			 fptr%base(ie)%state%v(i,j,2,k,n0) = xs(lx+shiftv)
+			 fptr%base(ie)%state%p(i,j,k,n0)  = xs(lx+shiftp)
             end do  !np
           end do  !np
         end do  !nlev
       end do !ie
-     end do !nvar
+	  
  end subroutine update_prec_state
-
 
 
   subroutine get_jac_vector(xs, nelemd, c_ptr_to_object) bind(C,name='get_jac_vector')
@@ -2374,9 +2204,9 @@ ptens=0.0d0
     integer              :: ne
 
 
-    integer    :: i,j,k,n,ie
+    integer    :: i,j,k,n,ie,shiftv,shiftp
     integer    :: nm1,n0,np1
-    integer    :: lenx,lenp, lx
+    integer    :: lx
 
     call c_f_pointer(c_ptr_to_object,fptr) ! convert C ptr to F ptr
 
@@ -2385,27 +2215,22 @@ ptens=0.0d0
     ne         = fptr%nete
 
     lx = 0
-     do n=1,nvar
+	shiftv = np*np*nlev*(ne-ns+1)
+	shiftp = 2*np*np*nlev*(ne-ns+1)
       do ie=ns,ne
         do k=1,nlev
           do j=1,np
             do i=1,np
              lx = lx+1
-             !hack to put current point
-             if (n==1) xs(lx)= fptr%base(ie)%state%v(i,j,1,k,n0)
-             if (n==2) xs(lx)= fptr%base(ie)%state%v(i,j,2,k,n0)
-             if (n==3) xs(lx)= fptr%base(ie)%state%p(i,j,k,n0)  
+			 xs(lx)= fptr%base(ie)%state%v(i,j,1,k,n0)
+			 xs(lx+shiftv)= fptr%base(ie)%state%v(i,j,2,k,n0)
+			 xs(lx+shiftp)= fptr%base(ie)%state%p(i,j,k,n0) 
             end do  !np
           end do  !np
         end do  !nlev
       end do !ie
-     end do !nvar
+	  
  end subroutine get_jac_vector
-
-
-
-
-
 
 
   subroutine test_id(xs, nelemd, fx, c_ptr_to_object) bind(C,name='test_id')
@@ -2453,4 +2278,3 @@ ptens=0.0d0
 
 
 end module implicit_mod
-
