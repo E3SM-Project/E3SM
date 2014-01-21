@@ -106,103 +106,870 @@
 
 
 <!-- **************************************************************************************** -->
+<!-- *************************************** Streams **************************************** -->
+<!-- **************************************************************************************** -->
+
+	<streams>
+		<stream name="input" type="input">
+			<var name="latCell"/>
+			<var name="lonCell"/>
+			<var name="xCell"/>
+			<var name="yCell"/>
+			<var name="zCell"/>
+			<var name="indexToCellID"/>
+			<var name="latEdge"/>
+			<var name="lonEdge"/>
+			<var name="xEdge"/>
+			<var name="yEdge"/>
+			<var name="zEdge"/>
+			<var name="indexToEdgeID"/>
+			<var name="latVertex"/>
+			<var name="lonVertex"/>
+			<var name="xVertex"/>
+			<var name="yVertex"/>
+			<var name="zVertex"/>
+			<var name="indexToVertexID"/>
+			<var name="cellsOnEdge"/>
+			<var name="nEdgesOnCell"/>
+			<var name="nEdgesOnEdge"/>
+			<var name="edgesOnCell"/>
+			<var name="edgesOnEdge"/>
+			<var name="weightsOnEdge"/>
+			<var name="dvEdge"/>
+			<var name="dcEdge"/>
+			<var name="angleEdge"/>
+			<var name="areaCell"/>
+			<var name="areaTriangle"/>
+			<var name="edgeNormalVectors"/>
+			<var name="localVerticalUnitVectors"/>
+			<var name="cellTangentPlane"/>
+			<var name="cellsOnCell"/>
+			<var name="verticesOnCell"/>
+			<var name="verticesOnEdge"/>
+			<var name="edgesOnVertex"/>
+			<var name="cellsOnVertex"/>
+			<var name="kiteAreasOnVertex"/>
+			<var name="fEdge"/>
+			<var name="fVertex"/>
+			<var name="meshDensity"/>
+			<var name="cf1"/>
+			<var name="cf2"/>
+			<var name="cf3"/>
+			<var name="hx"/>
+			<var name="zgrid"/>
+			<var name="rdzw"/>
+			<var name="dzu"/>
+			<var name="rdzu"/>
+			<var name="fzm"/>
+			<var name="fzp"/>
+			<var name="zx"/>
+			<var name="zz"/>
+			<var name="zb"/>
+			<var name="zb3"/>
+			<var name="dss"/>
+			<var name="u_init"/>
+			<var name="t_init"/>
+			<var name="qv_init"/>
+			<var name="deriv_two"/>
+			<var name="advCells"/>
+			<var name="defc_a"/>
+			<var name="defc_b"/>
+			<var name="coeffs_reconstruct"/>
+			<var name="qv"/>
+			<var name="qc"/>
+			<var name="qr"/>
+			<var name="qi"/>
+			<var name="qs"/>
+			<var name="qg"/>
+			<var name="xtime"/>
+			<var name="u"/>
+			<var name="w"/>
+			<var name="rho"/>
+			<var name="theta"/>
+			<var name="rh"/>
+			<var name="exner_base"/>
+			<var name="pressure_base"/>
+			<var name="rho_base"/>
+			<var name="theta_base"/>
+			<var name="surface_pressure"/>
+			<var name="isltyp"/>
+			<var name="ivgtyp"/>
+			<var name="landmask"/>
+			<var name="shdmin"/>
+			<var name="shdmax"/>
+			<var name="snoalb"/>
+			<var name="ter"/>
+			<var name="albedo12m"/>
+			<var name="greenfrac"/>
+			<var name="sfc_albbck"/>
+			<var name="skintemp"/>
+			<var name="snow"/>
+			<var name="snowc"/>
+			<var name="snowh"/>
+			<var name="sst"/>
+			<var name="tmn"/>
+			<var name="vegfra"/>
+			<var name="seaice"/>
+			<var name="xice"/>
+			<var name="xland"/>
+			<var name="dzs"/>
+			<var name="sh2o"/>
+			<var name="smois"/>
+			<var name="tslb"/>
+			<var name="var2d"/>
+			<var name="con"/>
+			<var name="oa1"/>
+			<var name="oa2"/>
+			<var name="oa3"/>
+			<var name="oa4"/>
+			<var name="ol1"/>
+			<var name="ol2"/>
+			<var name="ol3"/>
+			<var name="ol4"/>
+		</stream>
+
+		<stream name="restart" type="restart">
+			<var name="latCell"/>
+			<var name="lonCell"/>
+			<var name="xCell"/>
+			<var name="yCell"/>
+			<var name="zCell"/>
+			<var name="indexToCellID"/>
+			<var name="latEdge"/>
+			<var name="lonEdge"/>
+			<var name="xEdge"/>
+			<var name="yEdge"/>
+			<var name="zEdge"/>
+			<var name="indexToEdgeID"/>
+			<var name="latVertex"/>
+			<var name="lonVertex"/>
+			<var name="xVertex"/>
+			<var name="yVertex"/>
+			<var name="zVertex"/>
+			<var name="indexToVertexID"/>
+			<var name="cellsOnEdge"/>
+			<var name="nEdgesOnCell"/>
+			<var name="nEdgesOnEdge"/>
+			<var name="edgesOnCell"/>
+			<var name="edgesOnEdge"/>
+			<var name="weightsOnEdge"/>
+			<var name="dvEdge"/>
+			<var name="dcEdge"/>
+			<var name="angleEdge"/>
+			<var name="areaCell"/>
+			<var name="areaTriangle"/>
+			<var name="edgeNormalVectors"/>
+			<var name="localVerticalUnitVectors"/>
+			<var name="cellTangentPlane"/>
+			<var name="cellsOnCell"/>
+			<var name="verticesOnCell"/>
+			<var name="verticesOnEdge"/>
+			<var name="edgesOnVertex"/>
+			<var name="cellsOnVertex"/>
+			<var name="kiteAreasOnVertex"/>
+			<var name="fEdge"/>
+			<var name="fVertex"/>
+			<var name="meshDensity"/>
+			<var name="meshScalingDel2"/>
+			<var name="meshScalingDel4"/>
+			<var name="cf1"/>
+			<var name="cf2"/>
+			<var name="cf3"/>
+			<var name="cpr"/>
+			<var name="cpl"/>
+			<var name="hx"/>
+			<var name="zgrid"/>
+			<var name="rdzw"/>
+			<var name="dzu"/>
+			<var name="rdzu"/>
+			<var name="fzm"/>
+			<var name="fzp"/>
+			<var name="zx"/>
+			<var name="zz"/>
+			<var name="zb"/>
+			<var name="zb3"/>
+			<var name="pzm"/>
+			<var name="pzp"/>
+			<var name="dss"/>
+			<var name="u_init"/>
+			<var name="t_init"/>
+			<var name="qv_init"/>
+			<var name="deriv_two"/>
+			<var name="advCells"/>
+			<var name="defc_a"/>
+			<var name="defc_b"/>
+			<var name="coeffs_reconstruct"/>
+			<var name="east"/>
+			<var name="north"/>
+			<var name="qv"/>
+			<var name="qc"/>
+			<var name="qr"/>
+			<var name="qi"/>
+			<var name="qs"/>
+			<var name="qg"/>
+			<var name="xtime"/>
+			<var name="u"/>
+			<var name="w"/>
+			<var name="rho_zz"/>
+			<var name="theta_m"/>
+			<var name="pressure_p"/>
+			<var name="rho"/>
+			<var name="theta"/>
+			<var name="rh"/>
+			<var name="uReconstructZonal"/>
+			<var name="uReconstructMeridional"/>
+			<var name="rv"/>
+			<var name="circulation"/>
+			<var name="exner"/>
+			<var name="exner_base"/>
+			<var name="rtheta_base"/>
+			<var name="pressure_base"/>
+			<var name="rho_base"/>
+			<var name="theta_base"/>
+			<var name="ru"/>
+			<var name="ru_p"/>
+			<var name="rw"/>
+			<var name="rw_p"/>
+			<var name="rtheta_p"/>
+			<var name="rho_p"/>
+			<var name="surface_pressure"/>
+			<var name="rt_diabatic_tend"/>
+			<var name="dcEdge_m"/>
+			<var name="nsteps_accum"/>
+			<var name="ndays_accum"/>
+			<var name="tlag"/>
+			<var name="tday_accum"/>
+			<var name="tyear_mean"/>
+			<var name="tyear_accum"/>
+			<var name="refl10cm_max"/>
+			<var name="i_rainnc"/>
+			<var name="sr"/>
+			<var name="rainncv"/>
+			<var name="rainnc"/>
+			<var name="snownc"/>
+			<var name="graupelnc"/>
+			<var name="i_rainc"/>
+			<var name="cuprec"/>
+			<var name="rainc"/>
+			<var name="raincv"/>
+			<var name="nca"/>
+			<var name="cubot"/>
+			<var name="cutop"/>
+			<var name="w0avg"/>
+			<var name="kpbl"/>
+			<var name="hpbl"/>
+			<var name="hfx"/>
+			<var name="mavail"/>
+			<var name="mol"/>
+			<var name="qfx"/>
+			<var name="qsfc"/>
+			<var name="ust"/>
+			<var name="ustm"/>
+			<var name="zol"/>
+			<var name="znt"/>
+			<var name="br"/>
+			<var name="cd"/>
+			<var name="cda"/>
+			<var name="chs"/>
+			<var name="chs2"/>
+			<var name="cqs2"/>
+			<var name="ck"/>
+			<var name="cka"/>
+			<var name="cpm"/>
+			<var name="flhc"/>
+			<var name="flqc"/>
+			<var name="gz1oz0"/>
+			<var name="lh"/>
+			<var name="psim"/>
+			<var name="psih"/>
+			<var name="qgh"/>
+			<var name="regime"/>
+			<var name="rmol"/>
+			<var name="wspd"/>
+			<var name="fh"/>
+			<var name="fm"/>
+			<var name="u10"/>
+			<var name="v10"/>
+			<var name="q2"/>
+			<var name="t2m"/>
+			<var name="th2m"/>
+			<var name="dusfcg"/>
+			<var name="dvsfcg"/>
+			<var name="dtaux3d"/>
+			<var name="dtauy3d"/>
+			<var name="rubldiff"/>
+			<var name="rvbldiff"/>
+			<var name="i_acswdnb"/>
+			<var name="i_acswdnbc"/>
+			<var name="i_acswdnt"/>
+			<var name="i_acswdntc"/>
+			<var name="i_acswupb"/>
+			<var name="i_acswupbc"/>
+			<var name="i_acswupt"/>
+			<var name="i_acswuptc"/>
+			<var name="acswdnb"/>
+			<var name="acswdnbc"/>
+			<var name="acswdnt"/>
+			<var name="acswdntc"/>
+			<var name="acswupb"/>
+			<var name="acswupbc"/>
+			<var name="acswupt"/>
+			<var name="acswuptc"/>
+			<var name="gsw"/>
+			<var name="i_aclwdnb"/>
+			<var name="i_aclwdnbc"/>
+			<var name="i_aclwdnt"/>
+			<var name="i_aclwdntc"/>
+			<var name="i_aclwupb"/>
+			<var name="i_aclwupbc"/>
+			<var name="i_aclwupt"/>
+			<var name="i_aclwuptc"/>
+			<var name="aclwdnb"/>
+			<var name="aclwdnbc"/>
+			<var name="aclwdnt"/>
+			<var name="aclwdntc"/>
+			<var name="aclwupb"/>
+			<var name="aclwupbc"/>
+			<var name="aclwupt"/>
+			<var name="aclwuptc"/>
+			<var name="glw"/>
+			<var name="o3clim"/>
+			<var name="o3vmr "/>
+			<var name="acsnom"/>
+			<var name="acsnow"/>
+			<var name="canwat"/>
+			<var name="chklowq"/>
+			<var name="grdflx"/>
+			<var name="lai"/>
+			<var name="noahres"/>
+			<var name="potevp"/>
+			<var name="qz0"/>
+			<var name="sfc_albedo"/>
+			<var name="sfc_emiss"/>
+			<var name="sfc_emibck"/>
+			<var name="sfcrunoff"/>
+			<var name="smstav"/>
+			<var name="smstot"/>
+			<var name="snopcx"/>
+			<var name="snotime"/>
+			<var name="sstsk"/>
+			<var name="sstsk_dtc"/>
+			<var name="sstsk_dtw"/>
+			<var name="thc"/>
+			<var name="udrunoff"/>
+			<var name="xicem"/>
+			<var name="z0"/>
+			<var name="zs"/>
+			<var name="rthcuten"/>
+			<var name="rqvcuten"/>
+			<var name="rqccuten"/>
+			<var name="rqicuten"/>
+			<var name="rqrcuten"/>
+			<var name="rqscuten"/>
+			<var name="rqvdynten"/>
+			<var name="rucuten"/>
+			<var name="rvcuten"/>
+			<var name="rublten"/>
+			<var name="rvblten"/>
+			<var name="rthblten"/>
+			<var name="rqvblten"/>
+			<var name="rqcblten"/>
+			<var name="rqiblten"/>
+			<var name="rthratensw"/>
+			<var name="rthratenlw"/>
+			<var name="pin"/>
+			<var name="ozmixm"/>
+			<var name="isltyp"/>
+			<var name="ivgtyp"/>
+			<var name="landmask"/>
+			<var name="shdmin"/>
+			<var name="shdmax"/>
+			<var name="snoalb"/>
+			<var name="albedo12m"/>
+			<var name="greenfrac"/>
+			<var name="sfc_albbck"/>
+			<var name="skintemp"/>
+			<var name="snow"/>
+			<var name="snowc"/>
+			<var name="snowh"/>
+			<var name="sst"/>
+			<var name="tmn"/>
+			<var name="vegfra"/>
+			<var name="seaice"/>
+			<var name="xice"/>
+			<var name="xland"/>
+			<var name="dzs"/>
+			<var name="smcrel"/>
+			<var name="sh2o"/>
+			<var name="smois"/>
+			<var name="tslb"/>
+			<var name="var2d"/>
+			<var name="con"/>
+			<var name="oa1"/>
+			<var name="oa2"/>
+			<var name="oa3"/>
+			<var name="oa4"/>
+			<var name="ol1"/>
+			<var name="ol2"/>
+			<var name="ol3"/>
+			<var name="ol4"/>
+		</stream>
+
+		<stream name="output" type="output">
+			<var name="latCell"/>
+			<var name="lonCell"/>
+			<var name="xCell"/>
+			<var name="yCell"/>
+			<var name="zCell"/>
+			<var name="indexToCellID"/>
+			<var name="latEdge"/>
+			<var name="lonEdge"/>
+			<var name="xEdge"/>
+			<var name="yEdge"/>
+			<var name="zEdge"/>
+			<var name="indexToEdgeID"/>
+			<var name="latVertex"/>
+			<var name="lonVertex"/>
+			<var name="xVertex"/>
+			<var name="yVertex"/>
+			<var name="zVertex"/>
+			<var name="indexToVertexID"/>
+			<var name="cellsOnEdge"/>
+			<var name="nEdgesOnCell"/>
+			<var name="nEdgesOnEdge"/>
+			<var name="edgesOnCell"/>
+			<var name="edgesOnEdge"/>
+			<var name="weightsOnEdge"/>
+			<var name="dvEdge"/>
+			<var name="dcEdge"/>
+			<var name="angleEdge"/>
+			<var name="areaCell"/>
+			<var name="areaTriangle"/>
+			<var name="edgeNormalVectors"/>
+			<var name="localVerticalUnitVectors"/>
+			<var name="cellTangentPlane"/>
+			<var name="cellsOnCell"/>
+			<var name="verticesOnCell"/>
+			<var name="verticesOnEdge"/>
+			<var name="edgesOnVertex"/>
+			<var name="cellsOnVertex"/>
+			<var name="kiteAreasOnVertex"/>
+			<var name="fEdge"/>
+			<var name="fVertex"/>
+			<var name="meshDensity"/>
+			<var name="meshScalingDel2"/>
+			<var name="meshScalingDel4"/>
+			<var name="cf1"/>
+			<var name="cf2"/>
+			<var name="cf3"/>
+			<var name="cpr"/>
+			<var name="cpl"/>
+			<var name="hx"/>
+			<var name="zgrid"/>
+			<var name="rdzw"/>
+			<var name="dzu"/>
+			<var name="rdzu"/>
+			<var name="fzm"/>
+			<var name="fzp"/>
+			<var name="zx"/>
+			<var name="zz"/>
+			<var name="zb"/>
+			<var name="zb3"/>
+			<var name="dss"/>
+			<var name="u_init"/>
+			<var name="t_init"/>
+			<var name="qv_init"/>
+			<var name="defc_a"/>
+			<var name="defc_b"/>
+			<var name="coeffs_reconstruct"/>
+			<var name="qv"/>
+			<var name="qc"/>
+			<var name="qr"/>
+			<var name="qi"/>
+			<var name="qs"/>
+			<var name="qg"/>
+			<var name="xtime"/>
+			<var name="u"/>
+			<var name="w"/>
+			<var name="pressure_p"/>
+			<var name="rho"/>
+			<var name="theta"/>
+			<var name="rh"/>
+			<var name="v"/>
+			<var name="divergence"/>
+			<var name="vorticity"/>
+			<var name="pv_edge"/>
+			<var name="rho_edge"/>
+			<var name="ke"/>
+			<var name="pv_vertex"/>
+			<var name="pv_cell"/>
+			<var name="uReconstructX"/>
+			<var name="uReconstructY"/>
+			<var name="uReconstructZ"/>
+			<var name="uReconstructZonal"/>
+			<var name="uReconstructMeridional"/>
+			<var name="h_divergence"/>
+			<var name="exner"/>
+			<var name="exner_base"/>
+			<var name="pressure_base"/>
+			<var name="rho_base"/>
+			<var name="theta_base"/>
+			<var name="kdiff"/>
+			<var name="surface_pressure"/>
+			<var name="temperature_200hPa"/>
+			<var name="temperature_500hPa"/>
+			<var name="temperature_700hPa"/>
+			<var name="temperature_850hPa"/>
+			<var name="relhum_200hPa"/>
+			<var name="relhum_500hPa"/>
+			<var name="relhum_700hPa"/>
+			<var name="relhum_850hPa"/>
+			<var name="height_200hPa"/>
+			<var name="height_500hPa"/>
+			<var name="height_700hPa"/>
+			<var name="height_850hPa"/>
+			<var name="uzonal_200hPa"/>
+			<var name="uzonal_500hPa"/>
+			<var name="uzonal_700hPa"/>
+			<var name="uzonal_850hPa"/>
+			<var name="umeridional_200hPa"/>
+			<var name="umeridional_500hPa"/>
+			<var name="umeridional_700hPa"/>
+			<var name="umeridional_850hPa"/>
+			<var name="w_200hPa"/>
+			<var name="w_500hPa"/>
+			<var name="w_700hPa"/>
+			<var name="w_850hPa"/>
+			<var name="vorticity_200hPa"/>
+			<var name="vorticity_500hPa"/>
+			<var name="vorticity_700hPa"/>
+			<var name="vorticity_850hPa"/>
+			<var name="tend_qv"/>
+			<var name="tend_qc"/>
+			<var name="tend_qr"/>
+			<var name="tend_qi"/>
+			<var name="tend_qs"/>
+			<var name="tend_qg"/>
+			<var name="tend_u"/>
+			<var name="tend_w"/>
+			<var name="tend_rho"/>
+			<var name="tend_theta"/>
+			<var name="dcEdge_m"/>
+			<var name="refl10cm_max"/>
+			<var name="i_rainnc"/>
+			<var name="sr"/>
+			<var name="rainncv"/>
+			<var name="snowncv"/>
+			<var name="graupelncv"/>
+			<var name="rainnc"/>
+			<var name="snownc"/>
+			<var name="graupelnc"/>
+			<var name="precipw"/>
+			<var name="relhum"/>
+			<var name="i_rainc"/>
+			<var name="cuprec"/>
+			<var name="rainc"/>
+			<var name="raincv"/>
+			<var name="nca"/>
+			<var name="cubot"/>
+			<var name="cutop"/>
+			<var name="w0avg"/>
+			<var name="kpbl"/>
+			<var name="hpbl"/>
+			<var name="exch_h"/>
+			<var name="kzh"/>
+			<var name="kzm"/>
+			<var name="kzq"/>
+			<var name="hfx"/>
+			<var name="mavail"/>
+			<var name="mol"/>
+			<var name="qfx"/>
+			<var name="qsfc"/>
+			<var name="ust"/>
+			<var name="ustm"/>
+			<var name="zol"/>
+			<var name="znt"/>
+			<var name="br"/>
+			<var name="cd"/>
+			<var name="cda"/>
+			<var name="chs"/>
+			<var name="chs2"/>
+			<var name="cqs2"/>
+			<var name="ck"/>
+			<var name="cka"/>
+			<var name="cpm"/>
+			<var name="flhc"/>
+			<var name="flqc"/>
+			<var name="gz1oz0"/>
+			<var name="lh"/>
+			<var name="psim"/>
+			<var name="psih"/>
+			<var name="qgh"/>
+			<var name="regime"/>
+			<var name="rmol"/>
+			<var name="wspd"/>
+			<var name="fh"/>
+			<var name="fm"/>
+			<var name="u10"/>
+			<var name="v10"/>
+			<var name="q2"/>
+			<var name="t2m"/>
+			<var name="th2m"/>
+			<var name="dusfcg"/>
+			<var name="dvsfcg"/>
+			<var name="dtaux3d"/>
+			<var name="dtauy3d"/>
+			<var name="rubldiff"/>
+			<var name="rvbldiff"/>
+			<var name="i_acswdnb"/>
+			<var name="i_acswdnbc"/>
+			<var name="i_acswdnt"/>
+			<var name="i_acswdntc"/>
+			<var name="i_acswupb"/>
+			<var name="i_acswupbc"/>
+			<var name="i_acswupt"/>
+			<var name="i_acswuptc"/>
+			<var name="coszr"/>
+			<var name="swcf"/>
+			<var name="swdnb"/>
+			<var name="swdnbc"/>
+			<var name="swdnt"/>
+			<var name="swdntc"/>
+			<var name="swupb"/>
+			<var name="swupbc"/>
+			<var name="swupt"/>
+			<var name="swuptc"/>
+			<var name="acswdnb"/>
+			<var name="acswdnbc"/>
+			<var name="acswdnt"/>
+			<var name="acswdntc"/>
+			<var name="acswupb"/>
+			<var name="acswupbc"/>
+			<var name="acswupt"/>
+			<var name="acswuptc"/>
+			<var name="gsw"/>
+			<var name="swdnflx"/>
+			<var name="swdnflxc"/>
+			<var name="swupflx"/>
+			<var name="swupflxc"/>
+			<var name="nlrad"/>
+			<var name="plrad"/>
+			<var name="i_aclwdnb"/>
+			<var name="i_aclwdnbc"/>
+			<var name="i_aclwdnt"/>
+			<var name="i_aclwdntc"/>
+			<var name="i_aclwupb"/>
+			<var name="i_aclwupbc"/>
+			<var name="i_aclwupt"/>
+			<var name="i_aclwuptc"/>
+			<var name="lwcf"/>
+			<var name="lwdnb"/>
+			<var name="lwdnbc"/>
+			<var name="lwdnt"/>
+			<var name="lwdntc"/>
+			<var name="lwupb"/>
+			<var name="lwupbc"/>
+			<var name="lwupt"/>
+			<var name="lwuptc"/>
+			<var name="aclwdnb"/>
+			<var name="aclwdnbc"/>
+			<var name="aclwdnt"/>
+			<var name="aclwdntc"/>
+			<var name="aclwupb"/>
+			<var name="aclwupbc"/>
+			<var name="aclwupt"/>
+			<var name="aclwuptc"/>
+			<var name="olrtoa"/>
+			<var name="glw"/>
+			<var name="o3clim"/>
+			<var name="o3vmr "/>
+			<var name="cldfrac"/>
+			<var name="acsnom"/>
+			<var name="acsnow"/>
+			<var name="canwat"/>
+			<var name="chklowq"/>
+			<var name="grdflx"/>
+			<var name="lai"/>
+			<var name="noahres"/>
+			<var name="potevp"/>
+			<var name="qz0"/>
+			<var name="sfc_albedo"/>
+			<var name="sfc_emiss"/>
+			<var name="sfc_emibck"/>
+			<var name="sfcrunoff"/>
+			<var name="smstav"/>
+			<var name="smstot"/>
+			<var name="snopcx"/>
+			<var name="snotime"/>
+			<var name="sstsk"/>
+			<var name="sstsk_dtc"/>
+			<var name="sstsk_dtw"/>
+			<var name="thc"/>
+			<var name="udrunoff"/>
+			<var name="xicem"/>
+			<var name="z0"/>
+			<var name="zs"/>
+			<var name="rthcuten"/>
+			<var name="rqvcuten"/>
+			<var name="rqccuten"/>
+			<var name="rqicuten"/>
+			<var name="rqrcuten"/>
+			<var name="rqscuten"/>
+			<var name="rqvdynten"/>
+			<var name="rucuten"/>
+			<var name="rvcuten"/>
+			<var name="rublten"/>
+			<var name="rvblten"/>
+			<var name="rthblten"/>
+			<var name="rqvblten"/>
+			<var name="rqcblten"/>
+			<var name="rqiblten"/>
+			<var name="rthratensw"/>
+			<var name="rthratenlw"/>
+			<var name="pin"/>
+			<var name="ozmixm"/>
+			<var name="isltyp"/>
+			<var name="ivgtyp"/>
+			<var name="landmask"/>
+			<var name="shdmin"/>
+			<var name="shdmax"/>
+			<var name="snoalb"/>
+			<var name="ter"/>
+			<var name="albedo12m"/>
+			<var name="greenfrac"/>
+			<var name="sfc_albbck"/>
+			<var name="skintemp"/>
+			<var name="snow"/>
+			<var name="snowc"/>
+			<var name="snowh"/>
+			<var name="sst"/>
+			<var name="tmn"/>
+			<var name="vegfra"/>
+			<var name="seaice"/>
+			<var name="xice"/>
+			<var name="xland"/>
+			<var name="dzs"/>
+			<var name="smcrel"/>
+			<var name="sh2o"/>
+			<var name="smois"/>
+			<var name="tslb"/>
+			<var name="var2d"/>
+			<var name="con"/>
+			<var name="oa1"/>
+			<var name="oa2"/>
+			<var name="oa3"/>
+			<var name="oa4"/>
+			<var name="ol1"/>
+			<var name="ol2"/>
+			<var name="ol3"/>
+			<var name="ol4"/>
+		</stream>
+
+		<stream name="surface" type="input;output">
+			<var name="sst"/>
+			<var name="xice"/>
+		</stream>
+	</streams>
+
+
+<!-- **************************************************************************************** -->
 <!-- ************************************** Variables *************************************** -->
 <!-- **************************************************************************************** -->
 
         <var_struct name="mesh" time_levs="0">
 
                 <!-- horizontal grid structure -->
-                <var name="latCell"                   type="real"     dimensions="nCells"                      streams="iro"/>
-                <var name="lonCell"                   type="real"     dimensions="nCells"                      streams="iro"/>
-                <var name="xCell"                     type="real"     dimensions="nCells"                      streams="iro"/>
-                <var name="yCell"                     type="real"     dimensions="nCells"                      streams="iro"/>
-                <var name="zCell"                     type="real"     dimensions="nCells"                      streams="iro"/>
-                <var name="indexToCellID"             type="integer"  dimensions="nCells"                      streams="iro"/>
-                <var name="latEdge"                   type="real"     dimensions="nEdges"                      streams="iro"/>
-                <var name="lonEdge"                   type="real"     dimensions="nEdges"                      streams="iro"/>
-                <var name="xEdge"                     type="real"     dimensions="nEdges"                      streams="iro"/>
-                <var name="yEdge"                     type="real"     dimensions="nEdges"                      streams="iro"/>
-                <var name="zEdge"                     type="real"     dimensions="nEdges"                      streams="iro"/>
-                <var name="indexToEdgeID"             type="integer"  dimensions="nEdges"                      streams="iro"/>
-                <var name="latVertex"                 type="real"     dimensions="nVertices"                   streams="iro"/>
-                <var name="lonVertex"                 type="real"     dimensions="nVertices"                   streams="iro"/>
-                <var name="xVertex"                   type="real"     dimensions="nVertices"                   streams="iro"/>
-                <var name="yVertex"                   type="real"     dimensions="nVertices"                   streams="iro"/>
-                <var name="zVertex"                   type="real"     dimensions="nVertices"                   streams="iro"/>
-                <var name="indexToVertexID"           type="integer"  dimensions="nVertices"                   streams="iro"/>
-                <var name="cellsOnEdge"               type="integer"  dimensions="TWO nEdges"                  streams="iro"/>
-                <var name="nEdgesOnCell"              type="integer"  dimensions="nCells"                      streams="iro"/>
-                <var name="nEdgesOnEdge"              type="integer"  dimensions="nEdges"                      streams="iro"/>
-                <var name="edgesOnCell"               type="integer"  dimensions="maxEdges nCells"             streams="iro"/>
-                <var name="edgesOnEdge"               type="integer"  dimensions="maxEdges2 nEdges"            streams="iro"/>
-                <var name="weightsOnEdge"             type="real"     dimensions="maxEdges2 nEdges"            streams="iro"/>
-                <var name="dvEdge"                    type="real"     dimensions="nEdges"                      streams="iro"/>
-                <var name="dcEdge"                    type="real"     dimensions="nEdges"                      streams="iro"/>
-                <var name="angleEdge"                 type="real"     dimensions="nEdges"                      streams="iro"/>
-                <var name="areaCell"                  type="real"     dimensions="nCells"                      streams="iro"/>
-                <var name="areaTriangle"              type="real"     dimensions="nVertices"                   streams="iro"/>
-                <var name="edgeNormalVectors"         type="real"     dimensions="R3 nEdges"                   streams="iro"/>
-                <var name="localVerticalUnitVectors"  type="real"     dimensions="R3 nCells"                   streams="iro"/>
-                <var name="cellTangentPlane"          type="real"     dimensions="R3 TWO nCells"               streams="iro"/>
-                <var name="cellsOnCell"               type="integer"  dimensions="maxEdges nCells"             streams="iro"/>
-                <var name="verticesOnCell"            type="integer"  dimensions="maxEdges nCells"             streams="iro"/>
-                <var name="verticesOnEdge"            type="integer"  dimensions="TWO nEdges"                  streams="iro"/>
-                <var name="edgesOnVertex"             type="integer"  dimensions="vertexDegree nVertices"      streams="iro"/>
-                <var name="cellsOnVertex"             type="integer"  dimensions="vertexDegree nVertices"      streams="iro"/>
-                <var name="kiteAreasOnVertex"         type="real"     dimensions="vertexDegree nVertices"      streams="iro"/>
-                <var name="fEdge"                     type="real"     dimensions="nEdges"                      streams="iro"/>
-                <var name="fVertex"                   type="real"     dimensions="nVertices"                   streams="iro"/>
-                <var name="meshDensity"               type="real"     dimensions="nCells"                      streams="iro"/>
-                <var name="meshScalingDel2"           type="real"     dimensions="nEdges"                      streams="ro"/>
-                <var name="meshScalingDel4"           type="real"     dimensions="nEdges"                      streams="ro"/>
+                <var name="latCell"                   type="real"     dimensions="nCells"/>
+                <var name="lonCell"                   type="real"     dimensions="nCells"/>
+                <var name="xCell"                     type="real"     dimensions="nCells"/>
+                <var name="yCell"                     type="real"     dimensions="nCells"/>
+                <var name="zCell"                     type="real"     dimensions="nCells"/>
+                <var name="indexToCellID"             type="integer"  dimensions="nCells"/>
+                <var name="latEdge"                   type="real"     dimensions="nEdges"/>
+                <var name="lonEdge"                   type="real"     dimensions="nEdges"/>
+                <var name="xEdge"                     type="real"     dimensions="nEdges"/>
+                <var name="yEdge"                     type="real"     dimensions="nEdges"/>
+                <var name="zEdge"                     type="real"     dimensions="nEdges"/>
+                <var name="indexToEdgeID"             type="integer"  dimensions="nEdges"/>
+                <var name="latVertex"                 type="real"     dimensions="nVertices"/>
+                <var name="lonVertex"                 type="real"     dimensions="nVertices"/>
+                <var name="xVertex"                   type="real"     dimensions="nVertices"/>
+                <var name="yVertex"                   type="real"     dimensions="nVertices"/>
+                <var name="zVertex"                   type="real"     dimensions="nVertices"/>
+                <var name="indexToVertexID"           type="integer"  dimensions="nVertices"/>
+                <var name="cellsOnEdge"               type="integer"  dimensions="TWO nEdges"/>
+                <var name="nEdgesOnCell"              type="integer"  dimensions="nCells"/>
+                <var name="nEdgesOnEdge"              type="integer"  dimensions="nEdges"/>
+                <var name="edgesOnCell"               type="integer"  dimensions="maxEdges nCells"/>
+                <var name="edgesOnEdge"               type="integer"  dimensions="maxEdges2 nEdges"/>
+                <var name="weightsOnEdge"             type="real"     dimensions="maxEdges2 nEdges"/>
+                <var name="dvEdge"                    type="real"     dimensions="nEdges"/>
+                <var name="dcEdge"                    type="real"     dimensions="nEdges"/>
+                <var name="angleEdge"                 type="real"     dimensions="nEdges"/>
+                <var name="areaCell"                  type="real"     dimensions="nCells"/>
+                <var name="areaTriangle"              type="real"     dimensions="nVertices"/>
+                <var name="edgeNormalVectors"         type="real"     dimensions="R3 nEdges"/>
+                <var name="localVerticalUnitVectors"  type="real"     dimensions="R3 nCells"/>
+                <var name="cellTangentPlane"          type="real"     dimensions="R3 TWO nCells"/>
+                <var name="cellsOnCell"               type="integer"  dimensions="maxEdges nCells"/>
+                <var name="verticesOnCell"            type="integer"  dimensions="maxEdges nCells"/>
+                <var name="verticesOnEdge"            type="integer"  dimensions="TWO nEdges"/>
+                <var name="edgesOnVertex"             type="integer"  dimensions="vertexDegree nVertices"/>
+                <var name="cellsOnVertex"             type="integer"  dimensions="vertexDegree nVertices"/>
+                <var name="kiteAreasOnVertex"         type="real"     dimensions="vertexDegree nVertices"/>
+                <var name="fEdge"                     type="real"     dimensions="nEdges"/>
+                <var name="fVertex"                   type="real"     dimensions="nVertices"/>
+                <var name="meshDensity"               type="real"     dimensions="nCells"/>
+                <var name="meshScalingDel2"           type="real"     dimensions="nEdges"/>
+                <var name="meshScalingDel4"           type="real"     dimensions="nEdges"/>
 
                 <!-- coefficients for vertical extrapolation to the surface -->
-                <var name="cf1"                       type="real"     dimensions=""                            streams="iro"/>
-                <var name="cf2"                       type="real"     dimensions=""                            streams="iro"/>
-                <var name="cf3"                       type="real"     dimensions=""                            streams="iro"/>
+                <var name="cf1"                       type="real"     dimensions=""/>
+                <var name="cf2"                       type="real"     dimensions=""/>
+                <var name="cf3"                       type="real"     dimensions=""/>
 
                 <!-- coefficients used by "newpx" horizontal pressure gradient option -->
-                <var name="cpr"                       type="real"     dimensions="THREE nEdges"                streams="ro"/>
-                <var name="cpl"                       type="real"     dimensions="THREE nEdges"                streams="ro"/>
+                <var name="cpr"                       type="real"     dimensions="THREE nEdges"/>
+                <var name="cpl"                       type="real"     dimensions="THREE nEdges"/>
 
                 <!-- description of the vertical grid structure -->
-                <var name="hx"                        type="real"     dimensions="nVertLevelsP1 nCells"        streams="iro"/>
-                <var name="zgrid"                     type="real"     dimensions="nVertLevelsP1 nCells"        streams="iro"/>
-                <var name="rdzw"                      type="real"     dimensions="nVertLevels"                 streams="iro"/>
-                <var name="dzu"                       type="real"     dimensions="nVertLevels"                 streams="iro"/>
-                <var name="rdzu"                      type="real"     dimensions="nVertLevels"                 streams="iro"/>
-                <var name="fzm"                       type="real"     dimensions="nVertLevels"                 streams="iro"/>
-                <var name="fzp"                       type="real"     dimensions="nVertLevels"                 streams="iro"/>
-                <var name="zx"                        type="real"     dimensions="nVertLevelsP1 nEdges"        streams="iro"/>
-                <var name="zz"                        type="real"     dimensions="nVertLevelsP1 nCells"        streams="iro"/>
-                <var name="zb"                        type="real"     dimensions="nVertLevelsP1 TWO nEdges"    streams="iro"/>
-                <var name="zb3"                       type="real"     dimensions="nVertLevelsP1 TWO nEdges"    streams="iro"/>
-                <var name="pzm"                       type="real"     dimensions="nVertLevels nCells"          streams="r"/>
-                <var name="pzp"                       type="real"     dimensions="nVertLevels nCells"          streams="r"/>
+                <var name="hx"                        type="real"     dimensions="nVertLevelsP1 nCells"/>
+                <var name="zgrid"                     type="real"     dimensions="nVertLevelsP1 nCells"/>
+                <var name="rdzw"                      type="real"     dimensions="nVertLevels"/>
+                <var name="dzu"                       type="real"     dimensions="nVertLevels"/>
+                <var name="rdzu"                      type="real"     dimensions="nVertLevels"/>
+                <var name="fzm"                       type="real"     dimensions="nVertLevels"/>
+                <var name="fzp"                       type="real"     dimensions="nVertLevels"/>
+                <var name="zx"                        type="real"     dimensions="nVertLevelsP1 nEdges"/>
+                <var name="zz"                        type="real"     dimensions="nVertLevelsP1 nCells"/>
+                <var name="zb"                        type="real"     dimensions="nVertLevelsP1 TWO nEdges"/>
+                <var name="zb3"                       type="real"     dimensions="nVertLevelsP1 TWO nEdges"/>
+                <var name="pzm"                       type="real"     dimensions="nVertLevels nCells"/>
+                <var name="pzp"                       type="real"     dimensions="nVertLevels nCells"/>
 
                 <!-- W-Rayleigh damping coefficients -->
-                <var name="dss"                       type="real"     dimensions="nVertLevels nCells"          streams="iro"/>
+                <var name="dss"                       type="real"     dimensions="nVertLevels nCells"/>
 
-                <var name="u_init"                    type="real"     dimensions="nVertLevels"                 streams="iro"/>
-                <var name="t_init"                    type="real"     dimensions="nVertLevels nCells"          streams="iro"/>
-                <var name="qv_init"                   type="real"     dimensions="nVertLevels"                 streams="iro"/>
+                <var name="u_init"                    type="real"     dimensions="nVertLevels"/>
+                <var name="t_init"                    type="real"     dimensions="nVertLevels nCells"/>
+                <var name="qv_init"                   type="real"     dimensions="nVertLevels"/>
 
                 <!-- Space needed for advection -->
-                <var name="deriv_two"                 type="real"     dimensions="FIFTEEN TWO nEdges"          streams="ir"/>
-                <var name="advCells"                  type="integer"  dimensions="TWENTYONE nCells"            streams="ir"/>
+                <var name="deriv_two"                 type="real"     dimensions="FIFTEEN TWO nEdges"/>
+                <var name="advCells"                  type="integer"  dimensions="TWENTYONE nCells"/>
                 <var name="adv_coefs"                 type="real"     dimensions="FIFTEEN nEdges"/>
                 <var name="adv_coefs_3rd"             type="real"     dimensions="FIFTEEN nEdges"/>
                 <var name="advCellsForEdge"           type="integer"  dimensions="FIFTEEN nEdges"/>
                 <var name="nAdvCellsForEdge"          type="integer"  dimensions="nEdges"/>
 
                 <!-- Space needed for deformation calculation weights -->
-                <var name="defc_a"                    type="real"     dimensions="maxEdges nCells"             streams="iro"/>
-                <var name="defc_b"                    type="real"     dimensions="maxEdges nCells"             streams="iro"/>
+                <var name="defc_a"                    type="real"     dimensions="maxEdges nCells"/>
+                <var name="defc_b"                    type="real"     dimensions="maxEdges nCells"/>
 
                 <!-- Arrays required for reconstruction of velocity field -->
-                <var name="coeffs_reconstruct"        type="real"     dimensions="R3 maxEdges nCells"          streams="iro"/>
-                <var name="east"                      type="real"     dimensions="R3 nCells"                   streams="r"/>
-                <var name="north"                     type="real"     dimensions="R3 nCells"                   streams="r"/>
+                <var name="coeffs_reconstruct"        type="real"     dimensions="R3 maxEdges nCells"/>
+                <var name="east"                      type="real"     dimensions="R3 nCells"/>
+                <var name="north"                     type="real"     dimensions="R3 nCells"/>
 
                 <!-- Arrays needed only in the CAM LW and SW radiation codes: Aerosols -->
                 <var name="m_hybi"                    type="real"     dimensions="nAerLevels nCells"/>
@@ -210,21 +977,21 @@
 
         <var_struct name="state" time_levs="2">
 
-                <var name="xtime"     type="text"     dimensions="Time"                        streams="iro"/>
+                <var name="xtime"     type="text"     dimensions="Time"/>
 
                 <!-- Prognostic variables: read from input, saved in restart, and written to output -->
-                <var name="u"         type="real"     dimensions="nVertLevels nEdges Time"     streams="iro"/>
-                <var name="w"         type="real"     dimensions="nVertLevelsP1 nCells Time"   streams="iro"/>
-                <var name="rho_zz"    type="real"     dimensions="nVertLevels nCells Time"     streams="r"/>
-                <var name="theta_m"   type="real"     dimensions="nVertLevels nCells Time"     streams="r"/>
+                <var name="u"         type="real"     dimensions="nVertLevels nEdges Time"/>
+                <var name="w"         type="real"     dimensions="nVertLevelsP1 nCells Time"/>
+                <var name="rho_zz"    type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="theta_m"   type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="m_ps"      type="real"     dimensions="nCells Time"/>
                 <var_array name="scalars" type="real" dimensions="nVertLevels nCells Time">
-                        <var name="qv"      array_group="moist"       streams="iro"/>
-                        <var name="qc"      array_group="moist"       streams="iro"/>
-                        <var name="qr"      array_group="moist"       streams="iro"/>
-                        <var name="qi"      array_group="moist"       streams="iro"/>
-                        <var name="qs"      array_group="moist"       streams="iro"/>
-                        <var name="qg"      array_group="moist"       streams="iro"/>
+                        <var name="qv"      array_group="moist"/>
+                        <var name="qc"      array_group="moist"/>
+                        <var name="qr"      array_group="moist"/>
+                        <var name="qi"      array_group="moist"/>
+                        <var name="qs"      array_group="moist"/>
+                        <var name="qg"      array_group="moist"/>
                 </var_array>
 
                 <var_array name="aerosols" type="real" dimensions="nAerLevels nCells Time">
@@ -257,44 +1024,44 @@
                 <var name="gamma_tri"               type="real"     dimensions="nVertLevels nCells Time"/>
 
                 <!-- state variables diagnosed from prognostic state -->
-                <var name="pressure_p"              type="real"     dimensions="nVertLevels nCells Time"     streams="ro"/>
+                <var name="pressure_p"              type="real"     dimensions="nVertLevels nCells Time"/>
 
                 <!-- Diagnostic fields: only written to output                                                           -->
                 <!-- NOTE: added the "r" option to rho,theta,uReconstructZonal,and uReconstructMeridional for use of the -->
                 <!-- non-hydrostatic dynamical core in a data assimilation framework. NOTE that the "r" option is not    -->
                 <!-- needed for those 4 variables to get bit for bit restart capabilities, otherwise.                    -->
-                <var name="rho"                     type="real"     dimensions="nVertLevels nCells Time"     streams="iro"/>
-                <var name="theta"                   type="real"     dimensions="nVertLevels nCells Time"     streams="iro"/>
-                <var name="rh"                      type="real"     dimensions="nVertLevels nCells Time"     streams="iro"/>
-                <var name="v"                       type="real"     dimensions="nVertLevels nEdges Time"     streams="o"/>
-                <var name="divergence"              type="real"     dimensions="nVertLevels nCells Time"     streams="o"/>
-                <var name="vorticity"               type="real"     dimensions="nVertLevels nVertices Time"  streams="o"/>
-                <var name="pv_edge"                 type="real"     dimensions="nVertLevels nEdges Time"     streams="o"/>
-                <var name="rho_edge"                type="real"     dimensions="nVertLevels nEdges Time"     streams="o"/>
-                <var name="ke"                      type="real"     dimensions="nVertLevels nCells Time"     streams="o"/>
-                <var name="pv_vertex"               type="real"     dimensions="nVertLevels nVertices Time"  streams="o"/>
-                <var name="pv_cell"                 type="real"     dimensions="nVertLevels nCells Time"     streams="o"/>
+                <var name="rho"                     type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="theta"                   type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="rh"                      type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="v"                       type="real"     dimensions="nVertLevels nEdges Time"/>
+                <var name="divergence"              type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="vorticity"               type="real"     dimensions="nVertLevels nVertices Time"/>
+                <var name="pv_edge"                 type="real"     dimensions="nVertLevels nEdges Time"/>
+                <var name="rho_edge"                type="real"     dimensions="nVertLevels nEdges Time"/>
+                <var name="ke"                      type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="pv_vertex"               type="real"     dimensions="nVertLevels nVertices Time"/>
+                <var name="pv_cell"                 type="real"     dimensions="nVertLevels nCells Time"/>
 
                 <!-- reconstructed horizontal velocity vectors at cell centers -->
-                <var name="uReconstructX"           type="real"     dimensions="nVertLevels nCells Time"     streams="o"/>
-                <var name="uReconstructY"           type="real"     dimensions="nVertLevels nCells Time"     streams="o"/>
-                <var name="uReconstructZ"           type="real"     dimensions="nVertLevels nCells Time"     streams="o"/>
-                <var name="uReconstructZonal"       type="real"     dimensions="nVertLevels nCells Time"     streams="ro"/>
-                <var name="uReconstructMeridional"  type="real"     dimensions="nVertLevels nCells Time"     streams="ro"/>
+                <var name="uReconstructX"           type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="uReconstructY"           type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="uReconstructZ"           type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="uReconstructZonal"       type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="uReconstructMeridional"  type="real"     dimensions="nVertLevels nCells Time"/>
 
                 <!-- Other diagnostic variables -->
-                <var name="rv"                      type="real"     dimensions="nVertLevels nEdges Time"     streams="r"/>
-                <var name="circulation"             type="real"     dimensions="nVertLevels nVertices Time"  streams="r"/>
+                <var name="rv"                      type="real"     dimensions="nVertLevels nEdges Time"/>
+                <var name="circulation"             type="real"     dimensions="nVertLevels nVertices Time"/>
                 <var name="gradPVt"                 type="real"     dimensions="nVertLevels nEdges Time"/>
                 <var name="gradPVn"                 type="real"     dimensions="nVertLevels nEdges Time"/>
-                <var name="h_divergence"            type="real"     dimensions="nVertLevels nCells Time"     streams="o"/>
+                <var name="h_divergence"            type="real"     dimensions="nVertLevels nCells Time"/>
 
-                <var name="exner"                   type="real"     dimensions="nVertLevels nCells Time"     streams="ro"/>
-                <var name="exner_base"              type="real"     dimensions="nVertLevels nCells Time"     streams="iro"/>
-                <var name="rtheta_base"             type="real"     dimensions="nVertLevels nCells Time"     streams="r"/>
-                <var name="pressure_base"           type="real"     dimensions="nVertLevels nCells Time"     streams="iro"/>
-                <var name="rho_base"                type="real"     dimensions="nVertLevels nCells Time"     streams="iro"/>
-                <var name="theta_base"              type="real"     dimensions="nVertLevels nCells Time"     streams="iro"/>
+                <var name="exner"                   type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="exner_base"              type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="rtheta_base"             type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="pressure_base"           type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="rho_base"                type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="theta_base"              type="real"     dimensions="nVertLevels nCells Time"/>
 
                 <var name="ruAvg"                   type="real"     dimensions="nVertLevels nEdges Time"/>
                 <var name="wwAvg"                   type="real"     dimensions="nVertLevelsP1 nCells Time"/>
@@ -302,78 +1069,78 @@
                 <var name="cqw"                     type="real"     dimensions="nVertLevels nCells Time"/>
 
                 <!-- coupled variables needed by solver, but not output -->
-                <var name="ru"                      type="real"     dimensions="nVertLevels nEdges Time"     streams="r"/>
-                <var name="ru_p"                    type="real"     dimensions="nVertLevels nEdges Time"     streams="r"/>
+                <var name="ru"                      type="real"     dimensions="nVertLevels nEdges Time"/>
+                <var name="ru_p"                    type="real"     dimensions="nVertLevels nEdges Time"/>
                 <var name="ru_save"                 type="real"     dimensions="nVertLevels nEdges Time"/>
 
-                <var name="rw"                      type="real"     dimensions="nVertLevelsP1 nCells Time"   streams="r"/>
-                <var name="rw_p"                    type="real"     dimensions="nVertLevelsP1 nCells Time"   streams="r"/>
+                <var name="rw"                      type="real"     dimensions="nVertLevelsP1 nCells Time"/>
+                <var name="rw_p"                    type="real"     dimensions="nVertLevelsP1 nCells Time"/>
                 <var name="rw_save"                 type="real"     dimensions="nVertLevelsP1 nCells Time"/>
 
-                <var name="rtheta_p"                type="real"     dimensions="nVertLevels nCells Time"     streams="r"/>
+                <var name="rtheta_p"                type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="rtheta_pp"               type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="rtheta_p_save"           type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="rtheta_pp_old"           type="real"     dimensions="nVertLevels nCells Time"/>
 
-                <var name="rho_p"                   type="real"     dimensions="nVertLevels nCells Time"     streams="r"/>
+                <var name="rho_p"                   type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="rho_pp"                  type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="rho_p_save"              type="real"     dimensions="nVertLevels nCells Time"/>
 
-                <var name="kdiff"                   type="real"     dimensions="nVertLevels nCells Time"     streams="o"/>
+                <var name="kdiff"                   type="real"     dimensions="nVertLevels nCells Time"/>
 
-                <var name="surface_pressure"        type="real"     dimensions="nCells Time"                 streams="iro"/>
+                <var name="surface_pressure"        type="real"     dimensions="nCells Time"/>
 
-                <var name="temperature_200hPa"     type="real"     dimensions="nCells Time"                 streams="o"/>
-                <var name="temperature_500hPa"     type="real"     dimensions="nCells Time"                 streams="o"/>
-                <var name="temperature_700hPa"     type="real"     dimensions="nCells Time"                 streams="o"/>
-                <var name="temperature_850hPa"     type="real"     dimensions="nCells Time"                 streams="o"/>
-                <var name="relhum_200hPa"          type="real"     dimensions="nCells Time"                 streams="o"/>
-                <var name="relhum_500hPa"          type="real"     dimensions="nCells Time"                 streams="o"/>
-                <var name="relhum_700hPa"          type="real"     dimensions="nCells Time"                 streams="o"/>
-                <var name="relhum_850hPa"          type="real"     dimensions="nCells Time"                 streams="o"/>
-                <var name="height_200hPa"          type="real"     dimensions="nCells Time"                 streams="o"/>
-                <var name="height_500hPa"          type="real"     dimensions="nCells Time"                 streams="o"/>
-                <var name="height_700hPa"          type="real"     dimensions="nCells Time"                 streams="o"/>
-                <var name="height_850hPa"          type="real"     dimensions="nCells Time"                 streams="o"/>
-                <var name="uzonal_200hPa"          type="real"     dimensions="nCells Time"                 streams="o"/>
-                <var name="uzonal_500hPa"          type="real"     dimensions="nCells Time"                 streams="o"/>
-                <var name="uzonal_700hPa"          type="real"     dimensions="nCells Time"                 streams="o"/>
-                <var name="uzonal_850hPa"          type="real"     dimensions="nCells Time"                 streams="o"/>
-                <var name="umeridional_200hPa"     type="real"     dimensions="nCells Time"                 streams="o"/>
-                <var name="umeridional_500hPa"     type="real"     dimensions="nCells Time"                 streams="o"/>
-                <var name="umeridional_700hPa"     type="real"     dimensions="nCells Time"                 streams="o"/>
-                <var name="umeridional_850hPa"     type="real"     dimensions="nCells Time"                 streams="o"/>
-                <var name="w_200hPa"               type="real"     dimensions="nCells Time"                 streams="o"/>
-                <var name="w_500hPa"               type="real"     dimensions="nCells Time"                 streams="o"/>
-                <var name="w_700hPa"               type="real"     dimensions="nCells Time"                 streams="o"/>
-                <var name="w_850hPa"               type="real"     dimensions="nCells Time"                 streams="o"/>
-                <var name="vorticity_200hPa"       type="real"     dimensions="nVertices Time"              streams="o"/>
-                <var name="vorticity_500hPa"       type="real"     dimensions="nVertices Time"              streams="o"/>
-                <var name="vorticity_700hPa"       type="real"     dimensions="nVertices Time"              streams="o"/>
-                <var name="vorticity_850hPa"       type="real"     dimensions="nVertices Time"              streams="o"/>
+                <var name="temperature_200hPa"     type="real"     dimensions="nCells Time"/>
+                <var name="temperature_500hPa"     type="real"     dimensions="nCells Time"/>
+                <var name="temperature_700hPa"     type="real"     dimensions="nCells Time"/>
+                <var name="temperature_850hPa"     type="real"     dimensions="nCells Time"/>
+                <var name="relhum_200hPa"          type="real"     dimensions="nCells Time"/>
+                <var name="relhum_500hPa"          type="real"     dimensions="nCells Time"/>
+                <var name="relhum_700hPa"          type="real"     dimensions="nCells Time"/>
+                <var name="relhum_850hPa"          type="real"     dimensions="nCells Time"/>
+                <var name="height_200hPa"          type="real"     dimensions="nCells Time"/>
+                <var name="height_500hPa"          type="real"     dimensions="nCells Time"/>
+                <var name="height_700hPa"          type="real"     dimensions="nCells Time"/>
+                <var name="height_850hPa"          type="real"     dimensions="nCells Time"/>
+                <var name="uzonal_200hPa"          type="real"     dimensions="nCells Time"/>
+                <var name="uzonal_500hPa"          type="real"     dimensions="nCells Time"/>
+                <var name="uzonal_700hPa"          type="real"     dimensions="nCells Time"/>
+                <var name="uzonal_850hPa"          type="real"     dimensions="nCells Time"/>
+                <var name="umeridional_200hPa"     type="real"     dimensions="nCells Time"/>
+                <var name="umeridional_500hPa"     type="real"     dimensions="nCells Time"/>
+                <var name="umeridional_700hPa"     type="real"     dimensions="nCells Time"/>
+                <var name="umeridional_850hPa"     type="real"     dimensions="nCells Time"/>
+                <var name="w_200hPa"               type="real"     dimensions="nCells Time"/>
+                <var name="w_500hPa"               type="real"     dimensions="nCells Time"/>
+                <var name="w_700hPa"               type="real"     dimensions="nCells Time"/>
+                <var name="w_850hPa"               type="real"     dimensions="nCells Time"/>
+                <var name="vorticity_200hPa"       type="real"     dimensions="nVertices Time"/>
+                <var name="vorticity_500hPa"       type="real"     dimensions="nVertices Time"/>
+                <var name="vorticity_700hPa"       type="real"     dimensions="nVertices Time"/>
+                <var name="vorticity_850hPa"       type="real"     dimensions="nVertices Time"/>
         </var_struct>
 
         <var_struct name="tend" time_levs="1">
 
                 
                 <!-- tendencies for prognostic variables -->
-                <var name="tend_u"             name_in_code="u"           type="real"     dimensions="nVertLevels nEdges Time"     streams="o"/>
-                <var name="tend_w"             name_in_code="w"           type="real"     dimensions="nVertLevelsP1 nCells Time"   streams="o"/>
-                <var name="tend_rho"           name_in_code="rho_zz"      type="real"     dimensions="nVertLevels nCells Time"     streams="o"/>
-                <var name="tend_theta"         name_in_code="theta_m"     type="real"     dimensions="nVertLevels nCells Time"     streams="o"/>
-                <var name="rt_diabatic_tend"                              type="real"     dimensions="nVertLevels nCells Time"     streams="r"/>
+                <var name="tend_u"             name_in_code="u"           type="real"     dimensions="nVertLevels nEdges Time"/>
+                <var name="tend_w"             name_in_code="w"           type="real"     dimensions="nVertLevelsP1 nCells Time"/>
+                <var name="tend_rho"           name_in_code="rho_zz"      type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="tend_theta"         name_in_code="theta_m"     type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="rt_diabatic_tend"                              type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="euler_tend_u"       name_in_code="u_euler"     type="real"     dimensions="nVertLevels nEdges Time"/>
                 <var name="euler_tend_w"       name_in_code="w_euler"     type="real"     dimensions="nVertLevelsP1 nCells Time"/>
                 <var name="euler_tend_theta"   name_in_code="theta_euler" type="real"     dimensions="nVertLevels nCells Time"/>
 
                 <!-- scalar tendencies -->
                 <var_array name="scalars" type="real" dimensions="nVertLevels nCells Time">
-                        <var name="tend_qv"    name_in_code="qv"        array_group="moist"       streams="o"/>
-                        <var name="tend_qc"    name_in_code="qc"        array_group="moist"       streams="o"/>
-                        <var name="tend_qr"    name_in_code="qr"        array_group="moist"       streams="o"/>
-                        <var name="tend_qi"    name_in_code="qi"        array_group="moist"       streams="o"/>
-                        <var name="tend_qs"    name_in_code="qs"        array_group="moist"       streams="o"/>
-                        <var name="tend_qg"    name_in_code="qg"        array_group="moist"       streams="o"/>
+                        <var name="tend_qv"    name_in_code="qv"        array_group="moist"/>
+                        <var name="tend_qc"    name_in_code="qc"        array_group="moist"/>
+                        <var name="tend_qr"    name_in_code="qr"        array_group="moist"/>
+                        <var name="tend_qi"    name_in_code="qi"        array_group="moist"/>
+                        <var name="tend_qs"    name_in_code="qs"        array_group="moist"/>
+                        <var name="tend_qg"    name_in_code="qg"        array_group="moist"/>
                 </var_array>
         </var_struct>
 
@@ -435,7 +1202,7 @@
 
         <var_struct name="diag_physics" time_levs="1">
 
-                <var name="dcEdge_m"      type="real"     dimensions="nCells"                      streams="ro"/>
+                <var name="dcEdge_m"      type="real"     dimensions="nCells"/>
 
                 <!-- ================================================================================================= -->
                 <!-- ... ARRAYS AND VARIABLES FOR UPDATING THE DEEP SOIL TEMPERATURE:                                  -->
@@ -447,13 +1214,13 @@
                 <!-- tyear_mean  : annual mean surface temperature                                                 [K] -->
                 <!-- tyear_accum : accumulated yearly surface temperature for current year                         [K] -->
 
-                <var name="nsteps_accum"  type="real"     dimensions="nCells Time"                 streams="r"/>
-                <var name="ndays_accum"   type="real"     dimensions="nCells Time"                 streams="r"/>
+                <var name="nsteps_accum"  type="real"     dimensions="nCells Time"/>
+                <var name="ndays_accum"   type="real"     dimensions="nCells Time"/>
 
-                <var name="tlag"          type="real"     dimensions="nLags nCells Time"           streams="r"/>
-                <var name="tday_accum"    type="real"     dimensions="nCells Time"                 streams="r"/>
-                <var name="tyear_mean"    type="real"     dimensions="nCells Time"                 streams="r"/>
-                <var name="tyear_accum"   type="real"     dimensions="nCells Time"                 streams="r"/>
+                <var name="tlag"          type="real"     dimensions="nLags nCells Time"/>
+                <var name="tday_accum"    type="real"     dimensions="nCells Time"/>
+                <var name="tyear_mean"    type="real"     dimensions="nCells Time"/>
+                <var name="tyear_accum"   type="real"     dimensions="nCells Time"/>
 
 
                 <!-- ================================================================================================== -->
@@ -467,23 +1234,23 @@
                 <!-- graupelnc : accumulated grid-scale precipitation of graupel                                  (mm)  -->
                 <!-- graupelncv: time-step grid-scale precipitation of graupel                                    (mm)  -->
                 <!-- sr        : time-step ratio of frozen versus total grid-scale precipitation                   (-)  -->
-                <!-- precipw   : precipitable water                                                            (kg/m2) -->
-                <!-- refl10cm_max: maximum column reflectivity                                                   (dBz) -->
+                <!-- precipw   : precipitable water                                                            (kg/m2)  -->
+                <!-- refl10cm_max: maximum column reflectivity                                                   (dBz)  -->
 
-                <var name="refl10cm_max"  type="real"     dimensions="nCells Time"                 streams="ro"/>
+                <var name="refl10cm_max"  type="real"     dimensions="nCells Time"/>
 
-                <var name="i_rainnc"      type="integer"  dimensions="nCells Time"                 streams="ro"/>
-                <var name="sr"            type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="rainncv"       type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="snowncv"       type="real"     dimensions="nCells Time"                 streams="o"/>
-                <var name="graupelncv"    type="real"     dimensions="nCells Time"                 streams="o"/>
+                <var name="i_rainnc"      type="integer"  dimensions="nCells Time"/>
+                <var name="sr"            type="real"     dimensions="nCells Time"/>
+                <var name="rainncv"       type="real"     dimensions="nCells Time"/>
+                <var name="snowncv"       type="real"     dimensions="nCells Time"/>
+                <var name="graupelncv"    type="real"     dimensions="nCells Time"/>
 
-                <var name="rainnc"        type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="snownc"        type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="graupelnc"     type="real"     dimensions="nCells Time"                 streams="ro"/>
+                <var name="rainnc"        type="real"     dimensions="nCells Time"/>
+                <var name="snownc"        type="real"     dimensions="nCells Time"/>
+                <var name="graupelnc"     type="real"     dimensions="nCells Time"/>
 
-                <var name="precipw"       type="real"     dimensions="nCells Time"                 streams="o"/>
-                <var name="relhum"        type="real"     dimensions="nVertLevels nCells Time"     streams="o"/>
+                <var name="precipw"       type="real"     dimensions="nCells Time"/>
+                <var name="relhum"        type="real"     dimensions="nVertLevels nCells Time"/>
 
                 <!-- ================================================================================================== -->
                 <!-- ... PARAMETERIZATION OF CONVECTION:                                                                -->
@@ -493,10 +1260,10 @@
                 <!-- rainc     : accumulated time-step convective precipitation                                   (mm)  -->
                 <!-- raincv    : time-step convective precipitation                                               (mm)  -->
 
-                <var name="i_rainc"       type="integer"  dimensions="nCells Time"                 streams="ro"/>
-                <var name="cuprec"        type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="rainc"         type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="raincv"        type="real"     dimensions="nCells Time"                 streams="ro"/>
+                <var name="i_rainc"       type="integer"  dimensions="nCells Time"/>
+                <var name="cuprec"        type="real"     dimensions="nCells Time"/>
+                <var name="rainc"         type="real"     dimensions="nCells Time"/>
+                <var name="raincv"        type="real"     dimensions="nCells Time"/>
 
                 <!-- ... KAIN_FRITSCH:                                                                                 -->
                 <!-- cubot     : lowest level of convection                                                        (-) -->
@@ -504,10 +1271,10 @@
                 <!-- nca       : relaxation time for KF parameterization of convection                             (s) -->
                 <!-- wavg0     : average vertical velocity (KF scheme only)                                    (m s-1) -->
 
-                <var name="nca"           type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="cubot"         type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="cutop"         type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="w0avg"         type="real"     dimensions="nVertLevels nCells Time"     streams="ro"/>
+                <var name="nca"           type="real"     dimensions="nCells Time"/>
+                <var name="cubot"         type="real"     dimensions="nCells Time"/>
+                <var name="cutop"         type="real"     dimensions="nCells Time"/>
+                <var name="w0avg"         type="real"     dimensions="nVertLevels nCells Time"/>
 
 
                 <!-- ================================================================================================== -->
@@ -517,14 +1284,14 @@
                 <!-- hpbl      : PBL height                                                                        (m)  -->
                 <!-- exch_h    : exchange coefficient                                                              (-)  -->
 
-                <var name="kpbl"          type="integer"  dimensions="nCells Time"                 streams="ro"/>
-                <var name="hpbl"          type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="exch_h"        type="real"     dimensions="nVertLevels nCells Time"     streams="o"/>
+                <var name="kpbl"          type="integer"  dimensions="nCells Time"/>
+                <var name="hpbl"          type="real"     dimensions="nCells Time"/>
+                <var name="exch_h"        type="real"     dimensions="nVertLevels nCells Time"/>
 
                 <!-- TEMPORARY: -->
-		<var name="kzh"                               type="real"     dimensions="nVertLevels nCells Time"     streams="o"/>
-		<var name="kzm"                               type="real"     dimensions="nVertLevels nCells Time"     streams="o"/>
-		<var name="kzq"                               type="real"     dimensions="nVertLevels nCells Time"     streams="o"/>
+		<var name="kzh"                               type="real"     dimensions="nVertLevels nCells Time"/>
+		<var name="kzm"                               type="real"     dimensions="nVertLevels nCells Time"/>
+		<var name="kzq"                               type="real"     dimensions="nVertLevels nCells Time"/>
 
 
                 <!-- ================================================================================================== -->
@@ -567,44 +1334,44 @@
                 <!--  t2m       :temperature at 2m                                                                  [K] -->
                 <!--  th2m      :potential temperature at 2m                                                        [K] -->
 
-                <var name="hfx"           type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="mavail"        type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="mol"           type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="qfx"           type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="qsfc"          type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="ust"           type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="ustm"          type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="zol"           type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="znt"           type="real"     dimensions="nCells Time"                 streams="ro"/>
+                <var name="hfx"           type="real"     dimensions="nCells Time"/>
+                <var name="mavail"        type="real"     dimensions="nCells Time"/>
+                <var name="mol"           type="real"     dimensions="nCells Time"/>
+                <var name="qfx"           type="real"     dimensions="nCells Time"/>
+                <var name="qsfc"          type="real"     dimensions="nCells Time"/>
+                <var name="ust"           type="real"     dimensions="nCells Time"/>
+                <var name="ustm"          type="real"     dimensions="nCells Time"/>
+                <var name="zol"           type="real"     dimensions="nCells Time"/>
+                <var name="znt"           type="real"     dimensions="nCells Time"/>
 
-                <var name="br"            type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="cd"            type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="cda"           type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="chs"           type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="chs2"          type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="cqs2"          type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="ck"            type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="cka"           type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="cpm"           type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="flhc"          type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="flqc"          type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="gz1oz0"        type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="lh"            type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="psim"          type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="psih"          type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="qgh"           type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="regime"        type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="rmol"          type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="wspd"          type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="fh"            type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="fm"            type="real"     dimensions="nCells Time"                 streams="ro"/>
+                <var name="br"            type="real"     dimensions="nCells Time"/>
+                <var name="cd"            type="real"     dimensions="nCells Time"/>
+                <var name="cda"           type="real"     dimensions="nCells Time"/>
+                <var name="chs"           type="real"     dimensions="nCells Time"/>
+                <var name="chs2"          type="real"     dimensions="nCells Time"/>
+                <var name="cqs2"          type="real"     dimensions="nCells Time"/>
+                <var name="ck"            type="real"     dimensions="nCells Time"/>
+                <var name="cka"           type="real"     dimensions="nCells Time"/>
+                <var name="cpm"           type="real"     dimensions="nCells Time"/>
+                <var name="flhc"          type="real"     dimensions="nCells Time"/>
+                <var name="flqc"          type="real"     dimensions="nCells Time"/>
+                <var name="gz1oz0"        type="real"     dimensions="nCells Time"/>
+                <var name="lh"            type="real"     dimensions="nCells Time"/>
+                <var name="psim"          type="real"     dimensions="nCells Time"/>
+                <var name="psih"          type="real"     dimensions="nCells Time"/>
+                <var name="qgh"           type="real"     dimensions="nCells Time"/>
+                <var name="regime"        type="real"     dimensions="nCells Time"/>
+                <var name="rmol"          type="real"     dimensions="nCells Time"/>
+                <var name="wspd"          type="real"     dimensions="nCells Time"/>
+                <var name="fh"            type="real"     dimensions="nCells Time"/>
+                <var name="fm"            type="real"     dimensions="nCells Time"/>
 
                 <!-- DIAGNOSTICS: -->
-                <var name="u10"           type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="v10"           type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="q2"            type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="t2m"           type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="th2m"          type="real"     dimensions="nCells Time"                 streams="ro"/>
+                <var name="u10"           type="real"     dimensions="nCells Time"/>
+                <var name="v10"           type="real"     dimensions="nCells Time"/>
+                <var name="q2"            type="real"     dimensions="nCells Time"/>
+                <var name="t2m"           type="real"     dimensions="nCells Time"/>
+                <var name="th2m"          type="real"     dimensions="nCells Time"/>
 
 
                 <!-- ================================================================================================== -->
@@ -616,13 +1383,13 @@
                 <!--  dtaux3d    : gravity wave drag over orography u-stress                                    (m s-1) -->
                 <!--  dtauy3d    : gravity wave drag over orography v-stress                                    (m s-1) -->
 
-		<var name="dusfcg"                            type="real"     dimensions="nCells Time"                 streams="ro"/>
-		<var name="dvsfcg"                            type="real"     dimensions="nCells Time"                 streams="ro"/>
-		<var name="dtaux3d"                           type="real"     dimensions="nVertLevels nCells Time"     streams="ro"/>
-		<var name="dtauy3d"                           type="real"     dimensions="nVertLevels nCells Time"     streams="ro"/>
+		<var name="dusfcg"                            type="real"     dimensions="nCells Time"/>
+		<var name="dvsfcg"                            type="real"     dimensions="nCells Time"/>
+		<var name="dtaux3d"                           type="real"     dimensions="nVertLevels nCells Time"/>
+		<var name="dtauy3d"                           type="real"     dimensions="nVertLevels nCells Time"/>
 
-		<var name="rubldiff"                          type="real"     dimensions="nVertLevels nCells Time"     streams="ro"/>
-		<var name="rvbldiff"                          type="real"     dimensions="nVertLevels nCells Time"     streams="ro"/>
+		<var name="rubldiff"                          type="real"     dimensions="nVertLevels nCells Time"/>
+		<var name="rvbldiff"                          type="real"     dimensions="nVertLevels nCells Time"/>
 
 
                 <!-- ================================================================================================== -->
@@ -661,40 +1428,40 @@
                 <!--  i_acswupt : counter related to how often swupt is begin reset relative to its bucket value    (-) -->
                 <!--  i_acswuptc: counter related to how often swuptc is begin reset relative to its bucket value   (-) -->
 
-                <var name="i_acswdnb"     type="integer"  dimensions="nCells Time"                 streams="ro"/>
-                <var name="i_acswdnbc"    type="integer"  dimensions="nCells Time"                 streams="ro"/>
-                <var name="i_acswdnt"     type="integer"  dimensions="nCells Time"                 streams="ro"/>
-                <var name="i_acswdntc"    type="integer"  dimensions="nCells Time"                 streams="ro"/>
-                <var name="i_acswupb"     type="integer"  dimensions="nCells Time"                 streams="ro"/>
-                <var name="i_acswupbc"    type="integer"  dimensions="nCells Time"                 streams="ro"/>
-                <var name="i_acswupt"     type="integer"  dimensions="nCells Time"                 streams="ro"/>
-                <var name="i_acswuptc"    type="integer"  dimensions="nCells Time"                 streams="ro"/>
+                <var name="i_acswdnb"     type="integer"  dimensions="nCells Time"/>
+                <var name="i_acswdnbc"    type="integer"  dimensions="nCells Time"/>
+                <var name="i_acswdnt"     type="integer"  dimensions="nCells Time"/>
+                <var name="i_acswdntc"    type="integer"  dimensions="nCells Time"/>
+                <var name="i_acswupb"     type="integer"  dimensions="nCells Time"/>
+                <var name="i_acswupbc"    type="integer"  dimensions="nCells Time"/>
+                <var name="i_acswupt"     type="integer"  dimensions="nCells Time"/>
+                <var name="i_acswuptc"    type="integer"  dimensions="nCells Time"/>
 
-                <var name="coszr"         type="real"     dimensions="nCells Time"                 streams="o"/>
-                <var name="swcf"          type="real"     dimensions="nCells Time"                 streams="o"/>
-                <var name="swdnb"         type="real"     dimensions="nCells Time"                 streams="o"/>
-                <var name="swdnbc"        type="real"     dimensions="nCells Time"                 streams="o"/>
-                <var name="swdnt"         type="real"     dimensions="nCells Time"                 streams="o"/>
-                <var name="swdntc"        type="real"     dimensions="nCells Time"                 streams="o"/>
-                <var name="swupb"         type="real"     dimensions="nCells Time"                 streams="o"/>
-                <var name="swupbc"        type="real"     dimensions="nCells Time"                 streams="o"/>
-                <var name="swupt"         type="real"     dimensions="nCells Time"                 streams="o"/>
-                <var name="swuptc"        type="real"     dimensions="nCells Time"                 streams="o"/>
-                <var name="acswdnb"       type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="acswdnbc"      type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="acswdnt"       type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="acswdntc"      type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="acswupb"       type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="acswupbc"      type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="acswupt"       type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="acswuptc"      type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="gsw"           type="real"     dimensions="nCells Time"                 streams="ro"/>
+                <var name="coszr"         type="real"     dimensions="nCells Time"/>
+                <var name="swcf"          type="real"     dimensions="nCells Time"/>
+                <var name="swdnb"         type="real"     dimensions="nCells Time"/>
+                <var name="swdnbc"        type="real"     dimensions="nCells Time"/>
+                <var name="swdnt"         type="real"     dimensions="nCells Time"/>
+                <var name="swdntc"        type="real"     dimensions="nCells Time"/>
+                <var name="swupb"         type="real"     dimensions="nCells Time"/>
+                <var name="swupbc"        type="real"     dimensions="nCells Time"/>
+                <var name="swupt"         type="real"     dimensions="nCells Time"/>
+                <var name="swuptc"        type="real"     dimensions="nCells Time"/>
+                <var name="acswdnb"       type="real"     dimensions="nCells Time"/>
+                <var name="acswdnbc"      type="real"     dimensions="nCells Time"/>
+                <var name="acswdnt"       type="real"     dimensions="nCells Time"/>
+                <var name="acswdntc"      type="real"     dimensions="nCells Time"/>
+                <var name="acswupb"       type="real"     dimensions="nCells Time"/>
+                <var name="acswupbc"      type="real"     dimensions="nCells Time"/>
+                <var name="acswupt"       type="real"     dimensions="nCells Time"/>
+                <var name="acswuptc"      type="real"     dimensions="nCells Time"/>
+                <var name="gsw"           type="real"     dimensions="nCells Time"/>
 
                 <!-- RRTMG SW ONLY: -->
-                <var name="swdnflx"       type="real"     dimensions="nVertLevelsP2 nCells Time"   streams="o"/>
-                <var name="swdnflxc"      type="real"     dimensions="nVertLevelsP2 nCells Time"   streams="o"/>
-                <var name="swupflx"       type="real"     dimensions="nVertLevelsP2 nCells Time"   streams="o"/>
-                <var name="swupflxc"      type="real"     dimensions="nVertLevelsP2 nCells Time"   streams="o"/>
+                <var name="swdnflx"       type="real"     dimensions="nVertLevelsP2 nCells Time"/>
+                <var name="swdnflxc"      type="real"     dimensions="nVertLevelsP2 nCells Time"/>
+                <var name="swupflx"       type="real"     dimensions="nVertLevelsP2 nCells Time"/>
+                <var name="swupflxc"      type="real"     dimensions="nVertLevelsP2 nCells Time"/>
 
 
                 <!-- ================================================================================================== -->
@@ -741,43 +1508,43 @@
                 <!--  i_aclwupt : counter related to how often lwupt is begin reset relative to its bucket value    (-) -->
                 <!--  i_aclwuptc: counter related to how often lwuptc is begin reset relative to its bucket value   (-) -->
 
-                <var name="nlrad"         type="integer"  dimensions="nCells Time"                 streams="o" />
-                <var name="plrad"         type="real"     dimensions="nCells Time"                 streams="o" />
+                <var name="nlrad"         type="integer"  dimensions="nCells Time"/>
+                <var name="plrad"         type="real"     dimensions="nCells Time"/>
 
-                <var name="i_aclwdnb"     type="integer"  dimensions="nCells Time"                 streams="ro"/>
-                <var name="i_aclwdnbc"    type="integer"  dimensions="nCells Time"                 streams="ro"/>
-                <var name="i_aclwdnt"     type="integer"  dimensions="nCells Time"                 streams="ro"/>
-                <var name="i_aclwdntc"    type="integer"  dimensions="nCells Time"                 streams="ro"/>
-                <var name="i_aclwupb"     type="integer"  dimensions="nCells Time"                 streams="ro"/>
-                <var name="i_aclwupbc"    type="integer"  dimensions="nCells Time"                 streams="ro"/>
-                <var name="i_aclwupt"     type="integer"  dimensions="nCells Time"                 streams="ro"/>
-                <var name="i_aclwuptc"    type="integer"  dimensions="nCells Time"                 streams="ro"/>
+                <var name="i_aclwdnb"     type="integer"  dimensions="nCells Time"/>
+                <var name="i_aclwdnbc"    type="integer"  dimensions="nCells Time"/>
+                <var name="i_aclwdnt"     type="integer"  dimensions="nCells Time"/>
+                <var name="i_aclwdntc"    type="integer"  dimensions="nCells Time"/>
+                <var name="i_aclwupb"     type="integer"  dimensions="nCells Time"/>
+                <var name="i_aclwupbc"    type="integer"  dimensions="nCells Time"/>
+                <var name="i_aclwupt"     type="integer"  dimensions="nCells Time"/>
+                <var name="i_aclwuptc"    type="integer"  dimensions="nCells Time"/>
 
-                <var name="lwcf"          type="real"     dimensions="nCells Time"                 streams="o"/>
-                <var name="lwdnb"         type="real"     dimensions="nCells Time"                 streams="o"/>
-                <var name="lwdnbc"        type="real"     dimensions="nCells Time"                 streams="o"/>
-                <var name="lwdnt"         type="real"     dimensions="nCells Time"                 streams="o"/>
-                <var name="lwdntc"        type="real"     dimensions="nCells Time"                 streams="o"/>
-                <var name="lwupb"         type="real"     dimensions="nCells Time"                 streams="o"/>
-                <var name="lwupbc"        type="real"     dimensions="nCells Time"                 streams="o"/>
-                <var name="lwupt"         type="real"     dimensions="nCells Time"                 streams="o"/>
-                <var name="lwuptc"        type="real"     dimensions="nCells Time"                 streams="o"/>
-                <var name="aclwdnb"       type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="aclwdnbc"      type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="aclwdnt"       type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="aclwdntc"      type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="aclwupb"       type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="aclwupbc"      type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="aclwupt"       type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="aclwuptc"      type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="olrtoa"        type="real"     dimensions="nCells Time"                 streams="o"/>
-                <var name="glw"           type="real"     dimensions="nCells Time"                 streams="ro"/>
+                <var name="lwcf"          type="real"     dimensions="nCells Time"/>
+                <var name="lwdnb"         type="real"     dimensions="nCells Time"/>
+                <var name="lwdnbc"        type="real"     dimensions="nCells Time"/>
+                <var name="lwdnt"         type="real"     dimensions="nCells Time"/>
+                <var name="lwdntc"        type="real"     dimensions="nCells Time"/>
+                <var name="lwupb"         type="real"     dimensions="nCells Time"/>
+                <var name="lwupbc"        type="real"     dimensions="nCells Time"/>
+                <var name="lwupt"         type="real"     dimensions="nCells Time"/>
+                <var name="lwuptc"        type="real"     dimensions="nCells Time"/>
+                <var name="aclwdnb"       type="real"     dimensions="nCells Time"/>
+                <var name="aclwdnbc"      type="real"     dimensions="nCells Time"/>
+                <var name="aclwdnt"       type="real"     dimensions="nCells Time"/>
+                <var name="aclwdntc"      type="real"     dimensions="nCells Time"/>
+                <var name="aclwupb"       type="real"     dimensions="nCells Time"/>
+                <var name="aclwupbc"      type="real"     dimensions="nCells Time"/>
+                <var name="aclwupt"       type="real"     dimensions="nCells Time"/>
+                <var name="aclwuptc"      type="real"     dimensions="nCells Time"/>
+                <var name="olrtoa"        type="real"     dimensions="nCells Time"/>
+                <var name="glw"           type="real"     dimensions="nCells Time"/>
 
                 <!-- ... RRTMG LW ONLY: -->
-                <!-- var name="lwdnflx"       type="real"     dimensions="nVertLevelsP2 nCells Time"   streams="o" -->
-                <!-- var name="lwdnflxc"      type="real"     dimensions="nVertLevelsP2 nCells Time"   streams="o" -->
-                <!-- var name="lwupflx"       type="real"     dimensions="nVertLevelsP2 nCells Time"   streams="o" -->
-                <!-- var name="lwupflxc"      type="real"     dimensions="nVertLevelsP2 nCells Time"   streams="o" -->
+                <!-- var name="lwdnflx"       type="real"     dimensions="nVertLevelsP2 nCells Time" -->
+                <!-- var name="lwdnflxc"      type="real"     dimensions="nVertLevelsP2 nCells Time" -->
+                <!-- var name="lwupflx"       type="real"     dimensions="nVertLevelsP2 nCells Time" -->
+                <!-- var name="lwupflxc"      type="real"     dimensions="nVertLevelsP2 nCells Time" -->
 
 
                 <!-- ================================================================================================== -->
@@ -794,15 +1561,15 @@
                 <!-- ... ADDITIONAL OZONE ARRAYS NEEDED ONLY IN THE LW AND SW RADIATION CODES:                          -->
                 <!-- ================================================================================================== -->
 
-                <var name="o3clim"        type="real"     dimensions="nOznLevels nCells Time"      streams="ro"/>
-                <var name="o3vmr "        type="real"     dimensions="nVertLevels nCells Time"     streams="ro"/>
+                <var name="o3clim"        type="real"     dimensions="nOznLevels nCells Time"/>
+                <var name="o3vmr "        type="real"     dimensions="nVertLevels nCells Time"/>
 
 
                 <!-- ================================================================================================== -->
                 <!-- ... PARAMERIZATION OF CLOUDINESS:                                                                  -->
                 <!-- ================================================================================================== -->
 
-                <var name="cldfrac"       type="real"     dimensions="nVertLevels nCells Time"     streams="o"/>
+                <var name="cldfrac"       type="real"     dimensions="nVertLevels nCells Time"/>
 
 
                 <!-- ================================================================================================== -->
@@ -835,31 +1602,31 @@
                 <!-- z0             :background roughness length                                                    [m] -->
                 <!-- zs             :depth of centers of soil layers                                                [m] -->
 
-                <var name="acsnom"        type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="acsnow"        type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="canwat"        type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="chklowq"       type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="grdflx"        type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="lai"           type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="noahres"       type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="potevp"        type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="qz0"           type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="sfc_albedo"    type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="sfc_emiss"     type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="sfc_emibck"    type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="sfcrunoff"     type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="smstav"        type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="smstot"        type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="snopcx"        type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="snotime"       type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="sstsk"         type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="sstsk_dtc"     type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="sstsk_dtw"     type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="thc"           type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="udrunoff"      type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="xicem"         type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="z0"            type="real"     dimensions="nCells Time"                 streams="ro"/>
-                <var name="zs"            type="real"     dimensions="nCells Time"                 streams="ro"/>
+                <var name="acsnom"        type="real"     dimensions="nCells Time"/>
+                <var name="acsnow"        type="real"     dimensions="nCells Time"/>
+                <var name="canwat"        type="real"     dimensions="nCells Time"/>
+                <var name="chklowq"       type="real"     dimensions="nCells Time"/>
+                <var name="grdflx"        type="real"     dimensions="nCells Time"/>
+                <var name="lai"           type="real"     dimensions="nCells Time"/>
+                <var name="noahres"       type="real"     dimensions="nCells Time"/>
+                <var name="potevp"        type="real"     dimensions="nCells Time"/>
+                <var name="qz0"           type="real"     dimensions="nCells Time"/>
+                <var name="sfc_albedo"    type="real"     dimensions="nCells Time"/>
+                <var name="sfc_emiss"     type="real"     dimensions="nCells Time"/>
+                <var name="sfc_emibck"    type="real"     dimensions="nCells Time"/>
+                <var name="sfcrunoff"     type="real"     dimensions="nCells Time"/>
+                <var name="smstav"        type="real"     dimensions="nCells Time"/>
+                <var name="smstot"        type="real"     dimensions="nCells Time"/>
+                <var name="snopcx"        type="real"     dimensions="nCells Time"/>
+                <var name="snotime"       type="real"     dimensions="nCells Time"/>
+                <var name="sstsk"         type="real"     dimensions="nCells Time"/>
+                <var name="sstsk_dtc"     type="real"     dimensions="nCells Time"/>
+                <var name="sstsk_dtw"     type="real"     dimensions="nCells Time"/>
+                <var name="thc"           type="real"     dimensions="nCells Time"/>
+                <var name="udrunoff"      type="real"     dimensions="nCells Time"/>
+                <var name="xicem"         type="real"     dimensions="nCells Time"/>
+                <var name="z0"            type="real"     dimensions="nCells Time"/>
+                <var name="zs"            type="real"     dimensions="nCells Time"/>
         </var_struct>
 
         <var_struct name="tend_physics" time_levs="1">
@@ -872,25 +1639,25 @@
                 <!-- rqccuten  : tendency of cloud water mixing ratio due to cumulus convection            (kg/kg s-1)  -->
                 <!-- rqicuten  : tendency of cloud ice mixing ratio due to cumulus convection              (kg/kg s-1)  -->
 
-                <var name="rthcuten"    type="real"     dimensions="nVertLevels nCells Time"     streams="ro"/>
-                <var name="rqvcuten"    type="real"     dimensions="nVertLevels nCells Time"     streams="ro"/>
-                <var name="rqccuten"    type="real"     dimensions="nVertLevels nCells Time"     streams="ro"/>
-                <var name="rqicuten"    type="real"     dimensions="nVertLevels nCells Time"     streams="ro"/>
+                <var name="rthcuten"    type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="rqvcuten"    type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="rqccuten"    type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="rqicuten"    type="real"     dimensions="nVertLevels nCells Time"/>
 
                 <!-- KAIN_FRITSCH -->
                 <!-- rqrcuten  : tendency of rain mixing ratio due to cumulus convection                   (kg/kg s-1) -->
                 <!-- rqscuten  : tendency of snow mixing ratio due to cumulus convection                   (kg/kg s-1) -->
 
-                <var name="rqrcuten"    type="real"     dimensions="nVertLevels nCells Time"     streams="ro"/>
-                <var name="rqscuten"    type="real"     dimensions="nVertLevels nCells Time"     streams="ro"/>
+                <var name="rqrcuten"    type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="rqscuten"    type="real"     dimensions="nVertLevels nCells Time"/>
 
                 <!-- TIEDTKE -->
                 <!-- rucuten   : tendency of zonal wind due to cumulus convection                              (m/s-1) -->
                 <!-- rvcuten   : tendency of meridional wind due to cumulus convection                         (m/s-1) -->
                 <!-- rqvdynten : tendency of water vapor due to horizontal and vertical advections         (kg/kg/s-1) -->
-                <var name="rqvdynten"   type="real"     dimensions="nVertLevels nCells Time"     streams="ro"/>
-                <var name="rucuten"     type="real"     dimensions="nVertLevels nCells Time"     streams="ro"/>
-                <var name="rvcuten"     type="real"     dimensions="nVertLevels nCells Time"     streams="ro"/>
+                <var name="rqvdynten"   type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="rucuten"     type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="rvcuten"     type="real"     dimensions="nVertLevels nCells Time"/>
 
 
                 <!-- ================================================================================================== -->
@@ -903,12 +1670,12 @@
                 <!-- rqcblten  : tendency of cloud water mixing ratio due to pbl processes                 (kg/kg s-1)  -->
                 <!-- rqiblten  : tendency of cloud ice mixing ratio due to pbl processes                   (kg/kg s-1)  -->
 
-                <var name="rublten"     type="real"     dimensions="nVertLevels nCells Time"     streams="ro"/>
-                <var name="rvblten"     type="real"     dimensions="nVertLevels nCells Time"     streams="ro"/>
-                <var name="rthblten"    type="real"     dimensions="nVertLevels nCells Time"     streams="ro"/>
-                <var name="rqvblten"    type="real"     dimensions="nVertLevels nCells Time"     streams="ro"/>
-                <var name="rqcblten"    type="real"     dimensions="nVertLevels nCells Time"     streams="ro"/>
-                <var name="rqiblten"    type="real"     dimensions="nVertLevels nCells Time"     streams="ro"/>
+                <var name="rublten"     type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="rvblten"     type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="rthblten"    type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="rqvblten"    type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="rqcblten"    type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="rqiblten"    type="real"     dimensions="nVertLevels nCells Time"/>
 
 
                 <!-- ================================================================================================== -->
@@ -917,14 +1684,14 @@
                 <!--  rthratensw:uncoupled theta tendency due to shortwave radiation                            [K s-1] -->
                 <!--  rthratenlw:uncoupled theta tendency due to longwave radiation                             [K s-1] -->
 
-                <var name="rthratensw"  type="real"     dimensions="nVertLevels nCells Time"     streams="ro"/>
-                <var name="rthratenlw"  type="real"     dimensions="nVertLevels nCells Time"     streams="ro"/>
+                <var name="rthratensw"  type="real"     dimensions="nVertLevels nCells Time"/>
+                <var name="rthratenlw"  type="real"     dimensions="nVertLevels nCells Time"/>
         </var_struct>
 
         <var_struct name="atm_input" time_levs="0">
                 <!-- Monthly mean ozone climatology used in the CAM and RRTMG radiation codes -->
-                <var name="pin"         type="real"     dimensions="nOznLevels"                  streams="ro"/>
-                <var name="ozmixm"      type="real"     dimensions="nMonths nOznLevels nCells"   streams="ro"/>
+                <var name="pin"         type="real"     dimensions="nOznLevels"/>
+                <var name="ozmixm"      type="real"     dimensions="nMonths nOznLevels nCells"/>
         </var_struct>
 
         <var_struct name="sfc_input" time_levs="0">
@@ -960,33 +1727,33 @@
                 <!--  smois          :soil moisture                                                            [m3 m-3] -->
                 <!--  tslb           :soil temperature                                                              [K] -->
 
-                <var name="isltyp"      type="integer"  dimensions="nCells"                      streams="iro"/>
-                <var name="ivgtyp"      type="integer"  dimensions="nCells"                      streams="iro"/>
-                <var name="landmask"    type="integer"  dimensions="nCells"                      streams="iro"/>
-                <var name="shdmin"      type="real"     dimensions="nCells"                      streams="iro"/>
-                <var name="shdmax"      type="real"     dimensions="nCells"                      streams="iro"/>
-                <var name="snoalb"      type="real"     dimensions="nCells"                      streams="iro"/>
-                <var name="ter"         type="real"     dimensions="nCells"                      streams="io"/>
-                <var name="albedo12m"   type="real"     dimensions="nMonths nCells"              streams="iro"/>
-                <var name="greenfrac"   type="real"     dimensions="nMonths nCells"              streams="iro"/>
+                <var name="isltyp"      type="integer"  dimensions="nCells"/>
+                <var name="ivgtyp"      type="integer"  dimensions="nCells"/>
+                <var name="landmask"    type="integer"  dimensions="nCells"/>
+                <var name="shdmin"      type="real"     dimensions="nCells"/>
+                <var name="shdmax"      type="real"     dimensions="nCells"/>
+                <var name="snoalb"      type="real"     dimensions="nCells"/>
+                <var name="ter"         type="real"     dimensions="nCells"/>
+                <var name="albedo12m"   type="real"     dimensions="nMonths nCells"/>
+                <var name="greenfrac"   type="real"     dimensions="nMonths nCells"/>
 
-                <var name="sfc_albbck"  type="real"     dimensions="nCells Time"                 streams="iro"/>
-                <var name="skintemp"    type="real"     dimensions="nCells Time"                 streams="iro"/>
-                <var name="snow"        type="real"     dimensions="nCells Time"                 streams="iro"/>
-                <var name="snowc"       type="real"     dimensions="nCells Time"                 streams="iro"/>
-                <var name="snowh"       type="real"     dimensions="nCells Time"                 streams="iro"/>
-                <var name="sst"         type="real"     dimensions="nCells Time"                 streams="isro"/>
-                <var name="tmn"         type="real"     dimensions="nCells Time"                 streams="iro"/>
-                <var name="vegfra"      type="real"     dimensions="nCells Time"                 streams="iro"/>
-                <var name="seaice"      type="real"     dimensions="nCells Time"                 streams="iro"/>
-                <var name="xice"        type="real"     dimensions="nCells Time"                 streams="isro"/>
-                <var name="xland"       type="real"     dimensions="nCells Time"                 streams="iro"/>
+                <var name="sfc_albbck"  type="real"     dimensions="nCells Time"/>
+                <var name="skintemp"    type="real"     dimensions="nCells Time"/>
+                <var name="snow"        type="real"     dimensions="nCells Time"/>
+                <var name="snowc"       type="real"     dimensions="nCells Time"/>
+                <var name="snowh"       type="real"     dimensions="nCells Time"/>
+                <var name="sst"         type="real"     dimensions="nCells Time"/>
+                <var name="tmn"         type="real"     dimensions="nCells Time"/>
+                <var name="vegfra"      type="real"     dimensions="nCells Time"/>
+                <var name="seaice"      type="real"     dimensions="nCells Time"/>
+                <var name="xice"        type="real"     dimensions="nCells Time"/>
+                <var name="xland"       type="real"     dimensions="nCells Time"/>
 
-                <var name="dzs"         type="real"     dimensions="nSoilLevels nCells Time"     streams="iro"/>
-                <var name="smcrel"      type="real"     dimensions="nSoilLevels nCells Time"     streams="ro"/>
-                <var name="sh2o"        type="real"     dimensions="nSoilLevels nCells Time"     streams="iro"/>
-                <var name="smois"       type="real"     dimensions="nSoilLevels nCells Time"     streams="iro"/>
-                <var name="tslb"        type="real"     dimensions="nSoilLevels nCells Time"     streams="iro"/>
+                <var name="dzs"         type="real"     dimensions="nSoilLevels nCells Time"/>
+                <var name="smcrel"      type="real"     dimensions="nSoilLevels nCells Time"/>
+                <var name="sh2o"        type="real"     dimensions="nSoilLevels nCells Time"/>
+                <var name="smois"       type="real"     dimensions="nSoilLevels nCells Time"/>
+                <var name="tslb"        type="real"     dimensions="nSoilLevels nCells Time"/>
 
                 <!-- ================================================================================================== -->
                 <!-- ... PARAMETERIZATION OF GRAVITY WAVE DRAG OVER OROGRAPHY:                                          -->
@@ -1003,15 +1770,15 @@
                 <!--  ol3        : orographic direction asymmetry function                                          (-) -->
                 <!--  ol4        : orographic direction asymmetry function                                          (-) -->
 
-		<var name="var2d"                             type="real"     dimensions="nCells"                      streams="iro"/>
-		<var name="con"                               type="real"     dimensions="nCells"                      streams="iro"/>
-		<var name="oa1"                               type="real"     dimensions="nCells"                      streams="iro"/>
-		<var name="oa2"                               type="real"     dimensions="nCells"                      streams="iro"/>
-		<var name="oa3"                               type="real"     dimensions="nCells"                      streams="iro"/>
-		<var name="oa4"                               type="real"     dimensions="nCells"                      streams="iro"/>
-		<var name="ol1"                               type="real"     dimensions="nCells"                      streams="iro"/>
-		<var name="ol2"                               type="real"     dimensions="nCells"                      streams="iro"/>
-		<var name="ol3"                               type="real"     dimensions="nCells"                      streams="iro"/>
-		<var name="ol4"                               type="real"     dimensions="nCells"                      streams="iro"/>
+		<var name="var2d"                             type="real"     dimensions="nCells"/>
+		<var name="con"                               type="real"     dimensions="nCells"/>
+		<var name="oa1"                               type="real"     dimensions="nCells"/>
+		<var name="oa2"                               type="real"     dimensions="nCells"/>
+		<var name="oa3"                               type="real"     dimensions="nCells"/>
+		<var name="oa4"                               type="real"     dimensions="nCells"/>
+		<var name="ol1"                               type="real"     dimensions="nCells"/>
+		<var name="ol2"                               type="real"     dimensions="nCells"/>
+		<var name="ol3"                               type="real"     dimensions="nCells"/>
+		<var name="ol4"                               type="real"     dimensions="nCells"/>
         </var_struct>
 </registry>

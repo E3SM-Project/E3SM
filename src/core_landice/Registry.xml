@@ -212,59 +212,205 @@
 		/>
 	</nml_record>
 
+	<streams>
+		<stream name="input" type="input">
+			<var name="temperature"/>
+			<var name="thickness"/>
+			<var name="normalVelocity"/>
+			<var name="latCell"/>
+			<var name="lonCell"/>
+			<var name="xCell"/>
+			<var name="yCell"/>
+			<var name="zCell"/>
+			<var name="indexToCellID"/>
+			<var name="latEdge"/>
+			<var name="lonEdge"/>
+			<var name="xEdge"/>
+			<var name="yEdge"/>
+			<var name="zEdge"/>
+			<var name="indexToEdgeID"/>
+			<var name="latVertex"/>
+			<var name="lonVertex"/>
+			<var name="xVertex"/>
+			<var name="yVertex"/>
+			<var name="zVertex"/>
+			<var name="indexToVertexID"/>
+			<var name="cellsOnEdge"/>
+			<var name="nEdgesOnCell"/>
+			<var name="nEdgesOnEdge"/>
+			<var name="edgesOnCell"/>
+			<var name="edgesOnEdge"/>
+			<var name="weightsOnEdge"/>
+			<var name="dvEdge"/>
+			<var name="dcEdge"/>
+			<var name="angleEdge"/>
+			<var name="areaCell"/>
+			<var name="areaTriangle"/>
+			<var name="cellsOnCell"/>
+			<var name="verticesOnCell"/>
+			<var name="verticesOnEdge"/>
+			<var name="edgesOnVertex"/>
+			<var name="cellsOnVertex"/>
+			<var name="kiteAreasOnVertex"/>
+			<var name="layerThicknessFractions"/>
+			<var name="bedTopography"/>
+			<var name="sfcMassBal"/>
+		</stream>
+		<stream name="restart" type="restart">
+			<var name="temperature"/>
+			<var name="xtime"/>
+			<var name="thickness"/>
+			<var name="cellMask"/>
+			<var name="normalVelocity"/>
+			<var name="latCell"/>
+			<var name="lonCell"/>
+			<var name="xCell"/>
+			<var name="yCell"/>
+			<var name="zCell"/>
+			<var name="indexToCellID"/>
+			<var name="latEdge"/>
+			<var name="lonEdge"/>
+			<var name="xEdge"/>
+			<var name="yEdge"/>
+			<var name="zEdge"/>
+			<var name="indexToEdgeID"/>
+			<var name="latVertex"/>
+			<var name="lonVertex"/>
+			<var name="xVertex"/>
+			<var name="yVertex"/>
+			<var name="zVertex"/>
+			<var name="indexToVertexID"/>
+			<var name="cellsOnEdge"/>
+			<var name="nEdgesOnCell"/>
+			<var name="nEdgesOnEdge"/>
+			<var name="edgesOnCell"/>
+			<var name="edgesOnEdge"/>
+			<var name="weightsOnEdge"/>
+			<var name="dvEdge"/>
+			<var name="dcEdge"/>
+			<var name="angleEdge"/>
+			<var name="areaCell"/>
+			<var name="areaTriangle"/>
+			<var name="cellsOnCell"/>
+			<var name="verticesOnCell"/>
+			<var name="verticesOnEdge"/>
+			<var name="edgesOnVertex"/>
+			<var name="cellsOnVertex"/>
+			<var name="kiteAreasOnVertex"/>
+			<var name="layerThicknessFractions"/>
+			<var name="bedTopography"/>
+			<var name="sfcMassBal"/>
+		</stream>
+		<stream name="output" type="output">
+			<var name="temperature"/>
+			<var name="xtime"/>
+			<var name="thickness"/>
+			<var name="layerThickness"/>
+			<var name="lowerSurface"/>
+			<var name="upperSurface"/>
+			<var name="cellMask"/>
+			<var name="edgeMask"/>
+			<var name="vertexMask"/>
+			<var name="normalVelocity"/>
+			<var name="uReconstructX"/>
+			<var name="uReconstructY"/>
+			<var name="uReconstructZ"/>
+			<var name="uReconstructZonal"/>
+			<var name="uReconstructMeridional"/>
+			<var name="latCell"/>
+			<var name="lonCell"/>
+			<var name="xCell"/>
+			<var name="yCell"/>
+			<var name="zCell"/>
+			<var name="indexToCellID"/>
+			<var name="latEdge"/>
+			<var name="lonEdge"/>
+			<var name="xEdge"/>
+			<var name="yEdge"/>
+			<var name="zEdge"/>
+			<var name="indexToEdgeID"/>
+			<var name="latVertex"/>
+			<var name="lonVertex"/>
+			<var name="xVertex"/>
+			<var name="yVertex"/>
+			<var name="zVertex"/>
+			<var name="indexToVertexID"/>
+			<var name="cellsOnEdge"/>
+			<var name="nEdgesOnCell"/>
+			<var name="nEdgesOnEdge"/>
+			<var name="edgesOnCell"/>
+			<var name="edgesOnEdge"/>
+			<var name="weightsOnEdge"/>
+			<var name="dvEdge"/>
+			<var name="dcEdge"/>
+			<var name="angleEdge"/>
+			<var name="areaCell"/>
+			<var name="areaTriangle"/>
+			<var name="edgeNormalVectors"/>
+			<var name="localVerticalUnitVectors"/>
+			<var name="cellTangentPlane"/>
+			<var name="cellsOnCell"/>
+			<var name="verticesOnCell"/>
+			<var name="verticesOnEdge"/>
+			<var name="edgesOnVertex"/>
+			<var name="cellsOnVertex"/>
+			<var name="kiteAreasOnVertex"/>
+		</stream>
+	</streams>
+
 	<var_struct name="state" time_levs="2">
-		<var name="xtime" type="text" dimensions="Time" streams="ro" units="unitless"
+		<var name="xtime" type="text" dimensions="Time" units="unitless"
 		     description="model time, with format 'YYYY-MM-DD_HH:MM:SS'"
 		/>
 		<!-- Prognostic Variables: typically read from input, saved in restart, written to output --> 
-		<var name="thickness" type="real" dimensions="nCells Time" streams="iro" units="m"
+		<var name="thickness" type="real" dimensions="nCells Time" units="m"
 		     description="ice thickness"
 		/>
-		<var name="layerThickness" type="real" dimensions="nVertLevels nCells Time" streams="o" units="m"
+		<var name="layerThickness" type="real" dimensions="nVertLevels nCells Time" units="m"
 		     description="layer thickness"
 		/>
 		<var_array name="tracers" type="real" dimensions="nVertLevels nCells Time">
-			<var name="temperature" array_group="dynamics" streams="iro" units="degrees Celsius"
+			<var name="temperature" array_group="dynamics" units="degrees Celsius"
 			     description="ice temperature"
 			/>
 		</var_array>
 
 		<!-- Diagnostic Variables: typically just written to output --> 
-		<var name="lowerSurface" type="real" dimensions="nCells Time" streams="o" units="m above datum"
+		<var name="lowerSurface" type="real" dimensions="nCells Time" units="m above datum"
 		     description="elevation at bottom of ice"
 		/>
-		<var name="upperSurface" type="real" dimensions="nCells Time" streams="o" units="m above datum"
+		<var name="upperSurface" type="real" dimensions="nCells Time" units="m above datum"
 		     description="elevation at top of ice"
 		/>
-		<var name="layerThicknessEdge" type="real" dimensions="nVertLevels nEdges Time" streams="" units="m"
+		<var name="layerThicknessEdge" type="real" dimensions="nVertLevels nEdges Time" units="m"
 		     description="layer thickness on cell edges"
 		/>
-		<var name="cellMask" type="integer" dimensions="nCells Time" streams="ro" units="none"
+		<var name="cellMask" type="integer" dimensions="nCells Time" units="none"
 		     description="bitmask indicating various properties about the ice sheet on cells.  cellMask only needs to be a restart field if config_allow_additional_advance = false (to keep the mask of initial ice extent)"
 		/>
-		<var name="edgeMask" type="integer" dimensions="nEdges Time" streams="o" units="none"
+		<var name="edgeMask" type="integer" dimensions="nEdges Time" units="none"
 		     description="bitmask indicating various properties about the ice sheet on edges."
 		/>
-		<var name="vertexMask" type="integer" dimensions="nVertices Time" streams="o" units="none"
+		<var name="vertexMask" type="integer" dimensions="nVertices Time" units="none"
 		     description="bitmask indicating various properties about the ice sheet on vertices."
 		/>
-		<var name="normalVelocity" type="real" dimensions="nVertLevels nEdges Time" streams="iro" units="m s^{-1}"
+		<var name="normalVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
 		     description="horizonal velocity, normal component to an edge"
 		/>
 			<!-- normalVelocity needs to be input/restart for iterative velocity solvers -->
-		<var name="uReconstructX"                     type="real"     dimensions="nVertLevels nCells Time"     streams="o"
+		<var name="uReconstructX"                     type="real"     dimensions="nVertLevels nCells Time"    
 		     units="m s^{-1}"  description="x-component of velocity reconstructed on cell centers"
 		/>
-		<var name="uReconstructY"                     type="real"     dimensions="nVertLevels nCells Time"     streams="o"
+		<var name="uReconstructY"                     type="real"     dimensions="nVertLevels nCells Time"    
 		     units="m s^{-1}"  description="y-component of velocity reconstructed on cell centers"
 		/>
-		<var name="uReconstructZ"                     type="real"     dimensions="nVertLevels nCells Time"     streams="o"
+		<var name="uReconstructZ"                     type="real"     dimensions="nVertLevels nCells Time"    
 		     units="m s^{-1}"  description="z-component of velocity reconstructed on cell centers"
 		/>
-		<var name="uReconstructZonal"                 type="real"     dimensions="nVertLevels nCells Time"     streams="o"
+		<var name="uReconstructZonal"                 type="real"     dimensions="nVertLevels nCells Time"    
 		     units="m s^{-1}"  description="zonal velocity reconstructed on cell centers"
 		/>
-		<var name="uReconstructMeridional"            type="real"     dimensions="nVertLevels nCells Time"     streams="o"
+		<var name="uReconstructMeridional"            type="real"     dimensions="nVertLevels nCells Time"    
 		     units="m s^{-1}"  description="meridional velocity reconstructed on cell centers"
 		/>
 	</var_struct>
@@ -283,118 +429,118 @@
 
 	<!-- Mesh Variables (includes some time-independent variables)--> 
 	<var_struct name="mesh" time_levs="0">
-		<var name="latCell" type="real" dimensions="nCells" streams="iro" units="radians"
+		<var name="latCell" type="real" dimensions="nCells" units="radians"
 			 description="Latitude location of cell centers in radians."
 		/>
-		<var name="lonCell" type="real" dimensions="nCells" streams="iro" units="radians"
+		<var name="lonCell" type="real" dimensions="nCells" units="radians"
 		     description="Longitude location of cell centers in radians."
 		/>
-		<var name="xCell" type="real" dimensions="nCells" streams="iro" units="unitless"
+		<var name="xCell" type="real" dimensions="nCells" units="unitless"
 		     description="X Coordinate in cartesian space of cell centers."
 		/>
-		<var name="yCell" type="real" dimensions="nCells" streams="iro" units="unitless"
+		<var name="yCell" type="real" dimensions="nCells" units="unitless"
 		     description="Y Coordinate in cartesian space of cell centers."
 		/>
-		<var name="zCell" type="real" dimensions="nCells" streams="iro" units="unitless"
+		<var name="zCell" type="real" dimensions="nCells" units="unitless"
 		     description="Z Coordinate in cartesian space of cell centers."
 		/>
-		<var name="indexToCellID" type="integer" dimensions="nCells" streams="iro" units="unitless"
+		<var name="indexToCellID" type="integer" dimensions="nCells" units="unitless"
 		     description="List of global cell IDs."
 		/>
-		<var name="latEdge" type="real" dimensions="nEdges" streams="iro" units="radians"
+		<var name="latEdge" type="real" dimensions="nEdges" units="radians"
 		     description="Latitude location of edge midpoints in radians."
 		/>
-		<var name="lonEdge" type="real" dimensions="nEdges" streams="iro" units="radians"
+		<var name="lonEdge" type="real" dimensions="nEdges" units="radians"
 		     description="Longitude location of edge midpoints in radians."
 		/>
-		<var name="xEdge" type="real" dimensions="nEdges" streams="iro" units="unitless"
+		<var name="xEdge" type="real" dimensions="nEdges" units="unitless"
 		     description="X Coordinate in cartesian space of edge midpoints."
 		/>
-		<var name="yEdge" type="real" dimensions="nEdges" streams="iro" units="unitless"
+		<var name="yEdge" type="real" dimensions="nEdges" units="unitless"
 		     description="Y Coordinate in cartesian space of edge midpoints."
 		/>
-		<var name="zEdge" type="real" dimensions="nEdges" streams="iro" units="unitless"
+		<var name="zEdge" type="real" dimensions="nEdges" units="unitless"
 		     description="Z Coordinate in cartesian space of edge midpoints."
 		/>
-		<var name="indexToEdgeID" type="integer" dimensions="nEdges" streams="iro" units="unitless"
+		<var name="indexToEdgeID" type="integer" dimensions="nEdges" units="unitless"
 		     description="List of global edge IDs."
 		/>
-		<var name="latVertex" type="real" dimensions="nVertices" streams="iro" units="radians"
+		<var name="latVertex" type="real" dimensions="nVertices" units="radians"
 		     description="Latitude location of vertices in radians."
 		/>
-		<var name="lonVertex" type="real" dimensions="nVertices" streams="iro" units="radians"
+		<var name="lonVertex" type="real" dimensions="nVertices" units="radians"
 		     description="Longitude location of vertices in radians."
 		/>
-		<var name="xVertex" type="real" dimensions="nVertices" streams="iro" units="unitless"
+		<var name="xVertex" type="real" dimensions="nVertices" units="unitless"
 		     description="X Coordinate in cartesian space of vertices."
 		/>
-		<var name="yVertex" type="real" dimensions="nVertices" streams="iro" units="unitless"
+		<var name="yVertex" type="real" dimensions="nVertices" units="unitless"
 		     description="Y Coordinate in cartesian space of vertices."
 		/>
-		<var name="zVertex" type="real" dimensions="nVertices" streams="iro" units="unitless"
+		<var name="zVertex" type="real" dimensions="nVertices" units="unitless"
 		     description="Z Coordinate in cartesian space of vertices."
 		/>
-		<var name="indexToVertexID" type="integer" dimensions="nVertices" streams="iro" units="unitless"
+		<var name="indexToVertexID" type="integer" dimensions="nVertices" units="unitless"
 		     description="List of global vertex IDs."
 		/>
-		<var name="cellsOnEdge" type="integer" dimensions="TWO nEdges" streams="iro" units="unitless"
+		<var name="cellsOnEdge" type="integer" dimensions="TWO nEdges" units="unitless"
 		     description="List of cells that straddle each edge."
 		/>
-		<var name="nEdgesOnCell" type="integer" dimensions="nCells" streams="iro" units="unitless"
+		<var name="nEdgesOnCell" type="integer" dimensions="nCells" units="unitless"
 		     description="Number of edges that border each cell."
 		/>
-		<var name="nEdgesOnEdge" type="integer" dimensions="nEdges" streams="iro" units="unitless"
+		<var name="nEdgesOnEdge" type="integer" dimensions="nEdges" units="unitless"
 		     description="Number of edges that surround each of the cells that straddle each edge. These edges are used to reconstruct the tangential velocities."
 		/>
-		<var name="edgesOnCell" type="integer" dimensions="maxEdges nCells" streams="iro" units="unitless"
+		<var name="edgesOnCell" type="integer" dimensions="maxEdges nCells" units="unitless"
 		     description="List of edges that border each cell."
 		/>
-		<var name="edgesOnEdge" type="integer" dimensions="maxEdges2 nEdges" streams="iro" units="unitless"
+		<var name="edgesOnEdge" type="integer" dimensions="maxEdges2 nEdges" units="unitless"
 		     description="List of edges that border each of the cells that straddle each edge."
 		/>
-		<var name="weightsOnEdge" type="real" dimensions="maxEdges2 nEdges" streams="iro" units="unitless"
+		<var name="weightsOnEdge" type="real" dimensions="maxEdges2 nEdges" units="unitless"
 		     description="Reconstruction weights associated with each of the edgesOnEdge."
 		/>
-		<var name="dvEdge" type="real" dimensions="nEdges" streams="iro" units="m"
+		<var name="dvEdge" type="real" dimensions="nEdges" units="m"
 		     description="Length of each edge, computed as the distance between verticesOnEdge."
 		/>
-		<var name="dcEdge" type="real" dimensions="nEdges" streams="iro" units="m"
+		<var name="dcEdge" type="real" dimensions="nEdges" units="m"
 		     description="Length of each edge, computed as the distance between cellsOnEdge."
 		/>
-		<var name="angleEdge" type="real" dimensions="nEdges" streams="iro" units="radians"
+		<var name="angleEdge" type="real" dimensions="nEdges" units="radians"
 		     description="Angle the edge normal makes with local eastward direction."
 		/>
-		<var name="areaCell" type="real" dimensions="nCells" streams="iro" units="m^2"
+		<var name="areaCell" type="real" dimensions="nCells" units="m^2"
 		     description="Area of each cell in the primary grid."
 		/>
-		<var name="areaTriangle" type="real" dimensions="nVertices" streams="iro" units="m^2"
+		<var name="areaTriangle" type="real" dimensions="nVertices" units="m^2"
 		     description="Area of each cell (triangle) in the dual grid."
 		/>
-		<var name="edgeNormalVectors" type="real" dimensions="R3 nEdges" streams="o" units="unitless"
+		<var name="edgeNormalVectors" type="real" dimensions="R3 nEdges" units="unitless"
 		     description="Normal vector defined at an edge."
 		/>
-		<var name="localVerticalUnitVectors" type="real" dimensions="R3 nCells" streams="o" units="unitless"
+		<var name="localVerticalUnitVectors" type="real" dimensions="R3 nCells" units="unitless"
 		     description="Unit surface normal vectors defined at cell centers."
 		/>
-		<var name="cellTangentPlane" type="real" dimensions="R3 TWO nCells" streams="o" units="unitless"
+		<var name="cellTangentPlane" type="real" dimensions="R3 TWO nCells" units="unitless"
 		     description="The two vectors that define a tangent plane at a cell center."
 		/>
-		<var name="cellsOnCell" type="integer" dimensions="maxEdges nCells" streams="iro" units="unitless"
+		<var name="cellsOnCell" type="integer" dimensions="maxEdges nCells" units="unitless"
 		     description="List of cells that neighbor each cell."
 		/>
-		<var name="verticesOnCell" type="integer" dimensions="maxEdges nCells" streams="iro" units="unitless"
+		<var name="verticesOnCell" type="integer" dimensions="maxEdges nCells" units="unitless"
 		     description="List of vertices that border each cell."
 		/>
-		<var name="verticesOnEdge" type="integer" dimensions="TWO nEdges" streams="iro" units="unitless"
+		<var name="verticesOnEdge" type="integer" dimensions="TWO nEdges" units="unitless"
 		     description="List of vertices that straddle each edge."
 		/>
-		<var name="edgesOnVertex" type="integer" dimensions="vertexDegree nVertices" streams="iro" units="unitless"
+		<var name="edgesOnVertex" type="integer" dimensions="vertexDegree nVertices" units="unitless"
 		     description="List of edges that share a vertex as an endpoint."
 		/>
-		<var name="cellsOnVertex" type="integer" dimensions="vertexDegree nVertices" streams="iro" units="unitless"
+		<var name="cellsOnVertex" type="integer" dimensions="vertexDegree nVertices" units="unitless"
 		     description="List of cells that share a vertex."
 		/>
-		<var name="kiteAreasOnVertex" type="real" dimensions="vertexDegree nVertices" streams="iro" units="m^2"
+		<var name="kiteAreasOnVertex" type="real" dimensions="vertexDegree nVertices" units="m^2"
 		     description="Area of the portions of each dual cell that are part of each cellsOnVertex."
 		/>
 		<var name="coeffs_reconstruct" type="real" dimensions="R3 maxEdges nCells" units="unitless"
@@ -407,19 +553,19 @@
 		<var name="edgeSignOnVertex" type="integer" dimensions="maxEdges nVertices" units="unitless"
 		     description="Sign of edge contributions to a vertex for each edge on vertex. Used for bit-reproducible loops. Represents directionality of vector connecting vertices."
 		/>
-		<var name="layerThicknessFractions" type="real" dimensions="nVertLevels" streams="ir" units="none"
+		<var name="layerThicknessFractions" type="real" dimensions="nVertLevels" units="none"
 		     description="Fractional thickness of each sigma layer"
 		/>
-		<var name="layerCenterSigma" type="real" dimensions="nVertLevels" streams="" units="none"
+		<var name="layerCenterSigma" type="real" dimensions="nVertLevels" units="none"
 		     description="Sigma (fractional) level at center of each layer"
 		/>
-		<var name="layerInterfaceSigma" type="real" dimensions="nVertLevelsP1" streams="" units="none"
+		<var name="layerInterfaceSigma" type="real" dimensions="nVertLevelsP1" units="none"
 		     description="Sigma (fractional) level at interface between each layer (including top and bottom)"
 		/>
-		<var name="bedTopography" type="real" dimensions="nCells" streams="ir" units="m above datum"
+		<var name="bedTopography" type="real" dimensions="nCells" units="m above datum"
 		     description="Elevation of ice sheet bed.  Once isostasy is added to the model, this should become a state variable."
 		/>
-		<var name="sfcMassBal" type="real" dimensions="nCells" streams="ir" units="kg m^2 s^{-1}"
+		<var name="sfcMassBal" type="real" dimensions="nCells" units="kg m^2 s^{-1}"
 		     description="Surface mass balance"
 		/>
 	</var_struct>
