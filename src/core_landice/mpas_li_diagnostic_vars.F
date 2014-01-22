@@ -301,7 +301,7 @@ contains
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: statePool
       real (kind=RKIND), dimension(:), pointer :: thickness, upperSurface, &
-        lowerSurface, bedTopography
+        lowerSurface, bedTopography, upperSurfaceVertex
       integer, dimension(:), pointer :: cellMask
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers
@@ -369,6 +369,7 @@ contains
           call mpas_pool_get_array(statePool, 'cellMask', cellMask, timeLevel=timeLevel)
           call mpas_pool_get_array(statePool, 'thickness', thickness, timeLevel=timeLevel)
           call mpas_pool_get_array(statePool, 'upperSurface', upperSurface, timeLevel=timeLevel)
+          call mpas_pool_get_array(statePool, 'upperSurfaceVertex', upperSurfaceVertex, timeLevel=timeLevel)
           call mpas_pool_get_array(statePool, 'lowerSurface', lowerSurface, timeLevel=timeLevel)
           call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel=timeLevel)
           call mpas_pool_get_array(statePool, 'tracers', tracers, timeLevel=timeLevel)
@@ -390,6 +391,8 @@ contains
 
           ! Upper surface is the lower surface plus the thickness
           upperSurface(:) = lowerSurface(:) + thickness(:)
+          call cells_to_vertices_2dfield(meshPool, upperSurface, upperSurfaceVertex)  ! (Needed only for SIA solver)
+          ! Note: the outer halo may be wrong, but that's ok as long as numhalos>1 because the velocity on the 0-halo will still be correct.
 
           ! Do vertical remapping of layerThickness and tracers
           call vertical_remap(thickness, cellMask, meshPool, layerThickness, tracers, err)
@@ -489,6 +492,8 @@ contains
                layerThicknessEdge(k,iEdge) = max(VelSign * layerThickness(k, cell1), VelSign * (-1.0_RKIND) * layerThickness(k, cell2)) 
                ! + velocity goes from index 1 to 2 in the cellsOnEdge array.  
                !  Doug does the calculation as: h_edge = max(VelSign, 0.0) * h1 - min(VelSign, 0.0) * h2
+               !!! ! Calculate h on edges using second order
+               !!! layerThicknessEdge(k,iEdge) = 0.5_RKIND * (layerThickness(k, cell1) + layerThickness(k, cell2))
             end do
             ! thickness_edge is not currently in registry and not currenly needed.  If it is, uncomment the next line
             !h_edge = max(thickness(cell1), thickness(cell2))
@@ -813,6 +818,80 @@ contains
    end subroutine vertical_remap
 
 
+
+!***********************************************************************
+!
+!  subroutine cells_to_vertices_2dfield
+!
+!> \brief   Converts a 2d scalar field from cells to vertices
+!> \author  Matt Hoffman
+!> \date    21 May 2012
+!> \details 
+!>  This routine converts a 2d scalar field from cells to vertices.
+!-----------------------------------------------------------------------
+   subroutine cells_to_vertices_2dfield(meshPool, fieldCells, fieldVertices)
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      type (mpas_pool_type), intent(in) :: &
+         meshPool          !< Input: mesh information
+      real (kind=RKIND), dimension(:), intent(in) :: &
+         fieldCells    !< Input: field on cells
+
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:), intent(out) :: &
+         fieldVertices    !< Input: field on vertices
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+      real (kind=RKIND), dimension(:,:), pointer :: kiteAreasOnVertex
+      integer, dimension(:,:), pointer :: cellsOnVertex
+      integer, pointer :: nVertices, vertexDegree
+      integer :: iCell, icell2, iVertex, cellIndex
+      real (kind=RKIND) :: fVertexAccum, baryweight, weightAccum
+
+      ! Get needed items from mesh pool
+      call mpas_pool_get_dimension(meshPool, 'nVertices', nVertices)
+      call mpas_pool_get_dimension(meshPool, 'vertexDegree', vertexDegree)
+
+      call mpas_pool_get_array(meshPool, 'kiteAreasOnVertex', kiteAreasOnVertex)
+      call mpas_pool_get_array(meshPool, 'cellsOnVertex', cellsOnVertex)
+
+      ! Calculate h on vertices using barycentric interpolation
+      do iVertex = 1, nVertices  ! Loop over vertices
+        fVertexAccum = 0.0_RKIND
+        weightAccum = 0.0_RKIND
+        ! Loop over cells on this vertex
+        do iCell = 1, vertexDegree
+          cellIndex = cellsOnVertex(iCell, iVertex)
+          baryweight = 0.0_RKIND
+          do iCell2 = 1, vertexDegree
+            if (iCell2 /= icell) baryweight = baryweight + 0.5 * kiteAreasOnVertex(iCell2, iVertex)
+          enddo
+          fVertexAccum = fVertexAccum + baryweight * fieldCells(cellIndex)  ! add the contribution from this cell's kite
+          weightAccum = weightAccum + kiteAreasOnVertex(iCell, iVertex)  ! This doesn't match areaTriangle for some weird vertices
+        enddo
+        fieldVertices(iVertex) = fVertexAccum / weightAccum  ! I assume this should never be 0...
+      enddo
+
+   end subroutine cells_to_vertices_2dfield
 
 end module li_diagnostic_vars
 
