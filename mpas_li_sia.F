@@ -211,14 +211,15 @@ contains
       !
       !-----------------------------------------------------------------
 
-      real (kind=RKIND), dimension(:), pointer :: thickness, layerCenterSigma, dcEdge
+      real (kind=RKIND), dimension(:), pointer :: thickness, layerCenterSigma, dcEdge, dvEdge, upperSurface, upperSurfaceVertex
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity
-      integer, dimension(:,:), pointer :: cellsOnEdge
+      integer, dimension(:,:), pointer :: cellsOnEdge, verticesOnEdge
       integer, dimension(:), pointer :: edgeMask
-      integer, pointer :: nVertLevels, nEdges
-      integer :: iLevel, iEdge, cell1, cell2
+      integer, pointer :: nVertLevels, nEdges, nVertices, vertexDegree
+      integer :: iLevel, iEdge, iCell, iVertex, cell1, cell2, cellIndex
       real (kind=RKIND) :: basalVelocity, slopeOnEdge, &
-               layerCenterHeightOnEdge, thicknessEdge
+               normalSlopeOnEdge, tangentSlopeOnEdge,  &
+               layerCenterHeightOnEdge, thicknessEdge, hVertexAccum
       real (kind=RKIND), pointer :: rhoi         ! ice density
       real (kind=RKIND), pointer :: ratefactor   ! flow law parameter, A
       real (kind=RKIND), pointer :: n            ! flow law exponent, n
@@ -228,14 +229,20 @@ contains
       ! Set needed variables and pointers
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
       call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(meshPool, 'nVertices', nVertices)
+      call mpas_pool_get_dimension(meshPool, 'vertexDegree', vertexDegree)
 
       call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
+      call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
       call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
       call mpas_pool_get_array(meshPool, 'layerCenterSigma', layerCenterSigma)
+      call mpas_pool_get_array(meshPool, 'verticesOnEdge', verticesOnEdge)
 
       call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel=timeLevel)
       call mpas_pool_get_array(statePool, 'thickness', thickness, timeLevel=timeLevel)
       call mpas_pool_get_array(statePool, 'edgeMask', edgeMask, timeLevel=timeLevel)
+      call mpas_pool_get_array(statePool, 'upperSurface', upperSurface, timeLevel=timeLevel)
+      call mpas_pool_get_array(statePool, 'upperSurfaceVertex', upperSurfaceVertex, timeLevel=timeLevel)
 
 
       ! Get parameters specified in the namelist
@@ -246,7 +253,6 @@ contains
 
       basalVelocity = 0.0_RKIND  ! Assume no sliding
 
-
       ! Loop over edges
       do iEdge = 1, nEdges
          ! Only calculate velocity for edges that are part of the dynamic ice sheet.(thick ice)
@@ -256,7 +262,9 @@ contains
              cell2 = cellsOnEdge(2,iEdge)
              ! Calculate slope at edge
              ! This could/should be calculated externally to this subroutine
-             slopeOnEdge = (thickness(cell1) - thickness(cell2) ) / dcEdge(iEdge) 
+             normalSlopeOnEdge = (upperSurface(cell1) - upperSurface(cell2) ) / dcEdge(iEdge) 
+             tangentSlopeOnEdge = ( upperSurfaceVertex(verticesOnEdge(1,iEdge)) - upperSurfaceVertex(verticesOnEdge(2,iEdge)) ) / dvEdge(iEdge)
+             slopeOnEdge = (normalSlopeOnEdge**2 + tangentSlopeOnEdge**2)**0.5
              ! Calculate thickness on edge - 2nd order
              thicknessEdge = (thickness(cell1) + thickness(cell2) ) * 0.5_RKIND
              ! Loop over layers
@@ -265,7 +273,7 @@ contains
                 layerCenterHeightOnEdge = thicknessEdge * (1.0_RKIND - layerCenterSigma(iLevel) )
                 ! Calculate SIA velocity
                 normalVelocity(iLevel,iEdge) = basalVelocity + &
-                    0.5_RKIND * ratefactor * (rhoi * gravity)**n * slopeOnEdge**n * &
+                    0.5_RKIND * ratefactor * (rhoi * gravity)**n * slopeOnEdge**(n-1) * normalSlopeOnEdge * &
                     (thicknessEdge**(n+1) - (thicknessEdge - layerCenterHeightOnEdge)**(n+1))
              end do  ! Levels
          endif

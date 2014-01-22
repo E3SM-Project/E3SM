@@ -385,6 +385,9 @@
 		<var name="layerThicknessEdge" type="real" dimensions="nVertLevels nEdges Time" units="m"
 		     description="layer thickness on cell edges"
 		/>
+		<var name="upperSurfaceVertex" type="real" dimensions="nVertices Time" units="m above datum"
+		     description="elevation at top of ice on vertices (currently only needed by shallow ice solver)"
+		/>
 		<var name="cellMask" type="integer" dimensions="nCells Time" units="none"
 		     description="bitmask indicating various properties about the ice sheet on cells.  cellMask only needs to be a restart field if config_allow_additional_advance = false (to keep the mask of initial ice extent)"
 		/>
