@@ -663,7 +663,7 @@ module li_tendency
       endif
 
       if (config_print_thickness_advection_info) then
-         write(6,*) '  Maximum allowable time step (seconds) on this processor is ~', MinOfMaxAllowableDt
+         write(6,*) '  Maximum allowable time step (yr) on this processor is ', MinOfMaxAllowableDt/li_secondsInYear
       endif
 
       ! Optional check for mass conservation

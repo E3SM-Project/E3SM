@@ -239,7 +239,7 @@ module li_time_integration_fe
             allowableDtProcNumber = -1
           endif
           call mpas_dmpar_max_int(dminfo, allowableDtProcNumber, allowableDtMinProcNumber)
-          write(6,*) '  Maximum allowable time step for all processors is:', allowableDtMin,  '  Time step is limited by processor number ', allowableDtMinProcNumber
+          write(6,*) '  Maximum allowable time step (yr) for all processors is:', allowableDtMin/li_secondsInYear,  '  Time step is limited by processor number ', allowableDtMinProcNumber  ! TODO seconds in a year should come from the calendar or a parameter
       endif
 
       if (err .gt. 0) then
