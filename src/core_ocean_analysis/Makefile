@@ -9,21 +9,22 @@ ocean_shared:
 	ln -sf ../core_ocean/ocn_init.mod .
 	ln -sf ../core_ocean/ocn_diagnostics_routines.mod .
 
-oac_shared: ocean_shared
+oac_shared:  ocean_shared
 	( cd shared_oac; $(MAKE) CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" all ) 
 	ln -sf shared_oac/*.mod .
 
-core_oac: $(OBJS)
+core_oac: $(OBJS)  
 	ar -ru libdycore.a  $(OBJS) ../core_ocean/mpas_ocn_init.o ../core_ocean/mpas_ocn_diagnostics_routines.o shared_oac/*.o
 
 core_reg:
+	tail -n +3 ../core_ocean/Registry.xml | head -n -2 > Registry_shared_ocean_temporary.xml
 	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) Registry.xml > Registry_processed.xml
 
 mpas_ocn_mpas_core.o: ocean_shared oac_shared
 
 clean:
 	$(RM) *.o *.mod *.f90 libdycore.a
-	$(RM) Registry_processed.xml
+	$(RM) Registry_processed.xml Registry_shared_ocean_temporary.xml
 	(cd shared_oac; make clean)
 
 .F.o:

@@ -1,5 +1,6 @@
 <?xml version="1.0"?>
 <registry model="mpas" core="ocean" version="2.0">
+
 	<dims>
 		<dim name="nCells" units="unitless"
 			 description="The number of polygons in the primary grid."
@@ -1908,7 +1909,7 @@
 			 persistence="scratch"
 			 description="reconstructed surface wind stress in the northward direction. User for diagnostics."
 		/>
-
     </var_struct>
+
 #include "../core_ocean_analysis/shared_oac/Registry_shared_oac.xml"
 </registry>

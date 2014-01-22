@@ -1,4 +1,4 @@
-	<nml_record name="oac_TEMPLATE">
+	<nml_record name="oac_TEMPLATE" in_defaults="true">
 		<nml_option name="config_oac_TEMPLATE" type="logical" default_value=".false." units="unitless"
 			description="If true, ocean analysis member TEMPLATE is called."
 			possible_values=".true. or .false."
@@ -7,9 +7,8 @@
 	<packages>
 		<package name="amTemplate" description="This package includes variables required for the amTemplate analysis member."/>
 	</packages>
-	<var_struct name="amTemplate" time_levs="0">
+	<var_struct name="amTemplate" time_levs="0" packages="amTemplate">
 		<var name="example_variable" type="real" dimensions="nVertLevels nCells Time" streams="o" units="UNITS HERE"
 			description="DESCRIPTION HERE"
-			packages="amTemplate"
 		/>
 	</var_struct>
