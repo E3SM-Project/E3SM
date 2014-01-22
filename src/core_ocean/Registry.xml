@@ -1741,29 +1741,6 @@
 			/>
 		</var_array>
 	</var_struct>
-	<var_struct name="amGlobalStats" time_levs="0">
-		<var name="minGlobalStats" type="real" dimensions="TWENTYONE Time" streams="o" units="varies"
-			description="minimum over the domain of global statistics variables"
-		/>
-		<var name="maxGlobalStats" type="real" dimensions="TWENTYONE Time" streams="o" units="varies"
-			description="maximum over the domain of global statistics variables"
-		/>
-		<var name="sumGlobalStats" type="real" dimensions="TWENTYONE Time" streams="o" units="varies"
-			description="summation over the domain of global statistics variables"
-		/>
-		<var name="rmsGlobalStats" type="real" dimensions="TWENTYONE Time" streams="o" units="varies"
-			description="root mean square over the domain of global statistics variables"
-		/>
-		<var name="avgGlobalStats" type="real" dimensions="TWENTYONE Time" streams="o" units="varies"
-			description="average over the domain of global statistics variables"
-		/>
-		<var name="vertSumMinGlobalStats" type="real" dimensions="TWENTYONE Time" streams="o" units="varies"
-			description="minimum vertical sum over the domain of global statistics variables"
-		/>
-		<var name="vertSumMaxGlobalStats" type="real" dimensions="TWENTYONE Time" streams="o" units="varies"
-			description="maximum vertical sum over the domain of global statistics variables"
-		/>
-	</var_struct>
 	<var_struct name="scratch" time_levs="0">
 		<var name="workArray1Cell3D" persistence="scratch" type="real" dimensions="nVertLevels nCells" units="unitless"
 			description="work array"
@@ -1935,4 +1912,3 @@
     </var_struct>
 #include "../core_ocean_analysis/shared_oac/Registry_shared_oac.xml"
 </registry>
-
