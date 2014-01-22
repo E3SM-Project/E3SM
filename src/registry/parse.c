@@ -336,9 +336,6 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 				varname = ezxml_attr(var_xml, "name");
 				varunits = ezxml_attr(var_xml, "units");
 				vardesc = ezxml_attr(var_xml, "description");
-#ifdef OLD_STREAMS
-				varstreams = ezxml_attr(var_xml, "streams");
-#endif
 				vararrgroup = ezxml_attr(var_xml, "array_group");
 				varname_in_code = ezxml_attr(var_xml, "name_in_code");
 				varpackages = ezxml_attr(var_xml, "packages");
@@ -352,18 +349,6 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 					fprintf(stderr,"ERROR: Array group attribute missing for constituent variable %s in var_array %s in var_struct %s.\n", varname, vararrname, structname);
 					return 1;
 				}
-
-#ifdef OLD_STREAMS
-				if (varstreams != NULL) {
-					string = strdup(varstreams);
-					err_string = check_streams(string);
-
-					if (err_string != NULL){
-						fprintf(stderr,"ERROR: Stream %s defined on variable %s in var_array %s in var_struct %s is not a valid stream.\n", err_string, varname, vararrname, structname);
-						return 1;
-					}
-				}
-#endif
 
 				if (persistence == SCRATCH && vararrpackages != NULL) {
 					fprintf(stderr, "ERROR: Packages attribute not allowed on constituent variable %s within scratch var_srray %s in var_struct %s.\n", varname, vararrname, structname);
@@ -391,9 +376,6 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 			vardims = ezxml_attr(var_xml, "dimensions");
 			varunits = ezxml_attr(var_xml, "units");
 			vardesc = ezxml_attr(var_xml, "description");
-#ifdef OLD_STREAMS
-			varstreams = ezxml_attr(var_xml, "streams");
-#endif
 			varname_in_code = ezxml_attr(var_xml, "name_in_code");
 			varpackages = ezxml_attr(var_xml, "packages");
 
@@ -454,18 +436,6 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 				return -1;
 			}
 
-
-#ifdef OLD_STREAMS
-			if (varstreams != NULL) {
-				string = strdup(varstreams);
-				err_string = check_streams(string);
-
-				if (err_string != NULL){
-					fprintf(stderr,"ERROR: Stream %s defined on variable %s in var_struct %s is not a valid stream.\n", err_string, varname, structname);
-					return 1;
-				}
-			}
-#endif
 		}
 	}
 
@@ -504,9 +474,6 @@ int parse_reg_xml(ezxml_t registry, struct namelist **nls, struct dimension ** d
 	char dimensions[2048];
 	char *dimension_list;
 	char dimension_buffer[128];
-#ifdef OLD_STREAMS
-	char streams_buffer[128];
-#endif
 	char default_value[1024];
 
 	char *string, *tofree, *token;
@@ -711,9 +678,6 @@ int parse_reg_xml(ezxml_t registry, struct namelist **nls, struct dimension ** d
 				varname = ezxml_attr(var_xml, "name");
 				varunits = ezxml_attr(var_xml, "units");
 				vardesc = ezxml_attr(var_xml, "description");
-#ifdef OLD_STREAMS
-				varstreams = ezxml_attr(var_xml, "streams");
-#endif
 				vararrgroup = ezxml_attr(var_xml, "array_group");
 				varname_in_code = ezxml_attr(var_xml, "name_in_code");
 				varpackages = ezxml_attr(var_xml, "packages");
@@ -818,16 +782,6 @@ int parse_reg_xml(ezxml_t registry, struct namelist **nls, struct dimension ** d
 				if(var_ptr->dimlist) var_ptr->dimlist = var_ptr->dimlist->next;
 				free(dimlist_ptr);
 
-#ifdef OLD_STREAMS
-				if(varstreams != NULL){
-					snprintf(streams_buffer, 128, "%s", varstreams);
-					if(strchr(streams_buffer, (int)'i')) var_ptr->iostreams |= INPUT0;
-					if(strchr(streams_buffer, (int)'s')) var_ptr->iostreams |= SFC0;
-					if(strchr(streams_buffer, (int)'r')) var_ptr->iostreams |= RESTART0;
-					if(strchr(streams_buffer, (int)'o')) var_ptr->iostreams |= OUTPUT0;
-				}
-#endif
-
 				if(varname_in_code == NULL){
 					snprintf(var_ptr->name_in_code, 1024, "%s", varname);
 				} else {
@@ -856,9 +810,6 @@ int parse_reg_xml(ezxml_t registry, struct namelist **nls, struct dimension ** d
 			vardims = ezxml_attr(var_xml, "dimensions");
 			varunits = ezxml_attr(var_xml, "units");
 			vardesc = ezxml_attr(var_xml, "description");
-#ifdef OLD_STREAMS
-			varstreams = ezxml_attr(var_xml, "streams");
-#endif
 			varname_in_code = ezxml_attr(var_xml, "name_in_code");
 			vardefaultval = ezxml_attr(var_xml, "default_value");
 			varpackages = ezxml_attr(var_xml, "packages");
@@ -959,23 +910,6 @@ int parse_reg_xml(ezxml_t registry, struct namelist **nls, struct dimension ** d
 			if(var_ptr->dimlist) var_ptr->dimlist = var_ptr->dimlist->next;
 			free(dimlist_ptr);
 
-#ifdef OLD_STREAMS
-			if(varstreams != NULL){
-				snprintf(streams_buffer, 128, "%s", varstreams);
-				if(strchr(streams_buffer, (int)'i')) {
-					var_ptr->iostreams |= INPUT0;
-				}
-				if(strchr(streams_buffer, (int)'s')) {
-					var_ptr->iostreams |= SFC0;
-				}
-				if(strchr(streams_buffer, (int)'r')) {
-					var_ptr->iostreams |= RESTART0;
-				}
-				if(strchr(streams_buffer, (int)'o')) {
-					var_ptr->iostreams |= OUTPUT0;
-				}
-			}
-#endif
 
 			if(varname_in_code == NULL){
 				snprintf(var_ptr->name_in_code, 1024, "%s", varname);
@@ -1039,53 +973,6 @@ int parse_reg_xml(ezxml_t registry, struct namelist **nls, struct dimension ** d
 		}
 	}
 
-#ifdef OLD_STREAMS
-/******** Temporary code to print out stream definitions for a core to use in its Registry.xml file ********/
-	printf("\t<streams>\n");
-
-	printf("\t\t<stream name=\"input\" type=\"input\">\n");
-	var_ptr = *vars;
-	while (var_ptr) {
-		if (var_ptr->iostreams & INPUT0) {
-			printf("\t\t\t<var name=\"%s\"/>\n", var_ptr->name_in_file);
-		}
-		var_ptr = var_ptr->next;
-	}
-	printf("\t\t</stream>\n");
-
-	printf("\t\t<stream name=\"restart\" type=\"restart\">\n");
-	var_ptr = *vars;
-	while (var_ptr) {
-		if (var_ptr->iostreams & RESTART0) {
-			printf("\t\t\t<var name=\"%s\"/>\n", var_ptr->name_in_file);
-		}
-		var_ptr = var_ptr->next;
-	}
-	printf("\t\t</stream>\n");
-
-	printf("\t\t<stream name=\"output\" type=\"output\">\n");
-	var_ptr = *vars;
-	while (var_ptr) {
-		if (var_ptr->iostreams & OUTPUT0) {
-			printf("\t\t\t<var name=\"%s\"/>\n", var_ptr->name_in_file);
-		}
-		var_ptr = var_ptr->next;
-	}
-	printf("\t\t</stream>\n");
-
-	printf("\t\t<stream name=\"surface\" type=\"input;output\">\n");
-	var_ptr = *vars;
-	while (var_ptr) {
-		if (var_ptr->iostreams & SFC0) {
-			printf("\t\t\t<var name=\"%s\"/>\n", var_ptr->name_in_file);
-		}
-		var_ptr = var_ptr->next;
-	}
-	printf("\t\t</stream>\n");
-
-	printf("\t</streams>\n");
-/****************/
-#endif
 
 	return 0;
 }/*}}}*/
