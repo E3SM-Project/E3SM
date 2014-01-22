@@ -49,6 +49,24 @@
 						<xs:attribute name="name"  type="xs:string" use="required"/>
 					</xs:complexType>
 				</xs:element>
+				<!-- The streams element contains all I/O stream definitions for a core. -->
+				<xs:element name="streams"  maxOccurs="unbounded" >
+					<xs:complexType>
+						<xs:sequence>
+							<!-- The var element defines a variable that is member of the I/O stream. -->
+							<xs:element name="var"  maxOccurs="unbounded" minOccurs="0" >
+								<xs:complexType>
+									<!-- The name attribute is the name of the variable in the file, not the name of the variable in the code. -->
+									<xs:attribute name="name"  type="xs:string" use="required"/>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+						<!-- The name attribute is the name of the stream, which can be referenced by other streams. -->
+						<xs:attribute name="name"  type="xs:string" use="required"/>
+						<!-- The type attribute defines the type of the stream. Valid options are input, ouput, restart, and input;output -->
+						<xs:attribute name="type"  type="xs:string" use="required"/>
+					</xs:complexType>
+				</xs:element>
 				<!-- The var_struct element defines a grouping of variables. This is similar to mesh, or state and lives at the domain % blocklist level. -->
 				<xs:element name="var_struct"  maxOccurs="unbounded" >
 					<xs:complexType>
@@ -66,9 +84,7 @@
 												<xs:attribute name="name"  type="xs:string" use="required"/>
 												<!-- The array_group attribute is used to group variables within the var_array for ease of use. -->
 												<xs:attribute name="array_group"  type="xs:string" use="required"/>
-												<!-- The streams attribute defines the streams this variable is included in. Allowable values are omitted, i, r, o and any combination of i, r, and o. -->
-												<xs:attribute name="streams"  type="xs:string" use="optional"/>
-												<!-- The name_in_code attribute defines the name of the variable in the code, if it should be different then in the input/output/restart streams. -->
+												<!-- The name_in_code attribute defines the name of the variable in the code, if it should be different than in the input/output/restart streams. -->
 												<xs:attribute name="name_in_code"  type="xs:string" use="optional"/>
 												<!-- The units attribute defines the units of the particular variable -->
 												<xs:attribute name="units"  type="xs:string" use="optional"/>
@@ -102,8 +118,6 @@
 									<xs:attribute name="type"  type="xs:string" use="required"/>
 									<!-- The dimensions attribute defines the dimensions of the variable. -->
 									<xs:attribute name="dimensions"  type="xs:string" use="required"/>
-									<!-- The streams attribute defines the streams this variable is included in. -->
-									<xs:attribute name="streams"  type="xs:string" use="optional"/>
 									<!-- The name_in_code attribute defines the name of the variable within MPAS (if different from name). -->
 									<xs:attribute name="name_in_code"  type="xs:string" use="optional"/>
 									<!-- The units attribute defines the units of the variable. -->
