@@ -62,6 +62,8 @@ libcvmix:
 	fi
 	ln -sf cvmix/*.mod .
 
+ocean_shared: mpas_ocn_init.o mpas_ocn_diagnostics_routines.o
+
 oac_shared: mpas_ocn_diagnostics_routines.o
 	( cd ../core_ocean_analysis/shared_oac; $(MAKE) CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" all ) 
 	ln -sf ../core_ocean_analysis/shared_oac/*.mod .
