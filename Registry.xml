@@ -1743,24 +1743,6 @@
 		</var_array>
 	</var_struct>
 	<var_struct name="scratch" time_levs="0">
-		<var name="workArray1Cell3D" persistence="scratch" type="real" dimensions="nVertLevels nCells" units="unitless"
-			description="work array"
-		/>
-		<var name="workArray2Cell3D" persistence="scratch" type="real" dimensions="nVertLevels nCells" units="unitless"
-			description="work array"
-		/>
-		<var name="workArray1Vertex3D" persistence="scratch" type="real" dimensions="nVertLevels nVertices" units="unitless"
-			description="work array"
-		/>
-		<var name="workArray2Vertex3D" persistence="scratch" type="real" dimensions="nVertLevels nVertices" units="unitless"
-			description="work array"
-		/>
-		<var name="workArray1Edge3D" persistence="scratch" type="real" dimensions="nVertLevels nEdges" units="unitless"
-			description="work array"
-		/>
-		<var name="workArray2Edge3D" persistence="scratch" type="real" dimensions="nVertLevels nEdges" units="unitless"
-			description="work array"
-		/>
 		<var name="vorticityGradientTangentialComponent" 
 			persistence="scratch" 
 			type="real" dimensions="nVertLevels nEdges Time" 
