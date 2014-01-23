@@ -20,9 +20,14 @@ q2.png      tracer 2 in same region
 
 
 
+Note: all scripts referenced below have not been updated to use
+HOMME's CMAKE build system and need work to get them to run.
+
+
 ****************************************************************
 2.  Inviscid early time conservation properties
 ****************************************************************
+
 
 For this, see the script debug.job and the reference output:
 debug-tadv0.out:
