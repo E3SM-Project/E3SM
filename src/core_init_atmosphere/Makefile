@@ -64,6 +64,9 @@ mpas_atmphys_initialize_real.o:  \
 clean:
 	$(RM) *.o *.mod *.f90 libdycore.a
 	$(RM) Registry_processed.xml
+	@# Certain systems with intel compilers generate *.i files
+	@# This removes them during the clean process
+	$(RM) *.i
 
 .F.o:
 	$(RM) $@ $*.mod

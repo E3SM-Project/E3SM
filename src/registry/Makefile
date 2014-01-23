@@ -12,6 +12,9 @@ parse: $(OBJS)
 
 clean:
 	$(RM) *.o ezxml/*.o parse
+	@# Certain systems with intel compilers generate *.i files
+	@# This removes them during the clean process
+	$(RM) *.i
 
 .c.o:
 	$(CC) -c $<

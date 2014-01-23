@@ -76,6 +76,9 @@ mpas_io_units.o:
 
 clean:
 	$(RM) *.o *.mod *.f90 libframework.a
+	@# Certain systems with intel compilers generate *.i files
+	@# This removes them during the clean process
+	$(RM) *.i
 
 .F.o:
 	$(RM) $@ $*.mod

@@ -76,6 +76,9 @@ module_sf_noahlsm.o: \
 
 clean:
 	$(RM) *.f90 *.o *.mod
+	@# Certain systems with intel compilers generate *.i files
+	@# This removes them during the clean process
+	$(RM) *.i
 
 .F.o:
 ifeq "$(GEN_F90)" "true"

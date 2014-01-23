@@ -11,6 +11,9 @@ mpas.o: mpas_subdriver.o
 
 clean:
 	$(RM) *.o *.mod *.f90
+	@# Certain systems with intel compilers generate *.i files
+	@# This removes them during the clean process
+	$(RM) *.i
 
 .F.o:
 	$(RM) $@ $*.mod
