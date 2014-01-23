@@ -84,7 +84,7 @@ int main(int argc, char ** argv)/*{{{*/
 int validate_reg_xml(ezxml_t registry)/*{{{*/
 {
 	ezxml_t dims_xml, dim_xml;
-	ezxml_t structs_xml, var_arr_xml, var_xml;
+	ezxml_t structs_xml, var_arr_xml, var_xml, stream_var_xml;
 	ezxml_t nmlrecs_xml, nmlopt_xml;
 	ezxml_t streams_xml, stream_xml;
 
@@ -94,7 +94,7 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 	const char *structname, *structlevs, *structpackages;
 	const char *vararrname, *vararrtype, *vararrdims, *vararrpersistence, *vararrpackages;
 	const char *varname, *varpersistence, *vartype, *vardims, *varunits, *vardesc, *vararrgroup, *varstreams, *varpackages;
-	const char *varname_in_code;
+	const char *varname_in_code, *varname_in_stream;
 	const char *const_model, *const_core, *const_version;
 	const char *streamname;
 	const char *streamtype;
@@ -118,31 +118,6 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 
 	if(const_version == NULL)
 		fprintf(stderr,"Warning: Version attribute missing in registry declaration.\n");
-
-	// Validate default streams
-	for (streams_xml = ezxml_child(registry, "streams"); streams_xml; streams_xml = streams_xml->next) {
-		for (stream_xml = ezxml_child(streams_xml, "stream"); stream_xml; stream_xml = stream_xml->next) {
-			streamname = ezxml_attr(stream_xml, "name");
-			streamtype = ezxml_attr(stream_xml, "type");
-			if (streamname == NULL) {
-				fprintf(stderr,"ERROR: Stream specification missing \"name\" attribute.\n");
-				return 1;
-			}
-			else if (streamtype == NULL) {
-				fprintf(stderr,"ERROR: Stream specification missing \"type\" attribute.\n");
-				return 1;
-			}
-			else {
-				for (var_xml = ezxml_child(stream_xml, "var"); var_xml; var_xml = var_xml->next) {
-					varname = ezxml_attr(var_xml, "name");
-					if (varname == NULL) {
-						fprintf(stderr,"ERROR: Variable field in stream \"%s\" specification missing \"name\" attribute.\n", streamname);
-						return 1;
-					}
-				}
-			}
-		}
-	}
 
 	// Validate Namelist Records
 	for (nmlrecs_xml = ezxml_child(registry, "nml_record"); nmlrecs_xml; nmlrecs_xml = nmlrecs_xml->next){
@@ -436,6 +411,60 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 				return -1;
 			}
 
+		}
+	}
+
+	// Validate default streams
+	for (streams_xml = ezxml_child(registry, "streams"); streams_xml; streams_xml = streams_xml->next) {
+		for (stream_xml = ezxml_child(streams_xml, "stream"); stream_xml; stream_xml = stream_xml->next) {
+			streamname = ezxml_attr(stream_xml, "name");
+			streamtype = ezxml_attr(stream_xml, "type");
+			if (streamname == NULL) {
+				fprintf(stderr, "ERROR: Stream specification missing \"name\" attribute.\n");
+				return 1;
+			}
+			else if (streamtype == NULL) {
+				fprintf(stderr, "ERROR: Stream specification missing \"type\" attribute.\n");
+				return 1;
+			}
+			else {
+				for (stream_var_xml = ezxml_child(stream_xml, "var"); stream_var_xml; stream_var_xml = stream_var_xml->next) {
+					varname_in_stream = ezxml_attr(stream_var_xml, "name");
+					if (varname_in_stream == NULL) {
+						fprintf(stderr, "ERROR: Variable field in stream \"%s\" specification missing \"name\" attribute.\n", streamname);
+						return 1;
+					}
+
+
+					// Check that the variable being added to the stream has been defined
+					for (structs_xml = ezxml_child(registry, "var_struct"); structs_xml; structs_xml = structs_xml->next) {
+						for (var_arr_xml = ezxml_child(structs_xml, "var_array"); var_arr_xml; var_arr_xml = var_arr_xml->next) {
+							for (var_xml = ezxml_child(var_arr_xml, "var"); var_xml; var_xml = var_xml->next) {
+								varname = ezxml_attr(var_xml, "name");
+								if (strcmp(varname, varname_in_stream) == 0) {
+									goto done_searching;	
+								}
+							}
+						}
+						for (var_xml = ezxml_child(structs_xml, "var"); var_xml; var_xml = var_xml->next) {
+							varname = ezxml_attr(var_xml, "name");
+							if (strcmp(varname, varname_in_stream) == 0) {
+								goto done_searching;	
+							}
+						}
+					}
+
+done_searching:
+
+					// did we find what we were looking for?
+					if (var_xml == NULL) {
+						fprintf(stderr, "ERROR: Trying to add undefined variable %s to stream %s.\n", varname_in_stream, streamname);
+						return 1;
+					}	
+
+
+				}
+			}
 		}
 	}
 
@@ -967,7 +996,6 @@ int parse_reg_xml(ezxml_t registry, struct namelist **nls, struct dimension ** d
 							var_ptr = var_ptr->next;
 						}
 					}
-					if (var_ptr == NULL) printf("did not find match for %s\n", varname);
 				}
 			}
 		}
