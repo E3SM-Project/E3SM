@@ -257,7 +257,11 @@ contains
          block => block % next
       end do
 
-      ! mpi gather/scatter calls may be placed here
+      ! mpi gather/scatter calls may be placed here.
+      ! Here are some examples.  See mpas_oac_global_stats.F for further details.
+      call mpas_dmpar_sum_real_array(dminfo, nVariables, sumSquares(1:nVariables), reductions(1:nVariables))
+      call mpas_dmpar_min_real_array(dminfo, nMins, mins(1:nMins), reductions(1:nMins))
+      call mpas_dmpar_max_real_array(dminfo, nMaxes, maxes(1:nMaxes), reductions(1:nMaxes))
 
       ! Computations which are not functions of nCells, nEdges, or nVertices 
       ! may be placed outside of block loops
