@@ -47,6 +47,7 @@ set qsize = 4     # number of passive tracers
 #set qsize=25
 
 # simulate future DOE version:
+# todo: generate cam60 level files
 #set nlev=60
 #set qsize=50
 
