@@ -28,7 +28,7 @@ module mpas_core
    use mpas_timer
    use mpas_io_units
 
-   use oac_driver
+   use ocn_am_driver
    use ocn_init
    use ocn_diagnostics
    use ocn_equation_of_state
@@ -86,7 +86,7 @@ module mpas_core
       call ocn_equation_of_state_init(err_tmp)
       err = ior(err, err_tmp)
 
-      call oac_driver_init(domain, err_tmp)
+      call ocn_am_driver_init(domain, err_tmp)
       err = ior(err, err_tmp)
 
       call ocn_init_vert_coord(domain)
@@ -329,7 +329,7 @@ module mpas_core
       call mpas_timer_stop("diagnostic solve", initDiagSolveTimer)
 
       if (config_write_output_on_startup) then
-         call oac_driver_compute(domain, err) 
+         call ocn_am_driver_compute(domain, err) 
          call ocn_write_output_frame(output_obj, output_frame, domain)
       endif
 
@@ -467,7 +467,7 @@ module mpas_core
 
       ierr = 0
 
-      call oac_driver_setup_packages(err_tmp)
+      call ocn_am_driver_setup_packages(err_tmp)
       ierr = ior(ierr, err_tmp)
 
    end subroutine mpas_core_setup_packages!}}}

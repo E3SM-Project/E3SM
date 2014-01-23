@@ -1893,5 +1893,5 @@
 		/>
     </var_struct>
 
-#include "../core_ocean_analysis/shared_oac/Registry_shared_oac.xml"
+#include "analysis_members/Registry_analysis_members.xml"
 </registry>

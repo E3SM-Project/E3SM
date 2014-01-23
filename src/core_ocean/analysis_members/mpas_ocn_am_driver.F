@@ -7,7 +7,7 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  oac_driver
+!  ocn_am_driver
 !
 !> \brief Driver for MPAS ocean analysis core
 !> \author Mark Petersen
@@ -17,13 +17,13 @@
 !
 !-----------------------------------------------------------------------
 
-module oac_driver
+module ocn_am_driver
 
    use mpas_grid_types
    use mpas_configure
 
-   use oac_global_stats
-!   use oac_TEMPLATE
+   use ocn_am_global_stats
+!   use ocn_am_TEMPLATE
 
    implicit none
    private
@@ -41,12 +41,12 @@ module oac_driver
    !
    !--------------------------------------------------------------------
 
-   public :: oac_driver_setup_packages, &
-             oac_driver_init, &
-             oac_driver_compute, &
-             oac_driver_write, &
-             oac_driver_restart, &
-             oac_driver_finalize
+   public :: ocn_am_driver_setup_packages, &
+             ocn_am_driver_init, &
+             ocn_am_driver_compute, &
+             ocn_am_driver_write, &
+             ocn_am_driver_restart, &
+             ocn_am_driver_finalize
 
    !--------------------------------------------------------------------
    !
@@ -60,7 +60,7 @@ contains
 
 !***********************************************************************
 !
-!  routine oac_driver_setup_packages
+!  routine ocn_am_driver_setup_packages
 !
 !> \brief   Setup packages for MPAS-Ocean analysis driver
 !> \author  Mark Petersen
@@ -71,7 +71,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine oac_driver_setup_packages(err)!{{{
+   subroutine ocn_am_driver_setup_packages(err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -103,21 +103,21 @@ contains
 
       err = 0
 
-     if (config_oac_global_stats) then
-         call oac_setup_packages_global_stats(err_tmp)
+     if (config_ocn_am_global_stats) then
+         call ocn_am_setup_packages_global_stats(err_tmp)
          err = ior(err, err_tmp)
      endif
 
-!      if (config_oac_TEMPLATE) then
-!         call oac_setup_packages_TEMPLATE(err_tmp)
+!      if (config_ocn_am_TEMPLATE) then
+!         call ocn_am_setup_packages_TEMPLATE(err_tmp)
 !         err = ior(err, err_tmp)
 !      endif
 
-   end subroutine oac_driver_setup_packages!}}}
+   end subroutine ocn_am_driver_setup_packages!}}}
 
 !***********************************************************************
 !
-!  routine oac_driver_init
+!  routine ocn_am_driver_init
 !
 !> \brief   Initialize MPAS-Ocean analysis driver
 !> \author  Mark Petersen
@@ -128,7 +128,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine oac_driver_init(domain, err)!{{{
+   subroutine ocn_am_driver_init(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -162,21 +162,21 @@ contains
 
       err = 0
 
-     if (config_oac_global_stats) then
-         call oac_init_global_stats(domain, err_tmp)
+     if (config_ocn_am_global_stats) then
+         call ocn_am_init_global_stats(domain, err_tmp)
          err = ior(err, err_tmp)
      endif
 
-!      if (config_oac_TEMPLATE) then
-!         call oac_init_TEMPLATE(domain, err_tmp)
+!      if (config_ocn_am_TEMPLATE) then
+!         call ocn_am_init_TEMPLATE(domain, err_tmp)
 !         err = ior(err, err_tmp)
 !      endif
 
-   end subroutine oac_driver_init!}}}
+   end subroutine ocn_am_driver_init!}}}
 
 !***********************************************************************
 !
-!  routine oac_driver_compute
+!  routine ocn_am_driver_compute
 !
 !> \brief   Driver for MPAS-Ocean analysis computations
 !> \author  Mark Petersen
@@ -187,7 +187,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine oac_driver_compute(domain, err)!{{{
+   subroutine ocn_am_driver_compute(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -223,21 +223,21 @@ contains
       err = 0
 
       timeLevel=1
-      if (config_oac_global_stats) then
-         call oac_compute_global_stats(domain, timeLevel, err_tmp)
+      if (config_ocn_am_global_stats) then
+         call ocn_am_compute_global_stats(domain, timeLevel, err_tmp)
          err = ior(err, err_tmp)
       endif
 
-!      if (config_oac_TEMPLATE) then
-!         call oac_compute_TEMPLATE(domain, timeLevel, err_tmp)
+!      if (config_ocn_am_TEMPLATE) then
+!         call ocn_am_compute_TEMPLATE(domain, timeLevel, err_tmp)
 !         err = ior(err, err_tmp)
 !      endif
 
-   end subroutine oac_driver_compute!}}}
+   end subroutine ocn_am_driver_compute!}}}
 
 !***********************************************************************
 !
-!  routine oac_driver_restart
+!  routine ocn_am_driver_restart
 !
 !> \brief   Save restart for MPAS-Ocean analysis driver
 !> \author  Mark Petersen
@@ -248,7 +248,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine oac_driver_restart(domain, err)!{{{
+   subroutine ocn_am_driver_restart(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -282,21 +282,21 @@ contains
 
       err = 0
 
-     if (config_oac_global_stats) then
-         call oac_restart_global_stats(domain, err_tmp)
+     if (config_ocn_am_global_stats) then
+         call ocn_am_restart_global_stats(domain, err_tmp)
          err = ior(err, err_tmp)
      endif
 
-!      if (config_oac_TEMPLATE) then
-!         call oac_restart_TEMPLATE(domian, err_tmp)
+!      if (config_ocn_am_TEMPLATE) then
+!         call ocn_am_restart_TEMPLATE(domian, err_tmp)
 !         err = ior(err, err_tmp)
 !      endif
 
-   end subroutine oac_driver_restart!}}}
+   end subroutine ocn_am_driver_restart!}}}
 
 !***********************************************************************
 !
-!  routine oac_driver_write
+!  routine ocn_am_driver_write
 !
 !> \brief   Driver for MPAS-Ocean analysis output
 !> \author  Mark Petersen
@@ -309,7 +309,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine oac_driver_write(domain, err)!{{{
+   subroutine ocn_am_driver_write(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -343,21 +343,21 @@ contains
 
       err = 0
 
-     if (config_oac_global_stats) then
-         call oac_write_global_stats(domain, err_tmp)
+     if (config_ocn_am_global_stats) then
+         call ocn_am_write_global_stats(domain, err_tmp)
          err = ior(err, err_tmp)
      endif
 
-!      if (config_oac_TEMPLATE) then
-!         call oac_write_TEMPLATE(domain, err_tmp)
+!      if (config_ocn_am_TEMPLATE) then
+!         call ocn_am_write_TEMPLATE(domain, err_tmp)
 !         err = ior(err, err_tmp)
 !      endif
 
-   end subroutine oac_driver_write!}}}
+   end subroutine ocn_am_driver_write!}}}
 
 !***********************************************************************
 !
-!  routine oac_driver_finalize
+!  routine ocn_am_driver_finalize
 !
 !> \brief   Finalize MPAS-Ocean analysis driver
 !> \author  Mark Petersen
@@ -368,7 +368,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine oac_driver_finalize(domain, err)!{{{
+   subroutine ocn_am_driver_finalize(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -402,18 +402,18 @@ contains
 
       err = 0
 
-     if (config_oac_global_stats) then
-        call oac_finalize_global_stats(domain, err_tmp)
+     if (config_ocn_am_global_stats) then
+        call ocn_am_finalize_global_stats(domain, err_tmp)
         err = ior(err, err_tmp)
      endif
 
-!      if (config_oac_TEMPLATE) then
-!         call oac_finalize_TEMPLATE(domain, err_tmp)
+!      if (config_ocn_am_TEMPLATE) then
+!         call ocn_am_finalize_TEMPLATE(domain, err_tmp)
 !         err = ior(err, err_tmp)
 !      endif
 
-   end subroutine oac_driver_finalize!}}}
+   end subroutine ocn_am_driver_finalize!}}}
 
-end module oac_driver
+end module ocn_am_driver
 
 ! vim: foldmethod=marker

@@ -1,57 +1,45 @@
-.SUFFIXES: .F .o
+.SUFFIXES: .F .c .o
 
 CVMIX_REPO_ADDRESS=http://cvmix.googlecode.com/svn/trunk/src/shared
 
-OBJS = mpas_ocn_mpas_core.o \
-       mpas_ocn_init.o \
-       mpas_ocn_thick_hadv.o \
-       mpas_ocn_thick_vadv.o \
-       mpas_ocn_thick_surface_flux.o \
-       mpas_ocn_gm.o \
-       mpas_ocn_vel_coriolis.o \
-       mpas_ocn_vel_vadv.o \
-       mpas_ocn_vel_hmix.o \
-       mpas_ocn_vel_hmix_del2.o \
-       mpas_ocn_vel_hmix_leith.o \
-       mpas_ocn_vel_hmix_del4.o \
-       mpas_ocn_vel_forcing.o \
-       mpas_ocn_vel_forcing_windstress.o \
-       mpas_ocn_vel_forcing_rayleigh.o \
-       mpas_ocn_vel_pressure_grad.o \
-       mpas_ocn_vmix.o \
-       mpas_ocn_vmix_coefs_const.o \
-       mpas_ocn_vmix_coefs_rich.o \
-       mpas_ocn_vmix_coefs_tanh.o \
-       mpas_ocn_vmix_cvmix.o \
-       mpas_ocn_tendency.o \
-       mpas_ocn_diagnostics.o \
-       mpas_ocn_diagnostics_routines.o \
-       mpas_ocn_thick_ale.o \
-       mpas_ocn_tracer_hmix.o \
-       mpas_ocn_tracer_hmix_del2.o \
-       mpas_ocn_tracer_hmix_del4.o \
-       mpas_ocn_tracer_advection.o \
-	   mpas_ocn_tracer_short_wave_absorption.o \
-	   mpas_ocn_tracer_short_wave_absorption_jerlov.o \
-       mpas_ocn_high_freq_thickness_hmix_del2.o \
-       mpas_ocn_tracer_surface_flux.o \
-       mpas_ocn_time_integration.o \
-       mpas_ocn_time_integration_rk4.o \
-       mpas_ocn_time_integration_split.o \
-       mpas_ocn_equation_of_state.o \
-       mpas_ocn_equation_of_state_jm.o \
-       mpas_ocn_equation_of_state_linear.o \
-       mpas_ocn_global_diagnostics.o \
-       mpas_ocn_test.o \
-       mpas_ocn_constants.o \
-       mpas_ocn_forcing.o \
-       mpas_ocn_forcing_bulk.o \
-       mpas_ocn_forcing_restoring.o \
-       mpas_ocn_time_average.o \
-       mpas_ocn_time_average_coupled.o \
-       mpas_ocn_sea_ice.o
+OCEAN_SHARED_INCLUDES=-I../shared -I../analysis_members -I../cvmix -I../../framework -I../../external/esmf_time_f90 -I../../operators
 
-all: libcvmix oac_shared core_ocean
+OCEAN_LIBRARIES=cvmix/*.o analysis_members/*.o shared/*.o
+
+ifdef MODE
+
+ifeq ($(wildcard ./mode_$(MODE)), ) # CHECK FOR EXISTENCE OF MODE DIRECTORY
+all: exit
+
+core_reg: exit
+
+error_msg: error_head
+	@echo "$(MODE) is not a valid build mode for the ocean core"
+
+else # IFEQ ($(wildcard....
+
+all: shared libcvmix analysis_members
+	(cd mode_$(MODE); $(MAKE) FCINCLUDES="$(FCINCLUDES) $(OCEAN_SHARED_INCLUDES)" )
+	if [ -e libdycore.a ]; then \
+		($(RM) libdycore.a) \
+	fi
+	ar -ru libdycore.a $(OCEAN_LIBRARIES) mode_$(MODE)/*.o
+
+core_reg:
+	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) Registry.xml > Registry_processed.xml
+
+endif # IFEQ ($(wildcard....
+
+else # IFDEF MODE
+
+all: exit
+
+core_reg: exit
+
+error_msg: error_head
+	@echo "The ocean core requires a build mode."
+
+endif # IFDEF MODE
 
 libcvmix:
 	if [ ! -d cvmix ]; then \
@@ -60,173 +48,40 @@ libcvmix:
 	if [ -d cvmix ]; then \
 		(cd cvmix; svn update; make all FC="$(FC)" FFLAGS="$(FFLAGS)" FINCLUDES="$(FINCLUDES)") \
 	fi
-	ln -sf cvmix/*.mod .
 
-ocean_shared: mpas_ocn_init.o mpas_ocn_diagnostics_routines.o mpas_ocn_diagnostics.o
+shared: libcvmix
+	(cd shared; $(MAKE) FCINCLUDES="$(FCINCLUDES) $(OCEAN_SHARED_INCLUDES)")
 
-oac_shared: mpas_ocn_diagnostics_routines.o
-	( cd ../core_ocean_analysis/shared_oac; $(MAKE) CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" all ) 
-	ln -sf ../core_ocean_analysis/shared_oac/*.mod .
+analysis_members: libcvmix shared
+	( cd analysis_members; $(MAKE) FCINCLUDES="$(FCINCLUDES) $(OCEAN_SHARED_INCLUDES)" CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" all ) 
 
-core_ocean: libcvmix oac_shared $(OBJS) 
-	ar -ru libdycore.a $(OBJS) cvmix/*.o ../core_ocean_analysis/shared_oac/*.o 
+error_head:
+	@echo ""
+	@echo ""
+	@echo "*************************************"
+	@echo "ERROR"
 
-core_reg:
-	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) Registry.xml > Registry_processed.xml
+error_tail: error_head error_msg
+	@echo "Available build modes are:"
+	@ls -d mode_* | grep ".*" | sed "s/mode_/    /g"
+	@echo ""
+	@echo "Please specify at build time as follows:"
+	@echo "    make target CORE=ocean MODE=build_mode"
+	@echo "*************************************"
+	@echo ""
+	@echo ""
 
-mpas_ocn_time_integration.o: mpas_ocn_time_integration_rk4.o mpas_ocn_time_integration_split.o
+exit: error_head error_msg error_tail
+	@exit 1
 
-mpas_ocn_time_integration_rk4.o: mpas_ocn_tendency.o mpas_ocn_diagnostics.o mpas_ocn_time_average_coupled.o mpas_ocn_sea_ice.o
 
-mpas_ocn_time_integration_split.o: mpas_ocn_tendency.o mpas_ocn_diagnostics.o mpas_ocn_time_average_coupled.o mpas_ocn_sea_ice.o
-
-mpas_ocn_tendency.o: mpas_ocn_time_average.o mpas_ocn_high_freq_thickness_hmix_del2.o mpas_ocn_tracer_surface_flux.o mpas_ocn_thick_surface_flux.o mpas_ocn_tracer_short_wave_absorption.o
-
-mpas_ocn_diagnostics.o: mpas_ocn_thick_ale.o mpas_ocn_diagnostics_routines.o mpas_ocn_equation_of_state.o mpas_ocn_gm.o
-
-mpas_ocn_thick_ale.o: 
-
-mpas_ocn_global_diagnostics.o: 
-
-mpas_ocn_time_average.o:
-
-mpas_ocn_time_average_coupled.o: mpas_ocn_constants.o
-
-mpas_ocn_thick_hadv.o:
-
-mpas_ocn_thick_vadv.o:
-
-mpas_ocn_thick_surface_flux.o: mpas_ocn_forcing.o
-
-mpas_ocn_gm.o: 
-
-mpas_ocn_vel_pressure_grad.o:
-
-mpas_ocn_vel_vadv.o:
-
-mpas_ocn_vel_hmix.o: mpas_ocn_vel_hmix_del2.o mpas_ocn_vel_hmix_leith.o mpas_ocn_vel_hmix_del4.o
-
-mpas_ocn_vel_hmix_del2.o:
-
-mpas_ocn_vel_hmix_leith.o:
-
-mpas_ocn_vel_hmix_del4.o:
-
-mpas_ocn_vel_forcing.o: mpas_ocn_vel_forcing_windstress.o mpas_ocn_vel_forcing_rayleigh.o mpas_ocn_forcing.o
-
-mpas_ocn_vel_forcing_windstress.o:
-
-mpas_ocn_vel_forcing_rayleigh.o:
-
-mpas_ocn_vel_coriolis.o:
-
-mpas_ocn_tracer_hmix.o: mpas_ocn_tracer_hmix_del2.o mpas_ocn_tracer_hmix_del4.o
-
-mpas_ocn_tracer_hmix_del2.o:
-
-mpas_ocn_tracer_hmix_del4.o:
-
-mpas_ocn_tracer_advection.o:
-
-mpas_ocn_high_freq_thickness_hmix_del2.o:
-
-mpas_ocn_tracer_surface_flux.o: mpas_ocn_forcing.o
-
-mpas_ocn_tracer_short_wave_absorption.o: mpas_ocn_tracer_short_wave_absorption_jerlov.o
-
-mpas_ocn_tracer_short_wave_absorption_jerlov.o:
-
-mpas_ocn_vmix.o: mpas_ocn_vmix_coefs_const.o mpas_ocn_vmix_coefs_rich.o mpas_ocn_vmix_coefs_tanh.o mpas_ocn_vmix_cvmix.o
-
-mpas_ocn_vmix_coefs_const.o:
-
-mpas_ocn_vmix_coefs_rich.o: mpas_ocn_equation_of_state.o
-
-mpas_ocn_vmix_coefs_tanh.o:
-
-mpas_ocn_vmix_cvmix.o: libcvmix
-
-mpas_ocn_equation_of_state.o: mpas_ocn_equation_of_state_jm.o mpas_ocn_equation_of_state_linear.o
-
-mpas_ocn_equation_of_state_jm.o:
-
-mpas_ocn_equation_of_state_linear.o:
-
-mpas_ocn_test.o: 
-
-mpas_ocn_constants.o:
-
-mpas_ocn_forcing.o: mpas_ocn_constants.o mpas_ocn_forcing_bulk.o mpas_ocn_forcing_restoring.o
-
-mpas_ocn_forcing_bulk.o:
-
-mpas_ocn_forcing_restoring.o:
-
-mpas_ocn_sea_ice.o:
-
-mpas_ocn_mpas_core.o: mpas_ocn_thick_hadv.o \
-                      mpas_ocn_thick_vadv.o \
-                      mpas_ocn_init.o \
-                      mpas_ocn_thick_surface_flux.o \
-                      mpas_ocn_gm.o \
-                      mpas_ocn_vel_coriolis.o \
-                      mpas_ocn_vel_vadv.o \
-                      mpas_ocn_vel_hmix.o \
-                      mpas_ocn_vel_hmix_del2.o \
-                      mpas_ocn_vel_hmix_leith.o \
-                      mpas_ocn_vel_hmix_del4.o \
-                      mpas_ocn_vel_forcing.o \
-                      mpas_ocn_vel_forcing_windstress.o \
-                      mpas_ocn_vel_pressure_grad.o \
-                      mpas_ocn_tracer_hmix.o \
-                      mpas_ocn_tracer_hmix_del2.o \
-                      mpas_ocn_tracer_hmix_del4.o \
-                      mpas_ocn_high_freq_thickness_hmix_del2.o \
-                      mpas_ocn_vmix.o \
-                      mpas_ocn_vmix_coefs_const.o \
-                      mpas_ocn_vmix_coefs_rich.o \
-                      mpas_ocn_vmix_coefs_tanh.o \
-                      mpas_ocn_vmix_cvmix.o \
-                      mpas_ocn_tracer_advection.o \
-                      mpas_ocn_tracer_surface_flux.o \
-					  mpas_ocn_tracer_short_wave_absorption.o \
-					  mpas_ocn_tracer_short_wave_absorption_jerlov.o \
-                      mpas_ocn_tendency.o \
-                      mpas_ocn_diagnostics.o \
-                      mpas_ocn_thick_ale.o \
-                      mpas_ocn_time_integration.o \
-                      mpas_ocn_time_integration_rk4.o \
-                      mpas_ocn_time_integration_split.o \
-                      mpas_ocn_equation_of_state.o \
-                      mpas_ocn_equation_of_state_jm.o \
-                      mpas_ocn_equation_of_state_linear.o \
-                      mpas_ocn_global_diagnostics.o \
-                      mpas_ocn_test.o \
-                      mpas_ocn_constants.o \
-                      mpas_ocn_forcing.o \
-                      mpas_ocn_forcing_bulk.o \
-                      mpas_ocn_forcing_restoring.o \
-                      mpas_ocn_time_average.o \
-                      mpas_ocn_time_average_coupled.o \
-					  mpas_ocn_sea_ice.o
 
 clean:
 	if [ -d cvmix ]; then \
 		(cd cvmix; make clean) \
 	fi
-	$(RM) *.o *.mod *.f90 libdycore.a
-	$(RM) Registry_processed.xml
-	@# Certain systems with intel compilers generate *.i files
-	@# This removes them during the clean process
-	$(RM) *.i
-	(cd ../core_ocean_analysis; make clean)
-	(cd ../core_ocean_analysis/shared_oac; make clean)
-
-.F.o:
-	$(RM) $@ $*.mod
-ifeq "$(GEN_F90)" "true"
-	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) $< > $*.f90
-	$(FC) $(FFLAGS) -c $*.f90 $(FCINCLUDES) -I../framework -I../operators -I../external/esmf_time_f90 -I./cvmix/ -I../core_ocean_analysis/shared_oac 
-else
-	$(FC) $(CPPFLAGS) $(FFLAGS) -c $*.F $(CPPINCLUDES) $(FCINCLUDES) -I../framework -I../operators -I../external/esmf_time_f90 -I./cvmix/ -I../core_ocean_analysis/shared_oac 
-endif
+	(cd mode_forward; $(MAKE) clean)
+	(cd mode_analysis; $(MAKE) clean)
+	(cd analysis_members; $(MAKE) clean)
+	(cd shared; $(MAKE) clean)
+	($(RM) *.mod libdycore.a Registry_processed.xml)

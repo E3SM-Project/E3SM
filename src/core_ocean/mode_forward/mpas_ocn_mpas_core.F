@@ -27,7 +27,7 @@ module mpas_core
    use mpas_timer
    use mpas_io_units
 
-   use oac_driver
+   use ocn_am_driver
    use ocn_init
 
    use ocn_global_diagnostics
@@ -164,7 +164,7 @@ module mpas_core
       call ocn_sea_ice_init(domain % blocklist % mesh % nVertLevels, err_tmp)
       err = ior(err, err_tmp)
 
-      call oac_driver_init(domain, err_tmp)
+      call ocn_am_driver_init(domain, err_tmp)
       err = ior(err, err_tmp)
 
       call ocn_constants_init()
@@ -467,7 +467,7 @@ module mpas_core
       write(stderrUnit,*) 'Initial time ', trim(timeStamp)
 
       if (config_write_output_on_startup) then
-         call oac_driver_compute(domain, err) 
+         call ocn_am_driver_compute(domain, err) 
          call ocn_write_output_frame(output_obj, output_frame, domain)
       endif
 
@@ -522,7 +522,7 @@ module mpas_core
                 block_ptr => block_ptr % next
             end do
 
-            call oac_driver_compute(domain, err) 
+            call ocn_am_driver_compute(domain, err) 
             call ocn_write_output_frame(output_obj, output_frame, domain)
 
             block_ptr => domain % blocklist
@@ -540,7 +540,7 @@ module mpas_core
             call mpas_output_state_for_domain(restart_obj, domain, 1)
             call mpas_output_state_finalize(restart_obj, domain % dminfo)
 
-            call oac_driver_restart(domain, err)
+            call ocn_am_driver_restart(domain, err)
          end if
 
       end do
@@ -811,7 +811,7 @@ module mpas_core
       type (domain_type), intent(inout) :: domain 
       integer :: ierr
 
-      call oac_driver_finalize(domain, ierr) 
+      call ocn_am_driver_finalize(domain, ierr) 
 
       call mpas_destroy_clock(clock, ierr)
 
@@ -863,7 +863,7 @@ module mpas_core
          frazilIceActive = .true.
       end if
 
-      call oac_driver_setup_packages(err_tmp)
+      call ocn_am_driver_setup_packages(err_tmp)
       ierr = ior(ierr, err_tmp)
 
    end subroutine mpas_core_setup_packages!}}}

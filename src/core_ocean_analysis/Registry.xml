@@ -1,4 +1,0 @@
-<registry model="mpas" core="ocean_analysis" version="2.0">
-#include "Registry_shared_ocean_temporary.xml"
-#include "shared_oac/Registry_shared_oac.xml"
-</registry>

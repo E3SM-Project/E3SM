@@ -7,7 +7,7 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  oac_TEMPLATE
+!  ocn_am_TEMPLATE
 !
 !> \brief MPAS ocean analysis core member: TEMPLATE
 !> \author FILL_IN_AUTHOR
@@ -16,8 +16,8 @@
 !>  MPAS ocean analysis core member: TEMPLATE
 !>  In order to add a new analysis member, do the following:
 !>  1. Copy these to your new analysis member name:
-!>     mpas_oac_TEMPLATE.F
-!>     Registry_oac_TEMPLATE.xml
+!>     mpas_ocn_am_TEMPLATE.F
+!>     Registry_ocn_am_TEMPLATE.xml
 !>  
 !>  2. In those two new files, replace the following text:
 !>     TEMPLATE, amTemplate, FILL_IN_AUTHOR, FILL_IN_DATE
@@ -25,19 +25,19 @@
 !>     amTemplate uses caps, e.g. amGlobalStats.
 !>  
 !>  3. Add a #include line for your registry to
-!>     Registry_shared_oac.xml
+!>     Registry_shared_ocn_am.xml
 !>  
-!>  4. In mpas_oac_driver.F, add calls for your analysis member
+!>  4. In mpas_ocn_am_driver.F, add calls for your analysis member
 !>     by copying lines with TEMPLATE.
 !>  
-!>  5. In src/core_ocean_analysis/shared_oac/Makefile, add your
+!>  5. In src/core_ocean_analysis/shared_ocn_am/Makefile, add your
 !>     new analysis member everywhere you see
-!>     mpas_oac_global_stats.o
+!>     mpas_ocn_am_global_stats.o
 !>  
 !
 !-----------------------------------------------------------------------
 
-module oac_TEMPLATE
+module ocn_am_TEMPLATE
 
    use mpas_configure
    use mpas_grid_types
@@ -62,12 +62,12 @@ module oac_TEMPLATE
    !
    !--------------------------------------------------------------------
 
-   public :: oac_setup_packages_TEMPLATE, &
-             oac_init_TEMPLATE, &
-             oac_compute_TEMPLATE, &
-             oac_write_TEMPLATE, &
-             oac_restart_TEMPLATE, &
-             oac_finalize_TEMPLATE
+   public :: ocn_am_setup_packages_TEMPLATE, &
+             ocn_am_init_TEMPLATE, &
+             ocn_am_compute_TEMPLATE, &
+             ocn_am_write_TEMPLATE, &
+             ocn_am_restart_TEMPLATE, &
+             ocn_am_finalize_TEMPLATE
 
    !--------------------------------------------------------------------
    !
@@ -83,7 +83,7 @@ contains
 
 !***********************************************************************
 !
-!  routine oac_setup_packages_TEMPLATE
+!  routine ocn_am_setup_packages_TEMPLATE
 !
 !> \brief   Set up packages for MPAS-Ocean analysis member
 !> \author  Mark Petersen
@@ -94,7 +94,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine oac_setup_packages_TEMPLATE(err)!{{{
+   subroutine ocn_am_setup_packages_TEMPLATE(err)!{{{
 
       use mpas_packages
 
@@ -129,12 +129,12 @@ contains
       ! turn on package for this analysis member
       amTemplateActive = .true.
 
-   end subroutine oac_setup_packages_TEMPLATE!}}}
+   end subroutine ocn_am_setup_packages_TEMPLATE!}}}
 
 
 !***********************************************************************
 !
-!  routine oac_init_TEMPLATE
+!  routine ocn_am_init_TEMPLATE
 !
 !> \brief   Initialize MPAS-Ocean analysis member
 !> \author  FILL_IN_AUTHOR
@@ -145,7 +145,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine oac_init_TEMPLATE(domain, err)!{{{
+   subroutine ocn_am_init_TEMPLATE(domain, err)!{{{
 
       use mpas_packages
 
@@ -182,11 +182,11 @@ contains
       ! turn on package for this analysis member
       TEMPLATEActive = .true.
 
-   end subroutine oac_init_TEMPLATE!}}}
+   end subroutine ocn_am_init_TEMPLATE!}}}
 
 !***********************************************************************
 !
-!  routine oac_compute_TEMPLATE
+!  routine ocn_am_compute_TEMPLATE
 !
 !> \brief   Computeialize MPAS-Ocean analysis member
 !> \author  FILL_IN_AUTHOR
@@ -197,7 +197,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine oac_compute_TEMPLATE(domain, timeLevel, err)!{{{
+   subroutine ocn_am_compute_TEMPLATE(domain, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -269,11 +269,11 @@ contains
 
       call mpas_timer_stop("TEMPLATE", amTemplateTimer)
 
-   end subroutine oac_compute_TEMPLATE!}}}
+   end subroutine ocn_am_compute_TEMPLATE!}}}
 
 !***********************************************************************
 !
-!  routine oac_restart_TEMPLATE
+!  routine ocn_am_restart_TEMPLATE
 !
 !> \brief   Save restart for MPAS-Ocean analysis member
 !> \author  FILL_IN_AUTHOR
@@ -284,7 +284,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine oac_restart_TEMPLATE(domain, err)!{{{
+   subroutine ocn_am_restart_TEMPLATE(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -316,11 +316,11 @@ contains
 
       err = 0
 
-   end subroutine oac_restart_TEMPLATE!}}}
+   end subroutine ocn_am_restart_TEMPLATE!}}}
 
 !***********************************************************************
 !
-!  routine oac_write_TEMPLATE
+!  routine ocn_am_write_TEMPLATE
 !
 !> \brief   Driver for MPAS-Ocean analysis output
 !> \author  FILL_IN_AUTHOR
@@ -332,7 +332,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine oac_write_TEMPLATE(domain, err)!{{{
+   subroutine ocn_am_write_TEMPLATE(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -364,11 +364,11 @@ contains
 
       err = 0
 
-   end subroutine oac_write_TEMPLATE!}}}
+   end subroutine ocn_am_write_TEMPLATE!}}}
 
 !***********************************************************************
 !
-!  routine oac_finalize_TEMPLATE
+!  routine ocn_am_finalize_TEMPLATE
 !
 !> \brief   Finalize MPAS-Ocean analysis member
 !> \author  FILL_IN_AUTHOR
@@ -379,7 +379,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine oac_finalize_TEMPLATE(domain, err)!{{{
+   subroutine ocn_am_finalize_TEMPLATE(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -411,8 +411,8 @@ contains
 
       err = 0
 
-   end subroutine oac_finalize_TEMPLATE!}}}
+   end subroutine ocn_am_finalize_TEMPLATE!}}}
 
-end module oac_TEMPLATE
+end module ocn_am_TEMPLATE
 
 ! vim: foldmethod=marker
