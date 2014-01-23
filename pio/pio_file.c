@@ -294,7 +294,7 @@ int PIOc_deletefile(const int iosysid, const char fname[])
       ierr = nc_delete(fname);
 #else
 #ifdef _PNETCDF
-    ierr = ncmpi_delete(fname);
+    ierr = ncmpi_delete(fname, ios->info);
 #endif
 #endif
     MPI_Barrier(ios->io_comm);
