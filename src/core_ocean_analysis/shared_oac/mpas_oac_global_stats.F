@@ -104,8 +104,6 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: err_tmp
-
       err = 0
 
       ! turn on package for this analysis member
@@ -127,7 +125,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine oac_init_global_stats(err)!{{{
+   subroutine oac_init_global_stats(domain, err)!{{{
 
       use mpas_packages
 
@@ -143,6 +141,8 @@ contains
       !
       !-----------------------------------------------------------------
 
+      type (domain_type), intent(inout) :: domain
+
       !-----------------------------------------------------------------
       !
       ! output variables
@@ -156,8 +156,6 @@ contains
       ! local variables
       !
       !-----------------------------------------------------------------
-
-      integer :: err_tmp
 
       err = 0
 
@@ -176,7 +174,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine oac_compute_global_stats(amGlobalStats, state_ptr, dminfo, timeLevel, err)!{{{
+   subroutine oac_compute_global_stats(domain, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -184,8 +182,6 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (state_type), intent(in), pointer :: state_ptr
-      type (dm_info), intent(in), pointer :: dminfo
       integer, intent(in) :: timeLevel
 
       !-----------------------------------------------------------------
@@ -194,13 +190,14 @@ contains
       !
       !-----------------------------------------------------------------
 
+      type (domain_type), intent(inout) :: domain
+
       !-----------------------------------------------------------------
       !
       ! output variables
       !
       !-----------------------------------------------------------------
 
-      type (amGlobalStats_type), intent(inout) :: amGlobalStats
       integer, intent(out) :: err !< Output: error flag
 
       !-----------------------------------------------------------------
@@ -209,15 +206,15 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: err_tmp
+      type (amGlobalStats_type), pointer :: amGlobalStats
+      type (dm_info) :: dminfo
       type (block_type), pointer :: block
-
       type (state_type), pointer :: state
       type (mesh_type), pointer :: mesh
       type (scratch_type), pointer :: scratch
-      ! mrp remove diagnostics links later
       type (diagnostics_type), pointer :: diagnostics
 
+      integer :: err_tmp
       integer :: nVertLevels, nCellsSolve, nEdgesSolve, nVerticesSolve, nCellsGlobal, nEdgesGlobal, nVerticesGlobal, iTracer
       integer :: elementIndex, variableIndex, nVariables, nSums, nMaxes, nMins
       integer :: k,i, num_tracers, fileID
@@ -228,7 +225,7 @@ contains
 
       real (kind=RKIND) :: volumeCellGlobal, volumeEdgeGlobal, CFLNumberGlobal, localCFL, localSum, areaCellGlobal, areaEdgeGlobal, areaTriangleGlobal, time_days
       real (kind=RKIND), dimension(:), pointer ::  areaCell, dcEdge, dvEdge, areaTriangle, areaEdge
-      real (kind=RKIND), dimension(:,:), pointer :: layerThickness, normalVelocity, tangentialVelocity, layerThicknessEdge, kineticEnergyCell, &
+      real (kind=RKIND), dimension(:,:), pointer :: layerThickness, normalVelocity, tangentialVelocity, layerThicknessEdge, relativeVorticity, kineticEnergyCell, &
          normalizedRelativeVorticityEdge, normalizedPlanetaryVorticityEdge, pressure, montgomeryPotential, vertTransportVelocityTop, vertVelocityTop, &
          lowFreqDivergence, highFreqThickness, density
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers
@@ -238,8 +235,9 @@ contains
 
       real (kind=RKIND), dimension(:,:), allocatable :: enstrophy, normalizedAbsoluteVorticity, workArray
 
-
       err = 0
+
+      dminfo = domain % dminfo
 
       call mpas_timer_start("compute_global_stats", .false., amGlobalStatsTimer)
 
@@ -252,12 +250,11 @@ contains
       verticalSumMaxes = -1.0e34
       reductions = 0.0
 
-      block => state_ptr % block 
+      block => domain % blocklist
       do while (associated(block))
          state => block % state % time_levs(timeLevel) % state
          mesh => block % mesh
          scratch => block % scratch
-         ! mrp remove diagnostics links later
          diagnostics => block % diagnostics
          
          num_tracers = state % num_tracers
@@ -286,17 +283,10 @@ contains
             highFreqThickness => state % highFreqThickness % array
          end if
 
-         call mpas_allocate_scratch_field(scratch % workArray1Cell3D, .true.)
-         call mpas_allocate_scratch_field(scratch % workArray2Cell3D, .true.)
-         call mpas_allocate_scratch_field(scratch % workArray1Vertex3D, .true.)
-         call mpas_allocate_scratch_field(scratch % workArray2Vertex3D, .true.)
-         call mpas_allocate_scratch_field(scratch % workArray1Edge3D, .true.)
-         call mpas_allocate_scratch_field(scratch % workArray2Edge3D, .true.)
-
-      ! mrp remove diagnostics links later
          density                          => diagnostics % density % array
          montgomeryPotential              => diagnostics % montgomeryPotential % array
          pressure                         => diagnostics % pressure % array
+         relativeVorticity                => diagnostics % relativeVorticity % array
          normalizedRelativeVorticityEdge  => diagnostics % normalizedRelativeVorticityEdge % array
          normalizedPlanetaryVorticityEdge => diagnostics % normalizedPlanetaryVorticityEdge % array
          vertTransportVelocityTop         => diagnostics % vertTransportVelocityTop % array
@@ -355,12 +345,8 @@ contains
          verticalSumMaxes(variableIndex) = max(verticalSumMaxes(variableIndex), verticalSumMaxes_tmp(variableIndex))
 
          ! relativeVorticity
-         call ocn_relativeVorticity_circulation(scratch % workArray1Vertex3D % array, scratch % workArray2Vertex3D % array, &
-            mesh, state % normalVelocity % array, err_tmp)
-            err = ior(err, err_tmp)
          variableIndex = variableIndex + 1
-         call ocn_compute_field_area_weighted_local_stats_max_level(dminfo, nVertLevels, nVerticesSolve, maxLevelVertexBot(1:nVerticesSolve), areaTriangle(1:nVerticesSolve), &
-            scratch % workArray1Vertex3D % array(:,1:nVerticesSolve), &
+         call ocn_compute_field_area_weighted_local_stats_max_level(dminfo, nVertLevels, nVerticesSolve, maxLevelVertexBot(1:nVerticesSolve), areaTriangle(1:nVerticesSolve), relativeVorticity(:,1:nVerticesSolve), &
             sums_tmp(variableIndex), sumSquares_tmp(variableIndex), mins_tmp(variableIndex), maxes_tmp(variableIndex), verticalSumMins_tmp(variableIndex), verticalSumMaxes_tmp(variableIndex))
          sums(variableIndex) = sums(variableIndex) + sums_tmp(variableIndex)
          sumSquares(variableIndex) = sumSquares(variableIndex) + sumSquares_tmp(variableIndex)
@@ -369,10 +355,9 @@ contains
          verticalSumMins(variableIndex) = min(verticalSumMins(variableIndex), verticalSumMins_tmp(variableIndex))
          verticalSumMaxes(variableIndex) = max(verticalSumMaxes(variableIndex), verticalSumMaxes_tmp(variableIndex))
 
-         ! enstrophy 
-         ! Note: enstrophy uses the value in workArray1Vertex3D for relative vorticity, computed directly above.
+         ! enstrophy
          allocate(enstrophy(nVertLevels,nVerticesSolve))
-         enstrophy(:,:)=scratch % workArray1Vertex3D % array(:,1:nVerticesSolve)**2
+         enstrophy(:,:)=relativeVorticity(:,1:nVerticesSolve)**2
          variableIndex = variableIndex + 1
          call ocn_compute_field_area_weighted_local_stats_max_level(dminfo, nVertLevels, nVerticesSolve, maxLevelVertexBot(1:nVerticesSolve), areaTriangle(1:nVerticesSolve), &
             enstrophy(:,:), sums_tmp(variableIndex), sumSquares_tmp(variableIndex), mins_tmp(variableIndex), maxes_tmp(variableIndex), &
@@ -462,9 +447,9 @@ contains
          verticalSumMins(variableIndex) = min(verticalSumMins(variableIndex), verticalSumMins_tmp(variableIndex))
          verticalSumMaxes(variableIndex) = max(verticalSumMaxes(variableIndex), verticalSumMaxes_tmp(variableIndex))
 
+         ! lowFreqDivergence
+         variableIndex = variableIndex + 1
          if (thicknessFilterActive) then
-            ! lowFreqDivergence
-            variableIndex = variableIndex + 1
             call ocn_compute_field_volume_weighted_local_stats_max_level(dminfo, nVertLevels, nCellsSolve, maxLevelCell(1:nCellsSolve), areaCell(1:nCellsSolve), layerThickness(:,1:nCellsSolve), &
                lowFreqDivergence(:,1:nCellsSolve), sums_tmp(variableIndex), sumSquares_tmp(variableIndex), mins_tmp(variableIndex), maxes_tmp(variableIndex), verticalSumMins_tmp(variableIndex), &
                verticalSumMaxes_tmp(variableIndex))
@@ -474,9 +459,11 @@ contains
             maxes(variableIndex) = max(maxes(variableIndex), maxes_tmp(variableIndex))
             verticalSumMins(variableIndex) = min(verticalSumMins(variableIndex), verticalSumMins_tmp(variableIndex))
             verticalSumMaxes(variableIndex) = max(verticalSumMaxes(variableIndex), verticalSumMaxes_tmp(variableIndex))
+         end if
    
-            ! highFreqThickness
-            variableIndex = variableIndex + 1
+         ! highFreqThickness
+         variableIndex = variableIndex + 1
+         if (thicknessFilterActive) then
             call ocn_compute_field_volume_weighted_local_stats_max_level(dminfo, nVertLevels, nCellsSolve, maxLevelCell(1:nCellsSolve), areaCell(1:nCellsSolve), layerThickness(:,1:nCellsSolve), &
                highFreqThickness(:,1:nCellsSolve), sums_tmp(variableIndex), sumSquares_tmp(variableIndex), mins_tmp(variableIndex), maxes_tmp(variableIndex), verticalSumMins_tmp(variableIndex), &
                verticalSumMaxes_tmp(variableIndex))
@@ -543,13 +530,6 @@ contains
          nMins = nMins + nVariables
          nMaxes = nMaxes + nVariables
 
-         call mpas_deallocate_scratch_field(scratch % workArray1Cell3D, .true.)
-         call mpas_deallocate_scratch_field(scratch % workArray2Cell3D, .true.)
-         call mpas_deallocate_scratch_field(scratch % workArray1Vertex3D, .true.)
-         call mpas_deallocate_scratch_field(scratch % workArray2Vertex3D, .true.)
-         call mpas_deallocate_scratch_field(scratch % workArray1Edge3D, .true.)
-         call mpas_deallocate_scratch_field(scratch % workArray2Edge3D, .true.)
-
          block => block % next
       end do
 
@@ -576,15 +556,10 @@ contains
 
       volumeCellGlobal = sums(1)
       volumeEdgeGlobal = sums(4)
-! mrp note: when CORE= ocean_analysis, we don't have edge volumes, so we need to fill it in.
-      if (volumeEdgeGlobal<1e-16) then
-         volumeEdgeGlobal = volumeCellGlobal
-      endif
 
       ! compute the averages (slightly different depending on how the sum was computed)
       variableIndex = 0
 
-      ! mrp remove diagnostics links later
       ! time, in days, using a 360 day calendar
       read (diagnostics % xtime % scalar, '(i4,5(a1,i2))'), timeYYYY, timeChar, timeMM, timeChar, timeDD, timeChar, timeH, timeChar, timeM, timeChar, timeS
       ! subtract 31.0 because calendar starts on 00-01-01
@@ -660,6 +635,16 @@ contains
          variableIndex = variableIndex + 1
          averages(variableIndex) = sums(variableIndex)/volumeCellGlobal
          rms(variableIndex) = sqrt(sumSquares(variableIndex)/volumeCellGlobal)
+      else
+         ! lowFreqDivergence
+         variableIndex = variableIndex + 1
+         averages(variableIndex) = 0.0_RKIND
+         rms(variableIndex) = 0.0_RKIND
+   
+         ! highFreqThickness
+         variableIndex = variableIndex + 1
+         averages(variableIndex) = 0.0_RKIND
+         rms(variableIndex) = 0.0_RKIND
       end if
 
       ! Tracers
@@ -670,7 +655,7 @@ contains
       enddo
 
       ! write out data to Analysis Member output
-      ! mrp  Does this need to go into a block loop?
+      amGlobalStats => domain % blocklist % amGlobalStats
       amGlobalStats % minGlobalStats % array(1:nVariables) =  mins(1:nVariables)
       amGlobalStats % maxGlobalStats % array(1:nVariables) =  maxes(1:nVariables)
       amGlobalStats % sumGlobalStats % array(1:nVariables) =  sums(1:nVariables)
@@ -698,7 +683,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine oac_restart_global_stats(err)!{{{
+   subroutine oac_restart_global_stats(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -711,6 +696,8 @@ contains
       ! input/output variables
       !
       !-----------------------------------------------------------------
+
+      type (domain_type), intent(inout) :: domain
 
       !-----------------------------------------------------------------
       !
@@ -725,8 +712,6 @@ contains
       ! local variables
       !
       !-----------------------------------------------------------------
-
-      integer :: err_tmp
 
       err = 0
 
@@ -746,13 +731,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine oac_write_global_stats(err)!{{{
+   subroutine oac_write_global_stats(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      type (domain_type), intent(in) :: domain
 
       !-----------------------------------------------------------------
       !
@@ -773,8 +760,6 @@ contains
       ! local variables
       !
       !-----------------------------------------------------------------
-
-      integer :: err_tmp
 
       err = 0
 
@@ -793,13 +778,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine oac_finalize_global_stats(err)!{{{
+   subroutine oac_finalize_global_stats(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      type (domain_type), intent(inout) :: domain
 
       !-----------------------------------------------------------------
       !
@@ -821,11 +808,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: err_tmp
-
       err = 0
-
-print *, 'oac_finalize_global_stats'
 
    end subroutine oac_finalize_global_stats!}}}
 

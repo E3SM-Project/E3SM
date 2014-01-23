@@ -30,6 +30,8 @@ module mpas_core
 
    use oac_driver
    use ocn_init
+   use ocn_diagnostics
+   use ocn_equation_of_state
 
    type (io_output_object), save :: restart_obj
 
@@ -80,7 +82,11 @@ module mpas_core
       dminfo = domain % dminfo
       err = 0
 
-      call oac_driver_init(err_tmp)
+      ! Initialize submodules before initializing blocks.
+      call ocn_equation_of_state_init(err_tmp)
+      err = ior(err, err_tmp)
+
+      call oac_driver_init(domain, err_tmp)
       err = ior(err, err_tmp)
 
       call ocn_init_vert_coord(domain)
@@ -307,12 +313,20 @@ module mpas_core
       character(len=StrKIND) :: timeStamp
       integer :: err, ierr
    
-      ! mrp remove dt from oac core later
       dt = config_dt
 
       currTime = mpas_get_clock_time(clock, MPAS_NOW, ierr)
       call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
       write(stderrUnit,*) 'Initial time ', trim(timeStamp)
+
+      ! fill in diagnostics variables
+      call mpas_timer_start("diagnostic solve", .false., initDiagSolveTimer)
+      block_ptr => domain % blocklist
+      do while(associated(block_ptr))
+         call ocn_diagnostic_solve(dt,  block_ptr % state % time_levs(1) % state, block_ptr % forcing, block_ptr % mesh, block_ptr % diagnostics, block_ptr % scratch)
+         block_ptr => block_ptr % next
+      end do
+      call mpas_timer_stop("diagnostic solve", initDiagSolveTimer)
 
       if (config_write_output_on_startup) then
          call oac_driver_compute(domain, err) 

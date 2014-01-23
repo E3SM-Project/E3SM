@@ -128,7 +128,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine oac_driver_init(err)!{{{
+   subroutine oac_driver_init(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -141,6 +141,8 @@ contains
       ! input/output variables
       !
       !-----------------------------------------------------------------
+
+      type (domain_type), intent(inout) :: domain
 
       !-----------------------------------------------------------------
       !
@@ -161,12 +163,12 @@ contains
       err = 0
 
      if (config_oac_global_stats) then
-         call oac_init_global_stats(err_tmp)
+         call oac_init_global_stats(domain, err_tmp)
          err = ior(err, err_tmp)
      endif
 
 !      if (config_oac_TEMPLATE) then
-!         call oac_init_TEMPLATE(err_tmp)
+!         call oac_init_TEMPLATE(domain, err_tmp)
 !         err = ior(err, err_tmp)
 !      endif
 
@@ -221,15 +223,13 @@ contains
       err = 0
 
       timeLevel=1
-      state => domain % blocklist % state % time_levs(timeLevel) % state
-
-     if (config_oac_global_stats) then
-         call oac_compute_global_stats(domain % blocklist % amGlobalStats, state, domain % dminfo, timeLevel, err_tmp)
+      if (config_oac_global_stats) then
+         call oac_compute_global_stats(domain, timeLevel, err_tmp)
          err = ior(err, err_tmp)
-     endif
+      endif
 
 !      if (config_oac_TEMPLATE) then
-!         call oac_compute_TEMPLATE(domain % blocklist % amTemplate, state, domain % dminfo, timeLevel, err_tmp)
+!         call oac_compute_TEMPLATE(domain, timeLevel, err_tmp)
 !         err = ior(err, err_tmp)
 !      endif
 
@@ -248,7 +248,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine oac_driver_restart(err)!{{{
+   subroutine oac_driver_restart(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -261,6 +261,8 @@ contains
       ! input/output variables
       !
       !-----------------------------------------------------------------
+
+      type (domain_type), intent(inout) :: domain
 
       !-----------------------------------------------------------------
       !
@@ -281,12 +283,12 @@ contains
       err = 0
 
      if (config_oac_global_stats) then
-         call oac_restart_global_stats(err_tmp)
+         call oac_restart_global_stats(domain, err_tmp)
          err = ior(err, err_tmp)
      endif
 
 !      if (config_oac_TEMPLATE) then
-!         call oac_restart_TEMPLATE(err_tmp)
+!         call oac_restart_TEMPLATE(domian, err_tmp)
 !         err = ior(err, err_tmp)
 !      endif
 
@@ -307,13 +309,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine oac_driver_write(err)!{{{
+   subroutine oac_driver_write(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      type (domain_type), intent(in) :: domain
 
       !-----------------------------------------------------------------
       !
@@ -340,12 +344,12 @@ contains
       err = 0
 
      if (config_oac_global_stats) then
-         call oac_write_global_stats(err_tmp)
+         call oac_write_global_stats(domain, err_tmp)
          err = ior(err, err_tmp)
      endif
 
 !      if (config_oac_TEMPLATE) then
-!         call oac_write_TEMPLATE(err_tmp)
+!         call oac_write_TEMPLATE(domain, err_tmp)
 !         err = ior(err, err_tmp)
 !      endif
 
@@ -364,7 +368,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine oac_driver_finalize(err)!{{{
+   subroutine oac_driver_finalize(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -377,6 +381,8 @@ contains
       ! input/output variables
       !
       !-----------------------------------------------------------------
+
+      type (domain_type), intent(inout) :: domain
 
       !-----------------------------------------------------------------
       !
@@ -397,12 +403,12 @@ contains
       err = 0
 
      if (config_oac_global_stats) then
-        call oac_finalize_global_stats(err_tmp)
-         err = ior(err, err_tmp)
+        call oac_finalize_global_stats(domain, err_tmp)
+        err = ior(err, err_tmp)
      endif
 
 !      if (config_oac_TEMPLATE) then
-!         call oac_finalize_TEMPLATE(err_tmp)
+!         call oac_finalize_TEMPLATE(domain, err_tmp)
 !         err = ior(err, err_tmp)
 !      endif
 

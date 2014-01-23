@@ -164,7 +164,7 @@ module mpas_core
       call ocn_sea_ice_init(domain % blocklist % mesh % nVertLevels, err_tmp)
       err = ior(err, err_tmp)
 
-      call oac_driver_init(err_tmp)
+      call oac_driver_init(domain, err_tmp)
       err = ior(err, err_tmp)
 
       call ocn_constants_init()
@@ -540,7 +540,7 @@ module mpas_core
             call mpas_output_state_for_domain(restart_obj, domain, 1)
             call mpas_output_state_finalize(restart_obj, domain % dminfo)
 
-            call oac_driver_restart(err) ! add state and analysisInput later mrp
+            call oac_driver_restart(domain, err)
          end if
 
       end do
@@ -811,7 +811,7 @@ module mpas_core
       type (domain_type), intent(inout) :: domain 
       integer :: ierr
 
-      call oac_driver_finalize(ierr) 
+      call oac_driver_finalize(domain, ierr) 
 
       call mpas_destroy_clock(clock, ierr)
 

@@ -124,12 +124,10 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: err_tmp
-
       err = 0
 
       ! turn on package for this analysis member
-      amTemplate = .true.
+      amTemplateActive = .true.
 
    end subroutine oac_setup_packages_TEMPLATE!}}}
 
@@ -147,7 +145,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine oac_init_TEMPLATE(err)!{{{
+   subroutine oac_init_TEMPLATE(domain, err)!{{{
 
       use mpas_packages
 
@@ -163,6 +161,8 @@ contains
       !
       !-----------------------------------------------------------------
 
+      type (domain_type), intent(inout) :: domain
+
       !-----------------------------------------------------------------
       !
       ! output variables
@@ -176,8 +176,6 @@ contains
       ! local variables
       !
       !-----------------------------------------------------------------
-
-      integer :: err_tmp
 
       err = 0
 
@@ -199,7 +197,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine oac_compute_TEMPLATE(amTemplate, state_ptr, dminfo, timeLevel, err)!{{{
+   subroutine oac_compute_TEMPLATE(domain, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -207,8 +205,6 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (state_type), intent(in), pointer :: state_ptr
-      type (dm_info), intent(in), pointer :: dminfo
       integer, intent(in) :: timeLevel
 
       !-----------------------------------------------------------------
@@ -217,13 +213,14 @@ contains
       !
       !-----------------------------------------------------------------
 
+      type (domain_type), intent(inout) :: domain
+
       !-----------------------------------------------------------------
       !
       ! output variables
       !
       !-----------------------------------------------------------------
 
-      type (amTemplate_type), intent(inout) :: amTemplate
       integer, intent(out) :: err !< Output: error flag
 
       !-----------------------------------------------------------------
@@ -232,29 +229,39 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: err_tmp
+      type (amTemplate_type), pointer :: amTemplate
+      type (dm_info) :: dminfo
       type (block_type), pointer :: block
-
       type (state_type), pointer :: state
       type (mesh_type), pointer :: mesh
       type (scratch_type), pointer :: scratch
+      type (diagnostics_type), pointer :: diagnostics
 
       err = 0
 
+      dminfo = domain % dminfo
+
       call mpas_timer_start("compute_TEMPLATE", .false., amTemplateTimer)
 
-      block => state_ptr % block 
+      block => domain % block 
       do while (associated(block))
          state => block % state % time_levs(timeLevel) % state
          mesh => block % mesh
          scratch => block % scratch
+         diagnostics => block % diagnostics
+         amTemplate => block % amTemplate
 
-         ! block calculations may be placed here
+         ! Computations which are functions of nCells, nEdges, or nVertices 
+         ! must be placed within this block loop
 
          block => block % next
       end do
 
       ! mpi gather/scatter calls may be placed here
+
+      ! Computations which are not functions of nCells, nEdges, or nVertices 
+      ! may be placed outside of block loops
+      amTemplate => domain % blocklist % amTemplate
 
       call mpas_timer_stop("TEMPLATE", amTemplateTimer)
 
@@ -273,7 +280,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine oac_restart_TEMPLATE(err)!{{{
+   subroutine oac_restart_TEMPLATE(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -286,6 +293,8 @@ contains
       ! input/output variables
       !
       !-----------------------------------------------------------------
+
+      type (domain_type), intent(inout) :: domain
 
       !-----------------------------------------------------------------
       !
@@ -300,8 +309,6 @@ contains
       ! local variables
       !
       !-----------------------------------------------------------------
-
-      integer :: err_tmp
 
       err = 0
 
@@ -321,13 +328,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine oac_write_TEMPLATE(err)!{{{
+   subroutine oac_write_TEMPLATE(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      type (domain_type), intent(in) :: domain
 
       !-----------------------------------------------------------------
       !
@@ -348,8 +357,6 @@ contains
       ! local variables
       !
       !-----------------------------------------------------------------
-
-      integer :: err_tmp
 
       err = 0
 
@@ -368,7 +375,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine oac_finalize_TEMPLATE(err)!{{{
+   subroutine oac_finalize_TEMPLATE(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -381,6 +388,8 @@ contains
       ! input/output variables
       !
       !-----------------------------------------------------------------
+
+      type (domain_type), intent(inout) :: domain
 
       !-----------------------------------------------------------------
       !
@@ -396,11 +405,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: err_tmp
-
       err = 0
-
-print *, 'oac_finalize_TEMPLATE'
 
    end subroutine oac_finalize_TEMPLATE!}}}
 

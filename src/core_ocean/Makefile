@@ -62,7 +62,7 @@ libcvmix:
 	fi
 	ln -sf cvmix/*.mod .
 
-ocean_shared: mpas_ocn_init.o mpas_ocn_diagnostics_routines.o
+ocean_shared: mpas_ocn_init.o mpas_ocn_diagnostics_routines.o mpas_ocn_diagnostics.o
 
 oac_shared: mpas_ocn_diagnostics_routines.o
 	( cd ../core_ocean_analysis/shared_oac; $(MAKE) CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" all ) 
@@ -82,7 +82,7 @@ mpas_ocn_time_integration_split.o: mpas_ocn_tendency.o mpas_ocn_diagnostics.o mp
 
 mpas_ocn_tendency.o: mpas_ocn_time_average.o mpas_ocn_high_freq_thickness_hmix_del2.o mpas_ocn_tracer_surface_flux.o mpas_ocn_thick_surface_flux.o mpas_ocn_tracer_short_wave_absorption.o
 
-mpas_ocn_diagnostics.o: mpas_ocn_time_average.o mpas_ocn_thick_ale.o mpas_ocn_diagnostics_routines.o
+mpas_ocn_diagnostics.o: mpas_ocn_thick_ale.o mpas_ocn_diagnostics_routines.o mpas_ocn_equation_of_state.o mpas_ocn_gm.o
 
 mpas_ocn_thick_ale.o: 
 

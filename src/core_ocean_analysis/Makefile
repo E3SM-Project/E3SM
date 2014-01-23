@@ -6,15 +6,14 @@ all: oac_shared ocean_shared core_oac
 
 ocean_shared:
 	( cd ../core_ocean; $(MAKE) CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" ocean_shared ) 
-	ln -sf ../core_ocean/ocn_init.mod .
-	ln -sf ../core_ocean/ocn_diagnostics_routines.mod .
+	ln -sf ../core_ocean/*.mod .
 
 oac_shared:  ocean_shared
 	( cd shared_oac; $(MAKE) CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" all ) 
 	ln -sf shared_oac/*.mod .
 
 core_oac: $(OBJS)  
-	ar -ru libdycore.a  $(OBJS) ../core_ocean/mpas_ocn_init.o ../core_ocean/mpas_ocn_diagnostics_routines.o shared_oac/*.o
+	ar -ru libdycore.a  $(OBJS) ../core_ocean/*.o shared_oac/*.o
 
 core_reg:
 	tail -n +3 ../core_ocean/Registry.xml | head -n -2 > Registry_shared_ocean_temporary.xml
