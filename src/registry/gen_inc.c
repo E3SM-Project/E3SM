@@ -243,8 +243,12 @@ void write_field_dimensions(FILE *fd, struct dimension *dims){/*{{{*/
 	 */
 	dim_ptr = dims;
 	while (dim_ptr) {
-		if (dim_ptr->constant_value < 0 && !dim_ptr->namelist_defined && !is_derived_dim(dim_ptr->name_in_code)) fortprintf(fd, "      integer :: %s\n", dim_ptr->name_in_code);
-		if (dim_ptr->constant_value < 0 && dim_ptr->namelist_defined && !is_derived_dim(dim_ptr->name_in_code)) fortprintf(fd, "      integer :: %s\n", dim_ptr->name_in_file);
+		//if (!dim_ptr->namelist_defined && is_derived_dim(dim_ptr->name_in_code)) fortprintf(fd, "      integer :: %s\n", dim_ptr->name_in_file);
+		if (dim_ptr->constant_value < 0 && !dim_ptr->namelist_defined && !is_derived_dim(dim_ptr->name_in_code)) {
+			fortprintf(fd, "      integer :: %s\n", dim_ptr->name_in_code);
+		} else {
+			fortprintf(fd, "      integer :: %s\n", dim_ptr->name_in_file);
+		}
 		dim_ptr = dim_ptr->next;
 	}
 	dim_ptr = dims;
@@ -258,6 +262,7 @@ void write_field_dimensions(FILE *fd, struct dimension *dims){/*{{{*/
 		}
 		dim_ptr = dim_ptr->next;
 	}
+
 }/*}}}*/
 
 
@@ -772,8 +777,19 @@ void write_group_alloc_routines(FILE *fd, struct group_list *groups, struct dime
 		if (!strncmp(group_ptr->name, "mesh", 1024)) {
 			dim_ptr = dims;
 			while (dim_ptr) {
-				if (dim_ptr->constant_value < 0 && !dim_ptr->namelist_defined && !is_derived_dim(dim_ptr->name_in_code)) fortprintf(fd, "      %s %% %s = %s\n", group_ptr->name, dim_ptr->name_in_code, dim_ptr->name_in_code);
-				if (dim_ptr->constant_value < 0 && dim_ptr->namelist_defined && !is_derived_dim(dim_ptr->name_in_code)) fortprintf(fd, "      %s %% %s = %s\n", group_ptr->name, dim_ptr->name_in_file, dim_ptr->name_in_file);
+				if (dim_ptr->constant_value < 0 && !dim_ptr->namelist_defined && !is_derived_dim(dim_ptr->name_in_code)) {
+					fortprintf(fd, "      %s %% %s = %s\n", group_ptr->name, dim_ptr->name_in_code, dim_ptr->name_in_code);
+				} else if (dim_ptr->constant_value >= 0) {
+					fortprintf(fd, "      %s %% %s = %d\n", group_ptr->name, dim_ptr->name_in_file, dim_ptr->constant_value);
+				} else if(dim_ptr->namelist_defined) {
+					fortprintf(fd, "      %s %% %s = %s\n", group_ptr->name, dim_ptr->name_in_file, dim_ptr->name_in_file);
+				}
+				dim_ptr = dim_ptr->next;
+			}
+
+			dim_ptr = dims;
+			while (dim_ptr) {
+				if (dim_ptr->constant_value < 0 && !dim_ptr->namelist_defined && is_derived_dim(dim_ptr->name_in_code)) fortprintf(fd, "      %s %% %s = %s\n", group_ptr->name, dim_ptr->name_in_file, dim_ptr->name_in_code);
 				dim_ptr = dim_ptr->next;
 			}
 
