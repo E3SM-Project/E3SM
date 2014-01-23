@@ -2,7 +2,6 @@
 #include <pio_internal.h>
 #include <string.h>
 #include <stdio.h>
-#include <malloc.h>
 
 static io_desc_t *pio_iodesc_list=NULL;
 static io_desc_t *current_iodesc=NULL;

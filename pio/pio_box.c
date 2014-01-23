@@ -114,7 +114,7 @@ int compute_dest(const int nmap, const PIO_Offset compmap[],const PIO_Offset *st
   return PIO_NOERR;
 }
 
-int create_mpi_datatypes(const MPI_Datatype basetype,const int msgcnt,PIO_Offset mindex[],const int mcount[],int mtype[])
+int create_mpi_datatypes(const MPI_Datatype basetype,const int msgcnt,PIO_Offset mindex[],const int mcount[],MPI_Datatype mtype[])
 {
   PIO_Offset bsizeT[msgcnt];
   int pos;
@@ -124,7 +124,7 @@ int create_mpi_datatypes(const MPI_Datatype basetype,const int msgcnt,PIO_Offset
   MPI_Datatype newtype;
   int blocksize;
 
-  mtype = (int *) malloc(max(1,msgcnt)*sizeof(int));
+  mtype = (MPI_Datatype *) malloc(max(1,msgcnt)*sizeof(MPI_Datatype));
   mtype[0] = MPI_DATATYPE_NULL;
   pos = 0;
   ii = 0;
@@ -176,7 +176,7 @@ int compute_counts(iosystem_desc_t *ios, io_desc_t *iodesc,const int niomap)
   int ncomptasks;
   int iorank;
   int *scount;
-  int *sr_types;
+  MPI_Datatype *sr_types;
   int *send_counts;
   int *send_displs;
   int *recv_counts;
@@ -189,7 +189,7 @@ int compute_counts(iosystem_desc_t *ios, io_desc_t *iodesc,const int niomap)
   int pio_maxreq;  
   int ierr;
   int io_comprank;
-  int dtype;
+  MPI_Datatype dtype;
   int ioindex;
   int tsize, tsizei, tsizel;
   int ndof= iodesc->ndof;

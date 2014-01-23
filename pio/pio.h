@@ -31,9 +31,9 @@ typedef struct io_desc_t
   MPI_Datatype basetype;
   int *dest_ioproc;
   int *rfrom;
-  int *rtype;
+  MPI_Datatype *rtype;
   int *scount;
-  int *stype;
+  MPI_Datatype *stype;
   int async_id;
   int nrecvs;
   int compsize;

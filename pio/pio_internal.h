@@ -30,13 +30,13 @@ void piodie(const char *msg,const char *fname, const int line);
 int CalcStartandCount(const int basetype, const int ndims, const int *gdims, const int num_io_procs,
 		      const int myiorank, PIO_Offset *start, PIO_Offset *kount);
 void CheckMPIReturn(const int ierr,const char file[],const int line);
-int pio_fc_gather( void *sendbuf, const int sendcnt, const int sendtype,
-		   void *recvbuf, const int recvcnt, const int recvtype, const int root, 
+int pio_fc_gather( void *sendbuf, const int sendcnt, const MPI_Datatype sendtype,
+		   void *recvbuf, const int recvcnt, const MPI_Datatype recvtype, const int root, 
 		   MPI_Comm comm, const int flow_cntl);
 
 int pio_swapm(const int nprocs, const int mytask, void *sndbuf, const int sbuf_size, const int sndlths[],
-	      const int sdispls[], const int stypes[], void *rcvbuf, const int rbuf_size, const int rcvlths[], 
-	      const int rdispls[], const int rtypes[], MPI_Comm comm, const bool handshake, const bool isend, 
+	      const int sdispls[], const MPI_Datatype stypes[], void *rcvbuf, const int rbuf_size, const int rcvlths[], 
+	      const int rdispls[], const MPI_Datatype rtypes[], MPI_Comm comm, const bool handshake, const bool isend, 
 	      const int max_requests);
 long long lgcd_array(int nain, long long*ain);
 PIO_Offset GCDblocksize(const int arrlen, const PIO_Offset arr_in[]);

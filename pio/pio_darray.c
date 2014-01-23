@@ -9,7 +9,6 @@
       ((type *) arr)[_i] = *((type *) fill)
 
 
-
 int c_write_nc(const file_desc_t *file,const io_desc_t *iodesc, void *IOBUF, const int varid, const PIO_Offset start[], const PIO_Offset count[], MPI_Request *request)
 {
   int ierr;
@@ -83,20 +82,13 @@ int c_write_nc(const file_desc_t *file,const io_desc_t *iodesc, void *IOBUF, con
 	    mpierr = MPI_Recv( tcount, ndims, MPI_INT, i,2*ios->num_iotasks+i, ios->io_comm, &status);
 	    mpierr = MPI_Recv( tmp_buf, iodesc->maxiobuflen, iodesc->basetype, i, i, ios->io_comm, &status);
 	  }
-
-	  switch(iodesc->basetype){
-	  case MPI_DOUBLE:
-	  case MPI_REAL8:
-	    ierr = nc_put_vara_double (ncid, varid, tstart, tcount, (const double *) tmp_buf); 
-	    break;
-	  case MPI_INTEGER:
+	  if(iodesc->basetype == MPI_INTEGER){
 	    ierr = nc_put_vara_int (ncid, varid, tstart, tcount, (const int *) tmp_buf); 
-	    break;
-	  case MPI_FLOAT:
-	  case MPI_REAL4:
+	  }else if(iodesc->basetype == MPI_DOUBLE || iodesc->basetype == MPI_REAL8){
+	    ierr = nc_put_vara_double (ncid, varid, tstart, tcount, (const double *) tmp_buf); 
+	  }else if(iodesc->basetype == MPI_FLOAT || iodesc->basetype == MPI_REAL4){
 	    ierr = nc_put_vara_float (ncid,varid, tstart, tcount, (const float *) tmp_buf); 
-	    break;
-	  default:
+	  }else{
 	    fprintf(stderr,"Type not recognized %d in pioc_write_darray\n",(int) iodesc->basetype);
 	  }
 	}       
@@ -206,22 +198,15 @@ int PIOc_write_darray(const int ncid, const int vid, const int ioid, const PIO_O
     rlen = iodesc->llen;
 
     vtype = (MPI_Datatype) iodesc->basetype;
-    switch(vtype){
-    case MPI_INTEGER:
+    if(vtype == MPI_INTEGER){
       MALLOC_FILL_ARRAY(int, rlen, fillvalue, iobuf);
-      break;
-    case MPI_FLOAT:
-    case MPI_REAL4:
+    }else if(vtype == MPI_FLOAT || vtype == MPI_REAL4){
       MALLOC_FILL_ARRAY(float, rlen, fillvalue, iobuf);
-      break;
-    case MPI_DOUBLE:
-    case MPI_REAL8:
+    }else if(vtype == MPI_DOUBLE || vtype == MPI_REAL8){
       MALLOC_FILL_ARRAY(double, rlen, fillvalue, iobuf);
-      break;
-    case MPI_CHARACTER:
+    }else if(vtype == MPI_CHARACTER){
       MALLOC_FILL_ARRAY(char, rlen, fillvalue, iobuf);
-      break;
-    default:
+    }else{
       fprintf(stderr,"Type not recognized %d in pioc_write_darray\n",vtype);
     }
   }
