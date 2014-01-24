@@ -4,7 +4,7 @@
 
 #define MALLOC_FILL_ARRAY(type, n, fill, arr) \
   arr = malloc(n * sizeof (type));	      \
-  if(fill != NULL) \
+  if(fill != NULL)                                       \
     for(int _i=0; _i<n; _i++)			\
       ((type *) arr)[_i] = *((type *) fill)
 
@@ -210,8 +210,14 @@ int PIOc_write_darray(const int ncid, const int vid, const int ioid, const PIO_O
       fprintf(stderr,"Type not recognized %d in pioc_write_darray\n",vtype);
     }
   }
+
+  printf("array %ld %d %d %d\n", (size_t) array, ((int *) array)[0],((int *) array)[1],((int *) array)[2]);
+
   ierr = box_rearrange_comp2io(ios, iodesc, arraylen, array, rlen, iobuf, 0, 0);
 
+  if(ios->ioproc)
+    printf("iobuf %d %d %d %d %d %d\n",((int *) iobuf)[0],((int *) iobuf)[1],((int *) iobuf)[2], ((int *) iobuf)[3],((int *) iobuf)[4],((int *) iobuf)[5]);
+    
 
   
   switch(file->iotype){

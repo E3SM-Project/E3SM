@@ -42,7 +42,7 @@ bool find_ioproc(const PIO_Offset gcoord[], const PIO_Offset lb[], const PIO_Off
   for(i=0,ii=0; i<nioproc; i++){
       for(j=0;j<ndim;j++,ii++){
 	if(!found[j]){
-	    printf("lb %ld gcoord %ld ub %ld ioproc %d\n",lb[ii],gcoord[j],ub[ii],i);
+	  //	    printf("lb %ld gcoord %ld ub %ld ioproc %d\n",lb[ii],gcoord[j],ub[ii],i);
 	  if(lb[ii] <= gcoord[j] && gcoord[j] < ub[ii]){
 	    found[j] = true;
 	    *ioproc = i;
@@ -123,9 +123,11 @@ int create_mpi_datatypes(const MPI_Datatype basetype,const int msgcnt,PIO_Offset
   PIO_Offset i8blocksize;
   MPI_Datatype newtype;
   int blocksize;
+  bool freenewtype=true;
 
-  mtype = (MPI_Datatype *) malloc(max(1,msgcnt)*sizeof(MPI_Datatype));
+
   mtype[0] = MPI_DATATYPE_NULL;
+
   pos = 0;
   ii = 0;
   if(msgcnt>0){
@@ -134,33 +136,42 @@ int create_mpi_datatypes(const MPI_Datatype basetype,const int msgcnt,PIO_Offset
 	indptr = mindex+pos;
 	bsizeT[ii] = GCDblocksize(mcount[i], indptr);
 	ii++;
+	pos+=mcount[i];
       }
-      pos+=mcount[i];
     }
     blocksize = (int) lgcd_array(ii ,bsizeT);
 
     CheckMPIReturn(MPI_Type_contiguous(blocksize, basetype, &newtype),__FILE__,__LINE__);
     CheckMPIReturn(MPI_Type_commit(&newtype), __FILE__,__LINE__);
 
+    printf("%s %d %ld\n",__FILE__,__LINE__, blocksize);
+
     pos = 0;
     for(int i=0;i< msgcnt; i++){
       if(mcount[i]>0){
 	int len = mcount[i]/blocksize;
-	int *displace = (int *) malloc(len * sizeof(int));
-	if(blocksize==1)
-	  for(int j=0;j<len;j++)
-	    displace[j] = (int) (mindex+pos)[j];
-	else
-	  for(int j=0;j<len;j++)
-	    (mindex+pos)[j]++;
+	if(len>1){
+	  int *displace = (int *) malloc(len * sizeof(int));
+	  if(blocksize==1)
+	    for(int j=0;j<len;j++)
+	      displace[j] = (int) (mindex+pos)[j];
+	  else
+	    for(int j=0;j<len;j++)
+	      (mindex+pos)[j]++;
 
-	CheckMPIReturn(MPI_Type_create_indexed_block(len, 1, displace, newtype, mtype+i),__FILE__,__LINE__);
-	CheckMPIReturn(MPI_Type_commit(mtype+i), __FILE__,__LINE__);
-	free(displace);
+	  printf("%s %d %d %d\n",__FILE__,__LINE__, len, displace[0]);
+	  CheckMPIReturn(MPI_Type_create_indexed_block(len, 1, displace, newtype, mtype+i),__FILE__,__LINE__);
+	  CheckMPIReturn(MPI_Type_commit(mtype+i), __FILE__,__LINE__);
+	  free(displace);
+	}else{
+	  mtype[i] = newtype;
+	  freenewtype= false;
+	}
 	pos+=mcount[i];
+
       }
     }
-    CheckMPIReturn(MPI_Type_free(&newtype),__FILE__,__LINE__);
+    if(freenewtype) CheckMPIReturn(MPI_Type_free(&newtype),__FILE__,__LINE__);
   }
   return PIO_NOERR;
 
@@ -197,8 +208,6 @@ int compute_counts(iosystem_desc_t *ios, io_desc_t *iodesc,const int niomap)
   bool pio_isend;
   
 
-  rindex = (PIO_Offset *) calloc(max(1,niomap),sizeof(PIO_Offset));
-
   pio_hs = false;
   pio_isend = false;
   pio_maxreq = DEF_P2P_MAXREQ;
@@ -209,7 +218,7 @@ int compute_counts(iosystem_desc_t *ios, io_desc_t *iodesc,const int niomap)
   // scount is the amount of data sent to each task from the current task
   for(i=0;i<ndof; i++){
     iorank = iodesc->dest_ioproc[i];
-    if(iodesc->dest_ioproc[i] != -1){
+    if(iorank != -1){
       (scount[iorank])++;
     }
   }
@@ -232,8 +241,6 @@ int compute_counts(iosystem_desc_t *ios, io_desc_t *iodesc,const int niomap)
     send_displs[io_comprank] = i*sizeof(int);
   }
 
-  for(i=0;i<ncomptasks;i++)
-    recv_counts[i]=0;
 
   if(ios->ioproc){
     recv_buf = (int *) malloc(ncomptasks * sizeof(int));
@@ -249,12 +256,18 @@ int compute_counts(iosystem_desc_t *ios, io_desc_t *iodesc,const int niomap)
     recv_buf[0]=0;
   }
   // Share the scount from each compute task to all io tasks
+  /*
+  printf("\nsend_counts(%d):",__LINE__);
+    for(i=0;i<ncomptasks;i++)
+      printf(" %d %d ",send_counts[i], sr_types[i]);
+    printf("\n");
+  */
   
   ierr = pio_swapm( ncomptasks, ios->comp_rank, scount, niotasks,
 		    send_counts, send_displs, sr_types, recv_buf, rbuf_size, recv_counts, recv_displs,
 		    sr_types,ios->union_comm, pio_hs, pio_isend, pio_maxreq);
 
-  /*
+  /*  
   if(ios->ioproc){
     printf("\nrdispls:");
     for(i=0;i<ncomptasks;i++)
@@ -265,7 +278,9 @@ int compute_counts(iosystem_desc_t *ios, io_desc_t *iodesc,const int niomap)
       printf(" %d ",recv_buf[i]);
     printf("\n");
   }
-  */
+  */  
+
+
   nrecvs = 0;
   if(ios->ioproc){
     for(i=0;i<ncomptasks; i++){
@@ -353,6 +368,8 @@ int compute_counts(iosystem_desc_t *ios, io_desc_t *iodesc,const int niomap)
   }else{
     rbuf_size=1;
   }
+  rindex = (PIO_Offset *) calloc(max(1,niomap),sizeof(PIO_Offset));
+
 
   ierr = pio_swapm( ncomptasks, ios->comp_rank, s2rindex, ndof,
 		    send_counts, send_displs, sr_types, rindex, rbuf_size, recv_counts, recv_displs,
@@ -370,17 +387,23 @@ int compute_counts(iosystem_desc_t *ios, io_desc_t *iodesc,const int niomap)
   iodesc->stype = NULL;
 
   if(ios->ioproc){
+    iodesc->rtype = (MPI_Datatype *) malloc(max(1,nrecvs)*sizeof(MPI_Datatype));
     create_mpi_datatypes(iodesc->basetype, nrecvs, rindex, rcount, iodesc->rtype);
   }
+    // for(i=0;i<nrecvs;i++)
+    // iodesc->rtype[i] = iodesc->basetype;
+
+
+  iodesc->stype = (MPI_Datatype *) malloc(niotasks*sizeof(MPI_Datatype));
+  // for(i=0;i<niotasks;i++)
+  //   iodesc->stype[i]=iodesc->basetype;
+  create_mpi_datatypes(iodesc->basetype, niotasks, sindex, scount, iodesc->stype);
+
+
 
   free(rindex);
   free(rcount);
-
-  create_mpi_datatypes(iodesc->basetype, niotasks, sindex, scount, iodesc->stype);
-
   free(sindex);
-  free(scount);
-
   return ierr;
 
 }
@@ -389,31 +412,37 @@ int box_rearrange_comp2io(iosystem_desc_t *ios, io_desc_t *iodesc, const int sle
 			  void *rbuf, const int comm_option, const int fc_options)
 {
 
-  bool handshake=false;
+  bool handshake=true;
   bool isend = false;
   int maxreq = MAX_GATHER_BLOCK_SIZE;
   int nprocs = ios->num_comptasks;
   int *scount = iodesc->scount;
-  int *sendcounts = (int *) malloc(nprocs * sizeof(int));
-  int *recvcounts = (int *) malloc(nprocs * sizeof(int));
-  int *displs =  (int *) malloc(nprocs * sizeof(int));
-  MPI_Datatype *sendtypes = (MPI_Datatype *) malloc(nprocs * sizeof(MPI_Datatype));
-  MPI_Datatype *recvtypes = (MPI_Datatype *) malloc(nprocs * sizeof(MPI_Datatype));
-  int i;
-  
+  int *sendcounts = (int *) calloc(nprocs , sizeof(int));
+  int *recvcounts = (int *) calloc(nprocs , sizeof(int));
+  int *sdispls =  (int *) calloc(nprocs , sizeof(int));
+  int *rdispls =  (int *) calloc(nprocs , sizeof(int));
+  MPI_Datatype *sendtypes = (MPI_Datatype *) malloc(nprocs* sizeof(MPI_Datatype));
+  MPI_Datatype *recvtypes = (MPI_Datatype *) malloc(nprocs* sizeof(MPI_Datatype));
+  int i, tsize;
+
   for(i=0;i<nprocs;i++){
-    displs[i]=0;
+      recvtypes[ i ] = MPI_DATATYPE_NULL;
+      sendtypes[ i] =  MPI_DATATYPE_NULL;
   }
+
 
   if(ios->ioproc){
     for( i=0;i<iodesc->nrecvs;i++){
       recvcounts[ iodesc->rfrom[i] ] = 1;
       recvtypes[ iodesc->rfrom[i] ] = iodesc->rtype[i];
+      //recvtypes[ iodesc->rfrom[i] ] = iodesc->basetype;
+      
+      MPI_Type_size(iodesc->rtype[i],&tsize);
+      rdispls[ iodesc->rfrom[i] ] = i*tsize;
     }
   }else{
     for( i=0;i<iodesc->nrecvs;i++){
       recvcounts[ iodesc->rfrom[i] ] = 0;
-      recvtypes[ iodesc->rfrom[i] ] = MPI_DATATYPE_NULL;
     }
   }  
 
@@ -421,17 +450,17 @@ int box_rearrange_comp2io(iosystem_desc_t *ios, io_desc_t *iodesc, const int sle
     int io_comprank = ios->ioranks[i];
     if(scount[i] > 0) {
       sendcounts[io_comprank]=1;
-      sendtypes[io_comprank]=iodesc->stype[i];
+            sendtypes[io_comprank]=iodesc->stype[i];
+      //      sendtypes[io_comprank] = iodesc->basetype;
+      MPI_Type_size(iodesc->stype[i],&tsize);
+      sdispls[io_comprank] = i*tsize;
     }else{
       sendcounts[io_comprank]=0;
-      sendtypes[io_comprank]=MPI_DATATYPE_NULL;
     }
   }      
 
-
-  pio_swapm( nprocs, ios->union_rank, sbuf, slen, sendcounts, displs, sendtypes,
-	     rbuf, rlen, recvcounts, displs, recvtypes, ios->union_comm, handshake, isend, maxreq);
-
+  pio_swapm( nprocs, ios->union_rank, sbuf, slen, sendcounts, sdispls, sendtypes,
+	     rbuf, rlen, recvcounts, rdispls, recvtypes, ios->union_comm, handshake, isend, 0);
 
   free(sendtypes);
   free(recvtypes);
@@ -465,7 +494,7 @@ int box_rearrange_io2comp(iosystem_desc_t *ios, io_desc_t *iodesc, const int sle
   if(ios->ioproc){
     for( i=0;i<iodesc->nrecvs;i++){
       sendcounts[ iodesc->rfrom[i] ] = 1;
-      sendtypes[ iodesc->rfrom[i] ] = iodesc->rtype[i];
+      sendtypes[ iodesc->rfrom[i] ] = iodesc->basetype;
     }
   }else{
     for( i=0;i<iodesc->nrecvs;i++){
@@ -478,15 +507,20 @@ int box_rearrange_io2comp(iosystem_desc_t *ios, io_desc_t *iodesc, const int sle
     int io_comprank = ios->ioranks[i];
     if(scount[i] > 0) {
       recvcounts[io_comprank]=1;
-      recvtypes[io_comprank]=iodesc->stype[i];
+      recvtypes[io_comprank]=iodesc->basetype;
     }else{
       recvcounts[io_comprank]=0;
       recvtypes[io_comprank]=MPI_DATATYPE_NULL;
     }
   }      
 
+  printf("\nsend_counts(%d):",__LINE__);
+    for(i=0;i<nprocs;i++)
+      printf(" %d ",sendcounts[i]);
+    printf("\n");
+
   pio_swapm( nprocs, ios->union_rank, sbuf, slen, sendcounts, displs, sendtypes,
-	     rbuf, rlen, recvcounts, displs, recvtypes, ios->union_comm, handshake, isend,maxreq);
+	     rbuf, rlen, recvcounts, displs, recvtypes, ios->union_comm, handshake, isend, maxreq);
 
   free(sendtypes);
   free(recvtypes);
@@ -556,8 +590,18 @@ int box_rearrange_create(iosystem_desc_t *ios,const int maplen, const PIO_Offset
   //   printf("start %ld count %ld\n",iodesc->start[0],iodesc->count[0]);
 
 
+  printf("\nsend_counts(%d):",__LINE__);
+    for(i=0;i<ios->num_comptasks;i++)
+      printf(" %d ",sndlths[i]);
+    printf("\n");
+
   pio_swapm(ios->num_comptasks, ios->union_rank, iodesc->count, ndim, sndlths, sdispls, dtypes,
 	    count, ndim*nioprocs, recvlths, rdispls, dtypes, ios->union_comm, false, false, MAX_GATHER_BLOCK_SIZE);
+
+  printf("\nsend_counts(%d):",__LINE__);
+    for(i=0;i<ios->num_comptasks;i++)
+      printf(" %d ",sndlths[i]);
+    printf("\n");
 
   pio_swapm(ios->num_comptasks, ios->union_rank, iodesc->start, ndim, sndlths, sdispls, dtypes,
 	    start, ndim*nioprocs, recvlths, rdispls, dtypes, ios->union_comm, false, false, MAX_GATHER_BLOCK_SIZE);

@@ -154,6 +154,9 @@ int pio_swapm(const int nprocs, const int mytask, void *sndbuf, const int sbuf_s
   int cnt;
 
   if(max_requests == 0) {
+    for(int i=0;i<nprocs;i++)
+      printf("%d: sndlth %d sdispls %d rcvlth %d rdispls %d \n",mytask, sndlths[i],sdispls[i],rcvlths[i],rdispls[i]);
+
     CheckMPIReturn(MPI_Alltoallw( sndbuf, sndlths, sdispls, stypes, rcvbuf, rcvlths, rdispls, rtypes, comm),__FILE__,__LINE__);
     return PIO_NOERR;
   }
@@ -269,7 +272,7 @@ int pio_swapm(const int nprocs, const int mytask, void *sndbuf, const int sbuf_s
   return PIO_NOERR;
 }
 
-#ifdef TESTSWAPM
+#ifdef TESTSWAPM_OLD
 #include <sys/time.h>
 /*
 This program tests MPI_Alltoallw by having processor i send different
@@ -344,6 +347,7 @@ int main( int argc, char **argv )
 
     }
 
+    
 
     /* Test pio_swapm Create and load the arguments to alltoallv */
     sendcounts = (int *)malloc( size * sizeof(int) );
@@ -366,9 +370,9 @@ int main( int argc, char **argv )
         sendtypes[i] = recvtypes[i] = MPI_INT;
     }
     
-    for(int msg_cnt=4; msg_cnt<size; msg_cnt*=2){
-      if(rank==0) printf("message count %d\n",msg_cnt);
-      
+    //    for(int msg_cnt=4; msg_cnt<size; msg_cnt*=2){
+    //   if(rank==0) printf("message count %d\n",msg_cnt);
+    msg_cnt = 0;
     for(int itest=0;itest<5; itest++){
       bool hs=false; 
       bool isend=false;
@@ -444,7 +448,7 @@ int main( int argc, char **argv )
       }
     }
 
-    }
+    //    }
 
     free( sendtypes );
     free( recvtypes );

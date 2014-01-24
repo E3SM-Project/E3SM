@@ -66,7 +66,7 @@ int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const
     break;
   case PIO_INT:   
   defaut:
-    iodesc->basetype = MPI_INT;
+    iodesc->basetype = MPI_INTEGER;
     break;
   }    
 

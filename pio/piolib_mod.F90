@@ -1021,7 +1021,7 @@ contains
 
     !-------------------------------------------
     ! for testing purposes set the iomap
-    ! (decompmap_t) to something basic for
+      ! (decompmap_t) to something basic for
     ! testing.
     !-------------------------------------------
 #ifdef MEMCHK	

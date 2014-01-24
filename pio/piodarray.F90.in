@@ -96,6 +96,60 @@ contains
   end subroutine pio_set_buffer_size_limit
 
 ! TYPE real,int,double
+  subroutine write_darray_1d_cinterface_{TYPE} (File,varDesc,ioDesc, arraylen, array, iostat, fillval)
+    use iso_c_binding
+    ! !DESCRIPTION:
+    !  Writes a 2-d slab of TYPE to a netcdf file.
+    !
+    ! !REVISION HISTORY:
+    !  same as module
+
+    ! !INPUT PARAMETERS:
+
+    type (File_desc_t), intent(inout) :: &
+         File                   ! file information
+
+    type (var_desc_t), intent(inout) :: &
+         varDesc                      ! variable descriptor
+
+    type (io_desc_t), intent(inout) :: &
+         ioDesc                      ! variable descriptor
+
+    {VTYPE}, dimension(*), target, intent(in) ::  &
+         array                 ! array to be written
+
+    {VTYPE}, optional, target, intent(in) :: fillval    ! rearrange receiver fill value
+    type(iosystem_desc_t), pointer :: ios
+    integer,intent(in) :: arraylen
+    integer(i4), intent(out) :: iostat
+    integer :: ierr
+
+    character(len=*), parameter :: subName=modName//'::write_darray_{TYPE}'
+
+    interface
+       integer(C_INT) function PIOc_write_darray(ncid, vid, ioid, arraylen, array, fillvalue) &
+            bind(C,name="PIOc_write_darray")
+         use iso_c_binding
+         integer(C_INT), value :: ncid
+         integer(C_INT), value :: vid
+         integer(C_INT), value :: ioid
+         integer(C_SIZE_T), value :: arraylen
+         type(C_PTR), value :: array
+         type(C_PTR), value :: fillvalue
+       end function PIOc_write_darray
+    end interface
+
+    if(present(fillval)) then
+       ierr = PIOc_write_darray(file%fh, varDesc%varid, iodesc%ioid, int(arraylen,C_SIZE_T),C_LOC(array), C_LOC(fillval))
+    else
+       ierr = PIOc_write_darray(file%fh, varDesc%varid, iodesc%ioid, int(arraylen,C_SIZE_T), C_LOC(array), C_NULL_PTR)
+    endif
+    
+    call MPI_ABORT(MPI_COMM_WORLD,1,ierr)
+
+  end subroutine write_darray_1d_cinterface_{TYPE}
+
+! TYPE real,int,double
 !> 
 !! @public
 !! @ingroup PIO_write_darray
@@ -109,9 +163,8 @@ contains
 !! @param fillval : An optional fill value to fill holes in the data written
 !<  
   subroutine write_darray_1d_{TYPE} (File,varDesc,ioDesc, array, iostat, fillval)
-    use iso_c_binding
     ! !DESCRIPTION:
-    !  Writes a 2-d slab of TYPE to a netcdf file.
+    !  Writes a block of TYPE to a netcdf file.
     !
     ! !REVISION HISTORY:
     !  same as module
@@ -131,34 +184,12 @@ contains
          array                 ! array to be written
 
     {VTYPE}, optional, target, intent(in) :: fillval    ! rearrange receiver fill value
-    type(iosystem_desc_t), pointer :: ios
-    type(C_PTR), pointer :: carray
     integer(i4), intent(out) :: iostat
-    integer :: msg, ierr
-    integer :: hasfill, itype
+    integer :: ierr
 
     character(len=*), parameter :: subName=modName//'::write_darray_{TYPE}'
 
-    interface
-       integer(C_INT) function PIOc_write_darray(ncid, vid, ioid, arraylen, array, fillvalue) &
-            bind(C,name="PIOc_write_darray")
-         use iso_c_binding
-         integer(C_INT), value :: ncid
-         integer(C_INT), value :: vid
-         integer(C_INT), value :: ioid
-         integer(C_SIZE_T), value :: arraylen
-         type(C_PTR) :: array
-         type(C_PTR), value :: fillvalue
-       end function PIOc_write_darray
-    end interface
-    carray = transfer(array,carray)
-    if(present(fillval)) then
-       ierr = PIOc_write_darray(file%fh, varDesc%varid, iodesc%ioid, int(size(array),C_SIZE_T), &
-            carray, C_LOC(fillval))
-    else
-       ierr = PIOc_write_darray(file%fh, varDesc%varid, iodesc%ioid, int(size(array),C_SIZE_T), &
-            carray, C_NULL_PTR)
-    endif
+    call write_darray_1d_cinterface_{TYPE} (file, varDesc, iodesc, size(array), array, iostat, fillval)
 
   end subroutine write_darray_1d_{TYPE}
 
