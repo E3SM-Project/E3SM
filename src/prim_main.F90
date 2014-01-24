@@ -37,6 +37,11 @@ program prim_main
   ! -----------------------------------------------
   use common_io_mod, only:  output_dir
   ! -----------------------------------------------
+#ifdef _REFSOLN
+  use prim_state_mod, only : prim_printstate_par
+  ! -----------------------------------------------
+#endif
+
 
 #ifdef PIO_INTERP
   use interp_movie_mod, only : interp_movie_output, interp_movie_finish, interp_movie_init
@@ -274,6 +279,11 @@ program prim_main
 #else
      call prim_movie_output(elem, tl, hvcoord, hybrid, 1,nelemd, fvm)
 #endif
+
+#ifdef _REFSOLN
+     call prim_printstate_par(elem, tl,hybrid,hvcoord,nets,nete, par)
+#endif 
+
      ! ============================================================
      ! Write restart files if required 
      ! ============================================================

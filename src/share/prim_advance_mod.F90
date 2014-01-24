@@ -187,9 +187,7 @@ contains
 !
 ! integration = "full_imp"
 !
-!   tstep_type=1  Backward Euler, first order  (under development)
-!
-!   tstep_type=2  Crank Nicolson, second order (under development)
+!   tstep_type=1  Backward Euler or BDF2 implicit dynamics
 !
 
 ! default weights for computing mean dynamics fluxes
@@ -385,25 +383,25 @@ contains
        ! u5 = u0 +  dt/4 RHS(u0)) + 3dt/4 RHS(u4)
 #endif
 
-    else if (method==11) then
-       ! Backward Euler fully implicit JFNK method (vertically langragian not active yet)
+    else if ((method==11).or.(method==12)) then
+       ! Fully implicit JFNK method (vertically langragian not active yet)
        if (rsplit > 0) then
        call abortmp('ERROR: full_imp integration not yet coded for vert lagrangian adv option')
        end if
-      if (hybrid%masterthread) print*, "fully implicit integration is still under development"
+!      if (hybrid%masterthread) print*, "fully implicit integration is still under development"
 
 #ifdef TRILINOS
       lenx=(np*np*nlev*3 + np*np*1)*(nete-nets+1)  ! 3 3d vars plus 1 2d vars
       allocate(xstate(lenx))
       xstate(:) = 0d0
 
-      call initialize(state_object, lenx, elem, hvcoord, compute_diagnostics, &
+      call initialize(state_object, method, elem, hvcoord, compute_diagnostics, &
         qn0, eta_ave_w, hybrid, deriv, dt, np1, n0, np1, nets, nete)
 
-      call initialize(pre_object, lenx, elem, hvcoord, compute_diagnostics, &
+      call initialize(pre_object, method, elem, hvcoord, compute_diagnostics, &
         qn0, eta_ave_w, hybrid, deriv, dt, np1, n0, np1, nets, nete)
 
-      call initialize(jac_object, lenx, elem, hvcoord, compute_diagnostics, &
+      call initialize(jac_object, method, elem, hvcoord, compute_diagnostics, &
         qn0, eta_ave_w, hybrid, deriv, dt, np1, n0, np1, nets, nete)
 
 !      pc_elem = elem
@@ -1686,7 +1684,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            do k=1,nlev
               lap_p=laplace_sphere_wk(elem(ie)%state%T(:,:,k,nt),deriv,elem(ie),var_coef=.false.)
               lap_v=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie),var_coef=.false.)
-              ! advace in time.  (note: DSS commutes with time stepping, so we
+              ! advance in time.  (note: DSS commutes with time stepping, so we
               ! can time advance and then DSS.  this has the advantage of
               ! not letting any discontinuties accumulate in p,v via roundoff
               do j=1,np
@@ -3070,9 +3068,15 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   subroutine residual(xstate, fx, nelemd, c_ptr_to_object) bind(C,name='calc_f')
 
   ! ===================================
-  ! compute the RHS, accumulate into u(np1) and apply DSS
+  ! compute the RHS, accumulate into a residual for each dependent variable and apply DSS
   !
-  !           u(np1) = u(nm1) + dt2*DSS[ RHS(u(n0)) ]
+  ! For the Backward Euler first order option 
+  !
+  !           F(u)  = (u(np1) - u(n0))/dt  -  DSS[ RHS(u(np1)) ]
+  !
+  ! For the BDF2 second order option 
+  !
+  !           F(u)  = (u(np1) - u(n0))/dt  -  DSS[ RHS(u(np1)) ]
   !
   ! This subroutine is normally called to compute a leapfrog timestep
   ! but by adjusting np1,nm1,n0 and dt2, many other timesteps can be
@@ -3160,7 +3164,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   integer(c_int) ,intent(in) ,value  :: nelemd
   real (c_double) ,intent(in)        :: xstate(nelemd)
   real (c_double) ,intent(out)       :: fx(nelemd)
-  integer                            :: lenx
+  integer                            :: method
 
   type(derived_type) ,pointer        :: fptr=>NULL()
   type(c_ptr)                        :: c_ptr_to_object
@@ -3173,6 +3177,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
     nm1        = fptr%ntl2  ! n0
     n0         = fptr%ntl3  ! np1
 
+    method     = fptr%method
     dt2        = fptr%dt
     dti        = 1/dt2
     hvcoord    = fptr%hvcoord
@@ -3194,6 +3199,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
        fttens = 0.0d0
        fpstens = 0.0d0
        fdptens = 0.0d0
+!       write (iulog,*) 'implcit integration method= ', method
 
        lx = 1
 	   do ie=nets,nete

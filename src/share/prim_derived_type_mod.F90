@@ -14,7 +14,7 @@ module prim_derived_type_mod
 
   type ,public :: derived_type
 
-    integer                 :: n
+    integer                 :: method
     type (element_t)      ,allocatable ,dimension(:) :: base
     type (hvcoord_t)        :: hvcoord
     type (hybrid_t)         :: hybrid
@@ -55,7 +55,7 @@ module prim_derived_type_mod
 !  end type precon_type
 
  contains
-  subroutine initialize(object, lenx, elem, hvcoord, compute_diagnostics, &
+  subroutine initialize(object, method, elem, hvcoord, compute_diagnostics, &
            n_Q, eta_ave_w, hybrid, deriv, dt, ntl1, ntl2, ntl3, nets, nete)
 
    use kinds, only : real_kind
@@ -68,7 +68,7 @@ module prim_derived_type_mod
 
     integer :: ie
 
-    integer                ,intent(in)  :: lenx
+    integer                ,intent(in)  :: method
     type (element_t)       ,intent(in)  :: elem(nets:nete)
     type (hvcoord_t)       ,intent(in)  :: hvcoord
     type (hybrid_t)        ,intent(in)  :: hybrid
@@ -85,7 +85,7 @@ module prim_derived_type_mod
     type(derived_type)     ,intent(out) :: object
 
    allocate(object%base(nets:nete))
-   object%n = lenx
+   object%method = method
     do ie=nets,nete
    object%base(ie)= elem(ie)
     end do
