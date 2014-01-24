@@ -52,31 +52,8 @@ int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const
   if(ios == NULL)
     return PIO_EBADID;
 
-  iodesc = (io_desc_t *) malloc(sizeof(io_desc_t));
+  iodesc = malloc_iodesc(basetype, ndims);
 
-  switch(basetype){
-  case PIO_REAL:			
-    iodesc->basetype=MPI_FLOAT;
-    break;
-  case PIO_DOUBLE:
-    iodesc->basetype=MPI_DOUBLE;
-    break;
-  case PIO_CHAR:
-    iodesc->basetype=MPI_CHAR;
-    break;
-  case PIO_INT:   
-  defaut:
-    iodesc->basetype = MPI_INTEGER;
-    break;
-  }    
-
-  iodesc->ndims = ndims;
-  iodesc->start = (PIO_Offset *) malloc(sizeof(PIO_Offset)*ndims);
-  iodesc->count = (PIO_Offset *) malloc(sizeof(PIO_Offset)*ndims);
-  for(int i=0;i<ndims;i++){
-    iodesc->start[i] = 0;
-    iodesc->count[i] = 0;
-  }
   
   if(ios->ioproc){
     
@@ -100,7 +77,7 @@ int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const
     
   }
 
-  CheckMPIReturn(MPI_Bcast(&(ios->num_aiotasks), 1, MPI_INT, ios->iomaster,ios->my_comm),__FILE__,__LINE__);
+  CheckMPIReturn(MPI_Bcast(&(ios->num_aiotasks), 1, MPI_INT, ios->ioroot,ios->my_comm),__FILE__,__LINE__);
 
 
   ierr = box_rearrange_create( ios, maplen, compmap, dims, ndims, ios->num_aiotasks, iodesc);
@@ -137,7 +114,8 @@ int PIOc_Init_Intracomm(const MPI_Comm comp_comm,
   iosys->intercomm = MPI_COMM_NULL;
   iosys->error_handler = PIO_INTERNAL_ERROR;
   iosys->async_interface= false;
-  iosys->compmaster = 0;
+  iosys->compmaster = false;
+  iosys->iomaster = false;
   iosys->ioproc = false;
 #ifndef _MPISERIAL
   iosys->info = MPI_INFO_NULL;
@@ -147,10 +125,12 @@ int PIOc_Init_Intracomm(const MPI_Comm comp_comm,
 
   CheckMPIReturn(MPI_Comm_rank(comp_comm, &(iosys->comp_rank)),__FILE__,__LINE__);
   CheckMPIReturn(MPI_Comm_size(comp_comm, &(iosys->num_comptasks)),__FILE__,__LINE__);
-  
   if((num_iotasks < 1) || ((num_iotasks*stride) > iosys->num_comptasks)){
     return PIO_EBADID;
   }
+  if(iosys->comp_rank==0)
+    iosys->compmaster = true;
+
 #ifndef _MPISERIAL
   CheckMPIReturn(MPI_Info_create(&(iosys->info)),__FILE__,__LINE__);
 #endif
@@ -161,8 +141,9 @@ int PIOc_Init_Intracomm(const MPI_Comm comp_comm,
       iosys->ioproc = true;
   }
   iosys->ioroot = iosys->ioranks[0];
-  iosys->iomaster = iosys->ioranks[0];
-  iosys->compmaster = 0;
+
+  if(iosys->comp_rank == iosys->ioranks[0])
+    iosys->iomaster = true;
 
   CheckMPIReturn(MPI_Comm_group(comp_comm, &compgroup),__FILE__,__LINE__);
 			

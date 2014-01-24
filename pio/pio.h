@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h> // memcpy
+
 #ifdef _NETCDF
 #include <netcdf.h>
 #ifdef _NETCDF4
@@ -14,8 +15,12 @@
 #ifdef _PNETCDF
 #include <pnetcdf.h>
 #endif
+
 #define PIO_Offset MPI_Offset
 #define PIO_MAX_VARS 8192
+
+int PIOc_freedecomp(int iosysid, int ioid);
+
 
 typedef struct var_desc_t
 {
@@ -66,8 +71,8 @@ typedef struct iosystem_desc_t
   int comp_rank;
   int io_rank;
 
-  int iomaster;
-  int compmaster;
+  bool iomaster;
+  bool compmaster;
 
   int ioroot;
   int comproot;
@@ -185,7 +190,8 @@ enum PIO_ERROR_HANDLERS{
 #define PIO_MAX_NAME NC_MAX_NAME
 #define PIO_MAX_VAR_DIMS NC_MAX_VAR_DIMS
 #define PIO_64BIT_OFFSET NC_64BIT_OFFSET
-#define PIO_64BIT_DATA NC_64BIT_DATA
+// NC_64BIT_DATA  This is a problem - need to define directly instead of using include file
+#define PIO_64BIT_DATA 0x0010  
 #define PIO_EBADID NC_EBADID
 #define PIO_ENFILE NC_ENFILE
 #define PIO_EEXIST NC_EEXIST

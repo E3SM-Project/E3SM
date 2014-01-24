@@ -34,8 +34,8 @@ int pio_fc_gather( void *sendbuf, const int sendcnt, const MPI_Datatype sendtype
 		   void *recvbuf, const int recvcnt, const MPI_Datatype recvtype, const int root, 
 		   MPI_Comm comm, const int flow_cntl);
 
-int pio_swapm(const int nprocs, const int mytask, void *sndbuf, const int sbuf_size, const int sndlths[],
-	      const int sdispls[], const MPI_Datatype stypes[], void *rcvbuf, const int rbuf_size, const int rcvlths[], 
+int pio_swapm(const int nprocs, const int mytask, void *sndbuf, const int sndlths[],
+	      const int sdispls[], const MPI_Datatype stypes[], void *rcvbuf, const int rcvlths[], 
 	      const int rdispls[], const MPI_Datatype rtypes[], MPI_Comm comm, const bool handshake, const bool isend, 
 	      const int max_requests);
 long long lgcd_array(int nain, long long*ain);
@@ -48,6 +48,6 @@ int box_rearrange_io2comp(iosystem_desc_t *ios, io_desc_t *iodesc, const int sle
 int box_rearrange_comp2io(iosystem_desc_t *ios, io_desc_t *iodesc, const int slen, void *sbuf,const int rlen,
 			  void *rbuf, const int comm_option, const int fc_options);
 
-
+io_desc_t *malloc_iodesc(const int piotype, const int ndims);
 
 #endif

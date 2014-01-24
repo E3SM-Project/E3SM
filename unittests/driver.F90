@@ -158,7 +158,7 @@ Program pio_unit_test_driver
         if(master_task) ierr = nc_set_log_level2(3)
 #endif
         ! test_create()
-        if (master_task) write(*,"(3x,A,x)",advance="no") "testing PIO_createfile..."
+        if (master_task) write(*,"(3x,A,x)") "testing PIO_createfile..."
         call test_create(test_id, err_msg)
         call parse(err_msg, fail_cnt)
 
@@ -169,9 +169,6 @@ Program pio_unit_test_driver
         call parse(err_msg, fail_cnt)
 
         call mpi_barrier(mpi_comm_world,ierr)
-        call mpi_abort(mpi_comm_world)
-
-
 
         ! netcdf-specific tests
         if (is_netcdf(iotypes(test_id))) then

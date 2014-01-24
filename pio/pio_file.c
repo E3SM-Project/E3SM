@@ -74,7 +74,6 @@ int PIOc_OpenFile(const int iosysid, int *ncidp, const int iotype,
     case PIO_IOTYPE_NETCDF:
       if(ios->io_rank==0){
 	ierr = nc_open(fname, amode, &(file->fh));
-	printf("Openc %d %d\n",file->fh,ierr);
       }
       break;
 #endif
@@ -92,7 +91,7 @@ int PIOc_OpenFile(const int iosysid, int *ncidp, const int iotype,
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
   if(ierr==PIO_NOERR){
     *ncidp = file->fh;
-    mpierr = MPI_Bcast(ncidp, 1, MPI_INT, ios->iomaster, ios->my_comm);
+    mpierr = MPI_Bcast(ncidp, 1, MPI_INT, ios->ioroot, ios->my_comm);
     if((*ncidp) != file->fh) {
       *ncidp = -(*ncidp);
       file->fh = (*ncidp);
@@ -166,18 +165,21 @@ int PIOc_CreateFile(const int iosysid, int *ncidp, const int iotype,
 #ifdef _NETCDF
 #ifdef _NETCDF4
     case PIO_IOTYPE_NETCDF4P:
-#ifdef _MPISERIAL      
-      ierr = nc_create(fname, amode, &(file->fh));
-#else
+      //         The 64 bit options are not compatable with hdf5 format files
+      printf("%d %d %d %d %d \n",__LINE__,amode,PIO_64BIT_DATA, PIO_64BIT_OFFSET, NC_MPIIO);
+      amode = amode & PIO_64BIT_DATA;
+      amode = amode  & PIO_64BIT_OFFSET;
+      printf("%d %d  \n",__LINE__,amode);
+      amode = amode |  NC_MPIIO;
+      printf("%d %d \n",__LINE__,amode);
+
       ierr = nc_create_par(fname, amode, ios->io_comm,ios->info, &(file->fh));
-#endif
       break;
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
       if(ios->io_rank==0){
 	ierr = nc_create(fname, amode, &(file->fh));
-	printf("create %s mode %d fh %d rc %d\n",fname,amode,file->fh,ierr);
       }
       break;
 #endif
@@ -195,7 +197,7 @@ int PIOc_CreateFile(const int iosysid, int *ncidp, const int iotype,
 
   if(ierr == PIO_NOERR){
     *ncidp = file->fh;
-    mpierr = MPI_Bcast(ncidp, 1, MPI_INT, ios->iomaster, ios->my_comm);
+    mpierr = MPI_Bcast(ncidp, 1, MPI_INT, ios->ioroot, ios->my_comm);
     if((*ncidp) != file->fh) {
       *ncidp = -(*ncidp);
       file->fh = (*ncidp);
@@ -207,7 +209,6 @@ int PIOc_CreateFile(const int iosysid, int *ncidp, const int iotype,
 
     pio_add_to_file_list(file);
   }
-
   return ierr;
 }
 
@@ -246,7 +247,6 @@ int PIOc_CloseFile(int ncid)
     case PIO_IOTYPE_NETCDF:
       if(ios->io_rank==0){
 	ierr = nc_close(file->fh);
-	printf("close file %d rc %d\n",file->fh, ierr);
       }
       break;
 #endif
@@ -299,7 +299,9 @@ int PIOc_deletefile(const int iosysid, const char fname[])
 #endif
     MPI_Barrier(ios->io_comm);
   }
-      
+  //   Special case - always broadcast the return from the  
+  MPI_Bcast(&ierr, 1, MPI_INT, ios->ioroot, ios->my_comm);
+  
 
 
   return ierr;

@@ -47,68 +47,73 @@ module basic_tests
 
       ! Original file creation
       ret_val = PIO_createfile(pio_iosystem, pio_file, iotype, filename)
-      if (ret_val.ne.0) then
+      if (ret_val .ne. PIO_NOERR) then
         ! Error in PIO_createfile
+         print *,' ret_val = ', ret_val
         err_msg = "Could not create " // trim(filename)
-        return
+        call mpi_abort(MPI_COMM_WORLD,0,ret_val)
       end if
       
-
+      call mpi_barrier(mpi_comm_world,ret_val)
       ! netcdf files need to end define mode before closing
       if (is_netcdf(iotype)) then
         ret_val = PIO_enddef(pio_file)
-        if (ret_val.ne.0) then
+        if (ret_val .ne. PIO_NOERR) then
           ! Error in PIO_enddef
           err_msg = "Could not end define mode"
           call PIO_closefile(pio_file)
-          return
+          call mpi_abort(MPI_COMM_WORLD,0,ret_val)
         end if
       end if
       call PIO_closefile(pio_file)
 
-
+      call mpi_barrier(mpi_comm_world,ret_val)
       ! Test opening of file
       ret_val = PIO_openfile(pio_iosystem, pio_file, iotype, filename, PIO_nowrite)
-      if (ret_val.ne.0) then
+      if (ret_val .ne. PIO_NOERR) then
         ! Error in PIO_openfile
         err_msg = "Could not open " // trim(filename)
-        return
+        call mpi_abort(MPI_COMM_WORLD,0,ret_val)
       end if
 
       ! Close file
       call PIO_closefile(pio_file)
-
+      call mpi_barrier(mpi_comm_world,ret_val)
       ! Recreate file with CLOBBER (netcdf / pnetcdf only)
       if (is_netcdf(iotype)) then
         ret_val = PIO_createfile(pio_iosystem, pio_file, iotype, filename, PIO_CLOBBER)
-        if (ret_val.ne.0) then
+        if (ret_val .ne. PIO_NOERR) then
           ! Error in PIO_createfile
           err_msg = "Could not clobber " // trim(filename)
-          return
+          call mpi_abort(MPI_COMM_WORLD,0,ret_val)
         end if
 
         ! Leave define mode
         ret_val = PIO_enddef(pio_file)
-        if (ret_val.ne.0) then
+        if (ret_val .ne. PIO_NOERR) then
           ! Error in PIO_enddef
           err_msg = "Could not end define mode in clobbered file"
           call PIO_closefile(pio_file)
-          return
+          call mpi_abort(MPI_COMM_WORLD,0,ret_val)
         end if
 
         ! Close file
         call PIO_closefile(pio_file)
       end if
-
+      call mpi_barrier(mpi_comm_world,ret_val)
       ! Recreate file with NOCLOBBER
       if (is_netcdf(iotype)) then
+        if(master_task) write(*,"(6x,A,x)") "trying to create with noclobber, error expected ... "
+        call mpi_barrier(mpi_comm_world,ret_val)
         ret_val = PIO_createfile(pio_iosystem, pio_file, iotype, filename, PIO_NOCLOBBER)
-        if (ret_val.eq.0) then
+
+
+        if (ret_val.eq.PIO_NOERR) then
           ! Error in PIO_createfile
           err_msg = "Was able to clobber file despite PIO_NOCLOBBER"
           ret_val = PIO_enddef(pio_file)
           call PIO_closefile(pio_file)
-          return
+          call mpi_abort(MPI_COMM_WORLD,0,ret_val)
         end if
       end if
 
@@ -152,13 +157,15 @@ module basic_tests
       iotype   = iotypes(test_id)
 
       ! Open file that doesn't exist
+      if(master_task) write(*,"(6x,A,x)") "trying to open nonexistant file error expected ... "
+      call mpi_barrier(MPI_COMM_WORLD,ret_val)
       ret_val = PIO_openfile(pio_iosystem, pio_file, iotype, "FAKE.FILE", &
                              PIO_nowrite, CheckMPI=.false.)
-      if (ret_val.eq.0) then
+      if (ret_val.eq.PIO_NOERR) then
         ! Error in PIO_openfile
         err_msg = "Successfully opened file that doesn't exist"
         call PIO_closefile(pio_file)
-        return
+        call mpi_abort(MPI_COMM_WORLD,0,ret_val)
       end if
 
       ! Open existing file, write data to it (for binary file, need to create new file)
@@ -167,59 +174,59 @@ module basic_tests
       else
         ret_val = PIO_createfile(pio_iosystem, pio_file, iotype, filename)
       end if
-      if (ret_val.ne.0) then
+      if (ret_val .ne. PIO_NOERR) then
         ! Error in PIO_openfile (or PIO_createfile)
         err_msg = "Could not open " // trim(filename) // " in write mode"
-        return
+        call mpi_abort(MPI_COMM_WORLD,0,ret_val)
       end if
 
       ! Enter define mode for netcdf files
       if (is_netcdf(iotype)) then
         ret_val = PIO_redef(pio_file)
-        if (ret_val.ne.0) then
+        if (ret_val .ne. PIO_NOERR) then
           ! Error in PIO_redef
           err_msg = "Could not enter redef mode"
           call PIO_closefile(pio_file)
-          return
+          call mpi_abort(MPI_COMM_WORLD,0,ret_val)
         end if
 
         ! Define a new dimension N
         ret_val = PIO_def_dim(pio_file, 'N', 3*ntasks, pio_dim)
-        if (ret_val.ne.0) then
+        if (ret_val .ne. PIO_NOERR) then
           ! Error in PIO_def_dim
           err_msg = "Could not define dimension N"
           call PIO_closefile(pio_file)
-          return
+          call mpi_abort(MPI_COMM_WORLD,0,ret_val)
         end if
 
         ! Define a new variable foo
         ret_val = PIO_def_var(pio_file, 'foo', PIO_int, &
                               (/pio_dim/), pio_var)
-        if (ret_val.ne.0) then
+        if (ret_val .ne. PIO_NOERR) then
           ! Error in PIO_def_var
           err_msg = "Could not define variable foo"
           call PIO_closefile(pio_file)
-          return
+          call mpi_abort(MPI_COMM_WORLD,0,ret_val)
         end if
 
         ! Leave define mode
         ret_val = PIO_enddef(pio_file)
-        if (ret_val.ne.0) then
+        if (ret_val .ne. PIO_NOERR) then
           ! Error in PIO_enddef
            print *,__FILE__,__LINE__,ret_val
           err_msg = "Could not end define mode"
           call PIO_closefile(pio_file)
-          return
+          call mpi_abort(MPI_COMM_WORLD,0,ret_val)
         end if
       end if
 
       ! Write foo
-      call PIO_write_darray(pio_file, pio_var, iodesc_nCells, data_to_write, ret_val)
-      if (ret_val.ne.0) then
+      call PIO_write_darray(pio_file, pio_var, iodesc_nCells, data_to_write, ret_val, fillval=-1)
+      if (ret_val .ne. PIO_NOERR) then
         ! Error in PIO_write_darray
         err_msg = "Could not write data"
         call PIO_closefile(pio_file)
-        return
+        call mpi_abort(MPI_COMM_WORLD,0,ret_val)
       end if
 
       ! Close file
@@ -228,33 +235,39 @@ module basic_tests
       ! Open existing file with PIO_nowrite, try to write (netcdf only)
       if (is_netcdf(iotype)) then
         ret_val = PIO_openfile(pio_iosystem, pio_file, iotype, filename, PIO_nowrite)
-        if (ret_val.ne.0) then
+        if (ret_val .ne. PIO_NOERR) then
           ! Error opening file
           err_msg = "Could not open file in NoWrite mode"
-          return
+          call mpi_abort(MPI_COMM_WORLD,0,ret_val)
         end if
 
         ! Try to write (should fail)
+        if(master_task) write(*,"(6x,A,x)") "trying to write to readonly file, error expected ... "
+        call mpi_barrier(MPI_COMM_WORLD,ret_val)
         call PIO_write_darray(pio_file, pio_var, iodesc_nCells, data_to_write, ret_val)
-        if (ret_val.eq.0) then
+        if (ret_val.eq.PIO_NOERR) then
           ! Error in PIO_write_darray
           err_msg = "Wrote to file opened in NoWrite mode"
           call PIO_closefile(pio_file)
-          return
+          call mpi_abort(MPI_COMM_WORLD,0,ret_val)
         end if
         ! Close file
         call PIO_closefile(pio_file)
       end if
+      call mpi_barrier(MPI_COMM_WORLD,ret_val)
 
       ! Try to open standard binary file as netcdf (if iotype = netcdf)
       if (is_netcdf(iotype)) then
+         if(master_task) write(*,"(6x,A,x)") "trying to open non-netcdf file using netcdf, error expected ... "
+         call mpi_barrier(MPI_COMM_WORLD,ret_val)
+
         ret_val = PIO_openfile(pio_iosystem, pio_file, iotype, &
                                "not_netcdf.ieee", PIO_nowrite)
-        if (ret_val.eq.0) then
+        if (ret_val.eq.PIO_NOERR) then
           ! Error in PIO_openfile
           err_msg = "Opened a non-netcdf file as netcdf"
           call PIO_closefile(pio_file)
-          return
+          call mpi_abort(MPI_COMM_WORLD,0,ret_val)
         end if
       end if
 

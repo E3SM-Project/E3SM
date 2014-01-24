@@ -130,10 +130,10 @@ int pair(const int np, const int p, const int k)
   return pair;
 }
 
-int pio_swapm(const int nprocs, const int mytask, void *sndbuf, const int sbuf_size, const int sndlths[],
-	      const int sdispls[], const MPI_Datatype stypes[], void *rcvbuf, const int rbuf_size, const int rcvlths[], 
-	      const int rdispls[], const MPI_Datatype rtypes[], const MPI_Comm comm, const bool handshake, const bool isend, 
-	      const int max_requests)
+int pio_swapm(const int nprocs, const int mytask, 
+	      void *sndbuf,  const int sndlths[],const int sdispls[], const MPI_Datatype stypes[], 
+	      void *rcvbuf, const int rcvlths[], const int rdispls[], const MPI_Datatype rtypes[], 
+	      const MPI_Comm comm, const bool handshake, const bool isend, const int max_requests)
 {
   int tag;
   int offset_t;
@@ -154,9 +154,6 @@ int pio_swapm(const int nprocs, const int mytask, void *sndbuf, const int sbuf_s
   int cnt;
 
   if(max_requests == 0) {
-    for(int i=0;i<nprocs;i++)
-      printf("%d: sndlth %d sdispls %d rcvlth %d rdispls %d \n",mytask, sndlths[i],sdispls[i],rcvlths[i],rdispls[i]);
-
     CheckMPIReturn(MPI_Alltoallw( sndbuf, sndlths, sdispls, stypes, rcvbuf, rcvlths, rdispls, rtypes, comm),__FILE__,__LINE__);
     return PIO_NOERR;
   }
@@ -387,30 +384,30 @@ int main( int argc, char **argv )
       if(rank == 0) gettimeofday(&t1, NULL);
 
       if(itest==0){
-	err = pio_swapm( size, rank, sbuf, size*size, sendcounts, sdispls, sendtypes, 
-			 rbuf, size*size, recvcounts, rdispls, recvtypes, comm, hs, isend, 0);
+	err = pio_swapm( size, rank, sbuf,  sendcounts, sdispls, sendtypes, 
+			 rbuf,  recvcounts, rdispls, recvtypes, comm, hs, isend, 0);
       }else if(itest==1){
 	hs = true;
 	isend = true;
-	err = pio_swapm( size, rank, sbuf, size*size, sendcounts, sdispls, sendtypes, 
-			 rbuf, size*size, recvcounts, rdispls, recvtypes, comm, hs, isend, msg_cnt);
+	err = pio_swapm( size, rank, sbuf,  sendcounts, sdispls, sendtypes, 
+			 rbuf,  recvcounts, rdispls, recvtypes, comm, hs, isend, msg_cnt);
       }else if(itest==2){
 	hs = false;
 	isend = true;
-	err = pio_swapm( size, rank, sbuf, size*size, sendcounts, sdispls, sendtypes, 
-			 rbuf, size*size, recvcounts, rdispls, recvtypes, comm, hs, isend, msg_cnt);
+	err = pio_swapm( size, rank, sbuf, sendcounts, sdispls, sendtypes, 
+			 rbuf, recvcounts, rdispls, recvtypes, comm, hs, isend, msg_cnt);
 
       }else if(itest==3){
 	hs = false;
 	isend = false;
-	err = pio_swapm( size, rank, sbuf, size*size, sendcounts, sdispls, sendtypes, 
-			 rbuf, size*size, recvcounts, rdispls, recvtypes, comm, hs, isend, msg_cnt);
+	err = pio_swapm( size, rank, sbuf, sendcounts, sdispls, sendtypes, 
+			 rbuf, recvcounts, rdispls, recvtypes, comm, hs, isend, msg_cnt);
 
       }else if(itest==4){
 	hs = true;
 	isend = false;
-	err = pio_swapm( size, rank, sbuf, size*size, sendcounts, sdispls, sendtypes, 
-			 rbuf, size*size, recvcounts, rdispls, recvtypes, comm, hs, isend, msg_cnt);
+	err = pio_swapm( size, rank, sbuf,  sendcounts, sdispls, sendtypes, 
+			 rbuf,  recvcounts, rdispls, recvtypes, comm, hs, isend, msg_cnt);
 
       }
 

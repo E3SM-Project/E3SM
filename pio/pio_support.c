@@ -32,7 +32,7 @@ int check_netcdf(file_desc_t *file,int status, const char *fname, const int line
     if(ios->error_handler == PIO_INTERNAL_ERROR){
       // abort
     }else if(ios->error_handler==PIO_BCAST_ERROR){
-      ierr =MPI_Bcast(&status, 1, MPI_INT, ios->iomaster, ios->my_comm);
+      ierr =MPI_Bcast(&status, 1, MPI_INT, ios->ioroot, ios->my_comm);
     }
     break;
 #endif
@@ -45,7 +45,7 @@ int check_netcdf(file_desc_t *file,int status, const char *fname, const int line
       if(ios->error_handler == PIO_INTERNAL_ERROR){
 	// abort
       }else if(ios->error_handler==PIO_BCAST_ERROR){
-	ierr = MPI_Bcast(&status, 1, MPI_INT, ios->iomaster, ios->my_comm);
+	ierr = MPI_Bcast(&status, 1, MPI_INT, ios->ioroot, ios->my_comm);
       }
     break;
 #endif
@@ -59,3 +59,76 @@ int iotype_error(const int iotype, const char *fname, const int line){
     fprintf(stderr, "ERROR: iotype %d not defined in build %s %d\n", iotype, fname,line);
     return PIO_NOERR;
 }
+
+io_desc_t *malloc_iodesc(const int piotype, const int ndims)
+{
+  io_desc_t *iodesc;
+  iodesc = (io_desc_t *) malloc(sizeof(io_desc_t));
+
+  if(iodesc == NULL)
+    fprintf(stderr,"ERROR: allocation error \n");
+
+  switch(piotype){
+  case PIO_REAL:			
+    iodesc->basetype=MPI_FLOAT;
+    break;
+  case PIO_DOUBLE:
+    iodesc->basetype=MPI_DOUBLE;
+    break;
+  case PIO_CHAR:
+    iodesc->basetype=MPI_CHAR;
+    break;
+  case PIO_INT:   
+  defaut:
+    iodesc->basetype = MPI_INTEGER;
+    break;
+  }    
+  iodesc->dest_ioproc = NULL;
+  iodesc->rfrom = NULL;
+  iodesc->scount = NULL;
+  iodesc->rtype = NULL;
+  iodesc->stype = NULL;
+  iodesc->dest_ioindex = NULL;
+
+  iodesc->ndims = ndims;
+  iodesc->start = (PIO_Offset *) calloc(ndims, sizeof(PIO_Offset));
+  iodesc->count = (PIO_Offset *) calloc(ndims, sizeof(PIO_Offset));
+
+  return iodesc;
+}
+
+int PIOc_freedecomp(int iosysid, int ioid)
+{
+  iosystem_desc_t *ios;
+  io_desc_t *iodesc;
+  ios = pio_get_iosystem_from_id(iosysid);
+  if(ios == NULL)
+    return PIO_EBADID;
+
+  iodesc = pio_get_iodesc_from_id(ioid);
+  if(iodesc == NULL)
+    return PIO_EBADID;
+#ifdef DOTHEFREE
+  if(iodesc->dest_ioproc != NULL)
+    free(iodesc->dest_ioproc);
+  if(iodesc->rfrom != NULL)
+    free(iodesc->rfrom);
+  if(iodesc->scount != NULL)
+    free(iodesc->scount);
+  if(iodesc->rtype != NULL)
+    free(iodesc->rtype);
+  if(iodesc->stype != NULL)
+    free(iodesc->stype);
+  if(iodesc->start != NULL)
+    free(iodesc->start);
+  if(iodesc->count != NULL)
+    free(iodesc->count);
+  if(iodesc->dest_ioindex != NULL)
+    free(iodesc->dest_ioindex);
+#endif    
+  return pio_delete_iodesc_from_list(ioid);
+
+
+}
+
+

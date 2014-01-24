@@ -2273,56 +2273,17 @@ contains
     implicit none
     type (iosystem_desc_t) :: ios
     type (io_desc_t) :: iodesc
-    integer :: ierr, msg
+    integer :: ierr
+    interface 
+       integer(C_INT) function PIOc_freedecomp(iosysid, ioid) &
+            bind(C,name="PIOc_freedecomp")
+         use iso_c_binding
+         integer(C_INT), intent(in), value :: iosysid, ioid
+       end function PIOc_freedecomp
+    end interface
 
-    if(ios%async_interface .and. .not. ios%ioproc) then
-       msg = PIO_MSG_FREEDECOMP
-       if(ios%comp_rank==0) then
-          call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
-       end if
-       call MPI_Barrier(ios%comp_comm,ierr)
-       call mpi_bcast(iodesc%async_id,1, mpi_integer, ios%compmaster,ios%intercomm, ierr)
-    end if
-    call MPI_Barrier(ios%union_comm,ierr)
+    ierr = PIOc_freedecomp(ios%iosysid, iodesc%ioid)
 
-    iodesc%async_id=-1
-    call rearrange_free(ios,iodesc)
-
-#ifndef _MPISERIAL
-    if(ios%ioproc) then
-!       if(debug) print *,__PIO_FILE__,__LINE__,iodesc%write%n_elemtype,iodesc%write%n_words, &
-!       iodesc%write%elemtype,iodesc%write%filetype
-
-       if((iodesc%read%filetype .ne. mpi_datatype_null)  &
-	  .and. (iodesc%read%filetype .ne. iodesc%write%filetype) .and. &
-	  iodesc%read%n_words>0) then 
-          call mpi_type_free(iodesc%read%filetype,ierr)
-          call checkmpireturn('freedecomp mpi_type_free: ',ierr)
-          call mpi_type_free(iodesc%read%elemtype,ierr)
-          call checkmpireturn('freedecomp mpi_type_free: ',ierr)
-          iodesc%read%filetype=mpi_datatype_null
-       endif
-       if(iodesc%write%filetype .ne. mpi_datatype_null .and. &
-	  iodesc%write%n_words>0) then 
-          call mpi_type_free(iodesc%write%filetype,ierr)
-          call checkmpireturn('freedecomp mpi_type_free: ',ierr)
-          call mpi_type_free(iodesc%write%elemtype,ierr)
-          call checkmpireturn('freedecomp mpi_type_free: ',ierr)
-          iodesc%write%filetype=mpi_datatype_null
-       endif
-   
-    end if
-#endif
-
-    if(associated(iodesc%start)) then
-       call dealloc_check(iodesc%start,'iodesc%start')
-       nullify(iodesc%start)
-    end if
-
-    if(associated(iodesc%count)) then
-       call dealloc_check(iodesc%count,'iodesc%count')    
-       nullify(iodesc%count)
-    end if
   end subroutine freedecomp_ios
 !>
 !! @public 

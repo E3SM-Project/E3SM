@@ -3,7 +3,6 @@ int PIO_function()
   int ierr;
   int msg;
   int mpierr;
-  int chkerr;
   iosystem_desc_t *ios;
   file_desc_t *file;
 
@@ -16,9 +15,9 @@ int PIO_function()
   msg = 0;
 
   if(ios->async_interface && ! ios->ioproc){
-    if(ios->comp_rank==0) 
+    if(ios->compmaster) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
+    mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
 
 
@@ -47,7 +46,7 @@ int PIO_function()
     }
   }
 
-  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
 }

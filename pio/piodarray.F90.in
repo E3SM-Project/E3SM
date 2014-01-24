@@ -122,7 +122,6 @@ contains
     type(iosystem_desc_t), pointer :: ios
     integer,intent(in) :: arraylen
     integer(i4), intent(out) :: iostat
-    integer :: ierr
 
     character(len=*), parameter :: subName=modName//'::write_darray_{TYPE}'
 
@@ -138,14 +137,11 @@ contains
          type(C_PTR), value :: fillvalue
        end function PIOc_write_darray
     end interface
-
     if(present(fillval)) then
-       ierr = PIOc_write_darray(file%fh, varDesc%varid, iodesc%ioid, int(arraylen,C_SIZE_T),C_LOC(array), C_LOC(fillval))
+       iostat = PIOc_write_darray(file%fh, varDesc%varid, iodesc%ioid, int(arraylen,C_SIZE_T),C_LOC(array), C_LOC(fillval))
     else
-       ierr = PIOc_write_darray(file%fh, varDesc%varid, iodesc%ioid, int(arraylen,C_SIZE_T), C_LOC(array), C_NULL_PTR)
+       iostat = PIOc_write_darray(file%fh, varDesc%varid, iodesc%ioid, int(arraylen,C_SIZE_T), C_LOC(array), C_NULL_PTR)
     endif
-    
-    call MPI_ABORT(MPI_COMM_WORLD,1,ierr)
 
   end subroutine write_darray_1d_cinterface_{TYPE}
 

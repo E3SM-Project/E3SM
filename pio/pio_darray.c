@@ -119,9 +119,8 @@ int c_write_nc(const file_desc_t *file,const io_desc_t *iodesc, void *IOBUF, con
       ierr = iotype_error(file->iotype,__FILE__,__LINE__);
     }
   }
-
+  
   chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
-
   return ierr;
 }
 
@@ -171,7 +170,7 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, con
   ierr = c_write_nc(file, iodesc, array, vid, start, count, &(vdesc->request));
 
 
-  return PIO_NOERR;
+  return ierr;
 }
 
 int PIOc_write_darray(const int ncid, const int vid, const int ioid, const PIO_Offset arraylen, void *array, void *fillvalue)
@@ -211,13 +210,8 @@ int PIOc_write_darray(const int ncid, const int vid, const int ioid, const PIO_O
     }
   }
 
-  printf("array %ld %d %d %d\n", (size_t) array, ((int *) array)[0],((int *) array)[1],((int *) array)[2]);
 
   ierr = box_rearrange_comp2io(ios, iodesc, arraylen, array, rlen, iobuf, 0, 0);
-
-  if(ios->ioproc)
-    printf("iobuf %d %d %d %d %d %d\n",((int *) iobuf)[0],((int *) iobuf)[1],((int *) iobuf)[2], ((int *) iobuf)[3],((int *) iobuf)[4],((int *) iobuf)[5]);
-    
 
   
   switch(file->iotype){
@@ -229,7 +223,7 @@ int PIOc_write_darray(const int ncid, const int vid, const int ioid, const PIO_O
   case PIO_IOTYPE_NETCDF4C:
     ierr = pio_write_darray_nc(file, iodesc, vid, vtype, arraylen, iobuf, fillvalue);
   }
-  return PIO_NOERR;
+  return ierr;
 
 }
 
