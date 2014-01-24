@@ -100,10 +100,10 @@ contains
 #endif
 
 #ifdef _NETCDF
-       case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)	
+       case(pio_iotype_netcdf4p)
 ! all reads can be parallel in netcdf4 format
           ierr= nf90_get_var(File%fh, vardesc%varid, iobuf, start=int(start),count=int(count))
-       case(pio_iotype_netcdf)
+       case(pio_iotype_netcdf, pio_iotype_netcdf4c)	
           iobuf_size=size(IOBUF)
           call MPI_REDUCE( iobuf_size,max_iobuf_size, &
                1,MPI_INTEGER,MPI_MAX,0,File%iosystem%IO_comm,mpierr )

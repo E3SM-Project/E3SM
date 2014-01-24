@@ -129,9 +129,9 @@ CONTAINS
 #endif
 
 #ifdef _NETCDF
-       case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
+       case(pio_iotype_netcdf4p)
           ierr = nf90_get_var(File%fh, varid, ival, start=index)
-       case(pio_iotype_netcdf)
+       case(pio_iotype_netcdf, pio_iotype_netcdf4c)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival, start=index)
@@ -270,9 +270,9 @@ CONTAINS
                int(count,kind=PIO_OFFSET), ival, isize, {MPITYPE})
 #endif
 #ifdef  _NETCDF
-       case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
+       case(pio_iotype_netcdf4p)
           ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
-       case(pio_iotype_netcdf)
+       case(pio_iotype_netcdf, pio_iotype_netcdf4c)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival, start=start, count=count)
@@ -408,9 +408,9 @@ CONTAINS
           ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, {MPITYPE})
 #endif
 #ifdef  _NETCDF
-       case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
+       case(pio_iotype_netcdf4p)
              ierr = nf90_get_var(File%fh, varid, ival)
-       case(pio_iotype_netcdf)
+       case(pio_iotype_netcdf, pio_iotype_netcdf4c)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival)

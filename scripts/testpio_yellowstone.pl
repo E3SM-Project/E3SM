@@ -16,7 +16,7 @@ use File::Copy ;
 #BSUB -x
 
 my $piosrc="$ENV{HOME}/pio_trunk";
-my $testdir="/glade/scratch/$ENV{USER}/piotest/pio.all";
+my $testdir="/glade/scratch/$ENV{USER}/piotest/pio.all/pio";
 
 opendir(TNL,"$piosrc/testpio/namelists");
 my @namelists = grep(/testpio_in.*\d$/,readdir(TNL));

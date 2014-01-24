@@ -5,6 +5,20 @@ SVN $URL: https://parallelio.googlecode.com/svn/trunk $
 This file describes what tags were created and why
 ===========================
 Originator: jedwards
+Date: Jan 24, 2014
+Model: pio
+Version: pio1_8_8
+One-line : Fix some issues with netcdf4c
+
+M              924   pionfatt_mod.F90.in
+M              924   piodarray.F90.in
+M              924   pionfget_mod.F90.in
+M              924   pionfread_mod.F90.in
+
+
+
+===========================
+Originator: jedwards
 Date: Jan 16, 2014
 Model: pio
 Version: pio1_8_7

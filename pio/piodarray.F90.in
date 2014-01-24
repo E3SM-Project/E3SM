@@ -905,7 +905,8 @@ contains
        ! allocate temporary IO buffer 
        !-----------------------------
        if(userearranger) then
-          if(File%iotype == pio_iotype_netcdf .and. file%iosystem%io_rank==0) then	
+          if((File%iotype == pio_iotype_netcdf .or. File%iotype == pio_iotype_netcdf4c) &
+               .and. file%iosystem%io_rank==0) then	
              call alloc_check(IOBUF,iodesc%maxiobuflen,' TYPE :IOBUF')
           else
              call alloc_check(IOBUF,len,' TYPE :IOBUF')
