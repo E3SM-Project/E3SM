@@ -15,14 +15,15 @@ set input = $HOMME/test/jw_baroclinic
 set vdir = $HOMME/test/vcoord
 set bld = $wdir/bld
 #set MACH = $HOMME/cmake/machineFiles/redsky.cmake
-set MACH = $HOMME/cmake/machineFiles/titan.cmake
+#set MACH = $HOMME/cmake/machineFiles/titan.cmake
+set MACH = $HOMME/cmake/machineFiles/darwin.cmake
 
 
 #
 #  mpi run command
 #
-set NCPU = 0
-setenv OMP_NUM_THREADS 4
+set NCPU = 4
+setenv OMP_NUM_THREADS 1
 
 if ( ${?SLURM_NNODES} ) then
     set NCPU = $SLURM_NNODES
@@ -36,8 +37,9 @@ if ( ${?PBS_NUM_NODES} ) then
 endif
 
 echo using NCPU=$NCPU   NTHREADS=$OMP_NUM_THREADS
+set mpirun = "mpirun -np $NCPU"
 #set mpirun = "mpirun -loadbalance -np $NCPU"
-set mpirun = "aprun -n $NCPU -d $OMP_NUM_THREADS "
+#set mpirun = "aprun -n $NCPU -d $OMP_NUM_THREADS "
 
 
 
@@ -74,7 +76,7 @@ if ( ! -f CMakeCache.txt) set conf = 1   # no cmake files.  force configure
 if ( $conf == 1 ) then
    rm -rf CMakeFiles CMakeCache.txt src
    #rm -rf utils/pio  utils/timing utils/cprnc   # may also need to do this
-   cmake -C $MACH -DPREQX_PLEV=$nlev -DPREQX_NP=4  -DPREQX_USE_ENERGY=TRUE  $HOMME
+   cmake -C $MACH -DQSIZE_D=$qsize -DPREQX_PLEV=$nlev -DPREQX_NP=4  -DPREQX_USE_ENERGY=TRUE  $HOMME
    make -j4 clean
 endif
 if ( ! -f $exe) set build = 1   # no exe, force build
@@ -134,10 +136,23 @@ set sfreq = 8   # number of hours
 
 
 
-# copy vertical level files to run directory
+
 mkdir -p $run/movies
 cd $run
-cp $vdir/cam*$nlev.ascii  $run
+
+
+# copy vertical level files to run directory
+if ( $nlev == 30 ) then
+   set vfile_mid     = "./camm-30.ascii"
+   set vfile_int     = "./cami-30.ascii"
+   cp $vdir/cam*30.ascii  $run   
+else
+   set vfile_mid     = "./aspL60_mid.ascii"
+   set vfile_int     = "./aspL60_int.ascii"
+   cp $vdir/aspL60_*.ascii $run
+endif
+
+
 
 #  create a new namelist from original ne16 template:
 sed s/ne=.\*/ne=$ne/ $input/jw_baroclinic.nl |\
@@ -151,6 +166,8 @@ sed s/NThreads.\*/NThreads=$OMP_NUM_THREADS/ | \
 sed s/statefreq.\*/statefreq=$sfreq/ |\
 sed s/u_perturb.\*/"u_perturb = $u_perturb"/   |\
 sed s/rotate_grid.\*/"rotate_grid = $rotate"/  |\
+sed s:vfile_mid.\*:"vfile_mid = '$vfile_mid'":  |\
+sed s:vfile_int.\*:"vfile_int = '$vfile_int'":  |\
 sed s/qsize.\*/"qsize = $qsize"/  |\
 sed s/hypervis_subcycle=.\*/"hypervis_subcycle = $hypervis_subcycle "/ > input.nl
 
