@@ -77,7 +77,18 @@ if ( ! -f CMakeCache.txt) set conf = 1   # no cmake files.  force configure
 if ( $conf == 1 ) then
    rm -rf CMakeFiles CMakeCache.txt src
    #rm -rf utils/pio  utils/timing utils/cprnc   # may also need to do this
-   cmake -C $MACH -DQSIZE_D=$qsize -DPREQX_PLEV=$nlev -DPREQX_NP=4  -DPREQX_USE_ENERGY=TRUE  $HOMME
+   cmake -C $MACH -DQSIZE_D=$qsize -DPREQX_PLEV=$nlev -DPREQX_NP=4  \
+   -DOPT_FLAGS="-O2 -Kieee -Mvect=nosse"         \
+   -DBUILD_HOMME_SWDGX=FALSE                     \
+   -DBUILD_HOMME_SWEQX=FALSE                     \
+   -DBUILD_HOMME_PRIMDGX=FALSE                   \
+   -DENABLE_CUDA_FORTRAN=TRUE                    \
+   -DCUDA_VERSION=5.0                            \
+   -DCUDA_DEVICE_CAPABILITY=cc3x                 \
+   -DCMAKE_EXE_LINKER_FLAGS='-lcudafor4'         \
+   -DPREQX_USE_ENERGY=TRUE  $HOMME
+
+
    make -j4 clean
 endif
 if ( ! -f $exe) set build = 1   # no exe, force build
