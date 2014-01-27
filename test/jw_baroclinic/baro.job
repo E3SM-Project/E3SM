@@ -1,4 +1,4 @@
-#!/bin/tcsh -f 
+#!/bin/tcsh -f
 #SBATCH --job-name baro
 #SBATCH --account=FY139209
 #SBATCH -N 8
@@ -14,7 +14,8 @@ set HOMME = ~/codes/homme
 set input = $HOMME/test/jw_baroclinic       
 set vdir = $HOMME/test/vcoord
 set bld = $wdir/bld
-set MACH = $HOMME/cmake/machineFiles/redsky.cmake
+#set MACH = $HOMME/cmake/machineFiles/redsky.cmake
+set MACH = $HOMME/cmake/machineFiles/titan.cmake
 
 
 #
@@ -22,13 +23,21 @@ set MACH = $HOMME/cmake/machineFiles/redsky.cmake
 #
 set NCPU = 0
 setenv OMP_NUM_THREADS 4
+
 if ( ${?SLURM_NNODES} ) then
     set NCPU = $SLURM_NNODES
     @ NCPU *= 8
     @ NCPU /= $OMP_NUM_THREADS
-    echo using NCPU=$NCPU   NTHREADS=$OMP_NUM_THREADS
 endif
-set mpirun = "mpirun -loadbalance -np $NCPU"
+if ( ${?PBS_NUM_NODES} ) then
+    set NCPU = $PBS_NUM_NODES
+    @ NCPU *= $PBS_NUM_PPN
+    @ NCPU /= $OMP_NUM_THREADS
+endif
+
+echo using NCPU=$NCPU   NTHREADS=$OMP_NUM_THREADS
+#set mpirun = "mpirun -loadbalance -np $NCPU"
+set mpirun = "aprun -n $NCPU -d $OMP_NUM_THREADS "
 
 
 
@@ -66,13 +75,7 @@ if ( $conf == 1 ) then
    rm -rf CMakeFiles CMakeCache.txt src
    #rm -rf utils/pio  utils/timing utils/cprnc   # may also need to do this
    cmake -C $MACH -DPREQX_PLEV=$nlev -DPREQX_NP=4  -DPREQX_USE_ENERGY=TRUE  $HOMME
-#   for CSLAM tracers:
-#   cmake -C $MACH -DPREQX_PLEV=$nlev -DPREQX_NP=4  -DPREQX_USE_PIO=TRUE -DPREQX_NC=$NC  -DPREQX_USE_ENERGY=TRUE  $HOMME
    make -j4 clean
-#
-# touch temp
-# find . -newer temp -print | xargs touch
-#
 endif
 if ( ! -f $exe) set build = 1   # no exe, force build
 if ( $build == 1 ) then
