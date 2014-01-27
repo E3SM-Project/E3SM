@@ -26,6 +26,8 @@ bool find_ioproc(const PIO_Offset gcoord[], const PIO_Offset lb[], const PIO_Off
   PIO_Offset lindex;
 
   *ioindex = -1;
+  *ioproc = -1;
+
 
   for(j=0;j<ndim;j++){
     decompstep[j]=1;
@@ -59,6 +61,7 @@ bool find_ioproc(const PIO_Offset gcoord[], const PIO_Offset lb[], const PIO_Off
   
   }
 
+
   return true;
 }
 
@@ -76,7 +79,7 @@ int compute_dest(const int nmap, const PIO_Offset compmap[],const PIO_Offset *st
 
   for( i=0, ii=0;i<nioproc;i++){
     for( j=0;j<ndim;j++, ii++){
-      lb[ii] = start[ii]-1;
+      lb[ii] = start[ii];
       ub[ii] = lb[ii] + count[ii];
       lstride[ii]=1;
     }
@@ -101,12 +104,13 @@ int compute_dest(const int nmap, const PIO_Offset compmap[],const PIO_Offset *st
     }else{
       gindex = compmap[i]-1;
       ierr = gindex_to_coord(gindex, gstride, ndim, gcoord);
+
+
       if(! find_ioproc(gcoord, lb,  ub, lstride, 
 		       ndim, nioproc, dest_ioproc+i, dest_ioindex+i)){
 	fprintf(stderr,"No destination for compmap point = %ld\n",compmap[i]);
 	piodie("Could not find ioproc",__FILE__,__LINE__);
       }
-
     }
   }
  
@@ -208,7 +212,6 @@ int compute_counts(iosystem_desc_t *ios, io_desc_t *iodesc,const int niomap)
   pio_maxreq = DEF_P2P_MAXREQ;
   niotasks = ios->num_iotasks;
   ncomptasks = ios->num_comptasks;
-
   scount = (int *) calloc(niotasks,sizeof(int));
   // scount is the amount of data sent to each task from the current task
   for(i=0;i<ndof; i++){

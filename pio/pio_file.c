@@ -99,6 +99,7 @@ int PIOc_OpenFile(const int iosysid, int *ncidp, const int iotype,
     for(int i=0; i<PIO_MAX_VARS;i++){
       file->varlist[i].record = -1;
       file->varlist[i].buffer = NULL;
+      file->varlist[i].request = MPI_REQUEST_NULL;
     }
 
     pio_add_to_file_list(file);
@@ -205,6 +206,7 @@ int PIOc_CreateFile(const int iosysid, int *ncidp, const int iotype,
     for(int i=0; i<PIO_MAX_VARS;i++){
       file->varlist[i].record = -1;
       file->varlist[i].buffer = NULL;
+      file->varlist[i].request = MPI_REQUEST_NULL;
     }
 
     pio_add_to_file_list(file);
@@ -252,6 +254,7 @@ int PIOc_CloseFile(int ncid)
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
+      flush_ouput_buffer(file);
       ierr = ncmpi_close(file->fh);
       break;
 #endif
@@ -261,7 +264,10 @@ int PIOc_CloseFile(int ncid)
   }
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+
   int iret =  pio_delete_file_from_list(ncid);
+
+
   return ierr;
 }
 

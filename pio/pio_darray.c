@@ -14,7 +14,7 @@ int c_write_nc(const file_desc_t *file,const io_desc_t *iodesc, void *IOBUF, con
   int ierr;
   int msg;
   int mpierr;
-  int chkerr;
+
   iosystem_desc_t *ios;
   int dlen;
   int i;
@@ -22,7 +22,7 @@ int c_write_nc(const file_desc_t *file,const io_desc_t *iodesc, void *IOBUF, con
   int dsize;
   MPI_Status status;
 
-
+  ierr = PIO_NOERR;
   ios = file->iosystem;
   if(ios == NULL)
     return PIO_EBADID;
@@ -39,7 +39,7 @@ int c_write_nc(const file_desc_t *file,const io_desc_t *iodesc, void *IOBUF, con
     int ndims = iodesc->ndims;
     int ncid = file->fh;
     size_t tstart[ndims], tcount[ndims];
-    
+
     switch(file->iotype){
 #ifdef _NETCDF
 #ifdef _NETCDF4
@@ -64,12 +64,13 @@ int c_write_nc(const file_desc_t *file,const io_desc_t *iodesc, void *IOBUF, con
 #endif
     case PIO_IOTYPE_NETCDF:
       mpierr = MPI_Type_size(iodesc->basetype, &dsize);
+
       if(ios->io_rank==0){
-	for(i=0;i<ios->num_iotasks;i++){
+	for(i=0;i<ios->num_aiotasks;i++){
 	  if(i==0){	    
-	    for(int i=0;i<ndims;i++){
-	      tstart[i] = (int) start[i];
-	      tcount[i] = (int) count[i];
+	    for(int j=0;j<ndims;j++){
+	      tstart[j] =  start[j];
+	      tcount[j] =  count[j];
 	      tmp_buf = IOBUF;
 	    }
 	  }else{
@@ -93,7 +94,7 @@ int c_write_nc(const file_desc_t *file,const io_desc_t *iodesc, void *IOBUF, con
 	  }
 	}       
 	free(tmp_buf);
-      }else{
+      }else if(count[0]>0){
 	for(i=0;i<ndims;i++){
 	  tstart[i] = (size_t) start[i];
 	  tcount[i] = (size_t) count[i];
@@ -102,17 +103,21 @@ int c_write_nc(const file_desc_t *file,const io_desc_t *iodesc, void *IOBUF, con
 	mpierr = MPI_Send( tstart, ndims, MPI_INT, 0, ios->num_iotasks+ios->io_rank, ios->io_comm);
 	mpierr = MPI_Send( tcount, ndims, MPI_INT, 0,2*ios->num_iotasks+ios->io_rank, ios->io_comm);
 	mpierr = MPI_Send( IOBUF, iodesc->maxiobuflen, iodesc->basetype, 0, ios->io_rank, ios->io_comm);
-
       }
       break;
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
+      
       for( i=0,dsize=1;i<ndims;i++)
 	dsize*=count[i];
-      // assert(dsize > 0)
-      ierr = ncmpi_iput_vara(ncid, varid, (size_t *) start,(size_t *) count, IOBUF,
-			     dsize, iodesc->basetype, request);
+
+      //      printf("pnet %ld %ld %ld\n",start[0],count[0],dsize);
+      // for(i=0;i<dsize;i++)
+      //	printf("iobuf(%d) %d\n",i,((int *)IOBUF)[i]);
+
+	ierr = ncmpi_iput_vara(ncid, varid, (size_t *) start,(size_t *) count, IOBUF,
+			       dsize, iodesc->basetype, request);
       break;
 #endif
     default:
@@ -120,7 +125,7 @@ int c_write_nc(const file_desc_t *file,const io_desc_t *iodesc, void *IOBUF, con
     }
   }
   
-  chkerr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
   return ierr;
 }
 
@@ -131,7 +136,7 @@ int c_write_nc(const file_desc_t *file,const io_desc_t *iodesc, void *IOBUF, con
 
 
 int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, const int vtype, 
-			const PIO_Offset arraylen, void *array, void *fillvalue)
+			void *IOBUF, void *fillvalue)
 {
   iosystem_desc_t *ios;
   PIO_Offset *start, *count;
@@ -161,13 +166,15 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, con
       count[0] = 1;
       // Non-time dependent array
     }else{
-      start = (PIO_Offset *) calloc(ndims, sizeof(PIO_Offset));
-      count = (PIO_Offset *) calloc(ndims, sizeof(PIO_Offset));
+      //start = (PIO_Offset *) calloc(ndims, sizeof(PIO_Offset));
+      //count = (PIO_Offset *) calloc(ndims, sizeof(PIO_Offset));
+      start  = iodesc->start;
+      count = iodesc->count;
     }      
 
   }
-
-  ierr = c_write_nc(file, iodesc, array, vid, start, count, &(vdesc->request));
+  
+  ierr = c_write_nc(file, iodesc, IOBUF, vid, start, count, &(vdesc->request));
 
 
   return ierr;
@@ -210,10 +217,8 @@ int PIOc_write_darray(const int ncid, const int vid, const int ioid, const PIO_O
     }
   }
 
-
   ierr = box_rearrange_comp2io(ios, iodesc, arraylen, array, rlen, iobuf, 0, 0);
 
-  
   switch(file->iotype){
   case PIO_IOTYPE_PBINARY:
     break;
@@ -221,9 +226,40 @@ int PIOc_write_darray(const int ncid, const int vid, const int ioid, const PIO_O
   case PIO_IOTYPE_NETCDF:
   case PIO_IOTYPE_NETCDF4P:
   case PIO_IOTYPE_NETCDF4C:
-    ierr = pio_write_darray_nc(file, iodesc, vid, vtype, arraylen, iobuf, fillvalue);
+    ierr = pio_write_darray_nc(file, iodesc, vid, vtype,  iobuf, fillvalue);
   }
   return ierr;
 
+}
+
+int flush_ouput_buffer(file_desc_t *file)
+{
+  var_desc_t *vardesc;
+  int ierr=PIO_NOERR;
+#ifdef _PNETCDF
+  int request_cnt=0;
+  MPI_Request requests[PIO_MAX_VARS];
+  MPI_Status status[PIO_MAX_VARS];
+  vardesc = file->varlist;
+
+  for(int i=0;i<PIO_MAX_VARS;i++){
+    if(vardesc[i].request != MPI_REQUEST_NULL){
+      requests[request_cnt] = vardesc[i].request;
+      request_cnt++;
+    }
+  }
+  if(request_cnt>0){
+    ierr = ncmpi_wait_all(file->fh, request_cnt,  requests, status);
+    
+    for(int i=0;i<PIO_MAX_VARS;i++){
+      if(vardesc[i].request != MPI_REQUEST_NULL){
+	free(vardesc[i].buffer);
+	vardesc[i].buffer = NULL;
+	vardesc[i].request = MPI_REQUEST_NULL;
+      }
+    }   
+  } 
+#endif
+  return ierr;
 }
 

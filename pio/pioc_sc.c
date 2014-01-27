@@ -98,7 +98,7 @@ void computestartandcount(const int gdim, const int ioprocs, const int rank,
 
   irank = rank % ioprocs;
   *kount =(long int) (gdim/ioprocs);
-  *start = (long int) (*kount*irank+1);
+  *start = (long int) (*kount*irank);
   remainder = gdim - *kount*ioprocs;
 
   if(remainder>= ioprocs-irank){
@@ -223,7 +223,7 @@ int CalcStartandCount(const int basetype, const int ndims,const int *gdims, cons
   use_io_procs = max(1, min((int) ((float) p/ (float) minblocksize + 0.5),num_io_procs));
   converged = 0;
   for( i=0;i<ndims;i++){
-    mystart[i]=1;
+    mystart[i]=0;
     mykount[i]=0;
   }
 
@@ -231,7 +231,7 @@ int CalcStartandCount(const int basetype, const int ndims,const int *gdims, cons
   while(! converged){
     for(iorank=0;iorank<use_io_procs;iorank++){
       for( i=0;i<ndims;i++){
-	start[i]=1;
+	start[i]=0;
 	kount[i]=gdims[i];
       }
       ldims = ndims;
@@ -342,10 +342,6 @@ int main()
       }
       tpsize+=psize;
 
-      if(scnt>0) {
-	printf("iorank=%2.2d start=%3ld %3ld %3ld %3ld count=%3ld %3ld %3ld %3ld pgdims=%ld psize=%ld \n",iorank,start[0],start[1],start[2],start[3],
-	       kount[0],kount[1],kount[2],kount[3],pgdims,psize);
-      }
     }
  
     if(tpsize==pgdims)
