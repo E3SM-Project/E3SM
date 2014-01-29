@@ -177,8 +177,19 @@ IF (DEFINED EXTRAE_DIR)
   SET(HAVE_EXTRAE TRUE)
 ENDIF ()
 
+###########################################
+# Definitions for timing library
+###########################################
 # This is required in timing to set HAVE_MPI
 ADD_DEFINITIONS(-DSPMD)
+OPTION(ENABLE_NANOTIMERS "Use nano timers in timing library" FALSE)
+OPTION(USE_BIT64 "Set BIT64 (for 64 bit arch) in timing library when ENABLE_NANOTIME" FALSE)
+IF (${ENABLE_NANOTIMERS})
+  ADD_DEFINITIONS(-DHAVE_NANOTIME)
+  IF (${USE_BIT64})
+    ADD_DEFINITIONS(-DBIT64)
+  ENDIF ()
+ENDIF ()
 
 SET(PIO_USE_MPIIO OFF CACHE BOOL "Turn this off due to bug in pio")
 
