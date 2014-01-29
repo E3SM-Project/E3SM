@@ -171,10 +171,10 @@ int PIOc_CreateFile(const int iosysid, int *ncidp, const int iotype,
       amode = amode & PIO_64BIT_DATA;
       amode = amode  & PIO_64BIT_OFFSET;
       printf("%d %d  \n",__LINE__,amode);
-      amode = amode |  NC_MPIIO;
-      printf("%d %d \n",__LINE__,amode);
+      //      amode = amode |  NC_MPIIO;
+      //      printf("%d %d \n",__LINE__,amode);
 
-      ierr = nc_create_par(fname, amode, ios->io_comm,ios->info, &(file->fh));
+      ierr = nc_create_par(fname, amode, ios->io_comm,ios->info  , &(file->fh));
       break;
     case PIO_IOTYPE_NETCDF4C:
 #endif

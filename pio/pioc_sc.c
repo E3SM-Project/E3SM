@@ -234,7 +234,7 @@ int CalcStartandCount(const int basetype, const int ndims,const int *gdims, cons
 	start[i]=0;
 	kount[i]=gdims[i];
       }
-      ldims = ndims;
+      ldims = ndims-1;
       p=basesize;
       for(i=0;i<ndims;i++){
 	p=p*gdims[i];

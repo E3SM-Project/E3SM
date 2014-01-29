@@ -1148,6 +1148,7 @@ int PIOc_put_att_text (int ncid, int varid, const char *name, PIO_Offset len, co
 #endif
     case PIO_IOTYPE_NETCDF:
       if(ios->io_rank==0){
+	printf("%s %d %s %s\n",__FILE__,__LINE__,name,op);
 	ierr = nc_put_att_text(file->fh, varid, name, (size_t)len, op);;
       }
       break;

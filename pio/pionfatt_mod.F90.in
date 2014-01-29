@@ -113,9 +113,13 @@ contains
          {CTYPE} :: op
        end function PIOc_put_att_{NCTYPE}
     end interface
-
-
-    ierr = PIOc_put_att_{NCTYPE} (ncid,varid,name, PIO_{TYPE}, 1_C_LONG, value)
+    integer :: cvarid
+    if(varid==PIO_GLOBAL) then
+       cvarid = -1
+    else
+       cvarid = varid
+    end if
+    ierr = PIOc_put_att_{NCTYPE} (ncid,cvarid,name, PIO_{TYPE}, 1_C_LONG, value)
 
   end function put_att_id_{TYPE}
   integer function put_att_id_text (ncid, varid, name, value) result(ierr)
@@ -135,8 +139,14 @@ contains
          character(C_char) :: op
        end function PIOc_put_att_text
     end interface
+    integer :: cvarid
 
-    ierr = PIOc_put_att_text (ncid,varid,name, int(len(value),C_LONG), value)
+    if(varid==PIO_GLOBAL) then
+       cvarid = -1
+    else
+       cvarid = varid
+    end if
+    ierr = PIOc_put_att_text (ncid,cvarid,name, int(len(value),C_LONG), value)
 
   end function put_att_id_text
 
