@@ -29,7 +29,7 @@ se_ftype     = 0
 limiter_option = 4
 vert_remap_q_alg = 1
 hypervis_order = 2
-hypervis_subcycle=3
+hypervis_subcycle=4
 hypervis_subcycle_q=1
 /
 &solver_nl

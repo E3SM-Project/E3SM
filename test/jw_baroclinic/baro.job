@@ -1,11 +1,29 @@
 #!/bin/tcsh -f
+#
+#  This script will configure, build and run HOMME using the
+#  Jablownowski and Williamson baroclinic instability test case
+#  with a user specified number of tracers.
+#
+#  The goal is to configure HOMME to be identical to how it is used 
+#  in CAM.   We propose two configuations:
+#
+#  CAM5, with 30 levels and 25 tracers
+#  CAM6, with 60 levels and 50 tracers
+#  
+#  This script contains configurations for ne16, ne30, ne60, ne120, ne240
+#  The remap timestep and viscosity coefficients are scaled with resolution
+#  all other subcycling parameters are set to mimic that
+#  used by CAM5 1/4 degree.  So the relative performance, per timstep
+#  of the different components should be similar. (but for lower resolutions
+#  this will not be the most efficient choices)
+#
+#  TODO:  add option to use other tracer advection options
+#
+#
 #SBATCH --job-name baro
 #SBATCH --account=FY139209
 #SBATCH -N 8
 #SBATCH --time=1:00:00
-
-
-
 #
 #  set paths to source code, build directory and run directory
 #
@@ -109,27 +127,22 @@ set run = $wdir/$name
 
 if ( $ne == 16 ) then
    set tstep=600
-   set hypervis_subcycle = 3
    set nu=7e15
 endif
 if ( $ne == 30 ) then
    set tstep=300
-   set hypervis_subcycle = 3
    set nu=1e15
 endif
 if ( $ne == 60 ) then
    set tstep=150
-   set hypervis_subcycle = 4
    set nu=1e14
 endif
 if ( $ne == 120 ) then
    set tstep=75
-   set hypervis_subcycle = 4
    set nu=1e13
 endif
 if ( $ne == 240 ) then
    set tstep=40
-   set hypervis_subcycle = 4
    set nu=1e12
 endif
 
@@ -174,8 +187,7 @@ sed s/u_perturb.\*/"u_perturb = $u_perturb"/   |\
 sed s/rotate_grid.\*/"rotate_grid = $rotate"/  |\
 sed s:vfile_mid.\*:"vfile_mid = '$vfile_mid'":  |\
 sed s:vfile_int.\*:"vfile_int = '$vfile_int'":  |\
-sed s/qsize.\*/"qsize = $qsize"/  |\
-sed s/hypervis_subcycle=.\*/"hypervis_subcycle = $hypervis_subcycle "/ > input.nl
+sed s/qsize.\*/"qsize = $qsize"/  > input.nl
 
 
 date
