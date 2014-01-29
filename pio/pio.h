@@ -213,4 +213,61 @@ enum PIO_ERROR_HANDLERS{
 #endif
 
 
-#endif  _PIO_H_
+int PIOc_inq_att (int ncid, int varid, const char *name, nc_type *xtypep, PIO_Offset *lenp); 
+int PIOc_inq_format (int ncid, int *formatp); 
+int PIOc_inq_varid (int ncid, const char *name, int *varidp); 
+int PIOc_inq_varnatts (int ncid, int varid, int *nattsp); 
+int PIOc_def_var (int ncid, const char *name, nc_type xtype,  int ndims, const int *dimidsp, int *varidp); 
+int PIOc_inq_var (int ncid, int varid, char *name, nc_type *xtypep, int *ndimsp, int *dimidsp, int *nattsp); 
+int PIOc_inq_varname (int ncid, int varid, char *name); 
+int PIOc_put_att_double (int ncid, int varid, const char *name, nc_type xtype, PIO_Offset len, const double *op); 
+int PIOc_put_att_int (int ncid, int varid, const char *name, nc_type xtype, PIO_Offset len, const int *op); 
+int PIOc_rename_att (int ncid, int varid, const char *name, const char *newname); 
+int PIOc_del_att (int ncid, int varid, const char *name); 
+int PIOc_inq_natts (int ncid, int *ngattsp); 
+int PIOc_inq (int ncid, int *ndimsp, int *nvarsp, int *ngattsp, int *unlimdimidp);  
+int PIOc_get_att_text (int ncid, int varid, const char *name, char *ip); 
+int PIOc_get_att_short (int ncid, int varid, const char *name, short *ip); 
+int PIOc_put_att_long (int ncid, int varid, const char *name, nc_type xtype, PIO_Offset len, const long *op); 
+int PIOc_redef (int ncid); 
+int PIOc_set_fill (int ncid, int fillmode, int *old_modep); 
+int PIOc_enddef (int ncid); 
+int PIOc_rename_var (int ncid, int varid, const char *name); 
+int PIOc_put_att_short (int ncid, int varid, const char *name, nc_type xtype, PIO_Offset len, const short *op); 
+int PIOc_put_att_text (int ncid, int varid, const char *name, PIO_Offset len, const char *op); 
+int PIOc_inq_attname (int ncid, int varid, int attnum, char *name); 
+int PIOc_get_att_ulonglong (int ncid, int varid, const char *name, unsigned long long *ip); 
+int PIOc_get_att_ushort (int ncid, int varid, const char *name, unsigned short *ip); 
+int PIOc_put_att_ulonglong (int ncid, int varid, const char *name, nc_type xtype, PIO_Offset len, const unsigned long long *op); 
+int PIOc_inq_dimlen (int ncid, int dimid, PIO_Offset *lenp); 
+int PIOc_get_att_uint (int ncid, int varid, const char *name, unsigned int *ip); 
+int PIOc_get_att_longlong (int ncid, int varid, const char *name, long long *ip); 
+int PIOc_put_att_schar (int ncid, int varid, const char *name, nc_type xtype, PIO_Offset len, const signed char *op); 
+int PIOc_put_att_float (int ncid, int varid, const char *name, nc_type xtype, PIO_Offset len, const float *op); 
+int PIOc_inq_nvars (int ncid, int *nvarsp); 
+int PIOc_rename_dim (int ncid, int dimid, const char *name); 
+int PIOc_inq_varndims (int ncid, int varid, int *ndimsp); 
+int PIOc_get_att_long (int ncid, int varid, const char *name, long *ip); 
+int PIOc_inq_dim (int ncid, int dimid, char *name, PIO_Offset *lenp); 
+int PIOc_inq_dimid (int ncid, const char *name, int *idp); 
+int PIOc_inq_unlimdim (int ncid, int *unlimdimidp); 
+int PIOc_inq_vardimid (int ncid, int varid, int *dimidsp); 
+int PIOc_inq_attlen (int ncid, int varid, const char *name, PIO_Offset *lenp); 
+int PIOc_inq_dimname (int ncid, int dimid, char *name); 
+int PIOc_put_att_ushort (int ncid, int varid, const char *name, nc_type xtype, PIO_Offset len, const unsigned short *op); 
+int PIOc_get_att_float (int ncid, int varid, const char *name, float *ip); 
+int PIOc_sync (int ncid); 
+int PIOc_put_att_longlong (int ncid, int varid, const char *name, nc_type xtype, PIO_Offset len, const long long *op); 
+int PIOc_put_att_uint (int ncid, int varid, const char *name, nc_type xtype, PIO_Offset len, const unsigned int *op); 
+int PIOc_get_att_schar (int ncid, int varid, const char *name, signed char *ip); 
+int PIOc_inq_attid (int ncid, int varid, const char *name, int *idp); 
+int PIOc_def_dim (int ncid, const char *name, PIO_Offset len, int *idp); 
+int PIOc_inq_ndims (int ncid, int *ndimsp); 
+int PIOc_inq_vartype (int ncid, int varid, nc_type *xtypep); 
+int PIOc_get_att_int (int ncid, int varid, const char *name, int *ip); 
+int PIOc_get_att_double (int ncid, int varid, const char *name, double *ip); 
+int PIOc_inq_atttype (int ncid, int varid, const char *name, nc_type *xtypep); 
+int PIOc_put_att_uchar (int ncid, int varid, const char *name, nc_type xtype, PIO_Offset len, const unsigned char *op); 
+int PIOc_get_att_uchar (int ncid, int varid, const char *name, unsigned char *ip);              
+#endif  // _PIO_H_
+

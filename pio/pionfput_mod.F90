@@ -6,14 +6,15 @@
 #define __PIO_FILE__ "pionfput_mod.F90"
 !>
 !! @file 
-!! $Revision: 862 $
-!! $LastChangedDate: 2013-11-24 12:28:12 -0700 (Sun, 24 Nov 2013) $
+!! $Revision: 904 $
+!! $LastChangedDate: 2013-12-25 14:13:08 -0700 (Wed, 25 Dec 2013) $
 !! @brief Write Routines for non-decomposed NetCDF data.
 !<
 module pionfput_mod
 #ifdef TIMING
   use perf_mod, only : t_startf, t_stopf      ! _EXTERNAL
 #endif
+  use iso_c_binding
   use pio_kinds, only: i4,r4,r8,pio_offset
   use pio_types, only : file_desc_t, iosystem_desc_t, var_desc_t, &
 	pio_iotype_pbinary, pio_iotype_binary, pio_iotype_direct_pbinary, &
@@ -29,10 +30,15 @@ module pionfput_mod
 #ifndef NO_MPIMOD
   use mpi   ! _EXTERNAL
 #endif
+#ifdef USE_PNETCDF_MOD
+  use pnetcdf
+#endif
   implicit none
   private
 #ifdef _PNETCDF
-#include <pnetcdf.inc>  /* _EXTERNAL */
+#ifndef USE_PNETCDF_MOD
+#include <pnetcdf.inc>
+#endif
 #endif
 #ifdef _NETCDF
 ! Required for netcdf bug workaround
@@ -51,7 +57,7 @@ module pionfput_mod
 !! 
 !<
   public :: put_var
-# 49 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 55 "pionfput_mod.F90.in"
   interface put_var
      !  DIMS 0,1,2,3,4,5
      module procedure put_var_0d_text, put_var_vdesc_0d_text
@@ -146,7 +152,7 @@ module pionfput_mod
      module procedure put_var1_double, put_var1_vdesc_double
      module procedure put_var1_int, put_var1_vdesc_int
   end interface
-# 56 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 62 "pionfput_mod.F90.in"
 contains
 
 !>
@@ -160,7 +166,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 69 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 75 "pionfput_mod.F90.in"
   integer function put_var1_text (File,varid, index, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, index(:)
@@ -253,7 +259,7 @@ contains
 #ifdef TIMING
     call t_stopf("pio_put_var1_text")
 #endif 
-# 161 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 167 "pionfput_mod.F90.in"
   end function put_var1_text
 ! TYPE int,real,double
 !>
@@ -267,7 +273,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 174 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 180 "pionfput_mod.F90.in"
   integer function put_var1_int (File,varid, index, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, index(:)
@@ -351,7 +357,7 @@ contains
 #ifdef TIMING
     call t_stopf("pio_put_var1_int")
 #endif 
-# 257 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 263 "pionfput_mod.F90.in"
   end function put_var1_int
 ! TYPE int,real,double
 !>
@@ -365,7 +371,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 174 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 180 "pionfput_mod.F90.in"
   integer function put_var1_real (File,varid, index, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, index(:)
@@ -449,7 +455,7 @@ contains
 #ifdef TIMING
     call t_stopf("pio_put_var1_real")
 #endif 
-# 257 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 263 "pionfput_mod.F90.in"
   end function put_var1_real
 ! TYPE int,real,double
 !>
@@ -463,7 +469,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 174 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 180 "pionfput_mod.F90.in"
   integer function put_var1_double (File,varid, index, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, index(:)
@@ -547,7 +553,7 @@ contains
 #ifdef TIMING
     call t_stopf("pio_put_var1_double")
 #endif 
-# 257 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 263 "pionfput_mod.F90.in"
   end function put_var1_double
 
 !>
@@ -561,7 +567,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 270 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 276 "pionfput_mod.F90.in"
   integer function put_var1_vdesc_text (File,vardesc, start, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -569,9 +575,9 @@ contains
     character(len=*), intent(in) :: ival
 
     ierr = put_var1_text (File, vardesc%varid, start, ival)
-# 277 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 283 "pionfput_mod.F90.in"
   end function put_var1_vdesc_text
-# 270 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 276 "pionfput_mod.F90.in"
   integer function put_var1_vdesc_real (File,vardesc, start, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -579,9 +585,9 @@ contains
     real(r4), intent(in) :: ival
 
     ierr = put_var1_real (File, vardesc%varid, start, ival)
-# 277 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 283 "pionfput_mod.F90.in"
   end function put_var1_vdesc_real
-# 270 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 276 "pionfput_mod.F90.in"
   integer function put_var1_vdesc_double (File,vardesc, start, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -589,9 +595,9 @@ contains
     real(r8), intent(in) :: ival
 
     ierr = put_var1_double (File, vardesc%varid, start, ival)
-# 277 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 283 "pionfput_mod.F90.in"
   end function put_var1_vdesc_double
-# 270 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 276 "pionfput_mod.F90.in"
   integer function put_var1_vdesc_int (File,vardesc, start, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -599,11 +605,9 @@ contains
     integer(i4), intent(in) :: ival
 
     ierr = put_var1_int (File, vardesc%varid, start, ival)
-# 277 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 283 "pionfput_mod.F90.in"
   end function put_var1_vdesc_int
 
-! DIMS 0,1,2,3,4,5
-! TYPE text
 !>
 !! @public
 !! @ingroup PIO_put_var
@@ -615,116 +619,31 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 292 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 296 "pionfput_mod.F90.in"
   integer function put_var_0d_text (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
-    character(len=*), intent(in) :: ival
-    integer :: iotype
-    integer :: i, is, msg, mpierr, xlen, itype
-    type(iosystem_desc_t), pointer :: ios
-    integer :: dims(0)
-    integer :: start(0+1), count(0+1)
-#ifdef TIMING
-    call t_startf("pio_put_var_0d_text")
-#endif 
-    ierr=PIO_NOERR
+    character(len=*), intent(in) :: ival{DIMSTR}
+    
+# 301 "pionfput_mod.F90.in"
+    interface
+# 302 "pionfput_mod.F90.in"
+       integer(C_INT) function PIOc_put_var_text(ncid, varid, op) &
+            bind(C,name="PIOc_put_var_text")
+         use iso_c_binding
+         integer(C_INT), intent(in), value :: ncid
+         integer(C_INT), intent(in), value :: varid
+         type(C_PTR) :: op
+# 308 "pionfput_mod.F90.in"
+       end function PIOc_put_var_text
+    end interface
 
-    iotype = File%iotype 
-    start = 1
-    count = 0
-    is=0       
+   ierr = PIOc_put_var_text(file%fh, varid,  trim(ival)//C_NULL_CHAR)
 
 
-    ios=>File%iosystem
-    if(ios%async_interface .and. .not. ios%ioproc ) then
-       msg=PIO_MSG_PUTVAR_0d
-       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
-       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       itype = TYPETEXT
-       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-
-#if (0 > 0)
-       do i=1,0
-          dims(i)=size(ival,i)
-       end do
-       call MPI_BCAST(dims,0,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#endif
-       xlen = len(ival)
-       call MPI_BCAST(xlen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-    endif
-
-    if(ios%async_interface ) then
-#if(0==0)       
-       call MPI_BCAST(ival,len_trim(ival),MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
-#else
-       call MPI_BCAST(ival,size(ival),MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
-#endif
-    end if
-
-    if(Ios%IOProc) then
-       if(Ios%io_rank==0) then
-    	  count(1)=len(ival)
-	  is=1
-#if (0 > 0)
-          do i=1,0
-             count(i+is) = size(ival,i)
-          end do
-#endif
-       end if
-       select case (iotype) 
-#ifdef _PNETCDF
-       case(pio_iotype_pnetcdf)
-          if(ios%io_rank>0) count = 0
-          ierr = nfmpi_put_vara_text_all (File%fh, varid,int(start,kind=pio_offset),&
-               int(count,kind=pio_offset),ival)
-#endif
-#ifdef _NETCDF
-!       case(pio_iotype_netcdf4p)
-!          ierr=nf90_var_par_access(File%fh, varid, NF90_COLLECTIVE)
-#if (0==0)
-! This is a workaround for a bug in the netcdf f90 interface
-! The netcdf bug is that when you use nf90_put_var
-! to write a scalar string the trailing blanks are stripped by the specific
-! function nf90_put_var_text before it calls nf_put_vars_text. 
-!          if (Ios%io_rank == 0) then
-!             ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
-!          else
-!             ierr = nf_put_vars_text(File%fh, varid, (/1/), (/0/), (/1/), ival)
-!          end if
-#else
-!          ierr = nf90_put_var(File%fh, varid, ival, start=start, count=count)
-#endif
-       case( pio_iotype_netcdf,pio_iotype_netcdf4c, pio_iotype_netcdf4p)
-          ! Only io proc 0 will do writing
-          if (Ios%io_rank == 0) then
-
-#if (0==0)
-! This is a workaround for a bug in the netcdf f90 interface
-! The netcdf bug is that when you use nf90_put_var
-! to write a scalar string the trailing blanks are stripped by the specific
-! function nf90_put_var_text before it calls nf_put_vars_text. 
-             ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
-#else
-             ierr = nf90_put_var(File%fh, varid, ival)
-#endif
-          end if
-#endif
-       case default
-          print *,__PIO_FILE__,__LINE__,iotype
-          call piodie(__PIO_FILE__,__LINE__,"bad iotype specified" )
-
-       end select
-    end if
-
-    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
-#ifdef TIMING
-    call t_stopf("pio_put_var_0d_text")
-#endif 
-# 398 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 314 "pionfput_mod.F90.in"
   end function put_var_0d_text
-! DIMS 0,1,2,3,4,5
+! DIMS 1,2,3,4,5
 ! TYPE text
 !>
 !! @public
@@ -737,116 +656,31 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 292 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 328 "pionfput_mod.F90.in"
   integer function put_var_1d_text (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
     character(len=*), intent(in) :: ival(:)
-    integer :: iotype
-    integer :: i, is, msg, mpierr, xlen, itype
-    type(iosystem_desc_t), pointer :: ios
-    integer :: dims(1)
-    integer :: start(1+1), count(1+1)
-#ifdef TIMING
-    call t_startf("pio_put_var_1d_text")
-#endif 
-    ierr=PIO_NOERR
+    
+# 333 "pionfput_mod.F90.in"
+    interface
+# 334 "pionfput_mod.F90.in"
+       integer(C_INT) function PIOc_put_var_text(ncid, varid, op) &
+            bind(C,name="PIOc_put_var_text")
+         use iso_c_binding
+         integer(C_INT), intent(in), value :: ncid
+         integer(C_INT), intent(in), value :: varid
+         type(C_PTR) :: op
+# 340 "pionfput_mod.F90.in"
+       end function PIOc_put_var_text
+    end interface
 
-    iotype = File%iotype 
-    start = 1
-    count = 0
-    is=0       
+   ierr = PIOc_put_var_text(file%fh, varid,  ival)
 
 
-    ios=>File%iosystem
-    if(ios%async_interface .and. .not. ios%ioproc ) then
-       msg=PIO_MSG_PUTVAR_1d
-       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
-       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       itype = TYPETEXT
-       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-
-#if (1 > 0)
-       do i=1,1
-          dims(i)=size(ival,i)
-       end do
-       call MPI_BCAST(dims,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#endif
-       xlen = len(ival)
-       call MPI_BCAST(xlen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-    endif
-
-    if(ios%async_interface ) then
-#if(1==0)       
-       call MPI_BCAST(ival,len_trim(ival),MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
-#else
-       call MPI_BCAST(ival,size(ival),MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
-#endif
-    end if
-
-    if(Ios%IOProc) then
-       if(Ios%io_rank==0) then
-    	  count(1)=len(ival)
-	  is=1
-#if (1 > 0)
-          do i=1,1
-             count(i+is) = size(ival,i)
-          end do
-#endif
-       end if
-       select case (iotype) 
-#ifdef _PNETCDF
-       case(pio_iotype_pnetcdf)
-          if(ios%io_rank>0) count = 0
-          ierr = nfmpi_put_vara_text_all (File%fh, varid,int(start,kind=pio_offset),&
-               int(count,kind=pio_offset),ival)
-#endif
-#ifdef _NETCDF
-!       case(pio_iotype_netcdf4p)
-!          ierr=nf90_var_par_access(File%fh, varid, NF90_COLLECTIVE)
-#if (1==0)
-! This is a workaround for a bug in the netcdf f90 interface
-! The netcdf bug is that when you use nf90_put_var
-! to write a scalar string the trailing blanks are stripped by the specific
-! function nf90_put_var_text before it calls nf_put_vars_text. 
-!          if (Ios%io_rank == 0) then
-!             ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
-!          else
-!             ierr = nf_put_vars_text(File%fh, varid, (/1/), (/0/), (/1/), ival)
-!          end if
-#else
-!          ierr = nf90_put_var(File%fh, varid, ival, start=start, count=count)
-#endif
-       case( pio_iotype_netcdf,pio_iotype_netcdf4c, pio_iotype_netcdf4p)
-          ! Only io proc 0 will do writing
-          if (Ios%io_rank == 0) then
-
-#if (1==0)
-! This is a workaround for a bug in the netcdf f90 interface
-! The netcdf bug is that when you use nf90_put_var
-! to write a scalar string the trailing blanks are stripped by the specific
-! function nf90_put_var_text before it calls nf_put_vars_text. 
-             ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
-#else
-             ierr = nf90_put_var(File%fh, varid, ival)
-#endif
-          end if
-#endif
-       case default
-          print *,__PIO_FILE__,__LINE__,iotype
-          call piodie(__PIO_FILE__,__LINE__,"bad iotype specified" )
-
-       end select
-    end if
-
-    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
-#ifdef TIMING
-    call t_stopf("pio_put_var_1d_text")
-#endif 
-# 398 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 346 "pionfput_mod.F90.in"
   end function put_var_1d_text
-! DIMS 0,1,2,3,4,5
+! DIMS 1,2,3,4,5
 ! TYPE text
 !>
 !! @public
@@ -859,116 +693,31 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 292 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 328 "pionfput_mod.F90.in"
   integer function put_var_2d_text (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
     character(len=*), intent(in) :: ival(:,:)
-    integer :: iotype
-    integer :: i, is, msg, mpierr, xlen, itype
-    type(iosystem_desc_t), pointer :: ios
-    integer :: dims(2)
-    integer :: start(2+1), count(2+1)
-#ifdef TIMING
-    call t_startf("pio_put_var_2d_text")
-#endif 
-    ierr=PIO_NOERR
+    
+# 333 "pionfput_mod.F90.in"
+    interface
+# 334 "pionfput_mod.F90.in"
+       integer(C_INT) function PIOc_put_var_text(ncid, varid, op) &
+            bind(C,name="PIOc_put_var_text")
+         use iso_c_binding
+         integer(C_INT), intent(in), value :: ncid
+         integer(C_INT), intent(in), value :: varid
+         type(C_PTR) :: op
+# 340 "pionfput_mod.F90.in"
+       end function PIOc_put_var_text
+    end interface
 
-    iotype = File%iotype 
-    start = 1
-    count = 0
-    is=0       
+   ierr = PIOc_put_var_text(file%fh, varid,  ival)
 
 
-    ios=>File%iosystem
-    if(ios%async_interface .and. .not. ios%ioproc ) then
-       msg=PIO_MSG_PUTVAR_2d
-       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
-       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       itype = TYPETEXT
-       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-
-#if (2 > 0)
-       do i=1,2
-          dims(i)=size(ival,i)
-       end do
-       call MPI_BCAST(dims,2,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#endif
-       xlen = len(ival)
-       call MPI_BCAST(xlen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-    endif
-
-    if(ios%async_interface ) then
-#if(2==0)       
-       call MPI_BCAST(ival,len_trim(ival),MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
-#else
-       call MPI_BCAST(ival,size(ival),MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
-#endif
-    end if
-
-    if(Ios%IOProc) then
-       if(Ios%io_rank==0) then
-    	  count(1)=len(ival)
-	  is=1
-#if (2 > 0)
-          do i=1,2
-             count(i+is) = size(ival,i)
-          end do
-#endif
-       end if
-       select case (iotype) 
-#ifdef _PNETCDF
-       case(pio_iotype_pnetcdf)
-          if(ios%io_rank>0) count = 0
-          ierr = nfmpi_put_vara_text_all (File%fh, varid,int(start,kind=pio_offset),&
-               int(count,kind=pio_offset),ival)
-#endif
-#ifdef _NETCDF
-!       case(pio_iotype_netcdf4p)
-!          ierr=nf90_var_par_access(File%fh, varid, NF90_COLLECTIVE)
-#if (2==0)
-! This is a workaround for a bug in the netcdf f90 interface
-! The netcdf bug is that when you use nf90_put_var
-! to write a scalar string the trailing blanks are stripped by the specific
-! function nf90_put_var_text before it calls nf_put_vars_text. 
-!          if (Ios%io_rank == 0) then
-!             ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
-!          else
-!             ierr = nf_put_vars_text(File%fh, varid, (/1/), (/0/), (/1/), ival)
-!          end if
-#else
-!          ierr = nf90_put_var(File%fh, varid, ival, start=start, count=count)
-#endif
-       case( pio_iotype_netcdf,pio_iotype_netcdf4c, pio_iotype_netcdf4p)
-          ! Only io proc 0 will do writing
-          if (Ios%io_rank == 0) then
-
-#if (2==0)
-! This is a workaround for a bug in the netcdf f90 interface
-! The netcdf bug is that when you use nf90_put_var
-! to write a scalar string the trailing blanks are stripped by the specific
-! function nf90_put_var_text before it calls nf_put_vars_text. 
-             ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
-#else
-             ierr = nf90_put_var(File%fh, varid, ival)
-#endif
-          end if
-#endif
-       case default
-          print *,__PIO_FILE__,__LINE__,iotype
-          call piodie(__PIO_FILE__,__LINE__,"bad iotype specified" )
-
-       end select
-    end if
-
-    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
-#ifdef TIMING
-    call t_stopf("pio_put_var_2d_text")
-#endif 
-# 398 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 346 "pionfput_mod.F90.in"
   end function put_var_2d_text
-! DIMS 0,1,2,3,4,5
+! DIMS 1,2,3,4,5
 ! TYPE text
 !>
 !! @public
@@ -981,116 +730,31 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 292 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 328 "pionfput_mod.F90.in"
   integer function put_var_3d_text (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
     character(len=*), intent(in) :: ival(:,:,:)
-    integer :: iotype
-    integer :: i, is, msg, mpierr, xlen, itype
-    type(iosystem_desc_t), pointer :: ios
-    integer :: dims(3)
-    integer :: start(3+1), count(3+1)
-#ifdef TIMING
-    call t_startf("pio_put_var_3d_text")
-#endif 
-    ierr=PIO_NOERR
+    
+# 333 "pionfput_mod.F90.in"
+    interface
+# 334 "pionfput_mod.F90.in"
+       integer(C_INT) function PIOc_put_var_text(ncid, varid, op) &
+            bind(C,name="PIOc_put_var_text")
+         use iso_c_binding
+         integer(C_INT), intent(in), value :: ncid
+         integer(C_INT), intent(in), value :: varid
+         type(C_PTR) :: op
+# 340 "pionfput_mod.F90.in"
+       end function PIOc_put_var_text
+    end interface
 
-    iotype = File%iotype 
-    start = 1
-    count = 0
-    is=0       
+   ierr = PIOc_put_var_text(file%fh, varid,  ival)
 
 
-    ios=>File%iosystem
-    if(ios%async_interface .and. .not. ios%ioproc ) then
-       msg=PIO_MSG_PUTVAR_3d
-       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
-       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       itype = TYPETEXT
-       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-
-#if (3 > 0)
-       do i=1,3
-          dims(i)=size(ival,i)
-       end do
-       call MPI_BCAST(dims,3,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#endif
-       xlen = len(ival)
-       call MPI_BCAST(xlen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-    endif
-
-    if(ios%async_interface ) then
-#if(3==0)       
-       call MPI_BCAST(ival,len_trim(ival),MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
-#else
-       call MPI_BCAST(ival,size(ival),MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
-#endif
-    end if
-
-    if(Ios%IOProc) then
-       if(Ios%io_rank==0) then
-    	  count(1)=len(ival)
-	  is=1
-#if (3 > 0)
-          do i=1,3
-             count(i+is) = size(ival,i)
-          end do
-#endif
-       end if
-       select case (iotype) 
-#ifdef _PNETCDF
-       case(pio_iotype_pnetcdf)
-          if(ios%io_rank>0) count = 0
-          ierr = nfmpi_put_vara_text_all (File%fh, varid,int(start,kind=pio_offset),&
-               int(count,kind=pio_offset),ival)
-#endif
-#ifdef _NETCDF
-!       case(pio_iotype_netcdf4p)
-!          ierr=nf90_var_par_access(File%fh, varid, NF90_COLLECTIVE)
-#if (3==0)
-! This is a workaround for a bug in the netcdf f90 interface
-! The netcdf bug is that when you use nf90_put_var
-! to write a scalar string the trailing blanks are stripped by the specific
-! function nf90_put_var_text before it calls nf_put_vars_text. 
-!          if (Ios%io_rank == 0) then
-!             ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
-!          else
-!             ierr = nf_put_vars_text(File%fh, varid, (/1/), (/0/), (/1/), ival)
-!          end if
-#else
-!          ierr = nf90_put_var(File%fh, varid, ival, start=start, count=count)
-#endif
-       case( pio_iotype_netcdf,pio_iotype_netcdf4c, pio_iotype_netcdf4p)
-          ! Only io proc 0 will do writing
-          if (Ios%io_rank == 0) then
-
-#if (3==0)
-! This is a workaround for a bug in the netcdf f90 interface
-! The netcdf bug is that when you use nf90_put_var
-! to write a scalar string the trailing blanks are stripped by the specific
-! function nf90_put_var_text before it calls nf_put_vars_text. 
-             ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
-#else
-             ierr = nf90_put_var(File%fh, varid, ival)
-#endif
-          end if
-#endif
-       case default
-          print *,__PIO_FILE__,__LINE__,iotype
-          call piodie(__PIO_FILE__,__LINE__,"bad iotype specified" )
-
-       end select
-    end if
-
-    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
-#ifdef TIMING
-    call t_stopf("pio_put_var_3d_text")
-#endif 
-# 398 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 346 "pionfput_mod.F90.in"
   end function put_var_3d_text
-! DIMS 0,1,2,3,4,5
+! DIMS 1,2,3,4,5
 ! TYPE text
 !>
 !! @public
@@ -1103,116 +767,31 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 292 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 328 "pionfput_mod.F90.in"
   integer function put_var_4d_text (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
     character(len=*), intent(in) :: ival(:,:,:,:)
-    integer :: iotype
-    integer :: i, is, msg, mpierr, xlen, itype
-    type(iosystem_desc_t), pointer :: ios
-    integer :: dims(4)
-    integer :: start(4+1), count(4+1)
-#ifdef TIMING
-    call t_startf("pio_put_var_4d_text")
-#endif 
-    ierr=PIO_NOERR
+    
+# 333 "pionfput_mod.F90.in"
+    interface
+# 334 "pionfput_mod.F90.in"
+       integer(C_INT) function PIOc_put_var_text(ncid, varid, op) &
+            bind(C,name="PIOc_put_var_text")
+         use iso_c_binding
+         integer(C_INT), intent(in), value :: ncid
+         integer(C_INT), intent(in), value :: varid
+         type(C_PTR) :: op
+# 340 "pionfput_mod.F90.in"
+       end function PIOc_put_var_text
+    end interface
 
-    iotype = File%iotype 
-    start = 1
-    count = 0
-    is=0       
+   ierr = PIOc_put_var_text(file%fh, varid,  ival)
 
 
-    ios=>File%iosystem
-    if(ios%async_interface .and. .not. ios%ioproc ) then
-       msg=PIO_MSG_PUTVAR_4d
-       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
-       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       itype = TYPETEXT
-       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-
-#if (4 > 0)
-       do i=1,4
-          dims(i)=size(ival,i)
-       end do
-       call MPI_BCAST(dims,4,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#endif
-       xlen = len(ival)
-       call MPI_BCAST(xlen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-    endif
-
-    if(ios%async_interface ) then
-#if(4==0)       
-       call MPI_BCAST(ival,len_trim(ival),MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
-#else
-       call MPI_BCAST(ival,size(ival),MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
-#endif
-    end if
-
-    if(Ios%IOProc) then
-       if(Ios%io_rank==0) then
-    	  count(1)=len(ival)
-	  is=1
-#if (4 > 0)
-          do i=1,4
-             count(i+is) = size(ival,i)
-          end do
-#endif
-       end if
-       select case (iotype) 
-#ifdef _PNETCDF
-       case(pio_iotype_pnetcdf)
-          if(ios%io_rank>0) count = 0
-          ierr = nfmpi_put_vara_text_all (File%fh, varid,int(start,kind=pio_offset),&
-               int(count,kind=pio_offset),ival)
-#endif
-#ifdef _NETCDF
-!       case(pio_iotype_netcdf4p)
-!          ierr=nf90_var_par_access(File%fh, varid, NF90_COLLECTIVE)
-#if (4==0)
-! This is a workaround for a bug in the netcdf f90 interface
-! The netcdf bug is that when you use nf90_put_var
-! to write a scalar string the trailing blanks are stripped by the specific
-! function nf90_put_var_text before it calls nf_put_vars_text. 
-!          if (Ios%io_rank == 0) then
-!             ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
-!          else
-!             ierr = nf_put_vars_text(File%fh, varid, (/1/), (/0/), (/1/), ival)
-!          end if
-#else
-!          ierr = nf90_put_var(File%fh, varid, ival, start=start, count=count)
-#endif
-       case( pio_iotype_netcdf,pio_iotype_netcdf4c, pio_iotype_netcdf4p)
-          ! Only io proc 0 will do writing
-          if (Ios%io_rank == 0) then
-
-#if (4==0)
-! This is a workaround for a bug in the netcdf f90 interface
-! The netcdf bug is that when you use nf90_put_var
-! to write a scalar string the trailing blanks are stripped by the specific
-! function nf90_put_var_text before it calls nf_put_vars_text. 
-             ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
-#else
-             ierr = nf90_put_var(File%fh, varid, ival)
-#endif
-          end if
-#endif
-       case default
-          print *,__PIO_FILE__,__LINE__,iotype
-          call piodie(__PIO_FILE__,__LINE__,"bad iotype specified" )
-
-       end select
-    end if
-
-    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
-#ifdef TIMING
-    call t_stopf("pio_put_var_4d_text")
-#endif 
-# 398 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 346 "pionfput_mod.F90.in"
   end function put_var_4d_text
-! DIMS 0,1,2,3,4,5
+! DIMS 1,2,3,4,5
 ! TYPE text
 !>
 !! @public
@@ -1225,114 +804,29 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 292 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 328 "pionfput_mod.F90.in"
   integer function put_var_5d_text (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
     character(len=*), intent(in) :: ival(:,:,:,:,:)
-    integer :: iotype
-    integer :: i, is, msg, mpierr, xlen, itype
-    type(iosystem_desc_t), pointer :: ios
-    integer :: dims(5)
-    integer :: start(5+1), count(5+1)
-#ifdef TIMING
-    call t_startf("pio_put_var_5d_text")
-#endif 
-    ierr=PIO_NOERR
+    
+# 333 "pionfput_mod.F90.in"
+    interface
+# 334 "pionfput_mod.F90.in"
+       integer(C_INT) function PIOc_put_var_text(ncid, varid, op) &
+            bind(C,name="PIOc_put_var_text")
+         use iso_c_binding
+         integer(C_INT), intent(in), value :: ncid
+         integer(C_INT), intent(in), value :: varid
+         type(C_PTR) :: op
+# 340 "pionfput_mod.F90.in"
+       end function PIOc_put_var_text
+    end interface
 
-    iotype = File%iotype 
-    start = 1
-    count = 0
-    is=0       
+   ierr = PIOc_put_var_text(file%fh, varid,  ival)
 
 
-    ios=>File%iosystem
-    if(ios%async_interface .and. .not. ios%ioproc ) then
-       msg=PIO_MSG_PUTVAR_5d
-       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
-       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       itype = TYPETEXT
-       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-
-#if (5 > 0)
-       do i=1,5
-          dims(i)=size(ival,i)
-       end do
-       call MPI_BCAST(dims,5,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#endif
-       xlen = len(ival)
-       call MPI_BCAST(xlen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-    endif
-
-    if(ios%async_interface ) then
-#if(5==0)       
-       call MPI_BCAST(ival,len_trim(ival),MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
-#else
-       call MPI_BCAST(ival,size(ival),MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
-#endif
-    end if
-
-    if(Ios%IOProc) then
-       if(Ios%io_rank==0) then
-    	  count(1)=len(ival)
-	  is=1
-#if (5 > 0)
-          do i=1,5
-             count(i+is) = size(ival,i)
-          end do
-#endif
-       end if
-       select case (iotype) 
-#ifdef _PNETCDF
-       case(pio_iotype_pnetcdf)
-          if(ios%io_rank>0) count = 0
-          ierr = nfmpi_put_vara_text_all (File%fh, varid,int(start,kind=pio_offset),&
-               int(count,kind=pio_offset),ival)
-#endif
-#ifdef _NETCDF
-!       case(pio_iotype_netcdf4p)
-!          ierr=nf90_var_par_access(File%fh, varid, NF90_COLLECTIVE)
-#if (5==0)
-! This is a workaround for a bug in the netcdf f90 interface
-! The netcdf bug is that when you use nf90_put_var
-! to write a scalar string the trailing blanks are stripped by the specific
-! function nf90_put_var_text before it calls nf_put_vars_text. 
-!          if (Ios%io_rank == 0) then
-!             ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
-!          else
-!             ierr = nf_put_vars_text(File%fh, varid, (/1/), (/0/), (/1/), ival)
-!          end if
-#else
-!          ierr = nf90_put_var(File%fh, varid, ival, start=start, count=count)
-#endif
-       case( pio_iotype_netcdf,pio_iotype_netcdf4c, pio_iotype_netcdf4p)
-          ! Only io proc 0 will do writing
-          if (Ios%io_rank == 0) then
-
-#if (5==0)
-! This is a workaround for a bug in the netcdf f90 interface
-! The netcdf bug is that when you use nf90_put_var
-! to write a scalar string the trailing blanks are stripped by the specific
-! function nf90_put_var_text before it calls nf_put_vars_text. 
-             ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
-#else
-             ierr = nf90_put_var(File%fh, varid, ival)
-#endif
-          end if
-#endif
-       case default
-          print *,__PIO_FILE__,__LINE__,iotype
-          call piodie(__PIO_FILE__,__LINE__,"bad iotype specified" )
-
-       end select
-    end if
-
-    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
-#ifdef TIMING
-    call t_stopf("pio_put_var_5d_text")
-#endif 
-# 398 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 346 "pionfput_mod.F90.in"
   end function put_var_5d_text
 
 ! DIMS 1,2,3,4,5
@@ -1348,7 +842,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 413 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 361 "pionfput_mod.F90.in"
   integer function put_var_1d_int (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -1432,7 +926,7 @@ contains
 #ifdef TIMING
     call t_stopf("pio_put_var_1d_int")
 #endif 
-# 496 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 444 "pionfput_mod.F90.in"
   end function put_var_1d_int
 ! DIMS 1,2,3,4,5
 ! TYPE int,real,double
@@ -1447,7 +941,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 413 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 361 "pionfput_mod.F90.in"
   integer function put_var_2d_int (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -1531,7 +1025,7 @@ contains
 #ifdef TIMING
     call t_stopf("pio_put_var_2d_int")
 #endif 
-# 496 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 444 "pionfput_mod.F90.in"
   end function put_var_2d_int
 ! DIMS 1,2,3,4,5
 ! TYPE int,real,double
@@ -1546,7 +1040,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 413 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 361 "pionfput_mod.F90.in"
   integer function put_var_3d_int (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -1630,7 +1124,7 @@ contains
 #ifdef TIMING
     call t_stopf("pio_put_var_3d_int")
 #endif 
-# 496 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 444 "pionfput_mod.F90.in"
   end function put_var_3d_int
 ! DIMS 1,2,3,4,5
 ! TYPE int,real,double
@@ -1645,7 +1139,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 413 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 361 "pionfput_mod.F90.in"
   integer function put_var_4d_int (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -1729,7 +1223,7 @@ contains
 #ifdef TIMING
     call t_stopf("pio_put_var_4d_int")
 #endif 
-# 496 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 444 "pionfput_mod.F90.in"
   end function put_var_4d_int
 ! DIMS 1,2,3,4,5
 ! TYPE int,real,double
@@ -1744,7 +1238,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 413 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 361 "pionfput_mod.F90.in"
   integer function put_var_5d_int (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -1828,7 +1322,7 @@ contains
 #ifdef TIMING
     call t_stopf("pio_put_var_5d_int")
 #endif 
-# 496 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 444 "pionfput_mod.F90.in"
   end function put_var_5d_int
 ! DIMS 1,2,3,4,5
 ! TYPE int,real,double
@@ -1843,7 +1337,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 413 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 361 "pionfput_mod.F90.in"
   integer function put_var_1d_real (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -1927,7 +1421,7 @@ contains
 #ifdef TIMING
     call t_stopf("pio_put_var_1d_real")
 #endif 
-# 496 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 444 "pionfput_mod.F90.in"
   end function put_var_1d_real
 ! DIMS 1,2,3,4,5
 ! TYPE int,real,double
@@ -1942,7 +1436,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 413 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 361 "pionfput_mod.F90.in"
   integer function put_var_2d_real (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -2026,7 +1520,7 @@ contains
 #ifdef TIMING
     call t_stopf("pio_put_var_2d_real")
 #endif 
-# 496 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 444 "pionfput_mod.F90.in"
   end function put_var_2d_real
 ! DIMS 1,2,3,4,5
 ! TYPE int,real,double
@@ -2041,7 +1535,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 413 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 361 "pionfput_mod.F90.in"
   integer function put_var_3d_real (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -2125,7 +1619,7 @@ contains
 #ifdef TIMING
     call t_stopf("pio_put_var_3d_real")
 #endif 
-# 496 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 444 "pionfput_mod.F90.in"
   end function put_var_3d_real
 ! DIMS 1,2,3,4,5
 ! TYPE int,real,double
@@ -2140,7 +1634,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 413 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 361 "pionfput_mod.F90.in"
   integer function put_var_4d_real (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -2224,7 +1718,7 @@ contains
 #ifdef TIMING
     call t_stopf("pio_put_var_4d_real")
 #endif 
-# 496 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 444 "pionfput_mod.F90.in"
   end function put_var_4d_real
 ! DIMS 1,2,3,4,5
 ! TYPE int,real,double
@@ -2239,7 +1733,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 413 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 361 "pionfput_mod.F90.in"
   integer function put_var_5d_real (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -2323,7 +1817,7 @@ contains
 #ifdef TIMING
     call t_stopf("pio_put_var_5d_real")
 #endif 
-# 496 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 444 "pionfput_mod.F90.in"
   end function put_var_5d_real
 ! DIMS 1,2,3,4,5
 ! TYPE int,real,double
@@ -2338,7 +1832,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 413 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 361 "pionfput_mod.F90.in"
   integer function put_var_1d_double (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -2422,7 +1916,7 @@ contains
 #ifdef TIMING
     call t_stopf("pio_put_var_1d_double")
 #endif 
-# 496 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 444 "pionfput_mod.F90.in"
   end function put_var_1d_double
 ! DIMS 1,2,3,4,5
 ! TYPE int,real,double
@@ -2437,7 +1931,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 413 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 361 "pionfput_mod.F90.in"
   integer function put_var_2d_double (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -2521,7 +2015,7 @@ contains
 #ifdef TIMING
     call t_stopf("pio_put_var_2d_double")
 #endif 
-# 496 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 444 "pionfput_mod.F90.in"
   end function put_var_2d_double
 ! DIMS 1,2,3,4,5
 ! TYPE int,real,double
@@ -2536,7 +2030,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 413 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 361 "pionfput_mod.F90.in"
   integer function put_var_3d_double (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -2620,7 +2114,7 @@ contains
 #ifdef TIMING
     call t_stopf("pio_put_var_3d_double")
 #endif 
-# 496 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 444 "pionfput_mod.F90.in"
   end function put_var_3d_double
 ! DIMS 1,2,3,4,5
 ! TYPE int,real,double
@@ -2635,7 +2129,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 413 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 361 "pionfput_mod.F90.in"
   integer function put_var_4d_double (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -2719,7 +2213,7 @@ contains
 #ifdef TIMING
     call t_stopf("pio_put_var_4d_double")
 #endif 
-# 496 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 444 "pionfput_mod.F90.in"
   end function put_var_4d_double
 ! DIMS 1,2,3,4,5
 ! TYPE int,real,double
@@ -2734,7 +2228,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 413 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 361 "pionfput_mod.F90.in"
   integer function put_var_5d_double (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -2818,7 +2312,7 @@ contains
 #ifdef TIMING
     call t_stopf("pio_put_var_5d_double")
 #endif 
-# 496 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 444 "pionfput_mod.F90.in"
   end function put_var_5d_double
 
 ! TYPE int,real,double
@@ -2833,7 +2327,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 510 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 458 "pionfput_mod.F90.in"
   integer function put_var_0d_int (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -2896,7 +2390,7 @@ contains
 #ifdef TIMING
     call t_stopf("pio_put_var_0d_int")
 #endif 
-# 572 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 520 "pionfput_mod.F90.in"
   end function put_var_0d_int
 ! TYPE int,real,double
 !>
@@ -2910,7 +2404,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 510 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 458 "pionfput_mod.F90.in"
   integer function put_var_0d_real (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -2973,7 +2467,7 @@ contains
 #ifdef TIMING
     call t_stopf("pio_put_var_0d_real")
 #endif 
-# 572 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 520 "pionfput_mod.F90.in"
   end function put_var_0d_real
 ! TYPE int,real,double
 !>
@@ -2987,7 +2481,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 510 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 458 "pionfput_mod.F90.in"
   integer function put_var_0d_double (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
@@ -3050,7 +2544,7 @@ contains
 #ifdef TIMING
     call t_stopf("pio_put_var_0d_double")
 #endif 
-# 572 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 520 "pionfput_mod.F90.in"
   end function put_var_0d_double
 
 ! DIMS 0,1,2,3,4,5
@@ -3064,7 +2558,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 585 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 533 "pionfput_mod.F90.in"
   integer function put_var_vdesc_0d_text (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3072,7 +2566,7 @@ contains
     integer :: iotype
 
     ierr = put_var_0d_text (File, vardesc%varid, ival)
-# 592 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 540 "pionfput_mod.F90.in"
   end function put_var_vdesc_0d_text
 ! DIMS 0,1,2,3,4,5
 !>
@@ -3085,7 +2579,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 585 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 533 "pionfput_mod.F90.in"
   integer function put_var_vdesc_1d_text (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3093,7 +2587,7 @@ contains
     integer :: iotype
 
     ierr = put_var_1d_text (File, vardesc%varid, ival)
-# 592 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 540 "pionfput_mod.F90.in"
   end function put_var_vdesc_1d_text
 ! DIMS 0,1,2,3,4,5
 !>
@@ -3106,7 +2600,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 585 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 533 "pionfput_mod.F90.in"
   integer function put_var_vdesc_2d_text (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3114,7 +2608,7 @@ contains
     integer :: iotype
 
     ierr = put_var_2d_text (File, vardesc%varid, ival)
-# 592 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 540 "pionfput_mod.F90.in"
   end function put_var_vdesc_2d_text
 ! DIMS 0,1,2,3,4,5
 !>
@@ -3127,7 +2621,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 585 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 533 "pionfput_mod.F90.in"
   integer function put_var_vdesc_3d_text (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3135,7 +2629,7 @@ contains
     integer :: iotype
 
     ierr = put_var_3d_text (File, vardesc%varid, ival)
-# 592 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 540 "pionfput_mod.F90.in"
   end function put_var_vdesc_3d_text
 ! DIMS 0,1,2,3,4,5
 !>
@@ -3148,7 +2642,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 585 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 533 "pionfput_mod.F90.in"
   integer function put_var_vdesc_4d_text (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3156,7 +2650,7 @@ contains
     integer :: iotype
 
     ierr = put_var_4d_text (File, vardesc%varid, ival)
-# 592 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 540 "pionfput_mod.F90.in"
   end function put_var_vdesc_4d_text
 ! DIMS 0,1,2,3,4,5
 !>
@@ -3169,7 +2663,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 585 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 533 "pionfput_mod.F90.in"
   integer function put_var_vdesc_5d_text (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3177,7 +2671,7 @@ contains
     integer :: iotype
 
     ierr = put_var_5d_text (File, vardesc%varid, ival)
-# 592 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 540 "pionfput_mod.F90.in"
   end function put_var_vdesc_5d_text
 ! DIMS 0,1,2,3,4,5
 !>
@@ -3190,7 +2684,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 585 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 533 "pionfput_mod.F90.in"
   integer function put_var_vdesc_0d_real (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3198,7 +2692,7 @@ contains
     integer :: iotype
 
     ierr = put_var_0d_real (File, vardesc%varid, ival)
-# 592 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 540 "pionfput_mod.F90.in"
   end function put_var_vdesc_0d_real
 ! DIMS 0,1,2,3,4,5
 !>
@@ -3211,7 +2705,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 585 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 533 "pionfput_mod.F90.in"
   integer function put_var_vdesc_1d_real (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3219,7 +2713,7 @@ contains
     integer :: iotype
 
     ierr = put_var_1d_real (File, vardesc%varid, ival)
-# 592 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 540 "pionfput_mod.F90.in"
   end function put_var_vdesc_1d_real
 ! DIMS 0,1,2,3,4,5
 !>
@@ -3232,7 +2726,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 585 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 533 "pionfput_mod.F90.in"
   integer function put_var_vdesc_2d_real (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3240,7 +2734,7 @@ contains
     integer :: iotype
 
     ierr = put_var_2d_real (File, vardesc%varid, ival)
-# 592 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 540 "pionfput_mod.F90.in"
   end function put_var_vdesc_2d_real
 ! DIMS 0,1,2,3,4,5
 !>
@@ -3253,7 +2747,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 585 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 533 "pionfput_mod.F90.in"
   integer function put_var_vdesc_3d_real (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3261,7 +2755,7 @@ contains
     integer :: iotype
 
     ierr = put_var_3d_real (File, vardesc%varid, ival)
-# 592 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 540 "pionfput_mod.F90.in"
   end function put_var_vdesc_3d_real
 ! DIMS 0,1,2,3,4,5
 !>
@@ -3274,7 +2768,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 585 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 533 "pionfput_mod.F90.in"
   integer function put_var_vdesc_4d_real (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3282,7 +2776,7 @@ contains
     integer :: iotype
 
     ierr = put_var_4d_real (File, vardesc%varid, ival)
-# 592 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 540 "pionfput_mod.F90.in"
   end function put_var_vdesc_4d_real
 ! DIMS 0,1,2,3,4,5
 !>
@@ -3295,7 +2789,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 585 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 533 "pionfput_mod.F90.in"
   integer function put_var_vdesc_5d_real (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3303,7 +2797,7 @@ contains
     integer :: iotype
 
     ierr = put_var_5d_real (File, vardesc%varid, ival)
-# 592 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 540 "pionfput_mod.F90.in"
   end function put_var_vdesc_5d_real
 ! DIMS 0,1,2,3,4,5
 !>
@@ -3316,7 +2810,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 585 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 533 "pionfput_mod.F90.in"
   integer function put_var_vdesc_0d_double (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3324,7 +2818,7 @@ contains
     integer :: iotype
 
     ierr = put_var_0d_double (File, vardesc%varid, ival)
-# 592 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 540 "pionfput_mod.F90.in"
   end function put_var_vdesc_0d_double
 ! DIMS 0,1,2,3,4,5
 !>
@@ -3337,7 +2831,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 585 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 533 "pionfput_mod.F90.in"
   integer function put_var_vdesc_1d_double (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3345,7 +2839,7 @@ contains
     integer :: iotype
 
     ierr = put_var_1d_double (File, vardesc%varid, ival)
-# 592 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 540 "pionfput_mod.F90.in"
   end function put_var_vdesc_1d_double
 ! DIMS 0,1,2,3,4,5
 !>
@@ -3358,7 +2852,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 585 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 533 "pionfput_mod.F90.in"
   integer function put_var_vdesc_2d_double (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3366,7 +2860,7 @@ contains
     integer :: iotype
 
     ierr = put_var_2d_double (File, vardesc%varid, ival)
-# 592 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 540 "pionfput_mod.F90.in"
   end function put_var_vdesc_2d_double
 ! DIMS 0,1,2,3,4,5
 !>
@@ -3379,7 +2873,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 585 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 533 "pionfput_mod.F90.in"
   integer function put_var_vdesc_3d_double (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3387,7 +2881,7 @@ contains
     integer :: iotype
 
     ierr = put_var_3d_double (File, vardesc%varid, ival)
-# 592 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 540 "pionfput_mod.F90.in"
   end function put_var_vdesc_3d_double
 ! DIMS 0,1,2,3,4,5
 !>
@@ -3400,7 +2894,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 585 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 533 "pionfput_mod.F90.in"
   integer function put_var_vdesc_4d_double (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3408,7 +2902,7 @@ contains
     integer :: iotype
 
     ierr = put_var_4d_double (File, vardesc%varid, ival)
-# 592 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 540 "pionfput_mod.F90.in"
   end function put_var_vdesc_4d_double
 ! DIMS 0,1,2,3,4,5
 !>
@@ -3421,7 +2915,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 585 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 533 "pionfput_mod.F90.in"
   integer function put_var_vdesc_5d_double (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3429,7 +2923,7 @@ contains
     integer :: iotype
 
     ierr = put_var_5d_double (File, vardesc%varid, ival)
-# 592 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 540 "pionfput_mod.F90.in"
   end function put_var_vdesc_5d_double
 ! DIMS 0,1,2,3,4,5
 !>
@@ -3442,7 +2936,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 585 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 533 "pionfput_mod.F90.in"
   integer function put_var_vdesc_0d_int (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3450,7 +2944,7 @@ contains
     integer :: iotype
 
     ierr = put_var_0d_int (File, vardesc%varid, ival)
-# 592 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 540 "pionfput_mod.F90.in"
   end function put_var_vdesc_0d_int
 ! DIMS 0,1,2,3,4,5
 !>
@@ -3463,7 +2957,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 585 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 533 "pionfput_mod.F90.in"
   integer function put_var_vdesc_1d_int (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3471,7 +2965,7 @@ contains
     integer :: iotype
 
     ierr = put_var_1d_int (File, vardesc%varid, ival)
-# 592 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 540 "pionfput_mod.F90.in"
   end function put_var_vdesc_1d_int
 ! DIMS 0,1,2,3,4,5
 !>
@@ -3484,7 +2978,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 585 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 533 "pionfput_mod.F90.in"
   integer function put_var_vdesc_2d_int (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3492,7 +2986,7 @@ contains
     integer :: iotype
 
     ierr = put_var_2d_int (File, vardesc%varid, ival)
-# 592 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 540 "pionfput_mod.F90.in"
   end function put_var_vdesc_2d_int
 ! DIMS 0,1,2,3,4,5
 !>
@@ -3505,7 +2999,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 585 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 533 "pionfput_mod.F90.in"
   integer function put_var_vdesc_3d_int (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3513,7 +3007,7 @@ contains
     integer :: iotype
 
     ierr = put_var_3d_int (File, vardesc%varid, ival)
-# 592 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 540 "pionfput_mod.F90.in"
   end function put_var_vdesc_3d_int
 ! DIMS 0,1,2,3,4,5
 !>
@@ -3526,7 +3020,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 585 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 533 "pionfput_mod.F90.in"
   integer function put_var_vdesc_4d_int (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3534,7 +3028,7 @@ contains
     integer :: iotype
 
     ierr = put_var_4d_int (File, vardesc%varid, ival)
-# 592 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 540 "pionfput_mod.F90.in"
   end function put_var_vdesc_4d_int
 ! DIMS 0,1,2,3,4,5
 !>
@@ -3547,7 +3041,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 585 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 533 "pionfput_mod.F90.in"
   integer function put_var_vdesc_5d_int (File, vardesc, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t) , intent(in) :: vardesc
@@ -3555,7 +3049,7 @@ contains
     integer :: iotype
 
     ierr = put_var_5d_int (File, vardesc%varid, ival)
-# 592 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 540 "pionfput_mod.F90.in"
   end function put_var_vdesc_5d_int
 
 ! DIMS 1,2,3,4,5
@@ -3572,9 +3066,9 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 608 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 556 "pionfput_mod.F90.in"
   integer function put_vara_1d_text (File,varid, start, count, ival) result(ierr)
-    use nf_mod, only : pio_inq_varndims
+    use pio_nf, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
 
@@ -3679,7 +3173,7 @@ contains
 #ifdef TIMING
     call t_stopf("pio_put_vara_1d_text")
 #endif 
-# 714 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 662 "pionfput_mod.F90.in"
   end function put_vara_1d_text
 ! DIMS 1,2,3,4,5
 ! TYPE text
@@ -3695,9 +3189,9 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 608 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 556 "pionfput_mod.F90.in"
   integer function put_vara_2d_text (File,varid, start, count, ival) result(ierr)
-    use nf_mod, only : pio_inq_varndims
+    use pio_nf, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
 
@@ -3802,7 +3296,7 @@ contains
 #ifdef TIMING
     call t_stopf("pio_put_vara_2d_text")
 #endif 
-# 714 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 662 "pionfput_mod.F90.in"
   end function put_vara_2d_text
 ! DIMS 1,2,3,4,5
 ! TYPE text
@@ -3818,9 +3312,9 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 608 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 556 "pionfput_mod.F90.in"
   integer function put_vara_3d_text (File,varid, start, count, ival) result(ierr)
-    use nf_mod, only : pio_inq_varndims
+    use pio_nf, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
 
@@ -3925,7 +3419,7 @@ contains
 #ifdef TIMING
     call t_stopf("pio_put_vara_3d_text")
 #endif 
-# 714 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 662 "pionfput_mod.F90.in"
   end function put_vara_3d_text
 ! DIMS 1,2,3,4,5
 ! TYPE text
@@ -3941,9 +3435,9 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 608 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 556 "pionfput_mod.F90.in"
   integer function put_vara_4d_text (File,varid, start, count, ival) result(ierr)
-    use nf_mod, only : pio_inq_varndims
+    use pio_nf, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
 
@@ -4048,7 +3542,7 @@ contains
 #ifdef TIMING
     call t_stopf("pio_put_vara_4d_text")
 #endif 
-# 714 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 662 "pionfput_mod.F90.in"
   end function put_vara_4d_text
 ! DIMS 1,2,3,4,5
 ! TYPE text
@@ -4064,9 +3558,9 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 608 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 556 "pionfput_mod.F90.in"
   integer function put_vara_5d_text (File,varid, start, count, ival) result(ierr)
-    use nf_mod, only : pio_inq_varndims
+    use pio_nf, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
 
@@ -4171,7 +3665,7 @@ contains
 #ifdef TIMING
     call t_stopf("pio_put_vara_5d_text")
 #endif 
-# 714 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 662 "pionfput_mod.F90.in"
   end function put_vara_5d_text
 ! TYPE int,real,double
 ! DIMS 1,2,3,4,5
@@ -4187,9 +3681,9 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 729 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 677 "pionfput_mod.F90.in"
   integer function put_vara_1d_int (File,varid, start, count, ival) result(ierr)
-    use nf_mod, only : pio_inq_varndims
+    use pio_nf, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
 
@@ -4293,7 +3787,7 @@ contains
 #ifdef TIMING
     call t_stopf("pio_put_vara_1d_int")
 #endif 
-# 834 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 782 "pionfput_mod.F90.in"
   end function put_vara_1d_int
 ! TYPE int,real,double
 ! DIMS 1,2,3,4,5
@@ -4309,9 +3803,9 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 729 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 677 "pionfput_mod.F90.in"
   integer function put_vara_2d_int (File,varid, start, count, ival) result(ierr)
-    use nf_mod, only : pio_inq_varndims
+    use pio_nf, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
 
@@ -4415,7 +3909,7 @@ contains
 #ifdef TIMING
     call t_stopf("pio_put_vara_2d_int")
 #endif 
-# 834 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 782 "pionfput_mod.F90.in"
   end function put_vara_2d_int
 ! TYPE int,real,double
 ! DIMS 1,2,3,4,5
@@ -4431,9 +3925,9 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 729 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 677 "pionfput_mod.F90.in"
   integer function put_vara_3d_int (File,varid, start, count, ival) result(ierr)
-    use nf_mod, only : pio_inq_varndims
+    use pio_nf, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
 
@@ -4537,7 +4031,7 @@ contains
 #ifdef TIMING
     call t_stopf("pio_put_vara_3d_int")
 #endif 
-# 834 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 782 "pionfput_mod.F90.in"
   end function put_vara_3d_int
 ! TYPE int,real,double
 ! DIMS 1,2,3,4,5
@@ -4553,9 +4047,9 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 729 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 677 "pionfput_mod.F90.in"
   integer function put_vara_4d_int (File,varid, start, count, ival) result(ierr)
-    use nf_mod, only : pio_inq_varndims
+    use pio_nf, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
 
@@ -4659,7 +4153,7 @@ contains
 #ifdef TIMING
     call t_stopf("pio_put_vara_4d_int")
 #endif 
-# 834 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 782 "pionfput_mod.F90.in"
   end function put_vara_4d_int
 ! TYPE int,real,double
 ! DIMS 1,2,3,4,5
@@ -4675,9 +4169,9 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 729 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 677 "pionfput_mod.F90.in"
   integer function put_vara_5d_int (File,varid, start, count, ival) result(ierr)
-    use nf_mod, only : pio_inq_varndims
+    use pio_nf, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
 
@@ -4781,7 +4275,7 @@ contains
 #ifdef TIMING
     call t_stopf("pio_put_vara_5d_int")
 #endif 
-# 834 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 782 "pionfput_mod.F90.in"
   end function put_vara_5d_int
 ! TYPE int,real,double
 ! DIMS 1,2,3,4,5
@@ -4797,9 +4291,9 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 729 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 677 "pionfput_mod.F90.in"
   integer function put_vara_1d_real (File,varid, start, count, ival) result(ierr)
-    use nf_mod, only : pio_inq_varndims
+    use pio_nf, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
 
@@ -4903,7 +4397,7 @@ contains
 #ifdef TIMING
     call t_stopf("pio_put_vara_1d_real")
 #endif 
-# 834 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 782 "pionfput_mod.F90.in"
   end function put_vara_1d_real
 ! TYPE int,real,double
 ! DIMS 1,2,3,4,5
@@ -4919,9 +4413,9 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 729 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 677 "pionfput_mod.F90.in"
   integer function put_vara_2d_real (File,varid, start, count, ival) result(ierr)
-    use nf_mod, only : pio_inq_varndims
+    use pio_nf, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
 
@@ -5025,7 +4519,7 @@ contains
 #ifdef TIMING
     call t_stopf("pio_put_vara_2d_real")
 #endif 
-# 834 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 782 "pionfput_mod.F90.in"
   end function put_vara_2d_real
 ! TYPE int,real,double
 ! DIMS 1,2,3,4,5
@@ -5041,9 +4535,9 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 729 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 677 "pionfput_mod.F90.in"
   integer function put_vara_3d_real (File,varid, start, count, ival) result(ierr)
-    use nf_mod, only : pio_inq_varndims
+    use pio_nf, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
 
@@ -5147,7 +4641,7 @@ contains
 #ifdef TIMING
     call t_stopf("pio_put_vara_3d_real")
 #endif 
-# 834 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 782 "pionfput_mod.F90.in"
   end function put_vara_3d_real
 ! TYPE int,real,double
 ! DIMS 1,2,3,4,5
@@ -5163,9 +4657,9 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 729 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 677 "pionfput_mod.F90.in"
   integer function put_vara_4d_real (File,varid, start, count, ival) result(ierr)
-    use nf_mod, only : pio_inq_varndims
+    use pio_nf, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
 
@@ -5269,7 +4763,7 @@ contains
 #ifdef TIMING
     call t_stopf("pio_put_vara_4d_real")
 #endif 
-# 834 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 782 "pionfput_mod.F90.in"
   end function put_vara_4d_real
 ! TYPE int,real,double
 ! DIMS 1,2,3,4,5
@@ -5285,9 +4779,9 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 729 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 677 "pionfput_mod.F90.in"
   integer function put_vara_5d_real (File,varid, start, count, ival) result(ierr)
-    use nf_mod, only : pio_inq_varndims
+    use pio_nf, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
 
@@ -5391,7 +4885,7 @@ contains
 #ifdef TIMING
     call t_stopf("pio_put_vara_5d_real")
 #endif 
-# 834 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 782 "pionfput_mod.F90.in"
   end function put_vara_5d_real
 ! TYPE int,real,double
 ! DIMS 1,2,3,4,5
@@ -5407,9 +4901,9 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 729 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 677 "pionfput_mod.F90.in"
   integer function put_vara_1d_double (File,varid, start, count, ival) result(ierr)
-    use nf_mod, only : pio_inq_varndims
+    use pio_nf, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
 
@@ -5513,7 +5007,7 @@ contains
 #ifdef TIMING
     call t_stopf("pio_put_vara_1d_double")
 #endif 
-# 834 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 782 "pionfput_mod.F90.in"
   end function put_vara_1d_double
 ! TYPE int,real,double
 ! DIMS 1,2,3,4,5
@@ -5529,9 +5023,9 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 729 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 677 "pionfput_mod.F90.in"
   integer function put_vara_2d_double (File,varid, start, count, ival) result(ierr)
-    use nf_mod, only : pio_inq_varndims
+    use pio_nf, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
 
@@ -5635,7 +5129,7 @@ contains
 #ifdef TIMING
     call t_stopf("pio_put_vara_2d_double")
 #endif 
-# 834 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 782 "pionfput_mod.F90.in"
   end function put_vara_2d_double
 ! TYPE int,real,double
 ! DIMS 1,2,3,4,5
@@ -5651,9 +5145,9 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 729 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 677 "pionfput_mod.F90.in"
   integer function put_vara_3d_double (File,varid, start, count, ival) result(ierr)
-    use nf_mod, only : pio_inq_varndims
+    use pio_nf, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
 
@@ -5757,7 +5251,7 @@ contains
 #ifdef TIMING
     call t_stopf("pio_put_vara_3d_double")
 #endif 
-# 834 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 782 "pionfput_mod.F90.in"
   end function put_vara_3d_double
 ! TYPE int,real,double
 ! DIMS 1,2,3,4,5
@@ -5773,9 +5267,9 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 729 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 677 "pionfput_mod.F90.in"
   integer function put_vara_4d_double (File,varid, start, count, ival) result(ierr)
-    use nf_mod, only : pio_inq_varndims
+    use pio_nf, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
 
@@ -5879,7 +5373,7 @@ contains
 #ifdef TIMING
     call t_stopf("pio_put_vara_4d_double")
 #endif 
-# 834 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 782 "pionfput_mod.F90.in"
   end function put_vara_4d_double
 ! TYPE int,real,double
 ! DIMS 1,2,3,4,5
@@ -5895,9 +5389,9 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 729 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 677 "pionfput_mod.F90.in"
   integer function put_vara_5d_double (File,varid, start, count, ival) result(ierr)
-    use nf_mod, only : pio_inq_varndims
+    use pio_nf, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
 
@@ -6001,7 +5495,7 @@ contains
 #ifdef TIMING
     call t_stopf("pio_put_vara_5d_double")
 #endif 
-# 834 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 782 "pionfput_mod.F90.in"
   end function put_vara_5d_double
 
 ! DIMS 1,2,3,4,5
@@ -6017,7 +5511,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 849 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 797 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_1d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6027,7 +5521,7 @@ contains
     ierr = put_vara_1d_text (File, vardesc%varid, start, count, ival)
 
 
-# 858 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 806 "pionfput_mod.F90.in"
   end function put_vara_vdesc_1d_text
 ! DIMS 1,2,3,4,5
 !>
@@ -6042,7 +5536,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 849 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 797 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_2d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6052,7 +5546,7 @@ contains
     ierr = put_vara_2d_text (File, vardesc%varid, start, count, ival)
 
 
-# 858 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 806 "pionfput_mod.F90.in"
   end function put_vara_vdesc_2d_text
 ! DIMS 1,2,3,4,5
 !>
@@ -6067,7 +5561,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 849 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 797 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_3d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6077,7 +5571,7 @@ contains
     ierr = put_vara_3d_text (File, vardesc%varid, start, count, ival)
 
 
-# 858 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 806 "pionfput_mod.F90.in"
   end function put_vara_vdesc_3d_text
 ! DIMS 1,2,3,4,5
 !>
@@ -6092,7 +5586,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 849 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 797 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_4d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6102,7 +5596,7 @@ contains
     ierr = put_vara_4d_text (File, vardesc%varid, start, count, ival)
 
 
-# 858 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 806 "pionfput_mod.F90.in"
   end function put_vara_vdesc_4d_text
 ! DIMS 1,2,3,4,5
 !>
@@ -6117,7 +5611,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 849 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 797 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_5d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6127,7 +5621,7 @@ contains
     ierr = put_vara_5d_text (File, vardesc%varid, start, count, ival)
 
 
-# 858 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 806 "pionfput_mod.F90.in"
   end function put_vara_vdesc_5d_text
 ! DIMS 1,2,3,4,5
 !>
@@ -6142,7 +5636,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 849 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 797 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_1d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6152,7 +5646,7 @@ contains
     ierr = put_vara_1d_real (File, vardesc%varid, start, count, ival)
 
 
-# 858 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 806 "pionfput_mod.F90.in"
   end function put_vara_vdesc_1d_real
 ! DIMS 1,2,3,4,5
 !>
@@ -6167,7 +5661,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 849 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 797 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_2d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6177,7 +5671,7 @@ contains
     ierr = put_vara_2d_real (File, vardesc%varid, start, count, ival)
 
 
-# 858 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 806 "pionfput_mod.F90.in"
   end function put_vara_vdesc_2d_real
 ! DIMS 1,2,3,4,5
 !>
@@ -6192,7 +5686,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 849 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 797 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_3d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6202,7 +5696,7 @@ contains
     ierr = put_vara_3d_real (File, vardesc%varid, start, count, ival)
 
 
-# 858 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 806 "pionfput_mod.F90.in"
   end function put_vara_vdesc_3d_real
 ! DIMS 1,2,3,4,5
 !>
@@ -6217,7 +5711,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 849 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 797 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_4d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6227,7 +5721,7 @@ contains
     ierr = put_vara_4d_real (File, vardesc%varid, start, count, ival)
 
 
-# 858 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 806 "pionfput_mod.F90.in"
   end function put_vara_vdesc_4d_real
 ! DIMS 1,2,3,4,5
 !>
@@ -6242,7 +5736,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 849 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 797 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_5d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6252,7 +5746,7 @@ contains
     ierr = put_vara_5d_real (File, vardesc%varid, start, count, ival)
 
 
-# 858 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 806 "pionfput_mod.F90.in"
   end function put_vara_vdesc_5d_real
 ! DIMS 1,2,3,4,5
 !>
@@ -6267,7 +5761,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 849 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 797 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_1d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6277,7 +5771,7 @@ contains
     ierr = put_vara_1d_double (File, vardesc%varid, start, count, ival)
 
 
-# 858 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 806 "pionfput_mod.F90.in"
   end function put_vara_vdesc_1d_double
 ! DIMS 1,2,3,4,5
 !>
@@ -6292,7 +5786,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 849 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 797 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_2d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6302,7 +5796,7 @@ contains
     ierr = put_vara_2d_double (File, vardesc%varid, start, count, ival)
 
 
-# 858 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 806 "pionfput_mod.F90.in"
   end function put_vara_vdesc_2d_double
 ! DIMS 1,2,3,4,5
 !>
@@ -6317,7 +5811,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 849 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 797 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_3d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6327,7 +5821,7 @@ contains
     ierr = put_vara_3d_double (File, vardesc%varid, start, count, ival)
 
 
-# 858 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 806 "pionfput_mod.F90.in"
   end function put_vara_vdesc_3d_double
 ! DIMS 1,2,3,4,5
 !>
@@ -6342,7 +5836,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 849 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 797 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_4d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6352,7 +5846,7 @@ contains
     ierr = put_vara_4d_double (File, vardesc%varid, start, count, ival)
 
 
-# 858 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 806 "pionfput_mod.F90.in"
   end function put_vara_vdesc_4d_double
 ! DIMS 1,2,3,4,5
 !>
@@ -6367,7 +5861,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 849 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 797 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_5d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6377,7 +5871,7 @@ contains
     ierr = put_vara_5d_double (File, vardesc%varid, start, count, ival)
 
 
-# 858 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 806 "pionfput_mod.F90.in"
   end function put_vara_vdesc_5d_double
 ! DIMS 1,2,3,4,5
 !>
@@ -6392,7 +5886,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 849 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 797 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_1d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6402,7 +5896,7 @@ contains
     ierr = put_vara_1d_int (File, vardesc%varid, start, count, ival)
 
 
-# 858 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 806 "pionfput_mod.F90.in"
   end function put_vara_vdesc_1d_int
 ! DIMS 1,2,3,4,5
 !>
@@ -6417,7 +5911,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 849 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 797 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_2d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6427,7 +5921,7 @@ contains
     ierr = put_vara_2d_int (File, vardesc%varid, start, count, ival)
 
 
-# 858 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 806 "pionfput_mod.F90.in"
   end function put_vara_vdesc_2d_int
 ! DIMS 1,2,3,4,5
 !>
@@ -6442,7 +5936,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 849 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 797 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_3d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6452,7 +5946,7 @@ contains
     ierr = put_vara_3d_int (File, vardesc%varid, start, count, ival)
 
 
-# 858 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 806 "pionfput_mod.F90.in"
   end function put_vara_vdesc_3d_int
 ! DIMS 1,2,3,4,5
 !>
@@ -6467,7 +5961,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 849 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 797 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_4d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6477,7 +5971,7 @@ contains
     ierr = put_vara_4d_int (File, vardesc%varid, start, count, ival)
 
 
-# 858 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 806 "pionfput_mod.F90.in"
   end function put_vara_vdesc_4d_int
 ! DIMS 1,2,3,4,5
 !>
@@ -6492,7 +5986,7 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
-# 849 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 797 "pionfput_mod.F90.in"
   integer function put_vara_vdesc_5d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6502,6 +5996,6 @@ contains
     ierr = put_vara_5d_int (File, vardesc%varid, start, count, ival)
 
 
-# 858 "/glade/u/home/jedwards/pio_trunk/pio/pionfput_mod.F90.in"
+# 806 "pionfput_mod.F90.in"
   end function put_vara_vdesc_5d_int
 end module pionfput_mod

@@ -9,6 +9,7 @@ module pionfput_mod
 #ifdef TIMING
   use perf_mod, only : t_startf, t_stopf      ! _EXTERNAL
 #endif
+  use iso_c_binding
   use pio_kinds, only: i4,r4,r8,pio_offset
   use pio_types, only : file_desc_t, iosystem_desc_t, var_desc_t, &
 	pio_iotype_pbinary, pio_iotype_binary, pio_iotype_direct_pbinary, &
@@ -281,7 +282,46 @@ contains
     ierr = put_var1_{TYPE} (File, vardesc%varid, start, ival)
   end function put_var1_vdesc_{TYPE}
 
-! DIMS 0,1,2,3,4,5
+!>
+!! @public
+!! @ingroup PIO_put_var
+!! @brief Writes an netcdf attribute to a file
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! @param varid : The netcdf variable identifier
+!! @param ival : The value for the netcdf metadata
+!! @retval ierr @copydoc error_return
+!<
+  integer function put_var_0d_text (File,varid, ival) result(ierr)
+    type (File_desc_t), intent(inout) :: File
+    integer, intent(in) :: varid
+    character(len=*), intent(in) :: ival
+    character, allocatable :: cval(:)
+    integer :: clen, i
+    interface
+       integer(C_INT) function PIOc_put_var_text(ncid, varid, op) &
+            bind(C,name="PIOc_put_var_text")
+         use iso_c_binding
+         integer(C_INT), intent(in), value :: ncid
+         integer(C_INT), intent(in), value :: varid
+         character(C_CHAR) :: op
+       end function PIOc_put_var_text
+    end interface
+
+!   This manipulation is required to convert the fortran string to
+!   a c character array with all trailing space set to null
+!
+    clen = len(ival)
+    allocate(cval(clen))
+    cval = C_NULL_CHAR
+    do i=1,len_trim(ival)
+       cval(i) = ival(i:i)
+    end do
+    ierr = PIOc_put_var_text(file%fh, varid,  cval(1))
+    deallocate(cval)
+  end function put_var_0d_text
+! DIMS 1,2,3,4,5
 ! TYPE text
 !>
 !! @public
@@ -298,108 +338,91 @@ contains
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
     character(len=*), intent(in) :: ival{DIMSTR}
-    integer :: iotype
-    integer :: i, is, msg, mpierr, xlen, itype
-    type(iosystem_desc_t), pointer :: ios
-    integer :: dims({DIMS})
-    integer :: start({DIMS}+1), count({DIMS}+1)
-#ifdef TIMING
-    call t_startf("pio_put_var_{DIMS}d_text")
-#endif 
-    ierr=PIO_NOERR
+    character, allocatable :: cval(:)
+    integer :: clen, csize, i, j, k, m, n, q, sd({DIMS}), cinc
+    interface
+       integer(C_INT) function PIOc_put_var_text(ncid, varid, op) &
+            bind(C,name="PIOc_put_var_text")
+         use iso_c_binding
+         integer(C_INT), intent(in), value :: ncid
+         integer(C_INT), intent(in), value :: varid
+         character(C_CHAR) :: op
+       end function PIOc_put_var_text
+    end interface
+    ierr = PIO_NOERR
 
-    iotype = File%iotype 
-    start = 1
-    count = 0
-    is=0       
-
-
-    ios=>File%iosystem
-    if(ios%async_interface .and. .not. ios%ioproc ) then
-       msg=PIO_MSG_PUTVAR_{DIMS}d
-       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
-       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       itype = TYPETEXT
-       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-
-#if ({DIMS} > 0)
-       do i=1,{DIMS}
-          dims(i)=size(ival,i)
+!   This manipulation is required to convert the fortran string to
+!   a c character array with all trailing space set to null
+!
+    clen = len(ival)
+    sd = size(ival)
+    allocate(cval(clen*product(sd(1:{DIMS}))))
+    cval = C_NULL_CHAR
+    cinc = 0
+#if {DIMS} == 1
+    do j=1,sd(1)
+       do i=1,len_trim(ival(j))
+          cval(i+cinc*clen) = ival(j)(i:i)
        end do
-       call MPI_BCAST(dims,{DIMS},MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       cinc = cinc+1
+    enddo
 #endif
-       xlen = len(ival)
-       call MPI_BCAST(xlen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-    endif
-
-    if(ios%async_interface ) then
-#if({DIMS}==0)       
-       call MPI_BCAST(ival,len_trim(ival),MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
-#else
-       call MPI_BCAST(ival,size(ival),MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
-#endif
-    end if
-
-    if(Ios%IOProc) then
-       if(Ios%io_rank==0) then
-    	  count(1)=len(ival)
-	  is=1
-#if ({DIMS} > 0)
-          do i=1,{DIMS}
-             count(i+is) = size(ival,i)
+#if {DIMS} == 2
+    do k=1,sd(2)
+       do j=1,sd(1)
+          do i=1,len_trim(ival(j,k))
+             cval(i+cinc*clen) = ival(j,k)(i:i)
           end do
+          cinc = cinc+1
+       enddo
+    enddo
 #endif
-       end if
-       select case (iotype) 
-#ifdef _PNETCDF
-       case(pio_iotype_pnetcdf)
-          if(ios%io_rank>0) count = 0
-          ierr = nfmpi_put_vara_{TYPE}_all (File%fh, varid,int(start,kind=pio_offset),&
-               int(count,kind=pio_offset),ival)
+#if {DIMS} == 3
+    do m=1,sd(3)
+       do k=1,sd(2)
+          do j=1,sd(1)
+             do i=1,len_trim(ival(j,k,m))
+                cval(i+cinc*clen) = ival(j,k,m)(i:i)
+             end do
+             cinc = cinc+1
+          enddo
+       enddo
+    enddo
 #endif
-#ifdef _NETCDF
-!       case(pio_iotype_netcdf4p)
-!          ierr=nf90_var_par_access(File%fh, varid, NF90_COLLECTIVE)
-#if ({DIMS}==0)
-! This is a workaround for a bug in the netcdf f90 interface
-! The netcdf bug is that when you use nf90_put_var
-! to write a scalar string the trailing blanks are stripped by the specific
-! function nf90_put_var_text before it calls nf_put_vars_text. 
-!          if (Ios%io_rank == 0) then
-!             ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
-!          else
-!             ierr = nf_put_vars_text(File%fh, varid, (/1/), (/0/), (/1/), ival)
-!          end if
-#else
-!          ierr = nf90_put_var(File%fh, varid, ival, start=start, count=count)
+#if {DIMS} == 4
+    do n=1,sd(4)
+       do m=1,sd(3)
+          do k=1,sd(2)
+             do j=1,sd(1)
+                do i=1,len_trim(ival(j,k,m,n))
+                   cval(i+cinc*clen) = ival(j,k,m,n)(i:i)
+                end do
+                cinc = cinc+1
+             enddo
+          enddo
+       enddo
+    enddo
 #endif
-       case( pio_iotype_netcdf,pio_iotype_netcdf4c, pio_iotype_netcdf4p)
-          ! Only io proc 0 will do writing
-          if (Ios%io_rank == 0) then
+#if {DIMS} == 5
+    do q=1,sd(5)
+       do n=1,sd(4)
+          do m=1,sd(3)
+             do k=1,sd(2)
+                do j=1,sd(1)
+                   do i=1,len_trim(ival(j,k,m,n,q))
+                      cval(i+cinc*clen) = ival(j,k,m,n,q)(i:i)
+                   end do
+                   cinc = cinc+1
+                enddo
+             enddo
+          enddo
+       enddo
+    enddo
+#endif
+    ierr = PIOc_put_var_text(file%fh, varid,  cval(1))
+    deallocate(cval)
 
-#if ({DIMS}==0)
-! This is a workaround for a bug in the netcdf f90 interface
-! The netcdf bug is that when you use nf90_put_var
-! to write a scalar string the trailing blanks are stripped by the specific
-! function nf90_put_var_text before it calls nf_put_vars_text. 
-             ierr = nf_put_vars_text(File%fh, varid, (/1/), (/len(ival)/), (/1/), ival)
-#else
-             ierr = nf90_put_var(File%fh, varid, ival)
-#endif
-          end if
-#endif
-       case default
-          print *,__PIO_FILE__,__LINE__,iotype
-          call piodie(__PIO_FILE__,__LINE__,"bad iotype specified" )
 
-       end select
-    end if
-
-    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
-#ifdef TIMING
-    call t_stopf("pio_put_var_{DIMS}d_text")
-#endif 
   end function put_var_{DIMS}d_text
 
 ! DIMS 1,2,3,4,5
