@@ -276,6 +276,8 @@ contains
                     0.5_RKIND * ratefactor * (rhoi * gravity)**n * slopeOnEdge**(n-1) * normalSlopeOnEdge * &
                     (thicknessEdge**(n+1) - (thicknessEdge - layerCenterHeightOnEdge)**(n+1))
              end do  ! Levels
+         else
+             normalVelocity(:,iEdge) = 0.0_RKIND
          endif
       end do  ! edges  
 
