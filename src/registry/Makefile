@@ -8,7 +8,7 @@ ezxml/ezxml.o:
 	(cd ezxml; $(CC) -c ezxml.c)
 
 parse: $(OBJS)
-	$(CC) -o $@ $(OBJS)
+	$(CC) $(CPPFLAGS) -o $@ $(OBJS)
 
 clean:
 	$(RM) *.o ezxml/*.o parse
@@ -17,4 +17,4 @@ clean:
 	$(RM) *.i
 
 .c.o:
-	$(CC) -c $<
+	$(CC) $(CPPFLAGS) -c $<

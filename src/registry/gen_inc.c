@@ -14,6 +14,9 @@
 #include "gen_inc.h"
 #include "fortprintf.h"
 
+#define STR(s) #s
+#define MACRO_TO_STR(s) STR(s)
+
 int is_derived_dim(char * d)/*{{{*/
 {
 	if (strchr(d, (int)'+')) return 1;
@@ -221,10 +224,12 @@ void write_add_output_atts(FILE *fd, struct namelist *namelists){/*{{{*/
 
 /* *** History attribute related write functions *** {{{ */
 void write_model_variables(FILE *fd, char *modelname, char *corename, char *version){/*{{{*/
+	const char * suffix = MACRO_TO_STR(MPAS_NAMELIST_SUFFIX);
+
 	fortprintf(fd, "       character (len=StrKIND) :: modelName = '%s' !< Constant: Name of model\n", modelname);
 	fortprintf(fd, "       character (len=StrKIND) :: coreName = '%s' !< Constant: Name of core\n", corename);
 	fortprintf(fd, "       character (len=StrKIND) :: modelVersion = '%s' !< Constant: Version number\n", version);
-	fortprintf(fd, "       character (len=StrKIND) :: namelist_filename = 'namelist.%s' !< Constant: Name of namelist file\n", corename);
+	fortprintf(fd, "       character (len=StrKIND) :: namelist_filename = 'namelist.%s' !< Constant: Name of namelist file\n", suffix);
 }/*}}}*/
 /*}}}*/
 
@@ -1806,8 +1811,9 @@ void write_default_namelist(struct namelist *nls, char *corename){/*{{{*/
 	int record_started;
 	FILE *fd;
 	char filename[1024];
+	const char * suffix = MACRO_TO_STR(MPAS_NAMELIST_SUFFIX);
 
-	sprintf(filename, "namelist.%s.defaults", corename);
+	sprintf(filename, "namelist.%s.defaults", suffix);
 	fd = fopen(filename, "w+");
 
 	nls_ptr = nls;

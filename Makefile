@@ -246,8 +246,24 @@ RM = rm -f
 CPP = cpp -P -traditional
 RANLIB = ranlib
 
-
 ifdef CORE
+
+ifneq ($(wildcard src/core_$(CORE)), ) # CHECK FOR EXISTENCE OF CORE DIRECTORY
+
+ifneq ($(wildcard src/core_$(CORE)/build_options.mk), ) # Check for build_options.mk
+include src/core_$(CORE)/build_options.mk
+else # ELSE Use Default Options
+EXE_NAME=$(CORE)_model
+NAMELIST_SUFFIX=$(CORE)
+endif
+
+override CPPFLAGS += -DMPAS_NAMELIST_SUFFIX=$(NAMELIST_SUFFIX)
+
+else # ELSE CORE DIRECTORY CHECK
+
+report_builds: all
+
+endif # END CORE DIRECTORY CHECK
 
 ifeq "$(DEBUG)" "true"
 
@@ -326,11 +342,12 @@ else
 	CONTINUE=true
 endif # END IF BUILT CORE CHECK
 
-ifneq ($(wildcard namelist.$(CORE)), ) # Check for generated namelist file.
-	NAMELIST_MESSAGE="A default namelist file (namelist.$(CORE).defaults) has been generated, but namelist.$(CORE) has not been modified."
+ifneq ($(wildcard namelist.$(NAMELIST_SUFFIX)), ) # Check for generated namelist file.
+	NAMELIST_MESSAGE="A default namelist file (namelist.$(NAMELIST_SUFFIX).defaults) has been generated, but namelist.$(NAMELIST_SUFFIX) has not been modified."
 else
-	NAMELIST_MESSAGE="A default namelist file (namelist.$(CORE).defaults) has been generated and copied to namelist.$(CORE)."
+	NAMELIST_MESSAGE="A default namelist file (namelist.$(NAMELIST_SUFFIX).defaults) has been generated and copied to namelist.$(NAMELIST_SUFFIX)."
 endif
+
 
 ifeq "$(findstring clean, $(MAKECMDGOALS))" "clean" # CHECK FOR CLEAN TARGET
 	override AUTOCLEAN=false
@@ -363,6 +380,11 @@ all: core_error
 
 else
 
+ifeq ($(wildcard src/core_$(CORE)/build_options.mk), ) # Check for build_options.mk
+report_builds:
+	@echo "CORE=$(CORE)"
+endif
+
 ifeq "$(CONTINUE)" "true"
 all: mpas_main
 else
@@ -371,7 +393,8 @@ endif
 
 endif
 
-mpas_main: 
+
+mpas_main:
 ifeq "$(AUTOCLEAN)" "true"
 	$(RM) .mpas_core_*
 endif
@@ -391,11 +414,14 @@ endif
                  FCINCLUDES="$(FCINCLUDES)" \
                  CORE="$(CORE)"\
                  AUTOCLEAN="$(AUTOCLEAN)" \
-                 GEN_F90="$(GEN_F90)"
-	@echo "$(CORE)" > .mpas_core_$(CORE)
-	if [ -e src/$(CORE)_model ]; then mv src/$(CORE)_model .; fi
-	if [ -e src/inc/namelist.$(CORE).defaults ]; then mv src/inc/namelist.$(CORE).defaults .; fi
-	if [ ! -e namelist.$(CORE) ]; then cp namelist.$(CORE).defaults namelist.$(CORE); fi
+                 GEN_F90="$(GEN_F90)" \
+                 NAMELIST_SUFFIX="$(NAMELIST_SUFFIX)" \
+                 EXE_NAME="$(EXE_NAME)"
+
+	@echo "$(EXE_NAME)" > .mpas_core_$(CORE)
+	if [ -e src/$(EXE_NAME) ]; then mv src/$(EXE_NAME) .; fi
+	if [ -e src/inc/namelist.$(NAMELIST_SUFFIX).defaults ]; then mv src/inc/namelist.$(NAMELIST_SUFFIX).defaults .; fi
+	if [ ! -e namelist.$(NAMELIST_SUFFIX) ]; then cp namelist.$(NAMELIST_SUFFIX).defaults namelist.$(NAMELIST_SUFFIX); fi
 	@echo "*******************************************************************************"
 	@echo $(DEBUG_MESSAGE)
 	@echo $(PARALLEL_MESSAGE)
@@ -408,10 +434,10 @@ endif
 	@echo $(NAMELIST_MESSAGE)
 	@echo "*******************************************************************************"
 clean:
-	$(RM) .mpas_core_*
 	cd src; $(MAKE) clean RM="$(RM)" CORE="$(CORE)"
-	$(RM) $(CORE)_model
-	$(RM) namelist.$(CORE).defaults
+	$(RM) .mpas_core_*
+	$(RM) $(EXE_NAME)
+	$(RM) namelist.$(NAMELIST_SUFFIX).defaults
 core_error:
 	@echo ""
 	@echo "*******************************************************************************"

@@ -17,7 +17,7 @@ endif
 all: mpas
 
 mpas: $(AUTOCLEAN_DEPS) reg_includes externals frame ops dycore drver
-	$(LINKER) $(LDFLAGS) -o $(CORE)_model driver/*.o -L. -ldycore -lops -lframework $(LIBS) -I./external/esmf_time_f90 -L./external/esmf_time_f90 -lesmf_time
+	$(LINKER) $(LDFLAGS) -o $(EXE_NAME) driver/*.o -L. -ldycore -lops -lframework $(LIBS) -I./external/esmf_time_f90 -L./external/esmf_time_f90 -lesmf_time
 
 externals: $(AUTOCLEAN_DEPS) reg_includes
 	( cd external; $(MAKE) FC="$(FC)" SFC="$(SFC)" CC="$(CC)" SCC="$(SCC)" FFLAGS="$(FFLAGS)" CFLAGS="$(CFLAGS)" CPP="$(CPP)" NETCDF="$(NETCDF)" CORE="$(CORE)" )
@@ -27,7 +27,7 @@ drver:  $(AUTOCLEAN_DEPS) reg_includes externals frame ops dycore
 endif
 
 reg_includes: core_reg $(AUTOCLEAN_DEPS)  
-	( cd registry; $(MAKE) CC="$(SCC)" )
+	( cd registry; $(MAKE) CPPFLAGS="$(CPPFLAGS)" CC="$(SCC)" )
 	( cd inc; ../registry/parse < ../core_$(CORE)/Registry_processed.xml)
 
 core_reg:
