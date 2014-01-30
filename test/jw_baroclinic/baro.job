@@ -79,7 +79,8 @@ set ne = 16       # horizontal resolution   16,30,60,120,240
 # simulate future DOE version:
 # todo: generate cam60 level files
 set nlev=60
-set qsize=50
+set qsize=30
+
 
 
 
@@ -91,11 +92,14 @@ cd $bld
 set exe = $bld/src/preqx/preqx
 set build = 0  # set to 1 to force build
 set conf = 0   # set to 1 to force configure
+set use_cuda = 0
+
 if ( ! -f CMakeCache.txt) set conf = 1   # no cmake files.  force configure
 if ( $conf == 1 ) then
    rm -rf CMakeFiles CMakeCache.txt src
    #rm -rf utils/pio  utils/timing utils/cprnc   # may also need to do this
-   cmake -C $MACH -DQSIZE_D=$qsize -DPREQX_PLEV=$nlev -DPREQX_NP=4  \
+   if ( $use_cuda == 1 )  then
+      cmake -C $MACH -DQSIZE_D=$qsize -DPREQX_PLEV=$nlev -DPREQX_NP=4  \
    -DOPT_FLAGS="-O2 -Kieee -Mvect=nosse"         \
    -DBUILD_HOMME_SWDGX=FALSE                     \
    -DBUILD_HOMME_SWEQX=FALSE                     \
@@ -105,7 +109,13 @@ if ( $conf == 1 ) then
    -DCUDA_DEVICE_CAPABILITY=cc3x                 \
    -DCMAKE_EXE_LINKER_FLAGS='-lcudafor4'         \
    -DPREQX_USE_ENERGY=TRUE  $HOMME
-
+   else
+      cmake -C $MACH -DQSIZE_D=$qsize -DPREQX_PLEV=$nlev -DPREQX_NP=4  \
+   -DBUILD_HOMME_SWDGX=FALSE                     \
+   -DBUILD_HOMME_SWEQX=FALSE                     \
+   -DBUILD_HOMME_PRIMDGX=FALSE                   \
+      -DPREQX_USE_ENERGY=TRUE  $HOMME
+   endif
 
    make -j4 clean
 endif
