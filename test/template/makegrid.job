@@ -45,11 +45,9 @@ set input = $HOMME/test/template
 set output = jw_baroclinic1.nc
 
 set wdir = ~/scratch1
-mkdir $wdir/preqx
-mkdir $wdir/preqx/template
-mkdir $wdir/preqx/template/movies
+mkdir -p $wdir/preqx/template/movies
 mkdir $wdir/preqx/vcoord
-set src = $wdir/preqx
+set bld = $wdir/preqx/bld
 set wdir = $wdir/preqx/template
 
 set exe = preqx.template.nc$NC
@@ -59,7 +57,9 @@ set exe = preqx.template.nc$NC
 if ( $ne == 0 ) then
 #    set meshname = ARM_30_x8.g
 #    set meshfile=~/codes/mapping/grids/$meshname
-    set meshname = arm_30_x8_lowconn.g
+#    set meshname = arm_30_x8_lowconn.g
+#    set meshfile=~/codes/mapping/grids/$meshname
+    set meshname = poles_30_x4.g
     set meshfile=~/codes/mapping/grids/$meshname
 
 #    set meshname = mountain_10_x8.g
@@ -70,7 +70,7 @@ if ( $ne == 0 ) then
 #    set meshfile=~/codes/mapping/grids/$meshname
 
     set nu = 1.1e12
-    dtime=600 nsplit=19  qsplit=5   tstep=6.3
+#    dtime=600 nsplit=19  qsplit=5   tstep=6.3
     set tstep = 6
     set hypervis_subcycle = 1
     set HYPERVIS_OPTS = 'hypervis_power=3.2  fine_ne=240 max_hypervis_courant=9991.9 qsplit=5'
@@ -98,7 +98,7 @@ else
 endif
 
 
-cd $src
+cd $bld
 if (!( -f $exe )) then
     rm -rf CMakeFiles CMakeCache.txt
     cmake -C $MACH -DPREQX_PLEV=$nlev -DPREQX_USE_PIO=TRUE  -DPREQX_NP=$NPTS -DPREQX_NC=$NC  $HOMME 
@@ -107,10 +107,9 @@ if (!( -f $exe )) then
     mv src/preqx/preqx $exe
     exit
 endif
-
-make -j4 preqx
-if ( $status ) exit
-mv src/preqx/preqx $exe
+#make -j4 preqx
+#if ( $status ) exit
+#mv src/preqx/preqx $exe
 
 cd $wdir
 
@@ -133,7 +132,7 @@ rsync -a $HOMME/test/vcoord/*ascii $wdir/../vcoord
 
 set echo
 rm -Rf $wdir/movies/jw*
-mpirun  $src/$exe < $wdir/input.nl
+mpirun  $bld/$exe < $wdir/input.nl
 if ( $status ) exit
 
 
