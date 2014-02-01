@@ -85,8 +85,6 @@ int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const
 
   iodesc = malloc_iodesc(basetype, ndims);
 
-  printf("%s %d\n",__FILE__,__LINE__);
-
   if(ios->ioproc){
     
     if((iostart != NULL) && (iocount != NULL)){ 
@@ -96,10 +94,8 @@ int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const
       }
       ios->num_aiotasks = ios->num_iotasks;
     }else{
-  printf("%s %d\n",__FILE__,__LINE__);
       ios->num_aiotasks = CalcStartandCount(basetype, ndims, dims, ios->num_iotasks, ios->io_rank,
 					    iodesc->start, iodesc->count);
-  printf("%s %d\n",__FILE__,__LINE__);
 
     }
     iosize=1;
@@ -107,19 +103,15 @@ int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const
       iosize*=iodesc->count[i];
 
     iodesc->llen = iosize;
-  printf("%s %d\n",__FILE__,__LINE__);
+
     CheckMPIReturn(MPI_Allreduce(&iosize, &(iodesc->maxiobuflen), 1, MPI_INT, MPI_MAX, ios->io_comm),__FILE__,__LINE__);
     
   }
-  printf("%s %d\n",__FILE__,__LINE__);
 
   CheckMPIReturn(MPI_Bcast(&(ios->num_aiotasks), 1, MPI_INT, ios->ioroot,ios->my_comm),__FILE__,__LINE__);
 
-  printf("%s %d\n",__FILE__,__LINE__);
-
   ierr = box_rearrange_create( ios, maplen, compmap, dims, ndims, ios->num_aiotasks, iodesc);
 
-  printf("%s %d\n",__FILE__,__LINE__);
 
   lenblocks=1;
   for(int i=0;i<ndims;i++){
@@ -129,12 +121,8 @@ int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const
       break;
     }
   }
-  printf("%s %d\n",__FILE__,__LINE__);
-
   *ioidp = pio_add_to_iodesc_list(iodesc);
 
-  printf("%s %d\n",__FILE__,__LINE__);
-  
   return PIO_NOERR;
 }
 

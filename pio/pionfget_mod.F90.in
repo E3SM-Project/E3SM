@@ -351,9 +351,11 @@ CONTAINS
 !! @retval ierr @ref error_return
 !<
   integer function get_var_0d_text (File,varid, ival) result(ierr)
+    use iso_c_binding
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
     character(len=*), intent(out) :: ival
+    integer :: i
     interface
        integer(C_INT) function PIOc_get_var_text (ncid, varid, ival) &
             bind(C,name="PIOc_get_var_text")
@@ -363,10 +365,11 @@ CONTAINS
          character(C_CHAR) :: ival
        end function PIOc_get_var_text
     end interface
-    
     ierr = PIOc_get_var_text(File%fh, varid, ival)
-    print *,__FILE__,__LINE__,ival
-
+    do i=1,len(ival)
+       if(ival(i:i) == C_NULL_CHAR) ival(i:i)=''
+    end do
+       
   end function Get_var_0d_text
 
 

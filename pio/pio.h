@@ -24,9 +24,10 @@ int PIOc_freedecomp(int iosysid, int ioid);
 
 typedef struct var_desc_t
 {
-  int record;
-  void *buffer;
-  MPI_Request request;
+  int record;                      // the unlimited dimension index
+  int ndims;                      // number of variable dimensions
+  void *buffer;                  // data holder for buffered output
+  MPI_Request request;   // request associated with buffered data 
 } var_desc_t;
 
 

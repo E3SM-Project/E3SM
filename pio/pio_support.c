@@ -27,7 +27,7 @@ int check_netcdf(file_desc_t *file,int status, const char *fname, const int line
   case PIO_IOTYPE_NETCDF:
     if(ios->iomaster){
       if(status != NC_NOERR)	
-	fprintf(stderr,"NETCDF ERROR: %s\n",nc_strerror(status));
+	fprintf(stderr,"NETCDF ERROR: %s %s %d\n",nc_strerror(status),fname,line);
     }
     if(ios->error_handler == PIO_INTERNAL_ERROR){
       // abort
@@ -40,7 +40,7 @@ int check_netcdf(file_desc_t *file,int status, const char *fname, const int line
   case PIO_IOTYPE_PNETCDF:
       if(ios->iomaster){
 	if(status != NC_NOERR)
-	  fprintf(stderr,"PNETCDF ERROR: %s\n",ncmpi_strerror(status));
+	  fprintf(stderr,"PNETCDF ERROR: %s %s %d\n",ncmpi_strerror(status),fname,line);
       }
       if(ios->error_handler == PIO_INTERNAL_ERROR){
 	// abort

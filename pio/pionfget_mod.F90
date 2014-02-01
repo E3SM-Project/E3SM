@@ -6,8 +6,8 @@
 #define __PIO_FILE__ "pionfget_mod.F90"
 !>
 !! @file 
-!! $Revision: 788 $
-!! $LastChangedDate: 2013-05-08 12:52:45 -0600 (Wed, 08 May 2013) $
+!! $Revision: 932 $
+!! $LastChangedDate: 2014-01-29 16:02:41 -0700 (Wed, 29 Jan 2014) $
 !! @brief Read Routines for non-decomposed NetCDF data.
 !<
 module pionfget_mod
@@ -28,10 +28,15 @@ module pionfget_mod
 #ifndef NO_MPIMOD
   use mpi ! _EXTERNAL
 #endif
+#ifdef USE_PNETCDF_MOD
+  use pnetcdf
+#endif
   implicit none
   private
 #ifdef _PNETCDF
+#ifndef USE_PNETCDF_MOD
 #include <pnetcdf.inc>  /*  _EXTERNAL */
+#endif
 #endif
 #ifdef NO_MPIMOD
   include 'mpif.h'  ! _EXTERNAL
@@ -44,7 +49,7 @@ module pionfget_mod
 !!  root IO task and broadcast in its entirety to all tasks.  
 !<
   public :: get_var
-# 42 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 47 "pionfget_mod.F90.in"
   interface get_var
      module procedure get_var_0d_text, get_var_vdesc_0d_text
      module procedure get_var_1d_text, get_var_vdesc_1d_text
@@ -118,7 +123,7 @@ module pionfget_mod
 
  character(len=*), parameter :: modName='pionfget_mod'
 
-# 51 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 56 "pionfget_mod.F90.in"
 CONTAINS
 
 !>
@@ -132,7 +137,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 64 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 69 "pionfget_mod.F90.in"
   integer function get_var1_text (File,varid, index, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar1
     use pio_types, only : pio_max_var_dims
@@ -220,9 +225,9 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_var1_text")
 #endif
-# 151 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 156 "pionfget_mod.F90.in"
   end function get_var1_text
-# 64 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 69 "pionfget_mod.F90.in"
   integer function get_var1_real (File,varid, index, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar1
     use pio_types, only : pio_max_var_dims
@@ -310,9 +315,9 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_var1_real")
 #endif
-# 151 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 156 "pionfget_mod.F90.in"
   end function get_var1_real
-# 64 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 69 "pionfget_mod.F90.in"
   integer function get_var1_double (File,varid, index, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar1
     use pio_types, only : pio_max_var_dims
@@ -400,9 +405,9 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_var1_double")
 #endif
-# 151 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 156 "pionfget_mod.F90.in"
   end function get_var1_double
-# 64 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 69 "pionfget_mod.F90.in"
   integer function get_var1_int (File,varid, index, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar1
     use pio_types, only : pio_max_var_dims
@@ -490,7 +495,7 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_var1_int")
 #endif
-# 151 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 156 "pionfget_mod.F90.in"
   end function get_var1_int
 
 !>
@@ -504,7 +509,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 164 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 169 "pionfget_mod.F90.in"
   integer function get_var1_vdesc_text (File,vardesc, index, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -515,9 +520,9 @@ CONTAINS
 
     ierr = get_var1_text (File, vardesc%varid, index, ival)
 
-# 174 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 179 "pionfget_mod.F90.in"
   end function get_var1_vdesc_text
-# 164 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 169 "pionfget_mod.F90.in"
   integer function get_var1_vdesc_real (File,vardesc, index, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -528,9 +533,9 @@ CONTAINS
 
     ierr = get_var1_real (File, vardesc%varid, index, ival)
 
-# 174 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 179 "pionfget_mod.F90.in"
   end function get_var1_vdesc_real
-# 164 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 169 "pionfget_mod.F90.in"
   integer function get_var1_vdesc_double (File,vardesc, index, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -541,9 +546,9 @@ CONTAINS
 
     ierr = get_var1_double (File, vardesc%varid, index, ival)
 
-# 174 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 179 "pionfget_mod.F90.in"
   end function get_var1_vdesc_double
-# 164 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 169 "pionfget_mod.F90.in"
   integer function get_var1_vdesc_int (File,vardesc, index, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -554,7 +559,7 @@ CONTAINS
 
     ierr = get_var1_int (File, vardesc%varid, index, ival)
 
-# 174 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 179 "pionfget_mod.F90.in"
   end function get_var1_vdesc_int
 
 
@@ -587,7 +592,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 206 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 211 "pionfget_mod.F90.in"
   integer function get_vara_1d_text (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -677,7 +682,7 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_vara_1d_text")
 #endif
-# 295 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 300 "pionfget_mod.F90.in"
   end function get_vara_1d_text
 ! DIMS 1,2,3,4,5
 !>
@@ -708,7 +713,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 206 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 211 "pionfget_mod.F90.in"
   integer function get_vara_2d_text (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -798,7 +803,7 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_vara_2d_text")
 #endif
-# 295 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 300 "pionfget_mod.F90.in"
   end function get_vara_2d_text
 ! DIMS 1,2,3,4,5
 !>
@@ -829,7 +834,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 206 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 211 "pionfget_mod.F90.in"
   integer function get_vara_3d_text (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -919,7 +924,7 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_vara_3d_text")
 #endif
-# 295 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 300 "pionfget_mod.F90.in"
   end function get_vara_3d_text
 ! DIMS 1,2,3,4,5
 !>
@@ -950,7 +955,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 206 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 211 "pionfget_mod.F90.in"
   integer function get_vara_4d_text (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -1040,7 +1045,7 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_vara_4d_text")
 #endif
-# 295 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 300 "pionfget_mod.F90.in"
   end function get_vara_4d_text
 ! DIMS 1,2,3,4,5
 !>
@@ -1071,7 +1076,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 206 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 211 "pionfget_mod.F90.in"
   integer function get_vara_5d_text (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -1161,7 +1166,7 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_vara_5d_text")
 #endif
-# 295 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 300 "pionfget_mod.F90.in"
   end function get_vara_5d_text
 ! DIMS 1,2,3,4,5
 !>
@@ -1192,7 +1197,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 206 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 211 "pionfget_mod.F90.in"
   integer function get_vara_1d_real (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -1282,7 +1287,7 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_vara_1d_real")
 #endif
-# 295 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 300 "pionfget_mod.F90.in"
   end function get_vara_1d_real
 ! DIMS 1,2,3,4,5
 !>
@@ -1313,7 +1318,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 206 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 211 "pionfget_mod.F90.in"
   integer function get_vara_2d_real (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -1403,7 +1408,7 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_vara_2d_real")
 #endif
-# 295 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 300 "pionfget_mod.F90.in"
   end function get_vara_2d_real
 ! DIMS 1,2,3,4,5
 !>
@@ -1434,7 +1439,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 206 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 211 "pionfget_mod.F90.in"
   integer function get_vara_3d_real (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -1524,7 +1529,7 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_vara_3d_real")
 #endif
-# 295 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 300 "pionfget_mod.F90.in"
   end function get_vara_3d_real
 ! DIMS 1,2,3,4,5
 !>
@@ -1555,7 +1560,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 206 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 211 "pionfget_mod.F90.in"
   integer function get_vara_4d_real (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -1645,7 +1650,7 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_vara_4d_real")
 #endif
-# 295 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 300 "pionfget_mod.F90.in"
   end function get_vara_4d_real
 ! DIMS 1,2,3,4,5
 !>
@@ -1676,7 +1681,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 206 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 211 "pionfget_mod.F90.in"
   integer function get_vara_5d_real (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -1766,7 +1771,7 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_vara_5d_real")
 #endif
-# 295 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 300 "pionfget_mod.F90.in"
   end function get_vara_5d_real
 ! DIMS 1,2,3,4,5
 !>
@@ -1797,7 +1802,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 206 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 211 "pionfget_mod.F90.in"
   integer function get_vara_1d_double (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -1887,7 +1892,7 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_vara_1d_double")
 #endif
-# 295 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 300 "pionfget_mod.F90.in"
   end function get_vara_1d_double
 ! DIMS 1,2,3,4,5
 !>
@@ -1918,7 +1923,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 206 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 211 "pionfget_mod.F90.in"
   integer function get_vara_2d_double (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -2008,7 +2013,7 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_vara_2d_double")
 #endif
-# 295 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 300 "pionfget_mod.F90.in"
   end function get_vara_2d_double
 ! DIMS 1,2,3,4,5
 !>
@@ -2039,7 +2044,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 206 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 211 "pionfget_mod.F90.in"
   integer function get_vara_3d_double (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -2129,7 +2134,7 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_vara_3d_double")
 #endif
-# 295 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 300 "pionfget_mod.F90.in"
   end function get_vara_3d_double
 ! DIMS 1,2,3,4,5
 !>
@@ -2160,7 +2165,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 206 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 211 "pionfget_mod.F90.in"
   integer function get_vara_4d_double (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -2250,7 +2255,7 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_vara_4d_double")
 #endif
-# 295 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 300 "pionfget_mod.F90.in"
   end function get_vara_4d_double
 ! DIMS 1,2,3,4,5
 !>
@@ -2281,7 +2286,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 206 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 211 "pionfget_mod.F90.in"
   integer function get_vara_5d_double (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -2371,7 +2376,7 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_vara_5d_double")
 #endif
-# 295 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 300 "pionfget_mod.F90.in"
   end function get_vara_5d_double
 ! DIMS 1,2,3,4,5
 !>
@@ -2402,7 +2407,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 206 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 211 "pionfget_mod.F90.in"
   integer function get_vara_1d_int (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -2492,7 +2497,7 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_vara_1d_int")
 #endif
-# 295 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 300 "pionfget_mod.F90.in"
   end function get_vara_1d_int
 ! DIMS 1,2,3,4,5
 !>
@@ -2523,7 +2528,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 206 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 211 "pionfget_mod.F90.in"
   integer function get_vara_2d_int (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -2613,7 +2618,7 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_vara_2d_int")
 #endif
-# 295 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 300 "pionfget_mod.F90.in"
   end function get_vara_2d_int
 ! DIMS 1,2,3,4,5
 !>
@@ -2644,7 +2649,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 206 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 211 "pionfget_mod.F90.in"
   integer function get_vara_3d_int (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -2734,7 +2739,7 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_vara_3d_int")
 #endif
-# 295 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 300 "pionfget_mod.F90.in"
   end function get_vara_3d_int
 ! DIMS 1,2,3,4,5
 !>
@@ -2765,7 +2770,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 206 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 211 "pionfget_mod.F90.in"
   integer function get_vara_4d_int (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -2855,7 +2860,7 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_vara_4d_int")
 #endif
-# 295 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 300 "pionfget_mod.F90.in"
   end function get_vara_4d_int
 ! DIMS 1,2,3,4,5
 !>
@@ -2886,7 +2891,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 206 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 211 "pionfget_mod.F90.in"
   integer function get_vara_5d_int (File,varid, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
@@ -2976,7 +2981,7 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_vara_5d_int")
 #endif
-# 295 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 300 "pionfget_mod.F90.in"
   end function get_vara_5d_int
 
 ! DIMS 1,2,3,4,5
@@ -3008,7 +3013,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 326 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 331 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_1d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3019,7 +3024,7 @@ CONTAINS
 
     ierr = get_vara_1d_text (File, vardesc%varid, start, count, ival)
 
-# 336 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 341 "pionfget_mod.F90.in"
   end function get_vara_vdesc_1d_text
 ! DIMS 1,2,3,4,5
 !>
@@ -3050,7 +3055,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 326 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 331 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_2d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3061,7 +3066,7 @@ CONTAINS
 
     ierr = get_vara_2d_text (File, vardesc%varid, start, count, ival)
 
-# 336 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 341 "pionfget_mod.F90.in"
   end function get_vara_vdesc_2d_text
 ! DIMS 1,2,3,4,5
 !>
@@ -3092,7 +3097,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 326 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 331 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_3d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3103,7 +3108,7 @@ CONTAINS
 
     ierr = get_vara_3d_text (File, vardesc%varid, start, count, ival)
 
-# 336 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 341 "pionfget_mod.F90.in"
   end function get_vara_vdesc_3d_text
 ! DIMS 1,2,3,4,5
 !>
@@ -3134,7 +3139,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 326 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 331 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_4d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3145,7 +3150,7 @@ CONTAINS
 
     ierr = get_vara_4d_text (File, vardesc%varid, start, count, ival)
 
-# 336 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 341 "pionfget_mod.F90.in"
   end function get_vara_vdesc_4d_text
 ! DIMS 1,2,3,4,5
 !>
@@ -3176,7 +3181,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 326 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 331 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_5d_text (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3187,7 +3192,7 @@ CONTAINS
 
     ierr = get_vara_5d_text (File, vardesc%varid, start, count, ival)
 
-# 336 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 341 "pionfget_mod.F90.in"
   end function get_vara_vdesc_5d_text
 ! DIMS 1,2,3,4,5
 !>
@@ -3218,7 +3223,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 326 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 331 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_1d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3229,7 +3234,7 @@ CONTAINS
 
     ierr = get_vara_1d_real (File, vardesc%varid, start, count, ival)
 
-# 336 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 341 "pionfget_mod.F90.in"
   end function get_vara_vdesc_1d_real
 ! DIMS 1,2,3,4,5
 !>
@@ -3260,7 +3265,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 326 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 331 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_2d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3271,7 +3276,7 @@ CONTAINS
 
     ierr = get_vara_2d_real (File, vardesc%varid, start, count, ival)
 
-# 336 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 341 "pionfget_mod.F90.in"
   end function get_vara_vdesc_2d_real
 ! DIMS 1,2,3,4,5
 !>
@@ -3302,7 +3307,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 326 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 331 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_3d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3313,7 +3318,7 @@ CONTAINS
 
     ierr = get_vara_3d_real (File, vardesc%varid, start, count, ival)
 
-# 336 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 341 "pionfget_mod.F90.in"
   end function get_vara_vdesc_3d_real
 ! DIMS 1,2,3,4,5
 !>
@@ -3344,7 +3349,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 326 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 331 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_4d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3355,7 +3360,7 @@ CONTAINS
 
     ierr = get_vara_4d_real (File, vardesc%varid, start, count, ival)
 
-# 336 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 341 "pionfget_mod.F90.in"
   end function get_vara_vdesc_4d_real
 ! DIMS 1,2,3,4,5
 !>
@@ -3386,7 +3391,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 326 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 331 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_5d_real (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3397,7 +3402,7 @@ CONTAINS
 
     ierr = get_vara_5d_real (File, vardesc%varid, start, count, ival)
 
-# 336 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 341 "pionfget_mod.F90.in"
   end function get_vara_vdesc_5d_real
 ! DIMS 1,2,3,4,5
 !>
@@ -3428,7 +3433,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 326 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 331 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_1d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3439,7 +3444,7 @@ CONTAINS
 
     ierr = get_vara_1d_double (File, vardesc%varid, start, count, ival)
 
-# 336 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 341 "pionfget_mod.F90.in"
   end function get_vara_vdesc_1d_double
 ! DIMS 1,2,3,4,5
 !>
@@ -3470,7 +3475,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 326 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 331 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_2d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3481,7 +3486,7 @@ CONTAINS
 
     ierr = get_vara_2d_double (File, vardesc%varid, start, count, ival)
 
-# 336 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 341 "pionfget_mod.F90.in"
   end function get_vara_vdesc_2d_double
 ! DIMS 1,2,3,4,5
 !>
@@ -3512,7 +3517,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 326 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 331 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_3d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3523,7 +3528,7 @@ CONTAINS
 
     ierr = get_vara_3d_double (File, vardesc%varid, start, count, ival)
 
-# 336 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 341 "pionfget_mod.F90.in"
   end function get_vara_vdesc_3d_double
 ! DIMS 1,2,3,4,5
 !>
@@ -3554,7 +3559,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 326 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 331 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_4d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3565,7 +3570,7 @@ CONTAINS
 
     ierr = get_vara_4d_double (File, vardesc%varid, start, count, ival)
 
-# 336 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 341 "pionfget_mod.F90.in"
   end function get_vara_vdesc_4d_double
 ! DIMS 1,2,3,4,5
 !>
@@ -3596,7 +3601,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 326 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 331 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_5d_double (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3607,7 +3612,7 @@ CONTAINS
 
     ierr = get_vara_5d_double (File, vardesc%varid, start, count, ival)
 
-# 336 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 341 "pionfget_mod.F90.in"
   end function get_vara_vdesc_5d_double
 ! DIMS 1,2,3,4,5
 !>
@@ -3638,7 +3643,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 326 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 331 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_1d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3649,7 +3654,7 @@ CONTAINS
 
     ierr = get_vara_1d_int (File, vardesc%varid, start, count, ival)
 
-# 336 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 341 "pionfget_mod.F90.in"
   end function get_vara_vdesc_1d_int
 ! DIMS 1,2,3,4,5
 !>
@@ -3680,7 +3685,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 326 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 331 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_2d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3691,7 +3696,7 @@ CONTAINS
 
     ierr = get_vara_2d_int (File, vardesc%varid, start, count, ival)
 
-# 336 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 341 "pionfget_mod.F90.in"
   end function get_vara_vdesc_2d_int
 ! DIMS 1,2,3,4,5
 !>
@@ -3722,7 +3727,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 326 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 331 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_3d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3733,7 +3738,7 @@ CONTAINS
 
     ierr = get_vara_3d_int (File, vardesc%varid, start, count, ival)
 
-# 336 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 341 "pionfget_mod.F90.in"
   end function get_vara_vdesc_3d_int
 ! DIMS 1,2,3,4,5
 !>
@@ -3764,7 +3769,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 326 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 331 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_4d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3775,7 +3780,7 @@ CONTAINS
 
     ierr = get_vara_4d_int (File, vardesc%varid, start, count, ival)
 
-# 336 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 341 "pionfget_mod.F90.in"
   end function get_vara_vdesc_4d_int
 ! DIMS 1,2,3,4,5
 !>
@@ -3806,7 +3811,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 326 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 331 "pionfget_mod.F90.in"
   integer function get_vara_vdesc_5d_int (File,vardesc, start, count, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -3817,7 +3822,7 @@ CONTAINS
 
     ierr = get_vara_5d_int (File, vardesc%varid, start, count, ival)
 
-# 336 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 341 "pionfget_mod.F90.in"
   end function get_vara_vdesc_5d_int
 
 !>
@@ -3830,1519 +3835,34 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 348 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 353 "pionfget_mod.F90.in"
   integer function get_var_0d_text (File,varid, ival) result(ierr)
-    use pio_msg_mod, only : pio_msg_getvar_0d
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
     character(len=*), intent(out) :: ival
-    type(iosystem_desc_t), pointer :: ios
-    character(len=*), parameter :: subName=modName//'::get_var_0d_text'
-    integer :: iotype, mpierr, msg, ilen, itype
-#if (0 > 0)
-    integer :: dims(0)
-    integer :: i
-#endif
-    integer(kind=PIO_OFFSET) :: isize
-
-#ifdef TIMING
-    call t_startf("pio_get_var_0d_text")
-#endif
-    ierr=0
-    iotype = File%iotype 
-    isize=1	
-#if (0 > 0)
-    isize= size(ival)
-#endif
-#if (100 == TYPETEXT)
-    ilen = len(ival)	
-    isize = isize*ilen
-    ival = ' '
-#endif
-    ios=>File%iosystem
-    if(ios%async_interface .and. .not. ios%ioproc ) then
-       msg=PIO_MSG_GETVAR_0d
-       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
-       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       itype = 100
-       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#if (0 > 0)
-       do i=1,0
-          dims(i)=size(ival,i)
-       end do
-       call MPI_BCAST(dims,0,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#endif
-#if(100 == TYPETEXT) 
-          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#endif
-
-
-    endif
-
-
-
-    if(File%iosystem%IOProc) then
-       select case (iotype) 
-#ifdef _PNETCDF
-       case(pio_iotype_pnetcdf)
-          ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_CHARACTER)
-#endif
-#ifdef  _NETCDF
-       case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
-             ierr = nf90_get_var(File%fh, varid, ival)
-       case(pio_iotype_netcdf)
-          ! Only io proc 0 will do reading
-          if (File%iosystem%io_rank == 0) then
-             ierr = nf90_get_var(File%fh, varid, ival)
-          end if
-          if(.not. ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
-             call MPI_BCAST(ival,int(isize), MPI_CHARACTER ,0,ios%IO_comm, mpierr)
-             call CheckMPIReturn('nf_mod',mpierr)
-          end if
-
-#endif
-       end select
-    end if
-    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
-    if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
-       call MPI_Bcast(ival,int(isize), MPI_CHARACTER , ios%IOMaster, ios%My_comm, mpierr)
-       call CheckMPIReturn(subName, mpierr)
-    end if
-#ifdef TIMING
-    call t_stopf("pio_get_var_0d_text")
-#endif
-# 429 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
-  end function get_var_0d_text
-# 348 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
-  integer function get_var_1d_text (File,varid, ival) result(ierr)
-    use pio_msg_mod, only : pio_msg_getvar_1d
-    type (File_desc_t), intent(in) :: File
-    integer, intent(in) :: varid
-    character(len=*), intent(out) :: ival(:)
-    type(iosystem_desc_t), pointer :: ios
-    character(len=*), parameter :: subName=modName//'::get_var_1d_text'
-    integer :: iotype, mpierr, msg, ilen, itype
-#if (1 > 0)
-    integer :: dims(1)
-    integer :: i
-#endif
-    integer(kind=PIO_OFFSET) :: isize
-
-#ifdef TIMING
-    call t_startf("pio_get_var_1d_text")
-#endif
-    ierr=0
-    iotype = File%iotype 
-    isize=1	
-#if (1 > 0)
-    isize= size(ival)
-#endif
-#if (100 == TYPETEXT)
-    ilen = len(ival)	
-    isize = isize*ilen
-    ival(:) = ' '
-#endif
-    ios=>File%iosystem
-    if(ios%async_interface .and. .not. ios%ioproc ) then
-       msg=PIO_MSG_GETVAR_1d
-       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
-       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       itype = 100
-       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#if (1 > 0)
-       do i=1,1
-          dims(i)=size(ival,i)
-       end do
-       call MPI_BCAST(dims,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#endif
-#if(100 == TYPETEXT) 
-          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#endif
-
-
-    endif
-
-
-
-    if(File%iosystem%IOProc) then
-       select case (iotype) 
-#ifdef _PNETCDF
-       case(pio_iotype_pnetcdf)
-          ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_CHARACTER)
-#endif
-#ifdef  _NETCDF
-       case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
-             ierr = nf90_get_var(File%fh, varid, ival)
-       case(pio_iotype_netcdf)
-          ! Only io proc 0 will do reading
-          if (File%iosystem%io_rank == 0) then
-             ierr = nf90_get_var(File%fh, varid, ival)
-          end if
-          if(.not. ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
-             call MPI_BCAST(ival,int(isize), MPI_CHARACTER ,0,ios%IO_comm, mpierr)
-             call CheckMPIReturn('nf_mod',mpierr)
-          end if
-
-#endif
-       end select
-    end if
-    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
-    if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
-       call MPI_Bcast(ival,int(isize), MPI_CHARACTER , ios%IOMaster, ios%My_comm, mpierr)
-       call CheckMPIReturn(subName, mpierr)
-    end if
-#ifdef TIMING
-    call t_stopf("pio_get_var_1d_text")
-#endif
-# 429 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
-  end function get_var_1d_text
-# 348 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
-  integer function get_var_2d_text (File,varid, ival) result(ierr)
-    use pio_msg_mod, only : pio_msg_getvar_2d
-    type (File_desc_t), intent(in) :: File
-    integer, intent(in) :: varid
-    character(len=*), intent(out) :: ival(:,:)
-    type(iosystem_desc_t), pointer :: ios
-    character(len=*), parameter :: subName=modName//'::get_var_2d_text'
-    integer :: iotype, mpierr, msg, ilen, itype
-#if (2 > 0)
-    integer :: dims(2)
-    integer :: i
-#endif
-    integer(kind=PIO_OFFSET) :: isize
-
-#ifdef TIMING
-    call t_startf("pio_get_var_2d_text")
-#endif
-    ierr=0
-    iotype = File%iotype 
-    isize=1	
-#if (2 > 0)
-    isize= size(ival)
-#endif
-#if (100 == TYPETEXT)
-    ilen = len(ival)	
-    isize = isize*ilen
-    ival(:,:) = ' '
-#endif
-    ios=>File%iosystem
-    if(ios%async_interface .and. .not. ios%ioproc ) then
-       msg=PIO_MSG_GETVAR_2d
-       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
-       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       itype = 100
-       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#if (2 > 0)
-       do i=1,2
-          dims(i)=size(ival,i)
-       end do
-       call MPI_BCAST(dims,2,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#endif
-#if(100 == TYPETEXT) 
-          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#endif
-
-
-    endif
-
-
-
-    if(File%iosystem%IOProc) then
-       select case (iotype) 
-#ifdef _PNETCDF
-       case(pio_iotype_pnetcdf)
-          ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_CHARACTER)
-#endif
-#ifdef  _NETCDF
-       case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
-             ierr = nf90_get_var(File%fh, varid, ival)
-       case(pio_iotype_netcdf)
-          ! Only io proc 0 will do reading
-          if (File%iosystem%io_rank == 0) then
-             ierr = nf90_get_var(File%fh, varid, ival)
-          end if
-          if(.not. ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
-             call MPI_BCAST(ival,int(isize), MPI_CHARACTER ,0,ios%IO_comm, mpierr)
-             call CheckMPIReturn('nf_mod',mpierr)
-          end if
-
-#endif
-       end select
-    end if
-    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
-    if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
-       call MPI_Bcast(ival,int(isize), MPI_CHARACTER , ios%IOMaster, ios%My_comm, mpierr)
-       call CheckMPIReturn(subName, mpierr)
-    end if
-#ifdef TIMING
-    call t_stopf("pio_get_var_2d_text")
-#endif
-# 429 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
-  end function get_var_2d_text
-# 348 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
-  integer function get_var_3d_text (File,varid, ival) result(ierr)
-    use pio_msg_mod, only : pio_msg_getvar_3d
-    type (File_desc_t), intent(in) :: File
-    integer, intent(in) :: varid
-    character(len=*), intent(out) :: ival(:,:,:)
-    type(iosystem_desc_t), pointer :: ios
-    character(len=*), parameter :: subName=modName//'::get_var_3d_text'
-    integer :: iotype, mpierr, msg, ilen, itype
-#if (3 > 0)
-    integer :: dims(3)
-    integer :: i
-#endif
-    integer(kind=PIO_OFFSET) :: isize
-
-#ifdef TIMING
-    call t_startf("pio_get_var_3d_text")
-#endif
-    ierr=0
-    iotype = File%iotype 
-    isize=1	
-#if (3 > 0)
-    isize= size(ival)
-#endif
-#if (100 == TYPETEXT)
-    ilen = len(ival)	
-    isize = isize*ilen
-    ival(:,:,:) = ' '
-#endif
-    ios=>File%iosystem
-    if(ios%async_interface .and. .not. ios%ioproc ) then
-       msg=PIO_MSG_GETVAR_3d
-       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
-       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       itype = 100
-       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#if (3 > 0)
-       do i=1,3
-          dims(i)=size(ival,i)
-       end do
-       call MPI_BCAST(dims,3,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#endif
-#if(100 == TYPETEXT) 
-          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#endif
-
-
-    endif
-
-
-
-    if(File%iosystem%IOProc) then
-       select case (iotype) 
-#ifdef _PNETCDF
-       case(pio_iotype_pnetcdf)
-          ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_CHARACTER)
-#endif
-#ifdef  _NETCDF
-       case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
-             ierr = nf90_get_var(File%fh, varid, ival)
-       case(pio_iotype_netcdf)
-          ! Only io proc 0 will do reading
-          if (File%iosystem%io_rank == 0) then
-             ierr = nf90_get_var(File%fh, varid, ival)
-          end if
-          if(.not. ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
-             call MPI_BCAST(ival,int(isize), MPI_CHARACTER ,0,ios%IO_comm, mpierr)
-             call CheckMPIReturn('nf_mod',mpierr)
-          end if
-
-#endif
-       end select
-    end if
-    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
-    if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
-       call MPI_Bcast(ival,int(isize), MPI_CHARACTER , ios%IOMaster, ios%My_comm, mpierr)
-       call CheckMPIReturn(subName, mpierr)
-    end if
-#ifdef TIMING
-    call t_stopf("pio_get_var_3d_text")
-#endif
-# 429 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
-  end function get_var_3d_text
-# 348 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
-  integer function get_var_4d_text (File,varid, ival) result(ierr)
-    use pio_msg_mod, only : pio_msg_getvar_4d
-    type (File_desc_t), intent(in) :: File
-    integer, intent(in) :: varid
-    character(len=*), intent(out) :: ival(:,:,:,:)
-    type(iosystem_desc_t), pointer :: ios
-    character(len=*), parameter :: subName=modName//'::get_var_4d_text'
-    integer :: iotype, mpierr, msg, ilen, itype
-#if (4 > 0)
-    integer :: dims(4)
-    integer :: i
-#endif
-    integer(kind=PIO_OFFSET) :: isize
-
-#ifdef TIMING
-    call t_startf("pio_get_var_4d_text")
-#endif
-    ierr=0
-    iotype = File%iotype 
-    isize=1	
-#if (4 > 0)
-    isize= size(ival)
-#endif
-#if (100 == TYPETEXT)
-    ilen = len(ival)	
-    isize = isize*ilen
-    ival(:,:,:,:) = ' '
-#endif
-    ios=>File%iosystem
-    if(ios%async_interface .and. .not. ios%ioproc ) then
-       msg=PIO_MSG_GETVAR_4d
-       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
-       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       itype = 100
-       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#if (4 > 0)
-       do i=1,4
-          dims(i)=size(ival,i)
-       end do
-       call MPI_BCAST(dims,4,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#endif
-#if(100 == TYPETEXT) 
-          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#endif
-
-
-    endif
-
-
-
-    if(File%iosystem%IOProc) then
-       select case (iotype) 
-#ifdef _PNETCDF
-       case(pio_iotype_pnetcdf)
-          ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_CHARACTER)
-#endif
-#ifdef  _NETCDF
-       case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
-             ierr = nf90_get_var(File%fh, varid, ival)
-       case(pio_iotype_netcdf)
-          ! Only io proc 0 will do reading
-          if (File%iosystem%io_rank == 0) then
-             ierr = nf90_get_var(File%fh, varid, ival)
-          end if
-          if(.not. ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
-             call MPI_BCAST(ival,int(isize), MPI_CHARACTER ,0,ios%IO_comm, mpierr)
-             call CheckMPIReturn('nf_mod',mpierr)
-          end if
-
-#endif
-       end select
-    end if
-    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
-    if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
-       call MPI_Bcast(ival,int(isize), MPI_CHARACTER , ios%IOMaster, ios%My_comm, mpierr)
-       call CheckMPIReturn(subName, mpierr)
-    end if
-#ifdef TIMING
-    call t_stopf("pio_get_var_4d_text")
-#endif
-# 429 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
-  end function get_var_4d_text
-# 348 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
-  integer function get_var_5d_text (File,varid, ival) result(ierr)
-    use pio_msg_mod, only : pio_msg_getvar_5d
-    type (File_desc_t), intent(in) :: File
-    integer, intent(in) :: varid
-    character(len=*), intent(out) :: ival(:,:,:,:,:)
-    type(iosystem_desc_t), pointer :: ios
-    character(len=*), parameter :: subName=modName//'::get_var_5d_text'
-    integer :: iotype, mpierr, msg, ilen, itype
-#if (5 > 0)
-    integer :: dims(5)
-    integer :: i
-#endif
-    integer(kind=PIO_OFFSET) :: isize
-
-#ifdef TIMING
-    call t_startf("pio_get_var_5d_text")
-#endif
-    ierr=0
-    iotype = File%iotype 
-    isize=1	
-#if (5 > 0)
-    isize= size(ival)
-#endif
-#if (100 == TYPETEXT)
-    ilen = len(ival)	
-    isize = isize*ilen
-    ival(:,:,:,:,:) = ' '
-#endif
-    ios=>File%iosystem
-    if(ios%async_interface .and. .not. ios%ioproc ) then
-       msg=PIO_MSG_GETVAR_5d
-       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
-       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       itype = 100
-       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#if (5 > 0)
-       do i=1,5
-          dims(i)=size(ival,i)
-       end do
-       call MPI_BCAST(dims,5,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#endif
-#if(100 == TYPETEXT) 
-          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#endif
-
-
-    endif
-
-
-
-    if(File%iosystem%IOProc) then
-       select case (iotype) 
-#ifdef _PNETCDF
-       case(pio_iotype_pnetcdf)
-          ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_CHARACTER)
-#endif
-#ifdef  _NETCDF
-       case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
-             ierr = nf90_get_var(File%fh, varid, ival)
-       case(pio_iotype_netcdf)
-          ! Only io proc 0 will do reading
-          if (File%iosystem%io_rank == 0) then
-             ierr = nf90_get_var(File%fh, varid, ival)
-          end if
-          if(.not. ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
-             call MPI_BCAST(ival,int(isize), MPI_CHARACTER ,0,ios%IO_comm, mpierr)
-             call CheckMPIReturn('nf_mod',mpierr)
-          end if
-
-#endif
-       end select
-    end if
-    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
-    if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
-       call MPI_Bcast(ival,int(isize), MPI_CHARACTER , ios%IOMaster, ios%My_comm, mpierr)
-       call CheckMPIReturn(subName, mpierr)
-    end if
-#ifdef TIMING
-    call t_stopf("pio_get_var_5d_text")
-#endif
-# 429 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
-  end function get_var_5d_text
-# 348 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
-  integer function get_var_0d_real (File,varid, ival) result(ierr)
-    use pio_msg_mod, only : pio_msg_getvar_0d
-    type (File_desc_t), intent(in) :: File
-    integer, intent(in) :: varid
-    real(r4), intent(out) :: ival
-    type(iosystem_desc_t), pointer :: ios
-    character(len=*), parameter :: subName=modName//'::get_var_0d_real'
-    integer :: iotype, mpierr, msg, ilen, itype
-#if (0 > 0)
-    integer :: dims(0)
-    integer :: i
-#endif
-    integer(kind=PIO_OFFSET) :: isize
-
-#ifdef TIMING
-    call t_startf("pio_get_var_0d_real")
-#endif
-    ierr=0
-    iotype = File%iotype 
-    isize=1	
-#if (0 > 0)
-    isize= size(ival)
-#endif
-#if (101 == TYPETEXT)
-    ilen = len(ival)	
-    isize = isize*ilen
-    ival = ' '
-#endif
-    ios=>File%iosystem
-    if(ios%async_interface .and. .not. ios%ioproc ) then
-       msg=PIO_MSG_GETVAR_0d
-       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
-       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       itype = 101
-       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#if (0 > 0)
-       do i=1,0
-          dims(i)=size(ival,i)
-       end do
-       call MPI_BCAST(dims,0,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#endif
-#if(101 == TYPETEXT) 
-          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#endif
-
-
-    endif
-
-
-
-    if(File%iosystem%IOProc) then
-       select case (iotype) 
-#ifdef _PNETCDF
-       case(pio_iotype_pnetcdf)
-          ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_REAL4)
-#endif
-#ifdef  _NETCDF
-       case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
-             ierr = nf90_get_var(File%fh, varid, ival)
-       case(pio_iotype_netcdf)
-          ! Only io proc 0 will do reading
-          if (File%iosystem%io_rank == 0) then
-             ierr = nf90_get_var(File%fh, varid, ival)
-          end if
-          if(.not. ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
-             call MPI_BCAST(ival,int(isize), MPI_REAL4 ,0,ios%IO_comm, mpierr)
-             call CheckMPIReturn('nf_mod',mpierr)
-          end if
-
-#endif
-       end select
-    end if
-    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
-    if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
-       call MPI_Bcast(ival,int(isize), MPI_REAL4 , ios%IOMaster, ios%My_comm, mpierr)
-       call CheckMPIReturn(subName, mpierr)
-    end if
-#ifdef TIMING
-    call t_stopf("pio_get_var_0d_real")
-#endif
-# 429 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
-  end function get_var_0d_real
-# 348 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
-  integer function get_var_1d_real (File,varid, ival) result(ierr)
-    use pio_msg_mod, only : pio_msg_getvar_1d
-    type (File_desc_t), intent(in) :: File
-    integer, intent(in) :: varid
-    real(r4), intent(out) :: ival(:)
-    type(iosystem_desc_t), pointer :: ios
-    character(len=*), parameter :: subName=modName//'::get_var_1d_real'
-    integer :: iotype, mpierr, msg, ilen, itype
-#if (1 > 0)
-    integer :: dims(1)
-    integer :: i
-#endif
-    integer(kind=PIO_OFFSET) :: isize
-
-#ifdef TIMING
-    call t_startf("pio_get_var_1d_real")
-#endif
-    ierr=0
-    iotype = File%iotype 
-    isize=1	
-#if (1 > 0)
-    isize= size(ival)
-#endif
-#if (101 == TYPETEXT)
-    ilen = len(ival)	
-    isize = isize*ilen
-    ival(:) = ' '
-#endif
-    ios=>File%iosystem
-    if(ios%async_interface .and. .not. ios%ioproc ) then
-       msg=PIO_MSG_GETVAR_1d
-       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
-       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       itype = 101
-       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#if (1 > 0)
-       do i=1,1
-          dims(i)=size(ival,i)
-       end do
-       call MPI_BCAST(dims,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#endif
-#if(101 == TYPETEXT) 
-          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#endif
-
-
-    endif
-
-
-
-    if(File%iosystem%IOProc) then
-       select case (iotype) 
-#ifdef _PNETCDF
-       case(pio_iotype_pnetcdf)
-          ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_REAL4)
-#endif
-#ifdef  _NETCDF
-       case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
-             ierr = nf90_get_var(File%fh, varid, ival)
-       case(pio_iotype_netcdf)
-          ! Only io proc 0 will do reading
-          if (File%iosystem%io_rank == 0) then
-             ierr = nf90_get_var(File%fh, varid, ival)
-          end if
-          if(.not. ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
-             call MPI_BCAST(ival,int(isize), MPI_REAL4 ,0,ios%IO_comm, mpierr)
-             call CheckMPIReturn('nf_mod',mpierr)
-          end if
-
-#endif
-       end select
-    end if
-    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
-    if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
-       call MPI_Bcast(ival,int(isize), MPI_REAL4 , ios%IOMaster, ios%My_comm, mpierr)
-       call CheckMPIReturn(subName, mpierr)
-    end if
-#ifdef TIMING
-    call t_stopf("pio_get_var_1d_real")
-#endif
-# 429 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
-  end function get_var_1d_real
-# 348 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
-  integer function get_var_2d_real (File,varid, ival) result(ierr)
-    use pio_msg_mod, only : pio_msg_getvar_2d
-    type (File_desc_t), intent(in) :: File
-    integer, intent(in) :: varid
-    real(r4), intent(out) :: ival(:,:)
-    type(iosystem_desc_t), pointer :: ios
-    character(len=*), parameter :: subName=modName//'::get_var_2d_real'
-    integer :: iotype, mpierr, msg, ilen, itype
-#if (2 > 0)
-    integer :: dims(2)
-    integer :: i
-#endif
-    integer(kind=PIO_OFFSET) :: isize
-
-#ifdef TIMING
-    call t_startf("pio_get_var_2d_real")
-#endif
-    ierr=0
-    iotype = File%iotype 
-    isize=1	
-#if (2 > 0)
-    isize= size(ival)
-#endif
-#if (101 == TYPETEXT)
-    ilen = len(ival)	
-    isize = isize*ilen
-    ival(:,:) = ' '
-#endif
-    ios=>File%iosystem
-    if(ios%async_interface .and. .not. ios%ioproc ) then
-       msg=PIO_MSG_GETVAR_2d
-       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
-       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       itype = 101
-       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#if (2 > 0)
-       do i=1,2
-          dims(i)=size(ival,i)
-       end do
-       call MPI_BCAST(dims,2,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#endif
-#if(101 == TYPETEXT) 
-          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#endif
-
-
-    endif
-
-
-
-    if(File%iosystem%IOProc) then
-       select case (iotype) 
-#ifdef _PNETCDF
-       case(pio_iotype_pnetcdf)
-          ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_REAL4)
-#endif
-#ifdef  _NETCDF
-       case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
-             ierr = nf90_get_var(File%fh, varid, ival)
-       case(pio_iotype_netcdf)
-          ! Only io proc 0 will do reading
-          if (File%iosystem%io_rank == 0) then
-             ierr = nf90_get_var(File%fh, varid, ival)
-          end if
-          if(.not. ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
-             call MPI_BCAST(ival,int(isize), MPI_REAL4 ,0,ios%IO_comm, mpierr)
-             call CheckMPIReturn('nf_mod',mpierr)
-          end if
-
-#endif
-       end select
-    end if
-    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
-    if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
-       call MPI_Bcast(ival,int(isize), MPI_REAL4 , ios%IOMaster, ios%My_comm, mpierr)
-       call CheckMPIReturn(subName, mpierr)
-    end if
-#ifdef TIMING
-    call t_stopf("pio_get_var_2d_real")
-#endif
-# 429 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
-  end function get_var_2d_real
-# 348 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
-  integer function get_var_3d_real (File,varid, ival) result(ierr)
-    use pio_msg_mod, only : pio_msg_getvar_3d
-    type (File_desc_t), intent(in) :: File
-    integer, intent(in) :: varid
-    real(r4), intent(out) :: ival(:,:,:)
-    type(iosystem_desc_t), pointer :: ios
-    character(len=*), parameter :: subName=modName//'::get_var_3d_real'
-    integer :: iotype, mpierr, msg, ilen, itype
-#if (3 > 0)
-    integer :: dims(3)
-    integer :: i
-#endif
-    integer(kind=PIO_OFFSET) :: isize
-
-#ifdef TIMING
-    call t_startf("pio_get_var_3d_real")
-#endif
-    ierr=0
-    iotype = File%iotype 
-    isize=1	
-#if (3 > 0)
-    isize= size(ival)
-#endif
-#if (101 == TYPETEXT)
-    ilen = len(ival)	
-    isize = isize*ilen
-    ival(:,:,:) = ' '
-#endif
-    ios=>File%iosystem
-    if(ios%async_interface .and. .not. ios%ioproc ) then
-       msg=PIO_MSG_GETVAR_3d
-       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
-       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       itype = 101
-       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#if (3 > 0)
-       do i=1,3
-          dims(i)=size(ival,i)
-       end do
-       call MPI_BCAST(dims,3,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#endif
-#if(101 == TYPETEXT) 
-          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#endif
-
-
-    endif
-
-
-
-    if(File%iosystem%IOProc) then
-       select case (iotype) 
-#ifdef _PNETCDF
-       case(pio_iotype_pnetcdf)
-          ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_REAL4)
-#endif
-#ifdef  _NETCDF
-       case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
-             ierr = nf90_get_var(File%fh, varid, ival)
-       case(pio_iotype_netcdf)
-          ! Only io proc 0 will do reading
-          if (File%iosystem%io_rank == 0) then
-             ierr = nf90_get_var(File%fh, varid, ival)
-          end if
-          if(.not. ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
-             call MPI_BCAST(ival,int(isize), MPI_REAL4 ,0,ios%IO_comm, mpierr)
-             call CheckMPIReturn('nf_mod',mpierr)
-          end if
-
-#endif
-       end select
-    end if
-    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
-    if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
-       call MPI_Bcast(ival,int(isize), MPI_REAL4 , ios%IOMaster, ios%My_comm, mpierr)
-       call CheckMPIReturn(subName, mpierr)
-    end if
-#ifdef TIMING
-    call t_stopf("pio_get_var_3d_real")
-#endif
-# 429 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
-  end function get_var_3d_real
-# 348 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
-  integer function get_var_4d_real (File,varid, ival) result(ierr)
-    use pio_msg_mod, only : pio_msg_getvar_4d
-    type (File_desc_t), intent(in) :: File
-    integer, intent(in) :: varid
-    real(r4), intent(out) :: ival(:,:,:,:)
-    type(iosystem_desc_t), pointer :: ios
-    character(len=*), parameter :: subName=modName//'::get_var_4d_real'
-    integer :: iotype, mpierr, msg, ilen, itype
-#if (4 > 0)
-    integer :: dims(4)
-    integer :: i
-#endif
-    integer(kind=PIO_OFFSET) :: isize
-
-#ifdef TIMING
-    call t_startf("pio_get_var_4d_real")
-#endif
-    ierr=0
-    iotype = File%iotype 
-    isize=1	
-#if (4 > 0)
-    isize= size(ival)
-#endif
-#if (101 == TYPETEXT)
-    ilen = len(ival)	
-    isize = isize*ilen
-    ival(:,:,:,:) = ' '
-#endif
-    ios=>File%iosystem
-    if(ios%async_interface .and. .not. ios%ioproc ) then
-       msg=PIO_MSG_GETVAR_4d
-       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
-       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       itype = 101
-       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#if (4 > 0)
-       do i=1,4
-          dims(i)=size(ival,i)
-       end do
-       call MPI_BCAST(dims,4,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#endif
-#if(101 == TYPETEXT) 
-          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#endif
-
-
-    endif
-
-
-
-    if(File%iosystem%IOProc) then
-       select case (iotype) 
-#ifdef _PNETCDF
-       case(pio_iotype_pnetcdf)
-          ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_REAL4)
-#endif
-#ifdef  _NETCDF
-       case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
-             ierr = nf90_get_var(File%fh, varid, ival)
-       case(pio_iotype_netcdf)
-          ! Only io proc 0 will do reading
-          if (File%iosystem%io_rank == 0) then
-             ierr = nf90_get_var(File%fh, varid, ival)
-          end if
-          if(.not. ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
-             call MPI_BCAST(ival,int(isize), MPI_REAL4 ,0,ios%IO_comm, mpierr)
-             call CheckMPIReturn('nf_mod',mpierr)
-          end if
-
-#endif
-       end select
-    end if
-    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
-    if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
-       call MPI_Bcast(ival,int(isize), MPI_REAL4 , ios%IOMaster, ios%My_comm, mpierr)
-       call CheckMPIReturn(subName, mpierr)
-    end if
-#ifdef TIMING
-    call t_stopf("pio_get_var_4d_real")
-#endif
-# 429 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
-  end function get_var_4d_real
-# 348 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
-  integer function get_var_5d_real (File,varid, ival) result(ierr)
-    use pio_msg_mod, only : pio_msg_getvar_5d
-    type (File_desc_t), intent(in) :: File
-    integer, intent(in) :: varid
-    real(r4), intent(out) :: ival(:,:,:,:,:)
-    type(iosystem_desc_t), pointer :: ios
-    character(len=*), parameter :: subName=modName//'::get_var_5d_real'
-    integer :: iotype, mpierr, msg, ilen, itype
-#if (5 > 0)
-    integer :: dims(5)
-    integer :: i
-#endif
-    integer(kind=PIO_OFFSET) :: isize
-
-#ifdef TIMING
-    call t_startf("pio_get_var_5d_real")
-#endif
-    ierr=0
-    iotype = File%iotype 
-    isize=1	
-#if (5 > 0)
-    isize= size(ival)
-#endif
-#if (101 == TYPETEXT)
-    ilen = len(ival)	
-    isize = isize*ilen
-    ival(:,:,:,:,:) = ' '
-#endif
-    ios=>File%iosystem
-    if(ios%async_interface .and. .not. ios%ioproc ) then
-       msg=PIO_MSG_GETVAR_5d
-       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
-       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       itype = 101
-       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#if (5 > 0)
-       do i=1,5
-          dims(i)=size(ival,i)
-       end do
-       call MPI_BCAST(dims,5,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#endif
-#if(101 == TYPETEXT) 
-          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#endif
-
-
-    endif
-
-
-
-    if(File%iosystem%IOProc) then
-       select case (iotype) 
-#ifdef _PNETCDF
-       case(pio_iotype_pnetcdf)
-          ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_REAL4)
-#endif
-#ifdef  _NETCDF
-       case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
-             ierr = nf90_get_var(File%fh, varid, ival)
-       case(pio_iotype_netcdf)
-          ! Only io proc 0 will do reading
-          if (File%iosystem%io_rank == 0) then
-             ierr = nf90_get_var(File%fh, varid, ival)
-          end if
-          if(.not. ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
-             call MPI_BCAST(ival,int(isize), MPI_REAL4 ,0,ios%IO_comm, mpierr)
-             call CheckMPIReturn('nf_mod',mpierr)
-          end if
-
-#endif
-       end select
-    end if
-    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
-    if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
-       call MPI_Bcast(ival,int(isize), MPI_REAL4 , ios%IOMaster, ios%My_comm, mpierr)
-       call CheckMPIReturn(subName, mpierr)
-    end if
-#ifdef TIMING
-    call t_stopf("pio_get_var_5d_real")
-#endif
-# 429 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
-  end function get_var_5d_real
-# 348 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
-  integer function get_var_0d_double (File,varid, ival) result(ierr)
-    use pio_msg_mod, only : pio_msg_getvar_0d
-    type (File_desc_t), intent(in) :: File
-    integer, intent(in) :: varid
-    real(r8), intent(out) :: ival
-    type(iosystem_desc_t), pointer :: ios
-    character(len=*), parameter :: subName=modName//'::get_var_0d_double'
-    integer :: iotype, mpierr, msg, ilen, itype
-#if (0 > 0)
-    integer :: dims(0)
-    integer :: i
-#endif
-    integer(kind=PIO_OFFSET) :: isize
-
-#ifdef TIMING
-    call t_startf("pio_get_var_0d_double")
-#endif
-    ierr=0
-    iotype = File%iotype 
-    isize=1	
-#if (0 > 0)
-    isize= size(ival)
-#endif
-#if (102 == TYPETEXT)
-    ilen = len(ival)	
-    isize = isize*ilen
-    ival = ' '
-#endif
-    ios=>File%iosystem
-    if(ios%async_interface .and. .not. ios%ioproc ) then
-       msg=PIO_MSG_GETVAR_0d
-       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
-       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       itype = 102
-       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#if (0 > 0)
-       do i=1,0
-          dims(i)=size(ival,i)
-       end do
-       call MPI_BCAST(dims,0,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#endif
-#if(102 == TYPETEXT) 
-          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#endif
-
-
-    endif
-
-
-
-    if(File%iosystem%IOProc) then
-       select case (iotype) 
-#ifdef _PNETCDF
-       case(pio_iotype_pnetcdf)
-          ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_REAL8)
-#endif
-#ifdef  _NETCDF
-       case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
-             ierr = nf90_get_var(File%fh, varid, ival)
-       case(pio_iotype_netcdf)
-          ! Only io proc 0 will do reading
-          if (File%iosystem%io_rank == 0) then
-             ierr = nf90_get_var(File%fh, varid, ival)
-          end if
-          if(.not. ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
-             call MPI_BCAST(ival,int(isize), MPI_REAL8 ,0,ios%IO_comm, mpierr)
-             call CheckMPIReturn('nf_mod',mpierr)
-          end if
-
-#endif
-       end select
-    end if
-    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
-    if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
-       call MPI_Bcast(ival,int(isize), MPI_REAL8 , ios%IOMaster, ios%My_comm, mpierr)
-       call CheckMPIReturn(subName, mpierr)
-    end if
-#ifdef TIMING
-    call t_stopf("pio_get_var_0d_double")
-#endif
-# 429 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
-  end function get_var_0d_double
-# 348 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
-  integer function get_var_1d_double (File,varid, ival) result(ierr)
-    use pio_msg_mod, only : pio_msg_getvar_1d
-    type (File_desc_t), intent(in) :: File
-    integer, intent(in) :: varid
-    real(r8), intent(out) :: ival(:)
-    type(iosystem_desc_t), pointer :: ios
-    character(len=*), parameter :: subName=modName//'::get_var_1d_double'
-    integer :: iotype, mpierr, msg, ilen, itype
-#if (1 > 0)
-    integer :: dims(1)
-    integer :: i
-#endif
-    integer(kind=PIO_OFFSET) :: isize
-
-#ifdef TIMING
-    call t_startf("pio_get_var_1d_double")
-#endif
-    ierr=0
-    iotype = File%iotype 
-    isize=1	
-#if (1 > 0)
-    isize= size(ival)
-#endif
-#if (102 == TYPETEXT)
-    ilen = len(ival)	
-    isize = isize*ilen
-    ival(:) = ' '
-#endif
-    ios=>File%iosystem
-    if(ios%async_interface .and. .not. ios%ioproc ) then
-       msg=PIO_MSG_GETVAR_1d
-       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
-       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       itype = 102
-       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#if (1 > 0)
-       do i=1,1
-          dims(i)=size(ival,i)
-       end do
-       call MPI_BCAST(dims,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#endif
-#if(102 == TYPETEXT) 
-          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#endif
-
-
-    endif
-
-
-
-    if(File%iosystem%IOProc) then
-       select case (iotype) 
-#ifdef _PNETCDF
-       case(pio_iotype_pnetcdf)
-          ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_REAL8)
-#endif
-#ifdef  _NETCDF
-       case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
-             ierr = nf90_get_var(File%fh, varid, ival)
-       case(pio_iotype_netcdf)
-          ! Only io proc 0 will do reading
-          if (File%iosystem%io_rank == 0) then
-             ierr = nf90_get_var(File%fh, varid, ival)
-          end if
-          if(.not. ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
-             call MPI_BCAST(ival,int(isize), MPI_REAL8 ,0,ios%IO_comm, mpierr)
-             call CheckMPIReturn('nf_mod',mpierr)
-          end if
-
-#endif
-       end select
-    end if
-    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
-    if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
-       call MPI_Bcast(ival,int(isize), MPI_REAL8 , ios%IOMaster, ios%My_comm, mpierr)
-       call CheckMPIReturn(subName, mpierr)
-    end if
-#ifdef TIMING
-    call t_stopf("pio_get_var_1d_double")
-#endif
-# 429 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
-  end function get_var_1d_double
-# 348 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
-  integer function get_var_2d_double (File,varid, ival) result(ierr)
-    use pio_msg_mod, only : pio_msg_getvar_2d
-    type (File_desc_t), intent(in) :: File
-    integer, intent(in) :: varid
-    real(r8), intent(out) :: ival(:,:)
-    type(iosystem_desc_t), pointer :: ios
-    character(len=*), parameter :: subName=modName//'::get_var_2d_double'
-    integer :: iotype, mpierr, msg, ilen, itype
-#if (2 > 0)
-    integer :: dims(2)
-    integer :: i
-#endif
-    integer(kind=PIO_OFFSET) :: isize
-
-#ifdef TIMING
-    call t_startf("pio_get_var_2d_double")
-#endif
-    ierr=0
-    iotype = File%iotype 
-    isize=1	
-#if (2 > 0)
-    isize= size(ival)
-#endif
-#if (102 == TYPETEXT)
-    ilen = len(ival)	
-    isize = isize*ilen
-    ival(:,:) = ' '
-#endif
-    ios=>File%iosystem
-    if(ios%async_interface .and. .not. ios%ioproc ) then
-       msg=PIO_MSG_GETVAR_2d
-       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
-       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       itype = 102
-       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#if (2 > 0)
-       do i=1,2
-          dims(i)=size(ival,i)
-       end do
-       call MPI_BCAST(dims,2,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#endif
-#if(102 == TYPETEXT) 
-          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#endif
-
-
-    endif
-
-
-
-    if(File%iosystem%IOProc) then
-       select case (iotype) 
-#ifdef _PNETCDF
-       case(pio_iotype_pnetcdf)
-          ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_REAL8)
-#endif
-#ifdef  _NETCDF
-       case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
-             ierr = nf90_get_var(File%fh, varid, ival)
-       case(pio_iotype_netcdf)
-          ! Only io proc 0 will do reading
-          if (File%iosystem%io_rank == 0) then
-             ierr = nf90_get_var(File%fh, varid, ival)
-          end if
-          if(.not. ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
-             call MPI_BCAST(ival,int(isize), MPI_REAL8 ,0,ios%IO_comm, mpierr)
-             call CheckMPIReturn('nf_mod',mpierr)
-          end if
-
-#endif
-       end select
-    end if
-    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
-    if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
-       call MPI_Bcast(ival,int(isize), MPI_REAL8 , ios%IOMaster, ios%My_comm, mpierr)
-       call CheckMPIReturn(subName, mpierr)
-    end if
-#ifdef TIMING
-    call t_stopf("pio_get_var_2d_double")
-#endif
-# 429 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
-  end function get_var_2d_double
-# 348 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
-  integer function get_var_3d_double (File,varid, ival) result(ierr)
-    use pio_msg_mod, only : pio_msg_getvar_3d
-    type (File_desc_t), intent(in) :: File
-    integer, intent(in) :: varid
-    real(r8), intent(out) :: ival(:,:,:)
-    type(iosystem_desc_t), pointer :: ios
-    character(len=*), parameter :: subName=modName//'::get_var_3d_double'
-    integer :: iotype, mpierr, msg, ilen, itype
-#if (3 > 0)
-    integer :: dims(3)
-    integer :: i
-#endif
-    integer(kind=PIO_OFFSET) :: isize
-
-#ifdef TIMING
-    call t_startf("pio_get_var_3d_double")
-#endif
-    ierr=0
-    iotype = File%iotype 
-    isize=1	
-#if (3 > 0)
-    isize= size(ival)
-#endif
-#if (102 == TYPETEXT)
-    ilen = len(ival)	
-    isize = isize*ilen
-    ival(:,:,:) = ' '
-#endif
-    ios=>File%iosystem
-    if(ios%async_interface .and. .not. ios%ioproc ) then
-       msg=PIO_MSG_GETVAR_3d
-       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
-       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       itype = 102
-       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#if (3 > 0)
-       do i=1,3
-          dims(i)=size(ival,i)
-       end do
-       call MPI_BCAST(dims,3,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#endif
-#if(102 == TYPETEXT) 
-          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#endif
-
-
-    endif
-
-
-
-    if(File%iosystem%IOProc) then
-       select case (iotype) 
-#ifdef _PNETCDF
-       case(pio_iotype_pnetcdf)
-          ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_REAL8)
-#endif
-#ifdef  _NETCDF
-       case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
-             ierr = nf90_get_var(File%fh, varid, ival)
-       case(pio_iotype_netcdf)
-          ! Only io proc 0 will do reading
-          if (File%iosystem%io_rank == 0) then
-             ierr = nf90_get_var(File%fh, varid, ival)
-          end if
-          if(.not. ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
-             call MPI_BCAST(ival,int(isize), MPI_REAL8 ,0,ios%IO_comm, mpierr)
-             call CheckMPIReturn('nf_mod',mpierr)
-          end if
-
-#endif
-       end select
-    end if
-    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
-    if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
-       call MPI_Bcast(ival,int(isize), MPI_REAL8 , ios%IOMaster, ios%My_comm, mpierr)
-       call CheckMPIReturn(subName, mpierr)
-    end if
-#ifdef TIMING
-    call t_stopf("pio_get_var_3d_double")
-#endif
-# 429 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
-  end function get_var_3d_double
-# 348 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
-  integer function get_var_4d_double (File,varid, ival) result(ierr)
-    use pio_msg_mod, only : pio_msg_getvar_4d
-    type (File_desc_t), intent(in) :: File
-    integer, intent(in) :: varid
-    real(r8), intent(out) :: ival(:,:,:,:)
-    type(iosystem_desc_t), pointer :: ios
-    character(len=*), parameter :: subName=modName//'::get_var_4d_double'
-    integer :: iotype, mpierr, msg, ilen, itype
-#if (4 > 0)
-    integer :: dims(4)
-    integer :: i
-#endif
-    integer(kind=PIO_OFFSET) :: isize
-
-#ifdef TIMING
-    call t_startf("pio_get_var_4d_double")
-#endif
-    ierr=0
-    iotype = File%iotype 
-    isize=1	
-#if (4 > 0)
-    isize= size(ival)
-#endif
-#if (102 == TYPETEXT)
-    ilen = len(ival)	
-    isize = isize*ilen
-    ival(:,:,:,:) = ' '
-#endif
-    ios=>File%iosystem
-    if(ios%async_interface .and. .not. ios%ioproc ) then
-       msg=PIO_MSG_GETVAR_4d
-       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
-       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       itype = 102
-       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#if (4 > 0)
-       do i=1,4
-          dims(i)=size(ival,i)
-       end do
-       call MPI_BCAST(dims,4,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#endif
-#if(102 == TYPETEXT) 
-          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#endif
-
-
-    endif
-
-
-
-    if(File%iosystem%IOProc) then
-       select case (iotype) 
-#ifdef _PNETCDF
-       case(pio_iotype_pnetcdf)
-          ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_REAL8)
-#endif
-#ifdef  _NETCDF
-       case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
-             ierr = nf90_get_var(File%fh, varid, ival)
-       case(pio_iotype_netcdf)
-          ! Only io proc 0 will do reading
-          if (File%iosystem%io_rank == 0) then
-             ierr = nf90_get_var(File%fh, varid, ival)
-          end if
-          if(.not. ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
-             call MPI_BCAST(ival,int(isize), MPI_REAL8 ,0,ios%IO_comm, mpierr)
-             call CheckMPIReturn('nf_mod',mpierr)
-          end if
-
-#endif
-       end select
-    end if
-    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
-    if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
-       call MPI_Bcast(ival,int(isize), MPI_REAL8 , ios%IOMaster, ios%My_comm, mpierr)
-       call CheckMPIReturn(subName, mpierr)
-    end if
-#ifdef TIMING
-    call t_stopf("pio_get_var_4d_double")
-#endif
-# 429 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
-  end function get_var_4d_double
-# 348 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
-  integer function get_var_5d_double (File,varid, ival) result(ierr)
-    use pio_msg_mod, only : pio_msg_getvar_5d
-    type (File_desc_t), intent(in) :: File
-    integer, intent(in) :: varid
-    real(r8), intent(out) :: ival(:,:,:,:,:)
-    type(iosystem_desc_t), pointer :: ios
-    character(len=*), parameter :: subName=modName//'::get_var_5d_double'
-    integer :: iotype, mpierr, msg, ilen, itype
-#if (5 > 0)
-    integer :: dims(5)
-    integer :: i
-#endif
-    integer(kind=PIO_OFFSET) :: isize
-
-#ifdef TIMING
-    call t_startf("pio_get_var_5d_double")
-#endif
-    ierr=0
-    iotype = File%iotype 
-    isize=1	
-#if (5 > 0)
-    isize= size(ival)
-#endif
-#if (102 == TYPETEXT)
-    ilen = len(ival)	
-    isize = isize*ilen
-    ival(:,:,:,:,:) = ' '
-#endif
-    ios=>File%iosystem
-    if(ios%async_interface .and. .not. ios%ioproc ) then
-       msg=PIO_MSG_GETVAR_5d
-       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
-       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       itype = 102
-       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#if (5 > 0)
-       do i=1,5
-          dims(i)=size(ival,i)
-       end do
-       call MPI_BCAST(dims,5,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#endif
-#if(102 == TYPETEXT) 
-          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#endif
-
-
-    endif
-
-
-
-    if(File%iosystem%IOProc) then
-       select case (iotype) 
-#ifdef _PNETCDF
-       case(pio_iotype_pnetcdf)
-          ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_REAL8)
-#endif
-#ifdef  _NETCDF
-       case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
-             ierr = nf90_get_var(File%fh, varid, ival)
-       case(pio_iotype_netcdf)
-          ! Only io proc 0 will do reading
-          if (File%iosystem%io_rank == 0) then
-             ierr = nf90_get_var(File%fh, varid, ival)
-          end if
-          if(.not. ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
-             call MPI_BCAST(ival,int(isize), MPI_REAL8 ,0,ios%IO_comm, mpierr)
-             call CheckMPIReturn('nf_mod',mpierr)
-          end if
-
-#endif
-       end select
-    end if
-    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
-    if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
-       call MPI_Bcast(ival,int(isize), MPI_REAL8 , ios%IOMaster, ios%My_comm, mpierr)
-       call CheckMPIReturn(subName, mpierr)
-    end if
-#ifdef TIMING
-    call t_stopf("pio_get_var_5d_double")
-#endif
-# 429 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
-  end function get_var_5d_double
-# 348 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 357 "pionfget_mod.F90.in"
+    interface
+# 358 "pionfget_mod.F90.in"
+       integer(C_INT) function PIOc_get_var_text (ncid, varid, ival) &
+            bind(C,name="PIOc_get_var_text")
+         use iso_c_binding
+         integer(C_INT), value :: ncid
+         integer(C_INT), value :: varid
+         character(C_CHAR) :: ival
+# 364 "pionfget_mod.F90.in"
+       end function PIOc_get_var_text
+    end interface
+    
+    ierr = PIOc_get_var_text(File%fh, varid, ival)
+    print *,__FILE__,__LINE__,ival
+
+# 370 "pionfget_mod.F90.in"
+  end function Get_var_0d_text
+
+
+! TYPE int,real,double
+! DIMS 0
+# 375 "pionfget_mod.F90.in"
   integer function get_var_0d_int (File,varid, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar_0d
     type (File_desc_t), intent(in) :: File
@@ -5401,9 +3921,9 @@ CONTAINS
           ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_INTEGER)
 #endif
 #ifdef  _NETCDF
-       case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
+       case(pio_iotype_netcdf4p)
              ierr = nf90_get_var(File%fh, varid, ival)
-       case(pio_iotype_netcdf)
+       case(pio_iotype_netcdf, pio_iotype_netcdf4c)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival)
@@ -5424,9 +3944,1458 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_var_0d_int")
 #endif
-# 429 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 456 "pionfget_mod.F90.in"
   end function get_var_0d_int
-# 348 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+! TYPE int,real,double
+! DIMS 0
+# 375 "pionfget_mod.F90.in"
+  integer function get_var_0d_real (File,varid, ival) result(ierr)
+    use pio_msg_mod, only : pio_msg_getvar_0d
+    type (File_desc_t), intent(in) :: File
+    integer, intent(in) :: varid
+    real(r4), intent(out) :: ival
+    type(iosystem_desc_t), pointer :: ios
+    character(len=*), parameter :: subName=modName//'::get_var_0d_real'
+    integer :: iotype, mpierr, msg, ilen, itype
+#if (0 > 0)
+    integer :: dims(0)
+    integer :: i
+#endif
+    integer(kind=PIO_OFFSET) :: isize
+
+#ifdef TIMING
+    call t_startf("pio_get_var_0d_real")
+#endif
+    ierr=0
+    iotype = File%iotype 
+    isize=1	
+#if (0 > 0)
+    isize= size(ival)
+#endif
+#if (101 == TYPETEXT)
+    ilen = len(ival)	
+    isize = isize*ilen
+    ival = ' '
+#endif
+    ios=>File%iosystem
+    if(ios%async_interface .and. .not. ios%ioproc ) then
+       msg=PIO_MSG_GETVAR_0d
+       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
+       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = 101
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#if (0 > 0)
+       do i=1,0
+          dims(i)=size(ival,i)
+       end do
+       call MPI_BCAST(dims,0,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#endif
+#if(101 == TYPETEXT) 
+          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#endif
+
+
+    endif
+
+
+
+    if(File%iosystem%IOProc) then
+       select case (iotype) 
+#ifdef _PNETCDF
+       case(pio_iotype_pnetcdf)
+          ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_REAL4)
+#endif
+#ifdef  _NETCDF
+       case(pio_iotype_netcdf4p)
+             ierr = nf90_get_var(File%fh, varid, ival)
+       case(pio_iotype_netcdf, pio_iotype_netcdf4c)
+          ! Only io proc 0 will do reading
+          if (File%iosystem%io_rank == 0) then
+             ierr = nf90_get_var(File%fh, varid, ival)
+          end if
+          if(.not. ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
+             call MPI_BCAST(ival,int(isize), MPI_REAL4 ,0,ios%IO_comm, mpierr)
+             call CheckMPIReturn('nf_mod',mpierr)
+          end if
+
+#endif
+       end select
+    end if
+    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
+    if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
+       call MPI_Bcast(ival,int(isize), MPI_REAL4 , ios%IOMaster, ios%My_comm, mpierr)
+       call CheckMPIReturn(subName, mpierr)
+    end if
+#ifdef TIMING
+    call t_stopf("pio_get_var_0d_real")
+#endif
+# 456 "pionfget_mod.F90.in"
+  end function get_var_0d_real
+! TYPE int,real,double
+! DIMS 0
+# 375 "pionfget_mod.F90.in"
+  integer function get_var_0d_double (File,varid, ival) result(ierr)
+    use pio_msg_mod, only : pio_msg_getvar_0d
+    type (File_desc_t), intent(in) :: File
+    integer, intent(in) :: varid
+    real(r8), intent(out) :: ival
+    type(iosystem_desc_t), pointer :: ios
+    character(len=*), parameter :: subName=modName//'::get_var_0d_double'
+    integer :: iotype, mpierr, msg, ilen, itype
+#if (0 > 0)
+    integer :: dims(0)
+    integer :: i
+#endif
+    integer(kind=PIO_OFFSET) :: isize
+
+#ifdef TIMING
+    call t_startf("pio_get_var_0d_double")
+#endif
+    ierr=0
+    iotype = File%iotype 
+    isize=1	
+#if (0 > 0)
+    isize= size(ival)
+#endif
+#if (102 == TYPETEXT)
+    ilen = len(ival)	
+    isize = isize*ilen
+    ival = ' '
+#endif
+    ios=>File%iosystem
+    if(ios%async_interface .and. .not. ios%ioproc ) then
+       msg=PIO_MSG_GETVAR_0d
+       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
+       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = 102
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#if (0 > 0)
+       do i=1,0
+          dims(i)=size(ival,i)
+       end do
+       call MPI_BCAST(dims,0,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#endif
+#if(102 == TYPETEXT) 
+          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#endif
+
+
+    endif
+
+
+
+    if(File%iosystem%IOProc) then
+       select case (iotype) 
+#ifdef _PNETCDF
+       case(pio_iotype_pnetcdf)
+          ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_REAL8)
+#endif
+#ifdef  _NETCDF
+       case(pio_iotype_netcdf4p)
+             ierr = nf90_get_var(File%fh, varid, ival)
+       case(pio_iotype_netcdf, pio_iotype_netcdf4c)
+          ! Only io proc 0 will do reading
+          if (File%iosystem%io_rank == 0) then
+             ierr = nf90_get_var(File%fh, varid, ival)
+          end if
+          if(.not. ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
+             call MPI_BCAST(ival,int(isize), MPI_REAL8 ,0,ios%IO_comm, mpierr)
+             call CheckMPIReturn('nf_mod',mpierr)
+          end if
+
+#endif
+       end select
+    end if
+    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
+    if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
+       call MPI_Bcast(ival,int(isize), MPI_REAL8 , ios%IOMaster, ios%My_comm, mpierr)
+       call CheckMPIReturn(subName, mpierr)
+    end if
+#ifdef TIMING
+    call t_stopf("pio_get_var_0d_double")
+#endif
+# 456 "pionfget_mod.F90.in"
+  end function get_var_0d_double
+
+! DIMS 1,2,3,4,5
+# 459 "pionfget_mod.F90.in"
+  integer function get_var_1d_text (File,varid, ival) result(ierr)
+    use pio_msg_mod, only : pio_msg_getvar_1d
+    type (File_desc_t), intent(in) :: File
+    integer, intent(in) :: varid
+    character(len=*), intent(out) :: ival(:)
+    type(iosystem_desc_t), pointer :: ios
+    character(len=*), parameter :: subName=modName//'::get_var_1d_text'
+    integer :: iotype, mpierr, msg, ilen, itype
+#if (1 > 0)
+    integer :: dims(1)
+    integer :: i
+#endif
+    integer(kind=PIO_OFFSET) :: isize
+
+#ifdef TIMING
+    call t_startf("pio_get_var_1d_text")
+#endif
+    ierr=0
+    iotype = File%iotype 
+    isize=1	
+#if (1 > 0)
+    isize= size(ival)
+#endif
+#if (100 == TYPETEXT)
+    ilen = len(ival)	
+    isize = isize*ilen
+    ival(:) = ' '
+#endif
+    ios=>File%iosystem
+    if(ios%async_interface .and. .not. ios%ioproc ) then
+       msg=PIO_MSG_GETVAR_1d
+       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
+       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = 100
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#if (1 > 0)
+       do i=1,1
+          dims(i)=size(ival,i)
+       end do
+       call MPI_BCAST(dims,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#endif
+#if(100 == TYPETEXT) 
+          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#endif
+
+
+    endif
+
+
+
+    if(File%iosystem%IOProc) then
+       select case (iotype) 
+#ifdef _PNETCDF
+       case(pio_iotype_pnetcdf)
+          ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_CHARACTER)
+#endif
+#ifdef  _NETCDF
+       case(pio_iotype_netcdf4p)
+             ierr = nf90_get_var(File%fh, varid, ival)
+       case(pio_iotype_netcdf, pio_iotype_netcdf4c)
+          ! Only io proc 0 will do reading
+          if (File%iosystem%io_rank == 0) then
+             ierr = nf90_get_var(File%fh, varid, ival)
+          end if
+          if(.not. ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
+             call MPI_BCAST(ival,int(isize), MPI_CHARACTER ,0,ios%IO_comm, mpierr)
+             call CheckMPIReturn('nf_mod',mpierr)
+          end if
+
+#endif
+       end select
+    end if
+    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
+    if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
+       call MPI_Bcast(ival,int(isize), MPI_CHARACTER , ios%IOMaster, ios%My_comm, mpierr)
+       call CheckMPIReturn(subName, mpierr)
+    end if
+#ifdef TIMING
+    call t_stopf("pio_get_var_1d_text")
+#endif
+# 540 "pionfget_mod.F90.in"
+  end function get_var_1d_text
+! DIMS 1,2,3,4,5
+# 459 "pionfget_mod.F90.in"
+  integer function get_var_2d_text (File,varid, ival) result(ierr)
+    use pio_msg_mod, only : pio_msg_getvar_2d
+    type (File_desc_t), intent(in) :: File
+    integer, intent(in) :: varid
+    character(len=*), intent(out) :: ival(:,:)
+    type(iosystem_desc_t), pointer :: ios
+    character(len=*), parameter :: subName=modName//'::get_var_2d_text'
+    integer :: iotype, mpierr, msg, ilen, itype
+#if (2 > 0)
+    integer :: dims(2)
+    integer :: i
+#endif
+    integer(kind=PIO_OFFSET) :: isize
+
+#ifdef TIMING
+    call t_startf("pio_get_var_2d_text")
+#endif
+    ierr=0
+    iotype = File%iotype 
+    isize=1	
+#if (2 > 0)
+    isize= size(ival)
+#endif
+#if (100 == TYPETEXT)
+    ilen = len(ival)	
+    isize = isize*ilen
+    ival(:,:) = ' '
+#endif
+    ios=>File%iosystem
+    if(ios%async_interface .and. .not. ios%ioproc ) then
+       msg=PIO_MSG_GETVAR_2d
+       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
+       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = 100
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#if (2 > 0)
+       do i=1,2
+          dims(i)=size(ival,i)
+       end do
+       call MPI_BCAST(dims,2,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#endif
+#if(100 == TYPETEXT) 
+          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#endif
+
+
+    endif
+
+
+
+    if(File%iosystem%IOProc) then
+       select case (iotype) 
+#ifdef _PNETCDF
+       case(pio_iotype_pnetcdf)
+          ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_CHARACTER)
+#endif
+#ifdef  _NETCDF
+       case(pio_iotype_netcdf4p)
+             ierr = nf90_get_var(File%fh, varid, ival)
+       case(pio_iotype_netcdf, pio_iotype_netcdf4c)
+          ! Only io proc 0 will do reading
+          if (File%iosystem%io_rank == 0) then
+             ierr = nf90_get_var(File%fh, varid, ival)
+          end if
+          if(.not. ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
+             call MPI_BCAST(ival,int(isize), MPI_CHARACTER ,0,ios%IO_comm, mpierr)
+             call CheckMPIReturn('nf_mod',mpierr)
+          end if
+
+#endif
+       end select
+    end if
+    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
+    if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
+       call MPI_Bcast(ival,int(isize), MPI_CHARACTER , ios%IOMaster, ios%My_comm, mpierr)
+       call CheckMPIReturn(subName, mpierr)
+    end if
+#ifdef TIMING
+    call t_stopf("pio_get_var_2d_text")
+#endif
+# 540 "pionfget_mod.F90.in"
+  end function get_var_2d_text
+! DIMS 1,2,3,4,5
+# 459 "pionfget_mod.F90.in"
+  integer function get_var_3d_text (File,varid, ival) result(ierr)
+    use pio_msg_mod, only : pio_msg_getvar_3d
+    type (File_desc_t), intent(in) :: File
+    integer, intent(in) :: varid
+    character(len=*), intent(out) :: ival(:,:,:)
+    type(iosystem_desc_t), pointer :: ios
+    character(len=*), parameter :: subName=modName//'::get_var_3d_text'
+    integer :: iotype, mpierr, msg, ilen, itype
+#if (3 > 0)
+    integer :: dims(3)
+    integer :: i
+#endif
+    integer(kind=PIO_OFFSET) :: isize
+
+#ifdef TIMING
+    call t_startf("pio_get_var_3d_text")
+#endif
+    ierr=0
+    iotype = File%iotype 
+    isize=1	
+#if (3 > 0)
+    isize= size(ival)
+#endif
+#if (100 == TYPETEXT)
+    ilen = len(ival)	
+    isize = isize*ilen
+    ival(:,:,:) = ' '
+#endif
+    ios=>File%iosystem
+    if(ios%async_interface .and. .not. ios%ioproc ) then
+       msg=PIO_MSG_GETVAR_3d
+       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
+       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = 100
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#if (3 > 0)
+       do i=1,3
+          dims(i)=size(ival,i)
+       end do
+       call MPI_BCAST(dims,3,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#endif
+#if(100 == TYPETEXT) 
+          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#endif
+
+
+    endif
+
+
+
+    if(File%iosystem%IOProc) then
+       select case (iotype) 
+#ifdef _PNETCDF
+       case(pio_iotype_pnetcdf)
+          ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_CHARACTER)
+#endif
+#ifdef  _NETCDF
+       case(pio_iotype_netcdf4p)
+             ierr = nf90_get_var(File%fh, varid, ival)
+       case(pio_iotype_netcdf, pio_iotype_netcdf4c)
+          ! Only io proc 0 will do reading
+          if (File%iosystem%io_rank == 0) then
+             ierr = nf90_get_var(File%fh, varid, ival)
+          end if
+          if(.not. ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
+             call MPI_BCAST(ival,int(isize), MPI_CHARACTER ,0,ios%IO_comm, mpierr)
+             call CheckMPIReturn('nf_mod',mpierr)
+          end if
+
+#endif
+       end select
+    end if
+    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
+    if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
+       call MPI_Bcast(ival,int(isize), MPI_CHARACTER , ios%IOMaster, ios%My_comm, mpierr)
+       call CheckMPIReturn(subName, mpierr)
+    end if
+#ifdef TIMING
+    call t_stopf("pio_get_var_3d_text")
+#endif
+# 540 "pionfget_mod.F90.in"
+  end function get_var_3d_text
+! DIMS 1,2,3,4,5
+# 459 "pionfget_mod.F90.in"
+  integer function get_var_4d_text (File,varid, ival) result(ierr)
+    use pio_msg_mod, only : pio_msg_getvar_4d
+    type (File_desc_t), intent(in) :: File
+    integer, intent(in) :: varid
+    character(len=*), intent(out) :: ival(:,:,:,:)
+    type(iosystem_desc_t), pointer :: ios
+    character(len=*), parameter :: subName=modName//'::get_var_4d_text'
+    integer :: iotype, mpierr, msg, ilen, itype
+#if (4 > 0)
+    integer :: dims(4)
+    integer :: i
+#endif
+    integer(kind=PIO_OFFSET) :: isize
+
+#ifdef TIMING
+    call t_startf("pio_get_var_4d_text")
+#endif
+    ierr=0
+    iotype = File%iotype 
+    isize=1	
+#if (4 > 0)
+    isize= size(ival)
+#endif
+#if (100 == TYPETEXT)
+    ilen = len(ival)	
+    isize = isize*ilen
+    ival(:,:,:,:) = ' '
+#endif
+    ios=>File%iosystem
+    if(ios%async_interface .and. .not. ios%ioproc ) then
+       msg=PIO_MSG_GETVAR_4d
+       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
+       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = 100
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#if (4 > 0)
+       do i=1,4
+          dims(i)=size(ival,i)
+       end do
+       call MPI_BCAST(dims,4,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#endif
+#if(100 == TYPETEXT) 
+          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#endif
+
+
+    endif
+
+
+
+    if(File%iosystem%IOProc) then
+       select case (iotype) 
+#ifdef _PNETCDF
+       case(pio_iotype_pnetcdf)
+          ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_CHARACTER)
+#endif
+#ifdef  _NETCDF
+       case(pio_iotype_netcdf4p)
+             ierr = nf90_get_var(File%fh, varid, ival)
+       case(pio_iotype_netcdf, pio_iotype_netcdf4c)
+          ! Only io proc 0 will do reading
+          if (File%iosystem%io_rank == 0) then
+             ierr = nf90_get_var(File%fh, varid, ival)
+          end if
+          if(.not. ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
+             call MPI_BCAST(ival,int(isize), MPI_CHARACTER ,0,ios%IO_comm, mpierr)
+             call CheckMPIReturn('nf_mod',mpierr)
+          end if
+
+#endif
+       end select
+    end if
+    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
+    if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
+       call MPI_Bcast(ival,int(isize), MPI_CHARACTER , ios%IOMaster, ios%My_comm, mpierr)
+       call CheckMPIReturn(subName, mpierr)
+    end if
+#ifdef TIMING
+    call t_stopf("pio_get_var_4d_text")
+#endif
+# 540 "pionfget_mod.F90.in"
+  end function get_var_4d_text
+! DIMS 1,2,3,4,5
+# 459 "pionfget_mod.F90.in"
+  integer function get_var_5d_text (File,varid, ival) result(ierr)
+    use pio_msg_mod, only : pio_msg_getvar_5d
+    type (File_desc_t), intent(in) :: File
+    integer, intent(in) :: varid
+    character(len=*), intent(out) :: ival(:,:,:,:,:)
+    type(iosystem_desc_t), pointer :: ios
+    character(len=*), parameter :: subName=modName//'::get_var_5d_text'
+    integer :: iotype, mpierr, msg, ilen, itype
+#if (5 > 0)
+    integer :: dims(5)
+    integer :: i
+#endif
+    integer(kind=PIO_OFFSET) :: isize
+
+#ifdef TIMING
+    call t_startf("pio_get_var_5d_text")
+#endif
+    ierr=0
+    iotype = File%iotype 
+    isize=1	
+#if (5 > 0)
+    isize= size(ival)
+#endif
+#if (100 == TYPETEXT)
+    ilen = len(ival)	
+    isize = isize*ilen
+    ival(:,:,:,:,:) = ' '
+#endif
+    ios=>File%iosystem
+    if(ios%async_interface .and. .not. ios%ioproc ) then
+       msg=PIO_MSG_GETVAR_5d
+       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
+       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = 100
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#if (5 > 0)
+       do i=1,5
+          dims(i)=size(ival,i)
+       end do
+       call MPI_BCAST(dims,5,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#endif
+#if(100 == TYPETEXT) 
+          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#endif
+
+
+    endif
+
+
+
+    if(File%iosystem%IOProc) then
+       select case (iotype) 
+#ifdef _PNETCDF
+       case(pio_iotype_pnetcdf)
+          ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_CHARACTER)
+#endif
+#ifdef  _NETCDF
+       case(pio_iotype_netcdf4p)
+             ierr = nf90_get_var(File%fh, varid, ival)
+       case(pio_iotype_netcdf, pio_iotype_netcdf4c)
+          ! Only io proc 0 will do reading
+          if (File%iosystem%io_rank == 0) then
+             ierr = nf90_get_var(File%fh, varid, ival)
+          end if
+          if(.not. ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
+             call MPI_BCAST(ival,int(isize), MPI_CHARACTER ,0,ios%IO_comm, mpierr)
+             call CheckMPIReturn('nf_mod',mpierr)
+          end if
+
+#endif
+       end select
+    end if
+    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
+    if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
+       call MPI_Bcast(ival,int(isize), MPI_CHARACTER , ios%IOMaster, ios%My_comm, mpierr)
+       call CheckMPIReturn(subName, mpierr)
+    end if
+#ifdef TIMING
+    call t_stopf("pio_get_var_5d_text")
+#endif
+# 540 "pionfget_mod.F90.in"
+  end function get_var_5d_text
+! DIMS 1,2,3,4,5
+# 459 "pionfget_mod.F90.in"
+  integer function get_var_1d_real (File,varid, ival) result(ierr)
+    use pio_msg_mod, only : pio_msg_getvar_1d
+    type (File_desc_t), intent(in) :: File
+    integer, intent(in) :: varid
+    real(r4), intent(out) :: ival(:)
+    type(iosystem_desc_t), pointer :: ios
+    character(len=*), parameter :: subName=modName//'::get_var_1d_real'
+    integer :: iotype, mpierr, msg, ilen, itype
+#if (1 > 0)
+    integer :: dims(1)
+    integer :: i
+#endif
+    integer(kind=PIO_OFFSET) :: isize
+
+#ifdef TIMING
+    call t_startf("pio_get_var_1d_real")
+#endif
+    ierr=0
+    iotype = File%iotype 
+    isize=1	
+#if (1 > 0)
+    isize= size(ival)
+#endif
+#if (101 == TYPETEXT)
+    ilen = len(ival)	
+    isize = isize*ilen
+    ival(:) = ' '
+#endif
+    ios=>File%iosystem
+    if(ios%async_interface .and. .not. ios%ioproc ) then
+       msg=PIO_MSG_GETVAR_1d
+       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
+       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = 101
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#if (1 > 0)
+       do i=1,1
+          dims(i)=size(ival,i)
+       end do
+       call MPI_BCAST(dims,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#endif
+#if(101 == TYPETEXT) 
+          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#endif
+
+
+    endif
+
+
+
+    if(File%iosystem%IOProc) then
+       select case (iotype) 
+#ifdef _PNETCDF
+       case(pio_iotype_pnetcdf)
+          ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_REAL4)
+#endif
+#ifdef  _NETCDF
+       case(pio_iotype_netcdf4p)
+             ierr = nf90_get_var(File%fh, varid, ival)
+       case(pio_iotype_netcdf, pio_iotype_netcdf4c)
+          ! Only io proc 0 will do reading
+          if (File%iosystem%io_rank == 0) then
+             ierr = nf90_get_var(File%fh, varid, ival)
+          end if
+          if(.not. ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
+             call MPI_BCAST(ival,int(isize), MPI_REAL4 ,0,ios%IO_comm, mpierr)
+             call CheckMPIReturn('nf_mod',mpierr)
+          end if
+
+#endif
+       end select
+    end if
+    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
+    if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
+       call MPI_Bcast(ival,int(isize), MPI_REAL4 , ios%IOMaster, ios%My_comm, mpierr)
+       call CheckMPIReturn(subName, mpierr)
+    end if
+#ifdef TIMING
+    call t_stopf("pio_get_var_1d_real")
+#endif
+# 540 "pionfget_mod.F90.in"
+  end function get_var_1d_real
+! DIMS 1,2,3,4,5
+# 459 "pionfget_mod.F90.in"
+  integer function get_var_2d_real (File,varid, ival) result(ierr)
+    use pio_msg_mod, only : pio_msg_getvar_2d
+    type (File_desc_t), intent(in) :: File
+    integer, intent(in) :: varid
+    real(r4), intent(out) :: ival(:,:)
+    type(iosystem_desc_t), pointer :: ios
+    character(len=*), parameter :: subName=modName//'::get_var_2d_real'
+    integer :: iotype, mpierr, msg, ilen, itype
+#if (2 > 0)
+    integer :: dims(2)
+    integer :: i
+#endif
+    integer(kind=PIO_OFFSET) :: isize
+
+#ifdef TIMING
+    call t_startf("pio_get_var_2d_real")
+#endif
+    ierr=0
+    iotype = File%iotype 
+    isize=1	
+#if (2 > 0)
+    isize= size(ival)
+#endif
+#if (101 == TYPETEXT)
+    ilen = len(ival)	
+    isize = isize*ilen
+    ival(:,:) = ' '
+#endif
+    ios=>File%iosystem
+    if(ios%async_interface .and. .not. ios%ioproc ) then
+       msg=PIO_MSG_GETVAR_2d
+       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
+       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = 101
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#if (2 > 0)
+       do i=1,2
+          dims(i)=size(ival,i)
+       end do
+       call MPI_BCAST(dims,2,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#endif
+#if(101 == TYPETEXT) 
+          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#endif
+
+
+    endif
+
+
+
+    if(File%iosystem%IOProc) then
+       select case (iotype) 
+#ifdef _PNETCDF
+       case(pio_iotype_pnetcdf)
+          ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_REAL4)
+#endif
+#ifdef  _NETCDF
+       case(pio_iotype_netcdf4p)
+             ierr = nf90_get_var(File%fh, varid, ival)
+       case(pio_iotype_netcdf, pio_iotype_netcdf4c)
+          ! Only io proc 0 will do reading
+          if (File%iosystem%io_rank == 0) then
+             ierr = nf90_get_var(File%fh, varid, ival)
+          end if
+          if(.not. ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
+             call MPI_BCAST(ival,int(isize), MPI_REAL4 ,0,ios%IO_comm, mpierr)
+             call CheckMPIReturn('nf_mod',mpierr)
+          end if
+
+#endif
+       end select
+    end if
+    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
+    if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
+       call MPI_Bcast(ival,int(isize), MPI_REAL4 , ios%IOMaster, ios%My_comm, mpierr)
+       call CheckMPIReturn(subName, mpierr)
+    end if
+#ifdef TIMING
+    call t_stopf("pio_get_var_2d_real")
+#endif
+# 540 "pionfget_mod.F90.in"
+  end function get_var_2d_real
+! DIMS 1,2,3,4,5
+# 459 "pionfget_mod.F90.in"
+  integer function get_var_3d_real (File,varid, ival) result(ierr)
+    use pio_msg_mod, only : pio_msg_getvar_3d
+    type (File_desc_t), intent(in) :: File
+    integer, intent(in) :: varid
+    real(r4), intent(out) :: ival(:,:,:)
+    type(iosystem_desc_t), pointer :: ios
+    character(len=*), parameter :: subName=modName//'::get_var_3d_real'
+    integer :: iotype, mpierr, msg, ilen, itype
+#if (3 > 0)
+    integer :: dims(3)
+    integer :: i
+#endif
+    integer(kind=PIO_OFFSET) :: isize
+
+#ifdef TIMING
+    call t_startf("pio_get_var_3d_real")
+#endif
+    ierr=0
+    iotype = File%iotype 
+    isize=1	
+#if (3 > 0)
+    isize= size(ival)
+#endif
+#if (101 == TYPETEXT)
+    ilen = len(ival)	
+    isize = isize*ilen
+    ival(:,:,:) = ' '
+#endif
+    ios=>File%iosystem
+    if(ios%async_interface .and. .not. ios%ioproc ) then
+       msg=PIO_MSG_GETVAR_3d
+       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
+       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = 101
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#if (3 > 0)
+       do i=1,3
+          dims(i)=size(ival,i)
+       end do
+       call MPI_BCAST(dims,3,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#endif
+#if(101 == TYPETEXT) 
+          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#endif
+
+
+    endif
+
+
+
+    if(File%iosystem%IOProc) then
+       select case (iotype) 
+#ifdef _PNETCDF
+       case(pio_iotype_pnetcdf)
+          ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_REAL4)
+#endif
+#ifdef  _NETCDF
+       case(pio_iotype_netcdf4p)
+             ierr = nf90_get_var(File%fh, varid, ival)
+       case(pio_iotype_netcdf, pio_iotype_netcdf4c)
+          ! Only io proc 0 will do reading
+          if (File%iosystem%io_rank == 0) then
+             ierr = nf90_get_var(File%fh, varid, ival)
+          end if
+          if(.not. ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
+             call MPI_BCAST(ival,int(isize), MPI_REAL4 ,0,ios%IO_comm, mpierr)
+             call CheckMPIReturn('nf_mod',mpierr)
+          end if
+
+#endif
+       end select
+    end if
+    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
+    if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
+       call MPI_Bcast(ival,int(isize), MPI_REAL4 , ios%IOMaster, ios%My_comm, mpierr)
+       call CheckMPIReturn(subName, mpierr)
+    end if
+#ifdef TIMING
+    call t_stopf("pio_get_var_3d_real")
+#endif
+# 540 "pionfget_mod.F90.in"
+  end function get_var_3d_real
+! DIMS 1,2,3,4,5
+# 459 "pionfget_mod.F90.in"
+  integer function get_var_4d_real (File,varid, ival) result(ierr)
+    use pio_msg_mod, only : pio_msg_getvar_4d
+    type (File_desc_t), intent(in) :: File
+    integer, intent(in) :: varid
+    real(r4), intent(out) :: ival(:,:,:,:)
+    type(iosystem_desc_t), pointer :: ios
+    character(len=*), parameter :: subName=modName//'::get_var_4d_real'
+    integer :: iotype, mpierr, msg, ilen, itype
+#if (4 > 0)
+    integer :: dims(4)
+    integer :: i
+#endif
+    integer(kind=PIO_OFFSET) :: isize
+
+#ifdef TIMING
+    call t_startf("pio_get_var_4d_real")
+#endif
+    ierr=0
+    iotype = File%iotype 
+    isize=1	
+#if (4 > 0)
+    isize= size(ival)
+#endif
+#if (101 == TYPETEXT)
+    ilen = len(ival)	
+    isize = isize*ilen
+    ival(:,:,:,:) = ' '
+#endif
+    ios=>File%iosystem
+    if(ios%async_interface .and. .not. ios%ioproc ) then
+       msg=PIO_MSG_GETVAR_4d
+       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
+       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = 101
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#if (4 > 0)
+       do i=1,4
+          dims(i)=size(ival,i)
+       end do
+       call MPI_BCAST(dims,4,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#endif
+#if(101 == TYPETEXT) 
+          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#endif
+
+
+    endif
+
+
+
+    if(File%iosystem%IOProc) then
+       select case (iotype) 
+#ifdef _PNETCDF
+       case(pio_iotype_pnetcdf)
+          ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_REAL4)
+#endif
+#ifdef  _NETCDF
+       case(pio_iotype_netcdf4p)
+             ierr = nf90_get_var(File%fh, varid, ival)
+       case(pio_iotype_netcdf, pio_iotype_netcdf4c)
+          ! Only io proc 0 will do reading
+          if (File%iosystem%io_rank == 0) then
+             ierr = nf90_get_var(File%fh, varid, ival)
+          end if
+          if(.not. ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
+             call MPI_BCAST(ival,int(isize), MPI_REAL4 ,0,ios%IO_comm, mpierr)
+             call CheckMPIReturn('nf_mod',mpierr)
+          end if
+
+#endif
+       end select
+    end if
+    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
+    if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
+       call MPI_Bcast(ival,int(isize), MPI_REAL4 , ios%IOMaster, ios%My_comm, mpierr)
+       call CheckMPIReturn(subName, mpierr)
+    end if
+#ifdef TIMING
+    call t_stopf("pio_get_var_4d_real")
+#endif
+# 540 "pionfget_mod.F90.in"
+  end function get_var_4d_real
+! DIMS 1,2,3,4,5
+# 459 "pionfget_mod.F90.in"
+  integer function get_var_5d_real (File,varid, ival) result(ierr)
+    use pio_msg_mod, only : pio_msg_getvar_5d
+    type (File_desc_t), intent(in) :: File
+    integer, intent(in) :: varid
+    real(r4), intent(out) :: ival(:,:,:,:,:)
+    type(iosystem_desc_t), pointer :: ios
+    character(len=*), parameter :: subName=modName//'::get_var_5d_real'
+    integer :: iotype, mpierr, msg, ilen, itype
+#if (5 > 0)
+    integer :: dims(5)
+    integer :: i
+#endif
+    integer(kind=PIO_OFFSET) :: isize
+
+#ifdef TIMING
+    call t_startf("pio_get_var_5d_real")
+#endif
+    ierr=0
+    iotype = File%iotype 
+    isize=1	
+#if (5 > 0)
+    isize= size(ival)
+#endif
+#if (101 == TYPETEXT)
+    ilen = len(ival)	
+    isize = isize*ilen
+    ival(:,:,:,:,:) = ' '
+#endif
+    ios=>File%iosystem
+    if(ios%async_interface .and. .not. ios%ioproc ) then
+       msg=PIO_MSG_GETVAR_5d
+       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
+       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = 101
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#if (5 > 0)
+       do i=1,5
+          dims(i)=size(ival,i)
+       end do
+       call MPI_BCAST(dims,5,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#endif
+#if(101 == TYPETEXT) 
+          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#endif
+
+
+    endif
+
+
+
+    if(File%iosystem%IOProc) then
+       select case (iotype) 
+#ifdef _PNETCDF
+       case(pio_iotype_pnetcdf)
+          ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_REAL4)
+#endif
+#ifdef  _NETCDF
+       case(pio_iotype_netcdf4p)
+             ierr = nf90_get_var(File%fh, varid, ival)
+       case(pio_iotype_netcdf, pio_iotype_netcdf4c)
+          ! Only io proc 0 will do reading
+          if (File%iosystem%io_rank == 0) then
+             ierr = nf90_get_var(File%fh, varid, ival)
+          end if
+          if(.not. ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
+             call MPI_BCAST(ival,int(isize), MPI_REAL4 ,0,ios%IO_comm, mpierr)
+             call CheckMPIReturn('nf_mod',mpierr)
+          end if
+
+#endif
+       end select
+    end if
+    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
+    if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
+       call MPI_Bcast(ival,int(isize), MPI_REAL4 , ios%IOMaster, ios%My_comm, mpierr)
+       call CheckMPIReturn(subName, mpierr)
+    end if
+#ifdef TIMING
+    call t_stopf("pio_get_var_5d_real")
+#endif
+# 540 "pionfget_mod.F90.in"
+  end function get_var_5d_real
+! DIMS 1,2,3,4,5
+# 459 "pionfget_mod.F90.in"
+  integer function get_var_1d_double (File,varid, ival) result(ierr)
+    use pio_msg_mod, only : pio_msg_getvar_1d
+    type (File_desc_t), intent(in) :: File
+    integer, intent(in) :: varid
+    real(r8), intent(out) :: ival(:)
+    type(iosystem_desc_t), pointer :: ios
+    character(len=*), parameter :: subName=modName//'::get_var_1d_double'
+    integer :: iotype, mpierr, msg, ilen, itype
+#if (1 > 0)
+    integer :: dims(1)
+    integer :: i
+#endif
+    integer(kind=PIO_OFFSET) :: isize
+
+#ifdef TIMING
+    call t_startf("pio_get_var_1d_double")
+#endif
+    ierr=0
+    iotype = File%iotype 
+    isize=1	
+#if (1 > 0)
+    isize= size(ival)
+#endif
+#if (102 == TYPETEXT)
+    ilen = len(ival)	
+    isize = isize*ilen
+    ival(:) = ' '
+#endif
+    ios=>File%iosystem
+    if(ios%async_interface .and. .not. ios%ioproc ) then
+       msg=PIO_MSG_GETVAR_1d
+       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
+       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = 102
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#if (1 > 0)
+       do i=1,1
+          dims(i)=size(ival,i)
+       end do
+       call MPI_BCAST(dims,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#endif
+#if(102 == TYPETEXT) 
+          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#endif
+
+
+    endif
+
+
+
+    if(File%iosystem%IOProc) then
+       select case (iotype) 
+#ifdef _PNETCDF
+       case(pio_iotype_pnetcdf)
+          ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_REAL8)
+#endif
+#ifdef  _NETCDF
+       case(pio_iotype_netcdf4p)
+             ierr = nf90_get_var(File%fh, varid, ival)
+       case(pio_iotype_netcdf, pio_iotype_netcdf4c)
+          ! Only io proc 0 will do reading
+          if (File%iosystem%io_rank == 0) then
+             ierr = nf90_get_var(File%fh, varid, ival)
+          end if
+          if(.not. ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
+             call MPI_BCAST(ival,int(isize), MPI_REAL8 ,0,ios%IO_comm, mpierr)
+             call CheckMPIReturn('nf_mod',mpierr)
+          end if
+
+#endif
+       end select
+    end if
+    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
+    if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
+       call MPI_Bcast(ival,int(isize), MPI_REAL8 , ios%IOMaster, ios%My_comm, mpierr)
+       call CheckMPIReturn(subName, mpierr)
+    end if
+#ifdef TIMING
+    call t_stopf("pio_get_var_1d_double")
+#endif
+# 540 "pionfget_mod.F90.in"
+  end function get_var_1d_double
+! DIMS 1,2,3,4,5
+# 459 "pionfget_mod.F90.in"
+  integer function get_var_2d_double (File,varid, ival) result(ierr)
+    use pio_msg_mod, only : pio_msg_getvar_2d
+    type (File_desc_t), intent(in) :: File
+    integer, intent(in) :: varid
+    real(r8), intent(out) :: ival(:,:)
+    type(iosystem_desc_t), pointer :: ios
+    character(len=*), parameter :: subName=modName//'::get_var_2d_double'
+    integer :: iotype, mpierr, msg, ilen, itype
+#if (2 > 0)
+    integer :: dims(2)
+    integer :: i
+#endif
+    integer(kind=PIO_OFFSET) :: isize
+
+#ifdef TIMING
+    call t_startf("pio_get_var_2d_double")
+#endif
+    ierr=0
+    iotype = File%iotype 
+    isize=1	
+#if (2 > 0)
+    isize= size(ival)
+#endif
+#if (102 == TYPETEXT)
+    ilen = len(ival)	
+    isize = isize*ilen
+    ival(:,:) = ' '
+#endif
+    ios=>File%iosystem
+    if(ios%async_interface .and. .not. ios%ioproc ) then
+       msg=PIO_MSG_GETVAR_2d
+       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
+       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = 102
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#if (2 > 0)
+       do i=1,2
+          dims(i)=size(ival,i)
+       end do
+       call MPI_BCAST(dims,2,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#endif
+#if(102 == TYPETEXT) 
+          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#endif
+
+
+    endif
+
+
+
+    if(File%iosystem%IOProc) then
+       select case (iotype) 
+#ifdef _PNETCDF
+       case(pio_iotype_pnetcdf)
+          ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_REAL8)
+#endif
+#ifdef  _NETCDF
+       case(pio_iotype_netcdf4p)
+             ierr = nf90_get_var(File%fh, varid, ival)
+       case(pio_iotype_netcdf, pio_iotype_netcdf4c)
+          ! Only io proc 0 will do reading
+          if (File%iosystem%io_rank == 0) then
+             ierr = nf90_get_var(File%fh, varid, ival)
+          end if
+          if(.not. ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
+             call MPI_BCAST(ival,int(isize), MPI_REAL8 ,0,ios%IO_comm, mpierr)
+             call CheckMPIReturn('nf_mod',mpierr)
+          end if
+
+#endif
+       end select
+    end if
+    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
+    if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
+       call MPI_Bcast(ival,int(isize), MPI_REAL8 , ios%IOMaster, ios%My_comm, mpierr)
+       call CheckMPIReturn(subName, mpierr)
+    end if
+#ifdef TIMING
+    call t_stopf("pio_get_var_2d_double")
+#endif
+# 540 "pionfget_mod.F90.in"
+  end function get_var_2d_double
+! DIMS 1,2,3,4,5
+# 459 "pionfget_mod.F90.in"
+  integer function get_var_3d_double (File,varid, ival) result(ierr)
+    use pio_msg_mod, only : pio_msg_getvar_3d
+    type (File_desc_t), intent(in) :: File
+    integer, intent(in) :: varid
+    real(r8), intent(out) :: ival(:,:,:)
+    type(iosystem_desc_t), pointer :: ios
+    character(len=*), parameter :: subName=modName//'::get_var_3d_double'
+    integer :: iotype, mpierr, msg, ilen, itype
+#if (3 > 0)
+    integer :: dims(3)
+    integer :: i
+#endif
+    integer(kind=PIO_OFFSET) :: isize
+
+#ifdef TIMING
+    call t_startf("pio_get_var_3d_double")
+#endif
+    ierr=0
+    iotype = File%iotype 
+    isize=1	
+#if (3 > 0)
+    isize= size(ival)
+#endif
+#if (102 == TYPETEXT)
+    ilen = len(ival)	
+    isize = isize*ilen
+    ival(:,:,:) = ' '
+#endif
+    ios=>File%iosystem
+    if(ios%async_interface .and. .not. ios%ioproc ) then
+       msg=PIO_MSG_GETVAR_3d
+       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
+       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = 102
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#if (3 > 0)
+       do i=1,3
+          dims(i)=size(ival,i)
+       end do
+       call MPI_BCAST(dims,3,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#endif
+#if(102 == TYPETEXT) 
+          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#endif
+
+
+    endif
+
+
+
+    if(File%iosystem%IOProc) then
+       select case (iotype) 
+#ifdef _PNETCDF
+       case(pio_iotype_pnetcdf)
+          ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_REAL8)
+#endif
+#ifdef  _NETCDF
+       case(pio_iotype_netcdf4p)
+             ierr = nf90_get_var(File%fh, varid, ival)
+       case(pio_iotype_netcdf, pio_iotype_netcdf4c)
+          ! Only io proc 0 will do reading
+          if (File%iosystem%io_rank == 0) then
+             ierr = nf90_get_var(File%fh, varid, ival)
+          end if
+          if(.not. ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
+             call MPI_BCAST(ival,int(isize), MPI_REAL8 ,0,ios%IO_comm, mpierr)
+             call CheckMPIReturn('nf_mod',mpierr)
+          end if
+
+#endif
+       end select
+    end if
+    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
+    if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
+       call MPI_Bcast(ival,int(isize), MPI_REAL8 , ios%IOMaster, ios%My_comm, mpierr)
+       call CheckMPIReturn(subName, mpierr)
+    end if
+#ifdef TIMING
+    call t_stopf("pio_get_var_3d_double")
+#endif
+# 540 "pionfget_mod.F90.in"
+  end function get_var_3d_double
+! DIMS 1,2,3,4,5
+# 459 "pionfget_mod.F90.in"
+  integer function get_var_4d_double (File,varid, ival) result(ierr)
+    use pio_msg_mod, only : pio_msg_getvar_4d
+    type (File_desc_t), intent(in) :: File
+    integer, intent(in) :: varid
+    real(r8), intent(out) :: ival(:,:,:,:)
+    type(iosystem_desc_t), pointer :: ios
+    character(len=*), parameter :: subName=modName//'::get_var_4d_double'
+    integer :: iotype, mpierr, msg, ilen, itype
+#if (4 > 0)
+    integer :: dims(4)
+    integer :: i
+#endif
+    integer(kind=PIO_OFFSET) :: isize
+
+#ifdef TIMING
+    call t_startf("pio_get_var_4d_double")
+#endif
+    ierr=0
+    iotype = File%iotype 
+    isize=1	
+#if (4 > 0)
+    isize= size(ival)
+#endif
+#if (102 == TYPETEXT)
+    ilen = len(ival)	
+    isize = isize*ilen
+    ival(:,:,:,:) = ' '
+#endif
+    ios=>File%iosystem
+    if(ios%async_interface .and. .not. ios%ioproc ) then
+       msg=PIO_MSG_GETVAR_4d
+       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
+       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = 102
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#if (4 > 0)
+       do i=1,4
+          dims(i)=size(ival,i)
+       end do
+       call MPI_BCAST(dims,4,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#endif
+#if(102 == TYPETEXT) 
+          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#endif
+
+
+    endif
+
+
+
+    if(File%iosystem%IOProc) then
+       select case (iotype) 
+#ifdef _PNETCDF
+       case(pio_iotype_pnetcdf)
+          ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_REAL8)
+#endif
+#ifdef  _NETCDF
+       case(pio_iotype_netcdf4p)
+             ierr = nf90_get_var(File%fh, varid, ival)
+       case(pio_iotype_netcdf, pio_iotype_netcdf4c)
+          ! Only io proc 0 will do reading
+          if (File%iosystem%io_rank == 0) then
+             ierr = nf90_get_var(File%fh, varid, ival)
+          end if
+          if(.not. ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
+             call MPI_BCAST(ival,int(isize), MPI_REAL8 ,0,ios%IO_comm, mpierr)
+             call CheckMPIReturn('nf_mod',mpierr)
+          end if
+
+#endif
+       end select
+    end if
+    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
+    if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
+       call MPI_Bcast(ival,int(isize), MPI_REAL8 , ios%IOMaster, ios%My_comm, mpierr)
+       call CheckMPIReturn(subName, mpierr)
+    end if
+#ifdef TIMING
+    call t_stopf("pio_get_var_4d_double")
+#endif
+# 540 "pionfget_mod.F90.in"
+  end function get_var_4d_double
+! DIMS 1,2,3,4,5
+# 459 "pionfget_mod.F90.in"
+  integer function get_var_5d_double (File,varid, ival) result(ierr)
+    use pio_msg_mod, only : pio_msg_getvar_5d
+    type (File_desc_t), intent(in) :: File
+    integer, intent(in) :: varid
+    real(r8), intent(out) :: ival(:,:,:,:,:)
+    type(iosystem_desc_t), pointer :: ios
+    character(len=*), parameter :: subName=modName//'::get_var_5d_double'
+    integer :: iotype, mpierr, msg, ilen, itype
+#if (5 > 0)
+    integer :: dims(5)
+    integer :: i
+#endif
+    integer(kind=PIO_OFFSET) :: isize
+
+#ifdef TIMING
+    call t_startf("pio_get_var_5d_double")
+#endif
+    ierr=0
+    iotype = File%iotype 
+    isize=1	
+#if (5 > 0)
+    isize= size(ival)
+#endif
+#if (102 == TYPETEXT)
+    ilen = len(ival)	
+    isize = isize*ilen
+    ival(:,:,:,:,:) = ' '
+#endif
+    ios=>File%iosystem
+    if(ios%async_interface .and. .not. ios%ioproc ) then
+       msg=PIO_MSG_GETVAR_5d
+       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
+       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+       itype = 102
+       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#if (5 > 0)
+       do i=1,5
+          dims(i)=size(ival,i)
+       end do
+       call MPI_BCAST(dims,5,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#endif
+#if(102 == TYPETEXT) 
+          call MPI_BCAST(ilen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
+#endif
+
+
+    endif
+
+
+
+    if(File%iosystem%IOProc) then
+       select case (iotype) 
+#ifdef _PNETCDF
+       case(pio_iotype_pnetcdf)
+          ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_REAL8)
+#endif
+#ifdef  _NETCDF
+       case(pio_iotype_netcdf4p)
+             ierr = nf90_get_var(File%fh, varid, ival)
+       case(pio_iotype_netcdf, pio_iotype_netcdf4c)
+          ! Only io proc 0 will do reading
+          if (File%iosystem%io_rank == 0) then
+             ierr = nf90_get_var(File%fh, varid, ival)
+          end if
+          if(.not. ios%async_interface .and. ios%num_tasks==ios%num_iotasks) then
+             call MPI_BCAST(ival,int(isize), MPI_REAL8 ,0,ios%IO_comm, mpierr)
+             call CheckMPIReturn('nf_mod',mpierr)
+          end if
+
+#endif
+       end select
+    end if
+    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
+    if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
+       call MPI_Bcast(ival,int(isize), MPI_REAL8 , ios%IOMaster, ios%My_comm, mpierr)
+       call CheckMPIReturn(subName, mpierr)
+    end if
+#ifdef TIMING
+    call t_stopf("pio_get_var_5d_double")
+#endif
+# 540 "pionfget_mod.F90.in"
+  end function get_var_5d_double
+! DIMS 1,2,3,4,5
+# 459 "pionfget_mod.F90.in"
   integer function get_var_1d_int (File,varid, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar_1d
     type (File_desc_t), intent(in) :: File
@@ -5485,9 +5454,9 @@ CONTAINS
           ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_INTEGER)
 #endif
 #ifdef  _NETCDF
-       case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
+       case(pio_iotype_netcdf4p)
              ierr = nf90_get_var(File%fh, varid, ival)
-       case(pio_iotype_netcdf)
+       case(pio_iotype_netcdf, pio_iotype_netcdf4c)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival)
@@ -5508,9 +5477,10 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_var_1d_int")
 #endif
-# 429 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 540 "pionfget_mod.F90.in"
   end function get_var_1d_int
-# 348 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+! DIMS 1,2,3,4,5
+# 459 "pionfget_mod.F90.in"
   integer function get_var_2d_int (File,varid, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar_2d
     type (File_desc_t), intent(in) :: File
@@ -5569,9 +5539,9 @@ CONTAINS
           ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_INTEGER)
 #endif
 #ifdef  _NETCDF
-       case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
+       case(pio_iotype_netcdf4p)
              ierr = nf90_get_var(File%fh, varid, ival)
-       case(pio_iotype_netcdf)
+       case(pio_iotype_netcdf, pio_iotype_netcdf4c)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival)
@@ -5592,9 +5562,10 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_var_2d_int")
 #endif
-# 429 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 540 "pionfget_mod.F90.in"
   end function get_var_2d_int
-# 348 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+! DIMS 1,2,3,4,5
+# 459 "pionfget_mod.F90.in"
   integer function get_var_3d_int (File,varid, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar_3d
     type (File_desc_t), intent(in) :: File
@@ -5653,9 +5624,9 @@ CONTAINS
           ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_INTEGER)
 #endif
 #ifdef  _NETCDF
-       case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
+       case(pio_iotype_netcdf4p)
              ierr = nf90_get_var(File%fh, varid, ival)
-       case(pio_iotype_netcdf)
+       case(pio_iotype_netcdf, pio_iotype_netcdf4c)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival)
@@ -5676,9 +5647,10 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_var_3d_int")
 #endif
-# 429 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 540 "pionfget_mod.F90.in"
   end function get_var_3d_int
-# 348 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+! DIMS 1,2,3,4,5
+# 459 "pionfget_mod.F90.in"
   integer function get_var_4d_int (File,varid, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar_4d
     type (File_desc_t), intent(in) :: File
@@ -5737,9 +5709,9 @@ CONTAINS
           ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_INTEGER)
 #endif
 #ifdef  _NETCDF
-       case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
+       case(pio_iotype_netcdf4p)
              ierr = nf90_get_var(File%fh, varid, ival)
-       case(pio_iotype_netcdf)
+       case(pio_iotype_netcdf, pio_iotype_netcdf4c)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival)
@@ -5760,9 +5732,10 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_var_4d_int")
 #endif
-# 429 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 540 "pionfget_mod.F90.in"
   end function get_var_4d_int
-# 348 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+! DIMS 1,2,3,4,5
+# 459 "pionfget_mod.F90.in"
   integer function get_var_5d_int (File,varid, ival) result(ierr)
     use pio_msg_mod, only : pio_msg_getvar_5d
     type (File_desc_t), intent(in) :: File
@@ -5821,9 +5794,9 @@ CONTAINS
           ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, MPI_INTEGER)
 #endif
 #ifdef  _NETCDF
-       case(pio_iotype_netcdf4p, pio_iotype_netcdf4c)
+       case(pio_iotype_netcdf4p)
              ierr = nf90_get_var(File%fh, varid, ival)
-       case(pio_iotype_netcdf)
+       case(pio_iotype_netcdf, pio_iotype_netcdf4c)
           ! Only io proc 0 will do reading
           if (File%iosystem%io_rank == 0) then
              ierr = nf90_get_var(File%fh, varid, ival)
@@ -5844,8 +5817,9 @@ CONTAINS
 #ifdef TIMING
     call t_stopf("pio_get_var_5d_int")
 #endif
-# 429 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 540 "pionfget_mod.F90.in"
   end function get_var_5d_int
+
 
 !>
 !! @public
@@ -5857,7 +5831,7 @@ CONTAINS
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @ref error_return
 !<
-# 441 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 553 "pionfget_mod.F90.in"
   integer function get_var_vdesc_0d_text (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5867,9 +5841,9 @@ CONTAINS
 
     ierr = get_var_0d_text (File, vardesc%varid, ival)
 
-# 450 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 562 "pionfget_mod.F90.in"
   end function get_var_vdesc_0d_text
-# 441 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 553 "pionfget_mod.F90.in"
   integer function get_var_vdesc_1d_text (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5879,9 +5853,9 @@ CONTAINS
 
     ierr = get_var_1d_text (File, vardesc%varid, ival)
 
-# 450 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 562 "pionfget_mod.F90.in"
   end function get_var_vdesc_1d_text
-# 441 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 553 "pionfget_mod.F90.in"
   integer function get_var_vdesc_2d_text (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5891,9 +5865,9 @@ CONTAINS
 
     ierr = get_var_2d_text (File, vardesc%varid, ival)
 
-# 450 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 562 "pionfget_mod.F90.in"
   end function get_var_vdesc_2d_text
-# 441 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 553 "pionfget_mod.F90.in"
   integer function get_var_vdesc_3d_text (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5903,9 +5877,9 @@ CONTAINS
 
     ierr = get_var_3d_text (File, vardesc%varid, ival)
 
-# 450 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 562 "pionfget_mod.F90.in"
   end function get_var_vdesc_3d_text
-# 441 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 553 "pionfget_mod.F90.in"
   integer function get_var_vdesc_4d_text (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5915,9 +5889,9 @@ CONTAINS
 
     ierr = get_var_4d_text (File, vardesc%varid, ival)
 
-# 450 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 562 "pionfget_mod.F90.in"
   end function get_var_vdesc_4d_text
-# 441 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 553 "pionfget_mod.F90.in"
   integer function get_var_vdesc_5d_text (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5927,9 +5901,9 @@ CONTAINS
 
     ierr = get_var_5d_text (File, vardesc%varid, ival)
 
-# 450 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 562 "pionfget_mod.F90.in"
   end function get_var_vdesc_5d_text
-# 441 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 553 "pionfget_mod.F90.in"
   integer function get_var_vdesc_0d_real (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5939,9 +5913,9 @@ CONTAINS
 
     ierr = get_var_0d_real (File, vardesc%varid, ival)
 
-# 450 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 562 "pionfget_mod.F90.in"
   end function get_var_vdesc_0d_real
-# 441 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 553 "pionfget_mod.F90.in"
   integer function get_var_vdesc_1d_real (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5951,9 +5925,9 @@ CONTAINS
 
     ierr = get_var_1d_real (File, vardesc%varid, ival)
 
-# 450 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 562 "pionfget_mod.F90.in"
   end function get_var_vdesc_1d_real
-# 441 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 553 "pionfget_mod.F90.in"
   integer function get_var_vdesc_2d_real (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5963,9 +5937,9 @@ CONTAINS
 
     ierr = get_var_2d_real (File, vardesc%varid, ival)
 
-# 450 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 562 "pionfget_mod.F90.in"
   end function get_var_vdesc_2d_real
-# 441 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 553 "pionfget_mod.F90.in"
   integer function get_var_vdesc_3d_real (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5975,9 +5949,9 @@ CONTAINS
 
     ierr = get_var_3d_real (File, vardesc%varid, ival)
 
-# 450 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 562 "pionfget_mod.F90.in"
   end function get_var_vdesc_3d_real
-# 441 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 553 "pionfget_mod.F90.in"
   integer function get_var_vdesc_4d_real (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5987,9 +5961,9 @@ CONTAINS
 
     ierr = get_var_4d_real (File, vardesc%varid, ival)
 
-# 450 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 562 "pionfget_mod.F90.in"
   end function get_var_vdesc_4d_real
-# 441 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 553 "pionfget_mod.F90.in"
   integer function get_var_vdesc_5d_real (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -5999,9 +5973,9 @@ CONTAINS
 
     ierr = get_var_5d_real (File, vardesc%varid, ival)
 
-# 450 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 562 "pionfget_mod.F90.in"
   end function get_var_vdesc_5d_real
-# 441 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 553 "pionfget_mod.F90.in"
   integer function get_var_vdesc_0d_double (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6011,9 +5985,9 @@ CONTAINS
 
     ierr = get_var_0d_double (File, vardesc%varid, ival)
 
-# 450 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 562 "pionfget_mod.F90.in"
   end function get_var_vdesc_0d_double
-# 441 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 553 "pionfget_mod.F90.in"
   integer function get_var_vdesc_1d_double (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6023,9 +5997,9 @@ CONTAINS
 
     ierr = get_var_1d_double (File, vardesc%varid, ival)
 
-# 450 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 562 "pionfget_mod.F90.in"
   end function get_var_vdesc_1d_double
-# 441 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 553 "pionfget_mod.F90.in"
   integer function get_var_vdesc_2d_double (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6035,9 +6009,9 @@ CONTAINS
 
     ierr = get_var_2d_double (File, vardesc%varid, ival)
 
-# 450 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 562 "pionfget_mod.F90.in"
   end function get_var_vdesc_2d_double
-# 441 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 553 "pionfget_mod.F90.in"
   integer function get_var_vdesc_3d_double (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6047,9 +6021,9 @@ CONTAINS
 
     ierr = get_var_3d_double (File, vardesc%varid, ival)
 
-# 450 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 562 "pionfget_mod.F90.in"
   end function get_var_vdesc_3d_double
-# 441 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 553 "pionfget_mod.F90.in"
   integer function get_var_vdesc_4d_double (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6059,9 +6033,9 @@ CONTAINS
 
     ierr = get_var_4d_double (File, vardesc%varid, ival)
 
-# 450 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 562 "pionfget_mod.F90.in"
   end function get_var_vdesc_4d_double
-# 441 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 553 "pionfget_mod.F90.in"
   integer function get_var_vdesc_5d_double (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6071,9 +6045,9 @@ CONTAINS
 
     ierr = get_var_5d_double (File, vardesc%varid, ival)
 
-# 450 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 562 "pionfget_mod.F90.in"
   end function get_var_vdesc_5d_double
-# 441 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 553 "pionfget_mod.F90.in"
   integer function get_var_vdesc_0d_int (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6083,9 +6057,9 @@ CONTAINS
 
     ierr = get_var_0d_int (File, vardesc%varid, ival)
 
-# 450 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 562 "pionfget_mod.F90.in"
   end function get_var_vdesc_0d_int
-# 441 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 553 "pionfget_mod.F90.in"
   integer function get_var_vdesc_1d_int (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6095,9 +6069,9 @@ CONTAINS
 
     ierr = get_var_1d_int (File, vardesc%varid, ival)
 
-# 450 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 562 "pionfget_mod.F90.in"
   end function get_var_vdesc_1d_int
-# 441 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 553 "pionfget_mod.F90.in"
   integer function get_var_vdesc_2d_int (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6107,9 +6081,9 @@ CONTAINS
 
     ierr = get_var_2d_int (File, vardesc%varid, ival)
 
-# 450 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 562 "pionfget_mod.F90.in"
   end function get_var_vdesc_2d_int
-# 441 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 553 "pionfget_mod.F90.in"
   integer function get_var_vdesc_3d_int (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6119,9 +6093,9 @@ CONTAINS
 
     ierr = get_var_3d_int (File, vardesc%varid, ival)
 
-# 450 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 562 "pionfget_mod.F90.in"
   end function get_var_vdesc_3d_int
-# 441 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 553 "pionfget_mod.F90.in"
   integer function get_var_vdesc_4d_int (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6131,9 +6105,9 @@ CONTAINS
 
     ierr = get_var_4d_int (File, vardesc%varid, ival)
 
-# 450 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 562 "pionfget_mod.F90.in"
   end function get_var_vdesc_4d_int
-# 441 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 553 "pionfget_mod.F90.in"
   integer function get_var_vdesc_5d_int (File,vardesc, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
@@ -6143,6 +6117,6 @@ CONTAINS
 
     ierr = get_var_5d_int (File, vardesc%varid, ival)
 
-# 450 "/glade/u/home/jedwards/pio_trunk/pio/pionfget_mod.F90.in"
+# 562 "pionfget_mod.F90.in"
   end function get_var_vdesc_5d_int
 end module pionfget_mod

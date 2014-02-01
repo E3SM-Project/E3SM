@@ -43,9 +43,9 @@ PIO_Offset GCDblocksize(const int arrlen, const PIO_Offset arr_in[]);
 
 int box_rearrange_create(iosystem_desc_t *ios,const int maplen, const PIO_Offset compmap[], const int gsize[],
 			 const int ndim, const int nioproc, io_desc_t *iodesc);
-int box_rearrange_io2comp(iosystem_desc_t *ios, io_desc_t *iodesc, const int slen, void *sbuf,const int rlen,
+int box_rearrange_io2comp(iosystem_desc_t *ios, io_desc_t *iodesc, void *sbuf,
 			  void *rbuf, const int comm_option, const int fc_options);
-int box_rearrange_comp2io(iosystem_desc_t *ios, io_desc_t *iodesc, const int slen, void *sbuf,const int rlen,
+int box_rearrange_comp2io(iosystem_desc_t *ios, io_desc_t *iodesc, void *sbuf,
 			  void *rbuf, const int comm_option, const int fc_options);
 
 io_desc_t *malloc_iodesc(const int piotype, const int ndims);

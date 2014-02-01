@@ -6,6 +6,12 @@ my $pnetcdf_inc = "$ENV{PNETCDF}/include/pnetcdf.h";
 
 my $functions;
 
+my $typemap = {text=>"MPI_CHAR", short=>"MPI_SHORT", uchar=>"MPI_UNSIGNED_CHAR",
+                             schar =>"MPI_CHAR", float=>"MPI_FLOAT", ushort=>"MPI_UNSIGNED_SHORT",
+                             ulonglong=>"MPI_UNSIGNED_LONG_LONG",longlong=>"MPI_LONG_LONG",
+                             double=>"MPI_DOUBLE",uint=>"MPI_UNSIGNED",int=>"MPI_INT",long=>"MPI_LONG"};
+
+
 open(PF,$pnetcdf_inc) or die "Could not open $pnetcdf_inc";
 my @file = <PF>;
 my $func="";
@@ -157,36 +163,16 @@ foreach my $func (keys %{$functions}){
 
   my $bufcount;
   my $buftype;
-  if($func =~ /uchar/){
-      $buftype = "MPI_UNSIGNED_CHAR";
-  }elsif($func =~ /schar/){
-      $buftype = "MPI_CHAR";
-  }elsif($func =~ /text/){
-      $buftype = "MPI_CHAR";
-  }elsif($func =~ /float/){
-      $buftype = "MPI_FLOAT";
-  }elsif($func =~ /ushort/){
-      $buftype = "MPI_UNSIGNED_SHORT";
-  }elsif($func =~ /short/){
-      $buftype = "MPI_SHORT";
-  }elsif($func =~ /ulonglong/){
-      $buftype = "MPI_UNSIGNED_LONG_LONG";
-  }elsif($func =~ /longlong/){
-      $buftype = "MPI_LONG_LONG";
-  }elsif($func =~ /double/){
-      $buftype = "MPI_DOUBLE";
-  }elsif($func =~ /uint/){
-      $buftype = "MPI_UNSIGNED";
-  }elsif($func =~ /int/){
-      $buftype = "MPI_INT";
-  }elsif($func =~ /long/){
-      $buftype = "MPI_LONG";
+  if($func =~ /_([^_]+)\s*$/ || $func =~ /_([^_]+)_all/){
+      my $nctype = $1;
+#      print "nctype $nctype\n";
+      $buftype = $typemap->{$nctype};
   }
   
   if($func =~ /var1/){
       $bufcount = 1;
   }
-  
+#  print "$func $buftype\n";
 
   my @tmptmp = @template;
 
@@ -208,24 +194,25 @@ foreach my $func (keys %{$functions}){
 		      print F "  ibufcnt = $bufcount;\n";
 		  }elsif($func =~ /vara/){
 		      print F "  ierr = PIOc_inq_varndims(file->fh, varid, &ndims);\n";
-		      print F "  ibufcnt = 0;\n";
+		      print F "  ibufcnt = 1;\n";
 		      print F "  for(int i=0;i<ndims;i++){\n";
-		      print F "    ibufcnt += (count[i]-start[i]);\n";
+		      print F "    ibufcnt *= (count[i]-start[i]);\n";
 		      print F "  }\n";
 		  }elsif($func =~ /vars/ or $func =~ /varm/){
 		      print F "  ierr = PIOc_inq_varndims(file->fh, varid, &ndims);\n";
-		      print F "  ibufcnt = 0;\n";
+		      print F "  ibufcnt = 1;\n";
 		      print F "  for(int i=0;i<ndims;i++){\n";
-		      print F "    ibufcnt += (count[i]-start[i])/stride[i];\n";
+		      print F "    ibufcnt *= (count[i]-start[i])/stride[i];\n";
 		      print F "  }\n";
 		  }elsif($func =~ /var_?/){
 		      print F "  ierr = PIOc_inq_varndims(file->fh, varid, &ndims);\n";
-		      print F "  int dimid[ndims];\n";
-		      print F "  PIO_Offset dimsize[ndims];\n";
-		      print F "  ibufcnt = 0;\n";
+		      print F "  int dimid;\n";
+		      print F "  PIO_Offset dimsize;\n";
+		      print F "  ibufcnt = 1;\n";
 		      print F "  for(int i=0;i<ndims;i++){\n";
-		      print F "    PIOc_inq_dimlen(file->fh, dimid[i], dimsize+i);\n";
-		      print F "    ibufcnt += dimsize[i];\n";
+		      print F "    PIOc_inq_vardimid(file->fh, varid, &dimid);\n";
+		      print F "    PIOc_inq_dimlen(file->fh, dimid, &dimsize);\n";
+		      print F "    ibufcnt *= dimsize;\n";
 		      print F "  }\n";
 		  }
 	      }

@@ -646,7 +646,6 @@ contains
        end function PIOc_inq_varndims
     end interface
     ierr = PIOc_inq_varndims(ncid,varid,ndims)
-
   end function inq_varndims_id
 
 !>

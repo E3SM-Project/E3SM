@@ -98,6 +98,7 @@ int PIOc_OpenFile(const int iosysid, int *ncidp, const int iotype,
     }
     for(int i=0; i<PIO_MAX_VARS;i++){
       file->varlist[i].record = -1;
+      file->varlist[i].ndims = -1;
       file->varlist[i].buffer = NULL;
       file->varlist[i].request = MPI_REQUEST_NULL;
     }
@@ -205,6 +206,7 @@ int PIOc_CreateFile(const int iosysid, int *ncidp, const int iotype,
     }
     for(int i=0; i<PIO_MAX_VARS;i++){
       file->varlist[i].record = -1;
+      file->varlist[i].ndims = -1;
       file->varlist[i].buffer = NULL;
       file->varlist[i].request = MPI_REQUEST_NULL;
     }

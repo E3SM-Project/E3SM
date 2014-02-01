@@ -389,7 +389,7 @@ int compute_counts(iosystem_desc_t *ios, io_desc_t *iodesc,const int niomap)
 
 }
 
-int box_rearrange_comp2io(iosystem_desc_t *ios, io_desc_t *iodesc, const int slen, void *sbuf,const int rlen,
+int box_rearrange_comp2io(iosystem_desc_t *ios, io_desc_t *iodesc, void *sbuf,
 			  void *rbuf, const int comm_option, const int fc_options)
 {
 
@@ -414,7 +414,7 @@ int box_rearrange_comp2io(iosystem_desc_t *ios, io_desc_t *iodesc, const int sle
 
   if(ios->ioproc){
     for( i=0;i<iodesc->nrecvs;i++){
-      recvcounts[ iodesc->rfrom[i] ] = slen;
+      recvcounts[ iodesc->rfrom[i] ] = iodesc->llen;
       //      recvtypes[ iodesc->rfrom[i] ] = iodesc->rtype[i];
       recvtypes[ iodesc->rfrom[i] ] = iodesc->basetype;
       
@@ -422,8 +422,6 @@ int box_rearrange_comp2io(iosystem_desc_t *ios, io_desc_t *iodesc, const int sle
       rdispls[ iodesc->rfrom[i] ] = i*tsize;
       //recvtypes[ iodesc->rfrom[i] ] = iodesc->basetype;
       
-      MPI_Type_size(iodesc->rtype[i],&tsize);
-      rdispls[ iodesc->rfrom[i] ] = i*tsize;
     }
   }else{
     for( i=0;i<iodesc->nrecvs;i++){
@@ -454,44 +452,51 @@ int box_rearrange_comp2io(iosystem_desc_t *ios, io_desc_t *iodesc, const int sle
   return PIO_NOERR;
 }
 
-int box_rearrange_io2comp(iosystem_desc_t *ios, io_desc_t *iodesc, const int slen, void *sbuf,const int rlen,
+int box_rearrange_io2comp(iosystem_desc_t *ios, io_desc_t *iodesc, void *sbuf,
 			  void *rbuf, const int comm_option, const int fc_options)
 {
   
 
-  bool handshake=false;
+  bool handshake=true;
   bool isend = false;
   int maxreq = MAX_GATHER_BLOCK_SIZE;
   int nprocs = ios->num_comptasks;
   int *scount = iodesc->scount;
-  int *sendcounts = (int *) malloc(nprocs * sizeof(int));
-  int *recvcounts = (int *) malloc(nprocs * sizeof(int));
-  int *displs =  (int *) malloc(nprocs * sizeof(int));
+  int *sendcounts = (int *) calloc(nprocs , sizeof(int));
+  int *recvcounts = (int *) calloc(nprocs , sizeof(int));
+  int *sdispls =  (int *) calloc(nprocs , sizeof(int));
+  int *rdispls =  (int *) calloc(nprocs , sizeof(int));
   MPI_Datatype *sendtypes = (MPI_Datatype *) malloc(nprocs * sizeof(MPI_Datatype));
   MPI_Datatype *recvtypes = (MPI_Datatype *) malloc(nprocs * sizeof(MPI_Datatype));
-  int i;
+  int i, tsize;
   
-  for(i=0;i<nprocs;i++){
-    displs[i]=0;
-  }
 
+  for( i=0;i< nprocs;i++){
+    sendtypes[ i ] = MPI_DATATYPE_NULL;
+    recvtypes[ i ] = MPI_DATATYPE_NULL;
+  }
   if(ios->ioproc){
     for( i=0;i<iodesc->nrecvs;i++){
       sendcounts[ iodesc->rfrom[i] ] = 1;
-      sendtypes[ iodesc->rfrom[i] ] = iodesc->basetype;
+      //      sendtypes[ iodesc->rfrom[i] ] = iodesc->basetype;
+      sendtypes[ iodesc->rfrom[i] ] = iodesc->rtype[i];
+      MPI_Type_size(iodesc->stype[i], &tsize);
+      sdispls[ iodesc->rfrom[i] ] = i*tsize;
     }
-  }else{
-    for( i=0;i<iodesc->nrecvs;i++){
-      sendcounts[ iodesc->rfrom[i] ] = 0;
-      sendtypes[ iodesc->rfrom[i] ] = MPI_DATATYPE_NULL;
-    }
-  }  
+  }
+    
 
   for( i=0;i<ios->num_iotasks; i++){
     int io_comprank = ios->ioranks[i];
     if(scount[i] > 0) {
+      //recvcounts[io_comprank]=1;
+      //      recvtypes[io_comprank]=iodesc->basetype;
       recvcounts[io_comprank]=1;
-      recvtypes[io_comprank]=iodesc->basetype;
+      recvtypes[io_comprank]=iodesc->rtype[i];
+
+      MPI_Type_size(iodesc->rtype[i],&tsize);
+      rdispls[ io_comprank ] = i*tsize;
+
     }else{
       recvcounts[io_comprank]=0;
       recvtypes[io_comprank]=MPI_DATATYPE_NULL;
@@ -499,14 +504,21 @@ int box_rearrange_io2comp(iosystem_desc_t *ios, io_desc_t *iodesc, const int sle
   }      
 
 
-  pio_swapm( nprocs, ios->union_rank, sbuf,  sendcounts, displs, sendtypes,
-	     rbuf, recvcounts, displs, recvtypes, ios->union_comm, handshake, isend, maxreq);
+  for(i=0; i< nprocs; i++){
+    printf("%d sendcounts %d, sdispls %d, recvcounts %d, rdispls %d\n",i,sendcounts[i],
+	   sdispls[i],recvcounts[i],rdispls[i]);
+  }
+
+
+  pio_swapm( nprocs, ios->union_rank, sbuf,  sendcounts, sdispls, sendtypes,
+	     rbuf, recvcounts, rdispls, recvtypes, ios->union_comm, handshake, isend, maxreq);
 
   free(sendtypes);
   free(recvtypes);
   free(sendcounts);
   free(recvcounts);
-
+  free(sdispls);
+  free(rdispls);
   return PIO_NOERR;
 
 }
