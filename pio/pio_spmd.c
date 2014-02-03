@@ -262,6 +262,7 @@ int pio_swapm(const int nprocs, const int mytask,
       }
     }
   }
+
   CheckMPIReturn(MPI_Waitall(steps, rcvids, MPI_STATUSES_IGNORE), __FILE__,__LINE__);
 
   CheckMPIReturn(MPI_Waitall(steps, sndids, MPI_STATUSES_IGNORE), __FILE__,__LINE__);

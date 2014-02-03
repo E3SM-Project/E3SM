@@ -196,22 +196,22 @@ foreach my $func (keys %{$functions}){
 		      print F "  ierr = PIOc_inq_varndims(file->fh, varid, &ndims);\n";
 		      print F "  ibufcnt = 1;\n";
 		      print F "  for(int i=0;i<ndims;i++){\n";
-		      print F "    ibufcnt *= (count[i]-start[i]);\n";
+		      print F "    ibufcnt *= count[i];\n";
 		      print F "  }\n";
 		  }elsif($func =~ /vars/ or $func =~ /varm/){
 		      print F "  ierr = PIOc_inq_varndims(file->fh, varid, &ndims);\n";
 		      print F "  ibufcnt = 1;\n";
 		      print F "  for(int i=0;i<ndims;i++){\n";
-		      print F "    ibufcnt *= (count[i]-start[i])/stride[i];\n";
+		      print F "    ibufcnt *= count[i]/stride[i];\n";
 		      print F "  }\n";
 		  }elsif($func =~ /var_?/){
 		      print F "  ierr = PIOc_inq_varndims(file->fh, varid, &ndims);\n";
-		      print F "  int dimid;\n";
+		      print F "  int dimid[ndims];\n";
 		      print F "  PIO_Offset dimsize;\n";
 		      print F "  ibufcnt = 1;\n";
+		      print F "  PIOc_inq_vardimid(file->fh, varid, dimid);\n";
 		      print F "  for(int i=0;i<ndims;i++){\n";
-		      print F "    PIOc_inq_vardimid(file->fh, varid, &dimid);\n";
-		      print F "    PIOc_inq_dimlen(file->fh, dimid, &dimsize);\n";
+		      print F "    PIOc_inq_dimlen(file->fh, dimid[i], &dimsize);\n";
 		      print F "    ibufcnt *= dimsize;\n";
 		      print F "  }\n";
 		  }

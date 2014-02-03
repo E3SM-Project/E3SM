@@ -476,11 +476,10 @@ int box_rearrange_io2comp(iosystem_desc_t *ios, io_desc_t *iodesc, void *sbuf,
     recvtypes[ i ] = MPI_DATATYPE_NULL;
   }
   if(ios->ioproc){
-    for( i=0;i<iodesc->nrecvs;i++){
+    for( i=0;i< iodesc->nrecvs;i++){
       sendcounts[ iodesc->rfrom[i] ] = 1;
-      //      sendtypes[ iodesc->rfrom[i] ] = iodesc->basetype;
       sendtypes[ iodesc->rfrom[i] ] = iodesc->rtype[i];
-      MPI_Type_size(iodesc->stype[i], &tsize);
+      MPI_Type_size(iodesc->rtype[i], &tsize);
       sdispls[ iodesc->rfrom[i] ] = i*tsize;
     }
   }
@@ -489,12 +488,10 @@ int box_rearrange_io2comp(iosystem_desc_t *ios, io_desc_t *iodesc, void *sbuf,
   for( i=0;i<ios->num_iotasks; i++){
     int io_comprank = ios->ioranks[i];
     if(scount[i] > 0) {
-      //recvcounts[io_comprank]=1;
-      //      recvtypes[io_comprank]=iodesc->basetype;
       recvcounts[io_comprank]=1;
-      recvtypes[io_comprank]=iodesc->rtype[i];
+      recvtypes[io_comprank]=iodesc->stype[i];
 
-      MPI_Type_size(iodesc->rtype[i],&tsize);
+      MPI_Type_size(iodesc->stype[i],&tsize);
       rdispls[ io_comprank ] = i*tsize;
 
     }else{
@@ -502,13 +499,6 @@ int box_rearrange_io2comp(iosystem_desc_t *ios, io_desc_t *iodesc, void *sbuf,
       recvtypes[io_comprank]=MPI_DATATYPE_NULL;
     }
   }      
-
-
-  for(i=0; i< nprocs; i++){
-    printf("%d sendcounts %d, sdispls %d, recvcounts %d, rdispls %d\n",i,sendcounts[i],
-	   sdispls[i],recvcounts[i],rdispls[i]);
-  }
-
 
   pio_swapm( nprocs, ios->union_rank, sbuf,  sendcounts, sdispls, sendtypes,
 	     rbuf, recvcounts, rdispls, recvtypes, ios->union_comm, handshake, isend, maxreq);

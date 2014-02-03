@@ -137,6 +137,7 @@ contains
          type(C_PTR), value :: fillvalue
        end function PIOc_write_darray
     end interface
+    print *,'varid ',vardesc%varid, ' ioid ',iodesc%ioid
     if(present(fillval)) then
        iostat = PIOc_write_darray(file%fh, varDesc%varid, iodesc%ioid, int(arraylen,C_SIZE_T),C_LOC(array), C_LOC(fillval))
     else

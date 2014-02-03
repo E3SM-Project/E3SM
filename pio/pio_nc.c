@@ -1441,7 +1441,6 @@ int PIOc_inq_dimlen (int ncid, int dimid, PIO_Offset *lenp)
     return PIO_EBADID;
   ios = file->iosystem;
   msg = PIO_MSG_INQ_DIMLEN;
-  printf("dimid %d\n",dimid);
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 

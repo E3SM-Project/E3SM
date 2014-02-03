@@ -195,7 +195,6 @@ int PIOc_write_darray(const int ncid, const int vid, const int ioid, const PIO_O
 
   if(ios->ioproc){
     rlen = iodesc->llen;
-
     vtype = (MPI_Datatype) iodesc->basetype;
     if(vtype == MPI_INTEGER){
       MALLOC_FILL_ARRAY(int, rlen, fillvalue, iobuf);
@@ -209,6 +208,7 @@ int PIOc_write_darray(const int ncid, const int vid, const int ioid, const PIO_O
       fprintf(stderr,"Type not recognized %d in pioc_write_darray\n",vtype);
     }
   }
+
 
   ierr = box_rearrange_comp2io(ios, iodesc, array, iobuf, 0, 0);
 
@@ -297,41 +297,55 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void
 	for( i=0;i<ndims; i++){
 	  tmp_start[i] = start[i];
 	  tmp_count[i] = count[i];
-	  tmp_bufsize *= (count[i]-start[i]);
+	  tmp_bufsize *= count[i];
 	}
-	MPI_Send( tmp_start, ndims, MPI_UNSIGNED_LONG, 0, ios->io_rank, ios->io_comm);
 	MPI_Send( tmp_count, ndims, MPI_UNSIGNED_LONG, 0, ios->io_rank, ios->io_comm);
-	MPI_Recv( IOBUF, tmp_bufsize, iodesc->basetype, 0, ios->io_rank, ios->io_comm, &status);
+	if(tmp_bufsize > 0){
+	  MPI_Send( tmp_start, ndims, MPI_UNSIGNED_LONG, 0, ios->io_rank, ios->io_comm);
+	  MPI_Recv( IOBUF, tmp_bufsize, iodesc->basetype, 0, ios->io_rank, ios->io_comm, &status);
+	}
       }else if(ios->io_rank==0){
-	for( i=1; i<ios->num_iotasks;i++){
-	  MPI_Recv(tmp_start, ndims, MPI_UNSIGNED_LONG, i, i, ios->io_comm, &status);
-	  MPI_Recv(tmp_count, ndims, MPI_UNSIGNED_LONG, i, i, ios->io_comm, &status);
-
-	  if(vdesc->record >= 0){
-	    tmp_start[ndims] = vdesc->record;
-	    tmp_count[ndims] = 1;
+	for( i=ios->num_iotasks-1;i>=0;i--){
+	  if(i==0){
+	    for(int k=0;k<ndims;k++)
+	      tmp_count[k] = count[k];
+	  }else{
+	    MPI_Recv(tmp_count, ndims, MPI_UNSIGNED_LONG, i, i, ios->io_comm, &status);
 	  }
-
-
-	  switch(iodesc->basetype){
-	  case MPI_DOUBLE:
-	  case MPI_REAL8:
-	    ierr = nc_get_vara_double (file->fh, vid, tmp_start, tmp_count, IOBUF); 
-	    break;
-	  case MPI_INTEGER:
-	    ierr = nc_get_vara_int (file->fh, vid, tmp_start, tmp_count,  IOBUF); 
-	    break;
-	  case MPI_FLOAT:
-	  case MPI_REAL4:
-	    ierr = nc_get_vara_float (file->fh, vid, tmp_start, tmp_count,  IOBUF); 
-	    break;
-	  default:
-	    fprintf(stderr,"Type not recognized %d in pioc_write_darray\n",(int) iodesc->basetype);
-	  }	
+	  tmp_bufsize=1;
 	  for(int j=0;j<ndims; j++){
-	    tmp_bufsize *= (tmp_count[j]-tmp_start[j]);
+	    tmp_bufsize *= tmp_count[j];
 	  }
-	  MPI_Rsend(IOBUF, tmp_bufsize, iodesc->basetype, i, i, ios->io_comm);
+	  if(tmp_bufsize>0){
+	    if(i==0){
+	      for(int k=0;k<ndims;k++)
+		tmp_start[k] = start[k];
+	    }else{
+	      MPI_Recv(tmp_start, ndims, MPI_UNSIGNED_LONG, i, i, ios->io_comm, &status);
+	    }
+	    if(vdesc->record >= 0){
+	      tmp_start[ndims] = vdesc->record;
+	      tmp_count[ndims] = 1;
+	    }
+	    switch(iodesc->basetype){
+	    case MPI_DOUBLE:
+	    case MPI_REAL8:
+	      ierr = nc_get_vara_double (file->fh, vid, tmp_start, tmp_count, IOBUF); 
+	      break;
+	    case MPI_INTEGER:
+	      ierr = nc_get_vara_int (file->fh, vid, tmp_start, tmp_count,  IOBUF); 	     
+	      break;
+	    case MPI_FLOAT:
+	    case MPI_REAL4:
+	      ierr = nc_get_vara_float (file->fh, vid, tmp_start, tmp_count,  IOBUF); 
+	      break;
+	    default:
+	      fprintf(stderr,"Type not recognized %d in pioc_write_darray\n",(int) iodesc->basetype);
+	    }	
+	    if(i>0){
+	      MPI_Rsend(IOBUF, tmp_bufsize, iodesc->basetype, i, i, ios->io_comm);
+	    }
+	  }
 	}
 	break;
 #endif
@@ -340,7 +354,7 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void
 	{
 	  PIO_Offset tmp_bufsize=1;
 	  for(int j=0;j<ndims; j++){
-	    tmp_bufsize *= (count[j]-start[j]);
+	    tmp_bufsize *= count[j];
 	  }
 	  ncmpi_get_vara_all(file->fh, vid,(PIO_Offset *) start,(PIO_Offset *) count, IOBUF, tmp_bufsize, iodesc->basetype);
 	}
@@ -410,7 +424,10 @@ int PIOc_read_darray(const int ncid, const int vid, const int ioid, const PIO_Of
   case PIO_IOTYPE_NETCDF4C:
     ierr = pio_read_darray_nc(file, iodesc, vid, iobuf);
   }
-  ierr = box_rearrange_io2comp(ios, iodesc, array, iobuf, 0, 0);
+
+
+  ierr = box_rearrange_io2comp(ios, iodesc, iobuf, array, 0, 0);
+
 
   if(iobuf != NULL)
     free(iobuf);
