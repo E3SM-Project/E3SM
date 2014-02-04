@@ -692,13 +692,13 @@ contains
       eta_ave_w = 1d0 ! divide by qsplit for mean flux interpolation
 
       call initialize(state_object, lenx, elem, hvcoord, compute_diagnostics, &
-        qn0, eta_ave_w, hybrid, deriv(hybrid%ithr), tstep, tl%np1, tl%n0, tl%np1, nets, nete)
+        qn0, eta_ave_w, hybrid, deriv(hybrid%ithr), tstep, tl, nets, nete)
 
       call initialize(pre_object, lenx, elem, hvcoord, compute_diagnostics, &
-        qn0, eta_ave_w, hybrid, deriv(hybrid%ithr), tstep, tl%np1, tl%n0, tl%np1, nets, nete)
+        qn0, eta_ave_w, hybrid, deriv(hybrid%ithr), tstep, tl, nets, nete)
 
       call initialize(jac_object, lenx, elem, hvcoord, .false., &
-        qn0, eta_ave_w, hybrid, deriv(hybrid%ithr), tstep, tl%np1, tl%n0, tl%np1, nets, nete)
+        qn0, eta_ave_w, hybrid, deriv(hybrid%ithr), tstep, tl, nets, nete)
 
 !      pc_elem = elem
 !      jac_elem = elem

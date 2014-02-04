@@ -722,13 +722,13 @@ contains
 
 #ifdef _REFSOLN
 ! parallel write file with state vector in unformatted blocks for later calculation of norms
-    call ref_state_write(v(:,:,:,:,nets:nete),T(:,:,:,nets:nete),ps_v(:,:,nets:nete), & 
-	fstub,simday,nets,nete,par)
-    do ie=nets,nete
-       vp(:,:,:,:,ie)=v(:,:,:,:,ie)
-       Tp(:,:,:,ie)=T(:,:,:,ie)
-       ps_vp(:,:,ie)=ps_v(:,:,ie)
-    end do
+!    call ref_state_write(v(:,:,:,:,nets:nete),T(:,:,:,nets:nete),ps_v(:,:,nets:nete), & 
+!	fstub,simday,nets,nete,par)
+!    do ie=nets,nete
+!       vp(:,:,:,:,ie)=v(:,:,:,:,ie)
+!       Tp(:,:,:,ie)=T(:,:,:,ie)
+!       ps_vp(:,:,ie)=ps_v(:,:,ie)
+!    end do
 #endif
 
 #ifdef _REFSOLN

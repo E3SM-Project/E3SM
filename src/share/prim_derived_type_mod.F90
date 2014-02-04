@@ -9,6 +9,7 @@ module prim_derived_type_mod
    use hybvcoord_mod, only : hvcoord_t
    use hybrid_mod, only : hybrid_t
    use derivative_mod, only : derivative_t
+   use time_mod, only : TimeLevel_t
 
    implicit none
 
@@ -23,9 +24,7 @@ module prim_derived_type_mod
     real (kind=real_kind)   :: eta_ave_w
     type (derivative_t)     :: deriv
     real (kind=real_kind)   :: dt
-    integer                 :: ntl1
-    integer                 :: ntl2
-    integer                 :: ntl3
+    type (TimeLevel_t)      :: tl
     integer                 :: nets
     integer                 :: nete
 
@@ -56,13 +55,14 @@ module prim_derived_type_mod
 
  contains
   subroutine initialize(object, method, elem, hvcoord, compute_diagnostics, &
-           n_Q, eta_ave_w, hybrid, deriv, dt, ntl1, ntl2, ntl3, nets, nete)
+           n_Q, eta_ave_w, hybrid, deriv, dt, tl, nets, nete)
 
    use kinds, only : real_kind
    use element_mod, only : element_t
    use hybvcoord_mod, only : hvcoord_t
    use hybrid_mod, only : hybrid_t
    use derivative_mod, only : derivative_t
+   use time_mod, only : TimeLevel_t
 
    implicit none 
 
@@ -77,9 +77,7 @@ module prim_derived_type_mod
     real (kind=real_kind)  ,intent(in)  :: eta_ave_w
     type (derivative_t)    ,intent(in)  :: deriv
     real (kind=real_kind)  ,intent(in)  :: dt
-    integer                ,intent(in)  :: ntl1
-    integer                ,intent(in)  :: ntl2
-    integer                ,intent(in)  :: ntl3
+    type (TimeLevel_t)     ,intent(in)  :: tl
     integer                ,intent(in)  :: nets
     integer                ,intent(in)  :: nete
     type(derived_type)     ,intent(out) :: object
@@ -96,9 +94,7 @@ module prim_derived_type_mod
    object%eta_ave_w = eta_ave_w
    object%deriv = deriv
    object%dt = dt
-   object%ntl1 = ntl1
-   object%ntl2 = ntl2
-   object%ntl3 = ntl3
+   object%tl = tl
    object%nets = nets
    object%nete = nete
 

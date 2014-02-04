@@ -107,6 +107,8 @@ SET(PREQX_SRCS_F90
   ${SRC_SHARE_DIR}/mesh_mod.F90 
   ${SRC_SHARE_DIR}/Manager.F90
   ${SRC_DIR}/prim_main.F90 
+  ${SRC_DIR}/ref_state_mod.F90 
+  ${SRC_DIR}/jrio.c 
 )
 
 

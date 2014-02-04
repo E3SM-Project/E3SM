@@ -396,13 +396,13 @@ contains
       xstate(:) = 0d0
 
       call initialize(state_object, method, elem, hvcoord, compute_diagnostics, &
-        qn0, eta_ave_w, hybrid, deriv, dt, np1, n0, np1, nets, nete)
+        qn0, eta_ave_w, hybrid, deriv, dt, tl, nets, nete)
 
       call initialize(pre_object, method, elem, hvcoord, compute_diagnostics, &
-        qn0, eta_ave_w, hybrid, deriv, dt, np1, n0, np1, nets, nete)
+        qn0, eta_ave_w, hybrid, deriv, dt, tl, nets, nete)
 
       call initialize(jac_object, method, elem, hvcoord, compute_diagnostics, &
-        qn0, eta_ave_w, hybrid, deriv, dt, np1, n0, np1, nets, nete)
+        qn0, eta_ave_w, hybrid, deriv, dt, tl, nets, nete)
 
 !      pc_elem = elem
 !      jac_elem = elem
@@ -3108,6 +3108,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   use bndry_mod, only : bndry_exchangev
   use control_mod, only : moisture, qsplit, use_cpstar, rsplit
   use hybvcoord_mod, only : hvcoord_t
+  use time_mod, only : TimeLevel_t
 
   use physical_constants, only : cp, cpwater_vapor, Rgas, kappa
   use physics_mod, only : virtual_specific_heat, virtual_temperature
@@ -3117,7 +3118,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   use, intrinsic :: iso_c_binding
 
   implicit none
-  integer :: np1,nm1,n0,qn0,nets,nete,lx,n
+  integer :: np1,nm1,n0,nm,qn0,nets,nete,lx,n
   real*8 :: dt2, dti
   logical  :: compute_diagnostics
 
@@ -3154,28 +3155,34 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
   real (kind=real_kind) ::  cp2,cp_ratio,E,de,Qt,v1,v2
   real (kind=real_kind) ::  glnps1,glnps2,gpterm
+  real (kind=real_kind) ::  gam
   integer :: i,j,k,kptr,ie, n_Q
 
   type (element_t), target     :: elem(nelem)
   type (hvcoord_t)     :: hvcoord
   type (hybrid_t)      :: hybrid
   type (derivative_t)  :: deriv
+  type (TimeLevel_t)   :: tl
 
   integer(c_int) ,intent(in) ,value  :: nelemd
   real (c_double) ,intent(in)        :: xstate(nelemd)
   real (c_double) ,intent(out)       :: fx(nelemd)
-  integer                            :: method
+  integer                            :: method, nstep
 
   type(derived_type) ,pointer        :: fptr=>NULL()
   type(c_ptr)                        :: c_ptr_to_object
 
   call c_f_pointer(c_ptr_to_object,fptr) ! convert C ptr to F ptr
 
-! set these to match the integration type back in integration subroutine
+! set these to match the compute_and_apply_rhs for evenutal reincorporation, so
 ! BE  0= x(np1)-x(nm1) - (RSS*x(n0))
-    np1        = fptr%ntl1  ! np1
-    nm1        = fptr%ntl2  ! n0
-    n0         = fptr%ntl3  ! np1
+! BDF2  0= (1.5) (x(np1)-x(nm1)) - (0.5) (x(nm1)-x(nm)) - (RSS*x(n0))
+
+    np1        = fptr%tl%np1  
+    nm1        = fptr%tl%n0    
+    n0         = fptr%tl%np1    
+    nm         = fptr%tl%nm1    
+    nstep      = fptr%tl%nstep 
 
     method     = fptr%method
     dt2        = fptr%dt
@@ -3188,18 +3195,24 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
     compute_diagnostics = fptr%compute_diagnostics
     qn0        = fptr%n_Q
     eta_ave_w  = fptr%eta_ave_w
-!    elem       = fptr%base
+
+    if ((method==11).or.(nstep==0)) then
+       gam=0.0  ! use BE for BDF as well for the first time step
+    else if (method==12) then
+       gam=0.5  ! BDF2 
+    else ! for adding more methods, right now default to BE
+       call abortmp('ERROR: method > 12 not yet coded for implicit time integration')
+    end if
 
 !JMD  call t_barrierf('sync_residual', hybrid%par%comm)
   call t_adj_detailf(+1)
   call t_startf('residual')
-		
-		call t_startf('residual_int')
-       fvtens = 0.0d0
-       fttens = 0.0d0
-       fpstens = 0.0d0
-       fdptens = 0.0d0
-!       write (iulog,*) 'implcit integration method= ', method
+
+     call t_startf('residual_int')
+     fvtens = 0.0d0
+     fttens = 0.0d0
+     fpstens = 0.0d0
+     fdptens = 0.0d0
 
        lx = 1
 	   do ie=nets,nete
@@ -3655,31 +3668,34 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
      ! =========================================================
      ! local element timestep, store in np1.
-     ! note that we allow np1=n0 or nm1
      ! apply mass matrix
      ! =========================================================
+
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
 #endif
 
-!  Backward Euler 1st order method
-        do k=1,nlev
-        fttens(:,:,k,ie) = fptr%base(ie)%spheremp(:,:)* &
-        ( (fptr%base(ie)%state%T(:,:,k,np1) - fptr%base(ie)%state%T(:,:,k,nm1))*dti - &
-        ttens(:,:,k) )
+! for BE, gam = 0. For BDF2, gam = 0.5
+          do k=1,nlev
+           fttens(:,:,k,ie) = fptr%base(ie)%spheremp(:,:)* &
+           ( (1+gam)*(fptr%base(ie)%state%T(:,:,k,np1) - fptr%base(ie)%state%T(:,:,k,nm1))*dti - &
+           gam*(fptr%base(ie)%state%T(:,:,k,nm1) - fptr%base(ie)%state%T(:,:,k,nm))*dti - &
+           ttens(:,:,k) )
 
-        fvtens(:,:,1,k,ie) = fptr%base(ie)%spheremp(:,:)* &
-        ( (fptr%base(ie)%state%v(:,:,1,k,np1) - fptr%base(ie)%state%v(:,:,1,k,nm1))*dti - &
-        vtens1(:,:,k) )
+           fvtens(:,:,1,k,ie) = fptr%base(ie)%spheremp(:,:)* &
+           ( (1+gam)*(fptr%base(ie)%state%v(:,:,1,k,np1) - fptr%base(ie)%state%v(:,:,1,k,nm1))*dti - &
+           gam*(fptr%base(ie)%state%v(:,:,1,k,nm1) - fptr%base(ie)%state%v(:,:,1,k,nm))*dti - &
+           vtens1(:,:,k) )
 
-        fvtens(:,:,2,k,ie) = fptr%base(ie)%spheremp(:,:)* &
-        ( (fptr%base(ie)%state%v(:,:,2,k,np1) - fptr%base(ie)%state%v(:,:,2,k,nm1))*dti - &
-        vtens2(:,:,k) )
-        enddo
-
-        fpstens(:,:,ie) = fptr%base(ie)%spheremp(:,:)* &
-        ( (fptr%base(ie)%state%ps_v(:,:,np1) - fptr%base(ie)%state%ps_v(:,:,nm1))*dti + &
-        sdot_sum(:,:) )
+           fvtens(:,:,2,k,ie) = fptr%base(ie)%spheremp(:,:)* &
+           ( (1+gam)*(fptr%base(ie)%state%v(:,:,2,k,np1) - fptr%base(ie)%state%v(:,:,2,k,nm1))*dti - &
+           gam*(fptr%base(ie)%state%v(:,:,2,k,nm1) - fptr%base(ie)%state%v(:,:,2,k,nm))*dti - &
+           vtens2(:,:,k) )
+          enddo
+           fpstens(:,:,ie) = fptr%base(ie)%spheremp(:,:)* &
+           ( (1+gam)*(fptr%base(ie)%state%ps_v(:,:,np1) - fptr%base(ie)%state%ps_v(:,:,nm1))*dti - &
+           gam*(fptr%base(ie)%state%ps_v(:,:,nm1) - fptr%base(ie)%state%ps_v(:,:,nm))*dti + &
+           sdot_sum(:,:) )
 
 ! add for fdptens later for vert lagrangian
 
