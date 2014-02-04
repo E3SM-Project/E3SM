@@ -1,5 +1,9 @@
 High Order Method Modeling Environment
 
+DO NOT READ THIS!
+In 2012, HOMME switched to a CMAKE build system.  Please see README.cmake
+
+
 In 2010, HOMME transitioned to a GNU Autoconf/Automake build
 system.  Please notice the new build system does not affect the directory
 structure of the previous one. 
