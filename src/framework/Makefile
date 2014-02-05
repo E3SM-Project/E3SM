@@ -1,6 +1,6 @@
 .SUFFIXES: .F .o
 
-DEPS := $(wildcard ../core_$(CORE)/Registry.xml)
+DEPS := $(shell find ../core_$(CORE)/ -type f -name "*.xml" ! -name "*processed.xml")
 
 OBJS = mpas_kind_types.o \
        mpas_framework.o \
