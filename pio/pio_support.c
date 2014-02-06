@@ -84,11 +84,11 @@ io_desc_t *malloc_iodesc(const int piotype, const int ndims)
     break;
   }    
   iodesc->dest_ioproc = NULL;
+  iodesc->dest_ioindex = NULL;
   iodesc->rfrom = NULL;
   iodesc->scount = NULL;
   iodesc->rtype = NULL;
   iodesc->stype = NULL;
-  iodesc->dest_ioindex = NULL;
   iodesc->ioid=-1;
   iodesc->ndims = ndims;
   iodesc->start = (PIO_Offset *) calloc(ndims, sizeof(PIO_Offset));
@@ -108,7 +108,7 @@ int PIOc_freedecomp(int iosysid, int ioid)
   iodesc = pio_get_iodesc_from_id(ioid);
   if(iodesc == NULL)
     return PIO_EBADID;
-#ifdef DOTHEFREE
+
   if(iodesc->dest_ioproc != NULL)
     free(iodesc->dest_ioproc);
   if(iodesc->rfrom != NULL)
@@ -125,7 +125,7 @@ int PIOc_freedecomp(int iosysid, int ioid)
     free(iodesc->count);
   if(iodesc->dest_ioindex != NULL)
     free(iodesc->dest_ioindex);
-#endif    
+  printf("in freedecomp %d\n",ioid);
   return pio_delete_iodesc_from_list(ioid);
 
 

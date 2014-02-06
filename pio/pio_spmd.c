@@ -159,17 +159,9 @@ int pio_swapm(void *sndbuf,  const int sndlths[],const int sdispls[], const MPI_
   int swapids[nprocs];
 
   if(max_requests == 0) {
-    if(mytask==1){
-      int stsize, rtsize;
-      MPI_Type_size(stypes[0],&stsize);
-      MPI_Type_size(rtypes[0],&rtsize);
-      for(int i=0;i<3;i++)
-      printf("alltoall %d %d %d %d %d %d\n",sndlths[i],sdispls[i],rcvlths[i],rdispls[i], stsize,  rtsize);
-    }
+    //     for(int i=0; i< nprocs; i++)
+    //    printf("alltoall[%d] %d %d %d %d\n",i,sndlths[i],sdispls[i],rcvlths[i],rdispls[i]);
     CheckMPIReturn(MPI_Alltoallw( sndbuf, sndlths, sdispls, stypes, rcvbuf, rcvlths, rdispls, rtypes, comm),__FILE__,__LINE__);
-    if(mytask==1){
-      printf("recv: %ld %ld %ld\n",((int *)rcvbuf)[0],((int *)rcvbuf)[1],((int *)rcvbuf)[2]);
-    }
     return PIO_NOERR;
   }
 
@@ -182,7 +174,8 @@ int pio_swapm(void *sndbuf,  const int sndlths[],const int sdispls[], const MPI_
     CheckMPIReturn(MPI_Irecv(ptr, rcvlths[mytask], rtypes[mytask], mytask, tag, comm, rcvids), __FILE__,__LINE__);     
 
     ptr = (char *) sndbuf + sdispls[mytask]; 
-    CheckMPIReturn(MPI_Send(ptr, sndlths[mytask], stypes[mytask], mytask, tag, comm), __FILE__,__LINE__);
+    //    printf("%d sndlths %d %d\n",mytask,sndlths[mytask],sdispls[mytask]);
+    CheckMPIReturn(MPI_Rsend(ptr, sndlths[mytask], stypes[mytask], mytask, tag, comm), __FILE__,__LINE__);
     CheckMPIReturn(MPI_Wait(rcvids, &status), __FILE__,__LINE__);
   }
   for(int i=0;i<nprocs;i++){

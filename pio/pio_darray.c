@@ -99,7 +99,6 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, voi
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
-      printf("%s %d\n",__FILE__,__LINE__);
       mpierr = MPI_Type_size(iodesc->basetype, &dsize);
 
       if(ios->io_rank==0){
@@ -125,20 +124,23 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, voi
 	  }else if(iodesc->basetype == MPI_DOUBLE || iodesc->basetype == MPI_REAL8){
 	    ierr = nc_put_vara_double (ncid, vid, tstart, tcount, (const double *) tmp_buf); 
 	  }else if(iodesc->basetype == MPI_FLOAT || iodesc->basetype == MPI_REAL4){
+	    //    for(int j=0;j<ndims;j++)
+	    //  printf("tstart[%d] %ld tcount %ld %ld\n",j,tstart[j],tcount[j], iodesc->maxiobuflen);
+	    
 	    ierr = nc_put_vara_float (ncid,vid, tstart, tcount, (const float *) tmp_buf); 
 	  }else{
 	    fprintf(stderr,"Type not recognized %d in pioc_write_darray\n",(int) iodesc->basetype);
 	  }
-	}      
+	}     
       }else if(count[0]>0){
 	for(i=0;i<ndims;i++){
 	  tstart[i] = (size_t) start[i];
 	  tcount[i] = (size_t) count[i];
 	}
 	mpierr = MPI_Recv( &ierr, 1, MPI_INT, 0, 0, ios->io_comm, &status);  // task0 is ready to recieve
-	mpierr = MPI_Send( tstart, ndims, MPI_INT, 0, ios->num_iotasks+ios->io_rank, ios->io_comm);
-	mpierr = MPI_Send( tcount, ndims, MPI_INT, 0,2*ios->num_iotasks+ios->io_rank, ios->io_comm);
-	mpierr = MPI_Send( IOBUF, iodesc->maxiobuflen, iodesc->basetype, 0, ios->io_rank, ios->io_comm);
+	mpierr = MPI_Rsend( tstart, ndims, MPI_INT, 0, ios->num_iotasks+ios->io_rank, ios->io_comm);
+	mpierr = MPI_Rsend( tcount, ndims, MPI_INT, 0,2*ios->num_iotasks+ios->io_rank, ios->io_comm);
+	mpierr = MPI_Rsend( IOBUF, iodesc->maxiobuflen, iodesc->basetype, 0, ios->io_rank, ios->io_comm);
       }
       break;
 #endif
@@ -419,12 +421,7 @@ int PIOc_read_darray(const int ncid, const int vid, const int ioid, const PIO_Of
   case PIO_IOTYPE_NETCDF4C:
     ierr = pio_read_darray_nc(file, iodesc, vid, iobuf);
   }
-  if(ios->iomaster)
-    printf("b %d %d %d\n",((int *)iobuf)[0],((int *)iobuf)[1],((int *)iobuf)[2]);
-
   ierr = box_rearrange_io2comp(ios, iodesc, iobuf, array, 0, 0);
-
-  printf("a %d %d %d\n",((int *)array)[0],((int *)array)[1],((int *)array)[2]);
 
   if(iobuf != NULL)
     free(iobuf);
