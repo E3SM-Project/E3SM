@@ -71,7 +71,6 @@ int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const
   int mpierr;
   int ierr;
   int iosize;
-  int lenblocks;
   int ndisp;
 
   for(int i=0;i<ndims;i++){
@@ -86,7 +85,7 @@ int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const
   iodesc = malloc_iodesc(basetype, ndims);
 
   if(ios->ioproc){
-    
+    //  Unless the user specifies the start and count for each IO task compute it.    
     if((iostart != NULL) && (iocount != NULL)){ 
       for(int i=0;i<ndims;i++){
 	iodesc->start[i] = iostart[i];
@@ -98,29 +97,22 @@ int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const
 					    iodesc->start, iodesc->count);
 
     }
+
+    //  compute the max io buffer size
     iosize=1;
     for(int i=0;i<ndims;i++)
       iosize*=iodesc->count[i];
 
     iodesc->llen = iosize;
-
+    // Share the max io buffer size with all io tasks
     CheckMPIReturn(MPI_Allreduce(&iosize, &(iodesc->maxiobuflen), 1, MPI_INT, MPI_MAX, ios->io_comm),__FILE__,__LINE__);
     
   }
-
+  // Depending on array size and io-blocksize the actual number of io tasks used may vary
   CheckMPIReturn(MPI_Bcast(&(ios->num_aiotasks), 1, MPI_INT, ios->ioroot,ios->my_comm),__FILE__,__LINE__);
-
+  // Compute the communications pattern for this decomposition
   ierr = box_rearrange_create( ios, maplen, compmap, dims, ndims, ios->num_aiotasks, iodesc);
 
-
-  lenblocks=1;
-  for(int i=0;i<ndims;i++){
-    if(iodesc->count[i] == dims[i]){
-      lenblocks*=iodesc->count[i];
-    }else{
-      break;
-    }
-  }
   *ioidp = pio_add_to_iodesc_list(iodesc);
 
   return PIO_NOERR;
