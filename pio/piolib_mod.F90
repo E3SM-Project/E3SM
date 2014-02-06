@@ -958,6 +958,7 @@ contains
        cstart = C_NULL_PTR
        ccount = C_NULL_PTR
     endif
+
     ierr = PIOc_InitDecomp(iosystem%iosysid, basepiotype, size(dims), dims, &
          size(compdof), compdof, iodesc%ioid, cstart, ccount)
 

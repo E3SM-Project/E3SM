@@ -89,14 +89,10 @@ io_desc_t *malloc_iodesc(const int piotype, const int ndims)
   iodesc->rtype = NULL;
   iodesc->stype = NULL;
   iodesc->dest_ioindex = NULL;
-
+  iodesc->ioid=-1;
   iodesc->ndims = ndims;
   iodesc->start = (PIO_Offset *) calloc(ndims, sizeof(PIO_Offset));
   iodesc->count = (PIO_Offset *) calloc(ndims, sizeof(PIO_Offset));
-
-
-  printf("ptype %d %d\n",piotype,(int) iodesc->basetype);
-
 
   return iodesc;
 }

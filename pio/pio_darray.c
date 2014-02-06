@@ -21,7 +21,7 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, voi
   int mpierr;
   int i;
   void *tmp_buf=NULL;
-  MPI_Datatype dsize;
+  int dsize;
   MPI_Status status;
 
   ierr = PIO_NOERR;
@@ -99,6 +99,7 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, voi
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
+      printf("%s %d\n",__FILE__,__LINE__);
       mpierr = MPI_Type_size(iodesc->basetype, &dsize);
 
       if(ios->io_rank==0){
@@ -327,19 +328,13 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void
 	      tmp_start[ndims] = vdesc->record;
 	      tmp_count[ndims] = 1;
 	    }
-	    switch(iodesc->basetype){
-	    case MPI_DOUBLE:
-	    case MPI_REAL8:
+	    if(iodesc->basetype == MPI_DOUBLE || iodesc->basetype == MPI_REAL8){
 	      ierr = nc_get_vara_double (file->fh, vid, tmp_start, tmp_count, IOBUF); 
-	      break;
-	    case MPI_INTEGER:
+	    }else if(iodesc->basetype == MPI_INTEGER){
 	      ierr = nc_get_vara_int (file->fh, vid, tmp_start, tmp_count,  IOBUF); 	     
-	      break;
-	    case MPI_FLOAT:
-	    case MPI_REAL4:
+	    }else if(iodesc->basetype == MPI_FLOAT || iodesc->basetype == MPI_REAL4){
 	      ierr = nc_get_vara_float (file->fh, vid, tmp_start, tmp_count,  IOBUF); 
-	      break;
-	    default:
+	    }else{
 	      fprintf(stderr,"Type not recognized %d in pioc_write_darray\n",(int) iodesc->basetype);
 	    }	
 	    if(i>0){
@@ -424,10 +419,12 @@ int PIOc_read_darray(const int ncid, const int vid, const int ioid, const PIO_Of
   case PIO_IOTYPE_NETCDF4C:
     ierr = pio_read_darray_nc(file, iodesc, vid, iobuf);
   }
-
+  if(ios->iomaster)
+    printf("b %d %d %d\n",((int *)iobuf)[0],((int *)iobuf)[1],((int *)iobuf)[2]);
 
   ierr = box_rearrange_io2comp(ios, iodesc, iobuf, array, 0, 0);
 
+  printf("a %d %d %d\n",((int *)array)[0],((int *)array)[1],((int *)array)[2]);
 
   if(iobuf != NULL)
     free(iobuf);

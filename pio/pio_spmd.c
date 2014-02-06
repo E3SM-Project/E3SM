@@ -130,18 +130,13 @@ int pair(const int np, const int p, const int k)
   return pair;
 }
 
-int pio_swapm(const int nprocs, const int mytask, 
-	      void *sndbuf,  const int sndlths[],const int sdispls[], const MPI_Datatype stypes[], 
+int pio_swapm(void *sndbuf,  const int sndlths[],const int sdispls[], const MPI_Datatype stypes[], 
 	      void *rcvbuf, const int rcvlths[], const int rdispls[], const MPI_Datatype rtypes[], 
 	      const MPI_Comm comm, const bool handshake, const bool isend, const int max_requests)
 {
   int tag;
   int offset_t;
   int ierr;
-  MPI_Request rcvids[nprocs];
-  MPI_Request sndids[nprocs];
-  MPI_Request hs_rcvids[nprocs];
-  int swapids[nprocs];
   MPI_Status status;
   int steps;
   int istep;
@@ -152,9 +147,29 @@ int pio_swapm(const int nprocs, const int mytask,
   int hs;
   char *ptr;
   int cnt;
+  int mytask;
+  int nprocs;
+
+  CheckMPIReturn(MPI_Comm_rank(comm, &mytask),__FILE__,__LINE__);
+  CheckMPIReturn(MPI_Comm_size(comm, &nprocs),__FILE__,__LINE__);
+
+  MPI_Request  rcvids[nprocs];
+  MPI_Request sndids[nprocs];
+  MPI_Request hs_rcvids[nprocs];
+  int swapids[nprocs];
 
   if(max_requests == 0) {
+    if(mytask==1){
+      int stsize, rtsize;
+      MPI_Type_size(stypes[0],&stsize);
+      MPI_Type_size(rtypes[0],&rtsize);
+      for(int i=0;i<3;i++)
+      printf("alltoall %d %d %d %d %d %d\n",sndlths[i],sdispls[i],rcvlths[i],rdispls[i], stsize,  rtsize);
+    }
     CheckMPIReturn(MPI_Alltoallw( sndbuf, sndlths, sdispls, stypes, rcvbuf, rcvlths, rdispls, rtypes, comm),__FILE__,__LINE__);
+    if(mytask==1){
+      printf("recv: %ld %ld %ld\n",((int *)rcvbuf)[0],((int *)rcvbuf)[1],((int *)rcvbuf)[2]);
+    }
     return PIO_NOERR;
   }
 

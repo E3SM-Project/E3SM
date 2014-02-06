@@ -140,8 +140,8 @@ foreach my $func (keys %{$functions}){
 		  print F "  if(file->varlist[varid].ndims > 0){\n";
 		  print F "    (*ndimsp) = file->varlist[varid].ndims;\n";
 		  print F "    return PIO_NOERR;\n  }\n";
-	      }elsif($func =~ /inq_dimlen/){
-		  print F "  printf(\"dimid %d\\n\",dimid);\n";
+#	      }elsif($func =~ /inq_dimlen/){
+#		  print F "  printf(\"dimid %d\\n\",dimid);\n";
 
 	      }
 	  }
@@ -151,6 +151,10 @@ foreach my $func (keys %{$functions}){
 		  print F "  mpierr = MPI_Bcast(varidp,1, MPI_INT, ios->ioroot, ios->my_comm);\n";
 	      }elsif($func =~ /inq_ndims/){
 		  print F "  mpierr = MPI_Bcast(ndimsp , 1, MPI_INT, ios->ioroot, ios->my_comm);\n";	
+	      }elsif($func =~ /def_var/){
+		  print F "  mpierr = MPI_Bcast(varidp , 1, MPI_INT, ios->ioroot, ios->my_comm);\n";	
+	      }elsif($func =~ /def_dim/){
+		  print F "  mpierr = MPI_Bcast(idp , 1, MPI_INT, ios->ioroot, ios->my_comm);\n";	
 	      }elsif($func =~ /inq_format/){
 		  print F "  mpierr = MPI_Bcast(formatp , 1, MPI_INT, ios->ioroot, ios->my_comm);\n";	
 	      }elsif($func =~ /inq_natts/){

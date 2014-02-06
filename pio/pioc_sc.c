@@ -110,16 +110,19 @@ void computestartandcount(const int gdim, const int ioprocs, const int rank,
 }
 
 PIO_Offset GCDblocksize(const int arrlen, const PIO_Offset arr_in[]){
-  PIO_Offset *del_arr, *loc_arr, *gaps, *blk_len;
+  PIO_Offset *del_arr=NULL;
+  PIO_Offset *loc_arr=NULL; 
+  PIO_Offset *gaps=NULL;
+  PIO_Offset *blk_len=NULL;
   int i, j, k, n, numblks, numtimes, ii, numgaps;
   PIO_Offset bsize, bsizeg, blklensum;
 
   numblks=0;
   numgaps=0;
   numtimes=0;
-  del_arr = (PIO_Offset *) malloc((arrlen-1)*sizeof(PIO_Offset));
+  del_arr = (PIO_Offset *) calloc((arrlen-1),sizeof(PIO_Offset));
 
-  for(i=0;i<-1;i++){
+  for(i=0;i<arrlen-1;i++){
     del_arr[i] = arr_in[i+1] - arr_in[i];
     if(del_arr[i] > 1)
       numtimes++;
@@ -130,16 +133,12 @@ PIO_Offset GCDblocksize(const int arrlen, const PIO_Offset arr_in[]){
   else
     n = numtimes;
 
-  loc_arr = (PIO_Offset*) malloc(sizeof(PIO_Offset)*n);
-  j=0;
-  for(i=0;i<n;i++)
-    loc_arr[i]=1;
-  for(i=0;i<arrlen-1;i++){
-    if(del_arr[i] != 1)
-      loc_arr[ j++ ]  = i;
-  }
+  if(numblks==1) return(arrlen);
+
+  blk_len =  (PIO_Offset*) calloc(numblks,sizeof(PIO_Offset));
+  loc_arr = (PIO_Offset*) malloc((arrlen-1)*sizeof(PIO_Offset));
   if(numtimes>0){
-    gaps = (PIO_Offset *) malloc(numtimes*sizeof(PIO_Offset));
+    gaps = (PIO_Offset *) calloc(numtimes,sizeof(PIO_Offset));
     ii=0;
     for(i=0;i<arrlen-1;i++){
       if(del_arr[i]>1)
@@ -147,7 +146,15 @@ PIO_Offset GCDblocksize(const int arrlen, const PIO_Offset arr_in[]){
     }
     numgaps=ii;
   }
-  blk_len =  (PIO_Offset*) malloc(sizeof(PIO_Offset)*numblks);
+
+  j=0;
+  for(i=0;i<n;i++)
+    loc_arr[i]=1;
+  for(i=0;i<arrlen-1;i++){
+    if(del_arr[i] != 1)
+      loc_arr[ j++ ]  = i;
+  }
+
   blk_len[0] = loc_arr[0];
   blklensum=blk_len[0];
   for(i=1;i<numblks-1;i++){
@@ -160,13 +167,14 @@ PIO_Offset GCDblocksize(const int arrlen, const PIO_Offset arr_in[]){
   if(numgaps > 0) {
     bsizeg = lgcd_array(numgaps, gaps);
     bsize = lgcd(bsize,bsizeg);
-    free(gaps);
   }
   if(arr_in[0]>0) 
     bsize = lgcd(bsize,arr_in[0]);
-  free(del_arr);
-  free(loc_arr);
-  free(blk_len);
+
+  if(loc_arr != NULL) free(loc_arr);
+  if(del_arr != NULL) free(del_arr);
+  if(gaps    != NULL) free(gaps);
+  if(blk_len != NULL) free(blk_len);
   return bsize;
 }
 

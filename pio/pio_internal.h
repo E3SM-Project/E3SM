@@ -34,11 +34,12 @@ int pio_fc_gather( void *sendbuf, const int sendcnt, const MPI_Datatype sendtype
 		   void *recvbuf, const int recvcnt, const MPI_Datatype recvtype, const int root, 
 		   MPI_Comm comm, const int flow_cntl);
 
-int pio_swapm(const int nprocs, const int mytask, void *sndbuf, const int sndlths[],
-	      const int sdispls[], const MPI_Datatype stypes[], void *rcvbuf, const int rcvlths[], 
-	      const int rdispls[], const MPI_Datatype rtypes[], MPI_Comm comm, const bool handshake, const bool isend, 
-	      const int max_requests);
+int pio_swapm(void *sndbuf, const int sndlths[], const int sdispls[], const MPI_Datatype stypes[], 
+	      void *rcvbuf, const int rcvlths[], const int rdispls[], const MPI_Datatype rtypes[], 
+	      MPI_Comm comm, const bool handshake, const bool isend, const int max_requests);
+
 long long lgcd_array(int nain, long long*ain);
+
 PIO_Offset GCDblocksize(const int arrlen, const PIO_Offset arr_in[]);
 
 int box_rearrange_create(iosystem_desc_t *ios,const int maplen, const PIO_Offset compmap[], const int gsize[],

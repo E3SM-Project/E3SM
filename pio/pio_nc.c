@@ -267,6 +267,7 @@ int PIOc_def_var (int ncid, const char *name, nc_type xtype,  int ndims, const i
   }
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  mpierr = MPI_Bcast(varidp , 1, MPI_INT, ios->ioroot, ios->my_comm);
 
   return ierr;
 }
@@ -2687,6 +2688,7 @@ int PIOc_def_dim (int ncid, const char *name, PIO_Offset len, int *idp)
   }
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
+  mpierr = MPI_Bcast(idp , 1, MPI_INT, ios->ioroot, ios->my_comm);
 
   return ierr;
 }

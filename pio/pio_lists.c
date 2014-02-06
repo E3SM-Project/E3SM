@@ -117,18 +117,19 @@ iosystem_desc_t *pio_get_iosystem_from_id(int iosysid)
 int pio_add_to_iodesc_list(io_desc_t *iodesc)
 {
   io_desc_t *ciodesc;
-  int imax=511;
-  //  assert(file != NULL);
+  int imax=512;
 
   iodesc->next = NULL;
   if(pio_iodesc_list == NULL)
     pio_iodesc_list = iodesc;
   else{
-    for(ciodesc = pio_iodesc_list; ciodesc->next != NULL; ciodesc=ciodesc->next, imax=max(ciodesc->ioid,imax));
+    imax++;
+    for(ciodesc = pio_iodesc_list; ciodesc->next != NULL; ciodesc=ciodesc->next, imax=ciodesc->ioid+1);
     ciodesc->next = iodesc;
   }
-  iodesc->ioid = imax+1;
+  iodesc->ioid = imax;
   current_iodesc = iodesc;
+
   return iodesc->ioid;
 }
 
