@@ -110,17 +110,18 @@ void computestartandcount(const int gdim, const int ioprocs, const int rank,
 }
 
 PIO_Offset GCDblocksize(const int arrlen, const PIO_Offset arr_in[]){
-  PIO_Offset *del_arr=NULL;
-  PIO_Offset *loc_arr=NULL; 
+  PIO_Offset del_arr[arrlen-1];
+  PIO_Offset loc_arr[arrlen-1]; 
   PIO_Offset *gaps=NULL;
   PIO_Offset *blk_len=NULL;
   int i, j, k, n, numblks, numtimes, ii, numgaps;
   PIO_Offset bsize, bsizeg, blklensum;
+  
 
   numblks=0;
   numgaps=0;
   numtimes=0;
-  del_arr = (PIO_Offset *) calloc((arrlen-1),sizeof(PIO_Offset));
+  //  del_arr = (PIO_Offset *) calloc((arrlen-1),sizeof(PIO_Offset));
 
   for(i=0;i<arrlen-1;i++){
     del_arr[i] = arr_in[i+1] - arr_in[i];
@@ -136,7 +137,7 @@ PIO_Offset GCDblocksize(const int arrlen, const PIO_Offset arr_in[]){
   if(numblks==1) return(arrlen);
 
   blk_len =  (PIO_Offset*) calloc(numblks,sizeof(PIO_Offset));
-  loc_arr = (PIO_Offset*) malloc((arrlen-1)*sizeof(PIO_Offset));
+  //  loc_arr = (PIO_Offset*) malloc((arrlen-1)*sizeof(PIO_Offset));
   if(numtimes>0){
     gaps = (PIO_Offset *) calloc(numtimes,sizeof(PIO_Offset));
     ii=0;
@@ -167,14 +168,15 @@ PIO_Offset GCDblocksize(const int arrlen, const PIO_Offset arr_in[]){
   if(numgaps > 0) {
     bsizeg = lgcd_array(numgaps, gaps);
     bsize = lgcd(bsize,bsizeg);
+    free(gaps);
   }
   if(arr_in[0]>0) 
     bsize = lgcd(bsize,arr_in[0]);
 
-  if(loc_arr != NULL) free(loc_arr);
-  if(del_arr != NULL) free(del_arr);
-  if(gaps    != NULL) free(gaps);
-  if(blk_len != NULL) free(blk_len);
+  //  if(loc_arr != NULL) free(loc_arr);
+  //  if(del_arr != NULL) free(del_arr);
+
+  free(blk_len);
   return bsize;
 }
 

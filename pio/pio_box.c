@@ -457,6 +457,13 @@ int box_rearrange_create(iosystem_desc_t *ios,const int maplen, const PIO_Offset
   PIO_Offset start[ndims], count[ndims];
   int tsizei, tsizel, tsize, i, j, k, llen;
   MPI_Datatype dtype;
+  int sndlths[nprocs];
+  int sdispls[nprocs];
+  int recvlths[nprocs];
+  int rdispls[nprocs];
+  MPI_Datatype dtypes[nprocs];
+  PIO_Offset iomaplen[nioprocs];
+
 
   iodesc->ndof = maplen;
   gstride[0]=1;
@@ -472,11 +479,6 @@ int box_rearrange_create(iosystem_desc_t *ios,const int maplen, const PIO_Offset
     dtype = MPI_LONG;
     tsize = tsizel;
   }
-  int * sndlths = (int *) calloc( nprocs,sizeof(int));
-  int * sdispls = (int *) calloc( nprocs,sizeof(int));
-  int * recvlths = (int *) calloc( nprocs,sizeof(int));
-  int * rdispls = (int *) calloc( nprocs,sizeof(int));
-  MPI_Datatype * dtypes = (MPI_Datatype *) malloc(nprocs*sizeof(MPI_Datatype));
 
   iodesc->dest_ioproc = (int *) malloc(max(1,maplen) * sizeof(int));
   iodesc->dest_ioindex = (PIO_Offset *) calloc(max(1,maplen) , sizeof(PIO_Offset));
@@ -485,6 +487,7 @@ int box_rearrange_create(iosystem_desc_t *ios,const int maplen, const PIO_Offset
   }
   for(i=0;i<nprocs;i++){
     dtypes[i] = dtype;
+    sdispls[i] = 0;
   }
   if(ios->ioproc){
     for( i=0;i<nprocs;i++){
@@ -496,7 +499,6 @@ int box_rearrange_create(iosystem_desc_t *ios,const int maplen, const PIO_Offset
     recvlths[ io_comprank ] = 1;
     rdispls[ io_comprank ] = i*tsize;
   }      
-  PIO_Offset iomaplen[nioprocs];
   //  The length of each iomap
   pio_swapm(&(iodesc->llen), sndlths, sdispls, dtypes,
 	    iomaplen, recvlths, rdispls, dtypes, 	

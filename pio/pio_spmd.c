@@ -145,10 +145,10 @@ int pio_swapm(void *sndbuf,  const int sndlths[],const int sdispls[], const MPI_
   int maxreq;
   int maxreqh;
   int hs;
-  char *ptr;
   int cnt;
   int mytask;
   int nprocs;
+  char *ptr;
 
   CheckMPIReturn(MPI_Comm_rank(comm, &mytask),__FILE__,__LINE__);
   CheckMPIReturn(MPI_Comm_size(comm, &nprocs),__FILE__,__LINE__);
@@ -168,15 +168,25 @@ int pio_swapm(void *sndbuf,  const int sndlths[],const int sdispls[], const MPI_
   offset_t = nprocs;
   // send to self
   if(sndlths[mytask] > 0){
-    tag = mytask + offset_t;
-
-    ptr = (char *) rcvbuf + rdispls[mytask];
-    CheckMPIReturn(MPI_Irecv(ptr, rcvlths[mytask], rtypes[mytask], mytask, tag, comm, rcvids), __FILE__,__LINE__);     
-
-    ptr = (char *) sndbuf + sdispls[mytask]; 
+    if(sndlths[mytask] == rcvlths[mytask]){
+      int tsize;
+      char *sendbuf, *recvbuf;
+      MPI_Type_size(stypes[mytask], &tsize);
+      recvbuf = (char *) rcvbuf + rdispls[mytask];
+      sendbuf = (char *) sndbuf + sdispls[mytask]; 
+      printf("sdispls %d rdispls %d tsize %d sndlths %d\n",sdispls[mytask],rdispls[mytask],tsize,sndlths[mytask]);
+      memcpy(recvbuf, sendbuf, (size_t) (tsize*sndlths[mytask]));
+    }else{
+      tag = mytask + offset_t;
+      ptr = (char *) rcvbuf + rdispls[mytask];
+      CheckMPIReturn(MPI_Irecv(ptr, rcvlths[mytask], rtypes[mytask], mytask, tag, comm, rcvids), __FILE__,__LINE__);     
+      ptr = (char *) sndbuf + sdispls[mytask]; 
     //    printf("%d sndlths %d %d\n",mytask,sndlths[mytask],sdispls[mytask]);
-    CheckMPIReturn(MPI_Rsend(ptr, sndlths[mytask], stypes[mytask], mytask, tag, comm), __FILE__,__LINE__);
-    CheckMPIReturn(MPI_Wait(rcvids, &status), __FILE__,__LINE__);
+      CheckMPIReturn(MPI_Send(ptr, sndlths[mytask], stypes[mytask], mytask, tag, comm), __FILE__,__LINE__);
+      CheckMPIReturn(MPI_Wait(rcvids, &status), __FILE__,__LINE__);
+
+    }
+
   }
   for(int i=0;i<nprocs;i++){
     swapids[i]=0;

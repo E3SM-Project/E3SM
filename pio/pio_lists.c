@@ -55,6 +55,8 @@ int pio_delete_file_from_list(int ncid)
       }else{
 	pfile->next = cfile->next;
       }
+      if(current_file==cfile)
+	current_file = pio_file_list;
       free(cfile);
       return PIO_NOERR;
     }
@@ -164,6 +166,8 @@ int pio_delete_iodesc_from_list(int ioid)
       }else{
 	piodesc->next = ciodesc->next;
       }
+      if(current_iodesc==ciodesc)
+	current_iodesc=pio_iodesc_list;
       free(ciodesc);
       return PIO_NOERR;
     }

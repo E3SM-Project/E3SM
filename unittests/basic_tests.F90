@@ -140,7 +140,7 @@ module basic_tests
       integer                :: iotype, ret_val
 
       ! Data used to test writing
-      integer,          dimension(3) :: data_to_write, compdof
+      integer,          dimension(3) :: data_buffer, compdof
       integer,          dimension(1) :: dims
       type(io_desc_t)                :: iodesc_nCells
       integer                        :: pio_dim
@@ -149,7 +149,7 @@ module basic_tests
       err_msg = "no_error"
       dims(1) = 3*ntasks
       compdof = 3*my_rank+(/1,2,3/)  ! Where in the global array each task writes
-      data_to_write = my_rank
+      data_buffer = my_rank
 
       call PIO_initdecomp(pio_iosystem, PIO_int, dims, compdof, iodesc_nCells)
 
@@ -157,7 +157,7 @@ module basic_tests
       iotype   = iotypes(test_id)
 
       ! Open file that doesn't exist
-      if(master_task) write(*,"(6x,A,x)") "trying to open nonexistant file error expected ... "
+      if(master_task) write(*,"(6x,A)") "trying to open nonexistant file error expected ... "
       call mpi_barrier(MPI_COMM_WORLD,ret_val)
       ret_val = PIO_openfile(pio_iosystem, pio_file, iotype, "FAKE.FILE", &
                              PIO_nowrite, CheckMPI=.false.)
@@ -221,7 +221,8 @@ module basic_tests
       end if
 
       ! Write foo
-      call PIO_write_darray(pio_file, pio_var, iodesc_nCells, data_to_write, ret_val, fillval=-1)
+      call PIO_write_darray(pio_file, pio_var, iodesc_nCells, data_buffer, ret_val, fillval=-1)
+
       if (ret_val .ne. PIO_NOERR) then
         ! Error in PIO_write_darray
         err_msg = "Could not write data"
@@ -231,6 +232,7 @@ module basic_tests
 
       ! Close file
       call PIO_closefile(pio_file)
+
 
       ! Open existing file with PIO_nowrite, try to write (netcdf only)
       if (is_netcdf(iotype)) then
@@ -242,15 +244,34 @@ module basic_tests
         end if
 
         ! Try to write (should fail)
-        if(master_task) write(*,"(6x,A,x)") "trying to write to readonly file, error expected ... "
+        if(master_task) write(*,"(6x,A)") "trying to write to readonly file, error expected ... "
         call mpi_barrier(MPI_COMM_WORLD,ret_val)
-        call PIO_write_darray(pio_file, pio_var, iodesc_nCells, data_to_write, ret_val)
+        call PIO_write_darray(pio_file, pio_var, iodesc_nCells, data_buffer, ret_val)
+        
         if (ret_val.eq.PIO_NOERR) then
           ! Error in PIO_write_darray
           err_msg = "Wrote to file opened in NoWrite mode"
           call PIO_closefile(pio_file)
           call mpi_abort(MPI_COMM_WORLD,0,ret_val)
         end if
+
+        data_buffer = -1
+        call PIO_read_darray(pio_file, pio_var, iodesc_nCells,  data_buffer, ret_val)
+
+        if (ret_val.ne.PIO_NOERR) then
+          ! Error in PIO_read_darray
+          err_msg = "Error in read_darray"
+          call PIO_closefile(pio_file)
+          call mpi_abort(MPI_COMM_WORLD,0,ret_val)
+        end if
+        if(any(data_buffer /= my_rank)) then
+          err_msg = "Error reading data"
+          call PIO_closefile(pio_file)
+          call mpi_abort(MPI_COMM_WORLD,0,ret_val)
+        end if
+
+
+
         ! Close file
         call PIO_closefile(pio_file)
       end if
