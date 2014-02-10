@@ -131,7 +131,7 @@ int pio_add_to_iodesc_list(io_desc_t *iodesc)
   }
   iodesc->ioid = imax;
   current_iodesc = iodesc;
-  printf("In add to list %d\n",iodesc->ioid);
+  //  printf("In add to list %d\n",iodesc->ioid);
   return iodesc->ioid;
 }
 

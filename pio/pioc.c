@@ -105,9 +105,9 @@ int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const
 
     iodesc->llen = iosize;
     // Share the max io buffer size with all io tasks
-    printf("%s %d %d\n",__FILE__,__LINE__,iosize);
+    //    printf("%s %d %d\n",__FILE__,__LINE__,iosize);
     CheckMPIReturn(MPI_Allreduce(&iosize, &(iodesc->maxiobuflen), 1, MPI_INT, MPI_MAX, ios->io_comm),__FILE__,__LINE__);
-    printf("%s %d %d\n",__FILE__,__LINE__,iodesc->maxiobuflen);    
+    //    printf("%s %d %d\n",__FILE__,__LINE__,iodesc->maxiobuflen);    
     CheckMPIReturn(MPI_Barrier(ios->io_comm),__FILE__,__LINE__);
   }
   // Depending on array size and io-blocksize the actual number of io tasks used may vary

@@ -34,23 +34,26 @@ typedef struct var_desc_t
 typedef struct io_desc_t
 {
   int ioid;
-  int *dest_ioproc;
-  int *rfrom;
-  int *scount;
   int async_id;
   int nrecvs;
-  int compsize;
   int maxiobuflen;
   int ndof;
   int ndims;
   MPI_Datatype basetype;
+  PIO_Offset llen;
+
+  int *rfrom;
+
+  int *rcount;
+  int *scount;
+  PIO_Offset *sindex;
+  PIO_Offset *rindex;
+
   MPI_Datatype *rtype;
   MPI_Datatype *stype;
+
   PIO_Offset *start;
   PIO_Offset *count;
-  PIO_Offset llen;
-  PIO_Offset glen;
-  PIO_Offset *dest_ioindex;
   struct io_desc_t *next;
 } io_desc_t;
 

@@ -198,18 +198,22 @@ int PIOc_write_darray(const int ncid, const int vid, const int ioid, const PIO_O
 
   if(ios->ioproc){
     rlen = iodesc->llen;
-    vtype = (MPI_Datatype) iodesc->basetype;
-    if(vtype == MPI_INTEGER){
-      MALLOC_FILL_ARRAY(int, rlen, fillvalue, iobuf);
-    }else if(vtype == MPI_FLOAT || vtype == MPI_REAL4){
-      MALLOC_FILL_ARRAY(float, rlen, fillvalue, iobuf);
-    }else if(vtype == MPI_DOUBLE || vtype == MPI_REAL8){
-      MALLOC_FILL_ARRAY(double, rlen, fillvalue, iobuf);
-    }else if(vtype == MPI_CHARACTER){
-      MALLOC_FILL_ARRAY(char, rlen, fillvalue, iobuf);
-    }else{
-      fprintf(stderr,"Type not recognized %d in pioc_write_darray\n",vtype);
+    if(rlen>0){
+      vtype = (MPI_Datatype) iodesc->basetype;
+      if(vtype == MPI_INTEGER){
+	MALLOC_FILL_ARRAY(int, rlen, fillvalue, iobuf);
+      }else if(vtype == MPI_FLOAT || vtype == MPI_REAL4){
+	MALLOC_FILL_ARRAY(float, rlen, fillvalue, iobuf);
+      }else if(vtype == MPI_DOUBLE || vtype == MPI_REAL8){
+	MALLOC_FILL_ARRAY(double, rlen, fillvalue, iobuf);
+      }else if(vtype == MPI_CHARACTER){
+	MALLOC_FILL_ARRAY(char, rlen, fillvalue, iobuf);
+      }else{
+	fprintf(stderr,"Type not recognized %d in pioc_write_darray\n",vtype);
+      }
     }
+    printf(" rlen = %d %ld\n",rlen,iobuf); 
+
   }
 
 
