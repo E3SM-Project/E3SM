@@ -6,6 +6,7 @@
 !! @brief Read Routines for non-decomposed NetCDF data.
 !<
 module pionfget_mod
+  use iso_c_binding
 #ifdef TIMING
   use perf_mod, only : t_startf, t_stopf      ! _EXTERNAL
 #endif
@@ -418,17 +419,17 @@ CONTAINS
          use iso_c_binding
          integer(C_INT), value :: ncid
          integer(C_INT), value :: varid
-         character(C_CHAR) :: ival(*)
+         character(C_CHAR) :: ival
        end function PIOc_get_var_text
     end interface
-    ierr = PIOc_get_var_text(File%fh, varid, ival)
     dimlen = size(ival)
 
 #if({DIMS}==5)
-    do q=1,dimlen(1)
-    do n=1,dimlen(1)
-    do m=1,dimlen(1)
-    do k=1,dimlen(1)
+    ierr = PIOc_get_var_text(File%fh, varid, ival(1,1,1,1,1))
+    do q=1,dimlen(5)
+    do n=1,dimlen(4)
+    do m=1,dimlen(3)
+    do k=1,dimlen(2)
     do j=1,dimlen(1)
        call replace_c_null(ival(j,k,m,n,q))
     end do
@@ -438,9 +439,10 @@ CONTAINS
     end do
 #endif
 #if({DIMS}==4)
-    do n=1,dimlen(1)
-    do m=1,dimlen(1)
-    do k=1,dimlen(1)
+    ierr = PIOc_get_var_text(File%fh, varid, ival(1,1,1,1))
+    do n=1,dimlen(4)
+    do m=1,dimlen(3)
+    do k=1,dimlen(2)
     do j=1,dimlen(1)
        call replace_c_null(ival(j,k,m,n))
     end do
@@ -449,8 +451,9 @@ CONTAINS
     end do
 #endif
 #if({DIMS}==3)
-    do m=1,dimlen(1)
-    do k=1,dimlen(1)
+    ierr = PIOc_get_var_text(File%fh, varid, ival(1,1,1))
+    do m=1,dimlen(3)
+    do k=1,dimlen(2)
     do j=1,dimlen(1)
        call replace_c_null(ival(j,k,m))
     end do
@@ -458,13 +461,15 @@ CONTAINS
     end do
 #endif
 #if({DIMS}==2)
-    do k=1,dimlen(1)
+    ierr = PIOc_get_var_text(File%fh, varid, ival(1,1))
+    do k=1,dimlen(2)
     do j=1,dimlen(1)
        call replace_c_null(ival(j,k))
     end do
     end do
 #endif
 #if({DIMS}==1)
+    ierr = PIOc_get_var_text(File%fh, varid, ival(1))
     do j=1,dimlen(1)
        call replace_c_null(ival(j))
     end do

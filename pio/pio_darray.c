@@ -212,7 +212,7 @@ int PIOc_write_darray(const int ncid, const int vid, const int ioid, const PIO_O
 	fprintf(stderr,"Type not recognized %d in pioc_write_darray\n",vtype);
       }
     }
-    printf(" rlen = %d %ld\n",rlen,iobuf); 
+    //    printf(" rlen = %d %ld\n",rlen,iobuf); 
 
   }
 

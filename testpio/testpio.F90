@@ -13,7 +13,7 @@
 !<
 program testpio
   ! Modules from PIO package that are used by this application
-
+  use iso_fortran_env
   use kinds_mod
   !>
   !! Use PIO methods and data structures
@@ -131,7 +131,7 @@ program testpio
   integer(kind=PIO_OFFSET) :: startpio(3), countpio(3)
   integer, parameter :: strlen=80
   character(len=strlen) :: fname, fname_r8,fname_r4,fname_i4, fnamechk
-  logical, parameter :: Debug = .true.
+  logical, parameter :: Debug = .false.
   integer :: mpi_comm_compute, mpi_comm_io, mpi_icomm_cio
   integer :: charlen
   character(len=strlen), parameter :: fruits(4) = (/'orange','apple ','pear  ','mango '/)
@@ -1397,13 +1397,16 @@ program testpio
 
   call MPI_Barrier(MPI_COMM_COMPUTE,ierr)
 
+!  print *,my_task, master_task
   if (my_task == master_task) then
      print *,' '
      print *,'testpio completed successfully'
      print *,' '
   endif
-
+  flush(unit=OUTPUT_UNIT)
+  flush(unit=ERROR_UNIT)
   !print *,'IAM: ',my_task,'before PIO_finalize'
+  deallocate(vard_r8, vard_r4)
   call PIO_finalize(PIOSYS,ierr)
   !print *,'IAM: ',my_task,'before MPI_finalize'
 

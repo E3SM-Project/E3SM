@@ -48,12 +48,12 @@ Program pio_unit_test_driver
      end if
      close(615)
 
-     write(*,"(A,x,I0,x,A,x,I0)") "Running unit tests with", ntasks, &
+     write(*,"(A,1x,I0,1x,A,1x,I0)") "Running unit tests with", ntasks, &
           "MPI tasks and stride of", stride
 
      if (stride.gt.ntasks) then
         stride = ntasks
-        write(*,"(A,x,A,I0)") "WARNING: stride value in namelist is larger than", &
+        write(*,"(A,1x,A,I0)") "WARNING: stride value in namelist is larger than", &
              "number of MPI tasks, reducing stride to ", stride
      end if
 
@@ -61,7 +61,7 @@ Program pio_unit_test_driver
      ! (i.e. don't test pnetcdf if not built with pnetcdf)
 #ifndef USEMPIIO
      if (ltest_bin.or.ltest_bin_direct) then
-        write(*,"(A,x,A)") "WARNING: can not test binary files because PIO", &
+        write(*,"(A,1x,A)") "WARNING: can not test binary files because PIO", &
              "was not compiled with -DUSEMPIIO"
         ltest_bin        = .false.
         ltest_bin_direct = .false.
@@ -69,26 +69,26 @@ Program pio_unit_test_driver
 #endif
 #ifndef _NETCDF
      if (ltest_netcdf) then
-        write(*,"(A,x,A)") "WARNING: can not test netcdf files because PIO", &
+        write(*,"(A,1x,A)") "WARNING: can not test netcdf files because PIO", &
              "was not compiled with -D_NETCDF"
         ltest_netcdf     = .false.
      end if
 #endif
 #ifndef _NETCDF4
      if (ltest_netcdf4p) then
-        write(*,"(A,x,A)") "WARNING: can not test netcdf4p files because PIO", &
+        write(*,"(A,1x,A)") "WARNING: can not test netcdf4p files because PIO", &
              "was not compiled with -D_NETCDF4"
         ltest_netcdf4p     = .false.
      end if
      if (ltest_netcdf4c) then
-        write(*,"(A,x,A)") "WARNING: can not test netcdf4c files because PIO", &
+        write(*,"(A,1x,A)") "WARNING: can not test netcdf4c files because PIO", &
              "was not compiled with -D_NETCDF4"
         ltest_netcdf4c     = .false.
      end if
 #endif
 #ifndef _PNETCDF
      if (ltest_pnetcdf) then
-        write(*,"(A,x,A)") "WARNING: can not test pnetcdf files because PIO", &
+        write(*,"(A,1x,A)") "WARNING: can not test pnetcdf files because PIO", &
              "was not compiled with -D_PNETCDF"
         ltest_pnetcdf    = .false.
      end if
@@ -99,7 +99,7 @@ Program pio_unit_test_driver
 
   call MPI_Bcast(ios,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
   if (ios.ne.0) then
-     call MPI_Abort(MPI_COMM_WORLD)
+     call MPI_Abort(MPI_COMM_WORLD, 0, ierr)
   end if
 
   ltest(BINARY)  = ltest_bin
@@ -152,19 +152,19 @@ Program pio_unit_test_driver
         case DEFAULT
            if (master_task) &
                 write(*,"(A,I0)") "Error, not configured for test #", test_id
-           call MPI_Abort(MPI_COMM_WORLD)
+           call MPI_Abort(MPI_COMM_WORLD, 0, ierr)
         end select
 #if defined( _NETCDF4) && defined(LOGGING)
         if(master_task) ierr = nc_set_log_level2(3)
 #endif
         ! test_create()
-        if (master_task) write(*,"(3x,A,x)") "testing PIO_createfile..."
+        if (master_task) write(*,"(3x,A,1x)") "testing PIO_createfile..."
         call test_create(test_id, err_msg)
         call parse(err_msg, fail_cnt)
 
         ! test_open()
 
-        if (master_task) write(*,"(3x,A,x)", advance="no") "testing PIO_openfile...",test_id
+        if (master_task) write(*,"(3x,A,I3)", advance="no") "testing PIO_openfile...",test_id
         call test_open(test_id, err_msg)
         call parse(err_msg, fail_cnt)
 
@@ -172,11 +172,11 @@ Program pio_unit_test_driver
 
         ! netcdf-specific tests
         if (is_netcdf(iotypes(test_id))) then
-           if (master_task) write(*,"(3x,A,x)", advance="no") "testing PIO_redef..."
+           if (master_task) write(*,"(3x,A,1x)", advance="no") "testing PIO_redef..."
            call test_redef(test_id, err_msg)
            call parse(err_msg, fail_cnt)
 
-           if (master_task) write(*,"(3x,A,x)", advance="no") "testing PIO_enddef..."
+           if (master_task) write(*,"(3x,A,1x)", advance="no") "testing PIO_enddef..."
            call test_enddef(test_id, err_msg)
            call parse(err_msg, fail_cnt)
         end if

@@ -693,7 +693,7 @@ contains
            ' min=',minv,' max=',maxv,' values=',testdof(1:min(10,cnta(n1)),n1)
    enddo
    endif ! testonly
-
+   deallocate(testdof)
    ! --- write summary ---
 
    write(6,*) ' '

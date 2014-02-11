@@ -234,7 +234,7 @@ contains
 #ifndef _NO_FLOW_CONTROL
              call MPI_IRECV(wdof,int(sdof1d(n)),PIO_OFFSET_KIND,n,n,comm,rcv_request,ierr)
              if (ierr /= MPI_SUCCESS) call piodie(__PIO_FILE__,__LINE__,' pio_writedof mpi_irecv')
-             call MPI_SEND(hs,1,MPI_INTEGER,n,n,comm,ierr)
+!             call MPI_SEND(hs,1,MPI_INTEGER,n,n,comm,ierr)
              if (ierr /= MPI_SUCCESS) call piodie(__PIO_FILE__,__LINE__,' pio_writedof mpi_send')
              call MPI_WAIT(rcv_request,status,ierr)
              if (ierr /= MPI_SUCCESS) call piodie(__PIO_FILE__,__LINE__,' pio_writedof mpi_wait')
@@ -310,7 +310,7 @@ contains
        pio_offset_kind = MPI_INTEGER8
     end if
 
-
+ 
     allocate(dof(0))   ! default for pes with no dof
 
     if (myrank == masterproc) then
@@ -339,7 +339,7 @@ contains
              call MPI_SEND(sdof,1,PIO_OFFSET_KIND,n,n,comm,ierr)
              if (ierr /= MPI_SUCCESS) call piodie(__PIO_FILE__,__LINE__,' pio_readdof mpi_send1')
              if (sdof > 0) then
-                call MPI_SEND(wdof,int(sdof),PIO_OFFSET_KIND,n,npes+n,comm,ierr)
+!                call MPI_SEND(wdof,int(sdof),PIO_OFFSET_KIND,n,npes+n,comm,ierr)
                 if (ierr /= MPI_SUCCESS) call piodie(__PIO_FILE__,__LINE__,' pio_readdof mpi_send2')
              endif
           endif
@@ -352,7 +352,7 @@ contains
        if (sdof > 0) then
           deallocate(dof)
           allocate(dof(sdof))
-          call MPI_RECV(dof,int(sdof),PIO_OFFSET_KIND,masterproc,npes+myrank,comm,status,ierr)
+!          call MPI_RECV(dof,int(sdof),PIO_OFFSET_KIND,masterproc,npes+myrank,comm,status,ierr)
           if (ierr /= MPI_SUCCESS) call piodie(__PIO_FILE__,__LINE__,' pio_readdof mpi_recv2')
        endif
     endif
