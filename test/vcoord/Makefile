@@ -14,7 +14,7 @@ ARCH=$(shell uname -s)
 #####################################################
 
 EXE_SIGEQ = sigeqx
-SRC_SIGEQ = sigequal.F
+SRC_SIGEQ = sigequal.F90
 OBJ_SIGEQ = $(SRC_SIGEQ:.F=.o)
 
 EXE_HYB   = hybx
