@@ -116,7 +116,6 @@ module pio_types
        type(iosystem_desc_t), pointer :: iosystem => null()
        type(io_data_list), pointer :: data_list_top  => null()  ! used for non-blocking pnetcdf calls
        integer :: buffsize=0
-       integer :: request_cnt=0
        integer(i4) :: fh
        integer(kind=PIO_OFFSET) :: offset             ! offset into file
        integer(i4)              :: iotype             ! Type of IO to perform see parameter statement below     
