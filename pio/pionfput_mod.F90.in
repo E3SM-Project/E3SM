@@ -16,32 +16,10 @@ module pionfput_mod
 	pio_iotype_netcdf, pio_iotype_pnetcdf, pio_iotype_netcdf4p, pio_iotype_netcdf4c, &
 	pio_noerr
 
-  use pio_utils, only : check_netcdf
-  use pio_msg_mod
   use pio_support, only : Debug, DebugIO, piodie   
-#ifdef _NETCDF
-  use netcdf            ! _EXTERNAL
-#endif
-#ifndef NO_MPIMOD
-  use mpi   ! _EXTERNAL
-#endif
-#ifdef USE_PNETCDF_MOD
-  use pnetcdf
-#endif
   implicit none
   private
-#ifdef _PNETCDF
-#ifndef USE_PNETCDF_MOD
-#include <pnetcdf.inc>
-#endif
-#endif
-#ifdef _NETCDF
-! Required for netcdf bug workaround
-  integer, external :: nf_put_vars_text
-#endif
-#ifdef NO_MPIMOD
-  include 'mpif.h'   ! _EXTERNAL
-#endif
+
 !>
 !! @defgroup PIO_put_var PIO_put_var
 !! @brief Writes netcdf metadata to a file
@@ -76,90 +54,13 @@ contains
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, index(:)
     character(len=*), intent(in) :: ival
-    integer, allocatable :: count(:)
-    integer :: iotype
-    type(iosystem_desc_t), pointer :: ios
-    integer :: xlen, msg, mpierr, isize, itype
+
 
 #ifdef TIMING
     call t_startf("pio_put_var1_text")
 #endif 
     ierr=PIO_NOERR
-    iotype = File%iotype 
-    if(debug) print *,__PIO_FILE__,__LINE__,ival,iotype, index
 
-    ios=>File%iosystem
-
-    xlen = len_trim(ival)
-    if(ios%async_interface .and. .not. ios%ioproc ) then
-       msg=PIO_MSG_PUTVAR1
-       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
-       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       isize = size(index)
-       call MPI_BCAST(isize,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(index,isize,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       itype = TYPETEXT
-       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(xlen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-    endif
-
-    if(ios%async_interface) then
-       call MPI_BCAST(ival,xlen,MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
-    end if
-
-
-
-    if(Ios%IOProc) then
-       allocate(count(size(index)))
-!       if(Ios%io_rank == 0) then
-          count(:) = 1
-          count(1) = len(ival)
-!       else
-!          count(:) = 0
-!       end if
-
-       select case (iotype) 
-#ifdef _PNETCDF
-       case(pio_iotype_pnetcdf)
-!#ifdef USE_INDEP_WRITE
-          ierr = nfmpi_begin_indep_data(File%fh)
-          
-          if(Ios%io_rank==0 .and. (ierr==NF_EINDEP .or. ierr==PIO_NOERR)) then
-             print *,__FILE__,__LINE__,index,count,trim(ival)
-             ierr = nfmpi_put_vara (File%fh, varid, int(index,kind=PIO_OFFSET), &
-                  int(count,kind=PIO_OFFSET), ival, int(count,kind=PIO_OFFSET), &
-                  MPI_CHARACTER)
-          end if
-          if(ierr==PIO_NOERR) then
-             ierr = nfmpi_end_indep_data(File%fh)
-          end if
-!#else
-!          print *,__FILE__,__LINE__,index,count,trim(ival)
-!            ierr = nfmpi_put_vara_all (File%fh, varid, int(index,kind=PIO_OFFSET), &
-!                  int(count,kind=PIO_OFFSET), ival)
-!#endif
-
-#endif
-#ifdef _NETCDF
-#ifdef _NETCDF4
-       case (pio_iotype_netcdf4p)
-          ierr=nf90_var_par_access(File%fh, varid, NF90_COLLECTIVE)
-          ierr = nf90_put_var(File%fh, varid, ival, start=index)
-#endif
-       case( pio_iotype_netcdf,pio_iotype_netcdf4c)
-          ! Only io proc 0 will do writing
-          if (Ios%io_rank == 0) then
-             ierr = nf90_put_var(File%fh, varid, ival, start=index)
-          end if
-#endif 
-       case default
-          print *,__PIO_FILE__,__LINE__,iotype
-          call piodie(__PIO_FILE__,__LINE__,"bad iotype specified")
-       end select
-       deallocate(count)
-    end if
-    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
 
 #ifdef TIMING
     call t_stopf("pio_put_var1_text")
@@ -181,81 +82,12 @@ contains
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, index(:)
     {VTYPE}, intent(in) :: ival
-    integer, allocatable :: count(:)
-    integer :: iotype, isize
-    type(iosystem_desc_t), pointer :: ios
-    integer :: xlen, msg, mpierr, itype
 
 #ifdef TIMING
     call t_startf("pio_put_var1_{TYPE}")
 #endif 
     ierr=PIO_NOERR
-    iotype = File%iotype 
-    if(debug) print *,__PIO_FILE__,__LINE__,ival,iotype, index
 
-    ios=>File%iosystem
-    if(ios%async_interface .and. .not. ios%ioproc ) then
-       msg=PIO_MSG_PUTVAR1
-       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
-       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       isize = size(index)
-       call MPI_BCAST(isize,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(index,isize,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       itype = {ITYPE}
-       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-    endif
-
-    if(ios%async_interface) then
-       call MPI_BCAST(ival,1,{MPITYPE},ios%CompMaster, ios%my_comm , mpierr)
-    end if
-
-
-
-    if(Ios%IOProc) then
-
-       select case (iotype) 
-#ifdef _PNETCDF
-       case(pio_iotype_pnetcdf)
-          allocate(count(size(index)))
-          if(Ios%io_rank == 0) then
-             count(:) = 1
-          else
-             count(:) = 0
-          end if
-!#ifdef USE_INDEP_WRITE
-          ierr = nfmpi_begin_indep_data(File%fh)
-          if(Ios%io_rank==0 .and. (ierr==NF_EINDEP .or. ierr==PIO_NOERR)) then
-             ierr = nfmpi_put_vara (File%fh, varid, int(index,kind=PIO_OFFSET), int(count,kind=PIO_OFFSET), &
-                  ival, int(count,kind=PIO_OFFSET), {MPITYPE})
-          end if
-          if(ierr==PIO_NOERR) then
-             ierr = nfmpi_end_indep_data(File%fh)
-          end if
-!#else
-!          ierr = nfmpi_put_vara_all (File%fh, varid, int(index,kind=PIO_OFFSET), int(count,kind=PIO_OFFSET), &
-!               ival)
-!#endif
-          deallocate(count)
-#endif
-#ifdef _NETCDF
-#ifdef _NETCDF4
-       case (pio_iotype_netcdf4p) 
-          ierr=nf90_var_par_access(File%fh, varid, NF90_COLLECTIVE)
-          ierr = nf90_put_var(File%fh, varid, ival, start=index)
-#endif
-       case( pio_iotype_netcdf,pio_iotype_netcdf4c)
-          ! Only io proc 0 will do writing
-          if (Ios%io_rank == 0) then
-             ierr = nf90_put_var(File%fh, varid, ival, start=index)
-          end if
-#endif
-       case default
-          print *,__PIO_FILE__,__LINE__,iotype
-          call piodie(__PIO_FILE__,__LINE__,"bad iotype specified")
-       end select
-    end if
-    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
 
 #ifdef TIMING
     call t_stopf("pio_put_var1_{TYPE}")
@@ -349,11 +181,11 @@ contains
          character(C_CHAR) :: op
        end function PIOc_put_var_text
     end interface
-    ierr = PIO_NOERR
 
 !   This manipulation is required to convert the fortran string to
 !   a c character array with all trailing space set to null
 !
+    ierr = PIO_NOERR
     clen = len(ival)
     sd = size(ival)
     allocate(cval(clen*product(sd(1:{DIMS}))))
@@ -442,85 +274,10 @@ contains
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
     {VTYPE}, intent(in) :: ival{DIMSTR}
-    integer :: iotype, itype
-    integer :: i, is, msg, mpierr, xlen
-    type(iosystem_desc_t), pointer :: ios
-    integer :: dims({DIMS})
-    integer :: start({DIMS}), count({DIMS})
-
-
 
     ierr=PIO_NOERR
 
-    iotype = File%iotype 
-    start = 1
-    count = 0
-    is=0       
 
-#ifdef _PNETCDF
-    if(iotype == pio_iotype_pnetcdf) then
-       do i=1,{DIMS}
-          count(i) = size(ival,i)
-       end do
-       ierr = put_vara_{DIMS}d_{TYPE} (File, varid, start, count, ival)
-       return
-    end if
-#endif
-#ifdef TIMING
-    call t_startf("pio_put_var_{DIMS}d_{TYPE}")
-#endif 
-
-    ios=>File%iosystem
-    if(ios%async_interface .and. .not. ios%ioproc ) then
-       msg=PIO_MSG_PUTVAR_{DIMS}d
-       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
-       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       itype = {ITYPE}
-       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       do i=1,{DIMS}
-          dims(i)=size(ival,i)
-       end do
-       call MPI_BCAST(dims,{DIMS},MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-    endif
-
-    if(ios%async_interface ) then
-       call MPI_BCAST(ival,size(ival),{MPITYPE},ios%CompMaster, ios%my_comm , mpierr)
-    end if
-
-    if(Ios%IOProc) then
-       if(Ios%io_rank==0) then
-          do i=1,{DIMS}
-             count(i+is) = size(ival,i)
-          end do
-       end if
-       select case (iotype) 
-#ifdef _PNETCDF
-       case(pio_iotype_pnetcdf)
-          if(Ios%io_rank>0) count=0
-          ierr = nfmpi_put_vara_{TYPE}_all(File%fh, varid, int(start,kind=pio_offset),&
-               int(count,kind=pio_offset),ival)
-#endif
-#ifdef _NETCDF
-!       case(pio_iotype_netcdf4p)
-!          ierr = nf90_put_var(File%fh, varid, ival, start=start, count=count)
-       case( pio_iotype_netcdf,pio_iotype_netcdf4c,pio_iotype_netcdf4p)
-          ! Only io proc 0 will do writing
-          if (Ios%io_rank == 0) then
-             ierr = nf90_put_var(File%fh, varid, ival)
-          end if
-#endif
-       case default
-          print *,__PIO_FILE__,__LINE__,iotype
-          call piodie(__PIO_FILE__,__LINE__,"bad iotype specified" )
-
-       end select
-    end if
-
-    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
-#ifdef TIMING
-    call t_stopf("pio_put_var_{DIMS}d_{TYPE}")
-#endif 
   end function put_var_{DIMS}d_{TYPE}
 
 ! TYPE int,real,double
@@ -539,61 +296,16 @@ contains
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
     {VTYPE}, intent(in) :: ival
-    integer :: iotype
-    integer :: i, is, msg, mpierr, xlen
-    type(iosystem_desc_t), pointer :: ios
-    integer :: start(1),count(1), itype
+
 
     ierr=PIO_NOERR
 
-    iotype = File%iotype 
-    start = 1
-    count = 1
-    is=0       
 
 #ifdef TIMING
     call t_startf("pio_put_var_0d_{TYPE}")
 #endif 
 
-    ios=>File%iosystem
-    if(ios%async_interface .and. .not. ios%ioproc ) then
-       msg=PIO_MSG_PUTVAR_0d
-       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
-       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       itype = {ITYPE}
-       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-    endif
 
-    if(ios%async_interface ) then
-       call MPI_BCAST(ival,1,{MPITYPE},ios%CompMaster, ios%my_comm , mpierr)
-    end if
-
-    if(Ios%IOProc) then
-       select case (iotype) 
-#ifdef _PNETCDF
-       case(pio_iotype_pnetcdf)
-          if(Ios%io_rank>0) count=0
-          ierr = nfmpi_put_vara_{TYPE}_all(File%fh, varid, int(start,kind=pio_offset),&
-               int(count,kind=pio_offset),ival)
-#endif
-#ifdef _NETCDF
-!       case(pio_iotype_netcdf4p)
-!          ierr = nf90_put_var(File%fh, varid, ival)
-       case( pio_iotype_netcdf,pio_iotype_netcdf4c,pio_iotype_netcdf4p)
-          ! Only io proc 0 will do writing
-          if (Ios%io_rank == 0) then
-             ierr = nf90_put_var(File%fh, varid, ival)
-          end if
-#endif
-       case default
-          print *,__PIO_FILE__,__LINE__,iotype
-          call piodie(__PIO_FILE__,__LINE__,"bad iotype specified" )
-
-       end select
-    end if
-
-    call check_netcdf(File,ierr,__PIO_FILE__,__LINE__)
 #ifdef TIMING
     call t_stopf("pio_put_var_0d_{TYPE}")
 #endif 
@@ -634,107 +346,14 @@ contains
 !! @retval ierr @copydoc error_return
 !<
   integer function put_vara_{DIMS}d_text (File,varid, start, count, ival) result(ierr)
-    use pio_nf, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
-
-    integer(kind=PIO_OFFSET), allocatable :: pstart(:), pcount(:)
-
     character(len=*), intent(in) :: ival{DIMSTR}
-    integer :: iotype, i, ndims, msg, mpierr
-    integer(kind=pio_offset) :: clen
-    type(iosystem_desc_t), pointer :: ios
-    integer :: dims({DIMS}), xlen, itype, slen
+
 #ifdef TIMING
     call t_startf("pio_put_vara_{DIMS}d_text")
 #endif 
-    ndims=0
-    ierr=0
-    iotype = File%iotype 
-    ios=>File%iosystem
-    xlen = len(ival)
-    if(.not. ios%async_interface .or. .not. ios%ioproc ) then
-       ierr = pio_inq_varndims(File, varid, ndims)
-    end if
 
-    if(debug) print *,__PIO_FILE__,__LINE__,varid, iotype, start, count
-
-    if(ios%async_interface .and. .not. ios%ioproc ) then
-       msg=PIO_MSG_PUTVARA_{DIMS}d
-       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
-       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       itype = TYPETEXT
-       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       slen = size(start)
-       call MPI_BCAST(slen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(start,slen,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(count,slen,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-
-#if ({DIMS} > 0)
-       do i=1,{DIMS}
-          dims(i)=size(ival,i)
-       end do
-       call MPI_BCAST(dims,{DIMS},MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#endif
-       call MPI_BCAST(xlen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-    endif
-
-    if(ios%async_interface ) then    
-       call MPI_BCAST(ndims,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(ival,xlen*size(ival),MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
-    end if
-
-
-
-    
-    if(Ios%IOProc) then
-       allocate(pstart(ndims),pcount(ndims))
-       if(Ios%io_rank==0) then
-          pstart = start(1:ndims)
-          pcount = count(1:ndims)
-       else
-          pstart=1 ! avoids an unessasary pnetcdf error 
-          pcount=0
-       endif
-       select case (iotype) 
-#ifdef _PNETCDF
-       case(pio_iotype_pnetcdf)
-          clen=count(1)
-          do i=2,size(count)
-             clen=clen*count(i)
-          end do
-#ifdef USE_INDEP_WRITE
-          ierr = nfmpi_begin_indep_data(File%fh)
-          if(Ios%io_rank==0 .and. (ierr==NF_EINDEP .or. ierr==PIO_NOERR)) then
-             ierr = nfmpi_put_vara_{TYPE} (File%fh, varid, pstart, &
-                  pcount, ival)
-          end if
-          if(ierr==PIO_NOERR) then
-             ierr = nfmpi_end_indep_data(File%fh)
-          end if
-#else
-             ierr = nfmpi_put_vara_{TYPE}_all (File%fh, varid, pstart, &
-                  pcount, ival)
-
-#endif
-#endif
-#ifdef _NETCDF
-!       case(pio_iotype_netcdf4p)
-!          ierr = nf90_put_var(File%fh, varid, ival, start=int(pstart), count=int(pcount))
-       case(pio_iotype_netcdf, pio_iotype_netcdf4c, pio_iotype_netcdf4p)
-          ! Only io proc 0 will do writing
-          if (Ios%io_rank == 0) then
-             ierr = nf90_put_var(File%fh, varid, ival, start=int(pstart), count=int(pcount))
-          end if
-#endif
-       case default
-          print *,__PIO_FILE__,__LINE__,iotype
-          call piodie(__PIO_FILE__,__LINE__,"bad iotype specified")
-       end select
-       deallocate(pstart, pcount)
-    end if
-    call check_netcdf(File, ierr,__PIO_FILE__,__LINE__)
 
 #ifdef TIMING
     call t_stopf("pio_put_vara_{DIMS}d_{TYPE}")
@@ -755,106 +374,14 @@ contains
 !! @retval ierr @copydoc error_return
 !<
   integer function put_vara_{DIMS}d_{TYPE} (File,varid, start, count, ival) result(ierr)
-    use pio_nf, only : pio_inq_varndims
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
 
-    integer(kind=PIO_OFFSET), allocatable :: pstart(:), pcount(:)
-
     {VTYPE}, intent(in) :: ival{DIMSTR}
-    integer :: iotype, i, ndims, msg, mpierr
-    integer(kind=pio_offset) :: clen
-    type(iosystem_desc_t), pointer :: ios
-    integer :: dims({DIMS}), xlen, itype, slen
+
 #ifdef TIMING
     call t_startf("pio_put_vara_{DIMS}d_{TYPE}")
 #endif 
-    ierr=0
-    iotype = File%iotype 
-    ios=>File%iosystem
-    xlen=1
-    if(debug) print *,__PIO_FILE__,__LINE__,varid, iotype, start, count
-    if(.not. ios%async_interface .or. .not. ios%ioproc ) then
-       ierr = pio_inq_varndims(File, varid, ndims)
-    end if
-    if(ios%async_interface .and. .not. ios%ioproc ) then
-       msg=PIO_MSG_PUTVARA_{DIMS}d
-       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
-       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       itype = {ITYPE}
-       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       slen = size(start)
-       call MPI_BCAST(slen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(start,slen,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(count,slen,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-
-#if ({DIMS} > 0)
-       do i=1,{DIMS}
-          dims(i)=size(ival,i)
-       end do
-       call MPI_BCAST(dims,{DIMS},MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-#endif
-    endif
-
-    if(ios%async_interface ) then    
-       call MPI_BCAST(ndims,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(ival,xlen*size(ival),{MPITYPE},ios%CompMaster, ios%my_comm , mpierr)
-    end if
-
-
-    
-    if(Ios%IOProc) then
-       select case (iotype) 
-#ifdef _PNETCDF
-       case(pio_iotype_pnetcdf)
-          allocate(pstart(ndims),pcount(ndims))
-          if(Ios%io_rank==0) then
-             pstart = start(1:ndims)
-             pcount = count(1:ndims)
-          else
-             pstart=1 ! avoids an unessasary pnetcdf error 
-             pcount=0
-          endif
-
-          clen=count(1)
-          do i=2,size(count)
-             clen=clen*count(i)
-          end do
-#ifdef USE_INDEP_WRITE
-          ierr = nfmpi_begin_indep_data(File%fh)
-          if(Ios%io_rank==0 .and. (ierr==NF_EINDEP .or. ierr==PIO_NOERR)) then
-             ierr = nfmpi_put_vara_{TYPE} (File%fh, varid, pstart, &
-                  pcount, ival, clen, {MPITYPE})
-          end if
-          if(ierr==PIO_NOERR) then
-             ierr = nfmpi_end_indep_data(File%fh)
-          end if
-#else
-          ierr = nfmpi_put_vara_{TYPE}_all (File%fh, varid, pstart, &
-               pcount, ival)
-
-#endif
-          deallocate(pstart, pcount)
-#endif
-#ifdef _NETCDF
-#ifdef _NETCDF4
-       case(pio_iotype_netcdf4p)
-          ierr=nf90_var_par_access(File%fh, varid, NF90_COLLECTIVE)
-          ierr = nf90_put_var(File%fh, varid, ival, start=start, count=count)
-#endif
-       case(pio_iotype_netcdf, pio_iotype_netcdf4c)
-          ! Only io proc 0 will do writing
-          if (Ios%io_rank == 0) then
-             ierr = nf90_put_var(File%fh, varid, ival, start=start(1:ndims), count=count(1:ndims))
-          end if
-#endif
-       case default
-          print *,__PIO_FILE__,__LINE__,iotype
-          call piodie(__PIO_FILE__,__LINE__,"bad iotype specified")
-       end select
-    end if
-    call check_netcdf(File, ierr,__PIO_FILE__,__LINE__)
 
 #ifdef TIMING
     call t_stopf("pio_put_vara_{DIMS}d_{TYPE}")

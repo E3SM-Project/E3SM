@@ -21,6 +21,18 @@ int PIOc_Set_File_Error_Handling(int ncid, int method)
   return(oldmethod);
 } 
 
+int PIOc_advanceframe(int ncid, int varid)
+{
+  file_desc_t *file;
+  file = pio_get_file_from_id(ncid);
+  if(file == NULL)
+    return PIO_EBADID;
+
+  file->varlist[varid].record++;
+
+  return(PIO_NOERR);
+} 
+
 
 int PIOc_get_numiotasks(int iosysid, int *numiotasks)
 {
@@ -50,6 +62,12 @@ int PIOc_get_iorank(int iosysid, int *iorank)
 }
 
 
+int PIOc_get_local_array_size(int ioid)
+{
+  io_desc_t *iodesc;
+  iodesc = pio_get_iodesc_from_id(ioid);
+  return(iodesc->ndof);
+}
 
 
  int PIOc_Set_IOSystem_Error_Handling(int iosysid, int method)
@@ -191,3 +209,62 @@ int PIOc_Init_Intracomm_from_F90(int f90_comp_comm,
   return PIOc_Init_Intracomm(MPI_Comm_f2c(f90_comp_comm), num_iotasks, stride,base,iosysidp);
 }
   
+int PIOc_set_hint(const int iosysid, const char hint[], const char hintval[])
+{
+  iosystem_desc_t *ios;
+
+  ios = pio_get_iosystem_from_id(iosysid);
+  if(ios == NULL)
+    return PIO_EBADID;
+  
+  if(ios->ioproc)
+    CheckMPIReturn( MPI_Info_set(ios->info, hint, hintval), __FILE__,__LINE__);
+
+  return PIO_NOERR;
+
+}
+
+int PIOc_finalize(const int iosysid)
+{
+  iosystem_desc_t *ios, *nios;
+
+  ios = pio_get_iosystem_from_id(iosysid);
+  if(ios == NULL)
+    return PIO_EBADID;
+  nios = ios;
+  while(nios != NULL){
+    if(nios->ioranks != NULL){
+      free(nios->ioranks);
+      nios->ioranks=NULL;
+    }
+    ios = nios;
+    nios = nios->next;
+    free(ios);
+  }
+  return PIO_NOERR;
+}
+
+
+int PIOc_iam_iotask(const int iosysid, bool *ioproc)
+{
+  iosystem_desc_t *ios;
+  ios = pio_get_iosystem_from_id(iosysid);
+  if(ios == NULL)
+    return PIO_EBADID;
+  
+  *ioproc = ios->ioproc;
+  return PIO_NOERR;
+}
+
+int PIOc_iotask_rank(const int iosysid, int *iorank)
+{
+  iosystem_desc_t *ios;
+  ios = pio_get_iosystem_from_id(iosysid);
+  if(ios == NULL)
+    return PIO_EBADID;
+
+  *iorank = ios->io_rank;
+
+  return PIO_NOERR;
+  
+}

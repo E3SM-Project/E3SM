@@ -4,7 +4,7 @@ enum PIO_DATATYPE{
   PIO_INT,
   PIO_DOUBLE
 };
-int blocksize = 884736;
+
 
 #define max(a,b) \
    ({ __typeof__ (a) _a = (a); \
@@ -24,6 +24,16 @@ int blocksize = 884736;
 
 #define default_blocksize 884736;
 int blocksize = default_blocksize;
+
+
+int PIOc_set_blocksize(const int newblocksize)
+{
+  if(newblocksize > 0)
+    blocksize = newblocksize;
+  return PIO_NOERR;
+}
+
+
 
 /* Recursive Standard C Function: Greatest Common Divisor */
 

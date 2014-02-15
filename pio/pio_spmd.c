@@ -102,7 +102,7 @@ int pio_fc_gather( void *sendbuf, const int sendcnt, const MPI_Datatype sendtype
     }else{
       if(sendcnt > 0){
 	CheckMPIReturn(MPI_Recv( &hs, 1, MPI_INT, root, mtag, comm, &status), __FILE__,__LINE__);
-	CheckMPIReturn(MPI_Rsend( sendbuf, sendcnt, sendtype, root, mtag, comm), __FILE__,__LINE__);
+	CheckMPIReturn(MPI_Send( sendbuf, sendcnt, sendtype, root, mtag, comm), __FILE__,__LINE__);
       }
     }
   }else{
@@ -246,6 +246,11 @@ int pio_swapm(void *sndbuf,  const int sndlths[],const int sdispls[], const MPI_
     if(rcvlths[p] > 0){
       tag = p + offset_t;
       ptr = (char *) rcvbuf + rdispls[p];
+
+	  int tsize;
+	  MPI_Type_size(rtypes[p], &tsize);
+	  printf("rcvlths[%d] %d %d\n",p,rcvlths[p], tsize);
+
       CheckMPIReturn(MPI_Irecv( ptr, rcvlths[p], rtypes[p], p, tag, comm, rcvids+istep), __FILE__,__LINE__);
       //      printf("%d rcvids[%d] %d\n",__LINE__,istep,rcvids[istep]);
       if(handshake)
@@ -267,8 +272,10 @@ int pio_swapm(void *sndbuf,  const int sndlths[],const int sdispls[], const MPI_
 	CheckMPIReturn(MPI_Irsend(ptr, sndlths[p], stypes[p], p, tag, comm,sndids+istep), __FILE__,__LINE__);
       }
       else{
-	//	printf("ptr %d sndlths[%d] %d\n",((int *) ptr)[0], p, stypes[p]);
-	CheckMPIReturn(MPI_Rsend(ptr, sndlths[p], stypes[p], p, tag, comm), __FILE__,__LINE__);
+	int tsize;
+	MPI_Type_size(stypes[p], &tsize);
+	printf("sndlths[%d] %d %d\n",p,sndlths[p], tsize);
+	CheckMPIReturn(MPI_Send(ptr, sndlths[p], stypes[p], p, tag, comm), __FILE__,__LINE__);
       }
     }
     if(istep > maxreqh){
@@ -289,6 +296,9 @@ int pio_swapm(void *sndbuf,  const int sndlths[],const int sdispls[], const MPI_
 	  
 	  ptr = (char *) rcvbuf + rdispls[p];
 	  
+	  int tsize;
+	  MPI_Type_size(rtypes[p], &tsize);
+	  printf("rcvlths[%d] %d %d\n",p,rcvlths[p], tsize);
 	  CheckMPIReturn(MPI_Irecv( ptr, rcvlths[p], rtypes[p], p, tag, comm, rcvids+rstep), __FILE__,__LINE__);
 	  // printf("%d rcvids[%d] %d %d\n",__LINE__,rstep,rcvids[rstep],rcvlths[p]);
 	  if(handshake)

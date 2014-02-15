@@ -1,11 +1,12 @@
 #ifndef __PIO_INTERNAL__
 #define __PIO_INTERNAL__
 #include <pio.h>
-
+// It seems that some versions of openmpi fail to define MPI_OFFSET
 #ifdef OMPI_OFFSET_DATATYPE
+#ifndef MPI_OFFSET
 #define MPI_OFFSET OMPI_OFFSET_DATATYPE
 #endif
-
+#endif
 #define max(a,b) \
    ({ __typeof__ (a) _a = (a); \
        __typeof__ (b) _b = (b); \
@@ -54,6 +55,9 @@ int box_rearrange_comp2io(iosystem_desc_t *ios, io_desc_t *iodesc, void *sbuf,
 			  void *rbuf, const int comm_option, const int fc_options);
 
 io_desc_t *malloc_iodesc(const int piotype, const int ndims);
+
+int flush_output_buffer(file_desc_t *file);
+
 
 enum PIO_MSG{
   PIO_MSG_OPEN_FILE,

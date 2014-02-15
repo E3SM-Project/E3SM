@@ -95,7 +95,6 @@ typedef struct file_desc_t
 {
   iosystem_desc_t *iosystem;
   long int buffsize;
-  int request_cnt;
   int fh;
   int iotype;
   struct var_desc_t varlist[PIO_MAX_VARS];

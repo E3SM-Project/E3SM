@@ -6,25 +6,10 @@
 !! @brief NetCDF attribute interface to PIO
 !<
 module pionfatt_mod
-  use pio_kinds, only : r4, r8, i4
+  use pio_kinds, only : r4, r8, i4, pio_offset
   use pio_types
-  use pio_kinds, only : pio_offset
-  use pio_support, only : piodie, checkmpireturn, debug, debugasync
-  use pio_utils, only : check_netcdf, bad_iotype
-
-#ifdef _NETCDF
-  use netcdf      ! _EXTERNAL
-#endif
-#ifdef USE_PNETCDF_MOD
-  use pnetcdf
-#endif  
+  use iso_c_binding
   implicit none
-#ifdef _PNETCDF
-#ifndef USE_PNETCDF_MOD
-#  include <pnetcdf.inc>  /* _EXTERNAL */
-#endif
-#endif
-  include 'mpif.h'  ! _EXTERNAL 
 
 
   !>
@@ -34,7 +19,7 @@ module pionfatt_mod
   interface put_att
      module procedure put_att_id_{TYPE}, put_att_desc_{TYPE}, put_att_vid_{TYPE}
      ! TYPE real,int,double
-     module procedure put_att_1d_{TYPE}, put_att_desc_1d_{TYPE}
+     module procedure put_att_1d_id_{TYPE}, put_att_desc_1d_{TYPE}
   end interface
 
 
@@ -43,9 +28,9 @@ module pionfatt_mod
   !<
   public :: get_att
   interface get_att
-     module procedure get_att_{TYPE}, get_att_desc_{TYPE}
+     module procedure get_att_{TYPE}, get_att_desc_{TYPE}, get_att_id_{TYPE}
      ! TYPE real,int,double
-     module procedure get_att_1d_{TYPE}, get_att_desc_1d_{TYPE}
+     module procedure get_att_1d_{TYPE}, get_att_desc_1d_{TYPE}, get_att_1d_id_{TYPE}
   end interface
 
   !>
@@ -150,6 +135,34 @@ contains
 
   end function put_att_id_text
 
+  integer function get_att_id_text (ncid, varid, name, value) result(ierr)
+    use iso_c_binding
+    integer, intent(in) :: ncid
+    integer, intent(in) :: varid
+    character(len=*), intent(in) :: name
+    character(len=*), intent(out) :: value
+    interface
+       integer(C_INT) function PIOc_get_att_text (ncid, varid, name, len, op) &
+            bind(C,name="PIOc_get_att_text")
+         use iso_c_binding
+         integer(C_INT), value :: ncid
+         integer(C_INT), value :: varid
+         character(C_CHAR) :: name
+         integer(C_LONG), value :: len
+         character(C_char) :: op
+       end function PIOc_get_att_text
+    end interface
+    integer :: cvarid
+
+    if(varid==PIO_GLOBAL) then
+       cvarid = -1
+    else
+       cvarid = varid
+    end if
+    ierr = PIOc_get_att_text (ncid,cvarid,name, int(len(value),C_LONG), value)
+
+  end function get_att_id_text
+
   !pl The next line is needed by genf90.pl, do not remove it.
   ! TYPE real,double,int
   !>
@@ -163,84 +176,49 @@ contains
   !! @param value : The value for the netcdf attribute 
   !! @retval ierr @copydoc error_return
   !<
-  integer function put_att_1d_{TYPE} (File, varid, name, value) result(ierr)
-    use pio_msg_mod, only : pio_msg_putatt_1D
-    type (File_desc_t), intent(inout) , target :: File
+  integer function put_att_1d_id_{TYPE} (ncid, varid, name, value) result(ierr)
+    integer, intent(in) :: ncid
     integer, intent(in) :: varid
     character(len=*), intent(in) :: name
     {VTYPE}, intent(in) :: value(:)
-    type(iosystem_desc_t), pointer :: ios
+    integer(PIO_OFFSET) :: len
 
-#ifdef DEBUG
-    {VTYPE} :: chkval
-#endif
-    !------------------
-    ! Local variables
-    !------------------
+    len = size(value)
+    ierr = put_att_1d_id_internal_{TYPE} (ncid, varid, name, len, value)
 
-    character(len=*), parameter :: subName=modName//'::put_att_1d_{TYPE}'
-    integer :: iotype, mpierr, msg
-    integer ::  clen, itype, nlen
+  end function put_att_1d_id_{TYPE}
 
-    iotype = File%iotype
-    ierr=PIO_noerr
-    clen = size(value)
+  ! TYPE real,double,int
+  integer function put_att_1d_id_internal_{TYPE} (ncid, varid, name, len, value) result(ierr)
+    integer, intent(in) :: ncid
+    integer, intent(in) :: varid
+    integer(PIO_OFFSET), intent(in) :: len
+    character(len=*), intent(in) :: name
+    {VTYPE}, intent(in), target :: value(*)
 
-    ios => file%iosystem
-    if(ios%async_interface .and. .not. ios%ioproc ) then
-       msg=PIO_MSG_PUTATT_1D
-       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
-       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       itype = {ITYPE}
-       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       nlen = len(name)
-       call MPI_BCAST(nlen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(name,nlen,MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(clen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)	
+    interface
+       integer(C_INT) function PIOc_put_att_{NCTYPE} (ncid, varid, name, xtype, len, op) &
+            bind(C,name="PIOc_put_att_{NCTYPE}")
+         use iso_c_binding
+         integer(C_INT), value :: ncid
+         integer(C_INT), value :: varid
+         character(C_CHAR) :: name
+         integer(C_INT), value :: xtype
+         integer(C_LONG), value :: len
+         type(C_PTR) :: op
+       end function PIOc_put_att_{NCTYPE}
+    end interface
+    integer :: cvarid
+    if(varid==PIO_GLOBAL) then
+       cvarid = -1
+    else
+       cvarid = varid
     end if
 
-    call mpi_barrier(ios%union_comm, mpierr)
-
-    if(ios%async_interface) then
-       call MPI_BCAST(value, clen, {MPITYPE}, ios%compmaster, ios%my_comm, mpierr)
-    end if
-
-    if(Debug.or.DebugAsync) print *,__PIO_FILE__,__LINE__,clen,value
+    ierr = PIOc_put_att_{NCTYPE} (ncid, varid, name, PIO_{TYPE} , len, C_LOC(value))
 
 
-    if(Ios%IOproc) then
-       select case(iotype)
-#ifdef _PNETCDF
-       case(iotype_pnetcdf)
-#ifdef DEBUG
-          print *, __PIO_FILE__,__LINE__,value
-          call MPI_ALLREDUCE(value, chkval, 1, {MPITYPE}, MPI_MAX ,Ios%io_comm, mpierr)
-          call CheckMPIReturn(subName, mpierr)
-          if(chkval /= value) then
-             print *,__PIO_FILE__,__LINE__,chkval,value, mpierr
-             call piodie(__PIO_FILE__,__LINE__,'attributes do not match')
-          end if
-#endif             
-#undef DEBUG
-          ierr= nfmpi_put_att_{TYPE} (File%fh,varid,name, nf_{TYPE} , int(clen,kind=PIO_OFFSET),value)
-#endif
-#ifdef _NETCDF
-       case(iotype_netcdf, PIO_iotype_netcdf4c)
-          if (Ios%io_rank==0) then
-             ierr=nf90_put_att(File%fh,varid,name,value)
-          endif
-       case(pio_iotype_netcdf4p)
-          ierr=nf90_put_att(File%fh,varid,name,value)
-#endif
-
-       case default
-          call bad_iotype(iotype,__PIO_FILE__,__LINE__)
-
-       end select
-    endif
-    call check_netcdf(File, ierr,__PIO_FILE__,__LINE__)
-  end function put_att_1d_{TYPE}
+  end function put_att_1d_id_internal_{TYPE}
 
 
   ! TYPE real,int,double
@@ -264,7 +242,7 @@ contains
 
     character(len=*), parameter :: subName=modName//'::put_att_desc_1d_{TYPE}'
 
-    ierr = put_att_1d_{TYPE} (File,varDesc%varid,name,value)
+    ierr = put_att_1d_id_{TYPE} (File%fh,varDesc%varid,name,value)
 
   end function put_att_desc_1d_{TYPE}
 
@@ -293,7 +271,6 @@ contains
 
   end function get_att_desc_{TYPE}
 
-  ! TYPE real,int,double
   !>
   !! @public 
   !! @ingroup PIO_get_att
@@ -305,6 +282,7 @@ contains
   !! @param value : The value for the netcdf attribute 
   !! @retval ierr @copydoc error_return
   !<
+  ! TYPE int,real,double
   integer function get_att_desc_1d_{TYPE} (File,varDesc,name,value) result(ierr)
 
     type (File_desc_t), intent(inout) , target :: File
@@ -314,7 +292,7 @@ contains
 
     character(len=*), parameter :: subName=modName//'::get_att_desc_1d_{TYPE}'
 
-    ierr = get_att_1d_{TYPE} (File,varDesc%varid,name,value)
+    ierr = get_att_1d_id_{TYPE} (File%fh,varDesc%varid,name,value)
 
   end function get_att_desc_1d_{TYPE}
 
@@ -329,73 +307,48 @@ contains
   !! @param value : The value for the netcdf attribute 
   !! @retval ierr @copydoc error_return
   !<
+  ! TYPE int,real,double
+  integer function get_att_id_{TYPE} (ncid, varid, name, value) result(ierr)
+    use iso_c_binding
+    integer, intent(in) :: ncid
+    integer, intent(in) :: varid
+    character(len=*), intent(in) :: name
+    {VTYPE}, intent(out) :: value
+
+    interface
+       integer(C_INT) function PIOc_get_att_{NCTYPE} (ncid, varid, name, xtype, len, op) &
+            bind(C,name="PIOc_get_att_{NCTYPE}")
+         use iso_c_binding
+         integer(C_INT), value :: ncid
+         integer(C_INT), value :: varid
+         character(C_CHAR) :: name
+         integer(C_INT), value :: xtype
+         integer(C_LONG), value :: len
+         {CTYPE} :: op
+       end function PIOc_get_att_{NCTYPE}
+    end interface
+    integer :: cvarid
+    if(varid==PIO_GLOBAL) then
+       cvarid = -1
+    else
+       cvarid = varid
+    end if
+    ierr = PIOc_get_att_{NCTYPE} (ncid,cvarid,name, PIO_{TYPE}, 1_C_LONG, value)
+
+  end function get_att_id_{TYPE}
+
+
+  
   integer function get_att_{TYPE} (File,varid,name,value) result(ierr)
-    use pio_msg_mod, only : pio_msg_getatt	
     type (File_desc_t), intent(in) , target :: File
     integer(i4), intent(in)        :: varid
     character(len=*), intent(in)   :: name
     {VTYPE}, intent(out)          :: value
-    type(iosystem_desc_t), pointer :: ios
-    !------------------
-    ! Local variables
-    !------------------
-    character(len=*), parameter :: subName=modName//'::get_att_{TYPE}'
-    integer :: iotype, mpierr, msg
-    integer :: clen=1, itype, nlen
-
-    iotype = File%iotype
-    ierr=PIO_noerr
-#if ({ITYPE} == TYPETEXT)	
-    clen = len(value)
-    value = ' '
-#endif
-    ios => file%iosystem
-    if(ios%async_interface .and. .not. ios%ioproc ) then
-       msg=PIO_MSG_GETATT
-       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
-       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       itype = {ITYPE}
-       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       nlen = len(name)
-       call MPI_BCAST(nlen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(name,nlen,MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
-#if ({ITYPE} == TYPETEXT)	
-       call MPI_BCAST(clen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)	
-#endif
-    end if
 
 
-    if(Ios%IOproc) then
-       select case(iotype)
-#ifdef _PNETCDF
-       case(iotype_pnetcdf)
-          ierr= nfmpi_get_att_{TYPE} (File%fh,varid,name,value)
-#endif
+    ierr = get_att_id_{TYPE} (file%fh, varid, name, value)
 
-#ifdef _NETCDF
-       case(iotype_netcdf)
-          if (Ios%io_rank==0) then
-             ierr=nf90_get_att(File%fh,varid,name,value)
-          endif
-          if(Ios%num_tasks==Ios%num_iotasks) then
-             call MPI_BCAST(value,clen ,{MPITYPE} ,0,Ios%IO_comm, mpierr)
-             call CheckMPIReturn(subName, mpierr)
-          end if
-       case(PIO_iotype_netcdf4p,PIO_iotype_netcdf4c)
-          ierr=nf90_get_att(File%fh,varid,name,value)
-#endif
 
-       case default
-          call bad_iotype(iotype,__PIO_FILE__,__LINE__)
-
-       end select
-    endif
-    call check_netcdf(File, ierr,__PIO_FILE__,__LINE__)
-    if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
-       call MPI_BCAST(value, clen, {MPITYPE},Ios%iomaster,Ios%my_comm, mpierr)
-       call CheckMPIReturn(subName, mpierr)
-    end if
   end function get_att_{TYPE}
 
   ! TYPE real,int,double
@@ -411,72 +364,55 @@ contains
   !! @retval ierr @copydoc error_return
   !<
   integer function get_att_1d_{TYPE} (File,varid,name,value) result(ierr)
-    use pio_msg_mod, only : pio_msg_getatt_1d
-
     type (File_desc_t), intent(in) , target :: File
     integer(i4), intent(in)        :: varid
     character(len=*), intent(in)   :: name
     {VTYPE}, intent(out)          :: value(:)
-    type(iosystem_desc_t), pointer :: ios
-    !------------------
-    ! Local variables
-    !------------------
-    character(len=*), parameter :: subName=modName//'::get_att_1d_{TYPE}'
-    integer :: iotype, mpierr, msg
-    integer :: clen, itype, nlen
 
-    iotype = File%iotype
-    ierr=PIO_noerr
-    clen = size(value)
-
-    ios => file%iosystem
-    if(ios%async_interface .and. .not. ios%ioproc ) then
-       msg=PIO_MSG_GETATT_1D
-       if(ios%comp_rank==0) call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
-       call MPI_BCAST(file%fh,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(varid,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       itype = {ITYPE}
-       call MPI_BCAST(itype,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       nlen = len(name)
-       call MPI_BCAST(nlen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(name,nlen,MPI_CHARACTER,ios%CompMaster, ios%my_comm , mpierr)
-       call MPI_BCAST(clen,1,MPI_INTEGER,ios%CompMaster, ios%my_comm , mpierr)
-    end if
-
-
-
-
-    if(Ios%IOproc) then
-       select case(iotype)
-#ifdef _PNETCDF
-       case(iotype_pnetcdf)
-          ierr= nfmpi_get_att_{TYPE} (File%fh,varid,name,value)
-#endif
-#ifdef _NETCDF
-       case(iotype_netcdf)
-          if (Ios%io_rank==0) then
-             ierr=nf90_get_att(File%fh,varid,name,value)
-          endif
-          if(Ios%num_tasks==Ios%num_iotasks) then
-             call MPI_BCAST(value,clen ,{MPITYPE} ,0,Ios%IO_comm, mpierr)
-             call CheckMPIReturn(subName, mpierr)
-          end if
-       case(PIO_iotype_netcdf4p,PIO_iotype_netcdf4c)
-          ierr=nf90_get_att(File%fh,varid,name,value)
-#endif
-
-       case default
-          call bad_iotype(iotype,__PIO_FILE__,__LINE__)
-
-       end select
-    endif
-    call check_netcdf(File, ierr,__PIO_FILE__,__LINE__)
-    if(ios%async_interface .or. ios%num_tasks>ios%num_iotasks) then
-       call MPI_BCAST(value, clen, {MPITYPE},Ios%iomaster,Ios%my_comm, mpierr)
-       call CheckMPIReturn(subName, mpierr)
-    end if
+    ierr = get_att_1d_id_{TYPE} (file%fh, varid, name, value)
 
   end function get_att_1d_{TYPE}
+
+  ! TYPE real,int,double
+  integer function get_att_1d_id_internal_{TYPE} (ncid,varid,name,len,value) result(ierr)
+    integer, intent(in) :: ncid
+    integer(i4), intent(in)        :: varid
+    character(len=*), intent(in)   :: name
+    integer(pio_offset), intent(in) :: len
+    {VTYPE}, target, intent(out)   :: value(*)
+
+    interface
+       integer(C_INT) function PIOc_get_att_{NCTYPE} (ncid, varid, name, xtype, len, op) &
+            bind(C,name="PIOc_get_att_{NCTYPE}")
+         use iso_c_binding
+         integer(C_INT), value :: ncid
+         integer(C_INT), value :: varid
+         character(C_CHAR) :: name
+         integer(C_INT), value :: xtype
+         integer(C_LONG), value :: len
+         type(C_PTR) :: op
+       end function PIOc_get_att_{NCTYPE}
+    end interface
+
+
+    ierr = PIOc_get_att_{NCTYPE} (ncid, varid, name, PIO_{TYPE}, len, C_LOC(value))
+
+
+  end function get_att_1d_id_internal_{TYPE}
+
+  ! TYPE real,int,double
+  integer function get_att_1d_id_{TYPE} (ncid,varid,name,value) result(ierr)
+    integer, intent(in) :: ncid
+    integer(i4), intent(in)        :: varid
+    character(len=*), intent(in)   :: name
+    {VTYPE}, intent(out)          :: value(:)
+    integer(PIO_OFFSET) :: len
+
+    len = size(value)
+    ierr = get_att_1d_id_internal_{TYPE} (ncid, varid, name, len, value)
+
+
+  end function get_att_1d_id_{TYPE}
 
 
 end module pionfatt_mod

@@ -156,6 +156,12 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, voi
 
 	ierr = ncmpi_iput_vara(ncid, vid,  start, count, IOBUF,
 			       dsize, iodesc->basetype, &(vdesc->request));
+	file->buffsize+=dsize;
+
+	if(file->buffsize >= PIO_BUFFER_SIZE_LIMIT){
+	  flush_output_buffer(file);
+	}
+
       break;
 #endif
     default:
@@ -196,10 +202,11 @@ int PIOc_write_darray(const int ncid, const int vid, const int ioid, const PIO_O
 
   ios = file->iosystem;
 
-  if(ios->ioproc){
-    rlen = iodesc->llen;
+  //  if(ios->ioproc){
+  rlen = max(1,iodesc->llen);
     if(rlen>0){
       vtype = (MPI_Datatype) iodesc->basetype;
+      printf("rlen = %ld\n",rlen);
       if(vtype == MPI_INTEGER){
 	MALLOC_FILL_ARRAY(int, rlen, fillvalue, iobuf);
       }else if(vtype == MPI_FLOAT || vtype == MPI_REAL4){
@@ -214,7 +221,7 @@ int PIOc_write_darray(const int ncid, const int vid, const int ioid, const PIO_O
     }
     //    printf(" rlen = %d %ld\n",rlen,iobuf); 
 
-  }
+    //  }
 
 
   ierr = box_rearrange_comp2io(ios, iodesc, array, iobuf, 0, 0);
@@ -439,7 +446,7 @@ int PIOc_read_darray(const int ncid, const int vid, const int ioid, const PIO_Of
 
 
 
-int flush_ouput_buffer(file_desc_t *file)
+int flush_output_buffer(file_desc_t *file)
 {
   var_desc_t *vardesc;
   int ierr=PIO_NOERR;
@@ -467,6 +474,7 @@ int flush_ouput_buffer(file_desc_t *file)
       }
     }   
   } 
+  file->buffsize=0;
 #endif
   return ierr;
 }

@@ -24,22 +24,17 @@ module piolib_mod
   use pio_types, only : file_desc_t, iosystem_desc_t, var_desc_t, io_desc_t, &
 	pio_iotype_pbinary, pio_iotype_binary, pio_iotype_direct_pbinary, &
 	pio_iotype_netcdf, pio_iotype_pnetcdf, pio_iotype_netcdf4p, pio_iotype_netcdf4c, &
-        pio_noerr, pio_num_ost
+        pio_noerr
   !--------------
   use alloc_mod
   !--------------
   use pio_support, only : piodie, debug, debugio, debugasync, checkmpireturn
   !
 
-  use pionfread_mod, only : read_nf
-  use pionfwrite_mod, only : write_nf
   use pio_mpi_utils, only : PIO_type_to_mpi_type 
-  use iompi_mod
-  use rearrange
 #ifdef TIMING
   use perf_mod, only : t_startf, t_stopf     ! _EXTERNAL
 #endif
-  use pio_msg_mod
 #ifndef NO_MPIMOD
   use mpi    ! _EXTERNAL
 #endif
@@ -57,7 +52,6 @@ module piolib_mod
        PIO_syncfile,      &
        PIO_createfile,    &
        PIO_closefile,     &
-       PIO_setiotype,     &
        PIO_numtoread,     &
        PIO_numtowrite,    &
        PIO_setframe,      &
@@ -69,12 +63,11 @@ module piolib_mod
        PIO_dupiodesc,     &
        PIO_getnumiotasks, &
        PIO_set_hint,      &
-       PIO_getnum_OST,    &
-       PIO_setnum_OST,    &
        PIO_FILE_IS_OPEN, &
        PIO_deletefile, &
        PIO_get_numiotasks, &
        PIO_get_iorank
+
 
 #ifdef MEMCHK
 !> this is an internal variable for memory leak debugging 
@@ -171,7 +164,6 @@ module piolib_mod
   interface PIO_initdecomp
      module procedure PIO_initdecomp_dof_i4  ! previous name: initdecomop_1dof_nf_box
      module procedure PIO_initdecomp_dof_i8  ! previous name: initdecomop_1dof_nf_box
-     module procedure PIO_initdecomp_dof_i8_vdc 
      module procedure initdecomp_1dof_nf_i4
      module procedure initdecomp_1dof_nf_i8
      module procedure initdecomp_1dof_bin_i4
@@ -192,13 +184,7 @@ module piolib_mod
      module procedure dupiodesc
   end interface
 
-!> 
-!! @defgroup PIO_setiotype PIO_setiotype
-!!  sets the io type used by pio
-!<
-  interface PIO_setiotype 
-     module procedure setiotype
-  end interface
+
 
 !> 
 !! @defgroup PIO_numtoread PIO_numtoread
@@ -301,7 +287,15 @@ contains
 !<
   integer function PIO_get_local_array_size(iodesc)
     type(io_desc_t), intent(in) :: iodesc   
-    PIO_get_local_array_size = iodesc%compsize
+    interface
+       integer(C_INT) function PIOc_get_local_array_size(ioid) &
+            bind(C,NAME="PIOc_get_local_array_size")
+         use iso_c_binding
+         implicit none
+         integer(C_INT), value :: ioid
+       end function PIOc_get_local_array_size
+    end interface
+    PIO_get_local_array_size = PIOc_get_local_array_size(iodesc%ioid)
   end function PIO_get_local_array_size
 
 !> 
@@ -312,9 +306,20 @@ contains
 !! @details
 !! @param[in,out] vardesc @copybrief var_desc_t 
 !<
-  subroutine advanceframe(vardesc)
+  subroutine advanceframe(file, vardesc)
+    type(file_desc_t), intent(in) :: file
     type(var_desc_t), intent(inout) :: vardesc
-    vardesc%rec=vardesc%rec+1
+    integer ierr;
+    interface
+       integer(C_INT) function PIOc_advanceframe(fileid, varid) &
+            bind(C,NAME="PIOc_advanceframe")
+         use iso_c_binding
+         implicit none
+         integer(C_INT), value :: fileid
+         integer(C_INT), value :: varid
+       end function PIOc_advanceframe
+    end interface
+    ierr = PIOc_advanceframe(file%fh, vardesc%varid) 
   end subroutine advanceframe
 
 !> 
@@ -432,7 +437,6 @@ contains
 !! @param iodesc @copydoc iodesc_generate
 !<
   subroutine initdecomp_2dof_bin_i4(iosystem,basepiotype,dims,lenblocks,compdof,iodofr,iodofw,iodesc)
-    use calcdisplace_mod, only : calcdisplace
     type (iosystem_desc_t), intent(in) :: iosystem
     integer(i4), intent(in)           :: basepiotype
     integer(i4)                       :: basetype
@@ -450,7 +454,7 @@ contains
 
   end subroutine initdecomp_2dof_bin_i4
   subroutine initdecomp_2dof_bin_i8(iosystem,basepiotype,dims,lenblocks,compdof,iodofr,iodofw,iodesc)
-    use calcdisplace_mod, only : calcdisplace
+!    use calcdisplace_mod, only : calcdisplace
     type (iosystem_desc_t), intent(in) :: iosystem
     integer(i4), intent(in)           :: basepiotype
     integer(i4)                       :: basetype
@@ -460,7 +464,7 @@ contains
     integer (kind=pio_offset), intent(in)          :: iodofr(:)     !> global degrees of freedom for io decomposition 
     integer (kind=pio_offset), intent(in)          :: iodofw(:)     !> global degrees of freedom for io decomposition 
     type (io_desc_t), intent(inout)     :: iodesc
-
+#ifdef DOTHIS
     integer(kind=PIO_offset) :: start(1), count(1)
 
     integer (i4) :: i,ndims,n_iotasks
@@ -548,7 +552,7 @@ contains
     endif
 
     deallocate(displacer,displacew)
-
+#endif
 
   end subroutine initdecomp_2dof_bin_i8
 
@@ -662,13 +666,6 @@ contains
 
     call dupiodesc2(iodesc%write,tmp%write)
 
-    if(debug) then
-       print *, __PIO_FILE__,__LINE__,iodesc%read%filetype,iodesc%read%elemtype,&
-            iodesc%read%n_elemtype,iodesc%read%n_words   
-       print *, __PIO_FILE__,__LINE__,iodesc%write%filetype,iodesc%write%elemtype,&
-            iodesc%write%n_elemtype,iodesc%write%n_words
-    end if
-
   end subroutine initdecomp_2dof_nf_i8
 
 !> 
@@ -689,7 +686,6 @@ contains
 !! @param iodesc @copydoc iodesc_generate
 !<
   subroutine initdecomp_1dof_nf_i4(iosystem,basepiotype,dims,lenblocks,compdof,iodof,start, count, iodesc)
-    use calcdisplace_mod, only : calcdisplace
     type (iosystem_desc_t), intent(in) :: iosystem
     integer(i4), intent(in)           :: basepiotype
     integer(i4), intent(in)           :: dims(:)
@@ -705,7 +701,7 @@ contains
 
   end subroutine initdecomp_1dof_nf_i4
   subroutine initdecomp_1dof_nf_i8(iosystem,basepiotype,dims,lenblocks,compdof,iodof,start, count, iodesc)
-    use calcdisplace_mod, only : calcdisplace
+!    use calcdisplace_mod, only : calcdisplace
     type (iosystem_desc_t), intent(in) :: iosystem
     integer(i4), intent(in)           :: basepiotype
     integer(i4), intent(in)           :: dims(:)
@@ -715,7 +711,7 @@ contains
     type (io_desc_t), intent(inout)     :: iodesc
     integer :: piotype
     integer(kind=PIO_offset), intent(in) :: start(:), count(:)
-
+#ifdef DOTHIS
     integer(i4) :: length,n_iotasks
     integer(i4) :: ndims
 
@@ -837,9 +833,6 @@ contains
        call genindexedblock(lenblocks,piotype,iodesc%write%elemtype,iodesc%write%filetype,int(displace))
 
        
-!       call gensubarray(dims,piotype,iodesc,iodesc%write)
-
-
 
        if(debug) print *,'initdecomp: at the end of subroutine',iodesc%write%n_elemtype,iodesc%write%n_words
     endif
@@ -869,6 +862,7 @@ contains
 #ifdef TIMING
     call t_stopf("PIO_initdecomp")
 #endif
+#endif
   end subroutine initdecomp_1dof_nf_i8
 
 !>
@@ -892,7 +886,7 @@ contains
 !! @param iostart   The start index for the block-cyclic io decomposition
 !! @param iocount   The count for the block-cyclic io decomposition
 !<
-  subroutine PIO_initdecomp_dof_i4(iosystem,basepiotype,dims,compdof, iodesc, iostart, iocount, num_ts, bsize)
+  subroutine PIO_initdecomp_dof_i4(iosystem,basepiotype,dims,compdof, iodesc, iostart, iocount)
     type (iosystem_desc_t), intent(inout) :: iosystem
     integer(i4), intent(in)           :: basepiotype
     integer(i4), intent(in)          :: compdof(:)   ! global degrees of freedom for computational decomposition
@@ -900,8 +894,7 @@ contains
     type (io_desc_t), intent(inout)     :: iodesc
     integer(kind=PIO_OFFSET), pointer :: internal_compdof(:)
     integer(i4), intent(in)           :: dims(:)
-    !vdf optionals
-    integer(i4), intent(in), optional:: num_ts, bsize(3)
+
     allocate(internal_compdof(size(compdof)))
     internal_compdof = int(compdof,kind=pio_offset)
     
@@ -967,395 +960,7 @@ contains
 #endif
 
 
-#ifdef DOTHIS
-
-    integer(i4) :: length,n_iotasks
-    integer(i4) :: ndims
-    integer (i4)                       :: lenblocks
-    integer(i4)                       ::  piotype
-
-    integer(i4), pointer :: displace(:)  ! the displacements for the mpi data structure (read)
-
-    integer(i4) :: prev
-    integer(kind=PIO_OFFSET) :: glength    ! global length in words
-    integer(i4) :: ii,i,dis,ierr
-    integer(i4),pointer, dimension(:) :: blocklen,disp
-    logical(log_kind) ::  userearranger
-    logical, parameter :: check = .true.
-    integer(kind=pio_offset) :: ndisp
-    integer(i4) :: iosize               ! rml
-    integer(i4) :: msg
-    integer(i4), allocatable :: lstart(:),lcount(:)
-    logical :: is_async=.false.
-#ifdef MEMCHK
-    integer :: msize, rss, mshare, mtext, mstack
-#endif
-    integer ierror, dsize
-
-    nullify(displace)
-
-    if(iosystem%async_interface .and. .not. iosystem%ioproc) then
-       msg = PIO_MSG_INITDECOMP_DOF
-       is_async=.true.
-       if(DebugAsync) print*,__PIO_FILE__,__LINE__, iosystem%ioranks
-       if(iosystem%comp_rank==0) then
-          call mpi_send(msg, 1, mpi_integer, iosystem%ioroot, 1, iosystem%union_comm, ierr)
-       end if
-       if(DebugAsync) print*,__PIO_FILE__,__LINE__, ierr, iosystem%ioroot, iosystem%comp_rank
-
-       call mpi_bcast(basepiotype, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
-       if(DebugAsync) print*,__PIO_FILE__,__LINE__
-       dsize = size(dims)
-       call mpi_bcast(dsize, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
-       call mpi_bcast(dims, size(dims), mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
-
-       if(DebugAsync) print*,__PIO_FILE__,__LINE__
-       call mpi_bcast(iodesc%async_id, 1, mpi_integer, iosystem%iomaster, iosystem%intercomm, ierr)  
-       if(DebugAsync) print*,__PIO_FILE__,__LINE__, iodesc%async_id
-    endif
-
-    if(minval(dims)<=0) then
-       print *,__PIO_FILE__,__LINE__,dims
-       call piodie(__PIO_FILE__,__LINE__,'bad value in dims argument')
-    end if
-
-    if (iosystem%comp_rank == 0 .and. debug) &
-         print *,iosystem%comp_rank,': invoking PIO_initdecomp_dof'
-
-    if(DebugAsync) print*,__PIO_FILE__,__LINE__
-    piotype=PIO_type_to_mpi_type(basepiotype)
-
-    !-------------------------------------------
-    ! for testing purposes set the iomap
-      ! (decompmap_t) to something basic for
-    ! testing.
-    !-------------------------------------------
-#ifdef MEMCHK	
-    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
-    if(rss>lastrss) then
-       lastrss=rss
-       print *,__PIO_FILE__,__LINE__,'mem=',rss
-    end if
-#endif
-
-    userearranger = iosystem%userearranger
-    !---------------------
-    ! number of dimensions
-    !---------------------
-    ndims = size(dims)
-    !---------------------
-    ! total global size
-    !---------------------
-    glength= product(int(dims,kind=PIO_OFFSET))
-    if(glength > huge(int(i,kind=pio_offset))) then !not sure if this works, glength is pio_offset, if its > pio_offset range then 
-       call piodie( __PIO_FILE__,__LINE__, & !it will simply wrap around rather than be > max_int(pio_offset)
-            'requested array size too large for this interface ') !might be better to use a temp 8 byte int to store results
-                                                                  !of dims product and compare to the maxint(pio_offset)       
-    endif
-
-       
-
-    ! remember iocount() is only defined on io procs
-    call alloc_check(iodesc%start,ndims)
-    call alloc_check(iodesc%count,ndims)
-    iodesc%basetype=piotype
-       
-    iodesc%compsize=size(compdof)
-       
-    iodesc%start=0
-    iodesc%count=0
-
-    if(debug) print*,__PIO_FILE__,__LINE__, 'before calcstartandcount: ', iosystem%num_tasks, iosystem%num_iotasks, &
-         iosystem%io_rank, iosystem%io_comm, iosystem%ioranks
-
-    if (iosystem%ioproc) then
-       if(present(iostart) .and. present(iocount)) then
-          iodesc%start = iostart
-          iodesc%count = iocount
-       else if(present(iostart) .or. present(iocount)) then
-          call piodie( __PIO_FILE__,__LINE__, &
-               'both optional parameters start and count must be provided')
-       else	       
-          call calcstartandcount(basepiotype, ndims, dims, iosystem%num_iotasks, iosystem%io_rank,&
-               iodesc%start, iodesc%count,iosystem%num_aiotasks)
-       endif
-       iosize=1
-       do i=1,ndims
-          iosize=iosize*iodesc%count(i)
-       end do
-       call mpi_allreduce(iosize, iodesc%maxiobuflen, 1, mpi_integer, mpi_max, iosystem%io_comm, ierr)
-       call checkmpireturn('mpi_allreduce in initdecomp',ierr)
-
-       lenblocks=1
-       do i=1,ndims
-          if(iodesc%count(i) == dims(i)) then
-             lenblocks=lenblocks*iodesc%count(i)
-          else
-             exit
-          endif
-       enddo
-       if(lenblocks==1) lenblocks=iodesc%count(1)
-
-       if(lenblocks>0) then
-          ndisp=iosize/lenblocks
-       else
-          ndisp=0
-       end if
-       call alloc_check(displace,int(ndisp))
-
-       if(debug) print *,'IAM: ',iosystem%comp_rank,' after getiostartandcount: count is: ',iodesc%count,&
-            ' lenblocks =',lenblocks,' ndisp=',ndisp
-
-       if(debug) print *,'IAM: ',iosystem%comp_rank,' after getiostartandcount, num_aiotasks is: ', iosystem%num_aiotasks       
-       !--------------------------------------------
-       ! calculate mpi data structure displacements 
-       !--------------------------------------------
-      
-       if(debug) print *,'PIO_initdecomp: calcdisplace', &
-            ndisp,iosize,lenblocks, iodesc%start, iodesc%count
-       call calcdisplace_box(dims,lenblocks,iodesc%start,iodesc%count,ndims,displace)
-          
-       n_iotasks = iosystem%num_iotasks
-       length = iosize                      ! rml
-
-       !
-       !   this facilitates the use of seperate read and write descripters. 
-       !
-
-       iodesc%iomap%start  = iosystem%io_rank*length
-       iodesc%iomap%length = length
-       iodesc%glen = glength
-    endif
-    if(DebugAsync) print*,__PIO_FILE__,__LINE__
-
-#ifdef MEMCHK	
-    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
-    if(rss>lastrss) then
-       lastrss=rss
-       print *,__PIO_FILE__,__LINE__,'mem=',rss
-    end if
-#endif
-    if(debug) print *,__PIO_FILE__,__LINE__,'iam: ',iosystem%io_rank, &
-         'initdecomp: userearranger: ',userearranger, glength
-
-    if(userearranger) then 
-       call MPI_BCAST(iosystem%num_aiotasks,1,mpi_integer,iosystem%iomaster,&
-            iosystem%my_comm,ierr)
-       call rearrange_create( iosystem,compdof,dims,ndims,iodesc)
-    endif
-
-    if(DebugAsync) print*,__PIO_FILE__,__LINE__
-#ifdef MEMCHK	
-    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
-    if(rss>lastrss) then
-       lastrss=rss
-       print *,__PIO_FILE__,__LINE__,'mem=',rss
-    end if
-#endif
-
-    !---------------------------------------------
-    !  the setup for the mpi-io type information 
-    !---------------------------------------------
-    if(iosystem%ioproc) then 
-       !-----------------------------------------------
-       ! setup the data structure for the io operation 
-       !-----------------------------------------------
-       call gensubarray(dims,piotype,iodesc,iodesc%write)
-       
-       if(debug) print *,__PIO_FILE__,__LINE__,iodesc%write%n_elemtype, &
-        iodesc%write%n_words,iodesc%write%elemtype,iodesc%write%filetype, lenblocks
-
-    else
-       iodesc%write%n_elemtype=0
-       iodesc%write%n_words=0
-       iodesc%write%elemtype = mpi_datatype_null
-       iodesc%write%filetype = mpi_datatype_null
-    endif
-
-#ifdef MEMCHK	
-    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
-    if(rss>lastrss) then
-       lastrss=rss
-       print *,__PIO_FILE__,__LINE__,'mem=',rss
-    end if
-#endif
-
-    call dupiodesc2(iodesc%write,iodesc%read)
-    
-
-    if (associated(displace)) then
-       call dealloc_check(displace)
-    endif
-
-#ifdef MEMCHK	
-    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
-    if(rss>lastrss) then
-       lastrss=rss
-       print *,__PIO_FILE__,__LINE__,'mem=',rss
-    end if
-#endif
-#ifdef TIMING
-    call t_stopf("PIO_initdecomp_dof")
-#endif
-#endif
   end subroutine PIO_initdecomp_dof_i8
-
-  subroutine PIO_initdecomp_dof_i8_vdc(iosystem,dims,compdof, iodesc, num_ts, bsize)
-    use calcdisplace_mod, only : calcdisplace_box
-    use calcdecomp, only : calcstartandcount
-    use pio_types, only : pio_real
-    type (iosystem_desc_t), intent(inout) :: iosystem
-    integer(i4), intent(in)           :: dims(:)
-    integer (kind=pio_offset), intent(in)          :: compdof(:)   ! global degrees of freedom for computational decomposition
-
-    type (io_desc_t), intent(inout)     :: iodesc
-    !vdc args
-    integer(i4), intent(in) :: num_ts
-    integer(i4), intent(in), optional:: bsize(3)
-
-
-    integer(i4) :: length,n_iotasks
-    integer(i4) :: ndims
-    integer (i4)                       :: lenblocks
-    integer(i4)                       ::  piotype
-    integer(i4), pointer :: displace(:)  ! the displacements for the mpi data structure (read)
-
-    integer(i4) :: prev
-    integer(kind=PIO_OFFSET) :: glength    ! global length in words
-    integer(i4) :: ii,i,dis,ierr
-    integer(i4),pointer, dimension(:) :: blocklen,disp
-    logical(log_kind) ::  userearranger
-    logical, parameter :: check = .true.
-    integer(kind=pio_offset) :: ndisp
-    integer(i4) :: iosize               ! rml
-    integer(i4) :: msg, dsize
-    logical :: is_async=.false.
-#ifdef MEMCHK
-    integer :: msize, rss, mshare, mtext, mstack
-#endif
-
-    integer ierror
-
-    nullify(iodesc%start)
-    nullify(iodesc%count)
-
-
-#ifdef TIMING
-    call t_startf("PIO_initdecomp_dof")
-#endif
-    if(iosystem%async_interface .and. .not. iosystem%ioproc) then
-       msg = PIO_MSG_INITDECOMP_DOF
-       is_async=.true.
-       if(DebugAsync) print*,__PIO_FILE__,__LINE__, iosystem%ioranks
-       if(iosystem%comp_rank==0) then
-          call mpi_send(msg, 1, mpi_integer, iosystem%ioroot, 1, iosystem%union_comm, ierr)
-       end if
-       if(DebugAsync) print*,__PIO_FILE__,__LINE__, ierr, iosystem%ioroot, iosystem%comp_rank
-
-!       call mpi_bcast(basepiotype, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
-!       if(DebugAsync) print*,__PIO_FILE__,__LINE__
-       dsize = size(dims)
-       call mpi_bcast(dsize, 1, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
-       call mpi_bcast(dims, dsize, mpi_integer, iosystem%compmaster, iosystem%intercomm, ierr)
-
-       if(DebugAsync) print*,__PIO_FILE__,__LINE__
-       call mpi_bcast(iodesc%async_id, 1, mpi_integer, iosystem%iomaster, iosystem%intercomm, ierr)  
-       if(DebugAsync) print*,__PIO_FILE__,__LINE__, iodesc%async_id
-    endif
-
-    if(minval(dims)<=0) then
-       print *,__PIO_FILE__,__LINE__,dims
-       call piodie(__PIO_FILE__,__LINE__,'bad value in dims argument')
-    end if
-
-    if (iosystem%comp_rank == 0 .and. debug) &
-         print *,iosystem%comp_rank,': invoking PIO_initdecomp_dof'
-
-    if(DebugAsync) print*,__PIO_FILE__,__LINE__
-    piotype=MPI_REAL4
-
-    !-------------------------------------------
-    ! for testing purposes set the iomap
-    ! (decompmap_t) to something basic for
-    ! testing.
-    !-------------------------------------------
-#ifdef MEMCHK	
-    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
-    if(rss>lastrss) then
-       lastrss=rss
-       print *,__PIO_FILE__,__LINE__,'mem=',rss
-    end if
-#endif
-
-    userearranger = iosystem%userearranger
-    !---------------------
-    ! number of dimensions
-    !---------------------
-    ndims = size(dims)
-    !---------------------
-    ! total global size
-    !---------------------
-    glength= product(int(dims,kind=PIO_OFFSET))
-    if(glength > huge(int(i,kind=pio_offset))) then !not sure if this works, glength is pio_offset, if its > pio_offset range then 
-       call piodie( __PIO_FILE__,__LINE__, & !it will simply wrap around rather than be > max_int(pio_offset)
-            'requested array size too large for this interface ') !might be better to use a temp 8 byte int to store results
-                                                                  !of dims product and compare to the maxint(pio_offset)       
-    endif
-
-       
-
-    ! remember iocount() is only defined on io procs
-    call alloc_check(iodesc%start,ndims)
-    call alloc_check(iodesc%count,ndims)
-    iodesc%basetype=piotype
-       
-    iodesc%compsize=size(compdof)
-       
-    iodesc%start=0
-    iodesc%count=0
-
-    if (iosystem%ioproc) then
-
-       iosize=1
-       do i=1,ndims
-          iosize=iosize*iodesc%count(i)
-       end do
-       call mpi_allreduce(iosize, iodesc%maxiobuflen, 1, mpi_integer, mpi_max, iosystem%io_comm, ierr)
-       call checkmpireturn('mpi_allreduce in initdecomp',ierr)
-
-
-       iodesc%iomap%start  = iosystem%io_rank*iosize
-       iodesc%iomap%length = iosize
-       iodesc%glen = glength
-    endif
-    if(DebugAsync) print*,__PIO_FILE__,__LINE__
-
-    if(userearranger) then 
-       call MPI_BCAST(iosystem%num_aiotasks,1,mpi_integer,iosystem%iomaster,&
-            iosystem%my_comm,ierr)
-       call rearrange_create( iosystem,compdof,dims,ndims,iodesc)
-    endif
-
-    iodesc%write%n_elemtype=0
-    iodesc%write%n_words=0
-    iodesc%write%elemtype = mpi_datatype_null
-    iodesc%write%filetype = mpi_datatype_null
-
-    call dupiodesc2(iodesc%write,iodesc%read)
-    
-#ifdef MEMCHK	
-    call GPTLget_memusage(msize, rss, mshare, mtext, mstack)
-    if(rss>lastrss) then
-       lastrss=rss
-       print *,__PIO_FILE__,__LINE__,'mem=',rss
-    end if
-#endif
-#ifdef TIMING
-    call t_stopf("PIO_initdecomp_dof")
-#endif
-
-  end subroutine PIO_initdecomp_dof_i8_vdc
-
 
 
   !************************************
@@ -1463,66 +1068,6 @@ contains
 
   end subroutine genindexedblock
 
-  subroutine gensubarray(gdims,mpidatatype, iodesc, iodesc2)
-    use pio_types, only : io_desc2_t, io_desc_t
-    implicit none
-
-    integer, intent(in) :: gdims(:)
-    integer, intent(in) :: mpidatatype
-    type(IO_desc_t), intent(in) :: iodesc
-    type(IO_desc2_t), intent(inout) :: iodesc2
-    
-    integer :: ndims, ierr
-    integer, allocatable :: lstart(:), lcount(:)
-
-    ndims = size(gdims)
-#ifdef _MPISERIAL
-       iodesc2%elemtype=mpidatatype
-       iodesc2%filetype=mpidatatype          
-       iodesc2%n_elemtype = 0
-       iodesc2%n_words = 0
-#else
-    if(sum(iodesc%count)>0) then
-       allocate(lstart(ndims),lcount(ndims))
-       lstart = 0
-       lcount = int(iodesc%count)
-       iodesc2%n_elemtype = 1
-       iodesc2%n_words = product(lcount)
-       call mpi_type_contiguous(iodesc2%n_words,mpidatatype,iodesc2%elemtype,ierr)
-       call checkmpireturn('mpi_type_create_subarray in initdecomp',ierr)
-       call mpi_type_commit(iodesc2%elemtype,ierr)
-       call checkmpireturn('mpi_type_commit in initdecomp',ierr)
-
-#ifdef USEMPIIO
-! the filetype subarray is only used for binary file io, since we don't know in initdecomp what
-! kind of file we are writing we need to create it anyway (as long as we are building with mpi-io support)
-       lstart = int(iodesc%start)-1
-
-       call mpi_type_create_subarray(ndims, gdims, lcount, lstart, &
-            mpi_order_fortran,mpidatatype, iodesc2%filetype, ierr)
-       call checkmpireturn('mpi_type_create_subarray in initdecomp',ierr)
-       call mpi_type_commit(iodesc2%filetype,ierr)
-       call checkmpireturn('mpi_type_commit in initdecomp',ierr)
-       deallocate(lstart,lcount)     
-
-#else
-       iodesc2%filetype=mpi_datatype_null
-#endif
-    else
-       iodesc2%elemtype=mpidatatype
-       iodesc2%filetype=mpidatatype          
-       iodesc2%n_elemtype = 0
-       iodesc2%n_words = 0
-    endif
-#endif
-    
-
-
-
-  end subroutine gensubarray
-
-
-
 !> 
 !! @public
 !! @ingroup PIO_init
@@ -1598,7 +1143,7 @@ contains
     integer, intent(in) :: io_comm     !  The io communicator
 
     type (iosystem_desc_t), intent(out)  :: iosystem(component_count)  ! io descriptor to initalize
-
+#ifdef DOTHIS
     integer :: ierr
     logical :: is_inter
     logical, parameter :: check=.true.
@@ -1804,6 +1349,7 @@ contains
     call t_stopf("PIO_init")
 #endif
 #endif
+#endif
   end subroutine init_intercom
 
 !>
@@ -1880,19 +1426,22 @@ contains
   subroutine PIO_set_hint(iosystem, hint, hintval)
     type (iosystem_desc_t), intent(inout)  :: iosystem  ! io descriptor to initalize
     character(len=*), intent(in) :: hint, hintval
-    
     integer :: ierr
-#if defined(USEMPIIO) || defined(_PNETCDF) || defined(_NETCDF4)
-#ifndef _MPISERIAL
-    if(iosystem%ioproc .and. (iosystem%info /= MPI_INFO_NULL)) then
-       if(iosystem%io_rank==0 .or. Debug) print *,'Setting mpi info: ',hint,'=',hintval
-       call mpi_info_set(iosystem%info,hint,hintval,ierr)
-       call checkmpireturn('PIO_set_hint',ierr)
-    else
-       iosystem%info=mpi_info_null
-    end if
-#endif
-#endif
+    
+    interface
+       integer(C_INT) function PIOc_set_hint(iosysid, key, val) &
+            bind(C,name="PIOc_set_hint")
+         use iso_c_binding
+         integer(C_INT), intent(in), value :: iosysid
+         character(C_CHAR), intent(in) :: key
+         character(C_CHAR), intent(in) :: val
+       end function PIOc_set_hint
+    end interface
+
+
+    ierr = PIOc_set_hint(iosystem%iosysid, hint, hintval)
+
+
   end subroutine PIO_set_hint
 
 
@@ -1906,30 +1455,17 @@ contains
 !<
   subroutine finalize(iosystem,ierr)
      type (iosystem_desc_t), intent(inout) :: iosystem 
-     integer(i4), intent(out) :: ierr
+     integer(i4), intent(out) :: ierr 
+    interface
+       integer(C_INT) function PIOc_finalize(iosysid) &
+            bind(C,name="PIOc_finalize")
+         use iso_c_binding
+         integer(C_INT), intent(in), value :: iosysid
+       end function PIOc_finalize
+    end interface
+
+    ierr = PIOc_finalize(iosystem%iosysid)
      
-     integer :: msg
-
-     if(iosystem%async_interface .and. iosystem%comp_rank==0) then
-        !print *,'IAM: ',iosystem%comp_rank, ' ASYNC in finalize'
-        msg = PIO_MSG_EXIT
-        call mpi_send(msg, 1, mpi_integer, iosystem%ioroot, 1, iosystem%union_comm, ierr)
-     end if
-     If (associated (iosystem%ioranks)) deallocate (iosystem%ioranks)
-#ifndef _MPISERIAL
-     if(iosystem%info .ne. mpi_info_null) then 
-        call mpi_info_free(iosystem%info,ierr) 
-        iosystem%info=mpi_info_null
-        !print *,'IAM: ',iosystem%comp_rank, ' finalize (1) error = ', ierr
-     endif
-     if(iosystem%io_comm .ne. mpi_comm_null) then 
-        call mpi_comm_free(iosystem%io_comm,ierr)
-        iosystem%io_comm=mpi_comm_null
-        !print *,'IAM: ',iosystem%comp_rank, ' finalize (2) error = ', ierr
-     endif
-#endif
-     ierr = 0
-
   end subroutine finalize
 
 
@@ -2079,7 +1615,7 @@ contains
     dest%length   = src%length
 
   end subroutine copy_decompmap
-
+#ifdef WHAT_REASON_FOR_THIS_IN_THE_API
 !> 
 !! @public 
 !! @ingroup PIO_setiotype
@@ -2099,7 +1635,7 @@ contains
     file%iosystem%rearr = rearr
 
   end subroutine setiotype
-
+#endif
 !>
 !! @public
 !! @ingroup PIO_numtoread
@@ -2168,39 +1704,11 @@ contains
     mode = 0
     if(present(amode_in)) mode = amode_in
     ierr = PIOc_CreateFile(iosystem%iosysid, file%fh, iotype, trim(fname)//C_NULL_CHAR, mode)
+    file%iosystem => iosystem
 #ifdef TIMING
     call t_stopf("PIO_createfile")
 #endif
   end function createfile
-!>
-!! @public
-!! @defgroup PIO_setnum_OST PIO_setnum_OST
-!! @brief Sets the default number of Lustre Object Storage Targets (OST)
-!! @details  When PIO is used on a Lustre filesystem, this subroutine sets the
-!!           default number Object Storage targets (OST) to use. PIO
-!!           will use min(num_aiotasks,numOST) where num_aiotasks the the
-!!           actual number of active iotasks
-!! @param iosystem : a defined pio system descriptor created by a call to @ref PIO_init (see PIO_types)
-!! @param numOST : The number of OST to use by default
-!<
-  subroutine PIO_setnum_OST(iosystem,numOST)
-     type (iosystem_desc_t), intent(inout), target :: iosystem
-     integer(i4) :: numOST
-     iosystem%numOST = numOST
-  end subroutine PIO_setnum_OST
-!>
-!! @public
-!! @defgroup PIO_getnum_OST PIO_getnum_OST
-!! @brief Sets the default number of Lustre Object Storage Targets (OST)
-!! @details  When PIO is used on a Lustre filesystem, this subroutine gets the
-!!           default number Object Storage targets (OST) to use.
-!! @param iosystem : a defined pio system descriptor created by a call to @ref PIO_init (see PIO_types)
-!! @retval numOST : The number of OST to use.
-!<
-  integer function PIO_getnum_OST(iosystem) result(numOST)
-     type (iosystem_desc_t), intent(inout), target :: iosystem
-     numOST = iosystem%numOST
-  end function PIO_getnum_OST
 !> 
 !! @public
 !! @ingroup PIO_openfile 
@@ -2249,6 +1757,8 @@ contains
     if(present(mode)) imode = mode
     ierr = PIOc_OpenFile( iosystem%iosysid, file%fh, iotype, &
          trim(fname)//C_NULL_CHAR, imode, iCheckMPI)
+
+    file%iosystem => iosystem
 #ifdef TIMING
     call t_stopf("PIO_openfile")
 #endif
@@ -2265,27 +1775,20 @@ contains
 !! @param file @copydoc file_desc_t
 !<
   subroutine syncfile(file)
-    use piodarray, only : darray_write_complete
     implicit none
     type (file_desc_t), target :: file
-    integer :: ierr, msg
-    type(iosystem_desc_t), pointer :: ios
-     
- 
-    ios => file%iosystem
-    if(ios%async_interface .and. .not. ios%ioproc) then
-       msg = PIO_MSG_SYNC_FILE
-       if(ios%comp_rank==0) then
-          call mpi_send(msg, 1, mpi_integer, ios%ioroot, 1, ios%union_comm, ierr)
-       end if
-      
-       call mpi_bcast(file%fh, 1, mpi_integer, ios%compmaster, ios%intercomm, ierr)
-    end if
+    integer :: ierr
+    interface 
+       integer(C_INT) function PIOc_sync(ncid) &
+            bind(C,name="PIOc_sync")
+         use iso_c_binding
+         integer(C_INT), intent(in), value :: ncid
+       end function PIOc_sync
+    end interface
 
     select case(file%iotype)
-    case( pio_iotype_pnetcdf, pio_iotype_netcdf)
-       call darray_write_complete(file)
-!       ierr = sync_nf(file)
+    case( pio_iotype_pnetcdf, pio_iotype_netcdf, pio_iotype_netcdf4p, pio_iotype_netcdf4c)
+       ierr = PIOc_sync(file%fh)
     case(pio_iotype_pbinary, pio_iotype_direct_pbinary)
     case(pio_iotype_binary) 
     end select

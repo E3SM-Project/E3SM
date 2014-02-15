@@ -15,9 +15,9 @@ module pio
   use piolib_mod, only : pio_initdecomp, &
        pio_openfile, pio_closefile, pio_createfile, pio_setdebuglevel, &
        pio_seterrorhandling, pio_setframe, pio_init, pio_get_local_array_size, &
-       pio_freedecomp, pio_syncfile,pio_numtowrite,pio_numtoread,pio_setiotype, &
+       pio_freedecomp, pio_syncfile,pio_numtowrite,pio_numtoread, &
        pio_dupiodesc, pio_finalize, pio_set_hint, pio_getnumiotasks, pio_file_is_open, &
-       pio_setnum_OST, pio_getnum_OST, PIO_deletefile, PIO_get_numiotasks, PIO_get_iorank
+       PIO_deletefile, PIO_get_numiotasks, PIO_get_iorank
 
   use pio_types, only : io_desc_t, file_desc_t, var_desc_t, iosystem_desc_t, &
 	pio_int, pio_real, pio_double, pio_noerr, iotype_netcdf, &
@@ -62,22 +62,55 @@ module pio
   use pionfput_mod, only : PIO_put_var   => put_var
   use pionfget_mod, only : PIO_get_var   => get_var
 
-  use calcdecomp, only : pio_set_blocksize
-   
-
 
   implicit none
   public
 contains
+  subroutine pio_set_blocksize(blocksize)
+    integer :: blocksize
+    integer :: ierr
+    interface
+       integer(C_INT) function PIOc_set_blocksize(blocksize) &
+            bind(C,name="PIOc_set_blocksize")
+         use iso_c_binding
+         integer(C_INT), intent(in), value :: blocksize
+       end function PIOc_set_blocksize
+    end interface
+    ierr = PIOc_set_blocksize(blocksize)
+  end subroutine pio_set_blocksize
+
+
   function pio_iam_iotask(iosystem) result(task)
+    use iso_c_binding
     type(iosystem_desc_t), intent(in) :: iosystem
     logical :: task
-    task = iosystem%ioproc
+    integer :: ierr
+    logical(C_BOOL) :: ctask
+    interface
+       integer(C_INT) function PIOc_iam_iotask(iosysid, iotask) &
+            bind(C,name="PIOc_iam_iotask")
+         use iso_c_binding
+         integer(C_INT), intent(in), value :: iosysid
+         logical(C_BOOL), intent(out) :: iotask
+       end function PIOc_iam_iotask
+    end interface
+    
+    ierr = PIOc_iam_iotask(iosystem%iosysid, ctask)
+    task = ctask
   end function pio_iam_iotask
   function pio_iotask_rank(iosystem) result(rank)
     type(iosystem_desc_t), intent(in) :: iosystem
-    integer :: rank
-    rank = iosystem%io_rank
+    integer :: rank, ierr
+    interface
+       integer(C_INT) function PIOc_iotask_rank(iosysid, rank) &
+            bind(C,name="PIOc_iotask_rank")
+         use iso_c_binding
+         integer(C_INT), intent(in), value :: iosysid
+         integer(C_INT), intent(out) :: rank
+       end function PIOc_iotask_rank
+    end interface
+    
+    ierr = PIOc_iotask_rank(iosystem%iosysid, rank)
   end function pio_iotask_rank
 
 end module pio

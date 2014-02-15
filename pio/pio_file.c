@@ -66,6 +66,11 @@ int PIOc_OpenFile(const int iosysid, int *ncidp, const int iotype,
 #ifdef _MPISERIAL      
       ierr = nc_open(fname, amode, &(file->fh));
 #else
+      amode = amode & PIO_64BIT_DATA;
+      amode = amode  & PIO_64BIT_OFFSET;
+      //printf("%d %d  \n",__LINE__,amode);
+      amode = amode |  NC_MPIIO;
+
       ierr = nc_open_par(fname, amode, ios->io_comm,ios->info, &(file->fh));
 #endif
       break;
@@ -168,12 +173,12 @@ int PIOc_CreateFile(const int iosysid, int *ncidp, const int iotype,
 #ifdef _NETCDF4
     case PIO_IOTYPE_NETCDF4P:
       //         The 64 bit options are not compatable with hdf5 format files
-      printf("%d %d %d %d %d \n",__LINE__,amode,PIO_64BIT_DATA, PIO_64BIT_OFFSET, NC_MPIIO);
+      //      printf("%d %d %d %d %d \n",__LINE__,amode,PIO_64BIT_DATA, PIO_64BIT_OFFSET, NC_MPIIO);
       amode = amode & PIO_64BIT_DATA;
       amode = amode  & PIO_64BIT_OFFSET;
-      printf("%d %d  \n",__LINE__,amode);
-      //      amode = amode |  NC_MPIIO;
-      //      printf("%d %d \n",__LINE__,amode);
+      //printf("%d %d  \n",__LINE__,amode);
+      amode = amode |  NC_MPIIO;
+      printf("%d %d \n",__LINE__,amode);
 
       ierr = nc_create_par(fname, amode, ios->io_comm,ios->info  , &(file->fh));
       break;
@@ -256,7 +261,7 @@ int PIOc_CloseFile(int ncid)
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      flush_ouput_buffer(file);
+      flush_output_buffer(file);
       ierr = ncmpi_close(file->fh);
       break;
 #endif

@@ -135,6 +135,9 @@ foreach my $func (keys %{$functions}){
 #	      print F "  file->varlist[*varidp].buffer=NULL;\n";
 #	  }
 	  print F $line;
+	  if($func =~ /sync/ && $line =~   /case PIO_IOTYPE_PNETCDF/){
+	      printf F "      flush_output_buffer(file);\n";
+	  }
 	  if($line =~ /msg =/){
 	      if($func =~ /inq_varndims/){
 		  print F "  if(file->varlist[varid].ndims > 0){\n";

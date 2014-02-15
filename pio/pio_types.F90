@@ -47,43 +47,7 @@ module pio_types
 	sequence
 #endif
         integer(kind=c_int) :: iosysid
-        
-        integer(i4)              :: union_comm=MPI_COMM_NULL ! The intracomm union of comp and io communicators (for async only)
-        integer(i4)              :: IO_comm=MPI_COMM_NULL            ! The IO communicator
-        integer(i4)              :: comp_comm=MPI_COMM_NULL          ! The Compute communicator
-        integer(i4)              :: intercomm=MPI_COMM_NULL          ! the intercomm (may be MPI_COMM_NULL)
-        
-        integer(i4)              :: my_comm=MPI_COMM_NULL            ! either comp_comm or intercomm
-        integer(i4)              :: num_tasks          !  number of tasks
-        integer(i4)              :: num_iotasks        ! total number of IO tasks
-        integer(i4)              :: num_aiotasks       ! number of actual IO tasks
-        integer(i4)              :: num_comptasks
-
-        integer(i4)              :: union_rank
-        integer(i4)              :: comp_rank          ! the computational rank
-        integer(i4)              :: io_rank            ! the io rank if io_rank = -1 not an IO processor
-!
-        integer(i4)              :: Info=MPI_INFO_NULL  ! MPI-IO info structure
-        integer(i4)              :: numOST              ! The number of Object Storage Target (OST) to use.  This is a hardware raid device.
-        
-! rank of the io and comp roots in the intercomm
-        integer(i4)              :: IOMaster           ! The intercom of the io_rank 0
-        integer(i4)              :: compMaster           ! The intercom of the comp_rank 0
-
-! rank of the io and comp roots in the union_comm
-        integer(i4)              :: IOroot           ! The union_rank of the io_rank 0
-        integer(i4)              :: comproot           ! The union_rank of the comp_rank 0
-
-        logical(log_kind)        :: IOproc             ! .true. if an IO processor
-        logical(log_kind)        :: UseRearranger      ! .true. if data rearrangement is necessary
-        logical(log_kind)        :: async_interface=.false.    ! .true. if using the async interface model
-        integer(i4)              :: rearr         ! type of rearranger
-                                                  ! e.g. rearr_{none,box}
-	integer(i4)              :: error_handling ! how pio handles errors
-        integer(i4),pointer      :: ioranks(:) => null()         ! the computational ranks for the IO tasks
-
-	! This holds the IODESC
-    end type
+     end type IOSystem_desc_t
 
     type iosystem_list_t
        type(iosystem_desc_t), pointer :: this_iosystem => null()

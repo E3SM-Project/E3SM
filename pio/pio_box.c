@@ -215,7 +215,6 @@ int compute_counts(iosystem_desc_t *ios, io_desc_t *iodesc, const int dest_iopro
     rcount = (int *) malloc(sizeof(int));
     rcount[0]=0;
   }
-  free(recv_buf);
 
   iodesc->nrecvs = nrecvs;
   iodesc->sindex = (PIO_Offset *) calloc(ndof,sizeof(PIO_Offset));
@@ -362,10 +361,10 @@ int box_rearrange_comp2io(iosystem_desc_t *ios, io_desc_t *iodesc, void *sbuf,
 
   // Data in sbuf on the compute nodes is sent to rbuf on the ionodes
 
-
+  MPI_Barrier( ios->union_comm);
   pio_swapm( sbuf,  sendcounts, sdispls, sendtypes,
 	     rbuf, recvcounts, rdispls, recvtypes, 
-	     ios->union_comm, handshake, isend, MAX_GATHER_BLOCK_SIZE);
+	     ios->union_comm, handshake, isend, 1); //MAX_GATHER_BLOCK_SIZE);
 
 
   return PIO_NOERR;
