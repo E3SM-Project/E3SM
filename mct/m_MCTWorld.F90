@@ -51,6 +51,7 @@
       public :: initialized          ! Determine if MCT is initialized
       public :: init                 ! Create a MCTWorld
       public :: clean                ! Destroy a MCTWorld
+      public :: printnp                ! Print contents of a MCTWorld
       public :: NumComponents        ! Number of Components in the MCTWorld
       public :: ComponentNumProcs    ! Number of processes owned by a given
                                      ! component
@@ -73,6 +74,7 @@
       initr_
     end interface
     interface clean ; module procedure clean_ ; end interface
+    interface printnp ; module procedure printnp_ ; end interface
     interface NumComponents ; module procedure &
        NumComponents_ 
     end interface
@@ -835,6 +837,43 @@
   ComponentRootRank_ = world_comp_root
 
  end function ComponentRootRank_
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!    Math and Computer Science Division, Argonne National Laboratory   !
+!BOP -------------------------------------------------------------------
+!
+! !IROUTINE: printnp_ - Print number of procs for a component id.
+!
+! !DESCRIPTION:
+! Print out number of MPI processes for the givin component id.
+!
+! !INTERFACE:
+
+    subroutine printnp_(compid,lun)
+!
+! !USES:
+!
+      use m_die
+      use m_mpif90
+
+      implicit none 
+
+!INPUT/OUTPUT PARAMETERS:
+      integer, intent(in)           :: compid
+      integer, intent(in)           :: lun  
+
+! !REVISION HISTORY:
+! 06Jul12 - R. Jacob <jacob@mcs.anl.gov> - initial version
+!EOP ___________________________________________________________________
+
+
+    integer ier
+    character(len=*),parameter :: myname_=myname//'::printnp_'
+
+    write(lun,*) ThisMCTWorld%nprocspid(compid)
+
+ end subroutine printnp_
+
 
  end module m_MCTWorld
 
