@@ -3209,10 +3209,10 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   call t_startf('residual')
 
      call t_startf('residual_int')
-     fvtens = 0.0d0
-     fttens = 0.0d0
-     fpstens = 0.0d0
-     fdptens = 0.0d0
+     !fvtens = 0.0d0
+     !fttens = 0.0d0
+     !fpstens = 0.0d0
+     !fdptens = 0.0d0
 
        lx = 1
 	   do ie=nets,nete
