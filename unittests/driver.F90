@@ -8,6 +8,9 @@ Program pio_unit_test_driver
   use global_vars
   use basic_tests
   use ncdf_tests
+#ifdef TIMING
+  use perf_mod        ! _EXTERNAL
+#endif
 
   Implicit None
 
@@ -26,10 +29,18 @@ Program pio_unit_test_driver
 #if defined( _NETCDF4) && defined(LOGGING)
   integer, external :: nc_set_log_level2
 #endif
+  character(len=*), parameter :: nml_filename='input.nl'
   ! Set up MPI
   call MPI_Init(ierr)
   call MPI_Comm_rank(MPI_COMM_WORLD, my_rank, ierr)
   call MPI_Comm_size(MPI_COMM_WORLD, ntasks , ierr)
+#ifdef TIMING
+  call t_initf(nml_filename, logprint=.false., logunit=6, &
+       mpicom=MPI_COMM_WORLD)
+#endif
+
+
+
   master_task = my_rank.eq.0
 
   if (master_task) then
@@ -41,10 +52,10 @@ Program pio_unit_test_driver
      ltest_pnetcdf    = .false.
      stride           = 1
 
-     open(615, file="input.nl")
+     open(615, file=nml_filename)
      read(615, nml=piotest_nml, iostat=ios)
      if (ios.ne.0) then
-        print*, "ERROR reading input.nl, exiting!"
+        print*, "ERROR reading ",nml_filename, " exiting!"
      end if
      close(615)
 
@@ -194,6 +205,12 @@ Program pio_unit_test_driver
   end if
 
   call PIO_finalize(pio_iosystem, ierr)
+
+#ifdef TIMING
+  call t_prf('timing.unittests',MPI_COMM_WORLD)
+  call t_finalizef()
+#endif
+
   call MPI_Finalize(ierr)
   if(fail_cnt>0) then
      stop 1
