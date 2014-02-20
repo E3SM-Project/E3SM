@@ -1,8 +1,8 @@
 program main
 
-use mpi
-
 implicit none
+
+#include "mpif.h"
 
 integer ierr,myProc
 character(len=12) date1
@@ -13,7 +13,7 @@ call MPI_INIT(ierr)
 call MPI_COMM_RANK(MPI_COMM_WORLD,myProc,ierr)
 
 call DATE_AND_TIME(date=date1)
-ui = 6
+ui = 7
 
 if(myProc .eq. 0) call openIO(date1,ui,'AttrVect')
 call testAttrVect(myProc,ui)
@@ -84,8 +84,18 @@ subroutine openIO(stamp,ui,routine)
   character(len=54) filename
   integer ierr
 
+  ierr = 0
+
   filename = trim(routine)//'.log.' // stamp(1:8)
   OPEN (UNIT=ui, FILE=filename,STATUS='NEW',IOSTAT=ierr)
+
+  if (ierr /= 0) then
+     write(6,*) "Open failed on unit: ", ui
+     write(6,*) "File name was: [", filename, "]"
+     write(6,*) "Error code was: ", ierr
+
+     stop 1
+  end if
 
 end subroutine
 
