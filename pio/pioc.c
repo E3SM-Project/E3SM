@@ -128,7 +128,7 @@ int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const
     return PIO_EBADID;
 
   iodesc = malloc_iodesc(basetype, ndims);
-
+  
   if(ios->ioproc){
     //  Unless the user specifies the start and count for each IO task compute it.    
     if((iostart != NULL) && (iocount != NULL)){ 

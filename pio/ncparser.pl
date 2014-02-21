@@ -47,11 +47,19 @@ close(NF);
 my $func="";
 
 open(F,">pio_nc.c");
-print F "#include <pio.h>
+print F 
+"/**
+* \@file   pio_nc.c
+* \@Author Jim Edwards (jedwards\@ucar.edu)
+* \@date     Feburary 2014 
+* \@brief    PIO interfaces to netcdf support functions
+*
+* This file provides an interface to the netcdf support functions.  It calls the underlying netcdf or pnetcdf or netcdf4 
+* functions from the appropriate subset of mpi tasks.  
+*/
+#include <pio.h>
 #include <pio_internal.h>\n\n";
-#print "$functions->{inq}{pnetcdf}\n";
-#print "$functions->{inq}{netcdf}\n";
-#print "$functions->{inquire}{pio}\n";
+
   open(T,"pio_c_template.c") or die "Could not open file pio_c_template.c";
   my @template = <T>;
   close(T);
@@ -98,6 +106,12 @@ foreach my $func (keys %{$functions}){
 #	      $line =~ s/int ncid/file_desc_t *file/;
 		  $line =~ s/MPI_Offset/PIO_Offset/g;
 		  $line =~ s/\;//;
+
+		  print F 
+"/** 
+* \@name    PIOc_$func
+*/\n";
+
 	      }else{
 		  my $args;
 		  if($line =~ s/ncmpi_function/ncmpi_$func/){

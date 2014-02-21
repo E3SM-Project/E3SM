@@ -960,8 +960,8 @@ contains
           cstart(i) = iostart(ndims-i+1)
           ccount(i) = iocount(ndims-i+1)
        end do
-       ierr = PIOc_InitDecomp(iosystem%iosysid, basepiotype, ndims, cdims, &
-            size(compdof), compdof, iodesc%ioid, C_PTR(cstart(1)), C_PTR(ccount(1)))
+!       ierr = PIOc_InitDecomp(iosystem%iosysid, basepiotype, ndims, cdims, &
+!            size(compdof), compdof, iodesc%ioid, C_PTR(cstart(1)), C_PTR(ccount(1)))
     else
        ierr = PIOc_InitDecomp(iosystem%iosysid, basepiotype, ndims, cdims, &
             size(compdof), compdof, iodesc%ioid, C_NULL_PTR, C_NULL_PTR)

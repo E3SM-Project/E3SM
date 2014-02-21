@@ -341,10 +341,10 @@ CONTAINS
          use iso_c_binding
          integer(C_INT), value :: ncid
          integer(C_INT), value :: varid
-         type(C_PTR)  :: ival
+         {CTYPE}  :: ival
        end function PIOc_get_var_{NCTYPE}
     end interface
-    ierr = PIOc_get_var_{NCTYPE} (ncid, varid, C_PTR(ival(1)))
+    ierr = PIOc_get_var_{NCTYPE} (ncid, varid, ival(1))
 
   end function get_var_{DIMS}d_{TYPE}_internal
 ! TYPE int,real,double
