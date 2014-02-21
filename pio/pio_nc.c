@@ -51,7 +51,7 @@ int PIOc_inq_att (int ncid, int varid, const char *name, nc_type *xtypep, PIO_Of
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
   if(xtypep != NULL) mpierr = MPI_Bcast(xtypep , 1, MPI_INT, ios->ioroot, ios->my_comm);
-  if(lenp != NULL) mpierr = MPI_Bcast(lenp , 1, MPI_OFFSET, ios->ioroot, ios->my_comm);
+  if(lenp != NULL) mpierr = MPI_Bcast(lenp , 1, MPI_LONG_LONG, ios->ioroot, ios->my_comm);
 
   return ierr;
 }
@@ -322,7 +322,7 @@ int PIOc_inq_var (int ncid, int varid, char *name, nc_type *xtypep, int *ndimsp,
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
   if(xtypep != NULL) mpierr = MPI_Bcast(xtypep , 1, MPI_INT, ios->ioroot, ios->my_comm);
-  if(ndimsp != NULL){ mpierr = MPI_Bcast(ndimsp , 1, MPI_OFFSET, ios->ioroot, ios->my_comm);
+  if(ndimsp != NULL){ mpierr = MPI_Bcast(ndimsp , 1, MPI_LONG_LONG, ios->ioroot, ios->my_comm);
     file->varlist[varid].ndims = (*ndimsp);}
   if(nattsp != NULL) mpierr = MPI_Bcast(nattsp,1, MPI_INT, ios->ioroot, ios->my_comm);
   if(name != NULL){ 
@@ -1476,7 +1476,7 @@ int PIOc_inq_dimlen (int ncid, int dimid, PIO_Offset *lenp)
   }
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
-  mpierr = MPI_Bcast(lenp , 1, MPI_OFFSET, ios->ioroot, ios->my_comm);
+  mpierr = MPI_Bcast(lenp , 1, MPI_LONG_LONG, ios->ioroot, ios->my_comm);
 
   return ierr;
 }
@@ -1978,7 +1978,7 @@ int PIOc_inq_dim (int ncid, int dimid, char *name, PIO_Offset *lenp)
 	strcpy(tname, name);
     mpierr = MPI_Bcast(tname , PIO_MAX_NAME, MPI_CHAR, ios->ioroot, ios->my_comm);
     strcpy(name,tname); }
-  if(lenp != NULL) mpierr = MPI_Bcast(lenp , 1, MPI_OFFSET, ios->ioroot, ios->my_comm);
+  if(lenp != NULL) mpierr = MPI_Bcast(lenp , 1, MPI_LONG_LONG, ios->ioroot, ios->my_comm);
 
   return ierr;
 }
@@ -2196,7 +2196,7 @@ int PIOc_inq_attlen (int ncid, int varid, const char *name, PIO_Offset *lenp)
   }
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
-  mpierr = MPI_Bcast(lenp , 1, MPI_OFFSET, ios->ioroot, ios->my_comm);
+  mpierr = MPI_Bcast(lenp , 1, MPI_LONG_LONG, ios->ioroot, ios->my_comm);
 
   return ierr;
 }

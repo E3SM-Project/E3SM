@@ -18,6 +18,14 @@
      _a < _b ? _a : _b; })
 #define MAX_GATHER_BLOCK_SIZE 32
 
+extern int PIO_BUFFER_SIZE_LIMIT;
+
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
+
+
 int  pio_add_to_iodesc_list(io_desc_t *iodesc);
 io_desc_t *pio_get_iodesc_from_id(int ioid);
 int pio_delete_iodesc_from_list(int ioid);
@@ -57,7 +65,9 @@ int box_rearrange_comp2io(iosystem_desc_t *ios, io_desc_t *iodesc, void *sbuf,
 io_desc_t *malloc_iodesc(const int piotype, const int ndims);
 
 int flush_output_buffer(file_desc_t *file);
-
+#if defined(__cplusplus)
+}
+#endif
 
 enum PIO_MSG{
   PIO_MSG_OPEN_FILE,

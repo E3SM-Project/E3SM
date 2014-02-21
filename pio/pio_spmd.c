@@ -249,7 +249,7 @@ int pio_swapm(void *sndbuf,  const int sndlths[],const int sdispls[], const MPI_
 
 	  int tsize;
 	  MPI_Type_size(rtypes[p], &tsize);
-	  printf("rcvlths[%d] %d %d\n",p,rcvlths[p], tsize);
+	  //	  printf("rcvlths[%d] %d %d\n",p,rcvlths[p], tsize);
 
       CheckMPIReturn(MPI_Irecv( ptr, rcvlths[p], rtypes[p], p, tag, comm, rcvids+istep), __FILE__,__LINE__);
       //      printf("%d rcvids[%d] %d\n",__LINE__,istep,rcvids[istep]);
@@ -274,7 +274,7 @@ int pio_swapm(void *sndbuf,  const int sndlths[],const int sdispls[], const MPI_
       else{
 	int tsize;
 	MPI_Type_size(stypes[p], &tsize);
-	printf("sndlths[%d] %d %d\n",p,sndlths[p], tsize);
+	//	printf("sndlths[%d] %d %d\n",p,sndlths[p], tsize);
 	CheckMPIReturn(MPI_Send(ptr, sndlths[p], stypes[p], p, tag, comm), __FILE__,__LINE__);
       }
     }
@@ -298,7 +298,7 @@ int pio_swapm(void *sndbuf,  const int sndlths[],const int sdispls[], const MPI_
 	  
 	  int tsize;
 	  MPI_Type_size(rtypes[p], &tsize);
-	  printf("rcvlths[%d] %d %d\n",p,rcvlths[p], tsize);
+	  // printf("rcvlths[%d] %d %d\n",p,rcvlths[p], tsize);
 	  CheckMPIReturn(MPI_Irecv( ptr, rcvlths[p], rtypes[p], p, tag, comm, rcvids+rstep), __FILE__,__LINE__);
 	  // printf("%d rcvids[%d] %d %d\n",__LINE__,rstep,rcvids[rstep],rcvlths[p]);
 	  if(handshake)

@@ -170,7 +170,7 @@ foreach my $func (keys %{$functions}){
 		  print F "  mpierr = MPI_Bcast(ndimsp,1, MPI_INT, ios->ioroot, ios->my_comm);\n";
 		  print F "  file->varlist[varid].ndims = (*ndimsp);\n";
 	      }elsif($func =~ /inq_dimlen/ || $func =~ /inq_attlen/){
-		  print F "  mpierr = MPI_Bcast(lenp , 1, MPI_OFFSET, ios->ioroot, ios->my_comm);\n";
+		  print F "  mpierr = MPI_Bcast(lenp , 1, MPI_LONG_LONG, ios->ioroot, ios->my_comm);\n";
 	      }elsif($func =~ /inq_varid/){
 		  print F "  mpierr = MPI_Bcast(varidp , 1, MPI_INT, ios->ioroot, ios->my_comm);\n";
 	      }elsif($func =~ /inq_vartype/ || $func =~ /inq_atttype/){
@@ -179,10 +179,10 @@ foreach my $func (keys %{$functions}){
 		  print F "  mpierr = MPI_Bcast(idp , 1, MPI_INT, ios->ioroot, ios->my_comm);\n";
 	      }elsif($func =~ /inq_att$/){
 		  print F "  if(xtypep != NULL) mpierr = MPI_Bcast(xtypep , 1, MPI_INT, ios->ioroot, ios->my_comm);\n";
-		  print F "  if(lenp != NULL) mpierr = MPI_Bcast(lenp , 1, MPI_OFFSET, ios->ioroot, ios->my_comm);\n";
+		  print F "  if(lenp != NULL) mpierr = MPI_Bcast(lenp , 1, MPI_LONG_LONG, ios->ioroot, ios->my_comm);\n";
 	      }elsif($func =~ /inq_var$/){
 		  print F "  if(xtypep != NULL) mpierr = MPI_Bcast(xtypep , 1, MPI_INT, ios->ioroot, ios->my_comm);\n";
-		  print F "  if(ndimsp != NULL){ mpierr = MPI_Bcast(ndimsp , 1, MPI_OFFSET, ios->ioroot, ios->my_comm);\n";
+		  print F "  if(ndimsp != NULL){ mpierr = MPI_Bcast(ndimsp , 1, MPI_LONG_LONG, ios->ioroot, ios->my_comm);\n";
 		  print F "    file->varlist[varid].ndims = (*ndimsp);}\n";
 		  print F "  if(nattsp != NULL) mpierr = MPI_Bcast(nattsp,1, MPI_INT, ios->ioroot, ios->my_comm);\n";
 		  print F "  if(name != NULL){ \n";
@@ -205,7 +205,7 @@ foreach my $func (keys %{$functions}){
    		  print F "	strcpy(tname, name);\n";
 		  print F "    mpierr = MPI_Bcast(tname , PIO_MAX_NAME, MPI_CHAR, ios->ioroot, ios->my_comm);\n";
 		  print F "    strcpy(name,tname); }\n";
-		  print F "  if(lenp != NULL) mpierr = MPI_Bcast(lenp , 1, MPI_OFFSET, ios->ioroot, ios->my_comm);\n";
+		  print F "  if(lenp != NULL) mpierr = MPI_Bcast(lenp , 1, MPI_LONG_LONG, ios->ioroot, ios->my_comm);\n";
 	      }elsif($func =~ /inq_dimname/ || $func =~ /inq_varname/ || $func =~ /inq_attname/){
 		  print F  "  { char tname[PIO_MAX_NAME];\n";
 		  print F  "    if(ios->iomaster)\n";

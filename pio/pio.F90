@@ -10,13 +10,14 @@ module pio
 ! Package all exposed variables and functions under one roof
 
 ! only pio_offset is intended for export from kinds
+
   use pio_kinds, only : pio_offset
 
   use piolib_mod, only : pio_initdecomp, &
        pio_openfile, pio_closefile, pio_createfile, pio_setdebuglevel, &
        pio_seterrorhandling, pio_setframe, pio_init, pio_get_local_array_size, &
-       pio_freedecomp, pio_syncfile,pio_numtowrite,pio_numtoread, &
-       pio_dupiodesc, pio_finalize, pio_set_hint, pio_getnumiotasks, pio_file_is_open, &
+       pio_freedecomp, pio_syncfile, &
+       pio_finalize, pio_set_hint, pio_getnumiotasks, pio_file_is_open, &
        PIO_deletefile, PIO_get_numiotasks, PIO_get_iorank
 
   use pio_types, only : io_desc_t, file_desc_t, var_desc_t, iosystem_desc_t, &
@@ -61,7 +62,7 @@ module pio
        PIO_get_att   => get_att
   use pionfput_mod, only : PIO_put_var   => put_var
   use pionfget_mod, only : PIO_get_var   => get_var
-
+  
 
   implicit none
   public
@@ -112,6 +113,28 @@ contains
     
     ierr = PIOc_iotask_rank(iosystem%iosysid, rank)
   end function pio_iotask_rank
+
+  subroutine pio_iosystem_is_active(iosystem, active)
+    use iso_c_binding
+    type(iosystem_desc_t), intent(in) :: iosystem
+    logical, intent(out) :: active
+    logical(C_BOOL) :: lactive
+    integer :: ierr
+    interface
+       integer(C_INT) function PIOc_iosystem_is_active(iosysid, active) &
+            bind(C,name="PIOc_iosystem_is_active")
+         use iso_c_binding
+         integer(C_INT), intent(in), value :: iosysid
+         logical(C_BOOL), intent(out) :: active
+       end function PIOc_iosystem_is_active
+    end interface
+
+    ierr = PIOc_iosystem_is_active(iosystem%iosysid, lactive)
+    active = lactive
+
+
+  end subroutine pio_iosystem_is_active
+
 
 end module pio
 

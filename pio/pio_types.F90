@@ -62,13 +62,13 @@ module pio_types
 !! @struct io_data_list
 !! @brief Linked list of buffers for pnetcdf non-blocking interface
 !>
-    type, public :: io_data_list
-       integer :: request
-       real(r4), pointer :: data_real(:) => null()
-       integer(i4), pointer :: data_int(:) => null()
-       real(r8), pointer :: data_double(:) => null()
-       type(io_data_list), pointer :: next => null()
-    end type io_data_list
+!    type, public :: io_data_list
+!       integer :: request
+!       real(r4), pointer :: data_real(:) => null()
+!       integer(i4), pointer :: data_int(:) => null()
+!       real(r8), pointer :: data_double(:) => null()
+!       type(io_data_list), pointer :: next => null()
+!    end type io_data_list
 
      
 !> 
@@ -79,27 +79,27 @@ module pio_types
     type, public :: File_desc_t
        integer(kind=c_int) :: fh
        type(iosystem_desc_t), pointer :: iosystem => null()
-       type(io_data_list), pointer :: data_list_top  => null()  ! used for non-blocking pnetcdf calls
-       integer :: buffsize=0
-       integer :: request_cnt=0
-       integer(kind=PIO_OFFSET) :: offset             ! offset into file
-       integer(i4)              :: iotype             ! Type of IO to perform see parameter statement below     
-       logical                  :: file_is_open = .false.
+!       type(io_data_list), pointer :: data_list_top  => null()  ! used for non-blocking pnetcdf calls
+!       integer :: buffsize=0
+!       integer :: request_cnt=0
+!       integer(kind=PIO_OFFSET) :: offset             ! offset into file
+!       integer(i4)              :: iotype             ! Type of IO to perform see parameter statement below     
+!       logical                  :: file_is_open = .false.
     end type File_desc_t
 
 
     !------------------------------------------------------
     !  data structure to describe a data movement operator
     !------------------------------------------------------
-    type, public :: IO_desc2_t
+!    type, public :: IO_desc2_t
 #ifdef SEQUENCE
-	sequence
+!	sequence
 #endif
-        integer(i4)         ::  fileTYPE   ! MPI data types for file
-        integer(i4)         ::  elemTYPE
-        integer(i4)         :: n_words
-        integer(kind=pio_offset)         :: n_elemTYPE
-    end type IO_desc2_t
+!        integer(i4)         ::  fileTYPE   ! MPI data types for file
+!        integer(i4)         ::  elemTYPE
+!        integer(i4)         :: n_words
+!        integer(kind=pio_offset)         :: n_elemTYPE
+!    end type IO_desc2_t
 
 !>
 !! @private
@@ -119,41 +119,41 @@ module pio_types
 #ifdef SEQUENCE
 	sequence
 #endif
-        type(IO_desc2_t)    :: Read
-        type(IO_desc2_t)    :: Write
-	integer(kind=PIO_Offset), pointer :: start(:) => NULL()
-	integer(kind=PIO_Offset), pointer :: count(:) => NULL()
+!        type(IO_desc2_t)    :: Read
+!        type(IO_desc2_t)    :: Write
+!	integer(kind=PIO_Offset), pointer :: start(:) => NULL()
+!	integer(kind=PIO_Offset), pointer :: count(:) => NULL()
 
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         ! fields for box-based rearranger
         ! should put this in its own derived type later
 
-        integer :: baseTYPE
+!        integer :: baseTYPE
 
-        integer, pointer :: dest_ioproc(:)=> NULL()     ! for each dof
-        integer(kind=pio_offset), pointer :: dest_ioindex(:)=> NULL()    ! for each dof
+!        integer, pointer :: dest_ioproc(:)=> NULL()     ! for each dof
+!        integer(kind=pio_offset), pointer :: dest_ioindex(:)=> NULL()    ! for each dof
 
 
         ! Values needed only on io procs
-        integer,pointer :: rfrom(:)=> NULL()   ! rfrom(nrecvs)= rank of ith sender
-        integer,pointer :: rtype(:)=> NULL()   ! rtype(nrecvs)=mpi types for receives
+!        integer,pointer :: rfrom(:)=> NULL()   ! rfrom(nrecvs)= rank of ith sender
+!        integer,pointer :: rtype(:)=> NULL()   ! rtype(nrecvs)=mpi types for receives
 
         
         ! needed on all procs
-        integer,pointer :: scount(:)=> NULL()  ! scount(num_iotasks)= # sends to ith ioproc
-        integer,pointer :: stype(:)=> NULL()   ! stype(num_iotasks)=mpi type for sends
+!        integer,pointer :: scount(:)=> NULL()  ! scount(num_iotasks)= # sends to ith ioproc
+!        integer,pointer :: stype(:)=> NULL()   ! stype(num_iotasks)=mpi type for sends
 
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        integer(i4) :: async_id
+!        integer(i4) :: async_id
 
 
-        type (DecompMap_t)  :: IOmap      ! IO decomposition map
-        type (DecompMap_t)  :: COMPmap    ! Computational decomposition map
-        integer :: nrecvs                      ! valid for io procs
-        integer(kind=PIO_OFFSET)         :: glen       ! global length of array in words
-	integer(i4)         :: compsize   ! size of expected comp buffer
-        integer(i4)         :: maxiobuflen   ! size of largest iobuffer
-        integer(i4)         :: ndof
+!        type (DecompMap_t)  :: IOmap      ! IO decomposition map
+!        type (DecompMap_t)  :: COMPmap    ! Computational decomposition map
+!        integer :: nrecvs                      ! valid for io procs
+!        integer(kind=PIO_OFFSET)         :: glen       ! global length of array in words
+!	integer(i4)         :: compsize   ! size of expected comp buffer
+!        integer(i4)         :: maxiobuflen   ! size of largest iobuffer
+!        integer(i4)         :: ndof
         integer(i4)         :: ioid
     end type
 
@@ -167,11 +167,11 @@ module pio_types
 	sequence
 #endif	
         integer(i4)     :: varID
-        integer(i4)     :: rec   ! This is a record number or pointer into the unlim dimension of the	    
+!        integer(i4)     :: rec   ! This is a record number or pointer into the unlim dimension of the	    
                                  ! netcdf file
-	integer(i4)     :: type
-        integer(i4)     :: ndims ! number of dimensions as defined on the netcdf file.
-	character(len=50) :: name ! vdc needed variable
+!	integer(i4)     :: type
+!        integer(i4)     :: ndims ! number of dimensions as defined on the netcdf file.
+!	character(len=50) :: name ! vdc needed variable
     end type 
 
 !>

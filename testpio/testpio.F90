@@ -131,7 +131,7 @@ program testpio
   integer(kind=PIO_OFFSET) :: startpio(3), countpio(3)
   integer, parameter :: strlen=80
   character(len=strlen) :: fname, fname_r8,fname_r4,fname_i4, fnamechk
-  logical, parameter :: Debug = .false.
+  logical, parameter :: Debug = .true.
   integer :: mpi_comm_compute, mpi_comm_io, mpi_icomm_cio
   integer :: charlen
   character(len=strlen), parameter :: fruits(4) = (/'orange','apple ','pear  ','mango '/)
@@ -339,9 +339,9 @@ program testpio
                           trim(ibm_io_sparse_access))
      end if
   end if
-  if(set_lustre_values /= 0) then 
-        call PIO_setnum_OST(PIOSYS,lfs_ost_count)
-  endif
+!  if(set_lustre_values /= 0) then 
+!        call PIO_setnum_OST(PIOSYS,lfs_ost_count)
+!  endif
 
   !-----------------------------------------
   ! Compute compDOF based on namelist input
@@ -512,13 +512,6 @@ program testpio
   !----------------------
   ! allocate and set test arrays 
   !----------------------
-  if(iotype == PIO_IOTYPE_vdc2) then
-     CheckArrays=.false.
-     TestR8    = .false.
-     TestR4    = .true.
-     TestInt   = .false.
-     TestCombo = .false.     
-  end if
 
   if(TestR8 .or. TestCombo) then 
      call alloc_check(test_r8wr,lLength,'testpio:test_r8wr')
@@ -651,20 +644,19 @@ program testpio
               if(TestR8 .or. TestCombo) &
                    call PIO_initDecomp(PIOSYS,PIO_double,  gDims3D,compDOF,&
                    IOdesc_r8,startpio,countpio)
+              glenr8 = product(gdims3d)
               if(Debug)       print *,'iam: ',My_task,'testpio: point #7.1'
               
               if(TestR4 .or. TestCombo) then
-                 if(iotype == PIO_IOTYPE_vdc2) then
-                    call PIO_initDecomp(PIOSYS,  gDims3D,compDOF,IOdesc_r4,10)
-                 else
-                    call PIO_initDecomp(PIOSYS,PIO_real,    gDims3D,compDOF,&
-                         IOdesc_r4,startpio,countpio)
-                 end if
+                 call PIO_initDecomp(PIOSYS,PIO_real,    gDims3D,compDOF,&
+                      IOdesc_r4,startpio,countpio)
+                 glenr4 = product(gdims3d)
               end if
               if(Debug)       print *,'iam: ',My_task,'testpio: point #7.2'
               if(TestInt .or. TestCombo) &
                    call PIO_initDecomp(PIOSYS,PIO_int,     gDims3D,compDOF,&
                    IOdesc_i4,startpio,countpio)
+                 gleni4 = product(gdims3d)
               if(Debug)       print *,'iam: ',My_task,'testpio: point #8'
            else
               if(Debug)       print *,'iam: ',My_task,'testpio: point #8.1'
@@ -673,14 +665,9 @@ program testpio
                    IOdesc_r8)
               if(Debug)       print *,'iam: ',My_task,'testpio: point #8.2'
               if(TestR4 .or. TestCombo) then
-                 if(iotype == PIO_IOTYPE_vdc2) then
-                    if(Debug)       print *,'iam: ',My_task,'testpio: point #8.2a'
-                    call PIO_initDecomp(PIOSYS,  gDims3D,compDOF,IOdesc_r4,10)
-                 else
-                    if(Debug)       print *,'iam: ',My_task,'testpio: point #8.2b'
-                    call PIO_initDecomp(PIOSYS,PIO_real,    gDims3D,compDOF,&
-                         IOdesc_r4)
-                 end if
+                 if(Debug)       print *,'iam: ',My_task,'testpio: point #8.2b'
+                 call PIO_initDecomp(PIOSYS,PIO_real,    gDims3D,compDOF,&
+                      IOdesc_r4)
               end if
 
               if(Debug)       print *,'iam: ',My_task,'testpio: point #8.3'
@@ -819,8 +806,7 @@ program testpio
            if(iotype == iotype_pnetcdf .or. & 
                 iotype == iotype_netcdf .or. &
                 iotype == PIO_iotype_netcdf4p .or. &
-                iotype == PIO_iotype_netcdf4c .or. &
-                iotype == PIO_IOTYPE_vdc2) then
+                iotype == PIO_iotype_netcdf4c) then
 
               if(TestR8) then 
                  !-----------------------------------
@@ -845,11 +831,9 @@ program testpio
                  !-----------------------------------
                  ! for the single record real*4 file 
                  !-----------------------------------
-                if(iotype /= PIO_IOTYPE_vdc2) then
-                   call WriteHeader(File_r4,nx_global,ny_global,nz_global,dimid_x,dimid_y,dimid_z)
-                   iostat = PIO_def_dim(File_r4,'charlen',strlen,charlen)
-                   iostat = PIO_def_var(File_r4,'filename',pio_char,(/charlen/),varfn_r4)
-                end if
+                 call WriteHeader(File_r4,nx_global,ny_global,nz_global,dimid_x,dimid_y,dimid_z)
+                 iostat = PIO_def_dim(File_r4,'charlen',strlen,charlen)
+                 iostat = PIO_def_var(File_r4,'filename',pio_char,(/charlen/),varfn_r4)
 
                  do ivar = 1, nvars
                     write(varname,'(a,i5.5,a)') 'field',ivar
@@ -900,7 +884,7 @@ program testpio
 		 iostat = PIO_def_var(File,'filename',pio_char,(/charlen/),varfn)
 
 		 iostat = PIO_def_dim(File,'char2d',4,dimid)
-		 iostat = PIO_def_var(File,'fruits',pio_char,(/dimid,charlen/),varfruit)
+		 iostat = PIO_def_var(File,'fruits',pio_char,(/charlen,dimid/),varfruit)
 
 
                  iostat = PIO_enddef(File)
@@ -1082,8 +1066,7 @@ program testpio
            if(Debug) print *,__FILE__,__LINE__
 
            if(iotype == iotype_pnetcdf .or. &
-                iotype == iotype_netcdf .or. &
-              iotype == pio_iotype_vdc2) then
+                iotype == iotype_netcdf) then
               do ivar=1,nvars
                  if(TestR8) then 
                     iostat = PIO_inq_varid(file_r8,'filename',varfn_r8)
@@ -1097,16 +1080,8 @@ program testpio
                     if(iofmtd(2:3) .eq. 'nc') then
                        iostat = PIO_inq_varid(file_r4,'filename',varfn_r4)
                     end if
-                    if(iotype == pio_iotype_vdc2) then
-
-		    !there currently exists no vdc concept of inquiring a variable, the only thing in the var_desc_t
-		    !directly used by the writing/reading is var name
-	       	    iostat = PIO_def_var(File_r4,'field00001', PIO_real, vard_r4(ivar))  
-		
-                 else
 	            iostat = PIO_inq_varid(File_r4,'field00001',vard_r4(ivar))  
-                 endif
-                 call check_pioerr(iostat,__FILE__,__LINE__,' r4 inq_varid')
+                   call check_pioerr(iostat,__FILE__,__LINE__,' r4 inq_varid')
                  endif
               end do
               if(TestInt) then 
@@ -1332,9 +1307,6 @@ program testpio
         endif
 
 
-        if(TestR8 .or. TestCombo) glenr8=iodesc_r8%glen
-        if(TestR4 .or. TestCombo) glenr4=iodesc_r4%glen
-        if(TestInt .or. TestCombo) gleni4=iodesc_i4%glen
         if(TestR8 .or. TestCombo) call pio_freedecomp(PIOSYS, iodesc_r8)
         if(TestR4 .or. TestCombo) call pio_freedecomp(PIOSYS, iodesc_r4)
         if(TestInt .or. TestCombo) call pio_freedecomp(PIOSYS, iodesc_i4)

@@ -288,11 +288,11 @@ sub loadmodules{
 	require "/glade/apps/opt/lmod/lmod/init/perl";    
 	module_check($modpath,$host);
 #        module("purge");
-        module("load intel/13.1.2");
+        module("load intel/14.0.1");
 	module("load ncarcompilers/1.0");
         module("rm netcdf");
         module("load netcdf-mpi/4.3.0");
-        module("load pnetcdf/1.3.0");
+#        module("load pnetcdf/1.3.0");
         module("load ncarenv/1.0");
 	module("load ncarbinlibs/1.1");
 	module("load cmake");

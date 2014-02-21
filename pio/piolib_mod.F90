@@ -52,15 +52,12 @@ module piolib_mod
        PIO_syncfile,      &
        PIO_createfile,    &
        PIO_closefile,     &
-       PIO_numtoread,     &
-       PIO_numtowrite,    &
        PIO_setframe,      &
        PIO_advanceframe,  &
        PIO_setdebuglevel, &
        PIO_seterrorhandling, &
        PIO_get_local_array_size, &
        PIO_freedecomp,     &
-       PIO_dupiodesc,     &
        PIO_getnumiotasks, &
        PIO_set_hint,      &
        PIO_FILE_IS_OPEN, &
@@ -180,9 +177,9 @@ module piolib_mod
 !! @defgroup PIO_dupiodesc PIO_dupiodesc
 !! duplicates an eisting io descriptor
 !<
-  interface PIO_dupiodesc
-     module procedure dupiodesc
-  end interface
+!  interface PIO_dupiodesc
+!     module procedure dupiodesc
+!  end interface
 
 
 
@@ -190,17 +187,17 @@ module piolib_mod
 !! @defgroup PIO_numtoread PIO_numtoread
 !! returns the total number of words to read
 !<
-  interface PIO_numtoread
-     module procedure numtoread
-  end interface
+!  interface PIO_numtoread
+!     module procedure numtoread
+!  end interface
 
 !> 
 !! @defgroup PIO_numtowrite PIO_numtowrite
 !! returns the total number of words to write
 !<
-  interface PIO_numtowrite
-     module procedure numtowrite
-  end interface
+!  interface PIO_numtowrite
+!     module procedure numtowrite
+!  end interface
 
 
 !> 
@@ -333,8 +330,19 @@ contains
 !<
   subroutine setframe(vardesc,frame)
     type(var_desc_t), intent(inout) :: vardesc
-    integer(kind=PIO_offset), intent(in) :: frame
-    vardesc%rec=frame
+    integer(PIO_Offset), intent(in) :: frame
+    integer :: ierr, iframe
+    interface
+       integer(C_INT) function PIOc_setframe(varid, frame) &
+            bind(C,NAME="PIOc_setframe")
+         use iso_c_binding
+         implicit none
+         integer(C_INT), value :: varid
+         integer(C_INT), value :: frame
+       end function PIOc_setframe
+    end interface
+    iframe = frame
+    ierr = PIOc_setframe(vardesc%varid, iframe)
   end subroutine setframe
 
 !>  
@@ -658,13 +666,13 @@ contains
 
     integer(kind=PIO_offset), intent(in) :: start(:), count(:)
     type (io_desc_t) :: tmp
-
+    integer :: ierr
 
     call initdecomp_1dof_nf_i8(iosystem, basepiotype, dims, lenblocks, compdof, iodofr, start, count, iodesc)
 
     call initdecomp_1dof_nf_i8(iosystem, basepiotype, dims, lenblocks, compdof, iodofw, start, count, tmp)
-
-    call dupiodesc2(iodesc%write,tmp%write)
+    call mpi_abort(mpi_comm_world, 0, ierr)
+!    call dupiodesc2(iodesc%write,tmp%write)
 
   end subroutine initdecomp_2dof_nf_i8
 
@@ -909,19 +917,15 @@ contains
 
 
   subroutine PIO_initdecomp_dof_i8(iosystem,basepiotype,dims,compdof, iodesc, iostart, iocount)
-
-
-
-!    use calcdisplace_mod, only : calcdisplace_box
-!    use calcdecomp, only : calcstartandcount
     type (iosystem_desc_t), intent(inout) :: iosystem
     integer(i4), intent(in)           :: basepiotype
     integer(i4), intent(in)           :: dims(:)
     integer (kind=pio_offset), intent(in)          :: compdof(:)   ! global degrees of freedom for computational decomposition
     integer (kind=PIO_offset), optional :: iostart(:), iocount(:)
     type (io_desc_t), intent(inout)     :: iodesc
-    type (c_ptr) :: cstart, ccount
-
+!    type (c_ptr) :: cstart, ccount
+    integer(c_int) :: ndims
+    integer(c_int), dimension(:), allocatable :: cdims, cstart, ccount
     interface
        integer(C_INT) function PIOc_InitDecomp(iosysid,basetype,ndims,dims, &
             maplen, compmap, ioidp, iostart,iocount)  &
@@ -938,22 +942,33 @@ contains
          type(C_PTR), value :: iocount
        end function PIOc_InitDecomp
     end interface
-    integer :: ierr
+    integer :: ierr, i
     
 #ifdef TIMING
     call t_startf("PIO_initdecomp_dof")
 #endif
 
+    ndims = size(dims)
+    allocate(cdims(ndims))
+    do i=1,ndims
+       cdims(i) = dims(ndims-i+1)
+    end do
+
     if(present(iostart) .and. present(iocount)) then
-       cstart = transfer(iostart,cstart)
-       ccount = transfer(iocount,ccount)
+       allocate(cstart(ndims), ccount(ndims))
+       do i=1,ndims
+          cstart(i) = iostart(ndims-i+1)
+          ccount(i) = iocount(ndims-i+1)
+       end do
+       ierr = PIOc_InitDecomp(iosystem%iosysid, basepiotype, ndims, cdims, &
+            size(compdof), compdof, iodesc%ioid, C_PTR(cstart(1)), C_PTR(ccount(1)))
     else
-       cstart = C_NULL_PTR
-       ccount = C_NULL_PTR
+       ierr = PIOc_InitDecomp(iosystem%iosysid, basepiotype, ndims, cdims, &
+            size(compdof), compdof, iodesc%ioid, C_NULL_PTR, C_NULL_PTR)
+
     endif
 
-    ierr = PIOc_InitDecomp(iosystem%iosysid, basepiotype, size(dims), dims, &
-         size(compdof), compdof, iodesc%ioid, cstart, ccount)
+
 
 #ifdef TIMING
     call t_stopf("PIO_initdecomp_dof")
@@ -967,16 +982,16 @@ contains
   ! dupiodesc2
   !
 
-  subroutine dupiodesc2(src, dest)
-    use pio_types, only : io_desc2_t
-    type(io_desc2_t), intent(in) :: src
-    type(io_desc2_t), intent(out) :: dest
+!  subroutine dupiodesc2(src, dest)
+!    use pio_types, only : io_desc2_t
+!    type(io_desc2_t), intent(in) :: src
+!    type(io_desc2_t), intent(out) :: dest
 
-    dest%filetype = src%filetype
-    dest%elemtype = src%elemtype
-    dest%n_elemtype = src%n_elemtype
-    dest%n_words = src%n_words
-  end subroutine dupiodesc2
+!    dest%filetype = src%filetype
+!    dest%elemtype = src%elemtype
+!    dest%n_elemtype = src%n_elemtype
+!    dest%n_words = src%n_words
+!  end subroutine dupiodesc2
 
 
 
@@ -1527,12 +1542,13 @@ contains
 !! @param src :  an io description handle returned from @ref PIO_initdecomp (see PIO_types)
 !! @param dest : the newly created io descriptor with the same characteristcs as src.
 !<
+
+#ifdef WHAT_REASON_FOR_THIS_IN_THE_API
   subroutine dupiodesc(src,dest)
 
     integer :: n
     type (io_desc_t), intent(in) :: src
     type (io_desc_t), intent(inout) :: dest
-
 
     dest%glen        =  src%glen
     if(associated(src%start)) then
@@ -1615,7 +1631,7 @@ contains
     dest%length   = src%length
 
   end subroutine copy_decompmap
-#ifdef WHAT_REASON_FOR_THIS_IN_THE_API
+
 !> 
 !! @public 
 !! @ingroup PIO_setiotype
@@ -1635,7 +1651,7 @@ contains
     file%iosystem%rearr = rearr
 
   end subroutine setiotype
-#endif
+
 !>
 !! @public
 !! @ingroup PIO_numtoread
@@ -1666,7 +1682,7 @@ contains
     num = iodesc%write%n_words
 
   end function numtowrite
-
+#endif
 !> 
 !! @public
 !! @ingroup PIO_createfile 
@@ -1786,12 +1802,8 @@ contains
        end function PIOc_sync
     end interface
 
-    select case(file%iotype)
-    case( pio_iotype_pnetcdf, pio_iotype_netcdf, pio_iotype_netcdf4p, pio_iotype_netcdf4c)
-       ierr = PIOc_sync(file%fh)
-    case(pio_iotype_pbinary, pio_iotype_direct_pbinary)
-    case(pio_iotype_binary) 
-    end select
+    ierr = PIOc_sync(file%fh)
+
   end subroutine syncfile
 !> 
 !! @public 

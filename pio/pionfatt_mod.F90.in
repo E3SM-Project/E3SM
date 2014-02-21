@@ -19,7 +19,7 @@ module pionfatt_mod
   interface put_att
      module procedure put_att_id_{TYPE}, put_att_desc_{TYPE}, put_att_vid_{TYPE}
      ! TYPE real,int,double
-     module procedure put_att_1d_id_{TYPE}, put_att_desc_1d_{TYPE}
+     module procedure put_att_1d_id_{TYPE}, put_att_1d_desc_{TYPE}, put_att_1d_vid_{TYPE}
   end interface
 
 
@@ -135,6 +135,65 @@ contains
 
   end function put_att_id_text
 
+  integer function put_att_1d_id_text (ncid, varid, name, value) result(ierr)  
+    use iso_c_binding
+    integer, intent(in) :: ncid
+    integer, intent(in) :: varid
+    character(len=*), intent(in) :: name
+    character(len=*), intent(in) :: value(:)
+    character, allocatable :: nvalue(:)
+    integer :: slen, alen, i, j, k
+
+    slen = len(value(1))
+    alen = size(value)
+    allocate(nvalue(slen*alen))
+    
+    do i=1,alen 
+       j= len_trim(value(i))
+       do k=1,j
+          nvalue(k+(i-1)*slen) = value(i)(k:k)
+       end do
+       nvalue(j+1+(i-1)*slen) = C_NULL_CHAR
+    end do
+    ierr =  put_att_1d_id_text_internal (ncid, varid, name, slen*alen, nvalue)
+
+    deallocate(nvalue)
+
+  end function put_att_1d_id_text
+
+
+  integer function put_att_1d_id_text_internal (ncid, varid, name, arrlen, value) result(ierr)
+    use iso_c_binding
+    integer, intent(in) :: ncid
+    integer, intent(in) :: varid
+    character(len=*), intent(in) :: name
+    integer, intent(in) :: arrlen
+    character(C_char), intent(in) :: value(arrlen)
+    interface
+       integer(C_INT) function PIOc_put_att_text (ncid, varid, name, len, op) &
+            bind(C,name="PIOc_put_att_text")
+         use iso_c_binding
+         integer(C_INT), value :: ncid
+         integer(C_INT), value :: varid
+         character(C_CHAR) :: name
+         integer(C_LONG), value :: len
+         character(C_char) :: op(*)
+       end function PIOc_put_att_text
+    end interface
+    integer :: cvarid
+
+    if(varid==PIO_GLOBAL) then
+       cvarid = -1
+    else
+       cvarid = varid
+    end if
+
+    ierr = PIOc_put_att_text (ncid,cvarid,name, int(arrlen,C_LONG),  value)
+
+  end function put_att_1d_id_text_internal
+
+
+
   integer function get_att_id_text (ncid, varid, name, value) result(ierr)
     use iso_c_binding
     integer, intent(in) :: ncid
@@ -217,7 +276,6 @@ contains
 
     ierr = PIOc_put_att_{NCTYPE} (ncid, varid, name, PIO_{TYPE} , len, C_LOC(value))
 
-
   end function put_att_1d_id_internal_{TYPE}
 
 
@@ -233,18 +291,27 @@ contains
   !! @param value : The value for the netcdf attribute 
   !! @retval ierr @copydoc error_return
   !<
-  integer function put_att_desc_1d_{TYPE} (File,varDesc,name,value) result(ierr)
+  integer function put_att_1d_desc_{TYPE} (File,varDesc,name,value) result(ierr)
 
     type (File_desc_t), intent(inout) , target :: File
     type (VAR_desc_t), intent(in)     :: varDesc
     character(len=*), intent(in)      :: name
     {VTYPE}, intent(in)      :: value(:)
 
-    character(len=*), parameter :: subName=modName//'::put_att_desc_1d_{TYPE}'
-
     ierr = put_att_1d_id_{TYPE} (File%fh,varDesc%varid,name,value)
 
-  end function put_att_desc_1d_{TYPE}
+  end function put_att_1d_desc_{TYPE}
+
+  integer function put_att_1d_vid_{TYPE} (File,varid,name,value) result(ierr)
+
+    type (File_desc_t), intent(inout) , target :: File
+    integer, intent(in) :: varid
+    character(len=*), intent(in)      :: name
+    {VTYPE}, intent(in)      :: value(:)
+
+    ierr = put_att_1d_id_{TYPE} (File%fh,varid,name,value)
+
+  end function put_att_1d_vid_{TYPE}
 
 
   !>
@@ -264,8 +331,6 @@ contains
     type (VAR_desc_t), intent(in)     :: varDesc
     character(len=*), intent(in)      :: name
     {VTYPE}, intent(out)      :: value
-
-    character(len=*), parameter :: subName=modName//'::get_att_desc_{TYPE}'
 
     ierr = get_att_{TYPE} (File,varDesc%varid,name,value)
 
@@ -380,6 +445,7 @@ contains
     character(len=*), intent(in)   :: name
     integer(pio_offset), intent(in) :: len
     {VTYPE}, target, intent(out)   :: value(*)
+
 
     interface
        integer(C_INT) function PIOc_get_att_{NCTYPE} (ncid, varid, name, xtype, len, op) &

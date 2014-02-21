@@ -94,7 +94,7 @@ typedef struct iosystem_desc_t
 typedef struct file_desc_t
 {
   iosystem_desc_t *iosystem;
-  long int buffsize;
+  PIO_Offset buffsize;
   int fh;
   int iotype;
   struct var_desc_t varlist[PIO_MAX_VARS];
@@ -214,7 +214,9 @@ enum PIO_ERROR_HANDLERS{
 #else
 #define PIO_EINDEP  (-203) 
 #endif
-
+#if defined(__cplusplus)
+extern "C" {
+#endif
 
 int PIOc_inq_att (int ncid, int varid, const char *name, nc_type *xtypep, PIO_Offset *lenp); 
 int PIOc_inq_format (int ncid, int *formatp); 
@@ -272,5 +274,10 @@ int PIOc_get_att_double (int ncid, int varid, const char *name, double *ip);
 int PIOc_inq_atttype (int ncid, int varid, const char *name, nc_type *xtypep); 
 int PIOc_put_att_uchar (int ncid, int varid, const char *name, nc_type xtype, PIO_Offset len, const unsigned char *op); 
 int PIOc_get_att_uchar (int ncid, int varid, const char *name, unsigned char *ip);              
+
+#if defined(__cplusplus)
+}
+#endif
+
 #endif  // _PIO_H_
 

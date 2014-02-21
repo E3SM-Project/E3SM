@@ -613,7 +613,7 @@ contains
     integer, intent(in) :: ndims
     integer, intent(out) :: dimids(:)
     integer(C_INT) :: cdimids(ndims)
-
+    integer :: i
     interface
        integer(C_INT) function PIOc_inq_vardimid(ncid,varid,dimids) &
             bind(C,name="PIOc_inq_vardimid")
@@ -625,7 +625,9 @@ contains
     end interface
 
     ierr = PIOc_inq_vardimid(ncid,varid,cdimids)
-    dimids(1:ndims) =  cdimids(1:ndims)
+    do i=1,ndims
+       dimids(i) =  cdimids(ndims-i+1)
+    end do
     
   end function internal_inq_vardimid
     
@@ -1068,7 +1070,7 @@ contains
     integer, intent(in)   :: dimids(:)
     integer, intent(out) :: varid
     integer(C_INT) :: cdimids(PIO_MAX_VAR_DIMS)
-    integer :: ndims
+    integer :: ndims, i
     interface
        integer (C_INT) function PIOc_def_var(ncid,name,xtype,ndims,dimidsp,varidp) &
             bind(c,name="PIOc_def_var")
@@ -1082,7 +1084,9 @@ contains
        end function PIOc_def_var
     end interface
     ndims = size(dimids)
-    cdimids(1:ndims) = dimids
+    do i=1,ndims
+       cdimids(i) = dimids(ndims-i+1)
+    enddo
 
     ierr = PIOc_def_var(ncid, trim(name)//C_NULL_CHAR, type, ndims, cdimids,varid)
 

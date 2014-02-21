@@ -1,6 +1,21 @@
 #include <pio.h>
 #include <pio_internal.h>
 
+int PIOc_iosystem_is_active(const int iosysid, bool *active)
+{
+  iosystem_desc_t *ios;
+  ios = pio_get_iosystem_from_id(iosysid);
+  if(ios == NULL)
+    return PIO_EBADID;
+  
+  if(ios->comp_comm == MPI_COMM_NULL && ios->io_comm == MPI_COMM_NULL){
+    *active = false;
+  }else{
+    *active = true;
+  }
+    
+}
+
 int PIOc_File_is_Open(int ncid)
 {
   file_desc_t *file;
@@ -29,6 +44,18 @@ int PIOc_advanceframe(int ncid, int varid)
     return PIO_EBADID;
 
   file->varlist[varid].record++;
+
+  return(PIO_NOERR);
+} 
+
+int PIOc_setframe(const int ncid, const int varid,const int frame)
+{
+  file_desc_t *file;
+  file = pio_get_file_from_id(ncid);
+  if(file == NULL)
+    return PIO_EBADID;
+
+  file->varlist[varid].record = frame;
 
   return(PIO_NOERR);
 } 
@@ -123,9 +150,10 @@ int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const
 
     iodesc->llen = iosize;
     // Share the max io buffer size with all io tasks
-    //    printf("%s %d %d\n",__FILE__,__LINE__,iosize);
-    CheckMPIReturn(MPI_Allreduce(&iosize, &(iodesc->maxiobuflen), 1, MPI_INT, MPI_MAX, ios->io_comm),__FILE__,__LINE__);
-    //    printf("%s %d %d\n",__FILE__,__LINE__,iodesc->maxiobuflen);    
+    printf("%s %d %d\n",__FILE__,__LINE__,iosize);
+    CheckMPIReturn(MPI_Allreduce(MPI_IN_PLACE, &iosize, 1, MPI_INT, MPI_MAX, ios->io_comm),__FILE__,__LINE__);
+    iodesc->maxiobuflen = iosize;
+    printf("%s %d %d\n",__FILE__,__LINE__,iodesc->maxiobuflen);    
     CheckMPIReturn(MPI_Barrier(ios->io_comm),__FILE__,__LINE__);
   }
   // Depending on array size and io-blocksize the actual number of io tasks used may vary
@@ -209,6 +237,7 @@ int PIOc_Init_Intracomm_from_F90(int f90_comp_comm,
   return PIOc_Init_Intracomm(MPI_Comm_f2c(f90_comp_comm), num_iotasks, stride,base,iosysidp);
 }
   
+
 int PIOc_set_hint(const int iosysid, const char hint[], const char hintval[])
 {
   iosystem_desc_t *ios;
@@ -268,3 +297,4 @@ int PIOc_iotask_rank(const int iosysid, int *iorank)
   return PIO_NOERR;
   
 }
+

@@ -71,6 +71,15 @@ foreach my $func (keys %{$functions}){
 
   if(defined ($functions->{$func}{pnetcdf}) && defined($functions->{$func}{netcdf})){
 #      && defined($functions->{$func}{pio})){
+      my $bfunc = "b".$func;
+      my $pnetfunc;
+      if(defined $functions->{$bfunc}{pnetcdf}){
+	  $pnetfunc = $functions->{$bfunc}{pnetcdf};
+      }else{
+	  $pnetfunc = $functions->{$func}{pnetcdf};
+	  undef $bfunc;
+      }
+
       my $buf=0;
       foreach my $line (@tmptmp){
 	  if($line =~ /msg = 0/){
@@ -81,23 +90,29 @@ foreach my $func (keys %{$functions}){
 	  }
 	  if($line =~/function/){
 	      if($line =~ s/PIO_function/PIOc_$func/){
-		  $line =~ s/\(\)/ $functions->{$func}{pnetcdf} / ; 
+		  $line =~ s/\(\)/ $pnetfunc / ; 
 #	      $line =~ s/int ncid/file_desc_t *file/;
 		  $line =~ s/MPI_Offset/PIO_Offset/g;
 		  $line =~ s/\;//;
 		  
 	      }else{
 		  my $args;
-		  if($line =~ s/ncmpi_function/ncmpi_$func/){
-		      $args = $functions->{$func}{pnetcdf} ;
+		  if(defined $bfunc){
+		      if($line =~ s/ncmpi_function/ncmpi_$bfunc/){
+			  $args = $pnetfunc ;
+		      }
+		  }else{
+		      if($line =~ s/ncmpi_function/ncmpi_$func/){
+			  $args = $pnetfunc ;
+		      }
 		  }
 		  if($line =~ s/nc_function/nc_$func/){
 		      $args = $functions->{$func}{netcdf}  ; 
-		      if($functions->{$func}{pnetcdf} =~ /void \*buf/  ){
+		      if($pnetfunc =~ /void \*buf/  ){
 			  $args =~ s/\*op/ buf/g;
 			  $args =~ s/\*ip/ buf/g;
 		      }
-		      if($functions->{$func}{pnetcdf} =~ /\*ip/  ){
+		      if($pnetfunc =~ /\*ip/  ){
 			  $args =~ s/\*op/ ip/g;
 		      }
 		  }
@@ -144,7 +159,7 @@ foreach my $func (keys %{$functions}){
 
       }
     
-#    print "$func  $functions->{$func}{pnetcdf} $functions->{$func}{netcdf}\n";
+
       print F "\n";
   }
 }

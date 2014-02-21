@@ -139,7 +139,7 @@ CONTAINS
     {VTYPE}, intent(out) :: ival{DIMSTR}
          
     character(len=*), parameter :: subName=modName//'::get_vara_{DIMS}d_{TYPE}'
-
+    ierr = PIO_NOERR
 
   end function get_vara_{DIMS}d_{TYPE}
 
@@ -323,6 +323,32 @@ CONTAINS
 
 ! TYPE int,real,double
 ! DIMS 1,2,3,4,5
+  integer function get_var_{DIMS}d_{TYPE}_internal  (ncid,varid, ival) result(ierr)
+    integer, intent(in) :: ncid
+    integer, intent(in) :: varid
+    {VTYPE}, intent(out) :: ival(*)
+    type(iosystem_desc_t), pointer :: ios
+    character(len=*), parameter :: subName=modName//'::get_var_{DIMS}d_{TYPE}'
+    integer :: iotype, mpierr, msg, ilen, itype
+#if ({DIMS} > 0)
+    integer :: dims({DIMS})
+    integer :: i
+#endif
+    integer(kind=PIO_OFFSET) :: isize
+    interface
+       integer(C_INT) function PIOc_get_var_{NCTYPE} (ncid, varid, ival) &
+            bind(C,name="PIOc_get_var_{NCTYPE}")
+         use iso_c_binding
+         integer(C_INT), value :: ncid
+         integer(C_INT), value :: varid
+         type(C_PTR)  :: ival
+       end function PIOc_get_var_{NCTYPE}
+    end interface
+    ierr = PIOc_get_var_{NCTYPE} (ncid, varid, C_PTR(ival(1)))
+
+  end function get_var_{DIMS}d_{TYPE}_internal
+! TYPE int,real,double
+! DIMS 1,2,3,4,5
   integer function get_var_{DIMS}d_{TYPE} (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
@@ -336,9 +362,8 @@ CONTAINS
 #endif
     integer(kind=PIO_OFFSET) :: isize
 
-#ifdef TIMING
-    call t_startf("pio_get_var_{DIMS}d_{TYPE}")
-#endif
+    ierr = get_var_{DIMS}d_{TYPE}_internal(File%fh, varid, ival)
+
 
   end function get_var_{DIMS}d_{TYPE}
 
