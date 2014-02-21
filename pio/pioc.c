@@ -109,7 +109,7 @@ int PIOc_get_local_array_size(int ioid)
 
 
 int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const int dims[], 
-		    const int maplen, const PIO_Offset *compmap, int *ioidp, PIO_Offset *iostart,PIO_Offset *iocount)
+		    const int maplen, const PIO_Offset *compmap, int *ioidp) //, PIO_Offset *iostart,PIO_Offset *iocount)
 {
   iosystem_desc_t *ios;
   io_desc_t *iodesc;
@@ -126,22 +126,27 @@ int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const
   ios = pio_get_iosystem_from_id(iosysid);
   if(ios == NULL)
     return PIO_EBADID;
+  
+    printf("%s %d \n",__FILE__,__LINE__);    
+  CheckMPIReturn(MPI_Barrier(ios->io_comm),__FILE__,__LINE__);
 
   iodesc = malloc_iodesc(basetype, ndims);
   
   if(ios->ioproc){
     //  Unless the user specifies the start and count for each IO task compute it.    
-    if((iostart != NULL) && (iocount != NULL)){ 
+    /*    if((iostart != NULL) && (iocount != NULL)){ 
+      printf("iocount[0] = %ld %ld\n",iocount[0], iocount);
       for(int i=0;i<ndims;i++){
 	iodesc->start[i] = iostart[i];
 	iodesc->count[i] = iocount[i];
       }
       ios->num_aiotasks = ios->num_iotasks;
     }else{
+    */
       ios->num_aiotasks = CalcStartandCount(basetype, ndims, dims, ios->num_iotasks, ios->io_rank,
 					    iodesc->start, iodesc->count);
 
-    }
+      //}
 
     //  compute the max io buffer size
     iosize=1;
@@ -150,7 +155,7 @@ int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const
 
     iodesc->llen = iosize;
     // Share the max io buffer size with all io tasks
-    printf("%s %d %d\n",__FILE__,__LINE__,iosize);
+
     CheckMPIReturn(MPI_Allreduce(MPI_IN_PLACE, &iosize, 1, MPI_INT, MPI_MAX, ios->io_comm),__FILE__,__LINE__);
     iodesc->maxiobuflen = iosize;
     printf("%s %d %d\n",__FILE__,__LINE__,iodesc->maxiobuflen);    

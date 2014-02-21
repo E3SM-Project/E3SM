@@ -660,6 +660,9 @@ program testpio
               if(Debug)       print *,'iam: ',My_task,'testpio: point #8'
            else
               if(Debug)       print *,'iam: ',My_task,'testpio: point #8.1'
+
+              call MPI_Barrier(MPI_COMM_WORLD,ierr)
+
               if(TestR8 .or. TestCombo) &
                    call PIO_initDecomp(PIOSYS,PIO_double,  gDims3D,compDOF,&
                    IOdesc_r8)

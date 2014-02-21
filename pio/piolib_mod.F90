@@ -928,7 +928,7 @@ contains
     integer(c_int), dimension(:), allocatable :: cdims, cstart, ccount
     interface
        integer(C_INT) function PIOc_InitDecomp(iosysid,basetype,ndims,dims, &
-            maplen, compmap, ioidp, iostart,iocount)  &
+            maplen, compmap, ioidp)  &
             bind(C,name="PIOc_InitDecomp")
          use iso_c_binding
          integer(C_INT), value :: iosysid
@@ -938,8 +938,8 @@ contains
          integer(C_INT), value :: maplen
          integer(C_SIZE_T) :: compmap(*)
          integer(C_INT) :: ioidp
-         type(C_PTR), value :: iostart
-         type(C_PTR), value :: iocount
+!         type(C_PTR), value :: iostart
+!         type(C_PTR), value :: iocount
        end function PIOc_InitDecomp
     end interface
     integer :: ierr, i
@@ -947,7 +947,8 @@ contains
 #ifdef TIMING
     call t_startf("PIO_initdecomp_dof")
 #endif
-
+    call mpi_barrier(MPI_COMM_WORLD,ierr)
+    print *,__FILE__,__LINE__
     ndims = size(dims)
     allocate(cdims(ndims))
     do i=1,ndims
@@ -963,13 +964,10 @@ contains
 !       ierr = PIOc_InitDecomp(iosystem%iosysid, basepiotype, ndims, cdims, &
 !            size(compdof), compdof, iodesc%ioid, C_PTR(cstart(1)), C_PTR(ccount(1)))
     else
+       call MPI_BARRIER(MPI_COMM_WORLD,ierr)
        ierr = PIOc_InitDecomp(iosystem%iosysid, basepiotype, ndims, cdims, &
-            size(compdof), compdof, iodesc%ioid, C_NULL_PTR, C_NULL_PTR)
-
-    endif
-
-
-
+            size(compdof), compdof, iodesc%ioid)
+    end if
 #ifdef TIMING
     call t_stopf("PIO_initdecomp_dof")
 #endif
