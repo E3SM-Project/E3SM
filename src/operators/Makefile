@@ -11,20 +11,22 @@ OBJS = mpas_vector_operations.o \
        mpas_tracer_advection_std.o \
 	   mpas_geometry_utils.o
 
+DEPS := $(shell find ../core_$(CORE)/ -type f -name "*.xml" ! -name "*processed.xml")
+
 all: operators
 
-operators: $(OBJS)
+operators: $(OBJS) $(DEPS)
 	ar -ru libops.a $(OBJS)
 
-mpas_vector_operations.o:
-mpas_matrix_operations.o:
-mpas_tensor_operations.o: mpas_vector_operations.o mpas_matrix_operations.o
+mpas_vector_operations.o: $(DEPS)
+mpas_matrix_operations.o: $(DEPS)
+mpas_tensor_operations.o: mpas_vector_operations.o mpas_matrix_operations.o $(DEPS)
 mpas_rbf_interpolation.o: mpas_vector_operations.o
 mpas_vector_reconstruction.o: mpas_rbf_interpolation.o
 mpas_spline_interpolation:
-mpas_tracer_advection_helpers.o: mpas_geometry_utils.o
+mpas_tracer_advection_helpers.o: mpas_geometry_utils.o $(DEPS)
 mpas_tracer_advection_mono.o: mpas_tracer_advection_helpers.o
-mpas_tracer_advection_std.o: mpas_tracer_advection_helpers.o 
+mpas_tracer_advection_std.o: mpas_tracer_advection_helpers.o
 mpas_geometry_utils.o:
 
 clean:
