@@ -9,8 +9,11 @@ macro(createTestExec execName execType macroNP macroNC
   STRING(TOUPPER ${execType} EXEC_TYPE)
 
   # Set the include directories
+  SET(EXEC_MODULE_DIR "${CMAKE_CURRENT_BINARY_DIR}/${execName}_modules")
   INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR}
-                      ${${EXEC_TYPE}_INCLUDE_DIRS})
+                      ${${EXEC_TYPE}_INCLUDE_DIRS}
+                      ${EXEC_MODULE_DIR}
+                      )
 
   # Set the source files for this executable
   SET(EXEC_SOURCES ${${EXEC_TYPE}_SRCS})
@@ -42,8 +45,17 @@ macro(createTestExec execName execType macroNP macroNC
   ENDIF ()
 
   # This is needed to compile the test executables with the correct options
+  SET(THIS_CONFIG_HC ${CMAKE_CURRENT_BINARY_DIR}/config.h.c)
   SET(THIS_CONFIG_H ${CMAKE_CURRENT_BINARY_DIR}/config.h)
-  CONFIGURE_FILE(${HOMME_SOURCE_DIR}/src/${execType}/config.h.cmake.in ${THIS_CONFIG_H})
+
+  # First configure the file (which formats the file as C)
+  CONFIGURE_FILE(${HOMME_SOURCE_DIR}/src/${execType}/config.h.cmake.in ${THIS_CONFIG_HC})
+
+  # Next reformat the file as Fortran by appending comment lines with an exclamation mark
+  EXECUTE_PROCESS(COMMAND sed "s;^/;!/;g"
+                     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+                     INPUT_FILE ${THIS_CONFIG_HC}
+                     OUTPUT_FILE ${THIS_CONFIG_H})
 
   ADD_DEFINITIONS(-DHAVE_CONFIG_H)
 
@@ -61,7 +73,7 @@ macro(createTestExec execName execType macroNP macroNC
   # Move the module files out of the way so the parallel build 
   # doesn't have a race condition
   SET_TARGET_PROPERTIES(${execName} 
-                        PROPERTIES Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/${execName}_modules")
+                        PROPERTIES Fortran_MODULE_DIRECTORY ${EXEC_MODULE_DIR})
 
   IF (NOT HOMME_FIND_BLASLAPACK)
     TARGET_LINK_LIBRARIES(${execName} lapack blas)

@@ -12,7 +12,7 @@ module parallel_mod
 
 public 
 #ifdef _MPI
-#include <mpif.h> ! _EXTERNAL
+#include <mpif.h>
 #endif
        integer, parameter, public :: ORDERED = 1
        integer, parameter, public :: FAST = 2
@@ -108,14 +108,14 @@ contains
      
   function initmp(npes_in) result(par)
 #ifdef CAM
-    use spmd_utils, only : mpicom ! _EXTERNAL
+    use spmd_utils, only : mpicom
 #endif      
     integer, intent(in), optional ::  npes_in
     type (parallel_t) par
 
 #ifdef _MPI
 
-#include <mpif.h> ! _EXTERNAL
+#include <mpif.h>
 #ifdef _AIX
     integer(kind=int_kind)                              :: ii         
     character(len=2)                                    :: cfn
@@ -135,7 +135,7 @@ contains
     integer :: npes_homme
 #endif
 #ifdef USE_VT
-    include 'VT.inc' ! _EXTERNAL
+    include 'VT.inc'
     call VTTRACEOFF(ierr)
 #endif
 
@@ -325,7 +325,7 @@ contains
 ! =========================================================
      subroutine abortmp(string)
 #ifdef CAM
-       use abortutils, only : endrun ! _EXTERNAL
+       use abortutils, only : endrun
 #else
 #ifdef _MPI
          integer info,ierr
@@ -482,7 +482,7 @@ contains
          type (parallel_t) par
 
 #ifdef _MPI
-#include <mpif.h>     ! _EXTERNAL
+#include <mpif.h>
          integer                         :: errorcode,errorlen,ierr
          character(len=MPI_MAX_ERROR_STRING)               :: errorstring
 
