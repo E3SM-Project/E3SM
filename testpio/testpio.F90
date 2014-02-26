@@ -131,7 +131,7 @@ program testpio
   integer(kind=PIO_OFFSET) :: startpio(3), countpio(3)
   integer, parameter :: strlen=80
   character(len=strlen) :: fname, fname_r8,fname_r4,fname_i4, fnamechk
-  logical, parameter :: Debug = .true.
+  logical, parameter :: Debug = .false.
   integer :: mpi_comm_compute, mpi_comm_io, mpi_icomm_cio
   integer :: charlen
   character(len=strlen), parameter :: fruits(4) = (/'orange','apple ','pear  ','mango '/)
@@ -826,6 +826,7 @@ program testpio
                     iostat = PIO_def_var(File_r8,varname,PIO_double,(/dimid_x,dimid_y,dimid_z/),vard_r8(ivar))
                     call check_pioerr(iostat,__FILE__,__LINE__,' r8 defvar')
                  end do
+
                  iostat = PIO_enddef(File_r8)
                  call check_pioerr(iostat,__FILE__,__LINE__,' r8 enddef')
               endif
@@ -896,21 +897,6 @@ program testpio
 
            endif ! if(iotype == iotype_pnetcdf .or. iotype == iotype_netcdf ) then
 
-           ! Set Frame to '1' in the PIO descriptor file
-           do ivar=1,nvars
-              call PIO_SetFrame(vard_r8(ivar),one)
-              call PIO_SetFrame(vard_r4(ivar),one)
-           end do
-
-           call PIO_SetFrame(vard_i4,one)
-           call PIO_SetFrame(vard_r8c,one)
-           call PIO_SetFrame(vard_r4c,one)
-           call PIO_SetFrame(vard_i4c,one)
-           call PIO_SetFrame(vard_i4i,one)
-           call PIO_SetFrame(vard_i4j,one)
-           call PIO_SetFrame(vard_i4k,one)
-           call PIO_SetFrame(vard_i4m,one)
-           call PIO_SetFrame(vard_i4dof,one)
 
            if(Debug) then
               write(*,'(a,2(a,i8))') myname,':: After call to OpenFile.  comp_rank=',my_task, &
@@ -1094,16 +1080,6 @@ program testpio
 
            endif ! if((iotype == iotype_pnetcdf) .or (iotype == iotype_netcdf))...
               if(Debug)       print *,'iam: ',My_task,'testpio: point #17'
-           if(Debug) print *,__FILE__,__LINE__
-           do ivar=1,nvars
-              call PIO_SetFrame(vard_r8(ivar),one)
-              call PIO_SetFrame(vard_r4(ivar),one)
-           end do
-           call PIO_SetFrame(vard_i4,one)
-           call PIO_SetFrame(vard_r8c,one)
-           call PIO_SetFrame(vard_r4c,one)
-           call PIO_SetFrame(vard_i4c,one)
-              if(Debug)       print *,'iam: ',My_task,'testpio: point #18'
 
            !-------------------------
            ! Time the parallel  read

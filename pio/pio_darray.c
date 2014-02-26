@@ -227,6 +227,8 @@ int PIOc_write_darray(const int ncid, const int vid, const int ioid, const PIO_O
     //  }
 
 
+    printf("%s %d %ld %d %d %d %ld\n",__FILE__,__LINE__,array,((int *)array)[0],((int *)array)[1],((int *)array)[2], fillvalue);
+
   ierr = box_rearrange_comp2io(ios, iodesc, array, iobuf, 0, 0);
 
   switch(file->iotype){
@@ -272,11 +274,12 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void
     size_t tmp_count[ndims+1];
     size_t tmp_bufsize=1;
     if(vdesc->record >= 0){
+      ndims++;
       start[0] = vdesc->record;
       count[0] = 1;
-      for(i=1;i<=ndims;i++){
-	start[i] = iodesc->start[i];
-	count[i] = iodesc->count[i];
+      for(i=1;i<ndims;i++){
+	start[i] = iodesc->start[i-1];
+	count[i] = iodesc->count[i-1];
       } 
     }else{
     // Non-time dependent array
@@ -338,10 +341,6 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void
 	    }else{
 	      MPI_Recv(tmp_start, ndims, MPI_UNSIGNED_LONG, i, i, ios->io_comm, &status);
 	    }
-	    if(vdesc->record >= 0){
-	      tmp_start[ndims] = vdesc->record;
-	      tmp_count[ndims] = 1;
-	    }
 	    if(iodesc->basetype == MPI_DOUBLE || iodesc->basetype == MPI_REAL8){
 	      ierr = nc_get_vara_double (file->fh, vid, tmp_start, tmp_count, IOBUF); 
 	    }else if(iodesc->basetype == MPI_INTEGER){
@@ -400,10 +399,9 @@ int PIOc_read_darray(const int ncid, const int vid, const int ioid, const PIO_Of
     return PIO_EBADID;
 
   ios = file->iosystem;
-  
-  if(ios->ioproc){
-    rlen = iodesc->llen;
+  rlen = iodesc->llen;
 
+  if(ios->ioproc && rlen>0){
     vtype = (MPI_Datatype) iodesc->basetype;
     if(vtype == MPI_INTEGER){
       iobuf = malloc( rlen*sizeof(int));
@@ -435,7 +433,7 @@ int PIOc_read_darray(const int ncid, const int vid, const int ioid, const PIO_Of
   }
   ierr = box_rearrange_io2comp(ios, iodesc, iobuf, array, 0, 0);
 
-  if(iobuf != NULL)
+  if(ios->ioproc && rlen>0)
     free(iobuf);
 
   return ierr;

@@ -111,9 +111,11 @@ contains
     type(iosystem_desc_t), pointer :: ios
     integer,intent(in) :: arraylen
     integer(i4), intent(out) :: iostat
-
+    {VTYPE} :: cfill(1)
     character(len=*), parameter :: subName=modName//'::write_darray_{TYPE}'
-
+    integer(C_SIZE_T) :: carraylen
+    integer(PIO_Offset) :: cloc
+    
     interface
        integer(C_INT) function PIOc_write_darray(ncid, vid, ioid, arraylen, array, fillvalue) &
             bind(C,name="PIOc_write_darray")
@@ -126,11 +128,13 @@ contains
          type(C_PTR), value :: fillvalue
        end function PIOc_write_darray
     end interface
-
+    carraylen = int(arraylen,C_SIZE_T)
     if(present(fillval)) then
-       iostat = PIOc_write_darray(file%fh, varDesc%varid, iodesc%ioid, int(arraylen,C_SIZE_T),C_LOC(array), C_LOC(fillval))
+       cfill(1) = fillval
+       iostat = PIOc_write_darray(file%fh, varDesc%varid, iodesc%ioid, carraylen,C_LOC(array), C_LOC(cfill(1)))
     else
-       iostat = PIOc_write_darray(file%fh, varDesc%varid, iodesc%ioid, int(arraylen,C_SIZE_T), C_LOC(array), C_NULL_PTR)
+       print *,__FILE__,__LINE__,array(1),array(2),array(3)
+       iostat = PIOc_write_darray(file%fh, varDesc%varid, iodesc%ioid, carraylen, C_LOC(array), C_NULL_PTR)
     endif
 
   end subroutine write_darray_1d_cinterface_{TYPE}
@@ -259,7 +263,7 @@ contains
 
     integer,intent(in) :: arraylen
     integer(i4), intent(out) :: iostat
-
+    integer(C_SIZE_T) :: carraylen
     character(len=*), parameter :: subName=modName//'::write_darray_{TYPE}'
 
     interface
@@ -273,7 +277,9 @@ contains
          type(C_PTR), value :: array
        end function PIOc_read_darray
     end interface
-    iostat = PIOc_read_darray(file%fh, varDesc%varid, iodesc%ioid, int(arraylen,C_SIZE_T), C_LOC(array))
+    carraylen = int(arraylen,C_SIZE_T)
+
+    iostat = PIOc_read_darray(file%fh, varDesc%varid, iodesc%ioid, carraylen, C_LOC(array))
 
 
   end subroutine read_darray_1d_cinterface_{TYPE}
@@ -349,12 +355,13 @@ contains
 
     integer(i4), intent(out) :: iostat
 
-    {VTYPE}, pointer :: tmpvar(:)
-
-    call alloc_check(tmpvar,size(array))
+    {VTYPE}, allocatable :: tmpvar(:)
+    allocate(tmpvar(size(array)))
+    print *,__FILE__,__LINE__,loc(tmpvar)
     call read_darray_1d_{TYPE} (File, varDesc, iodesc, tmpvar, iostat)
+
     array = reshape(tmpvar,shape(array))
-    call dealloc_check(tmpvar)
+    deallocate(tmpvar)
 
   end subroutine read_darray_{DIMS}d_{TYPE}
 

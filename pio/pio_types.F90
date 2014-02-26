@@ -166,12 +166,8 @@ module pio_types
 #ifdef SEQUENCE
 	sequence
 #endif	
-        integer(i4)     :: varID
-!        integer(i4)     :: rec   ! This is a record number or pointer into the unlim dimension of the	    
-                                 ! netcdf file
-!	integer(i4)     :: type
-!        integer(i4)     :: ndims ! number of dimensions as defined on the netcdf file.
-!	character(len=50) :: name ! vdc needed variable
+        integer(i4) :: varID
+	integer(i4) :: ncid
     end type 
 
 !>

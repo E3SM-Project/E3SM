@@ -328,21 +328,23 @@ contains
 !! @param vardesc @copydoc var_desc_t
 !! @param frame   : frame number to set
 !<
-  subroutine setframe(vardesc,frame)
+  subroutine setframe(file, vardesc,frame)
+    type(file_desc_t) :: file
     type(var_desc_t), intent(inout) :: vardesc
     integer(PIO_Offset), intent(in) :: frame
     integer :: ierr, iframe
     interface
-       integer(C_INT) function PIOc_setframe(varid, frame) &
+       integer(C_INT) function PIOc_setframe(ncid, varid, frame) &
             bind(C,NAME="PIOc_setframe")
          use iso_c_binding
          implicit none
+         integer(C_INT), value :: ncid
          integer(C_INT), value :: varid
          integer(C_INT), value :: frame
        end function PIOc_setframe
     end interface
-    iframe = frame
-    ierr = PIOc_setframe(vardesc%varid, iframe)
+    iframe = frame-1
+    ierr = PIOc_setframe(file%fh, vardesc%varid, iframe)
   end subroutine setframe
 
 !>  
@@ -948,7 +950,7 @@ contains
     call t_startf("PIO_initdecomp_dof")
 #endif
     call mpi_barrier(MPI_COMM_WORLD,ierr)
-    print *,__FILE__,__LINE__
+
     ndims = size(dims)
     allocate(cdims(ndims))
     do i=1,ndims

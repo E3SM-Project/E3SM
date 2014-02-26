@@ -30,6 +30,8 @@ int check_netcdf(file_desc_t *file,int status, const char *fname, const int line
 	fprintf(stderr,"NETCDF ERROR: %s %s %d\n",nc_strerror(status),fname,line);
     }
     if(ios->error_handler == PIO_INTERNAL_ERROR){
+      if(status != NC_NOERR)	
+	MPI_Abort(MPI_COMM_WORLD,status);
       // abort
     }else if(ios->error_handler==PIO_BCAST_ERROR){
       ierr =MPI_Bcast(&status, 1, MPI_INT, ios->ioroot, ios->my_comm);

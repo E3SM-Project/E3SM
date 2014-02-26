@@ -309,17 +309,24 @@ int box_rearrange_comp2io(iosystem_desc_t *ios, io_desc_t *iodesc, void *sbuf,
   int maxreq = MAX_GATHER_BLOCK_SIZE;
   int nprocs = ios->num_comptasks;
   int *scount = iodesc->scount;
-  int sendcounts[nprocs];
-  int recvcounts[nprocs];
-  int sdispls[nprocs];
-  int rdispls[nprocs];
-  MPI_Datatype sendtypes[nprocs];
-  MPI_Datatype recvtypes[nprocs];
+
   int i, tsize;
+  int *sendcounts;
+  int *recvcounts;
+  int *sdispls;
+  int *rdispls;
+  MPI_Datatype *sendtypes;
+  MPI_Datatype *recvtypes;
 
 
   define_iodesc_datatypes(ios, iodesc);
 
+  sendcounts = (int *) malloc(nprocs*sizeof(int));
+  recvcounts = (int *) malloc(nprocs*sizeof(int));
+  sdispls = (int *) malloc(nprocs*sizeof(int));
+  rdispls = (int *) malloc(nprocs*sizeof(int));
+  sendtypes = (MPI_Datatype *) malloc(nprocs*sizeof(MPI_Datatype));
+  recvtypes = (MPI_Datatype *) malloc(nprocs*sizeof(MPI_Datatype));
 
   for(i=0;i<nprocs;i++){
     sendcounts[i] = 0;
@@ -364,9 +371,14 @@ int box_rearrange_comp2io(iosystem_desc_t *ios, io_desc_t *iodesc, void *sbuf,
   MPI_Barrier( ios->union_comm);
   pio_swapm( sbuf,  sendcounts, sdispls, sendtypes,
 	     rbuf, recvcounts, rdispls, recvtypes, 
-	     ios->union_comm, handshake, isend, 1); //MAX_GATHER_BLOCK_SIZE);
+	     ios->union_comm, handshake, isend, MAX_GATHER_BLOCK_SIZE);
 
-
+  free(sendcounts);
+  free(recvcounts); 
+  free(sdispls);
+  free(rdispls);
+  free(sendtypes);
+  free(recvtypes);
   return PIO_NOERR;
 }
 
@@ -380,16 +392,25 @@ int box_rearrange_io2comp(iosystem_desc_t *ios, io_desc_t *iodesc, void *sbuf,
   int maxreq = MAX_GATHER_BLOCK_SIZE;
   int nprocs = ios->num_comptasks;
   int *scount = iodesc->scount;
-  int sendcounts[nprocs];
-  int recvcounts[nprocs];
-  int sdispls[nprocs];
-  int rdispls[nprocs];
-  MPI_Datatype sendtypes[nprocs];
-  MPI_Datatype recvtypes[nprocs];
+
+  int *sendcounts;
+  int *recvcounts;
+  int *sdispls;
+  int *rdispls;
+  MPI_Datatype *sendtypes;
+  MPI_Datatype *recvtypes;
+
   int i, tsize;
   
-
   define_iodesc_datatypes(ios, iodesc);
+
+  sendcounts = (int *) malloc(nprocs*sizeof(int));
+  recvcounts = (int *) malloc(nprocs*sizeof(int));
+  sdispls = (int *) malloc(nprocs*sizeof(int));
+  rdispls = (int *) malloc(nprocs*sizeof(int));
+  sendtypes = (MPI_Datatype *) malloc(nprocs*sizeof(MPI_Datatype));
+  recvtypes = (MPI_Datatype *) malloc(nprocs*sizeof(MPI_Datatype));
+
 
   for( i=0;i< nprocs;i++){
     sendcounts[i] = 0;
@@ -423,8 +444,15 @@ int box_rearrange_io2comp(iosystem_desc_t *ios, io_desc_t *iodesc, void *sbuf,
   //
   pio_swapm( sbuf,  sendcounts, sdispls, sendtypes,
 	     rbuf, recvcounts, rdispls, recvtypes, 
-	     ios->union_comm, handshake,isend,maxreq);
+	     ios->union_comm, handshake,isend,MAX_GATHER_BLOCK_SIZE);
 
+
+  free(sendcounts);
+  free(recvcounts); 
+  free(sdispls);
+  free(rdispls);
+  free(sendtypes);
+  free(recvtypes);
 
   return PIO_NOERR;
 
@@ -443,8 +471,17 @@ int box_rearrange_create(iosystem_desc_t *ios,const int maplen, const PIO_Offset
   PIO_Offset start[ndims], count[ndims];
   int tsizei, tsizel, tsize, i, j, k, llen;
   MPI_Datatype dtype;
-  int dest_ioproc[maplen];
-  PIO_Offset dest_ioindex[maplen];
+  int *dest_ioproc;
+  PIO_Offset *dest_ioindex;
+  int *sndlths; 
+  int *sdispls;
+  int *recvlths;
+  int *rdispls;
+  MPI_Datatype *dtypes;
+
+  dest_ioproc = (int *) malloc(maplen*sizeof(int));
+  dest_ioindex = (PIO_Offset *) malloc(maplen*sizeof(PIO_Offset));
+
 
   iodesc->ndof = maplen;
   gstride[0]=1;
@@ -461,11 +498,11 @@ int box_rearrange_create(iosystem_desc_t *ios,const int maplen, const PIO_Offset
     dtype = MPI_LONG;
     tsize = tsizel;
   }
-  int sndlths[nprocs]; 
-  int sdispls[nprocs];
-  int recvlths[nprocs];
-  int rdispls[nprocs];
-  MPI_Datatype dtypes[nprocs];
+  sndlths = (int *) malloc(nprocs*sizeof(int)); 
+  sdispls= (int *) malloc(nprocs*sizeof(int));
+  recvlths= (int *) malloc(nprocs*sizeof(int));
+  rdispls= (int *) malloc(nprocs*sizeof(int));
+  dtypes= (MPI_Datatype *) malloc(nprocs*sizeof(MPI_Datatype));
 
 
   for(i=0; i< maplen; i++){
@@ -545,6 +582,14 @@ int box_rearrange_create(iosystem_desc_t *ios,const int maplen, const PIO_Offset
   }
 
   compute_counts(ios, iodesc, dest_ioproc, dest_ioindex);
+  free(sndlths); 
+  free(sdispls);
+  free(recvlths);
+  free(rdispls);
+  free(dtypes);
+
+  free(dest_ioproc);
+  free(dest_ioindex);
 
   return PIO_NOERR;
 }
