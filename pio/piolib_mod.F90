@@ -1709,7 +1709,7 @@ contains
          implicit none
          integer(c_int), value :: iosysid
          integer(c_int) :: fh
-         integer(c_int), value :: iotype
+         integer(c_int) :: iotype
          character(kind=c_char) :: fname
          integer(c_int), value :: mode
        end function PIOc_CreateFile
@@ -1758,7 +1758,7 @@ contains
          implicit none
          integer(c_int), value :: iosysid
          integer(c_int) :: fh
-         integer(c_int), value :: iotype
+         integer(c_int) :: iotype
          character(kind=c_char) :: fname
          integer(c_int), value :: mode
          logical(c_bool), value :: CheckMPI

@@ -133,7 +133,6 @@ contains
        cfill(1) = fillval
        iostat = PIOc_write_darray(file%fh, varDesc%varid, iodesc%ioid, carraylen,C_LOC(array), C_LOC(cfill(1)))
     else
-       print *,__FILE__,__LINE__,array(1),array(2),array(3)
        iostat = PIOc_write_darray(file%fh, varDesc%varid, iodesc%ioid, carraylen, C_LOC(array), C_NULL_PTR)
     endif
 

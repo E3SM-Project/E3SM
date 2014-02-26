@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdio.h>
 
-int PIOc_OpenFile(const int iosysid, int *ncidp, const int iotype,
+int PIOc_OpenFile(const int iosysid, int *ncidp, int *iotype,
 		  char *fname, const int mode, _Bool checkmpi)
 {
   int ierr;
@@ -27,22 +27,30 @@ int PIOc_OpenFile(const int iosysid, int *ncidp, const int iotype,
 
   file = (file_desc_t *) malloc(sizeof(file_desc_t));
   file->next = NULL;
-  file->iotype = iotype;
   file->iosystem = ios;
   
 #ifdef _NETCDF
-  if(ios->num_iotasks==1 && file->iotype==PIO_IOTYPE_PNETCDF) {
-    fprintf(stderr,"WARNING: only 1 iotask - changing iotype to netcdf\n");
-    file->iotype = PIO_IOTYPE_NETCDF;
+  if(ios->num_iotasks==1 && *iotype==PIO_IOTYPE_PNETCDF) {
+    if(ios->io_rank==0)
+      fprintf(stderr,"WARNING: only 1 iotask - changing iotype to netcdf\n");
+    *iotype = PIO_IOTYPE_NETCDF;
   }
 #ifndef _NETCDF4
-  if(iotype==PIO_IOTYPE_NETCDF4P || iotype==PIO_IOTYPE_NETCDF4C){
+  if(*iotype==PIO_IOTYPE_NETCDF4P || *iotype==PIO_IOTYPE_NETCDF4C){
     if(ios->io_rank==0)
       fprintf(stderr,"WARNING: PIO was not built with NETCDF 4 support, changing iotype to netcdf\n");
-    file->iotype = PIO_IOTYPE_NETCDF;
+    *iotype = PIO_IOTYPE_NETCDF;
   }
 #endif
 #endif  
+#ifndef _PNETCDF
+  if(*iotype==PIO_IOTYPE_PNETCDF) {
+    if(ios->io_rank==0)
+      fprintf(stderr,"WARNING: pnetcdf not supported in build - changing iotype to netcdf\n");
+    *iotype = PIO_IOTYPE_NETCDF;
+  }
+#endif    
+  file->iotype = *iotype;
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->comp_rank==0) 
@@ -88,7 +96,7 @@ int PIOc_OpenFile(const int iosysid, int *ncidp, const int iotype,
       break;
 #endif
     default:
-      ierr = iotype_error(iotype,__FILE__,__LINE__);
+      ierr = iotype_error(file->iotype,__FILE__,__LINE__);
     }
   }
 
@@ -116,7 +124,7 @@ int PIOc_OpenFile(const int iosysid, int *ncidp, const int iotype,
 
 
 
-int PIOc_CreateFile(const int iosysid, int *ncidp, const int iotype,
+int PIOc_CreateFile(const int iosysid, int *ncidp,  int *iotype,
 		 const char *fname, const int mode)
 {
   int ierr;
@@ -134,24 +142,32 @@ int PIOc_CreateFile(const int iosysid, int *ncidp, const int iotype,
   ios = pio_get_iosystem_from_id(iosysid);
   file = (file_desc_t *) malloc(sizeof(file_desc_t));
   file->next = NULL;
-  file->iotype = iotype;
   file->iosystem = ios;
 
   msg = PIO_MSG_CREATE_FILE;
   amode = mode;
 #ifdef _NETCDF  
-  if(ios->num_iotasks==1 && iotype==PIO_IOTYPE_PNETCDF) {
-    fprintf(stderr,"WARNING: only 1 iotask - changing iotype to netcdf\n");
-    file->iotype = PIO_IOTYPE_NETCDF;
+  if(ios->num_iotasks==1 && *iotype==PIO_IOTYPE_PNETCDF) {
+    if(ios->io_rank==0)
+      fprintf(stderr,"WARNING: only 1 iotask - changing iotype to netcdf\n");
+    *iotype = PIO_IOTYPE_NETCDF;
   }
 #ifndef _NETCDF4
-  if(iotype==PIO_IOTYPE_NETCDF4P || iotype==PIO_IOTYPE_NETCDF4C){
+  if(*iotype==PIO_IOTYPE_NETCDF4P || *iotype==PIO_IOTYPE_NETCDF4C){
     if(ios->io_rank==0)
       fprintf(stderr,"WARNING: PIO was not built with NETCDF 4 support, changing iotype to netcdf\n");
-    file->iotype = PIO_IOTYPE_NETCDF;
+    *iotype = PIO_IOTYPE_NETCDF;
   }
 #endif
 #endif
+#ifndef _PNETCDF
+  if(*iotype==PIO_IOTYPE_PNETCDF) {
+    if(ios->io_rank==0)
+      fprintf(stderr,"WARNING: pnetcdf not supported in build - changing iotype to netcdf\n");
+    *iotype = PIO_IOTYPE_NETCDF;
+  }
+#endif    
+  file->iotype = *iotype;
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->comp_rank==0) 
@@ -164,7 +180,7 @@ int PIOc_CreateFile(const int iosysid, int *ncidp, const int iotype,
   
 
   if(ios->ioproc){
-    switch(iotype){
+    switch(file->iotype){
     case PIO_IOYTPE_DIRECT_PBINARY:
     case PIO_IOTYPE_PBINARY:
       //      ierr = pio_create_mpiio(file, fname);
@@ -196,7 +212,7 @@ int PIOc_CreateFile(const int iosysid, int *ncidp, const int iotype,
       break;
 #endif
     default:
-      ierr = iotype_error(iotype,__FILE__,__LINE__);
+      ierr = iotype_error(file->iotype,__FILE__,__LINE__);
     }
   }
   
