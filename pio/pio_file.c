@@ -93,6 +93,9 @@ int PIOc_OpenFile(const int iosysid, int *ncidp, int *iotype,
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
       ierr = ncmpi_open(ios->io_comm, fname, amode, ios->info, &(file->fh));
+      // This should only be done with a file opened to append
+      if(ierr == PIO_NOERR && (amode & PIO_WRITE))
+	ierr = ncmpi_buffer_attach(file->fh, PIO_BUFFER_SIZE_LIMIT );
       break;
 #endif
     default:
@@ -209,6 +212,8 @@ int PIOc_CreateFile(const int iosysid, int *ncidp,  int *iotype,
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
       ierr = ncmpi_create(ios->io_comm, fname, amode, ios->info, &(file->fh));
+      if(ierr == PIO_NOERR)
+	ierr = ncmpi_buffer_attach(file->fh, PIO_BUFFER_SIZE_LIMIT );
       break;
 #endif
     default:
@@ -278,6 +283,7 @@ int PIOc_CloseFile(int ncid)
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
       flush_output_buffer(file);
+      ierr = ncmpi_buffer_detach(file->fh);
       ierr = ncmpi_close(file->fh);
       break;
 #endif

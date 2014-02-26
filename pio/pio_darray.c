@@ -5,6 +5,7 @@ int PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
 
 #define MALLOC_FILL_ARRAY(type, n, fill, arr) \
   arr = malloc(n * sizeof (type));	      \
+  printf("%s %d %ld \n",__FILE__,__LINE__,arr); \
   if(fill != NULL)                                       \
     for(int _i=0; _i<n; _i++)			\
       ((type *) arr)[_i] = *((type *) fill)
@@ -149,16 +150,17 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, voi
       //      printf("pnet %ld %ld %ld\n",start[0],count[0],dsize);
       // for(i=0;i<dsize;i++)
       //	printf("iobuf(%d) %d\n",i,((int *)IOBUF)[i]);
-#ifdef PNETCDF_BPUT_SUPPORT
+      //#ifdef PNETCDF_BPUT_SUPPORT
 	ierr = ncmpi_bput_vara(ncid, vid,  start, count, IOBUF,
 			       dsize, iodesc->basetype, &(vdesc->request));
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
-#else
+	/*	#else
 	ierr = ncmpi_iput_vara(ncid, vid,  start, count, IOBUF,
 			       dsize, iodesc->basetype, &(vdesc->request));
 	file->buffsize+=dsize;
 	usage = file->buffsize;
-#endif
+	#endif
+ 	*/
 	MPI_Allreduce(MPI_IN_PLACE, &usage, 1,  MPI_LONG_LONG,  MPI_MAX, ios->io_comm);
 
 	if(usage >= PIO_BUFFER_SIZE_LIMIT){
@@ -205,23 +207,22 @@ int PIOc_write_darray(const int ncid, const int vid, const int ioid, const PIO_O
 
   ios = file->iosystem;
 
-  //  if(ios->ioproc){
-  rlen = max(1,iodesc->llen);
-    if(rlen>0){
-      vtype = (MPI_Datatype) iodesc->basetype;
-      //      printf("rlen = %ld\n",rlen);
-      if(vtype == MPI_INTEGER){
-	MALLOC_FILL_ARRAY(int, rlen, fillvalue, iobuf);
-      }else if(vtype == MPI_FLOAT || vtype == MPI_REAL4){
-	MALLOC_FILL_ARRAY(float, rlen, fillvalue, iobuf);
-      }else if(vtype == MPI_DOUBLE || vtype == MPI_REAL8){
-	MALLOC_FILL_ARRAY(double, rlen, fillvalue, iobuf);
-      }else if(vtype == MPI_CHARACTER){
-	MALLOC_FILL_ARRAY(char, rlen, fillvalue, iobuf);
-      }else{
-	fprintf(stderr,"Type not recognized %d in pioc_write_darray\n",vtype);
-      }
+  rlen = iodesc->llen;
+  if(rlen>0){
+    vtype = (MPI_Datatype) iodesc->basetype;
+    //      printf("rlen = %ld\n",rlen);
+    if(vtype == MPI_INTEGER){
+      MALLOC_FILL_ARRAY(int, rlen, fillvalue, iobuf);
+    }else if(vtype == MPI_FLOAT || vtype == MPI_REAL4){
+      MALLOC_FILL_ARRAY(float, rlen, fillvalue, iobuf);
+    }else if(vtype == MPI_DOUBLE || vtype == MPI_REAL8){
+      MALLOC_FILL_ARRAY(double, rlen, fillvalue, iobuf);
+    }else if(vtype == MPI_CHARACTER){
+      MALLOC_FILL_ARRAY(char, rlen, fillvalue, iobuf);
+    }else{
+      fprintf(stderr,"Type not recognized %d in pioc_write_darray\n",vtype);
     }
+  }
     //    printf(" rlen = %d %ld\n",rlen,iobuf); 
 
     //  }
@@ -241,8 +242,8 @@ int PIOc_write_darray(const int ncid, const int vid, const int ioid, const PIO_O
     ierr = pio_write_darray_nc(file, iodesc, vid, iobuf, fillvalue);
   }
 
-  if(file->iotype != PIO_IOTYPE_PNETCDF && iobuf != NULL)
-    free(iobuf);
+
+  if(rlen>0) free(iobuf);
 
   return ierr;
 
@@ -433,7 +434,7 @@ int PIOc_read_darray(const int ncid, const int vid, const int ioid, const PIO_Of
   }
   ierr = box_rearrange_io2comp(ios, iodesc, iobuf, array, 0, 0);
 
-  if(ios->ioproc && rlen>0)
+  if(rlen>0)
     free(iobuf);
 
   return ierr;
@@ -466,7 +467,7 @@ int flush_output_buffer(file_desc_t *file)
 
   if(request_cnt>0){
     ierr = ncmpi_wait_all(file->fh, request_cnt,  requests, status);
-
+    /*
 #ifndef PNETCDF_BPUT_SUPPORT
     for(int i=0;i<PIO_MAX_VARS;i++){
       if(vardesc[i].request != MPI_REQUEST_NULL){
@@ -478,7 +479,7 @@ int flush_output_buffer(file_desc_t *file)
   } 
   file->buffsize=0;
 #endif
-
+    */
 #endif
   return ierr;
 }

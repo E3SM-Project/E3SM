@@ -109,7 +109,7 @@ int PIOc_get_local_array_size(int ioid)
 
 
 int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const int dims[], 
-		    const int maplen, const PIO_Offset *compmap, int *ioidp) //, PIO_Offset *iostart,PIO_Offset *iocount)
+		    const int maplen, const PIO_Offset *compmap, int *ioidp, PIO_Offset *iostart,PIO_Offset *iocount)
 {
   iosystem_desc_t *ios;
   io_desc_t *iodesc;
@@ -131,7 +131,7 @@ int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const
   
   if(ios->ioproc){
     //  Unless the user specifies the start and count for each IO task compute it.    
-    /*    if((iostart != NULL) && (iocount != NULL)){ 
+        if((iostart != NULL) && (iocount != NULL)){ 
       printf("iocount[0] = %ld %ld\n",iocount[0], iocount);
       for(int i=0;i<ndims;i++){
 	iodesc->start[i] = iostart[i];
@@ -139,11 +139,11 @@ int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const
       }
       ios->num_aiotasks = ios->num_iotasks;
     }else{
-    */
+    
       ios->num_aiotasks = CalcStartandCount(basetype, ndims, dims, ios->num_iotasks, ios->io_rank,
 					    iodesc->start, iodesc->count);
 
-      //}
+	}
 
     //  compute the max io buffer size
     iosize=1;
