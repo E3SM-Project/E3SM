@@ -1,6 +1,4 @@
 #!/usr/bin/env perl
-use strict;
-use File::Copy ;
 #BSUB -P P93300075            # project code
 #BSUB -W 0:40                # wall-clock time (hrs:mins)
 #BSUB -n 64            # number of tasks in job         
@@ -14,6 +12,8 @@ use File::Copy ;
 ##BSUB -a tv
 #BSUB -N
 #BSUB -x
+use strict;
+use File::Copy ;
 
 my $piosrc="$ENV{HOME}/pio2_0";
 my $testdir="/glade/scratch/$ENV{USER}/pio2test/pio.all/pio";
