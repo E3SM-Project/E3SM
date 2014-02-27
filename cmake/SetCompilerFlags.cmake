@@ -1,7 +1,12 @@
 ##############################################################################
 # Compiler specific options
 ##############################################################################
-MESSAGE(STATUS "CMAKE_Fortran_COMPILER_ID = ${CMAKE_Fortran_COMPILER_ID}")
+#MESSAGE(STATUS "CMAKE_Fortran_COMPILER_ID = ${CMAKE_Fortran_COMPILER_ID}")
+# Need this for a fix in repro_sum_mod
+IF (${CMAKE_Fortran_COMPILER_ID} STREQUAL XL)
+  ADD_DEFINITIONS(-DnoI8)
+ENDIF ()
+
 IF (DEFINED BASE_FFLAGS)
   SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${BASE_FFLAGS}")
 ELSE ()
@@ -15,7 +20,7 @@ ELSE ()
     SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -assume byterecl")
     SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fp-model precise -ftz")
   ELSEIF (CMAKE_Fortran_COMPILER_ID STREQUAL XL)
-    SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -qstrict")
+    SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -WF,-C! -qstrict -qnosave")
   ENDIF ()
 ENDIF ()
 

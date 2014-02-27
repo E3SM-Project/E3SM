@@ -47,6 +47,7 @@ module shallow_water_mod
   implicit none
   private
 
+  logical :: compute_penst = .true.
   ! ============================================
   ! Shallow Water Test Case Parameters 
   ! for test case 1 and 2; Cosine Bell and 
@@ -404,10 +405,11 @@ contains
              pv(i,j,ie) = penst(i,j,ie) + elem(ie)%fcor(i,j)
              hstar         = (elem(ie)%state%p(i,j,1,n0) + pmean)/g
              ! For swtc1 p = -pmean and penst is not well defined
-             if (hstar .eq. 0.0) then
-               hstar = 1.0
+             if (compute_penst) then
+               penst(i,j,ie) = (0.5D0*(penst(i,j,ie) + elem(ie)%fcor(i,j))**2) / hstar
+             else
+               penst(i,j,ie) = 0.0D0
              endif
-             penst(i,j,ie) = (0.5D0*(penst(i,j,ie) + elem(ie)%fcor(i,j))**2) / hstar
           end do
        end do
     end do
@@ -588,6 +590,9 @@ contains
     integer :: nm1 
     integer :: n0 
     integer :: np1
+
+    ! For swtc1 p = -pmean and penst is not well defined
+    compute_penst = .false.
 
     nm1= 1
     n0 = 2

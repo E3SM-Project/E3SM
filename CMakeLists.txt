@@ -36,6 +36,10 @@ INCLUDE(HommeMacros)
 # Debug statement, please leave here
 #MESSAGE(STATUS "CMAKE_IMP_LIBS=${CMAKE_Fortran_IMPLICIT_LINK_LIBRARIES}")
 
+TRY_RUN(IS_BIG_ENDIAN BIG_ENDIAN_COMPILED
+  ${CMAKE_BINARY_DIR}/tests/compilerTests/
+  ${CMAKE_CURRENT_SOURCE_DIR}/cmake/compilerTests/isBigEndian.c)
+
 ##############################################################################
 # Compiler test to see if the mpi compiler supports "use mpi" or "include
 # mpi.h"

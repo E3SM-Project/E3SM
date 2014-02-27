@@ -44,18 +44,9 @@ macro(createTestExec execName execType macroNP macroNC
     SET(ENERGY_DIAGNOSTICS)
   ENDIF ()
 
-  # This is needed to compile the test executables with the correct options
-  SET(THIS_CONFIG_HC ${CMAKE_CURRENT_BINARY_DIR}/config.h.c)
+  # This is needed to create the test executables with the correct options
   SET(THIS_CONFIG_H ${CMAKE_CURRENT_BINARY_DIR}/config.h)
-
-  # First configure the file (which formats the file as C)
-  CONFIGURE_FILE(${HOMME_SOURCE_DIR}/src/${execType}/config.h.cmake.in ${THIS_CONFIG_HC})
-
-  # Next reformat the file as Fortran by appending comment lines with an exclamation mark
-  EXECUTE_PROCESS(COMMAND sed "s;^/;!/;g"
-                     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-                     INPUT_FILE ${THIS_CONFIG_HC}
-                     OUTPUT_FILE ${THIS_CONFIG_H})
+  CONFIGURE_FILE(${HOMME_SOURCE_DIR}/src/${execType}/config.h.cmake.in ${THIS_CONFIG_H})
 
   ADD_DEFINITIONS(-DHAVE_CONFIG_H)
 
@@ -314,13 +305,16 @@ endmacro(printTestSummary)
 # Macro to create the individual tests
 macro(createTest testFile)
 
-  SET(NAMELIST_DIR namelists/little_endian)
+  IF (${IS_BIG_ENDIAN}) 
+    SET(NAMELIST_DIR namelists/big_endian)
+  ELSE ()
+    SET(NAMELIST_DIR namelists/little_endian)
+  ENDIF ()
 
   SET (THIS_TEST_INPUT ${HOMME_SOURCE_DIR}/test/reg_test/run_tests/${testFile})
 
   resetTestVariables()
 
-  SET(namelist_dir namelists/little_endian)
   SET(HOMME_ROOT ${HOMME_SOURCE_DIR})
 
   INCLUDE(${THIS_TEST_INPUT})
