@@ -444,7 +444,7 @@ int box_rearrange_io2comp(iosystem_desc_t *ios, io_desc_t *iodesc, void *sbuf,
   //
   pio_swapm( sbuf,  sendcounts, sdispls, sendtypes,
 	     rbuf, recvcounts, rdispls, recvtypes, 
-	     ios->union_comm, handshake,isend,MAX_GATHER_BLOCK_SIZE);
+	     ios->union_comm, handshake,isend, MAX_GATHER_BLOCK_SIZE);
 
 
   free(sendcounts);

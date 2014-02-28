@@ -313,6 +313,7 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void
 #endif
     case PIO_IOTYPE_NETCDF:
       if(ios->io_rank>0){
+	tmp_bufsize=1;
 	for( i=0;i<ndims; i++){
 	  tmp_start[i] = start[i];
 	  tmp_count[i] = count[i];
@@ -324,7 +325,7 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void
 	  MPI_Recv( IOBUF, tmp_bufsize, iodesc->basetype, 0, ios->io_rank, ios->io_comm, &status);
 	}
       }else if(ios->io_rank==0){
-	for( i=ios->num_iotasks-1;i>=0;i--){
+	for( i=ios->num_iotasks-1; i>=0; i--){
 	  if(i==0){
 	    for(int k=0;k<ndims;k++)
 	      tmp_count[k] = count[k];
@@ -390,6 +391,7 @@ int PIOc_read_darray(const int ncid, const int vid, const int ioid, const PIO_Of
   int ierr;
   MPI_Datatype vtype;
  
+
   file = pio_get_file_from_id(ncid);
 
   if(file == NULL)
@@ -432,7 +434,9 @@ int PIOc_read_darray(const int ncid, const int vid, const int ioid, const PIO_Of
   case PIO_IOTYPE_NETCDF4C:
     ierr = pio_read_darray_nc(file, iodesc, vid, iobuf);
   }
+
   ierr = box_rearrange_io2comp(ios, iodesc, iobuf, array, 0, 0);
+
 
   if(rlen>0)
     free(iobuf);

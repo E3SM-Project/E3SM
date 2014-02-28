@@ -16,6 +16,12 @@
 #include <pnetcdf.h>
 #endif
 
+#ifdef _MPISERIAL
+typedef int MPI_Info;
+
+#define MPI_Offset long long
+#endif
+
 #define PIO_Offset MPI_Offset
 #define PIO_MAX_VARS 8192
 

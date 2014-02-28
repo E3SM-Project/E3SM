@@ -22,7 +22,8 @@ enum PIO_DATATYPE{
 #include <pio_internal.h>
 #endif
 
-#define default_blocksize 884736;
+//#define default_blocksize 884736;
+#define default_blocksize 1024
 int blocksize = default_blocksize;
 
 
@@ -275,7 +276,8 @@ int CalcStartandCount(const int basetype, const int ndims,const int *gdims, cons
 
       ioprocs = use_io_procs;
       tiorank = iorank;
-      for(i=ldims;i>=0;i--){
+      //      for(i=ldims;i>=0;i--){
+      for(i=0;i<=ldims;i++){
 	if(gdims[i]>= ioprocs){
 	  computestartandcount(gdims[i],ioprocs,tiorank,start+i,kount+i);
 

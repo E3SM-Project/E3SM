@@ -7,6 +7,11 @@
 #define MPI_OFFSET OMPI_OFFSET_DATATYPE
 #endif
 #endif
+#ifndef MPI_Offset
+#define MPI_Offset long long
+#endif
+
+
 #define max(a,b) \
    ({ __typeof__ (a) _a = (a); \
        __typeof__ (b) _b = (b); \
