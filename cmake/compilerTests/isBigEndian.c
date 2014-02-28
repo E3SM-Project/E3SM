@@ -7,9 +7,9 @@ int little_endian(){
 
 int main(int argc, char** argv) {
   if (little_endian()) {
-    return 1;
+    return 0;
   }
   else {
-    return 0;
+    return 1;
   }
 }
