@@ -927,7 +927,7 @@ contains
     type (io_desc_t), intent(inout)     :: iodesc
 !    type (c_ptr) :: cstart, ccount
     integer(c_int) :: ndims
-    integer(c_int), dimension(:), allocatable :: cdims, cstart, ccount
+    integer(c_int), dimension(:), allocatable, target :: cdims, cstart, ccount
     interface
        integer(C_INT) function PIOc_InitDecomp(iosysid,basetype,ndims,dims, &
             maplen, compmap, ioidp, iostart, iocount)  &
@@ -964,11 +964,13 @@ contains
           ccount(i) = iocount(ndims-i+1)
        end do
        ierr = PIOc_InitDecomp(iosystem%iosysid, basepiotype, ndims, cdims, &
-            size(compdof), compdof, iodesc%ioid, C_PTR(cstart(1)), C_PTR(ccount(1)))
+            size(compdof), compdof, iodesc%ioid, C_LOC(cstart), C_LOC(ccount))
+       deallocate(cstart, ccount)
     else
        ierr = PIOc_InitDecomp(iosystem%iosysid, basepiotype, ndims, cdims, &
             size(compdof), compdof, iodesc%ioid, C_NULL_PTR, C_NULL_PTR)
     end if
+    deallocate(cdims)
 #ifdef TIMING
     call t_stopf("PIO_initdecomp_dof")
 #endif
