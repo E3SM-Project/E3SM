@@ -36,7 +36,6 @@ int create_mpi_datatypes(const MPI_Datatype basetype,const int msgcnt,PIO_Offset
   PIO_Offset i8blocksize;
   MPI_Datatype newtype;
   int blocksize;
-  bool freenewtype=true;
 
   bsizeT[0]=0;
   mtype[0] = MPI_DATATYPE_NULL;
@@ -55,37 +54,43 @@ int create_mpi_datatypes(const MPI_Datatype basetype,const int msgcnt,PIO_Offset
       }
     }
     blocksize = (int) lgcd_array(ii ,bsizeT);
-
-    CheckMPIReturn(MPI_Type_contiguous(blocksize, basetype, &newtype),__FILE__,__LINE__);
+    if(blocksize>1){
+      CheckMPIReturn(MPI_Type_contiguous(blocksize, basetype, &newtype),__FILE__,__LINE__);
+    }else{
+      CheckMPIReturn(MPI_Type_dup(basetype, &newtype), __FILE__,__LINE__);
+    }
     CheckMPIReturn(MPI_Type_commit(&newtype), __FILE__,__LINE__);
-    
-    //    printf("%d blocksize %d basetype %d newtype %d %d %d \n",msgcnt,blocksize,basetype,newtype,mindex[0],mcount[0]);
-
+     
 
     pos = 0;
     for(int i=0;i< msgcnt; i++){
+      printf("%d blocksize %d mindex %d mcount %d \n",i,blocksize,mindex[i],mcount[i]);
+
+      
       if(mcount[i]>0){
 	int len = mcount[i]/blocksize;
-	if(len>1){
+       	//if(len>1){
 	  int displace[len];
 	  if(blocksize==1)
 	    for(int j=0;j<len;j++)
 	      displace[j] = (int) (mindex+pos)[j];
-	  else
+	  else{
 	    for(int j=0;j<len;j++)
 	      (mindex+pos)[j]++;
+	    calcdisplace(blocksize, len, mindex+pos, displace);
+	  }
+	  	  printf("here displace[0]=%d\n",displace[0]);
 
 	  CheckMPIReturn(MPI_Type_create_indexed_block(len, 1, displace, newtype, mtype+i),__FILE__,__LINE__);
-	  CheckMPIReturn(MPI_Type_commit(mtype+i), __FILE__,__LINE__);
-	}else{
-	  mtype[i] = newtype;
-	  freenewtype= false;
-	}
+	  //	}else{
+	  //CheckMPIReturn(MPI_Type_dup(newtype, mtype+i), __FILE__,__LINE__);
+	  //}
+	CheckMPIReturn(MPI_Type_commit(mtype+i), __FILE__,__LINE__);
 	pos+=mcount[i];
 
       }
     }
-    if(freenewtype) CheckMPIReturn(MPI_Type_free(&newtype),__FILE__,__LINE__);
+    CheckMPIReturn(MPI_Type_free(&newtype),__FILE__,__LINE__);
   }
   return PIO_NOERR;
 
@@ -258,7 +263,7 @@ int compute_counts(iosystem_desc_t *ios, io_desc_t *iodesc, const int dest_iopro
     dtype = MPI_INT;
     tsize = tsizei;
   }else if(sizeof(PIO_Offset) == tsizel){
-    dtype = MPI_LONG;
+    dtype = MPI_LONG_LONG;
     tsize = tsizel;
   }
 
@@ -342,11 +347,13 @@ int box_rearrange_comp2io(iosystem_desc_t *ios, io_desc_t *iodesc, void *sbuf,
     recvcounts[ iodesc->rfrom[0] ] = 1;
     recvtypes[ iodesc->rfrom[0] ] = iodesc->rtype[0];
     rdispls[ iodesc->rfrom[0] ] = 0;
+    printf("%d: rindex[%d] %d\n",ios->comp_rank,0,iodesc->rindex[0]);
     for( i=1;i<iodesc->nrecvs;i++){
       recvcounts[ iodesc->rfrom[i] ] = 1;
       recvtypes[ iodesc->rfrom[i] ] = iodesc->rtype[i];
-      MPI_Type_size(iodesc->rtype[i-1],&tsize);
-      rdispls[ iodesc->rfrom[i] ] = rdispls[ iodesc->rfrom[i-1] ] + tsize;
+
+      printf("%d: rindex[%d] %d\n",ios->comp_rank,i,iodesc->rindex[i]);
+
     }
   }else{
     for( i=0;i<iodesc->nrecvs;i++){
@@ -359,8 +366,6 @@ int box_rearrange_comp2io(iosystem_desc_t *ios, io_desc_t *iodesc, void *sbuf,
     if(scount[i] > 0) {
       sendcounts[io_comprank]=1;
       sendtypes[io_comprank]=iodesc->stype[i];
-      MPI_Type_size(iodesc->stype[i],&tsize);
-      sdispls[io_comprank] = i*tsize;
     }else{
       sendcounts[io_comprank]=0;
     }
@@ -371,7 +376,15 @@ int box_rearrange_comp2io(iosystem_desc_t *ios, io_desc_t *iodesc, void *sbuf,
   MPI_Barrier( ios->union_comm);
   pio_swapm( sbuf,  sendcounts, sdispls, sendtypes,
 	     rbuf, recvcounts, rdispls, recvtypes, 
-	     ios->union_comm, handshake, isend, MAX_GATHER_BLOCK_SIZE);
+	     ios->union_comm, handshake, true, 0); //MAX_GATHER_BLOCK_SIZE);
+
+
+  if(ios->compmaster){
+    for(i=0;i<64;i++){
+      printf("rbuf[%d] %d\n",i,((int *)rbuf)[i]);
+    }
+  }
+
 
   free(sendcounts);
   free(recvcounts); 
@@ -424,8 +437,6 @@ int box_rearrange_io2comp(iosystem_desc_t *ios, io_desc_t *iodesc, void *sbuf,
     for( i=0;i< iodesc->nrecvs;i++){
       sendcounts[ iodesc->rfrom[i] ] = 1;
       sendtypes[ iodesc->rfrom[i] ] = iodesc->rtype[i];
-      MPI_Type_size(iodesc->rtype[i], &tsize);
-      sdispls[ iodesc->rfrom[i] ] = i*tsize;
     }
   }
     
@@ -435,8 +446,6 @@ int box_rearrange_io2comp(iosystem_desc_t *ios, io_desc_t *iodesc, void *sbuf,
     if(scount[i] > 0) {
       recvcounts[io_comprank]=1;
       recvtypes[io_comprank]=iodesc->stype[i];
-      MPI_Type_size(iodesc->stype[i],&tsize);
-      rdispls[ io_comprank ] = i*tsize;
     }
   } 
   //
@@ -495,7 +504,7 @@ int box_rearrange_create(iosystem_desc_t *ios,const int maplen, const PIO_Offset
     dtype = MPI_INT;
     tsize = tsizei;
   }else if(sizeof(PIO_Offset) == tsizel){
-    dtype = MPI_LONG;
+    dtype = MPI_LONG_LONG;
     tsize = tsizel;
   }
   sndlths = (int *) malloc(nprocs*sizeof(int)); 

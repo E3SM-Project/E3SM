@@ -131,7 +131,7 @@ int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const
   
   if(ios->ioproc){
     //  Unless the user specifies the start and count for each IO task compute it.    
-        if((iostart != NULL) && (iocount != NULL)){ 
+    if((iostart != NULL) && (iocount != NULL)){ 
       printf("iocount[0] = %ld %ld\n",iocount[0], iocount);
       for(int i=0;i<ndims;i++){
 	iodesc->start[i] = iostart[i];
@@ -143,7 +143,7 @@ int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const
       ios->num_aiotasks = CalcStartandCount(basetype, ndims, dims, ios->num_iotasks, ios->io_rank,
 					    iodesc->start, iodesc->count);
 
-	}
+    }
 
     //  compute the max io buffer size
     iosize=1;

@@ -2891,7 +2891,7 @@ int PIOc_inq_attid (int ncid, int varid, const char *name, int *idp)
 
 /** 
 * @name    PIOc_def_dim
-*/
+*/ 
 int PIOc_def_dim (int ncid, const char *name, PIO_Offset len, int *idp) 
 {
   int ierr;

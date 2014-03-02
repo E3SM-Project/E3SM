@@ -115,14 +115,14 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, voi
 	      mpierr = MPI_Recv( tcount, ndims, MPI_INT, i,2*ios->num_iotasks+i, ios->io_comm, &status);
 	      mpierr = MPI_Recv( tmp_buf, iodesc->maxiobuflen, iodesc->basetype, i, i, ios->io_comm, &status);
 	    }
+	    for(int j=0;j<ndims;j++)
+	      printf("tstart[%d] %ld tcount %ld %ld\n",j,tstart[j],tcount[j], iodesc->maxiobuflen);
+	    
 	    if(iodesc->basetype == MPI_INTEGER){
 	      ierr = nc_put_vara_int (ncid, vid, tstart, tcount, (const int *) tmp_buf); 
 	    }else if(iodesc->basetype == MPI_DOUBLE || iodesc->basetype == MPI_REAL8){
 	      ierr = nc_put_vara_double (ncid, vid, tstart, tcount, (const double *) tmp_buf); 
 	    }else if(iodesc->basetype == MPI_FLOAT || iodesc->basetype == MPI_REAL4){
-	      //    for(int j=0;j<ndims;j++)
-	      //  printf("tstart[%d] %ld tcount %ld %ld\n",j,tstart[j],tcount[j], iodesc->maxiobuflen);
-	    
 	      ierr = nc_put_vara_float (ncid,vid, tstart, tcount, (const float *) tmp_buf); 
 	    }else{
 	      fprintf(stderr,"Type not recognized %d in pioc_write_darray\n",(int) iodesc->basetype);

@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdio.h>
 
-int PIOc_OpenFile(const int iosysid, int *ncidp, int *iotype,
+int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
 		  char *fname, const int mode, _Bool checkmpi)
 {
   int ierr;
@@ -127,7 +127,7 @@ int PIOc_OpenFile(const int iosysid, int *ncidp, int *iotype,
 
 
 
-int PIOc_CreateFile(const int iosysid, int *ncidp,  int *iotype,
+int PIOc_createfile(const int iosysid, int *ncidp,  int *iotype,
 		 const char *fname, const int mode)
 {
   int ierr;
@@ -242,7 +242,7 @@ int PIOc_CreateFile(const int iosysid, int *ncidp,  int *iotype,
   return ierr;
 }
 
-int PIOc_CloseFile(int ncid)
+int PIOc_closefile(int ncid)
 {
   int ierr;
   int msg;

@@ -1704,8 +1704,8 @@ contains
     integer, optional, intent(in) :: amode_in
     integer :: mode
     interface
-       integer(C_INT) function PIOc_CreateFile(iosysid, fh, iotype, fname,mode) &
-         bind(C,NAME='PIOc_CreateFile')
+       integer(C_INT) function PIOc_createfile(iosysid, fh, iotype, fname,mode) &
+         bind(C,NAME='PIOc_createfile')
          use iso_c_binding
          implicit none
          integer(c_int), value :: iosysid
@@ -1713,14 +1713,14 @@ contains
          integer(c_int) :: iotype
          character(kind=c_char) :: fname
          integer(c_int), value :: mode
-       end function PIOc_CreateFile
+       end function PIOc_createfile
     end interface
 #ifdef TIMING
     call t_startf("PIO_createfile")
 #endif
     mode = 0
     if(present(amode_in)) mode = amode_in
-    ierr = PIOc_CreateFile(iosystem%iosysid, file%fh, iotype, trim(fname)//C_NULL_CHAR, mode)
+    ierr = PIOc_createfile(iosystem%iosysid, file%fh, iotype, trim(fname)//C_NULL_CHAR, mode)
     file%iosystem => iosystem
 #ifdef TIMING
     call t_stopf("PIO_createfile")
@@ -1753,8 +1753,8 @@ contains
     logical, optional, intent(in) :: CheckMPI
 
     interface
-       integer(C_INT) function PIOc_OpenFile(iosysid, fh, iotype, fname,mode, CheckMPI) &
-         bind(C,NAME='PIOc_OpenFile')
+       integer(C_INT) function PIOc_openfile(iosysid, fh, iotype, fname,mode, CheckMPI) &
+         bind(C,NAME='PIOc_openfile')
          use iso_c_binding
          implicit none
          integer(c_int), value :: iosysid
@@ -1763,7 +1763,7 @@ contains
          character(kind=c_char) :: fname
          integer(c_int), value :: mode
          logical(c_bool), value :: CheckMPI
-       end function PIOc_OpenFile
+       end function PIOc_openfile
     end interface
     logical(c_bool) :: iCheckMPI=.true.
     integer :: imode=0
@@ -1772,7 +1772,7 @@ contains
 #endif
     if(present(Checkmpi)) icheckmpi=logical(Checkmpi,c_bool)
     if(present(mode)) imode = mode
-    ierr = PIOc_OpenFile( iosystem%iosysid, file%fh, iotype, &
+    ierr = PIOc_openfile( iosystem%iosysid, file%fh, iotype, &
          trim(fname)//C_NULL_CHAR, imode, iCheckMPI)
 
     file%iosystem => iosystem
@@ -1859,16 +1859,16 @@ contains
     type(file_desc_t) :: file
     integer :: ierr
     interface
-       integer(c_int) function PIOc_CloseFile(ncid) &
-            bind(C,name="PIOc_CloseFile")
+       integer(c_int) function PIOc_closefile(ncid) &
+            bind(C,name="PIOc_closefile")
          use iso_c_binding
          integer(C_INT), value :: ncid
-       end function PIOc_CloseFile
+       end function PIOc_closefile
     end interface
 #ifdef TIMING
     call t_startf("PIO_closefile")
 #endif
-    ierr = PIOc_CloseFile(file%fh)
+    ierr = PIOc_closefile(file%fh)
 
 #ifdef TIMING
     call t_stopf("PIO_closefile")

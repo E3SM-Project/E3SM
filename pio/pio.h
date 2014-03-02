@@ -280,6 +280,24 @@ int PIOc_get_att_double (int ncid, int varid, const char *name, double *ip);
 int PIOc_inq_atttype (int ncid, int varid, const char *name, nc_type *xtypep); 
 int PIOc_put_att_uchar (int ncid, int varid, const char *name, nc_type xtype, PIO_Offset len, const unsigned char *op); 
 int PIOc_get_att_uchar (int ncid, int varid, const char *name, unsigned char *ip);              
+  int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const int dims[], 
+		      const int maplen, const PIO_Offset *compmap, int *ioidp, PIO_Offset *iostart,PIO_Offset *iocount);
+  int PIOc_Init_Intracomm(const MPI_Comm comp_comm, 
+			  const int num_iotasks, const int stride, 
+			  const int base, int *iosysidp);
+  int PIOc_closefile(int ncid);
+int PIOc_createfile(const int iosysid, int *ncidp,  int *iotype,
+		    const char *fname, const int mode);
+int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
+		  char *fname, const int mode, _Bool checkmpi);
+  int PIOc_write_darray(const int ncid, const int vid, const int ioid, const PIO_Offset arraylen, void *array, void *fillvalue);
+
+
+
+
+
+
+
 
 #if defined(__cplusplus)
 }

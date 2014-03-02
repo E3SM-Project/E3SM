@@ -52,9 +52,9 @@ int pio_fc_gather( void *sendbuf, const int sendcnt, const MPI_Datatype sendtype
 		   void *recvbuf, const int recvcnt, const MPI_Datatype recvtype, const int root, 
 		   MPI_Comm comm, const int flow_cntl);
 
-int pio_swapm(void *sndbuf, const int sndlths[], const int sdispls[], const MPI_Datatype stypes[], 
-	      void *rcvbuf, const int rcvlths[], const int rdispls[], const MPI_Datatype rtypes[], 
-	      MPI_Comm comm, const bool handshake, const bool isend, const int max_requests);
+int pio_swapm(void *sndbuf, int sndlths[], int sdispls[], MPI_Datatype stypes[], 
+	      void *rcvbuf, int rcvlths[], int rdispls[], MPI_Datatype rtypes[], 
+	      MPI_Comm comm, const bool handshake, bool isend, const int max_requests);
 
 long long lgcd_array(int nain, long long*ain);
 
@@ -66,7 +66,7 @@ int box_rearrange_io2comp(iosystem_desc_t *ios, io_desc_t *iodesc, void *sbuf,
 			  void *rbuf, const int comm_option, const int fc_options);
 int box_rearrange_comp2io(iosystem_desc_t *ios, io_desc_t *iodesc, void *sbuf,
 			  void *rbuf, const int comm_option, const int fc_options);
-
+  int calcdisplace(const int bsize, const int numblocks,const PIO_Offset *map, PIO_Offset *displace);
 io_desc_t *malloc_iodesc(const int piotype, const int ndims);
 
 int flush_output_buffer(file_desc_t *file);
