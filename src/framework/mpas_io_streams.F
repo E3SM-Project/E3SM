@@ -1518,7 +1518,7 @@ contains
       !
       ! Set variable indices
       !
-      if (ndims > 0) then
+      if (ndims > 0 .and. isDecomposed) then
          call MPAS_io_set_var_indices(stream % fileHandle, trim(fieldName), indices, io_err)
          call MPAS_io_err_mesg(io_err, .false.)
          if (io_err /= MPAS_IO_NOERR) then
