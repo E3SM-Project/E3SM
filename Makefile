@@ -197,7 +197,7 @@ intel-nersc:
 	"CC_PARALLEL = cc" \
 	"FC_SERIAL = ftn" \
 	"CC_SERIAL = cc" \
-	"FFLAGS_OPT = -real-size 64 -O3 -FR" \
+	"FFLAGS_OPT = -real-size 64 -O3 -convert big_endian -FR" \
 	"CFLAGS_OPT = -O3" \
 	"LDFLAGS_OPT = -O3" \
 	"CORE = $(CORE)" \
