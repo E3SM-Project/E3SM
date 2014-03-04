@@ -11,8 +11,8 @@ module quadrature_mod
 
   type, public :: quadrature_t
 #ifdef IS_ACCELERATOR
-     real (kind=longdouble_kind), dimension(:), pointer :: points
-     real (kind=longdouble_kind), dimension(:), pointer :: weights
+     real (kind=longdouble_kind), dimension(:), allocatable :: points
+     real (kind=longdouble_kind), dimension(:), allocatable :: weights
 #else
      real (kind=longdouble_kind), dimension(:), pointer :: points
      real (kind=longdouble_kind), dimension(:), pointer :: weights
