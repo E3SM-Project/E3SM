@@ -18,7 +18,6 @@ module quadrature_mod
      real (kind=longdouble_kind), dimension(:), pointer :: weights
 #endif
   end type quadrature_t
-  end type quadrature_t
 
   public  :: gausslobatto
   public  :: test_gausslobatto
