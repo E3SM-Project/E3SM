@@ -23,6 +23,7 @@ module ocn_am_driver
    use mpas_configure
 
    use ocn_am_global_stats
+   use ocn_am_zonal_mean
 !   use ocn_am_TEMPLATE
 
    implicit none
@@ -108,6 +109,11 @@ contains
          err = ior(err, err_tmp)
      endif
 
+      if (config_ocn_am_zonal_mean) then
+         call ocn_am_setup_packages_zonal_mean(err_tmp)
+         err = ior(err, err_tmp)
+      endif
+
 !      if (config_ocn_am_TEMPLATE) then
 !         call ocn_am_setup_packages_TEMPLATE(err_tmp)
 !         err = ior(err, err_tmp)
@@ -166,6 +172,11 @@ contains
          call ocn_am_init_global_stats(domain, err_tmp)
          err = ior(err, err_tmp)
      endif
+
+      if (config_ocn_am_zonal_mean) then
+         call ocn_am_init_zonal_mean(domain, err_tmp)
+         err = ior(err, err_tmp)
+      endif
 
 !      if (config_ocn_am_TEMPLATE) then
 !         call ocn_am_init_TEMPLATE(domain, err_tmp)
@@ -228,6 +239,11 @@ contains
          err = ior(err, err_tmp)
       endif
 
+      if (config_ocn_am_zonal_mean) then
+         call ocn_am_compute_zonal_mean(domain, timeLevel, err_tmp)
+         err = ior(err, err_tmp)
+      endif
+
 !      if (config_ocn_am_TEMPLATE) then
 !         call ocn_am_compute_TEMPLATE(domain, timeLevel, err_tmp)
 !         err = ior(err, err_tmp)
@@ -287,8 +303,13 @@ contains
          err = ior(err, err_tmp)
      endif
 
+      if (config_ocn_am_zonal_mean) then
+         call ocn_am_restart_zonal_mean(domain, err_tmp)
+         err = ior(err, err_tmp)
+      endif
+
 !      if (config_ocn_am_TEMPLATE) then
-!         call ocn_am_restart_TEMPLATE(domian, err_tmp)
+!         call ocn_am_restart_TEMPLATE(domain, err_tmp)
 !         err = ior(err, err_tmp)
 !      endif
 
@@ -348,6 +369,11 @@ contains
          err = ior(err, err_tmp)
      endif
 
+      if (config_ocn_am_zonal_mean) then
+         call ocn_am_write_zonal_mean(domain, err_tmp)
+         err = ior(err, err_tmp)
+      endif
+
 !      if (config_ocn_am_TEMPLATE) then
 !         call ocn_am_write_TEMPLATE(domain, err_tmp)
 !         err = ior(err, err_tmp)
@@ -406,6 +432,11 @@ contains
         call ocn_am_finalize_global_stats(domain, err_tmp)
         err = ior(err, err_tmp)
      endif
+
+      if (config_ocn_am_zonal_mean) then
+         call ocn_am_finalize_zonal_mean(domain, err_tmp)
+         err = ior(err, err_tmp)
+      endif
 
 !      if (config_ocn_am_TEMPLATE) then
 !         call ocn_am_finalize_TEMPLATE(domain, err_tmp)
