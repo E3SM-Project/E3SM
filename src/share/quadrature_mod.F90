@@ -10,8 +10,14 @@ module quadrature_mod
   private
 
   type, public :: quadrature_t
+#ifdef IS_ACCELERATOR
      real (kind=longdouble_kind), dimension(:), pointer :: points
      real (kind=longdouble_kind), dimension(:), pointer :: weights
+#else
+     real (kind=longdouble_kind), dimension(:), pointer :: points
+     real (kind=longdouble_kind), dimension(:), pointer :: weights
+#endif
+  end type quadrature_t
   end type quadrature_t
 
   public  :: gausslobatto
