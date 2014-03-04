@@ -1,0 +1,55 @@
+	<nml_record name="oac_zonal_mean" in_defaults="true">
+		<nml_option name="config_ocn_am_zonal_mean" type="logical" default_value=".false." units="unitless"
+			description="If true, ocean analysis member zonal_mean is called."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_ocn_am_zonal_mean_binning_variable" type="character" default_value="latCell" units="unitless"
+			description="Coordinate variable used to bin zonal mean."
+			possible_values="'latCell' or 'yCell'"
+		/>
+	</nml_record>
+	<dims>
+		<dim name="nZonalMeanBins" definition="180" units="unitless"
+			 description="Number of bins for zonal mean."
+		/>
+		<dim name="nZonalMeanBinsP1" definition="nZonalMeanBins+1" units="unitless"
+			 description="Number of bins for zonal mean."
+		/>
+	</dims>
+	<packages>
+		<package name="amZonalMean" description="This package includes variables required for the amZonalMean analysis member."/>
+	</packages>
+	<streams>
+		<stream name="output" type="output">
+			<var name="binCenterZonalMean"/>
+			<var name="binBoundaryZonalMean"/>
+			<var name="zonalVelocityZonalMean"/>
+			<var name="meridionalVelocityZonalMean"/>
+			<var name="tracer1ZonalMean"/>
+		</stream>
+	</streams>
+	<var_struct name="amZonalMean" time_levs="0" packages="amZonalMean">
+		<var name="binCenterZonalMean" type="real" dimensions="nZonalMeanBins" units="varies"
+			 description="Central coordinate of zonal mean bin, either in latitude or y, for plotting."
+		/>
+		<var name="binBoundaryZonalMean" type="real" dimensions="nZonalMeanBinsP1" units="varies"
+			 description="Coordinate of lower edge of zonal mean bin, either in latitude or y, for plotting."
+		/>
+		<var name="zonalVelocityZonalMean" type="real" dimensions="nVertLevels nZonalMeanBins Time" units="m s^{-1}"
+			 description="Zonal mean of component of horizontal velocity in the eastward direction"
+		/>
+		<var name="meridionalVelocityZonalMean" type="real" dimensions="nVertLevels nZonalMeanBins Time" units="m s^{-1}"
+			 description="Zonal mean of component of horizontal velocity in the northward direction"
+		/>
+		<var_array name="tracersZonalMean" type="real" dimensions="nVertLevels nZonalMeanBins Time">
+			<var name="temperatureZonalMean" array_group="dynamics" units="degrees Celsius" 
+			 description="Zonal mean of potential temperature"
+			/>
+			<var name="salinityZonalMean" array_group="dynamics" units="grams salt per kilogram seawater"
+			 description="Zonal mean of salinity"
+			/>
+			<var name="tracer1ZonalMean" array_group="dynamics" units="na"
+			 description="Zonal mean of tracer"
+			/>
+		</var_array>
+	</var_struct>
