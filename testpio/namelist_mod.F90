@@ -11,8 +11,8 @@ module namelist_mod
 ! Modules from PIO package that are used by this application
 
     use pio_support, only : piodie, CheckMPIReturn ! _EXTERNAL
-
-    implicit none
+    use pio, only : pio_offset
+    implicit none    
     private
 
     public :: broadcast_namelist
@@ -64,7 +64,7 @@ module namelist_mod
     character(len=4), save  :: ioFMT
     character(len=80), save :: fname1, fname2
     character(len=*), parameter :: myname='namelist_mod'
-    integer(i4) :: max_buffer_size
+    integer(PIO_OFFSET) :: max_buffer_size
     integer(i4) :: block_size
 
 ! Variables whose values are derived form items in namelist io_nml:
@@ -524,7 +524,7 @@ subroutine Broadcast_Namelist(caller, myID, root, comm, ierror)
   call MPI_Bcast(npr_yz, 4, MPI_INTEGER, root, comm, ierror)
   call CheckMPIReturn('Call to MPI_Bcast(npr_yz)',ierror,__FILE__,__LINE__)
 
-  call MPI_Bcast(max_buffer_size, 1, MPI_INTEGER, root, comm, ierror)
+  call MPI_Bcast(max_buffer_size, 1, MPI_LONG, root, comm, ierror)
   call CheckMPIReturn('Call to MPI_Bcast(npr_yz)',ierror,__FILE__,__LINE__)
 
   call MPI_Bcast(block_size, 1, MPI_INTEGER, root, comm, ierror)

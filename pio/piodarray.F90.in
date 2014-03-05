@@ -60,7 +60,7 @@ contains
        end function PIOc_set_buffer_size_limit
     end interface
     if(limit<0) then
-       call piodie(__PIO_FILE__,__LINE__,' bad value to buffer_size_limit',limit)
+       call piodie(__PIO_FILE__,__LINE__,' bad value to buffer_size_limit: ',int(limit))
     end if
     oldval = PIOc_set_buffer_size_limit(limit)
        

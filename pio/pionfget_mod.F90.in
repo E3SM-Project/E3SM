@@ -10,11 +10,8 @@ module pionfget_mod
 #ifdef TIMING
   use perf_mod, only : t_startf, t_stopf      ! _EXTERNAL
 #endif
-  use pio_kinds, only: i4,r4,r8,pio_offset
-  use pio_types, only : file_desc_t, iosystem_desc_t, var_desc_t, &
-	pio_iotype_pbinary, pio_iotype_binary, pio_iotype_direct_pbinary, &
-	pio_iotype_netcdf, pio_iotype_pnetcdf, pio_iotype_netcdf4p, pio_iotype_netcdf4c, &
-	pio_noerr
+  use pio_kinds, only: i4,r4,r8
+  use pio_types, only : file_desc_t, var_desc_t
   implicit none
   private
 !>
@@ -62,11 +59,12 @@ CONTAINS
     integer, intent(in) :: varid, index(:)
     {VTYPE}, intent(out) :: ival
     interface
-       integer(C_INT) function PIOc_get_var1_{NCTYPE} (ncid, varid, ival) &
+       integer(C_INT) function PIOc_get_var1_{NCTYPE} (ncid, varid, index, ival) &
             bind(C,name="PIOc_get_var1_{NCTYPE}")
          use iso_c_binding
          integer(C_INT), value :: ncid
          integer(C_INT), value :: varid
+         integer(C_INT) :: index(*)
          {CTYPE} :: ival
        end function PIOc_get_var1_{NCTYPE}
     end interface
@@ -74,7 +72,7 @@ CONTAINS
 #ifdef TIMING
     call t_startf("pio_get_var1_{TYPE}")
 #endif
-    ierr = PIOc_get_var1_{NCTYPE} (ncid, varid, ival)
+    ierr = PIOc_get_var1_{NCTYPE} (ncid, varid, index, ival)
 #ifdef TIMING
     call t_stopf("pio_get_var1_{TYPE}")
 #endif
@@ -220,14 +218,14 @@ CONTAINS
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
     character(len=*), intent(out) :: ival
-    integer :: i
+
     interface
        integer(C_INT) function PIOc_get_var_text (ncid, varid, ival) &
             bind(C,name="PIOc_get_var_text")
          use iso_c_binding
          integer(C_INT), value :: ncid
          integer(C_INT), value :: varid
-         character(C_CHAR) :: ival
+         character(C_CHAR) :: ival(*)
        end function PIOc_get_var_text
     end interface
     ierr = PIOc_get_var_text(File%fh, varid, ival)
@@ -243,7 +241,6 @@ CONTAINS
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
     {VTYPE}, intent(out) :: ival
-    integer :: i
     interface
        integer(C_INT) function PIOc_get_var_{NCTYPE} (ncid, varid, ival) &
             bind(C,name="PIOc_get_var_{NCTYPE}")
@@ -295,10 +292,6 @@ CONTAINS
     integer, intent(in) :: ncid
     integer, intent(in) :: varid
     {VTYPE}, intent(out) :: ival(*)
-    type(iosystem_desc_t), pointer :: ios
-    integer :: iotype, mpierr, msg, ilen, itype
-
-    integer(kind=PIO_OFFSET) :: isize
     interface
        integer(C_INT) function PIOc_get_var_{NCTYPE} (ncid, varid, ival) &
             bind(C,name="PIOc_get_var_{NCTYPE}")
@@ -319,10 +312,7 @@ CONTAINS
     integer, intent(in) :: start(:)
     integer, intent(in) :: count(:)
     {VTYPE}, intent(out) :: ival(*)
-    type(iosystem_desc_t), pointer :: ios
-    integer :: iotype, mpierr, msg, ilen, itype
 
-    integer(kind=PIO_OFFSET) :: isize
     interface
        integer(C_INT) function PIOc_get_vara_{NCTYPE} (ncid, varid, start, count, ival) &
             bind(C,name="PIOc_get_vara_{NCTYPE}")
@@ -345,8 +335,6 @@ CONTAINS
     integer, intent(in) :: count(:)
     integer, intent(in) :: nstrs
     character, intent(out) :: ival(*)
-    type(iosystem_desc_t), pointer :: ios
-    integer :: iotype, mpierr, msg, ilen, itype
     integer :: j
     interface
        integer(C_INT) function PIOc_get_vara_text (ncid, varid, start, count, ival) &
@@ -364,9 +352,6 @@ CONTAINS
     do j=1,nstrs
        call replace_c_null(ival(j))
     end do
-
-
-
   end function get_vara_text_internal
 
 ! TYPE int,real,double
@@ -375,14 +360,6 @@ CONTAINS
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
     {VTYPE}, intent(out) :: ival{DIMSTR}
-    type(iosystem_desc_t), pointer :: ios
-    character(len=*), parameter :: subName=modName//'::get_var_{DIMS}d_{TYPE}'
-    integer :: iotype, mpierr, msg, ilen, itype
-#if ({DIMS} > 0)
-    integer :: dims({DIMS})
-    integer :: i
-#endif
-    integer(kind=PIO_OFFSET) :: isize
 
     ierr = get_var_{TYPE}_internal(File%fh, varid, ival)
 
@@ -403,8 +380,6 @@ CONTAINS
     type (File_desc_t), intent(in) :: File
     type(var_desc_t), intent(in) :: vardesc
     {VTYPE}, intent(out) :: ival{DIMSTR}
-
-    character(len=*), parameter :: subName=modName//'::get_var_vdesc_{DIMS}d_{TYPE}'
 
     ierr = get_var_{DIMS}d_{TYPE} (File, vardesc%varid, ival)
 
