@@ -54,14 +54,32 @@ contains
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, index(:)
     character(len=*), intent(in) :: ival
-
+    integer :: clen, i
+    character, allocatable :: cval(:)
+    interface
+       integer(C_INT) function PIOc_put_var1_text(ncid, varid, index, op) &
+            bind(C,name="PIOc_put_var_text")
+         use iso_c_binding
+         integer(C_INT), intent(in), value :: ncid
+         integer(C_INT), intent(in), value :: varid
+         type(C_PTR), intent(in) :: index
+         character(C_CHAR) :: op
+       end function PIOc_put_var1_text
+    end interface
 
 #ifdef TIMING
     call t_startf("pio_put_var1_text")
 #endif 
-    ierr=PIO_NOERR
+    clen = len(ival)
+    allocate(cval(clen))
+    cval = C_NULL_CHAR
+    do i=1,len_trim(ival)
+       cval(i) = ival(i:i)
+    end do
+    
+    ierr = PIOc_put_var1_text(file%fh, varid, C_LOC(index(1)), cval(1))
 
-
+    deallocate(cval)
 #ifdef TIMING
     call t_stopf("pio_put_var1_text")
 #endif 
@@ -86,7 +104,7 @@ contains
 #ifdef TIMING
     call t_startf("pio_put_var1_{TYPE}")
 #endif 
-    ierr=PIO_NOERR
+    
 
 
 #ifdef TIMING
@@ -174,7 +192,7 @@ contains
     integer, intent(in) :: varid
     character(len=*), intent(in) :: ival{DIMSTR}
     character, allocatable :: cval(:)
-    integer :: clen, csize, i, j, k, m, n, q, sd({DIMS}), cinc
+    integer :: clen, csize, sd({DIMS})
     interface
        integer(C_INT) function PIOc_put_var_text(ncid, varid, op) &
             bind(C,name="PIOc_put_var_text")
@@ -192,68 +210,7 @@ contains
     clen = len(ival)
     sd = size(ival)
     allocate(cval(clen*product(sd(1:{DIMS}))))
-    cval = C_NULL_CHAR
-    cinc = 0
-#if {DIMS} == 1
-    do j=1,sd(1)
-       do i=1,len_trim(ival(j))
-          cval(i+cinc*clen) = ival(j)(i:i)
-       end do
-       cinc = cinc+1
-    enddo
-#endif
-#if {DIMS} == 2
-    do k=1,sd(2)
-       do j=1,sd(1)
-          do i=1,len_trim(ival(j,k))
-             cval(i+cinc*clen) = ival(j,k)(i:i)
-          end do
-          cinc = cinc+1
-       enddo
-    enddo
-#endif
-#if {DIMS} == 3
-    do m=1,sd(3)
-       do k=1,sd(2)
-          do j=1,sd(1)
-             do i=1,len_trim(ival(j,k,m))
-                cval(i+cinc*clen) = ival(j,k,m)(i:i)
-             end do
-             cinc = cinc+1
-          enddo
-       enddo
-    enddo
-#endif
-#if {DIMS} == 4
-    do n=1,sd(4)
-       do m=1,sd(3)
-          do k=1,sd(2)
-             do j=1,sd(1)
-                do i=1,len_trim(ival(j,k,m,n))
-                   cval(i+cinc*clen) = ival(j,k,m,n)(i:i)
-                end do
-                cinc = cinc+1
-             enddo
-          enddo
-       enddo
-    enddo
-#endif
-#if {DIMS} == 5
-    do q=1,sd(5)
-       do n=1,sd(4)
-          do m=1,sd(3)
-             do k=1,sd(2)
-                do j=1,sd(1)
-                   do i=1,len_trim(ival(j,k,m,n,q))
-                      cval(i+cinc*clen) = ival(j,k,m,n,q)(i:i)
-                   end do
-                   cinc = cinc+1
-                enddo
-             enddo
-          enddo
-       enddo
-    enddo
-#endif
+    call Fstring2Cstring_{DIMS}d (ival, cval, clen, sd)
     ierr = PIOc_put_var_text(file%fh, varid,  cval(1))
     deallocate(cval)
 
@@ -273,13 +230,50 @@ contains
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
+  integer function put_var_internal_{TYPE} (ncid,varid, ival) result(ierr)
+    integer, intent(in) :: ncid
+    integer, intent(in) :: varid
+    {VTYPE}, intent(in) :: ival(*)
+    
+    interface
+       integer(C_INT) function PIOc_put_var_{NCTYPE}(ncid, varid, op) &
+            bind(C,name="PIOc_put_var_{NCTYPE}")
+         use iso_c_binding
+         integer(C_INT), intent(in), value :: ncid
+         integer(C_INT), intent(in), value :: varid
+         type(C_PTR), intent(in) :: op
+       end function PIOc_put_var_{NCTYPE}
+    end interface
+
+    ierr=PIOc_put_var_{NCTYPE} (ncid, varid, C_LOC(ival))
+
+
+  end function put_var_internal_{TYPE}
+
+! DIMS 1,2,3,4,5
+! TYPE int,real,double
+!>
+!! @public
+!! @ingroup PIO_put_var
+!! @brief Writes an netcdf attribute to a file
+!! @details
+!! @param File @copydoc file_desc_t
+!! @param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! @param varid : The netcdf variable identifier
+!! @param ival : The value for the netcdf metadata
+!! @retval ierr @copydoc error_return
+!<
   integer function put_var_{DIMS}d_{TYPE} (File,varid, ival) result(ierr)
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
     {VTYPE}, intent(in) :: ival{DIMSTR}
-
-    ierr=PIO_NOERR
-
+    {VTYPE}, allocatable :: cval(:)
+    integer :: clen
+    clen = size(ival)
+    allocate(cval(clen))
+    cval = reshape(ival,(/clen/))
+    ierr = put_var_internal_{TYPE} (File%fh, varid, cval)
+    deallocate(cval)
 
   end function put_var_{DIMS}d_{TYPE}
 
@@ -299,15 +293,12 @@ contains
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid
     {VTYPE}, intent(in) :: ival
-
-
     ierr=PIO_NOERR
-
-
 #ifdef TIMING
     call t_startf("pio_put_var_0d_{TYPE}")
 #endif 
 
+    ierr = put_var_internal_{TYPE} (File%fh, varid, (/ival/))
 
 #ifdef TIMING
     call t_stopf("pio_put_var_0d_{TYPE}")
@@ -352,16 +343,134 @@ contains
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, start(:), count(:)
     character(len=*), intent(in) :: ival{DIMSTR}
+    character, allocatable :: cval(:)
+    integer :: clen, csize, i, j, k, m, n, q, sd({DIMS}), cinc
+    interface
+       integer(C_INT) function PIOc_put_vara_text(ncid, varid, start, count, op) &
+            bind(C,name="PIOc_put_var_text")
+         use iso_c_binding
+         integer(C_INT), intent(in), value :: ncid
+         integer(C_INT), intent(in), value :: varid
+         integer(C_INT), intent(in) :: start(*)
+         integer(C_INT), intent(in) :: count(*)
+         character(C_CHAR) :: op
+       end function PIOc_put_vara_text
+    end interface
 
-#ifdef TIMING
-    call t_startf("pio_put_vara_{DIMS}d_text")
-#endif 
+!   This manipulation is required to convert the fortran string to
+!   a c character array with all trailing space set to null
+!
+
+    clen = len(ival)
+    sd = size(ival)
+    allocate(cval(clen*product(sd)))
+    call Fstring2Cstring_{DIMS}d (ival, cval, clen, sd)
+
+    ierr = PIOc_put_vara_text(file%fh, varid,  start, count, cval(1))
+    deallocate(cval)
 
 
-#ifdef TIMING
-    call t_stopf("pio_put_vara_{DIMS}d_{TYPE}")
-#endif 
   end function put_vara_{DIMS}d_text
+
+! TYPE text  
+! DIMS 1,2,3,4,5
+  subroutine Fstring2Cstring_{DIMS}d(fstr, cstr, clen, sd)
+    character(len=*), intent(in) :: fstr{DIMSTR}
+    character, intent(out) :: cstr(:)
+    integer, intent(in) :: clen, sd(:)
+    integer :: cinc
+    integer :: i, j, k, m, n, q
+
+    cstr = C_NULL_CHAR
+    cinc = 0
+#if {DIMS} == 1
+    do j=1,sd(1)
+       do i=1,len_trim(fstr(j))
+          cstr(i+cinc*clen) = fstr(j)(i:i)
+       end do
+       cinc = cinc+1
+    enddo
+#endif
+#if {DIMS} == 2
+    do k=1,sd(2)
+       do j=1,sd(1)
+          do i=1,len_trim(fstr(j,k))
+             cstr(i+cinc*clen) = fstr(j,k)(i:i)
+          end do
+          cinc = cinc+1
+       enddo
+    enddo
+#endif
+#if {DIMS} == 3
+    do m=1,sd(3)
+       do k=1,sd(2)
+          do j=1,sd(1)
+             do i=1,len_trim(fstr(j,k,m))
+                cstr(i+cinc*clen) = fstr(j,k,m)(i:i)
+             end do
+             cinc = cinc+1
+          enddo
+       enddo
+    enddo
+#endif
+#if {DIMS} == 4
+    do n=1,sd(4)
+       do m=1,sd(3)
+          do k=1,sd(2)
+             do j=1,sd(1)
+                do i=1,len_trim(fstr(j,k,m,n))
+                   cstr(i+cinc*clen) = fstr(j,k,m,n)(i:i)
+                end do
+                cinc = cinc+1
+             enddo
+          enddo
+       enddo
+    enddo
+#endif
+#if {DIMS} == 5
+    do q=1,sd(5)
+       do n=1,sd(4)
+          do m=1,sd(3)
+             do k=1,sd(2)
+                do j=1,sd(1)
+                   do i=1,len_trim(fstr(j,k,m,n,q))
+                      cstr(i+cinc*clen) = fstr(j,k,m,n,q)(i:i)
+                   end do
+                   cinc = cinc+1
+                enddo
+             enddo
+          enddo
+       enddo
+    enddo
+#endif
+
+    
+  end subroutine Fstring2Cstring_{DIMS}d
+
+  integer function put_vara_internal_{TYPE} (ncid,varid,start,count, ival) result(ierr)
+    integer, intent(in) :: ncid
+    integer, intent(in) :: varid
+    integer, intent(in) :: start(:)
+    integer, intent(in) :: count(:)
+    {VTYPE}, intent(in) :: ival(*)
+    
+    interface
+       integer(C_INT) function PIOc_put_vara_{NCTYPE}(ncid, varid, start, count, op) &
+            bind(C,name="PIOc_put_var_{NCTYPE}")
+         use iso_c_binding
+         integer(C_INT), intent(in), value :: ncid
+         integer(C_INT), intent(in), value :: varid
+         integer(C_INT), intent(in) :: start(*)
+         integer(C_INT), intent(in) :: count(*)
+         type(C_PTR), intent(in) :: op
+       end function PIOc_put_vara_{NCTYPE}
+    end interface
+
+    ierr=PIOc_put_vara_{NCTYPE} (ncid, varid, start, count, C_LOC(ival))
+
+
+  end function put_vara_internal_{TYPE}
+
 ! TYPE int,real,double
 ! DIMS 1,2,3,4,5
 !>
@@ -382,11 +491,12 @@ contains
     integer, intent(in) :: varid, start(:), count(:)
 
     {VTYPE}, intent(in) :: ival{DIMSTR}
-
 #ifdef TIMING
     call t_startf("pio_put_vara_{DIMS}d_{TYPE}")
 #endif 
-    call MPI_ABORT(MPI_COMM_WORLD, -99, ierr)
+
+    ierr = put_vara_internal_{TYPE} (File%fh, varid, start, count, ival)
+
 #ifdef TIMING
     call t_stopf("pio_put_vara_{DIMS}d_{TYPE}")
 #endif 

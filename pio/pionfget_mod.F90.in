@@ -104,6 +104,7 @@ CONTAINS
   end function get_var1_vdesc_{TYPE}
 
 
+! TYPE int,real,double
 ! DIMS 1,2,3,4,5
 !>
 !! @public
@@ -137,11 +138,20 @@ CONTAINS
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
     {VTYPE}, intent(out) :: ival{DIMSTR}
-         
-    character(len=*), parameter :: subName=modName//'::get_vara_{DIMS}d_{TYPE}'
-    ierr = PIO_NOERR
+
+    ierr = get_vara_{TYPE}_internal (File%fh, varid, start, count, ival)
 
   end function get_vara_{DIMS}d_{TYPE}
+
+! DIMS 1,2,3,4,5
+  integer function get_vara_{DIMS}d_text (File,varid, start, count, ival) result(ierr)
+    type (File_desc_t), intent(in) :: File
+    integer, intent(in) :: varid, start(:), count(:)
+    character(len=*), intent(out) :: ival{DIMSTR}
+
+    ierr = get_vara_text_internal (File%fh, varid, start, count, size(ival), ival)
+
+  end function get_vara_{DIMS}d_text
 
 ! DIMS 1,2,3,4,5
 !>
@@ -247,93 +257,47 @@ CONTAINS
        
   end function Get_var_0d_{TYPE}
 
-! TYPE text
 ! DIMS 1,2,3,4,5
   integer function get_var_{DIMS}d_text (File,varid, ival) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
     character(len=*), intent(out) :: ival{DIMSTR}
-    integer :: dimlen({DIMS})
-    integer :: i
-    integer :: j, k, m,n, q
+
+    ierr = get_var_text_internal(File%fh, varid, size(ival), ival)
+
+  end function get_var_{DIMS}d_text
+
+  integer function get_var_text_internal (ncid,varid, nstrs, ival) result(ierr)
+    integer, intent(in) :: ncid
+    integer, intent(in) :: varid
+    integer, intent(in) :: nstrs
+    character(len=*), intent(out) :: ival(*)
+    integer :: j
     interface
        integer(C_INT) function PIOc_get_var_text (ncid, varid, ival) &
             bind(C,name="PIOc_get_var_text")
          use iso_c_binding
          integer(C_INT), value :: ncid
          integer(C_INT), value :: varid
-         character(C_CHAR) :: ival
+         character(C_CHAR) :: ival(*)
        end function PIOc_get_var_text
     end interface
-    dimlen = size(ival)
 
-#if({DIMS}==5)
-    ierr = PIOc_get_var_text(File%fh, varid, ival(1,1,1,1,1))
-    do q=1,dimlen(5)
-    do n=1,dimlen(4)
-    do m=1,dimlen(3)
-    do k=1,dimlen(2)
-    do j=1,dimlen(1)
-       call replace_c_null(ival(j,k,m,n,q))
-    end do
-    end do
-    end do
-    end do
-    end do
-#endif
-#if({DIMS}==4)
-    ierr = PIOc_get_var_text(File%fh, varid, ival(1,1,1,1))
-    do n=1,dimlen(4)
-    do m=1,dimlen(3)
-    do k=1,dimlen(2)
-    do j=1,dimlen(1)
-       call replace_c_null(ival(j,k,m,n))
-    end do
-    end do
-    end do
-    end do
-#endif
-#if({DIMS}==3)
-    ierr = PIOc_get_var_text(File%fh, varid, ival(1,1,1))
-    do m=1,dimlen(3)
-    do k=1,dimlen(2)
-    do j=1,dimlen(1)
-       call replace_c_null(ival(j,k,m))
-    end do
-    end do
-    end do
-#endif
-#if({DIMS}==2)
-    ierr = PIOc_get_var_text(File%fh, varid, ival(1,1))
-    do k=1,dimlen(2)
-    do j=1,dimlen(1)
-       call replace_c_null(ival(j,k))
-    end do
-    end do
-#endif
-#if({DIMS}==1)
-    ierr = PIOc_get_var_text(File%fh, varid, ival(1))
-    do j=1,dimlen(1)
+    ierr = PIOc_get_var_text(ncid, varid, ival)
+    do j=1,nstrs
        call replace_c_null(ival(j))
     end do
-#endif
 
-
-  end function get_var_{DIMS}d_text
+  end function get_var_text_internal
 
 ! TYPE int,real,double
-! DIMS 1,2,3,4,5
-  integer function get_var_{DIMS}d_{TYPE}_internal  (ncid,varid, ival) result(ierr)
+  integer function get_var_{TYPE}_internal  (ncid,varid, ival) result(ierr)
     integer, intent(in) :: ncid
     integer, intent(in) :: varid
     {VTYPE}, intent(out) :: ival(*)
     type(iosystem_desc_t), pointer :: ios
-    character(len=*), parameter :: subName=modName//'::get_var_{DIMS}d_{TYPE}'
     integer :: iotype, mpierr, msg, ilen, itype
-#if ({DIMS} > 0)
-    integer :: dims({DIMS})
-    integer :: i
-#endif
+
     integer(kind=PIO_OFFSET) :: isize
     interface
        integer(C_INT) function PIOc_get_var_{NCTYPE} (ncid, varid, ival) &
@@ -346,7 +310,65 @@ CONTAINS
     end interface
     ierr = PIOc_get_var_{NCTYPE} (ncid, varid, ival(1))
 
-  end function get_var_{DIMS}d_{TYPE}_internal
+  end function get_var_{TYPE}_internal
+
+! TYPE int,real,double
+  integer function get_vara_{TYPE}_internal  (ncid,varid, start, count, ival) result(ierr)
+    integer, intent(in) :: ncid
+    integer, intent(in) :: varid
+    integer, intent(in) :: start(:)
+    integer, intent(in) :: count(:)
+    {VTYPE}, intent(out) :: ival(*)
+    type(iosystem_desc_t), pointer :: ios
+    integer :: iotype, mpierr, msg, ilen, itype
+
+    integer(kind=PIO_OFFSET) :: isize
+    interface
+       integer(C_INT) function PIOc_get_vara_{NCTYPE} (ncid, varid, start, count, ival) &
+            bind(C,name="PIOc_get_vara_{NCTYPE}")
+         use iso_c_binding
+         integer(C_INT), value :: ncid
+         integer(C_INT), value :: varid
+         integer(C_INT)  :: start(*)
+         integer(C_INT)  :: count(*)
+         {CTYPE}  :: ival
+       end function PIOc_get_vara_{NCTYPE}
+    end interface
+    ierr = PIOc_get_vara_{NCTYPE} (ncid, varid, start, count, ival(1))
+
+  end function get_vara_{TYPE}_internal
+
+  integer function get_vara_text_internal  (ncid,varid, start, count, nstrs, ival) result(ierr)
+    integer, intent(in) :: ncid
+    integer, intent(in) :: varid
+    integer, intent(in) :: start(:)
+    integer, intent(in) :: count(:)
+    integer, intent(in) :: nstrs
+    character, intent(out) :: ival(*)
+    type(iosystem_desc_t), pointer :: ios
+    integer :: iotype, mpierr, msg, ilen, itype
+    integer :: j
+    interface
+       integer(C_INT) function PIOc_get_vara_text (ncid, varid, start, count, ival) &
+            bind(C,name="PIOc_get_vara_text")
+         use iso_c_binding
+         integer(C_INT), value :: ncid
+         integer(C_INT), value :: varid
+         integer(C_INT)  :: start(*)
+         integer(C_INT)  :: count(*)
+         character(C_CHAR)  :: ival
+       end function PIOc_get_vara_text
+    end interface
+    ierr = PIOc_get_vara_text (ncid, varid, start, count, ival(1))
+
+    do j=1,nstrs
+       call replace_c_null(ival(j))
+    end do
+
+
+
+  end function get_vara_text_internal
+
 ! TYPE int,real,double
 ! DIMS 1,2,3,4,5
   integer function get_var_{DIMS}d_{TYPE} (File,varid, ival) result(ierr)
@@ -362,8 +384,7 @@ CONTAINS
 #endif
     integer(kind=PIO_OFFSET) :: isize
 
-    ierr = get_var_{DIMS}d_{TYPE}_internal(File%fh, varid, ival)
-
+    ierr = get_var_{TYPE}_internal(File%fh, varid, ival)
 
   end function get_var_{DIMS}d_{TYPE}
 
