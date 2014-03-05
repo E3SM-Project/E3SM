@@ -1,6 +1,14 @@
+SET(TEMPSRCF90 alloc_mod.F90)
+FOREACH(tempfile IN LISTS TEMPSRCF90)
+ADD_CUSTOM_COMMAND(
+	OUTPUT ${tempfile}
+	COMMAND ${GENF90_PATH}/genf90.pl ${CMAKE_CURRENT_SOURCE_DIR}/${tempfile}.in > ${tempfile}
+	DEPENDS  ${tempfile}.in
+)
+ENDFOREACH()
 
 SET(SRC check_mod.F90  gdecomp_mod.F90  kinds_mod.F90  namelist_mod.F90  
-            testpio.F90  utils_mod.F90)
+            testpio.F90  utils_mod.F90 ${TEMPSRCF90})
 SET(WSSRC wstest.c)
 
 INCLUDE_DIRECTORIES(${PIO_INCLUDE_DIRS})

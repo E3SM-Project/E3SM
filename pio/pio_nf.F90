@@ -4,7 +4,7 @@ module pio_nf
   use perf_mod, only : t_startf, t_stopf      ! _EXTERNAL
 #endif
   use pio_kinds, only: pio_offset
-  use pio_types, only: file_desc_t, iosystem_desc_t, var_desc_t, PIO_MAX_VAR_DIMS
+  use pio_types, only: file_desc_t, var_desc_t, PIO_MAX_VAR_DIMS
   use iso_c_binding
 
   implicit none

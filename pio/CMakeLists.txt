@@ -162,7 +162,6 @@ SET(SRCS_F90 pio_nf.F90 pio.F90 pio_kinds.F90 pio_types.F90
 SET(TEMPSRCF90    pionfatt_mod.F90
                                 pionfput_mod.F90
                                 pionfget_mod.F90
-	                        alloc_mod.F90
            	                piodarray.F90
 	                        pio_spmd_utils.F90
         )

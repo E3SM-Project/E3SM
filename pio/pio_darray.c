@@ -1,13 +1,24 @@
 #include <pio.h>
 #include <pio_internal.h>
 
-int PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
+PIO_Offset PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
 
 #define MALLOC_FILL_ARRAY(type, n, fill, arr) \
   arr = malloc(n * sizeof (type));	      \
   if(fill != NULL)                                       \
     for(int _i=0; _i<n; _i++)			\
       ((type *) arr)[_i] = *((type *) fill)
+
+// Changes to PIO_BUFFER_SIZE_LIMIT only apply to files opened after the change
+PIO_Offset PIOc_set_buffer_size_limit(const PIO_Offset limit)
+{
+  PIO_Offset oldsize; 
+  oldsize = PIO_BUFFER_SIZE_LIMIT;
+  if(limit>0)
+    PIO_BUFFER_SIZE_LIMIT=limit;
+  return(oldsize);
+}
+
 
 
 int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void *IOBUF, void *fillvalue)

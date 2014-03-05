@@ -12,17 +12,11 @@ module pio_types
 #ifdef _NETCDF
      use netcdf                                  ! _EXTERNAL
 #endif
-#ifndef NO_MPIMOD
-    use mpi, only : MPI_COMM_NULL, MPI_INFO_NULL ! _EXTERNAL
-#endif
 #ifdef USE_PNETCDF_MOD
     use pnetcdf
 #endif
     implicit none
     private 
-#ifdef NO_MPIMOD
-    include 'mpif.h'                             ! _EXTERNAL
-#endif
     !-------------------------------------------
     !  data structure to describe decomposition
     !-------------------------------------------
@@ -53,9 +47,6 @@ module pio_types
        type(iosystem_desc_t), pointer :: this_iosystem => null()
     end type iosystem_list_t
 
-
-    integer, parameter :: MAX_IO_SYSTEMS=6
-    type(iosystem_list_t), save :: iosystems(MAX_IO_SYSTEMS)
 
 !> 
 !! @private
