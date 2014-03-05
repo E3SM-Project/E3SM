@@ -5,7 +5,6 @@ int PIO_BUFFER_SIZE_LIMIT= 100000000; // 100MB default limit
 
 #define MALLOC_FILL_ARRAY(type, n, fill, arr) \
   arr = malloc(n * sizeof (type));	      \
-  printf("%s %d %ld \n",__FILE__,__LINE__,arr); \
   if(fill != NULL)                                       \
     for(int _i=0; _i<n; _i++)			\
       ((type *) arr)[_i] = *((type *) fill)
@@ -25,6 +24,8 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, voi
   int dsize;
   MPI_Status status;
   PIO_Offset usage;
+  MPI_Request request;
+
 
   ierr = PIO_NOERR;
 
@@ -115,8 +116,9 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, voi
 	      mpierr = MPI_Recv( tcount, ndims, MPI_INT, i,2*ios->num_iotasks+i, ios->io_comm, &status);
 	      mpierr = MPI_Recv( tmp_buf, iodesc->maxiobuflen, iodesc->basetype, i, i, ios->io_comm, &status);
 	    }
-	    for(int j=0;j<ndims;j++)
-	      printf("tstart[%d] %ld tcount %ld %ld\n",j,tstart[j],tcount[j], iodesc->maxiobuflen);
+
+	    //	    for(int j=0;j<ndims;j++)
+	    //  printf("tstart[%d] %ld tcount %ld %ld\n",j,tstart[j],tcount[j], iodesc->maxiobuflen);
 	    
 	    if(iodesc->basetype == MPI_INTEGER){
 	      ierr = nc_put_vara_int (ncid, vid, tstart, tcount, (const int *) tmp_buf); 
@@ -152,7 +154,8 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, voi
       //	printf("iobuf(%d) %d\n",i,((int *)IOBUF)[i]);
       //#ifdef PNETCDF_BPUT_SUPPORT
 	ierr = ncmpi_bput_vara(ncid, vid,  start, count, IOBUF,
-			       dsize, iodesc->basetype, &(vdesc->request));
+			       dsize, iodesc->basetype, &request);
+	pio_push_request(file,request);
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	/*	#else
 	ierr = ncmpi_iput_vara(ncid, vid,  start, count, IOBUF,
@@ -455,35 +458,18 @@ int flush_output_buffer(file_desc_t *file)
   var_desc_t *vardesc;
   int ierr=PIO_NOERR;
 #ifdef _PNETCDF
-  int request_cnt=0;
-  MPI_Request requests[PIO_MAX_VARS];
   int status[PIO_MAX_VARS];
 
-  vardesc = file->varlist;
 
-  for(int i=0;i<PIO_MAX_VARS;i++){
-    if(vardesc[i].request != MPI_REQUEST_NULL){
-      requests[request_cnt] = vardesc[i].request;
-      request_cnt++;
-    }
+  if(file->nreq>0){
+    ierr = ncmpi_wait_all(file->fh, file->nreq,  file->request, status);
   }
+  for(int i=0;i<file->nreq;i++){
+    file->request[i]=MPI_REQUEST_NULL;
+  }
+  file->nreq = 0;
 
 
-  if(request_cnt>0){
-    ierr = ncmpi_wait_all(file->fh, request_cnt,  requests, status);
-    /*
-#ifndef PNETCDF_BPUT_SUPPORT
-    for(int i=0;i<PIO_MAX_VARS;i++){
-      if(vardesc[i].request != MPI_REQUEST_NULL){
-	free(vardesc[i].buffer);
-	vardesc[i].buffer = NULL;
-	vardesc[i].request = MPI_REQUEST_NULL;
-      }
-    }   
-  } 
-  file->buffsize=0;
-#endif
-    */
 #endif
   return ierr;
 }

@@ -14,6 +14,15 @@
 #BSUB -x
 use strict;
 use File::Copy ;
+require Utils;
+
+
+my $host="yellowstone";
+$host = Utils->host() unless(defined $host);
+print "host = $host\n";
+Utils->loadmodules("$host");
+
+
 
 my $piosrc="$ENV{HOME}/pio2_0";
 my $testdir="/glade/scratch/$ENV{USER}/pio2test/pio.all/pio";
@@ -57,7 +66,24 @@ foreach my $nl (sort @namelists){
     print T "Running test $1 ... ";
     mkdir $test;
     chdir $test;
-    copy("$piosrc/testpio/namelists/$nl","testpio_in");
+    open(F,"$piosrc/testpio/namelists/$nl");
+    my @namelist = <F>;
+    close(F);
+
+    open(G,">testpio_in");
+    foreach(@namelist){
+	if(/nx_global/){
+	    print G "  nx_global = 256\n";
+	    next;
+	}
+	if(/ny_global/){
+	    print G "  ny_global = 128\n";
+	    next;
+	}
+	print G $_;
+    }
+    close(G);
+#    copy("$piosrc/testpio/namelists/$nl","testpio_in");
     mkdir "none";
     system("mpirun.lsf ../testpio > $test.out");
     open(F,"$test.out");

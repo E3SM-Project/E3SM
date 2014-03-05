@@ -7,11 +7,11 @@ int gindex_to_coord(const PIO_Offset gindex, const PIO_Offset gstride[], const i
   PIO_Offset tempindex;
 
   tempindex = gindex;
-  for(int i=ndim-1;i>0;i--){
+  for(int i=0;i<ndim-1;i++){
     gcoord[i] = tempindex/gstride[i];
     tempindex -= gcoord[i]*gstride[i];
   }
-  gcoord[0] = tempindex;
+  gcoord[ndim-1] = tempindex;
   return PIO_NOERR;
 }
 
@@ -20,7 +20,7 @@ PIO_Offset lcoord_to_lindex(const int ndims, const PIO_Offset lcoord[], const PI
   PIO_Offset lindex=0;
   PIO_Offset stride=1;
 
-  for(int i=0; i<ndims; i++){
+  for(int i=ndims-1; i>=0; i--){
     lindex += lcoord[i]*stride;
     stride = stride*count[i];
   }
@@ -28,7 +28,7 @@ PIO_Offset lcoord_to_lindex(const int ndims, const PIO_Offset lcoord[], const PI
 
 }
 
-int create_mpi_datatypes(const MPI_Datatype basetype,const int msgcnt,PIO_Offset mindex[],const int mcount[],MPI_Datatype mtype[])
+int create_mpi_datatypes(const MPI_Datatype basetype,const int msgcnt,const int dlen, const PIO_Offset mindex[],const int mcount[],MPI_Datatype mtype[])
 {
   PIO_Offset bsizeT[msgcnt];
   int pos;
@@ -36,6 +36,9 @@ int create_mpi_datatypes(const MPI_Datatype basetype,const int msgcnt,PIO_Offset
   PIO_Offset i8blocksize;
   MPI_Datatype newtype;
   int blocksize;
+  PIO_Offset lindex[dlen];
+  
+  memcpy(lindex, mindex, (size_t) (dlen*sizeof(PIO_Offset)));
 
   bsizeT[0]=0;
   mtype[0] = MPI_DATATYPE_NULL;
@@ -43,17 +46,21 @@ int create_mpi_datatypes(const MPI_Datatype basetype,const int msgcnt,PIO_Offset
   ii = 0;
   if(msgcnt>0){
     for(int i=0;i<msgcnt;i++){
-      //      printf("mcount %d mindex %ld\n",mcount[i],mindex[i]);
+      //      printf("mcount %d lindex %ld\n",mcount[i],lindex[i]);
       if(mcount[i]>0){
-	bsizeT[ii] = GCDblocksize(mcount[i], mindex+pos);
+	bsizeT[ii] = GCDblocksize(mcount[i], lindex+pos);
 	//		for(int j=0;j<mcount[i];j++)
-	//		  printf(" %d ",mindex[pos+j]);
+	//		  printf(" %d ",lindex[pos+j]);
 	//		printf("\n bsizet[%d] %ld\n",ii,bsizeT[ii]);
 	ii++;
 	pos+=mcount[i];
       }
     }
     blocksize = (int) lgcd_array(ii ,bsizeT);
+
+    //    printf("blocksize = %d %d\n",blocksize, msgcnt);
+    
+
     if(blocksize>1){
       CheckMPIReturn(MPI_Type_contiguous(blocksize, basetype, &newtype),__FILE__,__LINE__);
     }else{
@@ -64,27 +71,22 @@ int create_mpi_datatypes(const MPI_Datatype basetype,const int msgcnt,PIO_Offset
 
     pos = 0;
     for(int i=0;i< msgcnt; i++){
-      printf("%d blocksize %d mindex %d mcount %d \n",i,blocksize,mindex[i],mcount[i]);
-
-      
+      //      printf("lindex[%d] %d mcount[%d] %d\n",i,lindex[i],i,mcount[i]);
       if(mcount[i]>0){
 	int len = mcount[i]/blocksize;
-       	//if(len>1){
-	  int displace[len];
-	  if(blocksize==1)
-	    for(int j=0;j<len;j++)
-	      displace[j] = (int) (mindex+pos)[j];
-	  else{
-	    for(int j=0;j<len;j++)
-	      (mindex+pos)[j]++;
-	    calcdisplace(blocksize, len, mindex+pos, displace);
+	int displace[len];
+	if(blocksize==1)
+	  for(int j=0;j<mcount[i];j++)
+	    displace[j] = (int) (lindex+pos)[j];
+	else{
+	  for(int j=0;j<mcount[i];j++)
+	    (lindex+pos)[j]++;
+	  for(int j=0;j<len;j++){
+	    displace[j]= ((lindex+pos)[j*blocksize]-1)/blocksize;
+	    //	    printf("displace[%d] %d pos %d lindex %d blocksize %d\n", j, displace[j],pos, (lindex+pos)[j*blocksize],blocksize);
 	  }
-	  	  printf("here displace[0]=%d\n",displace[0]);
-
-	  CheckMPIReturn(MPI_Type_create_indexed_block(len, 1, displace, newtype, mtype+i),__FILE__,__LINE__);
-	  //	}else{
-	  //CheckMPIReturn(MPI_Type_dup(newtype, mtype+i), __FILE__,__LINE__);
-	  //}
+	}
+	CheckMPIReturn(MPI_Type_create_indexed_block(len, 1, displace, newtype, mtype+i),__FILE__,__LINE__);
 	CheckMPIReturn(MPI_Type_commit(mtype+i), __FILE__,__LINE__);
 	pos+=mcount[i];
 
@@ -92,6 +94,7 @@ int create_mpi_datatypes(const MPI_Datatype basetype,const int msgcnt,PIO_Offset
     }
     CheckMPIReturn(MPI_Type_free(&newtype),__FILE__,__LINE__);
   }
+  
   return PIO_NOERR;
 
 }
@@ -99,16 +102,31 @@ int create_mpi_datatypes(const MPI_Datatype basetype,const int msgcnt,PIO_Offset
 
 int define_iodesc_datatypes(iosystem_desc_t *ios, io_desc_t *iodesc)
 {
+  //  printf("IO:\n");
   if(ios->ioproc){
     if(iodesc->rtype==NULL){
       iodesc->rtype = (MPI_Datatype *) malloc(max(1,iodesc->nrecvs)*sizeof(MPI_Datatype));
-      create_mpi_datatypes(iodesc->basetype, iodesc->nrecvs, iodesc->rindex, iodesc->rcount, iodesc->rtype);
+      /*
+      printf("rindex: \n");
+      for(int i=0;i<iodesc->llen;i++)
+	printf("%d ",iodesc->rindex[i]);
+      printf("\n");
+      for(int i=0;i<iodesc->nrecvs;i++)
+	printf("%d rcount %d \n",i,iodesc->rcount[i]);
+      */
+
+     create_mpi_datatypes(iodesc->basetype, iodesc->nrecvs, iodesc->llen, iodesc->rindex, iodesc->rcount, iodesc->rtype);
     }
   }
+
+  
+  //printf("COMP:\n");
+
   if(iodesc->stype==NULL){
     iodesc->stype = (MPI_Datatype *) malloc(ios->num_iotasks*sizeof(MPI_Datatype));
-    create_mpi_datatypes(iodesc->basetype, ios->num_iotasks, iodesc->sindex, iodesc->scount, iodesc->stype);
+    create_mpi_datatypes(iodesc->basetype, ios->num_iotasks, iodesc->ndof, iodesc->sindex, iodesc->scount, iodesc->stype);
   }
+
   return PIO_NOERR;
 
 }
@@ -250,11 +268,6 @@ int compute_counts(iosystem_desc_t *ios, io_desc_t *iodesc, const int dest_iopro
     recv_counts[i] = 0;
     recv_displs[i]   =0;
   }
-  for(i=0;i<niotasks;i++){
-    io_comprank = ios->ioranks[i];
-    send_counts[io_comprank] = iodesc->scount[i];
-    send_displs[io_comprank]  = spos[i] ;
-  }
 
   MPI_Type_size(MPI_LONG_LONG, &tsizel);
   MPI_Type_size(MPI_INT, &tsizei);
@@ -269,6 +282,11 @@ int compute_counts(iosystem_desc_t *ios, io_desc_t *iodesc, const int dest_iopro
 
   for(i=0; i<ncomptasks; i++){
     sr_types[i] = dtype;
+  }
+  for(i=0;i<niotasks;i++){
+    io_comprank = ios->ioranks[i];
+    send_counts[io_comprank] = iodesc->scount[i];
+    send_displs[io_comprank]  = spos[i]*tsize ;
   }
 
   if(ios->ioproc){
@@ -286,17 +304,30 @@ int compute_counts(iosystem_desc_t *ios, io_desc_t *iodesc, const int dest_iopro
 
   // s2rindex is the list of indeces on each compute task
 
+  //  for(i=0;i<ndof;i++)
+  //    printf("%d ",s2rindex[i]);
+  //printf("\n");
+
+
   ierr = pio_swapm( s2rindex, send_counts, send_displs, sr_types, 
 		    iodesc->rindex, recv_counts, recv_displs, sr_types,
 		    ios->union_comm, true, false,  MAX_GATHER_BLOCK_SIZE);
 
   //  rindex is an array of the indices of the data to be sent from
   //  this io task to each compute task. 
-
-  //  for(i=0;i<rbuf_size;i++)
-  //   printf("rindex[%d] %ld\n",i,rindex[i]);
+  /*  for(int j=0;j<nrecvs;j++){
+    printf("rfrom %d ",rfrom[j]);
+    if(j==0)
+      for(i=0;i<rcount[j];i++)
+	printf("%ld ",iodesc->rindex[i]);
+    else  
+      for(i=0;i<rcount[j];i++)
+	printf("%ld ",iodesc->rindex[rcount[j-1]+i]);
+    printf("\n");
+  }
+    MPI_Abort(MPI_COMM_WORLD,0);
+  */
   
-  //  MPI_Abort(MPI_COMM_WORLD,0);
 
   iodesc->rtype = NULL;
   iodesc->stype = NULL;
@@ -347,12 +378,12 @@ int box_rearrange_comp2io(iosystem_desc_t *ios, io_desc_t *iodesc, void *sbuf,
     recvcounts[ iodesc->rfrom[0] ] = 1;
     recvtypes[ iodesc->rfrom[0] ] = iodesc->rtype[0];
     rdispls[ iodesc->rfrom[0] ] = 0;
-    printf("%d: rindex[%d] %d\n",ios->comp_rank,0,iodesc->rindex[0]);
+    //    printf("%d: rindex[%d] %d\n",ios->comp_rank,0,iodesc->rindex[0]);
     for( i=1;i<iodesc->nrecvs;i++){
       recvcounts[ iodesc->rfrom[i] ] = 1;
       recvtypes[ iodesc->rfrom[i] ] = iodesc->rtype[i];
 
-      printf("%d: rindex[%d] %d\n",ios->comp_rank,i,iodesc->rindex[i]);
+      //   printf("%d: rindex[%d] %d\n",ios->comp_rank,i,iodesc->rindex[i]);
 
     }
   }else{
@@ -363,6 +394,7 @@ int box_rearrange_comp2io(iosystem_desc_t *ios, io_desc_t *iodesc, void *sbuf,
 
   for( i=0;i<ios->num_iotasks; i++){
     int io_comprank = ios->ioranks[i];
+    //    printf("scount[%d]=%d\n",i,scount[i]);
     if(scount[i] > 0) {
       sendcounts[io_comprank]=1;
       sendtypes[io_comprank]=iodesc->stype[i];
@@ -373,17 +405,12 @@ int box_rearrange_comp2io(iosystem_desc_t *ios, io_desc_t *iodesc, void *sbuf,
 
   // Data in sbuf on the compute nodes is sent to rbuf on the ionodes
 
-  MPI_Barrier( ios->union_comm);
   pio_swapm( sbuf,  sendcounts, sdispls, sendtypes,
 	     rbuf, recvcounts, rdispls, recvtypes, 
-	     ios->union_comm, handshake, true, 0); //MAX_GATHER_BLOCK_SIZE);
+	     ios->union_comm, handshake, true, maxreq);
 
-
-  if(ios->compmaster){
-    for(i=0;i<64;i++){
-      printf("rbuf[%d] %d\n",i,((int *)rbuf)[i]);
-    }
-  }
+  //  if(rbuf!=NULL)
+  //    printf("rbuf %d %d %d\n",((int *)rbuf)[0],((int *)rbuf)[1],((int *)rbuf)[2]);
 
 
   free(sendcounts);
@@ -417,19 +444,15 @@ int box_rearrange_io2comp(iosystem_desc_t *ios, io_desc_t *iodesc, void *sbuf,
   
   define_iodesc_datatypes(ios, iodesc);
 
-  sendcounts = (int *) malloc(nprocs*sizeof(int));
-  recvcounts = (int *) malloc(nprocs*sizeof(int));
-  sdispls = (int *) malloc(nprocs*sizeof(int));
-  rdispls = (int *) malloc(nprocs*sizeof(int));
+  sendcounts = (int *) calloc(nprocs,sizeof(int));
+  recvcounts = (int *) calloc(nprocs,sizeof(int));
+  sdispls = (int *) calloc(nprocs,sizeof(int));
+  rdispls = (int *) calloc(nprocs,sizeof(int));
   sendtypes = (MPI_Datatype *) malloc(nprocs*sizeof(MPI_Datatype));
   recvtypes = (MPI_Datatype *) malloc(nprocs*sizeof(MPI_Datatype));
 
 
   for( i=0;i< nprocs;i++){
-    sendcounts[i] = 0;
-    recvcounts[i] = 0; 
-    sdispls[i] = 0; 
-    rdispls[i] = 0;
     sendtypes[ i ] = MPI_DATATYPE_NULL;
     recvtypes[ i ] = MPI_DATATYPE_NULL;
   }
@@ -451,10 +474,11 @@ int box_rearrange_io2comp(iosystem_desc_t *ios, io_desc_t *iodesc, void *sbuf,
   //
   // Data in sbuf on the ionodes is sent to rbuf on the compute nodes
   //
+
+  MPI_Barrier(ios->union_comm);
   pio_swapm( sbuf,  sendcounts, sdispls, sendtypes,
 	     rbuf, recvcounts, rdispls, recvtypes, 
-	     ios->union_comm, handshake,isend, MAX_GATHER_BLOCK_SIZE);
-
+	     ios->union_comm, handshake,isend, maxreq);
 
   free(sendcounts);
   free(recvcounts); 
@@ -493,9 +517,9 @@ int box_rearrange_create(iosystem_desc_t *ios,const int maplen, const PIO_Offset
 
 
   iodesc->ndof = maplen;
-  gstride[0]=1;
-  for(int i=1;i<ndims; i++)
-    gstride[i]=gstride[i-1]*gsize[i-1];
+  gstride[ndims-1]=1;
+  for(int i=ndims-2;i>=0; i--)
+    gstride[i]=gstride[i+1]*gsize[i+1];
 
   MPI_Type_size(MPI_LONG_LONG, &tsizel);
   MPI_Type_size(MPI_INT, &tsizei);
@@ -569,6 +593,7 @@ int box_rearrange_create(iosystem_desc_t *ios,const int maplen, const PIO_Offset
 	bool found=true;
 	ierr = gindex_to_coord(compmap[k]-1, gstride, ndims, gcoord);
 	for(j=0;j<ndims;j++){
+	  //	  printf("%d %d map %d gcoord %d start %d count %d\n",j,k,compmap[k]-1,gcoord[j],start[j],count[j]);
 	  if(gcoord[j] >= start[j] && gcoord[j] < start[j]+count[j]){
 	    lcoord[j] = gcoord[j] - start[j];
 	  }else{
@@ -583,6 +608,9 @@ int box_rearrange_create(iosystem_desc_t *ios,const int maplen, const PIO_Offset
       }
     }
   }
+  //  printf("dest_ioproc %d %d %d dest_ioindex %d %d %d\n",dest_ioproc[0],dest_ioproc[1],dest_ioproc[2],
+  //	 dest_ioindex[0],dest_ioindex[1],dest_ioindex[2]);
+
   for(k=0; k<maplen; k++){
     if(dest_ioproc[k] == -1 && compmap[k]>=0){
       fprintf(stderr,"No destination found for compmap[%d] = %ld\n",k,compmap[k]);
@@ -591,6 +619,9 @@ int box_rearrange_create(iosystem_desc_t *ios,const int maplen, const PIO_Offset
   }
 
   compute_counts(ios, iodesc, dest_ioproc, dest_ioindex);
+
+
+
   free(sndlths); 
   free(sdispls);
   free(recvlths);

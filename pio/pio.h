@@ -33,7 +33,6 @@ typedef struct var_desc_t
   int record;                      // the unlimited dimension index
   int ndims;                      // number of variable dimensions
   void *buffer;                  // data holder for buffered output
-  MPI_Request request;   // request associated with buffered data 
 } var_desc_t;
 
 
@@ -46,10 +45,9 @@ typedef struct io_desc_t
   int ndof;
   int ndims;
   MPI_Datatype basetype;
-  PIO_Offset llen;
+  int llen;
 
   int *rfrom;
-
   int *rcount;
   int *scount;
   PIO_Offset *sindex;
@@ -104,6 +102,8 @@ typedef struct file_desc_t
   int fh;
   int iotype;
   struct var_desc_t varlist[PIO_MAX_VARS];
+  MPI_Request request[PIO_MAX_VARS];   // request associated with buffered data for pnetcdf
+  int nreq;   // next empty request slot to fill.
   struct file_desc_t *next;
 } file_desc_t;
 

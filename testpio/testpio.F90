@@ -558,6 +558,7 @@ program testpio
           cos(25.*real(k1,kind=r8)/real(gDims3D(3),kind=r8))*1000.0_r8)
      endif
   enddo
+!  print *,llength,'i4dof: ',test_i4dof
   if(Debug)       print *,'iam: ',My_task,'testpio: point #10'
 
 #ifdef MEMCHK	
@@ -969,8 +970,15 @@ program testpio
               call MPI_Barrier(MPI_COMM_COMPUTE,ierr)
               call CheckMPIReturn('Call to MPI_BARRIER()',ierr,__FILE__,__LINE__)
 
+!              print *,__FILE__,__LINE__,test_i4dof
+
               call PIO_write_darray(File_i4,vard_i4dof,iodesc_i4,test_i4dof,iostat)
               call check_pioerr(iostat,__FILE__,__LINE__,' i4dof write_darray')
+
+!              call MPI_Barrier(MPI_COMM_COMPUTE,ierr)
+!              call PIO_CloseFile(File_i4)
+!              call mpi_abort(MPI_COMM_WORLD,0,ierr)
+
 
               st = MPI_Wtime()
 #ifdef TIMING
@@ -1523,7 +1531,7 @@ contains
         end if
     enddo
 
-101 format(3x,a,i5,a,f9.1,a,e12.4,2x,a,2x,a)
+101 format(3x,a,i5,a,f12.4,a,e12.4,2x,a,2x,a)
 
     if (nTrials > 1) then
 

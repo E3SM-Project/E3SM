@@ -94,12 +94,18 @@ foreach my $func (keys %{$functions}){
 #	      $line =~ s/int ncid/file_desc_t *file/;
 		  $line =~ s/MPI_Offset/PIO_Offset/g;
 		  $line =~ s/\;//;
+
+# PIO handles requests internally, remove it from the argument list
+
+		  $line =~ s/, int \*request//;
+
 		  
 	      }else{
 		  my $args;
 		  if(defined $bfunc){
 		      if($line =~ s/ncmpi_function/ncmpi_$bfunc/){
 			  $args = $pnetfunc ;
+			  $args =~ s/request/&request/;
 		      }
 		  }else{
 		      if($line =~ s/ncmpi_function/ncmpi_$func/){

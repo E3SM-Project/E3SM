@@ -222,6 +222,7 @@ module basic_tests
 
       ! Write foo
       call PIO_write_darray(pio_file, pio_var, iodesc_nCells, data_buffer, ret_val, fillval=-1)
+      call mpi_barrier(MPI_COMM_WORLD,ret_val)
 
       if (ret_val .ne. PIO_NOERR) then
         ! Error in PIO_write_darray
@@ -247,7 +248,7 @@ module basic_tests
         if(master_task) write(*,"(6x,A)") "trying to write to readonly file, error expected ... "
         call mpi_barrier(MPI_COMM_WORLD,ret_val)
         call PIO_write_darray(pio_file, pio_var, iodesc_nCells, data_buffer, ret_val)
-        
+
         if (ret_val.eq.PIO_NOERR) then
           ! Error in PIO_write_darray
           err_msg = "Wrote to file opened in NoWrite mode"
@@ -255,26 +256,33 @@ module basic_tests
           call mpi_abort(MPI_COMM_WORLD,0,ret_val)
         end if
 
+        call mpi_barrier(MPI_COMM_WORLD,ret_val)
         data_buffer = -1
         call PIO_read_darray(pio_file, pio_var, iodesc_nCells,  data_buffer, ret_val)
+        call mpi_barrier(MPI_COMM_WORLD,ret_val)
+        
 
         if (ret_val.ne.PIO_NOERR) then
           ! Error in PIO_read_darray
           err_msg = "Error in read_darray"
           call PIO_closefile(pio_file)
+          print *,__FILE__,__LINE__,err_msg
           call mpi_abort(MPI_COMM_WORLD,0,ret_val)
         end if
         if(any(data_buffer /= my_rank)) then
           err_msg = "Error reading data"
           call PIO_closefile(pio_file)
+          print *,__FILE__,__LINE__,trim(err_msg), data_buffer
           call mpi_abort(MPI_COMM_WORLD,0,ret_val)
         end if
 
 
+        
 
         ! Close file
         call PIO_closefile(pio_file)
       end if
+        
       call mpi_barrier(MPI_COMM_WORLD,ret_val)
 
       ! Try to open standard binary file as netcdf (if iotype = netcdf)

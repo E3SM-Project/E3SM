@@ -22,8 +22,8 @@ enum PIO_DATATYPE{
 #include <pio_internal.h>
 #endif
 
-//#define default_blocksize 884736;
-#define default_blocksize 1024
+#define default_blocksize 884736;
+//#define default_blocksize 1024
 int blocksize = default_blocksize;
 
 
@@ -88,13 +88,10 @@ long long lgcd_array(int nain, long long*ain){
 }
 
 
-int calcdisplace(const int bsize, const int numblocks,const PIO_Offset *map, PIO_Offset *displace)
+int calcdisplace(const int bsize, const int numblocks,const PIO_Offset map[], int displace[])
 {
-  int lenblocks = bsize;
-  PIO_Offset dis;
-
   for(int i=0;i<numblocks;i++){
-    displace[i] = (map[i*lenblocks]-1)/lenblocks;
+    displace[i] = (map[i*bsize]-1)/bsize;
   }
   return PIO_NOERR;
 }

@@ -142,10 +142,8 @@ int pio_swapm(void *sndbuf,   int sndlths[], int sdispls[],  MPI_Datatype stypes
 
   CheckMPIReturn(MPI_Comm_size(comm, &nprocs),__FILE__,__LINE__);
   CheckMPIReturn(MPI_Comm_rank(comm, &mytask),__FILE__,__LINE__);
+  /*  
   if(isend){
-      for(int i=0;i<32;i++){
-	printf("%d:sndbuf[%d] = %d\n",mytask,i,((int *)sndbuf)[i]);
-      }
     for(int i=0; i< nprocs; i++){
       stsize = 0;
       rtsize = 0;
@@ -164,7 +162,7 @@ int pio_swapm(void *sndbuf,   int sndlths[], int sdispls[],  MPI_Datatype stypes
     MPI_Barrier(comm);
     isend = false;
   }
-
+  */
   if(max_requests == 0) {
     CheckMPIReturn(MPI_Alltoallw( sndbuf, sndlths, sdispls, stypes, rcvbuf, rcvlths, rdispls, rtypes, comm),__FILE__,__LINE__);
     return PIO_NOERR;
@@ -200,23 +198,17 @@ int pio_swapm(void *sndbuf,   int sndlths[], int sdispls[],  MPI_Datatype stypes
   offset_t = nprocs;
   // send to self
   if(sndlths[mytask] > 0){
-    if(sndlths[mytask] == rcvlths[mytask]){
-      MPI_Type_size(stypes[mytask], &tsize);
-      recvbuf = (char *) rcvbuf + rdispls[mytask];
-      sendbuf = (char *) sndbuf + sdispls[mytask]; 
-      //            printf("sdispls %d rdispls %d tsize %d sndlths %d\n",sdispls[mytask],rdispls[mytask],tsize,sndlths[mytask]);
-      memcpy(recvbuf, sendbuf, (size_t) (tsize*sndlths[mytask]));
-    }else{
-      tag = mytask + offset_t;
-      ptr = (char *) rcvbuf + rdispls[mytask];
-      CheckMPIReturn(MPI_Irecv(ptr, rcvlths[mytask], rtypes[mytask], mytask, tag, comm, rcvids), __FILE__,__LINE__);     
-      ptr = (char *) sndbuf + sdispls[mytask]; 
-    //    printf("%d sndlths %d %d\n",mytask,sndlths[mytask],sdispls[mytask]);
-      CheckMPIReturn(MPI_Send(ptr, sndlths[mytask], stypes[mytask], mytask, tag, comm), __FILE__,__LINE__);
-      CheckMPIReturn(MPI_Wait(rcvids, &status), __FILE__,__LINE__);
-      rcvids[0] = MPI_REQUEST_NULL;
-    }
+    tag = mytask + offset_t;
+    ptr = (char *) rcvbuf + rdispls[mytask];
 
+    CheckMPIReturn(MPI_Irecv(ptr, rcvlths[mytask], rtypes[mytask], mytask, tag, comm, rcvids), __FILE__,__LINE__);     
+    ptr = (char *) sndbuf + sdispls[mytask]; 
+
+    //    printf("%d sndlths %d %d\n",mytask,sndlths[mytask],sdispls[mytask]);
+    CheckMPIReturn(MPI_Send(ptr, sndlths[mytask], stypes[mytask], mytask, tag, comm), __FILE__,__LINE__);
+    CheckMPIReturn(MPI_Wait(rcvids, &status), __FILE__,__LINE__);
+    rcvids[0] = MPI_REQUEST_NULL;
+    //    printf("rcvbuf %d %d %d\n",((int *)rcvbuf)[0],((int *)rcvbuf)[1],((int *)rcvbuf)[2]);
   }
   for(int i=0;i<nprocs;i++)
     rcvids[i] = MPI_REQUEST_NULL;

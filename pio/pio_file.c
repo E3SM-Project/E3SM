@@ -94,8 +94,13 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
     case PIO_IOTYPE_PNETCDF:
       ierr = ncmpi_open(ios->io_comm, fname, amode, ios->info, &(file->fh));
       // This should only be done with a file opened to append
-      if(ierr == PIO_NOERR && (amode & PIO_WRITE))
+      if(ierr == PIO_NOERR && (amode & PIO_WRITE)){
+	if(ios->iomaster) printf("%d Setting IO buffer %d\n",__LINE__,PIO_BUFFER_SIZE_LIMIT);
 	ierr = ncmpi_buffer_attach(file->fh, PIO_BUFFER_SIZE_LIMIT );
+	for(int i=0;i<PIO_MAX_VARS;i++)
+	  file->request[i]=MPI_REQUEST_NULL;
+	file->nreq=0;
+      }
       break;
 #endif
     default:
@@ -116,7 +121,6 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
       file->varlist[i].record = -1;
       file->varlist[i].ndims = -1;
       file->varlist[i].buffer = NULL;
-      file->varlist[i].request = MPI_REQUEST_NULL;
     }
 
     pio_add_to_file_list(file);
@@ -212,8 +216,14 @@ int PIOc_createfile(const int iosysid, int *ncidp,  int *iotype,
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
       ierr = ncmpi_create(ios->io_comm, fname, amode, ios->info, &(file->fh));
-      if(ierr == PIO_NOERR)
+      if(ierr == PIO_NOERR){
+	if(ios->iomaster) printf("%d Setting IO buffer %d\n",__LINE__,PIO_BUFFER_SIZE_LIMIT);
 	ierr = ncmpi_buffer_attach(file->fh, PIO_BUFFER_SIZE_LIMIT );
+	for(int i=0;i<PIO_MAX_VARS;i++)
+	  file->request[i]=MPI_REQUEST_NULL;
+	file->nreq=0;
+
+      }
       break;
 #endif
     default:
@@ -234,7 +244,6 @@ int PIOc_createfile(const int iosysid, int *ncidp,  int *iotype,
       file->varlist[i].record = -1;
       file->varlist[i].ndims = -1;
       file->varlist[i].buffer = NULL;
-      file->varlist[i].request = MPI_REQUEST_NULL;
     }
 
     pio_add_to_file_list(file);

@@ -24,6 +24,13 @@ void pio_add_to_file_list(file_desc_t *file)
   current_file = file;
 }
 
+
+void pio_push_request(file_desc_t *file, MPI_Request request)
+{
+  file->request[file->nreq++] = request;
+}
+
+
      
 file_desc_t *pio_get_file_from_id(int ncid)
 {

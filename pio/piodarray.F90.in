@@ -128,6 +128,7 @@ contains
        end function PIOc_write_darray
     end interface
     carraylen = int(arraylen,C_SIZE_T)
+
     if(present(fillval)) then
        iostat = PIOc_write_darray(file%fh, varDesc%varid, iodesc%ioid, carraylen,C_LOC(array), C_LOC(fillval))
     else
@@ -175,7 +176,7 @@ contains
     integer :: ierr
 
     character(len=*), parameter :: subName=modName//'::write_darray_{TYPE}'
-
+    
     call write_darray_1d_cinterface_{TYPE} (file, varDesc, iodesc, size(array), array, iostat, fillval)
 
   end subroutine write_darray_1d_{TYPE}
@@ -292,53 +293,11 @@ contains
     alen = size(array)
     tlen = product(alen)
     allocate(carray(tlen))
-
     iostat = PIOc_read_darray(file%fh, varDesc%varid, iodesc%ioid, tlen, C_LOC(carray))
-
     array = reshape(carray,alen)
     deallocate(carray)
 
   end subroutine read_darray_{DIMS}d_{TYPE}
-#ifdef DOTHIS 
-! TYPE real,int,double
-! DIMS 2,3,4,5,6,7
-!> 
-!! @public
-!! @ingroup PIO_read_darray
-!! @brief Reads a {DIMS}D array of type {TYPE}. 
-!! @details
-!! @param File @ref file_desc_t
-!! @param varDesc @ref var_desc_t
-!! @param ioDesc @ref io_desc_t
-!! @param array  : The read data  
-!! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
-!<
-  subroutine read_darray_{DIMS}d_{TYPE} (File,varDesc,ioDesc, array, iostat)
-    ! !INPUT PARAMETERS:
-
-    type (File_desc_t), intent(inout) :: &
-	 File                   ! file information
-
-    type (var_desc_t), intent(inout) :: &
-	 varDesc                      ! variable descriptor
-
-    type (io_desc_t), intent(inout) :: &
-	 ioDesc                      ! iodecomp descriptor
-
-    {VTYPE}, intent(out) ::  array{DIMSTR}                 ! array to be read
-
-    integer(i4), intent(out) :: iostat
-
-    {VTYPE}, allocatable :: tmpvar(:)
-    allocate(tmpvar(size(array)))
-    print *,__FILE__,__LINE__,loc(tmpvar)
-    call read_darray_1d_{TYPE} (File, varDesc, iodesc, tmpvar, iostat)
-
-    array = reshape(tmpvar,shape(array))
-    deallocate(tmpvar)
-
-  end subroutine read_darray_{DIMS}d_{TYPE}
-#endif
 
 end module piodarray
 

@@ -38,6 +38,7 @@ int pio_delete_iodesc_from_list(int ioid);
 file_desc_t *pio_get_file_from_id(int ncid);
 int pio_delete_file_from_list(int ncid);
 void pio_add_to_file_list(file_desc_t *file);
+  void pio_push_request(file_desc_t *file, MPI_Request request);
 
 iosystem_desc_t *pio_get_iosystem_from_id(int iosysid);
 int pio_add_to_iosystem_list(iosystem_desc_t *ios);
@@ -66,7 +67,7 @@ int box_rearrange_io2comp(iosystem_desc_t *ios, io_desc_t *iodesc, void *sbuf,
 			  void *rbuf, const int comm_option, const int fc_options);
 int box_rearrange_comp2io(iosystem_desc_t *ios, io_desc_t *iodesc, void *sbuf,
 			  void *rbuf, const int comm_option, const int fc_options);
-  int calcdisplace(const int bsize, const int numblocks,const PIO_Offset *map, PIO_Offset *displace);
+int calcdisplace(const int bsize, const int numblocks,const PIO_Offset map[],int displace[]);
 io_desc_t *malloc_iodesc(const int piotype, const int ndims);
 
 int flush_output_buffer(file_desc_t *file);
