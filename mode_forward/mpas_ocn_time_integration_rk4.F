@@ -132,24 +132,46 @@ module ocn_time_integration_rk4
          block => block % next
       end do
 
+      ! Fourth-order Runge-Kutta, solving dy/dt = f(t,y) is typically written as follows
+      ! where h = delta t is the large time step.  Here f(t,y) is the right hand side, 
+      ! called the tendencies in the code below.
+      ! k_1 = h f(t_n        , y_n)
+      ! k_2 = h f(t_n + 1/2 h, y_n + 1/2 k_1)
+      ! k_3 = h f(t_n + 1/2 h, y_n + 1/2 k_2)
+      ! k_4 = h f(t_n +     h, y_n +     k_3)
+      ! y_{n+1} = y_n + 1/6 k_1 + 1/3 k_2 + 1/3 k_3 + 1/6 k_4 
+
+      ! in index notation:
+      ! k_{j+1} = h f(t_n + a_j h, y_n + a_j k_j)
+      ! y_{n+1} = y_n + sum ( b_j k_j ) 
+
+      ! The coefficients of k_j are b_j = (1/6, 1/3, 1/3, 1/6) and are
+      ! initialized here as delta t * b_j:
+
       rk_weights(1) = dt/6.
       rk_weights(2) = dt/3.
       rk_weights(3) = dt/3.
       rk_weights(4) = dt/6.
+
+      ! The a_j coefficients of h in the computation of k_j are typically written (0, 1/2, 1/2, 1).
+      ! However, in the algorithm below we pre-compute the state for the tendency one iteration early.
+      ! That is, on j=1 (rk_step=1, below) we pre-compute y_n + 1/2 k_1 and save it in provis_state.
+      ! Then we compute 1/6 k_1 and add it to state % time_levs(2).
+      ! That is why the coefficients of h are one index early in the following, i.e.
+      ! a = (1/2, 1/2, 1)
 
       rk_substep_weights(1) = dt/2.
       rk_substep_weights(2) = dt/2.
       rk_substep_weights(3) = dt
       rk_substep_weights(4) = dt ! a_4 only used for ALE step, otherwise it is skipped.
 
-
       call mpas_timer_start("RK4-main loop")
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! BEGIN RK loop 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       do rk_step = 1, 4
-! ---  update halos for diagnostic variables
 
+        ! Update halos for diagnostic variables.
         call mpas_timer_start("RK4-diagnostic halo update")
         call mpas_dmpar_exch_halo_field(domain % blocklist % diagnostics % normalizedRelativeVorticityEdge)
         if (config_mom_del4 > 0.0) then
@@ -158,7 +180,9 @@ module ocn_time_integration_rk4
         end if
         call mpas_timer_stop("RK4-diagnostic halo update")
 
-! ---  compute tendencies
+        ! Compute tendencies for high frequency thickness
+        ! In RK4 notation, we are computing the right hand side f(t,y), 
+        ! which is the same as k_j / h.
 
         if (config_use_freq_filtered_thickness) then
            call mpas_timer_start("RK4-tendency computations")
@@ -174,6 +198,8 @@ module ocn_time_integration_rk4
            call mpas_dmpar_exch_halo_field(domain % blocklist % tend % lowFreqDivergence)
            call mpas_timer_stop("RK4-prognostic halo update")
 
+           ! Compute next substep state for high frequency thickness.
+           ! In RK4 notation, we are computing y_n + a_j k_j.
 
            block => domain % blocklist
            do while (associated(block))
@@ -184,6 +210,9 @@ module ocn_time_integration_rk4
 
         endif
 
+        ! Compute tendencies for velocity, thickness, and tracers.
+        ! In RK4 notation, we are computing the right hand side f(t,y), 
+        ! which is the same as k_j / h.
         call mpas_timer_start("RK4-tendency computations")
         block => domain % blocklist
         do while (associated(block))
@@ -214,7 +243,7 @@ module ocn_time_integration_rk4
         end do
         call mpas_timer_stop("RK4-tendency computations")
 
-! ---  update halos for prognostic variables
+        ! Update halos for prognostic variables.
 
         call mpas_timer_start("RK4-prognostic halo update")
         call mpas_dmpar_exch_halo_field(domain % blocklist % tend % normalVelocity)
@@ -222,7 +251,8 @@ module ocn_time_integration_rk4
         call mpas_dmpar_exch_halo_field(domain % blocklist % tend % tracers)
         call mpas_timer_stop("RK4-prognostic halo update")
 
-! ---  compute next substep state
+        ! Compute next substep state for velocity, thickness, and tracers.
+        ! In RK4 notation, we are computing y_n + a_j k_j.
 
         call mpas_timer_start("RK4-update diagnostic variables")
         if (rk_step < 4) then
@@ -271,7 +301,10 @@ module ocn_time_integration_rk4
         end if
         call mpas_timer_stop("RK4-update diagnostic variables")
 
-!--- accumulate update (for RK4)
+        ! Accumulate update.
+        ! In RK4 notation, we are computing b_j k_j and adding it to an accumulating sum so that we have
+        !    y_{n+1} = y_n + sum ( b_j k_j ) 
+        ! after the fourth iteration.
 
         call mpas_timer_start("RK4-RK4 accumulate update")
         block => domain % blocklist
