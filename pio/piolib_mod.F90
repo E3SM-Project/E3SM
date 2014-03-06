@@ -26,8 +26,6 @@ module piolib_mod
 	pio_iotype_netcdf, pio_iotype_pnetcdf, pio_iotype_netcdf4p, pio_iotype_netcdf4c, &
         pio_noerr
   !--------------
-  use alloc_mod
-  !--------------
   use pio_support, only : piodie, debug, debugio, debugasync, checkmpireturn
   !
 
