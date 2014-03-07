@@ -49,6 +49,9 @@ if(defined($filesystem)){
     $cmake_opts .= " -DPIO_FILESYSTEM_HINTS=$filesystem ";
 }
 
+$cmake_opts .= " -DPIO_BUILD_TIMING=ON --debug-trycompile ";
+
+
 mkdir "$scratch";
 unless(-d  "$scratch/pio.$build"){
     mkdir "$scratch/pio.$build" or die "Could not make directory $scratch/pio.$build";

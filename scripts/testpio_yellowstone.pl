@@ -38,7 +38,7 @@ open(T,">$testdir/testpio/TestStatus");
 chdir "$testdir/unittests";
 copy("$piosrc/unittests/input.nl","input.nl");
 print T "Running unittests ... ";
-system("mpirun.lsf ./piotest > unittest.out");
+system("mpirun.lsf ./piotest 1> unittest.out 2>&1");
 open(F,"unittest.out");
 my $cnt = grep /PASSED unit testing/ , <F>;
 close(F);
@@ -78,6 +78,10 @@ foreach my $nl (sort @namelists){
 	}
 	if(/ny_global/){
 	    print G "  ny_global = 128\n";
+	    next;
+	}
+	if(/maxiter/){
+	    print G " maxiter=1\n";
 	    next;
 	}
 	print G $_;

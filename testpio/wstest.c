@@ -42,7 +42,7 @@ int main(int argc, char *argv[])
    for(j=mype*ny; j<(mype+1)*ny; j++){
      for(i=0; i<nx; i++, ii++){
        iarray[ii] = i + j*gdim[2] + k*gdim[2]*gdim[1];
-       imap[ii] = (PIO_Offset) iarray[ii] + 1;
+       imap[ii] = (PIO_Offset) iarray[ii];
        //       printf("%d: imap[%d]=%ld\n",mype,ii,(long) imap[ii]);
      }
    }

@@ -15,7 +15,14 @@ INCLUDE_DIRECTORIES(${PIO_INCLUDE_DIRS})
 LINK_DIRECTORIES(${PIO_LIB_DIR})
 ADD_EXECUTABLE(testpio ${SRC})
 ADD_EXECUTABLE(wstest ${WSSRC})
-TARGET_LINK_LIBRARIES(testpio piof pioc)
-TARGET_LINK_LIBRARIES(wstest pioc)
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/../timing)
+  TARGET_LINK_LIBRARIES(testpio timing piof pioc )
+  TARGET_LINK_LIBRARIES(wstest timing pioc )
+else()
+  TARGET_LINK_LIBRARIES(testpio piof pioc)
+  TARGET_LINK_LIBRARIES(wstest pioc)
+endif()
+
+
 
 

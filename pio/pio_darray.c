@@ -472,9 +472,7 @@ int flush_output_buffer(file_desc_t *file)
   int status[PIO_MAX_VARS];
 
 
-  if(file->nreq>0){
-    ierr = ncmpi_wait_all(file->fh, file->nreq,  file->request, status);
-  }
+  ierr = ncmpi_wait_all(file->fh, PIO_MAX_VARS,  file->request, status);
   for(int i=0;i<file->nreq;i++){
     file->request[i]=MPI_REQUEST_NULL;
   }

@@ -841,7 +841,7 @@ int PIOc_get_att_text (int ncid, int varid, const char *name, char *ip)
       ierr = iotype_error(file->iotype,__FILE__,__LINE__);
     }
   }
-
+  if(ierr != PIO_NOERR) printf("varid %d attname >%s<\n",varid, name);
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 #ifndef _MPISERIAL
   {PIO_Offset attlen;

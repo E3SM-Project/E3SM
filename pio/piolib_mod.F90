@@ -923,9 +923,9 @@ contains
     integer (kind=pio_offset), intent(in)          :: compdof(:)   ! global degrees of freedom for computational decomposition
     integer (kind=PIO_offset), optional :: iostart(:), iocount(:)
     type (io_desc_t), intent(inout)     :: iodesc
-!    type (c_ptr) :: cstart, ccount
     integer(c_int) :: ndims
     integer(c_int), dimension(:), allocatable, target :: cdims, cstart, ccount
+    integer(PIO_Offset), allocatable :: ccompmap(:)
     interface
        integer(C_INT) function PIOc_InitDecomp(iosysid,basetype,ndims,dims, &
             maplen, compmap, ioidp, iostart, iocount)  &
@@ -942,7 +942,7 @@ contains
          type(C_PTR), value :: iocount
        end function PIOc_InitDecomp
     end interface
-    integer :: ierr, i
+    integer :: ierr, i, maplen
     
 #ifdef TIMING
     call t_startf("PIO_initdecomp_dof")
@@ -954,6 +954,9 @@ contains
     do i=1,ndims
        cdims(i) = dims(ndims-i+1)
     end do
+    maplen = size(compdof)
+    allocate(ccompmap(maplen))
+    ccompmap = compdof - 1
 
     if(present(iostart) .and. present(iocount)) then
        allocate(cstart(ndims), ccount(ndims))
@@ -962,13 +965,14 @@ contains
           ccount(i) = iocount(ndims-i+1)
        end do
        ierr = PIOc_InitDecomp(iosystem%iosysid, basepiotype, ndims, cdims, &
-            size(compdof), compdof, iodesc%ioid, C_LOC(cstart), C_LOC(ccount))
+            maplen, ccompmap, iodesc%ioid, C_LOC(cstart), C_LOC(ccount))
        deallocate(cstart, ccount)
     else
        ierr = PIOc_InitDecomp(iosystem%iosysid, basepiotype, ndims, cdims, &
-            size(compdof), compdof, iodesc%ioid, C_NULL_PTR, C_NULL_PTR)
+            maplen, ccompmap, iodesc%ioid, C_NULL_PTR, C_NULL_PTR)
     end if
     deallocate(cdims)
+    deallocate(ccompmap)
 #ifdef TIMING
     call t_stopf("PIO_initdecomp_dof")
 #endif

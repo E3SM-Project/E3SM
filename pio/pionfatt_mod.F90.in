@@ -201,14 +201,13 @@ contains
     character(len=*), intent(in) :: name
     character(len=*), intent(out) :: var
     interface
-       integer(C_INT) function PIOc_get_att_text (ncid, varid, name, len, op) &
+       integer(C_INT) function PIOc_get_att_text (ncid, varid, name, op) &
             bind(C,name="PIOc_get_att_text")
          use iso_c_binding
          integer(C_INT), value :: ncid
          integer(C_INT), value :: varid
-         character(C_CHAR) :: name
-         integer(C_LONG), value :: len
-         character(C_char) :: op
+         character(C_CHAR) :: name(*)
+         character(C_char) :: op(*)
        end function PIOc_get_att_text
     end interface
     integer :: cvarid
@@ -218,7 +217,8 @@ contains
     else
        cvarid = varid
     end if
-    ierr = PIOc_get_att_text (ncid,cvarid,name, int(len(var),C_LONG), var)
+
+    ierr = PIOc_get_att_text (ncid,cvarid,trim(name)//C_NULL_CHAR, var)
 
   end function get_att_id_text
 

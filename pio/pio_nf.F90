@@ -204,6 +204,7 @@ contains
        end function PIOc_inq_dimid
     end interface
     ierr = PIOc_inq_dimid(ncid,trim(name)//C_NULL_CHAR,dimid)
+    dimid=dimid+1
   end function inq_dimid_id
 
 
@@ -278,7 +279,8 @@ contains
          integer(c_long) :: len
        end function PIOc_inq_dimlen
     end interface
-    ierr = PIOc_inq_dimlen(ncid,dimid,len)
+    
+    ierr = PIOc_inq_dimlen(ncid,dimid-1,len)
   end function inq_dimlen_id_long
 
   integer function inq_dimname_desc(File, dimid, name) result(ierr)
@@ -301,7 +303,7 @@ contains
          character(c_char) :: name
        end function PIOc_inq_dimname
     end interface
-    ierr = PIOc_inq_dimname(ncid,dimid,name)
+    ierr = PIOc_inq_dimname(ncid,dimid-1,name)
   end function inq_dimname_id
 
 
@@ -378,6 +380,7 @@ contains
        end function PIOc_inq_unlimdim
     end interface
     ierr = PIOc_inq_unlimdim(ncid,unlimdim)
+    unlimdim=unlimdim+1
   end function inq_unlimdim_id
 
 
@@ -518,6 +521,7 @@ contains
        end function PIOc_def_dim
     end interface
     ierr = PIOc_def_dim(ncid,trim(name)//C_NULL_CHAR,len,dimid)
+    dimid=dimid+1
   end function def_dim_id
 
 
@@ -626,7 +630,7 @@ contains
 
     ierr = PIOc_inq_vardimid(ncid,varid,cdimids)
     do i=1,ndims
-       dimids(i) =  cdimids(ndims-i+1)
+       dimids(i) =  cdimids(ndims-i+1)+1
     end do
     
   end function internal_inq_vardimid
@@ -672,7 +676,7 @@ contains
          integer(C_INT) :: ndims
        end function PIOc_inq_varndims
     end interface
-    ierr = PIOc_inq_varndims(ncid,varid,ndims)
+    ierr = PIOc_inq_varndims(ncid,varid-1,ndims)
   end function inq_varndims_id
 
 !>
@@ -716,7 +720,7 @@ contains
        end function PIOc_inq_vartype
     end interface
 
-    ierr = PIOc_inq_vartype(ncid,varid,type)
+    ierr = PIOc_inq_vartype(ncid,varid-1,type)
   end function inq_vartype_id
 
 !>
@@ -760,7 +764,7 @@ contains
        end function PIOc_inq_varnatts
     end interface
 
-    ierr = PIOc_inq_varnatts(ncid,varid,natts)
+    ierr = PIOc_inq_varnatts(ncid,varid-1,natts)
   end function inq_varnatts_id
     
 
@@ -789,7 +793,7 @@ contains
     integer, intent(in)    :: varid
     character(len=*), intent(out)    :: name
     
-    ierr = pio_inq_varname(file%fh,varid,name)
+    ierr = pio_inq_varname(file%fh,varid-1,name)
 
   end function inq_varname_vid
   integer function inq_varname_id(ncid,varid,name) result(ierr)
@@ -806,7 +810,7 @@ contains
          character(C_CHAR) :: name
        end function PIOc_inq_varname
     end interface
-    ierr = PIOc_inq_varname(ncid,varid,name)
+    ierr = PIOc_inq_varname(ncid,varid-1,name)
   end function inq_varname_id
 
 
@@ -851,6 +855,8 @@ contains
        end function PIOc_inq_varid
     end interface
     ierr = PIOc_inq_varid(ncid, trim(name)//C_NULL_CHAR, varid)
+    ! the fortran value is one based while the c value is 0 based
+    varid = varid+1
   end function inq_varid_id
 
 
@@ -901,7 +907,7 @@ contains
        end function PIOc_inq_attlen
     end interface
 
-    ierr = PIOc_inq_attlen(ncid,varid,trim(name)//C_NULL_CHAR,len)
+    ierr = PIOc_inq_attlen(ncid,varid-1,trim(name)//C_NULL_CHAR,len)
   end function inq_attlen_id
 
 
@@ -960,7 +966,7 @@ contains
        end function PIOc_inq_att
     end interface
     
-    ierr = PIOc_inq_att(ncid,varid,trim(name)//C_NULL_CHAR,xtype,len)
+    ierr = PIOc_inq_att(ncid,varid-1,trim(name)//C_NULL_CHAR,xtype,len)
 
   end function inq_att_id
 
@@ -999,7 +1005,7 @@ contains
        end function PIOc_inq_attname
     end interface
 
-    ierr = PIOc_inq_attname(ncid,varid,attnum,name)
+    ierr = PIOc_inq_attname(ncid,varid-1,attnum-1,name)
 
   end function inq_attname_id
 
@@ -1089,7 +1095,7 @@ contains
     enddo
 
     ierr = PIOc_def_var(ncid, trim(name)//C_NULL_CHAR, type, ndims, cdimids,varid)
-
+    varid = varid+1
   end function def_var_md_id
 
 

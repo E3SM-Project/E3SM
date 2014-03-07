@@ -1,10 +1,10 @@
 &io_nml
-  casename    = 'pb01:pnc:box:nprocIO=1:g_root'
+  casename    = 'pb01:pnc:box:nprocIO=2:g_root'
  nx_global = 1995
  ny_global = 2535
   iofmt       = 'pnc'
   rearr       = 'box'
-  nprocsIO    = 1
+  nprocsIO    = 2
   stride      = -1
   base        = 0
   maxiter     = 10

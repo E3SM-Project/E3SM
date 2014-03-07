@@ -4,9 +4,9 @@
 #ifdef BGL
 #define BGx
 #endif
-!#ifdef TIMING
-!#define MEMCHK
-!#endif
+#ifdef TIMING
+#define MEMCHK
+#endif
 !>
 !! @file testpio.F90
 !! An example of how PIO can be used
@@ -540,10 +540,11 @@ program testpio
         test_i4m(n) = my_task
      endif
      if(TestR8 .or. TestCombo) then 
-         test_r8wr(n) = 10.0_r8*cos(20.*real(i1,kind=r8)/real(gDims3D(1),kind=r8))* &
-          cos(10.*real(j1,kind=r8)/real(gDims3D(2),kind=r8))* &
-          (1.0+1.0*real(j1,kind=r8)/real(gDims3D(2),kind=r8))* &
-          cos(25.*real(k1,kind=r8)/real(gDims3D(3),kind=r8))
+!         test_r8wr(n) = 10.0_r8*cos(20.*real(i1,kind=r8)/real(gDims3D(1),kind=r8))* &
+!          cos(10.*real(j1,kind=r8)/real(gDims3D(2),kind=r8))* &
+!          (1.0+1.0*real(j1,kind=r8)/real(gDims3D(2),kind=r8))* &
+!          cos(25.*real(k1,kind=r8)/real(gDims3D(3),kind=r8))
+        test_r8wr = compdof
      endif
      if(TestR4 .or. TestCombo) then 
          test_r4wr(n) = 10.0_r4*cos(20.*real(i1,kind=r4)/real(gDims3D(1),kind=r4))* &
@@ -909,6 +910,7 @@ program testpio
            !-------------------------
 
 	   
+           dt_write_r8 = 0.
 	   
            if(TestR8) then
               if(iofmtd .ne. 'bin') then
@@ -916,7 +918,6 @@ program testpio
               end if
 
 
-              dt_write_r8 = 0.
               if(Debug)       print *,'iam: ',My_task,'testpio: point #9.0.1'
               call MPI_Barrier(MPI_COMM_COMPUTE,ierr)
               if(Debug)       print *,'iam: ',My_task,'testpio: point #9.0.2'
@@ -1012,6 +1013,7 @@ program testpio
                  iostat = pio_put_var(file,varfn,fname)
                  iostat = pio_put_var(file,varfruit,fruits)
               end if
+              st = MPI_Wtime()
               call PIO_write_darray(File,vard_r4c,iodesc_r4, test_r4wr,iostat)
               call check_pioerr(iostat,__FILE__,__LINE__,' combo r4 write_darray')
               call PIO_write_darray(File,vard_r8c,iodesc_r8,test_r8wr,iostat)
@@ -1019,6 +1021,8 @@ program testpio
               call PIO_write_darray(File,vard_i4c,iodesc_i4, test_i4wr,iostat)
               call check_pioerr(iostat,__FILE__,__LINE__,' combo i4 write_darray')
               call PIO_CloseFile(File)
+              et = MPI_Wtime()
+              dt_write_r8 = dt_write_r8 + (et - st)/nvars
            endif
 
            if(Debug) then
@@ -1055,7 +1059,7 @@ program testpio
               call check_pioerr(ierr,__FILE__,__LINE__,' int openfile')
            endif
 
-           !   if(TestCombo) ierr = PIO_OpenFile(PIOSYS,File,iotype,fname)
+!           if(TestCombo) ierr = PIO_OpenFile(PIOSYS,File,iotype,fname)
            if(Debug) then
               write(*,'(2a,i8)') myname,':: After calls to PIO_OpenFile.  my_task=',my_task
            endif
@@ -1092,6 +1096,7 @@ program testpio
            !-------------------------
            ! Time the parallel  read
            !-------------------------
+           dt_read_r8 = 0.
            if(TestR8) then 
               if(iofmtd(2:3) .eq. 'nc') then
                  iostat = pio_get_var(file_r8,varfn_r8, fnamechk)
@@ -1198,8 +1203,8 @@ program testpio
      !-----------------------------
      ! Perform correctness testing 
      !-----------------------------
-           if(TestR8 .and. CheckArrays) then
-              call checkpattern(mpi_comm_compute, fname_r8,test_r8wr,test_r8rd,lLength,iostat)
+           if(TestR8 .and. CheckArrays) then 
+             call checkpattern(mpi_comm_compute, fname_r8,test_r8wr,test_r8rd,lLength,iostat)
               call check_pioerr(iostat,__FILE__,__LINE__,' checkpattern r8 test')
            endif
      
@@ -1242,6 +1247,7 @@ program testpio
                  iostat = PIO_inq_varid(file,'fruits',varfruit)
                  iostat = pio_get_var(file,varfruit,newfruits)
               end if
+              st = MPI_Wtime()
               call PIO_read_darray(File,vard_i4c,iodesc_i4,test_i4rd,iostat)
               call check_pioerr(iostat,__FILE__,__LINE__,' combo test i4 pio_read_darray')
 
@@ -1253,7 +1259,9 @@ program testpio
 
               if(Debug)       print *,'iam: ',My_task,'testpio: point #22'
               call PIO_CloseFile(File)
-           
+              if(Debug)       print *,'iam: ',My_task,'testpio: point #22a'
+              et = MPI_Wtime()
+              dt_read_r8 = dt_read_r8 + (et - st)/nvars           
               !-----------------------------
               ! Check the combined file 
               !-----------------------------
@@ -1274,7 +1282,7 @@ program testpio
         endif
 
               if(Debug)       print *,'iam: ',My_task,'testpio: point #23'
-        if(TestR8) then
+        if(TestR8.or.TestCombo) then
            ! Maximum read/write times
            if(readPhase)  call GetMaxTime(dt_read_r8, gdt_read_r8(it), MPI_COMM_COMPUTE, ierr)
            if(writePhase) call GetMaxTime(dt_write_r8, gdt_write_r8(it), MPI_COMM_COMPUTE, ierr)
@@ -1316,8 +1324,8 @@ program testpio
   ! Print summary bandwidth statistics 
   !----------------------------------
 
-              if(Debug)       print *,'iam: ',My_task,'testpio: point #26'
-  if(TestR8 .and. (iorank == 0) ) then
+  if(Debug)       print *,'iam: ',My_task,'testpio: point #26'
+  if(TestR8 .or. TestCombo .and. (iorank == 0) ) then
      call WriteTimeTrialsStats(casename,TestR8CaseName, fname_r8, glenr8, gdt_read_r8, gdt_write_r8, maxiter) 
   endif
 

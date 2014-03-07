@@ -97,10 +97,10 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
       if(ierr == PIO_NOERR && (amode & PIO_WRITE)){
 	if(ios->iomaster) printf("%d Setting IO buffer %d\n",__LINE__,PIO_BUFFER_SIZE_LIMIT);
 	ierr = ncmpi_buffer_attach(file->fh, PIO_BUFFER_SIZE_LIMIT );
-	for(int i=0;i<PIO_MAX_VARS;i++)
-	  file->request[i]=MPI_REQUEST_NULL;
-	file->nreq=0;
       }
+      for(int i=0;i<PIO_MAX_VARS;i++)
+	file->request[i]=MPI_REQUEST_NULL;
+      file->nreq=0;
       break;
 #endif
     default:
@@ -219,11 +219,11 @@ int PIOc_createfile(const int iosysid, int *ncidp,  int *iotype,
       if(ierr == PIO_NOERR){
 	if(ios->iomaster) printf("%d Setting IO buffer %d\n",__LINE__,PIO_BUFFER_SIZE_LIMIT);
 	ierr = ncmpi_buffer_attach(file->fh, PIO_BUFFER_SIZE_LIMIT );
-	for(int i=0;i<PIO_MAX_VARS;i++)
-	  file->request[i]=MPI_REQUEST_NULL;
-	file->nreq=0;
-
       }
+      for(int i=0;i<PIO_MAX_VARS;i++)
+	file->request[i]=MPI_REQUEST_NULL;
+      file->nreq=0;
+
       break;
 #endif
     default:

@@ -410,7 +410,7 @@ int box_rearrange_comp2io(iosystem_desc_t *ios, io_desc_t *iodesc, void *sbuf,
 	     ios->union_comm, handshake, true, maxreq);
 
   //  if(rbuf!=NULL)
-  //    printf("rbuf %d %d %d\n",((int *)rbuf)[0],((int *)rbuf)[1],((int *)rbuf)[2]);
+  //   printf("rbuf %f %f %f\n",((double *)rbuf)[0],((double *)rbuf)[1],((double *)rbuf)[2]);
 
 
   free(sendcounts);
@@ -475,7 +475,6 @@ int box_rearrange_io2comp(iosystem_desc_t *ios, io_desc_t *iodesc, void *sbuf,
   // Data in sbuf on the ionodes is sent to rbuf on the compute nodes
   //
 
-  MPI_Barrier(ios->union_comm);
   pio_swapm( sbuf,  sendcounts, sdispls, sendtypes,
 	     rbuf, recvcounts, rdispls, recvtypes, 
 	     ios->union_comm, handshake,isend, maxreq);
@@ -591,9 +590,9 @@ int box_rearrange_create(iosystem_desc_t *ios,const int maplen, const PIO_Offset
       for(k=0;k<maplen;k++){
 	PIO_Offset gcoord[ndims], lcoord[ndims];
 	bool found=true;
-	ierr = gindex_to_coord(compmap[k]-1, gstride, ndims, gcoord);
+	ierr = gindex_to_coord(compmap[k], gstride, ndims, gcoord);
 	for(j=0;j<ndims;j++){
-	  //	  printf("%d %d map %d gcoord %d start %d count %d\n",j,k,compmap[k]-1,gcoord[j],start[j],count[j]);
+	  //	  printf("%d %d map %d gcoord %d start %d count %d\n",j,k,compmap[k],gcoord[j],start[j],count[j]);
 	  if(gcoord[j] >= start[j] && gcoord[j] < start[j]+count[j]){
 	    lcoord[j] = gcoord[j] - start[j];
 	  }else{
