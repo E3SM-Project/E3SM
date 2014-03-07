@@ -85,7 +85,7 @@ subroutine cslam_runflux(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
   integer (kind=int_kind),  dimension(10*(nc+2*nhe)*(nc+2*nhe),2)  :: weights_eul_index_all
   integer (kind=int_kind),  dimension(10*(nc+2*nhe)*(nc+2*nhe),2)  :: weights_lgr_index_all
   integer (kind=int_kind)                                          :: jall
-  real (kind=real_kind)                       :: sum
+  !real (kind=real_kind)                       :: sum
   
 !!!!! FOR DEBUGGING
 
@@ -112,7 +112,7 @@ subroutine cslam_runflux(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
      fvm(ie)%dsphere(:,:,:)%r=1.0D0  !!! RADIUS IS ASSUMED TO BE 1.0DO !!!!
    end do
    
-  sum=0.0D0
+  !sum=0.0D0
   do ie=nets, nete
     do k=1,nlev
 !       call fvm_mesh_dep(elem(ie),deriv,fvm(ie),tstep,tl,k)
@@ -171,13 +171,13 @@ subroutine cslam_runflux(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
       enddo  !End Tracer
 !       call t_stopf('CSLAM ntrac') 
 !        write(*,*) 'FACENO', fvm(ie)%faceno
-       do j=1,nc
-         do i=1,nc
+!       do j=1,nc
+!         do i=1,nc
            
 !            write(*,*) i,j,fvm(ie)%c(i,j,k,2,tl%np1)-fvm(ie)%c(i,j,k,1,tl%np1),fvm(ie)%c(i,j,k,2,tl%np1),fvm(ie)%c(i,j,k,1,tl%np1)
-           sum=sum+fvm(ie)%c(i,j,k,2,tl%np1)
-         end do
-       end do 
+!           sum=sum+fvm(ie)%c(i,j,k,2,tl%np1)
+!         end do
+!       end do 
     end do  !End Level
     !note write tl%np1 in buffer
     call ghostVpack(cellghostbuf, fvm(ie)%c,nhc,nc,nlev,ntrac,0,tl%np1,timelevels,elem(ie)%desc)
