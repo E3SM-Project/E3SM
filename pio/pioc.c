@@ -137,10 +137,10 @@ int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const
 	iodesc->start[i] = iostart[i];
 	iodesc->count[i] = iocount[i];
       }
-      ios->num_aiotasks = ios->num_iotasks;
+      iodesc->num_aiotasks = ios->num_iotasks;
     }else{
     
-      ios->num_aiotasks = CalcStartandCount(basetype, ndims, dims, ios->num_iotasks, ios->io_rank,
+      iodesc->num_aiotasks = CalcStartandCount(basetype, ndims, dims, ios->num_iotasks, ios->io_rank,
 					    iodesc->start, iodesc->count);
 
     }
@@ -156,9 +156,9 @@ int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const
     iodesc->maxiobuflen = iosize;
   }
   // Depending on array size and io-blocksize the actual number of io tasks used may vary
-  CheckMPIReturn(MPI_Bcast(&(ios->num_aiotasks), 1, MPI_INT, ios->ioroot,ios->my_comm),__FILE__,__LINE__);
+  CheckMPIReturn(MPI_Bcast(&(iodesc->num_aiotasks), 1, MPI_INT, ios->ioroot,ios->my_comm),__FILE__,__LINE__);
   // Compute the communications pattern for this decomposition
-  ierr = box_rearrange_create( ios, maplen, compmap, dims, ndims, ios->num_aiotasks, iodesc);
+  ierr = box_rearrange_create( ios, maplen, compmap, dims, ndims, iodesc->num_aiotasks, iodesc);
 
   *ioidp = pio_add_to_iodesc_list(iodesc);
 
@@ -186,7 +186,6 @@ int PIOc_Init_Intracomm(const MPI_Comm comp_comm,
   iosys->ioproc = false;
 
   iosys->num_iotasks = num_iotasks;
-  iosys->num_aiotasks = num_iotasks;
 
   CheckMPIReturn(MPI_Comm_rank(comp_comm, &(iosys->comp_rank)),__FILE__,__LINE__);
   CheckMPIReturn(MPI_Comm_size(comp_comm, &(iosys->num_comptasks)),__FILE__,__LINE__);

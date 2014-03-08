@@ -110,7 +110,7 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, voi
 	size_t tstart[ndims], tcount[ndims];
 
 	if(ios->io_rank==0){
-	  for(i=0;i<ios->num_aiotasks;i++){
+	  for(i=0;i<iodesc->num_aiotasks;i++){
 	    if(i==0){	    
 	      for(int j=0;j<ndims;j++){
 		tstart[j] =  start[j];

@@ -46,6 +46,7 @@ typedef struct io_desc_t
   int ndims;
   MPI_Datatype basetype;
   int llen;
+  int num_aiotasks;
 
   int *rfrom;
   int *rcount;
@@ -72,7 +73,6 @@ typedef struct iosystem_desc_t
   MPI_Comm my_comm;
   
   int num_iotasks;
-  int num_aiotasks;
   int num_comptasks;
 
   int union_rank;
