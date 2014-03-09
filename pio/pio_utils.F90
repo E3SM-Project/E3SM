@@ -33,6 +33,16 @@ module pio_utils
   
 
 contains
+  subroutine replace_c_null(istr)
+    use iso_c_binding, only : C_NULL_CHAR
+    character(len=*),intent(inout) :: istr
+    integer :: i
+    do i=1,len(istr)
+       if(istr(i:i) == C_NULL_CHAR) istr(i:i)=''
+    end do
+  end subroutine replace_c_null
+
+
 
   subroutine check_netcdf(File, status, filestr, line)
     type(file_desc_t), intent(in) :: file

@@ -59,10 +59,17 @@ int pio_swapm(void *sndbuf, int sndlths[], int sdispls[], MPI_Datatype stypes[],
 
 long long lgcd_array(int nain, long long*ain);
 
+  void PIO_Offset_size(MPI_Datatype *dtype, int *tsize);
 PIO_Offset GCDblocksize(const int arrlen, const PIO_Offset arr_in[]);
+
+int subset_rearrange_create(iosystem_desc_t *ios,const int maplen, const PIO_Offset compmap[], const int gsize[],
+			 const int ndim, const int nioproc, io_desc_t *iodesc);
+
 
 int box_rearrange_create(iosystem_desc_t *ios,const int maplen, const PIO_Offset compmap[], const int gsize[],
 			 const int ndim, const int nioproc, io_desc_t *iodesc);
+
+
 int box_rearrange_io2comp(iosystem_desc_t *ios, io_desc_t *iodesc, void *sbuf,
 			  void *rbuf, const int comm_option, const int fc_options);
 int box_rearrange_comp2io(iosystem_desc_t *ios, io_desc_t *iodesc, void *sbuf,

@@ -28,18 +28,18 @@ int main(int argc, char *argv[])
  PIOc_Init_Intracomm(MPI_COMM_WORLD, npe, 1, 0, &iosysid);
 
  // Create a weak scaling test - 
- nx=12;
- ny=12;
- nz=1;
+ nx=6;
+ ny=6;
+ nz=2;
  gdim[2] = nx;
  gdim[1] = ny*npe;
  gdim[0] = nz;
 
  iarray = (int *) malloc(nx*ny*nz*sizeof(int));
  imap = (PIO_Offset *) malloc(nx*ny*nz*sizeof(PIO_Offset));
-
- for(k=0, ii=0; k<nz; k++){
-   for(j=mype*ny; j<(mype+1)*ny; j++){
+ ii=0;
+ for(j=mype*ny; j<(mype+1)*ny; j++){
+   for(k=0; k<nz; k++){
      for(i=0; i<nx; i++, ii++){
        iarray[ii] = i + j*gdim[2] + k*gdim[2]*gdim[1];
        imap[ii] = (PIO_Offset) iarray[ii];

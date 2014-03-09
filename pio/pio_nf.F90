@@ -607,17 +607,7 @@ contains
     integer, intent(in) :: ncid
     integer, intent(in) :: varid
     integer, intent(out) :: dimids(:)
-
-    ierr = internal_inq_vardimid(ncid, varid, size(dimids), dimids)
-  end function inq_vardimid_id
-
-  integer function internal_inq_vardimid(ncid, varid, ndims, dimids) result(ierr)
-    integer, intent(in) :: ncid
-    integer, intent(in) :: varid
-    integer, intent(in) :: ndims
-    integer, intent(out) :: dimids(:)
-    integer(C_INT) :: cdimids(ndims)
-    integer :: i
+    integer, allocatable :: cdimids(:)
     interface
        integer(C_INT) function PIOc_inq_vardimid(ncid,varid,dimids) &
             bind(C,name="PIOc_inq_vardimid")
@@ -627,14 +617,19 @@ contains
          integer(C_INT) :: dimids(*)
        end function PIOc_inq_vardimid
     end interface
+    integer :: i, ndims
+    
+    ierr = inq_varndims_id(ncid,varid,ndims)
+    allocate(cdimids(ndims))
 
-    ierr = PIOc_inq_vardimid(ncid,varid,cdimids)
+    ierr = PIOc_inq_vardimid(ncid,varid-1,cdimids)
     do i=1,ndims
        dimids(i) =  cdimids(ndims-i+1)+1
     end do
-    
-  end function internal_inq_vardimid
-    
+    deallocate(cdimids)
+
+  end function inq_vardimid_id
+
 
 
 !>
@@ -1091,7 +1086,7 @@ contains
     end interface
     ndims = size(dimids)
     do i=1,ndims
-       cdimids(i) = dimids(ndims-i+1)
+       cdimids(i) = dimids(ndims-i+1)-1
     enddo
 
     ierr = PIOc_def_var(ncid, trim(name)//C_NULL_CHAR, type, ndims, cdimids,varid)

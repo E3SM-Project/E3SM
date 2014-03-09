@@ -42,6 +42,7 @@ module pio_support
   public :: pio_readdof
   public :: pio_writedof
   public :: pio_fc_gather_offset
+  public :: replace_c_null
 #ifdef NO_MPI2
   public :: MPI_TYPE_CREATE_INDEXED_BLOCK
 #endif
@@ -55,6 +56,14 @@ module pio_support
   character(len=*), parameter :: modName='pio_support'
 
 contains
+  subroutine replace_c_null(istr)
+    use iso_c_binding, only : C_NULL_CHAR
+    character(len=*),intent(inout) :: istr
+    integer :: i
+    do i=1,len(istr)
+       if(istr(i:i) == C_NULL_CHAR) istr(i:i)=''
+    end do
+  end subroutine replace_c_null
 
   subroutine piodie (file,line, msg, ival1, msg2, ival2, msg3, ival3, mpirank)
     !-----------------------------------------------------------------------

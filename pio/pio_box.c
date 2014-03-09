@@ -28,7 +28,7 @@ PIO_Offset lcoord_to_lindex(const int ndims, const PIO_Offset lcoord[], const PI
 
 }
 
-int create_mpi_datatypes(const MPI_Datatype basetype,const int msgcnt,const int dlen, const PIO_Offset mindex[],const int mcount[],MPI_Datatype mtype[])
+int create_mpi_datatypes(const MPI_Datatype basetype,const int msgcnt,const PIO_Offset dlen, const PIO_Offset mindex[],const int mcount[],MPI_Datatype mtype[])
 {
   PIO_Offset bsizeT[msgcnt];
   int pos;
@@ -156,7 +156,7 @@ int compute_counts(iosystem_desc_t *ios, io_desc_t *iodesc, const int dest_iopro
   int io_comprank;
   MPI_Datatype dtype;
   int ioindex;
-  int tsize, tsizei, tsizel;
+  int tsize;
   int ndof= iodesc->ndof;
 
 
@@ -269,16 +269,7 @@ int compute_counts(iosystem_desc_t *ios, io_desc_t *iodesc, const int dest_iopro
     recv_displs[i]   =0;
   }
 
-  MPI_Type_size(MPI_LONG_LONG, &tsizel);
-  MPI_Type_size(MPI_INT, &tsizei);
-
-  if(sizeof(PIO_Offset) == tsizei){
-    dtype = MPI_INT;
-    tsize = tsizei;
-  }else if(sizeof(PIO_Offset) == tsizel){
-    dtype = MPI_LONG_LONG;
-    tsize = tsizel;
-  }
+  PIO_Offset_size(&dtype, &tsize);
 
   for(i=0; i<ncomptasks; i++){
     sr_types[i] = dtype;
@@ -490,6 +481,23 @@ int box_rearrange_io2comp(iosystem_desc_t *ios, io_desc_t *iodesc, void *sbuf,
 
 }
 
+void PIO_Offset_size(MPI_Datatype *dtype, int *tsize)
+{
+  int  tsizei, tsizel;
+   
+  MPI_Type_size(MPI_LONG_LONG, &tsizel);
+  MPI_Type_size(MPI_INT, &tsizei);
+
+  if(sizeof(PIO_Offset) == tsizei){
+    *dtype = MPI_INT;
+    *tsize = tsizei;
+  }else if(sizeof(PIO_Offset) == tsizel){
+    *dtype = MPI_LONG_LONG;
+    *tsize = tsizel;
+  }
+
+}
+
 
 
 int box_rearrange_create(iosystem_desc_t *ios,const int maplen, const PIO_Offset compmap[], const int gsize[],
@@ -501,7 +509,7 @@ int box_rearrange_create(iosystem_desc_t *ios,const int maplen, const PIO_Offset
   PIO_Offset gstride[ndims];
   PIO_Offset iomap;
   PIO_Offset start[ndims], count[ndims];
-  int tsizei, tsizel, tsize, i, j, k, llen;
+  int  tsize, i, j, k, llen;
   MPI_Datatype dtype;
   int *dest_ioproc;
   PIO_Offset *dest_ioindex;
@@ -520,16 +528,8 @@ int box_rearrange_create(iosystem_desc_t *ios,const int maplen, const PIO_Offset
   for(int i=ndims-2;i>=0; i--)
     gstride[i]=gstride[i+1]*gsize[i+1];
 
-  MPI_Type_size(MPI_LONG_LONG, &tsizel);
-  MPI_Type_size(MPI_INT, &tsizei);
+  PIO_Offset_size(&dtype, &tsize);
 
-  if(sizeof(PIO_Offset) == tsizei){
-    dtype = MPI_INT;
-    tsize = tsizei;
-  }else if(sizeof(PIO_Offset) == tsizel){
-    dtype = MPI_LONG_LONG;
-    tsize = tsizel;
-  }
   sndlths = (int *) malloc(nprocs*sizeof(int)); 
   sdispls= (int *) malloc(nprocs*sizeof(int));
   recvlths= (int *) malloc(nprocs*sizeof(int));

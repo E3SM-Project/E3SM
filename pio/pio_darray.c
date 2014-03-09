@@ -288,6 +288,7 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void
     size_t tmp_start[ndims+1];
     size_t tmp_count[ndims+1];
     size_t tmp_bufsize=1;
+    printf("%s %d %d\n",__FILE__,__LINE__,vdesc->record);
     if(vdesc->record >= 0){
       ndims++;
       start[0] = vdesc->record;
@@ -357,6 +358,7 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void
 	    }else{
 	      MPI_Recv(tmp_start, ndims, MPI_UNSIGNED_LONG, i, i, ios->io_comm, &status);
 	    }
+
 	    if(iodesc->basetype == MPI_DOUBLE || iodesc->basetype == MPI_REAL8){
 	      ierr = nc_get_vara_double (file->fh, vid, tmp_start, tmp_count, IOBUF); 
 	    }else if(iodesc->basetype == MPI_INTEGER){
@@ -366,6 +368,9 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void
 	    }else{
 	      fprintf(stderr,"Type not recognized %d in pioc_write_darray\n",(int) iodesc->basetype);
 	    }	
+	    for(int k=0;k<ndims;k++)
+	      printf("%d %d %ld %ld %d\n",vid,k,tmp_start[k],tmp_count[k], ierr);
+
 	    if(i>0){
 	      MPI_Rsend(IOBUF, tmp_bufsize, iodesc->basetype, i, i, ios->io_comm);
 	    }

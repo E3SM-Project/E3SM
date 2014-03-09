@@ -12,6 +12,7 @@ module pionfget_mod
 #endif
   use pio_kinds, only: i4,r4,r8
   use pio_types, only : file_desc_t, var_desc_t
+  use pio_support, only : replace_c_null
   implicit none
   private
 !>
@@ -200,18 +201,6 @@ CONTAINS
     ierr = get_vara_{DIMS}d_{TYPE} (File, vardesc%varid, start, count, ival)
 
   end function get_vara_vdesc_{DIMS}d_{TYPE}
-
-
-  subroutine replace_c_null(istr)
-    use iso_c_binding, only : C_NULL_CHAR
-    character(len=*),intent(inout) :: istr
-    integer :: i
-    do i=1,len(istr)
-       if(istr(i:i) == C_NULL_CHAR) istr(i:i)=''
-    end do
-  end subroutine replace_c_null
-
-
 
 !>
 !! @public

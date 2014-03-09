@@ -314,7 +314,7 @@ contains
          integer(C_INT), value :: varid
        end function PIOc_advanceframe
     end interface
-    ierr = PIOc_advanceframe(file%fh, vardesc%varid) 
+    ierr = PIOc_advanceframe(file%fh, vardesc%varid-1) 
   end subroutine advanceframe
 
 !> 
@@ -342,7 +342,7 @@ contains
        end function PIOc_setframe
     end interface
     iframe = frame-1
-    ierr = PIOc_setframe(file%fh, vardesc%varid, iframe)
+    ierr = PIOc_setframe(file%fh, vardesc%varid-1, iframe)
   end subroutine setframe
 
 !>  

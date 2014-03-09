@@ -156,7 +156,7 @@ SET(PIO_INCLUDE_DIRS   ${pio_include_dirs_} CACHE STRING "")
 INCLUDE_DIRECTORIES(${PIO_INCLUDE_DIRS})
 
 SET(SRCS_C topology.c pio_nc.c pio_file.c pio_support.c pio_lists.c pioc.c
-	   pioc_sc.c pio_spmd.c pio_box.c pio_darray.c pio_put_nc.c pio_get_nc.c)
+	  pio_subset.c pioc_sc.c pio_spmd.c pio_box.c pio_darray.c pio_put_nc.c pio_get_nc.c)
 
 
 SET(SRCS_F90 pio_nf.F90 pio.F90 pio_kinds.F90 pio_types.F90

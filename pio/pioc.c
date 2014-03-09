@@ -128,6 +128,17 @@ int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const
     return PIO_EBADID;
   
   iodesc = malloc_iodesc(basetype, ndims);
+
+  /*
+  ierr = subset_rearrange_create( ios, maplen, compmap, dims, ndims, iodesc->num_aiotasks, iodesc);
+
+  MPI_Barrier(ios->comp_comm);
+
+  MPI_Abort(ios->comp_comm,ierr);
+  */
+
+
+
   
   if(ios->ioproc){
     //  Unless the user specifies the start and count for each IO task compute it.    

@@ -44,9 +44,10 @@ typedef struct io_desc_t
   int maxiobuflen;
   int ndof;
   int ndims;
-  MPI_Datatype basetype;
-  int llen;
   int num_aiotasks;
+  MPI_Datatype basetype;
+  PIO_Offset llen;
+
 
   int *rfrom;
   int *rcount;
