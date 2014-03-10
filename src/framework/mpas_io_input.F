@@ -261,7 +261,7 @@ module mpas_io_input
           if(iachar(domain % history(i:i)) == 0) then
             domain % history(i:i) = " "
           else if(iachar(domain % history(i:i)) == 10) then
-            domain % history(i:i) = ";"
+            domain % history(i:i) = new_line('A')
           end if
         end do
       end if
@@ -277,8 +277,16 @@ module mpas_io_input
       call MPAS_readStreamAtt(input_obj % io_stream, 'mesh_id', domain % mesh_id, ierr)
       if (ierr /= MPAS_STREAM_NOERR) then
          domain % mesh_id = 'Unknown'
+      end if
+
+      if ( trim(domain % mesh_id) /= 'Unknown') then
+         if ( trim(domain % parent_id) /= 'Unknown' ) then
+            domain % parent_id = trim(domain % mesh_id) // new_line('A') // trim(domain % parent_id)
+         else
+            domain % parent_id = trim(domain % mesh_id)
+         end if
       else
-         domain % parent_id = domain % mesh_id // "\n" // domain % parent_id
+         domain % parent_id = 'Unknown'
       end if
 
       call gen_random(idLength, domain % mesh_id)

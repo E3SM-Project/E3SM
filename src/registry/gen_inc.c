@@ -225,11 +225,15 @@ void write_add_output_atts(FILE *fd, struct namelist *namelists){/*{{{*/
 /* *** History attribute related write functions *** {{{ */
 void write_model_variables(FILE *fd, char *modelname, char *corename, char *version){/*{{{*/
 	const char * suffix = MACRO_TO_STR(MPAS_NAMELIST_SUFFIX);
+	const char * exe_name = MACRO_TO_STR(MPAS_EXE_NAME);
+	const char * git_ver = MACRO_TO_STR(MPAS_GIT_VERSION);
 
 	fortprintf(fd, "       character (len=StrKIND) :: modelName = '%s' !< Constant: Name of model\n", modelname);
 	fortprintf(fd, "       character (len=StrKIND) :: coreName = '%s' !< Constant: Name of core\n", corename);
 	fortprintf(fd, "       character (len=StrKIND) :: modelVersion = '%s' !< Constant: Version number\n", version);
 	fortprintf(fd, "       character (len=StrKIND) :: namelist_filename = 'namelist.%s' !< Constant: Name of namelist file\n", suffix);
+	fortprintf(fd, "       character (len=StrKIND) :: executableName = '%s' !< Constant: Name of executable generated at build time.\n", exe_name);
+	fortprintf(fd, "       character (len=StrKIND) :: git_version = '%s' !< Constant: Version string from git-describe.\n", git_ver);
 }/*}}}*/
 /*}}}*/
 

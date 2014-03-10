@@ -466,7 +466,6 @@ module mpas_grid_types
       character (len=StrKIND) :: source !< source attribute, read in from input file.
       character (len=StrKIND) :: mesh_spec !< mesh_spec attribute, read in from input file.
       character (len=StrKIND) :: parent_id !< parent_id attribute, read in from input file.
-      character (len=StrKIND) :: git_version = 'MPAS_GIT_VERSION' !< version from git describe.
    end type domain_type
 
    interface mpas_allocate_scratch_field
