@@ -376,6 +376,7 @@ module mpas_io_output
       call MPAS_writeStreamAtt(output_obj % io_stream, 'source', domain % source, nferr)
       call MPAS_writeStreamAtt(output_obj % io_stream, 'Conventions', domain % Conventions, nferr)
       call MPAS_writeStreamAtt(output_obj % io_stream, 'mesh_id', domain % mesh_id, nferr)
+      call MPAS_writeStreamAtt(output_obj % io_stream, 'parent_id', domain % parent_id, nferr)
       call MPAS_writeStreamAtt(output_obj % io_stream, 'mesh_spec', domain % mesh_spec, nferr)
 
 #include "add_output_atts.inc"

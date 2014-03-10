@@ -461,10 +461,11 @@ module mpas_grid_types
       type (dm_info), pointer :: dminfo
 #include "model_variables.inc"
       character (len=StrKIND*2) :: history !< History attribute, read in from input file.
-      character (len=StrKIND) :: mesh_id !< mesh_id attribute, read in from input file.
+      character (len=StrKIND) :: mesh_id !< mesh_id attribute, randomly generated
       character (len=StrKIND) :: Conventions !< Conventions attribute, read in from input file.
       character (len=StrKIND) :: source !< source attribute, read in from input file.
       character (len=StrKIND) :: mesh_spec !< mesh_spec attribute, read in from input file.
+      character (len=StrKIND) :: parent_id !< parent_id attribute, read in from input file.
       character (len=StrKIND) :: git_version = 'MPAS_GIT_VERSION' !< version from git describe.
    end type domain_type
 
