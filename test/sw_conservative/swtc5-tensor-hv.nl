@@ -27,7 +27,6 @@ nu_s=          0
 hypervis_order = 2
 hypervis_subcycle = 1
 hypervis_power = 0
-!mesh_file = '/home/onguba/homme7/test/mesh_refine/grids/mountain_10_x8.g'
 mesh_file = '/home/onguba/homme7/test/mesh_refine/grids/grid_10_x8_iter10halo2.g'
 which_vlaplace=2
 hypervis_scaling = 4
