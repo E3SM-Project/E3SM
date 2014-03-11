@@ -5,7 +5,7 @@
 
 module derivative_mod
   use kinds, only : real_kind, longdouble_kind
-  use dimensions_mod, only : np, nc, npdg, nep
+  use dimensions_mod, only : np, nc, npdg, nep, nelemd
   use quadrature_mod, only : quadrature_t, gauss, gausslobatto,legendre, jacobi
   use parallel_mod, only : abortmp
   ! needed for spherical differential operators:
@@ -1507,6 +1507,134 @@ endif
   end function interpolate_gll2fvm_corners
 
 
+#if 0
+!  ================================================
+!  bilin_phys2gll:
+!
+!  interpolate to an equally spaced (in reference element coordinate system)
+!  "physics" grid to the GLL grid
+!
+!  For edge/corner nodes:  compute only contribution from this element,
+!  assuming there is a corresponding (symmetric) contribution from the
+!  neighboring element.  (which is false at cube panel edges)
+!
+!  MT initial version 3/2014
+!  2nd order at all gll points (including cube corners) *except*
+!  1st order at edge points on cube panel edges
+!  ================================================
+  function bilin_phys2gll(pin,nphys) result(pout)
+    integer :: nphys
+    real(kind=real_kind), intent(in) :: pin(nphys,nphys)
+    real(kind=real_kind) :: pout(np,np)
+    
+    ! static data, shared by all threads
+    integer, save  :: nphys_init=0
+    integer, save  :: index_l(np),index_r(np)
+    real(kind=real_kind),save :: w_l(np),w_r(np)
+
+    ! local
+    real(kind=real_kind) :: px(np,nphys)  ! interpolate in x to this array
+                                          ! then interpolate in y to pout
+    integer i,j,i1,i2
+    real(kind=real_kind) :: phys_centers(nphys)
+    real(kind=real_kind) :: dx,d_l,d_r,gll
+    type(quadrature_t) :: gll_pts
+
+
+    if (nphys_init/=nphys) then
+    ! setup (most be done on masterthread only) since all data is static
+    ! MT: move inside if - we dont want a barrier every time this is called       
+#if (defined HORIZ_OPENMP)
+!OMP BARRIER
+!OMP MASTER
+#endif
+       nphys_init=nphys
+
+       ! compute phys grid cell edges on [-1,1]
+       do i=1,nphys
+          dx = 2d0/nphys
+          phys_centers(i)=-1 + (dx/2) + (i-1)*dx
+       enddo
+
+       ! compute 1D interpolation weights
+       ! for every GLL point, find the index of the phys point to the left and right:
+       !    index_l, index_r
+       ! Then compute the weights
+       !    w_l, w_r
+       !
+       ! for points on the edge, we just take data from a single point
+       ! which we'll fake by setting index_l=index_r and w_l = w_r = 0.5
+
+       ! first GLL point is just a copy from first PHYS point:    
+       w_l(1)=0.5d0
+       w_r(1)=0.5d0
+       index_l(1)=1
+       index_r(1)=1
+
+       w_l(np)=0.5d0
+       w_r(np)=0.5d0
+       index_l(np)=nphys
+       index_r(np)=nphys
+
+       ! compute GLL cell edges on [-1,1]
+       gll_pts = gausslobatto(np)
+
+       do i=2,np-1
+          ! find: i1,i2 such that:
+          ! phys_centers(i1) <=  gll(i)  <= phys_centers(i2)
+          gll = gll_pts%points(i)
+          i1=0
+          do j=1,nphys-1
+             if (phys_centers(j) <= gll .and. phys_centers(j+1)>gll) then
+                i1=j
+                i2=j+1
+             endif
+          enddo
+          if (i1==0) call abortmp('ERROR: bilin_phys2gll() bad logic0')
+
+          d_l = gll-phys_centers(i1) 
+          d_r = phys_centers(i2) - gll
+
+          if (d_l<0) call abortmp('ERROR: bilin_phys2gll() bad logic1')
+          if (d_r<0) call abortmp('ERROR: bilin_phys2gll() bad logic2')
+
+          w_l(i) = d_r/(d_r + d_l) 
+          w_r(i) = d_l/(d_r + d_l) 
+          index_l(i)=i1
+          index_r(i)=i2  
+       enddo
+
+       deallocate(gll_pts%points)
+       deallocate(gll_pts%weights)
+
+#if (defined HORIZ_OPENMP)
+!OMP END MASTER
+!OMP BARRIER
+#endif
+    endif
+
+    ! interpolate i dimension
+    do j=1,nphys
+       do i=1,np
+          ! pin(nphys,nphys) -> px(np,nphys)
+          i1=index_l(i)
+          i2=index_r(i)
+          px(i,j) = w_l(i)*pin(i1,j) + w_r(i)*pin(i2,j)
+       enddo
+    enddo
+
+    ! interpolate j dimension
+    do j=1,np
+       do i=1,np
+          ! px(np,nphys) -> pout(np,np)
+          i1=index_l(j)
+          i2=index_r(j)
+          pout(i,j) = w_l(j)*px(i,i1) + w_r(j)*px(i,i2)
+       enddo
+    enddo
+    end function bilin_phys2gll
+!----------------------------------------------------------------
+#endif
 
 !  ================================================
 !  remap_phys2gll:
@@ -1515,6 +1643,7 @@ endif
 !  "physics" grid to the GLL grid
 !
 !  1st order, monotone, conservative
+!  MT initial version 2013
 !  ================================================
   function remap_phys2gll(pin,nphys) result(pout)
     integer :: nphys
@@ -1533,13 +1662,16 @@ endif
 
     real(kind=real_kind) :: tol=1e-13
     real(kind=real_kind) :: weight,x1,x2,dx
-    real(kind=longdouble_kind) :: gll_edges(np+1),phys_edges(nphys+1)
+!    real(kind=longdouble_kind) :: gll_edges(np+1),phys_edges(nphys+1)
+    real(kind=real_kind) :: gll_edges(np+1),phys_edges(nphys+1)
     type(quadrature_t) :: gll_pts
-    ! setup (most be done on masterthread only) since all data is static
+    if (nphys_init/=nphys) then
+       ! setup (most be done on masterthread only) since all data is static
+       ! MT: move barrier inside if loop - we dont want a barrier every regular call
 #if (defined HORIZ_OPENMP)
+!OMP BARRIER
 !OMP MASTER
 #endif
-    if (nphys_init/=nphys) then
        nphys_init=nphys
        ! find number of intersections
        nintersect = np+nphys-1  ! max number of possible intersections
@@ -1584,9 +1716,11 @@ endif
                 endif
              endif
           enddo
+          print *,'x2=',x2
           if (x2>1+tol) call abortmp('ERROR: did not find next intersection point')
-             
+          if (x2<=x1) call abortmp('ERROR: next intersection point did not advance')
           count=count+1
+          if (count>nintersect) call abortmp('ERROR: search failuer: nintersect was too small')
           delta(count)=x2-x1
           
           found=.false.
@@ -1608,7 +1742,7 @@ endif
           if (.not. found) call abortmp('ERROR: interval search problem')
           x1=x2
        enddo
-       if (count>nintersect) call abortmp('ERROR: nintersect was too small')
+       ! reset to actual number of intersections
        nintersect=count
 #if 0
        print *,'gll->phys conservative monotone remap algorithm:'
@@ -1639,12 +1773,11 @@ endif
     print *,'sum of weights: ',pout(:,:)
     call abortmp(__FILE__)
 #endif
-    endif
 #if (defined HORIZ_OPENMP)
-    !OMP END MASTER
-    !OMP BARRIER
+!OMP END MASTER
+!OMP BARRIER
 #endif
-
+    endif
 
     pout=0
     do in_i = 1,nintersect

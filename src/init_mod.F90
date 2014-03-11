@@ -6,11 +6,7 @@
 module init_mod
 contains
 ! not a nice way to integrate fvm but otherwise DG does not work anymore
-#ifdef _FVM
   subroutine init(elem, edge1,edge2,edge3,red,par, fvm)
-#else  
-  subroutine init(elem, edge1,edge2,edge3,red,par)
-#endif
     use kinds, only : real_kind, longdouble_kind
     ! --------------------------------
     use thread_mod, only : nthreads
@@ -78,11 +74,9 @@ contains
     use params_mod, only : SFCURVE
     use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
     ! --------------------------------
-#ifdef _FVM 
-  use fvm_mod, only : fvm_init1
-  use fvm_control_volume_mod, only : fvm_struct
-  use dimensions_mod, only : nc
-#endif
+    use fvm_mod, only : fvm_init1
+    use fvm_control_volume_mod, only : fvm_struct
+    use dimensions_mod, only : nc, ntrac
 
     implicit none
 #ifdef _MPI
@@ -92,9 +86,7 @@ contains
 !   G95  "pointer attribute conflicts with INTENT attribute":  
 !    type (element_t), intent(inout), pointer :: elem(:)
     type (element_t), pointer :: elem(:)
-#ifdef _FVM    
     type (fvm_struct), pointer, optional :: fvm(:)
-#endif
         
     type (EdgeBuffer_t)           :: edge1
     type (EdgeBuffer_t)           :: edge2
@@ -285,10 +277,11 @@ contains
 
     allocate(elem(nelemd))
     call allocate_element_desc(elem)
-
-#ifdef _FVM
-    allocate(fvm(nelemd))
-#endif
+    if (ntrac>0) then
+       allocate(fvm(nelemd))
+    else
+       allocate(fvm(0))  ! create mesh, even if no cslam tracers
+    endif
 
     ! ====================================================
     !  Generate the communication schedule
@@ -403,10 +396,7 @@ contains
        call initRestartFile(elem(1)%state,par,RestFile)
     endif
     !DBG  print *,'prim_init: after call to initRestartFile'
-  
-#ifdef _FVM
-  call fvm_init1(par)
-#endif    
+    if (ntrac>0) call fvm_init1(par)
     
     call t_stopf('init')
   end subroutine init

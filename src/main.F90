@@ -58,19 +58,7 @@ program main
        Mpicom=par%comm, MasterTask=par%masterproc)
   call t_startf('Total')
   
-#ifdef _FVM
-  if(par%masterproc) then
-    print *, '----------------------------'
-    print *, 'RUN SWEQX with FVM TRACERS  '
-    print *, '----------------------------'
-  endif
-#endif
-
-#ifdef _FVM
-    call init(elem,edge1,edge2,edge3,red,par,fvm)
-#else    
-    call init(elem,edge1,edge2,edge3,red,par)
-#endif    
+  call init(elem,edge1,edge2,edge3,red,par,fvm)
   ! =====================================================
   ! Allocate state variables
   ! =====================================================

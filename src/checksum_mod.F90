@@ -3,7 +3,11 @@
 #endif
 
 module checksum_mod
-  use edge_mod, only : ghostbuffer3D_t, edgebuffer_t, ghostbuffer3d_t
+  use edge_mod, only : ghostbuffer3D_t, edgebuffer_t, ghostbuffer3d_t, ghostbufferTR_t
+  use kinds, only : real_kind
+  use dimensions_mod, only : np, nlev, nelem, nelemd, max_corner_elem, nc
+
+
   implicit none
 
   private
@@ -13,9 +17,10 @@ module checksum_mod
   ! and these buffers have to be thread-shared
   type (ghostBuffer3D_t)   :: ghostbuf,ghostbuf_cv
   type (ghostBuffer3d_t) :: ghostbuf3d
+  type (ghostBufferTR_t) :: ghostbuf_tr
   type (edgeBuffer_t)    :: edge1
 
-  public  :: testchecksum, test_ghost
+  public  :: testchecksum, test_ghost, test_bilin_phys2gll
   private :: genchecksum
   private :: ghostbuf,ghostbuf_cv,ghostbuf3d
 
@@ -28,10 +33,8 @@ contains
     use edge_mod, only : initedgebuffer, edgevpack, edgevunpack, edgedgvpack, &
          edgedgvunpack, edgebuffer_t
     use bndry_mod, only : bndry_exchangev
-    use kinds, only : real_kind
     use schedtype_mod, only : schedule_t, schedule
     use schedule_mod, only : checkschedule
-    use dimensions_mod, only : np, nlev, nelem, nelemd
 
     implicit none
 !#include <stats.h>
@@ -108,7 +111,8 @@ contains
     !  Allocate the communication Buffers
     !=======================================
 
-    call initEdgeBuffer(par,buffer,nlev)
+    call initEdgeBuffer(par,buffer,1)
+
 
     !=======================================
     !  Synch everybody up
@@ -280,7 +284,6 @@ contains
   end subroutine testchecksum
 
   subroutine genchecksum(TestField,Checksum,GridEdge)
-    use kinds, only : real_kind
     use gridgraph_mod, only : gridedge_t, edgeindex_t
 
     implicit none
@@ -353,9 +356,7 @@ contains
 !
 ! MT 7/2011  test new ghost exchange to populate ghost cells
 !
-  use kinds, only : real_kind
   use parallel_mod, only : syncmp
-  use dimensions_mod, only : np, nlev, max_corner_elem
   use hybrid_mod, only : hybrid_t
   use element_mod, only : element_t
   use bndry_mod, only : ghost_exchangevfull, bndry_exchangev
@@ -674,6 +675,120 @@ contains
   call freeghostbuffer3d(ghostbuf3d)
   call syncmp(hybrid%par)
   if (hybrid%par%masterproc) print *,'done'
+end subroutine
+
+
+
+
+
+
+  subroutine test_bilin_phys2gll(elem,fvm,hybrid,nets,nete)
+!
+! MT 3/2014  test bilinear interpolation routine
+!            run at several resolutiosn verify error decreases 2nd order 
+!
+  use hybrid_mod, only : hybrid_t
+  use element_mod, only : element_t
+  use fvm_control_volume_mod, only : fvm_struct
+  use bndry_mod, only : bndry_exchangev
+  use edge_mod, only :  edgebuffer_t, edgevpack,edgevunpack, initedgebuffer, &
+       freeedgebuffer
+  use coordinate_systems_mod, only : cartesian3D_t,cartesian2D_t,spherical_polar_t,&
+       spherical_to_cart,cart2spherical
+  use derivative_mod, only : remap_phys2gll
+  use fvm_mod, only : bilin_phys2gll
+  use global_norms_mod, only : linf_snorm, l1_snorm, l2_snorm
+
+  implicit none
+
+  type (hybrid_t)      , intent(in) :: hybrid
+  type (element_t)     , intent(inout), target :: elem(:)
+  type (fvm_struct)    , intent(inout), target :: fvm(:)
+  integer :: nets,nete
+
+  ! local
+  integer :: i,j,ie
+  type (cartesian3D_t) ::   cart3d
+  type (spherical_polar_t) ::   sphere
+  real (kind=real_kind) :: interpolated_gll(np,np,nets:nete)
+  real (kind=real_kind) :: diff(np,np,nets:nete)
+  real (kind=real_kind) :: exact_gll(np,np,nets:nete)
+  real (kind=real_kind) :: exact_fvm(nc,nc,nets:nete)
+  real (kind=real_kind) :: l2,linf
+  type (EdgeBuffer_t)                         :: buffer
+
+  if (hybrid%masterthread) print *,'running test_bilin_phys2gll'
+
+  call initEdgeBuffer(hybrid%par,buffer,1)
+
+  ! test the bilinear map from FVM cells to GLL points
+  ! function:  1 + x + y^2 + z^3
+    
+  do ie=nets,nete
+     ! Exact solution
+     do j=1,np
+     do i=1,np
+        sphere = elem(ie)%spherep(i,j)
+        cart3d = spherical_to_cart( sphere  )  ! lat/lon -> 3D
+        exact_gll(i,j,ie)=1 + cart3d%x + (cart3d%y)**2 + (cart3d%z)**3
+     enddo
+     enddo
+     ! Exact solution on CSLAM grid
+     do j=1,nc
+     do i=1,nc
+        cart3d=spherical_to_cart(fvm(ie)%centersphere(i,j))       ! lat/lon -> 3D 
+        exact_fvm(i,j,ie)=1 + cart3d%x + (cart3d%y)**2 + (cart3d%z)**3
+     enddo
+     enddo
+     ! Interpolate CSLAM -> GLL
+!     interpolated_gll(:,:,ie)=remap_phys2gll(exact_fvm(:,:,ie),nc)
+     interpolated_gll(:,:,ie)=bilin_phys2gll(exact_fvm(:,:,ie),nc,&
+          elem,fvm,hybrid,nets,nete,ie)
+     ! apply DSS:
+     interpolated_gll(:,:,ie)=interpolated_gll(:,:,ie)*elem(ie)%spheremp(:,:)
+     
+     call edgeVpack(buffer,interpolated_gll(:,:,ie),1,0,elem(ie)%desc)
+  enddo
+  call bndry_exchangeV(hybrid,buffer)
+  do ie=nets,nete
+     call edgeVunpack(buffer,interpolated_gll(:,:,ie),1,0,elem(ie)%desc)
+     interpolated_gll(:,:,ie)=interpolated_gll(:,:,ie)*elem(ie)%rspheremp(:,:)
+  enddo
+  call freeEdgeBuffer(buffer)
+
+  ! compute the error:
+  l2  = l2_snorm(elem, interpolated_gll(:,:,nets:nete), exact_gll(:,:,nets:nete),hybrid,np,nets,nete)
+  linf= linf_snorm(interpolated_gll(:,:,nets:nete), exact_gll(:,:,nets:nete),hybrid,np,nets,nete)
+
+  if (hybrid%masterthread) then
+     write(*,'(a,2e15.5)') "bilin_phys2gll l2,linf error =",l2,linf
+     ie=1
+     print *,'exact solution phys grid'
+     do j=1,nc
+        write(*,'(99e12.4)') (exact_fvm(i,j,ie),i=1,nc)
+     enddo
+
+     print *,'exact solution GLL grid'
+     do j=1,np
+        write(*,'(99e12.4)') (exact_gll(i,j,ie),i=1,np)
+     enddo
+
+     print *,'interpolated solution GLL grid'
+     do j=1,np
+        write(*,'(99e12.4)') (interpolated_gll(i,j,ie),i=1,np)
+     enddo
+
+     print *,'error GLL grid'
+     do j=1,np
+        write(*,'(99e12.4)') (interpolated_gll(i,j,ie)-exact_gll(i,j,ie),i=1,np)
+     enddo
+
+     print *,'DSS weights'
+     do j=1,np
+        write(*,'(99e12.4)') (elem(ie)%spheremp(i,j)*elem(ie)%rspheremp(i,j),i=1,np)
+     enddo
+
+  endif
 end subroutine
 
 end module checksum_mod

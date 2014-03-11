@@ -2030,7 +2030,8 @@ subroutine spelt_grid_init(elem,spelt,nets,nete,tl)
   use cube_mod, only : vmap, ref2sphere
   use kinds, only : longdouble_kind
   use physical_constants, only : DD_PI
-  use control_mod, only : north, south, east, west, neast, nwest, seast, swest
+  use control_mod, only : north, south, east, west, neast, nwest, seast, swest,&
+     cubed_sphere_map
   use quadrature_mod, only : quadrature_t, gausslobatto
   use parallel_mod, only : haltmp, abortmp
   
@@ -2086,7 +2087,7 @@ subroutine spelt_grid_init(elem,spelt,nets,nete,tl)
             iel=ic+(i-1)*nipm
             jel=jc+(j-1)*nipm
             !define the arrival grid in spherical coordinates
-            spelt(ie)%asphere(iel,jel)=ref2sphere(xref,yref,elem(ie)%corners3D,elem(ie)%corners,elem(ie)%facenum) 
+            spelt(ie)%asphere(iel,jel)=ref2sphere(xref,yref,elem(ie)%corners3D,cubed_sphere_map,elem(ie)%corners,elem(ie)%facenum) 
             alphabeta=sphere2cubedsphere(spelt(ie)%asphere(iel,jel), elem(ie)%FaceNum)
             tmpab(iel,jel)=alphabeta
             spelt(ie)%sga(iel,jel)=metric_term(alphabeta)
