@@ -160,7 +160,8 @@ module edge_mod
 ! input/output arrays are cartesian, and thus assume at most 1 element at each corner
 ! hence currently only supports cube-sphere grids.
 !
-! TODO: GhostBufferTR should be removed - we only need GhostBuffer3D, if we can fix
+! TODO: GhostBufferTR (init and type) should be removed - we only need GhostBuffer3D, 
+! if we can fix
 ! ghostVpack2d below to pass vlyr*ntrac_d instead of two seperate arguments
 !
   public :: initGhostBufferTR     ! ghostbufferTR_t
@@ -1805,7 +1806,7 @@ contains
   !! hold all vertical layers you intent to pack, the method will 
   !! halt the program with a call to parallel_mod::haltmp().
   !! @param[in] edge Ghost Buffer into which the data will be packed.
-  !! This buffer must be previously allocated with initghostbufferfull().
+  !! This buffer must be previously allocated with initghostbuffer().
   !! @param[in] v The data to be packed.
   !! @param[in] vlyr Number of vertical level coming into the subroutine
   !! for packing for input v.
