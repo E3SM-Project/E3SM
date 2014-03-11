@@ -787,7 +787,8 @@ subroutine fvm_mesh_dep(elem, deriv, fvm, dt, tl, klev)
 
   use derivative_mod, only : derivative_t
 
-#ifndef _PRIM
+#undef ANALITICAL_DEPATURE
+#ifdef ANALITICAL_DEPATURE
   use fvm_bsp_mod, only: boomerang, solidbody
 #endif
 
@@ -804,7 +805,7 @@ subroutine fvm_mesh_dep(elem, deriv, fvm, dt, tl, klev)
   
 
 ! for the benchmark test, use more accurate departure point creation
-#if 0 
+#ifdef ANALITICAL_DEPATURE
 !CE: define new mesh for fvm fvm on an equal angular grid
 ! go from alpha,beta -> cartesian xy on cube -> lat lon on the sphere
   do j=1,nc+1
