@@ -1516,7 +1516,8 @@ endif
 !
 !  For edge/corner nodes:  compute only contribution from this element,
 !  assuming there is a corresponding (symmetric) contribution from the
-!  neighboring element.  (which is false at cube panel edges)
+!  neighboring element which will be incorporated after DSS'ing the results
+!  Note: this symmetry assuption is false at cube panel edges.  
 !
 !  MT initial version 3/2014
 !  2nd order at all gll points (including cube corners) *except*
