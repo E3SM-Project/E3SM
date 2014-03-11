@@ -277,17 +277,18 @@ contains
 
     allocate(elem(nelemd))
     call allocate_element_desc(elem)
+    if (present(fvm)) then
     if (ntrac>0) then
        allocate(fvm(nelemd))
     else
        allocate(fvm(0))  ! create mesh, even if no cslam tracers
+    endif
     endif
 
     ! ====================================================
     !  Generate the communication schedule
     ! ====================================================
     call genEdgeSched(elem, iam,Schedule(1),MetaVertex(1))
-
     !call PrintSchedule(Schedule(1))
     
 
@@ -297,7 +298,6 @@ contains
 
     ! initial 1D grids used to form tensor product element grids:
     gp=gausslobatto(np)
-
     if (topology=="cube") then
        ! ========================================================================
        ! Note it is more expensive to initialize each individual spectral element 
@@ -395,7 +395,6 @@ contains
     if(restartfreq > 0) then
        call initRestartFile(elem(1)%state,par,RestFile)
     endif
-    !DBG  print *,'prim_init: after call to initRestartFile'
     if (ntrac>0) call fvm_init1(par)
     
     call t_stopf('init')

@@ -42,9 +42,13 @@ SET(SWDGX_SRCS
     ${SRC_SHARE}/cube_mod.F90
     ${SRC_SHARE}/interpolate_mod.F90
     ${SRC_SHARE}/spelt_mod.F90
+    ${SRC_SHARE}/fvm_mod.F90
     ${SRC_SHARE}/fvm_control_volume_mod.F90
-    ${SRC_SHARE}/fvm_reconstruction_mod.F90
-    ${SRC_SHARE}/fvm_filter_mod.F90
+    ${SRC_SHARE}/fvm_line_integrals_mod.F90 
+    ${SRC_SHARE}/fvm_line_integrals_flux_mod.F90 
+    ${SRC_SHARE}/fvm_analytic_mod.F90 
+    ${SRC_SHARE}/fvm_filter_mod.F90 
+    ${SRC_SHARE}/fvm_reconstruction_mod.F90 
     ${SRC_BASE}/interp_movie_mod.F90
     ${SRC_UTILS}/shr_kind_mod.F90
     ${SRC_UTILS}/shr_mpi_mod.F90
