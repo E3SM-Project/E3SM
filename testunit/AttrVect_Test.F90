@@ -1093,6 +1093,7 @@ i = 4
 call MCT_AtrVt_init(av,iList=variables,lsize=length)
 av%iAttr=i
 
+nullify(out)
 call MCT_AtrVt_exportIAttr(av, keyVar,out)
 do y=1,length
 if(out(y) /= i)then
@@ -1107,6 +1108,8 @@ else
   localResult = 0
   result = 1
 endif
+
+deallocate(out)
 
 call MCT_AtrVt_exportIAttr(av, keyVar,out,size)
 do y=1,length
@@ -1176,6 +1179,7 @@ r = .09_FP
 call MCT_AtrVt_init(av,rList=variables,lsize=length)
 av%rAttr=r
 
+nullify(out)
 call MCT_AtrVt_exportRAttr(av, keyVar,out)
 do y=1,length
 if(out(y) /= r)then
@@ -1190,6 +1194,8 @@ else
   localResult = 0
   result = 1
 endif
+
+deallocate(out)
 
 call MCT_AtrVt_exportRAttr(av, keyVar,out,size)
 do y=1,length
@@ -1261,6 +1267,8 @@ importVectP => importVect
 
 call MCT_AtrVt_init(av,iList=variables,lsize=length)
 call MCT_AtrVt_importIAttr(av,TRIM(keyVar),importVectP)
+
+nullify(out)
 call MCT_AtrVt_exportIAttr(av,TRIM(keyVar),out)
 do y=1,length
 if(out(y) /= i)then
@@ -1274,6 +1282,8 @@ else
   localResult = 0
   result = 1
 endif
+
+deallocate(out)
 
 i=6
 importVect = i
@@ -1350,6 +1360,7 @@ importVectP => importVect
 
 call MCT_AtrVt_init(av,rList=variables,lsize=length)
 call MCT_AtrVt_importRAttr(av,TRIM(keyVar),importVectP)
+nullify(out)
 call MCT_AtrVt_exportRAttr(av,TRIM(keyVar),out)
 do y=1,length
 if(out(y) /= r)then
@@ -1363,6 +1374,8 @@ else
   localResult = 0
   result = 1
 endif
+
+deallocate(out)
 
 r=0.06_FP
 importVect = r
