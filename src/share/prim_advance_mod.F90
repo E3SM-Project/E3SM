@@ -352,15 +352,32 @@ contains
 #else
        ! Ullrich 3nd order 5 stage:   CFL=sqrt( 4^2 -1) = 3.87
        ! u1 = u0 + dt/5 RHS(u0)  (save u1 in timelevel nm1)
+
+       !
+       ! phl: rhs: t=t
+       !
        call compute_and_apply_rhs(nm1,n0,n0,qn0,dt/5,elem,hvcoord,hybrid,&
             deriv,nets,nete,compute_diagnostics,eta_ave_w/4)
        ! u2 = u0 + dt/5 RHS(u1)
+
+       !
+       ! phl: rhs: t=t+dt/5
+       !
        call compute_and_apply_rhs(np1,n0,nm1,qn0,dt/5,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,0d0)
        ! u3 = u0 + dt/3 RHS(u2)
+       !
+       ! phl: rhs: t=t+2*dt/5
+       !
+
        call compute_and_apply_rhs(np1,n0,np1,qn0,dt/3,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,0d0)
        ! u4 = u0 + 2dt/3 RHS(u3)
+
+       !
+       ! phl: rhs: t=t+2*dt/5+dt/3
+       !
+
        call compute_and_apply_rhs(np1,n0,np1,qn0,2*dt/3,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,0d0)
 
@@ -379,6 +396,10 @@ contains
           endif
        enddo
        ! u5 = (5*u1/4 - u0/4) + 3dt/4 RHS(u4)
+       !
+       ! phl: rhs: t=t+2*dt/5+dt/3+3*dt/4         -wrong RK times ...
+       !
+
        call compute_and_apply_rhs(np1,nm1,np1,qn0,3*dt/4,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,3*eta_ave_w/4)
        ! final method is the same as:
@@ -2404,6 +2425,10 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   end subroutine advance_hypervis_lf
 
 
+  !
+  ! phl notes: output is stored in first argument. Advances from 2nd argument using tendencies evaluated at 3rd rgument: 
+  ! phl: for offline winds use time at 3rd argument (same as rhs currently)
+  !
   subroutine compute_and_apply_rhs(np1,nm1,n0,qn0,dt2,elem,hvcoord,hybrid,&
        deriv,nets,nete,compute_diagnostics,eta_ave_w)
   ! ===================================
@@ -2743,13 +2768,19 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
               vtens1(i,j,k) =   - v_vadv(i,j,1,k)                           &
                    + v2*(elem(ie)%fcor(i,j) + vort(i,j,k))        &
                    - vtemp(i,j,1) - glnps1
-
+              !
+              ! phl: add forcing term to zonal wind u
+              !
               vtens2(i,j,k) =   - v_vadv(i,j,2,k)                            &
                    - v1*(elem(ie)%fcor(i,j) + vort(i,j,k))        &
                    - vtemp(i,j,2) - glnps2
-
+              !
+              ! phl: add forcing term to meridional wind v
+              !
               ttens(i,j,k)  = - T_vadv(i,j,k) - vgrad_T(i,j) + kappa_star(i,j,k)*T_v(i,j,k)*omega_p(i,j,k)
-
+              !
+              ! phl: add forcing term to T
+              !
            end do
         end do
 

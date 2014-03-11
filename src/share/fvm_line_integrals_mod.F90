@@ -23,8 +23,9 @@ module fvm_line_integrals_mod
   real (kind=real_kind),parameter           :: fuzzy_width = 10.0*tiny
   ! turn on/off EOC (Enforcement of Consistency) -> Erath et al. MWR, 2013
   logical                                   :: EOC=.FALSE.
+  logical :: ldbg=.false.!dbg xxx
   public :: compute_weights, compute_weights_cell, gauss_points, getdep_cellboundariesxyvec
-  public :: compute_slope,y_cross_eul_lon,x_cross_eul_lat
+  public :: compute_slope,y_cross_eul_lon,x_cross_eul_lat,area
 contains
 ! ----------------------------------------------------------------------------------!
 !SUBROUTINE COMPUTE_WEIGHTS-----------------------------------------------CE-for FVM!
@@ -132,24 +133,26 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
   end do
   
   do jy=1, nc
-    do jx=1, nc            
-      !
-      ! define departure cell
-      !
-      call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)     
-      call compute_weights_cell(4,.not.EOC,xcell,ycell,jx,jy,nreconstruction,&
-           fvm%acartx,fvm%acarty,jx_min, jx_max, jy_min, jy_max, &
-           tmp,ngpc,gsweights,gspts,&
-           weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell) 
-      if (jcollect_cell>0) then
-        weights_all(jall:jall+jcollect_cell-1,:) = weights_cell(1:jcollect_cell,:)
-        weights_eul_index_all(jall:jall+jcollect_cell-1,:) = &
-             weights_eul_index_cell(1:jcollect_cell,:)
-        weights_lgr_index_all(jall:jall+jcollect_cell-1,1) = jx
-        weights_lgr_index_all(jall:jall+jcollect_cell-1,2) = jy
-        jall = jall+jcollect_cell          
-      endif
-    end do
+     do jx=1, nc            
+        !
+        ! define departure cell
+        !
+        call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)     
+
+        call compute_weights_cell(4,.not.EOC,xcell,ycell,jx,jy,nreconstruction,&
+             fvm%acartx,fvm%acarty,jx_min, jx_max, jy_min, jy_max, &
+             tmp,ngpc,gsweights,gspts,&
+             weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell) 
+
+        if (jcollect_cell>0) then
+           weights_all(jall:jall+jcollect_cell-1,:) = weights_cell(1:jcollect_cell,:)
+           weights_eul_index_all(jall:jall+jcollect_cell-1,:) = &
+                weights_eul_index_cell(1:jcollect_cell,:)
+           weights_lgr_index_all(jall:jall+jcollect_cell-1,1) = jx
+           weights_lgr_index_all(jall:jall+jcollect_cell-1,2) = jy
+           jall = jall+jcollect_cell          
+        endif
+     end do
   end do
   jallactual=jall
   
@@ -162,161 +165,161 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
   ! xphl rigorous remapping schemes on the sphere. Mon. Wea. Rev.
   !
   if (EOC) then
-    do jy=jy_min-1, 0
-      do jx=jx_min-1, jx_max  
-        if ((fvm%cubeboundary == swest) .and. (jx<1) .and. (jy<1)) then
-          !
-          ! xphl no cells in "south-west" halo
-          !
-          cycle
-        endif
-        if ((fvm%cubeboundary == seast) .and. (jx>nc) .and. (jy<1)) then
-          cycle
-        endif
-        call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)  
-        call compute_weights_cell(4,.not.EOC,xcell,ycell,jx,jy,nreconstruction,&
-             fvm%acartx,fvm%acarty,jx_min, jx_max, jy_min, jy_max, &
-             tmp,ngpc,gsweights,gspts,&
-             weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell) 
-        if (jcollect_cell>0) then
-          weights_all(jall:jall+jcollect_cell-1,:) = weights_cell(1:jcollect_cell,:)
-          weights_eul_index_all(jall:jall+jcollect_cell-1,:) = &
-               weights_eul_index_cell(1:jcollect_cell,:)
-          weights_lgr_index_all(jall:jall+jcollect_cell-1,1) = jx
-            weights_lgr_index_all(jall:jall+jcollect_cell-1,2) = jy
-            jall = jall+jcollect_cell          
-          endif
+     do jy=jy_min-1, 0
+        do jx=jx_min-1, jx_max  
+           if ((fvm%cubeboundary == swest) .and. (jx<1) .and. (jy<1)) then
+              !
+              ! xphl no cells in "south-west" halo
+              !
+              cycle
+           endif
+           if ((fvm%cubeboundary == seast) .and. (jx>nc) .and. (jy<1)) then
+              cycle
+           endif
+           call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)  
+           call compute_weights_cell(4,.not.EOC,xcell,ycell,jx,jy,nreconstruction,&
+                fvm%acartx,fvm%acarty,jx_min, jx_max, jy_min, jy_max, &
+                tmp,ngpc,gsweights,gspts,&
+                weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell) 
+           if (jcollect_cell>0) then
+              weights_all(jall:jall+jcollect_cell-1,:) = weights_cell(1:jcollect_cell,:)
+              weights_eul_index_all(jall:jall+jcollect_cell-1,:) = &
+                   weights_eul_index_cell(1:jcollect_cell,:)
+              weights_lgr_index_all(jall:jall+jcollect_cell-1,1) = jx
+              weights_lgr_index_all(jall:jall+jcollect_cell-1,2) = jy
+              jall = jall+jcollect_cell          
+           endif
         end do
-      end do
-    
-      do jy=nc+1, jy_max
+     end do
+     
+     do jy=nc+1, jy_max
         do jx=jx_min-1, jx_max      
-          if ((fvm%cubeboundary == nwest) .and. (jx<1) .and. (jy>nc)) then
-            cycle
-          endif
-          if ((fvm%cubeboundary == neast) .and. (jx>nc) .and. (jy>nc)) then
-            cycle
-          endif
-          call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)  
-          call compute_weights_cell(4,.not.EOC,xcell,ycell,jx,jy,nreconstruction,&
-               fvm%acartx,fvm%acarty,jx_min, jx_max, jy_min, jy_max, &
-               tmp,ngpc,gsweights,gspts,&
-               weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell) 
-          if (jcollect_cell>0) then
-            weights_all(jall:jall+jcollect_cell-1,:) = weights_cell(1:jcollect_cell,:)
-            weights_eul_index_all(jall:jall+jcollect_cell-1,:) = &
-                                          weights_eul_index_cell(1:jcollect_cell,:)
-            weights_lgr_index_all(jall:jall+jcollect_cell-1,1) = jx
-            weights_lgr_index_all(jall:jall+jcollect_cell-1,2) = jy
-            jall = jall+jcollect_cell          
-          endif
+           if ((fvm%cubeboundary == nwest) .and. (jx<1) .and. (jy>nc)) then
+              cycle
+           endif
+           if ((fvm%cubeboundary == neast) .and. (jx>nc) .and. (jy>nc)) then
+              cycle
+           endif
+           call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)  
+           call compute_weights_cell(4,.not.EOC,xcell,ycell,jx,jy,nreconstruction,&
+                fvm%acartx,fvm%acarty,jx_min, jx_max, jy_min, jy_max, &
+                tmp,ngpc,gsweights,gspts,&
+                weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell) 
+           if (jcollect_cell>0) then
+              weights_all(jall:jall+jcollect_cell-1,:) = weights_cell(1:jcollect_cell,:)
+              weights_eul_index_all(jall:jall+jcollect_cell-1,:) = &
+                   weights_eul_index_cell(1:jcollect_cell,:)
+              weights_lgr_index_all(jall:jall+jcollect_cell-1,1) = jx
+              weights_lgr_index_all(jall:jall+jcollect_cell-1,2) = jy
+              jall = jall+jcollect_cell          
+           endif
         end do
-      end do
-      do jx=jx_min-1, 0
+     end do
+     do jx=jx_min-1, 0
         do jy=1, nc             
-          call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)  
-          call compute_weights_cell(4,.not.EOC,xcell,ycell,jx,jy,nreconstruction,&
-               fvm%acartx,fvm%acarty,jx_min, jx_max, jy_min, jy_max, &
-               tmp,ngpc,gsweights,gspts,&
-               weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell) 
-          if (jcollect_cell>0) then
-            weights_all(jall:jall+jcollect_cell-1,:) = weights_cell(1:jcollect_cell,:)
-            weights_eul_index_all(jall:jall+jcollect_cell-1,:) = &
-                 weights_eul_index_cell(1:jcollect_cell,:)
-            weights_lgr_index_all(jall:jall+jcollect_cell-1,1) = jx
-            weights_lgr_index_all(jall:jall+jcollect_cell-1,2) = jy
-            jall = jall+jcollect_cell          
-          endif
+           call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)  
+           call compute_weights_cell(4,.not.EOC,xcell,ycell,jx,jy,nreconstruction,&
+                fvm%acartx,fvm%acarty,jx_min, jx_max, jy_min, jy_max, &
+                tmp,ngpc,gsweights,gspts,&
+                weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell) 
+           if (jcollect_cell>0) then
+              weights_all(jall:jall+jcollect_cell-1,:) = weights_cell(1:jcollect_cell,:)
+              weights_eul_index_all(jall:jall+jcollect_cell-1,:) = &
+                   weights_eul_index_cell(1:jcollect_cell,:)
+              weights_lgr_index_all(jall:jall+jcollect_cell-1,1) = jx
+              weights_lgr_index_all(jall:jall+jcollect_cell-1,2) = jy
+              jall = jall+jcollect_cell          
+           endif
         end do
-      end do
-      do jx=nc+1, jx_max
+     end do
+     do jx=nc+1, jx_max
         do jy=1, nc             
-          call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)  
-          call compute_weights_cell(4,.not.EOC,xcell,ycell,jx,jy,nreconstruction,&
-               fvm%acartx,fvm%acarty,jx_min, jx_max, jy_min, jy_max, &
-               tmp,ngpc,gsweights,gspts,&
-               weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell) 
-          if (jcollect_cell>0) then
-            weights_all(jall:jall+jcollect_cell-1,:) = weights_cell(1:jcollect_cell,:)
-            weights_eul_index_all(jall:jall+jcollect_cell-1,:) = &
-                 weights_eul_index_cell(1:jcollect_cell,:)
-            weights_lgr_index_all(jall:jall+jcollect_cell-1,1) = jx
-            weights_lgr_index_all(jall:jall+jcollect_cell-1,2) = jy
-            jall = jall+jcollect_cell          
-          endif
+           call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)  
+           call compute_weights_cell(4,.not.EOC,xcell,ycell,jx,jy,nreconstruction,&
+                fvm%acartx,fvm%acarty,jx_min, jx_max, jy_min, jy_max, &
+                tmp,ngpc,gsweights,gspts,&
+                weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell) 
+           if (jcollect_cell>0) then
+              weights_all(jall:jall+jcollect_cell-1,:) = weights_cell(1:jcollect_cell,:)
+              weights_eul_index_all(jall:jall+jcollect_cell-1,:) = &
+                   weights_eul_index_cell(1:jcollect_cell,:)
+              weights_lgr_index_all(jall:jall+jcollect_cell-1,1) = jx
+              weights_lgr_index_all(jall:jall+jcollect_cell-1,2) = jy
+              jall = jall+jcollect_cell          
+           endif
         end do
-      end do
-      !
-      ! xphl done weight correction
-      !
-      da_cslam=0.0D0
-      centroid_cslam=0.0D0
-      do ja=1,jall-1
+     end do
+     !
+     ! xphl done weight correction
+     !
+     da_cslam=0.0D0
+     centroid_cslam=0.0D0
+     do ja=1,jall-1
         jx = weights_eul_index_all(ja,1); jy = weights_eul_index_all(ja,2);
         da_cslam(jx,jy) = da_cslam(jx,jy)+weights_all(ja,1)
         centroid_cslam(:,jx,jy) = centroid_cslam(:,jx,jy)+weights_all(ja,2:6)
-      end do   
+     end do
+     
+     jall=jallactual
+     jallactual_eul=jall
+  endif !end EOC
     
-      jall=jallactual
-      jallactual_eul=jall
-    endif
-    
-    !WEST SIDE
-    if (fvm%cubeboundary == west) then
-      ! calculate xy Cartesian on the cube of departure points on the corresponding face
-      do jx=-1,2      
+  !WEST SIDE
+  if (fvm%cubeboundary == west) then
+     ! calculate xy Cartesian on the cube of departure points on the corresponding face
+     do jx=-1,2      
         do jy=-1,nc+3
-          call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy,klev)),&
-               fvm%nbrsface(west),dcart(jx,jy))                  
+           call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy,klev)),&
+                fvm%nbrsface(west),dcart(jx,jy))                  
         end do
-      end do
-      jx=1
-      do jy=1,nc
+     end do
+     jx=1
+     do jy=1,nc
         !       call getdep_cellboundaries(xcell,ycell,jx,jy,fvm%nbrsface(west),fvm%dsphere) 
         call getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)     
         
         if(swap1) then  !flip orientation
-          call compute_weights_cell(4,.not.EOC,xcell,ycell,jy_min1,jx_min1,nreconstruction,&
-               fvm%acarty1,fvm%acartx1,jy_min1, jy_max1, jx_min1, jx_max1, &
-               tmp,ngpc,gsweights,gspts,&
-               weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
-          do i=1,jcollect_cell
-            !
-            ! xphl swap i and j indices for ovelap areas on panel to the west - what panel?
-            !
-            inttmp=weights_eul_index_cell(i,1)
-            weights_eul_index_cell(i,1)=weights_eul_index_cell(i,2)
-            weights_eul_index_cell(i,2)=inttmp
-          end do
+           call compute_weights_cell(4,.not.EOC,xcell,ycell,jy_min1,jx_min1,nreconstruction,&
+                fvm%acarty1,fvm%acartx1,jy_min1, jy_max1, jx_min1, jx_max1, &
+                tmp,ngpc,gsweights,gspts,&
+                weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
+           do i=1,jcollect_cell
+              !
+              ! xphl swap i and j indices for ovelap areas on panel to the west - what panel?
+              !
+              inttmp=weights_eul_index_cell(i,1)
+              weights_eul_index_cell(i,1)=weights_eul_index_cell(i,2)
+              weights_eul_index_cell(i,2)=inttmp
+           end do
         else  
-          call compute_weights_cell(4,.not.EOC,xcell,ycell,jx,jy,nreconstruction,&
-               fvm%acartx1,fvm%acarty1,jx_min1, jx_max1, jy_min1, jy_max1, &
-               tmp,ngpc,gsweights,gspts,&
-               weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
+           call compute_weights_cell(4,.not.EOC,xcell,ycell,jx,jy,nreconstruction,&
+                fvm%acartx1,fvm%acarty1,jx_min1, jx_max1, jy_min1, jy_max1, &
+                tmp,ngpc,gsweights,gspts,&
+                weights_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
         end if
         !I have to correct the number - xphl????
         if (fvm%faceno==5) then
-          do i=1,jcollect_cell
-            weights_eul_index_cell(i,1)=weights_eul_index_cell(i,1)+nhe-1
-          end do
+           do i=1,jcollect_cell
+              weights_eul_index_cell(i,1)=weights_eul_index_cell(i,1)+nhe-1
+           end do
         end if
         if (fvm%faceno==6) then
-          do i=1,jcollect_cell
-            weights_eul_index_cell(i,2)=jy_max1-jy_min1-weights_eul_index_cell(i,2)-nhe-nhe+1
-          end do
+           do i=1,jcollect_cell
+              weights_eul_index_cell(i,2)=jy_max1-jy_min1-weights_eul_index_cell(i,2)-nhe-nhe+1
+           end do
         end if
         if (jcollect_cell>0) then
-          weights_all(jall:jall+jcollect_cell-1,:) = weights_cell(1:jcollect_cell,:)
-          weights_eul_index_all(jall:jall+jcollect_cell-1,:) = &
-               weights_eul_index_cell(1:jcollect_cell,:)
-          weights_lgr_index_all(jall:jall+jcollect_cell-1,1) = jx
-          weights_lgr_index_all(jall:jall+jcollect_cell-1,2) = jy
-          jall = jall+jcollect_cell          
+           weights_all(jall:jall+jcollect_cell-1,:) = weights_cell(1:jcollect_cell,:)
+           weights_eul_index_all(jall:jall+jcollect_cell-1,:) = &
+                weights_eul_index_cell(1:jcollect_cell,:)
+           weights_lgr_index_all(jall:jall+jcollect_cell-1,1) = jx
+           weights_lgr_index_all(jall:jall+jcollect_cell-1,2) = jy
+           jall = jall+jcollect_cell          
         endif
-      end do
-      
-      ! for Eulerian Correction  (Erath et al., MWR, 2013)
-      if(EOC) then
+     end do
+     
+     ! for Eulerian Correction  (Erath et al., MWR, 2013)
+     if(EOC) then
         jallactual=jall
         !
         do jx=-1,1      
@@ -1735,19 +1738,21 @@ use coordinate_systems_mod, only : cartesian2D_t
   integer (kind=int_kind), intent(in)                      :: jx, jy
   type (cartesian2D_t), intent(in)                         :: dcart(-1:nc+3,-1:nc+3)
 
-   xcell(1) = dcart(jx  ,jy  )%x 
-   ycell(1) = dcart(jx  ,jy  )%y
-   xcell(2) = dcart(jx  ,jy+1)%x 
-   ycell(2) = dcart(jx  ,jy+1)%y
-   xcell(3) = dcart(jx+1,jy+1)%x 
-   ycell(3) = dcart(jx+1,jy+1)%y
-   xcell(4) = dcart(jx+1,jy  )%x 
-   ycell(4) = dcart(jx+1,jy  )%y
-   xcell(5) = xcell(1)        
-   ycell(5) = ycell(1)          
-   xcell(0) = xcell(4)        
-   ycell(0) = ycell(4)
+  xcell(1) = dcart(jx  ,jy  )%x 
+  ycell(1) = dcart(jx  ,jy  )%y
+  xcell(2) = dcart(jx  ,jy+1)%x 
+  ycell(2) = dcart(jx  ,jy+1)%y
+  xcell(3) = dcart(jx+1,jy+1)%x 
+  ycell(3) = dcart(jx+1,jy+1)%y
+  xcell(4) = dcart(jx+1,jy  )%x 
+  ycell(4) = dcart(jx+1,jy  )%y
+
+  xcell(5) = xcell(1)        
+  ycell(5) = ycell(1)          
+  xcell(0) = xcell(4)        
+  ycell(0) = ycell(4)
 end subroutine getdep_cellboundariesxyvec
+
 !END SUBROUTINE GETDEP_CELLBOUNDARIESXYVEC--------------------------------CE-for FVM!
     
 ! ----------------------------------------------------------------------------------!
@@ -1794,8 +1799,6 @@ end subroutine getdep_cellboundariesxyvec
     integer (kind=int_kind),  &
          dimension(jmax_segments,2), intent(out)      :: weights_eul_index
     
-    real (kind=real_kind), dimension(0:3) :: x,y
-    integer (kind=int_kind),dimension(0:5) :: jx_eul, jy_eul
     integer (kind=int_kind) :: jsegment,i
     !
     ! variables for registering crossings with Eulerian latitudes and longitudes
@@ -1808,7 +1811,7 @@ end subroutine getdep_cellboundariesxyvec
          dimension(8*nhe,2) :: r_cross_lat
     integer (kind=int_kind), &
          dimension(8*nhe,2) :: cross_lat_eul_index
-    real (kind=real_kind)   ,  dimension(4) :: xcell,ycell
+    real (kind=real_kind)   ,  dimension(nvertex) :: xcell,ycell
 
     xcell = xcell_in(1:nvertex)
     ycell = ycell_in(1:nvertex)
@@ -1817,7 +1820,18 @@ end subroutine getdep_cellboundariesxyvec
     weights    = 0.0D0
     jcross_lat = 0
           
-    call side_integral(lexact_horizontal_line_integrals,xcell,ycell,4,jsegment,jmax_segments,&
+!    if (jx==4.and.jy==3) then
+!       ldbg=.true.
+!    else
+       ldbg=.false.
+!    end if
+    if (ldbg) write(*,*) "going into side_integral"
+!    if (ldbg) write(*,*) "cell is:"
+!    do i=1,nvertex
+!       if (ldbg) write(*,*) xcell(i),ycell(i)
+!    end do
+!    if (ldbg) write(*,*) "are line-integrals being computed exactly?",lexact_horizontal_line_integrals
+    call side_integral(lexact_horizontal_line_integrals,xcell,ycell,nvertex,jsegment,jmax_segments,&
          weights,weights_eul_index,nreconstruction,jx,jy,xgno,ygno,jx_min, jx_max, jy_min, jy_max,&
          ngauss,gauss_weights,abscissae,&
          jcross_lat,r_cross_lat,cross_lat_eul_index)
@@ -1828,6 +1842,7 @@ end subroutine getdep_cellboundariesxyvec
     !
     !**********************
     !    
+    if (ldbg) write(*,*) "going into compute_inner_line_integrals_lat"
     call compute_inner_line_integrals_lat(lexact_horizontal_line_integrals,&
          r_cross_lat,cross_lat_eul_index,&
          jcross_lat,jsegment,jmax_segments,xgno,jx_min, jx_max, jy_min, jy_max,&
@@ -1854,6 +1869,8 @@ end subroutine getdep_cellboundariesxyvec
       !       stop
       do i=1,jcollect     
         IF (weights(i,1)<0.0) THEN
+           write(*,*) "weights from compute_weights_cell:",weights(i,1)
+           write(*,*) "index jx,jy ",jx,jy
           IF (weights(i,1)<-1.0E-10) THEN
             WRITE(*,*) "negative cell area",weights(i,1)
             STOP
@@ -1871,7 +1888,7 @@ end subroutine getdep_cellboundariesxyvec
       END IF
       IF (tmp<-1.0E-9) THEN
         WRITE(*,*) "sum of weights is negative - negative area?",tmp,jx,jy
-        stop
+ !       stop
       END IF
     else
       jcollect = 0
@@ -1919,7 +1936,8 @@ end subroutine getdep_cellboundariesxyvec
           do k=1,jsegment
              if (weights_eul_index(k,1)==i.AND.weights_eul_index(k,2)==j) then
                 weights_out(jcollect,1:nreconstruction) = &
-                     weights_out(jcollect,1:nreconstruction) + weights(k,1:nreconstruction)
+                weights_out(jcollect,1:nreconstruction) + weights(k,1:nreconstruction)
+                if (ldbg) write(*,*) "qqqq eul index ",i,j,weights(k,1)
                 ltmp = .TRUE.
                 h = k
              endif
@@ -2010,6 +2028,8 @@ end subroutine getdep_cellboundariesxyvec
                    imin   = cross_lat_eul_index(j,1)
                    imax   = cross_lat_eul_index(k,1)
                 endif
+!                write(*,*) "from inner",rstart,rend
+!                write(*,*) "from h,i  ",h,i
                 do h=imin,imax
                    if (h==imax) then
                       rend_tmp = rend
@@ -2030,6 +2050,8 @@ end subroutine getdep_cellboundariesxyvec
                       weights_eul_index(jsegment,1) = h 
                       weights_eul_index(jsegment,2) = i
                       weights(jsegment,1:nreconstruction) = -weights_tmp
+                      if (ldbg) write(*,*) "from/to ",xseg(1),yseg(1),xseg(2),yseg(2)
+                      if (ldbg) write(*,*) "from inner",weights_tmp
                    endif
                    !
                    ! subtract the same weights on the west side of the line
@@ -2066,6 +2088,8 @@ end subroutine getdep_cellboundariesxyvec
        ngauss,gauss_weights,abscissae,&!)!phl add jx_min etc.
        jcross_lat,r_cross_lat,cross_lat_eul_index)
     implicit none
+
+
     logical, intent(in) :: lexact_horizontal_line_integrals
     integer (kind=int_kind),            intent(in)    :: nreconstruction,jx,jy,jmax_segments,ngauss
     integer (kind=int_kind), intent(in)               :: nvertex
@@ -2134,8 +2158,16 @@ end subroutine getdep_cellboundariesxyvec
     ycell(0) = ycell(nvertex); ycell(nvertex+1)=ycell(1); ycell(nvertex+2)=ycell(2);
 
 
-    IF (MAXVAL(xcell).LE.xgno(jx_min).OR.MINVAL(xcell).GE.xgno(jx_max).OR.&
-        MAXVAL(ycell).LE.ygno(jy_min).OR.MINVAL(ycell).GE.ygno(jy_max)) THEN
+    IF ((&
+         MAXVAL(xcell).LE.xgno(jx_min).OR.MINVAL(xcell).GE.xgno(jx_max).OR.&
+         MAXVAL(ycell).LE.ygno(jy_min).OR.MINVAL(ycell).GE.ygno(jy_max))&
+         .OR.area(xcell(1:nvertex),ycell(1:nvertex),nvertex).EQ.0.0) THEN
+         !
+         ! the area call is technically only needed for flux-form CSLAM
+         !
+!       write(*,*) "area ",area(xcell(1:nvertex),ycell(1:nvertex),nvertex)
+!       write(*,*) "xcell(1:nvertex)",xcell(1:nvertex)
+!       write(*,*) "ycell(1:nvertex)",ycell(1:nvertex)
       !
       ! entire cell off panel
       !
@@ -2194,6 +2226,7 @@ end subroutine getdep_cellboundariesxyvec
               cross_lat_eul_index(jcross_lat,2) = jy_eul
               r_cross_lat(jcross_lat,1) = x(2)
               r_cross_lat(jcross_lat,2) = y(2)
+!              write(*,*) "A register crossing with latitude",x(2),y(2),jx_eul,jy_eul
             ELSE IF (y(2).EQ.ygno(jy_eul  ).AND.y(3)<ygno(jy_eul)) THEN
               !
               ! register crossing with latitude: line-segments point Southward
@@ -2203,6 +2236,7 @@ end subroutine getdep_cellboundariesxyvec
               cross_lat_eul_index(jcross_lat,2) = jy_eul
               r_cross_lat(jcross_lat,1) = x(2)
               r_cross_lat(jcross_lat,2) = y(2)
+!              write(*,*) "B register crossing with latitude",x(2),y(2),jx_eul,jy_eul
               !
               jy_eul=jy_eul-1
             END IF
@@ -2266,6 +2300,7 @@ end subroutine getdep_cellboundariesxyvec
               end if
               r_cross_lat(jcross_lat,1) = xcross
               r_cross_lat(jcross_lat,2) = yeul
+!              write(*,*) "C register crossing with latitude",xcross,yeul,jx_eul,cross_lat_eul_index(jcross_lat,2)
             ELSE IF (lsame_cell_y) THEN
               !
               !*******************************************************************************
@@ -2350,6 +2385,7 @@ end subroutine getdep_cellboundariesxyvec
                 end if
                 r_cross_lat(jcross_lat,1) = xcross
                 r_cross_lat(jcross_lat,2) = yeul
+!              write(*,*) "D register crossing with latitude",xcross,yeul,jx_eul,cross_lat_eul_index(jcross_lat,2)
               ELSE
                 !
                 ! cross longitude
@@ -2378,6 +2414,14 @@ end subroutine getdep_cellboundariesxyvec
             call get_weights_exact(lexact_horizontal_line_integrals.AND.ABS(yseg(2)-yseg(1))<tiny,&
                  weights(jsegment,1:nreconstruction),&
                  xseg,yseg,nreconstruction,ngauss,gauss_weights,abscissae)
+            if (ldbg) then
+               write(*,*) "from inside side-integral"
+               write(*,*) "line-integral from/to ",xseg(1),yseg(1),xseg(2),yseg(2)
+               write(*,*) "weight is ",weights(jsegment,1)
+            end if
+
+
+
 !old            call get_weights_gauss(weights(jsegment,1:nreconstruction),&
 !old                 xseg,yseg,nreconstruction,ngauss,gauss_weights,abscissae)
           ELSE
@@ -2662,7 +2706,7 @@ end subroutine getdep_cellboundariesxyvec
               !
               j_eul = j_eul-1
             ELSE
-              WRITE(*,*) "inconsistent cell: x(1)=x(2)=x(3)"
+              WRITE(*,*) "inconsistent cell: x(1)=x(2)=x(3)",x(1),x(2),x(3)
               STOP
             END IF
           END IF
@@ -2717,7 +2761,8 @@ end subroutine getdep_cellboundariesxyvec
       IF (dist_new>dist) THEN
         lcontinue = .FALSE.
 !      ELSE IF (ABS(tmp)<1.0E-11) THEN
-      ELSE IF (ABS(tmp)<1.0E-9) THEN
+!phl      ELSE IF (ABS(tmp)<1.0E-9) THEN
+      ELSE IF (ABS(tmp)<tiny) THEN
 !      ELSE IF (ABS(tmp)<1.0E-4) THEN
         x = gno(j_eul)
         lcontinue = .FALSE.
@@ -2829,5 +2874,25 @@ end subroutine gauss_points
     ENDIF
   end function
 
+
+  real (kind=real_kind) function area(xseg,yseg,nvertex)
+    implicit none
+    real (kind=real_kind)  , dimension(nvertex), intent(in):: xseg,yseg
+    integer (kind=int_kind)                    , intent(in):: nvertex
+    !
+    integer (kind=int_kind):: i
+    area = 0.0
+    do i=1,nvertex-1
+       !
+       ! factor 0.5 missing for area computation, however,
+       ! we are only interested in the sign of the "area"
+       !
+       area = area - (yseg(i+1)-yseg(i))*(xseg(i+1)+xseg(i))
+!       area = area - (yseg(i+1)-yseg(i))*(xseg(i+1)+xseg(i))
+    end do
+    area = area - (yseg(1)-yseg(nvertex))*(xseg(1)+xseg(nvertex))
+    if (abs(area)< tiny) area = 0.0
+    if (ldbg) write(*,*) "area is ",area
+  end function area
 
 end module fvm_line_integrals_mod

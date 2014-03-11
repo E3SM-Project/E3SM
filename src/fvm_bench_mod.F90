@@ -101,6 +101,7 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
   integer  choosetrac, chooselev   !for test reason the output
  !-----------------------------------------------------------------------------------!  
  choosetrac=2
+! choosetrac=1!phl
  chooselev=1
  
   if(hybrid%masterthread) then 

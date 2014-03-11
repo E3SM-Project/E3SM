@@ -8,6 +8,12 @@
 !                                                                                   !
 ! IMPORTANT: the implementation is done for a ncfl > 1, which is not working        !
 !            but it works for ncfl=1                                                !
+!
+! phl: ibaseref goes out of range when using boundscheck compile option
+!      have not checked if if-statements below changes answers yet!
+!
+!
+!
 !-----------------------------------------------------------------------------------!
 module fvm_reconstruction_mod
 
@@ -44,7 +50,7 @@ subroutine reconstruction(fcube,fvm,recons)
   real (kind=real_kind),dimension(-1:nc+2,2,2)                        :: fnewval
   real (kind=real_kind), dimension(-1:nc+2,2,2)                       :: fhalo
   real (kind=real_kind), dimension(0:nhe+1,2,2)                       :: fhaloex
-          
+
   ! if element lies on a cube edge, recalculation the values in the halo zone
   if (fvm%cubeboundary > 0) then    
     call fillhalo_cubic(fcube,fvm,fnewval,fhalo,fhaloex)               
@@ -95,6 +101,11 @@ subroutine fillhalo_cubic(fcube,fvm,fnewval,fhalo,fhaloex)
   real (kind=real_kind), dimension(1:nhc)       :: tmpfval
   
   ! element is not on a corner, but shares a cube edge (call of subroutine)
+!  write(*,*) "this should be fixed"
+!  write(*,*) "arrays are out of bounds"
+!  write(*,*) "Fortran runtime error: Index '-4' of dimension 2 of array 'fcube' outside of expected range (-3:8)"
+!  write(*,*) "currently code does not fill halo"
+!  return
   select case (fvm%cubeboundary)
     ! NOTE case(0) is excluded in the subroutine call
 !-----------------------------------------------------------------------------------!
@@ -142,14 +153,16 @@ subroutine fillhalo_cubic(fcube,fvm,fnewval,fhalo,fhaloex)
       do halo=1,2 
         do i=-1,nc+2
           ibaseref=fvm%ibase(i,halo,2)                                      
+!          if (ibaseref<1-nhc) write(*,*) "ibaseref is out of range 1"
           fnewval(i,halo,2)=cubic_equispace_interp(fvm%dalpha, fvm%interp(i,halo,2),&
-                                                   fcube(ibaseref:ibaseref+3,nc+halo))                                       
+               fcube(ibaseref:ibaseref+3,nc+halo))  
         end do
       end do
       !northhalo: south zone (because of the reconstruction in the halo, conservation!)
       do halo=1,2
         do i=-1,nc+2
-          ibaseref=fvm%ibasehalo(i,halo,2)                                      
+          ibaseref=fvm%ibasehalo(i,halo,2)                         
+!          if (ibaseref<1-nhc) write(*,*) "ibaseref is out of range 2"             
           fhalo(i,halo,2)=cubic_equispace_interp(fvm%dalpha, fvm%interphalo(i,halo,2),&
                                                    fcube(ibaseref:ibaseref+3,nc+1-halo))
         end do
@@ -161,6 +174,7 @@ subroutine fillhalo_cubic(fcube,fvm,fnewval,fhalo,fhaloex)
      do halo=1,2
         do i=-1,nc+2
           ibaseref=fvm%ibase(i,halo,2)                                      
+!          if (ibaseref<1-nhc) write(*,*) "ibaseref is out of range 3"
           fnewval(i,halo,2)=cubic_equispace_interp(fvm%dalpha, fvm%interp(i,halo,2),&
                                                    fcube(ibaseref:ibaseref+3,1-halo))
         end do
@@ -170,6 +184,7 @@ subroutine fillhalo_cubic(fcube,fvm,fnewval,fhalo,fhaloex)
       do halo=1,2
         do i=-1,nc+2
           ibaseref=fvm%ibasehalo(i,halo,2)                                      
+!          if (ibaseref<1-nhc) write(*,*) "ibaseref is out of range 4"
           fhalo(i,halo,2)=cubic_equispace_interp(fvm%dalpha, fvm%interphalo(i,halo,2),&
                                                    fcube(ibaseref:ibaseref+3,halo))
         end do
@@ -187,7 +202,8 @@ subroutine fillhalo_cubic(fcube,fvm,fnewval,fhalo,fhaloex)
         end do
       ! south zone
         do i=0,nc+2
-          ibaseref=fvm%ibase(i,halo,2)                                      
+          ibaseref=fvm%ibase(i,halo,2)                          
+!          if (ibaseref<1-nhc) write(*,*) "ibaseref is out of range 5"            
           fnewval(i,halo,2)=cubic_equispace_interp(fvm%dalpha, fvm%interp(i,halo,2),&
                                                    fcube(ibaseref:ibaseref+3,1-halo))
         end do
@@ -214,6 +230,7 @@ subroutine fillhalo_cubic(fcube,fvm,fnewval,fhalo,fhaloex)
       do halo=1,2
         do i=0,nc+2
           ibaseref=fvm%ibasehalo(i,halo,2)                                      
+!          if (ibaseref<1-nhc) write(*,*) "ibaseref is out of range 6"
           fhalo(i,halo,2)=cubic_equispace_interp(fvm%dalpha, fvm%interphalo(i,halo,2),&
                                                    fcube(ibaseref:ibaseref+3,halo))
         end do
@@ -238,7 +255,11 @@ subroutine fillhalo_cubic(fcube,fvm,fnewval,fhalo,fhaloex)
         end do
       ! south zone
         do i=-1,nc+1
-          ibaseref=fvm%ibase(i,halo,2)                                      
+          ibaseref=fvm%ibase(i,halo,2)                             
+          if (ibaseref<1-nhc) then 
+!             write(*,*) "ibaseref is out of range 7"         
+             ibaseref=1-nhc
+          end if
           fnewval(i,halo,2)=cubic_equispace_interp(fvm%dalpha, fvm%interp(i,halo,2),&
                                                    fcube(ibaseref:ibaseref+3,1-halo))
         end do
@@ -264,7 +285,11 @@ subroutine fillhalo_cubic(fcube,fvm,fnewval,fhalo,fhaloex)
       !southhalo: north zone & west zone
       do halo=1,2
         do i=-1,nc+1
-          ibaseref=fvm%ibasehalo(i,halo,2)                                      
+          ibaseref=fvm%ibasehalo(i,halo,2)                         
+          if (ibaseref<1-nhc) then
+!             write(*,*) "ibaseref is out of range 8"             
+             ibaseref=1-nhc
+          end if
           fhalo(i,halo,2)=cubic_equispace_interp(fvm%dalpha, fvm%interphalo(i,halo,2),&
                                                    fcube(ibaseref:ibaseref+3,halo))
         end do
@@ -284,12 +309,20 @@ subroutine fillhalo_cubic(fcube,fvm,fnewval,fhalo,fhaloex)
       do halo=1,2
         do i=-1,nc+1 
           ibaseref=fvm%ibase(i,halo,1)                                      
+          if (ibaseref<1-nhc) then
+!             write(*,*) "ibaseref is out of range 8b"
+             ibaseref=1-nhc
+          end if
           fnewval(i,halo,1)=cubic_equispace_interp(fvm%dbeta, fvm%interp(i,halo,1),&
                                                    fcube(nc+halo,ibaseref:ibaseref+3))
         end do
       ! north zone
         do i=-1,nc+1
           ibaseref=fvm%ibase(i,halo,2)                                      
+          if (ibaseref<1-nhc) then
+!             write(*,*) "ibaseref is out of range 9"
+             ibaseref=1-nhc
+          end if
           fnewval(i,halo,2)=cubic_equispace_interp(fvm%dalpha, fvm%interp(i,halo,2),&
                                                    fcube(ibaseref:ibaseref+3,nc+halo))
         end do
@@ -299,6 +332,11 @@ subroutine fillhalo_cubic(fcube,fvm,fnewval,fhalo,fhaloex)
       do halo=1,2
         do i=-1,nc+1
           ibaseref=fvm%ibasehalo(i,halo,1)                                      
+          if (ibaseref<1-nhc) then
+!             write(*,*) "ibaseref is out of range 9b"
+             ibaseref=1-nhc
+          end if
+
           fhalo(i,halo,1)=cubic_equispace_interp(fvm%dbeta, fvm%interphalo(i,halo,1),&
                                                    fcube(nc+1-halo,ibaseref:ibaseref+3))
         end do
@@ -315,7 +353,11 @@ subroutine fillhalo_cubic(fcube,fvm,fnewval,fhalo,fhaloex)
       !(because of the reconstruction in the halo, conservation!)         
       do halo=1,2
         do i=-1,nc+1
-          ibaseref=fvm%ibasehalo(i,halo,2)                                      
+          ibaseref=fvm%ibasehalo(i,halo,2)          
+          if (ibaseref<1-nhc) then
+!             write(*,*) "ibaseref is out of range 10"
+             ibaseref=1-nhc
+          end if
           fhalo(i,halo,2)=cubic_equispace_interp(fvm%dalpha, fvm%interphalo(i,halo,2),&
                                                    fcube(ibaseref:ibaseref+3,nc+1-halo))
         end do
@@ -335,12 +377,21 @@ subroutine fillhalo_cubic(fcube,fvm,fnewval,fhalo,fhaloex)
       do halo=1,2
         do i=-1,nc+1
           ibaseref=fvm%ibase(i,halo,1)                                      
+          if (ibaseref<1-nhc) then
+!             write(*,*) "ibaseref is out of range 10b"
+             ibaseref=1-nhc
+          end if
+
           fnewval(i,halo,1)=cubic_equispace_interp(fvm%dbeta, fvm%interp(i,halo,1),&
                                                    fcube(1-halo,ibaseref:ibaseref+3))
         end do
       ! north zone
         do i=0,nc+2
-          ibaseref=fvm%ibase(i,halo,2)                                      
+          ibaseref=fvm%ibase(i,halo,2)              
+          if (ibaseref<1-nhc) then
+!             write(*,*) "ibaseref is out of range 11"
+             ibaseref=1-nhc
+          end if                        
           fnewval(i,halo,2)=cubic_equispace_interp(fvm%dalpha, fvm%interp(i,halo,2),&
                                                    fcube(ibaseref:ibaseref+3,nc+halo))
         end do
@@ -350,6 +401,10 @@ subroutine fillhalo_cubic(fcube,fvm,fnewval,fhalo,fhaloex)
       do halo=1,2
         do i=-1,nc+1
           ibaseref=fvm%ibasehalo(i,halo,1)                                      
+          if (ibaseref<1-nhc) then
+!             write(*,*) "ibaseref is out of range 11b"
+             ibaseref=1-nhc
+          end if
           fhalo(i,halo,1)=cubic_equispace_interp(fvm%dbeta, fvm%interphalo(i,halo,1),&
                                                    fcube(halo,ibaseref:ibaseref+3))
         end do
@@ -366,7 +421,8 @@ subroutine fillhalo_cubic(fcube,fvm,fnewval,fhalo,fhaloex)
       !(because of the reconstruction in the halo, conservation!) 
       do halo=1,2
         do i=0,nc+2
-          ibaseref=fvm%ibasehalo(i,halo,2)                                      
+          ibaseref=fvm%ibasehalo(i,halo,2)                         
+!          if (ibaseref<1-nhc) write(*,*) "ibaseref is out of range 12"             
           fhalo(i,halo,2)=cubic_equispace_interp(fvm%dalpha, fvm%interphalo(i,halo,2),&
                                                    fcube(ibaseref:ibaseref+3,nc+1-halo))
         end do
