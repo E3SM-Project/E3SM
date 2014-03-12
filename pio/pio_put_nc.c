@@ -2059,6 +2059,7 @@ int PIOc_put_var1_text (int ncid, int varid, const PIO_Offset index[], const cha
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
+      printf("%s %d %ld %ld >%s<\n",__FILE__,__LINE__,index[0],index[1],op);
       ierr = ncmpi_bput_var1_text(file->fh, varid, index, op, &request); ;
       pio_push_request(file, request);
       break;

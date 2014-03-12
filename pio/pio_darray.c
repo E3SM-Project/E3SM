@@ -70,8 +70,8 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, voi
       start[0] = vdesc->record;
       count[0] = 1;
       for(int i=1;i<ndims;i++){
-	start[i] = iodesc->start[i];
-	count[i] = iodesc->count[i];
+	start[i] = iodesc->start[i-1];
+	count[i] = iodesc->count[i-1];
       }
       // Non-time dependent array
     }else{
@@ -108,7 +108,6 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, voi
       {
 	mpierr = MPI_Type_size(iodesc->basetype, &dsize);
 	size_t tstart[ndims], tcount[ndims];
-
 	if(ios->io_rank==0){
 	  for(i=0;i<iodesc->num_aiotasks;i++){
 	    if(i==0){	    
@@ -140,8 +139,13 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, voi
 	    }else{
 	      fprintf(stderr,"Type not recognized %d in pioc_write_darray\n",(int) iodesc->basetype);
 	    }
+	    if(ierr == PIO_EEDGE){
+	      for(i=0;i<ndims;i++)
+		fprintf(stderr,"dim %d start %ld count %ld\n",i,tstart[i],tcount[i]);
+	    }
+
 	  }     
-	}else if(count[0]>0){
+	}else if(ios->io_rank < iodesc->num_aiotasks ){
 	  for(i=0;i<ndims;i++){
 	    tstart[i] = (size_t) start[i];
 	    tcount[i] = (size_t) count[i];
@@ -187,7 +191,6 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, voi
       ierr = iotype_error(file->iotype,__FILE__,__LINE__);
     }
   }
-  
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
   if(tmp_buf != NULL && tmp_buf != IOBUF)
     free(tmp_buf);
@@ -288,7 +291,7 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void
     size_t tmp_start[ndims+1];
     size_t tmp_count[ndims+1];
     size_t tmp_bufsize=1;
-    printf("%s %d %d\n",__FILE__,__LINE__,vdesc->record);
+
     if(vdesc->record >= 0){
       ndims++;
       start[0] = vdesc->record;

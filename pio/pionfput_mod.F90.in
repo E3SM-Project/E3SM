@@ -52,15 +52,15 @@ contains
     character(len=*), intent(in) :: ival
     integer :: clen, i
     character, allocatable :: cval(:)
-    integer, allocatable :: cindex(:)
+    integer(C_SIZE_T), allocatable :: cindex(:)
     interface
        integer(C_INT) function PIOc_put_var1_text(ncid, varid, index, op) &
             bind(C,name="PIOc_put_var1_text")
          use iso_c_binding
          integer(C_INT), intent(in), value :: ncid
          integer(C_INT), intent(in), value :: varid
-         integer(C_INT), intent(in) :: index(*)
-         character(C_CHAR) :: op
+         integer(C_SIZE_T), intent(in) :: index(*)
+         character(C_CHAR) :: op(*)
        end function PIOc_put_var1_text
     end interface
 
@@ -68,7 +68,7 @@ contains
     call t_startf("pio_put_var1_text")
 #endif 
     clen = len(ival)
-    allocate(cval(clen))
+    allocate(cval(clen+1))
     cval = C_NULL_CHAR
     do i=1,len_trim(ival)
        cval(i) = ival(i:i)
@@ -79,8 +79,7 @@ contains
        cindex(i) = index(clen-i+1)-1
     enddo
     
-
-    ierr = PIOc_put_var1_text(file%fh, varid-1, cindex, cval(1))
+    ierr = PIOc_put_var1_text(file%fh, varid-1, cindex, cval)
     deallocate(cindex)
     deallocate(cval)
 #ifdef TIMING
@@ -176,7 +175,7 @@ contains
          use iso_c_binding
          integer(C_INT), intent(in), value :: ncid
          integer(C_INT), intent(in), value :: varid
-         character(C_CHAR) :: op
+         character(C_CHAR) :: op(*)
        end function PIOc_put_var_text
     end interface
 
@@ -190,7 +189,7 @@ contains
        cval(i) = ival(i:i)
     end do
     
-    ierr = PIOc_put_var_text(file%fh, varid-1,  cval(1))
+    ierr = PIOc_put_var_text(file%fh, varid-1,  cval)
 
     deallocate(cval)
   end function put_var_0d_text
@@ -212,7 +211,7 @@ contains
     integer, intent(in) :: varid
     character(len=*), intent(in) :: ival{DIMSTR}
     character, allocatable :: cval(:)
-    integer :: clen,  sd({DIMS})
+    integer :: clen,  sd
     interface
        integer(C_INT) function PIOc_put_var_text(ncid, varid, op) &
             bind(C,name="PIOc_put_var_text")
@@ -229,8 +228,8 @@ contains
     ierr = PIO_NOERR
     clen = len(ival)
     sd = size(ival)
-    allocate(cval(clen*product(sd(1:{DIMS}))))
-    call Fstring2Cstring_{DIMS}d (ival, cval, clen, sd)
+    allocate(cval(clen*sd))
+    call Fstring2Cstring_{DIMS}d (ival, cval)
     ierr = PIOc_put_var_text(file%fh, varid-1,  cval)
     deallocate(cval)
 
@@ -397,7 +396,7 @@ contains
     integer, intent(in) :: varid, start(:), count(:)
     character(len=*), intent(in) :: ival{DIMSTR}
     character, allocatable :: cval(:)
-    integer :: clen,  sd({DIMS})
+    integer :: clen,  sd
     integer(C_SIZE_T), dimension({DIMS}) :: cstart, ccount
     integer :: i
     interface
@@ -422,8 +421,8 @@ contains
 
     clen = len(ival)
     sd = size(ival)
-    allocate(cval(clen*product(sd)))
-    call Fstring2Cstring_{DIMS}d (ival, cval, clen, sd)
+    allocate(cval(clen*sd))
+    call Fstring2Cstring_{DIMS}d (ival, cval)
 
     ierr = PIOc_put_vara_text(file%fh, varid-1,  cstart, ccount, cval)
     deallocate(cval)
@@ -431,18 +430,21 @@ contains
 
   end function put_vara_{DIMS}d_text
 
-! TYPE text  
 ! DIMS 1,2,3,4,5
-  subroutine Fstring2Cstring_{DIMS}d(fstr, cstr, clen, sd)
+  subroutine Fstring2Cstring_{DIMS}d(fstr, cstr)
     character(len=*), intent(in) :: fstr{DIMSTR}
-    character, intent(out) :: cstr(:)
-    integer, intent(in) :: clen, sd(:)
+    character(C_CHAR), intent(out) :: cstr(:)
+    integer :: clen, sd({DIMS})
     integer :: cinc
     integer :: i, j, k, m, n, q
 
     cstr = C_NULL_CHAR
+    do i=1,{DIMS}
+       sd(i) = size(fstr,i)
+    enddo
     cinc = 0
 #if {DIMS} == 1
+    clen= len(fstr(1))
     do j=1,sd(1)
        do i=1,len_trim(fstr(j))
           cstr(i+cinc*clen) = fstr(j)(i:i)
@@ -451,6 +453,8 @@ contains
     enddo
 #endif
 #if {DIMS} == 2
+    clen= len(fstr(1,1))
+    print *,__FILE__,__LINE__,clen, sd
     do k=1,sd(2)
        do j=1,sd(1)
           do i=1,len_trim(fstr(j,k))
@@ -461,6 +465,7 @@ contains
     enddo
 #endif
 #if {DIMS} == 3
+    clen= len(fstr(1,1,1))
     do m=1,sd(3)
        do k=1,sd(2)
           do j=1,sd(1)
@@ -473,6 +478,7 @@ contains
     enddo
 #endif
 #if {DIMS} == 4
+    clen= len(fstr(1,1,1,1))
     do n=1,sd(4)
        do m=1,sd(3)
           do k=1,sd(2)
@@ -487,6 +493,7 @@ contains
     enddo
 #endif
 #if {DIMS} == 5
+    clen= len(fstr(1,1,1,1,1))
     do q=1,sd(5)
        do n=1,sd(4)
           do m=1,sd(3)

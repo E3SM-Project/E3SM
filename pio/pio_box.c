@@ -398,7 +398,7 @@ int box_rearrange_comp2io(iosystem_desc_t *ios, io_desc_t *iodesc, void *sbuf,
 
   pio_swapm( sbuf,  sendcounts, sdispls, sendtypes,
 	     rbuf, recvcounts, rdispls, recvtypes, 
-	     ios->union_comm, handshake, true, maxreq);
+	     ios->union_comm, handshake, isend, maxreq);
 
   //  if(rbuf!=NULL)
   //   printf("rbuf %f %f %f\n",((double *)rbuf)[0],((double *)rbuf)[1],((double *)rbuf)[2]);

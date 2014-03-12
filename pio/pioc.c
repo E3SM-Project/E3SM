@@ -170,6 +170,10 @@ int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const
   CheckMPIReturn(MPI_Bcast(&(iodesc->num_aiotasks), 1, MPI_INT, ios->ioroot,ios->my_comm),__FILE__,__LINE__);
   // Compute the communications pattern for this decomposition
   ierr = box_rearrange_create( ios, maplen, compmap, dims, ndims, iodesc->num_aiotasks, iodesc);
+  //  if(ios->ioproc)
+  //   for(int i=0;i<ndims;i++)
+  //     printf("%s %d dim %d start %ld count %ld\n",__FILE__,__LINE__,dims[i],iodesc->start[i],iodesc->count[i]);
+
 
   *ioidp = pio_add_to_iodesc_list(iodesc);
 

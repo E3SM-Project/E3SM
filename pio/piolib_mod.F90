@@ -977,7 +977,6 @@ contains
     call t_stopf("PIO_initdecomp_dof")
 #endif
 
-
   end subroutine PIO_initdecomp_dof_i8
 
 
