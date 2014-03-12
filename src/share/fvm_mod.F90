@@ -1590,6 +1590,8 @@ end subroutine fvm_rkdss
 
 !----------------------------------------------------------------
   function bilin_phys2gll(pin,nphys,ie) result(pout)
+    use parallel_mod, only : abortmp
+
     ! input
     integer :: nphys,ie
     real(kind=real_kind), intent(in) :: pin(nphys,nphys)
@@ -1597,6 +1599,9 @@ end subroutine fvm_rkdss
 
     ! local
     integer i,j,i1,i2,j1,j2
+
+    if (nphys_init/=nphys) call abortmp(&
+         "Error: bilin_phys2gll(): bilin_phys2gll_init must be called first")
 
     ! interpolate i dimension
     do j=1,np
