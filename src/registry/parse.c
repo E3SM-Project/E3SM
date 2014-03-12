@@ -667,7 +667,6 @@ int parse_reg_xml(ezxml_t registry, struct namelist **nls, struct dimension ** d
 						fprintf(stderr,"\nRegistry error: Namelist variable %s not defined for namelist-derived dimension %s\n\n", dim_ptr->name_in_code, dim_ptr->name_in_file);
 						return 1;
 					}
-
 				}
 			}
 
