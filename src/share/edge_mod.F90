@@ -95,6 +95,14 @@ module edge_mod
   end type GhostBuffer3D_t
 
 ! NOTE ON ELEMENT ORIENTATION
+!
+! Element orientation:  index V(i,j)
+!
+!           (1,np) NWEST      (np,np) NEAST 
+!
+!           (1,1) SWEST       (np,1) SEAST
+!
+!
 ! for the edge neighbors:  
 !    we set the "reverse" flag if two elements who share an edge use a 
 !    reverse orientation.  The data is reversed during the *pack* stage

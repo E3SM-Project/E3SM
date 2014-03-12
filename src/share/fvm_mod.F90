@@ -1341,11 +1341,13 @@ end subroutine fvm_rkdss
 !  MT initial version 3/2014
 !  ================================================
   function bilin_phys2gll(pin,nphys,elem,fvm,hybrid,nets,nete,ie_in) result(pout)
-
+    use control_mod, only : neast, nwest, seast, swest
+    use dimensions_mod, only :  max_corner_elem
     use coordinate_systems_mod, only : cartesian3D_t,cartesian2D_t,spherical_polar_t,&
-       spherical_to_cart,cart2spherical, distance, cart2cubedsphere, sphere2cubedsphere
+       spherical_to_cart,cart2spherical, distance, cart2cubedsphere, sphere2cubedsphere,&
+       distance
     use quadrature_mod, only : quadrature_t, gausslobatto
-
+    use parallel_mod, only : abortmp
     use hybrid_mod, only : hybrid_t
     use element_mod, only : element_t
     use fvm_control_volume_mod, only : fvm_struct
@@ -1379,7 +1381,7 @@ end subroutine fvm_rkdss
 
     real(kind=real_kind) :: px(np,nphys)  ! interpolate in x to this array
                                           ! then interpolate in y to pout
-    integer i,j,i1,i2,j1,j2,ie
+    integer i,j,i1,i2,j1,j2,ie, l ,ic, cube_corner, ij_corner
     real(kind=real_kind) :: phys_centers(nphys)
     real(kind=real_kind) :: dx,gll,sum,d11,d12,d21,d22
     type(quadrature_t) :: gll_pts
@@ -1465,153 +1467,197 @@ end subroutine fvm_rkdss
 
        ! this can be done threaded (but not really needed)
        do ie=nets,nete
-       do j=1,np
-       do i=1,np
+           if ( elem(ie)%desc%actual_neigh_edges > 8 ) then
+              call abortmp('ERROR: bilinear interpolation not coded for unstructured meshes')
+           endif
 
-           i1 = index_l(i)
-           i2 = index_r(i)
-           j1 = index_l(j)
-           j2 = index_r(j)
+           cube_corner=0
+           if ( elem(ie)%desc%actual_neigh_edges == 7 ) then
+              ! SW
+              ic = elem(ie)%desc%getmapP_ghost(swest)
+              if(ic == -1) cube_corner=swest
+              ic = elem(ie)%desc%getmapP_ghost(seast)
+              if(ic == -1) cube_corner=seast
+              ic = elem(ie)%desc%getmapP_ghost(neast)
+              if(ic == -1) cube_corner=neast
+              ic = elem(ie)%desc%getmapP_ghost(nwest)
+              if(ic == -1) cube_corner=nwest
+           endif
 
-           
+           do j=1,np
+           do i=1,np
 
-          ! get the 4 or (3 if cube corner) points containing (i,j) GLL point
-           if (i==1 .or. j==1) then
-              d11=0
-           else
-              d11 = (phys_centers(i2)-gll_pts%points(i))*&
-                   (phys_centers(j2)-gll_pts%points(j))
-
-              ! compute weight from cart3d coords:
-              cart3d%x = fvm_cart3d(i2,j2,1,ie)
-              cart3d%y = fvm_cart3d(i2,j2,2,ie)
-              cart3d%z = fvm_cart3d(i2,j2,3,ie)
-              phys_cart2d = cart2cubedsphere(cart3d,elem(ie)%FaceNum)
-              gll_cart2d = sphere2cubedsphere(elem(ie)%spherep(i,j),elem(ie)%FaceNum)
-
-              d11 = (phys_cart2d%x-gll_cart2d%x)*&
-                   (phys_cart2d%y-gll_cart2d%y)
+              i1 = index_l(i)
+              i2 = index_r(i)
+              j1 = index_l(j)
+              j2 = index_r(j)
               
-           endif
+              
+              
+              ! get the 4 or (3 if cube corner) points containing (i,j) GLL point
+              if (i==1 .or. j==1) then
+                 d11=0
+              else
+                 d11 = (phys_centers(i2)-gll_pts%points(i))*&
+                      (phys_centers(j2)-gll_pts%points(j))
+                 
+                 ! compute weight from cart3d coords:
+                 cart3d%x = fvm_cart3d(i2,j2,1,ie)
+                 cart3d%y = fvm_cart3d(i2,j2,2,ie)
+                 cart3d%z = fvm_cart3d(i2,j2,3,ie)
+                 phys_cart2d = cart2cubedsphere(cart3d,elem(ie)%FaceNum)
+                 gll_cart2d = sphere2cubedsphere(elem(ie)%spherep(i,j),elem(ie)%FaceNum)
+                 
+                 d11 = (phys_cart2d%x-gll_cart2d%x)*&
+                      (phys_cart2d%y-gll_cart2d%y)
+                 
+              endif
+              
+              if (i==1 .or. j==np) then
+                 d12=0
+              else
+                 d12 = (phys_centers(i2)-gll_pts%points(i))*&
+                      (gll_pts%points(j)-phys_centers(j1))
+                 
+                 ! compute weight from cart3d coords:
+                 cart3d%x = fvm_cart3d(i2,j1,1,ie)
+                 cart3d%y = fvm_cart3d(i2,j1,2,ie)
+                 cart3d%z = fvm_cart3d(i2,j1,3,ie)
+                 phys_cart2d = cart2cubedsphere(cart3d,elem(ie)%FaceNum)
+                 gll_cart2d = sphere2cubedsphere(elem(ie)%spherep(i,j),elem(ie)%FaceNum)
+                 
+                 d12 = (phys_cart2d%x-gll_cart2d%x)*&
+                      (gll_cart2d%y-phys_cart2d%y)
+                 
+              endif
+              
+              if (i==np .or. j==1) then
+                 d21=0
+              else
+                 d21 = (gll_pts%points(i)-phys_centers(i1))*&
+                      (phys_centers(j2)-gll_pts%points(j))
+                 
+                 ! compute weight from cart3d coords:
+                 cart3d%x = fvm_cart3d(i1,j2,1,ie)
+                 cart3d%y = fvm_cart3d(i1,j2,2,ie)
+                 cart3d%z = fvm_cart3d(i1,j2,3,ie)
+                 phys_cart2d = cart2cubedsphere(cart3d,elem(ie)%FaceNum)
+                 gll_cart2d = sphere2cubedsphere(elem(ie)%spherep(i,j),elem(ie)%FaceNum)
+                 
+                 d21 = (gll_cart2d%x - phys_cart2d%x)*&
+                      (phys_cart2d%y - gll_cart2d%y)
+                 
+              endif
+              
+              if (i==np .or. j==np) then
+                 d22=0
+              else
+                 d22 = (gll_pts%points(i)-phys_centers(i1))*&
+                      (gll_pts%points(j)-phys_centers(j1))
+                 
+                 ! compute weight from cart3d coords:
+                 cart3d%x = fvm_cart3d(i1,j1,1,ie)
+                 cart3d%y = fvm_cart3d(i1,j1,2,ie)
+                 cart3d%z = fvm_cart3d(i1,j1,3,ie)
+                 phys_cart2d = cart2cubedsphere(cart3d,elem(ie)%FaceNum)
+                 gll_cart2d = sphere2cubedsphere(elem(ie)%spherep(i,j),elem(ie)%FaceNum)
+                 
+                 d22 = (gll_cart2d%x - phys_cart2d%x)*&
+                      (gll_cart2d%y - phys_cart2d%y )
+                 
+              endif
+              
+              ! regular bilinar interpolation:
+                 
+              corners3D(1)%x = fvm_cart3d(i1,j1,1,ie)
+              corners3D(1)%y = fvm_cart3d(i1,j1,2,ie)
+              corners3D(1)%z = fvm_cart3d(i1,j1,3,ie)
+              
+              corners3D(2)%x = fvm_cart3d(i2,j1,1,ie)
+              corners3D(2)%y = fvm_cart3d(i2,j1,2,ie)
+              corners3D(2)%z = fvm_cart3d(i2,j1,3,ie)
+              
+              corners3D(3)%x = fvm_cart3d(i2,j2,1,ie)
+              corners3D(3)%y = fvm_cart3d(i2,j2,2,ie)
+              corners3D(3)%z = fvm_cart3d(i2,j2,3,ie)
+              
+              corners3D(4)%x = fvm_cart3d(i1,j2,1,ie)
+              corners3D(4)%y = fvm_cart3d(i1,j2,2,ie)
+              corners3D(4)%z = fvm_cart3d(i1,j2,3,ie)
 
-           if (i==1 .or. j==np) then
-              d12=0
-           else
-              d12 = (phys_centers(i2)-gll_pts%points(i))*&
-                (gll_pts%points(j)-phys_centers(j1))
+              ! cube corner
+              ij_corner=0
+              if (i==1  .and. j==1)  ij_corner=SWEST
+              if (i==1  .and. j==np) ij_corner=NWEST
+              if (i==np  .and.j==1)  ij_corner=SEAST
+              if (i==np .and. j==np) ij_corner=NEAST
 
-              ! compute weight from cart3d coords:
-              cart3d%x = fvm_cart3d(i2,j1,1,ie)
-              cart3d%y = fvm_cart3d(i2,j1,2,ie)
-              cart3d%z = fvm_cart3d(i2,j1,3,ie)
-              phys_cart2d = cart2cubedsphere(cart3d,elem(ie)%FaceNum)
-              gll_cart2d = sphere2cubedsphere(elem(ie)%spherep(i,j),elem(ie)%FaceNum)
+              !  NW(4)d12  NE(3)d22
+              !
+              !  SW(1)d11  SE(2)d21
+              !   (1,1)     (np,1)
+              !
+              if (cube_corner == SEAST .and. ij_corner == SEAST ) then
+                 ! distance weighting
+                 cart3d=spherical_to_cart(elem(ie)%spherep(i,j))
+                 d11=1/distance(cart3d,corners3D(1))
+                 d21=0 ! 1/distance(cart3d,corners3D(2))
+                 d22=1/distance(cart3d,corners3D(3))
+                 d12=1/distance(cart3d,corners3D(4))
+              else if (cube_corner == SWEST .and. ij_corner == SWEST ) then
+                 cart3d=spherical_to_cart(elem(ie)%spherep(i,j))
+                 d11=0 ! 1/distance(cart3d,corners3D(1))
+                 d21=1/distance(cart3d,corners3D(2))
+                 d22=1/distance(cart3d,corners3D(3))
+                 d12=1/distance(cart3d,corners3D(4))
+              else if (cube_corner == NWEST .and. ij_corner == NWEST ) then
+                 cart3d=spherical_to_cart(elem(ie)%spherep(i,j))
+                 d11=1/distance(cart3d,corners3D(1))
+                 d21=1/distance(cart3d,corners3D(2))
+                 d22=1/distance(cart3d,corners3D(3))
+                 d12=0 ! 1/distance(cart3d,corners3D(4))
+              else if (cube_corner == NEAST .and. ij_corner == NEAST ) then
+                 cart3d=spherical_to_cart(elem(ie)%spherep(i,j))
+                 d11=1/distance(cart3d,corners3D(1))
+                 d21=1/distance(cart3d,corners3D(2))
+                 d22=0 ! 1/distance(cart3d,corners3D(3))
+                 d12=1/distance(cart3d,corners3D(4))
+              else
+                 ref_cart2d=parametric_coordinates(elem(ie)%spherep(i,j),corners3D,2)
+                 ! sanity check.  allow for small amount of extrapolation
+                 if (abs(ref_cart2d%x)>1.05 .or. abs(ref_cart2d%y)>1.05 )then
+                    ! this means the element was two distorted for our simple 1D
+                    ! search - need better search to find quad containing GLL point
+                    print *,'ERROR: bilinear interpolation: ref point outside quad'
+                 endif
+                 ref_cart2d%x = (ref_cart2d%x + 1)/2  ! convert to [0,1]
+                 ref_cart2d%y = (ref_cart2d%y + 1)/2  ! convert to [0,1]
+                 ! point in quad
+                 !   D12  C22
+                 !   A11  B21                     
+                 !  l1 =   A + x(B-A)  
+                 !  l2 =   D + x(C-D)
+                 !  X = l1 + y(l2-l1)  = (1-y) l1 +  y l2
+                 !    =  (1-y)(1-x) A  + (1-y)x B  + (1-x) y D  + x y C
+                 d11 = (1-ref_cart2d%x)*(1-ref_cart2d%y)
+                 d21 = (  ref_cart2d%x)*(1-ref_cart2d%y)
+                 d22 = (  ref_cart2d%x)*(  ref_cart2d%y)
+                 d12 = (1-ref_cart2d%x)*(  ref_cart2d%y)
+                 
+              endif
+              sum = d11+d12+d21+d22
+              ! with the weights defined above, we would need to do an
+              ! unweighted sum on edge boundaries.  To avoid confusion,
+              ! lets adjust the weights so we do the normal Jacobian weighted
+              ! average at element boundaries:
+              sum = sum*(elem(ie)%spheremp(i,j)*elem(ie)%rspheremp(i,j))
 
-              d12 = (phys_cart2d%x-gll_cart2d%x)*&
-                   (gll_cart2d%y-phys_cart2d%y)
-
-           endif
-
-           if (i==np .or. j==1) then
-              d21=0
-           else
-              d21 = (gll_pts%points(i)-phys_centers(i1))*&
-                   (phys_centers(j2)-gll_pts%points(j))
-
-              ! compute weight from cart3d coords:
-              cart3d%x = fvm_cart3d(i1,j2,1,ie)
-              cart3d%y = fvm_cart3d(i1,j2,2,ie)
-              cart3d%z = fvm_cart3d(i1,j2,3,ie)
-              phys_cart2d = cart2cubedsphere(cart3d,elem(ie)%FaceNum)
-              gll_cart2d = sphere2cubedsphere(elem(ie)%spherep(i,j),elem(ie)%FaceNum)
-
-              d21 = (gll_cart2d%x - phys_cart2d%x)*&
-                   (phys_cart2d%y - gll_cart2d%y)
-
-           endif
-
-           if (i==np .or. j==np) then
-              d22=0
-           else
-              d22 = (gll_pts%points(i)-phys_centers(i1))*&
-                (gll_pts%points(j)-phys_centers(j1))
-
-              ! compute weight from cart3d coords:
-              cart3d%x = fvm_cart3d(i1,j1,1,ie)
-              cart3d%y = fvm_cart3d(i1,j1,2,ie)
-              cart3d%z = fvm_cart3d(i1,j1,3,ie)
-              phys_cart2d = cart2cubedsphere(cart3d,elem(ie)%FaceNum)
-              gll_cart2d = sphere2cubedsphere(elem(ie)%spherep(i,j),elem(ie)%FaceNum)
-
-              d22 = (gll_cart2d%x - phys_cart2d%x)*&
-                   (gll_cart2d%y - phys_cart2d%y )
-
-           endif
-
-
-!           if ( num_neighbors>4) then
-!            call abort('CSLAM grid -> gll grid bilinear option not coded for unstructured grids')
-!           if ( num_neighbors==3) then
-           ! area average             
-!           if ( num_neighbors==4) then
-           ! bilinear:
-
-           corners3D(1)%x = fvm_cart3d(i1,j1,1,ie)
-           corners3D(1)%y = fvm_cart3d(i1,j1,2,ie)
-           corners3D(1)%z = fvm_cart3d(i1,j1,3,ie)
-           
-           corners3D(2)%x = fvm_cart3d(i2,j1,1,ie)
-           corners3D(2)%y = fvm_cart3d(i2,j1,2,ie)
-           corners3D(2)%z = fvm_cart3d(i2,j1,3,ie)
-           
-           corners3D(3)%x = fvm_cart3d(i2,j2,1,ie)
-           corners3D(3)%y = fvm_cart3d(i2,j2,2,ie)
-           corners3D(3)%z = fvm_cart3d(i2,j2,3,ie)
-           
-           corners3D(4)%x = fvm_cart3d(i1,j2,1,ie)
-           corners3D(4)%y = fvm_cart3d(i1,j2,2,ie)
-           corners3D(4)%z = fvm_cart3d(i1,j2,3,ie)
-
-           ref_cart2d=parametric_coordinates(elem(ie)%spherep(i,j),corners3D,2)
-           ! sanity check.  allow for small amount of extrapolation
-           if (abs(ref_cart2d%x)>1.05 .or. abs(ref_cart2d%y)>1.05 )then
-              ! this means the element was two distorted for our simple 1D
-              ! search - need better search to find quad containing GLL point
-              print *,'ERROR: bilinear interpolation: ref point outside quad'
-           endif
-           ref_cart2d%x = (ref_cart2d%x + 1)/2  ! convert to [0,1]
-           ref_cart2d%y = (ref_cart2d%y + 1)/2  ! convert to [0,1]
-           ! point in quad
-           !   D12  C22
-           !   A11  B21                     
-           !  l1 =   A + x(B-A)  
-           !  l2 =   D + x(C-D)
-           !  X = l1 + y(l2-l1)  = (1-y) l1 +  y l2
-           !    =  (1-y)(1-x) A  + (1-y)x B  + (1-x) y D  + x y C
-           d11 = (1-ref_cart2d%x)*(1-ref_cart2d%y)
-           d21 = (  ref_cart2d%x)*(1-ref_cart2d%y)
-           d22 = (  ref_cart2d%x)*(  ref_cart2d%y)
-           d12 = (1-ref_cart2d%x)*(  ref_cart2d%y)
-
-           sum = d11+d12+d21+d22
-           weights(i,j,1,1,ie) = d11/sum
-           weights(i,j,1,2,ie) = d12/sum
-           weights(i,j,2,1,ie) = d21/sum
-           weights(i,j,2,2,ie) = d22/sum
-
-           ! with the weights defined above, we would need to do an
-           ! unweighted sum on edge boundaries.  To avoid confusion,
-           ! lets adjust the weights so we do the normal Jacobian weighted
-           ! average at element boundaries:
-           sum = sum*(elem(ie)%spheremp(i,j)*elem(ie)%rspheremp(i,j))
-           weights(i,j,1,1,ie) = d11/sum
-           weights(i,j,1,2,ie) = d12/sum
-           weights(i,j,2,1,ie) = d21/sum
-           weights(i,j,2,2,ie) = d22/sum
-
-           
-        enddo
-        enddo
+              weights(i,j,1,1,ie) = d11/sum
+              weights(i,j,1,2,ie) = d12/sum
+              weights(i,j,2,1,ie) = d21/sum
+              weights(i,j,2,2,ie) = d22/sum
+           enddo
+           enddo
         enddo
 
 

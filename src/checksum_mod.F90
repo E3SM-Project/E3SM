@@ -762,7 +762,7 @@ end subroutine
 
   if (hybrid%masterthread) then
      write(*,'(a,2e15.5)') "bilin_phys2gll l2,linf error =",l2,linf
-     ie=1
+     ie=2
      print *,'exact solution phys grid'
      do j=1,nc
         write(*,'(99e12.4)') (exact_fvm(i,j,ie),i=1,nc)
