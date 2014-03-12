@@ -21,8 +21,78 @@ int is_derived_dim(char * d)/*{{{*/
 {
 	if (strchr(d, (int)'+')) return 1;
 	if (strchr(d, (int)'-')) return 1;
+	if (strchr(d, (int)'*')) return 1;
+	if (strchr(d, (int)'/')) return 1;
 
 	return 0;
+}/*}}}*/
+
+
+char * new_dimension_name(char * old_name){/*{{{*/
+	int i, j;
+	int len, new_len;
+	int new_string;
+	int added_sections;
+	char * new_name;
+
+	i = 0;
+	new_string = 0;
+	added_sections = 0;
+	len = 0;
+	while (old_name[i] != '\0') {
+		if (new_string == 0 && ((old_name[i] >= 'a' && old_name[i] <= 'z') || (old_name[i] >= 'A' && old_name[i] <= 'Z'))){
+			new_string = 1;
+			added_sections++;
+		} else if (old_name[i] == '+' || old_name[i] == '-' || old_name[i] == '*' || old_name[i] == '/'){
+			new_string = 0;
+		}
+		len++;
+		i++;
+	}
+
+	new_len = len + 7 + (added_sections-1) * 8;
+	new_name = malloc(sizeof(char)*new_len);
+	i = 0;
+	j = 0;
+	added_sections = 0;
+	while (old_name[i] != '\0') {
+		if (new_string == 0 && ((old_name[i] >= 'a' && old_name[i] <= 'z') || (old_name[i] >= 'A' && old_name[i] <= 'Z'))){
+			new_string = 1;
+			if (added_sections == 0){
+				new_name[j] = 'm';
+				new_name[j+1] = 'e';
+				new_name[j+2] = 's';
+				new_name[j+3] = 'h';
+				new_name[j+4] = ' ';
+				new_name[j+5] = '%';
+				new_name[j+6] = ' ';
+
+				j += 7;
+			} else {
+				new_name[j] = ' ';
+				new_name[j+1] = 'm';
+				new_name[j+2] = 'e';
+				new_name[j+3] = 's';
+				new_name[j+4] = 'h';
+				new_name[j+5] = ' ';
+				new_name[j+6] = '%';
+				new_name[j+7] = ' ';
+
+				j += 8;
+			}
+
+			added_sections++;
+		} else if (old_name[i] == '+' || old_name[i] == '-' || old_name[i] == '*' || old_name[i] == '/'){
+			new_string = 0;
+		}
+
+		new_name[j] = old_name[i];
+
+		i++;
+		j++;
+	}
+
+	return new_name;
 }/*}}}*/
 
 
@@ -61,7 +131,6 @@ void split_derived_dim_string(char * dim, char ** p1, char ** p2)/*{{{*/
 	*p2 = (char *)malloc((strlen(dim)-n+1)*sizeof(char));
 	sprintf(*p2, "%s", dim+n);
 }/*}}}*/
-
 
 
 /* *** Namelist related write functions *** {{{*/
@@ -757,6 +826,7 @@ void write_group_alloc_routines(FILE *fd, struct group_list *groups, struct dime
 	int i, new_class;
 	char var_array[1024];
 	char array_class[1024];
+	char * new_name;
 
 	/* Definitions of allocate subroutines */
 	group_ptr = groups;
@@ -793,7 +863,11 @@ void write_group_alloc_routines(FILE *fd, struct group_list *groups, struct dime
 
 			dim_ptr = dims;
 			while (dim_ptr) {
-				if (dim_ptr->constant_value < 0 && !dim_ptr->namelist_defined && is_derived_dim(dim_ptr->name_in_code)) fortprintf(fd, "      %s %% %s = %s\n", group_ptr->name, dim_ptr->name_in_file, dim_ptr->name_in_code);
+				if (dim_ptr->constant_value < 0 && !dim_ptr->namelist_defined && is_derived_dim(dim_ptr->name_in_code)) {
+					new_name = new_dimension_name(dim_ptr->name_in_code);
+					fortprintf(fd, "      %s %% %s = %s\n", group_ptr->name, dim_ptr->name_in_file, new_name);
+					free(new_name);
+				}
 				dim_ptr = dim_ptr->next;
 			}
 
