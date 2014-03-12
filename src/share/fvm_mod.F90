@@ -29,6 +29,13 @@ module fvm_mod
 
   type (ghostBuffertr_t)                      :: cellghostbuf, ghostbuf_tr
   type (EdgeBuffer_t)                         :: edgeveloc
+
+  ! static data, used by bilin_phys2gll()
+  ! shared by all threads.  only allocate if subroutine will be used
+  integer  :: nphys_init=0
+  integer  :: index_l(np),index_r(np)
+  real(kind=real_kind),allocatable :: weights(:,:,:,:,:) ! np,np,2,2,nelemd
+
   
 !   public :: cslam_run, cslam_runair, cslam_runairdensity
   public :: cslam_run, cslam_runairdensity, cslam_runflux
@@ -36,6 +43,7 @@ module fvm_mod
   public :: cellghostbuf, edgeveloc, fvm_init1,fvm_init2, fvm_mcgregor, fvm_mcgregordss
   public :: fvm_init3, fvm_rkdss
   public :: bilin_phys2gll
+  public :: bilin_phys2gll_init
 contains
 
 
@@ -1340,7 +1348,7 @@ end subroutine fvm_rkdss
 !
 !  MT initial version 3/2014
 !  ================================================
-  function bilin_phys2gll(pin,nphys,elem,fvm,hybrid,nets,nete,ie_in) result(pout)
+  subroutine bilin_phys2gll_init(nphys,elem,fvm,hybrid,nets,nete)
     use control_mod, only : neast, nwest, seast, swest
     use dimensions_mod, only :  max_corner_elem
     use coordinate_systems_mod, only : cartesian3D_t,cartesian2D_t,spherical_polar_t,&
@@ -1356,31 +1364,18 @@ end subroutine fvm_rkdss
          ghostvpackR, ghostvunpackR
     use interpolate_mod, only : parametric_coordinates
          
-
-
     ! input
     integer :: nphys,nets,nete,ie_in
-    real(kind=real_kind), intent(in) :: pin(nphys,nphys)
-    real(kind=real_kind) :: pout(np,np)
     type (element_t)     , intent(inout), target :: elem(:)
     type (fvm_struct)    , intent(inout), target :: fvm(:)
     type (hybrid_t)    , intent(in) :: hybrid
     
     ! static data, shared by all threads
-    integer, save  :: nphys_init=0
-    integer, save  :: index_l(np),index_r(np)
-    real(kind=real_kind),save,allocatable :: weights(:,:,:,:,:) ! np,np,2,2,nelemd
     real(kind=real_kind),allocatable :: fvm_cart3d(:,:,:,:) ! np,np,3,nelemd
-
-
-
 
     ! local
     type (cartesian3D_t) ::   cart3d,corners3D(4)
-    type (cartesian2D_t) ::   phys_cart2d, gll_cart2d, ref_cart2d
-
-    real(kind=real_kind) :: px(np,nphys)  ! interpolate in x to this array
-                                          ! then interpolate in y to pout
+    type (cartesian2D_t) ::   ref_cart2d
     integer i,j,i1,i2,j1,j2,ie, l ,ic, cube_corner, ij_corner
     real(kind=real_kind) :: phys_centers(nphys)
     real(kind=real_kind) :: dx,gll,sum,d11,d12,d21,d22
@@ -1390,17 +1385,15 @@ end subroutine fvm_rkdss
 
     if (nphys_init/=nphys) then
        if (hybrid%masterthread) print *,'Initializing PHYS_GRID -> GLL bilinear interpolation weights'
-       if (nphys_init /= 0 ) then
-          ! using a new phys grid.  need to recompute weights
-          deallocate(weights)
-       endif
-    ! setup (most be done on masterthread only) since all data is static
-    ! MT: move inside if - we dont want a barrier every time this is called       
-
+       ! initialize static data on master thread only
 #if (defined HORIZ_OPENMP)
 !OMP BARRIER
 !OMP MASTER
 #endif
+       if (nphys_init /= 0 ) then
+          ! using a new phys grid.  need to recompute weights
+          deallocate(weights)
+       endif
        allocate(weights(np,np,2,2,nelemd))
        allocate(fvm_cart3d(0:nc+1,0:nc+1,3,nelemd))
        nphys_init=nphys
@@ -1464,7 +1457,6 @@ end subroutine fvm_rkdss
        call freeghostbufferTR(ghostbuf_tr)
 !OMP END MASTER
 
-
        ! this can be done threaded (but not really needed)
        do ie=nets,nete
            if ( elem(ie)%desc%actual_neigh_edges > 8 ) then
@@ -1492,83 +1484,6 @@ end subroutine fvm_rkdss
               j1 = index_l(j)
               j2 = index_r(j)
               
-              
-              
-              ! get the 4 or (3 if cube corner) points containing (i,j) GLL point
-              if (i==1 .or. j==1) then
-                 d11=0
-              else
-                 d11 = (phys_centers(i2)-gll_pts%points(i))*&
-                      (phys_centers(j2)-gll_pts%points(j))
-                 
-                 ! compute weight from cart3d coords:
-                 cart3d%x = fvm_cart3d(i2,j2,1,ie)
-                 cart3d%y = fvm_cart3d(i2,j2,2,ie)
-                 cart3d%z = fvm_cart3d(i2,j2,3,ie)
-                 phys_cart2d = cart2cubedsphere(cart3d,elem(ie)%FaceNum)
-                 gll_cart2d = sphere2cubedsphere(elem(ie)%spherep(i,j),elem(ie)%FaceNum)
-                 
-                 d11 = (phys_cart2d%x-gll_cart2d%x)*&
-                      (phys_cart2d%y-gll_cart2d%y)
-                 
-              endif
-              
-              if (i==1 .or. j==np) then
-                 d12=0
-              else
-                 d12 = (phys_centers(i2)-gll_pts%points(i))*&
-                      (gll_pts%points(j)-phys_centers(j1))
-                 
-                 ! compute weight from cart3d coords:
-                 cart3d%x = fvm_cart3d(i2,j1,1,ie)
-                 cart3d%y = fvm_cart3d(i2,j1,2,ie)
-                 cart3d%z = fvm_cart3d(i2,j1,3,ie)
-                 phys_cart2d = cart2cubedsphere(cart3d,elem(ie)%FaceNum)
-                 gll_cart2d = sphere2cubedsphere(elem(ie)%spherep(i,j),elem(ie)%FaceNum)
-                 
-                 d12 = (phys_cart2d%x-gll_cart2d%x)*&
-                      (gll_cart2d%y-phys_cart2d%y)
-                 
-              endif
-              
-              if (i==np .or. j==1) then
-                 d21=0
-              else
-                 d21 = (gll_pts%points(i)-phys_centers(i1))*&
-                      (phys_centers(j2)-gll_pts%points(j))
-                 
-                 ! compute weight from cart3d coords:
-                 cart3d%x = fvm_cart3d(i1,j2,1,ie)
-                 cart3d%y = fvm_cart3d(i1,j2,2,ie)
-                 cart3d%z = fvm_cart3d(i1,j2,3,ie)
-                 phys_cart2d = cart2cubedsphere(cart3d,elem(ie)%FaceNum)
-                 gll_cart2d = sphere2cubedsphere(elem(ie)%spherep(i,j),elem(ie)%FaceNum)
-                 
-                 d21 = (gll_cart2d%x - phys_cart2d%x)*&
-                      (phys_cart2d%y - gll_cart2d%y)
-                 
-              endif
-              
-              if (i==np .or. j==np) then
-                 d22=0
-              else
-                 d22 = (gll_pts%points(i)-phys_centers(i1))*&
-                      (gll_pts%points(j)-phys_centers(j1))
-                 
-                 ! compute weight from cart3d coords:
-                 cart3d%x = fvm_cart3d(i1,j1,1,ie)
-                 cart3d%y = fvm_cart3d(i1,j1,2,ie)
-                 cart3d%z = fvm_cart3d(i1,j1,3,ie)
-                 phys_cart2d = cart2cubedsphere(cart3d,elem(ie)%FaceNum)
-                 gll_cart2d = sphere2cubedsphere(elem(ie)%spherep(i,j),elem(ie)%FaceNum)
-                 
-                 d22 = (gll_cart2d%x - phys_cart2d%x)*&
-                      (gll_cart2d%y - phys_cart2d%y )
-                 
-              endif
-              
-              ! regular bilinar interpolation:
-                 
               corners3D(1)%x = fvm_cart3d(i1,j1,1,ie)
               corners3D(1)%y = fvm_cart3d(i1,j1,2,ie)
               corners3D(1)%z = fvm_cart3d(i1,j1,3,ie)
@@ -1656,62 +1571,70 @@ end subroutine fvm_rkdss
               weights(i,j,1,2,ie) = d12/sum
               weights(i,j,2,1,ie) = d21/sum
               weights(i,j,2,2,ie) = d22/sum
+
+              if (d11<0) call abortmp("Error: bilin_phys2gll weight d11<0")
+              if (d12<0) call abortmp("Error: bilin_phys2gll weight d12<0")
+              if (d21<0) call abortmp("Error: bilin_phys2gll weight d21<0")
+              if (d22<0) call abortmp("Error: bilin_phys2gll weight d22<0")
+                 
            enddo
            enddo
         enddo
-
-
-
 
         deallocate(fvm_cart3d)
         deallocate(gll_pts%points)
         deallocate(gll_pts%weights)
     endif
+  end subroutine
+
+
+!----------------------------------------------------------------
+  function bilin_phys2gll(pin,nphys,ie) result(pout)
+    ! input
+    integer :: nphys,ie
+    real(kind=real_kind), intent(in) :: pin(nphys,nphys)
+    real(kind=real_kind) :: pout(np,np)
+
+    ! local
+    integer i,j,i1,i2,j1,j2
 
     ! interpolate i dimension
-    ie=ie_in
     do j=1,np
        j1 = index_l(j)
        j2 = index_r(j)
        do i=1,np
           i1 = index_l(i)
           i2 = index_r(i)
-         
-!          pout(i,j) = weights(i,j,1,1,ie)*pin(i1,j1) + &
-!                      weights(i,j,1,2,ie)*pin(i1,j2) + &
-!                      weights(i,j,2,1,ie)*pin(i2,j1) + &
-!                      weights(i,j,2,2,ie)*pin(i2,j2)
 
-           pout(i,j)=0
-           if (i==1 .or. j==1) then
-              !d11 = 0  
-           else
-              pout(i,j)=pout(i,j) + weights(i,j,1,1,ie)*pin(i1,j1)
-           endif
-
-           if (i==1 .or. j==np) then
-              !d12 = 0
-           else
-              pout(i,j)=pout(i,j) + weights(i,j,1,2,ie)*pin(i1,j2)
-           endif
-
-           if (i==np .or. j==1) then
-              !d21 = 0
-           else
-              pout(i,j)=pout(i,j) + weights(i,j,2,1,ie)*pin(i2,j1)
-           endif
-
-           if (i==np .or. j==np) then
-              !d22 = 0
-           else
-              pout(i,j)=pout(i,j) + weights(i,j,2,2,ie)*pin(i2,j2)
-           endif
-
+          ! only include contributions from this element
+          ! contributions from other elements will be handled by DSS
+          pout(i,j)=0
+          if (i==1 .or. j==1) then
+             !d11 = 0  
+          else
+             pout(i,j)=pout(i,j) + weights(i,j,1,1,ie)*pin(i1,j1)
+          endif
+          
+          if (i==1 .or. j==np) then
+             !d12 = 0
+          else
+             pout(i,j)=pout(i,j) + weights(i,j,1,2,ie)*pin(i1,j2)
+          endif
+          
+          if (i==np .or. j==1) then
+             !d21 = 0
+          else
+             pout(i,j)=pout(i,j) + weights(i,j,2,1,ie)*pin(i2,j1)
+          endif
+          
+          if (i==np .or. j==np) then
+             !d22 = 0
+          else
+             pout(i,j)=pout(i,j) + weights(i,j,2,2,ie)*pin(i2,j2)
+          endif
        enddo
     enddo
-  
-
-    end function bilin_phys2gll
+  end function bilin_phys2gll
 !----------------------------------------------------------------
 
 

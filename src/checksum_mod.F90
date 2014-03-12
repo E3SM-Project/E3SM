@@ -696,7 +696,7 @@ end subroutine
   use coordinate_systems_mod, only : cartesian3D_t,cartesian2D_t,spherical_polar_t,&
        spherical_to_cart,cart2spherical
   use derivative_mod, only : remap_phys2gll
-  use fvm_mod, only : bilin_phys2gll
+  use fvm_mod, only : bilin_phys2gll, bilin_phys2gll_init
   use global_norms_mod, only : linf_snorm, l1_snorm, l2_snorm
 
   implicit none
@@ -719,6 +719,7 @@ end subroutine
 
   if (hybrid%masterthread) print *,'running test_bilin_phys2gll'
 
+  call bilin_phys2gll_init(nc,elem,fvm,hybrid,nets,nete)
   call initEdgeBuffer(hybrid%par,buffer,1)
 
   ! test the bilinear map from FVM cells to GLL points
@@ -740,10 +741,11 @@ end subroutine
         exact_fvm(i,j,ie)=1 + cart3d%x + (cart3d%y)**2 + (cart3d%z)**3
      enddo
      enddo
+
+
      ! Interpolate CSLAM -> GLL
 !     interpolated_gll(:,:,ie)=remap_phys2gll(exact_fvm(:,:,ie),nc)
-     interpolated_gll(:,:,ie)=bilin_phys2gll(exact_fvm(:,:,ie),nc,&
-          elem,fvm,hybrid,nets,nete,ie)
+     interpolated_gll(:,:,ie)=bilin_phys2gll(exact_fvm(:,:,ie),nc,ie)
      ! apply DSS:
      interpolated_gll(:,:,ie)=interpolated_gll(:,:,ie)*elem(ie)%spheremp(:,:)
      
@@ -761,7 +763,8 @@ end subroutine
   linf= linf_snorm(interpolated_gll(:,:,nets:nete), exact_gll(:,:,nets:nete),hybrid,np,nets,nete)
 
   if (hybrid%masterthread) then
-     write(*,'(a,2e15.5)') "bilin_phys2gll l2,linf error =",l2,linf
+     write(*,'(a,2e15.5)') "bilin_phys2gll interpolation test: l2,linf error =",l2,linf
+#if 0
      ie=2
      print *,'exact solution phys grid'
      do j=1,nc
@@ -787,6 +790,7 @@ end subroutine
      do j=1,np
         write(*,'(99e12.4)') (elem(ie)%spheremp(i,j)*elem(ie)%rspheremp(i,j),i=1,np)
      enddo
+#endif
 
   endif
 end subroutine
