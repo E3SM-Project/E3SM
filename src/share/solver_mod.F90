@@ -393,10 +393,8 @@ contains
     real (kind=real_kind) :: gradp(np,np,2) ! velocity buffer
     real (kind=real_kind) :: div(np,np)
 
-    real (kind=real_kind), pointer :: mp(:, :)
-
     real (kind=real_kind), pointer :: rmp(:,:)
-    real (kind=real_kind), pointer :: mv(:,:)
+    real (kind=real_kind), pointer :: mp(:, :)
 
     real (kind=real_kind), pointer :: metdet(:,:)
     real (kind=real_kind), pointer :: rmetdet(:,:)
@@ -512,7 +510,7 @@ contains
              iptr=1
              do j=1,np
                 do i=1,np
-                   blkjac(ie)%E(iptr,kk,k) = metdet(i,j)*p(iptr) + lambdasq(k) * div(i,j)/(lsq*mv(i,j))
+                   blkjac(ie)%E(iptr,kk,k) = metdet(i,j)*p(iptr) + lambdasq(k) * div(i,j)/(lsq*mp(i,j))
                    iptr=iptr+1
                 end do
              end do
