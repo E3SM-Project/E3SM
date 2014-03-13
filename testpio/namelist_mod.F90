@@ -524,7 +524,7 @@ subroutine Broadcast_Namelist(caller, myID, root, comm, ierror)
   call MPI_Bcast(npr_yz, 4, MPI_INTEGER, root, comm, ierror)
   call CheckMPIReturn('Call to MPI_Bcast(npr_yz)',ierror,__FILE__,__LINE__)
 
-  call MPI_Bcast(max_buffer_size, 1, MPI_LONG, root, comm, ierror)
+  call MPI_Bcast(max_buffer_size, 1, MPI_INTEGER8, root, comm, ierror)
   call CheckMPIReturn('Call to MPI_Bcast(npr_yz)',ierror,__FILE__,__LINE__)
 
   call MPI_Bcast(block_size, 1, MPI_INTEGER, root, comm, ierror)

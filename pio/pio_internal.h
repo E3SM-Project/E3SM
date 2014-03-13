@@ -62,17 +62,17 @@ long long lgcd_array(int nain, long long*ain);
   void PIO_Offset_size(MPI_Datatype *dtype, int *tsize);
 PIO_Offset GCDblocksize(const int arrlen, const PIO_Offset arr_in[]);
 
-int subset_rearrange_create(iosystem_desc_t *ios,const int maplen, const PIO_Offset compmap[], const int gsize[],
-			 const int ndim, const int nioproc, io_desc_t *iodesc);
+int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, const PIO_Offset compmap[], const int gsize[],
+			 const int ndim, io_desc_t *iodesc);
 
 
-int box_rearrange_create(iosystem_desc_t *ios,const int maplen, const PIO_Offset compmap[], const int gsize[],
-			 const int ndim, const int nioproc, io_desc_t *iodesc);
+int box_rearrange_create(const iosystem_desc_t ios,const int maplen, const PIO_Offset compmap[], const int gsize[],
+			 const int ndim, io_desc_t *iodesc);
 
 
-int box_rearrange_io2comp(iosystem_desc_t *ios, io_desc_t *iodesc, void *sbuf,
+int box_rearrange_io2comp(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
 			  void *rbuf, const int comm_option, const int fc_options);
-int box_rearrange_comp2io(iosystem_desc_t *ios, io_desc_t *iodesc, void *sbuf,
+int box_rearrange_comp2io(const iosystem_desc_t ios, io_desc_t *iodesc, void *sbuf,
 			  void *rbuf, const int comm_option, const int fc_options);
 int calcdisplace(const int bsize, const int numblocks,const PIO_Offset map[],int displace[]);
 io_desc_t *malloc_iodesc(const int piotype, const int ndims);

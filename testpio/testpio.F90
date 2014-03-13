@@ -87,8 +87,8 @@ program testpio
 
   logical :: TestR8    = .false.
   logical :: TestR4    = .false.
-  logical :: TestInt   = .false.
-  logical :: TestCombo = .true.
+  logical :: TestInt   = .true.
+  logical :: TestCombo = .false.
   logical :: CheckArrays = .true.  ! turn off the array check for maximum memory usage testing
 
 
@@ -971,14 +971,14 @@ program testpio
               call MPI_Barrier(MPI_COMM_COMPUTE,ierr)
               call CheckMPIReturn('Call to MPI_BARRIER()',ierr,__FILE__,__LINE__)
 
-!              print *,__FILE__,__LINE__,test_i4dof
+              print *,__FILE__,__LINE__,test_i4dof
 
               call PIO_write_darray(File_i4,vard_i4dof,iodesc_i4,test_i4dof,iostat)
               call check_pioerr(iostat,__FILE__,__LINE__,' i4dof write_darray')
 
-!              call MPI_Barrier(MPI_COMM_COMPUTE,ierr)
-!              call PIO_CloseFile(File_i4)
-!              call mpi_abort(MPI_COMM_WORLD,0,ierr)
+              call MPI_Barrier(MPI_COMM_COMPUTE,ierr)
+              call PIO_CloseFile(File_i4)
+              call mpi_abort(MPI_COMM_WORLD,0,ierr)
 
 
               st = MPI_Wtime()

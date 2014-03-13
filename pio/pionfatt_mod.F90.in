@@ -359,7 +359,7 @@ contains
     integer, intent(in) :: ncid
     integer, intent(in) :: varid
     character(len=*), intent(in) :: name
-    {VTYPE}, intent(out) :: values
+    {VTYPE}, intent(out), target :: values
 
     interface
        integer(C_INT) function PIOc_get_att_{NCTYPE} (ncid, varid, name, op) &
@@ -368,11 +368,11 @@ contains
          integer(C_INT), value :: ncid
          integer(C_INT), value :: varid
          character(C_CHAR) :: name(*)
-         {CTYPE} :: op
+         type(C_PTR), value :: op
        end function PIOc_get_att_{NCTYPE}
     end interface
 
-    ierr = PIOc_get_att_{NCTYPE} (ncid,varid-1,trim(name)//C_NULL_CHAR, values)
+    ierr = PIOc_get_att_{NCTYPE} (ncid,varid-1,trim(name)//C_NULL_CHAR, C_LOC(values))
 
   end function get_att_id_{TYPE}
 
@@ -419,7 +419,7 @@ contains
     integer, intent(in) :: ncid
     integer(i4), intent(in)        :: varid
     character(len=*), intent(in)   :: name
-    {VTYPE}, intent(out)          :: values(:)
+    {VTYPE}, intent(out) , target         :: values(*)
 
     interface
        integer(C_INT) function PIOc_get_att_{NCTYPE} (ncid, varid, name, op) &
@@ -428,11 +428,11 @@ contains
          integer(C_INT), value :: ncid
          integer(C_INT), value :: varid
          character(C_CHAR) :: name(*)
-         {CTYPE} :: op(*)
+         type(C_PTR), value :: op
        end function PIOc_get_att_{NCTYPE}
     end interface
 
-    ierr = PIOc_get_att_{NCTYPE} (ncid, varid-1, trim(name)//C_NULL_CHAR, values)
+    ierr = PIOc_get_att_{NCTYPE} (ncid, varid-1, trim(name)//C_NULL_CHAR, C_LOC(values))
 
 
   end function get_att_1d_id_{TYPE}

@@ -13,7 +13,7 @@ int PIOc_iosystem_is_active(const int iosysid, bool *active)
   }else{
     *active = true;
   }
-    
+  return PIO_NOERR;
 }
 
 int PIOc_File_is_Open(int ncid)
@@ -129,51 +129,45 @@ int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const
   
   iodesc = malloc_iodesc(basetype, ndims);
 
-  /*
-  ierr = subset_rearrange_create( ios, maplen, compmap, dims, ndims, iodesc->num_aiotasks, iodesc);
-
-  MPI_Barrier(ios->comp_comm);
-
-  MPI_Abort(ios->comp_comm,ierr);
-  */
-
-
-
+  if(true){
+    iodesc->num_aiotasks = ios->num_iotasks;
+    ierr = subset_rearrange_create( *ios, maplen, compmap, dims, ndims, iodesc);
+  }else{
   
-  if(ios->ioproc){
-    //  Unless the user specifies the start and count for each IO task compute it.    
-    if((iostart != NULL) && (iocount != NULL)){ 
-      printf("iocount[0] = %ld %ld\n",iocount[0], iocount);
-      for(int i=0;i<ndims;i++){
-	iodesc->start[i] = iostart[i];
-	iodesc->count[i] = iocount[i];
+    if(ios->ioproc){
+      //  Unless the user specifies the start and count for each IO task compute it.    
+      if((iostart != NULL) && (iocount != NULL)){ 
+	printf("iocount[0] = %ld %ld\n",iocount[0], iocount);
+	for(int i=0;i<ndims;i++){
+	  iodesc->start[i] = iostart[i];
+	  iodesc->count[i] = iocount[i];
+	}
+	iodesc->num_aiotasks = ios->num_iotasks;
+      }else{
+	
+	iodesc->num_aiotasks = CalcStartandCount(basetype, ndims, dims, ios->num_iotasks, ios->io_rank,
+						 iodesc->start, iodesc->count);
+	
       }
-      iodesc->num_aiotasks = ios->num_iotasks;
-    }else{
-    
-      iodesc->num_aiotasks = CalcStartandCount(basetype, ndims, dims, ios->num_iotasks, ios->io_rank,
-					    iodesc->start, iodesc->count);
 
+      //  compute the max io buffer size
+      iosize=1;
+      for(int i=0;i<ndims;i++)
+	iosize*=iodesc->count[i];
+      
+      iodesc->llen = iosize;
+      // Share the max io buffer size with all io tasks
+      CheckMPIReturn(MPI_Allreduce(MPI_IN_PLACE, &iosize, 1, MPI_INT, MPI_MAX, ios->io_comm),__FILE__,__LINE__);
+      iodesc->maxiobuflen = iosize;
     }
-
-    //  compute the max io buffer size
-    iosize=1;
-    for(int i=0;i<ndims;i++)
-      iosize*=iodesc->count[i];
-
-    iodesc->llen = iosize;
-    // Share the max io buffer size with all io tasks
-    CheckMPIReturn(MPI_Allreduce(MPI_IN_PLACE, &iosize, 1, MPI_INT, MPI_MAX, ios->io_comm),__FILE__,__LINE__);
-    iodesc->maxiobuflen = iosize;
+    // Depending on array size and io-blocksize the actual number of io tasks used may vary
+    CheckMPIReturn(MPI_Bcast(&(iodesc->num_aiotasks), 1, MPI_INT, ios->ioroot,ios->my_comm),__FILE__,__LINE__);
+    // Compute the communications pattern for this decomposition
+    ierr = box_rearrange_create( *ios, maplen, compmap, dims, ndims, iodesc);
+    //  if(ios->ioproc)
+    //   for(int i=0;i<ndims;i++)
+    //     printf("%s %d dim %d start %ld count %ld\n",__FILE__,__LINE__,dims[i],iodesc->start[i],iodesc->count[i]);
   }
-  // Depending on array size and io-blocksize the actual number of io tasks used may vary
-  CheckMPIReturn(MPI_Bcast(&(iodesc->num_aiotasks), 1, MPI_INT, ios->ioroot,ios->my_comm),__FILE__,__LINE__);
-  // Compute the communications pattern for this decomposition
-  ierr = box_rearrange_create( ios, maplen, compmap, dims, ndims, iodesc->num_aiotasks, iodesc);
-  //  if(ios->ioproc)
-  //   for(int i=0;i<ndims;i++)
-  //     printf("%s %d dim %d start %ld count %ld\n",__FILE__,__LINE__,dims[i],iodesc->start[i],iodesc->count[i]);
-
 
   *ioidp = pio_add_to_iodesc_list(iodesc);
 

@@ -156,7 +156,7 @@ SET(PIO_INCLUDE_DIRS   ${pio_include_dirs_} CACHE STRING "")
 INCLUDE_DIRECTORIES(${PIO_INCLUDE_DIRS})
 
 SET(SRCS_C topology.c pio_nc.c pio_file.c pio_support.c pio_lists.c pioc.c
-	  pio_subset.c pioc_sc.c pio_spmd.c pio_box.c pio_darray.c pio_put_nc.c pio_get_nc.c)
+        pioc_sc.c pio_spmd.c pio_rearrange.c pio_darray.c pio_put_nc.c pio_get_nc.c)
 
 
 SET(SRCS_F90 pio_nf.F90 pio.F90 pio_kinds.F90 pio_types.F90
@@ -185,7 +185,7 @@ if("${CMAKE_C_COMPILER_ID}" STREQUAL "INTEL")
 endif()
 
 SET(CMAKE_Fortran_FLAGS	"${CMAKE_Fortran_FLAGS} -g")
-SET(CMAKE_C_FLAGS	"${CMAKE_C_FLAGS} -std=c99 -g")
+SET(CMAKE_C_FLAGS	"${CMAKE_C_FLAGS} -g")
 
 ADD_LIBRARY(pioc ${SRCS_C} )
 
@@ -193,10 +193,12 @@ ADD_LIBRARY(piof ${SRCS_F90} ${TEMPSRCF90})
 
 
 if(PNETCDF_LIBRARY)
+  MESSAGE("Adding pnetcdf  library ${PNETCDF_LIBRARIES}")
   TARGET_LINK_LIBRARIES(pioc ${PNETCDF_LIBRARIES})
 ENDIF()
 if(NETCDF_FOUND)
-  TARGET_LINK_LIBRARIES(pioc ${NETCDF_C_LIBRARIES})
+  MESSAGE("Adding netcdf library ${NETCDF_C_LIBRARY}")
+  TARGET_LINK_LIBRARIES(pioc ${NETCDF_C_LIBRARY})
 ENDIF()
 TARGET_LINK_LIBRARIES(pioc ${ADDITIONAL_LIBS})
 

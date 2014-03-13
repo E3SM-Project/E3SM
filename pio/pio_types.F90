@@ -9,12 +9,6 @@
 module pio_types
     use pio_kinds
     use iso_c_binding
-#ifdef _NETCDF
-     use netcdf                                  ! _EXTERNAL
-#endif
-#ifdef USE_PNETCDF_MOD
-    use pnetcdf
-#endif
     implicit none
     private 
     !-------------------------------------------
@@ -242,9 +236,7 @@ module pio_types
 !!  - PIO_char : character
 !<
 #ifdef _PNETCDF
-#ifndef USE_PNETCDF_MOD
 #include <pnetcdf.inc>   /* _EXTERNAL */
-#endif
    integer, public, parameter :: PIO_global = nf_global
    integer, public, parameter :: PIO_unlimited = nf_unlimited
    integer, public, parameter :: PIO_double = nf_double
@@ -264,21 +256,22 @@ module pio_types
 
 #else
 #ifdef _NETCDF
-   integer, public, parameter :: PIO_global = nf90_global
-   integer, public, parameter :: PIO_unlimited = nf90_unlimited
-   integer, public, parameter :: PIO_double = nf90_double
-   integer, public, parameter :: PIO_real   = nf90_real
-   integer, public, parameter :: PIO_int    = nf90_int
-   integer, public, parameter :: PIO_char   = nf90_char
-   integer, public, parameter :: PIO_noerr  = nf90_noerr
-   integer, public, parameter :: PIO_WRITE  = nf90_write
-   integer, public, parameter :: PIO_nowrite = nf90_nowrite
-   integer, public, parameter :: PIO_CLOBBER = nf90_clobber	
-   integer, public, parameter :: PIO_NOCLOBBER = nf90_NOclobber	
-   integer, public, parameter :: PIO_NOFILL = nf90_nofill
-   integer, public, parameter :: PIO_MAX_NAME = nf90_max_name
-   integer, public, parameter :: PIO_MAX_VAR_DIMS = nf90_max_var_dims
-   integer, public, parameter :: PIO_64BIT_OFFSET = nf90_64bit_offset
+#include <netcdf.inc>   /* _EXTERNAL */
+   integer, public, parameter :: PIO_global = nf_global
+   integer, public, parameter :: PIO_unlimited = nf_unlimited
+   integer, public, parameter :: PIO_double = nf_double
+   integer, public, parameter :: PIO_real   = nf_real
+   integer, public, parameter :: PIO_int    = nf_int
+   integer, public, parameter :: PIO_char   = nf_char
+   integer, public, parameter :: PIO_noerr  = nf_noerr
+   integer, public, parameter :: PIO_WRITE  = nf_write
+   integer, public, parameter :: PIO_nowrite = nf_nowrite
+   integer, public, parameter :: PIO_CLOBBER = nf_clobber	
+   integer, public, parameter :: PIO_NOCLOBBER = nf_NOclobber	
+   integer, public, parameter :: PIO_NOFILL = nf_nofill
+   integer, public, parameter :: PIO_MAX_NAME = nf_max_name
+   integer, public, parameter :: PIO_MAX_VAR_DIMS = nf_max_var_dims
+   integer, public, parameter :: PIO_64BIT_OFFSET = nf_64bit_offset
    integer, public, parameter :: PIO_64BIT_DATA = 0
 #else
    integer, public, parameter :: PIO_global = 0

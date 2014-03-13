@@ -11,10 +11,10 @@ INCLUDE_DIRECTORIES(${PIO_INCLUDE_DIRS} )
 LINK_DIRECTORIES(${PIO_LIB_DIR} )
 
 ADD_EXECUTABLE(piotest ${SRC})
+TARGET_LINK_LIBRARIES(piotest piof pioc)
 
 if(PIO_BUILD_TIMING MATCHES "ON") 
   TARGET_LINK_LIBRARIES(piotest piof pioc timing)
-else()
-  TARGET_LINK_LIBRARIES(piotest piof pioc)
 endif()
+
 ADD_TEST(piotest piotest)

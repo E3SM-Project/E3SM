@@ -16,12 +16,12 @@ LINK_DIRECTORIES(${PIO_LIB_DIR})
 ADD_EXECUTABLE(testpio ${SRC})
 ADD_EXECUTABLE(wstest ${WSSRC})
 if(PIO_BUILD_TIMING MATCHES "ON") 
-  TARGET_LINK_LIBRARIES(testpio timing piof pioc )
-  TARGET_LINK_LIBRARIES(wstest timing pioc )
-else()
-  TARGET_LINK_LIBRARIES(testpio piof pioc)
-  TARGET_LINK_LIBRARIES(wstest pioc)
+  TARGET_LINK_LIBRARIES(testpio timing  )
+  TARGET_LINK_LIBRARIES(wstest timing  )
 endif()
+TARGET_LINK_LIBRARIES(testpio piof pioc ${NETCDF_Fortran_LIBRARY})
+TARGET_LINK_LIBRARIES(wstest pioc)
+
 
 
 

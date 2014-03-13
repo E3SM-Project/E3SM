@@ -238,17 +238,17 @@ CONTAINS
     use iso_c_binding
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
-    {VTYPE}, intent(out) :: ival
+    {VTYPE}, intent(out), target :: ival
     interface
        integer(C_INT) function PIOc_get_var_{NCTYPE} (ncid, varid, ival) &
             bind(C,name="PIOc_get_var_{NCTYPE}")
          use iso_c_binding
          integer(C_INT), value :: ncid
          integer(C_INT), value :: varid
-         {CTYPE} :: ival
+         type(C_PTR), value :: ival
        end function PIOc_get_var_{NCTYPE}
     end interface
-    ierr = PIOc_get_var_{NCTYPE} (File%fh, varid-1, ival)
+    ierr = PIOc_get_var_{NCTYPE} (File%fh, varid-1, C_LOC(ival))
        
   end function Get_var_0d_{TYPE}
 
@@ -289,17 +289,17 @@ CONTAINS
   integer function get_var_{TYPE}_internal  (ncid,varid, ival) result(ierr)
     integer, intent(in) :: ncid
     integer, intent(in) :: varid
-    {VTYPE}, intent(out) :: ival(*)
+    {VTYPE}, intent(out), target :: ival(*)
     interface
        integer(C_INT) function PIOc_get_var_{NCTYPE} (ncid, varid, ival) &
             bind(C,name="PIOc_get_var_{NCTYPE}")
          use iso_c_binding
          integer(C_INT), value :: ncid
          integer(C_INT), value :: varid
-         {CTYPE}  :: ival(*)
+         type(C_PTR), value  :: ival
        end function PIOc_get_var_{NCTYPE}
     end interface
-    ierr = PIOc_get_var_{NCTYPE} (ncid, varid-1, ival)
+    ierr = PIOc_get_var_{NCTYPE} (ncid, varid-1, C_LOC(ival))
 
   end function get_var_{TYPE}_internal
 

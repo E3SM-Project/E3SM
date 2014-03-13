@@ -247,7 +247,7 @@ int PIOc_write_darray(const int ncid, const int vid, const int ioid, const PIO_O
 
     //    printf("%s %d %ld %d %d %d %ld\n",__FILE__,__LINE__,array,((int *)array)[0],((int *)array)[1],((int *)array)[2], fillvalue);
 
-  ierr = box_rearrange_comp2io(ios, iodesc, array, iobuf, 0, 0);
+  ierr = box_rearrange_comp2io(*ios, iodesc, array, iobuf, 0, 0);
 
   switch(file->iotype){
   case PIO_IOTYPE_PBINARY:
@@ -457,7 +457,7 @@ int PIOc_read_darray(const int ncid, const int vid, const int ioid, const PIO_Of
     ierr = pio_read_darray_nc(file, iodesc, vid, iobuf);
   }
 
-  ierr = box_rearrange_io2comp(ios, iodesc, iobuf, array, 0, 0);
+  ierr = box_rearrange_io2comp(*ios, iodesc, iobuf, array, 0, 0);
 
 
   if(rlen>0)

@@ -9,7 +9,7 @@ module piodarray
   use pio_types, only : file_desc_t, io_desc_t, var_desc_t
   use pio_kinds, only : i4, r4, r8, pio_offset
   use pio_support, only : piodie
-
+  use iso_c_binding
 #ifdef TIMING
   use perf_mod, only : t_startf, t_stopf   !_EXTERNAL
 #endif
@@ -52,6 +52,7 @@ contains
   subroutine pio_set_buffer_size_limit(limit)
     integer(PIO_Offset), intent(in) :: limit    
     integer(PIO_Offset) :: oldval
+    integer(C_LONG_LONG) :: clim
     interface 
        integer(C_LONG_LONG) function PIOc_set_buffer_size_limit(limit) &
             bind(C,name="PIOc_set_buffer_size_limit")
@@ -62,7 +63,8 @@ contains
     if(limit<0) then
        call piodie(__PIO_FILE__,__LINE__,' bad value to buffer_size_limit: ',int(limit))
     end if
-    oldval = PIOc_set_buffer_size_limit(limit)
+    clim = limit
+    oldval = PIOc_set_buffer_size_limit(clim)
        
   end subroutine pio_set_buffer_size_limit
 
@@ -94,7 +96,7 @@ contains
     integer,intent(in) :: arraylen
     integer(i4), intent(out) :: iostat
     integer(C_SIZE_T) :: carraylen
-    
+    type(C_PTR) :: cptr
     interface
        integer(C_INT) function PIOc_write_darray(ncid, vid, ioid, arraylen, array, fillvalue) &
             bind(C,name="PIOc_write_darray")
@@ -103,16 +105,19 @@ contains
          integer(C_INT), value :: vid
          integer(C_INT), value :: ioid
          integer(C_SIZE_T), value :: arraylen
-         {CTYPE} :: array(*)
+         type(c_ptr), value :: array
          type(C_PTR), value :: fillvalue
        end function PIOc_write_darray
     end interface
     carraylen = int(arraylen,C_SIZE_T)
+    cptr = C_LOC(array)
+
+    
 
     if(present(fillval)) then
-       iostat = PIOc_write_darray(file%fh, varDesc%varid-1, iodesc%ioid, carraylen,array, C_LOC(fillval))
+       iostat = PIOc_write_darray(file%fh, varDesc%varid-1, iodesc%ioid, carraylen,cptr, C_LOC(fillval))
     else
-       iostat = PIOc_write_darray(file%fh, varDesc%varid-1, iodesc%ioid, carraylen,array, C_NULL_PTR)
+       iostat = PIOc_write_darray(file%fh, varDesc%varid-1, iodesc%ioid, carraylen, cptr, C_NULL_PTR)
     endif
 
   end subroutine write_darray_1d_cinterface_{TYPE}
@@ -153,7 +158,6 @@ contains
 
     {VTYPE}, optional, target, intent(in) :: fillval    ! rearrange receiver fill value
     integer(i4), intent(out) :: iostat
-    integer :: ierr
 
     character(len=*), parameter :: subName=modName//'::write_darray_{TYPE}'
     
@@ -250,11 +254,31 @@ contains
 
     {VTYPE}, intent(out) ::  array{DIMSTR}                 ! array to be read
 
-    {VTYPE}, allocatable, target :: carray(:)
+    integer(i4), intent(out) :: iostat
+    integer(C_SIZE_T) :: tlen
+    tlen = size(array)
+    call read_darray_internal_{TYPE} (File%fh, vardesc%varid, iodesc%ioid, tlen, array, iostat)
+
+  end subroutine read_darray_{DIMS}d_{TYPE}
+
+! TYPE real,int,double
+
+  subroutine read_darray_internal_{TYPE} (ncid, varid, ioid, alen, array, iostat)
+    use iso_c_binding
+    ! !DESCRIPTION:
+    !  Reads a slab of TYPE from a netcdf file.
+    !
+    ! !REVISION HISTORY:
+    !  same as module
+
+    ! !INPUT PARAMETERS:
+    integer, intent(in) :: ncid, varid, ioid
+    integer(C_SIZE_T), intent(in) :: alen
+    
+    {VTYPE}, intent(out), target ::  array(*)                 ! array to be read
 
     integer(i4), intent(out) :: iostat
-    integer(C_SIZE_T) :: alen({DIMS}), tlen
-
+    type(C_PTR) :: cptr
     character(len=*), parameter :: subName=modName//'::read_darray_{TYPE}'
 
     interface
@@ -265,20 +289,14 @@ contains
          integer(C_INT), value :: vid
          integer(C_INT), value :: ioid
          integer(C_SIZE_T), value :: arraylen
-         {CTYPE} :: array(*)
+         type(C_PTR), value :: array
        end function PIOc_read_darray
     end interface
 
-    
-!    alen = size(array)
-!    tlen = product(alen)
-!    allocate(carray(tlen))
-    tlen = size(array)
-    iostat = PIOc_read_darray(file%fh, varDesc%varid-1, iodesc%ioid, tlen, array)
-!    array = reshape(carray,alen)
-!    deallocate(carray)
+    cptr = C_LOC(array)
+    iostat = PIOc_read_darray(ncid, varid-1, ioid, alen, cptr)
 
-  end subroutine read_darray_{DIMS}d_{TYPE}
+  end subroutine read_darray_internal_{TYPE}
 
 end module piodarray
 
