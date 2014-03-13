@@ -1122,7 +1122,7 @@ module repro_sum_mod
             e  = t1 - arr(isum,ifld)
             t2 = ((real(arr_lsum_dd(ifld)) - e) &
                   + (arr(isum,ifld) - (t1 - e))) &
-                 + imag(arr_lsum_dd(ifld))
+                 + aimag(arr_lsum_dd(ifld))
 
             ! The result is t1 + t2, after normalization.
             arr_lsum_dd(ifld) = cmplx ( t1 + t2, t2 - ((t1 + t2) - t1), r8 )
@@ -1178,7 +1178,7 @@ module repro_sum_mod
          t1 = real(dda(i)) + real(ddb(i))
          e  = t1 - real(dda(i))
          t2 = ((real(ddb(i)) - e) + (real(dda(i)) - (t1 - e))) &
-              + imag(dda(i)) + imag(ddb(i))
+              + aimag(dda(i)) + aimag(ddb(i))
 
 !   The result is t1 + t2, after normalization.
          ddb(i) = cmplx ( t1 + t2, t2 - ((t1 + t2) - t1), r8 )

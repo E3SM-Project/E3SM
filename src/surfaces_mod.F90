@@ -68,7 +68,7 @@ module surfaces_mod
 
   type (ctrlvol_t),    public, allocatable, target  :: cvlist(:)
   type (EdgeBuffer_t), private  :: edge1
-  type (Ghostbuffer3d_t)        :: ghost_buf
+  type (GhostBuffer3D_t)        :: ghost_buf
 
 
   ! User interface
