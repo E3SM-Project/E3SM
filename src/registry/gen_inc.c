@@ -1825,7 +1825,7 @@ void write_non_decomp_copy_input_fields(FILE *fd, struct group_list *groups){/*{
 	struct variable_list *var_list_ptr, *var_list_ptr2;
 	struct dimension_list *dimlist_ptr;
 	struct variable *var_ptr;
-	char var_array[1024];
+	char var_name[1024];
 	char struct_deref[1024];
 	int i;
 
@@ -1847,15 +1847,21 @@ void write_non_decomp_copy_input_fields(FILE *fd, struct group_list *groups){/*{
 							snprintf(struct_deref, 1024, "domain %% blocklist %% %s", group_ptr->name);
 						}
 
+						if (strncmp(var_ptr->var_array, "-", 1024) != 0) {
+							snprintf(var_name, 1024, "%s", var_ptr->var_array);
+						} else {
+							snprintf(var_name, 1024, "%s", var_ptr->name_in_code);
+						}
+
 						if (strncmp(dimlist_ptr->dim->name_in_file, "nCells", 1024) &&
 								strncmp(dimlist_ptr->dim->name_in_file, "nEdges", 1024) &&
 								strncmp(dimlist_ptr->dim->name_in_file, "nVertices", 1024)) {
 
-							fortprintf(fd, "      if (%s %% %s %% isPersistent .and. %s %% %s %% isActive) then\n", struct_deref, var_ptr->name_in_code, struct_deref, var_ptr->name_in_code);
-							fortprintf(fd, "         if ((%s %% %s %% ioinfo %% input .and. input_obj %% stream == STREAM_INPUT) .or. &\n", struct_deref, var_ptr->name_in_code);
-							fortprintf(fd, "             (%s %% %s %% ioinfo %% restart .and. input_obj %% stream == STREAM_RESTART) .or. &\n", struct_deref, var_ptr->name_in_code);
-							fortprintf(fd, "             (%s %% %s %% ioinfo %% sfc .and. input_obj %% stream == STREAM_SFC)) then\n", struct_deref, var_ptr->name_in_code);
-							fortprintf(fd, "             call mpas_dmpar_copy_field(%s %% %s)\n", struct_deref, var_ptr->name_in_code);
+							fortprintf(fd, "      if (%s %% %s %% isPersistent .and. %s %% %s %% isActive) then\n", struct_deref, var_name, struct_deref, var_name);
+							fortprintf(fd, "         if ((%s %% %s %% ioinfo %% input .and. input_obj %% stream == STREAM_INPUT) .or. &\n", struct_deref, var_name);
+							fortprintf(fd, "             (%s %% %s %% ioinfo %% restart .and. input_obj %% stream == STREAM_RESTART) .or. &\n", struct_deref, var_name);
+							fortprintf(fd, "             (%s %% %s %% ioinfo %% sfc .and. input_obj %% stream == STREAM_SFC)) then\n", struct_deref, var_name);
+							fortprintf(fd, "             call mpas_dmpar_copy_field(%s %% %s)\n", struct_deref, var_name);
 							fortprintf(fd, "         end if\n\n");
 							fortprintf(fd, "      end if\n\n");
 						}
