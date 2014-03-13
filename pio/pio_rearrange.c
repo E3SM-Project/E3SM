@@ -657,7 +657,7 @@ int compute_subset_start_and_count(const iosystem_desc_t ios,const PIO_Offset gs
   
 
   if(ios.ioproc && iodesc->llen>0){
-    PIO_Offset coord1[ndims], coord2[ndims], *curcoord, *prevcoord;
+    PIO_Offset coord1[ndims], coord2[ndims], *curcoord, *prevcoord, *tmpcoord;
     int stride1[ndims], stride2[ndims], patch_cnt=1;
     gindex_to_coord(iomap[0], gstride, ndims, coord1);
     gindex_to_coord(iomap[1], gstride, ndims, coord2);
@@ -665,7 +665,6 @@ int compute_subset_start_and_count(const iosystem_desc_t ios,const PIO_Offset gs
     for(int j=0;j<ndims;j++){
       iodesc->start[j]=coord1[j];
       stride1[j] = coord2[j]-coord1[j];
-      printf("%d stride %d\n",j,stride1[j]);  /// this is wrong
     }
     curcoord = coord1;
     prevcoord = coord2;
@@ -673,11 +672,19 @@ int compute_subset_start_and_count(const iosystem_desc_t ios,const PIO_Offset gs
       gindex_to_coord(iomap[i], gstride, ndims, curcoord);      
       
       for(int j=0;j<ndims;j++){
-	stride2[j] = curcoord[j]-prevcoord[j];
-	if(stride2[j] != stride1[j]){
-	  patch_cnt++;
+	if(curcoord[j]>prevcoord[j]){
+	  stride2[j] = curcoord[j]-prevcoord[j];
+	  if(stride1[j]>0 && (stride2[j] != stride1[j])){
+	    patch_cnt++;
+	  }else if(stride2[j]>0){
+	    stride1[j]=stride2[j];
+	  }
 	}
+         
       }
+      tmpcoord=curcoord;
+      curcoord=prevcoord;
+      prevcoord=tmpcoord;
     }
     if(patch_cnt==1){
       for(int j=0;j<ndims;j++)
@@ -686,6 +693,7 @@ int compute_subset_start_and_count(const iosystem_desc_t ios,const PIO_Offset gs
       fprintf(stderr, "need to deal with this case %d\n",patch_cnt);
     }
     for(int j=0;j<ndims;j++){
+      printf("%d stride %d\n",j,stride1[j]); 
       printf("%d start %ld count %ld\n",j,iodesc->start[j],iodesc->count[j]);
     }
   }
