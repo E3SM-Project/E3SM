@@ -37,7 +37,6 @@
          totalDimSize = globalDimSize
 
          if (field % block % domain % dminfo % my_proc_id == IO_NODE) then
-            ndims = 1
             allocate(indices(field % dimSizes(ndims)))
             do i=1,field % dimSizes(ndims)
                indices(i) = i
