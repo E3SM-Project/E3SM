@@ -39,10 +39,12 @@
       i8        = selected_int_kind(13)  ,&
       r4        = selected_real_kind(6)  ,&
       r8        = selected_real_kind(13)
-
-
+!
+!  MPI defines MPI_OFFSET_KIND as the byte size of the 
+!  type some compilers (nag) reject that as an invalid kind
+!
    integer, parameter, public ::          &
-      PIO_OFFSET = MPI_OFFSET_KIND
+      PIO_OFFSET = selected_int_kind(5+MPI_OFFSET_KIND)
 
 !EOP
 !BOC
