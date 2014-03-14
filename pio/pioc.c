@@ -129,7 +129,7 @@ int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const
   
   iodesc = malloc_iodesc(basetype, ndims);
 
-  if(true){
+  if(false){
     iodesc->num_aiotasks = ios->num_iotasks;
     ierr = subset_rearrange_create( *ios, maplen, compmap, dims, ndims, iodesc);
   }else{
@@ -149,16 +149,8 @@ int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const
 						 iodesc->start, iodesc->count);
 	
       }
+      compute_maxIObuffersize(ios->io_comm, iodesc);
 
-      //  compute the max io buffer size
-      iosize=1;
-      for(int i=0;i<ndims;i++)
-	iosize*=iodesc->count[i];
-      
-      iodesc->llen = iosize;
-      // Share the max io buffer size with all io tasks
-      CheckMPIReturn(MPI_Allreduce(MPI_IN_PLACE, &iosize, 1, MPI_INT, MPI_MAX, ios->io_comm),__FILE__,__LINE__);
-      iodesc->maxiobuflen = iosize;
     }
     // Depending on array size and io-blocksize the actual number of io tasks used may vary
     CheckMPIReturn(MPI_Bcast(&(iodesc->num_aiotasks), 1, MPI_INT, ios->ioroot,ios->my_comm),__FILE__,__LINE__);

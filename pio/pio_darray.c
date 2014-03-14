@@ -81,6 +81,11 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, voi
       count = iodesc->count;
     }      
 
+    //    for(int j=0;j<ndims;j++)
+    //   printf("%d start[%d] %ld count %ld\n",ios->io_rank,j,start[j],count[j]);
+
+
+
 
     switch(file->iotype){
 #ifdef _NETCDF
@@ -122,8 +127,8 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, voi
 	      }
 	    
 	      mpierr = MPI_Send( &ierr, 1, MPI_INT, i, 0, ios->io_comm);  // handshake - tell the sending task I'm ready
-	      mpierr = MPI_Recv( tstart, ndims, MPI_INT, i, ios->num_iotasks+i, ios->io_comm, &status);
-	      mpierr = MPI_Recv( tcount, ndims, MPI_INT, i,2*ios->num_iotasks+i, ios->io_comm, &status);
+	      mpierr = MPI_Recv( tstart, ndims, MPI_OFFSET, i, ios->num_iotasks+i, ios->io_comm, &status);
+	      mpierr = MPI_Recv( tcount, ndims, MPI_OFFSET, i,2*ios->num_iotasks+i, ios->io_comm, &status);
 	      mpierr = MPI_Recv( tmp_buf, iodesc->maxiobuflen, iodesc->basetype, i, i, ios->io_comm, &status);
 	    }
 
@@ -151,8 +156,8 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, voi
 	    tcount[i] = (size_t) count[i];
 	  }
 	  mpierr = MPI_Recv( &ierr, 1, MPI_INT, 0, 0, ios->io_comm, &status);  // task0 is ready to recieve
-	  mpierr = MPI_Rsend( tstart, ndims, MPI_INT, 0, ios->num_iotasks+ios->io_rank, ios->io_comm);
-	  mpierr = MPI_Rsend( tcount, ndims, MPI_INT, 0,2*ios->num_iotasks+ios->io_rank, ios->io_comm);
+	  mpierr = MPI_Rsend( tstart, ndims, MPI_OFFSET, 0, ios->num_iotasks+ios->io_rank, ios->io_comm);
+	  mpierr = MPI_Rsend( tcount, ndims, MPI_OFFSET, 0,2*ios->num_iotasks+ios->io_rank, ios->io_comm);
 	  mpierr = MPI_Rsend( IOBUF, iodesc->maxiobuflen, iodesc->basetype, 0, ios->io_rank, ios->io_comm);
 	}
 	break;
@@ -337,9 +342,9 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void
 	  tmp_count[i] = count[i];
 	  tmp_bufsize *= count[i];
 	}
-	MPI_Send( tmp_count, ndims, MPI_UNSIGNED_LONG, 0, ios->io_rank, ios->io_comm);
+	MPI_Send( tmp_count, ndims, MPI_OFFSET, 0, ios->io_rank, ios->io_comm);
 	if(tmp_bufsize > 0){
-	  MPI_Send( tmp_start, ndims, MPI_UNSIGNED_LONG, 0, ios->io_rank, ios->io_comm);
+	  MPI_Send( tmp_start, ndims, MPI_OFFSET, 0, ios->io_rank, ios->io_comm);
 	  MPI_Recv( IOBUF, tmp_bufsize, iodesc->basetype, 0, ios->io_rank, ios->io_comm, &status);
 	}
       }else if(ios->io_rank==0){
@@ -348,7 +353,7 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void
 	    for(int k=0;k<ndims;k++)
 	      tmp_count[k] = count[k];
 	  }else{
-	    MPI_Recv(tmp_count, ndims, MPI_UNSIGNED_LONG, i, i, ios->io_comm, &status);
+	    MPI_Recv(tmp_count, ndims, MPI_OFFSET, i, i, ios->io_comm, &status);
 	  }
 	  tmp_bufsize=1;
 	  for(int j=0;j<ndims; j++){
@@ -359,7 +364,7 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void
 	      for(int k=0;k<ndims;k++)
 		tmp_start[k] = start[k];
 	    }else{
-	      MPI_Recv(tmp_start, ndims, MPI_UNSIGNED_LONG, i, i, ios->io_comm, &status);
+	      MPI_Recv(tmp_start, ndims, MPI_OFFSET, i, i, ios->io_comm, &status);
 	    }
 
 	    if(iodesc->basetype == MPI_DOUBLE || iodesc->basetype == MPI_REAL8){
@@ -371,8 +376,8 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void
 	    }else{
 	      fprintf(stderr,"Type not recognized %d in pioc_write_darray\n",(int) iodesc->basetype);
 	    }	
-	    for(int k=0;k<ndims;k++)
-	      printf("%d %d %ld %ld %d\n",vid,k,tmp_start[k],tmp_count[k], ierr);
+	    //for(int k=0;k<ndims;k++)
+	    //  printf("%d %d %ld %ld %d\n",vid,k,tmp_start[k],tmp_count[k], ierr);
 
 	    if(i>0){
 	      MPI_Rsend(IOBUF, tmp_bufsize, iodesc->basetype, i, i, ios->io_comm);

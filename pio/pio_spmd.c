@@ -142,7 +142,7 @@ int pio_swapm(void *sndbuf,   int sndlths[], int sdispls[],  MPI_Datatype stypes
 
   CheckMPIReturn(MPI_Comm_size(comm, &nprocs),__FILE__,__LINE__);
   CheckMPIReturn(MPI_Comm_rank(comm, &mytask),__FILE__,__LINE__);
-  /*    
+
   if(isend){
     for(int i=0; i< nprocs; i++){
       stsize = 0;
@@ -162,7 +162,7 @@ int pio_swapm(void *sndbuf,   int sndlths[], int sdispls[],  MPI_Datatype stypes
     MPI_Barrier(comm);
     isend = false;
   }
-  */
+
   if(max_requests == 0) {
     CheckMPIReturn(MPI_Alltoallw( sndbuf, sndlths, sdispls, stypes, rcvbuf, rcvlths, rdispls, rtypes, comm),__FILE__,__LINE__);
     return PIO_NOERR;
