@@ -56,6 +56,8 @@ SET(SWDGX_SRCS
     ${SRC_UTILS}/shr_file_mod.F90
     ${SRC_UTILS}/shr_vmath_mod.F90
     ${SRC_UTILS}/shr_vmath_fwrap.c
+    ${SRC_UTILS}/shr_const_mod.F90 
+    ${SRC_UTILS}/shr_spfn_mod.F90 
     ${SRC_SHARE}/domain_mod.F90
     ${SRC_BASE}/restart_io_mod.F90
     ${SRC_SHARE}/cg_mod.F90

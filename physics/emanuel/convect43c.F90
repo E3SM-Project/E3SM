@@ -1098,13 +1098,14 @@ _DBG_
 !
         SUBROUTINE TLIFT(P,T,Q,QS,GZ,ICB,NK,TVP,TPK,CLW,ND,NL,KK)
         implicit none
+        INTEGER NK,ND,NL,KK,ICB
         REAL (kind=real_kind) :: GZ(ND),TPK(ND),CLW(ND),P(ND)
         REAL (kind=real_kind) :: T(ND),Q(ND),QS(ND),TVP(ND)
 !
 !   ***   ASSIGN VALUES OF THERMODYNAMIC CONSTANTS     ***
 !
  
-        INTEGER NK,ND,NL,KK,ICB,K,J,I,IE, nsb, nst
+        INTEGER K,J,I,IE, nsb, nst
 
         real (kind=real_kind) :: ah0,ahg,alv,cpinv,cpp,&
              denom,es,qg,rg,s,tc,tg

@@ -21,6 +21,7 @@ module surfaces_mod
 
   use parallel_mod, only   : abortmp,  global_shared_buf, global_shared_sum
   use edge_mod, only       : EdgeBuffer_t, Ghostbuffer3d_t
+  use bndry_mod,    only : ghost_exchangevfull
   use dimensions_mod, only : np, ne, nelemd, max_elements_attached_to_node, s_nv
   use global_norms_mod, only: wrap_repro_sum
 #if defined (_AIX) || defined (_BGL) || defined (_BGP) 
@@ -384,7 +385,6 @@ subroutine construct_cv_duel(elem,hybrid,nets,nete)
 !
 ! 10/2009: added option to make hexagon control volumes at cube edges and corners
 !
-    use bndry_mod,    only : ghost_exchangevfull
     use element_mod,  only : element_t
     use hybrid_mod,   only : hybrid_t
     use edge_mod,     only : ghostVpack3d, ghostVunpack3d

@@ -1188,12 +1188,13 @@ contains
 
 
   subroutine GetIODOF(ndims, gdims, iorank, iodof, start, count)
+    integer, intent(in) :: ndims
     integer, intent(in) :: gdims(ndims)
     integer, intent(in) :: iorank
     integer(kind=nfsizekind), intent(out) :: start(ndims), count(ndims)
     integer, pointer :: iodof(:) ! gcc4.2 didn't like intent(out)
 
-    integer :: nzrank, nxrank, nx, k, i, j, ndims, icnt
+    integer :: nzrank, nxrank, nx, k, i, j, icnt
 
 
 
