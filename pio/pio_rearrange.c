@@ -703,10 +703,10 @@ int compute_subset_start_and_count(const iosystem_desc_t ios,const PIO_Offset gs
       fprintf(stderr, "need to deal with this case %d\n",patch_cnt);
     }
 
-    for(int j=0;j<ndims;j++){
+    //    for(int j=0;j<ndims;j++){
       //      printf("%d stride %d\n",j,stride1[j]); 
-      printf("%d %d start %ld count %ld\n",ios.io_rank,j,iodesc->start[j],iodesc->count[j]);
-    }
+    // printf("%d %d start %ld count %ld\n",ios.io_rank,j,iodesc->start[j],iodesc->count[j]);
+    //}
   }
 
 }
@@ -848,16 +848,10 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, const PI
     qsort(map, iodesc->llen, sizeof(mapsort), compare_offsets); 
 
     for(i=0;i<iodesc->llen;i++){
-      //      printf("after from %d offset %d iomap %ld\n",(map+i)->rfrom,(map+i)->soffset,(map+i)->iomap);
       iomap[i]=(map+i)->iomap;
       sender = (map+i)->rfrom;
-      //      destloc = jstart[(map+i)->rfrom % taskratio] + ((map+i)->soffset)  ;
-      //if(destloc<0 || destloc>iodesc->llen)
-      //	fprintf(stderr,"Error computing destloc %d jstart %d\n",destloc, jstart[(map+i)->rfrom%taskratio]);
       destoffset[ rdispls[sender]/sizeof(PIO_Offset) + cnt[sender]++ ] = i;
-
       //      printf("%d %d displs %d destoffset[%d] %ld\n",ios.io_rank,sender,rdispls[sender]/sizeof(PIO_Offset),i,destoffset[i]);
-
     }
     compute_subset_start_and_count(ios,gstride,iomap,iodesc);
 
