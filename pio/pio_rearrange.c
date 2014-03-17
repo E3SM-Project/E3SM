@@ -509,6 +509,9 @@ void PIO_Offset_size(MPI_Datatype *dtype, int *tsize)
 {
   int  tsizei, tsizel;
    
+  MPI_Type_dup(MPI_OFFSET, dtype);
+  MPI_Type_size(*dtype,tsize);
+  return;
   MPI_Type_size(MPI_LONG_LONG, &tsizel);
   MPI_Type_size(MPI_INT, &tsizei);
 

@@ -173,19 +173,19 @@ contains
     ! Arguments
     !
     character(len=*),intent(in) :: file
-    integer(kind=pio_offset)  ,intent(in) :: dof(:)
+    integer(PIO_OFFSET_KIND)  ,intent(in) :: dof(:)
     integer         ,intent(in) :: comm
     integer,optional,intent(in) :: punit
 
     character(len=*), parameter :: subName=modName//'::pio_writedof'
     integer ierr, myrank, npes, m, n, unit
-    integer(kind=pio_offset), pointer :: wdof(:)
-    integer(kind=pio_offset), pointer :: sdof1d(:)
-    integer(kind=pio_offset) :: sdof, sdof_tmp(1)
+    integer(PIO_OFFSET_KIND), pointer :: wdof(:)
+    integer(PIO_OFFSET_KIND), pointer :: sdof1d(:)
+    integer(PIO_OFFSET_KIND) :: sdof, sdof_tmp(1)
     integer          :: status(MPI_STATUS_SIZE)
     integer, parameter :: masterproc = 0
 
-    integer :: pio_offset_kind                     ! kind of pio_offset
+
 #ifndef _NO_FLOW_CONTROL
     integer :: &
       rcv_request    ,&! request id
@@ -207,16 +207,8 @@ contains
     sdof1d = -1
     sdof_tmp(1) = sdof
 
-    if(kind(sdof_tmp) == kind(comm)) then
-       pio_offset_kind = MPI_INTEGER
-    else
-       pio_offset_kind = MPI_INTEGER8
-    end if
-
-
-
-    call pio_fc_gather_offset(sdof_tmp, 1, PIO_OFFSET_KIND, &
-       sdof1d, 1, PIO_OFFSET_KIND,masterproc,comm)
+    call pio_fc_gather_offset(sdof_tmp, 1, PIO_OFFSET, &
+       sdof1d, 1, PIO_OFFSET,masterproc,comm)
 
     if (myrank == masterproc) then
        write(6,*) subName,': writing file ',trim(file),' unit=',unit
@@ -236,19 +228,19 @@ contains
              call MPI_RECV(hs,1,MPI_INTEGER,masterproc,n,comm,status,ierr)
              if (ierr /= MPI_SUCCESS) call piodie(__PIO_FILE__,__LINE__,' pio_writedof mpi_recv')
 #endif
-             call MPI_SEND(dof,int(sdof),PIO_OFFSET_KIND,masterproc,n,comm,ierr)
+             call MPI_SEND(dof,int(sdof),PIO_OFFSET,masterproc,n,comm,ierr)
              if (ierr /= MPI_SUCCESS) call piodie(__PIO_FILE__,__LINE__,' pio_writedof mpi_send')
           endif
           if (myrank == masterproc .and. sdof1d(n) > 0) then
 #ifndef _NO_FLOW_CONTROL
-             call MPI_IRECV(wdof,int(sdof1d(n)),PIO_OFFSET_KIND,n,n,comm,rcv_request,ierr)
+             call MPI_IRECV(wdof,int(sdof1d(n)),PIO_OFFSET,n,n,comm,rcv_request,ierr)
              if (ierr /= MPI_SUCCESS) call piodie(__PIO_FILE__,__LINE__,' pio_writedof mpi_irecv')
 !             call MPI_SEND(hs,1,MPI_INTEGER,n,n,comm,ierr)
              if (ierr /= MPI_SUCCESS) call piodie(__PIO_FILE__,__LINE__,' pio_writedof mpi_send')
              call MPI_WAIT(rcv_request,status,ierr)
              if (ierr /= MPI_SUCCESS) call piodie(__PIO_FILE__,__LINE__,' pio_writedof mpi_wait')
 #else
-             call MPI_RECV(wdof,int(sdof1d(n)),PIO_OFFSET_KIND,n,n,comm,status,ierr)
+             call MPI_RECV(wdof,int(sdof1d(n)),PIO_OFFSET,n,n,comm,status,ierr)
              if (ierr /= MPI_SUCCESS) call piodie(__PIO_FILE__,__LINE__,' pio_writedof mpi_recv')
 #endif
           endif
@@ -290,18 +282,17 @@ contains
     ! Arguments
     !
     character(len=*),intent(in) :: file
-    integer(kind=pio_offset),pointer:: dof(:)
+    integer(PIO_OFFSET_KIND),pointer:: dof(:)
     integer         ,intent(in) :: comm
     integer,optional,intent(in) :: punit
 
     character(len=*), parameter :: subName=modName//'::pio_readdof'
     integer :: ierr, myrank, npes, m, n, unit, rn
-    integer(kind=pio_offset) :: sdof
+    integer(PIO_OFFSET_KIND) :: sdof
     integer :: rversno, rnpes
-    integer(kind=pio_offset), pointer :: wdof(:)
+    integer(PIO_OFFSET_KIND), pointer :: wdof(:)
     integer, parameter :: masterproc = 0
     integer :: status(MPI_STATUS_SIZE)
-    integer :: pio_offset_kind                        ! kind of pio_offset
 
     unit = 81
     if (present(punit)) then
@@ -313,13 +304,6 @@ contains
     call MPI_COMM_RANK(comm,myrank,ierr)
     call CheckMPIReturn(subName,ierr)
 
-    if(kind(sdof) == kind(comm)) then
-       pio_offset_kind = MPI_INTEGER
-    else
-       pio_offset_kind = MPI_INTEGER8
-    end if
-
- 
     allocate(dof(0))   ! default for pes with no dof
 
     if (myrank == masterproc) then
@@ -345,7 +329,7 @@ contains
              allocate(dof(sdof))
              dof = wdof
           else
-             call MPI_SEND(sdof,1,PIO_OFFSET_KIND,n,n,comm,ierr)
+             call MPI_SEND(sdof,1,PIO_OFFSET,n,n,comm,ierr)
              if (ierr /= MPI_SUCCESS) call piodie(__PIO_FILE__,__LINE__,' pio_readdof mpi_send1')
              if (sdof > 0) then
 !                call MPI_SEND(wdof,int(sdof),PIO_OFFSET_KIND,n,npes+n,comm,ierr)
@@ -356,12 +340,12 @@ contains
        enddo
        close(unit)
     else
-       call MPI_RECV(sdof,1,PIO_OFFSET_KIND,masterproc,myrank,comm,status,ierr)
+       call MPI_RECV(sdof,1,PIO_OFFSET,masterproc,myrank,comm,status,ierr)
        if (ierr /= MPI_SUCCESS) call piodie(__PIO_FILE__,__LINE__,' pio_readdof mpi_recv1')
        if (sdof > 0) then
           deallocate(dof)
           allocate(dof(sdof))
-!          call MPI_RECV(dof,int(sdof),PIO_OFFSET_KIND,masterproc,npes+myrank,comm,status,ierr)
+!          call MPI_RECV(dof,int(sdof),PIO_OFFSET,masterproc,npes+myrank,comm,status,ierr)
           if (ierr /= MPI_SUCCESS) call piodie(__PIO_FILE__,__LINE__,' pio_readdof mpi_recv2')
        endif
     endif
@@ -425,7 +409,7 @@ contains
 
 !---------------------------Input arguments--------------------------
 !
-   integer(kind=pio_offset), intent(in)  :: sendbuf(:)       ! outgoing message buffer
+   integer(PIO_OFFSET_KIND), intent(in)  :: sendbuf(:)       ! outgoing message buffer
    integer, intent(in)  :: sendcnt          ! size of send buffer
    integer, intent(in)  :: sendtype         ! MPI type of send buffer
    integer, intent(in)  :: recvcnt          ! size of receive buffer
@@ -436,7 +420,7 @@ contains
 
 !---------------------------Output arguments--------------------------
 !
-   integer(kind=pio_offset), intent(out) :: recvbuf(*)       ! incoming message buffer
+   integer(PIO_OFFSET_KIND), intent(out) :: recvbuf(*)       ! incoming message buffer
 !
 !---------------------------Local workspace---------------------------------
 !

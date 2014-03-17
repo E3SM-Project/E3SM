@@ -6,7 +6,7 @@
 !! @brief NetCDF attribute interface to PIO
 !<
 module pionfatt_mod
-  use pio_kinds, only : r4, r8, i4, pio_offset
+  use pio_kinds, only : r4, r8, i4, pio_offset_kind
   use pio_types
   use pio_support, only : replace_c_null
   use iso_c_binding
@@ -227,7 +227,7 @@ contains
     integer, intent(in) :: varid
     character(len=*), intent(in) :: name
     {VTYPE}, intent(in) :: values(:)
-    integer(PIO_OFFSET) :: len
+    integer(PIO_OFFSET_KIND) :: len
 
     len = size(values)
     ierr = put_att_1d_id_internal_{TYPE} (ncid, varid, name, len, values)
@@ -238,7 +238,7 @@ contains
   integer function put_att_1d_id_internal_{TYPE} (ncid, varid, name, len, values) result(ierr)
     integer, intent(in) :: ncid
     integer, intent(in) :: varid
-    integer(PIO_OFFSET), intent(in) :: len
+    integer(PIO_OFFSET_KIND), intent(in) :: len
     character(len=*), intent(in) :: name
     {VTYPE}, intent(in), target :: values(*)
 

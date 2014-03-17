@@ -27,7 +27,7 @@ print "$filesystem\n";
 print "$fc\n";
 
 # override pnetcdf with my own
-$pnetcdf =  "/glade/u/home/jedwards/pnetcdf/svn1544/intel/";
+#$pnetcdf =  "/glade/u/home/jedwards/pnetcdf/svn1544/intel/";
 
 
 my $piosrc = `pwd`;
@@ -53,10 +53,8 @@ $cmake_opts .= " -DPIO_BUILD_TIMING=ON --debug-trycompile ";
 
 
 mkdir "$scratch";
-unless(-d  "$scratch/pio.$build"){
-    mkdir "$scratch/pio.$build" or die "Could not make directory $scratch/pio.$build";
-}
-chdir "$scratch/pio.$build" or die "Could not make directory $scratch/pio.$build";
+
+chdir "$scratch" or die "Could not make directory $scratch";
     
 system("cmake  $cmake_opts -DCMAKE_VERBOSE_MAKEFILE=1 $piosrc");
 system("gmake -j 4");

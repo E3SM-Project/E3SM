@@ -45,6 +45,8 @@ typedef struct io_desc_t
   int ndof;
   int ndims;
   int num_aiotasks;
+  int rearranger;
+
   MPI_Datatype basetype;
   PIO_Offset llen;
 
@@ -88,6 +90,7 @@ typedef struct iosystem_desc_t
   int *ioranks;
 
   int error_handler;
+  int default_rearranger;
 
   bool async_interface;
   bool ioproc;
@@ -117,6 +120,11 @@ enum PIO_IOTYPE{
   PIO_IOTYPE_NETCDF4P=8
 };
 
+enum PIO_REARRANGERS{
+  PIO_REARR_NONE = 0,
+  PIO_REARR_BOX = 1,
+  PIO_REARR_SUBSET = 2
+};
 
 enum PIO_ERROR_HANDLERS{
   PIO_INTERNAL_ERROR=(-51),

@@ -21,7 +21,7 @@
 ! !USES:
 !  uses mpi if available
 #ifndef NO_MPIMOD
-   use mpi, only : MPI_OFFSET_KIND ! _EXTERNAL
+   use mpi, only : MPI_OFFSET_KIND, MPI_OFFSET ! _EXTERNAL
 #endif
 
    implicit none
@@ -41,10 +41,11 @@
       r8        = selected_real_kind(13)
 !
 !  MPI defines MPI_OFFSET_KIND as the byte size of the 
-!  type some compilers (nag) reject that as an invalid kind
+!  type, which is not nessasarily the type kind
 !
-   integer, parameter, public ::          &
-      PIO_OFFSET = selected_int_kind(5+MPI_OFFSET_KIND)
+   integer, parameter, public :: PIO_OFFSET=MPI_OFFSET
+   
+   integer, parameter, public :: PIO_OFFSET_KIND=i8
 
 !EOP
 !BOC

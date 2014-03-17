@@ -3,7 +3,7 @@ module pio_nf
 #ifdef TIMING
   use perf_mod, only : t_startf, t_stopf      ! _EXTERNAL
 #endif
-  use pio_kinds, only: pio_offset
+  use pio_kinds, only:  pio_offset_kind
   use pio_types, only: file_desc_t, var_desc_t, PIO_MAX_VAR_DIMS
   use iso_c_binding
 
@@ -232,7 +232,7 @@ contains
     integer,                       intent( in) :: dimid
     character (len = *), optional, intent(out) :: name
     integer,             optional, intent(out) :: len
-    integer(pio_offset) :: llen
+    integer(PIO_OFFSET_KIND) :: llen
     if(present(name)) ierr = inq_dimname_id(ncid, dimid, name)
     if(present(len)) then
        ierr = inq_dimlen_id_long(ncid, dimid, llen)
@@ -253,7 +253,7 @@ contains
   integer function inq_dimlen_desc_long(File, dimid, len) result(ierr)
     type(file_desc_t), intent(in) :: File
     integer, intent(in) :: dimid
-    integer(pio_offset), intent(out) :: len
+    integer(PIO_OFFSET_KIND), intent(out) :: len
     ierr = inq_dimlen_id_long(file%fh,dimid,len)
   end function inq_dimlen_desc_long
 
@@ -261,7 +261,7 @@ contains
     integer, intent(in) :: ncid
     integer, intent(in) :: dimid
     integer, intent(out) :: len
-    integer(pio_offset) :: llen
+    integer(PIO_OFFSET_KIND) :: llen
     ierr = inq_dimlen_id_long(ncid,dimid,llen)
     len = int(llen)
   end function inq_dimlen_id
@@ -269,7 +269,7 @@ contains
   integer function inq_dimlen_id_long(ncid, dimid, len) result(ierr)
     integer, intent(in) :: ncid
     integer, intent(in) :: dimid
-    integer(pio_offset), intent(out) :: len
+    integer(PIO_OFFSET_KIND), intent(out) :: len
     interface
        integer(C_INT) function PIOc_inq_dimlen(ncid,dimid,len) &
             bind(C,name="PIOc_inq_dimlen")
@@ -485,7 +485,7 @@ contains
     integer, intent(in)         :: len
     integer, intent(out)        :: dimid
 
-    ierr = def_dim_id(file%fh,name,int(len,pio_offset),dimid)
+    ierr = def_dim_id(file%fh,name,int(len,pio_offset_kind),dimid)
   end function def_dim_int_desc
   integer function def_dim_int_id(ncid,name,len,dimid) result(ierr)
     integer, intent(in) :: ncid
@@ -493,13 +493,13 @@ contains
     integer, intent(in)         :: len
     integer, intent(out)        :: dimid
 
-    ierr = def_dim_id(ncid,name,int(len,pio_offset),dimid)
+    ierr = def_dim_id(ncid,name,int(len,pio_offset_kind),dimid)
   end function def_dim_int_id
   integer function def_dim_desc(File,name,len,dimid) result(ierr)
 
     type (File_desc_t), intent(in)  :: File
     character(len=*), intent(in)    :: name
-    integer(pio_offset), intent(in)         :: len
+    integer(PIO_OFFSET_KIND), intent(in)         :: len
     integer, intent(out)        :: dimid
 
     ierr = def_dim_id(file%fh,name,len,dimid)
@@ -507,7 +507,7 @@ contains
   integer function def_dim_id(ncid,name,len,dimid) result(ierr)
     integer, intent(in)         :: ncid
     character(len=*), intent(in)    :: name
-    integer(pio_offset), intent(in)         :: len
+    integer(PIO_OFFSET_KIND), intent(in)         :: len
     integer, intent(out)        :: dimid
 
     interface

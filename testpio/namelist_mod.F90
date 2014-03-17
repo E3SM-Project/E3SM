@@ -11,7 +11,7 @@ module namelist_mod
 ! Modules from PIO package that are used by this application
 
     use pio_support, only : piodie, CheckMPIReturn ! _EXTERNAL
-    use pio, only : pio_offset
+    use pio, only : pio_offset_kind
     implicit none    
     private
 
@@ -64,7 +64,7 @@ module namelist_mod
     character(len=4), save  :: ioFMT
     character(len=80), save :: fname1, fname2
     character(len=*), parameter :: myname='namelist_mod'
-    integer(PIO_OFFSET) :: max_buffer_size
+    integer(PIO_OFFSET_KIND) :: max_buffer_size
     integer(i4) :: block_size
 
 ! Variables whose values are derived form items in namelist io_nml:

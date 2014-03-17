@@ -7,7 +7,7 @@
 !<
 module piodarray
   use pio_types, only : file_desc_t, io_desc_t, var_desc_t
-  use pio_kinds, only : i4, r4, r8, pio_offset
+  use pio_kinds, only : i4, r4, r8, pio_offset_kind
   use pio_support, only : piodie
   use iso_c_binding
 #ifdef TIMING
@@ -50,8 +50,8 @@ integer :: msize, rss, mshare, mtext, mstack, lastrss=0
 contains
 
   subroutine pio_set_buffer_size_limit(limit)
-    integer(PIO_Offset), intent(in) :: limit    
-    integer(PIO_Offset) :: oldval
+    integer(PIO_OFFSET_KIND), intent(in) :: limit    
+    integer(PIO_OFFSET_KIND) :: oldval
     integer(C_LONG_LONG) :: clim
     interface 
        integer(C_LONG_LONG) function PIOc_set_buffer_size_limit(limit) &

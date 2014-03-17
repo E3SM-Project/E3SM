@@ -329,7 +329,7 @@ contains
   subroutine setframe(file, vardesc,frame)
     type(file_desc_t) :: file
     type(var_desc_t), intent(inout) :: vardesc
-    integer(PIO_Offset), intent(in) :: frame
+    integer(PIO_OFFSET_KIND), intent(in) :: frame
     integer :: ierr, iframe
     interface
        integer(C_INT) function PIOc_setframe(ncid, varid, frame) &
@@ -456,8 +456,8 @@ contains
     type (io_desc_t), intent(inout)     :: iodesc
 
 
-    call initdecomp_2dof_bin_i8(iosystem,basepiotype,dims,lenblocks,int(compdof,kind=pio_offset),int(iodofr,kind=pio_offset), &
-         int(iodofw,kind=pio_offset),iodesc)
+    call initdecomp_2dof_bin_i8(iosystem,basepiotype,dims,lenblocks,int(compdof,PIO_OFFSET_KIND),int(iodofr,PIO_OFFSET_KIND), &
+         int(iodofw,PIO_OFFSET_KIND),iodesc)
 
 
   end subroutine initdecomp_2dof_bin_i4
@@ -468,19 +468,19 @@ contains
     integer(i4)                       :: basetype
     integer(i4), intent(in)           :: dims(:)
     integer (i4), intent(in)          :: lenblocks
-    integer (kind=pio_offset), intent(in)          :: compdof(:)   !> global degrees of freedom for computational decomposition
-    integer (kind=pio_offset), intent(in)          :: iodofr(:)     !> global degrees of freedom for io decomposition 
-    integer (kind=pio_offset), intent(in)          :: iodofw(:)     !> global degrees of freedom for io decomposition 
+    integer (PIO_OFFSET_KIND), intent(in)          :: compdof(:)   !> global degrees of freedom for computational decomposition
+    integer (PIO_OFFSET_KIND), intent(in)          :: iodofr(:)     !> global degrees of freedom for io decomposition 
+    integer (PIO_OFFSET_KIND), intent(in)          :: iodofw(:)     !> global degrees of freedom for io decomposition 
     type (io_desc_t), intent(inout)     :: iodesc
 #ifdef DOTHIS
-    integer(kind=PIO_offset) :: start(1), count(1)
+    integer(PIO_OFFSET_KIND) :: start(1), count(1)
 
     integer (i4) :: i,ndims,n_iotasks
-    integer(kind=PIO_OFFSET) glength
+    integer(PIO_OFFSET_KIND) glength
     logical :: userearranger
-    integer (kind=pio_offset) ::  ndispr,ndispw
-    integer (kind=pio_offset) :: lengthr, lengthw
-    integer (kind=pio_offset), pointer :: displacer(:),displacew(:)
+    integer (PIO_OFFSET_KIND) ::  ndispr,ndispw
+    integer (PIO_OFFSET_KIND) :: lengthr, lengthw
+    integer (PIO_OFFSET_KIND), pointer :: displacer(:),displacew(:)
 
 
     nullify(iodesc%start)
@@ -502,8 +502,8 @@ contains
     !---------------------
     ! total global size
     !---------------------
-    glength= product(int(dims,kind=PIO_OFFSET))
-    if(glength > int(huge(i),kind=pio_offset)) then
+    glength= product(int(dims,PIO_OFFSET_KIND))
+    if(glength > int(huge(i),PIO_OFFSET_KIND)) then
        call piodie( __PIO_FILE__,__LINE__, &
             'requested array size too large for this interface ')       
     endif
@@ -585,11 +585,11 @@ contains
     integer(i4), intent(in)           :: basepiotype
     integer(i4), intent(in)           :: dims(:)
     integer(i4), intent(in)          :: lenblocks
-    integer(kind=pio_offset), intent(in)          :: compdof(:)   ! global degrees of freedom for computational decomposition
-    integer(kind=pio_offset), intent(in)          :: iodofr(:)     ! global degrees of freedom for io decomposition 
+    integer(PIO_OFFSET_KIND), intent(in)          :: compdof(:)   ! global degrees of freedom for computational decomposition
+    integer(PIO_OFFSET_KIND), intent(in)          :: iodofr(:)     ! global degrees of freedom for io decomposition 
     type (io_desc_t), intent(inout)     :: iodesc
 
-    integer(kind=PIO_offset) :: start(1), count(1)
+    integer(PIO_OFFSET_KIND) :: start(1), count(1)
     ! these are not used in the binary interface
 
     start(1)=-1
@@ -606,13 +606,13 @@ contains
     integer (i4), intent(in)          :: iodofr(:)     ! global degrees of freedom for io decomposition 
     type (io_desc_t), intent(inout)     :: iodesc
 
-    integer(kind=PIO_offset) :: start(1), count(1)
+    integer(PIO_OFFSET_KIND) :: start(1), count(1)
     ! these are not used in the binary interface
 
     start(1)=-1
     count(1)=-1
     call initdecomp_1dof_nf_i8(iosystem,basepiotype,dims,lenblocks, &
-         int(compdof,kind=PIO_OFFSET),int(iodofr,kind=PIO_OFFSET),start, count, iodesc)
+         int(compdof,PIO_OFFSET_KIND),int(iodofr,PIO_OFFSET_KIND),start, count, iodesc)
   end subroutine initdecomp_1dof_bin_i4
 
 !> 
@@ -644,12 +644,12 @@ contains
 
     type (io_desc_t), intent(inout)     :: iodesc
 
-    integer(kind=PIO_offset), intent(in) :: start(:), count(:)
+    integer(PIO_OFFSET_KIND), intent(in) :: start(:), count(:)
     type (io_desc_t) :: tmp
 
 
-    call pio_initdecomp(iosystem, basepiotype,dims,lenblocks,int(compdof,kind=PIO_OFFSET),int(iodofr,kind=PIO_OFFSET), &
-         int(iodofw,kind=PIO_OFFSET),start,count,iodesc)
+    call pio_initdecomp(iosystem, basepiotype,dims,lenblocks,int(compdof,PIO_OFFSET_KIND),int(iodofr,PIO_OFFSET_KIND), &
+         int(iodofw,PIO_OFFSET_KIND),start,count,iodesc)
 
   end subroutine initdecomp_2dof_nf_i4
 
@@ -658,13 +658,13 @@ contains
     integer(i4), intent(in)           :: basepiotype
     integer(i4), intent(in)           :: dims(:)
     integer (i4), intent(in)          :: lenblocks
-    integer (kind=pio_offset), intent(in)          :: compdof(:)   ! global degrees of freedom for computational decomposition
-    integer (kind=pio_offset), intent(in)          :: iodofr(:)     ! global degrees of freedom for io decomposition 
-    integer (kind=pio_offset), intent(in)          :: iodofw(:)     ! global degrees of freedom for io decomposition 
+    integer (PIO_OFFSET_KIND), intent(in)          :: compdof(:)   ! global degrees of freedom for computational decomposition
+    integer (PIO_OFFSET_KIND), intent(in)          :: iodofr(:)     ! global degrees of freedom for io decomposition 
+    integer (PIO_OFFSET_KIND), intent(in)          :: iodofw(:)     ! global degrees of freedom for io decomposition 
 
     type (io_desc_t), intent(inout)     :: iodesc
 
-    integer(kind=PIO_offset), intent(in) :: start(:), count(:)
+    integer(PIO_OFFSET_KIND), intent(in) :: start(:), count(:)
     type (io_desc_t) :: tmp
     integer :: ierr
 
@@ -702,9 +702,9 @@ contains
     integer (i4), intent(in)          :: iodof(:)     ! global degrees of freedom for io decomposition 
     type (io_desc_t), intent(inout)     :: iodesc
     integer :: piotype	
-    integer(kind=PIO_offset), intent(in) :: start(:), count(:)
+    integer(PIO_OFFSET_KIND), intent(in) :: start(:), count(:)
 
-    call initdecomp_1dof_nf_i8(iosystem, basepiotype,dims,lenblocks,int(compdof,kind=pio_offset),int(iodof,kind=pio_offset),&
+    call initdecomp_1dof_nf_i8(iosystem, basepiotype,dims,lenblocks,int(compdof,PIO_OFFSET_KIND),int(iodof,PIO_OFFSET_KIND),&
          start,count,iodesc)
 
   end subroutine initdecomp_1dof_nf_i4
@@ -714,24 +714,24 @@ contains
     integer(i4), intent(in)           :: basepiotype
     integer(i4), intent(in)           :: dims(:)
     integer (i4), intent(in) :: lenblocks
-    integer (kind=pio_offset), intent(in)          :: compdof(:)   ! global degrees of freedom for computational decomposition
-    integer (kind=pio_offset), intent(in)          :: iodof(:)     ! global degrees of freedom for io decomposition 
+    integer (PIO_OFFSET_KIND), intent(in)          :: compdof(:)   ! global degrees of freedom for computational decomposition
+    integer (PIO_OFFSET_KIND), intent(in)          :: iodof(:)     ! global degrees of freedom for io decomposition 
     type (io_desc_t), intent(inout)     :: iodesc
     integer :: piotype
-    integer(kind=PIO_offset), intent(in) :: start(:), count(:)
+    integer(PIO_OFFSET_KIND), intent(in) :: start(:), count(:)
 #ifdef DOTHIS
     integer(i4) :: length,n_iotasks
     integer(i4) :: ndims
 
-    integer (kind=pio_offset), pointer :: displace(:)  ! the displacements for the mpi data structure (read)
+    integer (PIO_OFFSET_KIND), pointer :: displace(:)  ! the displacements for the mpi data structure (read)
 
     integer(i4) :: prev
-    integer(kind=PIO_OFFSET) :: glength    ! global length in words
+    integer(PIO_OFFSET_KIND) :: glength    ! global length in words
     integer(i4) :: ii,i,dis,ierr
     integer(i4),pointer, dimension(:) :: blocklen,disp
     logical(log_kind) ::  userearranger
     logical, parameter :: check = .true.
-    integer(kind=pio_offset) :: ndisp
+    integer(PIO_OFFSET_KIND) :: ndisp
 #ifdef MEMCHK
     integer :: msize, rss, mshare, mtext, mstack
 #endif
@@ -763,7 +763,7 @@ contains
     !---------------------
     ! total global size
     !---------------------
-    glength= product(int(dims,kind=PIO_OFFSET))
+    glength= product(int(dims,PIO_OFFSET_KIND))
     if(glength > huge(ndisp)) then
        print *,__FILE__,__LINE__,dims,glength
        call piodie( __PIO_FILE__,__LINE__, &
@@ -898,13 +898,13 @@ contains
     type (iosystem_desc_t), intent(inout) :: iosystem
     integer(i4), intent(in)           :: basepiotype
     integer(i4), intent(in)          :: compdof(:)   ! global degrees of freedom for computational decomposition
-    integer (kind=PIO_offset), optional :: iostart(:), iocount(:)
+    integer (PIO_OFFSET_KIND), optional :: iostart(:), iocount(:)
     type (io_desc_t), intent(inout)     :: iodesc
-    integer(kind=PIO_OFFSET), pointer :: internal_compdof(:)
+    integer(PIO_OFFSET_KIND), pointer :: internal_compdof(:)
     integer(i4), intent(in)           :: dims(:)
 
     allocate(internal_compdof(size(compdof)))
-    internal_compdof = int(compdof,kind=pio_offset)
+    internal_compdof = int(compdof,PIO_OFFSET_KIND)
     
     if(present(iostart) .and. present(iocount) ) then
        call pio_initdecomp_dof_i8(iosystem, basepiotype, dims, internal_compdof, iodesc, iostart, iocount)
@@ -920,12 +920,12 @@ contains
     type (iosystem_desc_t), intent(inout) :: iosystem
     integer(i4), intent(in)           :: basepiotype
     integer(i4), intent(in)           :: dims(:)
-    integer (kind=pio_offset), intent(in)          :: compdof(:)   ! global degrees of freedom for computational decomposition
-    integer (kind=PIO_offset), optional :: iostart(:), iocount(:)
+    integer (PIO_OFFSET_KIND), intent(in)          :: compdof(:)   ! global degrees of freedom for computational decomposition
+    integer (PIO_OFFSET_KIND), optional :: iostart(:), iocount(:)
     type (io_desc_t), intent(inout)     :: iodesc
     integer(c_int) :: ndims
     integer(c_int), dimension(:), allocatable, target :: cdims, cstart, ccount
-    integer(PIO_Offset), allocatable :: ccompmap(:)
+    integer(PIO_OFFSET_KIND), allocatable :: ccompmap(:)
     interface
        integer(C_INT) function PIOc_InitDecomp(iosysid,basetype,ndims,dims, &
             maplen, compmap, ioidp, iostart, iocount)  &
@@ -1124,10 +1124,10 @@ contains
          integer(C_INT) :: iosysidp
        end function PIOc_Init_Intracomm_from_F90
     end interface
+
 #ifdef TIMING
     call t_startf("PIO_init")
 #endif
-
     lbase=0
     if(present(base)) lbase=base
     ierr = PIOc_Init_Intracomm_from_F90(comp_comm,num_iotasks,stride,lbase,iosystem%iosysid)

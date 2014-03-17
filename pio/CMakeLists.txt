@@ -167,7 +167,6 @@ SET(TEMPSRCF90    pionfatt_mod.F90
                                 pionfput_mod.F90
                                 pionfget_mod.F90
            	                piodarray.F90
-	                        pio_spmd_utils.F90
         )
 
 FOREACH(tempfile IN LISTS TEMPSRCF90)
@@ -185,7 +184,7 @@ if("${CMAKE_C_COMPILER_ID}" STREQUAL "INTEL")
 endif()
 
 SET(CMAKE_Fortran_FLAGS	"${CMAKE_Fortran_FLAGS} -g")
-SET(CMAKE_C_FLAGS	"${CMAKE_C_FLAGS} -g")
+SET(CMAKE_C_FLAGS	"${CMAKE_C_FLAGS} -g -std=c99")
 
 ADD_LIBRARY(pioc ${SRCS_C} )
 

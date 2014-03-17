@@ -25,7 +25,7 @@ Utils->loadmodules("$host");
 
 
 my $piosrc="$ENV{HOME}/pio2_0";
-my $testdir="/glade/scratch/$ENV{USER}/pio2test/pio.all/pio";
+my $testdir="/glade/scratch/$ENV{USER}/pio2test/pio";
 
 opendir(TNL,"$piosrc/testpio/namelists");
 my @namelists = grep(/testpio_in.*\d$/,readdir(TNL));
@@ -64,6 +64,7 @@ foreach my $nl (sort @namelists){
     next if($test =~ /\.n4/);
 
     print T "Running test $1 ... ";
+    print "Running test $1 ... ";
     mkdir $test;
     chdir $test;
     open(F,"$piosrc/testpio/namelists/$nl");

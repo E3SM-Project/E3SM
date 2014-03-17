@@ -74,7 +74,7 @@ program testpio
 
   integer(i4) :: varid,dimid_x,dimid_y,dimid_z, dimid
 
-  integer(kind=PIO_OFFSET),parameter :: one = 1
+  integer(kind=PIO_OFFSET_KIND),parameter :: one = 1
 
   integer, parameter :: ntest = 5
   integer(i4), dimension(ntest),parameter :: num_agg =(/ 8,12,16,24,32/)
@@ -113,7 +113,7 @@ program testpio
   integer(i4)  :: master_task
   logical      :: log_master_task
   integer(i4)  :: nml_error
-  integer(kind=pio_offset)  :: sdof,sdof_sum,sdof_min,sdof_max
+  integer(kind=pio_offset_kind)  :: sdof,sdof_sum,sdof_min,sdof_max
 
   ! memory tracking stuff
   integer(i4)  :: msize,mrss,mrss0,mrss1,mrss2
@@ -121,17 +121,17 @@ program testpio
   real(r8),allocatable :: mem_tmp(:)
   integer(i4),allocatable :: lmem(:),gmem(:,:)
 
-  integer(kind=pio_offset), pointer  :: compDOF(:), ioDOF(:)
-  integer(kind=pio_offset), pointer  :: ioDOFR(:),ioDOFW(:)
+  integer(kind=pio_offset_kind), pointer  :: compDOF(:), ioDOF(:)
+  integer(kind=pio_offset_kind), pointer  :: ioDOFR(:),ioDOFW(:)
 
   integer(i4) :: startIO(3),countIO(3), &
        startCOMP(3), countCOMP(3), &
        start(3), count(3)
   integer(i4) :: lenblocks, glenr8, glenr4, gleni4
-  integer(kind=PIO_OFFSET) :: startpio(3), countpio(3)
+  integer(kind=PIO_OFFSET_KIND) :: startpio(3), countpio(3)
   integer, parameter :: strlen=80
   character(len=strlen) :: fname, fname_r8,fname_r4,fname_i4, fnamechk
-  logical, parameter :: Debug = .false.
+  logical, parameter :: Debug = .true.
   integer :: mpi_comm_compute, mpi_comm_io, mpi_icomm_cio
   integer :: charlen
   character(len=strlen), parameter :: fruits(4) = (/'orange','apple ','pear  ','mango '/)
@@ -1626,7 +1626,7 @@ contains
 
   subroutine c1dto3d(gindex,nx,ny,nz,i,j,k)
     implicit none
-    integer(kind=pio_offset),intent(in) :: gindex
+    integer(kind=pio_offset_kind),intent(in) :: gindex
     integer, intent(in) :: nx,ny,nz
     integer,intent(out) :: i,j,k
 

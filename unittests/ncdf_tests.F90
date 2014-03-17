@@ -71,7 +71,7 @@ Contains
     end if
 
     ! Define a new dimension M (already has 'N' from previous tests)
-    ret_val = PIO_def_dim(pio_file, 'M', int(2*ntasks,pio_offset), pio_dim)
+    ret_val = PIO_def_dim(pio_file, 'M', int(2*ntasks,pio_offset_kind), pio_dim)
     if (ret_val .ne. PIO_NOERR) then
        err_msg = "Could not define dimension M"
        call PIO_closefile(pio_file)

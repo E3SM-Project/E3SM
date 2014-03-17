@@ -3,7 +3,7 @@ module gdecomp_mod
    use kinds_mod
 #if !defined(STANDALONE_TEST)
    use pio_support, only : piodie  ! _EXTERNAL
-   use pio, only : pio_offset   ! _EXTERNAL
+   use pio, only : pio_offset_kind   ! _EXTERNAL
 #endif
 
    implicit none
@@ -308,7 +308,7 @@ contains
 
    type(gdecomp_type), intent(in)  :: gdecomp
    integer(i4),        intent(in)  :: my_task  ! task number
-   integer(kind=pio_offset),pointer             :: DOF(:)   ! allocated in this routine
+   integer(kind=pio_offset_kind),pointer             :: DOF(:)   ! allocated in this routine
    integer(i4),        intent(out) :: start(3) ! netcdf start index
    integer(i4),        intent(out) :: count(3) ! netcdf count index
    logical, optional,  intent(in)  :: write_decomp  ! write gdecomp.nc output file
@@ -340,7 +340,7 @@ contains
    integer(i4) :: npesx,nblks,nbors
    integer(i4) :: gnpes
    integer(i4) :: n1,n2,n3,n2b,nbord,nb1,nb2,nb3,nb,nbtmp,n
-   integer(kind=pio_offset) :: ii, nbxyz
+   integer(kind=pio_offset_kind) :: ii, nbxyz
    integer(i4) :: contval
    logical :: testonly,startok,wdecomp
    logical,save :: first_call = .true.
@@ -1117,7 +1117,7 @@ contains
     integer :: dim1, dim2, dim3
     integer, intent(in)          :: my_task         ! my MPI rank
     character(len=*),intent(in)  :: fname           ! name of MPAS partition file 
-    integer(kind=pio_offset), pointer             :: dof(:)
+    integer(kind=pio_offset_kind), pointer             :: dof(:)
 
 !  Local variables
 
@@ -1201,9 +1201,9 @@ contains
 
   subroutine camlike_decomp_generator(gnx, gny, gnz, myid, ntasks, npr_yz, dof)
     integer, intent(in) :: gnx, gny, gnz, myid, ntasks, npr_yz(4)
-    integer(kind=pio_offset), pointer :: dof(:), tdof(:), tchk(:) 
+    integer(kind=pio_offset_kind), pointer :: dof(:), tdof(:), tchk(:) 
     real, pointer :: rdof(:)
-    integer(kind=pio_offset) :: dofsize,tdofsize
+    integer(kind=pio_offset_kind) :: dofsize,tdofsize
 
     integer :: twodsize, i, j, spnt
 
@@ -1284,7 +1284,7 @@ contains
        end do
     end do
 
-    CALL qsRecursive(1_PIO_OFFSET, dofsize, dof) !kicks off the recursive 
+    CALL qsRecursive(1_PIO_OFFSET_KIND, dofsize, dof) !kicks off the recursive 
 
     deallocate(tdof)
 
@@ -1297,10 +1297,10 @@ contains
 
   RECURSIVE SUBROUTINE qsRecursive (lo, hi, list)
     !This is the actualy recursive portion of the quicksort
-    INTEGER(KIND=PIO_OFFSET) :: pivotPoint
-    INTEGER(KIND=PIO_OFFSET), INTENT(IN) :: lo
-    INTEGER(KIND=PIO_OFFSET), INTENT(IN) :: hi
-    integer(kind=pio_offset), INTENT(INOUT), DIMENSION(*) :: list
+    INTEGER(KIND=PIO_OFFSET_KIND) :: pivotPoint
+    INTEGER(KIND=PIO_OFFSET_KIND), INTENT(IN) :: lo
+    INTEGER(KIND=PIO_OFFSET_KIND), INTENT(IN) :: hi
+    integer(kind=pio_offset_kind), INTENT(INOUT), DIMENSION(*) :: list
     pivotPoint = qsPartition(lo, hi, list); !basically all we do is find the pivot point, adjust elements, then call it again
     IF (lo < pivotPoint) CALL qsRecursive(lo, pivotPoint -1, list)
     IF (pivotPoint < hi) CALL qsRecursive(pivotPoint + 1, hi, list)
@@ -1309,14 +1309,14 @@ contains
 
 
 
-  integer(kind=pio_offset) FUNCTION qsPartition (loin, hiin, list)
+  integer(kind=pio_offset_kind) FUNCTION qsPartition (loin, hiin, list)
     !The partition portios of the Quick Sort is the must involved part
-    integer(kind=pio_offset), INTENT(INOUT), DIMENSION(*) :: list
-    INTEGER(KIND=PIO_OFFSET), INTENT(IN) :: loin
-    INTEGER(KIND=PIO_OFFSET):: lo !variable so we can manipulate the hi and lo values without changing things elsewhere in the program by reference
-    INTEGER(KIND=PIO_OFFSET), INTENT(IN) :: hiin
-    INTEGER(KIND=PIO_OFFSET):: hi !variable so we can manipulate the hi and lo values without changing things elsewhere in the program by reference
-    integer(kind=pio_offset)::pivot !the temp location for the pivitoal element to which everything will be compaired
+    integer(kind=pio_offset_kind), INTENT(INOUT), DIMENSION(*) :: list
+    INTEGER(KIND=PIO_OFFSET_KIND), INTENT(IN) :: loin
+    INTEGER(KIND=PIO_OFFSET_KIND):: lo !variable so we can manipulate the hi and lo values without changing things elsewhere in the program by reference
+    INTEGER(KIND=PIO_OFFSET_KIND), INTENT(IN) :: hiin
+    INTEGER(KIND=PIO_OFFSET_KIND):: hi !variable so we can manipulate the hi and lo values without changing things elsewhere in the program by reference
+    integer(kind=pio_offset_kind)::pivot !the temp location for the pivitoal element to which everything will be compaired
     hi = hiin
     lo = loin
     pivot = list(lo)
