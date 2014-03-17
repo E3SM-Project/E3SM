@@ -5,6 +5,15 @@ SVN $URL: https://parallelio.googlecode.com/svn/trunk $
 This file describes what tags were created and why
 ===========================
 Originator: jedwards
+Date: Mar 17, 2014
+Model: pio
+Version: pio1_8_11
+One-line : timing build should be optional
+
+M   pio/CMakeLists.txt
+
+===========================
+Originator: jedwards
 Date: Feb 20, 2014
 Model: pio
 Version: pio1_8_10

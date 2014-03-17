@@ -4,9 +4,9 @@
 #ifdef BGL
 #define BGx
 #endif
-!#ifdef TIMING
-!#define MEMCHK
-!#endif
+#ifdef TIMING
+#define MEMCHK
+#endif
 !>
 !! @file testpio.F90
 !! An example of how PIO can be used
@@ -1301,7 +1301,7 @@ program testpio
         endif
 
               if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #23'
-        if(TestR8) then
+        if(TestR8 .or. TestCombo) then
            ! Maximum read/write times
            if(readPhase)  call GetMaxTime(dt_read_r8, gdt_read_r8(it), MPI_COMM_COMPUTE, ierr)
            if(writePhase) call GetMaxTime(dt_write_r8, gdt_write_r8(it), MPI_COMM_COMPUTE, ierr)
@@ -1347,7 +1347,7 @@ program testpio
   !----------------------------------
 
               if(Debug)       print *,'iam: ',PIOSYS%comp_rank,'testpio: point #26'
-  if(TestR8 .and. (piosys%io_rank == 0) ) then
+  if(TestR8 .or. TestCombo .and. (piosys%io_rank == 0) ) then
      call WriteTimeTrialsStats(casename,TestR8CaseName, fname_r8, glenr8, gdt_read_r8, gdt_write_r8, maxiter) 
   endif
 
