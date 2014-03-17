@@ -186,7 +186,7 @@ sub loadmodules{
 	module("switch cray-mpich cray-mpich/6.0.2");
 	module("switch intel      intel/13.1.3.192");
 	module("load cray-netcdf-hdf5parallel/4.3.0");
-	module("load  cray-parallel-netcdf/1.3.1.1");
+#	module("load  cray-parallel-netcdf/1.3.1.1");
 	module("load cmake/2.8.11.2");
     }elsif($host =~ "athena"){
 #	require "/opt/modules/default/init/perl";

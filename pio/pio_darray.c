@@ -41,14 +41,16 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, voi
   ierr = PIO_NOERR;
 
   ios = file->iosystem;
-  if(ios == NULL)
+  if(ios == NULL){
+    fprintf(stderr,"Failed to find iosystem handle \n");
     return PIO_EBADID;
-
+  }
   vdesc = (file->varlist)+vid;
 
-  if(vdesc == NULL)
+  if(vdesc == NULL){
+    fprintf(stderr,"Failed to find variable handle %d\n",vid);
     return PIO_EBADID;
-
+  }
   ndims = iodesc->ndims;
   msg = 0;
 
