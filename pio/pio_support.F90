@@ -29,6 +29,7 @@
 
 module pio_support
   use pio_kinds
+  use iso_c_binding
 #ifndef NO_MPIMOD
   use mpi !_EXTERNAL
 #endif
@@ -176,89 +177,19 @@ contains
     integer(PIO_OFFSET_KIND)  ,intent(in) :: dof(:)
     integer         ,intent(in) :: comm
     integer,optional,intent(in) :: punit
+    integer :: err
+    interface
+       integer(c_int) function PIOc_writemap_from_f90(file, maplen, map, f90_comm) &
+            bind(C,name="PIOc_writemap_from_f90")
+         use iso_c_binding
+         character(C_CHAR), intent(in) :: file
+         integer(C_SIZE_T), value, intent(in) :: maplen 
+         integer(C_SIZE_T), intent(in) :: map(*)
+         integer(C_INT), value, intent(in) :: f90_comm
+       end function PIOc_writemap_from_f90
+    end interface
 
-    character(len=*), parameter :: subName=modName//'::pio_writedof'
-    integer ierr, myrank, npes, m, n, unit
-    integer(PIO_OFFSET_KIND), pointer :: wdof(:)
-    integer(PIO_OFFSET_KIND), pointer :: sdof1d(:)
-    integer(PIO_OFFSET_KIND) :: sdof, sdof_tmp(1)
-    integer          :: status(MPI_STATUS_SIZE)
-    integer, parameter :: masterproc = 0
-
-
-#ifndef _NO_FLOW_CONTROL
-    integer :: &
-      rcv_request    ,&! request id
-      hs = 1           ! MPI handshaking variable
-#endif
-
-    unit = 81
-    if (present(punit)) then
-       unit = punit
-    endif
-
-    call MPI_COMM_SIZE(comm,npes,ierr)
-    call CheckMPIReturn(subName,ierr)
-    call MPI_COMM_RANK(comm,myrank,ierr)
-    call CheckMPIReturn(subName,ierr)
-    sdof = size(dof)
-
-    allocate(sdof1d(0:npes-1))
-    sdof1d = -1
-    sdof_tmp(1) = sdof
-
-    call pio_fc_gather_offset(sdof_tmp, 1, PIO_OFFSET, &
-       sdof1d, 1, PIO_OFFSET,masterproc,comm)
-
-    if (myrank == masterproc) then
-       write(6,*) subName,': writing file ',trim(file),' unit=',unit
-       open(unit,file=file)
-       write(unit,*) versno,npes
-    endif
-
-    do n = 0,npes-1
-       if (myrank == masterproc) then
-          allocate(wdof(sdof1d(n)))
-       endif
-       if (myrank == masterproc .and. n == masterproc) then
-          wdof = dof
-       else
-          if (myrank == n .and. sdof > 0) then
-#ifndef _NO_FLOW_CONTROL
-             call MPI_RECV(hs,1,MPI_INTEGER,masterproc,n,comm,status,ierr)
-             if (ierr /= MPI_SUCCESS) call piodie(__PIO_FILE__,__LINE__,' pio_writedof mpi_recv')
-#endif
-             call MPI_SEND(dof,int(sdof),PIO_OFFSET,masterproc,n,comm,ierr)
-             if (ierr /= MPI_SUCCESS) call piodie(__PIO_FILE__,__LINE__,' pio_writedof mpi_send')
-          endif
-          if (myrank == masterproc .and. sdof1d(n) > 0) then
-#ifndef _NO_FLOW_CONTROL
-             call MPI_IRECV(wdof,int(sdof1d(n)),PIO_OFFSET,n,n,comm,rcv_request,ierr)
-             if (ierr /= MPI_SUCCESS) call piodie(__PIO_FILE__,__LINE__,' pio_writedof mpi_irecv')
-!             call MPI_SEND(hs,1,MPI_INTEGER,n,n,comm,ierr)
-             if (ierr /= MPI_SUCCESS) call piodie(__PIO_FILE__,__LINE__,' pio_writedof mpi_send')
-             call MPI_WAIT(rcv_request,status,ierr)
-             if (ierr /= MPI_SUCCESS) call piodie(__PIO_FILE__,__LINE__,' pio_writedof mpi_wait')
-#else
-             call MPI_RECV(wdof,int(sdof1d(n)),PIO_OFFSET,n,n,comm,status,ierr)
-             if (ierr /= MPI_SUCCESS) call piodie(__PIO_FILE__,__LINE__,' pio_writedof mpi_recv')
-#endif
-          endif
-       endif
-       if (myrank == masterproc) then
-          write(unit,*) n,sdof1d(n)
-          do m = 1,sdof1d(n)
-             write(unit,*) wdof(m)
-          enddo
-          deallocate(wdof)
-       endif
-    enddo
-
-    if (myrank == masterproc) then
-       close(unit)
-    endif
-
-    deallocate(sdof1d)
+    err = PIOc_writemap_from_f90(trim(file)//C_NULL_CHAR, int(size(dof),C_SIZE_T), dof, comm)
 
   end subroutine pio_writedof
 

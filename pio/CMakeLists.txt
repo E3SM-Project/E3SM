@@ -155,7 +155,7 @@ ADD_DEFINITIONS(${PIO_DEFINITIONS})
 SET(PIO_INCLUDE_DIRS   ${pio_include_dirs_} CACHE STRING "")
 INCLUDE_DIRECTORIES(${PIO_INCLUDE_DIRS})
 
-SET(SRCS_C topology.c pio_nc.c pio_file.c pio_support.c pio_lists.c pioc.c
+SET(SRCS_C topology.c pio_nc.c pio_file.c pioc_support.c pio_lists.c pioc.c
         pioc_sc.c pio_spmd.c pio_rearrange.c pio_darray.c pio_put_nc.c pio_get_nc.c)
 
 

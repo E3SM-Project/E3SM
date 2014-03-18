@@ -83,12 +83,6 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, voi
       count = iodesc->count;
     }      
 
-    //    for(int j=0;j<ndims;j++)
-    //   printf("%d start[%d] %ld count %ld\n",ios->io_rank,j,start[j],count[j]);
-
-
-
-
     switch(file->iotype){
 #ifdef _NETCDF
 #ifdef _NETCDF4
@@ -171,21 +165,12 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, voi
       for( i=0,dsize=1;i<ndims;i++)
 	dsize*=count[i];
 
-      //      printf("pnet %ld %ld %ld\n",start[0],count[0],dsize);
-      // for(i=0;i<dsize;i++)
-      //	printf("iobuf(%d) %d\n",i,((int *)IOBUF)[i]);
-      //#ifdef PNETCDF_BPUT_SUPPORT
+
 	ierr = ncmpi_bput_vara(ncid, vid,  start, count, IOBUF,
 			       dsize, iodesc->basetype, &request);
 	pio_push_request(file,request);
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
-	/*	#else
-	ierr = ncmpi_iput_vara(ncid, vid,  start, count, IOBUF,
-			       dsize, iodesc->basetype, &(vdesc->request));
-	file->buffsize+=dsize;
-	usage = file->buffsize;
-	#endif
- 	*/
+
 	MPI_Allreduce(MPI_IN_PLACE, &usage, 1,  MPI_LONG_LONG,  MPI_MAX, ios->io_comm);
 
 	if(usage >= PIO_BUFFER_SIZE_LIMIT){

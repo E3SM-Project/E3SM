@@ -321,11 +321,17 @@ int CalcStartandCount(const int basetype, const int ndims,const int *gdims, cons
 
   }
 
-  for(i=0;i<ndims;i++){
-    start[i]=mystart[i];
-    kount[i]=mykount[i];
+  if(myiorank<use_io_procs){
+    for(i=0;i<ndims;i++){
+      start[i]=mystart[i];
+      kount[i]=mykount[i];
+    }
+  }else{
+    for(i=0;i<ndims;i++){
+      start[i]=0;
+      kount[i]=0;
+    }
   }
-
       
   return use_io_procs;
 }

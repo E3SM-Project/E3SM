@@ -219,7 +219,7 @@ subroutine check_1D_i4(my_comm, fname,wr_array,rd_array,len,iostat)
 
     integer(i4),pointer :: diff(:)
     integer(i4) :: lsum,gsum
-    integer(i4) :: ierr,cbad,rank
+    integer(i4) :: ierr,cbad,rank, lloc(1)
 
     
 
@@ -231,6 +231,7 @@ subroutine check_1D_i4(my_comm, fname,wr_array,rd_array,len,iostat)
        diff = wr_array - rd_array
        cbad = COUNT(diff .ne. 0.0)
        lsum = SUM(diff)
+       lloc = maxloc(wr_array-rd_array)
     else
        lsum = 0
     end if
@@ -240,7 +241,8 @@ subroutine check_1D_i4(my_comm, fname,wr_array,rd_array,len,iostat)
        call MPI_COMM_rank(MY_COMM,rank,ierr)
        call CheckMPIReturn('Call to MPI_COMM_RANK()',ierr,__FILE__,__LINE__)
        if(lsum .ne. 0) print *,'IAM: ', rank, 'File: ',TRIM(fname),&
-            ' Error detected for correctness test(1D,I4): ',lsum,' # bad: ',cbad
+            ' Error detected for correctness test(1D,I4): ',lsum,' # bad: ',cbad, &
+            lloc, wr_array(lloc(1)), rd_array(lloc(1))
        if(present(iostat)) iostat = -20
     endif
     deallocate(diff)	

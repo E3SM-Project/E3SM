@@ -73,18 +73,18 @@ foreach my $nl (sort @namelists){
 
     open(G,">testpio_in");
     foreach(@namelist){
-	if(/nx_global/){
-	    print G "  nx_global = 256\n";
-	    next;
-	}
-	if(/ny_global/){
-	    print G "  ny_global = 128\n";
-	    next;
-	}
-	if(/maxiter/){
-	    print G " maxiter=1\n";
-	    next;
-	}
+#	if(/nx_global/){
+#	    print G "  nx_global = 256\n";
+#	    next;
+#	}
+#	if(/ny_global/){
+#	    print G "  ny_global = 128\n";
+#	    next;
+#	}
+#	if(/maxiter/){
+#	    print G " maxiter=1\n";
+#	    next;
+#	}
 	print G $_;
     }
     close(G);

@@ -156,7 +156,14 @@ int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const
 	
 	iodesc->num_aiotasks = CalcStartandCount(basetype, ndims, dims, ios->num_iotasks, ios->io_rank,
 						 iodesc->start, iodesc->count);
-	
+
+	//	for(int j=0;j<ndims;j++)
+	//	  printf("%d start[%d] %ld count %ld\n",ios->io_rank,j,iodesc->start[j],iodesc->count[j]);
+
+
+
+
+
       }
       compute_maxIObuffersize(ios->io_comm, iodesc);
 

@@ -4,9 +4,9 @@
 #ifdef BGL
 #define BGx
 #endif
-#ifdef TIMING
-#define MEMCHK
-#endif
+!#ifdef TIMING
+!#define MEMCHK
+!#endif
 !>
 !! @file testpio.F90
 !! An example of how PIO can be used
@@ -131,7 +131,7 @@ program testpio
   integer(kind=PIO_OFFSET_KIND) :: startpio(3), countpio(3)
   integer, parameter :: strlen=80
   character(len=strlen) :: fname, fname_r8,fname_r4,fname_i4, fnamechk
-  logical, parameter :: Debug = .true.
+  logical, parameter :: Debug = .false.
   integer :: mpi_comm_compute, mpi_comm_io, mpi_icomm_cio
   integer :: charlen
   character(len=strlen), parameter :: fruits(4) = (/'orange','apple ','pear  ','mango '/)
@@ -553,10 +553,11 @@ program testpio
           cos(25.*real(k1,kind=r4)/real(gDims3D(3),kind=r4))
      endif
      if(TestInt .or. TestCombo) then 
-         test_i4wr(n) = nint(10.0_r8*cos(20.*real(i1,kind=r8)/real(gDims3D(1),kind=r8))* &
-          cos(10.*real(j1,kind=r8)/real(gDims3D(2),kind=r8))* &
-          (1.0+1.0*real(j1,kind=r8)/real(gDims3D(2),kind=r8))* &
-          cos(25.*real(k1,kind=r8)/real(gDims3D(3),kind=r8))*1000.0_r8)
+        test_i4wr(n) = compdof(n)
+!         test_i4wr(n) = nint(10.0_r8*cos(20.*real(i1,kind=r8)/real(gDims3D(1),kind=r8))* &
+!          cos(10.*real(j1,kind=r8)/real(gDims3D(2),kind=r8))* &
+!          (1.0+1.0*real(j1,kind=r8)/real(gDims3D(2),kind=r8))* &
+!          cos(25.*real(k1,kind=r8)/real(gDims3D(3),kind=r8))*1000.0_r8)
      endif
   enddo
 
@@ -1021,7 +1022,7 @@ program testpio
               call check_pioerr(iostat,__FILE__,__LINE__,' combo r4 write_darray')
               call PIO_write_darray(File,vard_r8c,iodesc_r8,test_r8wr,iostat)
               call check_pioerr(iostat,__FILE__,__LINE__,' combo r8 write_darray')
-              call PIO_write_darray(File,vard_i4c,iodesc_i4, test_i4wr,iostat)
+              call PIO_write_darray(File,vard_i4dof,iodesc_i4, test_i4wr,iostat)
               call check_pioerr(iostat,__FILE__,__LINE__,' combo i4 write_darray')
               call PIO_CloseFile(File)
               et = MPI_Wtime()
@@ -1163,8 +1164,7 @@ program testpio
 #ifdef TIMING
               call t_startf('testpio_read')
 #endif
-              call PIO_read_darray(File_i4,vard_i4,iodesc_i4, test_i4rd,iostat)
-
+              call PIO_read_darray(File_i4,vard_i4dof,iodesc_i4, test_i4rd,iostat)
 #ifdef TIMING
               call t_stopf('testpio_read')
 #endif
