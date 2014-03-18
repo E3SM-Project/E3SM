@@ -109,7 +109,8 @@ int PIOc_get_local_array_size(int ioid)
 
 
 int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const int dims[], 
-		    const int maplen, const PIO_Offset *compmap, int *ioidp, PIO_Offset *iostart,PIO_Offset *iocount)
+		    const int maplen, const PIO_Offset *compmap, int *ioidp,const int *rearranger,  
+		    const PIO_Offset *iostart,const PIO_Offset *iocount)
 {
   iosystem_desc_t *ios;
   io_desc_t *iodesc;
@@ -129,12 +130,20 @@ int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const
   
   iodesc = malloc_iodesc(basetype, ndims);
 
-  if(false){
+  if(rearranger == NULL)
+    iodesc->rearranger = ios->default_rearranger;
+  else
+    iodesc->rearranger = *rearranger;
+    
+  if(iodesc->rearranger==PIO_REARR_SUBSET){
+    if((iostart != NULL) && (iocount != NULL)){ 
+      fprintf(stderr,"%s %s\n","Iostart and iocount arguments to PIOc_InitDecomp",
+	      "are incompatable with subset rearrange method and will be ignored");
+    }
     iodesc->num_aiotasks = ios->num_iotasks;
     ierr = subset_rearrange_create( *ios, maplen, compmap, dims, ndims, iodesc);
   }else{
-  
-    if(ios->ioproc){
+      if(ios->ioproc){
       //  Unless the user specifies the start and count for each IO task compute it.    
       if((iostart != NULL) && (iocount != NULL)){ 
 	printf("iocount[0] = %ld %ld\n",iocount[0], iocount);
@@ -155,20 +164,23 @@ int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const
     // Depending on array size and io-blocksize the actual number of io tasks used may vary
     CheckMPIReturn(MPI_Bcast(&(iodesc->num_aiotasks), 1, MPI_INT, ios->ioroot,ios->my_comm),__FILE__,__LINE__);
     // Compute the communications pattern for this decomposition
-    ierr = box_rearrange_create( *ios, maplen, compmap, dims, ndims, iodesc);
+    if(iodesc->rearranger==PIO_REARR_BOX){   
+      ierr = box_rearrange_create( *ios, maplen, compmap, dims, ndims, iodesc);
+    }
+
     //  if(ios->ioproc)
     //   for(int i=0;i<ndims;i++)
     //     printf("%s %d dim %d start %ld count %ld\n",__FILE__,__LINE__,dims[i],iodesc->start[i],iodesc->count[i]);
   }
 
   *ioidp = pio_add_to_iodesc_list(iodesc);
-
+  
   return PIO_NOERR;
 }
 
 int PIOc_Init_Intracomm(const MPI_Comm comp_comm, 
 			const int num_iotasks, const int stride, 
-			const int base, int *iosysidp)
+			const int base,const int rearr, int *iosysidp)
 {
   iosystem_desc_t *iosys;
   int ierr;
@@ -185,7 +197,7 @@ int PIOc_Init_Intracomm(const MPI_Comm comp_comm,
   iosys->compmaster = false;
   iosys->iomaster = false;
   iosys->ioproc = false;
-
+  iosys->default_rearranger = rearr;
   iosys->num_iotasks = num_iotasks;
 
   CheckMPIReturn(MPI_Comm_rank(comp_comm, &(iosys->comp_rank)),__FILE__,__LINE__);
@@ -232,8 +244,8 @@ int PIOc_Init_Intracomm(const MPI_Comm comp_comm,
   
 int PIOc_Init_Intracomm_from_F90(int f90_comp_comm, 
 			const int num_iotasks, const int stride, 
-				 const int base, int *iosysidp){
-  return PIOc_Init_Intracomm(MPI_Comm_f2c(f90_comp_comm), num_iotasks, stride,base,iosysidp);
+				 const int base, const int rearr, int *iosysidp){
+  return PIOc_Init_Intracomm(MPI_Comm_f2c(f90_comp_comm), num_iotasks, stride,base,rearr, iosysidp);
 }
   
 

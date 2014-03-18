@@ -219,34 +219,38 @@ int PIOc_write_darray(const int ncid, const int vid, const int ioid, const PIO_O
 
   ierr = PIO_NOERR;
 
+
   file = pio_get_file_from_id(ncid);
-  if(file == NULL)
+  if(file == NULL){
+    fprintf(stderr,"File handle not found %d %d\n",ncid,__LINE__);
     return PIO_EBADID;
-
+  }
   iodesc = pio_get_iodesc_from_id(ioid);
-  if(iodesc == NULL)
+  if(iodesc == NULL){
+    fprintf(stderr,"iodesc handle not found %d %d\n",ioid,__LINE__);
     return PIO_EBADID;
-
+  }
   iobuf = NULL;
 
   ios = file->iosystem;
 
   rlen = iodesc->llen;
-  if(rlen>0){
-    vtype = (MPI_Datatype) iodesc->basetype;
-    //      printf("rlen = %ld\n",rlen);
-    if(vtype == MPI_INTEGER){
-      MALLOC_FILL_ARRAY(int, rlen, fillvalue, iobuf);
-    }else if(vtype == MPI_FLOAT || vtype == MPI_REAL4){
-      MALLOC_FILL_ARRAY(float, rlen, fillvalue, iobuf);
-    }else if(vtype == MPI_DOUBLE || vtype == MPI_REAL8){
-      MALLOC_FILL_ARRAY(double, rlen, fillvalue, iobuf);
-    }else if(vtype == MPI_CHARACTER){
-      MALLOC_FILL_ARRAY(char, rlen, fillvalue, iobuf);
-    }else{
-      fprintf(stderr,"Type not recognized %d in pioc_write_darray\n",vtype);
+  if(iodesc->rearranger>0){
+    if(rlen>0){
+      vtype = (MPI_Datatype) iodesc->basetype;
+      //    printf("rlen = %ld\n",rlen);
+      if(vtype == MPI_INTEGER){
+	MALLOC_FILL_ARRAY(int, rlen, fillvalue, iobuf);
+      }else if(vtype == MPI_FLOAT || vtype == MPI_REAL4){
+	MALLOC_FILL_ARRAY(float, rlen, fillvalue, iobuf);
+      }else if(vtype == MPI_DOUBLE || vtype == MPI_REAL8){
+	MALLOC_FILL_ARRAY(double, rlen, fillvalue, iobuf);
+      }else if(vtype == MPI_CHARACTER){
+	MALLOC_FILL_ARRAY(char, rlen, fillvalue, iobuf);
+      }else{
+	fprintf(stderr,"Type not recognized %d in pioc_write_darray\n",vtype);
+      }
     }
-  }
     //    printf(" rlen = %d %ld\n",rlen,iobuf); 
 
     //  }
@@ -254,8 +258,10 @@ int PIOc_write_darray(const int ncid, const int vid, const int ioid, const PIO_O
 
     //    printf("%s %d %ld %d %d %d %ld\n",__FILE__,__LINE__,array,((int *)array)[0],((int *)array)[1],((int *)array)[2], fillvalue);
 
-  ierr = box_rearrange_comp2io(*ios, iodesc, array, iobuf, 0, 0);
-
+    ierr = box_rearrange_comp2io(*ios, iodesc, array, iobuf, 0, 0);
+  }else{
+    iobuf = array;
+  }
   switch(file->iotype){
   case PIO_IOTYPE_PBINARY:
     break;
@@ -266,8 +272,8 @@ int PIOc_write_darray(const int ncid, const int vid, const int ioid, const PIO_O
     ierr = pio_write_darray_nc(file, iodesc, vid, iobuf, fillvalue);
   }
 
-
-  if(rlen>0) free(iobuf);
+  if(iodesc->rearranger>0 && rlen>0)
+    free(iobuf);
 
   return ierr;
 
@@ -423,35 +429,39 @@ int PIOc_read_darray(const int ncid, const int vid, const int ioid, const PIO_Of
 
   file = pio_get_file_from_id(ncid);
 
-  if(file == NULL)
+  if(file == NULL){
+    fprintf(stderr,"File handle not found %d %d\n",ncid,__LINE__);
     return PIO_EBADID;
-
+  }
   iodesc = pio_get_iodesc_from_id(ioid);
-  if(iodesc == NULL)
+  if(iodesc == NULL){
+    fprintf(stderr,"iodesc handle not found %d %d\n",ioid,__LINE__);
     return PIO_EBADID;
-
+  }
   ios = file->iosystem;
   rlen = iodesc->llen;
-
-  if(ios->ioproc && rlen>0){
-    vtype = (MPI_Datatype) iodesc->basetype;
-    if(vtype == MPI_INTEGER){
-      iobuf = malloc( rlen*sizeof(int));
-    }else if(vtype == MPI_FLOAT || vtype == MPI_REAL4){
+  
+  if(iodesc->rearranger > 0){
+    if(ios->ioproc && rlen>0){
+      vtype = (MPI_Datatype) iodesc->basetype;
+      if(vtype == MPI_INTEGER){
+	iobuf = malloc( rlen*sizeof(int));
+      }else if(vtype == MPI_FLOAT || vtype == MPI_REAL4){
       iobuf = malloc( rlen*sizeof(float));
-    }else if(vtype == MPI_DOUBLE || vtype == MPI_REAL8){
-      iobuf = malloc( rlen*sizeof(double));
-    }else if(vtype == MPI_CHARACTER){
-      iobuf = malloc( rlen*sizeof(char));
-    }else{
-      fprintf(stderr,"Type not recognized %d in pioc_read_darray\n",vtype);
+      }else if(vtype == MPI_DOUBLE || vtype == MPI_REAL8){
+	iobuf = malloc( rlen*sizeof(double));
+      }else if(vtype == MPI_CHARACTER){
+	iobuf = malloc( rlen*sizeof(char));
+      }else{
+	fprintf(stderr,"Type not recognized %d in pioc_read_darray\n",vtype);
+      }
+      if(iobuf == NULL){
+	fprintf(stderr,"malloc failed in pioc_read_darray\n");
+	return PIO_ENOMEM;
+      } 
     }
-    if(iobuf == NULL){
-      fprintf(stderr,"malloc failed in pioc_read_darray\n");
-      return PIO_ENOMEM;
-    } 
-
-
+  }else{
+    iobuf = array;
   }
 
   switch(file->iotype){
@@ -463,12 +473,11 @@ int PIOc_read_darray(const int ncid, const int vid, const int ioid, const PIO_Of
   case PIO_IOTYPE_NETCDF4C:
     ierr = pio_read_darray_nc(file, iodesc, vid, iobuf);
   }
-
-  ierr = box_rearrange_io2comp(*ios, iodesc, iobuf, array, 0, 0);
-
-
-  if(rlen>0)
-    free(iobuf);
+  if(iodesc->rearranger > 0){
+    ierr = box_rearrange_io2comp(*ios, iodesc, iobuf, array, 0, 0);
+    if(rlen>0)
+      free(iobuf);
+  }
 
   return ierr;
 

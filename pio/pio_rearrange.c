@@ -549,6 +549,7 @@ int box_rearrange_create(const iosystem_desc_t ios,const int maplen, const PIO_O
   dest_ioproc = (int *) malloc(maplen*sizeof(int));
   dest_ioindex = (PIO_Offset *) malloc(maplen*sizeof(PIO_Offset));
 
+  iodesc->rearranger = PIO_REARR_BOX;
 
   iodesc->ndof = maplen;
   gstride[ndims-1]=1;
@@ -745,6 +746,7 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, const PI
   dest_ioindex = (PIO_Offset *) malloc(maplen*sizeof(PIO_Offset));
 
   iodesc->ndof = maplen;
+  iodesc->rearranger = PIO_REARR_SUBSET;
 
   PIO_Offset_size(&dtype, &tsize);
   

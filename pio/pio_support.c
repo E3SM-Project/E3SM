@@ -87,6 +87,7 @@ io_desc_t *malloc_iodesc(const int piotype, const int ndims)
     iodesc->basetype = MPI_INTEGER;
     break;
   }    
+  iodesc->rearranger = 0;
   iodesc->rfrom = NULL;
   iodesc->scount = NULL;
   iodesc->rtype = NULL;

@@ -559,7 +559,7 @@ program testpio
           cos(25.*real(k1,kind=r8)/real(gDims3D(3),kind=r8))*1000.0_r8)
      endif
   enddo
-!  print *,llength,'i4dof: ',test_i4dof
+
   if(Debug)       print *,'iam: ',My_task,'testpio: point #10'
 
 #ifdef MEMCHK	
@@ -645,19 +645,19 @@ program testpio
               if(Debug)       print *,'iam: ',My_task,'testpio: point #7'
               if(TestR8 .or. TestCombo) &
                    call PIO_initDecomp(PIOSYS,PIO_double,  gDims3D,compDOF,&
-                   IOdesc_r8,startpio,countpio)
+                   IOdesc_r8,iostart=startpio,iocount=countpio)
               glenr8 = product(gdims3d)
               if(Debug)       print *,'iam: ',My_task,'testpio: point #7.1'
               
               if(TestR4 .or. TestCombo) then
                  call PIO_initDecomp(PIOSYS,PIO_real,    gDims3D,compDOF,&
-                      IOdesc_r4,startpio,countpio)
+                      IOdesc_r4,iostart=startpio,iocount=countpio)
                  glenr4 = product(gdims3d)
               end if
               if(Debug)       print *,'iam: ',My_task,'testpio: point #7.2'
               if(TestInt .or. TestCombo) &
                    call PIO_initDecomp(PIOSYS,PIO_int,     gDims3D,compDOF,&
-                   IOdesc_i4,startpio,countpio)
+                   IOdesc_i4,iostart=startpio,iocount=countpio)
                  gleni4 = product(gdims3d)
               if(Debug)       print *,'iam: ',My_task,'testpio: point #8'
            else
@@ -685,6 +685,9 @@ program testpio
            if(iofmtd.eq.'nc' ) then ! netCDF
               if (num_iodofs == 1) then
                  if(Debug)       print *,'iam: ',My_task,'testpio: point #8.5'
+                 print *,__FILE__,__LINE__,startpio,countpio
+                 print *,__FILE__,__LINE__,compdof
+                 print *,__FILE__,__LINE__,iodof
                  if(TestR8 .or. TestCombo) &
                       call PIO_initDecomp(PIOSYS,PIO_double, gDims3D,lenblocks,&
                       compDOF,ioDOF,startpio,countpio,IOdesc_r8)

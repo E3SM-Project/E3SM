@@ -25,7 +25,7 @@ int main(int argc, char *argv[])
  MPI_Comm_size(MPI_COMM_WORLD, &npe);
  MPI_Comm_rank(MPI_COMM_WORLD, &mype);
 
- PIOc_Init_Intracomm(MPI_COMM_WORLD, npe, 1, 0, &iosysid);
+ PIOc_Init_Intracomm(MPI_COMM_WORLD, npe, 1, 0, PIO_REARR_BOX,&iosysid);
 
  // Create a weak scaling test - 
  nx=6;
@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
    }
  }
 
- PIOc_InitDecomp(iosysid, PIO_INT, 3, gdim,(PIO_Offset) (nx*ny*nz), imap, &iodesc, NULL, NULL);
+ PIOc_InitDecomp(iosysid, PIO_INT, 3, gdim,(PIO_Offset) (nx*ny*nz), imap, &iodesc, NULL, NULL, NULL);
 
  PIOc_createfile(iosysid, &ncid, &iotype, "wstest.nc", PIO_CLOBBER);
  // Order of dims in c is slowest first
