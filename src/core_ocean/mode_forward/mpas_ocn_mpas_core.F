@@ -312,6 +312,7 @@ module mpas_core
       call mpas_set_timeInterval(alarmTimeStep, timeString=config_output_interval, ierr=ierr)
       alarmStartTime = startTime + alarmTimeStep
       call mpas_add_clock_alarm(clock, outputAlarmID, alarmStartTime, alarmTimeStep, ierr=ierr)
+print *, 'output alarmTimeStep', alarmTimeStep, ierr
 
       ! set restart alarm, if necessary
       if (trim(config_restart_interval) /= "none") then
@@ -330,6 +331,8 @@ module mpas_core
       end if
 
       call mpas_get_time(curr_time=startTime, dateTimeString=startTimeStamp, ierr=ierr)
+
+      call ocn_am_driver_init_alarms(clock,startTime,ierr)
 
    end subroutine ocn_simulation_clock_init!}}}
 
@@ -466,8 +469,9 @@ module mpas_core
       call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
       write(stderrUnit,*) 'Initial time ', trim(timeStamp)
 
+      call ocn_am_driver_compute_startup(domain, err) 
+
       if (config_write_output_on_startup) then
-         call ocn_am_driver_compute(domain, err) 
          call ocn_write_output_frame(output_obj, output_frame, domain)
       endif
 
@@ -507,6 +511,8 @@ module mpas_core
             block_ptr => block_ptr % next
          end do
       
+         call ocn_am_driver_compute_w_alarms(clock, domain, err) 
+
          if (mpas_is_alarm_ringing(clock, outputAlarmID, ierr=ierr)) then
             call mpas_reset_clock_alarm(clock, outputAlarmID, ierr=ierr)
             ! output_frame will always be > 1 here unless it was reset after the 
@@ -522,7 +528,6 @@ module mpas_core
                 block_ptr => block_ptr % next
             end do
 
-            call ocn_am_driver_compute(domain, err) 
             call ocn_write_output_frame(output_obj, output_frame, domain)
 
             block_ptr => domain % blocklist

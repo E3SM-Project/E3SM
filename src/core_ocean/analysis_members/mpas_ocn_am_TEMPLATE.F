@@ -43,6 +43,7 @@ module ocn_am_TEMPLATE
    use mpas_grid_types
    use mpas_timer
    use mpas_dmpar
+   use mpas_timekeeping
 
    use ocn_diagnostics_routines
 
@@ -64,6 +65,7 @@ module ocn_am_TEMPLATE
 
    public :: ocn_am_setup_packages_TEMPLATE, &
              ocn_am_init_TEMPLATE, &
+             ocn_am_init_alarms_TEMPLATE, &
              ocn_am_compute_TEMPLATE, &
              ocn_am_write_TEMPLATE, &
              ocn_am_restart_TEMPLATE, &
@@ -183,6 +185,75 @@ contains
 
 !***********************************************************************
 !
+!  routine ocn_am_init_alarms_TEMPLATE
+!
+!> \brief   Initialize alarms for MPAS-Ocean analysis member
+!> \author  Mark Petersen
+!> \date    November 2013
+!> \details 
+!>  This routine conducts all alarm initializations required for the 
+!>  MPAS-Ocean analysis member.
+!
+!-----------------------------------------------------------------------
+
+   subroutine ocn_am_init_alarms_TEMPLATE(clock, startTime, computeAlarmID, err)!{{{
+
+      use mpas_packages
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      integer, intent(in) :: computeAlarmID
+      type (MPAS_Time_Type), intent(in) :: startTime
+
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+
+      type (MPAS_Clock_type), intent(inout) :: clock
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      integer :: ierr
+      character(len=StrKIND) :: compute_interval
+      type (MPAS_Time_Type) :: alarmStartTime
+      type (MPAS_TimeInterval_type) :: alarmTimeStep
+
+      err = 0
+
+      ! set compute alarm for this analysis member
+      if (config_ocn_am_TEMPLATE_compute_interval=='same_as_output') then
+         compute_interval = config_output_interval
+      else
+         compute_interval = config_ocn_am_TEMPLATE_compute_interval
+      endif
+
+      call mpas_set_timeInterval(alarmTimeStep, timeString=compute_interval, ierr=ierr)
+      alarmStartTime = startTime + alarmTimeStep
+      call mpas_add_clock_alarm(clock, computeAlarmID, alarmStartTime, alarmTimeStep, ierr=ierr)
+
+   end subroutine ocn_am_init_alarms_TEMPLATE!}}}
+
+
+!***********************************************************************
+!
 !  routine ocn_am_compute_TEMPLATE
 !
 !> \brief   Compute MPAS-Ocean analysis member
@@ -290,8 +361,17 @@ contains
 !      call mpas_dmpar_min_real_array(dminfo, nMins, mins(1:nMins), reductions(1:nMins))
 !      call mpas_dmpar_max_real_array(dminfo, nMaxes, maxes(1:nMaxes), reductions(1:nMaxes))
 
-      ! Computations which are not functions of nCells, nEdges, or nVertices 
-      ! may be placed outside of block loops
+      ! Even though some variables do not include an index that is decomposed amongst 
+      ! domain partitions, we assign them within a block loop so that all blocks have the
+      ! correct values for writing output.
+      block => domain % blocklist
+      do while (associated(block))
+         amTemplate => block % amTemplate
+
+         ! assignment of final amTemplate variables could occur here.
+
+         block => block % next
+      end do
       amTemplate => domain % blocklist % amTemplate
 
       call mpas_timer_stop("TEMPLATE", amTemplateTimer)
