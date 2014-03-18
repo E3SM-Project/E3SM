@@ -23,6 +23,7 @@ module ocn_am_global_stats
    use mpas_grid_types
    use mpas_timer
    use mpas_dmpar
+   use mpas_timekeeping
 
    use ocn_diagnostics_routines
 
@@ -44,6 +45,7 @@ module ocn_am_global_stats
 
    public :: ocn_am_setup_packages_global_stats, &
              ocn_am_init_global_stats, &
+             ocn_am_init_alarms_global_stats, &
              ocn_am_compute_global_stats, &
              ocn_am_write_global_stats, &
              ocn_am_restart_global_stats, &
@@ -160,6 +162,74 @@ contains
       err = 0
 
    end subroutine ocn_am_init_global_stats!}}}
+
+!***********************************************************************
+!
+!  routine ocn_am_init_alarms_global_stats
+!
+!> \brief   Initialize alarms for MPAS-Ocean analysis member
+!> \author  Mark Petersen
+!> \date    November 2013
+!> \details 
+!>  This routine conducts all alarm initializations required for the 
+!>  MPAS-Ocean analysis member.
+!
+!-----------------------------------------------------------------------
+
+   subroutine ocn_am_init_alarms_global_stats(clock, startTime, computeAlarmID, err)!{{{
+
+      use mpas_packages
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      integer, intent(in) :: computeAlarmID
+      type (MPAS_Time_Type), intent(in) :: startTime
+
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+
+      type (MPAS_Clock_type), intent(inout) :: clock
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      integer :: ierr
+      character(len=StrKIND) :: compute_interval
+      type (MPAS_Time_Type) :: alarmStartTime
+      type (MPAS_TimeInterval_type) :: alarmTimeStep
+
+      err = 0
+
+      ! set compute alarm for this analysis member
+      if (config_ocn_am_global_stats_compute_interval=='same_as_output') then
+         compute_interval = config_output_interval
+      else
+         compute_interval = config_ocn_am_global_stats_compute_interval
+      endif
+
+      call mpas_set_timeInterval(alarmTimeStep, timeString=compute_interval, ierr=ierr)
+      alarmStartTime = startTime + alarmTimeStep
+      call mpas_add_clock_alarm(clock, computeAlarmID, alarmStartTime, alarmTimeStep, ierr=ierr)
+
+   end subroutine ocn_am_init_alarms_global_stats!}}}
 
 !***********************************************************************
 !
