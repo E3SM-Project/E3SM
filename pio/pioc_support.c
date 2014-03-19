@@ -2,6 +2,12 @@
 #include <pio_internal.h>
 #define versno 2000
 
+typedef struct cfptr
+{
+  PIO_Offset *map;
+} cfptr;
+
+
 void piodie(const char *msg,const char *fname, const int line){
   fprintf(stderr,"Abort with message %s in file %s at line %d\n",msg,fname,line);
 #ifdef MPI_SERIAL
@@ -142,7 +148,7 @@ int PIOc_freedecomp(int iosysid, int ioid)
 
 }
 
-int PIOc_readmap(const char file[], PIO_Offset *map[], const MPI_Comm comm)
+int PIOc_readmap(const char file[], PIO_Offset *fmaplen, PIO_Offset *map[], const MPI_Comm comm)
 {
   int npes, myrank;  
   int rnpes, rversno;
@@ -182,6 +188,7 @@ int PIOc_readmap(const char file[], PIO_Offset *map[], const MPI_Comm comm)
 	free(tmap);
       }else{
 	*map = tmap;
+	*fmaplen = maplen;
       }
     }
     fclose(fp);
@@ -190,14 +197,18 @@ int PIOc_readmap(const char file[], PIO_Offset *map[], const MPI_Comm comm)
     tmap = (PIO_Offset *) malloc(maplen*sizeof(PIO_Offset));
     MPI_Recv(tmap, maplen, PIO_OFFSET, 0, myrank, comm, &status);
     *map = tmap;
+    *fmaplen = maplen;
   }      
-
+  
 }
 
-int PIOc_readmap_from_f90(const char file[], PIO_Offset map[], const int f90_comm)
+int PIOc_readmap_from_f90(const char file[],PIO_Offset *maplen, PIO_Offset *map[], const int f90_comm)
 {
-  // printf("%s %d %s %ld\n",__FILE__,__LINE__,file,maplen);
-  return(PIOc_readmap(file, map, MPI_Comm_f2c(f90_comm)));
+  int ierr;
+
+  ierr = PIOc_readmap(file, maplen, map, MPI_Comm_f2c(f90_comm));
+
+  return(ierr);
 }
 
 
@@ -239,7 +250,7 @@ int PIOc_writemap(const char file[], PIO_Offset maplen, const PIO_Offset map[], 
       nmap = (PIO_Offset *) malloc(nmaplen[i] * sizeof(PIO_Offset));
 
       MPI_Send(&i, 1, MPI_INT, i, npes+i, comm);
-      MPI_Recv(nmap, nmaplen+i, PIO_OFFSET, i, i, comm, &status);
+      MPI_Recv(nmap, nmaplen[i], PIO_OFFSET, i, i, comm, &status);
 
       fprintf(fp,"%d %ld\n",i,nmaplen[i]);
       for(int j=0;j<nmaplen[i];j++)

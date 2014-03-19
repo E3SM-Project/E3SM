@@ -216,21 +216,23 @@ contains
     integer(PIO_OFFSET_KIND),pointer:: dof(:)
     integer         ,intent(in) :: comm
     integer,optional,intent(in) :: punit
+    integer(PIO_OFFSET_KIND) :: maplen
     integer :: ierr
     type(C_PTR) :: tmap
     interface
-       integer(c_int) function PIOc_readmap_from_f90(file, map, f90_comm) &
-            bind(C,name="PIOc_writemap_from_f90")
+       integer(C_INT) function PIOc_readmap_from_f90(file, maplen, map, f90_comm) &
+            bind(C,name="PIOc_readmap_from_f90") 
          use iso_c_binding
          character(C_CHAR), intent(in) :: file
-         type(C_PTR), intent(out) :: map
+         integer(C_SIZE_T), intent(out) :: maplen
+         type(C_PTR) :: map
          integer(C_INT), value, intent(in) :: f90_comm
        end function PIOc_readmap_from_f90
     end interface
 
-    ierr = PIOc_readmap_from_f90(trim(file)//C_NULL_CHAR, tmap, comm)
+    ierr = PIOc_readmap_from_f90(trim(file)//C_NULL_CHAR, maplen, tmap, comm);
 
-    call c_f_pointer(tmap, DOF)
+    call c_f_pointer(tmap, DOF, (/maplen/))
 
   end subroutine pio_readdof
 

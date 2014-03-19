@@ -636,7 +636,7 @@ program testpio
      ! Explain the distributed array decomposition to PIO lib
      !-------------------------------------------------------
 
-        if (trim(rearr) == 'box') then
+        if (trim(rearr) == 'box' .or. trim(rearr) == 'sub') then
            if (trim(iodof_input) == 'namelist') then
               if(Debug)       print *,'iam: ',My_task,'testpio: point #7'
               if(TestR8 .or. TestCombo) &
@@ -681,9 +681,6 @@ program testpio
            if(iofmtd.eq.'nc' ) then ! netCDF
               if (num_iodofs == 1) then
                  if(Debug)       print *,'iam: ',My_task,'testpio: point #8.5'
-                 print *,__FILE__,__LINE__,startpio,countpio
-                 print *,__FILE__,__LINE__,compdof
-                 print *,__FILE__,__LINE__,iodof
                  if(TestR8 .or. TestCombo) &
                       call PIO_initDecomp(PIOSYS,PIO_double, gDims3D,lenblocks,&
                       compDOF,ioDOF,startpio,countpio,IOdesc_r8)
@@ -1314,9 +1311,6 @@ program testpio
   !   note: make sure DOFs are not used later
   !--------------------------------
   if (My_task >= 0) call dealloc_check(compDOF)
-  if (trim(rearr) == 'mct') then
-     if (Iorank >= 0) call dealloc_check(ioDOF)
-  endif
 
   !----------------------------------
   ! Print summary bandwidth statistics 

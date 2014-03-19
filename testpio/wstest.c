@@ -25,7 +25,7 @@ int main(int argc, char *argv[])
  MPI_Comm_size(MPI_COMM_WORLD, &npe);
  MPI_Comm_rank(MPI_COMM_WORLD, &mype);
 
- PIOc_Init_Intracomm(MPI_COMM_WORLD, npe, 1, 0, PIO_REARR_BOX,&iosysid);
+ PIOc_Init_Intracomm(MPI_COMM_WORLD, npe, 1, 0, PIO_REARR_SUBSET,&iosysid);
 
  // Create a weak scaling test - 
  nx=6;
