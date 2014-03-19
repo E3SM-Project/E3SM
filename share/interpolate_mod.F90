@@ -19,6 +19,7 @@ module interpolate_mod
   use cube_mod,               only : convert_gbl_index, dmap, ref2sphere
   use mesh_mod,               only : MeshUseMeshFile
   use control_mod,            only : cubed_sphere_map
+  use edge_mod, only : ghostbuffertr_t
 
   implicit none
   private
@@ -101,6 +102,16 @@ module interpolate_mod
   integer :: auto_grid = 0        ! 0 = interpolation grid set by namelist
                                   ! 1 = grid set via mesh resolution
 
+
+  ! static data, used by bilin_phys2gll()
+  ! shared by all threads.  only allocate if subroutine will be used
+  type (ghostBuffertr_t)                      :: ghostbuf_tr
+  integer  :: nphys_init=0
+  integer  :: index_l(np),index_r(np)
+  real(kind=real_kind),allocatable :: weights(:,:,:,:,:) ! np,np,2,2,nelemd
+
+  public :: bilin_phys2gll
+  public :: bilin_phys2gll_init
 contains
 
 
@@ -1945,6 +1956,322 @@ DISABLED: breaks in many cases, like UV
 
   end function var_is_vector_vvar
 
+
+
+
+
+
+!  ================================================
+!  bilin_phys2gll:
+!
+!  interpolate to an equally spaced (in reference element coordinate system)
+!  CSLAM grid to the GLL grid
+!
+!  bilinear map 
+!
+!  MT initial version 3/2014
+!  ================================================
+  subroutine bilin_phys2gll_init(nphys,elem,hybrid,nets,nete)
+    use control_mod, only : neast, nwest, seast, swest, cubed_sphere_map
+    use dimensions_mod, only :  max_corner_elem
+    use coordinate_systems_mod, only : cartesian3D_t,cartesian2D_t,spherical_polar_t,&
+       spherical_to_cart,cart2spherical, distance, cart2cubedsphere, sphere2cubedsphere,&
+       distance
+    use cube_mod, only : ref2sphere
+    use quadrature_mod, only : quadrature_t, gausslobatto
+    use parallel_mod, only : abortmp
+    use hybrid_mod, only : hybrid_t
+    use element_mod, only : element_t
+!    use fvm_control_volume_mod, only : fvm_struct
+    use bndry_mod, only :  ghost_exchangev
+    use edge_mod, only :  freeghostbufferTR, initghostbufferTR, &
+         ghostvpackR, ghostvunpackR
+         
+    ! input
+    integer :: nphys,nets,nete,ie_in
+    type (element_t)     , intent(inout), target :: elem(:)
+!    type (fvm_struct)    , intent(inout), target :: fvm(:)
+    type (hybrid_t)    , intent(in) :: hybrid
+    
+    ! static data, shared by all threads
+    real(kind=real_kind),allocatable :: fvm_cart3d(:,:,:,:) ! np,np,3,nelemd
+
+    ! local
+    type (cartesian3D_t) ::   cart3d,corners3D(4)
+    type (cartesian2D_t) ::   ref_cart2d
+    integer i,j,i1,i2,j1,j2,ie, l ,ic, cube_corner, ij_corner
+    real(kind=real_kind) :: phys_centers(nphys)
+    real(kind=real_kind) :: dx,gll,sum,d11,d12,d21,d22
+    type(quadrature_t) :: gll_pts
+
+
+
+    if (nphys_init/=nphys) then
+       if (hybrid%masterthread) print *,'Initializing PHYS_GRID -> GLL bilinear interpolation weights'
+       ! initialize static data on master thread only
+#if (defined HORIZ_OPENMP)
+!OMP BARRIER
+!OMP MASTER
+#endif
+       if (nphys_init /= 0 ) then
+          ! using a new phys grid.  need to recompute weights
+          deallocate(weights)
+       endif
+       allocate(weights(np,np,2,2,nelemd))
+       allocate(fvm_cart3d(0:nphys+1,0:nphys+1,3,nelemd))
+       nphys_init=nphys
+
+       ! compute phys grid cell centers [-1,1]
+       ! these are the phys grid cell in the reference element [-1,1] coordinate system
+       do i=1,nphys
+          dx = 2d0/nphys
+          phys_centers(i)=-1 + (dx/2) + (i-1)*dx
+       enddo
+
+       ! compute 1D interpolation weights
+       ! for every GLL point, find the index of the phys point to the left and right:
+       !    index_l, index_r
+       index_l(1)=0
+       index_r(1)=1
+
+       index_l(np)=nphys
+       index_r(np)=nphys+1
+
+       ! compute GLL cell edges on [-1,1]
+       gll_pts = gausslobatto(np)
+
+       do i=2,np-1
+          ! find: i1,i2 such that:
+          ! phys_centers(i1) <=  gll(i)  <= phys_centers(i2)
+          gll = gll_pts%points(i)
+          i1=0
+          do j=1,nphys-1
+             if (phys_centers(j) <= gll .and. phys_centers(j+1)>gll) then
+                i1=j
+                i2=j+1
+             endif
+          enddo
+          if (i1==0) stop 'ERROR: bilin_phys2gll() bad logic0'
+          index_l(i)=i1
+          index_r(i)=i2  
+       enddo
+#if (defined HORIZ_OPENMP)
+!OMP END MASTER
+!OMP BARRIER
+#endif
+       ! do a ghost cell update to compute 
+       call initghostbufferTR(ghostbuf_tr,3,1,1,nphys)  ! 3 variables, 1 row halo cells
+       do ie=nets,nete
+          do i=1,nphys
+          do j=1,nphys
+             ! recompute physics grid centers
+             ! this could be made an input argument?
+             cart3d=spherical_to_cart(ref2sphere(phys_centers(i),&
+                  phys_centers(j),elem(ie)%corners3D,cubed_sphere_map,elem(ie)%corners,elem(ie)%facenum))
+             !cart3d=spherical_to_cart(fvm(ie)%centersphere(i,j))       ! lat/lon -> 3D 
+             fvm_cart3d(i,j,1,ie) = cart3d%x
+             fvm_cart3d(i,j,2,ie) = cart3d%y
+             fvm_cart3d(i,j,3,ie) = cart3d%z
+          enddo
+          enddo
+          call ghostVpackR(ghostbuf_tr, fvm_cart3d(:,:,:,ie),1,nphys,3,1,0,elem(ie)%desc)
+       enddo
+       call ghost_exchangeV(hybrid,ghostbuf_tr,1,nphys,1)
+       do ie=nets,nete
+          call ghostVunpackR(ghostbuf_tr, fvm_cart3d(:,:,:,ie),1,nphys,3,1,0,elem(ie)%desc)
+       enddo
+!OMP BARRIER
+!OMP MASTER
+       call freeghostbufferTR(ghostbuf_tr)
+!OMP END MASTER
+
+       ! this can be done threaded (but not really needed)
+       do ie=nets,nete
+           if ( elem(ie)%desc%actual_neigh_edges > 8 ) then
+              call abortmp('ERROR: bilinear interpolation not coded for unstructured meshes')
+           endif
+
+           cube_corner=0
+           if ( elem(ie)%desc%actual_neigh_edges == 7 ) then
+              ! SW
+              ic = elem(ie)%desc%getmapP_ghost(swest)
+              if(ic == -1) cube_corner=swest
+              ic = elem(ie)%desc%getmapP_ghost(seast)
+              if(ic == -1) cube_corner=seast
+              ic = elem(ie)%desc%getmapP_ghost(neast)
+              if(ic == -1) cube_corner=neast
+              ic = elem(ie)%desc%getmapP_ghost(nwest)
+              if(ic == -1) cube_corner=nwest
+           endif
+
+           do j=1,np
+           do i=1,np
+
+              i1 = index_l(i)
+              i2 = index_r(i)
+              j1 = index_l(j)
+              j2 = index_r(j)
+              
+              corners3D(1)%x = fvm_cart3d(i1,j1,1,ie)
+              corners3D(1)%y = fvm_cart3d(i1,j1,2,ie)
+              corners3D(1)%z = fvm_cart3d(i1,j1,3,ie)
+              
+              corners3D(2)%x = fvm_cart3d(i2,j1,1,ie)
+              corners3D(2)%y = fvm_cart3d(i2,j1,2,ie)
+              corners3D(2)%z = fvm_cart3d(i2,j1,3,ie)
+              
+              corners3D(3)%x = fvm_cart3d(i2,j2,1,ie)
+              corners3D(3)%y = fvm_cart3d(i2,j2,2,ie)
+              corners3D(3)%z = fvm_cart3d(i2,j2,3,ie)
+              
+              corners3D(4)%x = fvm_cart3d(i1,j2,1,ie)
+              corners3D(4)%y = fvm_cart3d(i1,j2,2,ie)
+              corners3D(4)%z = fvm_cart3d(i1,j2,3,ie)
+
+              ! cube corner
+              ij_corner=0
+              if (i==1  .and. j==1)  ij_corner=SWEST
+              if (i==1  .and. j==np) ij_corner=NWEST
+              if (i==np  .and.j==1)  ij_corner=SEAST
+              if (i==np .and. j==np) ij_corner=NEAST
+
+              !  NW(4)d12  NE(3)d22
+              !
+              !  SW(1)d11  SE(2)d21
+              !   (1,1)     (np,1)
+              !
+              if (cube_corner == SEAST .and. ij_corner == SEAST ) then
+                 ! distance weighting
+                 cart3d=spherical_to_cart(elem(ie)%spherep(i,j))
+                 d11=1/distance(cart3d,corners3D(1))
+                 d21=0 ! 1/distance(cart3d,corners3D(2))
+                 d22=1/distance(cart3d,corners3D(3))
+                 d12=1/distance(cart3d,corners3D(4))
+              else if (cube_corner == SWEST .and. ij_corner == SWEST ) then
+                 cart3d=spherical_to_cart(elem(ie)%spherep(i,j))
+                 d11=0 ! 1/distance(cart3d,corners3D(1))
+                 d21=1/distance(cart3d,corners3D(2))
+                 d22=1/distance(cart3d,corners3D(3))
+                 d12=1/distance(cart3d,corners3D(4))
+              else if (cube_corner == NWEST .and. ij_corner == NWEST ) then
+                 cart3d=spherical_to_cart(elem(ie)%spherep(i,j))
+                 d11=1/distance(cart3d,corners3D(1))
+                 d21=1/distance(cart3d,corners3D(2))
+                 d22=1/distance(cart3d,corners3D(3))
+                 d12=0 ! 1/distance(cart3d,corners3D(4))
+              else if (cube_corner == NEAST .and. ij_corner == NEAST ) then
+                 cart3d=spherical_to_cart(elem(ie)%spherep(i,j))
+                 d11=1/distance(cart3d,corners3D(1))
+                 d21=1/distance(cart3d,corners3D(2))
+                 d22=0 ! 1/distance(cart3d,corners3D(3))
+                 d12=1/distance(cart3d,corners3D(4))
+              else
+                 ! here we need to use a local projection that works across element
+                 ! edges.  so force cubed_sphere_map=2 even if HOMME is
+                 ! using a different map. 
+                 ref_cart2d=parametric_coordinates(elem(ie)%spherep(i,j),corners3D,2)
+                 ! sanity check.  allow for small amount of extrapolation
+                 if (abs(ref_cart2d%x)>1.05 .or. abs(ref_cart2d%y)>1.05 )then
+                    ! this means the element was two distorted for our simple 1D
+                    ! search - need better search to find quad containing GLL point
+                    print *,'ERROR: bilinear interpolation: ref point outside quad'
+                 endif
+                 ref_cart2d%x = (ref_cart2d%x + 1)/2  ! convert to [0,1]
+                 ref_cart2d%y = (ref_cart2d%y + 1)/2  ! convert to [0,1]
+                 ! point in quad
+                 !   D12  C22
+                 !   A11  B21                     
+                 !  l1 =   A + x(B-A)  
+                 !  l2 =   D + x(C-D)
+                 !  X = l1 + y(l2-l1)  = (1-y) l1 +  y l2
+                 !    =  (1-y)(1-x) A  + (1-y)x B  + (1-x) y D  + x y C
+                 d11 = (1-ref_cart2d%x)*(1-ref_cart2d%y)
+                 d21 = (  ref_cart2d%x)*(1-ref_cart2d%y)
+                 d22 = (  ref_cart2d%x)*(  ref_cart2d%y)
+                 d12 = (1-ref_cart2d%x)*(  ref_cart2d%y)
+                 
+              endif
+              sum = d11+d12+d21+d22
+              ! with the weights defined above, we would need to do an
+              ! unweighted sum on edge boundaries.  To avoid confusion,
+              ! lets adjust the weights so we do the normal Jacobian weighted
+              ! average at element boundaries:
+              sum = sum*(elem(ie)%spheremp(i,j)*elem(ie)%rspheremp(i,j))
+
+              weights(i,j,1,1,ie) = d11/sum
+              weights(i,j,1,2,ie) = d12/sum
+              weights(i,j,2,1,ie) = d21/sum
+              weights(i,j,2,2,ie) = d22/sum
+
+              if (d11<0) call abortmp("Error: bilin_phys2gll weight d11<0")
+              if (d12<0) call abortmp("Error: bilin_phys2gll weight d12<0")
+              if (d21<0) call abortmp("Error: bilin_phys2gll weight d21<0")
+              if (d22<0) call abortmp("Error: bilin_phys2gll weight d22<0")
+                 
+           enddo
+           enddo
+        enddo
+
+        deallocate(fvm_cart3d)
+        deallocate(gll_pts%points)
+        deallocate(gll_pts%weights)
+    endif
+  end subroutine
+
+
+!----------------------------------------------------------------
+  function bilin_phys2gll(pin,nphys,ie) result(pout)
+    use parallel_mod, only : abortmp
+
+    ! input
+    integer :: nphys,ie
+    real(kind=real_kind), intent(in) :: pin(nphys,nphys)
+    real(kind=real_kind) :: pout(np,np)
+
+    ! local
+    integer i,j,i1,i2,j1,j2
+
+    if (nphys_init/=nphys) call abortmp(&
+         "Error: bilin_phys2gll(): bilin_phys2gll_init must be called first")
+
+    ! interpolate i dimension
+    do j=1,np
+       j1 = index_l(j)
+       j2 = index_r(j)
+       do i=1,np
+          i1 = index_l(i)
+          i2 = index_r(i)
+
+          ! only include contributions from this element
+          ! contributions from other elements will be handled by DSS
+          pout(i,j)=0
+          if (i==1 .or. j==1) then
+             !d11 = 0  
+          else
+             pout(i,j)=pout(i,j) + weights(i,j,1,1,ie)*pin(i1,j1)
+          endif
+          
+          if (i==1 .or. j==np) then
+             !d12 = 0
+          else
+             pout(i,j)=pout(i,j) + weights(i,j,1,2,ie)*pin(i1,j2)
+          endif
+          
+          if (i==np .or. j==1) then
+             !d21 = 0
+          else
+             pout(i,j)=pout(i,j) + weights(i,j,2,1,ie)*pin(i2,j1)
+          endif
+          
+          if (i==np .or. j==np) then
+             !d22 = 0
+          else
+             pout(i,j)=pout(i,j) + weights(i,j,2,2,ie)*pin(i2,j2)
+          endif
+       enddo
+    enddo
+  end function bilin_phys2gll
+!----------------------------------------------------------------
 
 
 end module interpolate_mod
