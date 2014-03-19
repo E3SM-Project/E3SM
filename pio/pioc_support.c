@@ -142,9 +142,63 @@ int PIOc_freedecomp(int iosysid, int ioid)
 
 }
 
+int PIOc_readmap(const char file[], PIO_Offset *map[], const MPI_Comm comm)
+{
+  int npes, myrank;  
+  int rnpes, rversno;
+  int j;
+  PIO_Offset *tmap;
+  MPI_Status status;
+  PIO_Offset maplen;
 
+  MPI_Comm_size(comm, &npes);
+  MPI_Comm_rank(comm, &myrank);
+  
+  if(myrank == 0) {
+    FILE *fp = fopen(file, "r");
+    if(fp==NULL)
+      piodie("Failed to open dof file",__FILE__,__LINE__);
+    
+    fscanf(fp,"version %d npes %d\n",&rversno, &rnpes);
 
+    if(rversno != versno)
+      piodie("Attempt to read incompatable map file version",__FILE__,__LINE__);
 
+    if(rnpes < 1 || rnpes > npes)
+      piodie("Incompatable pe count in map file ",__FILE__,__LINE__);
+
+    for(int i=0; i< rnpes; i++){
+      fscanf(fp,"%d %ld",&j,&maplen);
+      if( j != i)  // Not sure how this could be possible
+	piodie("Incomprehensable error reading map file ",__FILE__,__LINE__);
+
+      tmap = (PIO_Offset *) malloc(maplen*sizeof(PIO_Offset));
+      for(j=0;j<maplen;j++)
+	fscanf(fp,"%ld ",tmap+j);
+      
+      if(i>0){
+	MPI_Send(&maplen, 1, PIO_OFFSET, i, i+npes, comm);
+	MPI_Send(tmap, maplen, PIO_OFFSET, i, i, comm);
+	free(tmap);
+      }else{
+	*map = tmap;
+      }
+    }
+    fclose(fp);
+  }else{
+    MPI_Recv(&maplen, 1, PIO_OFFSET, 0, myrank+npes, comm, &status);
+    tmap = (PIO_Offset *) malloc(maplen*sizeof(PIO_Offset));
+    MPI_Recv(tmap, maplen, PIO_OFFSET, 0, myrank, comm, &status);
+    *map = tmap;
+  }      
+
+}
+
+int PIOc_readmap_from_f90(const char file[], PIO_Offset map[], const int f90_comm)
+{
+  // printf("%s %d %s %ld\n",__FILE__,__LINE__,file,maplen);
+  return(PIOc_readmap(file, map, MPI_Comm_f2c(f90_comm)));
+}
 
 
 int PIOc_writemap(const char file[], PIO_Offset maplen, const PIO_Offset map[], const MPI_Comm comm)
@@ -169,9 +223,6 @@ int PIOc_writemap(const char file[], PIO_Offset maplen, const PIO_Offset map[], 
 
   if(myrank==0){
     FILE *fp;
-
-    for(i=0;i<npes;i++)
-      printf("nmaplen[%d] = %ld\n",i,nmaplen[i]);
 
 
     fp = fopen( file, "w");

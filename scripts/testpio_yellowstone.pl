@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 #BSUB -P P93300075            # project code
-#BSUB -W 0:40                # wall-clock time (hrs:mins)
+#BSUB -W 1:40                # wall-clock time (hrs:mins)
 #BSUB -n 64            # number of tasks in job         
 #BSUB -R "span[ptile=16]"    # run 16 MPI tasks per node
 #BSUB -J testpio                # job name

@@ -468,7 +468,7 @@ program testpio
      ioDOF   => compDOF
      startIO(1:3) = startCOMP(1:3)
      countIO(1:3) = countCOMP(1:3)
-  elseif (trim(rearr) == 'box') then
+  else  if (trim(rearr) == 'box' .or. trim(rearr) == 'sub') then
      ! do nothing
      if (trim(iodof_input) == 'namelist') then
         if(Debug)       print *,'iam: ',My_task,'testpio: point #4'
@@ -479,11 +479,6 @@ program testpio
         startIO(1:3) = start(1:3)
         countIO(1:3) = count(1:3)
      endif
-  elseif (trim(rearr) == 'mct') then
-     call gdecomp_read_nml(gdecomp,nml_filename,'io',Iorank,Niotasks,gDims3D(1:3))
-     call gdecomp_DOF(gdecomp,Iorank,ioDOF,start,count)
-     startIO(1:3) = start(1:3)
-     countIO(1:3) = count(1:3)
   else
      call piodie(__FILE__,__LINE__,' rearr '//trim(rearr)//' not supported')
   endif

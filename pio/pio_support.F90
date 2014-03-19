@@ -216,70 +216,21 @@ contains
     integer(PIO_OFFSET_KIND),pointer:: dof(:)
     integer         ,intent(in) :: comm
     integer,optional,intent(in) :: punit
+    integer :: ierr
+    type(C_PTR) :: tmap
+    interface
+       integer(c_int) function PIOc_readmap_from_f90(file, map, f90_comm) &
+            bind(C,name="PIOc_writemap_from_f90")
+         use iso_c_binding
+         character(C_CHAR), intent(in) :: file
+         type(C_PTR), intent(out) :: map
+         integer(C_INT), value, intent(in) :: f90_comm
+       end function PIOc_readmap_from_f90
+    end interface
 
-    character(len=*), parameter :: subName=modName//'::pio_readdof'
-    integer :: ierr, myrank, npes, m, n, unit, rn
-    integer(PIO_OFFSET_KIND) :: sdof
-    integer :: rversno, rnpes
-    integer(PIO_OFFSET_KIND), pointer :: wdof(:)
-    integer, parameter :: masterproc = 0
-    integer :: status(MPI_STATUS_SIZE)
+    ierr = PIOc_readmap_from_f90(trim(file)//C_NULL_CHAR, tmap, comm)
 
-    unit = 81
-    if (present(punit)) then
-       unit = punit
-    endif
-
-    call MPI_COMM_SIZE(comm,npes,ierr)
-    call CheckMPIReturn(subName,ierr)
-    call MPI_COMM_RANK(comm,myrank,ierr)
-    call CheckMPIReturn(subName,ierr)
-
-    allocate(dof(0))   ! default for pes with no dof
-
-    if (myrank == masterproc) then
-       write(6,*) subName,': reading file ',trim(file),' unit=',unit
-       open(unit,file=file,status='old')
-       read(unit,*) rversno,rnpes
-       write(6,*) subName,': reading file ',trim(file),' versno=',rversno
-       if (rnpes /= npes) then
-          call piodie(__PIO_FILE__,__LINE__,'pio_readdof npes incorrect')
-       endif
-
-       do n = 0,npes-1
-          read(unit,*) rn,sdof
-          if (rn /= n) then
-             call piodie(__PIO_FILE__,__LINE__,'pio_readdof rn out of sync')
-          endif
-          allocate(wdof(sdof))
-          do m = 1,sdof
-             read(unit,*) wdof(m)
-          enddo
-          if (n == masterproc) then
-             deallocate(dof)
-             allocate(dof(sdof))
-             dof = wdof
-          else
-             call MPI_SEND(sdof,1,PIO_OFFSET,n,n,comm,ierr)
-             if (ierr /= MPI_SUCCESS) call piodie(__PIO_FILE__,__LINE__,' pio_readdof mpi_send1')
-             if (sdof > 0) then
-!                call MPI_SEND(wdof,int(sdof),PIO_OFFSET_KIND,n,npes+n,comm,ierr)
-                if (ierr /= MPI_SUCCESS) call piodie(__PIO_FILE__,__LINE__,' pio_readdof mpi_send2')
-             endif
-          endif
-          deallocate(wdof)
-       enddo
-       close(unit)
-    else
-       call MPI_RECV(sdof,1,PIO_OFFSET,masterproc,myrank,comm,status,ierr)
-       if (ierr /= MPI_SUCCESS) call piodie(__PIO_FILE__,__LINE__,' pio_readdof mpi_recv1')
-       if (sdof > 0) then
-          deallocate(dof)
-          allocate(dof(sdof))
-!          call MPI_RECV(dof,int(sdof),PIO_OFFSET,masterproc,npes+myrank,comm,status,ierr)
-          if (ierr /= MPI_SUCCESS) call piodie(__PIO_FILE__,__LINE__,' pio_readdof mpi_recv2')
-       endif
-    endif
+    call c_f_pointer(tmap, DOF)
 
   end subroutine pio_readdof
 

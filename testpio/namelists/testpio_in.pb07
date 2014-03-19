@@ -1,7 +1,7 @@
 &io_nml
   casename    = 'pb07:pnc:box:stride=4:3d:nblksppe=16:g_xy:go_yxz:b_xyz:bo_yzx'
- nx_global = 3825
- ny_global = 2879
+ nx_global = 825
+ ny_global = 879
   nz_global   = 10
   iofmt       = 'pnc'
   rearr       = 'box'

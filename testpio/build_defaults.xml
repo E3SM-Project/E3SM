@@ -147,7 +147,7 @@
   run = "mpirun"
   netcdf4 = "true"
   corespernode="12"
-  conopts="--enable-filesystem-hints=lustre --with-piovdc=/home/jimedwards/libpiovdc/1.0/intel_12.1.4"
+  conopts="--enable-filesystem-hints=lustre "
   preamble = "
 #PBS -l walltime=01:00:00
 #PBS -N testpiob
@@ -174,7 +174,7 @@
   submit="qsub"
   run = "mpirun"
   corespernode="8"
-  conopts="--enable-filesystem-hints=gpfs --with-piovdc=/global/homes/j/jedwards/libpiovdc/carver/intel"
+  conopts="--enable-filesystem-hints=gpfs "
   preamble = "
 #PBS -l walltime=00:30:00
 #PBS -N testpiob
@@ -415,7 +415,7 @@
   run = "aprun" 
   corespernode = "12"
   submit = "qsub "
-  conopts = "   --enable-filesystem-hints=lustre --with-piovdc=/glade/home/jedwards/libpiovdc-cinterop/lynx/intel"
+  conopts = "   --enable-filesystem-hints=lustre "
   preamble="
 #PBS -N testpio_suite
 #PBS -l walltime=01:50:00

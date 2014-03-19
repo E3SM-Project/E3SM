@@ -274,6 +274,9 @@ subroutine ReadTestPIO_Namelist(device, nprocs, filename, caller, ierror)
     case('box')
        rearr_type=PIO_rearr_box
        write(*,*) trim(string),' rearr_type = ','PIO_rearr_box'
+    case('sub')
+       rearr_type=PIO_rearr_subset
+       write(*,*) trim(string),' rearr_type = ','PIO_rearr_subset'
     case default
        write(*,'(6a)') caller,'->',myname,':: Value of Rearranger type rearr = ',rearr, &
             'not supported.'
@@ -302,10 +305,6 @@ subroutine ReadTestPIO_Namelist(device, nprocs, filename, caller, ierror)
          iotype = PIO_iotype_netcdf4c
          ioFmtd = 'nc'
          write(*,*) trim(string),' iotype     = ','PIO_iotype_netcdf4c'
-      case('vdc2') ! netCDF4 compressed
-         iotype = PIO_iotype_vdc2
-         ioFmtd = 'vdf'
-         write(*,*) trim(string),' iotype     = ','PIO_iotype_vdc2'
       case default
          write(*,'(4a,i8)') caller,'->',myname,':: Unrecognized value of ioFMT =',ioFMT
          call piodie(__FILE__,__LINE__)

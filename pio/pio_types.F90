@@ -175,8 +175,7 @@ module pio_types
         PIO_iotype_pnetcdf = 5, &   ! parallel read/write of pNetCDF files
         PIO_iotype_netcdf  = 6, &   ! serial read/write of NetCDF file using 'base_node'
         PIO_iotype_netcdf4c = 7, &  ! netcdf4 (hdf5 format) file opened for compression (serial write access only)   
-        PIO_iotype_netcdf4p = 8, &  ! netcdf4 (hdf5 format) file opened in parallel (all netcdf4 files for read will be opened this way)
-        PIO_iotype_vdc2 = 10        ! VDC2 format file opened for compressed parallel write 
+        PIO_iotype_netcdf4p = 8    ! netcdf4 (hdf5 format) file opened in parallel (all netcdf4 files for read will be opened this way)
 
 
 ! These are for backward compatability and should not be used or expanded upon
@@ -195,9 +194,11 @@ module pio_types
 !! @details
 !!  - PIO_rearr_none : Do not use any form of rearrangement
 !!  - PIO_rearr_box : Use a PIO internal box rearrangement
+!! -  PIO_rearr_subset : Use a PIO internal subsetting rearrangement
 !>
     integer(i4), public, parameter :: PIO_rearr_none = 0
     integer(i4), public, parameter :: PIO_rearr_box =  1
+    integer(i4), public, parameter :: PIO_rearr_subset =  2
 
 !> 
 !! @public
