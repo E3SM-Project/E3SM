@@ -696,7 +696,7 @@ end subroutine
   use coordinate_systems_mod, only : cartesian3D_t,cartesian2D_t,spherical_polar_t,&
        spherical_to_cart,cart2spherical
   use derivative_mod, only : remap_phys2gll
-  use fvm_mod, only : bilin_phys2gll, bilin_phys2gll_init
+  use interpolate_mod, only : bilin_phys2gll, bilin_phys2gll_init
   use global_norms_mod, only : linf_snorm, l1_snorm, l2_snorm
 
   implicit none
@@ -719,7 +719,7 @@ end subroutine
 
   if (hybrid%masterthread) print *,'running test_bilin_phys2gll'
 
-  call bilin_phys2gll_init(nc,elem,fvm,hybrid,nets,nete)
+  call bilin_phys2gll_init(nc,elem,hybrid,nets,nete)
   call initEdgeBuffer(hybrid%par,buffer,1)
 
   ! test the bilinear map from FVM cells to GLL points
