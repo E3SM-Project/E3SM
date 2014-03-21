@@ -17,7 +17,7 @@
  use mpas_kind_types
  use mpas_grid_types
  
- use mpas_atmphys_constants,only: cp,degrad,ep_2,g,R_d,R_v,stbolt
+ use mpas_atmphys_constants,only: cp,degrad,ep_2,gravity,R_d,R_v,stbolt
  use mpas_atmphys_utilities
 
 !wrf physics:
@@ -53,6 +53,9 @@
 !>    * moved the arrays pin and ozmixm from the mesh structure to the atm_input structure in
 !>      subroutine oznini.
 !>      Laura D. Fowler (birch.ucar.edu) / 2013-07-08.
+!>    * Replaced the variable g (that originally pointed to gravity) with gravity, for simplicity.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-03-21.
+
 
 !local parameters:
  integer,parameter:: latsiz = 64
@@ -126,7 +129,7 @@
  epsqs = EP_2
 
 !initialization of some constants:
- call radini(dminfo,g,cp,ep_2,stbolt,pstd*10.0)
+ call radini(dminfo,gravity,cp,ep_2,stbolt,pstd*10.0)
  write(0,*) '    end subroutine radini'
 
 !initialization of saturation vapor pressures:

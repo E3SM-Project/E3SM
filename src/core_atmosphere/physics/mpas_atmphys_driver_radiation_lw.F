@@ -65,6 +65,9 @@
 !>    * modified the call to subroutine rrtmg_lwrad to include the option of using the same ozone
 !>      climatology as the one used in the CAM radiation codes.
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-07-17.
+!>    * in call to subroutine rrtmg_lwrad, replaced the variable g (that originally pointed to 
+!>      gravity) with gravity, for simplicity.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-03-21.
 
 
  contains
@@ -620,7 +623,7 @@
              lwupbc     = lwupbc_p     , lwdnb      = lwdnb_p     , lwdnbc     = lwdnbc_p      ,&
              lwcf       = lwcf_p       , glw        = glw_p       , olr        = olrtoa_p      ,&
              emiss      = sfc_emiss_p  , tsk        = tsk_p       , dz8w       = dz_p          ,&
-             cldfra3d   = cldfrac_p    , r          = R_d         , g          = g             ,&
+             cldfra3d   = cldfrac_p    , r          = R_d         , g          = gravity       ,&
              icloud     = icloud       , warm_rain  = warm_rain   , f_ice_phy  = f_ice         ,&
              f_rain_phy = f_rain       , xland      = xland_p     , xice       = xice_p        ,&
              snow       = snow_p       , qv3d       = qv_p        , qc3d       = qc_p          ,&

@@ -61,6 +61,9 @@
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-07-12. 
 !>    * removed the argument tend from the call to microphysics_from_MPAS (not needed).
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-11-07.
+!>    * in call to subroutine wsm6, replaced the variable g (that originally pointed to gravity)
+!>      with gravity, for simplicity.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-03-21.
 
 
  contains
@@ -253,7 +256,7 @@
                   qr      = qr_p        , qi         = qi_p         , qs      = qs_p      , &
                   qg      = qg_p        , den        = rho_p        , pii     = pi_p      , &
                   p       = pres_p      , delz       = dz_p         , delt    = dt_microp , &
-                  g       = g           , cpd        = cp           , cpv     = cpv       , &
+                  g       = gravity     , cpd        = cp           , cpv     = cpv       , &
                   rd      = R_d         , rv         = R_v          , t0c     = svpt0     , &
                   ep1     = ep_1        , ep2        = ep_2         , qmin    = epsilon   , &
                   xls     = xls         , xlv0       = xlv          , xlf0    = xlf       , &

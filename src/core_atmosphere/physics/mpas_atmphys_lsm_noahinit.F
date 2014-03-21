@@ -20,7 +20,7 @@
  use mpas_dmpar
  use mpas_grid_types
 
- use mpas_atmphys_constants, grav => g
+ use mpas_atmphys_constants
  use mpas_atmphys_utilities
 !wrf physics
  use module_sf_noahlsm
@@ -40,6 +40,11 @@
 !> -----------------------------------------
 !> noah_init_forMPAS: call lsminit from subroutine init_lsm (module mpas_atmphyse_driver_lsm.F).
 !> lsminit          : main initialization subroutine for the NOAH 4-layer land surface scheme.
+!>
+!> add-ons and modifications to sourcecode:
+!> ----------------------------------------
+!>    * replaced the variable grav with gravity, for simplicity.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-03-21.
 
 
  contains
@@ -143,7 +148,7 @@
                 smcmax = maxsmc(isltyp(iCell))
                 psisat = satpsi(isltyp(iCell))
                 if(bx >  blim) bx = blim
-                fk = (((hlice/(grav*(-psisat))) * &
+                fk = (((hlice/(gravity*(-psisat))) * &
                      ((tslb(ns,iCell)-t0)/tslb(ns,iCell)) )**(-1/bx) )*smcmax
                 if (fk < 0.02) fk = 0.02
                 sh2o(ns,iCell) = min(fk,smois(ns,iCell))

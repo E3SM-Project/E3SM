@@ -60,6 +60,10 @@
 !>    * added the mean distance between cell centers in the call to the Kain-Fritsch convection
 !>      parameterization of convection.
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-08-22. 
+!>    * in call to subroutine kf_eta_cps, replaced the variable g (that originally pointed to
+!>      gravity) with gravity, for simplicity.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-03-21.
+
 
  contains
 
@@ -308,7 +312,7 @@
              xlv0            = xlv0            , xlv1      = xlv1       ,            &
              xls0            = xls0            , xls1      = xls1       ,            &
              cp              = cp              , r         = r_d        ,            &
-             g               = g               , ep1       = ep_1       ,            &
+             g               = gravity         , ep1       = ep_1       ,            &
              ep2             = ep_2            , svp1      = svp1       ,            &
              svp2            = svp2            , svp3      = svp3       ,            &
              svpt0           = svpt0           , stepcu    = n_cu       ,            &

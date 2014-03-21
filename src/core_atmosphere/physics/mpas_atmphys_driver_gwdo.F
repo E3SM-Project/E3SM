@@ -49,6 +49,10 @@
 !>      Laura D. Fowler (birch.ucar.edu) / 2013-05-29.
 !>    * changed the definition of dx_p to the mean distance between cell centers.
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-08-23.
+!>    * in call to subroutine gwdo, replaced the variable g (that originally pointed to gravity)
+!>      with gravity, for simplicity.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-03-21.
+
 
  contains
 
@@ -227,7 +231,7 @@
                   rvblten   = rvblten_p   , dtaux3d   = dtaux3d_p    , dtauy3d = dtauy3d_p , &
                   dusfcg    = dusfcg_p    , dvsfcg    = dvsfcg_p     , kpbl2d  = kpbl_p    , &
                   itimestep = itimestep   , dt        = dt_pbl       , dx      = dx_p      , & 
-                  cp        = cp          , g         = g            , rd      = R_d       , & 
+                  cp        = cp          , g         = gravity      , rd      = R_d       , & 
                   rv        = R_v         , ep1       = ep_1         , pi      = pii       , & 
                   var2d     = var2d_p     , oc12d     = con_p        , oa2d1   = oa1_p     , & 
                   oa2d2     = oa2_p       , oa2d3     = oa3_p        , oa2d4   = oa4_p     , &

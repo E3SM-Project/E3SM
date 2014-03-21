@@ -49,7 +49,9 @@
 !>      update the modified potential temperature and calculate the diabatic tendency due to cloud
 !>      microphysics processes.
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-11-07.
- 
+!>    * Replaced the variable g (that originally pointed to gravity) with gravity, for simplicity.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-03-21.
+
 
  contains
 
@@ -245,7 +247,7 @@
     tem2 = zgrid(3,i)-zgrid(2,i)
     rho1 = rho_zz(1,i) * zz(1,i) * (1. + qv_p(i,1,j))
     rho2 = rho_zz(2,i) * zz(2,i) * (1. + qv_p(i,2,j))
-    sfc_pressure(i) = 0.5*g*(zgrid(2,i)-zgrid(1,i)) &
+    sfc_pressure(i) = 0.5*gravity*(zgrid(2,i)-zgrid(1,i)) &
                     * (rho1 + 0.5*(rho2-rho1)*tem1/(tem1+tem2))
     sfc_pressure(i) = sfc_pressure(i) + pressure_p(1,i) + pressure_b(1,i)
  enddo
@@ -335,8 +337,8 @@
     pres2_hydd_p(i,k,j) = pres2_p(i,k,j)
     do k = kte,1,-1
        rho_a = rho_p(i,k,j) / (1.+qv_p(i,k,j))
-       pres2_hyd_p(i,k,j)  = pres2_hyd_p(i,k+1,j)  + g*rho_p(i,k,j)*dz_p(i,k,j)
-       pres2_hydd_p(i,k,j) = pres2_hydd_p(i,k+1,j) + g*rho_a*dz_p(i,k,j)
+       pres2_hyd_p(i,k,j)  = pres2_hyd_p(i,k+1,j)  + gravity*rho_p(i,k,j)*dz_p(i,k,j)
+       pres2_hydd_p(i,k,j) = pres2_hydd_p(i,k+1,j) + gravity*rho_a*dz_p(i,k,j)
     enddo
     !pressure at theta-points:
     do k = kte,1,-1
@@ -437,11 +439,6 @@
 
  end select microp_select_init
 
- j=1;i=12
- do k = kts,kte
-    write(0,201) i,k,pres_p(i,k,j),theta_m(k,i),th_p(i,k,j),th_p(i,k,j)*pi_p(i,k,j), &
-                 qv_p(i,k,j),qc_p(i,k,j),qi_p(i,k,j)
- enddo
  write(0,*) '--- end subroutine microphysics_from_MPAS.'
 
 !formats:
@@ -543,7 +540,7 @@
     tem2 = zgrid(3,i)-zgrid(2,i)
     rho1 = rho_zz(1,i) * zz(1,i) * (1. + qv_p(i,1,j))
     rho2 = rho_zz(2,i) * zz(2,i) * (1. + qv_p(i,2,j))
-    sfc_pressure(i) = 0.5*g*(zgrid(2,i)-zgrid(1,i)) &
+    sfc_pressure(i) = 0.5*gravity*(zgrid(2,i)-zgrid(1,i)) &
                     * (rho1 + 0.5*(rho2-rho1)*tem1/(tem1+tem2))
     sfc_pressure(i) = sfc_pressure(i) + pressure_p(1,i) + pressure_b(1,i)
  enddo

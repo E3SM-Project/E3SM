@@ -5,10 +5,10 @@
 ! Additional copyright and license information can be found in the LICENSE file
 ! distributed with this code, or at http://mpas-dev.github.com/license.html
 !
-!=============================================================================================
+!==================================================================================================
  module mpas_atmphys_constants
  use mpas_kind_types, only : RKIND
- use mpas_constants, only : pii, cp, R_d => rgas, g => gravity
+ use mpas_constants, only : pii, cp, gravity, R_d => rgas
 
  implicit none
  public
@@ -20,6 +20,11 @@
 !>\date 2013-05-01.
 !>
 !>\details
+!>
+!> add-ons and modifications to sourcecode:
+!> ----------------------------------------
+!>    * Replaced the variable g (that originally pointed to gravity) with gravity, for simplicity.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-03-21.
 
  
 !==================================================================================================
@@ -33,7 +38,7 @@
  real(kind=RKIND),parameter:: ep_1    = R_v/R_d-1.
  real(kind=RKIND),parameter:: ep_2    = R_d/R_v
  real(kind=RKIND),parameter:: cpv     = 4.*R_v
- real(kind=RKIND),parameter:: rdg     = R_d/g
+ real(kind=RKIND),parameter:: rdg     = R_d/gravity
  real(kind=RKIND),parameter:: rcp     = R_d/cp
  real(kind=RKIND),parameter:: rcv     = R_d/(cp-R_d)
 

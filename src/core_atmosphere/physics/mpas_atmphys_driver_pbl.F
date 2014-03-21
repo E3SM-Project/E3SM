@@ -46,6 +46,10 @@
 !> ----------------------------------------
 !>    * removed the pre-processor option "do_hydrostatic_pressure" before call to subroutine ysu.
 !>      Laura D. Fowler (birch.ucar.edu) / 2013-05-29.
+!>    * in call to subroutine ysu, replaced the variable g (that originally pointed to gravity)
+!>      with gravity, for simplicity.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-03-21.
+
 
  contains
 
@@ -244,7 +248,7 @@
                  qv3d     = qv_p       , qc3d     = qc_p        , qi3d     = qi_p       , &
                  rublten  = rublten_p  , rvblten  = rvblten_p   , rthblten = rthblten_p , &
                  rqvblten = rqvblten_p , rqcblten = rqcblten_p  , rqiblten = rqiblten_p , & 
-                 flag_qi  = f_qi       , cp       = cp          , g        = g          , &
+                 flag_qi  = f_qi       , cp       = cp          , g        = gravity    , &
                  rovcp    = rcp        , rd       = R_d         , rovg     = rdg        , & 
                  ep1      = ep_1       , ep2      = ep_2        , karman   = karman     , &
                  xlv      = xlv        , rv       = R_v         , znt      = znt_p      , &
