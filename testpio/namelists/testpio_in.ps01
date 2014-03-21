@@ -1,11 +1,11 @@
 &io_nml
-  casename    = 'b02:bin:box:nproc=1'
- nx_global = 2616
- ny_global = 683
-  iofmt       = 'bin'
-  rearr       = 'box'
-  nprocsIO    = 1
-  stride      = 1
+  casename    = 'pb01:pnc:sub:nprocIO=2:g_root'
+ nx_global = 1995
+ ny_global = 2535
+  iofmt       = 'pnc'
+  rearr       = 'sub'
+  nprocsIO    = 2
+  stride      = -1
   base        = 0
   maxiter     = 10
   dir         = './none/'
@@ -17,10 +17,10 @@
 &compdof_nml
   nblksppe = 1
   grdorder = 'xyz'
-  grddecomp = 'xyz'
-  gdx = 0
-  gdy = 0
-  gdz = 0
+  grddecomp = 'setblk'
+  gdx = 360
+  gdy = 240
+  gdz = 1
   blkorder = 'xyz'
   blkdecomp1 = 'xy'
   blkdecomp2 = ''

@@ -1,10 +1,9 @@
 &io_nml
-  casename    = 'bb07:bin:box:stride=4:3d:nblksppe=16:g_xy:go_yxz:b_xyz:bo_yzx'
- nx_global = 3676
- ny_global = 1409
-  nz_global   = 10
-  iofmt       = 'bin'
-  rearr       = 'box'
+  casename    = 'pb04:pnc:sub:stride=4:g_xy:go_yxz'
+ nx_global = 4327
+ ny_global = 4323
+  iofmt       = 'pnc'
+  rearr       = 'sub'
   nprocsIO    = -1
   stride      = 4
   base        = 0
@@ -16,14 +15,14 @@
   compdof_output = 'none'
 /
 &compdof_nml
-  nblksppe = 16
+  nblksppe = 1
   grdorder = 'yxz'
   grddecomp = 'xy'
   gdx = 0
   gdy = 0
-  gdz = 5
-  blkorder = 'yzx'
-  blkdecomp1 = 'xyz'
+  gdz = 0
+  blkorder = 'xyz'
+  blkdecomp1 = 'xy'
   blkdecomp2 = ''
   bdx = 0
   bdy = 0

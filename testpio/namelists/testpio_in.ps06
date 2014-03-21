@@ -1,13 +1,14 @@
 &io_nml
-  casename    = 'bn02:bin:none:stride=1:g_xy'
-  nx_global   = 360
-  ny_global   = 240
-  iofmt       = 'bin'
-  rearr       = 'none'
+  casename    = 'ps06:pnc:sub:stride=4:3d:nblksppe=4:g_xy:go_yxz:b_xy'
+ nx_global = 2642
+ ny_global = 445
+  nz_global   = 60
+  iofmt       = 'pnc'
+  rearr       = 'sub'
   nprocsIO    = -1
-  stride      = 1
+  stride      = -1
   base        = 0
-  maxiter     = 10
+  maxiter     = 1
   dir         = './none/'
   num_aggregator = 1
   DebugLevel  = 0
@@ -15,12 +16,12 @@
   compdof_output = 'none'
 /
 &compdof_nml
-  nblksppe = 1
-  grdorder = 'xyz'
+  nblksppe = 4
+  grdorder = 'yxz'
   grddecomp = 'xy'
   gdx = 0
   gdy = 0
-  gdz = 0
+  gdz = 60
   blkorder = 'xyz'
   blkdecomp1 = 'xy'
   blkdecomp2 = ''

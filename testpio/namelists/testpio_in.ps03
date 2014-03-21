@@ -1,9 +1,9 @@
 &io_nml
-  casename    = 'bn03:bin:none:stride=1:g_root'
- nx_global = 498
- ny_global = 272
-  iofmt       = 'bin'
-  rearr       = 'none'
+  casename    = 'pb03:pnc:sub:stride=1:g_root'
+ nx_global = 2427
+ ny_global = 3820
+  iofmt       = 'pnc'
+  rearr       = 'sub'
   nprocsIO    = -1
   stride      = 1
   base        = 0
@@ -18,8 +18,8 @@
   nblksppe = 1
   grdorder = 'xyz'
   grddecomp = 'setblk'
-  gdx = 498
-  gdy = 272
+  gdx = 360
+  gdy = 240
   gdz = 1
   blkorder = 'xyz'
   blkdecomp1 = 'xy'

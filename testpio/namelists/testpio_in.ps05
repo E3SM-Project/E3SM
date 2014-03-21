@@ -1,11 +1,11 @@
 &io_nml
-  casename    = 'b03:pnc:box:nprocsIO=1'
- nx_global = 4222
- ny_global = 4385
+  casename    = 'ps05:pnc:sub:stride=4:nblksppe=4:g_xy:go_yxz:b_xy'
+ nx_global = 4656
+ ny_global = 2117
   iofmt       = 'pnc'
-  rearr       = 'box'
-  nprocsIO    = 1
-  stride      = 1
+  rearr       = 'sub'
+  nprocsIO    = -1
+  stride      = 4
   base        = 0
   maxiter     = 10
   dir         = './none/'
@@ -15,9 +15,9 @@
   compdof_output = 'none'
 /
 &compdof_nml
-  nblksppe = 1
-  grdorder = 'xyz'
-  grddecomp = 'xyz'
+  nblksppe = 4
+  grdorder = 'yxz'
+  grddecomp = 'xy'
   gdx = 0
   gdy = 0
   gdz = 0

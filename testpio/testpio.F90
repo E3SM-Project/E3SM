@@ -672,10 +672,14 @@ program testpio
               end if
 
               if(Debug)       print *,'iam: ',My_task,'testpio: point #8.3'
-              if(TestInt .or. TestCombo) &
-                   call PIO_initDecomp(PIOSYS,PIO_int,     gDims3D,compDOF,&
-                   IOdesc_i4)
-              if(Debug)       print *,'iam: ',My_task,'testpio: point #8.4'
+              if(TestInt .or. TestCombo) then
+!                 print *,__FILE__,__LINE__,gdims3d
+!                 print *,__FILE__,__LINE__,compdof
+              
+                 call PIO_initDecomp(PIOSYS,PIO_int,     gDims3D,compDOF,&
+                      IOdesc_i4)
+                 if(Debug)       print *,'iam: ',My_task,'testpio: point #8.4'
+              endif
            endif
         else
            if(iofmtd.eq.'nc' ) then ! netCDF
