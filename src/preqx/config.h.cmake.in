@@ -36,6 +36,9 @@
 /* Whether to use CUDA Fortran */
 #cmakedefine01 USE_CUDA_FORTRAN
 
+/* Whether to use OPENACC */
+#cmakedefine01 USE_OPENACC
+
 /* Quadruple-precision */
 #cmakedefine01 HOMME_QUAD_PREC
 
