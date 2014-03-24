@@ -608,6 +608,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
        type (TimeLevel_t), intent(in)    :: tl
        real(kind=real_kind), intent(in)  :: dt
        real(kind=real_kind)              :: time_adv
+#ifndef _CRAYFTN
        ! ==========================
        ! Local variables...
        ! ==========================
@@ -1417,6 +1418,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 #endif
        call t_stopf('prim_advance_si')
        call t_adj_detailf(-1)
+#endif
   end subroutine prim_advance_si
 
 
