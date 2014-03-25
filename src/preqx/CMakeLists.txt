@@ -158,6 +158,11 @@ IF (${PREQX_USE_CUDA_FORTRAN})
   MESSAGE(STATUS "  Using CUDA Fortran")
 ENDIF ()
 
+IF (${PREQX_USE_OPENACC})
+  SET(USE_OPENACC TRUE)
+  MESSAGE(STATUS "  Using OpenACC")
+ENDIF ()
+
 IF (${ENABLE_HORIZ_OPENMP})
   # Set this as global so it is picked up by other executables
   SET(HORIZ_OPENMP TRUE CACHE BOOL "Threading in the horizontal direction")

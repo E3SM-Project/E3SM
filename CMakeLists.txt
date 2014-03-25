@@ -36,9 +36,10 @@ INCLUDE(HommeMacros)
 # Debug statement, please leave here
 #MESSAGE(STATUS "CMAKE_IMP_LIBS=${CMAKE_Fortran_IMPLICIT_LINK_LIBRARIES}")
 
-TRY_RUN(IS_BIG_ENDIAN BIG_ENDIAN_COMPILED
-  ${CMAKE_BINARY_DIR}/tests/compilerTests/
-  ${CMAKE_CURRENT_SOURCE_DIR}/cmake/compilerTests/isBigEndian.c)
+OPTION(IS_BIG_ENDIAN "Whether the machine is big endian" FALSE)
+#TRY_RUN(IS_BIG_ENDIAN BIG_ENDIAN_COMPILED
+#  ${CMAKE_BINARY_DIR}/tests/compilerTests/
+#  ${CMAKE_CURRENT_SOURCE_DIR}/cmake/compilerTests/isBigEndian.c)
 
 # Default use quad precision
 OPTION(HOMME_QUAD_PREC "Default to try to use quadruple precision" TRUE)

@@ -7,3 +7,4 @@ SET (PNETCDF_DIR /u/an/es/bjamroz/software/parallel-netcdf-1.4.1 CACHE FILEPATH 
 
 SET (USE_MPIEXEC srun CACHE FILEPATH "")
 
+SET (IS_BIG_ENDIAN TRUE CACHE BOOL "")
