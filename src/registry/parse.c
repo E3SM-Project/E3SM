@@ -575,9 +575,9 @@ int parse_reg_xml(ezxml_t registry, struct namelist **nls, struct dimension ** d
 					nls_ptr->defval.ival = atoi(nmloptval);
 					break;
 				case LOGICAL:
-					if(strncmp(nmloptval, "true", 1024) ==0){
+					if(strncmp(nmloptval, "true", 1024) == 0 || strncmp(nmloptval, ".true.", 1024) == 0){
 						nls_ptr->defval.lval = 1;
-					} else if (strncmp(nmloptval, "false", 1024) == 0){
+					} else if (strncmp(nmloptval, "false", 1024) == 0 || strncmp(nmloptval, ".false.", 1024) == 0){
 						nls_ptr->defval.lval = 0;
 					}
 					break;
