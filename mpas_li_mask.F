@@ -24,6 +24,7 @@ module li_mask
    use mpas_grid_types
    use mpas_configure
    use mpas_dmpar
+   use li_setup
 
    implicit none
 
@@ -107,7 +108,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine li_calculate_mask_init(mesh, state, err)
+   subroutine li_calculate_mask_init(meshPool, statePool, timeLevel, err)
 
       !-----------------------------------------------------------------
       !
@@ -115,8 +116,11 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (mesh_type), intent(in) :: &
-         mesh          !< Input: mesh information
+      type (mpas_pool_type), intent(in) :: &
+         meshPool          !< Input: mesh information
+
+      integer, intent(in) :: &
+         timeLevel     !< Input: time level for which to init mask
 
       !-----------------------------------------------------------------
       !
@@ -124,8 +128,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (state_type), intent(inout) :: &
-         state          !< Input/Output: state information 
+      type (mpas_pool_type), intent(inout) :: &
+         statePool          !< Input/Output: state information 
 
       !-----------------------------------------------------------------
       !
@@ -142,12 +146,16 @@ contains
       !-----------------------------------------------------------------
       integer, dimension(:), pointer :: cellMask
       real(KIND=RKIND), dimension(:), pointer :: thickness
+      logical, pointer :: config_do_restart
 
       err = 0
 
       ! Assign pointers and variables
-      cellMask => state % cellMask % array
-      thickness => state % thickness % array
+      call mpas_pool_get_array(statePool, 'cellMask', cellMask, timeLevel=timeLevel)
+      call mpas_pool_get_array(statePool, 'thickness', thickness, timeLevel=timeLevel)
+
+      call mpas_pool_get_config(liConfigs, 'config_do_restart', config_do_restart)
+
 
       if (config_do_restart .eqv. .false.) then  ! We only want to set this bit of the mask when a new simulation starts, but not during a restart.
          ! Initialize cell mask to 0 everywhere before we assign anything to it.
@@ -176,7 +184,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine li_calculate_mask(mesh, state, err)
+   subroutine li_calculate_mask(meshPool, statePool, timeLevel, err)
 
       !-----------------------------------------------------------------
       !
@@ -184,8 +192,11 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (mesh_type), intent(in) :: &
-         mesh          !< Input: mesh information
+      type (mpas_pool_type), intent(in) :: &
+         meshPool          !< Input: mesh information
+
+      integer, intent(in) :: &
+         timeLevel     !< Input: time level for which to calculate mask
 
       !-----------------------------------------------------------------
       !
@@ -193,8 +204,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (state_type), intent(inout) :: &
-         state          !< Input/Output: state information 
+      type (mpas_pool_type), intent(inout) :: &
+         statePool          !< Input/Output: state information 
 
       !-----------------------------------------------------------------
       !
@@ -209,42 +220,42 @@ contains
       ! local variables
       !
       !-----------------------------------------------------------------
-
-
-      integer :: nCells, nVertices, nEdges
-
+      integer, pointer :: nCells, nVertices, nEdges, vertexDegree
       real(KIND=RKIND), dimension(:), pointer :: thickness, bedTopography
-
       integer, dimension(:), pointer :: nEdgesOnCell, cellMask, vertexMask, edgeMask
-
       integer, dimension(:,:), pointer :: cellsOnCell, cellsOnVertex, cellsOnEdge
+      real (kind=RKIND), pointer :: config_ice_density, config_ocean_density, &
+            config_sea_level, config_dynamic_thickness
 
       integer :: i, j, iCell
-
       logical :: isMargin
-
       logical :: aCellOnVertexHasIce, aCellOnVertexHasNoIce, aCellOnVertexHasDynamicIce, aCellOnVertexHasNoDynamicIce, aCellOnVertexIsFloating
-
       logical :: aCellOnEdgeHasIce, aCellOnEdgeHasNoIce, aCellOnEdgeHasDynamicIce, aCellOnEdgeHasNoDynamicIce, aCellOnEdgeIsFloating 
 
 
       err = 0
 
-
       ! Assign pointers and variables
-      cellMask => state % cellMask % array
-      thickness => state % thickness % array
-      bedTopography => mesh  % bedTopography % array
-      vertexMask => state % vertexMask % array
-      edgeMask => state % edgeMask % array
-      nEdgesOnCell => mesh % nEdgesOnCell % array
-      cellsOnCell => mesh % cellsOnCell % array
-      cellsOnVertex => mesh % cellsOnVertex % array
-      cellsOnEdge => mesh % cellsOnEdge % array
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nVertices', nVertices)
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(meshPool, 'vertexDegree', vertexDegree)
 
-      nCells = mesh % nCells
-      nVertices = mesh % nVertices
-      nEdges = mesh % nEdges
+      call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
+      call mpas_pool_get_array(meshPool, 'cellsOnVertex', cellsOnVertex)
+      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+      call mpas_pool_get_array(meshPool, 'bedTopography', bedTopography, timeLevel=timeLevel)
+
+      call mpas_pool_get_array(statePool, 'cellMask', cellMask, timeLevel=timeLevel)
+      call mpas_pool_get_array(statePool, 'edgeMask', edgeMask, timeLevel=timeLevel)
+      call mpas_pool_get_array(statePool, 'vertexMask', vertexMask, timeLevel=timeLevel)
+      call mpas_pool_get_array(statePool, 'thickness', thickness, timeLevel=timeLevel)
+
+      call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
+      call mpas_pool_get_config(liConfigs, 'config_ocean_density', config_ocean_density)
+      call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
+      call mpas_pool_get_config(liConfigs, 'config_dynamic_thickness', config_dynamic_thickness)
 
       ! ====
       ! Calculate cellMask values===========================
@@ -317,7 +328,7 @@ contains
           aCellOnVertexHasDynamicIce = .false.
           aCellOnVertexHasNoDynamicIce = .false.
           aCellOnVertexIsFloating = .false.
-          do j = 1, mesh % vertexDegree  ! vertexDegree is usually 3 (e.g. CVT mesh) but could be something else (e.g. 4 for quad mesh)
+          do j = 1, vertexDegree  ! vertexDegree is usually 3 (e.g. CVT mesh) but could be something else (e.g. 4 for quad mesh)
               iCell = cellsOnVertex(j,i)
               aCellOnVertexHasIce = (aCellOnVertexHasIce .or. li_mask_is_ice(cellMask(iCell)))
               aCellOnVertexHasNoIce = (aCellOnVertexHasNoIce .or. (.not. li_mask_is_ice(cellMask(iCell))))

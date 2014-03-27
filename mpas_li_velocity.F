@@ -27,6 +27,7 @@ module li_velocity
    use mpas_configure
 !!!   use li_lifev
    use li_sia
+   use li_setup
 
    implicit none
    private
@@ -100,9 +101,12 @@ contains
       ! local variables
       !
       !-----------------------------------------------------------------
+      character (len=StrKIND), pointer :: config_velocity_solver
       integer :: err_tmp
 
       err = 0
+
+      call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
 
       write(*,*) 'Using ', trim(config_velocity_solver), ' dynamical core.'
       select case (config_velocity_solver)
@@ -172,8 +176,11 @@ contains
       ! local variables
       !
       !-----------------------------------------------------------------
+      character (len=StrKIND), pointer :: config_velocity_solver
 
       err = 0
+
+      call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
 
       select case (config_velocity_solver)
       case ('sia')
@@ -212,7 +219,7 @@ contains
 !>  This routine calls velocity solvers.
 !
 !-----------------------------------------------------------------------
-   subroutine li_velocity_solve(mesh, state, err)
+   subroutine li_velocity_solve(meshPool, statePool, timeLevel, err)
 
       use li_sia
 
@@ -222,8 +229,10 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (mesh_type), intent(in) :: &
-         mesh          !< Input: mesh information
+      type (mpas_pool_type), intent(in) :: &
+         meshPool          !< Input: mesh information
+
+      integer, intent(in) :: timeLevel  !< Input: Time level on which to calculate diagnostic variables
 
       !-----------------------------------------------------------------
       !
@@ -231,8 +240,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (state_type), intent(inout) :: &
-         state          !< Input: state information 
+      type (mpas_pool_type), intent(inout) :: &
+         statePool          !< Input: state information 
 
       !-----------------------------------------------------------------
       !
@@ -247,25 +256,28 @@ contains
       ! local variables
       !
       !-----------------------------------------------------------------
-      integer :: iEdge, nEdges
-      real (kind=RKIND), dimension(:,:), pointer :: normalVelocity
-      integer, dimension(:), pointer :: edgeMask
+      character (len=StrKIND), pointer :: config_velocity_solver
+!      integer :: iEdge, nEdges
+!      real (kind=RKIND), dimension(:,:), pointer :: normalVelocity
+!      integer, dimension(:), pointer :: edgeMask
 
       err = 0
 
-      nEdges = mesh % nEdges
-      normalVelocity => state % normalVelocity % array
-      edgeMask => state % edgeMask % array
+      call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
+
+!      nEdges = mesh % nEdges
+!      normalVelocity => state % normalVelocity % array
+!      edgeMask => state % edgeMask % array
 
       select case (config_velocity_solver)
       case ('sia')
-          call li_sia_solve(mesh, state, err)
+          call li_sia_solve(meshPool, statePool, timeLevel, err)
 !!!      case ('L1L2')
-!!!          call li_lifev_solve(mesh, state, err)
+!!!          call li_lifev_solve(mesh, state, timeLevel, err)
 !!!      case ('FO')
-!!!          call li_lifev_solve(mesh, state, err)
+!!!          call li_lifev_solve(mesh, state, timeLevel, err)
 !!!      case ('Stokes')
-!!!          call li_lifev_solve(mesh, state, err)
+!!!          call li_lifev_solve(mesh, state, timeLevel, err)
       case default
           write(*,*) trim(config_velocity_solver), ' is not a valid land ice velocity solver option.'
           err = 1
@@ -335,8 +347,11 @@ contains
       ! local variables
       !
       !-----------------------------------------------------------------
+      character (len=StrKIND), pointer :: config_velocity_solver
 
       err = 0
+
+      call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
 
       select case (config_velocity_solver)
       case ('sia')
