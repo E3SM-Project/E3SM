@@ -36,11 +36,6 @@
 module cuda_mod
 #if USE_CUDA_FORTRAN
 
-! NP > 4 is not supported due to shared memory constraints
-#if NP > 4
-#error CUDA Fortran build only supported with NP <= 4
-#endif
-
 #define PAD 1
 
 !Put everything CUDA-specific in here so it doesn't get compiled without -Mcuda enabled on a PGI compiler
@@ -201,6 +196,11 @@ contains
 
 #if (defined COLUMN_OPENMP)
     write(*,*) 'ERROR: Do not use COLUMN_OPENMP and CUDA FORTRAN'
+    stop
+#endif
+! NP > 4 is not supported due to shared memory constraints
+#if NP > 4
+    write(*,*) 'CUDA Fortran build only supported with NP <= 4'
     stop
 #endif
 !$OMP BARRIER

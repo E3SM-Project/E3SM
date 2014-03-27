@@ -1301,13 +1301,13 @@ subroutine VDOT(rp,Que,rho,mass,hybrid,nets,nete)
   use global_norms_mod,    only: wrap_repro_sum
 
   implicit none
+  integer             , intent(in)              :: nets
+  integer             , intent(in)              :: nete
   real(kind=real_kind), intent(out)             :: rp                (nlev,qsize)
   real(kind=real_kind), intent(in)              :: Que         (np*np,nlev,qsize,nets:nete)
   real(kind=real_kind), intent(in)              :: rho         (np*np,nlev,      nets:nete)
   real(kind=real_kind), intent(in)              :: mass              (nlev,qsize)
   type (hybrid_t)     , intent(in)              :: hybrid
-  integer             , intent(in)              :: nets
-  integer             , intent(in)              :: nete
 
   integer                                       :: k,n,q,ie
 
@@ -1340,6 +1340,8 @@ subroutine Cobra_SLBQP(Que, Que_t, rho, minq, maxq, mass, hybrid, nets, nete)
   use global_norms_mod,    only: wrap_repro_sum
 
   implicit none
+  integer             , intent(in)              :: nets
+  integer             , intent(in)              :: nete
   real(kind=real_kind), intent(out)             :: Que         (np*np,nlev,qsize,nets:nete)
   real(kind=real_kind), intent(in)              :: Que_t       (np*np,nlev,qsize,nets:nete)
   real(kind=real_kind), intent(in)              :: rho         (np*np,nlev,      nets:nete)
@@ -1347,8 +1349,6 @@ subroutine Cobra_SLBQP(Que, Que_t, rho, minq, maxq, mass, hybrid, nets, nete)
   real(kind=real_kind), intent(in)              :: maxq        (np*np,nlev,qsize,nets:nete)
   real(kind=real_kind), intent(in)              :: mass              (nlev,qsize)
   type (hybrid_t)     , intent(in)              :: hybrid
-  integer             , intent(in)              :: nets
-  integer             , intent(in)              :: nete
 
   real(kind=real_kind),               parameter :: eta = 1D-12           
   real(kind=real_kind),               parameter :: hfd = 1D-12             
@@ -1576,9 +1576,9 @@ subroutine ALE_elems_with_dep_points (elem_indexes, dep_points, num_neighbors, n
 
   ! The ngh_corners array is a list of corners of both elem and all of it's
   ! neighor elements all sorted by global id.
+  integer              , intent(in)                :: num_neighbors
   type(cartesian3D_t),intent(in)                   :: ngh_corners(4,num_neighbors)
   integer              , intent(out)               :: elem_indexes(np,np)
-  integer              , intent(in)                :: num_neighbors
   type(cartesian3D_t)  , intent(in)                :: dep_points(np,np)
 
   integer                                          :: i,j,n

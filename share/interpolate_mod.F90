@@ -1416,7 +1416,8 @@ end subroutine interpol_spelt_latlon
           if (ii /= -1) then
              ! compute error: map 'cart' back to sphere and compare with original
              ! interpolation point:
-             sphere2_xyz = spherical_to_cart( ref2sphere(cart%x,cart%y,elem(ii)%corners3D,cubed_sphere_map,elem(ii)%corners,elem(ii)%facenum ))
+             sphere2_xyz = spherical_to_cart( ref2sphere(cart%x,cart%y,     &
+                  elem(ii)%corners3D,cubed_sphere_map,elem(ii)%corners,elem(ii)%facenum ))
              sphere_xyz = spherical_to_cart(sphere)
              err=max(err,distance(sphere2_xyz,sphere_xyz))
           endif
