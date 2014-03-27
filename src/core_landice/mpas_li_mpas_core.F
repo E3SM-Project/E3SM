@@ -96,9 +96,7 @@ module mpas_core
       !
       !-----------------------------------------------------------------
       type (block_type), pointer :: block
-
       integer :: i, err, err_tmp, globalErr
-
 
 
       err = 0
@@ -108,8 +106,7 @@ module mpas_core
       !
       ! Initialize core
       !
-
-      call li_setup_timestep(err_tmp)
+      call li_setup_config_options( domain, err_tmp )
       err = ior(err, err_tmp)
 
       ! ===
@@ -132,7 +129,7 @@ module mpas_core
       ! ===
       block => domain % blocklist
       do while (associated(block))
-         call mpas_init_block(block, block % mesh, startTimeStamp, domain % dminfo)
+         call landice_init_block(block, startTimeStamp, domain % dminfo)
 
          block => block % next
       end do
@@ -201,7 +198,10 @@ module mpas_core
       !
       !-----------------------------------------------------------------
       integer :: itimestep
-      type (block_type), pointer :: block_ptr
+      type (block_type), pointer :: block
+      type (mpas_pool_type), pointer :: statePool
+      logical, pointer :: config_do_restart
+
       type (MPAS_Time_Type) :: currTime
       character(len=StrKIND) :: timeStamp
       integer :: err, err_tmp, globalErr
@@ -212,6 +212,9 @@ module mpas_core
       err = 0
       err_tmp = 0
       globalErr = 0
+
+      ! Get Pool stuff that will be needed
+      call mpas_pool_get_config(liConfigs, 'config_do_restart', config_do_restart)
 
 
       call mpas_timer_start("land ice core run")
@@ -301,14 +304,15 @@ module mpas_core
          ! === Perform Timestep
          ! ===
          call mpas_timer_start("time integration")
-         call mpas_timestep(domain, itimestep, li_deltat, timeStamp, err_tmp)
+         call landice_timestep(domain, itimestep, li_deltat, timeStamp, err_tmp)
          err = ior(err,err_tmp)
 
          ! Move time level 2 fields back into time level 1 for next time step
-         block_ptr => domain % blocklist
-         do while(associated(block_ptr))
-            call mpas_shift_time_levels_state(block_ptr % state)
-            block_ptr => block_ptr % next
+         block => domain % blocklist
+         do while(associated(block))
+            call mpas_pool_get_subpool(block % structs, 'state', statePool)
+            call mpas_pool_shift_time_levels(statePool)
+            block => block % next
          end do
          call mpas_timer_stop("time integration")
 
@@ -355,8 +359,6 @@ module mpas_core
 
       end do
       call mpas_timer_stop("land ice core run")
-
-
 
    !--------------------------------------------------------------------
    end subroutine mpas_core_run
@@ -427,6 +429,34 @@ module mpas_core
    end subroutine mpas_core_finalize
 
 
+
+!***********************************************************************
+!
+!  routine mpas_core_setup_packages
+!
+!> \brief   Pacakge setup routine
+!> \author  Doug Jacobsen
+!> \date    September 2011
+!> \details 
+!>  This routine is intended to correctly configure the packages for this MPAS
+!>   core. It can use any Fortran logic to properly configure packages, and it
+!>   can also make use of any namelist options. All variables in the model are
+!>   *not* allocated until after this routine is called.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_core_setup_packages(configPool, packagePool, ierr)
+
+      implicit none
+      type (mpas_pool_type), intent(in) :: configPool
+      type (mpas_pool_type), intent(in) :: packagePool
+      integer, intent(out) :: ierr
+
+      ierr = 0
+
+   end subroutine mpas_core_setup_packages
+
+
+
 !***********************************************************************
 !***********************************************************************
 ! Private subroutines:
@@ -437,7 +467,7 @@ module mpas_core
 
 !***********************************************************************
 !
-!  routine mpas_init_block
+!  routine landice_init_block
 !
 !> \brief   Initializes blocks for the land ice core
 !> \author  Matt Hoffman
@@ -446,8 +476,8 @@ module mpas_core
 !>  This routine initializes blocks for the land ice core.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_init_block(block, mesh, startTimeStamp, dminfo)
-   
+   subroutine landice_init_block(block, startTimeStamp, dminfo)
+
       use mpas_grid_types
       use mpas_rbf_interpolation
       use mpas_vector_reconstruction
@@ -462,7 +492,7 @@ module mpas_core
       ! input variables
       !
       !-----------------------------------------------------------------
-      type (dm_info), intent(in) :: dminfo    !< Input: Domain info
+      type (dm_info), intent(in) :: dminfo             !< Input: Domain info
       character(len=*), intent(in) :: startTimeStamp   !< Input: time stamp at start 
 
       !-----------------------------------------------------------------
@@ -470,8 +500,7 @@ module mpas_core
       ! input/output variables
       !
       !-----------------------------------------------------------------
-      type (block_type), intent(inout) :: block   !< Input/output: Block object
-      type (mesh_type), intent(inout) :: mesh     !< Input/output: Mesh object
+      type (block_type), intent(inout) :: block         !< Input/output: Block object
 
       !-----------------------------------------------------------------
       !
@@ -484,34 +513,28 @@ module mpas_core
       ! local variables
       !
       !-----------------------------------------------------------------
+      type (mpas_pool_type), pointer :: meshPool
+      type (mpas_pool_type), pointer :: statePool
+      character (len=StrKIND), pointer :: xtime
       type (MPAS_Time_Type) :: currTime
       integer :: err, err_tmp
-
-      type (state_type), pointer :: state  
-
       integer :: iCell, iLevel, i
 
 
       err = 0
       err_tmp = 0
 
-      state => block % state % time_levs(1) % state  ! initial state
-
-      ! Make sure all time levels have a copy of the initial state
-      do i=2,nTimeLevs
-         call mpas_copy_state(block % state % time_levs(i) % state,   state)
-      end do
-   
-      ! Assign initial time stamp
-      state % xtime % scalar = startTimeStamp
+      ! Get pool stuff
+      call mpas_pool_get_subpool(block % structs, 'state', statePool)
+      call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
 
       ! ===
       ! === Call init routines ===
       ! ===
-      call li_setup_vertical_grid(mesh, err_tmp)
+      call li_setup_vertical_grid(meshPool, err_tmp)
       err = ior(err, err_tmp)
 
-      call li_setup_sign_and_index_fields(mesh)
+      call li_setup_sign_and_index_fields(meshPool)
 
 ! This was needed for annual forcing, which may or not be implemented in the same way.
 !!!      currTime = mpas_get_clock_time(clock, MPAS_NOW, err_tmp)
@@ -534,27 +557,33 @@ module mpas_core
       call mpas_timer_stop("initialize velocity")
 
       ! Init for reconstruction of velocity
-      call mpas_rbf_interp_initialize(mesh)
-      call mpas_init_reconstruct(mesh)
+      call mpas_rbf_interp_initialize(meshPool)
+      call mpas_init_reconstruct(meshPool)
+
+      ! Assign initial time stamp
+      call mpas_pool_get_array(statePool, 'xtime', xtime, timeLevel=1)
+      xtime = startTimeStamp
 
       ! Mask init identifies initial ice extent
-      call li_calculate_mask_init(mesh, state, err)
+      call li_calculate_mask_init(meshPool, statePool, timeLevel=1, err=err_tmp)
       err = ior(err, err_tmp)
 
+      ! Make sure all time levels have a copy of the initial state
+      call mpas_pool_initialize_time_levels(statePool)
 
       ! === error check
       if (err > 0) then
-          write (0,*) "An error has occurred in mpas_init_block."
+          write (0,*) "An error has occurred in init_block."
       endif
 
    !--------------------------------------------------------------------
-   end subroutine mpas_init_block
+   end subroutine landice_init_block
 
 
 
 !***********************************************************************
 !
-!  routine mpas_timestep
+!  routine landice_timestep
 !
 !> \brief   Performs a time step
 !> \author  Matt Hoffman
@@ -563,7 +592,7 @@ module mpas_core
 !>  This routine performs a time step for the land ice core.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_timestep(domain, itimestep, dt, timeStamp, err)
+   subroutine landice_timestep(domain, itimestep, dt, timeStamp, err)
    
       use mpas_grid_types
       use li_time_integration
@@ -650,7 +679,7 @@ module mpas_core
       endif
 
    
-   end subroutine mpas_timestep
+   end subroutine landice_timestep
    
    
 
@@ -699,11 +728,18 @@ module mpas_core
       !-----------------------------------------------------------------
       type (MPAS_Time_Type) :: startTime, stopTime, alarmStartTime
       type (MPAS_TimeInterval_type) :: runDuration, timeStep, alarmTimeStep
+      character (len=StrKIND), pointer :: config_start_time, config_run_duration, config_stop_time, config_output_interval, config_restart_interval
       integer :: err_tmp
 
 
       ierr = 0
       err_tmp = 0
+
+      call mpas_pool_get_config(domain % configs, 'config_start_time', config_start_time)
+      call mpas_pool_get_config(domain % configs, 'config_run_duration', config_run_duration)
+      call mpas_pool_get_config(domain % configs, 'config_stop_time', config_stop_time)
+      call mpas_pool_get_config(domain % configs, 'config_output_interval', config_output_interval)
+      call mpas_pool_get_config(domain % configs, 'config_restart_interval', config_restart_interval)
 
       call mpas_set_time(curr_time=startTime, dateTimeString=config_start_time, ierr=err_tmp)
       ierr = ior(ierr,err_tmp)
@@ -768,9 +804,9 @@ module mpas_core
 
    !--------------------------------------------------------------------
    end subroutine simulation_clock_init
-   
 
-   
+
+
 !***********************************************************************
 !
 !  routine write_output_frame
@@ -792,23 +828,19 @@ module mpas_core
    
       use mpas_grid_types
       use mpas_io_output
-   
+
       implicit none
 
       type (io_output_object), intent(inout) :: output_obj
       integer, intent(inout) :: output_frame
       type (domain_type), intent(inout) :: domain
-   
+      integer, pointer :: config_frames_per_outfile
+
       integer :: i, j, k
       integer :: eoe
-      type (block_type), pointer :: block_ptr
-   
-      block_ptr => domain % blocklist
-      do while (associated(block_ptr))
-         call compute_output_diagnostics(block_ptr % state % time_levs(1) % state, block_ptr % mesh)
-         block_ptr => block_ptr % next
-      end do
-   
+
+      call mpas_pool_get_config(domain % configs, 'config_frames_per_outfile', config_frames_per_outfile)
+
       call mpas_output_state_for_domain(output_obj, domain, output_frame)
       output_frame = output_frame + 1
 
@@ -824,66 +856,5 @@ module mpas_core
 
    end subroutine write_output_frame
 
-   
-   
-!***********************************************************************
-!
-!  routine compute_output_diagnostics
-!
-!> \brief   Computes diagnostic fields only needed for output
-!> \author  ??
-!> \date    ??
-!> \details
-!>  This routine is a placeholder for the calculation of any
-!>  fields that are only needed for diagnostic output.
-!
-!-----------------------------------------------------------------------
-   subroutine compute_output_diagnostics(state, mesh)
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   ! Compute diagnostic fields for a domain
-   !
-   ! Input: state - contains model prognostic fields
-   !        mesh  - contains mesh metadata
-   !
-   ! Output: state - upon returning, diagnostic fields will have be computed
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   
-      use mpas_grid_types
-   
-      implicit none
-   
-      type (state_type), intent(inout) :: state
-      type (mesh_type), intent(in) :: mesh
-   
-      integer :: i, eoe
-      integer :: iEdge, k
-   
-   end subroutine compute_output_diagnostics
-   
-!***********************************************************************
-!
-!  routine mpas_core_setup_packages
-!
-!> \brief   Pacakge setup routine
-!> \author  Doug Jacobsen
-!> \date    September 2011
-!> \details 
-!>  This routine is intended to correctly configure the packages for this MPAS
-!>   core. It can use any Fortran logic to properly configure packages, and it
-!>   can also make use of any namelist options. All variables in the model are
-!>   *not* allocated until after this routine is called.
-!
-!-----------------------------------------------------------------------
-   subroutine mpas_core_setup_packages(ierr)!{{{
-
-      use mpas_packages
-
-      implicit none
-
-      integer, intent(out) :: ierr
-
-      ierr = 0
-
-   end subroutine mpas_core_setup_packages!}}}  
 
 end module mpas_core

@@ -7,6 +7,7 @@
 !
 !==================================================================================================
  module mpas_atmphys_driver_pbl
+ use mpas_kind_types
  use mpas_grid_types
 
  use mpas_atmphys_constants
@@ -51,9 +52,12 @@
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-03-21.
 !>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-22.
+!>    * Modified sourcecode to use pools.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-05-15.
 
 
  contains
+
 
 !==================================================================================================
  subroutine allocate_pbl
@@ -136,29 +140,29 @@
 !==================================================================================================
 
 !input arguments:
- type(diag_physics_type),intent(in):: diag_physics
- type(sfc_input_type),intent(in)   :: sfc_input
+ type(mpas_pool_type),intent(in):: diag_physics
+ type(mpas_pool_type),intent(in):: sfc_input
 
-!local variables and arrays:
+!local pointers:
  real(kind=RKIND),dimension(:),pointer:: xland
  real(kind=RKIND),dimension(:),pointer:: br,gz1oz0,hfx,hpbl,fm,fh,qfx,regime,u10,ust,v10,wspd,znt
 
 !--------------------------------------------------------------------------------------------------
 
- br     => diag_physics % br     % array
- gz1oz0 => diag_physics % gz1oz0 % array
- hfx    => diag_physics % hfx    % array
- hpbl   => diag_physics % hpbl   % array
- fm     => diag_physics % fm     % array
- fh     => diag_physics % fh     % array
- qfx    => diag_physics % qfx    % array
- regime => diag_physics % regime % array
- u10    => diag_physics % u10    % array
- ust    => diag_physics % ust    % array
- v10    => diag_physics % v10    % array
- wspd   => diag_physics % wspd   % array
- znt    => diag_physics % znt    % array
- xland  => sfc_input    % xland  % array
+ call mpas_pool_get_array(diag_physics,'br'    ,br    )
+ call mpas_pool_get_array(diag_physics,'gz1oz0',gz1oz0)
+ call mpas_pool_get_array(diag_physics,'hfx'   ,hfx   )
+ call mpas_pool_get_array(diag_physics,'hpbl'  ,hpbl  )
+ call mpas_pool_get_array(diag_physics,'fm'    ,fm    )
+ call mpas_pool_get_array(diag_physics,'fh'    ,fh    )
+ call mpas_pool_get_array(diag_physics,'qfx'   ,qfx   )
+ call mpas_pool_get_array(diag_physics,'regime',regime)
+ call mpas_pool_get_array(diag_physics,'u10'   ,u10   )
+ call mpas_pool_get_array(diag_physics,'ust'   ,ust   )
+ call mpas_pool_get_array(diag_physics,'v10'   ,v10   )
+ call mpas_pool_get_array(diag_physics,'wspd'  ,wspd  )
+ call mpas_pool_get_array(diag_physics,'znt'   ,znt   )
+ call mpas_pool_get_array(sfc_input   ,'xland' ,xland )
 
  do j = jts,jte
  do i = its,ite
@@ -210,10 +214,10 @@
 !==================================================================================================
 
 !inout arguments:
- type(diag_physics_type),intent(inout):: diag_physics
- type(tend_physics_type),intent(inout):: tend_physics
+ type(mpas_pool_type),intent(inout):: diag_physics
+ type(mpas_pool_type),intent(inout):: tend_physics
 
-!local variables and arrays:
+!local pointers:
  integer,dimension(:),pointer:: kpbl
  real(kind=RKIND),dimension(:),pointer  :: hpbl
  real(kind=RKIND),dimension(:,:),pointer:: exch_h,kzh,kzm,kzq
@@ -221,19 +225,19 @@
 
 !--------------------------------------------------------------------------------------------------
 
- kpbl     => diag_physics % kpbl     % array 
- hpbl     => diag_physics % hpbl     % array
- exch_h   => diag_physics % exch_h   % array
- kzh      => diag_physics % kzh      % array
- kzm      => diag_physics % kzm      % array
- kzq      => diag_physics % kzq      % array
+ call mpas_pool_get_array(diag_physics,'kpbl'  ,kpbl  )
+ call mpas_pool_get_array(diag_physics,'hpbl'  ,hpbl  )
+ call mpas_pool_get_array(diag_physics,'exch_h',exch_h)
+ call mpas_pool_get_array(diag_physics,'kzh'   ,kzh   )
+ call mpas_pool_get_array(diag_physics,'kzm'   ,kzm   )
+ call mpas_pool_get_array(diag_physics,'kzq'   ,kzq   )
 
- rublten  => tend_physics % rublten  % array
- rvblten  => tend_physics % rvblten  % array
- rthblten => tend_physics % rthblten % array
- rqvblten => tend_physics % rqvblten % array
- rqcblten => tend_physics % rqcblten % array
- rqiblten => tend_physics % rqiblten % array
+ call mpas_pool_get_array(tend_physics,'rublten',rublten  )
+ call mpas_pool_get_array(tend_physics,'rvblten',rvblten  )
+ call mpas_pool_get_array(tend_physics,'rthblten',rthblten)
+ call mpas_pool_get_array(tend_physics,'rqvblten',rqvblten)
+ call mpas_pool_get_array(tend_physics,'rqcblten',rqcblten)
+ call mpas_pool_get_array(tend_physics,'rqiblten',rqiblten)
 
  do j = jts,jte
  do i = its,ite
@@ -268,9 +272,9 @@
 
 !input and output arguments:
 !---------------------------
- type(sfc_input_type),intent(inout)   :: sfc_input
- type(diag_physics_type),intent(inout):: diag_physics
- type(tend_physics_type),intent(inout):: tend_physics
+ type(mpas_pool_type),intent(inout):: sfc_input
+ type(mpas_pool_type),intent(inout):: diag_physics
+ type(mpas_pool_type),intent(inout):: tend_physics
 
 !--------------------------------------------------------------------------------------------------
  write(0,*)

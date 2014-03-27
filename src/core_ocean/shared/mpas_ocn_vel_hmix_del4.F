@@ -21,10 +21,10 @@
 module ocn_vel_hmix_del4
 
    use mpas_grid_types
-   use mpas_configure
    use mpas_vector_operations
    use mpas_matrix_operations
    use mpas_tensor_operations
+   use ocn_constants
 
    implicit none
    private
@@ -76,7 +76,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_hmix_del4_tend(mesh, divergence, relativeVorticity, tend, err)!{{{
+   subroutine ocn_vel_hmix_del4_tend(meshPool, divergence, relativeVorticity, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -90,8 +90,8 @@ contains
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          relativeVorticity       !< Input: relative vorticity
 
-      type (mesh_type), intent(in) :: &
-         mesh           !< Input: mesh information
+      type (mpas_pool_type), intent(in) :: &
+         meshPool           !< Input: mesh information
 
       !-----------------------------------------------------------------
       !
@@ -118,7 +118,7 @@ contains
 
       integer :: iEdge, cell1, cell2, vertex1, vertex2, k, i
       integer :: iCell, iVertex
-      integer :: nVertices, nVertLevels, nCells, nEdges, nEdgesSolve, vertexDegree
+      integer, pointer :: nVertices, nVertLevels, nCells, nEdges, nEdgesSolve, vertexDegree
 
       integer, dimension(:), pointer :: maxLevelEdgeTop, maxLevelVertexTop, &
             maxLevelCell, nEdgesOnCell
@@ -133,33 +133,37 @@ contains
       real (kind=RKIND), dimension(:,:), allocatable :: delsq_divergence, &
             delsq_circulation, delsq_relativeVorticity, delsq_u
 
+      real (kind=RKIND), pointer :: config_mom_del4
+
       err = 0
 
       if(.not.hmixDel4On) return
 
-      nCells = mesh % nCells
-      nEdges = mesh % nEdges
-      nEdgesSolve = mesh % nEdgessolve
-      nVertices = mesh % nVertices
-      nVertLevels = mesh % nVertLevels
-      vertexDegree = mesh % vertexDegree
+      call mpas_pool_get_config(ocnConfigs, 'config_mom_del4', config_mom_del4)
 
-      maxLevelEdgeTop => mesh % maxLevelEdgeTop % array
-      maxLevelVertexTop => mesh % maxLevelVertexTop % array
-      maxLevelCell => mesh % maxLevelCell % array
-      cellsOnEdge => mesh % cellsOnEdge % array
-      verticesOnEdge => mesh % verticesOnEdge % array
-      dcEdge => mesh % dcEdge % array
-      dvEdge => mesh % dvEdge % array
-      areaTriangle => mesh % areaTriangle % array
-      areaCell => mesh % areaCell % array
-      meshScalingDel4 => mesh % meshScalingDel4 % array
-      edgeMask => mesh % edgeMask % array
-      nEdgesOnCell => mesh % nEdgesOnCell % array
-      edgesOnVertex => mesh % edgesOnVertex % array
-      edgesOnCell => mesh % edgesOnCell % array
-      edgeSignOnVertex => mesh % edgeSignOnVertex % array
-      edgeSignOnCell => mesh % edgeSignOnCell % array
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
+      call mpas_pool_get_dimension(meshPool, 'nVertices', nVertices)
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+      call mpas_pool_get_dimension(meshPool, 'vertexDegree', vertexDegree)
+
+      call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
+      call mpas_pool_get_array(meshPool, 'maxLevelVertexTop', maxLevelVertexTop)
+      call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+      call mpas_pool_get_array(meshPool, 'verticesOnEdge', verticesOnEdge)
+      call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
+      call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
+      call mpas_pool_get_array(meshPool, 'areaTriangle', areaTriangle)
+      call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+      call mpas_pool_get_array(meshPool, 'meshScalingDel4', meshScalingDel4)
+      call mpas_pool_get_array(meshPool, 'edgeMask', edgeMask)
+      call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(meshPool, 'edgesOnVertex', edgesOnVertex)
+      call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
+      call mpas_pool_get_array(meshPool, 'edgeSignOnVertex', edgeSignOnVertex)
+      call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
 
       allocate(delsq_u(nVertLEvels, nEdges+1))
       allocate(delsq_divergence(nVertLevels, nCells+1))
@@ -253,7 +257,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_hmix_del4_tensor_tend(mesh, normalVelocity, tangentialVelocity, viscosity, scratch, tend, err)!{{{
+   subroutine ocn_vel_hmix_del4_tensor_tend(meshPool, normalVelocity, tangentialVelocity, viscosity, scratchPool, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -267,8 +271,8 @@ contains
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          tangentialVelocity     !< Input: velocity, tangent to an edge
 
-      type (mesh_type), intent(in) :: &
-         mesh            !< Input: mesh information
+      type (mpas_pool_type), intent(in) :: &
+         meshPool            !< Input: mesh information
 
       !-----------------------------------------------------------------
       !
@@ -279,8 +283,8 @@ contains
       real (kind=RKIND), dimension(:,:), intent(inout) :: &
          viscosity       !< Input/Output: viscosity
 
-      type (scratch_type), intent(inout) :: &
-         scratch !< Input/Output: Scratch structure
+      type (mpas_pool_type), intent(inout) :: &
+         scratchPool !< Input/Output: Scratch structure
 
       real (kind=RKIND), dimension(:,:), intent(inout) :: &
          tend             !< Input/Output: velocity tendency
@@ -299,7 +303,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, nEdgesSolve, nEdges, k, nVertLevels
+      integer :: iEdge, k
+      integer, pointer :: nEdgesSolve, nEdges, nVertLevels
       integer, dimension(:), pointer :: maxLevelEdgeTop
       integer, dimension(:,:), pointer :: edgeMask, edgeSignOnCell
 
@@ -309,6 +314,13 @@ contains
       real (kind=RKIND), dimension(:,:,:), pointer :: &
          strainRateR3Cell, strainRateR3Edge, divTensorR3Cell, outerProductEdge
 
+      type (field2DReal), pointer :: normalVectorEdgeField, tangentialVectorEdgeField
+      type (field3DReal), pointer :: strainRateR3CellField, strainRateR3EdgeField, divTensorR3CellField, outerProductEdgeField
+
+      logical, pointer :: config_use_mom_del4_tensor
+      real (kind=RKIND), pointer :: config_mom_del4_tensor
+
+
       !-----------------------------------------------------------------
       !
       ! exit if this mixing is not selected
@@ -317,95 +329,106 @@ contains
 
       err = 0
 
+      call mpas_pool_get_config(ocnConfigs, 'config_use_mom_del4_tensor', config_use_mom_del4_tensor)
+
       if(.not.config_use_mom_del4_tensor) return
 
-      nEdges = mesh % nEdges
-      nVertLevels = mesh % nVertLevels
-      nEdgesSolve = mesh % nEdgesSolve
-      maxLevelEdgeTop => mesh % maxLevelEdgeTop % array
-      meshScalingDel4 => mesh % meshScalingDel4 % array
-      edgeMask => mesh % edgeMask % array
-      edgeSignOnCell => mesh % edgeSignOnCell % array
-      edgeTangentVectors => mesh % edgeTangentVectors % array
+      call mpas_pool_get_config(ocnConfigs, 'config_mom_del4_tensor', config_mom_del4_tensor)
 
-      call mpas_allocate_scratch_field(scratch % strainRateR3Cell, .true.)
-      call mpas_allocate_scratch_field(scratch % strainRateR3Edge, .true.)
-      call mpas_allocate_scratch_field(scratch % divTensorR3Cell, .true.)
-      call mpas_allocate_scratch_field(scratch % outerProductEdge, .true.)
-      call mpas_allocate_scratch_field(scratch % normalVectorEdge, .true.)
-      call mpas_allocate_scratch_field(scratch % tangentialVectorEdge, .true.)
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+      call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
+      call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
+      call mpas_pool_get_array(meshPool, 'meshScalingDel4', meshScalingDel4)
+      call mpas_pool_get_array(meshPool, 'edgeMask', edgeMask)
+      call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
+      call mpas_pool_get_array(meshPool, 'edgeTangentVectors', edgeTangentVectors)
 
-      strainRateR3Cell => scratch % strainRateR3Cell % array
-      strainRateR3Edge => scratch % strainRateR3Edge % array
-      divTensorR3Cell  => scratch % divTensorR3Cell % array
-      outerProductEdge => scratch % outerProductEdge % array
-      normalVectorEdge => scratch % normalVectorEdge % array
-      tangentialVectorEdge => scratch % tangentialVectorEdge % array
+      call mpas_pool_get_field(scratchPool, 'strainRateR3Cell', strainRateR3CellField)
+      call mpas_pool_get_field(scratchPool, 'strainRateR3Edge', strainRateR3EdgeField)
+      call mpas_pool_get_field(scratchPool, 'divTensorR3Cell', divTensorR3CellField)
+      call mpas_pool_get_field(scratchPool, 'outerProductEdge', outerProductEdgeField)
+      call mpas_pool_get_field(scratchPool, 'normalVectorEdge', normalVectorEdgeField)
+      call mpas_pool_get_field(scratchPool, 'tangentialVectorEdge', tangentialVectorEdgeField)
+
+      call mpas_allocate_scratch_field(strainRateR3CellField, .true.)
+      call mpas_allocate_scratch_field(strainRateR3EdgeField, .true.)
+      call mpas_allocate_scratch_field(divTensorR3CellField, .true.)
+      call mpas_allocate_scratch_field(outerProductEdgeField, .true.)
+      call mpas_allocate_scratch_field(normalVectorEdgeField, .true.)
+      call mpas_allocate_scratch_field(tangentialVectorEdgeField, .true.)
+
+      strainRateR3Cell => strainRateR3CellField % array
+      strainRateR3Edge => strainRateR3EdgeField % array
+      divTensorR3Cell  => divTensorR3CellField % array
+      outerProductEdge => outerProductEdgeField % array
+      normalVectorEdge => normalVectorEdgeField % array
+      tangentialVectorEdge => tangentialVectorEdgeField % array
 
       !!!!!!! first div(grad())
 
       call mpas_strain_rate_R3Cell(normalVelocity, tangentialVelocity, &
-         mesh, edgeSignOnCell, edgeTangentVectors, .true., &
+         meshPool, edgeSignOnCell, edgeTangentVectors, .true., &
          outerProductEdge, strainRateR3Cell)
 
-      call mpas_matrix_cell_to_edge(strainRateR3Cell, mesh, .true., strainRateR3Edge)
+      call mpas_matrix_cell_to_edge(strainRateR3Cell, meshPool, .true., strainRateR3Edge)
 
       ! The following loop could possibly be reduced to nEdgesSolve
-      do iEdge=1,nEdges 
+      do iEdge = 1, nEdges 
          visc4_sqrt = sqrt(config_mom_del4_tensor * meshScalingDel4(iEdge))
-         do k=1,maxLevelEdgeTop(iEdge)
+         do k = 1, maxLevelEdgeTop(iEdge)
             strainRateR3Edge(:,k,iEdge) = visc4_sqrt * strainRateR3Edge(:,k,iEdge) 
          end do
          ! Impose zero strain rate at land boundaries
-         do k=maxLevelEdgeTop(iEdge)+1,nVertLevels
+         do k = maxLevelEdgeTop(iEdge)+1, nVertLevels
             strainRateR3Edge(:,k,iEdge) = 0.0
          end do
       end do
 
       ! may change boundaries to false later
-      call mpas_divergence_of_tensor_R3Cell(strainRateR3Edge, mesh, edgeSignOnCell, .true., divTensorR3Cell)
+      call mpas_divergence_of_tensor_R3Cell(strainRateR3Edge, meshPool, edgeSignOnCell, .true., divTensorR3Cell)
 
-      call mpas_vector_R3Cell_to_2DEdge(divTensorR3Cell, mesh, edgeTangentVectors, .true., normalVectorEdge, tangentialVectorEdge)
+      call mpas_vector_R3Cell_to_2DEdge(divTensorR3Cell, meshPool, edgeTangentVectors, .true., normalVectorEdge, tangentialVectorEdge)
 
       !!!!!!! second div(grad())
 
       call mpas_strain_rate_R3Cell(normalVectorEdge, tangentialVectorEdge, &
-         mesh, edgeSignOnCell, edgeTangentVectors, .true., &
+         meshPool, edgeSignOnCell, edgeTangentVectors, .true., &
          outerProductEdge, strainRateR3Cell)
 
-      call mpas_matrix_cell_to_edge(strainRateR3Cell, mesh, .true., strainRateR3Edge)
+      call mpas_matrix_cell_to_edge(strainRateR3Cell, meshPool, .true., strainRateR3Edge)
 
       ! The following loop could possibly be reduced to nEdgesSolve
-      do iEdge=1,nEdges  
+      do iEdge = 1, nEdges  
          visc4_sqrt = sqrt(config_mom_del4_tensor * meshScalingDel4(iEdge))
          viscosity(:,iEdge) = viscosity(:,iEdge) + config_mom_del4_tensor * meshScalingDel4(iEdge)
-         do k=1,maxLevelEdgeTop(iEdge)
+         do k = 1, maxLevelEdgeTop(iEdge)
             strainRateR3Edge(:,k,iEdge) = visc4_sqrt * strainRateR3Edge(:,k,iEdge) 
          end do
          ! Impose zero strain rate at land boundaries
-         do k=maxLevelEdgeTop(iEdge)+1,nVertLevels
+         do k = maxLevelEdgeTop(iEdge)+1, nVertLevels
             strainRateR3Edge(:,k,iEdge) = 0.0
          end do
       end do
 
       ! may change boundaries to false later
-      call mpas_divergence_of_tensor_R3Cell(strainRateR3Edge, mesh, edgeSignOnCell, .true., divTensorR3Cell)
+      call mpas_divergence_of_tensor_R3Cell(strainRateR3Edge, meshPool, edgeSignOnCell, .true., divTensorR3Cell)
 
-      call mpas_vector_R3Cell_to_normalVectorEdge(divTensorR3Cell, mesh, .true., normalVectorEdge)
+      call mpas_vector_R3Cell_to_normalVectorEdge(divTensorR3Cell, meshPool, .true., normalVectorEdge)
 
       ! The following loop could possibly be reduced to nEdgesSolve
-      do iEdge=1,nEdges
-         do k=1,maxLevelEdgeTop(iEdge)
+      do iEdge = 1,nEdges
+         do k = 1,maxLevelEdgeTop(iEdge)
             tend(k,iEdge) = tend(k,iEdge) - edgeMask(k, iEdge) * normalVectorEdge(k,iEdge)
          end do
       end do
 
-      call mpas_deallocate_scratch_field(scratch % strainRateR3Cell, .true.)
-      call mpas_deallocate_scratch_field(scratch % strainRateR3Edge, .true.)
-      call mpas_deallocate_scratch_field(scratch % divTensorR3Cell, .true.)
-      call mpas_deallocate_scratch_field(scratch % outerProductEdge, .true.)
-      call mpas_deallocate_scratch_field(scratch % normalVectorEdge, .true.)
-      call mpas_deallocate_scratch_field(scratch % tangentialVectorEdge, .true.)
+      call mpas_deallocate_scratch_field(strainRateR3CellField, .true.)
+      call mpas_deallocate_scratch_field(strainRateR3EdgeField, .true.)
+      call mpas_deallocate_scratch_field(divTensorR3CellField, .true.)
+      call mpas_deallocate_scratch_field(outerProductEdgeField, .true.)
+      call mpas_deallocate_scratch_field(normalVectorEdgeField, .true.)
+      call mpas_deallocate_scratch_field(tangentialVectorEdgeField, .true.)
 
    !--------------------------------------------------------------------
 
@@ -434,7 +457,13 @@ contains
    !
    !--------------------------------------------------------------------
 
+   real (kind=RKIND), pointer :: config_mom_del4
+   logical, pointer :: config_use_mom_del4
+
    err = 0
+
+   call mpas_pool_get_config(ocnConfigs, 'config_mom_del4', config_mom_del4)
+   call mpas_pool_get_config(ocnConfigs, 'config_use_mom_del4', config_use_mom_del4)
 
    hmixDel4On = .false.
 

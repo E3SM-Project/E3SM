@@ -20,7 +20,7 @@
 module ocn_forcing_restoring
 
    use mpas_grid_types
-   use mpas_configure
+   use ocn_constants
 
    implicit none
    private
@@ -67,7 +67,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_forcing_restoring_build_arrays(mesh, indexT, indexS, indexTFlux, indexSFlux, tracers, temperatureRestoring, salinityRestoring, surfaceTracerFluxes, err)!{{{
+   subroutine ocn_forcing_restoring_build_arrays(meshPool, indexT, indexS, indexTFlux, indexSFlux, tracers, temperatureRestoring, salinityRestoring, surfaceTracerFluxes, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -75,8 +75,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (mesh_type), intent(in) :: &
-         mesh          !< Input: mesh information
+      type (mpas_pool_type), intent(in) :: &
+         meshPool     !< Input: mesh information
 
       real (kind=RKIND), dimension(:,:,:), intent(in) :: &
         tracers !< Input: tracer quantities
@@ -113,13 +113,14 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iCell, nCellsSolve, k
+      integer :: iCell, k
+      integer, pointer :: nCellsSolve
 
       real (kind=RKIND) :: invTemp, invSalinity
 
       err = 0
 
-      nCellsSolve = mesh % nCellsSolve
+      call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
 
       invTemp = 1.0 / (temperatureTimeScale * 86400.0)
       invSalinity = 1.0 / (salinityTimeScale * 86400.0)
@@ -151,7 +152,15 @@ contains
 
       integer, intent(out) :: err !< Output: error flag
 
+      real (kind=RKIND), pointer :: config_restoreT_timescale, config_restoreT_lengthscale
+      real (kind=RKIND), pointer :: config_restoreS_timescale, config_restoreS_lengthscale
+
       err = 0
+
+      call mpas_pool_get_config(ocnConfigs, 'config_restoreT_timescale', config_restoreT_timescale)
+      call mpas_pool_get_config(ocnConfigs, 'config_restoreT_lengthscale', config_restoreT_lengthscale)
+      call mpas_pool_get_config(ocnConfigs, 'config_restoreS_timescale', config_restoreS_timescale)
+      call mpas_pool_get_config(ocnConfigs, 'config_restoreS_lengthscale', config_restoreS_lengthscale)
 
       temperatureTimeScale = config_restoreT_timescale
       salinityTimeScale = config_restoreS_timescale

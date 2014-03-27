@@ -35,13 +35,19 @@ module mpas_io_output
       implicit none
 
       type (io_output_object), intent(inout) :: output_obj
-      type (domain_type), intent(in) :: domain
+      type (domain_type), intent(inout) :: domain
       character (len=*) :: stream
       character (len=*), optional :: outputSuffix
 
       character (len=StrKIND) :: tempfilename
 
       type (block_type), pointer :: block_ptr
+
+      character (len=StrKIND), pointer :: config_output_name, config_restart_name, config_restart_timestamp_name
+
+      call mpas_pool_get_config(domain % configs, 'config_output_name', config_output_name)
+      call mpas_pool_get_config(domain % configs, 'config_restart_name', config_restart_name)
+      call mpas_pool_get_config(domain % configs, 'config_restart_timestamp_name', config_restart_timestamp_name)
 
       block_ptr => domain % blocklist
 
@@ -72,9 +78,7 @@ module mpas_io_output
       ! For now, we assume that a domain consists only of one block,
       !   although in future, work needs to be done to write model state
       !   from many distributed blocks
-      call mpas_io_output_init(domain, output_obj, domain % dminfo, &
-                          block_ptr % mesh &
-                         )
+      call mpas_io_output_init(domain, output_obj, domain % dminfo)
 
    end subroutine mpas_output_state_init!}}}
 
@@ -111,12 +115,13 @@ module mpas_io_output
       type (domain_type), intent(inout) :: domain
       integer, intent(in) :: itime
 
-      type(block_type), pointer :: block_ptr
+      type (block_type), pointer :: block_ptr
 
-      integer :: nCells, nEdges, nVertices, vertexDegree
-      integer :: maxEdges, maxEdges2, nEdgesSolve, nCellsSolve, nVerticesSolve
+      integer, pointer :: nCells, nEdges, nVertices, vertexDegree
+      integer, pointer :: maxEdges, maxEdges2, nEdgesSolve, nCellsSolve, nVerticesSolve
       integer :: ierr
       integer :: i, j
+      integer, dimension(:), pointer :: nEdgesOnCell, nEdgesOnEdge, indexToCellID, indexToEdgeID, indexToVertexID
       type (field2dInteger), pointer :: cellsOnCell_save, edgesOnCell_save, verticesOnCell_save, &
                                cellsOnEdge_save, verticesOnEdge_save, edgesOnEdge_save, &
                                cellsOnVertex_save, edgesOnVertex_save
@@ -124,6 +129,10 @@ module mpas_io_output
       type (field2dInteger), pointer :: cellsOnCell_ptr, edgesOnCell_ptr, verticesOnCell_ptr, &
                                cellsOnEdge_ptr, verticesOnEdge_ptr, edgesOnEdge_ptr, &
                                cellsOnVertex_ptr, edgesOnVertex_ptr
+
+      type (field2dInteger), pointer :: cellsOnCell, edgesOnCell, verticesOnCell, &
+                               cellsOnEdge, verticesOnEdge, edgesOnEdge, &
+                               cellsOnVertex, edgesOnVertex
 
       output_obj % time = itime
 
@@ -153,78 +162,92 @@ module mpas_io_output
 
       block_ptr => domain % blocklist
       do while(associated(block_ptr))
-        maxEdges = block_ptr % mesh % maxEdges
-        maxEdges2 = block_ptr % mesh % maxEdges2
-        vertexDegree = block_ptr % mesh % vertexDegree
-        nCells = block_ptr % mesh % nCells
-        nEdges = block_ptr % mesh % nEdges
-        nVertices = block_ptr % mesh % nVertices
-        nCellsSolve = block_ptr % mesh % nCellsSolve
-        nEdgesSolve = block_ptr % mesh % nEdgesSolve
-        nVerticesSolve = block_ptr % mesh % nVerticesSolve
+        call mpas_pool_get_dimension(block_ptr % dimensions, 'maxEdges', maxEdges)
+        call mpas_pool_get_dimension(block_ptr % dimensions, 'maxEdges2', maxEdges2)
+        call mpas_pool_get_dimension(block_ptr % dimensions, 'vertexDegree', vertexDegree)
+        call mpas_pool_get_dimension(block_ptr % dimensions, 'nCells', nCells)
+        call mpas_pool_get_dimension(block_ptr % dimensions, 'nEdges', nEdges)
+        call mpas_pool_get_dimension(block_ptr % dimensions, 'nVertices', nVertices)
+        call mpas_pool_get_dimension(block_ptr % dimensions, 'nCellsSolve', nCellsSolve)
+        call mpas_pool_get_dimension(block_ptr % dimensions, 'nEdgesSolve', nEdgesSolve)
+        call mpas_pool_get_dimension(block_ptr % dimensions, 'nVerticesSolve', nVerticesSolve)
+
+        call mpas_pool_get_array(block_ptr % allFields, 'nEdgesOnCell', nEdgesOnCell)
+        call mpas_pool_get_array(block_ptr % allFields, 'nEdgesOnEdge', nEdgesOnEdge)
+        call mpas_pool_get_array(block_ptr % allFields, 'indexToCellID', indexToCellID)
+        call mpas_pool_get_array(block_ptr % allFields, 'indexToEdgeID', indexToEdgeID)
+        call mpas_pool_get_array(block_ptr % allFields, 'indexToVertexID', indexToVertexID)
 
         nullify(cellsOncell_ptr % ioinfo)
-        cellsOncell_ptr % array => block_ptr % mesh % cellsOncell % array
-        allocate(block_ptr % mesh % cellsOnCell % array(maxEdges, nCells+1))
+        call mpas_pool_get_field(block_ptr % allFields, 'cellsOnCell', cellsOnCell)
+        cellsOnCell_ptr % array => cellsOnCell % array
+        allocate(cellsOnCell % array(maxEdges, nCells+1))
 
         nullify(edgesOnCell_ptr % ioinfo)
-        edgesOnCell_ptr % array => block_ptr % mesh % edgesOnCell % array
-        allocate(block_ptr % mesh % edgesOnCell % array(maxEdges, nCells+1))
+        call mpas_pool_get_field(block_ptr % allFields, 'edgesOnCell', edgesOnCell)
+        edgesOnCell_ptr % array => edgesOnCell % array
+        allocate(edgesOnCell % array(maxEdges, nCells+1))
 
         nullify(verticesOnCell_ptr % ioinfo)
-        verticesOnCell_ptr % array => block_ptr % mesh % verticesOnCell % array
-        allocate(block_ptr % mesh % verticesOnCell % array(maxEdges, nCells+1))
+        call mpas_pool_get_field(block_ptr % allFields, 'verticesOnCell', verticesOnCell)
+        verticesOnCell_ptr % array => verticesOnCell % array
+        allocate(verticesOnCell % array(maxEdges, nCells+1))
 
         nullify(cellsOnEdge_ptr % ioinfo)
-        cellsOnEdge_ptr % array => block_ptr % mesh % cellsOnEdge % array
-        allocate(block_ptr % mesh % cellsOnEdge % array(2, nEdges+1))
+        call mpas_pool_get_field(block_ptr % allFields, 'cellsOnEdge', cellsOnEdge)
+        cellsOnEdge_ptr % array => cellsOnEdge % array
+        allocate(cellsOnEdge % array(2, nEdges+1))
 
         nullify(verticesOnEdge_ptr % ioinfo)
-        verticesOnEdge_ptr % array => block_ptr % mesh % verticesOnEdge % array
-        allocate(block_ptr % mesh % verticesOnEdge % array(2, nEdges+1))
+        call mpas_pool_get_field(block_ptr % allFields, 'verticesOnEdge', verticesOnEdge)
+        verticesOnEdge_ptr % array => verticesOnEdge % array
+        allocate(verticesOnEdge % array(2, nEdges+1))
 
         nullify(edgesOnEdge_ptr % ioinfo)
-        edgesOnEdge_ptr % array => block_ptr % mesh % edgesOnEdge % array
-        allocate(block_ptr % mesh % edgesOnEdge % array(maxEdges2, nEdges+1))
+        call mpas_pool_get_field(block_ptr % allFields, 'edgesOnEdge', edgesOnEdge)
+        edgesOnEdge_ptr % array => edgesOnEdge % array
+        allocate(edgesOnEdge % array(maxEdges2, nEdges+1))
 
         nullify(cellsOnVertex_ptr % ioinfo)
-        cellsOnVertex_ptr % array => block_ptr % mesh % cellsOnVertex % array
-        allocate(block_ptr % mesh % cellsOnVertex % array(vertexDegree, nVertices+1))
+        call mpas_pool_get_field(block_ptr % allFields, 'cellsOnVertex', cellsOnVertex)
+        cellsOnVertex_ptr % array => cellsOnVertex % array
+        allocate(cellsOnVertex % array(vertexDegree, nVertices+1))
 
         nullify(edgesOnVertex_ptr % ioinfo)
-        edgesOnVertex_ptr % array => block_ptr % mesh % edgesOnVertex % array
-        allocate(block_ptr % mesh % edgesOnVertex % array(vertexDegree, nVertices+1))
+        call mpas_pool_get_field(block_ptr % allFields, 'edgesOnVertex', edgesOnVertex)
+        edgesOnVertex_ptr % array => edgesOnVertex % array
+        allocate(edgesOnVertex % array(vertexDegree, nVertices+1))
 
         do i = 1, nCellsSolve
-          do j = 1, block_ptr % mesh % nEdgesOnCell % array(i)
-            block_ptr % mesh % cellsOnCell % array(j, i) = block_ptr % mesh % indexToCellID % array(cellsOnCell_ptr % array(j, i))
-            block_ptr % mesh % edgesOnCell % array(j, i) = block_ptr % mesh % indexToEdgeID % array(edgesOnCell_ptr % array(j, i))
-            block_ptr % mesh % verticesOnCell % array(j, i) = block_ptr % mesh % indexToVertexID % array(verticesOnCell_ptr % array(j, i))
+          do j = 1, nEdgesOnCell(i)
+            cellsOnCell % array(j, i) = indexToCellID(cellsOnCell_ptr % array(j, i))
+            edgesOnCell % array(j, i) = indexToEdgeID(edgesOnCell_ptr % array(j, i))
+            verticesOnCell % array(j, i) = indexToVertexID(verticesOnCell_ptr % array(j, i))
           end do
 
-          block_ptr % mesh % cellsOnCell % array(block_ptr % mesh % nEdgesOnCell % array(i) + 1:maxEdges, i) = nCells+1
-          block_ptr % mesh % edgesOnCell % array(block_ptr % mesh % nEdgesOnCell % array(i) + 1:maxEdges, i) = nEdges+1
-          block_ptr % mesh % verticesOnCell % array(block_ptr % mesh % nEdgesOnCell % array(i) + 1:maxEdges, i) = nVertices+1
+          cellsOnCell % array(nEdgesOnCell(i) + 1:maxEdges, i) = nCells+1
+          edgesOnCell % array(nEdgesOnCell(i) + 1:maxEdges, i) = nEdges+1
+          verticesOnCell % array(nEdgesOnCell(i) + 1:maxEdges, i) = nVertices+1
         end do
 
         do i = 1, nEdgesSolve
-          block_ptr % mesh % cellsOnEdge % array(1, i) = block_ptr % mesh % indexToCellID % array(cellsOnEdge_ptr % array(1, i))
-          block_ptr % mesh % cellsOnEdge % array(2, i) = block_ptr % mesh % indexToCellID % array(cellsOnEdge_ptr % array(2, i))
+          cellsOnEdge % array(1, i) = indexToCellID(cellsOnEdge_ptr % array(1, i))
+          cellsOnEdge % array(2, i) = indexToCellID(cellsOnEdge_ptr % array(2, i))
 
-          block_ptr % mesh % verticesOnedge % array(1, i) = block_ptr % mesh % indexToVertexID % array(verticesOnEdge_ptr % array(1,i))
-          block_ptr % mesh % verticesOnedge % array(2, i) = block_ptr % mesh % indexToVertexID % array(verticesOnEdge_ptr % array(2,i))
+          verticesOnedge % array(1, i) = indexToVertexID(verticesOnEdge_ptr % array(1,i))
+          verticesOnedge % array(2, i) = indexToVertexID(verticesOnEdge_ptr % array(2,i))
 
-          do j = 1, block_ptr % mesh % nEdgesOnEdge % array(i)
-            block_ptr % mesh % edgesOnEdge % array(j, i) = block_ptr % mesh % indexToEdgeID % array(edgesOnEdge_ptr % array(j, i))
+          do j = 1, nEdgesOnEdge(i)
+            edgesOnEdge % array(j, i) = indexToEdgeID(edgesOnEdge_ptr % array(j, i))
           end do
 
-          block_ptr % mesh % edgesOnEdge % array(block_ptr % mesh % nEdgesOnEdge % array(i)+1:maxEdges2, i) = nEdges+1
+          edgesOnEdge % array(nEdgesOnEdge(i)+1:maxEdges2, i) = nEdges+1
         end do
 
         do i = 1, nVerticesSolve
           do j = 1, vertexDegree
-            block_ptr % mesh % cellsOnVertex % array(j, i) = block_ptr % mesh % indexToCellID % array(cellsOnVertex_ptr % array(j, i))
-            block_ptr % mesh % edgesOnVertex % array(j, i) = block_ptr % mesh % indexToEdgeID % array(edgesOnVertex_ptr % array(j, i))
+            cellsOnVertex % array(j, i) = indexToCellID(cellsOnVertex_ptr % array(j, i))
+            edgesOnVertex % array(j, i) = indexToEdgeID(edgesOnVertex_ptr % array(j, i))
           end do
         end do
 
@@ -275,23 +298,32 @@ module mpas_io_output
       block_ptr => domain % blocklist
       do while(associated(block_ptr))
 
-        deallocate(block_ptr % mesh % cellsOnCell % array)
-        deallocate(block_ptr % mesh % edgesOnCell % array)
-        deallocate(block_ptr % mesh % verticesOnCell % array)
-        deallocate(block_ptr % mesh % cellsOnEdge % array)
-        deallocate(block_ptr % mesh % verticesOnEdge % array)
-        deallocate(block_ptr % mesh % edgesOnEdge % array)
-        deallocate(block_ptr % mesh % cellsOnVertex % array)
-        deallocate(block_ptr % mesh % edgesOnVertex % array)
+        call mpas_pool_get_field(block_ptr % allFields, 'cellsOnCell', cellsOnCell)
+        call mpas_pool_get_field(block_ptr % allFields, 'edgesOnCell', edgesOnCell)
+        call mpas_pool_get_field(block_ptr % allFields, 'verticesOnCell', verticesOnCell)
+        call mpas_pool_get_field(block_ptr % allFields, 'cellsOnEdge', cellsOnEdge)
+        call mpas_pool_get_field(block_ptr % allFields, 'verticesOnEdge', verticesOnEdge)
+        call mpas_pool_get_field(block_ptr % allFields, 'edgesOnEdge', edgesOnEdge)
+        call mpas_pool_get_field(block_ptr % allFields, 'cellsOnVertex', cellsOnVertex)
+        call mpas_pool_get_field(block_ptr % allFields, 'edgesOnVertex', edgesOnVertex)
 
-        block_ptr % mesh % cellsOncell % array => cellsOnCell_ptr % array
-        block_ptr % mesh % edgesOnCell % array => edgesOnCell_ptr % array
-        block_ptr % mesh % verticesOnCell % array => verticesOnCell_ptr % array
-        block_ptr % mesh % cellsOnEdge % array => cellsOnEdge_ptr % array
-        block_ptr % mesh % verticesOnEdge % array => verticesOnEdge_ptr % array
-        block_ptr % mesh % edgesOnEdge % array => edgesOnEdge_ptr % array
-        block_ptr % mesh % cellsOnVertex % array => cellsOnVertex_ptr % array
-        block_ptr % mesh % edgesOnVertex % array => edgesOnVertex_ptr % array
+        deallocate(cellsOnCell % array)
+        deallocate(edgesOnCell % array)
+        deallocate(verticesOnCell % array)
+        deallocate(cellsOnEdge % array)
+        deallocate(verticesOnEdge % array)
+        deallocate(edgesOnEdge % array)
+        deallocate(cellsOnVertex % array)
+        deallocate(edgesOnVertex % array)
+
+        cellsOncell % array => cellsOnCell_ptr % array
+        edgesOnCell % array => edgesOnCell_ptr % array
+        verticesOnCell % array => verticesOnCell_ptr % array
+        cellsOnEdge % array => cellsOnEdge_ptr % array
+        verticesOnEdge % array => verticesOnEdge_ptr % array
+        edgesOnEdge % array => edgesOnEdge_ptr % array
+        cellsOnVertex % array => cellsOnVertex_ptr % array
+        edgesOnVertex % array => edgesOnVertex_ptr % array
 
         nullify(cellsOnCell_ptr % array)
         nullify(edgesOnCell_ptr % array)
@@ -322,8 +354,6 @@ module mpas_io_output
       call mpas_deallocate_field(cellsOnVertex_save)
       call mpas_deallocate_field(edgesOnVertex_save)
 
-
-
    end subroutine mpas_output_state_for_domain!}}}
 
    subroutine mpas_output_state_finalize(output_obj, dminfo)!{{{
@@ -337,17 +367,12 @@ module mpas_io_output
 
    end subroutine mpas_output_state_finalize!}}}
 
-   subroutine mpas_io_output_init( domain, output_obj, &!{{{
-                              dminfo, &
-                              mesh &
-                            )
- 
+   subroutine mpas_io_output_init( domain, output_obj, dminfo)!{{{
       implicit none
  
-      type (domain_type), intent(in) :: domain
+      type (domain_type), intent(inout) :: domain
       type (io_output_object), intent(inout) :: output_obj
       type (dm_info), intent(in) :: dminfo
-      type (mesh_type), intent(in) :: mesh
  
       integer :: nferr, ierr
       integer, dimension(10) :: dimlist
@@ -361,14 +386,12 @@ module mpas_io_output
  
       call MPAS_createStream(output_obj % io_stream, trim(output_obj % filename), MPAS_IO_PNETCDF, MPAS_IO_WRITE, 1, nferr)
 
-#include "add_output_fields.inc"
-
-      if (mesh % on_a_sphere) then
+      if (domain % on_a_sphere) then
          call MPAS_writeStreamAtt(output_obj % io_stream, 'on_a_sphere', 'YES             ', nferr)
       else
          call MPAS_writeStreamAtt(output_obj % io_stream, 'on_a_sphere', 'NO              ', nferr)
       end if
-      call MPAS_writeStreamAtt(output_obj % io_stream, 'sphere_radius', mesh % sphere_radius, nferr)
+      call MPAS_writeStreamAtt(output_obj % io_stream, 'sphere_radius', domain % sphere_radius, nferr)
       call MPAS_writeStreamAtt(output_obj % io_stream, 'model_name', domain % modelName, nferr)
       call MPAS_writeStreamAtt(output_obj % io_stream, 'core_name', domain % coreName, nferr)
       call MPAS_writeStreamAtt(output_obj % io_stream, 'model_version', domain % modelVersion, nferr)
@@ -380,7 +403,9 @@ module mpas_io_output
       call MPAS_writeStreamAtt(output_obj % io_stream, 'mesh_spec', domain % mesh_spec, nferr)
       call MPAS_writeStreamAtt(output_obj % io_stream, 'git_version', domain % git_version, nferr)
 
-#include "add_output_atts.inc"
+      call mpas_add_output_atts(domain % configs, output_obj)
+
+      call mpas_add_output_fields(domain, output_obj)
  
    end subroutine mpas_io_output_init!}}}
 
@@ -396,5 +421,9 @@ module mpas_io_output
       call MPAS_closeStream(output_obj % io_stream, nferr)
  
    end subroutine mpas_io_output_finalize!}}}
+
+
+#include "add_output_atts.inc"
+#include "add_output_fields.inc"
  
 end module mpas_io_output

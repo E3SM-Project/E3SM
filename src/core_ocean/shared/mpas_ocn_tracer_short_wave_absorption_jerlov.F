@@ -14,7 +14,7 @@
 module ocn_tracer_short_wave_absorption_jerlov
 
    use mpas_grid_types
-   use mpas_configure
+   use ocn_constants
 
    implicit none
    private
@@ -74,7 +74,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_short_wave_absorption_jerlov_tend(mesh, index_temperature, layerThickness, penetrativeTemperatureFlux, tend, err)!{{{
+   subroutine ocn_tracer_short_wave_absorption_jerlov_tend(meshPool, index_temperature, layerThickness, penetrativeTemperatureFlux, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -82,8 +82,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (mesh_type), intent(in) :: &
-         mesh          !< Input: mesh information
+      type (mpas_pool_type), intent(in) :: &
+         meshPool          !< Input: mesh information
 
       real (kind=RKIND), dimension(:), intent(in) :: &
         penetrativeTemperatureFlux !< Input: penetrative temperature flux through the surface
@@ -115,7 +115,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iCell, nCells, k, nVertLevels
+      integer :: iCell, k
+      integer, pointer :: nCells, nVertLevels
 
       integer, dimension(:), pointer :: maxLevelCell
 
@@ -123,22 +124,26 @@ contains
       real (kind=RKIND), dimension(:), pointer :: refBottomDepth
       real (kind=RKIND), dimension(:), allocatable :: weights
 
+      logical, pointer :: config_fixed_jerlov_weights
+
       err = 0
 
-      nCells = mesh % nCells
-      nVertLevels = mesh % nVertLevels
+      call mpas_pool_get_config(ocnConfigs, 'config_fixed_jerlov_weights', config_fixed_jerlov_weights)
 
-      maxLevelCell => mesh % maxLevelCell % array
-      refBottomDepth => mesh % refBottomDepth % array
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+
+      call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+      call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
 
       allocate(weights(nVertLevels+1))
       weights = 0.0_RKIND
       weights(1) = 1.0_RKIND
 
-      if(config_fixed_jerlov_weights) then
+      if ( config_fixed_jerlov_weights ) then
          do iCell = 1, nCells
            depth = 0.0_RKIND
-           do k =1, maxLevelCell(iCell)
+           do k = 1, maxLevelCell(iCell)
              depth = depth + refBottomDepth(k)
 
              call ocn_get_jerlov_fraction(depth, weights(k+1))
@@ -148,7 +153,7 @@ contains
       else
          do iCell = 1, nCells
            depth = 0.0_RKIND
-           do k =1, maxLevelCell(iCell)
+           do k = 1, maxLevelCell(iCell)
              depth = depth + layerThickness(k, iCell)
 
              call ocn_get_jerlov_fraction(depth, weights(k+1))
@@ -181,9 +186,13 @@ contains
 
       integer, intent(out) :: err !< Output: error flag
 
+      character (len=StrKIND), pointer :: config_sw_absorption_type
+
       err = 0
 
-      if(trim(config_sw_absorption_type) .ne. 'jerlov') then
+      call mpas_pool_get_config(ocnConfigs, 'config_sw_absorption_type', config_sw_absorption_type)
+
+      if ( trim( config_sw_absorption_type ) .ne. 'jerlov') then
         write(0,*) 'Incorrect option for config_sw_absorption_type. Options are: jerlov'
         err = 1
         return
@@ -225,12 +234,16 @@ contains
       integer,  parameter :: num_water_types = 5  ! max number of different water types
    
       real (kind=RKIND), parameter :: depth_cutoff = -200.0_RKIND
+
+      integer, pointer :: config_jerlov_water_type
    
 !-----------------------------------------------------------------------
 !
 !  compute absorption fraction
 !
 !-----------------------------------------------------------------------
+
+      call mpas_pool_get_config(ocnConfigs, 'config_jerlov_water_type', config_jerlov_water_type)
 
       if (-depth < depth_cutoff) then
          weight = 0.0_RKIND

@@ -18,12 +18,10 @@
 !>  and a testing routine to verify these work properly.
 !
 !-----------------------------------------------------------------------
-
 module mpas_tensor_operations
 
    use mpas_grid_types
    use mpas_constants
-   use mpas_configure
    use mpas_vector_operations
    use mpas_matrix_operations
    use mpas_dmpar
@@ -77,7 +75,7 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine mpas_strain_rate_R3Cell(normalVelocity, tangentialVelocity, &
-      grid, edgeSignOnCell, edgeTangentVectors, includeHalo, &
+      meshPool, edgeSignOnCell, edgeTangentVectors, includeHalo, &
       outerProductEdge, strainRateR3Cell)!{{{
 
       !-----------------------------------------------------------------
@@ -94,8 +92,8 @@ contains
       integer, dimension(:,:), intent(in) :: &
          edgeSignOnCell        !< Input: Direction of vector connecting cells
 
-      type (mesh_type), intent(in) :: &
-         grid          !< Input: grid information
+      type (mpas_pool_type), intent(in) :: &
+         meshPool          !< Input: mesh information
 
       logical, intent(in) :: & 
          includeHalo !< Input: If true, halo cells and edges are included in computation
@@ -118,7 +116,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, nEdges, iCell, nCellsCompute, i,j,k, nVertLevels
+      integer :: iEdge, iCell, i, j, k
+      integer, pointer :: nEdges, nCellsCompute, nVertLevels
 
       integer, dimension(:), pointer :: nEdgesOnCell
       integer, dimension(:,:), pointer :: edgesOnCell
@@ -128,21 +127,21 @@ contains
       real (kind=RKIND), dimension(:), pointer :: dvEdge, areaCell, angleEdge
       real (kind=RKIND), dimension(:,:), pointer :: edgeNormalVectors
 
-      nEdges = grid % nEdges
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
       if (includeHalo) then
-         nCellsCompute = grid % nCells
+         call mpas_pool_get_dimension(meshPool, 'nCells', nCellsCompute)
       else 
-         nCellsCompute = grid % nCellsSolve
+         call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsCompute)
       endif
 
-      nVertLevels = grid % nVertLevels
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
-      nEdgesOnCell      => grid % nEdgesOnCell % array
-      edgesOnCell       => grid % edgesOnCell % array
-      dvEdge            => grid % dvEdge % array
-      angleEdge         => grid % angleEdge % array
-      areaCell          => grid % areaCell % array
-      edgeNormalVectors  => grid % edgeNormalVectors % array
+      call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
+      call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
+      call mpas_pool_get_array(meshPool, 'angleEdge', angleEdge)
+      call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+      call mpas_pool_get_array(meshPool, 'edgeNormalVectors', edgeNormalVectors)
 
       do iEdge=1,nEdges
          do k=1,nVertLevels
@@ -188,7 +187,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_divergence_of_tensor_R3Cell(strainRateR3Edge, grid, edgeSignOnCell, includeHalo, divTensorR3Cell)!{{{
+   subroutine mpas_divergence_of_tensor_R3Cell(strainRateR3Edge, meshPool, edgeSignOnCell, includeHalo, divTensorR3Cell)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -199,8 +198,8 @@ contains
       real (kind=RKIND), dimension(:,:,:), intent(in) :: &
          strainRateR3Edge  !< Input: tensor at edge, R3, in symmetric 6-index form
 
-      type (mesh_type), intent(in) :: &
-         grid          !< Input: grid information
+      type (mpas_pool_type), intent(in) :: &
+         meshPool        !< Input: grid information
 
       integer, dimension(:,:), intent(in) :: &
          edgeSignOnCell        !< Input: Direction of vector connecting cells
@@ -224,7 +223,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, iCell, nCellsCompute, i,k,p,q, nVertLevels
+      integer :: iEdge, iCell, i, k, p, q
+      integer, pointer :: nCellsCompute, nVertLevels
 
       integer, dimension(:), pointer :: nEdgesOnCell
       integer, dimension(:,:), pointer :: edgesOnCell
@@ -236,17 +236,17 @@ contains
       real (kind=RKIND), dimension(:,:), pointer :: edgeNormalVectors
 
       if (includeHalo) then
-         nCellsCompute = grid % nCells
+         call mpas_pool_get_dimension(meshPool, 'nCells', nCellsCompute)
       else 
-         nCellsCompute = grid % nCellsSolve
+         call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsCompute)
       endif
-      nVertLevels = grid % nVertLevels
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
-      edgesOnCell       => grid % edgesOnCell % array
-      nEdgesOnCell      => grid % nEdgesOnCell % array
-      dvEdge            => grid % dvEdge % array
-      areaCell          => grid % areaCell % array
-      edgeNormalVectors  => grid % edgeNormalVectors % array
+      call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
+      call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
+      call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+      call mpas_pool_get_array(meshPool, 'edgeNormalVectors', edgeNormalVectors)
 
       divTensorR3Cell(:,:,:) = 0.0
       do iCell = 1, nCellsCompute
@@ -284,7 +284,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_tensor_edge_R3_to_2D(strainRateR3Edge, grid, edgeTangentVectors, includeHalo, strainRate2DEdge)!{{{
+   subroutine mpas_tensor_edge_R3_to_2D(strainRateR3Edge, meshPool, edgeTangentVectors, includeHalo, strainRate2DEdge)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -295,8 +295,8 @@ contains
       real (kind=RKIND), dimension(:,:,:), intent(in) :: &
          strainRateR3Edge  !< Input: strain rate tensor at edge, R3, in symmetric 6-index form
 
-      type (mesh_type), intent(in) :: &
-         grid          !< Input: grid information
+      type (mpas_pool_type), intent(in) :: &
+         meshPool         !< Input: mesh information
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          edgeTangentVectors   !< Input: unit vector tangent to an edge
@@ -319,20 +319,21 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, nEdgesCompute, i,j,k,p,q, nVertLevels
+      integer :: iEdge, i, j, k, p, q
+      integer, pointer :: nEdgesCompute, nVertLevels
 
       real (kind=RKIND), dimension(3) :: edgeVerticalVector
       real (kind=RKIND), dimension(3,3) :: rotationMatrix, strainRateR3Edge3x3, strainRateR3Edge3x3Rotated
       real (kind=RKIND), dimension(:,:), pointer :: edgeNormalVectors
 
       if (includeHalo) then
-         nEdgesCompute = grid % nEdges
+         call mpas_pool_get_dimension(meshPool, 'nEdges', nEdgesCompute)
       else 
-         nEdgesCompute = grid % nEdgesSolve
+         call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesCompute)
       endif
-      nVertLevels = grid % nVertLevels
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
-      edgeNormalVectors  => grid % edgeNormalVectors % array
+      call mpas_pool_get_array(meshPool, 'edgeNormalVectors', edgeNormalVectors)
 
       do iEdge=1,nEdgesCompute
 
@@ -382,7 +383,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine mpas_tensor_edge_2D_to_R3(strainRate2DEdge, grid, edgeTangentVectors, includeHalo, strainRateR3Edge)!{{{
+   subroutine mpas_tensor_edge_2D_to_R3(strainRate2DEdge, meshPool, edgeTangentVectors, includeHalo, strainRateR3Edge)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -393,8 +394,8 @@ contains
       real (kind=RKIND), dimension(:,:,:), intent(in) :: &
          strainRate2DEdge   !< Input: strain rate tensor at edge, 2D, in symmetric 3-index form
 
-      type (mesh_type), intent(in) :: &
-         grid          !< Input: grid information
+      type (mpas_pool_type), intent(in) :: &
+         meshPool          !< Input: mesh information
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          edgeTangentVectors   !< Input: unit vector tangent to an edge
@@ -417,20 +418,21 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, nEdgesCompute, i,j,k,p,q, nVertLevels
+      integer :: iEdge, i, j, k, p, q
+      integer, pointer :: nEdgesCompute, nVertLevels
 
       real (kind=RKIND), dimension(3) :: edgeVerticalVector
       real (kind=RKIND), dimension(3,3) :: rotationMatrix, strainRateR3Edge3x3, strainRateR3Edge3x3Rotated
       real (kind=RKIND), dimension(:,:), pointer :: edgeNormalVectors
 
       if (includeHalo) then
-         nEdgesCompute = grid % nEdges
+         call mpas_pool_get_dimension(meshPool, 'nEdges', nEdgesCompute)
       else 
-         nEdgesCompute = grid % nEdgesSolve
+         call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesCompute)
       endif
-      nVertLevels = grid % nVertLevels
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
-      edgeNormalVectors  => grid % edgeNormalVectors % array
+      call mpas_pool_get_array(meshPool, 'edgeNormalVectors', edgeNormalVectors)
 
       do iEdge=1,nEdgesCompute
 
@@ -837,8 +839,10 @@ contains
 
       type (block_type), pointer :: block
       type (dm_info), pointer :: dminfo
+      type (mpas_pool_type), pointer :: meshPool
 
-      integer :: nCells, nCellsSolve, nCellsSolveSum, nCellsGlobal, nEdges, nVertices, nVertLevels, iCell, iEdge, p, strainRateLonLatRIndex
+      integer :: nCellsSolveSum, nCellsGlobal, iCell, iEdge, p, strainRateLonLatRIndex
+      integer, pointer :: nCells, nCellsSolve, nEdges, nVertices, nVertLevels
       integer, dimension(:,:), pointer :: edgeSignOnCell
 
       real (kind=RKIND) :: xVelocity, yVelocity, cn, cs, r, theta, rot, f, g1, g2, fcos, pi2l, ld, &
@@ -864,6 +868,8 @@ contains
          divTensorR3Cell_field_ptr, divTensorR3CellSolution_field_ptr, &
          outerProductEdge_field_ptr,  strainRateLonLatREdge_field_ptr
       logical :: computeStrainRate
+
+      real (kind=RKIND), pointer :: sphere_radius
 
     ! Parameter settings for test functions on a plane.
     cn = 15.0e4  ! normal component of strain
@@ -900,24 +906,25 @@ contains
     block => domain % blocklist
     dminfo => domain % dminfo
     do while (associated(block))
+      call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
 
-      nCells      = block % mesh % nCells
-      nCellsSolve = block % mesh % nCellsSolve
-      nEdges      = block % mesh % nEdges
-      nVertices   = block % mesh % nVertices
-      nVertLevels = block % mesh % nVertLevels
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(meshPool, 'nVertices', nVertices)
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
-      xCell  => block % mesh % xCell % array
-      yCell  => block % mesh % yCell % array
-      latCell=> block % mesh % latCell % array
-      lonCell=> block % mesh % lonCell % array
-      latEdge=> block % mesh % latEdge % array
-      lonEdge=> block % mesh % lonEdge % array
-      xEdge  => block % mesh % xEdge % array
-      yEdge  => block % mesh % yEdge % array
-      angleEdge => block % mesh % angleEdge % array
+      call mpas_pool_get_array(meshPool, 'xCell', xCell)
+      call mpas_pool_get_array(meshPool, 'yCell', yCell)
+      call mpas_pool_get_array(meshPool, 'latCell', latCell)
+      call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
+      call mpas_pool_get_array(meshPool, 'latEdge', latEdge)
+      call mpas_pool_get_array(meshPool, 'lonEdge', lonEdge)
+      call mpas_pool_get_array(meshPool, 'xEdge', xEdge)
+      call mpas_pool_get_array(meshPool, 'yEdge', yEdge)
+      call mpas_pool_get_array(meshPool, 'angleEdge', angleEdge)
 
-      edgeNormalVectors  => block % mesh % edgeNormalVectors % array
+      call mpas_pool_get_array(meshPool, 'edgeNormalVectors', edgeNormalVectors)
 
       edgeSignOnCell                => edgeSignOnCell_field_ptr % array
       edgeTangentVectors            => edgeTangentVectors_field_ptr % array
@@ -953,7 +960,8 @@ contains
       strainRateR3CellSolution = 0.0
       divTensorR3CellSolution = 0.0
 
-      R = block % mesh % sphere_radius
+      call mpas_pool_get_config(meshPool, 'sphere_radius', sphere_radius)
+      R = sphere_radius
       computeStrainRate = .true.
 
      write (stdoutUnit,*) 'Executing tensor test using test function: ',trim(tensor_test_function)
@@ -1371,13 +1379,13 @@ contains
 
      if (computeStrainRate) then
         call mpas_strain_rate_R3Cell(normalVelocity, tangentialVelocity, &
-          block % mesh, edgeSignOnCell, edgeTangentVectors, .false., &
+          meshPool, edgeSignOnCell, edgeTangentVectors, .false., &
           outerProductEdge, strainRateR3Cell)
 
-        call mpas_matrix_cell_to_edge(strainRateR3Cell, block % mesh, .false., strainRateR3Edge)
+        call mpas_matrix_cell_to_edge(strainRateR3Cell, meshPool, .false., strainRateR3Edge)
      endif
 
-     call mpas_divergence_of_tensor_R3Cell(strainRateR3Edge, block % mesh, edgeSignOnCell, .false., divTensorR3Cell)
+     call mpas_divergence_of_tensor_R3Cell(strainRateR3Edge, meshPool, edgeSignOnCell, .false., divTensorR3Cell)
 
      do iCell = 1,nCells
 
@@ -1437,7 +1445,5 @@ contains
 
 end module mpas_tensor_operations
 
-
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 ! vim: foldmethod=marker
-

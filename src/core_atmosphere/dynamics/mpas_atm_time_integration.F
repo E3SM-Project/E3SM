@@ -9,7 +9,6 @@ module atm_time_integration
 
    use mpas_grid_types
    use mpas_kind_types
-   use mpas_configure
    use mpas_constants
    use mpas_dmpar
    use mpas_vector_reconstruction
@@ -43,27 +42,36 @@ module atm_time_integration
       character(len=*), intent(in) :: timeStamp
       integer, intent(in) :: itimestep
 
+
       type (block_type), pointer :: block
       type (MPAS_Time_type) :: currTime
       type (MPAS_TimeInterval_type) :: dtInterval
-      character (len=StrKIND) :: xtime
+      character (len=StrKIND), pointer :: xtime
+      character (len=StrKIND) :: xtime_new
+      type (mpas_pool_type), pointer :: state
+      character (len=StrKIND), pointer :: config_time_integration
+
+
+      call mpas_pool_get_config(domain % blocklist % configs, 'config_time_integration', config_time_integration)
 
       if (trim(config_time_integration) == 'SRK3') then
          call atm_srk3(domain, dt, itimestep)
       else
          write(0,*) 'Unknown time integration option '//trim(config_time_integration)
          write(0,*) 'Currently, only ''SRK3'' is supported.'
-         stop
+         call mpas_dmpar_abort(domain % dminfo)
       end if
 
       call mpas_set_time(currTime, dateTimeString=timeStamp)
       call mpas_set_timeInterval(dtInterval, dt=dt)
       currTime = currTime + dtInterval
-      call mpas_get_time(currTime, dateTimeString=xtime)
+      call mpas_get_time(currTime, dateTimeString=xtime_new)
 
       block => domain % blocklist
       do while (associated(block))
-         block % state % time_levs(2) % state % xtime % scalar = xtime
+         call mpas_pool_get_subpool(block % structs, 'state', state)
+         call mpas_pool_get_array(state, 'xtime', xtime, 2)
+         xtime = xtime_new
          block => block % next
       end do
 
@@ -90,6 +98,7 @@ module atm_time_integration
       real (kind=RKIND), intent(in) :: dt
       integer, intent(in) :: itimestep
 
+
       integer :: iCell, k, iEdge
       type (block_type), pointer :: block
 
@@ -105,6 +114,67 @@ module atm_time_integration
 
       real (kind=RKIND) :: scalar_min, scalar_max
       real (kind=RKIND) :: global_scalar_min, global_scalar_max
+
+      integer, pointer :: config_number_of_sub_steps
+      logical, pointer :: config_scalar_advection
+      logical, pointer :: config_positive_definite
+      logical, pointer :: config_monotonic
+      real (kind=RKIND), pointer :: config_dt
+      character (len=StrKIND), pointer :: config_microp_scheme
+
+      integer, pointer :: num_scalars, index_qv, nCells, nCellsSolve, nEdges, nEdgesSolve, nVertLevels
+
+      type (mpas_pool_type), pointer :: state
+      type (mpas_pool_type), pointer :: diag
+      type (mpas_pool_type), pointer :: diag_physics
+      type (mpas_pool_type), pointer :: mesh
+      type (mpas_pool_type), pointer :: tend
+      type (mpas_pool_type), pointer :: tend_physics
+
+      type (field2DReal), pointer :: theta_m_field
+      type (field3DReal), pointer :: scalars_field
+      type (field2DReal), pointer :: pressure_p_field
+      type (field2DReal), pointer :: rtheta_p_field
+      type (field2DReal), pointer :: rtheta_pp_field
+      type (field2DReal), pointer :: tend_u_field
+      type (field2DReal), pointer :: u_field
+      type (field2DReal), pointer :: w_field
+      type (field2DReal), pointer :: rw_p_field
+      type (field2DReal), pointer :: ru_p_field
+      type (field2DReal), pointer :: rho_pp_field
+      type (field2DReal), pointer :: pv_edge_field
+      type (field2DReal), pointer :: rho_edge_field
+
+      real (kind=RKIND), dimension(:,:), pointer :: w
+      real (kind=RKIND), dimension(:,:), pointer :: u, uReconstructZonal, uReconstructMeridional, uReconstructX, uReconstructY, uReconstructZ
+      real (kind=RKIND), dimension(:,:,:), pointer :: scalars, scalars_1, scalars_2
+
+      real (kind=RKIND), dimension(:,:), pointer :: rqvdynten
+
+
+      !
+      ! Retrieve configuration options
+      !
+      call mpas_pool_get_config(domain % blocklist % configs, 'config_number_of_sub_steps', config_number_of_sub_steps)
+      call mpas_pool_get_config(domain % blocklist % configs, 'config_scalar_advection', config_scalar_advection)
+      call mpas_pool_get_config(domain % blocklist % configs, 'config_positive_definite', config_positive_definite)
+      call mpas_pool_get_config(domain % blocklist % configs, 'config_monotonic', config_monotonic)
+      call mpas_pool_get_config(domain % blocklist % configs, 'config_dt', config_dt)
+      call mpas_pool_get_config(domain % blocklist % configs, 'config_microp_scheme', config_microp_scheme)
+
+      !
+      ! Retrieve field structures
+      !
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'state', state)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'diag', diag)
+
+      !
+      ! Retrieve fields
+      !
+      call mpas_pool_get_field(state, 'theta_m', theta_m_field, 1)
+      call mpas_pool_get_field(state, 'scalars', scalars_field, 1)
+      call mpas_pool_get_field(diag, 'pressure_p', pressure_p_field)
+      call mpas_pool_get_field(diag, 'rtheta_p', rtheta_p_field)
 
 
       !
@@ -127,21 +197,23 @@ module atm_time_integration
       if(debug) write(0,*) ' copy step in rk solver '
 
 ! theta_m
-      call mpas_dmpar_exch_halo_field(domain % blocklist % state % time_levs(1) % state % theta_m)
+      call mpas_dmpar_exch_halo_field(theta_m_field)
  
 ! scalars
-      call mpas_dmpar_exch_halo_field(domain % blocklist % state % time_levs(1) % state % scalars)
+      call mpas_dmpar_exch_halo_field(scalars_field)
 
 ! pressure_p
-      call mpas_dmpar_exch_halo_field(domain % blocklist % diag % pressure_p)
+      call mpas_dmpar_exch_halo_field(pressure_p_field)
 
 ! rtheta_p
-      call mpas_dmpar_exch_halo_field(domain % blocklist % diag % rtheta_p)
+      call mpas_dmpar_exch_halo_field(rtheta_p_field)
 
 
       block => domain % blocklist
       do while (associated(block))
-         call atm_rk_integration_setup( block % state % time_levs(2) % state, block % state % time_levs(1) % state, block % diag )
+         call mpas_pool_get_subpool(block % structs, 'state', state)
+         call mpas_pool_get_subpool(block % structs, 'diag', diag)
+         call atm_rk_integration_setup(state, diag)
          block => block % next
       end do
 
@@ -156,7 +228,10 @@ module atm_time_integration
          block => domain % blocklist
          do while (associated(block))
             ! The coefficients are set for owned cells (cqw) and for all edges of owned cells, 
-            call atm_compute_moist_coefficients( block % state % time_levs(2) % state, block % diag, block % mesh )
+            call mpas_pool_get_subpool(block % structs, 'state', state)
+            call mpas_pool_get_subpool(block % structs, 'diag', diag)
+            call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
+            call atm_compute_moist_coefficients( block % dimensions, state, diag, mesh )    !MGD could do away with dimensions arg
             block => block % next
          end do
 
@@ -164,7 +239,15 @@ module atm_time_integration
          if (debug) write(0,*) ' compute_dyn_tend '
          block => domain % blocklist
          do while (associated(block))
-            call atm_compute_dyn_tend( block % tend, block % state % time_levs(2) % state, block % diag, block % mesh, rk_step, dt )
+            call mpas_pool_get_subpool(block % structs, 'state', state)
+            call mpas_pool_get_subpool(block % structs, 'diag', diag)
+            call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
+            call mpas_pool_get_subpool(block % structs, 'tend', tend)
+
+            call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
+
+            call atm_compute_dyn_tend( tend, state, diag, mesh, block % configs, nVertLevels, rk_step, dt )
+
             block => block % next
          end do
          if (debug) write(0,*) ' finished compute_dyn_tend '
@@ -173,13 +256,18 @@ module atm_time_integration
          if (debug) write(0,*) ' add physics tendencies '
          block => domain % blocklist
          do while (associated(block))
-            call physics_addtend( block % mesh, &
-                         block % state % time_levs(1) % state, &
-                         block % diag, &
-                         block % tend, &
-                         block % tend_physics, &
-                         block % state % time_levs(2) % state % rho_zz % array(:,:), &
-                         block % diag % rho_edge % array(:,:), & 
+            call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
+            call mpas_pool_get_subpool(block % structs, 'state', state)
+            call mpas_pool_get_subpool(block % structs, 'diag', diag)
+            call mpas_pool_get_subpool(block % structs, 'tend', tend)
+            call mpas_pool_get_subpool(block % structs, 'tend_physics', tend_physics)
+            call physics_addtend( block, &
+                         mesh, &
+                         state, &     
+                         diag, &
+                         tend, &
+                         tend_physics, &
+                         block % configs, &
                          rk_step )
             block => block % next
          end do
@@ -193,12 +281,22 @@ module atm_time_integration
          !***********************************
 
 ! tend_u
-         call mpas_dmpar_exch_halo_field(domain % blocklist % tend % u, (/ 1 /))
+         call mpas_pool_get_subpool(domain % blocklist % structs, 'tend', tend)
+         call mpas_pool_get_field(tend, 'u', tend_u_field)
+         call mpas_dmpar_exch_halo_field(tend_u_field, (/ 1 /))
 
          block => domain % blocklist
-            do while (associated(block))
-               call atm_set_smlstep_pert_variables( block % tend, block % diag, block % mesh )
-               call atm_compute_vert_imp_coefs( block % state % time_levs(2) % state, block % mesh, block % diag, rk_sub_timestep(rk_step) )
+         do while (associated(block))
+            call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
+            call mpas_pool_get_subpool(block % structs, 'state', state)
+            call mpas_pool_get_subpool(block % structs, 'diag', diag)
+            call mpas_pool_get_subpool(block % structs, 'tend', tend)
+
+            call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
+
+            call atm_set_smlstep_pert_variables( tend, diag, mesh, block % configs )
+            call atm_compute_vert_imp_coefs( state, mesh, diag, block % configs, nVertLevels, rk_sub_timestep(rk_step) )
+
             block => block % next
          end do
 
@@ -212,8 +310,16 @@ module atm_time_integration
       
             block => domain % blocklist
             do while (associated(block))
-               call atm_advance_acoustic_step( block % state % time_levs(2) % state, block % diag, block % tend, &
-                                           block % mesh, rk_sub_timestep(rk_step) )
+               call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
+               call mpas_pool_get_subpool(block % structs, 'state', state)
+               call mpas_pool_get_subpool(block % structs, 'diag', diag)
+               call mpas_pool_get_subpool(block % structs, 'tend', tend)
+
+               call mpas_pool_get_dimension(mesh, 'nCells', nCells)
+               call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
+
+               call atm_advance_acoustic_step( state, diag, tend,  mesh, block % configs, nCells, nVertLevels, rk_sub_timestep(rk_step) )
+
                block => block % next
             end do
 
@@ -222,32 +328,45 @@ module atm_time_integration
 ! rtheta_pp
 ! This is the only communications needed during the acoustic steps because we solve for u on all edges of owned cells
 
-            call mpas_dmpar_exch_halo_field(domain % blocklist % diag % rtheta_pp, (/ 1 /))
+            call mpas_pool_get_subpool(domain % blocklist % structs, 'diag', diag)
+            call mpas_pool_get_field(diag, 'rtheta_pp', rtheta_pp_field)
+            call mpas_dmpar_exch_halo_field(rtheta_pp_field, (/ 1 /))
  
          end do  ! end of acoustic steps loop
 
          !CR: SMALLER STENCIL?: call mpas_dmpar_exch_halo_field(block % diag % rw_p, (/ 1 /))
-         call mpas_dmpar_exch_halo_field(domain % blocklist % diag % rw_p)
+         call mpas_pool_get_subpool(domain % blocklist % structs, 'diag', diag)
+         call mpas_pool_get_field(diag, 'rw_p', rw_p_field)
+         call mpas_dmpar_exch_halo_field(rw_p_field)
 
          !CR: SMALLER STENCIL?: call mpas_dmpar_exch_halo_field(block % diag % ru_p, (/ 2 /))
-         call mpas_dmpar_exch_halo_field(domain % blocklist % diag % ru_p)
+         call mpas_pool_get_field(diag, 'ru_p', ru_p_field)
+         call mpas_dmpar_exch_halo_field(ru_p_field)
 
-         call mpas_dmpar_exch_halo_field(domain % blocklist % diag % rho_pp)
+         call mpas_pool_get_field(diag, 'rho_pp', rho_pp_field)
+         call mpas_dmpar_exch_halo_field(rho_pp_field)
 
          ! the second layer of halo cells must be exchanged before calling atm_recover_large_step_variables
-         call mpas_dmpar_exch_halo_field(domain % blocklist % diag % rtheta_pp, (/ 2 /))
+         call mpas_pool_get_field(diag, 'rtheta_pp', rtheta_pp_field)
+         call mpas_dmpar_exch_halo_field(rtheta_pp_field, (/ 2 /))
 
          block => domain % blocklist
          do while (associated(block))
-            call atm_recover_large_step_variables( block % state % time_levs(2) % state,                 &
-                                               block % diag, block % tend, block % mesh,                 &
-                                               rk_timestep(rk_step), number_sub_steps(rk_step), rk_step  )
+            call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
+            call mpas_pool_get_subpool(block % structs, 'state', state)
+            call mpas_pool_get_subpool(block % structs, 'diag', diag)
+            call mpas_pool_get_subpool(block % structs, 'tend', tend)
+
+            call atm_recover_large_step_variables( state, diag, tend, mesh, block % configs, rk_timestep(rk_step), number_sub_steps(rk_step), rk_step  )
+
             block => block % next
          end do
 
 ! u
          !CR: SMALLER STENCIL?: call mpas_dmpar_exch_halo_field(block % state % time_levs(2) % state % u, (/ 3 /))
-         call mpas_dmpar_exch_halo_field(domain % blocklist % state % time_levs(2) % state % u)
+         call mpas_pool_get_subpool(domain % blocklist % structs, 'state', state)
+         call mpas_pool_get_field(state, 'u', u_field, 2)
+         call mpas_dmpar_exch_halo_field(u_field)
 
          ! scalar advection: RK3 scheme of Skamarock and Gassmann (2011). 
          ! PD or monotonicity constraints applied only on the final Runge-Kutta substep.
@@ -256,22 +375,26 @@ module atm_time_integration
 
          block => domain % blocklist
          do while (associated(block))
+            call mpas_pool_get_subpool(block % structs, 'tend', tend)
+            call mpas_pool_get_subpool(block % structs, 'state', state)
+            call mpas_pool_get_subpool(block % structs, 'diag', diag)
+            call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
+
+            call mpas_pool_get_dimension(mesh, 'nCells', nCells)
+            call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
+            call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
+            call mpas_pool_get_dimension(state, 'num_scalars', num_scalars)
+
             !
             ! Note: The advance_scalars_mono routine can be used without limiting, and thus, encompasses 
             !       the functionality of the advance_scalars routine; however, it is noticeably slower, 
             !       so we use the advance_scalars routine for the first two RK substeps.
             !
             if (rk_step < 3 .or. (.not. config_monotonic .and. .not. config_positive_definite)) then
-               call atm_advance_scalars( block % tend, &
-                                     block % state % time_levs(1) % state, block % state % time_levs(2) % state, &
-                                     block % diag, &
-                                     block % mesh, rk_timestep(rk_step) )
+               call atm_advance_scalars( tend, state, diag, mesh, block % configs, num_scalars, nVertLevels, rk_timestep(rk_step) )
             else
                block % domain = domain 
-               call atm_advance_scalars_mono( block % tend, &
-                                              block % state % time_levs(1) % state, block % state % time_levs(2) % state, &
-                                              block % diag, block % mesh, &
-                                              rk_timestep(rk_step))
+               call atm_advance_scalars_mono( block, tend, state, diag, mesh, block % configs, nCells, nEdges, nVertLevels, rk_timestep(rk_step) )
             end if
             block => block % next
          end do
@@ -284,24 +407,35 @@ module atm_time_integration
 
          block => domain % blocklist
          do while (associated(block))
-            call atm_compute_solve_diagnostics( dt, block % state % time_levs(2) % state, block % diag, block % mesh )
+            call mpas_pool_get_subpool(block % structs, 'state', state)
+            call mpas_pool_get_subpool(block % structs, 'diag', diag)
+            call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
+
+            call atm_compute_solve_diagnostics( dt, state, 2, diag, mesh, block % configs )
+
             block => block % next
          end do
 
          if(debug) write(0,*) ' diagnostics complete '
 
 ! w
-         call mpas_dmpar_exch_halo_field(domain % blocklist % state % time_levs(2) % state % w)
+         call mpas_pool_get_subpool(domain % blocklist % structs, 'state', state)
+         call mpas_pool_get_field(state, 'w', w_field, 2)
+         call mpas_dmpar_exch_halo_field(w_field)
 
 ! pv_edge
-         call mpas_dmpar_exch_halo_field(domain % blocklist % diag % pv_edge)
+         call mpas_pool_get_subpool(domain % blocklist % structs, 'diag', diag)
+         call mpas_pool_get_field(diag, 'pv_edge', pv_edge_field)
+         call mpas_dmpar_exch_halo_field(pv_edge_field)
 
 ! rho_edge
-         call mpas_dmpar_exch_halo_field(domain % blocklist % diag % rho_edge)
+         call mpas_pool_get_field(diag, 'rho_edge', rho_edge_field)
+         call mpas_dmpar_exch_halo_field(rho_edge_field)
 
 ! scalars
          if (rk_step < 3) then
-            call mpas_dmpar_exch_halo_field(domain % blocklist % state % time_levs(2) % state % scalars)
+            call mpas_pool_get_field(state, 'scalars', scalars_field, 2)
+            call mpas_dmpar_exch_halo_field(scalars_field)
          end if
 
       end do ! rk_step loop
@@ -309,13 +443,25 @@ module atm_time_integration
 !...  compute full velocity vectors at cell centers:
       block => domain % blocklist
       do while (associated(block))
-         call mpas_reconstruct(block % mesh, block % state % time_levs(2) % state % u % array, &
-                               block % diag % uReconstructX % array,                           &
-                               block % diag % uReconstructY % array,                           &
-                               block % diag % uReconstructZ % array,                           &
-                               block % diag % uReconstructZonal % array,                       &
-                               block % diag % uReconstructMeridional % array                   &
+         call mpas_pool_get_subpool(block % structs, 'state', state)
+         call mpas_pool_get_subpool(block % structs, 'diag', diag)
+         call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
+
+         call mpas_pool_get_array(state, 'u', u, 2)
+         call mpas_pool_get_array(diag, 'uReconstructX', uReconstructX)
+         call mpas_pool_get_array(diag, 'uReconstructY', uReconstructY)
+         call mpas_pool_get_array(diag, 'uReconstructZ', uReconstructZ)
+         call mpas_pool_get_array(diag, 'uReconstructZonal', uReconstructZonal)
+         call mpas_pool_get_array(diag, 'uReconstructMeridional', uReconstructMeridional)
+
+         call mpas_reconstruct(mesh, u,                &
+                               uReconstructX,          &
+                               uReconstructY,          &
+                               uReconstructZ,          &
+                               uReconstructZonal,      &
+                               uReconstructMeridional  &
                               )
+
          block => block % next
       end do
 
@@ -326,26 +472,33 @@ module atm_time_integration
       block => domain % blocklist
       do while(associated(block))
 
+         call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
+         call mpas_pool_get_subpool(block % structs, 'state', state)
+         call mpas_pool_get_subpool(block % structs, 'diag', diag)
+         call mpas_pool_get_subpool(block % structs, 'diag_physics', diag_physics)
+         call mpas_pool_get_subpool(block % structs, 'tend_physics', tend_physics)
+         call mpas_pool_get_subpool(block % structs, 'tend', tend)
+         call mpas_pool_get_array(state, 'scalars', scalars_1, 1)
+         call mpas_pool_get_array(state, 'scalars', scalars_2, 2)
+         call mpas_pool_get_dimension(state, 'index_qv', index_qv)
+         call mpas_pool_get_array(tend_physics, 'rqvdynten', rqvdynten)
+
          !NOTE: The calculation of the tendency due to horizontal and vertical advection for the water vapor mixing ratio
          !requires that the subroutine atm_advance_scalars_mono was called on the third Runge Kutta step, so that a halo
          !update for the scalars at time_levs(1) is applied. A halo update for the scalars at time_levs(2) is done above. 
          if (config_monotonic) then
-            block % tend_physics % rqvdynten % array(:,:) = &
-                 ( block % state % time_levs(2) % state % scalars % array(block % state % time_levs(2) % state % index_qv,:,:)   &
-                 - block % state % time_levs(1) % state % scalars % array(block % state % time_levs(1) % state % index_qv,:,:) ) &
-                 / config_dt
+            rqvdynten(:,:) = ( scalars_2(index_qv,:,:) - scalars_1(index_qv,:,:) ) / config_dt
          else
-            block % tend_physics % rqvdynten % array(:,:) = 0._RKIND
+            rqvdynten(:,:) = 0._RKIND
          end if
 
          !simply set to zero negative mixing ratios of different water species (for now):
-         where ( block % state % time_levs(2) % state % scalars % array(:,:,:) .lt. 0.) &
-            block % state % time_levs(2) % state % scalars % array(:,:,:) = 0.
+         where ( scalars_2(:,:,:) < 0.0)  &
+            scalars_2(:,:,:) = 0.0
 
          !call microphysics schemes:
-         if (config_microp_scheme .ne. 'off') &
-            call microphysics_driver ( block % state % time_levs(2) % state, block % diag, block % diag_physics, &
-                                       block % tend, block % mesh, itimestep )
+         if (config_microp_scheme .ne. 'off')  &
+            call microphysics_driver ( block % configs, mesh, state, 2, diag, diag_physics, tend, itimestep )
 
          block => block % next
       end do
@@ -355,41 +508,52 @@ module atm_time_integration
       write(0,*)
       block => domain % blocklist
       do while (associated(block))
+         call mpas_pool_get_subpool(block % structs, 'state', state)
+         call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
+
+         call mpas_pool_get_array(state, 'w', w, 2)
+         call mpas_pool_get_array(state, 'u', u, 2)
+         call mpas_pool_get_array(state, 'scalars', scalars, 2)
+         call mpas_pool_get_dimension(state, 'num_scalars', num_scalars)
+         call mpas_pool_get_dimension(mesh, 'nCellsSolve', nCellsSolve)
+         call mpas_pool_get_dimension(mesh, 'nEdgesSolve', nEdgesSolve)
+         call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
+
          scalar_min = 0.
          scalar_max = 0.
-         do iCell = 1, block % mesh % nCellsSolve
-         do k = 1, block % mesh % nVertLevels
-            scalar_min = min(scalar_min, block % state % time_levs(2) % state % w % array(k,iCell))
-            scalar_max = max(scalar_max, block % state % time_levs(2) % state % w % array(k,iCell))
+         do iCell = 1, nCellsSolve
+         do k = 1, nVertLevels
+            scalar_min = min(scalar_min, w(k,iCell))
+            scalar_max = max(scalar_max, w(k,iCell))
          end do
          end do
-         call mpas_dmpar_min_real(domain%dminfo, scalar_min, global_scalar_min)
-         call mpas_dmpar_max_real(domain%dminfo, scalar_max, global_scalar_max)
+         call mpas_dmpar_min_real(domain % dminfo, scalar_min, global_scalar_min)
+         call mpas_dmpar_max_real(domain % dminfo, scalar_max, global_scalar_max)
          write(0,*) 'global min, max w ',global_scalar_min, global_scalar_max
 
          scalar_min = 0.
          scalar_max = 0.
-         do iEdge = 1, block % mesh % nEdgesSolve
-         do k = 1, block % mesh % nVertLevels
-            scalar_min = min(scalar_min, block % state % time_levs(2) % state % u % array(k,iEdge))
-            scalar_max = max(scalar_max, block % state % time_levs(2) % state % u % array(k,iEdge))
+         do iEdge = 1, nEdgesSolve
+         do k = 1, nVertLevels
+            scalar_min = min(scalar_min, u(k,iEdge))
+            scalar_max = max(scalar_max, u(k,iEdge))
          end do
          end do
-         call mpas_dmpar_min_real(domain%dminfo, scalar_min, global_scalar_min)
-         call mpas_dmpar_max_real(domain%dminfo, scalar_max, global_scalar_max)
+         call mpas_dmpar_min_real(domain % dminfo, scalar_min, global_scalar_min)
+         call mpas_dmpar_max_real(domain % dminfo, scalar_max, global_scalar_max)
          write(0,*) 'global min, max u ',global_scalar_min, global_scalar_max
 
-         do iScalar = 1, block % state % time_levs(2) % state % num_scalars
+         do iScalar = 1, num_scalars
             scalar_min = 0.
             scalar_max = 0.
-            do iCell = 1, block % mesh % nCellsSolve
-            do k = 1, block % mesh % nVertLevels
-               scalar_min = min(scalar_min, block % state % time_levs(2) % state % scalars % array(iScalar,k,iCell))
-               scalar_max = max(scalar_max, block % state % time_levs(2) % state % scalars % array(iScalar,k,iCell))
+            do iCell = 1, nCellsSolve
+            do k = 1, nVertLevels
+               scalar_min = min(scalar_min, scalars(iScalar,k,iCell))
+               scalar_max = max(scalar_max, scalars(iScalar,k,iCell))
             end do
             end do
-            call mpas_dmpar_min_real(domain%dminfo, scalar_min, global_scalar_min)
-            call mpas_dmpar_max_real(domain%dminfo, scalar_max, global_scalar_max)
+            call mpas_dmpar_min_real(domain % dminfo, scalar_min, global_scalar_min)
+            call mpas_dmpar_max_real(domain % dminfo, scalar_max, global_scalar_max)
             write(0,102) iScalar,global_scalar_min,global_scalar_max
          end do
 
@@ -400,58 +564,105 @@ module atm_time_integration
 
 !---
 
-   subroutine atm_rk_integration_setup( s_old, s_new, diag )
+   subroutine atm_rk_integration_setup( state, diag )
 
       implicit none
 
-      type (state_type) :: s_new, s_old
-      type (diag_type) :: diag
+      type (mpas_pool_type), intent(inout) :: state
+      type (mpas_pool_type), intent(inout) :: diag
 
-      diag % ru_save % array       = diag % ru % array
-      diag % rw_save % array       = diag % rw % array
-      diag % rtheta_p_save % array = diag % rtheta_p % array
-      diag % rho_p_save % array    = diag % rho_p % array
+      real (kind=RKIND), dimension(:,:), pointer :: ru
+      real (kind=RKIND), dimension(:,:), pointer :: ru_save
+      real (kind=RKIND), dimension(:,:), pointer :: rw
+      real (kind=RKIND), dimension(:,:), pointer :: rw_save
+      real (kind=RKIND), dimension(:,:), pointer :: rtheta_p
+      real (kind=RKIND), dimension(:,:), pointer :: rtheta_p_save
+      real (kind=RKIND), dimension(:,:), pointer :: rho_p
+      real (kind=RKIND), dimension(:,:), pointer :: rho_p_save
 
-      s_old % u % array       = s_new % u % array
-      s_old % w % array       = s_new % w % array
-      s_old % theta_m % array = s_new % theta_m % array
-      s_old % rho_zz % array  = s_new % rho_zz % array
-      s_old % scalars % array = s_new % scalars % array
+      real (kind=RKIND), dimension(:,:), pointer :: u_1, u_2
+      real (kind=RKIND), dimension(:,:), pointer :: w_1, w_2
+      real (kind=RKIND), dimension(:,:), pointer :: theta_m_1, theta_m_2
+      real (kind=RKIND), dimension(:,:), pointer :: rho_zz_1, rho_zz_2
+      real (kind=RKIND), dimension(:,:,:), pointer :: scalars_1, scalars_2
+
+      call mpas_pool_get_array(diag, 'ru', ru)
+      call mpas_pool_get_array(diag, 'ru_save', ru_save)
+      call mpas_pool_get_array(diag, 'rw', rw)
+      call mpas_pool_get_array(diag, 'rw_save', rw_save)
+      call mpas_pool_get_array(diag, 'rtheta_p', rtheta_p)
+      call mpas_pool_get_array(diag, 'rtheta_p_save', rtheta_p_save)
+      call mpas_pool_get_array(diag, 'rho_p', rho_p)
+      call mpas_pool_get_array(diag, 'rho_p_save', rho_p_save)
+
+      call mpas_pool_get_array(state, 'u', u_1, 1)
+      call mpas_pool_get_array(state, 'u', u_2, 2)
+      call mpas_pool_get_array(state, 'w', w_1, 1)
+      call mpas_pool_get_array(state, 'w', w_2, 2)
+      call mpas_pool_get_array(state, 'theta_m', theta_m_1, 1)
+      call mpas_pool_get_array(state, 'theta_m', theta_m_2, 2)
+      call mpas_pool_get_array(state, 'rho_zz', rho_zz_1, 1)
+      call mpas_pool_get_array(state, 'rho_zz', rho_zz_2, 2)
+      call mpas_pool_get_array(state, 'scalars', scalars_1, 1)
+      call mpas_pool_get_array(state, 'scalars', scalars_2, 2)
+
+      ru_save(:,:) = ru(:,:)
+      rw_save(:,:) = rw(:,:)
+      rtheta_p_save(:,:) = rtheta_p(:,:)
+      rho_p_save(:,:) = rho_p(:,:)
+
+      u_2(:,:) = u_1(:,:)
+      w_2(:,:) = w_1(:,:)
+      theta_m_2(:,:) = theta_m_1(:,:)
+      rho_zz_2(:,:) = rho_zz_1(:,:)
+      scalars_2(:,:,:) = scalars_1(:,:,:)
 
    end subroutine atm_rk_integration_setup
 
 !-----
 
-   subroutine atm_compute_moist_coefficients( state, diag, grid )
+   subroutine atm_compute_moist_coefficients( dims, state, diag, mesh )
 
       ! the moist coefficients cqu and cqw serve to transform the inverse dry density (1/rho_d) 
       ! into the inverse full (moist) density (1/rho_m).
 
       implicit none
 
-      type (state_type) :: state
-      type (diag_type) :: diag
-      type (mesh_type) :: grid
+      type (mpas_pool_type), intent(in) :: dims
+      type (mpas_pool_type), intent(inout) :: state
+      type (mpas_pool_type), intent(inout) :: diag
+      type (mpas_pool_type), intent(inout) :: mesh
+
 
       integer :: iEdge, iCell, k, cell1, cell2, iq
-      integer :: nCells, nEdges, nVertLevels, nCellsSolve
+      integer, pointer :: nCells, nEdges, nVertLevels, nCellsSolve
       real (kind=RKIND) :: qtot
       integer, dimension(:,:), pointer :: cellsOnEdge
+      integer, pointer :: moist_start, moist_end
+      real (kind=RKIND), dimension(:,:,:), pointer :: scalars
+      real (kind=RKIND), dimension(:,:), pointer :: cqw
+      real (kind=RKIND), dimension(:,:), pointer :: cqu
 
-      nCells      = grid % nCells
-      nEdges      = grid % nEdges
-      nVertLevels = grid % nVertLevels
-      nCellsSolve = grid % nCellsSolve
+      call mpas_pool_get_dimension(dims, 'nCells', nCells)
+      call mpas_pool_get_dimension(dims, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(dims, 'nVertLevels', nVertLevels)
+      call mpas_pool_get_dimension(dims, 'nCellsSolve', nCellsSolve)
+      call mpas_pool_get_dimension(state, 'moist_start', moist_start)
+      call mpas_pool_get_dimension(state, 'moist_end', moist_end)
 
-      cellsOnEdge => grid % cellsOnEdge % array
+      call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
+      call mpas_pool_get_array(state, 'scalars', scalars, 2)
+      call mpas_pool_get_array(diag, 'cqw', cqw)
+      call mpas_pool_get_array(diag, 'cqu', cqu)
+
 
       do iCell = 1, nCellsSolve
          do k = 2, nVertLevels
             qtot = 0.
-            do iq = state % moist_start, state % moist_end
-               qtot = qtot + 0.5 * (state % scalars % array (iq, k, iCell) + state % scalars % array (iq, k-1, iCell))
+            do iq = moist_start, moist_end
+               qtot = qtot + 0.5 * (scalars(iq, k, iCell) + scalars(iq, k-1, iCell))
             end do
-            diag % cqw % array(k,iCell) = 1./(1.+qtot)
+            cqw(k,iCell) = 1./(1.+qtot)
          end do
       end do
 
@@ -461,10 +672,10 @@ module atm_time_integration
          if (cell1 <= nCellsSolve .or. cell2 <= nCellsSolve) then
             do k = 1, nVertLevels
                qtot = 0.
-               do iq = state % moist_start, state % moist_end
-                  qtot = qtot + 0.5 * ( state % scalars % array (iq, k, cell1) + state % scalars % array (iq, k, cell2) )
+               do iq = moist_start, moist_end
+                  qtot = qtot + 0.5 * ( scalars(iq, k, cell1) + scalars(iq, k, cell2) )
                end do
-               diag % cqu % array(k,iEdge) = 1./( 1. + qtot)
+               cqu(k,iEdge) = 1./( 1. + qtot)
             end do
          end if
       end do
@@ -473,64 +684,74 @@ module atm_time_integration
 
 !---
 
-   subroutine atm_compute_vert_imp_coefs(s, grid, diag, dts)
+   subroutine atm_compute_vert_imp_coefs(state, mesh, diag, configs, nVertLevels, dts)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! Compute coefficients for vertically implicit gravity-wave/acoustic computations
    !
-   ! Input: s - current model state
-   !        grid - grid metadata
+   ! Input: state - current model state
+   !        mesh - grid metadata
    !
    ! Output: diag - cofrz, cofwr, cofwz, coftz, cofwt, a, alpha and gamma
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       implicit none
 
-      type (state_type), intent(in)   :: s
-      type (mesh_type), intent(in)    :: grid
-      type (diag_type), intent(inout) :: diag
-      real (kind=RKIND), intent(in)   :: dts
+      type (mpas_pool_type), intent(in)    :: state
+      type (mpas_pool_type), intent(in)    :: mesh
+      type (mpas_pool_type), intent(inout) :: diag
+      type (mpas_pool_type), intent(in)    :: configs
+      integer, intent(in)                  :: nVertLevels          ! for allocating stack variables
+      real (kind=RKIND), intent(in)        :: dts
 
 
       integer :: iCell, k, iq
 
-      integer :: nCells, nVertLevels, nCellsSolve
+      integer, pointer :: nCells, nCellsSolve
       real (kind=RKIND), dimension(:,:), pointer :: zz, cqw, p, t, rb, rtb, pb, rt
       real (kind=RKIND), dimension(:,:), pointer :: cofwr, cofwz, coftz, cofwt, a_tri, alpha_tri, gamma_tri
       real (kind=RKIND), dimension(:), pointer :: cofrz, rdzw, fzm, fzp, rdzu
+      real (kind=RKIND), dimension(:,:,:), pointer :: scalars
 
-      real (kind=RKIND), dimension( grid % nVertLevels ) :: b_tri,c_tri
-      real (kind=RKIND) :: epssm, dtseps, c2, qtot, rcv
+      real (kind=RKIND), dimension( nVertLevels ) :: b_tri,c_tri
+      real (kind=RKIND), pointer :: epssm
+      real (kind=RKIND) :: dtseps, c2, qtot, rcv
+
+      integer, pointer :: moist_start, moist_end
 
 !  set coefficients
 
-      nCells      = grid % nCells
-      nCellsSolve = grid % nCellsSolve
-      nVertLevels = grid % nVertLevels
-      epssm = config_epssm
+      call mpas_pool_get_dimension(mesh, 'nCells', nCells)
+      call mpas_pool_get_dimension(mesh, 'nCellsSolve', nCellsSolve)
 
-      rdzu => grid % rdzu % array
-      rdzw => grid % rdzw % array
-      fzm => grid % fzm % array
-      fzp => grid % fzp % array
-      zz => grid % zz % array
-      cqw => diag % cqw % array
+      call mpas_pool_get_config(configs, 'config_epssm', epssm)
 
-      p => diag % exner % array
-      pb => diag % exner_base % array
-      rt => diag % rtheta_p % array
-      rtb => diag % rtheta_base % array
-      rb => diag % rho_base % array
+      call mpas_pool_get_array(mesh, 'rdzu', rdzu)
+      call mpas_pool_get_array(mesh, 'rdzw', rdzw)
+      call mpas_pool_get_array(mesh, 'fzm', fzm)
+      call mpas_pool_get_array(mesh, 'fzp', fzp)
+      call mpas_pool_get_array(mesh, 'zz', zz)
 
-      alpha_tri => diag % alpha_tri % array
-      gamma_tri => diag % gamma_tri % array
-      a_tri => diag % a_tri % array
-      cofwr => diag % cofwr % array      
-      cofwz => diag % cofwz % array      
-      coftz => diag % coftz % array      
-      cofwt => diag % cofwt % array      
-      cofrz => diag % cofrz % array      
+      call mpas_pool_get_array(diag, 'cqw', cqw)
+      call mpas_pool_get_array(diag, 'exner', p)
+      call mpas_pool_get_array(diag, 'exner_base', pb)
+      call mpas_pool_get_array(diag, 'rtheta_p', rt)
+      call mpas_pool_get_array(diag, 'rtheta_base', rtb)
+      call mpas_pool_get_array(diag, 'rho_base', rb)
 
-      t => s % theta_m % array
+      call mpas_pool_get_array(diag, 'alpha_tri', alpha_tri)
+      call mpas_pool_get_array(diag, 'gamma_tri', gamma_tri)
+      call mpas_pool_get_array(diag, 'a_tri', a_tri)
+      call mpas_pool_get_array(diag, 'cofwr', cofwr)
+      call mpas_pool_get_array(diag, 'cofwz', cofwz)
+      call mpas_pool_get_array(diag, 'coftz', coftz)
+      call mpas_pool_get_array(diag, 'cofwt', cofwt)
+      call mpas_pool_get_array(diag, 'cofrz', cofrz)
+
+      call mpas_pool_get_array(state, 'theta_m', t, 2)
+      call mpas_pool_get_array(state, 'scalars', scalars, 2)
+      call mpas_pool_get_dimension(state, 'moist_start', moist_start)
+      call mpas_pool_get_dimension(state, 'moist_end', moist_end)
+
 
       dtseps = .5*dts*(1.+epssm)
       rcv = rgas/(cp-rgas)
@@ -555,8 +776,8 @@ module atm_time_integration
          do k=1,nVertLevels
 
             qtot = 0.
-            do iq = s % moist_start, s % moist_end
-               qtot = qtot + s % scalars % array (iq, k, iCell)
+            do iq = moist_start, moist_end
+               qtot = qtot + scalars(iq, k, iCell)
             end do
 
             cofwt(k,iCell) = .5*dtseps*rcv*zz(k,iCell)*gravity*rb(k,iCell)/(1.+qtot)  &
@@ -594,7 +815,7 @@ module atm_time_integration
 
 !------------------------
 
-   subroutine atm_set_smlstep_pert_variables( tend, diag, grid )
+   subroutine atm_set_smlstep_pert_variables( tend, diag, mesh, configs )
 
       ! following Klemp et al MWR 2007, we use preturbation variables
       ! in the acoustic-step integration.  This routine computes those 
@@ -604,48 +825,86 @@ module atm_time_integration
 
       implicit none
 
-      type (tend_type) :: tend
-      type (diag_type) :: diag
-      type (mesh_type) :: grid
+      type (mpas_pool_type), intent(inout) :: tend
+      type (mpas_pool_type), intent(inout) :: diag
+      type (mpas_pool_type), intent(inout) :: mesh
+      type (mpas_pool_type), intent(in) :: configs
 
-      integer :: iCell, iEdge, k, cell1, cell2, coef_3rd_order
-      integer :: nCellsSolve, nCells, nVertLevels, nEdges
+      integer :: iCell, iEdge, k, cell1, cell2
+      real (kind=RKIND), pointer :: coef_3rd_order
+      integer, pointer :: config_theta_adv_order
+      integer, pointer :: nCellsSolve, nCells, nVertLevels, nEdges
       integer, dimension(:,:), pointer :: cellsOnEdge
       real (kind=RKIND), dimension(:), pointer :: fzm, fzp, dvEdge, areaCell
       real (kind=RKIND) :: flux
+      real (kind=RKIND), dimension(:,:), pointer :: ruAvg, wwAvg
+      real (kind=RKIND), dimension(:,:,:), pointer :: zb, zb3
+      real (kind=RKIND), dimension(:,:), pointer :: zz
+      real (kind=RKIND), dimension(:,:), pointer :: w_tend, u_tend
+      real (kind=RKIND), dimension(:,:), pointer :: rho_pp, rho_p_save, rho_p
+      real (kind=RKIND), dimension(:,:), pointer :: ru_p, ru, ru_save
+      real (kind=RKIND), dimension(:,:), pointer :: rtheta_pp, rtheta_p_save, rtheta_p, rtheta_pp_old
+      real (kind=RKIND), dimension(:,:), pointer :: rw_p, rw_save, rw
 
-      coef_3rd_order = config_coef_3rd_order
-      if (config_theta_adv_order /=3) coef_3rd_order = 0
 
-      nCellsSolve = grid % nCellsSolve
-      nCells      = grid % nCells
-      nEdges      = grid % nEdges
-      nVertLevels = grid % nVertLevels
+      call mpas_pool_get_config(configs, 'config_coef_3rd_order', coef_3rd_order)
+      call mpas_pool_get_config(configs, 'config_theta_adv_order', config_theta_adv_order)
 
-      fzm => grid % fzm % array
-      fzp => grid % fzp % array
-      dvEdge => grid % dvEdge % array
-      areaCell => grid % areaCell % array
-      cellsOnEdge => grid % cellsOnEdge % array
+      call mpas_pool_get_dimension(mesh, 'nCells', nCells)
+      call mpas_pool_get_dimension(mesh, 'nCellsSolve', nCellsSolve)
+      call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
+
+      call mpas_pool_get_array(mesh, 'zz', zz)
+      call mpas_pool_get_array(mesh, 'zb', zb)
+      call mpas_pool_get_array(mesh, 'zb3', zb3)
+      call mpas_pool_get_array(mesh, 'fzm', fzm)
+      call mpas_pool_get_array(mesh, 'fzp', fzp)
+      call mpas_pool_get_array(mesh, 'dvEdge', dvEdge)
+      call mpas_pool_get_array(mesh, 'areaCell', areaCell)
+      call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
+
+      call mpas_pool_get_array(tend, 'w', w_tend)
+      call mpas_pool_get_array(tend, 'u', u_tend)
+
+      call mpas_pool_get_array(diag, 'ruAvg', ruAvg)
+      call mpas_pool_get_array(diag, 'wwAvg', wwAvg)
+
+      call mpas_pool_get_array(diag, 'rho_pp', rho_pp)
+      call mpas_pool_get_array(diag, 'rho_p_save', rho_p_save)
+      call mpas_pool_get_array(diag, 'rho_p', rho_p)
+
+      call mpas_pool_get_array(diag, 'ru_p', ru_p)
+      call mpas_pool_get_array(diag, 'ru_save', ru_save)
+      call mpas_pool_get_array(diag, 'ru', ru)
+
+      call mpas_pool_get_array(diag, 'rtheta_pp', rtheta_pp)
+      call mpas_pool_get_array(diag, 'rtheta_p_save', rtheta_p_save)
+      call mpas_pool_get_array(diag, 'rtheta_p', rtheta_p)
+      call mpas_pool_get_array(diag, 'rtheta_pp_old', rtheta_pp_old)
+
+      call mpas_pool_get_array(diag, 'rw_p', rw_p)
+      call mpas_pool_get_array(diag, 'rw_save', rw_save)
+      call mpas_pool_get_array(diag, 'rw', rw)
+
+      if (config_theta_adv_order /= 3) coef_3rd_order = 0.0
 
       ! set the acoustic step perturbation variables by subtracting the RK timestep variables
       ! from their at the previous RK substep.
 
-      diag % rho_pp % array = diag % rho_p_save % array - diag % rho_p % array
-      diag % ru_p % array = diag % ru_save % array - diag % ru % array
-      diag % rtheta_pp % array = diag % rtheta_p_save % array - diag % rtheta_p % array
-      diag % rtheta_pp_old % array = diag % rtheta_pp % array
-      diag % rw_p % array = diag % rw_save % array - diag % rw % array
+      rho_pp = rho_p_save - rho_p
+      ru_p = ru_save - ru
+      rtheta_pp = rtheta_p_save - rtheta_p
+      rtheta_pp_old = rtheta_pp
+      rw_p = rw_save - rw
 
       ! we solve for omega instead of w (see Klemp et al MWR 2007),
       ! so here we change the w_p tendency to an omega_p tendency
 
       do iCell = 1, nCellsSolve
-      do k = 2, nVertLevels
-         tend % w % array(k,iCell) = ( fzm(k) * grid % zz % array(k  ,iCell) +   &
-                                       fzp(k) * grid % zz % array(k-1,iCell)   ) &
-                                      * tend % w % array(k,iCell)
-      end do
+         do k = 2, nVertLevels
+            w_tend(k,iCell) = ( fzm(k) * zz(k,iCell) + fzp(k) * zz(k-1,iCell)   ) * w_tend(k,iCell)
+         end do
       end do
 
       ! here we need to compute the omega tendency in a manner consistent with our diagnosis of omega.
@@ -657,27 +916,27 @@ module atm_time_integration
          cell2 = cellsOnEdge(2,iEdge)
 
          do k = 2, nVertLevels
-            flux = fzm(k) * tend % u % array(k,iEdge) + fzp(k) * tend % u % array(k-1,iEdge)
-            tend % w % array(k,cell2) = tend % w % array(k,cell2)   &
-                     + (grid % zb % array(k,2,iEdge) + coef_3rd_order*sign(1.0_RKIND,tend % u % array(k,iEdge))*grid %zb3 % array(k,2,iEdge))*flux   &
-                     * (fzm(k) * grid % zz % array(k,cell2) + fzp(k) * grid % zz % array(k-1,cell2)) 
-            tend % w % array(k,cell1) = tend % w % array(k,cell1)   &
-                     - (grid % zb % array(k,1,iEdge) + coef_3rd_order*sign(1.0_RKIND,tend % u % array(k,iEdge))*grid %zb3 % array(k,1,iEdge))*flux   &
-                     * (fzm(k) * grid % zz % array(k,cell1) + fzp(k) * grid % zz % array(k-1,cell1)) 
+            flux = fzm(k) * u_tend(k,iEdge) + fzp(k) * u_tend(k-1,iEdge)
+            w_tend(k,cell2) = w_tend(k,cell2)   &
+                     + (zb(k,2,iEdge) + coef_3rd_order * sign(1.0_RKIND, u_tend(k,iEdge)) * zb3(k,2,iEdge)) * flux   &
+                     * (fzm(k) * zz(k,cell2) + fzp(k) * zz(k-1,cell2)) 
+            w_tend(k,cell1) = w_tend(k,cell1)   &
+                     - (zb(k,1,iEdge) + coef_3rd_order * sign(1.0_RKIND, u_tend(k,iEdge)) * zb3(k,1,iEdge)) * flux   &
+                     * (fzm(k) * zz(k,cell1) + fzp(k) * zz(k-1,cell1)) 
          end do
 
       end do
 
       !  ruAvg and wwAvg will store the mass fluxes averaged over the acoustic steps for the subsequent scalar transport.
 
-      diag % ruAvg % array = 0.
-      diag % wwAvg % array = 0.
+      ruAvg(:,:) = 0.0
+      wwAvg(:,:) = 0.0
 
    end subroutine atm_set_smlstep_pert_variables
 
 !-------------------------------
 
-   subroutine atm_advance_acoustic_step( s, diag, tend, grid, dts )
+   subroutine atm_advance_acoustic_step( state, diag, tend, mesh, configs, nCells, nVertLevels, dts )
 
       !  This subroutine performs the entire acoustic step update, following Klemp et al MWR 2007,
       !  using forward-backward vertically implicit integration.  
@@ -687,10 +946,13 @@ module atm_time_integration
 
       implicit none
 
-      type (state_type) :: s
-      type (diag_type) :: diag
-      type (tend_type) :: tend
-      type (mesh_type) :: grid
+      type (mpas_pool_type), intent(inout) :: state
+      type (mpas_pool_type), intent(inout) :: diag
+      type (mpas_pool_type), intent(inout) :: tend
+      type (mpas_pool_type), intent(inout) :: mesh
+      type (mpas_pool_type), intent(in)    :: configs
+      integer, intent(in) :: nCells                  ! for allocating stack variables
+      integer, intent(in) :: nVertLevels             ! for allocating stack variables
       real (kind=RKIND), intent(in) :: dts
 
 
@@ -705,85 +967,87 @@ module atm_time_integration
       real (kind=RKIND), dimension(:,:), pointer :: cpr, cpl, pzp, pzm
       integer, dimension(:,:), pointer :: cellsOnEdge
 
-      real (kind=RKIND) :: smdiv, c2, rcv
-      real (kind=RKIND), dimension( grid % nVertLevels ) :: du
-      real (kind=RKIND), dimension( grid % nVertLevels + 1 ) :: dpzx
-      real (kind=RKIND), dimension( grid % nVertLevels, grid % nCells+1 ) :: ts, rs
+      real (kind=RKIND) :: c2, rcv
+      real (kind=RKIND), dimension( nVertLevels ) :: du
+      real (kind=RKIND), dimension( nVertLevels + 1 ) :: dpzx
+      real (kind=RKIND), dimension( nVertLevels, nCells+1 ) :: ts, rs
 
       integer :: cell1, cell2, iEdge, iCell, k
-      real (kind=RKIND) :: pgrad, flux, resm, epssm
+      real (kind=RKIND) :: pgrad, flux, resm
+      real (kind=RKIND), pointer :: epssm, smdiv
 
-      real (kind=RKIND) :: cf1, cf2, cf3, pr, pl
+      real (kind=RKIND), pointer :: cf1, cf2, cf3
+      real (kind=RKIND) :: pr, pl
       integer :: kr, kl
 
-      integer :: nEdges, nCells, nCellsSolve, nVertLevels
+      integer, pointer :: nEdges, nCellsSolve
 
       logical, parameter :: debug = .false.
       logical, parameter :: debug1 = .false.
-      logical :: newpx
+      logical, pointer :: newpx
 
 !--
-      cellsOnEdge => grid % cellsOnEdge % array
+      call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
 
-      rho_zz => s % rho_zz % array
-      theta_m => s % theta_m % array
-      w => s % w % array
+      call mpas_pool_get_array(state, 'rho_zz', rho_zz, 2)
+      call mpas_pool_get_array(state, 'theta_m', theta_m, 2)
+      call mpas_pool_get_array(state, 'w', w, 2)
 
-      rtheta_pp => diag % rtheta_pp % array
-      rtheta_pp_old => diag % rtheta_pp_old % array
-      h_divergence => diag % h_divergence % array
-      ru_p => diag % ru_p % array
-      rw_p => diag % rw_p % array
-      exner => diag % exner % array
-      cqu => diag % cqu % array
-      ruAvg => diag % ruAvg % array
-      wwAvg => diag % wwAvg % array
-      rho_pp => diag % rho_pp % array
-      cofwt => diag % cofwt % array
-      coftz => diag % coftz % array
-      cofrz => diag % cofrz % array
-      cofwr => diag % cofwr % array
-      cofwz => diag % cofwz % array
-      a_tri => diag % a_tri % array
-      alpha_tri => diag % alpha_tri % array
-      gamma_tri => diag % gamma_tri % array
-      dss => grid % dss % array
+      call mpas_pool_get_array(diag, 'rtheta_pp', rtheta_pp)
+      call mpas_pool_get_array(diag, 'rtheta_pp_old', rtheta_pp_old)
+      call mpas_pool_get_array(diag, 'h_divergence', h_divergence)
+      call mpas_pool_get_array(diag, 'ru_p', ru_p)
+      call mpas_pool_get_array(diag, 'rw_p', rw_p)
+      call mpas_pool_get_array(diag, 'exner', exner)
+      call mpas_pool_get_array(diag, 'cqu', cqu)
+      call mpas_pool_get_array(diag, 'ruAvg', ruAvg)
+      call mpas_pool_get_array(diag, 'wwAvg', wwAvg)
+      call mpas_pool_get_array(diag, 'rho_pp', rho_pp)
+      call mpas_pool_get_array(diag, 'cofwt', cofwt)
+      call mpas_pool_get_array(diag, 'coftz', coftz)
+      call mpas_pool_get_array(diag, 'cofrz', cofrz)
+      call mpas_pool_get_array(diag, 'cofwr', cofwr)
+      call mpas_pool_get_array(diag, 'cofwz', cofwz)
+      call mpas_pool_get_array(diag, 'a_tri', a_tri)
+      call mpas_pool_get_array(diag, 'alpha_tri', alpha_tri)
+      call mpas_pool_get_array(diag, 'gamma_tri', gamma_tri)
 
-      pzp  => grid % pzp % array
-      pzm  => grid % pzm % array
+      call mpas_pool_get_array(mesh, 'dss', dss)
+      call mpas_pool_get_array(mesh, 'pzp', pzp)
+      call mpas_pool_get_array(mesh, 'pzm', pzm)
 
-      tend_ru => tend % u % array
-      tend_rho => tend % rho_zz % array
-      tend_rt => tend % theta_m % array
-      tend_rw => tend % w % array
+      call mpas_pool_get_array(tend, 'u', tend_ru)
+      call mpas_pool_get_array(tend, 'rho_zz', tend_rho)
+      call mpas_pool_get_array(tend, 'theta_m', tend_rt)
+      call mpas_pool_get_array(tend, 'w', tend_rw)
 
-      zz => grid % zz % array
-      zx => grid % zx % array
-      zgrid => grid % zgrid % array
-      fzm => grid % fzm % array
-      fzp => grid % fzp % array
-      rdzw => grid % rdzw % array
-      dcEdge => grid % dcEdge % array
-      dvEdge => grid % dvEdge % array
-      AreaCell => grid % AreaCell % array
+      call mpas_pool_get_array(mesh, 'zz', zz)
+      call mpas_pool_get_array(mesh, 'zx', zx)
+      call mpas_pool_get_array(mesh, 'zgrid', zgrid)
+      call mpas_pool_get_array(mesh, 'fzm', fzm)
+      call mpas_pool_get_array(mesh, 'fzp', fzp)
+      call mpas_pool_get_array(mesh, 'rdzw', rdzw)
+      call mpas_pool_get_array(mesh, 'dcEdge', dcEdge)
+      call mpas_pool_get_array(mesh, 'dvEdge', dvEdge)
+      call mpas_pool_get_array(mesh, 'areaCell', areaCell)
 
-      nEdges = grid % nEdges
-      nCells = grid % nCells
-      nCellsSolve = grid % nCellsSolve
-      nVertLevels = grid % nVertLevels
+      call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(mesh, 'nCellsSolve', nCellsSolve)
 
-      cf1 = grid % cf1 % scalar
-      cf2 = grid % cf2 % scalar
-      cf3 = grid % cf3 % scalar
+      call mpas_pool_get_array(mesh, 'cf1', cf1)
+      call mpas_pool_get_array(mesh, 'cf2', cf2)
+      call mpas_pool_get_array(mesh, 'cf3', cf3)
 
-      cpr         => grid % cpr % array
-      cpl         => grid % cpl % array
-      newpx = config_newpx
+      call mpas_pool_get_array(mesh, 'cpr', cpr)
+      call mpas_pool_get_array(mesh, 'cpl', cpl)
+
+      call mpas_pool_get_config(configs, 'config_newpx', newpx) 
 
       ! epssm is the offcentering coefficient for the vertically implicit integration.
       ! smdiv is the 3D divergence-damping coefficient.
-      epssm = config_epssm
-      smdiv = config_smdiv
+      call mpas_pool_get_config(configs, 'config_epssm', epssm) 
+      call mpas_pool_get_config(configs, 'config_smdiv', smdiv) 
+
 
       rcv = rgas/(cp-rgas)
       c2 = cp*rcv
@@ -982,7 +1246,7 @@ module atm_time_integration
 
 !------------------------
 
-   subroutine atm_recover_large_step_variables( s, diag, tend, grid, dt, ns, rk_step )
+   subroutine atm_recover_large_step_variables( state, diag, tend, mesh, configs, dt, ns, rk_step )
 
       ! reconstitute state variables from acoustic-step perturbation variables 
       ! after the acoustic steps.  The perturbation variables were originally set in
@@ -991,10 +1255,11 @@ module atm_time_integration
 
       implicit none
 
-      type (state_type) :: s
-      type (diag_type) :: diag
-      type (tend_type) :: tend
-      type (mesh_type) :: grid
+      type (mpas_pool_type), intent(inout) :: state
+      type (mpas_pool_type), intent(inout) :: diag
+      type (mpas_pool_type), intent(inout) :: tend
+      type (mpas_pool_type), intent(inout) :: mesh
+      type (mpas_pool_type), intent(in) :: configs
       integer, intent(in) :: ns, rk_step
       real (kind=RKIND), intent(in) :: dt
 
@@ -1004,72 +1269,83 @@ module atm_time_integration
                                                     rho_pp, rho_zz, rho_base, ruAvg, ru_save, ru_p, u, ru, &
                                                     exner, exner_base, rtheta_base, pressure_p,         &
                                                     zz, theta_m, pressure_b, qvapor
+      real (kind=RKIND), dimension(:,:,:), pointer :: scalars
       real (kind=RKIND), dimension(:), pointer :: fzm, fzp, dvEdge, areaCell
       real (kind=RKIND), dimension(:,:,:), pointer :: zb, zb3 
       integer, dimension(:,:), pointer :: cellsOnEdge
 
       integer :: iCell, iEdge, k, cell1, cell2
-      integer :: nVertLevels, nCells, nCellsSolve, nEdges, nEdgesSolve
-      real (kind=RKIND) :: rcv, p0, cf1, cf2, cf3, flux, coef_3rd_order
+      integer, pointer :: nVertLevels, nCells, nCellsSolve, nEdges, nEdgesSolve
+      real (kind=RKIND) :: rcv, p0, flux
+      real (kind=RKIND), pointer :: cf1, cf2, cf3, coef_3rd_order
+      integer, pointer :: config_theta_adv_order
+      integer, pointer :: index_qv
 
       logical, parameter :: debug=.false.
 
 
-      wwAvg => diag % wwAvg % array
-      rw_save => diag % rw_save % array
-      rw => diag % rw % array
-      rw_p => diag % rw_p % array
-      w => s % w % array
+      call mpas_pool_get_array(diag, 'wwAvg', wwAvg)
+      call mpas_pool_get_array(diag, 'rw_save', rw_save)
+      call mpas_pool_get_array(diag, 'rw', rw)
+      call mpas_pool_get_array(diag, 'rw_p', rw_p)
+      call mpas_pool_get_array(state, 'w', w, 2)
 
-      rtheta_p => diag % rtheta_p % array
-      rtheta_p_save => diag % rtheta_p_save % array
-      rtheta_pp => diag % rtheta_pp % array
-      rtheta_base => diag % rtheta_base % array
-      rt_diabatic_tend => tend % rt_diabatic_tend % array
-      theta_m => s % theta_m % array
-      qvapor => s % scalars % array(s%index_qv,:,:)
+      call mpas_pool_get_array(diag, 'rtheta_p', rtheta_p)
+      call mpas_pool_get_array(diag, 'rtheta_p_save', rtheta_p_save)
+      call mpas_pool_get_array(diag, 'rtheta_pp', rtheta_pp)
+      call mpas_pool_get_array(diag, 'rtheta_base', rtheta_base)
+      call mpas_pool_get_array(tend, 'rt_diabatic_tend', rt_diabatic_tend)
+      call mpas_pool_get_array(state, 'theta_m', theta_m, 2)
+      call mpas_pool_get_array(state, 'scalars', scalars, 2)
 
-      rho_zz => s % rho_zz % array
-      rho_p => diag % rho_p % array
-      rho_p_save => diag % rho_p_save % array
-      rho_pp => diag % rho_pp % array
-      rho_base => diag % rho_base % array
+      call mpas_pool_get_dimension(state, 'index_qv', index_qv)
 
-      ruAvg => diag % ruAvg % array
-      ru_save => diag % ru_save % array
-      ru_p => diag % ru_p % array
-      ru => diag % ru % array
-      u => s % u % array
+      qvapor => scalars(index_qv,:,:)   ! MGD does this actually work?
 
-      exner => diag % exner % array
-      exner_base => diag % exner_base % array
+      call mpas_pool_get_array(state, 'rho_zz', rho_zz, 2)
+      call mpas_pool_get_array(diag, 'rho_p', rho_p)
+      call mpas_pool_get_array(diag, 'rho_p_save', rho_p_save)
+      call mpas_pool_get_array(diag, 'rho_pp', rho_pp)
+      call mpas_pool_get_array(diag, 'rho_base', rho_base)
 
-      pressure_p => diag % pressure_p % array
-      pressure_b => diag % pressure_base % array
+      call mpas_pool_get_array(diag, 'ruAvg', ruAvg)
+      call mpas_pool_get_array(diag, 'ru_save', ru_save)
+      call mpas_pool_get_array(diag, 'ru_p', ru_p)
+      call mpas_pool_get_array(diag, 'ru', ru)
+      call mpas_pool_get_array(state, 'u', u, 2)
 
-      zz => grid % zz % array
-      zb => grid % zb % array
-      zb3 => grid % zb3 % array
-      fzm => grid % fzm % array
-      fzp => grid % fzp % array
-      dvEdge => grid % dvEdge % array
-      areaCell => grid % areaCell % array
-      cellsOnEdge => grid % cellsOnEdge % array
+      call mpas_pool_get_array(diag, 'exner', exner)
+      call mpas_pool_get_array(diag, 'exner_base', exner_base)
 
-      nVertLevels = grid % nVertLevels
-      nCells = grid % nCells
-      nCellsSolve = grid % nCellsSolve
-      nEdges = grid % nEdges
-      nEdgesSolve = grid % nEdgesSolve
+      call mpas_pool_get_array(diag, 'pressure_p', pressure_p)
+      call mpas_pool_get_array(diag, 'pressure_base', pressure_b)
+
+      call mpas_pool_get_array(mesh, 'zz', zz)
+      call mpas_pool_get_array(mesh, 'zb', zb)
+      call mpas_pool_get_array(mesh, 'zb3', zb3)
+      call mpas_pool_get_array(mesh, 'fzm', fzm)
+      call mpas_pool_get_array(mesh, 'fzp', fzp)
+      call mpas_pool_get_array(mesh, 'dvEdge', dvEdge)
+      call mpas_pool_get_array(mesh, 'areaCell', areaCell)
+      call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
+
+      call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
+      call mpas_pool_get_dimension(mesh, 'nCells', nCells)
+      call mpas_pool_get_dimension(mesh, 'nCellsSolve', nCellsSolve)
+      call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(mesh, 'nEdgesSolve', nEdgesSolve)
+
+      call mpas_pool_get_array(mesh, 'cf1', cf1)
+      call mpas_pool_get_array(mesh, 'cf2', cf2)
+      call mpas_pool_get_array(mesh, 'cf3', cf3)
+
+      call mpas_pool_get_config(configs, 'config_coef_3rd_order', coef_3rd_order)
+      call mpas_pool_get_config(configs, 'config_theta_adv_order', config_theta_adv_order)
 
       rcv = rgas/(cp-rgas)
       p0 = 1.e+05  ! this should come from somewhere else...
 
-      cf1 = grid % cf1 % scalar
-      cf2 = grid % cf2 % scalar
-      cf3 = grid % cf3 % scalar
-      coef_3rd_order = config_coef_3rd_order
-      if (config_theta_adv_order /=3) coef_3rd_order = 0
+      if (config_theta_adv_order /=3) coef_3rd_order = 0.0
 
       ! compute new density everywhere so we can compute u from ru.
       ! we will also need it to compute theta_m below
@@ -1160,7 +1436,7 @@ module atm_time_integration
 
 !---------------------------------------------------------------------------------------
 
-   subroutine atm_advance_scalars( tend, s_old, s_new, diag, grid, dt)
+   subroutine atm_advance_scalars( tend, state, diag, mesh, configs, num_scalars, nVertLevels, dt)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
    !
    ! Integrate scalar equations - explicit transport plus other tendencies
@@ -1171,7 +1447,7 @@ module atm_time_integration
    !
    ! input scalars in state are uncoupled (i.e. not mulitplied by density)
    ! 
-   ! Output: updated uncoupled scalars (scalars in s_new).
+   ! Output: updated uncoupled scalars (scalars in state).
    ! Note: scalar tendencies are also modified by this routine.
    !
    ! This routine DOES NOT apply any positive definite or monotonic renormalizations.
@@ -1182,11 +1458,13 @@ module atm_time_integration
 
       implicit none
 
-      type (tend_type), intent(in) :: tend
-      type (state_type), intent(in) :: s_old
-      type (state_type), intent(inout) :: s_new
-      type (diag_type), intent(in) :: diag
-      type (mesh_type), intent(in) :: grid
+      type (mpas_pool_type), intent(in) :: tend
+      type (mpas_pool_type), intent(inout) :: state
+      type (mpas_pool_type), intent(in) :: diag
+      type (mpas_pool_type), intent(in) :: mesh
+      type (mpas_pool_type), intent(in) :: configs
+      integer, intent(in) :: num_scalars      ! for allocating stack variables
+      integer, intent(in) :: nVertLevels      ! for allocating stack variables
       real (kind=RKIND) :: dt
 
       integer :: i, iCell, iEdge, k, iScalar, cell1, cell2
@@ -1201,18 +1479,20 @@ module atm_time_integration
       integer, dimension(:,:), pointer :: advCellsForEdge
       integer, dimension(:), pointer :: nAdvCellsForEdge
       real (kind=RKIND), dimension(:,:), pointer :: adv_coefs, adv_coefs_3rd
-      real (kind=RKIND), dimension( s_old % num_scalars, grid % nVertLevels ) :: flux_arr
+      real (kind=RKIND), dimension( num_scalars, nVertLevels ) :: flux_arr
 
-      real (kind=RKIND), dimension( s_old % num_scalars, grid % nVertLevels + 1 ) :: wdtn
-      integer :: nCellsSolve, nEdges, nVertLevels
+      real (kind=RKIND), dimension( num_scalars, nVertLevels + 1 ) :: wdtn
+      integer, pointer :: nCellsSolve, nEdges
 
       real (kind=RKIND), dimension(:), pointer :: fnm, fnp, rdnw, meshScalingDel2, meshScalingDel4
-      real (kind=RKIND) :: coef_3rd_order
+      real (kind=RKIND), pointer :: coef_3rd_order
 
-      real (kind=RKIND) :: h_theta_eddy_visc2, v_theta_eddy_visc2
+      real (kind=RKIND), pointer :: h_theta_eddy_visc2, v_theta_eddy_visc2
 
       real (kind=RKIND) :: flux3, flux4
       real (kind=RKIND) :: q_im2, q_im1, q_i, q_ip1, ua, coef3
+
+      integer, pointer :: config_scalar_vadv_order
 
       integer, parameter :: hadv_opt = 2
 
@@ -1223,43 +1503,47 @@ module atm_time_integration
                 flux4(q_im2, q_im1, q_i, q_ip1, ua) +           &
                 coef3*abs(ua)*((q_ip1 - q_im2)-3.*(q_i-q_im1))/12.0
 
-      coef_3rd_order = config_coef_3rd_order
+      call mpas_pool_get_config(configs, 'config_coef_3rd_order', coef_3rd_order)
+      call mpas_pool_get_config(configs, 'config_scalar_vadv_order', config_scalar_vadv_order)
 
-      scalar_old  => s_old % scalars % array
-      scalar_new  => s_new % scalars % array
-      kdiff       => diag % kdiff % array
-      deriv_two   => grid % deriv_two % array
-      uhAvg       => diag % ruAvg % array
-      dvEdge      => grid % dvEdge % array
-      dcEdge      => grid % dcEdge % array
-      cellsOnEdge => grid % cellsOnEdge % array
-      scalar_tend => tend % scalars % array
-      h_old       => s_old % rho_zz % array
-      h_new       => s_new % rho_zz % array
-      wwAvg       => diag % wwAvg % array
-      areaCell    => grid % areaCell % array
+      call mpas_pool_get_array(state, 'scalars', scalar_old, 1)
+      call mpas_pool_get_array(state, 'scalars', scalar_new, 2)
+      call mpas_pool_get_array(state, 'rho_zz', h_old, 1)
+      call mpas_pool_get_array(state, 'rho_zz', h_new, 2)
+      call mpas_pool_get_array(state, 'rho_zz', rho_zz, 2)
 
-      fnm         => grid % fzm % array
-      fnp         => grid % fzp % array
-      rdnw        => grid % rdzw % array
-      meshScalingDel2 => grid % meshScalingDel2 % array
-      meshScalingDel4 => grid % meshScalingDel4 % array
+      call mpas_pool_get_array(diag, 'kdiff', kdiff)
+      call mpas_pool_get_array(diag, 'ruAvg', uhAvg)
+      call mpas_pool_get_array(diag, 'wwAvg', wwAvg)
 
-      nAdvCellsForEdge => grid % nAdvCellsForEdge % array
-      advCellsForEdge => grid % advCellsForEdge % array
-      adv_coefs => grid % adv_coefs % array
-      adv_coefs_3rd => grid % adv_coefs_3rd % array
+      call mpas_pool_get_array(mesh, 'deriv_two', deriv_two)
+      call mpas_pool_get_array(mesh, 'dvEdge', dvEdge)
+      call mpas_pool_get_array(mesh, 'dcEdge', dcEdge)
+      call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
+      call mpas_pool_get_array(mesh, 'areaCell', areaCell)
+      call mpas_pool_get_array(tend, 'scalars_tend', scalar_tend)
 
-      nCellsSolve = grid % nCellsSolve
-      nEdges      = grid % nEdges
-      nVertLevels = grid % nVertLevels
+      call mpas_pool_get_array(mesh, 'fzm', fnm)
+      call mpas_pool_get_array(mesh, 'fzp', fnp)
+      call mpas_pool_get_array(mesh, 'rdzw', rdnw)
+      call mpas_pool_get_array(mesh, 'meshScalingDel2', meshScalingDel2)
+      call mpas_pool_get_array(mesh, 'meshScalingDel4', meshScalingDel4)
 
-      h_theta_eddy_visc2 = config_h_theta_eddy_visc2
-      v_theta_eddy_visc2 = config_v_theta_eddy_visc2
-      rho_edge     => diag % rho_edge % array
-      rho_zz       => s_new % rho_zz % array
-      qv_init      => grid % qv_init % array
-      zgrid        => grid % zgrid % array
+      call mpas_pool_get_array(mesh, 'nAdvCellsForEdge', nAdvCellsForEdge)
+      call mpas_pool_get_array(mesh, 'advCellsForEdge', advCellsForEdge)
+      call mpas_pool_get_array(mesh, 'adv_coefs', adv_coefs)
+      call mpas_pool_get_array(mesh, 'adv_coefs_3rd', adv_coefs_3rd)
+
+      call mpas_pool_get_array(diag, 'rho_edge', rho_edge)
+      call mpas_pool_get_array(mesh, 'qv_init', qv_init)
+      call mpas_pool_get_array(mesh, 'zgrid', zgrid)
+
+      call mpas_pool_get_dimension(mesh, 'nCellsSolve', nCellsSolve)
+      call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
+
+      call mpas_pool_get_config(configs, 'config_h_theta_eddy_visc2', h_theta_eddy_visc2)
+      call mpas_pool_get_config(configs, 'config_v_theta_eddy_visc2', v_theta_eddy_visc2)
+
 
 #ifndef DO_PHYSICS
       scalar_tend = 0.  !  testing purposes - we have no sources or sinks
@@ -1283,7 +1567,7 @@ module atm_time_integration
                iCell = advCellsForEdge(i,iEdge)
                do k=1,nVertLevels
                   scalar_weight = adv_coefs(i,iEdge) + coef_3rd_order*sign(1.0_RKIND,uhAvg(k,iEdge))*adv_coefs_3rd(i,iEdge)
-                  do iScalar=1,s_old % num_scalars
+                  do iScalar=1,num_scalars
                      flux_arr(iScalar,k) = flux_arr(iScalar,k) + scalar_weight* scalar_new(iScalar,k,iCell)
                   end do
                end do
@@ -1293,7 +1577,7 @@ module atm_time_integration
             ! note that the scalar tendency is modified.
 
             do k=1,nVertLevels
-            do iScalar=1,s_old % num_scalars
+            do iScalar=1,num_scalars
                   scalar_tend(iScalar,k,cell1) = scalar_tend(iScalar,k,cell1) &
                          - uhAvg(k,iEdge)*flux_arr(iScalar,k)/areaCell(cell1)
                   scalar_tend(iScalar,k,cell2) = scalar_tend(iScalar,k,cell2) &
@@ -1317,12 +1601,12 @@ module atm_time_integration
 
          do iCell=1,nCellsSolve
             do k = 2, nVertLevels
-               do iScalar=1,s_old % num_scalars
+               do iScalar=1,num_scalars
                   wdtn(iScalar,k) = wwAvg(k,iCell)*(fnm(k)*scalar_new(iScalar,k,iCell)+fnp(k)*scalar_new(iScalar,k-1,iCell))
                end do
             end do
             do k=1,nVertLevels
-               do iScalar=1,s_old % num_scalars
+               do iScalar=1,num_scalars
                   scalar_new(iScalar,k,iCell) = (   scalar_old(iScalar,k,iCell)*h_old(k,iCell) &
                         + dt*( scalar_tend(iScalar,k,iCell) -rdnw(k)*(wdtn(iScalar,k+1)-wdtn(iScalar,k)) ) )/h_new(k,iCell)
                end do
@@ -1334,24 +1618,24 @@ module atm_time_integration
          do iCell=1,nCellsSolve
 
             k = 2
-            do iScalar=1,s_old % num_scalars
+            do iScalar=1,num_scalars
                wdtn(iScalar,k) = wwAvg(k,iCell)*(fnm(k)*scalar_new(iScalar,k,iCell)+fnp(k)*scalar_new(iScalar,k-1,iCell))
             end do
              
             do k=3,nVertLevels-1
-               do iScalar=1,s_old % num_scalars
+               do iScalar=1,num_scalars
                   wdtn(iScalar,k) = flux3( scalar_new(iScalar,k-2,iCell),scalar_new(iScalar,k-1,iCell),  &
                                            scalar_new(iScalar,k  ,iCell),scalar_new(iScalar,k+1,iCell),  &
                                            wwAvg(k,iCell), coef_3rd_order )
                end do
             end do
             k = nVertLevels
-            do iScalar=1,s_old % num_scalars
+            do iScalar=1,num_scalars
                wdtn(iScalar,k) = wwAvg(k,iCell)*(fnm(k)*scalar_new(iScalar,k,iCell)+fnp(k)*scalar_new(iScalar,k-1,iCell))
             end do
 
             do k=1,nVertLevels
-               do iScalar=1,s_old % num_scalars
+               do iScalar=1,num_scalars
                   scalar_new(iScalar,k,iCell) = (   scalar_old(iScalar,k,iCell)*h_old(k,iCell) &
                         + dt*( scalar_tend(iScalar,k,iCell) -rdnw(k)*(wdtn(iScalar,k+1)-wdtn(iScalar,k)) ) )/h_new(k,iCell)
                end do
@@ -1364,22 +1648,22 @@ module atm_time_integration
          do iCell=1,nCellsSolve
 
             k = 2
-            do iScalar=1,s_old % num_scalars
+            do iScalar=1,num_scalars
                wdtn(iScalar,k) = wwAvg(k,iCell)*(fnm(k)*scalar_new(iScalar,k,iCell)+fnp(k)*scalar_new(iScalar,k-1,iCell))
             end do
             do k=3,nVertLevels-1
-               do iScalar=1,s_old % num_scalars
+               do iScalar=1,num_scalars
                   wdtn(iScalar,k) = flux4( scalar_new(iScalar,k-2,iCell),scalar_new(iScalar,k-1,iCell),  &
                                            scalar_new(iScalar,k  ,iCell),scalar_new(iScalar,k+1,iCell), wwAvg(k,iCell) )
                end do
             end do
             k = nVertLevels
-            do iScalar=1,s_old % num_scalars
+            do iScalar=1,num_scalars
                wdtn(iScalar,k) = wwAvg(k,iCell)*(fnm(k)*scalar_new(iScalar,k,iCell)+fnp(k)*scalar_new(iScalar,k-1,iCell))
             end do
 
             do k=1,nVertLevels
-               do iScalar=1,s_old % num_scalars
+               do iScalar=1,num_scalars
                   scalar_new(iScalar,k,iCell) = (   scalar_old(iScalar,k,iCell)*h_old(k,iCell) &
                         + dt*( scalar_tend(iScalar,k,iCell) -rdnw(k)*(wdtn(iScalar,k+1)-wdtn(iScalar,k)) ) )/h_new(k,iCell)
                end do
@@ -1397,7 +1681,7 @@ module atm_time_integration
 
 !---------------------------
 
-   subroutine atm_advance_scalars_mono(tend, s_old, s_new, diag, grid, dt)
+   subroutine atm_advance_scalars_mono(block, tend, state, diag, mesh, configs, nCells, nEdges, nVertLevels, dt)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
    !
    ! Integrate scalar equations - transport plus other tendencies
@@ -1421,14 +1705,17 @@ module atm_time_integration
 
       implicit none
 
-      type (tend_type),intent(in)     :: tend
-      type (state_type),intent(inout) :: s_old
-      type (state_type),intent(inout) :: s_new
-      type (diag_type),intent(in)     :: diag
-      type (mesh_type),intent(in)     :: grid
-      real (kind=RKIND),intent(in)    :: dt
+      type (block_type), intent(inout), target :: block
+      type (mpas_pool_type), intent(in)    :: tend
+      type (mpas_pool_type), intent(inout) :: state
+      type (mpas_pool_type), intent(in)    :: diag
+      type (mpas_pool_type), intent(in)    :: mesh
+      type (mpas_pool_type), intent(in)    :: configs
+      integer, intent(in)                  :: nCells           ! for allocating stack variables
+      integer, intent(in)                  :: nEdges           ! for allocating stack variables
+      integer, intent(in)                  :: nVertLevels      ! for allocating stack variables
+      real (kind=RKIND), intent(in)        :: dt
 
-      type (block_type), pointer :: block
       integer :: i, iCell, iEdge, k, iScalar, cell1, cell2
       real (kind=RKIND) :: flux, scalar_weight
 
@@ -1436,31 +1723,34 @@ module atm_time_integration
       real (kind=RKIND), dimension(:,:,:), pointer :: deriv_two
       real (kind=RKIND), dimension(:,:), pointer :: uhAvg, h_old, h_new, wwAvg, rho_edge, rho_zz, zgrid, kdiff
       real (kind=RKIND), dimension(:), pointer :: dvEdge, dcEdge, areaCell, qv_init
-      integer, dimension(:,:), pointer :: cellsOnEdge
+      integer, dimension(:,:), pointer :: cellsOnEdge, cellsOnCell
 
       integer, dimension(:,:), pointer :: advCellsForEdge
       integer, dimension(:), pointer :: nAdvCellsForEdge
       real (kind=RKIND), dimension(:,:), pointer :: adv_coefs, adv_coefs_3rd
+      real (kind=RKIND), dimension(:,:,:), pointer :: scalars_old, scalars_new
+      type (field3DReal), pointer :: scalars_old_field
 
       type (field3DReal), pointer :: tempField
       type (field3DReal), target :: tempFieldTarget
 
-      real (kind=RKIND), dimension( grid % nVertLevels, grid % nCells ) :: scalar_old, scalar_new
-      real (kind=RKIND), dimension( grid % nVertLevels, grid % nCells ) :: s_max, s_min
-      real (kind=RKIND), dimension( 2, grid % nVertLevels, grid % nCells ), target :: scale_arr
+      real (kind=RKIND), dimension( nVertLevels, nCells ) :: scalar_old, scalar_new
+      real (kind=RKIND), dimension( nVertLevels, nCells ) :: s_max, s_min
+      real (kind=RKIND), dimension( 2, nVertLevels, nCells ), target :: scale_arr
 
       integer, parameter :: SCALE_IN = 1, SCALE_OUT = 2
 
-      real (kind=RKIND), dimension( grid % nVertLevels, grid % nEdges ) :: flux_arr
-      real (kind=RKIND), dimension( grid % nVertLevels + 1, grid % nCells ) :: wdtn
+      real (kind=RKIND), dimension( nVertLevels, nEdges ) :: flux_arr
+      real (kind=RKIND), dimension( nVertLevels + 1, nCells ) :: wdtn
 
-      integer :: nCells, nCellsSolve, nEdges, nVertLevels, num_scalars, icellmax, kmax
+      integer, pointer :: nCellsSolve, num_scalars
+      integer :: icellmax, kmax
 
       real (kind=RKIND), dimension(:), pointer :: fnm, fnp, rdnw, meshScalingDel2, meshScalingDel4
       integer, dimension(:), pointer :: nEdgesOnCell
-      real (kind=RKIND) :: coef_3rd_order
+      real (kind=RKIND), pointer :: coef_3rd_order
 
-      real (kind=RKIND) :: h_theta_eddy_visc2, v_theta_eddy_visc2
+      real (kind=RKIND), pointer :: h_theta_eddy_visc2, v_theta_eddy_visc2
 
       real (kind=RKIND) :: flux3, flux4, flux_upwind
       real (kind=RKIND) :: q_im2, q_im1, q_i, q_ip1, ua, coef3, scmin,scmax
@@ -1477,45 +1767,46 @@ module atm_time_integration
                 flux4(q_im2, q_im1, q_i, q_ip1, ua) +           &
                 coef3*abs(ua)*((q_ip1 - q_im2)-3.*(q_i-q_im1))/12.0
 
-      block => grid % block
 
-      coef_3rd_order = config_coef_3rd_order
+      call mpas_pool_get_config(configs, 'config_coef_3rd_order', coef_3rd_order)
+      call mpas_pool_get_config(configs, 'config_h_theta_eddy_visc2', h_theta_eddy_visc2)
+      call mpas_pool_get_config(configs, 'config_v_theta_eddy_visc2', v_theta_eddy_visc2)
 
-      kdiff       => diag % kdiff % array
-      deriv_two   => grid % deriv_two % array
-      uhAvg       => diag % ruAvg % array
-      dvEdge      => grid % dvEdge % array
-      dcEdge      => grid % dcEdge % array
-      cellsOnEdge => grid % cellsOnEdge % array
-      scalar_tend => tend % scalars % array
-      h_old       => s_old % rho_zz % array
-      h_new       => s_new % rho_zz % array
-      wwAvg       => diag % wwAvg % array
-      areaCell    => grid % areaCell % array
+      call mpas_pool_get_dimension(mesh, 'nCellsSolve', nCellsSolve)
+      call mpas_pool_get_dimension(state, 'num_scalars', num_scalars)
 
-      fnm         => grid % fzm % array
-      fnp         => grid % fzp % array
-      rdnw        => grid % rdzw % array
-      meshScalingDel2 => grid % meshScalingDel2 % array
-      meshScalingDel4 => grid % meshScalingDel4 % array
+      call mpas_pool_get_array(diag, 'kdiff', kdiff)
+      call mpas_pool_get_array(diag, 'ruAvg', uhAvg)
+      call mpas_pool_get_array(diag, 'wwAvg', wwAvg)
+      call mpas_pool_get_array(diag, 'rho_edge', rho_edge)
 
-      nEdgesOnCell => grid % nEdgesOnCell % array
-      nAdvCellsForEdge => grid % nAdvCellsForEdge % array
-      advCellsForEdge => grid % advCellsForEdge % array
-      adv_coefs => grid % adv_coefs % array
-      adv_coefs_3rd => grid % adv_coefs_3rd % array
+      call mpas_pool_get_array(tend, 'scalars_tend', scalar_tend)
 
-      nCells      = grid % nCells
-      nCellsSolve = grid % nCellsSolve
-      nEdges      = grid % nEdges
-      nVertLevels = grid % nVertLevels
+      call mpas_pool_get_array(state, 'rho_zz', h_old, 1)
+      call mpas_pool_get_array(state, 'rho_zz', h_new, 2)
+      call mpas_pool_get_array(state, 'rho_zz', rho_zz, 2)
+      call mpas_pool_get_array(state, 'scalars', scalars_old, 1)
+      call mpas_pool_get_array(state, 'scalars', scalars_new, 2)
+      call mpas_pool_get_field(state, 'scalars', scalars_old_field, 1)
 
-      h_theta_eddy_visc2 = config_h_theta_eddy_visc2
-      v_theta_eddy_visc2 = config_v_theta_eddy_visc2
-      rho_edge     => diag % rho_edge % array
-      rho_zz       => s_new % rho_zz % array
-      qv_init      => grid % qv_init % array
-      zgrid        => grid % zgrid % array
+      call mpas_pool_get_array(mesh, 'areaCell', areaCell)
+      call mpas_pool_get_array(mesh, 'deriv_two', deriv_two)
+      call mpas_pool_get_array(mesh, 'dvEdge', dvEdge)
+      call mpas_pool_get_array(mesh, 'dcEdge', dcEdge)
+      call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
+      call mpas_pool_get_array(mesh, 'cellsOnCell', cellsOnCell)
+      call mpas_pool_get_array(mesh, 'fzm', fnm)
+      call mpas_pool_get_array(mesh, 'fzp', fnp)
+      call mpas_pool_get_array(mesh, 'rdzw', rdnw)
+      call mpas_pool_get_array(mesh, 'meshScalingDel2', meshScalingDel2)
+      call mpas_pool_get_array(mesh, 'meshScalingDel4', meshScalingDel4)
+      call mpas_pool_get_array(mesh, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(mesh, 'nAdvCellsForEdge', nAdvCellsForEdge)
+      call mpas_pool_get_array(mesh, 'advCellsForEdge', advCellsForEdge)
+      call mpas_pool_get_array(mesh, 'adv_coefs', adv_coefs)
+      call mpas_pool_get_array(mesh, 'adv_coefs_3rd', adv_coefs_3rd)
+      call mpas_pool_get_array(mesh, 'qv_init', qv_init)
+      call mpas_pool_get_array(mesh, 'zgrid', zgrid)
 
 #ifndef DO_PHYSICS
       scalar_tend = 0.  !  testing purposes - we have no sources or sinks
@@ -1528,8 +1819,8 @@ module atm_time_integration
 
       do iCell = 1, nCellsSolve
       do k = 1, nVertLevels
-      do iScalar = 1,s_old%num_scalars
-         s_old % scalars % array(iScalar,k,iCell) = s_old % scalars % array(iScalar,k,iCell)+dt*scalar_tend(iScalar,k,iCell) / h_old(k,iCell)
+      do iScalar = 1,num_scalars
+         scalars_old(iScalar,k,iCell) = scalars_old(iScalar,k,iCell)+dt*scalar_tend(iScalar,k,iCell) / h_old(k,iCell)
          scalar_tend(iScalar,k,iCell) = 0.
       end do
       end do
@@ -1537,7 +1828,7 @@ module atm_time_integration
 
       !  halo exchange
 
-      call mpas_dmpar_exch_halo_field(s_old % scalars)
+      call mpas_dmpar_exch_halo_field(scalars_old_field)
 
       !
       ! Runge Kutta integration, so we compute fluxes from scalar_new values, update starts from scalar_old
@@ -1545,15 +1836,13 @@ module atm_time_integration
 
       ! do one scalar at a time
 
-      num_scalars = 1
-
-      do iScalar = 1, s_old % num_scalars
+      do iScalar = 1, num_scalars
          write(0,*) ' mono transport for scalar ',iScalar
 
          do iCell = 1, nCells
          do k = 1, nVertLevels
-            scalar_old(k,iCell) = s_old % scalars % array(iScalar,k,iCell)
-            scalar_new(k,iCell) = s_new % scalars % array(iScalar,k,iCell)
+            scalar_old(k,iCell) = scalars_old(iScalar,k,iCell)
+            scalar_new(k,iCell) = scalars_new(iScalar,k,iCell)
          end do
          end do
 
@@ -1589,7 +1878,7 @@ module atm_time_integration
 
             ! zero flux at top and bottom
             wdtn(1,iCell) = 0.
-            wdtn(grid % nVertLevels+1,iCell) = 0.
+            wdtn(nVertLevels+1,iCell) = 0.
 
             k = 1
             s_max(k,iCell) = max(scalar_old(1,iCell),scalar_old(2,iCell))
@@ -1616,9 +1905,9 @@ module atm_time_integration
       ! pull s_min and s_max from the (horizontal) surrounding cells
 
             do i=1, nEdgesOnCell(iCell)
-               do k=1, grid % nVertLevels
-                  s_max(k,iCell) = max(s_max(k,iCell),scalar_old(k, grid % CellsOnCell % array(i,iCell)))
-                  s_min(k,iCell) = min(s_min(k,iCell),scalar_old(k, grid % CellsOnCell % array(i,iCell)))
+               do k=1, nVertLevels
+                  s_max(k,iCell) = max(s_max(k,iCell),scalar_old(k, cellsOnCell(i,iCell)))
+                  s_min(k,iCell) = min(s_min(k,iCell),scalar_old(k, cellsOnCell(i,iCell)))
                end do
             end do
 
@@ -1681,7 +1970,7 @@ module atm_time_integration
             cell2 = cellsOnEdge(2,iEdge)
             if (cell1 <= nCellsSolve .or. cell2 <= nCellsSolve) then  ! only for owned cells
                do k=1, nVertLevels
-                  flux_upwind = grid % dvEdge % array(iEdge) * dt *   &
+                  flux_upwind = dvEdge(iEdge) * dt *   &
                          (max(0.0_RKIND,uhAvg(k,iEdge))*scalar_old(k,cell1) + min(0.0_RKIND,uhAvg(k,iEdge))*scalar_old(k,cell2))
                   flux_arr(k,iEdge) = dt*flux_arr(k,iEdge) - flux_upwind
                   scalar_new(k,cell1) = scalar_new(k,cell1) - flux_upwind / areaCell(cell1)
@@ -1738,8 +2027,8 @@ module atm_time_integration
 
          tempField % block => block
          tempField % dimSizes(1) = 2
-         tempField % dimSizes(2) = grid % nVertLevels
-         tempField % dimSizes(3) = grid % nCells
+         tempField % dimSizes(2) = nVertLevels
+         tempField % dimSizes(3) = nCells
          tempField % sendList => block % parinfo % cellsToSend
          tempField % recvList => block % parinfo % cellsToRecv
          tempField % copyList => block % parinfo % cellsToCopy
@@ -1822,7 +2111,7 @@ module atm_time_integration
 
          do iCell = 1, nCells
          do k=1, nVertLevels
-            s_new % scalars % array(iScalar,k,iCell) = max(0.0_RKIND,scalar_new(k,iCell))
+            scalars_new(iScalar,k,iCell) = max(0.0_RKIND,scalar_new(k,iCell))
          end do
          end do
 
@@ -1832,12 +2121,12 @@ module atm_time_integration
 
 !----
 
-   subroutine atm_compute_dyn_tend(tend, s, diag, grid, rk_step, dt)
+   subroutine atm_compute_dyn_tend(tend, state, diag, mesh, configs, nVertLevels, rk_step, dt)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
    ! Compute height and normal wind tendencies, as well as diagnostic variables
    !
-   ! Input: s - current model state
-   !        grid - grid metadata
+   ! Input: state - current model state
+   !        mesh - grid metadata
    !        diag - some grid diagnostics
    !
    ! Output: tend - tendencies: tend_u, tend_w, tend_theta and tend_rho
@@ -1848,10 +2137,12 @@ module atm_time_integration
 
       implicit none
 
-      type (tend_type), intent(inout) :: tend
-      type (state_type), intent(in) :: s
-      type (diag_type), intent(in) :: diag
-      type (mesh_type), intent(in) :: grid
+      type (mpas_pool_type), intent(inout) :: tend
+      type (mpas_pool_type), intent(in) :: state
+      type (mpas_pool_type), intent(in) :: diag
+      type (mpas_pool_type), intent(in) :: mesh
+      type (mpas_pool_type), intent(in) :: configs
+      integer, intent(in) :: nVertLevels              ! for allocating stack variables
       integer, intent(in) :: rk_step
       real (kind=RKIND), intent(in) :: dt
 
@@ -1861,24 +2152,29 @@ module atm_time_integration
       integer :: iEdge, iCell, iVertex, k, cell1, cell2, vertex1, vertex2, eoe, i, j, iq
       real (kind=RKIND) :: flux, workpv
 
-      integer :: nCells, nEdges, nVertices, nVertLevels, nCellsSolve, nEdgesSolve
-      real (kind=RKIND) :: h_mom_eddy_visc2,   v_mom_eddy_visc2,   h_mom_eddy_visc4
-      real (kind=RKIND) :: h_theta_eddy_visc2, v_theta_eddy_visc2, h_theta_eddy_visc4
+      integer, pointer :: nCells, nEdges, nVertices, nCellsSolve, nEdgesSolve
+      integer, pointer :: moist_start, moist_end
+      real (kind=RKIND), pointer :: h_mom_eddy_visc2, v_mom_eddy_visc2
+      real (kind=RKIND), pointer :: h_theta_eddy_visc2, v_theta_eddy_visc2
+      real (kind=RKIND) :: h_mom_eddy_visc4
+      real (kind=RKIND) :: h_theta_eddy_visc4
       real (kind=RKIND) :: u_diffusion
       real (kind=RKIND), dimension(:), pointer ::  fEdge, dvEdge, dcEdge, areaCell, areaTriangle, meshScalingDel2, meshScalingDel4
       real (kind=RKIND), dimension(:,:), pointer :: weightsOnEdge, zgrid, rho_edge, rho_zz, ru, u, v, tend_u, &
                                                     circulation, divergence, vorticity, ke, pv_edge, theta_m, rw, tend_rho, &
                                                     rt_diabatic_tend, tend_theta, tend_w, w, cqw, rb, rr, pp, pressure_b, zz, zx, cqu, & 
                                                     h_divergence, kdiff
+      real (kind=RKIND), dimension(:,:,:), pointer :: scalars
 
       real (kind=RKIND), dimension(:,:), pointer :: tend_u_euler, tend_w_euler, tend_theta_euler
 
       real (kind=RKIND), dimension(:,:,:), pointer :: deriv_two
-      integer, dimension(:,:), pointer :: cellsOnEdge, verticesOnEdge, edgesOnCell, edgesOnEdge
+      integer, dimension(:,:), pointer :: cellsOnEdge, verticesOnEdge, edgesOnCell, edgesOnEdge, cellsOnCell
       integer, dimension(:), pointer :: nEdgesOnCell, nEdgesOnEdge
+      real (kind=RKIND), dimension(:), pointer :: latCell, latEdge, angleEdge, u_init
 
-      real (kind=RKIND), dimension( grid % nVertLevels + 1 ) :: wduz, wdwz, wdtz, dpzx
-      real (kind=RKIND), dimension( grid % nVertLevels ) :: u_mix, ru_edge_w, q
+      real (kind=RKIND), dimension( nVertLevels + 1 ) :: wduz, wdwz, wdtz, dpzx
+      real (kind=RKIND), dimension( nVertLevels ) :: u_mix, ru_edge_w, q
       real (kind=RKIND) :: theta_turb_flux, z1, z2, z3, z4, zm, z0, zp, r
       real (kind=RKIND) :: d2fdx2_cell1, d2fdx2_cell2
 
@@ -1897,24 +2193,37 @@ module atm_time_integration
       real (kind=RKIND), allocatable, dimension(:,:) :: delsq_theta, delsq_divergence
       real (kind=RKIND), allocatable, dimension(:,:) :: delsq_u
       real (kind=RKIND), allocatable, dimension(:,:) :: delsq_circulation, delsq_vorticity
-      real (kind=RKIND) :: cf1, cf2, cf3, pr, pl
+      real (kind=RKIND), pointer :: cf1, cf2, cf3
+      real (kind=RKIND) :: pr, pl
       real (kind=RKIND) :: prandtl_inv
 
       logical, parameter :: debug = .false.
 
       logical, parameter :: curvature = .true.
-      real (kind=RKIND) :: r_earth
+      real (kind=RKIND), pointer :: r_earth
       real (kind=RKIND), dimension(:,:), pointer :: ur_cell, vr_cell
 
       real (kind=RKIND), parameter :: c_s = 0.125
 !      real (kind=RKIND), parameter :: c_s = 0.25
-      real (kind=RKIND), dimension( grid % nVertLevels ) :: d_diag, d_off_diag, flux_arr
+      real (kind=RKIND), dimension( nVertLevels ) :: d_diag, d_off_diag, flux_arr
       real (kind=RKIND), dimension(:,:), pointer :: defc_a, defc_b
-      logical :: delsq_horiz_mixing, newpx
+      logical :: delsq_horiz_mixing
 
-      real(kind=RKIND),dimension(:,:),pointer:: tend_w_pgf,tend_w_buoy
+      real(kind=RKIND), dimension(:,:), pointer :: tend_w_pgf, tend_w_buoy
 
-      real (kind=RKIND) :: coef_3rd_order
+      real (kind=RKIND), pointer :: coef_3rd_order
+      logical, pointer :: newpx
+      logical, pointer :: config_mix_full
+      integer, pointer :: config_theta_vadv_order
+      character (len=StrKIND), pointer :: config_horiz_mixing
+      integer, pointer :: config_theta_adv_order
+      integer, pointer :: config_w_vadv_order
+      integer, pointer :: config_w_adv_order
+      real (kind=RKIND), pointer :: config_del4u_div_factor
+      real (kind=RKIND), pointer :: config_h_theta_eddy_visc4
+      real (kind=RKIND), pointer :: config_h_mom_eddy_visc4
+      real (kind=RKIND), pointer :: config_visc4_2dsmag
+      real (kind=RKIND), pointer :: config_len_disp
 
       real (kind=RKIND) :: flux3, flux4
       real (kind=RKIND) :: q_im2, q_im1, q_i, q_ip1, ua, coef3
@@ -1928,105 +2237,119 @@ module atm_time_integration
 
 !-----------
 
-      r_earth = grid % sphere_radius
-      ur_cell => diag % uReconstructZonal % array
-      vr_cell => diag % uReconstructMeridional % array
+      call mpas_pool_get_config(mesh, 'sphere_radius', r_earth)
+      call mpas_pool_get_config(configs, 'config_newpx', newpx)
+      call mpas_pool_get_config(configs, 'config_coef_3rd_order', coef_3rd_order)
+      call mpas_pool_get_config(configs, 'config_mix_full', config_mix_full)
+      call mpas_pool_get_config(configs, 'config_theta_vadv_order', config_theta_vadv_order)
+      call mpas_pool_get_config(configs, 'config_horiz_mixing', config_horiz_mixing)
+      call mpas_pool_get_config(configs, 'config_theta_adv_order', config_theta_adv_order)
+      call mpas_pool_get_config(configs, 'config_w_vadv_order', config_w_vadv_order)
+      call mpas_pool_get_config(configs, 'config_w_adv_order', config_w_adv_order)
+      call mpas_pool_get_config(configs, 'config_del4u_div_factor', config_del4u_div_factor)
+      call mpas_pool_get_config(configs, 'config_h_theta_eddy_visc4', config_h_theta_eddy_visc4)
+      call mpas_pool_get_config(configs, 'config_h_mom_eddy_visc4', config_h_mom_eddy_visc4)
+      call mpas_pool_get_config(configs, 'config_visc4_2dsmag', config_visc4_2dsmag)
+      call mpas_pool_get_config(configs, 'config_len_disp', config_len_disp)
 
-      coef_3rd_order = config_coef_3rd_order
+      call mpas_pool_get_array(state, 'rho_zz', rho_zz, 2)
+      call mpas_pool_get_array(state, 'u', u, 2)
+      call mpas_pool_get_array(state, 'w', w, 2)
+      call mpas_pool_get_array(state, 'theta_m', theta_m, 2)
+      call mpas_pool_get_array(state, 'scalars', scalars, 2)
 
-      rho_zz       => s % rho_zz % array
-      rho_edge     => diag % rho_edge % array
-      rb           => diag % rho_base % array
-      rr           => diag % rho_p % array
-      u            => s % u % array
-      v            => diag % v % array
-      kdiff        => diag % kdiff % array
-      ru           => diag % ru % array
-      w            => s % w % array
-      rw           => diag % rw % array
-      theta_m      => s % theta_m % array
-      circulation  => diag % circulation % array
-      divergence   => diag % divergence % array
-      vorticity    => diag % vorticity % array
-      ke           => diag % ke % array
-      pv_edge      => diag % pv_edge % array
-      pp           => diag % pressure_p % array
-      pressure_b   => diag % pressure_base % array
-      h_divergence => diag % h_divergence % array
+      call mpas_pool_get_array(diag, 'uReconstructZonal', ur_cell)
+      call mpas_pool_get_array(diag, 'uReconstructMeridional', vr_cell)
+      call mpas_pool_get_array(diag, 'rho_edge', rho_edge)
+      call mpas_pool_get_array(diag, 'rho_base', rb)
+      call mpas_pool_get_array(diag, 'rho_p', rr)
+      call mpas_pool_get_array(diag, 'v', v)
+      call mpas_pool_get_array(diag, 'kdiff', kdiff)
+      call mpas_pool_get_array(diag, 'ru', ru)
+      call mpas_pool_get_array(diag, 'rw', rw)
+      call mpas_pool_get_array(diag, 'circulation', circulation)
+      call mpas_pool_get_array(diag, 'divergence', divergence)
+      call mpas_pool_get_array(diag, 'vorticity', vorticity)
+      call mpas_pool_get_array(diag, 'ke', ke)
+      call mpas_pool_get_array(diag, 'pv_edge', pv_edge)
+      call mpas_pool_get_array(diag, 'pressure_p', pp)
+      call mpas_pool_get_array(diag, 'pressure_base', pressure_b)
+      call mpas_pool_get_array(diag, 'h_divergence', h_divergence)
 
-      pzp          => grid % pzp % array
-      pzm          => grid % pzm % array
+      call mpas_pool_get_array(mesh, 'pzp', pzp)
+      call mpas_pool_get_array(mesh, 'pzm', pzm)
+      call mpas_pool_get_array(mesh, 'weightsOnEdge', weightsOnEdge)
+      call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
+      call mpas_pool_get_array(mesh, 'cellsOnCell', cellsOnCell)
+      call mpas_pool_get_array(mesh, 'verticesOnEdge', verticesOnEdge)
+      call mpas_pool_get_array(mesh, 'nEdgesOnEdge', nEdgesOnEdge)
+      call mpas_pool_get_array(mesh, 'edgesOnEdge', edgesOnEdge)
+      call mpas_pool_get_array(mesh, 'edgesOnCell', edgesOnCell)
+      call mpas_pool_get_array(mesh, 'dcEdge', dcEdge)
+      call mpas_pool_get_array(mesh, 'dvEdge', dvEdge)
+      call mpas_pool_get_array(mesh, 'areaCell', areaCell)
+      call mpas_pool_get_array(mesh, 'areaTriangle', areaTriangle)
+      call mpas_pool_get_array(mesh, 'fEdge', fEdge)
+      call mpas_pool_get_array(mesh, 'deriv_two', deriv_two)
+      call mpas_pool_get_array(mesh, 'zz', zz)
+      call mpas_pool_get_array(mesh, 'zx', zx)
+      call mpas_pool_get_array(mesh, 'latCell', latCell)
+      call mpas_pool_get_array(mesh, 'latEdge', latEdge)
+      call mpas_pool_get_array(mesh, 'angleEdge', angleEdge)
+      call mpas_pool_get_array(mesh, 'defc_a', defc_a)
+      call mpas_pool_get_array(mesh, 'defc_b', defc_b)
+      call mpas_pool_get_array(mesh, 'meshScalingDel2', meshScalingDel2)
+      call mpas_pool_get_array(mesh, 'meshScalingDel4', meshScalingDel4)
+      call mpas_pool_get_array(mesh, 'u_init', u_init)
+      call mpas_pool_get_array(mesh, 't_init', t_init)
+      call mpas_pool_get_array(mesh, 'qv_init', qv_init)
 
+      call mpas_pool_get_array(mesh, 'rdzu', rdzu)
+      call mpas_pool_get_array(mesh, 'rdzw', rdzw)
+      call mpas_pool_get_array(mesh, 'fzm', fzm)
+      call mpas_pool_get_array(mesh, 'fzp', fzp)
+      call mpas_pool_get_array(mesh, 'zgrid', zgrid)
+      call mpas_pool_get_array(mesh, 'cpr', cpr)
+      call mpas_pool_get_array(mesh, 'cpl', cpl)
 
-      weightsOnEdge     => grid % weightsOnEdge % array
-      cellsOnEdge       => grid % cellsOnEdge % array
-      verticesOnEdge    => grid % verticesOnEdge % array
-      nEdgesOnEdge      => grid % nEdgesOnEdge % array
-      edgesOnEdge       => grid % edgesOnEdge % array
-      edgesOnCell       => grid % edgesOnCell % array
-      dcEdge            => grid % dcEdge % array
-      dvEdge            => grid % dvEdge % array
-      areaCell          => grid % areaCell % array
-      areaTriangle      => grid % areaTriangle % array
-      fEdge             => grid % fEdge % array
-      deriv_two         => grid % deriv_two % array
-      zz                => grid % zz % array
-      zx                => grid % zx % array
+      call mpas_pool_get_array(tend, 'u', tend_u)
+      call mpas_pool_get_array(tend, 'theta_m', tend_theta)
+      call mpas_pool_get_array(tend, 'w', tend_w)
+      call mpas_pool_get_array(tend, 'rho_zz', tend_rho)
+      call mpas_pool_get_array(tend, 'rt_diabatic_tend', rt_diabatic_tend)
+      call mpas_pool_get_array(tend, 'u_euler', tend_u_euler)
+      call mpas_pool_get_array(tend, 'theta_euler', tend_theta_euler)
+      call mpas_pool_get_array(tend, 'w_euler', tend_w_euler)
+      call mpas_pool_get_array(tend, 'w_pgf', tend_w_pgf)
+      call mpas_pool_get_array(tend, 'w_buoy', tend_w_buoy)
 
-      defc_a             => grid % defc_a % array
-      defc_b             => grid % defc_b % array
+      call mpas_pool_get_array(diag, 'cqw', cqw)
+      call mpas_pool_get_array(diag, 'cqu', cqu)
 
-      meshScalingDel2    => grid % meshScalingDel2 % array
-      meshScalingDel4    => grid % meshScalingDel4 % array
+      call mpas_pool_get_dimension(mesh, 'nCells', nCells)
+      call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(mesh, 'nVertices', nVertices)
+      call mpas_pool_get_dimension(mesh, 'nCellsSolve', nCellsSolve)
+      call mpas_pool_get_dimension(mesh, 'nEdgesSolve', nEdgesSolve)
 
+      call mpas_pool_get_dimension(state, 'moist_start', moist_start)
+      call mpas_pool_get_dimension(state, 'moist_end', moist_end)
 
-      tend_u      => tend % u % array
-      tend_theta  => tend % theta_m % array
-      tend_w      => tend % w % array
-      tend_rho    => tend % rho_zz % array
-      rt_diabatic_tend  => tend % rt_diabatic_tend % array
+      call mpas_pool_get_config(configs, 'config_h_mom_eddy_visc2', h_mom_eddy_visc2)
+      call mpas_pool_get_config(configs, 'config_v_mom_eddy_visc2', v_mom_eddy_visc2)
+      call mpas_pool_get_config(configs, 'config_h_theta_eddy_visc2', h_theta_eddy_visc2)
+      call mpas_pool_get_config(configs, 'config_v_theta_eddy_visc2', v_theta_eddy_visc2)
 
-      tend_u_euler      => tend % u_euler % array
-      tend_theta_euler  => tend % theta_euler % array
-      tend_w_euler      => tend % w_euler % array
+      call mpas_pool_get_array(mesh, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(mesh, 'nAdvCellsForEdge', nAdvCellsForEdge)
+      call mpas_pool_get_array(mesh, 'advCellsForEdge', advCellsForEdge)
+      call mpas_pool_get_array(mesh, 'adv_coefs', adv_coefs)
+      call mpas_pool_get_array(mesh, 'adv_coefs_3rd', adv_coefs_3rd)
 
-      tend_w_pgf  => tend % w_pgf  % array
-      tend_w_buoy => tend % w_buoy % array
+      call mpas_pool_get_array(mesh, 'cf1', cf1)
+      call mpas_pool_get_array(mesh, 'cf2', cf2)
+      call mpas_pool_get_array(mesh, 'cf3', cf3)
 
-      t_init      => grid % t_init % array
-      qv_init     => grid % qv_init % array
-
-      rdzu        => grid % rdzu % array
-      rdzw        => grid % rdzw % array
-      fzm         => grid % fzm % array
-      fzp         => grid % fzp % array
-      zgrid       => grid % zgrid % array
-      cqw         => diag % cqw % array
-      cqu         => diag % cqu % array
-
-      cpr         => grid % cpr % array
-      cpl         => grid % cpl % array
-      newpx       = config_newpx
-
-      nCells      = grid % nCells
-      nEdges      = grid % nEdges
-      nVertLevels = grid % nVertLevels
-      nVertices   = grid % nVertices
-      nCellsSolve = grid % nCellsSolve
-      nEdgesSolve = grid % nEdgesSolve
-
-      h_mom_eddy_visc2 = config_h_mom_eddy_visc2
-!     h_mom_eddy_visc4 = config_h_mom_eddy_visc4
-      v_mom_eddy_visc2 = config_v_mom_eddy_visc2
-      h_theta_eddy_visc2 = config_h_theta_eddy_visc2
-!     h_theta_eddy_visc4 = config_h_theta_eddy_visc4
-      v_theta_eddy_visc2 = config_v_theta_eddy_visc2
-
-      nEdgesOnCell => grid % nEdgesOnCell % array
-      nAdvCellsForEdge => grid % nAdvCellsForEdge % array
-      advCellsForEdge => grid % advCellsForEdge % array
-      adv_coefs => grid % adv_coefs % array
-      adv_coefs_3rd => grid % adv_coefs_3rd % array
 
       prandtl_inv = 1.0_RKIND/prandtl
 
@@ -2073,10 +2396,6 @@ module atm_time_integration
 
       tend_u(:,:) = 0.0
 
-      cf1 = grid % cf1 % scalar
-      cf2 = grid % cf2 % scalar
-      cf3 = grid % cf3 % scalar
-
       ! tendency for density.
       ! accumulate total water here for later use in w tendency calculation.
 
@@ -2109,8 +2428,8 @@ module atm_time_integration
             h_divergence(k,iCell) = divergence_ru(k,iCell)
             tend_rho(k,iCell) = -divergence_ru(k,iCell)-rdzw(k)*(rw(k+1,iCell)-rw(k,iCell))
 
-            do iq = s % moist_start, s % moist_end
-               qtot(k,iCell) = qtot(k,iCell) + s % scalars % array (iq, k, iCell)
+            do iq = moist_start, moist_end
+               qtot(k,iCell) = qtot(k,iCell) + scalars(iq, k, iCell)
             end do
 
          end do
@@ -2219,7 +2538,7 @@ module atm_time_integration
                ! curvature terms for the sphere
 
                tend_u(k,iEdge) = tend_u(k,iEdge) &
-                                - 2.*omega*cos(grid % angleEdge % array(iEdge))*cos(grid % latEdge % array(iEdge))  &
+                                - 2.*omega*cos(angleEdge(iEdge))*cos(latEdge(iEdge))  &
                                   *rho_edge(k,iEdge)*.25*(w(k,cell1)+w(k+1,cell1)+w(k,cell2)+w(k+1,cell2))          & 
                                 - u(k,iEdge)*.25*(w(k+1,cell1)+w(k,cell1)+w(k,cell2)+w(k+1,cell2))                  &
                                   *rho_edge(k,iEdge)/r_earth
@@ -2424,9 +2743,9 @@ module atm_time_integration
 
                do k=1,nVertLevels
 #ifdef ROTATED_GRID
-                  u_mix(k) = u(k,iEdge) - grid % u_init % array(k) * sin( grid % angleEdge % array(iEdge) )
+                  u_mix(k) = u(k,iEdge) - u_init(k) * sin( angleEdge(iEdge) )
 #else
-                  u_mix(k) = u(k,iEdge) - grid % u_init % array(k) * cos( grid % angleEdge % array(iEdge) )
+                  u_mix(k) = u(k,iEdge) - u_init(k) * cos( angleEdge(iEdge) )
 #endif
                end do
 
@@ -2531,12 +2850,12 @@ module atm_time_integration
                   d2fdx2_cell1 = deriv_two(1,1,iEdge) * w(k,cell1)
                   d2fdx2_cell2 = deriv_two(1,2,iEdge) * w(k,cell2)
                   do i=1, nEdgesOnCell(cell1)
-                     if ( grid % CellsOnCell % array (i,cell1) <= nCells) &
-                     d2fdx2_cell1 = d2fdx2_cell1 + deriv_two(i+1,1,iEdge) * w(k,grid % CellsOnCell % array (i,cell1))
+                     if ( cellsOnCell(i,cell1) <= nCells) &
+                     d2fdx2_cell1 = d2fdx2_cell1 + deriv_two(i+1,1,iEdge) * w(k,cellsOnCell(i,cell1))
                   end do
                   do i=1, nEdgesOnCell(cell2)
-                     if ( grid % CellsOnCell % array (i,cell2) <= nCells) &
-                     d2fdx2_cell2 = d2fdx2_cell2 + deriv_two(i+1,2,iEdge) * w(k,grid % CellsOnCell % array (i,cell2))
+                     if ( cellsOnCell(i,cell2) <= nCells) &
+                     d2fdx2_cell2 = d2fdx2_cell2 + deriv_two(i+1,2,iEdge) * w(k,cellsOnCell(i,cell2))
                   end do
 
                   flux = dvEdge(iEdge) * (fzm(k)*ru(k,iEdge) + fzp(k)*ru(k-1,iEdge)) * (  &
@@ -2559,7 +2878,7 @@ module atm_time_integration
                tend_w(k,iCell) = tend_w(k,iCell) + (rho_zz(k,iCell)*fzm(k)+rho_zz(k-1,iCell)*fzp(k))*          &
                                          ( (fzm(k)*ur_cell(k,iCell)+fzp(k)*ur_cell(k-1,iCell))**2.             &
                                           +(fzm(k)*vr_cell(k,iCell)+fzp(k)*vr_cell(k-1,iCell))**2. )/r_earth   &
-                                   + 2.*omega*cos(grid % latCell % array(iCell))                               &
+                                   + 2.*omega*cos(latCell(iCell))                                              &
                                           *(fzm(k)*ur_cell(k,iCell)+fzp(k)*ur_cell(k-1,iCell))                 &
                                           *(rho_zz(k,iCell)*fzm(k)+rho_zz(k-1,iCell)*fzp(k))
 
@@ -2821,12 +3140,12 @@ module atm_time_integration
                   d2fdx2_cell1 = deriv_two(1,1,iEdge) * theta_m(k,cell1)
                   d2fdx2_cell2 = deriv_two(1,2,iEdge) * theta_m(k,cell2)
                   do i=1, nEdgesOnCell(cell1)
-                     if ( grid % CellsOnCell % array (i,cell1) <= grid%nCells) &
-                        d2fdx2_cell1 = d2fdx2_cell1 + deriv_two(i+1,1,iEdge) * theta_m(k,grid % CellsOnCell % array (i,cell1))
+                     if ( cellsOnCell(i,cell1) <= nCells) &
+                        d2fdx2_cell1 = d2fdx2_cell1 + deriv_two(i+1,1,iEdge) * theta_m(k,cellsOnCell(i,cell1))
                   end do
                   do i=1, nEdgesOnCell(cell2)
-                     if ( grid % CellsOnCell % array (i,cell2) <= grid%nCells) &
-                        d2fdx2_cell2 = d2fdx2_cell2 + deriv_two(i+1,2,iEdge) * theta_m(k,grid % CellsOnCell % array (i,cell2))
+                     if ( cellsOnCell(i,cell2) <= nCells) &
+                        d2fdx2_cell2 = d2fdx2_cell2 + deriv_two(i+1,2,iEdge) * theta_m(k,cellsOnCell(i,cell2))
                   end do
 
                   flux = dvEdge(iEdge) *  ru(k,iEdge) * (                                               &
@@ -3043,7 +3362,7 @@ module atm_time_integration
 
 !-------
 
-   subroutine atm_compute_solve_diagnostics(dt, s, diag, grid)
+   subroutine atm_compute_solve_diagnostics(dt, state, time_lev, diag, mesh, configs)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
    ! Compute diagnostic fields used in the tendency computations
    !
@@ -3055,15 +3374,17 @@ module atm_time_integration
       implicit none
 
       real (kind=RKIND), intent(in) :: dt
-      type (state_type), intent(inout) :: s
-      type (diag_type), intent(inout) :: diag
-      type (mesh_type), intent(in) :: grid
+      type (mpas_pool_type), intent(inout) :: state
+      integer, intent(in) :: time_lev                   ! which time level of state to use
+      type (mpas_pool_type), intent(inout) :: diag
+      type (mpas_pool_type), intent(in) :: mesh
+      type (mpas_pool_type), intent(in) :: configs
 
 
       integer :: iEdge, iCell, iVertex, k, cell1, cell2, eoe, i
       real (kind=RKIND) :: h_vertex, r
 
-      integer :: nCells, nEdges, nVertices, nVertLevels, vertexDegree
+      integer, pointer :: nCells, nEdges, nVertices, nVertLevels, vertexDegree
       real (kind=RKIND), dimension(:), pointer :: fVertex, fEdge, dvEdge, dcEdge, areaCell, areaTriangle
       real (kind=RKIND), dimension(:,:), pointer :: vh, weightsOnEdge, kiteAreasOnVertex, h_edge, h, u, v, &
                                                     circulation, vorticity, ke, pv_edge, pv_vertex, pv_cell, gradPVn, gradPVt, &
@@ -3073,46 +3394,51 @@ module atm_time_integration
 
       logical, parameter :: hollingsworth=.true.
       real (kind=RKIND), allocatable, dimension(:,:) :: ke_vertex
-      real (kind=RKIND)  :: ke_fact
+      real (kind=RKIND) :: ke_fact
+      real (kind=RKIND), pointer :: config_apvm_upwinding
 
 
-      h           => s % rho_zz % array
-      u           => s % u % array
-      v           => diag % v % array
-      vh          => diag % rv % array
-      h_edge      => diag % rho_edge % array
-      circulation => diag % circulation % array
-      vorticity   => diag % vorticity % array
-      divergence  => diag % divergence % array
-      ke          => diag % ke % array
-      pv_edge     => diag % pv_edge % array
-      pv_vertex   => diag % pv_vertex % array
-      pv_cell     => diag % pv_cell % array
-      gradPVn     => diag % gradPVn % array
-      gradPVt     => diag % gradPVt % array
+      call mpas_pool_get_config(configs, 'config_apvm_upwinding', config_apvm_upwinding)
 
-      weightsOnEdge     => grid % weightsOnEdge % array
-      kiteAreasOnVertex => grid % kiteAreasOnVertex % array
-      cellsOnEdge       => grid % cellsOnEdge % array
-      cellsOnVertex     => grid % cellsOnVertex % array
-      verticesOnEdge    => grid % verticesOnEdge % array
-      nEdgesOnCell      => grid % nEdgesOnCell % array
-      edgesOnCell       => grid % edgesOnCell % array
-      nEdgesOnEdge      => grid % nEdgesOnEdge % array
-      edgesOnEdge       => grid % edgesOnEdge % array
-      edgesOnVertex     => grid % edgesOnVertex % array
-      dcEdge            => grid % dcEdge % array
-      dvEdge            => grid % dvEdge % array
-      areaCell          => grid % areaCell % array
-      areaTriangle      => grid % areaTriangle % array
-      fVertex           => grid % fVertex % array
-      fEdge             => grid % fEdge % array
-                  
-      nCells       = grid % nCells
-      nEdges       = grid % nEdges
-      nVertices    = grid % nVertices
-      nVertLevels  = grid % nVertLevels
-      vertexDegree = grid % vertexDegree
+      call mpas_pool_get_array(state, 'rho_zz', h, time_lev)
+      call mpas_pool_get_array(state, 'u', u, time_lev)
+
+      call mpas_pool_get_array(diag, 'v', v)
+      call mpas_pool_get_array(diag, 'rv', vh)
+      call mpas_pool_get_array(diag, 'rho_edge', h_edge)
+      call mpas_pool_get_array(diag, 'circulation', circulation)
+      call mpas_pool_get_array(diag, 'vorticity', vorticity)
+      call mpas_pool_get_array(diag, 'divergence', divergence)
+      call mpas_pool_get_array(diag, 'ke', ke)
+      call mpas_pool_get_array(diag, 'pv_edge', pv_edge)
+      call mpas_pool_get_array(diag, 'pv_vertex', pv_vertex)
+      call mpas_pool_get_array(diag, 'pv_cell', pv_cell)
+      call mpas_pool_get_array(diag, 'gradPVn', gradPVn)
+      call mpas_pool_get_array(diag, 'gradPVt', gradPVt)
+
+      call mpas_pool_get_array(mesh, 'weightsOnEdge', weightsOnEdge)
+      call mpas_pool_get_array(mesh, 'kiteAreasOnVertex', kiteAreasOnVertex)
+      call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
+      call mpas_pool_get_array(mesh, 'cellsOnVertex', cellsOnVertex)
+      call mpas_pool_get_array(mesh, 'verticesOnEdge', verticesOnEdge)
+      call mpas_pool_get_array(mesh, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(mesh, 'edgesOnCell', edgesOnCell)
+      call mpas_pool_get_array(mesh, 'nEdgesOnEdge', nEdgesOnEdge)
+      call mpas_pool_get_array(mesh, 'edgesOnEdge', edgesOnEdge)
+      call mpas_pool_get_array(mesh, 'edgesOnVertex', edgesOnVertex)
+      call mpas_pool_get_array(mesh, 'dcEdge', dcEdge)
+      call mpas_pool_get_array(mesh, 'dvEdge', dvEdge)
+      call mpas_pool_get_array(mesh, 'areaCell', areaCell)
+      call mpas_pool_get_array(mesh, 'areaTriangle', areaTriangle)
+      call mpas_pool_get_array(mesh, 'fVertex', fVertex)
+      call mpas_pool_get_array(mesh, 'fEdge', fEdge)
+
+      call mpas_pool_get_dimension(mesh, 'nCells', nCells)
+      call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(mesh, 'nVertices', nVertices)
+      call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
+      call mpas_pool_get_dimension(mesh, 'vertexDegree', vertexDegree)
+
 
       !
       ! Compute height on cell edges at velocity locations
@@ -3332,35 +3658,87 @@ module atm_time_integration
 
 !----------
 
-   subroutine atm_init_coupled_diagnostics( state, diag, grid )
+   subroutine atm_init_coupled_diagnostics( state, time_lev, diag, mesh, configs )
 
       implicit none
    
-      type (state_type), intent(inout) :: state
-      type (diag_type), intent(inout) :: diag
-      type (mesh_type), intent(inout) :: grid
+      type (mpas_pool_type), intent(inout) :: state
+      integer, intent(in) :: time_lev                    ! which time level to use from state
+      type (mpas_pool_type), intent(inout) :: diag
+      type (mpas_pool_type), intent(inout) :: mesh
+      type (mpas_pool_type), intent(in) :: configs
 
-      integer :: k,iCell,iEdge,iCell1,iCell2, cell1, cell2, coef_3rd_order
-      integer :: nCells, nEdges, nVertLevels
+      integer :: k, iCell, iEdge, iCell1, iCell2, cell1, cell2
+      real (kind=RKIND), pointer :: coef_3rd_order
+      integer, pointer :: config_theta_adv_order
+      integer, pointer :: nCells, nEdges, nVertLevels
+      integer, pointer :: index_qv
       real (kind=RKIND) :: p0, rcv, flux
       integer, dimension(:,:), pointer :: cellsOnEdge
+      real (kind=RKIND), dimension(:,:), pointer :: theta_m
+      real (kind=RKIND), dimension(:,:), pointer :: theta
+      real (kind=RKIND), dimension(:,:), pointer :: rho_zz
+      real (kind=RKIND), dimension(:,:), pointer :: rho
+      real (kind=RKIND), dimension(:,:), pointer :: rho_p
+      real (kind=RKIND), dimension(:,:), pointer :: rho_base
+      real (kind=RKIND), dimension(:,:), pointer :: rtheta_base
+      real (kind=RKIND), dimension(:,:), pointer :: theta_base
+      real (kind=RKIND), dimension(:,:), pointer :: rtheta_p
+      real (kind=RKIND), dimension(:,:), pointer :: zz
+      real (kind=RKIND), dimension(:,:,:), pointer :: scalars
+      real (kind=RKIND), dimension(:,:), pointer :: ru
+      real (kind=RKIND), dimension(:,:), pointer :: rw
+      real (kind=RKIND), dimension(:,:), pointer :: u
+      real (kind=RKIND), dimension(:,:), pointer :: w
+      real (kind=RKIND), dimension(:,:), pointer :: pressure_p
+      real (kind=RKIND), dimension(:,:), pointer :: exner
+      real (kind=RKIND), dimension(:,:), pointer :: exner_base
+      real (kind=RKIND), dimension(:), pointer :: fzm, fzp
+      real (kind=RKIND), dimension(:,:,:), pointer :: zb, zb3 
 
-      nCells      = grid % nCells
-      nEdges      = grid % nEdges
-      nVertLevels = grid % nVertLevels
 
-      cellsOnEdge => grid % cellsOnEdge % array
+      call mpas_pool_get_dimension(mesh, 'nCells', nCells)
+      call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
+      call mpas_pool_get_dimension(state, 'index_qv', index_qv)
 
-      coef_3rd_order = config_coef_3rd_order
-      if(config_theta_adv_order /=3) coef_3rd_order = 0
+      call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
+
+      call mpas_pool_get_config(configs, 'config_coef_3rd_order', coef_3rd_order)
+      call mpas_pool_get_config(configs, 'config_theta_adv_order', config_theta_adv_order)
+
+      call mpas_pool_get_array(state, 'theta_m', theta_m, time_lev)
+      call mpas_pool_get_array(diag, 'theta', theta)
+      call mpas_pool_get_array(state, 'rho_zz', rho_zz, time_lev)
+      call mpas_pool_get_array(diag, 'rho', rho)
+      call mpas_pool_get_array(diag, 'rho_p', rho_p)
+      call mpas_pool_get_array(diag, 'rho_base', rho_base)
+      call mpas_pool_get_array(diag, 'rtheta_base', rtheta_base)
+      call mpas_pool_get_array(diag, 'theta_base', theta_base)
+      call mpas_pool_get_array(diag, 'rtheta_p', rtheta_p)
+      call mpas_pool_get_array(mesh, 'zz', zz)
+      call mpas_pool_get_array(state, 'scalars', scalars, time_lev)
+      call mpas_pool_get_array(diag, 'ru', ru)
+      call mpas_pool_get_array(diag, 'rw', rw)
+      call mpas_pool_get_array(state, 'u', u, time_lev)
+      call mpas_pool_get_array(state, 'w', w, time_lev)
+      call mpas_pool_get_array(diag, 'pressure_p', pressure_p)
+      call mpas_pool_get_array(diag, 'exner', exner)
+      call mpas_pool_get_array(diag, 'exner_base', exner_base)
+      call mpas_pool_get_array(mesh, 'fzm', fzm)
+      call mpas_pool_get_array(mesh, 'fzp', fzp)
+      call mpas_pool_get_array(mesh, 'zb', zb)
+      call mpas_pool_get_array(mesh, 'zb3', zb3)
+
+      if (config_theta_adv_order /= 3) coef_3rd_order = 0.0
 
       rcv = rgas / (cp-rgas)
       p0 = 1.e5  ! this should come from somewhere else...
 
       do iCell=1,nCells
          do k=1,nVertLevels
-            state % theta_m % array(k,iCell) = diag % theta % array(k,iCell) * (1._RKIND + rvord * state % scalars % array(state % index_qv,k,iCell))
-            state % rho_zz % array(k,iCell) = diag % rho % array(k,iCell) / grid % zz % array(k,iCell)
+            theta_m(k,iCell) = theta(k,iCell) * (1._RKIND + rvord * scalars(index_qv,k,iCell))
+            rho_zz(k,iCell) = rho(k,iCell) / zz(k,iCell)
          end do
       end do
 
@@ -3368,7 +3746,7 @@ module atm_time_integration
          iCell1 = cellsOnEdge(1,iEdge)
          iCell2 = cellsOnEdge(2,iEdge)
          do k=1,nVertLevels
-            diag % ru % array(k,iEdge) = 0.5 * state % u % array(k,iEdge) * (state % rho_zz % array(k,iCell1) + state % rho_zz % array(k,iCell2))
+            ru(k,iEdge) = 0.5 * u(k,iEdge) * (rho_zz(k,iCell1) + rho_zz(k,iCell2))
          end do
       end do
 
@@ -3376,12 +3754,12 @@ module atm_time_integration
       ! We are reversing the procedure we use in subroutine atm_recover_large_step_variables.
       ! first, the piece that depends on w.
       do iCell=1,nCells
-         diag % rw % array(1,iCell) = 0.
-         diag % rw % array(grid%nVertLevels+1,iCell) = 0.
+         rw(1,iCell) = 0.0
+         rw(nVertLevels+1,iCell) = 0.0
          do k=2,nVertLevels
-            diag % rw % array(k,iCell) = state % w % array(k,iCell)     &
-                          * (grid % fzp % array(k) * state % rho_zz % array(k-1,iCell) + grid % fzm % array(k) * state % rho_zz % array(k,iCell)) &
-                          * (grid % fzp % array(k) * grid % zz % array(k-1,iCell) + grid % fzm % array(k) * grid % zz % array(k,iCell))
+            rw(k,iCell) = w(k,iCell)     &
+                          * (fzp(k) * rho_zz(k-1,iCell) + fzm(k) * rho_zz(k,iCell)) &
+                          * (fzp(k) * zz(k-1,iCell) + fzm(k) * zz(k,iCell))
          end do
       end do
   
@@ -3390,46 +3768,46 @@ module atm_time_integration
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
          do k = 2, nVertLevels
-            flux = (grid % fzm % array(k) * diag % ru % array(k,iEdge)+grid % fzp % array(k) * diag % ru % array(k-1,iEdge))
-            diag % rw % array(k,cell2) = diag % rw % array(k,cell2)   &
-                          + (grid % zb % array(k,2,iEdge) + coef_3rd_order * sign(1.0_RKIND,flux) * grid % zb3 % array(k,2,iEdge))*flux   &
-                          * (grid % fzp % array(k) * grid % zz % array(k-1,cell2) + grid % fzm % array(k) * grid % zz % array(k,cell2))
-            diag % rw % array(k,cell1) = diag % rw % array(k,cell1)   &
-                          - (grid % zb % array(k,1,iEdge) + coef_3rd_order * sign(1.0_RKIND,flux) * grid % zb3 % array(k,1,iEdge))*flux   &
-                          * (grid % fzp % array(k) * grid % zz % array(k-1,cell1) + grid % fzm % array(k) * grid % zz % array(k,cell1))
+            flux = (fzm(k)*ru(k,iEdge) + fzp(k)*ru(k-1,iEdge))
+            rw(k,cell2) = rw(k,cell2)   &
+                          + (zb(k,2,iEdge) + coef_3rd_order * sign(1.0_RKIND,flux) * zb3(k,2,iEdge))*flux   &
+                          * (fzp(k) * zz(k-1,cell2) + fzm(k) * zz(k,cell2))
+            rw(k,cell1) = rw(k,cell1)   &
+                          - (zb(k,1,iEdge) + coef_3rd_order * sign(1.0_RKIND,flux) * zb3(k,1,iEdge))*flux   &
+                          * (fzp(k) * zz(k-1,cell1) + fzm(k) * zz(k,cell1))
          end do
       end do
 
       do iCell = 1, nCells
          do k=1,nVertLevels
-            diag % rho_p % array(k,iCell) = state % rho_zz % array(k,iCell) - diag % rho_base % array(k,iCell)
+            rho_p(k,iCell) = rho_zz(k,iCell) - rho_base(k,iCell)
          end do
       end do
 
       do iCell = 1, nCells
          do k=1,nVertLevels
-            diag % rtheta_base % array(k,iCell) = diag % theta_base % array(k,iCell) * diag % rho_base % array(k,iCell)
+            rtheta_base(k,iCell) = theta_base(k,iCell) * rho_base(k,iCell)
          end do
       end do
 
       do iCell = 1, nCells
          do k=1,nVertLevels
-            diag % rtheta_p % array(k,iCell) = state % theta_m % array(k,iCell) * diag % rho_p % array(k,iCell)  &
-                                             + diag % rho_base % array(k,iCell)   * (state % theta_m % array(k,iCell) - diag % theta_base % array(k,iCell))
+            rtheta_p(k,iCell) = theta_m(k,iCell) * rho_p(k,iCell)  &
+                                             + rho_base(k,iCell)   * (theta_m(k,iCell) - theta_base(k,iCell))
          end do
       end do
 
       do iCell=1,nCells
          do k=1,nVertLevels
-            diag % exner % array(k,iCell) = (grid % zz % array(k,iCell) * (rgas/p0) * (diag % rtheta_p % array(k,iCell) + diag % rtheta_base % array(k,iCell)))**rcv
+            exner(k,iCell) = (zz(k,iCell) * (rgas/p0) * (rtheta_p(k,iCell) + rtheta_base(k,iCell)))**rcv
          end do
       end do
 
       do iCell=1,nCells
          do k=1,nVertLevels
-            diag % pressure_p % array(k,iCell) = grid % zz % array(k,iCell) * rgas &
-                                               * (  diag % exner % array(k,iCell) * diag % rtheta_p % array(k,iCell) &
-                                                  + diag % rtheta_base % array(k,iCell) * (diag % exner % array(k,iCell) - diag % exner_base % array(k,iCell)) &
+            pressure_p(k,iCell) = zz(k,iCell) * rgas &
+                                               * (  exner(k,iCell) * rtheta_p(k,iCell) &
+                                                  + rtheta_base(k,iCell) * (exner(k,iCell) - exner_base(k,iCell)) &
                                                  )
          end do
       end do

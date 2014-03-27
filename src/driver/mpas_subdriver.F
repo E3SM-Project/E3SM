@@ -27,6 +27,7 @@ module mpas_subdriver
 
       character(len=StrKIND) :: timeStamp
       integer :: ierr
+      integer, pointer :: config_frames_per_outfile
 
       domain_ptr => domain
 
@@ -34,7 +35,7 @@ module mpas_subdriver
       ! Initialize infrastructure
       !
       call mpas_framework_init(dminfo, domain_ptr)
-      call mpas_core_setup_packages(ierr)
+      call mpas_core_setup_packages(domain_ptr % configs, domain_ptr % packages, ierr)
 
       call mpas_timer_start("total time")
       call mpas_timer_start("initialize")
@@ -54,6 +55,8 @@ module mpas_subdriver
       ! Set up output streams to be written to by the MPAS core
       !
       output_frame = 1
+
+      call mpas_pool_get_config(domain_ptr % configs, 'config_frames_per_outfile', config_frames_per_outfile)
 
       if(config_frames_per_outfile > 0) then
          call mpas_output_state_init(output_obj, domain_ptr, "OUTPUT", trim(timeStamp))

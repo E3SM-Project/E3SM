@@ -20,7 +20,6 @@
 module ocn_global_diagnostics
 
    use mpas_grid_types
-   use mpas_configure
    use mpas_constants
    use mpas_dmpar
    use mpas_timer
@@ -70,22 +69,25 @@ module ocn_global_diagnostics
       type (domain_type), intent(inout) :: domain !< Input/Output: domain information
       integer, intent(in) :: timeIndex
       real (kind=RKIND), intent(in) :: dt
+      integer, intent(in) :: timeLevel
 
       type (block_type), pointer :: block
       type (dm_info), pointer :: dminfo
-      type (state_type), pointer :: state
-      type (mesh_type), pointer :: mesh
-      type (diagnostics_type), pointer :: diagnostics
+      type (mpas_pool_type), pointer :: statePool
+      type (mpas_pool_type), pointer :: meshPool
+      type (mpas_pool_type), pointer :: diagnosticsPool
 
-      integer :: nVertLevels, nCellsSolve, nEdgesSolve, nVerticesSolve, nCellsGlobal, nEdgesGlobal, nVerticesGlobal, iTracer
+      integer :: nCellsGlobal, nEdgesGlobal, nVerticesGlobal, iTracer
       integer :: elementIndex, variableIndex, nVariables, nSums, nMaxes, nMins
-      integer :: timeLevel,k,i, num_tracers, fileID
+      integer :: k, i, fileID
       integer :: timeYYYY, timeMM, timeDD, timeH, timeM, timeS
+      integer, pointer :: nVertLevels, nCellsSolve, nEdgesSolve, nVerticesSolve, num_tracers
       character*1 timeChar
       integer, parameter :: kMaxVariables = 1024 ! this must be a little more than double the number of variables to be reduced
       integer, dimension(:), pointer :: maxLevelCell, maxLevelEdgeTop, maxLevelVertexBot
 
-      real (kind=RKIND) :: volumeCellGlobal, volumeEdgeGlobal, CFLNumberGlobal, localCFL, localSum, areaCellGlobal, areaEdgeGlobal, areaTriangleGlobal, time_days
+      real (kind=RKIND) :: localCFL, localSum, time_days
+      real (kind=RKIND), pointer :: volumeCellGlobal, volumeEdgeGlobal, CFLNumberGlobal, areaCellGlobal, areaEdgeGlobal, areaTriangleGlobal
       real (kind=RKIND), dimension(:), pointer ::  areaCell, dcEdge, dvEdge, areaTriangle, areaEdge
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness, normalVelocity, tangentialVelocity, layerThicknessEdge, relativeVorticity, kineticEnergyCell, &
          normalizedRelativeVorticityEdge, normalizedPlanetaryVorticityEdge, pressure, montgomeryPotential, vertTransportVelocityTop, vertVelocityTop, &
@@ -96,6 +98,8 @@ module ocn_global_diagnostics
       real (kind=RKIND), dimension(kMaxVariables) :: sums_tmp, sumSquares_tmp, mins_tmp, maxes_tmp, averages_tmp, verticalSumMins_tmp, verticalSumMaxes_tmp
 
       real (kind=RKIND), dimension(:,:), allocatable :: enstrophy, normalizedAbsoluteVorticity, workArray
+
+      character (len=StrKIND), pointer :: xtime
 
       block => domain % blocklist
       dminfo => domain % dminfo
@@ -111,47 +115,45 @@ module ocn_global_diagnostics
 
       call mpas_timer_start("diagnostic block loop", .false., diagBlockTimer)
       do while (associated(block))
-         state => block % state % time_levs(timeLevel) % state
-         mesh => block % mesh
-         diagnostics => block % diagnostics
+         call mpas_pool_get_subpool(block % structs, 'state', statePool)
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
          
-         num_tracers = state % num_tracers
+         call mpas_pool_get_dimension(statePool, 'num_tracers', num_tracers)
 
-         nVertLevels = mesh % nVertLevels
-         nCellsSolve = mesh % nCellsSolve
-         nEdgesSolve = mesh % nEdgesSolve
-         nVerticesSolve = mesh % nVerticesSolve
+         call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+         call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+         call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
+         call mpas_pool_get_dimension(meshPool, 'nVerticesSolve', nVerticesSolve)
 
-         areaCell          => mesh % areaCell % array
-         dcEdge            => mesh % dcEdge % array
-         dvEdge            => mesh % dvEdge % array
-         areaTriangle      => mesh % areaTriangle % array
-         maxLevelCell      => mesh % maxLevelCell % array
-         maxLevelEdgeTop   => mesh % maxLevelEdgeTop % array
-         maxLevelVertexBot => mesh % maxLevelVertexBot % array
+         call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+         call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
+         call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
+         call mpas_pool_get_array(meshPool, 'areaTriangle', areaTriangle)
+         call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+         call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
+         call mpas_pool_get_array(meshPool, 'maxLevelVertexBot', maxLevelVertexBot)
 
          allocate(areaEdge(1:nEdgesSolve))
          areaEdge = dcEdge(1:nEdgesSolve)*dvEdge(1:nEdgesSolve)
 
-         layerThickness    => state % layerThickness % array
-         normalVelocity    => state % normalVelocity % array
-         tracers           => state % tracers % array
-         if(thicknessFilterActive) then
-            lowFreqDivergence => state % lowFreqDivergence % array
-            highFreqThickness => state % highFreqThickness % array
-         end if
+         call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
+         call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel)
+         call mpas_pool_get_array(statePool, 'tracers', tracers, timeLevel)
+         call mpas_pool_get_array(statePool, 'lowFreqDivergence', lowFreqDivergence, timeLevel)
+         call mpas_pool_get_array(statePool, 'highFreqThickness', highFreqThickness, timeLevel)
 
-         density                          => diagnostics % density % array
-         montgomeryPotential              => diagnostics % montgomeryPotential % array
-         pressure                         => diagnostics % pressure % array
-         relativeVorticity                => diagnostics % relativeVorticity % array
-         normalizedRelativeVorticityEdge  => diagnostics % normalizedRelativeVorticityEdge % array
-         normalizedPlanetaryVorticityEdge => diagnostics % normalizedPlanetaryVorticityEdge % array
-         vertTransportVelocityTop         => diagnostics % vertTransportVelocityTop % array
-         vertVelocityTop                  => diagnostics % vertVelocityTop % array
-         tangentialVelocity               => diagnostics % tangentialVelocity % array
-         layerThicknessEdge               => diagnostics % layerThicknessEdge % array
-         kineticEnergyCell                => diagnostics % kineticEnergyCell % array
+         call mpas_pool_get_array(diagnosticsPool, 'density', density)
+         call mpas_pool_get_array(diagnosticsPool, 'montgomeryPotential', montgomeryPotential)
+         call mpas_pool_get_array(diagnosticsPool, 'pressure', pressure)
+         call mpas_pool_get_array(diagnosticsPool, 'relativeVorticity', relativeVorticity)
+         call mpas_pool_get_array(diagnosticsPool, 'normalizedRelativeVorticityEdge', normalizedRelativeVorticityEdge)
+         call mpas_pool_get_array(diagnosticsPool, 'normalizedPlanetaryVorticityEdge', normalizedPlanetaryVorticityEdge)
+         call mpas_pool_get_array(diagnosticsPool, 'vertTransportVelocityTop', vertTransportVelocityTop)
+         call mpas_pool_get_array(diagnosticsPool, 'vertVelocityTop', vertVelocityTop)
+         call mpas_pool_get_array(diagnosticsPool, 'tangentialVelocity', tangentialVelocity)
+         call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdge', layerThicknessEdge)
+         call mpas_pool_get_array(diagnosticsPool, 'kineticEnergyCell', kineticEnergyCell)
 
          allocate(workArray(nVertLevels,nCellsSolve))
 
@@ -307,7 +309,7 @@ module ocn_global_diagnostics
 
          ! lowFreqDivergence
          variableIndex = variableIndex + 1
-         if (thicknessFilterActive) then
+         if (associated(lowFreqDivergence)) then
             call ocn_compute_field_volume_weighted_local_stats_max_level(dminfo, nVertLevels, nCellsSolve, maxLevelCell(1:nCellsSolve), areaCell(1:nCellsSolve), layerThickness(:,1:nCellsSolve), &
                lowFreqDivergence(:,1:nCellsSolve), sums_tmp(variableIndex), sumSquares_tmp(variableIndex), mins_tmp(variableIndex), maxes_tmp(variableIndex), verticalSumMins_tmp(variableIndex), &
                verticalSumMaxes_tmp(variableIndex))
@@ -321,7 +323,7 @@ module ocn_global_diagnostics
    
          ! highFreqThickness
          variableIndex = variableIndex + 1
-         if (thicknessFilterActive) then
+         if (associated(highFreqThickness)) then
             call ocn_compute_field_volume_weighted_local_stats_max_level(dminfo, nVertLevels, nCellsSolve, maxLevelCell(1:nCellsSolve), areaCell(1:nCellsSolve), layerThickness(:,1:nCellsSolve), &
                highFreqThickness(:,1:nCellsSolve), sums_tmp(variableIndex), sumSquares_tmp(variableIndex), mins_tmp(variableIndex), maxes_tmp(variableIndex), verticalSumMins_tmp(variableIndex), &
                verticalSumMaxes_tmp(variableIndex))
@@ -334,7 +336,7 @@ module ocn_global_diagnostics
          end if
 
          ! Tracers
-         do iTracer=1,num_tracers
+         do iTracer = 1, num_tracers
             variableIndex = variableIndex + 1
             workArray = Tracers(iTracer,:,1:nCellsSolve)
             call ocn_compute_field_volume_weighted_local_stats_max_level(dminfo, nVertLevels, nCellsSolve, maxLevelCell(1:nCellsSolve), areaCell(1:nCellsSolve), layerThickness(:,1:nCellsSolve), &
@@ -387,10 +389,22 @@ module ocn_global_diagnostics
          nMins = nMins + nVariables
          nMaxes = nMaxes + nVariables
 
+         deallocate(areaEdge)
+
          block => block % next
       end do
       call mpas_timer_stop("diagnostic block loop", diagBlockTimer)
       call mpas_timer_start("diagnostics mpi", .false., diagMPITimer)
+
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'diagnostics', diagnosticsPool)
+
+      call mpas_pool_get_array(diagnosticsPool, 'areaCellGlobal', areaCellGlobal)
+      call mpas_pool_get_array(diagnosticsPool, 'areaEdgeGlobal', areaEdgeGlobal)
+      call mpas_pool_get_array(diagnosticsPool, 'areaTriangleGlobal', areaTriangleGlobal)
+      call mpas_pool_get_array(diagnosticsPool, 'volumeCellGlobal', volumeCellGlobal)
+      call mpas_pool_get_array(diagnosticsPool, 'volumeEdgeGlobal', volumeEdgeGlobal)
+      call mpas_pool_get_array(diagnosticsPool, 'CFLNumberGlobal', CFLNumberGlobal)
+      call mpas_pool_get_array(diagnosticsPool, 'xtime', xtime)
 
       ! global reduction of the 5 arrays (packed into 3 to minimize global communication)
       call mpas_dmpar_sum_real_array(dminfo, nSums, sums(1:nSums), reductions(1:nSums))
@@ -421,7 +435,7 @@ module ocn_global_diagnostics
       variableIndex = 0
 
       ! time, in days, using a 360 day calendar
-      read (diagnostics % xtime % scalar, '(i4,5(a1,i2))'), timeYYYY, timeChar, timeMM, timeChar, timeDD, timeChar, timeH, timeChar, timeM, timeChar, timeS
+      read (xtime, '(i4,5(a1,i2))'), timeYYYY, timeChar, timeMM, timeChar, timeDD, timeChar, timeH, timeChar, timeM, timeChar, timeS
       ! subtract 31.0 because calendar starts on 00-01-01
       time_days = timeYYYY*360.0 + timeMM*30.0 + timeDD + (timeH + (timeM + timeS/60.0)/60.0)/24.0 - 31.0
 
@@ -485,7 +499,7 @@ module ocn_global_diagnostics
       averages(variableIndex) = sums(variableIndex)/volumeCellGlobal
       rms(variableIndex) = sqrt(sumSquares(variableIndex)/volumeCellGlobal)
 
-      if (thicknessFilterActive) then
+      if (associated(lowFreqDivergence) .and. associated(highFreqThickness)) then
          ! lowFreqDivergence
          variableIndex = variableIndex + 1
          averages(variableIndex) = sums(variableIndex)/volumeCellGlobal
@@ -508,13 +522,16 @@ module ocn_global_diagnostics
       end if
 
       ! Tracers
-      do iTracer=1,num_tracers
+      do iTracer = 1, num_tracers
         variableIndex = variableIndex + 1
         averages(variableIndex) = sums(variableIndex)/volumeCellGlobal
         rms(variableIndex) = sqrt(sumSquares(variableIndex)/volumeCellGlobal)
       enddo
 
       call mpas_timer_stop("diagnostics mpi", diagMPITimer)
+
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'diagnostics', diagnosticsPool)
+      call mpas_pool_get_array(diagnosticsPool, 'xtime', xtime)
 
       ! write out the data to files
       if (dminfo % my_proc_id == IO_NODE) then
@@ -536,7 +553,7 @@ module ocn_global_diagnostics
          close (fileID)
          open(fileID,file='stats_time.txt',STATUS='UNKNOWN', POSITION='append')
             write (fileID,'(i10,10x,a,100es24.14)') timeIndex, &
-               trim(diagnostics % xtime % scalar), dt, &
+               trim(xtime), dt, &
                CFLNumberGlobal
          close (fileID)
          open(fileID,file='stats_colmin.txt',STATUS='UNKNOWN', POSITION='append')
@@ -546,15 +563,6 @@ module ocn_global_diagnostics
             write (fileID,'(100es24.14)') verticalSumMaxes(1:nVariables)
          close (fileID)
       end if
-
-      diagnostics % areaCellGlobal % scalar = areaCellGlobal
-      diagnostics % areaEdgeGlobal % scalar = areaEdgeGlobal
-      diagnostics % areaTriangleGlobal % scalar = areaTriangleGlobal
-
-      diagnostics % volumeCellGlobal % scalar = volumeCellGlobal
-      diagnostics % volumeEdgeGlobal % scalar = volumeEdgeGlobal
-      diagnostics % CFLNumberGlobal % scalar = CFLNumberGlobal
-      deallocate(areaEdge)
 
    end subroutine ocn_compute_global_diagnostics!}}}
 

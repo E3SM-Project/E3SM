@@ -48,7 +48,7 @@ module mpas_io_input
    
       integer :: i, j, k
       type (io_input_object) :: input_obj
-#include "dim_decls.inc"
+#include "dim_dummy_defines_noinput.inc"
 
       character (len=StrKIND) :: c_on_a_sphere
       real (kind=RKIND) :: r_sphere_radius
@@ -101,7 +101,22 @@ module mpas_io_input
       character(len=StrKIND) :: timeStamp, restartTimeStamp
       character(len=StrKIND) :: filename
 
+      integer, pointer :: config_num_halos, config_number_of_blocks
+      logical, pointer :: config_do_restart, config_explicit_proc_decomp
+      character (len=StrKIND), pointer :: config_restart_timestamp_name, config_start_time, config_restart_name, config_input_name
+      character (len=StrKIND), pointer :: config_block_decomp_file_prefix, config_proc_decomp_file_prefix
       integer :: nHalos
+
+      call mpas_pool_get_config(domain % configs, 'config_num_halos', config_num_halos)
+      call mpas_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
+      call mpas_pool_get_config(domain % configs, 'config_restart_timestamp_name', config_restart_timestamp_name)
+      call mpas_pool_get_config(domain % configs, 'config_start_time', config_start_time)
+      call mpas_pool_get_config(domain % configs, 'config_restart_name', config_restart_name)
+      call mpas_pool_get_config(domain % configs, 'config_input_name', config_input_name)
+      call mpas_pool_get_config(domain % configs, 'config_number_of_blocks', config_number_of_blocks)
+      call mpas_pool_get_config(domain % configs, 'config_explicit_proc_decomp', config_explicit_proc_decomp)
+      call mpas_pool_get_config(domain % configs, 'config_block_decomp_file_prefix', config_block_decomp_file_prefix)
+      call mpas_pool_get_config(domain % configs, 'config_proc_decomp_file_prefix', config_proc_decomp_file_prefix)
 
       nHalos = config_num_halos
 
@@ -141,111 +156,27 @@ module mpas_io_input
         call mpas_dmpar_abort(domain % dminfo)
       end if
 
-      !
-      ! Read global number of cells/edges/vertices
-      !
-#include "read_dims.inc"
-   
-      !
-      ! Determine the range of cells/edges/vertices that a processor will initially read
-      !   from the input file
-      !
-      call mpas_dmpar_get_index_range(domain % dminfo, 1, nCells, readCellStart, readCellEnd)   
-      nReadCells = readCellEnd - readCellStart + 1
-   
-      call mpas_dmpar_get_index_range(domain % dminfo, 1, nEdges, readEdgeStart, readEdgeEnd)   
-      nReadEdges = readEdgeEnd - readEdgeStart + 1
-   
-      call mpas_dmpar_get_index_range(domain % dminfo, 1, nVertices, readVertexStart, readVertexEnd)   
-      nReadVertices = readVertexEnd - readVertexStart + 1
-
-      allocate(readingBlock)
-      readingBlock % domain => domain
-      readingBlock % blockID = domain % dminfo % my_proc_id
-      readingBlock % localBlockID = 0
-
-      !
-      ! Allocate and read fields that we will need in order to ultimately work out
-      !   which cells/edges/vertices are owned by each block, and which are ghost
-      !
-
-      call mpas_io_setup_cell_block_fields(inputHandle, nreadCells, readCellStart, readingBlock, maxEdges, indexTocellIDField, xCellField, &
-                                           yCellField, zCellField, nEdgesOnCellField, cellsOnCellField, edgesOnCellField, verticesOnCellField)
-
-      call mpas_io_setup_edge_block_fields(inputHandle, nReadEdges, readEdgeStart, readingBlock, indexToEdgeIDField, xEdgeField, yEdgeField, zEdgeField, cellsOnEdgeField)
-
-      call mpas_io_setup_vertex_block_fields(inputHandle, nReadVertices, readVertexStart, readingBlock, vertexDegree, indexToVertexIDField, &
-                                             xVertexField, yVertexField, zVertexField, cellsOnVertexField)
-      !
-      ! Set up a graph derived data type describing the connectivity for the cells 
-      !   that were read by this process
-      ! A partial description is passed to the block decomp module by each process,
-      !   and the block decomp module returns with a list of global cell indices
-      !   that belong to the block on this process
-      !
-      partial_global_graph_info % nVertices = nReadCells
-      partial_global_graph_info % nVerticesTotal = nCells
-      partial_global_graph_info % maxDegree = maxEdges
-      partial_global_graph_info % ghostStart = nVertices+1
-      allocate(partial_global_graph_info % vertexID(nReadCells))
-      allocate(partial_global_graph_info % nAdjacent(nReadCells))
-      allocate(partial_global_graph_info % adjacencyList(maxEdges, nReadCells))
-   
-      partial_global_graph_info % vertexID(:) = indexToCellIDField % array(:)
-      partial_global_graph_info % nAdjacent(:) = nEdgesOnCellField % array(:)
-      partial_global_graph_info % adjacencyList(:,:) = cellsOnCellField % array(:,:)
-   
-      ! TODO: Ensure (by renaming or exchanging) that initial cell range on each proc is contiguous
-      !       This situation may occur when reading a restart file with cells/edges/vertices written
-      !       in a scrambled order
-   
-
-      ! Determine which cells are owned by this process
-      call mpas_block_decomp_cells_for_proc(domain % dminfo, partial_global_graph_info, local_cell_list, block_id, block_start, block_count)
-
-      deallocate(partial_global_graph_info % vertexID)
-      deallocate(partial_global_graph_info % nAdjacent)
-      deallocate(partial_global_graph_info % adjacencyList)
-
-      call mpas_block_creator_setup_blocks_and_0halo_cells(domain, indexToCellID_Block, local_cell_list, block_id, block_start, block_count)
-      call mpas_block_creator_build_0halo_cell_fields(indexToCellIDField, nEdgesOnCellField, cellsOnCellField, verticesOnCellField, edgesOnCellField, indexToCellID_Block, nEdgesOnCell_Block, cellsOnCell_Block, verticesOnCell_Block, edgesOnCell_Block)
-
-      call mpas_block_creator_build_0_and_1halo_edge_fields(indexToEdgeIDField, cellsOnEdgeField, indexToCellID_Block, nEdgesOnCell_Block, edgesOnCell_Block, indexToEdgeID_Block, cellsOnEdge_Block, nEdgesSolveField)
-      call mpas_block_creator_build_0_and_1halo_edge_fields(indexToVertexIDField, cellsOnVertexField, indexToCellID_Block, nEdgesOnCell_Block, verticesOnCell_Block, indexToVertexID_Block, cellsOnVertex_Block, nVerticesSolveField)
-
-      call mpas_block_creator_build_cell_halos(indexToCellID_Block, nEdgesOnCell_Block, cellsOnCell_Block, verticesOnCell_Block, edgesOnCell_Block, nCellsSolveField)
-
-      call mpas_block_creator_build_edge_halos(indexToCellID_Block, nEdgesOnCell_Block, nCellsSolveField, edgesOnCell_Block, indexToEdgeID_Block, cellsOnEdge_Block, nEdgesSolveField)
-      call mpas_block_creator_build_edge_halos(indexToCellID_Block, nEdgesOnCell_Block, nCellsSolveField, verticesOnCell_Block, indexToVertexID_Block, cellsOnVertex_Block, nVerticesSolveField)
-
-
-     ! Allocate blocks, and copy indexTo arrays into blocks
-     call mpas_block_creator_finalize_block_init(domain % blocklist, &
-#include "dim_dummy_args.inc"         
-                             , nCellsSolveField, nEdgesSolveField, nVerticesSolveField, indexToCellID_Block, indexToEdgeID_Block, indexToVertexID_Block)
-
-
-      call mpas_io_input_init(input_obj, domain % blocklist, domain % dminfo)
+      call mpas_io_input_init(input_obj, domain % dminfo)
 
       call MPAS_readStreamAtt(input_obj % io_stream, 'sphere_radius', r_sphere_radius, ierr)
       if (ierr /= MPAS_STREAM_NOERR) then
         write(stderrUnit,*) 'Warning: Attribute sphere_radius not found in '//trim(input_obj % filename)
         write(stderrUnit,*) '   Setting sphere_radius to 1.0'
-        domain % blocklist % mesh % sphere_radius = 1.0
+        domain % sphere_radius = 1.0
       else
-        domain % blocklist % mesh % sphere_radius = r_sphere_radius
+        domain % sphere_radius = r_sphere_radius
       end if
 
       call MPAS_readStreamAtt(input_obj % io_stream, 'on_a_sphere', c_on_a_sphere, ierr)
       if (ierr /= MPAS_STREAM_NOERR) then
         write(stderrUnit,*) 'Warning: Attribute on_a_sphere not found in '//trim(input_obj % filename)
         write(stderrUnit,*) '   Setting on_a_sphere to ''YES'''
-        domain % blocklist % mesh % on_a_sphere = .true.
+        domain % on_a_sphere = .true.
       else
         if (index(c_on_a_sphere, 'YES') /= 0) then
-          domain % blocklist % mesh % on_a_sphere = .true.
+          domain % on_a_sphere = .true.
         else
-          domain % blocklist % mesh % on_a_sphere = .false.
+          domain % on_a_sphere = .false.
         end if
       end if
 
@@ -312,18 +243,94 @@ module mpas_io_input
         domain % mesh_spec = "Unknown"
       end if
 
-      block_ptr => domain % blocklist % next
-      do while (associated(block_ptr))
-        block_ptr % mesh % sphere_radius = domain % blocklist % mesh % sphere_radius
-        block_ptr % mesh % on_a_sphere = domain % blocklist % mesh % on_a_sphere
 
-        ! Link the sendList and recvList pointers in each field type to the appropriate lists 
-        !   in parinfo, e.g., cellsToSend and cellsToRecv; in future, it can also be extended to 
-        !   link blocks of fields to eachother
-        call mpas_create_field_links(block_ptr)
+      !
+      ! Read global number of cells/edges/vertices
+      !
+#include "read_dimensions.inc"
+   
+      !
+      ! Determine the range of cells/edges/vertices that a processor will initially read
+      !   from the input file
+      !
+      call mpas_dmpar_get_index_range(domain % dminfo, 1, nCells, readCellStart, readCellEnd)   
+      nReadCells = readCellEnd - readCellStart + 1
+   
+      call mpas_dmpar_get_index_range(domain % dminfo, 1, nEdges, readEdgeStart, readEdgeEnd)   
+      nReadEdges = readEdgeEnd - readEdgeStart + 1
+   
+      call mpas_dmpar_get_index_range(domain % dminfo, 1, nVertices, readVertexStart, readVertexEnd)   
+      nReadVertices = readVertexEnd - readVertexStart + 1
 
-        block_ptr => block_ptr % next
-      end do
+      allocate(readingBlock)
+      readingBlock % domain => domain
+      readingBlock % blockID = domain % dminfo % my_proc_id
+      readingBlock % localBlockID = 0
+
+      !
+      ! Allocate and read fields that we will need in order to ultimately work out
+      !   which cells/edges/vertices are owned by each block, and which are ghost
+      !
+
+      call mpas_io_setup_cell_block_fields(inputHandle, nreadCells, readCellStart, readingBlock, maxEdges, indexTocellIDField, xCellField, &
+                                           yCellField, zCellField, nEdgesOnCellField, cellsOnCellField, edgesOnCellField, verticesOnCellField, nHalos)
+
+      call mpas_io_setup_edge_block_fields(inputHandle, nReadEdges, readEdgeStart, readingBlock, indexToEdgeIDField, xEdgeField, yEdgeField, zEdgeField, cellsOnEdgeField, nHalos)
+
+      call mpas_io_setup_vertex_block_fields(inputHandle, nReadVertices, readVertexStart, readingBlock, vertexDegree, indexToVertexIDField, &
+                                             xVertexField, yVertexField, zVertexField, cellsOnVertexField, nHalos)
+      !
+      ! Set up a graph derived data type describing the connectivity for the cells 
+      !   that were read by this process
+      ! A partial description is passed to the block decomp module by each process,
+      !   and the block decomp module returns with a list of global cell indices
+      !   that belong to the block on this process
+      !
+      partial_global_graph_info % nVertices = nReadCells
+      partial_global_graph_info % nVerticesTotal = nCells
+      partial_global_graph_info % maxDegree = maxEdges
+      partial_global_graph_info % ghostStart = nVertices+1
+      allocate(partial_global_graph_info % vertexID(nReadCells))
+      allocate(partial_global_graph_info % nAdjacent(nReadCells))
+      allocate(partial_global_graph_info % adjacencyList(maxEdges, nReadCells))
+   
+      partial_global_graph_info % vertexID(:) = indexToCellIDField % array(:)
+      partial_global_graph_info % nAdjacent(:) = nEdgesOnCellField % array(:)
+      partial_global_graph_info % adjacencyList(:,:) = cellsOnCellField % array(:,:)
+   
+      ! TODO: Ensure (by renaming or exchanging) that initial cell range on each proc is contiguous
+      !       This situation may occur when reading a restart file with cells/edges/vertices written
+      !       in a scrambled order
+   
+
+      ! Determine which cells are owned by this process
+      call mpas_block_decomp_cells_for_proc(domain % dminfo, partial_global_graph_info, local_cell_list, block_id, block_start, block_count, &
+                                            config_number_of_blocks, config_explicit_proc_decomp, config_block_decomp_file_prefix, config_proc_decomp_file_prefix)
+
+      deallocate(partial_global_graph_info % vertexID)
+      deallocate(partial_global_graph_info % nAdjacent)
+      deallocate(partial_global_graph_info % adjacencyList)
+
+      call mpas_block_creator_setup_blocks_and_0halo_cells(nHalos, domain, indexToCellID_Block, local_cell_list, block_id, block_start, block_count)
+      call mpas_block_creator_build_0halo_cell_fields(nHalos, indexToCellIDField, nEdgesOnCellField, cellsOnCellField, verticesOnCellField, edgesOnCellField, indexToCellID_Block, nEdgesOnCell_Block, cellsOnCell_Block, verticesOnCell_Block, edgesOnCell_Block)
+
+      call mpas_block_creator_build_0_and_1halo_edge_fields(nHalos, indexToEdgeIDField, cellsOnEdgeField, indexToCellID_Block, nEdgesOnCell_Block, edgesOnCell_Block, indexToEdgeID_Block, cellsOnEdge_Block, nEdgesSolveField)
+      call mpas_block_creator_build_0_and_1halo_edge_fields(nHalos, indexToVertexIDField, cellsOnVertexField, indexToCellID_Block, nEdgesOnCell_Block, verticesOnCell_Block, indexToVertexID_Block, cellsOnVertex_Block, nVerticesSolveField)
+
+      call mpas_block_creator_build_cell_halos(nHalos, indexToCellID_Block, nEdgesOnCell_Block, cellsOnCell_Block, verticesOnCell_Block, edgesOnCell_Block, nCellsSolveField)
+
+      call mpas_block_creator_build_edge_halos(nHalos, indexToCellID_Block, nEdgesOnCell_Block, nCellsSolveField, edgesOnCell_Block, indexToEdgeID_Block, cellsOnEdge_Block, nEdgesSolveField)
+      call mpas_block_creator_build_edge_halos(nHalos, indexToCellID_Block, nEdgesOnCell_Block, nCellsSolveField, verticesOnCell_Block, indexToVertexID_Block, cellsOnVertex_Block, nVerticesSolveField)
+
+
+     ! Allocate blocks, and copy indexTo arrays into blocks
+     call mpas_block_creator_finalize_block_init(nHalos, domain % blocklist, &
+#include "dim_dummy_args.inc"         
+                             , nCellsSolveField, nEdgesSolveField, nVerticesSolveField, indexToCellID_Block, indexToEdgeID_Block, indexToVertexID_Block)
+
+      call mpas_link_fields(domain)
+
+      call mpas_add_input_fields(domain, input_obj)
 
       if (.not. config_do_restart) then
         input_obj % time = 1
@@ -454,12 +461,11 @@ module mpas_io_input
 
    end subroutine mpas_read_and_distribute_fields!}}}
 
-   subroutine mpas_io_input_init(input_obj, blocklist, dminfo)!{{{
+   subroutine mpas_io_input_init(input_obj, dminfo)!{{{
  
       implicit none
 
       type (io_input_object), intent(inout) :: input_obj
-      type (block_type), intent(in) :: blocklist
       type (dm_info), intent(in) :: dminfo
  
       integer :: nferr
@@ -478,8 +484,6 @@ module mpas_io_input
          call mpas_dmpar_abort(dminfo)
       end if
 
-#include "add_input_fields.inc"
-
    end subroutine mpas_io_input_init!}}}
 
    subroutine mpas_exch_input_field_halos(domain, input_obj)!{{{
@@ -489,9 +493,7 @@ module mpas_io_input
       type (domain_type), intent(inout) :: domain
       type (io_input_object), intent(inout) :: input_obj
 
-#include "exchange_input_field_halos.inc"
-
-#include "non_decomp_copy_input_fields.inc"
+      call mpas_exchange_fields(domain, input_obj)
 
    end subroutine mpas_exch_input_field_halos!}}}
 
@@ -508,7 +510,7 @@ module mpas_io_input
  
    end subroutine mpas_io_input_finalize!}}}
 
-   subroutine mpas_io_setup_cell_block_fields(inputHandle, nReadCells, readCellStart, readingBlock, maxEdges, indexToCellID, xCell, yCell, zCell, nEdgesOnCell, cellsOnCell, edgesOnCell, verticesOnCell)!{{{
+   subroutine mpas_io_setup_cell_block_fields(inputHandle, nReadCells, readCellStart, readingBlock, maxEdges, indexToCellID, xCell, yCell, zCell, nEdgesOnCell, cellsOnCell, edgesOnCell, verticesOnCell, nHalos)!{{{
      type (MPAS_IO_Handle_type) :: inputHandle
      integer, intent(in) :: nReadCells
      integer, intent(in) :: readCellStart
@@ -522,12 +524,11 @@ module mpas_io_input
      type (field2dInteger), pointer :: cellsOnCell
      type (field2dInteger), pointer :: edgesOnCell
      type (field2dInteger), pointer :: verticesOnCell
+     integer, intent(in) :: nHalos
 
-     integer :: i, nHalos
+     integer :: i
      integer, dimension(:), pointer :: readIndices
 
-     nHalos = config_num_halos
-  
      !
      ! Allocate and read fields that we will need in order to ultimately work out
      !   which cells/edges/vertices are owned by each block, and which are ghost
@@ -636,7 +637,7 @@ module mpas_io_input
    
    end subroutine mpas_io_setup_cell_block_fields!}}}
 
-   subroutine mpas_io_setup_edge_block_fields(inputHandle, nReadEdges, readEdgeStart, readingBlock, indexToEdgeID, xEdge, yEdge, zEdge, cellsOnEdge)!{{{
+   subroutine mpas_io_setup_edge_block_fields(inputHandle, nReadEdges, readEdgeStart, readingBlock, indexToEdgeID, xEdge, yEdge, zEdge, cellsOnEdge, nHalos)!{{{
      type (MPAS_IO_Handle_type) :: inputHandle
      integer, intent(in) :: nReadEdges
      integer, intent(in) :: readEdgeStart
@@ -646,12 +647,11 @@ module mpas_io_input
      type (field1dReal), pointer :: yEdge
      type (field1dReal), pointer :: zEdge
      type (field2dInteger), pointer :: cellsOnEdge
+     integer, intent(in) :: nHalos
 
-     integer :: i, nHalos
+     integer :: i
      integer, dimension(:), pointer :: readIndices
 
-     nHalos = config_num_halos
-  
      !
      ! Allocate and read fields that we will need in order to ultimately work out
      !   which cells/edges/vertices are owned by each block, and which are ghost
@@ -707,7 +707,7 @@ module mpas_io_input
    
    end subroutine mpas_io_setup_edge_block_fields!}}}
 
-   subroutine mpas_io_setup_vertex_block_fields(inputHandle, nReadVertices, readVertexStart, readingBlock, vertexDegree, indexToVertexID, xVertex, yVertex, zVertex, cellsOnVertex)!{{{
+   subroutine mpas_io_setup_vertex_block_fields(inputHandle, nReadVertices, readVertexStart, readingBlock, vertexDegree, indexToVertexID, xVertex, yVertex, zVertex, cellsOnVertex, nHalos)!{{{
      type (MPAS_IO_Handle_type) :: inputHandle
      integer, intent(in) :: nReadVertices
      integer, intent(in) :: readVertexStart
@@ -718,12 +718,11 @@ module mpas_io_input
      type (field1dReal), pointer :: yVertex
      type (field1dReal), pointer :: zVertex
      type (field2dInteger), pointer :: cellsOnVertex
+     integer, intent(in) :: nHalos
 
-     integer :: i, nHalos
+     integer :: i
      integer, dimension(:), pointer :: readIndices
 
-     nHalos = config_num_halos
-  
      ! Global vertex indices
      allocate(indexToVertexID)
      allocate(indexToVertexID % ioinfo)
@@ -772,5 +771,7 @@ module mpas_io_input
 
    end subroutine mpas_io_setup_vertex_block_fields!}}}
 
+#include "add_input_fields.inc"
+#include "exchange_fields.inc"
  
 end module mpas_io_input

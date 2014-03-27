@@ -22,7 +22,7 @@
 module ocn_vel_vadv
 
    use mpas_grid_types
-   use mpas_configure
+   use ocn_constants
 
    implicit none
    private
@@ -69,7 +69,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_vadv_tend(mesh, u, layerThicknessEdge, vertTransportVelocityTop, tend, err)!{{{
+   subroutine ocn_vel_vadv_tend(meshPool, u, layerThicknessEdge, vertTransportVelocityTop, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -83,8 +83,8 @@ contains
          layerThicknessEdge,&!< Input: thickness at edge
          vertTransportVelocityTop  !< Input: Vertical velocity on top layer
 
-      type (mesh_type), intent(in) :: &
-         mesh          !< Input: mesh information
+      type (mpas_pool_type), intent(in) :: &
+         meshPool          !< Input: mesh information
 
       !-----------------------------------------------------------------
       !
@@ -109,33 +109,33 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, nEdgesSolve, cell1, cell2, k
-      integer :: nVertLevels
+      integer :: iEdge, cell1, cell2, k
+      integer, pointer :: nEdgesSolve, nVertLevels
       integer, dimension(:), pointer :: maxLevelEdgeTop
       integer, dimension(:,:), pointer :: cellsOnEdge, edgeMask
 
       real (kind=RKIND) :: vertTransportVelocityTopEdge
       real (kind=RKIND), dimension(:), allocatable :: w_dudzTopEdge
 
-      if(.not.velVadvOn) return
+      if (.not. velVadvOn) return
 
       err = 0
 
-      nVertLevels = mesh % nVertLevels
-      nEdgesSolve = mesh % nEdgesSolve
-      maxLevelEdgeTop => mesh % maxLevelEdgeTop % array
-      cellsOnEdge => mesh % cellsOnEdge % array
-      edgeMask => mesh % edgeMask % array
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+      call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
+      call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
+      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+      call mpas_pool_get_array(meshPool, 'edgeMask', edgeMask)
 
       allocate(w_dudzTopEdge(nVertLevels+1))
       w_dudzTopEdge = 0.0
-      do iEdge=1,nEdgesSolve
+      do iEdge = 1, nEdgesSolve
         cell1 = cellsOnEdge(1,iEdge)
         cell2 = cellsOnEdge(2,iEdge)
 
-        do k=2,maxLevelEdgeTop(iEdge)
+        do k = 2, maxLevelEdgeTop(iEdge)
           ! Average w from cell center to edge
-          vertTransportVelocityTopEdge = 0.5*(vertTransportVelocityTop(k,cell1)+vertTransportVelocityTop(k,cell2))
+          vertTransportVelocityTopEdge = 0.5*(vertTransportVelocityTop(k,cell1) + vertTransportVelocityTop(k,cell2))
 
           ! compute dudz at vertical interface with first order derivative.
           w_dudzTopEdge(k) = vertTransportVelocityTopEdge * (u(k-1,iEdge)-u(k,iEdge)) &
@@ -143,7 +143,7 @@ contains
         end do
         w_dudzTopEdge(maxLevelEdgeTop(iEdge)+1) = 0.0
         ! Average w*du/dz from vertical interface to vertical middle of cell
-        do k=1,maxLevelEdgeTop(iEdge)
+        do k = 1, maxLevelEdgeTop(iEdge)
 
           tend(k,iEdge) = tend(k,iEdge) - edgeMask(k, iEdge) * 0.5 * (w_dudzTopEdge(k) + w_dudzTopEdge(k+1))
         enddo
@@ -179,14 +179,21 @@ contains
 
       integer, intent(out) :: err !< Output: error flag
 
+      character (len=StrKIND), pointer :: config_vert_coord_movement
+      logical, pointer :: config_disable_vel_vadv
+
       err = 0
+
+      call mpas_pool_get_config(ocnConfigs, 'config_vert_coord_movement', config_vert_coord_movement)
+      call mpas_pool_get_config(ocnConfigs, 'config_disable_vel_vadv', config_disable_vel_vadv)
+
       velVadvOn = .false.
 
-      if (config_vert_coord_movement.ne.'impermeable_interfaces') then
+      if (config_vert_coord_movement .ne.'impermeable_interfaces') then
           velVadvOn = .true.
       end if
 
-      if(config_disable_vel_vadv) velVadvOn = .false.
+      if ( config_disable_vel_vadv ) velVadvOn = .false.
 
    !--------------------------------------------------------------------
 

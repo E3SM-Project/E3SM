@@ -7,7 +7,7 @@
 !
 !==================================================================================================
  module mpas_atmphys_driver_radiation_lw
- use mpas_configure, only: config_do_restart, config_o3climatology
+ use mpas_kind_types
  use mpas_grid_types
  use mpas_timer
 
@@ -70,9 +70,12 @@
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-03-21.
 !>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-22.
+!>    * Modified sourcecode to use pools.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-05-15.
 
 
  contains
+
 
 !==================================================================================================
  subroutine allocate_radiation_lw(xtime_s)
@@ -239,24 +242,26 @@
  end subroutine deallocate_radiation_lw
 
 !==================================================================================================
- subroutine radiation_lw_from_MPAS(xtime_s,mesh,state,diag_physics,atm_input,sfc_input)
+ subroutine radiation_lw_from_MPAS(xtime_s,configs,mesh,state,time_lev,diag_physics,atm_input, &
+                                   sfc_input)
 !==================================================================================================
 
 !input arguments:
- type(mesh_type),intent(in) :: mesh
- type(state_type),intent(in):: state
- type(atm_input_type)   ,intent(in):: atm_input
- type(sfc_input_type)   ,intent(in):: sfc_input
+ type(mpas_pool_type),intent(in):: mesh
+ type(mpas_pool_type),intent(in):: configs
+ type(mpas_pool_type),intent(in):: state
+ type(mpas_pool_type),intent(in):: atm_input
+ type(mpas_pool_type),intent(in):: sfc_input
 
-!inout arguments:
- type(diag_physics_type),intent(inout):: diag_physics
-
+ integer,intent(in):: time_lev
  real(kind=RKIND),intent(in):: xtime_s
 
-!local variables and arrays:
- integer:: ncols,nlevs
+!inout arguments:
+ type(mpas_pool_type),intent(inout):: diag_physics
 
- real(kind=RKIND),dimension(:,:),allocatable:: p2d,o32d
+!local pointers:
+ logical,pointer:: config_o3climatology
+
  real(kind=RKIND),dimension(:),pointer    :: latCell,lonCell
  real(kind=RKIND),dimension(:),pointer    :: skintemp,snow,xice,xland
  real(kind=RKIND),dimension(:),pointer    :: m_ps,pin
@@ -264,24 +269,34 @@
  real(kind=RKIND),dimension(:,:),pointer  :: cldfrac,m_hybi,o3clim,o3vmr
  real(kind=RKIND),dimension(:,:,:),pointer:: aerosols,ozmixm
 
+!local variables and arrays:
+ integer:: ncols,nlevs
+ real(kind=RKIND),dimension(:,:),allocatable:: p2d,o32d
+
 !--------------------------------------------------------------------------------------------------
 
- latCell    => mesh         % latCell    % array
- lonCell    => mesh         % lonCell    % array
- m_hybi     => mesh         % m_hybi     % array
- m_ps       => state        % m_ps       % array
- aerosols   => state        % aerosols   % array
- skintemp   => sfc_input    % skintemp   % array
- snow       => sfc_input    % snow       % array
- xice       => sfc_input    % xice       % array
- xland      => sfc_input    % xland      % array
- pin        => atm_input    % pin        % array
- ozmixm     => atm_input    % ozmixm     % array
- sfc_albedo => diag_physics % sfc_albedo % array
- sfc_emiss  => diag_physics % sfc_emiss  % array
- cldfrac    => diag_physics % cldfrac    % array
- o3clim     => diag_physics % o3clim     % array
- o3vmr      => diag_physics % o3vmr      % array
+ call mpas_pool_get_config(configs,'config_o3climatology',config_o3climatology)
+
+ call mpas_pool_get_array(mesh,'latCell',latCell)
+ call mpas_pool_get_array(mesh,'lonCell',lonCell)
+ call mpas_pool_get_array(mesh,'m_hybi' ,m_hybi )
+
+ call mpas_pool_get_array(state,'m_ps'    ,m_ps    ,time_lev)
+ call mpas_pool_get_array(state,'aerosols',aerosols,time_lev)
+
+ call mpas_pool_get_array(sfc_input,'skintemp',skintemp)
+ call mpas_pool_get_array(sfc_input,'snow'    ,snow    )
+ call mpas_pool_get_array(sfc_input,'xice'    ,xice    )
+ call mpas_pool_get_array(sfc_input,'xland'   ,xland   )
+
+ call mpas_pool_get_array(atm_input,'pin'     ,pin     )
+ call mpas_pool_get_array(atm_input,'ozmixm'  ,ozmixm  )
+
+ call mpas_pool_get_array(diag_physics,'sfc_albedo',sfc_albedo)
+ call mpas_pool_get_array(diag_physics,'sfc_emiss' ,sfc_emiss )
+ call mpas_pool_get_array(diag_physics,'cldfrac'   ,cldfrac   )
+ call mpas_pool_get_array(diag_physics,'o3clim'    ,o3clim    )
+ call mpas_pool_get_array(diag_physics,'o3vmr'     ,o3vmr     )
 
  do j = jts,jte
  do i = its,ite
@@ -500,31 +515,33 @@
 !==================================================================================================
 
 !input arguments:
- type(diag_physics_type),intent(inout):: diag_physics
- type(tend_physics_type),intent(inout):: tend_physics
+ type(mpas_pool_type),intent(inout):: diag_physics
+ type(mpas_pool_type),intent(inout):: tend_physics
 
-!local variables and arrays:
- integer:: nlay,pcols
-
- real(kind=RKIND),dimension(:,:),allocatable:: p1d
+!local pointers:
  real(kind=RKIND),dimension(:),pointer :: glw,lwcf,lwdnb,lwdnbc,lwdnt,lwdntc,lwupb,lwupbc, &
                                           lwupt,lwuptc,olrtoa
  real(kind=RKIND),dimension(:,:),pointer:: rthratenlw
 
+!local variables and arrays:
+ integer:: nlay,pcols
+ real(kind=RKIND),dimension(:,:),allocatable:: p1d
+
 !--------------------------------------------------------------------------------------------------
 
- glw    => diag_physics % glw    % array
- lwcf   => diag_physics % lwcf   % array
- lwdnb  => diag_physics % lwdnb  % array
- lwdnbc => diag_physics % lwdnbc % array
- lwdnt  => diag_physics % lwdnt  % array
- lwdntc => diag_physics % lwdntc % array
- lwupb  => diag_physics % lwupb  % array
- lwupbc => diag_physics % lwupbc % array
- lwupt  => diag_physics % lwupt  % array
- lwuptc => diag_physics % lwuptc % array
- olrtoa => diag_physics % olrtoa % array
- rthratenlw => tend_physics % rthratenlw % array
+ call mpas_pool_get_array(diag_physics,'glw'   ,glw   )
+ call mpas_pool_get_array(diag_physics,'lwcf'  ,lwcf  )
+ call mpas_pool_get_array(diag_physics,'lwdnb' ,lwdnb )
+ call mpas_pool_get_array(diag_physics,'lwdnbc',lwdnbc)
+ call mpas_pool_get_array(diag_physics,'lwdnt' ,lwdnt )
+ call mpas_pool_get_array(diag_physics,'lwdntc',lwdntc)
+ call mpas_pool_get_array(diag_physics,'lwupb' ,lwupb )
+ call mpas_pool_get_array(diag_physics,'lwupbc',lwupbc)
+ call mpas_pool_get_array(diag_physics,'lwupt' ,lwupt )
+ call mpas_pool_get_array(diag_physics,'lwuptc',lwuptc)
+ call mpas_pool_get_array(diag_physics,'olrtoa',olrtoa)
+
+ call mpas_pool_get_array(tend_physics,'rthratenlw',rthratenlw)
 
  do j = jts,jte
  do i = its,ite
@@ -555,17 +572,17 @@
 !==================================================================================================
 
 !input arguments:
- type(diag_physics_type),intent(inout):: diag_physics
+ type(mpas_pool_type),intent(inout):: diag_physics
 
-!local variables and arrays:
+!local pointers:
  real(kind=RKIND),dimension(:,:),pointer  :: emstot
  real(kind=RKIND),dimension(:,:,:),pointer:: absnxt,abstot
 
 !---------------------------------------------------------------------------------------------
 
- absnxt => diag_physics % absnxt % array
- abstot => diag_physics % abstot % array
- emstot => diag_physics % emstot % array
+ call mpas_pool_get_array(diag_physics,'absnxt',absnxt)
+ call mpas_pool_get_array(diag_physics,'abstot',abstot)
+ call mpas_pool_get_array(diag_physics,'emstot',emstot)
 
 !write(0,*) '--- writing absnxt,abstot,and emstot to restart =', l_camlw
  do j = jts,jte
@@ -593,17 +610,19 @@
  end subroutine radiation_camlw_to_MPAS
 
 !==================================================================================================
- subroutine init_radiation_lw(dminfo,mesh,atm_input,diag,state_1,state_2)
+ subroutine init_radiation_lw(dminfo,mesh,atm_input,diag,state,time_lev)
 !==================================================================================================
 
 !input arguments:
  type(dm_info),intent(in):: dminfo
- type(mesh_type),intent(in),optional:: mesh
- type(diag_type),intent(in),optional:: diag
+ type(mpas_pool_type),intent(in),optional:: mesh
+ type(mpas_pool_type),intent(in),optional:: diag
+
+ integer,intent(in),optional:: time_lev
 
 !inout arguments:
- type(atm_input_type),intent(inout),optional:: atm_input
- type(state_type),intent(inout),optional:: state_1,state_2 
+ type(mpas_pool_type),intent(inout),optional:: atm_input
+ type(mpas_pool_type),intent(inout),optional:: state
 
 !--------------------------------------------------------------------------------------------------
 
@@ -618,7 +637,7 @@
 
     case("cam_lw")
        write(0,*) '    enter subroutine camradinit:'
-       call camradinit(dminfo,mesh,atm_input,diag,state_1,state_2)
+       call camradinit(dminfo,mesh,atm_input,diag,state,time_lev)
        write(0,*) '    end subroutine camradinit'
     
     case default
@@ -629,19 +648,26 @@
  end subroutine init_radiation_lw
 
 !==================================================================================================
- subroutine driver_radiation_lw(xtime_s,mesh,state,diag_physics,atm_input,sfc_input,tend_physics)
+ subroutine driver_radiation_lw(xtime_s,configs,mesh,state,time_lev,diag_physics,atm_input, &
+                                sfc_input,tend_physics)
 !==================================================================================================
 
 !input arguments:
- type(mesh_type),intent(in) :: mesh
+ type(mpas_pool_type),intent(in):: mesh
+ type(mpas_pool_type),intent(in):: configs
+
+ integer,intent(in):: time_lev
  real(kind=RKIND),intent(in):: xtime_s
 
 !inout arguments:
- type(state_type)       ,intent(inout):: state
- type(diag_physics_type),intent(inout):: diag_physics
- type(atm_input_type)   ,intent(inout):: atm_input
- type(sfc_input_type)   ,intent(inout):: sfc_input
- type(tend_physics_type),intent(inout):: tend_physics
+ type(mpas_pool_type),intent(inout):: state
+ type(mpas_pool_type),intent(inout):: diag_physics
+ type(mpas_pool_type),intent(inout):: atm_input
+ type(mpas_pool_type),intent(inout):: sfc_input
+ type(mpas_pool_type),intent(inout):: tend_physics
+
+!local pointers:
+ logical,pointer:: config_o3climatology
 
 !local variables:
  integer:: o3input
@@ -655,8 +681,10 @@
  100 format(/,' --- enter subroutine driver_radiation_lw: ',i6)
  101 format(i8,12(1x,e15.8))
 
+ call mpas_pool_get_config(configs,'config_o3climatology',config_o3climatology)
+
 !copy MPAS arrays to local arrays:
- call radiation_lw_from_MPAS(xtime_s,mesh,state,diag_physics,atm_input,sfc_input)
+ call radiation_lw_from_MPAS(xtime_s,configs,mesh,state,time_lev,diag_physics,atm_input,sfc_input)
 
 !call to longwave radiation scheme:
  radiation_lw_select: select case (trim(radt_lw_scheme))

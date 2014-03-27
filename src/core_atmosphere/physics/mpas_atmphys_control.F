@@ -7,7 +7,7 @@
 !
 !==================================================================================================
  module mpas_atmphys_control
- use mpas_configure
+ use mpas_kind_types
  use mpas_grid_types
 
  use mpas_atmphys_utilities
@@ -42,13 +42,43 @@
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-05-29.
 !>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-22.
+!>    * Modified sourcecode to use pools.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-05-15.
 
 
  contains
 
+
 !==================================================================================================
- subroutine physics_namelist_check
+ subroutine physics_namelist_check(mesh,configs)
 !==================================================================================================
+
+!input arguments:
+ type(mpas_pool_type),intent(in):: mesh
+ type(mpas_pool_type),intent(in):: configs
+
+!local pointers:
+ character(len=StrKIND),pointer:: config_microp_scheme,    &
+                                  config_conv_deep_scheme, &
+                                  config_lsm_scheme,       &
+                                  config_pbl_scheme,       &
+                                  config_gwdo_scheme,      &
+                                  config_radt_cld_scheme,  &
+                                  config_radt_lw_scheme,   &
+                                  config_radt_sw_scheme,   &
+                                  config_sfclayer_scheme
+
+!--------------------------------------------------------------------------------------------------
+
+ call mpas_pool_get_config(configs,'config_microp_scheme'   ,config_microp_scheme   )
+ call mpas_pool_get_config(configs,'config_conv_deep_scheme',config_conv_deep_scheme)
+ call mpas_pool_get_config(configs,'config_lsm_scheme'      ,config_lsm_scheme      )
+ call mpas_pool_get_config(configs,'config_pbl_scheme'      ,config_pbl_scheme      )
+ call mpas_pool_get_config(configs,'config_gwdo_scheme'     ,config_gwdo_scheme     )
+ call mpas_pool_get_config(configs,'config_radt_cld_scheme' ,config_radt_cld_scheme )
+ call mpas_pool_get_config(configs,'config_radt_lw_scheme'  ,config_radt_lw_scheme  )
+ call mpas_pool_get_config(configs,'config_radt_sw_scheme'  ,config_radt_sw_scheme  )
+ call mpas_pool_get_config(configs,'config_sfclayer_scheme' ,config_sfclayer_scheme )
 
  write(0,*)
  write(0,*) '--- enter subroutine physics_namelist_check:'
@@ -198,25 +228,34 @@
  end subroutine physics_namelist_check
 
 !==================================================================================================
- subroutine physics_registry_init(config_do_restart,mesh,sfc_input)
+ subroutine physics_registry_init(mesh,configs,sfc_input)
 !==================================================================================================
 
-!input and output arguments:
- logical,intent(in):: config_do_restart
- type(mesh_type),intent(in):: mesh
- type(sfc_input_type),intent(inout):: sfc_input
+!input and inout arguments:
+ type(mpas_pool_type),intent(in):: mesh
+ type(mpas_pool_type),intent(in):: configs
+ type(mpas_pool_type),intent(inout):: sfc_input
+
+!local pointers:
+ logical,pointer:: config_do_restart
+ character(len=StrKIND),pointer:: config_lsm_scheme
+ integer,pointer:: nCells
+ integer,dimension(:),pointer:: landmask
+
+ real(kind=RKIND),dimension(:,:),pointer:: dzs
 
 !local variables:
- integer:: iCell,nCells
+ integer:: iCell
 
- integer,dimension(:),pointer:: landmask
- real(kind=RKIND),dimension(:,:),pointer:: dzs
- 
 !--------------------------------------------------------------------------------------------------
 
- nCells = mesh % nCells
- landmask => sfc_input % landmask % array
- dzs      => sfc_input % dzs % array
+ call mpas_pool_get_config(configs,'config_do_restart',config_do_restart)
+ call mpas_pool_get_config(configs,'config_lsm_scheme',config_lsm_scheme)
+
+ call mpas_pool_get_dimension(mesh,'nCells',nCells)
+
+ call mpas_pool_get_array(sfc_input,'landmask',landmask)
+ call mpas_pool_get_array(sfc_input,'dzs'     , dzs    )
 
 !initialization of input variables, if needed:
 
@@ -248,46 +287,48 @@
 !==================================================================================================
 
 !input and output arguments:
- type(mesh_type),intent(in):: mesh
- type(sfc_input_type),intent(inout):: sfc_input
+ type(mpas_pool_type),intent(in):: mesh
+ type(mpas_pool_type),intent(inout):: sfc_input
 
-!local variables:
- integer:: iCell,iMonth,iSoil
- integer:: nCells,nMonths,nSoilLevels
- 
+!local pointers: 
+ integer,pointer:: nCells,nMonths,nSoilLevels
  integer,dimension(:),pointer:: isltyp,ivgtyp,landmask
+ 
  real(kind=RKIND),dimension(:),pointer:: shdmin,shdmax,snoalb,snow,snowc,ter,vegfra,xice
  real(kind=RKIND),dimension(:),pointer:: skintemp,sst,tmn
  real(kind=RKIND),dimension(:,:),pointer:: tslb,smcrel,sh2o,smois,dzs
  real(kind=RKIND),dimension(:,:),pointer:: albedo12m,greenfrac
 
+!local variables:
+ integer:: iCell,iMonth,iSoil
+ 
 !--------------------------------------------------------------------------------------------------
 
- nCells      = mesh % nCells
- nSoilLevels = mesh % nSoilLevels
+ call mpas_pool_get_dimension(mesh,'nCells',nCells)
+ call mpas_pool_get_dimension(mesh,'nMonths',nMonths)
+ call mpas_pool_get_dimension(mesh,'nSoilLevel',nSoilLevels)
 
- isltyp    => sfc_input % isltyp    % array
- ivgtyp    => sfc_input % ivgtyp    % array
- landmask  => sfc_input % landmask  % array
-
- shdmin    => sfc_input % shdmin    % array
- shdmax    => sfc_input % shdmax    % array
- snoalb    => sfc_input % snoalb    % array
- snow      => sfc_input % snow      % array
- snowc     => sfc_input % snowc     % array
- ter       => sfc_input % ter       % array
- vegfra    => sfc_input % vegfra    % array
- xice      => sfc_input % xice      % array
- skintemp  => sfc_input % skintemp  % array
- sst       => sfc_input % sst       % array
- tmn       => sfc_input % tmn       % array
- dzs       => sfc_input % dzs       % array
- sh2o      => sfc_input % sh2o      % array
- smcrel    => sfc_input % smcrel    % array
- smois     => sfc_input % smois     % array
- tslb      => sfc_input % tslb      % array
- albedo12m => sfc_input % albedo12m % array
- greenfrac => sfc_input % greenfrac % array
+ call mpas_pool_get_array(sfc_input,'isltyp'   ,isltyp   )
+ call mpas_pool_get_array(sfc_input,'ivgtyp'   ,ivgtyp   )
+ call mpas_pool_get_array(sfc_input,'landmask' ,landmask )
+ call mpas_pool_get_array(sfc_input,'shdmin'   ,shdmin   )
+ call mpas_pool_get_array(sfc_input,'shdmax'   ,shdmax   )
+ call mpas_pool_get_array(sfc_input,'snoalb'   ,snoalb   )
+ call mpas_pool_get_array(sfc_input,'snow'     ,snow     )
+ call mpas_pool_get_array(sfc_input,'snowc'    ,snowc    )
+ call mpas_pool_get_array(sfc_input,'ter'      ,ter      )
+ call mpas_pool_get_array(sfc_input,'vegfra'   ,vegfra   )
+ call mpas_pool_get_array(sfc_input,'xice'     ,xice     )
+ call mpas_pool_get_array(sfc_input,'skintemp' ,skintemp )
+ call mpas_pool_get_array(sfc_input,'sst'      ,sst      )
+ call mpas_pool_get_array(sfc_input,'tmn'      ,tmn      )
+ call mpas_pool_get_array(sfc_input,'dzs'      ,dzs      )
+ call mpas_pool_get_array(sfc_input,'sh2o'     ,sh2o     )
+ call mpas_pool_get_array(sfc_input,'smcrel'   ,smcrel   )
+ call mpas_pool_get_array(sfc_input,'smois'    ,smois    )
+ call mpas_pool_get_array(sfc_input,'tslb'     ,tslb     )
+ call mpas_pool_get_array(sfc_input,'albedo12m',albedo12m)
+ call mpas_pool_get_array(sfc_input,'greenfrac',greenfrac)
 
 !initialization of surface input variables that are not needed if we run the current set of
 !idealized test cases:

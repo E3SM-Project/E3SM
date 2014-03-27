@@ -7,6 +7,7 @@
 !
 !==================================================================================================
  module mpas_atmphys_driver_cloudiness
+ use mpas_kind_types
  use mpas_grid_types
 
  use mpas_atmphys_constants, only: ep_2
@@ -41,9 +42,12 @@
 !> ----------------------------------------
 !>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-22.
+!>    * Modified sourcecode to use pools.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-05-15.
 
 
  contains
+
 
 !==================================================================================================
  subroutine allocate_cloudiness
@@ -66,14 +70,14 @@
 !==================================================================================================
 
 !inout arguments:
- type(diag_physics_type),intent(inout):: diag_physics
+ type(mpas_pool_type),intent(inout):: diag_physics
 
 !--------------------------------------------------------------------------------------------------
 
  do j = jts,jte
  do k = kts,kte
  do i = its,ite
-    cldfrac_p(i,k,j) = 0.
+    cldfrac_p(i,k,j) = 0._RKIND
  enddo
  enddo
  enddo
@@ -85,14 +89,14 @@
 !==================================================================================================
 
 !inout arguments:
- type(diag_physics_type),intent(inout):: diag_physics
+ type(mpas_pool_type),intent(inout):: diag_physics
 
-!local variables:
+!local pointers:
  real(kind=RKIND),dimension(:,:),pointer:: cldfrac
 
 !--------------------------------------------------------------------------------------------------
 
- cldfrac => diag_physics % cldfrac % array
+ call mpas_pool_get_array(diag_physics,'cldfrac',cldfrac)
 
  do j = jts,jte
  do k = kts,kte
@@ -109,7 +113,7 @@
 !==================================================================================================
 
 !inout arguments:
- type(diag_physics_type),intent(inout):: diag_physics
+ type(mpas_pool_type),intent(inout):: diag_physics
 
 !--------------------------------------------------------------------------------------------------
  write(0,*)

@@ -7,7 +7,7 @@
 !
 !==================================================================================================
  module mpas_atmphys_update
- use mpas_configure
+ use mpas_kind_types
  use mpas_grid_types
 
  use mpas_atmphys_driver_convection_deep
@@ -34,6 +34,8 @@
 !> ----------------------------------------
 !>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-22.
+!>    * Modified sourcecode to use pools.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-05-15.
 
 
  contains
@@ -67,23 +69,24 @@
  end subroutine physics_update
 
 !==================================================================================================
- subroutine update_radiation_diagnostics(bucket_radt,mesh,diag_physics)
+ subroutine update_radiation_diagnostics(configs,mesh,diag_physics)
 !==================================================================================================
 
 !input arguments:
- real(kind=RKIND),intent(in):: bucket_radt
- type(mesh_type),intent(in):: mesh
+ type(mpas_pool_type),intent(in):: configs
+ type(mpas_pool_type),intent(in):: mesh
 
 !inout arguments:
- type(diag_physics_type),intent(inout):: diag_physics
+ type(mpas_pool_type),intent(inout):: diag_physics
 
-!local variables and arrays:
- integer:: iCell,nCellsSolve
+!local pointers:
+ integer,pointer:: nCellsSolve
  integer,dimension(:),pointer  :: i_acswdnb,i_acswdnbc,i_acswdnt,i_acswdntc, &
                                   i_acswupb,i_acswupbc,i_acswupt,i_acswuptc, &
                                   i_aclwdnb,i_aclwdnbc,i_aclwdnt,i_aclwdntc, &
                                   i_aclwupb,i_aclwupbc,i_aclwupt,i_aclwuptc
 
+ real(kind=RKIND),pointer:: bucket_radt
  real(kind=RKIND),dimension(:),pointer:: swdnb,swdnbc,swdnt,swdntc,  &
                                          swupb,swupbc,swupt,swuptc,  &
                                          lwdnb,lwdnbc,lwdnt,lwdntc,  &
@@ -93,60 +96,65 @@
                                          aclwdnb,aclwdnbc,aclwdnt,aclwdntc,  &
                                          aclwupb,aclwupbc,aclwupt,aclwuptc
 
+!local variables and arrays:
+ integer:: iCell
+
 !--------------------------------------------------------------------------------------------------
 
- nCellsSolve = mesh % nCellsSolve
+ call mpas_pool_get_config(configs,'config_bucket_radt',bucket_radt)
 
- i_acswdnb    => diag_physics % i_acswdnb  % array
- i_acswdnbc   => diag_physics % i_acswdnbc % array
- i_acswdnt    => diag_physics % i_acswdnt  % array
- i_acswdntc   => diag_physics % i_acswdntc % array
- i_acswupb    => diag_physics % i_acswupb  % array
- i_acswupbc   => diag_physics % i_acswupbc % array
- i_acswupt    => diag_physics % i_acswupt  % array
- i_acswuptc   => diag_physics % i_acswuptc % array
- i_aclwdnb    => diag_physics % i_aclwdnb  % array
- i_aclwdnbc   => diag_physics % i_aclwdnbc % array
- i_aclwdnt    => diag_physics % i_aclwdnt  % array
- i_aclwdntc   => diag_physics % i_aclwdntc % array
- i_aclwupb    => diag_physics % i_aclwupb  % array
- i_aclwupbc   => diag_physics % i_aclwupbc % array
- i_aclwupt    => diag_physics % i_aclwupt  % array
- i_aclwuptc   => diag_physics % i_aclwuptc % array
+ call mpas_pool_get_dimension(mesh,'nCellsSolve',nCellsSolve)
 
- acswdnb      => diag_physics % acswdnb    % array
- acswdnbc     => diag_physics % acswdnbc   % array
- acswdnt      => diag_physics % acswdnt    % array
- acswdntc     => diag_physics % acswdntc   % array
- acswupb      => diag_physics % acswupb    % array
- acswupbc     => diag_physics % acswupbc   % array
- acswupt      => diag_physics % acswupt    % array
- acswuptc     => diag_physics % acswuptc   % array
- aclwdnb      => diag_physics % aclwdnb    % array
- aclwdnbc     => diag_physics % aclwdnbc   % array
- aclwdnt      => diag_physics % aclwdnt    % array
- aclwdntc     => diag_physics % aclwdntc   % array
- aclwupb      => diag_physics % aclwupb    % array
- aclwupbc     => diag_physics % aclwupbc   % array
- aclwupt      => diag_physics % aclwupt    % array
- aclwuptc     => diag_physics % aclwuptc   % array
+ call mpas_pool_get_array(diag_physics,'i_acswdnb' , i_acswdnb )
+ call mpas_pool_get_array(diag_physics,'i_acswdnbc', i_acswdnbc)
+ call mpas_pool_get_array(diag_physics,'i_acswdnt' , i_acswdnt )
+ call mpas_pool_get_array(diag_physics,'i_acswdntc', i_acswdntc)
+ call mpas_pool_get_array(diag_physics,'i_acswupb' , i_acswupb )
+ call mpas_pool_get_array(diag_physics,'i_acswupbc', i_acswupbc)
+ call mpas_pool_get_array(diag_physics,'i_acswupt' , i_acswupt )
+ call mpas_pool_get_array(diag_physics,'i_acswuptc', i_acswuptc)
+ call mpas_pool_get_array(diag_physics,'i_aclwdnb' , i_aclwdnb )
+ call mpas_pool_get_array(diag_physics,'i_aclwdnbc', i_aclwdnbc)
+ call mpas_pool_get_array(diag_physics,'i_aclwdnt' , i_aclwdnt )
+ call mpas_pool_get_array(diag_physics,'i_aclwdntc', i_aclwdntc)
+ call mpas_pool_get_array(diag_physics,'i_aclwupb' , i_aclwupb )
+ call mpas_pool_get_array(diag_physics,'i_aclwupbc', i_aclwupbc)
+ call mpas_pool_get_array(diag_physics,'i_aclwupt' , i_aclwupt )
+ call mpas_pool_get_array(diag_physics,'i_aclwuptc', i_aclwuptc)
 
- swdnb        => diag_physics % swdnb      % array
- swdnbc       => diag_physics % swdnbc     % array
- swdnt        => diag_physics % swdnt      % array
- swdntc       => diag_physics % swdntc     % array
- swupb        => diag_physics % swupb      % array
- swupbc       => diag_physics % swupbc     % array
- swupt        => diag_physics % swupt      % array
- swuptc       => diag_physics % swuptc     % array
- lwdnb        => diag_physics % lwdnb      % array
- lwdnbc       => diag_physics % lwdnbc     % array
- lwdnt        => diag_physics % lwdnt      % array
- lwdntc       => diag_physics % lwdntc     % array
- lwupb        => diag_physics % lwupb      % array
- lwupbc       => diag_physics % lwupbc     % array
- lwupt        => diag_physics % lwupt      % array
- lwuptc       => diag_physics % lwuptc     % array
+ call mpas_pool_get_array(diag_physics,'acswdnb'   , acswdnb   )
+ call mpas_pool_get_array(diag_physics,'acswdnbc'  , acswdnbc  )
+ call mpas_pool_get_array(diag_physics,'acswdnt'   , acswdnt   )
+ call mpas_pool_get_array(diag_physics,'acswdntc'  , acswdntc  )
+ call mpas_pool_get_array(diag_physics,'acswupb'   , acswupb   )
+ call mpas_pool_get_array(diag_physics,'acswupbc'  , acswupbc  )
+ call mpas_pool_get_array(diag_physics,'acswupt'   , acswupt   )
+ call mpas_pool_get_array(diag_physics,'acswuptc'  , acswuptc  )
+ call mpas_pool_get_array(diag_physics,'aclwdnb'   , aclwdnb   )
+ call mpas_pool_get_array(diag_physics,'aclwdnbc'  , aclwdnbc  )
+ call mpas_pool_get_array(diag_physics,'aclwdnt'   , aclwdnt   )
+ call mpas_pool_get_array(diag_physics,'aclwdntc'  , aclwdntc  )
+ call mpas_pool_get_array(diag_physics,'aclwupb'   , aclwupb   )
+ call mpas_pool_get_array(diag_physics,'aclwupbc'  , aclwupbc  )
+ call mpas_pool_get_array(diag_physics,'aclwupt'   , aclwupt   )
+ call mpas_pool_get_array(diag_physics,'aclwuptc'  , aclwuptc  )
+
+ call mpas_pool_get_array(diag_physics,'swdnb'     , swdnb     )
+ call mpas_pool_get_array(diag_physics,'swdnbc'    , swdnbc    )
+ call mpas_pool_get_array(diag_physics,'swdnt'     , swdnt     )
+ call mpas_pool_get_array(diag_physics,'swdntc'    , swdntc    )
+ call mpas_pool_get_array(diag_physics,'swupb'     , swupb     )
+ call mpas_pool_get_array(diag_physics,'swupbc'    , swupbc    )
+ call mpas_pool_get_array(diag_physics,'swupt'     , swupt     )
+ call mpas_pool_get_array(diag_physics,'swuptc'    , swuptc    )
+ call mpas_pool_get_array(diag_physics,'lwdnb'     , lwdnb     )
+ call mpas_pool_get_array(diag_physics,'lwdnbc'    , lwdnbc    )
+ call mpas_pool_get_array(diag_physics,'lwdnt'     , lwdnt     )
+ call mpas_pool_get_array(diag_physics,'lwdntc'    , lwdntc    )
+ call mpas_pool_get_array(diag_physics,'lwupb'     , lwupb     )
+ call mpas_pool_get_array(diag_physics,'lwupbc'    , lwupbc    )
+ call mpas_pool_get_array(diag_physics,'lwupt'     , lwupt     )
+ call mpas_pool_get_array(diag_physics,'lwuptc'    , lwuptc    )
 
  do iCell = 1, nCellsSolve
     !short-wave radiation:

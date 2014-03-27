@@ -7,6 +7,7 @@
 !
 !==================================================================================================
  module mpas_atmphys_driver_convection_deep
+ use mpas_kind_types
  use mpas_grid_types
 
  use mpas_atmphys_constants
@@ -65,9 +66,12 @@
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-03-21.
 !>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-22.
+!>    * Modified sourcecode to use pools.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-05-15.
 
 
  contains
+
 
 !==================================================================================================
  subroutine allocate_convection_deep
@@ -198,27 +202,31 @@
  end subroutine deallocate_convection_deep
 
 !==================================================================================================
- subroutine init_convection_deep(config_do_restart,mesh,diag_physics)
+ subroutine init_convection_deep(mesh,configs,diag_physics)
 !==================================================================================================
 
 !input arguments:
- logical,intent(in):: config_do_restart
- type(mesh_type),intent(in):: mesh
+ type(mpas_pool_type),intent(in):: mesh
+ type(mpas_pool_type),intent(in):: configs
 
 !inout arguments:
- type(diag_physics_type),intent(inout):: diag_physics
+ type(mpas_pool_type),intent(inout):: diag_physics
 
-!local variables and arrays:
- integer:: iCell,nCells
-
+!local pointers:
+ logical,pointer:: config_do_restart
+ integer,pointer:: nCells
  real(kind=RKIND),dimension(:),pointer:: nca
+
+!local variables:
+ integer:: iCell
 
 !--------------------------------------------------------------------------------------------------
  write(0,*)
  write(0,*) '--- enter convection_deep initialization:'
 
- nCells = mesh % nCells
- nca => diag_physics % nca % array
+ call mpas_pool_get_dimension(mesh,'nCells',nCells)
+ call mpas_pool_get_config(configs,'config_do_restart',config_do_restart)
+ call mpas_pool_get_array(diag_physics,'nca',nca)
 
  convection_select: select case(conv_deep_scheme)
 
@@ -253,10 +261,10 @@
 !input and output arguments:
 !---------------------------
  integer,intent(in):: itimestep
- type(mesh_type),intent(in):: mesh
- type(sfc_input_type),intent(in):: sfc_input
- type(diag_physics_type),intent(inout):: diag_physics
- type(tend_physics_type),intent(inout):: tend_physics
+ type(mpas_pool_type),intent(in):: mesh
+ type(mpas_pool_type),intent(in):: sfc_input
+ type(mpas_pool_type),intent(inout):: diag_physics
+ type(mpas_pool_type),intent(inout):: tend_physics
 
 !local variables and arrays:
 !---------------------------
@@ -378,13 +386,13 @@
  subroutine convection_from_MPAS(dt_dyn,mesh,sfc_input,diag_physics,tend_physics)
 !==================================================================================================
 !input arguments:
- type(mesh_type),intent(in):: mesh
- type(sfc_input_type),intent(in)   :: sfc_input
- type(diag_physics_type),intent(in):: diag_physics
- type(tend_physics_type),intent(in):: tend_physics
+ type(mpas_pool_type),intent(in):: mesh
+ type(mpas_pool_type),intent(in)   :: sfc_input
+ type(mpas_pool_type),intent(in):: diag_physics
+ type(mpas_pool_type),intent(in):: tend_physics
  real(kind=RKIND),intent(in):: dt_dyn
 
-!local variables and arrays:
+!local pointers:
  real(kind=RKIND),dimension(:),pointer  :: areaCell,dcEdge_m
  real(kind=RKIND),dimension(:),pointer  :: nca,cubot,cutop,cuprec,raincv
  real(kind=RKIND),dimension(:),pointer  :: qfx,xland
@@ -396,28 +404,29 @@
  write(0,*)
  write(0,*) '--- enter subroutine convection_from_MPAS:'
 
- areaCell  => mesh         % areaCell  % array
- xland     => sfc_input    % xland     % array
+ call mpas_pool_get_array(mesh,'areaCell',areaCell)
 
- dcEdge_m  => diag_physics % dcEdge_m  % array
- nca       => diag_physics % nca       % array
- cubot     => diag_physics % cubot     % array
- cutop     => diag_physics % cutop     % array
- cuprec    => diag_physics % cuprec    % array
- raincv    => diag_physics % raincv    % array
- w0avg     => diag_physics % w0avg     % array
- qfx       => diag_physics % qfx       % array
+ call mpas_pool_get_array(sfc_input,'xland',xland)
 
- rthcuten  => tend_physics % rthcuten  % array
- rqvcuten  => tend_physics % rqvcuten  % array
- rqccuten  => tend_physics % rqccuten  % array
- rqicuten  => tend_physics % rqicuten  % array
- rqrcuten  => tend_physics % rqrcuten  % array
- rqscuten  => tend_physics % rqscuten  % array
- rucuten   => tend_physics % rucuten   % array
- rvcuten   => tend_physics % rvcuten   % array
- rqvblten  => tend_physics % rqvblten  % array
- rqvdynten => tend_physics % rqvdynten % array
+ call mpas_pool_get_array(diag_physics,'dcEdge_m' ,dcEdge_m )
+ call mpas_pool_get_array(diag_physics,'nca'      ,nca      )
+ call mpas_pool_get_array(diag_physics,'cubot'    ,cubot    )
+ call mpas_pool_get_array(diag_physics,'cutop'    ,cutop    )
+ call mpas_pool_get_array(diag_physics,'cuprec'   ,cuprec   )
+ call mpas_pool_get_array(diag_physics,'raincv'   ,raincv   )
+ call mpas_pool_get_array(diag_physics,'w0avg'    ,w0avg    )
+ call mpas_pool_get_array(diag_physics,'qfx'      ,qfx      )
+
+ call mpas_pool_get_array(tend_physics,'rthcuten' ,rthcuten )
+ call mpas_pool_get_array(tend_physics,'rqvcuten' ,rqvcuten )
+ call mpas_pool_get_array(tend_physics,'rqccuten' ,rqccuten )
+ call mpas_pool_get_array(tend_physics,'rqicuten' ,rqicuten )
+ call mpas_pool_get_array(tend_physics,'rqrcuten' ,rqrcuten )
+ call mpas_pool_get_array(tend_physics,'rqscuten' ,rqscuten )
+ call mpas_pool_get_array(tend_physics,'rucuten'  ,rucuten  )
+ call mpas_pool_get_array(tend_physics,'rvcuten'  ,rvcuten  )
+ call mpas_pool_get_array(tend_physics,'rqvblten' ,rqvblten )
+ call mpas_pool_get_array(tend_physics,'rqvdynten',rqvdynten)
 
  do j = jts,jte
  do i = its,ite
@@ -487,10 +496,10 @@
  subroutine convection_to_MPAS(diag_physics,tend_physics)
 !==================================================================================================
 !inout arguments:
- type(diag_physics_type),intent(inout):: diag_physics
- type(tend_physics_type),intent(inout):: tend_physics
+ type(mpas_pool_type),intent(inout):: diag_physics
+ type(mpas_pool_type),intent(inout):: tend_physics
 
-!local variables and arrays:
+!local pointers:
  real(kind=RKIND),dimension(:),pointer  :: nca,cubot,cutop,cuprec,raincv
  real(kind=RKIND),dimension(:,:),pointer:: w0avg
  real(kind=RKIND),dimension(:,:),pointer:: rthcuten,rqvcuten,rqccuten,rqicuten,rqrcuten,rqscuten
@@ -498,20 +507,20 @@
 
 !--------------------------------------------------------------------------------------------------
 
- nca       => diag_physics % nca       % array
- cubot     => diag_physics % cubot     % array
- cutop     => diag_physics % cutop     % array
- cuprec    => diag_physics % cuprec    % array
- raincv    => diag_physics % raincv    % array
- w0avg     => diag_physics % w0avg     % array
- rthcuten  => tend_physics % rthcuten  % array
- rqvcuten  => tend_physics % rqvcuten  % array
- rqccuten  => tend_physics % rqccuten  % array
- rqicuten  => tend_physics % rqicuten  % array
- rqrcuten  => tend_physics % rqrcuten  % array
- rqscuten  => tend_physics % rqscuten  % array
- rucuten   => tend_physics % rucuten   % array
- rvcuten   => tend_physics % rvcuten   % array
+ call mpas_pool_get_array(diag_physics,'nca'     ,nca     )
+ call mpas_pool_get_array(diag_physics,'cubot'   ,cubot   )
+ call mpas_pool_get_array(diag_physics,'cutop'   ,cutop   )
+ call mpas_pool_get_array(diag_physics,'cuprec'  ,cuprec  )
+ call mpas_pool_get_array(diag_physics,'raincv'  ,raincv  )
+ call mpas_pool_get_array(diag_physics,'w0avg'   ,w0avg   )
+ call mpas_pool_get_array(tend_physics,'rthcuten',rthcuten)
+ call mpas_pool_get_array(tend_physics,'rqvcuten',rqvcuten)
+ call mpas_pool_get_array(tend_physics,'rqccuten',rqccuten)
+ call mpas_pool_get_array(tend_physics,'rqicuten',rqicuten)
+ call mpas_pool_get_array(tend_physics,'rqrcuten',rqrcuten)
+ call mpas_pool_get_array(tend_physics,'rqscuten',rqscuten)
+ call mpas_pool_get_array(tend_physics,'rucuten' ,rucuten )
+ call mpas_pool_get_array(tend_physics,'rvcuten' ,rvcuten )
 
  do j = jts,jte
  do i = its,ite
@@ -562,34 +571,38 @@
  subroutine update_convection_step1(mesh,diag_physics,tend_physics)
 !==================================================================================================
 !input arguments:
- type(mesh_type),intent(in):: mesh
+ type(mpas_pool_type),intent(in):: mesh
 
 !inout arguments:
- type(diag_physics_type),intent(inout):: diag_physics
- type(tend_physics_type),intent(inout):: tend_physics
+ type(mpas_pool_type),intent(inout):: diag_physics
+ type(mpas_pool_type),intent(inout):: tend_physics
 
-!local variables and arrays:
- integer:: iCell,k,nCellsSolve,nVertLevels
+!local pointers:
+ integer,pointer:: nCellsSolve,nVertLevels
 
  real(kind=RKIND),dimension(:),pointer  :: nca,cubot,cutop,cuprec,raincv
  real(kind=RKIND),dimension(:,:),pointer:: rthcuten,rqvcuten,rqccuten,rqicuten,rqrcuten,rqscuten
 
+!local variables and arrays:
+ integer:: iCell,k
+
 !--------------------------------------------------------------------------------------------------
 
- nCellsSolve = mesh % nCellsSolve
- nVertLevels = mesh % nVertLevels 
+ call mpas_pool_get_dimension(mesh,'nCellsSolve',nCellsSolve)
+ call mpas_pool_get_dimension(mesh,'nVertLevels',nVertLevels)
 
- nca       => diag_physics % nca       % array
- cubot     => diag_physics % cubot     % array
- cutop     => diag_physics % cutop     % array
- cuprec    => diag_physics % cuprec    % array
- raincv    => diag_physics % raincv    % array
- rthcuten  => tend_physics % rthcuten  % array
- rqvcuten  => tend_physics % rqvcuten  % array
- rqccuten  => tend_physics % rqccuten  % array
- rqicuten  => tend_physics % rqicuten  % array
- rqrcuten  => tend_physics % rqrcuten  % array
- rqscuten  => tend_physics % rqscuten  % array
+ call mpas_pool_get_array(diag_physics,'nca'   ,nca   )
+ call mpas_pool_get_array(diag_physics,'cubot' ,cubot )
+ call mpas_pool_get_array(diag_physics,'cutop' ,cutop )
+ call mpas_pool_get_array(diag_physics,'cuprec',cuprec)
+ call mpas_pool_get_array(diag_physics,'raincv',raincv)
+
+ call mpas_pool_get_array(tend_physics,'rthcuten',rthcuten)
+ call mpas_pool_get_array(tend_physics,'rqvcuten',rqvcuten)
+ call mpas_pool_get_array(tend_physics,'rqccuten',rqccuten)
+ call mpas_pool_get_array(tend_physics,'rqicuten',rqicuten)
+ call mpas_pool_get_array(tend_physics,'rqrcuten',rqrcuten)
+ call mpas_pool_get_array(tend_physics,'rqscuten',rqscuten)
 
  convection_select: select case(conv_deep_scheme)
 
@@ -626,35 +639,42 @@
  end subroutine update_convection_step1
 
 !==================================================================================================
- subroutine update_convection_step2(bucket_rainc,mesh,diag_physics)
+ subroutine update_convection_step2(configs,mesh,diag_physics)
 !==================================================================================================
 
 !input arguments:
- type(mesh_type),intent(in):: mesh
- real(kind=RKIND),intent(in):: bucket_rainc
+ type(mpas_pool_type),intent(in):: configs
+ type(mpas_pool_type),intent(in):: mesh
 
 !inout arguments:
- type(diag_physics_type),intent(inout):: diag_physics
+ type(mpas_pool_type),intent(inout):: diag_physics
+
+!local pointers:
+ integer,pointer:: nCellsSolve
+ integer,dimension(:),pointer:: i_rainc
+
+ real(kind=RKIND),pointer:: bucket_rainc
+ real(kind=RKIND),dimension(:),pointer:: cuprec,rainc
 
 !local variables and arrays:
- integer:: iCell,nCellsSolve
-
- integer,dimension(:),pointer:: i_rainc
- real(kind=RKIND),dimension(:),pointer:: cuprec,rainc
+ integer:: iCell
 
 !--------------------------------------------------------------------------------------------------
 
- nCellsSolve = mesh % nCellsSolve
+ call mpas_pool_get_config(configs,'config_bucket_rainc',bucket_rainc)
 
- i_rainc => diag_physics % i_rainc % array
- cuprec  => diag_physics % cuprec  % array
- rainc   => diag_physics % rainc   % array
+ call mpas_pool_get_dimension(mesh,'nCellsSolve',nCellsSolve)
+
+ call mpas_pool_get_array(diag_physics,'i_rainc',i_rainc)
+ call mpas_pool_get_array(diag_physics,'cuprec' ,cuprec )
+ call mpas_pool_get_array(diag_physics,'rainc'  ,rainc  )
 
 !update the accumulated precipitation at the end of each dynamic time-step:
  do iCell = 1, nCellsSolve
     rainc(iCell) = rainc(iCell) + cuprec(iCell) * dt_dyn
 
-    if(l_acrain .and. bucket_rainc.gt.0._RKIND .and. rainc(iCell).gt.bucket_rainc) then
+    if(l_acrain .and. bucket_rainc.gt.0._RKIND .and. &
+       rainc(iCell).gt.bucket_rainc) then
        i_rainc(iCell) = i_rainc(iCell) + 1
        rainc(iCell)   = rainc(iCell) - bucket_rainc
     endif

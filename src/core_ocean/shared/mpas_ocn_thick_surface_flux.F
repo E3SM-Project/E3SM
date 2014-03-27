@@ -21,7 +21,7 @@
 module ocn_thick_surface_flux
 
    use mpas_grid_types
-   use mpas_configure
+   use ocn_constants
 
    use ocn_forcing
 
@@ -51,6 +51,7 @@ module ocn_thick_surface_flux
    !--------------------------------------------------------------------
 
    logical :: surfaceMassFluxOn
+   real (kind=RKIND) :: refDensity
 
 
 !***********************************************************************
@@ -70,15 +71,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_thick_surface_flux_tend(mesh, transmissionCoefficients, layerThickness, surfaceMassFlux, tend, err)!{{{
+   subroutine ocn_thick_surface_flux_tend(meshPool, transmissionCoefficients, layerThickness, surfaceMassFlux, tend, err)!{{{
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
 
-      type (mesh_type), intent(in) :: &
-         mesh              !< Input: mesh information
+      type (mpas_pool_type), intent(in) :: &
+         meshPool              !< Input: mesh information
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          transmissionCoefficients !< Input: Coefficients for the transmission of surface fluxes
@@ -113,7 +114,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iCell, nCells, k, nVertLevels
+      integer :: iCell, k
+      integer, pointer :: nCells, nVertLevels
       integer, dimension(:), pointer :: maxLevelCell
       integer, dimension(:,:), pointer :: cellMask
 
@@ -123,21 +125,21 @@ contains
 
       if (.not. surfaceMassFluxOn) return
 
-      maxLevelCell => mesh % maxLevelCell % array
-      cellMask => mesh % cellMask % array
+      call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+      call mpas_pool_get_array(meshPool, 'cellMask', cellMask)
 
-      nCells = mesh % nCells
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
       do iCell = 1, nCells
         remainingFlux = 1.0_RKIND
         do k = 1, maxLevelCell(iCell)
           remainingFlux = remainingFlux - transmissionCoefficients(k, iCell)
 
-          tend(k, iCell) = tend(k, iCell) + cellMask(k, iCell) * (surfaceMassFlux(iCell)/config_density0) * transmissionCoefficients(k, iCell)
+          tend(k, iCell) = tend(k, iCell) + cellMask(k, iCell) * (surfaceMassFlux(iCell) / refDensity) * transmissionCoefficients(k, iCell)
         end do
 
         if(maxLevelCell(iCell) > 0 .and. remainingFlux > 0.0_RKIND) then
-          tend(maxLevelCell(iCell), iCell) = tend(maxLevelCell(iCell), iCell) + cellMask(maxLevelCell(iCell), iCell) * remainingFlux*surfaceMassFlux(iCell)/config_density0
+          tend(maxLevelCell(iCell), iCell) = tend(maxLevelCell(iCell), iCell) + cellMask(maxLevelCell(iCell), iCell) * remainingFlux * surfaceMassFlux(iCell) / refDensity
         end if
       end do
 
@@ -170,7 +172,17 @@ contains
 
       integer, intent(out) :: err !< Output: error flag
 
+      logical, pointer :: config_disable_thick_sflux
+      character (len=StrKIND), pointer :: config_forcing_type
+      real (kind=RKIND), pointer :: config_density0
+
       err = 0
+
+      call mpas_pool_get_config(ocnConfigs, 'config_disable_thick_sflux', config_disable_thick_sflux)
+      call mpas_pool_get_config(ocnConfigs, 'config_forcing_type', config_forcing_type)
+      call mpas_pool_get_config(ocnConfigs, 'config_density0', config_density0)
+
+      refDensity = config_density0
 
       surfaceMassFluxOn = .true.
 

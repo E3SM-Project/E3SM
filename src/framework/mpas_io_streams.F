@@ -364,6 +364,10 @@ contains
       logical :: any_success
       logical, dimension(:), pointer :: isAvailable
 
+      type (mpas_pool_type), pointer :: meshPool
+      integer, dimension(:), pointer :: indexArray
+      integer, pointer :: indexDimension
+
       if (present(ierr)) ierr = MPAS_STREAM_NOERR
 
       !
@@ -467,6 +471,11 @@ contains
       logical :: any_success
       logical, dimension(:), pointer :: isAvailable
 
+      type (mpas_pool_type), pointer :: meshPool
+      integer, dimension(:), pointer :: indexArray
+      integer, pointer :: indexDimension
+
+
       if (present(ierr)) ierr = MPAS_STREAM_NOERR
 
       !
@@ -569,6 +578,11 @@ contains
       type (field_list_type), pointer :: new_field_list_node
       logical :: any_success
       logical, dimension(:), pointer :: isAvailable
+
+      type (mpas_pool_type), pointer :: meshPool
+      integer, dimension(:), pointer :: indexArray
+      integer, pointer :: indexDimension
+
 
       if (present(ierr)) ierr = MPAS_STREAM_NOERR
 
@@ -752,6 +766,11 @@ contains
       logical :: any_success
       logical, dimension(:), pointer :: isAvailable
 
+      type (mpas_pool_type), pointer :: meshPool
+      integer, dimension(:), pointer :: indexArray
+      integer, pointer :: indexDimension
+
+
       if (present(ierr)) ierr = MPAS_STREAM_NOERR
 
       !
@@ -855,6 +874,11 @@ contains
       logical :: any_success
       logical, dimension(:), pointer :: isAvailable
 
+      type (mpas_pool_type), pointer :: meshPool
+      integer, dimension(:), pointer :: indexArray
+      integer, pointer :: indexDimension
+
+
       if (present(ierr)) ierr = MPAS_STREAM_NOERR
 
       !
@@ -957,6 +981,11 @@ contains
       type (field_list_type), pointer :: new_field_list_node
       logical :: any_success
       logical, dimension(:), pointer :: isAvailable
+
+      type (mpas_pool_type), pointer :: meshPool
+      integer, dimension(:), pointer :: indexArray
+      integer, pointer :: indexDimension
+
 
       if (present(ierr)) ierr = MPAS_STREAM_NOERR
 
@@ -1063,6 +1092,11 @@ contains
       logical :: any_success
       logical, dimension(:), pointer :: isAvailable
 
+      type (mpas_pool_type), pointer :: meshPool
+      integer, dimension(:), pointer :: indexArray
+      integer, pointer :: indexDimension
+
+
       if (present(ierr)) ierr = MPAS_STREAM_NOERR
 
       !
@@ -1167,6 +1201,11 @@ contains
       type (field_list_type), pointer :: new_field_list_node
       logical :: any_success
       logical, dimension(:), pointer :: isAvailable
+
+      type (mpas_pool_type), pointer :: meshPool
+      integer, dimension(:), pointer :: indexArray
+      integer, pointer :: indexDimension
+
 
       if (present(ierr)) ierr = MPAS_STREAM_NOERR
 
@@ -1558,7 +1597,7 @@ contains
       integer :: io_err
       integer :: i, j
       integer :: ncons
-      integer :: ownedSize
+      integer, pointer :: ownedSize
       type (field0dInteger), pointer :: field_0dint_ptr
       type (field1dInteger), pointer :: field_1dint_ptr
       type (field2dInteger), pointer :: field_2dint_ptr
@@ -1666,11 +1705,11 @@ contains
                   i = 1
                   do while (associated(field_1dint_ptr))
                      if (trim(field_1dint_ptr % dimNames(1)) == 'nCells') then
-                        ownedSize = field_1dint_ptr % block % mesh % nCellsSolve
+                        call mpas_pool_get_dimension(field_1dint_ptr % block % dimensions, 'nCellsSolve', ownedSize)
                      else if (trim(field_1dint_ptr % dimNames(1)) == 'nEdges') then
-                        ownedSize = field_1dint_ptr % block % mesh % nEdgesSolve
+                        call mpas_pool_get_dimension(field_1dint_ptr % block % dimensions, 'nEdgesSolve', ownedSize)
                      else if (trim(field_1dint_ptr % dimNames(1)) == 'nVertices') then
-                        ownedSize = field_1dint_ptr % block % mesh % nVerticesSolve
+                        call mpas_pool_get_dimension(field_1dint_ptr % block % dimensions, 'nVerticesSolve', ownedSize)
                      else
                         ownedSize = field_1dint_ptr % dimSizes(1)
                      end if
@@ -1744,11 +1783,11 @@ contains
                   i = 1
                   do while (associated(field_2dint_ptr))
                      if (trim(field_2dint_ptr % dimNames(2)) == 'nCells') then
-                        ownedSize = field_2dint_ptr % block % mesh % nCellsSolve
+                        call mpas_pool_get_dimension(field_2dint_ptr % block % dimensions, 'nCellsSolve', ownedSize)
                      else if (trim(field_2dint_ptr % dimNames(2)) == 'nEdges') then
-                        ownedSize = field_2dint_ptr % block % mesh % nEdgesSolve
+                        call mpas_pool_get_dimension(field_2dint_ptr % block % dimensions, 'nEdgesSolve', ownedSize)
                      else if (trim(field_2dint_ptr % dimNames(2)) == 'nVertices') then
-                        ownedSize = field_2dint_ptr % block % mesh % nVerticesSolve
+                        call mpas_pool_get_dimension(field_2dint_ptr % block % dimensions, 'nVerticesSolve', ownedSize)
                      else
                         ownedSize = field_2dint_ptr % dimSizes(2)
                      end if
@@ -1826,11 +1865,11 @@ contains
                   i = 1
                   do while (associated(field_3dint_ptr))
                      if (trim(field_3dint_ptr % dimNames(3)) == 'nCells') then
-                        ownedSize = field_3dint_ptr % block % mesh % nCellsSolve
+                        call mpas_pool_get_dimension(field_3dint_ptr % block % dimensions, 'nCellsSolve', ownedSize)
                      else if (trim(field_3dint_ptr % dimNames(3)) == 'nEdges') then
-                        ownedSize = field_3dint_ptr % block % mesh % nEdgesSolve
+                        call mpas_pool_get_dimension(field_3dint_ptr % block % dimensions, 'nEdgesSolve', ownedSize)
                      else if (trim(field_3dint_ptr % dimNames(3)) == 'nVertices') then
-                        ownedSize = field_3dint_ptr % block % mesh % nVerticesSolve
+                        call mpas_pool_get_dimension(field_3dint_ptr % block % dimensions, 'nVerticesSolve', ownedSize)
                      else
                         ownedSize = field_3dint_ptr % dimSizes(3)
                      end if
@@ -1927,11 +1966,11 @@ contains
 
                   do while (associated(field_1dreal_ptr))
                      if (trim(field_1dreal_ptr % dimNames(1)) == 'nCells') then
-                        ownedSize = field_1dreal_ptr % block % mesh % nCellsSolve
+                        call mpas_pool_get_dimension(field_1dreal_ptr % block % dimensions, 'nCellsSolve', ownedSize)
                      else if (trim(field_1dreal_ptr % dimNames(1)) == 'nEdges') then
-                        ownedSize = field_1dreal_ptr % block % mesh % nEdgesSolve
+                        call mpas_pool_get_dimension(field_1dreal_ptr % block % dimensions, 'nEdgesSolve', ownedSize)
                      else if (trim(field_1dreal_ptr % dimNames(1)) == 'nVertices') then
-                        ownedSize = field_1dreal_ptr % block % mesh % nVerticesSolve
+                        call mpas_pool_get_dimension(field_1dreal_ptr % block % dimensions, 'nVerticesSolve', ownedSize)
                      else
                         ownedSize = field_1dreal_ptr % dimSizes(1)
                      end if
@@ -2005,11 +2044,11 @@ contains
                   i = 1
                   do while (associated(field_2dreal_ptr))
                      if (trim(field_2dreal_ptr % dimNames(2)) == 'nCells') then
-                        ownedSize = field_2dreal_ptr % block % mesh % nCellsSolve
+                        call mpas_pool_get_dimension(field_2dreal_ptr % block % dimensions, 'nCellsSolve', ownedSize)
                      else if (trim(field_2dreal_ptr % dimNames(2)) == 'nEdges') then
-                        ownedSize = field_2dreal_ptr % block % mesh % nEdgesSolve
+                        call mpas_pool_get_dimension(field_2dreal_ptr % block % dimensions, 'nEdgesSolve', ownedSize)
                      else if (trim(field_2dreal_ptr % dimNames(2)) == 'nVertices') then
-                        ownedSize = field_2dreal_ptr % block % mesh % nVerticesSolve
+                        call mpas_pool_get_dimension(field_2dreal_ptr % block % dimensions, 'nVerticesSolve', ownedSize)
                      else
                         ownedSize = field_2dreal_ptr % dimSizes(2)
                      end if
@@ -2090,11 +2129,11 @@ contains
                   i = 1
                   do while (associated(field_3dreal_ptr))
                      if (trim(field_3dreal_ptr % dimNames(3)) == 'nCells') then
-                        ownedSize = field_3dreal_ptr % block % mesh % nCellsSolve
+                        call mpas_pool_get_dimension(field_3dreal_ptr % block % dimensions, 'nCellsSolve', ownedSize)
                      else if (trim(field_3dreal_ptr % dimNames(3)) == 'nEdges') then
-                        ownedSize = field_3dreal_ptr % block % mesh % nEdgesSolve
+                        call mpas_pool_get_dimension(field_3dreal_ptr % block % dimensions, 'nEdgesSolve', ownedSize)
                      else if (trim(field_3dreal_ptr % dimNames(3)) == 'nVertices') then
-                        ownedSize = field_3dreal_ptr % block % mesh % nVerticesSolve
+                        call mpas_pool_get_dimension(field_3dreal_ptr % block % dimensions, 'nVerticesSolve', ownedSize)
                      else
                         ownedSize = field_3dreal_ptr % dimSizes(3)
                      end if
@@ -2177,11 +2216,11 @@ contains
                   i = 1
                   do while (associated(field_4dreal_ptr))
                      if (trim(field_4dreal_ptr % dimNames(4)) == 'nCells') then
-                        ownedSize = field_4dreal_ptr % block % mesh % nCellsSolve
+                        call mpas_pool_get_dimension(field_4dreal_ptr % block % dimensions, 'nCellsSolve', ownedSize)
                      else if (trim(field_4dreal_ptr % dimNames(4)) == 'nEdges') then
-                        ownedSize = field_4dreal_ptr % block % mesh % nEdgesSolve
+                        call mpas_pool_get_dimension(field_4dreal_ptr % block % dimensions, 'nEdgesSolve', ownedSize)
                      else if (trim(field_4dreal_ptr % dimNames(4)) == 'nVertices') then
-                        ownedSize = field_4dreal_ptr % block % mesh % nVerticesSolve
+                        call mpas_pool_get_dimension(field_4dreal_ptr % block % dimensions, 'nVerticesSolve', ownedSize)
                      else
                         ownedSize = field_4dreal_ptr % dimSizes(4)
                      end if
@@ -2267,11 +2306,11 @@ contains
                   i = 1
                   do while (associated(field_5dreal_ptr))
                      if (trim(field_5dreal_ptr % dimNames(5)) == 'nCells') then
-                        ownedSize = field_5dreal_ptr % block % mesh % nCellsSolve
+                        call mpas_pool_get_dimension(field_5dreal_ptr % block % dimensions, 'nCellsSolve', ownedSize)
                      else if (trim(field_5dreal_ptr % dimNames(5)) == 'nEdges') then
-                        ownedSize = field_5dreal_ptr % block % mesh % nEdgesSolve
+                        call mpas_pool_get_dimension(field_5dreal_ptr % block % dimensions, 'nEdgesSolve', ownedSize)
                      else if (trim(field_5dreal_ptr % dimNames(5)) == 'nVertices') then
-                        ownedSize = field_5dreal_ptr % block % mesh % nVerticesSolve
+                        call mpas_pool_get_dimension(field_5dreal_ptr % block % dimensions, 'nVerticesSolve', ownedSize)
                      else
                         ownedSize = field_5dreal_ptr % dimSizes(5)
                      end if
@@ -2356,7 +2395,7 @@ contains
       integer :: io_err
       integer :: i, j
       integer :: ncons
-      integer :: ownedSize
+      integer, pointer :: ownedSize
       type (field0dInteger), pointer :: field_0dint_ptr
       type (field1dInteger), pointer :: field_1dint_ptr
       type (field2dInteger), pointer :: field_2dint_ptr
@@ -2437,11 +2476,11 @@ contains
                   i = 1
                   do while (associated(field_1dint_ptr))
                      if (trim(field_1dint_ptr % dimNames(1)) == 'nCells') then
-                        ownedSize = field_1dint_ptr % block % mesh % nCellsSolve
+                        call mpas_pool_get_dimension(field_1dint_ptr % block % dimensions, 'nCellsSolve', ownedSize)
                      else if (trim(field_1dint_ptr % dimNames(1)) == 'nEdges') then
-                        ownedSize = field_1dint_ptr % block % mesh % nEdgesSolve
+                        call mpas_pool_get_dimension(field_1dint_ptr % block % dimensions, 'nEdgesSolve', ownedSize)
                      else if (trim(field_1dint_ptr % dimNames(1)) == 'nVertices') then
-                        ownedSize = field_1dint_ptr % block % mesh % nVerticesSolve
+                        call mpas_pool_get_dimension(field_1dint_ptr % block % dimensions, 'nVerticesSolve', ownedSize)
                      else
                         ownedSize = field_1dint_ptr % dimSizes(1)
                      end if
@@ -2494,11 +2533,11 @@ contains
                   i = 1
                   do while (associated(field_2dint_ptr))
                      if (trim(field_2dint_ptr % dimNames(2)) == 'nCells') then
-                        ownedSize = field_2dint_ptr % block % mesh % nCellsSolve
+                        call mpas_pool_get_dimension(field_2dint_ptr % block % dimensions, 'nCellsSolve', ownedSize)
                      else if (trim(field_2dint_ptr % dimNames(2)) == 'nEdges') then
-                        ownedSize = field_2dint_ptr % block % mesh % nEdgesSolve
+                        call mpas_pool_get_dimension(field_2dint_ptr % block % dimensions, 'nEdgesSolve', ownedSize)
                      else if (trim(field_2dint_ptr % dimNames(2)) == 'nVertices') then
-                        ownedSize = field_2dint_ptr % block % mesh % nVerticesSolve
+                        call mpas_pool_get_dimension(field_2dint_ptr % block % dimensions, 'nVerticesSolve', ownedSize)
                      else
                         ownedSize = field_2dint_ptr % dimSizes(2)
                      end if
@@ -2554,11 +2593,11 @@ contains
                   i = 1
                   do while (associated(field_3dint_ptr))
                      if (trim(field_3dint_ptr % dimNames(3)) == 'nCells') then
-                        ownedSize = field_3dint_ptr % block % mesh % nCellsSolve
+                        call mpas_pool_get_dimension(field_3dint_ptr % block % dimensions, 'nCellsSolve', ownedSize)
                      else if (trim(field_3dint_ptr % dimNames(3)) == 'nEdges') then
-                        ownedSize = field_3dint_ptr % block % mesh % nEdgesSolve
+                        call mpas_pool_get_dimension(field_3dint_ptr % block % dimensions, 'nEdgesSolve', ownedSize)
                      else if (trim(field_3dint_ptr % dimNames(3)) == 'nVertices') then
-                        ownedSize = field_3dint_ptr % block % mesh % nVerticesSolve
+                        call mpas_pool_get_dimension(field_3dint_ptr % block % dimensions, 'nVerticesSolve', ownedSize)
                      else
                         ownedSize = field_3dint_ptr % dimSizes(3)
                      end if
@@ -2624,11 +2663,11 @@ contains
                   i = 1
                   do while (associated(field_1dreal_ptr))
                      if (trim(field_1dreal_ptr % dimNames(1)) == 'nCells') then
-                        ownedSize = field_1dreal_ptr % block % mesh % nCellsSolve
+                        call mpas_pool_get_dimension(field_1dreal_ptr % block % dimensions, 'nCellsSolve', ownedSize)
                      else if (trim(field_1dreal_ptr % dimNames(1)) == 'nEdges') then
-                        ownedSize = field_1dreal_ptr % block % mesh % nEdgesSolve
+                        call mpas_pool_get_dimension(field_1dreal_ptr % block % dimensions, 'nEdgesSolve', ownedSize)
                      else if (trim(field_1dreal_ptr % dimNames(1)) == 'nVertices') then
-                        ownedSize = field_1dreal_ptr % block % mesh % nVerticesSolve
+                        call mpas_pool_get_dimension(field_1dreal_ptr % block % dimensions, 'nVerticesSolve', ownedSize)
                      else
                         ownedSize = field_1dreal_ptr % dimSizes(1)
                      end if
@@ -2681,11 +2720,11 @@ contains
                   i = 1
                   do while (associated(field_2dreal_ptr))
                      if (trim(field_2dreal_ptr % dimNames(2)) == 'nCells') then
-                        ownedSize = field_2dreal_ptr % block % mesh % nCellsSolve
+                        call mpas_pool_get_dimension(field_2dreal_ptr % block % dimensions, 'nCellsSolve', ownedSize)
                      else if (trim(field_2dreal_ptr % dimNames(2)) == 'nEdges') then
-                        ownedSize = field_2dreal_ptr % block % mesh % nEdgesSolve
+                        call mpas_pool_get_dimension(field_2dreal_ptr % block % dimensions, 'nEdgesSolve', ownedSize)
                      else if (trim(field_2dreal_ptr % dimNames(2)) == 'nVertices') then
-                        ownedSize = field_2dreal_ptr % block % mesh % nVerticesSolve
+                        call mpas_pool_get_dimension(field_2dreal_ptr % block % dimensions, 'nVerticesSolve', ownedSize)
                      else
                         ownedSize = field_2dreal_ptr % dimSizes(2)
                      end if
@@ -2741,11 +2780,11 @@ contains
                   i = 1
                   do while (associated(field_3dreal_ptr))
                      if (trim(field_3dreal_ptr % dimNames(3)) == 'nCells') then
-                        ownedSize = field_3dreal_ptr % block % mesh % nCellsSolve
+                        call mpas_pool_get_dimension(field_3dreal_ptr % block % dimensions, 'nCellsSolve', ownedSize)
                      else if (trim(field_3dreal_ptr % dimNames(3)) == 'nEdges') then
-                        ownedSize = field_3dreal_ptr % block % mesh % nEdgesSolve
+                        call mpas_pool_get_dimension(field_3dreal_ptr % block % dimensions, 'nEdgesSolve', ownedSize)
                      else if (trim(field_3dreal_ptr % dimNames(3)) == 'nVertices') then
-                        ownedSize = field_3dreal_ptr % block % mesh % nVerticesSolve
+                        call mpas_pool_get_dimension(field_3dreal_ptr % block % dimensions, 'nVerticesSolve', ownedSize)
                      else
                         ownedSize = field_3dreal_ptr % dimSizes(3)
                      end if
@@ -2803,11 +2842,11 @@ contains
                   i = 1
                   do while (associated(field_4dreal_ptr))
                      if (trim(field_4dreal_ptr % dimNames(4)) == 'nCells') then
-                        ownedSize = field_4dreal_ptr % block % mesh % nCellsSolve
+                        call mpas_pool_get_dimension(field_4dreal_ptr % block % dimensions, 'nCellsSolve', ownedSize)
                      else if (trim(field_4dreal_ptr % dimNames(4)) == 'nEdges') then
-                        ownedSize = field_4dreal_ptr % block % mesh % nEdgesSolve
+                        call mpas_pool_get_dimension(field_4dreal_ptr % block % dimensions, 'nEdgesSolve', ownedSize)
                      else if (trim(field_4dreal_ptr % dimNames(4)) == 'nVertices') then
-                        ownedSize = field_4dreal_ptr % block % mesh % nVerticesSolve
+                        call mpas_pool_get_dimension(field_4dreal_ptr % block % dimensions, 'nVerticesSolve', ownedSize)
                      else
                         ownedSize = field_4dreal_ptr % dimSizes(4)
                      end if
@@ -2867,11 +2906,11 @@ contains
                   i = 1
                   do while (associated(field_5dreal_ptr))
                      if (trim(field_5dreal_ptr % dimNames(5)) == 'nCells') then
-                        ownedSize = field_5dreal_ptr % block % mesh % nCellsSolve
+                        call mpas_pool_get_dimension(field_5dreal_ptr % block % dimensions, 'nCellsSolve', ownedSize)
                      else if (trim(field_5dreal_ptr % dimNames(5)) == 'nEdges') then
-                        ownedSize = field_5dreal_ptr % block % mesh % nEdgesSolve
+                        call mpas_pool_get_dimension(field_5dreal_ptr % block % dimensions, 'nEdgesSolve', ownedSize)
                      else if (trim(field_5dreal_ptr % dimNames(5)) == 'nVertices') then
-                        ownedSize = field_5dreal_ptr % block % mesh % nVerticesSolve
+                        call mpas_pool_get_dimension(field_5dreal_ptr % block % dimensions, 'nVerticesSolve', ownedSize)
                      else
                         ownedSize = field_5dreal_ptr % dimSizes(5)
                      end if

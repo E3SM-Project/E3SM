@@ -9,14 +9,13 @@ module atm_advection
 
    use mpas_kind_types
    use mpas_grid_types
-   use mpas_configure
    use mpas_constants
 
 
    contains
 
 
-   subroutine atm_initialize_advection_rk( grid )
+   subroutine atm_initialize_advection_rk( mesh, nCells, nEdges, maxEdges, on_a_sphere, sphere_radius )
                                       
 !
 ! compute the cell coefficients for the polynomial fit.
@@ -25,15 +24,23 @@ module atm_advection
 !
       implicit none
 
-      type (mesh_type), intent(in) :: grid
+      type (mpas_pool_type), intent(inout) :: mesh
+      integer, intent(in) :: nCells, nEdges, maxEdges
+      logical, intent(in) :: on_a_sphere
+      real (kind=RKIND), intent(in) :: sphere_radius
 
       real (kind=RKIND), dimension(:,:,:), pointer :: deriv_two
+      real (kind=RKIND), dimension(:), pointer :: xCell, yCell, zCell
+      real (kind=RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
+      real (kind=RKIND), dimension(:), pointer :: angleEdge, dcEdge
       integer, dimension(:,:), pointer :: advCells
+      integer, dimension(:), pointer :: nEdgesOnCell
+      integer, dimension(:,:), pointer :: cellsOnCell, edgesOnCell, verticesOnEdge, cellsOnEdge
 
 !  local variables
 
-      real (kind=RKIND), dimension(2, grid % nEdges) :: thetae
-      real (kind=RKIND), dimension(grid % nCells) :: theta_abs
+      real (kind=RKIND), dimension(2,nEdges) :: thetae
+      real (kind=RKIND), dimension(nCells) :: theta_abs
 
       real (kind=RKIND), dimension(25) :: xc, yc, zc ! cell center coordinates
       real (kind=RKIND), dimension(25) :: thetav, thetat, dl_sphere
@@ -52,7 +59,7 @@ module atm_advection
       logical :: add_the_cell, do_the_cell
 
       real (kind=RKIND) :: cos2t, costsint, sin2t
-      real (kind=RKIND), dimension(grid%maxEdges) :: angle_2d
+      real (kind=RKIND), dimension(maxEdges) :: angle_2d
 
       integer, parameter :: polynomial_order = 2
       logical, parameter :: debug = .false.
@@ -62,22 +69,36 @@ module atm_advection
 
       pii = 2.*asin(1.0)
 
-      advCells => grid % advCells % array
-      deriv_two => grid % deriv_two % array
+      call mpas_pool_get_array(mesh, 'advCells', advCells)
+      call mpas_pool_get_array(mesh, 'deriv_two', deriv_two)
+      call mpas_pool_get_array(mesh, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(mesh, 'edgesOnCell', edgesOnCell)
+      call mpas_pool_get_array(mesh, 'verticesOnEdge', verticesOnEdge)
+      call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
+      call mpas_pool_get_array(mesh, 'cellsOnCell', cellsOnCell)
+      call mpas_pool_get_array(mesh, 'xCell', xCell)
+      call mpas_pool_get_array(mesh, 'yCell', yCell)
+      call mpas_pool_get_array(mesh, 'zCell', zCell)
+      call mpas_pool_get_array(mesh, 'xVertex', xVertex)
+      call mpas_pool_get_array(mesh, 'yVertex', yVertex)
+      call mpas_pool_get_array(mesh, 'zVertex', zVertex)
+      call mpas_pool_get_array(mesh, 'angleEdge', angleEdge)
+      call mpas_pool_get_array(mesh, 'dcEdge', dcEdge)
+
       deriv_two(:,:,:) = 0.
 
-      do iCell = 1, grid % nCells !  is this correct? - we need first halo cell also...
+      do iCell = 1, nCells !  is this correct? - we need first halo cell also...
 
          cell_list(1) = iCell
-         do i=2, grid % nEdgesOnCell % array(iCell)+1
-            cell_list(i) = grid % CellsOnCell % array(i-1,iCell)
+         do i=2,nEdgesOnCell(iCell)+1
+            cell_list(i) = cellsOnCell(i-1,iCell)
          end do
-         n = grid % nEdgesOnCell % array(iCell) + 1
+         n = nEdgesOnCell(iCell) + 1
 
          if ( polynomial_order > 2 ) then
-            do i=2,grid % nEdgesOnCell % array(iCell) + 1
-               do j=1,grid % nEdgesOnCell % array ( cell_list(i) )
-                  cell_add = grid % CellsOnCell % array (j,cell_list(i))
+            do i=2,nEdgesOnCell(iCell) + 1
+               do j=1,nEdgesOnCell( cell_list(i) )
+                  cell_add = cellsOnCell(j,cell_list(i))
                   add_the_cell = .true.
                   do k=1,n
                      if ( cell_add == cell_list(k) ) add_the_cell = .false.
@@ -96,7 +117,7 @@ module atm_advection
 
          do_the_cell = .true.
          do i=1,n
-            if (cell_list(i) > grid % nCells) do_the_cell = .false.
+            if (cell_list(i) > nCells) do_the_cell = .false.
          end do
 
 
@@ -104,13 +125,13 @@ module atm_advection
 
 
 !  compute poynomial fit for this cell if all needed neighbors exist
-         if ( grid % on_a_sphere ) then
+         if ( on_a_sphere ) then
 
             do i=1,n
                advCells(i+1,iCell) = cell_list(i)
-               xc(i) = grid % xCell % array(advCells(i+1,iCell))/grid%sphere_radius
-               yc(i) = grid % yCell % array(advCells(i+1,iCell))/grid%sphere_radius
-               zc(i) = grid % zCell % array(advCells(i+1,iCell))/grid%sphere_radius
+               xc(i) = xCell(advCells(i+1,iCell))/sphere_radius
+               yc(i) = yCell(advCells(i+1,iCell))/sphere_radius
+               zc(i) = zCell(advCells(i+1,iCell))/sphere_radius
             end do
 
             !
@@ -138,7 +159,7 @@ module atm_advection
                                          xc(i+1), yc(i+1), zc(i+1),  &
                                          xc(ip2), yc(ip2), zc(ip2)   )
   
-               dl_sphere(i) = grid%sphere_radius*arc_length( xc(1),   yc(1),   zc(1),  &
+               dl_sphere(i) = sphere_radius*arc_length( xc(1),   yc(1),   zc(1),  &
                                                              xc(i+1), yc(i+1), zc(i+1) )
             end do
 
@@ -162,16 +183,16 @@ module atm_advection
 
             do i=1,n-1
 
-               angle_2d(i) = grid%angleEdge%array(grid % EdgesOnCell % array(i,iCell))
-               iEdge = grid % EdgesOnCell % array(i,iCell)
-               if ( iCell .ne. grid % CellsOnEdge % array(1,iEdge)) &
+               angle_2d(i) = angleEdge(edgesOnCell(i,iCell))
+               iEdge = edgesOnCell(i,iCell)
+               if ( iCell /= cellsOnEdge(1,iEdge)) &
                   angle_2d(i) = angle_2d(i) - pii
   
-!                 xp(i) = grid % xCell % array(cell_list(i)) - grid % xCell % array(iCell)
-!                 yp(i) = grid % yCell % array(cell_list(i)) - grid % yCell % array(iCell)
+!                 xp(i) = xCell(cell_list(i)) - xCell(iCell)
+!                 yp(i) = yCell(cell_list(i)) - yCell(iCell)
 
-               xp(i) = grid % dcEdge % array(grid % EdgesOnCell % array(i,iCell)) * cos(angle_2d(i))
-               yp(i) = grid % dcEdge % array(grid % EdgesOnCell % array(i,iCell)) * sin(angle_2d(i))
+               xp(i) = dcEdge(edgesOnCell(i,iCell)) * cos(angle_2d(i))
+               yp(i) = dcEdge(edgesOnCell(i,iCell)) * sin(angle_2d(i))
 
             end do
 
@@ -179,7 +200,7 @@ module atm_advection
 
 
          ma = n-1
-         mw = grid % nEdgesOnCell % array (iCell)
+         mw = nEdgesOnCell(iCell)
 
          bmatrix = 0.
          amatrix = 0.
@@ -264,19 +285,19 @@ module atm_advection
  
          call poly_fit_2( amatrix, bmatrix, wmatrix, ma, na, 25 )
 
-         do i=1,grid % nEdgesOnCell % array (iCell)
+         do i=1,nEdgesOnCell(iCell)
             ip1 = i+1
             if (ip1 > n-1) ip1 = 1
   
-            iEdge = grid % EdgesOnCell % array (i,iCell)
-            xv1 = grid % xVertex % array(grid % verticesOnEdge % array (1,iedge))/grid%sphere_radius
-            yv1 = grid % yVertex % array(grid % verticesOnEdge % array (1,iedge))/grid%sphere_radius
-            zv1 = grid % zVertex % array(grid % verticesOnEdge % array (1,iedge))/grid%sphere_radius
-            xv2 = grid % xVertex % array(grid % verticesOnEdge % array (2,iedge))/grid%sphere_radius
-            yv2 = grid % yVertex % array(grid % verticesOnEdge % array (2,iedge))/grid%sphere_radius
-            zv2 = grid % zVertex % array(grid % verticesOnEdge % array (2,iedge))/grid%sphere_radius
+            iEdge = edgesOnCell(i,iCell)
+            xv1 = xVertex(verticesOnEdge(1,iedge))/sphere_radius
+            yv1 = yVertex(verticesOnEdge(1,iedge))/sphere_radius
+            zv1 = zVertex(verticesOnEdge(1,iedge))/sphere_radius
+            xv2 = xVertex(verticesOnEdge(2,iedge))/sphere_radius
+            yv2 = yVertex(verticesOnEdge(2,iedge))/sphere_radius
+            zv2 = zVertex(verticesOnEdge(2,iedge))/sphere_radius
   
-            if ( grid % on_a_sphere ) then
+            if ( on_a_sphere ) then
                call arc_bisect( xv1, yv1, zv1,  &
                                 xv2, yv2, zv2,  &
                                 xec, yec, zec   )
@@ -285,15 +306,15 @@ module atm_advection
                                           xc(i+1), yc(i+1), zc(i+1),  &
                                           xec,     yec,     zec       )
                thetae_tmp = thetae_tmp + thetat(i)
-               if (iCell == grid % cellsOnEdge % array(1,iEdge)) then
-                  thetae(1,grid % EdgesOnCell % array (i,iCell)) = thetae_tmp
+               if (iCell == cellsOnEdge(1,iEdge)) then
+                  thetae(1,edgesOnCell(i,iCell)) = thetae_tmp
                else
-                  thetae(2,grid % EdgesOnCell % array (i,iCell)) = thetae_tmp
+                  thetae(2,edgesOnCell(i,iCell)) = thetae_tmp
                end if
 !            else
 !
-!               xe(grid % EdgesOnCell % array (i,iCell)) = 0.5 * (xv1 + xv2)
-!               ye(grid % EdgesOnCell % array (i,iCell)) = 0.5 * (yv1 + yv2)
+!               xe(edgesOnCell(i,iCell)) = 0.5 * (xv1 + xv2)
+!               ye(edgesOnCell(i,iCell)) = 0.5 * (yv1 + yv2)
 
             end if
   
@@ -301,15 +322,15 @@ module atm_advection
 
 !  fill second derivative stencil for rk advection 
 
-         do i=1, grid % nEdgesOnCell % array (iCell)
-            iEdge = grid % EdgesOnCell % array (i,iCell)
+         do i=1, nEdgesOnCell(iCell)
+            iEdge = edgesOnCell(i,iCell)
   
   
-            if ( grid % on_a_sphere ) then
-               if (iCell == grid % cellsOnEdge % array(1,iEdge)) then
+            if ( on_a_sphere ) then
+               if (iCell == cellsOnEdge(1,iEdge)) then
   
-                  cos2t = cos(thetae(1,grid % EdgesOnCell % array (i,iCell)))
-                  sin2t = sin(thetae(1,grid % EdgesOnCell % array (i,iCell)))
+                  cos2t = cos(thetae(1,edgesOnCell(i,iCell)))
+                  sin2t = sin(thetae(1,edgesOnCell(i,iCell)))
                   costsint = cos2t*sin2t
                   cos2t = cos2t**2
                   sin2t = sin2t**2
@@ -321,8 +342,8 @@ module atm_advection
                   end do
                else
      
-                  cos2t = cos(thetae(2,grid % EdgesOnCell % array (i,iCell)))
-                  sin2t = sin(thetae(2,grid % EdgesOnCell % array (i,iCell)))
+                  cos2t = cos(thetae(2,edgesOnCell(i,iCell)))
+                  sin2t = sin(thetae(2,edgesOnCell(i,iCell)))
                   costsint = cos2t*sin2t
                   cos2t = cos2t**2
                   sin2t = sin2t**2
@@ -349,7 +370,7 @@ module atm_advection
 !                                         + 2.*ye(iEdge)*ye(iEdge)*bmatrix(6,j)
 !               end do
 
-               if (iCell == grid % cellsOnEdge % array(1,iEdge)) then
+               if (iCell == cellsOnEdge(1,iEdge)) then
                   do j=1,n
                      deriv_two(j,1,iEdge) =   2.*cos2t*bmatrix(4,j)  &
                                             + 2.*costsint*bmatrix(5,j)  &
@@ -745,7 +766,7 @@ module atm_advection
    END SUBROUTINE ELGS
    
 
-   subroutine atm_initialize_deformation_weights( grid )
+   subroutine atm_initialize_deformation_weights( mesh, nCells, on_a_sphere, sphere_radius )
                                       
 !
 ! compute the cell coefficients for the deformation calculations
@@ -753,14 +774,20 @@ module atm_advection
 !
       implicit none
 
-      type (mesh_type), intent(in) :: grid
-
-      real (kind=RKIND), dimension(:,:), pointer :: defc_a, defc_b
-      integer, dimension(:,:), pointer :: cellsOnEdge, edgesOnCell
+      type (mpas_pool_type), intent(inout) :: mesh
+      integer, intent(in) :: nCells
+      logical, intent(in) :: on_a_sphere
+      real (kind=RKIND), intent(in) :: sphere_radius
 
 !  local variables
 
-      real (kind=RKIND), dimension(grid % nCells) :: theta_abs
+      real (kind=RKIND), dimension(:,:), pointer :: defc_a, defc_b
+      integer, dimension(:,:), pointer :: cellsOnEdge, edgesOnCell, cellsOnCell, verticesOnCell
+      integer, dimension(:), pointer :: nEdgesOnCell
+      real (kind=RKIND), dimension(:), pointer :: xCell, yCell, zCell
+      real (kind=RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
+
+      real (kind=RKIND), dimension(nCells) :: theta_abs
 
       real (kind=RKIND), dimension(25) :: xc, yc, zc ! cell center coordinates
       real (kind=RKIND), dimension(25) :: thetav, thetat, dl_sphere
@@ -781,10 +808,20 @@ module atm_advection
 
       if (debug) write(0,*) ' in def weight calc '
 
-      defc_a => grid % defc_a % array
-      defc_b => grid % defc_b % array
-      cellsOnEdge => grid % cellsOnEdge % array
-      edgesOnCell => grid % edgesOnCell % array
+      
+      call mpas_pool_get_array(mesh, 'defc_a', defc_a)
+      call mpas_pool_get_array(mesh, 'defc_b', defc_b)
+      call mpas_pool_get_array(mesh, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
+      call mpas_pool_get_array(mesh, 'edgesOnCell', edgesOnCell)
+      call mpas_pool_get_array(mesh, 'cellsOnCell', cellsOnCell)
+      call mpas_pool_get_array(mesh, 'verticesOnCell', verticesOnCell)
+      call mpas_pool_get_array(mesh, 'xCell', xCell)
+      call mpas_pool_get_array(mesh, 'yCell', yCell)
+      call mpas_pool_get_array(mesh, 'zCell', zCell)
+      call mpas_pool_get_array(mesh, 'xVertex', xVertex)
+      call mpas_pool_get_array(mesh, 'yVertex', yVertex)
+      call mpas_pool_get_array(mesh, 'zVertex', zVertex)
 
       defc_a(:,:) = 0.
       defc_b(:,:) = 0.
@@ -793,15 +830,15 @@ module atm_advection
 
       if (debug) write(0,*) ' beginning cell loop '
 
-      do iCell = 1, grid % nCells
+      do iCell = 1, nCells
 
          if (debug) write(0,*) ' cell loop ', iCell
 
          cell_list(1) = iCell
-         do i=2, grid % nEdgesOnCell % array(iCell)+1
-            cell_list(i) = grid % CellsOnCell % array(i-1,iCell)
+         do i=2,nEdgesOnCell(iCell)+1
+            cell_list(i) = cellsOnCell(i-1,iCell)
          end do
-         n = grid % nEdgesOnCell % array(iCell) + 1
+         n = nEdgesOnCell(iCell) + 1
 
 !  check to see if we are reaching outside the halo
 
@@ -809,7 +846,7 @@ module atm_advection
 
          do_the_cell = .true.
          do i=1,n
-            if (cell_list(i) > grid % nCells) do_the_cell = .false.
+            if (cell_list(i) > nCells) do_the_cell = .false.
          end do
 
 
@@ -817,18 +854,18 @@ module atm_advection
 
 
 !  compute poynomial fit for this cell if all needed neighbors exist
-         if (grid % on_a_sphere) then
+         if (on_a_sphere) then
 
-            xc(1) = grid % xCell % array(iCell)/grid%sphere_radius
-            yc(1) = grid % yCell % array(iCell)/grid%sphere_radius
-            zc(1) = grid % zCell % array(iCell)/grid%sphere_radius
+            xc(1) = xCell(iCell)/sphere_radius
+            yc(1) = yCell(iCell)/sphere_radius
+            zc(1) = zCell(iCell)/sphere_radius
 
 
             do i=2,n
-               iv = grid % verticesOnCell % array(i-1,iCell)
-               xc(i) = grid % xVertex % array(iv)/grid%sphere_radius
-               yc(i) = grid % yVertex % array(iv)/grid%sphere_radius
-               zc(i) = grid % zVertex % array(iv)/grid%sphere_radius
+               iv = verticesOnCell(i-1,iCell)
+               xc(i) = xVertex(iv)/sphere_radius
+               yc(i) = yVertex(iv)/sphere_radius
+               zc(i) = zVertex(iv)/sphere_radius
             end do
 
             !
@@ -857,7 +894,7 @@ module atm_advection
                                          xc(i+1), yc(i+1), zc(i+1),  &
                                          xc(ip2), yc(ip2), zc(ip2)   )
 
-               dl_sphere(i) = grid%sphere_radius*arc_length( xc(1),   yc(1),   zc(1),  &
+               dl_sphere(i) = sphere_radius*arc_length( xc(1),   yc(1),   zc(1),  &
                                                              xc(i+1), yc(i+1), zc(i+1) )
             end do
 
@@ -879,14 +916,15 @@ module atm_advection
 
          else     ! On an x-y plane
 
-            xp(1) = grid % xCell % array(iCell)
-            yp(1) = grid % yCell % array(iCell)
+            theta_abs(iCell) = 0.0
 
+            xp(1) = xCell(iCell)
+            yp(1) = yCell(iCell)
 
             do i=2,n
-               iv = grid % verticesOnCell % array(i-1,iCell)
-               xp(i) = grid % xVertex % array(iv)
-               yp(i) = grid % yVertex % array(iv)
+               iv = verticesOnCell(i-1,iCell)
+               xp(i) = xVertex(iv)
+               yp(i) = yVertex(iv)
             end do
 
          end if

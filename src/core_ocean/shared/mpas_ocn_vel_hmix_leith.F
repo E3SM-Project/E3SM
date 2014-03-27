@@ -21,7 +21,7 @@
 module ocn_vel_hmix_leith
 
    use mpas_grid_types
-   use mpas_configure
+   use ocn_constants
 
    implicit none
    private
@@ -78,7 +78,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_hmix_leith_tend(mesh, divergence, relativeVorticity, viscosity, tend, err)!{{{
+   subroutine ocn_vel_hmix_leith_tend(meshPool, divergence, relativeVorticity, viscosity, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -92,8 +92,8 @@ contains
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          relativeVorticity       !< Input: relative vorticity
 
-      type (mesh_type), intent(in) :: &
-         mesh            !< Input: mesh information
+      type (mpas_pool_type), intent(in) :: &
+         meshPool            !< Input: mesh information
 
       !-----------------------------------------------------------------
       !
@@ -121,13 +121,16 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, nEdgesSolve, cell1, cell2, vertex1, vertex2, k
+      integer :: iEdge, cell1, cell2, vertex1, vertex2, k
+      integer, pointer :: nEdgesSolve
       integer, dimension(:), pointer :: maxLevelEdgeTop
       integer, dimension(:,:), pointer :: cellsOnEdge, verticesOnEdge, edgeMask
 
       real (kind=RKIND) :: u_diffusion, invLength1, invLength2, visc2
       real (kind=RKIND), dimension(:), pointer :: meshScaling, &
               dcEdge, dvEdge
+
+      real (kind=RKIND), pointer :: config_leith_parameter, config_leith_dx, config_leith_visc2_max
 
       !-----------------------------------------------------------------
       !
@@ -139,16 +142,21 @@ contains
 
       if(.not.hmixLeithOn) return
 
-      nEdgesSolve = mesh % nEdgesSolve
-      maxLevelEdgeTop => mesh % maxLevelEdgeTop % array
-      cellsOnEdge => mesh % cellsOnEdge % array
-      verticesOnEdge => mesh % verticesOnEdge % array
-      meshScaling => mesh % meshScaling % array
-      edgeMask => mesh % edgeMask % array
-      dcEdge => mesh % dcEdge % array
-      dvEdge => mesh % dvEdge % array
+      call mpas_pool_get_config(ocnConfigs, 'config_Leith_parameter', config_leith_parameter)
+      call mpas_pool_get_config(ocnConfigs, 'config_Leith_dx', config_leith_dx)
+      call mpas_pool_get_config(ocnConfigs, 'config_Leith_visc2_max', config_leith_visc2_max)
 
-      do iEdge=1,nEdgesSolve
+      call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
+
+      call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
+      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+      call mpas_pool_get_array(meshPool, 'verticesOnEdge', verticesOnEdge)
+      call mpas_pool_get_array(meshPool, 'meshScaling', meshScaling)
+      call mpas_pool_get_array(meshPool, 'edgeMask', edgeMask)
+      call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
+      call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
+
+      do iEdge = 1, nEdgesSolve
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
          vertex1 = verticesOnEdge(1,iEdge)
@@ -157,7 +165,7 @@ contains
          invLength1 = 1.0 / dcEdge(iEdge)
          invLength2 = 1.0 / dvEdge(iEdge)
 
-         do k=1,maxLevelEdgeTop(iEdge)
+         do k = 1, maxLevelEdgeTop(iEdge)
 
             ! Here -( relativeVorticity(k,vertex2) - relativeVorticity(k,vertex1) ) / dvEdge(iEdge)
             ! is - \nabla relativeVorticity pointing from vertex 2 to vertex 1, or equivalently 
@@ -207,8 +215,11 @@ contains
    ! set some local module variables based on input config choices
    !
    !--------------------------------------------------------------------
+   logical, pointer :: config_use_Leith_del2
 
    err = 0
+
+   call mpas_pool_get_config(ocnConfigs, 'config_use_Leith_del2', config_use_Leith_del2)
 
    hmixLeithOn = .false.
 

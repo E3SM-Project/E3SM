@@ -372,7 +372,7 @@
 <!-- ************************************** Variables *************************************** -->
 <!-- **************************************************************************************** -->
 
-        <var_struct name="mesh" time_levs="0">
+        <var_struct name="mesh" time_levs="1">
                 <var name="latCell"                      type="real"     dimensions="nCells"/>
                 <var name="lonCell"                      type="real"     dimensions="nCells"/>
                 <var name="xCell"                        type="real"     dimensions="nCells"/>
@@ -478,7 +478,7 @@
                 <var name="coeffs_reconstruct"         type="real"     dimensions="R3 maxEdges nCells"/>
         </var_struct>
 
-        <var_struct name="state" time_levs="2">
+        <var_struct name="state" time_levs="1">
                 <var name="xtime"                      type="text"     dimensions="Time"/>
                 <var name="u"                          type="real"     dimensions="nVertLevels nEdges Time"/>
                 <var name="w"                          type="real"     dimensions="nVertLevelsP1 nCells Time"/>

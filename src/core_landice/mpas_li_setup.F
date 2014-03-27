@@ -36,7 +36,9 @@ module li_setup
    !--------------------------------------------------------------------
 
    real (kind=RKIND) :: li_deltat  !< Public parameter: Time step used by model
-   public :: li_deltat
+   type (mpas_pool_type), pointer :: liConfigs  !< Public parameter: pool of config options
+
+   public :: li_deltat, liConfigs
    ! Note: li_deltat is a public module level variable so it can be used by other
    ! modules.  This was necessitated because deltat needs to be set during mpas_core_init
    ! but used in mpas_core_run and there is currently no way to pass it between those
@@ -53,9 +55,9 @@ module li_setup
    ! Public member functions
    !
    !--------------------------------------------------------------------
-   public :: li_setup_vertical_grid, &
-             li_setup_sign_and_index_fields, &
-             li_setup_timestep
+   public :: li_setup_config_options, &
+             li_setup_vertical_grid, &
+             li_setup_sign_and_index_fields
 
    !--------------------------------------------------------------------
    !
@@ -69,6 +71,72 @@ module li_setup
 
 contains
 
+
+!***********************************************************************
+!
+!  routine li_setup_config_options
+!
+!> \brief   Makes any setup changes needed based on chosen config options
+!> \author  Matt Hoffman
+!> \date    16 April 2014
+!> \details
+!>  This routine makes any adjustments as needed based on which
+!>  config options were chosen.
+!
+!-----------------------------------------------------------------------
+
+   subroutine li_setup_config_options( domain, err )
+
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+      type (domain_type), intent(inout) :: domain  !< Input/Output: domain object
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      integer, intent(out) :: err            !< Output: error flag
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      real (kind=RKIND), pointer :: config_dt_seconds, config_dt_years
+
+      err = 0
+
+      ! Make config pool publicly available in this module
+      liConfigs => domain % configs
+
+
+      ! This section initializes the time step based on whether
+      ! config_dt or config_dt_years has been set in the namelist.
+
+      ! If dt in years is supplied, convert it to seconds and use it.  Otherwise use dt in seconds
+      ! li_deltat is a module variable
+      call mpas_pool_get_config(liConfigs, 'config_dt_seconds', config_dt_seconds)
+      call mpas_pool_get_config(liConfigs, 'config_dt_years', config_dt_years)
+      if (config_dt_years == 0.0_RKIND) then
+         li_deltat = config_dt_seconds
+      else
+         li_deltat = config_dt_years * (365.0 * 24.0 * 3600.0)
+         ! TODO Should seconds in a year be dependent on calendar used?
+         ! TODO Should seconds in a year be a parameter/module variable somewhere
+      endif
+
+      if (li_deltat < 0.0_RKIND) then
+         err = 1
+         write(0,*) 'Error: negative time step was specified.'
+      endif
+
+   !--------------------------------------------------------------------
+   end subroutine li_setup_config_options
+
+
+
 !***********************************************************************
 !
 !  routine li_setup_vertical_grid
@@ -81,7 +149,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine li_setup_vertical_grid(mesh, err)
+   subroutine li_setup_vertical_grid(meshPool, err)
 
       !-----------------------------------------------------------------
       !
@@ -95,7 +163,7 @@ contains
       ! input/output variables
       !
       !-----------------------------------------------------------------
-      type (mesh_type), intent(inout) :: mesh  !< Input/Output: mesh object
+      type (mpas_pool_type), intent(inout) :: meshPool  !< Input/Output: mesh object
 
       !-----------------------------------------------------------------
       !
@@ -110,14 +178,19 @@ contains
       ! local variables
       !
       !-----------------------------------------------------------------
-
-      integer :: nVertLevels, k
-      real (kind=RKIND) :: fractionTotal
+      ! Pool pointers
+      integer, pointer :: nVertLevels ! Dimensions
       real (kind=RKIND), dimension(:), pointer :: layerThicknessFractions, layerCenterSigma, layerInterfaceSigma
+      ! Truly locals
+      integer :: k
+      real (kind=RKIND) :: fractionTotal
 
-      nVertLevels = mesh % nVertLevels
+      ! Get pool stuff
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
       ! layerThicknessFractions is provided by input
-      layerThicknessFractions => mesh % layerThicknessFractions % array
+      call mpas_pool_get_array(meshPool, 'layerThicknessFractions', layerThicknessFractions)
+      call mpas_pool_get_array(meshPool, 'layerCenterSigma', layerCenterSigma)
+      call mpas_pool_get_array(meshPool, 'layerInterfaceSigma', layerInterfaceSigma)
 
       ! Check that layerThicknessFractions are valid
       ! TODO - switch to having the user input the sigma levels instead???
@@ -132,12 +205,8 @@ contains
          layerThicknessFractions(1) = layerThicknessFractions(1) - (fractionTotal - 1.0_RKIND)
       endif
 
-
       ! layerCenterSigma is the fractional vertical position (0-1) of each layer center, with 0.0 at the ice surface and 1.0 at the ice bed
-      layerCenterSigma => mesh % layerCenterSigma % array
       ! layerInterfaceSigma is the fractional vertical position (0-1) of each layer interface, with 0.0 at the ice surface and 1.0 at the ice bed.  Interface 1 is the surface, interface 2 is between layers 1 and 2, etc., and interface nVertLevels+1 is the bed.
-      layerInterfaceSigma => mesh % layerInterfaceSigma % array
-
       layerCenterSigma(1) = 0.5_RKIND * layerThicknessFractions(1)
       layerInterfaceSigma(1) = 0.0_RKIND
       do k = 2, nVertLevels 
@@ -146,7 +215,7 @@ contains
          layerInterfaceSigma(k) = layerInterfaceSigma(k-1) + layerThicknessFractions(k-1)
       end do
       layerInterfaceSigma(nVertLevels+1) = 1.0_RKIND
-      
+
    !--------------------------------------------------------------------
    end subroutine li_setup_vertical_grid
 
@@ -163,7 +232,7 @@ contains
 !>  This routine determines the sign for various mesh items.
 !
 !-----------------------------------------------------------------------
-   subroutine li_setup_sign_and_index_fields(mesh)!{{{
+   subroutine li_setup_sign_and_index_fields(meshPool)
 
       !-----------------------------------------------------------------
       !
@@ -176,7 +245,7 @@ contains
       ! input/output variables
       !
       !-----------------------------------------------------------------
-      type (mesh_type), intent(inout) :: mesh  !< Input/Output: mesh object
+      type (mpas_pool_type), intent(inout) :: meshPool  !< Input/Output: mesh object
 
       !-----------------------------------------------------------------
       !
@@ -189,34 +258,29 @@ contains
       ! local variables
       !
       !-----------------------------------------------------------------
-       integer, dimension(:), pointer :: nEdgesOnCell
-       integer, dimension(:,:), pointer :: edgesOnCell, cellsOnEdge !, edgesOnVertex, cellsOnVertex, verticesOnCell, verticesOnEdge
-       integer, dimension(:,:), pointer :: edgeSignOnCell !, edgeSignOnVertex, kiteIndexOnCell
-
-       integer :: nCells !, nVertices, vertexDegree
+      ! Pool pointers
+      integer, pointer :: nCells !, nVertices, vertexDegree
+      integer, dimension(:), pointer :: nEdgesOnCell
+      integer, dimension(:,:), pointer :: edgesOnCell, cellsOnEdge !, edgesOnVertex, cellsOnVertex, verticesOnCell, verticesOnEdge
+      integer, dimension(:,:), pointer :: edgeSignOnCell !, edgeSignOnVertex, kiteIndexOnCell
+      ! Truly locals
        integer :: iCell, iEdge, iVertex, i, j, k
 
-       nCells = mesh % nCells
-       !nVertices = mesh % nVertices
-       !vertexDegree = mesh % vertexDegree
-
-       nEdgesOnCell => mesh % nEdgesOnCell % array
-       edgesOnCell => mesh % edgeSOnCell % array
-       !edgesOnVertex => mesh % edgesOnVertex % array
-       !cellsOnVertex => mesh % cellsOnVertex % array
-       cellsOnEdge => mesh % cellsOnEdge % array
-       !verticesOnCell => mesh % verticesOnCell % array
-       !verticesOnEdge => mesh % verticesOnEdge % array
-       edgeSignOnCell => mesh % edgeSignOnCell % array
-       !edgeSignOnVertex => mesh % edgeSignOnVertex % array
-       !kiteIndexOnCell => mesh % kiteIndexOnCell % array
+      ! Get pool stuff
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      ! layerThicknessFractions is provided by input
+      call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
+      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+      call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
 
        edgeSignOnCell = 0.0_RKIND
        !edgeSignOnVertex = 0.0_RKIND
        !kiteIndexOnCell = 0.0_RKIND
+       ! If needed, edgeSignOnVertex and kiteIndexOnCell can also be setup here.
 
        do iCell = 1, nCells
-         do i = 1, nEdgesOnCell(iCell) 
+         do i = 1, nEdgesOnCell(iCell)
            iEdge = edgesOnCell(i, iCell)
            !iVertex = verticesOnCell(i, iCell)
 
@@ -249,70 +313,7 @@ contains
        !end do
 
    !--------------------------------------------------------------------
-   end subroutine li_setup_sign_and_index_fields!}}}
-
-
-
-!***********************************************************************
-!
-!  routine li_setup_timestep
-!
-!> \brief   Initializes time step
-!> \author  Matt Hoffman
-!> \date    24 September 2013
-!> \details
-!>  This routine initializes the time step based on whether
-!>   config_dt or config_dt_years has been set in the namelist.
-!
-!-----------------------------------------------------------------------
-
-   subroutine li_setup_timestep( err )
-
-      !-----------------------------------------------------------------
-      !
-      ! input variables
-      !
-      !-----------------------------------------------------------------
-
-      !-----------------------------------------------------------------
-      !
-      ! input/output variables
-      !
-      !-----------------------------------------------------------------
-
-      !-----------------------------------------------------------------
-      !
-      ! output variables
-      !
-      !-----------------------------------------------------------------
-
-      integer, intent(out) :: err            !< Output: error flag
-
-      !-----------------------------------------------------------------
-      !
-      ! local variables
-      !
-      !-----------------------------------------------------------------
-
-      err = 0
-
-      ! If dt in years is supplied, convert it to seconds and use it.  Otherwise use dt in seconds
-      ! li_deltat is a module variable
-      if (config_dt_years == 0.0_RKIND) then
-         li_deltat = config_dt_seconds
-      else
-         li_deltat = config_dt_years * (365.0 * 24.0 * 3600.0)  
-         ! TODO Should seconds in a year be dependent on calendar used?
-         ! TODO Should seconds in a year be a parameter/module variable somewhere
-      endif
-
-      if (li_deltat < 0.0_RKIND) then
-         err = 1
-         write(0,*) 'Error: negative time step was specified.'
-      endif
-
-   !--------------------------------------------------------------------
-   end subroutine li_setup_timestep
+   end subroutine li_setup_sign_and_index_fields
 
 
 

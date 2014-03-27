@@ -50,9 +50,12 @@
 !> ----------------------------------------
 !>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-22.
+!>    * Modified sourcecode to use pools.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-05-15.
 
 
  contains
+
 
 !==================================================================================================
  subroutine init_o3climatology(mesh,atm_input)
@@ -62,10 +65,16 @@
 !with monthly climatology varying ozone distribution.
 
 !input arguments:
- type(mesh_type),intent(in):: mesh
+ type(mpas_pool_type),intent(in):: mesh
 
 !inout arguments:
- type(atm_input_type), intent(inout):: atm_input
+ type(mpas_pool_type),intent(inout):: atm_input
+
+!local pointers:
+ integer, pointer:: nCells,num_months,levsiz
+ real(kind=RKIND),dimension(:),pointer:: latCell,lonCell
+ real(kind=RKIND),dimension(:),pointer:: pin
+ real(kind=RKIND),dimension(:,:,:),pointer:: ozmixm
 
 !local variables:
  integer,parameter:: pin_unit = 27
@@ -74,28 +83,24 @@
  integer,parameter:: open_ok  = 0
 
  integer:: i,i1,i2,istat,k,j,m
- integer:: iCell,nCells,num_months,levsiz
+ integer:: iCell
  
- real(kind=RKIND),dimension(:),pointer:: latCell,lonCell
- real(kind=RKIND),dimension(:),pointer:: pin
- real(kind=RKIND),dimension(:,:,:),pointer:: ozmixm
-
  real(kind=RKIND):: lat,lon,dlat,dlatCell
  real(kind=RKIND),dimension(latsiz):: lat_ozone
-!real(Kind=RKIND),dimension(lonsiz,levsiz,latsiz,num_months):: ozmixin
  real(kind=RKIND),dimension(:,:,:,:),allocatable:: ozmixin
 
 !--------------------------------------------------------------------------------------------------
  write(0,*)
  write(0,*) '--- enter subroutine physics_init_o3:'
 
- nCells     = mesh % nCells
- num_months = mesh % nMonths
- levsiz     = mesh % nOznLevels
- pin     => atm_input % pin % array
- ozmixm  => atm_input % ozmixm % array
- latCell => mesh % latCell % array
- lonCell => mesh % lonCell % array
+ call mpas_pool_get_dimension(mesh,'nCells',nCells)
+ call mpas_pool_get_dimension(mesh,'nMonths',num_months)
+ call mpas_pool_get_dimension(mesh,'nOznLevels',levsiz)
+
+ call mpas_pool_get_array(atm_input,'pin',pin)
+ call mpas_pool_get_array(atm_input,'ozmixm',ozmixm)
+ call mpas_pool_get_array(mesh,'latCell',latCell)
+ call mpas_pool_get_array(mesh,'lonCell',lonCell)
 
 !-- read in ozone pressure data:
  open(pin_unit,file='OZONE_PLEV.TBL',action='READ',status='OLD',iostat=istat)
@@ -195,27 +200,30 @@
 !==================================================================================================
 
 !input arguments:
- type(mesh_type),intent(in) :: mesh
+ type(mpas_pool_type),intent(in) :: mesh
  character(len=*),intent(in):: current_date
 
 !inout arguments:
- type(atm_input_type),intent(inout):: atm_input
- type(diag_physics_type),intent(inout):: diag_physics
+ type(mpas_pool_type),intent(inout):: atm_input
+ type(mpas_pool_type),intent(inout):: diag_physics
 
-!local variables:
- integer:: iCell,iLev,nCellsSolve,nOznLevels
+!local pointers:
+ integer, pointer:: nCellsSolve,nOznLevels
  real(kind=RKIND),dimension(:,:),pointer  :: o3clim
  real(kind=RKIND),dimension(:,:,:),pointer:: ozmixm
+
+!local variables:
+ integer:: iCell,iLev
 
 !--------------------------------------------------------------------------------------------------
  write(0,*)
  write(0,*) '--- enter subroutine physics_update_o3:'
 
- nCellsSolve = mesh % nCellsSolve
- nOznLevels  = mesh % nOznLevels
+ call mpas_pool_get_dimension(mesh,'nCellsSolve',nCellsSolve)
+ call mpas_pool_get_dimension(mesh,'nOznLevels',nOznLevels)
 
- ozmixm => atm_input % ozmixm % array
- o3clim => diag_physics % o3clim % array
+ call mpas_pool_get_array(atm_input,'ozmixm',ozmixm)
+ call mpas_pool_get_array(diag_physics,'o3clim',o3clim)
 
  do iLev = 1,nOznLevels 
     call monthly_interp_to_date(nCellsSolve,current_date,ozmixm(:,iLev,:),o3clim(iLev,:))
@@ -229,18 +237,23 @@
 !==================================================================================================
 
 !input arguments:
- type(mesh_type),intent(in):: mesh
+ type(mpas_pool_type),intent(in):: mesh
  real(kind=RKIND),intent(in):: julian
- type(atm_input_type),intent(in):: atm_input 
+ type(mpas_pool_type),intent(in):: atm_input 
 
 !inout arguments:
- type(diag_physics_type),intent(inout):: diag_physics
+ type(mpas_pool_type),intent(inout):: diag_physics
+
+!local pointers:
+ integer,pointer:: nOznLevels,nVertLevels,nCellsSolve,nMonths
+ real(kind=RKIND),dimension(:,:),pointer  :: o3clim
+ real(kind=RKIND),dimension(:,:,:),pointer:: ozmixm
 
 !local variables:
  logical:: finddate
  logical:: ozncyc
 
- integer:: iCell,k,nCellsSolve,nVertLevels,nOznLevels,nMonths
+ integer:: iCell,k
  integer:: ijul,m,nm,np,np1
  integer, dimension(12) ::  date_oz
  data date_oz/16, 45, 75, 105, 136, 166, 197, 228, 258, 289, 319, 350/
@@ -250,21 +263,18 @@
  real(kind=r8):: fact1_r8, fact2_r8
  real(kind=RKIND):: fact1,fact2
 
- real(kind=RKIND),dimension(:,:),pointer  :: o3clim
- real(kind=RKIND),dimension(:,:,:),pointer:: ozmixm
-
 !--------------------------------------------------------------------------------------------------
 
 !write(0,*)
 !write(0,*) '--- enter subroutine o3climatology_from_MPAS:'
 
- nOznLevels  = mesh % nOznLevels
- nVertLevels = mesh % nVertLevels
- nCellsSolve = mesh % nCellsSolve
- nMonths     = mesh % nMonths
-
- ozmixm => atm_input % ozmixm % array
- o3clim => diag_physics % o3clim % array
+ call mpas_pool_get_dimension(mesh,'nOznLevels',nOznLevels)
+ call mpas_pool_get_dimension(mesh,'nVertLevels',nVertLevels)
+ call mpas_pool_get_dimension(mesh,'nCellsSolve',nCellsSolve)
+ call mpas_pool_get_dimension(mesh,'nMonths',nMonths)
+ 
+ call mpas_pool_get_array(atm_input,'ozmixm',ozmixm)
+ call mpas_pool_get_array(diag_physics,'o3clim',o3clim)
 
  ozncyc = .true.
 

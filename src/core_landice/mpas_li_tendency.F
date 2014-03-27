@@ -26,6 +26,7 @@ module li_tendency
    use mpas_configure
    use mpas_constants
    use mpas_dmpar
+   use li_setup
 !!!   use li_mask
 !!!   use mpas_tracer_advection
 
@@ -72,7 +73,7 @@ module li_tendency
 !
 !-----------------------------------------------------------------------
 
-   subroutine li_tendency_thickness(mesh, state, layerThickness_tend, dt, dminfo, allowableDt, err)
+   subroutine li_tendency_thickness(meshPool, statePool, layerThickness_tend, dt, dminfo, allowableDt, err)
 
       !-----------------------------------------------------------------
       !
@@ -80,8 +81,8 @@ module li_tendency
       !
       !-----------------------------------------------------------------
 
-      type (mesh_type), intent(in) :: &
-         mesh          !< Input: mesh information
+      type (mpas_pool_type), intent(in) :: &
+         meshPool          !< Input: mesh information
 
       real (kind=RKIND), intent(in) :: &
          dt       !< Input: dt
@@ -95,8 +96,8 @@ module li_tendency
       !
       !-----------------------------------------------------------------
 
-      type (state_type), intent(inout) :: &
-         state         !< Input: state to use to calculate tendency (old time level)
+      type (mpas_pool_type), intent(inout) :: &
+         statePool         !< Input: state to use to calculate tendency (old time level)
          ! Note: state needs to be inout (rather than just in) so that adjust_marine_boundary_fluxes can modify it.
 
       real (kind=RKIND), dimension(:,:), pointer, intent(inout) :: &
@@ -120,38 +121,46 @@ module li_tendency
       ! local variables
       !
       !-----------------------------------------------------------------
-      integer nVertLevels
+      integer, pointer :: nVertLevels
       real (kind=RKIND), dimension(:), pointer :: sfcMassBal
+      real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, layerThicknessEdge
 !!!      real (kind=RKIND), dimension(:), pointer :: iceArea, areaCell, marineBasalMassBal
-      integer, dimension(:), pointer :: cellMask
+      integer, dimension(:), pointer :: cellMask, edgeMask
+      character (len=StrKIND), pointer :: config_thickness_advection
+      real (kind=RKIND), pointer :: config_ice_density
       integer :: err_tmp
 
 
       err = 0
       err_tmp = 0
 
-     nVertLevels = mesh % nVertLevels
-     sfcMassBal => mesh % sfcMassBal % array
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+      call mpas_pool_get_array(meshPool, 'sfcMassBal', sfcMassBal)
+      ! Assuming tendency will always be calculated using time level 1!
+      call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel=1)
+      call mpas_pool_get_array(statePool, 'layerThicknessEdge', layerThicknessEdge, timeLevel=1)
+      call mpas_pool_get_array(statePool, 'cellMask', cellMask, timeLevel=1)
+      call mpas_pool_get_array(statePool, 'edgeMask', edgeMask, timeLevel=1)
 !!!     marineBasalMassBal => mesh % marineBasalMassBal % array
 !!!     iceArea => state % iceArea % array
 !!!     areaCell => mesh % areaCell % array
-     cellMask => state % cellMask % array
-
+      call mpas_pool_get_config(liConfigs, 'config_thickness_advection', config_thickness_advection)
+      call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
 
      ! 0 tendency
-     layerThickness_tend = 0.0_RKIND
+      layerThickness_tend = 0.0_RKIND
 !!!     iceArea_tend = 0.0_RKIND
 
-     select case (config_thickness_advection)
-     case ('fo')  !===================================================
+      select case (trim(config_thickness_advection))
+      case ('fo')  !===================================================
         !print *,'Using FO Upwind for thickness advection'
 
 !!!        ! Alternate call to calculate thickness tendency for entire ice column (deprecated)
 !!!        !call li_tend_h_fo_upwind(mesh, state % normalVelocity % array, &
 !!!        !   state % layerThickness % array, state % thickness % array, thickness_tend, dt, err)
 
-        call tend_layerthickness_fo_upwind(mesh, state % normalVelocity % array, &
-             state % layerThicknessEdge % array, state % edgeMask % array, layerThickness_tend, dt, allowableDt, err_tmp)       
+        call tend_layerthickness_fo_upwind(meshPool, normalVelocity, &
+             layerThicknessEdge, edgeMask, layerThickness_tend, dt, allowableDt, err_tmp)
 
 
         !!! Experimental implementation of using FCT for thickness tendency calculation
@@ -179,20 +188,20 @@ module li_tendency
          ! assign to the thickness tend i actually use
         ! layerThickness_tend = block % tend % sup_thickness % array(1,:,:)
 
-     case ('none')  !===================================================
+      case ('none')  !===================================================
         ! Do nothing
-     case default  !===================================================
+      case default  !===================================================
         write(0,*) trim(config_thickness_advection), ' is not a valid thickness advection option.'
         err_tmp = 1
-     end select  !===================================================
-     err = ior(err,err_tmp)
+      end select  !===================================================
+      err = ior(err,err_tmp)
 
 
-     ! Add the MB to the tendencies
-     select case (config_thickness_advection)
-     case ('None')  !===================================================
+      ! Add the MB to the tendencies
+      select case (trim(config_thickness_advection))
+      case ('None')  !===================================================
         ! Do nothing - don't add the MB
-     case default
+      case default
 ! Commenting BMB out for now.
 !!!        ! Make some potential adjustments to BMB before applying them.
 !!!        !    It's ok to overwrite the values with 0's here, because each time step
@@ -223,12 +232,12 @@ module li_tendency
 !!!                                    + mesh % marineBasalMassBal % array    ! (tendency in meters per year)
 !!!        ! TODO Add in grounded ice basal mass balance once temperature diffusion is calculated
 !!!        ! TODO THIS MIGHT RESULT IN  NEGATIVE LAYER THICKNESS!
-     end select
+      end select
 
-     ! === error check
-     if (err > 0) then
+      ! === error check
+      if (err > 0) then
          write (0,*) "An error has occurred in li_tendency_thickness."
-     endif
+      endif
 
    !--------------------------------------------------------------------
    end subroutine li_tendency_thickness
@@ -249,7 +258,7 @@ module li_tendency
 !
 !-----------------------------------------------------------------------
 
-   subroutine li_tendency_tracers(mesh, state, layerThickness_tend, tracer_tendency, dt, dminfo, err)
+   subroutine li_tendency_tracers(meshPool, statePool, layerThickness_tend, tracer_tendency, dt, dminfo, err)
 
       !-----------------------------------------------------------------
       !
@@ -257,14 +266,14 @@ module li_tendency
       !
       !-----------------------------------------------------------------
 
-      type (mesh_type), intent(in) :: &
-         mesh          !< Input: mesh information
+      type (mpas_pool_type), intent(in) :: &
+         meshPool          !< Input: mesh information
 
-      type (state_type), intent(in) :: &
-         state         !< Input: state to use to calculate tendency
+      type (mpas_pool_type), intent(in) :: &
+         statePool         !< Input: state to use to calculate tendency
 
       real (kind=RKIND), dimension(:,:), pointer, intent(in) :: &
-         layerThickness_tend         !< Input/Output: layer thickness tendency     
+         layerThickness_tend         !< Input/Output: layer thickness tendency
 
       real (kind=RKIND), intent(in) :: &
          dt       !< Input: dt
@@ -396,7 +405,7 @@ module li_tendency
 !> marine-terminating ice.
 !
 !-----------------------------------------------------------------------
-   subroutine li_apply_calving(mesh, state, err)!{{{
+   subroutine li_apply_calving(meshPool, statePool, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -404,8 +413,8 @@ module li_tendency
       !
       !-----------------------------------------------------------------
 
-      type (mesh_type), intent(in) :: &
-         mesh          !< Input: mesh information
+      type (mpas_pool_type), intent(in) :: &
+         meshPool          !< Input: mesh information
 
       !-----------------------------------------------------------------
       !
@@ -413,8 +422,8 @@ module li_tendency
       !
       !-----------------------------------------------------------------
 
-      type (state_type), intent(inout) :: &
-         state         !< Input/Output: state for which to update diagnostic variables
+      type (mpas_pool_type), intent(inout) :: &
+         statePool         !< Input/Output: state for which to update diagnostic variables
 
       !-----------------------------------------------------------------
       !
@@ -554,7 +563,7 @@ module li_tendency
 !>  results.  
 !
 !-----------------------------------------------------------------------
-   subroutine tend_layerThickness_fo_upwind(mesh, normalVelocity, layerThicknessEdge, edgeMask, tend, dt, MinOfMaxAllowableDt, err)!{{{
+   subroutine tend_layerThickness_fo_upwind(meshPool, normalVelocity, layerThicknessEdge, edgeMask, tend, dt, MinOfMaxAllowableDt, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -562,8 +571,8 @@ module li_tendency
       !
       !-----------------------------------------------------------------
 
-      type (mesh_type), intent(in) :: &
-         mesh          !< Input: mesh information
+      type (mpas_pool_type), intent(in) :: &
+         meshPool          !< Input: mesh information
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          normalVelocity    !< Input: velocity
@@ -600,25 +609,28 @@ module li_tendency
       !
       !-----------------------------------------------------------------
 
-      integer :: nCells, nVertLevels, iEdge, iCell, i, k
+      integer, pointer :: nCells, nVertLevels
       integer, dimension(:,:), pointer :: edgesOnCell, edgeSignOnCell
       integer, dimension(:), pointer :: nEdgesOnCell
-      real (kind=RKIND) :: invAreaCell, flux, maxAllowableDt
       real (kind=RKIND), dimension(:), pointer :: dvEdge, areaCell, dcEdge
+      logical, pointer :: config_print_thickness_advection_info
+      real (kind=RKIND) :: invAreaCell, flux, maxAllowableDt
+      integer :: iEdge, iCell, i, k
 
       ! Only needed for optional check for mass conservation
       !real (kind=RKIND) :: tendVolSum
 
       err = 0
 
-      nCells = mesh % nCells
-      nVertLevels = mesh % nVertLevels
-      nEdgesOnCell => mesh % nEdgesOnCell % array
-      edgesOnCell => mesh % edgesOnCell % array
-      edgeSignOnCell => mesh % edgeSignOnCell % array
-      dvEdge => mesh % dvEdge % array
-      dcEdge => mesh % dcEdge % array
-      areaCell => mesh % areaCell % array
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+      call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
+      call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
+      call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
+      call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
+      call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+      call mpas_pool_get_config(liConfigs, 'config_print_thickness_advection_info', config_print_thickness_advection_info)
 
       MinOfMaxAllowableDt = 1.0e36_RKIND
 
@@ -650,7 +662,7 @@ module li_tendency
          err = 1
       endif
 
-      if (config_print_thickness_advection_info .eqv. .true.) then
+      if (config_print_thickness_advection_info) then
          write(6,*) '  Maximum allowable time step (seconds) on this processor is ~', MinOfMaxAllowableDt
       endif
 
@@ -684,21 +696,21 @@ module li_tendency
 
 !
 !-----------------------------------------------------------------------
-   subroutine tracer_advection_tend_fo(tracers, uh, mesh, tracer_tendency, err)
+   subroutine tracer_advection_tend_fo(tracers, uh, meshPool, tracer_tendency, err)
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
 
-      type (mesh_type), intent(in) :: &
-         mesh          !< Input: mesh information
+      type (mpas_pool_type), intent(in) :: &
+         meshPool          !< Input: mesh information
 
       real (kind=RKIND), dimension(:,:,:), intent(in) :: &
-         tracers    !< Input: 
+         tracers    !< Input:
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-         uh    !< Input: 
+         uh    !< Input:
 
       !-----------------------------------------------------------------
       !

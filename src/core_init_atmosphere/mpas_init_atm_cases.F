@@ -9,7 +9,6 @@ module init_atm_cases
 
    use mpas_kind_types
    use mpas_grid_types
-   use mpas_configure
    use mpas_constants
    use mpas_dmpar
    use atm_advection
@@ -42,9 +41,26 @@ module init_atm_cases
 
       type (domain_type), intent(inout) :: domain
 
+
       integer :: i
       type (block_type), pointer :: block_ptr
 
+      type (mpas_pool_type), pointer :: mesh
+      type (mpas_pool_type), pointer :: fg
+      type (mpas_pool_type), pointer :: state
+      type (mpas_pool_type), pointer :: diag
+      type (mpas_pool_type), pointer :: diag_physics
+
+      integer, pointer :: config_init_case
+      logical, pointer :: config_static_interp
+      logical, pointer :: config_met_interp
+
+      integer, pointer :: nCells
+      integer, pointer :: nEdges
+      integer, pointer :: nVertLevels
+
+
+      call mpas_pool_get_config(domain % blocklist % configs, 'config_init_case', config_init_case)
 
       !
       ! Do some quick checks to make sure compile options are compatible with the chosen test case
@@ -79,23 +95,42 @@ module init_atm_cases
          if (config_init_case == 3) write(0,*) ' normal-mode perturbation included '
          block_ptr => domain % blocklist
          do while (associated(block_ptr))
+
+            call mpas_pool_get_config(block_ptr % configs, 'config_static_interp', config_static_interp)
+            call mpas_pool_get_config(block_ptr % configs, 'config_met_interp', config_met_interp)
+
+            call mpas_pool_get_subpool(block_ptr % structs, 'mesh', mesh)
+            call mpas_pool_get_subpool(block_ptr % structs, 'state', state)
+            call mpas_pool_get_subpool(block_ptr % structs, 'diag', diag)
+
+            call mpas_pool_get_dimension(block_ptr % dimensions, 'nCells', nCells)
+            call mpas_pool_get_dimension(block_ptr % dimensions, 'nVertLevels', nVertLevels)
+
             write(0,*) ' calling test case setup '
-            call init_atm_case_jw(block_ptr % mesh, block_ptr % state % time_levs(1) % state, block_ptr % diag, config_init_case)
-            call decouple_variables(block_ptr % mesh, block_ptr % state % time_levs(1) % state, block_ptr % diag)
+            call init_atm_case_jw(mesh, nCells, nVertLevels, state, diag, block_ptr % configs, config_init_case)
+            call decouple_variables(mesh, nCells, nVertLevels, state, diag)
             write(0,*) ' returned from test case setup '
             block_ptr => block_ptr % next
          end do
 
-      else if ((config_init_case == 4) .or. (config_init_case ==5)) then
+      else if ((config_init_case == 4) .or. (config_init_case == 5)) then
 
          write(0,*) ' squall line - super cell test case '
          if (config_init_case == 4) write(0,*) ' squall line test case' 
          if (config_init_case == 5) write(0,*) ' supercell test case'
          block_ptr => domain % blocklist
          do while (associated(block_ptr))
+
+            call mpas_pool_get_dimension(block_ptr % dimensions, 'nCells', nCells)
+            call mpas_pool_get_dimension(block_ptr % dimensions, 'nVertLevels', nVertLevels)
+
+            call mpas_pool_get_subpool(block_ptr % structs, 'mesh', mesh)
+            call mpas_pool_get_subpool(block_ptr % structs, 'state', state)
+            call mpas_pool_get_subpool(block_ptr % structs, 'diag', diag)
+
             write(0,*) ' calling test case setup '
-            call init_atm_case_squall_line(domain % dminfo, block_ptr % mesh, block_ptr % state % time_levs(1) % state, block_ptr % diag, config_init_case)
-            call decouple_variables(block_ptr % mesh, block_ptr % state % time_levs(1) % state, block_ptr % diag)
+            call init_atm_case_squall_line(domain % dminfo, mesh, nCells, nVertLevels, state, diag, config_init_case)
+            call decouple_variables(mesh, nCells, nVertLevels, state, diag)
             write(0,*) ' returned from test case setup '
             block_ptr => block_ptr % next
          end do
@@ -105,18 +140,42 @@ module init_atm_cases
          write(0,*) ' mountain wave test case '
          block_ptr => domain % blocklist
          do while (associated(block_ptr))
+
+            call mpas_pool_get_dimension(block_ptr % dimensions, 'nCells', nCells)
+            call mpas_pool_get_dimension(block_ptr % dimensions, 'nVertLevels', nVertLevels)
+
+            call mpas_pool_get_subpool(block_ptr % structs, 'mesh', mesh)
+            call mpas_pool_get_subpool(block_ptr % structs, 'state', state)
+            call mpas_pool_get_subpool(block_ptr % structs, 'diag', diag)
+
             write(0,*) ' calling test case setup '
-            call init_atm_case_mtn_wave(block_ptr % mesh, block_ptr % state % time_levs(1) % state, block_ptr % diag, config_init_case)
-            call decouple_variables(block_ptr % mesh, block_ptr % state % time_levs(1) % state, block_ptr % diag)
+            call init_atm_case_mtn_wave(domain % dminfo, mesh, nCells, nVertLevels, state, diag, block_ptr % configs, config_init_case)
+            call decouple_variables(mesh, nCells, nVertLevels, state, diag)
             write(0,*) ' returned from test case setup '
             block_ptr => block_ptr % next
          end do
 
       else if (config_init_case == 7 ) then
 
+
          write(0,*) ' real-data GFS test case '
          block_ptr => domain % blocklist
+
          do while (associated(block_ptr))
+
+            call mpas_pool_get_config(block_ptr % configs, 'config_static_interp', config_static_interp)
+            call mpas_pool_get_config(block_ptr % configs, 'config_met_interp', config_met_interp)
+
+            call mpas_pool_get_subpool(block_ptr % structs, 'mesh', mesh)
+            call mpas_pool_get_subpool(block_ptr % structs, 'fg', fg)
+            call mpas_pool_get_subpool(block_ptr % structs, 'state', state)
+            call mpas_pool_get_subpool(block_ptr % structs, 'diag', diag)
+            call mpas_pool_get_subpool(block_ptr % structs, 'diag_physics', diag_physics)
+
+            call mpas_pool_get_dimension(block_ptr % dimensions, 'nCells', nCells)
+            call mpas_pool_get_dimension(block_ptr % dimensions, 'nEdges', nEdges)
+            call mpas_pool_get_dimension(block_ptr % dimensions, 'nVertLevels', nVertLevels)
+
             if (config_static_interp) then
 
                !  
@@ -135,13 +194,12 @@ module init_atm_cases
                   call mpas_dmpar_abort(domain % dminfo)
                end if
 
-               call init_atm_static(block_ptr % mesh)
-               call init_atm_static_orogwd(block_ptr % mesh)
-            endif
-            call init_atm_case_gfs(block_ptr % mesh, block_ptr % fg, & 
-                                        block_ptr % state % time_levs(1) % state, block_ptr % diag, &
-                                        block_ptr % diag_physics, config_init_case)
-            if (config_met_interp) call physics_initialize_real(block_ptr % mesh, block_ptr % fg, domain % dminfo)
+               call init_atm_static(mesh, block_ptr % dimensions, block_ptr % configs)
+               call init_atm_static_orogwd(mesh, block_ptr % dimensions, block_ptr % configs)
+            end if
+            call init_atm_case_gfs(block_ptr, mesh, nCells, nEdges, nVertLevels, fg, state, &
+                                   diag, diag_physics, config_init_case, block_ptr % dimensions, block_ptr % configs)
+            if (config_met_interp) call physics_initialize_real(mesh, fg, domain % dminfo, block_ptr % dimensions, block_ptr % configs)
 
             block_ptr => block_ptr % next
          end do
@@ -151,8 +209,12 @@ module init_atm_cases
          write(0,*) 'real-data surface (SST) update test case '
          block_ptr => domain % blocklist
          do while (associated(block_ptr))
+            call mpas_pool_get_subpool(block_ptr % structs, 'mesh', mesh)
+            call mpas_pool_get_subpool(block_ptr % structs, 'fg', fg)
+            call mpas_pool_get_subpool(block_ptr % structs, 'state', state)
+
             ! Defined in mpas_init_atm_surface.F
-            call init_atm_case_sfc(domain, domain % dminfo, block_ptr % mesh,block_ptr % fg, block_ptr % state % time_levs(1) % state)
+            call init_atm_case_sfc(domain, domain % dminfo, mesh, fg, state, block_ptr % dimensions, block_ptr % configs)
             block_ptr => block_ptr % next
          end do
 
@@ -168,40 +230,37 @@ module init_atm_cases
       end if
 
 
-      ! Copy initialized state to all time levels
-      block_ptr => domain % blocklist
-      do while (associated(block_ptr))
-         do i=2,nTimeLevs
-            call mpas_copy_state(block_ptr % state % time_levs(i) % state, block_ptr % state % time_levs(1) % state)
-         end do
-         block_ptr => block_ptr % next
-      end do
-
       !initialization of surface input variables technically not needed to run our current set of
       !idealized test cases:
       if (config_init_case < 7)  then
          block_ptr => domain % blocklist
          do while (associated(block_ptr))
-            call physics_idealized_init(block_ptr % mesh, block_ptr % fg)
+            call mpas_pool_get_subpool(block_ptr % structs, 'mesh', mesh)
+            call mpas_pool_get_subpool(block_ptr % structs, 'fg', fg)
+
+            call physics_idealized_init(mesh, fg)
+
             block_ptr => block_ptr % next
          end do
-      endif
+      end if
 
    end subroutine init_atm_setup_case
 
 !----------------------------------------------------------------------------------------------------------
 
-   subroutine init_atm_case_jw(grid, state, diag, test_case)
+   subroutine init_atm_case_jw(mesh, nCells, nVertLevels, state, diag, configs, test_case)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! Setup baroclinic wave test case from Jablonowski and Williamson 2008 (QJRMS)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       implicit none
 
-      type (mesh_type), intent(inout) :: grid
-      type (state_type), intent(inout) :: state
-      type (diag_type), intent(inout) :: diag
-      !type (diag_physics_type), intent(inout) :: diag_physics
+      type (mpas_pool_type), intent(inout) :: mesh
+      integer, intent(in) :: nCells
+      integer, intent(in) :: nVertLevels
+      type (mpas_pool_type), intent(inout) :: state
+      type (mpas_pool_type), intent(inout) :: diag
+      type (mpas_pool_type), intent(in) :: configs
       integer, intent(in) :: test_case
 
       real (kind=RKIND), parameter :: u0 = 35.0
@@ -220,27 +279,29 @@ module init_atm_cases
       real (kind=RKIND), dimension(:), pointer :: surface_pressure
       real (kind=RKIND), dimension(:,:), pointer :: zgrid, zx, zz, hx
       real (kind=RKIND), dimension(:,:), pointer :: pressure, ppb, pb, rho_zz, rb, rr, tb, rtb, p, pp, dss, t, rt
+      real (kind=RKIND), dimension(:,:), pointer :: u, ru, w, rw, v
+      real (kind=RKIND), dimension(:,:), pointer :: rho, theta
       real (kind=RKIND), dimension(:,:,:), pointer :: zb, zb3
       real (kind=RKIND), dimension(:,:,:), pointer :: deriv_two
       
 !.. initialization of moisture:
-      integer:: index_qv
-      real (kind=RKIND),parameter :: rh_max = 0.40 ! Maximum relative humidity
-!      real (kind=RKIND),parameter :: rh_max = 0.70 ! Maximum relative humidity
-      real (kind=RKIND),dimension(grid % nVertLevels, grid % nCells) :: qsat, relhum
-      real (kind=RKIND),dimension(:,:,:),pointer:: scalars
+      integer, pointer :: index_qv
+      real (kind=RKIND), parameter :: rh_max = 0.40 ! Maximum relative humidity
+!      real (kind=RKIND), parameter :: rh_max = 0.70 ! Maximum relative humidity
+      real (kind=RKIND), dimension(nVertLevels, nCells) :: qsat, relhum
+      real (kind=RKIND), dimension(:,:,:), pointer :: scalars
 !.. end initialization of moisture.
 
-      integer :: iCell, iCell1, iCell2 , iEdge, vtx1, vtx2, ivtx, i, k, nz, nz1, itr, itrp, cell1, cell2, nCellsSolve
+      integer :: iCell, iCell1, iCell2 , iEdge, vtx1, vtx2, ivtx, i, k, nz, itr, itrp, cell1, cell2
+      integer, pointer :: nz1, nCellsSolve, nEdges, maxEdges, nVertices
 
       !This is temporary variable here. It just need when calculate tangential velocity v.
       integer :: eoe, j
-      integer, dimension(:), pointer :: nEdgesOnEdge 
-      integer, dimension(:,:), pointer :: edgesOnEdge, CellsOnEdge
-      real (kind=RKIND), dimension(:), pointer :: dvEdge, AreaCell 
+      integer, dimension(:), pointer :: nEdgesOnEdge, nEdgesOnCell
+      integer, dimension(:,:), pointer :: edgesOnEdge, cellsOnEdge, verticesOnEdge, cellsOnCell
       real (kind=RKIND), dimension(:,:), pointer :: weightsOnEdge
 
-      real (kind=RKIND) :: u, v, flux, fluxk, lat1, lat2, eta_v, r_pert, u_pert, lat_pert, lon_pert, r
+      real (kind=RKIND) :: flux, fluxk, lat1, lat2, eta_v, r_pert, u_pert, lat_pert, lon_pert, r
 
       real (kind=RKIND) :: ptop, p0, phi
       real (kind=RKIND) :: lon_Edge
@@ -250,23 +311,24 @@ module init_atm_cases
       real (kind=RKIND) :: es, qvs, xnutr, znut, ptemp 
       integer :: iter
 
-      real (kind=RKIND), dimension(grid % nVertLevels + 1 ) :: hyai, hybi, znu, znw, znwc, znwv, hyam, hybm
-      real (kind=RKIND), dimension(grid % nVertLevels + 1 ) :: znuc, znuv, bn, divh, dpn
+      real (kind=RKIND), dimension(nVertLevels + 1 ) :: hyai, hybi, znu, znw, znwc, znwv, hyam, hybm
+      real (kind=RKIND), dimension(nVertLevels + 1 ) :: znuc, znuv, bn, divh, dpn
 
-      real (kind=RKIND), dimension(grid % nVertLevels + 1 ) :: sh, zw, ah
-      real (kind=RKIND), dimension(grid % nVertLevels ) :: zu, dzw, rdzwp, rdzwm
-      real (kind=RKIND), dimension(grid % nVertLevels ) :: eta, etav, teta, ppi, tt, temperature_1d
+      real (kind=RKIND), dimension(nVertLevels + 1 ) :: sh, zw, ah
+      real (kind=RKIND), dimension(nVertLevels ) :: zu, dzw, rdzwp, rdzwm
+      real (kind=RKIND), dimension(nVertLevels ) :: eta, etav, teta, ppi, tt, temperature_1d
 
-      real (kind=RKIND) :: d1, d2, d3, cf1, cf2, cf3, cof1, cof2, psurf
+      real (kind=RKIND) :: d1, d2, d3, cof1, cof2, psurf
+      real (kind=RKIND), pointer :: cf1, cf2, cf3
 
       !  storage for (lat,z) arrays for zonal velocity calculation
 
       logical, parameter :: rebalance = .true.
       integer, parameter :: nlat=721
-      real (kind=RKIND), dimension(grid % nVertLevels) :: flux_zonal
-      real (kind=RKIND), dimension(grid % nVertLevels + 1, nlat) :: zgrid_2d
-      real (kind=RKIND), dimension(grid % nVertLevels, nlat) :: u_2d, pp_2d, rho_2d, qv_2d, etavs_2d, zz_2d
-      real (kind=RKIND), dimension(grid % nVertLevels, nlat-1) :: zx_2d 
+      real (kind=RKIND), dimension(nVertLevels) :: flux_zonal
+      real (kind=RKIND), dimension(nVertLevels + 1, nlat) :: zgrid_2d
+      real (kind=RKIND), dimension(nVertLevels, nlat) :: u_2d, pp_2d, rho_2d, qv_2d, etavs_2d, zz_2d
+      real (kind=RKIND), dimension(nVertLevels, nlat-1) :: zx_2d 
       real (kind=RKIND), dimension(nlat) :: lat_2d
       real (kind=RKIND) :: dlat, hx_1d
       real (kind=RKIND) :: z_edge, z_edge3, d2fdx2_cell1, d2fdx2_cell2
@@ -274,70 +336,126 @@ module init_atm_cases
 !      logical, parameter :: moisture = .true.
       logical, parameter :: moisture = .false.
 
+      real (kind=RKIND), dimension(:), pointer :: xCell, yCell, zCell
+      real (kind=RKIND), dimension(:), pointer :: xEdge, yEdge, zEdge
+      real (kind=RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
+      real (kind=RKIND), dimension(:), pointer :: dcEdge, dvEdge, areaCell, areaTriangle
+      real (kind=RKIND), dimension(:,:), pointer :: kiteAreasOnVertex
+
+      real (kind=RKIND), dimension(:), pointer :: latCell, latVertex, lonVertex, latEdge, lonEdge
+      real (kind=RKIND), dimension(:), pointer :: fEdge, fVertex
+
+      real (kind=RKIND), pointer :: sphere_radius
+      logical, pointer :: on_a_sphere
+      real (kind=RKIND), pointer :: config_coef_3rd_order
+      integer, pointer :: config_theta_adv_order
+      integer, pointer :: config_init_case
+
+
+      call mpas_pool_get_config(configs, 'config_init_case', config_init_case)
+      call mpas_pool_get_config(configs, 'config_coef_3rd_order', config_coef_3rd_order)
+      call mpas_pool_get_config(configs, 'config_theta_adv_order', config_theta_adv_order)
+
+
       !
       ! Scale all distances and areas from a unit sphere to one with radius sphere_radius
       !
-      grid % xCell % array = grid % xCell % array * grid % sphere_radius
-      grid % yCell % array = grid % yCell % array * grid % sphere_radius
-      grid % zCell % array = grid % zCell % array * grid % sphere_radius
-      grid % xVertex % array = grid % xVertex % array * grid % sphere_radius
-      grid % yVertex % array = grid % yVertex % array * grid % sphere_radius
-      grid % zVertex % array = grid % zVertex % array * grid % sphere_radius
-      grid % xEdge % array = grid % xEdge % array * grid % sphere_radius
-      grid % yEdge % array = grid % yEdge % array * grid % sphere_radius
-      grid % zEdge % array = grid % zEdge % array * grid % sphere_radius
-      grid % dvEdge % array = grid % dvEdge % array * grid % sphere_radius
-      grid % dcEdge % array = grid % dcEdge % array * grid % sphere_radius
-      grid % areaCell % array = grid % areaCell % array * grid % sphere_radius**2.0
-      grid % areaTriangle % array = grid % areaTriangle % array * grid % sphere_radius**2.0
-      grid % kiteAreasOnVertex % array = grid % kiteAreasOnVertex % array * grid % sphere_radius**2.0
+      call mpas_pool_get_array(mesh, 'xCell', xCell)
+      call mpas_pool_get_array(mesh, 'yCell', yCell)
+      call mpas_pool_get_array(mesh, 'zCell', zCell)
+      call mpas_pool_get_array(mesh, 'xEdge', xEdge)
+      call mpas_pool_get_array(mesh, 'yEdge', yEdge)
+      call mpas_pool_get_array(mesh, 'zEdge', zEdge)
+      call mpas_pool_get_array(mesh, 'xVertex', xVertex)
+      call mpas_pool_get_array(mesh, 'yVertex', yVertex)
+      call mpas_pool_get_array(mesh, 'zVertex', zVertex)
+      call mpas_pool_get_array(mesh, 'dvEdge', dvEdge)
+      call mpas_pool_get_array(mesh, 'dcEdge', dcEdge)
+      call mpas_pool_get_array(mesh, 'areaCell', areaCell)
+      call mpas_pool_get_array(mesh, 'areaTriangle', areaTriangle)
+      call mpas_pool_get_array(mesh, 'kiteAreasOnVertex', kiteAreasOnVertex)
+      call mpas_pool_get_config(mesh, 'on_a_sphere', on_a_sphere)
+      call mpas_pool_get_config(mesh, 'sphere_radius', sphere_radius)
 
-      weightsOnEdge     => grid % weightsOnEdge % array
-      nEdgesOnEdge      => grid % nEdgesOnEdge % array
-      edgesOnEdge       => grid % edgesOnEdge % array
-      dvEdge            => grid % dvEdge % array
-      AreaCell          => grid % AreaCell % array
-      CellsOnEdge       => grid % CellsOnEdge % array
+      xCell(:) = xCell(:) * sphere_radius
+      yCell(:) = yCell(:) * sphere_radius
+      zCell(:) = zCell(:) * sphere_radius
+      xVertex(:) = xVertex(:) * sphere_radius
+      yVertex(:) = yVertex(:) * sphere_radius
+      zVertex(:) = zVertex(:) * sphere_radius
+      xEdge(:) = xEdge(:) * sphere_radius
+      yEdge(:) = yEdge(:) * sphere_radius
+      zEdge(:) = zEdge(:) * sphere_radius
+      dvEdge(:) = dvEdge(:) * sphere_radius
+      dcEdge(:) = dcEdge(:) * sphere_radius
+      areaCell(:) = areaCell(:) * sphere_radius**2.0
+      areaTriangle(:) = areaTriangle(:) * sphere_radius**2.0
+      kiteAreasOnVertex(:,:) = kiteAreasOnVertex(:,:) * sphere_radius**2.0
 
-      deriv_two  => grid % deriv_two % array
-      zb  => grid % zb % array
-      zb3 => grid % zb3% array
-      
-      nz1 = grid % nVertLevels
+      call mpas_pool_get_array(mesh, 'weightsOnEdge', weightsOnEdge)
+      call mpas_pool_get_array(mesh, 'nEdgesOnEdge', nEdgesOnEdge)
+      call mpas_pool_get_array(mesh, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(mesh, 'edgesOnEdge', edgesOnEdge)
+      call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
+      call mpas_pool_get_array(mesh, 'cellsOnCell', cellsOnCell)
+      call mpas_pool_get_array(mesh, 'verticesOnEdge', verticesOnEdge)
+      call mpas_pool_get_array(mesh, 'deriv_two', deriv_two)
+      call mpas_pool_get_array(mesh, 'zb', zb)
+      call mpas_pool_get_array(mesh, 'zb3', zb3)
+
+      call mpas_pool_get_dimension(mesh, 'nVertLevels', nz1)
+      call mpas_pool_get_dimension(mesh, 'nCellsSolve', nCellsSolve)
+      call mpas_pool_get_dimension(mesh, 'nVertices', nVertices)
+      call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(mesh, 'maxEdges', maxEdges)
       nz = nz1 + 1
-      nCellsSolve = grid % nCellsSolve
 
-      zgrid => grid % zgrid % array
-      rdzw => grid % rdzw % array
-      dzu => grid % dzu % array
-      rdzu => grid % rdzu % array
-      fzm => grid % fzm % array
-      fzp => grid % fzp % array
-      zx => grid % zx % array
-      zz => grid % zz % array
-      hx => grid % hx % array
-      dss => grid % dss % array
+      call mpas_pool_get_array(mesh, 'zgrid', zgrid)
+      call mpas_pool_get_array(mesh, 'rdzw', rdzw)
+      call mpas_pool_get_array(mesh, 'dzu', dzu)
+      call mpas_pool_get_array(mesh, 'rdzu', rdzu)
+      call mpas_pool_get_array(mesh, 'fzm', fzm)
+      call mpas_pool_get_array(mesh, 'fzp', fzp)
+      call mpas_pool_get_array(mesh, 'zx', zx)
+      call mpas_pool_get_array(mesh, 'zz', zz)
+      call mpas_pool_get_array(mesh, 'hx', hx)
+      call mpas_pool_get_array(mesh, 'dss', dss)
 
-      pb => diag % exner_base % array
-      rb => diag % rho_base % array
-      tb => diag % theta_base % array
-      rtb => diag % rtheta_base % array
-      p => diag % exner % array
+      call mpas_pool_get_array(diag, 'exner_base', pb)
+      call mpas_pool_get_array(diag, 'rho_base', rb)
+      call mpas_pool_get_array(diag, 'rho_p', rr)
+      call mpas_pool_get_array(diag, 'rho', rho)
+      call mpas_pool_get_array(diag, 'theta_base', tb)
+      call mpas_pool_get_array(diag, 'theta', theta)
+      call mpas_pool_get_array(diag, 'rtheta_base', rtb)
+      call mpas_pool_get_array(diag, 'rtheta_p', rt)
+      call mpas_pool_get_array(diag, 'exner', p)
+      call mpas_pool_get_array(diag, 'pressure_base', ppb)
+      call mpas_pool_get_array(diag, 'pressure_p', pp)
+      call mpas_pool_get_array(diag, 'surface_pressure', surface_pressure)
+      call mpas_pool_get_array(diag, 'ru', ru)
+      call mpas_pool_get_array(diag, 'rw', rw)
+      call mpas_pool_get_array(diag, 'v', v)
 
-      ppb => diag % pressure_base % array
-      pp  => diag % pressure_p % array
+      call mpas_pool_get_array(state, 'rho_zz', rho_zz)
+      call mpas_pool_get_array(state, 'theta_m', t)
+      call mpas_pool_get_array(state, 'scalars', scalars)
+      call mpas_pool_get_array(state, 'u', u)
+      call mpas_pool_get_array(state, 'w', w)
 
-      rho_zz => state % rho_zz % array
-      rr => diag % rho_p % array
-      t => state % theta_m % array      
-      rt => diag % rtheta_p % array
+      call mpas_pool_get_array(mesh, 'latCell', latCell)
+      call mpas_pool_get_array(mesh, 'latVertex', latVertex)
+      call mpas_pool_get_array(mesh, 'lonVertex', lonVertex)
+      call mpas_pool_get_array(mesh, 'latEdge', latEdge)
+      call mpas_pool_get_array(mesh, 'lonEdge', lonEdge)
+      call mpas_pool_get_array(mesh, 'fEdge', fEdge)
+      call mpas_pool_get_array(mesh, 'fVertex', fVertex)
 
-      surface_pressure => diag % surface_pressure % array
+      call mpas_pool_get_array(mesh, 'cf1', cf1)
+      call mpas_pool_get_array(mesh, 'cf2', cf2)
+      call mpas_pool_get_array(mesh, 'cf3', cf3)
 
 !.. initialization of moisture:
-      scalars => state % scalars % array
-      !qsat    => diag_physics % qsat % array
-      !relhum  => diag_physics % relhum % array
       scalars(:,:,:) = 0.0
       qsat(:,:)      = 0.0
       relhum(:,:)    = 0.0
@@ -346,36 +464,36 @@ module init_atm_cases
 
       surface_pressure(:) = 0.0
 
-      call atm_initialize_advection_rk(grid) 
-      call atm_initialize_deformation_weights(grid) 
+      call atm_initialize_advection_rk(mesh, nCells, nEdges, maxEdges, on_a_sphere, sphere_radius )
+      call atm_initialize_deformation_weights(mesh, nCells, on_a_sphere, sphere_radius)
 
-      index_qv = state % index_qv
+      call mpas_pool_get_dimension(state, 'index_qv', index_qv) 
 
-      xnutr = 0.
-      zd = 12000.
+      xnutr = 0.0
+      zd = 12000.0
       znut = eta_t
 
-      etavs = (1.-0.252)*pii/2.
-      r_earth = grid % sphere_radius
+      etavs = (1.0 - 0.252) * pii/2.
+      r_earth = sphere_radius
       omega_e = omega
-      p0 = 1.e+05
+      p0 = 1.0e+05
 
       write(0,*) ' point 1 in test case setup '
 
 ! We may pass in an hx(:,:) that has been precomputed elsewhere.
 ! For now it is independent of k
 
-      do iCell=1,grid % nCells
+      do iCell=1,nCells
         do k=1,nz
-          phi = grid % latCell % array (iCell)
+          phi = latCell(iCell)
           hx(k,iCell) = u0/gravity*cos(etavs)**1.5                                   &
                       *((-2.*sin(phi)**6                                   &
                             *(cos(phi)**2+1./3.)+10./63.)                  &
                             *(u0)*cos(etavs)**1.5                          &
                        +(1.6*cos(phi)**3                                   &
                             *(sin(phi)**2+2./3.)-pii/4.)*r_earth*omega_e)
-        enddo
-      enddo
+        end do
+      end do
 
       !     Metrics for hybrid coordinate and vertical stretching
 
@@ -442,11 +560,7 @@ module init_atm_cases
 
       write(0,*) ' cf1, cf2, cf3 = ',cf1,cf2,cf3
 
-      grid % cf1 % scalar = cf1
-      grid % cf2 % scalar = cf2
-      grid % cf3 % scalar = cf3
-
-      do iCell=1,grid % nCells
+      do iCell=1,nCells
         do k=1,nz	
           zgrid(k,iCell) = (1.-ah(k))*(sh(k)*(zt-hx(k,iCell))+hx(k,iCell))  &
                          + ah(k) * sh(k)* zt	
@@ -456,14 +570,14 @@ module init_atm_cases
         end do
       end do
 
-      do i=1, grid % nEdges
-        iCell1 = grid % CellsOnEdge % array(1,i)
-        iCell2 = grid % CellsOnEdge % array(2,i)
+      do i=1, nEdges
+        iCell1 = cellsOnEdge(1,i)
+        iCell2 = cellsOnEdge(2,i)
         do k=1,nz
-          zx (k,i) = (zgrid(k,iCell2)-zgrid(k,iCell1)) / grid % dcEdge % array(i)
+          zx (k,i) = (zgrid(k,iCell2)-zgrid(k,iCell1)) / dcEdge(i)
         end do
       end do
-      do i=1, grid % nCells
+      do i=1, nCells
         do k=1,nz1
           ztemp = .5*(zgrid(k+1,i)+zgrid(k,i))
           dss(k,i) = 0.
@@ -472,15 +586,15 @@ module init_atm_cases
              dss(k,i) = dss(k,i)+xnutr*sin(.5*pii*(ztemp-zd)/(zt-zd))**2
           end if
         end do
-      enddo
+      end do
 
       !do k=1,nz1
       !  write(0,*) ' k, zgrid(k,1),hx(k,1) ',k,zgrid(k,1),hx(k,1)
-      !enddo
+      !end do
 
       !do k=1,nz1
       !  write(0,*) ' k, zx(k,1) ',k,zx(k,1)
-      !enddo
+      !end do
 
       write(0,*) ' grid metrics setup complete '
 
@@ -600,8 +714,8 @@ module init_atm_cases
           end do
         end do
 
-        call init_atm_recompute_geostrophic_wind(u_2d,rho_2d,pp_2d,qv_2d,lat_2d,zz_2d,zx_2d,     &
-                                        cf1,cf2,cf3,fzm,fzp,rdzw,nz1,nlat,dlat,grid%sphere_radius)
+        call init_atm_recompute_geostrophic_wind(u_2d, rho_2d, pp_2d, qv_2d, lat_2d, zz_2d, zx_2d,     &
+                                        cf1, cf2, cf3, fzm, fzp, rdzw, nz1, nlat, dlat, sphere_radius)
 
       end if
 
@@ -612,7 +726,7 @@ module init_atm_cases
 !
 !     reference sounding based on dry isothermal atmosphere
 !
-      do i=1, grid % nCells
+      do i=1, nCells
         do k=1,nz1
           ztemp    = .5*(zgrid(k+1,i)+zgrid(k,i))
           ppb(k,i) = p0*exp(-gravity*ztemp/(rgas*t0b)) 
@@ -628,7 +742,7 @@ module init_atm_cases
 !       if(i == 1) then
 !         do k=1,nz1
 !           write(0,*) ' k, ppb, pb, rb, tb (k,1) ',k,ppb(k,1),pb(k,1),rb(k,1)*zz(k,1),tb(k,1)
-!         enddo
+!         end do
 !       end if
 
       200 format(4i6,8(1x,e15.8))
@@ -649,7 +763,7 @@ module init_atm_cases
               teta(k) = t0*eta(k)**(rgas*dtdz/gravity) + delta_t*(znut-eta(k))**5
             end if
           end do
-          phi = grid % latCell % array (i)
+          phi = latCell(i)
           do k=1,nz1
             temperature_1d(k) = teta(k)+.75*eta(k)*pii*u0/rgas*sin(etav(k))      &
                             *sqrt(cos(etav(k)))*                   &
@@ -673,7 +787,7 @@ module init_atm_cases
                   relhum(k,i) = 1.0
                else
                   relhum(k,i) = (1.-((p0-ptemp)/50000.)**1.25)
-               endif
+               end if
                relhum(k,i) = min(rh_max,relhum(k,i))
 
                !.. calculation of water vapor mixing ratio:
@@ -738,79 +852,79 @@ module init_atm_cases
 
       !write(0,*)
       !write(0,*) '--- initialization of water vapor:'
-      !do iCell = 1, grid % nCells
-      !   if(iCell == 1 .or. iCell == grid % nCells) then
+      !do iCell = 1, nCells
+      !   if(iCell == 1 .or. iCell == nCells) then
       !      do k = nz1, 1, -1
       !         write(0,202) iCell,k,t(k,iCell),relhum(k,iCell),qsat(k,iCell),scalars(index_qv,k,iCell)
-      !      enddo
+      !      end do
       !      write(0,*)
-      !   endif
-      !enddo
+      !   end if
+      !end do
 
       lat_pert = latitude_pert*pii/180.
       lon_pert = longitude_pert*pii/180.
 
-      do iEdge=1,grid % nEdges
+      do iEdge=1,nEdges
 
-         vtx1 = grid % VerticesOnEdge % array (1,iEdge)
-         vtx2 = grid % VerticesOnEdge % array (2,iEdge)
-         lat1 = grid%latVertex%array(vtx1)
-         lat2 = grid%latVertex%array(vtx2)
-         iCell1 = grid % cellsOnEdge % array(1,iEdge)
-         iCell2 = grid % cellsOnEdge % array(2,iEdge)
-         flux = (0.5*(lat2-lat1) - 0.125*(sin(4.*lat2) - sin(4.*lat1))) * grid % sphere_radius / grid % dvEdge % array(iEdge)
+         vtx1 = verticesOnEdge(1,iEdge)
+         vtx2 = verticesOnEdge(2,iEdge)
+         lat1 = latVertex(vtx1)
+         lat2 = latVertex(vtx2)
+         iCell1 = cellsOnEdge(1,iEdge)
+         iCell2 = cellsOnEdge(2,iEdge)
+         flux = (0.5*(lat2-lat1) - 0.125*(sin(4.*lat2) - sin(4.*lat1))) * sphere_radius / dvEdge(iEdge)
 
          if (config_init_case == 2) then
-            r_pert = sphere_distance( grid % latEdge % array (iEdge), grid % lonEdge % array (iEdge), &
+            r_pert = sphere_distance( latEdge(iEdge), lonEdge(iEdge), &
                                       lat_pert, lon_pert, 1.0_RKIND)/(pert_radius)
-            u_pert = u_perturbation*exp(-r_pert**2)*(lat2-lat1) * grid % sphere_radius / grid % dvEdge % array(iEdge)
+            u_pert = u_perturbation*exp(-r_pert**2)*(lat2-lat1) * sphere_radius / dvEdge(iEdge)
 
          else if (config_init_case == 3) then
-            lon_Edge = grid % lonEdge % array(iEdge)
+            lon_Edge = lonEdge(iEdge)
             u_pert = u_perturbation*cos(k_x*(lon_Edge - lon_pert)) &
-                         *(0.5*(lat2-lat1) - 0.125*(sin(4.*lat2) - sin(4.*lat1))) * grid % sphere_radius / grid % dvEdge % array(iEdge)
+                         *(0.5*(lat2-lat1) - 0.125*(sin(4.*lat2) - sin(4.*lat1))) * sphere_radius / dvEdge(iEdge)
          else
             u_pert = 0.0
          end if
 
          if (rebalance) then
 
-           call init_atm_calc_flux_zonal(u_2d,etavs_2d,lat_2d,flux_zonal,lat1,lat2,grid % dvEdge % array(iEdge),grid%sphere_radius,u0,nz1,nlat)
-           do k=1,grid % nVertLevels
+           call init_atm_calc_flux_zonal(u_2d,etavs_2d,lat_2d,flux_zonal,lat1,lat2,dvEdge(iEdge),sphere_radius,u0,nz1,nlat)
+           do k=1,nVertLevels
              fluxk = u0*flux_zonal(k)/(0.5*(rb(k,iCell1)+rb(k,iCell2)+rr(k,iCell1)+rr(k,iCell2)))
-             state % u % array(k,iEdge) = fluxk + u_pert
+             u(k,iEdge) = fluxk + u_pert
            end do
 
          else 
 
-           do k=1,grid % nVertLevels
+           do k=1,nVertLevels
              etavs = (0.5*(ppb(k,iCell1)+ppb(k,iCell2)+pp(k,iCell1)+pp(k,iCell2))/p0 - 0.252)*pii/2.
              fluxk = u0*flux*(cos(etavs)**1.5)
-             state % u % array(k,iEdge) = fluxk + u_pert
+             u(k,iEdge) = fluxk + u_pert
            end do
 
          end if
 
-         cell1 = grid % CellsOnEdge % array(1,iEdge)
-         cell2 = grid % CellsOnEdge % array(2,iEdge)
+         cell1 = cellsOnEdge(1,iEdge)
+         cell2 = cellsOnEdge(2,iEdge)
          do k=1,nz1
-            diag % ru % array (k,iEdge)  = 0.5*(rho_zz(k,cell1)+rho_zz(k,cell2))*state % u % array (k,iEdge)
+            ru(k,iEdge)  = 0.5*(rho_zz(k,cell1)+rho_zz(k,cell2))*u(k,iEdge)
          end do
 
       !
       ! Generate rotated Coriolis field
       !
 
-         grid % fEdge % array(iEdge) = 2.0 * omega_e * &
-                                       ( -cos(grid%lonEdge%array(iEdge)) * cos(grid%latEdge%array(iEdge)) * sin(alpha_grid) + &
-                                         sin(grid%latEdge%array(iEdge)) * cos(alpha_grid) &
+         fEdge(iEdge) = 2.0 * omega_e * &
+                                       ( -cos(lonEdge(iEdge)) * cos(latEdge(iEdge)) * sin(alpha_grid) + &
+                                         sin(latEdge(iEdge)) * cos(alpha_grid) &
                                        )
       end do
 
-      do iVtx=1,grid % nVertices
-         grid % fVertex % array(iVtx) = 2.0 * omega_e * &
-                                         (-cos(grid%lonVertex%array(iVtx)) * cos(grid%latVertex%array(iVtx)) * sin(alpha_grid) + &
-                                          sin(grid%latVertex%array(iVtx)) * cos(alpha_grid) &
+      do iVtx=1,nVertices
+         fVertex(iVtx) = 2.0 * omega_e * &
+                                         (-cos(lonVertex(iVtx)) * cos(latVertex(iVtx)) * sin(alpha_grid) + &
+                                          sin(latVertex(iVtx)) * cos(alpha_grid) &
                                          )
       end do
 
@@ -821,11 +935,11 @@ module init_atm_cases
       !
       !     pre-calculation z-metric terms in omega eqn.
       !
-      do iEdge = 1,grid % nEdges
-         cell1 = CellsOnEdge(1,iEdge)
-         cell2 = CellsOnEdge(2,iEdge)
+      do iEdge = 1,nEdges
+         cell1 = cellsOnEdge(1,iEdge)
+         cell2 = cellsOnEdge(2,iEdge)
 
-         do k = 1, grid%nVertLevels
+         do k = 1, nVertLevels
 
             if (config_theta_adv_order == 2) then
 
@@ -838,54 +952,54 @@ module init_atm_cases
 
 !  WCS fix 20120711
 
-                  do i=1, grid % nEdgesOnCell % array (cell1)
-                     if ( grid % CellsOnCell % array (i,cell1) > 0)       &
-                     d2fdx2_cell1 = d2fdx2_cell1 + deriv_two(i+1,1,iEdge) * zgrid(k,grid % CellsOnCell % array (i,cell1))
+                  do i=1, nEdgesOnCell(cell1)
+                     if ( cellsOnCell(i,cell1) > 0)       &
+                     d2fdx2_cell1 = d2fdx2_cell1 + deriv_two(i+1,1,iEdge) * zgrid(k,cellsOnCell(i,cell1))
                   end do
-                  do i=1, grid % nEdgesOnCell % array (cell2)
-                     if ( grid % CellsOnCell % array (i,cell2) > 0)       &
-                     d2fdx2_cell2 = d2fdx2_cell2 + deriv_two(i+1,2,iEdge) * zgrid(k,grid % CellsOnCell % array (i,cell2))
+                  do i=1, nEdgesOnCell(cell2)
+                     if ( cellsOnCell(i,cell2) > 0)       &
+                     d2fdx2_cell2 = d2fdx2_cell2 + deriv_two(i+1,2,iEdge) * zgrid(k,cellsOnCell(i,cell2))
                   end do             
 
                z_edge =  0.5*(zgrid(k,cell1) + zgrid(k,cell2))         &
-                             - (grid % dcEdge % array(iEdge) **2) * (d2fdx2_cell1 + d2fdx2_cell2) / 12.
+                             - (dcEdge(iEdge) **2) * (d2fdx2_cell1 + d2fdx2_cell2) / 12.
 
                if (config_theta_adv_order == 3) then
-                  z_edge3 =  - (grid % dcEdge % array(iEdge) **2) * (d2fdx2_cell1 - d2fdx2_cell2) / 12.
+                  z_edge3 =  - (dcEdge(iEdge) **2) * (d2fdx2_cell1 - d2fdx2_cell2) / 12.
                else
                   z_edge3 = 0.
                end if
 
             end if
 
-               zb(k,1,iEdge) = (z_edge-zgrid(k,cell1))*dvEdge(iEdge)/AreaCell(cell1)
-               zb(k,2,iEdge) = (z_edge-zgrid(k,cell2))*dvEdge(iEdge)/AreaCell(cell2)
-               zb3(k,1,iEdge)=  z_edge3*dvEdge(iEdge)/AreaCell(cell1)
-               zb3(k,2,iEdge)=  z_edge3*dvEdge(iEdge)/AreaCell(cell2)
+               zb(k,1,iEdge) = (z_edge-zgrid(k,cell1))*dvEdge(iEdge)/areaCell(cell1)
+               zb(k,2,iEdge) = (z_edge-zgrid(k,cell2))*dvEdge(iEdge)/areaCell(cell2)
+               zb3(k,1,iEdge)=  z_edge3*dvEdge(iEdge)/areaCell(cell1)
+               zb3(k,2,iEdge)=  z_edge3*dvEdge(iEdge)/areaCell(cell2)
 
          end do
 
       end do
 
       ! for including terrain
-      diag % rw % array = 0.
-      state % w % array = 0.
-      do iEdge = 1,grid % nEdges
+      rw = 0.0
+      w = 0.0
+      do iEdge = 1,nEdges
 
-         cell1 = CellsOnEdge(1,iEdge)
-         cell2 = CellsOnEdge(2,iEdge)
+         cell1 = cellsOnEdge(1,iEdge)
+         cell2 = cellsOnEdge(2,iEdge)
 
-         do k = 2, grid%nVertLevels
-            flux =  (fzm(k)*diag % ru % array(k,iEdge)+fzp(k)*diag % ru % array(k-1,iEdge))
-            diag % rw % array(k,cell2) = diag % rw % array(k,cell2) + (fzm(k)*zz(k,cell2)+fzp(k)*zz(k-1,cell2))*zb(k,2,iEdge)*flux
-            diag % rw % array(k,cell1) = diag % rw % array(k,cell1) - (fzm(k)*zz(k,cell1)+fzp(k)*zz(k-1,cell1))*zb(k,1,iEdge)*flux
+         do k = 2, nVertLevels
+            flux =  (fzm(k)*ru(k,iEdge)+fzp(k)*ru(k-1,iEdge))
+            rw(k,cell2) = rw(k,cell2) + (fzm(k)*zz(k,cell2)+fzp(k)*zz(k-1,cell2))*zb(k,2,iEdge)*flux
+            rw(k,cell1) = rw(k,cell1) - (fzm(k)*zz(k,cell1)+fzp(k)*zz(k-1,cell1))*zb(k,1,iEdge)*flux
 
             if (config_theta_adv_order ==3) then 
-               diag % rw % array(k,cell2) = diag % rw % array(k,cell2)    &
-                                            - sign(1.0_RKIND,diag % ru % array(k,iEdge))*config_coef_3rd_order* &
+               rw(k,cell2) = rw(k,cell2)    &
+                                            - sign(1.0_RKIND,ru(k,iEdge))*config_coef_3rd_order* &
                                               (fzm(k)*zz(k,cell2)+fzp(k)*zz(k-1,cell2))*zb3(k,2,iEdge)*flux
-               diag % rw % array(k,cell1) = diag % rw % array(k,cell1)    &
-                                            + sign(1.0_RKIND,diag % ru % array(k,iEdge))*config_coef_3rd_order* &
+               rw(k,cell1) = rw(k,cell1)    &
+                                            + sign(1.0_RKIND,ru(k,iEdge))*config_coef_3rd_order* &
                                               (fzm(k)*zz(k,cell1)+fzp(k)*zz(k-1,cell1))*zb3(k,1,iEdge)*flux
             end if
 
@@ -894,10 +1008,9 @@ module init_atm_cases
       end do
 
       ! Compute w from rho_zz and rw
-      do iCell=1,grid%nCells
-         do k=2,grid%nVertLevels
-            state % w % array(k,iCell) = diag % rw % array(k,iCell)     &
-                                       / (fzp(k) * state % rho_zz % array(k-1,iCell) + fzm(k) * state % rho_zz % array(k,iCell))
+      do iCell=1,nCells
+         do k=2,nVertLevels
+            w(k,iCell) = rw(k,iCell) / (fzp(k) * rho_zz(k-1,iCell) + fzm(k) * rho_zz(k,iCell))
          end do
       end do
 
@@ -905,12 +1018,12 @@ module init_atm_cases
       !
       ! Compute mass fluxes tangential to each edge (i.e., through the faces of dual grid cells)
       !
-      diag % v % array(:,:) = 0.0
-      do iEdge = 1, grid%nEdges
+      v(:,:) = 0.0
+      do iEdge = 1, nEdges
          do i=1,nEdgesOnEdge(iEdge)
             eoe = edgesOnEdge(i,iEdge)
-            do k = 1, grid%nVertLevels
-               diag % v % array(k,iEdge) = diag % v %array(k,iEdge) + weightsOnEdge(i,iEdge) * state % u % array(k, eoe)
+            do k = 1, nVertLevels
+               v(k,iEdge) = v(k,iEdge) + weightsOnEdge(i,iEdge) * u(k, eoe)
            end do
          end do
       end do
@@ -922,14 +1035,14 @@ module init_atm_cases
                           *(1.25*(rr(1,i)+rb(1,i))*(1.+scalars(index_qv,1,i))   &
                             -.25*(rr(2,i)+rb(2,i))*(1.+scalars(index_qv,2,i)))
 
-        write(0,*) ' i, psurf, lat ',i,psurf,grid%latCell%array(i)*180./3.1415828
-      enddo
+        write(0,*) ' i, psurf, lat ',i,psurf,latCell(i)*180./3.1415828
+      end do
 
       ! Compute rho and theta from rho_zz and theta_m
-      do iCell=1,grid%nCells
-         do k=1,grid%nVertLevels
-            diag % rho % array(k,iCell) = state % rho_zz % array(k,iCell) * zz(k,iCell)
-            diag % theta % array(k,iCell) = state % theta_m % array(k,iCell) / (1.0 + 1.61 * scalars(index_qv,k,iCell))
+      do iCell=1,nCells
+         do k=1,nVertLevels
+            rho(k,iCell) = rho_zz(k,iCell) * zz(k,iCell)
+            theta(k,iCell) = t(k,iCell) / (1.0 + 1.61 * scalars(index_qv,k,iCell))
          end do
       end do
 
@@ -938,154 +1051,155 @@ module init_atm_cases
 
    subroutine init_atm_calc_flux_zonal(u_2d,etavs_2d,lat_2d,flux_zonal,lat1_in,lat2_in,dvEdge,a,u0,nz1,nlat)
 
-   implicit none
-   integer, intent(in) :: nz1,nlat
-   real (kind=RKIND), dimension(nz1,nlat), intent(in) :: u_2d,etavs_2d
-   real (kind=RKIND), dimension(nlat), intent(in) :: lat_2d
-   real (kind=RKIND), dimension(nz1), intent(out) :: flux_zonal
-   real (kind=RKIND), intent(in) :: lat1_in, lat2_in, dvEdge, a, u0
-
-   integer :: k,i
-   real (kind=RKIND) :: lat1, lat2, w1, w2
-   real (kind=RKIND) :: dlat,da,db
-
-   lat1 = abs(lat1_in)
-   lat2 = abs(lat2_in)
-   if(lat2 <= lat1) then
-     lat1 = abs(lat2_in)
-     lat2 = abs(lat1_in)
-   end if
-
-   do k=1,nz1
-     flux_zonal(k) = 0.
-   end do
-
-   do i=1,nlat-1
-     if( (lat1 <= lat_2d(i+1)) .and. (lat2 >= lat_2d(i)) ) then
-
-     dlat = lat_2d(i+1)-lat_2d(i)
-     da = (max(lat1,lat_2d(i))-lat_2d(i))/dlat
-     db = (min(lat2,lat_2d(i+1))-lat_2d(i))/dlat
-     w1 = (db-da) -0.5*(db-da)**2
-     w2 = 0.5*(db-da)**2
-
-     do k=1,nz1
-       flux_zonal(k) = flux_zonal(k) + w1*u_2d(k,i) + w2*u_2d(k,i+1)
-     end do
-
-     end if
-
-   end do
-
-!  renormalize for setting cell-face fluxes
-
-   do k=1,nz1
-     flux_zonal(k) = sign(1.0_RKIND,lat2_in-lat1_in)*flux_zonal(k)*dlat*a/dvEdge/u0
-   end do
-     
+      implicit none
+   
+      integer, intent(in) :: nz1,nlat
+      real (kind=RKIND), dimension(nz1,nlat), intent(in) :: u_2d,etavs_2d
+      real (kind=RKIND), dimension(nlat), intent(in) :: lat_2d
+      real (kind=RKIND), dimension(nz1), intent(out) :: flux_zonal
+      real (kind=RKIND), intent(in) :: lat1_in, lat2_in, dvEdge, a, u0
+   
+      integer :: k,i
+      real (kind=RKIND) :: lat1, lat2, w1, w2
+      real (kind=RKIND) :: dlat,da,db
+   
+      lat1 = abs(lat1_in)
+      lat2 = abs(lat2_in)
+      if(lat2 <= lat1) then
+        lat1 = abs(lat2_in)
+        lat2 = abs(lat1_in)
+      end if
+   
+      do k=1,nz1
+        flux_zonal(k) = 0.
+      end do
+   
+      do i=1,nlat-1
+        if( (lat1 <= lat_2d(i+1)) .and. (lat2 >= lat_2d(i)) ) then
+   
+        dlat = lat_2d(i+1)-lat_2d(i)
+        da = (max(lat1,lat_2d(i))-lat_2d(i))/dlat
+        db = (min(lat2,lat_2d(i+1))-lat_2d(i))/dlat
+        w1 = (db-da) -0.5*(db-da)**2
+        w2 = 0.5*(db-da)**2
+   
+        do k=1,nz1
+          flux_zonal(k) = flux_zonal(k) + w1*u_2d(k,i) + w2*u_2d(k,i+1)
+        end do
+   
+        end if
+   
+      end do
+   
+   !  renormalize for setting cell-face fluxes
+   
+      do k=1,nz1
+        flux_zonal(k) = sign(1.0_RKIND,lat2_in-lat1_in)*flux_zonal(k)*dlat*a/dvEdge/u0
+      end do
+        
    end subroutine init_atm_calc_flux_zonal
-
 
 
    !SHP-balance
    subroutine init_atm_recompute_geostrophic_wind(u_2d,rho_2d,pp_2d,qv_2d,lat_2d,zz_2d,zx_2d,     &
                                          cf1,cf2,cf3,fzm,fzp,rdzw,nz1,nlat,dlat,rad)
 
-   implicit none
-   integer, intent(in) :: nz1,nlat
-   real (kind=RKIND), dimension(nz1,nlat), intent(inout) :: u_2d
-   real (kind=RKIND), dimension(nz1,nlat), intent(in) :: rho_2d, pp_2d, qv_2d, zz_2d
-   real (kind=RKIND), dimension(nz1,nlat-1), intent(in) :: zx_2d
-   real (kind=RKIND), dimension(nlat), intent(in) :: lat_2d
-   real (kind=RKIND), dimension(nz1), intent(in) :: fzm, fzp, rdzw
-   real (kind=RKIND), intent(in) :: cf1, cf2, cf3, dlat, rad
-
-   !local variable
-   real (kind=RKIND), dimension(nz1,nlat-1) :: pgrad, ru, u
-   real (kind=RKIND), dimension(nlat-1) :: f
-   real (kind=RKIND), dimension(nz1+1)  :: dpzx
-
-!   real (kind=RKIND), parameter :: omega_e = 7.29212e-05
-   real (kind=RKIND) :: omega_e
-
-   real (kind=RKIND) :: rdx, qtot, r_earth, phi
-   integer :: k,i, itr
-
-   r_earth  = rad
-   omega_e = omega
-   rdx = 1./(dlat*r_earth)
-
-   do i=1,nlat-1
-     do k=1,nz1
-       pgrad(k,i) = rdx*(pp_2d(k,i+1)/zz_2d(k,i+1)-pp_2d(k,i)/zz_2d(k,i))
-     end do
-
-     dpzx(:) = 0.
-
-     k=1
-     dpzx(k) = .5*zx_2d(k,i)*(cf1*(pp_2d(k  ,i+1)+pp_2d(k  ,i))        &
-                             +cf2*(pp_2d(k+1,i+1)+pp_2d(k+1,i))        &
-                             +cf3*(pp_2d(k+2,i+1)+pp_2d(k+2,i)))
-     do k=2,nz1
-        dpzx(k) = .5*zx_2d(k,i)*(fzm(k)*(pp_2d(k  ,i+1)+pp_2d(k  ,i))   &
-                                +fzp(k)*(pp_2d(k-1,i+1)+pp_2d(k-1,i)))
-     end do
-
-     do k=1,nz1
-        pgrad(k,i) = pgrad(k,i) - rdzw(k)*(dpzx(k+1)-dpzx(k))
-     end do
-   end do
-
-
-   !initial value of v and rv -> that is from analytic sln. 
-   do i=1,nlat-1
-      do k=1,nz1
-         u(k,i) = .5*(u_2d(k,i)+u_2d(k,i+1))
-         ru(k,i) = u(k,i)*(rho_2d(k,i)+rho_2d(k,i+1))*.5
+      implicit none
+   
+      integer, intent(in) :: nz1,nlat
+      real (kind=RKIND), dimension(nz1,nlat), intent(inout) :: u_2d
+      real (kind=RKIND), dimension(nz1,nlat), intent(in) :: rho_2d, pp_2d, qv_2d, zz_2d
+      real (kind=RKIND), dimension(nz1,nlat-1), intent(in) :: zx_2d
+      real (kind=RKIND), dimension(nlat), intent(in) :: lat_2d
+      real (kind=RKIND), dimension(nz1), intent(in) :: fzm, fzp, rdzw
+      real (kind=RKIND), intent(in) :: cf1, cf2, cf3, dlat, rad
+   
+      !local variable
+      real (kind=RKIND), dimension(nz1,nlat-1) :: pgrad, ru, u
+      real (kind=RKIND), dimension(nlat-1) :: f
+      real (kind=RKIND), dimension(nz1+1)  :: dpzx
+   
+   !   real (kind=RKIND), parameter :: omega_e = 7.29212e-05
+      real (kind=RKIND) :: omega_e
+   
+      real (kind=RKIND) :: rdx, qtot, r_earth, phi
+      integer :: k,i, itr
+   
+      r_earth  = rad
+      omega_e = omega
+      rdx = 1./(dlat*r_earth)
+   
+      do i=1,nlat-1
+        do k=1,nz1
+          pgrad(k,i) = rdx*(pp_2d(k,i+1)/zz_2d(k,i+1)-pp_2d(k,i)/zz_2d(k,i))
+        end do
+   
+        dpzx(:) = 0.
+   
+        k=1
+        dpzx(k) = .5*zx_2d(k,i)*(cf1*(pp_2d(k  ,i+1)+pp_2d(k  ,i))        &
+                                +cf2*(pp_2d(k+1,i+1)+pp_2d(k+1,i))        &
+                                +cf3*(pp_2d(k+2,i+1)+pp_2d(k+2,i)))
+        do k=2,nz1
+           dpzx(k) = .5*zx_2d(k,i)*(fzm(k)*(pp_2d(k  ,i+1)+pp_2d(k  ,i))   &
+                                   +fzp(k)*(pp_2d(k-1,i+1)+pp_2d(k-1,i)))
+        end do
+   
+        do k=1,nz1
+           pgrad(k,i) = pgrad(k,i) - rdzw(k)*(dpzx(k+1)-dpzx(k))
+        end do
       end do
-   end do
-
-   write(0,*) "MAX U wind before REBALANCING ---->", maxval(abs(u))
-
-   !re-calculate geostrophic wind using iteration 
-   do itr=1,50
-   do i=1,nlat-1
-      phi = (lat_2d(i)+lat_2d(i+1))/2.
-      f(i) = 2.*omega_e*sin(phi)
-      do k=1,nz1
-         if (f(i).eq.0.) then
-           ru(k,i) = 0.
-         else
-           qtot = .5*(qv_2d(k,i)+qv_2d(k,i+1))
-           ru(k,i) = - ( 1./(1.+qtot)*pgrad(k,i) + tan(phi)/r_earth*u(k,i)*ru(k,i) )/f(i)
-         end if
-           u(k,i) = ru(k,i)*2./(rho_2d(k,i)+rho_2d(k,i+1))
+   
+   
+      !initial value of v and rv -> that is from analytic sln. 
+      do i=1,nlat-1
+         do k=1,nz1
+            u(k,i) = .5*(u_2d(k,i)+u_2d(k,i+1))
+            ru(k,i) = u(k,i)*(rho_2d(k,i)+rho_2d(k,i+1))*.5
+         end do
       end do
-   end do
-   end do
-
-   write(0,*) "MAX U wind after REBALANCING ---->", maxval(abs(u))
-
-   !update 2d ru
-   do i=2,nlat-1
-     do k=1,nz1
-       u_2d(k,i) = (ru(k,i-1)+ru(k,i))*.5
-     end do
-   end do
-
-   i=1
-   do k=1,nz1
-      u_2d(k,i) = (3.*u_2d(k,i+1)-u_2d(k,i+2))*.5
-   end do
-   i=nlat
-   do k=1,nz1
-      u_2d(k,i) = (3.*u_2d(k,i-1)-u_2d(k,i-2))*.5
-   end do
+   
+      write(0,*) "MAX U wind before REBALANCING ---->", maxval(abs(u))
+   
+      !re-calculate geostrophic wind using iteration 
+      do itr=1,50
+      do i=1,nlat-1
+         phi = (lat_2d(i)+lat_2d(i+1))/2.
+         f(i) = 2.*omega_e*sin(phi)
+         do k=1,nz1
+            if (f(i).eq.0.) then
+              ru(k,i) = 0.
+            else
+              qtot = .5*(qv_2d(k,i)+qv_2d(k,i+1))
+              ru(k,i) = - ( 1./(1.+qtot)*pgrad(k,i) + tan(phi)/r_earth*u(k,i)*ru(k,i) )/f(i)
+            end if
+              u(k,i) = ru(k,i)*2./(rho_2d(k,i)+rho_2d(k,i+1))
+         end do
+      end do
+      end do
+   
+      write(0,*) "MAX U wind after REBALANCING ---->", maxval(abs(u))
+   
+      !update 2d ru
+      do i=2,nlat-1
+        do k=1,nz1
+          u_2d(k,i) = (ru(k,i-1)+ru(k,i))*.5
+        end do
+      end do
+   
+      i=1
+      do k=1,nz1
+         u_2d(k,i) = (3.*u_2d(k,i+1)-u_2d(k,i+2))*.5
+      end do
+      i=nlat
+      do k=1,nz1
+         u_2d(k,i) = (3.*u_2d(k,i-1)-u_2d(k,i-2))*.5
+      end do
 
    end subroutine init_atm_recompute_geostrophic_wind
 
 
-   subroutine init_atm_case_squall_line(dminfo, grid, state, diag, test_case)
+   subroutine init_atm_case_squall_line(dminfo, mesh, nCells, nVertLevels, state, diag, test_case)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! Setup squall line and supercell test case
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1093,43 +1207,77 @@ module init_atm_cases
       implicit none
 
       type (dm_info), intent(in) :: dminfo
-      type (mesh_type), intent(inout) :: grid
-      type (state_type), intent(inout) :: state
-      type (diag_type), intent(inout) :: diag
+      type (mpas_pool_type), intent(inout) :: mesh
+      integer, intent(in) :: nCells
+      integer, intent(in) :: nVertLevels
+      type (mpas_pool_type), intent(inout) :: state
+      type (mpas_pool_type), intent(inout) :: diag
       integer, intent(in) :: test_case
 
       real (kind=RKIND), dimension(:), pointer :: rdzw, dzu, rdzu, fzm, fzp
       real (kind=RKIND), dimension(:,:), pointer :: zgrid, zx, zz, hx, cqw
       real (kind=RKIND), dimension(:,:), pointer :: ppb, pb, rho_zz, rb, rr, tb, rtb, p, pp, dss, t, rt, u, ru
       real (kind=RKIND), dimension(:,:,:), pointer :: scalars
+      real (kind=RKIND), dimension(:,:,:), pointer :: zb, zb3
 
       !This is temporary variable here. It just need when calculate tangential velocity v.
       integer :: eoe, j
       integer, dimension(:), pointer :: nEdgesOnEdge 
-      integer, dimension(:,:), pointer :: edgesOnEdge
+      integer, dimension(:,:), pointer :: edgesOnEdge, cellsOnEdge
       real (kind=RKIND), dimension(:,:), pointer :: weightsOnEdge
 
-      integer :: iCell, iCell1, iCell2 , iEdge, vtx1, vtx2, ivtx, i, k, nz, nz1, itr, cell1, cell2, nCellsSolve
-      integer :: index_qv
+      integer :: iCell, iCell1, iCell2 , iEdge, vtx1, vtx2, ivtx, i, k, nz, nz1, itr, cell1, cell2
+      integer, pointer :: nEdges, nVertices, maxEdges, nCellsSolve
+      integer, pointer :: index_qv
 
-      real (kind=RKIND), dimension(grid % nVertLevels + 1 ) :: znu, znw, znwc, znwv
-      real (kind=RKIND), dimension(grid % nVertLevels + 1 ) :: znuc, znuv
+      real (kind=RKIND), dimension(nVertLevels + 1 ) :: znu, znw, znwc, znwv
+      real (kind=RKIND), dimension(nVertLevels + 1 ) :: znuc, znuv
 
-      real (kind=RKIND), dimension(grid % nVertLevels + 1 ) :: zc, zw, ah
-      real (kind=RKIND), dimension(grid % nVertLevels ) :: zu, dzw, rdzwp, rdzwm
+      real (kind=RKIND), dimension(nVertLevels + 1 ) :: zc, zw, ah
+      real (kind=RKIND), dimension(nVertLevels ) :: zu, dzw, rdzwp, rdzwm
 
-      real (kind=RKIND), dimension(grid % nVertLevels, grid % nCells) :: rh, thi, tbi, cqwb
+      real (kind=RKIND), dimension(nVertLevels, nCells) :: rh, thi, tbi, cqwb
 
       real (kind=RKIND) ::  r, xnutr
       real (kind=RKIND) ::  ztemp, zd, zt, dz, str
 
-      real (kind=RKIND), dimension(grid % nVertLevels ) :: qvb
-      real (kind=RKIND), dimension(grid % nVertLevels ) :: t_init_1d
+      real (kind=RKIND), dimension(nVertLevels ) :: qvb
+      real (kind=RKIND), dimension(nVertLevels ) :: t_init_1d
 
-      real (kind=RKIND) :: d1, d2, d3, cf1, cf2, cf3, cof1, cof2
+      real (kind=RKIND) :: d1, d2, d3, cof1, cof2
+      real (kind=RKIND), pointer :: cf1, cf2, cf3
       real (kind=RKIND) :: ztr, thetar, ttr, thetas, um, us, zts, pitop, pibtop, ptopb, ptop, rcp, rcv, p0
       real (kind=RKIND) :: radx, radz, zcent, xmid, delt, xloc, rad, yloc, ymid, a_scale
       real (kind=RKIND) :: pres, temp, es, qvs
+
+      real (kind=RKIND), dimension(:), pointer :: xCell, yCell, zCell
+      real (kind=RKIND), dimension(:), pointer :: xEdge, yEdge, zEdge
+      real (kind=RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
+      real (kind=RKIND), dimension(:), pointer :: dcEdge, dvEdge, areaCell, areaTriangle
+      real (kind=RKIND), dimension(:,:), pointer :: kiteAreasOnVertex
+      logical, pointer :: on_a_sphere
+      real (kind=RKIND), pointer :: sphere_radius
+
+      real (kind=RKIND), dimension(:,:), pointer :: t_init, w, rw, v, rho, theta
+      real (kind=RKIND), dimension(:), pointer :: u_init, qv_init, angleEdge, fEdge, fVertex
+
+      call mpas_pool_get_array(mesh, 'xCell', xCell)
+      call mpas_pool_get_array(mesh, 'yCell', yCell)
+      call mpas_pool_get_array(mesh, 'zCell', zCell)
+      call mpas_pool_get_array(mesh, 'xEdge', xEdge)
+      call mpas_pool_get_array(mesh, 'yEdge', yEdge)
+      call mpas_pool_get_array(mesh, 'zEdge', zEdge)
+      call mpas_pool_get_array(mesh, 'xVertex', xVertex)
+      call mpas_pool_get_array(mesh, 'yVertex', yVertex)
+      call mpas_pool_get_array(mesh, 'zVertex', zVertex)
+      call mpas_pool_get_array(mesh, 'dvEdge', dvEdge)
+      call mpas_pool_get_array(mesh, 'dcEdge', dcEdge)
+      call mpas_pool_get_array(mesh, 'areaCell', areaCell)
+      call mpas_pool_get_array(mesh, 'areaTriangle', areaTriangle)
+      call mpas_pool_get_array(mesh, 'kiteAreasOnVertex', kiteAreasOnVertex)
+
+      call mpas_pool_get_config(mesh, 'on_a_sphere', on_a_sphere)
+      call mpas_pool_get_config(mesh, 'sphere_radius', sphere_radius)
 
       !
       ! Scale all distances
@@ -1137,66 +1285,86 @@ module init_atm_cases
 
       a_scale = 1.0
 
-      grid % xCell % array = grid % xCell % array * a_scale
-      grid % yCell % array = grid % yCell % array * a_scale
-      grid % zCell % array = grid % zCell % array * a_scale
-      grid % xVertex % array = grid % xVertex % array * a_scale
-      grid % yVertex % array = grid % yVertex % array * a_scale
-      grid % zVertex % array = grid % zVertex % array * a_scale
-      grid % xEdge % array = grid % xEdge % array * a_scale
-      grid % yEdge % array = grid % yEdge % array * a_scale
-      grid % zEdge % array = grid % zEdge % array * a_scale
-      grid % dvEdge % array = grid % dvEdge % array * a_scale
-      grid % dcEdge % array = grid % dcEdge % array * a_scale
-      grid % areaCell % array = grid % areaCell % array * a_scale**2.0
-      grid % areaTriangle % array = grid % areaTriangle % array * a_scale**2.0
-      grid % kiteAreasOnVertex % array = grid % kiteAreasOnVertex % array * a_scale**2.0
+      xCell(:) = xCell(:) * a_scale
+      yCell(:) = yCell(:) * a_scale
+      zCell(:) = zCell(:) * a_scale
+      xVertex(:) = xVertex(:) * a_scale
+      yVertex(:) = yVertex(:) * a_scale
+      zVertex(:) = zVertex(:) * a_scale
+      xEdge(:) = xEdge(:) * a_scale
+      yEdge(:) = yEdge(:) * a_scale
+      zEdge(:) = zEdge(:) * a_scale
+      dvEdge(:) = dvEdge(:) * a_scale
+      dcEdge(:) = dcEdge(:) * a_scale
+      areaCell(:) = areaCell(:) * a_scale**2.0
+      areaTriangle(:) = areaTriangle(:) * a_scale**2.0
+      kiteAreasOnVertex(:,:) = kiteAreasOnVertex(:,:) * a_scale**2.0
 
-      weightsOnEdge     => grid % weightsOnEdge % array
-      nEdgesOnEdge      => grid % nEdgesOnEdge % array
-      edgesOnEdge       => grid % edgesOnEdge % array
-      
-      nz1 = grid % nVertLevels
+      call mpas_pool_get_array(mesh, 'weightsOnEdge', weightsOnEdge)
+      call mpas_pool_get_array(mesh, 'nEdgesOnEdge', nEdgesOnEdge)
+      call mpas_pool_get_array(mesh, 'edgesOnEdge', edgesOnEdge)
+      call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
+
+      call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(mesh, 'nVertices', nVertices)
+      call mpas_pool_get_dimension(mesh, 'nCellsSolve', nCellsSolve)
+      call mpas_pool_get_dimension(mesh, 'maxEdges', maxEdges)
+      nz1 = nVertLevels
       nz = nz1 + 1
-      nCellsSolve = grid % nCellsSolve
 
-      zgrid => grid % zgrid % array
-      rdzw => grid % rdzw % array
-      dzu => grid % dzu % array
-      rdzu => grid % rdzu % array
-      fzm => grid % fzm % array
-      fzp => grid % fzp % array
-      zx => grid % zx % array
-      zz => grid % zz % array
-      hx => grid % hx % array
-      dss => grid % dss % array
+      call mpas_pool_get_array(mesh, 'zgrid', zgrid)
+      call mpas_pool_get_array(mesh, 'zb', zb)
+      call mpas_pool_get_array(mesh, 'zb3', zb3)
+      call mpas_pool_get_array(mesh, 'rdzw', rdzw)
+      call mpas_pool_get_array(mesh, 'dzu', dzu)
+      call mpas_pool_get_array(mesh, 'rdzu', rdzu)
+      call mpas_pool_get_array(mesh, 'fzm', fzm)
+      call mpas_pool_get_array(mesh, 'fzp', fzp)
+      call mpas_pool_get_array(mesh, 'zx', zx)
+      call mpas_pool_get_array(mesh, 'zz', zz)
+      call mpas_pool_get_array(mesh, 'hx', hx)
+      call mpas_pool_get_array(mesh, 'dss', dss)
+      call mpas_pool_get_array(mesh, 't_init', t_init)
+      call mpas_pool_get_array(mesh, 'u_init', u_init)
+      call mpas_pool_get_array(mesh, 'qv_init', qv_init)
+      call mpas_pool_get_array(mesh, 'angleEdge', angleEdge)
+      call mpas_pool_get_array(mesh, 'fEdge', fEdge)
+      call mpas_pool_get_array(mesh, 'fVertex', fVertex)
 
-      ppb => diag % pressure_base % array
-      pb => diag % exner_base % array
-      rb => diag % rho_base % array
-      tb => diag % theta_base % array
-      rtb => diag % rtheta_base % array
-      p => diag % exner % array
-      cqw => diag % cqw % array
+      call mpas_pool_get_array(mesh, 'cf1', cf1)
+      call mpas_pool_get_array(mesh, 'cf2', cf2)
+      call mpas_pool_get_array(mesh, 'cf3', cf3)
 
-      rho_zz => state % rho_zz % array
+      call mpas_pool_get_array(diag, 'pressure_base', ppb)
+      call mpas_pool_get_array(diag, 'exner_base', pb)
+      call mpas_pool_get_array(diag, 'rho_base', rb)
+      call mpas_pool_get_array(diag, 'theta_base', tb)
+      call mpas_pool_get_array(diag, 'rtheta_base', rtb)
+      call mpas_pool_get_array(diag, 'exner', p)
+      call mpas_pool_get_array(diag, 'cqw', cqw)
 
-      pp => diag % pressure_p % array
-      rr => diag % rho_p % array
-      t => state % theta_m % array      
-      rt => diag % rtheta_p % array
-      u => state % u % array
-      ru => diag % ru % array
+      call mpas_pool_get_array(diag, 'pressure_p', pp)
+      call mpas_pool_get_array(diag, 'rho_p', rr)
+      call mpas_pool_get_array(diag, 'rtheta_p', rt)
+      call mpas_pool_get_array(diag, 'ru', ru)
+      call mpas_pool_get_array(diag, 'rw', rw)
+      call mpas_pool_get_array(diag, 'v', v)
+      call mpas_pool_get_array(diag, 'rho', rho)
+      call mpas_pool_get_array(diag, 'theta', theta)
 
-      scalars => state % scalars % array
+      call mpas_pool_get_array(state, 'rho_zz', rho_zz)
+      call mpas_pool_get_array(state, 'theta_m', t)
+      call mpas_pool_get_array(state, 'u', u)
+      call mpas_pool_get_array(state, 'w', w)
+      call mpas_pool_get_array(state, 'scalars', scalars)
 
-      index_qv = state % index_qv
+      call mpas_pool_get_dimension(state, 'index_qv', index_qv)
 
       scalars(:,:,:) = 0.
 
-      call atm_initialize_advection_rk(grid) 
-      call atm_initialize_deformation_weights(grid) 
-
+      call atm_initialize_advection_rk(mesh, nCells, nEdges, maxEdges, on_a_sphere, sphere_radius )
+      call atm_initialize_deformation_weights(mesh, nCells, on_a_sphere, sphere_radius)
+      
       xnutr = 0.
       zd = 12000.
 
@@ -1209,11 +1377,11 @@ module init_atm_cases
 ! We may pass in an hx(:,:) that has been precomputed elsewhere.
 ! For now it is independent of k
 
-      do iCell=1,grid % nCells
+      do iCell=1,nCells
         do k=1,nz
           hx(k,iCell) = 0.  ! squall line or supercell on flat plane
-        enddo
-      enddo
+        end do
+      end do
 
       !     metrics for hybrid coordinate and vertical stretching
 
@@ -1279,11 +1447,7 @@ module init_atm_cases
 !      cf2 = d1*d3*(d1-d3)/(d2*d3*(d3-d2)+d1*d3*(d1-d3)+d1*d2*(d2-d1))
 !      cf3 = d1*d2*(d2-d1)/(d2*d3*(d3-d2)+d1*d3*(d1-d3)+d1*d2*(d2-d1))
 
-      grid % cf1 % scalar = cf1
-      grid % cf2 % scalar = cf2
-      grid % cf3 % scalar = cf3
-
-      do iCell=1,grid % nCells
+      do iCell=1,nCells
         do k=1,nz	
             zgrid(k,iCell) = ah(k)*(zc(k)*(1.-hx(k,iCell)/zt)+hx(k,iCell)) &
                            + (1.-ah(k)) * zc(k)	
@@ -1293,14 +1457,14 @@ module init_atm_cases
         end do
       end do
 
-      do i=1, grid % nEdges
-        iCell1 = grid % CellsOnEdge % array(1,i)
-        iCell2 = grid % CellsOnEdge % array(2,i)
+      do i=1, nEdges
+        iCell1 = cellsOnEdge(1,i)
+        iCell2 = cellsOnEdge(2,i)
         do k=1,nz
-          zx (k,i) = (zgrid(k,iCell2)-zgrid(k,iCell1)) / grid % dcEdge % array(i)
+          zx (k,i) = (zgrid(k,iCell2)-zgrid(k,iCell1)) / dcEdge(i)
         end do
       end do
-      do i=1, grid % nCells
+      do i=1, nCells
         do k=1,nz1
           ztemp = .5*(zgrid(k+1,i)+zgrid(k,i))
           dss(k,i) = 0.
@@ -1309,7 +1473,7 @@ module init_atm_cases
              dss(k,i) = dss(k,i)+xnutr*sin(.5*pii*(ztemp-zd)/(zt-zd))**2
           end if
         end do
-      enddo
+      end do
 
 !
 ! convective initialization
@@ -1321,17 +1485,17 @@ module init_atm_cases
 
 !         write(0,*) ' rgas, cp, gravity ',rgas,cp, gravity
 
-      if ( config_init_case == 4) then ! squall line parameters
+      if ( test_case == 4) then ! squall line parameters
          um = 12.
          us = 10.
          zts = 2500.
-      else if (config_init_case == 5) then !supercell parameters
+      else if (test_case == 5) then !supercell parameters
          um = 30.
          us = 15.
          zts = 5000.
       end if
 
-         do i=1,grid % nCells
+         do i=1,nCells
             do k=1,nz1
                ztemp = .5*(zgrid(k,i)+zgrid(k+1,i))
                if(ztemp .gt. ztr) then
@@ -1354,9 +1518,9 @@ module init_atm_cases
 
 !  set the velocity field - we are on a plane here.
 
-         do i=1, grid % nEdges
-            cell1 = grid % CellsOnEdge % array(1,i)
-            cell2 = grid % CellsOnEdge % array(2,i)
+         do i=1, nEdges
+            cell1 = cellsOnEdge(1,i)
+            cell2 = cellsOnEdge(2,i)
             if(cell1 <= nCellsSolve .or. cell2 <= nCellsSolve) then
             do k=1,nz1
                ztemp = .25*( zgrid(k,cell1 )+zgrid(k+1,cell1 )  &
@@ -1366,13 +1530,13 @@ module init_atm_cases
                else
                   u(k,i) = um
                end if
-               if(i == 1 ) grid % u_init % array(k) = u(k,i) - us
-               u(k,i) = cos(grid % angleEdge % array(i)) * (u(k,i) - us)
+               if(i == 1 ) u_init(k) = u(k,i) - us
+               u(k,i) = cos(angleEdge(i)) * (u(k,i) - us)
             end do
             end if
          end do
 
-         call mpas_dmpar_bcast_reals(dminfo, nz1, grid % u_init % array)
+         call mpas_dmpar_bcast_reals(dminfo, nz1, u_init)
 
 !
 !    for reference sounding 
@@ -1398,7 +1562,7 @@ module init_atm_cases
       ptopb = p0*pibtop**(1./rcp)
       write(6,*) 'ptopb = ',.01*ptopb
 
-      do i=1, grid % nCells
+      do i=1, nCells
          pb(nz1,i) = pibtop+.5*dzw(nz1)*gravity*(1.+qvb(nz1))/(cp*tb(nz1,i)*zz(nz1,i))
          p (nz1,i) = pitop+.5*dzw(nz1)*gravity*(1.+scalars(index_qv,nz1,i))/(cp*t (nz1,i)*zz(nz1,i))
          do k=nz1-1,1,-1
@@ -1418,7 +1582,7 @@ module init_atm_cases
      !
      ! update water vapor mixing ratio from humidity profile
      !
-      do i= 1,grid%nCells
+      do i= 1,nCells
          do k=1,nz1
             temp     = p(k,i)*thi(k,i)
             pres     = p0*p(k,i)**(1./rcp)
@@ -1437,7 +1601,7 @@ module init_atm_cases
 !*********************************************************************
       end do
 
-      do i= 1,grid%nCells
+      do i= 1,nCells
          do k=1,nz1
             t (k,i) = thi(k,i)*(1.+1.61*scalars(index_qv,k,i))
             tb(k,i) = tbi(k,i)*(1.+1.61*qvb(k))
@@ -1452,7 +1616,7 @@ module init_atm_cases
 
       write(0,*) ' base state sounding '
       write(0,*) ' k,     pb,     rb,     tb,     rtb,     t,     rr,      p,    qvb'
-      do k=1,grid%nVertLevels
+      do k=1,nVertLevels
          write (0,'(i2,8(2x,f19.15))') k,pb(k,1),rb(k,1),tb(k,1),rtb(k,1),t(k,1),rr(k,1),p(k,1),qvb(k)
       end do
 
@@ -1466,23 +1630,23 @@ module init_atm_cases
       radz  = 1500.
       zcent = 1500.
 
-      if (config_init_case == 4) then          ! squall line prameters
-         call mpas_dmpar_max_real(dminfo, maxval(grid % xCell % array(:)), xmid)
+      if (test_case == 4) then          ! squall line prameters
+         call mpas_dmpar_max_real(dminfo, maxval(xCell(:)), xmid)
          xmid = xmid * 0.5
          ymid = 0.0          ! Not used for squall line
-      else if (config_init_case == 5) then     ! supercell parameters
-         call mpas_dmpar_max_real(dminfo, maxval(grid % xCell % array(:)), xmid)
-         call mpas_dmpar_max_real(dminfo, maxval(grid % yCell % array(:)), ymid)
+      else if (test_case == 5) then     ! supercell parameters
+         call mpas_dmpar_max_real(dminfo, maxval(xCell(:)), xmid)
+         call mpas_dmpar_max_real(dminfo, maxval(yCell(:)), ymid)
          xmid = xmid * 0.5
          ymid = ymid * 0.5
       end if
 
-      do i=1, grid % nCells
-        xloc = grid % xCell % array(i) - xmid
-        if (config_init_case == 4) then 
+      do i=1, nCells
+        xloc = xCell(i) - xmid
+        if (test_case == 4) then 
            yloc = 0.                            !squall line setting
-        else if (config_init_case == 5) then
-           yloc = grid % yCell % array(i) - ymid !supercell setting
+        else if (test_case == 5) then
+           yloc = yCell(i) - ymid !supercell setting
         end if
 
         do k = 1,nz1
@@ -1508,7 +1672,7 @@ module init_atm_cases
 
         call mpas_dmpar_bcast_real(dminfo, ptop)
 
-        do i = 1, grid % nCells
+        do i = 1, nCells
 
           pp(nz1,i) = ptop-ptopb+.5*dzw(nz1)*gravity*   &
                        (rr(nz1,i)+(rr(nz1,i)+rb(nz1,i))*scalars(index_qv,nz1,i))
@@ -1540,23 +1704,23 @@ module init_atm_cases
 !----------------------------------------------------------------------
 !
       do k=1,nz1
-        grid % qv_init % array(k) = scalars(index_qv,k,1)
+         qv_init(k) = scalars(index_qv,k,1)
       end do
 
       t_init_1d(:) = t(:,1)
       call mpas_dmpar_bcast_reals(dminfo, nz1, t_init_1d)
-      call mpas_dmpar_bcast_reals(dminfo, nz1, grid % qv_init % array)
+      call mpas_dmpar_bcast_reals(dminfo, nz1, qv_init)
 
-      do i=1,grid % ncells
+      do i=1,nCells
          do k=1,nz1
-            grid % t_init % array(k,i) = t_init_1d(k)
+            t_init(k,i) = t_init_1d(k)
             rho_zz(k,i) = rb(k,i)+rr(k,i)
          end do
       end do
 
-      do i=1,grid % nEdges
-        cell1 = grid % CellsOnEdge % array(1,i)
-        cell2 = grid % CellsOnEdge % array(2,i)
+      do i=1,nEdges
+        cell1 = cellsOnEdge(1,i)
+        cell2 = cellsOnEdge(2,i)
         if(cell1 <= nCellsSolve .or. cell2 <= nCellsSolve) then
           do k=1,nz1
             ru (k,i)  = 0.5*(rho_zz(k,cell1)+rho_zz(k,cell2))*u(k,i)    
@@ -1569,48 +1733,48 @@ module init_atm_cases
       !  we are assuming w and rw are zero for this initialization
       !  i.e., no terrain
       !
-       diag % rw % array = 0.
-       state % w % array = 0.
+       rw = 0.0
+       w = 0.0
 
-       grid % zb % array = 0.
-       grid % zb3% array = 0.
+       zb = 0.0
+       zb3 = 0.0
 
       !
       ! Generate rotated Coriolis field
       !
-      do iEdge=1,grid % nEdges
-         grid % fEdge % array(iEdge) = 0.
+      do iEdge=1,nEdges
+         fEdge(iEdge) = 0.0
       end do
 
-      do iVtx=1,grid % nVertices
-         grid % fVertex % array(iVtx) = 0.
+      do iVtx=1,nVertices
+         fVertex(iVtx) = 0.0
       end do
 
       !
       ! Compute mass fluxes tangential to each edge (i.e., through the faces of dual grid cells)
       !
-      diag % v % array(:,:) = 0.0
-      do iEdge = 1, grid%nEdges
+      v(:,:) = 0.0
+      do iEdge = 1, nEdges
          do i=1,nEdgesOnEdge(iEdge)
             eoe = edgesOnEdge(i,iEdge)
             if (eoe > 0) then
-               do k = 1, grid%nVertLevels
-                 diag % v % array(k,iEdge) = diag % v %array(k,iEdge) + weightsOnEdge(i,iEdge) * state % u % array(k, eoe)
+               do k = 1, nVertLevels
+                 v(k,iEdge) = v(k,iEdge) + weightsOnEdge(i,iEdge) * u(k, eoe)
               end do
             end if
          end do
       end do
 
      ! write(0,*) ' k,u_init, t_init, qv_init '
-     ! do k=1,grid%nVertLevels
-     !   write(0,'(i2,3(2x,f14.10)') k,grid % u_init % array(k),grid % t_init% array(k),grid % qv_init % array(k)
+     ! do k=1,nVertLevels
+     !   write(0,'(i2,3(2x,f14.10)') k,u_init(k),t_initk),qv_init(k)
      ! end do
 
       ! Compute rho and theta from rho_zz and theta_m
-      do iCell=1,grid%nCells
-         do k=1,grid%nVertLevels
-            diag % rho % array(k,iCell) = state % rho_zz % array(k,iCell) * zz(k,iCell)
-            diag % theta % array(k,iCell) = state % theta_m % array(k,iCell) / (1.0 + 1.61 * scalars(index_qv,k,iCell))
+      do iCell=1,nCells
+         do k=1,nVertLevels
+            rho(k,iCell) = rho_zz(k,iCell) * zz(k,iCell)
+            theta(k,iCell) = t(k,iCell) / (1.0 + 1.61 * scalars(index_qv,k,iCell))
          end do
       end do
 
@@ -1620,16 +1784,20 @@ module init_atm_cases
 !----------------------------------------------------------------------------------------------------------
 
 
-   subroutine init_atm_case_mtn_wave(grid, state, diag, init_case)
+   subroutine init_atm_case_mtn_wave(dminfo, mesh, nCells, nVertLevels, state, diag, configs, init_case)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! Setup baroclinic wave test case from Jablonowski and Williamson 2008 (QJRMS)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       implicit none
 
-      type (mesh_type), intent(inout) :: grid
-      type (state_type), intent(inout) :: state
-      type (diag_type), intent(inout) :: diag
+      type (dm_info), intent(in) :: dminfo
+      type (mpas_pool_type), intent(inout) :: mesh
+      integer, intent(in) :: nCells
+      integer, intent(in) :: nVertLevels
+      type (mpas_pool_type), intent(inout) :: state
+      type (mpas_pool_type), intent(inout) :: diag
+      type (mpas_pool_type), intent(inout) :: configs
       integer, intent(in) :: init_case
 
       real (kind=RKIND), parameter :: t0=288., hm=250.
@@ -1641,109 +1809,158 @@ module init_atm_cases
 
       !This is temporary variable here. It just need when calculate tangential velocity v.
       integer :: eoe, j
-      integer, dimension(:), pointer :: nEdgesOnEdge 
-      integer, dimension(:,:), pointer :: edgesOnEdge, CellsOnEdge
-      real (kind=RKIND), dimension(:), pointer :: dvEdge, AreaCell, xCell, yCell 
+      integer, dimension(:), pointer :: nEdgesOnEdge, nEdgesOnCell
+      integer, dimension(:,:), pointer :: edgesOnEdge, cellsOnEdge, cellsOnCell
       real (kind=RKIND), dimension(:,:), pointer :: weightsOnEdge
 
-      integer :: iCell, iCell1, iCell2 , iEdge, vtx1, vtx2, ivtx, i, k, nz, nz1, itr, itrp, cell1, cell2, nCellsSolve
-      integer :: index_qv
+      integer :: iCell, iCell1, iCell2 , iEdge, vtx1, vtx2, ivtx, i, k, nz, itr, itrp, cell1, cell2, nz1
+      integer, pointer :: nEdges, maxEdges, nCellsSolve, nVertices
+      integer, pointer :: index_qv
 
       real (kind=RKIND) :: ptop, pitop, ptopb, p0, flux, d2fdx2_cell1, d2fdx2_cell2
 
       real (kind=RKIND) :: ztemp, zd, zt, dz, str
 
-      real (kind=RKIND), dimension(grid % nVertLevels, grid % nCells) :: rh
+      real (kind=RKIND), dimension(nVertLevels, nCells) :: rh
       real (kind=RKIND) :: es, qvs, xnutr, ptemp
       integer :: iter
 
-      real (kind=RKIND), dimension(grid % nVertLevels + 1 ) :: zc, zw, ah
-      real (kind=RKIND), dimension(grid % nVertLevels ) :: zu, dzw, rdzwp, rdzwm
+      real (kind=RKIND), dimension(nVertLevels + 1 ) :: zc, zw, ah
+      real (kind=RKIND), dimension(nVertLevels ) :: zu, dzw, rdzwp, rdzwm
 
-      real (kind=RKIND) :: d1, d2, d3, cof1, cof2, cf1, cf2, cf3
+      real (kind=RKIND) :: d1, d2, d3, cof1, cof2
       real (kind=RKIND) :: um, us,  rcp, rcv
       real (kind=RKIND) :: xmid, temp, pres, a_scale
 
       real (kind=RKIND) :: xi, xa, xc, xla, zinv, xn2, xn2m, xn2l, sm, dzh, dzht, dzmin, z_edge, z_edge3 
 
-      integer, dimension(grid % nCells, 2) :: next_cell
-      real (kind=RKIND),  dimension(grid % nCells) :: hxzt
+      integer, dimension(nCells, 2) :: next_cell
+      real (kind=RKIND),  dimension(nCells) :: hxzt
       logical, parameter :: terrain_smooth = .false.
+
+      real (kind=RKIND), dimension(:), pointer :: xCell, yCell, zCell
+      real (kind=RKIND), dimension(:), pointer :: xEdge, yEdge, zEdge
+      real (kind=RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
+      real (kind=RKIND), dimension(:), pointer :: dcEdge, dvEdge, areaCell, areaTriangle
+      real (kind=RKIND), dimension(:,:), pointer :: kiteAreasOnVertex
+      logical, pointer :: on_a_sphere
+      real (kind=RKIND), pointer :: sphere_radius
+      real (kind=RKIND), pointer :: config_coef_3rd_order
+      integer, pointer :: config_theta_adv_order
+
+      real (kind=RKIND), pointer :: cf1, cf2, cf3
+
+      real (kind=RKIND), dimension(:,:), pointer :: t_init, w, rw, v, rho, theta
+      real (kind=RKIND), dimension(:), pointer :: u_init, angleEdge, fEdge, fVertex
+
+
+      call mpas_pool_get_array(mesh, 'xCell', xCell)
+      call mpas_pool_get_array(mesh, 'yCell', yCell)
+      call mpas_pool_get_array(mesh, 'zCell', zCell)
+      call mpas_pool_get_array(mesh, 'xEdge', xEdge)
+      call mpas_pool_get_array(mesh, 'yEdge', yEdge)
+      call mpas_pool_get_array(mesh, 'zEdge', zEdge)
+      call mpas_pool_get_array(mesh, 'xVertex', xVertex)
+      call mpas_pool_get_array(mesh, 'yVertex', yVertex)
+      call mpas_pool_get_array(mesh, 'zVertex', zVertex)
+      call mpas_pool_get_array(mesh, 'dvEdge', dvEdge)
+      call mpas_pool_get_array(mesh, 'dcEdge', dcEdge)
+      call mpas_pool_get_array(mesh, 'areaCell', areaCell)
+      call mpas_pool_get_array(mesh, 'areaTriangle', areaTriangle)
+      call mpas_pool_get_array(mesh, 'kiteAreasOnVertex', kiteAreasOnVertex)
+
+      call mpas_pool_get_config(mesh, 'on_a_sphere', on_a_sphere)
+      call mpas_pool_get_config(mesh, 'sphere_radius', sphere_radius)
+
+      call mpas_pool_get_config(configs, 'config_coef_3rd_order', config_coef_3rd_order)
+      call mpas_pool_get_config(configs, 'config_theta_adv_order', config_theta_adv_order)
+
+      call mpas_pool_get_array(mesh, 'weightsOnEdge', weightsOnEdge)
+      call mpas_pool_get_array(mesh, 'nEdgesOnEdge', nEdgesOnEdge)
+      call mpas_pool_get_array(mesh, 'edgesOnEdge', edgesOnEdge)
+      call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
+      call mpas_pool_get_array(mesh, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(mesh, 'cellsOnCell', cellsOnCell)
+      call mpas_pool_get_array(mesh, 'deriv_two', deriv_two)
+      call mpas_pool_get_array(mesh, 't_init', t_init)
+      call mpas_pool_get_array(mesh, 'u_init', u_init)
+      call mpas_pool_get_array(mesh, 'angleEdge', angleEdge)
+      call mpas_pool_get_array(mesh, 'fEdge', fEdge)
+      call mpas_pool_get_array(mesh, 'fVertex', fVertex)
 
       !
       ! Scale all distances
       !
-
       a_scale = 1.0
 
-      grid % xCell % array = grid % xCell % array * a_scale
-      grid % yCell % array = grid % yCell % array * a_scale
-      grid % zCell % array = grid % zCell % array * a_scale
-      grid % xVertex % array = grid % xVertex % array * a_scale
-      grid % yVertex % array = grid % yVertex % array * a_scale
-      grid % zVertex % array = grid % zVertex % array * a_scale
-      grid % xEdge % array = grid % xEdge % array * a_scale
-      grid % yEdge % array = grid % yEdge % array * a_scale
-      grid % zEdge % array = grid % zEdge % array * a_scale
-      grid % dvEdge % array = grid % dvEdge % array * a_scale
-      grid % dcEdge % array = grid % dcEdge % array * a_scale
-      grid % areaCell % array = grid % areaCell % array * a_scale**2.0
-      grid % areaTriangle % array = grid % areaTriangle % array * a_scale**2.0
-      grid % kiteAreasOnVertex % array = grid % kiteAreasOnVertex % array * a_scale**2.0
+      xCell(:) = xCell(:) * a_scale
+      yCell(:) = yCell(:) * a_scale
+      zCell(:) = zCell(:) * a_scale
+      xVertex(:) = xVertex(:) * a_scale
+      yVertex(:) = yVertex(:) * a_scale
+      zVertex(:) = zVertex(:) * a_scale
+      xEdge(:) = xEdge(:) * a_scale
+      yEdge(:) = yEdge(:) * a_scale
+      zEdge(:) = zEdge(:) * a_scale
+      dvEdge(:) = dvEdge(:) * a_scale
+      dcEdge(:) = dcEdge(:) * a_scale
+      areaCell(:) = areaCell(:) * a_scale**2.0
+      areaTriangle(:) = areaTriangle(:) * a_scale**2.0
+      kiteAreasOnVertex(:,:) = kiteAreasOnVertex(:,:) * a_scale**2.0
 
-      weightsOnEdge     => grid % weightsOnEdge % array
-      nEdgesOnEdge      => grid % nEdgesOnEdge % array
-      edgesOnEdge       => grid % edgesOnEdge % array  
-      dvEdge            => grid % dvEdge % array
-      AreaCell          => grid % AreaCell % array
-      CellsOnEdge       => grid % CellsOnEdge % array
-      deriv_two         => grid % deriv_two % array
       
-      nz1 = grid % nVertLevels
+      call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(mesh, 'nVertices', nVertices)
+      call mpas_pool_get_dimension(mesh, 'nCellsSolve', nCellsSolve)
+      call mpas_pool_get_dimension(mesh, 'maxEdges', maxEdges)
+      nz1 = nVertLevels
       nz = nz1 + 1
-      nCellsSolve = grid % nCellsSolve
 
-      zgrid => grid % zgrid % array
-      zb => grid % zb % array
-      zb3 => grid % zb3 % array
-      rdzw => grid % rdzw % array
-      dzu => grid % dzu % array
-      rdzu => grid % rdzu % array
-      fzm => grid % fzm % array
-      fzp => grid % fzp % array
-      zx => grid % zx % array
-      zz => grid % zz % array
-      hx => grid % hx % array
-      dss => grid % dss % array
- 
-      xCell => grid % xCell % array
-      yCell => grid % yCell % array
+      call mpas_pool_get_array(mesh, 'zgrid', zgrid)
+      call mpas_pool_get_array(mesh, 'zb', zb)
+      call mpas_pool_get_array(mesh, 'zb3', zb3)
+      call mpas_pool_get_array(mesh, 'rdzw', rdzw)
+      call mpas_pool_get_array(mesh, 'dzu', dzu)
+      call mpas_pool_get_array(mesh, 'rdzu', rdzu)
+      call mpas_pool_get_array(mesh, 'fzm', fzm)
+      call mpas_pool_get_array(mesh, 'fzp', fzp)
+      call mpas_pool_get_array(mesh, 'zx', zx)
+      call mpas_pool_get_array(mesh, 'zz', zz)
+      call mpas_pool_get_array(mesh, 'hx', hx)
+      call mpas_pool_get_array(mesh, 'dss', dss)
 
-      ppb => diag % pressure_base % array
-      pb => diag % exner_base % array
-      rb => diag % rho_base % array
-      tb => diag % theta_base % array
-      rtb => diag % rtheta_base % array
-      p => diag % exner % array
-      cqw => diag % cqw % array
+      call mpas_pool_get_array(mesh, 'cf1', cf1)
+      call mpas_pool_get_array(mesh, 'cf2', cf2)
+      call mpas_pool_get_array(mesh, 'cf3', cf3)
 
-      rho_zz => state % rho_zz % array
+      call mpas_pool_get_array(diag, 'pressure_base', ppb)
+      call mpas_pool_get_array(diag, 'exner_base', pb)
+      call mpas_pool_get_array(diag, 'rho_base', rb)
+      call mpas_pool_get_array(diag, 'theta_base', tb)
+      call mpas_pool_get_array(diag, 'rtheta_base', rtb)
+      call mpas_pool_get_array(diag, 'exner', p)
+      call mpas_pool_get_array(diag, 'cqw', cqw)
+      call mpas_pool_get_array(diag, 'pressure_p', pp)
+      call mpas_pool_get_array(diag, 'rho_p', rr)
+      call mpas_pool_get_array(diag, 'rtheta_p', rt)
+      call mpas_pool_get_array(diag, 'ru', ru)
+      call mpas_pool_get_array(diag, 'rw', rw)
+      call mpas_pool_get_array(diag, 'v', v)
+      call mpas_pool_get_array(diag, 'rho', rho)
+      call mpas_pool_get_array(diag, 'theta', theta)
 
-      pp => diag % pressure_p % array
-      rr => diag % rho_p % array
-      t => state % theta_m % array      
-      rt => diag % rtheta_p % array
-      u => state % u % array
-      ru => diag % ru % array
+      call mpas_pool_get_array(state, 'rho_zz', rho_zz)
+      call mpas_pool_get_array(state, 'theta_m', t)
+      call mpas_pool_get_array(state, 'u', u)
+      call mpas_pool_get_array(state, 'w', w)
+      call mpas_pool_get_array(state, 'scalars', scalars)
 
-      scalars => state % scalars % array
-
-      index_qv = state % index_qv
+      call mpas_pool_get_dimension(state, 'index_qv', index_qv)
 
       scalars(:,:,:) = 0.
 
-      call atm_initialize_advection_rk(grid) 
-      call atm_initialize_deformation_weights(grid) 
+      call atm_initialize_advection_rk(mesh, nCells, nEdges, maxEdges, on_a_sphere, sphere_radius )
+      call atm_initialize_deformation_weights(mesh, nCells, on_a_sphere, sphere_radius)
 
       xnutr = 0.1
       zd = 10500.
@@ -1755,7 +1972,7 @@ module init_atm_cases
       ! for hx computation
       xa = 5000. !SHP - should be changed based on grid distance 
       xla = 4000.
-      xc = maxval (grid % xCell % array(:))/2. 
+      xc = maxval (xCell(:))/2. 
 
       !     metrics for hybrid coordinate and vertical stretching
       str = 1.0
@@ -1818,13 +2035,9 @@ module init_atm_cases
       cf2  = fzm(2) - cof1 - cof2
       cf3  = cof2
 
-      grid % cf1 % scalar = cf1
-      grid % cf2 % scalar = cf2
-      grid % cf3 % scalar = cf3
-
 ! setting for terrain
-      do iCell=1,grid % nCells
-         xi = grid % xCell % array(iCell)
+      do iCell=1,nCells
+         xi = xCell(iCell)
          !====1. for pure cosine mountain
          ! if(abs(xi-xc).ge.2.*xa)  then
          !    hx(1,iCell) = 0.
@@ -1845,22 +2058,22 @@ module init_atm_cases
          hx(nz,iCell) = zt
 
 !***** SHP -> get the temporary point information for the neighbor cell ->> should be changed!!!!! 
-         do i=1,grid % nCells 
+         do i=1,nCells 
             !option 1
-            !IF(yCell(i).eq.yCell(iCell).and.xCell(i).eq.xCell(iCell)-sqrt(3.)*grid % dcEdge % array(1)) next_cell(iCell,1) = i 
-            !IF(yCell(i).eq.yCell(iCell).and.xCell(i).eq.xCell(iCell)+sqrt(3.)*grid % dcEdge % array(1)) next_cell(iCell,2) = i 
+            !IF(yCell(i).eq.yCell(iCell).and.xCell(i).eq.xCell(iCell)-sqrt(3.)*dcEdge(1)) next_cell(iCell,1) = i 
+            !IF(yCell(i).eq.yCell(iCell).and.xCell(i).eq.xCell(iCell)+sqrt(3.)*dcEdge(1)) next_cell(iCell,2) = i 
             !option 2
             next_cell(iCell,1) = iCell - 8 ! note ny=4
             next_cell(iCell,2) = iCell + 8 ! note ny=4
 
-            if (xCell(iCell).le. 3.*grid % dcEdge % array(1)) then
+            if (xCell(iCell).le. 3.*dcEdge(1)) then
                 next_cell(iCell,1) = 1
-            else if (xCell(iCell).ge. maxval(xCell(:))-3.*grid % dcEdge % array(1)) then
+            else if (xCell(iCell).ge. maxval(xCell(:))-3.*dcEdge(1)) then
                 next_cell(iCell,2) = 1
             end if
 
          end do
-      enddo
+      end do
       
       write(0,*) ' hx computation complete '
 
@@ -1870,10 +2083,10 @@ module init_atm_cases
          write(0,*) 'Otherwise, set terrain_smooth=.false. in the mountain wave test case'
          write(0,*) '   initialization routine and re-compile.'
          write(0,*) '***************************************************************************'
-         call mpas_dmpar_abort(grid % block % domain % dminfo)
+         call mpas_dmpar_abort(dminfo)
       end if
 
-      do iCell=1,grid % nCells
+      do iCell=1,nCells
         do k=1,nz
             if (terrain_smooth) then
             zgrid(k,iCell) = ah(k)*(zc(k)*(1.-hx(k,iCell)/zt)+hx(k,iCell)) &
@@ -1888,14 +2101,14 @@ module init_atm_cases
         end do
       end do
 
-      do i=1, grid % nEdges
-        iCell1 = grid % CellsOnEdge % array(1,i)
-        iCell2 = grid % CellsOnEdge % array(2,i)
+      do i=1, nEdges
+        iCell1 = cellsOnEdge(1,i)
+        iCell2 = cellsOnEdge(2,i)
         do k=1,nz
-          zx (k,i) = (zgrid(k,iCell2)-zgrid(k,iCell1)) / grid % dcEdge % array(i)
+          zx (k,i) = (zgrid(k,iCell2)-zgrid(k,iCell1)) / dcEdge(i)
         end do
       end do
-      do i=1, grid % nCells
+      do i=1, nCells
         do k=1,nz1
           ztemp = .5*(zgrid(k+1,i)+zgrid(k,i))
           dss(k,i) = 0.
@@ -1904,7 +2117,7 @@ module init_atm_cases
              dss(k,i) = dss(k,i)+xnutr*sin(.5*pii*(ztemp-zd)/(zt-zd))**2
           end if
         end do
-      enddo
+      end do
 
       write(0,*) ' grid metrics setup complete '
 
@@ -1923,7 +2136,7 @@ module init_atm_cases
          um = 10.
          us = 0.
 
-         do i=1,grid % nCells
+         do i=1,nCells
             do k=1,nz1
                ztemp   = .5*(zgrid(k,i)+zgrid(k+1,i))
                tb(k,i) =  t0*(1. + xn2m/gravity*ztemp) 
@@ -1938,19 +2151,19 @@ module init_atm_cases
 
 !  set the velocity field - we are on a plane here.
 
-         do i=1, grid % nEdges
-            cell1 = grid % CellsOnEdge % array(1,i)
-            cell2 = grid % CellsOnEdge % array(2,i)
+         do i=1, nEdges
+            cell1 = cellsOnEdge(1,i)
+            cell2 = cellsOnEdge(2,i)
             if(cell1 <= nCellsSolve .or. cell2 <= nCellsSolve) then
             do k=1,nz1
                ztemp = .25*( zgrid(k,cell1 )+zgrid(k+1,cell1 )  &
                             +zgrid(k,cell2)+zgrid(k+1,cell2))
                u(k,i) = um
-               if(i == 1 ) grid % u_init % array(k) = u(k,i) - us
+               if(i == 1 ) u_init(k) = u(k,i) - us
 #ifdef ROTATED_GRID
-               u(k,i) = sin(grid % angleEdge % array(i)) * (u(k,i) - us)
+               u(k,i) = sin(angleEdge(i)) * (u(k,i) - us)
 #else
-               u(k,i) = cos(grid % angleEdge % array(i)) * (u(k,i) - us)
+               u(k,i) = cos(angleEdge(i)) * (u(k,i) - us)
 #endif
             end do
             end if
@@ -1967,7 +2180,7 @@ module init_atm_cases
       pitop = pitop-.5*dzw(nz1)*gravity/(cp*tb(nz1,1)*zz(nz1,1))
       ptopb = p0*pitop**(1./rcp)
                 
-      do i=1, grid % nCells
+      do i=1, nCells
          pb(nz1,i) = pitop+.5*dzw(nz1)*gravity/(cp*tb(nz1,i)*zz(nz1,i))
          p (nz1,i) = pitop+.5*dzw(nz1)*gravity/(cp*t (nz1,i)*zz(nz1,i))
          do k=nz1-1,1,-1
@@ -1986,7 +2199,7 @@ module init_atm_cases
 
        write(0,*) ' ***** base state sounding ***** '
        write(0,*) 'k       pb        p         rb         rtb         rr          tb          t'
-       do k=1,grid%nVertLevels
+       do k=1,nVertLevels
           write(0,'(i2,7(2x,f14.9))') k,pb(k,1),p(k,1),rb(k,1),rtb(k,1),rr(k,1),tb(k,1),t(k,1)
        end do
  
@@ -2004,7 +2217,7 @@ module init_atm_cases
         pitop = pitop - .5*dzw(nz1)*gravity*(1.+scalars(index_qv,nz1,1))/(cp*t(nz1,1)*zz(nz1,1))
         ptop = p0*pitop**(1./rcp)
 
-        do i = 1, grid % nCells
+        do i = 1, nCells
 
            pp(nz1,i) = ptop-ptopb+.5*dzw(nz1)*gravity*   &
                        (rr(nz1,i)+(rr(nz1,i)+rb(nz1,i))*scalars(index_qv,nz1,i))
@@ -2050,22 +2263,22 @@ module init_atm_cases
                        .01*p0*p(k,1)**(1./rcp),                       &
                        1000.*scalars(index_qv,k,1),                   &
                        (rb(k,1)+rr(k,1))*(1.+scalars(index_qv,k,1)),  &
-                       grid % u_init % array(k), rr(k,1)
+                       u_init(k), rr(k,1)
       end do
 
-      do i=1,grid % ncells
+      do i=1,ncells
          do k=1,nz1
             rho_zz(k,i) = rb(k,i)+rr(k,i)
          end do
 
         do k=1,nz1
-            grid % t_init % array(k,i) = t(k,i)
+            t_init(k,i) = t(k,i)
         end do
       end do
 
-      do i=1,grid % nEdges
-        cell1 = grid % CellsOnEdge % array(1,i)
-        cell2 = grid % CellsOnEdge % array(2,i)
+      do i=1,nEdges
+        cell1 = cellsOnEdge(1,i)
+        cell2 = cellsOnEdge(2,i)
         if(cell1 <= nCellsSolve .or. cell2 <= nCellsSolve) then
           do k=1,nz1
             ru (k,i)  = 0.5*(rho_zz(k,cell1)+rho_zz(k,cell2))*u(k,i)    
@@ -2076,12 +2289,12 @@ module init_atm_cases
 !
 !     pre-calculation z-metric terms in omega eqn.
 !
-      do iEdge = 1,grid % nEdges
-         cell1 = CellsOnEdge(1,iEdge)
-         cell2 = CellsOnEdge(2,iEdge)
+      do iEdge = 1,nEdges
+         cell1 = cellsOnEdge(1,iEdge)
+         cell2 = cellsOnEdge(2,iEdge)
          if (cell1 <= nCellsSolve .or. cell2 <= nCellsSolve ) then
 
-            do k = 1, grid%nVertLevels
+            do k = 1, nVertLevels
 
                if (config_theta_adv_order == 2) then
 
@@ -2091,30 +2304,30 @@ module init_atm_cases
 
                   d2fdx2_cell1 = deriv_two(1,1,iEdge) * zgrid(k,cell1)
                   d2fdx2_cell2 = deriv_two(1,2,iEdge) * zgrid(k,cell2)
-                  do i=1, grid % nEdgesOnCell % array (cell1)
-                     if ( grid % CellsOnCell % array (i,cell1) > 0)       &
-                     d2fdx2_cell1 = d2fdx2_cell1 + deriv_two(i+1,1,iEdge) * zgrid(k,grid % CellsOnCell % array (i,cell1))
+                  do i=1, nEdgesOnCell(cell1)
+                     if ( cellsOnCell(i,cell1) > 0)       &
+                     d2fdx2_cell1 = d2fdx2_cell1 + deriv_two(i+1,1,iEdge) * zgrid(k,cellsOnCell(i,cell1))
                   end do
-                  do i=1, grid % nEdgesOnCell % array (cell2)
-                     if ( grid % CellsOnCell % array (i,cell2) > 0)       &
-                     d2fdx2_cell2 = d2fdx2_cell2 + deriv_two(i+1,2,iEdge) * zgrid(k,grid % CellsOnCell % array (i,cell2))
+                  do i=1, nEdgesOnCell(cell2)
+                     if ( cellsOnCell(i,cell2) > 0)       &
+                     d2fdx2_cell2 = d2fdx2_cell2 + deriv_two(i+1,2,iEdge) * zgrid(k,cellsOnCell(i,cell2))
                   end do             
              
                   z_edge =  0.5*(zgrid(k,cell1) + zgrid(k,cell2))         &
-                                - (grid % dcEdge % array(iEdge) **2) * (d2fdx2_cell1 + d2fdx2_cell2) / 12. 
+                                - (dcEdge(iEdge) **2) * (d2fdx2_cell1 + d2fdx2_cell2) / 12. 
 
                   if (config_theta_adv_order == 3) then
-                     z_edge3 =  - (grid % dcEdge % array(iEdge) **2) * (d2fdx2_cell1 - d2fdx2_cell2) / 12.   
+                     z_edge3 =  - (dcEdge(iEdge) **2) * (d2fdx2_cell1 - d2fdx2_cell2) / 12.   
                   else 
                      z_edge3 = 0.
                   end if
 
                end if
 
-                  zb(k,1,iEdge) = (z_edge-zgrid(k,cell1))*dvEdge(iEdge)/AreaCell(cell1) 
-                  zb(k,2,iEdge) = (z_edge-zgrid(k,cell2))*dvEdge(iEdge)/AreaCell(cell2) 
-                  zb3(k,1,iEdge)=  z_edge3*dvEdge(iEdge)/AreaCell(cell1) 
-                  zb3(k,2,iEdge)=  z_edge3*dvEdge(iEdge)/AreaCell(cell2) 
+                  zb(k,1,iEdge) = (z_edge-zgrid(k,cell1))*dvEdge(iEdge)/areaCell(cell1) 
+                  zb(k,2,iEdge) = (z_edge-zgrid(k,cell2))*dvEdge(iEdge)/areaCell(cell2) 
+                  zb3(k,1,iEdge)=  z_edge3*dvEdge(iEdge)/areaCell(cell1) 
+                  zb3(k,2,iEdge)=  z_edge3*dvEdge(iEdge)/areaCell(cell2) 
   
             end do
 
@@ -2122,29 +2335,29 @@ module init_atm_cases
        end do
 
 !     for including terrain
-      state % w % array(:,:) = 0.0
-      diag % rw % array(:,:) = 0.0
+      w(:,:) = 0.0
+      rw(:,:) = 0.0
 
 !
 !     calculation of omega, rw = zx * ru + zz * rw
 !
 
-      do iEdge = 1,grid % nEdges
+      do iEdge = 1,nEdges
 
-         cell1 = CellsOnEdge(1,iEdge)
-         cell2 = CellsOnEdge(2,iEdge)
+         cell1 = cellsOnEdge(1,iEdge)
+         cell2 = cellsOnEdge(2,iEdge)
 
          if (cell1 <= nCellsSolve .or. cell2 <= nCellsSolve ) then
-         do k = 2, grid%nVertLevels
+         do k = 2, nVertLevels
             flux =  (fzm(k)*ru(k,iEdge)+fzp(k)*ru(k-1,iEdge))  
-            diag % rw % array(k,cell2) = diag % rw % array(k,cell2) + (fzm(k)*zz(k,cell2)+fzp(k)*zz(k-1,cell2))*zb(k,2,iEdge)*flux 
-            diag % rw % array(k,cell1) = diag % rw % array(k,cell1) - (fzm(k)*zz(k,cell1)+fzp(k)*zz(k-1,cell1))*zb(k,1,iEdge)*flux 
+            rw(k,cell2) = rw(k,cell2) + (fzm(k)*zz(k,cell2)+fzp(k)*zz(k-1,cell2))*zb(k,2,iEdge)*flux 
+            rw(k,cell1) = rw(k,cell1) - (fzm(k)*zz(k,cell1)+fzp(k)*zz(k-1,cell1))*zb(k,1,iEdge)*flux 
 
             if (config_theta_adv_order ==3) then
-               diag % rw % array(k,cell2) = diag % rw % array(k,cell2)    &
+               rw(k,cell2) = rw(k,cell2)    &
                                             - sign(1.0_RKIND,ru(k,iEdge))*config_coef_3rd_order* &
                                               (fzm(k)*zz(k,cell2)+fzp(k)*zz(k-1,cell2))*zb3(k,2,iEdge)*flux
-               diag % rw % array(k,cell1) = diag % rw % array(k,cell1)    &
+               rw(k,cell1) = rw(k,cell1)    &
                                             + sign(1.0_RKIND,ru(k,iEdge))*config_coef_3rd_order* &
                                               (fzm(k)*zz(k,cell1)+fzp(k)*zz(k-1,cell1))*zb3(k,1,iEdge)*flux
             end if
@@ -2155,53 +2368,52 @@ module init_atm_cases
       end do
 
       ! Compute w from rho_zz and rw
-      do iCell=1,grid%nCells
-         do k=2,grid%nVertLevels
-            state % w % array(k,iCell) = diag % rw % array(k,iCell)     & 
-                                       / (fzp(k) * state % rho_zz % array(k-1,iCell) + fzm(k) * state % rho_zz % array(k,iCell))
+      do iCell=1,nCells
+         do k=2,nVertLevels
+            w(k,iCell) = rw(k,iCell) / (fzp(k) * rho_zz(k-1,iCell) + fzm(k) * rho_zz(k,iCell))
          end do
       end do
 
 
-      do iEdge=1,grid % nEdges
-         grid % fEdge % array(iEdge) = 0.
+      do iEdge=1,nEdges
+         fEdge(iEdge) = 0.
       end do
 
-      do iVtx=1,grid % nVertices
-         grid % fVertex % array(iVtx) = 0.
+      do iVtx=1,nVertices
+         fVertex(iVtx) = 0.
       end do
 
       !
       ! Compute mass fluxes tangential to each edge (i.e., through the faces of dual grid cells)
       !
-      diag % v % array(:,:) = 0.0
-      do iEdge = 1, grid%nEdges
+      v(:,:) = 0.0
+      do iEdge = 1, nEdges
          do i=1,nEdgesOnEdge(iEdge)
             eoe = edgesOnEdge(i,iEdge)
             if (eoe > 0) then
-               do k = 1, grid%nVertLevels
-                 diag % v % array(k,iEdge) = diag % v %array(k,iEdge) + weightsOnEdge(i,iEdge) * state % u % array(k, eoe)
+               do k = 1, nVertLevels
+                 v(k,iEdge) = v(k,iEdge) + weightsOnEdge(i,iEdge) * u(k, eoe)
               end do
             end if
          end do
       end do
 
-!      do k=1,grid%nVertLevels
-!        write(0,*) ' k,u_init, t_init, qv_init ',k,grid % u_init % array(k),grid % t_init% array(k),grid % qv_init % array(k)
+!      do k=1,nVertLevels
+!        write(0,*) ' k,u_init, t_init, qv_init ',k,u_init(k),t_init(k),qv_init(k)
 !      end do
 
       ! Compute rho and theta from rho_zz and theta_m
-      do iCell=1,grid%nCells
-         do k=1,grid%nVertLevels
-            diag % rho % array(k,iCell) = state % rho_zz % array(k,iCell) * zz(k,iCell)
-            diag % theta % array(k,iCell) = state % theta_m % array(k,iCell) / (1.0 + 1.61 * scalars(index_qv,k,iCell))
+      do iCell=1,nCells
+         do k=1,nVertLevels
+            rho(k,iCell) = rho_zz(k,iCell) * zz(k,iCell)
+            theta(k,iCell) = t(k,iCell) / (1.0 + 1.61 * scalars(index_qv,k,iCell))
          end do
       end do
 
    end subroutine init_atm_case_mtn_wave
 
 
-   subroutine init_atm_case_gfs(grid, fg, state, diag, diag_physics, init_case)
+   subroutine init_atm_case_gfs(block, mesh, nCells, nEdges, nVertLevels, fg, state, diag, diag_physics, init_case, dims, configs)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! Real-data test case using GFS data
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2213,14 +2425,19 @@ module init_atm_cases
 
       implicit none
 
-      type (mesh_type), intent(inout) :: grid
-      type (fg_type), intent(inout) :: fg
-      type (state_type), intent(inout) :: state
-      type (diag_type), intent(inout) :: diag
-      type (diag_physics_type), intent(inout):: diag_physics
+      type (block_type), intent(inout), target :: block
+      type (mpas_pool_type), intent(inout) :: mesh
+      integer, intent(in) :: nCells
+      integer, intent(in) :: nEdges
+      integer, intent(in) :: nVertLevels
+      type (mpas_pool_type), intent(inout) :: fg
+      type (mpas_pool_type), intent(inout) :: state
+      type (mpas_pool_type), intent(inout) :: diag
+      type (mpas_pool_type), intent(inout):: diag_physics
       integer, intent(in) :: init_case
+      type (mpas_pool_type), intent(inout):: dims
+      type (mpas_pool_type), intent(inout):: configs
 
-      type (block_type), pointer :: block
       type (parallel_info), pointer :: parinfo
       type (dm_info), pointer :: dminfo
 
@@ -2244,6 +2461,7 @@ module init_atm_cases
       real (kind=RKIND), dimension(:), pointer :: vert_level, latPoints, lonPoints, ter
       real (kind=RKIND), dimension(:,:), pointer :: zgrid, zx, zz, hx
       real (kind=RKIND), dimension(:,:), pointer :: pressure, ppb, pb, rho_zz, rb, rr, tb, rtb, p, pp, dss, t, rt
+      real (kind=RKIND), dimension(:), pointer :: surface_pressure
       real (kind=RKIND), dimension(:), pointer :: destField1d
       real (kind=RKIND), dimension(:,:), pointer :: destField2d
       real (kind=RKIND), dimension(:,:,:), pointer :: zb, zb3
@@ -2251,10 +2469,12 @@ module init_atm_cases
       real (kind=RKIND), dimension(:,:,:), pointer :: deriv_two
 
       real (kind=RKIND) :: target_z
-      integer :: iCell, iCell1, iCell2 , iEdge, vtx1, vtx2, ivtx, i, k, nz, nz1, itr, itrp, cell1, cell2, nCellsSolve
+      integer :: iCell, iCell1, iCell2 , iEdge, vtx1, vtx2, ivtx, i, k, nz, itr, itrp, cell1, cell2
+      integer, pointer :: nCellsSolve, nz1
       integer :: nInterpPoints, ndims
 
       integer :: nfglevels_actual
+      integer, pointer :: index_qv
 
       integer, dimension(5) :: interp_list
       real (kind=RKIND) :: maskval
@@ -2266,11 +2486,12 @@ module init_atm_cases
       integer :: eoe, j
       integer, dimension(:), pointer :: nEdgesOnCell
       integer, dimension(:,:), pointer :: edgesOnEdge, cellsOnEdge, edgesOnCell, cellsOnCell
-      real (kind=RKIND), dimension(:), pointer :: dvEdge, dcEdge, AreaCell 
+      real (kind=RKIND), dimension(:), pointer :: dvEdge, dcEdge, areaCell 
       real (kind=RKIND), dimension(:,:), pointer :: v
       real (kind=RKIND), dimension(:,:), pointer :: sorted_arr
 
       type (field1DReal), pointer :: tempField
+      type (field1DReal), pointer :: ter_field
       type (field1DReal), target :: tempFieldTarget
 
       real(kind=RKIND), dimension(:), pointer :: hs, hs1
@@ -2287,10 +2508,10 @@ module init_atm_cases
 
       real (kind=RKIND), allocatable, dimension(:,:) :: rslab, maskslab
       integer, dimension(:), pointer :: mask_array
-      integer, dimension(grid % nEdges), target :: edge_mask
+      integer, dimension(nEdges), target :: edge_mask
       character (len=StrKIND) :: fname
 
-      real (kind=RKIND) :: u, flux, fluxk, lat1, lat2, eta_v, r_pert, u_pert, lat_pert, lon_pert, r
+      real (kind=RKIND) :: flux, fluxk, lat1, lat2, eta_v, r_pert, u_pert, lat_pert, lon_pert, r
       real (kind=RKIND) :: lat, lon, x, y
 
       real (kind=RKIND) :: ptop, p0, phi
@@ -2298,79 +2519,187 @@ module init_atm_cases
 
       real (kind=RKIND) :: r_earth, etavs, ztemp, zd, zt, dz, gam, delt, str
 
-      real (kind=RKIND), dimension(grid % nVertLevels, grid % nCells) :: rel_hum, temperature, qv
+      real (kind=RKIND), dimension(nVertLevels, nCells) :: rel_hum, temperature, qv
       real (kind=RKIND) :: ptmp, es, rs, rgas_moist, qvs, xnutr, znut, ptemp, rcv
       integer :: iter
 
-      real (kind=RKIND), dimension(grid % nVertLevels + 1) :: hyai, hybi, znu, znw, znwc, znwv, hyam, hybm
-      real (kind=RKIND), dimension(grid % nVertLevels + 1) :: znuc, znuv, bn, divh, dpn
+      real (kind=RKIND), dimension(nVertLevels + 1) :: hyai, hybi, znu, znw, znwc, znwv, hyam, hybm
+      real (kind=RKIND), dimension(nVertLevels + 1) :: znuc, znuv, bn, divh, dpn
 
-      real (kind=RKIND), dimension(grid % nVertLevels + 1) :: sh, zw, ah
-      real (kind=RKIND), dimension(grid % nVertLevels) :: zu, dzw, rdzwp, rdzwm
-      real (kind=RKIND), dimension(grid % nVertLevels) :: eta, etav, teta, ppi, tt
+      real (kind=RKIND), dimension(nVertLevels + 1) :: sh, zw, ah
+      real (kind=RKIND), dimension(nVertLevels) :: zu, dzw, rdzwp, rdzwm
+      real (kind=RKIND), dimension(nVertLevels) :: eta, etav, teta, ppi, tt
 
-      real (kind=RKIND) :: d1, d2, d3, cf1, cf2, cf3, cof1, cof2, psurf
+      real (kind=RKIND) :: d1, d2, d3, cof1, cof2, psurf
 
       !  storage for (lat,z) arrays for zonal velocity calculation
 
       integer, parameter :: nlat=361
-      real (kind=RKIND), dimension(grid % nVertLevels + 1) :: zz_1d, zgrid_1d, hx_1d
-      real (kind=RKIND), dimension(grid % nVertLevels) :: flux_zonal
-      real (kind=RKIND), dimension(nlat, grid % nVertLevels) :: u_2d, etavs_2d
-      real (kind=RKIND), dimension(grid % nVertLevels + 1) :: fsum
+      real (kind=RKIND), dimension(nVertLevels + 1) :: zz_1d, zgrid_1d, hx_1d
+      real (kind=RKIND), dimension(nVertLevels) :: flux_zonal
+      real (kind=RKIND), dimension(nlat, nVertLevels) :: u_2d, etavs_2d
+      real (kind=RKIND), dimension(nVertLevels + 1) :: fsum
       real (kind=RKIND), dimension(nlat) :: lat_2d
       real (kind=RKIND) :: dlat
       real (kind=RKIND) :: z_edge, z_edge3, d2fdx2_cell1, d2fdx2_cell2
 
+      character (len=StrKIND), pointer :: config_met_prefix
+      character (len=StrKIND), pointer :: config_start_time
+      logical, pointer :: config_met_interp
+      logical, pointer :: config_vertical_grid
+      integer, pointer :: config_nsmterrain
+      real (kind=RKIND), pointer :: config_ztop
+      integer, pointer :: config_nfglevels
+      integer, pointer :: config_nfgsoillevels
+      logical, pointer :: config_smooth_surfaces
+      integer, pointer :: config_theta_adv_order
+      real (kind=RKIND), pointer :: config_coef_3rd_order
 
-      block => grid % block
+      real (kind=RKIND), dimension(:), pointer :: latCell, lonCell
+      real (kind=RKIND), dimension(:), pointer :: latEdge, lonEdge
+      real (kind=RKIND), dimension(:), pointer :: angleEdge
+      real (kind=RKIND), pointer :: cf1, cf2, cf3
+      integer, dimension(:), pointer :: landmask
+
+      real (kind=RKIND), dimension(:,:), pointer :: dzs_fg
+      real (kind=RKIND), dimension(:,:), pointer :: zs_fg
+
+      real (kind=RKIND), dimension(:), pointer :: sst
+      real (kind=RKIND), dimension(:), pointer :: seaice
+      real (kind=RKIND), dimension(:), pointer :: xice
+      real (kind=RKIND), dimension(:,:), pointer :: u
+      real (kind=RKIND), dimension(:,:), pointer :: w
+      real (kind=RKIND), dimension(:,:), pointer :: theta
+      real (kind=RKIND), dimension(:,:), pointer :: rho
+      real (kind=RKIND), dimension(:,:), pointer :: rh
+      real (kind=RKIND), dimension(:,:), pointer :: ru
+      real (kind=RKIND), dimension(:,:), pointer :: rw
+      real (kind=RKIND), dimension(:), pointer :: precipw
+      real (kind=RKIND), dimension(:,:), pointer :: uReconstructX
+      real (kind=RKIND), dimension(:,:), pointer :: uReconstructY
+      real (kind=RKIND), dimension(:,:), pointer :: uReconstructZ
+      real (kind=RKIND), dimension(:,:), pointer :: uReconstructZonal
+      real (kind=RKIND), dimension(:,:), pointer :: uReconstructMeridional
+
+      real (kind=RKIND), dimension(:), pointer :: psfc
+      real (kind=RKIND), dimension(:), pointer :: skintemp
+      real (kind=RKIND), dimension(:), pointer :: snow
+      real (kind=RKIND), dimension(:), pointer :: snowc
+      real (kind=RKIND), dimension(:,:), pointer :: u_fg
+      real (kind=RKIND), dimension(:,:), pointer :: v_fg
+      real (kind=RKIND), dimension(:,:), pointer :: z_fg
+      real (kind=RKIND), dimension(:,:), pointer :: t_fg
+      real (kind=RKIND), dimension(:,:), pointer :: rh_fg
+      real (kind=RKIND), dimension(:,:), pointer :: gfs_z
+      real (kind=RKIND), dimension(:,:), pointer :: p_fg
+      real (kind=RKIND), dimension(:,:), pointer :: st_fg
+      real (kind=RKIND), dimension(:,:), pointer :: sm_fg
+
+      call mpas_pool_get_config(configs, 'config_met_prefix', config_met_prefix)
+      call mpas_pool_get_config(configs, 'config_start_time', config_start_time)
+      call mpas_pool_get_config(configs, 'config_met_interp', config_met_interp)
+      call mpas_pool_get_config(configs, 'config_vertical_grid', config_vertical_grid)
+      call mpas_pool_get_config(configs, 'config_nsmterrain', config_nsmterrain)
+      call mpas_pool_get_config(configs, 'config_ztop', config_ztop)
+      call mpas_pool_get_config(configs, 'config_nfglevels', config_nfglevels)
+      call mpas_pool_get_config(configs, 'config_nfgsoillevels', config_nfgsoillevels)
+      call mpas_pool_get_config(configs, 'config_smooth_surfaces', config_smooth_surfaces)
+      call mpas_pool_get_config(configs, 'config_theta_adv_order', config_theta_adv_order)
+      call mpas_pool_get_config(configs, 'config_coef_3rd_order', config_coef_3rd_order)
+
       parinfo => block % parinfo
       dminfo => block % domain % dminfo
 
-      nEdgesOnCell      => grid % nEdgesOnCell % array
-      edgesOnEdge       => grid % edgesOnEdge % array
-      edgesOnCell       => grid % edgesOnCell % array
-      dvEdge            => grid % dvEdge % array
-      dcEdge            => grid % dcEdge % array
-      AreaCell          => grid % AreaCell % array
-      CellsOnEdge       => grid % CellsOnEdge % array
-      cellsOnCell       => grid % cellsOnCell % array
+      call mpas_pool_get_field(mesh, 'ter', ter_field)
 
-      deriv_two  => grid % deriv_two % array
-      zb  => grid % zb % array
-      zb3 => grid % zb3% array
+      call mpas_pool_get_array(mesh, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(mesh, 'edgesOnEdge', edgesOnEdge)
+      call mpas_pool_get_array(mesh, 'edgesOnCell', edgesOnCell)
+      call mpas_pool_get_array(mesh, 'dvEdge', dvEdge)
+      call mpas_pool_get_array(mesh, 'dcEdge', dcEdge)
+      call mpas_pool_get_array(mesh, 'areaCell', areaCell)
+      call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
+      call mpas_pool_get_array(mesh, 'cellsOnCell', cellsOnCell)
+      call mpas_pool_get_array(mesh, 'angleEdge', angleEdge)
 
-      zgrid => grid % zgrid % array
-      rdzw => grid % rdzw % array
-      dzu => grid % dzu % array
-      rdzu => grid % rdzu % array
-      fzm => grid % fzm % array
-      fzp => grid % fzp % array
-      zx => grid % zx % array
-      zz => grid % zz % array
-      hx => grid % hx % array
-      ter => grid % ter % array
-      dss => grid % dss % array
+      call mpas_pool_get_array(mesh, 'deriv_two', deriv_two)
+      call mpas_pool_get_array(mesh, 'zb', zb)
+      call mpas_pool_get_array(mesh, 'zb3', zb3)
 
-      pb => diag % exner_base % array
-      rb => diag % rho_base % array
-      tb => diag % theta_base % array
-      rtb => diag % rtheta_base % array
-      p => diag % exner % array
+      call mpas_pool_get_array(mesh, 'zgrid', zgrid)
+      call mpas_pool_get_array(mesh, 'rdzw', rdzw)
+      call mpas_pool_get_array(mesh, 'dzu', dzu)
+      call mpas_pool_get_array(mesh, 'rdzu', rdzu)
+      call mpas_pool_get_array(mesh, 'fzm', fzm)
+      call mpas_pool_get_array(mesh, 'fzp', fzp)
+      call mpas_pool_get_array(mesh, 'zx', zx)
+      call mpas_pool_get_array(mesh, 'zz', zz)
+      call mpas_pool_get_array(mesh, 'hx', hx)
+      call mpas_pool_get_array(mesh, 'ter', ter)
+      call mpas_pool_get_array(mesh, 'dss', dss)
 
-      ppb => diag % pressure_base % array
-      pp  => diag % pressure_p % array
+      call mpas_pool_get_array(diag, 'exner_base', pb)
+      call mpas_pool_get_array(diag, 'rho_base', rb)
+      call mpas_pool_get_array(diag, 'theta_base', tb)
+      call mpas_pool_get_array(diag, 'rtheta_base', rtb)
+      call mpas_pool_get_array(diag, 'exner', p)
+      call mpas_pool_get_array(diag, 'pressure_base', ppb)
+      call mpas_pool_get_array(diag, 'pressure_p', pp)
+      call mpas_pool_get_array(diag, 'pressure', pressure)
+      call mpas_pool_get_array(diag, 'surface_pressure', surface_pressure)
+      call mpas_pool_get_array(diag, 'rh', rh)
+      call mpas_pool_get_array(diag, 'ru', ru)
+      call mpas_pool_get_array(diag, 'rw', rw)
 
-      rho_zz => state % rho_zz % array
-      rr => diag % rho_p % array
-      t => state % theta_m % array      
-      rt => diag % rtheta_p % array
+      call mpas_pool_get_array(state, 'rho_zz', rho_zz)
+      call mpas_pool_get_array(diag, 'rho_p', rr)
+      call mpas_pool_get_array(state, 'theta_m', t)
+      call mpas_pool_get_array(diag, 'rtheta_p', rt)
+      call mpas_pool_get_array(state, 'scalars', scalars)
+      call mpas_pool_get_array(state, 'u', u)
+      call mpas_pool_get_array(state, 'w', w)
+      call mpas_pool_get_array(diag, 'theta', theta)
+      call mpas_pool_get_array(diag, 'rho', rho)
+      call mpas_pool_get_array(diag_physics, 'precipw', precipw)
+      call mpas_pool_get_array(diag, 'uReconstructX', uReconstructX)
+      call mpas_pool_get_array(diag, 'uReconstructY', uReconstructY)
+      call mpas_pool_get_array(diag, 'uReconstructZ', uReconstructZ)
+      call mpas_pool_get_array(diag, 'uReconstructZonal', uReconstructZonal)
+      call mpas_pool_get_array(diag, 'uReconstructMeridional', uReconstructMeridional)
 
-      scalars => state % scalars % array
-      
-      nz1 = grid % nVertLevels
+      call mpas_pool_get_array(mesh, 'latCell', latCell)
+      call mpas_pool_get_array(mesh, 'lonCell', lonCell)
+      call mpas_pool_get_array(mesh, 'latEdge', latEdge)
+      call mpas_pool_get_array(mesh, 'lonEdge', lonEdge)
+      call mpas_pool_get_array(mesh, 'cf1', cf1)
+      call mpas_pool_get_array(mesh, 'cf2', cf2)
+      call mpas_pool_get_array(mesh, 'cf3', cf3)
+      call mpas_pool_get_array(mesh, 'landmask', landmask)
+
+      call mpas_pool_get_array(fg, 'dzs_fg', dzs_fg)
+      call mpas_pool_get_array(fg, 'zs_fg', zs_fg)
+      call mpas_pool_get_array(fg, 'sst', sst)
+      call mpas_pool_get_array(fg, 'xice', xice)
+      call mpas_pool_get_array(fg, 'seaice', seaice)
+      call mpas_pool_get_array(fg, 'st_fg', st_fg)
+      call mpas_pool_get_array(fg, 'sm_fg', sm_fg)
+      call mpas_pool_get_array(fg, 'psfc', psfc)
+      call mpas_pool_get_array(fg, 'skintemp', skintemp)
+      call mpas_pool_get_array(fg, 'snow', snow)
+      call mpas_pool_get_array(fg, 'snowc', snowc)
+      call mpas_pool_get_array(fg, 'u', u_fg)
+      call mpas_pool_get_array(fg, 'v', v_fg)
+      call mpas_pool_get_array(fg, 'z', z_fg)
+      call mpas_pool_get_array(fg, 't', t_fg)
+      call mpas_pool_get_array(fg, 'rh', rh_fg)
+      call mpas_pool_get_array(fg, 'gfs_z', gfs_z)
+      call mpas_pool_get_array(fg, 'p', p_fg)
+
+      call mpas_pool_get_dimension(dims, 'nVertLevels', nz1)
+      call mpas_pool_get_dimension(dims, 'nCellsSolve', nCellsSolve)
       nz = nz1 + 1
-      nCellsSolve = grid % nCellsSolve
+
+      call mpas_pool_get_dimension(state, 'index_qv', index_qv)
 
       xnutr = 0.
       zd = 12000.
@@ -2378,7 +2707,6 @@ module init_atm_cases
 
       etavs = (1.-0.252)*pii/2.
       rcv = rgas/(cp-rgas)
-      r_earth = grid % sphere_radius
       omega_e = omega
       p0 = 1.e+05
 
@@ -2396,7 +2724,7 @@ module init_atm_cases
          write(0,*) 'Error opening initial meteorological data file '//   &
                      trim(config_met_prefix)//':'//config_start_time(1:13)
          write(0,*) '********************************************************************************'
-         call mpas_dmpar_abort(grid % block % domain % dminfo)
+         call mpas_dmpar_abort(dminfo)
       end if
 
       call read_next_met_field(field, istatus)
@@ -2420,9 +2748,9 @@ module init_atm_cases
 
 
             if (index(field % field, 'SOILHGT') /= 0) then
-               nInterpPoints = grid % nCells
-               latPoints => grid % latCell % array
-               lonPoints => grid % lonCell % array
+               nInterpPoints = nCells
+               latPoints => latCell
+               lonPoints => lonCell
                destField1d => ter
                ndims = 1
             end if
@@ -2460,8 +2788,8 @@ module init_atm_cases
       !
       ! Vertical grid setup
       !
-      allocate(hs (grid%nCells+1))
-      allocate(hs1(grid%nCells+1))
+      allocate(hs (nCells+1))
+      allocate(hs1(nCells+1))
 
 !     Fourth order smoother for terrain
 
@@ -2469,7 +2797,7 @@ module init_atm_cases
 
       do i=1,nsmterrain
 
-         do iCell=1,grid%nCells
+         do iCell=1,nCells
             hs(iCell) = 0.
             if(ter(iCell) .ne. 0.) then
                do j = 1,nEdgesOnCell(iCell)
@@ -2477,11 +2805,11 @@ module init_atm_cases
                                         / dcEdge(edgesOnCell(j,iCell))    &
                                         * (ter(cellsOnCell(j,iCell))-ter(iCell))
                end do
-            endif
+            end if
             hs(iCell) = ter(iCell) + 0.125*hs(iCell)
          end do
 
-         do iCell=1,grid %nCells
+         do iCell=1,nCells
             ter(iCell) = 0.
             if(hs(iCell) .ne. 0.) then
                do j = 1,nEdgesOnCell(iCell)
@@ -2489,17 +2817,17 @@ module init_atm_cases
                                           / dcEdge(edgesOnCell(j,iCell))    &
                                           * (hs(cellsOnCell(j,iCell))-hs(iCell))
                end do
-            endif
+            end if
 !           ter(iCell) = hs(iCell) - 0.25*ter(iCell)
             ter(iCell) = hs(iCell) - 0.125*ter(iCell)
          end do
 
          ! note that ther variable ter used throughout this section is a pointer to grid % ter % array, here we are passing ter's parent field
-         call mpas_dmpar_exch_halo_field(grid % ter)
+         call mpas_dmpar_exch_halo_field(ter_field)
 
       end do
 
-      do iCell=1,grid % nCells
+      do iCell=1,nCells
          hx(:,iCell) = ter(iCell)
       end do
 
@@ -2590,10 +2918,6 @@ module init_atm_cases
 
       write(0,*) ' cf1, cf2, cf3 = ',cf1,cf2,cf3
 
-      grid % cf1 % scalar = cf1
-      grid % cf2 % scalar = cf2
-      grid % cf3 % scalar = cf3
-
 !     Smoothing algorithm for coordinate surfaces 
 
       smooth = config_smooth_surfaces
@@ -2612,7 +2936,7 @@ module init_atm_cases
             sm = .02*min(0.5_RKIND*zw(k)/hm,1.0_RKIND)
           
             do i=1,30
-               do iCell=1,grid % nCells
+               do iCell=1,nCells
                   hs1(iCell) = 0.
                   do j = 1,nEdgesOnCell(iCell)
 
@@ -2634,7 +2958,7 @@ module init_atm_cases
 
                tempField => tempFieldTarget
                tempField % block => block
-               tempField % dimSizes(1) = grid % nCells
+               tempField % dimSizes(1) = nCells
                tempField % sendList => parinfo % cellsToSend
                tempField % recvList => parinfo % cellsToRecv
                tempField % copyList => parinfo % cellsToCopy
@@ -2675,7 +2999,7 @@ module init_atm_cases
 
 !     Height of coordinate levels (calculation of zgrid)
 
-      do iCell=1,grid % nCells
+      do iCell=1,nCells
          do k=1,nz	
             zgrid(k,iCell) = zw(k) + ah(k)*hx(k,iCell)
          end do
@@ -2684,14 +3008,14 @@ module init_atm_cases
          end do
       end do
 
-      do i=1, grid % nEdges
-         iCell1 = grid % CellsOnEdge % array(1,i)
-         iCell2 = grid % CellsOnEdge % array(2,i)
+      do i=1, nEdges
+         iCell1 = cellsOnEdge(1,i)
+         iCell2 = cellsOnEdge(2,i)
          do k=1,nz
-            zx (k,i) = (zgrid(k,iCell2)-zgrid(k,iCell1)) / grid % dcEdge % array(i)
+            zx (k,i) = (zgrid(k,iCell2)-zgrid(k,iCell1)) / dcEdge(i)
          end do
       end do
-      do i=1, grid % nCells
+      do i=1, nCells
          do k=1,nz1
            ztemp = .5*(zgrid(k+1,i)+zgrid(k,i))
            dss(k,i) = 0.
@@ -2700,24 +3024,24 @@ module init_atm_cases
                dss(k,i) = dss(k,i)+xnutr*sin(.5*pii*(ztemp-zd)/(zt-zd))**2
            end if
          end do
-      enddo
+      end do
 
 !      do k=1,nz1
 !         write(0,*) ' k, zgrid(k,1),hx(k,1) ',k,zgrid(k,1),hx(k,1)
-!      enddo
+!      end do
 
 !      do k=1,nz1
 !         write(0,*) ' k, zx(k,1) ',k,zx(k,1)
-!      enddo
+!      end do
 
 
       ! For z-metric term in omega equation
-      do iEdge = 1,grid % nEdges
-         cell1 = CellsOnEdge(1,iEdge)
-         cell2 = CellsOnEdge(2,iEdge)
+      do iEdge = 1,nEdges
+         cell1 = cellsOnEdge(1,iEdge)
+         cell2 = cellsOnEdge(2,iEdge)
          if (cell1 <= nCellsSolve .or. cell2 <= nCellsSolve ) then
 
-            do k = 1, grid%nVertLevels
+            do k = 1, nVertLevels
 
                if (config_theta_adv_order == 2) then
 
@@ -2727,30 +3051,30 @@ module init_atm_cases
 
                   d2fdx2_cell1 = deriv_two(1,1,iEdge) * zgrid(k,cell1)
                   d2fdx2_cell2 = deriv_two(1,2,iEdge) * zgrid(k,cell2)
-                  do i=1, grid % nEdgesOnCell % array (cell1)
-                     if ( grid % CellsOnCell % array (i,cell1) > 0)       &
-                     d2fdx2_cell1 = d2fdx2_cell1 + deriv_two(i+1,1,iEdge) * zgrid(k,grid % CellsOnCell % array (i,cell1))
+                  do i=1, nEdgesOnCell(cell1)
+                     if ( cellsOnCell(i,cell1) > 0)       &
+                        d2fdx2_cell1 = d2fdx2_cell1 + deriv_two(i+1,1,iEdge) * zgrid(k,cellsOnCell(i,cell1))
                   end do
-                  do i=1, grid % nEdgesOnCell % array (cell2)
-                     if ( grid % CellsOnCell % array (i,cell2) > 0)       &
-                     d2fdx2_cell2 = d2fdx2_cell2 + deriv_two(i+1,2,iEdge) * zgrid(k,grid % CellsOnCell % array (i,cell2))
+                  do i=1, nEdgesOnCell(cell2)
+                     if ( cellsOnCell(i,cell2) > 0)       &
+                        d2fdx2_cell2 = d2fdx2_cell2 + deriv_two(i+1,2,iEdge) * zgrid(k,cellsOnCell(i,cell2))
                   end do             
              
                   z_edge =  0.5*(zgrid(k,cell1) + zgrid(k,cell2))         &
-                                - (grid % dcEdge % array(iEdge) **2) * (d2fdx2_cell1 + d2fdx2_cell2) / 12. 
+                                - (dcEdge(iEdge) **2) * (d2fdx2_cell1 + d2fdx2_cell2) / 12. 
 
                   if (config_theta_adv_order == 3) then
-                     z_edge3 =  - (grid % dcEdge % array(iEdge) **2) * (d2fdx2_cell1 - d2fdx2_cell2) / 12.   
+                     z_edge3 =  - (dcEdge(iEdge) **2) * (d2fdx2_cell1 - d2fdx2_cell2) / 12.   
                   else 
                      z_edge3 = 0.
                   end if
 
                end if
 
-                  zb(k,1,iEdge) = (z_edge-zgrid(k,cell1))*dvEdge(iEdge)/AreaCell(cell1) 
-                  zb(k,2,iEdge) = (z_edge-zgrid(k,cell2))*dvEdge(iEdge)/AreaCell(cell2) 
-                  zb3(k,1,iEdge)=  z_edge3*dvEdge(iEdge)/AreaCell(cell1) 
-                  zb3(k,2,iEdge)=  z_edge3*dvEdge(iEdge)/AreaCell(cell2) 
+                  zb(k,1,iEdge) = (z_edge-zgrid(k,cell1))*dvEdge(iEdge)/areaCell(cell1) 
+                  zb(k,2,iEdge) = (z_edge-zgrid(k,cell2))*dvEdge(iEdge)/areaCell(cell2) 
+                  zb3(k,1,iEdge)=  z_edge3*dvEdge(iEdge)/areaCell(cell1) 
+                  zb3(k,2,iEdge)=  z_edge3*dvEdge(iEdge)/areaCell(cell2) 
   
             end do
 
@@ -2766,9 +3090,9 @@ module init_atm_cases
 
       !ldf (2011-11-19): added initialization of the sea-surface temperature, seaice fraction, and
       !seaice flag:
-       fg % sst % array    = 0.
-       fg % xice % array   = 0.
-       fg % seaice % array = 0.
+       sst = 0.0
+       xice = 0.0
+       seaice = 0.0
       !ldf end.
 
       !
@@ -2781,7 +3105,7 @@ module init_atm_cases
          write(0,*) 'Error opening initial meteorological data file '//   &
                      trim(config_met_prefix)//':'//config_start_time(1:13)
          write(0,*) '********************************************************************************'
-         call mpas_dmpar_abort(grid % block % domain % dminfo)
+         call mpas_dmpar_abort(dminfo)
       end if
 
       call read_next_met_field(field, istatus)
@@ -2823,7 +3147,7 @@ write(0,*) 'minval, maxval of LANDSEA = ', minval(maskslab), maxval(maskslab)
          write(0,*) 'Error opening initial meteorological data file '//   &
                      trim(config_met_prefix)//':'//config_start_time(1:13)
          write(0,*) '********************************************************************************'
-         call mpas_dmpar_abort(grid % block % domain % dminfo)
+         call mpas_dmpar_abort(dminfo)
       end if
 
       call read_next_met_field(field, istatus)
@@ -2839,7 +3163,7 @@ write(0,*) 'minval, maxval of LANDSEA = ', minval(maskslab), maxval(maskslab)
          fillval = 0.0
          msgval = -1.e30
 
-         mask_array => grid % landmask % array
+         mask_array => landmask
 
          if (index(field % field, 'UU') /= 0 .or. &
              index(field % field, 'VV') /= 0 .or. &
@@ -2905,7 +3229,7 @@ write(0,*) 'minval, maxval of LANDSEA = ', minval(maskslab), maxval(maskslab)
                   write(0,*) 'Error: The meteorological data file has more than config_nfglevels.'
                   write(0,*) '       Please increase config_nfglevels in the namelist and re-run.'
                   write(0,*) '*******************************************************************'
-                  call mpas_dmpar_abort(grid % block % domain % dminfo)
+                  call mpas_dmpar_abort(dminfo)
                end if
                if (vert_level(k) == -1.0) vert_level(k) = field % xlvl
             else
@@ -2943,69 +3267,69 @@ write(0,*) 'Interpolating U at ', k, vert_level(k)
 
                mask_array => edge_mask
 
-               nInterpPoints = grid % nEdges
-               latPoints => grid % latEdge % array
-               lonPoints => grid % lonEdge % array
-               destField2d => fg % u % array
+               nInterpPoints = nEdges
+               latPoints => latEdge
+               lonPoints => lonEdge
+               call mpas_pool_get_array(fg, 'u', destField2d)
                ndims = 2
             else if (index(field % field, 'VV') /= 0) then
 write(0,*) 'Interpolating V at ', k, vert_level(k)
 
                mask_array => edge_mask
 
-               nInterpPoints = grid % nEdges
-               latPoints => grid % latEdge % array
-               lonPoints => grid % lonEdge % array
-               destField2d => fg % v % array
+               nInterpPoints = nEdges
+               latPoints => latEdge
+               lonPoints => lonEdge
+               call mpas_pool_get_array(fg, 'v', destField2d)
                ndims = 2
             else if (index(field % field, 'TT') /= 0) then
 write(0,*) 'Interpolating T at ', k, vert_level(k)
-               nInterpPoints = grid % nCells
-               latPoints => grid % latCell % array
-               lonPoints => grid % lonCell % array
-               destField2d => fg % t % array
+               nInterpPoints = nCells
+               latPoints => latCell
+               lonPoints => lonCell
+               call mpas_pool_get_array(fg, 't', destField2d)
                ndims = 2
             else if (index(field % field, 'RH') /= 0) then
 write(0,*) 'Interpolating RH at ', k, vert_level(k)
-               nInterpPoints = grid % nCells
-               latPoints => grid % latCell % array
-               lonPoints => grid % lonCell % array
-               destField2d => fg % rh % array
+               nInterpPoints = nCells
+               latPoints => latCell
+               lonPoints => lonCell
+               call mpas_pool_get_array(fg, 'rh', destField2d)
                ndims = 2
             else if (index(field % field, 'GHT') /= 0) then
 write(0,*) 'Interpolating GHT at ', k, vert_level(k)
-               nInterpPoints = grid % nCells
-               latPoints => grid % latCell % array
-               lonPoints => grid % lonCell % array
-               destField2d => fg % z % array
+               nInterpPoints = nCells
+               latPoints => latCell
+               lonPoints => lonCell
+               call mpas_pool_get_array(fg, 'z', destField2d)
                ndims = 2
             else if (index(field % field, 'PRES') /= 0) then
 write(0,*) 'Interpolating PRES at ', k, vert_level(k)
-               nInterpPoints = grid % nCells
-               latPoints => grid % latCell % array
-               lonPoints => grid % lonCell % array
-               destField2d => fg % p % array
+               nInterpPoints = nCells
+               latPoints => latCell
+               lonPoints => lonCell
+               call mpas_pool_get_array(fg, 'p', destField2d)
                ndims = 2
             else if (index(field % field, 'PMSL') /= 0) then
 write(0,*) 'Interpolating PMSL'
-               nInterpPoints = grid % nCells
-               latPoints => grid % latCell % array
-               lonPoints => grid % lonCell % array
-               destField1d => fg % pmsl % array
+               nInterpPoints = nCells
+               latPoints => latCell
+               lonPoints => lonCell
+               call mpas_pool_get_array(fg, 'pmsl', destField1d)
                ndims = 1
             else if (index(field % field, 'PSFC') /= 0) then
 write(0,*) 'Interpolating PSFC'
-               nInterpPoints = grid % nCells
-               latPoints => grid % latCell % array
-               lonPoints => grid % lonCell % array
-               destField1d => fg % psfc % array
+               nInterpPoints = nCells
+               latPoints => latCell
+               lonPoints => lonCell
+               call mpas_pool_get_array(fg, 'psfc', destField1d)
                ndims = 1
             else if (index(field % field, 'SOILHGT') /= 0) then
 write(0,*) 'Interpolating SOILHGT'
-               nInterpPoints = grid % nCells
-               latPoints => grid % latCell % array
-               lonPoints => grid % lonCell % array
-               destField1d => fg % soilz % array
+               nInterpPoints = nCells
+               latPoints => latCell
+               lonPoints => lonCell
+               call mpas_pool_get_array(fg, 'soilz', destField1d)
                ndims = 1
             else if (index(field % field, 'SM000010') /= 0) then
 write(0,*) 'Interpolating SM000010'
@@ -3019,14 +3343,14 @@ write(0,*) 'Interpolating SM000010'
                masked = 0
                fillval = 1.0
 
-               nInterpPoints = grid % nCells
-               latPoints => grid % latCell % array
-               lonPoints => grid % lonCell % array
-               destField2d => fg % sm_fg % array
+               nInterpPoints = nCells
+               latPoints => latCell
+               lonPoints => lonCell
+               call mpas_pool_get_array(fg, 'sm_fg', destField2d)
                k = 1
                ndims = 2
-               fg % dzs_fg % array(k,:) = 10.
-               fg % zs_fg  % array(k,:) = 10.
+               dzs_fg(k,:) = 10.
+               zs_fg(k,:) = 10.
             else if (index(field % field, 'SM010200') /= 0) then
 write(0,*) 'Interpolating SM010200'
 
@@ -3039,14 +3363,14 @@ write(0,*) 'Interpolating SM010200'
                masked = 0
                fillval = 1.0
 
-               nInterpPoints = grid % nCells
-               latPoints => grid % latCell % array
-               lonPoints => grid % lonCell % array
-               destField2d => fg % sm_fg % array
+               nInterpPoints = nCells
+               latPoints => latCell
+               lonPoints => lonCell
+               call mpas_pool_get_array(fg, 'sm_fg', destField2d)
                k = 2
                ndims = 2
-               fg % dzs_fg % array(k,:) = 200.-10.
-               fg % zs_fg  % array(k,:) = 200.
+               dzs_fg(k,:) = 200.-10.
+               zs_fg(k,:) = 200.
             else if (index(field % field, 'SM010040') /= 0) then
 write(0,*) 'Interpolating SM010040'
 
@@ -3059,14 +3383,14 @@ write(0,*) 'Interpolating SM010040'
                masked = 0
                fillval = 1.0
 
-               nInterpPoints = grid % nCells
-               latPoints => grid % latCell % array
-               lonPoints => grid % lonCell % array
-               destField2d => fg % sm_fg % array
+               nInterpPoints = nCells
+               latPoints => latCell
+               lonPoints => lonCell
+               call mpas_pool_get_array(fg, 'sm_fg', destField2d)
                k = 2
                ndims = 2
-               fg % dzs_fg % array(k,:) = 40.-10.
-               fg % zs_fg  % array(k,:) = 40.
+               dzs_fg(k,:) = 40.-10.
+               zs_fg(k,:) = 40.
             else if (index(field % field, 'SM040100') /= 0) then
 write(0,*) 'Interpolating SM040100'
 
@@ -3079,14 +3403,14 @@ write(0,*) 'Interpolating SM040100'
                masked = 0
                fillval = 1.0
 
-               nInterpPoints = grid % nCells
-               latPoints => grid % latCell % array
-               lonPoints => grid % lonCell % array
-               destField2d => fg % sm_fg % array
+               nInterpPoints = nCells
+               latPoints => latCell
+               lonPoints => lonCell
+               call mpas_pool_get_array(fg, 'sm_fg', destField2d)
                k = 3
                ndims = 2
-               fg % dzs_fg % array(k,:) = 100.-40.
-               fg % zs_fg  % array(k,:) = 100.
+               dzs_fg(k,:) = 100.-40.
+               zs_fg(k,:) = 100.
             else if (index(field % field, 'SM100200') /= 0) then
 write(0,*) 'Interpolating SM100200'
 
@@ -3099,14 +3423,14 @@ write(0,*) 'Interpolating SM100200'
                masked = 0
                fillval = 1.0
 
-               nInterpPoints = grid % nCells
-               latPoints => grid % latCell % array
-               lonPoints => grid % lonCell % array
-               destField2d => fg % sm_fg % array
+               nInterpPoints = nCells
+               latPoints => latCell
+               lonPoints => lonCell
+               call mpas_pool_get_array(fg, 'sm_fg', destField2d)
                k = 4
                ndims = 2
-               fg % dzs_fg % array(k,:) = 200.-100.
-               fg % zs_fg  % array(k,:) = 200.
+               dzs_fg(k,:) = 200.-100.
+               zs_fg(k,:) = 200.
             else if (index(field % field, 'SM000007') /= 0) then
 write(0,*) 'Interpolating SM000007'
 
@@ -3119,14 +3443,14 @@ write(0,*) 'Interpolating SM000007'
                masked = 0
                fillval = 1.0
 
-               nInterpPoints = grid % nCells
-               latPoints => grid % latCell % array
-               lonPoints => grid % lonCell % array
-               destField2d => fg % sm_fg % array
+               nInterpPoints = nCells
+               latPoints => latCell
+               lonPoints => lonCell
+               call mpas_pool_get_array(fg, 'sm_fg', destField2d)
                k = 1
                ndims = 2
-               fg % dzs_fg % array(k,:) = 7.
-               fg % zs_fg  % array(k,:) = 7.
+               dzs_fg(k,:) = 7.
+               zs_fg(k,:) = 7.
             else if (index(field % field, 'SM007028') /= 0) then
 write(0,*) 'Interpolating SM007028'
 
@@ -3139,14 +3463,14 @@ write(0,*) 'Interpolating SM007028'
                masked = 0
                fillval = 1.0
 
-               nInterpPoints = grid % nCells
-               latPoints => grid % latCell % array
-               lonPoints => grid % lonCell % array
-               destField2d => fg % sm_fg % array
+               nInterpPoints = nCells
+               latPoints => latCell
+               lonPoints => lonCell
+               call mpas_pool_get_array(fg, 'sm_fg', destField2d)
                k = 2
                ndims = 2
-               fg % dzs_fg % array(k,:) = 28.-7.
-               fg % zs_fg  % array(k,:) = 28.
+               dzs_fg(k,:) = 28.-7.
+               zs_fg(k,:) = 28.
             else if (index(field % field, 'SM028100') /= 0) then
 write(0,*) 'Interpolating SM028100'
 
@@ -3159,14 +3483,14 @@ write(0,*) 'Interpolating SM028100'
                masked = 0
                fillval = 1.0
 
-               nInterpPoints = grid % nCells
-               latPoints => grid % latCell % array
-               lonPoints => grid % lonCell % array
-               destField2d => fg % sm_fg % array
+               nInterpPoints = nCells
+               latPoints => latCell
+               lonPoints => lonCell
+               call mpas_pool_get_array(fg, 'sm_fg', destField2d)
                k = 3
                ndims = 2
-               fg % dzs_fg % array(k,:) = 100.-28.
-               fg % zs_fg  % array(k,:) = 100.
+               dzs_fg(k,:) = 100.-28.
+               zs_fg(k,:) = 100.
             else if (index(field % field, 'SM100255') /= 0) then
 write(0,*) 'Interpolating SM100255'
 
@@ -3179,14 +3503,14 @@ write(0,*) 'Interpolating SM100255'
                masked = 0
                fillval = 1.0
 
-               nInterpPoints = grid % nCells
-               latPoints => grid % latCell % array
-               lonPoints => grid % lonCell % array
-               destField2d => fg % sm_fg % array
+               nInterpPoints = nCells
+               latPoints => latCell
+               lonPoints => lonCell
+               call mpas_pool_get_array(fg, 'sm_fg', destField2d)
                k = 4
                ndims = 2
-               fg % dzs_fg % array(k,:) = 255.-100.
-               fg % zs_fg  % array(k,:) = 255.
+               dzs_fg(k,:) = 255.-100.
+               zs_fg(k,:) = 255.
             else if (index(field % field, 'ST000010') /= 0) then
 write(0,*) 'Interpolating ST000010'
 
@@ -3200,14 +3524,14 @@ write(0,*) 'Interpolating ST000010'
                masked = 0
                fillval = 285.0
 
-               nInterpPoints = grid % nCells
-               latPoints => grid % latCell % array
-               lonPoints => grid % lonCell % array
-               destField2d => fg % st_fg % array
+               nInterpPoints = nCells
+               latPoints => latCell
+               lonPoints => lonCell
+               call mpas_pool_get_array(fg, 'st_fg', destField2d)
                k = 1
                ndims = 2
-               fg % dzs_fg % array(k,:) = 10.
-               fg % zs_fg  % array(k,:) = 10.
+               dzs_fg(k,:) = 10.
+               zs_fg(k,:) = 10.
             else if (index(field % field, 'ST010200') /= 0) then
 write(0,*) 'Interpolating ST010200'
 
@@ -3221,14 +3545,14 @@ write(0,*) 'Interpolating ST010200'
                masked = 0
                fillval = 285.0
 
-               nInterpPoints = grid % nCells
-               latPoints => grid % latCell % array
-               lonPoints => grid % lonCell % array
-               destField2d => fg % st_fg % array
+               nInterpPoints = nCells
+               latPoints => latCell
+               lonPoints => lonCell
+               call mpas_pool_get_array(fg, 'st_fg', destField2d)
                k = 2
                ndims = 2
-               fg % dzs_fg % array(k,:) = 200.-10.
-               fg % zs_fg  % array(k,:) = 200.
+               dzs_fg(k,:) = 200.-10.
+               zs_fg(k,:) = 200.
             else if (index(field % field, 'ST010040') /= 0) then
 write(0,*) 'Interpolating ST010040'
 
@@ -3242,14 +3566,14 @@ write(0,*) 'Interpolating ST010040'
                masked = 0
                fillval = 285.0
 
-               nInterpPoints = grid % nCells
-               latPoints => grid % latCell % array
-               lonPoints => grid % lonCell % array
-               destField2d => fg % st_fg % array
+               nInterpPoints = nCells
+               latPoints => latCell
+               lonPoints => lonCell
+               call mpas_pool_get_array(fg, 'st_fg', destField2d)
                k = 2
                ndims = 2
-               fg % dzs_fg % array(k,:) = 40.-10.               
-               fg % zs_fg  % array(k,:) = 40.
+               dzs_fg(k,:) = 40.-10.               
+               zs_fg(k,:) = 40.
             else if (index(field % field, 'ST040100') /= 0) then
 write(0,*) 'Interpolating ST040100'
 
@@ -3263,14 +3587,14 @@ write(0,*) 'Interpolating ST040100'
                masked = 0
                fillval = 285.0
 
-               nInterpPoints = grid % nCells
-               latPoints => grid % latCell % array
-               lonPoints => grid % lonCell % array
-               destField2d => fg % st_fg % array
+               nInterpPoints = nCells
+               latPoints => latCell
+               lonPoints => lonCell
+               call mpas_pool_get_array(fg, 'st_fg', destField2d)
                k = 3
                ndims = 2
-               fg % dzs_fg % array(k,:) = 100.-40.             
-               fg % zs_fg  % array(k,:) = 100.
+               dzs_fg(k,:) = 100.-40.             
+               zs_fg(k,:) = 100.
             else if (index(field % field, 'ST100200') /= 0) then
 write(0,*) 'Interpolating ST100200'
 
@@ -3284,14 +3608,14 @@ write(0,*) 'Interpolating ST100200'
                masked = 0
                fillval = 285.0
 
-               nInterpPoints = grid % nCells
-               latPoints => grid % latCell % array
-               lonPoints => grid % lonCell % array
-               destField2d => fg % st_fg % array
+               nInterpPoints = nCells
+               latPoints => latCell
+               lonPoints => lonCell
+               call mpas_pool_get_array(fg, 'st_fg', destField2d)
                k = 4
                ndims = 2
-               fg % dzs_fg % array(k,:) = 200.-100.
-               fg % zs_fg  % array(k,:) = 200.
+               dzs_fg(k,:) = 200.-100.
+               zs_fg(k,:) = 200.
             else if (index(field % field, 'ST000007') /= 0) then
 write(0,*) 'Interpolating ST000007'
 
@@ -3305,14 +3629,14 @@ write(0,*) 'Interpolating ST000007'
                masked = 0
                fillval = 285.0
 
-               nInterpPoints = grid % nCells
-               latPoints => grid % latCell % array
-               lonPoints => grid % lonCell % array
-               destField2d => fg % st_fg % array
+               nInterpPoints = nCells
+               latPoints => latCell
+               lonPoints => lonCell
+               call mpas_pool_get_array(fg, 'st_fg', destField2d)
                k = 1
                ndims = 2
-               fg % dzs_fg % array(k,:) = 7.
-               fg % zs_fg  % array(k,:) = 7.
+               dzs_fg(k,:) = 7.
+               zs_fg(k,:) = 7.
             else if (index(field % field, 'ST007028') /= 0) then
 write(0,*) 'Interpolating ST007028'
 
@@ -3326,14 +3650,14 @@ write(0,*) 'Interpolating ST007028'
                masked = 0
                fillval = 285.0
 
-               nInterpPoints = grid % nCells
-               latPoints => grid % latCell % array
-               lonPoints => grid % lonCell % array
-               destField2d => fg % st_fg % array
+               nInterpPoints = nCells
+               latPoints => latCell
+               lonPoints => lonCell
+               call mpas_pool_get_array(fg, 'st_fg', destField2d)
                k = 2
                ndims = 2
-               fg % dzs_fg % array(k,:) = 28.-7.
-               fg % zs_fg  % array(k,:) = 28.
+               dzs_fg(k,:) = 28.-7.
+               zs_fg(k,:) = 28.
             else if (index(field % field, 'ST028100') /= 0) then
 write(0,*) 'Interpolating ST028100'
 
@@ -3347,14 +3671,14 @@ write(0,*) 'Interpolating ST028100'
                masked = 0
                fillval = 285.0
 
-               nInterpPoints = grid % nCells
-               latPoints => grid % latCell % array
-               lonPoints => grid % lonCell % array
-               destField2d => fg % st_fg % array
+               nInterpPoints = nCells
+               latPoints => latCell
+               lonPoints => lonCell
+               call mpas_pool_get_array(fg, 'st_fg', destField2d)
                k = 3
                ndims = 2
-               fg % dzs_fg % array(k,:) = 100.-28.
-               fg % zs_fg  % array(k,:) = 100.
+               dzs_fg(k,:) = 100.-28.
+               zs_fg(k,:) = 100.
             else if (index(field % field, 'ST100255') /= 0) then
 write(0,*) 'Interpolating ST100255'
 
@@ -3368,14 +3692,14 @@ write(0,*) 'Interpolating ST100255'
                masked = 0
                fillval = 285.0
 
-               nInterpPoints = grid % nCells
-               latPoints => grid % latCell % array
-               lonPoints => grid % lonCell % array
-               destField2d => fg % st_fg % array
+               nInterpPoints = nCells
+               latPoints => latCell
+               lonPoints => lonCell
+               call mpas_pool_get_array(fg, 'st_fg', destField2d)
                k = 4
                ndims = 2
-               fg % dzs_fg % array(k,:) = 255.-100.
-               fg % zs_fg  % array(k,:) = 255.
+               dzs_fg(k,:) = 255.-100.
+               zs_fg(k,:) = 255.
             else if (index(field % field, 'SNOW') /= 0) then
 write(0,*) 'Interpolating SNOW'
 
@@ -3386,10 +3710,10 @@ write(0,*) 'Interpolating SNOW'
                masked = 0
                fillval = 0.0
 
-               nInterpPoints = grid % nCells
-               latPoints => grid % latCell % array
-               lonPoints => grid % lonCell % array
-               destField1d => fg % snow % array
+               nInterpPoints = nCells
+               latPoints => latCell
+               lonPoints => lonCell
+               call mpas_pool_get_array(fg, 'snow', destField1d)
                ndims = 1
             else if (index(field % field, 'SEAICE') /= 0) then
 write(0,*) 'Interpolating SEAICE'
@@ -3403,17 +3727,17 @@ write(0,*) 'Interpolating SEAICE'
                masked = 1
                fillval = 0.0
 
-               nInterpPoints = grid % nCells
-               latPoints => grid % latCell % array
-               lonPoints => grid % lonCell % array
-               destField1d => fg % xice % array
+               nInterpPoints = nCells
+               latPoints => latCell
+               lonPoints => lonCell
+               call mpas_pool_get_array(fg, 'xice', destField1d)
                ndims = 1
             else if (index(field % field, 'SKINTEMP') /= 0) then
 write(0,*) 'Interpolating SKINTEMP'
-               nInterpPoints = grid % nCells
-               latPoints => grid % latCell % array
-               lonPoints => grid % lonCell % array
-               destField1d => fg % skintemp % array
+               nInterpPoints = nCells
+               latPoints => latCell
+               lonPoints => lonCell
+               call mpas_pool_get_array(fg, 'skintemp', destField1d)
                ndims = 1
             end if
 
@@ -3460,41 +3784,41 @@ write(0,*) 'Interpolating SKINTEMP'
       call read_met_close()
 
       ! Fix for isobaric data
-      if (minval(fg % p % array(:,:)) == 0.0) then
+      if (minval(p_fg(:,:)) == 0.0) then
          write(0,*) 'Setting pressure field for isobaric data'
          do k=1,config_nfglevels
             if (vert_level(k) /= 200100.0) then
-               fg % p % array(k,:) = vert_level(k)
+               p_fg(k,:) = vert_level(k)
             else
-               fg % p % array(k,:) = fg % psfc % array(:)
+               p_fg(k,:) = psfc(:)
             end if
          end do
       end if
 
       ! Set SST based on SKINTEMP field if it wasn't found in input data
-      if (minval(fg % sst % array) == 0.0 .and. maxval(fg % sst % array) == 0.0) then
+      if (minval(sst) == 0.0 .and. maxval(sst) == 0.0) then
          write(0,*) 'Setting SST from SKINTEMP'
-         !where (grid % landmask % array == 0) fg % sst % array = fg % skintemp % array
-         fg % sst % array = fg % skintemp % array
+         !where (landmask == 0) sst = skintemp
+         sst = skintemp
       end if
 
       ! Set SNOWC (snow-cover flag) based on SNOW
-      fg % snowc % array(:) = 0.0
-      where (fg % snow % array > 0.0) fg % snowc % array = 1.0
+      snowc(:) = 0.0
+      where (snow > 0.0) snowc = 1.0
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !MGD CHECK
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-do iCell=1,grid%nCells
-   if (grid % landmask % array(iCell) == 1) then
+do iCell=1,nCells
+   if (landmask(iCell) == 1) then
 
       do k = 1, config_nfgsoillevels
-         if (fg % st_fg % array(k,iCell) <= 0.0) write(0,*) 'Bad st_fg ', k, iCell
-      enddo
+         if (st_fg(k,iCell) <= 0.0) write(0,*) 'Bad st_fg ', k, iCell
+      end do
 
       do k = 1, config_nfgsoillevels
-         if (fg % sm_fg % array(k,iCell) <= 0.0) write(0,*) 'Bad sm_fg ', k, iCell
-      enddo
+         if (sm_fg(k,iCell) <= 0.0) write(0,*) 'Bad sm_fg ', k, iCell
+      end do
       !LDF end.
 
    end if
@@ -3535,10 +3859,10 @@ write(0,*) 'PROCESSING SEAICE'
                end if
 
                if (index(field % field, 'SEAICE') /= 0) then
-                  nInterpPoints = grid % nCells
-                  latPoints => grid % latCell % array
-                  lonPoints => grid % lonCell % array
-                  destField1d => fg % xice % array
+                  nInterpPoints = nCells
+                  latPoints => latCell
+                  lonPoints => lonCell
+                  call mpas_pool_get_array(fg, 'xice', destField1d)
                   ndims = 1
                end if
    
@@ -3549,7 +3873,7 @@ write(0,*) 'PROCESSING SEAICE'
                masked = 1
                fillval = 0.0
                msgval = 1.01
-               mask_array => grid % landmask % array
+               mask_array => landmask
 
 
                allocate(rslab(field % nx, field % ny))
@@ -3592,26 +3916,26 @@ write(0,*) 'PROCESSING SEAICE'
       if (allocated(maskslab)) deallocate(maskslab)
 
       ! Freeze really cold ocean
-      where (fg % sst % array < 271.0 .and. grid % landmask % array == 0) fg % xice % array = 1.0
+      where (sst < 271.0 .and. landmask == 0) xice = 1.0
 
       ! Limit XICE to values between 0 and 1. Although the input meteorological field is between 0.
       ! and 1., interpolation to the MPAS grid can yield values of XiCE less than 0. and greater
       ! than 1.:
-      where (fg % xice % array < 0._RKIND) fg % xice % array = 0._RKIND
-      where (fg % xice % array > 1._RKIND) fg % xice % array = 1._RKIND
+      where (xice < 0._RKIND) xice = 0._RKIND
+      where (xice > 1._RKIND) xice = 1._RKIND
 
       ! Set SEAICE (0/1 flag) based on XICE (fractional ice coverage)
-      fg % seaice % array(:) = 0.0
-      where (fg % xice % array >= 0.5) fg % seaice % array = 1.0
+      seaice(:) = 0.0
+      where (xice >= 0.5) seaice = 1.0
 
 
       !  
-      ! Compute normal wind component and store in fg%u
+      ! Compute normal wind component and store in fg % u
       !  
-      do iEdge=1,grid%nEdges
+      do iEdge=1,nEdges
          do k=1,config_nfglevels
-            fg % u % array(k,iEdge) = cos(grid % angleEdge % array(iEdge)) * fg % u % array(k,iEdge) &
-                                    + sin(grid % angleEdge % array(iEdge)) * fg % v % array(k,iEdge)
+            u_fg(k,iEdge) = cos(angleEdge(iEdge)) * u_fg(k,iEdge) &
+                          + sin(angleEdge(iEdge)) * v_fg(k,iEdge)
          end do
       end do
 
@@ -3632,21 +3956,21 @@ write(0,*) 'PROCESSING SEAICE'
       !  
       allocate(sorted_arr(2,nfglevels_actual))
 
-      do iCell=1,grid%nCells
+      do iCell=1,nCells
 
          ! T
          sorted_arr(:,:) = -999.0
          do k=1,nfglevels_actual
-            sorted_arr(1,k) = fg % z % array(k,iCell)
+            sorted_arr(1,k) = z_fg(k,iCell)
 !NOSFC            if (vert_level(k) == 200100.0) sorted_arr(1,k) = fg % soilz % array(iCell)
             if (vert_level(k) == 200100.0) sorted_arr(1,k) = 99999.0
-            sorted_arr(2,k) = fg % t % array(k,iCell)
+            sorted_arr(2,k) = t_fg(k,iCell)
          end do
          call mpas_quicksort(nfglevels_actual, sorted_arr)
-         do k=1,grid%nVertLevels
-            target_z = 0.5 * (grid % zgrid % array(k,iCell) + grid % zgrid % array(k+1,iCell))
-!           state % theta_m % array(k,iCell) = vertical_interp(target_z, nfglevels_actual, sorted_arr, order=1, extrap=1)
-            state % theta_m % array(k,iCell) = vertical_interp(target_z, nfglevels_actual-1, &
+         do k=1,nVertLevels
+            target_z = 0.5 * (zgrid(k,iCell) + zgrid(k+1,iCell))
+!           t(k,iCell) = vertical_interp(target_z, nfglevels_actual, sorted_arr, order=1, extrap=1)
+            t(k,iCell) = vertical_interp(target_z, nfglevels_actual-1, &
                                       sorted_arr(:,1:nfglevels_actual-1), order=1, extrap=1)
          end do
 
@@ -3654,54 +3978,53 @@ write(0,*) 'PROCESSING SEAICE'
          ! RH
          sorted_arr(:,:) = -999.0
          do k=1,nfglevels_actual
-            sorted_arr(1,k) = fg % z % array(k,iCell)
+            sorted_arr(1,k) = z_fg(k,iCell)
 !NOSFC            if (vert_level(k) == 200100.0) sorted_arr(1,k) = fg % soilz % array(iCell)
             if (vert_level(k) == 200100.0) sorted_arr(1,k) = 99999.0
-            sorted_arr(2,k) = fg % rh % array(k,iCell)
+            sorted_arr(2,k) = rh_fg(k,iCell)
          end do
          call mpas_quicksort(nfglevels_actual, sorted_arr)
-         do k=1,grid%nVertLevels
-            target_z = 0.5 * (grid % zgrid % array(k,iCell) + grid % zgrid % array(k+1,iCell))
-!           state % scalars % array(state % index_qv,k,iCell) = vertical_interp(target_z, nfglevels_actual, sorted_arr, order=1, extrap=0)
-            state % scalars % array(state % index_qv,k,iCell) = vertical_interp(target_z, nfglevels_actual-1, &
+         do k=1,nVertLevels
+            target_z = 0.5 * (zgrid(k,iCell) + zgrid(k+1,iCell))
+!           scalars(index_qv,k,iCell) = vertical_interp(target_z, nfglevels_actual, sorted_arr, order=1, extrap=0)
+            scalars(index_qv,k,iCell) = vertical_interp(target_z, nfglevels_actual-1, &
                                                        sorted_arr(:,1:nfglevels_actual-1), order=1, extrap=1)
-            diag % rh % array(k,iCell) = state % scalars % array(state % index_qv,k,iCell)
+            rh(k,iCell) = scalars(index_qv,k,iCell)
          end do
 
 
          ! GHT
          sorted_arr(:,:) = -999.0
          do k=1,nfglevels_actual
-            sorted_arr(1,k) = fg % z % array(k,iCell)
+            sorted_arr(1,k) = z_fg(k,iCell)
 !NOSFC            if (vert_level(k) == 200100.0) sorted_arr(1,k) = fg % soilz % array(iCell)
             if (vert_level(k) == 200100.0) sorted_arr(1,k) = 99999.0
-            sorted_arr(2,k) = fg % z % array(k,iCell)
+            sorted_arr(2,k) = z_fg(k,iCell)
          end do
          call mpas_quicksort(nfglevels_actual, sorted_arr)
-         do k=1,grid%nVertLevels
-            target_z = 0.5 * (grid % zgrid % array(k,iCell) + grid % zgrid % array(k+1,iCell))
-!           fg % gfs_z % array(k,iCell) = vertical_interp(target_z, nfglevels_actual, sorted_arr, order=1, extrap=1)
-            fg % gfs_z % array(k,iCell) = vertical_interp(target_z, nfglevels_actual-1, &
-                                 sorted_arr(:,1:nfglevels_actual-1), order=1, extrap=1)
+         do k=1,nVertLevels
+            target_z = 0.5 * (zgrid(k,iCell) + zgrid(k+1,iCell))
+!           gfs_z(k,iCell) = vertical_interp(target_z, nfglevels_actual, sorted_arr, order=1, extrap=1)
+            gfs_z(k,iCell) = vertical_interp(target_z, nfglevels_actual-1, sorted_arr(:,1:nfglevels_actual-1), order=1, extrap=1)
          end do
 
 
          ! PRESSURE
          sorted_arr(:,:) = -999.0
          do k=1,nfglevels_actual
-            sorted_arr(1,k) = fg % z % array(k,iCell)
+            sorted_arr(1,k) = z_fg(k,iCell)
             if (vert_level(k) == 200100.0) then 
 !NOSFC               sorted_arr(1,k) = fg % soilz % array(iCell)
                sorted_arr(1,k) = 99999.0
                sfc_k = k
             end if
-            sorted_arr(2,k) = log(fg % p % array(k,iCell))
+            sorted_arr(2,k) = log(p_fg(k,iCell))
          end do
          call mpas_quicksort(nfglevels_actual, sorted_arr)
-         do k=1,grid%nVertLevels
-            target_z = 0.5 * (grid % zgrid % array(k,iCell) + grid % zgrid % array(k+1,iCell))
-!           diag % pressure % array(k,iCell) = exp(vertical_interp(target_z, nfglevels_actual, sorted_arr, order=1, extrap=1))
-            diag % pressure % array(k,iCell) = exp(vertical_interp(target_z, nfglevels_actual-1, &
+         do k=1,nVertLevels
+            target_z = 0.5 * (zgrid(k,iCell) + zgrid(k+1,iCell))
+!           pressure(k,iCell) = exp(vertical_interp(target_z, nfglevels_actual, sorted_arr, order=1, extrap=1))
+            pressure(k,iCell) = exp(vertical_interp(target_z, nfglevels_actual-1, &
                                          sorted_arr(:,1:nfglevels_actual-1), order=1, extrap=1))
          end do
 
@@ -3709,39 +4032,38 @@ write(0,*) 'PROCESSING SEAICE'
          ! PRESSURE
 !         sorted_arr(:,:) = -999.0
 !         do k=1,nfglevels_actual
-!            sorted_arr(1,k) = fg % z % array(k,iCell)
+!            sorted_arr(1,k) = z_fg(k,iCell)
 !            if (vert_level(k) == 200100.0) then 
 !!NOSFC               sorted_arr(1,k) = fg % soilz % array(iCell)
 !               sorted_arr(1,k) = 99999.0
 !               sfc_k = k
 !            end if
-!            sorted_arr(2,k) = log(fg % p % array(k,iCell))
+!            sorted_arr(2,k) = log(p_fg(k,iCell))
 !         end do
 !         call mpas_quicksort(nfglevels_actual, sorted_arr)
-!         do k=1,grid%nVertLevels+1
-!            target_z = grid % zgrid % array(k,iCell)
-!            fg % gfs_p % array(k,iCell) = exp(vertical_interp(target_z, nfglevels_actual, sorted_arr, order=1, extrap=1))
+!         do k=1,nVertLevels+1
+!            target_z = zgrid(k,iCell)
+!            gfs_p(k,iCell) = exp(vertical_interp(target_z, nfglevels_actual, sorted_arr, order=1, extrap=1))
 !         end do
 
       end do
 
 
-      do iEdge=1,grid%nEdges
+      do iEdge=1,nEdges
 
          ! U
          sorted_arr(:,:) = -999.0
          do k=1,nfglevels_actual
-            sorted_arr(1,k) = 0.5 * (fg % z % array(k,cellsOnEdge(1,iEdge)) + fg % z % array(k,cellsOnEdge(2,iEdge)))
+            sorted_arr(1,k) = 0.5 * (z_fg(k,cellsOnEdge(1,iEdge)) + z_fg(k,cellsOnEdge(2,iEdge)))
 !NOSFC            if (vert_level(k) == 200100.0) sorted_arr(1,k) = 0.5 * (fg % soilz % array(cellsOnEdge(1,iEdge)) + fg % soilz % array(cellsOnEdge(2,iEdge)))
             if (vert_level(k) == 200100.0) sorted_arr(1,k) = 99999.0
-            sorted_arr(2,k) = fg % u % array(k,iEdge)
+            sorted_arr(2,k) = u_fg(k,iEdge)
          end do
          call mpas_quicksort(nfglevels_actual, sorted_arr)
-         do k=1,grid%nVertLevels
-            target_z = 0.25 * (grid % zgrid % array(k,cellsOnEdge(1,iEdge)) + grid % zgrid % array(k+1,cellsOnEdge(1,iEdge)) + grid % zgrid % array(k,cellsOnEdge(2,iEdge)) + grid % zgrid % array(k+1,cellsOnEdge(2,iEdge)))
-!           state % u % array(k,iEdge) = vertical_interp(target_z, nfglevels_actual, sorted_arr, order=1, extrap=0)
-            state % u % array(k,iEdge) = vertical_interp(target_z, nfglevels_actual-1, & 
-                                sorted_arr(:,1:nfglevels_actual-1), order=1, extrap=1)
+         do k=1,nVertLevels
+            target_z = 0.25 * (zgrid(k,cellsOnEdge(1,iEdge)) + zgrid(k+1,cellsOnEdge(1,iEdge)) + zgrid(k,cellsOnEdge(2,iEdge)) + zgrid(k+1,cellsOnEdge(2,iEdge)))
+!           u(k,iEdge) = vertical_interp(target_z, nfglevels_actual, sorted_arr, order=1, extrap=0)
+            u(k,iEdge) = vertical_interp(target_z, nfglevels_actual-1, sorted_arr(:,1:nfglevels_actual-1), order=1, extrap=1)
          end do
 
       end do
@@ -3750,14 +4072,14 @@ write(0,*) 'PROCESSING SEAICE'
       !
       ! Reconstruct zonal and meridional winds for diagnostic puposes:
       !
-      call mpas_rbf_interp_initialize(grid)
-      call mpas_init_reconstruct(grid)
-      call mpas_reconstruct(grid, state % u % array,                        &
-                            diag % uReconstructX % array,                   &
-                            diag % uReconstructY % array,                   &
-                            diag % uReconstructZ % array,                   &
-                            diag % uReconstructZonal % array,               &
-                            diag % uReconstructMeridional % array           &
+      call mpas_rbf_interp_initialize(mesh)
+      call mpas_init_reconstruct(mesh)
+      call mpas_reconstruct(mesh, u,                 &
+                            uReconstructX,           &
+                            uReconstructY,           &
+                            uReconstructZ,           &
+                            uReconstructZonal,       &
+                            uReconstructMeridional   &
                            )
    
 
@@ -3767,21 +4089,21 @@ write(0,*) 'PROCESSING SEAICE'
       do sfc_k=1,nfglevels_actual
          if (vert_level(sfc_k) == 200100.) exit
       end do 
-      do iCell=1,grid%nCells
+      do iCell=1,nCells
 
          ! We need to extrapolate
             sorted_arr(:,:) = -999.0
             do k=1,nfglevels_actual
-               sorted_arr(1,k) = fg % z % array(k,iCell)
+               sorted_arr(1,k) = z_fg(k,iCell)
                if (vert_level(k) == 200100.0) then 
 !NOSFC                  sorted_arr(1,k) = fg % soilz % array(iCell)
                   sorted_arr(1,k) = 99999.0
                end if
-               sorted_arr(2,k) = log(fg % p % array(k,iCell))
+               sorted_arr(2,k) = log(p_fg(k,iCell))
             end do
             call mpas_quicksort(nfglevels_actual, sorted_arr)
-            target_z = grid % zgrid % array(1,iCell)
-            fg % psfc % array(iCell) = exp(vertical_interp(target_z, nfglevels_actual, sorted_arr, order=1, extrap=1))
+            target_z = zgrid(1,iCell)
+            psfc(iCell) = exp(vertical_interp(target_z, nfglevels_actual, sorted_arr, order=1, extrap=1))
 
       end do
 
@@ -3793,24 +4115,24 @@ write(0,*) 'PROCESSING SEAICE'
       ! Diagnose fields needed in initial conditions file (u, w, rho, theta, scalars)
       ! NB: At this point, "rho_zz" is simple dry density, and "theta_m" is regular potential temperature
       !
-      do iCell=1,grid%nCells
-         do k=1,grid%nVertLevels
+      do iCell=1,nCells
+         do k=1,nVertLevels
 
             ! QV
-            es = 6.112 * exp((17.27*(state % theta_m % array(k,iCell) - 273.16))/(state % theta_m % array(k,iCell) - 35.86))
-            rs = 0.622 * es * 100. / (diag % pressure % array(k,iCell) - es * 100.)
-            scalars(state % index_qv,k,iCell) = 0.01 * rs * scalars(state % index_qv,k,iCell)
+            es = 6.112 * exp((17.27*(t(k,iCell) - 273.16))/(t(k,iCell) - 35.86))
+            rs = 0.622 * es * 100. / (pressure(k,iCell) - es * 100.)
+            scalars(index_qv,k,iCell) = 0.01 * rs * scalars(index_qv,k,iCell)
 
             ! PI
-            p(k,iCell) = (diag % pressure % array(k,iCell) / p0) ** (rgas / cp)
+            p(k,iCell) = (pressure(k,iCell) / p0) ** (rgas / cp)
 
             ! THETA - can compute this using PI instead
 !            t(k,iCell) = t(k,iCell) / p(k,iCell)
-            t(k,iCell) = t(k,iCell) * (p0 / diag % pressure % array(k,iCell)) ** (rgas / cp)
+            t(k,iCell) = t(k,iCell) * (p0 / pressure(k,iCell)) ** (rgas / cp)
 
             ! RHO_ZZ
-            rho_zz(k,iCell) = diag % pressure % array(k,iCell) / rgas / (p(k,iCell) * t(k,iCell))
-            rho_zz(k,iCell) = rho_zz(k,iCell) / (1.0 + scalars(state % index_qv,k,iCell))
+            rho_zz(k,iCell) = pressure(k,iCell) / rgas / (p(k,iCell) * t(k,iCell))
+            rho_zz(k,iCell) = rho_zz(k,iCell) / (1.0 + scalars(index_qv,k,iCell))
          end do
       end do
 
@@ -3818,18 +4140,17 @@ write(0,*) 'PROCESSING SEAICE'
       !
       ! Calculation of the initial precipitable water:
       ! 
-      do iCell = 1,grid%nCells
-         diag_physics%precipw%array(iCell) = 0.0
-         do k = 1,grid%nVertLevels
-            diag_physics%precipw%array(iCell) = diag_physics%precipw%array(iCell) &
-                         + rho_zz(k,iCell)*scalars(state%index_qv,k,iCell)*(zgrid(k+1,iCell)-zgrid(k,iCell))
-         enddo
-      enddo
+      do iCell = 1,nCells
+         precipw(iCell) = 0.0
+         do k = 1,nVertLevels
+            precipw(iCell) = precipw(iCell) + rho_zz(k,iCell)*scalars(index_qv,k,iCell)*(zgrid(k+1,iCell)-zgrid(k,iCell))
+         end do
+      end do
 
       !
       ! Reference state based on a dry isothermal atmosphere
       !
-      do iCell=1,grid % nCells
+      do iCell=1,nCells
          do k=1,nz1
             ztemp    = 0.5*(zgrid(k+1,iCell)+zgrid(k,iCell))
             ppb(k,iCell) = p0*exp(-gravity*ztemp/(rgas*t0b))      ! pressure_base
@@ -3844,28 +4165,28 @@ write(0,*) 'PROCESSING SEAICE'
          end do
       end do
 
-      do iCell=1,grid%nCells
-         do k=1,grid%nVertLevels
+      do iCell=1,nCells
+         do k=1,nVertLevels
 
 !  WCS 20130821 - couple with vertical metric
 
             rb(k,iCell) = rb(k,iCell) / zz(k,iCell)
             rho_zz(k,iCell) = rho_zz(k,iCell) / zz(k,iCell)
 
-            pp(k,iCell) = diag % pressure % array(k,iCell) - ppb(k,iCell) 
+            pp(k,iCell) = pressure(k,iCell) - ppb(k,iCell) 
             rr(k,iCell) = rho_zz(k,iCell) - rb(k,iCell)
 
          end do
       end do
 
-      do iCell=1,grid%nCells
+      do iCell=1,nCells
          k = 1
 !  WCS 20130821 - couple with vertical metric, note: rr is coupled here
-         rho_zz(k,iCell) = ((diag % pressure % array(k,iCell) / p0)**(cv / cp)) * (p0 / rgas) &
-                            / (t(k,iCell)*(1.0 + 1.61*scalars(state % index_qv,k,iCell))) / zz(k,iCell)
+         rho_zz(k,iCell) = ((pressure(k,iCell) / p0)**(cv / cp)) * (p0 / rgas) &
+                            / (t(k,iCell)*(1.0 + 1.61*scalars(index_qv,k,iCell))) / zz(k,iCell)
          rr(k,iCell) = rho_zz(k,iCell) - rb(k,iCell)
 
-         do k=2,grid % nVertLevels
+         do k=2,nVertLevels
             it = 0
             p_check = 2.0 * 0.0001
             do while ( (it < 30) .and. (p_check > 0.0001) )
@@ -3873,13 +4194,13 @@ write(0,*) 'PROCESSING SEAICE'
                p_check = pp(k,iCell)
 !  WCS 20130821 - MPAS hydrostatic relation
                pp(k,iCell) = pp(k-1,iCell) - (fzm(k)*rr(k,iCell) + fzp(k)*rr(k-1,iCell))*gravity*dzu(k) &
-                                           - (fzm(k)*rho_zz(k,iCell)*scalars(state % index_qv,k,iCell) &
-                                                  + fzp(k)*rho_zz(k-1,iCell)*scalars(state % index_qv,k-1,iCell))*gravity*dzu(k)
-               diag % pressure % array(k,iCell) = pp(k,iCell) + ppb(k,iCell)
-               p(k,iCell) = (diag % pressure % array(k,iCell) / p0) ** (rgas / cp)
+                                           - (fzm(k)*rho_zz(k,iCell)*scalars(index_qv,k,iCell) &
+                                                  + fzp(k)*rho_zz(k-1,iCell)*scalars(index_qv,k-1,iCell))*gravity*dzu(k)
+               pressure(k,iCell) = pp(k,iCell) + ppb(k,iCell)
+               p(k,iCell) = (pressure(k,iCell) / p0) ** (rgas / cp)
 !  WCS 20130821 - couple with vertical metric
-               rho_zz(k,iCell) = diag % pressure % array(k,iCell) / rgas &
-                     / (p(k,iCell)*t(k,iCell)*(1.0 + 1.61*scalars(state % index_qv,k,iCell)))/zz(k,iCell)
+               rho_zz(k,iCell) = pressure(k,iCell) / rgas &
+                     / (p(k,iCell)*t(k,iCell)*(1.0 + 1.61*scalars(index_qv,k,iCell)))/zz(k,iCell)
                rr(k,iCell) = rho_zz(k,iCell) - rb(k,iCell)
 
                p_check = abs(p_check - pp(k,iCell))
@@ -3890,9 +4211,9 @@ write(0,*) 'PROCESSING SEAICE'
       end do
 
       ! Compute theta_m and rho-tilde
-      do iCell=1,grid%nCells
-         do k=1,grid%nVertLevels
-            t(k,iCell) = t(k,iCell) * (1.0 + 1.61*scalars(state % index_qv,k,iCell))
+      do iCell=1,nCells
+         do k=1,nVertLevels
+            t(k,iCell) = t(k,iCell) * (1.0 + 1.61*scalars(index_qv,k,iCell))
 !!  WCS 20130821 - coupling with vertical metric already accomplished...
 !!            rho_zz(k,iCell) = rho_zz(k,iCell) / zz(k,iCell)
 !!            rb(k,iCell) = rb(k,iCell) / zz(k,iCell)
@@ -3901,33 +4222,33 @@ write(0,*) 'PROCESSING SEAICE'
          end do
       end do
 
-      do iEdge=1,grid%nEdges
-         do k=1,grid%nVertLevels
-            diag % ru % array(k,iEdge) = state % u % array(k,iEdge) * 0.5*(state % rho_zz % array(k,cellsOnEdge(1,iEdge)) + state % rho_zz % array(k,cellsOnEdge(2,iEdge)))
+      do iEdge=1,nEdges
+         do k=1,nVertLevels
+            ru(k,iEdge) = u(k,iEdge) * 0.5*(rho_zz(k,cellsOnEdge(1,iEdge)) + rho_zz(k,cellsOnEdge(2,iEdge)))
          end do
       end do
 
 
-      diag % rw % array = 0.
-      state % w % array = 0.
-      do iEdge = 1,grid % nEdges
+      rw= 0.0
+      w = 0.0
+      do iEdge = 1,nEdges
 
-         cell1 = CellsOnEdge(1,iEdge)
-         cell2 = CellsOnEdge(2,iEdge)
+         cell1 = cellsOnEdge(1,iEdge)
+         cell2 = cellsOnEdge(2,iEdge)
 
          if (cell1 <= nCellsSolve .or. cell2 <= nCellsSolve ) then
-         do k = 2, grid%nVertLevels
-            flux =  (fzm(k)*diag % ru % array(k,iEdge)+fzp(k)*diag % ru % array(k-1,iEdge))
-            diag % rw % array(k,cell2) = diag % rw % array(k,cell2) + (fzm(k)*zz(k,cell2)+fzp(k)*zz(k-1,cell2))*zb(k,2,iEdge)*flux
-            diag % rw % array(k,cell1) = diag % rw % array(k,cell1) - (fzm(k)*zz(k,cell1)+fzp(k)*zz(k-1,cell1))*zb(k,1,iEdge)*flux
+         do k = 2, nVertLevels
+            flux =  (fzm(k)*ru(k,iEdge)+fzp(k)*ru(k-1,iEdge))
+            rw(k,cell2) = rw(k,cell2) + (fzm(k)*zz(k,cell2)+fzp(k)*zz(k-1,cell2))*zb(k,2,iEdge)*flux
+            rw(k,cell1) = rw(k,cell1) - (fzm(k)*zz(k,cell1)+fzp(k)*zz(k-1,cell1))*zb(k,1,iEdge)*flux
 
             if (config_theta_adv_order ==3) then 
-               diag % rw % array(k,cell2) = diag % rw % array(k,cell2)    &
-                                            - sign(1.0_RKIND,diag % ru % array(k,iEdge))*config_coef_3rd_order* &
-                                              (fzm(k)*zz(k,cell2)+fzp(k)*zz(k-1,cell2))*zb3(k,2,iEdge)*flux
-               diag % rw % array(k,cell1) = diag % rw % array(k,cell1)    &
-                                            + sign(1.0_RKIND,diag % ru % array(k,iEdge))*config_coef_3rd_order* &
-                                              (fzm(k)*zz(k,cell1)+fzp(k)*zz(k-1,cell1))*zb3(k,1,iEdge)*flux
+               rw(k,cell2) = rw(k,cell2)    &
+                            - sign(1.0_RKIND,ru(k,iEdge))*config_coef_3rd_order* &
+                              (fzm(k)*zz(k,cell2)+fzp(k)*zz(k-1,cell2))*zb3(k,2,iEdge)*flux
+               rw(k,cell1) = rw(k,cell1)    &
+                            + sign(1.0_RKIND,ru(k,iEdge))*config_coef_3rd_order* &
+                              (fzm(k)*zz(k,cell1)+fzp(k)*zz(k-1,cell1))*zb3(k,1,iEdge)*flux
             end if
 
          end do
@@ -3936,10 +4257,9 @@ write(0,*) 'PROCESSING SEAICE'
       end do
 
       ! Compute w from rho_zz and rw
-      do iCell=1,grid%nCells
-         do k=2,grid%nVertLevels
-            state % w % array(k,iCell) = diag % rw % array(k,iCell)     &
-                                       / (fzp(k) * state % rho_zz % array(k-1,iCell) + fzm(k) * state % rho_zz % array(k,iCell))
+      do iCell=1,nCells
+         do k=2,nVertLevels
+            w(k,iCell) = rw(k,iCell) / (fzp(k) * rho_zz(k-1,iCell) + fzm(k) * rho_zz(k,iCell))
          end do
       end do
    
@@ -3948,18 +4268,18 @@ write(0,*) 'PROCESSING SEAICE'
      
       ! Calculate surface pressure (This is an ad-hoc calculation. The actual surface pressure is actually re-calculated at
       !the top of the subroutine MPAS_to_physics in ../core_atmos_physics/mpas_atmphys_interface_nhyd.F
-      do iCell=1,grid%nCells
-         diag % surface_pressure % array(iCell) = 0.5*gravity/rdzw(1)                                              &
-                                                * (1.25* rho_zz(1,iCell) * (1. + scalars(state % index_qv, 1, iCell))  &
-                                                -  0.25* rho_zz(2,iCell) * (1. + scalars(state % index_qv, 2, iCell)))
-         diag % surface_pressure % array(iCell) = diag % surface_pressure % array(iCell) + pp(1,iCell) + ppb(1,iCell)
+      do iCell=1,nCells
+         surface_pressure(iCell) = 0.5*gravity/rdzw(1)                                              &
+                                 * (1.25* rho_zz(1,iCell) * (1. + scalars(index_qv, 1, iCell))  &
+                                 -  0.25* rho_zz(2,iCell) * (1. + scalars(index_qv, 2, iCell)))
+         surface_pressure(iCell) = surface_pressure(iCell) + pp(1,iCell) + ppb(1,iCell)
       end do
 
       ! Compute rho and theta from rho_zz and theta_m
-      do iCell=1,grid%nCells
-         do k=1,grid%nVertLevels
-            diag % rho % array(k,iCell) = state % rho_zz % array(k,iCell) * zz(k,iCell)
-            diag % theta % array(k,iCell) = state % theta_m % array(k,iCell) / (1.0 + 1.61 * scalars(state % index_qv,k,iCell))
+      do iCell=1,nCells
+         do k=1,nVertLevels
+            rho(k,iCell) = rho_zz(k,iCell) * zz(k,iCell)
+            theta(k,iCell) = t(k,iCell) / (1.0 + 1.61 * scalars(index_qv,k,iCell))
          end do
       end do
 
@@ -4158,106 +4478,148 @@ write(0,*) 'PROCESSING SEAICE'
    
       implicit none
       
-      !input and output arguments:
-      type(mesh_type),intent(inout):: mesh
-      type (fg_type), intent(inout) :: fg
+      type (mpas_pool_type), intent(inout) :: mesh
+      type (mpas_pool_type), intent(inout) :: fg
       
       !local variables:
-      integer:: iCell,iMonth,iSoil
+      integer :: iCell, iMonth, iSoil
+      integer, pointer :: nCells, nSoilLevels, nMonths
+      integer, dimension(:), pointer :: landmask, lu_index, soilcat_top
+      real (kind=RKIND), dimension(:), pointer :: ter, xice, shdmin, shdmax, vegfra, sfc_albbck, xland, seaice
+      real (kind=RKIND), dimension(:), pointer :: snow, snowc, snoalb, snowh, skintemp, sst, tmn
+      real (kind=RKIND), dimension(:,:), pointer :: tslb, smcrel, sh2o, smois, dzs, albedo12m, greenfrac
       
       !---------------------------------------------------------------------------------------------
+
+      call mpas_pool_get_dimension(mesh, 'nCells', nCells)
+      call mpas_pool_get_dimension(mesh, 'nSoilLevels', nSoilLevels)
+      call mpas_pool_get_dimension(mesh, 'nMonths', nMonths)
+
+      call mpas_pool_get_array(mesh, 'ter', ter)
+      call mpas_pool_get_array(mesh, 'landmask', landmask)
+      call mpas_pool_get_array(mesh, 'lu_index', lu_index)
+      call mpas_pool_get_array(mesh, 'soilcat_top', soilcat_top)
+      call mpas_pool_get_array(mesh, 'shdmin', shdmin)
+      call mpas_pool_get_array(mesh, 'shdmax', shdmax)
+      call mpas_pool_get_array(mesh, 'snoalb', snoalb)
+      call mpas_pool_get_array(mesh, 'albedo12m', albedo12m)
+      call mpas_pool_get_array(mesh, 'greenfrac', greenfrac)
+
+      call mpas_pool_get_array(fg, 'xice', xice)
+      call mpas_pool_get_array(fg, 'vegfra', vegfra)
+      call mpas_pool_get_array(fg, 'sfc_albbck', sfc_albbck)
+      call mpas_pool_get_array(fg, 'xland', xland)
+      call mpas_pool_get_array(fg, 'seaice', seaice)
+      call mpas_pool_get_array(fg, 'snow', snow)
+      call mpas_pool_get_array(fg, 'snowc', snowc)
+      call mpas_pool_get_array(fg, 'snowh', snowh)
+      call mpas_pool_get_array(fg, 'skintemp', skintemp)
+      call mpas_pool_get_array(fg, 'sst', sst)
+      call mpas_pool_get_array(fg, 'tmn', tmn)
+      call mpas_pool_get_array(fg, 'tslb', tslb)
+      call mpas_pool_get_array(fg, 'smcrel', smcrel)
+      call mpas_pool_get_array(fg, 'sh2o', sh2o)
+      call mpas_pool_get_array(fg, 'smois', smois)
+      call mpas_pool_get_array(fg, 'dzs', dzs)
       
       !initialization of surface input variables that are not needed if we run the current set of
       !idealized test cases:
       
       
-      do iCell = 1, mesh % nCells
+      do iCell = 1, nCells
       
          !terrain,soil type, and vegetation:
-         mesh % ter      % array(iCell) = 0.
-         fg % xice       % array(iCell) = 0.
-         mesh % landmask % array(iCell) = 0
-         mesh % lu_index  % array(iCell) = 0
-         mesh % soilcat_top % array(iCell) = 0
-         mesh % shdmin   % array(iCell) = 0.
-         mesh % shdmax   % array(iCell) = 0.
-         fg % vegfra   % array(iCell) = 0.
-         fg % sfc_albbck % array(iCell) = 0.
-         fg % xland % array(iCell) = 0.
-         fg % seaice % array(iCell) = 0.
+         ter(iCell) = 0.0
+         xice(iCell) = 0.0
+         landmask(iCell) = 0
+         lu_index(iCell) = 0
+         soilcat_top(iCell) = 0
+         shdmin(iCell) = 0.0
+         shdmax(iCell) = 0.0
+         vegfra(iCell) = 0.0
+         sfc_albbck(iCell) = 0.0
+         xland(iCell) = 0.0
+         seaice(iCell) = 0.0
       
          !snow coverage:
-         fg % snow     % array(iCell) = 0.
-         fg % snowc    % array(iCell) = 0.
-         mesh % snoalb % array(iCell) = 0.08
-         fg % snowh % array(iCell) = 0.
+         snow(iCell) = 0.0
+         snowc(iCell) = 0.0
+         snoalb(iCell) = 0.08
+         snowh(iCell) = 0.0
       
          !surface and sea-surface temperatures:
-         fg % skintemp % array(iCell) = 288.0
-         fg % sst      % array(iCell) = 288.0
+         skintemp(iCell) = 288.0
+         sst(iCell) = 288.0
       
          !soil layers:
-         fg % tmn % array(iCell) = 288.0
-         do iSoil = 1, mesh % nSoilLevels
-            fg % tslb % array(iSoil,iCell)   = 288.0
-            fg % smcrel % array(iSoil,iCell) =   0.0
-            fg % sh2o   % array(iSoil,iCell) =   0.0
-            fg % smois  % array(iSoil,iCell) =   0.0
-            fg % dzs    % array(iSoil,iCell) =   0.0
-         enddo
+         tmn(iCell) = 288.0
+         do iSoil = 1, nSoilLevels
+            tslb(iSoil,iCell)   = 288.0
+            smcrel(iSoil,iCell) =   0.0
+            sh2o(iSoil,iCell) =   0.0
+            smois(iSoil,iCell) =   0.0
+            dzs(iSoil,iCell) =   0.0
+         end do
       
          !monthly climatological surface albedo and greeness fraction:
-         do iMonth = 1, mesh % nMonths
-            mesh % albedo12m % array(iMonth,iCell) = 0.08
-            mesh % greenfrac % array(iMonth,iCell) = 0.
-         enddo
+         do iMonth = 1, nMonths
+            albedo12m(iMonth,iCell) = 0.08
+            greenfrac(iMonth,iCell) = 0.0
+         end do
       
-      enddo
+      end do
    
    end subroutine physics_idealized_init
    
    
-   subroutine decouple_variables(grid, state, diag)
+   subroutine decouple_variables(mesh, nCells, nVertLevels, state, diag)
 
       implicit none
 
-      type (mesh_type), intent(in) :: grid
-      type (state_type), intent(inout) :: state
-      type (diag_type), intent(inout) :: diag
+      type (mpas_pool_type), intent(in) :: mesh
+      integer, intent(in) :: nCells
+      integer, intent(in) :: nVertLevels
+      type (mpas_pool_type), intent(inout) :: state
+      type (mpas_pool_type), intent(inout) :: diag
 
       integer :: iCell, iEdge, k
 
       integer, dimension(:,:), pointer :: cellsOnEdge
-      real (kind=RKIND), dimension(:), pointer :: fzm, fzp, rdzw
-      real (kind=RKIND), dimension(:,:), pointer :: zz, pp, ppb
+      real (kind=RKIND), dimension(:), pointer :: rdzw
+      real (kind=RKIND), dimension(:,:), pointer :: zz, pp, ppb, rho, rho_zz, theta, theta_m
+      real (kind=RKIND), dimension(:), pointer :: surface_pressure
       real (kind=RKIND), dimension(:,:,:), pointer :: scalars
 
-      cellsOnEdge => grid % CellsOnEdge % array
-      fzp => grid % fzm % array
-      fzp => grid % fzp % array
-      rdzw => grid % rdzw % array
-      zz => grid % zz % array
+      integer, pointer :: index_qv
 
-      pp  => diag % pressure_p % array
-      ppb => diag % pressure_base % array
+      call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
+      call mpas_pool_get_array(mesh, 'rdzw', rdzw)
+      call mpas_pool_get_array(mesh, 'zz', zz)
+      call mpas_pool_get_array(diag, 'pressure_p', pp)
+      call mpas_pool_get_array(diag, 'pressure_base', ppb)
+      call mpas_pool_get_array(diag, 'surface_pressure', surface_pressure)
+      call mpas_pool_get_array(diag, 'rho', rho)
+      call mpas_pool_get_array(diag, 'theta', theta)
+      call mpas_pool_get_array(state, 'rho_zz', rho_zz)
+      call mpas_pool_get_array(state, 'theta_m', theta_m)
+      call mpas_pool_get_array(state, 'scalars', scalars)
 
-      scalars => state % scalars % array
- 
+      call mpas_pool_get_dimension(state, 'index_qv', index_qv)
      
       ! Compute surface pressure
-      do iCell=1,grid%nCells
-         diag % surface_pressure % array(iCell) = 0.5*gravity/rdzw(1)                                        &
-                                                * (1.25* state % rho_zz % array(1,iCell) * (1. + scalars(state % index_qv, 1, iCell))  &
-                                                -  0.25* state % rho_zz % array(2,iCell) * (1. + scalars(state % index_qv, 2, iCell)))
-         diag % surface_pressure % array(iCell) = diag % surface_pressure % array(iCell) + pp(1,iCell) + ppb(1,iCell)
+      do iCell=1,nCells
+         surface_pressure(iCell) = 0.5*gravity/rdzw(1)                                        &
+                                   * (1.25* rho_zz(1,iCell) * (1. + scalars(index_qv, 1, iCell))  &
+                                      -  0.25* rho_zz(2,iCell) * (1. + scalars(index_qv, 2, iCell)))
+         surface_pressure(iCell) = surface_pressure(iCell) + pp(1,iCell) + ppb(1,iCell)
       end do
 
 
       ! Compute rho and theta from rho_zz and theta_m
-      do iCell=1,grid%nCells
-         do k=1,grid%nVertLevels
-            diag % rho % array(k,iCell) = state % rho_zz % array(k,iCell) * zz(k,iCell)
-            diag % theta % array(k,iCell) = state % theta_m % array(k,iCell) / (1.0 + 1.61 * scalars(state % index_qv,k,iCell))
+      do iCell=1,nCells
+         do k=1,nVertLevels
+            rho(k,iCell) = rho_zz(k,iCell) * zz(k,iCell)
+            theta(k,iCell) = theta_m(k,iCell) / (1.0 + 1.61 * scalars(index_qv,k,iCell))
          end do
       end do
 

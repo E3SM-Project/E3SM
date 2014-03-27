@@ -25,7 +25,7 @@ module mpas_core
 
    subroutine mpas_core_init(domain, startTimeStamp)
 
-      use mpas_configure
+!      use mpas_configure
       use mpas_kind_types
       use mpas_grid_types
 
@@ -34,47 +34,68 @@ module mpas_core
       type (domain_type), intent(inout) :: domain
       character(len=*), intent(out) :: startTimeStamp
 
-      real (kind=RKIND) :: dt
+      real (kind=RKIND), pointer :: dt
       type (block_type), pointer :: block
 
       character(len=StrKIND) :: timeStamp
       integer :: i
       integer :: ierr
+      logical, pointer :: config_do_restart
+     
+      type (mpas_pool_type), pointer :: state
+      type (mpas_pool_type), pointer :: mesh
+      type (mpas_pool_type), pointer :: diag
+      type (field2DReal), pointer :: u_field, pv_edge_field, ru_field, rw_field
+      character (len=StrKIND), pointer :: xtime
+      character (len=StrKIND), pointer :: config_sfc_update_interval, config_sfc_update_name
+
+
+      call mpas_pool_get_config(domain % blocklist % configs, 'config_do_restart', config_do_restart)
+      call mpas_pool_get_config(domain % blocklist % configs, 'config_dt', dt)
+      call mpas_pool_get_config(domain % blocklist % configs, 'config_sfc_update_interval', config_sfc_update_interval)
+      call mpas_pool_get_config(domain % blocklist % configs, 'config_sfc_update_name', config_sfc_update_name)
 
       if (.not. config_do_restart) then
-
-         ! Code that was previously in atm_setup_test_case()
-
          block => domain % blocklist
          do while (associated(block))
-            do i=2,nTimeLevs
-               call mpas_copy_state(block % state % time_levs(i) % state, block % state % time_levs(1) % state)
-            end do
+            call mpas_pool_get_subpool(block % structs, 'state', state)
+            call mpas_pool_initialize_time_levels(state)
             block => block % next
          end do
-
       end if
 
 
       !
       ! Initialize core
       !
-      dt = config_dt
-
       call atm_simulation_clock_init(domain, dt, startTimeStamp)
 
-      call mpas_dmpar_exch_halo_field(domain % blocklist % state % time_levs(1) % state % u)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'state', state)
+      call mpas_pool_get_field(state, 'u', u_field, 1)
+      call mpas_dmpar_exch_halo_field(u_field)
 
       block => domain % blocklist
       do while (associated(block))
-         call atm_mpas_init_block(domain % dminfo, block, block % mesh, dt)
-         block % state % time_levs(1) % state % xtime % scalar = startTimeStamp
+         call mpas_pool_get_subpool(block % structs, 'mesh', mesh)
+         call mpas_pool_get_subpool(block % structs, 'state', state)
+
+         call atm_mpas_init_block(domain % dminfo, block, mesh, dt)
+
+         call mpas_pool_get_array(state, 'xtime', xtime, 1)
+         xtime = startTimeStamp
+
          block => block % next
       end do
 
-      call mpas_dmpar_exch_halo_field(domain % blocklist % diag % pv_edge)
-      call mpas_dmpar_exch_halo_field(domain % blocklist % diag % ru)
-      call mpas_dmpar_exch_halo_field(domain % blocklist % diag % rw)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'diag', diag)
+      call mpas_pool_get_field(diag, 'pv_edge', pv_edge_field)
+      call mpas_dmpar_exch_halo_field(pv_edge_field)
+
+      call mpas_pool_get_field(diag, 'ru', ru_field)
+      call mpas_dmpar_exch_halo_field(ru_field)
+
+      call mpas_pool_get_field(diag, 'rw', rw_field)
+      call mpas_dmpar_exch_halo_field(rw_field)
 
       current_outfile_frames = 0
 
@@ -83,7 +104,7 @@ module mpas_core
          sfc_update_obj % filename = trim(config_sfc_update_name)
          sfc_update_obj % stream = STREAM_SFC
 
-         call mpas_io_input_init(sfc_update_obj, domain % blocklist, domain % dminfo)
+         call mpas_io_input_init(sfc_update_obj, domain % dminfo)
 
          !     
          ! We need to decide which time slice to read from the surface file - read the most recent time slice that falls before or on the start time
@@ -112,6 +133,24 @@ module mpas_core
       type (MPAS_Time_Type) :: startTime, stopTime, alarmStartTime
       type (MPAS_TimeInterval_type) :: runDuration, timeStep, alarmTimeStep
       integer :: ierr
+      character (len=StrKIND), pointer :: config_start_time
+      character (len=StrKIND), pointer :: config_restart_timestamp_name
+      character (len=StrKIND), pointer :: config_run_duration
+      character (len=StrKIND), pointer :: config_stop_time
+      character (len=StrKIND), pointer :: config_output_interval
+      character (len=StrKIND), pointer :: config_restart_interval
+      character (len=StrKIND), pointer :: config_hifreq_output_interval
+      character (len=StrKIND), pointer :: config_sfc_update_interval
+
+
+      call mpas_pool_get_config(domain % blocklist % configs, 'config_start_time', config_start_time)
+      call mpas_pool_get_config(domain % blocklist % configs, 'config_restart_timestamp_name', config_restart_timestamp_name)
+      call mpas_pool_get_config(domain % blocklist % configs, 'config_run_duration', config_run_duration)
+      call mpas_pool_get_config(domain % blocklist % configs, 'config_stop_time', config_stop_time)
+      call mpas_pool_get_config(domain % blocklist % configs, 'config_output_interval', config_output_interval)
+      call mpas_pool_get_config(domain % blocklist % configs, 'config_restart_interval', config_restart_interval)
+      call mpas_pool_get_config(domain % blocklist % configs, 'config_hifreq_output_interval', config_hifreq_output_interval)
+      call mpas_pool_get_config(domain % blocklist % configs, 'config_sfc_update_interval', config_sfc_update_interval)
 
       if(trim(config_start_time) == 'file') then
          open(22,file=trim(config_restart_timestamp_name),form='formatted',status='old')
@@ -173,6 +212,7 @@ module mpas_core
 
       call mpas_get_time(curr_time=startTime, dateTimeString=startTimeStamp, ierr=ierr)
 
+
    end subroutine atm_simulation_clock_init
 
 
@@ -181,7 +221,7 @@ module mpas_core
       use mpas_grid_types
    !   use atm_advection
       use atm_time_integration
-      use mpas_configure
+!      use mpas_configure
       use mpas_rbf_interpolation
       use mpas_vector_reconstruction
 #ifdef DO_PHYSICS
@@ -195,64 +235,88 @@ module mpas_core
    
       type (dm_info), intent(in) :: dminfo
       type (block_type), intent(inout) :: block
-      type (mesh_type), intent(inout) :: mesh
+      type (mpas_pool_type), intent(inout) :: mesh     !MGD does this need to be a pointer?
       real (kind=RKIND), intent(in) :: dt
+
+      type (mpas_pool_type), pointer :: state
+      type (mpas_pool_type), pointer :: diag
+      type (mpas_pool_type), pointer :: sfc_input
+      type (mpas_pool_type), pointer :: diag_physics
+      type (mpas_pool_type), pointer :: atm_input
+      
+      real (kind=RKIND), dimension(:,:), pointer :: u, uReconstructX, uReconstructY, uReconstructZ, uReconstructZonal, uReconstructMeridional
+      real (kind=RKIND), dimension(:), pointer :: meshScalingDel2, meshScalingDel4
+
+      integer, pointer :: nEdges
    
+      logical, pointer :: config_do_restart, config_do_DAcycling
+
+   
+      call mpas_pool_get_subpool(block % structs, 'diag', diag)
+      call mpas_pool_get_subpool(block % structs, 'state', state)
+
+      call mpas_pool_get_config(block % configs, 'config_do_restart', config_do_restart)
+      call mpas_pool_get_config(block % configs, 'config_do_DAcycling', config_do_DAcycling)
+
       if (.not. config_do_restart .or. (config_do_restart .and. config_do_DAcycling)) then
-         call atm_init_coupled_diagnostics( block % state % time_levs(1) % state, block % diag, mesh)
+         call atm_init_coupled_diagnostics( state, 1, diag, mesh, block % configs)
       end if
-      call atm_compute_solve_diagnostics(dt, block % state % time_levs(1) % state, block % diag, mesh)
+      call atm_compute_solve_diagnostics(dt, state, 1, diag, mesh, block % configs)
 
       call mpas_rbf_interp_initialize(mesh)
       call mpas_init_reconstruct(mesh)
-      call mpas_reconstruct(mesh, block % state % time_levs(1) % state % u % array, &
-                            block % diag % uReconstructX % array,                   &
-                            block % diag % uReconstructY % array,                   &
-                            block % diag % uReconstructZ % array,                   &
-                            block % diag % uReconstructZonal % array,               &
-                            block % diag % uReconstructMeridional % array           &
+
+      call mpas_pool_get_array(state, 'u', u, 1)
+      call mpas_pool_get_array(diag, 'uReconstructX', uReconstructX)
+      call mpas_pool_get_array(diag, 'uReconstructY', uReconstructY)
+      call mpas_pool_get_array(diag, 'uReconstructZ', uReconstructZ)
+      call mpas_pool_get_array(diag, 'uReconstructZonal', uReconstructZonal)
+      call mpas_pool_get_array(diag, 'uReconstructMeridional', uReconstructMeridional)
+      call mpas_reconstruct(mesh, u,                   &
+                            uReconstructX,             &
+                            uReconstructY,             &
+                            uReconstructZ,             &
+                            uReconstructZonal,         &
+                            uReconstructMeridional     &
                            )
    
-   !
-   ! Note: The following initialization calls have been moved to mpas_setup_test_case()
-   !       since values computed by these routines are needed to produce initial fields
-   !
-   !   call atm_initialize_advection_rk(mesh)
-   !   call atm_initialize_deformation_weights(mesh)
-
 #ifdef DO_PHYSICS
       !check that all the physics options are correctly defined and that at least one physics
       !parameterization is called (using the logical moist_physics):
-      call physics_namelist_check
+      call physics_namelist_check(mesh, block % configs)
 
       !proceed with initialization of physics parameterization if moist_physics is set to true:
-      if(moist_physics) then
+      if (moist_physics) then
          !initialization of seom input variables in registry:
-         call physics_registry_init(config_do_restart, mesh, block % sfc_input)
-         call physics_run_init(mesh,block % state % time_levs(1) % state,clock)
+         call mpas_pool_get_subpool(block % structs, 'sfc_input', sfc_input)
+         call mpas_pool_get_subpool(block % structs, 'diag_physics', diag_physics)
+         call mpas_pool_get_subpool(block % structs, 'atm_input', atm_input)
+         call physics_registry_init(mesh, block % configs, sfc_input)
+         call physics_run_init(block % configs, mesh, state, clock)
 
          !initialization of all physics:
-         call physics_init(dminfo, clock, config_do_restart, mesh, block % diag, &
-                           block % state % time_levs(1) % state, &
-                           block % state % time_levs(1) % state, &
-                           block % diag_physics, block % atm_input, &
-                           block % sfc_input)
-
+         call physics_init(dminfo, clock, block % configs, mesh, diag, state, 1, diag_physics, &
+                           atm_input, sfc_input)
       endif
 #endif
    
-      call atm_compute_mesh_scaling(mesh)
+      call atm_compute_mesh_scaling(mesh, block % configs)
 
-      call atm_compute_damping_coefs(mesh)
+      call atm_compute_damping_coefs(mesh, block % configs)
 
-      call atm_compute_pgf_coefs(mesh)
+      call atm_compute_pgf_coefs(mesh, block % configs)
 
-      write(0,*) 'min/max of meshScalingDel2 = ', minval(mesh % meshScalingDel2 % array(1:mesh%nEdges)), &
-                                                  maxval(mesh % meshScalingDel2 % array(1:mesh%nEdges))
-      write(0,*) 'min/max of meshScalingDel4 = ', minval(mesh % meshScalingDel4 % array(1:mesh%nEdges)), &
-                                                  maxval(mesh % meshScalingDel4 % array(1:mesh%nEdges))
+      call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
+      call mpas_pool_get_array(mesh, 'meshScalingDel2', meshScalingDel2)
+      call mpas_pool_get_array(mesh, 'meshScalingDel4', meshScalingDel4)
+
+      write(0,*) 'min/max of meshScalingDel2 = ', minval(meshScalingDel2(1:nEdges)), &
+                                                  maxval(meshScalingDel2(1:nEdges))
+      write(0,*) 'min/max of meshScalingDel4 = ', minval(meshScalingDel4(1:nEdges)), &
+                                                  maxval(meshScalingDel4(1:nEdges))
 
       call atm_adv_coef_compression(mesh)
+
    
    end subroutine atm_mpas_init_block
    
@@ -271,7 +335,7 @@ module mpas_core
       type (io_output_object), intent(inout) :: output_obj
       integer, intent(inout) :: output_frame
    
-      real (kind=RKIND) :: dt
+      real (kind=RKIND), pointer :: dt
       type (block_type), pointer :: block_ptr
 
       type (MPAS_Time_Type) :: currTime
@@ -279,18 +343,33 @@ module mpas_core
       integer :: itimestep
       integer :: ierr
 
+      type (mpas_pool_type), pointer :: state, diag, diag_physics, mesh
+
       ! For high-frequency diagnostics output
       character (len=StrKIND) :: tempfilename
 
+      character (len=StrKIND), pointer :: config_hifreq_output_interval
+      integer, pointer :: config_frames_per_outfile
+
+
+      call mpas_pool_get_config(domain % blocklist % configs, 'config_hifreq_output_interval', config_hifreq_output_interval)
+      call mpas_pool_get_config(domain % blocklist % configs, 'config_frames_per_outfile', config_frames_per_outfile)
+
       ! Eventually, dt should be domain specific
-      dt = config_dt
+      call mpas_pool_get_config(domain % blocklist % configs, 'config_dt', dt)
+
 
       call atm_write_output_frame(output_obj, output_frame, domain)
 
+
       if (trim(config_hifreq_output_interval) /= 'none') then
          block_ptr => domain % blocklist
-         call atm_compute_output_diagnostics(block_ptr % state % time_levs(1) % state, block_ptr % diag, &
-                                             block_ptr % diag_physics, block_ptr % mesh)
+
+         call mpas_pool_get_subpool(block_ptr % structs, 'state', state)
+         call mpas_pool_get_subpool(block_ptr % structs, 'diag', diag)
+         call mpas_pool_get_subpool(block_ptr % structs, 'diag_physics', diag_physics)
+         call mpas_pool_get_subpool(block_ptr % structs, 'mesh', mesh)
+         call atm_compute_output_diagnostics(state, 1, diag, diag_physics, mesh)
 
          currTime = mpas_get_clock_time(clock, MPAS_NOW, ierr)
          call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
@@ -321,7 +400,8 @@ module mpas_core
          call mpas_timer_stop("time integration")   
 
          ! Move time level 2 fields back into time level 1 for next time step
-         call mpas_shift_time_levels_state(domain % blocklist % state)
+         call mpas_pool_get_subpool(domain % blocklist % structs, 'state', state)
+         call mpas_pool_shift_time_levels(state)
          
 
          ! Advance clock before writing output
@@ -345,8 +425,11 @@ module mpas_core
             call mpas_reset_clock_alarm(clock, hifreqAlarmID, ierr=ierr)
 
             block_ptr => domain % blocklist
-            call atm_compute_output_diagnostics(block_ptr % state % time_levs(1) % state, block_ptr % diag, &
-                                                block_ptr % diag_physics, block_ptr % mesh)
+            call mpas_pool_get_subpool(block_ptr % structs, 'state', state)
+            call mpas_pool_get_subpool(block_ptr % structs, 'diag', diag)
+            call mpas_pool_get_subpool(block_ptr % structs, 'diag_physics', diag_physics)
+            call mpas_pool_get_subpool(block_ptr % structs, 'mesh', mesh)
+            call atm_compute_output_diagnostics(state, 1, diag, diag_physics, mesh)
 
             call insert_string_suffix('diagnostics.nc', trim(timeStamp), tempfilename)
             call write_hifreq_output(block_ptr, tempfilename)
@@ -357,7 +440,10 @@ module mpas_core
 
             block_ptr => domain % blocklist
             do while (associated(block_ptr))
-               call atm_compute_restart_diagnostics(block_ptr % state % time_levs(1) % state, block_ptr % diag, block_ptr % mesh)
+               call mpas_pool_get_subpool(block_ptr % structs, 'state', state)
+               call mpas_pool_get_subpool(block_ptr % structs, 'diag', diag)
+               call mpas_pool_get_subpool(block_ptr % structs, 'mesh', mesh)
+               call atm_compute_restart_diagnostics(state, 1, diag, mesh)
                block_ptr => block_ptr % next
             end do
 
@@ -390,11 +476,23 @@ module mpas_core
       type (io_output_object), intent(inout) :: output_obj
    
       type (block_type), pointer :: block_ptr
+
+      type (mpas_pool_type), pointer :: state, diag, diag_physics, mesh
+      integer, pointer :: config_frames_per_outfile
+
+
+      call mpas_pool_get_config(domain % blocklist % configs, 'config_frames_per_outfile', config_frames_per_outfile)
    
       block_ptr => domain % blocklist
       do while (associated(block_ptr))
-         call atm_compute_output_diagnostics(block_ptr % state % time_levs(1) % state, block_ptr % diag, &
-                                             block_ptr % diag_physics, block_ptr % mesh)
+
+         call mpas_pool_get_subpool(block_ptr % structs, 'state', state)
+         call mpas_pool_get_subpool(block_ptr % structs, 'diag', diag)
+         call mpas_pool_get_subpool(block_ptr % structs, 'diag_physics', diag_physics)
+         call mpas_pool_get_subpool(block_ptr % structs, 'mesh', mesh)
+
+         call atm_compute_output_diagnostics(state, 1, diag, diag_physics, mesh)
+
          block_ptr => block_ptr % next
       end do
    
@@ -413,12 +511,12 @@ module mpas_core
    end subroutine atm_write_output_frame
    
    
-   subroutine atm_compute_output_diagnostics(state, diag, diag_physics, grid)
+   subroutine atm_compute_output_diagnostics(state, time_lev, diag, diag_physics, mesh)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! Compute diagnostic fields for a domain to be written to history files
    !
    ! Input: state - contains model prognostic fields
-   !        grid  - contains grid metadata
+   !        mesh  - contains grid metadata
    !
    ! Output: state - upon returning, diagnostic fields will have be computed
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -429,31 +527,48 @@ module mpas_core
    
       implicit none
    
-      type (state_type), intent(inout) :: state
-      type (diag_type), intent(inout) :: diag
-      type (diag_physics_type), intent(inout) :: diag_physics
-      type (mesh_type), intent(in) :: grid
+      type (mpas_pool_type), intent(inout) :: state
+      integer, intent(in) :: time_lev            ! which time level to use from state
+      type (mpas_pool_type), intent(inout) :: diag
+      type (mpas_pool_type), intent(inout) :: diag_physics
+      type (mpas_pool_type), intent(in) :: mesh
    
       integer :: iCell, k
+      integer, pointer :: nCells, nVertLevels, index_qv
+      real (kind=RKIND), dimension(:,:), pointer :: theta, rho, theta_m, rho_zz, zz
+      real (kind=RKIND), dimension(:,:,:), pointer :: scalars
 
-      do iCell=1,grid%nCells
-         do k=1,grid%nVertLevels
-            diag % theta % array(k,iCell) = state % theta_m % array(k,iCell) / (1._RKIND + rvord * state % scalars % array(state % index_qv,k,iCell))
-            diag % rho % array(k,iCell) = state % rho_zz % array(k,iCell) * grid % zz % array(k,iCell)
+      call mpas_pool_get_dimension(mesh, 'nCells', nCells)
+      call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
+      call mpas_pool_get_dimension(state, 'index_qv', index_qv)
+
+      call mpas_pool_get_array(state, 'theta_m', theta_m, time_lev)
+      call mpas_pool_get_array(state, 'rho_zz', rho_zz, time_lev)
+      call mpas_pool_get_array(state, 'scalars', scalars, time_lev)
+
+      call mpas_pool_get_array(diag, 'theta', theta)
+      call mpas_pool_get_array(diag, 'rho', rho)
+
+      call mpas_pool_get_array(mesh, 'zz', zz)
+
+      do iCell=1,nCells
+         do k=1,nVertLevels
+            theta(k,iCell) = theta_m(k,iCell) / (1._RKIND + rvord * scalars(index_qv,k,iCell))
+            rho(k,iCell) = rho_zz(k,iCell) * zz(k,iCell)
          end do
       end do
 
-      call interp_diagnostics(grid,state,diag,diag_physics)
+      call interp_diagnostics(mesh, state, time_lev, diag, diag_physics)
    
    end subroutine atm_compute_output_diagnostics
    
    
-   subroutine atm_compute_restart_diagnostics(state, diag, grid)
+   subroutine atm_compute_restart_diagnostics(state, time_lev, diag, mesh)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! Compute diagnostic fields for a domain to be written to restart files
    !
    ! Input: state - contains model prognostic fields
-   !        grid  - contains grid metadata
+   !        mesh  - contains grid metadata
    !
    ! Output: state - upon returning, diagnostic fields will have be computed
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -463,16 +578,33 @@ module mpas_core
    
       implicit none
    
-      type (state_type), intent(inout) :: state
-      type (diag_type), intent(inout) :: diag
-      type (mesh_type), intent(in) :: grid
+      type (mpas_pool_type), intent(inout) :: state
+      integer, intent(in) :: time_lev                 ! which time level to use from state
+      type (mpas_pool_type), intent(inout) :: diag
+      type (mpas_pool_type), intent(in) :: mesh
    
       integer :: iCell, k
+      integer, pointer :: nCells, nVertLevels, index_qv
+      real (kind=RKIND), dimension(:,:), pointer :: theta, rho, theta_m, rho_zz, zz
+      real (kind=RKIND), dimension(:,:,:), pointer :: scalars
 
-      do iCell=1,grid%nCells
-         do k=1,grid%nVertLevels
-            diag % theta % array(k,iCell) = state % theta_m % array(k,iCell) / (1._RKIND + rvord * state % scalars % array(state % index_qv,k,iCell))
-            diag % rho % array(k,iCell) = state % rho_zz % array(k,iCell) * grid % zz % array(k,iCell)
+      call mpas_pool_get_dimension(mesh, 'nCells', nCells)
+      call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
+      call mpas_pool_get_dimension(state, 'index_qv', index_qv)
+
+      call mpas_pool_get_array(state, 'theta_m', theta_m, time_lev)
+      call mpas_pool_get_array(state, 'rho_zz', rho_zz, time_lev)
+      call mpas_pool_get_array(state, 'scalars', scalars, time_lev)
+
+      call mpas_pool_get_array(diag, 'theta', theta)
+      call mpas_pool_get_array(diag, 'rho', rho)
+
+      call mpas_pool_get_array(mesh, 'zz', zz)
+
+      do iCell=1,nCells
+         do k=1,nVertLevels
+            theta(k,iCell) = theta_m(k,iCell) / (1.0_RKIND + rvord * scalars(index_qv,k,iCell))
+            rho(k,iCell) = rho_zz(k,iCell) * zz(k,iCell)
          end do
       end do
    
@@ -489,44 +621,110 @@ module mpas_core
       integer :: ierr
       type (MPAS_Stream_type) :: hifreq_stream
 
+      type (mpas_pool_type), pointer :: mesh
+      type (mpas_pool_type), pointer :: state
+      type (mpas_pool_type), pointer :: diag
+      type (mpas_pool_type), pointer :: diag_physics
+      logical, pointer :: on_a_sphere
+      real (kind=RKIND), pointer :: sphere_radius
+      character (len=StrKIND), pointer :: modelName, coreName, modelVersion
+      type (field0DChar), pointer :: xtime
+      type (field1DReal), pointer :: olrtoa, rainc, rainnc, refl10cm_max, precipw
+      type (field1DReal), pointer :: temperature_200hPa
+      type (field1DReal), pointer :: temperature_500hPa
+      type (field1DReal), pointer :: temperature_850hPa
+      type (field1DReal), pointer :: height_200hPa
+      type (field1DReal), pointer :: height_500hPa
+      type (field1DReal), pointer :: height_850hPa
+      type (field1DReal), pointer :: uzonal_200hPa
+      type (field1DReal), pointer :: uzonal_500hPa
+      type (field1DReal), pointer :: uzonal_850hPa
+      type (field1DReal), pointer :: umeridional_200hPa
+      type (field1DReal), pointer :: umeridional_500hPa
+      type (field1DReal), pointer :: umeridional_850hPa
+      type (field1DReal), pointer :: w_200hPa
+      type (field1DReal), pointer :: w_500hPa
+      type (field1DReal), pointer :: w_850hPa
+      type (field1DReal), pointer :: vorticity_200hPa
+      type (field1DReal), pointer :: vorticity_500hPa
+      type (field1DReal), pointer :: vorticity_850hPa
+
+
       call MPAS_createStream(hifreq_stream, trim(fname), MPAS_IO_PNETCDF, MPAS_IO_WRITE, 1, ierr)
 
-      if (block_ptr % mesh % on_a_sphere) then
+      call mpas_pool_get_subpool(block_ptr % structs, 'mesh', mesh)
+      call mpas_pool_get_config(mesh, 'on_a_sphere', on_a_sphere)
+      if (on_a_sphere) then
          call MPAS_writeStreamAtt(hifreq_stream, 'on_a_sphere', 'YES             ', ierr)
       else
          call MPAS_writeStreamAtt(hifreq_stream, 'on_a_sphere', 'NO              ', ierr)
       end if
-      call MPAS_writeStreamAtt(hifreq_stream, 'sphere_radius', block_ptr % mesh % sphere_radius, ierr)
-      call MPAS_writeStreamAtt(hifreq_stream, 'model_name', block_ptr % domain % modelName, ierr)
-      call MPAS_writeStreamAtt(hifreq_stream, 'core_name', block_ptr % domain % coreName, ierr)
-      call MPAS_writeStreamAtt(hifreq_stream, 'model_version', block_ptr % domain % modelVersion, ierr)
+
+      call mpas_pool_get_config(block_ptr % configs, 'sphere_radius', sphere_radius)
+      call mpas_pool_get_config(block_ptr % configs, 'modelName', modelName)
+      call mpas_pool_get_config(block_ptr % configs, 'coreName', coreName)
+      call mpas_pool_get_config(block_ptr % configs, 'modelVersion', modelVersion)
+
+      call MPAS_writeStreamAtt(hifreq_stream, 'sphere_radius', sphere_radius, ierr)
+      call MPAS_writeStreamAtt(hifreq_stream, 'model_name', modelName, ierr)
+      call MPAS_writeStreamAtt(hifreq_stream, 'core_name', coreName, ierr)
+      call MPAS_writeStreamAtt(hifreq_stream, 'model_version', modelVersion, ierr)
       call MPAS_writeStreamAtt(hifreq_stream, 'source', 'MPAS', ierr)
       call MPAS_writeStreamAtt(hifreq_stream, 'Conventions', 'MPAS', ierr)
 
-      call MPAS_streamAddField(hifreq_stream, block_ptr % state % time_levs(1) % state % xtime, ierr)
-      call MPAS_streamAddField(hifreq_stream, block_ptr % diag_physics % olrtoa, ierr)
-      call MPAS_streamAddField(hifreq_stream, block_ptr % diag_physics % rainc, ierr)
-      call MPAS_streamAddField(hifreq_stream, block_ptr % diag_physics % rainnc, ierr)
-      call MPAS_streamAddField(hifreq_stream, block_ptr % diag_physics % refl10cm_max, ierr)
-      call MPAS_streamAddField(hifreq_stream, block_ptr % diag_physics % precipw, ierr)
-      call MPAS_streamAddField(hifreq_stream, block_ptr % diag % temperature_200hPa, ierr)
-      call MPAS_streamAddField(hifreq_stream, block_ptr % diag % temperature_500hPa, ierr)
-      call MPAS_streamAddField(hifreq_stream, block_ptr % diag % temperature_850hPa, ierr)
-      call MPAS_streamAddField(hifreq_stream, block_ptr % diag % height_200hPa, ierr)
-      call MPAS_streamAddField(hifreq_stream, block_ptr % diag % height_500hPa, ierr)
-      call MPAS_streamAddField(hifreq_stream, block_ptr % diag % height_850hPa, ierr)
-      call MPAS_streamAddField(hifreq_stream, block_ptr % diag % uzonal_200hPa, ierr)
-      call MPAS_streamAddField(hifreq_stream, block_ptr % diag % uzonal_500hPa, ierr)
-      call MPAS_streamAddField(hifreq_stream, block_ptr % diag % uzonal_850hPa, ierr)
-      call MPAS_streamAddField(hifreq_stream, block_ptr % diag % umeridional_200hPa, ierr)
-      call MPAS_streamAddField(hifreq_stream, block_ptr % diag % umeridional_500hPa, ierr)
-      call MPAS_streamAddField(hifreq_stream, block_ptr % diag % umeridional_850hPa, ierr)
-      call MPAS_streamAddField(hifreq_stream, block_ptr % diag % w_200hPa, ierr)
-      call MPAS_streamAddField(hifreq_stream, block_ptr % diag % w_500hPa, ierr)
-      call MPAS_streamAddField(hifreq_stream, block_ptr % diag % w_850hPa, ierr)
-      call MPAS_streamAddField(hifreq_stream, block_ptr % diag % vorticity_200hPa, ierr)
-      call MPAS_streamAddField(hifreq_stream, block_ptr % diag % vorticity_500hPa, ierr)
-      call MPAS_streamAddField(hifreq_stream, block_ptr % diag % vorticity_850hPa, ierr)
+      call mpas_pool_get_subpool(block_ptr % structs, 'state', state)
+      call mpas_pool_get_subpool(block_ptr % structs, 'diag_physics', diag_physics)
+      call mpas_pool_get_subpool(block_ptr % structs, 'diag', diag)
+
+      call mpas_pool_get_field(state, 'xtime', xtime, 1)
+      call mpas_pool_get_field(diag_physics, 'olrtoa', olrtoa)
+      call mpas_pool_get_field(diag_physics, 'rainc', rainc)
+      call mpas_pool_get_field(diag_physics, 'rainnc', rainnc)
+      call mpas_pool_get_field(diag_physics, 'refl10cm_max', refl10cm_max)
+      call mpas_pool_get_field(diag_physics, 'precipw', precipw)
+      call mpas_pool_get_field(diag, 'temperature_200hPa', temperature_200hPa)
+      call mpas_pool_get_field(diag, 'temperature_500hPa', temperature_500hPa)
+      call mpas_pool_get_field(diag, 'temperature_850hPa', temperature_850hPa)
+      call mpas_pool_get_field(diag, 'height_200hPa', height_200hPa)
+      call mpas_pool_get_field(diag, 'height_500hPa', height_500hPa)
+      call mpas_pool_get_field(diag, 'height_850hPa', height_850hPa)
+      call mpas_pool_get_field(diag, 'uzonal_200hPa', uzonal_200hPa)
+      call mpas_pool_get_field(diag, 'uzonal_500hPa', uzonal_500hPa)
+      call mpas_pool_get_field(diag, 'uzonal_850hPa', uzonal_850hPa)
+      call mpas_pool_get_field(diag, 'umeridional_200hPa', umeridional_200hPa)
+      call mpas_pool_get_field(diag, 'umeridional_500hPa', umeridional_500hPa)
+      call mpas_pool_get_field(diag, 'umeridional_850hPa', umeridional_850hPa)
+      call mpas_pool_get_field(diag, 'w_200hPa', w_200hPa)
+      call mpas_pool_get_field(diag, 'w_500hPa', w_500hPa)
+      call mpas_pool_get_field(diag, 'w_850hPa', w_850hPa)
+      call mpas_pool_get_field(diag, 'vorticity_200hPa', vorticity_200hPa)
+      call mpas_pool_get_field(diag, 'vorticity_500hPa', vorticity_500hPa)
+      call mpas_pool_get_field(diag, 'vorticity_850hPa', vorticity_850hPa)
+
+      call MPAS_streamAddField(hifreq_stream, xtime, ierr)
+      call MPAS_streamAddField(hifreq_stream, olrtoa, ierr)
+      call MPAS_streamAddField(hifreq_stream, rainc, ierr)
+      call MPAS_streamAddField(hifreq_stream, rainnc, ierr)
+      call MPAS_streamAddField(hifreq_stream, refl10cm_max, ierr)
+      call MPAS_streamAddField(hifreq_stream, precipw, ierr)
+      call MPAS_streamAddField(hifreq_stream, temperature_200hPa, ierr)
+      call MPAS_streamAddField(hifreq_stream, temperature_500hPa, ierr)
+      call MPAS_streamAddField(hifreq_stream, temperature_850hPa, ierr)
+      call MPAS_streamAddField(hifreq_stream, height_200hPa, ierr)
+      call MPAS_streamAddField(hifreq_stream, height_500hPa, ierr)
+      call MPAS_streamAddField(hifreq_stream, height_850hPa, ierr)
+      call MPAS_streamAddField(hifreq_stream, uzonal_200hPa, ierr)
+      call MPAS_streamAddField(hifreq_stream, uzonal_500hPa, ierr)
+      call MPAS_streamAddField(hifreq_stream, uzonal_850hPa, ierr)
+      call MPAS_streamAddField(hifreq_stream, umeridional_200hPa, ierr)
+      call MPAS_streamAddField(hifreq_stream, umeridional_500hPa, ierr)
+      call MPAS_streamAddField(hifreq_stream, umeridional_850hPa, ierr)
+      call MPAS_streamAddField(hifreq_stream, w_200hPa, ierr)
+      call MPAS_streamAddField(hifreq_stream, w_500hPa, ierr)
+      call MPAS_streamAddField(hifreq_stream, w_850hPa, ierr)
+      call MPAS_streamAddField(hifreq_stream, vorticity_200hPa, ierr)
+      call MPAS_streamAddField(hifreq_stream, vorticity_500hPa, ierr)
+      call MPAS_streamAddField(hifreq_stream, vorticity_850hPa, ierr)
       call MPAS_writeStream(hifreq_stream, 1, ierr)
       call MPAS_closeStream(hifreq_stream, ierr)
 
@@ -589,6 +787,9 @@ module mpas_core
    
       type (domain_type), intent(inout) :: domain 
       integer :: ierr
+      character (len=StrKIND), pointer :: config_sfc_update_interval
+
+      call mpas_pool_get_config(domain % blocklist % configs, 'config_sfc_update_interval', config_sfc_update_interval)
 
       if (config_sfc_update_interval /= "none") call mpas_io_input_finalize(sfc_update_obj, domain % dminfo)
 
@@ -597,20 +798,29 @@ module mpas_core
    end subroutine mpas_core_finalize
 
 
-   subroutine atm_compute_mesh_scaling(mesh)
+   subroutine atm_compute_mesh_scaling(mesh, configs)
 
       use mpas_grid_types
 
       implicit none
 
-      type (mesh_type), intent(inout) :: mesh
+      type (mpas_pool_type), intent(inout) :: mesh
+      type (mpas_pool_type), intent(in) :: configs
 
       integer :: iEdge, cell1, cell2
+      integer, pointer :: nEdges
+      integer, dimension(:,:), pointer :: cellsOnEdge
       real (kind=RKIND), dimension(:), pointer :: meshDensity, meshScalingDel2, meshScalingDel4
+      logical, pointer :: config_h_ScaleWithMesh
 
-      meshDensity => mesh % meshDensity % array
-      meshScalingDel2 => mesh % meshScalingDel2 % array
-      meshScalingDel4 => mesh % meshScalingDel4 % array
+      call mpas_pool_get_array(mesh, 'meshDensity', meshDensity)
+      call mpas_pool_get_array(mesh, 'meshScalingDel2', meshScalingDel2)
+      call mpas_pool_get_array(mesh, 'meshScalingDel4', meshScalingDel4)
+      call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
+
+      call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
+
+      call mpas_pool_get_config(configs, 'config_h_ScaleWithMesh', config_h_ScaleWithMesh)
 
       !
       ! Compute the scaling factors to be used in the del2 and del4 dissipation
@@ -618,9 +828,9 @@ module mpas_core
       meshScalingDel2(:) = 1.0
       meshScalingDel4(:) = 1.0
       if (config_h_ScaleWithMesh) then
-         do iEdge=1,mesh%nEdges
-            cell1 = mesh % cellsOnEdge % array(1,iEdge)
-            cell2 = mesh % cellsOnEdge % array(2,iEdge)
+         do iEdge=1,nEdges
+            cell1 = cellsOnEdge(1,iEdge)
+            cell2 = cellsOnEdge(2,iEdge)
             meshScalingDel2(iEdge) = 1.0 / ( (meshDensity(cell1) + meshDensity(cell2) )/2.0)**0.5
             meshScalingDel4(iEdge) = 1.0 / ( (meshDensity(cell1) + meshDensity(cell2) )/2.0)
          end do
@@ -629,29 +839,38 @@ module mpas_core
    end subroutine atm_compute_mesh_scaling
 
 
-   subroutine atm_compute_damping_coefs(mesh)
+   subroutine atm_compute_damping_coefs(mesh, configs)
 
       use mpas_grid_types
-      use mpas_configure
+!      use mpas_configure
 
       implicit none
 
-      type (mesh_type), intent(inout) :: mesh
+      type (mpas_pool_type), intent(inout) :: mesh
+      type (mpas_pool_type), intent(in) :: configs
 
       integer :: iCell, k
+      integer, pointer :: nCells, nVertLevels
+      real (kind=RKIND), pointer :: config_xnutr, config_zd
       real (kind=RKIND) :: z, zt, m1, pii
       real (kind=RKIND), dimension(:,:), pointer :: dss, zgrid
 
       m1 = -1.0
       pii = acos(m1)
 
-      dss => mesh % dss % array
-      zgrid => mesh % zgrid % array
+      call mpas_pool_get_dimension(mesh, 'nCells', nCells)
+      call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
+
+      call mpas_pool_get_array(mesh, 'dss', dss)
+      call mpas_pool_get_array(mesh, 'zgrid', zgrid)
+
+      call mpas_pool_get_config(configs, 'config_zd', config_zd)
+      call mpas_pool_get_config(configs, 'config_xnutr', config_xnutr)
 
       dss(:,:) = 0.0
-      do iCell=1,mesh%nCells
-         zt = zgrid(mesh%nVertLevels+1,iCell)
-         do k=1,mesh%nVertLevels
+      do iCell=1,nCells
+         zt = zgrid(nVertLevels+1,iCell)
+         do k=1,nVertLevels
             z = 0.5*(zgrid(k,iCell) + zgrid(k+1,iCell))
             if (z > config_zd) then
                dss(k,iCell) = config_xnutr*sin(0.5*pii*(z-config_zd)/(zt-config_zd))**2.0
@@ -662,24 +881,35 @@ module mpas_core
    end subroutine atm_compute_damping_coefs
 
 
-   subroutine atm_compute_pgf_coefs(mesh)
+   subroutine atm_compute_pgf_coefs(mesh, configs)
 
       use mpas_grid_types
-      use mpas_configure
+!      use mpas_configure
 
       implicit none
 
-      type (mesh_type), intent(inout) :: mesh
+      type (mpas_pool_type), intent(inout) :: mesh
+      type (mpas_pool_type), intent(in) :: configs
 
       integer :: iEdge, iCell1, iCell2, k, iCell, nz, nz1
       real (kind=RKIND) :: d1, d2, d3
       real (kind=RKIND), dimension(:,:), pointer :: cpr, cpl, zgrid, pzp, pzm
+      integer, dimension(:,:), pointer :: cellsOnEdge
+      integer, pointer :: nCells, nEdges, nVertLevels
+      logical, pointer :: config_newpx
 
-      cpr   => mesh % cpr % array
-      cpl   => mesh % cpl % array
-      pzp   => mesh % pzp % array
-      pzm   => mesh % pzm % array
-      zgrid => mesh % zgrid % array
+      call mpas_pool_get_array(mesh, 'cpr', cpr)
+      call mpas_pool_get_array(mesh, 'cpl', cpl)
+      call mpas_pool_get_array(mesh, 'pzp', pzp)
+      call mpas_pool_get_array(mesh, 'pzm', pzm)
+      call mpas_pool_get_array(mesh, 'zgrid', zgrid)
+      call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
+
+      call mpas_pool_get_config(configs, 'config_newpx', config_newpx)
+
+      call mpas_pool_get_dimension(mesh, 'nCells', nCells)
+      call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(mesh, 'nVertLevels', nVertLevels)
 
 !**** coefficient arrays for new pressure gradient calculation
 
@@ -687,10 +917,10 @@ module mpas_core
       cpl(:,:) = 0.0
 
       if (config_newpx) then
-         do iEdge=1,mesh%nEdges
+         do iEdge=1,nEdges
 
-            iCell1 = mesh % cellsOnEdge % array(1,iEdge)
-            iCell2 = mesh % cellsOnEdge % array(2,iEdge)
+            iCell1 = cellsOnEdge(1,iEdge)
+            iCell2 = cellsOnEdge(2,iEdge)
 
             d1       = .25*(zgrid(1,iCell2)+zgrid(2,iCell2)-zgrid(1,iCell1)-zgrid(2,iCell1))
             d2       = d1+.5*(zgrid(3,iCell2)-zgrid(1,iCell2))
@@ -725,10 +955,10 @@ module mpas_core
 !        Coefficients for computing vertical pressure gradient dp/dz
 !        dp/dz (k,iCell) = pzp(k,iCell) * (p(k+1,iCell) - p(k,iCell)) +pzm(k,iCell) * (p(k,iCell) - p(k-1,iCell))
 
-         nz1 = mesh % nVertLevels
+         nz1 = nVertLevels
          nz = nz1 + 1
 
-         do iCell=1, mesh % nCells
+         do iCell=1, nCells
 
             d1 = zgrid(3,iCell)-zgrid(1,iCell)
             d2 = zgrid(4,iCell)-zgrid(2,iCell)
@@ -757,39 +987,47 @@ module mpas_core
    end subroutine atm_compute_pgf_coefs
 
 
-   subroutine atm_adv_coef_compression( grid )
+   subroutine atm_adv_coef_compression( mesh )
 
       implicit none
 
-      type (mesh_type), intent(inout) :: grid
+      type (mpas_pool_type), intent(inout) :: mesh
 
 
       real (kind=RKIND), dimension(:,:,:), pointer :: deriv_two
       real (kind=RKIND), dimension(:,:), pointer :: adv_coefs, adv_coefs_3rd
       integer, dimension(:,:), pointer :: cellsOnCell, cellsOnEdge, advCellsForEdge
       integer, dimension(:), pointer :: nEdgesOnCell, nAdvCellsForEdge
+      real (kind=RKIND), dimension(:), pointer :: dcEdge, dvEdge
 
       integer :: cell1, cell2, iEdge, n, i, j, j_in, iCell
+      integer, pointer :: nCells, nEdges
       integer :: cell_list(20), ordered_cell_list(20)
       logical :: addcell
 
-      deriv_two => grid % deriv_two % array
-      adv_coefs => grid % adv_coefs % array
-      adv_coefs_3rd => grid % adv_coefs_3rd % array
-      cellsOnCell => grid % cellsOnCell % array
-      cellsOnEdge => grid % cellsOnEdge % array
-      advCellsForEdge => grid % advCellsForEdge % array
-      nEdgesOnCell => grid % nEdgesOnCell % array
-      nAdvCellsForEdge => grid % nAdvCellsForEdge % array
 
-      do iEdge = 1, grid % nEdges
+      call mpas_pool_get_array(mesh, 'deriv_two', deriv_two)
+      call mpas_pool_get_array(mesh, 'adv_coefs', adv_coefs)
+      call mpas_pool_get_array(mesh, 'adv_coefs_3rd', adv_coefs_3rd)
+      call mpas_pool_get_array(mesh, 'cellsOnCell', cellsOnCell)
+      call mpas_pool_get_array(mesh, 'cellsOnEdge', cellsOnEdge)
+      call mpas_pool_get_array(mesh, 'advCellsForEdge', advCellsForEdge)
+      call mpas_pool_get_array(mesh, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(mesh, 'nAdvCellsForEdge', nAdvCellsForEdge)
+      call mpas_pool_get_array(mesh, 'dcEdge', dcEdge)
+      call mpas_pool_get_array(mesh, 'dvEdge', dvEdge)
+
+      call mpas_pool_get_dimension(mesh, 'nCells', nCells)
+      call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
+
+      do iEdge = 1, nEdges
          nAdvCellsForEdge(iEdge) = 0
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
          !
          ! do only if this edge flux is needed to update owned cells
          !
-         if (cell1 <= grid%nCells .or. cell2 <= grid%nCells) then
+         if (cell1 <= nCells .or. cell2 <= nCells) then
  
             cell_list(1) = cell1
             cell_list(2) = cell2
@@ -818,7 +1056,7 @@ module mpas_core
           ! order the list by increasing cell number (brute force approach)
   
             do i=1,n
-               ordered_cell_list(i) = grid % nCells + 2
+               ordered_cell_list(i) = nCells + 2
                j_in = 1
                do j=1,n
                   if (ordered_cell_list(i) > cell_list(j) ) then
@@ -827,7 +1065,7 @@ module mpas_core
                   end if
                end do
 !               ordered_cell_list(i) = cell_list(j_in)
-               cell_list(j_in) = grid % nCells + 3
+               cell_list(j_in) = nCells + 3
             end do
   
             nAdvCellsForEdge(iEdge) = n
@@ -879,8 +1117,8 @@ module mpas_core
             end do
   
             do j = 1,n
-               adv_coefs    (j,iEdge) = - (grid % dcEdge % array (iEdge) **2) * adv_coefs    (j,iEdge) / 12.
-               adv_coefs_3rd(j,iEdge) = - (grid % dcEdge % array (iEdge) **2) * adv_coefs_3rd(j,iEdge) / 12.
+               adv_coefs    (j,iEdge) = - (dcEdge(iEdge) **2) * adv_coefs    (j,iEdge) / 12.
+               adv_coefs_3rd(j,iEdge) = - (dcEdge(iEdge) **2) * adv_coefs_3rd(j,iEdge) / 12.
             end do
   
           ! 2nd order centered contribution - place this in the main flux weights
@@ -900,8 +1138,8 @@ module mpas_core
           !  multiply by edge length - thus the flux is just dt*ru times the results of the vector-vector multiply
   
             do j=1,n
-               adv_coefs    (j,iEdge) = grid % dvEdge % array(iEdge) * adv_coefs    (j,iEdge)
-               adv_coefs_3rd(j,iEdge) = grid % dvEdge % array(iEdge) * adv_coefs_3rd(j,iEdge)
+               adv_coefs    (j,iEdge) = dvEdge(iEdge) * adv_coefs    (j,iEdge)
+               adv_coefs_3rd(j,iEdge) = dvEdge(iEdge) * adv_coefs_3rd(j,iEdge)
             end do
  
          end if  ! only do for edges of owned-cells
@@ -924,12 +1162,14 @@ module mpas_core
 !>   *not* allocated until after this routine is called.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_core_setup_packages(ierr)!{{{
+   subroutine mpas_core_setup_packages(configs, packages, ierr)!{{{
 
       use mpas_packages
 
       implicit none
 
+      type (mpas_pool_type), intent(inout) :: configs
+      type (mpas_pool_type), intent(inout) :: packages
       integer, intent(out) :: ierr
 
       ierr = 0

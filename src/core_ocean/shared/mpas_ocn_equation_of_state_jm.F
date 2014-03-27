@@ -22,9 +22,9 @@ module ocn_equation_of_state_jm
 
    use mpas_kind_types
    use mpas_grid_types
-   use mpas_configure
    use mpas_dmpar
    use mpas_io_units
+   use ocn_constants
 
    implicit none
    private
@@ -79,7 +79,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_equation_of_state_jm_density(mesh, k_displaced, displacement_type, &
+   subroutine ocn_equation_of_state_jm_density(meshPool, k_displaced, displacement_type, &
        indexT, indexS, tracers, density, err, &
        tracersSurfaceValue, thermalExpansionCoeff, salineContractionCoeff)!{{{
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -105,7 +105,7 @@ contains
 
       implicit none
 
-      type (mesh_type), intent(in) :: mesh
+      type (mpas_pool_type), intent(in) :: meshPool
       integer, intent(in) :: k_displaced, indexT, indexS
       character(len=*), intent(in) :: displacement_type
       real (kind=RKIND), dimension(:,:,:), intent(in) :: tracers
@@ -117,7 +117,8 @@ contains
          salineContractionCoeff   ! Saline contraction coefficient (beta), defined as $1/\rho d\rho/dS$
 
       type (dm_info) :: dminfo
-      integer :: iEdge, iCell, iVertex, k, nCells, nEdges, nVertices, nVertLevels, k_displaced_local
+      integer :: iEdge, iCell, iVertex, k, k_displaced_local
+      integer, pointer :: nCells, nEdges, nVertices, nVertLevels
       integer, dimension(:), pointer :: maxLevelCell
       character(len=60) :: displacement_type_local
 
@@ -217,10 +218,11 @@ contains
    
       err = 0
    
-      nCells      = mesh % nCells
-      maxLevelCell      => mesh % maxLevelCell % array
-      nVertLevels = mesh % nVertLevels
-      refBottomDepth => mesh % refBottomDepth % array
+      call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+      call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
+
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
 !  allocate local T,S tracer field
       allocate(tracerTS(2,nVertLevels,nCells+1))
@@ -430,7 +432,6 @@ contains
       ! call individual init routines for each parameterization
       !
       !-----------------------------------------------------------------
-
       integer, intent(out) :: err
 
       err = 0

@@ -22,8 +22,8 @@
 module ocn_vmix_coefs_tanh
 
    use mpas_grid_types
-   use mpas_configure
    use mpas_timer
+   use ocn_constants
 
    implicit none
    private
@@ -69,7 +69,8 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vmix_coefs_tanh_build(mesh, s, d, err)!{{{
+   ! DWJ-POOL -- Remove Statepool?
+   subroutine ocn_vmix_coefs_tanh_build(meshPool, statePool, diagnosticsPool, err, timeLevelIn)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -77,8 +78,9 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (mesh_type), intent(in) :: &
-         mesh          !< Input: mesh information
+      type (mpas_pool_type), intent(in) :: &
+         meshPool          !< Input: mesh information
+      integer, intent(in), optional :: timeLevelIn
 
       !-----------------------------------------------------------------
       !
@@ -86,11 +88,11 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (state_type), intent(inout) :: &
-         s             !< Input/Output: state information
+      type (mpas_pool_type), intent(inout) :: &
+         statePool             !< Input/Output: state information
 
-      type (diagnostics_type), intent(inout) :: &
-         d             !< Input/Output: diagnostic information
+      type (mpas_pool_type), intent(inout) :: &
+         diagnosticsPool             !< Input/Output: diagnostic information
 
       !-----------------------------------------------------------------
       !
@@ -106,7 +108,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: err1, err2
+      integer :: err1, err2, timeLevel
 
       real (kind=RKIND), dimension(:,:), pointer :: &
         vertViscTopOfEdge, vertDiffTopOfCell
@@ -121,11 +123,17 @@ contains
 
       err = 0
 
-      vertViscTopOfEdge => d % vertViscTopOfEdge % array
-      vertDiffTopOfCell => d % vertDiffTopOfCell % array
+      if (present(timeLevelIn)) then
+         timeLevel = timeLevelIn
+      else
+         timeLevel = 1
+      end if
 
-      call ocn_vel_vmix_coefs_tanh(mesh, vertViscTopOfEdge, err1)
-      call ocn_tracer_vmix_coefs_tanh(mesh, vertDiffTopOfCell, err2)
+      call mpas_pool_get_array(diagnosticsPool, 'vertViscTopOfEdge', vertViscTopOfEdge)
+      call mpas_pool_get_array(diagnosticsPool, 'vertDiffTopOfCell', vertDiffTopOfCell)
+
+      call ocn_vel_vmix_coefs_tanh(meshPool, vertViscTopOfEdge, err1)
+      call ocn_tracer_vmix_coefs_tanh(meshPool, vertDiffTopOfCell, err2)
 
       err = ior(err1, err2)
 
@@ -145,7 +153,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_vmix_coefs_tanh(mesh, vertViscTopOfEdge, err)!{{{
+   subroutine ocn_vel_vmix_coefs_tanh(meshPool, vertViscTopOfEdge, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -153,8 +161,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (mesh_type), intent(in) :: &
-         mesh          !< Input: mesh information
+      type (mpas_pool_type), intent(in) :: &
+         meshPool          !< Input: mesh information
 
       !-----------------------------------------------------------------
       !
@@ -178,25 +186,33 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: k, nVertLevels
+      integer :: k
+      integer, pointer :: nVertLevels
 
       real (kind=RKIND), dimension(:), pointer :: refBottomDepth
+      real (kind=RKIND), pointer :: config_max_visc_tanh, config_min_visc_tanh, config_ZMid_tanh
+      real (kind=RKIND), pointer :: config_zWidth_tanh
 
       err = 0
 
       if(.not.tanhViscOn) return
 
-      nVertLevels = mesh % nVertLevels
-      refBottomDepth => mesh % refBottomDepth % array
+      call mpas_pool_get_config(ocnConfigs, 'config_max_visc_tanh', config_max_visc_tanh)
+      call mpas_pool_get_config(ocnConfigs, 'config_min_visc_tanh', config_min_visc_tanh)
+      call mpas_pool_get_config(ocnConfigs, 'config_ZMid_tanh', config_ZMid_tanh)
+      call mpas_pool_get_config(ocnConfigs, 'config_zWidth_tanh', config_zWidth_tanh)
+
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+      call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
 
       ! refBottomDepth is used here for simplicity.  Using zMid and h, which 
       ! vary in time, would give the exact location of the top, but it
       ! would only change the diffusion value very slightly.
-      do k=2,nVertLevels
-         vertViscTopOfEdge(k,:) = vertViscTopOfEdge(k,:)-(config_max_visc_tanh-config_min_visc_tanh)/2.0 &
-            *tanh((refBottomDepth(k-1)+config_ZMid_tanh) &
-                  /config_zWidth_tanh) &
-            + (config_max_visc_tanh+config_min_visc_tanh)/2
+      do k = 2, nVertLevels
+         vertViscTopOfEdge(k,:) = vertViscTopOfEdge(k,:) - (config_max_visc_tanh - config_min_visc_tanh) / 2.0 &
+            * tanh((refBottomDepth(k-1) + config_ZMid_tanh) &
+                  / config_zWidth_tanh) &
+            + (config_max_visc_tanh + config_min_visc_tanh) / 2
       end do
 
 
@@ -216,7 +232,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_vmix_coefs_tanh(mesh, vertDiffTopOfCell, err)!{{{
+   subroutine ocn_tracer_vmix_coefs_tanh(meshPool, vertDiffTopOfCell, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -224,8 +240,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (mesh_type), intent(in) :: &
-         mesh          !< Input: mesh information
+      type (mpas_pool_type), intent(in) :: &
+         meshPool          !< Input: mesh information
 
       !-----------------------------------------------------------------
       !
@@ -249,25 +265,34 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: k, nVertLevels
+      integer :: k
+      integer, pointer :: nVertLevels
 
       real (kind=RKIND), dimension(:), pointer :: refBottomDepth
 
+      real (kind=RKIND), pointer :: config_max_diff_tanh, config_min_diff_tanh, config_ZMid_tanh
+      real (kind=RKIND), pointer :: config_zWidth_tanh
+
       err = 0
 
-      if(.not.tanhDiffOn) return
+      if ( .not. tanhDiffOn ) return
 
-      nVertLevels = mesh % nVertLevels
-      refBottomDepth => mesh % refBottomDepth % array
+      call mpas_pool_get_config(ocnConfigs, 'config_max_diff_tanh', config_max_diff_tanh)
+      call mpas_pool_get_config(ocnConfigs, 'config_min_diff_tanh', config_min_diff_tanh)
+      call mpas_pool_get_config(ocnConfigs, 'config_ZMid_tanh', config_ZMid_tanh)
+      call mpas_pool_get_config(ocnConfigs, 'config_zWidth_tanh', config_zWidth_tanh)
+
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+      call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
 
       ! refBottomDepth is used here for simplicity.  Using zMid and h, which 
       ! vary in time, would give the exact location of the top, but it
       ! would only change the diffusion value very slightly.
       do k=2,nVertLevels
-         vertDiffTopOfCell(k,:) = vertDiffTopOfCell(k,:)-(config_max_diff_tanh-config_min_diff_tanh)/2.0 &
-            *tanh((refBottomDepth(k-1)+config_ZMid_tanh) &
-                  /config_zWidth_tanh) &
-            + (config_max_diff_tanh+config_min_diff_tanh)/2
+         vertDiffTopOfCell(k,:) = vertDiffTopOfCell(k,:) - (config_max_diff_tanh - config_min_diff_tanh) / 2.0 &
+            * tanh((refBottomDepth(k-1) + config_ZMid_tanh) &
+                  / config_zWidth_tanh) &
+            + (config_max_diff_tanh + config_min_diff_tanh) / 2
       end do
 
 
@@ -289,7 +314,6 @@ contains
 !
 !-----------------------------------------------------------------------
 
-
    subroutine ocn_vmix_coefs_tanh_init(err)!{{{
 
    !--------------------------------------------------------------------
@@ -302,7 +326,12 @@ contains
 
       integer, intent(out) :: err !< Output: error flag
 
+      logical, pointer :: config_use_tanh_visc, config_use_tanh_diff
+
       err = 0
+
+      call mpas_pool_get_config(ocnConfigs, 'config_use_tanh_visc', config_use_tanh_visc)
+      call mpas_pool_get_config(ocnConfigs, 'config_use_tanh_diff', config_use_tanh_diff)
 
       tanhViscOn = config_use_tanh_visc
       tanhDiffOn = config_use_tanh_diff

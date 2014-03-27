@@ -7,6 +7,7 @@
 !
 !==================================================================================================
  module mpas_atmphys_driver_sfclayer
+ use mpas_kind_types
  use mpas_grid_types
 
  use mpas_atmphys_constants
@@ -67,9 +68,12 @@
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-16. 
 !>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-22.
+!>    * Modified sourcecode to use pools.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-05-15.
 
 
  contains
+
 
 !==================================================================================================
  subroutine allocate_sfclayer
@@ -168,11 +172,11 @@
 !==================================================================================================
 
 !input arguments:
- type(mesh_type),intent(in):: mesh
- type(sfc_input_type),intent(in):: sfc_input
- type(diag_physics_type),intent(inout):: diag_physics
+ type(mpas_pool_type),intent(in):: mesh
+ type(mpas_pool_type),intent(in):: sfc_input
+ type(mpas_pool_type),intent(inout):: diag_physics
 
-!local variables and arrays:
+!local pointers:
  real(kind=RKIND),dimension(:),pointer:: skintemp,xland
  real(kind=RKIND),dimension(:),pointer:: dcEdge_m,hpbl,mavail
  real(kind=RKIND),dimension(:),pointer:: br,cpm,chs,chs2,cqs2,fh,fm,flhc,flqc,gz1oz0,hfx,    &
@@ -181,36 +185,36 @@
 
 !--------------------------------------------------------------------------------------------------
 
- skintemp => sfc_input    % skintemp % array
- xland    => sfc_input    % xland    % array
- dcEdge_m => diag_physics % dcEdge_m % array
- hpbl     => diag_physics % hpbl     % array
- mavail   => diag_physics % mavail   % array
- br       => diag_physics % br       % array
- cpm      => diag_physics % cpm      % array
- chs      => diag_physics % chs      % array
- chs2     => diag_physics % chs2     % array
- cqs2     => diag_physics % cqs2     % array
- fh       => diag_physics % fh       % array
- fm       => diag_physics % fm       % array
- flhc     => diag_physics % flhc     % array
- flqc     => diag_physics % flqc     % array
- gz1oz0   => diag_physics % gz1oz0   % array
- hfx      => diag_physics % hfx      % array
- qfx      => diag_physics % qfx      % array
- qgh      => diag_physics % qgh      % array
- qsfc     => diag_physics % qsfc     % array
- lh       => diag_physics % lh       % array
- mol      => diag_physics % mol      % array
- psim     => diag_physics % psim     % array
- psih     => diag_physics % psih     % array
- regime   => diag_physics % regime   % array
- rmol     => diag_physics % rmol     % array
- ust      => diag_physics % ust      % array
- ustm     => diag_physics % ustm     % array
- wspd     => diag_physics % wspd     % array
- znt      => diag_physics % znt      % array
- zol      => diag_physics % zol      % array
+ call mpas_pool_get_array(sfc_input   ,'skintemp',skintemp)
+ call mpas_pool_get_array(sfc_input   ,'xland'   ,xland   )
+ call mpas_pool_get_array(diag_physics,'dcEdge_m',dcEdge_m)
+ call mpas_pool_get_array(diag_physics,'hpbl'    ,hpbl    )
+ call mpas_pool_get_array(diag_physics,'mavail'  ,mavail  )
+ call mpas_pool_get_array(diag_physics,'br'      ,br      )
+ call mpas_pool_get_array(diag_physics,'cpm'     ,cpm     )
+ call mpas_pool_get_array(diag_physics,'chs'     ,chs     )
+ call mpas_pool_get_array(diag_physics,'chs2'    ,chs2    )
+ call mpas_pool_get_array(diag_physics,'cqs2'    ,cqs2    )
+ call mpas_pool_get_array(diag_physics,'fh'      ,fh      )
+ call mpas_pool_get_array(diag_physics,'fm'      ,fm      )
+ call mpas_pool_get_array(diag_physics,'flhc'    ,flhc    )
+ call mpas_pool_get_array(diag_physics,'flqc'    ,flqc    )
+ call mpas_pool_get_array(diag_physics,'gz1oz0'  ,gz1oz0  )
+ call mpas_pool_get_array(diag_physics,'hfx'     ,hfx     )
+ call mpas_pool_get_array(diag_physics,'qfx'     ,qfx     )
+ call mpas_pool_get_array(diag_physics,'qgh'     ,qgh     )
+ call mpas_pool_get_array(diag_physics,'qsfc'    ,qsfc    )
+ call mpas_pool_get_array(diag_physics,'lh'      ,lh      )
+ call mpas_pool_get_array(diag_physics,'mol'     ,mol     )
+ call mpas_pool_get_array(diag_physics,'psim'    ,psim    )
+ call mpas_pool_get_array(diag_physics,'psih'    ,psih    )
+ call mpas_pool_get_array(diag_physics,'regime'  ,regime  )
+ call mpas_pool_get_array(diag_physics,'rmol'    ,rmol    )
+ call mpas_pool_get_array(diag_physics,'ust'     ,ust     )
+ call mpas_pool_get_array(diag_physics,'ustm'    ,ustm    )
+ call mpas_pool_get_array(diag_physics,'wspd'    ,wspd    )
+ call mpas_pool_get_array(diag_physics,'znt'     ,znt     )
+ call mpas_pool_get_array(diag_physics,'zol'     ,zol     )
 
  do j = jts,jte
  do i = its,ite
@@ -267,9 +271,9 @@
 !==================================================================================================
 
 !inout arguments:
- type(diag_physics_type),intent(inout):: diag_physics
+ type(mpas_pool_type),intent(inout):: diag_physics
 
-!local variables and arrays:
+!local pointers:
  real(kind=RKIND),dimension(:),pointer:: br,cpm,chs,chs2,cqs2,fh,fm,flhc,flqc,gz1oz0,hfx,    &
                                          qfx,qgh,qsfc,lh,mol,psim,psih,regime,rmol,ust,ustm, &
                                          wspd,znt,zol
@@ -277,37 +281,37 @@
 
 !--------------------------------------------------------------------------------------------------
 
- br       => diag_physics % br       % array
- cpm      => diag_physics % cpm      % array
- chs      => diag_physics % chs      % array
- chs2     => diag_physics % chs2     % array
- cqs2     => diag_physics % cqs2     % array
- fh       => diag_physics % fh       % array
- fm       => diag_physics % fm       % array
- flhc     => diag_physics % flhc     % array
- flqc     => diag_physics % flqc     % array
- gz1oz0   => diag_physics % gz1oz0   % array
- hfx      => diag_physics % hfx      % array
- qfx      => diag_physics % qfx      % array
- qgh      => diag_physics % qgh      % array
- qsfc     => diag_physics % qsfc     % array
- lh       => diag_physics % lh       % array
- mol      => diag_physics % mol      % array
- psim     => diag_physics % psim     % array
- psih     => diag_physics % psih     % array
- regime   => diag_physics % regime   % array
- rmol     => diag_physics % rmol     % array
- ust      => diag_physics % ust      % array
- ustm     => diag_physics % ustm     % array
- wspd     => diag_physics % wspd     % array
- znt      => diag_physics % znt      % array
- zol      => diag_physics % zol      % array
+ call mpas_pool_get_array(diag_physics,'br'    , br    )
+ call mpas_pool_get_array(diag_physics,'cpm'   , cpm   )
+ call mpas_pool_get_array(diag_physics,'chs'   , chs   )
+ call mpas_pool_get_array(diag_physics,'chs2'  , chs2  )
+ call mpas_pool_get_array(diag_physics,'cqs2'  , cqs2  )
+ call mpas_pool_get_array(diag_physics,'fh'    , fh    )
+ call mpas_pool_get_array(diag_physics,'fm'    , fm    )
+ call mpas_pool_get_array(diag_physics,'flhc'  , flhc  )
+ call mpas_pool_get_array(diag_physics,'flqc'  , flqc  )
+ call mpas_pool_get_array(diag_physics,'gz1oz0', gz1oz0)
+ call mpas_pool_get_array(diag_physics,'hfx'   , hfx   )
+ call mpas_pool_get_array(diag_physics,'qfx'   , qfx   )
+ call mpas_pool_get_array(diag_physics,'qgh'   , qgh   )
+ call mpas_pool_get_array(diag_physics,'qsfc'  , qsfc  )
+ call mpas_pool_get_array(diag_physics,'lh'    , lh    )
+ call mpas_pool_get_array(diag_physics,'mol'   , mol   )
+ call mpas_pool_get_array(diag_physics,'psim'  , psim  )
+ call mpas_pool_get_array(diag_physics,'psih'  , psih  )
+ call mpas_pool_get_array(diag_physics,'regime', regime)
+ call mpas_pool_get_array(diag_physics,'rmol'  , rmol  )
+ call mpas_pool_get_array(diag_physics,'ust'   , ust   )
+ call mpas_pool_get_array(diag_physics,'ustm'  , ustm  )
+ call mpas_pool_get_array(diag_physics,'wspd'  , wspd  )
+ call mpas_pool_get_array(diag_physics,'znt'   , znt   )
+ call mpas_pool_get_array(diag_physics,'zol'   , zol   )
 
- q2       => diag_physics % q2       % array
- t2m      => diag_physics % t2m      % array
- th2m     => diag_physics % th2m     % array
- u10      => diag_physics % u10      % array
- v10      => diag_physics % v10      % array
+ call mpas_pool_get_array(diag_physics,'q2'    , q2    )
+ call mpas_pool_get_array(diag_physics,'t2m'   , t2m   )
+ call mpas_pool_get_array(diag_physics,'th2m'  , th2m  )
+ call mpas_pool_get_array(diag_physics,'u10'   , u10   )
+ call mpas_pool_get_array(diag_physics,'v10'   , v10   )
 
  do j = jts,jte
  do i = its,ite
@@ -376,18 +380,21 @@
 !==================================================================================================
 
 !input and inout arguments:
-!--------------------------
- type(mesh_type)        ,intent(in):: mesh
- type(sfc_input_type)   ,intent(in):: sfc_input
- type(diag_physics_type),intent(inout):: diag_physics
+ type(mpas_pool_type),intent(in):: mesh
+ type(mpas_pool_type),intent(in):: sfc_input
+ type(mpas_pool_type),intent(inout):: diag_physics
+
+!local pointers:
+ real(kind=RKIND),dimension(:),pointer:: areaCell
 
 !local variables:
-!----------------
  real(kind=RKIND):: dx
 
 !--------------------------------------------------------------------------------------------------
  write(0,*)
  write(0,*) '--- enter subroutine driver_sfclayer:'
+
+ call mpas_pool_get_array(mesh,'areaCell',areaCell)
 
 !copy all MPAS arrays to rectanguler grid:
  call sfclayer_from_MPAS(mesh,diag_physics,sfc_input)
@@ -395,7 +402,7 @@
  sfclayer_select: select case (trim(sfclayer_scheme))
 
     case("monin_obukhov")
-       dx = sqrt(maxval(mesh % areaCell % array))
+       dx = sqrt(maxval(areaCell))
        call sfclay( &
                    p3d      = pres_hyd_p , psfc     = psfc_p     , t3d      = t_p        , &
                    u3d      = u_p        , v3d      = v_p        , qv3d     = qv_p       , &

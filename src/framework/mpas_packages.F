@@ -17,8 +17,6 @@
 !-----------------------------------------------------------------------
 module mpas_packages
 
-#include "define_packages.inc"
-
    contains
 
    subroutine mpas_packages_dummy()

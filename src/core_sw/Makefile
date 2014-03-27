@@ -2,9 +2,10 @@
 
 OBJS = 	mpas_sw_mpas_core.o \
         mpas_sw_test_cases.o \
-	mpas_sw_advection.o \
-	mpas_sw_time_integration.o \
-	mpas_sw_global_diagnostics.o
+        mpas_sw_advection.o \
+        mpas_sw_time_integration.o \
+        mpas_sw_global_diagnostics.o \
+        mpas_sw_constants.o
 
 all: core_sw
 
@@ -14,15 +15,17 @@ core_sw: $(OBJS)
 core_reg:
 	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) Registry.xml > Registry_processed.xml
 
-mpas_sw_test_cases.o:
+mpas_sw_constants.o:
 
-mpas_sw_advection.o:
+mpas_sw_test_cases.o: mpas_sw_constants.o
 
-mpas_sw_time_integration.o:
+mpas_sw_advection.o: mpas_sw_constants.o
 
-mpas_sw_global_diagnostics.o:
+mpas_sw_time_integration.o: mpas_sw_constants.o
 
-mpas_sw_mpas_core.o: mpas_sw_global_diagnostics.o mpas_sw_test_cases.o mpas_sw_time_integration.o mpas_sw_advection.o
+mpas_sw_global_diagnostics.o: mpas_sw_constants.o
+
+mpas_sw_mpas_core.o: mpas_sw_global_diagnostics.o mpas_sw_test_cases.o mpas_sw_time_integration.o mpas_sw_advection.o mpas_sw_constants.o
 
 clean:
 	$(RM) *.o *.mod *.f90 libdycore.a
