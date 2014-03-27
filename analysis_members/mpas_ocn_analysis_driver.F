@@ -20,9 +20,9 @@
 module ocn_analysis_driver
 
    use mpas_grid_types
-   use mpas_configure
    use mpas_timekeeping
 
+   use ocn_constants
    use ocn_global_stats
    use ocn_zonal_mean
 !   use ocn_TEMPLATE
@@ -81,13 +81,16 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_analysis_setup_packages(err)!{{{
+   subroutine ocn_analysis_setup_packages(configPool, packagePool, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+
+      type (mpas_pool_type), intent(in) :: configPool
+      type (mpas_pool_type), intent(in) :: packagePool
 
       !-----------------------------------------------------------------
       !
@@ -110,21 +113,27 @@ contains
       !-----------------------------------------------------------------
 
       integer :: err_tmp
+      logical, pointer :: config_use_global_stats, config_use_zonal_mean 
+!      logical, pointer :: config_use_TEMPLATE
 
       err = 0
 
-     if (config_use_global_stats) then
-         call ocn_setup_packages_global_stats(err_tmp)
-         err = ior(err, err_tmp)
-     endif
 
+      call mpas_pool_get_config(configPool, 'config_use_global_stats', config_use_global_stats)
+      if (config_use_global_stats) then
+          call ocn_setup_packages_global_stats(configPool, packagePool, err_tmp)
+          err = ior(err, err_tmp)
+      endif
+
+      call mpas_pool_get_config(configPool, 'config_use_zonal_mean', config_use_zonal_mean)
       if (config_use_zonal_mean) then
-         call ocn_setup_packages_zonal_mean(err_tmp)
+         call ocn_setup_packages_zonal_mean(configPool, packagePool, err_tmp)
          err = ior(err, err_tmp)
       endif
 
+!      call mpas_pool_get_config(configPool, 'config_use_TEMPLATE', config_use_TEMPLATE)
 !      if (config_use_TEMPLATE) then
-!         call ocn_setup_packages_TEMPLATE(err_tmp)
+!         call ocn_setup_packages_TEMPLATE(configPool, packagePool, err_tmp)
 !         err = ior(err, err_tmp)
 !      endif
 
@@ -174,19 +183,24 @@ contains
       !-----------------------------------------------------------------
 
       integer :: err_tmp
+      logical, pointer :: config_use_global_stats, config_use_zonal_mean
+!      logical, pointer :: config_use_TEMPLATE
 
       err = 0
 
-     if (config_use_global_stats) then
-         call ocn_init_global_stats(domain, err_tmp)
-         err = ior(err, err_tmp)
-     endif
+      call mpas_pool_get_config(domain % configs, 'config_use_global_stats', config_use_global_stats)
+      if (config_use_global_stats) then
+          call ocn_init_global_stats(domain, err_tmp)
+          err = ior(err, err_tmp)
+      endif
 
+      call mpas_pool_get_config(domain % configs, 'config_use_zonal_mean', config_use_zonal_mean)
       if (config_use_zonal_mean) then
          call ocn_init_zonal_mean(domain, err_tmp)
          err = ior(err, err_tmp)
       endif
 
+!      call mpas_pool_get_config(domain % configs, 'config_use_TEMPLATE', config_use_TEMPLATE)
 !      if (config_use_TEMPLATE) then
 !         call ocn_init_TEMPLATE(domain, err_tmp)
 !         err = ior(err, err_tmp)
@@ -241,20 +255,26 @@ contains
 
       integer :: err_tmp
 
+      logical, pointer :: config_use_global_stats, config_use_zonal_mean
+!      logical, pointer :: config_use_TEMPLATE
+
       err = 0
 
-     if (config_use_global_stats) then
-         call ocn_init_alarms_global_stats(clock, startTime, compute_global_stats_AlarmID, err_tmp)
-         err = ior(err, err_tmp)
-     endif
+      call mpas_pool_get_config(ocnConfigs, 'config_use_global_stats', config_use_global_stats)
+      if (config_use_global_stats) then
+          call ocn_init_alarms_global_stats(clock, startTime, compute_global_stats_AlarmID, err_tmp)
+          err = ior(err, err_tmp)
+      endif
 
+      call mpas_pool_get_config(ocnConfigs, 'config_use_zonal_mean', config_use_zonal_mean)
       if (config_use_zonal_mean) then
          call ocn_init_alarms_zonal_mean(clock, startTime, compute_zonal_mean_AlarmID, err_tmp)
          err = ior(err, err_tmp)
       endif
 
+!      call mpas_pool_get_config(ocnConfigs, 'config_use_TEMPLATE', config_use_TEMPLATE)
 !      if (config_use_TEMPLATE) then
-      !         call ocn_init_alarms_TEMPLATE(clock, startTime, compute_TEMPLATE_AlarmID, err_tmp)
+!         call ocn_init_alarms_TEMPLATE(clock, startTime, compute_TEMPLATE_AlarmID, err_tmp)
 !         err = ior(err, err_tmp)
 !      endif
 
@@ -304,21 +324,30 @@ contains
       !-----------------------------------------------------------------
 
       integer :: timeLevel, err_tmp
-      type (state_type), pointer :: state
+
+      logical, pointer :: config_use_global_stats, config_global_stats_compute_startup
+      logical, pointer :: config_use_zonal_mean, config_zonal_mean_compute_startup
+!      logical, pointer :: config_use_TEMPLATE, config_TEMPLATE_compute_startup
 
       err = 0
 
       timeLevel=1
+      call mpas_pool_get_config(domain % configs, 'config_use_global_stats', config_use_global_stats)
+      call mpas_pool_get_config(domain % configs, 'config_global_stats_compute_startup', config_global_stats_compute_startup)
       if (config_use_global_stats.and.config_global_stats_compute_startup) then
          call ocn_compute_global_stats(domain, timeLevel, err_tmp)
          err = ior(err, err_tmp)
       endif 
 
+      call mpas_pool_get_config(domain % configs, 'config_use_zonal_mean', config_use_zonal_mean)
+      call mpas_pool_get_config(domain % configs, 'config_zonal_mean_compute_startup', config_zonal_mean_compute_startup)
       if (config_use_zonal_mean.and.config_zonal_mean_compute_startup) then
          call ocn_compute_zonal_mean(domain, timeLevel, err_tmp)
          err = ior(err, err_tmp)
       endif
 
+!      call mpas_pool_get_config(domain % configs, 'config_use_TEMPLATE', config_use_TEMPLATE)
+!      call mpas_pool_get_config(domain % configs, 'config_TEMPLATE_compute_startup', config_TEMPLATE_compute_startup)
 !      if (config_use_TEMPLATE.and.config_TEMPLATE_compute_startup) then
 !         call ocn_compute_TEMPLATE(domain, timeLevel, err_tmp)
 !         err = ior(err, err_tmp)
@@ -370,19 +399,24 @@ contains
       !-----------------------------------------------------------------
 
       integer :: timeLevel, err_tmp
-      type (state_type), pointer :: state
+
+      logical, pointer :: config_use_global_stats, config_use_zonal_mean
+!      logical, pointer :: config_use_TEMPLATE
 
       err = 0
 
       timeLevel=1
+      call mpas_pool_get_config(domain % configs, 'config_use_global_stats', config_use_global_stats)
       if (config_use_global_stats) then
          call ocn_compute_global_stats(domain, timeLevel, err_tmp)
       endif
 
+      call mpas_pool_get_config(domain % configs, 'config_use_zonal_mean', config_use_zonal_mean)
       if (config_use_zonal_mean) then
          call ocn_compute_zonal_mean(domain, timeLevel, err_tmp)
       endif
 
+!      call mpas_pool_get_config(domain % configs, 'config_use_TEMPLATE', config_use_TEMPLATE)
 !      if (config_use_TEMPLATE) then
 !         call ocn_compute_TEMPLATE(domain, timeLevel, err_tmp)
 !      endif
@@ -434,11 +468,13 @@ contains
       !-----------------------------------------------------------------
 
       integer :: timeLevel, err_tmp
-      type (state_type), pointer :: state
+      logical, pointer :: config_use_global_stats, config_use_zonal_mean
+!      logical, pointer :: config_use_TEMPLATE
 
       err = 0
 
       timeLevel=1
+      call mpas_pool_get_config(domain % configs, 'config_use_global_stats', config_use_global_stats)
       if (config_use_global_stats) then
          if (mpas_is_alarm_ringing(clock, compute_global_stats_AlarmID, ierr=err_tmp)) then
             call mpas_reset_clock_alarm(clock, compute_global_stats_AlarmID, ierr=err_tmp)
@@ -446,6 +482,7 @@ contains
          endif 
       endif
 
+      call mpas_pool_get_config(domain % configs, 'config_use_zonal_mean', config_use_zonal_mean)
       if (config_use_zonal_mean) then
          if (mpas_is_alarm_ringing(clock, compute_zonal_mean_AlarmID, ierr=err_tmp)) then
             call mpas_reset_clock_alarm(clock, compute_zonal_mean_AlarmID, ierr=err_tmp)
@@ -453,6 +490,7 @@ contains
          endif
       endif
 
+!      call mpas_pool_get_config(domain % configs, 'config_use_TEMPLATE', config_use_TEMPLATE)
 !      if (config_use_TEMPLATE) then
 !         if (mpas_is_alarm_ringing(clock, compute_TEMPLATE_AlarmID, ierr=err_tmp)) then
 !            call mpas_reset_clock_alarm(clock, compute_TEMPLATE_AlarmID, ierr=err_tmp)
@@ -506,19 +544,24 @@ contains
       !-----------------------------------------------------------------
 
       integer :: err_tmp
+      logical, pointer :: config_use_global_stats, config_use_zonal_mean
+!      logical, pointer :: config_use_TEMPLATE
 
       err = 0
 
-     if (config_use_global_stats) then
-         call ocn_restart_global_stats(domain, err_tmp)
-         err = ior(err, err_tmp)
-     endif
+      call mpas_pool_get_config(domain % configs, 'config_use_global_stats', config_use_global_stats)
+      if (config_use_global_stats) then
+          call ocn_restart_global_stats(domain, err_tmp)
+          err = ior(err, err_tmp)
+      endif
 
+      call mpas_pool_get_config(domain % configs, 'config_use_zonal_mean', config_use_zonal_mean)
       if (config_use_zonal_mean) then
          call ocn_restart_zonal_mean(domain, err_tmp)
          err = ior(err, err_tmp)
       endif
 
+!      call mpas_pool_get_config(domain % configs, 'config_use_TEMPLATE', config_use_TEMPLATE)
 !      if (config_use_TEMPLATE) then
 !         call ocn_restart_TEMPLATE(domain, err_tmp)
 !         err = ior(err, err_tmp)
@@ -573,18 +616,24 @@ contains
 
       integer :: err_tmp
 
+      logical, pointer :: config_use_global_stats, config_use_zonal_mean
+!      logical, pointer :: config_use_TEMPLATE
+
       err = 0
 
-     if (config_use_global_stats) then
-         call ocn_write_global_stats(domain, err_tmp)
-         err = ior(err, err_tmp)
-     endif
+      call mpas_pool_get_config(domain % configs, 'config_use_global_stats', config_use_global_stats)
+      if (config_use_global_stats) then
+          call ocn_write_global_stats(domain, err_tmp)
+          err = ior(err, err_tmp)
+      endif
 
+      call mpas_pool_get_config(domain % configs, 'config_use_zonal_mean', config_use_zonal_mean)
       if (config_use_zonal_mean) then
          call ocn_write_zonal_mean(domain, err_tmp)
          err = ior(err, err_tmp)
       endif
 
+!      call mpas_pool_get_config(domain % configs, 'config_use_TEMPLATE', config_use_TEMPLATE)
 !      if (config_use_TEMPLATE) then
 !         call ocn_write_TEMPLATE(domain, err_tmp)
 !         err = ior(err, err_tmp)
@@ -636,19 +685,24 @@ contains
       !-----------------------------------------------------------------
 
       integer :: err_tmp
+      logical, pointer :: config_use_global_stats, config_use_zonal_mean
+!      logical, pointer :: config_use_TEMPLATE
 
       err = 0
 
+      call mpas_pool_get_config(domain % configs, 'config_use_global_stats', config_use_global_stats)
      if (config_use_global_stats) then
         call ocn_finalize_global_stats(domain, err_tmp)
         err = ior(err, err_tmp)
      endif
 
+      call mpas_pool_get_config(domain % configs, 'config_use_zonal_mean', config_use_zonal_mean)
       if (config_use_zonal_mean) then
          call ocn_finalize_zonal_mean(domain, err_tmp)
          err = ior(err, err_tmp)
       endif
 
+!      call mpas_pool_get_config(domain % configs, 'config_use_TEMPLATE', config_use_TEMPLATE)
 !      if (config_use_TEMPLATE) then
 !         call ocn_finalize_TEMPLATE(domain, err_tmp)
 !         err = ior(err, err_tmp)

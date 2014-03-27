@@ -21,10 +21,10 @@
 module ocn_diagnostics
 
    use mpas_grid_types
-   use mpas_configure
    use mpas_constants
    use mpas_timer
 
+   use ocn_constants
    use ocn_gm
    use ocn_equation_of_state
    use ocn_thick_ale
@@ -62,7 +62,8 @@ module ocn_diagnostics
    !--------------------------------------------------------------------
 
    integer :: ke_cell_flag, ke_vertex_flag
-   real (kind=RKIND) ::  coef_3rd_order, fCoef
+   real (kind=RKIND) ::  fCoef
+   real (kind=RKIND), pointer ::  coef_3rd_order
 
 !***********************************************************************
 
@@ -80,17 +81,19 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_diagnostic_solve(dt, state, forcing, mesh, diagnostics, scratch)!{{{
+   subroutine ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, timeLevelIn)!{{{
 
       real (kind=RKIND), intent(in) :: dt !< Input: Time step
-      type (state_type), intent(inout) :: state !< Input/Output: State information
-      type (forcing_type), intent(in) :: forcing !< Input: Forcing information
-      type (mesh_type), intent(in) :: mesh !< Input: mesh information
-      type (diagnostics_type), intent(inout) :: diagnostics  !< Input/Output: diagnostic fields derived from State
-      type (scratch_type), intent(inout) :: scratch !< Input: scratch variables
+      type (mpas_pool_type), intent(in) :: statePool !< Input: State information
+      type (mpas_pool_type), intent(in) :: forcingPool !< Input: Forcing information
+      type (mpas_pool_type), intent(in) :: meshPool !< Input: mesh information
+      type (mpas_pool_type), intent(inout) :: diagnosticsPool  !< Input: diagnostic fields derived from State
+      type (mpas_pool_type), intent(in) :: scratchPool !< Input: scratch variables
+      integer, intent(in), optional :: timeLevelIn !< Input: Time level in state
 
       integer :: iEdge, iCell, iVertex, k, cell1, cell2, vertex1, vertex2, eoe, i, j
-      integer :: boundaryMask, velMask, nCells, nEdges, nVertices, nVertLevels, vertexDegree, err
+      integer :: boundaryMask, velMask, err
+      integer, pointer  :: nEdgesSolve, nCells, nEdges, nVertices, nVertLevels, vertexDegree
 
       integer, dimension(:), pointer :: nEdgesOnCell, nEdgesOnEdge, &
         maxLevelCell, maxLevelEdgeTop, maxLevelEdgeBot, &
@@ -114,77 +117,101 @@ contains
         normalizedRelativeVorticityEdge, normalizedRelativeVorticityVertex, normalizedRelativeVorticityCell, &
         density, displacedDensity, potentialDensity, temperature, salinity, kineticEnergyVertex, kineticEnergyVertexOnCells, uBolusGM, uTransport, &
         vertVelocityTop, BruntVaisalaFreqTop, &
-        vorticityGradientNormalComponent, vorticityGradientTangentialComponent
+        vorticityGradientNormalComponent, vorticityGradientTangentialComponent, gradSSH
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers, derivTwo
       character :: c1*6
 
-      real (kind=RKIND), dimension(:,:), pointer :: tracersSurfaceValue ! => diagnostics % tracersSurfaceValue % array
+      real (kind=RKIND), dimension(:,:), pointer :: tracersSurfaceValue
 
-      layerThickness => state % layerThickness % array
-      normalVelocity => state % normalVelocity % array
-      tracers        => state % tracers % array
-      ssh            => state % ssh % array
+      type (field2DReal), pointer :: kineticEnergyVertexField, kineticEnergyVertexOnCellsField
+      type (field2DReal), pointer :: normalizedRelativeVorticityVertexField, normalizedPlanetaryVorticityVertexField
+      type (field2DReal), pointer :: vorticityGradientNormalComponentField, vorticityGradientTangentialComponentField
 
-      zMid                             => diagnostics % zMid % array
-      zTop                             => diagnostics % zTop % array
-      divergence                       => diagnostics % divergence % array
-      circulation                      => diagnostics % circulation % array
-      relativeVorticity                => diagnostics % relativeVorticity % array
-      relativeVorticityCell            => diagnostics % relativeVorticityCell % array
-      normalizedPlanetaryVorticityEdge => diagnostics % normalizedPlanetaryVorticityEdge % array
-      normalizedRelativeVorticityEdge  => diagnostics % normalizedRelativeVorticityEdge % array
-      normalizedRelativeVorticityCell  => diagnostics % normalizedRelativeVorticityCell % array
-      density                          => diagnostics % density % array
-      displacedDensity                 => diagnostics % displacedDensity % array
-      potentialDensity                 => diagnostics % potentialDensity % array
-      montgomeryPotential              => diagnostics % montgomeryPotential % array
-      pressure                         => diagnostics % pressure % array
-      BruntVaisalaFreqTop              => diagnostics % BruntVaisalaFreqTop % array
-      tangentialVelocity               => diagnostics % tangentialVelocity % array
-      layerThicknessEdge               => diagnostics % layerThicknessEdge % array
-      kineticEnergyCell                => diagnostics % kineticEnergyCell % array
-      vertVelocityTop                  => diagnostics % vertVelocityTop % array
-      uBolusGM                         => diagnostics % uBolusGM % array
-      uTransport                       => diagnostics % uTransport % array
+      integer :: timeLevel
+      integer, pointer :: indexTemperature, indexSalinity
+      real (kind=RKIND), pointer :: config_density0, config_apvm_scale_factor, config_h_kappa, config_coef_3rd_order
+      character (len=StrKIND), pointer :: config_pressure_gradient_type
 
-      weightsOnEdge     => mesh % weightsOnEdge % array
-      kiteAreasOnVertex => mesh % kiteAreasOnVertex % array
-      cellsOnEdge       => mesh % cellsOnEdge % array
-      cellsOnVertex     => mesh % cellsOnVertex % array
-      verticesOnEdge    => mesh % verticesOnEdge % array
-      nEdgesOnCell      => mesh % nEdgesOnCell % array
-      nEdgesOnEdge      => mesh % nEdgesOnEdge % array
-      edgesOnCell       => mesh % edgesOnCell % array
-      edgesOnEdge       => mesh % edgesOnEdge % array
-      edgesOnVertex     => mesh % edgesOnVertex % array
-      dcEdge            => mesh % dcEdge % array
-      dvEdge            => mesh % dvEdge % array
-      areaCell          => mesh % areaCell % array
-      areaTriangle      => mesh % areaTriangle % array
-      bottomDepth       => mesh % bottomDepth % array
-      fVertex           => mesh % fVertex % array
-      derivTwo          => mesh % derivTwo % array
-      maxLevelCell      => mesh % maxLevelCell % array
-      maxLevelEdgeTop   => mesh % maxLevelEdgeTop % array
-      maxLevelEdgeBot   => mesh % maxLevelEdgeBot % array
-      maxLevelVertexBot => mesh % maxLevelVertexBot % array
-      kiteIndexOnCell   => mesh % kiteIndexOnCell % array
-      verticesOnCell    => mesh % verticesOnCell % array
+      if (present(timeLevelIn)) then
+         timeLevel = timeLevelIn
+      else
+         timeLevel = 1
+      end if
 
-      seaSurfacePressure => forcing % seaSurfacePressure % array
+      call mpas_pool_get_config(ocnConfigs, 'config_density0', config_density0)
+      call mpas_pool_get_config(ocnConfigs, 'config_apvm_scale_factor', config_apvm_scale_factor)
+      call mpas_pool_get_config(ocnConfigs, 'config_h_kappa', config_h_kappa)
+      call mpas_pool_get_config(ocnConfigs, 'config_pressure_gradient_type', config_pressure_gradient_type)
+      call mpas_pool_get_config(ocnConfigs, 'config_coef_3rd_order', config_coef_3rd_order)
+
+      call mpas_pool_get_dimension(statePool, 'index_temperature', indexTemperature)
+      call mpas_pool_get_dimension(statePool, 'index_salinity', indexSalinity)
+
+      call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
+      call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel)
+      call mpas_pool_get_array(statePool, 'tracers', tracers, timeLevel)
+      call mpas_pool_get_array(statePool, 'ssh', ssh, timeLevel)
+
+      call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
+      call mpas_pool_get_array(diagnosticsPool, 'zTop', zTop)
+      call mpas_pool_get_array(diagnosticsPool, 'divergence', divergence)
+      call mpas_pool_get_array(diagnosticsPool, 'circulation', circulation)
+      call mpas_pool_get_array(diagnosticsPool, 'relativeVorticity', relativeVorticity)
+      call mpas_pool_get_array(diagnosticsPool, 'relativeVorticityCell', relativeVorticityCell)
+      call mpas_pool_get_array(diagnosticsPool, 'normalizedPlanetaryVorticityEdge', normalizedPlanetaryVorticityEdge)
+      call mpas_pool_get_array(diagnosticsPool, 'normalizedRelativeVorticityEdge', normalizedRelativeVorticityEdge)
+      call mpas_pool_get_array(diagnosticsPool, 'normalizedRelativeVorticityCell', normalizedRelativeVorticityCell)
+      call mpas_pool_get_array(diagnosticsPool, 'density', density)
+      call mpas_pool_get_array(diagnosticsPool, 'displacedDensity', displacedDensity)
+      call mpas_pool_get_array(diagnosticsPool, 'potentialDensity', potentialDensity)
+      call mpas_pool_get_array(diagnosticsPool, 'montgomeryPotential', montgomeryPotential)
+      call mpas_pool_get_array(diagnosticsPool, 'pressure', pressure)
+      call mpas_pool_get_array(diagnosticsPool, 'BruntVaisalaFreqTop', BruntVaisalaFreqTop)
+      call mpas_pool_get_array(diagnosticsPool, 'tangentialVelocity', tangentialVelocity)
+      call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdge', layerThicknessEdge)
+      call mpas_pool_get_array(diagnosticsPool, 'kineticEnergyCell', kineticEnergyCell)
+      call mpas_pool_get_array(diagnosticsPool, 'vertVelocityTop', vertVelocityTop)
+      call mpas_pool_get_array(diagnosticsPool, 'uBolusGM', uBolusGM)
+      call mpas_pool_get_array(diagnosticsPool, 'uTransport', uTransport)
+      call mpas_pool_get_array(diagnosticsPool, 'gradSSH', gradSSH)
+
+      call mpas_pool_get_array(meshPool, 'weightsOnEdge', weightsOnEdge)
+      call mpas_pool_get_array(meshPool, 'kiteAreasOnVertex', kiteAreasOnVertex)
+      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+      call mpas_pool_get_array(meshPool, 'cellsOnVertex', cellsOnVertex)
+      call mpas_pool_get_array(meshPool, 'verticesOnEdge', verticesOnEdge)
+      call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(meshPool, 'nEdgesOnEdge', nEdgesOnEdge)
+      call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
+      call mpas_pool_get_array(meshPool, 'edgesOnEdge', edgesOnEdge)
+      call mpas_pool_get_array(meshPool, 'edgesOnVertex', edgesOnVertex)
+      call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
+      call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
+      call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+      call mpas_pool_get_array(meshPool, 'areaTriangle', areaTriangle)
+      call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
+      call mpas_pool_get_array(meshPool, 'fVertex', fVertex)
+      call mpas_pool_get_array(meshPool, 'derivTwo', derivTwo)
+      call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+      call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
+      call mpas_pool_get_array(meshPool, 'maxLevelEdgeBot', maxLevelEdgeBot)
+      call mpas_pool_get_array(meshPool, 'maxLevelVertexBot', maxLevelVertexBot)
+      call mpas_pool_get_array(meshPool, 'kiteIndexOnCell', kiteIndexOnCell)
+      call mpas_pool_get_array(meshPool, 'verticesOnCell', verticesOnCell)
+      call mpas_pool_get_array(meshPool, 'boundaryCell', boundaryCell)
+      call mpas_pool_get_array(meshPool, 'edgeSignOnVertex', edgeSignOnVertex)
+      call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
+
+      call mpas_pool_get_array(forcingPool, 'seaSurfacePressure', seaSurfacePressure)
                   
-      nCells      = mesh % nCells
-      nEdges      = mesh % nEdges
-      nVertices   = mesh % nVertices
-      nVertLevels = mesh % nVertLevels
-      vertexDegree = mesh % vertexDegree
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
+      call mpas_pool_get_dimension(meshPool, 'nVertices', nVertices)
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+      call mpas_pool_get_dimension(meshPool, 'vertexDegree', vertexDegree)
 
-      boundaryCell => mesh % boundaryCell % array
-
-      edgeSignOnVertex => mesh % edgeSignOnVertex % array
-      edgeSignOnCell => mesh % edgeSignOnCell % array
-
-      tracersSurfaceValue  => diagnostics % tracersSurfaceValue % array(:,:)
+      call mpas_pool_get_array(diagnosticsPool, 'tracersSurfaceValue', tracersSurfaceValue)
 
       !
       ! Compute height on cell edges at velocity locations
@@ -193,12 +220,12 @@ contains
 
       ! initialize layerThicknessEdge to avoid divide by zero and NaN problems.
       layerThicknessEdge = -1.0e34
-      coef_3rd_order = config_coef_3rd_order
+      coef_3rd_order = config_coef_3rd_order 
 
-      do iEdge=1,nEdges
+      do iEdge = 1, nEdges
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
-         do k=1,maxLevelEdgeTop(iEdge)
+         do k = 1, maxLevelEdgeTop(iEdge)
             layerThicknessEdge(k,iEdge) = 0.5 * (layerThickness(k,cell1) + layerThickness(k,cell2))
          end do
       end do
@@ -209,16 +236,15 @@ contains
       !
       normalVelocity(:,nEdges+1) = -1e34
       layerThickness(:,nCells+1) = -1e34
-      tracers(state % index_temperature,:,nCells+1) = -1e34
-      tracers(state % index_salinity,:,nCells+1) = -1e34
+      tracers(indexTemperature,:,nCells+1) = -1e34
+      tracers(indexSalinity,:,nCells+1) = -1e34
 
       divergence(:,:) = 0.0
       vertVelocityTop(:,:)=0.0
       kineticEnergyCell(:,:) = 0.0
       tangentialVelocity(:,:) = 0.0
 
-      call ocn_relativeVorticity_circulation(diagnostics % relativeVorticity % array, diagnostics % circulation % array, &
-         mesh, state % normalVelocity % array, err)
+      call ocn_relativeVorticity_circulation(relativeVorticity, circulation, meshPool, normalVelocity, err)
 
       relativeVorticityCell(:,:) = 0.0
       do iCell = 1, nCells
@@ -254,11 +280,11 @@ contains
       end do
       deallocate(div_hu)
 
-      do iEdge=1,nEdges
+      do iEdge = 1, nEdges
          ! Compute v (tangential) velocities
-         do i=1,nEdgesOnEdge(iEdge)
+         do i = 1, nEdgesOnEdge(iEdge)
             eoe = edgesOnEdge(i,iEdge)
-            do k = 1,maxLevelEdgeTop(iEdge) 
+            do k = 1, maxLevelEdgeTop(iEdge) 
                tangentialVelocity(k,iEdge) = tangentialVelocity(k,iEdge) + weightsOnEdge(i,iEdge) * normalVelocity(k, eoe)
             end do
          end do
@@ -267,10 +293,12 @@ contains
       !
       ! Compute kinetic energy
       !
-      call mpas_allocate_scratch_field(scratch % kineticEnergyVertex, .true.)
-      call mpas_allocate_scratch_field(scratch % kineticEnergyVertexOnCells, .true.)
-      kineticEnergyVertex         => scratch % kineticEnergyVertex % array
-      kineticEnergyVertexOnCells  => scratch % kineticEnergyVertexOnCells % array
+      call mpas_pool_get_field(scratchPool, 'kineticEnergyVertex', kineticEnergyVertexField)
+      call mpas_pool_get_field(scratchPool, 'kineticEnergyVertexOnCells', kineticEnergyVertexOnCellsField)
+      call mpas_allocate_scratch_field(kineticEnergyVertexField, .true.)
+      call mpas_allocate_scratch_field(kineticEnergyVertexOnCellsField, .true.)
+      kineticEnergyVertex         => kineticEnergyVertexField % array
+      kineticEnergyVertexOnCells  => kineticEnergyVertexOnCellsField % array
       kineticEnergyVertex(:,:) = 0.0; 
       kineticEnergyVertexOnCells(:,:) = 0.0
       do iVertex = 1, nVertices*ke_vertex_flag
@@ -297,28 +325,29 @@ contains
       !
       ! Compute kinetic energy in each cell by blending kineticEnergyCell and kineticEnergyVertexOnCells
       !
-      do iCell=1,nCells*ke_vertex_flag
-         do k=1,nVertLevels
-            kineticEnergyCell(k,iCell) = 5.0/8.0*kineticEnergyCell(k,iCell) + 3.0/8.0*kineticEnergyVertexOnCells(k,iCell)
+      do iCell = 1, nCells * ke_vertex_flag
+         do k = 1, nVertLevels
+            kineticEnergyCell(k,iCell) = 5.0 / 8.0 * kineticEnergyCell(k,iCell) + 3.0 / 8.0 * kineticEnergyVertexOnCells(k,iCell)
          end do
       end do
 
-      call mpas_deallocate_scratch_field(scratch % kineticEnergyVertex, .true.)
-      call mpas_deallocate_scratch_field(scratch % kineticEnergyVertexOnCells, .true.)
-
+      call mpas_deallocate_scratch_field(kineticEnergyVertexField, .true.)
+      call mpas_deallocate_scratch_field(kineticEnergyVertexOnCellsField, .true.)
 
       !
       ! Compute normalized relative and planetary vorticity
       !
-      call mpas_allocate_scratch_field(scratch % normalizedRelativeVorticityVertex, .true.)
-      call mpas_allocate_scratch_field(scratch % normalizedPlanetaryVorticityVertex, .true.)
-      normalizedPlanetaryVorticityVertex  => scratch % normalizedPlanetaryVorticityVertex % array
-      normalizedRelativeVorticityVertex  => scratch % normalizedRelativeVorticityVertex % array
-      do iVertex = 1,nVertices
+      call mpas_pool_get_field(scratchPool, 'normalizedRelativeVorticityVertex', normalizedRelativeVorticityVertexField)
+      call mpas_pool_get_field(scratchPool, 'normalizedPlanetaryVorticityVertex', normalizedPlanetaryVorticityVertexField)
+      call mpas_allocate_scratch_field(normalizedRelativeVorticityVertexField, .true.)
+      call mpas_allocate_scratch_field(normalizedPlanetaryVorticityVertexField, .true.)
+      normalizedPlanetaryVorticityVertex  => normalizedPlanetaryVorticityVertexField % array
+      normalizedRelativeVorticityVertex  => normalizedRelativeVorticityVertexField % array
+      do iVertex = 1, nVertices
          invAreaTri1 = 1.0 / areaTriangle(iVertex)
-         do k=1,maxLevelVertexBot(iVertex)
+         do k = 1, maxLevelVertexBot(iVertex)
             layerThicknessVertex = 0.0
-            do i=1,vertexDegree
+            do i = 1, vertexDegree
                layerThicknessVertex = layerThicknessVertex + layerThickness(k,cellsOnVertex(i,iVertex)) * kiteAreasOnVertex(i,iVertex)
             end do
             layerThicknessVertex = layerThicknessVertex * invAreaTri1
@@ -356,10 +385,13 @@ contains
       ! Diagnostics required for the Anticipated Potential Vorticity Method (apvm).
       if (config_apvm_scale_factor>1e-10) then
 
-         call mpas_allocate_scratch_field(scratch % vorticityGradientNormalComponent, .true.)
-         call mpas_allocate_scratch_field(scratch % vorticityGradientTangentialComponent, .true.)
-         vorticityGradientNormalComponent => scratch % vorticityGradientNormalComponent % array
-         vorticityGradientTangentialComponent => scratch % vorticityGradientTangentialComponent % array
+         call mpas_pool_get_field(scratchPool, 'vorticityGradientNormalComponent', vorticityGradientNormalComponentField)
+         call mpas_pool_get_field(scratchPool, 'vorticityGradientTangentialComponent', vorticityGradientTangentialComponentField)
+         call mpas_allocate_scratch_field(vorticityGradientNormalComponentField, .true.)
+         call mpas_allocate_scratch_field(vorticityGradientTangentialComponentField, .true.)
+         vorticityGradientNormalComponent => vorticityGradientNormalComponentField % array
+         vorticityGradientTangentialComponent => vorticityGradientTangentialComponentField % array
+
          do iEdge = 1,nEdges
             cell1 = cellsOnEdge(1, iEdge)
             cell2 = cellsOnEdge(2, iEdge)
@@ -395,12 +427,12 @@ contains
                      + tangentialVelocity(k,iEdge) * vorticityGradientTangentialComponent(k,iEdge) )
             enddo
          enddo
-         call mpas_deallocate_scratch_field(scratch % vorticityGradientNormalComponent, .true.)
-         call mpas_deallocate_scratch_field(scratch % vorticityGradientTangentialComponent, .true.)
+         call mpas_deallocate_scratch_field(vorticityGradientNormalComponentField, .true.)
+         call mpas_deallocate_scratch_field(vorticityGradientTangentialComponentField, .true.)
 
       endif
-      call mpas_deallocate_scratch_field(scratch % normalizedRelativeVorticityVertex, .true.)
-      call mpas_deallocate_scratch_field(scratch % normalizedPlanetaryVorticityVertex, .true.)
+      call mpas_deallocate_scratch_field(normalizedRelativeVorticityVertexField, .true.)
+      call mpas_deallocate_scratch_field(normalizedPlanetaryVorticityVertexField, .true.)
 
       !
       ! equation of state
@@ -408,14 +440,14 @@ contains
       call mpas_timer_start("equation of state", .false., diagEOSTimer)
 
       ! compute in-place density
-      call ocn_equation_of_state_density(state, diagnostics, mesh, 0, 'relative', density, err)
+      call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, 0, 'relative', density, err, timeLevelIn=timeLevel)
 
       ! compute potentialDensity, the density displaced adiabatically to the mid-depth of top layer.
-      call ocn_equation_of_state_density(state, diagnostics, mesh, 1, 'absolute', potentialDensity, err)
+      call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, 1, 'absolute', potentialDensity, err, timeLevelIn=timeLevel)
 
       ! compute displacedDensity, density displaced adiabatically to the mid-depth one layer deeper.  
       ! That is, layer k has been displaced to the depth of layer k+1.
-      call ocn_equation_of_state_density(state, diagnostics, mesh, 1, 'relative', displacedDensity, err)
+      call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, 1, 'relative', displacedDensity, err, timeLevelIn=timeLevel)
 
       call mpas_timer_stop("equation of state", diagEOSTimer)
 
@@ -429,7 +461,7 @@ contains
         ! However, one may use 'pressure_and_zmid' when layers are isopycnal as well.
         ! Compute pressure at top of each layer, and then Montgomery Potential.
         allocate(pTop(nVertLevels))
-        do iCell=1,nCells
+        do iCell = 1, nCells
 
            ! assume atmospheric pressure at the surface is zero for now.
            pTop(1) = 0.0
@@ -438,7 +470,7 @@ contains
            montgomeryPotential(1,iCell) = gravity &
               * (bottomDepth(iCell) + sum(layerThickness(1:nVertLevels,iCell)))
 
-           do k=2,nVertLevels
+           do k = 2, nVertLevels
               pTop(k) = pTop(k-1) + density(k-1,iCell)*gravity* layerThickness(k-1,iCell)
 
               ! from delta M = p delta / density
@@ -451,14 +483,14 @@ contains
 
       elseif (config_pressure_gradient_type.eq.'pressure_and_zmid') then
 
-        do iCell=1,nCells
+        do iCell = 1, nCells
            ! Pressure for generalized coordinates.
            ! Pressure at top surface may be due to atmospheric pressure
            ! or an ice-shelf depression. 
            pressure(1,iCell) = seaSurfacePressure(iCell) + density(1,iCell)*gravity &
               * 0.5*layerThickness(1,iCell)
 
-           do k=2,maxLevelCell(iCell)
+           do k = 2, maxLevelCell(iCell)
               pressure(k,iCell) = pressure(k-1,iCell)  &
                 + 0.5*gravity*(  density(k-1,iCell)*layerThickness(k-1,iCell) &
                                + density(k  ,iCell)*layerThickness(k  ,iCell))
@@ -472,7 +504,7 @@ contains
            zMid(k:nVertLevels,iCell) = -bottomDepth(iCell) + 0.5*layerThickness(k,iCell)
            zTop(k:nVertLevels,iCell) = -bottomDepth(iCell) +     layerThickness(k,iCell)
 
-           do k=maxLevelCell(iCell)-1, 1, -1
+           do k = maxLevelCell(iCell)-1, 1, -1
               zMid(k,iCell) = zMid(k+1,iCell)  &
                 + 0.5*(  layerThickness(k+1,iCell) &
                        + layerThickness(k  ,iCell))
@@ -490,10 +522,10 @@ contains
       !
       ! Brunt-Vaisala frequency
       !
-      coef = -gravity/config_density0
-      do iCell=1,nCells
+      coef = -gravity / config_density0
+      do iCell = 1, nCells
          BruntVaisalaFreqTop(1,iCell) = 0.0
-         do k=2,maxLevelCell(iCell)
+         do k = 2, maxLevelCell(iCell)
             BruntVaisalaFreqTop(k,iCell) = coef * (displacedDensity(k-1,iCell) - density(k,iCell)) & 
               / (zMid(k-1,iCell) - zMid(k,iCell))
           end do
@@ -507,23 +539,23 @@ contains
 
       !
       !  compute fields used as intent(in) to CVMix/KPP
-      call computeKPPInputFields(state, forcing, mesh, diagnostics, scratch)
+      call computeKPPInputFields(statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, timeLevel)
 
       !
       ! Apply the GM closure as a bolus velocity
       !
       if (config_h_kappa .GE. epsilon(0D0)) then
-         call ocn_gm_compute_uBolus(state, diagnostics, mesh)
+         call ocn_gm_compute_uBolus(statePool, diagnosticsPool, meshPool)
       else
          uBolusGM = 0.0
       end if
 
 #ifdef MPAS_CESM
-      do iEdge = 1, mesh % nEdgesSolve
+      do iEdge = 1, nEdgesSolve
          cell1 = cellsOnEdge(1, iEdge)
          cell2 = cellsOnEdge(2, iEdge)
 
-         diagnostics % gradSSH % array(1, iEdge) = (ssh(cell2) - ssh(cell1)) / dcEdge(iEdge)
+         gradSSH(1, iEdge) = (ssh(cell2) - ssh(cell1)) / dcEdge(iEdge)
       end do
 #endif
 
@@ -541,7 +573,7 @@ contains
 !>  cell.  
 !
 !-----------------------------------------------------------------------
-   subroutine ocn_vert_transport_velocity_top(mesh, verticalMesh, oldLayerThickness, layerThicknessEdge, &
+   subroutine ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, oldLayerThickness, layerThicknessEdge, &
      normalVelocity, oldSSH, newHighFreqThickness, dt, vertTransportVelocityTop, err)!{{{
 
       !-----------------------------------------------------------------
@@ -550,11 +582,11 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (mesh_type), intent(in) :: &
-         mesh           !< Input: horizonal mesh information
+      type (mpas_pool_type), intent(in) :: &
+         meshPool           !< Input: horizonal mesh information
 
-      type (verticalMesh_type), intent(in) :: &
-         verticalMesh   !< Input: vertical mesh information
+      type (mpas_pool_type), intent(in) :: &
+         verticalMeshPool   !< Input: vertical mesh information
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          oldLayerThickness    !< Input: layer thickness at old time
@@ -591,7 +623,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, iCell, k, i, nCells, nVertLevels
+      integer :: iEdge, iCell, k, i
+      integer, pointer :: nCells, nVertLevels
       integer, dimension(:), pointer :: nEdgesOnCell, nEdgesOnEdge, &
         maxLevelCell, maxLevelEdgeBot
       integer, dimension(:,:), pointer :: edgesOnCell, edgeSignOnCell
@@ -604,21 +637,25 @@ contains
          ALE_Thickness, & !> ALE thickness at new time
          div_hu           !> divergence of (thickness*velocity)
 
+      character (len=StrKIND), pointer :: config_vert_coord_movement
+
       err = 0
 
-      nEdgesOnCell      => mesh % nEdgesOnCell % array
-      areaCell          => mesh % areaCell % array
-      edgesOnCell       => mesh % edgesOnCell % array
-      edgeSignOnCell    => mesh % edgeSignOnCell % array
-      maxLevelCell      => mesh % maxLevelCell % array
-      maxLevelEdgeBot   => mesh % maxLevelEdgeBot % array
-      dvEdge            => mesh % dvEdge % array
+      call mpas_pool_get_config(ocnConfigs, 'config_vert_coord_movement', config_vert_coord_movement)
 
-      nCells      = mesh % nCells
-      nVertLevels = mesh % nVertLevels
+      call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+      call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
+      call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
+      call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+      call mpas_pool_get_array(meshPool, 'maxLevelEdgeBot', maxLevelEdgeBot)
+      call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
+
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
       if (config_vert_coord_movement.eq.'impermeable_interfaces') then
-        vertTransportVelocityTop=0.0
+        vertTransportVelocityTop = 0.0
         return
       end if
 
@@ -628,7 +665,7 @@ contains
       ! thickness-weighted divergence and barotropic divergence
       !
       ! See Ringler et al. (2010) jcp paper, eqn 19, 21, and fig. 3.
-      do iCell=1,nCells
+      do iCell = 1, nCells
          div_hu(:,iCell) = 0.0
          div_hu_btr(iCell) = 0.0
          invAreaCell = 1.0 / areaCell(iCell)
@@ -647,7 +684,7 @@ contains
       !
       ! Compute desired thickness at new time
       !
-      call ocn_ALE_thickness(mesh, verticalMesh, oldSSH, div_hu_btr, newHighFreqThickness, dt, ALE_thickness, err)
+      call ocn_ALE_thickness(meshPool, verticalMeshPool, oldSSH, div_hu_btr, newHighFreqThickness, dt, ALE_thickness, err)
 
       !
       ! Vertical transport through layer interfaces
@@ -656,12 +693,12 @@ contains
       ! Here we are using solving the continuity equation for vertTransportVelocityTop ($w^t$),
       ! and using ALE_Thickness for thickness at the new time.
 
-      do iCell=1,nCells
+      do iCell = 1, nCells
          vertTransportVelocityTop(1,iCell) = 0.0
          vertTransportVelocityTop(maxLevelCell(iCell)+1,iCell) = 0.0
-         do k=maxLevelCell(iCell),2,-1
+         do k = maxLevelCell(iCell), 2, -1
             vertTransportVelocityTop(k,iCell) = vertTransportVelocityTop(k+1,iCell) - div_hu(k,iCell) &
-              - (ALE_Thickness(k,iCell) - oldLayerThickness(k,iCell))/dt
+              - (ALE_Thickness(k,iCell) - oldLayerThickness(k,iCell)) / dt
          end do
       end do
 
@@ -681,13 +718,14 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_fuperp(state, mesh)!{{{
+   subroutine ocn_fuperp(statePool, meshPool, timeLevelIn)!{{{
 
-      type (state_type), intent(inout) :: state !< Input/Output: State information
-      type (mesh_type), intent(in) :: mesh !< Input: mesh information
+      type (mpas_pool_type), intent(inout) :: statePool !< Input/Output: State information
+      type (mpas_pool_type), intent(in) :: meshPool !< Input: mesh information
+      integer, intent(in), optional :: timeLevelIn !< Input: Input time level for state pool
 
       integer :: iEdge, cell1, cell2, eoe, i, j, k
-      integer :: nEdgesSolve
+      integer, pointer :: nEdgesSolve
       real (kind=RKIND), dimension(:), pointer :: fEdge
       real (kind=RKIND), dimension(:,:), pointer :: weightsOnEdge, normalVelocity, normalBaroclinicVelocity
       type (dm_info) :: dminfo
@@ -695,29 +733,38 @@ contains
       integer, dimension(:), pointer :: maxLevelEdgeTop, nEdgesOnEdge
       integer, dimension(:,:), pointer :: cellsOnEdge, edgesOnEdge
 
+      integer :: timeLevel
+
+      if (present(timeLevelIn)) then
+         timeLevel = timeLevelIn
+      else
+         timeLevel = 1
+      end if
+
       call mpas_timer_start("ocn_fuperp")
 
-      normalVelocity           => state % normalVelocity % array
-      normalBaroclinicVelocity        => state % normalBaroclinicVelocity % array
-      weightsOnEdge     => mesh % weightsOnEdge % array
-      fEdge             => mesh % fEdge % array
-      maxLevelEdgeTop      => mesh % maxLevelEdgeTop % array
-      cellsOnEdge       => mesh % cellsOnEdge % array
-      nEdgesOnEdge      => mesh % nEdgesOnEdge % array
-      edgesOnEdge       => mesh % edgesOnEdge % array
+      call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel)
+      call mpas_pool_get_array(statePool, 'normalBaroclinicVelocity', normalBaroclinicVelocity, timeLevel)
 
-      fEdge       => mesh % fEdge % array
+      call mpas_pool_get_array(meshPool, 'weightsOnEdge', weightsOnEdge)
+      call mpas_pool_get_array(meshPool, 'fEdge', fEdge)
+      call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
+      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+      call mpas_pool_get_array(meshPool, 'nEdgesOnEdge', nEdgesOnEdge)
+      call mpas_pool_get_array(meshPool, 'edgesOnEdge', edgesOnEdge)
 
-      nEdgesSolve = mesh % nEdgesSolve
+      call mpas_pool_get_array(meshPool, 'fEdge', fEdge)
+
+      call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
 
       !
       ! Put f*normalBaroclinicVelocity^{perp} in u as a work variable
       !
-      do iEdge=1,nEdgesSolve
+      do iEdge = 1, nEdgesSolve
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
 
-         do k=1,maxLevelEdgeTop(iEdge)
+         do k = 1, maxLevelEdgeTop(iEdge)
 
             normalVelocity(k,iEdge) = 0.0
             do j = 1,nEdgesOnEdge(iEdge)
@@ -742,25 +789,39 @@ contains
 !>  This routine filters barotropic mode out of the velocity variable.
 !
 !-----------------------------------------------------------------------
-   subroutine ocn_filter_btr_mode_vel(state, diagnostics, mesh)!{{{
+   subroutine ocn_filter_btr_mode_vel(statePool, diagnosticsPool, meshPool, timeLevelIn)!{{{
 
-      type (state_type), intent(inout) :: state !< Input/Output: State information
-      type (diagnostics_type), intent(in) :: diagnostics !< Input: Diagnostics information
-      type (mesh_type), intent(in) :: mesh !< Input: Mesh information
+      type (mpas_pool_type), intent(inout) :: statePool !< Input/Output: State information
+      type (mpas_pool_type), intent(in) :: diagnosticsPool !< Input: Diagnostics information
+      type (mpas_pool_type), intent(in) :: meshPool !< Input: Mesh information
+      integer, intent(in), optional :: timeLevelIn !< Input: Time level for state pool
 
-      integer :: iEdge, k, nEdges
+      integer :: iEdge, k
+      integer, pointer :: nEdges
       real (kind=RKIND) :: vertSum, normalThicknessFluxSum, thicknessSum
       real (kind=RKIND), dimension(:,:), pointer :: layerThicknessEdge, normalVelocity
       integer, dimension(:), pointer :: maxLevelEdgeTop
 
+      integer :: timeLevel
+
       call mpas_timer_start("ocn_filter_btr_mode_vel")
 
-      normalVelocity => state % normalVelocity % array
-      layerThicknessEdge => diagnostics % layerThicknessEdge % array
-      maxLevelEdgeTop => mesh % maxLevelEdgeTop % array
-      nEdges      = mesh % nEdges
 
-      do iEdge=1,nEdges
+      if (present(timeLevelIn)) then
+         timeLevel = timeLevelIn
+      else
+         timeLevel = 1
+      end if
+
+      call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel)
+
+      call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdge', layerThicknessEdge)
+
+      call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
+
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+
+      do iEdge = 1, nEdges
 
         ! thicknessSum is initialized outside the loop because on land boundaries 
         ! maxLevelEdgeTop=0, but I want to initialize thicknessSum with a 
@@ -768,13 +829,13 @@ contains
         normalThicknessFluxSum = layerThicknessEdge(1,iEdge) * normalVelocity(1,iEdge)
         thicknessSum  = layerThicknessEdge(1,iEdge)
 
-        do k=2,maxLevelEdgeTop(iEdge)
+        do k = 2, maxLevelEdgeTop(iEdge)
           normalThicknessFluxSum = normalThicknessFluxSum + layerThicknessEdge(k,iEdge) * normalVelocity(k,iEdge)
           thicknessSum  =  thicknessSum + layerThicknessEdge(k,iEdge)
         enddo
 
         vertSum = normalThicknessFluxSum/thicknessSum
-        do k=1,maxLevelEdgeTop(iEdge)
+        do k = 1, maxLevelEdgeTop(iEdge)
           normalVelocity(k,iEdge) = normalVelocity(k,iEdge) - vertSum
         enddo
       enddo ! iEdge
@@ -794,27 +855,40 @@ contains
 !>  This routine filters barotropic mode out of the velocity tendency.
 !
 !-----------------------------------------------------------------------
-   subroutine ocn_filter_btr_mode_tend_vel(tend, state, diagnostics, mesh)!{{{
+   subroutine ocn_filter_btr_mode_tend_vel(tendPool, statePool, diagnosticsPool, meshPool, timeLevelIn)!{{{
 
-      type (tend_type), intent(inout) :: tend !< Input/Output: Tendency information
-      type (state_type), intent(in) :: state !< Input: State information
-      type (diagnostics_type), intent(in) :: diagnostics !< Input: Diagnostics information
-      type (mesh_type), intent(in) :: mesh !< Input: Mesh information
+      type (mpas_pool_type), intent(inout) :: tendPool !< Input/Output: Tendency information
+      type (mpas_pool_type), intent(in) :: statePool !< Input: State information
+      type (mpas_pool_type), intent(in) :: diagnosticsPool !< Input: Diagnostics information
+      type (mpas_pool_type), intent(in) :: meshPool !< Input: Mesh information
+      integer, intent(in), optional :: timeLevelIn !< Input: Time level for state pool
 
-      integer :: iEdge, k, nEdges
+      integer :: iEdge, k
+      integer, pointer :: nEdges
       real (kind=RKIND) :: vertSum, normalThicknessFluxSum, thicknessSum
       real (kind=RKIND), dimension(:,:), pointer :: layerThicknessEdge, tend_normalVelocity
 
       integer, dimension(:), pointer :: maxLevelEdgeTop
 
+      integer :: timeLevel
+
       call mpas_timer_start("ocn_filter_btr_mode_tend_vel")
 
-      tend_normalVelocity => tend % normalVelocity % array
-      layerThicknessEdge => diagnostics % layerThicknessEdge % array
-      maxLevelEdgeTop => mesh % maxLevelEdgeTop % array
-      nEdges      = mesh % nEdges
+      if (present(timeLevelIn)) then
+         timeLevel = timeLevelIn
+      else
+         timeLevel = 1
+      end if
 
-      do iEdge=1,nEdges
+      call mpas_pool_get_array(tendPool, 'normalVelocity', tend_normalVelocity)
+
+      call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdge', layerThicknessEdge)
+
+      call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
+
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+
+      do iEdge = 1, nEdges
 
         ! thicknessSum is initialized outside the loop because on land boundaries 
         ! maxLevelEdgeTop=0, but I want to initialize thicknessSum with a 
@@ -822,13 +896,13 @@ contains
         normalThicknessFluxSum = layerThicknessEdge(1,iEdge) * tend_normalVelocity(1,iEdge)
         thicknessSum  = layerThicknessEdge(1,iEdge)
 
-        do k=2,maxLevelEdgeTop(iEdge)
+        do k = 2, maxLevelEdgeTop(iEdge)
           normalThicknessFluxSum = normalThicknessFluxSum + layerThicknessEdge(k,iEdge) * tend_normalVelocity(k,iEdge)
           thicknessSum  =  thicknessSum + layerThicknessEdge(k,iEdge)
         enddo
 
-        vertSum = normalThicknessFluxSum/thicknessSum
-        do k=1,maxLevelEdgeTop(iEdge)
+        vertSum = normalThicknessFluxSum / thicknessSum
+        do k = 1, maxLevelEdgeTop(iEdge)
           tend_normalVelocity(k,iEdge) = tend_normalVelocity(k,iEdge) - vertSum
         enddo
       enddo ! iEdge
@@ -852,7 +926,13 @@ contains
    subroutine ocn_diagnostics_init(err)!{{{
       integer, intent(out) :: err !< Output: Error flag
 
+      logical, pointer :: config_include_KE_vertex
+      character (len=StrKIND), pointer :: config_time_integrator
+
       err = 0
+
+      call mpas_pool_get_config(ocnConfigs, 'config_include_KE_vertex', config_include_KE_vertex)
+      call mpas_pool_get_config(ocnConfigs, 'config_time_integrator', config_time_integrator)
 
       if(config_include_KE_vertex) then
          ke_vertex_flag = 1
@@ -891,16 +971,17 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    subroutine computeKPPInputFields(state, forcing, mesh, diagnostics, scratch)!{{{
+    subroutine computeKPPInputFields(statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, timeLevelIn)!{{{
 
-      type (state_type), intent(inout) :: state !< Input/Output: State information
-      type (forcing_type), intent(in) :: forcing !< Input: Forcing information
-      type (mesh_type), intent(in) :: mesh !< Input: Mesh information
-      type (diagnostics_type), intent(inout) :: diagnostics !< Diagnostics information derived from State
-      type (scratch_type), intent(inout) :: scratch !< Input: scratch variables
+      type (mpas_pool_type), intent(in) :: statePool !< Input/Output: State information
+      type (mpas_pool_type), intent(in) :: forcingPool !< Input: Forcing information
+      type (mpas_pool_type), intent(in) :: meshPool !< Input: Mesh information
+      type (mpas_pool_type), intent(inout) :: diagnosticsPool !< Diagnostics information derived from State
+      type (mpas_pool_type), intent(in) :: scratchPool !< Input: scratch variables
+      integer, intent(in), optional :: timeLevelIn
 
       ! scalars
-      integer :: nCells, nVertLevels
+      integer, pointer :: nCells, nVertLevels
 
       ! integer pointers
       integer, dimension(:), pointer :: maxLevelCell, nEdgesOnCell
@@ -915,62 +996,76 @@ contains
            normalVelocity, surfaceTracerFlux, thermalExpansionCoeff, salineContractionCoeff
 
       ! local
-      integer :: iCell, iEdge, i, k, err, indexTempFlux, indexSaltFlux
+      integer :: iCell, iEdge, i, k, err
+      integer, pointer :: indexTempFlux, indexSaltFlux
+      integer :: timeLevel
       real (kind=RKIND) :: numerator, denominator, factor, deltaVelocitySquared, turbulentVelocitySquared, delU2, invAreaCell
+
+      type (field2DReal), pointer :: densitySurfaceDisplacedField, thermalExpansionCoeffField, salineContractionCoeffField
+      real (kind=RKIND), pointer :: config_density0
+
+      if (present(timeLevelIn)) then
+         timeLevel = timeLevelIn
+      else
+         timeLevel = 1
+      end if
+
+      call mpas_pool_get_config(ocnConfigs, 'config_density0', config_density0)
 
       ! set the parameter turbulentVelocitySquared
       turbulentVelocitySquared = 0.001
 
       ! set scalar values
-      nCells      = mesh % nCells
-      nVertLevels = mesh % nVertLevels
-      indexTempFlux = forcing % index_surfaceTemperatureFlux
-      indexSaltFlux = forcing % index_surfaceSalinityFlux
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+      call mpas_pool_get_dimension(forcingPool, 'index_surfaceTemperatureFlux', indexTempFlux)
+      call mpas_pool_get_dimension(forcingPool, 'index_surfaceSalinityFlux', indexSaltFlux)
 
       ! set pointers into state, mesh, diagnostics and scratch
-      normalVelocity => state % normalVelocity % array
-      layerThickness => state % layerThickness % array
+      call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel)
+      call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
 
-      maxLevelCell => mesh % maxLevelCell % array 
-      nEdgesOnCell => mesh % nEdgesOnCell % array
-      edgesOnCell  => mesh % edgesOnCell % array
-      areaCell     => mesh % areaCell % array
-      dcEdge       => mesh % dcEdge % array
-      dvEdge       => mesh % dvEdge % array
+      call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+      call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
+      call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+      call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
+      call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
 
-      zMid                          => diagnostics % zMid % array
-      zTop                          => diagnostics % zTop % array
-      density                       => diagnostics % density % array
-      bulkRichardsonNumber          => diagnostics % bulkRichardsonNumber % array
-      tracersSurfaceValues          => diagnostics % tracersSurfaceValue  % array
-      boundaryLayerDepth            => diagnostics % boundaryLayerDepth % array
-      surfaceFrictionVelocity       => diagnostics % surfaceFrictionVelocity % array
-      penetrativeTemperatureFluxOBL => diagnostics % penetrativeTemperatureFluxOBL % array
-      buoyancyForcingOBL            => diagnostics % buoyancyForcingOBL % array
+      call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
+      call mpas_pool_get_array(diagnosticsPool, 'zTop', zTop)
+      call mpas_pool_get_array(diagnosticsPool, 'density', density)
+      call mpas_pool_get_array(diagnosticsPool, 'bulkRichardsonNumber', bulkRichardsonNumber)
+      call mpas_pool_get_array(diagnosticsPool, 'tracersSurfaceValue ', tracersSurfaceValues)
+      call mpas_pool_get_array(diagnosticsPool, 'boundaryLayerDepth', boundaryLayerDepth)
+      call mpas_pool_get_array(diagnosticsPool, 'surfaceFrictionVelocity', surfaceFrictionVelocity)
+      call mpas_pool_get_array(diagnosticsPool, 'penetrativeTemperatureFluxOBL', penetrativeTemperatureFluxOBL)
+      call mpas_pool_get_array(diagnosticsPool, 'buoyancyForcingOBL', buoyancyForcingOBL)
 
-      normalVelocity => state % normalVelocity % array
-
-      surfaceMassFlux            => forcing % surfaceMassFlux % array
-      surfaceTracerFlux          => forcing % surfaceTracerFlux % array
-      penetrativeTemperatureFlux => forcing % penetrativeTemperatureFlux % array 
-      surfaceWindStressMagnitude => forcing % surfaceWindStressMagnitude % array      
+      call mpas_pool_get_array(forcingPool, 'surfaceMassFlux', surfaceMassFlux)
+      call mpas_pool_get_array(forcingPool, 'surfaceTracerFlux', surfaceTracerFlux)
+      call mpas_pool_get_array(forcingPool, 'penetrativeTemperatureFlux', penetrativeTemperatureFlux)
+      call mpas_pool_get_array(forcingPool, 'surfaceWindStressMagnitude', surfaceWindStressMagnitude)
 
       ! allocate scratch space displaced density computation
-      call mpas_allocate_scratch_field(scratch % densitySurfaceDisplaced, .true.)
-      call mpas_allocate_scratch_field(scratch % thermalExpansionCoeff, .true.)
-      call mpas_allocate_scratch_field(scratch % salineContractionCoeff, .true.)
-      densitySurfaceDisplaced => scratch % densitySurfaceDisplaced % array
-      thermalExpansionCoeff => scratch % thermalExpansionCoeff % array
-      salineContractionCoeff => scratch % salineContractionCoeff % array
+      call mpas_pool_get_field(scratchPool, 'densitySurfaceDisplaced', densitySurfaceDisplacedField)
+      call mpas_pool_get_field(scratchPool, 'thermalExpansionCoeff', thermalExpansionCoeffField)
+      call mpas_pool_get_field(scratchPool, 'salineContractionCoeff', salineContractionCoeffField)
+      call mpas_allocate_scratch_field(densitySurfaceDisplacedField, .true.)
+      call mpas_allocate_scratch_field(thermalExpansionCoeffField, .true.)
+      call mpas_allocate_scratch_field(salineContractionCoeffField, .true.)
+      densitySurfaceDisplaced => densitySurfaceDisplacedField % array
+      thermalExpansionCoeff => thermalExpansionCoeffField % array
+      salineContractionCoeff => salineContractionCoeffField % array
 
       ! compute EOS by displacing SST/SSS to every vertical layer in column
-      call ocn_equation_of_state_density(state, diagnostics, mesh, 0, 'surfaceDisplaced', densitySurfaceDisplaced, err, &
-              thermalExpansionCoeff, salineContractionCoeff)
+      call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, 0, 'surfaceDisplaced', densitySurfaceDisplaced, err, &
+              thermalExpansionCoeff, salineContractionCoeff, timeLevel)
 
       ! set value to out-of-bounds
       bulkRichardsonNumber(:,:) = -1.0e34
 
-      do iCell=1,nCells
+      do iCell = 1, nCells
        invAreaCell = 1.0 / areaCell(iCell)
 
        ! compute surface buoyancy forcing based on surface fluxes of mass, temperature, salinity and frazil (frazil to be added later)
@@ -1000,7 +1095,7 @@ contains
          surfaceFrictionVelocity(iCell) = surfacewindStressMagnitude(iCell) / config_density0
 
        ! loop over vertical to compute bulk Richardson number
-       do k=1,maxLevelCell(iCell)
+       do k = 1, maxLevelCell(iCell)
 
         ! find deltaVelocitySquared defined at cell centers
         deltaVelocitySquared = 0.0
@@ -1021,9 +1116,9 @@ contains
       enddo
 
       ! deallocate scratch space
-      call mpas_deallocate_scratch_field(scratch % densitySurfaceDisplaced, .true.)
-      call mpas_deallocate_scratch_field(scratch % thermalExpansionCoeff, .true.)
-      call mpas_deallocate_scratch_field(scratch % salineContractionCoeff, .true.)
+      call mpas_deallocate_scratch_field(densitySurfaceDisplacedField, .true.)
+      call mpas_deallocate_scratch_field(thermalExpansionCoeffField, .true.)
+      call mpas_deallocate_scratch_field(salineContractionCoeffField, .true.)
 
     end subroutine computeKPPInputFields!}}}
 

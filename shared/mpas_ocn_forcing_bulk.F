@@ -22,7 +22,6 @@ module ocn_forcing_bulk
 
    use mpas_kind_types
    use mpas_grid_types
-   use mpas_configure
    use mpas_timekeeping
    use ocn_constants
 
@@ -57,7 +56,7 @@ contains
 
 !***********************************************************************
 !
-!  routine ocn_build_forcing_arrays
+!  routine ocn_forcing_bulk_build_arrays
 !
 !> \brief   Determines the forcing array used for the bulk forcing.
 !> \author  Doug Jacobsen
@@ -67,24 +66,21 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_forcing_bulk_build_arrays(mesh, forcing, err)!{{{
+   subroutine ocn_forcing_bulk_build_arrays(meshPool, forcingPool, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
+      type (mpas_pool_type), intent(in) :: meshPool !< Input: mesh information
 
       !-----------------------------------------------------------------
       !
       ! input/output variables
       !
       !-----------------------------------------------------------------
-
-      type (mesh_type), intent(in) :: mesh !< Input: mesh information
-
-      type (forcing_type), intent(inout) :: forcing !< Input: Forcing information
-
+      type (mpas_pool_type), intent(inout) :: forcingPool !< Input: Forcing information
 
       !-----------------------------------------------------------------
       !
@@ -102,7 +98,8 @@ contains
 
       integer :: iEdge, cell1, cell2
       integer :: iCell, k
-      integer :: index_temperature_flux, index_salinity_flux
+      integer, pointer :: index_temperature_flux, index_salinity_flux
+      integer, pointer :: nCells, nEdges
 
       integer, dimension(:,:), pointer :: cellsOnEdge
 
@@ -119,44 +116,46 @@ contains
       real (kind=RKIND), dimension(:), pointer :: surfaceMassFlux, surfaceWindStress, surfaceWindStressMagnitude
       real (kind=RKIND), dimension(:,:), pointer :: surfaceTracerFlux
 
-      angleEdge => mesh % angleEdge % array
-      cellsOnEdge => mesh % cellsOnEdge % array
+      err = 0
 
-      index_temperature_flux = forcing % index_surfaceTemperatureflux
-      index_salinity_flux = forcing % index_surfaceSalinityFlux
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
 
-      index_temperature_flux = forcing % index_surfaceTemperatureFlux
-      index_salinity_flux = forcing % index_surfaceSalinityFlux
+      call mpas_pool_get_array(meshPool, 'angleEdge', angleEdge)
+      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
 
-      surfaceWindStress          => forcing % surfaceWindStress % array
-      surfaceWindStressMagnitude => forcing % surfaceWindStressMagnitude % array
-      windStressZonal            => forcing % windStressZonal % array
-      windStressMeridional       => forcing % windStressMeridional % array
-      latentHeatFlux             => forcing % latentHeatFlux % array
-      sensibleHeatFlux           => forcing % sensibleHeatFlux % array
-      longWaveHeatFluxUp         => forcing % longWaveHeatFluxUp % array
-      longWaveHeatFluxDown       => forcing % longWaveHeatFluxDown % array
-      evaporationFlux            => forcing % evaporationFlux % array
-      seaIceHeatFlux             => forcing % seaIceHeatFlux % array
-      snowFlux                   => forcing % snowFlux % array
-      shortWaveHeatFlux          => forcing % shortWaveHeatFlux % array
+      call mpas_pool_get_dimension(forcingPool, 'index_surfaceTemperatureFlux', index_temperature_flux)
+      call mpas_pool_get_dimension(forcingPool, 'index_surfaceSalinityFlux', index_salinity_flux)
 
-      seaIceFreshWaterFlux => forcing % seaIceFreshWaterFlux % array
-      seaIceSalinityFlux   => forcing % seaIceSalinityFlux % array
-      riverRunoffFlux      => forcing % riverRunoffFlux % array
-      iceRunoffFlux        => forcing % iceRunoffFlux % array
+      call mpas_pool_get_array(forcingPool, 'surfaceWindStress', surfaceWindStress)
+      call mpas_pool_get_array(forcingPool, 'surfaceWindStressMagnitude', surfaceWindStressMagnitude)
+      call mpas_pool_get_array(forcingPool, 'windStressZonal', windStressZonal)
+      call mpas_pool_get_array(forcingPool, 'windStressMeridional', windStressMeridional)
+      call mpas_pool_get_array(forcingPool, 'latentHeatFlux', latentHeatFlux)
+      call mpas_pool_get_array(forcingPool, 'sensibleHeatFlux', sensibleHeatFlux)
+      call mpas_pool_get_array(forcingPool, 'longWaveHeatFluxUp', longWaveHeatFluxUp)
+      call mpas_pool_get_array(forcingPool, 'longWaveHeatFluxDown', longWaveHeatFluxDown)
+      call mpas_pool_get_array(forcingPool, 'evaporationFlux', evaporationFlux)
+      call mpas_pool_get_array(forcingPool, 'seaIceHeatFlux', seaIceHeatFlux)
+      call mpas_pool_get_array(forcingPool, 'snowFlux', snowFlux)
+      call mpas_pool_get_array(forcingPool, 'shortWaveHeatFlux', shortWaveHeatFlux)
 
-      rainFlux             => forcing % rainFlux % array
+      call mpas_pool_get_array(forcingPool, 'seaIceFreshWaterFlux', seaIceFreshWaterFlux)
+      call mpas_pool_get_array(forcingPool, 'seaIceSalinityFlux', seaIceSalinityFlux)
+      call mpas_pool_get_array(forcingPool, 'riverRunoffFlux', riverRunoffFlux)
+      call mpas_pool_get_array(forcingPool, 'iceRunoffFlux', iceRunoffFlux)
 
-      seaSurfacePressure   => forcing % seaSurfacePressure % array
-      iceFraction          => forcing % iceFraction % array
+      call mpas_pool_get_array(forcingPool, 'rainFlux', rainFlux)
 
-      surfaceMassFlux      => forcing % surfaceMassFlux % array
-      surfaceTracerFlux    => forcing % surfaceTracerFlux % array
-      penetrativeTemperatureFlux  => forcing % penetrativeTemperatureFlux % array
+      call mpas_pool_get_array(forcingPool, 'seaSurfacePressure', seaSurfacePressure)
+      call mpas_pool_get_array(forcingPool, 'iceFraction', iceFraction)
+
+      call mpas_pool_get_array(forcingPool, 'surfaceMassFlux', surfaceMassFlux)
+      call mpas_pool_get_array(forcingPool, 'surfaceTracerFlux', surfaceTracerFlux)
+      call mpas_pool_get_array(forcingPool, 'penetrativeTemperatureFlux', penetrativeTemperatureFlux)
 
       ! Convert CESM wind stress to MPAS-O windstress
-      do iEdge = 1, mesh % nEdges
+      do iEdge = 1, nEdges
         cell1 = cellsOnEdge(1, iEdge)
         cell2 = cellsOnEdge(2, iEdge)
 
@@ -168,7 +167,7 @@ contains
 
 
       ! Build surface fluxes at cell centers
-      do iCell = 1, mesh % nCells
+      do iCell = 1, nCells
         surfaceWindStressMagnitude(iCell) = sqrt(windStressZonal(iCell)**2 + windStressMeridional(iCell)**2)
         surfaceTracerFlux(index_temperature_flux, iCell) = (latentHeatFlux(iCell) + sensibleHeatFlux(iCell) + longWaveHeatFluxUp(iCell) + longWaveHeatFluxDown(iCell) &
                                                            + seaIceHeatFlux(iCell) - (snowFlux(iCell) + iceRunoffFlux(iCell)) * latent_heat_fusion_mks) * hflux_factor

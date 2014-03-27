@@ -22,9 +22,9 @@ module ocn_equation_of_state
 
    use mpas_kind_types
    use mpas_grid_types
-   use mpas_configure
    use ocn_equation_of_state_linear
    use ocn_equation_of_state_jm
+   use ocn_constants
    use mpas_io_units
 
    implicit none
@@ -71,8 +71,8 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_equation_of_state_density(state, diagnostics, mesh, k_displaced, displacement_type, density, err, &
-      thermalExpansionCoeff, salineContractionCoeff)!{{{
+   subroutine ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, k_displaced, displacement_type, density, err, &
+      thermalExpansionCoeff, salineContractionCoeff, timeLevelIn)!{{{
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !  This module contains routines necessary for computing the density
    !  from model temperature and salinity using an equation of state.
@@ -92,9 +92,10 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       implicit none
 
-      type (state_type), intent(inout) :: state
-      type (diagnostics_type), intent(inout) :: diagnostics
-      type (mesh_type), intent(in) :: mesh
+      type (mpas_pool_type), intent(in) :: statePool
+      type (mpas_pool_type), intent(inout) :: diagnosticsPool
+      type (mpas_pool_type), intent(in) :: meshPool
+      integer, intent(in), optional :: timeLevelIn
       integer :: k_displaced
       character(len=*), intent(in) :: displacement_type
       real (kind=RKIND), dimension(:,:), intent(out) :: density
@@ -106,24 +107,32 @@ contains
       integer, dimension(:), pointer :: maxLevelCell
       real (kind=RKIND), dimension(:,:), pointer :: tracersSurfaceValue
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers
-      integer :: nCells, iCell, k, indexT, indexS
+      integer :: iCell, k
+      integer, pointer :: indexT, indexS
       type (dm_info) :: dminfo
+      integer :: timeLevel
 
       err = 0
 
-      tracersSurfaceValue => diagnostics % tracersSurfaceValue % array
-      tracers => state % tracers % array
-      indexT = state % index_temperature
-      indexS = state % index_salinity
+      if (present(timeLevelIn)) then
+         timeLevel = timeLevelIn
+      else
+         timeLevel = 1
+      end if
+
+      call mpas_pool_get_array(diagnosticsPool, 'tracersSurfaceValue', tracersSurfaceValue)
+      call mpas_pool_get_array(statePool, 'tracers', tracers, timeLevel)
+      call mpas_pool_get_dimension(statePool, 'index_temperature', indexT)
+      call mpas_pool_get_dimension(statePool, 'index_salinity', indexS)
 
       if (linearEos) then
 
-         call ocn_equation_of_state_linear_density(mesh, indexT, indexS, tracers, density, err, &
+         call ocn_equation_of_state_linear_density(meshPool, indexT, indexS, tracers, density, err, &
             thermalExpansionCoeff, salineContractionCoeff)
 
       elseif (jmEos) then
 
-         call ocn_equation_of_state_jm_density(mesh, k_displaced, displacement_type, indexT, indexS, tracers, density, err, &
+         call ocn_equation_of_state_jm_density(meshPool, k_displaced, displacement_type, indexT, indexS, tracers, density, err, &
             tracersSurfaceValue, thermalExpansionCoeff, salineContractionCoeff)
 
       endif
@@ -157,14 +166,21 @@ contains
 
       integer, intent(out) :: err
 
+      character (len=StrKIND), pointer :: config_eos_type
+
       err = 0
+
+      call mpas_pool_get_config(ocnConfigs, 'config_eos_type', config_eos_type)
+
       linearEos = .false.
       jmEos = .false.
 
       if (config_eos_type.eq.'linear') then
          linearEos = .true.
+         call ocn_equation_of_state_linear_init(err)
       elseif (config_eos_type.eq.'jm') then
          jmEos = .true.
+         call ocn_equation_of_state_jm_init(err)
       else
          write (stderrUnit,*) 'Invalid choice for config_eos_type.'
          write (stderrUnit,*) '  Choices are: linear, jm'

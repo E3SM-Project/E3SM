@@ -41,20 +41,23 @@ module ocn_time_average_coupled
 !>  This routine initializes the coupled time averaging fields
 !
 !-----------------------------------------------------------------------
-    subroutine ocn_time_average_coupled_init(forcing)!{{{
-        type (forcing_type), intent(inout) :: forcing
+    subroutine ocn_time_average_coupled_init(forcingPool)!{{{
+        type (mpas_pool_type), intent(inout) :: forcingPool
 
         real (kind=RKIND), dimension(:,:), pointer :: avgTracersSurfaceValue, avgSurfaceVelocity, avgSSHGradient
 
-        avgTracersSurfaceValue => forcing % avgTracersSurfaceValue % array
-        avgSurfaceVelocity => forcing % avgSurfaceVelocity % array
-        avgSSHGradient => forcing % avgSSHGradient % array
+        integer, pointer :: nAccumulatedCoupled
+
+        call mpas_pool_get_array(forcingPool, 'avgTracersSurfaceValue', avgTracersSurfaceValue)
+        call mpas_pool_get_array(forcingPool, 'avgSurfaceVelocity', avgSurfaceVelocity)
+        call mpas_pool_get_array(forcingPool, 'avgSSHGradient', avgSSHGradient)
+        call mpas_pool_get_array(forcingPool, 'nAccumulatedCoupled', nAccumulatedCoupled)
 
         avgTracersSurfaceValue(:,:) = 0.0_RKIND
         avgSurfaceVelocity(:,:) = 0.0_RKIND
         avgSSHGradient(:,:) = 0.0_RKIND
 
-        forcing % nAccumulatedCoupled % scalar = 0
+        nAccumulatedCoupled = 0
 
     end subroutine ocn_time_average_coupled_init!}}}
 
@@ -69,30 +72,31 @@ module ocn_time_average_coupled
 !>  This routine accumulated the coupled time averaging fields
 !
 !-----------------------------------------------------------------------
-    subroutine ocn_time_average_coupled_accumulate(diagnostics, forcing)!{{{
-        type (diagnostics_type), intent(in) :: diagnostics
-        type (forcing_type), intent(inout) :: forcing
+    subroutine ocn_time_average_coupled_accumulate(diagnosticsPool, forcingPool)!{{{
+        type (mpas_pool_type), intent(in) :: diagnosticsPool
+        type (mpas_pool_type), intent(inout) :: forcingPool
 
         real (kind=RKIND), dimension(:,:), pointer :: surfaceVelocity, avgSurfaceVelocity
         real (kind=RKIND), dimension(:,:), pointer :: tracersSurfaceValue, avgTracersSurfaceValue
         real (kind=RKIND), dimension(:,:), pointer :: avgSSHGradient
         real (kind=RKIND), dimension(:,:), pointer :: gradSSHZonal, gradSSHMeridional
-        integer :: index_temperature, index_zonalSSH, index_meridionalSSH, nAccumulatedCoupled
+        integer, pointer :: index_temperature, index_zonalSSH, index_meridionalSSH
+        integer, pointer :: nAccumulatedCoupled
 
-        tracersSurfaceValue => diagnostics % tracersSurfaceValue % array
-        surfaceVelocity     => diagnostics % surfaceVelocity % array
-        gradSSHZonal        => diagnostics % gradSSHZonal % array
-        gradSSHMeridional   => diagnostics % gradSSHMeridional % array
+        call mpas_pool_get_array(diagnosticsPool, 'tracersSurfaceValue', tracersSurfaceValue)
+        call mpas_pool_get_array(diagnosticsPool, 'surfaceVelocity', surfaceVelocity)
+        call mpas_pool_get_array(diagnosticsPool, 'gradSSHZonal', gradSSHZonal)
+        call mpas_pool_get_array(diagnosticsPool, 'gradSSHMeridional', gradSSHMeridional)
 
-        avgTracersSurfaceValue => forcing % avgTracersSurfaceValue % array
-        avgSurfaceVelocity => forcing % avgSurfaceVelocity % array
-        avgSSHGradient => forcing % avgSSHGradient % array
+        call mpas_pool_get_array(forcingPool, 'avgTracersSurfaceValue', avgTracersSurfaceValue)
+        call mpas_pool_get_array(forcingPool, 'avgSurfaceVelocity', avgSurfaceVelocity)
+        call mpas_pool_get_array(forcingPool, 'avgSSHGradient', avgSSHGradient)
 
-        index_temperature = forcing % index_temperatureSurfaceValue
-        index_zonalSSH = forcing % index_avgZonalSSHGradient
-        index_meridionalSSH = forcing % index_avgMeridionalSSHGradient
+        call mpas_pool_get_dimension(forcingPool, 'index_temperatureSurfaceValue', index_temperature)
+        call mpas_pool_get_dimension(forcingPool, 'index_avgZonalSSHGradient', index_zonalSSH)
+        call mpas_pool_get_dimension(forcingPool, 'index_avgMeridionalSSHGradient', index_meridionalSSH)
 
-        nAccumulatedCoupled = forcing % nAccumulatedCoupled % scalar
+        call mpas_pool_get_array(forcingPool, 'nAccumulatedCoupled', nAccumulatedCoupled)
 
         avgTracersSurfaceValue(:,:) = avgTracersSurfaceValue(:,:) * nAccumulatedCoupled + tracersSurfaceValue(:,:)
         avgTracersSurfaceValue(index_temperature,:) = avgTracersSurfaceValue(index_temperature,:) + T0_Kelvin
@@ -103,7 +107,7 @@ module ocn_time_average_coupled
         avgSSHGradient(index_zonalSSH,:)      = ( avgSSHGradient(index_zonalSSH,:)      * nAccumulatedCoupled + gradSSHZonal(1,:) ) / ( nAccumulatedCoupled + 1 )
         avgSSHGradient(index_meridionalSSH,:) = ( avgSSHGradient(index_meridionalSSH,:) * nAccumulatedCoupled + gradSSHMeridional(1,:) ) / ( nAccumulatedCoupled + 1 )
 
-        forcing % nAccumulatedCoupled % scalar = forcing % nAccumulatedCoupled % scalar + 1
+        nAccumulatedCoupled = nAccumulatedCoupled + 1
 
     end subroutine ocn_time_average_coupled_accumulate!}}}
 
@@ -118,9 +122,9 @@ module ocn_time_average_coupled
 !>  This routine normalizes the coupled time averaging fields
 !
 !-----------------------------------------------------------------------
-    subroutine ocn_time_average_coupled_normalize(forcing)!{{{
+    subroutine ocn_time_average_coupled_normalize(forcingPool)!{{{
 
-        type (forcing_type), intent(inout) :: forcing
+        type (mpas_pool_type), intent(inout) :: forcingPool
 
 !       real (kind=RKIND), dimension(:,:), pointer :: avgTracersSurfaceValue, avgSurfaceVelocity, avgSSHGradient
 

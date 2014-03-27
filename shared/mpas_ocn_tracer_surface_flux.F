@@ -21,8 +21,8 @@
 module ocn_tracer_surface_flux
 
    use mpas_grid_types
-   use mpas_configure
 
+   use ocn_constants
    use ocn_forcing
 
    implicit none
@@ -68,15 +68,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_surface_flux_tend(mesh, transmissionCoefficients, layerThickness, surfaceTracerFlux, tend, err)!{{{
+   subroutine ocn_tracer_surface_flux_tend(meshPool, transmissionCoefficients, layerThickness, surfaceTracerFlux, tend, err)!{{{
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
 
-      type (mesh_type), intent(in) :: &
-         mesh          !< Input: mesh information
+      type (mpas_pool_type), intent(in) :: &
+         meshPool          !< Input: mesh information
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
         layerThickness !< Input: Layer thickness
@@ -110,7 +110,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iCell, nCells, k, iTracer, nTracers, nVertLevels
+      integer :: iCell, k, iTracer, nTracers
+      integer, pointer :: nCells, nVertLevels
       integer, dimension(:), pointer :: maxLevelCell
       integer, dimension(:,:), pointer :: cellMask
 
@@ -120,12 +121,12 @@ contains
 
       if (.not. surfaceTracerFluxOn) return
 
-      nCells = mesh % nCells
-      nVertLevels = mesh % nVertLevels
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
       nTracers = size(tend, dim=1)
 
-      maxLevelCell => mesh % maxLevelCell % array
-      cellMask => mesh % cellMask % array
+      call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+      call mpas_pool_get_array(meshPool, 'cellMask', cellMask)
 
       do iCell = 1, nCells
         remainingFlux = 1.0_RKIND
@@ -166,7 +167,13 @@ contains
 
       integer, intent(out) :: err !< Output: error flag
 
+      logical, pointer :: config_disable_tr_sflux
+      character (len=StrKIND), pointer :: config_forcing_type
+
       err = 0
+
+      call mpas_pool_get_config(ocnConfigs, 'config_disable_tr_sflux', config_disable_tr_sflux)
+      call mpas_pool_get_config(ocnConfigs, 'config_forcing_type', config_forcing_type)
 
       surfaceTracerFluxOn = .true.
 

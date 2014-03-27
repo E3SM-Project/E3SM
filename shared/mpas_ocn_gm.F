@@ -8,8 +8,8 @@
 module ocn_gm
 
    use mpas_grid_types
-   use mpas_configure
    use mpas_timer
+   use ocn_constants
    
    implicit none
    private 
@@ -34,35 +34,38 @@ module ocn_gm
    ! Private module variables
    !
    !--------------------------------------------------------------------
+   character (len=StrKIND), pointer :: config_vert_coord_movement
+   real (kind=RKIND), pointer :: config_h_kappa, config_h_kappa_q
 
 contains
 
-   subroutine ocn_gm_compute_uBolus(state, diagnostics, mesh)!{{{
+   subroutine ocn_gm_compute_uBolus(statePool, diagnosticsPool, meshPool)!{{{
       implicit none
-      type(state_type), intent(inout)        :: state !< Input/Output: State information
-      type(diagnostics_type), intent(inout)  :: diagnostics !< Input/Output: Diagnostics information
-      type(mesh_type), intent(in)            :: mesh !< Input: Mesh information
+      type (mpas_pool_type), intent(in)  :: statePool !< Input/Output: State information
+      type (mpas_pool_type), intent(inout)  :: diagnosticsPool !< Input/Output: Diagnostics information
+      type (mpas_pool_type), intent(in)     :: meshPool !< Input: Mesh information
 
       real(kind=RKIND), dimension(:,:), pointer :: uBolusGM, hEddyFlux, layerThicknessEdge
 
       integer, dimension(:), pointer   :: maxLevelEdgeTop
-      integer                          :: k, iEdge, nEdges
+      integer                          :: k, iEdge
+      integer, pointer                 :: nEdges
 
-      uBolusGM           => diagnostics % uBolusGM % array
-      hEddyFlux          => diagnostics % hEddyFlux % array
-      layerThicknessEdge => diagnostics % layerThicknessEdge % array
+      call mpas_pool_get_array(diagnosticsPool, 'uBolusGM', uBolusGM)
+      call mpas_pool_get_array(diagnosticsPool, 'hEddyFlux', hEddyFlux)
+      call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdge', layerThicknessEdge)
 
-      maxLevelEdgeTop => mesh % maxLevelEdgeTop % array
+      call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
 
-      nEdges = mesh % nEdges
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
 
-      call ocn_gm_compute_hEddyFlux(state, diagnostics, mesh)
+      call ocn_gm_compute_hEddyFlux(statePool, diagnosticsPool, meshPool)
 
       if (config_vert_coord_movement .EQ. 'impermeable_interfaces') then
 
          do iEdge = 1, nEdges
             do k = 1, maxLevelEdgeTop(iEdge)
-               uBolusGM(k,iEdge) = hEddyFlux(k,iEdge)/layerThicknessEdge(k,iEdge)
+               uBolusGM(k,iEdge) = hEddyFlux(k,iEdge) / layerThicknessEdge(k,iEdge)
             end do
          end do
 
@@ -75,34 +78,44 @@ contains
 
    end subroutine ocn_gm_compute_uBolus!}}}
 
-   subroutine ocn_gm_compute_hEddyFlux(state, diagnostics, mesh)!{{{
+   subroutine ocn_gm_compute_hEddyFlux(statePool, diagnosticsPool, meshPool, timeLevelIn)!{{{
       implicit none
-      type(state_type), intent(inout)     :: state !< Input/Output: State information
-      type(diagnostics_type), intent(in)  :: diagnostics !< Input: Diagnostics information
-      type(mesh_type), intent(in)         :: mesh !< Input: Mesh information
+      type (mpas_pool_type), intent(in) :: statePool !< Input/Output: State information
+      type (mpas_pool_type), intent(inout)    :: diagnosticsPool !< Input: Diagnostics information
+      type (mpas_pool_type), intent(in)    :: meshPool !< Input: Mesh information
+      integer, intent(in), optional :: timeLevelIn
 
       real(kind=RKIND), dimension(:,:), pointer  :: hEddyFlux, layerThickness
       real(kind=RKIND), dimension(:), pointer    :: dcEdge
       integer, dimension(:,:), pointer           :: cellsOnEdge
       integer, dimension(:), pointer             :: maxLevelEdgeTop
-      integer                                    :: k, cell1, cell2, iEdge, nEdges
+      integer                                    :: k, cell1, cell2, iEdge
+      integer, pointer                           :: nEdges
+      integer :: timeLevel
 
-      hEddyFlux      => diagnostics % hEddyFlux % array
-      layerThickness => state % layerThickness % array
+      if (present(timeLevelIn)) then
+         timeLevel = timeLevelIn
+      else
+         timeLevel = 1
+      end if
 
-      dcEdge         => mesh % dcEdge % array
-      cellsOnEdge    => mesh % cellsOnEdge % array
-      maxLevelEdgeTop => mesh % maxLevelEdgeTop % array
+      call mpas_pool_get_array(diagnosticsPool, 'hEddyFlux', hEddyFlux)
 
-      nEdges = mesh % nEdges
+      call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
+
+      call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
+      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+      call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
+
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
 
       hEddyFlux(:,:) = 0.0
 
       if (config_vert_coord_movement .EQ. 'impermeable_interfaces') then
-            do iEdge = 1,nEdges
+            do iEdge = 1, nEdges
                cell1 = cellsOnEdge(1,iEdge)
                cell2 = cellsOnEdge(2,iEdge)
-               do k=1,maxLevelEdgeTop(iEdge)
+               do k = 1, maxLevelEdgeTop(iEdge)
                   hEddyFlux(k,iEdge) = -config_h_kappa * (layerThickness(k,cell2) - layerThickness(k,cell1)) / dcEdge(iEdge)
                end do
             end do
@@ -114,34 +127,44 @@ contains
                   
    end subroutine ocn_gm_compute_hEddyFlux!}}}
 
-   subroutine ocn_get_h_kappa(diagnostics, mesh)!{{{
+   subroutine ocn_get_h_kappa(diagnosticsPool, meshPool)!{{{
 
-      type (diagnostics_type), intent(inout) :: diagnostics !< Input/Output: Diagnostics information
-      type (mesh_type), intent(in) :: mesh !< Input: Mesh information
+      type (mpas_pool_type), intent(inout) :: diagnosticsPool !< Input/Output: Diagnostics information
+      type (mpas_pool_type), intent(in) :: meshPool !< Input: Mesh information
 
       real(kind=RKIND), dimension(:,:), pointer    :: hKappa
 
 
-      hKappa  => diagnostics % hKappa % array
+      call mpas_pool_get_array(diagnosticsPool, 'hKappa', hKappa)
 
       hKappa(:,:) = config_h_kappa
 
-
    end subroutine ocn_get_h_kappa!}}}
 
-   subroutine ocn_get_h_kappa_q(diagnostics, mesh)!{{{
+   subroutine ocn_get_h_kappa_q(diagnosticsPool, meshPool)!{{{
 
-      type (diagnostics_type), intent(inout) :: diagnostics !< Input/Output: Diagnostics information
-      type (mesh_type), intent(in) :: mesh !< Input: Mesh information
+      type (mpas_pool_type), intent(inout) :: diagnosticsPool !< Input/Output: Diagnostics information
+      type (mpas_pool_type), intent(in) :: meshPool !< Input: Mesh information
 
       real(kind=RKIND), dimension(:,:), pointer    :: hKappaQ
 
 
-      hKappaQ  => diagnostics % hKappaQ % array
+      call mpas_pool_get_array(diagnosticsPool, 'hKappaQ', hKappaQ)
 
       hKappaQ(:,:) = config_h_kappa_q
 
 
    end subroutine ocn_get_h_kappa_q!}}}
+
+   subroutine ocn_gm_init(err)!{{{
+      integer, intent(out) :: err
+
+      err = 0
+
+      call mpas_pool_get_config(ocnConfigs, 'config_vert_coord_movement', config_vert_coord_movement)
+      call mpas_pool_get_config(ocnConfigs, 'config_h_kappa', config_h_kappa)
+      call mpas_pool_get_config(ocnConfigs, 'config_h_kappa_q', config_h_kappa_q)
+
+   end subroutine ocn_gm_init!}}}
 
 end module ocn_gm

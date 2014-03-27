@@ -21,8 +21,8 @@
 module ocn_vel_forcing_windstress
 
    use mpas_grid_types
-   use mpas_configure
 
+   use ocn_constants
    use ocn_forcing
 
    implicit none
@@ -69,7 +69,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_forcing_windstress_tend(mesh, surfaceWindStress, layerThicknessEdge, tend, err)!{{{
+   subroutine ocn_vel_forcing_windstress_tend(meshPool, surfaceWindStress, layerThicknessEdge, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -83,8 +83,8 @@ contains
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          layerThicknessEdge     !< Input: thickness at edge
 
-      type (mesh_type), intent(in) :: &
-         mesh          !< Input: mesh information
+      type (mpas_pool_type), intent(in) :: &
+         meshPool          !< Input: mesh information
 
       !-----------------------------------------------------------------
       !
@@ -109,11 +109,14 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, nEdgesSolve, k
+      integer :: iEdge, k
+      integer, pointer :: nEdgesSolve
       integer, dimension(:), pointer :: maxLevelEdgeTop
       integer, dimension(:,:), pointer :: edgeMask
 
       real (kind=RKIND) :: transmissionCoeffTop, transmissionCoeffBot, zTop, zBot, remainingStress
+
+      real (kind=RKIND), pointer :: config_density0
 
       !-----------------------------------------------------------------
       !
@@ -125,32 +128,37 @@ contains
 
       err = 0
 
-      if(.not.windStressOn) return
+      if ( .not. windStressOn ) return
 
-      nEdgesSolve = mesh % nEdgesSolve
-      maxLevelEdgeTop => mesh % maxLevelEdgeTop % array
-      edgeMask => mesh % edgeMask % array
+      call mpas_pool_get_config(ocnConfigs, 'config_density0', config_density0)
 
-      do iEdge=1,nEdgesSolve
+      call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
+
+      call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
+      call mpas_pool_get_array(meshPool, 'edgeMask', edgeMask)
+
+      do iEdge = 1, nEdgesSolve
         zTop = 0.0_RKIND
         transmissionCoeffTop = ocn_forcing_transmission(zTop)
         remainingStress = 1.0_RKIND
-        do k = 1,maxLevelEdgeTop(iEdge)
+        do k = 1, maxLevelEdgeTop(iEdge)
            zBot = zTop - layerThicknessEdge(k, iEdge)
 
            transmissionCoeffBot = ocn_forcing_transmission(zBot)
 
            remainingStress = remainingStress - (transmissionCoeffTop - transmissionCoeffBot)
 
-           tend(k,iEdge) =  tend(k,iEdge) + edgeMask(k, iEdge) * surfaceWindStress(iEdge) * (transmissionCoeffTop - transmissionCoeffBot) / config_density0 / layerThicknessEdge(k,iEdge)
+           tend(k,iEdge) =  tend(k,iEdge) + edgeMask(k, iEdge) * surfaceWindStress(iEdge) &
+                         * (transmissionCoeffTop - transmissionCoeffBot) / config_density0 / layerThicknessEdge(k,iEdge)
 
            zTop = zBot
            transmissionCoeffTop = transmissionCoeffBot
         enddo
 
         if ( maxLevelEdgeTop(iEdge) > 0 .and. remainingStress > 0.0_RKIND) then
-           tend(maxLevelEdgeTop(iEdge), iEdge) = tend(maxLevelEdgeTop(iEdge), iEdge) + edgeMask(maxLevelEdgeTop(iEdge), iEdge) * surfaceWindStress(iEdge) * remainingStress &
-                                                                                     / config_density0 / layerThicknessEdge(maxLevelEdgeTop(iEdge), iEdge)
+           tend(maxLevelEdgeTop(iEdge), iEdge) = tend(maxLevelEdgeTop(iEdge), iEdge) &
+                         + edgeMask(maxLevelEdgeTop(iEdge), iEdge) * surfaceWindStress(iEdge) * remainingStress &
+                         / config_density0 / layerThicknessEdge(maxLevelEdgeTop(iEdge), iEdge)
         end if
       enddo
 
@@ -183,6 +191,12 @@ contains
       !-----------------------------------------------------------------
 
       integer, intent(out) :: err !< Output: error flag
+
+      logical, pointer :: config_disable_vel_windstress
+      character (len=StrKIND), pointer :: config_forcing_type
+
+      call mpas_pool_get_config(ocnConfigs, 'config_disable_vel_windstress', config_disable_vel_windstress)
+      call mpas_pool_get_config(ocnConfigs, 'config_forcing_type', config_forcing_type)
 
       windStressOn = .true.
 

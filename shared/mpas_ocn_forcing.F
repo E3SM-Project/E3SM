@@ -21,12 +21,12 @@ module ocn_forcing
 
    use mpas_kind_types
    use mpas_grid_types
-   use mpas_configure
    use mpas_timekeeping
    use mpas_io_units
    use mpas_dmpar
    use ocn_forcing_bulk
    use ocn_forcing_restoring
+   use ocn_constants
 
    implicit none
    private
@@ -75,7 +75,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_forcing_build_arrays(mesh, state, forcing, err)!{{{
+   subroutine ocn_forcing_build_arrays(meshPool, statePool, forcingPool, err, timeLevelIn)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -83,11 +83,11 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (state_type), intent(in) :: &
-         state          !< Input: State information
+      type (mpas_pool_type), intent(in) :: &
+         statePool, &  !< Input: State information
+         meshPool      !< Input: mesh information
 
-      type (mesh_type), intent(in) :: &
-         mesh          !< Input: mesh information
+      integer, intent(in), optional :: timeLevelIn
 
       !-----------------------------------------------------------------
       !
@@ -95,7 +95,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (forcing_type), intent(inout) :: forcing !< Input: Forcing information
+      type (mpas_pool_type), intent(inout) :: forcingPool !< Input: Forcing information
 
       !-----------------------------------------------------------------
       !
@@ -111,15 +111,42 @@ contains
       !
       !-----------------------------------------------------------------
 
+      integer :: timeLevel
+      integer, pointer :: indexTemperature, indexSalinity
+      integer, pointer :: indexSurfaceTemperatureFlux, indexSurfaceSalinityFlux
+
+      real (kind=RKIND), dimension(:), pointer :: temperatureRestore, salinityRestore
+      real (kind=RKIND), dimension(:,:), pointer :: surfaceTracerFlux
+      real (kind=RKIND), dimension(:,:,:), pointer :: tracers
+
+      if (present(timeLevelIn)) then
+         timeLevel = timeLevelIn
+      else
+         timeLevel = 1
+      end if
+
       if ( bulkOn ) then
-         call ocn_forcing_bulk_build_arrays(mesh, forcing, err)
+         call ocn_forcing_bulk_build_arrays(meshPool, forcingPool, err)
       end if
 
       if ( restoringOn ) then
-         call ocn_forcing_restoring_build_arrays(mesh, state % index_temperature, state % index_salinity, &
-              forcing % index_surfaceTemperatureFlux, forcing % index_surfaceSalinityFlux, &
-              state % tracers % array, mesh % temperatureRestore % array, mesh % salinityRestore % array, &
-              forcing % surfaceTracerFlux % array, err)
+         call mpas_pool_get_dimension(statePool, 'index_temperature', indexTemperature)
+         call mpas_pool_get_dimension(statePool, 'index_salinity', indexSalinity)
+
+         call mpas_pool_get_dimension(forcingPool, 'index_surfaceTemperatureFlux', indexSurfaceTemperatureFlux)
+         call mpas_pool_get_dimension(forcingPool, 'index_surfaceSalinityFlux', indexSurfaceSalinityFlux)
+
+         call mpas_pool_get_array(statePool, 'tracers', tracers, timeLevel)
+
+         call mpas_pool_get_array(meshPool, 'temperatureRestore', temperatureRestore)
+         call mpas_pool_get_array(meshPool, 'salinityRestore', salinityRestore)
+
+         call mpas_pool_get_array(forcingPool, 'surfaceTracerFlux', surfaceTracerFlux)
+
+         call ocn_forcing_restoring_build_arrays(meshPool, indexTemperature, indexSalinity, &
+              indexSurfaceTemperatureFlux, indexSurfaceSalinityFlux, &
+              tracers, temperatureRestore, salinityRestore, &
+              surfaceTracerFlux, err)
       end if
 
    !--------------------------------------------------------------------
@@ -144,8 +171,14 @@ contains
 
       integer :: err1
 
+      character (len=StrKIND), pointer :: config_forcing_type
+      real (kind=RKIND), pointer :: config_flux_attenuation_coefficient
+
       err = 0
       err1 = 0
+
+      call mpas_pool_get_config(ocnConfigs, 'config_flux_attenuation_coefficient', config_flux_attenuation_coefficient)
+      call mpas_pool_get_config(ocnConfigs, 'config_forcing_type', config_forcing_type)
 
       attenuationCoefficient = config_flux_attenuation_coefficient
 
@@ -183,11 +216,12 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    subroutine ocn_forcing_build_transmission_array(mesh, state, forcing, err)!{{{
-        type (mesh_type), intent(in) :: mesh !< Input: Mesh information
-        type (state_type), intent(in) :: state !< Input: State information
-        type (forcing_type), intent(inout) :: forcing !< Input/Output: Forcing information
+    subroutine ocn_forcing_build_transmission_array(meshPool, statePool, forcingPool, err, timeLevelIn)!{{{
+        type (mpas_pool_type), intent(in) :: meshPool !< Input: Mesh information
+        type (mpas_pool_type), intent(in) :: statePool !< Input: State information
+        type (mpas_pool_type), intent(inout) :: forcingPool !< Input/Output: Forcing information
         integer, intent(out) :: err !< Output: Error code
+        integer, intent(in), optional :: timeLevelIn
 
         !************************************************
         !
@@ -199,20 +233,26 @@ contains
 
         real (kind=RKIND), dimension(:,:), pointer :: layerThickness, transmissionCoefficients
 
-        integer :: iCell, k
-        integer :: nCells
+        integer :: iCell, k, timeLevel
+        integer, pointer :: nCells
 
         integer, dimension(:), pointer :: maxLevelCell
 
         err = 0
 
-        nCells = mesh % nCells
+        if (present(timeLevelIn)) then
+           timeLevel = timeLevelIn
+        else
+           timeLevel = 1
+        end if
 
-        maxLevelCell             => mesh % maxLevelCell % array
+        call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
-        layerThickness           => state % layerThickness % array
+        call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
-        transmissionCoefficients => forcing % transmissionCoefficients % array
+        call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
+
+        call mpas_pool_get_array(forcingPool, 'transmissionCoefficients', transmissionCoefficients)
 
         do iCell = 1, nCells
            zTop = 0.0_RKIND
@@ -247,8 +287,7 @@ contains
    real (kind=RKIND) function ocn_forcing_transmission(z)!{{{
       real (kind=RKIND), intent(in) :: z 
 
-
-      ocn_forcing_transmission = exp(z/attenuationCoefficient)
+      ocn_forcing_transmission = exp( z / attenuationCoefficient )
 
    end function ocn_forcing_transmission!}}}
 

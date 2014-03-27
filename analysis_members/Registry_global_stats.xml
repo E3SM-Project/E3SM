@@ -26,7 +26,7 @@
 			<var name="vertSumMaxGlobalStats"/> 
 		</stream>
 	</streams>
-	<var_struct name="amGlobalStats" time_levs="0" packages="amGlobalStats">
+	<var_struct name="amGlobalStats" time_levs="1" packages="amGlobalStats">
 		<var name="minGlobalStats" type="real" dimensions="TWENTYONE Time" units="varies"
 			description="minimum over the domain of global statistics variables"
 		/>

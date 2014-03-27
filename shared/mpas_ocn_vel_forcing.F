@@ -21,8 +21,8 @@
 module ocn_vel_forcing
 
    use mpas_grid_types
-   use mpas_configure
 
+   use ocn_constants
    use ocn_forcing
 
    use ocn_vel_forcing_windstress
@@ -75,7 +75,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_forcing_tend(mesh, normalVelocity, surfaceWindStress, layerThicknessEdge, tend, err)!{{{
+   subroutine ocn_vel_forcing_tend(meshPool, normalVelocity, surfaceWindStress, layerThicknessEdge, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -92,8 +92,8 @@ contains
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          layerThicknessEdge     !< Input: thickness at edge
 
-      type (mesh_type), intent(in) :: &
-         mesh          !< Input: mesh information
+      type (mpas_pool_type), intent(in) :: &
+         meshPool          !< Input: mesh information
 
       !-----------------------------------------------------------------
       !
@@ -128,8 +128,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      call ocn_vel_forcing_windstress_tend(mesh, surfaceWindStress, layerThicknessEdge, tend, err1)
-      call ocn_vel_forcing_rayleigh_tend(mesh, normalVelocity, tend, err2)
+      call ocn_vel_forcing_windstress_tend(meshPool, surfaceWindStress, layerThicknessEdge, tend, err1)
+      call ocn_vel_forcing_rayleigh_tend(meshPool, normalVelocity, tend, err2)
 
       err = ior(err1, err2)
 

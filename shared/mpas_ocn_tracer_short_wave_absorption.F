@@ -14,7 +14,7 @@
 module ocn_tracer_short_wave_absorption
 
    use mpas_grid_types
-   use mpas_configure
+   use ocn_constants
    use ocn_tracer_short_wave_absorption_jerlov
 
    implicit none
@@ -60,7 +60,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_short_wave_absorption_tend(mesh, index_temperature, layerThickness, penetrativeTemperatureFlux, tend, err)!{{{
+   subroutine ocn_tracer_short_wave_absorption_tend(meshPool, index_temperature, layerThickness, penetrativeTemperatureFlux, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -68,8 +68,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (mesh_type), intent(in) :: &
-         mesh          !< Input: mesh information
+      type (mpas_pool_type), intent(in) :: &
+         meshPool          !< Input: mesh information
 
       real (kind=RKIND), dimension(:), intent(in) :: &
          penetrativeTemperatureFlux !< Input: short wave heat flux
@@ -103,8 +103,8 @@ contains
 
       err = 0
 
-      if(useJerlov) then
-         call ocn_tracer_short_wave_absorption_jerlov_tend(mesh, index_temperature, layerThickness, penetrativeTemperatureFlux, tend, err)
+      if ( useJerlov ) then
+         call ocn_tracer_short_wave_absorption_jerlov_tend(meshPool, index_temperature, layerThickness, penetrativeTemperatureFlux, tend, err)
       end if
 
    !--------------------------------------------------------------------
@@ -129,15 +129,19 @@ contains
 
       integer, intent(out) :: err !< Output: error flag
 
+      character (len=StrKind), pointer :: config_sw_absorption_type
+
       err = 0
+
+      call mpas_pool_get_config(ocnConfigs, 'config_sw_absorption_type', config_sw_absorption_type)
 
       useJerlov = .false.
 
-      if(trim(config_sw_absorption_type) .ne. 'jerlov') then
+      if ( trim( config_sw_absorption_type ) .ne. 'jerlov') then
         write(0,*) 'Incorrect option for config_sw_absorption_type. Options are: jerlov'
         err = 1
         return
-      else if(trim(config_sw_absorption_type) == 'jerlov') then
+      else if ( trim( config_sw_absorption_type ) == 'jerlov') then
         useJerlov = .true.
         call ocn_tracer_short_wave_absorption_jerlov_init(err)
       end if

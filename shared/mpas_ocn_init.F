@@ -21,9 +21,9 @@
 
 module ocn_init
 
-   use mpas_configure
    use mpas_framework
    use mpas_dmpar
+   use ocn_constants
 
    !--------------------------------------------------------------------
    !
@@ -68,17 +68,17 @@ subroutine ocn_compute_max_level(domain)!{{{
 ! Initialize maxLevel and boundary mesh variables.
 
    use mpas_grid_types
-   use mpas_configure
    use mpas_constants
 
    implicit none
 
    type (domain_type), intent(inout) :: domain
+   type (mpas_pool_type), pointer :: meshPool
 
    integer :: i, iCell, iEdge, iVertex, k
    type (block_type), pointer :: block
 
-   integer :: nCells, nEdges, nVertices, nVertLevels, vertexDegree
+   integer, pointer :: nCells, nEdges, nVertices, nVertLevels, vertexDegree
 
    integer, dimension(:), pointer :: &
       maxLevelCell, maxLevelEdgeTop, maxLevelEdgeBot, &
@@ -90,30 +90,31 @@ subroutine ocn_compute_max_level(domain)!{{{
    ! Initialize z-level mesh variables from h, read in from input file.
    block => domain % blocklist
    do while (associated(block))
+      call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
 
-      maxLevelCell => block % mesh % maxLevelCell % array
-      maxLevelEdgeTop => block % mesh % maxLevelEdgeTop % array
-      maxLevelEdgeBot => block % mesh % maxLevelEdgeBot % array
-      maxLevelVertexTop => block % mesh % maxLevelVertexTop % array
-      maxLevelVertexBot => block % mesh % maxLevelVertexBot % array
-      cellsOnEdge    => block % mesh % cellsOnEdge % array
-      cellsOnVertex  => block % mesh % cellsOnVertex % array
-      verticesOnEdge => block % mesh % verticesOnEdge % array
-      boundaryEdge   => block % mesh % boundaryEdge % array
-      boundaryCell   => block % mesh % boundaryCell % array
-      boundaryVertex => block % mesh % boundaryVertex % array
-      edgeMask => block % mesh % edgeMask % array
-      cellMask => block % mesh % cellMask % array
-      vertexMask => block % mesh % vertexMask % array
+      call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+      call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
+      call mpas_pool_get_array(meshPool, 'maxLevelEdgeBot', maxLevelEdgeBot)
+      call mpas_pool_get_array(meshPool, 'maxLevelVertexTop', maxLevelVertexTop)
+      call mpas_pool_get_array(meshPool, 'maxLevelVertexBot', maxLevelVertexBot)
+      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+      call mpas_pool_get_array(meshPool, 'cellsOnVertex', cellsOnVertex)
+      call mpas_pool_get_array(meshPool, 'verticesOnEdge', verticesOnEdge)
+      call mpas_pool_get_array(meshPool, 'boundaryEdge', boundaryEdge)
+      call mpas_pool_get_array(meshPool, 'boundaryCell', boundaryCell)
+      call mpas_pool_get_array(meshPool, 'boundaryVertex', boundaryVertex)
+      call mpas_pool_get_array(meshPool, 'edgeMask', edgeMask)
+      call mpas_pool_get_array(meshPool, 'cellMask', cellMask)
+      call mpas_pool_get_array(meshPool, 'vertexMask', vertexMask)
 
-      nCells      = block % mesh % nCells
-      nEdges      = block % mesh % nEdges
-      nVertices   = block % mesh % nVertices
-      nVertLevels = block % mesh % nVertLevels
-      vertexDegree = block % mesh % vertexDegree
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(meshPool, 'nVertices ', nVertices)
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+      call mpas_pool_get_dimension(meshPool, 'vertexDegree', vertexDegree)
 
       ! maxLevelEdgeTop is the minimum (shallowest) of the surrounding cells
-      do iEdge=1,nEdges
+      do iEdge = 1, nEdges
          maxLevelEdgeTop(iEdge) = &
             min( maxLevelCell(cellsOnEdge(1,iEdge)), &
                  maxLevelCell(cellsOnEdge(2,iEdge)) )
@@ -121,7 +122,7 @@ subroutine ocn_compute_max_level(domain)!{{{
       maxLevelEdgeTop(nEdges+1) = 0
 
       ! maxLevelEdgeBot is the maximum (deepest) of the surrounding cells
-      do iEdge=1,nEdges
+      do iEdge = 1, nEdges
          maxLevelEdgeBot(iEdge) = &
             max( maxLevelCell(cellsOnEdge(1,iEdge)), &
                  maxLevelCell(cellsOnEdge(2,iEdge)) )
@@ -131,7 +132,7 @@ subroutine ocn_compute_max_level(domain)!{{{
       ! maxLevelVertexBot is the maximum (deepest) of the surrounding cells
       do iVertex = 1,nVertices
          maxLevelVertexBot(iVertex) = maxLevelCell(cellsOnVertex(1,iVertex))
-         do i=2,vertexDegree
+         do i = 2, vertexDegree
             maxLevelVertexBot(iVertex) = &
                max( maxLevelVertexBot(iVertex), &
                     maxLevelCell(cellsOnVertex(i,iVertex)))
@@ -142,7 +143,7 @@ subroutine ocn_compute_max_level(domain)!{{{
       ! maxLevelVertexTop is the minimum (shallowest) of the surrounding cells
       do iVertex = 1,nVertices
          maxLevelVertexTop(iVertex) = maxLevelCell(cellsOnVertex(1,iVertex))
-         do i=2,vertexDegree
+         do i = 2, vertexDegree
             maxLevelVertexTop(iVertex) = &
                min( maxLevelVertexTop(iVertex), &
                     maxLevelCell(cellsOnVertex(i,iVertex)))
@@ -153,7 +154,7 @@ subroutine ocn_compute_max_level(domain)!{{{
       ! set boundary edge
       boundaryEdge(:,1:nEdges+1)=1
       edgeMask(:,1:nEdges+1)=0
-      do iEdge=1,nEdges
+      do iEdge = 1, nEdges
          boundaryEdge(1:maxLevelEdgeTop(iEdge),iEdge)=0
          edgeMask(1:maxLevelEdgeTop(iEdge),iEdge)=1
       end do 
@@ -165,8 +166,8 @@ subroutine ocn_compute_max_level(domain)!{{{
       cellMask(:,1:nCells+1) = 0
       boundaryVertex(:,1:nVertices+1) = 0
       vertexMask(:,1:nVertices+1) = 0
-      do iEdge=1,nEdges
-         do k=1,nVertLevels
+      do iEdge = 1, nEdges
+         do k = 1, nVertLevels
             if (boundaryEdge(k,iEdge).eq.1) then
                boundaryCell(k,cellsOnEdge(1,iEdge)) = 1
                boundaryCell(k,cellsOnEdge(2,iEdge)) = 1
@@ -212,32 +213,32 @@ end subroutine ocn_compute_max_level!}}}
 !>   kiteIndexOnCell.
 !
 !-----------------------------------------------------------------------
-   subroutine ocn_setup_sign_and_index_fields(mesh)!{{{
+   subroutine ocn_setup_sign_and_index_fields(meshPool)!{{{
 
-       type (mesh_type), intent(inout) :: mesh
+       type (mpas_pool_type), intent(inout) :: meshPool
 
        integer, dimension(:), pointer :: nEdgesOnCell
        integer, dimension(:,:), pointer :: edgesOnCell, edgesOnVertex, cellsOnVertex, cellsOnEdge, verticesOnCell, verticesOnEdge
        integer, dimension(:,:), pointer :: edgeSignOnCell, edgeSignOnVertex, kiteIndexOnCell
 
-       integer :: nCells, nEdges, nVertices, vertexDegree
+       integer, pointer :: nCells, nEdges, nVertices, vertexDegree
        integer :: iCell, iEdge, iVertex, i, j, k
 
-       nCells = mesh % nCells
-       nEdges = mesh % nEdges
-       nVertices = mesh % nVertices
-       vertexDegree = mesh % vertexDegree
+       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+       call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+       call mpas_pool_get_dimension(meshPool, 'nVertices', nVertices)
+       call mpas_pool_get_dimension(meshPool, 'vertexDegree', vertexDegree)
 
-       nEdgesOnCell => mesh % nEdgesOnCell % array
-       edgesOnCell => mesh % edgeSOnCell % array
-       edgesOnVertex => mesh % edgesOnVertex % array
-       cellsOnVertex => mesh % cellsOnVertex % array
-       cellsOnEdge => mesh % cellsOnEdge % array
-       verticesOnCell => mesh % verticesOnCell % array
-       verticesOnEdge => mesh % verticesOnEdge % array
-       edgeSignOnCell => mesh % edgeSignOnCell % array
-       edgeSignOnVertex => mesh % edgeSignOnVertex % array
-       kiteIndexOnCell => mesh % kiteIndexOnCell % array
+       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+       call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
+       call mpas_pool_get_array(meshPool, 'edgesOnVertex', edgesOnVertex)
+       call mpas_pool_get_array(meshPool, 'cellsOnVertex', cellsOnVertex)
+       call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+       call mpas_pool_get_array(meshPool, 'verticesOnCell', verticesOnCell)
+       call mpas_pool_get_array(meshPool, 'verticesOnEdge', verticesOnEdge)
+       call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
+       call mpas_pool_get_array(meshPool, 'edgeSignOnVertex', edgeSignOnVertex)
+       call mpas_pool_get_array(meshPool, 'kiteIndexOnCell', kiteIndexOnCell)
 
        edgeSignOnCell = 0.0_RKIND
        edgeSignOnVertex = 0.0_RKIND
@@ -290,22 +291,28 @@ end subroutine ocn_compute_max_level!}}}
 !>   meshScalingDel4
 !
 !-----------------------------------------------------------------------
-   subroutine ocn_compute_mesh_scaling(mesh)!{{{
+   subroutine ocn_compute_mesh_scaling(meshPool, scaleHmixWithMesh, maxMeshDensity)!{{{
 
       use mpas_grid_types
-      use mpas_configure
 
       implicit none
 
-      type (mesh_type), intent(inout) :: mesh
+      type (mpas_pool_type), intent(inout) :: meshPool
+      logical, intent(in) :: scaleHmixWithMesh
+      real (kind=RKIND), intent(in) :: maxMeshDensity
 
       integer :: iEdge, cell1, cell2
+      integer, pointer :: nEdges
+      integer, dimension(:,:), pointer :: cellsOnEdge
       real (kind=RKIND), dimension(:), pointer :: meshDensity, meshScalingDel2, meshScalingDel4, meshScaling
 
-      meshDensity => mesh % meshDensity % array
-      meshScalingDel2 => mesh % meshScalingDel2 % array
-      meshScalingDel4 => mesh % meshScalingDel4 % array
-      meshScaling     => mesh % meshScaling     % array
+      call mpas_pool_get_array(meshPool, 'meshDensity', meshDensity)
+      call mpas_pool_get_array(meshPool, 'meshScalingDel2', meshScalingDel2)
+      call mpas_pool_get_array(meshPool, 'meshScalingDel4', meshScalingDel4)
+      call mpas_pool_get_array(meshPool, 'meshScaling', meshScaling)
+      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+
+      call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
 
       !
       ! Compute the scaling factors to be used in the del2 and del4 dissipation
@@ -313,13 +320,13 @@ end subroutine ocn_compute_max_level!}}}
       meshScalingDel2(:) = 1.0
       meshScalingDel4(:) = 1.0
       meshScaling(:)     = 1.0
-      if (config_hmix_ScaleWithMesh) then
-         do iEdge=1,mesh%nEdges
-            cell1 = mesh % cellsOnEdge % array(1,iEdge)
-            cell2 = mesh % cellsOnEdge % array(2,iEdge)
-            meshScalingDel2(iEdge) = 1.0 / ( ((meshDensity(cell1) + meshDensity(cell2) )/2.0)/config_maxMeshDensity)**(3.0/4.0)  ! goes as dc**3
-            meshScalingDel4(iEdge) = 1.0 / ( ((meshDensity(cell1) + meshDensity(cell2) )/2.0)/config_maxMeshDensity)**(3.0/4.0)  ! goes as dc**3
-            meshScaling(iEdge)     = 1.0 / ( ((meshDensity(cell1) + meshDensity(cell2) )/2.0)/config_maxMeshDensity)**(1.0/4.0)
+      if (scaleHmixWithMesh) then
+         do iEdge = 1, nEdges
+            cell1 = cellsOnEdge(1,iEdge)
+            cell2 = cellsOnEdge(2,iEdge)
+            meshScalingDel2(iEdge) = 1.0 / ( ((meshDensity(cell1) + meshDensity(cell2) ) / 2.0) / maxMeshDensity)**(3.0 / 4.0)  ! goes as dc**3
+            meshScalingDel4(iEdge) = 1.0 / ( ((meshDensity(cell1) + meshDensity(cell2) ) / 2.0) / maxMeshDensity)**(3.0 / 4.0)  ! goes as dc**3
+            meshScaling(iEdge)     = 1.0 / ( ((meshDensity(cell1) + meshDensity(cell2) ) / 2.0) / maxMeshDensity)**(1.0 / 4.0)
          end do
       end if
 
@@ -346,9 +353,13 @@ end subroutine ocn_compute_max_level!}}}
       implicit none
 
       type (domain_type), intent(inout) :: domain
+
+      type (mpas_pool_type), pointer :: statePool
+      type (mpas_pool_type), pointer :: meshPool
+      type (mpas_pool_type), pointer :: verticalMeshPool
       type (dm_info) :: dminfo
 
-      integer :: i, iCell, iEdge, iVertex, k, km1, nCells, num_tracers
+      integer :: i, iCell, iEdge, iVertex, k, km1
       type (block_type), pointer :: block
 
       integer :: iTracer, cell, cell1, cell2
@@ -361,32 +372,51 @@ end subroutine ocn_compute_max_level!}}}
          
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness, restingThickness
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers
-      integer :: nVertLevels
+      integer, pointer :: nVertLevels, nCells, num_tracers
       logical :: consistentSSH
+
+      real (kind=RKIND), pointer :: config_min_pbc_fraction
+      logical, pointer :: config_do_restart, config_alter_ICs_for_pbcs, config_check_ssh_consistency
+      logical, pointer :: config_check_zlevel_consistency, config_set_restingThickness_to_IC
+      character (len=StrKIND), pointer :: config_vert_coord_movement, config_pbc_alteration_type
+
+      call mpas_pool_get_config(domain % configs, 'config_vert_coord_movement', config_vert_coord_movement)
+      call mpas_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
+      call mpas_pool_get_config(domain % configs, 'config_alter_ICs_for_pbcs', config_alter_ICs_for_pbcs)
+      call mpas_pool_get_config(domain % configs, 'config_pbc_alteration_type', config_pbc_alteration_type)
+      call mpas_pool_get_config(domain % configs, 'config_check_ssh_consistency', config_check_ssh_consistency)
+      call mpas_pool_get_config(domain % configs, 'config_check_zlevel_consistency', config_check_zlevel_consistency)
+      call mpas_pool_get_config(domain % configs, 'config_min_pbc_fraction', config_min_pbc_fraction)
+      call mpas_pool_get_config(domain % configs, 'config_set_restingThickness_to_IC', config_set_restingThickness_to_IC)
 
       ! Initialize z-level mesh variables from h, read in from input file.
       block => domain % blocklist
       do while (associated(block))
+         call mpas_pool_get_subpool(block % structs, 'state', statePool)
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block % structs, 'verticalMesh', verticalMeshPool)
 
-         layerThickness => block % state % time_levs(1) % state % layerThickness % array
-         tracers => block % state % time_levs(1) % state % tracers % array
-         refBottomDepth => block % mesh % refBottomDepth % array
-         refBottomDepthTopOfCell => block % mesh % refBottomDepthTopOfCell % array
-         bottomDepth => block % mesh % bottomDepth % array
-         vertCoordMovementWeights => block % mesh % vertCoordMovementWeights % array
-         maxLevelCell => block % mesh % maxLevelCell % array
+         call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
+         call mpas_pool_get_array(statePool, 'tracers', tracers, 1)
 
-         restingThickness => block % verticalMesh % restingThickness % array
-         refZMid => block % verticalMesh % refZMid % array
-         refLayerThickness => block % verticalMesh % refLayerThickness % array
+         call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
+         call mpas_pool_get_array(meshPool, 'refBottomDepthTopOfCell', refBottomDepthTopOfCell)
+         call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
+         call mpas_pool_get_array(meshPool, 'vertCoordMovementWeights', vertCoordMovementWeights)
+         call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
-         nCells      = block % mesh % nCells
-         nVertLevels = block % mesh % nVertLevels
-         num_tracers = size(tracers, dim=1)
+         call mpas_pool_get_array(verticalMeshPool, 'restingThickness', restingThickness)
+         call mpas_pool_get_array(verticalMeshPool, 'refZMid', refZMid)
+         call mpas_pool_get_array(verticalMeshPool, 'refLayerThickness', refLayerThickness)
+
+         call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+         call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+
+         call mpas_pool_get_dimension(statePool, 'num_tracers', num_tracers)
 
          ! TopOfCell needed where zero depth for the very top may be referenced.
          refBottomDepthTopOfCell(1) = 0.0
-         do k = 1,nVertLevels
+         do k = 1, nVertLevels
             refBottomDepthTopOfCell(k+1) = refBottomDepth(k)
             refLayerThickness(k) = refBottomDepth(k) - refBottomDepthTopOfCell(k)
             refZMid(k) = - refBottomDepthTopOfCell(k) - refLayerThickness(k)/2.0
@@ -414,9 +444,9 @@ end subroutine ocn_compute_max_level!}}}
          !    If your input file does not include bottomDepth, the false option will
          !    initialize bottomDepth correctly for a non-pbc run.
 
-         if (.not.config_do_restart.and.config_alter_ICs_for_pbcs) then
+         if (.not. config_do_restart .and. config_alter_ICs_for_pbcs) then
 
-            if (config_pbc_alteration_type.eq.'partial_cell') then
+            if (config_pbc_alteration_type .eq. 'partial_cell') then
 
                write (stdoutUnit,'(a)') ' Altering bottomDepth to avoid very thin cells.'
                write (stdoutUnit,'(a)') ' Altering layerThickness and tracer initial conditions to conform with partial bottom cells.'
@@ -432,21 +462,21 @@ end subroutine ocn_compute_max_level!}}}
                minBottomDepth(1) = (1.0-config_min_pbc_fraction)*refBottomDepth(1)
                minBottomDepthMid(1) = 0.5*(minBottomDepth(1) + refBottomDepthTopOfCell(1))
                zMidZLevel(1) = - 0.5*(refBottomDepth(1) + refBottomDepthTopOfCell(1))
-               do k=2,nVertLevels
+               do k = 2, nVertLevels
                   minBottomDepth(k) = refBottomDepth(k) - (1.0-config_min_pbc_fraction)*(refBottomDepth(k) - refBottomDepth(k-1))
                   minBottomDepthMid(k) = 0.5*(minBottomDepth(k) + refBottomDepthTopOfCell(k))
                   zMidZLevel(k) = - 0.5*(refBottomDepth(k) + refBottomDepthTopOfCell(k))
                enddo
 
-               do iCell=1,nCells
+               do iCell = 1, nCells
 
                   ! Change value of maxLevelCell for partial bottom cells
                   k = maxLevelCell(iCell)
-                  if (bottomDepth(iCell).lt.minBottomDepthMid(k)) then
+                  if (bottomDepth(iCell) .lt. minBottomDepthMid(k)) then
                      ! Round up to cell above
                      maxLevelCell(iCell) = maxLevelCell(iCell) - 1
                      bottomDepth(iCell) = refBottomDepth(maxLevelCell(iCell))
-                  elseif (bottomDepth(iCell).lt.minBottomDepth(k)) then
+                  elseif (bottomDepth(iCell) .lt. minBottomDepth(k)) then
                      ! Round down cell to the min_pbc_fraction.
                      bottomDepth(iCell) = minBottomDepth(k)
                   endif
@@ -459,7 +489,7 @@ end subroutine ocn_compute_max_level!}}}
                   ! Linearly interpolate the initial T&S for new location of bottom cell for PBCs
                   zMidPBC = -0.5*(bottomDepth(iCell) + refBottomDepthTopOfCell(k))
                   km1 = max(k-1,1)
-                  do iTracer=1,num_tracers
+                  do iTracer = 1, num_tracers
                      tracers(iTracer,k,iCell) = tracers(iTracer,k,iCell) &
                         + (tracers(iTracer,km1,iCell) - tracers(iTracer,k,iCell)) &
                          /(zMidZLevel(km1)-zMidZLevel(k)+1.0e-16) &
@@ -470,7 +500,7 @@ end subroutine ocn_compute_max_level!}}}
 
                deallocate(minBottomDepth,zMidZLevel)
 
-            elseif (config_pbc_alteration_type.eq.'full_cell') then
+            elseif (config_pbc_alteration_type .eq. 'full_cell') then
 
                do iCell = 1,nCells
                   bottomDepth(iCell) = refBottomDepth(maxLevelCell(iCell))
@@ -485,7 +515,7 @@ end subroutine ocn_compute_max_level!}}}
 
          endif ! .not.config_do_restart
 
-         if (.not.config_do_restart) then
+         if (.not. config_do_restart) then
 
             ! Layer thickness when the ocean is at rest, i.e. without SSH or internal perturbations.
             ! This is applied only from the initial condition

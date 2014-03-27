@@ -21,7 +21,7 @@
 module ocn_equation_of_state_linear
 
    use mpas_grid_types
-   use mpas_configure
+   use ocn_constants
 
    implicit none
    private
@@ -47,6 +47,13 @@ module ocn_equation_of_state_linear
    ! Private module variables
    !
    !--------------------------------------------------------------------
+   real (kind=RKIND), pointer :: config_eos_linear_densityref
+   real (kind=RKIND), pointer :: config_eos_linear_alpha
+   real (kind=RKIND), pointer :: config_eos_linear_beta
+   real (kind=RKIND), pointer :: config_eos_linear_Tref
+   real (kind=RKIND), pointer :: config_eos_linear_Sref
+
+
 
 !***********************************************************************
 
@@ -64,7 +71,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_equation_of_state_linear_density(mesh, indexT, indexS, tracers, density, err, &
+   subroutine ocn_equation_of_state_linear_density(meshPool, indexT, indexS, tracers, density, err, &
       thermalExpansionCoeff, salineContractionCoeff)!{{{
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !  This module contains routines necessary for computing the density
@@ -82,7 +89,7 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       implicit none
 
-      type (mesh_type), intent(in) :: mesh
+      type (mpas_pool_type), intent(in) :: meshPool
       integer, intent(in) :: indexT, indexS
       real (kind=RKIND), dimension(:,:,:), intent(in) :: tracers
       real (kind=RKIND), dimension(:,:), intent(inout) :: density
@@ -92,35 +99,36 @@ contains
          salineContractionCoeff   ! Saline contraction coefficient (beta), defined as $1/\rho d\rho/dS$
 
       integer, dimension(:), pointer :: maxLevelCell
-      integer :: nCells, iCell, k
+      integer :: iCell, k
+      integer, pointer :: nCells
       type (dm_info) :: dminfo
 
-      maxLevelCell  => mesh % maxLevelCell % array
-      nCells        =  mesh % nCells
+      call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
       err = 0
 
-      do iCell=1,nCells
-         do k=1,maxLevelCell(iCell)
+      do iCell = 1, nCells
+         do k = 1, maxLevelCell(iCell)
             ! Linear equation of state
             density(k,iCell) =  config_eos_linear_densityref &
-                  - config_eos_linear_alpha * (tracers(indexT,k,iCell)-config_eos_linear_Tref) &
-                  + config_eos_linear_beta  * (tracers(indexS,k,iCell)-config_eos_linear_Sref)
+                  - config_eos_linear_alpha * (tracers(indexT,k,iCell) - config_eos_linear_Tref) &
+                  + config_eos_linear_beta  * (tracers(indexS,k,iCell) - config_eos_linear_Sref)
          end do
       end do
 
       if (present(thermalExpansionCoeff)) then
-         do iCell=1,nCells
-            do k=1,maxLevelCell(iCell)
-               thermalExpansionCoeff(k,iCell) = config_eos_linear_alpha/density(k,iCell)
+         do iCell = 1, nCells
+            do k = 1, maxLevelCell(iCell)
+               thermalExpansionCoeff(k,iCell) = config_eos_linear_alpha / density(k,iCell)
             end do
          end do
       endif
 
       if (present(salineContractionCoeff)) then
-         do iCell=1,nCells
-            do k=1,maxLevelCell(iCell)
-               salineContractionCoeff(k,iCell) = config_eos_linear_beta/density(k,iCell)
+         do iCell = 1, nCells
+            do k = 1, maxLevelCell(iCell)
+               salineContractionCoeff(k,iCell) = config_eos_linear_beta / density(k,iCell)
             end do
          end do
       endif
@@ -157,6 +165,12 @@ contains
       integer :: err1, err2
 
       err = 0
+
+      call mpas_pool_get_config(ocnConfigs, 'config_eos_linear_densityref', config_eos_linear_densityref)
+      call mpas_pool_get_config(ocnConfigs, 'config_eos_linear_alpha', config_eos_linear_alpha)
+      call mpas_pool_get_config(ocnConfigs, 'config_eos_linear_beta', config_eos_linear_beta)
+      call mpas_pool_get_config(ocnConfigs, 'config_eos_linear_Tref', config_eos_linear_Tref)
+      call mpas_pool_get_config(ocnConfigs, 'config_eos_linear_Sref', config_eos_linear_Sref)
 
    !--------------------------------------------------------------------
 

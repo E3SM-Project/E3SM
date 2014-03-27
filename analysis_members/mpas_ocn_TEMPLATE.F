@@ -16,8 +16,8 @@
 !>  MPAS ocean analysis core member: TEMPLATE
 !>  In order to add a new analysis member, do the following:
 !>  1. Copy these to your new analysis member name:
-!>     mpas_ocn_TEMPLATE.F
-!>     Registry_ocn_TEMPLATE.xml
+!>     cp mpas_ocn_TEMPLATE.F mpas_ocn_your_new_name.F
+!>     cp Registry_ocn_TEMPLATE.xml Registry_ocn_your_new_name.xml
 !>  
 !>  2. In those two new files, replace the following text:
 !>     TEMPLATE, amTemplate, FILL_IN_AUTHOR, FILL_IN_DATE
@@ -39,12 +39,12 @@
 
 module ocn_TEMPLATE
 
-   use mpas_configure
    use mpas_grid_types
    use mpas_timer
    use mpas_dmpar
    use mpas_timekeeping
 
+   use ocn_constants
    use ocn_diagnostics_routines
 
    implicit none
@@ -96,7 +96,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_setup_packages_TEMPLATE(err)!{{{
+   subroutine ocn_setup_packages_TEMPLATE(configPool, packagePool, err)!{{{
 
       use mpas_packages
 
@@ -105,6 +105,8 @@ contains
       ! input variables
       !
       !-----------------------------------------------------------------
+      type (mpas_pool_type), intent(in) :: configPool
+      type (mpas_pool_type), intent(in) :: packagePool
 
       !-----------------------------------------------------------------
       !
@@ -125,8 +127,11 @@ contains
       ! local variables
       !
       !-----------------------------------------------------------------
+      logical, pointer :: amTemplateActive
 
       err = 0
+
+      call mpas_pool_get_package(packagePool, 'amTemplateActive', amTemplateActive)
 
       ! turn on package for this analysis member
       amTemplateActive = .true.
@@ -198,8 +203,6 @@ contains
 
    subroutine ocn_init_alarms_TEMPLATE(clock, startTime, computeAlarmID, err)!{{{
 
-      use mpas_packages
-
       !-----------------------------------------------------------------
       !
       ! input variables
@@ -236,13 +239,18 @@ contains
       type (MPAS_Time_Type) :: alarmStartTime
       type (MPAS_TimeInterval_type) :: alarmTimeStep
 
+      character (len=StrKIND), pointer :: config_TEMPLATE_compute_interval, config_output_interval
+
       err = 0
 
+      call mpas_pool_get_config(ocnConfigs, 'config_TEMPLATE_compute_interval', config_TEMPLATE_compute_interval)
+      call mpas_pool_get_config(ocnConfigs, 'config_output_interval', config_output_interval)
+
       ! set compute alarm for this analysis member
-      if (config_ocn_am_TEMPLATE_compute_interval=='same_as_output') then
+      if (config_TEMPLATE_compute_interval=='same_as_output') then
          compute_interval = config_output_interval
       else
-         compute_interval = config_ocn_am_TEMPLATE_compute_interval
+         compute_interval = config_TEMPLATE_compute_interval
       endif
 
       call mpas_set_timeInterval(alarmTimeStep, timeString=compute_interval, ierr=ierr)
@@ -250,7 +258,6 @@ contains
       call mpas_add_clock_alarm(clock, computeAlarmID, alarmStartTime, alarmTimeStep, ierr=ierr)
 
    end subroutine ocn_init_alarms_TEMPLATE!}}}
-
 
 !***********************************************************************
 !
@@ -297,16 +304,17 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (amTemplate_type), pointer :: amTemplate
+      type (mpas_pool_type), pointer :: amTemplatePool
       type (dm_info) :: dminfo
       type (block_type), pointer :: block
-      type (state_type), pointer :: state
-      type (mesh_type), pointer :: mesh
-      type (scratch_type), pointer :: scratch
-      type (diagnostics_type), pointer :: diagnostics
+      type (mpas_pool_type), pointer :: statePool
+      type (mpas_pool_type), pointer :: meshPool
+      type (mpas_pool_type), pointer :: scratchPool
+      type (mpas_pool_type), pointer :: diagnosticsPool
+      type (mpas_pool_type), pointer :: amTemplate
 
       ! Here are some example variables which may be needed for your analysis member
-      integer :: num_tracers, nVertLevels, nCellsSolve, nEdgesSolve, nVerticesSolve
+      integer, pointer :: nVertLevels, nCellsSolve, nEdgesSolve, nVerticesSolve, num_tracers
       integer :: iTracer, k, iCell
       integer, dimension(:), pointer :: maxLevelCell, maxLevelEdgeTop, maxLevelVertexBot
 
@@ -320,33 +328,33 @@ contains
 
       block => domain % blocklist
       do while (associated(block))
-         state => block % state % time_levs(timeLevel) % state
-         mesh => block % mesh
-         scratch => block % scratch
-         diagnostics => block % diagnostics
-         amTemplate => block % amTemplate
+         call mpas_pool_get_subpool(block % structs, 'state', statePool)
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
+         call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
+         call mpas_pool_get_subpool(block % structs, 'amTemplate', amTemplatePool)
 
          ! Here are some example variables which may be needed for your analysis member
-         num_tracers = state % num_tracers
+         call mpas_pool_get_dimension(statePool, 'num_tracers', num_tracers)
 
-         nVertLevels = mesh % nVertLevels
-         nCellsSolve = mesh % nCellsSolve
-         nEdgesSolve = mesh % nEdgesSolve
-         nVerticesSolve = mesh % nVerticesSolve
+         call mpas_pool_get_dimension(block % dimensions, 'nVertLevels', nVertLevels)
+         call mpas_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
+         call mpas_pool_get_dimension(block % dimensions, 'nEdgesSolve', nEdgesSolve)
+         call mpas_pool_get_dimension(block % dimensions, 'nVerticesSolve', nVerticesSolve)
 
-         areaCell          => mesh % areaCell % array
-         dcEdge            => mesh % dcEdge % array
-         dvEdge            => mesh % dvEdge % array
-         maxLevelCell      => mesh % maxLevelCell % array
-         maxLevelEdgeTop   => mesh % maxLevelEdgeTop % array
-         maxLevelVertexBot => mesh % maxLevelVertexBot % array
+         call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+         call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
+         call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
+         call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+         call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
+         call mpas_pool_get_array(meshPool, 'maxLevelVertexBot', maxLevelVertexBot)
 
          ! Computations which are functions of nCells, nEdges, or nVertices 
          ! must be placed within this block loop
          ! Here are some example loops
          do iCell = 1,nCellsSolve
-            do k=1,maxLevelCell(iCell)
-               do iTracer = 1,num_tracers
+            do k = 1, maxLevelCell(iCell)
+               do iTracer = 1, num_tracers
                ! computations on tracers(iTracer,k, iCell)
                end do
             end do
@@ -366,13 +374,12 @@ contains
       ! correct values for writing output.
       block => domain % blocklist
       do while (associated(block))
-         amTemplate => block % amTemplate
+         call mpas_pool_get_subpool(block % structs, 'amTemplate', amTemplatePool)
 
          ! assignment of final amTemplate variables could occur here.
 
          block => block % next
       end do
-      amTemplate => domain % blocklist % amTemplate
 
       call mpas_timer_stop("TEMPLATE", amTemplateTimer)
 

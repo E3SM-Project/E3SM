@@ -21,7 +21,7 @@
 			<var name="example_variable2"/> 
 		</stream>
 	</streams>
-	<var_struct name="amTemplate" time_levs="0" packages="amTemplate">
+	<var_struct name="amTemplate" time_levs="1" packages="amTemplate">
 		<var name="example_variable1" type="real" dimensions="nVertLevels nCells Time" units="UNITS HERE"
 			description="DESCRIPTION HERE"
 		/>
