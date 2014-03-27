@@ -70,6 +70,8 @@ SET(PRIM_SRCS ${SRC_SHARE_DIR}/kinds.F90
 					     ${UTILS_SHARE_DIR}/shr_file_mod.F90 
 					     ${UTILS_SHARE_DIR}/shr_vmath_mod.F90 
 					     ${UTILS_SHARE_DIR}/shr_vmath_fwrap.c 
+                                             ${UTILS_SHARE_DIR}/shr_spfn_mod.F90 
+                                             ${UTILS_SHARE_DIR}/shr_const_mod.F90 
 					     ${UTILS_TIMING_DIR}/perf_mod.F90 
 					     ${UTILS_TIMING_DIR}/perf_utils.F90 
 					     ${SRC_SHARE_DIR}/domain_mod.F90 

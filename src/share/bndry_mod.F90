@@ -4,6 +4,7 @@
 
 module bndry_mod
   use parallel_mod, only : abortmp
+  use edge_mod, only : Ghostbuffer3D_t
   implicit none
   private
   public :: bndry_exchangeV, ghost_exchangeVfull, compute_ghost_corner_orientation
@@ -377,7 +378,6 @@ contains
 !
     use hybrid_mod, only : hybrid_t
     use kinds, only : log_kind
-    use edge_mod, only : Ghostbuffer3D_t
     use schedtype_mod, only : schedule_t, cycle_t, schedule
     use dimensions_mod, only: nelemd
 #ifdef _MPI

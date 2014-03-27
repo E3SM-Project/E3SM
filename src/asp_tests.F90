@@ -981,7 +981,8 @@ use physical_constants, only : p0, g
 use dimensions_mod, only : nlev,np, qsize,nc,ntrac, nep
 use control_mod, only : test_case, u_perturb
 use cube_mod, only : rotate_grid
-use jw, only : u_wind, v_wind, temperature, surface_geopotential, tracer_q1_q2, tracer_q3, perturbation_longitude, perturbation_latitude, deg2rad ! _EXTERNAL
+use jw, only : u_wind, v_wind, temperature, surface_geopotential, tracer_q1_q2,&
+     tracer_q3, perturbation_longitude, perturbation_latitude, deg2rad ! _EXTERNAL
 use parallel_mod, only : abortmp
 
 implicit none

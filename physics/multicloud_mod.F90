@@ -489,8 +489,10 @@ contains
        do j=1,np	
           do i=1,np
              q  = elem_physics(ie)%qmc(i,j,n0v)
-             v1 = (elem_physics(ie)%uproj1(i,j,1,n0v) + cm%alpha*elem_physics(ie)%uproj2(i,j,1,n0v) + 0.0D0*elem_physics(ie)%ubar(i,j,1,n0v))*q
-             v2 = (elem_physics(ie)%uproj1(i,j,2,n0v) + cm%alpha*elem_physics(ie)%uproj2(i,j,2,n0v) + 0.0D0*elem_physics(ie)%ubar(i,j,2,n0v))*q
+             v1 = (elem_physics(ie)%uproj1(i,j,1,n0v) + cm%alpha*elem_physics(ie)%uproj2(i,j,1,n0v) + &
+                  0.0D0*elem_physics(ie)%ubar(i,j,1,n0v))*q
+             v2 = (elem_physics(ie)%uproj1(i,j,2,n0v) + cm%alpha*elem_physics(ie)%uproj2(i,j,2,n0v) + &
+                  0.0D0*elem_physics(ie)%ubar(i,j,2,n0v))*q
 
              ! project from sphere to contravariant velocities
              vcon1 = elem(ie)%Dinv(1,1,i,j)*v1 + elem(ie)%Dinv(1,2,i,j)*v2
@@ -660,10 +662,14 @@ contains
              end if
 
              ! 7/1/09 we should remove max
-             !Pbig = max(0.0D0,Hd*cm%psi1avgtrunc + (elem_physics(ie)%Hc(i,j,nm1) - elem_physics(ie)%Hs(i,j,nm1))*cm%psi2avgtrunc) ! Precipitation
-             !Pbig0 = max(0.0D0,Hd0*cm%psi1avgtrunc + (elem_physics(ie)%Hc(i,j,n0) - elem_physics(ie)%Hs(i,j,n0))*cm%psi2avgtrunc) ! Precipitation
-             Pbig  = Hd*cm%D%psi1avgtrunc  + (1.0D0-cm%csr)*(elem_physics(ie)%Hc(i,j,nm1) - elem_physics(ie)%Hs(i,j,nm1))*cm%D%psi2avgtrunc ! Precipitation
-             Pbig0 = Hd0*cm%D%psi1avgtrunc + (1.0D0-cm%csr)*(elem_physics(ie)%Hc(i,j,n0) - elem_physics(ie)%Hs(i,j,n0))*cm%D%psi2avgtrunc ! Precipitation
+             !Pbig = max(0.0D0,Hd*cm%psi1avgtrunc + (elem_physics(ie)%Hc(i,j,nm1) - &
+             !    elem_physics(ie)%Hs(i,j,nm1))*cm%psi2avgtrunc) ! Precipitation
+             !Pbig0 = max(0.0D0,Hd0*cm%psi1avgtrunc + (elem_physics(ie)%Hc(i,j,n0) - &
+             !    elem_physics(ie)%Hs(i,j,n0))*cm%psi2avgtrunc) ! Precipitation
+             Pbig  = Hd*cm%D%psi1avgtrunc  + (1.0D0-cm%csr)*(elem_physics(ie)%Hc(i,j,nm1) - &
+                  elem_physics(ie)%Hs(i,j,nm1))*cm%D%psi2avgtrunc ! Precipitation
+             Pbig0 = Hd0*cm%D%psi1avgtrunc + (1.0D0-cm%csr)*(elem_physics(ie)%Hc(i,j,n0) - &
+                  elem_physics(ie)%Hs(i,j,n0))*cm%D%psi2avgtrunc ! Precipitation
 
 
              ! just to store the info
@@ -719,9 +725,9 @@ contains
              Acst = cm%D%Tau_evap_Inv + Bcst  
              tem0 = tem0 - cm%TebMinTem
  
-             elem_physics(ie)%teb(i,j,np1) = elem_physics(ie)%mp(i,j)*((elem_physics(ie)%teb(i,j,nm1)*dexp(-Acst*dt2) +&
-                                           (elem_physics(ie)%delthetasurf(i,j)*cm%D%Tau_evap_Inv + Bcst*tem0)*(1.d0 - dexp(-Acst*dt2))/Acst)&
-                    *elem_physics(ie)%mask(i,j) - dt2*tebtens)
+             elem_physics(ie)%teb(i,j,np1) = elem_physics(ie)%mp(i,j)*((elem_physics(ie)%teb(i,j,nm1)*dexp(-Acst*dt2) + &
+                  (elem_physics(ie)%delthetasurf(i,j)*cm%D%Tau_evap_Inv + &
+                  Bcst*tem0)*(1.d0 - dexp(-Acst*dt2))/Acst)*elem_physics(ie)%mask(i,j) - dt2*tebtens)
 
                  
              
@@ -807,7 +813,8 @@ contains
           do j=1,np	
              do i=1,np
                 elem_physics(ie)%QHeating(i,j,k) =    (1.4D0*((Hd2D(i,j,ie)*cm%D%psitrunc(k,1) &
-                     + (elem_physics(ie)%Hc(i,j,n0) - elem_physics(ie)%Hs(i,j,n0))*(cm%D%psitrunc(k,2) - cm%csr*cm%D%psi2avgtrunc)) - cooling(k))*elem_physics(ie)%mask(i,j) &
+                     + (elem_physics(ie)%Hc(i,j,n0) - elem_physics(ie)%Hs(i,j,n0))*(cm%D%psitrunc(k,2) - &
+                     cm%csr*cm%D%psi2avgtrunc)) - cooling(k))*elem_physics(ie)%mask(i,j) &
                      +  cm%Tau_r*elem_physics(ie)%pot0(i,j,k))*(p(i,j,k)/p0)**(kappa) &
                      -  cm%Tau_r*elem(ie)%state%T(i,j,k,n0)
              enddo

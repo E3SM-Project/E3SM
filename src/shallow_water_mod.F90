@@ -40,8 +40,8 @@ module shallow_water_mod
   ! ------------------------
   use viscosity_mod, only: biharmonic_wk, test_ibyp, neighbor_minmax, check_edge_flux
   ! ------------------------
-  use control_mod, only : nu, nu_div, nu_s, hypervis_order, hypervis_subcycle, limiter_option, integration, test_case, sub_case, kmass, &
-                          g_sw_output,TRACERADV_UGRADQ,tracer_advection_formulation
+  use control_mod, only : nu, nu_div, nu_s, hypervis_order, hypervis_subcycle, limiter_option, integration, test_case, sub_case, &
+                           kmass, g_sw_output,TRACERADV_UGRADQ,tracer_advection_formulation
   ! ------------------------
 
   implicit none
@@ -469,7 +469,8 @@ contains
           dENS = (Ipenst-Ipenst_last)/(time-time_last)/Ipenst
 	  do k=1,nlev
 	    dm = (Imass(k)-Imass_last(k))/(time-time_last)/Imass(k)
-	    write(6,'(a,i3,a,e11.4,a,e13.6,a,e13.6)') "level =",k,"  M-M0/M0      =",(Imass(k)-Imass_init(k))/Imass_init(k), " dM/dt   /M  = ",dm
+	    write(6,'(a,i3,a,e11.4,a,e13.6,a,e13.6)') "level =",k,"  M-M0/M0      =",(Imass(k)-Imass_init(k))/Imass_init(k), &
+          " dM/dt   /M  = ",dm
 	  enddo
           if (test_case(1:5) /= "swtc1") then
              write(6,'(a,e11.4,a,e13.6,a,e13.6)') "ENS-ENS0/ENS0=",(Ipenst-Ipenst_init)/Ipenst_init, " dENS/dt /ENS= ",dENS

@@ -41,40 +41,6 @@ OPTION(IS_BIG_ENDIAN "Whether the machine is big endian" FALSE)
 #  ${CMAKE_BINARY_DIR}/tests/compilerTests/
 #  ${CMAKE_CURRENT_SOURCE_DIR}/cmake/compilerTests/isBigEndian.c)
 
-##############################################################################
-# Compiler test to see if the mpi compiler supports "use mpi" or "include
-# mpi.h"
-# Note 1) Although "use mpi" is part of the standard, many installs of MPI are
-#   incorrect and this doesn't work.
-# Note 2) Steve G. has pushed this exact fix into PIO, which is the only place
-#   that needs it. Once that code is in place this code will be deleted.
-##############################################################################
-TRY_COMPILE(MPIMOD_SUCCESS 
-            ${CMAKE_BINARY_DIR}/tests/compilerTests/
-            ${CMAKE_CURRENT_SOURCE_DIR}/cmake/compilerTests/mpiModTest.f90
-            OUTPUT_VARIABLE COMPILE_OUTPUT)
-IF (${MPIMOD_SUCCESS})
-  SET(PIO_USE_MPIMOD TRUE)
-  MESSAGE(STATUS "MPI Fortran \"use\" mpi module available.")
-ELSE()
-  SET(PIO_USE_MPIMOD FALSE)
-  MESSAGE(STATUS "MPI Fortran \"use\" mpi module not available.")
-  TRY_COMPILE(MPIINC_SUCCESS 
-            ${CMAKE_BINARY_DIR}/tests/compilerTests/
-            ${CMAKE_CURRENT_SOURCE_DIR}/cmake/compilerTests/mpiIncludeTest.F90
-            OUTPUT_VARIABLE COMPILE_OUTPUT)
-  IF(NOT ${MPIINC_SUCCESS})
-    MESSAGE(FATAL_ERROR "MPI fortran \"include mpi.h\" not available.\n"
-            "Fortran Compiler not capable of compiling MPI programs.\n"
-            "Be sure to use a parallel (MPI) compiler.")
-  ENDIF ()
-ENDIF()
-##############################################################################
-IF (NOT PIO_USE_MPIMOD)
-  ADD_DEFINITIONS(-DNO_MPIMOD)
-ENDIF()
-##############################################################################
-
 # Default use quad precision
 OPTION(HOMME_QUAD_PREC "Default to try to use quadruple precision" TRUE)
 
@@ -195,8 +161,6 @@ IF (${ENABLE_NANOTIMERS})
     ADD_DEFINITIONS(-DBIT64)
   ENDIF ()
 ENDIF ()
-
-SET(PIO_USE_MPIIO OFF CACHE BOOL "Turn this off due to bug in pio")
 
 ADD_SUBDIRECTORY(utils/pio)
 

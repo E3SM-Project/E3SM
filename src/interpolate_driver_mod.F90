@@ -405,7 +405,10 @@ contains
     
     call nf_output_register_dims(ncdf, ofdims, dimnames, dimsize)
     call create_output_decomps(ncdf, interpdata, nlon, nlat)
-    if (hybrid%par%masterproc) print *,'registering output variables -- if you get a seg fault, try increasing the number of processors used to help memory management'
+    if (hybrid%par%masterproc) then
+      print *,'registering output variables -- '//&
+           'if you get a seg fault, try increasing the number of processors used to help memory management'
+    end if
     call nf_output_register_variables(ncdf, nvars, infile%vars%name, &
          vardims, otype, varrequired)
 
