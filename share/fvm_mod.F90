@@ -40,7 +40,7 @@ contains
   
   subroutine cslam_runflux(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
     ! ---------------------------------------------------------------------------------
-    use fvm_line_integrals_mod, only: compute_weights !dbg
+    use fvm_line_integrals_mod, only: compute_weights , ldbg!dbg
     use fvm_line_integrals_flux_mod, only: compute_weights_fluxform !dbg
     ! ---------------------------------------------------------------------------------  
     use fvm_filter_mod, only: monotonic_gradient_cart
@@ -53,7 +53,8 @@ contains
     ! -----------------------------------------------
     use edge_mod, only :  ghostBuffertr_t,ghostVpack2d_level, ghostVunpack2d_level,initghostbufferTR,freeghostbuffertr
     
-    use control_mod, only : north, south, east, west, neast, nwest, seast, swest !dbg   
+!    use fvm_control_volume_mod, only:  fvm_struct !dbg
+!    use control_mod, only : north, south, east, west, neast, nwest, seast, swest !dbg   
     
     implicit none
     type (element_t), intent(inout)                :: elem(:)
@@ -77,7 +78,7 @@ contains
     real (kind=real_kind), dimension(1-nhc:nc+nhc,1-nhc:nc+nhc)        :: tracer0 
     
     real (kind=real_kind), dimension(1-nhc:nc+nhc,1-nhc:nc+nhc)        :: tracer_air0   
-    real (kind=real_kind), dimension(1:nc,1:nc)                        :: tracer1, tracer_air1 !dbg
+!    real (kind=real_kind), dimension(1:nc,1:nc)                        :: tracer1, tracer_air1 !dbg
     real (kind=real_kind), dimension(1:nc,1:nc):: cslam_area, fluxform_effective_area, &
          area_flux !dbg
     integer (kind=int_kind) :: itmp, jtmp
@@ -90,17 +91,17 @@ contains
     
     type (ghostBuffertr_t)                      :: buflatlon
     
-    write(*,*) "running flux-form CSLAM scheme"!dbg
-    
     call initghostbufferTR(buflatlon,nlev,2,2,nc+1)    ! use the tracer entry 2 for lat lon
     
-    call t_startf('CSLAM scheme') 
+    call t_startf('Fluxform-CSLAM scheme') 
     
     do ie=nets, nete
        do k=1,nlev
           call fvm_mesh_dep(elem(ie),deriv,fvm(ie),tstep,tl,k)
        end do
     end do
+
+
     
     
     do ie=nets,nete
@@ -116,48 +117,62 @@ contains
        fvm(ie)%dsphere(:,:,:)%r=1.0D0  !!! RADIUS IS ASSUMED TO BE 1.0DO !!!!
        
     end do
+
+!    write(*,*) "xxx",tl%nstep
+!    if (tl%nstep==179) ldbg = .true.
+
     
     do ie=nets, nete
        do k=1,nlev
-          call cslam_get_area(fvm(ie),cslam_area,k)!dbg
+          !
+          ! zero velocity - for debugging
+          !
+!          if (fvm(ie)%cubeboundary > 0) then
+!             do j=1,nc+1                                                                             
+!                do i=1,nc+1                                                                              
+!                   if (i==1.or.j==1.or.i==nc+1.or.j==nc+1) then
+!                      fvm%dsphere(i,j,k)=fvm%asphere(i,j) !zero velocity
+!                   end if
+!                end do
+!             end do
+!          end if
 
           call compute_weights_fluxform(fvm(ie),6,weights_all,weights_eul_index_all, &
              weights_lgr_index_all,k,jall)     
 
 
-          ! for debugging
-          call cslam_get_area(fvm(ie),cslam_area,k)
-          call fluxform_cslam_area(fluxform_effective_area,&
-               fvm(ie)%area_sphere(1:nc,1:nc),&
-               weights_all,weights_eul_index_all, weights_lgr_index_all, jall)
-          do j=1,nc
-             do i=1,nc
-!                fvm(ie)%c(i,j,k,1,tl%np1)=fluxform_effective_area(i,j)/fvm(ie)%area_sphere(i,j)
-                diff_dbg = (cslam_area(i,j)-fluxform_effective_area(i,j))
-!                diff_dbg = diff_dbg/cslam_area(i,j)
-                if (ABS(diff_dbg)>1.0E-12) then
-                   write(*,*) "effective flux departure cell area"
-                   write(*,*) "different than CSLAM departure area"
-                   write(*,*) "absolute difference is ",diff_dbg,i,j,ie
-                end if
-                if (ABS(diff_dbg)>1.0E-11) then
-                   write(*,*) "effective flux departure cell area"
-                   write(*,*) "different than CSLAM departure area"
-                   write(*,*) "absolute difference is ",diff_dbg,i,j,ie
-                   stop
-                end if
-             end do
-          end do
-!          write(*,*) "passed debugging test: consistency"
-          ! end debugging
+!          if (.false.) then
+!             !
+!             ! for debugging
+!             !
+!             call cslam_get_area(fvm(ie),cslam_area,k)
+!             call fluxform_cslam_area(fluxform_effective_area,&
+!                  fvm(ie)%area_sphere(1:nc,1:nc),&
+!                  weights_all,weights_eul_index_all, weights_lgr_index_all, jall)
+!             do j=1,nc
+!                do i=1,nc
+!                   !                fvm(ie)%c(i,j,k,1,tl%np1)=fluxform_effective_area(i,j)/fvm(ie)%area_sphere(i,j)
+!                   diff_dbg = (cslam_area(i,j)-fluxform_effective_area(i,j))
+!                   diff_dbg = diff_dbg/cslam_area(i,j)
+!                   if (ABS(diff_dbg)>1.0E-12) then
+!                      write(*,*) "effective flux departure cell area"
+!                      write(*,*) "different than CSLAM departure area"
+!                      write(*,*) "absolute difference is ",diff_dbg,i,j,ie
+!                      write(*,*) "cslam_area(i,j),fluxform_effective_area(i,j)",cslam_area(i,j),fluxform_effective_area(i,j)
+!                   end if
+!                end do
+!             end do
+!          end if
+!          ! end debugging
           
 
-
+          !
           ! THE FIRST TRACER IS AIRDENSITY
+          !
           tracer_air0=fvm(ie)%c(:,:,k,1,tl%n0)       
           call reconstruction(tracer_air0, fvm(ie),recons)
 !          recons = 0.0!dbg
-!          call monotonic_gradient_cart(tracer_air0, fvm(ie),recons, elem(ie)%desc)
+          call monotonic_gradient_cart(tracer_air0, fvm(ie),recons, elem(ie)%desc)
           !
           ! do remapping for x (j=1) and y (j=2) fluxes
           !
@@ -167,10 +182,10 @@ contains
                   fvm(ie)%spherecentroid, weights_eul_index_all(:,:,j),&
                   weights_lgr_index_all(:,:,j), jall(j),1)  
           end do
-
-
-
-
+          
+          
+          
+          
           !
           ! forecast equation for air density
           !
@@ -179,15 +194,12 @@ contains
                 fvm(ie)%c(i,j,k,1,tl%np1)=tracer_air0(i,j)-(&  
                      flux_air(i+1,j,1)-flux_air(i,j,1)+flux_air(i,j+1,2)-flux_air(i,j,2)&
                      )/fvm(ie)%area_sphere(i,j)
-
+                
              end do
           end do
-
-
-
-          
-          
+          !
           !loop through all tracers
+          !
           do itr=2,ntrac
              tracer0=fvm(ie)%c(:,:,k,itr,tl%n0)
              call reconstruction(tracer0, fvm(ie),recons)
@@ -213,11 +225,11 @@ contains
                    area = fvm(ie)%area_sphere(i,j)
                    !
                    q1=q0*rho0-(&  
-                   !
-                   flux_air(i+1,j  ,1)*flux_tracer(i+1,j  ,1)-&
-                   flux_air(i  ,j  ,1)*flux_tracer(i  ,j  ,1)+&
-                   flux_air(i  ,j+1,2)*flux_tracer(i  ,j+1,2)-&
-                   flux_air(i  ,j  ,2)*flux_tracer(i  ,j  ,2)&
+                        !
+                        flux_air(i+1,j  ,1)*flux_tracer(i+1,j  ,1)-&
+                        flux_air(i  ,j  ,1)*flux_tracer(i  ,j  ,1)+&
+                        flux_air(i  ,j+1,2)*flux_tracer(i  ,j+1,2)-&
+                        flux_air(i  ,j  ,2)*flux_tracer(i  ,j  ,2)&
                         )/area
                    fvm(ie)%c(i,j,k,itr,tl%np1)=q1/rho1
                 end do
@@ -227,7 +239,7 @@ contains
        !note write tl%np1 in buffer
        call ghostVpack(cellghostbuf, fvm(ie)%c,nhc,nc,nlev,ntrac,0,tl%np1,timelevels,elem(ie)%desc)
     end do
-    write(*,*) "done flux-form time-step run"
+!    write(*,*) "done flux-form time-step run"
     !  stop
     call t_stopf('Fluxform-CSLAM scheme')
     call t_startf('FVM Communication')
@@ -988,9 +1000,7 @@ contains
     ! #endif
 #else
     ! for given velocities in the element structure
-    call fvm_dep_from_gll(elem, deriv, fvm%asphere,fvm%dsphere,dt,tl,klev)
-    
-    
+    call fvm_dep_from_gll(elem, deriv, fvm%asphere,fvm%dsphere,dt,tl,klev)    
 #endif
     
     if (test_cfldep) then

@@ -10,14 +10,14 @@ module fvm_line_integrals_flux_mod
   use kinds, only               : int_kind, real_kind
   use dimensions_mod, only      : nc, nhe, ngpc
   use parallel_mod, only : abortmp
+  use fvm_line_integrals_mod, only: ldbg
 
   implicit none
   private
   real (kind=real_kind),parameter, public   :: bignum = 1.0D20
   real (kind=real_kind),parameter, public   :: tiny   = 1.0D-12
   real (kind=real_kind),parameter           :: fuzzy_width = 10.0*tiny
-  logical                                   :: lexact_horizontal_line_integrals=.TRUE.
-  logical                                   :: ldbg=.false.!dbg
+  logical                                   :: lexact_horizontal_line_integrals=.FALSE.
   public :: compute_weights_fluxform
 contains
   ! ----------------------------------------------------------------------------------!
@@ -122,7 +122,6 @@ contains
        !
        ! element is on panel side
        !
-       if (ldbg) write(*,*) "element is on panel side"!dbg
        jx_min1=fvm%jx_min1; jx_max1=fvm%jx_max1; 
        jy_min1=fvm%jy_min1; jy_max1=fvm%jy_max1;
        swap1=fvm%swap1
@@ -130,13 +129,10 @@ contains
           !
           ! element is on a panel corner
           !
-          if (ldbg) write(*,*) "element is on panel corner"!dbg
           jx_min2=fvm%jx_min2; jx_max2=fvm%jx_max2;
           jy_min2=fvm%jy_min2; jy_max2=fvm%jy_max2;
           swap2=fvm%swap2
        endif
-    else
-       if (ldbg) write(*,*) "element is interior"!dbg
     endif
     
     jmax_segments_cell = nhe*50
@@ -182,42 +178,11 @@ contains
           !
           lxflux=jy<nc+1
           lyflux=jx<nc+1
-!          if ((jx==2.and.jy==4).or.(jx==3.and.jy==3)) then
-!             ldbg=.true.
-!          else
-!             ldbg=.false.
-!          end if
           if (lxflux.or.lyflux) then
-             if (ldbg) write(*,*) "zzzz element is from interior  ",jx,jy
-             if (ldbg) write(*,*) "========================================"
-             !
-             ! define departure cell
-             !fvm%cubeboundary
              if (lxflux) call getdep_cellboundariesxyvec_xflux(xflux_x,xflux_y,jx,jy,&
                   acart,dcart)     
              if (lyflux) call getdep_cellboundariesxyvec_yflux(yflux_x,yflux_y,jx,jy,&
                   acart,dcart)     
-
-          if (ldbg) write(*,*) "jx,jy",jx,jy
-          if (ldbg) write(*,*) "------------------------------"
-          if (ldbg) write(*,*) "dep cell"
-          if (ldbg) write(*,*) dcart(jx,jy  )%x,dcart(jx,jy)%y
-          if (ldbg) write(*,*) dcart(jx,jy+1)%x,dcart(jx,jy+1)%y
-          if (ldbg) write(*,*) dcart(jx+1,jy+1)%x,dcart(jx+1,jy+1)%y
-          if (ldbg) write(*,*) dcart(jx+1,jy)%x,dcart(jx+1,jy)%y
-          if (ldbg) write(*,*) dcart(jx,jy)%x,dcart(jx,jy)%y
-          if (ldbg) write(*,*) "-----------------"
-          if (ldbg) write(*,*) "jx,jy",jx,jy
-          if (ldbg) write(*,*) "------------------------------"
-          if (ldbg) write(*,*) "arr cell"
-          if (ldbg) write(*,*) acart(jx,jy  )%x,acart(jx,jy)%y
-          if (ldbg) write(*,*) acart(jx,jy+1)%x,acart(jx,jy+1)%y
-          if (ldbg) write(*,*) acart(jx+1,jy+1)%x,acart(jx+1,jy+1)%y
-          if (ldbg) write(*,*) acart(jx+1,jy)%x,acart(jx+1,jy)%y
-          if (ldbg) write(*,*) acart(jx,jy)%x,acart(jx,jy)%y
-          if (ldbg) write(*,*) "-----------------"
-
-
 
              call compute_weights_flux_cell(lxflux,lyflux,xflux_x,xflux_y,yflux_x,&
                   yflux_y,jx,jy,&
@@ -225,16 +190,12 @@ contains
                   tmp,ngpc,gsweights,gspts,&
                   weights_flux_cell,weights_eul_index_cell,jcollect_cell,&
                   jmax_segments_cell) 
-
-
+             
+             
              do j=1,2
-                if (ldbg) write(*,*) "from interior j,jcollect_cell(j) ",j,jcollect_cell(j)
                 if (jcollect_cell(j)>0) then
                    weights_all(jall(j):jall(j)+jcollect_cell(j)-1,:,j) = &
                         weights_flux_cell(1:jcollect_cell(j),:,j)
-                   if (ldbg) write(*,*) j, "xweights are",weights_eul_index_cell(1:jcollect_cell(j),1,j)
-                   if (ldbg) write(*,*) j, "yweights are",weights_eul_index_cell(1:jcollect_cell(j),2,j)
-                   if (ldbg) write(*,*) "weights",weights_flux_cell(1:jcollect_cell(j),1,j)
                    weights_eul_index_all(jall(j):jall(j)+jcollect_cell(j)-1,:,j) = &
                         weights_eul_index_cell(1:jcollect_cell(j),:,j)
                    weights_lgr_index_all(jall(j):jall(j)+jcollect_cell(j)-1,1,j) = jx
@@ -248,7 +209,6 @@ contains
 
     !WEST SIDE
     if (fvm%cubeboundary == west) then
-       if (ldbg) write(*,*) "zzzz element is west, fvm%faceno:",fvm%faceno!dbg
        !
        !
        ! This Figure shows the element to the East 
@@ -296,8 +256,8 @@ contains
                acart,dcart)     
 
           if(swap1) then  !flip orientation
-             if (ldbg) write(*,*) "swap1"
-             call compute_weights_flux_cell(lxflux,lyflux,xflux_x,xflux_y,yflux_x,yflux_y,jy_min1,jx_min1,nreconstruction,&
+             call compute_weights_flux_cell(lxflux,lyflux,xflux_x,xflux_y,yflux_x,yflux_y,jy_min1,jx_min1,&
+                  nreconstruction,&
                   fvm%acarty1,fvm%acartx1,jy_min1, jy_max1, jx_min1, jx_max1, &
                   tmp,ngpc,gsweights,gspts,&
                   weights_flux_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
@@ -309,8 +269,6 @@ contains
                 end do
              end do
           else  
-             if (ldbg) write(*,*) "no swap1"
-
              call compute_weights_flux_cell(lxflux,lyflux,xflux_x,xflux_y,yflux_x,yflux_y,jx,jy,nreconstruction,&
                   fvm%acartx1,fvm%acarty1,jx_min1, jx_max1, jy_min1, jy_max1, &
                   tmp,ngpc,gsweights,gspts,&
@@ -348,7 +306,6 @@ contains
 
     !EAST SIDE
     if (fvm%cubeboundary == east) then
-       if (ldbg) write(*,*) "zzzzzz element is east"!dbg
        !
        !
        ! This Figure show the element to the East 
@@ -454,7 +411,6 @@ contains
 
     !NORTH SIDE 
     if (fvm%cubeboundary == north) then
-       if (ldbg) write(*,*) "zzzzz element is north"!dbg
        !
        ! no "swapping case"
        !
@@ -576,7 +532,6 @@ contains
     !SOUTH SIDE
 
     if (fvm%cubeboundary == south) then
-       if (ldbg) write(*,*) "zzzzzz element is south"!dbg
        !
        ! no "swapping case"
        !
@@ -616,30 +571,6 @@ contains
                fvm%faceno,acart(jx,jy+1))                  
        end do
 
-       do jx=1,nc+1
-
-          if (ldbg) write(*,*) "dbg dbgd dbg dbg dbgd dbg dbg dbgd dbg dbg dbgd dbg"
-          if (ldbg) write(*,*) "jx,jy",jx,jy
-          if (ldbg) write(*,*) "------------------------------"
-          if (ldbg) write(*,*) "dep cell on faceno face"
-          if (ldbg) write(*,*) dcart(jx,jy  )%x,dcart(jx,jy)%y
-          if (ldbg) write(*,*) dcart(jx,jy+1)%x,dcart(jx,jy+1)%y
-          if (ldbg) write(*,*) dcart(jx+1,jy+1)%x,dcart(jx+1,jy+1)%y
-          if (ldbg) write(*,*) dcart(jx+1,jy)%x,dcart(jx+1,jy)%y
-          if (ldbg) write(*,*) dcart(jx,jy)%x,dcart(jx,jy)%y
-          if (ldbg) write(*,*) "-----------------"
-          if (ldbg) write(*,*) "------------------------------"
-          if (ldbg) write(*,*) "arr cell on faceno face"
-          if (ldbg) write(*,*) acart(jx,jy  )%x,acart(jx,jy)%y
-          if (ldbg) write(*,*) acart(jx,jy+1)%x,acart(jx,jy+1)%y
-          if (ldbg) write(*,*) acart(jx+1,jy+1)%x,acart(jx+1,jy+1)%y
-          if (ldbg) write(*,*) acart(jx+1,jy)%x,acart(jx+1,jy)%y
-          if (ldbg) write(*,*) acart(jx,jy)%x,acart(jx,jy)%y
-          if (ldbg) write(*,*) "-----------------"
-          if (ldbg) write(*,*) "dbg dbgd dbg dbg dbgd dbg dbg dbgd dbg dbg dbgd dbg"
-       end do
-       !end dbg
-
        jy=1
        do jx=1,nc+1
           call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy,klev)),&
@@ -653,16 +584,6 @@ contains
        end do
        
        do jx=1,nc+1
-          
-          if (ldbg) write(*,*) "jx,jy",jx,jy
-          if (ldbg) write(*,*) "------------------------------"
-          if (ldbg) write(*,*) "dep cell"
-          if (ldbg) write(*,*) dcart(jx,jy  )%x,dcart(jx,jy)%y
-          if (ldbg) write(*,*) dcart(jx,jy+1)%x,dcart(jx,jy+1)%y
-          if (ldbg) write(*,*) dcart(jx+1,jy+1)%x,dcart(jx+1,jy+1)%y
-          if (ldbg) write(*,*) dcart(jx+1,jy)%x,dcart(jx+1,jy)%y
-          if (ldbg) write(*,*) dcart(jx,jy)%x,dcart(jx,jy)%y
-          if (ldbg) write(*,*) "-----------------"
           lxflux=.TRUE.
           lyflux=(jx<nc+1)
           
@@ -673,7 +594,6 @@ contains
                acart,dcart)     
              
           if(swap1) then !flip orientation
-             if (ldbg) write(*,*) "swap 1"
              call compute_weights_flux_cell(lxflux,lyflux,xflux_x,xflux_y,yflux_x,yflux_y,jy_min1,jx_min1,nreconstruction,&
                   fvm%acarty1,fvm%acartx1,jy_min1, jy_max1, jx_min1, jx_max1, &
                   tmp,ngpc,gsweights,gspts,&
@@ -689,7 +609,6 @@ contains
                 end do
              end do
           else
-             if (ldbg) write(*,*) "no swap 1"
              call compute_weights_flux_cell(lxflux,lyflux,xflux_x,xflux_y,yflux_x,yflux_y,jx,jy,nreconstruction,&
                   fvm%acartx1,fvm%acarty1,jx_min1, jx_max1, jy_min1, jy_max1, &
                   tmp,ngpc,gsweights,gspts,&
@@ -697,7 +616,6 @@ contains
 
 
           end if
-          if (ldbg) write(*,*) "SOUTH jcollect_cell(j) is",jx,jy,jcollect_cell(1),jcollect_cell(2)
           if  (fvm%faceno==2) then
              do j=1,2
                 do i=1,jcollect_cell(j)
@@ -743,7 +661,6 @@ contains
     endif
     !SOUTHWEST Corner
     if (fvm%cubeboundary == swest) then
-       if (ldbg) write(*,*) "zzzzzz element is sw,fvm%faceno",fvm%faceno !dbg
 
        !
        ! no "swapping case"
@@ -773,7 +690,6 @@ contains
        ! start with South side
        !
        jy=1
-       if (ldbg) write(*,*) "south panel neighbor is", fvm%nbrsface(south)
        do jx=1,nc+1
           call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy,klev)),&
                fvm%nbrsface(south),dcart(jx,jy))                  
@@ -798,7 +714,6 @@ contains
                acart,dcart)     
 
           if(swap1) then !flip orientation
-             if (ldbg) write(*,*) "swap",jx,jy,lxflux,lyflux
              call compute_weights_flux_cell(lxflux,lyflux,xflux_x,xflux_y,yflux_x,yflux_y,jy_min1,jx_min1,nreconstruction,&
                   fvm%acarty1,fvm%acartx1,jy_min1, jy_max1, jx_min1, jx_max1, &
                   tmp,ngpc,gsweights,gspts,&
@@ -813,8 +728,6 @@ contains
                 end do
              end do
           else
-             if (ldbg) write(*,*) "no swap",jx,jy,lxflux,lyflux
-
              call compute_weights_flux_cell(lxflux,lyflux,xflux_x,xflux_y,yflux_x,yflux_y,jx,jy,nreconstruction,&
                   fvm%acartx1,fvm%acarty1,jx_min1, jx_max1, jy_min1, jy_max1, &
                   tmp,ngpc,gsweights,gspts,&
@@ -861,7 +774,6 @@ contains
        !       
        ! calculate xy Cartesian on the cube of departure points on the corresponding face
        jx=1
-       if (ldbg) write(*,*) "west panel neighbor is", fvm%nbrsface(west)
        do jy=1,nc+1
           call cart2cubedspherexy(spherical_to_cart(fvm%dsphere(jx,jy,klev)),&
                fvm%nbrsface(west),dcart(jx,jy))                  
@@ -883,7 +795,6 @@ contains
                acart,dcart)     
 
           if(swap2) then !flip orientation
-             if (ldbg) write(*,*) "swap2",jx,jy,lxflux,lyflux
              call compute_weights_flux_cell(lxflux,lyflux,xflux_x,xflux_y,yflux_x,yflux_y,jy_min2,jx_min2,nreconstruction,&
                   fvm%acarty2,fvm%acartx2,jy_min2, jy_max2, jx_min2, jx_max2, &
                   tmp,ngpc,gsweights,gspts,&
@@ -898,7 +809,6 @@ contains
                 end do
              end do
           else
-             if (ldbg) write(*,*) "no swap2",jx,jy,lxflux,lyflux
              call compute_weights_flux_cell(lxflux,lyflux,xflux_x,xflux_y,yflux_x,yflux_y,jx,jy,nreconstruction,&
                   fvm%acartx2,fvm%acarty2,jx_min2, jx_max2, jy_min2, jy_max2, &
                   tmp,ngpc,gsweights,gspts,&
@@ -935,7 +845,6 @@ contains
     
     ! SOUTHEAST Corner
     if (fvm%cubeboundary == seast) then
-       if (ldbg) write(*,*) "zzzzz element is se"!dbg
        !
        ! no "swapping case"
        !
@@ -1127,7 +1036,6 @@ contains
     
     !NORTHEAST Corner
     if (fvm%cubeboundary == neast) then
-       if (ldbg) write(*,*) "zzzzz element is ne"!dbg
        !
        !                    o-y-o-y-o-y-o-y-o-  jy=nc+1         
        !                    |   |   |   |   |
@@ -1313,7 +1221,6 @@ contains
     
  !NORTH WEST CORNER 
  if (fvm%cubeboundary == nwest) then
-       if (ldbg) write(*,*) "zzzzz element is nw"!dbg
     !
     !
     !                    o-y-o-y-o-y-o-y-o-  jy=nc+1         
@@ -1353,9 +1260,6 @@ contains
     
     do jy=nc,nc+1
        do jx=1,nc+1
-
-          if (ldbg) write(*,*) "north side of nw first jx,jy ",jx,jy
-          
           lxflux=(jy==nc)
           lyflux=(jy==nc+1).AND.jx<nc+1
           
@@ -1447,63 +1351,61 @@ contains
     do jy=1,nc+1
        lxflux=jy<nc+1
        lyflux=.true.
-
-       if (ldbg) write(*,*) "west side of nw first jx,jy ",jx,jy
-
-          if (lxflux) call getdep_cellboundariesxyvec_xflux(xflux_x,xflux_y,jx,jy,&
-               acart,dcart)     
-          if (lyflux) call getdep_cellboundariesxyvec_yflux(yflux_x,yflux_y,jx,jy,&
-               acart,dcart)     
-
-          if(swap2) then !flip orientation
-             call compute_weights_flux_cell(lxflux,lyflux,xflux_x,xflux_y,yflux_x,yflux_y,jy_min2,jx_min2,nreconstruction,&
-                  fvm%acarty2,fvm%acartx2,jy_min2, jy_max2, jx_min2, jx_max2, &
-                  tmp,ngpc,gsweights,gspts,&
-                  weights_flux_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
-             do j=1,2
-                do i=1,jcollect_cell(j)
-                   inttmp=weights_eul_index_cell(i,1,j)
-                   weights_eul_index_cell(i,1,j)=weights_eul_index_cell(i,2,j)
-                   weights_eul_index_cell(i,2,j)=inttmp
-                end do
-             end do
-          else
-             call compute_weights_flux_cell(lxflux,lyflux,xflux_x,xflux_y,yflux_x,yflux_y,jx,jy,nreconstruction,&
-                  fvm%acartx2,fvm%acarty2,jx_min2, jx_max2, jy_min2, jy_max2, &
-                  tmp,ngpc,gsweights,gspts,&
-                  weights_flux_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
-          end if
-
-
-
-          if (fvm%faceno==5) then
-             do j=1,2
-                do i=1,jcollect_cell(j)
-                   weights_eul_index_cell(i,1,j)=weights_eul_index_cell(i,1,j)+nhe-1
-                end do
-             end do
-          end if
-          if (fvm%faceno==6) then
-             do j=1,2
-                do i=1,jcollect_cell(j)
-                   weights_eul_index_cell(i,2,j)=jy_max2-jy_min2-weights_eul_index_cell(i,2,j)-nhe-nhe+1
-                end do
-             end do
-          end if
+       
+       if (lxflux) call getdep_cellboundariesxyvec_xflux(xflux_x,xflux_y,jx,jy,&
+            acart,dcart)     
+       if (lyflux) call getdep_cellboundariesxyvec_yflux(yflux_x,yflux_y,jx,jy,&
+            acart,dcart)     
+       
+       if(swap2) then !flip orientation
+          call compute_weights_flux_cell(lxflux,lyflux,xflux_x,xflux_y,yflux_x,yflux_y,jy_min2,jx_min2,nreconstruction,&
+               fvm%acarty2,fvm%acartx2,jy_min2, jy_max2, jx_min2, jx_max2, &
+               tmp,ngpc,gsweights,gspts,&
+               weights_flux_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
           do j=1,2
-             if (jcollect_cell(j)>0) then
-                weights_all(jall(j):jall(j)+jcollect_cell(j)-1,:,j) = weights_flux_cell(1:jcollect_cell(j),:,j)
-                weights_eul_index_all(jall(j):jall(j)+jcollect_cell(j)-1,:,j) = &
-                     weights_eul_index_cell(1:jcollect_cell(j),:,j)
-                weights_lgr_index_all(jall(j):jall(j)+jcollect_cell(j)-1,1,j) = jx
-                weights_lgr_index_all(jall(j):jall(j)+jcollect_cell(j)-1,2,j) = jy
-                jall(j) = jall(j)+jcollect_cell(j)                 
-             endif
+             do i=1,jcollect_cell(j)
+                inttmp=weights_eul_index_cell(i,1,j)
+                weights_eul_index_cell(i,1,j)=weights_eul_index_cell(i,2,j)
+                weights_eul_index_cell(i,2,j)=inttmp
+             end do
           end do
+       else
+          call compute_weights_flux_cell(lxflux,lyflux,xflux_x,xflux_y,yflux_x,yflux_y,jx,jy,nreconstruction,&
+               fvm%acartx2,fvm%acarty2,jx_min2, jx_max2, jy_min2, jy_max2, &
+               tmp,ngpc,gsweights,gspts,&
+               weights_flux_cell,weights_eul_index_cell,jcollect_cell,jmax_segments_cell)
+       end if
+       
+       
+       
+       if (fvm%faceno==5) then
+          do j=1,2
+             do i=1,jcollect_cell(j)
+                weights_eul_index_cell(i,1,j)=weights_eul_index_cell(i,1,j)+nhe-1
+             end do
+          end do
+       end if
+       if (fvm%faceno==6) then
+          do j=1,2
+             do i=1,jcollect_cell(j)
+                weights_eul_index_cell(i,2,j)=jy_max2-jy_min2-weights_eul_index_cell(i,2,j)-nhe-nhe+1
+             end do
+          end do
+       end if
+       do j=1,2
+          if (jcollect_cell(j)>0) then
+             weights_all(jall(j):jall(j)+jcollect_cell(j)-1,:,j) = weights_flux_cell(1:jcollect_cell(j),:,j)
+             weights_eul_index_all(jall(j):jall(j)+jcollect_cell(j)-1,:,j) = &
+                  weights_eul_index_cell(1:jcollect_cell(j),:,j)
+             weights_lgr_index_all(jall(j):jall(j)+jcollect_cell(j)-1,1,j) = jx
+             weights_lgr_index_all(jall(j):jall(j)+jcollect_cell(j)-1,2,j) = jy
+             jall(j) = jall(j)+jcollect_cell(j)                 
+          endif
        end do
+    end do
  endif
-!end if!dbg
-    jall=jall-1
+ !end if!dbg
+ jall=jall-1
     
   end subroutine compute_weights_fluxform
 
@@ -1513,7 +1415,7 @@ contains
        jx_min, jx_max, jy_min, jy_max,tmp,&
        ngauss,gauss_weights,abscissae,weights,weights_eul_index,jcollect,jmax_segments)
 
-    use fvm_line_integrals_mod, only : compute_weights_cell
+    use fvm_line_integrals_mod, only : compute_weights_cell, truncate_vertex
     implicit none
     logical, intent(in) :: ldo_xflux, ldo_yflux
     integer (kind=int_kind)                  , intent(in):: nreconstruction, jx,jy,ngauss,jmax_segments
@@ -1560,6 +1462,7 @@ contains
     integer (kind=int_kind),  &
          dimension(jmax_segments,2)      :: weights_eul_index2
 
+    integer (kind=int_kind) :: iter,jx_eul,jy_eul
     lzero_flux = .false.
     !
     ! figure out how to loop over flux-edges (in calling routine)
@@ -1584,51 +1487,36 @@ contains
     !    
     jcollect=0
 
-!    ldbg=.true.
-!    ldbg=.false.
     if (ldo_xflux) then
-!       ldbg=.true.
-       if (ldbg) write(*,*) "doing xflux"
        !
        ! constuct xflux-cell
        !
        xcell_flux = xflux_x; ycell_flux = xflux_y;
-
-       if (ldbg) write(*,*) "xflux area is (from outside)):"
-       do j=1,4
-          if (ldbg) write(*,*) xcell_flux(j),ycell_flux(j)
-          if (ABS(xcell_flux(j))>1000.0.OR.ABS(ycell_flux(j))>1000.0) stop
-       end do
-       if (ldbg) j=1;if (ldbg) write(*,*) xcell_flux(j),ycell_flux(j)
-
 
        call make_flux_area(jx,jy,xcell_flux,ycell_flux,xcell_flux2,ycell_flux2,&
             lzero_flux,nvertex,weight_sign,weight_sign2)
        
        if (lzero_flux) then
           jcollect1=0
-          if (ldbg) write(*,*) "zero xflux"
        else
-          if (ldbg) write(*,*) "nvertex is ",nvertex
-          if (ldbg) write(*,*) "flux area after make_flux_area is:"
-          do j=1,nvertex
-             if (ldbg) write(*,*) xcell_flux(j),ycell_flux(j)
-          end do
-!          if (ldbg) j=1;if (ldbg) write(*,*) xcell_flux(j),ycell_flux(j)
-          
-          if (ldbg) write(*,*) "going into compute weights cell xflux",jx,jy
+!          if (ldbg) write(*,*) "nvertex is ",nvertex
+!          if (ldbg) write(*,*) "flux area after make_flux_area is:"
+!          do j=1,nvertex
+!             if (ldbg) write(*,*) xcell_flux(j),ycell_flux(j)
+!          end do
+!          if (ldbg) write(*,*) "going into compute weights cell xflux",jx,jy
           call compute_weights_cell(nvertex,lexact_horizontal_line_integrals,&
                xcell_flux(1:nvertex),ycell_flux(1:nvertex),jx,jy,nreconstruction,xgno,ygno,&
                jx_min, jx_max, jy_min, jy_max,tmp,&
                ngauss,gauss_weights,abscissae,weights(:,:,1),weights_eul_index(:,:,1),jcollect1,jmax_segments)
           weights(1:jcollect1,:,1) = weight_sign*weights(1:jcollect1,:,1)
-          if (ldbg) write(*,*) "jcollect1 is ",jcollect1
-          if (ldbg) write(*,*) "weights are (from inside)",weights(1:jcollect1,1,1)
-          if (ldbg) write(*,*) "ixweights are (from inside)",weights_eul_index(1:jcollect1,1,1)
-          if (ldbg) write(*,*) "iyweights are (from inside)",weights_eul_index(1:jcollect1,2,1)
-
+!          if (ldbg) write(*,*) "jcollect1 is ",jcollect1
+!          if (ldbg) write(*,*) "weights are (from inside)",weights(1:jcollect1,1,1)
+!          if (ldbg) write(*,*) "ixweights are (from inside)",weights_eul_index(1:jcollect1,1,1)
+!          if (ldbg) write(*,*) "iyweights are (from inside)",weights_eul_index(1:jcollect1,2,1)
+!
           if (weight_sign2>-2) then
-             if (ldbg) write(*,*) "hour glass second triangle xflux"
+!             if (ldbg) write(*,*) "hour glass second triangle xflux"
              !
              ! hour-glass flow situation
              !
@@ -1645,47 +1533,39 @@ contains
     end if
 
     if (ldo_yflux) then
-       if (ldbg) write(*,*) "doing yflux"
+!       if (ldbg) write(*,*) "doing yflux"
        !
        ! constuct yflux-cell
        !
        xcell_flux = yflux_x; ycell_flux = yflux_y;
 
-       if (ldbg) write(*,*) "yflux before after make_flux_cell is: jx,jy",jx,jy
-       do j=1,4
-          if (ldbg) write(*,*) j, xcell_flux(j),ycell_flux(j)
-          if (ABS(xcell_flux(j))>1000.0.OR.ABS(ycell_flux(j))>1000.0) stop
-       end do
-       if (ldbg) j=1;if (ldbg) write(*,*) xcell_flux(j),ycell_flux(j)
-
+!       if (ldbg) write(*,*) "yflux before after make_flux_cell is: jx,jy",jx,jy
 
        call make_flux_area(jx,jy,xcell_flux,ycell_flux,xcell_flux2,ycell_flux2,&
             lzero_flux,nvertex,weight_sign,weight_sign2)
        
        if (lzero_flux) then
           jcollect(2)=0
-          if (ldbg) write(*,*) "zero yflux"
+!          if (ldbg) write(*,*) "zero yflux"
        else
-          if (ldbg) write(*,*) "nvertex",nvertex
-          if (ldbg) write(*,*) "yflux area after make_flux_cell is: jx,jy",jx,jy
-          do j=1,nvertex
-             if (ldbg) write(*,*) xcell_flux(j),ycell_flux(j)
-          end do
-          if (ldbg) j=1;if (ldbg) write(*,*) xcell_flux(j),ycell_flux(j)
-
+!          if (ldbg) write(*,*) "nvertex",nvertex
+!          if (ldbg) write(*,*) "yflux area after make_flux_cell is: jx,jy",jx,jy
+!          do j=1,nvertex
+!             if (ldbg) write(*,*) xcell_flux(j),ycell_flux(j)
+!          end do
           call compute_weights_cell(nvertex,lexact_horizontal_line_integrals,&
                xcell_flux(1:nvertex),ycell_flux(1:nvertex),jx,jy,nreconstruction,xgno,ygno,&
                jx_min, jx_max, jy_min, jy_max,tmp,&
                ngauss,gauss_weights,abscissae,weights(:,:,2),weights_eul_index(:,:,2),&
                jcollect1,jmax_segments)
           weights(1:jcollect1,:,2) = weight_sign*weights(1:jcollect1,:,2)
-          if (ldbg) write(*,*) "jcollect1 is ",jcollect1
-          if (ldbg) write(*,*) "weights are (from inside)",weights(1:jcollect1,1,2)
-          if (ldbg) write(*,*) "ixweights are (from inside)",weights_eul_index(1:jcollect1,1,2)
-          if (ldbg) write(*,*) "iyweights are (from inside)",weights_eul_index(1:jcollect1,2,2)
-          if (ldbg) write(*,*) "compute weights cell"
+!          if (ldbg) write(*,*) "jcollect1 is ",jcollect1
+!          if (ldbg) write(*,*) "weights are (from inside)",weights(1:jcollect1,1,2)
+!          if (ldbg) write(*,*) "ixweights are (from inside)",weights_eul_index(1:jcollect1,1,2)
+!          if (ldbg) write(*,*) "iyweights are (from inside)",weights_eul_index(1:jcollect1,2,2)
+!          if (ldbg) write(*,*) "compute weights cell"
           if (weight_sign2>-2) then
-             if (ldbg) write(*,*) "hour glass y-flux"
+!             if (ldbg) write(*,*) "hour glass y-flux"
              !
              ! hour-glass flow situation
              !
@@ -1695,10 +1575,10 @@ contains
                   ngauss,gauss_weights,abscissae,weights2(:,:,2),weights_eul_index2,jcollect2,jmax_segments)
 
 
-             if (ldbg) write(*,*) "jcollect2 is ",jcollect2
-             if (ldbg) write(*,*) "weights2 are (from inside)",weights2(1:jcollect2,1,2)
-             if (ldbg) write(*,*) "ixweights2 are (from inside)",weights_eul_index2(1:jcollect2,1)
-             if (ldbg) write(*,*) "iyweights2 are (from inside)",weights_eul_index2(1:jcollect2,2)
+!             if (ldbg) write(*,*) "jcollect2 is ",jcollect2
+!             if (ldbg) write(*,*) "weights2 are (from inside)",weights2(1:jcollect2,1,2)
+!             if (ldbg) write(*,*) "ixweights2 are (from inside)",weights_eul_index2(1:jcollect2,1)
+!             if (ldbg) write(*,*) "iyweights2 are (from inside)",weights_eul_index2(1:jcollect2,2)
 
              weights(jcollect1+1:jcollect1+jcollect2,:,2) = weight_sign2*weights2(1:jcollect2,:,2)
              weights_eul_index(jcollect1+1:jcollect1+jcollect2,:,2) = weights_eul_index2(1:jcollect2,:)
@@ -1781,7 +1661,7 @@ contains
     isLeft2 = isLeft(xcell_flux(4),ycell_flux(4),xcell_flux(3),ycell_flux(3),&
          xcell_flux(2),ycell_flux(2))
 
-    if (ldbg) write(*,*) "isLeft1,isLeft2",isLeft1,isLeft2
+!    if (ldbg) write(*,*) "isLeft1,isLeft2",isLeft1,isLeft2
 
 
     lzero_flux = (isLeft1==1000.and.isLeft2==1000)
@@ -1793,7 +1673,7 @@ contains
        xcell_flux=-999999.99; ycell_flux=-999999.99; nvertex=-1
     else
        if (isLeft1==1000) then
-          if (ldbg) write(*,*) "trajec1 zero case"
+!          if (ldbg) write(*,*) "trajec1 zero case"
           !
           ! flux-area a triangle; point 1 lies on flux-side (point 3 to 4)
           !
@@ -1824,7 +1704,7 @@ contains
           !
           ! same as previous if-statement but for point 2
           !
-          if (ldbg) write(*,*) "trajec2 zero case"
+ !         if (ldbg) write(*,*) "trajec2 zero case"
           !
           ! flux-area a triangle
           !
@@ -1841,7 +1721,7 @@ contains
           ! Both point 1 and 2 are to the left or right of flux side (point 3 to 4)
           ! flux-area is a simply connected non-convex polygon
           !
-          if (ldbg) write(*,*) "flux-area is a quadrilateral"
+!          if (ldbg) write(*,*) "flux-area is a quadrilateral"
           nvertex = 4
           if (isLeft1==1) then
              weight_sign=1.0
@@ -1850,7 +1730,7 @@ contains
              weight_sign  = -1.0
           end if
        else if (isLeft1+isLeft2==0) then
-          if (ldbg) write(*,*) "complex case"
+!          if (ldbg) write(*,*) "complex case"
           xcell_flux_tmp = xcell_flux; ycell_flux_tmp = ycell_flux 
           !
           ! hour-glass flow situation or non-simple (possibly slef-intersecting) polygon
@@ -1910,7 +1790,7 @@ contains
 
           call line_intersect(xcell_flux(1:4),ycell_flux(1:4),xcross,ycross,&
                intersect)
-          if (ldbg) write(*,*) "intersect",intersect
+!          if (ldbg) write(*,*) "intersect",intersect
           nvertex = 3
           xcell_flux(1) = xcell_flux_tmp(1); ycell_flux(1) = ycell_flux_tmp(1);
           xcell_flux(2) = xcross            ; ycell_flux(2) = ycross;
@@ -1921,14 +1801,10 @@ contains
              call reverse(xcell_flux(0:nvertex+1),ycell_flux(0:nvertex+1),nvertex)
              weight_sign = -1.0
           end if
-          
-          
-          
-          if (ldbg) write(*,*) "weight_sign",weight_sign
-          if (ldbg) write(*,*) "first flux area"
-          do j=1,nvertex
-             if (ldbg) write(*,*) xcell_flux(j),ycell_flux(j)
-          end do
+                             
+!          do j=1,nvertex
+!             if (ldbg) write(*,*) xcell_flux(j),ycell_flux(j)
+!          end do
           
           
           xcell_flux2(1) = xcross            ; ycell_flux2(1) = ycross;
@@ -1943,15 +1819,6 @@ contains
           
           if ((isLeft1>0.and.intersect>-1).or.((isLeft1<0.and.intersect==-1))) &
                call reverse(xcell_flux2(0:nvertex+1),ycell_flux2(0:nvertex+1),nvertex)
-          
-          if (ldbg) write(*,*) "weight_sign2",weight_sign2
-          if (ldbg) write(*,*) "second flux area"
-          do j=1,nvertex
-             if (ldbg) write(*,*) xcell_flux2(j),ycell_flux2(j)
-          end do
-          
-          
-          
           
        end if
     end if
@@ -2010,6 +1877,17 @@ use coordinate_systems_mod, only : cartesian2D_t
   xcell(3) = acart(jx,jy+1)%x ; ycell(3) = acart(jx,jy+1)%y
   xcell(4) = acart(jx,jy  )%x ; ycell(4) = acart(jx,jy  )%y
 
+  !
+  ! truncate
+  !
+  if (ABS(xcell(1)-xcell(4))<1.0E-9) xcell(1) = xcell(4)
+  if (ABS(xcell(2)-xcell(3))<1.0E-9) xcell(2) = xcell(3)
+  if (ABS(ycell(1)-ycell(4))<1.0E-9) ycell(1) = ycell(4)
+  if (ABS(ycell(2)-ycell(3))<1.0E-9) ycell(2) = ycell(3)
+  !
+  !
+  ! are these lines necessary?
+  !
   xcell(5) = xcell(1)         ; ycell(5) = ycell(1)          
   xcell(0) = xcell(4)         ; ycell(0) = ycell(4)
 end subroutine getdep_cellboundariesxyvec_xflux
@@ -2026,6 +1904,19 @@ use coordinate_systems_mod, only : cartesian2D_t
   xcell(2) = dcart(jx  ,jy)%x ; ycell(2) = dcart(jx  ,jy)%y
   xcell(3) = acart(jx  ,jy)%x ; ycell(3) = acart(jx  ,jy)%y
   xcell(4) = acart(jx+1,jy)%x ; ycell(4) = acart(jx+1,jy)%y
+
+  !
+  ! truncate
+  !
+  if (ABS(xcell(1)-xcell(4))<1.0E-9) xcell(1) = xcell(4)
+  if (ABS(xcell(2)-xcell(3))<1.0E-9) xcell(2) = xcell(3)
+  if (ABS(ycell(1)-ycell(4))<1.0E-9) ycell(1) = ycell(4)
+  if (ABS(ycell(2)-ycell(3))<1.0E-9) ycell(2) = ycell(3)
+  !
+  ! are these lines necessary?
+  !
+  xcell(5) = xcell(1)         ; ycell(5) = ycell(1)          
+  xcell(0) = xcell(4)         ; ycell(0) = ycell(4)
 end subroutine getdep_cellboundariesxyvec_yflux
 
 
@@ -2099,4 +1990,33 @@ subroutine line_intersect(x,y,xintersect,yintersect,intersect)
       end if
    end if
  end subroutine line_intersect
+
+subroutine debugging_print_cells(jx,jy,acart,dcart)
+  use coordinate_systems_mod, only : cartesian2D_t
+  implicit none
+  integer (kind=int_kind), intent(in) :: jx,jy
+  type (cartesian2D_t), intent(in) :: dcart(-1:nc+3,-1:nc+3)
+  type (cartesian2D_t), intent(in) :: acart(-1:nc+3,-1:nc+3)
+
+  write(*,*) "jx,jy",jx,jy
+  write(*,*) "------------------------------"
+  write(*,*) "dep cell"
+  write(*,*) dcart(jx,jy  )%x,dcart(jx,jy)%y
+  write(*,*) dcart(jx,jy+1)%x,dcart(jx,jy+1)%y
+  write(*,*) dcart(jx+1,jy+1)%x,dcart(jx+1,jy+1)%y
+  write(*,*) dcart(jx+1,jy)%x,dcart(jx+1,jy)%y
+  write(*,*) dcart(jx,jy)%x,dcart(jx,jy)%y
+  write(*,*) "-----------------"
+  write(*,*) "jx,jy",jx,jy
+  write(*,*) "------------------------------"
+  write(*,*) "arr cell"
+  write(*,*) acart(jx,jy  )%x,acart(jx,jy)%y
+  write(*,*) acart(jx,jy+1)%x,acart(jx,jy+1)%y
+  write(*,*) acart(jx+1,jy+1)%x,acart(jx+1,jy+1)%y
+  write(*,*) acart(jx+1,jy)%x,acart(jx+1,jy)%y
+  write(*,*) acart(jx,jy)%x,acart(jx,jy)%y
+  write(*,*) "-----------------"
+
+
+end subroutine debugging_print_cells
 end module fvm_line_integrals_flux_mod
