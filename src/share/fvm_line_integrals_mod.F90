@@ -23,9 +23,10 @@ module fvm_line_integrals_mod
   real (kind=real_kind),parameter           :: fuzzy_width = 10.0*tiny
   ! turn on/off EOC (Enforcement of Consistency) -> Erath et al. MWR, 2013
   logical                                   :: EOC=.FALSE.
-  logical :: ldbg=.false.!dbg xxx
+  
+  logical, public :: ldbg=.false.!dbg xxx
   public :: compute_weights, compute_weights_cell, gauss_points, getdep_cellboundariesxyvec
-  public :: compute_slope,y_cross_eul_lon,x_cross_eul_lat,area
+  public :: compute_slope,y_cross_eul_lon,x_cross_eul_lat,area, truncate_vertex
 contains
 ! ----------------------------------------------------------------------------------!
 !SUBROUTINE COMPUTE_WEIGHTS-----------------------------------------------CE-for FVM!
@@ -1823,7 +1824,7 @@ end subroutine getdep_cellboundariesxyvec
 !    if (jx==4.and.jy==3) then
 !       ldbg=.true.
 !    else
-       ldbg=.false.
+!       ldbg=.true.
 !    end if
     if (ldbg) write(*,*) "going into side_integral"
 !    if (ldbg) write(*,*) "cell is:"
@@ -1873,7 +1874,7 @@ end subroutine getdep_cellboundariesxyvec
            write(*,*) "index jx,jy ",jx,jy
           IF (weights(i,1)<-1.0E-10) THEN
             WRITE(*,*) "negative cell area",weights(i,1)
-            STOP
+!            STOP
           END IF
           !           weights(i,2:nreconstruction) = 0.0
         END IF
@@ -2108,7 +2109,6 @@ end subroutine getdep_cellboundariesxyvec
          dimension(jmax_segments,nreconstruction), intent(out) :: weights
     integer (kind=int_kind),  &
          dimension(jmax_segments,2), intent(out) :: weights_eul_index
-
 
     !
     ! variables for registering crossings with Eulerian latitudes and longitudes
@@ -2411,6 +2411,35 @@ end subroutine getdep_cellboundariesxyvec
 
 !            call get_weights_exact(lexact_horizontal_line_integrals, weights_tmp,xseg,yseg,&
 !                 nreconstruction,ngauss,gauss_weights,abscissae)
+
+             
+            !
+            ! debugging phl
+            !
+!            write(*,*) "start test"
+!            xseg(1) = 4.3660942908512038D-002; yseg(1) = 0.83909966789439261D0
+!            xseg(2) = 8.7488663525923979D-002; yseg(2) = 0.83909963117727981D0
+!!## weight is    2.8010300820513669E-002
+!
+!            call get_weights_exact(.false.,&
+!                 weights(jsegment,1:nreconstruction),&
+!                 xseg,yseg,nreconstruction,ngauss,gauss_weights,abscissae)
+!            write(*,*) "weights is",weights(jsegment,1)
+!            jsegment = jsegment+1
+!!#
+!            xseg(1)= 8.7488663525923979D-002; yseg(1) =   0.83909963117727981D0
+!            xseg(2) = 4.3660942908512038D-002; yseg(2) =  0.83909963117727981D0
+!
+!
+!
+!            call get_weights_exact(.false.,&
+!                 weights(jsegment,1:nreconstruction),&
+!                 xseg,yseg,nreconstruction,ngauss,gauss_weights,abscissae)
+!            write(*,*) "weights is",weights(jsegment,1)
+!            write(*,*) "sum=",weights(jsegment-1,1)+weights(jsegment,1)
+!            write(*,*) "end test"
+!            stop
+!
             call get_weights_exact(lexact_horizontal_line_integrals.AND.ABS(yseg(2)-yseg(1))<tiny,&
                  weights(jsegment,1:nreconstruction),&
                  xseg,yseg,nreconstruction,ngauss,gauss_weights,abscissae)
@@ -2761,8 +2790,8 @@ end subroutine getdep_cellboundariesxyvec
       IF (dist_new>dist) THEN
         lcontinue = .FALSE.
 !      ELSE IF (ABS(tmp)<1.0E-11) THEN
-!phl      ELSE IF (ABS(tmp)<1.0E-9) THEN
-      ELSE IF (ABS(tmp)<tiny) THEN
+      ELSE IF (ABS(tmp)<1.0E-9) THEN
+!      ELSE IF (ABS(tmp)<tiny) THEN
 !      ELSE IF (ABS(tmp)<1.0E-4) THEN
         x = gno(j_eul)
         lcontinue = .FALSE.
