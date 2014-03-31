@@ -105,8 +105,11 @@ io_desc_t *malloc_iodesc(const int piotype, const int ndims)
   iodesc->ioid=-1;
   iodesc->llen=0;
   iodesc->ndims = ndims;
-  iodesc->start = (PIO_Offset *) calloc(ndims, sizeof(PIO_Offset));
-  iodesc->count = (PIO_Offset *) calloc(ndims, sizeof(PIO_Offset));
+
+  iodesc->firstregion = (io_region *) malloc(sizeof(io_region));
+  iodesc->firstregion->start = (PIO_Offset *) calloc(ndims, sizeof(PIO_Offset));
+  iodesc->firstregion->count = (PIO_Offset *) calloc(ndims, sizeof(PIO_Offset));
+  iodesc->firstregion->next=NULL;
 
   return iodesc;
 }

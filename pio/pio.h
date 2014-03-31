@@ -35,6 +35,14 @@ typedef struct var_desc_t
 } var_desc_t;
 
 
+typedef struct io_region
+{
+  int loffset;
+  PIO_Offset *start;
+  PIO_Offset *count;
+  io_region *next;
+} io_region;
+
 typedef struct io_desc_t
 {
   int ioid;
@@ -58,9 +66,9 @@ typedef struct io_desc_t
 
   MPI_Datatype *rtype;
   MPI_Datatype *stype;
+  
+  io_region *firstregion;
 
-  PIO_Offset *start;
-  PIO_Offset *count;
   struct io_desc_t *next;
 } io_desc_t;
 
