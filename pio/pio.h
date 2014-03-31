@@ -40,7 +40,7 @@ typedef struct io_region
   int loffset;
   PIO_Offset *start;
   PIO_Offset *count;
-  io_region *next;
+  struct io_region *next;
 } io_region;
 
 typedef struct io_desc_t
@@ -53,6 +53,7 @@ typedef struct io_desc_t
   int ndims;
   int num_aiotasks;
   int rearranger;
+  int maxregions;
 
   MPI_Datatype basetype;
   PIO_Offset llen;

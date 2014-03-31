@@ -66,9 +66,21 @@ int check_netcdf(file_desc_t *file,int status, const char *fname, const int line
   return status;
 }
 
-int iotype_error(const int iotype, const char *fname, const int line){
+int iotype_error(const int iotype, const char *fname, const int line)
+{
     fprintf(stderr, "ERROR: iotype %d not defined in build %s %d\n", iotype, fname,line);
     return PIO_NOERR;
+}
+
+io_region *alloc_region(const int ndims)
+{
+  io_region *region;
+
+  region = (io_region *) malloc(sizeof(io_region));
+  region->start = (PIO_Offset *) calloc(ndims, sizeof(PIO_Offset));
+  region->count = (PIO_Offset *) calloc(ndims, sizeof(PIO_Offset));
+  region->next=NULL;
+  return region;
 }
 
 io_desc_t *malloc_iodesc(const int piotype, const int ndims)
@@ -95,6 +107,7 @@ io_desc_t *malloc_iodesc(const int piotype, const int ndims)
     break;
   }    
   iodesc->rearranger = 0;
+  iodesc->maxregions=1;
   iodesc->rfrom = NULL;
   iodesc->scount = NULL;
   iodesc->rtype = NULL;
@@ -105,14 +118,28 @@ io_desc_t *malloc_iodesc(const int piotype, const int ndims)
   iodesc->ioid=-1;
   iodesc->llen=0;
   iodesc->ndims = ndims;
-
-  iodesc->firstregion = (io_region *) malloc(sizeof(io_region));
-  iodesc->firstregion->start = (PIO_Offset *) calloc(ndims, sizeof(PIO_Offset));
-  iodesc->firstregion->count = (PIO_Offset *) calloc(ndims, sizeof(PIO_Offset));
-  iodesc->firstregion->next=NULL;
+  iodesc->firstregion = alloc_region(ndims);
 
   return iodesc;
 }
+
+void free_region_list(io_region *top)
+{
+  io_region *ptr, *tptr;
+
+  ptr = top;
+  while(ptr != NULL) {
+    if(ptr->start != NULL)
+      free(ptr->start);
+    if(ptr->count != NULL)
+      free(ptr->count);
+    tptr=ptr;
+    ptr=ptr->next;
+    free(tptr);      
+  }
+
+}
+
 
 int PIOc_freedecomp(int iosysid, int ioid)
 {
@@ -141,10 +168,8 @@ int PIOc_freedecomp(int iosysid, int ioid)
     free(iodesc->rtype);
   if(iodesc->stype != NULL)
     free(iodesc->stype);
-  if(iodesc->start != NULL)
-    free(iodesc->start);
-  if(iodesc->count != NULL)
-    free(iodesc->count);
+  if(iodesc->firstregion != NULL)
+    free_region_list(iodesc->firstregion);
 
   return pio_delete_iodesc_from_list(ioid);
 
@@ -202,7 +227,7 @@ int PIOc_readmap(const char file[], PIO_Offset *fmaplen, PIO_Offset *map[], cons
     *map = tmap;
     *fmaplen = maplen;
   }      
-  
+  return PIO_NOERR;
 }
 
 int PIOc_readmap_from_f90(const char file[],PIO_Offset *maplen, PIO_Offset *map[], const int f90_comm)
