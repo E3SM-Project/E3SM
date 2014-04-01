@@ -26,10 +26,6 @@ print "$cc\n";
 print "$filesystem\n";
 print "$fc\n";
 
-# override pnetcdf with my own
-$pnetcdf =  "/ccs/home/jedwards/parallel_netcdf/r1544/intel/";
-
-
 my $piosrc = `pwd`;
 chomp $piosrc;
 $piosrc.="/../";

@@ -143,9 +143,9 @@ ENDIF()
 OPTION(PIO_BUILD_TIMING  "" OFF)
 
 if(${PIO_BUILD_TIMING})
-  if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/../timing)
+  if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/timing)
     SET(bld_PIO_DEFINITIONS ${bld_PIO_DEFINITIONS} -DTIMING -I ${CMAKE_CURRENT_BINARY_DIR}/timing)
-    ADD_SUBDIRECTORY(../timing timing)
+    ADD_SUBDIRECTORY(timing timing)
   endif()
 endif()
 

@@ -79,6 +79,7 @@ io_region *alloc_region(const int ndims)
   region = (io_region *) malloc(sizeof(io_region));
   region->start = (PIO_Offset *) calloc(ndims, sizeof(PIO_Offset));
   region->count = (PIO_Offset *) calloc(ndims, sizeof(PIO_Offset));
+  region->loffset = 0;
   region->next=NULL;
   return region;
 }

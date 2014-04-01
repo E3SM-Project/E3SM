@@ -383,19 +383,19 @@ int compute_counts(const iosystem_desc_t ios, io_desc_t *iodesc, const int dest_
 
   // s2rindex is the list of indeces on each compute task
     
-  //  printf("%d s2rindex: ", ios.comp_rank);
+  // printf("%d s2rindex: ", ios.comp_rank);
   // for(i=0;i<ndof;i++)
-  //  printf("%ld ",s2rindex[i]);
-      // printf("\n");
+  //   printf("%ld ",s2rindex[i]);
+  // printf("\n");
   
 
   ierr = pio_swapm( s2rindex, send_counts, send_displs, sr_types, 
 		    iodesc->rindex, recv_counts, recv_displs, sr_types,
-		    ios.union_comm, true, false,  MAX_GATHER_BLOCK_SIZE);
+		    ios.union_comm, true, true, 0);//MAX_GATHER_BLOCK_SIZE);
 
   //  rindex is an array of the indices of the data to be sent from
   //  this io task to each compute task. 
-  /*
+  
   if(ios.ioproc){
     printf("%d rindex: ",ios.io_rank);
     for(int j=0;j<iodesc->llen;j++)
@@ -413,8 +413,9 @@ int compute_counts(const iosystem_desc_t ios, io_desc_t *iodesc, const int dest_
       printf("\n");
     }
   }
-          MPI_Abort(MPI_COMM_WORLD,0);
-  */
+  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Abort(MPI_COMM_WORLD,0);
+  
   iodesc->rtype = NULL;
   iodesc->stype = NULL;
 
@@ -741,7 +742,7 @@ int compare_offsets(const void *a,const void *b)
 //
 // Find all regions. 
 //
-void get_start_and_count_regions(io_desc_t *iodesc, const int gdims[],const PIO_Offset map[])
+void get_start_and_count_regions(const MPI_Comm io_comm, io_desc_t *iodesc, const int gdims[],const PIO_Offset map[])
 {
   int i;
   int nmaplen;
@@ -750,9 +751,14 @@ void get_start_and_count_regions(io_desc_t *iodesc, const int gdims[],const PIO_
 
   nmaplen = 0;
   region = iodesc->firstregion;
+  region->loffset=0;
+
   iodesc->maxregions = 1;
   while(nmaplen < iodesc->llen){
-    region->loffset = find_first_region(iodesc->ndims, gdims, iodesc->llen-nmaplen, 
+    // Here we find the largest region from the current offset into the iomap
+    // regionlen is the size of that region and we step to that point in the map array
+    // until we reach the end 
+    regionlen = find_first_region(iodesc->ndims, gdims, iodesc->llen-nmaplen, 
 					map+nmaplen, region->start, region->count);
 
     printf("start %ld %ld %ld\n", region->start[0], region->start[1], region->start[2]);
@@ -761,11 +767,17 @@ void get_start_and_count_regions(io_desc_t *iodesc, const int gdims[],const PIO_
     nmaplen = nmaplen+regionlen;
     if(region->next==NULL && nmaplen<iodesc->llen){
       region->next = alloc_region(iodesc->ndims);
+      // The offset into the local array buffer is the sum of the sizes of all of the previous regions (loffset) 
       region=region->next;
+      region->loffset = nmaplen;
+      // The calls to the io library are collective and so we must have the same number of regions on each
+      // io task iodesc->maxregions will be the total number of regions on this task 
       iodesc->maxregions++;
     }
   }
-  
+  // pad maxregions on all tasks to the maximum and use this to assure that collective io calls are made.
+  MPI_Allreduce(MPI_IN_PLACE,&(iodesc->maxregions), 1, MPI_INTEGER, MPI_MAX, io_comm);
+
 
 
 
@@ -801,7 +813,6 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, const PI
   PIO_Offset *destoffset=NULL;
   PIO_Offset gstride[ndims];
   int dioproc;
-  int maxregions;
 
   if(maplen>0){
     dest_ioproc = (int *) malloc(maplen*sizeof(int));
@@ -926,9 +937,9 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, const PI
       //      printf("%d %d displs %d destoffset[%d] %ld\n",ios.io_rank,sender,rdispls[sender]/sizeof(PIO_Offset),i,destoffset[i]);
     }
 
-    get_start_and_count_regions(iodesc,gsize,iomap);
+    get_start_and_count_regions(ios.io_comm,iodesc,gsize,iomap);
 
-    MPI_Allreduce(MPI_IN_PLACE,&(iodesc->maxregions), 1, MPI_INTEGER, MPI_MAX, ios.io_comm);
+    printf("maxregions = %d\n",iodesc->maxregions);
 
     compute_maxIObuffersize(ios.io_comm, iodesc);
     free(map);

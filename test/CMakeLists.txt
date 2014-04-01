@@ -18,34 +18,42 @@ FOREACH(gen_src IN LISTS SRCS_GENERATED)
   )
 ENDFOREACH()
 
+if(${PIO_BUILD_TIMING} MATCHES "ON") 
+  SET(TIMING_LINK_LIB timing)
+endif()
+
+
+
+
+
 ADD_EXECUTABLE(pio_init_finalize pio_init_finalize.F90 ${SRCS_PIO_TUTIL})
-TARGET_LINK_LIBRARIES(pio_init_finalize piof pioc)
+TARGET_LINK_LIBRARIES(pio_init_finalize piof pioc ${TIMING_LINK_LIB} )
 
 ADD_TEST(init_finalize_1_proc ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ./pio_init_finalize)
 ADD_TEST(init_finalize_2_proc ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 2 ./pio_init_finalize)
 ADD_TEST(init_finalize_2_proc_with_args ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 2 ./pio_init_finalize --pio-tf-stride=2 --pio-tf-num-aggregators=2)
 
 #ADD_EXECUTABLE(pio_fail pio_fail.F90 ${SRCS_PIO_TUTIL})
-#TARGET_LINK_LIBRARIES(pio_fail piof pioc)
+#TARGET_LINK_LIBRARIES(pio_fail  piof pioc ${TIMING_LINK_LIB} )
 
 #ADD_TEST(even_ranks_fail ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 5 ./pio_fail)
 
 ADD_EXECUTABLE(pio_file_simple_tests pio_file_simple_tests.F90 ${SRCS_PIO_TUTIL})
-TARGET_LINK_LIBRARIES(pio_file_simple_tests piof pioc)
+TARGET_LINK_LIBRARIES(pio_file_simple_tests  piof pioc ${TIMING_LINK_LIB} )
 
 ADD_TEST(pio_file_simple_tests ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 2 ./pio_file_simple_tests)
 
 ADD_EXECUTABLE(pio_file_fail pio_file_fail.F90 ${SRCS_PIO_TUTIL})
-TARGET_LINK_LIBRARIES(pio_file_fail piof pioc)
+TARGET_LINK_LIBRARIES(pio_file_fail  piof pioc ${TIMING_LINK_LIB} )
 
 ADD_TEST(pio_file_fail ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 2 ./pio_file_fail)
 
 ADD_EXECUTABLE(ncdf_simple_tests ncdf_simple_tests.F90 ${SRCS_PIO_TUTIL})
-TARGET_LINK_LIBRARIES(ncdf_simple_tests piof pioc)
+TARGET_LINK_LIBRARIES(ncdf_simple_tests  piof pioc ${TIMING_LINK_LIB} )
 
 ADD_TEST(ncdf_simple_tests ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 2 ./ncdf_simple_tests)
 
 ADD_EXECUTABLE(ncdf_fail ncdf_fail.F90 ${SRCS_PIO_TUTIL})
-TARGET_LINK_LIBRARIES(ncdf_fail piof pioc)
+TARGET_LINK_LIBRARIES(ncdf_fail  piof pioc ${TIMING_LINK_LIB} )
 
 ADD_TEST(ncdf_fail ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 2 ./ncdf_fail)
