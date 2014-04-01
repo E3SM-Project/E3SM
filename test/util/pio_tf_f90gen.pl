@@ -36,10 +36,13 @@ $cur_test_case_num = 1;
 # * Does the transformation of the template source
 sub transform_src
 {
-  my($ref_auto_funcs_list, $in_line, $template_fname, $template_line_no) = @_;
+  my($ref_auto_funcs_list, $in_line, $template_fname, $template_line_no, $ref_modif) = @_;
   my($out_line);
   if($verbose){ print "Transforming: $in_line\n"; }
   $_ = $in_line;
+  # By default assume that source is transformed/modified
+  # reset otherwise
+  $$ref_modif = 1;
   if(/^(\s*)(PIO_TF_TEST_SUB_BEGIN)(.*)$/s){
     $out_line = $1 . "SUBROUTINE" . $3 . "\n";
     $out_line = $out_line . $1 . "#ifndef NO_MPIMOD\n";
@@ -232,6 +235,7 @@ sub transform_src
   }
   else{
     $out_line = $_;
+    $$ref_modif = 0;
   }
   return $out_line;
 }
@@ -370,6 +374,7 @@ sub process_template_file
   my($TEMPLATE_FILE);
   my($base_file_name);
   my($in_line) = "";
+  my($orig_line) = "";
 
   $base_file_name = basename($ifname);
 
@@ -382,9 +387,12 @@ sub process_template_file
 
   $ifline_num = 1;
   $in_line = "";
+  # Unmodified (orig) line
+  $orig_line = "";
   while(<TEMPLATE_FILE>){
     my ($out_line);
   
+    $orig_line = $orig_line . $_;
     chomp;
     $_ = $in_line . $_;
     if(/^s*[!#].*$/s){
@@ -415,15 +423,25 @@ sub process_template_file
         next;
       }
       else{
-        $out_line = &transform_src(\@auto_funcs_list, $_, $base_file_name, $ifline_num);
+        my ($is_transformed) = 0;
+        $out_line = &transform_src(\@auto_funcs_list, $_, $base_file_name,
+                        $ifline_num, \$is_transformed);
+        if($is_transformed == 0){
+          # If the line is not transformed, undo all changes done and
+          # output the original line[s] read from the file
+          chomp($orig_line);
+          $out_line = $orig_line;
+        }
         if($annotate_source){
           # Annotate source with template file name and line number
+          # Add it after the line
           $out_line = $out_line . "   ! $base_file_name:$ifline_num";
         }
       }
     }
     print OUTPUT_FILE "$out_line\n";
     $in_line = "";
+    $orig_line = "";
     $ifline_num += 1;
   }
 
