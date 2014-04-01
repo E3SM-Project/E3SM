@@ -19,7 +19,11 @@ if(PIO_BUILD_TIMING MATCHES "ON")
   TARGET_LINK_LIBRARIES(testpio timing  )
   TARGET_LINK_LIBRARIES(wstest timing  )
 endif()
-TARGET_LINK_LIBRARIES(testpio piof pioc ${NETCDF_Fortran_LIBRARY})
+if(NETCDF_FOUND)
+  TARGET_LINK_LIBRARIES(testpio piof pioc ${NETCDF_Fortran_LIBRARY})
+else()
+  TARGET_LINK_LIBRARIES(testpio piof pioc)
+endif()
 TARGET_LINK_LIBRARIES(wstest pioc)
 
 
