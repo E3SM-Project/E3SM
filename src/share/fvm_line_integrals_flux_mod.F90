@@ -42,11 +42,17 @@ contains
     type (fvm_struct), intent(inout)                                :: fvm
     integer (kind=int_kind), intent(in)                            :: nreconstruction
     ! arrays for collecting cell data
-    real (kind=real_kind),dimension(10*(nc+2*nhe)*(nc+2*nhe),nreconstruction,2), &
+    !
+    !
+    ! maximum number of overlaps for CN<1 is 4 per flux edge
+    !
+    ! nhe is CEILING(CN) which is 1 here
+    !
+    real (kind=real_kind),dimension(4*(nc+2*nhe)*(nc+nhe),nreconstruction,2), &
          intent(out) :: weights_all
-    integer (kind=int_kind), dimension(10*(nc+2*nhe)*(nc+2*nhe),2,2), &
+    integer (kind=int_kind), dimension(4*(nc+2*nhe)*(nc+nhe),2,2), &
          intent(out) :: weights_eul_index_all
-    integer (kind=int_kind), dimension(10*(nc+2*nhe)*(nc+2*nhe),2,2), &
+    integer (kind=int_kind), dimension(4*(nc+2*nhe)*(nc+nhe),2,2), &
          intent(out) :: weights_lgr_index_all
     integer (kind=int_kind), intent(in)                       :: klev
     integer (kind=int_kind), dimension(2), intent(out)        :: jall
@@ -1406,6 +1412,7 @@ contains
  endif
  !end if!dbg
  jall=jall-1
+
     
   end subroutine compute_weights_fluxform
 
