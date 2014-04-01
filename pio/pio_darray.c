@@ -417,11 +417,12 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void
 	    //  printf("%d %d %ld %ld %d\n",vid,k,tmp_start[k],tmp_count[k], ierr);
 
 	      if(i>0){
-		MPI_Rsend(IOBUF, tmp_bufsize, iodesc->basetype, i, i, ios->io_comm);
-	      }
-	    }
-	  }
-	  break;
+          MPI_Rsend(IOBUF, tmp_bufsize, iodesc->basetype, i, i, ios->io_comm);
+        } // if(i>0)
+      } // if(tmp_bufsize > 0)
+    } // for( i=ios->num_iotasks-1; i>=0; i--)
+  } // else if(ios->io_rank==0)
+  break;
 #endif
 #ifdef _PNETCDF
 	case PIO_IOTYPE_PNETCDF:
@@ -437,12 +438,11 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void
 	default:
 	  ierr = iotype_error(file->iotype,__FILE__,__LINE__);
 	  
-	}
-      }
-    }
+	} // switch(file->iotype)
     if(region->next != NULL)
       region = region->next;
-  }
+  } // for(regioncnt=0;...)
+  } // if (ios->ioproc)
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
   return ierr;
