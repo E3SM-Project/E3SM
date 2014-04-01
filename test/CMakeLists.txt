@@ -1,0 +1,51 @@
+INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/util)
+
+# PIO Test util sources
+SET(SRCS_PIO_TUTIL	${CMAKE_CURRENT_SOURCE_DIR}/util/pio_tutil.F90)
+
+# PIO test source generator path
+SET(PIO_TUTIL_GEN_PATH ${CMAKE_CURRENT_SOURCE_DIR}/util)
+
+# Test source files that are generated (from template files)
+SET(SRCS_GENERATED pio_file_simple_tests.F90 pio_init_finalize.F90 pio_fail.F90 pio_file_fail.F90 ncdf_simple_tests.F90 ncdf_fail.F90)
+
+# Generate test cases from template files
+FOREACH(gen_src IN LISTS SRCS_GENERATED)
+  ADD_CUSTOM_COMMAND(
+    OUTPUT ${gen_src}
+    COMMAND ${PIO_TUTIL_GEN_PATH}/pio_tf_f90gen.pl --annotate-source --out=./${gen_src} ${CMAKE_CURRENT_SOURCE_DIR}/${gen_src}.in
+    DEPENDS ${gen_src}.in
+  )
+ENDFOREACH()
+
+ADD_EXECUTABLE(pio_init_finalize pio_init_finalize.F90 ${SRCS_PIO_TUTIL})
+TARGET_LINK_LIBRARIES(pio_init_finalize piof pioc)
+
+ADD_TEST(init_finalize_1_proc ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ./pio_init_finalize)
+ADD_TEST(init_finalize_2_proc ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 2 ./pio_init_finalize)
+ADD_TEST(init_finalize_2_proc_with_args ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 2 ./pio_init_finalize --pio-tf-stride=2 --pio-tf-num-aggregators=2)
+
+#ADD_EXECUTABLE(pio_fail pio_fail.F90 ${SRCS_PIO_TUTIL})
+#TARGET_LINK_LIBRARIES(pio_fail piof pioc)
+
+#ADD_TEST(even_ranks_fail ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 5 ./pio_fail)
+
+ADD_EXECUTABLE(pio_file_simple_tests pio_file_simple_tests.F90 ${SRCS_PIO_TUTIL})
+TARGET_LINK_LIBRARIES(pio_file_simple_tests piof pioc)
+
+ADD_TEST(pio_file_simple_tests ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 2 ./pio_file_simple_tests)
+
+ADD_EXECUTABLE(pio_file_fail pio_file_fail.F90 ${SRCS_PIO_TUTIL})
+TARGET_LINK_LIBRARIES(pio_file_fail piof pioc)
+
+ADD_TEST(pio_file_fail ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 2 ./pio_file_fail)
+
+ADD_EXECUTABLE(ncdf_simple_tests ncdf_simple_tests.F90 ${SRCS_PIO_TUTIL})
+TARGET_LINK_LIBRARIES(ncdf_simple_tests piof pioc)
+
+ADD_TEST(ncdf_simple_tests ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 2 ./ncdf_simple_tests)
+
+ADD_EXECUTABLE(ncdf_fail ncdf_fail.F90 ${SRCS_PIO_TUTIL})
+TARGET_LINK_LIBRARIES(ncdf_fail piof pioc)
+
+ADD_TEST(ncdf_fail ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 2 ./ncdf_fail)

@@ -1,0 +1,127 @@
+MODULE ncdf_simple_tests_tgv
+  use pio_tutil
+  ! tgv in prefix corresponds to module name (ncdf_simple_tests_tgv)
+  character(len=PIO_TF_MAX_STR_LEN), parameter :: tgv_fname = "pio_ncdf_test_file.nc"
+  integer :: tgv_iotype
+END MODULE ncdf_simple_tests_tgv
+
+PIO_TF_AUTO_TEST_SUB_BEGIN test_clobber
+  use ncdf_simple_tests_tgv
+  Implicit none
+  type(file_desc_t) :: pio_file
+  character(len=PIO_TF_MAX_STR_LEN), parameter :: clob_fname = "pio_test_clobber.nc"
+  integer :: ret
+  
+  ! Default is NOCLOBBER
+  ret = PIO_createfile(pio_tf_iosystem_, pio_file, tgv_iotype, clob_fname)
+  PIO_TF_CHECK_ERR(ret, "Failed to create:" // trim(clob_fname))
+
+  call PIO_closefile(pio_file)
+
+  ! Recrate with CLOBBER option - should erase existing file and create new one
+  ret = PIO_createfile(pio_tf_iosystem_, pio_file, tgv_iotype, clob_fname, PIO_CLOBBER)
+  PIO_TF_CHECK_ERR(ret, "Failed to create (with CLOBBER):" // trim(clob_fname))
+
+  call PIO_closefile(pio_file)
+  call PIO_deletefile(pio_tf_iosystem_, clob_fname)
+
+PIO_TF_AUTO_TEST_SUB_END test_clobber
+
+PIO_TF_AUTO_TEST_SUB_BEGIN test_redef_enddef
+  use ncdf_simple_tests_tgv
+  Implicit none
+  type(file_desc_t) :: pio_file
+  integer :: ret
+  
+  ret = PIO_openfile(pio_tf_iosystem_, pio_file, tgv_iotype, tgv_fname, PIO_write)
+  PIO_TF_CHECK_ERR(ret, "Failed to open:" // trim(tgv_fname))
+
+  ! A simple redef and then enddef
+  ret = PIO_redef(pio_file)
+  PIO_TF_CHECK_ERR(ret, "Failed to redef:" // trim(tgv_fname))
+
+  ret = PIO_enddef(pio_file)
+  PIO_TF_CHECK_ERR(ret, "Failed to enddef:" // trim(tgv_fname))
+
+  call PIO_closefile(pio_file)
+
+PIO_TF_AUTO_TEST_SUB_END test_redef_enddef
+
+PIO_TF_AUTO_TEST_SUB_BEGIN test_def_dim
+  use ncdf_simple_tests_tgv
+  Implicit none
+  type(file_desc_t) :: pio_file
+  integer :: pio_dim
+  integer :: ret
+  
+  ret = PIO_openfile(pio_tf_iosystem_, pio_file, tgv_iotype, tgv_fname, PIO_write)
+  PIO_TF_CHECK_ERR(ret, "Failed to open:" // trim(tgv_fname))
+
+  ! A simple redef and then enddef
+  ret = PIO_redef(pio_file)
+  PIO_TF_CHECK_ERR(ret, "Failed to redef:" // trim(tgv_fname))
+
+  ret = PIO_def_dim(pio_file, 'dummy_dim_def_dim', 100, pio_dim)
+  PIO_TF_CHECK_ERR(ret, "Failed to define dim:" // trim(tgv_fname))
+
+  ret = PIO_enddef(pio_file)
+  PIO_TF_CHECK_ERR(ret, "Failed to enddef:" // trim(tgv_fname))
+
+  call PIO_closefile(pio_file)
+
+PIO_TF_AUTO_TEST_SUB_END test_def_dim
+
+PIO_TF_AUTO_TEST_SUB_BEGIN test_def_var
+  use ncdf_simple_tests_tgv
+  Implicit none
+  type(file_desc_t) :: pio_file
+  type(var_desc_t)  :: pio_var
+  integer :: pio_dim
+  integer :: ret
+  
+  ret = PIO_openfile(pio_tf_iosystem_, pio_file, tgv_iotype, tgv_fname, PIO_write)
+  PIO_TF_CHECK_ERR(ret, "Failed to open:" // trim(tgv_fname))
+
+  ! A simple redef and then enddef
+  ret = PIO_redef(pio_file)
+  PIO_TF_CHECK_ERR(ret, "Failed to redef:" // trim(tgv_fname))
+
+  ret = PIO_def_dim(pio_file, 'dummy_dim_def_var', 100, pio_dim)
+  PIO_TF_CHECK_ERR(ret, "Failed to define dim:" // trim(tgv_fname))
+
+  ret = PIO_def_var(pio_file, 'dummy_var_def_var', PIO_int, (/pio_dim/), pio_var)
+  PIO_TF_CHECK_ERR(ret, "Failed to define var:" // trim(tgv_fname))
+
+  ret = PIO_enddef(pio_file)
+  PIO_TF_CHECK_ERR(ret, "Failed to enddef:" // trim(tgv_fname))
+
+  call PIO_closefile(pio_file)
+
+PIO_TF_AUTO_TEST_SUB_END test_def_var
+
+PIO_TF_TEST_DRIVER_BEGIN
+  use ncdf_simple_tests_tgv
+  Implicit none
+  type(file_desc_t) :: pio_file
+  integer :: ret, i
+  ! iotypes = valid NC types
+  integer, dimension(:), allocatable :: iotypes
+  character(len=PIO_TF_MAX_STR_LEN), dimension(:), allocatable :: iotype_descs
+  integer :: num_iotypes
+
+  num_iotypes = 0
+  call PIO_TF_Get_nc_iotypes(iotypes, iotype_descs, num_iotypes) 
+  do i=1,num_iotypes
+    tgv_iotype = iotypes(i)
+    ret = PIO_createfile(pio_tf_iosystem_, pio_file, tgv_iotype, tgv_fname)
+    PIO_TF_CHECK_ERR(ret, "Failed to create:"//trim(iotype_descs(i))//":"//trim(tgv_fname))
+
+    call PIO_closefile(pio_file)
+
+    ! Make sure that global variables are set correctly before running the tests
+    PIO_TF_AUTO_TESTS_RUN(trim(iotype_descs(i)))
+
+    call PIO_deletefile(pio_tf_iosystem_, tgv_fname)
+  end do
+
+PIO_TF_TEST_DRIVER_END

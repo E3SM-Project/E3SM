@@ -1,0 +1,500 @@
+! PIO Testing framework utilities module
+MODULE pio_tutil
+#ifndef NO_MPIMOD
+  USE mpi
+#else
+  include 'mpif.h'
+#endif
+  USE pio
+  IMPLICIT NONE
+  ! Error/Return values
+  INTEGER ::  pio_tf_nerrs_total_
+  INTEGER ::  pio_tf_retval_utest_
+  INTEGER, PARAMETER :: PIO_TF_ERR = 1
+
+  ! IO Processing stuff
+  INTEGER, PARAMETER :: MAX_STDIN_ARG_LEN=100
+  ENUM, BIND(C)
+    ENUMERATOR  ::  IARG_STRIDE_SIDX = 1
+    ENUMERATOR  ::  IARG_NUM_IO_TASKS_SIDX
+    ENUMERATOR  ::  IARG_NUM_AGGREGATORS_SIDX
+    ! Unfortunately since fortran starts with index 1 we need the
+    ! hack below. Don't forget to update when adding more argvs
+    ENUMERATOR  ::  NUM_IARGS = IARG_NUM_AGGREGATORS_SIDX
+    ENUMERATOR  ::  IARG_MAX_SIDX = NUM_IARGS
+  ENDENUM
+
+  ! PIO specific info
+  INTEGER :: pio_tf_stride_, pio_tf_num_io_tasks_, pio_tf_num_aggregators_
+  TYPE(iosystem_desc_t), save :: pio_tf_iosystem_
+
+  ! MPI info
+  INTEGER ::  pio_tf_world_rank_, pio_tf_world_sz_
+  INTEGER :: pio_tf_comm_
+
+  ! Misc constants
+  INTEGER, PARAMETER :: PIO_TF_MAX_STR_LEN=100
+
+  ! Logging
+  INTEGER :: pio_tf_log_level_
+  ! PIO_TF_TEST_RES_FMT is used for formatted test result output
+  ! -- Useful for writes like
+  ! HEADER_STRING, TEST_DESC, FOOTER_STRING, TEST_STATUS
+  ! "PIO_TF: Test no: 12", "Test name, desc etc", "-----", "PASSED" 
+  CHARACTER(LEN=*), PARAMETER :: PIO_TF_TEST_RES_FMT = "(A20,T22,A40,T64,A6,T72,A6)"
+  ! -- Useful for writes like
+  ! HEADER_STRING, NUMBER_OF_TESTS, FOOTER_STRING, TEST_STATUS
+  ! "PIO_TF: [", 3, "] -----", "FAILED" 
+  CHARACTER(LEN=*), PARAMETER :: PIO_TF_TEST_RES_FMT2 = "(A20,T22,I5,T28,A10,T62,A16)"
+  CHARACTER(LEN=PIO_TF_MAX_STR_LEN) :: pio_tf_tmp_log_str_
+
+  ! Access modifiers
+  ! Public variables
+  PUBLIC  :: pio_tf_nerrs_total_, pio_tf_retval_utest_
+  PUBLIC  :: pio_tf_iosystem_
+  PUBLIC  :: pio_tf_world_rank_, pio_tf_world_sz_
+  PUBLIC  :: pio_tf_log_level_
+  PUBLIC  :: PIO_TF_TEST_RES_FMT
+  PUBLIC  :: pio_tf_tmp_log_str_
+  PUBLIC  :: PIO_TF_MAX_STR_LEN
+  ! Public functions
+  PUBLIC  :: PIO_TF_Init_, PIO_TF_Finalize_, PIO_TF_Passert_
+  PUBLIC  :: PIO_TF_Is_netcdf
+  PUBLIC  :: PIO_TF_Get_nc_iotypes, PIO_TF_Get_undef_nc_iotypes
+  PUBLIC  :: PIO_TF_Get_iotypes, PIO_TF_Get_undef_iotypes
+
+CONTAINS
+  ! Initialize Testing framework - Internal (Not directly used by unit tests)
+  SUBROUTINE  PIO_TF_Init_
+    INTEGER ierr
+
+    CALL MPI_COMM_DUP(MPI_COMM_WORLD, pio_tf_comm_, ierr);
+    CALL MPI_COMM_RANK(pio_tf_comm_, pio_tf_world_rank_, ierr)
+    CALL MPI_COMM_SIZE(pio_tf_comm_, pio_tf_world_sz_, ierr)
+
+    pio_tf_log_level_ = 0
+    pio_tf_num_aggregators_ = 0
+    pio_tf_num_io_tasks_ = 0
+    pio_tf_stride_ = 1
+    ! Now read input args from rank 0 and bcast it
+    ! Args supported are --num-io-tasks, --num-aggregators,
+    !   --stride
+
+    CALL Read_input()
+    IF (pio_tf_num_io_tasks_ == 0) THEN
+      pio_tf_num_io_tasks_ = pio_tf_world_sz_ / pio_tf_stride_;
+    END IF
+    !IF (pio_tf_world_rank_ == 0) THEN
+    !  PRINT *, "PIO_TF: stride=", pio_tf_stride_, ", io_tasks=",&
+    !    pio_tf_num_io_tasks_, ", no of aggregators=", &
+    !    pio_tf_num_aggregators_
+    !END IF
+
+    ! FIXME: Do we need to test with different types of aggregators?
+    ! Initialize PIO
+    CALL PIO_init(pio_tf_world_rank_, &
+          pio_tf_comm_,               &
+          pio_tf_num_io_tasks_,       &
+          pio_tf_num_aggregators_,    &
+          pio_tf_stride_,             &
+          PIO_rearr_box,              &
+          pio_tf_iosystem_,           &
+          base=1)
+
+    ! Set PIO to bcast error
+    CALL PIO_seterrorhandling(pio_tf_iosystem_, PIO_BCAST_ERROR)
+  END SUBROUTINE PIO_TF_Init_
+
+  ! Finalize Testing framework - Internal (Not directly used by unit tests)
+  SUBROUTINE  PIO_TF_Finalize_
+    INTEGER ierr
+    IF (pio_tf_world_rank_ == 0) THEN
+      CALL MPI_REDUCE(MPI_IN_PLACE, pio_tf_nerrs_total_, 1, MPI_INTEGER, MPI_MAX, 0, pio_tf_comm_, ierr)
+    ELSE
+      CALL MPI_REDUCE(pio_tf_nerrs_total_, pio_tf_nerrs_total_, 1, MPI_INTEGER, MPI_MAX, 0, pio_tf_comm_, ierr)
+    END IF
+
+    ! Finalize PIO
+    CALL PIO_finalize(pio_tf_iosystem_, ierr);
+  END SUBROUTINE PIO_TF_Finalize_
+
+  ! Collective assert - Internal (Not directly used by unit tests)
+  ! Each processes passes in its local assert condition and the function
+  ! returns the global assert condition
+  LOGICAL FUNCTION PIO_TF_Passert_(local_result)
+    LOGICAL, INTENT(IN) ::  local_result
+    LOGICAL :: global_result
+    LOGICAL :: failed, all_failed
+    INTEGER :: rank, ierr
+    LOGICAL, DIMENSION(:), ALLOCATABLE :: failed_ranks
+
+    CALL MPI_ALLREDUCE(local_result, global_result, 1, MPI_LOGICAL, MPI_LAND, pio_tf_comm_, ierr)
+    IF (.NOT. global_result) THEN
+      failed = .NOT. local_result
+      IF (pio_tf_world_rank_ == 0) THEN
+        ALLOCATE(failed_ranks(pio_tf_world_sz_))
+      END IF
+      ! Gather the ranks where assertion failed
+      CALL MPI_GATHER(failed, 1, MPI_LOGICAL, failed_ranks, 1, MPI_LOGICAL, 0, pio_tf_comm_, ierr)
+
+      ! Display the ranks where the assertion failed
+      IF (pio_tf_world_rank_ == 0) THEN
+        all_failed = .TRUE.
+        DO rank=1,pio_tf_world_sz_
+          IF (.NOT. failed_ranks(rank)) THEN
+            all_failed = .FALSE.
+            ! Thank you - f90
+            EXIT
+          END IF
+        END DO
+        IF (all_failed) THEN
+          PRINT *, "PIO_TF: Fatal Error: Assertion failed on ALL processes"
+        ELSE
+          PRINT *, "PIO_TF: Fatal Error: Assertion failed on following processes: "
+          WRITE(*,"(A8)",ADVANCE="NO") "PIO_TF: "
+          DO rank=1,pio_tf_world_sz_
+            IF (failed_ranks(rank)) THEN
+              WRITE(*,"(I5,A)",ADVANCE="NO") rank-1, ","
+            END IF
+          END DO
+          PRINT *, ""
+        END IF
+      END IF
+    END IF
+
+    PIO_TF_Passert_ = global_result
+  END FUNCTION PIO_TF_Passert_
+
+  ! Returns true if iotype is a netcdf type, false otherwise
+  LOGICAL FUNCTION PIO_TF_Is_netcdf(iotype)
+    INTEGER,  INTENT(IN)  :: iotype
+    PIO_TF_Is_netcdf = (iotype == PIO_iotype_netcdf) .or. &
+                        (iotype == PIO_iotype_netcdf4p) .or. &
+                        (iotype == PIO_iotype_netcdf4c) .or. &
+                        (iotype == PIO_iotype_pnetcdf)
+
+  END FUNCTION PIO_TF_Is_netcdf
+
+  ! Returns a list of defined netcdf iotypes
+  ! iotypes : After the routine returns contains a list of defined
+  !             netcdf types
+  ! iotype_descs : After the routine returns contains description of
+  !                 the netcdf types returned in iotypes
+  ! num_iotypes : After the routine returns contains the number of
+  !                 of defined netcdf types, i.e., size of iotypes and
+  !                 iotype_descs arrays
+  SUBROUTINE PIO_TF_Get_nc_iotypes(iotypes, iotype_descs, num_iotypes)
+    INTEGER, DIMENSION(:), ALLOCATABLE, INTENT(OUT) :: iotypes
+    CHARACTER(LEN=*), DIMENSION(:), ALLOCATABLE, INTENT(OUT) :: iotype_descs
+    INTEGER, INTENT(OUT) :: num_iotypes
+    INTEGER :: i
+
+    num_iotypes = 0
+    ! First find the number of io types
+#ifdef _NETCDF4
+      ! netcdf, netcdf4p, netcdf4c
+      num_iotypes = num_iotypes + 3
+#elif _NETCDF
+      ! netcdf
+      num_iotypes = num_iotypes + 1
+#endif
+#ifdef _PNETCDF
+      ! pnetcdf
+      num_iotypes = num_iotypes + 1
+#endif
+
+    ! ALLOCATE with 0 elements ok?
+    ALLOCATE(iotypes(num_iotypes))
+    ALLOCATE(iotype_descs(num_iotypes))
+
+    i = 1
+#ifdef _NETCDF4
+      ! netcdf, netcdf4p, netcdf4c
+      iotypes(i) = PIO_iotype_netcdf
+      iotype_descs(i) = "NETCDF"
+      i = i + 1
+      iotypes(i) = PIO_iotype_netcdf4p
+      iotype_descs(i) = "NETCDF4P"
+      i = i + 1
+      iotypes(i) = PIO_iotype_netcdf4c
+      iotype_descs(i) = "NETCDF4C"
+      i = i + 1
+#elif _NETCDF
+      ! netcdf
+      iotypes(i) = PIO_iotype_netcdf
+      iotype_descs(i) = "NETCDF"
+      i = i + 1
+#endif
+#ifdef _PNETCDF
+      ! pnetcdf
+      iotypes(i) = PIO_iotype_pnetcdf
+      iotype_descs(i) = "PNETCDF"
+      i = i + 1
+#endif
+  END SUBROUTINE
+
+  ! Returns a list of undefined netcdf iotypes
+  ! e.g. This list could be used by a test to make sure that PIO
+  !       fails gracefully for undefined types
+  ! iotypes : After the routine returns contains a list of undefined
+  !             netcdf types
+  ! iotype_descs : After the routine returns contains description of
+  !                 the netcdf types returned in iotypes
+  ! num_iotypes : After the routine returns contains the number of
+  !                 of undefined netcdf types, i.e., size of iotypes and
+  !                 iotype_descs arrays
+  SUBROUTINE PIO_TF_Get_undef_nc_iotypes(iotypes, iotype_descs, num_iotypes)
+    INTEGER, DIMENSION(:), ALLOCATABLE, INTENT(OUT) :: iotypes
+    CHARACTER(LEN=*), DIMENSION(:), ALLOCATABLE, INTENT(OUT) :: iotype_descs
+    INTEGER, INTENT(OUT) :: num_iotypes
+    INTEGER :: i
+
+    num_iotypes = 0
+    ! First find the number of io types
+#ifndef _NETCDF
+      ! netcdf
+      num_iotypes = num_iotypes + 1
+#ifndef _NETCDF4
+        ! netcdf4p, netcdf4c
+        num_iotypes = num_iotypes + 2
+#endif
+#endif
+#ifndef _PNETCDF
+      ! pnetcdf
+      num_iotypes = num_iotypes + 1
+#endif
+
+    ! ALLOCATE with 0 elements ok?
+    ALLOCATE(iotypes(num_iotypes))
+    ALLOCATE(iotype_descs(num_iotypes))
+
+    i = 1
+#ifndef _NETCDF
+      ! netcdf
+      iotypes(i) = PIO_iotype_netcdf
+      iotype_descs(i) = "NETCDF"
+      i = i + 1
+#ifndef _NETCDF4
+        ! netcdf4p, netcdf4c
+        iotypes(i) = PIO_iotype_netcdf4p
+        iotype_descs(i) = "NETCDF4P"
+        i = i + 1
+        iotypes(i) = PIO_iotype_netcdf4c
+        iotype_descs(i) = "NETCDF4C"
+        i = i + 1
+#endif
+#endif
+#ifndef _PNETCDF
+      ! pnetcdf
+      iotypes(i) = PIO_iotype_pnetcdf
+      iotype_descs(i) = "PNETCDF"
+      i = i + 1
+#endif
+  END SUBROUTINE
+
+  ! Returns a list of defined iotypes
+  ! iotypes : After the routine returns contains a list of defined
+  !             types
+  ! iotype_descs : After the routine returns contains description of
+  !                 the types returned in iotypes
+  ! num_iotypes : After the routine returns contains the number of
+  !                 of defined types, i.e., size of iotypes and
+  !                 iotype_descs arrays
+  SUBROUTINE PIO_TF_Get_iotypes(iotypes, iotype_descs, num_iotypes)
+    INTEGER, DIMENSION(:), ALLOCATABLE, INTENT(OUT) :: iotypes
+    CHARACTER(LEN=*), DIMENSION(:), ALLOCATABLE, INTENT(OUT) :: iotype_descs
+    INTEGER, INTENT(OUT) :: num_iotypes
+    INTEGER :: i
+
+    ! First find the number of io types
+    ! binary
+    num_iotypes = 1
+#ifdef _USEMPIIO
+      ! pbinary, direct_pbinary
+      num_iotypes = num_iotypes + 2
+#endif
+#ifdef _NETCDF4
+      ! netcdf, netcdf4p, netcdf4c
+      num_iotypes = num_iotypes + 3
+#elif _NETCDF
+      ! netcdf
+      num_iotypes = num_iotypes + 1
+#endif
+#ifdef _PNETCDF
+      ! pnetcdf
+      num_iotypes = num_iotypes + 1
+#endif
+
+    ! ALLOCATE with 0 elements ok?
+    ALLOCATE(iotypes(num_iotypes))
+    ALLOCATE(iotype_descs(num_iotypes))
+
+    i = 1
+    iotypes(i) = PIO_iotype_binary
+    iotype_descs(i) = "BINARY"
+    i = i + 1
+
+#ifdef _USEMPIIO
+      ! pbinary, direct_pbinary
+      iotypes(i) = PIO_iotype_pbinary
+      iotype_descs(i) = "PBINARY"
+      i = i + 1
+      iotypes(i) = PIO_iotype_direct_pbinary
+      iotype_descs(i) = "DIRECT_PBINARY"
+      i = i + 1
+#endif
+#ifdef _NETCDF4
+      ! netcdf, netcdf4p, netcdf4c
+      iotypes(i) = PIO_iotype_netcdf
+      iotype_descs(i) = "NETCDF"
+      i = i + 1
+      iotypes(i) = PIO_iotype_netcdf4p
+      iotype_descs(i) = "NETCDF4P"
+      i = i + 1
+      iotypes(i) = PIO_iotype_netcdf4c
+      iotype_descs(i) = "NETCDF4C"
+      i = i + 1
+#elif _NETCDF
+      ! netcdf
+      iotypes(i) = PIO_iotype_netcdf
+      iotype_descs(i) = "NETCDF"
+      i = i + 1
+#endif
+#ifdef _PNETCDF
+      ! pnetcdf
+      iotypes(i) = PIO_iotype_pnetcdf
+      iotype_descs(i) = "PNETCDF"
+      i = i + 1
+#endif
+  END SUBROUTINE
+
+  ! Returns a list of undefined iotypes
+  ! e.g. This list could be used by a test to make sure that PIO
+  !       fails gracefully for undefined types
+  ! iotypes : After the routine returns contains a list of undefined
+  !             types
+  ! iotype_descs : After the routine returns contains description of
+  !                 the types returned in iotypes
+  ! num_iotypes : After the routine returns contains the number of
+  !                 of undefined types, i.e., size of iotypes and
+  !                 iotype_descs arrays
+  SUBROUTINE PIO_TF_Get_undef_iotypes(iotypes, iotype_descs, num_iotypes)
+    INTEGER, DIMENSION(:), ALLOCATABLE, INTENT(OUT) :: iotypes
+    CHARACTER(LEN=*), DIMENSION(:), ALLOCATABLE, INTENT(OUT) :: iotype_descs
+    INTEGER, INTENT(OUT) :: num_iotypes
+    INTEGER :: i
+
+    ! First find the number of io types
+    ! binary is always defined
+    num_iotypes = 0
+#ifndef _USEMPIIO
+      ! pbinary, direct_pbinary
+      num_iotypes = num_iotypes + 2
+#endif
+#ifndef _NETCDF
+      ! netcdf
+      num_iotypes = num_iotypes + 1
+#ifndef _NETCDF4
+      ! netcdf4p, netcdf4c
+      num_iotypes = num_iotypes + 2
+#endif
+#endif
+
+#ifndef _PNETCDF
+      ! pnetcdf
+      num_iotypes = num_iotypes + 1
+#endif
+
+    ! ALLOCATE with 0 elements ok?
+    ALLOCATE(iotypes(num_iotypes))
+    ALLOCATE(iotype_descs(num_iotypes))
+
+    i = 1
+#ifndef _USEMPIIO
+      ! pbinary, direct_pbinary
+      iotypes(i) = PIO_iotype_pbinary
+      iotype_descs(i) = "PBINARY"
+      i = i + 1
+      iotypes(i) = PIO_iotype_direct_pbinary
+      iotype_descs(i) = "DIRECT_PBINARY"
+      i = i + 1
+#endif
+#ifndef _NETCDF
+      ! netcdf
+      iotypes(i) = PIO_iotype_netcdf
+      iotype_descs(i) = "NETCDF"
+      i = i + 1
+#ifndef _NETCDF4
+      ! netcdf4p, netcdf4c
+      iotypes(i) = PIO_iotype_netcdf4p
+      iotype_descs(i) = "NETCDF4P"
+      i = i + 1
+      iotypes(i) = PIO_iotype_netcdf4c
+      iotype_descs(i) = "NETCDF4C"
+      i = i + 1
+#endif
+#endif
+
+#ifndef _PNETCDF
+      ! pnetcdf
+      iotypes(i) = PIO_iotype_pnetcdf
+      iotype_descs(i) = "PNETCDF"
+      i = i + 1
+#endif
+  END SUBROUTINE
+
+  ! Parse and process input arguments like "--pio-tf-stride=2" passed
+  ! to the unit tests - PRIVATE function
+  ! FIXME: Do we need to move input argument processing to a new module?
+  SUBROUTINE Parse_and_process_input(argv)
+    CHARACTER(LEN=*), INTENT(IN)  :: argv
+    INTEGER :: pos
+
+    ! All input arguments are of the form <INPUT_ARG_NAME>=<INPUT_ARG>
+    PRINT *, argv
+    pos = INDEX(argv, "=")
+    IF (pos == 0) THEN
+      ! Ignore unrecognized args
+      RETURN
+    ELSE
+      ! Check if it an input to PIO testing framework
+      IF (argv(:pos) == "--pio-tf-num-io-tasks=") THEN
+        READ(argv(pos+1:), *) pio_tf_num_io_tasks_
+      ELSE IF (argv(:pos) == "--pio-tf-num-aggregators=") THEN
+        READ(argv(pos+1:), *) pio_tf_num_aggregators_
+      ELSE IF (argv(:pos) == "--pio-tf-stride=") THEN
+        READ(argv(pos+1:), *) pio_tf_stride_
+      ELSE IF (argv(:pos) == "--pio-tf-input-file=") THEN
+        PRINT *, "This option is not implemented yet"
+      END IF
+    END IF
+
+  END SUBROUTINE Parse_and_process_input
+
+  ! Read input arguments - command line, namelist files - common
+  ! to all unit test cases and make sure all MPI processes have
+  ! access to it - PRIVATE function
+  SUBROUTINE Read_input()
+    INTEGER :: i, nargs, ierr
+    CHARACTER(LEN=MAX_STDIN_ARG_LEN) :: argv
+    ! Need to send pio_tf_stride_, pio_tf_num_io_tasks_, pio_tf_num_aggregators_
+    INTEGER :: send_buf(NUM_IARGS)
+
+    IF (pio_tf_world_rank_ == 0) THEN
+      nargs = COMMAND_ARGUMENT_COUNT()
+      DO i=1, nargs
+        CALL GET_COMMAND_ARGUMENT(i, argv)
+        CALL Parse_and_process_input(argv)
+      END DO
+      send_buf(IARG_STRIDE_SIDX) = pio_tf_stride_
+      send_buf(IARG_NUM_IO_TASKS_SIDX) = pio_tf_num_io_tasks_
+      send_buf(IARG_NUM_AGGREGATORS_SIDX) = pio_tf_num_aggregators_
+    END IF
+    ! Make sure all processes get the input args
+    CALL MPI_BCAST(send_buf, NUM_IARGS, MPI_INTEGER, 0, pio_tf_comm_, ierr)
+    pio_tf_stride_ = send_buf(IARG_STRIDE_SIDX)
+    pio_tf_num_io_tasks_ = send_buf(IARG_NUM_IO_TASKS_SIDX)
+    pio_tf_num_aggregators_ = send_buf(IARG_NUM_AGGREGATORS_SIDX)
+
+  END SUBROUTINE Read_input
+END MODULE pio_tutil
