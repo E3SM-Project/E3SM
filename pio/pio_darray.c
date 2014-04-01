@@ -24,7 +24,6 @@ PIO_Offset PIOc_set_buffer_size_limit(const PIO_Offset limit)
 int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void *IOBUF, void *fillvalue)
 {
   iosystem_desc_t *ios;
-  PIO_Offset *start, *count;
   var_desc_t *vdesc;
   int ndims;
   int ierr;
@@ -66,47 +65,39 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, voi
     void *bufptr;
     void *tmp_buf=NULL;
     int tsize;
+    size_t start[ndims+1];
+    size_t count[ndims+1];
 
     MPI_Type_size(iodesc->basetype, &tsize);
     region = iodesc->firstregion;
 
     if(vdesc->record >= 0)
       ndims++;
-    start = (PIO_Offset *) calloc(ndims, sizeof(PIO_Offset));
-    count = (PIO_Offset *) calloc(ndims, sizeof(PIO_Offset));
 
     for(regioncnt=0;regioncnt<iodesc->maxregions;regioncnt++){
-      // this is a time dependent multidimensional array
-      bufptr = IOBUF+tsize*region->loffset;
-
-      if(vdesc->record >= 0){
-	if(region != NULL){
+      if(region == NULL){
+	  for(int i=0;i<ndims;i++){
+	    start[i] = 0;
+	    count[i] = 0;
+	  }
+      }else{
+	bufptr = IOBUF+tsize*region->loffset;
+	// this is a time dependent multidimensional array
+	if(vdesc->record >= 0){
 	  start[0] = vdesc->record;
 	  count[0] = 1;
 	  for(int i=1;i<ndims;i++){
 	    start[i] = region->start[i-1];
 	    count[i] = region->count[i-1];
 	  }
-	}else{
-	  for(int i=0;i<ndims;i++){
-	    start[i] = 0;
-	    count[i] = 0;
-	  }
-	}
 	// Non-time dependent array
-      }else{
-	if(region!=NULL){
+	}else{
 	  for(int i=0;i<ndims;i++){
 	    start[i] = region->start[i];
 	    count[i] = region->count[i];
 	  }
-	}else{
-	  for(int i=0;i<ndims;i++){
-	    start[i] = 0;
-	    count[i] = 0;
-	  }
 	}
-    }      
+      }
 
       switch(file->iotype){
 #ifdef _NETCDF
@@ -195,6 +186,8 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, voi
 			       dsize, iodesc->basetype, &request);
 	pio_push_request(file,request);
 	
+	// This code should be moved outside the region block
+
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	MPI_Allreduce(MPI_IN_PLACE, &usage, 1,  MPI_LONG_LONG,  MPI_MAX, ios->io_comm);
 	if(usage >= PIO_BUFFER_SIZE_LIMIT){
@@ -209,18 +202,13 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, voi
     
       if(region->next != NULL)
 	region = region->next;
-    }
+    } //    for(regioncnt=0;regioncnt<iodesc->maxregions;regioncnt++){
     if(tmp_buf != NULL && tmp_buf != bufptr)
       free(tmp_buf);
 
 
-  }
+  } // if(ios->ioproc)
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
-
-
-
-
-
   return ierr;
 }
 
@@ -526,11 +514,6 @@ int PIOc_read_darray(const int ncid, const int vid, const int ioid, const PIO_Of
   return ierr;
 
 }
-
-
-
-
-
 
 int flush_output_buffer(file_desc_t *file)
 {

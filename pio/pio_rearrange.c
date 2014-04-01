@@ -391,11 +391,11 @@ int compute_counts(const iosystem_desc_t ios, io_desc_t *iodesc, const int dest_
 
   ierr = pio_swapm( s2rindex, send_counts, send_displs, sr_types, 
 		    iodesc->rindex, recv_counts, recv_displs, sr_types,
-		    ios.union_comm, true, true, 0);//MAX_GATHER_BLOCK_SIZE);
+		    ios.union_comm, true, false, MAX_GATHER_BLOCK_SIZE);
 
   //  rindex is an array of the indices of the data to be sent from
   //  this io task to each compute task. 
-  
+  /* 
   if(ios.ioproc){
     printf("%d rindex: ",ios.io_rank);
     for(int j=0;j<iodesc->llen;j++)
@@ -415,7 +415,7 @@ int compute_counts(const iosystem_desc_t ios, io_desc_t *iodesc, const int dest_
   }
   MPI_Barrier(MPI_COMM_WORLD);
   MPI_Abort(MPI_COMM_WORLD,0);
-  
+*/  
   iodesc->rtype = NULL;
   iodesc->stype = NULL;
 
