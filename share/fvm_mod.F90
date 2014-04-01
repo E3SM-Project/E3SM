@@ -68,10 +68,12 @@ contains
     type (TimeLevel_t)                          :: tl              ! time level struct
     type (derivative_t)                         :: deriv           ! derivative struct
     
-    real (kind=real_kind)   , dimension(10*(nc+2*nhe)*(nc+2*nhe),6,2)  :: weights_all
-    integer (kind=int_kind),  dimension(10*(nc+2*nhe)*(nc+2*nhe),2,2)  :: weights_eul_index_all
-    integer (kind=int_kind),  dimension(10*(nc+2*nhe)*(nc+2*nhe),2,2)  :: weights_lgr_index_all
+    real (kind=real_kind)   , dimension(4*(nc+2*nhe)*(nc+nhe),6,2)  :: weights_all
+    integer (kind=int_kind),  dimension(4*(nc+2*nhe)*(nc+nhe),2,2)  :: weights_eul_index_all
+    integer (kind=int_kind),  dimension(4*(nc+2*nhe)*(nc+nhe),2,2)  :: weights_lgr_index_all
     integer (kind=int_kind), dimension(2)                            :: jall
+
+    integer (kind=int_kind)                            :: jall_max !dbg
     
     real (kind=real_kind), dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe)      :: recons
     
@@ -121,7 +123,9 @@ contains
 !    write(*,*) "xxx",tl%nstep
 !    if (tl%nstep==179) ldbg = .true.
 
-    
+
+
+    jall_max=0
     do ie=nets, nete
        do k=1,nlev
           !
@@ -138,8 +142,18 @@ contains
 !          end if
 
           call compute_weights_fluxform(fvm(ie),6,weights_all,weights_eul_index_all, &
-             weights_lgr_index_all,k,jall)     
+             weights_lgr_index_all,k,jall)
+          if (jall(1)>4*(nc+2*nhe)*(nc+nhe)) then
+             write(*,*) "jall(1)>4*(nc+2*nhe)*(nc+nhe)"
+             stop
+          endif
+          if (jall(2)>4*(nc+2*nhe)*(nc+nhe)) then
+             write(*,*) "jall(2)>4*(nc+2*nhe)*(nc+nhe)"
+             stop
+          endif
 
+!          if (jall(1)>jall_max) jall_max=jall(1)
+!          if (jall(2)>jall_max) jall_max=jall(2)
 
 !          if (.false.) then
 !             !
@@ -177,10 +191,10 @@ contains
           ! do remapping for x (j=1) and y (j=2) fluxes
           !
           do j=1,2
-             call cslam_remap(tracer_air0,flux_air(:,:,j),weights_all(:,:,j), &
+             call cslam_remap(tracer_air0,flux_air(:,:,j),weights_all(1:jall(j),:,j), &
                   recons, &
-                  fvm(ie)%spherecentroid, weights_eul_index_all(:,:,j),&
-                  weights_lgr_index_all(:,:,j), jall(j),1)  
+                  fvm(ie)%spherecentroid, weights_eul_index_all(1:jall(j),:,j),&
+                  weights_lgr_index_all(1:jall(j),:,j), jall(j),1)  
           end do
           
           
@@ -209,10 +223,10 @@ contains
              ! do remapping for x (j=1) and y (j=2) fluxes
              !
              do j=1,2
-                call cslam_remap_q(tracer0,flux_tracer(:,:,j),weights_all(:,:,j), &
+                call cslam_remap_q(tracer0,flux_tracer(:,:,j),weights_all(1:jall(j),:,j), &
                      recons, &
-                     fvm(ie)%spherecentroid, weights_eul_index_all(:,:,j),&
-                     weights_lgr_index_all(:,:,j), jall(j))  
+                     fvm(ie)%spherecentroid, weights_eul_index_all(1:jall(j),:,j),&
+                     weights_lgr_index_all(1:jall(j),:,j), jall(j))  
              end do
              !
              ! forecast equation for tracer (kg/kg)
@@ -240,6 +254,7 @@ contains
        call ghostVpack(cellghostbuf, fvm(ie)%c,nhc,nc,nlev,ntrac,0,tl%np1,timelevels,elem(ie)%desc)
     end do
 !    write(*,*) "done flux-form time-step run"
+!    write(*,*) "jall_max ",tl%nstep,jall_max
     !  stop
     call t_stopf('Fluxform-CSLAM scheme')
     call t_startf('FVM Communication')
@@ -337,8 +352,8 @@ contains
           
           tracer_air1=0.0D0   
           
-          call cslam_remap(tracer_air0,tracer_air1,weights_all, recons_air, &
-               fvm(ie)%spherecentroid, weights_eul_index_all, weights_lgr_index_all, jall,0)
+          call cslam_remap(tracer_air0,tracer_air1,weights_all(1:jall,:), recons_air, &
+               fvm(ie)%spherecentroid, weights_eul_index_all(1:jall,:), weights_lgr_index_all(1:jall,:), jall,0)
           ! finish scheme
           do j=1,nc
              do i=1,nc
@@ -356,8 +371,8 @@ contains
              
              !         call cslam_remap(tracer0,tracer1,weights_all, recons, &
              !                    fvm(ie)%spherecentroid, weights_eul_index_all, weights_lgr_index_all, jall)                   
-             call cslam_remap_air(tracer0,tracer1,tracer_air0,weights_all, recons,recons_air,&
-                  fvm(ie)%spherecentroid,weights_eul_index_all, weights_lgr_index_all, jall)  
+             call cslam_remap_air(tracer0,tracer1,tracer_air0,weights_all(1:jall,:), recons,recons_air,&
+                  fvm(ie)%spherecentroid,weights_eul_index_all(1:jall,:), weights_lgr_index_all(1:jall,:), jall)  
              ! finish scheme
              do j=1,nc
                 do i=1,nc
@@ -464,8 +479,8 @@ contains
              call reconstruction(tracer0, fvm(ie),recons)
              call monotonic_gradient_cart(tracer0, fvm(ie),recons, elem(ie)%desc)
              tracer1=0.0D0   
-             call cslam_remap(tracer0,tracer1,weights_all, recons, &
-                  fvm(ie)%spherecentroid, weights_eul_index_all, weights_lgr_index_all, jall,0)
+             call cslam_remap(tracer0,tracer1,weights_all(1:jall,:), recons, &
+                  fvm(ie)%spherecentroid, weights_eul_index_all(1:jall,:), weights_lgr_index_all(1:jall,:), jall,0)
              ! finish scheme
              do j=1,nc
                 do i=1,nc
@@ -595,11 +610,11 @@ contains
     
     real (kind=real_kind), intent(in)           :: tracer0(1-nhc:nc+nhc,1-nhc:nc+nhc)
     real (kind=real_kind), intent(inout)        :: tracer1(1:nc+iflux,1:nc+iflux)
-    real (kind=real_kind), intent(in)           :: weights(10*(nc+2*nhe)*(nc+2*nhe),6)
+    real (kind=real_kind), intent(in)           :: weights(jall,6)
     real (kind=real_kind), intent(in)           :: recons(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
     real (kind=real_kind), intent(in)           :: centroid(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
-    integer (kind=int_kind), intent(in)        :: weights_eul_index_all(10*(nc+2*nhe)*(nc+2*nhe),2)
-    integer (kind=int_kind), intent(in)        :: weights_lgr_index_all(10*(nc+2*nhe)*(nc+2*nhe),2)
+    integer (kind=int_kind), intent(in)        :: weights_eul_index_all(jall,2)
+    integer (kind=int_kind), intent(in)        :: weights_lgr_index_all(jall,2)
     integer (kind=int_kind), intent(in)        :: jall  
     integer (kind=int_kind), intent(in)        :: iflux !to accomodate flux call  
     
@@ -640,11 +655,11 @@ contains
     
     real (kind=real_kind), intent(in)           :: tracer0(1-nhc:nc+nhc,1-nhc:nc+nhc)
     real (kind=real_kind), intent(inout)        :: flux(1:nc+1,1:nc+1)
-    real (kind=real_kind), intent(in)           :: weights(10*(nc+2*nhe)*(nc+2*nhe),6)
+    real (kind=real_kind), intent(in)           :: weights(jall,6)
     real (kind=real_kind), intent(in)           :: recons(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
     real (kind=real_kind), intent(in)           :: centroid(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
-    integer (kind=int_kind), intent(in)        :: weights_eul_index_all(10*(nc+2*nhe)*(nc+2*nhe),2)
-    integer (kind=int_kind), intent(in)        :: weights_lgr_index_all(10*(nc+2*nhe)*(nc+2*nhe),2)
+    integer (kind=int_kind), intent(in)        :: weights_eul_index_all(jall,2)
+    integer (kind=int_kind), intent(in)        :: weights_lgr_index_all(jall,2)
     integer (kind=int_kind), intent(in)        :: jall  
     
     real (kind=real_kind)        :: flux_area(1:nc+1,1:nc+1)
@@ -766,10 +781,10 @@ contains
     real (kind=real_kind), intent(in)           :: recons(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
     real (kind=real_kind), intent(in)           :: recons_air(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
     
-    real (kind=real_kind), intent(in)           :: weights(10*(nc+2*nhe)*(nc+2*nhe),6)
+    real (kind=real_kind), intent(in)           :: weights(jall,6)
     real (kind=real_kind), intent(in)           :: centroid(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
-    integer (kind=int_kind), intent(in)         :: weights_eul_index_all(10*(nc+2*nhe)*(nc+2*nhe),2)
-    integer (kind=int_kind), intent(in)         :: weights_lgr_index_all(10*(nc+2*nhe)*(nc+2*nhe),2)
+    integer (kind=int_kind), intent(in)         :: weights_eul_index_all(jall,2)
+    integer (kind=int_kind), intent(in)         :: weights_lgr_index_all(jall,2)
     integer (kind=int_kind), intent(in)         :: jall  
     
     integer                                     :: h, jx, jy, jdx, jdy    
@@ -986,22 +1001,22 @@ contains
     type (cartesian2D_t)                 :: dcart(nc+1,nc+1)
     
     
-    ! for the benchmark test, use more accurate departure point creation
-#if 0 
-    !CE: define new mesh for fvm fvm on an equal angular grid
-    ! go from alpha,beta -> cartesian xy on cube -> lat lon on the sphere
-    ! #ifdef _FVM
+!phl    ! for the benchmark test, use more accurate departure point creation
+!phl#if 0 
+!phl    !CE: define new mesh for fvm fvm on an equal angular grid
+!phl    ! go from alpha,beta -> cartesian xy on cube -> lat lon on the sphere
+!phl    ! #ifdef _FVM
     do j=1,nc+1
        do i=1,nc+1               
           !         call solidbody(fvm%asphere(i,j), fvm%dsphere(i,j,klev))
           call boomerang(fvm%asphere(i,j), fvm%dsphere(i,j,klev),tl%nstep)
        end do
     end do
-    ! #endif
-#else
-    ! for given velocities in the element structure
-    call fvm_dep_from_gll(elem, deriv, fvm%asphere,fvm%dsphere,dt,tl,klev)    
-#endif
+!phl    ! #endif
+!phl#else
+!phl    ! for given velocities in the element structure
+!phl    call fvm_dep_from_gll(elem, deriv, fvm%asphere,fvm%dsphere,dt,tl,klev)    
+!phl#endif
     
     if (test_cfldep) then
        call check_departurecell(fvm,klev) 
