@@ -1,5 +1,13 @@
 MODULE ncdf_fail_tgv
   use pio_tutil
+#ifndef NO_MPIMOD
+  USE mpi
+#endif
+  implicit none	
+#ifdef NO_MPIMOD
+  include 'mpif.h'
+#endif
+
   ! tgv = test global vars
   character(len=PIO_TF_MAX_STR_LEN), parameter :: tgv_fname = "pio_ncdf_test_file.nc"
   integer :: tgv_iotype

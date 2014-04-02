@@ -14,8 +14,8 @@ sub host{
     my $host = `hostname -f`;
     $host = `hostname` if($?);
 #HOST SPECIFIC START
-    if($host =~ /intrepid/){
-	$host = "intrepid";
+    if($host =~ /^goldbach/){
+	$host = "goldbach";
     }elsif($host =~ /^fr\d+en/){
 	$host = "frost";
     }elsif($host =~ /^eos/){
@@ -146,6 +146,7 @@ sub loadmodules{
 #HOST SPECIFIC START
     my $modpath = {
 		   erebus => "/usr/share/Modules/",
+		   goldbach => "/usr/share/Modules/",
 		   yellowstone => "/glade/apps/opt/modulefiles",
 		   yellowstone_pgi => "/glade/apps/opt/modulefiles",
 		   yellowstone_gnu => "/glade/apps/opt/modulefiles",
@@ -217,14 +218,16 @@ sub loadmodules{
     }elsif($host =~ "columbia"){
         module(" load pd-netcdf.3.6.2");
 !        module(" load pd-pnetcdf.1.1.1");
-    }elsif($host =~ "lynx_intel"){
-	require "/opt/modules/default/init/perl";
-	module_check($modpath,$host);
-	module(" rm PrgEnv-pgi ");
-	module(" load PrgEnv-intel");
-	module(" switch intel intel/12.1.0");
-        module(" load INTEL/netcdf4/4.1.3_seq");
-        module(" load pnetcdf/1.2.0");
+    }elsif($host =~ "goldbach"){
+	require "/usr/share/Modules/init/perl.pm";
+	module(" purge");
+#	module_check($modpath,$host);
+	module(" load compiler/gnu/4.4.7");
+	module(" load tool/netcdf/4.3.0/gcc");
+	module(" load mpi/gcc/openmpi-1.4.3-qlc");
+#	module(" load compiler/nag/5.3.1-907");
+#	module(" load mpi/nag/openmpi-1.6.5");
+#	module(" load tool/netcdf/4.3.0/nag");
 	module(" list");
     }elsif($host =~ "hopper_gnu"){
 	require "/opt/modules/default/init/perl";
@@ -366,6 +369,12 @@ sub hostmods{
 	$filesystem = "lustre";
 	$cc = "cc";
 	$fc = "ftn";
+    }
+    if($host =~ /^goldbach/){
+	$scratch = "/scratch/cluster/$ENV{USER}/testpio";
+	$netcdf = $ENV{NETCDF_PATH};
+	$cc = "mpicc";
+	$fc = "mpif90";
     }
     return ($scratch,$netcdf,$pnetcdf,$cc,$fc,$filesystem);
 }

@@ -45,24 +45,14 @@ sub transform_src
   $$ref_modif = 1;
   if(/^(\s*)(PIO_TF_TEST_SUB_BEGIN)(.*)$/s){
     $out_line = $1 . "SUBROUTINE" . $3 . "\n";
-    $out_line = $out_line . $1 . "#ifndef NO_MPIMOD\n";
-    $out_line = $out_line . $1 . "  USE mpi\n";
-    $out_line = $out_line . $1 . "#else\n";
-    $out_line = $out_line . $1 . "  include 'mpif.h'\n";
-    $out_line = $out_line . $1 . "#endif\n";
-    $out_line = $out_line . $1 . "  USE pio_tutil";
+    $out_line = $out_line . $1 . "  USE pio_tutil\n";
   }
   elsif(/^(\s*)(PIO_TF_TEST_SUB_END)(.*)$/s){
     $out_line = $1 . "END SUBROUTINE" . $3;
   }
   elsif(/^(\s*)(PIO_TF_AUTO_TEST_SUB_BEGIN)(\s*)(.*)$/s){
     $out_line = $1 . "SUBROUTINE" . $3 . $4 . "\n";
-    $out_line = $out_line . $1 . "#ifndef NO_MPIMOD\n";
-    $out_line = $out_line . $1 . "  USE mpi\n";
-    $out_line = $out_line . $1 . "#else\n";
-    $out_line = $out_line . $1 . "  include 'mpif.h'\n";
-    $out_line = $out_line . $1 . "#endif\n";
-    $out_line = $out_line . $1 . "  USE pio_tutil";
+    $out_line = $out_line . $1 . "  USE pio_tutil\n";
     $template_has_auto_funcs = 1;
 
     # Add auto test func into the auto func list
@@ -73,12 +63,7 @@ sub transform_src
   }
   elsif(/^(\s*)(PIO_TF_TEST_DRIVER_BEGIN)(.*)$/s){
     $out_line = $1 . "SUBROUTINE PIO_TF_Test_driver_" . $3 . "\n";
-    $out_line = $out_line . $1 . "#ifndef NO_MPIMOD\n";
-    $out_line = $out_line . $1 . "  USE mpi\n";
-    $out_line = $out_line . $1 . "#else\n";
-    $out_line = $out_line . $1 . "  include 'mpif.h'\n";
-    $out_line = $out_line . $1 . "#endif\n";
-    $out_line = $out_line . $1 . "  USE pio_tutil";
+    $out_line = $out_line . $1 . "  USE pio_tutil\n";
     $template_has_test_driver = 1;
   }
   elsif(/^(\s*)(PIO_TF_TEST_DRIVER_END)(.*)$/s){
@@ -246,11 +231,6 @@ sub get_default_test_main
   my($out_line);
   $out_line = "\n\n";
   $out_line = $out_line . "  PROGRAM PIO_TF_Test_main_\n";
-  $out_line = $out_line . "#ifndef NO_MPIMOD\n";
-  $out_line = $out_line . "    USE mpi\n";
-  $out_line = $out_line . "#else\n";
-  $out_line = $out_line . "    include 'mpif.h'\n";
-  $out_line = $out_line . "#endif\n";
   $out_line = $out_line . "    USE pio_tutil\n";
   $out_line = $out_line . "    IMPLICIT NONE\n";
   $out_line = $out_line . "    INTEGER ierr\n";
@@ -293,11 +273,6 @@ sub get_default_test_driver
 
   $out_line = "\n\n";
   $out_line = $out_line . "  SUBROUTINE PIO_TF_Test_driver_\n";
-  $out_line = $out_line . "#ifndef NO_MPIMOD\n";
-  $out_line = $out_line . "    USE mpi\n";
-  $out_line = $out_line . "#else\n";
-  $out_line = $out_line . "    include 'mpif.h'\n";
-  $out_line = $out_line . "#endif\n";
   $out_line = $out_line . "    USE pio_tutil\n";
   $out_line = $out_line . "    IMPLICIT NONE\n";
   if($template_auto_funcs_inserted == 1){

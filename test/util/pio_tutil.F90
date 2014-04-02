@@ -1,10 +1,5 @@
 ! PIO Testing framework utilities module
 MODULE pio_tutil
-#ifndef NO_MPIMOD
-  USE mpi
-#else
-  include 'mpif.h'
-#endif
   USE pio
   IMPLICIT NONE
   ! Error/Return values
@@ -66,6 +61,11 @@ MODULE pio_tutil
 CONTAINS
   ! Initialize Testing framework - Internal (Not directly used by unit tests)
   SUBROUTINE  PIO_TF_Init_
+#ifndef NO_MPIMOD
+    use mpi
+#else
+    include 'mpif.h'
+#endif
     INTEGER ierr
 
     CALL MPI_COMM_DUP(MPI_COMM_WORLD, pio_tf_comm_, ierr);
@@ -107,6 +107,11 @@ CONTAINS
 
   ! Finalize Testing framework - Internal (Not directly used by unit tests)
   SUBROUTINE  PIO_TF_Finalize_
+#ifndef NO_MPIMOD
+    use mpi
+#else
+    include 'mpif.h'
+#endif
     INTEGER ierr
     IF (pio_tf_world_rank_ == 0) THEN
       CALL MPI_REDUCE(MPI_IN_PLACE, pio_tf_nerrs_total_, 1, MPI_INTEGER, MPI_MAX, 0, pio_tf_comm_, ierr)
@@ -122,6 +127,11 @@ CONTAINS
   ! Each processes passes in its local assert condition and the function
   ! returns the global assert condition
   LOGICAL FUNCTION PIO_TF_Passert_(local_result)
+#ifndef NO_MPIMOD
+    use mpi
+#else
+    include 'mpif.h'
+#endif
     LOGICAL, INTENT(IN) ::  local_result
     LOGICAL :: global_result
     LOGICAL :: failed, all_failed
@@ -475,6 +485,11 @@ CONTAINS
   ! to all unit test cases and make sure all MPI processes have
   ! access to it - PRIVATE function
   SUBROUTINE Read_input()
+#ifndef NO_MPIMOD
+    use mpi
+#else
+    include 'mpif.h'
+#endif
     INTEGER :: i, nargs, ierr
     CHARACTER(LEN=MAX_STDIN_ARG_LEN) :: argv
     ! Need to send pio_tf_stride_, pio_tf_num_io_tasks_, pio_tf_num_aggregators_

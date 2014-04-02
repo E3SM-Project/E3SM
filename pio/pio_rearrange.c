@@ -831,7 +831,6 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, const PI
   for(i=ndims-2;i>=0; i--)
     gstride[i]=gstride[i+1]*gsize[i+1];
 
-
   // Each compute task sends to only one IO task
   dioproc = ios.comp_rank/taskratio;
   for(i=0;i<maplen;i++){
@@ -913,7 +912,8 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, const PI
 
   pio_swapm(compmap, sndlths, sdispls, dtypes, 
 	    iomap, recvlths, rdispls, dtypes, 
-	    ios.union_comm, hs, isend, MAX_GATHER_BLOCK_SIZE);
+	    ios.union_comm, hs, true, MAX_GATHER_BLOCK_SIZE);
+
 
   if(ios.ioproc){
     int cnt[nprocs];
@@ -951,6 +951,9 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, const PI
   pio_swapm(destoffset, recvlths, rdispls, dtypes, 
 	    dest_ioindex, sndlths, sdispls, dtypes, 
 	    ios.union_comm, hs, isend, MAX_GATHER_BLOCK_SIZE);
+
+  MPI_Barrier(MPI_COMM_WORLD);
+
 
   compute_counts(ios, iodesc, dest_ioproc, dest_ioindex);
 

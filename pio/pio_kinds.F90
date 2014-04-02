@@ -27,7 +27,11 @@
    implicit none
    private
 #ifdef NO_MPIMOD
-   include 'mpif.h'   ! _EXTERNAL
+#include <mpif.h>
+
+#ifndef MPI_OFFSET
+#define MPI_OFFSET	MPI_INTEGER8
+#endif
 #endif
 ! !DEFINED PARAMETERS:
 
