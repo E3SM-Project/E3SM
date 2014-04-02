@@ -1,13 +1,13 @@
-	<nml_record name="ocn_am_global_stats" in_defaults="true">
-		<nml_option name="config_ocn_am_global_stats" type="logical" default_value=".false." units="unitless"
+	<nml_record name="global_stats" in_defaults="true">
+		<nml_option name="config_use_global_stats" type="logical" default_value=".false." units="unitless"
 			description="If true, ocean analysis member global_stats is called."
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_ocn_am_global_stats_compute_interval" type="character" default_value="same_as_output" units="unitless"
+		<nml_option name="config_global_stats_compute_interval" type="character" default_value="same_as_output" units="unitless"
 			description="Timestamp determining how often analysis member computation should be performed."
 			possible_values="'DDDD_HH:MM:SS', 'same_as_output'"
 		/>
-		<nml_option name="config_ocn_am_global_stats_compute_startup" type="logical" default_value=".true." units="unitless"
+		<nml_option name="config_global_stats_compute_startup" type="logical" default_value=".true." units="unitless"
 			description="Logical flag determining if an analysis member computation occurs on start-up."
 			possible_values=".true. or .false."
 		/>

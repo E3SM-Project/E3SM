@@ -7,7 +7,7 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  ocn_am_zonal_mean
+!  ocn_zonal_mean
 !
 !> \brief MPAS ocean analysis core member: zonal_mean
 !> \author Mark Petersen
@@ -18,7 +18,7 @@
 !
 !-----------------------------------------------------------------------
 
-module ocn_am_zonal_mean
+module ocn_zonal_mean
 
    use mpas_configure
    use mpas_grid_types
@@ -44,13 +44,13 @@ module ocn_am_zonal_mean
    !
    !--------------------------------------------------------------------
 
-   public :: ocn_am_setup_packages_zonal_mean, &
-             ocn_am_init_zonal_mean, &
-             ocn_am_init_alarms_zonal_mean, &
-             ocn_am_compute_zonal_mean, &
-             ocn_am_write_zonal_mean, &
-             ocn_am_restart_zonal_mean, &
-             ocn_am_finalize_zonal_mean
+   public :: ocn_setup_packages_zonal_mean, &
+             ocn_init_zonal_mean, &
+             ocn_init_alarms_zonal_mean, &
+             ocn_compute_zonal_mean, &
+             ocn_write_zonal_mean, &
+             ocn_restart_zonal_mean, &
+             ocn_finalize_zonal_mean
 
    !--------------------------------------------------------------------
    !
@@ -58,6 +58,7 @@ module ocn_am_zonal_mean
    !
    !--------------------------------------------------------------------
 
+   integer :: nZonalMeanBinsUsed
    type (timer_node), pointer :: amZonalMeanTimer
 
 !***********************************************************************
@@ -66,7 +67,7 @@ contains
 
 !***********************************************************************
 !
-!  routine ocn_am_setup_packages_zonal_mean
+!  routine ocn_setup_packages_zonal_mean
 !
 !> \brief   Set up packages for MPAS-Ocean analysis member
 !> \author  Mark Petersen
@@ -77,7 +78,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_am_setup_packages_zonal_mean(err)!{{{
+   subroutine ocn_setup_packages_zonal_mean(err)!{{{
 
       use mpas_packages
 
@@ -112,12 +113,12 @@ contains
       ! turn on package for this analysis member
       amZonalMeanActive = .true.
 
-   end subroutine ocn_am_setup_packages_zonal_mean!}}}
+   end subroutine ocn_setup_packages_zonal_mean!}}}
 
 
 !***********************************************************************
 !
-!  routine ocn_am_init_zonal_mean
+!  routine ocn_init_zonal_mean
 !
 !> \brief   Initialize MPAS-Ocean analysis member
 !> \author  Mark Petersen
@@ -128,7 +129,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_am_init_zonal_mean(domain, err)!{{{
+   subroutine ocn_init_zonal_mean(domain, err)!{{{
 
       use mpas_packages
 
@@ -182,9 +183,12 @@ contains
       nZonalMeanBins = domain % blocklist % mesh % nZonalMeanBins
       amZonalMean => domain % blocklist % amZonalMean
 
+      nZonalMeanBinsUsed = min(config_number_zonal_mean_bins,nZonalMeanBins)
+
       binCenterZonalMean => amZonalMean % binCenterZonalMean % array
       binBoundaryZonalMean => amZonalMean % binBoundaryZonalMean % array
 
+      ! Find min and max values of binning variable.
       block => domain % blocklist
       do while (associated(block))
          mesh => block % mesh
@@ -192,13 +196,11 @@ contains
          binCenterZonalMean => amZonalMean % binCenterZonalMean % array
          binBoundaryZonalMean => amZonalMean % binBoundaryZonalMean % array
 
-         if (config_ocn_am_zonal_mean_binning_variable=='latCell') then
+         ! Bin by latitude on a sphere, by yCell otherwise.
+         if (mesh % on_a_sphere) then
             binVariable  => mesh % latCell % array
-         elseif (config_ocn_am_zonal_mean_binning_variable=='yCell') then
-            binVariable  => mesh % yCell % array
          else
-            write (stderrUnit,'(a)') ' Error: incorrect choice of config_ocn_am_zonal_mean_binning_variable'
-            call mpas_dmpar_abort(dminfo)
+            binVariable  => mesh % yCell % array
          end if 
 
          minBin = min(minBin, minval(binVariable) )
@@ -208,23 +210,42 @@ contains
       end do
 
       call mpas_dmpar_min_real_array(dminfo, 1, minBin, minBinDomain)
-      call mpas_dmpar_max_real_array(dminfo, 1, maxBin, maxBindomain)
+      call mpas_dmpar_max_real_array(dminfo, 1, maxBin, maxBinDomain)
 
-      ! set up bins. 
-      binWidth = (maxBinDomain(1) - minBinDomain(1)) / nZonalMeanBins
+      ! Set up bins. 
+      binBoundaryZonalMean = -1.0e34
+      binCenterZonalMean = -1.0e34
+
+      ! Change min and max bin bounds to configuration settings, if applicable.
+      if (config_min_zonal_mean_bin>-1.0e33) then
+         minBinDomain(1) = config_min_zonal_mean_bin
+      else
+         ! use measured min value, but decrease slightly to include least value.
+         minBinDomain(1) = minBinDomain(1) - 1.0e-10*abs(minBinDomain(1))
+      end if
+
+      if (config_max_zonal_mean_bin>-1.0e33) then
+         maxBinDomain(1) = config_max_zonal_mean_bin
+      else
+         ! use measured max value, but increase slightly to include max value.
+         maxBinDomain(1) = maxBinDomain(1) + 1.0e-10*abs(maxBinDomain(1))
+      end if
+
       binBoundaryZonalMean(1) = minBinDomain(1)
+      binWidth = (maxBinDomain(1) - minBinDomain(1)) / nZonalMeanBinsUsed
+
       binCenterZonalMean(1) = minBinDomain(1) + binWidth/2.0
-      do iBin = 2,nZonalMeanBins
+      do iBin = 2,nZonalMeanBinsUsed
          binBoundaryZonalMean(iBin) = binBoundaryZonalMean(iBin-1) + binWidth
          binCenterZonalMean(iBin) = binCenterZonalMean(iBin-1) + binWidth
       end do
-      binBoundaryZonalMean(nZonalMeanBins+1) = binBoundaryZonalMean(nZonalMeanBins) + binWidth
+      binBoundaryZonalMean(nZonalMeanBinsUsed+1) = binBoundaryZonalMean(nZonalMeanBinsUsed) + binWidth
 
-   end subroutine ocn_am_init_zonal_mean!}}}
+   end subroutine ocn_init_zonal_mean!}}}
 
 !***********************************************************************
 !
-!  routine ocn_am_init_alarms_zonal_mean
+!  routine ocn_init_alarms_zonal_mean
 !
 !> \brief   Initialize alarms for MPAS-Ocean analysis member
 !> \author  Mark Petersen
@@ -235,7 +256,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_am_init_alarms_zonal_mean(clock, startTime, computeAlarmID, err)!{{{
+   subroutine ocn_init_alarms_zonal_mean(clock, startTime, computeAlarmID, err)!{{{
 
       use mpas_packages
 
@@ -278,21 +299,21 @@ contains
       err = 0
 
       ! set compute alarm for this analysis member
-      if (config_ocn_am_zonal_mean_compute_interval=='same_as_output') then
+      if (config_zonal_mean_compute_interval=='same_as_output') then
          compute_interval = config_output_interval
       else
-         compute_interval = config_ocn_am_zonal_mean_compute_interval
+         compute_interval = config_zonal_mean_compute_interval
       endif
 
       call mpas_set_timeInterval(alarmTimeStep, timeString=compute_interval, ierr=ierr)
       alarmStartTime = startTime + alarmTimeStep
       call mpas_add_clock_alarm(clock, computeAlarmID, alarmStartTime, alarmTimeStep, ierr=ierr)
 
-   end subroutine ocn_am_init_alarms_zonal_mean!}}}
+   end subroutine ocn_init_alarms_zonal_mean!}}}
 
 !***********************************************************************
 !
-!  routine ocn_am_compute_zonal_mean
+!  routine ocn_compute_zonal_mean
 !
 !> \brief   Compute MPAS-Ocean analysis member
 !> \author  Mark Petersen
@@ -303,7 +324,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_am_compute_zonal_mean(domain, timeLevel, err)!{{{
+   subroutine ocn_compute_zonal_mean(domain, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -351,7 +372,7 @@ contains
       real (kind=RKIND), dimension(:), pointer ::  areaCell, binVariable, binBoundaryZonalMean
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocityZonal, normalVelocityMeridional
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers
-      real (kind=RKIND), dimension(:,:,:), allocatable :: sumZonalMean, totalSumZonalMean
+      real (kind=RKIND), dimension(:,:,:), allocatable :: sumZonalMean, totalSumZonalMean, normZonalMean
 
       err = 0
       dminfo = domain % dminfo
@@ -366,7 +387,9 @@ contains
 
       binBoundaryZonalMean => amZonalMean % binBoundaryZonalMean % array
 
-      allocate(sumZonalMean(nZonalMeanVariables,nVertLevels,nZonalMeanBins),totalSumZonalMean(nZonalMeanVariables,nVertLevels,nZonalMeanBins))
+      allocate(sumZonalMean(nZonalMeanVariables,nVertLevels,nZonalMeanBinsUsed), &
+         totalSumZonalMean(nZonalMeanVariables,nVertLevels,nZonalMeanBinsUsed), &
+         normZonalMean(nZonalMeanVariables,nVertLevels,nZonalMeanBins))
 
       sumZonalMean = 0.0
 
@@ -384,23 +407,23 @@ contains
          areaCell          => mesh % areaCell % array
          maxLevelCell      => mesh % maxLevelCell % array
          tracers           => state % tracers % array
-         normalVelocityZonal => diagnostics % normalVelocityZonal % array
+         normalVelocityZonal =>  diagnostics % normalVelocityZonal % array
          normalVelocityMeridional => diagnostics % normalVelocityMeridional % array
 
-         if (config_ocn_am_zonal_mean_binning_variable=='latCell') then
+         ! Bin by latitude on a sphere, by yCell otherwise.
+         if (mesh % on_a_sphere) then
             binVariable  => mesh % latCell % array
-         elseif (config_ocn_am_zonal_mean_binning_variable=='yCell') then
-            binVariable  => mesh % yCell % array
          else
-            write (stderrUnit,'(a)') ' Error: incorrect choice of config_ocn_am_zonal_mean_binning_variable'
-            call mpas_dmpar_abort(dminfo)
+            binVariable  => mesh % yCell % array
          end if 
 
          ! note that sum is for each vertical index, which is a little wrong for z-star and very wrong for PBCs.
          do iCell = 1,nCellsSolve
             kMax = maxLevelCell(iCell)
 
-            do iBin=1,nZonalMeanBins
+            if (binVariable(iCell).lt.binBoundaryZonalMean(1)) cycle
+
+            do iBin=1,nZonalMeanBinsUsed
                if (binVariable(iCell).lt.binBoundaryZonalMean(iBin+1) ) then
 
                   do k=1,kMax
@@ -429,15 +452,21 @@ contains
       end do
 
       ! mpi summation over all processors
-      call mpas_dmpar_sum_real_array(dminfo, nVertLevels*nZonalMeanBins*nZonalMeanVariables, sumZonalMean, totalSumZonalMean)
+      call mpas_dmpar_sum_real_array(dminfo, nVertLevels*nZonalMeanBinsUsed*nZonalMeanVariables, sumZonalMean, totalSumZonalMean)
 
       ! normalize by area
-      do iField=1,nZonalMeanVariables
-         do iBin=1,nZonalMeanBins
-            do k=1,nVertLevels
-               totalSumZonalMean(:,k,iBin) = totalSumZonalMean(:,k,iBin) / (totalSumZonalMean(1,k,iBin)+1.0e-34)
-            end do
+      do iBin = 1,nZonalMeanBinsUsed
+         do k = 1,nVertLevels
+            ! Check if there is any area accumulated.  If so, normalize by the area.
+            if (totalSumZonalMean(1,k,iBin)>1.0e-12) then
+               normZonalMean(:,k,iBin) = totalSumZonalMean(:,k,iBin) / totalSumZonalMean(1,k,iBin)
+            else
+               normZonalMean(:,k,iBin) = -1.0e34
+            end if
          end do
+      end do
+      do iBin = nZonalMeanBinsUsed+1,nZonalMeanBins
+         normZonalMean(:,:,iBin) = -1.0e34
       end do
 
       ! Even though these variables do not include an index that is decomposed amongst 
@@ -451,13 +480,13 @@ contains
             do k=1,nVertLevels
 
                do iField = 1,num_tracers
-                  amZonalMean % tracersZonalMean % array(iField,k,iBin) = totalSumZonalMean(iField+1,k,iBin)
+                  amZonalMean % tracersZonalMean % array(iField,k,iBin) = normZonalMean(iField+1,k,iBin)
                enddo
 
                iField = num_tracers+2
-               amZonalMean % zonalVelocityZonalMean % array(k,iBin) = totalSumZonalMean(iField,k,iBin)
+               amZonalMean % zonalVelocityZonalMean % array(k,iBin) = normZonalMean(iField,k,iBin)
                iField = iField+1
-               amZonalMean % meridionalVelocityZonalMean % array(k,iBin) = totalSumZonalMean(iField,k,iBin)
+               amZonalMean % meridionalVelocityZonalMean % array(k,iBin) = normZonalMean(iField,k,iBin)
 
             end do
          end do
@@ -465,15 +494,15 @@ contains
          block => block % next
       end do
 
-      deallocate(sumZonalMean,totalSumZonalMean)
+      deallocate(sumZonalMean,totalSumZonalMean,normZonalMean)
 
       call mpas_timer_stop("zonal_mean", amZonalMeanTimer)
 
-   end subroutine ocn_am_compute_zonal_mean!}}}
+   end subroutine ocn_compute_zonal_mean!}}}
 
 !***********************************************************************
 !
-!  routine ocn_am_restart_zonal_mean
+!  routine ocn_restart_zonal_mean
 !
 !> \brief   Save restart for MPAS-Ocean analysis member
 !> \author  Mark Petersen
@@ -484,7 +513,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_am_restart_zonal_mean(domain, err)!{{{
+   subroutine ocn_restart_zonal_mean(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -516,13 +545,13 @@ contains
 
       err = 0
 
-   end subroutine ocn_am_restart_zonal_mean!}}}
+   end subroutine ocn_restart_zonal_mean!}}}
 
 !***********************************************************************
 !
-!  routine ocn_am_write_zonal_mean
+!  routine ocn_write_zonal_mean
 !
-!> \brief   Driver for MPAS-Ocean analysis output
+!> \brief   MPAS-Ocean analysis output
 !> \author  Mark Petersen
 !> \date    March 2014
 !> \details 
@@ -532,7 +561,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_am_write_zonal_mean(domain, err)!{{{
+   subroutine ocn_write_zonal_mean(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -564,11 +593,11 @@ contains
 
       err = 0
 
-   end subroutine ocn_am_write_zonal_mean!}}}
+   end subroutine ocn_write_zonal_mean!}}}
 
 !***********************************************************************
 !
-!  routine ocn_am_finalize_zonal_mean
+!  routine ocn_finalize_zonal_mean
 !
 !> \brief   Finalize MPAS-Ocean analysis member
 !> \author  Mark Petersen
@@ -579,7 +608,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_am_finalize_zonal_mean(domain, err)!{{{
+   subroutine ocn_finalize_zonal_mean(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -611,8 +640,8 @@ contains
 
       err = 0
 
-   end subroutine ocn_am_finalize_zonal_mean!}}}
+   end subroutine ocn_finalize_zonal_mean!}}}
 
-end module ocn_am_zonal_mean
+end module ocn_zonal_mean
 
 ! vim: foldmethod=marker

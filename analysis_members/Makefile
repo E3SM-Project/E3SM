@@ -1,16 +1,16 @@
 .SUFFIXES: .F .o
 
-OBJS = mpas_ocn_am_driver.o \
-       mpas_ocn_am_global_stats.o \
-       mpas_ocn_am_zonal_mean.o
+OBJS = mpas_ocn_analysis_driver.o \
+       mpas_ocn_global_stats.o \
+       mpas_ocn_zonal_mean.o
 
 all: $(OBJS)
 
-mpas_ocn_am_driver.o: mpas_ocn_am_global_stats.o mpas_ocn_am_zonal_mean.o
+mpas_ocn_analysis_driver.o: mpas_ocn_global_stats.o mpas_ocn_zonal_mean.o
 
-mpas_ocn_am_global_stats.o:
+mpas_ocn_global_stats.o:
 
-mpas_ocn_am_zonal_mean.o:
+mpas_ocn_zonal_mean.o:
 
 clean:
 	$(RM) *.o *.i *.mod *.f90 lib*.a 

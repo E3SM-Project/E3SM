@@ -7,7 +7,7 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  ocn_am_global_stats
+!  ocn_global_stats
 !
 !> \brief MPAS ocean analysis core member: global statistics
 !> \author Mark Petersen
@@ -17,7 +17,7 @@
 !
 !-----------------------------------------------------------------------
 
-module ocn_am_global_stats
+module ocn_global_stats
 
    use mpas_configure
    use mpas_grid_types
@@ -43,13 +43,13 @@ module ocn_am_global_stats
    !
    !--------------------------------------------------------------------
 
-   public :: ocn_am_setup_packages_global_stats, &
-             ocn_am_init_global_stats, &
-             ocn_am_init_alarms_global_stats, &
-             ocn_am_compute_global_stats, &
-             ocn_am_write_global_stats, &
-             ocn_am_restart_global_stats, &
-             ocn_am_finalize_global_stats
+   public :: ocn_setup_packages_global_stats, &
+             ocn_init_global_stats, &
+             ocn_init_alarms_global_stats, &
+             ocn_compute_global_stats, &
+             ocn_write_global_stats, &
+             ocn_restart_global_stats, &
+             ocn_finalize_global_stats
 
    !--------------------------------------------------------------------
    !
@@ -65,7 +65,7 @@ contains
 
 !***********************************************************************
 !
-!  routine ocn_am_setup_packages_global_stats
+!  routine ocn_setup_packages_global_stats
 !
 !> \brief   Set up packages for MPAS-Ocean analysis member
 !> \author  Mark Petersen
@@ -76,7 +76,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_am_setup_packages_global_stats(err)!{{{
+   subroutine ocn_setup_packages_global_stats(err)!{{{
 
       use mpas_packages
 
@@ -111,12 +111,12 @@ contains
       ! turn on package for this analysis member
       amGlobalStatsActive = .true.
 
-   end subroutine ocn_am_setup_packages_global_stats!}}}
+   end subroutine ocn_setup_packages_global_stats!}}}
 
 
 !***********************************************************************
 !
-!  routine ocn_am_init_global_stats
+!  routine ocn_init_global_stats
 !
 !> \brief   Initialize MPAS-Ocean analysis member
 !> \author  Mark Petersen
@@ -127,7 +127,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_am_init_global_stats(domain, err)!{{{
+   subroutine ocn_init_global_stats(domain, err)!{{{
 
       use mpas_packages
 
@@ -161,11 +161,11 @@ contains
 
       err = 0
 
-   end subroutine ocn_am_init_global_stats!}}}
+   end subroutine ocn_init_global_stats!}}}
 
 !***********************************************************************
 !
-!  routine ocn_am_init_alarms_global_stats
+!  routine ocn_init_alarms_global_stats
 !
 !> \brief   Initialize alarms for MPAS-Ocean analysis member
 !> \author  Mark Petersen
@@ -176,7 +176,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_am_init_alarms_global_stats(clock, startTime, computeAlarmID, err)!{{{
+   subroutine ocn_init_alarms_global_stats(clock, startTime, computeAlarmID, err)!{{{
 
       use mpas_packages
 
@@ -219,23 +219,23 @@ contains
       err = 0
 
       ! set compute alarm for this analysis member
-      if (config_ocn_am_global_stats_compute_interval=='same_as_output') then
+      if (config_global_stats_compute_interval=='same_as_output') then
          compute_interval = config_output_interval
       else
-         compute_interval = config_ocn_am_global_stats_compute_interval
+         compute_interval = config_global_stats_compute_interval
       endif
 
       call mpas_set_timeInterval(alarmTimeStep, timeString=compute_interval, ierr=ierr)
       alarmStartTime = startTime + alarmTimeStep
       call mpas_add_clock_alarm(clock, computeAlarmID, alarmStartTime, alarmTimeStep, ierr=ierr)
 
-   end subroutine ocn_am_init_alarms_global_stats!}}}
+   end subroutine ocn_init_alarms_global_stats!}}}
 
 !***********************************************************************
 !
-!  routine ocn_am_compute_global_stats
+!  routine ocn_compute_global_stats
 !
-!> \brief   Computeialize MPAS-Ocean analysis member
+!> \brief   Compute MPAS-Ocean analysis member
 !> \author  Mark Petersen
 !> \date    November 2013
 !> \details 
@@ -244,7 +244,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_am_compute_global_stats(domain, timeLevel, err)!{{{
+   subroutine ocn_compute_global_stats(domain, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -738,11 +738,11 @@ contains
 
       call mpas_timer_stop("global_stats", amGlobalStatsTimer)
 
-   end subroutine ocn_am_compute_global_stats!}}}
+   end subroutine ocn_compute_global_stats!}}}
 
 !***********************************************************************
 !
-!  routine ocn_am_restart_global_stats
+!  routine ocn_restart_global_stats
 !
 !> \brief   Save restart for MPAS-Ocean analysis member
 !> \author  Mark Petersen
@@ -753,7 +753,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_am_restart_global_stats(domain, err)!{{{
+   subroutine ocn_restart_global_stats(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -785,13 +785,13 @@ contains
 
       err = 0
 
-   end subroutine ocn_am_restart_global_stats!}}}
+   end subroutine ocn_restart_global_stats!}}}
 
 !***********************************************************************
 !
-!  routine ocn_am_write_global_stats
+!  routine ocn_write_global_stats
 !
-!> \brief   Driver for MPAS-Ocean analysis output
+!> \brief   MPAS-Ocean analysis output
 !> \author  Mark Petersen
 !> \date    November 2013
 !> \details 
@@ -801,7 +801,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_am_write_global_stats(domain, err)!{{{
+   subroutine ocn_write_global_stats(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -833,11 +833,11 @@ contains
 
       err = 0
 
-   end subroutine ocn_am_write_global_stats!}}}
+   end subroutine ocn_write_global_stats!}}}
 
 !***********************************************************************
 !
-!  routine ocn_am_finalize_global_stats
+!  routine ocn_finalize_global_stats
 !
 !> \brief   Finalize MPAS-Ocean analysis member
 !> \author  Mark Petersen
@@ -848,7 +848,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_am_finalize_global_stats(domain, err)!{{{
+   subroutine ocn_finalize_global_stats(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -880,7 +880,7 @@ contains
 
       err = 0
 
-   end subroutine ocn_am_finalize_global_stats!}}}
+   end subroutine ocn_finalize_global_stats!}}}
 
    subroutine ocn_compute_field_area_weighted_local_stats_max_level(dminfo, nVertLevels, nElements, maxLevel, areas, field, &!{{{
       localSum, localRMS, localMin, localMax, localVertSumMin, localVertSumMax)
@@ -957,6 +957,6 @@ contains
    end subroutine ocn_compute_field_volume_weighted_local_stats_max_level!}}}
 
 
-end module ocn_am_global_stats
+end module ocn_global_stats
 
 ! vim: foldmethod=marker

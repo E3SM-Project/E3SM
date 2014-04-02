@@ -389,7 +389,7 @@ end subroutine ocn_compute_max_level!}}}
          do k = 1,nVertLevels
             refBottomDepthTopOfCell(k+1) = refBottomDepth(k)
             refLayerThickness(k) = refBottomDepth(k) - refBottomDepthTopOfCell(k)
-            refZMid(k) = - refBottomDepthTopOfCell(1) - refLayerThickness(k)/2.0
+            refZMid(k) = - refBottomDepthTopOfCell(k) - refLayerThickness(k)/2.0
          end do
 
          ! Initialization of vertCoordMovementWeights. This determines how SSH perturbations
