@@ -1,27 +1,35 @@
-	<nml_record name="oac_zonal_mean" in_defaults="true">
-		<nml_option name="config_ocn_am_zonal_mean" type="logical" default_value=".false." units="unitless"
+	<nml_record name="zonal_mean" in_defaults="true">
+		<nml_option name="config_use_zonal_mean" type="logical" default_value=".false." units="unitless"
 			description="If true, ocean analysis member zonal_mean is called."
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_ocn_am_zonal_mean_compute_interval" type="character" default_value="same_as_output" units="unitless"
+		<nml_option name="config_zonal_mean_compute_interval" type="character" default_value="same_as_output" units="unitless"
 			description="Timestamp determining how often analysis member computation should be performed."
 			possible_values="'DDDD_HH:MM:SS', 'same_as_output'"
 		/>
-		<nml_option name="config_ocn_am_zonal_mean_compute_startup" type="logical" default_value=".true." units="unitless"
+		<nml_option name="config_zonal_mean_compute_startup" type="logical" default_value=".true." units="unitless"
 			description="Logical flag determining if an analysis member computation occurs on start-up."
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_ocn_am_zonal_mean_binning_variable" type="character" default_value="latCell" units="unitless"
-			description="Coordinate variable used to bin zonal mean."
-			possible_values="'latCell' or 'yCell'"
+		<nml_option name="config_number_zonal_mean_bins" type="integer" default_value="180" units="unitless"
+			description="Number of bins used for zonal mean.  Must be less than or equal to the dimension nZonalMeanBins (set in Registry)."
+			possible_values="Any positive integer value <= nZonalMeanBins."
+		/>
+		<nml_option name="config_min_zonal_mean_bin" type="real" default_value="-1.0e34" units="varies"
+			description="minimum bin boundary value.  If set to -1.0e34, the minimum value in the domain is found."
+			possible_values="Any real number."
+		/>
+		<nml_option name="config_max_zonal_mean_bin" type="real" default_value="-1.0e34" units="varies"
+			description="maximum bin boundary value.  If set to -1.0e34, the maximum value in the domain is found."
+			possible_values="Any real number."
 		/>
 	</nml_record>
 	<dims>
 		<dim name="nZonalMeanBins" definition="180" units="unitless"
-			 description="Number of bins for zonal mean."
+			 description="Maximum number of bins for zonal mean."
 		/>
 		<dim name="nZonalMeanBinsP1" definition="nZonalMeanBins+1" units="unitless"
-			 description="Number of bins for zonal mean."
+			 description="Maximum number of bins for zonal mean, plus one."
 		/>
 	</dims>
 	<packages>

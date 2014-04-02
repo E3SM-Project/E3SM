@@ -200,7 +200,7 @@
 	<nml_record name="decomposition" in_defaults="true">
 		<nml_option name="config_num_halos" type="integer" default_value="3" units="unitless"
 					description="Determines the number of halo cells extending from a blocks owned cells (Called the 0-Halo). The default of 3 is the minimum that can be used with monotonic advection."
-					possible_values="Any positive interger value."
+					possible_values="Any positive integer value."
 		/>
 		<nml_option name="config_block_decomp_file_prefix" type="character" default_value="graph.info.part." units="unitless"
 					description="Defines the prefix for the block decomposition file. Can include a path. The number of blocks is appended to the end of the prefix at run-time."

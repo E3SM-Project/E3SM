@@ -1,6 +1,6 @@
 .SUFFIXES: .F .o
 
-OBJS = mpas_ocn_am_mpas_core.o
+OBJS = mpas_ocn_analysis_core.o
 
 all: $(OBJS)
 
