@@ -34,24 +34,26 @@ PIO_Offset coord_to_lindex(const int ndims, const PIO_Offset lcoord[], const PIO
 
 void compute_maxIObuffersize(MPI_Comm io_comm, io_desc_t *iodesc)
 {
-  int iosize=1;
+  int iosize, totiosize;
   int i;
   io_region *region;
 
   //  compute the max io buffer size, for conveneance it is the combined size of all regions
-  iosize=1;
-  
+  totiosize=0;
   region = iodesc->firstregion;
   while(region != NULL){
     if(region->count[0]>0)
+      iosize=1;
       for(i=0;i<iodesc->ndims;i++)
 	iosize*=region->count[i];
+      totiosize+=iosize;
     region = region->next;
   }
-  iodesc->llen = iosize;
+  iodesc->llen = totiosize;
   // Share the max io buffer size with all io tasks
-  CheckMPIReturn(MPI_Allreduce(MPI_IN_PLACE, &iosize, 1, MPI_INT, MPI_MAX, io_comm),__FILE__,__LINE__);
-  iodesc->maxiobuflen = iosize;
+  CheckMPIReturn(MPI_Allreduce(MPI_IN_PLACE, &totiosize, 1, MPI_INT, MPI_MAX, io_comm),__FILE__,__LINE__);
+  iodesc->maxiobuflen = totiosize;
+  //  printf("%d iosize %d %d\n",__LINE__,totiosize, iodesc->llen);
 }
 
 
@@ -375,19 +377,18 @@ int compute_counts(const iosystem_desc_t ios, io_desc_t *iodesc, const int dest_
       recv_displs[rfrom[i]] = recv_displs[rfrom[i-1]]+rcount[i-1]*tsize;
     if(iodesc->llen>0)
       iodesc->rindex = (PIO_Offset *) calloc(iodesc->llen,sizeof(PIO_Offset));
-
   }
 
   //  printf("%d rbuf_size %d\n",ios.comp_rank,rbuf_size);
 
 
   // s2rindex is the list of indeces on each compute task
-    
-  // printf("%d s2rindex: ", ios.comp_rank);
-  // for(i=0;i<ndof;i++)
-  //   printf("%ld ",s2rindex[i]);
-  // printf("\n");
-  
+  /*    
+  printf("%d s2rindex: ", ios.comp_rank);
+  for(i=0;i<ndof;i++)
+    printf("%ld ",s2rindex[i]);
+  printf("\n");
+  */
 
   ierr = pio_swapm( s2rindex, send_counts, send_displs, sr_types, 
 		    iodesc->rindex, recv_counts, recv_displs, sr_types,
@@ -690,6 +691,7 @@ int box_rearrange_create(const iosystem_desc_t ios,const int maplen, const PIO_O
       pio_swapm(iodesc->firstregion->start,  sndlths, sdispls, dtypes,
 		start, recvlths, rdispls, dtypes, 
 		ios.union_comm, false, false, MAX_GATHER_BLOCK_SIZE);
+
       for(k=0;k<maplen;k++){
 	PIO_Offset gcoord[ndims], lcoord[ndims];
 	bool found=true;
@@ -710,8 +712,8 @@ int box_rearrange_create(const iosystem_desc_t ios,const int maplen, const PIO_O
       }
     }
   }
-  //  printf("dest_ioproc %d %d %d dest_ioindex %d %d %d\n",dest_ioproc[0],dest_ioproc[1],dest_ioproc[2],
-  //	 dest_ioindex[0],dest_ioindex[1],dest_ioindex[2]);
+  //    printf("dest_ioproc %d %d %d dest_ioindex %d %d %d\n",dest_ioproc[0],dest_ioproc[1],dest_ioproc[2],
+  // 	 dest_ioindex[0],dest_ioindex[1],dest_ioindex[2]);
 
   for(k=0; k<maplen; k++){
     if(dest_ioproc[k] == -1 && compmap[k]>=0){
@@ -761,8 +763,8 @@ void get_start_and_count_regions(const MPI_Comm io_comm, io_desc_t *iodesc, cons
     regionlen = find_first_region(iodesc->ndims, gdims, iodesc->llen-nmaplen, 
 					map+nmaplen, region->start, region->count);
 
-    printf("start %ld %ld %ld\n", region->start[0], region->start[1], region->start[2]);
-    printf("count %ld %ld %ld\n", region->count[0], region->count[1], region->count[2]);
+    //    printf("start %ld %ld %ld\n", region->start[0], region->start[1], region->start[2]);
+    // printf("count %ld %ld %ld\n", region->count[0], region->count[1], region->count[2]);
 
     nmaplen = nmaplen+regionlen;
     if(region->next==NULL && nmaplen<iodesc->llen){
@@ -874,7 +876,6 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, const PI
   if(ios.ioproc){
     for(i=0;i<taskratio;i++){
       iodesc->llen+=recvlen[i];
-      //      printf("%d recvlen=%d\n",i,recvlen[i]);
     }
     if(iodesc->llen>0){
       map = (mapsort *) malloc(iodesc->llen * sizeof(mapsort));    
@@ -939,9 +940,8 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, const PI
 
     get_start_and_count_regions(ios.io_comm,iodesc,gsize,iomap);
 
-    printf("maxregions = %d\n",iodesc->maxregions);
-
     compute_maxIObuffersize(ios.io_comm, iodesc);
+
     free(map);
     free(iomap);
 

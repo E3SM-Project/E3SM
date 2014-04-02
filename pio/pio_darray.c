@@ -181,7 +181,6 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, voi
 	for( i=0,dsize=1;i<ndims;i++)
 	  dsize*=count[i];
 
-	printf("start %ld %ld %ld count %ld %ld %ld buf0 %d\n",start[0],start[1],start[2],count[0],count[1],count[2],((int *)bufptr)[0]);
 	ierr = ncmpi_bput_vara(ncid, vid,  start, count, bufptr,
 			       dsize, iodesc->basetype, &request);
 	pio_push_request(file,request);
@@ -427,10 +426,7 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void
 	    for(int j=0;j<ndims; j++){
 	      tmp_bufsize *= count[j];
 	    }
-	    printf("start %ld %ld %ld\n", start[0], start[1], start[2]);
-	    printf("count %ld %ld %ld\n", count[0], count[1], count[2]);
 	    ncmpi_get_vara_all(file->fh, vid,(PIO_Offset *) start,(PIO_Offset *) count, bufptr, tmp_bufsize, iodesc->basetype);
-	    printf("%s %d %d %d \n",__FILE__,__LINE__,tmp_bufsize,((int *) bufptr)[0]);
 	  }
 	  break;
 #endif
