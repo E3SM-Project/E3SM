@@ -152,8 +152,8 @@ subroutine remap1(Qdp,nx,qsize,dp1,dp2)
      return
   endif
 
-#if (defined ELEMENT_OPENMP)
-!$omp parallel do private(qsize,i,j,z1c,z2c,zv,k,dp_np1,dp_star,Qcol,zkr,ilev) &
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(q,i,j,z1c,z2c,zv,k,dp_np1,dp_star,Qcol,zkr,ilev) &
 !$omp    private(jk,zgam,zhdp,h,zarg,rhs,lower_diag,diag,upper_diag,q_diag,tmp_cal,filter_code) &
 !$omp    private(dy,im1,im2,im3,ip1,t1,t2,t3,za0,za1,za2,xm_d,xm,f_xm,t4,tm,tp,peaks,peaks_min) &
 !$omp    private(peaks_max,ip2,level1,level2,level3,level4,level5,lt1,lt2,lt3,zv1,zv2)
@@ -416,8 +416,8 @@ subroutine remap1_nofilter(Qdp,nx,qsize,dp1,dp2)
   logical :: abort=.false.
 !   call t_startf('remap1_nofilter')
 
-#if (defined ELEMENT_OPENMP)
-!$omp parallel do private(qsize,i,j,z1c,z2c,zv,k,dp_np1,dp_star,Qcol,zkr,ilev) &
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(q,i,j,z1c,z2c,zv,k,dp_np1,dp_star,Qcol,zkr,ilev) &
 !$omp    private(jk,zgam,zhdp,h,zarg,rhs,lower_diag,diag,upper_diag,q_diag,tmp_cal,filter_code) &
 !$omp    private(dy,im1,im2,im3,ip1,t1,t2,t3,za0,za1,za2,xm_d,xm,f_xm,t4,tm,tp,peaks,peaks_min) &
 !$omp    private(peaks_max,ip2,level1,level2,level3,level4,level5,lt1,lt2,lt3,zv1,zv2)
@@ -1140,36 +1140,39 @@ contains
 
 
 
-  subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets , nete )
-    use coordinate_systems_mod, only : cartesian3D_t, cartesian2D_t
-    use dimensions_mod,         only : max_neigh_edges
-    use edge_mod,               only : initghostbuffer3D, ghostVpack_unoriented, ghostVunpack_unoriented
-    use bndry_mod,              only : ghost_exchangevfull
-    use interpolate_mod,        only : interpolate_tracers
-    use control_mod   ,         only : qsplit
+subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets , nete )
+  use coordinate_systems_mod, only : cartesian3D_t, cartesian2D_t
+  use dimensions_mod,         only : max_neigh_edges
+  use edge_mod,               only : initghostbuffer3D, ghostVpack_unoriented, ghostVunpack_unoriented
+  use bndry_mod,              only : ghost_exchangevfull
+  use interpolate_mod,        only : interpolate_tracers, minmax_tracers
+  use control_mod   ,         only : qsplit
+  use global_norms_mod,       only: wrap_repro_sum
+  use parallel_mod,           only: global_shared_buf, global_shared_sum
 
 
-    implicit none
-    type (element_t)     , intent(inout) :: elem(:)
-    type (derivative_t)  , intent(in   ) :: deriv
-    type (hybrid_t)      , intent(in   ) :: hybrid
-    real(kind=real_kind) , intent(in   ) :: dt
-    type (TimeLevel_t)   , intent(in   ) :: tl
-    integer              , intent(in   ) :: nets
-    integer              , intent(in   ) :: nete
+
+  implicit none
+  type (element_t)     , intent(inout) :: elem(:)
+  type (derivative_t)  , intent(in   ) :: deriv
+  type (hybrid_t)      , intent(in   ) :: hybrid
+  real(kind=real_kind) , intent(in   ) :: dt
+  type (TimeLevel_t)   , intent(in   ) :: tl
+  integer              , intent(in   ) :: nets
+  integer              , intent(in   ) :: nete
 
 
   type(cartesian3D_t)                           :: dep_points  (np,np)
   integer                                       :: elem_indexes(np,np)
   type(cartesian2D_t)                           :: para_coords (np,np)
-  real(kind=real_kind)                          :: rho         (np,np,nets:nete,nlev,qsize)
-  real(kind=real_kind)                          :: rhot        (np,np,nets:nete,nlev,qsize)
-  real(kind=real_kind)                          :: minq        (np,np,nets:nete,nlev,qsize)
-  real(kind=real_kind)                          :: maxq        (np,np,nets:nete,nlev,qsize)
-  real(kind=real_kind)                          :: f                                (qsize)
-  real(kind=real_kind)                          :: g                                (qsize)
-  real(kind=real_kind)                          :: mass                        (nlev,qsize)
-  real(kind=real_kind)                          :: rowsum      (np,np,nets:nete)
+  real(kind=real_kind)                          :: Que         (np,np,nlev,qsize,nets:nete)
+  real(kind=real_kind)                          :: Que_t       (np,np,nlev,qsize,nets:nete)
+  real(kind=real_kind)                          :: minq        (np,np,nlev,qsize,nets:nete)
+  real(kind=real_kind)                          :: maxq        (np,np,nlev,qsize,nets:nete)
+  real(kind=real_kind)                          :: f                      (qsize)
+  real(kind=real_kind)                          :: g                      (qsize)
+  real(kind=real_kind)                          :: mass              (nlev,qsize)
+  real(kind=real_kind)                          :: rho         (np,np,nlev,      nets:nete)
 
   real(kind=real_kind)                          :: neigh_q     (np,np,qsize,max_neigh_edges+1)
   real(kind=real_kind)                          :: u           (np,np,qsize)
@@ -1234,58 +1237,191 @@ contains
           ! interpolate tracers to deperature grid
           call interpolate_tracers     (para_coords(i,j), neigh_q(:,:,:,elem_indexes(i,j)),f)
           elem(ie)%state%Q(i,j,k,:) = f;
-          ! interpolate tracers to deperature grid
-!          call minmax_tracers          (para_coords(i,j), neigh_q(:,:,:,elem_indexes(i,j)),f,g)
-!          minq(i,j,ie,k,:) = f;
-!          maxq(i,j,ie,k,:) = g;
+
+          call minmax_tracers          (para_coords(i,j), neigh_q(:,:,:,elem_indexes(i,j)),f,g)
+          minq(i,j,k,:,ie) = f;
+          maxq(i,j,k,:,ie) = g;
         enddo
         enddo
      end do
   end do
 
-  do ie=nets,nete
-     do k=1,nlev
-     do q=1,qsize
-        ! note: pack so that tracers per level are contiguous so we can unpack into
-        ! array neigh_q()
-        elem(ie)%state%Qdp(:,:,k,q,np1_qdp) = elem(ie)%state%Q(:,:,k,q) * elem(ie)%state%dp3d(:,:,k,tl%np1)
-     enddo
-     enddo
-  end do
-
-#if 0
   ! compute original mass, at tl_1%n0
-  ! NOTE: global_shared_buf was allocated outside threaded region
-  ! probably assuming n<=10.
-  n=0
+  ! NOTE: global_shared_buf was allocated outside threaded region probably assuming n<=10.
   do ie=nets,nete
+    n=0
     do k=1,nlev
-      do q=1,qsize
-        n=n+1
-        global_shared_buf(ie,n) = DOT_PRODUCT(elem(ie)%state%Qdp(:,:,k,q,tl_q%n0), elem(ie)%spheremp(:,:))
+    do q=1,qsize
+      n=n+1
+      global_shared_buf(ie,n) = 0
+      do j=1,np
+        global_shared_buf(ie,n) = global_shared_buf(ie,n) + DOT_PRODUCT(elem(ie)%state%Qdp(:,j,k,q,n0_qdp),elem(ie)%spheremp(:,j))
       end do
+    end do
     end do
   end do
   call wrap_repro_sum(nvars=n, comm=hybrid%par%comm)
-  do n=1,nmax
-     mass(q,k) = global_shared_sum(n)
+  n=0
+  do k=1,nlev
+  do q=1,qsize
+    n=n+1
+    mass(k,q) = global_shared_sum(n)
+  enddo
   enddo
 
   do ie=nets,nete
+  do k=1,nlev
+    rho(:,:,k,ie) = elem(ie)%spheremp(:,:)*elem(ie)%state%dp3d(:,:,k,tl%np1)
+  end do
+  end do
+
+  do ie=nets,nete
+    Que_t(:,:,:,:,ie) = elem(ie)%state%Q(:,:,:,:)
+  end do
+
+  call Cobra_SLBQP(Que, Que_t, rho, minq, maxq, mass, hybrid, nets, nete)
+
+  do ie=nets,nete
+    elem(ie)%state%Q(:,:,:,:) =  Que(:,:,:,:,ie)
+  end do
+
+  do ie=nets,nete
+  do k=1,nlev
+  do q=1,qsize
+     ! note: pack so that tracers per level are contiguous so we can unpack into
+     ! array neigh_q()
+     elem(ie)%state%Qdp(:,:,k,q,np1_qdp) = elem(ie)%state%Q(:,:,k,q) * elem(ie)%state%dp3d(:,:,k,tl%np1)
+  enddo
+  enddo
+  end do
+
+end subroutine Prim_Advec_Tracers_remap_ALE
+
+subroutine VDOT(rp,Que,rho,mass,hybrid,nets,nete)
+  use parallel_mod,        only: global_shared_buf, global_shared_sum
+  use global_norms_mod,    only: wrap_repro_sum
+
+  implicit none
+  integer             , intent(in)              :: nets
+  integer             , intent(in)              :: nete
+  real(kind=real_kind), intent(out)             :: rp                (nlev,qsize)
+  real(kind=real_kind), intent(in)              :: Que         (np*np,nlev,qsize,nets:nete)
+  real(kind=real_kind), intent(in)              :: rho         (np*np,nlev,      nets:nete)
+  real(kind=real_kind), intent(in)              :: mass              (nlev,qsize)
+  type (hybrid_t)     , intent(in)              :: hybrid
+
+  integer                                       :: k,n,q,ie
+
+  global_shared_buf = 0 
+  do ie=nets,nete
+    n=0
+    do q=1,qsize
     do k=1,nlev
-      rowsum(:,:,ie-nets+1) = elem(ie)%spheremp(:,:)*elem(ie)%state%dp3d(:,:,k,tl%np1)
+      n=n+1
+      global_shared_buf(ie,n) = global_shared_buf(ie,n) + DOT_PRODUCT(Que(:,k,q,ie), rho(:,k,ie))
+    end do
     end do
   end do
 
-  call Cobra_SLBQP(rho, rhot, rowsum, minq, maxq, mass, hybrid)
+  call wrap_repro_sum(nvars=n, comm=hybrid%par%comm)
+
+  n=0
+  do q=1,qsize
+  do k=1,nlev
+    n=n+1
+    rp(k,q) = global_shared_sum(n) - mass(k,q)
+  enddo
+  enddo
+  
+end subroutine VDOT
+
+subroutine Cobra_SLBQP(Que, Que_t, rho, minq, maxq, mass, hybrid, nets, nete) 
+
+  use parallel_mod,        only: global_shared_buf, global_shared_sum
+  use global_norms_mod,    only: wrap_repro_sum
+
+  implicit none
+  integer             , intent(in)              :: nets
+  integer             , intent(in)              :: nete
+  real(kind=real_kind), intent(out)             :: Que         (np*np,nlev,qsize,nets:nete)
+  real(kind=real_kind), intent(in)              :: Que_t       (np*np,nlev,qsize,nets:nete)
+  real(kind=real_kind), intent(in)              :: rho         (np*np,nlev,      nets:nete)
+  real(kind=real_kind), intent(in)              :: minq        (np*np,nlev,qsize,nets:nete)
+  real(kind=real_kind), intent(in)              :: maxq        (np*np,nlev,qsize,nets:nete)
+  real(kind=real_kind), intent(in)              :: mass              (nlev,qsize)
+  type (hybrid_t)     , intent(in)              :: hybrid
+
+  real(kind=real_kind),               parameter :: eta = 1D-12           
+  real(kind=real_kind),               parameter :: hfd = 1D-12             
+  real(kind=real_kind)                          :: lambda_p          (nlev,qsize)
+  real(kind=real_kind)                          :: lambda_c          (nlev,qsize)
+  real(kind=real_kind)                          :: rp                (nlev,qsize)
+  real(kind=real_kind)                          :: rc                (nlev,qsize)
+  real(kind=real_kind)                          :: rd                (nlev,qsize)
+  real(kind=real_kind)                          :: alpha             (nlev,qsize)
+  integer                                       :: j,k,n,q,ie
+  integer                                       :: nclip
+
+  nclip = 0
+
+  Que(:,:,:,:) = Que_t(:,:,:,:)
+
+  Que = MIN(MAX(Que,minq),maxq)
+
+  call VDOT(rp,Que,rho,mass,hybrid,nets,nete)
+  nclip = nclip + 1
+
+  if (MAXVAL(ABS(rp)).lt.eta) return
 
   do ie=nets,nete
-    elem(ie)%state%Q(:,:,:,:) =  rho (:,:,ie-nets+1,:,:)
-  end do
-#endif
+  do q=1,qsize
+  do k=1,nlev
+     Que(:,k,q,ie) = hfd * rho(:,k,ie) + Que_t(:,k,q,ie)
+  enddo
+  enddo
+  enddo
 
+  Que = MIN(MAX(Que,minq),maxq)
 
-  end subroutine Prim_Advec_Tracers_remap_ALE
+  call VDOT(rc,Que,rho,mass,hybrid,nets,nete)
+
+  rd = rc-rp
+  if (MAXVAL(ABS(rd)).eq.0) return 
+  
+  alpha = 0
+  WHERE (rd.ne.0) alpha = hfd / rd 
+
+  lambda_p = 0
+  lambda_c =  -alpha*rp
+
+  do while (MAXVAL(ABS(rc)).gt.eta)
+
+    do ie=nets,nete
+    do q=1,qsize
+    do k=1,nlev
+       Que(:,k,q,ie) = (lambda_c(k,q) + hfd) * rho(:,k,ie) + Que_t(:,k,q,ie)
+    enddo
+    enddo
+    enddo
+    Que = MIN(MAX(Que,minq),maxq)
+
+    call VDOT(rc,Que,rho,mass,hybrid,nets,nete)
+    nclip = nclip + 1
+
+    rd = rp-rc
+
+    if (MAXVAL(ABS(rd)).eq.0) exit
+
+    alpha = 0
+    WHERE (rd.ne.0) alpha = (lambda_p - lambda_c) / rd 
+
+    rp       = rc
+    lambda_p = lambda_c
+
+    lambda_c = lambda_c -  alpha * rc
+
+  enddo
+end subroutine Cobra_SLBQP
 
 ! ----------------------------------------------------------------------------------!
 !SUBROUTINE ALE_RKDSS-----------------------------------------------CE-for FVM!
@@ -1441,9 +1577,9 @@ subroutine ALE_elems_with_dep_points (elem_indexes, dep_points, num_neighbors, n
 
   ! The ngh_corners array is a list of corners of both elem and all of it's
   ! neighor elements all sorted by global id.
+  integer              , intent(in)                :: num_neighbors
   type(cartesian3D_t),intent(in)                   :: ngh_corners(4,num_neighbors)
   integer              , intent(out)               :: elem_indexes(np,np)
-  integer              , intent(in)                :: num_neighbors
   type(cartesian3D_t)  , intent(in)                :: dep_points(np,np)
 
   integer                                          :: i,j,n
@@ -1577,7 +1713,7 @@ end subroutine ALE_parametric_coords
     ! Also: save a copy of div(U dp) in derived%div(:,:,:,1), which will be DSS'd
     !       and a DSS'ed version stored in derived%div(:,:,:,2)
     do ie=nets,nete
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k, gradQ)
 #endif
       do k=1,nlev
@@ -1734,7 +1870,7 @@ end subroutine ALE_parametric_coords
     ! initialize dp, and compute Q from Qdp (and store Q in Qtens_biharmonic)
     do ie = nets , nete
       ! add hyperviscosity to RHS.  apply to Q at timelevel n0, Qdp(n0)/dp
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k, q)
 #endif
       do k = 1 , nlev    !  Loop index added with implicit inversion (AAM)
@@ -1791,7 +1927,7 @@ end subroutine ALE_parametric_coords
       ! nu_p>0):   qtens_biharmonc *= elem()%psdiss_ave      (for consistency, if nu_p=nu_q)
       if ( nu_p > 0 ) then
         do ie = nets , nete
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
           !$omp parallel do private(k, q, dp0, dpdiss)
 #endif
           do k = 1 , nlev
@@ -1813,7 +1949,7 @@ end subroutine ALE_parametric_coords
       call biharmonic_wk_scalar_minmax( elem , qtens_biharmonic , deriv , edgeAdvQ3 , hybrid , &
            nets , nete , qmin(:,:,nets:nete) , qmax(:,:,nets:nete) )
       do ie = nets , nete
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
         !$omp parallel do private(k, q, dp0)
 #endif
         do k = 1 , nlev    !  Loop inversion (AAM)
@@ -1841,7 +1977,7 @@ end subroutine ALE_parametric_coords
     if ( DSSopt == DSSdiv_vdp_ave ) DSSvar => elem(ie)%derived%divdp_proj(:,:,:)
 
     ! Compute velocity used to advance Qdp
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
 #endif
     do k = 1 , nlev    !  Loop index added (AAM)
@@ -1853,7 +1989,7 @@ end subroutine ALE_parametric_coords
     enddo
 
     ! advance Qdp
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(q,k,gradQ,dp_star,qtens,dpdiss)
 #endif
     do q = 1 , qsize
@@ -1903,7 +2039,7 @@ end subroutine ALE_parametric_coords
     else
       call edgeVpack(edgeAdv_p1 , elem(ie)%state%Qdp(:,:,:,:,np1_qdp) , nlev*qsize , 0 , elem(ie)%desc )
       ! also DSS extra field
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
 #endif
       do k = 1 , nlev
@@ -1926,7 +2062,7 @@ end subroutine ALE_parametric_coords
 
     if ( DSSopt == DSSno_var ) then
       call edgeVunpack( edgeAdv    , elem(ie)%state%Qdp(:,:,:,:,np1_qdp) , nlev*qsize , 0 , elem(ie)%desc )
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,q)
 #endif
       do q = 1 , qsize
@@ -1936,8 +2072,8 @@ end subroutine ALE_parametric_coords
       enddo
     else
       call edgeVunpack( edgeAdv_p1 , elem(ie)%state%Qdp(:,:,:,:,np1_qdp) , nlev*qsize , 0 , elem(ie)%desc )
-#if (defined ELEMENT_OPENMP)
-      !$omp parallel do private(k,q)
+#if (defined COLUMN_OPENMP)
+      !$omp parallel do private(q,k)
 #endif
       do q = 1 , qsize
         do k = 1 , nlev    !  Potential loop inversion (AAM)
@@ -1952,7 +2088,7 @@ end subroutine ALE_parametric_coords
     endif
   enddo
 #ifdef DEBUGOMP
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -2044,7 +2180,7 @@ end subroutine ALE_parametric_coords
      else
 	call edgeVpack(edgeAdv_p1,elem(ie)%state%Qdp(:,:,:,:,n0_qdp),nlev*qsize,0,elem(ie)%desc)
 	! also DSS extra field
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
 #endif
 	do k=1,nlev
@@ -2078,7 +2214,7 @@ end subroutine ALE_parametric_coords
      endif
 
      ! compute flux and advection term
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
 #endif
      do k=1,nlev
@@ -2088,8 +2224,8 @@ end subroutine ALE_parametric_coords
         Vstar(:,:,2,k) = elem(ie)%derived%vn0(:,:,2,k)/dp(:,:,k)
      enddo
 
-#if (defined ELEMENT_OPENMP)
-!$omp parallel do private(k,q,vtemp,divdp,pshat,i,j)
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(q,k,vtemp,divdp,pshat,j,i)
 #endif
      do q=1,qsize
         do k=1,nlev
@@ -2146,7 +2282,7 @@ end subroutine ALE_parametric_coords
      end do
   end do
 #ifdef DEBUGOMP
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -2342,7 +2478,7 @@ end subroutine ALE_parametric_coords
   integer i,j,k
   real (kind=real_kind) :: mass,mass_new,area,qmin(nlev),qmax(nlev),mass2
 
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,mass,area,mass2,mass_new,i,j)
 #endif
   do k = 1 , nlev
@@ -2520,8 +2656,8 @@ end subroutine ALE_parametric_coords
   do ic = 1 , hypervis_subcycle_q
     do ie = nets , nete
       ! Qtens = Q/dp   (apply hyperviscsoity to dp0 * Q, not Qdp)
-#if (defined ELEMENT_OPENMP)
-!$omp parallel do private(k,q)
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(k,dp0,q)
 #endif
       do k = 1 , nlev
          ! various options:
@@ -2551,8 +2687,8 @@ end subroutine ALE_parametric_coords
     call biharmonic_wk_scalar( elem , Qtens , deriv , edgeAdv , hybrid , nets , nete )
     do ie = nets , nete
       !spheremp     => elem(ie)%spheremp
-#if (defined ELEMENT_OPENMP)
-!$omp parallel do private(q,k,i,j,dp0)
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(q,k,j,i,dp0)
 #endif
       do q = 1 , qsize
         do k = 1 , nlev
@@ -2579,7 +2715,7 @@ end subroutine ALE_parametric_coords
     do ie = nets , nete
       call edgeVunpack( edgeAdv , elem(ie)%state%Qdp(:,:,:,:,nt_qdp) , qsize*nlev , 0 , elem(ie)%desc )
       !rspheremp     => elem(ie)%rspheremp
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(q,k)
 #endif
       do q = 1 , qsize
@@ -2590,7 +2726,7 @@ end subroutine ALE_parametric_coords
       enddo
     enddo
 #ifdef DEBUGOMP
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif

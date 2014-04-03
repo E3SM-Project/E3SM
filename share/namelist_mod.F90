@@ -94,7 +94,7 @@ module namelist_mod
       
 
   !-----------------
-  use thread_mod, only : nthreads, nthreads_accel, omp_get_max_threads
+  use thread_mod, only : nthreads, nthreads_accel, omp_get_max_threads, vert_num_threads
   !-----------------
   use dimensions_mod, only : ne, np, npdg, nnodes, nmpi_per_node, npart, ntrac, ntrac_d, qsize, qsize_d, set_mesh_dimensions
   !-----------------
@@ -231,6 +231,7 @@ module namelist_mod
                      qsize,         &       ! number of SE tracers
                      ntrac,         &       ! number of fvm tracers
                      nthreads,      &       ! Number of threads per process
+                     vert_num_threads,      &       ! Number of threads per process
                      nthreads_accel,      &       ! Number of threads per an accelerator process
                      limiter_option, &
                      smooth,        &        ! Timestep Filter
@@ -419,11 +420,12 @@ module namelist_mod
     ndays         = 0
     nmax          = 12
     nthreads = 1
-    nthreads_accel = 1
+    vert_num_threads = 1
+    nthreads_accel = -1
     se_ftype = ftype   ! MNL: For non-CAM runs, ftype=0 in control_mod
     phys_tscale=0
     nsplit = 1
-    pertlim = 0.
+    pertlim = 0.0_real_kind
 #endif
     sub_case      = 1
     numnodes      = -1
@@ -445,7 +447,6 @@ module namelist_mod
     tracer_advection_formulation  = TRACERADV_UGRADQ
 #endif
     use_semi_lagrange_transport   = .false.
-!    pertlim = 0.0_real_kind
     disable_diagnostics = .false.
 
 
@@ -512,7 +513,7 @@ module namelist_mod
        nEndStep = nmax
 #endif
 
-       if ((integration == "semi_imp").or.(integration == "full_imp")) then
+       if (integration == "semi_imp") then
           ! =========================
           ! set solver defaults
           ! =========================
@@ -545,7 +546,8 @@ module namelist_mod
 #else
           read(*,nml=solver_nl)
 #endif
-       else if((integration .ne. "explicit").and.(integration .ne. "runge_kutta")) then
+       else if((integration .ne. "explicit").and.(integration .ne. "runge_kutta").and. &
+                    (integration .ne. "full_imp")) then
           call abortmp('integration must be explicit, semi_imp, full_imp, or runge_kutta')
        end if
 
@@ -553,8 +555,7 @@ module namelist_mod
           if (tstep_type<10) then
              ! namelist did not set a valid tstep_type. pick one:
              tstep_type=11   ! backward euler
-             !tstep_type=12  ! Crank Nicolson
-             !tstep_type=13  ! BDF2 with BE bootstrap
+             !tstep_type=12  ! BDF2 with BE bootstrap
           endif
        endif
 
@@ -825,6 +826,7 @@ module namelist_mod
     call MPI_bcast(tstep     ,1,MPIreal_t   ,par%root,par%comm,ierr)
     call MPI_bcast(nmax      ,1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(NTHREADS  ,1,MPIinteger_t,par%root,par%comm,ierr)
+    call MPI_bcast(vert_num_threads,1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(nthreads_accel  ,1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(ndays     ,1,MPIinteger_t,par%root,par%comm,ierr)
 
@@ -846,7 +848,6 @@ module namelist_mod
     call MPI_bcast(nu_div       ,1,MPIreal_t   ,par%root,par%comm,ierr)
     call MPI_bcast(nu_p         ,1,MPIreal_t   ,par%root,par%comm,ierr)
     call MPI_bcast(nu_top   ,1,MPIreal_t   ,par%root,par%comm,ierr)
-!    call MPI_bcast(pertlim, 1, MPIreal_t, par%root,par%comm,ierr)
     call MPI_bcast(disable_diagnostics,1,MPIlogical_t,par%root,par%comm,ierr)
     call MPI_bcast(psurf_vis,1,MPIinteger_t   ,par%root,par%comm,ierr)
     call MPI_bcast(hypervis_order,1,MPIinteger_t   ,par%root,par%comm,ierr)
@@ -947,9 +948,15 @@ module namelist_mod
     call MPI_bcast(output_type , 9,MPIChar_t,par%root,par%comm,ierr)
     call MPI_bcast(infilenames ,160*MAX_INFILES ,MPIChar_t,par%root,par%comm,ierr)
 
+#ifdef IS_ACCELERATOR
+    if (nthreads_accel > 0) then
+        nthreads = nthreads_accel
+    end if
+#endif
+
     ! sanity check on thread count
     ! HOMME will run if if nthreads > max, but gptl will print out GB of warnings.
-    if (NThreads > omp_get_max_threads()) then
+    if (NThreads*vert_num_threads > omp_get_max_threads()) then
        if(par%masterproc) write(iulog,*) "Main:NThreads=",NThreads
        if(par%masterproc) print *,'omp_get_max_threads() = ',OMP_get_max_threads()
        if(par%masterproc) print *,'requested threads exceeds OMP_get_max_threads()'
@@ -1129,6 +1136,7 @@ module namelist_mod
           call abortmp('user specified ntrac > ntrac_d parameter in dimensions_mod.F90')
        endif
        write(iulog,*)"readnl: NThreads      = ",NTHREADS
+       write(iulog,*)"readnl: vert_num_threads = ",vert_num_threads
        write(iulog,*)"readnl: nthreads_accel = ",nthreads_accel
 #endif
 

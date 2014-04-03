@@ -161,7 +161,7 @@ contains
     ! =========================================
     do i=1,np
     do j=1,np
-       elem%spherep(i,j)=ref2sphere(gll_points(i),gll_points(j),elem%corners3D,elem%corners,elem%facenum)
+       elem%spherep(i,j)=ref2sphere(gll_points(i),gll_points(j),elem%corners3D,cubed_sphere_map,elem%corners,elem%facenum)
     enddo
     enddo
 
@@ -285,7 +285,7 @@ contains
        do i=1,np
           x1=gll_points(i)
           x2=gll_points(j)
-          call Dmap(elem%D(:,:,i,j),x1,x2,elem%corners3D,elem%corners,elem%u2qmap,elem%facenum)
+          call Dmap(elem%D(:,:,i,j),x1,x2,elem%corners3D,cubed_sphere_map,elem%corners,elem%u2qmap,elem%facenum)
 
 
           ! Numerical metric tensor based on analytic D: met = D^T times D
@@ -619,25 +619,28 @@ contains
   ! vector fields on the reference element onto vector fields on
   ! the sphere. 
   ! ========================================================
-  subroutine Dmap(D, a,b, corners3D, corners, u2qmap, facenum)
+  subroutine Dmap(D, a,b, corners3D, ref_map, corners, u2qmap, facenum)
     real (kind=real_kind), intent(out)  :: D(2,2)
     real (kind=real_kind), intent(in)     :: a,b
     type (cartesian3D_t)   :: corners3D(4)  !x,y,z coords of element corners
+    integer :: ref_map 
+    ! only needed for ref_map=0,1
     type (cartesian2D_t),optional   :: corners(4)    ! gnomonic coords of element corners
     real (kind=real_kind),optional  :: u2qmap(4,2)   
     integer,optional  :: facenum
 
 
-    if (cubed_sphere_map==0) then
+
+    if (ref_map==0) then
        if (.not. present ( corners ) ) &
             call abortmp('Dmap(): missing arguments for equiangular map')
        call dmap_equiangular(D,a,b,corners,u2qmap,facenum)
-    else if (cubed_sphere_map==1) then
+    else if (ref_map==1) then
        call abortmp('equi-distance gnomonic map not yet implemented')
-    else if (cubed_sphere_map==2) then
+    else if (ref_map==2) then
        call dmap_elementlocal(D,a,b,corners3D)
     else
-       call abortmp('bad value of cubed_sphere_map')
+       call abortmp('bad value of ref_map')
     endif
   end subroutine Dmap
 
@@ -841,7 +844,7 @@ contains
     real(kind=real_kind)               ::  D1(2,3), D2(3,3), D3(3,2), D4(3,2)
     integer :: i,j
 
-    sphere = ref2sphere(a,b,corners3D)
+    sphere = ref2sphere(a,b,corners3D,2) ! use element local map, ref_map=2
 
     c(1,1)=corners3D(1)%x;  c(2,1)=corners3D(1)%y;  c(3,1)=corners3D(1)%z; 
     c(1,2)=corners3D(2)%x;  c(2,2)=corners3D(2)%y;  c(3,2)=corners3D(2)%z; 
@@ -2473,43 +2476,49 @@ contains
 !  equi-angular cubed-sphere mapping for non-cubed sphere grids, hence the 
 !  need for a new map)
 !
-  function ref2sphere_double(a,b, corners3D, corners, facenum) result(sphere)
+  function ref2sphere_double(a,b, corners3D, ref_map, corners, facenum) result(sphere)
     real(kind=real_kind)    :: a,b
     type (spherical_polar_t)      :: sphere
     type (cartesian3d_t)            :: corners3D(4)
-    type (cartesian2d_t), optional  :: corners(4)  ! only needed for gnominic maps
-    integer, optional               :: facenum     ! only needed for gnominic maps
+    integer :: ref_map
+    ! only needed for gnominic maps
+    type (cartesian2d_t), optional  :: corners(4)  
+    integer, optional               :: facenum    
 
-    if (cubed_sphere_map==0) then
+
+    if (ref_map==0) then
        if (.not. present(corners) ) &
             call abortmp('ref2sphere_double(): missing arguments for equiangular map')
        sphere = ref2sphere_equiangular_double(a,b,corners,facenum)
-    elseif (cubed_sphere_map==1) then
+    elseif (ref_map==1) then
 !       sphere = ref2sphere_gnomonic_double(a,b,corners,face_no)
-    elseif (cubed_sphere_map==2) then
+       call abortmp('gnomonic map not yet coded')
+    elseif (ref_map==2) then
        sphere = ref2sphere_elementlocal_double(a,b,corners3D)
     else
-       call abortmp('ref2sphere_double(): bad value of cubed_sphere_map')
+       call abortmp('ref2sphere_double(): bad value of ref_map')
     endif
   end function
 
-  function ref2sphere_longdouble(a,b, corners3D, corners, facenum) result(sphere)
+  function ref2sphere_longdouble(a,b, corners3D, ref_map, corners, facenum) result(sphere)
     real(kind=longdouble_kind)    :: a,b
     type (spherical_polar_t)      :: sphere
     type (cartesian3d_t)          :: corners3D(4)
     type (cartesian2d_t), optional  :: corners(4)
     integer, optional               :: facenum
+    integer :: ref_map
 
-    if (cubed_sphere_map==0) then
+    if (ref_map==0) then
        if (.not. present(corners) ) &
             call abortmp('ref2sphere_double(): missing arguments for equiangular map')
        sphere = ref2sphere_equiangular_longdouble(a,b,corners,facenum)
-    elseif (cubed_sphere_map==1) then
+    elseif (ref_map==1) then
 !       sphere = ref2sphere_gnomonic_longdouble(a,b,corners,face_no)
-    elseif (cubed_sphere_map==2) then
+       call abortmp('gnomonic map not yet coded')
+    elseif (ref_map==2) then
        sphere = ref2sphere_elementlocal_longdouble(a,b,corners3D)
     else
-       call abortmp('ref2sphere_double(): bad value of cubed_sphere_map')
+       call abortmp('ref2sphere_double(): bad value of ref_map')
     endif
   end function
 

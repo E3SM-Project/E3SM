@@ -9,9 +9,6 @@ module element_mod
   use dimensions_mod,         only: np, npsq, nlev, nlevp, qsize_d, max_neigh_edges
   use edge_mod,               only: edgedescriptor_t, rotation_t
   use gridgraph_mod,          only: gridvertex_t
-#ifdef _FVM
-  use dimensions_mod,         only: nc, nhc, ntrac_d
-#endif
 
   implicit none
   private

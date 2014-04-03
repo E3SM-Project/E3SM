@@ -11,6 +11,7 @@ module viscosity_mod
 !  by element)
 !
 !
+use thread_mod
 use kinds, only : real_kind, iulog
 use dimensions_mod, only : np, nlev,qsize,nelemd
 use hybrid_mod, only : hybrid_t, hybrid_create
@@ -118,7 +119,7 @@ logical var_coef1
       pstens(:,:,ie)=laplace_sphere_wk(elem(ie)%state%ps_v(:,:,nt),deriv,elem(ie),var_coef=var_coef1)
 #endif
       
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k, j, i)
 #endif
       do k=1,nlev
@@ -162,7 +163,7 @@ logical var_coef1
       call edgeVunpack(edge3, vtens(1,1,1,1,ie), 2*nlev, kptr, elem(ie)%desc)
       
       ! apply inverse mass matrix, then apply laplace again
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k, j, i, v)
 #endif
       do k=1,nlev
@@ -188,7 +189,7 @@ logical var_coef1
 
    enddo
 #ifdef DEBUGOMP
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -245,11 +246,10 @@ logical var_coef1
    endif
 
 
-
    do ie=nets,nete
 
-#if (defined ELEMENT_OPENMP)
-!$omp parallel do private(k)
+#if (defined COLUMN_OPENMP)
+!$omp parallel do default(shared), private(k,tmp)
 #endif
       do k=1,nlev
          tmp=elem(ie)%state%T(:,:,k,nt) 
@@ -281,8 +281,8 @@ logical var_coef1
       call edgeVunpack(edge3, dptens(1,1,1,ie), nlev, kptr, elem(ie)%desc)
       
       ! apply inverse mass matrix, then apply laplace again
-#if (defined ELEMENT_OPENMP)
-!$omp parallel do private(k,  v)
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(k,v,tmp)
 #endif
       do k=1,nlev
          tmp(:,:)=rspheremv(:,:)*ptens(:,:,k,ie)
@@ -298,7 +298,7 @@ logical var_coef1
       enddo
    enddo
 #ifdef DEBUGOMP
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -333,7 +333,7 @@ logical var_coef1
 
 
    do ie=nets,nete
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k, q, lap_p)
 #endif
       do q=1,qsize      
@@ -352,18 +352,18 @@ logical var_coef1
       call edgeVunpack(edgeq, qtens(:,:,:,:,ie),qsize*nlev,0,elem(ie)%desc)
 
       ! apply inverse mass matrix, then apply laplace again
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k, q, lap_p)
 #endif
       do q=1,qsize      
-      do k=1,nlev    !  Potential loop inversion (AAM)
-         lap_p(:,:)=elem(ie)%rspheremp(:,:)*qtens(:,:,k,q,ie)
-         qtens(:,:,k,q,ie)=laplace_sphere_wk(lap_p,deriv,elem(ie),var_coef=.true.)
-      enddo
+        do k=1,nlev    !  Potential loop inversion (AAM)
+           lap_p(:,:)=elem(ie)%rspheremp(:,:)*qtens(:,:,k,q,ie)
+           qtens(:,:,k,q,ie)=laplace_sphere_wk(lap_p,deriv,elem(ie),var_coef=.true.)
+        enddo
       enddo
    enddo
 #ifdef DEBUGOMP
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -402,7 +402,7 @@ logical var_coef1
 
 
    do ie=nets,nete
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k, q, lap_p)
 #endif
       do q=1,qsize      
@@ -434,23 +434,23 @@ logical var_coef1
       call edgeVunpackMax(edgeq, Qmax,qsize*nlev,2*qsize*nlev,elem(ie)%desc)
 
       ! apply inverse mass matrix, then apply laplace again
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k, q, lap_p)
 #endif
       do q=1,qsize      
-      do k=1,nlev    !  Potential loop inversion (AAM)
-         lap_p(:,:)=elem(ie)%rspheremp(:,:)*qtens(:,:,k,q,ie)
-         qtens(:,:,k,q,ie)=laplace_sphere_wk(lap_p,deriv,elem(ie),var_coef=.true.)
-         ! note: only need to consider the corners, since the data we packed was
-         ! constant within each element
-         emin(k,q,ie)=min(qmin(1,1,k,q),qmin(1,np,k,q),qmin(np,1,k,q),qmin(np,np,k,q))
-         emin(k,q,ie)=max(emin(k,q,ie),0d0)
-         emax(k,q,ie)=max(qmax(1,1,k,q),qmax(1,np,k,q),qmax(np,1,k,q),qmax(np,np,k,q))
-      enddo
+        do k=1,nlev    !  Potential loop inversion (AAM)
+           lap_p(:,:)=elem(ie)%rspheremp(:,:)*qtens(:,:,k,q,ie)
+           qtens(:,:,k,q,ie)=laplace_sphere_wk(lap_p,deriv,elem(ie),var_coef=.true.)
+           ! note: only need to consider the corners, since the data we packed was
+           ! constant within each element
+           emin(k,q,ie)=min(qmin(1,1,k,q),qmin(1,np,k,q),qmin(np,1,k,q),qmin(np,np,k,q))
+           emin(k,q,ie)=max(emin(k,q,ie),0d0)
+           emax(k,q,ie)=max(qmax(1,1,k,q),qmax(1,np,k,q),qmax(np,1,k,q),qmax(np,np,k,q))
+        enddo
       enddo
    enddo
 #ifdef DEBUGOMP
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -482,7 +482,7 @@ integer :: k,i,j,ie,ic,kptr
 call initEdgeBuffer(hybrid%par,edge1,nlev)
 
 do ie=nets,nete
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
 #endif
    do k=1,nlev
@@ -495,7 +495,7 @@ call bndry_exchangeV(hybrid,edge1)
 do ie=nets,nete
    kptr=0
    call edgeVunpack(edge1, zeta(1,1,1,ie),nlev,kptr,elem(ie)%desc)
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
 #endif
    do k=1,nlev
@@ -503,7 +503,7 @@ do ie=nets,nete
    enddo
 enddo
 #ifdef DEBUGOMP
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -526,7 +526,7 @@ type (EdgeBuffer_t)          :: edge2
 call initEdgeBuffer(hybrid%par,edge2,2*nlev)
 
 do ie=nets,nete
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
 #endif
    do k=1,nlev
@@ -540,7 +540,7 @@ call bndry_exchangeV(hybrid,edge2)
 do ie=nets,nete
    kptr=0
    call edgeVunpack(edge2, v(1,1,1,1,ie),2*nlev,kptr,elem(ie)%desc)
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
 #endif
    do k=1,nlev
@@ -549,7 +549,7 @@ do ie=nets,nete
    enddo
 enddo
 #ifdef DEBUGOMP
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -718,7 +718,7 @@ type (derivative_t)          :: deriv
 call derivinit(deriv)
 
 do ie=nets,nete
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
 #endif
 do k=1,nlev
@@ -754,7 +754,7 @@ type (derivative_t)          :: deriv
 call derivinit(deriv)
 
 do ie=nets,nete
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
 #endif
 do k=1,nlev
@@ -795,10 +795,10 @@ real (kind=real_kind) :: Qmax(np,np,nlev,qsize)
 
     ! compute Qmin, Qmax
     do ie=nets,nete
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k, q)
 #endif
-       do q=1,qsize	
+       do q=1,qsize
           do k=1,nlev
              Qmin(:,:,k,q)=min_neigh(k,q,ie)
              Qmax(:,:,k,q)=max_neigh(k,q,ie)
@@ -811,10 +811,10 @@ real (kind=real_kind) :: Qmax(np,np,nlev,qsize)
     call bndry_exchangeV(hybrid,edgeMinMax)
        
     do ie=nets,nete
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k, q)
 #endif
-       do q=1,qsize	
+       do q=1,qsize
           do k=1,nlev         
              Qmin(:,:,k,q)=min_neigh(k,q,ie) ! restore element data.  we could avoid
              Qmax(:,:,k,q)=max_neigh(k,q,ie) ! this by adding a "ie" index to Qmin/max
@@ -823,7 +823,7 @@ real (kind=real_kind) :: Qmax(np,np,nlev,qsize)
 ! WARNING - edgeVunpackMin/Max take second argument as input/ouput
        call edgeVunpackMin(edgeMinMax,Qmin,nlev*qsize,0,elem(ie)%desc)
        call edgeVunpackMax(edgeMinMax,Qmax,nlev*qsize,nlev*qsize,elem(ie)%desc)
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k, q)
 #endif
        do q=1,qsize
@@ -837,7 +837,7 @@ real (kind=real_kind) :: Qmax(np,np,nlev,qsize)
        end do
     end do
 #ifdef DEBUGOMP
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -890,7 +890,7 @@ integer :: ie,k,q
 
     ! compute p min, max
     do ie=nets,nete
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
 #endif
        do k=1,nlev
@@ -907,7 +907,7 @@ integer :: ie,k,q
     call bndry_exchangeV(hybrid,edgebuf)
        
     do ie=nets,nete
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
 #endif
        do k=1,nlev
@@ -917,7 +917,7 @@ integer :: ie,k,q
 
        ! now unpack the min
        if (present(min_var)) then
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
 #endif
           do k=1,nlev
@@ -925,7 +925,7 @@ integer :: ie,k,q
           enddo
 ! WARNING - edgeVunpackMin/Max take second argument as input/ouput
           call edgeVunpackMin(edgebuf,Qvar,nlev,2*nlev,elem(ie)%desc)
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
 #endif
           do k=1,nlev
@@ -935,7 +935,7 @@ integer :: ie,k,q
 
        ! now unpack the max
        if (present(max_var)) then
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
 #endif
           do k=1,nlev
@@ -943,7 +943,7 @@ integer :: ie,k,q
           enddo
 ! WARNING - edgeVunpackMin/Max take second argument as input/ouput
           call edgeVunpackMax(edgebuf,Qvar,nlev,2*nlev,elem(ie)%desc)
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
 #endif
           do k=1,nlev
@@ -955,7 +955,7 @@ integer :: ie,k,q
 ! WARNING - edgeVunpackMin/Max take second argument as input/ouput
        call edgeVunpackMax(edgebuf,Qmax,nlev,0,elem(ie)%desc)
        call edgeVunpackMin(edgebuf,Qmin,nlev,nlev,elem(ie)%desc)
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
 #endif
        do k=1,nlev
@@ -967,7 +967,7 @@ integer :: ie,k,q
 
     call FreeEdgeBuffer(edgebuf) 
 #ifdef DEBUGOMP
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -1248,7 +1248,7 @@ end subroutine
 
     end do
 #ifdef DEBUGOMP
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif

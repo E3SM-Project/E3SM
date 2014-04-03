@@ -24,7 +24,7 @@ module prim_state_mod
   ! ------------------------------
   use hybvcoord_mod, only : hvcoord_t 
   ! ------------------------------
-  use global_norms_mod, only : global_integral 
+  use global_norms_mod, only : global_integral, linf_snorm, l1_snorm, l2_snorm
   ! ------------------------------
   use element_mod, only : element_t
   ! ------------------------------
@@ -35,6 +35,10 @@ module prim_state_mod
   ! ------------------------------
   use reduction_mod, only : parallelmax,parallelmin
   ! ------------------------------
+#ifdef _REFSOLN
+  use ref_state_mod, only : ref_state_read, ref_state_write
+#endif
+
 implicit none
 private
   character(len=*), private, parameter :: massfname = "mass.out"
@@ -43,6 +47,7 @@ private
 
 
   public :: prim_printstate
+  public :: prim_printstate_par
   public :: prim_printstate_init
   public :: prim_energy_halftimes
   public :: prim_diag_scalars
@@ -86,8 +91,6 @@ contains
     type (hvcoord_t), intent(in)   :: hvcoord
     integer,intent(in)             :: nets,nete
 
-
-
     ! Local variables...
     integer :: i,j,k,ie
     integer,parameter  :: type=ORDERED
@@ -106,7 +109,6 @@ contains
     real (kind=real_kind)  :: ps(np,np)
     real (kind=real_kind)  :: dp(np,np)
     !    real (kind=real_kind)  :: E(np,np)
-
 
     real (kind=real_kind) :: umin_local(nets:nete), umax_local(nets:nete), usum_local(nets:nete), &
          vmin_local(nets:nete), vmax_local(nets:nete), vsum_local(nets:nete), &
@@ -398,6 +400,8 @@ contains
        if(fvmin_p.ne.fvmax_p) write(iulog,100) "fv = ",fvmin_p,fvmax_p,fvsum_p
        if(ftmin_p.ne.ftmax_p) write(iulog,100) "ft = ",ftmin_p,ftmax_p,ftsum_p
        if(fqmin_p.ne.fqmax_p) write(iulog,100) "fq = ",fqmin_p, fqmax_p, fqsum_p
+
+
     endif
  
 
@@ -688,6 +692,75 @@ contains
   end subroutine prim_printstate
    
    
+  subroutine prim_printstate_par(elem, tl,hybrid,hvcoord,nets,nete, par)
+    type (element_t), intent(in) :: elem(:)
+    type (TimeLevel_t), target, intent(in) :: tl
+    type (hybrid_t),intent(in)     :: hybrid
+    type (hvcoord_t), intent(in)   :: hvcoord
+    integer,intent(in)             :: nets,nete
+    character(len=*), parameter    :: fstub = "state_norms"
+    integer	                   :: simday
+    type(parallel_t)               :: par
+
+    real (kind=real_kind)  :: v(np,np,2,nlev,nets:nete)
+    real (kind=real_kind)  :: t(np,np,nlev,nets:nete)
+    real (kind=real_kind)  :: ps_v(np,np,nets:nete)
+    real (kind=real_kind)  :: vp(np,np,2,nlev,nets:nete)
+    real (kind=real_kind)  :: tp(np,np,nlev,nets:nete)
+    real (kind=real_kind)  :: ps_vp(np,np,nets:nete)
+    real (kind=real_kind) :: l1,l2,linf
+    integer               :: n0,i,j,k,ie,npts
+
+    npts=SIZE(elem(1)%state%lnps(:,:,n0),1)
+    n0=tl%n0
+    do ie=nets,nete
+       v(:,:,:,:,ie)=elem(ie)%state%v(:,:,:,:,n0) 
+       T(:,:,:,ie)=elem(ie)%state%T(:,:,:,n0) 
+       ps_v(:,:,ie)=elem(ie)%state%ps_v(:,:,n0) 
+    enddo
+       simday = 0
+
+#ifdef _REFSOLN
+! parallel write file with state vector in unformatted blocks for later calculation of norms
+!    call ref_state_write(v(:,:,:,:,nets:nete),T(:,:,:,nets:nete),ps_v(:,:,nets:nete), & 
+!	fstub,simday,nets,nete,par)
+!    do ie=nets,nete
+!       vp(:,:,:,:,ie)=v(:,:,:,:,ie)
+!       Tp(:,:,:,ie)=T(:,:,:,ie)
+!       ps_vp(:,:,ie)=ps_v(:,:,ie)
+!    end do
+#endif
+
+#ifdef _REFSOLN
+! parallel read file with state vector in unformatted blocks as written above
+#if (defined HORIZ_OPENMP)
+    !$OMP BARRIER
+#endif
+!  Parallel version of ref_state, comment out if writing above
+!    call ref_state_read(vp(:,:,:,:,nets:nete),Tp(:,:,:,nets:nete),ps_vp(:,:,nets:nete), & 
+!	fstub,simday,nets,nete,par)
+#if (defined HORIZ_OPENMP)
+    !$OMP BARRIER
+#endif
+
+    npts=np
+
+    l1   = l1_snorm(elem,ps_v(:,:,nets:nete),  ps_vp(:,:,nets:nete),hybrid,npts,nets,nete)
+    l2   = l2_snorm(elem,ps_v(:,:,nets:nete),  ps_vp(:,:,nets:nete),hybrid,npts,nets,nete)
+    linf = linf_snorm(ps_v(:,:,nets:nete),ps_vp(:,:,nets:nete),hybrid,npts,nets,nete)
+
+    if (hybrid%par%masterproc .and. (hybrid%ithr==0)) then
+       print *,simday, "L1=",l1
+       print *,simday, "L2=",l2
+       print *,simday, "Linf=",linf
+    end if
+#if (defined HORIZ_OPENMP)
+    !$OMP BARRIER
+#endif
+#endif
+
+
+  end subroutine prim_printstate_par
 
 !=======================================================================================================! 
 
@@ -773,7 +846,7 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     !        [Cp + (Cpv-Cp) Q(n)] *dpdn(n)*T(n+1) 
     do ie=nets,nete
 
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
 #endif
        do k=1,nlev
@@ -783,7 +856,7 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
                ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,t2)
        enddo
 
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j,cp_star1,cp_star2,qval_t1,qval_t2)
 #endif
        do k=1,nlev
@@ -824,7 +897,7 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
 
     
     !   KE   .5 dp/dn U^2
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,E)
 #endif
        do k=1,nlev
@@ -940,7 +1013,7 @@ subroutine prim_diag_scalars(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     if (tstep_type>0) then
 
        do ie=nets,nete
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
           !$omp parallel do private(q,k,suml)
 #endif
           do q=1,qsize
@@ -953,7 +1026,7 @@ subroutine prim_diag_scalars(elem,hvcoord,tl,n,t_before_advance,nets,nete)
        enddo
        
        do ie=nets,nete
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
           !$omp parallel do private(q,k,suml)
 #endif
           do q=1,qsize

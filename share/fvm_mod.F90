@@ -985,8 +985,11 @@ contains
     
     use derivative_mod, only : derivative_t
     
-#ifndef _PRIM
-    use fvm_bsp_mod, only: boomerang, solidbody
+!#undef ANALITICAL_DEPATURE
+#define ANALITICAL_DEPATURE
+#ifdef ANALITICAL_DEPATURE
+    use fvm_bsp_mod, only: boomerang
+!    use fvm_bsp_mod, only: solidbody
 #endif
     
     implicit none
@@ -1002,21 +1005,19 @@ contains
     
     
 !phl    ! for the benchmark test, use more accurate departure point creation
-!phl#if 0 
+#ifdef ANALITICAL_DEPATURE
 !phl    !CE: define new mesh for fvm fvm on an equal angular grid
 !phl    ! go from alpha,beta -> cartesian xy on cube -> lat lon on the sphere
-!phl    ! #ifdef _FVM
     do j=1,nc+1
        do i=1,nc+1               
           !         call solidbody(fvm%asphere(i,j), fvm%dsphere(i,j,klev))
           call boomerang(fvm%asphere(i,j), fvm%dsphere(i,j,klev),tl%nstep)
        end do
     end do
-!phl    ! #endif
-!phl#else
-!phl    ! for given velocities in the element structure
-!phl    call fvm_dep_from_gll(elem, deriv, fvm%asphere,fvm%dsphere,dt,tl,klev)    
-!phl#endif
+#else
+    ! for given velocities in the element structure
+    call fvm_dep_from_gll(elem, deriv, fvm%asphere,fvm%dsphere,dt,tl,klev)    
+#endif
     
     if (test_cfldep) then
        call check_departurecell(fvm,klev) 

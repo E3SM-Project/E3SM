@@ -64,18 +64,19 @@ module coordinate_systems_mod
   public :: surfareaxy
   public :: distance
   public :: change_coordinates
-  public :: cart2cubedsphere
-  public :: spherical_to_cart   !CE
-  public :: projectpoint        ! should be called cubedsphere2spherical
-  public :: cubedsphere2cart
-  public :: sphere2cubedsphere
+  public :: cart2cubedsphere    ! (x,y,z)           -> equal-angle (x,y)
+  public :: spherical_to_cart   ! (lat,lon)         ->  (x,y,z)
+  public :: projectpoint        ! equal-angle (x,y) ->  (lat,lon)
+                                ! should be called cubedsphere2spherical
+  public :: cubedsphere2cart    ! equal-angle (x,y) ->  (x,y,z)
+  public :: sphere2cubedsphere  ! (lat,lon)         ->  equal-angle (x,y)
   public :: cube_face_number_from_cart
   public :: cube_face_number_from_sphere
 
 ! CE
-  public :: cart2cubedspherexy
+  public :: cart2cubedspherexy  !  (x,y,z)          -> gnomonic (x,y)
+  public :: cart2spherical      !  gnominic (x,y)   -> (lat,lon) 
 
-  public :: cart2spherical  !CE
   private :: copy_cart2d
   private :: eq_cart2d
   private :: distance_cart2D
