@@ -417,6 +417,7 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void
 	      }
 	    }
 	  }
+    }
 	  break;
 #endif
 #ifdef _PNETCDF
@@ -434,7 +435,6 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void
 	  ierr = iotype_error(file->iotype,__FILE__,__LINE__);
 	  
 	}
-      }
       if(region->next != NULL)
 	region = region->next;
     } // for(regioncnt=0;...)
