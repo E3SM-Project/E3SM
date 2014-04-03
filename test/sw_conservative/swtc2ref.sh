@@ -11,16 +11,20 @@
 #  Shallow water test case 6 Runge-Kutta test
 #  used to check stability of m-stage RK schemes
 #
-set wdir = ~/scratch1/swtc2
+set wdir = ~/scratch1/sweqx
 set HOMME = ~/codes/homme
-#set MACH = $HOMME/cmake/machineFiles/redsky.cmake
+set MACH = $HOMME/cmake/machineFiles/redsky.cmake
 #set MACH = $HOMME/cmake/machineFiles/darwin.cmake
-set MACH = $HOMME/cmake/machineFiles/rhel5.cmake
-set src = $HOMME/build/sweqx
+#set MACH = $HOMME/cmake/machineFiles/rhel5.cmake
 set input = $HOMME/test/sw_conservative
-mkdir $wdir
-cd $wdir
-mkdir movies
+
+set builddir = $wdir/bld
+set rundir = $wdir/swtc2ref
+mkdir -p $rundir
+mkdir -p $wdir/bld
+
+cd $builddir
+
 
 set NCPU = 2
 if ( ${?PBS_NODEFILE} ) then
@@ -43,7 +47,7 @@ if ( $#argv >= 1) then
   if ( $1 == 'build' ) set build = 1
 endif
 #cmake:
-cd $wdir
+cd $builddir
 if ( $build == 1 ) then
    rm -rf CMakeFiles CMakeCache.txt
    cmake -C $MACH -DSWEQX_PLEV=1  -DSWEQX_NP=4 $HOMME
@@ -53,7 +57,12 @@ if ( $make == 1 ) then
    make -j4 sweqx
     if ($status) exit
 endif
-set exe = $wdir/src/sweqx/sweqx
+set exe = $builddir/src/sweqx/sweqx
+
+
+
+cd $rundir
+mkdir movies
 
 
 # defaults:

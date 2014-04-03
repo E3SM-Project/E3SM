@@ -70,6 +70,8 @@ SET(PRIM_SRCS ${SRC_SHARE_DIR}/kinds.F90
 					     ${UTILS_SHARE_DIR}/shr_file_mod.F90 
 					     ${UTILS_SHARE_DIR}/shr_vmath_mod.F90 
 					     ${UTILS_SHARE_DIR}/shr_vmath_fwrap.c 
+                                             ${UTILS_SHARE_DIR}/shr_spfn_mod.F90 
+                                             ${UTILS_SHARE_DIR}/shr_const_mod.F90 
 					     ${UTILS_TIMING_DIR}/perf_mod.F90 
 					     ${UTILS_TIMING_DIR}/perf_utils.F90 
 					     ${SRC_SHARE_DIR}/domain_mod.F90 
@@ -107,6 +109,8 @@ SET(PRIM_SRCS ${SRC_SHARE_DIR}/kinds.F90
 					     ${SRC_DIR}/repro_sum_mod.F90 
 					     ${SRC_DIR}/interpolate_driver_mod.F90 
 					     ${SRC_DIR}/netcdf_io_mod.F90 
+					     ${SRC_DIR}/ref_state_mod.F90 
+					     ${SRC_DIR}/jrio.c
 					     ${SRC_SHARE_DIR}/mesh_mod.F90 
 					     ${SRC_SHARE_DIR}/Manager.F90
 					     ${SRC_SHARE_DIR}/prim_derived_type_mod.F90 
@@ -114,6 +118,8 @@ SET(PRIM_SRCS ${SRC_SHARE_DIR}/kinds.F90
 					     ${UTILS_TRILINOS_DIR}/trilinosModelEvaluator.cpp 
 					     ${UTILS_TRILINOS_DIR}/block_precon_interface.cpp 
 					     ${UTILS_TRILINOS_DIR}/precon_interface.cpp 
+					     ${UTILS_TRILINOS_DIR}/belos_helm.cpp 
+					     ${SRC_DIR}/derived_type_mod.F90 
 )
 
 

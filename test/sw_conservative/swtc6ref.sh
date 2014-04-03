@@ -7,13 +7,24 @@
 #PBX -a 1758
 #XXX -W depend=afterany:jobid
 
+
 #
 #  Shallow water test case 6 "referece" test described in
 #  homme/README 
 #
-set wdir = ~/scratch1/swtc6
+set wdir = ~/scratch1/sweqx
 set src = ~/codes/homme/build/sweqx
 set input = ~/codes/homme/test/sw_conservative
+
+
+set builddir = $wdir/bld
+set rundir = $wdir/swtc6ref
+
+mkdir -p $builddir
+mkdir -p $rundir
+cd $builddir
+
+
 
 set NCPU = 2
 if ( ${?PBS_NODEFILE} ) then
@@ -28,34 +39,33 @@ endif
 echo NCPU = $NCPU
 
 
+
 set test_case = swtc6
 set sub_case = 1 # default
 
-#configure the model
-cd $src
-set configure = 1
-if ( $configure ) then
-  if (${?PNETCDF_PATH} ) then
-     ./configure --with-netcdf=$NETCDF_PATH --with-pnetcdf=$PNETCDF_PATH NP=4 PLEV=1
-  else
-     ./configure --with-netcdf=$NETCDF_PATH NP=4 PLEV=1
-  endif
-  if ($status ) exit
-
-  make clean
-  make -j4 depends
-  if ($status ) exit
+set build = 0
+set make = 1
+if ( $#argv >= 1) then
+  if ( $1 == 'build' ) set build = 1
 endif
 
-make -j4 sweqx
-if ($status ) exit
+#cmake:
+cd $builddir
+if ( $build == 1 ) then
+   rm -rf CMakeFiles CMakeCache.txt
+   cmake -C $MACH -DSWEQX_PLEV=1  -DSWEQX_NP=4 $HOMME
+   exit
+endif
+if ( $make == 1 ) then
+   make -j4 sweqx
+    if ($status) exit
+endif
+set exe = $builddir/src/sweqx/sweqx
 
 
-
-
-mkdir $wdir
-cd $wdir
+cd $rundir
 mkdir movies
+
 
 # defaults:
 set smooth=0

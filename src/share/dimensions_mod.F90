@@ -12,7 +12,11 @@ module dimensions_mod
 
 ! set MAX number of tracers.  actual number of tracers is a run time argument  
 #ifndef CAM
-  integer, parameter         :: qsize_d=4          ! SE tracers  
+#ifdef QSIZE_D
+  integer, parameter         :: qsize_d=QSIZE_D    ! SE tracers  
+#else
+  integer, parameter         :: qsize_d=4          ! SE tracers: default is 4
+#endif
   integer, parameter         :: ntrac_d=4          ! fvm tracers
 #endif
 

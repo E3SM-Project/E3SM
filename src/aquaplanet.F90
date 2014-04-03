@@ -634,6 +634,8 @@ contains
   subroutine srf_flux_simple(uf,vf,tf,qf,ie,elemin,&
        hybrid,hvcoord,nets,nete,tl,npts,nlevels,ne,iprint)
     implicit none	 
+    integer,intent(in)                 :: npts,ne
+    integer,intent(in)                 :: nlevels
     real (kind=real_kind),intent(out):: uf(npts,npts,nlevels,ne)
     real (kind=real_kind),intent(out):: vf(npts,npts,nlevels,ne)
     real (kind=real_kind),intent(out):: tf(npts,npts,nlevels,ne)
@@ -643,9 +645,7 @@ contains
     type (hvcoord_t)                   :: hvcoord
     type (TimeLevel_t)                 :: tl
     integer,target                     :: nets,nete
-    integer,intent(in)                 :: ie,ne
-    integer,intent(in)                 :: npts
-    integer,intent(in)                 :: nlevels
+    integer,intent(in)                 :: ie
     integer,intent(in)                 :: iprint
 
     real (kind=real_kind) :: zfull(np,np,nlev)
@@ -1035,19 +1035,22 @@ contains
   subroutine noise(spherep, ff,z,hybrid,nx,ny,k,ifirst)
     use coordinate_systems_mod, only : spherical_polar_t
 
+    integer, intent(in) :: nx,ny,k
     type (spherical_polar_t), intent(in) :: spherep(:,:)
     real (kind=real_kind), intent(out), dimension(nx,ny) :: ff
     real (kind=real_kind), intent(in) :: z
     type (hybrid_t)                   :: hybrid
+    integer, intent(inout) :: ifirst
+
     double precision rand
     real (kind=real_kind) :: ha,amp,ranf
-    integer i,j,k,nx,ny,nz
-    integer ia,im,ic,ierr,iran,ifirst
+    integer i,j,nz
+    integer ia,im,ic,ierr,iran
     save iran
 
-    amp=max(0.0_real_kind,(ha-z)/ha)
 #ifdef DONTDO
 #if defined(_AIX) || defined(_BGL)      
+    amp=max(0.0_real_kind,(ha-z)/ha)
     call random_number(ff)
 
     do j=1,ny

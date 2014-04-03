@@ -243,7 +243,9 @@ SUBROUTINE shr_sys_abort(string,rc)
      endif
    endif
    call shr_sys_flush(6)
+#ifndef CPRNAG
    call abort()
+#endif
    stop
 
 END SUBROUTINE shr_sys_abort

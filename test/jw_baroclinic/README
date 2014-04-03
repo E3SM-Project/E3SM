@@ -12,7 +12,7 @@ PIO_INTERP output of ps and relative vorticity.
 See "baro.job"  for a sample script.  NCL scripts to plot the results
 to mimic the J&W paper are is ps.ncl, zeta.ncl and steady.ncl
 
-Example plots, from a run with NE=21, NV=4 and del^4 nu=2e15:
+Example plots, from a run with NE=21, NP=4 and del^4 nu=2e15:
 
 zeta.png    closeup of vorticty near instability at day 9
 q1.png      tracer 1 in same region
@@ -20,9 +20,14 @@ q2.png      tracer 2 in same region
 
 
 
+Note: all scripts referenced below have not been updated to use
+HOMME's CMAKE build system and need work to get them to run.
+
+
 ****************************************************************
 2.  Inviscid early time conservation properties
 ****************************************************************
+
 
 For this, see the script debug.job and the reference output:
 debug-tadv0.out:

@@ -1,196 +1,199 @@
-#!/bin/tcsh -f 
-#PBS -l nodes=30:ppn=2
-#PBS -l walltime=0:30:00
-#PBS -j oe
-#PBS -A 109710/1
+#!/bin/tcsh -f
+#
+#  This script will configure, build and run HOMME using the
+#  Jablownowski and Williamson baroclinic instability test case
+#  with a user specified number of tracers.
+#
+#  The goal is to configure HOMME to be identical to how it is used 
+#  in CAM.   We propose two configuations:
+#
+#  CAM5, with 30 levels and 25 tracers
+#  CAM6, with 60 levels and 50 tracers
+#  
+#  This script contains configurations for ne16, ne30, ne60, ne120, ne240
+#  The remap timestep and viscosity coefficients are scaled with resolution
+#  all other subcycling parameters are set to mimic that
+#  used by CAM5 1/4 degree.  So the relative performance, per timstep
+#  of the different components should be similar. (but for lower resolutions
+#  this will not be the most efficient choices)
+#
+#  TODO:  add option to use other tracer advection options
+#
+#
+#SBATCH --job-name baro
+#SBATCH --account=FY139209
+#SBATCH -N 8
+#SBATCH --time=1:00:00
+#
+#  set paths to source code, build directory and run directory
+#
+set wdir =  ~/scratch1/preqx             # run directory
+set HOMME = ~/codes/homme                # HOMME svn checkout     
+set input = $HOMME/test/jw_baroclinic    # input files for test case
+set vdir = $HOMME/test/vcoord            # vertical coordinate files
+set bld = $wdir/bld                      # cmake/build directory
 
-#NCAR batch system: 
-#BSUB -x                # exlusive use of node (not_shared)
-#BSUB -n 24             # number of tasks
-#BSUB -a poe            # select the poe elim
-#BSUB -R "span[ptile=32]"       # tasks per node
-#BSUB -J homme          # job name
-#BSUB -o homme.out      # output filename
-#BSUB -e homme.out  
-#BSUB -W 0:15	        #  wall clock time 
-#BSUB -P 39510003
-#BSUB -q premium        # queue
+#set MACH = $HOMME/cmake/machineFiles/redsky.cmake
+#set MACH = $HOMME/cmake/machineFiles/titan.cmake
+set MACH = $HOMME/cmake/machineFiles/titan-cuda.cmake    # CMAKE file for Titan GPU support
+#set MACH = $HOMME/cmake/machineFiles/darwin.cmake
+setenv CRAY_CUDA_PROXY 1
 
-set NCPU = 24
-if ( ${?PBS_NODEFILE} ) then
-    set NCPU = `wc $PBS_NODEFILE | awk '{print $1}' - `
-    echo using NCPU = $NCPU
+
+#
+#  mpi run command
+#
+set NCPU = 4
+setenv OMP_NUM_THREADS 4
+
+if ( ${?SLURM_NNODES} ) then   # redsky
+    set NCPU = $SLURM_NNODES
+    @ NCPU *= 8
+    @ NCPU /= $OMP_NUM_THREADS
+endif
+if ( ${?PBS_NUM_NODES} ) then  # titan, other PBS based systems?
+    set NCPU = $PBS_NUM_NODES
+    @ NCPU *= $PBS_NUM_PPN
+    @ NCPU /= $OMP_NUM_THREADS
 endif
 
-#set nlev=50
-set nlev=26
-set qsize = 2
-set tadv = 1
+
+
+echo using NCPU=$NCPU   NTHREADS=$OMP_NUM_THREADS
+#set mpirun = "mpirun -np $NCPU"
+#set mpirun = "mpirun -loadbalance -np $NCPU"
+set mpirun = "aprun -n $NCPU -d $OMP_NUM_THREADS "
+
+
+
+# Test case: JW Baroclinic instability 
+# default is no rotation, with u perturbation
 set u_perturb = 1
 set rotate = 0
-set test_case = 'jw_baroclinic'
 
-#set test_case = 'jw_baroclinic2'
-#set rotate = 45
+                  # number of elemnets:  6*ne*ne
+set ne = 16       # horizontal resolution   16,30,60,120,240
+#set nlev=30       # vertical resolution
+#set qsize = 4     # number of passive tracers
 
+# simulate CAM5:
+#set nlev=30
+#set qsize=25
 
-
-# requires subcycle=4 for nu=2e15
-#set ne = 11
-#set tstep = 50
-#set NPTS = 8
-
-
-#set ne = 21
-#set tstep = 120   #150 blows up.  144 runs.  lets go with 120
-#set NPTS = 4
-
-#set ne = 26
-#set tstep = 100
-#set NPTS = 4
-
-set ne = 30
-set tstep = 90
-set NPTS = 4
-
-#set ne = 19
-#set tstep = 90
-#set NPTS = 5
-
-#set ne = 39
-#set tstep = 144
-#set NPTS = 3
-
-#set ne = 45
-#set tstep = 112.5
-#set NPTS = 3
-
-#set ne = 78
-#set tstep = 120
-#set NPTS = 2
+# simulate future DOE version:
+# todo: generate cam60 level files
+set nlev=60
+set qsize=30
 
 
-# number of hours between calls to prim_printstate
-# @ doesn't like floating point numbers?
-set sfreq = 3
-if ( 112.5 == $tstep ) then
-   @ sfreq *= 36000
-   @ sfreq /= 1125
+
+
+#
+#  BUILD PREQX
+#
+mkdir -p $bld
+cd $bld
+set exe = $bld/src/preqx/preqx
+set build = 0  # set to 1 to force build
+set conf = 0   # set to 1 to force configure
+
+if ( ! -f CMakeCache.txt) set conf = 1   # no cmake files.  force configure
+if ( $conf == 1 ) then
+   rm -rf CMakeFiles CMakeCache.txt src
+   #rm -rf utils/pio  utils/timing utils/cprnc   # may also need to do this
+   echo "running CMAKE to configure the model"
+   echo $NETCDF_DIR
+
+   cmake -C $MACH -DQSIZE_D=$qsize -DPREQX_PLEV=$nlev -DPREQX_NP=4  \
+   -DBUILD_HOMME_SWDGX=FALSE                     \
+   -DBUILD_HOMME_SWEQX=FALSE                     \
+   -DBUILD_HOMME_PRIMDGX=FALSE                   \
+   -DPREQX_USE_ENERGY=TRUE  $HOMME
+
+   make -j4 clean
+endif
+if ( ! -f $exe) set build = 1   # no exe, force build
+if ( $build == 1 ) then
+   make -j4 preqx
+   if ($status) exit
+endif
+
+
+
+
+#
+#  run each different resolution in a different directory
+#
+set name = jw-ne${ne}-nlev${nlev}-qsize${qsize}
+set run = $wdir/$name
+
+
+if ( $ne == 16 ) then
+   set tstep=600
+   set nu=7e15
+endif
+if ( $ne == 30 ) then
+   set tstep=300
+   set nu=1e15
+endif
+if ( $ne == 60 ) then
+   set tstep=150
+   set nu=1e14
+endif
+if ( $ne == 120 ) then
+   set tstep=75
+   set nu=1e13
+endif
+if ( $ne == 240 ) then
+   set tstep=40
+   set nu=1e12
+endif
+
+
+
+# diagnostics printed to stdout
+set sfreq = 8   # number of hours
+@ sfreq *= 3600
+@ sfreq /= $tstep
+
+
+
+
+
+mkdir -p $run/movies
+cd $run
+
+
+# copy vertical level files to run directory
+if ( $nlev == 30 ) then
+   set vfile_mid     = "./camm-30.ascii"
+   set vfile_int     = "./cami-30.ascii"
+   cp $vdir/cam*30.ascii  $run   
 else
-   @ sfreq *= 3600
-   @ sfreq /= $tstep
-endif
-
-set nu_p = 0
-# hypervis = 0   then use -nu${nu} for name.  strong form viscosity
-# hypervis = 1   then use -wnu${nu} for name.  weak form viscosity
-# hypervis = 2   then use -hnu${nu} for name.  hyper viscosity
-
-#set nu = 7e5
-#set nu_s = 7e5
-#set hypervis = 0
-#set subcycle = 1
-
-# 4e6 runs .5d   6e6 blows up .125d
-#set nu = 3e4
-#set nu_s = 3e4
-#set hypervis = 1
-#set subcycle = 1
-
-# reasonable value:  2e15-1
-set nu = 9.6e14
-set nu_s = 9.6e14
-set nu_p = 0
-set hypervis = 2
-set subcycle = 1
-set subcycle_q = 1
-
-set OSTYPE = `uname`
-
-
-set HOMME = ~/homme
-if ( -d ~/codes/homme ) then
-set HOMME = ~/codes/homme
-endif
-set src = $HOMME/build.$OSTYPE
-set input = $HOMME/test/jw_baroclinic
-set vdir = $HOMME/test/vcoord
-
-if ( $NPTS == 8 ) then
-   set namelist = Params${nlev}.inc
-   set mesh = ne${ne}t${tstep}l${nlev}
-else
-   set namelist = Params${nlev}-${NPTS}.inc
-   set mesh = ne${ne}-${NPTS}t${tstep}l${nlev}
-endif
-
-if ( $hypervis == 0 ) then
-   set name = jw-${mesh}-nu${nu}
-endif
-if ( $hypervis == 1 ) then
-   set name = jw-${mesh}-wnu${nu}-$subcycle
-endif
-if ( $hypervis == 2 ) then
-   if ( $nu_p == 0 ) then
-      set name = jw-${mesh}-hnu${nu}-$subcycle
-   else
-      set name = jw-${mesh}-hpnu${nu}-$subcycle
-   endif
-endif
-echo $name
-
-set bigendian = 0
-set mpirun = "mpirun -np $NCPU"
-if ($OSTYPE == AIX) then
-   set bigendian = 1
-   set mpirun = "mpirun.lsf launch"
-endif
-
-
-# setup the work directory
-set wdir = ~/scratch1/preqx
-#set wdir = ~/jw
-mkdir $wdir
-set wdir = $wdir/$name
-mkdir $wdir
-mkdir $wdir/movies
-rsync -a $vdir/*26* $wdir/vcoord
-
-
-# copy Params.inc into output directory to archive it
-cp -f $input/$namelist $wdir/Params.inc
-
-
-
-cd $input
-rm -f $wdir/explicit.nl
-
-
-sed s/NE/$ne/ explicit${nlev}.nl.sed | sed s/TSTEP/$tstep/ | sed s/SFREQ/$sfreq/ |\
-sed s/NU1/$nu/ | sed s/NU2/$nu_s/ | sed s/NUP/$nu_p/ |\
-sed s/u_perturb.\*/"u_perturb = $u_perturb \nrotate_grid = $rotate"/ |\
-sed s/qsize.\*/"qsize = $qsize tracer_advection_formulation=$tadv "/  |\
-sed s/test_case.\*/"test_case = '$test_case'"/  |\
-sed s/ORDER/$hypervis/ | sed s/SUBCYCLE/"$subcycle \n hypervis_subcycle_q = $subcycle_q"/ > $wdir/input.nl
-if ( $bigendian == 1 ) then
-  mv -f $wdir/input.nl $wdir/tmp.nl
-  sed  s/.littleendian//g $wdir/tmp.nl > $wdir/input.nl
+   set vfile_mid     = "./aspL60_mid.ascii"
+   set vfile_int     = "./aspL60_int.ascii"
+   cp $vdir/aspL60_*.ascii $run
 endif
 
 
 
-diff  $input/$namelist $src/../Params.inc
-if ($status != 0) then
-   echo "replacing Params.inc"
-   cp $input/$namelist $src/../Params.inc
-endif
+#  create a new namelist from original ne16 template:
+sed s/ne=.\*/ne=$ne/ $input/jw_baroclinic.nl |\
+sed s/tstep=.\*/tstep=$tstep/ | \
+sed s/nu=.\*/nu=$nu/ | \
+sed s/nu_div=.\*/nu_div=$nu/ | \
+sed s/nu_p=.\*/nu_p=$nu/ | \
+sed s/nu_q=.\*/nu_q=$nu/ | \
+sed s/NThreads.\*/NThreads=$OMP_NUM_THREADS/ | \
+sed s/statefreq.\*/statefreq=$sfreq/ |\
+sed s/u_perturb.\*/"u_perturb = $u_perturb"/   |\
+sed s/rotate_grid.\*/"rotate_grid = $rotate"/  |\
+sed s:vfile_mid.\*:"vfile_mid = '$vfile_mid'":  |\
+sed s:vfile_int.\*:"vfile_int = '$vfile_int'":  |\
+sed s/qsize.\*/"qsize = $qsize"/  > input.nl
 
-cd $src
-rm -f preqx
-gmake preqx
-cd $wdir
 
 date
-$mpirun $src/preqx < $wdir/input.nl
+$mpirun $exe  < input.nl
 date
 

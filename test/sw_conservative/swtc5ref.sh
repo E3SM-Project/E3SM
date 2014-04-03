@@ -2,7 +2,7 @@
 #XPBS -l nodes=100:ppn=4
 #PBS -l nodes=200:ppn=2
 #PBS -l walltime=1:00:00
-#PBS -N swtc1
+#PBS -N swtc5
 #PBS -j oe
 #PBS -A FY081407
 #PBX -a 1758
@@ -13,15 +13,20 @@
 #  homme/README 
 #  Mark Taylor 2010/10
 #
-set wdir = ~/scratch1/swtc5
+set wdir = ~/scratch1/sweqx
 set HOMME = ~/codes/homme
 set MACH = $HOMME/cmake/machineFiles/redsky.cmake
-set MACH = $HOMME/cmake/machineFiles/darwin.cmake
-set src = $HOMME/build/sweqx
+#set MACH = $HOMME/cmake/machineFiles/darwin.cmake
 set input = $HOMME/test/sw_conservative
-mkdir $wdir
-cd $wdir
-mkdir movies
+
+
+set builddir = $wdir/bld
+set rundir = $wdir/swtc5ref
+
+mkdir -p $builddir
+mkdir -p $rundir
+cd $builddir
+
 
 set NCPU = 32
 if ( ${?PBS_NODEFILE} ) then
@@ -40,7 +45,7 @@ if ( $#argv >= 1) then
 endif
 
 #cmake:
-cd $wdir
+cd $builddir
 if ( $build == 1 ) then
    rm -rf CMakeFiles CMakeCache.txt
    cmake -C $MACH -DSWEQX_PLEV=1  -DSWEQX_NP=4 $HOMME
@@ -50,9 +55,11 @@ if ( $make == 1 ) then
    make -j4 sweqx
     if ($status) exit
 endif
-set exe = $wdir/src/sweqx/sweqx
+set exe = $builddir/src/sweqx/sweqx
 
 
+cd $rundir
+mkdir movies
 
 
 # defaults:

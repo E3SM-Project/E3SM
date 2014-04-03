@@ -40,13 +40,14 @@ module shallow_water_mod
   ! ------------------------
   use viscosity_mod, only: biharmonic_wk, test_ibyp, neighbor_minmax, check_edge_flux
   ! ------------------------
-  use control_mod, only : nu, nu_div, nu_s, hypervis_order, hypervis_subcycle, limiter_option, integration, test_case, sub_case, kmass, &
-                          g_sw_output,TRACERADV_UGRADQ,tracer_advection_formulation
+  use control_mod, only : nu, nu_div, nu_s, hypervis_order, hypervis_subcycle, limiter_option, integration, test_case, sub_case, &
+                           kmass, g_sw_output,TRACERADV_UGRADQ,tracer_advection_formulation
   ! ------------------------
 
   implicit none
   private
 
+  logical :: compute_penst = .true.
   ! ============================================
   ! Shallow Water Test Case Parameters 
   ! for test case 1 and 2; Cosine Bell and 
@@ -298,7 +299,7 @@ contains
 
     n0 = tl%n0
     k=1
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
     if (tl%nstep == 0) then
@@ -404,10 +405,11 @@ contains
              pv(i,j,ie) = penst(i,j,ie) + elem(ie)%fcor(i,j)
              hstar         = (elem(ie)%state%p(i,j,1,n0) + pmean)/g
              ! For swtc1 p = -pmean and penst is not well defined
-             if (hstar .eq. 0.0) then
-               hstar = 1.0
+             if (compute_penst) then
+               penst(i,j,ie) = (0.5D0*(penst(i,j,ie) + elem(ie)%fcor(i,j))**2) / hstar
+             else
+               penst(i,j,ie) = 0.0D0
              endif
-             penst(i,j,ie) = (0.5D0*(penst(i,j,ie) + elem(ie)%fcor(i,j))**2) / hstar
           end do
        end do
     end do
@@ -436,7 +438,7 @@ contains
 
 
     time   = Time_at(tl%nstep)
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
     if (hybrid%par%masterproc .and. (hybrid%ithr==0)) then
@@ -467,7 +469,8 @@ contains
           dENS = (Ipenst-Ipenst_last)/(time-time_last)/Ipenst
 	  do k=1,nlev
 	    dm = (Imass(k)-Imass_last(k))/(time-time_last)/Imass(k)
-	    write(6,'(a,i3,a,e11.4,a,e13.6,a,e13.6)') "level =",k,"  M-M0/M0      =",(Imass(k)-Imass_init(k))/Imass_init(k), " dM/dt   /M  = ",dm
+	    write(6,'(a,i3,a,e11.4,a,e13.6,a,e13.6)') "level =",k,"  M-M0/M0      =",(Imass(k)-Imass_init(k))/Imass_init(k), &
+          " dM/dt   /M  = ",dm
 	  enddo
           if (test_case(1:5) /= "swtc1") then
              write(6,'(a,e11.4,a,e13.6,a,e13.6)') "ENS-ENS0/ENS0=",(Ipenst-Ipenst_init)/Ipenst_init, " dENS/dt /ENS= ",dENS
@@ -485,7 +488,7 @@ contains
 
     end if
 
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
     Imass_last=Imass
@@ -588,6 +591,9 @@ contains
     integer :: nm1 
     integer :: n0 
     integer :: np1
+
+    ! For swtc1 p = -pmean and penst is not well defined
+    compute_penst = .false.
 
     nm1= 1
     n0 = 2
@@ -1062,7 +1068,7 @@ contains
 
     integer ie,k
 
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
 
@@ -1138,7 +1144,7 @@ contains
     enddo
 
 
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
 
@@ -1400,7 +1406,7 @@ contains
 
     time_tmp   = Time_at(tl%nstep)
 
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
     if ((tl%nstep == 1).or.(tl%nstep == 0)) then
@@ -1431,7 +1437,7 @@ contains
        write(*,'(f6.2,a,3e15.7)') time_tmp/secpday,' days  l1,l2,linf=',&
             l1,l2,linf
     end if
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
 
@@ -1749,7 +1755,7 @@ contains
     real (kind=real_kind) :: l1,l2,linf
     integer ie,npts
 
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
     if ((tl%nstep == 1).or.(tl%nstep == 0)) then
@@ -1783,12 +1789,12 @@ contains
     ! ======================================================
 
 #ifdef _REFSOLN
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
 !  Parallel version of ref_state, comment out if writing above
 !    call ref_state_read(pt(:,:,nets:nete),vt(:,:,:,nets:nete),fstub,simday,nets,nete,par)
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
 
@@ -1806,7 +1812,7 @@ contains
        print *,simday, "L2=",l2
        print *,simday, "Linf=",linf
     end if
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
 #endif
@@ -1899,7 +1905,7 @@ contains
 
     n0 = tl%n0
 
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
     if (tl%nstep == 0) then
@@ -2004,7 +2010,7 @@ contains
 
     time   = Time_at(tl%nstep)
 
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
     if (hybrid%par%masterproc .and. (hybrid%ithr==0)) then
@@ -2032,7 +2038,7 @@ contains
 
     end if
 
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
 
@@ -2207,7 +2213,7 @@ contains
     real (kind=real_kind) :: l1,l2,linf
     integer ie,npts
 
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
     if (tl%nstep == 0) then
@@ -2240,12 +2246,12 @@ contains
     ! read in the reference state for this simulated day...
     ! ======================================================
 #ifdef _REFSOLN
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !    !$OMP BARRIER
 #endif
 !  Parallel version of ref_state, comment out if writing above
 !    call ref_state_read(pt(:,:,nets:nete),vt(:,:,:,nets:nete),fstub,simday,nets,nete,par)
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
 
@@ -2266,7 +2272,7 @@ contains
        print *,simday, "Linf=",linf
     end if
 #endif
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
 
@@ -3024,7 +3030,7 @@ contains
 
     integer ie,k
 
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
     if (tl%nstep == 0) then
@@ -3064,7 +3070,7 @@ contains
     enddo
 
 
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
 
@@ -3099,7 +3105,7 @@ contains
 
     integer ie,k,i,j
 
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
     if (tl%nstep == 0) then
@@ -3150,7 +3156,7 @@ contains
     enddo
 
 
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
 
@@ -3957,7 +3963,7 @@ contains
     real (kind=real_kind) :: l1,l2,linf
     integer ie,npts
 
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
     if ((tl%nstep == 1).or.(tl%nstep == 0)) then
@@ -3991,12 +3997,12 @@ contains
     ! ======================================================
 
 #ifdef _REFSOLN
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
 !  Parallel version of ref_state, comment out if writing above
 !   call ref_state_read(pt(:,:,nets:nete),vt(:,:,:,nets:nete),fstub,simday,nets,nete,par)
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
    !$OMP BARRIER
 #endif
 
@@ -4014,7 +4020,7 @@ contains
        print *,simday, "L2=",l2
        print *,simday, "Linf=",linf
     end if
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
 #endif

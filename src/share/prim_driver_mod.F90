@@ -28,7 +28,7 @@ module prim_driver_mod
   use spelt_mod, only : spelt_struct, spelt_init1,spelt_init2, spelt_init3
 
   use element_mod, only : element_t, timelevels,  allocate_element_desc
-
+  use thread_mod, only : omp_get_num_threads
   implicit none
   private
   public :: prim_init1, prim_init2 , prim_run, prim_run_subcycle, prim_finalize, leapfrog_bootstrap
@@ -57,7 +57,8 @@ contains
   subroutine prim_init1(elem, fvm, par, dom_mt, Tl)
 
     ! --------------------------------
-    use thread_mod, only : nthreads, omp_get_thread_num, omp_set_num_threads
+    use thread_mod, only : nthreads, omp_get_thread_num, omp_set_num_threads, &
+                           vert_num_threads
     ! --------------------------------
     use control_mod, only : runtype, restartfreq, filter_counter, integration, topology, &
          partmethod, while_iter
@@ -323,6 +324,7 @@ contains
 
 
     allocate(global_shared_buf(nelemd,nrepro_vars))
+    global_shared_buf=0.0_real_kind
     !  nlyr=edge3p1%nlyr
     !  call MessageStats(nlyr)
     !  call testchecksum(par,GridEdge)
@@ -342,10 +344,6 @@ contains
     !  for OpenMP across elements, equal to 1 for OpenMP within element
     ! =================================================================
     n_domains = min(Nthreads,nelemd)
-#if (defined ELEMENT_OPENMP)
-    n_domains = 1
-#endif
-
 
     ! =================================================================
     ! Initialize shared boundary_exchange and reduction buffers
@@ -498,11 +496,8 @@ contains
     deallocate(HeadPartition)
 
     n_domains = min(Nthreads,nelemd)
-#if defined(ELEMENT_OPENMP) || defined(NESTED_OPENMP)
-    call omp_set_num_threads(NThreads)
-#else
     call omp_set_num_threads(n_domains)
-#endif
+
     ! =====================================
     ! Set number of threads...
     ! =====================================
@@ -551,7 +546,10 @@ contains
          s_bv, topology,columnpackage, moisture, precon_method, rsplit, qsplit, rk_stage_user,&
          sub_case, &
          limiter_option, nu, nu_q, nu_div, tstep_type, hypervis_subcycle, &
-         hypervis_subcycle_q, use_semi_lagrange_transport, pertlim
+         hypervis_subcycle_q, use_semi_lagrange_transport
+#ifndef CAM
+    use control_mod, only : pertlim                     !used for homme temperature perturbations
+#endif
     use prim_si_ref_mod, only: prim_si_refstate_init, prim_set_mass
     use bndry_mod, only : sort_neighbor_buffer_mapping
 #ifdef TRILINOS
@@ -694,13 +692,13 @@ contains
       eta_ave_w = 1d0 ! divide by qsplit for mean flux interpolation
 
       call initialize(state_object, lenx, elem, hvcoord, compute_diagnostics, &
-        qn0, eta_ave_w, hybrid, deriv(hybrid%ithr), tstep, tl%np1, tl%n0, tl%np1, nets, nete)
+        qn0, eta_ave_w, hybrid, deriv(hybrid%ithr), tstep, tl, nets, nete)
 
       call initialize(pre_object, lenx, elem, hvcoord, compute_diagnostics, &
-        qn0, eta_ave_w, hybrid, deriv(hybrid%ithr), tstep, tl%np1, tl%n0, tl%np1, nets, nete)
+        qn0, eta_ave_w, hybrid, deriv(hybrid%ithr), tstep, tl, nets, nete)
 
       call initialize(jac_object, lenx, elem, hvcoord, .false., &
-        qn0, eta_ave_w, hybrid, deriv(hybrid%ithr), tstep, tl%np1, tl%n0, tl%np1, nets, nete)
+        qn0, eta_ave_w, hybrid, deriv(hybrid%ithr), tstep, tl, nets, nete)
 
 !      pc_elem = elem
 !      jac_elem = elem
@@ -735,16 +733,13 @@ contains
     ! initialize vertical structure and
     ! related matrices..
     ! ====================================
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP MASTER
 #endif
     if (integration == "semi_imp") then
        refstate = prim_si_refstate_init(.false.,hybrid%masterthread,hvcoord)
-       if (precon_method == "block_jacobi") then
-          allocate(blkjac(nets:nete))
-       endif
     endif
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP END MASTER
 #endif
     ! ==========================================
@@ -777,13 +772,13 @@ contains
        endif
     endif
 
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
     if (hybrid%ithr==0) then
        call syncmp(hybrid%par)
     end if
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
 
@@ -909,7 +904,9 @@ contains
        do ie=nets,nete
 
           elem(ie)%state%T=elem(ie)%state%T &
-                * (1.0 + pertlim)
+                * (1.0_real_kind + pertlim)  ! set perlim in ctl_nl namelist for
+                                             ! temperature field initial
+                                             ! perterbation
        enddo
  
        ! ========================================
@@ -942,8 +939,8 @@ contains
        end do
        call TimeLevel_Qdp( tl, qsplit, n0_qdp)
        do ie=nets,nete
-#if (defined ELEMENT_OPENMP)
-!$omp parallel do private(k, j, i, t, q, dp)
+#if (defined COLUMN_OPENMP)
+!$omp parallel do default(shared), private(k, t, q, i, j, dp)
 #endif
           do k=1,nlev    !  Loop inversion (AAM)
              do t=1,3
@@ -1027,8 +1024,8 @@ contains
     if (runtype==1) then
        call TimeLevel_Qdp( tl, qsplit, n0_qdp)
        do ie=nets,nete
-#if (defined ELEMENT_OPENMP)
-!$omp parallel do private(k, j, i, t, q, dp)
+#if (defined COLUMN_OPENMP)
+!$omp parallel do default(shared), private(k, t, q, i, j, dp)
 #endif
           do k=1,nlev    !  Loop inversion (AAM)
              do t=tl%n0,tl%n0
@@ -1225,7 +1222,7 @@ contains
     ! ===============
     ! Dynamical Step  uses Q at tl%n0
     ! ===============
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
     if (integration == "semi_imp") then
@@ -1454,10 +1451,13 @@ contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     do ie=nets,nete
        elem(ie)%state%lnps(:,:,tl%np1)= LOG(elem(ie)%state%ps_v(:,:,tl%np1))
-#if (defined ELEMENT_OPENMP)
-       !$omp parallel do private(k,q)
+#if (defined COLUMN_OPENMP)
+       !$omp parallel do default(shared), private(k,q,dp_np1)
 #endif
        do k=1,nlev    !  Loop inversion (AAM)
+          !if (k == 1) then
+           !write(*,*) "In prim run there are ", omp_get_num_threads(), " in the current team in parallel region"
+          !endif
           dp_np1(:,:) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
                ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%np1)
           do q=1,qsize
@@ -1589,10 +1589,10 @@ contains
       end if
 
       if (rsplit==0) then
-#if (defined ELEMENT_OPENMP)
-!$omp parallel do private(k, j, i)
+        ! save dp at time t for use in tracers
+#if (defined COLUMN_OPENMP)
+!$omp parallel do default(shared), private(k)
 #endif
-      ! save dp at time t for use in tracers
          do k=1,nlev
             elem(ie)%derived%dp(:,:,k)=&
                  ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
@@ -1789,16 +1789,16 @@ contains
     psum = 0
     do ie=nets,nete
 
-#if (defined ELEMENT_OPENMP)
-!$omp parallel do private(k)
+#if (defined COLUMN_OPENMP)
+!$omp parallel do default(shared), private(k)
 #endif
        do k=1,nlev
           dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
                ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,t2)
        enddo
        suml=0
-#if (defined ELEMENT_OPENMP)
-!$omp parallel do private(k, j, i)
+#if (defined COLUMN_OPENMP)
+!$omp parallel do default(shared), private(k, i, j)
 #endif
        do k=1,nlev
           do i=1,np

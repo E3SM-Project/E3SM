@@ -74,7 +74,9 @@ SET(SPELT_SRCS ${SRC_SHARE_DIR}/bndry_mod.F90
                ${UTILS_SHARE_DIR}/shr_mpi_mod.F90
                ${UTILS_SHARE_DIR}/shr_sys_mod.F90
                ${UTILS_SHARE_DIR}/shr_file_mod.F90
-               ${UTILS_SHARE_DIR}/shr_vmath_mod.F90 
+               ${UTILS_SHARE_DIR}/shr_vmath_mod.F90
+               ${UTILS_SHARE_DIR}/shr_const_mod.F90
+               ${UTILS_SHARE_DIR}/shr_spfn_mod.F90
 )
 
 # Make SRCS global so the tests can access it

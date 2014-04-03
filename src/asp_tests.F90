@@ -981,7 +981,8 @@ use physical_constants, only : p0, g
 use dimensions_mod, only : nlev,np, qsize,nc,ntrac, nep
 use control_mod, only : test_case, u_perturb
 use cube_mod, only : rotate_grid
-use jw, only : u_wind, v_wind, temperature, surface_geopotential, tracer_q1_q2, tracer_q3, perturbation_longitude, perturbation_latitude, deg2rad ! _EXTERNAL
+use jw, only : u_wind, v_wind, temperature, surface_geopotential, tracer_q1_q2,&
+     tracer_q3, perturbation_longitude, perturbation_latitude, deg2rad ! _EXTERNAL
 use parallel_mod, only : abortmp
 
 implicit none
@@ -1338,10 +1339,29 @@ if (qsize>=3) then
    enddo
 endif
 
+
 if (qsize>=4) then
    idex=4
    do ie=nets,nete
       elem(ie)%state%Q(:,:,:,idex) = 1
+   enddo
+endif
+
+
+if (qsize>=5) then
+   ! set the rest of the tracers to the temperature
+   do idex=5,qsize
+   do ie=nets,nete
+      do j=1,np
+      do i=1,np
+         lon = elem(ie)%spherep(i,j)%lon
+         lat = elem(ie)%spherep(i,j)%lat
+         do k=1,nlev
+            elem(ie)%state%Q(:,:,:,idex) = temperature(lon,lat,hvcoord%etam(k),rotate_grid)
+         enddo
+      enddo
+      enddo
+   enddo
    enddo
 endif
 

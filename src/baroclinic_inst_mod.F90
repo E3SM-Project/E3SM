@@ -192,12 +192,13 @@ enddo
 ! first tracer:  temperature at T=0
 
 if (qsize>=1) then
-   idex=1
+   do idex=1,qsize
    do ie=nets,nete
       !do tl=1,3
       do tl=1,1
          elem(ie)%state%Q(:,:,:,idex) = elem(ie)%state%T(:,:,:,tl)/400
       enddo
+   enddo
    enddo
 endif
 
@@ -225,14 +226,15 @@ if (qsize>=2) then
 endif
 
 
-
-!!!!! OG added a const tracer to jw_baroclinic test
-if (qsize>=2) then
+! third tracer is constant
+if (qsize>=3) then
    idex=3
    do ie=nets,nete
-            elem(ie)%state%Q(:,:,:,idex) = 1.0d0
+      elem(ie)%state%Q(:,:,:,idex) = 1.0d0
    enddo
 endif
+
+
 !=======================================================================================================!
  end subroutine 
 

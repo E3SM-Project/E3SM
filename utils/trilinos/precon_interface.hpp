@@ -36,12 +36,6 @@ class  Precon_Interface :
 				void* prec_data_,
 				void (*precFunction_)(double *,int,double*,void *));
 
-		Precon_Interface(int nelems,Teuchos::RCP<Epetra_Map> gmap,const Epetra_Comm& comm_,
-				void* prec_data_,
-				void (*precFunctionblock11_)(double *,int,double*,void *),
-				void (*precFunctionblock12_)(double *,int,double*,void *),
-				void (*precFunctionblock21_)(double *,int,double*,void *),
-				void (*precFunctionblock22_)(double *,int,double*,void *));
 
 	//	Precon_Interface(const Epetra_Comm& comm_,int nelems,Teuchos::RCP<Epetra_Map> gmap);
 
@@ -70,10 +64,6 @@ class  Precon_Interface :
 		const Epetra_Comm& comm;
 		void* precdata;
 		void (*precFunction)(double *, int, double*, void *);
-		void (*precFunctionblock11)(double *, int, double*, void *);
-		void (*precFunctionblock12)(double *, int, double*, void *);
-		void (*precFunctionblock21)(double *, int, double*, void *);
-		void (*precFunctionblock22)(double *, int, double*, void *);
 		std::string label;
                 bool printproc;
 

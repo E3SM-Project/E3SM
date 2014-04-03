@@ -253,11 +253,9 @@ contains
 
   function bvsigma(p,x) result(sigma)
 
-#ifdef CAM
     ! CAM code is required to use this function, to handle differences in
     ! Fortran 2008 support and compiler extensions.
     use shr_spfn_mod, only: erfc => shr_spfn_erfc
-#endif
 
     real (kind=real_kind), intent(in) :: p
     real (kind=real_kind), intent(in) :: x
@@ -268,15 +266,7 @@ contains
     real (kind=real_kind) :: om
     real (kind=real_kind) :: xfac
     real (kind=real_kind) :: arg
-#if 0
-    real (kind=real_kind) :: tmp
-#endif
 
-    ! For some old (pre-F2008) compilers, this is safer than "erfc", which
-    ! is sometimes only single precision (not generic).
-#ifndef CAM
-    real*8  :: derfc
-#endif
     call t_startf('bvsigma')
 
     om=ABS(x)-0.5D0
@@ -289,18 +279,7 @@ contains
        xfac=one
        if (om /= zero) xfac = SQRT(-LOG((one-4.0D0*om**2))/(4.0D0*om**2))
        arg = 2.0D0*SQRT(p)*om*xfac
-#if 0
-       tmp = erfd(arg)
-       print *, "x, erf", x, tmp
-#endif
-#ifdef CAM
        sigma = 0.50D0*erfc(arg)
-#else
-       sigma = 0.50D0*derfc(arg)
-#endif
-#if 0
-       sigma = 0.50D0*(one - erfd(arg))
-#endif
     end if
     call t_stopf('bvsigma')
 
@@ -786,7 +765,7 @@ contains
 
        end do
 #ifdef DEBUGOMP
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -947,11 +926,11 @@ contains
  
     if (flt%type == "bv") then
 
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
        !$OMP BARRIER
 #endif
        if (hybrid%ithr==0) call syncmp(hybrid%par)
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
        !$OMP BARRIER
 #endif
 
@@ -968,7 +947,7 @@ contains
 
           elem(ie)%state%lnps(:,:,nfilt) = mp*elem(ie)%state%lnps(:,:,nfilt)
 
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j)
 #endif
           do k=1,nlev
@@ -1032,7 +1011,7 @@ contains
           elem(ie)%state%lnps(:,:,nfilt) = LOG(elem(ie)%state%lnps(:,:,nfilt))
 #endif
 
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j)
 #endif
           do k=1,nlev
@@ -1047,7 +1026,7 @@ contains
 
        end do
 #ifdef DEBUGOMP
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -1067,7 +1046,7 @@ contains
 #else
           elem(ie)%state%lnps(:,:,nfilt) = LOG(elem(ie)%state%lnps(:,:,nfilt))
 #endif
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j,v1,v2,u,v)
 #endif
           do k=1,nlev

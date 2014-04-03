@@ -1,81 +1,30 @@
-createLSFHeader() {
-
-  RUN_SCRIPT=$1
-
-  #delete the file if it exists
-  rm -f $RUN_SCRIPT
-
-  # Set up some yellowstone boiler plate
-  echo "#!/bin/bash" >> $RUN_SCRIPT
-  echo ""  >> $RUN_SCRIPT # newlines
-
-  echo "#BSUB -a poe" >> $RUN_SCRIPT
-
-  if [ -n "$HOMME_ACCOUNT" ]; then
-    echo "#BSUB -P $HOMME_ACCOUNT" >> $RUN_SCRIPT
-  else
-    echo "PROJECT CHARGE ID (HOMME_PROJID) not set"
-    exit -1
-  fi 
-
-  echo "" >> $RUN_SCRIPT # newline
-
-  echo "#BSUB -q small" >> $RUN_SCRIPT
-  echo "#BSUB -W 0:40" >> $RUN_SCRIPT
-
-  echo "" >> $RUN_SCRIPT # newline
-
-  echo "#BSUB -x" >> $RUN_SCRIPT
-
-  echo "" >> $RUN_SCRIPT # newline
-
-  # Set the job name
-  echo "#BSUB -J $testName" >> $RUN_SCRIPT
-  echo "" >> $RUN_SCRIPT
-
-  # Set the output and error filenames
-  echo "#BSUB -o $testName.stdout.%J" >> $RUN_SCRIPT
-  echo "#BSUB -e $testName.stderr.%J" >> $RUN_SCRIPT
-  echo "" >> $RUN_SCRIPT
-
-  # Set the ncpus and ranks per MPI
-  echo "#BSUB -n $num_cpus" >> $RUN_SCRIPT
-  echo '#BSUB -R "span[ptile='$num_cpus']" ' >> $RUN_SCRIPT
-
-  echo "" >> $RUN_SCRIPT
-
+parseHeader() {
+  cat $1 | \
+  sed -e "s/\${TEST_NAME}/${TEST_NAME}/g" \
+      -e "s;\${TEST_DIR};${outputDir};g" \
+      -e "s;\${NUM_CPUS};${NUM_CPUS};g" \
+      -e "s;\${HOMME_PROJID};${HOMME_ACCOUNT};g" > $2
+  echo ""  >> $2 # newline
+  echo "########################################"  >> $2
+  echo "# Above is header, below is run data"  >> $2
+  echo "########################################"  >> $2
+  echo ""  >> $2 # newline
 }
 
-createPBSHeader() {
-
+submissionHeader() {
   RUN_SCRIPT=$1
 
-  #delete the file if it exists
-  rm -f $RUN_SCRIPT
-
-  # Set up some yellowstone boiler plate
-  echo "#!/bin/bash -l" >> $RUN_SCRIPT
-  echo ""  >> $RUN_SCRIPT # newlines
-  
-  if [ -n "$HOMME_ACCOUNT" ]; then
-    echo "#PBS -A $HOMME_ACCOUNT" >> $RUN_SCRIPT
+  if [ "$HOMME_Submission_Type" != none ]; then 
+    # Use a provided or user defined header
+    if [ -n "$HOMME_Submission_Header" ]; then
+      parseHeader ${HOMME_Submission_Header} ${RUN_SCRIPT}
+    else
+      echo "Error: No queue subimission header supplied"
+      exit -19
+    fi
   else
-    echo "PROJECT CHARGE ID (HOMME_PROJID) not set"
-    exit -2
-  fi 
-
-  # Set the output and error filenames
-  echo "#PBS -o $testName.stdout.\${PBS_JOBID}" >> $RUN_SCRIPT
-  echo "#PBS -e $testName.stderr.\${PBS_JOBID}" >> $RUN_SCRIPT
-
-  echo "#PBS -N $testName" >> $RUN_SCRIPT
-
-  echo "#PBS -l nodes=1" >> $RUN_SCRIPT
-  echo "#PBS -l walltime=0:40:00" >> $RUN_SCRIPT
-  # Not sure how to make the following portable
-  #echo "#PBS -l gres=widow1" >> $RUN_SCRIPT
-
-  echo "" >> $RUN_SCRIPT
+    createStdHeader $RUN_SCRIPT
+  fi
 
 }
 
@@ -312,29 +261,29 @@ runTestsStd() {
 }
 
 createAllRunScripts() {
-  touch $lsfListFile
-  echo "num_submissions=$num_test_files" > $lsfListFile
+  touch $subListFile
+  echo "num_submissions=${NUM_TEST_FILES}" > $subListFile
 
-  for testFileNum in $(seq 1 $num_test_files)
+  for testFileNum in $(seq 1 ${NUM_TEST_FILES})
   do
 
-    testFile=test_file${testFileNum}
+    testFile=TEST_FILE_${testFileNum}
     source ${!testFile}
 
-    testName=`basename ${!testFile} .sh`
+    TEST_NAME=`basename ${!testFile} .sh`
 
-    echo "Test $testName has $num_tests pure MPI tests"
-    if [ -n "$omp_num_tests" ]; then
-      echo "  and $omp_num_tests Hybrid MPI + OpenMP tests"
+    echo "Test ${TEST_NAME} has ${NUM_TESTS} pure MPI tests"
+    if [ -n "${OMP_NUM_TESTS}" ]; then
+      echo "  and ${OMP_NUM_TESTS} Hybrid MPI + OpenMP tests"
     fi
 
     if [ "${CREATE_BASELINE}" == true ] ; then
       # Create the run script
-      thisRunScript="${HOMME_DEFAULT_BASELINE_DIR}/$testName/$testName-run.sh"
-      outputDir="${HOMME_DEFAULT_BASELINE_DIR}/$testName"
+      thisRunScript="${HOMME_DEFAULT_BASELINE_DIR}/${TEST_NAME}/${TEST_NAME}-run.sh"
+      outputDir="${HOMME_DEFAULT_BASELINE_DIR}/${TEST_NAME}"
     else
       # Create the run script
-      thisRunScript=`dirname ${!testFile}`/$testName-run.sh
+      thisRunScript=`dirname ${!testFile}`/${TEST_NAME}-run.sh
       outputDir=`dirname ${!testFile}`
     fi
 
@@ -348,25 +297,25 @@ createAllRunScripts() {
     echo "cd $outputDir" >> $RUN_SCRIPT
     echo "" >> $RUN_SCRIPT # new line
 
-    for testNum in $(seq 1 $num_tests)
+    for testNum in $(seq 1 ${NUM_TESTS})
     do
-      testExec=test${testNum}
+      testExec=TEST_${testNum}
       echo "# Pure MPI test ${testNum}" >> $thisRunScript
-      #echo "mpiexec -n $num_cpus ${!testExec} > $testName.out 2> $testName.err" >> $thisRunScript
-      execLine $thisRunScript "${!testExec}" $num_cpus
+      #echo "mpiexec -n ${NUM_CPUS }${!testExec} > ${TEST_NAME}.out 2> ${TEST_NAME}.err" >> $thisRunScript
+      execLine $thisRunScript "${!testExec}" ${NUM_CPUS}
       echo "" >> $thisRunScript # new line
     done
 
-    if [ -n "$omp_num_tests" -a "${RUN_OPENMP}" = TRUE ]; then
-      echo "export OMP_NUM_THREADS=$omp_number_threads" >> $thisRunScript
+    if [ -n "${OMP_NUM_TESTS}" -a "${RUN_OPENMP}" = TRUE ]; then
+      echo "export OMP_NUM_THREADS=${OMP_NUMBER_THREADS}" >> $thisRunScript
       echo "export OMP_STACKSIZE=128M" >> $thisRunScript
       echo "" >> $thisRunScript # new line
-      for testNum in $(seq 1 $omp_num_tests)
+      for testNum in $(seq 1 ${OMP_NUM_TESTS})
       do
-         testExec=omp_test${testNum}
+         testExec=OMP_TEST_${testNum}
          echo "# Hybrid test ${testNum}" >> $thisRunScript
-         #echo "mpiexec -n $omp_num_mpi ${!testExec} > $testName.out 2> $testName.err" >> $thisRunScript
-         execLine $thisRunScript "${!testExec}" $omp_num_mpi
+         #echo "mpiexec -n $omp_num_mpi ${!testExec} > ${TEST_NAME}.out 2> ${TEST_NAME}.err" >> $thisRunScript
+         execLine $thisRunScript "${!testExec}" ${OMP_NUM_MPI}
          echo "" >> $thisRunScript # new line
       done
     fi
@@ -377,15 +326,15 @@ createAllRunScripts() {
     # For the cprnc diffing we need to add that
     ############################################################
     if [ "${CREATE_BASELINE}" == false ] ; then 
-      mkdir -p ${HOMME_DEFAULT_BASELINE_DIR}/${testName}
-      echo "cp $thisRunScript ${HOMME_BASELINE_DIR}/${testName}/"
-      cp $thisRunScript ${HOMME_BASELINE_DIR}/${testName}/
+      mkdir -p ${HOMME_DEFAULT_BASELINE_DIR}/${TEST_NAME}
+      echo "cp $thisRunScript ${HOMME_BASELINE_DIR}/${TEST_NAME}/"
+      cp $thisRunScript ${HOMME_BASELINE_DIR}/${TEST_NAME}/
 
       ############################################################
       # Now set up the cprnc diffing
       ############################################################
       # load the cprnc files for this run
-      FILES="${nc_output_files}"
+      FILES="${NC_OUTPUT_FILES}"
 
       if [ -z "${FILES}" ] ; then
           echo "Test ${TEST_NAME} doesn't have Netcdf output files"
@@ -398,7 +347,7 @@ createAllRunScripts() {
         baseFilename=`basename $file`
 
         # new result
-        newFile=${HOMME_TESTING_DIR}/${testName}/movies/$file
+        newFile=${HOMME_TESTING_DIR}/${TEST_NAME}/movies/$file
 
         #if [ ! -f "${newFile}" ] ; then
         #  echo "Error: The result file ${newFile} does not exist. Exiting" 
@@ -406,7 +355,7 @@ createAllRunScripts() {
         #fi
 
         # result in the repo
-        repoFile=${HOMME_BASELINE_DIR}/${testName}/movies/${baseFilename}
+        repoFile=${HOMME_BASELINE_DIR}/${TEST_NAME}/movies/${baseFilename}
 
         #if [ ! -f "${newFile}" ] ; then
         #  echo "Warning: The repo file ${repoFile} does not exist in the baseline dir"
@@ -414,8 +363,8 @@ createAllRunScripts() {
         #fi
 
 
-        diffStdout=${testName}.${baseFilename}.out
-        diffStderr=${testName}.${baseFilename}.err
+        diffStdout=${TEST_NAME}.${baseFilename}.out
+        diffStderr=${TEST_NAME}.${baseFilename}.err
 
         echo "# Running cprnc to difference ${baseFilename} against baseline " >> $thisRunScript
         #echo "$cmd > $diffStdout 2> $diffStderr" >> $thisRunScript
@@ -430,14 +379,14 @@ createAllRunScripts() {
     # Finished setting up cprnc
     ############################################################
 
-    echo "subFile$testFileNum=$thisRunScript" >>  $lsfListFile
+    echo "subFile$testFileNum=$thisRunScript" >>  $subListFile
 
     # Make the script executable
     chmod u+x ${thisRunScript}
 
     # Reset the variables (in case they are not redefined in the next iteration)
-    unset omp_num_tests
-    unset num_tests
+    unset OMP_NUM_TESTS
+    unset NUM_TESTS
 
   done
 
@@ -447,15 +396,15 @@ createRunScript() {
 
   source ${THIS_TEST_FILE}
 
-  testName=`basename ${THIS_TEST_FILE} .sh`
+  TEST_NAME=`basename ${THIS_TEST_FILE} .sh`
 
-  echo "Test $testName has $num_tests pure MPI tests"
-  if [ -n "$omp_num_tests" ]; then
-    echo "  and $omp_num_tests Hybrid MPI + OpenMP tests"
+  echo "Test ${TEST_NAME} has ${NUM_TESTS} pure MPI tests"
+  if [ -n "${OMP_NUM_TESTS}" ]; then
+    echo "  and ${OMP_NUM_TESTS} Hybrid MPI + OpenMP tests"
   fi
 
   # Create the run script
-  thisRunScript=`dirname ${THIS_TEST_FILE}`/$testName-run.sh
+  thisRunScript=`dirname ${THIS_TEST_FILE}`/${TEST_NAME}-run.sh
   rm -f ${thisRunScript}
 
   outputDir=`dirname ${THIS_TEST_FILE}`
@@ -463,22 +412,22 @@ createRunScript() {
   # Set up header
   submissionHeader $thisRunScript
 
-  for testNum in $(seq 1 $num_tests)
+  for testNum in $(seq 1 ${NUM_TESTS})
   do
-    testExec=test${testNum}
+    testExec=TEST_${testNum}
     echo "# Pure MPI test ${testNum}" >> $thisRunScript
-    execLine $thisRunScript "${!testExec}" $num_cpus
+    execLine $thisRunScript "${!testExec}" ${NUM_CPUS}
     echo "" >> $thisRunScript # new line
   done
 
-  if [ -n "$omp_num_tests" -a "${RUN_OPENMP}" == true ]; then
-    echo "export OMP_NUM_THREADS=$omp_number_threads" >> $thisRunScript
+  if [ -n "${OMP_NUM_TESTS}" -a "${RUN_OPENMP}" == true ]; then
+    echo "export OMP_NUM_THREADS=${OMP_NUMBER_THREADS}" >> $thisRunScript
     echo "" >> $thisRunScript # new line
-    for testNum in $(seq 1 $omp_num_tests)
+    for testNum in $(seq 1 ${OMP_NUM_TESTS})
     do
-       testExec=omp_test${testNum}
+       testExec=${OMP_TEST_${testNum}}
        echo "# Hybrid test ${testNum}" >> $thisRunScript
-       execLine $thisRunScript "${!testExec}" $omp_num_mpi
+       execLine $thisRunScript "${!testExec}" ${OMP_NUM_MPI}
        echo "" >> $thisRunScript # new line
     done
   fi
@@ -492,60 +441,27 @@ createRunScript() {
 
 }
 
-parseHeader() {
-  cat $1 | \
-  sed -e "s/\${testName}/${testName}/g" \
-      -e "s;\${testDir};${outputDir};g" \
-      -e "s;\${HOMME_PROJID};${HOMME_ACCOUNT};g" > $2
-  echo ""  >> $2 # newline
-  echo "########################################"  >> $2
-  echo "# Above is header, below is run data"  >> $2
-  echo "########################################"  >> $2
-  echo ""  >> $2 # newline
-}
-
-submissionHeader() {
-  RUN_SCRIPT=$1
-
-  if [ "$HOMME_Submission_Type" != none ]; then 
-    # Use a user defined header
-    if [ -n "$HOMME_Submission_Header" ]; then
-      parseHeader ${HOMME_Submission_Header} ${RUN_SCRIPT}
-    else
-      # Build a header for lsf or pbs
-      if [ "$HOMME_Submission_Type" = lsf ]; then
-        createLSFHeader $RUN_SCRIPT
-      elif [ "$HOMME_Submission_Type" = pbs ]; then
-        createPBSHeader $RUN_SCRIPT
-      fi
-    fi
-  else
-    createStdHeader $RUN_SCRIPT
-  fi
-
-}
-
 execLine() {
   RUN_SCRIPT=$1
   EXEC=$2
-  NUM_CPUS=$3
+  NUM_MPI_PROCS=$3
 
   if [ -n "${MPI_EXEC}" ]; then
     # mpirun.lsf is a special case
     if [ "${MPI_EXEC}" = "mpirun.lsf" ] ; then
-      echo "mpirun.lsf -pam \"-n ${NUM_CPUS}\" ${MPI_OPTIONS} $EXEC" >> $RUN_SCRIPT
+      echo "mpirun.lsf -pam \"-n ${NUM_MPI_PROCS}\" ${MPI_OPTIONS} $EXEC" >> $RUN_SCRIPT
     else
-      echo "${MPI_EXEC} -n ${NUM_CPUS} ${MPI_OPTIONS} $EXEC" >> $RUN_SCRIPT
+      echo "${MPI_EXEC} -n ${NUM_MPI_PROCS} ${MPI_OPTIONS} $EXEC" >> $RUN_SCRIPT
     fi
   else
     if [ "$HOMME_Submission_Type" = lsf ]; then
-      echo "mpirun.lsf -pam \"-n ${NUM_CPUS}\" ${MPI_OPTIONS} $EXEC" >> $RUN_SCRIPT
+      echo "mpirun.lsf -pam \"-n ${NUM_MPI_PROCS}\" ${MPI_OPTIONS} $EXEC" >> $RUN_SCRIPT
 
     elif [ "$HOMME_Submission_Type" = pbs ]; then
-      echo "aprun -n ${NUM_CPUS} ${MPI_OPTIONS} $EXEC" >> $RUN_SCRIPT
+      echo "aprun -n ${NUM_MPI_PROCS} ${MPI_OPTIONS} $EXEC" >> $RUN_SCRIPT
 
     else
-      echo "mpiexec -n ${NUM_CPUS} ${MPI_OPTIONS} $EXEC" >> $RUN_SCRIPT
+      echo "mpiexec -n ${NUM_MPI_PROCS} ${MPI_OPTIONS} $EXEC" >> $RUN_SCRIPT
 
     fi
   fi
@@ -583,11 +499,11 @@ diffCprnc() {
     exit -8
   fi
 
-  # source the test.sh file to get the names of the nc_output_files
+  # source the test.sh file to get the names of the NC_OUTPUT_FILES
   source ${HOMME_TESTING_DIR}/${TEST_NAME}/${TEST_NAME}.sh
 
-  # nc_output_files is defined in the .sh file
-  FILES="${nc_output_files}"
+  # NC_OUTPUT_FILES is defined in the .sh file
+  FILES="${NC_OUTPUT_FILES}"
 
   if [ -z "${FILES}" ] ; then
       echo "Test ${TEST_NAME} doesn't have Netcdf output files"
@@ -648,11 +564,11 @@ diffCprnc() {
 
 diffCprncOutput() {
 
-  # source the test.sh file to get the names of the nc_output_files
+  # source the test.sh file to get the names of the NC_OUTPUT_FILES
   source ${HOMME_TESTING_DIR}/${TEST_NAME}/${TEST_NAME}.sh
 
-  # nc_output_files is defined in the .sh file
-  FILES="${nc_output_files}"
+  # NC_OUTPUT_FILES is defined in the .sh file
+  FILES="${NC_OUTPUT_FILES}"
 
   if [ -z "${FILES}" ] ; then
       echo "Test ${TEST_NAME} doesn't have Netcdf output files"
@@ -693,10 +609,10 @@ moveBaseline() {
 
   source ${HOMME_TESTING_DIR}/test_list.sh
 
-  for subNum in $(seq 1 ${num_test_files})
+  for subNum in $(seq 1 ${NUM_TEST_FILES})
   do
 
-    subFile=test_file${subNum}
+    subFile=TEST_FILE_${subNum}
     subFile=${!subFile}
 
     subDirName=`dirname ${subFile}`
@@ -705,11 +621,11 @@ moveBaseline() {
     baselineDir=${HOMME_BASELINE_DIR}/$subBaseName
     mkdir -p $baselineDir
 
-    # source the test.sh file to get the name of the nc_output_files
+    # source the test.sh file to get the name of the NC_OUTPUT_FILES
     source ${subFile}
 
-    # nc_output_files is defined in the .sh file
-    FILES="${nc_output_files}"
+    # NC_OUTPUT_FILES is defined in the .sh file
+    FILES="${NC_OUTPUT_FILES}"
 
     if [ -z "${FILES}" ] ; then
       : # pass for now
@@ -748,15 +664,15 @@ checkBaselineResults() {
 
   filesNotFound=false
 
-  for testFileNum in $(seq 1 $num_test_files)
+  for testFileNum in $(seq 1 ${NUM_TEST_FILES})
   do
 
-    testFile=test_file${testFileNum}
+    testFile=TEST_FILE_${testFileNum}
     source ${!testFile}
 
-    testName=`basename ${!testFile} .sh`
+    TEST_NAME=`basename ${!testFile} .sh`
 
-    FILES="${nc_output_files}"
+    FILES="${NC_OUTPUT_FILES}"
 
 
     if [ -z "${FILES}" ] ; then
@@ -769,7 +685,7 @@ checkBaselineResults() {
       baseFilename=`basename $file`
 
       # result in the repo
-      repoFile=${HOMME_BASELINE_DIR}/${testName}/movies/${baseFilename}
+      repoFile=${HOMME_BASELINE_DIR}/${TEST_NAME}/movies/${baseFilename}
 
       if [ ! -f "${repoFile}" ] ; then
         echo "Error: The Netcdf file ${repoFile} does not exist in the baseline dir"

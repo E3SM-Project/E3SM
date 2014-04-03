@@ -105,7 +105,7 @@ program spelt_main
   ! =====================================
   ! Begin threaded region...
   ! =====================================
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
   !$OMP PARALLEL DEFAULT(SHARED), PRIVATE(ithr,nets,nete)
 #endif
   ithr=omp_get_thread_num()
@@ -138,7 +138,7 @@ program spelt_main
 
   call spelt_run_bench(elem,spelt,hybrid,nets,nete,tl)
 
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
   !$OMP END PARALLEL
 #endif
   ! ================================================

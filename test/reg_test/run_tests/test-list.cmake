@@ -3,6 +3,7 @@ SET(HOMME_TESTS
   swtc1.cmake
   swtc5.cmake
   swtc6.cmake
+  swimtc5.cmake
   baro1a.cmake
   baro1b.cmake
   baro2a.cmake

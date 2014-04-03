@@ -4,6 +4,7 @@
 
 module bndry_mod
   use parallel_mod, only : abortmp
+  use edge_mod, only : Ghostbuffer3D_t
   implicit none
   private
   public :: bndry_exchangeV, ghost_exchangeVfull, compute_ghost_corner_orientation
@@ -266,7 +267,7 @@ contains
 
     call t_adj_detailf(+2)
     call t_startf('bndry_exchange')
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
     if(hybrid%ithr == 0) then 
@@ -357,7 +358,7 @@ contains
 
 #endif
     endif  ! if (hybrid%ithr == 0)
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
     call t_stopf('bndry_exchange')
@@ -377,7 +378,6 @@ contains
 !
     use hybrid_mod, only : hybrid_t
     use kinds, only : log_kind
-    use edge_mod, only : Ghostbuffer3D_t
     use schedtype_mod, only : schedule_t, cycle_t, schedule
     use dimensions_mod, only: nelemd
 #ifdef _MPI
@@ -404,7 +404,7 @@ contains
     logical(kind=log_kind),parameter      :: Debug = .FALSE.
 
 
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
     if(hybrid%ithr == 0) then 
@@ -478,7 +478,7 @@ contains
 
 #endif
     endif  ! if (hybrid%ithr == 0)
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
 
@@ -527,7 +527,7 @@ contains
     logical(kind=log_kind),parameter      :: Debug = .FALSE.
 
 
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
     if(hybrid%ithr == 0) then 
@@ -605,15 +605,11 @@ contains
 
 #endif
     endif  ! if (hybrid%ithr == 0)
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
 
   end subroutine ghost_exchangeV
-
-
-
-
 
   subroutine compute_ghost_corner_orientation(hybrid,elem,nets,nete)
 !

@@ -68,6 +68,8 @@ SET(PREQX_SRCS_F90
   ${UTILS_SHARE_DIR}/shr_sys_mod.F90 
   ${UTILS_SHARE_DIR}/shr_file_mod.F90 
   ${UTILS_SHARE_DIR}/shr_vmath_mod.F90 
+  ${UTILS_SHARE_DIR}/shr_const_mod.F90 
+  ${UTILS_SHARE_DIR}/shr_spfn_mod.F90 
   ${UTILS_TIMING_DIR}/perf_mod.F90 
   ${UTILS_TIMING_DIR}/perf_utils.F90 
   ${SRC_SHARE_DIR}/domain_mod.F90 
@@ -107,11 +109,13 @@ SET(PREQX_SRCS_F90
   ${SRC_SHARE_DIR}/mesh_mod.F90 
   ${SRC_SHARE_DIR}/Manager.F90
   ${SRC_DIR}/prim_main.F90 
+  ${SRC_DIR}/ref_state_mod.F90 
 )
 
 
 SET(PREQX_SRCS_C
   ${UTILS_SHARE_DIR}/shr_vmath_fwrap.c
+  ${SRC_DIR}/jrio.c
 )
 
 # If the user specified a file for custom compiler options use those
@@ -138,6 +142,9 @@ ENDIF ()
 IF (NOT PREQX_NC)
   SET (PREQX_NC 4)
 ENDIF ()
+IF (PREQX_QSIZE_D)
+  SET (QSIZE_D ${PREQX_QSIZE_D})
+ENDIF ()
 
 MESSAGE(STATUS "Building preqx with:")
 MESSAGE(STATUS "  NP = ${PREQX_NP}")
@@ -151,9 +158,26 @@ IF (${PREQX_USE_CUDA_FORTRAN})
   MESSAGE(STATUS "  Using CUDA Fortran")
 ENDIF ()
 
-IF (${ENABLE_ELEMENT_OPENMP})
-  SET(ELEMENT_OPENMP TRUE)
-  MESSAGE(STATUS "  Using ELEMENT_OPENMP")
+IF (${PREQX_USE_OPENACC})
+  SET(USE_OPENACC TRUE)
+  MESSAGE(STATUS "  Using OpenACC")
+ENDIF ()
+
+IF (${ENABLE_HORIZ_OPENMP})
+  # Set this as global so it is picked up by other executables
+  SET(HORIZ_OPENMP TRUE CACHE BOOL "Threading in the horizontal direction")
+  MESSAGE(STATUS "  Using HORIZ_OPENMP")
+ENDIF ()
+
+IF (${ENABLE_COLUMN_OPENMP})
+  # Set this as global so it is picked up by other executables
+  #SET(COLUMN_OPENMP TRUE CACHE BOOL "Threading in the horizontal direction")
+  SET(COLUMN_OPENMP TRUE)
+  MESSAGE(STATUS "  Using COLUMN_OPENMP")
+ENDIF ()
+
+IF (${ENABLE_HORIZ_OPENMP} AND ${ENABLE_COLUMN_OPENMP})
+  SET(NESTED_OPENMP TRUE CACHE BOOL "Both horizontal and column threading")
 ENDIF ()
 
 # The following macro handles the compilation with the appropriate variables

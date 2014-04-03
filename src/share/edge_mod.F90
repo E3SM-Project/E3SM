@@ -95,6 +95,14 @@ module edge_mod
   end type GhostBuffer3D_t
 
 ! NOTE ON ELEMENT ORIENTATION
+!
+! Element orientation:  index V(i,j)
+!
+!           (1,np) NWEST      (np,np) NEAST 
+!
+!           (1,1) SWEST       (np,1) SEAST
+!
+!
 ! for the edge neighbors:  
 !    we set the "reverse" flag if two elements who share an edge use a 
 !    reverse orientation.  The data is reversed during the *pack* stage
@@ -160,7 +168,8 @@ module edge_mod
 ! input/output arrays are cartesian, and thus assume at most 1 element at each corner
 ! hence currently only supports cube-sphere grids.
 !
-! TODO: GhostBufferTR should be removed - we only need GhostBuffer3D, if we can fix
+! TODO: GhostBufferTR (init and type) should be removed - we only need GhostBuffer3D, 
+! if we can fix
 ! ghostVpack2d below to pass vlyr*ntrac_d instead of two seperate arguments
 !
   public :: initGhostBufferTR     ! ghostbufferTR_t
@@ -261,7 +270,7 @@ contains
 !$OMP BARRIER
 
 !   only master thread should allocate the buffer
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP MASTER
 #endif
     if (present(buf_ptr)) then
@@ -333,11 +342,11 @@ contains
     enddo
 #endif
 
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP END MASTER
 #endif
 !   make sure all threads wait until buffer is allocated
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 
@@ -350,14 +359,14 @@ contains
        if (ith <= 1 ) then
           edgebuff_ptrs(ith)%ptr => edge%buf
        endif
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
        !$OMP BARRIER
        !$OMP MASTER
 #endif
        if (.not. associated(edgebuff_ptrs(0)%ptr, edgebuff_ptrs(1)%ptr)) then
           call haltmp('ERROR: edge struct appears to be thread-private.')
        endif
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
        !$OMP END MASTER
 #endif
     endif
@@ -423,7 +432,7 @@ contains
     implicit none
     type (EdgeBuffer_t),intent(inout) :: edge
 
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 !$OMP MASTER
 #endif
@@ -431,7 +440,7 @@ contains
     edge%nlyr=0
     deallocate(edge%buf)
     deallocate(edge%receive)
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP END MASTER
 #endif
 
@@ -441,7 +450,7 @@ contains
     implicit none
     type (Ghostbuffer3d_t),intent(inout) :: buffer
 
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 !$OMP MASTER
 #endif
@@ -449,7 +458,7 @@ contains
     buffer%nlyr=0
     deallocate(buffer%buf)
     deallocate(buffer%receive)
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP END MASTER
 #endif
 
@@ -499,7 +508,6 @@ contains
     type (EdgeDescriptor_t),intent(in) :: desc
 
     ! Local variables
-    logical, parameter :: UseUnroll = .TRUE.
     integer :: i,k,ir,ll
 
     integer :: is,ie,in,iw
@@ -507,7 +515,7 @@ contains
     call t_adj_detailf(+2)
     call t_startf('edge_pack')
     if(.not. threadsafe) then
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
        threadsafe=.true.
@@ -520,93 +528,78 @@ contains
     if (edge%nlyr < (kptr+vlyr) ) then
        call haltmp('edgeVpack: Buffer overflow: size of the vertical dimension must be increased!')
     endif
-    if(MODULO(np,2) == 0 .and. UseUnroll) then 
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i)
 #endif
+    do i=1,np
+       ! East
        do k=1,vlyr
-          do i=1,np,2
-             edge%buf(kptr+k,is+i)   = v(i  ,1 ,k)
-             edge%buf(kptr+k,is+i+1) = v(i+1,1 ,k)
-             edge%buf(kptr+k,ie+i)   = v(np ,i ,k)
-             edge%buf(kptr+k,ie+i+1) = v(np ,i+1 ,k)
-             edge%buf(kptr+k,in+i)   = v(i  ,np,k)
-             edge%buf(kptr+k,in+i+1) = v(i+1  ,np,k)
-             edge%buf(kptr+k,iw+i)   = v(1  ,i ,k)
-             edge%buf(kptr+k,iw+i+1) = v(1  ,i+1 ,k)
-
-          enddo
-       end do
-    else
-#if (defined ELEMENT_OPENMP)
-!$omp parallel do private(k,i)
-#endif
+          edge%buf(kptr+k,ie+i)   = v(np ,i ,k)
+       enddo
+       ! South
        do k=1,vlyr
-          do i=1,np
-             edge%buf(kptr+k,is+i)   = v(i  ,1 ,k)
-             edge%buf(kptr+k,ie+i)   = v(np ,i ,k)
-             edge%buf(kptr+k,in+i)   = v(i  ,np,k)
-             edge%buf(kptr+k,iw+i)   = v(1  ,i ,k)
-          enddo
-       end do
-    endif
-
+          edge%buf(kptr+k,is+i)   = v(i  ,1 ,k)
+       enddo
+       ! North
+       do k=1,vlyr
+          edge%buf(kptr+k,in+i)   = v(i  ,np,k)
+       enddo
+       ! West
+       do k=1,vlyr
+          edge%buf(kptr+k,iw+i)   = v(1  ,i ,k)
+       enddo
+    end do
 
     !  This is really kludgy way to setup the index reversals
     !  But since it is so a rare event not real need to spend time optimizing
 
     if(desc%reverse(south)) then
-       is = desc%putmapP(south)
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,ir)
 #endif
-       do k=1,vlyr
-          do i=1,np
-             ir = np-i+1
+       do i=1,np
+          ir = np-i+1
+          do k=1,vlyr
              edge%buf(kptr+k,is+ir)=v(i,1,k)
           enddo
        enddo
     endif
 
     if(desc%reverse(east)) then
-       ie = desc%putmapP(east)
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,ir)
 #endif
-       do k=1,vlyr
-          do i=1,np
-             ir = np-i+1
+       do i=1,np
+          ir = np-i+1
+          do k=1,vlyr
              edge%buf(kptr+k,ie+ir)=v(np,i,k)
           enddo
        enddo
     endif
 
     if(desc%reverse(north)) then
-       in = desc%putmapP(north)
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,ir)
 #endif
-       do k=1,vlyr
-          do i=1,np
-             ir = np-i+1
+       do i=1,np
+          ir = np-i+1
+          do k=1,vlyr
              edge%buf(kptr+k,in+ir)=v(i,np,k)
           enddo
        enddo
     endif
 
     if(desc%reverse(west)) then
-       iw = desc%putmapP(west)
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,ir)
 #endif
-       do k=1,vlyr
-          do i=1,np
-             ir = np-i+1
+       do i=1,np
+          ir = np-i+1
+          do k=1,vlyr
              edge%buf(kptr+k,iw+ir)=v(1,i,k)
           enddo
        enddo
     endif
-
 
 ! SWEST
     do ll=swest,swest+max_corner_elem-1
@@ -671,7 +664,7 @@ contains
     integer :: is,ie,in,iw
 
     if(.not. threadsafe) then
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
        threadsafe=.true.
@@ -808,7 +801,6 @@ contains
     type (EdgeDescriptor_t)            :: desc
 
     ! Local
-    logical, parameter :: UseUnroll = .TRUE.
     integer :: i,k,ll
     integer :: is,ie,in,iw
 
@@ -821,35 +813,27 @@ contains
     in=desc%getmapP(north)
     iw=desc%getmapP(west)
 
-    if(MODULO(np,2) == 0 .and. UseUnroll) then 
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i)
 #endif
+    do i=1,np
+       ! East
        do k=1,vlyr
-          do i=1,np,2
-             v(i  ,1  ,k) = v(i  ,1  ,k)+edge%buf(kptr+k,is+i  )
-             v(i+1,1  ,k) = v(i+1,1  ,k)+edge%buf(kptr+k,is+i+1)
-             v(np ,i  ,k) = v(np ,i  ,k)+edge%buf(kptr+k,ie+i  )
-             v(np ,i+1,k) = v(np ,i+1,k)+edge%buf(kptr+k,ie+i+1)
-             v(i  ,np ,k) = v(i  ,np ,k)+edge%buf(kptr+k,in+i  )
-             v(i+1,np ,k) = v(i+1,np ,k)+edge%buf(kptr+k,in+i+1)
-             v(1  ,i  ,k) = v(1  ,i  ,k)+edge%buf(kptr+k,iw+i  )
-             v(1  ,i+1,k) = v(1  ,i+1,k)+edge%buf(kptr+k,iw+i+1)
-          end do
+          v(np ,i  ,k) = v(np ,i  ,k)+edge%buf(kptr+k,ie+i  )
        end do
-    else
-#if (defined ELEMENT_OPENMP)
-!$omp parallel do private(k,i)
-#endif
+       ! South
        do k=1,vlyr
-          do i=1,np
-             v(i  ,1  ,k) = v(i  ,1  ,k)+edge%buf(kptr+k,is+i  )
-             v(np ,i  ,k) = v(np ,i  ,k)+edge%buf(kptr+k,ie+i  )
-             v(i  ,np ,k) = v(i  ,np ,k)+edge%buf(kptr+k,in+i  )
-             v(1  ,i  ,k) = v(1  ,i  ,k)+edge%buf(kptr+k,iw+i  )
-          end do
+          v(i  ,1  ,k) = v(i  ,1  ,k)+edge%buf(kptr+k,is+i  )
        end do
-    endif
+       ! North
+       do k=1,vlyr
+          v(i  ,np ,k) = v(i  ,np ,k)+edge%buf(kptr+k,in+i  )
+       end do
+       ! West
+       do k=1,vlyr
+          v(1  ,i  ,k) = v(1  ,i  ,k)+edge%buf(kptr+k,iw+i  )
+       end do
+    end do
 
 ! SWEST
     do ll=swest,swest+max_corner_elem-1
@@ -1453,7 +1437,7 @@ contains
     implicit none
     type (GhostBuffertr_t),intent(inout) :: ghost
 
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 !$OMP MASTER
 #endif
@@ -1461,7 +1445,7 @@ contains
     ghost%nlyr=0
     deallocate(ghost%buf)
     deallocate(ghost%receive)
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP END MASTER
 #endif
 
@@ -1502,7 +1486,7 @@ contains
     integer :: is,ie,in,iw
 
     if(.not. threadsafe) then
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
        threadsafe=.true.
@@ -1830,7 +1814,7 @@ contains
   !! hold all vertical layers you intent to pack, the method will 
   !! halt the program with a call to parallel_mod::haltmp().
   !! @param[in] edge Ghost Buffer into which the data will be packed.
-  !! This buffer must be previously allocated with initghostbufferfull().
+  !! This buffer must be previously allocated with initghostbuffer().
   !! @param[in] v The data to be packed.
   !! @param[in] vlyr Number of vertical level coming into the subroutine
   !! for packing for input v.
@@ -1840,14 +1824,15 @@ contains
   subroutine GhostVpack_unoriented(edge,v,nc,vlyr,kptr,desc)
     type (Ghostbuffer3D_t),intent(inout) :: edge
     integer,              intent(in)   :: vlyr
+    integer,              intent(in)   :: nc
     real (kind=real_kind),intent(in)   :: v(nc,nc,vlyr)
-    integer,              intent(in)   :: nc,kptr
+    integer,              intent(in)   :: kptr
     type (EdgeDescriptor_t),intent(in) :: desc
 
     integer :: k,l,l_local,is
 
     if(.not. threadsafe) then
-#if (! defined ELEMENT_OPENMP)
+#if ( defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
        threadsafe=.true.
@@ -1875,8 +1860,9 @@ contains
 
     type (Ghostbuffer3D_t),intent(inout)  :: edge
     integer,               intent(in)     :: vlyr
+    integer,               intent(in)     :: nc
     real (kind=real_kind), intent(out)    :: v(nc,nc,vlyr,*)
-    integer,               intent(in)     :: kptr,nc
+    integer,               intent(in)     :: kptr
     type (EdgeDescriptor_t),intent(in)    :: desc
     integer(kind=int_kind),intent(in)     :: GlobalId
     real (kind=real_kind), intent(in)     :: u(nc,nc,vlyr)
@@ -1946,7 +1932,7 @@ contains
     endif
 
     nbuf=max_neigh_edges*nelemd
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP MASTER
 #endif
     ghost%nlyr=nlyr
@@ -1956,7 +1942,7 @@ contains
 
     allocate(ghost%receive(npoints,nhc,nlyr,ntrac,nbuf))
     ghost%receive=0
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP END MASTER
 !$OMP BARRIER
 #endif
@@ -1989,7 +1975,7 @@ subroutine ghostVpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,tn0,timelevels,desc)
   integer :: is,ie,in,iw
 
   if(.not. threadsafe) then
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
      threadsafe=.true.
@@ -2184,7 +2170,7 @@ subroutine ghostVpackR(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
   integer :: is,ie,in,iw
 
   if(.not. threadsafe) then
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
      threadsafe=.true.
@@ -2832,7 +2818,7 @@ end subroutine ghostVunpackR
 
 
       if(.not. threadsafe) then
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
   !$OMP BARRIER
 #endif
          threadsafe=.true.
@@ -3246,7 +3232,7 @@ end subroutine ghostVunpackR
 
 
       if(.not. threadsafe) then
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
   !$OMP BARRIER
 #endif
          threadsafe=.true.
@@ -3615,7 +3601,7 @@ end subroutine ghostVunpackR
 
 
       if(.not. threadsafe) then
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
   !$OMP BARRIER
 #endif
          threadsafe=.true.
@@ -3938,7 +3924,7 @@ end subroutine ghostVunpackR
     endif
 
     nbuf=max_neigh_edges*nelemd
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP MASTER
 #endif
     ghost%nlyr    = nlyr
@@ -3950,8 +3936,7 @@ end subroutine ghostVunpackR
     allocate(ghost%receive(np,(nhc+1),nlyr,nbuf))
     ghost%buf=0
     ghost%receive=0
-
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP END MASTER
 !$OMP BARRIER
 #endif
@@ -3999,7 +3984,7 @@ end subroutine ghostVunpackR
     integer :: is,ie,in,iw
 
     if(.not. threadsafe) then
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
        threadsafe=.true.

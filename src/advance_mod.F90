@@ -22,27 +22,17 @@ contains
     ! ---------------------
     use element_mod, only : element_t
     ! ---------------------
-    use edge_mod, only : EdgeBuffer_t, edgevpack, edgevunpack
+    use edge_mod, only : EdgeBuffer_t
     ! ---------------------
-    use filter_mod, only : filter_t, filter_P
+    use filter_mod, only : filter_t
     ! ---------------------
     use hybrid_mod, only : hybrid_t
     ! ---------------------
-    use reduction_mod, only : reductionbuffer_ordered_1d_t
-    ! ---------------------
-    use derivative_mod, only : derivative_t, gradient_sphere, divergence_sphere,vorticity_sphere,&
-         divergence_sphere_wk
+    use derivative_mod, only : derivative_t
     ! ---------------------
     use time_mod, only : timelevel_t, smooth
     ! ---------------------
-    use control_mod, only :  filter_freq, filter_counter, topology, test_case, LFTfreq
-    ! ---------------------
-    use shallow_water_mod, only : tc1_velocity, vortex_velocity, swirl_velocity
-    ! ---------------------
-    use cg_mod, only : cg_t
-    ! ---------------------
-    use bndry_mod, only : bndry_exchangev
-    use viscosity_mod, only : neighbor_minmax
+    use control_mod, only : LFTfreq
     ! ---------------------
     !  FOR DEBUGING use only 
     ! ---------------------
@@ -68,23 +58,18 @@ contains
     type (TimeLevel_t)   , intent(in) :: tl
     integer              , intent(in) :: nets
     integer              , intent(in) :: nete
-    integer               :: ig
 
     ! =================
     ! Local
     ! =================
     ! Thread private working set ...
-    real (kind=real_kind), dimension(:,:), pointer     :: rspheremp,spheremp
     real (kind=real_kind), dimension(np,np,2,nlev,nets:nete)  :: vtens
     real (kind=real_kind), dimension(np,np,nlev,nets:nete) :: ptens
-    logical :: do_leapfrog
 
 
     real (kind=real_kind) :: dt2, real_time
 
-    real*8                :: st,et
     integer    :: i,j,k,ie
-    integer    :: kptr
     integer    :: nm1,n0,np1
     integer    :: nstep, steptype
 
@@ -193,7 +178,7 @@ contains
 
     call t_stopf('advance_nonstag')
 
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
   end subroutine advance_nonstag
@@ -212,24 +197,17 @@ contains
     ! ---------------------
     use edge_mod, only : EdgeBuffer_t, edgevpack, edgevunpack, edgedgvunpack
     ! ---------------------
-    use filter_mod, only : filter_t, filter_P
+    use filter_mod, only : filter_t
     ! ---------------------
     use hybrid_mod, only : hybrid_t
-    ! ---------------------
-    use reduction_mod, only : reductionbuffer_ordered_1d_t
     ! ---------------------
     use derivative_mod, only : derivative_t, gradient_sphere, divergence_sphere,vorticity_sphere,&
          divergence_sphere_wk, edge_flux_u_cg, dgmodal_to_gll, gll_to_dgmodal
     ! ---------------------
-    use time_mod, only : timelevel_t, smooth
+    use time_mod, only : timelevel_t
     ! ---------------------
-    use control_mod, only :  filter_freq, filter_counter, topology, test_case, sub_case, &
-          limiter_option, nu, nu_div, nu_s, tracer_advection_formulation, TRACERADV_UGRADQ, &
-	  kmass
-    ! ---------------------
-    use shallow_water_mod, only : tc1_velocity, vortex_velocity, vortex_exact, swirl_velocity
-    ! ---------------------
-    use cg_mod, only : cg_t
+    use control_mod, only :  test_case, limiter_option, nu, nu_s, &
+         tracer_advection_formulation, TRACERADV_UGRADQ, kmass
     ! ---------------------
     use bndry_mod, only : bndry_exchangev
     use viscosity_mod, only : neighbor_minmax, biharmonic_wk
@@ -259,7 +237,6 @@ contains
     type (TimeLevel_t)   , intent(inout) :: tl
     integer              , intent(in) :: nets
     integer              , intent(in) :: nete
-    integer                           :: ig
 
     ! =================
     ! Local
@@ -267,8 +244,7 @@ contains
 
     ! pointer ...
 
-    real (kind=real_kind), dimension(:,:), pointer     :: fcor,rspheremp,spheremp,metdet,rmetdet
-    real (kind=real_kind), dimension(:,:,:,:), pointer :: met,metinv
+    real (kind=real_kind), dimension(:,:), pointer     :: fcor,rspheremp,spheremp
 
     ! Thread private working set ...
 
@@ -278,7 +254,6 @@ contains
     real (kind=real_kind), dimension(npdg,npdg)   :: phat
 
     real (kind=real_kind), dimension(0:np+1,0:np+1,nlev)   :: pedges
-    real (kind=real_kind), dimension(np,np,nlev)   :: p_storage, ptens_tvd
 
     real (kind=real_kind), dimension(np,np,2)    :: grade   ! kinetic energy gradient
     real (kind=real_kind), dimension(np,np,2)    :: gradh   ! grad(h)
@@ -290,17 +265,16 @@ contains
     real (kind=real_kind), dimension(np,np,2)    :: ulatlon
 
 
-    real (kind=real_kind) :: v1,v2,pstar,gmn,fjmax(4)
+    real (kind=real_kind) :: v1,v2,fjmax(4)
     real (kind=real_kind) :: vtens1,vtens2
     real (kind=real_kind) :: pmin(nlev,nets:nete),pmax(nlev,nets:nete)
-    real (kind=real_kind) :: plmin(np,np,nlev,nets:nete),plmax(np,np,nlev,nets:nete)
 
-    real (kind=real_kind) :: delta,real_time
+    real (kind=real_kind) :: real_time
 
-    real*8     :: st,et,dtstage
-    integer    :: i,j,k,s,ie,m,n
+    real (kind=real_kind) :: dtstage
+    integer    :: i,j,k,s,ie
     integer    :: kptr
-    integer    :: nm1,n0,np1
+    integer    :: n0,np1
     integer    :: nstep
     integer    :: ntmp
 
@@ -323,7 +297,6 @@ contains
        endif   
     endif
 
-    nm1   = tl%nm1
     n0    = tl%n0
     np1   = tl%np1
     nstep = tl%nstep
@@ -455,10 +428,6 @@ contains
 ! --- endif  HYPERVIS_T1
 
        do ie=nets,nete
-          met    => elem(ie)%met
-          metinv => elem(ie)%metinv
-          metdet => elem(ie)%metdet
-          rmetdet => elem(ie)%rmetdet
           fcor   => elem(ie)%fcor
           spheremp     => elem(ie)%spheremp
 
@@ -564,13 +533,13 @@ contains
 
        if(Debug) print *,'homme: adv.._rk 2'
 
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
        !$OMP BARRIER
 #endif
 
        call bndry_exchangeV(hybrid,edge3)
 
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
        !$OMP BARRIER
 #endif
        
@@ -708,7 +677,7 @@ contains
     tl%np1  = tl%n0
     tl%n0   = ntmp
 
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
   end subroutine advance_nonstag_rk
@@ -728,7 +697,7 @@ contains
 
     real (kind=real_kind), dimension(np,np) :: weights
     real (kind=real_kind), dimension(np,np) :: ptens_mass
-    integer  k1, k, i, j, iter, i1, i2
+    integer  k1, k, i, j, i1, i2
     integer :: whois_neg(np*np), whois_pos(np*np), neg_counter, pos_counter
 
     real (kind=real_kind) :: addmass, weightssum, mass
@@ -910,7 +879,9 @@ contains
 !to the initial field (in terms of a weighted sum), but satisfies the constraints.
 !So, first we find values which do not satisfy constraints and bring these values
 !to a closest constraint. This way we introduce some mass change (addmass),
-!so, we redistribute addmass in the way that error is smallest. This redistribution might !violate constraints (though I think the solution is given by one iteration only if the !problem is well-posed) due to round off, for example; thus, we do a few iterations. 
+!so, we redistribute addmass in the way that error is smallest. This redistribution might
+!violate constraints (though I think the solution is given by one iteration only if the
+!problem is well-posed) due to round off, for example; thus, we do a few iterations. 
 
     use kinds, only : real_kind
     use dimensions_mod, only : np, nlev
@@ -925,7 +896,7 @@ contains
  
     real (kind=real_kind), dimension(np,np) :: weights
     real (kind=real_kind), dimension(np,np) :: ptens_mass
-    integer  k1, k, i, j, iter, i1, i2
+    integer  k1, k, i, j, i1, i2
     integer :: pos_counter, neg_counter, whois_neg(np*np), whois_pos(np*np)
     real (kind=real_kind) :: addmass, weightssum, mass
     real (kind=real_kind) :: x(np*np),c(np*np)
@@ -1114,7 +1085,9 @@ contains
 !to the initial field (in terms of a weighted sum), but satisfies the constraints.
 !So, first we find values which do not satisfy constraints and bring these values
 !to a closest constraint. This way we introduce some mass change (addmass),
-!so, we redistribute addmass in the way that error is smallest. This redistribution might !violate constraints (though I think the solution is given by one iteration only if the !problem is well-posed) due to round off, for example; thus, we do a few iterations. 
+!so, we redistribute addmass in the way that error is smallest. This redistribution might
+!violate constraints (though I think the solution is given by one iteration only if the
+!problem is well-posed) due to round off, for example; thus, we do a few iterations. 
 
     use kinds, only : real_kind
     use dimensions_mod, only : np, nlev
@@ -1426,7 +1399,7 @@ contains
     !
     use kinds, only : real_kind
     use dimensions_mod, only : np, nlev
-    use control_mod, only : nu, nu_div, nu_s, hypervis_order, hypervis_subcycle, limiter_option,&
+    use control_mod, only : nu, nu_s, hypervis_order, hypervis_subcycle, limiter_option,&
 	  test_case, kmass
     use hybrid_mod, only : hybrid_t
     use element_mod, only : element_t
@@ -1439,12 +1412,12 @@ contains
 
     type (hybrid_t)      , intent(in) :: hybrid
     type (element_t)     , intent(inout), target :: elem(:)
+    integer :: nt,nets,nete
     real (kind=real_kind), dimension(np,np,2,nlev,nets:nete)  :: vtens
     real (kind=real_kind), dimension(np,np,nlev,nets:nete) :: ptens
     type (EdgeBuffer_t)  , intent(inout) :: edge3
     type (derivative_t)  , intent(in) :: deriv
     real (kind=real_kind) :: dt2
-    integer :: nt,nets,nete
 
 
     ! local
@@ -1678,8 +1651,6 @@ contains
     ! ---------------------
     use filter_mod, only : filter_t, filter_P
     ! ---------------------
-    use hybrid_mod, only : hybrid_t
-    ! ---------------------
     use reduction_mod, only : reductionbuffer_ordered_1d_t
     ! ---------------------
     !    use parallel_mod
@@ -1689,9 +1660,7 @@ contains
     ! ---------------------
     use time_mod, only : timelevel_t, smooth
     ! ---------------------
-    use control_mod, only : filter_freq, filter_counter, topology, test_case, precon_method
-    ! ---------------------
-    use shallow_water_mod, only : tc1_velocity
+    use control_mod, only : filter_freq, precon_method
     ! ---------------------
     use cg_mod, only : cg_t
     ! ---------------------
@@ -1715,7 +1684,7 @@ contains
 
     integer              , intent(in) :: nets
     integer              , intent(in) :: nete
-    type (blkjac_t)                   :: blkjac(nets:nete)
+    type (blkjac_t), allocatable      :: blkjac(:)
 
     real (kind=real_kind), intent(in) :: dt
     real (kind=real_kind), intent(in) :: pmean
@@ -1728,14 +1697,11 @@ contains
     ! pointers ...
 
     real (kind=real_kind), dimension(:,:), pointer     :: mp
-    real (kind=real_kind), dimension(:,:), pointer     :: metdetp
 
     real (kind=real_kind), dimension(:,:), pointer     :: fcor
     real (kind=real_kind), dimension(:,:), pointer     :: rmp
     real (kind=real_kind), dimension(:,:), pointer     :: metdet
-    real (kind=real_kind), dimension(:,:), pointer     :: rmetdet
-    real (kind=real_kind), dimension(:,:,:,:), pointer :: met
-    real (kind=real_kind), dimension(:,:,:,:), pointer :: metinv, Dinv
+    real (kind=real_kind), dimension(:,:,:,:), pointer :: Dinv
 
     ! Thread private working set ...
 
@@ -1760,23 +1726,20 @@ contains
     real (kind=real_kind), dimension(np,np)      :: divm1      ! timestep n-1 velocity divergence (p-grid)
 
     real (kind=real_kind) ::  v1,v2
-    real (kind=real_kind) ::  gradp1,gradp2
     real (kind=real_kind) ::  grad_dp1,grad_dp2
-    real (kind=real_kind) ::  Ru1,Ru2,Rp
+    real (kind=real_kind) ::  Ru1,Ru2
 
     real (kind=real_kind) ::  dt2
-    real (kind=real_kind) ::  time_adv
 
-    real*8  :: et,st
+!    real (kind=real_kind) :: et,st
     integer i,j,k,ie
     integer kptr
-    integer point
+#ifdef _HTRACE
+!    integer point
+#endif
     integer iptr
     integer nm1,n0,np1
     integer nstep
-
-    real (kind=real_kind) :: tmp1
-    real (kind=real_kind) :: p0sum,v0sum
 
     call t_startf('advance_si_nonstag')
 
@@ -1801,7 +1764,7 @@ contains
 
     !DBG print *,'advance_si: point #1'
 
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
 
@@ -1840,12 +1803,12 @@ contains
        end do
 
        !DBG print *,'advance_si: point #8'
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
        !$OMP BARRIER
 #endif
 
        call bndry_exchangeV(cg%hybrid,edge3)
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
        !$OMP BARRIER
 #endif
 
@@ -1872,7 +1835,7 @@ contains
 
        end do
 
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
        !$OMP BARRIER
 #endif
 
@@ -1884,7 +1847,6 @@ contains
        mp => elem(ie)%mp
        fcor => elem(ie)%fcor
        metdet => elem(ie)%metdet
-       metinv => elem(ie)%metinv
        Dinv => elem(ie)%Dinv
 
        !JMD       TIMER_DETAIL_START(timer,2,st)
@@ -2017,7 +1979,7 @@ contains
     ! =============================================================
 
     call bndry_exchangeV(cg%hybrid,edge3)
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
 
@@ -2027,7 +1989,6 @@ contains
        mp      => elem(ie)%mp
        Dinv    => elem(ie)%Dinv
        metdet  => elem(ie)%metdet
-       rmetdet=> elem(ie)%rmetdet
 
        ! ===========================================================
        ! Unpack the edges for vgradp and vtens
@@ -2093,7 +2054,7 @@ contains
           iptr=1
           do j=1,np
              do i=1,np
-                Rs(i,j,k,ie) = dt2*mp(i,j)*(vgradp(i,j,k,ie)*metdetp(i,j)   &
+                Rs(i,j,k,ie) = dt2*mp(i,j)*(vgradp(i,j,k,ie)*metdet(i,j)   &
                      - elem(ie)%state%p(i,j,k,n0)*div(i,j)       &
                      -                 pmean*divm1(i,j))
              end do
@@ -2107,7 +2068,7 @@ contains
     end do
 
     call bndry_exchangeV(cg%hybrid,edge1)
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
 
@@ -2130,20 +2091,20 @@ contains
     ! ======================================================
 
     !DBG print *,'advance_si: before call to pcg_solver'
-    point = 3
 #ifdef _HTRACE
+!    point = 3
     !JMD    call EVENT_POINT(point)
 ! ---
 #endif
 ! --- endif _HTRACE
 
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
 
 
     dp(:,:,:,nets:nete) = pcg_solver(elem, &
-	 Rs(:,:,:,nets:nete),  &     ! rhs of Helmholtz problem
+         Rs(:,:,:,nets:nete),  &     ! rhs of Helmholtz problem
          cg,              &     ! cg struct
          red,             &     ! reduction buffer
          edge1 ,          &     ! single vector edge exchange buffer
@@ -2153,10 +2114,9 @@ contains
          nets,            &     ! starting element number
          nete,            &     ! ending   element number
          blkjac)
-    point = 4
-
 
 #ifdef _HTRACE
+!    point = 4
     !JMD   call EVENT_POINT(point)
 ! ---
 #endif
@@ -2164,7 +2124,6 @@ contains
 
     do ie=nets,nete
 
-       metinv => elem(ie)%metinv
        Dinv => elem(ie)%Dinv
 
        do k=1,nlev
@@ -2201,11 +2160,11 @@ contains
        call edgeVpack(edge2, grad_dp(1,1,1,1,ie),2*nlev,kptr,elem(ie)%desc)
     end do
 
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
     call bndry_exchangeV(cg%hybrid,edge2)
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
     do ie=nets,nete
@@ -2261,7 +2220,7 @@ contains
 
     call t_stopf('advance_si_nonstag')
 
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
 
@@ -2274,7 +2233,7 @@ contains
   subroutine set_prescribed_velocity(elem,n0,time)
   use control_mod, only :  topology, test_case
   use element_mod, only : element_t
-  use dimensions_mod, only : np, nlev
+  use dimensions_mod, only : nlev
   use shallow_water_mod, only : tc1_velocity, vortex_velocity, swirl_velocity
   implicit none
 
@@ -2337,17 +2296,16 @@ contains
 
   type (hybrid_t)      , intent(in) :: hybrid
   type (element_t)     , intent(inout), target :: elem(:)
+  integer :: nm1,np1,n0,nets,nete
   real (kind=real_kind), dimension(np,np,2,nlev,nets:nete)  :: vtens
   real (kind=real_kind), dimension(np,np,nlev,nets:nete) :: ptens
   type (EdgeBuffer_t)  , intent(inout) :: edge3
   type (derivative_t)  , intent(in) :: deriv
   real (kind=real_kind) :: dt2,pmean,real_time
-  integer :: nm1,np1,n0,nets,nete
 
   ! local
   ! pointer ...
-  real (kind=real_kind), dimension(:,:), pointer :: fcor,rspheremp,spheremp,metdet,rmetdet
-  real (kind=real_kind), dimension(:,:,:,:), pointer :: met,metinv
+  real (kind=real_kind), dimension(:,:), pointer :: fcor,rspheremp,spheremp
   real (kind=real_kind), dimension(np,np,2)    :: grade   ! strong kinetic energy gradient
   real (kind=real_kind), dimension(np,np,2)    :: pv      ! p*v lat-lon
   real (kind=real_kind), dimension(np,np)                     :: E          ! kinetic energy term
@@ -2367,10 +2325,6 @@ contains
   ! on the velocity grid...
   ! ===================================
   do ie=nets,nete
-     met    => elem(ie)%met
-     metinv => elem(ie)%metinv
-     metdet => elem(ie)%metdet
-     rmetdet => elem(ie)%rmetdet
      fcor   => elem(ie)%fcor
      spheremp     => elem(ie)%spheremp
 
@@ -2422,11 +2376,11 @@ contains
   end do
   
   
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
   !$OMP BARRIER
 #endif
   call bndry_exchangeV(hybrid,edge3)
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
   !$OMP BARRIER
 #endif
   
@@ -2498,8 +2452,9 @@ function adv_flux_term(elem,deriv,contrauv,si,si_neighbor) result(numflux)
     real (kind=real_kind), dimension(np,np) :: numflux
     real (kind=real_kind), dimension(np,np) :: mij
     real (kind=real_kind), dimension(np)   :: lf_south,lf_north,lf_east,lf_west
-    real(kind=real_kind) ::  alfa1, alfa2, ul,ur , left, right, f_left, f_right, s1,s2
-    integer i,j, k
+    real(kind=real_kind) ::  alfa1, alfa2, left, right, f_left, f_right, s1,s2
+!    real(kind=real_kind) :: ul, ur
+    integer i,j
 !=======================================================================================!
     mij(:,:)  = 0
     mij(1,1)  = 1
@@ -2606,7 +2561,7 @@ end function adv_flux_term
  real (kind=real_kind),dimension(4)   :: fjmax
  real (kind=real_kind):: alfa1,alfa2, ul,ur 
  integer, parameter:: south=1,east=2,north=3,west=4
- integer:: i,j,wall
+ integer:: i,j
 !========================================================
 #if 0
     ! for debugging: with this, we should duplicate adv_flux_term()
@@ -2683,9 +2638,9 @@ subroutine swsys_flux(numeqn,elem,deriv,fjmax,si,si_neighbor,uvcontra,fluxout)
    real (kind=real_kind), dimension(np,4,numeqn) :: si_senw
    real (kind=real_kind), dimension(np,np) :: mij
    real (kind=real_kind), dimension(np)   :: lf_south,lf_north,lf_east,lf_west
-   real(kind=real_kind) ::  ul,ur , left, right, f_left, f_right, s1,s2
+   real(kind=real_kind) ::  left, right, f_left, f_right, s1,s2
 
-   integer i,j,k,eqn 
+   integer i,j,eqn 
 
       mij(:,:) = 0.0D0
       mij(1,1) = 1.0D0

@@ -18,7 +18,7 @@ contains
     !-----------------
     use derivative_mod, only : derivative_t, derivinit, deriv_print
     !-----------------
-    use dimensions_mod, only : np, nlev, npsq, npsq, nelemd, nvar, nc
+    use dimensions_mod, only : np, nlev, npsq, npsq, nelemd, nvar, nc, ntrac
     !-----------------
     use shallow_water_mod, only : tc1_init_state, tc2_init_state, tc5_init_state, tc6_init_state, tc5_invariants, &
          tc8_init_state, vortex_init_state, vortex_errors, sj1_init_state, tc6_errors, &
@@ -57,7 +57,9 @@ contains
     !-----------------
     use, intrinsic :: iso_c_binding 
     !-----------------
-    use derived_type_mod ,only : derived_type, precon_type, initialize, init_precon
+    use derived_type_mod ,only : derived_type, initialize
+    use precon_type_mod ,only : precon_type, init_precon
+    use solver_mod, only : solver_test, solver_test_ml
 #endif
     !-----------------
     use control_mod, only : integration, filter_mu, filter_type, transfer_type, debug_level,  &
@@ -68,7 +70,7 @@ contains
     use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
     use bndry_mod, only : compute_ghost_corner_orientation, &
          sort_neighbor_buffer_mapping
-    use checksum_mod, only : test_ghost
+    use checksum_mod, only : test_ghost, test_bilin_phys2gll
 
     use fvm_control_volume_mod, only : fvm_struct
     
@@ -159,14 +161,12 @@ contains
     real*8  :: tot_iter
     logical, parameter :: Debug = .FALSE.
 
-    logical :: fvm_check = .FALSE.
-#ifdef _FVM
   real (kind=longdouble_kind)                    :: fvm_corners(nc+1)
   real(kind=longdouble_kind)                     :: fvm_points(nc)     ! fvm cell centers on reference element
   
   real (kind=real_kind)                          :: xtmp
   real (kind=real_kind)                          :: maxcflx, maxcfly  
-#endif    
+
 
 #ifdef TRILINOS
   interface 
@@ -197,14 +197,14 @@ contains
     call t_startf('sweq')
 
     hybrid = hybrid_create(par,ithr,NThreads)
-
+    simday=0
     if (topology == "cube") then
        call test_global_integral(elem,hybrid,nets,nete)
 
        dtnu = 2.0d0*tstep*max(nu,nu_s)/hypervis_subcycle
        call print_cfl(elem,hybrid,nets,nete,dtnu)
 
-       if (MeshUseMeshFile .EQV. .FALSE.) then
+       if (.not. MeshUseMeshFile) then
           ! orientation code assumes only one corner element neighbor
           ! orientation algorithm only works for cubed-sphere meshes
           call compute_ghost_corner_orientation(hybrid,elem,nets,nete)
@@ -217,8 +217,6 @@ contains
     ! ==================================
     ! Initialize derivative structure
     ! ==================================
-
-#ifdef _FVM
 
     ! Initialize derivative structure
     ! fvm nodes are equally spaced in alpha/beta
@@ -234,11 +232,10 @@ contains
        fvm_points(i)= ( fvm_corners(i)+fvm_corners(i+1) ) /2
     end do
     call derivinit(deriv,fvm_corners,fvm_points)
-    call fvm_init2(elem,fvm,hybrid,nets,nete,tl)
-    
-#else
-    call derivinit(deriv)
-#endif    
+    if (ntrac>0) then
+       call fvm_init2(elem,fvm,hybrid,nets,nete,tl)
+       call test_bilin_phys2gll(elem,fvm,hybrid,nets,nete)
+    endif
 
 !   if (hybrid%masterthread) then
 !       call deriv_print(deriv)
@@ -304,14 +301,17 @@ contains
 
 !   some test code
 #if 0
-    if (hybrid%masterthread) print *,'running CG solver test'
-    call solver_test(elem,edge1,red,hybrid,deriv,nets,nete)
-    stop
-    if (hybrid%masterthread) print *,'running global integration-by-parts checks'
-    call test_ibyp(elem,hybrid,nets,nete)
-    if (hybrid%masterthread) print *,'running element divergence/edge flux checks'
-    call check_edge_flux(elem,deriv,nets,nete)
-    stop
+!#if 1
+!#ifdef TRILINOS
+!    if (hybrid%masterthread) print *,'running CG solver test'
+!    call solver_test(elem,edge1,red,hybrid,deriv,nets,nete)
+!    call solver_test_ml(elem,edge1,red,hybrid,deriv,nets,nete)
+!    stop
+!    if (hybrid%masterthread) print *,'running global integration-by-parts checks'
+!    call test_ibyp(elem,hybrid,nets,nete)
+!    if (hybrid%masterthread) print *,'running element divergence/edge flux checks'
+!    call check_edge_flux(elem,deriv,nets,nete)
+!    stop
 #endif
 
 
@@ -450,13 +450,14 @@ contains
              call tc5_invariants(elem,90,tl,pmean,edge2,deriv,hybrid,nets,nete)
              call tc5_errors(elem,7,tl,pmean,"ref_tc5_imp",simday,hybrid,nets,nete,par)
              
-#ifdef _FVM
+             if (ntrac>0) then
              do ie=nets,nete
                call fvm_init_tracer(fvm(ie),tl)
              end do
              call fvm_init3(elem,fvm,hybrid,nets,nete,tl%n0)
              if (hybrid%masterthread) print *,"initializing fvm tracers for swtc5..."
-#endif
+             endif
+
              
           else if (test_case(1:5) == "swtc6") then
              if (hybrid%masterthread)  print *,"initializing swtc6..."
@@ -482,22 +483,13 @@ contains
           ! ==============================================
           ! Output initial picture of geopotential...
           ! ============================================== 
-#ifdef _FVM
-          fvm_check = .TRUE.
-#endif
-
 
 #ifdef PIO_INTERP
 	  call interp_movie_init(elem,hybrid,nets,nete,tl=tl)
           call interp_movie_output(elem,tl, hybrid, pmean, nets, nete,fvm)     
 #else
-          if (fvm_check) then
-             call shal_movie_init(elem,hybrid,fvm)
-             call shal_movie_output(elem,tl, hybrid, pmean, nets, nete,deriv,fvm)
-          else
-             call shal_movie_init(elem,hybrid)
-             call shal_movie_output(elem,tl, hybrid, pmean, nets, nete,deriv)
-          endif
+          call shal_movie_init(elem,hybrid,fvm)
+          call shal_movie_output(elem,tl, hybrid, pmean, nets, nete,deriv,fvm)
 #endif
           call printstate(elem,pmean,g_sw_output,tl%n0,hybrid,nets,nete,-1)
           call sweq_invariants(elem,190,tl,pmean,edge3,deriv,hybrid,nets,nete)
@@ -651,13 +643,13 @@ contains
 
     end if
     
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
     if (ithr==0) then
        call syncmp(par)
     end if
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
 
@@ -828,7 +820,7 @@ contains
        ! ==================================================
        if(Debug) print *,'homme: point #14'
 
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
        !$OMP BARRIER
 #endif
        if (test_case(1:5) == "swtc1") then
@@ -930,7 +922,7 @@ contains
 
        end if
 
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
        !$OMP BARRIER
 #endif
        if(Debug) print *,'homme: point #17'
@@ -950,7 +942,7 @@ contains
           endif
        endif
 
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
        !$OMP BARRIER
 #endif
 
@@ -1328,13 +1320,13 @@ contains
 
     if(Debug) print *,'homme: point #11'
 
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
     if (ithr==0) then
        call syncmp(par)
     end if
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
     !$OMP BARRIER
 #endif
 
@@ -1388,7 +1380,7 @@ contains
        ! ==================================================
        if(Debug) print *,'homme: point #14'
 
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
        !$OMP BARRIER
 #endif
        if (test_case(1:5) == "swtc1") then
@@ -1491,7 +1483,7 @@ contains
 
        end if
 
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
        !$OMP BARRIER
 #endif
        if(Debug) print *,'homme: point #17'
@@ -1505,7 +1497,7 @@ contains
 
           call sweq_invariants(elem,190,tl,pmean,edge3,deriv,hybrid,nets,nete)
        end if
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
        !$OMP BARRIER
 #endif
 

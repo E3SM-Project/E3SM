@@ -22,7 +22,7 @@ ENDFOREACH()
 # The following builds cprnc 
 ExternalProject_Add(
   cprnc
-  SOURCE_DIR ${CMAKE_SOURCE_DIR}/utils/cprnc_131004
+  SOURCE_DIR ${CMAKE_SOURCE_DIR}/utils/cprnc
   LIST_SEPARATOR ^^
   CMAKE_ARGS
     -DCMAKE_Fortran_COMPILER=${CMAKE_Fortran_COMPILER}

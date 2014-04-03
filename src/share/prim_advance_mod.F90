@@ -187,9 +187,7 @@ contains
 !
 ! integration = "full_imp"
 !
-!   tstep_type=1  Backward Euler, first order  (under development)
-!
-!   tstep_type=2  Crank Nicolson, second order (under development)
+!   tstep_type=1  Backward Euler or BDF2 implicit dynamics
 !
 
 ! default weights for computing mean dynamics fluxes
@@ -240,7 +238,7 @@ contains
                elem(ie)%derived%eta_dot_dpdn(:,:,:) + eta_dot_dpdn(:,:,:)*eta_ave_w
 
           ! subcycling code uses a mean flux to advect tracers
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
           !$omp parallel do private(k,dp)
 #endif
           do k=1,nlev
@@ -406,26 +404,26 @@ contains
        ! u5 = u0 +  dt/4 RHS(u0)) + 3dt/4 RHS(u4)
 #endif
 
-    else if (method==11) then
-       ! Backward Euler fully implicit JFNK method (vertically langragian not active yet)
+    else if ((method==11).or.(method==12)) then
+       ! Fully implicit JFNK method (vertically langragian not active yet)
        if (rsplit > 0) then
        call abortmp('ERROR: full_imp integration not yet coded for vert lagrangian adv option')
        end if
-      if (hybrid%masterthread) print*, "fully implicit integration is still under development"
+!      if (hybrid%masterthread) print*, "fully implicit integration is still under development"
 
 #ifdef TRILINOS
       lenx=(np*np*nlev*3 + np*np*1)*(nete-nets+1)  ! 3 3d vars plus 1 2d vars
       allocate(xstate(lenx))
       xstate(:) = 0d0
 
-      call initialize(state_object, lenx, elem, hvcoord, compute_diagnostics, &
-        qn0, eta_ave_w, hybrid, deriv, dt, np1, n0, np1, nets, nete)
+      call initialize(state_object, method, elem, hvcoord, compute_diagnostics, &
+        qn0, eta_ave_w, hybrid, deriv, dt, tl, nets, nete)
 
-      call initialize(pre_object, lenx, elem, hvcoord, compute_diagnostics, &
-        qn0, eta_ave_w, hybrid, deriv, dt, np1, n0, np1, nets, nete)
+      call initialize(pre_object, method, elem, hvcoord, compute_diagnostics, &
+        qn0, eta_ave_w, hybrid, deriv, dt, tl, nets, nete)
 
-      call initialize(jac_object, lenx, elem, hvcoord, compute_diagnostics, &
-        qn0, eta_ave_w, hybrid, deriv, dt, np1, n0, np1, nets, nete)
+      call initialize(jac_object, method, elem, hvcoord, compute_diagnostics, &
+        qn0, eta_ave_w, hybrid, deriv, dt, tl, nets, nete)
 
 !      pc_elem = elem
 !      jac_elem = elem
@@ -443,30 +441,45 @@ contains
        np1 = n0
 
        lx = 1
-       do n=1,nvar
-       do ie=nets,nete
-       if (n.le.3) then
-        do k=1,nlev
-          do j=1,np
-            do i=1,np
-             if (n==1) xstate(lx) = elem(ie)%state%v(i,j,1,k,n0)
-             if (n==2) xstate(lx) = elem(ie)%state%v(i,j,2,k,n0)
-             if (n==3) xstate(lx) = elem(ie)%state%T(i,j,k,n0)
-             lx = lx+1
-            end do  !np
-          end do  !np
-         end do  !nlev
-        else
-          do j=1,np
-            do i=1,np
-              if (n==4) xstate(lx) = elem(ie)%state%ps_v(i,j,n0)
-              lx = lx+1
-            end do  !np
-          end do  !np
-        end if ! nvar
-       end do !ie
-       end do !nvar
-
+	   do ie=nets,nete
+		   do k=1,nlev
+			   do j=1,np
+				   do i=1,np
+					   xstate(lx) = elem(ie)%state%v(i,j,1,k,n0)
+					   lx = lx+1
+				   end do
+			   end do
+		   end do
+	   end do
+	   do ie=nets,nete
+		   do k=1,nlev
+			   do j=1,np
+				   do i=1,np
+					   xstate(lx) = elem(ie)%state%v(i,j,2,k,n0)
+					   lx = lx+1
+				   end do
+			   end do
+		   end do
+	   end do
+	   do ie=nets,nete
+		   do k=1,nlev
+			   do j=1,np
+				   do i=1,np
+					   xstate(lx) = elem(ie)%state%T(i,j,k,n0)
+					   lx = lx+1
+				   end do
+			   end do
+		   end do
+	   end do
+	   do ie=nets,nete
+		   do j=1,np
+			   do i=1,np
+				   xstate(lx) = elem(ie)%state%ps_v(i,j,n0)
+				   lx = lx+1
+			   end do
+		   end do
+	   end do
+       
 ! activate these lines to test infrastructure and still solve with explicit code
 !       ! RK2
 !       ! forward euler to u(dt/2) = u(0) + (dt/2) RHS(0)  (store in u(np1))
@@ -482,31 +495,45 @@ contains
       call c_f_pointer(c_ptr_to_object, fptr) ! convert C ptr to F ptr
       elem = fptr%base
 
-       lx = 1
-       do n=1,nvar
-       do ie=nets,nete
-       if (n.le.3) then
-        do k=1,nlev
-          do j=1,np
-            do i=1,np
-             if (n==1) elem(ie)%state%v(i,j,1,k,np1) = xstate(lx)
-             if (n==2) elem(ie)%state%v(i,j,2,k,np1) = xstate(lx)
-             if (n==3) elem(ie)%state%T(i,j,k,np1) = xstate(lx)
-             lx = lx+1
-            end do  !np
-          end do  !np
-         end do  !nlev
-        else
-          do j=1,np
-            do i=1,np
-              if (n==4) elem(ie)%state%ps_v(i,j,np1) = xstate(lx)
-              lx = lx+1
-            end do  !np
-          end do  !np
-        end if ! nvar
-       end do !ie
-       end do !nvar
-
+	  lx = 1
+	  do ie=nets,nete
+		  do k=1,nlev
+			  do j=1,np
+				  do i=1,np
+					  elem(ie)%state%v(i,j,1,k,np1) = xstate(lx)
+					  lx = lx+1
+				  end do
+			  end do
+		  end do
+	  end do
+	  do ie=nets,nete
+		  do k=1,nlev
+			  do j=1,np
+				  do i=1,np
+					  elem(ie)%state%v(i,j,2,k,np1) = xstate(lx) 
+					  lx = lx+1
+				  end do
+			  end do
+		  end do
+	  end do
+	  do ie=nets,nete
+		  do k=1,nlev
+			  do j=1,np
+				  do i=1,np
+					  elem(ie)%state%T(i,j,k,np1) = xstate(lx)
+					  lx = lx+1
+				  end do
+			  end do
+		  end do
+	  end do
+	  do ie=nets,nete
+		  do j=1,np
+			  do i=1,np
+				  elem(ie)%state%ps_v(i,j,np1) = xstate(lx)
+				  lx = lx+1
+			  end do
+		  end do
+	  end do
 #endif
 
     else
@@ -546,7 +573,7 @@ contains
 #ifdef ENERGY_DIAGNOSTICS
     if (compute_diagnostics) then
        do ie = nets,nete
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
 #endif
          do k=1,nlev  !  Loop index added (AAM)
@@ -588,7 +615,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
        integer, intent(in)               :: nets,nete
        type (element_t), intent(inout), target :: elem(:)
-       type (blkjac_t)                   :: blkjac(nets:nete)
+       type (blkjac_t), allocatable      :: blkjac(:)
 
        type (cg_t)                       :: cg
 
@@ -602,6 +629,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
        type (TimeLevel_t), intent(in)    :: tl
        real(kind=real_kind), intent(in)  :: dt
        real(kind=real_kind)              :: time_adv
+#ifndef _CRAYFTN
        ! ==========================
        ! Local variables...
        ! ==========================
@@ -714,11 +742,11 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
        if ( dt /= initialized_for_dt ) then
           if(hybrid%par%masterproc) print *,'Initializing semi-implicit matricies for dt=',dt
 
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
           !$OMP MASTER
 #endif
           call set_vert_struct_mat(dt, refstate, hvcoord, hybrid%masterthread)
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
           !$OMP END MASTER
 #endif
 
@@ -739,6 +767,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
           call cg_create(cg, np*np, nlev, nete-nets+1, hybrid, debug_level, solver_wts)
           deallocate(solver_wts)
           if (precon_method == "block_jacobi") then
+             if (.not. allocated(blkjac)) then
+                allocate(blkjac(nets:nete))
+             endif
              call blkjac_init(elem, deriv,refstate%Lambda,nets,nete,blkjac)
           end if
           initialized_for_dt = dt
@@ -805,7 +836,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
           rpmid = 1.0_real_kind/pmid
           rpdel = 1.0_real_kind/pdel
 
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j,v1,v2,vco)
 #endif
           do k=1,nlev
@@ -850,7 +881,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
              end do
           end do
 
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j)
 #endif
           do k=1,nlev-1
@@ -971,11 +1002,10 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
           end do
 
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j,Vs1,Vs2)
 #endif
           do k=1,nlev
-
              do j=1,np
                 do i=1,np
                    Vs1 = elem(ie)%Dinv(1,1,i,j)*grad_dGref(i,j,1,k) + elem(ie)%Dinv(2,1,i,j)*grad_dGref(i,j,2,k)
@@ -1019,15 +1049,15 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
           kptr=0
           call edgeVunpack(edge2, Vscript(1,1,1,1,ie), 2*nlev, kptr, elem(ie)%desc)
 #ifdef DEBUGOMP
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
+! Not sure about deriv here.
 !$omp parallel do private(k,i,j,gVscript,deriv)
 #endif
           do k=1,nlev
-
              do j=1,np
                 do i=1,np
                    Vscript(i,j,1,k,ie) = elem(ie)%rmp(i,j)*Vscript(i,j,1,k,ie)
@@ -1055,7 +1085,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
           end do
 
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j,l)
 #endif
           do k=1,nlev
@@ -1080,7 +1110,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
           !  Weight C (the RHS of the helmholtz problem) by the mass matrix
           ! ===============================================================
 
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j)
 #endif
           do k=1,nlev
@@ -1119,7 +1149,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
           ! Complete global assembly by normalizing by rmp
           ! ===============================================
 
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j)
 #endif
           do k=1,nlev
@@ -1132,7 +1162,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
           end do
 
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j,l)
 #endif
           do k=1,nlev
@@ -1155,7 +1185,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
        end do
 #ifdef DEBUGOMP
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -1181,9 +1211,10 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
        ! to find prognostic variables at time level n+1
        ! ================================================================
 
+       kptr=0
        do ie = nets, nete
 
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j,l)
 #endif
           do k=1,nlev
@@ -1210,7 +1241,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
           end do
 
-          kptr=0
           call edgeVpack(edge1,B(:,:,:,ie),nlev,kptr,elem(ie)%desc)
 
        end do
@@ -1222,11 +1252,11 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
           kptr=0
           call edgeVunpack(edge1, B(:,:,:,ie), nlev, kptr, elem(ie)%desc)
 #ifdef DEBUGOMP
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j)
 #endif
           do k=1,nlev
@@ -1239,7 +1269,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
           end do
 
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j,l)
 #endif
           do k=1,nlev
@@ -1261,7 +1291,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
           end do
 
 #if 1
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j,l)
 #endif
           do k=1,nlev
@@ -1367,7 +1397,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
           ! Vscript = Vscript - dt*grad(Gref)
           ! ==========================================================
 
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j)
 #endif
           do k=1,nlev
@@ -1387,7 +1417,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
              end do
           end do
 
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j)
 #endif
           do k=1,nlev
@@ -1400,7 +1430,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
        end do
 #ifdef DEBUGOMP
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -1409,6 +1439,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 #endif
        call t_stopf('prim_advance_si')
        call t_adj_detailf(-1)
+#endif
   end subroutine prim_advance_si
 
 
@@ -1480,7 +1511,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   do ie=nets,nete
      ! apply forcing to Qdp
      elem(ie)%derived%FQps(:,:,1)=0
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(q,k,i,j,v1)
 #endif
      do q=1,qsize
@@ -1549,7 +1580,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
 
      ! Qdp(np1) and ps_v(np1) were updated by forcing - update Q(np1)
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(q,k,i,j,dp)
 #endif
      do q=1,qsize
@@ -1669,13 +1700,14 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      do ic=1,hypervis_subcycle
         do ie=nets,nete
 
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
+! Not sure about deriv here
 !$omp parallel do private(k,lap_p,lap_v,deriv,i,j)
 #endif
            do k=1,nlev
               lap_p=laplace_sphere_wk(elem(ie)%state%T(:,:,k,nt),deriv,elem(ie),var_coef=.false.)
               lap_v=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie),var_coef=.false.)
-              ! advace in time.  (note: DSS commutes with time stepping, so we
+              ! advance in time.  (note: DSS commutes with time stepping, so we
               ! can time advance and then DSS.  this has the advantage of
               ! not letting any discontinuties accumulate in p,v via roundoff
               do j=1,np
@@ -1703,7 +1735,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            call edgeVunpack(edge3, elem(ie)%state%v(:,:,:,:,nt), 2*nlev, kptr, elem(ie)%desc)
 
            ! apply inverse mass matrix
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j)
 #endif
            do k=1,nlev
@@ -1717,7 +1749,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            enddo
         enddo
 #ifdef DEBUGOMP
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -1760,7 +1792,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 #endif
            endif
            nu_scale=1
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j,lap_p,lap_v,nu_scale_top,dpdn,dpdn0,nu_scale,utens_tmp,vtens_tmp,ptens_tmp)
 #endif
            do k=1,nlev
@@ -1829,8 +1861,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
 
            ! apply inverse mass matrix, accumulate tendencies
-#if (defined ELEMENT_OPENMP)
-!$omp parallel do private(k,i,j,v1,v2,heating)
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(k)
 #endif
            do k=1,nlev
               vtens(:,:,1,k,ie)=dt*vtens(:,:,1,k,ie)*elem(ie)%rspheremp(:,:)
@@ -1870,7 +1902,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
         enddo
 #ifdef DEBUGOMP
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -1955,7 +1987,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      do ic=1,hypervis_subcycle
         do ie=nets,nete
 
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
+! Not sure about deriv here
 !$omp parallel do private(k,lap_t,lap_v,deriv,i,j)
 #endif
            do k=1,nlev
@@ -1989,7 +2022,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            call edgeVunpack(edge3, elem(ie)%state%v(:,:,:,:,nt), 2*nlev, kptr, elem(ie)%desc)
 
            ! apply inverse mass matrix
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j)
 #endif
            do k=1,nlev
@@ -2003,7 +2036,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            enddo
         enddo
 #ifdef DEBUGOMP
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -2033,7 +2066,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
               elem(ie)%derived%dpdiss_biharmonic(:,:,:)=elem(ie)%derived%dpdiss_biharmonic(:,:,:)+&
                    eta_ave_w*dptens(:,:,:,ie)/hypervis_subcycle
            endif
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j,lap_t,lap_dp,lap_v,nu_scale_top,dpdn,dpdn0,utens_tmp,vtens_tmp,ttens_tmp,dptens_tmp)
 #endif
            do k=1,nlev
@@ -2096,7 +2129,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
 
            ! apply inverse mass matrix, accumulate tendencies
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
 #endif
            do k=1,nlev
@@ -2112,7 +2145,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            ! E1-E0:   dpdn (u dot utens) + dpdn .5 utens dot utens   - dpdn X
            !      X = (u dot utens) + .5 utens dot utens
            !  alt:  (u+utens) dot utens
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j,v1,v2,heating)
 #endif
            do k=1,nlev
@@ -2134,7 +2167,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            enddo
         enddo
 #ifdef DEBUGOMP
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -2226,7 +2259,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      do ic=1,hypervis_subcycle
         do ie=nets,nete
 
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
+! Not sure about deriv here
 !$omp parallel do private(k,lap_p,lap_v,deriv,i,j)
 #endif
            do k=1,nlev
@@ -2260,7 +2294,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            call edgeVunpack(edge3, elem(ie)%state%v(:,:,:,:,nt), 2*nlev, kptr, elem(ie)%desc)
 
            ! apply inverse mass matrix
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j)
 #endif
            do k=1,nlev
@@ -2274,7 +2308,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            enddo
         enddo
 #ifdef DEBUGOMP
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -2291,7 +2325,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
         do ie=nets,nete
 
            nu_scale=1
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j,lap_p,lap_v,nu_scale_top,dpdn,dpdn0,nu_scale,utens_tmp,vtens_tmp,ptens_tmp)
 #endif
            do k=1,nlev
@@ -2365,7 +2399,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
               do k=1,nlev
                  p(:,:,k)   = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem(ie)%state%ps_v(:,:,nt)
               enddo
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,dXdp)
 #endif
               do k=1,nlev
@@ -2386,7 +2420,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
 
            ! apply inverse mass matrix, accumulate tendencies
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j,v1,v2,heating)
 #endif
            do k=1,nlev
@@ -2412,7 +2446,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            elem(ie)%state%ps_v(:,:,nt)=elem(ie)%state%ps_v(:,:,nt) + dt*elem(ie)%rspheremp(:,:)*pstens(:,:,ie)
         enddo
 #ifdef DEBUGOMP
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -2473,9 +2507,9 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
 
   implicit none
-  integer :: np1,nm1,n0,qn0,nets,nete
-  real*8 :: dt2
-  logical  :: compute_diagnostics
+  integer, intent(in) :: np1,nm1,n0,qn0,nets,nete
+  real*8, intent(in) :: dt2
+  logical, intent(in)  :: compute_diagnostics
 
   type (hvcoord_t)     , intent(in) :: hvcoord
   type (hybrid_t)      , intent(in) :: hybrid
@@ -2535,15 +2569,20 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      ! ============================
      ! compute p and delta p
      ! ============================
-!#if (defined ELEMENT_OPENMP)
+!#if (defined COLUMN_OPENMP)
 !!$omp parallel do private(k,i,j)
 !#endif
 !     do k=1,nlev+1
 !       ph(:,:,k)   = hvcoord%hyai(k)*hvcoord%ps0 + hvcoord%hybi(k)*elem(ie)%state%ps_v(:,:,n0)
 !     end do
 
-#if (defined ELEMENT_OPENMP)
-!$omp parallel do private(k,i,j,v1,v2,vtemp)
+#if (defined COLUMN_OPENMP_BROKEN)
+!  Note that the following does not work with OpenMP threading turned on.
+!  The line 
+!              p(:,:,k)=p(:,:,k-1) + dp(:,:,k-1)/2 + dp(:,:,k)/2
+!  is sequential in that it depends upon the previous p(:,:,k-1) and therefore
+!  gives a race condition.
+!  !$omp parallel do private(k,i,j,v1,v2,vtemp)
 #endif
      do k=1,nlev
         if (rsplit==0) then
@@ -2607,7 +2646,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      ! compute T_v for timelevel n0
      !if ( moisture /= "dry") then
      if (qn0 == -1 ) then
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j)
 #endif
         do k=1,nlev
@@ -2619,7 +2658,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            end do
         end do
      else
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j,Qt)
 #endif
         do k=1,nlev
@@ -2685,7 +2724,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
         ! for reference: at mid layers we have:
         !    omega = v grad p  - integral_etatop^eta[ divdp ]
         ! ===========================================================
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
         !$omp parallel do private(k)
 #endif
         do k=1,nlev-1
@@ -2706,7 +2745,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      ! ================================
      ! accumulate mean vertical flux:
      ! ================================
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
      !$omp parallel do private(k)
 #endif
      do k=1,nlev  !  Loop index added (AAM)
@@ -2725,7 +2764,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      ! ==============================================
      ! Compute phi + kinetic energy term: 10*nv*nv Flops
      ! ==============================================
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j,v1,v2,E,Ephi,vtemp,vgrad_T,gpterm,glnps1,glnps2)
 #endif
      do k=1,nlev
@@ -2948,7 +2987,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      ! =========================================================
      if (dt2<0) then
         ! calling program just wanted DSS'd RHS, skip time advance
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
 #endif
         do k=1,nlev
@@ -2961,7 +3000,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
         enddo
         elem(ie)%state%ps_v(:,:,np1) = -elem(ie)%spheremp(:,:)*sdot_sum
      else
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
 #endif
         do k=1,nlev
@@ -3025,8 +3064,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      ! Scale tendencies by inverse mass matrix
      ! ====================================================
 
-#if (defined ELEMENT_OPENMP)
-!$omp parallel do private(k,i,j)
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(k)
 #endif
      do k=1,nlev
         elem(ie)%state%T(:,:,k,np1)   = elem(ie)%rspheremp(:,:)*elem(ie)%state%T(:,:,k,np1)
@@ -3050,7 +3089,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
 
 #ifdef DEBUGOMP
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -3062,9 +3101,15 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   subroutine residual(xstate, fx, nelemd, c_ptr_to_object) bind(C,name='calc_f')
 
   ! ===================================
-  ! compute the RHS, accumulate into u(np1) and apply DSS
+  ! compute the RHS, accumulate into a residual for each dependent variable and apply DSS
   !
-  !           u(np1) = u(nm1) + dt2*DSS[ RHS(u(n0)) ]
+  ! For the Backward Euler first order option 
+  !
+  !           F(u)  = (u(np1) - u(n0))/dt  -  DSS[ RHS(u(np1)) ]
+  !
+  ! For the BDF2 second order option 
+  !
+  !           F(u)  = (u(np1) - u(n0))/dt  -  DSS[ RHS(u(np1)) ]
   !
   ! This subroutine is normally called to compute a leapfrog timestep
   ! but by adjusting np1,nm1,n0 and dt2, many other timesteps can be
@@ -3096,6 +3141,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   use bndry_mod, only : bndry_exchangev
   use control_mod, only : moisture, qsplit, use_cpstar, rsplit
   use hybvcoord_mod, only : hvcoord_t
+  use time_mod, only : TimeLevel_t
 
   use physical_constants, only : cp, cpwater_vapor, Rgas, kappa
   use physics_mod, only : virtual_specific_heat, virtual_temperature
@@ -3105,7 +3151,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   use, intrinsic :: iso_c_binding
 
   implicit none
-  integer :: np1,nm1,n0,qn0,nets,nete,lx,n
+  integer :: np1,nm1,n0,nm,qn0,nets,nete,lx,n
   real*8 :: dt2, dti
   logical  :: compute_diagnostics
 
@@ -3142,29 +3188,36 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
   real (kind=real_kind) ::  cp2,cp_ratio,E,de,Qt,v1,v2
   real (kind=real_kind) ::  glnps1,glnps2,gpterm
+  real (kind=real_kind) ::  gam
   integer :: i,j,k,kptr,ie, n_Q
 
   type (element_t), target     :: elem(nelem)
   type (hvcoord_t)     :: hvcoord
   type (hybrid_t)      :: hybrid
   type (derivative_t)  :: deriv
+  type (TimeLevel_t)   :: tl
 
   integer(c_int) ,intent(in) ,value  :: nelemd
   real (c_double) ,intent(in)        :: xstate(nelemd)
   real (c_double) ,intent(out)       :: fx(nelemd)
-  integer                            :: lenx
+  integer                            :: method, nstep
 
   type(derived_type) ,pointer        :: fptr=>NULL()
   type(c_ptr)                        :: c_ptr_to_object
 
   call c_f_pointer(c_ptr_to_object,fptr) ! convert C ptr to F ptr
 
-! set these to match the integration type back in integration subroutine
+! set these to match the compute_and_apply_rhs for evenutal reincorporation, so
 ! BE  0= x(np1)-x(nm1) - (RSS*x(n0))
-    np1        = fptr%ntl1  ! np1
-    nm1        = fptr%ntl2  ! n0
-    n0         = fptr%ntl3  ! np1
+! BDF2  0= (1.5) (x(np1)-x(nm1)) - (0.5) (x(nm1)-x(nm)) - (RSS*x(n0))
 
+    np1        = fptr%tl%np1  
+    nm1        = fptr%tl%n0    
+    n0         = fptr%tl%np1    
+    nm         = fptr%tl%nm1    
+    nstep      = fptr%tl%nstep 
+
+    method     = fptr%method
     dt2        = fptr%dt
     dti        = 1/dt2
     hvcoord    = fptr%hvcoord
@@ -3175,41 +3228,67 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
     compute_diagnostics = fptr%compute_diagnostics
     qn0        = fptr%n_Q
     eta_ave_w  = fptr%eta_ave_w
-!    elem       = fptr%base
+
+    if ((method==11).or.(nstep==0)) then
+       gam=0.0  ! use BE for BDF as well for the first time step
+    else if (method==12) then
+       gam=0.5  ! BDF2 
+    else ! for adding more methods, right now default to BE
+       call abortmp('ERROR: method > 12 not yet coded for implicit time integration')
+    end if
 
 !JMD  call t_barrierf('sync_residual', hybrid%par%comm)
   call t_adj_detailf(+1)
   call t_startf('residual')
 
-       fvtens = 0.0d0
-       fttens = 0.0d0
-       fpstens = 0.0d0
-       fdptens = 0.0d0
+     call t_startf('residual_int')
+     !fvtens = 0.0d0
+     !fttens = 0.0d0
+     !fpstens = 0.0d0
+     !fdptens = 0.0d0
 
        lx = 1
-       do n=1,nvar
-       do ie=nets,nete
-       if (n.le.3) then
-        do k=1,nlev
-          do j=1,np
-            do i=1,np
-             if (n==1) fptr%base(ie)%state%v(i,j,1,k,np1) = xstate(lx)
-             if (n==2) fptr%base(ie)%state%v(i,j,2,k,np1) = xstate(lx)
-             if (n==3) fptr%base(ie)%state%T(i,j,k,np1) = xstate(lx)
-             lx = lx+1
-            end do  !np
-          end do  !np
-         end do  !nlev
-        else
-          do j=1,np
-            do i=1,np
-              if (n==4) fptr%base(ie)%state%ps_v(i,j,np1) = xstate(lx)
-              lx = lx+1
-            end do  !np
-          end do  !np
-        end if ! nvar
-       end do !ie
-       end do !nvar
+	   do ie=nets,nete
+		   do k=1,nlev
+			   do j=1,np
+				   do i=1,np
+					   fptr%base(ie)%state%v(i,j,1,k,np1) = xstate(lx)
+					   lx = lx+1
+				   end do
+			   end do
+		   end do
+	   end do
+	   do ie=nets,nete
+		   do k=1,nlev
+			   do j=1,np
+				   do i=1,np
+					   fptr%base(ie)%state%v(i,j,2,k,np1) = xstate(lx)
+					   lx = lx+1
+				   end do
+			   end do
+		   end do
+	   end do
+	   do ie=nets,nete
+		   do k=1,nlev
+			   do j=1,np
+				   do i=1,np
+					   fptr%base(ie)%state%T(i,j,k,np1) = xstate(lx)
+					   lx = lx+1
+				   end do
+			   end do
+		   end do
+	   end do
+	   do ie=nets,nete
+		   do j=1,np
+			   do i=1,np
+				   fptr%base(ie)%state%ps_v(i,j,np1) = xstate(lx)
+				   lx = lx+1
+			   end do
+		   end do
+	   end do
+	   call t_stopf('residual_int')
+       
+	   call t_startf('residual_cal')
 
   do ie=nets,nete
 !     ps => fptr%base(ie)%state%ps_v(:,:,n0)
@@ -3228,14 +3307,14 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      ! ============================
      ! compute p and delta p
      ! ============================
-!#if (defined ELEMENT_OPENMP)
+!#if (defined COLUMN_OPENMP)
 !!$omp parallel do private(k,i,j)
 !#endif
 !     do k=1,nlev+1
 !       ph(:,:,k)   = hvcoord%hyai(k)*hvcoord%ps0 + hvcoord%hybi(k)*fptr%base(ie)%state%ps_v(:,:,n0)
 !     end do
 
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j,v1,v2,vtemp)
 #endif
      do k=1,nlev
@@ -3299,7 +3378,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      ! compute T_v for timelevel n0
      !if ( moisture /= "dry") then
      if (qn0 == -1 ) then
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j)
 #endif
         do k=1,nlev
@@ -3311,7 +3390,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            end do
         end do
      else
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j,Qt)
 #endif
         do k=1,nlev
@@ -3373,7 +3452,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
         ! for reference: at mid layers we have:
         !    omega = v grad p  - integral_etatop^eta[ divdp ]
         ! ===========================================================
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
         !$omp parallel do private(k)
 #endif
         do k=1,nlev-1
@@ -3393,7 +3472,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      ! ================================
      ! accumulate mean vertical flux:
      ! ================================
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
      !$omp parallel do private(k)
 #endif
      do k=1,nlev  !  Loop index added (AAM)
@@ -3409,7 +3488,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      ! ==============================================
      ! Compute phi + kinetic energy term: 10*np*np Flops
      ! ==============================================
-#if (defined ELEMENT_OPENMP)
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j,v1,v2,E,Ephi,vtemp,vgrad_T,gpterm,glnps1,glnps2)
 #endif
      do k=1,nlev
@@ -3622,31 +3701,34 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
      ! =========================================================
      ! local element timestep, store in np1.
-     ! note that we allow np1=n0 or nm1
      ! apply mass matrix
      ! =========================================================
-#if (defined ELEMENT_OPENMP)
+
+#if (defined COLUMN_OPENMP)
 !$omp parallel do private(k)
 #endif
 
-!  Backward Euler 1st order method
-        do k=1,nlev
-        fttens(:,:,k,ie) = fptr%base(ie)%spheremp(:,:)* &
-        ( (fptr%base(ie)%state%T(:,:,k,np1) - fptr%base(ie)%state%T(:,:,k,nm1))*dti - &
-        ttens(:,:,k) )
+! for BE, gam = 0. For BDF2, gam = 0.5
+          do k=1,nlev
+           fttens(:,:,k,ie) = fptr%base(ie)%spheremp(:,:)* &
+           ( (1+gam)*(fptr%base(ie)%state%T(:,:,k,np1) - fptr%base(ie)%state%T(:,:,k,nm1))*dti - &
+           gam*(fptr%base(ie)%state%T(:,:,k,nm1) - fptr%base(ie)%state%T(:,:,k,nm))*dti - &
+           ttens(:,:,k) )
 
-        fvtens(:,:,1,k,ie) = fptr%base(ie)%spheremp(:,:)* &
-        ( (fptr%base(ie)%state%v(:,:,1,k,np1) - fptr%base(ie)%state%v(:,:,1,k,nm1))*dti - &
-        vtens1(:,:,k) )
+           fvtens(:,:,1,k,ie) = fptr%base(ie)%spheremp(:,:)* &
+           ( (1+gam)*(fptr%base(ie)%state%v(:,:,1,k,np1) - fptr%base(ie)%state%v(:,:,1,k,nm1))*dti - &
+           gam*(fptr%base(ie)%state%v(:,:,1,k,nm1) - fptr%base(ie)%state%v(:,:,1,k,nm))*dti - &
+           vtens1(:,:,k) )
 
-        fvtens(:,:,2,k,ie) = fptr%base(ie)%spheremp(:,:)* &
-        ( (fptr%base(ie)%state%v(:,:,2,k,np1) - fptr%base(ie)%state%v(:,:,2,k,nm1))*dti - &
-        vtens2(:,:,k) )
-        enddo
-
-        fpstens(:,:,ie) = fptr%base(ie)%spheremp(:,:)* &
-        ( (fptr%base(ie)%state%ps_v(:,:,np1) - fptr%base(ie)%state%ps_v(:,:,nm1))*dti + &
-        sdot_sum(:,:) )
+           fvtens(:,:,2,k,ie) = fptr%base(ie)%spheremp(:,:)* &
+           ( (1+gam)*(fptr%base(ie)%state%v(:,:,2,k,np1) - fptr%base(ie)%state%v(:,:,2,k,nm1))*dti - &
+           gam*(fptr%base(ie)%state%v(:,:,2,k,nm1) - fptr%base(ie)%state%v(:,:,2,k,nm))*dti - &
+           vtens2(:,:,k) )
+          enddo
+           fpstens(:,:,ie) = fptr%base(ie)%spheremp(:,:)* &
+           ( (1+gam)*(fptr%base(ie)%state%ps_v(:,:,np1) - fptr%base(ie)%state%ps_v(:,:,nm1))*dti - &
+           gam*(fptr%base(ie)%state%ps_v(:,:,nm1) - fptr%base(ie)%state%ps_v(:,:,nm))*dti + &
+           sdot_sum(:,:) )
 
 ! add for fdptens later for vert lagrangian
 
@@ -3699,8 +3781,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      ! Scale tendencies by inverse mass matrix
      ! ====================================================
 
-#if (defined ELEMENT_OPENMP)
-!$omp parallel do private(k,i,j)
+#if (defined COLUMN_OPENMP)
+!$omp parallel do private(k)
 #endif
      do k=1,nlev
         fttens(:,:,k,ie)   = fptr%base(ie)%rspheremp(:,:)*fttens(:,:,k,ie)
@@ -3721,36 +3803,54 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
      endif
 
   end do
-
-       lx = 1
-       do n=1,nvar
-        do ie=nets,nete
-        if (n.le.3) then
-        do k=1,nlev
-          do j=1,np
-            do i=1,np
-             if (n==1) fx(lx) = fvtens(i,j,1,k,ie)
-             if (n==2) fx(lx) = fvtens(i,j,2,k,ie)
-             if (n==3) fx(lx) = fttens(i,j,k,ie)
-             lx = lx+1
-            end do  !np
-          end do  !np
-        end do  !nlev
-        else
-          do j=1,np
-            do i=1,np
-              if (n==4) fx(lx) = fpstens(i,j,ie)
-              lx = lx+1
-            end do  !np
-          end do  !np
-        end if ! nlev
-       end do !ie
-       end do !nvar
+  
+  call t_stopf('residual_cal')
+  call t_startf('residual_fin')
+	  lx = 1
+	  do ie=nets,nete
+		  do k=1,nlev
+			  do j=1,np
+				  do i=1,np
+					  fx(lx) = fvtens(i,j,1,k,ie)
+					  lx = lx+1
+				  end do
+			  end do
+		  end do
+	  end do
+	  do ie=nets,nete
+		  do k=1,nlev
+			  do j=1,np
+				  do i=1,np
+					  fx(lx) = fvtens(i,j,2,k,ie)
+					  lx = lx+1
+				  end do
+			  end do
+		  end do
+	  end do
+	  do ie=nets,nete
+		  do k=1,nlev
+			  do j=1,np
+				  do i=1,np
+					  fx(lx) = fttens(i,j,k,ie)
+					  lx = lx+1
+				  end do
+			  end do
+		  end do
+	  end do
+	  do ie=nets,nete
+		  do j=1,np
+			  do i=1,np
+				  fx(lx) = fpstens(i,j,ie)
+				  lx = lx+1
+			  end do
+		  end do
+	  end do
+      call t_stopf('residual_fin')
 
 !       if (hybrid%masterthread) print*, "F(u,v,t,p)",NORM2(fvtens),NORM2(fttens),NORM2(fpstens)
 
 #ifdef DEBUGOMP
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -3938,7 +4038,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            pstens(:,:,ie)=pstens(:,:,ie)*elem(ie)%rspheremp(:,:)
         enddo
 #ifdef DEBUGOMP
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif
@@ -3991,7 +4091,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
         phis(:,:,ie)=phis(:,:,ie)*elem(ie)%rspheremp(:,:)
      enddo
 #ifdef DEBUGOMP
-#if (! defined ELEMENT_OPENMP)
+#if (defined HORIZ_OPENMP)
 !$OMP BARRIER
 #endif
 #endif

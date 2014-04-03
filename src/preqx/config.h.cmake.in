@@ -27,20 +27,35 @@
 /* Number of POINTS in the element (Default value is 1) */
 #define PLEV @NUM_PLEV@
 
+/* Number of tracers (Default value 4 if not specified) */
+#cmakedefine QSIZE_D @QSIZE_D@
+
 /* Basic PIO */
 #cmakedefine PIO
 
 /* Whether to use CUDA Fortran */
 #cmakedefine01 USE_CUDA_FORTRAN
 
+/* Whether to use OPENACC */
+#cmakedefine01 USE_OPENACC
+
 /* Quadruple-precision */
 #cmakedefine01 HOMME_QUAD_PREC
 
-/* Element OpenMP */
-#cmakedefine ELEMENT_OPENMP
+/* Horizontal OpenMP (over elements) */
+#cmakedefine HORIZ_OPENMP
+
+/* Vertical OpenMP (within elements) */
+#cmakedefine COLUMN_OPENMP
+
+/* Nested OpenMP (both horizontal and vertical) */
+#cmakedefine NESTED_OPENMP
 
 /* Zoltan partitioning library */
 #cmakedefine01 HAVE_ZOLTAN
 
 /* Enable persistent MPI comm */
 #cmakedefine MPI_PERSISTENT
+
+/* Using Accelerator */
+#cmakedefine IS_ACCELERATOR

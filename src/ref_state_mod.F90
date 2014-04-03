@@ -10,7 +10,7 @@ module ref_state_mod
   ! ------------------
   use parallel_mod, only : parallel_t, iam, syncmp, abortmp
   ! ------------------
-  use schedule_mod, only : Schedule
+  use schedtype_mod, only : Schedule
   ! ------------------
 !  use dimensions_mod
   ! ------------------
@@ -20,11 +20,13 @@ private
   interface ref_state_write
       module procedure ref_state_write_2d
       module procedure ref_state_write_jr
+      module procedure ref_state_write_jr3d
   end interface
 
   interface ref_state_read
       module procedure ref_state_read_2d
       module procedure ref_state_read_jr
+      module procedure ref_state_read_jr3d
   end interface
 
   public :: ref_state_write
@@ -121,6 +123,60 @@ contains
      call jrclose_direct(handle)
 
   end subroutine ref_state_write_jr
+
+  subroutine ref_state_write_jr3d(v,T,ps,fstub,timetag,nets,nete,par)
+     use dimensions_mod, only : np, nlev
+     implicit none
+     integer              , intent(in) :: nets,nete
+     real (kind=real_kind), intent(in) :: v(np,np,2,nlev,nets:nete)
+     real (kind=real_kind), intent(in) :: T(np,np,nlev,nets:nete)
+     real (kind=real_kind), intent(in) :: ps(np,np,nets:nete)
+     integer              , intent(in) :: timetag         ! time tag (day)
+     character(len=*)     , intent(in) :: fstub           ! file stub
+     type(parallel_t)     , intent(in) :: par             ! communicator
+
+     ! =========================
+     ! Local variables...
+     ! =========================
+
+     integer handle, ret
+     integer ie, ig
+     integer reclen
+     integer iunit
+
+     character(len=6) :: chartag
+     character(len=20):: fname
+
+     reclen = np*np
+!     reclen = np*np + 2*np*np 
+     iunit = 66                 ! hardwire hack the unit number (should use navu)
+     
+      write(chartag,'(i6)') timetag
+      fname=TRIM(ADJUSTL(fstub))//"."//TRIM(ADJUSTL(chartag))
+
+     call jropen_direct(TRIM(fname),'replace',reclen*8,handle,ret)
+     if (ret/= 0) then
+      write(6,*) 'file,handle=',fname,handle
+      call abortmp('error opening binary reference file')
+     end if
+     if (par%masterproc) write(6,*) 'opening binary reference file=',TRIM(fname),handle
+
+     call syncmp(par)
+ 
+     do ie=nets,nete
+      ig = Schedule(1)%Local2Global(ie)
+      call jrwrite_direct(handle, ig, ps(1,1,ie), 0, ret)
+      if (ret /= 0) then
+        write(6,*) 'file,handle:',fname,handle
+        call abortmp('failure to write reference file')
+      end if
+     end do
+     
+     call syncmp(par)
+
+     call jrclose_direct(handle)
+
+  end subroutine ref_state_write_jr3d
 
   subroutine ref_state_read_2d(phi,v,fstub,timetag,nets,nete)
      use dimensions_mod, only : np
@@ -220,6 +276,59 @@ contains
      call jrclose_direct(handle)
 
   end subroutine ref_state_read_jr
+
+  subroutine ref_state_read_jr3d(v,T,ps,fstub,timetag,nets,nete,par)
+     use dimensions_mod, only : np, nlev
+     implicit none
+     integer              , intent(in)    :: nets,nete
+     real (kind=real_kind), intent(out)   :: v(np,np,2,nlev,nets:nete)
+     real (kind=real_kind), intent(out)   :: T(np,np,nlev,nets:nete)
+     real (kind=real_kind), intent(out)   :: ps(np,np,nets:nete)
+     integer              , intent(in)    :: timetag         ! time tag (day)
+     character(len=*)     , intent(in)    :: fstub           ! file stub
+     type(parallel_t)     , intent(in)    :: par           ! file stub
+
+     ! =========================
+     ! Local variables...
+     ! =========================
+
+     integer handle, ret
+     integer ie,ig
+     integer reclen
+     integer iunit
+
+     character(len=6) :: chartag
+     character(len=80):: fname
+    
+     reclen = np*np
+!     reclen = np*np + 2*np*np 
+     iunit = 66                 ! hardwire hack the unit number (should use navu)
+     write(chartag,'(i6)') timetag
+     fname=TRIM(ADJUSTL(fstub))//"."//TRIM(ADJUSTL(chartag))
+          
+     if (par%masterproc) print *,"opening file ",fname
+
+     call jropen_direct(TRIM(fname),'old',reclen*8,handle,ret)
+     if (ret/= 0) then
+      write(6,*) 'filename,handle=',fname,handle
+      call abortmp('error opening existing binary reference file=')
+     end if
+     if (par%masterproc) write(6,*) 'opening existing reference file=',TRIM(fname),handle
+ 
+     do ie=nets,nete
+      ig = Schedule(1)%Local2Global(ie)
+      call jrread_direct(handle, ig, ps(1,1,ie), 0, ret)
+      if (ret /= 0) then
+       write(6,*) 'fname,handle:',fname,handle
+       call abortmp('failure to read existing binary reference file=')
+      end if
+     end do
+     
+     call syncmp(par)
+ 
+     call jrclose_direct(handle)
+
+  end subroutine ref_state_read_jr3d
 #endif
 end module ref_state_mod
 
