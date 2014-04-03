@@ -60,6 +60,10 @@ PIO_TF_TEST_DRIVER_BEGIN
     PIO_TF_TEST_RUN(open_file_no_write(iotypes(i), dummy_file), trim(iotype_descs(i)))
     PIO_TF_TEST_RUN(delete_file(dummy_file), trim(iotype_descs(i)))
   end do
+  if(allocated(iotypes)) then
+    deallocate(iotypes)
+    deallocate(iotype_descs)
+  end if
 
 PIO_TF_TEST_DRIVER_END
 

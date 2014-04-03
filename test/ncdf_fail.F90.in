@@ -93,5 +93,9 @@ PIO_TF_TEST_DRIVER_BEGIN
 
     call PIO_deletefile(pio_tf_iosystem_, tgv_fname)
   end do 
+  if(allocated(iotypes)) then
+    deallocate(iotypes)
+    deallocate(iotype_descs)
+  end if
 
 PIO_TF_TEST_DRIVER_END

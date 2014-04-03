@@ -169,6 +169,7 @@ CONTAINS
           END DO
           PRINT *, ""
         END IF
+        DEALLOCATE(failed_ranks)
       END IF
     END IF
 
