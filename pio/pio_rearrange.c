@@ -952,9 +952,6 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, const PI
 	    dest_ioindex, sndlths, sdispls, dtypes, 
 	    ios.union_comm, hs, isend, MAX_GATHER_BLOCK_SIZE);
 
-  MPI_Barrier(MPI_COMM_WORLD);
-
-
   compute_counts(ios, iodesc, dest_ioproc, dest_ioindex);
 
   free(sndlths); 

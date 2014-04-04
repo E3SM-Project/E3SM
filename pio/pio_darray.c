@@ -67,6 +67,7 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, voi
     int tsize;
     size_t start[ndims+1];
     size_t count[ndims+1];
+    int buflen, j, i;
 
     MPI_Type_size(iodesc->basetype, &tsize);
     region = iodesc->firstregion;
@@ -74,9 +75,23 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, voi
     if(vdesc->record >= 0)
       ndims++;
 
+    if(file->iotype == PIO_IOTYPE_PNETCDF){
+      // make sure we have room in the buffer ;
+	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
+	usage += tsize*(iodesc->maxiobuflen);
+	MPI_Allreduce(MPI_IN_PLACE, &usage, 1,  MPI_LONG_LONG,  MPI_MAX, ios->io_comm);
+	printf("usage %ld\n",usage);
+	if(usage >= PIO_BUFFER_SIZE_LIMIT){
+	  flush_output_buffer(file);
+	}
+	
+    }
+
+
+
     for(regioncnt=0;regioncnt<iodesc->maxregions;regioncnt++){
       if(region == NULL){
-	  for(int i=0;i<ndims;i++){
+	  for(i=0;i<ndims;i++){
 	    start[i] = 0;
 	    count[i] = 0;
 	  }
@@ -92,7 +107,7 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, voi
 	  }
 	// Non-time dependent array
 	}else{
-	  for(int i=0;i<ndims;i++){
+	  for( i=0;i<ndims;i++){
 	    start[i] = region->start[i];
 	    count[i] = region->count[i];
 	  }
@@ -128,7 +143,7 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, voi
 	  if(ios->io_rank==0){
 	    for(i=0;i<iodesc->num_aiotasks;i++){
 	      if(i==0){	    
-		for(int j=0;j<ndims;j++){
+		for(j=0;j<ndims;j++){
 		  tstart[j] =  start[j];
 		  tcount[j] =  count[j];
 		  tmp_buf = bufptr;
@@ -141,7 +156,10 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, voi
 		mpierr = MPI_Send( &ierr, 1, MPI_INT, i, 0, ios->io_comm);  // handshake - tell the sending task I'm ready
 		mpierr = MPI_Recv( tstart, ndims, MPI_OFFSET, i, ios->num_iotasks+i, ios->io_comm, &status);
 		mpierr = MPI_Recv( tcount, ndims, MPI_OFFSET, i,2*ios->num_iotasks+i, ios->io_comm, &status);
-		mpierr = MPI_Recv( tmp_buf, iodesc->maxiobuflen, iodesc->basetype, i, i, ios->io_comm, &status);
+		buflen=1;
+		for(j=0;j<ndims;j++)
+		  buflen*=tcount[j];
+		mpierr = MPI_Recv( tmp_buf, buflen, iodesc->basetype, i, i, ios->io_comm, &status);
 	      }
 
 	    //	    for(int j=0;j<ndims;j++)
@@ -163,14 +181,16 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, voi
 	      
 	    }     
 	  }else if(ios->io_rank < iodesc->num_aiotasks ){
+	    buflen=1;
 	    for(i=0;i<ndims;i++){
 	      tstart[i] = (size_t) start[i];
 	      tcount[i] = (size_t) count[i];
+	      buflen*=tcount[i];
 	    }
 	    mpierr = MPI_Recv( &ierr, 1, MPI_INT, 0, 0, ios->io_comm, &status);  // task0 is ready to recieve
 	    mpierr = MPI_Rsend( tstart, ndims, MPI_OFFSET, 0, ios->num_iotasks+ios->io_rank, ios->io_comm);
 	    mpierr = MPI_Rsend( tcount, ndims, MPI_OFFSET, 0,2*ios->num_iotasks+ios->io_rank, ios->io_comm);
-	    mpierr = MPI_Rsend( bufptr, iodesc->maxiobuflen, iodesc->basetype, 0, ios->io_rank, ios->io_comm);
+	    mpierr = MPI_Rsend( bufptr, buflen, iodesc->basetype, 0, ios->io_rank, ios->io_comm);
 	  }
 	  break;
 	}
@@ -180,18 +200,10 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, voi
       
 	for( i=0,dsize=1;i<ndims;i++)
 	  dsize*=count[i];
-
-	ierr = ncmpi_bput_vara(ncid, vid,  start, count, bufptr,
+	printf("dsize %ld\n",dsize);
+	ierr = ncmpi_bput_vara(ncid, vid,  (PIO_Offset *) start,(PIO_Offset *) count, bufptr,
 			       dsize, iodesc->basetype, &request);
 	pio_push_request(file,request);
-	
-	// This code should be moved outside the region block
-
-	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
-	MPI_Allreduce(MPI_IN_PLACE, &usage, 1,  MPI_LONG_LONG,  MPI_MAX, ios->io_comm);
-	if(usage >= PIO_BUFFER_SIZE_LIMIT){
-	  flush_output_buffer(file);
-	}
 	
 	break;
 #endif

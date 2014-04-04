@@ -726,8 +726,6 @@ contains
 #ifdef TIMING
     call t_startf("PIO_initdecomp_dof")
 #endif
-    call mpi_barrier(MPI_COMM_WORLD,ierr)
-
     ndims = size(dims)
     allocate(cdims(ndims))
     do i=1,ndims
