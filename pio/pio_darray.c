@@ -74,7 +74,7 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, voi
 
     if(vdesc->record >= 0)
       ndims++;
-
+#ifdef _PNETCDF
     if(file->iotype == PIO_IOTYPE_PNETCDF){
       // make sure we have room in the buffer ;
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
@@ -86,7 +86,7 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, voi
 	}
 	
     }
-
+#endif
 
 
     for(regioncnt=0;regioncnt<iodesc->maxregions;regioncnt++){

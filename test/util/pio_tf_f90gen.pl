@@ -258,7 +258,7 @@ sub get_default_test_main
   $out_line = $out_line . "    END IF\n";
   $out_line = $out_line . "    CALL MPI_Finalize(ierr)\n";
   $out_line = $out_line . "    IF (pio_tf_nerrs_total_ /= 0) THEN\n";
-  $out_line = $out_line . "      STOP PIO_TF_ERR\n";
+  $out_line = $out_line . "      STOP 99\n";
   $out_line = $out_line . "    END IF\n";
   $out_line = $out_line . "  END PROGRAM\n";
 
