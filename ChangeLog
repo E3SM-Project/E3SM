@@ -4,6 +4,16 @@ SVN $URL: https://parallelio.googlecode.com/svn/trunk $
 ================================================================================
 This file describes what tags were created and why
 ===========================
+Originator: jamroz
+Date: April 8, 2014
+Model: pio
+Version: pio1_8_12
+One-line : Update cmake tag
+
+M      .
+M       SVN_EXTERNAL_DIRECTORIES
+
+===========================
 Originator: jedwards
 Date: Mar 17, 2014
 Model: pio
