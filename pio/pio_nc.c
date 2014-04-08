@@ -787,13 +787,13 @@ int PIOc_inq (int ncid, int *ndimsp, int *nvarsp, int *ngattsp, int *unlimdimidp
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 #ifndef _MPISERIAL
     if(ndimsp != NULL)
-      mpierr = MPI_Bcast(ip , ndimsp, MPI_INT, ios->ioroot, ios->my_comm);
+      mpierr = MPI_Bcast(ndimsp, 1, MPI_INT, ios->ioroot, ios->my_comm);
      if(nvarsp != NULL)
-      mpierr = MPI_Bcast(ip , nvarsp,  MPI_INT, ios->ioroot, ios->my_comm);
+      mpierr = MPI_Bcast(nvarsp, 1, MPI_INT, ios->ioroot, ios->my_comm);
      if(ngattsp != NULL)
-      mpierr = MPI_Bcast(ip , ngattsp, MPI_INT, ios->ioroot, ios->my_comm);
+      mpierr = MPI_Bcast(ngattsp, 1, MPI_INT, ios->ioroot, ios->my_comm);
      if(unlimdimidp != NULL)
-      mpierr = MPI_Bcast(ip , unlimdimidp, MPI_INT, ios->ioroot, ios->my_comm);
+      mpierr = MPI_Bcast(unlimdimidp, 1, MPI_INT, ios->ioroot, ios->my_comm);
  #endif
 
   return ierr;

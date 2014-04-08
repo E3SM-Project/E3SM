@@ -241,13 +241,13 @@ foreach my $func (keys %{$functions}){
 		  
 	      }elsif($func =~/inq$/){
 		  print F "    if(ndimsp != NULL)\n";
-		  print F "      mpierr = MPI_Bcast(ip , ndimsp, MPI_INT, ios->ioroot, ios->my_comm);\n ";
+		  print F "      mpierr = MPI_Bcast(ndimsp, 1, MPI_INT, ios->ioroot, ios->my_comm);\n ";
 		  print F "    if(nvarsp != NULL)\n";
-		  print F "      mpierr = MPI_Bcast(ip , nvarsp,  MPI_INT, ios->ioroot, ios->my_comm);\n ";
+		  print F "      mpierr = MPI_Bcast(nvarsp, 1, MPI_INT, ios->ioroot, ios->my_comm);\n ";
 		  print F "    if(ngattsp != NULL)\n";
-		  print F "      mpierr = MPI_Bcast(ip , ngattsp, MPI_INT, ios->ioroot, ios->my_comm);\n ";
+		  print F "      mpierr = MPI_Bcast(ngattsp, 1, MPI_INT, ios->ioroot, ios->my_comm);\n ";
 		  print F "    if(unlimdimidp != NULL)\n";
-		  print F "      mpierr = MPI_Bcast(ip , unlimdimidp, MPI_INT, ios->ioroot, ios->my_comm);\n ";
+		  print F "      mpierr = MPI_Bcast(unlimdimidp, 1, MPI_INT, ios->ioroot, ios->my_comm);\n ";
 
 	      }
 	      print F "#endif\n";
