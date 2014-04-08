@@ -786,7 +786,15 @@ int PIOc_inq (int ncid, int *ndimsp, int *nvarsp, int *ngattsp, int *unlimdimidp
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 #ifndef _MPISERIAL
-#endif
+    if(ndimsp != NULL)
+      mpierr = MPI_Bcast(ip , ndimsp, MPI_INT, ios->ioroot, ios->my_comm);
+     if(nvarsp != NULL)
+      mpierr = MPI_Bcast(ip , nvarsp,  MPI_INT, ios->ioroot, ios->my_comm);
+     if(ngattsp != NULL)
+      mpierr = MPI_Bcast(ip , ngattsp, MPI_INT, ios->ioroot, ios->my_comm);
+     if(unlimdimidp != NULL)
+      mpierr = MPI_Bcast(ip , unlimdimidp, MPI_INT, ios->ioroot, ios->my_comm);
+ #endif
 
   return ierr;
 }
@@ -841,7 +849,7 @@ int PIOc_get_att_text (int ncid, int varid, const char *name, char *ip)
       ierr = iotype_error(file->iotype,__FILE__,__LINE__);
     }
   }
-  if(ierr != PIO_NOERR) printf("varid %d attname >%s<\n",varid, name);
+
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 #ifndef _MPISERIAL
   {PIO_Offset attlen;
@@ -2891,7 +2899,7 @@ int PIOc_inq_attid (int ncid, int varid, const char *name, int *idp)
 
 /** 
 * @name    PIOc_def_dim
-*/ 
+*/
 int PIOc_def_dim (int ncid, const char *name, PIO_Offset len, int *idp) 
 {
   int ierr;
