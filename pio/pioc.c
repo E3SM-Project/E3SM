@@ -283,18 +283,10 @@ int PIOc_finalize(const int iosysid)
 
   ios = pio_get_iosystem_from_id(iosysid);
   if(ios == NULL)
-    return PIO_EBADID;
-  nios = ios;
-  while(nios != NULL){
-    if(nios->ioranks != NULL){
-      free(nios->ioranks);
-      nios->ioranks=NULL;
-    }
-    ios = nios;
-    nios = nios->next;
-    free(ios);
-  }
-  return PIO_NOERR;
+    return PIO_EBADID; 
+  return pio_delete_iosystem_from_list(iosysid);
+
+  
 }
 
 

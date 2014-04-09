@@ -31,16 +31,8 @@ module pio_types
 !! @brief A defined PIO system descriptor created by @ref PIO_init (see pio_types)
 !<
     type, public :: IOSystem_desc_t
-#ifdef SEQUENCE
-	sequence
-#endif
-        integer(kind=c_int) :: iosysid
+        integer(kind=c_int) :: iosysid = -1
      end type IOSystem_desc_t
-
-    type iosystem_list_t
-       type(iosystem_desc_t), pointer :: this_iosystem => null()
-    end type iosystem_list_t
-
 
 !> 
 !! @private
@@ -64,12 +56,6 @@ module pio_types
     type, public :: File_desc_t
        integer(kind=c_int) :: fh
        type(iosystem_desc_t), pointer :: iosystem => null()
-!       type(io_data_list), pointer :: data_list_top  => null()  ! used for non-blocking pnetcdf calls
-!       integer :: buffsize=0
-!       integer :: request_cnt=0
-!       integer(kind=PIO_OFFSET) :: offset             ! offset into file
-!       integer(i4)              :: iotype             ! Type of IO to perform see parameter statement below     
-!       logical                  :: file_is_open = .false.
     end type File_desc_t
 
 

@@ -165,6 +165,7 @@ foreach my $func (keys %{$functions}){
 
 	  if($line =~ /check_netcdf/){
 	      print F "#ifndef _MPISERIAL\n";
+	      print F "  if(ierr == PIO_NOERR){\n";
 	      if($func =~ /inq_varid/){
 		  print F "  mpierr = MPI_Bcast(varidp,1, MPI_INT, ios->ioroot, ios->my_comm);\n";
 	      }elsif($func =~ /inq_ndims/){
@@ -234,11 +235,9 @@ foreach my $func (keys %{$functions}){
 		  print F "  }\n";
 	      }elsif($func =~ /get_att_(\w+)/){
 		  my $atype = $1;
-		  print F "  {PIO_Offset attlen;\n";
+		  print F "    PIO_Offset attlen;\n";		  
 		  print F "    PIOc_inq_attlen(file->fh, varid, name, \&attlen);\n";
 		  print F "    mpierr = MPI_Bcast(ip , attlen, $typemap->{$atype}, ios->ioroot, ios->my_comm);\n ";
-		  print F "  }\n";
-		  
 	      }elsif($func =~/inq$/){
 		  print F "    if(ndimsp != NULL)\n";
 		  print F "      mpierr = MPI_Bcast(ndimsp, 1, MPI_INT, ios->ioroot, ios->my_comm);\n ";
@@ -250,6 +249,7 @@ foreach my $func (keys %{$functions}){
 		  print F "      mpierr = MPI_Bcast(unlimdimidp, 1, MPI_INT, ios->ioroot, ios->my_comm);\n ";
 
 	      }
+	      print F "  }\n";
 	      print F "#endif\n";
 	  }
       }

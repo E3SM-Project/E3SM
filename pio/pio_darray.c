@@ -80,7 +80,7 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, voi
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	usage += tsize*(iodesc->maxiobuflen);
 	MPI_Allreduce(MPI_IN_PLACE, &usage, 1,  MPI_LONG_LONG,  MPI_MAX, ios->io_comm);
-	printf("usage %ld\n",usage);
+	//	printf("usage %ld\n",usage);
 	if(usage >= PIO_BUFFER_SIZE_LIMIT){
 	  flush_output_buffer(file);
 	}
@@ -162,8 +162,8 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, voi
 		mpierr = MPI_Recv( tmp_buf, buflen, iodesc->basetype, i, i, ios->io_comm, &status);
 	      }
 
-	    //	    for(int j=0;j<ndims;j++)
-	    //  printf("tstart[%d] %ld tcount %ld %ld\n",j,tstart[j],tcount[j], iodesc->maxiobuflen);
+	      //	      for(int j=0;j<ndims;j++)
+	      //	printf("tstart[%d] %ld tcount %ld %ld\n",j,tstart[j],tcount[j], iodesc->maxiobuflen);
 	    
 	      if(iodesc->basetype == MPI_INTEGER){
 		ierr = nc_put_vara_int (ncid, vid, tstart, tcount, (const int *) tmp_buf); 
@@ -411,6 +411,8 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void
 	      }else{
 		MPI_Recv(tmp_start, ndims, MPI_OFFSET, i, i, ios->io_comm, &status);
 	      }
+	      //	      for(int k=0;k<ndims;k++)
+	      //	printf("%d %d %ld %ld %d\n",vid,k,tmp_start[k],tmp_count[k], ierr);
 	      
 	      if(iodesc->basetype == MPI_DOUBLE || iodesc->basetype == MPI_REAL8){
 		ierr = nc_get_vara_double (file->fh, vid, tmp_start, tmp_count, bufptr); 
@@ -421,8 +423,6 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void
 	      }else{
 		fprintf(stderr,"Type not recognized %d in pioc_write_darray\n",(int) iodesc->basetype);
 	      }	
-	    //for(int k=0;k<ndims;k++)
-	    //  printf("%d %d %ld %ld %d\n",vid,k,tmp_start[k],tmp_count[k], ierr);
 
 	      if(i>0){
 		MPI_Rsend(bufptr, tmp_bufsize, iodesc->basetype, i, i, ios->io_comm);

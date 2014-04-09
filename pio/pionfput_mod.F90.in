@@ -454,7 +454,6 @@ contains
 #endif
 #if {DIMS} == 2
     clen= len(fstr(1,1))
-    print *,__FILE__,__LINE__,clen, sd
     do k=1,sd(2)
        do j=1,sd(1)
           do i=1,len_trim(fstr(j,k))

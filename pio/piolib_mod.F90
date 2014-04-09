@@ -1265,9 +1265,9 @@ contains
          integer(C_INT), intent(in), value :: iosysid
        end function PIOc_finalize
     end interface
-
-    ierr = PIOc_finalize(iosystem%iosysid)
-     
+    if(iosystem%iosysid /= -1) then
+       ierr = PIOc_finalize(iosystem%iosysid)
+    endif
   end subroutine finalize
 
 

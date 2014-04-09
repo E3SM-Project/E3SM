@@ -5,7 +5,7 @@
 
 static io_desc_t *pio_iodesc_list=NULL;
 static io_desc_t *current_iodesc=NULL;
-static iosystem_desc_t *pio_iosystem_list = NULL;
+static iosystem_desc_t *pio_iosystem_list=NULL;
 static file_desc_t *pio_file_list = NULL;
 static file_desc_t *current_file=NULL;
 
@@ -78,6 +78,9 @@ int pio_delete_iosystem_from_list(int piosysid)
   iosystem_desc_t *ciosystem, *piosystem;
 
   piosystem = NULL;
+
+  //  printf(" %d iosystem_top = %ld \n",__LINE__,pio_iosystem_list);
+
   for(ciosystem=pio_iosystem_list; ciosystem != NULL; ciosystem=ciosystem->next){
     if(ciosystem->iosysid == piosysid){
       if(piosystem == NULL){
@@ -97,16 +100,23 @@ int pio_add_to_iosystem_list(iosystem_desc_t *ios)
 {
   iosystem_desc_t *cios;
   int i=1;
-  //  assert(ios != NULL);
 
+  //assert(ios != NULL);
   ios->next = NULL;
-  if(pio_iosystem_list == NULL){
+  cios = pio_iosystem_list;
+  if(cios==NULL)
     pio_iosystem_list = ios;
-  }else{
-    for(cios = pio_iosystem_list; cios->next != NULL; cios=cios->next, i++);
+  else{
+    i++;
+    while(cios->next != NULL){
+      cios = cios->next;
+      i++;
+    }
     cios->next = ios;
   }
   ios->iosysid = i << 16;
+  //  ios->iosysid = i ;
+  //  printf(" ios = %ld %d %ld\n",ios, ios->iosysid,ios->next);
   return ios->iosysid;
 }
 
@@ -114,10 +124,13 @@ iosystem_desc_t *pio_get_iosystem_from_id(int iosysid)
 {
   iosystem_desc_t *ciosystem;
 
-  for(ciosystem=pio_iosystem_list; ciosystem != NULL; ciosystem=ciosystem->next){
+  ciosystem = pio_iosystem_list;
+  while(ciosystem != NULL){
+    // printf("%d ciosystem %ld %ld %d\n",__LINE__,pio_iosystem_list, ciosystem,iosysid);
     if(ciosystem->iosysid == iosysid){
       return ciosystem;
     }
+    ciosystem = ciosystem->next;
   }
   return NULL;
   
