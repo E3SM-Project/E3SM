@@ -397,8 +397,9 @@ contains
     character(len=*), intent(in) :: ival{DIMSTR}
     character, allocatable :: cval(:)
     integer :: clen,  sd
-    integer(C_SIZE_T), dimension({DIMS}) :: cstart, ccount
+    integer(C_SIZE_T), allocatable :: cstart(:), ccount(:)
     integer :: i
+    integer :: ndims
     interface
        integer(C_INT) function PIOc_put_vara_text(ncid, varid, start, count, op) &
             bind(C,name="PIOc_put_vara_text")
@@ -411,21 +412,24 @@ contains
        end function PIOc_put_vara_text
     end interface
 
+
+    ndims = size(count)
+    allocate(cstart(ndims),ccount(ndims))
+
+    do i=1,ndims
+       cstart(i) = start(ndims-i+1)-1
+       ccount(i) = count(ndims-i+1)
+    enddo
+
 !   This manipulation is required to convert the fortran string to
 !   a c character array with all trailing space set to null
 !
-    do i=1,{DIMS}
-       cstart(i) = start({DIMS}-i+1)-1
-       ccount(i) = count({DIMS}-i+1)
-    enddo
-
     clen = len(ival)
     sd = size(ival)
     allocate(cval(clen*sd))
     call Fstring2Cstring_{DIMS}d (ival, cval)
-
     ierr = PIOc_put_vara_text(file%fh, varid-1,  cstart, ccount, cval)
-    deallocate(cval)
+    deallocate(cval, cstart, ccount)
 
 
   end function put_vara_{DIMS}d_text
