@@ -50,6 +50,7 @@ contains
     type (File_desc_t), intent(inout) :: File
     integer, intent(in) :: varid, index(:)
     character(len=*), intent(in) :: ival
+#ifdef DOTHIS
     integer :: clen, i
     character, allocatable :: cval(:)
     integer(C_SIZE_T), allocatable :: cindex(:)
@@ -73,18 +74,30 @@ contains
     do i=1,len_trim(ival)
        cval(i) = ival(i:i)
     end do
-    clen = size(index)
+
+    clen = size(index)    
     allocate(cindex(clen))
     do i=1,clen
        cindex(i) = index(clen-i+1)-1
     enddo
-    
+    print *,__FILE__,__LINE__,varid,cindex,cval,' <'
     ierr = PIOc_put_var1_text(file%fh, varid-1, cindex, cval)
     deallocate(cindex)
     deallocate(cval)
 #ifdef TIMING
     call t_stopf("pio_put_var1_text")
 #endif 
+#else
+    integer, allocatable :: count(:)
+    integer :: ndims
+    
+    ndims = size(index)
+    allocate(count(ndims))
+    count = 1
+    count(1) = len(ival)
+     ierr = put_vara_1d_text(File,varid, index, count, (/ival/)) 
+    deallocate(count)
+#endif
   end function put_var1_text
 ! TYPE int,real,double
 !>

@@ -891,9 +891,6 @@ int PIOc_put_vara_text (int ncid, int varid, const PIO_Offset start[], const PIO
       ierr = iotype_error(file->iotype,__FILE__,__LINE__);
     }
   }
-  if(ierr /= PIO_NOERR)
-    printf("varid %d start %ld %ld count %ld %ld\n",varid,start[0],start[1],count[0] ,count[1]);
-  
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   return ierr;
@@ -2055,6 +2052,7 @@ int PIOc_put_var1_text (int ncid, int varid, const PIO_Offset index[], const cha
 #endif
     case PIO_IOTYPE_NETCDF:
       if(ios->io_rank==0){
+	printf("%s %d %ld %ld %ld >%s<\n",__FILE__,__LINE__,index[0],index[1],index[2],op);
 	ierr = nc_put_var1_text(file->fh, varid, (size_t *) index, op);;
       }
       break;
