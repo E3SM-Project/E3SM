@@ -1,0 +1,31 @@
+PIO_TF_AUTO_TEST_SUB_BEGIN init_decomp_1d_get_loc_sz
+  implicit none
+  integer, parameter :: VEC_LOCAL_SZ = 7
+  integer, dimension(:), allocatable :: data_types
+  character(len=PIO_TF_MAX_STR_LEN), dimension(:), allocatable :: data_type_descs
+  type(io_desc_t) :: iodesc
+  integer, dimension(VEC_LOCAL_SZ) :: compdof, compdof_rel_disps
+  integer, dimension(1) :: dims
+  integer :: i, ntypes, lsz
+
+  do i=1,VEC_LOCAL_SZ
+    compdof_rel_disps(i) = i
+  end do
+  dims(1) = VEC_LOCAL_SZ * pio_tf_world_sz_
+  compdof = VEC_LOCAL_SZ * pio_tf_world_rank_ + compdof_rel_disps
+
+  call PIO_TF_Get_data_types(data_types, data_type_descs, ntypes)
+  do i=1,ntypes
+    PIO_TF_LOG(0,*) "Testing type : ", data_type_descs(i)
+    call PIO_initdecomp(pio_tf_iosystem_, data_types(i), dims, compdof, iodesc)
+    lsz = PIO_get_local_array_size(iodesc)
+    PIO_TF_PASSERT(lsz == VEC_LOCAL_SZ, "Checking the local array size")
+    call PIO_freedecomp(pio_tf_iosystem_, iodesc)
+  end do
+
+  if(allocated(data_types)) then
+    deallocate(data_types)
+    deallocate(data_type_descs)
+  end if
+PIO_TF_AUTO_TEST_SUB_END init_decomp_1d_get_loc_sz
+

@@ -7,7 +7,7 @@ SET(SRCS_PIO_TUTIL	${CMAKE_CURRENT_SOURCE_DIR}/util/pio_tutil.F90)
 SET(PIO_TUTIL_GEN_PATH ${CMAKE_CURRENT_SOURCE_DIR}/util)
 
 # Test source files that are generated (from template files)
-SET(SRCS_GENERATED pio_file_simple_tests.F90 pio_init_finalize.F90 pio_fail.F90 pio_file_fail.F90 ncdf_simple_tests.F90 ncdf_fail.F90)
+SET(SRCS_GENERATED pio_file_simple_tests.F90 pio_init_finalize.F90 pio_fail.F90 pio_file_fail.F90 ncdf_simple_tests.F90 ncdf_fail.F90 pio_decomp_simple_tests.F90)
 
 # Generate test cases from template files
 FOREACH(gen_src IN LISTS SRCS_GENERATED)
@@ -57,3 +57,10 @@ ADD_EXECUTABLE(ncdf_fail ncdf_fail.F90 ${SRCS_PIO_TUTIL})
 TARGET_LINK_LIBRARIES(ncdf_fail  piof pioc ${TIMING_LINK_LIB} )
 
 ADD_TEST(ncdf_fail ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 2 ./ncdf_fail)
+
+ADD_EXECUTABLE(pio_decomp_simple_tests pio_decomp_simple_tests.F90 ${SRCS_PIO_TUTIL})
+TARGET_LINK_LIBRARIES(pio_decomp_simple_tests  piof pioc ${TIMING_LINK_LIB} )
+
+ADD_TEST(pio_decomp_simple_tests_1_proc ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ./pio_decomp_simple_tests)
+ADD_TEST(pio_decomp_simple_tests_2_proc ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 2 ./pio_decomp_simple_tests)
+ADD_TEST(pio_decomp_simple_tests_3_proc ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 3 ./pio_decomp_simple_tests)
