@@ -11,11 +11,13 @@ contains
 
   subroutine cice_timestep(block, clock, dt)
 
+    use mpas_configure
+
     use cice_dynamics, only: run_dynamics
-    use cice_advection, only: run_advection
+    !use cice_advection, only: run_advection
     use cice_forcing, only: get_forcing
 
-    use cice_diagnostics, only: plot_cells_spherical, plot_pop_grid_cells, plot_state
+    use cice_diagnostics, only: writeout_state
 
     use cice_therm_zerolayer, only: therm_zerolayer
 
@@ -28,19 +30,26 @@ contains
     real(kind=RKIND) :: &
          time
 
-    !call get_forcing( &
-    !     block % mesh, &
-    !     clock, &
-    !     block % atmos_forcing)
-
     nstep = nstep + 1
     time = nstep * dt
 
+    ! get forcing
+    if (config_use_forcing) &
+         call get_forcing( &
+            block % mesh, &
+            clock, &
+            block % atmos_forcing)
+
     ! velocity solve
-    !call run_dynamics(block, dt, nstep)
+    if (config_use_velocity_solver) &
+         call run_dynamics(block, dt, nstep)
 
     ! advection
-    call run_advection(block, dt, nstep)
+    !if (config_use_advection) &    
+    !     call run_advection(block, dt, nstep)
+
+    ! output
+    !call writeout_state(block, nstep)
 
   end subroutine cice_timestep
 

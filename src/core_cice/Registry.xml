@@ -46,7 +46,31 @@
 		<nml_option name="config_do_restart"                 type="logical"       default_value="false"/>
 		<nml_option name="config_restart_interval"           type="character"     default_value="none"/>
 	</nml_record>
-
+	<nml_record name="initialize">
+		<nml_option name="config_initial_condition_type"     type="character"     default_value="uniform"/>
+		<nml_option name="config_initial_ice_area"           type="real"          default_value="0.0"/>
+		<nml_option name="config_initial_ice_volume"         type="real"          default_value="0.0"/>
+		<nml_option name="config_initial_snow_volume"        type="real"          default_value="0.0"/>
+		<nml_option name="config_initial_latitude_north"     type="real"          default_value="0.0"/>
+		<nml_option name="config_initial_latitude_south"     type="real"          default_value="0.0"/>
+		<nml_option name="config_initial_velocity_type"      type="character"     default_value="uniform"/>
+		<nml_option name="config_initial_uvelocity"          type="real"          default_value="0.0"/>
+		<nml_option name="config_initial_vvelocity"          type="real"          default_value="0.0"/>
+	</nml_record>
+	<nml_record name="use_sections">
+		<nml_option name="config_use_velocity_solver"         type="logical"       default_value="false"/>
+		<nml_option name="config_use_advection"               type="logical"       default_value="false"/>
+		<nml_option name="config_use_forcing"                 type="logical"       default_value="false"/>
+		<nml_option name="config_use_vertical_thermodynamics" type="logical"       default_value="false"/>
+	</nml_record>
+	<nml_record name="unit_test">
+		<nml_option name="config_perform_unit_test"           type="logical"       default_value="false"/>
+		<nml_option name="config_unit_test_type"              type="character"     default_value=""/>
+		<nml_option name="config_unit_test_subtype"           type="character"     default_value=""/>
+	</nml_record>
+	<nml_record name="velocity_solver">
+		<nml_option name="config_velocity_solver_type"       type="character"     default_value="none"/>
+	</nml_record>
 
 	<nml_record name="advection">
 		<nml_option name="config_vert_tracer_adv" type="character" default_value="stencil" units="unitless"
@@ -146,16 +170,13 @@
 
 
 	<!-- ice state -->
-	<var_struct name="icestate" time_levs="0">
+	<var_struct name="icestate" time_levs="0">-->
                 <var_array name="tracers" type="real" dimensions="ONE nCells">
-			<var name="iceAreaCell"    array_group="tracers" streams="iro"/>
-			<var name="iceVolumeCell"  array_group="tracers" streams="iro"/>
-			<var name="snowVolumeCell" array_group="tracers" streams="iro"/>
+		 	<var name="iceAreaCell"    array_group="tracers" streams="o"/>
+		 	<var name="iceVolumeCell"  array_group="tracers" streams="o"/>
+		 	<var name="snowVolumeCell" array_group="tracers" streams="o"/>
 		</var_array>
-		<!-- <var name="iceAreaCell"                       type="real"     dimensions="nCells"              name_in_code="iceAreaCell"/>-->
 		<var name="iceAreaVertex"                     type="real"     dimensions="nVertices"           name_in_code="iceAreaVertex"/>
-		<!-- <var name="iceVolumeCell"                     type="real"     dimensions="nCells"              name_in_code="iceVolumeCell"/>-->
-		<!-- <var name="snowVolumeCell"                    type="real"     dimensions="nCells"              name_in_code="snowVolumeCell"/>-->
 		<var name="totalMassCell"                     type="real"     dimensions="nCells"              name_in_code="totalMassCell"/>
 		<var name="totalMassVertex"                   type="real"     dimensions="nVertices"           name_in_code="totalMassVertex"/>
 		<var name="surfaceTemperature"                type="real"     dimensions="nVertices"           name_in_code="surfaceTemperature"/>
@@ -185,7 +206,7 @@
 		<var name="vPOPAlongGridVector"               type="real"     dimensions="TWO nCells"          name_in_code="vPOPAlongGridVector"/>
 	</var_struct>
 
-	<!--atmos forcing -->
+	<!--ocean forcing -->
 	<var_struct name="ocean_forcing" time_levs="0">
 		<var name="seaSurfaceSalinity"                type="real"     dimensions="nCells"              name_in_code="seaSurfaceSalinity"/>
 		<var name="seaSurfaceTemperature"             type="real"     dimensions="nCells"              name_in_code="seaSurfaceTemperature"/>
@@ -193,29 +214,21 @@
 
 	<!-- define boundary variables -->
 	<var_struct name="boundary" time_levs="0">
-		<var name="boundaryCell"                      type="integer"  dimensions="nCells"                   name_in_code="boundaryCell"/>
-		<var name="boundaryCell2"                     type="integer"  dimensions="nCells"                   name_in_code="boundaryCell2"/>
-		<var name="boundaryEdge"                      type="integer"  dimensions="nEdges"                   name_in_code="boundaryEdge"/>
-		<var name="boundaryVertex"                    type="integer"  dimensions="nVertices"                name_in_code="boundaryVertex"/>
-		<var name="boundaryVertex2"                   type="integer"  dimensions="nVertices"                name_in_code="boundaryVertex2"/>
-		<var name="interiorCell"                      type="integer"  dimensions="nVertices"                name_in_code="interiorCell"/>
 		<var name="interiorVertex"                    type="integer"  dimensions="nVertices"                name_in_code="interiorVertex"/>
-		<var name="interiorVertex2"                   type="integer"  dimensions="nVertices"                name_in_code="interiorVertex2"/>
 	</var_struct>
 
 	<!-- normal vectors -->
 	<var_struct name="normal" time_levs="0">
 		<var name="normalVectorPolygon"               type="real"     dimensions="TWO maxEdges nCells"            name_in_code="normalVectorPolygon"/>
 		<var name="normalVectorTriangle"              type="real"     dimensions="TWO vertexDegree nVertices"     name_in_code="normalVectorTriangle"/>
-		<var name="normalVectorTriangleCorners"       type="real"     dimensions="TWO TWO vertexDegree nVertices" name_in_code="normalVectorTriangleCorners"/>
 		<var name="latCellRotated"                    type="real"     dimensions="nCells"                         name_in_code="latCellRotated"/>
 		<var name="latVertexRotated"                  type="real"     dimensions="nVertices"                      name_in_code="latVertexRotated"/>
 	</var_struct>
 
 	<!-- dynamics with velocity points at vertices -->
 	<var_struct name="hexdyn" time_levs="0">
-		<var name="uVelocity"                         type="real"     dimensions="nVertices"                name_in_code="uVelocity"/>
-		<var name="vVelocity"                         type="real"     dimensions="nVertices"                name_in_code="vVelocity"/>
+		<var name="uVelocity"                         type="real"     dimensions="nVertices"                name_in_code="uVelocity" streams="o"/>
+		<var name="vVelocity"                         type="real"     dimensions="nVertices"                name_in_code="vVelocity" streams="o"/>
 		<var name="edgeVelocity"                      type="real"     dimensions="nEdges"                   name_in_code="edgeVelocity"/>
 		<var name="solveStress"                       type="integer"  dimensions="nCells"                   name_in_code="solveStress"/>
 		<var name="solveVelocity"                     type="integer"  dimensions="nVertices"                name_in_code="solveVelocity"/>	

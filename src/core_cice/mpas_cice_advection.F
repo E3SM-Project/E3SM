@@ -93,19 +93,21 @@ contains
     type (normal_type), pointer :: normal
 
     real(kind=RKIND), dimension(:,:,:), pointer :: &
-         tracers                  ! (nTracers, nVertLevels, nCells)
+         tracers, &              ! (nTracers, nVertLevels, nCells)
+         tracersOnArea
 
     real(kind=RKIND), dimension(:,:,:), allocatable :: &
-         tendency                 ! (nTracers, nVertLevels, nCells)
+         tendency                ! (nTracers, nVertLevels, nCells)
 
     real(kind=RKIND), dimension(:,:), allocatable :: &
-         previousTracer,        & ! (nVertLevels, nCells)
-         previousTracerOldTime, & ! (nVertLevels, nCells)
-         previousTendency         ! (nVertLevels, nCells)
+         lowerLevelTracer,     & ! (nVertLevels, nCells)
+         lowerLevelTracerPrev, & ! (nVertLevels, nCells)
+         lowerLevelTracerNext, & ! (nVertLevels, nCells)
+         lowerLevelTendency      ! (nVertLevels, nCells)
 
     real(kind=RKIND), dimension(:,:), allocatable :: &
-         verticalVelocity,      & ! (nVertLevels+1, nEdges)
-         verticalCellSize         ! (nVertLevels, nCells)
+         verticalVelocity,     & ! (nVertLevels+1, nEdges)
+         verticalCellSize        ! (nVertLevels, nCells)
 
     integer :: &
          nTracers, &
@@ -116,16 +118,10 @@ contains
          iVertLevel, &
          iTracer
 
-    integer :: &
-        index_iceAreaCell 
-
     ! perform pointer assignments
     mesh    => block % mesh
     hexdyn  => block % hexdyn
     normal  => block % normal
-    tracers => block % icestate % tracers % array
-
-    index_iceAreaCell = block % icestate % index_iceAreaCell
 
     ! init non changing things
     call init_run_advection(&
@@ -133,13 +129,12 @@ contains
          verticalVelocity, &
          verticalCellSize)
 
-    nTracers    = size(tracers, 1)
     nVertLevels = 1
 
-    allocate(tendency              (nTracers,1,mesh % nCells))
-    allocate(previousTracer        (1,mesh % nCells))
-    allocate(previousTracerOldTime (1,mesh % nCells))
-    allocate(previousTendency      (1,mesh % nCells))
+    allocate(lowerLevelTracer     (1,mesh % nCells))
+    allocate(lowerLevelTracerPrev (1,mesh % nCells))
+    allocate(lowerLevelTracerNext (1,mesh % nCells))
+    allocate(lowerLevelTendency   (1,mesh % nCells))
 
     ! calculate edge velocity
     call edge_from_vertex_velocity(&
@@ -149,13 +144,17 @@ contains
        normal % normalVectorPolygon % array, &
        hexdyn % edgeVelocity % array)
 
-    ! set first level values
+    ! perform first level
+    tracers => block % icestate % tracers % array
+    nTracers = size(tracers, 1)
+    allocate(tendency(nTracers,1,mesh % nCells))
+
     do iCell = 1, mesh % nCells
        do iVertLevel = 1, nVertLevels
 
-          previousTracer        (iVertLevel, iCell) = 1.0_RKIND
-          previousTracerOldTime (iVertLevel, iCell) = 1.0_RKIND
-          previousTendency      (iVertLevel, iCell) = 0.0_RKIND
+          lowerLevelTracer     (iVertLevel, iCell) = 1.0_RKIND
+          lowerLevelTracerPrev (iVertLevel, iCell) = 1.0_RKIND
+          lowerLevelTendency   (iVertLevel, iCell) = 0.0_RKIND
 
           do iTracer = 1, nTracers
              
@@ -173,33 +172,26 @@ contains
        tracers, &
        tendency, &
        hexdyn % edgeVelocity % array, &
-       previousTracer, &
-       previousTracerOldTime, &
-       previousTendency, &
+       lowerLevelTracer, &
+       lowerLevelTracerPrev, &
+       lowerLevelTendency, &
        verticalVelocity, &
        verticalCellSize)
 
-    ! diagnostic output
-    call plot_pop_grid_cells(mesh, tracers(index_iceAreaCell,1,:), "iceAreaCell.txt", nstep)
-
-    call plot_pop_grid_cells(mesh, tendency(index_iceAreaCell,1,:), "iceAreaCellTend.txt", nstep)
-
-    !call output_meridonal_strip(mesh, tracers(index_iceAreaCell,1,:), "area_strip.txt", 10, nstep, 1)
-
-    !call output_meridonal_strip(mesh, tendency(index_iceAreaCell,1,:), "tend_strip.txt", 10, nstep, 1)
+    ! perform second level
 
 
-    deallocate(tendency)
-    deallocate(previousTracer)
-    deallocate(previousTracerOldTime)
-    deallocate(previousTendency)
+
 
     ! cleanup
+
+    deallocate(lowerLevelTracer)
+    deallocate(lowerLevelTracerPrev)
+    deallocate(lowerLevelTendency)
+
     call cleanup_run_advection(&
          verticalVelocity, &
          verticalCellSize)
-
-    !stop
 
   end subroutine run_advection
 
@@ -211,9 +203,9 @@ contains
        tracers, &
        tendency, &
        edgeVelocity, &
-       previousTracer, &
-       previousTracerOldTime, &
-       previousTendency, &
+       lowerLevelTracer, &
+       lowerLevelTracerPrev, &
+       lowerLevelTendency, &
        verticalVelocity, &
        verticalCellSize)
 
@@ -226,25 +218,25 @@ contains
          dt
 
     real(kind=RKIND), dimension(:,:,:), intent(inout) :: &
-         tracers                  ! (nTracers, nVertLevels, nCells)
+         tracers                 ! (nTracers, nVertLevels, nCells)
 
     real(kind=RKIND), dimension(:,:,:), intent(out) :: &
-         tendency                 ! (nTracers, nVertLevels, nCells)
+         tendency                ! (nTracers, nVertLevels, nCells)
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         edgeVelocity             ! (nEdges)
+         edgeVelocity            ! (nEdges)
 
     real(kind=RKIND), dimension(:,:), intent(in) :: &
-         previousTracer,        & ! (nVertLevels, nCells)
-         previousTracerOldTime, & ! (nVertLevels, nCells)
-         previousTendency         ! (nVertLevels, nCells)
+         lowerLevelTracer,     & ! (nVertLevels, nCells)
+         lowerLevelTracerPrev, & ! (nVertLevels, nCells)
+         lowerLevelTendency      ! (nVertLevels, nCells)
 
     real(kind=RKIND), dimension(:,:), intent(in) :: &
-         verticalVelocity,      & ! (nVertLevels+1, nEdges)
-         verticalCellSize         ! (nVertLevels, nCells)
+         verticalVelocity,     & ! (nVertLevels+1, nEdges)
+         verticalCellSize        ! (nVertLevels, nCells)
 
     real(kind=RKIND), dimension(:,:), allocatable :: &
-         edgeFlux                 ! (nVertLevels, nEdges)
+         edgeFlux                ! (nVertLevels, nEdges)
 
     integer :: &
          iEdge, &
@@ -263,7 +255,7 @@ contains
     nTracers    = size(tracers, 1)
     nVertLevels = size(tracers, 2)
 
-    ! calculate edgeVelocity * previousTracerAtEdge
+    ! calculate edgeVelocity * lowerLevelTracerAtEdge
     allocate(edgeFlux(nVertLevels, mesh % nEdges))
 
     do iEdge = 1, mesh % nEdges
@@ -282,7 +274,7 @@ contains
 
           do iVertLevel = 1, nVertLevels
              edgeFlux(iVertLevel,iEdge) = edgeVelocity(iEdge) * &
-                  0.5_RKIND * (previousTracer(iVertLevel,iCell1) + previousTracer(iVertLevel,iCell2))
+                  0.5_RKIND * (lowerLevelTracer(iVertLevel,iCell1) + lowerLevelTracer(iVertLevel,iCell2))
           enddo ! iVertLevel
 
        endif
@@ -298,23 +290,24 @@ contains
          mesh % advCellsForEdge % array,  & ! (nAdvectionCells nEdges)
          edgeFlux,                        & ! (nVertLevels, nEdges)
          verticalVelocity,                & ! (nVertLevels+1, nEdges)
-         previousTracer,                  & ! (nVertLevels, nCells)
+         lowerLevelTracer,                & ! (nVertLevels, nCells)
          verticalCellSize,                & ! (nVertLevels, nCells)
          dt,                              & ! 
          mesh,                            & ! 
-         previousTendency,                & ! (nVertLevels, nCells)
+         lowerLevelTendency,              & ! (nVertLevels, nCells)
          tendency,                        & ! (nTracers, nVertLevels, nCells)
          highOrderAdvectionMask_in =      & ! (nVertLevels nEdges)
-         mesh % highOrderAdvectionMask % array)
+         mesh % highOrderAdvectionMask % array, &
+         lvertical_in=.false.)
 
     ! apply the advective changes
     do iCell = 1, mesh % nCells
        do iVertLevel = 1, nVertLevels
           do iTracer = 1, nTracers
 
-             tracers(iTracer,iVertLevel,iCell) = (tracers(iTracer,iVertLevel,iCell) * previousTracerOldTime(iVertLevel,iCell) &
+             tracers(iTracer,iVertLevel,iCell) = (tracers(iTracer,iVertLevel,iCell) * lowerLevelTracerPrev(iVertLevel,iCell) &
                                                + tendency(iTracer,iVertLevel,iCell) * dt) &
-                                               / previousTracer(iVertLevel,iCell)
+                                               / lowerLevelTracer(iVertLevel,iCell)
 
           enddo ! iTracer
        enddo ! iVertLevel

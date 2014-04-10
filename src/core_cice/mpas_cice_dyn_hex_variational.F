@@ -18,8 +18,7 @@ contains
 
   subroutine init_dynamics_hex_variational(mesh, hexvar, boundary)
 
-    use cice_dynamics_shared, only: interior_vertices, &
-                                    calc_cell_vertices_at_vertex
+    use cice_mesh, only: calc_cell_vertices_at_vertex
 
     type(mesh_type), intent(in) :: mesh
 
@@ -29,9 +28,6 @@ contains
     integer :: &
          iCell, &
          iVertex
-
-    call interior_vertices(mesh, &
-         boundary % interiorVertex % array)
 
     call calc_local_coords(mesh, &
          hexvar % xLocal % array, &

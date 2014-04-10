@@ -5,10 +5,10 @@ module cice_therm_zerolayer
   implicit none
 
   private
-
-  public :: therm_zerolayer, &
-            init_semtner_forcing, &
-            init_semtner_test_case
+  public :: &
+       therm_zerolayer, &
+       init_semtner_forcing, &
+       init_semtner_test_case
 
   logical :: ltest = .false.
 
@@ -1132,7 +1132,7 @@ contains
 
   subroutine calculate_interpolation_coefficients(MonthlyIntCoeff, MonthlyExpand, semtner_data_times)
 
-    use cice_dynamics_shared, only: solve_linear_basis_system
+    use cice_numerics, only: solve_linear_basis_system
 
     real(kind=RKIND), dimension(0:12,4), intent(out) :: &
          MonthlyIntCoeff

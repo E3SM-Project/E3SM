@@ -6,6 +6,7 @@ module cice_diagnostics
 
   private
   public :: &
+       writeout_state, &
        gnuplot_cell, &
        matlab_jet, &
        plot_pop_grid_cells, &
@@ -32,16 +33,54 @@ module cice_diagnostics
        ymin =  1.0e30_RKIND, &
        ymax = -1.0e30_RKIND
 
-  real(kind=RKIND), parameter :: &
-       pi = 3.14159265359_RKIND, &
-       deg_to_rad = pi / 180.0_RKIND
-
 contains
 
   !-------------------------------------------------------------
   ! general plotting
   !-------------------------------------------------------------
   
+  subroutine writeout_state(block, nstep)
+
+    type(block_type), intent(in) :: block
+
+    integer, intent(in) :: &
+         nstep
+
+    real(kind=RKIND), dimension(:,:,:), pointer :: &
+         tracers                  ! (nTracers, nVertLevels, nCells)
+
+    integer :: &
+        index_iceAreaCell, &
+        index_iceVolumeCell
+
+    type (boundary_type), pointer :: boundary
+
+    integer, parameter :: &
+         nstep_skip = 100
+
+    boundary => block % boundary
+
+    tracers => block % icestate % tracers % array
+
+    index_iceAreaCell   = block % icestate % index_iceAreaCell
+    index_iceVolumeCell = block % icestate % index_iceVolumeCell
+
+    if (nstep == 0 .or. nstep == 1 .or. mod(nstep,nstep_skip) == 0) then
+
+       ! cell centre quantities
+       call plot_pop_grid_cells(block % mesh, tracers(index_iceAreaCell,1,:),   "iceAreaCell.txt",   nstep)
+       call plot_pop_grid_cells(block % mesh, tracers(index_iceVolumeCell,1,:), "iceVolumeCell.txt", nstep)
+       
+       ! vertex quantities
+       call plot_pop_grid_vertices(block % mesh, block % hexdyn % uVelocity % array, boundary % interiorVertex % array, "uVelocity.txt", nstep)
+       call plot_pop_grid_vertices(block % mesh, block % hexdyn % vVelocity % array, boundary % interiorVertex % array, "vVelocity.txt", nstep)
+
+    endif
+
+  end subroutine writeout_state
+  
+  !-------------------------------------------------------------
+
   subroutine gnuplot_cell(mesh, cellArray, filename, append, nofill) 
     
     type(mesh_type), intent(in) :: mesh
@@ -515,85 +554,6 @@ contains
     color = hexstring(red,green,blue)
 
   end function matlab_jet
-
-  !-------------------------------------------------------------
-
-  subroutine boundary_locations(mesh, boundaryCell, boundaryVertex, interiorVertex, boundaryEdge)
-
-    type(mesh_type), intent(in) :: mesh
-
-    integer, dimension(:), intent(in) :: &
-         boundaryCell, &
-         boundaryVertex, &
-         interiorVertex, &
-         boundaryEdge
-
-    integer :: &
-         iCell, &
-         iVertex, &
-         iEdge
-
-    ! identify border cells
-    open(55,file="border_cell.txt",action="write")
-
-    do iCell = 1, mesh % nCells
-
-       if (boundaryCell(iCell) == 1) then
-
-          write(55,*) mesh % xCell % array(iCell), mesh % yCell % array(iCell)
-
-       endif
-
-    enddo ! iCell
-
-    close(55)
-
-    ! identify border vertices
-    open(55,file="border_vertex.txt",action="write")
-
-    do iVertex = 1, mesh % nVertices
-
-       if (boundaryVertex(iVertex) == 1) then
-
-          write(55,*) mesh % xVertex % array(iVertex), mesh % yVertex % array(iVertex)
-
-       endif
-
-    enddo ! iVertex
-
-    close(55)
-
-    ! identify interior vertices
-    open(55,file="interior_vertex.txt",action="write")
-
-    do iVertex = 1, mesh % nVertices
-
-       if (interiorVertex(iVertex) == 1) then
-
-          write(55,*) mesh % xVertex % array(iVertex), mesh % yVertex % array(iVertex)
-
-       endif
-
-    enddo ! iVertex
-
-    close(55)
-
-    ! identify border edges
-    open(55,file="border_edge.txt",action="write")
-
-    do iEdge = 1, mesh % nEdges
-
-       if (boundaryEdge(iEdge) == 1) then
-
-          write(55,*) mesh % xEdge % array(iEdge), mesh % yEdge % array(iEdge)
-
-       endif
-
-    enddo ! iVertex
-
-    close(55)
-
-  end subroutine boundary_locations
 
   !-------------------------------------------------------------
 
@@ -2000,6 +1960,8 @@ contains
 
   subroutine latlon_to_xyz(mesh, x, y, z, lat, lon)
 
+    use cice_constants, only: deg_to_rad
+
     type(mesh_type), intent(in) :: mesh
 
     real(kind=RKIND), intent(in) :: &
@@ -2017,6 +1979,8 @@ contains
   !-------------------------------------------------------------
 
   subroutine perform_rotation(x, y, z)
+
+    use cice_constants, only: deg_to_rad
 
     real(kind=RKIND), intent(inout) :: &
          x, y, z
@@ -2432,6 +2396,138 @@ contains
     rms = sqrt(rms / real(num, RKIND))
 
   end subroutine rms_difference
+
+  !-------------------------------------------------------------
+  ! global statistics
+  !-------------------------------------------------------------
+
+  subroutine global_statistics(block, nstep)
+
+    type(block_type), intent(inout) :: block
+
+    integer, intent(in) :: &
+         nstep
+
+    real(kind=RKIND), dimension(:,:,:), pointer :: &
+         tracers                  ! (nTracers, nVertLevels, nCells)
+
+    integer :: &
+         index_iceAreaCell, &
+         index_iceVolumeCell, &
+         index_snowVolumeCell
+
+    type (mesh_type), pointer :: mesh
+
+    integer :: &
+         iCell
+
+    ! (1): Global, (2): Northern hemipshere, (3): Southern hemisphere
+    real(kind=RKIND), dimension(3) :: &
+         iceAreaCellMin,       iceAreaCellMax, &
+         iceVolumeCellMin,     iceVolumeCellMax, &
+         snowVolumeCellMin,    snowVolumeCellMax, &
+         totalIceVolume
+
+    mesh => block % mesh
+
+    tracers => block % icestate % tracers % array
+
+    index_iceAreaCell    = block % icestate % index_iceAreaCell
+    index_iceVolumeCell  = block % icestate % index_iceVolumeCell
+    index_snowVolumeCell = block % icestate % index_snowVolumeCell
+
+    ! init min/max
+    iceAreaCellMin(:)       =  1.0e30_RKIND
+    iceAreaCellMax(:)       = -1.0e30_RKIND
+    iceVolumeCellMin(:)     =  1.0e30_RKIND
+    iceVolumeCellMax(:)     = -1.0e30_RKIND
+    snowVolumeCellMin(:)    =  1.0e30_RKIND
+    snowVolumeCellMax(:)    = -1.0e30_RKIND
+
+    ! init totals
+    totalIceVolume(:) = 0.0_RKIND
+
+    ! determine aggregate quantities
+    do iCell = 1, mesh % nCells
+
+       ! whole globe
+
+       ! min/max area volume
+       iceAreaCellMin(1)    = min(iceAreaCellMin(1),    tracers(index_iceAreaCell,1,iCell))
+       iceAreaCellMax(1)    = max(iceAreaCellMin(1),    tracers(index_iceAreaCell,1,iCell))
+       iceVolumeCellMin(1)  = min(iceVolumeCellMin(1),  tracers(index_iceVolumeCell,1,iCell))
+       iceVolumeCellMax(1)  = max(iceVolumeCellMin(1),  tracers(index_iceVolumeCell,1,iCell))
+       snowVolumeCellMin(1) = min(snowVolumeCellMin(1), tracers(index_snowVolumeCell,1,iCell))
+       snowVolumeCellMax(1) = max(snowVolumeCellMin(1), tracers(index_snowVolumeCell,1,iCell))
+
+       ! total ice volume
+       totalIceVolume(1) = totalIceVolume(1) + mesh % areaCell % array(iCell) * tracers(index_iceVolumeCell,1,iCell)
+
+       if (mesh % latCell % array(iCell) > 0.0_RKIND) then
+
+          ! northern hemisphere
+
+          ! min/max area volume
+          iceAreaCellMin(2)    = min(iceAreaCellMin(2),    tracers(index_iceAreaCell,1,iCell))
+          iceAreaCellMax(2)    = max(iceAreaCellMin(2),    tracers(index_iceAreaCell,1,iCell))
+          iceVolumeCellMin(2)  = min(iceVolumeCellMin(2),  tracers(index_iceVolumeCell,1,iCell))
+          iceVolumeCellMax(2)  = max(iceVolumeCellMin(2),  tracers(index_iceVolumeCell,1,iCell))
+          snowVolumeCellMin(2) = min(snowVolumeCellMin(2), tracers(index_snowVolumeCell,1,iCell))
+          snowVolumeCellMax(2) = max(snowVolumeCellMin(2), tracers(index_snowVolumeCell,1,iCell))
+
+          ! total ice volume
+          totalIceVolume(2) = totalIceVolume(2) + mesh % areaCell % array(iCell) * tracers(index_iceVolumeCell,1,iCell)
+
+       else if (mesh % latCell % array(iCell) < 0.0_RKIND) then
+
+          ! southern hemisphere
+
+          ! min/max area volume
+          iceAreaCellMin(3)    = min(iceAreaCellMin(3),    tracers(index_iceAreaCell,1,iCell))
+          iceAreaCellMax(3)    = max(iceAreaCellMin(3),    tracers(index_iceAreaCell,1,iCell))
+          iceVolumeCellMin(3)  = min(iceVolumeCellMin(3),  tracers(index_iceVolumeCell,1,iCell))
+          iceVolumeCellMax(3)  = max(iceVolumeCellMin(3),  tracers(index_iceVolumeCell,1,iCell))
+          snowVolumeCellMin(3) = min(snowVolumeCellMin(3), tracers(index_snowVolumeCell,1,iCell))
+          snowVolumeCellMax(3) = max(snowVolumeCellMin(3), tracers(index_snowVolumeCell,1,iCell))
+
+          ! total ice volume
+          totalIceVolume(3) = totalIceVolume(3) + mesh % areaCell % array(iCell) * tracers(index_iceVolumeCell,1,iCell)
+
+       endif
+
+    enddo ! iCell
+
+    open(55,file="global_statistics.txt")
+
+    write(55,*) nstep, &
+         iceAreaCellMin(1),    iceAreaCellMax(1), &
+         iceVolumeCellMin(1),  iceVolumeCellMax(1), &
+         snowVolumeCellMin(1), snowVolumeCellMax(1), &
+         totalIceVolume(1)
+
+    close(55)
+
+    open(55,file="global_statistics_nh.txt")
+
+    write(55,*) nstep, &
+         iceAreaCellMin(2),    iceAreaCellMax(2), &
+         iceVolumeCellMin(2),  iceVolumeCellMax(2), &
+         snowVolumeCellMin(2), snowVolumeCellMax(2), &
+         totalIceVolume(2)
+
+    close(55)
+
+    open(55,file="global_statistics_sh.txt")
+
+    write(55,*) nstep, &
+         iceAreaCellMin(3),    iceAreaCellMax(3), &
+         iceVolumeCellMin(3),  iceVolumeCellMax(3), &
+         snowVolumeCellMin(3), snowVolumeCellMax(3), &
+         totalIceVolume(3)
+
+    close(55)
+
+  end subroutine global_statistics
 
   !-------------------------------------------------------------
 

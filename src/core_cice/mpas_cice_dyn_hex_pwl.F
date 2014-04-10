@@ -5,9 +5,10 @@ module cice_dyn_hex_pwl
   implicit none
 
   private
-  public :: init_dynamics_hex_pwl, &
-            strain_tensor_hex_pwl, &
-            stress_divergence_hex_pwl
+  public :: &
+       init_dynamics_hex_pwl, &
+       strain_tensor_hex_pwl, &
+       stress_divergence_hex_pwl
 
 contains
 
@@ -17,17 +18,13 @@ contains
 
   subroutine init_dynamics_hex_pwl(mesh, hexvar, hexpwl, boundary)
 
-    use cice_dynamics_shared, only: interior_vertices, &
-                                    calc_cell_vertices_at_vertex
+    use cice_mesh, only: calc_cell_vertices_at_vertex
 
     type(mesh_type), intent(in) :: mesh
 
     type(hexvar_type),   pointer :: hexvar
     type(boundary_type), pointer :: boundary
     type(hexpwl_type),   pointer :: hexpwl
-
-    call interior_vertices(mesh, &
-         boundary % interiorVertex % array)
 
     call calc_cell_vertices_at_vertex(mesh, &
          hexvar % cellVerticesAtVertex % array)
@@ -44,7 +41,7 @@ contains
   subroutine init_dynamics_hex_pwl_basis(mesh,           basisSubArea, &
                                          basisGradientU, basisGradientV)
 
-    use cice_dynamics_shared, only: solve_linear_basis_system
+    use cice_numerics, only: solve_linear_basis_system
 
     type(mesh_type), intent(in) :: mesh
 

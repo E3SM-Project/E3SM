@@ -6,7 +6,6 @@ module cice_forcing
   implicit none
 
   private
-
   public :: &
        init_forcing, &
        get_forcing, &
@@ -1063,9 +1062,9 @@ contains
 
   subroutine POP_grid_basis(mesh, uPOPAlongGridVector, vPOPAlongGridVector)
 
-    use cice_dynamics_shared, only: grid_rotation_forward, &
-                                    grid_rotation_forward_nochange, &
-                                    dot_product_3space
+    use cice_mesh, only: grid_rotation_forward, &
+                         grid_rotation_forward_nochange, &
+                         dot_product_3space
 
     type(mesh_type), intent(in) :: mesh
 
@@ -1252,7 +1251,8 @@ contains
 
     ! POP input
     character(len=200), parameter :: filein_POP = &
-         '/Users/akt/Work/Forcing/gx3/atm/gx3v2m/NCAR_bulk/NCEP/4XDAILY/STATES/t_10.1997.dat'
+!         '/Users/akt/Work/Forcing/gx3/atm/gx3v2m/NCAR_bulk/NCEP/4XDAILY/STATES/t_10.1997.dat'
+         '/Users/akt/Work/Forcing/gx1/4XDAILY/v_10.2000.dat'
 
     real(kind=RKIND), dimension(mesh % POP_nx, mesh % POP_ny) :: &
          array_POP
@@ -1260,7 +1260,8 @@ contains
 
     ! MPAS input
     character(len=200), parameter :: filein_MPAS = &
-         '/Users/akt/Work/Forcing/gx3/atm/gx3v2m/NCAR_bulk/NCEP/4XDAILY/STATES/t_10_mpas.1997.dat'
+!         '/Users/akt/Work/Forcing/gx3/atm/gx3v2m/NCAR_bulk/NCEP/4XDAILY/STATES/t_10_mpas.1997.dat'
+         '/Users/akt/Work/MPAS-CICE/forcing/forcing_creation/perform_remap/gx1/v_10.2000.dat'
 
     real(kind=RKIND), dimension(mesh % nCells) :: &
          array_MPAS
@@ -1306,6 +1307,8 @@ contains
        
        array_POP_out(i,j)  = array_POP(i,j)
        array_MPAS_out(i,j) = array_MPAS(iCell)
+
+       !write(*,*) iCell, i, j
 
     enddo ! iCell
 

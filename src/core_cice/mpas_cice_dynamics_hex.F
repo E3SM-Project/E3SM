@@ -5,8 +5,9 @@ module cice_dynamics_hex
   implicit none
 
   private
-  public :: init_dynamics_hex, &
-            run_dynamics_hex
+  public :: &
+       init_dynamics_hex, &
+       run_dynamics_hex
   
 contains
 
@@ -56,9 +57,6 @@ contains
 
     endif
 
-    call plot_pop_grid_vertices(mesh, mesh % fVertex % array, boundary % interiorVertex % array, "coriolis.txt", 0)
-    call plot_pop_grid_vertices(mesh, mesh % latVertex % array, boundary % interiorVertex % array, "latVertex.txt", 0)
-
   end subroutine init_dynamics_hex
 
   !-------------------------------------------------------------
@@ -75,8 +73,9 @@ contains
                               evpDamping, &
                               nstep)
 
-    use cice_dynamics_shared, only: ice_strength, &
-                                    interpolate_cell_to_vertex, &
+    use cice_mesh, only: interpolate_cell_to_vertex
+
+    use cice_dynamics_shared, only: ice_strength, &           
                                     air_stress, &
                                     ocean_stress, &
                                     surface_tilt, &
@@ -133,9 +132,6 @@ contains
          icestate % totalMassVertex % array, &
          icestate % totalMassCell % array)
 
-    call plot_pop_grid_vertices(mesh, icestate % totalMassVertex % array, boundary % interiorVertex % array, "totalMassVertex.txt", nstep)
-
-
     ! calculate computational masks
     call stress_calculation_mask_hex(mesh, &
          hexdyn % solveStress % array, &
@@ -148,16 +144,12 @@ contains
          icestate % totalMassVertex % array, &
          boundary % interiorVertex % array)
 
-
-
     ! calculate the ice strength
     call ice_strength(mesh, &     
          hexdyn % icePressure % array,     &
          iceAreaCell,   &
          iceVolumeCell, &
          hexdyn % solveStress % array)
-
-    call plot_pop_grid_cells(mesh, hexdyn % icePressure % array, "strength.txt", nstep)
 
     ! calculate the air stress
     call air_stress(&
@@ -168,16 +160,6 @@ contains
          atmos_forcing % airDensity % array,   &
          iceAreaCell)
 
-    call plot_pop_grid_cells(mesh, atmos_forcing % uAirVelocity % array, "uAirVelocity.txt", nstep)
-    call plot_pop_grid_cells(mesh, atmos_forcing % vAirVelocity % array, "vAirVelocity.txt", nstep)
-    call plot_pop_grid_cells(mesh, atmos_forcing % uAirVelocityPOP % array, "uAirVelocityPOP.txt", nstep)
-    call plot_pop_grid_cells(mesh, atmos_forcing % vAirVelocityPOP % array, "vAirVelocityPOP.txt", nstep)
-    call plot_pop_grid_cells(mesh, atmos_forcing % airTemperature % array, "airTemperature.txt", nstep)
-    call plot_pop_grid_cells(mesh, atmos_forcing % airDensity % array, "airDensity.txt", nstep)
-    call plot_pop_grid_cells(mesh, hexdyn % airStressCellU % array, "airStressCellU.txt", nstep)
-    call plot_pop_grid_cells(mesh, hexdyn % airStressCellV % array, "airStressCellV.txt", nstep)
-
-
     call interpolate_cell_to_vertex(mesh, &
          hexdyn % airStressVertexU % array, &
          hexdyn % airStressCellU % array)
@@ -185,9 +167,6 @@ contains
     call interpolate_cell_to_vertex(mesh, &
          hexdyn % airStressVertexV % array, &
          hexdyn % airStressCellV % array)
-
-    call plot_pop_grid_vertices(mesh, hexdyn % airStressVertexU % array, boundary % interiorVertex % array, "airStressVertexU.txt", nstep)
-    call plot_pop_grid_vertices(mesh, hexdyn % airStressVertexV % array, boundary % interiorVertex % array, "airStressVertexV.txt", nstep)
 
     ! calculate the ocean stress
     call ocean_stress(& 
@@ -198,11 +177,6 @@ contains
          mesh % fVertex % array,          &
          hexdyn % solveVelocity % array)
 
-    !call plot_pop_grid_vertices(mesh, hexfor % uOceanVelocity % array, boundary % interiorVertex % array, "uOceanVelocity.txt", nstep)
-    !call plot_pop_grid_vertices(mesh, hexfor % uOceanVelocity % array, boundary % interiorVertex % array, "uOceanVelocity.txt", nstep)
-    !call plot_pop_grid_vertices(mesh, hexdyn % oceanStressU % array, boundary % interiorVertex % array, "oceanStressU.txt", nstep)
-    !call plot_pop_grid_vertices(mesh, hexdyn % oceanStressV % array, boundary % interiorVertex % array, "oceanStressV.txt", nstep)
-
     ! calculate the surface tilt force
     call surface_tilt(&
          hexdyn % surfaceTiltForceU % array, &
@@ -212,9 +186,6 @@ contains
          icestate % totalMassVertex % array, &
          mesh % fVertex % array,             &
          hexdyn % solveVelocity % array)
-
-    !call plot_pop_grid_vertices(mesh, hexdyn % surfaceTiltForceU % array, boundary % interiorVertex % array, "surfaceTiltForceU.txt", nstep)
-    !call plot_pop_grid_vertices(mesh, hexdyn % surfaceTiltForceV % array, boundary % interiorVertex % array, "surfaceTiltForceV.txt", nstep)
 
     ! subcycle the dynamics
     call subcycle_dynamics_hex(mesh, &
@@ -298,7 +269,7 @@ contains
 
     do iElasticSubcycle = 1, nElasticSubcycle
 
-       write(*,*) "subcycle: ", iElasticSubcycle
+       !write(*,*) "subcycle: ", iElasticSubcycle
        call single_subcycle_dynamics_hex(mesh, &
                                          icestate,   boundary,  &
                                          normal,     hexdyn,    &
@@ -310,8 +281,6 @@ contains
                                          iElasticSubcycle, nstep)
 
     enddo
-
-    stop
 
   end subroutine subcycle_dynamics_hex
 
@@ -327,14 +296,14 @@ contains
                                           evpDamping,            &
                                           iElasticSubcycle, nstep)
 
-    use cice_dynamics_shared, only: interpolate_cell_to_vertex, &
-                                    ocean_stress_coefficient, &
+    use cice_mesh, only: interpolate_cell_to_vertex                                    
+
+    use cice_dynamics_shared, only: ocean_stress_coefficient, &
                                     solve_velocity
 
     use cice_dyn_hex_weak, only: strain_tensor_hex_weak, &
                                  stress_tensor_hex_weak, &
-                                 stress_divergence_hex_weak, &
-                                 stress_divergence_hex_weak_corners
+                                 stress_divergence_hex_weak
 
     use cice_dyn_hex_variational, only: strain_tensor_hex_variational, &
                                         stress_tensor_hex_variational, &
@@ -375,69 +344,39 @@ contains
 
     character(len=*), intent(in) :: divergenceFormulation
 
-    !do iVertex = 1, mesh % nVertices
-    
-    !   if (boundary % interiorVertex % array(iVertex) == 1) then
-       
-    !      hexdyn % uVelocity % array(iVertex) = sin(4.0_RKIND * mesh % latVertex % array(iVertex) + 2.0_RKIND * 3.142_RKIND * sin(2.0_RKIND * mesh % lonVertex % array(iVertex)))
-    !      hexdyn % vVelocity % array(iVertex) = 0.0_RKIND
-          
-    !   else
-
-    !      hexdyn % uVelocity % array(iVertex) = 0.0_RKIND
-    !      hexdyn % vVelocity % array(iVertex) = 0.0_RKIND
-
-    !   endif
-
-    !enddo ! iVertex
-
     if (trim(divergenceFormulation) == "weak") then
 
-       call strain_tensor_hex_weak(mesh, &
-            hexweak % strain11 % array,           &
-            hexweak % strain22 % array,           &
-            hexweak % strain12 % array,           &
-            hexdyn % uVelocity % array,           &
-            hexdyn % vVelocity % array,           &
-            normal % normalVectorPolygon % array, &
-            normal % latCellRotated % array,      &
-            hexdyn % solveStress % array)
+       !call strain_tensor_hex_weak(mesh, &
+       !     hexweak % strain11 % array,           &
+       !     hexweak % strain22 % array,           &
+       !     hexweak % strain12 % array,           &
+       !     hexdyn % uVelocity % array,           &
+       !     hexdyn % vVelocity % array,           &
+       !     normal % normalVectorPolygon % array, &
+       !     normal % latCellRotated % array,      &
+       !     hexdyn % solveStress % array)
 
-       call plot_pop_grid_cells(mesh, hexweak % strain11 % array, "strain11.txt", iElasticSubcycle)
-       call plot_pop_grid_cells(mesh, hexweak % strain22 % array, "strain22.txt", iElasticSubcycle)
-       call plot_pop_grid_cells(mesh, hexweak % strain12 % array, "strain12.txt", iElasticSubcycle)
+       !call stress_tensor_hex_weak(mesh, &
+       !     hexweak % stress11 % array,           &
+       !     hexweak % stress22 % array,           &
+       !     hexweak % stress12 % array,           &
+       !     hexweak % strain11 % array,           &
+       !     hexweak % strain22 % array,           &
+       !     hexweak % strain12 % array,           &
+       !     hexdyn % icePressure % array,         &
+       !     hexdyn % replacementPressure % array, &
+       !     hexdyn % solveStress % array,          &       
+       !     dtElastic, evpDamping)
 
-       call stress_tensor_hex_weak(mesh, &
-            hexweak % stress11 % array,           &
-            hexweak % stress22 % array,           &
-            hexweak % stress12 % array,           &
-            hexweak % strain11 % array,           &
-            hexweak % strain22 % array,           &
-            hexweak % strain12 % array,           &
-            hexdyn % icePressure % array,         &
-            hexdyn % replacementPressure % array, &
-            hexdyn % solveStress % array,          &       
-            dtElastic, evpDamping)
-
-       call plot_pop_grid_cells(mesh, hexweak % stress11 % array, "stress11.txt", iElasticSubcycle)
-       call plot_pop_grid_cells(mesh, hexweak % stress22 % array, "stress22.txt", iElasticSubcycle)
-       call plot_pop_grid_cells(mesh, hexweak % stress12 % array, "stress12.txt", iElasticSubcycle)
-
-       call stress_divergence_hex_weak(mesh, &
-            hexdyn % stressDivergenceU % array,    &
-            hexdyn % stressDivergenceV % array,    &
-            hexweak % stress11 % array,            &
-            hexweak % stress22 % array,            &
-            hexweak % stress12 % array,            &
-            normal % normalVectorTriangle % array, &
-            normal % latVertexRotated % array,     &
-            hexdyn % solveVelocity % array)
-
-       call plot_pop_grid_vertices(mesh, hexdyn % stressDivergenceU % array, boundary % interiorVertex % array, "divstressu.txt", iElasticSubcycle)
-       call plot_pop_grid_vertices(mesh, hexdyn % stressDivergenceV % array, boundary % interiorVertex % array, "divstressv.txt", iElasticSubcycle)
-
-       !hexdyn % stressDivergenceU % array = 0.0_RKIND
-       !hexdyn % stressDivergenceU % array = 0.0_RKIND
+       !call stress_divergence_hex_weak(mesh, &
+       !     hexdyn % stressDivergenceU % array,    &
+       !     hexdyn % stressDivergenceV % array,    &
+       !     hexweak % stress11 % array,            &
+       !     hexweak % stress22 % array,            &
+       !     hexweak % stress12 % array,            &
+       !     normal % normalVectorTriangle % array, &
+       !     normal % latVertexRotated % array,     &
+       !     hexdyn % solveVelocity % array)
 
     else if (trim(divergenceFormulation) == "variational") then
 
@@ -537,9 +476,6 @@ contains
          hexdyn % oceanStressV % array,      &
          hexdyn % oceanStressCoeff % array,  &
          dtElastic,mesh)
-
-    call plot_pop_grid_vertices(mesh, hexdyn % uVelocity % array, boundary % interiorVertex % array, "uvel.txt", iElasticSubcycle)
-    call plot_pop_grid_vertices(mesh, hexdyn % vVelocity % array, boundary % interiorVertex % array, "vvel.txt", iElasticSubcycle)
 
   end subroutine single_subcycle_dynamics_hex
 

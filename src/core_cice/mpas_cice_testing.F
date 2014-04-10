@@ -11,13 +11,9 @@ module cice_testing
        divergence_stress_test_stress_set_tri, &
        divergence_stress_test_stress_set_weak, &
        init_square_test_case_hex, &
-       spherical_test_strain, &
-       spherical_test_divergence_stress, &
        init_spherical_test_case
 
   real(kind=RKIND), parameter :: &
-       pi = 3.14159265359_RKIND, &
-       deg_to_rad = pi / 180.0_RKIND, &
        rhoi = 917.0_RKIND
 
   ! parameter in constant stress strain relation
@@ -73,97 +69,105 @@ contains
          initialIceEdgeLatitudeSouthernHemisphere = -60.0_RKIND * degreesToRadians, &
          circle_radius = 1.0e6_RKIND
 
-
-
     real(kind=RKIND) :: &
          x, y, z
+
+    character(len=200), parameter :: &
+         test_type = "icecaps"
+         !test_type = "circleofice"
          
 
     call init_ijpop_from_ivertex(mesh)
 
     mesh % fVertex % array = 2.0_RKIND * omega * sin(mesh % latVertex % array)
 
-    !do iCell = 1, mesh % nCells
+    if (trim(test_type) == "icecaps") then
 
-       !if (mesh % latCell % array(iCell) > initialIceEdgeLatitudeNorthernHemisphere .or. &
-       !    mesh % latCell % array(iCell) < initialIceEdgeLatitudeSouthernHemisphere) then
-    !   if (mesh % latCell % array(iCell) < initialIceEdgeLatitudeSouthernHemisphere) then
+       do iCell = 1, mesh % nCells
 
-          ! ice present
-    !      iceAreaCell(iCell)        = 1.0_RKIND
-    !      iceVolumeCell(iCell)      = iceAreaCell(iCell) * iceHeightCell
-    !      totalMassCell(iCell)      = iceVolumeCell(iCell) * rhoi
-    !      surfaceTemperature(iCell) = 0.0_RKIND
+          if (mesh % latCell % array(iCell) > initialIceEdgeLatitudeNorthernHemisphere .or. &
+               mesh % latCell % array(iCell) < initialIceEdgeLatitudeSouthernHemisphere) then
+          !if (mesh % latCell % array(iCell) < initialIceEdgeLatitudeSouthernHemisphere) then
 
-    !   else
+             ! ice present
+             iceAreaCell(iCell)        = 1.0_RKIND
+             iceVolumeCell(iCell)      = iceAreaCell(iCell) * iceHeightCell
+             totalMassCell(iCell)      = iceVolumeCell(iCell) * rhoi
+             surfaceTemperature(iCell) = 0.0_RKIND
 
-    !      ! no ice
-    !      iceAreaCell(iCell)   = 0.0_RKIND
-    !      iceVolumeCell(iCell) = 0.0_RKIND
-    !      totalMassCell(iCell) = 0.0_RKIND
-    !      surfaceTemperature(iCell) = 0.0_RKIND
+          else
 
-    !   endif
+             ! no ice
+             iceAreaCell(iCell)   = 0.0_RKIND
+             iceVolumeCell(iCell) = 0.0_RKIND
+             totalMassCell(iCell) = 0.0_RKIND
+             surfaceTemperature(iCell) = 0.0_RKIND
 
-    !end do ! iCell
+          endif
 
-    !do iVertex = 1, mesh % nVertices
+       end do ! iCell
 
-    !   if (interiorVertex(iVertex) == 1) then
+       do iVertex = 1, mesh % nVertices
 
-    !      uVelocity(iVertex) = 0.0_RKIND
-    !      vVelocity(iVertex) = 1.0_RKIND
-          
-    !   else
+          if (interiorVertex(iVertex) == 1) then
 
-    !      uVelocity(iVertex) = 0.0_RKIND
-    !      vVelocity(iVertex) = 0.0_RKIND
+             uVelocity(iVertex) = 0.0_RKIND
+             vVelocity(iVertex) = 1.0_RKIND
 
-    !   endif
+          else
 
-    !enddo ! iVertex
+             uVelocity(iVertex) = 0.0_RKIND
+             vVelocity(iVertex) = 0.0_RKIND
 
-    ! circle of ice at equator
-    do iCell = 1, mesh % nCells
-    
-       x = mesh % xCell % array(iCell)
-       y = mesh % yCell % array(iCell)
-       z = mesh % zCell % array(iCell)
+          endif
 
-       if (sqrt(x**2+z**2) < circle_radius .and. y > 0.0_RKIND) then
+       enddo ! iVertex
 
-          iceAreaCell(iCell)        = 1.0_RKIND
-          iceVolumeCell(iCell)      = iceAreaCell(iCell) * iceHeightCell
-          totalMassCell(iCell)      = iceVolumeCell(iCell) * rhoi
-          surfaceTemperature(iCell) = 0.0_RKIND
+    else if (trim(test_type) == "circleofice") then
 
-       else
+       ! circle of ice at equator
+       do iCell = 1, mesh % nCells
 
-          ! no ice
-          iceAreaCell(iCell)   = 0.0_RKIND
-          iceVolumeCell(iCell) = 0.0_RKIND
-          totalMassCell(iCell) = 0.0_RKIND
-          surfaceTemperature(iCell) = 0.0_RKIND
+          x = mesh % xCell % array(iCell)
+          y = mesh % yCell % array(iCell)
+          z = mesh % zCell % array(iCell)
 
-       endif
+          if (sqrt(x**2+z**2) < circle_radius .and. y > 0.0_RKIND) then
 
-    enddo ! iCell
-    
-    do iVertex = 1, mesh % nVertices
+             iceAreaCell(iCell)        = 1.0_RKIND
+             iceVolumeCell(iCell)      = iceAreaCell(iCell) * iceHeightCell
+             totalMassCell(iCell)      = iceVolumeCell(iCell) * rhoi
+             surfaceTemperature(iCell) = 0.0_RKIND
 
-       if (interiorVertex(iVertex) == 1) then
+          else
 
-          uVelocity(iVertex) = 1.0_RKIND
-          vVelocity(iVertex) = 0.0_RKIND
-          
-       else
+             ! no ice
+             iceAreaCell(iCell)   = 0.0_RKIND
+             iceVolumeCell(iCell) = 0.0_RKIND
+             totalMassCell(iCell) = 0.0_RKIND
+             surfaceTemperature(iCell) = 0.0_RKIND
 
-          uVelocity(iVertex) = 0.0_RKIND
-          vVelocity(iVertex) = 0.0_RKIND
+          endif
 
-       endif
+       enddo ! iCell
 
-    enddo ! iVertex
+       do iVertex = 1, mesh % nVertices
+
+          if (interiorVertex(iVertex) == 1) then
+
+             uVelocity(iVertex) = 1.0_RKIND
+             vVelocity(iVertex) = 0.0_RKIND
+
+          else
+
+             uVelocity(iVertex) = 0.0_RKIND
+             vVelocity(iVertex) = 0.0_RKIND
+
+          endif
+
+       enddo ! iVertex
+
+    endif ! test_type
 
   end subroutine init_spherical_test_case
 
@@ -743,578 +747,6 @@ contains
     enddo ! iCell
 
   end subroutine divergence_stress_test_stress_set_weak
-
-  !-------------------------------------------------------------
-  ! spherical tests - strain
-  !-------------------------------------------------------------
-
-  subroutine spherical_test_strain(mesh, &
-       uVelocity,         &
-       vVelocity,         &
-       longitudeVelocity, &
-       latitudeVelocity,  &
-       strain11,          &
-       strain22,          &
-       strain12,          &
-       longitudeStrain,   &
-       latitudeStrain,    &
-       test_type)
-
-    type(mesh_type), intent(in) :: mesh
-
-    real(kind=RKIND), dimension(:), intent(out) :: &
-         uVelocity, &
-         vVelocity, &
-         strain11,  &
-         strain22,  &
-         strain12
-
-    real(kind=RKIND), dimension(:), intent(in) :: &
-         longitudeVelocity, &
-         latitudeVelocity,  &
-         longitudeStrain,   &
-         latitudeStrain
-
-    character(len=*), intent(in) :: &
-         test_type
-
-    real(kind=RKIND) :: &
-         uVelocity_test, &
-         vVelocity_test, &
-         du_dlon, &
-         du_dlat, &
-         dv_dlon, &
-         dv_dlat, &
-         radius
-
-    integer :: &
-         nPointsVelocity, &
-         nPointsStrain, &
-         iPoint
-
-    nPointsVelocity = size(uVelocity)
-    nPointsStrain   = size(strain11)
-
-    radius = mesh % sphere_radius
-
-    ! set velocity points
-    do iPoint = 1, nPointsVelocity
-
-       call spherical_test_strain_velocities( &
-            uVelocity(iPoint),         &
-            vVelocity(iPoint),         &
-            du_dlon,                   &
-            du_dlat,                   &
-            dv_dlon,                   &
-            dv_dlat,                   &
-            longitudeVelocity(iPoint), &
-            latitudeVelocity(iPoint),  &
-            test_type)
-
-    enddo ! iPoint
-
-    !write(*,*) "Velocities:", trim(test_type)
-    !write(*,*) minval(uVelocity), maxval(uVelocity)
-    !write(*,*) minval(vVelocity), maxval(vVelocity)
-
-    ! set strain points
-    do iPoint = 1, nPointsStrain
-
-       call spherical_test_strain_velocities( &
-            uVelocity_test,          &
-            vVelocity_test,          &
-            du_dlon,                 &
-            du_dlat,                 &
-            dv_dlon,                 &
-            dv_dlat,                 &
-            longitudeStrain(iPoint), &
-            latitudeStrain(iPoint),  &
-            test_type)
-
-       strain11(iPoint) = strain11_component(uVelocity_test, vVelocity_test, &
-                                             du_dlon, du_dlat, dv_dlon, dv_dlat, &
-                                             radius, longitudeStrain(iPoint), latitudeStrain(iPoint))
-       strain22(iPoint) = strain22_component(uVelocity_test, vVelocity_test, &
-                                             du_dlon, du_dlat, dv_dlon, dv_dlat, &
-                                             radius, longitudeStrain(iPoint), latitudeStrain(iPoint))
-       strain12(iPoint) = strain12_component(uVelocity_test, vVelocity_test, &
-                                             du_dlon, du_dlat, dv_dlon, dv_dlat, &
-                                             radius, longitudeStrain(iPoint), latitudeStrain(iPoint))
-
-    enddo ! iPoint
-
-    !write(*,*) "Strains:", trim(test_type)
-    !write(*,*) minval(strain11), maxval(strain11)
-    !write(*,*) minval(strain22), maxval(strain22)
-    !write(*,*) minval(strain12), maxval(strain12)
-
-  end subroutine spherical_test_strain
-
-  !-------------------------------------------------------------
-  
-  subroutine spherical_test_strain_velocities( &
-       u,       &
-       v,       &
-       du_dlon, &
-       du_dlat, &
-       dv_dlon, &
-       dv_dlat, &
-       lon,     &
-       lat,     &
-       test_type)
-
-    real(kind=RKIND), intent(out) :: &
-         u,       &
-         v,       &
-         du_dlon, &
-         du_dlat, &
-         dv_dlon, &
-         dv_dlat
-    
-    real(kind=RKIND), intent(in) :: &
-         lon, &
-         lat
-    
-    character(len=*), intent(in) :: &
-         test_type
-
-    if (trim(test_type) == "zero") then
-
-       u = 0.0_RKIND
-       v = 0.0_RKIND
-
-       du_dlon = 0.0_RKIND
-       du_dlat = 0.0_RKIND
-       dv_dlon = 0.0_RKIND
-       dv_dlat = 0.0_RKIND
-
-    else if (trim(test_type) == "zonal") then
-
-       u = 1.0_RKIND
-       v = 0.0_RKIND
-
-       du_dlon = 0.0_RKIND
-       du_dlat = 0.0_RKIND
-       dv_dlon = 0.0_RKIND
-       dv_dlat = 0.0_RKIND
-
-    else if (trim(test_type) == "meridonal") then
-
-       u = 0.0_RKIND
-       v = 1.0_RKIND
-
-       du_dlon = 0.0_RKIND
-       du_dlat = 0.0_RKIND
-       dv_dlon = 0.0_RKIND
-       dv_dlat = 0.0_RKIND
-
-    else if (trim(test_type) == "solid_body") then
-
-       u = cos(lat)
-       v = 0.0_RKIND
-
-       du_dlon = 0.0_RKIND
-       du_dlat = -sin(lat)
-       dv_dlon = 0.0_RKIND
-       dv_dlat = 0.0_RKIND
-
-    else if (trim(test_type) == "sinusoidal1") then
-
-       u = cos(lon) * (1.0_RKIND + cos(2.0_RKIND * lat))
-       v = 0.0_RKIND
-
-       du_dlon = -sin(lon) * (1.0_RKIND + cos(2.0_RKIND * lat))
-       du_dlat = -2.0_RKIND * cos(lon) * sin(2.0_RKIND * lat)
-       dv_dlon = 0.0_RKIND
-       dv_dlat = 0.0_RKIND
-
-    else if (trim(test_type) == "sinusoidal2") then
-
-       u = 0.0_RKIND
-       v = cos(lon) * (1.0_RKIND + cos(2.0_RKIND * lat))
-
-       du_dlon = 0.0_RKIND
-       du_dlat = 0.0_RKIND
-       dv_dlon = -sin(lon) * (1.0_RKIND + cos(2.0_RKIND * lat))
-       dv_dlat = -2.0_RKIND * cos(lon) * sin(2.0_RKIND * lat)
-
-    endif
-
-  end subroutine spherical_test_strain_velocities
-
-  !-------------------------------------------------------------
-
-  function strain11_component(u, v, du_dlon, du_dlat, dv_dlon, dv_dlat, r, lon, lat) result(e11)
-
-    real(kind=RKIND), intent(in) :: &
-         u,       &
-         v,       &
-         du_dlon, &
-         du_dlat, &
-         dv_dlon, &
-         dv_dlat, &                                  
-         r,       &
-         lon,     &
-         lat
-
-    real(kind=RKIND) :: e11
-
-    e11 = (1.0_RKIND / (r * cos(lat))) * (du_dlon - v * sin(lat)) 
-
-  end function strain11_component
-
-  !-------------------------------------------------------------
-
-  function strain22_component(u, v, du_dlon, du_dlat, dv_dlon, dv_dlat, r, lon, lat) result(e22)
-
-    real(kind=RKIND), intent(in) :: &
-         u,       &
-         v,       &
-         du_dlon, &
-         du_dlat, &
-         dv_dlon, &
-         dv_dlat, &                                  
-         r,       &
-         lon,     &
-         lat
-
-    real(kind=RKIND) :: e22
-
-    e22 = dv_dlat / r
-
-  end function strain22_component
-
-  !-------------------------------------------------------------
-
-  function strain12_component(u, v, du_dlon, du_dlat, dv_dlon, dv_dlat, r, lon, lat) result(e12)
-
-    real(kind=RKIND), intent(in) :: &
-         u,       &
-         v,       &
-         du_dlon, &
-         du_dlat, &
-         dv_dlon, &
-         dv_dlat, &                                  
-         r,       &
-         lon,     &
-         lat
-
-    real(kind=RKIND) :: e12
-
-    e12 = (0.5_RKIND / r) * (du_dlat + u * tan(lat) + dv_dlon / cos(lat))
-
-  end function strain12_component
-
-  !-------------------------------------------------------------
-  ! spherical tests - strain
-  !-------------------------------------------------------------
-
-  subroutine spherical_test_divergence_stress(mesh, &
-       stress11,            &
-       stress22,            &
-       stress12,            &
-       longitudeStress,     &
-       latitudeStress,      &
-       stressDivergenceU,   &
-       stressDivergenceV,   &
-       longitudeDivergence, &
-       latitudeDivergence,  &
-       test_type)
-
-    type(mesh_type), intent(in) :: mesh
-
-    real(kind=RKIND), dimension(:), intent(out) :: &
-         stressDivergenceU, &
-         stressDivergenceV, &
-         stress11,          &
-         stress22,          &
-         stress12
-    
-    real(kind=RKIND), dimension(:), intent(in) :: &
-         longitudeStress,     &
-         latitudeStress,      &
-         longitudeDivergence, &
-         latitudeDivergence
-
-    character(len=*), intent(in) :: &
-         test_type
-
-    real(kind=RKIND) :: &
-         stress11_test,  &
-         stress22_test,  &
-         stress12_test,  &
-         dstress11_dlon, &
-         dstress11_dlat, &
-         dstress22_dlon, &
-         dstress22_dlat, &
-         dstress12_dlon, &
-         dstress12_dlat, &
-         radius
-
-    integer :: &
-         nPointsStress, &
-         nPointsDivergence, &
-         iPoint
-
-    radius = mesh % sphere_radius
-
-    nPointsStress     = size(stress11)
-    nPointsDivergence = size(stressDivergenceU)
-
-    ! set stress points
-    do iPoint = 1, nPointsStress
-
-       call spherical_test_divergence_stress_stresses( &
-         stress11(iPoint),        &
-         stress22(iPoint),        &
-         stress12(iPoint),        &
-         dstress11_dlon,          &
-         dstress11_dlat,          &
-         dstress22_dlon,          &
-         dstress22_dlat,          &
-         dstress12_dlon,          &
-         dstress12_dlat,          &
-         longitudeStress(iPoint), &
-         latitudeStress(iPoint),  &
-         test_type)
-
-    enddo ! iPoint
-
-    ! set divergence poinys
-    do iPoint = 1, nPointsDivergence
-
-       call spherical_test_divergence_stress_stresses( &
-         stress11_test,               &
-         stress22_test,               &
-         stress12_test,               &
-         dstress11_dlon,              &
-         dstress11_dlat,              &
-         dstress22_dlon,              &
-         dstress22_dlat,              &
-         dstress12_dlon,              &
-         dstress12_dlat,              &
-         longitudeDivergence(iPoint), &
-         latitudeDivergence(iPoint),  &
-         test_type)
-
-       stressDivergenceU(iPoint) = divergenceStressU(stress11_test, stress22_test, stress12_test, &
-                                                     dstress11_dlon, dstress11_dlat, dstress22_dlon, dstress22_dlat, dstress12_dlon, dstress12_dlat, &
-                                                     radius, longitudeDivergence(iPoint), latitudeDivergence(iPoint))
-       stressDivergenceV(iPoint) = divergenceStressV(stress11_test, stress22_test, stress12_test, &
-                                                     dstress11_dlon, dstress11_dlat, dstress22_dlon, dstress22_dlat, dstress12_dlon, dstress12_dlat, &
-                                                     radius, longitudeDivergence(iPoint), latitudeDivergence(iPoint))
-
-       write(55,*) iPoint, longitudeDivergence(iPoint), latitudeDivergence(iPoint), stressDivergenceU(iPoint), stressDivergenceV(iPoint), radius
-
-    enddo ! iPoint
-
-  end subroutine spherical_test_divergence_stress
-
-  !-------------------------------------------------------------
-
-  subroutine spherical_test_divergence_stress_stresses( &
-       stress11,       &
-       stress22,       &
-       stress12,       &
-       dstress11_dlon, &
-       dstress11_dlat, &
-       dstress22_dlon, &
-       dstress22_dlat, &
-       dstress12_dlon, &
-       dstress12_dlat, &
-       lon,            &
-       lat,            &
-       test_type)
-    
-    real(kind=RKIND), intent(out) :: &
-         stress11,       &
-         stress22,       &
-         stress12,       &
-         dstress11_dlon, &
-         dstress11_dlat, &
-         dstress22_dlon, &
-         dstress22_dlat, &
-         dstress12_dlon, &
-         dstress12_dlat
-
-    real(kind=RKIND), intent(in) :: &
-         lon, &
-         lat
-
-    character(len=*), intent(in) :: &
-         test_type
-
-    if (trim(test_type) == "zero") then
-       
-       stress11 = 0.0_RKIND
-       stress22 = 0.0_RKIND
-       stress12 = 0.0_RKIND
-       
-       dstress11_dlon = 0.0_RKIND
-       dstress11_dlat = 0.0_RKIND
-       dstress22_dlon = 0.0_RKIND
-       dstress22_dlat = 0.0_RKIND
-       dstress12_dlon = 0.0_RKIND
-       dstress12_dlat = 0.0_RKIND
-
-    else if (trim(test_type) == "const11") then
-
-       stress11 = 1.0_RKIND
-       stress22 = 0.0_RKIND
-       stress12 = 0.0_RKIND
-       
-       dstress11_dlon = 0.0_RKIND
-       dstress11_dlat = 0.0_RKIND
-       dstress22_dlon = 0.0_RKIND
-       dstress22_dlat = 0.0_RKIND
-       dstress12_dlon = 0.0_RKIND
-       dstress12_dlat = 0.0_RKIND
-
-    else if (trim(test_type) == "const22") then
-
-       stress11 = 0.0_RKIND
-       stress22 = 1.0_RKIND
-       stress12 = 0.0_RKIND
-       
-       dstress11_dlon = 0.0_RKIND
-       dstress11_dlat = 0.0_RKIND
-       dstress22_dlon = 0.0_RKIND
-       dstress22_dlat = 0.0_RKIND
-       dstress12_dlon = 0.0_RKIND
-       dstress12_dlat = 0.0_RKIND
-
-    else if (trim(test_type) == "const12") then
-
-       stress11 = 0.0_RKIND
-       stress22 = 0.0_RKIND
-       stress12 = 1.0_RKIND
-       
-       dstress11_dlon = 0.0_RKIND
-       dstress11_dlat = 0.0_RKIND
-       dstress22_dlon = 0.0_RKIND
-       dstress22_dlat = 0.0_RKIND
-       dstress12_dlon = 0.0_RKIND
-       dstress12_dlat = 0.0_RKIND
-
-    else if (trim(test_type) == "test1") then
-
-       stress11 = cos(lon) * (1.0_RKIND + cos(2.0_RKIND * lat))
-       stress22 = 0.0_RKIND
-       stress12 = 0.0_RKIND
-       
-       dstress11_dlon = -sin(lon) * (1.0_RKIND + cos(2.0_RKIND * lat))
-       dstress11_dlat = -cos(lon) * 2.0_RKIND * sin(2.0_RKIND * lat)
-       dstress22_dlon = 0.0_RKIND
-       dstress22_dlat = 0.0_RKIND
-       dstress12_dlon = 0.0_RKIND
-       dstress12_dlat = 0.0_RKIND
-
-    else if (trim(test_type) == "test2") then
-
-       stress11 = 0.0_RKIND
-       stress22 = cos(lon) * (1.0_RKIND + cos(2.0_RKIND * lat))
-       stress12 = 0.0_RKIND
-       
-       dstress11_dlon = 0.0_RKIND
-       dstress11_dlat = 0.0_RKIND
-       dstress22_dlon = -sin(lon) * (1.0_RKIND + cos(2.0_RKIND * lat))
-       dstress22_dlat = -cos(lon) * 2.0_RKIND * sin(2.0_RKIND * lat)
-       dstress12_dlon = 0.0_RKIND
-       dstress12_dlat = 0.0_RKIND
-
-    else if (trim(test_type) == "test3") then
-
-       stress11 = 0.0_RKIND
-       stress22 = 0.0_RKIND
-       stress12 = cos(lon) * (1.0_RKIND + cos(2.0_RKIND * lat))
-       
-       dstress11_dlon = 0.0_RKIND
-       dstress11_dlat = 0.0_RKIND
-       dstress22_dlon = 0.0_RKIND
-       dstress22_dlat = 0.0_RKIND
-       dstress12_dlon = -sin(lon) * (1.0_RKIND + cos(2.0_RKIND * lat))
-       dstress12_dlat = -cos(lon) * 2.0_RKIND * sin(2.0_RKIND * lat)
-
-    else if (trim(test_type) == "test4") then
-
-       stress11 = cos(lon) * (1.0_RKIND + cos(2.0_RKIND * lat))
-       stress22 = cos(lon) * (1.0_RKIND + cos(2.0_RKIND * lat))
-       stress12 = cos(lon) * (1.0_RKIND + cos(2.0_RKIND * lat))
-       
-       dstress11_dlon = -sin(lon) * (1.0_RKIND + cos(2.0_RKIND * lat))
-       dstress11_dlat = -cos(lon) * 2.0_RKIND * sin(2.0_RKIND * lat)
-       dstress22_dlon = -sin(lon) * (1.0_RKIND + cos(2.0_RKIND * lat))
-       dstress22_dlat = -cos(lon) * 2.0_RKIND * sin(2.0_RKIND * lat)
-       dstress12_dlon = -sin(lon) * (1.0_RKIND + cos(2.0_RKIND * lat))
-       dstress12_dlat = -cos(lon) * 2.0_RKIND * sin(2.0_RKIND * lat)
-
-    else
-       
-       write(*,*) "Unknown test case"
-       stop
-
-    endif
-
-  end subroutine spherical_test_divergence_stress_stresses
-
-  !-------------------------------------------------------------
-
-  function divergenceStressU(stress11, stress22, stress12, &
-                             dstress11_dlon, dstress11_dlat, dstress22_dlon, dstress22_dlat, dstress12_dlon, dstress12_dlat, &
-                             r, lon, lat) result(divu)
-
-    real(kind=RKIND), intent(in) :: &
-         stress11,       &
-         stress22,       &
-         stress12,       &
-         dstress11_dlon, &
-         dstress11_dlat, &
-         dstress22_dlon, &
-         dstress22_dlat, &
-         dstress12_dlon, &
-         dstress12_dlat, &
-         r,              &
-         lon,            &
-         lat
-
-    real(kind=RKIND) :: divu
-
-    divu = (1.0_RKIND / (r * cos(lat))) * dstress11_dlon + &
-           (1.0_RKIND / r)              * dstress12_dlat - &
-           (2.0_RKIND / r) * tan(lat)   * stress12
-
-  end function divergenceStressU
-
-  !-------------------------------------------------------------
-
-  function divergenceStressV(stress11, stress22, stress12, &
-                             dstress11_dlon, dstress11_dlat, dstress22_dlon, dstress22_dlat, dstress12_dlon, dstress12_dlat, &
-                             r, lon, lat) result(divv)
-
-    real(kind=RKIND), intent(in) :: &
-         stress11,       &
-         stress22,       &
-         stress12,       &
-         dstress11_dlon, &
-         dstress11_dlat, &
-         dstress22_dlon, &
-         dstress22_dlat, &
-         dstress12_dlon, &
-         dstress12_dlat, &
-         r,              &
-         lon,            &
-         lat
-
-    real(kind=RKIND) :: divv
-
-    divv = (1.0_RKIND / (r * cos(lat))) * dstress12_dlon + &
-           (1.0_RKIND / r)              * dstress22_dlat + &
-           (1.0_RKIND / r) * tan(lat)   * stress11       - &
-           (1.0_RKIND / r) * tan(lat)   * stress22
-
-  end function divergenceStressV
-
-  !-------------------------------------------------------------
 
 end module cice_testing
 
