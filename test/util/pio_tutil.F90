@@ -57,6 +57,7 @@ MODULE pio_tutil
   PUBLIC  :: PIO_TF_Is_netcdf
   PUBLIC  :: PIO_TF_Get_nc_iotypes, PIO_TF_Get_undef_nc_iotypes
   PUBLIC  :: PIO_TF_Get_iotypes, PIO_TF_Get_undef_iotypes
+  PUBLIC  :: PIO_TF_Get_data_types
 
 CONTAINS
   ! Initialize Testing framework - Internal (Not directly used by unit tests)
@@ -453,6 +454,29 @@ CONTAINS
       i = i + 1
 #endif
   END SUBROUTINE
+
+  ! Returns a list of PIO base types
+  SUBROUTINE PIO_TF_Get_data_types(data_types, data_type_descs, num_data_types)
+    INTEGER, DIMENSION(:), ALLOCATABLE, INTENT(OUT) :: data_types
+    CHARACTER(LEN=*), DIMENSION(:), ALLOCATABLE, INTENT(OUT) :: data_type_descs
+    INTEGER, INTENT(OUT) :: num_data_types
+
+    !num_data_types = 4
+    num_data_types = 3
+    ALLOCATE(data_types(4))
+    ALLOCATE(data_type_descs(4))
+
+    data_types(1) = PIO_double
+    data_type_descs(1) = "PIO_double"
+    data_types(2) = PIO_real
+    data_type_descs(2) = "PIO_real"
+    data_types(3) = PIO_int
+    data_type_descs(3) = "PIO_int"
+    ! FIXME: Check why some PIO functions don't support the char type
+    !data_types(4) = PIO_char
+    !data_type_descs(4) = "PIO_char"
+
+  END SUBROUTINE PIO_TF_Get_data_types
 
   ! Parse and process input arguments like "--pio-tf-stride=2" passed
   ! to the unit tests - PRIVATE function
