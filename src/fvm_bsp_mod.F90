@@ -179,6 +179,7 @@ subroutine analytical_function(value,sphere,klev,itr)
         (cart%z-cartcenter%z)*(cart%z-cartcenter%z)
         
     value=value+h0*exp(-R0*tmp)
+    value=value+1.0!phl
     
 !   !Non-smooth scalar field (slotted cylinder) --------------------------------------!
 !  R0=0.5D0
@@ -301,7 +302,9 @@ function get_boomerang_velocities_gll(elem, time) result(vstar)
     do j=1,np
       lon = elem%spherep(i,j)%lon
       lat = elem%spherep(i,j)%lat
-
+      !ldbg start
+!      if (lon<DD_PI+0.4D0.and.lon>DD_PI-0.4D0.and.lat<0.4D0.and.lat>-0.4) then
+         !ldbg end
       slat  = sin(lat)
       clat  = cos(lat)
 
@@ -316,9 +319,12 @@ function get_boomerang_velocities_gll(elem, time) result(vstar)
       ! meters/sec 
       vstar(i,j,1)=u * Rearth /( ndays*3600*24.0D0/5.0D0)
       vstar(i,j,2)=v * Rearth /( ndays*3600*24.0D0/5.0D0)
+!      else
+!         vstar(i,j,1)=0.0D0
+!         vstar(i,j,2)=0.0D0
+!      end if !ldbg
     enddo
   enddo
-
 end function get_boomerang_velocities_gll     
 
 subroutine set_boomerang_velocities_gll(elem, time,klev)
@@ -326,7 +332,7 @@ subroutine set_boomerang_velocities_gll(elem, time,klev)
   use element_mod, only : element_t
   use fvm_control_volume_mod, only: fvm_struct
   use physical_constants, only : DD_PI, rearth
-  
+
   implicit none
   type (element_t), intent(inout)   :: elem
   real (kind=real_kind),intent(in)             :: time  ! time of the arrival grid
@@ -406,6 +412,8 @@ subroutine boomerang(asphere,dsphere,nstep,part)
   
   nmaxaround=12*nmax/ndays          ! in 12 days around the earth
   nmaxaround=nmax
+
+
 !   tmp_time=(nstep)*5.0D0/nmaxaround
 !   tmp_dt = 5.0D0/nmaxaround/iteration
   tmp_time=(nstep+1)*5.0D0/(nmaxaround)
@@ -422,7 +430,7 @@ subroutine boomerang(asphere,dsphere,nstep,part)
   if (present(part)) then
     iteration=5
   endif
-  
+
   DO i=1,iteration
 
     omega = DD_PI/tt
