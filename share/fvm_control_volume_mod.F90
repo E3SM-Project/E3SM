@@ -1361,11 +1361,15 @@ subroutine interpolation_point(gnom,gnom1d,face1,face2,xy,except, point,ida,ide,
   else
     ibaseref=iref-2  
   end if
-  if (ibaseref < 1-nhc ) then
-     print *,'ERROR: ibaseref out of range: ',ibaseref,ida,ide,iref
-  else
-     point=point-gnom1d(ibaseref)
-  endif
+  !
+  ! fix out-of-bounds error appearing in subroutine fillhalo_cubic 
+  ! (in fvm_reconstruction_mod.F90)
+  ibaseref = MAX(1-nhc,ibaseref) 
+!  if (ibaseref < 1-nhc ) then
+!    print *,'ERROR: ibaseref out of range: ',ibaseref,ida,ide,iref
+!  else
+  point=point-gnom1d(ibaseref)
+!  endif
   
 end subroutine interpolation_point
 !END SUBROUTINE INTERPOLATION_POINT---------------------------------------CE-for FVM!
