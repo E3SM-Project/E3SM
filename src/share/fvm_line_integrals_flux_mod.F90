@@ -9,7 +9,6 @@ module fvm_line_integrals_flux_mod
 
   use kinds, only               : int_kind, real_kind
   use dimensions_mod, only      : nc, nhe, ngpc
-  use parallel_mod, only : abortmp
   use fvm_line_integrals_mod, only: ldbg
 
   implicit none
@@ -31,9 +30,8 @@ contains
   subroutine compute_weights_fluxform(fvm,nreconstruction,weights_all,weights_eul_index_all, &
        weights_lgr_index_all,klev,jall)  
     use fvm_control_volume_mod, only:  fvm_struct                                         
-    use coordinate_systems_mod,  only :  cartesian2D_t, spherical_polar_t, &
+    use coordinate_systems_mod,  only :  cartesian2D_t, &
          cart2cubedspherexy, spherical_to_cart
-    use physical_constants, only : DD_PI
     use control_mod, only : north, south, east, west, neast, nwest, seast, swest
     
     use fvm_line_integrals_mod, only: gauss_points
@@ -68,7 +66,7 @@ contains
     integer                                     :: jx_min2, jx_max2, jy_min2, jy_max2
     logical                                     :: swap1, swap2
     
-    integer (kind=int_kind)                     :: i, j, jtmp
+    integer (kind=int_kind)                     :: i, j
     
     type (cartesian2D_t)                        :: dcart(-1:nc+3,-1:nc+3)       ! Cartesian coordinates 
 
@@ -77,7 +75,6 @@ contains
     real (kind=real_kind), dimension(0:5)       :: xflux_x,xflux_y,yflux_x,yflux_y
     integer (kind=int_kind)                     :: inttmp
     real (kind=real_kind)                       :: tmp
-    logical                                     :: swap
     ! for Gaussian quadrature
     real (kind=real_kind), dimension(ngpc)      :: gsweights, gspts
     ! weight-variables for individual cells
@@ -1422,7 +1419,7 @@ contains
        jx_min, jx_max, jy_min, jy_max,tmp,&
        ngauss,gauss_weights,abscissae,weights,weights_eul_index,jcollect,jmax_segments)
 
-    use fvm_line_integrals_mod, only : compute_weights_cell, truncate_vertex
+    use fvm_line_integrals_mod, only : compute_weights_cell
     implicit none
     logical, intent(in) :: ldo_xflux, ldo_yflux
     integer (kind=int_kind)                  , intent(in):: nreconstruction, jx,jy,ngauss,jmax_segments
@@ -1459,7 +1456,7 @@ contains
     !
     ! local workspace
     !
-    integer :: i,j,nvertex,jcollect1,jcollect2
+    integer :: nvertex,jcollect1,jcollect2
     real (kind=real_kind)   ,  dimension(0:5) :: xcell_flux,ycell_flux
     real (kind=real_kind)   ,  dimension(0:5) :: xcell_flux2,ycell_flux2
     real (kind=real_kind)                     :: weight_sign,weight_sign2
@@ -1469,7 +1466,6 @@ contains
     integer (kind=int_kind),  &
          dimension(jmax_segments,2)      :: weights_eul_index2
 
-    integer (kind=int_kind) :: iter,jx_eul,jy_eul
     lzero_flux = .false.
     !
     ! figure out how to loop over flux-edges (in calling routine)
@@ -1598,7 +1594,6 @@ contains
 
   subroutine make_flux_area(jx,jy,xcell_flux,ycell_flux,xcell_flux2,ycell_flux2,&
        lzero_flux,nvertex,weight_sign,weight_sign2)
-    use fvm_line_integrals_mod, only: compute_slope, y_cross_eul_lon, x_cross_eul_lat
     implicit none
     integer (kind=int_kind)              , intent(in   ):: jx,jy
     real (kind=real_kind), dimension(0:5), intent(inout):: xcell_flux   ,ycell_flux
@@ -1611,7 +1606,7 @@ contains
     !
     integer (kind=int_kind) :: intersect
     real (kind=real_kind), dimension(0:5) :: xcell_flux_tmp, ycell_flux_tmp
-    real (kind=real_kind)                 :: slope, xcross, ycross,tmp
+    real (kind=real_kind)                 :: xcross, ycross
     integer (kind=int_kind) :: isLeft1, isLeft2
     integer (kind=int_kind) :: j!dbg
 
@@ -1835,11 +1830,11 @@ contains
   subroutine orient(x,y,nvertex,weight_sign)
     use fvm_line_integrals_mod, only: area
     implicit none
+    integer (kind=int_kind)                      , intent(in):: nvertex
     real (kind=real_kind), dimension(0:nvertex+1), intent(inout):: x,y
     real (kind=real_kind)                        , intent(out  ):: weight_sign
     !
     real (kind=real_kind), dimension(0:nvertex+1) :: xtmp,ytmp
-    integer (kind=int_kind)           , intent(in):: nvertex
 
     if (area(x(1:nvertex),y(1:nvertex),nvertex)<0) then
        xtmp(1:nvertex)=x(1:nvertex); ytmp(1:nvertex)=y(1:nvertex)
@@ -1857,8 +1852,8 @@ contains
 
   subroutine reverse(x,y,nvertex)
     implicit none
-    real (kind=real_kind), dimension(0:nvertex+1), intent(inout):: x,y
     integer (kind=int_kind)           , intent(in):: nvertex
+    real (kind=real_kind), dimension(0:nvertex+1), intent(inout):: x,y
     !
     real (kind=real_kind), dimension(0:nvertex+1) :: xtmp,ytmp
 

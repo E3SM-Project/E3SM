@@ -704,7 +704,7 @@ contains
                      en=st+interpdata(ie)%n_interp-1
                      do k=1,nlev                       
                        call interpol_phys_latlon(interpdata(ie),fvm(ie)%c(:,:,k,cindex,n0), &
-                                          fvm(ie),elem(ie)%corners,elem(ie)%desc,datall(st:en,k))                                          
+                                          fvm(ie),elem(ie)%corners,elem(ie)%desc,datall(st:en,k))
                      end do
                      st=st+interpdata(ie)%n_interp
                   enddo                  

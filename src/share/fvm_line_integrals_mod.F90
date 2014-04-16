@@ -14,7 +14,6 @@ module fvm_line_integrals_mod
 
   use kinds, only               : int_kind, real_kind
   use dimensions_mod, only      : nc, nhe, ngpc
-  use parallel_mod, only : abortmp
 
   implicit none
   private
@@ -2906,8 +2905,8 @@ end subroutine gauss_points
 
   real (kind=real_kind) function area(xseg,yseg,nvertex)
     implicit none
-    real (kind=real_kind)  , dimension(nvertex), intent(in):: xseg,yseg
     integer (kind=int_kind)                    , intent(in):: nvertex
+    real (kind=real_kind)  , dimension(nvertex), intent(in):: xseg,yseg
     !
     integer (kind=int_kind):: i
     area = 0.0

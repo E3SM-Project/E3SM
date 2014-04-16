@@ -335,11 +335,13 @@ endif
       global_shared_buf(ie,:)=0.0D0
       do j=1,nc
         do i=1,nc
-          global_shared_buf(ie,1)=global_shared_buf(ie,1)+fvm(ie)%area_sphere(i,j)*abs(fvm(ie)%c(i,j,chooselev,choosetrac,tl%n0)-fvm(ie)%cstart(i,j))
+          global_shared_buf(ie,1)=global_shared_buf(ie,1)+ &
+               fvm(ie)%area_sphere(i,j)*abs(fvm(ie)%c(i,j,chooselev,choosetrac,tl%n0)-fvm(ie)%cstart(i,j))
           global_shared_buf(ie,2)=global_shared_buf(ie,2)+fvm(ie)%area_sphere(i,j)*abs(fvm(ie)%cstart(i,j))
-          
-          global_shared_buf(ie,3)=global_shared_buf(ie,3)+fvm(ie)%area_sphere(i,j)*(fvm(ie)%c(i,j,chooselev,choosetrac,tl%n0)-fvm(ie)%cstart(i,j))* &
-                                            (fvm(ie)%c(i,j,chooselev,choosetrac,tl%n0)-fvm(ie)%cstart(i,j))
+
+          global_shared_buf(ie,3)=global_shared_buf(ie,3)+ &
+               fvm(ie)%area_sphere(i,j)*(fvm(ie)%c(i,j,chooselev,choosetrac,tl%n0)-fvm(ie)%cstart(i,j))* &
+               (fvm(ie)%c(i,j,chooselev,choosetrac,tl%n0)-fvm(ie)%cstart(i,j))
           global_shared_buf(ie,4)=global_shared_buf(ie,4)+fvm(ie)%area_sphere(i,j)*(fvm(ie)%cstart(i,j))*(fvm(ie)%cstart(i,j))
           
           tmp=max(tmp,abs(fvm(ie)%c(i,j,chooselev,choosetrac,tl%n0)-fvm(ie)%cstart(i,j)))
