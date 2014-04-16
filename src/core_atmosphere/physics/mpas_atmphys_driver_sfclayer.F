@@ -61,6 +61,10 @@
 !>    * in call to subroutine sfclay, replaced the variable g (that originally pointed to gravity)
 !>      with gravity, for simplicity.
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-03-21.
+!>    * in subroutine sfclayer_from_MPAS, added initialization of ustm, cd, cda, ck, and cka. in
+!>      subroutine sfclayer_to_MPAS, filled diag_physics%ustm with ustm_p after call to subroutine
+!>      sfclay.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-16. 
 
 
  contains
@@ -198,10 +202,16 @@
     regime_p(i,j) = diag_physics % regime % array(i)
     rmol_p(i,j)   = diag_physics % rmol   % array(i)
     ust_p(i,j)    = diag_physics % ust    % array(i)
+    ustm_p(i,j)   = diag_physics % ustm   % array(i)
     wspd_p(i,j)   = diag_physics % wspd   % array(i)
     znt_p(i,j)    = diag_physics % znt    % array(i) 
     zol_p(i,j)    = diag_physics % zol    % array(i) 
     !output variables:
+    cd_p(i,j)     = 0._RKIND
+    cda_p(i,j)    = 0._RKIND
+    ck_p(i,j)     = 0._RKIND
+    cka_p(i,j)    = 0._RKIND
+
     q2_p(i,j)     = 0._RKIND
     t2m_p(i,j)    = 0._RKIND
     th2m_p(i,j)   = 0._RKIND
@@ -244,6 +254,7 @@
     diag_physics % regime % array(i) = regime_p(i,j)
     diag_physics % rmol   % array(i) = rmol_p(i,j)
     diag_physics % ust    % array(i) = ust_p(i,j)
+    diag_physics % ustm   % array(i) = ustm_p(i,j)
     diag_physics % wspd   % array(i) = wspd_p(i,j)
     diag_physics % zol    % array(i) = zol_p(i,j)
     diag_physics % znt    % array(i) = znt_p(i,j)
