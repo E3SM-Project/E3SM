@@ -608,17 +608,16 @@ contains
   subroutine cslam_remap(tracer0,tracer1,weights,recons,centroid, &
        weights_eul_index_all, weights_lgr_index_all, jall, iflux)
     
-    real (kind=real_kind), intent(in)           :: tracer0(1-nhc:nc+nhc,1-nhc:nc+nhc)
-    real (kind=real_kind), intent(inout)        :: tracer1(1:nc+iflux,1:nc+iflux)
-    real (kind=real_kind), intent(in)           :: weights(jall,6)
-    real (kind=real_kind), intent(in)           :: recons(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
-    real (kind=real_kind), intent(in)           :: centroid(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
+    real (kind=real_kind),   intent(in)        :: tracer0(1-nhc:nc+nhc,1-nhc:nc+nhc)
+    integer (kind=int_kind), intent(in)        :: iflux !to accomodate flux call
+    real (kind=real_kind),   intent(inout)     :: tracer1(1:nc+iflux,1:nc+iflux)
+    integer (kind=int_kind), intent(in)        :: jall  
+    real (kind=real_kind),   intent(in)        :: weights(jall,6)
+    real (kind=real_kind),   intent(in)        :: recons(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
+    real (kind=real_kind),   intent(in)        :: centroid(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
     integer (kind=int_kind), intent(in)        :: weights_eul_index_all(jall,2)
     integer (kind=int_kind), intent(in)        :: weights_lgr_index_all(jall,2)
-    integer (kind=int_kind), intent(in)        :: jall  
-    integer (kind=int_kind), intent(in)        :: iflux !to accomodate flux call  
-    
-    
+ 
     integer                                     :: h, jx, jy, jdx, jdy
     
     tracer1 = 0.0D0
@@ -655,12 +654,12 @@ contains
     
     real (kind=real_kind), intent(in)           :: tracer0(1-nhc:nc+nhc,1-nhc:nc+nhc)
     real (kind=real_kind), intent(inout)        :: flux(1:nc+1,1:nc+1)
+    integer (kind=int_kind), intent(in)         :: jall  
     real (kind=real_kind), intent(in)           :: weights(jall,6)
     real (kind=real_kind), intent(in)           :: recons(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
     real (kind=real_kind), intent(in)           :: centroid(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
     integer (kind=int_kind), intent(in)        :: weights_eul_index_all(jall,2)
     integer (kind=int_kind), intent(in)        :: weights_lgr_index_all(jall,2)
-    integer (kind=int_kind), intent(in)        :: jall  
     
     real (kind=real_kind)        :: flux_area(1:nc+1,1:nc+1)
     
@@ -780,15 +779,15 @@ contains
     real (kind=real_kind), intent(in)           :: tracer_air(1-nhc:nc+nhc,1-nhc:nc+nhc)
     real (kind=real_kind), intent(in)           :: recons(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
     real (kind=real_kind), intent(in)           :: recons_air(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
-    
+ 
+    integer (kind=int_kind), intent(in)         :: jall  
     real (kind=real_kind), intent(in)           :: weights(jall,6)
     real (kind=real_kind), intent(in)           :: centroid(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
     integer (kind=int_kind), intent(in)         :: weights_eul_index_all(jall,2)
     integer (kind=int_kind), intent(in)         :: weights_lgr_index_all(jall,2)
-    integer (kind=int_kind), intent(in)         :: jall  
-    
+ 
     integer                                     :: h, jx, jy, jdx, jdy    
-    
+ 
     do h=1,jall
        jx  = weights_lgr_index_all(h,1)
        jy  = weights_lgr_index_all(h,2)
@@ -875,7 +874,7 @@ contains
     use fvm_control_volume_mod, only: fvm_mesh_ari
     use fvm_analytic_mod, only: computexytosphere_moments
     use bndry_mod, only: compute_ghost_corner_orientation
-    use bndry_mod, only : ghost_exchangevfull, bndry_exchangev
+    use bndry_mod, only : ghost_exchangevfull
     
     !  use edge_mod, only : ghostvpackfull, ghostvunpackfull
     
@@ -1234,8 +1233,8 @@ contains
     
     if (crossline) then
        write(*,*) "FATAL Error in fvm_mod.F90: departure cell is degenerated!"
-       write(*,*) "Choose a smaller time step! max CFL in this element: maxcflx", fvm%maxcfl(1,klev), "maxcfly", fvm%maxcfl(2,klev) 
-       STOP "Exit program!"
+       write(*,*) "Choose a smaller time step! max CFL in this element: maxcflx", fvm%maxcfl(1,klev), "maxcfly", fvm%maxcfl(2,klev)
+       STOP 'Exit program!'
     endif
   end subroutine check_departurecell
   
