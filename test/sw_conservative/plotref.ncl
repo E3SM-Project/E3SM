@@ -55,7 +55,7 @@ begin
 
 fref = addfile("../reg_test/ref_sol/REF0114.cdf","r")
 ;fnames =systemfunc("ls /tmp/sweqx/swtc5-NE?-*-LFT.nc ; ls /tmp/sweqx/swtc5-NE??-*-LFT.nc ")
-fnames =systemfunc("ls ~/scratch1/swtc5/movies/swtc51.nc")
+fnames =systemfunc("ls ~/scratch1/sweqx/swtc5ref/movies/swtc51.nc")
 itime = 15
 case = 5
 
@@ -216,6 +216,31 @@ res@cnLevelSpacingF = einterval
 ;contour = gsn_csm_contour_map(wks,geodiff,res)     ; Draw a contour plot.  ;
 
 
+; make a color plot
+  res@cnFillOn            = True         ; Turn on contour fill
+  res@cnFillMode          = "AreaFill"   ; Style of fill. You can also
+                                         ; use "CellFill" and "RasterFill"
+  res@cnLinesOn           = True       ; Turn off contour lines
+  res@cnLineLabelsOn      = False        ; Turn off contour line labels
+
+  res@lbLabelAutoStride   = True         ; Clean up labelbar labels.
+  res@lbBoxLinesOn        = False        ; Turn of labelbar box lines.
+  res@mpGridAndLimbOn  = False
+;  res@mpGridSpacingF  = 30.0
+  res@cnLevelSelectionMode = "ManualLevels"
+
+  res@mpOutlineOn          = False
+  res@mpFillOn             = False
+  res@mpCenterLonF         = 0
+  res@mpShapeMode          = "FreeAspect"
+
+  res@cnMinLevelValF = 5000. 
+  res@cnMaxLevelValF = 6000.
+  res@cnLevelSpacingF = cinterval/2
+
+    res@mpProjection = "CylindricalEquidistant"
+    res@mpCenterLonF         = 0
+contour = gsn_csm_contour_map(wks,geo,res)     ; Draw a contour plot.  ;
 
 end
 
