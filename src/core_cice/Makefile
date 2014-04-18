@@ -24,6 +24,9 @@ all: core_cice
 core_cice: $(OBJS)
 	ar -ru libdycore.a $(OBJS)
 
+core_reg:
+	$(CPP) $(CPPFLAGS) $(CPPINCLUDES) Registry.xml > Registry_processed.xml
+
 mpas_cice_constants.o:
 
 mpas_cice_mesh.o: mpas_cice_constants.o
