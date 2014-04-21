@@ -21,7 +21,7 @@ contains
 
     use cice_mesh, only: calc_cell_vertices_at_vertex
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     type(MPAS_pool_type), pointer :: hexvar
     type(MPAS_pool_type), pointer :: boundary
@@ -59,7 +59,7 @@ contains
 
     use cice_numerics, only: solve_linear_basis_system
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     real(kind=RKIND), dimension(:,:), intent(out) :: &
          basisSubArea
@@ -311,7 +311,7 @@ contains
                                    basisGradientU, basisGradientV, &
                                    solveStress)
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     real(kind=RKIND), dimension(:,:), intent(out) :: &
          strain11, &
@@ -413,7 +413,7 @@ contains
                                        basisSubArea, &
                                        cellVerticesAtVertex, solveVelocity)
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     real(kind=RKIND), dimension(:), intent(out) :: &
          stressDivergenceU, &

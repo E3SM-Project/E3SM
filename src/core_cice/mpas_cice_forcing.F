@@ -69,7 +69,7 @@ contains
 
   subroutine init_forcing(mesh, atmos_forcing)
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     type(MPAS_pool_type), pointer :: atmos_forcing
 
@@ -96,7 +96,7 @@ contains
 
   subroutine init_atmos_forcing(mesh)
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     atmosForcingFields % nForcingFields = 8
     allocate(atmosForcingFields % forcingFieldsArray(atmosForcingFields % nForcingFields))
@@ -144,7 +144,7 @@ contains
 
   subroutine get_forcing(mesh, clock, atmos_forcing)
 
-    type (MPAS_pool_type), intent(in) :: mesh
+    type (MPAS_pool_type), pointer, intent(in) :: mesh
     type (MPAS_Clock_type), intent(in) :: clock
     type (MPAS_pool_type), pointer :: atmos_forcing
 
@@ -171,7 +171,7 @@ contains
 
     use cice_diagnostics, only: plot_pop_grid_cells, plot_cells_spherical
     
-    type (MPAS_pool_type), intent(in) :: mesh
+    type (MPAS_pool_type), pointer, intent(in) :: mesh
     type (MPAS_pool_type), pointer :: atmos_forcing
 
     integer, intent(in) :: &
@@ -447,7 +447,7 @@ contains
                                 filenameDirectory, filenamePrefix, filenameSuffix, filetype, &
                                 pointsPerYear, positionInInterval)
 
-    type (MPAS_pool_type), intent(in) :: mesh
+    type (MPAS_pool_type), pointer, intent(in) :: mesh
     type (forcing_field), intent(inout) :: forcingField
 
     character(len=*), intent(in) :: forcingType, filenameDirectory, filenamePrefix, filenameSuffix, filetype
@@ -564,7 +564,7 @@ contains
 
     use mpas_timekeeping
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     real(kind=RKIND), intent(in) :: &
          forcingTime, &
@@ -869,7 +869,7 @@ contains
 
   subroutine read_data(mesh, forcingDirectory, forcingField, slot, desiredYear, desiredRecordNumber, position)
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     character(len=*), intent(in) :: forcingDirectory
 
@@ -897,7 +897,7 @@ contains
 
   subroutine read_data_binaryPOP(mesh, forcingDirectory, forcingField, slot, desiredYear, desiredRecordNumber, position)
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     character(len=*), intent(in) :: forcingDirectory
 
@@ -964,7 +964,7 @@ contains
 
   subroutine read_data_binaryMPAS(mesh, forcingDirectory, forcingField, slot, desiredYear, desiredRecordNumber, position)
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     character(len=*), intent(in) :: forcingDirectory
 
@@ -1089,7 +1089,7 @@ contains
 
   function POPiCell(mesh, i, j) result(iCellOut)
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
     
     integer, intent(in) :: i, j
     integer :: iCellOut
@@ -1165,7 +1165,7 @@ contains
                          grid_rotation_forward_nochange, &
                          dot_product_3space
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     real(kind=RKIND), dimension(:,:), intent(out) :: &
          uPOPAlongGridVector, &
@@ -1375,7 +1375,7 @@ contains
 
   subroutine forcing_file_comparison(mesh)
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     ! POP input
     character(len=200), parameter :: filein_POP = &

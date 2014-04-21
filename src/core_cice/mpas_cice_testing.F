@@ -198,7 +198,7 @@ contains
 
   subroutine init_square_test_case_hex(mesh, tracers, icestate, hexdyn, hexfor, boundary, atmos_forcing)
 
-    type(MPAS_pool_type), intent(inout) :: mesh
+    type(MPAS_pool_type), pointer, intent(inout) :: mesh
     type(MPAS_pool_type), pointer :: tracers
     type(MPAS_pool_type), pointer :: icestate
     type(MPAS_pool_type), pointer :: hexdyn
@@ -339,7 +339,7 @@ contains
 
   subroutine init_ice_state(mesh, tracers, icestate, hexdyn, hexfor, boundary)
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
     type(MPAS_pool_type), pointer :: tracers
     type(MPAS_pool_type), pointer :: icestate
     type(MPAS_pool_type), pointer :: hexdyn
@@ -637,7 +637,7 @@ contains
 
   subroutine divergence_stress_test_stress_set_hex(mesh, stress1, stress2, stress12)
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     real(kind=RKIND), dimension(:,:), intent(inout) :: &
          stress1, &
@@ -731,7 +731,7 @@ contains
 
   subroutine divergence_stress_test_stress_set_tri(mesh, stress1, stress2, stress12)
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     real(kind=RKIND), dimension(:,:), intent(inout) :: &
          stress1, &
@@ -823,7 +823,7 @@ contains
 
   subroutine divergence_stress_test_stress_set_weak(mesh, stress11, stress22, stress12)
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     real(kind=RKIND), dimension(:), intent(inout) :: &
          stress11, &

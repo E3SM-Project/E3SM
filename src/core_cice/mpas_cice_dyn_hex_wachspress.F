@@ -21,7 +21,7 @@ contains
 
     use cice_mesh, only: calc_cell_vertices_at_vertex
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     type(MPAS_pool_type), pointer :: hexvar
     type(MPAS_pool_type), pointer :: hexwach
@@ -116,7 +116,7 @@ contains
 
   subroutine calc_local_coords(mesh, xLocal, yLocal)
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     real(kind=RKIND), dimension(:,:), intent(out) :: &
          xLocal, &
@@ -170,7 +170,7 @@ contains
 
   subroutine calc_wachspress_coefficients(mesh, wachspressKappa, wachspressA, wachspressB, xLocal, yLocal)
     
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     real(kind=RKIND), dimension(:,:,:), intent(out) :: &
          wachspressKappa
@@ -529,7 +529,7 @@ contains
     ! iVertexOnCell : The vertex basis function the gradient is calculated from
     ! jVertexOnCell : The vertex location the gradients are calculated at
     
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     real(kind=RKIND), dimension(:,:,:), intent(out) :: &
          basisGradientU, &
@@ -660,7 +660,7 @@ contains
     ! jVertexOnCell : vertex number of Wachspress derivative function 
     ! Sij
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     real(kind=RKIND), dimension(:,:,:), intent(out) :: &
          basisIntegralsU, &
@@ -1000,7 +1000,7 @@ contains
        basisGradientU, basisGradientV, &
        solveStress)
     
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     real(kind=RKIND), dimension(:,:), intent(out) :: &
          strain11, &
@@ -1088,7 +1088,7 @@ contains
        basisIntegralsU,      basisIntegralsV,   &
        cellVerticesAtVertex, solveVelocity)
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     real(kind=RKIND), dimension(:), intent(out) :: &
          stressDivergenceU, &
@@ -1193,7 +1193,7 @@ contains
 
   subroutine plot_wachpress(mesh, iCell, nEdgesOnCell, iVertex, wachspressKappa, wachspressA, wachspressB, xLocal, yLocal)
     
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     integer, intent(in) :: &
          iCell, &
@@ -1449,7 +1449,7 @@ stop
 
   subroutine plot_wachspress_square(mesh,wachspressKappa, wachspressA, wachspressB)
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
     real(kind=RKIND), dimension(:,:,:) :: wachspressKappa
     real(kind=RKIND), dimension(:,:) :: wachspressA, wachspressB
 

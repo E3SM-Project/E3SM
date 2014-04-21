@@ -1345,7 +1345,7 @@ contains
 
   subroutine init_semtner_test_case(mesh, tracers)
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     type(MPAS_pool_type), pointer :: tracers
 

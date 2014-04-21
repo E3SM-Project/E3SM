@@ -95,7 +95,7 @@ contains
 
   subroutine gnuplot_cell(mesh, cellArray, filename, append, nofill) 
     
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
     
     real(kind=RKIND), dimension(:), intent(in) :: &
          cellArray
@@ -274,7 +274,7 @@ contains
 
   subroutine gnuplot_triangle(mesh, vertexArray, filename, append, nofill)
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     real(kind=RKIND), dimension(:), intent(in) :: &
          vertexArray
@@ -479,7 +479,7 @@ contains
 
   subroutine gnuplot_vertexvector(mesh, vertexArrayU, vertexArrayV, filename)
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     real(kind=RKIND), dimension(:), intent(in) :: &
          vertexArrayU, &
@@ -631,7 +631,7 @@ contains
 
   subroutine plot_boundary_triangles(mesh, boundaryVertex, interiorVertex, boundaryEdge)
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     integer, dimension(:), intent(in) :: &
          boundaryVertex, &
@@ -819,7 +819,7 @@ contains
 
   subroutine labels_verticesOnCell(mesh, verticesOnCell, filename) 
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     integer, dimension(:,:), intent(in) :: &
          verticesOnCell
@@ -848,7 +848,7 @@ contains
 
   subroutine label_verticesOnCell(mesh, iCell, verticesOnCell0, filename, append) 
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     integer, intent(in) :: &
          iCell
@@ -965,7 +965,7 @@ contains
 
   subroutine labels_verticesDegreeOnVertex(mesh, verticesDegreeOnVertex, interiorVertex, filename) 
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     integer, dimension(:,:), intent(in) :: &
          verticesDegreeOnVertex
@@ -1001,7 +1001,7 @@ contains
 
   subroutine label_verticesDegreeOnVertex(mesh, iVertex, verticesDegreeOnVertex, filename, append) 
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     integer, intent(in) :: &
          iVertex
@@ -1137,7 +1137,7 @@ contains
 
   subroutine writeout_on_cell_real(mesh, arrayOnCell, filename)
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     real(kind=RKIND), dimension(:), intent(in) :: &
          arrayOnCell
@@ -1176,7 +1176,7 @@ contains
 
   subroutine writeout_on_vertex_real(mesh, arrayOnVertex, filename)
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     real(kind=RKIND), dimension(:), intent(in) :: &
          arrayOnVertex
@@ -1210,7 +1210,7 @@ contains
 
   subroutine writeout_on_vertex_on_cell_real(mesh, arrayVertexOnCell, filename)
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     real(kind=RKIND), dimension(:,:), intent(in) :: &
          arrayVertexOnCell
@@ -1293,7 +1293,7 @@ contains
     
   subroutine writeout_edgecell(mesh, arrayEdgeCell, filename)
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     real(kind=RKIND), dimension(:,:), intent(in) :: &
          arrayEdgeCell
@@ -1335,7 +1335,7 @@ contains
 
   subroutine writeout_edgeedgecell(mesh, arrayEdgeEdgeCell, filename)
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     real(kind=RKIND), dimension(:,:,:), intent(in) :: &
          arrayEdgeEdgeCell
@@ -1382,7 +1382,7 @@ contains
 
   function find_nearest_cell(mesh,x,y) result(iNear)
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     real(kind=RKIND), intent(in) :: &
          x, y
@@ -1431,7 +1431,7 @@ contains
 
   subroutine rotate_ninety(mesh)
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     integer :: &
          iCell, &
@@ -1502,7 +1502,7 @@ contains
 
   subroutine plot_state(mesh, tracers, atmos_forcing, time, dt)
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
     type(MPAS_pool_type), pointer :: tracers
     type(MPAS_pool_type), pointer :: atmos_forcing
 
@@ -1590,7 +1590,7 @@ contains
 
   subroutine plot_vertices_spherical(mesh, cellArray, interiorVertex, filename, fmin, fmax)
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
     
     real(kind=RKIND), dimension(:), intent(in) :: &
          cellArray
@@ -1897,7 +1897,7 @@ contains
 
   subroutine plot_cells_spherical(mesh, cellArray, filename, fmin, fmax)
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
     
     real(kind=RKIND), dimension(:), intent(in) :: &
          cellArray
@@ -2203,7 +2203,7 @@ contains
 
     use cice_constants, only: deg_to_rad
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     real(kind=RKIND), intent(in) :: &
          lat, lon
@@ -2275,7 +2275,7 @@ contains
 
   subroutine plot_pop_grid_cells(mesh, cellArray, filename, tag)
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
     
     real(kind=RKIND), dimension(:), intent(in) :: &
          cellArray
@@ -2363,7 +2363,7 @@ contains
 
   subroutine plot_pop_grid_vertices(mesh, vertexArray, interiorVertex, filename, tag)
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
     
     real(kind=RKIND), dimension(:), intent(in) :: &
          vertexArray

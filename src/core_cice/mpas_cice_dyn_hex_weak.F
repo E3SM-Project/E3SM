@@ -22,7 +22,7 @@ contains
 
     use cice_mesh, only: normal_vectors
 
-    type(MPAS_pool_type), intent(inout) :: mesh
+    type(MPAS_pool_type), pointer, intent(inout) :: mesh
 
     type(MPAS_pool_type), pointer :: normal
     type(MPAS_pool_type), pointer :: boundary
@@ -161,7 +161,7 @@ contains
 
     use cice_constants, only: deg_to_rad
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     real(kind=RKIND), dimension(:), intent(out) :: &
          strain11, &
@@ -309,7 +309,7 @@ contains
     use cice_dynamics_shared, only: evp_constitutive_relation, &
                                     linear_constitutive_relation
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     real(kind=RKIND), dimension(:), intent(inout) :: &
          stress11, &
@@ -378,7 +378,7 @@ contains
                                         normalVectorTriangle, latVertexRotated,  &
                                         solveVelocity)
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     real(kind=RKIND), dimension(:), intent(out) :: &
          stressDivergenceU, &

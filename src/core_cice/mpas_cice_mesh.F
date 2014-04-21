@@ -45,7 +45,7 @@ contains
 
   subroutine interior_vertices(mesh, interiorVertex)
 
-    type (MPAS_pool_type), intent(in) :: mesh
+    type (MPAS_pool_type), pointer, intent(in) :: mesh
 
     integer, dimension(:), intent(out) :: &
          interiorVertex
@@ -185,7 +185,7 @@ contains
 
   subroutine boundary_vertices(mesh, boundaryVertex, interiorVertex, interiorVertex2, boundaryCell)
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     integer, dimension(:), intent(out) :: &
          boundaryVertex, & ! boundary vertices of boundary vertex triangles
@@ -285,7 +285,7 @@ contains
 
   subroutine boundary_edges(mesh, boundaryEdge)
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     integer, dimension(:), intent(out) :: &
          boundaryEdge
@@ -335,7 +335,7 @@ contains
 
    subroutine calc_cell_vertices_at_vertex(mesh, cellVerticesAtVertex)
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     integer, dimension(:,:), intent(out) :: &
          cellVerticesAtVertex
@@ -401,7 +401,7 @@ contains
                             latCellRotated,      latVertexRotated,     &
                             interiorVertex,      gridCurvature)
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     real(kind=RKIND), dimension(:,:,:), intent(out) :: &
          normalVectorPolygon, &
@@ -435,7 +435,7 @@ contains
 
   subroutine normal_vectors_planar_polygon(mesh, normalVectorPolygon)
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     real(kind=RKIND), dimension(:,:,:), intent(out) :: &
          normalVectorPolygon
@@ -494,7 +494,7 @@ contains
 
   subroutine normal_vectors_planar_triangle(mesh, normalVectorTriangle, interiorVertex)
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     real(kind=RKIND), dimension(:,:,:), intent(out) :: &
          normalVectorTriangle
@@ -560,7 +560,7 @@ contains
 
   subroutine normal_vectors_spherical_polygon_metric(mesh, normalVectorPolygon, latCellRotated)
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     real(kind=RKIND), dimension(:,:,:), intent(out) :: &
          normalVectorPolygon
@@ -746,7 +746,7 @@ contains
 
   subroutine normal_vectors_spherical_polygon(mesh, normalVectorPolygon)
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     real(kind=RKIND), dimension(:,:,:), intent(out) :: &
          normalVectorPolygon
@@ -863,7 +863,7 @@ contains
 
   subroutine normal_vectors_spherical_triangle_metric(mesh, normalVectorTriangle, latVertexRotated, interiorVertex)
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     real(kind=RKIND), dimension(:,:,:), intent(out) :: &
          normalVectorTriangle
@@ -1048,7 +1048,7 @@ contains
 
   subroutine normal_vectors_spherical_triangle(mesh, normalVectorTriangle, interiorVertex)
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     real(kind=RKIND), dimension(:,:,:), intent(out) :: &
          normalVectorTriangle
@@ -1193,7 +1193,7 @@ contains
 
   subroutine normal_vectors_spherical_polygon_2(mesh, normalVectorPolygon, latCellRotated)
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     real(kind=RKIND), dimension(:,:,:), intent(out) :: &
          normalVectorPolygon ! TWO maxEdges nCells
@@ -1270,7 +1270,7 @@ contains
   
   subroutine normal_vectors_spherical_triangle_2(mesh, normalVectorTriangle, latVertexRotated, interiorVertex)
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     real(kind=RKIND), dimension(:,:,:), intent(out) :: &
          normalVectorTriangle ! TWO vertexDegree nVertices
@@ -1394,7 +1394,7 @@ contains
 
   subroutine get_polygon_side_normal_3D_vector(mesh, iCell, iEdgeOnCell, xCell0, yCell0, zCell0, normalVector3D)
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     integer, intent(in) :: &
          iCell, &
@@ -1480,7 +1480,7 @@ contains
 
   subroutine get_triangle_side_normal_3D_vector(mesh, iVertex, iVertexDegree, xVertex0, yVertex0, zVertex0, normalVector3D)
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     integer, intent(in) :: &
          iVertex, &
@@ -1950,7 +1950,7 @@ contains
 
   subroutine interpolate_cell_to_vertex(mesh, variableVertex, variableCell)
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     real(kind=RKIND), dimension(:), intent(out) :: &
          variableVertex

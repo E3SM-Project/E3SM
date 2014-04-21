@@ -301,7 +301,7 @@ contains
        latitudeStrain,    &
        test_type)
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     real(kind=RKIND), dimension(:), intent(out) :: &
          uVelocity, &
@@ -808,7 +808,7 @@ contains
        latitudeDivergence,  &
        test_type)
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     real(kind=RKIND), dimension(:), intent(out) :: &
          stressDivergenceU, &

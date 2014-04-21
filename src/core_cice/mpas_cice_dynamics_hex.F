@@ -29,7 +29,7 @@ contains
 
     use cice_diagnostics, only: plot_pop_grid_vertices
 
-    type(MPAS_pool_type), intent(inout) :: mesh
+    type(MPAS_pool_type), pointer, intent(inout) :: mesh
 
     type(MPAS_pool_type), pointer :: normal
     type(MPAS_pool_type), pointer :: hexvar
@@ -555,7 +555,7 @@ contains
 
     use cice_dynamics_shared, only: areaMinimum, massMinimum
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     integer, dimension(:), intent(out) :: &
          solveStress
@@ -623,7 +623,7 @@ contains
 
     use cice_dynamics_shared, only: areaMinimum, massMinimum
 
-    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
 
     integer, dimension(:), intent(out) :: &
          solveVelocity

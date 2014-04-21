@@ -151,7 +151,7 @@ contains
 
     use mpas_configure
 
-    type (MPAS_pool_type), intent(in) :: mesh
+    type (MPAS_pool_type), pointer, intent(in) :: mesh
     type (MPAS_pool_type), pointer :: tracers
     type (MPAS_pool_type), pointer :: hexdyn
     type (MPAS_pool_type), pointer :: boundary
@@ -261,7 +261,7 @@ contains
        latitudeLimitNorth, &
        latitudeLimitSouth)
 
-    type (MPAS_pool_type), intent(in) :: mesh
+    type (MPAS_pool_type), pointer, intent(in) :: mesh
     
     real(kind=RKIND), dimension(:), intent(out) :: &
          iceAreaCell, &
@@ -326,7 +326,7 @@ contains
        iceVolumeInitial, &
        snowVolumeInitial)
 
-    type (MPAS_pool_type), intent(in) :: mesh
+    type (MPAS_pool_type), pointer, intent(in) :: mesh
     
     real(kind=RKIND), dimension(:), intent(out) :: &
          iceAreaCell, &
@@ -396,7 +396,7 @@ contains
        InitialUVelocity, &
        InitialVVelocity)
     
-    type (MPAS_pool_type), intent(in) :: mesh
+    type (MPAS_pool_type), pointer, intent(in) :: mesh
     
     real(kind=RKIND), dimension(:), intent(out) :: &
          uVelocity, &
