@@ -20,19 +20,34 @@ contains
 
     use cice_mesh, only: normal_vectors
 
-    type(mesh_type), intent(inout) :: mesh
+    type(MPAS_pool_type), intent(inout) :: mesh
 
-    type(normal_type),   pointer :: normal
-    type(boundary_type), pointer :: boundary
+    type(MPAS_pool_type), pointer :: normal
+    type(MPAS_pool_type), pointer :: boundary
 
     character(len=*), intent(in) :: gridCurvature
 
+    real(kind=RKIND), dimension(:,:,:), pointer :: &
+         normalVectorPolygon, &
+         normalVectorTriangle
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         latCellRotated, &
+         latVertexRotated
+
+    integer, dimension(:), pointer :: &
+         interiorVertex
+
+    call MPAS_pool_get_array(mesh, "normalVectorPolygon", normalVectorPolygon)
+    call MPAS_pool_get_array(mesh, "normalVectorTriangle", normalVectorTriangle)
+    call MPAS_pool_get_array(boundary, "interiorVertex", interiorVertex)
+
     call normal_vectors(mesh, &
-         normal % normalVectorPolygon % array,         &
-         normal % normalVectorTriangle % array,        &
-         normal % latCellRotated % array,              &
-         normal % latVertexRotated % array,            &
-         boundary % interiorVertex % array,            &
+         normalVectorPolygon,         &
+         normalVectorTriangle,        &
+         latCellRotated,              &
+         latVertexRotated,            &
+         interiorVertex,            &
          gridCurvature)
 
   end subroutine init_dynamics_hex_weak
@@ -51,7 +66,7 @@ contains
 
     use cice_constants, only: deg_to_rad
 
-    type(mesh_type), intent(in) :: mesh
+    type(MPAS_pool_type), intent(in) :: mesh
 
     real(kind=RKIND), dimension(:), intent(out) :: &
          strain11, &
@@ -81,8 +96,40 @@ contains
          vVelocityEdge, &
          uCellCentre, &
          vCellCentre
-     
-    do iCell = 1, mesh % nCells
+
+    integer, pointer :: &
+         nCells
+
+    integer, dimension(:), pointer :: &
+         nEdgesOnCell, &
+         POPindxi, &
+         POPindxj
+
+    integer, dimension(:,:), pointer :: &
+         verticesOnCell, &
+         edgesOnCell, &
+         verticesOnEdge
+
+    real(kind=RKIND), pointer :: &
+         sphere_radius
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         dvEdge, &
+         areaCell
+
+    ! init variables
+    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
+    call MPAS_pool_get_array(mesh, "POPindxi", POPindxi)
+    call MPAS_pool_get_array(mesh, "POPindxj", POPindxj)
+    call MPAS_pool_get_array(mesh, "verticesOnCell", verticesOnCell)
+    call MPAS_pool_get_array(mesh, "edgesOnCell", edgesOnCell)
+    call MPAS_pool_get_array(mesh, "verticesOnEdge", verticesOnEdge)
+    call MPAS_pool_get_array(mesh, "sphere_radius", sphere_radius)
+    call MPAS_pool_get_array(mesh, "dvEdge", dvEdge)
+    call MPAS_pool_get_array(mesh, "areaCell", areaCell)
+
+    do iCell = 1, nCells
 
        strain11(iCell) = 0.0_RKIND
        strain22(iCell) = 0.0_RKIND
@@ -93,23 +140,23 @@ contains
           uCellCentre = 0.0_RKIND
           vCellCentre = 0.0_RKIND
 
-          do iEdgeOnCell = 1, mesh % nEdgesOnCell % array(iCell)
+          do iEdgeOnCell = 1, nEdgesOnCell(iCell)
 
              ! cell centre velocities
-             iVertex = mesh % verticesOnCell % array(iEdgeOnCell,iCell)
+             iVertex = verticesOnCell(iEdgeOnCell,iCell)
 
              uCellCentre = uCellCentre + uVelocity(iVertex)
              vCellCentre = vCellCentre + vVelocity(iVertex)
 
              ! interpolated edge velocity
-             iEdge = mesh % edgesOnCell % array(iEdgeOnCell,iCell)
+             iEdge = edgesOnCell(iEdgeOnCell,iCell)
 
              uVelocityEdge = 0.0_RKIND
              vVelocityEdge = 0.0_RKIND
 
              do iVertexOnEdge = 1, 2
 
-                iVertex = mesh % verticesOnEdge % array(iVertexOnEdge,iEdge)
+                iVertex = verticesOnEdge(iVertexOnEdge,iEdge)
 
                 uVelocityEdge = uVelocityEdge + uVelocity(iVertex)
                 vVelocityEdge = vVelocityEdge + vVelocity(iVertex)
@@ -120,34 +167,34 @@ contains
              vVelocityEdge = vVelocityEdge / 2.0_RKIND
 
              ! summation over edges
-             strain11(iCell) = strain11(iCell) + uVelocityEdge * normalVectorPolygon(1,iEdgeOnCell,iCell) * mesh % dvEdge % array(iEdge)
-             strain22(iCell) = strain22(iCell) + vVelocityEdge * normalVectorPolygon(2,iEdgeOnCell,iCell) * mesh % dvEdge % array(iEdge)
+             strain11(iCell) = strain11(iCell) + uVelocityEdge * normalVectorPolygon(1,iEdgeOnCell,iCell) * dvEdge(iEdge)
+             strain22(iCell) = strain22(iCell) + vVelocityEdge * normalVectorPolygon(2,iEdgeOnCell,iCell) * dvEdge(iEdge)
              strain12(iCell) = strain12(iCell) + 0.5_RKIND * ( &
                   uVelocityEdge * normalVectorPolygon(2,iEdgeOnCell,iCell) + &
-                  vVelocityEdge * normalVectorPolygon(1,iEdgeOnCell,iCell) ) * mesh % dvEdge % array(iEdge)
+                  vVelocityEdge * normalVectorPolygon(1,iEdgeOnCell,iCell) ) * dvEdge(iEdge)
 
-             !write(72,*) mesh % POPindxi % array(iCell), mesh % POPindxj % array(iCell), iEdgeOnCell, &
-             !     uVelocityEdge, normalVectorPolygon(1,iEdgeOnCell,iCell), mesh % dvEdge % array(iEdge), &
-             !     uVelocityEdge * normalVectorPolygon(1,iEdgeOnCell,iCell) * mesh % dvEdge % array(iEdge)
+             !write(72,*) POPindxi(iCell), POPindxj(iCell), iEdgeOnCell, &
+             !     uVelocityEdge, normalVectorPolygon(1,iEdgeOnCell,iCell), dvEdge(iEdge), &
+             !     uVelocityEdge * normalVectorPolygon(1,iEdgeOnCell,iCell) * dvEdge(iEdge)
 
           enddo ! iEdgeOnCell
 
-          uCellCentre = uCellCentre / real(mesh % nEdgesOnCell % array(iCell), RKIND)
-          vCellCentre = vCellCentre / real(mesh % nEdgesOnCell % array(iCell), RKIND)
+          uCellCentre = uCellCentre / real(nEdgesOnCell(iCell), RKIND)
+          vCellCentre = vCellCentre / real(nEdgesOnCell(iCell), RKIND)
 
-          !write(72,*) mesh % POPindxi % array(iCell), mesh % POPindxj % array(iCell), 0, &
-          !     strain11(iCell), strain11(iCell) / mesh % areaCell % array(iCell), mesh % areaCell % array(iCell)
+          !write(72,*) POPindxi(iCell), POPindxj(iCell), 0, &
+          !     strain11(iCell), strain11(iCell) / areaCell(iCell), areaCell(iCell)
 
-          strain11(iCell) = strain11(iCell) / mesh % areaCell % array(iCell)
-          strain22(iCell) = strain22(iCell) / mesh % areaCell % array(iCell)
-          strain12(iCell) = strain12(iCell) / mesh % areaCell % array(iCell)
+          strain11(iCell) = strain11(iCell) / areaCell(iCell)
+          strain22(iCell) = strain22(iCell) / areaCell(iCell)
+          strain12(iCell) = strain12(iCell) / areaCell(iCell)
 
           ! metric terms
-          strain11(iCell) = strain11(iCell) - (vCellCentre * tan(latCellRotated(iCell))) / mesh % sphere_radius
-          strain12(iCell) = strain12(iCell) + (uCellCentre * tan(latCellRotated(iCell)) * 0.5_RKIND) / mesh % sphere_radius
+          strain11(iCell) = strain11(iCell) - (vCellCentre * tan(latCellRotated(iCell))) / sphere_radius
+          strain12(iCell) = strain12(iCell) + (uCellCentre * tan(latCellRotated(iCell)) * 0.5_RKIND) / sphere_radius
 
           if (abs(strain11(iCell)) < 1e-10_RKIND) strain11(iCell) = 0.0_RKIND
-          write(71,*) mesh % POPindxi % array(iCell), mesh % POPindxj % array(iCell), strain11(iCell), strain22(iCell), strain12(iCell)
+          write(71,*) POPindxi(iCell), POPindxj(iCell), strain11(iCell), strain22(iCell), strain12(iCell)
 
        endif ! solveStress
 
@@ -167,7 +214,7 @@ contains
     use cice_dynamics_shared, only: evp_constitutive_relation, &
                                     linear_constitutive_relation
 
-    type(mesh_type), intent(in) :: mesh
+    type(MPAS_pool_type), intent(in) :: mesh
 
     real(kind=RKIND), dimension(:), intent(inout) :: &
          stress11, &
@@ -192,14 +239,24 @@ contains
 
     integer :: iCell
 
-    do iCell = 1, mesh % nCells
+    integer, pointer :: &
+         nCells
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         areaCell
+
+    ! init variables
+    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_array(mesh, "areaCell", areaCell)
+
+    do iCell = 1, nCells
 
        if (solveStress(iCell) == 1) then
 
           call evp_constitutive_relation(stress11(iCell),    stress22(iCell),    stress12(iCell), &
                                          strain11(iCell),    strain22(iCell),    strain12(iCell), &
                                          icePressure(iCell), replacementPressure(iCell),          &
-                                         mesh % areaCell % array(iCell),                          &
+                                         areaCell(iCell),                                         &
                                          dtElastic,          evpDamping)
 
           !call linear_constitutive_relation(stress11(iCell), stress22(iCell), stress12(iCell), &
@@ -226,7 +283,7 @@ contains
                                         normalVectorTriangle, latVertexRotated,  &
                                         solveVelocity)
 
-    type(mesh_type), intent(in) :: mesh
+    type(MPAS_pool_type), intent(in) :: mesh
 
     real(kind=RKIND), dimension(:), intent(out) :: &
          stressDivergenceU, &
@@ -259,7 +316,39 @@ contains
          iCellOnEdge, &
          iCell
 
-    do iVertex = 1, mesh % nVertices
+    integer, pointer :: &
+         nVertices, &
+         vertexDegree
+
+    integer, dimension(:), pointer :: &
+         POPindxiv, &
+         POPindxjv
+
+    integer, dimension(:,:), pointer :: &
+         cellsOnVertex, &
+         edgesOnVertex, &
+         cellsOnEdge
+
+    real(kind=RKIND), pointer :: &
+         sphere_radius
+    
+    real(kind=RKIND), dimension(:), pointer :: &
+         areaTriangle, &
+         dcEdge
+
+    ! init variables
+    call MPAS_pool_get_array(mesh, "nVertices", nVertices)
+    call MPAS_pool_get_array(mesh, "vertexDegree", vertexDegree)
+    call MPAS_pool_get_array(mesh, "POPindxiv", POPindxiv)
+    call MPAS_pool_get_array(mesh, "POPindxjv", POPindxjv)
+    call MPAS_pool_get_array(mesh, "cellsOnVertex", cellsOnVertex)
+    call MPAS_pool_get_array(mesh, "edgesOnVertex", edgesOnVertex)
+    call MPAS_pool_get_array(mesh, "cellsOnEdge", cellsOnEdge)
+    call MPAS_pool_get_array(mesh, "sphere_radius", sphere_radius)
+    call MPAS_pool_get_array(mesh, "areaTriangle", areaTriangle)
+    call MPAS_pool_get_array(mesh, "dcEdge", dcEdge)
+
+    do iVertex = 1, nVertices
 
        stressDivergenceU(iVertex) = 0.0_RKIND
        stressDivergenceV(iVertex) = 0.0_RKIND
@@ -270,17 +359,17 @@ contains
           stress22Vertex = 0.0_RKIND
           stress12Vertex = 0.0_RKIND
           
-          do iVertexDegree = 1, mesh % vertexDegree
+          do iVertexDegree = 1, vertexDegree
              
              ! vertex stresses
-             iCell = mesh % cellsOnVertex % array(iVertexDegree,iVertex)
+             iCell = cellsOnVertex(iVertexDegree,iVertex)
 
              stress11Vertex = stress11Vertex + stress11(iCell)
              stress22Vertex = stress22Vertex + stress22(iCell)
              stress12Vertex = stress12Vertex + stress12(iCell)
              
              ! interpolated edge velocity
-             iEdge = mesh % edgesOnVertex % array(iVertexDegree,iVertex)
+             iEdge = edgesOnVertex(iVertexDegree,iVertex)
              
              stress11Edge = 0.0_RKIND
              stress22Edge = 0.0_RKIND
@@ -288,7 +377,7 @@ contains
              
              do iCellOnEdge = 1, 2
                 
-                iCell = mesh % cellsOnEdge % array(iCellOnEdge,iEdge)
+                iCell = cellsOnEdge(iCellOnEdge,iEdge)
                 
                 stress11Edge = stress11Edge + stress11(iCell)
                 stress22Edge = stress22Edge + stress22(iCell)
@@ -302,34 +391,34 @@ contains
              
              stressDivergenceU(iVertex) = stressDivergenceU(iVertex) + &
                   (stress11Edge * normalVectorTriangle(1,iVertexDegree,iVertex) + &
-                   stress12Edge * normalVectorTriangle(2,iVertexDegree,iVertex)) * mesh % dcEdge % array(iEdge)
+                   stress12Edge * normalVectorTriangle(2,iVertexDegree,iVertex)) * dcEdge(iEdge)
              
              stressDivergenceV(iVertex) = stressDivergenceV(iVertex) + &
                   (stress22Edge * normalVectorTriangle(2,iVertexDegree,iVertex) + &
-                   stress12Edge * normalVectorTriangle(1,iVertexDegree,iVertex)) * mesh % dcEdge % array(iEdge)
+                   stress12Edge * normalVectorTriangle(1,iVertexDegree,iVertex)) * dcEdge(iEdge)
 
-             write(70,*) mesh % POPindxiv % array(iVertex), mesh % POPindxjv % array(iVertex), &
-                  -1, iVertexDegree, stress11Edge, normalVectorTriangle(1,iVertexDegree,iVertex), stress12Edge, normalVectorTriangle(2,iVertexDegree,iVertex), mesh % dcEdge % array(iEdge)
+             write(70,*) POPindxiv(iVertex), POPindxjv(iVertex), &
+                  -1, iVertexDegree, stress11Edge, normalVectorTriangle(1,iVertexDegree,iVertex), stress12Edge, normalVectorTriangle(2,iVertexDegree,iVertex), dcEdge(iEdge)
 
           enddo ! iVertexDegree
 
-          stress11Vertex = stress11Vertex / real(mesh % vertexDegree, RKIND)
-          stress22Vertex = stress22Vertex / real(mesh % vertexDegree, RKIND)
-          stress12Vertex = stress12Vertex / real(mesh % vertexDegree, RKIND)
+          stress11Vertex = stress11Vertex / real(vertexDegree, RKIND)
+          stress22Vertex = stress22Vertex / real(vertexDegree, RKIND)
+          stress12Vertex = stress12Vertex / real(vertexDegree, RKIND)
           
-          stressDivergenceU(iVertex) = stressDivergenceU(iVertex) / mesh % areaTriangle % array(iVertex)
-          stressDivergenceV(iVertex) = stressDivergenceV(iVertex) / mesh % areaTriangle % array(iVertex)
+          stressDivergenceU(iVertex) = stressDivergenceU(iVertex) / areaTriangle(iVertex)
+          stressDivergenceV(iVertex) = stressDivergenceV(iVertex) / areaTriangle(iVertex)
 
-          write(70,*) mesh % POPindxiv % array(iVertex), mesh % POPindxjv % array(iVertex), &
+          write(70,*) POPindxiv(iVertex), POPindxjv(iVertex), &
                0, stressDivergenceU(iVertex)
 
           ! metric terms
           stressDivergenceU(iVertex) = stressDivergenceU(iVertex) - &
-               (tan(latVertexRotated(iVertex)) * stress12Vertex * 2.0_RKIND) / mesh % sphere_radius
+               (tan(latVertexRotated(iVertex)) * stress12Vertex * 2.0_RKIND) / sphere_radius
           stressDivergenceV(iVertex) = stressDivergenceV(iVertex) + &
-               (tan(latVertexRotated(iVertex)) * (stress11Vertex - stress22Vertex)) / mesh % sphere_radius
+               (tan(latVertexRotated(iVertex)) * (stress11Vertex - stress22Vertex)) / sphere_radius
 
-          write(70,*) mesh % POPindxiv % array(iVertex), mesh % POPindxjv % array(iVertex), &
+          write(70,*) POPindxiv(iVertex), POPindxjv(iVertex), &
                1, stressDivergenceU(iVertex)
 
        endif ! solveVelocity

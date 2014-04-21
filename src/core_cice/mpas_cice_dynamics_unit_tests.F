@@ -30,10 +30,10 @@ contains
     character(len=*), intent(in) :: &
          unit_test_subtype
 
-    type(mesh_type),     pointer :: mesh
-    type(normal_type),   pointer :: normal
-    type(hexdyn_type),   pointer :: hexdyn
-    type(hexweak_type),  pointer :: hexweak
+    type (MPAS_pool_type), pointer :: mesh
+    type (MPAS_pool_type), pointer :: normal
+    type (MPAS_pool_type), pointer :: hexdyn
+    type (MPAS_pool_type), pointer :: hexweak
     
     real(kind=RKIND), dimension(:), allocatable :: &
          strain11_test, &
@@ -42,10 +42,10 @@ contains
          strain11_diff, &
          strain22_diff, &
          strain12_diff, &
-         latVertexRotated, &
-         lonVertexRotated, &
-         latCellRotated, &
-         lonCellRotated
+         latVertexRotated0, &
+         lonVertexRotated0, &
+         latCellRotated0, &
+         lonCellRotated0
 
     integer :: &
          iCell, &
@@ -59,62 +59,112 @@ contains
          rms_strain22, &
          rms_strain12
 
+    integer, pointer :: &
+         nCells, &
+         nVertices
+
+    integer, dimension(:), pointer :: &
+         solveStress
+
+    real(kind=RKIND), pointer :: &
+         sphere_radius
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         xVertex, &
+         yVertex, &
+         zVertex, &
+         xCell, &
+         yCell, &
+         zCell, &
+         latCell, &
+         lonCell, &
+         uVelocity, &
+         vVelocity, &
+         latCellRotated, &
+         strain11, &
+         strain22, &
+         strain12
+  
+    real(kind=RKIND), dimension(:,:,:), pointer :: &
+         normalVectorPolygon
+
+    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+    call MPAS_pool_get_subpool(block % structs, "normal", normal)
+    call MPAS_pool_get_subpool(block % structs, "hexdyn", hexdyn)
+    call MPAS_pool_get_subpool(block % structs, "hexweak", hexweak)
+
+    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_array(mesh, "nVertices", nVertices)
+    call MPAS_pool_get_array(mesh, "sphere_radius", sphere_radius)
+    call MPAS_pool_get_array(mesh, "xVertex", xVertex)
+    call MPAS_pool_get_array(mesh, "yVertex", yVertex)
+    call MPAS_pool_get_array(mesh, "zVertex", zVertex)
+    call MPAS_pool_get_array(mesh, "xCell", xCell)
+    call MPAS_pool_get_array(mesh, "yCell", yCell)
+    call MPAS_pool_get_array(mesh, "zCell", zCell)
+    call MPAS_pool_get_array(mesh, "latCell", latCell)
+    call MPAS_pool_get_array(mesh, "lonCell", lonCell)
+
+    call MPAS_pool_get_array(hexdyn, "solveStress", solveStress)
+    call MPAS_pool_get_array(hexdyn, "uVelocity", uVelocity)
+    call MPAS_pool_get_array(hexdyn, "vVelocity", vVelocity)
+
+    call MPAS_pool_get_array(normal, "latCellRotated", latCellRotated)
+    call MPAS_pool_get_array(normal, "normalVectorPolygon", normalVectorPolygon)
+
+    call MPAS_pool_get_array(hexweak, "strain11", strain11)
+    call MPAS_pool_get_array(hexweak, "strain22", strain22)
+    call MPAS_pool_get_array(hexweak, "strain12", strain12)
+
     open(54,file="strain_rate_test.txt")
 
-    mesh    => block % mesh 
-    normal  => block % normal
-    hexdyn  => block % hexdyn
-    hexweak => block % hexweak
+    solveStress(:) = 1
 
-    hexdyn % solveStress % array = 1
+    allocate(strain11_test(nCells))
+    allocate(strain22_test(nCells))
+    allocate(strain12_test(nCells))
+    allocate(strain11_diff(nCells))
+    allocate(strain22_diff(nCells))
+    allocate(strain12_diff(nCells))
 
-    allocate(strain11_test(mesh % nCells))
-    allocate(strain22_test(mesh % nCells))
-    allocate(strain12_test(mesh % nCells))
-    allocate(strain11_diff(mesh % nCells))
-    allocate(strain22_diff(mesh % nCells))
-    allocate(strain12_diff(mesh % nCells))
+    allocate(lonVertexRotated0(nVertices))
+    allocate(latVertexRotated0(nVertices))
+    allocate(lonCellRotated0(nCells))
+    allocate(latCellRotated0(nCells))
 
-    allocate(lonVertexRotated(mesh % nVertices))
-    allocate(latVertexRotated(mesh % nVertices))
-    allocate(lonCellRotated(mesh % nCells))
-    allocate(latCellRotated(mesh % nCells))
-
-    do iVertex = 1, mesh % nVertices
+    do iVertex = 1, nVertices
     
-       call grid_rotation_forward(xp, yp, zp, &
-            mesh % xVertex % array(iVertex), &
-            mesh % yVertex % array(iVertex), &
-            mesh % zVertex % array(iVertex))
+       call grid_rotation_forward(&
+            xp,               yp,               zp, &
+            xVertex(iVertex), yVertex(iVertex), zVertex(iVertex))
 
-       call latlon_from_xyz(latVertexRotated(iVertex), lonVertexRotated(iVertex), &
-            xp, yp, zp, mesh % sphere_radius)
+       call latlon_from_xyz(latVertexRotated0(iVertex), lonVertexRotated0(iVertex), &
+            xp, yp, zp, sphere_radius)
 
     enddo ! iVertex
 
-    do iCell = 1, mesh % nCells
+    do iCell = 1, nCells
 
-       call grid_rotation_forward(xp, yp, zp, &
-            mesh % xCell % array(iCell), &
-            mesh % yCell % array(iCell), &
-            mesh % zCell % array(iCell))
+       call grid_rotation_forward(&
+            xp,           yp,           zp, &
+            xCell(iCell), yCell(iCell), zCell(iCell))
 
-       call latlon_from_xyz(latCellRotated(iCell), lonCellRotated(iCell), &
-            xp, yp, zp, mesh % sphere_radius)
+       call latlon_from_xyz(latCellRotated0(iCell), lonCellRotated0(iCell), &
+            xp, yp, zp, sphere_radius)
 
     enddo ! iCell
     
     ! set test velocities and expected outputs
     call spherical_test_strain(mesh, &
-         hexdyn % uVelocity % array, &
-         hexdyn % vVelocity % array, &
-         lonVertexRotated,           &
-         latVertexRotated,           &
-         strain11_test,              &
-         strain22_test,              &
-         strain12_test,              &
-         lonCellRotated,             &
-         latCellRotated,             &
+         uVelocity,              &
+         vVelocity,              &
+         lonVertexRotated0,      &
+         latVertexRotated0,      &
+         strain11_test,          &
+         strain22_test,          &
+         strain12_test,          &
+         lonCellRotated0,        &
+         latCellRotated0,        &
          trim(unit_test_subtype))
 
     write(54,*) 
@@ -125,31 +175,28 @@ contains
 
     ! calculate strain
     call strain_tensor_hex_weak(mesh, &
-         hexweak % strain11 % array,           &
-         hexweak % strain22 % array,           &
-         hexweak % strain12 % array,           &
-         hexdyn % uVelocity % array,           &
-         hexdyn % vVelocity % array,           &
-         normal % normalVectorPolygon % array, &
-         normal % latCellRotated % array,      &
-         hexdyn % solveStress % array)
+         strain11,            &
+         strain22,            &
+         strain12,            &
+         uVelocity,           &
+         vVelocity,           &
+         normalVectorPolygon, &
+         latCellRotated,      &
+         solveStress)
 
     write(54,*) 
     write(54,*) "Numerical solution:"
-    write(54,*) "strain11 (min/max):", minval(hexweak % strain11 % array(1:mesh % nCells)), &
-                                       maxval(hexweak % strain11 % array(1:mesh % nCells))
-    write(54,*) "strain22 (min/max):", minval(hexweak % strain22 % array(1:mesh % nCells)), &
-                                       maxval(hexweak % strain22 % array(1:mesh % nCells))
-    write(54,*) "strain12 (min/max):", minval(hexweak % strain12 % array(1:mesh % nCells)), &
-                                       maxval(hexweak % strain12 % array(1:mesh % nCells))
+    write(54,*) "strain11 (min/max):", minval(strain11(1:nCells)), &
+                                       maxval(strain11(1:nCells))
+    write(54,*) "strain22 (min/max):", minval(strain22(1:nCells)), &
+                                       maxval(strain22(1:nCells))
+    write(54,*) "strain12 (min/max):", minval(strain12(1:nCells)), &
+                                       maxval(strain12(1:nCells))
 
     ! calculate difference
-    strain11_diff = hexweak % strain11 % array(1:mesh % nCells) - &
-                    strain11_test
-    strain22_diff = hexweak % strain22 % array(1:mesh % nCells) - &
-                    strain22_test
-    strain12_diff = hexweak % strain12 % array(1:mesh % nCells) - &
-                    strain12_test
+    strain11_diff = strain11(1:nCells) - strain11_test
+    strain22_diff = strain22(1:nCells) - strain22_test
+    strain12_diff = strain12(1:nCells) - strain12_test
 
     write(54,*) 
     write(54,*) "Difference:"
@@ -158,39 +205,39 @@ contains
     write(54,*) "strain12 (min/max):", minval(strain12_diff), maxval(strain12_diff)
 
     open(55,file="strains.txt")
-    do iCell = 1, mesh % nCells
+    do iCell = 1, nCells
 
-       write(55,*) iCell, hexdyn % solveStress % array(iCell), &
-            hexweak % strain11 % array(iCell), strain11_test(iCell), &
-            hexweak % strain22 % array(iCell), strain22_test(iCell), &
-            hexweak % strain12 % array(iCell), strain12_test(iCell), &
-            hexweak % strain12 % array(iCell) - strain12_test(iCell)
+       write(55,*) iCell, solveStress(iCell), &
+            strain11(iCell), strain11_test(iCell), &
+            strain22(iCell), strain22_test(iCell), &
+            strain12(iCell), strain12_test(iCell), &
+            strain12(iCell) - strain12_test(iCell)
 
     enddo ! iCell
     close(55)
 
     ! set cells to solve
-    do iCell = 1, mesh % nCells
-       hexdyn % solveStress % array(iCell) = 1
+    do iCell = 1, nCells
+       solveStress(iCell) = 1
        ! cut off low latitude cells
-       if (mesh % latCell % array(iCell) < 30.0 * deg_to_rad .and. mesh % latCell % array(iCell) > -30.0 * deg_to_rad) then
-          hexdyn % solveStress % array(iCell) = 0
+       if (latCell(iCell) < 30.0 * deg_to_rad .and. latCell(iCell) > -30.0 * deg_to_rad) then
+          solveStress(iCell) = 0
        endif
     enddo ! iCell
 
     open(55,file='strain11.txt')
     open(56,file='strain22.txt')
     open(57,file='strain12.txt')
-    do iCell = 1, mesh % nCells
-       write(55,*) iCell, mesh % lonCell % array(iCell) * rad_to_deg, mesh % latCell % array(iCell) * rad_to_deg, &
-            hexweak % strain11 % array(iCell), strain11_test(iCell), strain11_diff(iCell), &
-            strain11_diff(iCell) * real(hexdyn % solveStress % array(iCell),RKIND)
-       write(56,*) iCell, mesh % lonCell % array(iCell) * rad_to_deg, mesh % latCell % array(iCell) * rad_to_deg, &
-            hexweak % strain22 % array(iCell), strain22_test(iCell), strain22_diff(iCell), &
-            strain22_diff(iCell) * real(hexdyn % solveStress % array(iCell),RKIND)
-       write(57,*) iCell, mesh % lonCell % array(iCell) * rad_to_deg, mesh % latCell % array(iCell) * rad_to_deg, &
-            hexweak % strain12 % array(iCell), strain12_test(iCell), strain12_diff(iCell), &
-            strain12_diff(iCell) * real(hexdyn % solveStress % array(iCell),RKIND)
+    do iCell = 1, nCells
+       write(55,*) iCell, lonCell(iCell) * rad_to_deg, latCell(iCell) * rad_to_deg, &
+            strain11(iCell), strain11_test(iCell), strain11_diff(iCell), &
+            strain11_diff(iCell) * real(solveStress(iCell),RKIND)
+       write(56,*) iCell, lonCell(iCell) * rad_to_deg, latCell(iCell) * rad_to_deg, &
+            strain22(iCell), strain22_test(iCell), strain22_diff(iCell), &
+            strain22_diff(iCell) * real(solveStress(iCell),RKIND)
+       write(57,*) iCell, lonCell(iCell) * rad_to_deg, latCell(iCell) * rad_to_deg, &
+            strain12(iCell), strain12_test(iCell), strain12_diff(iCell), &
+            strain12_diff(iCell) * real(solveStress(iCell),RKIND)
     enddo ! iCell
     close(55)
     close(56)
@@ -198,24 +245,24 @@ contains
 
     ! rms difference
     call rms_difference( &
-         hexweak % strain11 % array(1:mesh % nCells),   &
-         strain11_test,                                 &
-         hexdyn % solveStress % array(1:mesh % nCells), &
-         mesh % nCells,                                 &
+         strain11(1:nCells),    &
+         strain11_test,         &
+         solveStress(1:nCells), &
+         nCells,                &
          rms_strain11)
 
     call rms_difference( &
-         hexweak % strain22 % array(1:mesh % nCells),   &
-         strain22_test,                                 &
-         hexdyn % solveStress % array(1:mesh % nCells), &
-         mesh % nCells,                                 &
+         strain22(1:nCells),    &
+         strain22_test,         &
+         solveStress(1:nCells), &
+         nCells,                &
          rms_strain22)
 
     call rms_difference( &
-         hexweak % strain12 % array(1:mesh % nCells),   &
-         strain12_test,                                 &
-         hexdyn % solveStress % array(1:mesh % nCells), &
-         mesh % nCells,                                 &
+         strain12(1:nCells),    &
+         strain12_test,         &
+         solveStress(1:nCells), &
+         nCells,                &
          rms_strain12)
 
     write(54,*)
@@ -231,10 +278,10 @@ contains
     deallocate(strain22_diff)
     deallocate(strain12_diff)
 
-    deallocate(lonVertexRotated)
-    deallocate(latVertexRotated)
-    deallocate(lonCellRotated)
-    deallocate(latCellRotated)
+    deallocate(lonVertexRotated0)
+    deallocate(latVertexRotated0)
+    deallocate(lonCellRotated0)
+    deallocate(latCellRotated0)
 
     close(54)
 
@@ -254,7 +301,7 @@ contains
        latitudeStrain,    &
        test_type)
 
-    type(mesh_type), intent(in) :: mesh
+    type(MPAS_pool_type), intent(in) :: mesh
 
     real(kind=RKIND), dimension(:), intent(out) :: &
          uVelocity, &
@@ -286,10 +333,15 @@ contains
          nPointsStrain, &
          iPoint
 
+    real(kind=RKIND), pointer :: &
+         sphere_radius
+
+    call MPAS_pool_get_array(mesh, "sphere_radius", sphere_radius)
+
     nPointsVelocity = size(uVelocity)
     nPointsStrain   = size(strain11)
 
-    radius = mesh % sphere_radius
+    radius = sphere_radius
 
     ! set velocity points
     do iPoint = 1, nPointsVelocity
@@ -509,20 +561,20 @@ contains
     character(len=*), intent(in) :: &
          unit_test_subtype
 
-    type(mesh_type),     pointer :: mesh
-    type(normal_type),   pointer :: normal
-    type(hexdyn_type),   pointer :: hexdyn
-    type(hexweak_type),  pointer :: hexweak
+    type (MPAS_pool_type), pointer :: mesh
+    type (MPAS_pool_type), pointer :: normal
+    type (MPAS_pool_type), pointer :: hexdyn
+    type (MPAS_pool_type), pointer :: hexweak
 
     real(kind=RKIND), dimension(:), allocatable :: &
          stressDivergenceU_test, &
          stressDivergenceV_test, &
          stressDivergenceU_diff, &
          stressDivergenceV_diff, &
-         latVertexRotated, &
-         lonVertexRotated, &
-         latCellRotated, &
-         lonCellRotated
+         latVertexRotated0, &
+         lonVertexRotated0, &
+         latCellRotated0, &
+         lonCellRotated0
     
     real(kind=RKIND) :: &
          xp, yp, zp, &
@@ -533,60 +585,110 @@ contains
          iCell, &
          iVertex
 
+    integer, pointer :: &
+         nCells, &
+         nVertices
+
+    integer, dimension(:), pointer :: &
+         solveVelocity
+
+    real(kind=RKIND), pointer :: &
+         sphere_radius
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         xVertex, &
+         yVertex, &
+         zVertex, &
+         xCell, &
+         yCell, &
+         zCell, &
+         latVertex, &
+         lonVertex, &
+         latVertexRotated, &
+         stress11, &
+         stress22, &
+         stress12, &
+         stressDivergenceU, &
+         stressDivergenceV
+
+    real(kind=RKIND), dimension(:,:,:), pointer :: &
+         normalVectorTriangle
+
+    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+    call MPAS_pool_get_subpool(block % structs, "normal", normal)
+    call MPAS_pool_get_subpool(block % structs, "hexdyn", hexdyn)
+    call MPAS_pool_get_subpool(block % structs, "hexweak", hexweak)
+
+    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_array(mesh, "nVertices", nVertices)
+    call MPAS_pool_get_array(mesh, "sphere_radius", sphere_radius)
+    call MPAS_pool_get_array(mesh, "xVertex", xVertex)
+    call MPAS_pool_get_array(mesh, "yVertex", yVertex)
+    call MPAS_pool_get_array(mesh, "zVertex", zVertex)
+    call MPAS_pool_get_array(mesh, "xCell", xCell)
+    call MPAS_pool_get_array(mesh, "yCell", yCell)
+    call MPAS_pool_get_array(mesh, "zCell", zCell)
+    call MPAS_pool_get_array(mesh, "latVertex", latVertex)
+    call MPAS_pool_get_array(mesh, "lonVertex", lonVertex)
+
+    call MPAS_pool_get_array(hexdyn, "solveVelocity", solveVelocity)
+    call MPAS_pool_get_array(hexdyn, "stressDivergenceU", stressDivergenceU)
+    call MPAS_pool_get_array(hexdyn, "stressDivergenceV", stressDivergenceV)
+
+    call MPAS_pool_get_array(normal, "normalVectorTriangle", normalVectorTriangle)
+    call MPAS_pool_get_array(normal, "latVertexRotated", latVertexRotated)
+
+    call MPAS_pool_get_array(hexweak, "stress11", stress11)
+    call MPAS_pool_get_array(hexweak, "stress22", stress22)
+    call MPAS_pool_get_array(hexweak, "stress12", stress12)
+
     open(54,file="stress_divergence_test.txt")
 
-    mesh    => block % mesh
-    normal  => block % normal
-    hexdyn  => block % hexdyn
-    hexweak => block % hexweak
+    solveVelocity(:) = 1
 
-    hexdyn % solveVelocity % array = 1
+    allocate(stressDivergenceU_test(nVertices))
+    allocate(stressDivergenceV_test(nVertices))
+    allocate(stressDivergenceU_diff(nVertices))
+    allocate(stressDivergenceV_diff(nVertices))
 
-    allocate(stressDivergenceU_test(mesh % nVertices))
-    allocate(stressDivergenceV_test(mesh % nVertices))
-    allocate(stressDivergenceU_diff(mesh % nVertices))
-    allocate(stressDivergenceV_diff(mesh % nVertices))
+    allocate(lonVertexRotated0(nVertices))
+    allocate(latVertexRotated0(nVertices))
+    allocate(lonCellRotated0(nCells))
+    allocate(latCellRotated0(nCells))
 
-    allocate(lonVertexRotated(mesh % nVertices))
-    allocate(latVertexRotated(mesh % nVertices))
-    allocate(lonCellRotated(mesh % nCells))
-    allocate(latCellRotated(mesh % nCells))
-
-    do iVertex = 1, mesh % nVertices
+    do iVertex = 1, nVertices
     
-       call grid_rotation_forward(xp, yp, zp, &
-            mesh % xVertex % array(iVertex), &
-            mesh % yVertex % array(iVertex), &
-            mesh % zVertex % array(iVertex))
+       call grid_rotation_forward(&
+            xp,               yp,               zp, &
+            xVertex(iVertex), yVertex(iVertex), zVertex(iVertex))
 
-       call latlon_from_xyz(latVertexRotated(iVertex), lonVertexRotated(iVertex), &
-            xp, yp, zp, mesh % sphere_radius)
+       call latlon_from_xyz(latVertexRotated0(iVertex), lonVertexRotated0(iVertex), &
+            xp, yp, zp, sphere_radius)
 
     enddo ! iVertex
 
-    do iCell = 1, mesh % nCells
+    do iCell = 1, nCells
 
-       call grid_rotation_forward(xp, yp, zp, &
-            mesh % xCell % array(iCell), &
-            mesh % yCell % array(iCell), &
-            mesh % zCell % array(iCell))
+       call grid_rotation_forward(&
+            xp,           yp,           zp, &
+            xCell(iCell), yCell(iCell), zCell(iCell))
 
-       call latlon_from_xyz(latCellRotated(iCell), lonCellRotated(iCell), &
-            xp, yp, zp, mesh % sphere_radius)
+       call latlon_from_xyz(latCellRotated0(iCell), lonCellRotated0(iCell), &
+            xp, yp, zp, sphere_radius)
 
     enddo ! iCell
 
     ! set test velocities and expected outputs
     call spherical_test_divergence_stress(mesh, &
-         hexweak % stress11 % array, &
-         hexweak % stress22 % array, &
-         hexweak % stress12 % array, &
-         lonCellRotated,             &
-         latCellRotated,             &
-         stressDivergenceU_test,     &
-         stressDivergenceV_test,     &
-         lonVertexRotated,           &
-         latVertexRotated,           &
+         stress11,               &
+         stress22,               &
+         stress12,               &
+         lonCellRotated0,        &
+         latCellRotated0,        &
+         stressDivergenceU_test, &
+         stressDivergenceV_test, &
+         lonVertexRotated0,      &
+         latVertexRotated0,      &
          trim(unit_test_subtype))
 
     write(54,*)
@@ -596,26 +698,26 @@ contains
 
     ! calculate divergence of stress
     call stress_divergence_hex_weak(mesh, &
-         hexdyn % stressDivergenceU % array,    &
-         hexdyn % stressDivergenceV % array,    &
-         hexweak % stress11 % array,            &
-         hexweak % stress22 % array,            &
-         hexweak % stress12 % array,            &
-         normal % normalVectorTriangle % array, &
-         normal % latVertexRotated % array,     &
-         hexdyn % solveVelocity % array)
+         stressDivergenceU,    &
+         stressDivergenceV,    &
+         stress11,             &
+         stress22,             &
+         stress12,             &
+         normalVectorTriangle, &
+         latVertexRotated,     &
+         solveVelocity)
 
     write(54,*)
     write(54,*) "Numerical solution:"
-    write(54,*) "stressDivergenceU:", minval(hexdyn % stressDivergenceU % array), &
-                                      maxval(hexdyn % stressDivergenceU % array)
-    write(54,*) "stressDivergenceV:", minval(hexdyn % stressDivergenceV % array), &
-                                      maxval(hexdyn % stressDivergenceV % array)
+    write(54,*) "stressDivergenceU:", minval(stressDivergenceU), &
+                                      maxval(stressDivergenceU)
+    write(54,*) "stressDivergenceV:", minval(stressDivergenceV), &
+                                      maxval(stressDivergenceV)
 
     ! calculate difference
-    stressDivergenceU_diff = hexdyn % stressDivergenceU % array(1:mesh % nVertices) - &
+    stressDivergenceU_diff = stressDivergenceU(1:nVertices) - &
                              stressDivergenceU_test
-    stressDivergenceV_diff = hexdyn % stressDivergenceV % array(1:mesh % nVertices) - &
+    stressDivergenceV_diff = stressDivergenceV(1:nVertices) - &
                              stressDivergenceV_test
 
     write(54,*)
@@ -624,52 +726,52 @@ contains
     write(54,*) "stressDivergenceV:", minval(stressDivergenceV_diff), maxval(stressDivergenceV_diff)
 
     open(55, file="divergences")
-    do iVertex = 1, mesh % nVertices
+    do iVertex = 1, nVertices
 
-       write(55,*) iVertex, hexdyn % solveVelocity % array(iVertex), &
-            hexdyn % stressDivergenceU % array(iVertex), stressDivergenceU_test(iVertex), &
-            hexdyn % stressDivergenceV % array(iVertex), stressDivergenceV_test(iVertex), &
-            hexdyn % stressDivergenceU % array(iVertex) - stressDivergenceU_test(iVertex), &
-            hexdyn % stressDivergenceV % array(iVertex) - stressDivergenceV_test(iVertex)
+       write(55,*) iVertex, solveVelocity(iVertex), &
+            stressDivergenceU(iVertex), stressDivergenceU_test(iVertex), &
+            stressDivergenceV(iVertex), stressDivergenceV_test(iVertex), &
+            stressDivergenceU(iVertex) - stressDivergenceU_test(iVertex), &
+            stressDivergenceV(iVertex) - stressDivergenceV_test(iVertex)
 
     enddo ! iVertex
     close(55)
 
     ! set vertices to solve
-    do iVertex = 1, mesh % nVertices
-       hexdyn % solveVelocity % array(iVertex) = 1
+    do iVertex = 1, nVertices
+       solveVelocity(iVertex) = 1
        ! cut off low latitude cells
-       if (mesh % latVertex % array(iVertex) < 30.0 * deg_to_rad .and. mesh % latVertex % array(iVertex) > -30.0 * deg_to_rad) then
-          hexdyn % solveVelocity % array(iVertex) = 0
+       if (latVertex(iVertex) < 30.0 * deg_to_rad .and. latVertex(iVertex) > -30.0 * deg_to_rad) then
+          solveVelocity(iVertex) = 0
        endif
     enddo ! iVertex
 
     open(55,file='divergenceu.txt')
     open(56,file='divergencev.txt')
-    do iVertex = 1, mesh % nVertices
-       write(55,*) iVertex, mesh % lonVertex % array(iVertex) * rad_to_deg, mesh % latVertex % array(iVertex) * rad_to_deg, &
-            hexdyn % stressDivergenceU % array(iVertex), stressDivergenceU_test(iVertex), stressDivergenceU_diff(iVertex), &
-            stressDivergenceU_diff(iVertex) * real(hexdyn % solveVelocity % array(iVertex),RKIND)
-       write(56,*) iVertex, mesh % lonVertex % array(iVertex) * rad_to_deg, mesh % latVertex % array(iVertex) * rad_to_deg, &
-            hexdyn % stressDivergenceV % array(iVertex), stressDivergenceV_test(iVertex), stressDivergenceV_diff(iVertex), &
-            stressDivergenceV_diff(iVertex) * real(hexdyn % solveVelocity % array(iVertex),RKIND)
+    do iVertex = 1, nVertices
+       write(55,*) iVertex, lonVertex(iVertex) * rad_to_deg, latVertex(iVertex) * rad_to_deg, &
+            stressDivergenceU(iVertex), stressDivergenceU_test(iVertex), stressDivergenceU_diff(iVertex), &
+            stressDivergenceU_diff(iVertex) * real(solveVelocity(iVertex),RKIND)
+       write(56,*) iVertex, lonVertex(iVertex) * rad_to_deg, latVertex(iVertex) * rad_to_deg, &
+            stressDivergenceV(iVertex), stressDivergenceV_test(iVertex), stressDivergenceV_diff(iVertex), &
+            stressDivergenceV_diff(iVertex) * real(solveVelocity(iVertex),RKIND)
     enddo ! iVertex
     close(55)
     close(56)
 
     ! rms difference
     call rms_difference( &
-         hexdyn % stressDivergenceU % array(1:mesh % nVertices), &
-         stressDivergenceU_test,                                  &
-         hexdyn % solveVelocity % array(1:mesh % nVertices),      &
-         mesh % nVertices,                                        &
+         stressDivergenceU(1:nVertices), &
+         stressDivergenceU_test,         &
+         solveVelocity(1:nVertices),     &
+         nVertices,                      &
          rms_divergenceU)
 
     call rms_difference( &
-         hexdyn % stressDivergenceV % array(1:mesh % nVertices), &
-         stressDivergenceV_test,                                  &
-         hexdyn % solveVelocity % array(1:mesh % nVertices),      &
-         mesh % nVertices,                                        &
+         stressDivergenceV(1:nVertices), &
+         stressDivergenceV_test,         &
+         solveVelocity(1:nVertices),     &
+         nVertices,                      &
          rms_divergenceV)
 
     write(54,*) 
@@ -683,10 +785,10 @@ contains
     deallocate(stressDivergenceU_diff)
     deallocate(stressDivergenceV_diff)
 
-    deallocate(lonVertexRotated)
-    deallocate(latVertexRotated)
-    deallocate(lonCellRotated)
-    deallocate(latCellRotated)
+    deallocate(lonVertexRotated0)
+    deallocate(latVertexRotated0)
+    deallocate(lonCellRotated0)
+    deallocate(latCellRotated0)
 
     close(54)
 
@@ -706,7 +808,7 @@ contains
        latitudeDivergence,  &
        test_type)
 
-    type(mesh_type), intent(in) :: mesh
+    type(MPAS_pool_type), intent(in) :: mesh
 
     real(kind=RKIND), dimension(:), intent(out) :: &
          stressDivergenceU, &
@@ -741,7 +843,12 @@ contains
          nPointsDivergence, &
          iPoint
 
-    radius = mesh % sphere_radius
+    real(kind=RKIND), pointer :: &
+         sphere_radius
+    
+    call MPAS_pool_get_array(mesh, "sphere_radius", sphere_radius)
+
+    radius = sphere_radius
 
     nPointsStress     = size(stress11)
     nPointsDivergence = size(stressDivergenceU)

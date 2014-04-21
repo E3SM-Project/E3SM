@@ -20,19 +20,34 @@ contains
 
     use cice_mesh, only: calc_cell_vertices_at_vertex
 
-    type(mesh_type), intent(in) :: mesh
+    type(MPAS_pool_type), intent(in) :: mesh
 
-    type(hexvar_type),   pointer :: hexvar
-    type(boundary_type), pointer :: boundary
-    type(hexpwl_type),   pointer :: hexpwl
+    type(MPAS_pool_type), pointer :: hexvar
+    type(MPAS_pool_type), pointer :: boundary
+    type(MPAS_pool_type), pointer :: hexpwl
+
+    integer, dimension(:,:), pointer :: &
+         cellVerticesAtVertex
+
+    real(kind=RKIND), dimension(:,:), pointer :: &
+         basisSubArea
+
+    real(kind=RKIND), dimension(:,:,:), pointer :: &
+         basisGradientU, &
+         basisGradientV
+
+    call MPAS_pool_get_array(hexvar, "cellVerticesAtVertex", cellVerticesAtVertex)
+    call MPAS_pool_get_array(hexpwl, "basisSubArea", basisSubArea)
+    call MPAS_pool_get_array(hexpwl, "basisGradientU", basisGradientU)
+    call MPAS_pool_get_array(hexpwl, "basisGradientV", basisGradientV)
 
     call calc_cell_vertices_at_vertex(mesh, &
-         hexvar % cellVerticesAtVertex % array)
+         cellVerticesAtVertex)
 
     call init_dynamics_hex_pwl_basis(mesh, &
-         hexpwl % basisSubArea % array, &
-         hexpwl % basisGradientU % array, &
-         hexpwl % basisGradientV % array)
+         basisSubArea, &
+         basisGradientU, &
+         basisGradientV)
 
   end subroutine init_dynamics_hex_pwl
 
@@ -43,7 +58,7 @@ contains
 
     use cice_numerics, only: solve_linear_basis_system
 
-    type(mesh_type), intent(in) :: mesh
+    type(MPAS_pool_type), intent(in) :: mesh
 
     real(kind=RKIND), dimension(:,:), intent(out) :: &
          basisSubArea
@@ -60,7 +75,6 @@ contains
 
     integer :: &
          iCell, &
-         nEdgesOnCell, &
          iVertexOnCell, &
          iVertex, &
          iEdgeOnCell, &
@@ -77,41 +91,63 @@ contains
          rightHandSide, &
          solutionVector
 
-    ! loop over cells
-    do iCell = 1, mesh % nCells
+    integer, pointer :: &
+         nCells
 
-       nEdgesOnCell = mesh % nEdgesOnCell % array(iCell)
+    integer, dimension(:), pointer :: &
+         nEdgesOnCell
+
+    integer, dimension(:,:), pointer :: &
+         verticesOnCell, &
+         edgesOnCell
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         xVertex, &
+         yVertex, &
+         dvEdge
+
+    ! init variables
+    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
+    call MPAS_pool_get_array(mesh, "verticesOnCell", verticesOnCell)
+    call MPAS_pool_get_array(mesh, "edgesOnCell", edgesOnCell)
+    call MPAS_pool_get_array(mesh, "xVertex", xVertex)
+    call MPAS_pool_get_array(mesh, "yVertex", yVertex)
+    call MPAS_pool_get_array(mesh, "dvEdge", dvEdge)
+
+    ! loop over cells
+    do iCell = 1, nCells
        
-       alphaPWL = 1.0_RKIND / real(nEdgesOnCell,RKIND)
+       alphaPWL = 1.0_RKIND / real(nEdgesOnCell(iCell),RKIND)
 
        ! determine cell centre for piecewise linear basis
        xPWLCentre = 0.0_RKIND
        yPWLCentre = 0.0_RKIND
 
-       do iVertexOnCell = 1, nEdgesOnCell
+       do iVertexOnCell = 1, nEdgesOnCell(iCell)
 
-          iVertex = mesh % verticesOnCell % array(iVertexOnCell,iCell)
+          iVertex = verticesOnCell(iVertexOnCell,iCell)
 
-          xPWLCentre = xPWLCentre + alphaPWL * mesh % xVertex % array(iVertex)
-          yPWLCentre = yPWLCentre + alphaPWL * mesh % yVertex % array(iVertex)
+          xPWLCentre = xPWLCentre + alphaPWL * xVertex(iVertex)
+          yPWLCentre = yPWLCentre + alphaPWL * yVertex(iVertex)
 
        enddo ! iVertexOnCell
 
        ! calculate the area of the subcells
-       do iEdgeOnCell = 1, nEdgesOnCell
+       do iEdgeOnCell = 1, nEdgesOnCell(iCell)
 
-          iEdge = mesh % edgesOnCell % array(iEdgeOnCell,iCell)
+          iEdge = edgesOnCell(iEdgeOnCell,iCell)
           iVertexOnCell1 = iEdgeOnCell
-          iVertexOnCell2 = wrapped_index(iEdgeOnCell + 1, nEdgesOnCell)
+          iVertexOnCell2 = wrapped_index(iEdgeOnCell + 1, nEdgesOnCell(iCell))
 
-          iVertex1 = mesh % verticesOnCell % array(iVertexOnCell1,iCell)
-          iVertex2 = mesh % verticesOnCell % array(iVertexOnCell2,iCell)
+          iVertex1 = verticesOnCell(iVertexOnCell1,iCell)
+          iVertex2 = verticesOnCell(iVertexOnCell2,iCell)
 
-          c = mesh % dvEdge % array(iEdge)
-          a = sqrt((mesh % xVertex % array(iVertex1) - xPWLCentre)**2 + &
-                   (mesh % yVertex % array(iVertex1) - yPWLCentre)**2)
-          b = sqrt((mesh % xVertex % array(iVertex2) - xPWLCentre)**2 + &
-                   (mesh % yVertex % array(iVertex2) - yPWLCentre)**2)
+          c = dvEdge(iEdge)
+          a = sqrt((xVertex(iVertex1) - xPWLCentre)**2 + &
+                   (yVertex(iVertex1) - yPWLCentre)**2)
+          b = sqrt((xVertex(iVertex2) - xPWLCentre)**2 + &
+                   (yVertex(iVertex2) - yPWLCentre)**2)
 
           s = (a + b + c) * 0.5_RKIND
 
@@ -120,12 +156,12 @@ contains
                sqrt(s * (s-a) * (s-b) * (s-c))
 
           ! set up left hand matrix
-          leftMatrix(1,1) = mesh % xVertex % array(iVertex1) - xPWLCentre
-          leftMatrix(1,2) = mesh % yVertex % array(iVertex1) - yPWLCentre
+          leftMatrix(1,1) = xVertex(iVertex1) - xPWLCentre
+          leftMatrix(1,2) = yVertex(iVertex1) - yPWLCentre
           leftMatrix(1,3) = 1.0_RKIND
           
-          leftMatrix(2,1) = mesh % xVertex % array(iVertex2) - xPWLCentre
-          leftMatrix(2,2) = mesh % yVertex % array(iVertex2) - yPWLCentre
+          leftMatrix(2,1) = xVertex(iVertex2) - xPWLCentre
+          leftMatrix(2,2) = yVertex(iVertex2) - yPWLCentre
           leftMatrix(2,3) = 1.0_RKIND
           
           leftMatrix(3,1) = 0.0_RKIND
@@ -169,7 +205,7 @@ contains
                                    basisGradientU, basisGradientV, &
                                    solveStress)
 
-    type(mesh_type), intent(in) :: mesh
+    type(MPAS_pool_type), intent(in) :: mesh
 
     real(kind=RKIND), dimension(:,:), intent(out) :: &
          strain11, &
@@ -192,7 +228,6 @@ contains
 
     integer :: &
          iCell, &
-         nEdgesOnCell, &
          jVertexOnCell, &
          iVertexOnCell, &
          iVertex, &
@@ -200,8 +235,22 @@ contains
          iSubCell1, &
          iSubCell2
 
+    integer, pointer :: &
+         nCells
+
+    integer, dimension(:), pointer :: &
+         nEdgesOnCell
+
+    integer, dimension(:,:), pointer :: &
+         verticesOnCell
+
+    ! init variables
+    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
+    call MPAS_pool_get_array(mesh, "verticesOnCell", verticesOnCell)
+
     ! loop over cells
-    do iCell = 1, mesh % nCells
+    do iCell = 1, nCells
 
        strain11(:,iCell) = 0.0_RKIND
        strain22(:,iCell) = 0.0_RKIND
@@ -209,36 +258,34 @@ contains
 
        if (solveStress(iCell) == 1) then
 
-          nEdgesOnCell = mesh % nEdgesOnCell % array(iCell)
-
-          alphaPWL = 1.0_RKIND / real(nEdgesOnCell, RKIND)
+          alphaPWL = 1.0_RKIND / real(nEdgesOnCell(iCell), RKIND)
 
           ! loop over velocity points surrounding cell - location of stress and derivative
-          do jVertexOnCell = 1, nEdgesOnCell
+          do jVertexOnCell = 1, nEdgesOnCell(iCell)
 
-             jVertex = mesh % verticesOnCell % array(jVertexOnCell,iCell)
+             jVertex = verticesOnCell(jVertexOnCell,iCell)
 
              iSubCell1 = jVertexOnCell
-             iSubCell2 = wrapped_index(jVertexOnCell + 1, nEdgesOnCell)
+             iSubCell2 = wrapped_index(jVertexOnCell + 1, nEdgesOnCell(iCell))
 
              ! loop over basis functions
-             do iVertexOnCell = 1, nEdgesOnCell
+             do iVertexOnCell = 1, nEdgesOnCell(iCell)
 
-                iVertex = mesh % verticesOnCell % array(iVertexOnCell,iCell)
+                iVertex = verticesOnCell(iVertexOnCell,iCell)
 
                 strain11(jVertexOnCell,iCell) = strain11(jVertexOnCell,iCell) + &
-                     uVelocity(iVertex) * (pwl_basis_gradient(nEdgesOnCell, basisGradientU(:,:,iCell), alphaPWL, iVertexOnCell, iSubCell1)  + &
-                                           pwl_basis_gradient(nEdgesOnCell, basisGradientU(:,:,iCell), alphaPWL, iVertexOnCell, iSubCell2))
+                     uVelocity(iVertex) * (pwl_basis_gradient(nEdgesOnCell(iCell), basisGradientU(:,:,iCell), alphaPWL, iVertexOnCell, iSubCell1)  + &
+                                           pwl_basis_gradient(nEdgesOnCell(iCell), basisGradientU(:,:,iCell), alphaPWL, iVertexOnCell, iSubCell2))
 
                 strain22(jVertexOnCell,iCell) = strain22(jVertexOnCell,iCell) + &
-                     vVelocity(iVertex) * (pwl_basis_gradient(nEdgesOnCell, basisGradientV(:,:,iCell), alphaPWL, iVertexOnCell, iSubCell1)  + &
-                                           pwl_basis_gradient(nEdgesOnCell, basisGradientV(:,:,iCell), alphaPWL, iVertexOnCell, iSubCell2))
+                     vVelocity(iVertex) * (pwl_basis_gradient(nEdgesOnCell(iCell), basisGradientV(:,:,iCell), alphaPWL, iVertexOnCell, iSubCell1)  + &
+                                           pwl_basis_gradient(nEdgesOnCell(iCell), basisGradientV(:,:,iCell), alphaPWL, iVertexOnCell, iSubCell2))
 
                 strain12(jVertexOnCell,iCell) = strain12(jVertexOnCell,iCell) + 0.5_RKIND * ( &
-                     uVelocity(iVertex) * (pwl_basis_gradient(nEdgesOnCell, basisGradientV(:,:,iCell), alphaPWL, iVertexOnCell, iSubCell1)  + &
-                                           pwl_basis_gradient(nEdgesOnCell, basisGradientV(:,:,iCell), alphaPWL, iVertexOnCell, iSubCell2)) + &
-                     vVelocity(iVertex) * (pwl_basis_gradient(nEdgesOnCell, basisGradientU(:,:,iCell), alphaPWL, iVertexOnCell, iSubCell1)  + &
-                                           pwl_basis_gradient(nEdgesOnCell, basisGradientU(:,:,iCell), alphaPWL, iVertexOnCell, iSubCell2)))
+                     uVelocity(iVertex) * (pwl_basis_gradient(nEdgesOnCell(iCell), basisGradientV(:,:,iCell), alphaPWL, iVertexOnCell, iSubCell1)  + &
+                                           pwl_basis_gradient(nEdgesOnCell(iCell), basisGradientV(:,:,iCell), alphaPWL, iVertexOnCell, iSubCell2)) + &
+                     vVelocity(iVertex) * (pwl_basis_gradient(nEdgesOnCell(iCell), basisGradientU(:,:,iCell), alphaPWL, iVertexOnCell, iSubCell1)  + &
+                                           pwl_basis_gradient(nEdgesOnCell(iCell), basisGradientU(:,:,iCell), alphaPWL, iVertexOnCell, iSubCell2)))
 
              enddo ! iVertexOnCell
 
@@ -260,7 +307,7 @@ contains
                                        basisSubArea, &
                                        cellVerticesAtVertex, solveVelocity)
 
-    type(mesh_type), intent(in) :: mesh
+    type(MPAS_pool_type), intent(in) :: mesh
 
     real(kind=RKIND), dimension(:), intent(out) :: &
          stressDivergenceU, &
@@ -293,13 +340,32 @@ contains
          iVertex, &
          iCellOnVertex, &
          iCell, &
-         nEdgesOnCell, &
          iVertexOnCell, &
          jVertexOnCell, &
          iSubCell
 
+    integer, pointer :: &
+         nVertices, &
+         vertexDegree
+
+    integer, dimension(:), pointer :: &
+         nEdgesOnCell
+
+    integer, dimension(:,:), pointer :: &
+         cellsOnVertex
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         areaTriangle
+
+    ! init variables
+    call MPAS_pool_get_array(mesh, "nVertices", nVertices)
+    call MPAS_pool_get_array(mesh, "vertexDegree", vertexDegree)
+    call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
+    call MPAS_pool_get_array(mesh, "cellsOnVertex", cellsOnVertex)
+    call MPAS_pool_get_array(mesh, "areaTriangle", areaTriangle)
+
     ! loop over velocity positions
-    do iVertex = 1, mesh % nVertices
+    do iVertex = 1, nVertices
 
        stressDivergenceU(iVertex) = 0.0_RKIND
        stressDivergenceV(iVertex) = 0.0_RKIND
@@ -307,14 +373,12 @@ contains
        if (solveVelocity(iVertex) == 1) then
 
           ! loop over surrounding cells
-          do iCellOnVertex = 1, mesh % vertexDegree
+          do iCellOnVertex = 1, vertexDegree
              
              ! get the cell number of this cell
-             iCell = mesh % cellsOnVertex % array(iCellOnVertex, iVertex)
+             iCell = cellsOnVertex(iCellOnVertex, iVertex)
 
-             nEdgesOnCell = mesh % nEdgesOnCell % array(iCell)
-
-             alphaPWL = 1.0_RKIND / real(nEdgesOnCell, RKIND)
+             alphaPWL = 1.0_RKIND / real(nEdgesOnCell(iCell), RKIND)
              
              ! get the vertexOnCell number of the iVertex velocity point from cell iCell
              jVertexOnCell = cellVerticesAtVertex(iCellOnVertex,iVertex)
@@ -323,22 +387,22 @@ contains
              stressDivergenceVCell = 0.0_RKIND
 
              ! loop over the vertices of the surrounding cell
-             do iVertexOnCell = 1, nEdgesOnCell
+             do iVertexOnCell = 1, nEdgesOnCell(iCell)
 
                 ! loop over subcells
-                do iSubCell = 1, nEdgesOnCell
+                do iSubCell = 1, nEdgesOnCell(iCell)
 
                    stressDivergenceUCell = stressDivergenceUCell + &
                         stress11(iVertexOnCell,iCell) * basisSubArea(iSubCell,iCell) * &
-                                                        pwl_basis_gradient(nEdgesOnCell, basisGradientU(:,:,iCell), alphaPWL, iVertexOnCell, iSubCell) + &
+                                                        pwl_basis_gradient(nEdgesOnCell(iCell), basisGradientU(:,:,iCell), alphaPWL, iVertexOnCell, iSubCell) + &
                         stress12(iVertexOnCell,iCell) * basisSubArea(iSubCell,iCell) * &
-                                                        pwl_basis_gradient(nEdgesOnCell, basisGradientV(:,:,iCell), alphaPWL, iVertexOnCell, iSubCell)
+                                                        pwl_basis_gradient(nEdgesOnCell(iCell), basisGradientV(:,:,iCell), alphaPWL, iVertexOnCell, iSubCell)
                    
                    stressDivergenceVCell = stressDivergenceVCell + &
                         stress22(iVertexOnCell,iCell) * basisSubArea(iSubCell,iCell) * &
-                                                        pwl_basis_gradient(nEdgesOnCell, basisGradientV(:,:,iCell), alphaPWL, iVertexOnCell, iSubCell) + &
+                                                        pwl_basis_gradient(nEdgesOnCell(iCell), basisGradientV(:,:,iCell), alphaPWL, iVertexOnCell, iSubCell) + &
                         stress12(iVertexOnCell,iCell) * basisSubArea(iSubCell,iCell) * &
-                                                        pwl_basis_gradient(nEdgesOnCell, basisGradientU(:,:,iCell), alphaPWL, iVertexOnCell, iSubCell)
+                                                        pwl_basis_gradient(nEdgesOnCell(iCell), basisGradientU(:,:,iCell), alphaPWL, iVertexOnCell, iSubCell)
 
                 enddo ! iSubCell
                 
@@ -349,8 +413,8 @@ contains
              
           enddo ! iCellOnVertex
 
-          stressDivergenceU(iVertex) = stressDivergenceU(iVertex) / mesh % areaTriangle % array(iVertex)
-          stressDivergenceV(iVertex) = stressDivergenceV(iVertex) / mesh % areaTriangle % array(iVertex)
+          stressDivergenceU(iVertex) = stressDivergenceU(iVertex) / areaTriangle(iVertex)
+          stressDivergenceV(iVertex) = stressDivergenceV(iVertex) / areaTriangle(iVertex)
 
        endif ! solveVelocity
 

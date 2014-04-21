@@ -69,9 +69,13 @@ contains
 
   subroutine init_forcing(mesh, atmos_forcing)
 
-    type(mesh_type), intent(in) :: mesh
+    type(MPAS_pool_type), intent(in) :: mesh
 
-    type(atmos_forcing_type), pointer :: atmos_forcing
+    type(MPAS_pool_type), pointer :: atmos_forcing
+
+    real(kind=RKIND), dimension(:,:), pointer :: &
+         uPOPAlongGridVector, &
+         vPOPAlongGridVector
 
     call init_forcing_generic()
 
@@ -79,9 +83,12 @@ contains
 
     elapsed_time_forcing = 0.0_RKIND
 
+    call MPAS_pool_get_array(atmos_forcing, "uPOPAlongGridVector", uPOPAlongGridVector)
+    call MPAS_pool_get_array(atmos_forcing, "vPOPAlongGridVector", vPOPAlongGridVector)
+
     call POP_grid_basis(mesh, &
-                        atmos_forcing % uPOPAlongGridVector % array, &
-                        atmos_forcing % vPOPAlongGridVector % array)
+                        uPOPAlongGridVector, &
+                        vPOPAlongGridVector)
 
   end subroutine init_forcing
 
@@ -89,7 +96,7 @@ contains
 
   subroutine init_atmos_forcing(mesh)
 
-    type(mesh_type), intent(in) :: mesh
+    type(MPAS_pool_type), intent(in) :: mesh
 
     atmosForcingFields % nForcingFields = 8
     allocate(atmosForcingFields % forcingFieldsArray(atmosForcingFields % nForcingFields))
@@ -137,9 +144,9 @@ contains
 
   subroutine get_forcing(mesh, clock, atmos_forcing)
 
-    type(mesh_type), intent(in) :: mesh
+    type (MPAS_pool_type), intent(in) :: mesh
     type (MPAS_Clock_type), intent(in) :: clock
-    type (atmos_forcing_type), pointer :: atmos_forcing
+    type (MPAS_pool_type), pointer :: atmos_forcing
 
     integer :: &
          year, &
@@ -164,8 +171,8 @@ contains
 
     use cice_diagnostics, only: plot_pop_grid_cells, plot_cells_spherical
     
-    type(mesh_type), intent(in) :: mesh
-    type (atmos_forcing_type), pointer :: atmos_forcing
+    type (MPAS_pool_type), intent(in) :: mesh
+    type (MPAS_pool_type), pointer :: atmos_forcing
 
     integer, intent(in) :: &
          year, &
@@ -178,65 +185,115 @@ contains
 
     integer :: iCell
 
+    integer, pointer :: &
+         nCells
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         airTemperature, &
+         uAirVelocityPOP, &
+         vAirVelocityPOP, &
+         airDensity, &
+         airSpecificHumidity, &
+         shortwaveDown, &
+         cloudFraction, &
+         precipitationRate, &
+         longWavedown, &
+         snowfallRate, &
+         airPotentialTemperature, &
+         windSpeed, &
+         sensibleTransferCoefficient, &
+         latentTransferCoefficient, &
+         uAirStress, &
+         vAirStress, &
+         uAirVelocity, &
+         vAirVelocity
+
+    real(kind=RKIND), dimension(:,:), pointer :: &
+         uPOPAlongGridVector, &
+         vPOPAlongGridVector
+
+    call MPAS_pool_get_array(mesh, "nCells", nCells)
+
+    call MPAS_pool_get_array(atmos_forcing, "airTemperature", airTemperature)
+    call MPAS_pool_get_array(atmos_forcing, "uAirVelocityPOP", uAirVelocityPOP)
+    call MPAS_pool_get_array(atmos_forcing, "vAirVelocityPOP", vAirVelocityPOP)
+    call MPAS_pool_get_array(atmos_forcing, "airDensity", airDensity)
+    call MPAS_pool_get_array(atmos_forcing, "airSpecificHumidity", airSpecificHumidity)
+    call MPAS_pool_get_array(atmos_forcing, "shortwaveDown", shortwaveDown)
+    call MPAS_pool_get_array(atmos_forcing, "cloudFraction", cloudFraction)
+    call MPAS_pool_get_array(atmos_forcing, "precipitationRate", precipitationRate)
+    call MPAS_pool_get_array(atmos_forcing, "longWavedown", longWavedown)
+    call MPAS_pool_get_array(atmos_forcing, "snowfallRate", snowfallRate)
+    call MPAS_pool_get_array(atmos_forcing, "airPotentialTemperature", airPotentialTemperature)
+    call MPAS_pool_get_array(atmos_forcing, "windSpeed", windSpeed)
+    call MPAS_pool_get_array(atmos_forcing, "sensibleTransferCoefficient", sensibleTransferCoefficient)
+    call MPAS_pool_get_array(atmos_forcing, "latentTransferCoefficient", latentTransferCoefficient)
+    call MPAS_pool_get_array(atmos_forcing, "uAirStress", uAirStress) 
+    call MPAS_pool_get_array(atmos_forcing, "vAirStress", vAirStress)
+    call MPAS_pool_get_array(atmos_forcing, "uAirVelocity", uAirVelocity)
+    call MPAS_pool_get_array(atmos_forcing, "vAirVelocity", vAirVelocity)
+    call MPAS_pool_get_array(atmos_forcing, "uPOPAlongGridVector", uPOPAlongGridVector)
+    call MPAS_pool_get_array(atmos_forcing, "vPOPAlongGridVector", vPOPAlongGridVector)
+
     ! get the forcing fields
     ! air temperature
     call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
          atmosForcingFields % forcingDirectory, &
          atmosForcingFields % forcingFieldsArray(1), &
-         atmos_forcing % airTemperature % array(1:mesh % nCells))
+         airTemperature(1:nCells))
 
     ! u air velocity
     call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
          atmosForcingFields % forcingDirectory, &
          atmosForcingFields % forcingFieldsArray(2), &
-         atmos_forcing % uAirVelocityPOP % array(1:mesh % nCells))
+         uAirVelocityPOP(1:nCells))
 
     ! v air velocity
     call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
          atmosForcingFields % forcingDirectory, &
          atmosForcingFields % forcingFieldsArray(3), &
-         atmos_forcing % vAirVelocityPOP % array(1:mesh % nCells))
+         vAirVelocityPOP(1:nCells))
 
     ! air density
     call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
          atmosForcingFields % forcingDirectory, &
          atmosForcingFields % forcingFieldsArray(4), &
-         atmos_forcing % airDensity % array(1:mesh % nCells))
+         airDensity(1:nCells))
 
     ! air humidity
     call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
          atmosForcingFields % forcingDirectory, &
          atmosForcingFields % forcingFieldsArray(5), &
-         atmos_forcing % airSpecificHumidity % array(1:mesh % nCells))
+         airSpecificHumidity(1:nCells))
 
     ! shortwave down
     call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
          atmosForcingFields % forcingDirectory, &
          atmosForcingFields % forcingFieldsArray(6), &
-         atmos_forcing % shortwaveDown % array(1:mesh % nCells))
+         shortwaveDown(1:nCells))
 
     ! cloudFraction
     call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
          atmosForcingFields % forcingDirectory, &
          atmosForcingFields % forcingFieldsArray(7), &
-         atmos_forcing % cloudFraction % array(1:mesh % nCells))
+         cloudFraction(1:nCells))
 
     ! precipitation
     call get_individual_forcing(mesh, forcingTime, forcingTimeEpoch, year, month, dayOfMonth, &
          atmosForcingFields % forcingDirectory, &
          atmosForcingFields % forcingFieldsArray(8), &
-         atmos_forcing % precipitationRate % array(1:mesh % nCells))
+         precipitationRate(1:nCells))
 
     !iCell = POPiCell(mesh,69,59)
     !write(56,*) elapsed_time_forcing/3600.0_RKIND, &
-    !     atmos_forcing % airTemperature % array(iCell), &
-    !     atmos_forcing % uAirVelocityPOP % array(iCell), &
-    !     atmos_forcing % vAirVelocityPOP % array(iCell), &
-    !     atmos_forcing % airDensity % array(iCell), &
-    !     atmos_forcing % airSpecificHumidity % array(iCell), &
-    !     atmos_forcing % shortwaveDown % array(iCell), &         
-    !     atmos_forcing % cloudFraction % array(iCell), &
-    !     atmos_forcing % precipitationRate % array(iCell)
+    !     airTemperature(iCell), &
+    !     uAirVelocityPOP(iCell), &
+    !     vAirVelocityPOP(iCell), &
+    !     airDensity(iCell), &
+    !     airSpecificHumidity(iCell), &
+    !     shortwaveDown(iCell), &         
+    !     cloudFraction(iCell), &
+    !     precipitationRate(iCell)
 
     ! plot 'fort.56' using 1:2 with linespoints, '/Users/akt/Work/MPAS-CICE/cice_sphere/rundir/fort.55' using 1:2 with lines
     ! plot 'fort.56' using 1:3 with linespoints, '/Users/akt/Work/MPAS-CICE/cice_sphere/rundir/fort.55' using 1:3 with lines
@@ -247,32 +304,32 @@ contains
     ! plot 'fort.56' using 1:8 with linespoints, '/Users/akt/Work/MPAS-CICE/cice_sphere/rundir/fort.55' using 1:8 with lines
     ! plot 'fort.56' using 1:9 with linespoints, '/Users/akt/Work/MPAS-CICE/cice_sphere/rundir/fort.55' using 1:9 with lines
 
-    call rotate_vector_POP_to_cartesian(atmos_forcing % uAirVelocity % array,        &   
-                                        atmos_forcing % vAirVelocity % array,        &
-                                        atmos_forcing % uAirVelocityPOP % array,     &  
-                                        atmos_forcing % vAirVelocityPOP % array,     &
-                                        atmos_forcing % uPOPAlongGridVector % array, &
-                                        atmos_forcing % vPOPAlongGridVector % array)
+    call rotate_vector_POP_to_cartesian(uAirVelocity,        &   
+                                        vAirVelocity,        &
+                                        uAirVelocityPOP,     &  
+                                        vAirVelocityPOP,     &
+                                        uPOPAlongGridVector, &
+                                        vPOPAlongGridVector)
 
 
     ! calculate other quantities
-    do iCell = 1, mesh % nCells
+    do iCell = 1, nCells
 
        call calculate_derived_forcing_variables( &
-            atmos_forcing % longWavedown % array(iCell), &
-            atmos_forcing % snowfallRate % array(iCell), &
-            atmos_forcing % airPotentialTemperature % array(iCell), &
-            atmos_forcing % windSpeed % array(iCell), &
-            atmos_forcing % sensibleTransferCoefficient % array(iCell), &
-            atmos_forcing % latentTransferCoefficient % array(iCell), &
-            atmos_forcing % uAirStress % array(iCell), &
-            atmos_forcing % vAirStress % array(iCell), &
-            atmos_forcing % airTemperature % array(iCell), &
-            atmos_forcing % cloudFraction % array(iCell), &
-            atmos_forcing % precipitationRate % array(iCell), &
-            atmos_forcing % uAirVelocity % array(iCell), &
-            atmos_forcing % vAirVelocity % array(iCell), &
-            atmos_forcing % airDensity % array(iCell))
+            longWavedown(iCell), &
+            snowfallRate(iCell), &
+            airPotentialTemperature(iCell), &
+            windSpeed(iCell), &
+            sensibleTransferCoefficient(iCell), &
+            latentTransferCoefficient(iCell), &
+            uAirStress(iCell), &
+            vAirStress(iCell), &
+            airTemperature(iCell), &
+            cloudFraction(iCell), &
+            precipitationRate(iCell), &
+            uAirVelocity(iCell), &
+            vAirVelocity(iCell), &
+            airDensity(iCell))
 
     enddo ! iCell
 
@@ -390,12 +447,17 @@ contains
                                 filenameDirectory, filenamePrefix, filenameSuffix, filetype, &
                                 pointsPerYear, positionInInterval)
 
-    type(mesh_type), intent(in) :: mesh
+    type (MPAS_pool_type), intent(in) :: mesh
     type (forcing_field), intent(inout) :: forcingField
 
     character(len=*), intent(in) :: forcingType, filenameDirectory, filenamePrefix, filenameSuffix, filetype
     integer, intent(in) :: pointsPerYear
     real(kind=RKIND) :: positionInInterval
+
+    integer, pointer :: &
+         nCells
+
+    call MPAS_pool_get_array(mesh, "nCells", nCells)
 
     forcingField % forcingType = trim(forcingType)
 
@@ -416,7 +478,7 @@ contains
     
     forcingField % currentYear = 0  
 
-    forcingField % ndata = mesh % nCells
+    forcingField % ndata = nCells
 
     allocate(forcingField % data(1:forcingField % ndata,1:2))
 
@@ -502,7 +564,7 @@ contains
 
     use mpas_timekeeping
 
-    type(mesh_type), intent(in) :: mesh
+    type(MPAS_pool_type), intent(in) :: mesh
 
     real(kind=RKIND), intent(in) :: &
          forcingTime, &
@@ -807,7 +869,7 @@ contains
 
   subroutine read_data(mesh, forcingDirectory, forcingField, slot, desiredYear, desiredRecordNumber, position)
 
-    type(mesh_type), intent(in) :: mesh
+    type(MPAS_pool_type), intent(in) :: mesh
 
     character(len=*), intent(in) :: forcingDirectory
 
@@ -835,7 +897,7 @@ contains
 
   subroutine read_data_binaryPOP(mesh, forcingDirectory, forcingField, slot, desiredYear, desiredRecordNumber, position)
 
-    type(mesh_type), intent(in) :: mesh
+    type(MPAS_pool_type), intent(in) :: mesh
 
     character(len=*), intent(in) :: forcingDirectory
 
@@ -855,9 +917,24 @@ contains
 
     logical :: lexist
 
-    allocate(arrayPOP(1:mesh % POP_nx, 1:mesh % POP_ny))
+    integer, pointer :: &
+         POP_nx, &
+         POP_ny, &
+         nCells
 
-    recordLength = mesh % POP_nx * mesh % POP_ny * 8
+    integer, dimension(:), pointer :: &
+         POPindxi, &
+         POPindxj
+
+    call MPAS_pool_get_array(mesh, "POP_nx", POP_nx)
+    call MPAS_pool_get_array(mesh, "POP_ny", POP_ny)
+    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_array(mesh, "POPindxi", POPindxi)
+    call MPAS_pool_get_array(mesh, "POPindxj", POPindxj)
+
+    allocate(arrayPOP(1:POP_nx, 1:POP_ny))
+
+    recordLength = POP_nx * POP_ny * 8
 
     usedRecordNumber = desiredRecordNumber
 
@@ -871,11 +948,11 @@ contains
 
     forcingField % data(:,slot) = 1.0e30_RKIND
     
-    do iCell = 1, mesh % nCells
+    do iCell = 1, nCells
 
-       forcingField % data(iCell,slot) = arrayPOP(mesh % POPindxi % array(iCell),mesh % POPindxj % array(iCell))
+       forcingField % data(iCell,slot) = arrayPOP(POPindxi(iCell),POPindxj(iCell))
 
-       !write(*,*) iCell, mesh % POPindxi % array(iCell),mesh % POPindxj % array(iCell)
+       !write(*,*) iCell, POPindxi(iCell),POPindxj(iCell)
 
     enddo ! iCell
 
@@ -887,7 +964,7 @@ contains
 
   subroutine read_data_binaryMPAS(mesh, forcingDirectory, forcingField, slot, desiredYear, desiredRecordNumber, position)
 
-    type(mesh_type), intent(in) :: mesh
+    type(MPAS_pool_type), intent(in) :: mesh
 
     character(len=*), intent(in) :: forcingDirectory
 
@@ -907,9 +984,20 @@ contains
 
     logical :: lexist
 
-    allocate(arrayMPAS(1:mesh % nCells))
+    integer, pointer :: &
+         nCells
 
-    recordLength = mesh % nCells * 8
+    integer, dimension(:), pointer :: &
+         POPindxi, &
+         POPindxj
+
+    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_array(mesh, "POPindxi", POPindxi)
+    call MPAS_pool_get_array(mesh, "POPindxj", POPindxj)
+
+    allocate(arrayMPAS(1:nCells))
+
+    recordLength = nCells * 8
 
     usedRecordNumber = desiredRecordNumber
 
@@ -923,11 +1011,11 @@ contains
 
     forcingField % data(:,slot) = 1.0e30_RKIND
     
-    do iCell = 1, mesh % nCells
+    do iCell = 1, nCells
 
        forcingField % data(iCell,slot) = arrayMPAS(iCell)
 
-       !write(*,*) iCell, mesh % POPindxi % array(iCell),mesh % POPindxj % array(iCell)
+       !write(*,*) iCell, POPindxi(iCell),POPindxj(iCell)
 
     enddo ! iCell
 
@@ -1001,18 +1089,29 @@ contains
 
   function POPiCell(mesh, i, j) result(iCellOut)
 
-    type(mesh_type), intent(in) :: mesh
+    type(MPAS_pool_type), intent(in) :: mesh
     
     integer, intent(in) :: i, j
     integer :: iCellOut
 
     integer :: iCell
 
+    integer, pointer :: &
+         nCells
+
+    integer, dimension(:), pointer :: &
+         POPindxi, &
+         POPindxj
+
+    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_array(mesh, "POPindxi", POPindxi)
+    call MPAS_pool_get_array(mesh, "POPindxj", POPindxj)
+
     iCellOut = -1
 
-    do iCell = 1, mesh % nCells
+    do iCell = 1, nCells
 
-       if (mesh % POPindxi % array(iCell) == i .and. mesh % POPindxj % array(iCell) == j) then
+       if (POPindxi(iCell) == i .and. POPindxj(iCell) == j) then
 
           iCellOut = iCell
           exit
@@ -1066,16 +1165,16 @@ contains
                          grid_rotation_forward_nochange, &
                          dot_product_3space
 
-    type(mesh_type), intent(in) :: mesh
+    type(MPAS_pool_type), intent(in) :: mesh
 
     real(kind=RKIND), dimension(:,:), intent(out) :: &
          uPOPAlongGridVector, &
          vPOPAlongGridVector
 
     real(kind=RKIND) :: &
-         xCell, &
-         yCell, &
-         zCell, &
+         xCell0, &
+         yCell0, &
+         zCell0, &
          xEdge1, &
          yEdge1, &
          zEdge1, &
@@ -1092,7 +1191,6 @@ contains
          iCell, &
          iPOPCell, &
          jPOPCell, &
-         nEdgesOnCell, &
          iEdgeOnCell, &
          iCellAdjacent, &
          iPOPAdjacent, &
@@ -1105,38 +1203,68 @@ contains
          iEdgeU1, &
          iEdgeV2, &
          iEdgeV1
-    
-    do iCell = 1, mesh % nCells
+
+    integer, pointer :: &
+         nCells
+
+    integer, dimension(:), pointer :: &
+         POPindxi, &
+         POPindxj, &
+         nEdgesOnCell
+
+    integer, dimension(:,:), pointer :: &
+         cellsOnCell, &
+         edgesOnCell
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         xCell, &
+         yCell, &
+         zCell, &
+         xEdge, &
+         yEdge, &
+         zEdge
+
+    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_array(mesh, "POPindxi", POPindxi)
+    call MPAS_pool_get_array(mesh, "POPindxj", POPindxj)
+    call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
+    call MPAS_pool_get_array(mesh, "cellsOnCell", cellsOnCell)
+    call MPAS_pool_get_array(mesh, "edgesOnCell", edgesOnCell)
+
+
+    call MPAS_pool_get_array(mesh, "xEdge", xEdge)
+    call MPAS_pool_get_array(mesh, "yEdge", yEdge)
+    call MPAS_pool_get_array(mesh, "zEdge", zEdge)
+
+    do iCell = 1, nCells
 
        ! eastwards vector
-       call grid_rotation_forward(xCell, yCell, zCell, &
-                                  mesh % xCell % array(iCell), mesh % yCell % array(iCell), mesh % zCell % array(iCell))
+       call grid_rotation_forward(xCell0,       yCell0,       zCell0, &
+                                  xCell(iCell), yCell(iCell), zCell(iCell))
 
-       eastwardsVector(1) = -yCell
-       eastwardsVector(2) =  xCell
+       eastwardsVector(1) = -yCell0
+       eastwardsVector(2) =  xCell0
        eastwardsVector(3) = 0.0_RKIND
        eastwardsVector = eastwardsVector / &
                          sqrt(eastwardsVector(1)**2 + eastwardsVector(2)**2)
 
        ! cell location in POP coordinates
-       iPOPCell = mesh % POPindxi % array(iCell)
-       jPOPCell = mesh % POPindxj % array(iCell)       
-
-       nEdgesOnCell = mesh % nEdgesOnCell % array(iCell)
+       iPOPCell = POPindxi(iCell)
+       jPOPCell = POPindxj(iCell)       
 
        iEdgeOnCellU2 = -1
        iEdgeOnCellU1 = -1
        iEdgeOnCellV2 = -1
        iEdgeOnCellV1 = -1
 
-       do iEdgeOnCell = 1, nEdgesOnCell
+       do iEdgeOnCell = 1, nEdgesOnCell(iCell)
 
-          iCellAdjacent = mesh % cellsOnCell % array(iEdgeOnCell,iCell)
+          iCellAdjacent = cellsOnCell(iEdgeOnCell,iCell)
 
-          if (iCellAdjacent < mesh % nCells + 1) then
+          if (iCellAdjacent < nCells + 1) then
 
-             iPOPAdjacent = mesh % POPindxi % array(iCellAdjacent)
-             jPOPAdjacent = mesh % POPindxj % array(iCellAdjacent)
+             iPOPAdjacent = POPindxi(iCellAdjacent)
+             jPOPAdjacent = POPindxj(iCellAdjacent)
 
              if (iPOPAdjacent == iPOPCell+1 .and. jPOPAdjacent == jPOPCell) then
                 
@@ -1176,10 +1304,10 @@ contains
 
        enddo ! iEdgeOnCell
 
-       if (iEdgeOnCellU2 > nEdgesOnCell) iEdgeOnCellU2 = iEdgeOnCellU2 - nEdgesOnCell
-       if (iEdgeOnCellU1 > nEdgesOnCell) iEdgeOnCellU1 = iEdgeOnCellU1 - nEdgesOnCell
-       if (iEdgeOnCellV2 > nEdgesOnCell) iEdgeOnCellV2 = iEdgeOnCellV2 - nEdgesOnCell
-       if (iEdgeOnCellV1 > nEdgesOnCell) iEdgeOnCellV1 = iEdgeOnCellV1 - nEdgesOnCell
+       if (iEdgeOnCellU2 > nEdgesOnCell(iCell)) iEdgeOnCellU2 = iEdgeOnCellU2 - nEdgesOnCell(iCell)
+       if (iEdgeOnCellU1 > nEdgesOnCell(iCell)) iEdgeOnCellU1 = iEdgeOnCellU1 - nEdgesOnCell(iCell)
+       if (iEdgeOnCellV2 > nEdgesOnCell(iCell)) iEdgeOnCellV2 = iEdgeOnCellV2 - nEdgesOnCell(iCell)
+       if (iEdgeOnCellV1 > nEdgesOnCell(iCell)) iEdgeOnCellV1 = iEdgeOnCellV1 - nEdgesOnCell(iCell)
 
        if (iEdgeOnCellU2 == -1 .or. iEdgeOnCellU1 == -1 .or. iEdgeOnCellV2 == -1 .or. iEdgeOnCellV1 == -1) then
 
@@ -1189,20 +1317,20 @@ contains
 
        endif
 
-       iEdgeU2 = mesh % edgesOnCell % array(iEdgeOnCellU2,iCell)
-       iEdgeU1 = mesh % edgesOnCell % array(iEdgeOnCellU1,iCell)
-       iEdgeV2 = mesh % edgesOnCell % array(iEdgeOnCellV2,iCell)
-       iEdgeV1 = mesh % edgesOnCell % array(iEdgeOnCellV1,iCell)
+       iEdgeU2 = edgesOnCell(iEdgeOnCellU2,iCell)
+       iEdgeU1 = edgesOnCell(iEdgeOnCellU1,iCell)
+       iEdgeV2 = edgesOnCell(iEdgeOnCellV2,iCell)
+       iEdgeV1 = edgesOnCell(iEdgeOnCellV1,iCell)
 
        !write(*,*) iCell, iEdgeOnCellU2, iEdgeOnCellU1, iEdgeOnCellV2, iEdgeOnCellV1, &
        !           iEdgeU2, iEdgeU1, iEdgeV2, iEdgeV1
        
        ! U vector
-       call grid_rotation_forward(xEdge2, yEdge2, zEdge2, &
-                                  mesh % xEdge % array(iEdgeU2), mesh % yEdge % array(iEdgeU2), mesh % zEdge % array(iEdgeU2))
+       call grid_rotation_forward(xEdge2,         yEdge2,         zEdge2, &
+                                  xEdge(iEdgeU2), yEdge(iEdgeU2), zEdge(iEdgeU2))
        
-       call grid_rotation_forward(xEdge1, yEdge1, zEdge1, &
-                                  mesh % xEdge % array(iEdgeU1), mesh % yEdge % array(iEdgeU1), mesh % zEdge % array(iEdgeU1))
+       call grid_rotation_forward(xEdge1,         yEdge1,         zEdge1, &
+                                  xEdge(iEdgeU1), yEdge(iEdgeU1), zEdge(iEdgeU1))
        
        uVector(1) = xEdge2 - xEdge1
        uVector(2) = yEdge2 - yEdge1
@@ -1219,11 +1347,11 @@ contains
        !write(*,*) iCell, uPOPAlongGridVector(1,iCell), uPOPAlongGridVector(2,iCell)
        
        ! V vector
-       call grid_rotation_forward(xEdge2, yEdge2, zEdge2, &
-                                  mesh % xEdge % array(iEdgeV2), mesh % yEdge % array(iEdgeV2), mesh % zEdge % array(iEdgeV2))
+       call grid_rotation_forward(xEdge2,         yEdge2,         zEdge2, &
+                                  xEdge(iEdgeV2), yEdge(iEdgeV2), zEdge(iEdgeV2))
        
-       call grid_rotation_forward(xEdge1, yEdge1, zEdge1, &
-                                  mesh % xEdge % array(iEdgeV1), mesh % yEdge % array(iEdgeV1), mesh % zEdge % array(iEdgeV1))
+       call grid_rotation_forward(xEdge1,         yEdge1,         zEdge1, &
+                                  xEdge(iEdgeV1), yEdge(iEdgeV1), zEdge(iEdgeV1))
        
        vVector(1) = xEdge2 - xEdge1
        vVector(2) = yEdge2 - yEdge1
@@ -1247,14 +1375,14 @@ contains
 
   subroutine forcing_file_comparison(mesh)
 
-    type(mesh_type), intent(in) :: mesh
+    type(MPAS_pool_type), intent(in) :: mesh
 
     ! POP input
     character(len=200), parameter :: filein_POP = &
 !         '/Users/akt/Work/Forcing/gx3/atm/gx3v2m/NCAR_bulk/NCEP/4XDAILY/STATES/t_10.1997.dat'
          '/Users/akt/Work/Forcing/gx1/4XDAILY/v_10.2000.dat'
 
-    real(kind=RKIND), dimension(mesh % POP_nx, mesh % POP_ny) :: &
+    real(kind=RKIND), dimension(:,:), allocatable :: &
          array_POP
 
 
@@ -1263,11 +1391,11 @@ contains
 !         '/Users/akt/Work/Forcing/gx3/atm/gx3v2m/NCAR_bulk/NCEP/4XDAILY/STATES/t_10_mpas.1997.dat'
          '/Users/akt/Work/MPAS-CICE/forcing/forcing_creation/perform_remap/gx1/v_10.2000.dat'
 
-    real(kind=RKIND), dimension(mesh % nCells) :: &
+    real(kind=RKIND), dimension(:), allocatable :: &
          array_MPAS
 
     ! comparison
-    real(kind=RKIND), dimension(mesh % POP_nx, mesh % POP_ny) :: &
+    real(kind=RKIND), dimension(:,:), allocatable :: &
          array_POP_out, &
          array_MPAS_out, &
          array_comp
@@ -1278,8 +1406,29 @@ contains
          j, &
          recl
 
+    integer, pointer :: &
+         POP_nx, &
+         POP_ny, &
+         nCells
+
+    integer, dimension(:), pointer :: &
+         POPindxi, &
+         POPindxj
+
+    call MPAS_pool_get_array(mesh, "POP_nx", POP_nx)
+    call MPAS_pool_get_array(mesh, "POP_ny", POP_ny)
+    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_array(mesh, "POPindxi", POPindxi)
+    call MPAS_pool_get_array(mesh, "POPindxj", POPindxj)
+
+    allocate(array_POP(POP_nx, POP_ny))
+    allocate(array_MPAS(nCells))
+    allocate(array_POP_out(POP_nx, POP_ny))
+    allocate(array_MPAS_out(POP_nx, POP_ny))
+    allocate(array_comp(POP_nx, POP_ny))
+
     ! read in POP data
-    recl = 8 * mesh % POP_nx * mesh % POP_ny
+    recl = 8 * POP_nx * POP_ny
 
     open(55,file=trim(filein_POP),form="unformatted",access="direct",recl=recl)
 
@@ -1288,7 +1437,7 @@ contains
     close(55)
 
     ! read in MPAS data
-    recl = 8 * mesh % nCells
+    recl = 8 * nCells
 
     open(55,file=trim(filein_MPAS),form="unformatted",access="direct",recl=recl)
 
@@ -1300,10 +1449,10 @@ contains
     array_POP_out  = 0.0_RKIND
     array_MPAS_out = 0.0_RKIND
     
-    do iCell = 1, mesh % nCells
+    do iCell = 1, nCells
 
-       i = mesh % POPindxi % array(iCell)
-       j = mesh % POPindxj % array(iCell)
+       i = POPindxi(iCell)
+       j = POPindxj(iCell)
        
        array_POP_out(i,j)  = array_POP(i,j)
        array_MPAS_out(i,j) = array_MPAS(iCell)
@@ -1315,8 +1464,8 @@ contains
     ! compare
     array_comp = 0.0_RKIND
 
-    do j = 1, mesh % POP_ny
-    do i = 1, mesh % POP_nx
+    do j = 1, POP_ny
+    do i = 1, POP_nx
 
        array_comp(i,j) = array_MPAS_out(i,j) - array_POP_out(i,j)
 
@@ -1328,8 +1477,8 @@ contains
     open(56,file="comp_MPAS.txt")
     open(57,file="comp_MPAS-POP.txt")
 
-    do j = 1, mesh % POP_ny
-    do i = 1, mesh % POP_nx
+    do j = 1, POP_ny
+    do i = 1, POP_nx
 
        write(55,*) i, i+1, j, j+1, array_POP_out(i,j)
        write(56,*) i, i+1, j, j+1, array_MPAS_out(i,j)
@@ -1341,6 +1490,12 @@ contains
     close(55)
     close(56)
     close(57)
+
+    deallocate(array_POP)
+    deallocate(array_MPAS)
+    deallocate(array_POP_out)
+    deallocate(array_MPAS_out)
+    deallocate(array_comp)
 
   end subroutine forcing_file_comparison
 

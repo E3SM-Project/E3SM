@@ -39,7 +39,7 @@ contains
     use mpas_constants, only: omega
     use cice_diagnostics, only: init_ijpop_from_ivertex
 
-    type(mesh_type), intent(inout) :: mesh
+    type(MPAS_pool_type), intent(inout) :: mesh
 
     real(kind=RKIND), dimension(:), intent(out) :: &
          iceAreaCell, &
@@ -75,19 +75,40 @@ contains
     character(len=200), parameter :: &
          test_type = "icecaps"
          !test_type = "circleofice"
-         
+
+    integer, pointer :: &
+         nCells, &
+         nVertices
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         fVertex, &
+         latVertex, &
+         latCell, &
+         xCell, &
+         yCell, &
+         zCell
+
+    ! init variables
+    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_array(mesh, "nVertices", nVertices)
+    call MPAS_pool_get_array(mesh, "fVertex", fVertex)
+    call MPAS_pool_get_array(mesh, "latVertex", latVertex)
+    call MPAS_pool_get_array(mesh, "latCell", latCell)
+    call MPAS_pool_get_array(mesh, "xCell", xCell)
+    call MPAS_pool_get_array(mesh, "yCell", yCell)
+    call MPAS_pool_get_array(mesh, "zCell", zCell)
 
     call init_ijpop_from_ivertex(mesh)
 
-    mesh % fVertex % array = 2.0_RKIND * omega * sin(mesh % latVertex % array)
+    fVertex = 2.0_RKIND * omega * sin(latVertex)
 
     if (trim(test_type) == "icecaps") then
 
-       do iCell = 1, mesh % nCells
+       do iCell = 1, nCells
 
-          if (mesh % latCell % array(iCell) > initialIceEdgeLatitudeNorthernHemisphere .or. &
-               mesh % latCell % array(iCell) < initialIceEdgeLatitudeSouthernHemisphere) then
-          !if (mesh % latCell % array(iCell) < initialIceEdgeLatitudeSouthernHemisphere) then
+          if (latCell(iCell) > initialIceEdgeLatitudeNorthernHemisphere .or. &
+              latCell(iCell) < initialIceEdgeLatitudeSouthernHemisphere) then
+          !if (latCell(iCell) < initialIceEdgeLatitudeSouthernHemisphere) then
 
              ! ice present
              iceAreaCell(iCell)        = 1.0_RKIND
@@ -107,7 +128,7 @@ contains
 
        end do ! iCell
 
-       do iVertex = 1, mesh % nVertices
+       do iVertex = 1, nVertices
 
           if (interiorVertex(iVertex) == 1) then
 
@@ -126,11 +147,11 @@ contains
     else if (trim(test_type) == "circleofice") then
 
        ! circle of ice at equator
-       do iCell = 1, mesh % nCells
+       do iCell = 1, nCells
 
-          x = mesh % xCell % array(iCell)
-          y = mesh % yCell % array(iCell)
-          z = mesh % zCell % array(iCell)
+          x = xCell(iCell)
+          y = yCell(iCell)
+          z = zCell(iCell)
 
           if (sqrt(x**2+z**2) < circle_radius .and. y > 0.0_RKIND) then
 
@@ -151,7 +172,7 @@ contains
 
        enddo ! iCell
 
-       do iVertex = 1, mesh % nVertices
+       do iVertex = 1, nVertices
 
           if (interiorVertex(iVertex) == 1) then
 
@@ -177,54 +198,52 @@ contains
 
   subroutine init_square_test_case_hex(mesh, icestate, hexdyn, hexfor, boundary, atmos_forcing)
 
-    type(mesh_type), intent(inout) :: mesh
+    type(MPAS_pool_type), intent(inout) :: mesh
 
-    type(icestate_type),      pointer :: icestate
-    type(hexdyn_type),        pointer :: hexdyn
-    type(hexfor_type),        pointer :: hexfor
-    type(boundary_type),      pointer :: boundary
-    type(atmos_forcing_type), pointer :: atmos_forcing
+    type(MPAS_pool_type), pointer :: icestate
+    type(MPAS_pool_type), pointer :: hexdyn
+    type(MPAS_pool_type), pointer :: hexfor
+    type(MPAS_pool_type), pointer :: boundary
+    type(MPAS_pool_type), pointer :: atmos_forcing
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         xCell, &
+         yCell, &
+         xVertex, &
+         yVertex, &
+         uAirVelocity, &
+         vAirVelocity, &
+         uOceanVelocity, &
+         vOceanVelocity
+
+    ! init variables
+    call MPAS_pool_get_array(mesh, "xCell", xCell)
+    call MPAS_pool_get_array(mesh, "yCell", yCell)
+    call MPAS_pool_get_array(mesh, "xVertex", xVertex)
+    call MPAS_pool_get_array(mesh, "yVertex", yVertex)
+
+    call MPAS_pool_get_array(atmos_forcing, "uAirVelocity", uAirVelocity)
+    call MPAS_pool_get_array(atmos_forcing, "vAirVelocity", vAirVelocity)
+
+    call MPAS_pool_get_array(hexfor, "uOceanVelocity", uOceanVelocity)
+    call MPAS_pool_get_array(hexfor, "vOceanVelocity", vOceanVelocity)
 
     call square_test_correct_positions(mesh)
 
-    call init_atmos_velocity(atmos_forcing % uAirVelocity % array, &
-                             atmos_forcing % vAirVelocity % array, &
-                             mesh % xCell % array,                 &
-                             mesh % yCell % array,                 &
+    call init_atmos_velocity(uAirVelocity, &
+                             vAirVelocity, &
+                             xCell,        &
+                             yCell,        &
                              0.0_RKIND)
 
-    call init_ocean_velocity(hexfor % uOceanVelocity % array, &
-                             hexfor % vOceanVelocity % array, &
-                             mesh % xVertex % array,          &
-                             mesh % yVertex % array)
+    call init_ocean_velocity(uOceanVelocity, &
+                             vOceanVelocity, &
+                             xVertex,        &
+                             yVertex)
 
     call init_ice_state(mesh, icestate, hexdyn, hexfor, boundary)
 
   end subroutine init_square_test_case_hex
-
-  !-------------------------------------------------------------
-
-  !subroutine init_square_test_case_tri(mesh, icestate, forcing)
-
-  !  type(mesh_type), intent(in) :: mesh
-
-  !  type(icestate_type), pointer :: icestate
-  !  type(forcing_type),  pointer :: forcing
-
-  !  call init_atmos_velocity(forcing % uAirVelocity % array, &
-  !                           forcing % vAirVelocity % array, &
-  !                           mesh % xCell % array,           &
-  !                           mesh % yCell % array,           &
-  !                           0.0_RKIND)
-
-  !  call init_ocean_velocity(forcing % uOceanVelocity % array, &
-  !                           forcing % vOceanVelocity % array, &
-  !                           mesh % xCell % array,             &
-  !                           mesh % yCell % array)
-
-  !  !call init_ice_state(mesh, icestate)
-
-  !end subroutine init_square_test_case_tri
 
   !-------------------------------------------------------------
 
@@ -320,12 +339,12 @@ contains
 
   subroutine init_ice_state(mesh, icestate, hexdyn, hexfor, boundary)
 
-    type(mesh_type), intent(in) :: mesh
+    type(MPAS_pool_type), intent(in) :: mesh
 
-    type(icestate_type), pointer :: icestate
-    type(hexdyn_type),   pointer :: hexdyn
-    type(hexfor_type),   pointer :: hexfor
-    type(boundary_type), pointer :: boundary
+    type(MPAS_pool_type), pointer :: icestate
+    type(MPAS_pool_type), pointer :: hexdyn
+    type(MPAS_pool_type), pointer :: hexfor
+    type(MPAS_pool_type), pointer :: boundary
 
     real(kind=RKIND) :: iceThickness
 
@@ -338,33 +357,71 @@ contains
          iCell, &
          iVertex
 
+    integer, pointer :: &
+         nCells, &
+         nVertices, &
+         index_iceAreaCell, &
+         index_iceVolumeCell
+
+    integer, dimension(:), pointer :: &
+         interiorVertex
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         xCell, &
+         totalMassCell, &
+         uVelocity, &
+         vVelocity, &
+         uOceanVelocity, &
+         vOceanVelocity
+    
+    real(kind=RKIND), dimension(:,:,:), pointer :: &
+         tracers
+
+    ! init variables
+    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_array(mesh, "nVertices", nVertices)
+    call MPAS_pool_get_array(mesh, "xCell", xCell)
+
+    call MPAS_pool_get_array(icestate, "tracers", tracers)
+    call MPAS_pool_get_array(icestate, "index_iceAreaCell", index_iceAreaCell)
+    call MPAS_pool_get_array(icestate, "index_iceVolumeCell", index_iceVolumeCell)
+    call MPAS_pool_get_array(icestate, "totalMassCell", totalMassCell)
+
+    call MPAS_pool_get_array(boundary, "interiorVertex", interiorVertex)
+
+    call MPAS_pool_get_array(hexdyn, "uVelocity", uVelocity)
+    call MPAS_pool_get_array(hexdyn, "vVelocity", vVelocity)
+
+    call MPAS_pool_get_array(hexfor, "uOceanVelocity", uOceanVelocity)
+    call MPAS_pool_get_array(hexfor, "vOceanVelocity", vOceanVelocity)
+
     iceThickness = 2.0_RKIND
 
-    do iCell = 1, mesh % nCells
+    do iCell = 1, nCells
 
-       x = mesh % xCell % array(iCell)
+       x = xCell(iCell)
 
-       icestate % tracers % array(icestate % index_iceAreaCell, 1, iCell) = &!0.95_RKIND!&
+       tracers(index_iceAreaCell, 1, iCell) = &!0.95_RKIND!&
             max(min(x / Lx, 1.0_RKIND), 0.0_RKIND)
 
-       icestate % tracers % array(icestate % index_iceVolumeCell, 1, :) = &
-            iceThickness * icestate % tracers % array(icestate % index_iceAreaCell, 1, iCell)
+       tracers(index_iceVolumeCell, 1, :) = &
+            iceThickness * tracers(index_iceAreaCell, 1, iCell)
 
-       icestate % totalMassCell % array(iCell) = icestate % tracers % array(icestate % index_iceVolumeCell, 1, iCell) * rhoi
+       totalMassCell(iCell) = tracers(index_iceVolumeCell, 1, iCell) * rhoi
           
     enddo ! iCell
 
-    do iVertex = 1, mesh % nVertices
+    do iVertex = 1, nVertices
     
-       if (boundary % interiorVertex % array(iVertex) == 1) then
+       if (interiorVertex(iVertex) == 1) then
 
-          hexdyn % uVelocity % array(iVertex) = hexfor % uOceanVelocity % array(iVertex)
-          hexdyn % vVelocity % array(iVertex) = hexfor % vOceanVelocity % array(iVertex)
+          uVelocity(iVertex) = uOceanVelocity(iVertex)
+          vVelocity(iVertex) = vOceanVelocity(iVertex)
 
        else
 
-          hexdyn % uVelocity % array(iVertex) = 0.0_RKIND
-          hexdyn % vVelocity % array(iVertex) = 0.0_RKIND
+          uVelocity(iVertex) = 0.0_RKIND
+          vVelocity(iVertex) = 0.0_RKIND
 
        endif
 
@@ -376,7 +433,7 @@ contains
 
   subroutine square_test_correct_positions(mesh)
 
-    type(mesh_type), intent(inout) :: mesh
+    type(MPAS_pool_type), intent(inout) :: mesh
 
     ! periodic quad - use with ocean
     real(kind=RKIND), parameter :: &
@@ -397,41 +454,75 @@ contains
          rad_to_deg      = 180.0_RKIND / pi, &
          distanceToAngle = rad_to_deg / radius, &
          omega           = 7.292e-5_RKIND
+    
+    real(kind=RKIND), dimension(:), pointer :: &
+         xCell, &
+         yCell, &
+         lonCell, &
+         latCell, &
+         xVertex, &
+         yVertex, &
+         lonVertex, &
+         latVertex, &
+         xEdge, &
+         yEdge, &
+         lonEdge, &
+         latEdge, &
+         fCell, &
+         fVertex, &
+         fEdge
+
+    ! init variables
+    call MPAS_pool_get_array(mesh, "xCell", xCell)
+    call MPAS_pool_get_array(mesh, "yCell", yCell)
+    call MPAS_pool_get_array(mesh, "lonCell", lonCell)
+    call MPAS_pool_get_array(mesh, "latCell", latCell)
+    call MPAS_pool_get_array(mesh, "xVertex", xVertex)
+    call MPAS_pool_get_array(mesh, "yVertex", yVertex)
+    call MPAS_pool_get_array(mesh, "lonVertex", lonVertex)
+    call MPAS_pool_get_array(mesh, "latVertex", latVertex)
+    call MPAS_pool_get_array(mesh, "xEdge", xEdge)
+    call MPAS_pool_get_array(mesh, "yEdge", yEdge)
+    call MPAS_pool_get_array(mesh, "lonEdge", lonEdge)
+    call MPAS_pool_get_array(mesh, "latEdge", latEdge)
+    call MPAS_pool_get_array(mesh, "fCell", fCell)
+    call MPAS_pool_get_array(mesh, "fVertex", fVertex)
+    call MPAS_pool_get_array(mesh, "fEdge", fEdge)
 
     ! Cell
-    mesh % xCell % array = mesh % xCell % array + dx
-    mesh % yCell % array = mesh % yCell % array + dy
+    xCell = xCell + dx
+    yCell = yCell + dy
 
-    mesh % lonCell % array = mesh % xCell % array * distanceToAngle + longitudeSquare
-    mesh % latCell % array = mesh % yCell % array * distanceToAngle + latitudeSquare
+    lonCell = xCell * distanceToAngle + longitudeSquare
+    latCell = yCell * distanceToAngle + latitudeSquare
 
-    mesh % lonCell % array = mesh % lonCell % array / rad_to_deg
-    mesh % lonCell % array = mesh % lonCell % array / rad_to_deg
+    lonCell = lonCell / rad_to_deg
+    latCell = latCell / rad_to_deg
 
     ! Vertex
-    mesh % xVertex % array = mesh % xVertex % array + dx
-    mesh % yVertex % array = mesh % yVertex % array + dy
+    xVertex = xVertex + dx
+    yVertex = yVertex + dy
 
-    mesh % lonVertex % array = mesh % xVertex % array * distanceToAngle + longitudeSquare
-    mesh % latVertex % array = mesh % yVertex % array * distanceToAngle + latitudeSquare
+    lonVertex = xVertex * distanceToAngle + longitudeSquare
+    latVertex = yVertex * distanceToAngle + latitudeSquare
 
-    mesh % lonVertex % array = mesh % lonVertex % array / rad_to_deg
-    mesh % latVertex % array = mesh % latVertex % array / rad_to_deg
+    lonVertex = lonVertex / rad_to_deg
+    latVertex = latVertex / rad_to_deg
 
     ! Edge
-    mesh % xEdge % array = mesh % xEdge % array + dx
-    mesh % yEdge % array = mesh % yEdge % array + dy
+    xEdge = xEdge + dx
+    yEdge = yEdge + dy
 
-    mesh % lonEdge % array = mesh % xEdge % array * distanceToAngle + longitudeSquare
-    mesh % latEdge % array = mesh % yEdge % array * distanceToAngle + latitudeSquare
+    lonEdge = xEdge * distanceToAngle + longitudeSquare
+    latEdge = yEdge * distanceToAngle + latitudeSquare
 
-    mesh % lonEdge % array = mesh % lonEdge % array / rad_to_deg
-    mesh % latEdge % array = mesh % latEdge % array / rad_to_deg
+    lonEdge = lonEdge / rad_to_deg
+    latEdge = latEdge / rad_to_deg
 
     ! fvalues
-    mesh % fCell % array   = 2.0_RKIND * omega * sin(mesh % latCell % array)
-    mesh % fVertex % array = 2.0_RKIND * omega * sin(mesh % latVertex % array)
-    mesh % fEdge % array   = 2.0_RKIND * omega * sin(mesh % latEdge % array)
+    fCell   = 2.0_RKIND * omega * sin(latCell)
+    fVertex = 2.0_RKIND * omega * sin(latVertex)
+    fEdge   = 2.0_RKIND * omega * sin(latEdge)
 
   end subroutine square_test_correct_positions
 
@@ -550,7 +641,7 @@ contains
 
   subroutine divergence_stress_test_stress_set_hex(mesh, stress1, stress2, stress12)
 
-    type(mesh_type), intent(in) :: mesh
+    type(MPAS_pool_type), intent(in) :: mesh
 
     real(kind=RKIND), dimension(:,:), intent(inout) :: &
          stress1, &
@@ -566,14 +657,34 @@ contains
          iVertexOnCell, &
          iVertex
 
-    do iCell = 1, mesh % nCells
+    integer, pointer :: &
+         nCells
 
-       do iVertexOnCell = 1, mesh % nEdgesOnCell % array(iCell)
+    integer, dimension(:), pointer :: &
+         nEdgesOnCell
 
-          iVertex = mesh % verticesOnCell % array(iVertexOnCell,iCell)
+    integer, dimension(:,:), pointer :: &
+         verticesOnCell
 
-          x = mesh % xVertex % array(iVertex)
-          y = mesh % yVertex % array(iVertex)
+    real(kind=RKIND), dimension(:), pointer :: &
+         xVertex, &
+         yVertex
+
+    ! init variables
+    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
+    call MPAS_pool_get_array(mesh, "verticesOnCell", verticesOnCell)
+    call MPAS_pool_get_array(mesh, "xVertex", xVertex)
+    call MPAS_pool_get_array(mesh, "yVertex", yVertex)
+
+    do iCell = 1, nCells
+
+       do iVertexOnCell = 1, nEdgesOnCell(iCell)
+
+          iVertex = verticesOnCell(iVertexOnCell,iCell)
+
+          x = xVertex(iVertex)
+          y = yVertex(iVertex)
 
           xpy = x + y
 
@@ -624,7 +735,7 @@ contains
 
   subroutine divergence_stress_test_stress_set_tri(mesh, stress1, stress2, stress12)
 
-    type(mesh_type), intent(in) :: mesh
+    type(MPAS_pool_type), intent(in) :: mesh
 
     real(kind=RKIND), dimension(:,:), intent(inout) :: &
          stress1, &
@@ -640,14 +751,32 @@ contains
          iVertexDegree, &
          iCell
 
-    do iVertex = 1, mesh % nVertices
+    integer, pointer :: &
+         nVertices, &
+         vertexDegree
 
-       do iVertexDegree = 1, mesh % vertexDegree
+    integer, dimension(:,:), pointer :: &
+         cellsOnVertex
 
-          iCell = mesh % cellsOnVertex % array(iVertexDegree,iVertex)
+    real(kind=RKIND), dimension(:), pointer :: &
+         xCell, &
+         yCell
 
-          x = mesh % xCell % array(iCell)
-          y = mesh % yCell % array(iCell)
+    ! init variables
+    call MPAS_pool_get_array(mesh, "nVertices", nVertices)
+    call MPAS_pool_get_array(mesh, "vertexDegree", vertexDegree)
+    call MPAS_pool_get_array(mesh, "cellsOnVertex", cellsOnVertex)
+    call MPAS_pool_get_array(mesh, "xCell", xCell)
+    call MPAS_pool_get_array(mesh, "yCell", yCell)
+
+    do iVertex = 1, nVertices
+
+       do iVertexDegree = 1, vertexDegree
+
+          iCell = cellsOnVertex(iVertexDegree,iVertex)
+
+          x = xCell(iCell)
+          y = yCell(iCell)
 
           xpy = x + y
 
@@ -698,7 +827,7 @@ contains
 
   subroutine divergence_stress_test_stress_set_weak(mesh, stress11, stress22, stress12)
 
-    type(mesh_type), intent(in) :: mesh
+    type(MPAS_pool_type), intent(in) :: mesh
 
     real(kind=RKIND), dimension(:), intent(inout) :: &
          stress11, &
@@ -712,10 +841,22 @@ contains
     integer :: &
          iCell
 
-    do iCell = 1, mesh % nCells
+    integer, pointer :: &
+         nCells
 
-       x = mesh % xCell % array(iCell)
-       y = mesh % yCell % array(iCell)
+    real(kind=RKIND), dimension(:), pointer :: &
+         xCell, &
+         yCell
+    
+    ! init variables
+    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_array(mesh, "xCell", xCell)
+    call MPAS_pool_get_array(mesh, "yCell", yCell)
+
+    do iCell = 1, nCells
+
+       x = xCell(iCell)
+       y = yCell(iCell)
 
        xpy = x + y
 

@@ -18,7 +18,6 @@ module mpas_core
 
    subroutine mpas_core_init(domain, startTimeStamp)
    
-      use mpas_configure
       use mpas_grid_types
    
       implicit none
@@ -26,20 +25,22 @@ module mpas_core
       type (domain_type), intent(inout) :: domain
       character(len=*), intent(out) :: startTimeStamp
    
-      real (kind=RKIND) :: dt
+      real (kind=RKIND), pointer :: dt
       type (block_type), pointer :: block
 
-      !
-      ! Initialize core
-      !
-      dt = config_dt
+      type (MPAS_pool_type), pointer :: &
+           configs
+
+      configs => domain % blocklist % configs
+
+      call MPAS_pool_get_config(configs, "config_dt", dt)
 
       call simulation_clock_init(domain, dt, startTimeStamp)
 
       block => domain % blocklist
       do while (associated(block))
-         call mpas_init_block(block, block % mesh, dt)
-         block % state % time_levs(1) % state % xtime % scalar = startTimeStamp
+         call mpas_init_block(block, dt)
+         !block % state % time_levs(1) % state % xtime % scalar = startTimeStamp
          block => block % next
       end do
 
@@ -60,6 +61,24 @@ module mpas_core
       type (MPAS_Time_Type) :: startTime, stopTime, alarmStartTime
       type (MPAS_TimeInterval_type) :: runDuration, timeStep, alarmTimeStep
       integer :: ierr
+
+      type (MPAS_pool_type), pointer :: &
+           configs
+
+      character(len=strKIND), pointer :: &
+           config_start_time, &
+           config_run_duration, &
+           config_stop_time, &
+           config_output_interval, &
+           config_restart_interval
+
+      configs => domain % blocklist % configs
+      
+      call MPAS_pool_get_config(configs, "config_start_time", config_start_time)
+      call MPAS_pool_get_config(configs, "config_run_duration", config_run_duration)
+      call MPAS_pool_get_config(configs, "config_stop_time", config_stop_time)
+      call MPAS_pool_get_config(configs, "config_output_interval", config_output_interval)
+      call MPAS_pool_get_config(configs, "config_restart_interval", config_restart_interval)
 
       call mpas_set_time(curr_time=startTime, dateTimeString=config_start_time, ierr=ierr)
       call mpas_set_timeInterval(timeStep, dt=dt, ierr=ierr)
@@ -100,7 +119,7 @@ module mpas_core
 
 !--------------------------------------------------------------------------
 
-   subroutine mpas_init_block(block, mesh, dt)
+   subroutine mpas_init_block(block, dt)
    
       use mpas_grid_types
       use mpas_rbf_interpolation
@@ -111,8 +130,11 @@ module mpas_core
       implicit none
 
       type (block_type), intent(inout) :: block
-      type (mesh_type), intent(inout) :: mesh
       real (kind=RKIND), intent(in) :: dt
+
+      type (MPAS_pool_type), pointer :: mesh
+
+      call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
 
       call mpas_rbf_interp_initialize(mesh)
       call mpas_init_reconstruct(mesh)
@@ -138,15 +160,19 @@ module mpas_core
       integer, intent(inout) :: output_frame
 
       integer :: itimestep
-      real (kind=RKIND) :: dt
+      real (kind=RKIND), pointer :: dt
       type (block_type), pointer :: block_ptr
 
       type (MPAS_Time_Type) :: currTime
       character(len=StrKIND) :: timeStamp
       integer :: ierr
 
+      type (MPAS_pool_type), pointer :: configs
+
       ! Eventually, dt should be domain specific
-      dt = config_dt
+      configs => domain % blocklist % configs
+
+      call MPAS_pool_get_config(configs, "config_dt", dt)
 
       currTime = mpas_get_clock_time(clock, MPAS_NOW, ierr)
       call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)         
@@ -171,11 +197,11 @@ module mpas_core
          call mpas_timer_stop("time integration")
 
          ! Move time level 2 fields back into time level 1 for next time step
-         block_ptr => domain % blocklist
-         do while(associated(block_ptr))
-            call mpas_shift_time_levels_state(block_ptr % state)
-            block_ptr => block_ptr % next
-         end do
+         !block_ptr => domain % blocklist
+         !do while(associated(block_ptr))
+         !   call mpas_shift_time_levels_state(block_ptr % state)
+         !   block_ptr => block_ptr % next
+         !end do
 
          !TODO: mpas_get_clock_ringing_alarms is probably faster than multiple mpas_is_alarm_ringing...
 
@@ -220,16 +246,15 @@ module mpas_core
       type (io_output_object), intent(inout) :: output_obj
       integer, intent(inout) :: output_frame
       type (domain_type), intent(inout) :: domain
-   
-      integer :: i, j, k
-      integer :: eoe
-      type (block_type), pointer :: block_ptr
-   
-      block_ptr => domain % blocklist
-      do while (associated(block_ptr))
-         call compute_output_diagnostics(block_ptr % state % time_levs(1) % state, block_ptr % mesh)
-         block_ptr => block_ptr % next
-      end do
+
+      type (MPAS_pool_type), pointer :: &
+           configs
+
+      integer, pointer :: config_frames_per_outfile
+
+      configs => domain % blocklist % configs
+
+      call MPAS_pool_get_config(configs, "config_frames_per_outfile", config_frames_per_outfile)
    
       call mpas_output_state_for_domain(output_obj, domain, output_frame)
       output_frame = output_frame + 1
@@ -244,30 +269,6 @@ module mpas_core
       end if
 
    end subroutine write_output_frame
-   
-!--------------------------------------------------------------------------
-   
-   subroutine compute_output_diagnostics(state, grid)
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   ! Compute diagnostic fields for a domain
-   !
-   ! Input: state - contains model prognostic fields
-   !        grid  - contains grid metadata
-   !
-   ! Output: state - upon returning, diagnostic fields will have be computed
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   
-      use mpas_grid_types
-   
-      implicit none
-   
-      type (state_type), intent(inout) :: state
-      type (mesh_type), intent(in) :: grid
-   
-      integer :: i, eoe
-      integer :: iEdge, k
-   
-   end subroutine compute_output_diagnostics
    
 !--------------------------------------------------------------------------
    
@@ -311,11 +312,15 @@ module mpas_core
 
 !--------------------------------------------------------------------------
 
-   subroutine mpas_core_setup_packages(ierr)
+   subroutine mpas_core_setup_packages(configs, packages, ierr)
 
       use mpas_packages
 
       implicit none
+
+      type (MPAS_pool_type), pointer :: &
+           configs, &
+           packages
 
       integer, intent(out) :: ierr
 

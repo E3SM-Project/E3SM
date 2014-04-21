@@ -65,7 +65,7 @@ contains
                           iceAreaCell, iceVolumeCell, &
                           solveStress)
 
-    type(mesh_type), intent(in) :: mesh
+    type(MPAS_pool_type), intent(in) :: mesh
 
     real(kind=RKIND), dimension(:), intent(out) :: &
          icePressure
@@ -84,7 +84,13 @@ contains
          Pstar = 2.75e4_RKIND, & ! constant in Hibler strength formula 
          Cstar = 20.0_RKIND      ! constant in Hibler strength formula 
 
-    do iCell = 1, mesh % nCells
+    integer, pointer :: &
+         nCells
+
+    ! init variables
+    call MPAS_pool_get_array(mesh, "nCells", nCells)
+
+    do iCell = 1, nCells
 
        if (solveStress(iCell) == 1) then
 
@@ -184,7 +190,8 @@ contains
                             airStressU,        airStressV,        &
                             surfaceTiltForceU, surfaceTiltForceV, &
                             oceanStressU,      oceanStressV,      &
-                            oceanStressCoeff,  dtElastic,mesh)
+                            oceanStressCoeff,  dtElastic,         &
+                            mesh)
 
     integer, intent(in) :: &
          nPoints
@@ -211,7 +218,9 @@ contains
 
     real(kind=RKIND), intent(in) :: &
          dtElastic
-    type(mesh_type), intent(in) :: mesh
+
+    type(MPAS_pool_type), intent(in) :: mesh
+
     real(kind=RKIND), dimension(2) :: &
          rightHandSide
 
@@ -223,6 +232,13 @@ contains
 
     integer :: &
          iPoint,i,j
+
+    integer, dimension(:), pointer :: &
+         POPindxiv, &
+         POPindxjv
+
+    call MPAS_pool_get_array(mesh, "POPindxiv", POPindxiv)
+    call MPAS_pool_get_array(mesh, "POPindxjv", POPindxjv)
 
     do iPoint = 1, nPoints
 
@@ -249,7 +265,9 @@ contains
           uVelocity(iPoint) = (leftMatrix(2,2) * rightHandSide(1) - leftMatrix(1,2) * rightHandSide(2)) / solutionDenominator
           vVelocity(iPoint) = (leftMatrix(1,1) * rightHandSide(2) - leftMatrix(2,1) * rightHandSide(1)) / solutionDenominator
 
-          write(70,*) mesh % POPindxiv % array(iPoint), mesh % POPindxjv % array(iPoint), &
+          write(70,*) &
+               POPindxiv(iPoint), &
+               POPindxjv(iPoint), &
                uVelocity(iPoint), coriolisParameter(iPoint)
 
        else

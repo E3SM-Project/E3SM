@@ -30,15 +30,32 @@ contains
     real(kind=RKIND) :: &
          time
 
+    type (MPAS_pool_type), pointer :: &
+         configs, &
+         mesh, &
+         atmos_forcing
+
+    logical, pointer :: &
+         config_use_forcing, &
+         config_use_velocity_solver
+         
     nstep = nstep + 1
     time = nstep * dt
+
+    configs => block % configs
+
+    call MPAS_pool_get_config(configs, "config_use_forcing", config_use_forcing)
+    call MPAS_pool_get_config(configs, "config_use_velocity_solver", config_use_velocity_solver)
+
+    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+    call MPAS_pool_get_subpool(block % structs, "atmos_forcing", atmos_forcing)
 
     ! get forcing
     if (config_use_forcing) &
          call get_forcing( &
-            block % mesh, &
+            mesh, &
             clock, &
-            block % atmos_forcing)
+            atmos_forcing)
 
     ! velocity solve
     if (config_use_velocity_solver) &

@@ -18,7 +18,7 @@
 	  	<dim name="POP_nx"/>
 		<dim name="POP_ny"/>
 	</dims>
-	<nml_record name="cice_model">
+	<nml_record name="cice_model" in_defaults="true">
 		<nml_option name="config_dt"                         type="real"          default_value="172.8"/>
 		<nml_option name="config_calendar_type"              type="character"     default_value="360day"/>
 		<nml_option name="config_start_time"                 type="character"     default_value="1997-01-01_00:00:00"/>
@@ -26,7 +26,7 @@
 		<nml_option name="config_run_duration"               type="character"     default_value="none"/>
 		<nml_option name="config_num_halos"                  type="integer"       default_value="2"/>
 	</nml_record>
-	<nml_record name="io">
+	<nml_record name="io" in_defaults="true">
 		<nml_option name="config_input_name"                 type="character"     default_value="grid.nc"/>
 		<nml_option name="config_output_name"                type="character"     default_value="output.nc"/>
 		<nml_option name="config_restart_name"               type="character"     default_value="restart.nc"/>
@@ -36,17 +36,17 @@
 		<nml_option name="config_pio_stride"                 type="integer"       default_value="1"/>
 		<nml_option name="config_restart_timestamp_name"     type="character"     default_value="restart_timestamp"/>
 	</nml_record>
-	<nml_record name="decomposition">
+	<nml_record name="decomposition" in_defaults="true">
 		<nml_option name="config_block_decomp_file_prefix"   type="character"     default_value="graph.info.part."/>
 		<nml_option name="config_number_of_blocks"           type="integer"       default_value="0"/>
 		<nml_option name="config_explicit_proc_decomp"       type="logical"       default_value=".false."/>
 		<nml_option name="config_proc_decomp_file_prefix"    type="character"     default_value="graph.info.part."/>
 	</nml_record>
-	<nml_record name="restart">
+	<nml_record name="restart" in_defaults="true">
 		<nml_option name="config_do_restart"                 type="logical"       default_value="false"/>
 		<nml_option name="config_restart_interval"           type="character"     default_value="none"/>
 	</nml_record>
-	<nml_record name="initialize">
+	<nml_record name="initialize" in_defaults="true">
 		<nml_option name="config_initial_condition_type"     type="character"     default_value="uniform"/>
 		<nml_option name="config_initial_ice_area"           type="real"          default_value="0.0"/>
 		<nml_option name="config_initial_ice_volume"         type="real"          default_value="0.0"/>
@@ -57,22 +57,22 @@
 		<nml_option name="config_initial_uvelocity"          type="real"          default_value="0.0"/>
 		<nml_option name="config_initial_vvelocity"          type="real"          default_value="0.0"/>
 	</nml_record>
-	<nml_record name="use_sections">
+	<nml_record name="use_sections" in_defaults="true">
 		<nml_option name="config_use_velocity_solver"         type="logical"       default_value="false"/>
 		<nml_option name="config_use_advection"               type="logical"       default_value="false"/>
 		<nml_option name="config_use_forcing"                 type="logical"       default_value="false"/>
 		<nml_option name="config_use_vertical_thermodynamics" type="logical"       default_value="false"/>
 	</nml_record>
-	<nml_record name="unit_test">
+	<nml_record name="unit_test" in_defaults="true">
 		<nml_option name="config_perform_unit_test"           type="logical"       default_value="false"/>
 		<nml_option name="config_unit_test_type"              type="character"     default_value=""/>
 		<nml_option name="config_unit_test_subtype"           type="character"     default_value=""/>
 	</nml_record>
-	<nml_record name="velocity_solver">
+	<nml_record name="velocity_solver" in_defaults="true">
 		<nml_option name="config_velocity_solver_type"       type="character"     default_value="none"/>
 	</nml_record>
 
-	<nml_record name="advection">
+	<nml_record name="advection" in_defaults="true">
 		<nml_option name="config_vert_tracer_adv" type="character" default_value="stencil" units="unitless"
 					description="Method for interpolating tracer values from layer centers to layer edges"
 					possible_values="'spline' and 'stencil'"
@@ -96,85 +96,136 @@
 	</nml_record>
 
 
+	<streams>
+	  <stream name="input" type="input">
+	    <var name="latCell"/>
+	    <var name="lonCell"/>
+	    <var name="xCell"/>
+	    <var name="yCell"/>
+	    <var name="zCell"/>
+	    <var name="indexToCellID"/>
+	    <var name="latEdge"/>
+	    <var name="lonEdge"/>
+	    <var name="xEdge"/>
+	    <var name="yEdge"/>
+	    <var name="zEdge"/>
+	    <var name="indexToEdgeID"/>
+	    <var name="latVertex"/>
+	    <var name="lonVertex"/>
+	    <var name="xVertex"/>
+	    <var name="yVertex"/>
+	    <var name="zVertex"/>
+	    <var name="indexToVertexID"/>
+	    <var name="meshDensity"/>
+	    <var name="cellsOnEdge"/>
+	    <var name="nEdgesOnCell"/>
+	    <var name="nEdgesOnEdge"/>
+	    <var name="edgesOnCell"/>
+	    <var name="edgesOnEdge"/>
+	    <var name="weightsOnEdge"/>
+	    <var name="dvEdge"/>
+	    <var name="dcEdge"/>
+	    <var name="angleEdge"/>
+	    <var name="areaCell"/>
+	    <var name="areaTriangle"/>
+	    <var name="cellsOnCell"/>
+	    <var name="verticesOnCell"/>
+	    <var name="verticesOnEdge"/>
+	    <var name="edgesOnVertex"/>
+	    <var name="cellsOnVertex"/>
+	    <var name="kiteAreasOnVertex"/>
+	    <var name="fEdge"/>
+	    <var name="fVertex"/>
+	    <var name="fCell"/>
+	    <var name="boundaryEdge"/>
+	    <var name="boundaryVertex"/>
+	    <var name="boundaryCell"/>
+	  </stream>
+	  <stream name="restart" type="restart">    
+	  </stream>
+	  <stream name="output" type="output">
+	  </stream>
+	</streams>
+	
 	<var_struct name="state" time_levs="2">
-		<var name="xtime"                             type="text"     dimensions="Time"                        streams="ro"/>
-		<var name="somevar"                           type="integer"  dimensions="TWO"                         streams=""/>
+		<var name="xtime"                             type="text"     dimensions="Time"/>
+		<var name="somevar"                           type="integer"  dimensions="TWO"/>
 	</var_struct>
-	<var_struct name="mesh" time_levs="0">
-		<var name="latCell"                           type="real"     dimensions="nCells"                      streams="iro"/>
-		<var name="lonCell"                           type="real"     dimensions="nCells"                      streams="iro"/>
-		<var name="xCell"                             type="real"     dimensions="nCells"                      streams="iro"/>
-		<var name="yCell"                             type="real"     dimensions="nCells"                      streams="iro"/>
-		<var name="zCell"                             type="real"     dimensions="nCells"                      streams="iro"/>
-		<var name="indexToCellID"                     type="integer"  dimensions="nCells"                      streams="iro"/>
-		<var name="latEdge"                           type="real"     dimensions="nEdges"                      streams="iro"/>
-		<var name="lonEdge"                           type="real"     dimensions="nEdges"                      streams="iro"/>
-		<var name="xEdge"                             type="real"     dimensions="nEdges"                      streams="iro"/>
-		<var name="yEdge"                             type="real"     dimensions="nEdges"                      streams="iro"/>
-		<var name="zEdge"                             type="real"     dimensions="nEdges"                      streams="iro"/>
-		<var name="indexToEdgeID"                     type="integer"  dimensions="nEdges"                      streams="iro"/>
-		<var name="latVertex"                         type="real"     dimensions="nVertices"                   streams="iro"/>
-		<var name="lonVertex"                         type="real"     dimensions="nVertices"                   streams="iro"/>
-		<var name="xVertex"                           type="real"     dimensions="nVertices"                   streams="iro"/>
-		<var name="yVertex"                           type="real"     dimensions="nVertices"                   streams="iro"/>
-		<var name="zVertex"                           type="real"     dimensions="nVertices"                   streams="iro"/>
-		<var name="indexToVertexID"                   type="integer"  dimensions="nVertices"                   streams="iro"/>
-		<var name="meshDensity"                       type="real"     dimensions="nCells"                      streams="iro"/>
-		<var name="meshScalingDel2"                   type="real"     dimensions="nEdges"                      streams="ro"/>
-		<var name="meshScalingDel4"                   type="real"     dimensions="nEdges"                      streams="ro"/>
-		<var name="cellsOnEdge"                       type="integer"  dimensions="TWO nEdges"                  streams="iro"/>
-		<var name="nEdgesOnCell"                      type="integer"  dimensions="nCells"                      streams="iro"/>
-		<var name="nEdgesOnEdge"                      type="integer"  dimensions="nEdges"                      streams="iro"/>
-		<var name="edgesOnCell"                       type="integer"  dimensions="maxEdges nCells"             streams="iro"/>
-		<var name="edgesOnEdge"                       type="integer"  dimensions="maxEdges2 nEdges"            streams="iro"/>
-		<var name="weightsOnEdge"                     type="real"     dimensions="maxEdges2 nEdges"            streams="iro"/>
-		<var name="dvEdge"                            type="real"     dimensions="nEdges"                      streams="iro"/>
-		<var name="dcEdge"                            type="real"     dimensions="nEdges"                      streams="iro"/>
-		<var name="angleEdge"                         type="real"     dimensions="nEdges"                      streams="iro"/>
-		<var name="areaCell"                          type="real"     dimensions="nCells"                      streams="iro"/>
-		<var name="areaTriangle"                      type="real"     dimensions="nVertices"                   streams="iro"/>
-		<var name="edgeNormalVectors"                 type="real"     dimensions="R3 nEdges"                   streams="o"/>
-		<var name="localVerticalUnitVectors"          type="real"     dimensions="R3 nCells"                   streams="o"/>
-		<var name="cellTangentPlane"                  type="real"     dimensions="R3 TWO nCells"               streams="o"/>
-		<var name="cellsOnCell"                       type="integer"  dimensions="maxEdges nCells"             streams="iro"/>
-		<var name="verticesOnCell"                    type="integer"  dimensions="maxEdges nCells"             streams="iro"/>
-		<var name="verticesOnEdge"                    type="integer"  dimensions="TWO nEdges"                  streams="iro"/>
-		<var name="edgesOnVertex"                     type="integer"  dimensions="vertexDegree nVertices"      streams="iro"/>
-		<var name="cellsOnVertex"                     type="integer"  dimensions="vertexDegree nVertices"      streams="iro"/>
-		<var name="kiteAreasOnVertex"                 type="real"     dimensions="vertexDegree nVertices"      streams="iro"/>
-		<var name="fEdge"                             type="real"     dimensions="nEdges"                      streams="iro"/>
-		<var name="fVertex"                           type="real"     dimensions="nVertices"                   streams="iro"/>
-		<var name="fCell"                             type="real"     dimensions="nCells"                      streams="iro"/>
-		<var name="h_s"                               type="real"     dimensions="nCells"                      streams="iro"/>
-		<var name="derivTwo"                          type="real"     dimensions="maxEdges2 TWO nEdges"        streams="o"/>
+	<var_struct name="mesh" time_levs="1">
+		<var name="latCell"                           type="real"     dimensions="nCells"/>
+		<var name="lonCell"                           type="real"     dimensions="nCells"/>
+		<var name="xCell"                             type="real"     dimensions="nCells"/>
+		<var name="yCell"                             type="real"     dimensions="nCells"/>
+		<var name="zCell"                             type="real"     dimensions="nCells"/>
+		<var name="indexToCellID"                     type="integer"  dimensions="nCells"/>
+		<var name="latEdge"                           type="real"     dimensions="nEdges"/>
+		<var name="lonEdge"                           type="real"     dimensions="nEdges"/>
+		<var name="xEdge"                             type="real"     dimensions="nEdges"/>
+		<var name="yEdge"                             type="real"     dimensions="nEdges"/>
+		<var name="zEdge"                             type="real"     dimensions="nEdges"/>
+		<var name="indexToEdgeID"                     type="integer"  dimensions="nEdges"/>
+		<var name="latVertex"                         type="real"     dimensions="nVertices"/>
+		<var name="lonVertex"                         type="real"     dimensions="nVertices"/>
+		<var name="xVertex"                           type="real"     dimensions="nVertices"/>
+		<var name="yVertex"                           type="real"     dimensions="nVertices"/>
+		<var name="zVertex"                           type="real"     dimensions="nVertices"/>
+		<var name="indexToVertexID"                   type="integer"  dimensions="nVertices"/>
+		<var name="meshDensity"                       type="real"     dimensions="nCells"/>
+		<var name="meshScalingDel2"                   type="real"     dimensions="nEdges"/>
+		<var name="meshScalingDel4"                   type="real"     dimensions="nEdges"/>
+		<var name="cellsOnEdge"                       type="integer"  dimensions="TWO nEdges"/>
+		<var name="nEdgesOnCell"                      type="integer"  dimensions="nCells"/>
+		<var name="nEdgesOnEdge"                      type="integer"  dimensions="nEdges"/>
+		<var name="edgesOnCell"                       type="integer"  dimensions="maxEdges nCells"/>
+		<var name="edgesOnEdge"                       type="integer"  dimensions="maxEdges2 nEdges"/>
+		<var name="weightsOnEdge"                     type="real"     dimensions="maxEdges2 nEdges"/>
+		<var name="dvEdge"                            type="real"     dimensions="nEdges"/>
+		<var name="dcEdge"                            type="real"     dimensions="nEdges"/>
+		<var name="angleEdge"                         type="real"     dimensions="nEdges"/>
+		<var name="areaCell"                          type="real"     dimensions="nCells"/>
+		<var name="areaTriangle"                      type="real"     dimensions="nVertices"/>
+		<var name="edgeNormalVectors"                 type="real"     dimensions="R3 nEdges"/>
+		<var name="localVerticalUnitVectors"          type="real"     dimensions="R3 nCells"/>
+		<var name="cellTangentPlane"                  type="real"     dimensions="R3 TWO nCells"/>
+		<var name="cellsOnCell"                       type="integer"  dimensions="maxEdges nCells"/>
+		<var name="verticesOnCell"                    type="integer"  dimensions="maxEdges nCells"/>
+		<var name="verticesOnEdge"                    type="integer"  dimensions="TWO nEdges"/>
+		<var name="edgesOnVertex"                     type="integer"  dimensions="vertexDegree nVertices"/>
+		<var name="cellsOnVertex"                     type="integer"  dimensions="vertexDegree nVertices"/>
+		<var name="kiteAreasOnVertex"                 type="real"     dimensions="vertexDegree nVertices"/>
+		<var name="fEdge"                             type="real"     dimensions="nEdges"/>
+		<var name="fVertex"                           type="real"     dimensions="nVertices"/>
+		<var name="fCell"                             type="real"     dimensions="nCells"/>
+		<var name="h_s"                               type="real"     dimensions="nCells"/>
+		<var name="derivTwo"                          type="real"     dimensions="maxEdges2 TWO nEdges"/>
 		<var name="advCells"                          type="integer"  dimensions="TWENTYONE nCells"/>
 		<var name="defc_a"                            type="real"     dimensions="maxEdges nCells"/>
 		<var name="defc_b"                            type="real"     dimensions="maxEdges nCells"/>
 		<var name="kdiff"                             type="real"     dimensions="nVertLevels nCells Time"/>
 		<var name="coeffs_reconstruct"                type="real"     dimensions="R3 maxEdges nCells"/>
-		<var name="boundaryEdge"                      type="integer"  dimensions="nVertLevels nEdges"          streams="iro"/>
-		<var name="boundaryVertex"                    type="integer"  dimensions="nVertLevels nVertices"       streams="iro"/>
-		<var name="boundaryCell"                      type="integer"  dimensions="nVertLevels nCells"          streams="iro"/>
-		<var name="u_src"                             type="real"     dimensions="nVertLevels nEdges"          streams="iro"/>
-		<var name="POPindxi"                          type="integer"  dimensions="nCells"                      streams="iro"/>
-		<var name="POPindxj"                          type="integer"  dimensions="nCells"                      streams="iro"/>
-		<var name="POPindxiv"                         type="integer"  dimensions="nVertices"                   streams=""/>
-		<var name="POPindxjv"                         type="integer"  dimensions="nVertices"                   streams=""/>
-		<var name="advCoefs"                          type="real"     dimensions="nAdvectionCells nEdges"      streams=""/>
-		<var name="advCoefs3rd"                       type="real"     dimensions="nAdvectionCells nEdges"      streams=""/>
-		<var name="advCellsForEdge"                   type="integer"  dimensions="nAdvectionCells nEdges"      streams=""/>
-		<var name="nAdvCellsForEdge"                  type="integer"  dimensions="nEdges"                      streams=""/>
-		<var name="highOrderAdvectionMask"            type="integer"  dimensions="nVertLevels nEdges"          streams=""/>
-		<var name="maxLevelCell"                      type="integer"  dimensions="nCells"                      streams="iro"/>
+		<var name="boundaryEdge"                      type="integer"  dimensions="nVertLevels nEdges"/>
+		<var name="boundaryVertex"                    type="integer"  dimensions="nVertLevels nVertices"/>
+		<var name="boundaryCell"                      type="integer"  dimensions="nVertLevels nCells"/>
+		<var name="u_src"                             type="real"     dimensions="nVertLevels nEdges"/>
+		<var name="POPindxi"                          type="integer"  dimensions="nCells"/>
+		<var name="POPindxj"                          type="integer"  dimensions="nCells"/>
+		<var name="POPindxiv"                         type="integer"  dimensions="nVertices"/>
+		<var name="POPindxjv"                         type="integer"  dimensions="nVertices"/>
+		<var name="advCoefs"                          type="real"     dimensions="nAdvectionCells nEdges"/>
+		<var name="advCoefs3rd"                       type="real"     dimensions="nAdvectionCells nEdges"/>
+		<var name="advCellsForEdge"                   type="integer"  dimensions="nAdvectionCells nEdges"/>
+		<var name="nAdvCellsForEdge"                  type="integer"  dimensions="nEdges"/>
+		<var name="highOrderAdvectionMask"            type="integer"  dimensions="nVertLevels nEdges"/>
+		<var name="maxLevelCell"                      type="integer"  dimensions="nCells"/>
 	</var_struct>
 
 
 	<!-- ice state -->
-	<var_struct name="icestate" time_levs="0">-->
+	<var_struct name="icestate" time_levs="1">-->
                 <var_array name="tracers" type="real" dimensions="ONE nCells">
-		 	<var name="iceAreaCell"    array_group="tracers" streams="o"/>
-		 	<var name="iceVolumeCell"  array_group="tracers" streams="o"/>
-		 	<var name="snowVolumeCell" array_group="tracers" streams="o"/>
+		 	<var name="iceAreaCell"    array_group="tracers"/>
+		 	<var name="iceVolumeCell"  array_group="tracers"/>
+		 	<var name="snowVolumeCell" array_group="tracers"/>
 		</var_array>
 		<var name="iceAreaVertex"                     type="real"     dimensions="nVertices"           name_in_code="iceAreaVertex"/>
 		<var name="totalMassCell"                     type="real"     dimensions="nCells"              name_in_code="totalMassCell"/>
@@ -183,7 +234,7 @@
 	</var_struct>
 
 	<!--atmos forcing -->
-	<var_struct name="atmos_forcing" time_levs="0">
+	<var_struct name="atmos_forcing" time_levs="1">
 	        <var name="airTemperature"                    type="real"     dimensions="nCells"              name_in_code="airTemperature"/>
 	        <var name="airPotentialTemperature"           type="real"     dimensions="nCells"              name_in_code="airPotentialTemperature"/>
 		<var name="uAirVelocity"                      type="real"     dimensions="nCells"              name_in_code="uAirVelocity"/>
@@ -207,18 +258,18 @@
 	</var_struct>
 
 	<!--ocean forcing -->
-	<var_struct name="ocean_forcing" time_levs="0">
+	<var_struct name="ocean_forcing" time_levs="1">
 		<var name="seaSurfaceSalinity"                type="real"     dimensions="nCells"              name_in_code="seaSurfaceSalinity"/>
 		<var name="seaSurfaceTemperature"             type="real"     dimensions="nCells"              name_in_code="seaSurfaceTemperature"/>
 	</var_struct>
 
 	<!-- define boundary variables -->
-	<var_struct name="boundary" time_levs="0">
+	<var_struct name="boundary" time_levs="1">
 		<var name="interiorVertex"                    type="integer"  dimensions="nVertices"                name_in_code="interiorVertex"/>
 	</var_struct>
 
 	<!-- normal vectors -->
-	<var_struct name="normal" time_levs="0">
+	<var_struct name="normal" time_levs="1">
 		<var name="normalVectorPolygon"               type="real"     dimensions="TWO maxEdges nCells"            name_in_code="normalVectorPolygon"/>
 		<var name="normalVectorTriangle"              type="real"     dimensions="TWO vertexDegree nVertices"     name_in_code="normalVectorTriangle"/>
 		<var name="latCellRotated"                    type="real"     dimensions="nCells"                         name_in_code="latCellRotated"/>
@@ -226,7 +277,7 @@
 	</var_struct>
 
 	<!-- dynamics with velocity points at vertices -->
-	<var_struct name="hexdyn" time_levs="0">
+	<var_struct name="hexdyn" time_levs="1">
 		<var name="uVelocity"                         type="real"     dimensions="nVertices"                name_in_code="uVelocity" streams="o"/>
 		<var name="vVelocity"                         type="real"     dimensions="nVertices"                name_in_code="vVelocity" streams="o"/>
 		<var name="edgeVelocity"                      type="real"     dimensions="nEdges"                   name_in_code="edgeVelocity"/>
@@ -249,12 +300,12 @@
 		<var name="replacementPressure"               type="real"     dimensions="nCells"                   name_in_code="replacementPressure"/>
 	</var_struct>
 	<!-- forcing on hexagons -->
-	<var_struct name="hexfor" time_levs="0">
+	<var_struct name="hexfor" time_levs="1">
 		<var name="uOceanVelocity"                    type="real"     dimensions="nVertices"                  name_in_code="uOceanVelocity"/>
 		<var name="vOceanVelocity"                    type="real"     dimensions="nVertices"                  name_in_code="vOceanVelocity"/>
 	</var_struct>
 	<!-- weak formulation on hexagons -->
-	<var_struct name="hexweak" time_levs="0">
+	<var_struct name="hexweak" time_levs="1">
 		<var name="strain11"                          type="real"     dimensions="nCells"                     name_in_code="strain11"/>
 		<var name="strain22"                          type="real"     dimensions="nCells"                     name_in_code="strain22"/>
 		<var name="strain12"                          type="real"     dimensions="nCells"                     name_in_code="strain12"/>
@@ -263,7 +314,7 @@
 		<var name="stress12"                          type="real"     dimensions="nCells"                     name_in_code="stress12"/>
 	</var_struct>
 	<!-- variational formulation on hexagons -->
-	<var_struct name="hexvar" time_levs="0">
+	<var_struct name="hexvar" time_levs="1">
 		<var name="strain11"                          type="real"     dimensions="maxEdges nCells"          name_in_code="strain11"              persistence="scratch"/>
 		<var name="strain22"                          type="real"     dimensions="maxEdges nCells"          name_in_code="strain22"              persistence="scratch"/>
 		<var name="strain12"                          type="real"     dimensions="maxEdges nCells"          name_in_code="strain12"              persistence="scratch"/>
@@ -281,7 +332,7 @@
 		<var name="basisGradientV"                    type="real"     dimensions="maxEdges maxEdges nCells" name_in_code="basisGradientV"        persistence="scratch"/>
 		<var name="cellVerticesAtVertex"              type="integer"  dimensions="vertexDegree nVertices"   name_in_code="cellVerticesAtVertex"  persistence="scratch"/>
 	</var_struct>
-	<var_struct name="hexpwl" time_levs="0">
+	<var_struct name="hexpwl" time_levs="1">
 		<var name="basisSubArea"                      type="real"     dimensions="maxEdges nCells"     name_in_code="basisSubArea"    persistence="scratch"/>
 		<var name="basisGradientU"                    type="real"     dimensions="TWO maxEdges nCells" name_in_code="basisGradientU"  persistence="scratch"/>
 		<var name="basisGradientV"                    type="real"     dimensions="TWO maxEdges nCells" name_in_code="basisGradientV"  persistence="scratch"/>

@@ -39,15 +39,28 @@ contains
     type (block_type), intent(inout) :: block
     real (kind=RKIND), intent(in) :: dt
 
+    type (MPAS_pool_type), pointer :: &
+         mesh, &
+         boundary, &
+         normal, &
+         hexvar, &
+         hexpwl
+
+    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+    call MPAS_pool_get_subpool(block % structs, "boundary", boundary)
+    call MPAS_pool_get_subpool(block % structs, "normal", normal)
+    call MPAS_pool_get_subpool(block % structs, "hexvar", hexvar)
+    call MPAS_pool_get_subpool(block % structs, "hexpwl", hexpwl)
+
     if (trim(dynamicsGridType) == "hex") then
 
        call init_dynamics_hex(&
-            block % mesh,          &
+            mesh,                  &
             dt,                    &
-            block % boundary,      &
-            block % normal,        &
-            block % hexvar,        &
-            block % hexpwl,        &
+            boundary,              &
+            normal,                &
+            hexvar,                &
+            hexpwl,                &
             divergenceFormulation, &
             gridCurvature)
 
@@ -70,19 +83,42 @@ contains
     real (kind=RKIND), intent(in) :: dt
     integer, intent(in) :: nstep
 
+    type (MPAS_pool_type), pointer :: &
+         mesh,          &
+         icestate,      &
+         boundary,      &
+         normal,        &
+         atmos_forcing, &
+         hexdyn,        &
+         hexweak,       &
+         hexvar,        &
+         hexpwl,        &
+         hexfor
+
+    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+    call MPAS_pool_get_subpool(block % structs, "icestate", icestate)
+    call MPAS_pool_get_subpool(block % structs, "boundary", boundary)
+    call MPAS_pool_get_subpool(block % structs, "normal", normal)
+    call MPAS_pool_get_subpool(block % structs, "atmos_forcing", atmos_forcing)
+    call MPAS_pool_get_subpool(block % structs, "hexdyn", hexdyn)
+    call MPAS_pool_get_subpool(block % structs, "hexweak", hexweak)
+    call MPAS_pool_get_subpool(block % structs, "hexvar", hexvar)
+    call MPAS_pool_get_subpool(block % structs, "hexpwl", hexpwl)
+    call MPAS_pool_get_subpool(block % structs, "hexfor", hexfor)
+
     if (trim(dynamicsGridType) == "hex") then
 
        call run_dynamics_hex(&
-            block % mesh,          &
-            block % icestate,      &
-            block % boundary,      &
-            block % normal,        &
-            block % atmos_forcing, &
-            block % hexdyn,        &
-            block % hexweak,       &
-            block % hexvar,        &
-            block % hexpwl,        &
-            block % hexfor,        &
+            mesh,                      &
+            icestate,                  &
+            boundary,                  &
+            normal,                    &
+            atmos_forcing,             &
+            hexdyn,                    &
+            hexweak,                   &
+            hexvar,                    &
+            hexpwl,                    &
+            hexfor,                    &
             dt, divergenceFormulation, &
             evpDamping, &
             nstep)

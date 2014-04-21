@@ -49,31 +49,49 @@ contains
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          tracers                  ! (nTracers, nVertLevels, nCells)
 
-    integer :: &
+    integer, pointer :: &
         index_iceAreaCell, &
         index_iceVolumeCell
 
-    type (boundary_type), pointer :: boundary
+    type (MPAS_pool_type), pointer :: &
+         boundary, &
+         icestate, &
+         mesh, &
+         hexdyn
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         uVelocity, &
+         vVelocity
+
+    integer, dimension(:), pointer :: &
+         interiorVertex
 
     integer, parameter :: &
          nstep_skip = 100
 
-    boundary => block % boundary
+    call MPAS_pool_get_subpool(block % structs, "boundary", boundary)
+    call MPAS_pool_get_subpool(block % structs, "icestate", icestate)
+    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+    call MPAS_pool_get_subpool(block % structs, "hexdyn", hexdyn)
+    call MPAS_pool_get_subpool(block % structs, "boundary", boundary)
 
-    tracers => block % icestate % tracers % array
+    call MPAS_pool_get_array(icestate, "tracers", tracers)
+    call MPAS_pool_get_array(icestate, "index_iceAreaCell", index_iceAreaCell)
+    call MPAS_pool_get_array(icestate, "index_iceVolumeCell", index_iceVolumeCell)
 
-    index_iceAreaCell   = block % icestate % index_iceAreaCell
-    index_iceVolumeCell = block % icestate % index_iceVolumeCell
+    call MPAS_pool_get_array(hexdyn, "uVelocity", uVelocity)
+    call MPAS_pool_get_array(hexdyn, "vVelocity", vVelocity)    
+    call MPAS_pool_get_array(boundary, "interiorVertex", interiorVertex)    
 
     if (nstep == 0 .or. nstep == 1 .or. mod(nstep,nstep_skip) == 0) then
 
        ! cell centre quantities
-       call plot_pop_grid_cells(block % mesh, tracers(index_iceAreaCell,1,:),   "iceAreaCell.txt",   nstep)
-       call plot_pop_grid_cells(block % mesh, tracers(index_iceVolumeCell,1,:), "iceVolumeCell.txt", nstep)
+       call plot_pop_grid_cells(mesh, tracers(index_iceAreaCell,1,:),   "iceAreaCell.txt",   nstep)
+       call plot_pop_grid_cells(mesh, tracers(index_iceVolumeCell,1,:), "iceVolumeCell.txt", nstep)
        
        ! vertex quantities
-       call plot_pop_grid_vertices(block % mesh, block % hexdyn % uVelocity % array, boundary % interiorVertex % array, "uVelocity.txt", nstep)
-       call plot_pop_grid_vertices(block % mesh, block % hexdyn % vVelocity % array, boundary % interiorVertex % array, "vVelocity.txt", nstep)
+       call plot_pop_grid_vertices(mesh, uVelocity, interiorVertex, "uVelocity.txt", nstep)
+       call plot_pop_grid_vertices(mesh, vVelocity, interiorVertex, "vVelocity.txt", nstep)
 
     endif
 
@@ -83,7 +101,7 @@ contains
 
   subroutine gnuplot_cell(mesh, cellArray, filename, append, nofill) 
     
-    type(mesh_type), intent(in) :: mesh
+    type(MPAS_pool_type), intent(in) :: mesh
     
     real(kind=RKIND), dimension(:), intent(in) :: &
          cellArray
@@ -126,6 +144,32 @@ contains
          lappend, &
          lnofill
 
+    integer, pointer :: &
+         nCells
+
+    integer, dimension(:), pointer :: &
+         nEdgesOnCell
+
+    integer, dimension(:,:), pointer :: &
+         cellsOnCell, &
+         verticesOnCell
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         xCell, &
+         yCell, &
+         xVertex, &
+         yVertex
+
+    ! init variables
+    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
+    call MPAS_pool_get_array(mesh, "verticesOnCell", verticesOnCell)
+    call MPAS_pool_get_array(mesh, "cellsOnCell", cellsOnCell)
+    call MPAS_pool_get_array(mesh, "xCell", xCell)
+    call MPAS_pool_get_array(mesh, "yCell", yCell)
+    call MPAS_pool_get_array(mesh, "xVertex", xVertex)
+    call MPAS_pool_get_array(mesh, "yVertex", yVertex)
+
     ! optional arguments
     lappend = .false.
     if (present(append)) lappend = append
@@ -133,10 +177,10 @@ contains
     lnofill = .false.
     if (present(nofill)) lnofill = nofill
 
-    fMin = minval(cellArray(1:mesh % nCells))
-    fMax = maxval(cellArray(1:mesh % nCells))
+    fMin = minval(cellArray(1:nCells))
+    fMax = maxval(cellArray(1:nCells))
     !fMin = 1
-    !fMax = mesh % nCells
+    !fMax = nCells
 
     if (lappend) then
        open(55,file=filename,action="write",position="append")
@@ -146,14 +190,14 @@ contains
 
     open(56,file="border.txt",action="write")
 
-    write(56,*) minval(mesh % cellsOnCell % array), maxval(mesh % cellsOnCell % array)
-    write(56,*) minloc(mesh % cellsOnCell % array), maxloc(mesh % cellsOnCell % array)
-    write(56,*) size(mesh % cellsOnCell % array,1), size(mesh % cellsOnCell % array,2)
+    write(56,*) minval(cellsOnCell), maxval(cellsOnCell)
+    write(56,*) minloc(cellsOnCell), maxloc(cellsOnCell)
+    write(56,*) size(cellsOnCell,1), size(cellsOnCell,2)
 
-    do iCell = 1, mesh % nCells
+    do iCell = 1, nCells
 
-       xc = mesh % xCell % array(iCell)
-       yc = mesh % yCell % array(iCell)
+       xc = xCell(iCell)
+       yc = yCell(iCell)
 
        write(*,*) iCell, xc, yc
 
@@ -170,16 +214,16 @@ contains
 
        write(strout,fmt='(a,i5,a)') "set object ",iObject," polygon from "
 
-       do iVertexOnCell = 1, mesh % nEdgesOnCell % array(iCell)
+       do iVertexOnCell = 1, nEdgesOnCell(iCell)
 
           !write(*,*) iCell, iVertexOnCell
 
-          write(56,*) iCell, mesh % nCells, iVertexOnCell, mesh % cellsOnCell % array(iVertexOnCell, iCell)
+          write(56,*) iCell, nCells, iVertexOnCell, cellsOnCell(iVertexOnCell, iCell)
 
-          iVertex = mesh % verticesOnCell % array(iVertexOnCell, iCell)
+          iVertex = verticesOnCell(iVertexOnCell, iCell)
 
-          x = mesh % xVertex % array(iVertex)
-          y = mesh % yVertex % array(iVertex)
+          x = xVertex(iVertex)
+          y = yVertex(iVertex)
 
           xmin = min(xmin,x) ; xmax = max(xmax,x)
           ymin = min(ymin,y) ; ymax = max(ymax,y)
@@ -230,15 +274,13 @@ contains
     close(55)
     close(56)
 
-    !call gnuplot_triangle(mesh, mesh % xVertex % array, filename, .true., mesh % nCells, .true.)
-!stop
   end subroutine gnuplot_cell
 
   !-------------------------------------------------------------
 
   subroutine gnuplot_triangle(mesh, vertexArray, filename, append, nofill)
 
-    type(mesh_type), intent(in) :: mesh
+    type(MPAS_pool_type), intent(in) :: mesh
 
     real(kind=RKIND), dimension(:), intent(in) :: &
          vertexArray
@@ -283,6 +325,30 @@ contains
          lappend, &
          lnofill
 
+    integer, pointer :: &
+         nCells, &
+         nVertices, &
+         vertexDegree
+
+    integer, dimension(:,:), pointer :: &
+         cellsOnVertex
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         xVertex, &
+         yVertex, &
+         xCell, &
+         yCell
+
+    ! init variables
+    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_array(mesh, "nVertices", nVertices)
+    call MPAS_pool_get_array(mesh, "vertexDegree", vertexDegree)
+    call MPAS_pool_get_array(mesh, "cellsOnVertex", cellsOnVertex)
+    call MPAS_pool_get_array(mesh, "xVertex", xVertex)
+    call MPAS_pool_get_array(mesh, "yVertex", yVertex)
+    call MPAS_pool_get_array(mesh, "xCell", xCell)
+    call MPAS_pool_get_array(mesh, "yCell", yCell)
+
     ! optional arguments
     lappend = .false.
     if (present(append)) lappend = append
@@ -295,15 +361,15 @@ contains
     fMax = -1e30
 
     ! loop over triangles
-    do iVertex = 1, mesh % nVertices
+    do iVertex = 1, nVertices
        atBoundary = .false.
 
        ! loop over triangle vertices
-       do iVertexDegree = 1, mesh % vertexDegree
+       do iVertexDegree = 1, vertexDegree
 
-          iCell = mesh % cellsOnVertex % array(iVertexDegree,iVertex)
+          iCell = cellsOnVertex(iVertexDegree,iVertex)
 
-          if (iCell > mesh % nCells) then
+          if (iCell > nCells) then
              atBoundary = .true.
           end if
        enddo ! iVertexDegree
@@ -321,7 +387,7 @@ contains
     !fMin = minval(vertexArray)
     !fMax = maxval(vertexArray)
     !fMin = 1
-    !fMax = mesh % nVertices
+    !fMax = nVertices
 
     if (lappend) then
        open(55,file=filename,action="write",position="append")
@@ -330,10 +396,10 @@ contains
     end if
 
     ! loop over triangles
-    do iVertex = 1, mesh % nVertices
+    do iVertex = 1, nVertices
 
-       xv = mesh % xVertex % array(iVertex)
-       yv = mesh % yVertex % array(iVertex)
+       xv = xVertex(iVertex)
+       yv = yVertex(iVertex)
 
        !write(*,*) iVertex, xv, yv
 
@@ -354,16 +420,16 @@ contains
        write(strout,fmt='(a,i5,a)') "set object ",iObject," polygon from "
 
        ! loop over triangle vertices
-       do iVertexDegree = 1, mesh % vertexDegree
+       do iVertexDegree = 1, vertexDegree
 
-          iCell = mesh % cellsOnVertex % array(iVertexDegree,iVertex)
+          iCell = cellsOnVertex(iVertexDegree,iVertex)
 
-          if (iCell > mesh % nCells) then
+          if (iCell > nCells) then
              atBoundary = .true.
           end if
 
-          x = mesh % xCell % array(iCell)
-          y = mesh % yCell % array(iCell)
+          x = xCell(iCell)
+          y = yCell(iCell)
 
           if (.not. atBoundary) then
              xmin = min(xmin,x) ; xmax = max(xmax,x)
@@ -419,7 +485,7 @@ contains
 
   subroutine gnuplot_vertexvector(mesh, vertexArrayU, vertexArrayV, filename)
 
-    type(mesh_type), intent(in) :: mesh
+    type(MPAS_pool_type), intent(in) :: mesh
 
     real(kind=RKIND), dimension(:), intent(in) :: &
          vertexArrayU, &
@@ -445,10 +511,22 @@ contains
 
     integer :: iVertex
 
+    integer, pointer :: &
+         nVertices
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         xVertex, &
+         yVertex
+
+    ! init variables
+    call MPAS_pool_get_array(mesh, "nVertices", nVertices)
+    call MPAS_pool_get_array(mesh, "xVertex", xVertex)
+    call MPAS_pool_get_array(mesh, "yVertex", yVertex)
+
     ! find maximum vector
     arrowLengthMax = -1e30
 
-    do iVertex = 1, mesh % nVertices
+    do iVertex = 1, nVertices
 
        n1 = vertexArrayU(iVertex)
        n2 = vertexArrayV(iVertex)
@@ -463,7 +541,7 @@ contains
 
     open(55,file=filename)
 
-    do iVertex = 1, mesh % nVertices
+    do iVertex = 1, nVertices
     
        random = rand()
 
@@ -478,8 +556,8 @@ contains
 
           arrowLengthPlot = (arrowLength / arrowLengthMax) * plotLength
 
-          x1 = mesh % xVertex % array(iVertex)
-          y1 = mesh % yVertex % array(iVertex)
+          x1 = xVertex(iVertex)
+          y1 = yVertex(iVertex)
 
           x2 = x1 + n1 * arrowLengthPlot
           y2 = y1 + n2 * arrowLengthPlot
@@ -559,7 +637,7 @@ contains
 
   subroutine plot_boundary_triangles(mesh, boundaryVertex, interiorVertex, boundaryEdge)
 
-    type(mesh_type), intent(in) :: mesh
+    type(MPAS_pool_type), intent(in) :: mesh
 
     integer, dimension(:), intent(in) :: &
          boundaryVertex, &
@@ -585,14 +663,44 @@ contains
 
     integer :: start_index
 
-    start_index = mesh % nCells + mesh % nVertices + 10
+    integer, pointer :: &
+         nCells, &
+         nVertices, &
+         nEdges, &
+         vertexDegree
+
+    integer, dimension(:,:), pointer :: &
+         cellsOnEdge, &
+         verticesOnEdge, &
+         cellsOnVertex
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         xCell, &
+         yCell, &
+         xVertex, &
+         yVertex
+
+    ! init variables
+    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_array(mesh, "nVertices", nVertices)
+    call MPAS_pool_get_array(mesh, "nEdges", nEdges)
+    call MPAS_pool_get_array(mesh, "vertexDegree", vertexDegree)
+    call MPAS_pool_get_array(mesh, "cellsOnEdge", cellsOnEdge)
+    call MPAS_pool_get_array(mesh, "verticesOnEdge", verticesOnEdge)
+    call MPAS_pool_get_array(mesh, "cellsOnVertex", cellsOnVertex)
+    call MPAS_pool_get_array(mesh, "xCell", xCell)
+    call MPAS_pool_get_array(mesh, "yCell", yCell)
+    call MPAS_pool_get_array(mesh, "xVertex", xVertex)
+    call MPAS_pool_get_array(mesh, "yVertex", yVertex)
+
+    start_index = nCells + nVertices + 10
 
     open(55,file="boundary_triangles_edge.txt",action="write")
 
     ! edge triangles
     iEdgeBoundary = 0
 
-    do iEdge = 1, mesh % nEdges
+    do iEdge = 1, nEdges
 
        write(0,*) iEdge, boundaryEdge(iEdge)
 
@@ -605,13 +713,13 @@ contains
           ! find the interior cell
           do iCellOnEdge = 1, 2
 
-             iCell = mesh % cellsOnEdge %array(iCellOnEdge,iEdge)
+             iCell = cellsOnEdge(iCellOnEdge,iEdge)
 
-             if (iCell >= 1 .and. iCell <= mesh % nCells) then
+             if (iCell >= 1 .and. iCell <= nCells) then
 
                 ! this cell is interior to domain
-                x = mesh % xCell % array(iCell)
-                y = mesh % yCell % array(iCell)               
+                x = xCell(iCell)
+                y = yCell(iCell)               
                 x0 = x
                 y0 = y
 
@@ -626,10 +734,10 @@ contains
           ! find the adjacent vertices
           do iVertexOnEdge = 1, 2
 
-             iVertex = mesh % verticesOnEdge % array(iVertexOnEdge,iEdge)
+             iVertex = verticesOnEdge(iVertexOnEdge,iEdge)
 
-             x = mesh % xVertex % array(iVertex)
-             y = mesh % yVertex % array(iVertex)
+             x = xVertex(iVertex)
+             y = yVertex(iVertex)
 
              write(stroutvertex,fmt='(f10.2,a,f10.2,a)') x, ",", y, " to "
 
@@ -656,7 +764,7 @@ contains
     open(55,file="boundary_triangles_vertex.txt",action="write")
 
     ! loop over vertices
-    do iVertex = 1, mesh % nVertices
+    do iVertex = 1, nVertices
 
        ! boundary vertex adjacent to two interior cells
        if (boundaryVertex(iVertex) == 1) then
@@ -666,8 +774,8 @@ contains
           write(strout,fmt='(a,i5,a)') "set object ",iEdgeBoundary+start_index," polygon from "
 
           ! starting vertex point
-          x = mesh % xVertex % array(iVertex)
-          y = mesh % yVertex % array(iVertex)
+          x = xVertex(iVertex)
+          y = yVertex(iVertex)
           x0 = x
           y0 = y
 
@@ -676,16 +784,16 @@ contains
           strout = trim(strout)//trim(stroutvertex)
 
           ! the two interior cells
-          do iVertexDegree = 1, mesh % vertexDegree
+          do iVertexDegree = 1, vertexDegree
 
              ! adjacent cell
-             iCell = mesh % cellsOnVertex % array(iVertexDegree, iVertex)
+             iCell = cellsOnVertex(iVertexDegree, iVertex)
 
-             if (iCell >= 1 .and. iCell <= mesh % nCells) then
+             if (iCell >= 1 .and. iCell <= nCells) then
                 ! interior adjacent cell
 
-                x = mesh % xCell % array(iCell)
-                y = mesh % yCell % array(iCell)
+                x = xCell(iCell)
+                y = yCell(iCell)
 
                 write(stroutvertex,fmt='(f10.2,a,f10.2,a)') x, ",", y, " to "
 
@@ -717,7 +825,7 @@ contains
 
   subroutine labels_verticesOnCell(mesh, verticesOnCell, filename) 
 
-    type(mesh_type), intent(in) :: mesh
+    type(MPAS_pool_type), intent(in) :: mesh
 
     integer, dimension(:,:), intent(in) :: &
          verticesOnCell
@@ -728,7 +836,13 @@ contains
     integer :: &
          iCell
 
-    do iCell = 1, mesh % nCells
+    integer, pointer :: &
+         nCells
+
+    ! init variables
+    call MPAS_pool_get_array(mesh, "nCells", nCells)
+
+    do iCell = 1, nCells
 
        call label_verticesOnCell(mesh, iCell, verticesOnCell(:,iCell), filename, .true.) 
 
@@ -738,15 +852,15 @@ contains
 
   !-------------------------------------------------------------
 
-  subroutine label_verticesOnCell(mesh, iCell, verticesOnCell, filename, append) 
+  subroutine label_verticesOnCell(mesh, iCell, verticesOnCell0, filename, append) 
 
-    type(mesh_type), intent(in) :: mesh
+    type(MPAS_pool_type), intent(in) :: mesh
 
     integer, intent(in) :: &
          iCell
 
     integer, dimension(:), intent(in) :: &
-         verticesOnCell
+         verticesOnCell0
 
     character(len=*), intent(in) :: &
          filename
@@ -773,6 +887,26 @@ contains
     logical :: &
          lappend
 
+    integer, dimension(:), pointer :: &
+         nEdgesOnCell
+
+    integer, dimension(:,:), pointer :: &
+         verticesOnCell
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         xCell, &
+         yCell, &
+         xVertex, &
+         yVertex
+
+    ! init variables
+    call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
+    call MPAS_pool_get_array(mesh, "verticesOnCell", verticesOnCell)
+    call MPAS_pool_get_array(mesh, "xCell", xCell)
+    call MPAS_pool_get_array(mesh, "yCell", yCell)
+    call MPAS_pool_get_array(mesh, "xVertex", xVertex)
+    call MPAS_pool_get_array(mesh, "yVertex", yVertex)
+
     lappend = .false.
     if (present(append)) lappend = .true.
 
@@ -784,16 +918,16 @@ contains
 
     write(strout,fmt='(a,i5,a)') "set object ",iObject," polygon from "
 
-    xc = mesh % xCell % array(iCell)
-    yc = mesh % yCell % array(iCell)
+    xc = xCell(iCell)
+    yc = yCell(iCell)
 
     ! draw cell
-    do iVertexOnCell = 1, mesh % nEdgesOnCell % array(iCell)
+    do iVertexOnCell = 1, nEdgesOnCell(iCell)
 
-       iVertex = mesh % verticesOnCell % array(iVertexOnCell,iCell)
+       iVertex = verticesOnCell(iVertexOnCell,iCell)
 
-       x = mesh % xVertex % array(iVertex)
-       y = mesh % yVertex % array(iVertex)
+       x = xVertex(iVertex)
+       y = yVertex(iVertex)
 
        if (iVertexOnCell == 1) then
           x0 = x
@@ -808,7 +942,7 @@ contains
        yl = 0.3_RKIND * yc + 0.7_RKIND * y
 
        !write(stroutint,fmt='(i5)') iVertexOnCell
-       write(stroutint,fmt='(i5)') verticesOnCell(iVertexOnCell)
+       write(stroutint,fmt='(i5)') verticesOnCell0(iVertexOnCell)
        write(stroutlabel,fmt='(a,i5,a,a,a,f10.2,a,f10.2,a)') "set label ",iLabel,' "',trim(adjustl(stroutint)),'" at ',xl, ",",yl, ' center font "Helvetica,8"'
 
        write(55,*) trim(stroutlabel)
@@ -837,7 +971,7 @@ contains
 
   subroutine labels_verticesDegreeOnVertex(mesh, verticesDegreeOnVertex, interiorVertex, filename) 
 
-    type(mesh_type), intent(in) :: mesh
+    type(MPAS_pool_type), intent(in) :: mesh
 
     integer, dimension(:,:), intent(in) :: &
          verticesDegreeOnVertex
@@ -851,7 +985,13 @@ contains
     integer :: &
          iVertex
 
-    do iVertex = 1, mesh % nVertices
+    integer, pointer :: &
+         nVertices
+
+    ! init variables
+    call MPAS_pool_get_array(mesh, "nVertices", nVertices)
+
+    do iVertex = 1, nVertices
 
        if (interiorVertex(iVertex) == 1) then
 
@@ -867,7 +1007,7 @@ contains
 
   subroutine label_verticesDegreeOnVertex(mesh, iVertex, verticesDegreeOnVertex, filename, append) 
 
-    type(mesh_type), intent(in) :: mesh
+    type(MPAS_pool_type), intent(in) :: mesh
 
     integer, intent(in) :: &
          iVertex
@@ -900,6 +1040,26 @@ contains
     logical :: &
          lappend
 
+    integer, pointer :: &
+         vertexDegree
+
+    integer, dimension(:,:), pointer :: &
+         cellsOnVertex
+ 
+    real(kind=RKIND), dimension(:), pointer :: &
+         xVertex, &
+         yVertex, &
+         xCell, &
+         yCell
+
+    ! init variables
+    call MPAS_pool_get_array(mesh, "vertexDegree", vertexDegree)
+    call MPAS_pool_get_array(mesh, "cellsOnVertex", cellsOnVertex)
+    call MPAS_pool_get_array(mesh, "xVertex", xVertex)
+    call MPAS_pool_get_array(mesh, "yVertex", yVertex)
+    call MPAS_pool_get_array(mesh, "xCell", xCell)
+    call MPAS_pool_get_array(mesh, "yCell", yCell)
+
     lappend = .false.
     if (present(append)) lappend = .true.
 
@@ -911,16 +1071,16 @@ contains
 
     write(strout,fmt='(a,i5,a)') "set object ",iObject," polygon from "
 
-    xv = mesh % xVertex % array(iVertex)
-    yv = mesh % yVertex % array(iVertex)
+    xv = xVertex(iVertex)
+    yv = yVertex(iVertex)
 
     ! draw cell
-    do iVertexDegree = 1, mesh % vertexDegree
+    do iVertexDegree = 1, vertexDegree
 
-       iCell = mesh % cellsOnVertex % array(iVertexDegree,iVertex)
+       iCell = cellsOnVertex(iVertexDegree,iVertex)
 
-       x = mesh % xCell % array(iCell)
-       y = mesh % yCell % array(iCell)
+       x = xCell(iCell)
+       y = yCell(iCell)
 
        if (iVertexDegree == 1) then
           x0 = x
@@ -983,7 +1143,7 @@ contains
 
   subroutine writeout_on_cell_real(mesh, arrayOnCell, filename)
 
-    type(mesh_type), intent(in) :: mesh
+    type(MPAS_pool_type), intent(in) :: mesh
 
     real(kind=RKIND), dimension(:), intent(in) :: &
          arrayOnCell
@@ -993,12 +1153,24 @@ contains
 
     integer :: iCell
 
+    integer, pointer :: &
+         nCells
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         xCell, &
+         yCell
+
+    ! init variables
+    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_array(mesh, "xCell", xCell)
+    call MPAS_pool_get_array(mesh, "yCell", yCell)
+
     open(55,file=filename)
 
-    do iCell = 1, mesh % nCells
+    do iCell = 1, nCells
 
        write(55,*) iCell, arrayOnCell(iCell), &
-            mesh % xCell % array(iCell), mesh % yCell % array(iCell)
+            xCell(iCell), yCell(iCell)
 
     enddo ! iCell
 
@@ -1010,7 +1182,7 @@ contains
 
   subroutine writeout_on_vertex_real(mesh, arrayOnVertex, filename)
 
-    type(mesh_type), intent(in) :: mesh
+    type(MPAS_pool_type), intent(in) :: mesh
 
     real(kind=RKIND), dimension(:), intent(in) :: &
          arrayOnVertex
@@ -1020,12 +1192,19 @@ contains
 
     integer :: iVertex
 
+    integer, pointer :: &
+         nVertices
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         xVertex, &
+         yVertex
+
     open(55,file=filename)
 
-    do iVertex = 1, mesh % nVertices
+    do iVertex = 1, nVertices
 
        write(55,*) iVertex, arrayOnVertex(iVertex), &
-            mesh % xVertex % array(iVertex), mesh % yVertex % array(iVertex)
+            xVertex(iVertex), yVertex(iVertex)
 
     enddo ! iVertex
 
@@ -1037,7 +1216,7 @@ contains
 
   subroutine writeout_on_vertex_on_cell_real(mesh, arrayVertexOnCell, filename)
 
-    type(mesh_type), intent(in) :: mesh
+    type(MPAS_pool_type), intent(in) :: mesh
 
     real(kind=RKIND), dimension(:,:), intent(in) :: &
          arrayVertexOnCell
@@ -1050,17 +1229,37 @@ contains
          iVertexOnCell, &
          iVertex
 
+    integer, pointer :: &
+         nCells
+
+    integer, dimension(:), pointer :: &
+         nEdgesOnCell
+
+    integer, dimension(:,:), pointer :: &
+         verticesOnCell
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         xVertex, &
+         yVertex
+
+    ! init variables
+    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
+    call MPAS_pool_get_array(mesh, "verticesOnCell", verticesOnCell)
+    call MPAS_pool_get_array(mesh, "xVertex", xVertex)
+    call MPAS_pool_get_array(mesh, "yVertex", yVertex)
+
     open(55,file=filename)
 
-    do iCell = 1, mesh % nCells
+    do iCell = 1, nCells
 
-       do iVertexOnCell = 1, mesh % nEdgesOnCell % array(iCell)
+       do iVertexOnCell = 1, nEdgesOnCell(iCell)
 
-          iVertex = mesh % verticesOnCell % array(iVertexOnCell,iCell)
+          iVertex = verticesOnCell(iVertexOnCell,iCell)
 
           write(55,*) iCell, iVertexOnCell, arrayVertexOnCell(iVertexOnCell,iCell), &
-               mesh % xVertex % array(iVertex), mesh % yVertex % array(iVertex), &
-               arrayVertexOnCell(iVertexOnCell,iCell) / (mesh % xVertex % array(iVertex) + mesh % yVertex % array(iVertex))
+               xVertex(iVertex), yVertex(iVertex), &
+               arrayVertexOnCell(iVertexOnCell,iCell) / (xVertex(iVertex) + yVertex(iVertex))
 
        enddo ! iVertexOnCell
 
@@ -1100,7 +1299,7 @@ contains
     
   subroutine writeout_edgecell(mesh, arrayEdgeCell, filename)
 
-    type(mesh_type), intent(in) :: mesh
+    type(MPAS_pool_type), intent(in) :: mesh
 
     real(kind=RKIND), dimension(:,:), intent(in) :: &
          arrayEdgeCell
@@ -1112,11 +1311,21 @@ contains
          iCell, &
          iEdge
 
+    integer, pointer :: &
+         nCells
+    
+    integer, dimension(:), pointer :: &
+         nEdgesOnCell
+
+    ! init variables
+    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
+
     open(55,file=filename)
 
-    do iCell = 1, mesh % nCells
+    do iCell = 1, nCells
        
-       do iEdge = 1, mesh % nEdgesOnCell % array(iCell)
+       do iEdge = 1, nEdgesOnCell(iCell)
 
           write(55,*) iCell, iEdge, arrayEdgeCell(iEdge,iCell)
 
@@ -1132,7 +1341,7 @@ contains
 
   subroutine writeout_edgeedgecell(mesh, arrayEdgeEdgeCell, filename)
 
-    type(mesh_type), intent(in) :: mesh
+    type(MPAS_pool_type), intent(in) :: mesh
 
     real(kind=RKIND), dimension(:,:,:), intent(in) :: &
          arrayEdgeEdgeCell
@@ -1145,13 +1354,23 @@ contains
          iEdge, &
          jEdge
 
+    integer, pointer :: &
+         nCells
+    
+    integer, dimension(:), pointer :: &
+         nEdgesOnCell
+
+    ! init variables
+    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
+
     open(55,file=filename)
 
-    do iCell = 1, mesh % nCells
+    do iCell = 1, nCells
        
-       do iEdge = 1, mesh % nEdgesOnCell % array(iCell)
+       do iEdge = 1, nEdgesOnCell(iCell)
 
-          do jEdge = 1, mesh % nEdgesOnCell % array(iCell) 
+          do jEdge = 1, nEdgesOnCell(iCell) 
 
              write(55,*) iCell, iEdge, jEdge, arrayEdgeEdgeCell(jEdge,iEdge,iCell)
 
@@ -1169,7 +1388,7 @@ contains
 
   function find_nearest_cell(mesh,x,y) result(iNear)
 
-    type(mesh_type), intent(in) :: mesh
+    type(MPAS_pool_type), intent(in) :: mesh
 
     real(kind=RKIND), intent(in) :: &
          x, y
@@ -1183,12 +1402,24 @@ contains
     integer :: &
          iCell
 
+    integer, pointer :: &
+         nCells
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         xCell, &
+         yCell
+
+    ! init variables
+    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_array(mesh, "xCell", xCell)
+    call MPAS_pool_get_array(mesh, "yCell", yCell)
+
     iNear = -1
     min_distance = 1e30_RKIND
 
-    do iCell = 1, mesh % nCells
+    do iCell = 1, nCells
 
-       distance = sqrt((x - mesh % xCell % array(iCell))**2 + (y - mesh % yCell % array(iCell))**2)
+       distance = sqrt((x - xCell(iCell))**2 + (y - yCell(iCell))**2)
 
        if (distance < min_distance) then
 
@@ -1206,7 +1437,7 @@ contains
 
   subroutine rotate_ninety(mesh)
 
-    type(mesh_type), intent(in) :: mesh
+    type(MPAS_pool_type), intent(in) :: mesh
 
     integer :: &
          iCell, &
@@ -1215,128 +1446,61 @@ contains
 
     real(kind=RKIND) :: x, y
 
-    do iCell = 1, mesh % nCells
+    integer, pointer :: &
+         nCells, &
+         nVertices, &
+         nEdges
+    
+    real(kind=RKIND), dimension(:), pointer :: &
+         xCell, &
+         yCell, &
+         xVertex, &
+         yVertex, &
+         xEdge, &
+         yEdge
 
-       x = mesh % xCell % array(iCell)
-       y = mesh % yCell % array(iCell)
+    ! init variables
+    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_array(mesh, "nVertices", nVertices)
+    call MPAS_pool_get_array(mesh, "nEdges", nEdges)
+    call MPAS_pool_get_array(mesh, "xCell", xCell)
+    call MPAS_pool_get_array(mesh, "yCell", yCell)
+    call MPAS_pool_get_array(mesh, "xVertex", xVertex)
+    call MPAS_pool_get_array(mesh, "yVertex", yVertex)
+    call MPAS_pool_get_array(mesh, "xEdge", xEdge)
+    call MPAS_pool_get_array(mesh, "yEdge", yEdge)
 
-       mesh % xCell % array(iCell) = y
-       mesh % yCell % array(iCell) = -x
+    do iCell = 1, nCells
+
+       x = xCell(iCell)
+       y = yCell(iCell)
+
+       xCell(iCell) = y
+       yCell(iCell) = -x
 
     enddo ! iCell
 
-    do iVertex = 1, mesh % nVertices
+    do iVertex = 1, nVertices
 
-       x = mesh % xVertex % array(iVertex)
-       y = mesh % yVertex % array(iVertex)
+       x = xVertex(iVertex)
+       y = yVertex(iVertex)
 
-       mesh % xVertex % array(iVertex) = y
-       mesh % yVertex % array(iVertex) = -x
+       xVertex(iVertex) = y
+       yVertex(iVertex) = -x
 
     enddo ! iVertex
 
-    do iEdge = 1, mesh % nEdges
+    do iEdge = 1, nEdges
 
-       x = mesh % xEdge % array(iEdge)
-       y = mesh % yEdge % array(iEdge)
+       x = xEdge(iEdge)
+       y = yEdge(iEdge)
 
-       mesh % xEdge % array(iEdge) = y
-       mesh % yEdge % array(iEdge) = -x
+       xEdge(iEdge) = y
+       yEdge(iEdge) = -x
 
     enddo ! iVertex
 
   end subroutine rotate_ninety
-
-  !-------------------------------------------------------------
-  
-  subroutine reverse_grids(mesh)
-
-    type(mesh_type), intent(inout) :: mesh
-
-    real(kind=RKIND), dimension(:), allocatable :: tmp_ncells, tmp_nvertices
-    integer, dimension(:,:), allocatable :: tmp_maxedgesncells, tmp_vertexdegreenvertices
-
-
-    integer :: nCells0, nVertices0, vertexDegree0, maxEdges0
-
-    !write(*,*) lbound(mesh % xCell % array), ubound(mesh % xCell % array), size(mesh % xCell % array,1), mesh % nCells
-    !stop
-
-
-    nCells0 = mesh % nCells
-    nVertices0 = mesh % nVertices
-    vertexDegree0 = mesh % vertexDegree
-    maxEdges0 = mesh % maxEdges
-
-    allocate(tmp_ncells(1:mesh % nCells+1))
-    allocate(tmp_nvertices(1:mesh % nVertices+1))
-    allocate(tmp_maxedgesncells(1:mesh % maxEdges,1:mesh % nCells+1))
-    allocate(tmp_vertexdegreenvertices(1:mesh % vertexDegree,1:mesh % nVertices+1))
-
-    ! x position
-    tmp_ncells    = mesh % xCell % array
-    tmp_nvertices = mesh % xVertex % array
-    deallocate(mesh % xCell % array)
-    deallocate(mesh % xVertex % array)
-    allocate(mesh % xCell % array(1:nVertices0+1))
-    allocate(mesh % xVertex % array(1:nCells0+1))
-    mesh % xCell % array = tmp_nvertices
-    mesh % xVertex % array = tmp_ncells
-
-    ! x position
-    tmp_ncells    = mesh % yCell % array
-    tmp_nvertices = mesh % yVertex % array
-    deallocate(mesh % yCell % array)
-    deallocate(mesh % yVertex % array)
-    allocate(mesh % yCell % array(1:nVertices0+1))
-    allocate(mesh % yVertex % array(1:nCells0+1))
-    mesh % yCell % array = tmp_nvertices
-    mesh % yVertex % array = tmp_ncells
-
-    ! z position
-    tmp_ncells    = mesh % zCell % array
-    tmp_nvertices = mesh % zVertex % array
-    deallocate(mesh % zCell % array)
-    deallocate(mesh % zVertex % array)
-    allocate(mesh % zCell % array(1:nVertices0+1))
-    allocate(mesh % zVertex % array(1:nCells0+1))
-    mesh % zCell % array = tmp_nvertices
-    mesh % zVertex % array = tmp_ncells
-
-    ! nEdgesOnCell
-    deallocate(mesh % nEdgesOnCell % array)
-    allocate(mesh % nEdgesOnCell % array(nVertices0+1))
-    mesh % nEdgesOnCell % array = 3
-
-
-    ! verticesOnCell / cellsOnVertex
-    tmp_maxedgesncells = mesh % verticesOnCell % array
-    tmp_vertexdegreenvertices = mesh % cellsOnVertex % array
-    deallocate(mesh % verticesOnCell % array)
-    deallocate(mesh % cellsOnVertex % array)
-    allocate(mesh % verticesOnCell % array(vertexDegree0,nVertices0+1))
-    allocate(mesh % cellsOnVertex % array(maxEdges0,nCells0+1))
-    mesh % verticesOnCell % array = tmp_vertexdegreenvertices
-    mesh % cellsOnVertex % array = tmp_maxedgesncells
-
-    ! area
-    deallocate(mesh % areaCell % array)
-    allocate(mesh % areaCell % array(nVertices0+1))
-    mesh % areaCell % array = mesh % areaTriangle % array
-    
-    ! sizes
-    mesh % nCells = nVertices0
-    mesh % nVertices = nCells0
-    mesh % vertexDegree = maxEdges0
-    mesh % maxEdges = vertexDegree0
-
-    deallocate(tmp_ncells)
-    deallocate(tmp_nvertices)
-    deallocate(tmp_maxedgesncells)
-    deallocate(tmp_vertexdegreenvertices)
-
-    !stop
-  end subroutine reverse_grids
 
   !-------------------------------------------------------------
   ! Spherical plotting
@@ -1344,9 +1508,9 @@ contains
 
   subroutine plot_state(mesh, icestate, atmos_forcing, time, dt)
 
-    type(mesh_type), intent(in) :: mesh
-    type(icestate_type), pointer :: icestate
-    type(atmos_forcing_type), pointer :: atmos_forcing
+    type(MPAS_pool_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer :: icestate
+    type(MPAS_pool_type), pointer :: atmos_forcing
 
     real(kind=RKIND), intent(in) :: &
          time, &
@@ -1365,24 +1529,47 @@ contains
          iceThickness, &
          snowThickness
 
+    integer, pointer :: &
+         nCells, &
+         index_iceAreaCell, &
+         index_iceVolumeCell, &
+         index_snowVolumeCell
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         surfaceTemperature, &
+         airPotentialTemperature, &
+         longwaveDown
+
+    real(kind=RKIND), dimension(:,:,:), pointer :: &    
+         tracers
+
+    ! init variables
+    call MPAS_pool_get_array(icestate, "tracers", tracers)
+    call MPAS_pool_get_array(icestate, "index_iceAreaCell", index_iceAreaCell)
+    call MPAS_pool_get_array(icestate, "index_iceVolumeCell", index_iceVolumeCell)
+    call MPAS_pool_get_array(icestate, "index_snowVolumeCell", index_snowVolumeCell)
+    call MPAS_pool_get_array(atmos_forcing, "surfaceTemperature", surfaceTemperature)
+    call MPAS_pool_get_array(atmos_forcing, "airPotentialTemperature", airPotentialTemperature)
+    call MPAS_pool_get_array(atmos_forcing, "longwaveDown", longwaveDown)
+
     if (mod(nint(time/dt),output_freq) == 0) then
 
-       allocate(iceThickness(mesh % nCells))
-       allocate(snowThickness(mesh % nCells))
+       allocate(iceThickness(nCells))
+       allocate(snowThickness(nCells))
 
-       do iCell = 1, mesh % nCells
+       do iCell = 1, nCells
 
-          if (icestate % tracers % array(icestate % index_iceAreaCell, 1, iCell) > 0.0_RKIND) then
-             iceThickness(iCell)  = icestate % tracers % array(icestate % index_iceVolumeCell, 1, iCell) / &
-                                    icestate % tracers % array(icestate % index_iceAreaCell, 1, iCell)
-             snowThickness(iCell) = icestate % tracers % array(icestate % index_snowVolumeCell, 1, iCell) / &
-                                    icestate % tracers % array(icestate % index_iceAreaCell, 1, iCell)
+          if (tracers(index_iceAreaCell, 1, iCell) > 0.0_RKIND) then
+             iceThickness(iCell)  = tracers(index_iceVolumeCell, 1, iCell) / &
+                                    tracers(index_iceAreaCell, 1, iCell)
+             snowThickness(iCell) = tracers(index_snowVolumeCell, 1, iCell) / &
+                                    tracers(index_iceAreaCell, 1, iCell)
           else
              iceThickness(iCell)  = 0.0_RKIND
              snowThickness(iCell) = 0.0_RKIND
           endif
 
-          if (iCell == 7755) write(*,*) time, iceThickness(iCell), snowThickness(iCell), icestate % surfaceTemperature % array(iCell)
+          if (iCell == 7755) write(*,*) time, iceThickness(iCell), snowThickness(iCell), surfaceTemperature(iCell)
 
        enddo ! iCell
 
@@ -1390,13 +1577,13 @@ contains
 
        write(suffix,fmt='(a,i10.10,a)') "_", nint(time), ".txt"
        
-       call plot_cells_spherical(mesh, atmos_forcing % airPotentialTemperature % array, "movie/data/airTemperature"//trim(suffix), -50.0_RKIND, 50.0_RKIND)
-       call plot_cells_spherical(mesh, atmos_forcing % longwaveDown % array, "movie/data/longwave"//trim(suffix), 0.0_RKIND, 1000.0_RKIND)
+       call plot_cells_spherical(mesh, airPotentialTemperature, "movie/data/airTemperature"//trim(suffix), -50.0_RKIND, 50.0_RKIND)
+       call plot_cells_spherical(mesh, longwaveDown, "movie/data/longwave"//trim(suffix), 0.0_RKIND, 1000.0_RKIND)
 
-       call plot_cells_spherical(mesh, icestate % tracers % array(icestate % index_iceAreaCell, 1, :),        "movie/data/iceAreaCell"//trim(suffix),          0.0_RKIND, 1.0_RKIND)
-       call plot_cells_spherical(mesh, iceThickness,                          "movie/data/iceThickness"//trim(suffix),         0.0_RKIND, 2.0_RKIND)
-       call plot_cells_spherical(mesh, snowThickness,                         "movie/data/snowThickness"//trim(suffix),        0.0_RKIND, 2.0_RKIND)
-       call plot_cells_spherical(mesh, icestate % surfaceTemperature % array, "movie/data/surfaceTemperature"//trim(suffix), -60.0_RKIND, 0.1_RKIND)
+       call plot_cells_spherical(mesh, tracers(index_iceAreaCell, 1, :), "movie/data/iceAreaCell"//trim(suffix),          0.0_RKIND, 1.0_RKIND)
+       call plot_cells_spherical(mesh, iceThickness,                     "movie/data/iceThickness"//trim(suffix),         0.0_RKIND, 2.0_RKIND)
+       call plot_cells_spherical(mesh, snowThickness,                    "movie/data/snowThickness"//trim(suffix),        0.0_RKIND, 2.0_RKIND)
+       call plot_cells_spherical(mesh, surfaceTemperature,               "movie/data/surfaceTemperature"//trim(suffix), -60.0_RKIND, 0.1_RKIND)
 
        deallocate(iceThickness)
        deallocate(snowThickness)
@@ -1411,7 +1598,7 @@ contains
 
   subroutine plot_vertices_spherical(mesh, cellArray, interiorVertex, filename, fmin, fmax)
 
-    type(mesh_type), intent(in) :: mesh
+    type(MPAS_pool_type), intent(in) :: mesh
     
     real(kind=RKIND), dimension(:), intent(in) :: &
          cellArray
@@ -1480,6 +1667,36 @@ contains
     character(len=200) :: &
          filename_use
 
+    integer, pointer :: &
+         nVertices, &
+         vertexDegree
+
+    integer, dimension(:,:), pointer :: &
+         cellsOnVertex
+
+    real(kind=RKIND), pointer :: &
+         sphere_radius
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         xVertex, &
+         yVertex, &
+         zVertex, &
+         xCell, &
+         yCell, &
+         zCell
+    
+    ! init variables
+    call MPAS_pool_get_array(mesh, "nVertices", nVertices)
+    call MPAS_pool_get_array(mesh, "vertexDegree", vertexDegree)
+    call MPAS_pool_get_array(mesh, "cellsOnVertex", cellsOnVertex)
+    call MPAS_pool_get_array(mesh, "sphere_radius", sphere_radius)
+    call MPAS_pool_get_array(mesh, "xVertex", xVertex)
+    call MPAS_pool_get_array(mesh, "yVertex", yVertex)
+    call MPAS_pool_get_array(mesh, "zVertex", zVertex)
+    call MPAS_pool_get_array(mesh, "xCell", xCell)
+    call MPAS_pool_get_array(mesh, "yCell", yCell)
+    call MPAS_pool_get_array(mesh, "zCell", zCell)
+
     iObject = 1
 
     lnofill = .false.
@@ -1488,8 +1705,8 @@ contains
        fMin_use = fmin
        fMax_use = fmax
     else
-       fMin_use = minval(cellArray(1:mesh % nVertices))
-       fMax_use = maxval(cellArray(1:mesh % nVertices))
+       fMin_use = minval(cellArray(1:nVertices))
+       fMax_use = maxval(cellArray(1:nVertices))
     endif
 
     filename_use = "spherical_vertices.txt"
@@ -1498,13 +1715,13 @@ contains
     open(55,file=trim(filename_use),action="write")
     open(56,file="clearPlot.gnuplot",action="write")
 
-    do iVertex = 1, mesh % nVertices
+    do iVertex = 1, nVertices
 
        if (interiorVertex(iVertex) == 1) then
 
-          xc = mesh % xVertex % array(iVertex)
-          yc = mesh % yVertex % array(iVertex)
-          zc = mesh % zVertex % array(iVertex)
+          xc = xVertex(iVertex)
+          yc = yVertex(iVertex)
+          zc = zVertex(iVertex)
           
           call perform_rotation(xc, yc, zc)
           
@@ -1515,13 +1732,13 @@ contains
              
              write(strout,fmt='(a,i5,a)') "set object ",iObject," polygon from "
              
-             do iVertexDegree = 1, mesh % vertexDegree
+             do iVertexDegree = 1, vertexDegree
                 
-                iCell = mesh % cellsOnVertex % array(iVertexDegree, iVertex)
+                iCell = cellsOnVertex(iVertexDegree, iVertex)
                 
-                xv = mesh % xCell % array(iCell)
-                yv = mesh % yCell % array(iCell)
-                zv = mesh % zCell % array(iCell)
+                xv = xCell(iCell)
+                yv = yCell(iCell)
+                zv = zCell(iCell)
                 
                 call perform_rotation(xv, yv, zv)
                 
@@ -1678,8 +1895,8 @@ contains
     close(56)
 
     write(strout,fmt='(a,f15.3,a,f15.3,a,f15.3,a,f15.3,a)') &
-         "set xrange [",-mesh % sphere_radius*1.1_RKIND,":",mesh % sphere_radius*1.1_RKIND,&
-         "] ; set yrange [",-mesh % sphere_radius*1.1_RKIND,":",mesh % sphere_radius*1.1_RKIND,"]"
+         "set xrange [",-sphere_radius*1.1_RKIND,":",sphere_radius*1.1_RKIND,&
+         "] ; set yrange [",-sphere_radius*1.1_RKIND,":",sphere_radius*1.1_RKIND,"]"
     !write(*,*) trim(strout)
 
   end subroutine plot_vertices_spherical
@@ -1688,7 +1905,7 @@ contains
 
   subroutine plot_cells_spherical(mesh, cellArray, filename, fmin, fmax)
 
-    type(mesh_type), intent(in) :: mesh
+    type(MPAS_pool_type), intent(in) :: mesh
     
     real(kind=RKIND), dimension(:), intent(in) :: &
          cellArray
@@ -1754,6 +1971,38 @@ contains
     character(len=200) :: &
          filename_use
 
+    integer, pointer :: &
+         nCells
+
+    integer, dimension(:), pointer :: &
+         nEdgesOnCell
+
+    integer, dimension(:,:), pointer :: &
+         verticesOnCell
+
+    real(kind=RKIND), pointer :: &
+         sphere_radius
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         xCell, &
+         yCell, &
+         zCell, &
+         xVertex, &
+         yVertex, &
+         zVertex
+
+    ! init variables
+    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
+    call MPAS_pool_get_array(mesh, "verticesOnCell", verticesOnCell)
+    call MPAS_pool_get_array(mesh, "sphere_radius", sphere_radius)
+    call MPAS_pool_get_array(mesh, "xCell", xCell)
+    call MPAS_pool_get_array(mesh, "yCell", yCell)
+    call MPAS_pool_get_array(mesh, "zCell", zCell)
+    call MPAS_pool_get_array(mesh, "xVertex", xVertex)
+    call MPAS_pool_get_array(mesh, "yVertex", yVertex)
+    call MPAS_pool_get_array(mesh, "zVertex", zVertex)
+
     iObject = 1
 
     lnofill = .false.
@@ -1762,8 +2011,8 @@ contains
        fMin_use = fmin
        fMax_use = fmax
     else
-       fMin_use = minval(cellArray(1:mesh % nCells))
-       fMax_use = maxval(cellArray(1:mesh % nCells))
+       fMin_use = minval(cellArray(1:nCells))
+       fMax_use = maxval(cellArray(1:nCells))
     endif
 
     filename_use = "spherical_cells.txt"
@@ -1772,11 +2021,11 @@ contains
     open(55,file=trim(filename_use),action="write")
     open(56,file="clearPlot.gnuplot",action="write")
 
-    do iCell = 1, mesh % nCells
+    do iCell = 1, nCells
 
-       xc = mesh % xCell % array(iCell)
-       yc = mesh % yCell % array(iCell)
-       zc = mesh % zCell % array(iCell)
+       xc = xCell(iCell)
+       yc = yCell(iCell)
+       zc = zCell(iCell)
 
        call perform_rotation(xc, yc, zc)
 
@@ -1789,13 +2038,13 @@ contains
 
           write(strout,fmt='(a,i5,a)') "set object ",iObject," polygon from "
 
-          do iVertexOnCell = 1, mesh % nEdgesOnCell % array(iCell)
+          do iVertexOnCell = 1, nEdgesOnCell(iCell)
 
-             iVertex = mesh % verticesOnCell % array(iVertexOnCell, iCell)
+             iVertex = verticesOnCell(iVertexOnCell, iCell)
 
-             xv = mesh % xVertex % array(iVertex)
-             yv = mesh % yVertex % array(iVertex)
-             zv = mesh % zVertex % array(iVertex)
+             xv = xVertex(iVertex)
+             yv = yVertex(iVertex)
+             zv = zVertex(iVertex)
 
              call perform_rotation(xv, yv, zv)
 
@@ -1950,8 +2199,8 @@ contains
     close(56)
 
     write(strout,fmt='(a,f15.3,a,f15.3,a,f15.3,a,f15.3,a)') &
-         "set xrange [",-mesh % sphere_radius*1.1_RKIND,":",mesh % sphere_radius*1.1_RKIND,&
-         "] ; set yrange [",-mesh % sphere_radius*1.1_RKIND,":",mesh % sphere_radius*1.1_RKIND,"]"
+         "set xrange [",-sphere_radius*1.1_RKIND,":",sphere_radius*1.1_RKIND,&
+         "] ; set yrange [",-sphere_radius*1.1_RKIND,":",sphere_radius*1.1_RKIND,"]"
     !write(*,*) trim(strout)
 
   end subroutine plot_cells_spherical
@@ -1962,7 +2211,7 @@ contains
 
     use cice_constants, only: deg_to_rad
 
-    type(mesh_type), intent(in) :: mesh
+    type(MPAS_pool_type), intent(in) :: mesh
 
     real(kind=RKIND), intent(in) :: &
          lat, lon
@@ -1970,9 +2219,15 @@ contains
     real(kind=RKIND), intent(out) :: &
          x, y, z
 
-    z = mesh % sphere_radius * sin(lat*deg_to_rad)
-    x = mesh % sphere_radius * cos(lon*deg_to_rad) * cos(lat*deg_to_rad)
-    y = mesh % sphere_radius * sin(lon*deg_to_rad) * cos(lat*deg_to_rad)
+    real(kind=RKIND), pointer :: &
+         sphere_radius
+
+    ! init variables
+    call MPAS_pool_get_array(mesh, "sphere_radius", sphere_radius)
+
+    z = sphere_radius * sin(lat*deg_to_rad)
+    x = sphere_radius * cos(lon*deg_to_rad) * cos(lat*deg_to_rad)
+    y = sphere_radius * sin(lon*deg_to_rad) * cos(lat*deg_to_rad)
 
   end subroutine latlon_to_xyz
 
@@ -2028,7 +2283,7 @@ contains
 
   subroutine plot_pop_grid_cells(mesh, cellArray, filename, tag)
 
-    type(mesh_type), intent(in) :: mesh
+    type(MPAS_pool_type), intent(in) :: mesh
     
     real(kind=RKIND), dimension(:), intent(in) :: &
          cellArray
@@ -2050,6 +2305,22 @@ contains
     character(len=200) :: &
          filename_use
 
+    integer, pointer :: &
+         POP_nx, &
+         POP_ny, &
+         nCells
+    
+    integer, dimension(:), pointer :: &
+         POPindxi, &
+         POPindxj
+
+    ! init variables
+    call MPAS_pool_get_array(mesh, "POP_nx", POP_nx)
+    call MPAS_pool_get_array(mesh, "POP_ny", POP_ny)
+    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_array(mesh, "POPindxi", POPindxi)
+    call MPAS_pool_get_array(mesh, "POPindxj", POPindxj)
+
     if (present(filename)) then
 
        if (present(tag)) then
@@ -2064,14 +2335,14 @@ contains
        open(55,file='history/'//'pop_grid.txt',action='write')
     endif
 
-    do i = 1, mesh % POP_nx
-       do j = 1, mesh % POP_ny
+    do i = 1, POP_nx
+       do j = 1, POP_ny
 
           lfound = .false.
 
-          do iCell = 1, mesh % nCells
+          do iCell = 1, nCells
              
-             if (mesh % POPindxi % array(iCell) == i .and. mesh % POPindxj % array(iCell) == j) then
+             if (POPindxi(iCell) == i .and. POPindxj(iCell) == j) then
                 
                 lfound = .true.
 
@@ -2100,7 +2371,7 @@ contains
 
   subroutine plot_pop_grid_vertices(mesh, vertexArray, interiorVertex, filename, tag)
 
-    type(mesh_type), intent(in) :: mesh
+    type(MPAS_pool_type), intent(in) :: mesh
     
     real(kind=RKIND), dimension(:), intent(in) :: &
          vertexArray
@@ -2130,7 +2401,23 @@ contains
     real(kind=RKIND), dimension(:,:,:), allocatable :: &
          arrayOrdered
 
-    allocate(arrayOrdered(mesh % POP_nx,mesh % POP_ny,2))
+    integer, pointer :: &
+         POP_nx, &
+         POP_ny, &
+         nVertices
+
+    integer, dimension(:), pointer :: &
+         POPindxiv, &
+         POPindxjv
+
+    ! init variables
+    call MPAS_pool_get_array(mesh, "POP_nx", POP_nx)
+    call MPAS_pool_get_array(mesh, "POP_ny", POP_ny)
+    call MPAS_pool_get_array(mesh, "nVertices", nVertices)
+    call MPAS_pool_get_array(mesh, "POPindxiv", POPindxiv)
+    call MPAS_pool_get_array(mesh, "POPindxjv", POPindxjv)
+
+    allocate(arrayOrdered(POP_nx,POP_ny,2))
     arrayOrdered = 0.0_RKIND
 
     if (present(filename)) then
@@ -2147,12 +2434,12 @@ contains
        open(55,file='history/'//'pop_grid.txt',action='write')
     endif
 
-    do iVertex = 1, mesh % nVertices
+    do iVertex = 1, nVertices
 
        if (interiorVertex(iVertex) == 1) then
 
-          i = mesh % POPindxiv % array(iVertex)
-          j = mesh % POPindxjv % array(iVertex)
+          i = POPindxiv(iVertex)
+          j = POPindxjv(iVertex)
 
           if (i > 0 .and. i <= size(arrayOrdered,1) .and. j > 0 .and. j <= size(arrayOrdered,2)) then
 
@@ -2165,8 +2452,8 @@ contains
 
     enddo ! iVertex
 
-    do i = 1, mesh % POP_nx
-       do j = 1, mesh % POP_ny
+    do i = 1, POP_nx
+       do j = 1, POP_ny
 
           if (arrayOrdered(i,j,1) == 1.0_RKIND) then
 
@@ -2190,7 +2477,7 @@ contains
 
   subroutine init_ijpop_from_ivertex(mesh)
 
-    type(mesh_type), intent(inout) :: mesh
+    type(MPAS_pool_type), intent(inout) :: mesh
 
     integer :: &
          iVertex, &
@@ -2203,7 +2490,41 @@ contains
 
     logical :: l_boundary
 
-    do iVertex = 1, mesh % nVertices
+    integer, pointer :: &
+         nCells, &
+         nVertices, &
+         vertexDegree, &
+         POP_nx
+
+    integer, dimension(:), pointer :: &
+         POPindxi, &
+         POPindxj, &
+         POPindxiv, &
+         POPindxjv
+
+    integer, dimension(:,:), pointer :: &
+         cellsOnVertex
+    
+    real(kind=RKIND), dimension(:), pointer :: &
+         areaTriangle, &
+         areaCell, &
+         latVertex
+
+    ! init variables
+    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_array(mesh, "nVertices", nVertices)
+    call MPAS_pool_get_array(mesh, "vertexDegree", vertexDegree)
+    call MPAS_pool_get_array(mesh, "POP_nx", POP_nx)
+    call MPAS_pool_get_array(mesh, "POPindxi", POPindxi)
+    call MPAS_pool_get_array(mesh, "POPindxj", POPindxj)
+    call MPAS_pool_get_array(mesh, "POPindxiv", POPindxiv)
+    call MPAS_pool_get_array(mesh, "POPindxjv", POPindxjv)
+    call MPAS_pool_get_array(mesh, "cellsOnVertex", cellsOnVertex)
+    call MPAS_pool_get_array(mesh, "areaTriangle", areaTriangle)
+    call MPAS_pool_get_array(mesh, "areaCell", areaCell)
+    call MPAS_pool_get_array(mesh, "latVertex", latVertex)
+
+    do iVertex = 1, nVertices
 
        imin = 1000000000
        jmin = 1000000000
@@ -2212,12 +2533,12 @@ contains
        jmax = -1000000000
 
        ! first we find the minimum and maximum POP i value of a cell surrounding the vertex point
-       do iVertexDegree = 1, mesh % vertexDegree
+       do iVertexDegree = 1, vertexDegree
 
-          iCell = mesh % cellsOnVertex % array(iVertexDegree,iVertex)
+          iCell = cellsOnVertex(iVertexDegree,iVertex)
 
-          i = mesh % POPindxi % array(iCell)
-          j = mesh % POPindxj % array(iCell)
+          i = POPindxi(iCell)
+          j = POPindxj(iCell)
 
           imin = min(imin,i)
           jmin = min(jmin,j)
@@ -2228,50 +2549,50 @@ contains
        enddo ! iVertexDegree
 
        ! decide if at border
-       POP_nx_2 = nint(real(mesh % POP_nx) / 2.0)
+       POP_nx_2 = nint(real(POP_nx) / 2.0)
 
        l_boundary = .false.
        if (imin < POP_nx_2 .and. imax > POP_nx_2) l_boundary = .true.    
 
-       do iVertexDegree = 1, mesh % vertexDegree
+       do iVertexDegree = 1, vertexDegree
 
-          iCell = mesh % cellsOnVertex % array(iVertexDegree,iVertex)
+          iCell = cellsOnVertex(iVertexDegree,iVertex)
 
-          i = mesh % POPindxi % array(iCell)
-          j = mesh % POPindxj % array(iCell)
+          i = POPindxi(iCell)
+          j = POPindxj(iCell)
 
-          if (l_boundary .and. i > POP_nx_2) i = i - mesh % POP_nx
+          if (l_boundary .and. i > POP_nx_2) i = i - POP_nx
           imin = min(imin,i)
 
           jmin = min(jmin,j)
 
        enddo ! iVertexDegree
 
-       if (l_boundary .and. imin < 1) imin = imin + mesh % POP_nx
+       if (l_boundary .and. imin < 1) imin = imin + POP_nx
 
-       mesh % POPindxiv % array(iVertex) = imin
-       mesh % POPindxjv % array(iVertex) = jmin
+       POPindxiv(iVertex) = imin
+       POPindxjv(iVertex) = jmin
 
     enddo ! iVertex
     
     open(11,file="vertexareas.txt")
-    do iVertex = 1, mesh % nVertices
-       write(11,*) mesh % POPindxiv % array(iVertex), mesh % POPindxjv % array(iVertex), &
-            mesh % areaTriangle % array(iVertex)
+    do iVertex = 1, nVertices
+       write(11,*) POPindxiv(iVertex), POPindxjv(iVertex), &
+            areaTriangle(iVertex)
     enddo
     close(11)
     
     open(11,file="cellareas.txt")
-    do iCell = 1, mesh % nCells
-       write(11,*) mesh % POPindxi % array(iCell), mesh % POPindxj % array(iCell), &
-            mesh % areaCell % array(iCell)
+    do iCell = 1, nCells
+       write(11,*) POPindxi(iCell), POPindxj(iCell), &
+            areaCell(iCell)
     enddo
     close(11)
 
     open(11,file="vertexlat.txt")
-    do iVertex = 1, mesh % nVertices
-       write(11,*) mesh % POPindxiv % array(iVertex), mesh % POPindxjv % array(iVertex), &
-            mesh % latVertex % array(iVertex)
+    do iVertex = 1, nVertices
+       write(11,*) POPindxiv(iVertex), POPindxjv(iVertex), &
+            latVertex(iVertex)
     enddo
     close(11)
 
@@ -2282,7 +2603,7 @@ contains
 
   subroutine output_meridonal_strip(mesh, array, filename, imeridonal, istep, step_freq)
 
-    type(mesh_type), intent(inout) :: mesh
+    type(MPAS_pool_type), intent(inout) :: mesh
 
     real(kind=RKIND), dimension(:), intent(in) :: &
          array
@@ -2307,9 +2628,21 @@ contains
          stripmask, &
          stripcell
 
+    integer, pointer :: &
+         nCells
+    
+    integer, dimension(:), pointer :: &
+         POPindxi, &
+         POPindxj
+
+    ! init variables
+    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_array(mesh, "POPindxi", POPindxi)
+    call MPAS_pool_get_array(mesh, "POPindxj", POPindxj)
+
     if (mod(istep,step_freq) == 0) then
        
-       ny = maxval(mesh % POPindxj % array)
+       ny = maxval(POPindxj)
 
        allocate(stripval(ny))
        allocate(stripmask(ny))
@@ -2318,11 +2651,11 @@ contains
        stripval  = -999.0_RKIND
        stripmask = 0
 
-       do iCell = 1, mesh % nCells
+       do iCell = 1, nCells
 
-          if (mesh % POPindxi % array(iCell) == imeridonal) then
+          if (POPindxi(iCell) == imeridonal) then
 
-             j = mesh % POPindxj % array(iCell)
+             j = POPindxj(iCell)
 
              stripval(j) = array(iCell)
              stripmask(j) = 1
@@ -2411,12 +2744,14 @@ contains
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          tracers                  ! (nTracers, nVertLevels, nCells)
 
-    integer :: &
+    integer, pointer :: &
          index_iceAreaCell, &
          index_iceVolumeCell, &
          index_snowVolumeCell
 
-    type (mesh_type), pointer :: mesh
+    type (MPAS_pool_type), pointer :: &
+         mesh, &
+         icestate
 
     integer :: &
          iCell
@@ -2428,13 +2763,24 @@ contains
          snowVolumeCellMin,    snowVolumeCellMax, &
          totalIceVolume
 
-    mesh => block % mesh
+    integer, pointer :: &
+         nCells
 
-    tracers => block % icestate % tracers % array
+    real(kind=RKIND), dimension(:), pointer :: &
+         areaCell, &
+         latCell
 
-    index_iceAreaCell    = block % icestate % index_iceAreaCell
-    index_iceVolumeCell  = block % icestate % index_iceVolumeCell
-    index_snowVolumeCell = block % icestate % index_snowVolumeCell
+    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+    call MPAS_pool_get_subpool(block % structs, "icestate", icestate)
+
+    call MPAS_pool_get_array(icestate, "tracers", tracers)
+    call MPAS_pool_get_array(icestate, "index_iceAreaCell", index_iceAreaCell)
+    call MPAS_pool_get_array(icestate, "index_iceVolumeCell", index_iceVolumeCell)
+    call MPAS_pool_get_array(icestate, "index_snowVolumeCell", index_snowVolumeCell)
+
+    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_array(mesh, "areaCell", areaCell)
+    call MPAS_pool_get_array(mesh, "latCell", latCell)
 
     ! init min/max
     iceAreaCellMin(:)       =  1.0e30_RKIND
@@ -2448,7 +2794,7 @@ contains
     totalIceVolume(:) = 0.0_RKIND
 
     ! determine aggregate quantities
-    do iCell = 1, mesh % nCells
+    do iCell = 1, nCells
 
        ! whole globe
 
@@ -2461,9 +2807,9 @@ contains
        snowVolumeCellMax(1) = max(snowVolumeCellMin(1), tracers(index_snowVolumeCell,1,iCell))
 
        ! total ice volume
-       totalIceVolume(1) = totalIceVolume(1) + mesh % areaCell % array(iCell) * tracers(index_iceVolumeCell,1,iCell)
+       totalIceVolume(1) = totalIceVolume(1) + areaCell(iCell) * tracers(index_iceVolumeCell,1,iCell)
 
-       if (mesh % latCell % array(iCell) > 0.0_RKIND) then
+       if (latCell(iCell) > 0.0_RKIND) then
 
           ! northern hemisphere
 
@@ -2476,9 +2822,9 @@ contains
           snowVolumeCellMax(2) = max(snowVolumeCellMin(2), tracers(index_snowVolumeCell,1,iCell))
 
           ! total ice volume
-          totalIceVolume(2) = totalIceVolume(2) + mesh % areaCell % array(iCell) * tracers(index_iceVolumeCell,1,iCell)
+          totalIceVolume(2) = totalIceVolume(2) + areaCell(iCell) * tracers(index_iceVolumeCell,1,iCell)
 
-       else if (mesh % latCell % array(iCell) < 0.0_RKIND) then
+       else if (latCell(iCell) < 0.0_RKIND) then
 
           ! southern hemisphere
 
@@ -2491,7 +2837,7 @@ contains
           snowVolumeCellMax(3) = max(snowVolumeCellMin(3), tracers(index_snowVolumeCell,1,iCell))
 
           ! total ice volume
-          totalIceVolume(3) = totalIceVolume(3) + mesh % areaCell % array(iCell) * tracers(index_iceVolumeCell,1,iCell)
+          totalIceVolume(3) = totalIceVolume(3) + areaCell(iCell) * tracers(index_iceVolumeCell,1,iCell)
 
        endif
 

@@ -127,11 +127,11 @@ contains
 
   subroutine therm_zerolayer(mesh, icestate, atmos_forcing, ocean_forcing, dt, time)
 
-    type(mesh_type), intent(inout) :: mesh
+    type (MPAS_pool_type), intent(inout) :: mesh
 
-    type(icestate_type), pointer :: icestate
-    type(atmos_forcing_type), pointer :: atmos_forcing
-    type(ocean_forcing_type), pointer :: ocean_forcing
+    type (MPAS_pool_type), pointer :: icestate
+    type (MPAS_pool_type), pointer :: atmos_forcing
+    type (MPAS_pool_type), pointer :: ocean_forcing
 
     real(kind=RKIND), intent(in) :: &
          dt, &
@@ -150,17 +150,56 @@ contains
          iceVolumeCell, &
          snowVolumeCell
 
-    allocate(iceAreaCell(1:mesh % nCells))
-    allocate(iceVolumeCell(1:mesh % nCells))
-    allocate(snowVolumeCell(1:mesh % nCells))
+    integer, pointer :: &
+         nCells, &
+         index_iceAreaCell, &
+         index_iceVolumeCell, &
+         index_snowVolumeCell
 
-    iceAreaCell    = icestate % tracers % array(icestate % index_iceAreaCell, 1, :)
-    iceVolumeCell  = icestate % tracers % array(icestate % index_iceVolumeCell, 1, :)
-    snowVolumeCell = icestate % tracers % array(icestate % index_snowVolumeCell, 1, :)
+    real(kind=RKIND), dimension(:), pointer :: &
+         surfaceTemperature, &
+         shortwaveDown, &
+         longwaveDown, &
+         airDensity, &
+         airSpecificHumidity, &
+         airPotentialTemperature, &
+         sensibleTransferCoefficient, &
+         latentTransferCoefficient, &
+         snowfallRate, &
+         seaSurfaceSalinity
+
+    real(kind=RKIND), dimension(:,:,:), pointer :: &
+         tracers
+
+    ! init variables
+    call MPAS_pool_get_array(mesh, "nCells", nCells)
+
+    call MPAS_pool_get_array(icestate, "tracers", tracers)
+    call MPAS_pool_get_array(icestate, "index_iceAreaCell", index_iceAreaCell)
+    call MPAS_pool_get_array(icestate, "index_iceVolumeCell", index_iceVolumeCell)
+    call MPAS_pool_get_array(icestate, "index_snowVolumeCell", index_snowVolumeCell)
+    call MPAS_pool_get_array(icestate, "surfaceTemperature", surfaceTemperature)
+    call MPAS_pool_get_array(atmos_forcing, "shortwaveDown", shortwaveDown)
+    call MPAS_pool_get_array(atmos_forcing, "longwaveDown", longwaveDown)
+    call MPAS_pool_get_array(atmos_forcing, "airDensity", airDensity)
+    call MPAS_pool_get_array(atmos_forcing, "airSpecificHumidity", airSpecificHumidity)
+    call MPAS_pool_get_array(atmos_forcing, "airPotentialTemperature", airPotentialTemperature)
+    call MPAS_pool_get_array(atmos_forcing, "sensibleTransferCoefficient", sensibleTransferCoefficient)
+    call MPAS_pool_get_array(atmos_forcing, "latentTransferCoefficient", latentTransferCoefficient)
+    call MPAS_pool_get_array(atmos_forcing, "snowfallRate", snowfallRate)
+    call MPAS_pool_get_array(ocean_forcing, "seaSurfaceSalinity", seaSurfaceSalinity)
+
+    allocate(iceAreaCell(1:nCells))
+    allocate(iceVolumeCell(1:nCells))
+    allocate(snowVolumeCell(1:nCells))
+
+    iceAreaCell    = tracers(index_iceAreaCell, 1, :)
+    iceVolumeCell  = tracers(index_iceVolumeCell, 1, :)
+    snowVolumeCell = tracers(index_snowVolumeCell, 1, :)
 
     !call run_semtner_test_case()
 
-    do iCell = 1, mesh % nCells
+    do iCell = 1, nCells
 
        if (iceAreaCell(iCell) > 0.0_RKIND) then
 
@@ -170,16 +209,16 @@ contains
                iceAreaCell(iCell), &
                iceVolumeCell(iCell), &
                snowVolumeCell(iCell), &
-               icestate % surfaceTemperature % array(iCell), &
-               atmos_forcing % shortwaveDown % array(iCell), &
-               atmos_forcing % longwaveDown % array(iCell), &
-               atmos_forcing % airDensity % array(iCell), &
-               atmos_forcing % airSpecificHumidity % array(iCell), &
-               atmos_forcing % airPotentialTemperature % array(iCell), &
-               atmos_forcing % sensibleTransferCoefficient % array(iCell), &
-               atmos_forcing % latentTransferCoefficient % array(iCell), &
-               atmos_forcing % snowfallRate % array(iCell), &
-               ocean_forcing % seaSurfaceSalinity % array(iCell), &
+               surfaceTemperature(iCell), &
+               shortwaveDown(iCell), &
+               longwaveDown(iCell), &
+               airDensity(iCell), &
+               airSpecificHumidity(iCell), &
+               airPotentialTemperature(iCell), &
+               sensibleTransferCoefficient(iCell), &
+               latentTransferCoefficient(iCell), &
+               snowfallRate(iCell), &
+               seaSurfaceSalinity(iCell), &
                cumulativeIceAblation, &
                cumulativeBasalAblation, &
                cumulativeBasalAccretion, &
@@ -188,7 +227,7 @@ contains
 
           ltest = .false.
 
-          !write(*,*) iCell, icestate % surfaceTemperature % array(iCell)
+          !write(*,*) iCell, surfaceTemperature(iCell)
 
        else
 
@@ -196,14 +235,14 @@ contains
                iceAreaCell(iCell), &
                iceVolumeCell(iCell), &
                snowVolumeCell(iCell), &
-               icestate % surfaceTemperature % array(iCell), &
-               atmos_forcing % airPotentialTemperature % array(iCell))
+               surfaceTemperature(iCell), &
+               airPotentialTemperature(iCell))
           
        endif ! iceAreaCell
 
     enddo ! iCell
 
-    !write(*,*) minloc(icestate % surfaceTemperature % array), minval(icestate % surfaceTemperature % array)
+    !write(*,*) minloc(surfaceTemperature), minval(surfaceTemperature)
 
 !stop
 
@@ -1327,21 +1366,40 @@ contains
 
   subroutine init_semtner_test_case(mesh, icestate)
 
-    type(mesh_type), intent(in) :: mesh
+    type(MPAS_pool_type), intent(in) :: mesh
 
-    type(icestate_type), pointer :: icestate
+    type(MPAS_pool_type), pointer :: icestate
 
     integer :: &
          iCell
 
-    do iCell = 1, mesh % nCells
+    integer, pointer :: &
+         nCells, &
+         index_iceAreaCell, &
+         index_iceVolumeCell, &
+         index_snowVolumeCell
 
-       icestate % tracers % array(icestate % index_iceAreaCell, 1, :) = 1.0_RKIND
+    real(kind=RKIND), dimension(:), pointer :: &
+         surfaceTemperature
+    
+    real(kind=RKIND), dimension(:,:,:), pointer :: &
+         tracers
+    
+    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_array(icestate, "index_iceAreaCell", index_iceAreaCell)
+    call MPAS_pool_get_array(icestate, "index_iceVolumeCell", index_iceVolumeCell)
+    call MPAS_pool_get_array(icestate, "index_snowVolumeCell", index_snowVolumeCell)
+    call MPAS_pool_get_array(icestate, "surfaceTemperature", surfaceTemperature)
+    call MPAS_pool_get_array(icestate, "tracers", tracers)
+
+    do iCell = 1, nCells
+
+       tracers(index_iceAreaCell, 1, :) = 1.0_RKIND
        
-       icestate % surfaceTemperature % array(iCell) = -1.0_RKIND
+       surfaceTemperature(iCell) = -1.0_RKIND
        
-       icestate % tracers % array(icestate % index_iceVolumeCell, 1, :)  = 0.1_RKIND
-       icestate % tracers % array(icestate % index_snowVolumeCell, 1, :) = 0.0_RKIND
+       tracers(index_iceVolumeCell, 1, :)  = 0.1_RKIND
+       tracers(index_snowVolumeCell, 1, :) = 0.0_RKIND
 
     enddo ! iCell
 

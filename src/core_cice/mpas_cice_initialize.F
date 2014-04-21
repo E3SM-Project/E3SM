@@ -31,8 +31,41 @@ contains
 
     real(kind=RKIND), intent(in) :: &
          dt
+    
+    type (MPAS_pool_type), pointer :: &
+         mesh, &
+         atmos_forcing, &
+         icestate, &
+         hexdyn, &
+         boundary, &
+         configs
 
-    call init_junk_values(block % mesh)
+    logical, pointer :: &
+         config_use_velocity_solver, &
+         config_use_advection, &
+         config_use_forcing, &
+         config_perform_unit_test
+
+    character(len=strKIND), pointer :: &
+         config_unit_test_type, &
+         config_unit_test_subtype
+
+    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+    call MPAS_pool_get_subpool(block % structs, "atmos_forcing", atmos_forcing)
+    call MPAS_pool_get_subpool(block % structs, "icestate", icestate)
+    call MPAS_pool_get_subpool(block % structs, "hexdyn", hexdyn)
+    call MPAS_pool_get_subpool(block % structs, "boundary", boundary)
+
+    configs => block % configs
+
+    call MPAS_pool_get_config(configs, "config_use_velocity_solver", config_use_velocity_solver)
+    call MPAS_pool_get_config(configs, "config_use_advection", config_use_advection)
+    call MPAS_pool_get_config(configs, "config_use_forcing", config_use_forcing)
+    call MPAS_pool_get_config(configs, "config_perform_unit_test", config_perform_unit_test)
+    call MPAS_pool_get_config(configs, "config_unit_test_type", config_unit_test_type)
+    call MPAS_pool_get_config(configs, "config_unit_test_subtype", config_unit_test_subtype)
+
+    call init_junk_values(mesh)
 
     ! calculate boundary variables
     call init_boundary(block)
@@ -43,29 +76,30 @@ contains
     
     ! init advection
     !if (config_use_advection) &
-    !     call init_advection(block % mesh)
+    !     call init_advection(mesh)
     
     ! init forcing
     if (config_use_forcing) then
 
        call init_forcing(&
-            block % mesh, &
-            block % atmos_forcing)
+            mesh, &
+            atmos_forcing)
        
        call get_forcing(&
-            block % mesh, &
+            mesh, &
             clock, &
-            block % atmos_forcing)
+            atmos_forcing)
        
     endif
 
     ! init ice state
     call init_ice_state(&
-         block % mesh, &
-         block % icestate, &
-         block % hexdyn, &
-         block % boundary, &
-         block % atmos_forcing)
+         configs, &
+         mesh, &
+         icestate, &
+         hexdyn, &
+         boundary, &
+         atmos_forcing)
     
     if (config_perform_unit_test) &
          call perform_unit_test(block, config_unit_test_type, config_unit_test_subtype)
@@ -79,7 +113,7 @@ contains
 
   subroutine init_junk_values(mesh)
 
-    type(mesh_type), intent(inout) :: mesh
+    type(MPAS_pool_type), intent(inout) :: mesh
 
     integer :: &
          njunk
@@ -87,15 +121,26 @@ contains
     real(kind=RKIND), parameter :: &
          value_junk = -1.0e34
 
-    njunk = mesh % nCells + 1
+    integer, pointer :: &
+         nCells
     
-    mesh % areaCell % array(njunk) = value_junk
+    real(kind=RKIND), dimension(:), pointer :: &
+         areaCell
+
+    ! init variables
+    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_array(mesh, "areaCell", areaCell)
+
+    njunk = nCells + 1
+    
+    areaCell(njunk) = value_junk
 
   end subroutine init_junk_values
 
   !--------------------------------------------------------------------------
   
   subroutine init_ice_state(&
+       configs, &
        mesh, &
        icestate, &
        hexdyn, &
@@ -104,25 +149,55 @@ contains
 
     use mpas_configure
 
-    type (mesh_type),          intent(in) :: mesh
-    type (icestate_type),      pointer :: icestate
-    type (hexdyn_type),        pointer :: hexdyn
-    type (boundary_type),      pointer :: boundary
-    type (atmos_forcing_type), pointer :: atmos_forcing
+    type (MPAS_pool_type), intent(in) :: mesh
+    type (MPAS_pool_type), pointer :: icestate
+    type (MPAS_pool_type), pointer :: hexdyn
+    type (MPAS_pool_type), pointer :: boundary
+    type (MPAS_pool_type), pointer :: atmos_forcing
+    type (MPAS_pool_type), pointer :: configs
 
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          tracers                  ! (nTracers, nVertLevels, nCells)
 
-    integer :: &
+    integer, pointer :: &
          index_iceAreaCell, &
          index_iceVolumeCell, &
          index_snowVolumeCell
 
-    tracers => icestate % tracers % array
+    real(kind=RKIND), dimension(:), pointer :: &
+         uVelocity, &
+         vVelocity
 
-    index_iceAreaCell    = icestate % index_iceAreaCell
-    index_iceVolumeCell  = icestate % index_iceVolumeCell
-    index_snowVolumeCell = icestate % index_snowVolumeCell
+    character(len=strKIND), pointer :: &
+         config_initial_condition_type, &
+         config_initial_velocity_type
+
+    real(kind=RKIND), pointer :: &
+         config_initial_ice_area, &
+         config_initial_ice_volume, &
+         config_initial_snow_volume, &
+         config_initial_latitude_north, &
+         config_initial_latitude_south, &
+         config_initial_uvelocity, &
+         config_initial_vvelocity
+
+    call MPAS_pool_get_array(icestate, "tracers", tracers)
+    call MPAS_pool_get_array(icestate, "index_iceAreaCell", index_iceAreaCell)
+    call MPAS_pool_get_array(icestate, "index_iceVolumeCell", index_iceVolumeCell)
+    call MPAS_pool_get_array(icestate, "index_snowVolumeCell", index_snowVolumeCell)
+
+    call MPAS_pool_get_array(hexdyn, "uVelocity", uVelocity)
+    call MPAS_pool_get_array(hexdyn, "vVelocity", vVelocity)
+
+    call MPAS_pool_get_config(configs, "config_initial_condition_type", config_initial_condition_type)
+    call MPAS_pool_get_config(configs, "config_initial_velocity_type", config_initial_velocity_type)
+    call MPAS_pool_get_config(configs, "config_initial_ice_area", config_initial_ice_area)
+    call MPAS_pool_get_config(configs, "config_initial_ice_volume", config_initial_ice_volume)
+    call MPAS_pool_get_config(configs, "config_initial_snow_volume", config_initial_snow_volume)
+    call MPAS_pool_get_config(configs, "config_initial_latitude_north", config_initial_latitude_north)
+    call MPAS_pool_get_config(configs, "config_initial_latitude_south", config_initial_latitude_south)
+    call MPAS_pool_get_config(configs, "config_initial_uvelocity", config_initial_uvelocity)
+    call MPAS_pool_get_config(configs, "config_initial_vvelocity", config_initial_vvelocity)
 
     ! set volumes/areas
     if (trim(config_initial_condition_type) == "uniform") then
@@ -162,8 +237,8 @@ contains
 
        call init_ice_velocity_uniform(&
             mesh, &
-            hexdyn % uVelocity % array, &
-            hexdyn % vVelocity % array, &
+            uVelocity, &
+            vVelocity, &
             config_initial_uvelocity, &
             config_initial_vvelocity)
 
@@ -190,7 +265,7 @@ contains
        latitudeLimitNorth, &
        latitudeLimitSouth)
 
-    type (mesh_type), intent(in) :: mesh
+    type (MPAS_pool_type), intent(in) :: mesh
     
     real(kind=RKIND), dimension(:), intent(out) :: &
          iceAreaCell, &
@@ -211,10 +286,20 @@ contains
          pi = 3.14_RKIND, &
          rad_to_deg = pi / 180.0_RKIND
 
-    do iCell = 1, mesh % nCells
+    integer, pointer :: &
+         nCells
 
-       if (mesh % latCell % array(iCell) >= latitudeLimitNorth * rad_to_deg .or. &
-           mesh % latCell % array(iCell) <= latitudeLimitSouth * rad_to_deg) then
+    real(kind=RKIND), dimension(:), pointer :: &
+         latCell
+
+    ! init variables
+    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_array(mesh, "latCell", latCell)
+
+    do iCell = 1, nCells
+
+       if (latCell(iCell) >= latitudeLimitNorth * rad_to_deg .or. &
+           latCell(iCell) <= latitudeLimitSouth * rad_to_deg) then
 
           ! has ice
           iceAreaCell(iCell)    = iceAreaInitial
@@ -245,7 +330,7 @@ contains
        iceVolumeInitial, &
        snowVolumeInitial)
 
-    type (mesh_type), intent(in) :: mesh
+    type (MPAS_pool_type), intent(in) :: mesh
     
     real(kind=RKIND), dimension(:), intent(out) :: &
          iceAreaCell, &
@@ -266,11 +351,25 @@ contains
     real(kind=RKIND), parameter :: &
          circle_radius = 1.0e6_RKIND
 
-    do iCell = 1, mesh % nCells
+    integer, pointer :: &
+         nCells
+    
+    real(kind=RKIND), dimension(:), pointer :: &
+         xCell, &
+         yCell, &
+         zCell
+   
+    ! init variables
+    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_array(mesh, "xCell", xCell)
+    call MPAS_pool_get_array(mesh, "yCell", yCell)
+    call MPAS_pool_get_array(mesh, "zCell", zCell)
+
+    do iCell = 1, nCells
        
-       x = mesh % xCell % array(iCell)
-       y = mesh % yCell % array(iCell)
-       z = mesh % zCell % array(iCell)
+       x = xCell(iCell)
+       y = yCell(iCell)
+       z = zCell(iCell)
        
        if (sqrt(x**2+z**2) < circle_radius .and. y > 0.0_RKIND) then
           
@@ -301,7 +400,7 @@ contains
        InitialUVelocity, &
        InitialVVelocity)
     
-    type (mesh_type), intent(in) :: mesh
+    type (MPAS_pool_type), intent(in) :: mesh
     
     real(kind=RKIND), dimension(:), intent(out) :: &
          uVelocity, &
@@ -314,7 +413,12 @@ contains
     integer :: &
          iVertex
 
-    do iVertex = 1, mesh % nVertices
+    integer, pointer :: &
+         nVertices
+
+    call MPAS_pool_get_array(mesh, "nVertices", nVertices)
+
+    do iVertex = 1, nVertices
 
        uVelocity(iVertex) = InitialUVelocity
        vVelocity(iVertex) = InitialVVelocity

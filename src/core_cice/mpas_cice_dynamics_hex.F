@@ -28,12 +28,12 @@ contains
 
     use cice_diagnostics, only: plot_pop_grid_vertices
 
-    type(mesh_type), intent(inout) :: mesh
+    type(MPAS_pool_type), intent(inout) :: mesh
 
-    type(normal_type),   pointer :: normal
-    type(hexvar_type),   pointer :: hexvar
-    type(hexpwl_type),   pointer :: hexpwl
-    type(boundary_type), pointer :: boundary
+    type(MPAS_pool_type), pointer :: normal
+    type(MPAS_pool_type), pointer :: hexvar
+    type(MPAS_pool_type), pointer :: hexpwl
+    type(MPAS_pool_type), pointer :: boundary
 
     real(kind=RKIND), intent(in) :: dt
 
@@ -89,17 +89,17 @@ contains
          plot_vertices_spherical, &
          plot_pop_grid_vertices
 
-    type(mesh_type), intent(in) :: mesh
+    type(MPAS_pool_type), intent(in) :: mesh
 
-    type(icestate_type),      pointer :: icestate
-    type(boundary_type),      pointer :: boundary
-    type(normal_type),        pointer :: normal
-    type(atmos_forcing_type), pointer :: atmos_forcing    
-    type(hexdyn_type),        pointer :: hexdyn
-    type(hexweak_type),       pointer :: hexweak
-    type(hexvar_type),        pointer :: hexvar
-    type(hexpwl_type),        pointer :: hexpwl
-    type(hexfor_type),        pointer :: hexfor
+    type(MPAS_pool_type), pointer :: icestate
+    type(MPAS_pool_type), pointer :: boundary
+    type(MPAS_pool_type), pointer :: normal
+    type(MPAS_pool_type), pointer :: atmos_forcing    
+    type(MPAS_pool_type), pointer :: hexdyn
+    type(MPAS_pool_type), pointer :: hexweak
+    type(MPAS_pool_type), pointer :: hexvar
+    type(MPAS_pool_type), pointer :: hexpwl
+    type(MPAS_pool_type), pointer :: hexfor
 
     real(kind=RKIND), intent(in) :: &
          dt
@@ -117,75 +117,161 @@ contains
          iceAreaCell, &
          iceVolumeCell
 
-    allocate(iceAreaCell(1:mesh % nCells))
-    allocate(iceVolumeCell(1:mesh % nCells))
+    integer, pointer :: &
+         nCells, &
+         index_iceAreaCell, &
+         index_iceVolumeCell
 
-    iceAreaCell   = icestate % tracers % array(icestate % index_iceAreaCell, 1, :)
-    iceVolumeCell = icestate % tracers % array(icestate % index_iceVolumeCell, 1, :)
+    integer, dimension(:), pointer :: &
+         solveStress, &
+         solveVelocity, &
+         interiorVertex
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         iceAreaVertex, &
+         totalMassVertex, &
+         totalMassCell, &
+         icePressure, &
+         airStressCellU, &
+         airStressCellV, &
+         airStressVertexU, &
+         airStressVertexV, &
+         oceanStressU, &
+         oceanStressV, &
+         surfaceTiltForceU, &
+         surfaceTiltForceV, &
+         principalStress1, &
+         principalStress2, &
+         replacementPressure, &
+         uOceanVelocity, &
+         vOceanVelocity, &
+         airDensity, &
+         uAirVelocity, &
+         vAirVelocity, &
+         fVertex, &
+         stress11Weak, &
+         stress22Weak, &
+         stress12Weak
+
+    real(kind=RKIND), dimension(:,:), pointer :: &
+         stress11Var, &
+         stress22Var, &
+         stress12Var
+
+    real(kind=RKIND), dimension(:,:,:), pointer :: &
+         tracers
+
+    ! init variables
+    call MPAS_pool_get_array(icestate, "tracers", tracers)
+    call MPAS_pool_get_array(icestate, "index_iceAreaCell", index_iceAreaCell)
+    call MPAS_pool_get_array(icestate, "index_iceVolumeCell", index_iceVolumeCell)
+    call MPAS_pool_get_array(icestate, "iceAreaVertex", iceAreaVertex)
+    call MPAS_pool_get_array(icestate, "totalMassVertex", totalMassVertex)
+    call MPAS_pool_get_array(icestate, "totalMassCell", totalMassCell)
+
+    call MPAS_pool_get_array(hexdyn, "solveStress", solveStress)
+    call MPAS_pool_get_array(hexdyn, "solveVelocity", solveVelocity)
+    call MPAS_pool_get_array(hexdyn, "icePressure", icePressure)
+    call MPAS_pool_get_array(hexdyn, "airStressCellU", airStressCellU)
+    call MPAS_pool_get_array(hexdyn, "airStressCellV", airStressCellV)
+    call MPAS_pool_get_array(hexdyn, "airStressVertexU", airStressVertexU)
+    call MPAS_pool_get_array(hexdyn, "airStressVertexV", airStressVertexV)
+    call MPAS_pool_get_array(hexdyn, "oceanStressU", oceanStressU)
+    call MPAS_pool_get_array(hexdyn, "oceanStressV", oceanStressV)
+    call MPAS_pool_get_array(hexdyn, "surfaceTiltForceU", surfaceTiltForceU)
+    call MPAS_pool_get_array(hexdyn, "surfaceTiltForceV", surfaceTiltForceV)
+    call MPAS_pool_get_array(hexdyn, "principalStress1", principalStress1)
+    call MPAS_pool_get_array(hexdyn, "principalStress2", principalStress2)
+    call MPAS_pool_get_array(hexdyn, "replacementPressure", replacementPressure)
+
+    call MPAS_pool_get_array(hexfor, "uOceanVelocity", uOceanVelocity)
+    call MPAS_pool_get_array(hexfor, "vOceanVelocity", vOceanVelocity)
+
+    call MPAS_pool_get_array(boundary, "interiorVertex", interiorVertex)
+
+    call MPAS_pool_get_array(atmos_forcing, "uAirVelocity", uAirVelocity)
+    call MPAS_pool_get_array(atmos_forcing, "vAirVelocity", vAirVelocity)
+    call MPAS_pool_get_array(atmos_forcing, "airDensity", airDensity)
+
+    call MPAS_pool_get_array(mesh, "fVertex", fVertex)
+
+    call MPAS_pool_get_array(hexweak, "stress11", stress11Weak) 
+    call MPAS_pool_get_array(hexweak, "stress22", stress22Weak) 
+    call MPAS_pool_get_array(hexweak, "stress12", stress12Weak) 
+
+    call MPAS_pool_get_array(hexvar, "stress11", stress11Var) 
+    call MPAS_pool_get_array(hexvar, "stress22", stress22Var)
+    call MPAS_pool_get_array(hexvar, "stress12", stress12Var)
+
+    allocate(iceAreaCell(1:nCells))
+    allocate(iceVolumeCell(1:nCells))
+
+    iceAreaCell   = tracers(index_iceAreaCell, 1, :)
+    iceVolumeCell = tracers(index_iceVolumeCell, 1, :)
 
     ! interpolate area and mass from cells to vertices
     call interpolate_cell_to_vertex(mesh, &
-         icestate % iceAreaVertex % array, &
+         iceAreaVertex, &
          iceAreaCell)
 
     call interpolate_cell_to_vertex(mesh, &
-         icestate % totalMassVertex % array, &
-         icestate % totalMassCell % array)
+         totalMassVertex, &
+         totalMassCell)
 
     ! calculate computational masks
     call stress_calculation_mask_hex(mesh, &
-         hexdyn % solveStress % array, &
+         solveStress, &
          iceAreaCell, &
-         icestate % totalMassCell % array)
+         totalMassCell)
 
     call velocity_calculation_mask_hex(mesh, &
-         hexdyn % solveVelocity % array, &
-         icestate % iceAreaVertex % array, &
-         icestate % totalMassVertex % array, &
-         boundary % interiorVertex % array)
+         solveVelocity,   &
+         iceAreaVertex,   &
+         totalMassVertex, &
+         interiorVertex)
 
     ! calculate the ice strength
     call ice_strength(mesh, &     
-         hexdyn % icePressure % array,     &
+         icePressure,   &
          iceAreaCell,   &
          iceVolumeCell, &
-         hexdyn % solveStress % array)
+         solveStress)
 
     ! calculate the air stress
     call air_stress(&
-         hexdyn % airStressCellU % array,      &
-         hexdyn % airStressCellV % array,      &
-         atmos_forcing % uAirVelocity % array, & 
-         atmos_forcing % vAirVelocity % array, &
-         atmos_forcing % airDensity % array,   &
+         airStressCellU, &
+         airStressCellV, &
+         uAirVelocity,   & 
+         vAirVelocity,   &
+         airDensity,     &
          iceAreaCell)
 
     call interpolate_cell_to_vertex(mesh, &
-         hexdyn % airStressVertexU % array, &
-         hexdyn % airStressCellU % array)
+         airStressVertexU, &
+         airStressCellU)
 
     call interpolate_cell_to_vertex(mesh, &
-         hexdyn % airStressVertexV % array, &
-         hexdyn % airStressCellV % array)
+         airStressVertexV, &
+         airStressCellV)
 
     ! calculate the ocean stress
     call ocean_stress(& 
-         hexdyn % oceanStressU % array,   &
-         hexdyn % oceanStressV % array,   &
-         hexfor % uOceanVelocity % array, & 
-         hexfor % vOceanVelocity % array, &
-         mesh % fVertex % array,          &
-         hexdyn % solveVelocity % array)
+         oceanStressU,   &
+         oceanStressV,   &
+         uOceanVelocity, & 
+         vOceanVelocity, &
+         fVertex,        &
+         solveVelocity)
 
     ! calculate the surface tilt force
     call surface_tilt(&
-         hexdyn % surfaceTiltForceU % array, &
-         hexdyn % surfaceTiltForceV % array, &
-         hexfor % uOceanVelocity % array,    & 
-         hexfor % vOceanVelocity % array,    &
-         icestate % totalMassVertex % array, &
-         mesh % fVertex % array,             &
-         hexdyn % solveVelocity % array)
+         surfaceTiltForceU, &
+         surfaceTiltForceV, &
+         uOceanVelocity,    & 
+         vOceanVelocity,    &
+         totalMassVertex,   &
+         fVertex,           &
+         solveVelocity)
 
     ! subcycle the dynamics
     call subcycle_dynamics_hex(mesh, &
@@ -203,22 +289,22 @@ contains
     if (trim(divergenceFormulation) == "weak") then
 
        call principal_stresses(&
-            hexdyn % principalStress1 % array, &
-            hexdyn % principalStress2 % array, &
-            hexweak % stress11 % array, &
-            hexweak % stress22 % array, &
-            hexweak % stress12 % array, &
-            hexdyn % replacementPressure % array)
+            principalStress1, &
+            principalStress2, &
+            stress11Weak,     &
+            stress22Weak,     &
+            stress12Weak,     &
+            replacementPressure)
 
     else if (trim(divergenceFormulation) == "variational") then
 
        call principal_stresses(&
-            hexdyn % principalStress1 % array, &
-            hexdyn % principalStress2 % array, &
-            hexvar % stress11 % array(1,:), &
-            hexvar % stress22 % array(1,:), &
-            hexvar % stress12 % array(1,:), &
-            hexdyn % replacementPressure % array)
+            principalStress1, &
+            principalStress2, &
+            stress11Var(1,:), &
+            stress22Var(1,:), &
+            stress12Var(1,:), &
+            replacementPressure)
 
     endif
 
@@ -240,16 +326,16 @@ contains
 
     use cice_dynamics_shared, only: nElasticSubcycle
 
-    type(mesh_type), intent(in) :: mesh
+    type(MPAS_pool_type), intent(in) :: mesh
 
-    type(icestate_type), pointer :: icestate
-    type(boundary_type), pointer :: boundary
-    type(normal_type),   pointer :: normal
-    type(hexdyn_type),   pointer :: hexdyn
-    type(hexweak_type),  pointer :: hexweak
-    type(hexvar_type),   pointer :: hexvar
-    type(hexpwl_type),   pointer :: hexpwl
-    type(hexfor_type),   pointer :: hexfor
+    type(MPAS_pool_type), pointer :: icestate
+    type(MPAS_pool_type), pointer :: boundary
+    type(MPAS_pool_type), pointer :: normal
+    type(MPAS_pool_type), pointer :: hexdyn
+    type(MPAS_pool_type), pointer :: hexweak
+    type(MPAS_pool_type), pointer :: hexvar
+    type(MPAS_pool_type), pointer :: hexpwl
+    type(MPAS_pool_type), pointer :: hexfor
 
     real(kind=RKIND), intent(in) :: &
          dtDynamics, &
@@ -318,16 +404,16 @@ contains
          plot_pop_grid_vertices, &
          plot_pop_grid_cells
 
-    type(mesh_type), intent(in) :: mesh
+    type(MPAS_pool_type), intent(in) :: mesh
 
-    type(icestate_type), pointer :: icestate
-    type(boundary_type), pointer :: boundary
-    type(normal_type),   pointer :: normal
-    type(hexdyn_type),   pointer :: hexdyn
-    type(hexweak_type),  pointer :: hexweak
-    type(hexvar_type),   pointer :: hexvar
-    type(hexpwl_type),   pointer :: hexpwl
-    type(hexfor_type),   pointer :: hexfor
+    type(MPAS_pool_type), pointer :: icestate
+    type(MPAS_pool_type), pointer :: boundary
+    type(MPAS_pool_type), pointer :: normal
+    type(MPAS_pool_type), pointer :: hexdyn
+    type(MPAS_pool_type), pointer :: hexweak
+    type(MPAS_pool_type), pointer :: hexvar
+    type(MPAS_pool_type), pointer :: hexpwl
+    type(MPAS_pool_type), pointer :: hexfor
 
     real(kind=RKIND), intent(in) :: &
          dtDynamics, &
@@ -344,138 +430,249 @@ contains
 
     character(len=*), intent(in) :: divergenceFormulation
 
+    integer, pointer :: &
+         nVertices
+
+    integer, dimension(:), pointer :: &
+         solveVelocity, &
+         solveStress
+
+    integer, dimension(:,:), pointer :: &
+         cellVerticesAtVertex
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         iceAreaVertex, &
+         totalMassVertex, &
+         fVertex, &
+         latCellRotated, &
+         latVertexRotated, &
+         uVelocity, &
+         vVelocity, &
+         icePressure, &
+         replacementPressure, &
+         stressDivergenceU, &
+         stressDivergenceV, &
+         airStressVertexU, &
+         airStressVertexV, &
+         surfaceTiltForceU, &
+         surfaceTiltForceV, &
+         oceanStressU, &
+         oceanStressV, &
+         oceanStressCoeff, &
+         uOceanVelocity, &
+         vOceanVelocity, &
+         strain11Weak, &
+         strain22Weak, &
+         strain12Weak, &
+         stress11Weak, &
+         stress22Weak, &
+         stress12Weak
+
+    real(kind=RKIND), dimension(:,:), pointer :: &
+         strain11Var, &
+         strain22Var, &
+         strain12Var, &
+         stress11Var, &
+         stress22Var, &
+         stress12Var, &
+         basisSubArea
+
+    real(kind=RKIND), dimension(:,:,:), pointer :: &
+         normalVectorPolygon, &
+         normalVectorTriangle, &
+         basisGradientU, &
+         basisGradientV, &
+         basisIntegralsU, &
+         basisIntegralsV, &
+         basisGradientUPWL, &
+         basisGradientVPWL
+
+    call MPAS_pool_get_array(icestate, "iceAreaVertex", iceAreaVertex)
+    call MPAS_pool_get_array(icestate, "totalMassVertex", totalMassVertex)
+
+    call MPAS_pool_get_array(mesh, "nVertices", nVertices)
+    call MPAS_pool_get_array(mesh, "fvertex", fvertex)
+
+    call MPAS_pool_get_array(normal, "normalVectorPolygon", normalVectorPolygon)
+    call MPAS_pool_get_array(normal, "normalVectorTriangle", normalVectorTriangle)
+    call MPAS_pool_get_array(normal, "latCellRotated", latCellRotated)
+    call MPAS_pool_get_array(normal, "latVertexRotated", latVertexRotated)
+
+    call MPAS_pool_get_array(hexdyn, "solveVelocity", solveVelocity)
+    call MPAS_pool_get_array(hexdyn, "solveStress", solveStress)
+    call MPAS_pool_get_array(hexdyn, "uVelocity", uVelocity)
+    call MPAS_pool_get_array(hexdyn, "vVelocity", vVelocity)
+    call MPAS_pool_get_array(hexdyn, "icePressure", icePressure)
+    call MPAS_pool_get_array(hexdyn, "replacementPressure", replacementPressure)
+    call MPAS_pool_get_array(hexdyn, "stressDivergenceU", stressDivergenceU)
+    call MPAS_pool_get_array(hexdyn, "stressDivergenceV", stressDivergenceV)
+    call MPAS_pool_get_array(hexdyn, "airStressVertexU", airStressVertexU)
+    call MPAS_pool_get_array(hexdyn, "airStressVertexV", airStressVertexV)
+    call MPAS_pool_get_array(hexdyn, "surfaceTiltForceU", surfaceTiltForceU)
+    call MPAS_pool_get_array(hexdyn, "surfaceTiltForceV", surfaceTiltForceV)
+    call MPAS_pool_get_array(hexdyn, "oceanStressU", oceanStressU)
+    call MPAS_pool_get_array(hexdyn, "oceanStressV", oceanStressV)
+    call MPAS_pool_get_array(hexdyn, "oceanStressCoeff", oceanStressCoeff)
+
+    call MPAS_pool_get_array(hexfor, "uOceanVelocity", uOceanVelocity)
+    call MPAS_pool_get_array(hexfor, "vOceanVelocity", vOceanVelocity)
+
+    call MPAS_pool_get_array(hexweak, "strain11", strain11Weak)
+    call MPAS_pool_get_array(hexweak, "strain22", strain22Weak)
+    call MPAS_pool_get_array(hexweak, "strain12", strain12Weak)
+    call MPAS_pool_get_array(hexweak, "stress11", stress11Weak)
+    call MPAS_pool_get_array(hexweak, "stress22", stress22Weak)
+    call MPAS_pool_get_array(hexweak, "stress12", stress12Weak)
+
+    call MPAS_pool_get_array(hexvar, "strain11", strain11Var)
+    call MPAS_pool_get_array(hexvar, "strain22", strain22Var)
+    call MPAS_pool_get_array(hexvar, "strain12", strain12Var)
+    call MPAS_pool_get_array(hexvar, "stress11", stress11Var)
+    call MPAS_pool_get_array(hexvar, "stress22", stress22Var)
+    call MPAS_pool_get_array(hexvar, "stress12", stress12Var)
+    call MPAS_pool_get_array(hexvar, "basisGradientU", basisGradientU)
+    call MPAS_pool_get_array(hexvar, "basisGradientV", basisGradientV)
+    call MPAS_pool_get_array(hexvar, "basisIntegralsU", basisIntegralsU)
+    call MPAS_pool_get_array(hexvar, "basisIntegralsV", basisIntegralsV)
+    call MPAS_pool_get_array(hexvar, "cellVerticesAtVertex", cellVerticesAtVertex)
+
+    call MPAS_pool_get_array(hexpwl, "basisGradientU", basisGradientUPWL)
+    call MPAS_pool_get_array(hexpwl, "basisGradientV", basisGradientVPWL)
+    call MPAS_pool_get_array(hexpwl, "basisSubArea", basisSubArea)
+
     if (trim(divergenceFormulation) == "weak") then
 
        !call strain_tensor_hex_weak(mesh, &
-       !     hexweak % strain11 % array,           &
-       !     hexweak % strain22 % array,           &
-       !     hexweak % strain12 % array,           &
-       !     hexdyn % uVelocity % array,           &
-       !     hexdyn % vVelocity % array,           &
-       !     normal % normalVectorPolygon % array, &
-       !     normal % latCellRotated % array,      &
-       !     hexdyn % solveStress % array)
+       !     strain11Weak,        &
+       !     strain22Weak,        &
+       !     strain12Weak,        &
+       !     uVelocity,           &
+       !     vVelocity,           &
+       !     normalVectorPolygon, &
+       !     latCellRotated,      &
+       !     solveStress)
 
        !call stress_tensor_hex_weak(mesh, &
-       !     hexweak % stress11 % array,           &
-       !     hexweak % stress22 % array,           &
-       !     hexweak % stress12 % array,           &
-       !     hexweak % strain11 % array,           &
-       !     hexweak % strain22 % array,           &
-       !     hexweak % strain12 % array,           &
-       !     hexdyn % icePressure % array,         &
-       !     hexdyn % replacementPressure % array, &
-       !     hexdyn % solveStress % array,          &       
+       !     stress11Weak,         &
+       !     stress22Weak,         &
+       !     stress12Weak,         &
+       !     strain11Weak,         &
+       !     strain22Weak,         &
+       !     strain12Weak,         &
+       !     icePressure,          &
+       !     replacementPressure,  &
+       !     solveStress,          &       
        !     dtElastic, evpDamping)
 
        !call stress_divergence_hex_weak(mesh, &
-       !     hexdyn % stressDivergenceU % array,    &
-       !     hexdyn % stressDivergenceV % array,    &
-       !     hexweak % stress11 % array,            &
-       !     hexweak % stress22 % array,            &
-       !     hexweak % stress12 % array,            &
-       !     normal % normalVectorTriangle % array, &
-       !     normal % latVertexRotated % array,     &
-       !     hexdyn % solveVelocity % array)
+       !     stressDivergenceU,    &
+       !     stressDivergenceV,    &
+       !     stress11Weak,         &
+       !     stress22Weak,         &
+       !     stress12Weak,         &
+       !     normalVectorTriangle, &
+       !     latVertexRotated,     &
+       !     solveVelocity)
 
     else if (trim(divergenceFormulation) == "variational") then
 
        call strain_tensor_hex_variational(mesh, &
-            hexvar % strain11 % array,       &
-            hexvar % strain22 % array,       &
-            hexvar % strain12 % array,       &
-            hexdyn % uVelocity % array,      &
-            hexdyn % vVelocity % array,      &
-            hexvar % basisGradientU % array, &
-            hexvar % basisGradientV % array, &
-            hexdyn % solveStress % array)
+            strain11Var,    &
+            strain22Var,    &
+            strain12Var,    &
+            uVelocity,      &
+            vVelocity,      &
+            basisGradientU, &
+            basisGradientV, &
+            solveStress)
 
        call stress_tensor_hex_variational(mesh, &
-            hexvar % stress11 % array,            &
-            hexvar % stress22 % array,            &
-            hexvar % stress12 % array,            &
-            hexvar % strain11 % array,            &
-            hexvar % strain22 % array,            &
-            hexvar % strain12 % array,            &
-            hexdyn % icePressure % array,         &
-            hexdyn % replacementPressure % array, &
-            hexdyn % solveStress % array,          &
+            stress11Var,          &
+            stress22Var,          &
+            stress12Var,          &
+            strain11Var,          &
+            strain22Var,          &
+            strain12Var,          &
+            icePressure,          &
+            replacementPressure,  &
+            solveStress,          &
             dtElastic, evpDamping)
 
        call stress_divergence_hex_variational(mesh, &
-            hexdyn % stressDivergenceU % array,    &
-            hexdyn % stressDivergenceV % array,    &
-            hexvar % stress11 % array,             &
-            hexvar % stress22 % array,             &
-            hexvar % stress12 % array,             &
-            hexvar % basisIntegralsU % array,      &
-            hexvar % basisIntegralsV % array,      &
-            hexvar % cellVerticesAtVertex % array, &
-            hexdyn % solveVelocity % array)
+            stressDivergenceU,    &
+            stressDivergenceV,    &
+            stress11Var,          &
+            stress22Var,          &
+            stress12Var,          &
+            basisIntegralsU,      &
+            basisIntegralsV,      &
+            cellVerticesAtVertex, &
+            solveVelocity)
 
     else if (trim(divergenceFormulation) == "pwl") then
 
        call strain_tensor_hex_pwl(mesh, &
-            hexvar % strain11 % array,       &
-            hexvar % strain22 % array,       &
-            hexvar % strain12 % array,       &
-            hexdyn % uVelocity % array,      &
-            hexdyn % vVelocity % array,      &
-            hexpwl % basisGradientU % array, &
-            hexpwl % basisGradientV % array, &
-            hexdyn % solveStress % array)
+            strain11Var,       &
+            strain22Var,       &
+            strain12Var,       &
+            uVelocity,         &
+            vVelocity,         &
+            basisGradientUPWL, &
+            basisGradientVPWL, &
+            solveStress)
 
        call stress_tensor_hex_variational(mesh, &
-            hexvar % stress11 % array,            &
-            hexvar % stress22 % array,            &
-            hexvar % stress12 % array,            &
-            hexvar % strain11 % array,            &
-            hexvar % strain22 % array,            &
-            hexvar % strain12 % array,            &
-            hexdyn % icePressure % array,         &
-            hexdyn % replacementPressure % array, &
-            hexdyn % solveStress % array,          &
+            stress11Var,          &
+            stress22Var,          &
+            stress12Var,          &
+            strain11Var,          &
+            strain22Var,          &
+            strain12Var,          &
+            icePressure,          &
+            replacementPressure,  &
+            solveStress,          &
             dtElastic, evpDamping)
 
        call stress_divergence_hex_pwl(mesh, &
-            hexdyn % stressDivergenceU % array,    &
-            hexdyn % stressDivergenceV % array,    &
-            hexvar % stress11 % array,             &
-            hexvar % stress22 % array,             &
-            hexvar % stress12 % array,             &
-            hexpwl % basisGradientU % array,       &
-            hexpwl % basisGradientV % array,       &
-            hexpwl % basisSubArea % array,         &
-            hexvar % cellVerticesAtVertex % array, &
-            hexdyn % solveVelocity % array)
+            stressDivergenceU,    &
+            stressDivergenceV,    &
+            stress11Var,          &
+            stress22Var,          &
+            stress12Var,          &
+            basisGradientUPWL,    &
+            basisGradientVPWL,    &
+            basisSubArea,         &
+            cellVerticesAtVertex, &
+            solveVelocity)
 
     endif
 
     call ocean_stress_coefficient(& 
-         hexdyn % oceanStressCoeff % array, &
-         hexfor % uOceanVelocity % array,   & 
-         hexfor % vOceanVelocity % array,   &
-         hexdyn % uVelocity % array,        &   
-         hexdyn % vVelocity % array,        &
-         icestate % iceAreaVertex % array,  &
-         hexdyn % solveVelocity % array)
+         oceanStressCoeff, &
+         uOceanVelocity,   & 
+         vOceanVelocity,   &
+         uVelocity,        &   
+         vVelocity,        &
+         iceAreaVertex,    &
+         solveVelocity)
 
-    call solve_velocity(mesh % nVertices, &
-         hexdyn % solveVelocity % array,      &
-         hexdyn % uVelocity % array,         &   
-         hexdyn % vVelocity % array,         &
-         icestate % totalMassVertex % array, & 
-         mesh % fVertex % array,             &
-         hexdyn % stressDivergenceU % array, & 
-         hexdyn % stressDivergenceV % array, &
-         hexdyn % airStressVertexU % array,  & 
-         hexdyn % airStressVertexV % array,  &
-         hexdyn % surfaceTiltForceU % array, &
-         hexdyn % surfaceTiltForceV % array, &
-         hexdyn % oceanStressU % array,      &
-         hexdyn % oceanStressV % array,      &
-         hexdyn % oceanStressCoeff % array,  &
-         dtElastic,mesh)
+    call solve_velocity(&
+         nVertices,         &
+         solveVelocity,     &
+         uVelocity,         &   
+         vVelocity,         &
+         totalMassVertex,   & 
+         fVertex,           &
+         stressDivergenceU, & 
+         stressDivergenceV, &
+         airStressVertexU,  & 
+         airStressVertexV,  &
+         surfaceTiltForceU, &
+         surfaceTiltForceV, &
+         oceanStressU,      &
+         oceanStressV,      &
+         oceanStressCoeff,  &
+         dtElastic, mesh)
 
   end subroutine single_subcycle_dynamics_hex
 
@@ -486,7 +683,7 @@ contains
 
     use cice_dynamics_shared, only: areaMinimum, massMinimum
 
-    type(mesh_type), intent(in) :: mesh
+    type(MPAS_pool_type), intent(in) :: mesh
 
     integer, dimension(:), intent(out) :: &
          solveStress
@@ -500,7 +697,20 @@ contains
          iCellOnCell, &
          iCellNeighbour
 
-    do iCell = 1, mesh % nCells
+    integer, pointer :: &
+         nCells
+
+    integer, dimension(:), pointer :: &
+         nEdgesOnCell
+    
+    integer, dimension(:,:), pointer :: &
+         cellsOnCell
+
+    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
+    call MPAS_pool_get_array(mesh, "cellsOnCell", cellsOnCell)
+
+    do iCell = 1, nCells
 
        solveStress(iCell) = 0
 
@@ -513,9 +723,9 @@ contains
        else
 
           ! test neighbouring cells to see if have sufficient ice
-          do iCellOnCell = 1, mesh % nEdgesOnCell % array(iCell)
+          do iCellOnCell = 1, nEdgesOnCell(iCell)
 
-             iCellNeighbour = mesh % cellsOnCell % array(iCellOnCell,iCell)
+             iCellNeighbour = cellsOnCell(iCellOnCell,iCell)
 
              if (areaCell(iCellNeighbour) > areaMinimum .and. &
                  massCell(iCellNeighbour) > massMinimum) then
@@ -541,7 +751,7 @@ contains
 
     use cice_dynamics_shared, only: areaMinimum, massMinimum
 
-    type(mesh_type), intent(in) :: mesh
+    type(MPAS_pool_type), intent(in) :: mesh
 
     integer, dimension(:), intent(out) :: &
          solveVelocity
@@ -556,7 +766,12 @@ contains
     integer :: &
          iVertex
 
-    do iVertex = 1, mesh % nVertices
+    integer, pointer :: &
+         nVertices
+
+    call MPAS_pool_get_array(mesh, "nVertices", nVertices)
+
+    do iVertex = 1, nVertices
 
        solveVelocity(iVertex) = 0
 
