@@ -5,10 +5,12 @@ module cice_dyn_hex_weak
   implicit none
 
   private
-  public :: init_dynamics_hex_weak, &
-            strain_tensor_hex_weak, &
-            stress_tensor_hex_weak, &
-            stress_divergence_hex_weak
+  public :: &
+       init_dynamics_hex_weak, &
+       internal_stress_weak, &
+       strain_tensor_hex_weak, &
+       stress_tensor_hex_weak, &
+       stress_divergence_hex_weak
 
 contains
 
@@ -54,6 +56,99 @@ contains
 
   !-------------------------------------------------------------
   ! Time step
+  !-------------------------------------------------------------
+
+  subroutine internal_stress_weak(&
+       mesh,                hexweak, &
+       uVelocity,           vVelocity, &
+       normalVectorPolygon, normalVectorTriangle, &
+       latCellRotated,      latVertexRotated, &
+       icePressure,         replacementPressure, &
+       dtElastic,           evpDamping, &
+       stressDivergenceU,   stressDivergenceV, &
+       solveStress,         solveVelocity)
+
+    type (MPAS_pool_type), pointer :: &
+         mesh, &
+         hexweak
+
+    real(kind=RKIND), dimension(:), intent(in) :: &
+         uVelocity, &
+         vVelocity, &
+         latCellRotated, &
+         latVertexRotated         
+
+    real(kind=RKIND), dimension(:), intent(inout) :: &
+         icePressure, &
+         replacementPressure
+
+    real(kind=RKIND), dimension(:,:,:), intent(in) :: &
+         normalVectorPolygon, &
+         normalVectorTriangle
+
+    real(kind=RKIND), intent(in) :: &
+         dtElastic
+
+    logical, intent(in) :: &
+         evpDamping
+
+    real(kind=RKIND), dimension(:), intent(out) :: &
+         stressDivergenceU, &
+         stressDivergenceV
+
+    integer, dimension(:), intent(in) :: &
+         solveStress, &
+         solveVelocity
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         strain11, &
+         strain22, &
+         strain12, &
+         stress11, &
+         stress22, &
+         stress12
+
+    call MPAS_pool_get_array(hexweak, "strain11", strain11)
+    call MPAS_pool_get_array(hexweak, "strain22", strain22)
+    call MPAS_pool_get_array(hexweak, "strain12", strain12)
+    call MPAS_pool_get_array(hexweak, "stress11", stress11)
+    call MPAS_pool_get_array(hexweak, "stress22", stress22)
+    call MPAS_pool_get_array(hexweak, "stress12", stress12)
+
+    call strain_tensor_hex_weak(mesh, &
+         strain11,            &
+         strain22,            &
+         strain12,            &
+         uVelocity,           &
+         vVelocity,           &
+         normalVectorPolygon, &
+         latCellRotated,      &
+         solveStress)
+    
+    call stress_tensor_hex_weak(mesh, &
+         stress11,             &
+         stress22,             &
+         stress12,             &
+         strain11,             &
+         strain22,             &
+         strain12,             &
+         icePressure,          &
+         replacementPressure,  &
+         solveStress,          &       
+         dtElastic, evpDamping)
+
+    call stress_divergence_hex_weak(mesh, &
+         stressDivergenceU,    &
+         stressDivergenceV,    &
+         stress11,             &
+         stress22,             &
+         stress12,             &
+         normalVectorTriangle, &
+         latVertexRotated,     &
+         solveVelocity)
+
+  end subroutine internal_stress_weak
+
   !-------------------------------------------------------------
 
   subroutine strain_tensor_hex_weak(mesh, &

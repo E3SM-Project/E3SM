@@ -323,6 +323,9 @@
 		<var name="stress12"                          type="real"     dimensions="maxEdges nCells"          name_in_code="stress12"              persistence="scratch"/>
 		<var name="xLocal"                            type="real"     dimensions="maxEdges nCells"          name_in_code="xLocal"                persistence="scratch"/>
 		<var name="yLocal"                            type="real"     dimensions="maxEdges nCells"          name_in_code="yLocal"                persistence="scratch"/>
+		<var name="cellVerticesAtVertex"              type="integer"  dimensions="vertexDegree nVertices"   name_in_code="cellVerticesAtVertex"  persistence="scratch"/>
+	</var_struct>
+	<var_struct name="hexwach" time_levs="1">
 		<var name="wachspressA"                       type="real"     dimensions="maxEdges nCells"          name_in_code="wachspressA"           persistence="scratch"/>
 		<var name="wachspressB"                       type="real"     dimensions="maxEdges nCells"          name_in_code="wachspressB"           persistence="scratch"/>
 		<var name="wachspressKappa"                   type="real"     dimensions="maxEdges maxEdges nCells" name_in_code="wachspressKappa"       persistence="scratch"/>
@@ -330,7 +333,6 @@
 		<var name="basisIntegralsV"                   type="real"     dimensions="maxEdges maxEdges nCells" name_in_code="basisIntegralsV"       persistence="scratch"/>
 		<var name="basisGradientU"                    type="real"     dimensions="maxEdges maxEdges nCells" name_in_code="basisGradientU"        persistence="scratch"/>
 		<var name="basisGradientV"                    type="real"     dimensions="maxEdges maxEdges nCells" name_in_code="basisGradientV"        persistence="scratch"/>
-		<var name="cellVerticesAtVertex"              type="integer"  dimensions="vertexDegree nVertices"   name_in_code="cellVerticesAtVertex"  persistence="scratch"/>
 	</var_struct>
 	<var_struct name="hexpwl" time_levs="1">
 		<var name="basisSubArea"                      type="real"     dimensions="maxEdges nCells"     name_in_code="basisSubArea"    persistence="scratch"/>

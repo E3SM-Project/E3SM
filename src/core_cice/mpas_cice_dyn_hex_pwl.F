@@ -7,6 +7,7 @@ module cice_dyn_hex_pwl
   private
   public :: &
        init_dynamics_hex_pwl, &
+       internal_stress_pwl, &
        strain_tensor_hex_pwl, &
        stress_divergence_hex_pwl
 
@@ -196,6 +197,111 @@ contains
 
   !-------------------------------------------------------------
   ! time step
+  !-------------------------------------------------------------
+
+  subroutine internal_stress_pwl(&
+       mesh, &
+       hexvar,              hexpwl, &
+       uVelocity,           vVelocity, &
+       icePressure,         replacementPressure, &
+       dtElastic,           evpDamping, &
+       stressDivergenceU,   stressDivergenceV, &
+       solveStress,         solveVelocity)
+
+    use cice_dyn_hex_variational, only: &
+         stress_tensor_hex_variational
+
+    type (MPAS_pool_type), pointer :: &
+         mesh, &
+         hexvar, &
+         hexpwl
+
+    real(kind=RKIND), dimension(:), intent(in) :: &
+         uVelocity, &
+         vVelocity       
+
+    real(kind=RKIND), dimension(:), intent(inout) :: &
+         icePressure, &
+         replacementPressure
+
+    real(kind=RKIND), intent(in) :: &
+         dtElastic
+
+    logical, intent(in) :: &
+         evpDamping
+
+    real(kind=RKIND), dimension(:), intent(out) :: &
+         stressDivergenceU, &
+         stressDivergenceV
+
+    integer, dimension(:), intent(in) :: &
+         solveStress, &
+         solveVelocity
+
+    integer, dimension(:,:), pointer :: &
+         cellVerticesAtVertex
+
+    real(kind=RKIND), dimension(:,:), pointer :: &
+         strain11, &
+         strain22, &
+         strain12, &
+         stress11, &
+         stress22, &
+         stress12, &
+         basisSubArea
+
+    real(kind=RKIND), dimension(:,:,:), pointer :: &
+         basisGradientUPWL, &
+         basisGradientVPWL
+
+    call MPAS_pool_get_array(hexvar, "strain11", strain11)
+    call MPAS_pool_get_array(hexvar, "strain22", strain22)
+    call MPAS_pool_get_array(hexvar, "strain12", strain12)
+    call MPAS_pool_get_array(hexvar, "stress11", stress11)
+    call MPAS_pool_get_array(hexvar, "stress22", stress22)
+    call MPAS_pool_get_array(hexvar, "stress12", stress12)
+    call MPAS_pool_get_array(hexvar, "cellVerticesAtVertex", cellVerticesAtVertex)
+
+    call MPAS_pool_get_array(hexpwl, "basisGradientU", basisGradientUPWL)
+    call MPAS_pool_get_array(hexpwl, "basisGradientV", basisGradientVPWL)
+    call MPAS_pool_get_array(hexpwl, "basisSubArea", basisSubArea)
+
+    call strain_tensor_hex_pwl(mesh, &
+         strain11,          &
+         strain22,          &
+         strain12,          &
+         uVelocity,         &
+         vVelocity,         &
+         basisGradientUPWL, &
+         basisGradientVPWL, &
+         solveStress)
+    
+    call stress_tensor_hex_variational(mesh, &
+         stress11,             &
+         stress22,             &
+         stress12,             &
+         strain11,             &
+         strain22,             &
+         strain12,             &
+         icePressure,          &
+         replacementPressure,  &
+         solveStress,          &
+         dtElastic, evpDamping)
+    
+    call stress_divergence_hex_pwl(mesh, &
+         stressDivergenceU,    &
+         stressDivergenceV,    &
+         stress11,             &
+         stress22,             &
+         stress12,             &
+         basisGradientUPWL,    &
+         basisGradientVPWL,    &
+         basisSubArea,         &
+         cellVerticesAtVertex, &
+         solveVelocity)
+
+  end subroutine internal_stress_pwl
+
   !-------------------------------------------------------------
   
   subroutine strain_tensor_hex_pwl(mesh, &

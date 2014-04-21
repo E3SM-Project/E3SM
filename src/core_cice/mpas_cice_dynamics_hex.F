@@ -17,13 +17,14 @@ contains
   
   subroutine init_dynamics_hex(mesh,     dt,          &
                                boundary, normal,      &
-                               hexvar,   hexpwl,      &
+                               hexvar,                &
+                               hexwach,   hexpwl,     &
                                divergenceFormulation, &
                                gridCurvature)
 
     use cice_dynamics_shared, only: init_evp
     use cice_dyn_hex_weak, only: init_dynamics_hex_weak
-    use cice_dyn_hex_variational, only: init_dynamics_hex_variational
+    use cice_dyn_hex_wachspress, only: init_dynamics_hex_wachspress
     use cice_dyn_hex_pwl, only: init_dynamics_hex_pwl
 
     use cice_diagnostics, only: plot_pop_grid_vertices
@@ -32,6 +33,7 @@ contains
 
     type(MPAS_pool_type), pointer :: normal
     type(MPAS_pool_type), pointer :: hexvar
+    type(MPAS_pool_type), pointer :: hexwach
     type(MPAS_pool_type), pointer :: hexpwl
     type(MPAS_pool_type), pointer :: boundary
 
@@ -49,7 +51,7 @@ contains
 
     else if (trim(divergenceFormulation) == "variational") then
 
-       call init_dynamics_hex_variational(mesh, hexvar, boundary)
+       call init_dynamics_hex_wachspress(mesh, hexvar, hexwach, boundary)
 
     else if (trim(divergenceFormulation) == "pwl") then
 
@@ -67,7 +69,8 @@ contains
                               icestate, boundary,        &
                               normal,   atmos_forcing,   &
                               hexdyn,   hexweak,         &
-                              hexvar,   hexpwl,          &
+                              hexvar,                    &
+                              hexwach,   hexpwl,         &
                               hexfor,                    &
                               dt, divergenceFormulation, &
                               evpDamping, &
@@ -89,8 +92,7 @@ contains
          plot_vertices_spherical, &
          plot_pop_grid_vertices
 
-    type(MPAS_pool_type), intent(in) :: mesh
-
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
     type(MPAS_pool_type), pointer :: icestate
     type(MPAS_pool_type), pointer :: boundary
     type(MPAS_pool_type), pointer :: normal
@@ -98,6 +100,7 @@ contains
     type(MPAS_pool_type), pointer :: hexdyn
     type(MPAS_pool_type), pointer :: hexweak
     type(MPAS_pool_type), pointer :: hexvar
+    type(MPAS_pool_type), pointer :: hexwach
     type(MPAS_pool_type), pointer :: hexpwl
     type(MPAS_pool_type), pointer :: hexfor
 
@@ -278,7 +281,8 @@ contains
                                icestate,   boundary,  &
                                normal,     hexdyn,    &
                                hexweak,    hexvar,    &
-                               hexpwl,     hexfor,    &
+                               hexwach,    hexpwl,    &
+                               hexfor,                &
                                dtDynamics, dtElastic, &
                                divergenceFormulation, &
                                evpDamping, nstep)
@@ -319,21 +323,22 @@ contains
                                   icestate,   boundary,  &
                                   normal,     hexdyn,    &
                                   hexweak,    hexvar,    &
-                                  hexpwl,     hexfor,    &
+                                  hexwach,    hexpwl,    &
+                                  hexfor,                &
                                   dtDynamics, dtElastic, &
                                   divergenceFormulation, &
                                   evpDamping, nstep)
 
     use cice_dynamics_shared, only: nElasticSubcycle
 
-    type(MPAS_pool_type), intent(in) :: mesh
-
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
     type(MPAS_pool_type), pointer :: icestate
     type(MPAS_pool_type), pointer :: boundary
     type(MPAS_pool_type), pointer :: normal
     type(MPAS_pool_type), pointer :: hexdyn
     type(MPAS_pool_type), pointer :: hexweak
     type(MPAS_pool_type), pointer :: hexvar
+    type(MPAS_pool_type), pointer :: hexwach
     type(MPAS_pool_type), pointer :: hexpwl
     type(MPAS_pool_type), pointer :: hexfor
 
@@ -360,7 +365,8 @@ contains
                                          icestate,   boundary,  &
                                          normal,     hexdyn,    &
                                          hexweak,    hexvar,    &
-                                         hexpwl,     hexfor,    &
+                                         hexwach,    hexpwl,    &
+                                         hexfor,                &
                                          dtDynamics, dtElastic, &
                                          divergenceFormulation, &
                                          evpDamping,            &
@@ -376,7 +382,8 @@ contains
                                           icestate,   boundary,  &
                                           normal,     hexdyn,    &
                                           hexweak,    hexvar,    &
-                                          hexpwl,     hexfor,    &
+                                          hexwach,    hexpwl,    &
+                                          hexfor,                &
                                           dtDynamics, dtElastic, &
                                           divergenceFormulation, &
                                           evpDamping,            &
@@ -387,16 +394,14 @@ contains
     use cice_dynamics_shared, only: ocean_stress_coefficient, &
                                     solve_velocity
 
-    use cice_dyn_hex_weak, only: strain_tensor_hex_weak, &
-                                 stress_tensor_hex_weak, &
-                                 stress_divergence_hex_weak
+    use cice_dyn_hex_weak, only: &
+         internal_stress_weak
 
-    use cice_dyn_hex_variational, only: strain_tensor_hex_variational, &
-                                        stress_tensor_hex_variational, &
-                                        stress_divergence_hex_variational
+    use cice_dyn_hex_wachspress, only: &
+         internal_stress_wachspress
 
-    use cice_dyn_hex_pwl, only: strain_tensor_hex_pwl, &
-                                stress_divergence_hex_pwl
+    use cice_dyn_hex_pwl, only: &
+         internal_stress_pwl
 
     use cice_diagnostics, only: &
          plot_cells_spherical, &
@@ -404,14 +409,14 @@ contains
          plot_pop_grid_vertices, &
          plot_pop_grid_cells
 
-    type(MPAS_pool_type), intent(in) :: mesh
-
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
     type(MPAS_pool_type), pointer :: icestate
     type(MPAS_pool_type), pointer :: boundary
     type(MPAS_pool_type), pointer :: normal
     type(MPAS_pool_type), pointer :: hexdyn
     type(MPAS_pool_type), pointer :: hexweak
     type(MPAS_pool_type), pointer :: hexvar
+    type(MPAS_pool_type), pointer :: hexwach
     type(MPAS_pool_type), pointer :: hexpwl
     type(MPAS_pool_type), pointer :: hexfor
 
@@ -437,9 +442,6 @@ contains
          solveVelocity, &
          solveStress
 
-    integer, dimension(:,:), pointer :: &
-         cellVerticesAtVertex
-
     real(kind=RKIND), dimension(:), pointer :: &
          iceAreaVertex, &
          totalMassVertex, &
@@ -460,32 +462,11 @@ contains
          oceanStressV, &
          oceanStressCoeff, &
          uOceanVelocity, &
-         vOceanVelocity, &
-         strain11Weak, &
-         strain22Weak, &
-         strain12Weak, &
-         stress11Weak, &
-         stress22Weak, &
-         stress12Weak
-
-    real(kind=RKIND), dimension(:,:), pointer :: &
-         strain11Var, &
-         strain22Var, &
-         strain12Var, &
-         stress11Var, &
-         stress22Var, &
-         stress12Var, &
-         basisSubArea
+         vOceanVelocity
 
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          normalVectorPolygon, &
-         normalVectorTriangle, &
-         basisGradientU, &
-         basisGradientV, &
-         basisIntegralsU, &
-         basisIntegralsV, &
-         basisGradientUPWL, &
-         basisGradientVPWL
+         normalVectorTriangle
 
     call MPAS_pool_get_array(icestate, "iceAreaVertex", iceAreaVertex)
     call MPAS_pool_get_array(icestate, "totalMassVertex", totalMassVertex)
@@ -517,133 +498,39 @@ contains
     call MPAS_pool_get_array(hexfor, "uOceanVelocity", uOceanVelocity)
     call MPAS_pool_get_array(hexfor, "vOceanVelocity", vOceanVelocity)
 
-    call MPAS_pool_get_array(hexweak, "strain11", strain11Weak)
-    call MPAS_pool_get_array(hexweak, "strain22", strain22Weak)
-    call MPAS_pool_get_array(hexweak, "strain12", strain12Weak)
-    call MPAS_pool_get_array(hexweak, "stress11", stress11Weak)
-    call MPAS_pool_get_array(hexweak, "stress22", stress22Weak)
-    call MPAS_pool_get_array(hexweak, "stress12", stress12Weak)
-
-    call MPAS_pool_get_array(hexvar, "strain11", strain11Var)
-    call MPAS_pool_get_array(hexvar, "strain22", strain22Var)
-    call MPAS_pool_get_array(hexvar, "strain12", strain12Var)
-    call MPAS_pool_get_array(hexvar, "stress11", stress11Var)
-    call MPAS_pool_get_array(hexvar, "stress22", stress22Var)
-    call MPAS_pool_get_array(hexvar, "stress12", stress12Var)
-    call MPAS_pool_get_array(hexvar, "basisGradientU", basisGradientU)
-    call MPAS_pool_get_array(hexvar, "basisGradientV", basisGradientV)
-    call MPAS_pool_get_array(hexvar, "basisIntegralsU", basisIntegralsU)
-    call MPAS_pool_get_array(hexvar, "basisIntegralsV", basisIntegralsV)
-    call MPAS_pool_get_array(hexvar, "cellVerticesAtVertex", cellVerticesAtVertex)
-
-    call MPAS_pool_get_array(hexpwl, "basisGradientU", basisGradientUPWL)
-    call MPAS_pool_get_array(hexpwl, "basisGradientV", basisGradientVPWL)
-    call MPAS_pool_get_array(hexpwl, "basisSubArea", basisSubArea)
-
     if (trim(divergenceFormulation) == "weak") then
 
-       !call strain_tensor_hex_weak(mesh, &
-       !     strain11Weak,        &
-       !     strain22Weak,        &
-       !     strain12Weak,        &
-       !     uVelocity,           &
-       !     vVelocity,           &
-       !     normalVectorPolygon, &
-       !     latCellRotated,      &
-       !     solveStress)
+       call internal_stress_weak(&
+            mesh,                hexweak, &
+            uVelocity,           vVelocity, &
+            normalVectorPolygon, normalVectorTriangle, &
+            latCellRotated,      latVertexRotated, &
+            icePressure,         replacementPressure, &
+            dtElastic,           evpDamping, &
+            stressDivergenceU,   stressDivergenceV, &
+            solveStress,         solveVelocity)
 
-       !call stress_tensor_hex_weak(mesh, &
-       !     stress11Weak,         &
-       !     stress22Weak,         &
-       !     stress12Weak,         &
-       !     strain11Weak,         &
-       !     strain22Weak,         &
-       !     strain12Weak,         &
-       !     icePressure,          &
-       !     replacementPressure,  &
-       !     solveStress,          &       
-       !     dtElastic, evpDamping)
+    else if (trim(divergenceFormulation) == "wachspress") then
 
-       !call stress_divergence_hex_weak(mesh, &
-       !     stressDivergenceU,    &
-       !     stressDivergenceV,    &
-       !     stress11Weak,         &
-       !     stress22Weak,         &
-       !     stress12Weak,         &
-       !     normalVectorTriangle, &
-       !     latVertexRotated,     &
-       !     solveVelocity)
-
-    else if (trim(divergenceFormulation) == "variational") then
-
-       call strain_tensor_hex_variational(mesh, &
-            strain11Var,    &
-            strain22Var,    &
-            strain12Var,    &
-            uVelocity,      &
-            vVelocity,      &
-            basisGradientU, &
-            basisGradientV, &
-            solveStress)
-
-       call stress_tensor_hex_variational(mesh, &
-            stress11Var,          &
-            stress22Var,          &
-            stress12Var,          &
-            strain11Var,          &
-            strain22Var,          &
-            strain12Var,          &
-            icePressure,          &
-            replacementPressure,  &
-            solveStress,          &
-            dtElastic, evpDamping)
-
-       call stress_divergence_hex_variational(mesh, &
-            stressDivergenceU,    &
-            stressDivergenceV,    &
-            stress11Var,          &
-            stress22Var,          &
-            stress12Var,          &
-            basisIntegralsU,      &
-            basisIntegralsV,      &
-            cellVerticesAtVertex, &
-            solveVelocity)
+       call internal_stress_wachspress(&
+            mesh, &
+            hexvar,              hexwach, &
+            uVelocity,           vVelocity, &
+            icePressure,         replacementPressure, &
+            dtElastic,           evpDamping, &
+            stressDivergenceU,   stressDivergenceV, &
+            solveStress,         solveVelocity)
 
     else if (trim(divergenceFormulation) == "pwl") then
 
-       call strain_tensor_hex_pwl(mesh, &
-            strain11Var,       &
-            strain22Var,       &
-            strain12Var,       &
-            uVelocity,         &
-            vVelocity,         &
-            basisGradientUPWL, &
-            basisGradientVPWL, &
-            solveStress)
-
-       call stress_tensor_hex_variational(mesh, &
-            stress11Var,          &
-            stress22Var,          &
-            stress12Var,          &
-            strain11Var,          &
-            strain22Var,          &
-            strain12Var,          &
-            icePressure,          &
-            replacementPressure,  &
-            solveStress,          &
-            dtElastic, evpDamping)
-
-       call stress_divergence_hex_pwl(mesh, &
-            stressDivergenceU,    &
-            stressDivergenceV,    &
-            stress11Var,          &
-            stress22Var,          &
-            stress12Var,          &
-            basisGradientUPWL,    &
-            basisGradientVPWL,    &
-            basisSubArea,         &
-            cellVerticesAtVertex, &
-            solveVelocity)
+       call internal_stress_pwl(&
+            mesh, &
+            hexvar,              hexpwl, &
+            uVelocity,           vVelocity, &
+            icePressure,         replacementPressure, &
+            dtElastic,           evpDamping, &
+            stressDivergenceU,   stressDivergenceV, &
+            solveStress,         solveVelocity)
 
     endif
 

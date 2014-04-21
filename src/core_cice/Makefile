@@ -7,6 +7,7 @@ OBJS = 	mpas_cice_mpas_core.o \
 	mpas_cice_dynamics_hex.o \
 	mpas_cice_dyn_hex_weak.o \
 	mpas_cice_dyn_hex_variational.o \
+	mpas_cice_dyn_hex_wachspress.o \
 	mpas_cice_dyn_hex_pwl.o \
 	mpas_cice_dynamics_shared.o \
 	mpas_cice_forcing.o \
@@ -45,11 +46,13 @@ mpas_cice_forcing.o: mpas_cice_constants.o mpas_cice_mesh.o
 
 mpas_cice_dyn_hex_weak.o: mpas_cice_constants.o mpas_cice_testing.o mpas_cice_diagnostics.o mpas_cice_dynamics_shared.o
 
-mpas_cice_dyn_hex_variational.o: mpas_cice_constants.o mpas_cice_mesh.o mpas_cice_testing.o mpas_cice_dynamics_shared.o mpas_cice_diagnostics.o
+mpas_cice_dyn_hex_variational.o: mpas_cice_constants.o mpas_cice_dynamics_shared.o mpas_cice_diagnostics.o
 
-mpas_cice_dyn_hex_pwl.o: mpas_cice_constants.o mpas_cice_numerics.o mpas_cice_mesh.o mpas_cice_testing.o mpas_cice_dynamics_shared.o mpas_cice_diagnostics.o
+mpas_cice_dyn_hex_wachspress.o: mpas_cice_constants.o mpas_cice_numerics.o mpas_cice_mesh.o mpas_cice_testing.o mpas_cice_dynamics_shared.o mpas_cice_diagnostics.o mpas_cice_dyn_hex_variational.o
 
-mpas_cice_dynamics_hex.o: mpas_cice_constants.o mpas_cice_mesh.o mpas_cice_testing.o mpas_cice_dyn_hex_pwl.o mpas_cice_dyn_hex_variational.o mpas_cice_dyn_hex_weak.o mpas_cice_dynamics_shared.o mpas_cice_diagnostics.o
+mpas_cice_dyn_hex_pwl.o: mpas_cice_constants.o mpas_cice_numerics.o mpas_cice_mesh.o mpas_cice_testing.o mpas_cice_dynamics_shared.o mpas_cice_diagnostics.o mpas_cice_dyn_hex_variational.o
+
+mpas_cice_dynamics_hex.o: mpas_cice_constants.o mpas_cice_mesh.o mpas_cice_testing.o mpas_cice_dyn_hex_pwl.o mpas_cice_dyn_hex_wachspress.o mpas_cice_dyn_hex_weak.o mpas_cice_dynamics_shared.o mpas_cice_diagnostics.o
 
 mpas_cice_dynamics.o: mpas_cice_constants.o mpas_cice_dynamics_hex.o mpas_cice_dynamics_shared.o
 

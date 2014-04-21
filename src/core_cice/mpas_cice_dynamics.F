@@ -44,12 +44,14 @@ contains
          boundary, &
          normal, &
          hexvar, &
+         hexwach, &
          hexpwl
 
     call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
     call MPAS_pool_get_subpool(block % structs, "boundary", boundary)
     call MPAS_pool_get_subpool(block % structs, "normal", normal)
     call MPAS_pool_get_subpool(block % structs, "hexvar", hexvar)
+    call MPAS_pool_get_subpool(block % structs, "hexwach", hexwach)
     call MPAS_pool_get_subpool(block % structs, "hexpwl", hexpwl)
 
     if (trim(dynamicsGridType) == "hex") then
@@ -60,6 +62,7 @@ contains
             boundary,              &
             normal,                &
             hexvar,                &
+            hexwach,               &
             hexpwl,                &
             divergenceFormulation, &
             gridCurvature)
@@ -92,6 +95,7 @@ contains
          hexdyn,        &
          hexweak,       &
          hexvar,        &
+         hexwach,       &
          hexpwl,        &
          hexfor
 
@@ -103,6 +107,7 @@ contains
     call MPAS_pool_get_subpool(block % structs, "hexdyn", hexdyn)
     call MPAS_pool_get_subpool(block % structs, "hexweak", hexweak)
     call MPAS_pool_get_subpool(block % structs, "hexvar", hexvar)
+    call MPAS_pool_get_subpool(block % structs, "hexwach", hexwach)
     call MPAS_pool_get_subpool(block % structs, "hexpwl", hexpwl)
     call MPAS_pool_get_subpool(block % structs, "hexfor", hexfor)
 
@@ -117,6 +122,7 @@ contains
             hexdyn,                    &
             hexweak,                   &
             hexvar,                    &
+            hexwach,                   &
             hexpwl,                    &
             hexfor,                    &
             dt, divergenceFormulation, &
