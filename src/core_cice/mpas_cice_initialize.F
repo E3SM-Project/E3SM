@@ -35,6 +35,7 @@ contains
     type (MPAS_pool_type), pointer :: &
          mesh, &
          atmos_forcing, &
+         tracers, &
          icestate, &
          hexdyn, &
          boundary, &
@@ -51,6 +52,7 @@ contains
          config_unit_test_subtype
 
     call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+    call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
     call MPAS_pool_get_subpool(block % structs, "atmos_forcing", atmos_forcing)
     call MPAS_pool_get_subpool(block % structs, "icestate", icestate)
     call MPAS_pool_get_subpool(block % structs, "hexdyn", hexdyn)
@@ -96,7 +98,7 @@ contains
     call init_ice_state(&
          configs, &
          mesh, &
-         icestate, &
+         tracers, &
          hexdyn, &
          boundary, &
          atmos_forcing)
@@ -142,7 +144,7 @@ contains
   subroutine init_ice_state(&
        configs, &
        mesh, &
-       icestate, &
+       tracers, &
        hexdyn, &
        boundary, &
        atmos_forcing)
@@ -150,23 +152,18 @@ contains
     use mpas_configure
 
     type (MPAS_pool_type), intent(in) :: mesh
-    type (MPAS_pool_type), pointer :: icestate
+    type (MPAS_pool_type), pointer :: tracers
     type (MPAS_pool_type), pointer :: hexdyn
     type (MPAS_pool_type), pointer :: boundary
     type (MPAS_pool_type), pointer :: atmos_forcing
     type (MPAS_pool_type), pointer :: configs
 
-    real(kind=RKIND), dimension(:,:,:), pointer :: &
-         tracers                  ! (nTracers, nVertLevels, nCells)
-
-    integer, pointer :: &
-         index_iceAreaCell, &
-         index_iceVolumeCell, &
-         index_snowVolumeCell
-
     real(kind=RKIND), dimension(:), pointer :: &
          uVelocity, &
-         vVelocity
+         vVelocity, &
+         iceAreaCell, &
+         iceVolumeCell, &
+         snowVolumeCell
 
     character(len=strKIND), pointer :: &
          config_initial_condition_type, &
@@ -181,10 +178,9 @@ contains
          config_initial_uvelocity, &
          config_initial_vvelocity
 
-    call MPAS_pool_get_array(icestate, "tracers", tracers)
-    call MPAS_pool_get_array(icestate, "index_iceAreaCell", index_iceAreaCell)
-    call MPAS_pool_get_array(icestate, "index_iceVolumeCell", index_iceVolumeCell)
-    call MPAS_pool_get_array(icestate, "index_snowVolumeCell", index_snowVolumeCell)
+    call MPAS_pool_get_array(tracers, "iceAreaCell", iceAreaCell)
+    call MPAS_pool_get_array(tracers, "iceVolumeCell", iceVolumeCell)
+    call MPAS_pool_get_array(tracers, "snowVolumeCell", snowVolumeCell)
 
     call MPAS_pool_get_array(hexdyn, "uVelocity", uVelocity)
     call MPAS_pool_get_array(hexdyn, "vVelocity", vVelocity)
@@ -204,9 +200,9 @@ contains
 
        call init_ice_state_uniform_ice(&
             mesh, &
-            tracers(index_iceAreaCell,1,:), &
-            tracers(index_iceVolumeCell,1,:), &
-            tracers(index_snowVolumeCell,1,:), &
+            iceAreaCell, &
+            iceVolumeCell, &
+            snowVolumeCell, &
             config_initial_ice_area, &
             config_initial_ice_volume, &
             config_initial_snow_volume, &
@@ -217,9 +213,9 @@ contains
 
        call init_ice_state_circle_of_ice(&
             mesh, &
-            tracers(index_iceAreaCell,1,:), &
-            tracers(index_iceVolumeCell,1,:), &
-            tracers(index_snowVolumeCell,1,:), &
+            iceAreaCell, &
+            iceVolumeCell, &
+            snowVolumeCell, &
             config_initial_ice_area, &
             config_initial_ice_volume, &
             config_initial_snow_volume)

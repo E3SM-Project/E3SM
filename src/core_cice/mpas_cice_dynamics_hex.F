@@ -66,11 +66,12 @@ contains
   !-------------------------------------------------------------
 
   subroutine run_dynamics_hex(mesh, &
-                              icestate, boundary,        &
+                              tracers,  icestate,        &
+                              boundary,                  &
                               normal,   atmos_forcing,   &
                               hexdyn,   hexweak,         &
                               hexvar,                    &
-                              hexwach,   hexpwl,         &
+                              hexwach,  hexpwl,          &
                               hexfor,                    &
                               dt, divergenceFormulation, &
                               evpDamping, &
@@ -93,6 +94,7 @@ contains
          plot_pop_grid_vertices
 
     type(MPAS_pool_type), pointer, intent(in) :: mesh
+    type(MPAS_pool_type), pointer :: tracers
     type(MPAS_pool_type), pointer :: icestate
     type(MPAS_pool_type), pointer :: boundary
     type(MPAS_pool_type), pointer :: normal
@@ -116,14 +118,8 @@ contains
     integer, intent(in) :: &
          nstep
 
-    real(kind=RKIND), dimension(:), allocatable :: &
-         iceAreaCell, &
-         iceVolumeCell
-
     integer, pointer :: &
-         nCells, &
-         index_iceAreaCell, &
-         index_iceVolumeCell
+         nCells
 
     integer, dimension(:), pointer :: &
          solveStress, &
@@ -131,6 +127,8 @@ contains
          interiorVertex
 
     real(kind=RKIND), dimension(:), pointer :: &
+         iceAreaCell, &
+         iceVolumeCell, &
          iceAreaVertex, &
          totalMassVertex, &
          totalMassCell, &
@@ -161,13 +159,9 @@ contains
          stress22Var, &
          stress12Var
 
-    real(kind=RKIND), dimension(:,:,:), pointer :: &
-         tracers
-
     ! init variables
-    call MPAS_pool_get_array(icestate, "tracers", tracers)
-    call MPAS_pool_get_array(icestate, "index_iceAreaCell", index_iceAreaCell)
-    call MPAS_pool_get_array(icestate, "index_iceVolumeCell", index_iceVolumeCell)
+    call MPAS_pool_get_array(tracers, "iceAreaCell", iceAreaCell)
+    call MPAS_pool_get_array(tracers, "iceVolumeCell", iceVolumeCell)
     call MPAS_pool_get_array(icestate, "iceAreaVertex", iceAreaVertex)
     call MPAS_pool_get_array(icestate, "totalMassVertex", totalMassVertex)
     call MPAS_pool_get_array(icestate, "totalMassCell", totalMassCell)
@@ -205,12 +199,6 @@ contains
     call MPAS_pool_get_array(hexvar, "stress11", stress11Var) 
     call MPAS_pool_get_array(hexvar, "stress22", stress22Var)
     call MPAS_pool_get_array(hexvar, "stress12", stress12Var)
-
-    allocate(iceAreaCell(1:nCells))
-    allocate(iceVolumeCell(1:nCells))
-
-    iceAreaCell   = tracers(index_iceAreaCell, 1, :)
-    iceVolumeCell = tracers(index_iceVolumeCell, 1, :)
 
     ! interpolate area and mass from cells to vertices
     call interpolate_cell_to_vertex(mesh, &
@@ -311,9 +299,6 @@ contains
             replacementPressure)
 
     endif
-
-    deallocate(iceAreaCell)
-    deallocate(iceVolumeCell)
 
   end subroutine run_dynamics_hex
 

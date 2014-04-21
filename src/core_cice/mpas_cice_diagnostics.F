@@ -46,22 +46,17 @@ contains
     integer, intent(in) :: &
          nstep
 
-    real(kind=RKIND), dimension(:,:,:), pointer :: &
-         tracers                  ! (nTracers, nVertLevels, nCells)
-
-    integer, pointer :: &
-        index_iceAreaCell, &
-        index_iceVolumeCell
-
     type (MPAS_pool_type), pointer :: &
          boundary, &
-         icestate, &
+         tracers, &
          mesh, &
          hexdyn
 
     real(kind=RKIND), dimension(:), pointer :: &
          uVelocity, &
-         vVelocity
+         vVelocity, &
+         iceAreaCell, &
+         iceVolumeCell         
 
     integer, dimension(:), pointer :: &
          interiorVertex
@@ -70,14 +65,13 @@ contains
          nstep_skip = 100
 
     call MPAS_pool_get_subpool(block % structs, "boundary", boundary)
-    call MPAS_pool_get_subpool(block % structs, "icestate", icestate)
+    call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
     call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
     call MPAS_pool_get_subpool(block % structs, "hexdyn", hexdyn)
     call MPAS_pool_get_subpool(block % structs, "boundary", boundary)
 
-    call MPAS_pool_get_array(icestate, "tracers", tracers)
-    call MPAS_pool_get_array(icestate, "index_iceAreaCell", index_iceAreaCell)
-    call MPAS_pool_get_array(icestate, "index_iceVolumeCell", index_iceVolumeCell)
+    call MPAS_pool_get_array(tracers, "iceAreaCell", iceAreaCell)
+    call MPAS_pool_get_array(tracers, "iceVolumeCell", iceVolumeCell)
 
     call MPAS_pool_get_array(hexdyn, "uVelocity", uVelocity)
     call MPAS_pool_get_array(hexdyn, "vVelocity", vVelocity)    
@@ -86,8 +80,8 @@ contains
     if (nstep == 0 .or. nstep == 1 .or. mod(nstep,nstep_skip) == 0) then
 
        ! cell centre quantities
-       call plot_pop_grid_cells(mesh, tracers(index_iceAreaCell,1,:),   "iceAreaCell.txt",   nstep)
-       call plot_pop_grid_cells(mesh, tracers(index_iceVolumeCell,1,:), "iceVolumeCell.txt", nstep)
+       call plot_pop_grid_cells(mesh, iceAreaCell,   "iceAreaCell.txt",   nstep)
+       call plot_pop_grid_cells(mesh, iceVolumeCell, "iceVolumeCell.txt", nstep)
        
        ! vertex quantities
        call plot_pop_grid_vertices(mesh, uVelocity, interiorVertex, "uVelocity.txt", nstep)
@@ -1506,10 +1500,10 @@ contains
   ! Spherical plotting
   !-------------------------------------------------------------
 
-  subroutine plot_state(mesh, icestate, atmos_forcing, time, dt)
+  subroutine plot_state(mesh, tracers, atmos_forcing, time, dt)
 
     type(MPAS_pool_type), intent(in) :: mesh
-    type(MPAS_pool_type), pointer :: icestate
+    type(MPAS_pool_type), pointer :: tracers
     type(MPAS_pool_type), pointer :: atmos_forcing
 
     real(kind=RKIND), intent(in) :: &
@@ -1530,24 +1524,22 @@ contains
          snowThickness
 
     integer, pointer :: &
-         nCells, &
-         index_iceAreaCell, &
-         index_iceVolumeCell, &
-         index_snowVolumeCell
+         nCells
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         iceAreaCell, &
+         iceVolumeCell, &
+         snowVolumeCell
 
     real(kind=RKIND), dimension(:), pointer :: &
          surfaceTemperature, &
          airPotentialTemperature, &
          longwaveDown
 
-    real(kind=RKIND), dimension(:,:,:), pointer :: &    
-         tracers
-
     ! init variables
-    call MPAS_pool_get_array(icestate, "tracers", tracers)
-    call MPAS_pool_get_array(icestate, "index_iceAreaCell", index_iceAreaCell)
-    call MPAS_pool_get_array(icestate, "index_iceVolumeCell", index_iceVolumeCell)
-    call MPAS_pool_get_array(icestate, "index_snowVolumeCell", index_snowVolumeCell)
+    call MPAS_pool_get_array(tracers, "iceAreaCell", iceAreaCell)
+    call MPAS_pool_get_array(tracers, "iceVolumeCell", iceVolumeCell)
+    call MPAS_pool_get_array(tracers, "snowVolumeCell", snowVolumeCell)
     call MPAS_pool_get_array(atmos_forcing, "surfaceTemperature", surfaceTemperature)
     call MPAS_pool_get_array(atmos_forcing, "airPotentialTemperature", airPotentialTemperature)
     call MPAS_pool_get_array(atmos_forcing, "longwaveDown", longwaveDown)
@@ -1559,11 +1551,11 @@ contains
 
        do iCell = 1, nCells
 
-          if (tracers(index_iceAreaCell, 1, iCell) > 0.0_RKIND) then
-             iceThickness(iCell)  = tracers(index_iceVolumeCell, 1, iCell) / &
-                                    tracers(index_iceAreaCell, 1, iCell)
-             snowThickness(iCell) = tracers(index_snowVolumeCell, 1, iCell) / &
-                                    tracers(index_iceAreaCell, 1, iCell)
+          if (iceAreaCell(iCell) > 0.0_RKIND) then
+             iceThickness(iCell)  = iceVolumeCell(iCell) / &
+                                    iceAreaCell(iCell)
+             snowThickness(iCell) = snowVolumeCell(iCell) / &
+                                    iceAreaCell(iCell)
           else
              iceThickness(iCell)  = 0.0_RKIND
              snowThickness(iCell) = 0.0_RKIND
@@ -1580,10 +1572,10 @@ contains
        call plot_cells_spherical(mesh, airPotentialTemperature, "movie/data/airTemperature"//trim(suffix), -50.0_RKIND, 50.0_RKIND)
        call plot_cells_spherical(mesh, longwaveDown, "movie/data/longwave"//trim(suffix), 0.0_RKIND, 1000.0_RKIND)
 
-       call plot_cells_spherical(mesh, tracers(index_iceAreaCell, 1, :), "movie/data/iceAreaCell"//trim(suffix),          0.0_RKIND, 1.0_RKIND)
-       call plot_cells_spherical(mesh, iceThickness,                     "movie/data/iceThickness"//trim(suffix),         0.0_RKIND, 2.0_RKIND)
-       call plot_cells_spherical(mesh, snowThickness,                    "movie/data/snowThickness"//trim(suffix),        0.0_RKIND, 2.0_RKIND)
-       call plot_cells_spherical(mesh, surfaceTemperature,               "movie/data/surfaceTemperature"//trim(suffix), -60.0_RKIND, 0.1_RKIND)
+       call plot_cells_spherical(mesh, iceAreaCell, "movie/data/iceAreaCell"//trim(suffix),          0.0_RKIND, 1.0_RKIND)
+       call plot_cells_spherical(mesh, iceThickness,       "movie/data/iceThickness"//trim(suffix),         0.0_RKIND, 2.0_RKIND)
+       call plot_cells_spherical(mesh, snowThickness,      "movie/data/snowThickness"//trim(suffix),        0.0_RKIND, 2.0_RKIND)
+       call plot_cells_spherical(mesh, surfaceTemperature, "movie/data/surfaceTemperature"//trim(suffix), -60.0_RKIND, 0.1_RKIND)
 
        deallocate(iceThickness)
        deallocate(snowThickness)
@@ -2741,17 +2733,14 @@ contains
     integer, intent(in) :: &
          nstep
 
-    real(kind=RKIND), dimension(:,:,:), pointer :: &
-         tracers                  ! (nTracers, nVertLevels, nCells)
-
-    integer, pointer :: &
-         index_iceAreaCell, &
-         index_iceVolumeCell, &
-         index_snowVolumeCell
+    real(kind=RKIND), dimension(:), pointer :: &
+         iceAreaCell, &
+         iceVolumeCell, &
+         snowVolumeCell
 
     type (MPAS_pool_type), pointer :: &
          mesh, &
-         icestate
+         tracers
 
     integer :: &
          iCell
@@ -2771,12 +2760,11 @@ contains
          latCell
 
     call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
-    call MPAS_pool_get_subpool(block % structs, "icestate", icestate)
+    call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
 
-    call MPAS_pool_get_array(icestate, "tracers", tracers)
-    call MPAS_pool_get_array(icestate, "index_iceAreaCell", index_iceAreaCell)
-    call MPAS_pool_get_array(icestate, "index_iceVolumeCell", index_iceVolumeCell)
-    call MPAS_pool_get_array(icestate, "index_snowVolumeCell", index_snowVolumeCell)
+    call MPAS_pool_get_array(tracers, "iceAreaCell", iceAreaCell)
+    call MPAS_pool_get_array(tracers, "iceVolumeCell", iceVolumeCell)
+    call MPAS_pool_get_array(tracers, "snowVolumeCell", snowVolumeCell)
 
     call MPAS_pool_get_array(mesh, "nCells", nCells)
     call MPAS_pool_get_array(mesh, "areaCell", areaCell)
@@ -2799,45 +2787,45 @@ contains
        ! whole globe
 
        ! min/max area volume
-       iceAreaCellMin(1)    = min(iceAreaCellMin(1),    tracers(index_iceAreaCell,1,iCell))
-       iceAreaCellMax(1)    = max(iceAreaCellMin(1),    tracers(index_iceAreaCell,1,iCell))
-       iceVolumeCellMin(1)  = min(iceVolumeCellMin(1),  tracers(index_iceVolumeCell,1,iCell))
-       iceVolumeCellMax(1)  = max(iceVolumeCellMin(1),  tracers(index_iceVolumeCell,1,iCell))
-       snowVolumeCellMin(1) = min(snowVolumeCellMin(1), tracers(index_snowVolumeCell,1,iCell))
-       snowVolumeCellMax(1) = max(snowVolumeCellMin(1), tracers(index_snowVolumeCell,1,iCell))
+       iceAreaCellMin(1)    = min(iceAreaCellMin(1),    iceAreaCell(iCell))
+       iceAreaCellMax(1)    = max(iceAreaCellMin(1),    iceAreaCell(iCell))
+       iceVolumeCellMin(1)  = min(iceVolumeCellMin(1),  iceVolumeCell(iCell))
+       iceVolumeCellMax(1)  = max(iceVolumeCellMin(1),  iceVolumeCell(iCell))
+       snowVolumeCellMin(1) = min(snowVolumeCellMin(1), snowVolumeCell(iCell))
+       snowVolumeCellMax(1) = max(snowVolumeCellMin(1), snowVolumeCell(iCell))
 
        ! total ice volume
-       totalIceVolume(1) = totalIceVolume(1) + areaCell(iCell) * tracers(index_iceVolumeCell,1,iCell)
+       totalIceVolume(1) = totalIceVolume(1) + areaCell(iCell) * iceVolumeCell(iCell)
 
        if (latCell(iCell) > 0.0_RKIND) then
 
           ! northern hemisphere
 
           ! min/max area volume
-          iceAreaCellMin(2)    = min(iceAreaCellMin(2),    tracers(index_iceAreaCell,1,iCell))
-          iceAreaCellMax(2)    = max(iceAreaCellMin(2),    tracers(index_iceAreaCell,1,iCell))
-          iceVolumeCellMin(2)  = min(iceVolumeCellMin(2),  tracers(index_iceVolumeCell,1,iCell))
-          iceVolumeCellMax(2)  = max(iceVolumeCellMin(2),  tracers(index_iceVolumeCell,1,iCell))
-          snowVolumeCellMin(2) = min(snowVolumeCellMin(2), tracers(index_snowVolumeCell,1,iCell))
-          snowVolumeCellMax(2) = max(snowVolumeCellMin(2), tracers(index_snowVolumeCell,1,iCell))
+          iceAreaCellMin(2)    = min(iceAreaCellMin(2),    iceAreaCell(iCell))
+          iceAreaCellMax(2)    = max(iceAreaCellMin(2),    iceAreaCell(iCell))
+          iceVolumeCellMin(2)  = min(iceVolumeCellMin(2),  iceVolumeCell(iCell))
+          iceVolumeCellMax(2)  = max(iceVolumeCellMin(2),  iceVolumeCell(iCell))
+          snowVolumeCellMin(2) = min(snowVolumeCellMin(2), snowVolumeCell(iCell))
+          snowVolumeCellMax(2) = max(snowVolumeCellMin(2), snowVolumeCell(iCell))
 
           ! total ice volume
-          totalIceVolume(2) = totalIceVolume(2) + areaCell(iCell) * tracers(index_iceVolumeCell,1,iCell)
+          totalIceVolume(2) = totalIceVolume(2) + areaCell(iCell) * iceVolumeCell(iCell)
 
        else if (latCell(iCell) < 0.0_RKIND) then
 
           ! southern hemisphere
 
           ! min/max area volume
-          iceAreaCellMin(3)    = min(iceAreaCellMin(3),    tracers(index_iceAreaCell,1,iCell))
-          iceAreaCellMax(3)    = max(iceAreaCellMin(3),    tracers(index_iceAreaCell,1,iCell))
-          iceVolumeCellMin(3)  = min(iceVolumeCellMin(3),  tracers(index_iceVolumeCell,1,iCell))
-          iceVolumeCellMax(3)  = max(iceVolumeCellMin(3),  tracers(index_iceVolumeCell,1,iCell))
-          snowVolumeCellMin(3) = min(snowVolumeCellMin(3), tracers(index_snowVolumeCell,1,iCell))
-          snowVolumeCellMax(3) = max(snowVolumeCellMin(3), tracers(index_snowVolumeCell,1,iCell))
+          iceAreaCellMin(3)    = min(iceAreaCellMin(3),    iceAreaCell(iCell))
+          iceAreaCellMax(3)    = max(iceAreaCellMin(3),    iceAreaCell(iCell))
+          iceVolumeCellMin(3)  = min(iceVolumeCellMin(3),  iceVolumeCell(iCell))
+          iceVolumeCellMax(3)  = max(iceVolumeCellMin(3),  iceVolumeCell(iCell))
+          snowVolumeCellMin(3) = min(snowVolumeCellMin(3), snowVolumeCell(iCell))
+          snowVolumeCellMax(3) = max(snowVolumeCellMin(3), snowVolumeCell(iCell))
 
           ! total ice volume
-          totalIceVolume(3) = totalIceVolume(3) + areaCell(iCell) * tracers(index_iceVolumeCell,1,iCell)
+          totalIceVolume(3) = totalIceVolume(3) + areaCell(iCell) * iceVolumeCell(iCell)
 
        endif
 

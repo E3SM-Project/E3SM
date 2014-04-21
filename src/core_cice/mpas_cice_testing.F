@@ -196,10 +196,10 @@ contains
   ! Square test case
   !-------------------------------------------------------------
 
-  subroutine init_square_test_case_hex(mesh, icestate, hexdyn, hexfor, boundary, atmos_forcing)
+  subroutine init_square_test_case_hex(mesh, tracers, icestate, hexdyn, hexfor, boundary, atmos_forcing)
 
     type(MPAS_pool_type), intent(inout) :: mesh
-
+    type(MPAS_pool_type), pointer :: tracers
     type(MPAS_pool_type), pointer :: icestate
     type(MPAS_pool_type), pointer :: hexdyn
     type(MPAS_pool_type), pointer :: hexfor
@@ -241,7 +241,7 @@ contains
                              xVertex,        &
                              yVertex)
 
-    call init_ice_state(mesh, icestate, hexdyn, hexfor, boundary)
+    call init_ice_state(mesh, tracers, icestate, hexdyn, hexfor, boundary)
 
   end subroutine init_square_test_case_hex
 
@@ -337,10 +337,10 @@ contains
 
   !-------------------------------------------------------------
 
-  subroutine init_ice_state(mesh, icestate, hexdyn, hexfor, boundary)
+  subroutine init_ice_state(mesh, tracers, icestate, hexdyn, hexfor, boundary)
 
     type(MPAS_pool_type), intent(in) :: mesh
-
+    type(MPAS_pool_type), pointer :: tracers
     type(MPAS_pool_type), pointer :: icestate
     type(MPAS_pool_type), pointer :: hexdyn
     type(MPAS_pool_type), pointer :: hexfor
@@ -359,32 +359,28 @@ contains
 
     integer, pointer :: &
          nCells, &
-         nVertices, &
-         index_iceAreaCell, &
-         index_iceVolumeCell
+         nVertices
 
     integer, dimension(:), pointer :: &
          interiorVertex
 
     real(kind=RKIND), dimension(:), pointer :: &
          xCell, &
+         iceAreaCell, &
+         iceVolumeCell, &
          totalMassCell, &
          uVelocity, &
          vVelocity, &
          uOceanVelocity, &
          vOceanVelocity
     
-    real(kind=RKIND), dimension(:,:,:), pointer :: &
-         tracers
-
     ! init variables
     call MPAS_pool_get_array(mesh, "nCells", nCells)
     call MPAS_pool_get_array(mesh, "nVertices", nVertices)
     call MPAS_pool_get_array(mesh, "xCell", xCell)
 
-    call MPAS_pool_get_array(icestate, "tracers", tracers)
-    call MPAS_pool_get_array(icestate, "index_iceAreaCell", index_iceAreaCell)
-    call MPAS_pool_get_array(icestate, "index_iceVolumeCell", index_iceVolumeCell)
+    call MPAS_pool_get_array(tracers, "iceAreaCell", iceAreaCell)
+    call MPAS_pool_get_array(tracers, "iceVolumeCell", iceVolumeCell)
     call MPAS_pool_get_array(icestate, "totalMassCell", totalMassCell)
 
     call MPAS_pool_get_array(boundary, "interiorVertex", interiorVertex)
@@ -401,13 +397,13 @@ contains
 
        x = xCell(iCell)
 
-       tracers(index_iceAreaCell, 1, iCell) = &!0.95_RKIND!&
+       iceAreaCell(iCell) = &!0.95_RKIND!&
             max(min(x / Lx, 1.0_RKIND), 0.0_RKIND)
 
-       tracers(index_iceVolumeCell, 1, :) = &
-            iceThickness * tracers(index_iceAreaCell, 1, iCell)
+       iceVolumeCell(iCell) = &
+            iceThickness * iceAreaCell(iCell)
 
-       totalMassCell(iCell) = tracers(index_iceVolumeCell, 1, iCell) * rhoi
+       totalMassCell(iCell) = iceVolumeCell(iCell) * rhoi
           
     enddo ! iCell
 

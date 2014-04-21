@@ -88,6 +88,7 @@ contains
 
     type (MPAS_pool_type), pointer :: &
          mesh,          &
+         tracers,       &
          icestate,      &
          boundary,      &
          normal,        &
@@ -100,6 +101,7 @@ contains
          hexfor
 
     call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+    call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
     call MPAS_pool_get_subpool(block % structs, "icestate", icestate)
     call MPAS_pool_get_subpool(block % structs, "boundary", boundary)
     call MPAS_pool_get_subpool(block % structs, "normal", normal)
@@ -115,6 +117,7 @@ contains
 
        call run_dynamics_hex(&
             mesh,                      &
+            tracers,                   &
             icestate,                  &
             boundary,                  &
             normal,                    &

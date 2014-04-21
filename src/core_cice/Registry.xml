@@ -221,16 +221,16 @@
 
 
 	<!-- ice state -->
-	<var_struct name="icestate" time_levs="1">-->
-                <var_array name="tracers" type="real" dimensions="ONE nCells">
-		 	<var name="iceAreaCell"    array_group="tracers"/>
-		 	<var name="iceVolumeCell"  array_group="tracers"/>
-		 	<var name="snowVolumeCell" array_group="tracers"/>
-		</var_array>
+	<var_struct name="tracers" time_levs="1">
+		<var name="iceAreaCell"                       type="real"     dimensions="nCells"              name_in_code="iceAreaCell"/>
+		<var name="iceVolumeCell"                     type="real"     dimensions="nCells"              name_in_code="iceVolumeCell"/>
+		<var name="snowVolumeCell"                    type="real"     dimensions="nCells"              name_in_code="snowVolumeCell"/>
+		<var name="surfaceTemperature"                type="real"     dimensions="nCells"              name_in_code="surfaceTemperature"/>
+	</var_struct>
+	<var_struct name="icestate" time_levs="1">
 		<var name="iceAreaVertex"                     type="real"     dimensions="nVertices"           name_in_code="iceAreaVertex"/>
 		<var name="totalMassCell"                     type="real"     dimensions="nCells"              name_in_code="totalMassCell"/>
 		<var name="totalMassVertex"                   type="real"     dimensions="nVertices"           name_in_code="totalMassVertex"/>
-		<var name="surfaceTemperature"                type="real"     dimensions="nVertices"           name_in_code="surfaceTemperature"/>
 	</var_struct>
 
 	<!--atmos forcing -->
