@@ -37,9 +37,10 @@
 !> calc_cldincidence    : calculates the cloud fraction as 0 or 1, depending on cloud condensates.
 !> calc_cldfraction     : calculates the cloud fraction as a function of the relative humidity.
 !>
-!> comments:
-!> The subroutine calc_cldfraction has not been testted in MPAS. The default is to use subroutine
-!> calc_cldincidence.
+!> add-ons and modifications to sourcecode:
+!> ----------------------------------------
+!>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-22.
 
 
  contains
@@ -86,12 +87,17 @@
 !inout arguments:
  type(diag_physics_type),intent(inout):: diag_physics
 
+!local variables:
+ real(kind=RKIND),dimension(:,:),pointer:: cldfrac
+
 !--------------------------------------------------------------------------------------------------
+
+ cldfrac => diag_physics % cldfrac % array
 
  do j = jts,jte
  do k = kts,kte
  do i = its,ite
-    diag_physics % cldfrac % array(k,i) = cldfrac_p(i,k,j)
+    cldfrac(k,i) = cldfrac_p(i,k,j)
  enddo
  enddo
  enddo

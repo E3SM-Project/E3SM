@@ -68,6 +68,8 @@
 !>    * in call to subroutine rrtmg_lwrad, replaced the variable g (that originally pointed to 
 !>      gravity) with gravity, for simplicity.
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-03-21.
+!>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-22.
 
 
  contains
@@ -251,25 +253,49 @@
 
  real(kind=RKIND),intent(in):: xtime_s
 
-!local variables:
+!local variables and arrays:
  integer:: ncols,nlevs
+
  real(kind=RKIND),dimension(:,:),allocatable:: p2d,o32d
+ real(kind=RKIND),dimension(:),pointer    :: latCell,lonCell
+ real(kind=RKIND),dimension(:),pointer    :: skintemp,snow,xice,xland
+ real(kind=RKIND),dimension(:),pointer    :: m_ps,pin
+ real(kind=RKIND),dimension(:),pointer    :: sfc_albedo,sfc_emiss
+ real(kind=RKIND),dimension(:,:),pointer  :: cldfrac,m_hybi,o3clim,o3vmr
+ real(kind=RKIND),dimension(:,:,:),pointer:: aerosols,ozmixm
 
 !--------------------------------------------------------------------------------------------------
 
+ latCell    => mesh         % latCell    % array
+ lonCell    => mesh         % lonCell    % array
+ m_hybi     => mesh         % m_hybi     % array
+ m_ps       => state        % m_ps       % array
+ aerosols   => state        % aerosols   % array
+ skintemp   => sfc_input    % skintemp   % array
+ snow       => sfc_input    % snow       % array
+ xice       => sfc_input    % xice       % array
+ xland      => sfc_input    % xland      % array
+ pin        => atm_input    % pin        % array
+ ozmixm     => atm_input    % ozmixm     % array
+ sfc_albedo => diag_physics % sfc_albedo % array
+ sfc_emiss  => diag_physics % sfc_emiss  % array
+ cldfrac    => diag_physics % cldfrac    % array
+ o3clim     => diag_physics % o3clim     % array
+ o3vmr      => diag_physics % o3vmr      % array
+
  do j = jts,jte
  do i = its,ite
-    sfc_emiss_p(i,j) = diag_physics % sfc_emiss % array(i)
-    tsk_p(i,j)       = sfc_input % skintemp % array(i)
-    snow_p(i,j)      = sfc_input % snow     % array(i)
-    xice_p(i,j)      = sfc_input % xice     % array(i)
-    xland_p(i,j)     = sfc_input % xland    % array(i)
+    sfc_emiss_p(i,j) = sfc_emiss(i)
+    tsk_p(i,j)       = skintemp(i)
+    snow_p(i,j)      = snow(i)
+    xice_p(i,j)      = xice(i)
+    xland_p(i,j)     = xland(i)
  enddo
  enddo
  do j = jts,jte
  do k = kts,kte
  do i = its,ite
-    cldfrac_p(i,k,j) = diag_physics % cldfrac % array(k,i)
+    cldfrac_p(i,k,j) = cldfrac(k,i)
  enddo
  enddo
  enddo
@@ -323,12 +349,12 @@
        if(config_o3climatology) then
           !ozone mixing ratio:
           do k = 1, num_oznLevels
-             pin_p(k) = atm_input % pin % array(k)         
+             pin_p(k) = pin(k)
           enddo
           do j = jts,jte
           do k = 1, num_oznLevels
              do i = its,ite
-                o3clim_p(i,k,j) = diag_physics % o3clim % array(k,i)
+                o3clim_p(i,k,j) = o3clim(k,i)
              enddo
           enddo
           enddo
@@ -347,7 +373,7 @@
              call vinterp_ozn(1,ncols,ncols,nlevs,p2d,pin_p,num_oznlevels,o3clim_p(1,1,j),o32d)
              do i = its,ite
              do k = kts,kte
-                diag_physics % o3vmr % array(k,i) = o32d(i,k)
+                o3vmr(k,i) = o32d(i,k)
              enddo
              enddo
           enddo
@@ -368,9 +394,9 @@
     case("cam_lw")
        do j = jts,jte
        do i = its,ite
-          xlat_p(i,j) = (mesh % latCell % array(i)) / degrad
-          xlon_p(i,j) = (mesh % lonCell % array(i)) / degrad
-          sfc_albedo_p(i,j) = diag_physics % sfc_albedo % array(i)
+          xlat_p(i,j) = latCell(i) / degrad
+          xlon_p(i,j) = lonCell(i) / degrad
+          sfc_albedo_p(i,j) = sfc_albedo(i)
 
           coszr_p(i,j)      = 0.0_RKIND
           gsw_p(i,j)        = 0.0_RKIND
@@ -426,33 +452,33 @@
        call mpas_timer_start("CAM lw: ozone and aerosols")
        !ozone mixing ratio:
        do k = 1, num_oznlevels
-          pin_p(k) = atm_input % pin % array(k)
+          pin_p(k) = pin(k)
        enddo
        do n = 1, num_months
           do j = jts,jte
           do k = 1, num_oznlevels
           do i = its,ite
-             ozmixm_p(i,k,j,n) = atm_input % ozmixm % array(n,k,i)
+             ozmixm_p(i,k,j,n) = ozmixm(n,k,i)
           enddo
           enddo
           enddo
        enddo
        !aerosol mixing ratio:
        do k = 1, num_aerlevels
-          m_hybi_p(k) = mesh % m_hybi % array(k,1)
+          m_hybi_p(k) = m_hybi(k,1)
        enddo
        do i = its,ite
        do j = jts,jte
-          m_psp_p(i,j) = state % m_ps % array(i)
-          m_psn_p(i,j) = state % m_ps % array(i)
+          m_psp_p(i,j) = m_ps(i)
+          m_psn_p(i,j) = m_ps(i)
        enddo
        enddo
        do n = 1,num_aerosols
        do j = jts,jte
        do k = 1, num_aerlevels
        do i = its,ite
-          aerosolcp_p(i,k,j,n) = state % aerosols % array(n,k,i)
-          aerosolcn_p(i,k,j,n) = state % aerosols % array(n,k,i)
+          aerosolcp_p(i,k,j,n) = aerosols(n,k,i)
+          aerosolcn_p(i,k,j,n) = aerosols(n,k,i)
        enddo
        enddo
        enddo
@@ -477,30 +503,47 @@
  type(diag_physics_type),intent(inout):: diag_physics
  type(tend_physics_type),intent(inout):: tend_physics
 
-!local variables:
+!local variables and arrays:
  integer:: nlay,pcols
+
  real(kind=RKIND),dimension(:,:),allocatable:: p1d
+ real(kind=RKIND),dimension(:),pointer :: glw,lwcf,lwdnb,lwdnbc,lwdnt,lwdntc,lwupb,lwupbc, &
+                                          lwupt,lwuptc,olrtoa
+ real(kind=RKIND),dimension(:,:),pointer:: rthratenlw
 
 !--------------------------------------------------------------------------------------------------
 
+ glw    => diag_physics % glw    % array
+ lwcf   => diag_physics % lwcf   % array
+ lwdnb  => diag_physics % lwdnb  % array
+ lwdnbc => diag_physics % lwdnbc % array
+ lwdnt  => diag_physics % lwdnt  % array
+ lwdntc => diag_physics % lwdntc % array
+ lwupb  => diag_physics % lwupb  % array
+ lwupbc => diag_physics % lwupbc % array
+ lwupt  => diag_physics % lwupt  % array
+ lwuptc => diag_physics % lwuptc % array
+ olrtoa => diag_physics % olrtoa % array
+ rthratenlw => tend_physics % rthratenlw % array
+
  do j = jts,jte
  do i = its,ite
-    diag_physics % glw    % array(i) = glw_p(i,j)
-    diag_physics % lwcf   % array(i) = lwcf_p(i,j)
-    diag_physics % lwdnb  % array(i) = lwdnb_p(i,j)
-    diag_physics % lwdnbc % array(i) = lwdnbc_p(i,j)
-    diag_physics % lwdnt  % array(i) = lwdnt_p(i,j)
-    diag_physics % lwdntc % array(i) = lwdntc_p(i,j)
-    diag_physics % lwupb  % array(i) = lwupb_p(i,j)
-    diag_physics % lwupbc % array(i) = lwupbc_p(i,j)
-    diag_physics % lwupt  % array(i) = lwupt_p(i,j)
-    diag_physics % lwuptc % array(i) = lwuptc_p(i,j)
-    diag_physics % olrtoa % array(i) = olrtoa_p(i,j)
+    glw(i)    = glw_p(i,j)
+    lwcf(i)   = lwcf_p(i,j)
+    lwdnb(i)  = lwdnb_p(i,j)
+    lwdnbc(i) = lwdnbc_p(i,j)
+    lwdnt(i)  = lwdnt_p(i,j)
+    lwdntc(i) = lwdntc_p(i,j)
+    lwupb(i)  = lwupb_p(i,j)
+    lwupbc(i) = lwupbc_p(i,j)
+    lwupt(i)  = lwupt_p(i,j)
+    lwuptc(i) = lwuptc_p(i,j)
+    olrtoa(i) = olrtoa_p(i,j)
  enddo
 
  do k = kts,kte
  do i = its,ite
-    tend_physics % rthratenlw % array(k,i) = rthratenlw_p(i,k,j)
+    rthratenlw(k,i) = rthratenlw_p(i,k,j)
  enddo
  enddo
  enddo
@@ -514,27 +557,35 @@
 !input arguments:
  type(diag_physics_type),intent(inout):: diag_physics
 
+!local variables and arrays:
+ real(kind=RKIND),dimension(:,:),pointer  :: emstot
+ real(kind=RKIND),dimension(:,:,:),pointer:: absnxt,abstot
+
 !---------------------------------------------------------------------------------------------
+
+ absnxt => diag_physics % absnxt % array
+ abstot => diag_physics % abstot % array
+ emstot => diag_physics % emstot % array
 
 !write(0,*) '--- writing absnxt,abstot,and emstot to restart =', l_camlw
  do j = jts,jte
  do n = 1,cam_abs_dim1
  do k = kts,kte
  do i = its,ite
-    diag_physics % absnxt % array(k,n,i) = absnxt_p(i,k,n,j)
+    absnxt(k,n,i) = absnxt_p(i,k,n,j)
  enddo
  enddo
  enddo
  do n = 1,cam_abs_dim2
  do k = kts,kte+1
  do i = its,ite
-    diag_physics % abstot % array(k,n,i) = abstot_p(i,k,n,j)
+    abstot(k,n,i) = abstot_p(i,k,n,j)
  enddo
  enddo
  enddo
  do k = kts,kte+1
  do i = its,ite
-    diag_physics % emstot % array(k,i) = emstot_p(i,k,j)
+    emstot(k,i) = emstot_p(i,k,j)
  enddo
  enddo
  enddo
@@ -636,6 +687,7 @@
              ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme ,&
              its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte  &
                        )
+       write(0,*) '--- exit subroutine rrtmg_lwrad'
 
     case ("cam_lw")
        xtime_m = xtime_s/60.

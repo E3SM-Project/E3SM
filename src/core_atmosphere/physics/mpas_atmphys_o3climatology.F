@@ -45,9 +45,11 @@
 !>                          as in the CAM radiation codes.      
 !> vinterp_ozn            : vertical interpolation of the ozone volume mixing ratios from fixed
 !>                          ozone pressure levels to the MPAS pressure levels.
-
-!> modifications:
-!>    none.
+!>
+!> add-ons and modifications to sourcecode:
+!> ----------------------------------------
+!>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-22.
 
 
  contains
@@ -248,6 +250,9 @@
  real(kind=r8):: fact1_r8, fact2_r8
  real(kind=RKIND):: fact1,fact2
 
+ real(kind=RKIND),dimension(:,:),pointer  :: o3clim
+ real(kind=RKIND),dimension(:,:,:),pointer:: ozmixm
+
 !--------------------------------------------------------------------------------------------------
 
 !write(0,*)
@@ -257,6 +262,9 @@
  nVertLevels = mesh % nVertLevels
  nCellsSolve = mesh % nCellsSolve
  nMonths     = mesh % nMonths
+
+ ozmixm => atm_input % ozmixm % array
+ o3clim => diag_physics % o3clim % array
 
  ozncyc = .true.
 
@@ -301,12 +309,10 @@
 !Time interpolation.
  do k = 1, nOznLevels
  do iCell = 1, nCellsSolve
-    diag_physics % o3clim % array(k,iCell) = fact1 * atm_input % ozmixm % array(nm,k,iCell) &
-                                           + fact2 * atm_input % ozmixm % array(np,k,iCell)
+    o3clim(k,iCell) = fact1 * ozmixm(nm,k,iCell) + fact2 * ozmixm(np,k,iCell)
  end do
-!write(0,101) k,diag_physics%o3clim%array(k,1),atm_input%ozmixm%array(nm,k,1), &
-!             atm_input%ozmixm%array(np,k,1),diag_physics%o3clim%array(k,nCellsSolve), &
-!             atm_input%ozmixm%array(nm,k,nCellsSolve),atm_input%ozmixm%array(np,k,nCellsSolve)
+!write(0,101) k,o3clim(k,1),ozmixm(nm,k,1),ozmixm(np,k,1), &
+!             o3clim(k,nCellsSolve),ozmixm(nm,k,nCellsSolve),ozmixm(np,k,nCellsSolve)
  end do
  101 format(i4,6(1x,e15.8))
 

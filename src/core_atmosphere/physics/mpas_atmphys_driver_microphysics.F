@@ -64,6 +64,8 @@
 !>    * in call to subroutine wsm6, replaced the variable g (that originally pointed to gravity)
 !>      with gravity, for simplicity.
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-03-21.
+!>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-22.
 
 
  contains
@@ -292,12 +294,12 @@
 
     ! calculate the relative humidity over water if the temperature is strictly greater than 0.C,
     ! over ice otherwise.
-    call compute_relhum(diag_physics)
+    call compute_relhum(mesh,diag_physics)
 
  end if
 
 !... copy updated precipitation from the wrf-physics grid back to the geodesic-dynamics grid:
- call precip_to_MPAS(config_bucket_rainnc,diag_physics)
+ call precip_to_MPAS(mesh,config_bucket_rainnc,diag_physics)
 
 !... copy updated cloud microphysics variables from the wrf-physics grid back to the geodesic-
 !    dynamics grid:
@@ -324,10 +326,19 @@
 !output variables:
  type(diag_physics_type),intent(inout):: diag_physics
 
-!local variables:
- integer:: i,iCell,j
+!local variables and arrays:
+ integer:: i,iCell,j,nCellsSolve
+
+ real,dimension(:),pointer:: graupelncv,rainncv,snowncv,sr 
 
 !--------------------------------------------------------------------------------------------------
+
+ nCellsSolve = mesh % nCellsSolve
+
+ graupelncv => diag_physics % graupelncv % array
+ rainncv    => diag_physics % rainncv    % array
+ snowncv    => diag_physics % snowncv    % array
+ sr         => diag_physics % sr         % array
 
 !variables common to all cloud microphysics schemes:
  do j = jts, jte
@@ -337,8 +348,8 @@
  enddo
  enddo
 
- do iCell = 1, mesh % nCellsSolve
-    diag_physics % rainncv % array(iCell) = 0._RKIND
+ do iCell = 1, nCellsSolve
+    rainncv(iCell) = 0._RKIND
  enddo
 
 !variables specific to different cloud microphysics schemes:
@@ -357,10 +368,10 @@
        enddo
        enddo
 
-       do iCell = 1, mesh % nCellsSolve
-          diag_physics % snowncv % array(iCell)    = 0._RKIND
-          diag_physics % graupelncv % array(iCell) = 0._RKIND
-          diag_physics % sr % array(iCell)         = 0._RKIND
+       do iCell = 1, nCellsSolve
+          snowncv(iCell)    = 0._RKIND
+          graupelncv(iCell) = 0._RKIND
+          sr(iCell)         = 0._RKIND
        enddo 
 
     case default
@@ -370,18 +381,43 @@
  end subroutine precip_from_MPAS
 
 !==================================================================================================
- subroutine precip_to_MPAS(bucket_rainnc,diag_physics)
+ subroutine precip_to_MPAS(mesh,bucket_rainnc,diag_physics)
 !==================================================================================================
 
-!output variables:
+!input arguments:
+ type(mesh_type),intent(in):: mesh
  real(kind=RKIND),intent(in):: bucket_rainnc
+
+!inout arguments:
  type(diag_physics_type),intent(inout):: diag_physics
 
-!local variables:
- integer:: i,j,k
+!local variables and arrays:
+ integer:: i,j,k,nCellsSolve
+
+ integer,dimension(:),pointer:: i_rainnc
+
  real(kind=RKIND):: rho_a
+ real(kind=RKIND),dimension(:),pointer:: precipw
+ real(kind=RKIND),dimension(:),pointer:: graupelnc,rainnc,snownc
+ real(kind=RKIND),dimension(:),pointer:: graupelncv,rainncv,snowncv,sr
 
 !--------------------------------------------------------------------------------------------------
+
+ nCellsSolve = mesh % nCellsSolve
+
+ i_rainnc   => diag_physics % i_rainnc   % array
+ precipw    => diag_physics % precipw    % array
+ graupelnc  => diag_physics % graupelnc  % array
+ graupelncv => diag_physics % graupelncv % array
+ rainnc     => diag_physics % rainnc     % array
+ rainncv    => diag_physics % rainncv    % array
+ snownc     => diag_physics % snownc     % array
+ snowncv    => diag_physics % snowncv    % array
+ sr         => diag_physics % sr         % array
+
+ do i = 1, nCellsSolve
+    precipw(i) = 0._RKIND    
+ enddo
 
 !variables common to all cloud microphysics schemes:
 
@@ -389,24 +425,20 @@
  do i = its,ite
 
     !precipitable water:
-    diag_physics % precipw % array(i) = 0._RKIND
     do k = kts,kte
        rho_a = rho_p(i,k,j) / (1._RKIND + qv_p(i,k,j))
-       diag_physics % precipw % array(i) = &
-            diag_physics % precipw % array(i) + qv_p(i,k,j) * rho_a * dz_p(i,k,j)
+       precipw(i) = precipw(i) + qv_p(i,k,j) * rho_a * dz_p(i,k,j)
     enddo
 
     !time-step precipitation:
-    diag_physics % rainncv % array(i) = rainnc_p(i,j)
+    rainncv(i) = rainnc_p(i,j)
     
     !accumulated precipitation:
-    diag_physics % rainnc % array(i) = diag_physics % rainnc % array(i) &
-                                     + diag_physics % rainncv % array(i)
+    rainnc(i) = rainnc(i) + rainncv(i)
 
-   if(l_acrain .and. bucket_rainnc.gt.0._RKIND .and. &
-      diag_physics%rainnc%array(i).gt.bucket_rainnc) then
-      diag_physics % i_rainnc % array(i) = diag_physics % i_rainnc % array(i) + 1
-      diag_physics % rainnc % array(i) = diag_physics % rainnc % array(i) - bucket_rainnc
+   if(l_acrain .and. bucket_rainnc.gt.0._RKIND .and. rainnc(i).gt.bucket_rainnc) then
+      i_rainnc(i) = i_rainnc(i) + 1
+      rainnc(i)   = rainnc(i) - bucket_rainnc
    endif
  
  enddo
@@ -422,16 +454,13 @@
        do i = its,ite
        
           !time-step precipitation:
-          diag_physics % snowncv % array(i)    = snownc_p(i,j)
-          diag_physics % graupelncv % array(i) = graupelnc_p(i,j)
-          diag_physics % sr % array(i) = &
-                         (snownc_p(i,j) + graupelnc_p(i,j)) / (rainnc_p(i,j)+1.e-12)
+          snowncv(i)    = snownc_p(i,j)
+          graupelncv(i) = graupelnc_p(i,j)
+          sr(i) = (snownc_p(i,j) + graupelnc_p(i,j)) / (rainnc_p(i,j)+1.e-12)
 
           !accumulated precipitation:
-          diag_physics % snownc % array(i)    = diag_physics % snownc  % array(i)    &
-                                              + diag_physics % snowncv % array(i)
-          diag_physics % graupelnc % array(i) = diag_physics % graupelnc  % array(i) &
-                                              + diag_physics % graupelncv % array(i)
+          snownc(i)    = snownc(i) + snowncv(i)
+          graupelnc(i) = graupelnc(i) + graupelncv(i)
 
        enddo
        enddo
@@ -449,13 +478,17 @@
 !inout arguments:
  type(diag_physics_type),intent(inout):: diag_physics
 
-!local variables:
+!local variables and arrays:
  integer:: i,j,k
  real(kind=RKIND),dimension(:),allocatable:: qv1d,qr1d,qs1d,qg1d,t1d,p1d,dBZ1d
+
+ real(kind=RKIND),dimension(:),pointer:: refl10cm_max
 
 !--------------------------------------------------------------------------------------------------
 !write(0,*)
 !write(0,*) '--- enter subroutine COMPUTE_RADAR_REFLECTIVITY:'
+
+ refl10cm_max => diag_physics % refl10cm_max % array
 
  microp_select: select case(microp_scheme)
 
@@ -491,9 +524,8 @@
              dBZ1d(k) = max(-35._RKIND,dBZ1d(k))
 !            write(0,201) i,k,dBZ1d(k)
           enddo
-          diag_physics % refl10cm_max % array(i) = maxval(dBZ1d(:))
-!         if(diag_physics % refl10cm_max % array(i) .gt. 0.) &
-!            write(0,201) j,i,diag_physics % refl10cm_max % array(i)
+          refl10cm_max(i) = maxval(dBZ1d(:))
+!         if(refl10cm_max(i) .gt. 0.) write(0,201) j,i,refl10cm_max(i)
        enddo
        enddo
 
@@ -515,20 +547,30 @@
  end subroutine compute_radar_reflectivity
 
 !==================================================================================================
- subroutine compute_relhum(diag_physics)
+ subroutine compute_relhum(mesh,diag_physics)
 !==================================================================================================
+
+!input arguments:
+ type(mesh_type),intent(in):: mesh
 
 !inout arguments:
  type(diag_physics_type),intent(inout):: diag_physics
 
-!local variables:
- integer:: i,j,k
+!local variables and arrays:
+ integer:: i,j,k,nCellsSolve,nVertLevels
+
  real(kind=RKIND):: tempc
  real(kind=RKIND),dimension(:),allocatable:: qv1d,qvs1d,t1d,p1d
+ real(kind=RKIND),dimension(:,:),pointer:: relhum
 
 !--------------------------------------------------------------------------------------------------
 
- diag_physics % relhum % array(:,:) = 0._RKIND
+ nCellsSolve = mesh % nCellsSolve
+ nVertLevels = mesh % nVertLevels
+
+ relhum => diag_physics % relhum % array
+
+ relhum(1:nVertLevels,1:nCellsSolve) = 0._RKIND
 
  if(.not.allocated(p1d)  ) allocate(p1d(kts:kte)  )
  if(.not.allocated(t1d)  ) allocate(t1d(kts:kte)  )
@@ -545,7 +587,7 @@
        qvs1d(k) = rslf(p1d(k),t1d(k))
        if(tempc .le. 0._RKIND) qvs1d(k) = rsif(p1d(k),t1d(k))
        qv1d(k) = qv_p(i,k,j)
-       diag_physics % relhum % array(k,i) = qv1d(k) / qvs1d(k)
+       relhum(k,i) = qv1d(k) / qvs1d(k)
     enddo
 
  enddo

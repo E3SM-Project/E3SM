@@ -50,6 +50,8 @@
 !>      -> revised subroutine physics_init_sst.
 !>      -> revised subroutine physics_init_seaice.
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-08-02.
+!>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-22.
 
 
  contains
@@ -254,9 +256,12 @@
 !inout arguments:
  type(fg_type),intent(inout):: fg 
 
-!local variables:
+!local variables and arrays:
  integer:: iCell,iSoil
  integer:: nCellsSolve,nSoilLevels,nFGSoilLevels
+
+ real(kind=RKIND),dimension(:,:),pointer:: dzs_fg,zs_fg
+ real(kind=RKIND),dimension(:,:),pointer:: dzs,zs
 
 !--------------------------------------------------------------------------------------------------
 
@@ -267,33 +272,36 @@
  nSoilLevels   = mesh % nSoilLevels
  nFGSoilLevels = mesh % nFGSoilLevels
 
+ zs_fg  => fg % zs_fg  % array
+ dzs_fg => fg % dzs_fg % array 
+ zs     => fg % zs     % array
+ dzs    => fg % dzs    % array
+
  if(config_nsoillevels .ne. 4) &
     call physics_error_fatal('NOAH lsm uses 4 soil layers. Correct config_nsoillevels.')
 
  do iCell = 1, nCellsSolve
-
     iSoil = 1
-    fg % zs_fg % array(iSoil,iCell) = 0.5_RKIND * fg % dzs_fg % array(iSoil,iCell)
+    zs_fg(iSoil,iCell) = 0.5_RKIND * dzs_fg(iSoil,iCell)
     do iSoil = 2, nFGSoilLevels
-       fg % zs_fg % array(iSoil,iCell) = fg % zs_fg % array(iSoil-1,iCell)        &
-                                 + 0.5_RKIND * fg % dzs_fg % array(iSoil-1,iCell) &
-                                 + 0.5_RKIND * fg % dzs_fg % array(iSoil,iCell)
+       zs_fg(iSoil,iCell) = zs_fg(iSoil-1,iCell)        &
+                          + 0.5_RKIND * dzs_fg(iSoil-1,iCell) &
+                          + 0.5_RKIND * dzs_fg(iSoil,iCell)
     enddo
-
  enddo
 
  do iCell = 1, nCellsSolve
-    fg % dzs % array(1,iCell) = 0.10_RKIND
-    fg % dzs % array(2,iCell) = 0.30_RKIND
-    fg % dzs % array(3,iCell) = 0.60_RKIND
-    fg % dzs % array(4,iCell) = 1.00_RKIND
+    dzs(1,iCell) = 0.10_RKIND
+    dzs(2,iCell) = 0.30_RKIND
+    dzs(3,iCell) = 0.60_RKIND
+    dzs(4,iCell) = 1.00_RKIND
 
     iSoil = 1
-    fg % zs % array(iSoil,iCell)  = 0.5_RKIND * fg % dzs % array(iSoil,iCell)
+    zs(iSoil,iCell)  = 0.5_RKIND * dzs(iSoil,iCell)
     do iSoil = 2, nSoilLevels
-       fg % zs % array(iSoil,iCell) = fg % zs % array(iSoil-1,iCell)              &
-                                    + 0.5_RKIND * fg % dzs % array(iSoil-1,iCell) &
-                                    + 0.5_RKIND * fg % dzs % array(iSoil,iCell)
+       zs(iSoil,iCell) = zs(iSoil-1,iCell)              &
+                       + 0.5_RKIND * dzs(iSoil-1,iCell) &
+                       + 0.5_RKIND * dzs(iSoil,iCell)
     enddo
 
  enddo

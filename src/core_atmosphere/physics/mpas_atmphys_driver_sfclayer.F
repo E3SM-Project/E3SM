@@ -65,6 +65,8 @@
 !>      subroutine sfclayer_to_MPAS, filled diag_physics%ustm with ustm_p after call to subroutine
 !>      sfclay.
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-16. 
+!>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-22.
 
 
  contains
@@ -170,42 +172,80 @@
  type(sfc_input_type),intent(in):: sfc_input
  type(diag_physics_type),intent(inout):: diag_physics
 
+!local variables and arrays:
+ real(kind=RKIND),dimension(:),pointer:: skintemp,xland
+ real(kind=RKIND),dimension(:),pointer:: dcEdge_m,hpbl,mavail
+ real(kind=RKIND),dimension(:),pointer:: br,cpm,chs,chs2,cqs2,fh,fm,flhc,flqc,gz1oz0,hfx,    &
+                                         qfx,qgh,qsfc,lh,mol,psim,psih,regime,rmol,ust,ustm, &
+                                         wspd,znt,zol
+
 !--------------------------------------------------------------------------------------------------
+
+ skintemp => sfc_input    % skintemp % array
+ xland    => sfc_input    % xland    % array
+ dcEdge_m => diag_physics % dcEdge_m % array
+ hpbl     => diag_physics % hpbl     % array
+ mavail   => diag_physics % mavail   % array
+ br       => diag_physics % br       % array
+ cpm      => diag_physics % cpm      % array
+ chs      => diag_physics % chs      % array
+ chs2     => diag_physics % chs2     % array
+ cqs2     => diag_physics % cqs2     % array
+ fh       => diag_physics % fh       % array
+ fm       => diag_physics % fm       % array
+ flhc     => diag_physics % flhc     % array
+ flqc     => diag_physics % flqc     % array
+ gz1oz0   => diag_physics % gz1oz0   % array
+ hfx      => diag_physics % hfx      % array
+ qfx      => diag_physics % qfx      % array
+ qgh      => diag_physics % qgh      % array
+ qsfc     => diag_physics % qsfc     % array
+ lh       => diag_physics % lh       % array
+ mol      => diag_physics % mol      % array
+ psim     => diag_physics % psim     % array
+ psih     => diag_physics % psih     % array
+ regime   => diag_physics % regime   % array
+ rmol     => diag_physics % rmol     % array
+ ust      => diag_physics % ust      % array
+ ustm     => diag_physics % ustm     % array
+ wspd     => diag_physics % wspd     % array
+ znt      => diag_physics % znt      % array
+ zol      => diag_physics % zol      % array
 
  do j = jts,jte
  do i = its,ite
     !input variables:
-    dx_p(i,j)     = diag_physics % dcEdge_m % array(i)
-    hpbl_p(i,j)   = diag_physics % hpbl     % array(i)
-    mavail_p(i,j) = diag_physics % mavail   % array(i)
-    tsk_p(i,j)    = sfc_input    % skintemp % array(i)
-    xland_p(i,j)  = sfc_input    % xland    % array(i)       
+    dx_p(i,j)     = dcEdge_m(i)
+    hpbl_p(i,j)   = hpbl(i)
+    mavail_p(i,j) = mavail(i)
+    tsk_p(i,j)    = skintemp(i)
+    xland_p(i,j)  = xland(i)       
     !inout variables:
-    br_p(i,j)     = diag_physics % br     % array(i)
-    cpm_p(i,j)    = diag_physics % cpm    % array(i)
-    chs_p(i,j)    = diag_physics % chs    % array(i)
-    chs2_p(i,j)   = diag_physics % chs2   % array(i)
-    cqs2_p(i,j)   = diag_physics % cqs2   % array(i)
-    fh_p(i,j)     = diag_physics % fh     % array(i)
-    fm_p(i,j)     = diag_physics % fm     % array(i)
-    flhc_p(i,j)   = diag_physics % flhc   % array(i)
-    flqc_p(i,j)   = diag_physics % flqc   % array(i)
-    gz1oz0_p(i,j) = diag_physics % gz1oz0 % array(i)
-    hfx_p(i,j)    = diag_physics % hfx    % array(i)
-    qfx_p(i,j)    = diag_physics % qfx    % array(i)
-    qgh_p(i,j)    = diag_physics % qgh    % array(i)
-    qsfc_p(i,j)   = diag_physics % qsfc   % array(i) 
-    lh_p(i,j)     = diag_physics % lh     % array(i)
-    mol_p(i,j)    = diag_physics % mol    % array(i) 
-    psim_p(i,j)   = diag_physics % psim   % array(i)
-    psih_p(i,j)   = diag_physics % psih   % array(i)
-    regime_p(i,j) = diag_physics % regime % array(i)
-    rmol_p(i,j)   = diag_physics % rmol   % array(i)
-    ust_p(i,j)    = diag_physics % ust    % array(i)
-    ustm_p(i,j)   = diag_physics % ustm   % array(i)
-    wspd_p(i,j)   = diag_physics % wspd   % array(i)
-    znt_p(i,j)    = diag_physics % znt    % array(i) 
-    zol_p(i,j)    = diag_physics % zol    % array(i) 
+    br_p(i,j)     = br(i)
+    cpm_p(i,j)    = cpm(i)
+    chs_p(i,j)    = chs(i)
+    chs2_p(i,j)   = chs2(i)
+    cqs2_p(i,j)   = cqs2(i)
+    fh_p(i,j)     = fh(i)
+    fm_p(i,j)     = fm(i)
+    flhc_p(i,j)   = flhc(i)
+    flqc_p(i,j)   = flqc(i)
+    gz1oz0_p(i,j) = gz1oz0(i)
+    hfx_p(i,j)    = hfx(i)
+    qfx_p(i,j)    = qfx(i)
+    qgh_p(i,j)    = qgh(i)
+    qsfc_p(i,j)   = qsfc(i) 
+    lh_p(i,j)     = lh(i)
+    mol_p(i,j)    = mol(i) 
+    psim_p(i,j)   = psim(i)
+    psih_p(i,j)   = psih(i)
+    regime_p(i,j) = regime(i)
+    rmol_p(i,j)   = rmol(i)
+    ust_p(i,j)    = ust(i)
+    ustm_p(i,j)   = ustm(i)
+    wspd_p(i,j)   = wspd(i)
+    znt_p(i,j)    = znt(i) 
+    zol_p(i,j)    = zol(i) 
     !output variables:
     cd_p(i,j)     = 0._RKIND
     cda_p(i,j)    = 0._RKIND
@@ -229,41 +269,79 @@
 !inout arguments:
  type(diag_physics_type),intent(inout):: diag_physics
 
+!local variables and arrays:
+ real(kind=RKIND),dimension(:),pointer:: br,cpm,chs,chs2,cqs2,fh,fm,flhc,flqc,gz1oz0,hfx,    &
+                                         qfx,qgh,qsfc,lh,mol,psim,psih,regime,rmol,ust,ustm, &
+                                         wspd,znt,zol
+ real(kind=RKIND),dimension(:),pointer:: q2,t2m,th2m,u10,v10
+
 !--------------------------------------------------------------------------------------------------
+
+ br       => diag_physics % br       % array
+ cpm      => diag_physics % cpm      % array
+ chs      => diag_physics % chs      % array
+ chs2     => diag_physics % chs2     % array
+ cqs2     => diag_physics % cqs2     % array
+ fh       => diag_physics % fh       % array
+ fm       => diag_physics % fm       % array
+ flhc     => diag_physics % flhc     % array
+ flqc     => diag_physics % flqc     % array
+ gz1oz0   => diag_physics % gz1oz0   % array
+ hfx      => diag_physics % hfx      % array
+ qfx      => diag_physics % qfx      % array
+ qgh      => diag_physics % qgh      % array
+ qsfc     => diag_physics % qsfc     % array
+ lh       => diag_physics % lh       % array
+ mol      => diag_physics % mol      % array
+ psim     => diag_physics % psim     % array
+ psih     => diag_physics % psih     % array
+ regime   => diag_physics % regime   % array
+ rmol     => diag_physics % rmol     % array
+ ust      => diag_physics % ust      % array
+ ustm     => diag_physics % ustm     % array
+ wspd     => diag_physics % wspd     % array
+ znt      => diag_physics % znt      % array
+ zol      => diag_physics % zol      % array
+
+ q2       => diag_physics % q2       % array
+ t2m      => diag_physics % t2m      % array
+ th2m     => diag_physics % th2m     % array
+ u10      => diag_physics % u10      % array
+ v10      => diag_physics % v10      % array
 
  do j = jts,jte
  do i = its,ite
-    diag_physics % br     % array(i) = br_p(i,j)
-    diag_physics % cpm    % array(i) = cpm_p(i,j)
-    diag_physics % chs    % array(i) = chs_p(i,j)
-    diag_physics % chs2   % array(i) = chs2_p(i,j)
-    diag_physics % cqs2   % array(i) = cqs2_p(i,j)
-    diag_physics % fh     % array(i) = fh_p(i,j)
-    diag_physics % fm     % array(i) = fm_p(i,j)
-    diag_physics % flhc   % array(i) = flhc_p(i,j)
-    diag_physics % flqc   % array(i) = flqc_p(i,j)
-    diag_physics % gz1oz0 % array(i) = gz1oz0_p(i,j)
-    diag_physics % hfx    % array(i) = hfx_p(i,j)
-    diag_physics % lh     % array(i) = lh_p(i,j)
-    diag_physics % mol    % array(i) = mol_p(i,j)
-    diag_physics % qfx    % array(i) = qfx_p(i,j)
-    diag_physics % qgh    % array(i) = qgh_p(i,j)
-    diag_physics % qsfc   % array(i) = qsfc_p(i,j)
-    diag_physics % psim   % array(i) = psim_p(i,j)
-    diag_physics % psih   % array(i) = psih_p(i,j)
-    diag_physics % regime % array(i) = regime_p(i,j)
-    diag_physics % rmol   % array(i) = rmol_p(i,j)
-    diag_physics % ust    % array(i) = ust_p(i,j)
-    diag_physics % ustm   % array(i) = ustm_p(i,j)
-    diag_physics % wspd   % array(i) = wspd_p(i,j)
-    diag_physics % zol    % array(i) = zol_p(i,j)
-    diag_physics % znt    % array(i) = znt_p(i,j)
+    br(i)     = br_p(i,j)
+    cpm(i)    = cpm_p(i,j)
+    chs(i)    = chs_p(i,j)
+    chs2(i)   = chs2_p(i,j)
+    cqs2(i)   = cqs2_p(i,j)
+    fh(i)     = fh_p(i,j)
+    fm(i)     = fm_p(i,j)
+    flhc(i)   = flhc_p(i,j)
+    flqc(i)   = flqc_p(i,j)
+    gz1oz0(i) = gz1oz0_p(i,j)
+    hfx(i)    = hfx_p(i,j)
+    lh(i)     = lh_p(i,j)
+    mol(i)    = mol_p(i,j)
+    qfx(i)    = qfx_p(i,j)
+    qgh(i)    = qgh_p(i,j)
+    qsfc(i)   = qsfc_p(i,j)
+    psim(i)   = psim_p(i,j)
+    psih(i)   = psih_p(i,j)
+    regime(i) = regime_p(i,j)
+    rmol(i)   = rmol_p(i,j)
+    ust(i)    = ust_p(i,j)
+    ustm(i)   = ustm_p(i,j)
+    wspd(i)   = wspd_p(i,j)
+    zol(i)    = zol_p(i,j)
+    znt(i)    = znt_p(i,j)
     !diagnostics:
-    diag_physics % q2     % array(i) = q2_p(i,j)
-    diag_physics % t2m    % array(i) = t2m_p(i,j)
-    diag_physics % th2m   % array(i) = th2m_p(i,j)
-    diag_physics % u10    % array(i) = u10_p(i,j)
-    diag_physics % v10    % array(i) = v10_p(i,j)
+    q2(i)     = q2_p(i,j)
+    t2m(i)    = t2m_p(i,j)
+    th2m(i)   = th2m_p(i,j)
+    u10(i)    = u10_p(i,j)
+    v10(i)    = v10_p(i,j)
  enddo
  enddo
 

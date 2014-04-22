@@ -55,6 +55,8 @@
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-08-22.
 !>    * added initialization of variable xicem.
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-08-24.
+!>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-22.
 
 
  contains
@@ -77,33 +79,108 @@
  type(atm_input_type),intent(inout):: atm_input
  type(sfc_input_type),intent(inout):: sfc_input
 
-!local variables:
+!local variables and arrays:
  type(MPAS_Time_Type):: currTime
 
  logical:: init_done
- integer:: iCell,iLag,ierr,julday 
- integer:: iEdge,nEdges
+ integer:: ierr,julday 
+ integer:: iCell,iLag,iEdge,nCellsSolve,nEdges,nLags
+
+ integer,dimension(:),pointer  :: nEdgesOnCell
+ integer,dimension(:),pointer  :: i_rainc,i_rainnc
+ integer,dimension(:),pointer  :: i_acswdnb,i_acswdnbc,i_acswdnt,i_acswdntc, &
+                                  i_acswupb,i_acswupbc,i_acswupt,i_acswuptc, &
+                                  i_aclwdnb,i_aclwdnbc,i_aclwdnt,i_aclwdntc, &
+                                  i_aclwupb,i_aclwupbc,i_aclwupt,i_aclwuptc
+ integer,dimension(:,:),pointer:: edgesOnCell
+
+
+ real(kind=RKIND),dimension(:),pointer  :: dcEdge,dcEdge_m
+ real(kind=RKIND),dimension(:),pointer  :: acswdnb,acswdnbc,acswdnt,acswdntc,  &
+                                           acswupb,acswupbc,acswupt,acswuptc,  &
+                                           aclwdnb,aclwdnbc,aclwdnt,aclwdntc,  &
+                                           aclwupb,aclwupbc,aclwupt,aclwuptc
+ real(kind=RKIND),dimension(:),pointer  :: nsteps_accum,ndays_accum,tday_accum, &
+                                           tyear_accum,tyear_mean
+ real(kind=RKIND),dimension(:),pointer  :: sst,sstsk,tmn,xice,xicem
+ real(kind=RKIND),dimension(:,:),pointer:: tlag
 
 !--------------------------------------------------------------------------------------------------
  write(0,*)
  write(0,*) '--- enter subroutine physics_init:'
+
+ nCellsSolve = mesh % nCellsSolve
+ nLags       = mesh % nLags
+
+ nEdgesOnCell => mesh         % nEdgesOnCell % array
+ edgesOnCell  => mesh         % edgesOnCell  % array
+ dcEdge       => mesh         % dcEdge       % array
+ dcEdge_m     => diag_physics % dcEdge_m     % array
+ 
+ i_rainc      => diag_physics % i_rainc      % array
+ i_rainnc     => diag_physics % i_rainnc     % array
+
+ i_acswdnb    => diag_physics % i_acswdnb    % array
+ i_acswdnbc   => diag_physics % i_acswdnbc   % array
+ i_acswdnt    => diag_physics % i_acswdnt    % array
+ i_acswdntc   => diag_physics % i_acswdntc   % array
+ i_acswupb    => diag_physics % i_acswupb    % array
+ i_acswupbc   => diag_physics % i_acswupbc   % array
+ i_acswupt    => diag_physics % i_acswupt    % array
+ i_acswuptc   => diag_physics % i_acswuptc   % array
+ i_aclwdnb    => diag_physics % i_aclwdnb    % array
+ i_aclwdnbc   => diag_physics % i_aclwdnbc   % array
+ i_aclwdnt    => diag_physics % i_aclwdnt    % array
+ i_aclwdntc   => diag_physics % i_aclwdntc   % array
+ i_aclwupb    => diag_physics % i_aclwupb    % array
+ i_aclwupbc   => diag_physics % i_aclwupbc   % array
+ i_aclwupt    => diag_physics % i_aclwupt    % array
+ i_aclwuptc   => diag_physics % i_aclwuptc   % array
+
+ acswdnb      => diag_physics % acswdnb      % array
+ acswdnbc     => diag_physics % acswdnbc     % array
+ acswdnt      => diag_physics % acswdnt      % array
+ acswdntc     => diag_physics % acswdntc     % array
+ acswupb      => diag_physics % acswupb      % array
+ acswupbc     => diag_physics % acswupbc     % array
+ acswupt      => diag_physics % acswupt      % array
+ acswuptc     => diag_physics % acswuptc     % array
+ aclwdnb      => diag_physics % aclwdnb      % array
+ aclwdnbc     => diag_physics % aclwdnbc     % array
+ aclwdnt      => diag_physics % aclwdnt      % array
+ aclwdntc     => diag_physics % aclwdntc     % array
+ aclwupb      => diag_physics % aclwupb      % array
+ aclwupbc     => diag_physics % aclwupbc     % array
+ aclwupt      => diag_physics % aclwupt      % array
+ aclwuptc     => diag_physics % aclwuptc     % array
+
+ nsteps_accum => diag_physics % nsteps_accum % array
+ ndays_accum  => diag_physics % ndays_accum  % array
+ tday_accum   => diag_physics % tday_accum   % array
+ tyear_accum  => diag_physics % tyear_accum  % array
+ tyear_mean   => diag_physics % tyear_mean   % array
+ tlag         => diag_physics % tlag         % array
+ sstsk        => diag_physics % sstsk        % array
+ xicem        => diag_physics % xicem        % array
+
+ sst          => sfc_input    % sst          % array
+ tmn          => sfc_input    % tmn          % array
+ xice         => sfc_input    % xice         % array
+
 
  currTime = mpas_get_clock_time(clock,MPAS_NOW,ierr)
  call mpas_get_time(curr_time=currTime,DoY=julday,ierr=ierr)
 
 !calculation of the mean distance between cell centers:
  if(.not. config_do_restart) then
-    do iCell = 1, mesh % nCellsSolve
-       diag_physics % dcEdge_m % array(iCell) = 0._RKIND
-       nEdges = mesh%nEdgesOnCell%array(iCell)
+    do iCell = 1, nCellsSolve
+       dcEdge_m(iCell) = 0._RKIND
+       nEdges = nEdgesOnCell(iCell)
        do iEdge = 1, nEdges
-          diag_physics%dcEdge_m%array(iCell) = diag_physics%dcEdge_m%array(iCell) &
-                       + mesh%dcEdge%array(mesh%edgesOnCell%array(iEdge,iCell))
+          dcEdge_m(iCell) = dcEdge_m(iCell) + dcEdge(edgesOnCell(iEdge,iCell))
        enddo
-       diag_physics % dcEdge_m % array(iCell) = diag_physics % dcEdge_m % array(iCell) &
-                       / nEdges
-!      write(0,102) iCell,nEdges,(mesh%dcEdge%array(mesh%edgesOnCell%array(iEdge,iCell)), &
-!                   iEdge=1,nEdges),diag_physics%dcEdge_m%array(iCell)
+       dcEdge_m(iCell) = dcEdge_m(iCell) / nEdges
+!      write(0,102) iCell,nEdges,(dcEdge(edgesOnCell(iEdge,iCell)),iEdge=1,nEdges),dcEdge_m(iCell)
     enddo
  endif
  101 format(8i9,10(1x,e15.8))
@@ -117,59 +194,59 @@
 !times the accumulated convective (rainc) and grid-scale (rainnc) rain exceed the prescribed
 !threshold value:
  if(.not. config_do_restart) then
-    do iCell = 1, mesh % nCellsSolve
-       diag_physics % i_rainc  % array(iCell) = 0
-       diag_physics % i_rainnc % array(iCell) = 0
+    do iCell = 1, nCellsSolve
+       i_rainc(iCell)  = 0
+       i_rainnc(iCell) = 0
     enddo
  endif
 
 !initialization of counters i_acsw* and i_aclw*. i_acsw* and i_aclw* track the number of times
 !the accumulated long and short-wave radiation fluxes exceed their prescribed theshold values.
  if(.not. config_do_restart) then
-    do iCell = 1, mesh % nCellsSolve
-       diag_physics % i_acswdnb  % array(iCell) = 0
-       diag_physics % i_acswdnbc % array(iCell) = 0
-       diag_physics % i_acswdnt  % array(iCell) = 0
-       diag_physics % i_acswdntc % array(iCell) = 0
-       diag_physics % i_acswupb  % array(iCell) = 0
-       diag_physics % i_acswupbc % array(iCell) = 0
-       diag_physics % i_acswupt  % array(iCell) = 0
-       diag_physics % i_acswuptc % array(iCell) = 0
+    do iCell = 1, nCellsSolve
+       i_acswdnb(iCell)  = 0
+       i_acswdnbc(iCell) = 0
+       i_acswdnt(iCell)  = 0
+       i_acswdntc(iCell) = 0
+       i_acswupb(iCell)  = 0
+       i_acswupbc(iCell) = 0
+       i_acswupt(iCell)  = 0
+       i_acswuptc(iCell) = 0
 
-       diag_physics % i_aclwdnb  % array(iCell) = 0
-       diag_physics % i_aclwdnbc % array(iCell) = 0
-       diag_physics % i_aclwdnt  % array(iCell) = 0
-       diag_physics % i_aclwdntc % array(iCell) = 0
-       diag_physics % i_aclwupb  % array(iCell) = 0
-       diag_physics % i_aclwupbc % array(iCell) = 0
-       diag_physics % i_aclwupt  % array(iCell) = 0
-       diag_physics % i_aclwuptc % array(iCell) = 0
+       i_aclwdnb(iCell)  = 0
+       i_aclwdnbc(iCell) = 0
+       i_aclwdnt(iCell)  = 0
+       i_aclwdntc(iCell) = 0
+       i_aclwupb(iCell)  = 0
+       i_aclwupbc(iCell) = 0
+       i_aclwupt(iCell)  = 0
+       i_aclwuptc(iCell) = 0
 
-       diag_physics % acswdnb  % array(iCell) = 0._RKIND
-       diag_physics % acswdnbc % array(iCell) = 0._RKIND
-       diag_physics % acswdnt  % array(iCell) = 0._RKIND
-       diag_physics % acswdntc % array(iCell) = 0._RKIND
-       diag_physics % acswupb  % array(iCell) = 0._RKIND
-       diag_physics % acswupbc % array(iCell) = 0._RKIND
-       diag_physics % acswupt  % array(iCell) = 0._RKIND
-       diag_physics % acswuptc % array(iCell) = 0._RKIND
+       acswdnb(iCell)  = 0._RKIND
+       acswdnbc(iCell) = 0._RKIND
+       acswdnt(iCell)  = 0._RKIND
+       acswdntc(iCell) = 0._RKIND
+       acswupb(iCell)  = 0._RKIND
+       acswupbc(iCell) = 0._RKIND
+       acswupt(iCell)  = 0._RKIND
+       acswuptc(iCell) = 0._RKIND
 
-       diag_physics % aclwdnb  % array(iCell) = 0._RKIND
-       diag_physics % aclwdnbc % array(iCell) = 0._RKIND
-       diag_physics % aclwdnt  % array(iCell) = 0._RKIND
-       diag_physics % aclwdntc % array(iCell) = 0._RKIND
-       diag_physics % aclwupb  % array(iCell) = 0._RKIND
-       diag_physics % aclwupbc % array(iCell) = 0._RKIND
-       diag_physics % aclwupt  % array(iCell) = 0._RKIND
-       diag_physics % aclwuptc % array(iCell) = 0._RKIND
+       aclwdnb(iCell)  = 0._RKIND
+       aclwdnbc(iCell) = 0._RKIND
+       aclwdnt(iCell)  = 0._RKIND
+       aclwdntc(iCell) = 0._RKIND
+       aclwupb(iCell)  = 0._RKIND
+       aclwupbc(iCell) = 0._RKIND
+       aclwupt(iCell)  = 0._RKIND
+       aclwuptc(iCell) = 0._RKIND
     enddo
  endif
 
 !initialization of xicem:
  if(.not.config_do_restart) then
     write(0,*) '--- initialization of xicem:'
-    do iCell = 1, mesh % nCellsSolve
-       diag_physics % xicem % array(iCell) = sfc_input % xice % array(iCell)
+    do iCell = 1, nCellsSolve
+       xicem(iCell) = xice(iCell)
     enddo
  endif
 
@@ -178,21 +255,21 @@
 !zero over land:
  if(.not. config_do_restart) then
     write(0,*) '--- initialization of sstsk:'
-    do iCell = 1, mesh % nCellsSolve
-       diag_physics % sstsk % array(iCell) = sfc_input % sst % array(iCell)
+    do iCell = 1, nCellsSolve
+       sstsk(iCell) = sst(iCell)
     enddo
  endif
 
 !initialization of temperatures needed for updating the deep soil temperature:
  if(.not. config_do_restart) then
-    do iCell = 1, mesh % nCellsSolve
-       diag_physics % nsteps_accum % array(iCell) = 0._RKIND
-       diag_physics % ndays_accum  % array(iCell) = 0._RKIND
-       diag_physics % tday_accum   % array(iCell) = 0._RKIND
-       diag_physics % tyear_accum  % array(iCell) = 0._RKIND
-       diag_physics % tyear_mean   % array(iCell) = sfc_input % tmn % array(iCell)
-       do iLag = 1, mesh % nLags
-          diag_physics % tlag % array(iLag,iCell) = sfc_input % tmn % array(iCell)
+    do iCell = 1, nCellsSolve
+       nsteps_accum(iCell) = 0._RKIND
+       ndays_accum(iCell)  = 0._RKIND
+       tday_accum(iCell)   = 0._RKIND
+       tyear_accum(iCell)  = 0._RKIND
+       tyear_mean(iCell)   = tmn(iCell)
+       do iLag = 1, nLags
+          tlag(iLag,iCell) = tmn(iCell)
        enddo
     enddo
  endif
@@ -263,11 +340,13 @@
  type(mesh_type),intent(in):: mesh
 
 !local variables:
- integer:: iCell
+ integer:: iCell,nCells
  real(kind=RKIND),dimension(:),pointer:: latCell,lonCell
  real(kind=RKIND),dimension(:,:),pointer:: east,north
 
 !---------------------------------------------------------------------------------------------
+
+ nCells = mesh % nCells
 
  latCell => mesh % latCell % array
  lonCell => mesh % lonCell % array
@@ -275,7 +354,7 @@
  north   => mesh % north % array
 
 !Compute unit vectors in east and north directions for each cell:
- do iCell = 1, mesh % nCells
+ do iCell = 1, nCells
 
     east(1,iCell) = -sin(lonCell(iCell))
     east(2,iCell) =  cos(lonCell(iCell))

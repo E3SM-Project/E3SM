@@ -51,6 +51,8 @@
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-11-07.
 !>    * Replaced the variable g (that originally pointed to gravity) with gravity, for simplicity.
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-03-21.
+!>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-22.
 
 
  contains
@@ -164,11 +166,11 @@
 
  real(kind=RKIND),dimension(:),pointer:: latCell,lonCell
  real(kind=RKIND),dimension(:),pointer  :: fzm,fzp,rdzw
- real(kind=RKIND),dimension(:),pointer  :: sfc_pressure
+ real(kind=RKIND),dimension(:),pointer  :: sfc_pressure,plrad
  real(kind=RKIND),dimension(:,:),pointer:: zgrid
  real(kind=RKIND),dimension(:,:),pointer:: zz,exner,pressure_b,rtheta_p,rtheta_b
  real(kind=RKIND),dimension(:,:),pointer:: rho_zz,theta_m,pressure_p,u,v,w
- real(kind=RKIND),dimension(:,:),pointer:: qvs,rh
+ real(kind=RKIND),dimension(:,:),pointer:: qv,qc,qr,qi,qs,qg
 
  real(kind=RKIND):: rho_a,rho1,rho2,tem1,tem2
 
@@ -185,39 +187,46 @@
  write(0,*) 'kts=',kts,' kte=',kte
 
 !initialization:
- latCell   => mesh % latCell % array
- lonCell   => mesh % lonCell % array
+ latCell => mesh % latCell % array
+ lonCell => mesh % lonCell % array
+ fzm     => mesh % fzm     % array
+ fzp     => mesh % fzp     % array
+ rdzw    => mesh % rdzw    % array
+ zgrid   => mesh % zgrid   % array
+ zz      => mesh % zz      % array
 
- fzm          => mesh % fzm % array
- fzp          => mesh % fzp % array
- rdzw         => mesh % rdzw % array
- zgrid        => mesh % zgrid % array
- zz           => mesh % zz % array
  sfc_pressure => diag % surface_pressure % array
- exner        => diag % exner % array
- pressure_b   => diag % pressure_base % array
- pressure_p   => diag % pressure_p % array
- rtheta_p     => diag % rtheta_p % array
- rtheta_b     => diag % rtheta_base % array
+ exner        => diag % exner            % array
+ pressure_b   => diag % pressure_base    % array
+ pressure_p   => diag % pressure_p       % array
+ rtheta_p     => diag % rtheta_p         % array
+ rtheta_b     => diag % rtheta_base      % array
 
- rho_zz  => state % rho_zz % array
+ rho_zz  => state % rho_zz  % array
  theta_m => state % theta_m % array
+ w       => state % w       % array
+ u       => diag  % uReconstructZonal      % array
+ v       => diag  % uReconstructMeridional % array
+ qv      => state % scalars % array(state%index_qv,:,:)
+ qc      => state % scalars % array(state%index_qc,:,:)
+ qr      => state % scalars % array(state%index_qr,:,:)
+ qi      => state % scalars % array(state%index_qi,:,:)
+ qs      => state % scalars % array(state%index_qs,:,:)
+ qg      => state % scalars % array(state%index_qg,:,:)
 
- w => state % w % array
- u => diag  % uReconstructZonal % array
- v => diag  % uReconstructMeridional % array
+ plrad => diag_physics % plrad % array
 
  do j = jts, jte
  do k = kts, kte
  do i = its, ite
 
     !water vapor and moist arrays:
-    qv_p(i,k,j) = max(0.,state % scalars % array(state%index_qv,k,i))
-    qc_p(i,k,j) = max(0.,state % scalars % array(state%index_qc,k,i))
-    qr_p(i,k,j) = max(0.,state % scalars % array(state%index_qr,k,i))
-    qi_p(i,k,j) = max(0.,state % scalars % array(state%index_qi,k,i))
-    qs_p(i,k,j) = max(0.,state % scalars % array(state%index_qs,k,i))
-    qg_p(i,k,j) = max(0.,state % scalars % array(state%index_qg,k,i))
+    qv_p(i,k,j) = max(0.,qv(k,i))
+    qc_p(i,k,j) = max(0.,qc(k,i))
+    qr_p(i,k,j) = max(0.,qr(k,i))
+    qi_p(i,k,j) = max(0.,qi(k,i))
+    qs_p(i,k,j) = max(0.,qs(k,i))
+    qg_p(i,k,j) = max(0.,qg(k,i))
     
     !arrays located at theta points:
     u_p(i,k,j) = u(k,i)
@@ -358,7 +367,7 @@
 !save the model-top pressure:
  do j = jts,jte
  do i = its,ite
-    diag_physics % plrad % array(i) = pres2_p(i,kte+1,j) 
+    plrad(i) = pres2_p(i,kte+1,j) 
  enddo
  enddo
 
@@ -384,6 +393,7 @@
  real(kind=RKIND),dimension(:,:),pointer:: zgrid
  real(kind=RKIND),dimension(:,:),pointer:: zz,exner,pressure_b,rtheta_p,rtheta_b
  real(kind=RKIND),dimension(:,:),pointer:: rho_zz,theta_m,pressure_p
+ real(kind=RKIND),dimension(:,:),pointer:: qv,qc,qr,qi,qs,qg
 
 !--------------------------------------------------------------------------------------------------
 
@@ -392,22 +402,30 @@
  write(0,*) '--- enter subroutine microphysics_from_MPAS:'
 
  zgrid => mesh % zgrid % array
- zz    => mesh % zz % array
- exner      => diag % exner % array
+ zz    => mesh % zz    % array
+
+ exner      => diag % exner         % array
  pressure_b => diag % pressure_base % array
- pressure_p => diag % pressure_p % array
- rtheta_p   => diag % rtheta_p % array
- rtheta_b   => diag % rtheta_base % array
- rho_zz     => state % rho_zz % array
- theta_m    => state % theta_m % array
+ pressure_p => diag % pressure_p    % array
+ rtheta_p   => diag % rtheta_p      % array
+ rtheta_b   => diag % rtheta_base   % array
+
+ rho_zz  => state % rho_zz  % array
+ theta_m => state % theta_m % array
+ qv      => state % scalars % array(state%index_qv,:,:)
+ qc      => state % scalars % array(state%index_qc,:,:)
+ qr      => state % scalars % array(state%index_qr,:,:)
+ qi      => state % scalars % array(state%index_qi,:,:)
+ qs      => state % scalars % array(state%index_qs,:,:)
+ qg      => state % scalars % array(state%index_qg,:,:)
 
 !initialize variables needed in the cloud microphysics schemes:
  do j = jts, jte
  do k = kts, kte
  do i = its, ite
-    qv_p(i,k,j) = state % scalars % array(state%index_qv,k,i)
-    qc_p(i,k,j) = state % scalars % array(state%index_qc,k,i)
-    qr_p(i,k,j) = state % scalars % array(state%index_qr,k,i)
+    qv_p(i,k,j) = qv(k,i)
+    qc_p(i,k,j) = qc(k,i)
+    qr_p(i,k,j) = qr(k,i)
 
     rho_p(i,k,j)  = zz(k,i) * rho_zz(k,i)
     th_p(i,k,j)   = theta_m(k,i) / (1._RKIND + R_v/R_d * max(0._RKIND,qv_p(i,k,j)))
@@ -428,9 +446,9 @@
        do j = jts, jte
        do k = kts, kte
        do i = its, ite
-          qi_p(i,k,j) = state % scalars % array(state%index_qi,k,i)
-          qs_p(i,k,j) = state % scalars % array(state%index_qs,k,i)
-          qg_p(i,k,j) = state % scalars % array(state%index_qg,k,i)
+          qi_p(i,k,j) = qi(k,i)
+          qs_p(i,k,j) = qs(k,i)
+          qg_p(i,k,j) = qg(k,i)
        enddo
        enddo
        enddo
@@ -462,17 +480,14 @@
 !local variables:
  integer:: icount
  integer:: i,k,j
- real(kind=RKIND):: acoef
+ real(kind=RKIND):: acoef,rho1,rho2,tem1,tem2
+ real(kind=RKIND),dimension(:),pointer  :: rdzw
+ real(kind=RKIND),dimension(:),pointer  :: sfc_pressure
+ real(kind=RKIND),dimension(:,:),pointer:: zgrid
  real(kind=RKIND),dimension(:,:),pointer:: zz,exner,exner_b,pressure_b,rtheta_p,rtheta_b
  real(kind=RKIND),dimension(:,:),pointer:: rho_zz,theta_m,pressure_p
  real(kind=RKIND),dimension(:,:),pointer:: rt_diabatic_tend
-
-!ldf(2011-11-12): surface pressure.
- real(kind=RKIND):: rho1,rho2,tem1,tem2
- real(kind=RKIND),dimension(:),pointer:: rdzw
- real(kind=RKIND),dimension(:),pointer:: sfc_pressure
- real(kind=RKIND),dimension(:,:),pointer:: zgrid
-!ldf end.
+ real(kind=RKIND),dimension(:,:),pointer:: qv,qc,qr,qi,qs,qg
 
 !--------------------------------------------------------------------------------------------------
 
@@ -480,24 +495,28 @@
  write(0,*) '--- enter subroutine microphysics_to_MPAS:'
 
 !initialization:
- zz         => mesh % zz % array
- zgrid      => mesh % zgrid % array
- exner      => diag % exner % array
- exner_b    => diag % exner_base % array
- pressure_b => diag % pressure_base % array
- pressure_p => diag % pressure_p % array
- rtheta_p   => diag % rtheta_p % array
- rtheta_b   => diag % rtheta_base % array
+ rdzw  => mesh % rdzw  % array
+ zz    => mesh % zz    % array
+ zgrid => mesh % zgrid % array
 
- rho_zz     => state % rho_zz % array
- theta_m    => state % theta_m % array
+ exner        => diag % exner            % array
+ exner_b      => diag % exner_base       % array
+ pressure_b   => diag % pressure_base    % array
+ pressure_p   => diag % pressure_p       % array
+ rtheta_p     => diag % rtheta_p         % array
+ rtheta_b     => diag % rtheta_base      % array
+ sfc_pressure => diag % surface_pressure % array
+
+ rho_zz  => state % rho_zz  % array
+ theta_m => state % theta_m % array
+ qv      => state % scalars % array(state%index_qv,:,:)
+ qc      => state % scalars % array(state%index_qc,:,:)
+ qr      => state % scalars % array(state%index_qr,:,:)
+ qi      => state % scalars % array(state%index_qi,:,:)
+ qs      => state % scalars % array(state%index_qs,:,:)
+ qg      => state % scalars % array(state%index_qg,:,:)
 
  rt_diabatic_tend => tend % rt_diabatic_tend % array
-
-!ldf (2011-11-12): update surface pressure.
- rdzw => mesh % rdzw % array
- sfc_pressure => diag % surface_pressure % array
-!ldf end.
 
 !update variables needed in the dynamical core:
  if(.not.allocated(t_p)) allocate(t_p(ims:ime,kms:kme,jms:jme))
@@ -505,9 +524,9 @@
  do j = jts,jte
  do k = kts,kte
  do i = its,ite
-    state % scalars % array(state%index_qv,k,i) = qv_p(i,k,j)
-    state % scalars % array(state%index_qc,k,i) = qc_p(i,k,j)
-    state % scalars % array(state%index_qr,k,i) = qr_p(i,k,j)
+    qv(k,i) = qv_p(i,k,j)
+    qc(k,i) = qc_p(i,k,j)
+    qr(k,i) = qr_p(i,k,j)
 
     !perturbation pressure and exner function using the equation of state:
     t_p(i,k,j)    = th_p(i,k,j)*pi_p(i,k,j)
@@ -555,9 +574,9 @@
        do k = kts, kte
        do i = its, ite
           !mass mixing ratios:
-          state % scalars % array(state%index_qi,k,i) = qi_p(i,k,j)
-          state % scalars % array(state%index_qs,k,i) = qs_p(i,k,j)
-          state % scalars % array(state%index_qg,k,i) = qg_p(i,k,j)
+          qi(k,i) = qi_p(i,k,j)
+          qs(k,i) = qs_p(i,k,j)
+          qg(k,i) = qg_p(i,k,j)
        enddo
        enddo
        enddo

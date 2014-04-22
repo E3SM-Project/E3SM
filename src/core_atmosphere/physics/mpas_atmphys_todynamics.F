@@ -27,6 +27,11 @@
 !> ---------------------------------------
 !> physics_addtend: add and mass-weigh tendencies before being added to dynamics tendencies.
 !> tend_toEdges   : interpolate wind-tendencies from centers to edges of grid-cells.
+!>
+!> add-ons and modifications to sourcecode:
+!> ----------------------------------------
+!>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-22.
 
 
  contains
@@ -64,8 +69,8 @@
                                            rucuten,rvcuten
  real(kind=RKIND),dimension(:,:),pointer:: rthratenlw,rthratensw                                    
  
- real(kind=RKIND),dimension(:,:),pointer  :: tend_theta,tend_u
- real(kind=RKIND),dimension(:,:,:),pointer:: tend_scalars
+ real(kind=RKIND),dimension(:,:),pointer:: tend_theta,tend_u
+ real(kind=RKIND),dimension(:,:),pointer:: tend_qv,tend_qc,tend_qr,tend_qi,tend_qs,tend_qg
 
  real(kind=RKIND):: tem
  real(kind=RKIND),dimension(:,:),allocatable:: rublten_Edge,rucuten_Edge
@@ -106,16 +111,26 @@
  rthratenlw => tend_physics % rthratenlw % array
  rthratensw => tend_physics % rthratensw % array
 
- tend_u       => tend % u % array
- tend_theta   => tend % theta_m % array
- tend_scalars => tend % scalars % array
+ tend_u     => tend % u % array
+ tend_theta => tend % theta_m % array
+ tend_qv    => tend % scalars % array(tend%index_qv,:,:)
+ tend_qc    => tend % scalars % array(tend%index_qc,:,:)
+ tend_qr    => tend % scalars % array(tend%index_qr,:,:)
+ tend_qi    => tend % scalars % array(tend%index_qi,:,:)
+ tend_qs    => tend % scalars % array(tend%index_qs,:,:)
+ tend_qg    => tend % scalars % array(tend%index_qg,:,:)
 
 !initialize the tendency for the potential temperature and all scalars due to PBL, convection,
 !and longwave and shortwave radiation:
  allocate(theta(nVertLevels,nCellsSolve)  )
  allocate(tend_th(nVertLevels,nCellsSolve))
- tend_th      = 0.
- tend_scalars = 0.
+ tend_th = 0._RKIND
+ tend_qv = 0._RKIND
+ tend_qc = 0._RKIND
+ tend_qr = 0._RKIND
+ tend_qi = 0._RKIND
+ tend_qs = 0._RKIND
+ tend_qg = 0._RKIND
 
 !add coupled tendencies due to PBL processes:
  if(config_pbl_scheme .ne. 'off') then
@@ -131,10 +146,10 @@
 
     do i = 1, nCellsSolve
     do k = 1, nVertLevels
-       tend_th(k,i) = tend_th(k,i)+rthblten(k,i)*mass(k,i)
-       tend_scalars(tend%index_qv,k,i)=tend_scalars(tend%index_qv,k,i)+rqvblten(k,i)*mass(k,i)
-       tend_scalars(tend%index_qc,k,i)=tend_scalars(tend%index_qc,k,i)+rqcblten(k,i)*mass(k,i)
-       tend_scalars(tend%index_qi,k,i)=tend_scalars(tend%index_qi,k,i)+rqiblten(k,i)*mass(k,i)
+       tend_th(k,i) = tend_th(k,i) + rthblten(k,i)*mass(k,i)
+       tend_qv(k,i) = tend_qv(k,i) + rqvblten(k,i)*mass(k,i)
+       tend_qc(k,i) = tend_qc(k,i) + rqcblten(k,i)*mass(k,i)
+       tend_qi(k,i) = tend_qi(k,i) + rqiblten(k,i)*mass(k,i)
     enddo
     enddo
  endif
@@ -156,12 +171,12 @@
 
     do i = 1, nCellsSolve
     do k = 1, nVertLevels
-       tend_th(k,i)=tend_th(k,i)+rthcuten(k,i)*mass(k,i)
-       tend_scalars(tend%index_qv,k,i)=tend_scalars(tend%index_qv,k,i)+rqvcuten(k,i)*mass(k,i)
-       tend_scalars(tend%index_qc,k,i)=tend_scalars(tend%index_qc,k,i)+rqccuten(k,i)*mass(k,i)
-       tend_scalars(tend%index_qr,k,i)=tend_scalars(tend%index_qr,k,i)+rqrcuten(k,i)*mass(k,i)
-       tend_scalars(tend%index_qi,k,i)=tend_scalars(tend%index_qi,k,i)+rqicuten(k,i)*mass(k,i)
-       tend_scalars(tend%index_qs,k,i)=tend_scalars(tend%index_qs,k,i)+rqscuten(k,i)*mass(k,i)    
+       tend_th(k,i) = tend_th(k,i) + rthcuten(k,i)*mass(k,i)
+       tend_qv(k,i) = tend_qv(k,i) + rqvcuten(k,i)*mass(k,i)
+       tend_qc(k,i) = tend_qc(k,i) + rqccuten(k,i)*mass(k,i)
+       tend_qr(k,i) = tend_qr(k,i) + rqrcuten(k,i)*mass(k,i)
+       tend_qi(k,i) = tend_qi(k,i) + rqicuten(k,i)*mass(k,i)
+       tend_qs(k,i) = tend_qs(k,i) + rqscuten(k,i)*mass(k,i)    
     enddo
     enddo
  endif
@@ -170,7 +185,7 @@
  if(config_radt_lw_scheme .ne. 'off') then
     do i = 1, nCellsSolve
     do k = 1, nVertLevels
-       tend_th(k,i)=tend_th(k,i)+rthratenlw(k,i)*mass(k,i)
+       tend_th(k,i) = tend_th(k,i) + rthratenlw(k,i)*mass(k,i)
     enddo
     enddo
  endif
@@ -179,7 +194,7 @@
  if(config_radt_sw_scheme .ne. 'off') then
     do i = 1, nCellsSolve
     do k = 1, nVertLevels
-       tend_th(k,i)=tend_th(k,i)+rthratensw(k,i)*mass(k,i)
+       tend_th(k,i) = tend_th(k,i) + rthratensw(k,i)*mass(k,i)
     enddo
     enddo
  endif
@@ -190,7 +205,7 @@
  do k = 1, nVertLevels
     theta(k,i) = theta_m(k,i) / (1. + R_v/R_d * qv(k,i))
     tend_th(k,i) = (1. + R_v/R_d * qv(k,i)) * tend_th(k,i) &
-                    + R_v/R_d * theta(k,i) * tend_scalars(tend%index_qv,k,i)
+                    + R_v/R_d * theta(k,i) * tend_qv(k,i)
     tend_theta(k,i) = tend_theta(k,i) + tend_th(k,i)
  enddo
  enddo

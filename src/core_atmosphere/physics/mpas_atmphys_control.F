@@ -39,7 +39,10 @@
 !>    * removed the namelist option config_eddy_scheme and associated sourcecode.
 !>    * removed the namelist option config_conv_shallow_scheme and associated sourcecode.
 !>    * removed controls to the updated Kain-Fritsch convection scheme.
-!>      Laura D. Fowler (birch.ucar.edu) / 2013-05-29.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-05-29.
+!>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-22.
+
 
  contains
 
@@ -204,9 +207,16 @@
  type(sfc_input_type),intent(inout):: sfc_input
 
 !local variables:
- integer:: iCell
+ integer:: iCell,nCells
+
+ integer,dimension(:),pointer:: landmask
+ real(kind=RKIND),dimension(:,:),pointer:: dzs
  
 !--------------------------------------------------------------------------------------------------
+
+ nCells = mesh % nCells
+ landmask => sfc_input % landmask % array
+ dzs      => sfc_input % dzs % array
 
 !initialization of input variables, if needed:
 
@@ -216,12 +226,12 @@
 
        case("noah")
        !initialize the thickness of the soil layers for the Noah scheme:
-          do iCell = 1, mesh % nCells
-             if(sfc_input % landmask % array(iCell) == 1) then  
-                sfc_input % dzs % array(1,iCell) = 0.10
-                sfc_input % dzs % array(2,iCell) = 0.30
-                sfc_input % dzs % array(3,iCell) = 0.60
-                sfc_input % dzs % array(4,iCell) = 1.00
+          do iCell = 1, nCells
+             if(landmask(iCell) == 1) then  
+                dzs(1,iCell) = 0.10_RKIND
+                dzs(2,iCell) = 0.30_RKIND
+                dzs(3,iCell) = 0.60_RKIND
+                dzs(4,iCell) = 1.00_RKIND
              endif
           enddo
 
@@ -243,46 +253,79 @@
 
 !local variables:
  integer:: iCell,iMonth,iSoil
+ integer:: nCells,nMonths,nSoilLevels
  
+ integer,dimension(:),pointer:: isltyp,ivgtyp,landmask
+ real(kind=RKIND),dimension(:),pointer:: shdmin,shdmax,snoalb,snow,snowc,ter,vegfra,xice
+ real(kind=RKIND),dimension(:),pointer:: skintemp,sst,tmn
+ real(kind=RKIND),dimension(:,:),pointer:: tslb,smcrel,sh2o,smois,dzs
+ real(kind=RKIND),dimension(:,:),pointer:: albedo12m,greenfrac
+
 !--------------------------------------------------------------------------------------------------
+
+ nCells      = mesh % nCells
+ nSoilLevels = mesh % nSoilLevels
+
+ isltyp    => sfc_input % isltyp    % array
+ ivgtyp    => sfc_input % ivgtyp    % array
+ landmask  => sfc_input % landmask  % array
+
+ shdmin    => sfc_input % shdmin    % array
+ shdmax    => sfc_input % shdmax    % array
+ snoalb    => sfc_input % snoalb    % array
+ snow      => sfc_input % snow      % array
+ snowc     => sfc_input % snowc     % array
+ ter       => sfc_input % ter       % array
+ vegfra    => sfc_input % vegfra    % array
+ xice      => sfc_input % xice      % array
+ skintemp  => sfc_input % skintemp  % array
+ sst       => sfc_input % sst       % array
+ tmn       => sfc_input % tmn       % array
+ dzs       => sfc_input % dzs       % array
+ sh2o      => sfc_input % sh2o      % array
+ smcrel    => sfc_input % smcrel    % array
+ smois     => sfc_input % smois     % array
+ tslb      => sfc_input % tslb      % array
+ albedo12m => sfc_input % albedo12m % array
+ greenfrac => sfc_input % greenfrac % array
 
 !initialization of surface input variables that are not needed if we run the current set of
 !idealized test cases:
 
- do iCell = 1, mesh % nCells
+ do iCell = 1, nCells
     !terrain,soil type, and vegetation:
-    sfc_input % ter      % array(iCell) = 0.
-    sfc_input % xice     % array(iCell) = 0.
-    sfc_input % landmask % array(iCell) = 0
-    sfc_input % ivgtyp   % array(iCell) = 0
-    sfc_input % isltyp   % array(iCell) = 0
-    sfc_input % shdmin   % array(iCell) = 0.
-    sfc_input % shdmax   % array(iCell) = 0.
-    sfc_input % vegfra   % array(iCell) = 0.
+    landmask(iCell) = 0
+    ivgtyp(iCell)   = 0
+    isltyp(iCell)   = 0
+    ter(iCell)      = 0._RKIND
+    xice(iCell)     = 0._RKIND
+    shdmin(iCell)   = 0._RKIND
+    shdmax(iCell)   = 0._RKIND
+    vegfra(iCell)   = 0._RKIND
 
     !snow coverage:    
-    sfc_input % snow     % array(iCell) = 0.
-    sfc_input % snowc    % array(iCell) = 0.
-    sfc_input % snoalb   % array(iCell) = 0.08 
+    snow(iCell)   = 0._RKIND
+    snowc(iCell)  = 0._RKIND
+    snoalb(iCell) = 0.08_RKIND
     
     !surface and sea-surface temperatures:
-    sfc_input % skintemp % array(iCell) = 288.0
-    sfc_input % sst      % array(iCell) = 288.0
+    skintemp(iCell) = 288._RKIND
+    sst(iCell)      = 288._RKIND
     
     !soil layers:
-    sfc_input % tmn % array(iCell) = 288.0
-    do iSoil = 1, mesh % nSoilLevels
-       sfc_input % tslb % array(iSoil,iCell)   = 288.0
-       sfc_input % smcrel % array(iSoil,iCell) =   0.0
-       sfc_input % sh2o   % array(iSoil,iCell) =   0.0
-       sfc_input % smois  % array(iSoil,iCell) =   0.0
-       sfc_input % dzs    % array(iSoil,iCell) =   0.0
+    tmn(iCell) = 288._RKIND
+    do iSoil = 1, nSoilLevels
+       dzs(iSoil,iCell)    =   0._RKIND
+       sh2o(iSoil,iCell)   =   0._RKIND
+       smcrel(iSoil,iCell) =   0._RKIND
+       smois(iSoil,iCell)  =   0._RKIND
+       tslb(iSoil,iCell)   = 288._RKIND
     enddo
 
     !monthly climatological surface albedo and greeness fraction:
-    do iMonth = 1, mesh % nMonths
-       sfc_input % albedo12m % array(iMonth,iCell) = 0.08
-       sfc_input % greenfrac % array(iMonth,iCell) = 0.
+    do iMonth = 1, nMonths
+       albedo12m(iMonth,iCell) = 0.08_RKIND
+       greenfrac(iMonth,iCell) = 0._RKIND
     enddo
 
  enddo   

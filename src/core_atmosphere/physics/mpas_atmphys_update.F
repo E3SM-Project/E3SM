@@ -29,6 +29,11 @@
 !> -----------------------------------
 !> physics_update              : not used.
 !> update_radiation_diagnostics: update accumulated radiation diagnostics.
+!>
+!> add-ons and modifications to sourcecode:
+!> ----------------------------------------
+!>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-22.
 
 
  contains
@@ -62,7 +67,7 @@
  end subroutine physics_update
 
 !==================================================================================================
- subroutine update_radiation_diagnostics(bucket_radt,mesh,diag)
+ subroutine update_radiation_diagnostics(bucket_radt,mesh,diag_physics)
 !==================================================================================================
 
 !input arguments:
@@ -70,102 +75,168 @@
  type(mesh_type),intent(in):: mesh
 
 !inout arguments:
- type(diag_physics_type),intent(inout):: diag
+ type(diag_physics_type),intent(inout):: diag_physics
 
-!local variables:
- integer:: iCell
+!local variables and arrays:
+ integer:: iCell,nCellsSolve
+ integer,dimension(:),pointer  :: i_acswdnb,i_acswdnbc,i_acswdnt,i_acswdntc, &
+                                  i_acswupb,i_acswupbc,i_acswupt,i_acswuptc, &
+                                  i_aclwdnb,i_aclwdnbc,i_aclwdnt,i_aclwdntc, &
+                                  i_aclwupb,i_aclwupbc,i_aclwupt,i_aclwuptc
+
+ real(kind=RKIND),dimension(:),pointer:: swdnb,swdnbc,swdnt,swdntc,  &
+                                         swupb,swupbc,swupt,swuptc,  &
+                                         lwdnb,lwdnbc,lwdnt,lwdntc,  &
+                                         lwupb,lwupbc,lwupt,lwuptc
+ real(kind=RKIND),dimension(:),pointer:: acswdnb,acswdnbc,acswdnt,acswdntc,  &
+                                         acswupb,acswupbc,acswupt,acswuptc,  &
+                                         aclwdnb,aclwdnbc,aclwdnt,aclwdntc,  &
+                                         aclwupb,aclwupbc,aclwupt,aclwuptc
 
 !--------------------------------------------------------------------------------------------------
 
- do iCell = 1, mesh%nCellsSolve
+ nCellsSolve = mesh % nCellsSolve
+
+ i_acswdnb    => diag_physics % i_acswdnb  % array
+ i_acswdnbc   => diag_physics % i_acswdnbc % array
+ i_acswdnt    => diag_physics % i_acswdnt  % array
+ i_acswdntc   => diag_physics % i_acswdntc % array
+ i_acswupb    => diag_physics % i_acswupb  % array
+ i_acswupbc   => diag_physics % i_acswupbc % array
+ i_acswupt    => diag_physics % i_acswupt  % array
+ i_acswuptc   => diag_physics % i_acswuptc % array
+ i_aclwdnb    => diag_physics % i_aclwdnb  % array
+ i_aclwdnbc   => diag_physics % i_aclwdnbc % array
+ i_aclwdnt    => diag_physics % i_aclwdnt  % array
+ i_aclwdntc   => diag_physics % i_aclwdntc % array
+ i_aclwupb    => diag_physics % i_aclwupb  % array
+ i_aclwupbc   => diag_physics % i_aclwupbc % array
+ i_aclwupt    => diag_physics % i_aclwupt  % array
+ i_aclwuptc   => diag_physics % i_aclwuptc % array
+
+ acswdnb      => diag_physics % acswdnb    % array
+ acswdnbc     => diag_physics % acswdnbc   % array
+ acswdnt      => diag_physics % acswdnt    % array
+ acswdntc     => diag_physics % acswdntc   % array
+ acswupb      => diag_physics % acswupb    % array
+ acswupbc     => diag_physics % acswupbc   % array
+ acswupt      => diag_physics % acswupt    % array
+ acswuptc     => diag_physics % acswuptc   % array
+ aclwdnb      => diag_physics % aclwdnb    % array
+ aclwdnbc     => diag_physics % aclwdnbc   % array
+ aclwdnt      => diag_physics % aclwdnt    % array
+ aclwdntc     => diag_physics % aclwdntc   % array
+ aclwupb      => diag_physics % aclwupb    % array
+ aclwupbc     => diag_physics % aclwupbc   % array
+ aclwupt      => diag_physics % aclwupt    % array
+ aclwuptc     => diag_physics % aclwuptc   % array
+
+ swdnb        => diag_physics % swdnb      % array
+ swdnbc       => diag_physics % swdnbc     % array
+ swdnt        => diag_physics % swdnt      % array
+ swdntc       => diag_physics % swdntc     % array
+ swupb        => diag_physics % swupb      % array
+ swupbc       => diag_physics % swupbc     % array
+ swupt        => diag_physics % swupt      % array
+ swuptc       => diag_physics % swuptc     % array
+ lwdnb        => diag_physics % lwdnb      % array
+ lwdnbc       => diag_physics % lwdnbc     % array
+ lwdnt        => diag_physics % lwdnt      % array
+ lwdntc       => diag_physics % lwdntc     % array
+ lwupb        => diag_physics % lwupb      % array
+ lwupbc       => diag_physics % lwupbc     % array
+ lwupt        => diag_physics % lwupt      % array
+ lwuptc       => diag_physics % lwuptc     % array
+
+ do iCell = 1, nCellsSolve
     !short-wave radiation:
-    diag%acswdnb %array(iCell) = diag%acswdnb %array(iCell) + diag%swdnb %array(iCell)*dt_dyn
-    diag%acswdnbc%array(iCell) = diag%acswdnbc%array(iCell) + diag%swdnbc%array(iCell)*dt_dyn
-    diag%acswdnt %array(iCell) = diag%acswdnt %array(iCell) + diag%swdnt %array(iCell)*dt_dyn
-    diag%acswdntc%array(iCell) = diag%acswdntc%array(iCell) + diag%swdntc%array(iCell)*dt_dyn
-    diag%acswupb %array(iCell) = diag%acswupb %array(iCell) + diag%swupb %array(iCell)*dt_dyn
-    diag%acswupbc%array(iCell) = diag%acswupbc%array(iCell) + diag%swupbc%array(iCell)*dt_dyn
-    diag%acswupt %array(iCell) = diag%acswupt %array(iCell) + diag%swupt %array(iCell)*dt_dyn
-    diag%acswuptc%array(iCell) = diag%acswuptc%array(iCell) + diag%swuptc%array(iCell)*dt_dyn
+    acswdnb(iCell)  = acswdnb (iCell) + swdnb (iCell)*dt_dyn
+    acswdnbc(iCell) = acswdnbc(iCell) + swdnbc(iCell)*dt_dyn
+    acswdnt(iCell)  = acswdnt (iCell) + swdnt (iCell)*dt_dyn
+    acswdntc(iCell) = acswdntc(iCell) + swdntc(iCell)*dt_dyn
+    acswupb(iCell)  = acswupb (iCell) + swupb (iCell)*dt_dyn
+    acswupbc(iCell) = acswupbc(iCell) + swupbc(iCell)*dt_dyn
+    acswupt(iCell)  = acswupt (iCell) + swupt (iCell)*dt_dyn
+    acswuptc(iCell) = acswuptc(iCell) + swuptc(iCell)*dt_dyn
     !long-wave radiation:
-    diag%aclwdnb %array(iCell) = diag%aclwdnb %array(iCell) + diag%lwdnb %array(iCell)*dt_dyn
-    diag%aclwdnbc%array(iCell) = diag%aclwdnbc%array(iCell) + diag%lwdnbc%array(iCell)*dt_dyn
-    diag%aclwdnt %array(iCell) = diag%aclwdnt %array(iCell) + diag%lwdnt %array(iCell)*dt_dyn
-    diag%aclwdntc%array(iCell) = diag%aclwdntc%array(iCell) + diag%lwdntc%array(iCell)*dt_dyn
-    diag%aclwupb %array(iCell) = diag%aclwupb %array(iCell) + diag%lwupb %array(iCell)*dt_dyn
-    diag%aclwupbc%array(iCell) = diag%aclwupbc%array(iCell) + diag%lwupbc%array(iCell)*dt_dyn
-    diag%aclwupt %array(iCell) = diag%aclwupt %array(iCell) + diag%lwupt %array(iCell)*dt_dyn
-    diag%aclwuptc%array(iCell) = diag%aclwuptc%array(iCell) + diag%lwuptc%array(iCell)*dt_dyn
+    aclwdnb(iCell)  = aclwdnb (iCell) + lwdnb (iCell)*dt_dyn
+    aclwdnbc(iCell) = aclwdnbc(iCell) + lwdnbc(iCell)*dt_dyn
+    aclwdnt(iCell)  = aclwdnt (iCell) + lwdnt (iCell)*dt_dyn
+    aclwdntc(iCell) = aclwdntc(iCell) + lwdntc(iCell)*dt_dyn
+    aclwupb(iCell)  = aclwupb (iCell) + lwupb (iCell)*dt_dyn
+    aclwupbc(iCell) = aclwupbc(iCell) + lwupbc(iCell)*dt_dyn
+    aclwupt(iCell)  = aclwupt (iCell) + lwupt (iCell)*dt_dyn
+    aclwuptc(iCell) = aclwuptc(iCell) + lwuptc(iCell)*dt_dyn
  enddo
 
  if(l_acradt .and. bucket_radt.gt.0._RKIND) then
 
-    do iCell = 1, mesh%nCellsSolve
+    do iCell = 1, nCellsSolve
        !short-wave radiation:
-       if(diag%acswdnb%array(iCell) .gt. bucket_radt) then
-          diag%i_acswdnb%array(iCell) = diag%i_acswdnb%array(iCell) + 1
-          diag%acswdnb%array(iCell) = diag%acswdnb%array(iCell) - bucket_radt
+       if(acswdnb(iCell) .gt. bucket_radt) then
+          i_acswdnb(iCell) = i_acswdnb(iCell) + 1
+          acswdnb(iCell) = acswdnb(iCell) - bucket_radt
        endif   
-       if(diag%acswdnbc%array(iCell) .gt. bucket_radt) then
-          diag%i_acswdnbc%array(iCell) = diag%i_acswdnbc%array(iCell) + 1
-          diag%acswdnbc%array(iCell) = diag%acswdnbc%array(iCell) - bucket_radt
+       if(acswdnbc(iCell) .gt. bucket_radt) then
+          i_acswdnbc(iCell) = i_acswdnbc(iCell) + 1
+          acswdnbc(iCell) = acswdnbc(iCell) - bucket_radt
        endif   
-       if(diag%acswdnt%array(iCell) .gt. bucket_radt) then
-          diag%i_acswdnt%array(iCell) = diag%i_acswdnt%array(iCell) + 1
-          diag%acswdnt%array(iCell) = diag%acswdnt%array(iCell) - bucket_radt
+       if(acswdnt(iCell) .gt. bucket_radt) then
+          i_acswdnt(iCell) = i_acswdnt(iCell) + 1
+          acswdnt(iCell) = acswdnt(iCell) - bucket_radt
        endif   
-       if(diag%acswdntc%array(iCell) .gt. bucket_radt) then
-          diag%i_acswdntc%array(iCell) = diag%i_acswdntc%array(iCell) + 1
-          diag%acswdntc%array(iCell) = diag%acswdntc%array(iCell) - bucket_radt
+       if(acswdntc(iCell) .gt. bucket_radt) then
+          i_acswdntc(iCell) = i_acswdntc(iCell) + 1
+          acswdntc(iCell) = acswdntc(iCell) - bucket_radt
        endif
-       if(diag%acswupb%array(iCell) .gt. bucket_radt) then
-          diag%i_acswupb%array(iCell) = diag%i_acswupb%array(iCell) + 1
-          diag%acswupb%array(iCell) = diag%acswupb%array(iCell) - bucket_radt
+       if(acswupb(iCell) .gt. bucket_radt) then
+          i_acswupb(iCell) = i_acswupb(iCell) + 1
+          acswupb(iCell) = acswupb(iCell) - bucket_radt
        endif   
-       if(diag%acswupbc%array(iCell) .gt. bucket_radt) then
-          diag%i_acswupbc%array(iCell) = diag%i_acswupbc%array(iCell) + 1
-          diag%acswupbc%array(iCell) = diag%acswupbc%array(iCell) - bucket_radt
+       if(acswupbc(iCell) .gt. bucket_radt) then
+          i_acswupbc(iCell) = i_acswupbc(iCell) + 1
+          acswupbc(iCell) = acswupbc(iCell) - bucket_radt
        endif   
-       if(diag%acswupt%array(iCell) .gt. bucket_radt) then
-          diag%i_acswupt%array(iCell) = diag%i_acswupt%array(iCell) + 1
-          diag%acswupt%array(iCell) = diag%acswupt%array(iCell) - bucket_radt
+       if(acswupt(iCell) .gt. bucket_radt) then
+          i_acswupt(iCell) = i_acswupt(iCell) + 1
+          acswupt(iCell) = acswupt(iCell) - bucket_radt
        endif   
-       if(diag%acswuptc%array(iCell) .gt. bucket_radt) then
-          diag%i_acswuptc%array(iCell) = diag%i_acswuptc%array(iCell) + 1
-          diag%acswuptc%array(iCell) = diag%acswuptc%array(iCell) - bucket_radt
+       if(acswuptc(iCell) .gt. bucket_radt) then
+          i_acswuptc(iCell) = i_acswuptc(iCell) + 1
+          acswuptc(iCell) = acswuptc(iCell) - bucket_radt
        endif
        !long-wave radiation:
-       if(diag%aclwdnb%array(iCell) .gt. bucket_radt) then
-          diag%i_aclwdnb%array(iCell) = diag%i_aclwdnb%array(iCell) + 1
-          diag%aclwdnb%array(iCell) = diag%aclwdnb%array(iCell) - bucket_radt
+       if(aclwdnb(iCell) .gt. bucket_radt) then
+          i_aclwdnb(iCell) = i_aclwdnb(iCell) + 1
+          aclwdnb(iCell) = aclwdnb(iCell) - bucket_radt
        endif   
-       if(diag%aclwdnbc%array(iCell) .gt. bucket_radt) then
-          diag%i_aclwdnbc%array(iCell) = diag%i_aclwdnbc%array(iCell) + 1
-          diag%aclwdnbc%array(iCell) = diag%aclwdnbc%array(iCell) - bucket_radt
+       if(aclwdnbc(iCell) .gt. bucket_radt) then
+          i_aclwdnbc(iCell) = i_aclwdnbc(iCell) + 1
+          aclwdnbc(iCell) = aclwdnbc(iCell) - bucket_radt
        endif   
-       if(diag%aclwdnt%array(iCell) .gt. bucket_radt) then
-          diag%i_aclwdnt%array(iCell) = diag%i_aclwdnt%array(iCell) + 1
-          diag%aclwdnt%array(iCell) = diag%aclwdnt%array(iCell) - bucket_radt
+       if(aclwdnt(iCell) .gt. bucket_radt) then
+          i_aclwdnt(iCell) = i_aclwdnt(iCell) + 1
+          aclwdnt(iCell) = aclwdnt(iCell) - bucket_radt
        endif   
-       if(diag%aclwdntc%array(iCell) .gt. bucket_radt) then
-          diag%i_aclwdntc%array(iCell) = diag%i_aclwdntc%array(iCell) + 1
-          diag%aclwdntc%array(iCell) = diag%aclwdntc%array(iCell) - bucket_radt
+       if(aclwdntc(iCell) .gt. bucket_radt) then
+          i_aclwdntc(iCell) = i_aclwdntc(iCell) + 1
+          aclwdntc(iCell) = aclwdntc(iCell) - bucket_radt
        endif
-       if(diag%aclwupb%array(iCell) .gt. bucket_radt) then
-          diag%i_aclwupb%array(iCell) = diag%i_aclwupb%array(iCell) + 1
-          diag%aclwupb%array(iCell) = diag%aclwupb%array(iCell) - bucket_radt
+       if(aclwupb(iCell) .gt. bucket_radt) then
+          i_aclwupb(iCell) = i_aclwupb(iCell) + 1
+          aclwupb(iCell) = aclwupb(iCell) - bucket_radt
        endif   
-       if(diag%aclwupbc%array(iCell) .gt. bucket_radt) then
-          diag%i_aclwupbc%array(iCell) = diag%i_aclwupbc%array(iCell) + 1
-          diag%aclwupbc%array(iCell) = diag%aclwupbc%array(iCell) - bucket_radt
+       if(aclwupbc(iCell) .gt. bucket_radt) then
+          i_aclwupbc(iCell) = i_aclwupbc(iCell) + 1
+          aclwupbc(iCell) = aclwupbc(iCell) - bucket_radt
        endif   
-       if(diag%aclwupt%array(iCell) .gt. bucket_radt) then
-          diag%i_aclwupt%array(iCell) = diag%i_aclwupt%array(iCell) + 1
-          diag%aclwupt%array(iCell) = diag%aclwupt%array(iCell) - bucket_radt
+       if(aclwupt(iCell) .gt. bucket_radt) then
+          i_aclwupt(iCell) = i_aclwupt(iCell) + 1
+          aclwupt(iCell) = aclwupt(iCell) - bucket_radt
        endif   
-       if(diag%aclwuptc%array(iCell) .gt. bucket_radt) then
-          diag%i_aclwuptc%array(iCell) = diag%i_aclwuptc%array(iCell) + 1
-          diag%aclwuptc%array(iCell) = diag%aclwuptc%array(iCell) - bucket_radt
+       if(aclwuptc(iCell) .gt. bucket_radt) then
+          i_aclwuptc(iCell) = i_aclwuptc(iCell) + 1
+          aclwuptc(iCell) = aclwuptc(iCell) - bucket_radt
        endif
     enddo
 

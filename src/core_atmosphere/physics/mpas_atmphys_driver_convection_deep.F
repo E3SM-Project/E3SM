@@ -63,6 +63,8 @@
 !>    * in call to subroutine kf_eta_cps, replaced the variable g (that originally pointed to
 !>      gravity) with gravity, for simplicity.
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-03-21.
+!>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-22.
 
 
  contains
@@ -206,20 +208,25 @@
 !inout arguments:
  type(diag_physics_type),intent(inout):: diag_physics
 
-!local variables:
- integer:: iCell
+!local variables and arrays:
+ integer:: iCell,nCells
+
+ real(kind=RKIND),dimension(:),pointer:: nca
 
 !--------------------------------------------------------------------------------------------------
  write(0,*)
  write(0,*) '--- enter convection_deep initialization:'
+
+ nCells = mesh % nCells
+ nca => diag_physics % nca % array
 
  convection_select: select case(conv_deep_scheme)
 
     case ("kain_fritsch")
        write(0,*) '    enter kain-fritsch initialization:'
        if(.not. config_do_restart) then
-          do iCell = 1, mesh % nCells
-             diag_physics % nca % array(iCell) = -100._RKIND
+          do iCell = 1, nCells
+             nca(iCell) = -100._RKIND
           enddo
        endif
        call kf_lutab(svp1,svp2,svp3,svpt0)
@@ -377,19 +384,50 @@
  type(tend_physics_type),intent(in):: tend_physics
  real(kind=RKIND),intent(in):: dt_dyn
 
+!local variables and arrays:
+ real(kind=RKIND),dimension(:),pointer  :: areaCell,dcEdge_m
+ real(kind=RKIND),dimension(:),pointer  :: nca,cubot,cutop,cuprec,raincv
+ real(kind=RKIND),dimension(:),pointer  :: qfx,xland
+ real(kind=RKIND),dimension(:,:),pointer:: w0avg
+ real(kind=RKIND),dimension(:,:),pointer:: rthcuten,rqvcuten,rqccuten,rqicuten,rqrcuten,rqscuten 
+ real(kind=RKIND),dimension(:,:),pointer:: rqvblten,rqvdynten,rucuten,rvcuten 
+
 !--------------------------------------------------------------------------------------------------
  write(0,*)
  write(0,*) '--- enter subroutine convection_from_MPAS:'
 
+ areaCell  => mesh         % areaCell  % array
+ xland     => sfc_input    % xland     % array
+
+ dcEdge_m  => diag_physics % dcEdge_m  % array
+ nca       => diag_physics % nca       % array
+ cubot     => diag_physics % cubot     % array
+ cutop     => diag_physics % cutop     % array
+ cuprec    => diag_physics % cuprec    % array
+ raincv    => diag_physics % raincv    % array
+ w0avg     => diag_physics % w0avg     % array
+ qfx       => diag_physics % qfx       % array
+
+ rthcuten  => tend_physics % rthcuten  % array
+ rqvcuten  => tend_physics % rqvcuten  % array
+ rqccuten  => tend_physics % rqccuten  % array
+ rqicuten  => tend_physics % rqicuten  % array
+ rqrcuten  => tend_physics % rqrcuten  % array
+ rqscuten  => tend_physics % rqscuten  % array
+ rucuten   => tend_physics % rucuten   % array
+ rvcuten   => tend_physics % rvcuten   % array
+ rqvblten  => tend_physics % rqvblten  % array
+ rqvdynten => tend_physics % rqvdynten % array
+
  do j = jts,jte
  do i = its,ite
-    raincv_p(i,j) = diag_physics % raincv % array(i)
-    pratec_p(i,j) = diag_physics % cuprec % array(i)
+    raincv_p(i,j) = raincv(i)
+    pratec_p(i,j) = cuprec(i)
     do k = kts,kte
-       rthcuten_p(i,k,j) = tend_physics % rthcuten % array(k,i)
-       rqvcuten_p(i,k,j) = tend_physics % rqvcuten % array(k,i)
-       rqccuten_p(i,k,j) = tend_physics % rqccuten % array(k,i)
-       rqicuten_p(i,k,j) = tend_physics % rqicuten % array(k,i)
+       rthcuten_p(i,k,j) = rthcuten(k,i)
+       rqvcuten_p(i,k,j) = rqvcuten(k,i)
+       rqccuten_p(i,k,j) = rqccuten(k,i)
+       rqicuten_p(i,k,j) = rqicuten(k,i)
     enddo
  enddo
  enddo
@@ -401,23 +439,23 @@
        do j = jts,jte
        do i = its,ite
           !area of grid-cell:       
-          area_p(i,j)  = mesh % areaCell % array(i)
-          dx_p(i,j)    = diag_physics % dcEdge_m % array(i)
-          cubot_p(i,j) = diag_physics % cubot    % array(i)
-          cutop_p(i,j) = diag_physics % cutop    % array(i)
+          area_p(i,j)  = areaCell(i)
+          dx_p(i,j)    = dcEdge_m(i)
+          cubot_p(i,j) = cubot(i)
+          cutop_p(i,j) = cutop(i)
 
           do k = kts,kte
-             rqrcuten_p(i,k,j) = tend_physics % rqrcuten % array(k,i)
-             rqscuten_p(i,k,j) = tend_physics % rqscuten % array(k,i)
+             rqrcuten_p(i,k,j) = rqrcuten(k,i)
+             rqscuten_p(i,k,j) = rqscuten(k,i)
           enddo
 
           !decreases the characteristic time period that convection remains active. When nca_p
           !becomes less than the convective timestep, convective tendencies and precipitation
           !are reset to zero (note that this is also done in subroutine kf_eta_cps).
-          nca_p(i,j) = diag_physics % nca % array(i)
+          nca_p(i,j) = nca(i)
 
           do k = kts,kte
-             w0avg_p(i,k,j) = diag_physics % w0avg % array(k,i)
+             w0avg_p(i,k,j) = w0avg(k,i)
           enddo
        enddo
        enddo
@@ -425,24 +463,20 @@
     case ("tiedtke")
        do j = jts,jte
        do i = its,ite
-          xland_p(i,j) = sfc_input % xland % array(i)
-          qfx_p(i,j)   = diag_physics % qfx % array(i)
+          xland_p(i,j) = xland(i)
+          qfx_p(i,j)   = qfx(i)
        enddo
 
        do k = kts,kte
        do i = its,ite
-          rqvdynblten_p(i,k,j) = tend_physics % rqvblten  % array(k,i) 
-          rqvdynten_p(i,k,j)   = tend_physics % rqvdynten % array(k,i)
-          rucuten_p(i,k,j)     = tend_physics % rucuten % array(k,i)
-          rvcuten_p(i,k,j)     = tend_physics % rvcuten % array(k,i)
+          rqvdynblten_p(i,k,j) = rqvblten(k,i) 
+          rqvdynten_p(i,k,j)   = rqvdynten(k,i)
+          rucuten_p(i,k,j)     = rucuten(k,i)
+          rvcuten_p(i,k,j)     = rvcuten(k,i)
        enddo
        enddo
        enddo
-!      write(0,*) '--- max rqvdynblten = ',maxval(rqvdynblten_p(its:ite,kts:kte,jts:jte))
-!      write(0,*) '--- min rqvdynblten = ',minval(rqvdynblten_p(its:ite,kts:kte,jts:jte))
-!      write(0,*) '--- max rqvdynten   = ',maxval(rqvdynten_p(its:ite,kts:kte,jts:jte))
-!      write(0,*) '--- min rqvdynten   = ',minval(rqvdynten_p(its:ite,kts:kte,jts:jte))
-       
+ 
     case default
 
  end select convection_select
@@ -456,17 +490,38 @@
  type(diag_physics_type),intent(inout):: diag_physics
  type(tend_physics_type),intent(inout):: tend_physics
 
+!local variables and arrays:
+ real(kind=RKIND),dimension(:),pointer  :: nca,cubot,cutop,cuprec,raincv
+ real(kind=RKIND),dimension(:,:),pointer:: w0avg
+ real(kind=RKIND),dimension(:,:),pointer:: rthcuten,rqvcuten,rqccuten,rqicuten,rqrcuten,rqscuten
+ real(kind=RKIND),dimension(:,:),pointer:: rucuten,rvcuten
+
 !--------------------------------------------------------------------------------------------------
+
+ nca       => diag_physics % nca       % array
+ cubot     => diag_physics % cubot     % array
+ cutop     => diag_physics % cutop     % array
+ cuprec    => diag_physics % cuprec    % array
+ raincv    => diag_physics % raincv    % array
+ w0avg     => diag_physics % w0avg     % array
+ rthcuten  => tend_physics % rthcuten  % array
+ rqvcuten  => tend_physics % rqvcuten  % array
+ rqccuten  => tend_physics % rqccuten  % array
+ rqicuten  => tend_physics % rqicuten  % array
+ rqrcuten  => tend_physics % rqrcuten  % array
+ rqscuten  => tend_physics % rqscuten  % array
+ rucuten   => tend_physics % rucuten   % array
+ rvcuten   => tend_physics % rvcuten   % array
 
  do j = jts,jte
  do i = its,ite
-    diag_physics % raincv % array(i) = raincv_p(i,j)
-    diag_physics % cuprec % array(i) = pratec_p(i,j)
+    raincv(i) = raincv_p(i,j)
+    cuprec(i) = pratec_p(i,j)
     do k = kts, kte
-       tend_physics % rthcuten % array(k,i) = rthcuten_p(i,k,j)
-       tend_physics % rqvcuten % array(k,i) = rqvcuten_p(i,k,j)
-       tend_physics % rqccuten % array(k,i) = rqccuten_p(i,k,j)
-       tend_physics % rqicuten % array(k,i) = rqicuten_p(i,k,j)
+       rthcuten(k,i) = rthcuten_p(i,k,j)
+       rqvcuten(k,i) = rqvcuten_p(i,k,j)
+       rqccuten(k,i) = rqccuten_p(i,k,j)
+       rqicuten(k,i) = rqicuten_p(i,k,j)
     enddo
  enddo
  enddo
@@ -476,13 +531,13 @@
     case ("kain_fritsch")
        do j = jts,jte
        do i = its,ite
-          diag_physics % cubot % array(i) = cubot_p(i,j)
-          diag_physics % cutop % array(i) = cutop_p(i,j)
-          diag_physics % nca   % array(i) = nca_p(i,j)
+          cubot(i) = cubot_p(i,j)
+          cutop(i) = cutop_p(i,j)
+          nca(i)   = nca_p(i,j)
           do k = kts, kte
-             diag_physics % w0avg % array(k,i) = w0avg_p(i,k,j)
-             tend_physics % rqrcuten % array(k,i) = rqrcuten_p(i,k,j)
-             tend_physics % rqscuten % array(k,i) = rqscuten_p(i,k,j)
+             w0avg(k,i)    = w0avg_p(i,k,j)
+             rqrcuten(k,i) = rqrcuten_p(i,k,j)
+             rqscuten(k,i) = rqscuten_p(i,k,j)
           enddo                          
        enddo
        enddo
@@ -491,8 +546,8 @@
        do j = jts,jte
        do k = kts,kte
        do i = its,ite
-          tend_physics % rucuten % array(k,i) = rucuten_p(i,k,j)
-          tend_physics % rvcuten % array(k,i) = rvcuten_p(i,k,j)
+          rucuten(k,i) = rucuten_p(i,k,j)
+          rvcuten(k,i) = rvcuten_p(i,k,j)
        enddo
        enddo
        enddo
@@ -513,35 +568,53 @@
  type(diag_physics_type),intent(inout):: diag_physics
  type(tend_physics_type),intent(inout):: tend_physics
 
-!local variables:
- integer:: iCell,k
+!local variables and arrays:
+ integer:: iCell,k,nCellsSolve,nVertLevels
+
+ real(kind=RKIND),dimension(:),pointer  :: nca,cubot,cutop,cuprec,raincv
+ real(kind=RKIND),dimension(:,:),pointer:: rthcuten,rqvcuten,rqccuten,rqicuten,rqrcuten,rqscuten
 
 !--------------------------------------------------------------------------------------------------
- 
+
+ nCellsSolve = mesh % nCellsSolve
+ nVertLevels = mesh % nVertLevels 
+
+ nca       => diag_physics % nca       % array
+ cubot     => diag_physics % cubot     % array
+ cutop     => diag_physics % cutop     % array
+ cuprec    => diag_physics % cuprec    % array
+ raincv    => diag_physics % raincv    % array
+ rthcuten  => tend_physics % rthcuten  % array
+ rqvcuten  => tend_physics % rqvcuten  % array
+ rqccuten  => tend_physics % rqccuten  % array
+ rqicuten  => tend_physics % rqicuten  % array
+ rqrcuten  => tend_physics % rqrcuten  % array
+ rqscuten  => tend_physics % rqscuten  % array
+
  convection_select: select case(conv_deep_scheme)
 
     case ("kain_fritsch")
 
-       do iCell = 1, mesh%nCellsSolve
+       do iCell = 1, nCellsSolve
           !decreases the characteristic time period that convection remains active. When nca_p
           !becomes less than the convective timestep, convective tendencies and precipitation
           !are reset to zero (note that this is also done in subroutine kf_eta_cps).
-          if(diag_physics % nca % array(iCell) .gt. 0.) then
-             diag_physics % nca % array(iCell) = diag_physics % nca % array(iCell) - dt_dyn
+          if(nca(iCell) .gt. 0.) then
+             nca(iCell) = nca(iCell) - dt_dyn
              
-             if(diag_physics % nca % array(iCell) .lt. 0.5*dt_dyn) then
-                do k = 1, mesh%nVertLevels
-                   tend_physics % rthcuten % array(k,iCell) = 0._RKIND
-                   tend_physics % rqvcuten % array(k,iCell) = 0._RKIND
-                   tend_physics % rqccuten % array(k,iCell) = 0._RKIND
-                   tend_physics % rqrcuten % array(k,iCell) = 0._RKIND
-                   tend_physics % rqicuten % array(k,iCell) = 0._RKIND
-                   tend_physics % rqscuten % array(k,iCell) = 0._RKIND
+             if(nca(iCell) .lt. 0.5*dt_dyn) then
+                do k = 1, nVertLevels
+                   rthcuten(k,iCell) = 0._RKIND
+                   rqvcuten(k,iCell) = 0._RKIND
+                   rqccuten(k,iCell) = 0._RKIND
+                   rqrcuten(k,iCell) = 0._RKIND
+                   rqicuten(k,iCell) = 0._RKIND
+                   rqscuten(k,iCell) = 0._RKIND
                 enddo
-                diag_physics % raincv % array(iCell) = 0._RKIND
-                diag_physics % cuprec % array(iCell) = 0._RKIND
-                diag_physics % cubot  % array(iCell) = kte+1
-                diag_physics  % cutop  % array(iCell) = kts
+                raincv(iCell) = 0._RKIND
+                cuprec(iCell) = 0._RKIND
+                cubot(iCell)  = kte+1
+                cutop(iCell)  = kts
              endif
           endif
        enddo
@@ -563,21 +636,27 @@
 !inout arguments:
  type(diag_physics_type),intent(inout):: diag_physics
 
-!local variables:
- integer:: iCell
+!local variables and arrays:
+ integer:: iCell,nCellsSolve
+
+ integer,dimension(:),pointer:: i_rainc
+ real(kind=RKIND),dimension(:),pointer:: cuprec,rainc
 
 !--------------------------------------------------------------------------------------------------
- 
-!update the accumulated precipitation at the end of each dynamic time-step:
- do iCell = 1, mesh % nCellsSolve
-    diag_physics % rainc % array(iCell) = diag_physics % rainc % array(iCell) &
-                                    + diag_physics % cuprec % array(iCell) * dt_dyn
 
-    if(l_acrain .and. bucket_rainc.gt.0._RKIND .and. &
-       diag_physics%rainc%array(iCell).gt.bucket_rainc) then
-       diag_physics % i_rainc % array(iCell) = diag_physics % i_rainc % array(iCell) + 1
-       diag_physics % rainc % array(iCell) = diag_physics % rainc % array(iCell) &
-                                           - bucket_rainc
+ nCellsSolve = mesh % nCellsSolve
+
+ i_rainc => diag_physics % i_rainc % array
+ cuprec  => diag_physics % cuprec  % array
+ rainc   => diag_physics % rainc   % array
+
+!update the accumulated precipitation at the end of each dynamic time-step:
+ do iCell = 1, nCellsSolve
+    rainc(iCell) = rainc(iCell) + cuprec(iCell) * dt_dyn
+
+    if(l_acrain .and. bucket_rainc.gt.0._RKIND .and. rainc(iCell).gt.bucket_rainc) then
+       i_rainc(iCell) = i_rainc(iCell) + 1
+       rainc(iCell)   = rainc(iCell) - bucket_rainc
     endif
 
  enddo

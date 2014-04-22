@@ -66,6 +66,8 @@
 !>    * in call to subroutine rrtmg_swrad, replaced the variable g (that originally pointed to
 !>      gravity) with gravity, for simplicity.
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-03-21.
+!>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-22.
 
 
  contains
@@ -266,24 +268,48 @@
 
  real(kind=RKIND),intent(in):: xtime_s
 
+!local variables and arrays:
+ real(kind=RKIND),dimension(:),pointer    :: latCell,lonCell
+ real(kind=RKIND),dimension(:),pointer    :: skintemp,snow,xice,xland
+ real(kind=RKIND),dimension(:),pointer    :: m_ps,pin
+ real(kind=RKIND),dimension(:),pointer    :: sfc_albedo,sfc_emiss
+ real(kind=RKIND),dimension(:,:),pointer  :: cldfrac,m_hybi,o3clim
+ real(kind=RKIND),dimension(:,:,:),pointer:: aerosols,ozmixm
+
 !--------------------------------------------------------------------------------------------------
+
+ latCell    => mesh         % latCell    % array
+ lonCell    => mesh         % lonCell    % array
+ m_hybi     => mesh         % m_hybi     % array
+ m_ps       => state        % m_ps       % array
+ aerosols   => state        % aerosols   % array
+ skintemp   => sfc_input    % skintemp   % array
+ snow       => sfc_input    % snow       % array
+ xice       => sfc_input    % xice       % array
+ xland      => sfc_input    % xland      % array
+ pin        => atm_input    % pin        % array
+ ozmixm     => atm_input    % ozmixm     % array
+ sfc_albedo => diag_physics % sfc_albedo % array
+ sfc_emiss  => diag_physics % sfc_emiss  % array
+ cldfrac    => diag_physics % cldfrac    % array
+ o3clim     => diag_physics % o3clim     % array
 
  do j = jts,jte
  do i = its,ite
-    xlat_p(i,j)       = (mesh % latCell % array(i)) / degrad
-    xlon_p(i,j)       = (mesh % lonCell % array(i)) / degrad
+    xlat_p(i,j)       = latCell(i) / degrad
+    xlon_p(i,j)       = lonCell(i) / degrad
 
-    sfc_albedo_p(i,j) = diag_physics % sfc_albedo % array(i)
-    snow_p(i,j)       = sfc_input    % snow       % array(i)
-    tsk_p(i,j)        = sfc_input    % skintemp   % array(i)
-    xice_p(i,j)       = sfc_input    % xice       % array(i)
-    xland_p(i,j)      = sfc_input    % xland      % array(i)
+    sfc_albedo_p(i,j) = sfc_albedo(i)
+    snow_p(i,j)       = snow(i)
+    tsk_p(i,j)        = skintemp(i)
+    xice_p(i,j)       = xice(i)
+    xland_p(i,j)      = xland(i)
  enddo
  enddo
  do j = jts,jte
  do k = kts,kte
  do i = its,ite
-    cldfrac_p(i,k,j) = diag_physics % cldfrac % array(k,i)
+    cldfrac_p(i,k,j) = cldfrac(k,i)
  enddo
  enddo
  enddo
@@ -337,12 +363,12 @@
        !ozone volum mixing ratio:
        if(config_o3climatology) then
           do k = 1, num_oznLevels
-             pin_p(k) = atm_input % pin % array(k)
+             pin_p(k) = pin(k)
           enddo
           do j = jts,jte
           do k = 1, num_oznLevels
              do i = its,ite
-                o3clim_p(i,k,j) = diag_physics % o3clim % array(k,i)
+                o3clim_p(i,k,j) = o3clim(k,i)
              enddo
           enddo
           enddo
@@ -362,7 +388,7 @@
     case("cam_sw")
        do j = jts,jte
        do i = its,ite
-          sfc_emiss_p(i,j) = diag_physics % sfc_emiss % array(i)
+          sfc_emiss_p(i,j)  = sfc_emiss(i)
 
           olrtoa_p(i,j)     = 0.0_RKIND
           glw_p(i,j)        = 0.0_RKIND
@@ -411,33 +437,33 @@
        endif
        !ozone mixing ratio:
        do k = 1, num_oznlevels
-          pin_p(k) = atm_input % pin % array(k)
+          pin_p(k) = pin(k)
        enddo
        do n = 1, num_months
           do j = jts,jte
           do k = 1, num_oznlevels
           do i = its,ite
-             ozmixm_p(i,k,j,n) = atm_input % ozmixm % array(n,k,i)
+             ozmixm_p(i,k,j,n) = ozmixm(n,k,i)
           enddo
           enddo
           enddo
        enddo
        !aerosol mixing ratio:
        do k = 1, num_aerlevels
-          m_hybi_p(k) = mesh % m_hybi % array(k,1)
+          m_hybi_p(k) = m_hybi(k,1)
        enddo
        do i = its,ite
        do j = jts,jte
-          m_psp_p(i,j) = state % m_ps % array(i)
-          m_psn_p(i,j) = state % m_ps % array(i)
+          m_psp_p(i,j) = m_ps(i)
+          m_psn_p(i,j) = m_ps(i)
        enddo
        enddo
        do n = 1,num_aerosols
        do j = jts,jte
        do k = 1, num_aerlevels
        do i = its,ite
-          aerosolcp_p(i,k,j,n) = state % aerosols % array(n,k,i)
-          aerosolcn_p(i,k,j,n) = state % aerosols % array(n,k,i)
+          aerosolcp_p(i,k,j,n) = aerosols(n,k,i)
+          aerosolcn_p(i,k,j,n) = aerosols(n,k,i)
        enddo
        enddo
        enddo
@@ -461,36 +487,59 @@
  type(diag_physics_type),intent(inout):: diag_physics
  type(tend_physics_type),intent(inout):: tend_physics
 
+!local variables and arrays:
+ real(kind=RKIND),dimension(:),pointer  :: coszr,gsw,swcf,swdnb,swdnbc,swdnt,swdntc, &
+                                           swupb,swupbc,swupt,swuptc
+!real(kind=RKIND),dimension(:,:),pointer:: swdnflx,swdnflxc,swupflx,swupflxc
+ real(kind=RKIND),dimension(:,:),pointer:: rthratensw
+
 !--------------------------------------------------------------------------------------------------
+
+ coszr    => diag_physics % coszr    % array
+ gsw      => diag_physics % gsw      % array
+ swcf     => diag_physics % swcf     % array
+ swdnb    => diag_physics % swdnb    % array
+ swdnbc   => diag_physics % swdnbc   % array
+ swdnt    => diag_physics % swdnt    % array
+ swdntc   => diag_physics % swdntc   % array
+ swupb    => diag_physics % swupb    % array
+ swupbc   => diag_physics % swupbc   % array
+ swupt    => diag_physics % swupt    % array
+ swuptc   => diag_physics % swuptc   % array
+!swdnflx  => diag_physics % swdnflx  % array
+!swdnflxc => diag_physics % swdnflxc % array
+!swupflx  => diag_physics % swupflx  % array
+!swupflxc => diag_physics % swupflxc % array
+ rthratensw => tend_physics % rthratensw % array
 
  do j = jts,jte
 
  do i = its,ite
-    diag_physics % coszr      % array(i) = coszr_p(i,j)
-    diag_physics % gsw        % array(i) = gsw_p(i,j)
-    diag_physics % swcf       % array(i) = swcf_p(i,j)
-    diag_physics % swdnb      % array(i) = swdnb_p(i,j)
-    diag_physics % swdnbc     % array(i) = swdnbc_p(i,j)
-    diag_physics % swdnt      % array(i) = swdnt_p(i,j)
-    diag_physics % swdntc     % array(i) = swdntc_p(i,j)
-    diag_physics % swupb      % array(i) = swupb_p(i,j)
-    diag_physics % swupbc     % array(i) = swupbc_p(i,j)
-    diag_physics % swupt      % array(i) = swupt_p(i,j)
-    diag_physics % swuptc     % array(i) = swuptc_p(i,j)
+    coszr(i) = coszr_p(i,j)
+    gsw(i)    = gsw_p(i,j)
+    swcf(i)   = swcf_p(i,j)
+    swdnb(i)  = swdnb_p(i,j)
+    swdnbc(i) = swdnbc_p(i,j)
+    swdnt(i)  = swdnt_p(i,j)
+    swdntc(i) = swdntc_p(i,j)
+    swupb(i)  = swupb_p(i,j)
+    swupbc(i) = swupbc_p(i,j)
+    swupt(i)  = swupt_p(i,j)
+    swuptc(i) = swuptc_p(i,j)
  enddo
 !not needed:
 !do k = kts,kte+2
 !do i = its,ite
-!   diag_physics % swdnflx    % array(k,i) = swdnflx_p(i,k,j)
-!   diag_physics % swdnflxc   % array(k,i) = swdnflxc_p(i,k,j)
-!   diag_physics % swupflx    % array(k,i) = swupflx_p(i,k,j)
-!   diag_physics % swupflxc   % array(k,i) = swupflxc_p(i,k,j)
+!   swdnflx(k,i)  = swdnflx_p(i,k,j)
+!   swdnflxc(k,i) = swdnflxc_p(i,k,j)
+!   swupflx(k,i)  = swupflx_p(i,k,j)
+!   swupflxc(k,i) = swupflxc_p(i,k,j)
 !enddo
 !enddo
 
  do k = kts,kte
  do i = its,ite
-    tend_physics % rthratensw % array(k,i) = rthratensw_p(i,k,j)
+    rthratensw(k,i) = rthratensw_p(i,k,j)
  enddo
  enddo
 
