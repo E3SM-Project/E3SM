@@ -48,7 +48,7 @@ contains
 
     type (MPAS_pool_type), pointer :: &
          boundary, &
-         tracers, &
+         icestate, &
          mesh, &
          hexdyn
 
@@ -65,13 +65,13 @@ contains
          nstep_skip = 100
 
     call MPAS_pool_get_subpool(block % structs, "boundary", boundary)
-    call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
+    call MPAS_pool_get_subpool(block % structs, "icestate", icestate)
     call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
     call MPAS_pool_get_subpool(block % structs, "hexdyn", hexdyn)
     call MPAS_pool_get_subpool(block % structs, "boundary", boundary)
 
-    call MPAS_pool_get_array(tracers, "iceAreaCell", iceAreaCell)
-    call MPAS_pool_get_array(tracers, "iceVolumeCell", iceVolumeCell)
+    call MPAS_pool_get_array(icestate, "iceAreaCell", iceAreaCell)
+    call MPAS_pool_get_array(icestate, "iceVolumeCell", iceVolumeCell)
 
     call MPAS_pool_get_array(hexdyn, "uVelocity", uVelocity)
     call MPAS_pool_get_array(hexdyn, "vVelocity", vVelocity)    
@@ -1500,10 +1500,10 @@ contains
   ! Spherical plotting
   !-------------------------------------------------------------
 
-  subroutine plot_state(mesh, tracers, atmos_forcing, time, dt)
+  subroutine plot_state(mesh, icestate, atmos_forcing, time, dt)
 
     type(MPAS_pool_type), pointer, intent(in) :: mesh
-    type(MPAS_pool_type), pointer :: tracers
+    type(MPAS_pool_type), pointer :: icestate
     type(MPAS_pool_type), pointer :: atmos_forcing
 
     real(kind=RKIND), intent(in) :: &
@@ -1537,9 +1537,9 @@ contains
          longwaveDown
 
     ! init variables
-    call MPAS_pool_get_array(tracers, "iceAreaCell", iceAreaCell)
-    call MPAS_pool_get_array(tracers, "iceVolumeCell", iceVolumeCell)
-    call MPAS_pool_get_array(tracers, "snowVolumeCell", snowVolumeCell)
+    call MPAS_pool_get_array(icestate, "iceAreaCell", iceAreaCell)
+    call MPAS_pool_get_array(icestate, "iceVolumeCell", iceVolumeCell)
+    call MPAS_pool_get_array(icestate, "snowVolumeCell", snowVolumeCell)
     call MPAS_pool_get_array(atmos_forcing, "surfaceTemperature", surfaceTemperature)
     call MPAS_pool_get_array(atmos_forcing, "airPotentialTemperature", airPotentialTemperature)
     call MPAS_pool_get_array(atmos_forcing, "longwaveDown", longwaveDown)
@@ -2740,7 +2740,7 @@ contains
 
     type (MPAS_pool_type), pointer :: &
          mesh, &
-         tracers
+         icestate
 
     integer :: &
          iCell
@@ -2760,11 +2760,11 @@ contains
          latCell
 
     call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
-    call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
+    call MPAS_pool_get_subpool(block % structs, "icestate", icestate)
 
-    call MPAS_pool_get_array(tracers, "iceAreaCell", iceAreaCell)
-    call MPAS_pool_get_array(tracers, "iceVolumeCell", iceVolumeCell)
-    call MPAS_pool_get_array(tracers, "snowVolumeCell", snowVolumeCell)
+    call MPAS_pool_get_array(icestate, "iceAreaCell", iceAreaCell)
+    call MPAS_pool_get_array(icestate, "iceVolumeCell", iceVolumeCell)
+    call MPAS_pool_get_array(icestate, "snowVolumeCell", snowVolumeCell)
 
     call MPAS_pool_get_array(mesh, "nCells", nCells)
     call MPAS_pool_get_array(mesh, "areaCell", areaCell)

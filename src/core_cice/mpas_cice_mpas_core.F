@@ -324,7 +324,75 @@ module mpas_core
 
       integer, intent(out) :: ierr
 
+      logical, pointer :: &
+           config_use_velocity_solver, &
+           pkgWeak, &
+           pkgVariational, &
+           pkgWachspress, &
+           pkgPieceWiseLinear
+
+      character(len=strKIND), pointer :: &
+           config_stress_divergence_scheme, &
+           config_variational_basis
+
       ierr = 0
+
+      !pkgWeak
+      !pkgVariational
+      !pkgWachspress
+      !pkgPieceWiseLinear
+
+      call MPAS_pool_get_config(configs, "config_use_velocity_solver", config_use_velocity_solver)
+      call MPAS_pool_get_config(configs, "config_stress_divergence_scheme", config_stress_divergence_scheme)
+      call MPAS_pool_get_config(configs, "config_variational_basis", config_variational_basis)
+
+      call MPAS_pool_get_package(packages, "pkgWeak", pkgWeak)
+      call MPAS_pool_get_package(packages, "pkgVariational", pkgVariational)
+      call MPAS_pool_get_package(packages, "pkgWachspress", pkgWachspress)
+      call MPAS_pool_get_package(packages, "pkgPieceWiseLinear", pkgPieceWiseLinear)
+
+      ! is the velocity solver on
+      if (config_use_velocity_solver) then
+
+         ! stress divergence scheme
+         if (trim(config_stress_divergence_scheme) == "weak") then
+
+            ! weak stress divergence scheme
+            pkgWeak = .true.
+
+         else if (trim(config_stress_divergence_scheme) == "variational") then
+
+            ! variational stress divergence scheme
+            pkgVariational = .true.
+
+            ! variational basis function scheme
+            if (trim(config_variational_basis) == "wachspress") then
+
+               ! wachspress basis functions
+               pkgWachspress = .true.
+               
+            else if (trim(config_variational_basis) == "pwl") then
+
+               ! piecewise linear basis functions
+               pkgPieceWiseLinear = .true.
+
+            else
+
+               ! unknown value of config_variational_basis
+               write(*,*) "Unknown variational scheme: ", trim(config_variational_basis)
+               ierr = 1
+
+            endif ! config_variational_basis
+
+         else
+
+            ! unknown value of config_stress_divergence_scheme
+            write(*,*) "Unknown stress divergence scheme: ", trim(config_stress_divergence_scheme)
+            ierr = 1
+
+         endif ! config_stress_divergence_scheme
+
+      endif ! config_use_velocity_solver
 
    end subroutine mpas_core_setup_packages
 

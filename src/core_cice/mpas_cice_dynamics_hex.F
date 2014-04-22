@@ -83,7 +83,6 @@ contains
                                     air_stress, &
                                     ocean_stress, &
                                     surface_tilt, &
-                                    principal_stresses, &
                                     dtDynamics, &
                                     dtElastic, &
                                     elapsedTime
@@ -129,6 +128,7 @@ contains
     real(kind=RKIND), dimension(:), pointer :: &
          iceAreaCell, &
          iceVolumeCell, &
+         snowVolumeCell, &
          iceAreaVertex, &
          totalMassVertex, &
          totalMassCell, &
@@ -149,19 +149,21 @@ contains
          airDensity, &
          uAirVelocity, &
          vAirVelocity, &
-         fVertex, &
-         stress11Weak, &
-         stress22Weak, &
-         stress12Weak
+         fVertex
 
     real(kind=RKIND), dimension(:,:), pointer :: &
-         stress11Var, &
-         stress22Var, &
-         stress12Var
+         iceAreaCategory, &
+         iceVolumeCategory, &
+         snowVolumeCategory
 
     ! init variables
-    call MPAS_pool_get_array(tracers, "iceAreaCell", iceAreaCell)
-    call MPAS_pool_get_array(tracers, "iceVolumeCell", iceVolumeCell)
+    call MPAS_pool_get_array(tracers, "iceAreaCategory", iceAreaCategory)
+    call MPAS_pool_get_array(tracers, "iceVolumeCategory", iceVolumeCategory)
+    call MPAS_pool_get_array(tracers, "snowVolumeCategory", snowVolumeCategory)
+
+    call MPAS_pool_get_array(icestate, "iceAreaCell", iceAreaCell)
+    call MPAS_pool_get_array(icestate, "iceVolumeCell", iceVolumeCell)
+    call MPAS_pool_get_array(icestate, "snowVolumeCell", snowVolumeCell)
     call MPAS_pool_get_array(icestate, "iceAreaVertex", iceAreaVertex)
     call MPAS_pool_get_array(icestate, "totalMassVertex", totalMassVertex)
     call MPAS_pool_get_array(icestate, "totalMassCell", totalMassCell)
@@ -192,13 +194,15 @@ contains
 
     call MPAS_pool_get_array(mesh, "fVertex", fVertex)
 
-    call MPAS_pool_get_array(hexweak, "stress11", stress11Weak) 
-    call MPAS_pool_get_array(hexweak, "stress22", stress22Weak) 
-    call MPAS_pool_get_array(hexweak, "stress12", stress12Weak) 
-
-    call MPAS_pool_get_array(hexvar, "stress11", stress11Var) 
-    call MPAS_pool_get_array(hexvar, "stress22", stress22Var)
-    call MPAS_pool_get_array(hexvar, "stress12", stress12Var)
+    ! aggregate categories for area and volume
+    call aggregate_mass_and_area(mesh, &
+         iceAreaCategory, &
+         iceVolumeCategory, &
+         snowVolumeCategory, &
+         iceAreaCell, &
+         iceVolumeCell, &
+         snowVolumeCell, &
+         totalMassCell)
 
     ! interpolate area and mass from cells to vertices
     call interpolate_cell_to_vertex(mesh, &
@@ -277,8 +281,59 @@ contains
 
     elapsedTime = elapsedTime + dt
 
+    call principal_stresses_driver(&
+         hexweak, &
+         hexvar, &
+         replacementPressure, &
+         divergenceFormulation, &
+         principalStress1, &
+         principalStress2)
+
+  end subroutine run_dynamics_hex
+
+  !-------------------------------------------------------------
+
+  subroutine principal_stresses_driver(&
+       hexweak, &
+       hexvar, &
+       replacementPressure, &
+       divergenceFormulation, &
+       principalStress1, &
+       principalStress2)
+
+    use cice_dynamics_shared, only: &
+         principal_stresses         
+
+    type (MPAS_pool_type), pointer, intent(in) :: &
+         hexweak, &
+         hexvar
+
+    real(kind=RKIND), dimension(:), intent(in) :: &
+         replacementPressure
+
+    character(len=*), intent(in) :: &
+         divergenceFormulation
+    
+    real(kind=RKIND), dimension(:), intent(out) :: &
+         principalStress1, &
+         principalStress2
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         stress11Weak, &
+         stress22Weak, &
+         stress12Weak
+
+    real(kind=RKIND), dimension(:,:), pointer :: &
+         stress11Var, &
+         stress22Var, &
+         stress12Var
+
     ! calculate the principal stresses
     if (trim(divergenceFormulation) == "weak") then
+
+       call MPAS_pool_get_array(hexweak, "stress11", stress11Weak) 
+       call MPAS_pool_get_array(hexweak, "stress22", stress22Weak) 
+       call MPAS_pool_get_array(hexweak, "stress12", stress12Weak) 
 
        call principal_stresses(&
             principalStress1, &
@@ -290,6 +345,10 @@ contains
 
     else if (trim(divergenceFormulation) == "variational") then
 
+       call MPAS_pool_get_array(hexvar, "stress11", stress11Var) 
+       call MPAS_pool_get_array(hexvar, "stress22", stress22Var)
+       call MPAS_pool_get_array(hexvar, "stress12", stress12Var)
+
        call principal_stresses(&
             principalStress1, &
             principalStress2, &
@@ -300,7 +359,7 @@ contains
 
     endif
 
-  end subroutine run_dynamics_hex
+  end subroutine principal_stresses_driver
 
   !-------------------------------------------------------------
 
@@ -547,6 +606,64 @@ contains
          dtElastic, mesh)
 
   end subroutine single_subcycle_dynamics_hex
+
+  !-------------------------------------------------------------
+
+  subroutine aggregate_mass_and_area(&
+       mesh, &
+       iceAreaCategory, iceVolumeCategory, snowVolumeCategory, &
+       iceAreaCell, iceVolumeCell, snowVolumeCell, totalMassCell)
+
+    use cice_constants, only: &
+         rhoi, &
+         rhos
+
+    type (MPAS_pool_type), pointer, intent(in) :: mesh
+
+    real(kind=RKIND), dimension(:,:), intent(in) :: &
+         iceAreaCategory, &
+         iceVolumeCategory, &
+         snowVolumeCategory      
+
+    real(kind=RKIND), dimension(:), intent(out) :: &
+         totalMassCell, &
+         iceAreaCell, &
+         iceVolumeCell, &
+         snowVolumeCell
+
+    integer :: &
+         iCell, &
+         iCategory
+
+    integer, pointer :: &
+         nCells, &
+         nCategories
+
+    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_array(mesh, "nCategories", nCategories)
+
+    do iCell = 1, nCells
+
+       totalMassCell(iCell)  = 0.0_RKIND
+       iceAreaCell(iCell)    = 0.0_RKIND
+       iceVolumeCell(iCell)  = 0.0_RKIND
+       snowVolumeCell(iCell) = 0.0_RKIND
+
+       do iCategory = 1, nCategories
+
+          iceAreaCell(iCell)    = iceAreaCell(iCell) + iceAreaCategory(iCategory,iCell)
+          iceVolumeCell(iCell)  = iceVolumeCell(iCell) + iceVolumeCategory(iCategory,iCell)
+          snowVolumeCell(iCell) = snowVolumeCell(iCell) + snowVolumeCategory(iCategory,iCell)
+
+          totalMassCell(iCell)  = totalMassCell(iCell) + &
+               iceVolumeCell(iCell) * rhoi + &
+               snowVolumeCell(iCell) * rhos
+
+       enddo ! iCategory
+
+    enddo ! iCell
+
+  end subroutine aggregate_mass_and_area
 
   !-------------------------------------------------------------
 

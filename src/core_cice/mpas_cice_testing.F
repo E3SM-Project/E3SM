@@ -13,9 +13,6 @@ module cice_testing
        init_square_test_case_hex, &
        init_spherical_test_case
 
-  real(kind=RKIND), parameter :: &
-       rhoi = 917.0_RKIND
-
   ! parameter in constant stress strain relation
   real(kind=RKIND), parameter, public :: lambda = 1.0_RKIND
 
@@ -113,7 +110,6 @@ contains
              ! ice present
              iceAreaCell(iCell)        = 1.0_RKIND
              iceVolumeCell(iCell)      = iceAreaCell(iCell) * iceHeightCell
-             totalMassCell(iCell)      = iceVolumeCell(iCell) * rhoi
              surfaceTemperature(iCell) = 0.0_RKIND
 
           else
@@ -121,7 +117,6 @@ contains
              ! no ice
              iceAreaCell(iCell)   = 0.0_RKIND
              iceVolumeCell(iCell) = 0.0_RKIND
-             totalMassCell(iCell) = 0.0_RKIND
              surfaceTemperature(iCell) = 0.0_RKIND
 
           endif
@@ -157,7 +152,6 @@ contains
 
              iceAreaCell(iCell)        = 1.0_RKIND
              iceVolumeCell(iCell)      = iceAreaCell(iCell) * iceHeightCell
-             totalMassCell(iCell)      = iceVolumeCell(iCell) * rhoi
              surfaceTemperature(iCell) = 0.0_RKIND
 
           else
@@ -196,11 +190,10 @@ contains
   ! Square test case
   !-------------------------------------------------------------
 
-  subroutine init_square_test_case_hex(mesh, tracers, icestate, hexdyn, hexfor, boundary, atmos_forcing)
+  subroutine init_square_test_case_hex(mesh, tracers, hexdyn, hexfor, boundary, atmos_forcing)
 
     type(MPAS_pool_type), pointer, intent(inout) :: mesh
     type(MPAS_pool_type), pointer :: tracers
-    type(MPAS_pool_type), pointer :: icestate
     type(MPAS_pool_type), pointer :: hexdyn
     type(MPAS_pool_type), pointer :: hexfor
     type(MPAS_pool_type), pointer :: boundary
@@ -241,7 +234,7 @@ contains
                              xVertex,        &
                              yVertex)
 
-    call init_ice_state(mesh, tracers, icestate, hexdyn, hexfor, boundary)
+    call init_ice_state(mesh, tracers, hexdyn, hexfor, boundary)
 
   end subroutine init_square_test_case_hex
 
@@ -337,11 +330,10 @@ contains
 
   !-------------------------------------------------------------
 
-  subroutine init_ice_state(mesh, tracers, icestate, hexdyn, hexfor, boundary)
+  subroutine init_ice_state(mesh, tracers, hexdyn, hexfor, boundary)
 
     type(MPAS_pool_type), pointer, intent(in) :: mesh
     type(MPAS_pool_type), pointer :: tracers
-    type(MPAS_pool_type), pointer :: icestate
     type(MPAS_pool_type), pointer :: hexdyn
     type(MPAS_pool_type), pointer :: hexfor
     type(MPAS_pool_type), pointer :: boundary
@@ -366,22 +358,24 @@ contains
 
     real(kind=RKIND), dimension(:), pointer :: &
          xCell, &
-         iceAreaCell, &
-         iceVolumeCell, &
-         totalMassCell, &
          uVelocity, &
          vVelocity, &
          uOceanVelocity, &
          vOceanVelocity
-    
+
+    real(kind=RKIND), dimension(:,:), pointer :: &    
+         iceAreaCategory, &
+         iceVolumeCategory, &
+         snowVolumeCategory
+
     ! init variables
     call MPAS_pool_get_array(mesh, "nCells", nCells)
     call MPAS_pool_get_array(mesh, "nVertices", nVertices)
     call MPAS_pool_get_array(mesh, "xCell", xCell)
 
-    call MPAS_pool_get_array(tracers, "iceAreaCell", iceAreaCell)
-    call MPAS_pool_get_array(tracers, "iceVolumeCell", iceVolumeCell)
-    call MPAS_pool_get_array(icestate, "totalMassCell", totalMassCell)
+    call MPAS_pool_get_array(tracers, "iceAreaCategory", iceAreaCategory)
+    call MPAS_pool_get_array(tracers, "iceVolumeCategory", iceVolumeCategory)
+    call MPAS_pool_get_array(tracers, "snowVolumeCategory", snowVolumeCategory)
 
     call MPAS_pool_get_array(boundary, "interiorVertex", interiorVertex)
 
@@ -397,13 +391,13 @@ contains
 
        x = xCell(iCell)
 
-       iceAreaCell(iCell) = &!0.95_RKIND!&
+       iceAreaCategory(:,iCell) = &!0.95_RKIND!&
             max(min(x / Lx, 1.0_RKIND), 0.0_RKIND)
 
-       iceVolumeCell(iCell) = &
-            iceThickness * iceAreaCell(iCell)
+       iceVolumeCategory(:,iCell) = &
+            iceThickness * iceAreaCategory(:,iCell)
 
-       totalMassCell(iCell) = iceVolumeCell(iCell) * rhoi
+       snowVolumeCategory(:,iCell) = 0.0_RKIND
           
     enddo ! iCell
 

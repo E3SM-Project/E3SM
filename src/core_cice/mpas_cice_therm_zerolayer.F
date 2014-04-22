@@ -143,16 +143,20 @@ contains
          cumulativeBasalAccretion
          
     integer :: &
-         iCell
+         iCell, &
+         iCategory
 
     integer, pointer :: &
-         nCells
+         nCells, &
+         nCategories
+
+    real(kind=RKIND), dimension(:,:), pointer :: &
+         iceAreaCategory, &
+         iceVolumeCategory, &
+         snowVolumeCategory, &
+         surfaceTemperature
 
     real(kind=RKIND), dimension(:), pointer :: &
-         iceAreaCell, &
-         iceVolumeCell, &
-         snowVolumeCell, &
-         surfaceTemperature, &
          shortwaveDown, &
          longwaveDown, &
          airDensity, &
@@ -165,10 +169,11 @@ contains
 
     ! init variables
     call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_array(mesh, "nCategories", nCategories)
 
-    call MPAS_pool_get_array(tracers, "iceAreaCell", iceAreaCell)
-    call MPAS_pool_get_array(tracers, "iceVolumeCell", iceVolumeCell)
-    call MPAS_pool_get_array(tracers, "snowVolumeCell", snowVolumeCell)
+    call MPAS_pool_get_array(tracers, "iceAreaCategory", iceAreaCategory)
+    call MPAS_pool_get_array(tracers, "iceVolumeCategory", iceVolumeCategory)
+    call MPAS_pool_get_array(tracers, "snowVolumeCategory", snowVolumeCategory)
     call MPAS_pool_get_array(tracers, "surfaceTemperature", surfaceTemperature)
     call MPAS_pool_get_array(atmos_forcing, "shortwaveDown", shortwaveDown)
     call MPAS_pool_get_array(atmos_forcing, "longwaveDown", longwaveDown)
@@ -182,68 +187,66 @@ contains
 
     !call run_semtner_test_case()
 
-    do iCell = 1, nCells
+    do iCategory = 1, nCategories
 
-       if (iceAreaCell(iCell) > 0.0_RKIND) then
-
-          if (iCell == 7134 .or. iCell == 7133) ltest = .true.
-
-          call therm_zerolayer_column( &
-               iceAreaCell(iCell), &
-               iceVolumeCell(iCell), &
-               snowVolumeCell(iCell), &
-               surfaceTemperature(iCell), &
-               shortwaveDown(iCell), &
-               longwaveDown(iCell), &
-               airDensity(iCell), &
-               airSpecificHumidity(iCell), &
-               airPotentialTemperature(iCell), &
-               sensibleTransferCoefficient(iCell), &
-               latentTransferCoefficient(iCell), &
-               snowfallRate(iCell), &
-               seaSurfaceSalinity(iCell), &
-               cumulativeIceAblation, &
-               cumulativeBasalAblation, &
-               cumulativeBasalAccretion, &
-               dt, &
-               time)
-
-          ltest = .false.
-
-          !write(*,*) iCell, surfaceTemperature(iCell)
-
-       else
-
-          call add_new_ice( &
-               iceAreaCell(iCell), &
-               iceVolumeCell(iCell), &
-               snowVolumeCell(iCell), &
-               surfaceTemperature(iCell), &
-               airPotentialTemperature(iCell))
+       do iCell = 1, nCells
           
-       endif ! iceAreaCell
+          if (iceAreaCategory(iCategory,iCell) > 0.0_RKIND) then
 
-    enddo ! iCell
+             if (iCell == 7134 .or. iCell == 7133) ltest = .true.
+             
+             call therm_zerolayer_column( &
+                  iceAreaCategory(iCategory,iCell), &
+                  iceVolumeCategory(iCategory,iCell), &
+                  snowVolumeCategory(iCategory,iCell), &
+                  surfaceTemperature(iCategory,iCell), &
+                  shortwaveDown(iCell), &
+                  longwaveDown(iCell), &
+                  airDensity(iCell), &
+                  airSpecificHumidity(iCell), &
+                  airPotentialTemperature(iCell), &
+                  sensibleTransferCoefficient(iCell), &
+                  latentTransferCoefficient(iCell), &
+                  snowfallRate(iCell), &
+                  seaSurfaceSalinity(iCell), &
+                  cumulativeIceAblation, &
+                  cumulativeBasalAblation, &
+                  cumulativeBasalAccretion, &
+                  dt, &
+                  time)
+             
+             ltest = .false.
+             
+          else
+             
+             call add_new_ice( &
+                  iceAreaCategory(iCategory,iCell), &
+                  iceVolumeCategory(iCategory,iCell), &
+                  snowVolumeCategory(iCategory,iCell), &
+                  surfaceTemperature(iCategory,iCell), &
+                  airPotentialTemperature(iCell))
+             
+          endif ! iceAreaCell
+          
+       enddo ! iCell
 
-    !write(*,*) minloc(surfaceTemperature), minval(surfaceTemperature)
-
-!stop
+    enddo ! iCategory
 
   end subroutine therm_zerolayer
 
   !-------------------------------------------------------------
 
   subroutine add_new_ice( &
-       iceAreaCell, &
-       iceVolumeCell, &
-       snowVolumeCell, &
+       iceAreaCategory, &
+       iceVolumeCategory, &
+       snowVolumeCategory, &
        surfaceTemperature, &
        airPotentialTemperature)
 
     real(kind=RKIND), intent(inout) :: &
-         iceAreaCell, &
-         iceVolumeCell, &
-         snowVolumeCell, &
+         iceAreaCategory, &
+         iceVolumeCategory, &
+         snowVolumeCategory, &
          surfaceTemperature
 
     real(kind=RKIND), intent(in) :: &
@@ -251,9 +254,9 @@ contains
 
     if (airPotentialTemperature < -2.0_RKIND) then
 
-       iceAreaCell = 1.0_RKIND
-       iceVolumeCell = 0.1_RKIND
-       snowVolumeCell = 0.0_RKIND
+       iceAreaCategory = 1.0_RKIND
+       iceVolumeCategory = 0.1_RKIND
+       snowVolumeCategory = 0.0_RKIND
        surfaceTemperature = -2.0_RKIND
 
     endif
@@ -263,9 +266,9 @@ contains
   !-------------------------------------------------------------
 
   subroutine therm_zerolayer_column( &
-       iceAreaCell, &
-       iceVolumeCell, &
-       snowVolumeCell, &
+       iceAreaCategory, &
+       iceVolumeCategory, &
+       snowVolumeCategory, &
        surfaceTemperature, &
        shortwaveDownForcing, &
        longwaveDownForcing, &
@@ -283,9 +286,9 @@ contains
        time)
 
     real(kind=RKIND), intent(inout) :: &
-         iceAreaCell, &
-         iceVolumeCell, &
-         snowVolumeCell, &
+         iceAreaCategory, &
+         iceVolumeCategory, &
+         snowVolumeCategory, &
          surfaceTemperature, &
          cumulativeIceAblation, &
          cumulativeBasalAblation, &
@@ -321,8 +324,8 @@ contains
          dlatentHeatFlux_dTsf
 
     ! determine thicknesses
-    iceThickness  = iceVolumeCell  / iceAreaCell
-    snowThickness = snowVolumeCell / iceAreaCell
+    iceThickness = iceVolumeCategory  / iceAreaCategory
+    snowThickness = snowVolumeCategory / iceAreaCategory
 
     ! calculate the bottom temperature
     call calculate_basal_properties( &
@@ -407,13 +410,13 @@ contains
     ! all ice gone
     if (iceThickness == 0.0_RKIND) then
        snowThickness = 0.0_RKIND
-       iceAreaCell = 0.0_RKIND
+       iceAreaCategory = 0.0_RKIND
        surfaceTemperature = 0.0_RKIND
     end if
 
     ! determine volumes
-    iceVolumeCell  = iceThickness  * iceAreaCell
-    snowVolumeCell = snowThickness * iceAreaCell 
+    iceVolumeCategory  = iceThickness  * iceAreaCategory
+    snowVolumeCategory = snowThickness * iceAreaCategory
 
   end subroutine therm_zerolayer_column
 
@@ -882,9 +885,9 @@ contains
          dt = 3600.0_RKIND
 
     real(kind=RKIND) :: &
-         iceAreaCell, &
-         iceVolumeCell, &
-         snowVolumeCell, &
+         iceAreaCategory, &
+         iceVolumeCategory, &
+         snowVolumeCategory, &
          surfaceTemperature
 
     real(kind=RKIND) :: &
@@ -919,9 +922,9 @@ contains
     snowfallRateForcing = 0.0_RKIND
     seaSurfaceSalinity = 0.0_RKIND
 
-    iceAreaCell = 1.0_RKIND
-    iceVolumeCell = 1.0_RKIND
-    snowVolumeCell = 0.0_RKIND
+    iceAreaCategory = 1.0_RKIND
+    iceVolumeCategory = 1.0_RKIND
+    snowVolumeCategory = 0.0_RKIND
     surfaceTemperature = -10.0_RKIND
 
     cumulativeIceAblation = 0.0_RKIND
@@ -937,9 +940,9 @@ contains
        time = istep * dt
 
        call therm_zerolayer_column( &
-            iceAreaCell, &
-            iceVolumeCell, &
-            snowVolumeCell, &
+            iceAreaCategory, &
+            iceVolumeCategory, &
+            snowVolumeCategory, &
             surfaceTemperature, &
             shortwaveDownForcing, &
             longwaveDownForcing, &
@@ -957,7 +960,7 @@ contains
             time)
 
        if (mod(istep,24) == 0) then
-          write(11,*) time, iceVolumeCell, snowVolumeCell, surfaceTemperature
+          write(11,*) time, iceVolumeCategory, snowVolumeCategory, surfaceTemperature
        end if
 
        if (mod(istep,24*360) == 0) then
@@ -1350,33 +1353,37 @@ contains
     type(MPAS_pool_type), pointer :: tracers
 
     integer :: &
-         iCell
+         iCell, &
+         iCategory
 
     integer, pointer :: &
-         nCells
+         nCells, &
+         nCategories
 
-    real(kind=RKIND), dimension(:), pointer :: &
-         iceAreaCell, &
-         iceVolumeCell, &
-         snowVolumeCell, &
+    real(kind=RKIND), dimension(:,:), pointer :: &
+         iceAreaCategory, &
+         iceVolumeCategory, &
+         snowVolumeCategory, &
          surfaceTemperature
     
     call MPAS_pool_get_array(mesh, "nCells", nCells)
-    call MPAS_pool_get_array(tracers, "iceAreaCell", iceAreaCell)
-    call MPAS_pool_get_array(tracers, "iceVolumeCell", iceVolumeCell)
-    call MPAS_pool_get_array(tracers, "snowVolumeCell", snowVolumeCell)
+    call MPAS_pool_get_array(tracers, "iceAreaCategory", iceAreaCategory)
+    call MPAS_pool_get_array(tracers, "iceVolumeCategory", iceVolumeCategory)
+    call MPAS_pool_get_array(tracers, "snowVolumeCategory", snowVolumeCategory)
     call MPAS_pool_get_array(tracers, "surfaceTemperature", surfaceTemperature)
 
-    do iCell = 1, nCells
-
-       iceAreaCell(iCell) = 1.0_RKIND
-       
-       surfaceTemperature(iCell) = -1.0_RKIND
-       
-       iceVolumeCell(iCell)  = 0.1_RKIND
-       snowVolumeCell(iCell) = 0.0_RKIND
-
-    enddo ! iCell
+    do iCategory = 1, nCategories
+       do iCell = 1, nCells
+          
+          iceAreaCategory(iCategory,iCell) = 1.0_RKIND
+          
+          surfaceTemperature(iCategory,iCell) = -1.0_RKIND
+          
+          iceVolumeCategory(iCategory,iCell)  = 0.1_RKIND
+          snowVolumeCategory(iCategory,iCell) = 0.0_RKIND
+          
+       enddo ! iCell
+    enddo ! iCategory
 
   end subroutine init_semtner_test_case
 

@@ -160,10 +160,12 @@ contains
 
     real(kind=RKIND), dimension(:), pointer :: &
          uVelocity, &
-         vVelocity, &
-         iceAreaCell, &
-         iceVolumeCell, &
-         snowVolumeCell
+         vVelocity
+
+    real(kind=RKIND), dimension(:,:), pointer :: &
+         iceAreaCategory, &
+         iceVolumeCategory, &
+         snowVolumeCategory
 
     character(len=strKIND), pointer :: &
          config_initial_condition_type, &
@@ -178,9 +180,9 @@ contains
          config_initial_uvelocity, &
          config_initial_vvelocity
 
-    call MPAS_pool_get_array(tracers, "iceAreaCell", iceAreaCell)
-    call MPAS_pool_get_array(tracers, "iceVolumeCell", iceVolumeCell)
-    call MPAS_pool_get_array(tracers, "snowVolumeCell", snowVolumeCell)
+    call MPAS_pool_get_array(tracers, "iceAreaCategory", iceAreaCategory)
+    call MPAS_pool_get_array(tracers, "iceVolumeCategory", iceVolumeCategory)
+    call MPAS_pool_get_array(tracers, "snowVolumeCategory", snowVolumeCategory)
 
     call MPAS_pool_get_array(hexdyn, "uVelocity", uVelocity)
     call MPAS_pool_get_array(hexdyn, "vVelocity", vVelocity)
@@ -200,9 +202,9 @@ contains
 
        call init_ice_state_uniform_ice(&
             mesh, &
-            iceAreaCell, &
-            iceVolumeCell, &
-            snowVolumeCell, &
+            iceAreaCategory, &
+            iceVolumeCategory, &
+            snowVolumeCategory, &
             config_initial_ice_area, &
             config_initial_ice_volume, &
             config_initial_snow_volume, &
@@ -213,9 +215,9 @@ contains
 
        call init_ice_state_circle_of_ice(&
             mesh, &
-            iceAreaCell, &
-            iceVolumeCell, &
-            snowVolumeCell, &
+            iceAreaCategory, &
+            iceVolumeCategory, &
+            snowVolumeCategory, &
             config_initial_ice_area, &
             config_initial_ice_volume, &
             config_initial_snow_volume)
@@ -252,9 +254,9 @@ contains
 
   subroutine init_ice_state_uniform_ice(&
        mesh, &
-       iceAreaCell, &
-       iceVolumeCell, &
-       snowVolumeCell, &
+       iceAreaCategory, &
+       iceVolumeCategory, &
+       snowVolumeCategory, &
        iceAreaInitial, &
        iceVolumeInitial, &
        snowVolumeInitial, &
@@ -263,10 +265,10 @@ contains
 
     type (MPAS_pool_type), pointer, intent(in) :: mesh
     
-    real(kind=RKIND), dimension(:), intent(out) :: &
-         iceAreaCell, &
-         iceVolumeCell, &
-         snowVolumeCell
+    real(kind=RKIND), dimension(:,:), intent(out) :: &
+         iceAreaCategory, &
+         iceVolumeCategory, &
+         snowVolumeCategory
 
     real(kind=RKIND), intent(in) :: &
          iceAreaInitial, &
@@ -298,16 +300,16 @@ contains
            latCell(iCell) <= latitudeLimitSouth * rad_to_deg) then
 
           ! has ice
-          iceAreaCell(iCell)    = iceAreaInitial
-          iceVolumeCell(iCell)  = iceVolumeInitial
-          snowVolumeCell(iCell) = snowVolumeInitial
+          iceAreaCategory(:,iCell)     = iceAreaInitial
+          iceVolumeCategory(:,iCell)   = iceVolumeInitial
+          snowVolumeCategory(:,iCell) = snowVolumeInitial
           
        else
 
           ! no ice
-          iceAreaCell(iCell)    = 0.0_RKIND
-          iceVolumeCell(iCell)  = 0.0_RKIND
-          snowVolumeCell(iCell) = 0.0_RKIND
+          iceAreaCategory(:,iCell)    = 0.0_RKIND
+          iceVolumeCategory(:,iCell)  = 0.0_RKIND
+          snowVolumeCategory(:,iCell) = 0.0_RKIND
 
        endif
 
@@ -319,19 +321,19 @@ contains
 
   subroutine init_ice_state_circle_of_ice(&
        mesh, &
-       iceAreaCell, &
-       iceVolumeCell, &
-       snowVolumeCell, &
+       iceAreaCategory, &
+       iceVolumeCategory, &
+       snowVolumeCategory, &
        iceAreaInitial, &
        iceVolumeInitial, &
        snowVolumeInitial)
 
     type (MPAS_pool_type), pointer, intent(in) :: mesh
     
-    real(kind=RKIND), dimension(:), intent(out) :: &
-         iceAreaCell, &
-         iceVolumeCell, &
-         snowVolumeCell
+    real(kind=RKIND), dimension(:,:), intent(out) :: &
+         iceAreaCategory, &
+         iceVolumeCategory, &
+         snowVolumeCategory
 
     real(kind=RKIND), intent(in) :: &
          iceAreaInitial, &
@@ -370,16 +372,16 @@ contains
        if (sqrt(x**2+z**2) < circle_radius .and. y > 0.0_RKIND) then
           
           ! has ice
-          iceAreaCell(iCell)    = iceAreaInitial
-          iceVolumeCell(iCell)  = iceVolumeInitial
-          snowVolumeCell(iCell) = snowVolumeInitial
+          iceAreaCategory(:,iCell)    = iceAreaInitial
+          iceVolumeCategory(:,iCell)  = iceVolumeInitial
+          snowVolumeCategory(:,iCell) = snowVolumeInitial
           
        else
           
           ! no ice
-          iceAreaCell(iCell)    = 0.0_RKIND
-          iceVolumeCell(iCell)  = 0.0_RKIND
-          snowVolumeCell(iCell) = 0.0_RKIND
+          iceAreaCategory(:,iCell)    = 0.0_RKIND
+          iceVolumeCategory(:,iCell)  = 0.0_RKIND
+          snowVolumeCategory(:,iCell) = 0.0_RKIND
           
        endif
        
