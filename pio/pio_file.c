@@ -107,16 +107,13 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
       ierr = iotype_error(file->iotype,__FILE__,__LINE__);
     }
   }
-
-
+  if(ios->io_rank==0){
+    printf("Open file %s %d\n",fname,file->fh);
+  }
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
   if(ierr==PIO_NOERR){
-    *ncidp = file->fh;
-    mpierr = MPI_Bcast(ncidp, 1, MPI_INT, ios->ioroot, ios->my_comm);
-    if((*ncidp) != file->fh) {
-      *ncidp = -(*ncidp);
-      file->fh = (*ncidp);
-    }
+    mpierr = MPI_Bcast(&(file->fh), 1, MPI_INT, ios->ioroot, ios->my_comm);
+    
     for(int i=0; i<PIO_MAX_VARS;i++){
       file->varlist[i].record = -1;
       file->varlist[i].ndims = -1;
@@ -124,6 +121,7 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
     }
 
     pio_add_to_file_list(file);
+    *ncidp = file->fh;
   }
 
   return ierr;
@@ -234,12 +232,7 @@ int PIOc_createfile(const int iosysid, int *ncidp,  int *iotype,
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
 
   if(ierr == PIO_NOERR){
-    *ncidp = file->fh;
-    mpierr = MPI_Bcast(ncidp, 1, MPI_INT, ios->ioroot, ios->my_comm);
-    if((*ncidp) != file->fh) {
-      *ncidp = -(*ncidp);
-      file->fh = (*ncidp);
-    }
+    mpierr = MPI_Bcast(&(file->fh), 1, MPI_INT, ios->ioroot, ios->my_comm);
     for(int i=0; i<PIO_MAX_VARS;i++){
       file->varlist[i].record = -1;
       file->varlist[i].ndims = -1;
@@ -247,6 +240,7 @@ int PIOc_createfile(const int iosysid, int *ncidp,  int *iotype,
     }
 
     pio_add_to_file_list(file);
+    *ncidp = file->fh;
   }
   return ierr;
 }
@@ -299,6 +293,9 @@ int PIOc_closefile(int ncid)
     default:
       ierr = iotype_error(file->iotype,__FILE__,__LINE__);
     }
+  }
+  if(ios->io_rank==0){
+    printf("Close file %d\n",file->fh);
   }
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);

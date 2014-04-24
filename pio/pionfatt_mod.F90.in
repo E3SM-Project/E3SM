@@ -70,13 +70,13 @@ contains
     ierr = put_att_id_{TYPE} (File%fh,vdesc%varid,name,values)
 
   end function put_att_desc_{TYPE}
-  integer function put_att_vid_{TYPE} (File, varid, name, values) result(ierr)
+  integer function put_att_vid_{TYPE} (File, varid, name, value) result(ierr)
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
     character(len=*), intent(in) :: name
-    {VTYPE}, intent(in) :: values
+    {VTYPE}, intent(in) :: value
 
-    ierr = put_att_id_{TYPE} (File%fh,varid,name,values)
+    ierr = put_att_id_{TYPE} (File%fh,varid,name,value)
 
   end function put_att_vid_{TYPE}
   ! TYPE int,real,double
@@ -134,23 +134,23 @@ contains
     deallocate(cvar)
   end function put_att_id_text
 
-  integer function put_att_1d_id_text (ncid, varid, name, values) result(ierr)  
+  integer function put_att_1d_id_text (ncid, varid, name, value) result(ierr)  
     use iso_c_binding
     integer, intent(in) :: ncid
     integer, intent(in) :: varid
     character(len=*), intent(in) :: name
-    character(len=*), intent(in) :: values(:)
+    character(len=*), intent(in) :: value(:)
     character, allocatable :: nvalue(:)
     integer :: slen, alen, i, j, k
 
-    slen = len(values(1))
-    alen = size(values)
+    slen = len(value(1))
+    alen = size(value)
     allocate(nvalue(slen*alen))
     
     do i=1,alen 
-       j= len_trim(values(i))
+       j= len_trim(value(i))
        do k=1,j
-          nvalue(k+(i-1)*slen) = values(i)(k:k)
+          nvalue(k+(i-1)*slen) = value(i)(k:k)
        end do
        nvalue(j+1+(i-1)*slen) = C_NULL_CHAR
     end do
@@ -283,14 +283,14 @@ contains
 
   end function put_att_1d_desc_{TYPE}
 
-  integer function put_att_1d_vid_{TYPE} (File,varid,name,values) result(ierr)
+  integer function put_att_1d_vid_{TYPE} (File,varid,name,value) result(ierr)
 
     type (File_desc_t), intent(inout) , target :: File
     integer, intent(in) :: varid
     character(len=*), intent(in)      :: name
-    {VTYPE}, intent(in)      :: values(:)
+    {VTYPE}, intent(in)      :: value(:)
 
-    ierr = put_att_1d_id_{TYPE} (File%fh,varid,name,values)
+    ierr = put_att_1d_id_{TYPE} (File%fh,varid,name,value)
 
   end function put_att_1d_vid_{TYPE}
 

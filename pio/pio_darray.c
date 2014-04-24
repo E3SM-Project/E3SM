@@ -200,7 +200,7 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, voi
       
 	for( i=0,dsize=1;i<ndims;i++)
 	  dsize*=count[i];
-	printf("dsize %ld\n",dsize);
+	// printf("dsize %ld\n",dsize);
 	ierr = ncmpi_bput_vara(ncid, vid,  (PIO_Offset *) start,(PIO_Offset *) count, bufptr,
 			       dsize, iodesc->basetype, &request);
 	pio_push_request(file,request);

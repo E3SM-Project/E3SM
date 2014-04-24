@@ -66,7 +66,7 @@ print F
 
 my $typemap = {text=>"MPI_CHAR", short=>"MPI_SHORT", uchar=>"MPI_UNSIGNED_CHAR",
                              schar =>"MPI_CHAR", float=>"MPI_FLOAT", ushort=>"MPI_UNSIGNED_SHORT",
-                             ulonglong=>"MPI_UNSIGNED_LONG_LONG",longlong=>"MPI_LONG_LONG",
+                             ulonglong=>"MPI_UNSIGNED_LONG_LONG",longlong=>"MPI_LONG_LONG",ubyte=>"MPI_BYTE",
                              double=>"MPI_DOUBLE",uint=>"MPI_UNSIGNED",int=>"MPI_INT",long=>"MPI_LONG"};
 
 
@@ -81,7 +81,7 @@ foreach my $func (keys %{$functions}){
   next if($func=~/default_format/);
   next if($func=~/copy_att/);
   next if($func=~/abort/);
-
+  next if($func=~/string/);
   next if($functions->{$func}{pnetcdf} =~ /\(void\)/);
 
   my @tmptmp = @template;
@@ -164,98 +164,96 @@ foreach my $func (keys %{$functions}){
 	  }
 
 	  if($line =~ /check_netcdf/){
-	      print F "#ifndef _MPISERIAL\n";
-	      print F "  if(ierr == PIO_NOERR){\n";
 	      if($func =~ /inq_varid/){
-		  print F "  mpierr = MPI_Bcast(varidp,1, MPI_INT, ios->ioroot, ios->my_comm);\n";
+		  print F "    mpierr = MPI_Bcast(varidp,1, MPI_INT, ios->ioroot, ios->my_comm);\n";
 	      }elsif($func =~ /inq_ndims/){
-		  print F "  mpierr = MPI_Bcast(ndimsp , 1, MPI_INT, ios->ioroot, ios->my_comm);\n";	
+		  print F "    mpierr = MPI_Bcast(ndimsp , 1, MPI_INT, ios->ioroot, ios->my_comm);\n";	
 	      }elsif($func =~ /def_var/){
-		  print F "  mpierr = MPI_Bcast(varidp , 1, MPI_INT, ios->ioroot, ios->my_comm);\n";	
+		  print F "    mpierr = MPI_Bcast(varidp , 1, MPI_INT, ios->ioroot, ios->my_comm);\n";	
 	      }elsif($func =~ /def_dim/){
-		  print F "  mpierr = MPI_Bcast(idp , 1, MPI_INT, ios->ioroot, ios->my_comm);\n";	
+		  print F "    mpierr = MPI_Bcast(idp , 1, MPI_INT, ios->ioroot, ios->my_comm);\n";	
 	      }elsif($func =~ /inq_format/){
-		  print F "  mpierr = MPI_Bcast(formatp , 1, MPI_INT, ios->ioroot, ios->my_comm);\n";	
+		  print F "    mpierr = MPI_Bcast(formatp , 1, MPI_INT, ios->ioroot, ios->my_comm);\n";	
 	      }elsif($func =~ /inq_natts/){
-		  print F "  mpierr = MPI_Bcast(ngattsp,1, MPI_INT, ios->ioroot, ios->my_comm);\n";
+		  print F "    mpierr = MPI_Bcast(ngattsp,1, MPI_INT, ios->ioroot, ios->my_comm);\n";
 	      }elsif($func =~ /inq_varnatts/){
-		  print F "  mpierr = MPI_Bcast(nattsp,1, MPI_INT, ios->ioroot, ios->my_comm);\n";
+		  print F "    mpierr = MPI_Bcast(nattsp,1, MPI_INT, ios->ioroot, ios->my_comm);\n";
 	      }elsif($func =~ /inq_nvars/){
-		  print F "  mpierr = MPI_Bcast(nvarsp,1, MPI_INT, ios->ioroot, ios->my_comm);\n";
+		  print F "    mpierr = MPI_Bcast(nvarsp,1, MPI_INT, ios->ioroot, ios->my_comm);\n";
 	      }elsif($func =~ /inq_varndims/){
-		  print F "  mpierr = MPI_Bcast(ndimsp,1, MPI_INT, ios->ioroot, ios->my_comm);\n";
-		  print F "  file->varlist[varid].ndims = (*ndimsp);\n";
+		  print F "    mpierr = MPI_Bcast(ndimsp,1, MPI_INT, ios->ioroot, ios->my_comm);\n";
+		  print F "    file->varlist[varid].ndims = (*ndimsp);\n";
 	      }elsif($func =~ /inq_dimlen/ || $func =~ /inq_attlen/){
-		  print F "  mpierr = MPI_Bcast(lenp , 1, MPI_OFFSET, ios->ioroot, ios->my_comm);\n";
+		  print F "    mpierr = MPI_Bcast(lenp , 1, MPI_OFFSET, ios->ioroot, ios->my_comm);\n";
 	      }elsif($func =~ /inq_varid/){
-		  print F "  mpierr = MPI_Bcast(varidp , 1, MPI_INT, ios->ioroot, ios->my_comm);\n";
+		  print F "    mpierr = MPI_Bcast(varidp , 1, MPI_INT, ios->ioroot, ios->my_comm);\n";
 	      }elsif($func =~ /inq_vartype/ || $func =~ /inq_atttype/){
-		  print F "  mpierr = MPI_Bcast(xtypep , 1, MPI_INT, ios->ioroot, ios->my_comm);\n";
+		  print F "    mpierr = MPI_Bcast(xtypep , 1, MPI_INT, ios->ioroot, ios->my_comm);\n";
 	      }elsif($func =~ /inq_attid/ || $func =~ /inq_dimid/){
-		  print F "  mpierr = MPI_Bcast(idp , 1, MPI_INT, ios->ioroot, ios->my_comm);\n";
+		  print F "    mpierr = MPI_Bcast(idp , 1, MPI_INT, ios->ioroot, ios->my_comm);\n";
 	      }elsif($func =~ /inq_att$/){
-		  print F "  if(xtypep != NULL) mpierr = MPI_Bcast(xtypep , 1, MPI_INT, ios->ioroot, ios->my_comm);\n";
-		  print F "  if(lenp != NULL) mpierr = MPI_Bcast(lenp , 1, MPI_OFFSET, ios->ioroot, ios->my_comm);\n";
+		  print F "    if(xtypep != NULL) mpierr = MPI_Bcast(xtypep , 1, MPI_INT, ios->ioroot, ios->my_comm);\n";
+		  print F "    if(lenp != NULL) mpierr = MPI_Bcast(lenp , 1, MPI_OFFSET, ios->ioroot, ios->my_comm);\n";
 	      }elsif($func =~ /inq_var$/){
-		  print F "  if(xtypep != NULL) mpierr = MPI_Bcast(xtypep , 1, MPI_INT, ios->ioroot, ios->my_comm);\n";
-		  print F "  if(ndimsp != NULL){ mpierr = MPI_Bcast(ndimsp , 1, MPI_OFFSET, ios->ioroot, ios->my_comm);\n";
-		  print F "    file->varlist[varid].ndims = (*ndimsp);}\n";
-		  print F "  if(nattsp != NULL) mpierr = MPI_Bcast(nattsp,1, MPI_INT, ios->ioroot, ios->my_comm);\n";
-		  print F "  if(name != NULL){ \n";
-                  print F "     char tname[PIO_MAX_NAME];\n";
-		  print F  "    if(ios->iomaster)\n";
-   		  print F "	strcpy(tname, name);\n";
-		  print F "     mpierr = MPI_Bcast(tname , PIO_MAX_NAME, MPI_CHAR, ios->ioroot, ios->my_comm);\n";
+		  print F "    if(xtypep != NULL) mpierr = MPI_Bcast(xtypep , 1, MPI_INT, ios->ioroot, ios->my_comm);\n";
+		  print F "    if(ndimsp != NULL){ mpierr = MPI_Bcast(ndimsp , 1, MPI_OFFSET, ios->ioroot, ios->my_comm);\n";
+		  print F "      file->varlist[varid].ndims = (*ndimsp);}\n";
+		  print F "      if(nattsp != NULL) mpierr = MPI_Bcast(nattsp,1, MPI_INT, ios->ioroot, ios->my_comm);\n";
+		  print F "    if(name != NULL){ \n";
+                  print F "       char tname[PIO_MAX_NAME];\n";
+		  print F  "      if(ios->iomaster)\n";
+   		  print F "	       strcpy(tname, name);\n";
+		  print F "      mpierr = MPI_Bcast(tname , PIO_MAX_NAME, MPI_CHAR, ios->ioroot, ios->my_comm);\n";
 		  print F "     strcpy(name,tname);\n";
 	          print F "  }\n";
-		  print F "  if(dimidsp != NULL) {int ndims;\n";
-		  print F "    PIOc_inq_varndims(file->fh, varid, \&ndims);\n";
-		  print F "    mpierr = MPI_Bcast(dimidsp , ndims, MPI_INT, ios->ioroot, ios->my_comm);\n ";
-		  print F "  }\n";
+		  print F "    if(dimidsp != NULL) {int ndims;\n";
+		  print F "      PIOc_inq_varndims(file->fh, varid, \&ndims);\n";
+		  print F "      mpierr = MPI_Bcast(dimidsp , ndims, MPI_INT, ios->ioroot, ios->my_comm);\n ";
+		  print F "    }\n";
 
 
 		  
 	      }elsif($func =~ /inq_dim$/){
-		  print F  "  if(name != NULL){ char tname[PIO_MAX_NAME];\n";
-		  print F  "    if(ios->iomaster)\n";
-   		  print F "	strcpy(tname, name);\n";
-		  print F "    mpierr = MPI_Bcast(tname , PIO_MAX_NAME, MPI_CHAR, ios->ioroot, ios->my_comm);\n";
-		  print F "    strcpy(name,tname); }\n";
-		  print F "  if(lenp != NULL) mpierr = MPI_Bcast(lenp , 1, MPI_OFFSET, ios->ioroot, ios->my_comm);\n";
+		  print F  "    if(name != NULL){ char tname[PIO_MAX_NAME];\n";
+		  print F  "      if(ios->iomaster)\n";
+   		  print F "	       strcpy(tname, name);\n";
+		  print F "      mpierr = MPI_Bcast(tname , PIO_MAX_NAME, MPI_CHAR, ios->ioroot, ios->my_comm);\n";
+		  print F "      strcpy(name,tname); }\n";
+		  print F "      if(lenp != NULL) mpierr = MPI_Bcast(lenp , 1, MPI_OFFSET, ios->ioroot, ios->my_comm);\n";
 	      }elsif($func =~ /inq_dimname/ || $func =~ /inq_varname/ || $func =~ /inq_attname/){
-		  print F  "  { char tname[PIO_MAX_NAME];\n";
-		  print F  "    if(ios->iomaster)\n";
-   		  print F "	strcpy(tname, name);\n";
-		  print F "  mpierr = MPI_Bcast(tname , PIO_MAX_NAME, MPI_CHAR, ios->ioroot, ios->my_comm);\n";
-		  print F "  strcpy(name,tname); }\n";
+		  print F  "    { char tname[PIO_MAX_NAME];\n";
+		  print F  "        if(ios->iomaster)\n";
+   		  print F "	       strcpy(tname, name);\n";
+		  print F "        mpierr = MPI_Bcast(tname , PIO_MAX_NAME, MPI_CHAR, ios->ioroot, ios->my_comm);\n";
+		  print F "      strcpy(name,tname); }\n";
 	      }elsif($func =~ /inq_vardimid/){
-		  print F "  {int ndims;\n";
-		  print F "  PIOc_inq_varndims(file->fh, varid, \&ndims);\n";
-		  print F "  mpierr = MPI_Bcast(dimidsp , ndims, MPI_INT, ios->ioroot, ios->my_comm);\n ";
-		  print F "  }\n";
+		  print F "    {int ndims;\n";
+		  print F "    PIOc_inq_varndims(file->fh, varid, \&ndims);\n";
+		  print F "    mpierr = MPI_Bcast(dimidsp , ndims, MPI_INT, ios->ioroot, ios->my_comm);\n ";
+		  print F "    }\n";
 	      }elsif($func =~ /get_att_(\w+)/){
 		  my $atype = $1;
-		  print F "    PIO_Offset attlen;\n";		  
-		  print F "    PIOc_inq_attlen(file->fh, varid, name, \&attlen);\n";
-		  print F "    mpierr = MPI_Bcast(ip , attlen, $typemap->{$atype}, ios->ioroot, ios->my_comm);\n ";
+		  print F "      if(ierr == PIO_NOERR){\n";
+		  print F "        PIO_Offset attlen;\n";		  
+		  print F "        PIOc_inq_attlen(file->fh, varid, name, \&attlen);\n";
+		  print F "        mpierr = MPI_Bcast(ip , (int) attlen, $typemap->{$atype}, ios->ioroot, ios->my_comm);\n ";
+		  print F "     }\n";
 	      }elsif($func =~/inq$/){
-		  print F "    if(ndimsp != NULL)\n";
-		  print F "      mpierr = MPI_Bcast(ndimsp, 1, MPI_INT, ios->ioroot, ios->my_comm);\n ";
-		  print F "    if(nvarsp != NULL)\n";
-		  print F "      mpierr = MPI_Bcast(nvarsp, 1, MPI_INT, ios->ioroot, ios->my_comm);\n ";
-		  print F "    if(ngattsp != NULL)\n";
-		  print F "      mpierr = MPI_Bcast(ngattsp, 1, MPI_INT, ios->ioroot, ios->my_comm);\n ";
-		  print F "    if(unlimdimidp != NULL)\n";
-		  print F "      mpierr = MPI_Bcast(unlimdimidp, 1, MPI_INT, ios->ioroot, ios->my_comm);\n ";
+		  print F "      if(ndimsp != NULL)\n";
+		  print F "        mpierr = MPI_Bcast(ndimsp, 1, MPI_INT, ios->ioroot, ios->my_comm);\n ";
+		  print F "      if(nvarsp != NULL)\n";
+		  print F "        mpierr = MPI_Bcast(nvarsp, 1, MPI_INT, ios->ioroot, ios->my_comm);\n ";
+		  print F "      if(ngattsp != NULL)\n";
+		  print F "        mpierr = MPI_Bcast(ngattsp, 1, MPI_INT, ios->ioroot, ios->my_comm);\n ";
+		  print F "      if(unlimdimidp != NULL)\n";
+		  print F "        mpierr = MPI_Bcast(unlimdimidp, 1, MPI_INT, ios->ioroot, ios->my_comm);\n ";
 
 	      }
-	      print F "  }\n";
-	      print F "#endif\n";
 	  }
       }
 
 #    print "$func  $functions->{$func}{pnetcdf} $functions->{$func}{netcdf}\n";
       print F "\n";
   }
-}
+} 
 close(F);

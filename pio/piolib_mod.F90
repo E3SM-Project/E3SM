@@ -261,13 +261,12 @@ contains
          integer(c_int), value :: ncid
        end function PIOc_File_is_Open
     end interface
-
-    if(PIOc_File_is_Open(file%fh)==1) then
-       PIO_FILE_IS_OPEN = .true.
-    else
-       PIO_FILE_IS_OPEN = .false.
+    PIO_FILE_IS_OPEN = .false.
+    if(associated(file%iosystem)) then
+      if(PIOc_File_is_Open(file%fh)==1) then
+        PIO_FILE_IS_OPEN = .true.
+      endif
     endif
-
 
   end function PIO_FILE_IS_OPEN
 

@@ -12,16 +12,35 @@ static file_desc_t *current_file=NULL;
 void pio_add_to_file_list(file_desc_t *file)
 {
   file_desc_t *cfile;
-  //  assert(file != NULL);
+  int cnt=-1;
+  // on iotasks the fh returned from netcdf should be unique, on non-iotasks we
+  // need to generate a unique fh, we do this with cnt, its a negative index 
 
   file->next = NULL;
-  if(pio_file_list == NULL)
+  cfile = pio_file_list;
+  current_file = file;
+  if(cfile==NULL){
     pio_file_list = file;
-  else{
-    for(cfile = pio_file_list; cfile->next != NULL; cfile=cfile->next);
+  }else{
+    cnt =  min(cnt,cfile->fh-1);
+    while(cfile->next != NULL)
+      {
+	cnt =  min(cnt,cfile->fh-1);
+	cfile=cfile->next;
+      }
     cfile->next = file;
   }
-  current_file = file;
+  if(! file->iosystem->ioproc)
+    file->fh = cnt;
+  
+  cfile = pio_file_list;
+  /*
+  while(cfile != NULL)
+    {
+      printf("%s %d %d %ld %ld\n",__FILE__,__LINE__,cfile->fh,cfile,cfile->iosystem);
+      cfile=cfile->next;
+    }
+  */
 }
 
 
@@ -46,6 +65,11 @@ file_desc_t *pio_get_file_from_id(int ncid)
       break;
     }
   }
+
+  if(cfile==NULL){
+    piodie("NULL ptr error",__FILE__,__LINE__);
+  }
+
   return cfile;
 }
   
@@ -55,6 +79,7 @@ int pio_delete_file_from_list(int ncid)
   file_desc_t *cfile, *pfile;
 
   pfile = NULL;
+
   for(cfile=pio_file_list; cfile != NULL; cfile=cfile->next){
     if(cfile->fh == ncid){
       if(pfile == NULL){
@@ -63,8 +88,8 @@ int pio_delete_file_from_list(int ncid)
 	pfile->next = cfile->next;
       }
       if(current_file==cfile)
-	current_file = pio_file_list;
-      free(cfile);
+	current_file=pfile;
+      free(cfile);      
       return PIO_NOERR;
     }
     pfile = cfile;

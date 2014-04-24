@@ -1,15 +1,33 @@
 #include <pio.h>
 #include <pio_internal.h>
-#define versno 2000
 
-typedef struct cfptr
+#include <execinfo.h>
+#define versno 2000
+     
+/* Obtain a backtrace and print it to stderr. */
+void print_trace (void)
 {
-  PIO_Offset *map;
-} cfptr;
+  void *array[10];
+  size_t size;
+  char **strings;
+  size_t i;
+  
+  size = backtrace (array, 10);
+  strings = backtrace_symbols (array, size);
+  
+  fprintf (stderr,"Obtained %zd stack frames.\n", size);
+     
+  for (i = 0; i < size; i++)
+    fprintf (stderr,"%s\n", strings[i]);
+     
+  free (strings);
+}
 
 
 void piodie(const char *msg,const char *fname, const int line){
   fprintf(stderr,"Abort with message %s in file %s at line %d\n",msg,fname,line);
+  
+  print_trace();
 #ifdef MPI_SERIAL
   abort();
 #else
@@ -33,7 +51,7 @@ int check_netcdf(file_desc_t *file,int status, const char *fname, const int line
 #endif
   case PIO_IOTYPE_NETCDF:
     if(ios->iomaster){
-      if(status != NC_NOERR)	
+      if(status != NC_NOERR && (ios->error_handler == PIO_INTERNAL_ERROR))	
 	fprintf(stderr,"NETCDF ERROR: %s %s %d\n",nc_strerror(status),fname,line);
     }
     if(ios->error_handler == PIO_INTERNAL_ERROR){
@@ -48,7 +66,7 @@ int check_netcdf(file_desc_t *file,int status, const char *fname, const int line
 #ifdef _PNETCDF
   case PIO_IOTYPE_PNETCDF:
       if(ios->iomaster){
-	if(status != NC_NOERR)
+	if(status != NC_NOERR && (ios->error_handler == PIO_INTERNAL_ERROR))	
 	  fprintf(stderr,"PNETCDF ERROR: %s %s %d\n",ncmpi_strerror(status),fname,line);
       }
       if(ios->error_handler == PIO_INTERNAL_ERROR){
