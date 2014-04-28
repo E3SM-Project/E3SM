@@ -2,280 +2,515 @@ module cice_advection
 
   use mpas_grid_types
 
-  use cice_testing
-
   implicit none
 
   private
-  public :: init_advection, &
-            run_advection
+  public :: &
+       init_advection, &
+       advection
+  
+  integer, parameter :: &
+       nTracerVariables = 7
+
+  ! tracerConnectivity(iTracer, 1) ! child tracer name in code
+  ! tracerConnectivity(iTracer, 2) ! parent tracer name in code
+  character(len=200), dimension(nTracerVariables, 2) :: &
+       tracerConnectivity
 
 contains
 
   !--------------------------------------------------------------------------
+  ! Initialization
+  !--------------------------------------------------------------------------
   
-  subroutine init_advection(mesh)
+  subroutine init_advection(block)
 
     use mpas_tracer_advection_helpers, only: &
-         mpas_initialize_deriv_two, &
          mpas_tracer_advection_coefficients
 
-    use mpas_configure, only: &
+    type(block_type), intent(inout) :: &
+         block
+
+    type (MPAS_pool_type), pointer :: &
+         mesh, &
+         configs
+
+    integer, pointer :: &
          config_horiz_tracer_adv_order
-    
-    type (mesh_type), intent(inout) :: mesh
+
+    real(kind=RKIND), dimension(:,:,:), pointer :: &
+         derivTwo
+
+    real(kind=RKIND), dimension(:,:), pointer :: &
+         advCoefs, &
+         advCoefs3rd
+
+    integer, dimension(:), pointer :: &
+         nAdvCellsForEdge, &
+         maxLevelCell
+
+    integer, dimension(:,:), pointer :: &
+         advCellsForEdge, &
+         highOrderAdvectionMask, &
+         boundaryCell
 
     integer :: &
-         err, &
-         err1
+         err
 
-    integer :: &
-         i1, i2, i3
+    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
 
-    !do i1 = 1, mesh % maxEdges2
-    !   do i2 = 1, 2
-    !      do i3 = 1, mesh % nEdges
-    !         write(*,*) i1, i2, i3, mesh % derivTwo % array(i1,i2,i3)
-    !      enddo
-    !   enddo
-    !enddo
+    configs => block % configs
+    call MPAS_pool_get_config(configs, "config_horiz_tracer_adv_order", config_horiz_tracer_adv_order)
 
-    !call mpas_initialize_deriv_two(&
-    !     mesh, &
-    !     mesh % derivTwo % array, &
-    !     err)
+    call MPAS_pool_get_array(mesh, "derivTwo", derivTwo)
+    call MPAS_pool_get_array(mesh, "advCoefs", advCoefs)
+    call MPAS_pool_get_array(mesh, "advCoefs3rd", advCoefs3rd)
+    call MPAS_pool_get_array(mesh, "nAdvCellsForEdge", nAdvCellsForEdge)
+    call MPAS_pool_get_array(mesh, "advCellsForEdge", advCellsForEdge)
+    call MPAS_pool_get_array(mesh, "maxLevelCell", maxLevelCell)
+    call MPAS_pool_get_array(mesh, "highOrderAdvectionMask", highOrderAdvectionMask)
+    call MPAS_pool_get_array(mesh, "boundaryCell", boundaryCell)
 
-    !FIFTEEN TWO nEdges
-    !write(*,*) &
-    !     size(mesh % derivTwo % array,1), &
-    !     size(mesh % derivTwo % array,2), &
-    !     size(mesh % derivTwo % array,3), &
-    !     mesh % maxEdges2, &
-    !     mesh % nEdges
-
-    !do i1 = 1, mesh % maxEdges2
-    !   do i2 = 1, 2
-    !      do i3 = 1, mesh % nEdges
-    !         write(*,*) i1, i2, i3, mesh % derivTwo % array(i1,i2,i3)
-    !      enddo
-    !   enddo
-    !enddo
+    err = 0
 
     call mpas_tracer_advection_coefficients(&
          mesh, &
          config_horiz_tracer_adv_order, &
-         mesh % derivTwo % array, &
-         mesh % advCoefs % array, &
-         mesh % advCoefs3rd % array, &
-         mesh % nAdvCellsForEdge % array, &
-         mesh % advCellsForEdge % array, &
-         err1, &
-         mesh % maxLevelCell % array, &
-         mesh % highOrderAdvectionMask % array, &
-         mesh % boundaryCell % array)
+         derivTwo, &
+         advCoefs, &
+         advCoefs3rd, &
+         nAdvCellsForEdge, &
+         advCellsForEdge, &
+         err, &
+         maxLevelCell, &
+         highOrderAdvectionMask, &
+         boundaryCell)
 
-    !stop
+    call define_tracer_connectivity()
 
   end subroutine init_advection
 
   !--------------------------------------------------------------------------
+  
+  subroutine define_tracer_connectivity()
 
-  subroutine run_advection(block, dt, nstep)
+    ! child tracer                                 ! parent tracer to child
+    tracerConnectivity(1,1) = 'iceAreaCell'        ; tracerConnectivity(1,2) = 'none'
+    tracerConnectivity(2,1) = 'surfaceTemperature' ; tracerConnectivity(2,2) = 'iceAreaCell'
+    tracerConnectivity(3,1) = 'iceVolumeCell'      ; tracerConnectivity(3,2) = 'iceAreaCell'
+    tracerConnectivity(4,1) = 'snowVolumeCell'     ; tracerConnectivity(4,2) = 'iceAreaCell'
+    tracerConnectivity(5,1) = 'iceEnthalpy'        ; tracerConnectivity(5,2) = 'iceVolumeCell'
+    tracerConnectivity(6,1) = 'iceSalinity'        ; tracerConnectivity(6,2) = 'iceVolumeCell'
+    tracerConnectivity(7,1) = 'snowEnthalpy'       ; tracerConnectivity(7,2) = 'snowVolumeCell'
 
-    use cice_diagnostics, only: plot_pop_grid_cells, output_meridonal_strip
-
-    type (block_type), intent(inout) :: block
-    real (kind=RKIND), intent(in) :: dt
-    integer, intent(in) :: nstep
-
-    type (mesh_type), pointer :: mesh
-    type (hexdyn_type), pointer :: hexdyn
-    type (normal_type), pointer :: normal
-
-    real(kind=RKIND), dimension(:,:,:), pointer :: &
-         tracers, &              ! (nTracers, nVertLevels, nCells)
-         tracersOnArea
-
-    real(kind=RKIND), dimension(:,:,:), allocatable :: &
-         tendency                ! (nTracers, nVertLevels, nCells)
-
-    real(kind=RKIND), dimension(:,:), allocatable :: &
-         lowerLevelTracer,     & ! (nVertLevels, nCells)
-         lowerLevelTracerPrev, & ! (nVertLevels, nCells)
-         lowerLevelTracerNext, & ! (nVertLevels, nCells)
-         lowerLevelTendency      ! (nVertLevels, nCells)
-
-    real(kind=RKIND), dimension(:,:), allocatable :: &
-         verticalVelocity,     & ! (nVertLevels+1, nEdges)
-         verticalCellSize        ! (nVertLevels, nCells)
-
-    integer :: &
-         nTracers, &
-         nVertLevels
-
-    integer :: &
-         iCell, &
-         iVertLevel, &
-         iTracer
-
-    ! perform pointer assignments
-    mesh    => block % mesh
-    hexdyn  => block % hexdyn
-    normal  => block % normal
-
-    ! init non changing things
-    call init_run_advection(&
-         mesh, &
-         verticalVelocity, &
-         verticalCellSize)
-
-    nVertLevels = 1
-
-    allocate(lowerLevelTracer     (1,mesh % nCells))
-    allocate(lowerLevelTracerPrev (1,mesh % nCells))
-    allocate(lowerLevelTracerNext (1,mesh % nCells))
-    allocate(lowerLevelTendency   (1,mesh % nCells))
-
-    ! calculate edge velocity
-    call edge_from_vertex_velocity(&
-       mesh, &
-       hexdyn % uVelocity % array, &
-       hexdyn % vVelocity % array, &
-       normal % normalVectorPolygon % array, &
-       hexdyn % edgeVelocity % array)
-
-    ! perform first level
-    tracers => block % icestate % tracers % array
-    nTracers = size(tracers, 1)
-    allocate(tendency(nTracers,1,mesh % nCells))
-
-    do iCell = 1, mesh % nCells
-       do iVertLevel = 1, nVertLevels
-
-          lowerLevelTracer     (iVertLevel, iCell) = 1.0_RKIND
-          lowerLevelTracerPrev (iVertLevel, iCell) = 1.0_RKIND
-          lowerLevelTendency   (iVertLevel, iCell) = 0.0_RKIND
-
-          do iTracer = 1, nTracers
-             
-             tendency(iTracer, iVertLevel, iCell) = 0.0_RKIND
-
-          enddo ! iTracer
-
-       enddo ! iVertLevel
-    enddo ! iCell
-
-    ! perform the first level of advection
-    call perform_advection(&
-       mesh, &
-       dt, &
-       tracers, &
-       tendency, &
-       hexdyn % edgeVelocity % array, &
-       lowerLevelTracer, &
-       lowerLevelTracerPrev, &
-       lowerLevelTendency, &
-       verticalVelocity, &
-       verticalCellSize)
-
-    ! perform second level
-
-
-
-
-    ! cleanup
-
-    deallocate(lowerLevelTracer)
-    deallocate(lowerLevelTracerPrev)
-    deallocate(lowerLevelTendency)
-
-    call cleanup_run_advection(&
-         verticalVelocity, &
-         verticalCellSize)
-
-  end subroutine run_advection
+  end subroutine define_tracer_connectivity
 
   !--------------------------------------------------------------------------
+  ! time stepping
+  !--------------------------------------------------------------------------
 
-  subroutine perform_advection(&
-       mesh, &
-       dt, &
-       tracers, &
-       tendency, &
-       edgeVelocity, &
-       lowerLevelTracer, &
-       lowerLevelTracerPrev, &
-       lowerLevelTendency, &
-       verticalVelocity, &
-       verticalCellSize)
+  subroutine advection(block, dt)
 
-    use mpas_tracer_advection_mono, only: &
-         mpas_tracer_advection_mono_tend
-
-    type (mesh_type), intent(in) :: mesh
+    type (block_type), intent(inout) :: block
 
     real(kind=RKIND), intent(in) :: &
          dt
 
-    real(kind=RKIND), dimension(:,:,:), intent(inout) :: &
-         tracers                 ! (nTracers, nVertLevels, nCells)
+    type (MPAS_pool_type), pointer :: &
+         mesh, &
+         tracers, &
+         tracer_tendencies, &
+         hexdyn, &
+         normal
 
-    real(kind=RKIND), dimension(:,:,:), intent(out) :: &
-         tendency                ! (nTracers, nVertLevels, nCells)
+    real(kind=RKIND), dimension(:), pointer :: &
+         uVelocity, &
+         vVelocity
+
+    real(kind=RKIND), dimension(:,:,:), pointer :: &
+         normalVectorPolygon
+
+    integer :: &
+         iTracerVariable
+
+    real(kind=RKIND), dimension(:), allocatable :: &
+         edgeVelocity
+
+    real(kind=RKIND), dimension(:,:), allocatable :: &    
+         edgeFlux, &
+         verticalVelocity, &
+         verticalCellSize
+
+    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+    call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
+    call MPAS_pool_get_subpool(block % structs, "tracer_tendencies", tracer_tendencies)
+    call MPAS_pool_get_subpool(block % structs, "hexdyn", hexdyn)
+    call MPAS_pool_get_subpool(block % structs, "normal", normal)
+
+    call MPAS_pool_get_array(hexdyn, "uVelocity", uVelocity)
+    call MPAS_pool_get_array(hexdyn, "vVelocity", vVelocity)
+    call MPAS_pool_get_array(normal, "normalVectorPolygon", normalVectorPolygon)
+
+    call prepare_advection(&
+         mesh, &
+         tracers, &
+         uVelocity, &
+         vVelocity, &
+         normalVectorPolygon, &
+         edgeVelocity, &
+         edgeFlux, &
+         verticalVelocity, &
+         verticalCellSize)
+
+    do iTracerVariable = 1, nTracerVariables
+
+       call run_advection_variable(&
+            mesh, &
+            tracers, &
+            tracer_tendencies, &
+            tracerConnectivity(iTracerVariable,1), &
+            tracerConnectivity(iTracerVariable,2), &
+            edgeVelocity, &
+            edgeFlux, &
+            verticalVelocity, &
+            verticalCellSize, &
+            dt)
+
+    enddo ! iTracerVariable
+
+    call finalize_advection(&
+         mesh, &
+         tracers, &
+         edgeVelocity, &
+         edgeFlux, &
+         verticalVelocity, &
+         verticalCellSize)
+
+  end subroutine advection
+
+  !--------------------------------------------------------------------------
+  
+  subroutine advection_variable(&
+       mesh, &
+       tracers, &
+       tracer_tendencies, &
+       childTracerName, &
+       parentTracerName, &
+       edgeVelocity, &
+       edgeFlux, &
+       verticalVelocity, &
+       verticalCellSize, &
+       dt)
+
+    type (MPAS_pool_type), pointer, intent(in) :: &
+         mesh
+  
+    type (MPAS_pool_type), pointer :: &
+         tracers, &
+         tracer_tendencies
+    
+    character(len=*), intent(in) :: &
+         childTracerName, &
+         parentTracerName
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         edgeVelocity            ! (nEdges)
+         edgeVelocity
+         
+    real(kind=RKIND), dimension(:,:), intent(inout) :: &
+         edgeFlux
 
     real(kind=RKIND), dimension(:,:), intent(in) :: &
-         lowerLevelTracer,     & ! (nVertLevels, nCells)
-         lowerLevelTracerPrev, & ! (nVertLevels, nCells)
-         lowerLevelTendency      ! (nVertLevels, nCells)
+         verticalVelocity, &
+         verticalCellSize
+    
+    real(kind=RKIND), intent(in) :: &
+         dt
+
+    type (mpas_pool_field_info_type) :: childFieldInfo
+
+    call mpas_pool_get_field_info(tracers, trim(childTracerName), childFieldInfo)
+
+    if (childFieldInfo % nDims == 3) then
+
+       call advection_variable_3D(&
+            mesh, &
+            tracers, &
+            tracer_tendencies, &
+            childTracerName, &
+            parentTracerName, &
+            edgeVelocity, &
+            edgeFlux, &
+            verticalVelocity, &
+            verticalCellSize, &
+            dt)
+       
+    else if (childFieldInfo % nDims == 4) then
+
+       call advection_variable_4D(&
+            mesh, &
+            tracers, &
+            tracer_tendencies, &
+            childTracerName, &
+            parentTracerName, &
+            edgeVelocity, &
+            edgeFlux, &
+            verticalVelocity, &
+            verticalCellSize, &
+            dt)
+
+    endif
+
+  end subroutine advection_variable
+
+  !--------------------------------------------------------------------------
+
+  subroutine advection_variable_3D(&
+       mesh, &
+       tracers, &
+       tracer_tendencies, &
+       childTracerName, &
+       parentTracerName, &
+       edgeVelocity, &
+       edgeFlux, &
+       verticalVelocity, &
+       verticalCellSize, &
+       dt)
+
+    type (MPAS_pool_type), pointer, intent(in) :: &
+         mesh
+    
+    type (MPAS_pool_type), pointer :: &
+         tracers, &
+         tracer_tendencies
+    
+    character(len=*), intent(in) :: &
+         childTracerName, &
+         parentTracerName
+
+    real(kind=RKIND), dimension(:), intent(in) :: &
+         edgeVelocity
+         
+    real(kind=RKIND), dimension(:,:), intent(inout) :: &
+         edgeFlux
 
     real(kind=RKIND), dimension(:,:), intent(in) :: &
-         verticalVelocity,     & ! (nVertLevels+1, nEdges)
-         verticalCellSize        ! (nVertLevels, nCells)
+         verticalVelocity, &
+         verticalCellSize
+    
+    real(kind=RKIND), intent(in) :: &
+         dt
 
-    real(kind=RKIND), dimension(:,:), allocatable :: &
-         edgeFlux                ! (nVertLevels, nEdges)
+    real (kind=RKIND), dimension(:,:,:), pointer :: &
+         childTracerOld, &
+         childTracerNew, &
+         childTendency
+
+    real (kind=RKIND), dimension(:,:,:), pointer :: &
+         parentTracerOld, &
+         parentTracerNew, &
+         parentTendency    
+
+    ! child tracer
+    call MPAS_pool_get_array(tracers, trim(childTracerName), childTracerOld, 1)
+    call MPAS_pool_get_array(tracers, trim(childTracerName), childTracerNew, 2)
+    call MPAS_pool_get_array(tracer_tendencies, trim(childTracerName), childTendency)
+
+    ! parent tracer
+    call MPAS_pool_get_array(tracers, trim(parentTracerName), parentTracerOld, 1)
+    call MPAS_pool_get_array(tracers, trim(parentTracerName), parentTracerOld, 2)
+    call MPAS_pool_get_array(tracer_tendencies, trim(parentTracerName), parentTendency)
+
+    call advection_subvariable(&
+         mesh, &
+         childTracerOld(:,:,:), &
+         childTracerNew(:,:,:), &
+         childTendency(:,:,:), &
+         parentTracerOld(:,:,:), &
+         parentTracerNew(:,:,:), &
+         parentTendency(:,:,:), &
+         edgeVelocity, &
+         edgeFlux, &
+         verticalVelocity, &
+         verticalCellSize, &
+         dt)
+
+  end subroutine advection_variable_3D
+
+  !--------------------------------------------------------------------------
+
+  subroutine advection_variable_4D(&
+       mesh, &
+       tracers, &
+       tracer_tendencies, &
+       childTracerName, &
+       parentTracerName, &
+       edgeVelocity, &
+       edgeFlux, &
+       verticalVelocity, &
+       verticalCellSize, &
+       dt)
+    
+    type (MPAS_pool_type), pointer, intent(in) :: &
+         mesh
+
+    type (MPAS_pool_type), pointer :: &
+         tracers, &
+         tracer_tendencies
+    
+    character(len=*), intent(in) :: &
+         childTracerName, &
+         parentTracerName
+
+    real(kind=RKIND), dimension(:), intent(in) :: &
+         edgeVelocity
+         
+    real(kind=RKIND), dimension(:,:), intent(inout) :: &
+         edgeFlux
+
+    real(kind=RKIND), dimension(:,:), intent(in) :: &
+         verticalVelocity, &
+         verticalCellSize
+    
+    real(kind=RKIND), intent(in) :: &
+         dt
+
+    real (kind=RKIND), dimension(:,:,:,:), pointer :: &
+         childTracerOld, &
+         childTracerNew, &
+         childTendency
+
+    real (kind=RKIND), dimension(:,:,:), pointer :: &
+         parentTracerOld, &
+         parentTracerNew, &
+         parentTendency  
 
     integer :: &
-         iEdge, &
+         iTracerDimension
+
+    ! child tracer
+    call MPAS_pool_get_array(tracers, trim(childTracerName), childTracerOld, 1)
+    call MPAS_pool_get_array(tracers, trim(childTracerName), childTracerNew, 2)
+    call MPAS_pool_get_array(tracer_tendencies, trim(childTracerName), childTendency)
+
+    ! parent tracer
+    call MPAS_pool_get_array(tracers, trim(parentTracerName), parentTracerOld, 1)
+    call MPAS_pool_get_array(tracers, trim(parentTracerName), parentTracerNew, 2)
+    call MPAS_pool_get_array(tracer_tendencies, trim(parentTracerName), parentTendency)
+    
+    do iTracerDimension = 1, size(childTracerNew,1)
+
+       call advection_subvariable(&
+            mesh, &
+            childTracerOld(iTracerDimension,:,:,:), &
+            childTracerNew(iTracerDimension,:,:,:), &
+            childTendency(iTracerDimension,:,:,:), &
+            parentTracerOld(:,:,:), &
+            parentTracerNew(:,:,:), &
+            parentTendency(:,:,:), &
+            edgeVelocity, &
+            edgeFlux, &
+            verticalVelocity, &
+            verticalCellSize, &
+            dt)
+       
+    enddo ! iTracerDimension
+    
+  end subroutine advection_variable_4D
+
+  !--------------------------------------------------------------------------
+
+  subroutine advection_subvariable(&
+       mesh, &
+       childTracerOld, &
+       childTracerNew, &
+       childTendency, &
+       parentTracerOld, &
+       parentTracerNew, &
+       parentTendency, &
+       edgeVelocity, &
+       edgeFlux, &
+       verticalVelocity, &
+       verticalCellSize, &
+       dt)
+
+    use mpas_tracer_advection_mono, only: &
+         mpas_tracer_advection_mono_tend
+
+    type (MPAS_pool_type), pointer, intent(in) :: &
+         mesh
+
+    real(kind=RKIND), dimension(:,:,:), intent(inout) :: &
+         childTracerOld, &
+         childTracerNew, &
+         childTendency
+
+    real(kind=RKIND), dimension(:,:,:), intent(in) :: &
+         parentTracerOld, &
+         parentTracerNew, &
+         parentTendency
+
+    real(kind=RKIND), dimension(:), intent(in) :: &
+         edgeVelocity
+         
+    real(kind=RKIND), dimension(:,:), intent(inout) :: &
+         edgeFlux
+
+    real(kind=RKIND), dimension(:,:), intent(in) :: &
+         verticalVelocity, &
+         verticalCellSize
+    
+    real(kind=RKIND), intent(in) :: &
+         dt
+
+    integer, pointer :: &
+         nEdges, &
+         nCells, &
+         nCategories
+
+    integer, dimension(:), pointer :: &
+         nAdvCellsForEdge
+
+    integer, dimension(:,:), pointer :: &
+         cellsOnEdge, &
+         advCellsForEdge, &
+         highOrderAdvectionMask
+
+    real(kind=RKIND), dimension(:,:), pointer :: &
+         advCoefs, &
+         advCoefs3rd
+
+    integer :: &
          iCell, &
-         iTracer, &
-         iVertLevel, &
-         iCell1, &
-         iCell2, &
-         iAdvectionCell
+         iEdge, &
+         iCategory, &
+         iTracerDimension
 
-    integer :: &
-         nTracers, &
-         nVertLevels, &
-         nAdvectionCells
+    call MPAS_pool_get_array(mesh, "nEdges", nEdges)   
+    call MPAS_pool_get_array(mesh, "nCells", nCells)    
+    call MPAS_pool_get_array(mesh, "nCategories", nCategories)
+    call MPAS_pool_get_array(mesh, "cellsOnEdge", cellsOnEdge)
+    call MPAS_pool_get_array(mesh, "nAdvCellsForEdge", nAdvCellsForEdge)  
+    call MPAS_pool_get_array(mesh, "advCellsForEdge", advCellsForEdge)  
+    call MPAS_pool_get_array(mesh, "highOrderAdvectionMask", highOrderAdvectionMask)  
+    call MPAS_pool_get_array(mesh, "advCoefs", advCoefs)  
+    call MPAS_pool_get_array(mesh, "advCoefs3rd", advCoefs3rd)  
 
-    nTracers    = size(tracers, 1)
-    nVertLevels = size(tracers, 2)
+    ! edge flux of parent tracer
+    do iEdge = 1, nEdges
 
-    ! calculate edgeVelocity * lowerLevelTracerAtEdge
-    allocate(edgeFlux(nVertLevels, mesh % nEdges))
-
-    do iEdge = 1, mesh % nEdges
-
-       iCell1 = mesh % cellsOnEdge % array(1,iEdge)
-       iCell2 = mesh % cellsOnEdge % array(2,iEdge)
-
-       if (iCell1 > mesh % nCells .or. iCell2 > mesh % nCells) then
+       if (cellsOnEdge(1,iEdge) > nCells .or. cellsOnEdge(2,iEdge) > nCells) then
 
           ! edge of domain
-          do iVertLevel = 1, nVertLevels
-             edgeFlux(iVertLevel,iEdge) = 0.0_RKIND
-          enddo ! iVertLevel
+          do iCategory = 1, nCategories
+             edgeFlux(iCategory,iEdge) = 0.0_RKIND
+          enddo ! iCategory
 
        else
 
-          do iVertLevel = 1, nVertLevels
-             edgeFlux(iVertLevel,iEdge) = edgeVelocity(iEdge) * &
-                  0.5_RKIND * (lowerLevelTracer(iVertLevel,iCell1) + lowerLevelTracer(iVertLevel,iCell2))
-          enddo ! iVertLevel
+          do iCategory = 1, nCategories
+             edgeFlux(iCategory,iEdge) = edgeVelocity(iEdge) * &
+                  0.5_RKIND * (parentTracerNew(1,iCategory,cellsOnEdge(1,iEdge)) + parentTracerNew(1,iCategory,cellsOnEdge(2,iEdge)))
+          enddo ! iCategory
 
        endif
 
@@ -283,39 +518,136 @@ contains
 
     ! run the advection routine
     call mpas_tracer_advection_mono_tend(&
-         tracers,                         & ! (nTracers, nVertLevels, nCells)
-         mesh % advCoefs % array,         & ! (nAdvectionCells nEdges)
-         mesh % advCoefs3rd % array,      & ! (nAdvectionCells nEdges)
-         mesh % nAdvCellsForEdge % array, & ! (nEdges)
-         mesh % advCellsForEdge % array,  & ! (nAdvectionCells nEdges)
-         edgeFlux,                        & ! (nVertLevels, nEdges)
-         verticalVelocity,                & ! (nVertLevels+1, nEdges)
-         lowerLevelTracer,                & ! (nVertLevels, nCells)
-         verticalCellSize,                & ! (nVertLevels, nCells)
+         childTracerOld,                  & ! (nTracers, nCategories, nCells)
+         advCoefs,                        & ! (nAdvectionCells nEdges)
+         advCoefs3rd,                     & ! (nAdvectionCells nEdges)
+         nAdvCellsForEdge,                & ! (nEdges)
+         advCellsForEdge,                 & ! (nAdvectionCells nEdges)
+         edgeFlux,                        & ! (nCategories, nEdges)
+         verticalVelocity,                & ! (nCategories+1, nEdges)
+         parentTracerNew(1,:,:),          & ! (nCategories, nCells)
+         verticalCellSize,                & ! (nCategories, nCells)
          dt,                              & ! 
          mesh,                            & ! 
-         lowerLevelTendency,              & ! (nVertLevels, nCells)
-         tendency,                        & ! (nTracers, nVertLevels, nCells)
-         highOrderAdvectionMask_in =      & ! (nVertLevels nEdges)
-         mesh % highOrderAdvectionMask % array, &
-         lvertical_in=.false.)
+         parentTendency(1,:,:),           & ! (nCategories, nCells)
+         childTendency,                   & ! (nTracers, nCategories, nCells)
+         highOrderAdvectionMask_in =      & ! (nCategories nEdges)
+         highOrderAdvectionMask)!,          &
+         !lvertical_in=.false.)
 
     ! apply the advective changes
-    do iCell = 1, mesh % nCells
-       do iVertLevel = 1, nVertLevels
-          do iTracer = 1, nTracers
+    do iCell = 1, nCells
+       do iCategory = 1, nCategories
+          do iTracerDimension = 1, size(childTracerNew,1)
 
-             tracers(iTracer,iVertLevel,iCell) = (tracers(iTracer,iVertLevel,iCell) * lowerLevelTracerPrev(iVertLevel,iCell) &
-                                               + tendency(iTracer,iVertLevel,iCell) * dt) &
-                                               / lowerLevelTracer(iVertLevel,iCell)
+             childTracerNew(iTracerDimension,iCategory,iCell) = &
+                  (childTracerOld(iTracerDimension,iCategory,iCell) * parentTracerOld(1,iCategory,iCell) &
+                  + childTendency(iTracerDimension,iCategory,iCell) * dt) &
+                  / parentTracerNew(1,iCategory,iCell)
 
           enddo ! iTracer
-       enddo ! iVertLevel
+       enddo ! iCategory
     enddo ! iCell
 
-    deallocate(edgeFlux)
+  end subroutine advection_subvariable
 
-  end subroutine perform_advection
+  !--------------------------------------------------------------------------
+
+  subroutine prepare_advection(&
+       mesh, &
+       tracers, &
+       uVelocity, &
+       vVelocity, &
+       normalVectorPolygon, &
+       edgeVelocity, &
+       edgeFlux, &
+       verticalVelocity, &
+       verticalCellSize)
+    
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh
+
+    type(MPAS_pool_type), pointer :: &
+         tracers
+
+    real(kind=RKIND), dimension(:), intent(in) :: &
+         uVelocity, &
+         vVelocity
+
+    real(kind=RKIND), dimension(:,:,:), intent(in) :: &
+         normalVectorPolygon
+
+    real(kind=RKIND), dimension(:), allocatable :: &
+         edgeVelocity
+
+    real(kind=RKIND), dimension(:,:), allocatable :: &    
+         edgeFlux, &
+         verticalVelocity, &
+         verticalCellSize
+
+    integer, pointer :: &
+         nEdges, &
+         nCategories
+
+    call MPAS_pool_get_array(mesh, "nEdges", nEdges)
+    call MPAS_pool_get_array(mesh, "nCategories", nCategories)
+
+    allocate(edgeVelocity(nEdges))
+    allocate(edgeFlux(nCategories,nEdges))
+    allocate(verticalVelocity(nCategories+1,nEdges))
+    allocate(verticalCellSize(nCategories,nEdges))
+
+    ! prepare vertical quantities
+    verticalVelocity = 0.0_RKIND
+    verticalCellSize = 1.0_RKIND
+    
+    call edge_from_vertex_velocity(&
+         mesh, &
+         uVelocity, &
+         vVelocity, &
+         normalVectorPolygon, &
+         edgeVelocity)
+
+    call prepare_tracers(&
+         mesh, &
+         tracers)
+
+  end subroutine prepare_advection
+
+  !--------------------------------------------------------------------------
+
+  subroutine finalize_advection(&
+       mesh, &
+       tracers, &
+       edgeVelocity, &
+       edgeFlux, &
+       verticalVelocity, &
+       verticalCellSize)
+
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh
+
+    type(MPAS_pool_type), pointer :: &
+         tracers
+
+    real(kind=RKIND), dimension(:), allocatable :: &
+         edgeVelocity
+
+    real(kind=RKIND), dimension(:,:), allocatable :: &    
+         edgeFlux, &
+         verticalVelocity, &
+         verticalCellSize
+
+    call finalize_tracers(&
+         mesh, &
+         tracers)
+
+    deallocate(edgeVelocity)
+    deallocate(edgeFlux)
+    deallocate(verticalVelocity)
+    deallocate(verticalCellSize)
+
+  end subroutine finalize_advection
 
   !--------------------------------------------------------------------------
 
@@ -326,7 +658,7 @@ contains
        normalVectorPolygon, &
        edgeVelocity)
 
-    type(mesh_type), intent(in) :: mesh
+    type(MPAS_pool_type), intent(in) :: mesh
 
     real(kind=RKIND), dimension(:), intent(in) :: &
          uVelocity, &
@@ -349,16 +681,33 @@ contains
          iVertexOnEdge, &
          iVertex
 
+    integer, pointer :: &
+         nCells
+    
+    integer, dimension(:), pointer :: &
+         nEdgesOnCell
+
+    integer, dimension(:,:), pointer :: &
+         edgesOnCell, &
+         cellsOnEdge, &
+         verticesOnEdge
+
+    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
+    call MPAS_pool_get_array(mesh, "edgesOnCell", edgesOnCell)
+    call MPAS_pool_get_array(mesh, "cellsOnEdge", cellsOnEdge)
+    call MPAS_pool_get_array(mesh, "verticesOnEdge", verticesOnEdge)
+
     ! loop over cells
-    do iCell = 1, mesh % nCells
+    do iCell = 1, nCells
 
        ! loop over cell edges
-       do iEdgeOnCell = 1, mesh % nEdgesOnCell % array(iCell)
+       do iEdgeOnCell = 1, nEdgesOnCell(iCell)
 
-          iEdge = mesh % edgesOnCell % array(iEdgeOnCell,iCell)
+          iEdge = edgesOnCell(iEdgeOnCell,iCell)
 
           ! determine if velocity points outwards
-          if (mesh % cellsOnEdge % array(1,iEdge) == iCell) then
+          if (cellsOnEdge(1,iEdge) == iCell) then
 
              ! find u,v velocity at edge
              uVelocityEdge = 0.0_RKIND
@@ -366,7 +715,7 @@ contains
 
              do iVertexOnEdge = 1, 2
 
-                iVertex = mesh % verticesOnEdge % array(iVertexOnEdge, iEdge)
+                iVertex = verticesOnEdge(iVertexOnEdge, iEdge)
 
                 uVelocityEdge = uVelocityEdge + uVelocity(iVertex)
                 vVelocityEdge = vVelocityEdge + vVelocity(iVertex)
@@ -391,49 +740,102 @@ contains
 
   !--------------------------------------------------------------------------
 
-  subroutine init_run_advection(mesh, verticalVelocity, verticalCellSize)
+  subroutine prepare_tracers(&
+       mesh, &
+       tracers)
 
-    type(mesh_type), intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh
 
-    real(kind=RKIND), dimension(:,:), allocatable, intent(inout) :: &
-         verticalVelocity, &
-         verticalCellSize
+    type(MPAS_pool_type), pointer :: &
+         tracers
+
+    real(kind=RKIND), dimension(:,:,:), pointer :: &
+         iceAreaCategory, &
+         iceVolumeCategory, &
+         snowVolumeCategory
+
+    integer, pointer :: &
+         nCells, &
+         nCategories
 
     integer :: &
-         iEdge, &
-         iCell
+         iCell, &
+         iCategory
 
-    allocate(verticalVelocity(2, mesh % nEdges))
-    allocate(verticalCellSize(1, mesh % nCells))
+    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_array(tracers, "iceAreaCategory", iceAreaCategory)
+    call MPAS_pool_get_array(tracers, "iceVolumeCategory", iceVolumeCategory)
+    call MPAS_pool_get_array(tracers, "snowVolumeCategory", snowVolumeCategory)
 
-    do iEdge = 1, mesh % nEdges
+    do iCell = 1, nCells
+       do iCategory = 1, nCategories
 
-       verticalVelocity(:,iEdge) = 0.0_RKIND       
+          if (iceAreaCategory(1,iCategory,iCell) > 0.0_RKIND) then
 
-    enddo ! iEdge
+             iceVolumeCategory(1,iCategory,iCell) = iceVolumeCategory(1,iCategory,iCell) / &
+                                                    iceAreaCategory(1,iCategory,iCell)
 
-    do iCell = 1, mesh % nCells
+             snowVolumeCategory(1,iCategory,iCell) = snowVolumeCategory(1,iCategory,iCell) / &
+                                                     iceAreaCategory(1,iCategory,iCell)
 
-       verticalCellSize(:,iCell) = 1.0_RKIND
-    
+          endif ! area > 0
+
+       enddo ! iCategory
     enddo ! iCell
 
-  end subroutine init_run_advection
+  end subroutine prepare_tracers
 
   !--------------------------------------------------------------------------
 
-  subroutine cleanup_run_advection(verticalVelocity, verticalCellSize)
+  subroutine finalize_tracers(&
+       mesh, &
+       tracers)
 
-    real(kind=RKIND), dimension(:,:), allocatable, intent(inout) :: &
-         verticalVelocity, &
-         verticalCellSize
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh
 
-    deallocate(verticalVelocity)
-    deallocate(verticalCellSize)
+    type(MPAS_pool_type), pointer :: &
+         tracers
 
-  end subroutine cleanup_run_advection
+    real(kind=RKIND), dimension(:,:,:), pointer :: &
+         iceAreaCategory, &
+         iceVolumeCategory, &
+         snowVolumeCategory
+
+    integer, pointer :: &
+         nCells, &
+         nCategories
+
+    integer :: &
+         iCell, &
+         iCategory
+
+    call MPAS_pool_shift_time_levels(tracers)
+
+    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_array(tracers, "iceAreaCategory", iceAreaCategory)
+    call MPAS_pool_get_array(tracers, "iceVolumeCategory", iceVolumeCategory)
+    call MPAS_pool_get_array(tracers, "snowVolumeCategory", snowVolumeCategory)
+
+    do iCell = 1, nCells
+       do iCategory = 1, nCategories
+
+          if (iceAreaCategory(1,iCategory,iCell) > 0.0_RKIND) then
+
+             iceVolumeCategory(1,iCategory,iCell) = iceVolumeCategory(1,iCategory,iCell) * &
+                                                    iceAreaCategory(1,iCategory,iCell)
+
+             snowVolumeCategory(1,iCategory,iCell) = snowVolumeCategory(1,iCategory,iCell) * &
+                                                     iceAreaCategory(1,iCategory,iCell)
+
+          endif ! area > 0
+
+       enddo ! iCategory
+    enddo ! iCell
+
+  end subroutine finalize_tracers
 
   !--------------------------------------------------------------------------
-
 
 end module cice_advection

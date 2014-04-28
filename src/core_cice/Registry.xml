@@ -12,8 +12,10 @@
 		<dim name="R3"                 definition="3"/>
 		<dim name="FIFTEEN"            definition="15"/>
 		<dim name="TWENTYONE"          definition="21"/>
-		<dim name="nCategories"/>
 		<dim name="vertexDegree"/>
+		<dim name="nCategories"        definition="1"/>
+		<dim name="nIceLayers"         definition="1"/>
+		<dim name="nSnowLayers"        definition="1"/>
 		<dim name="nVertLevels"/>
 	  	<dim name="POP_nx"/>
 		<dim name="POP_ny"/>
@@ -227,11 +229,23 @@
 	</packages>
 
 	<!-- ice state -->
-	<var_struct name="tracers" time_levs="1">
-		<var name="iceAreaCategory"                   type="real"     dimensions="nCategories nCells"  name_in_code="iceAreaCategory"/>
-		<var name="iceVolumeCategory"                 type="real"     dimensions="nCategories nCells"  name_in_code="iceVolumeCategory"/>
-		<var name="snowVolumeCategory"                type="real"     dimensions="nCategories nCells"  name_in_code="snowVolumeCategory"/>
-		<var name="surfaceTemperature"                type="real"     dimensions="nCategories nCells"  name_in_code="surfaceTemperature"/>
+	<var_struct name="tracers" time_levs="2">
+		<var name="iceAreaCategory"                   type="real"     dimensions="ONE nCategories nCells"  name_in_code="iceAreaCategory"/>
+		<var name="iceVolumeCategory"                 type="real"     dimensions="ONE nCategories nCells"  name_in_code="iceVolumeCategory"/>
+		<var name="snowVolumeCategory"                type="real"     dimensions="ONE nCategories nCells"  name_in_code="snowVolumeCategory"/>
+		<var name="surfaceTemperature"                type="real"     dimensions="ONE nCategories nCells"  name_in_code="surfaceTemperature"/>
+		<var name="iceEnthalpy"                       type="real"     dimensions="nIceLayers nCategories nCells"  name_in_code="iceEnthalpy"/>
+		<var name="iceSalinity"                       type="real"     dimensions="nIceLayers nCategories nCells"  name_in_code="iceSalinity"/>
+		<var name="snowEnthalpy"                      type="real"     dimensions="nSnowLayers nCategories nCells"  name_in_code="snowEnthalpy"/>
+	</var_struct>
+	<var_struct name="tracer_tendencies" time_levs="1">
+		<var name="iceAreaCategory"                   type="real"     dimensions="ONE nCategories nCells"  name_in_code="iceAreaCategory"/>
+		<var name="iceVolumeCategory"                 type="real"     dimensions="ONE nCategories nCells"  name_in_code="iceVolumeCategory"/>
+		<var name="snowVolumeCategory"                type="real"     dimensions="ONE nCategories nCells"  name_in_code="snowVolumeCategory"/>
+		<var name="surfaceTemperature"                type="real"     dimensions="ONE nCategories nCells"  name_in_code="surfaceTemperature"/>
+		<var name="iceEnthalpy"                       type="real"     dimensions="nIceLayers nCategories nCells"  name_in_code="iceEnthalpy"/>
+		<var name="iceSalinity"                       type="real"     dimensions="nIceLayers nCategories nCells"  name_in_code="iceSalinity"/>
+		<var name="snowEnthalpy"                      type="real"     dimensions="nSnowLayers nCategories nCells"  name_in_code="snowEnthalpy"/>
 	</var_struct>
 	<var_struct name="icestate" time_levs="1">
 		<var name="iceAreaCell"                       type="real"     dimensions="nCells"              name_in_code="iceAreaCell"/>

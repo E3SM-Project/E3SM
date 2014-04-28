@@ -2,6 +2,7 @@
 
 OBJS = 	mpas_cice_mpas_core.o \
 	mpas_cice_time_integration.o \
+	mpas_cice_advection.o \
 	mpas_cice_dynamics_unit_tests.o \
 	mpas_cice_dynamics.o \
 	mpas_cice_dynamics_hex.o \
@@ -57,6 +58,8 @@ mpas_cice_dynamics_hex.o: mpas_cice_constants.o mpas_cice_mesh.o mpas_cice_testi
 mpas_cice_dynamics.o: mpas_cice_constants.o mpas_cice_dynamics_hex.o mpas_cice_dynamics_shared.o
 
 mpas_cice_dynamics_unit_tests.o: mpas_cice_constants.o mpas_cice_mesh.o
+
+mpas_cice_advection.o: 
 
 mpas_cice_unit_test.o: mpas_cice_constants.o mpas_cice_dynamics_unit_tests.o
 

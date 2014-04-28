@@ -35,6 +35,8 @@ module mpas_core
 
       call MPAS_pool_get_config(configs, "config_dt", dt)
 
+      write(*,*) "config_dt", dt
+
       call simulation_clock_init(domain, dt, startTimeStamp)
 
       block => domain % blocklist
@@ -134,7 +136,15 @@ module mpas_core
 
       type (MPAS_pool_type), pointer :: mesh
 
+      integer, pointer :: nCells, vertexDegree
+
       call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+
+      call MPAS_pool_get_array(mesh, "nCells", nCells)
+      call MPAS_pool_get_array(mesh, "vertexDegree", vertexDegree)
+      write(*,*) "nCells", nCells
+      write(*,*) "vertexDegree", vertexDegree
+      stop
 
       call mpas_rbf_interp_initialize(mesh)
       call mpas_init_reconstruct(mesh)
