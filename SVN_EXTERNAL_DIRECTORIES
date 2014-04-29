@@ -1,5 +1,5 @@
 utils/timing        https://svn-ccsm-models.cgd.ucar.edu/timing/trunk_tags/timing_131108/
-utils/pio           http://parallelio.googlecode.com/svn/trunk_tags/pio1_8_9/pio
+utils/pio           http://parallelio.googlecode.com/svn/trunk_tags/pio1_8_12/pio
 utils/pio/bin       http://parallelio.googlecode.com/svn/genf90/trunk_tags/genf90_131120
-utils/pio/cmake     https://github.com/quantheory/CMake_Fortran_utils/tags/CMake_Fortran_utils_140116
-utils/cprnc https://svn-ccsm-models.cgd.ucar.edu/tools/cprnc/trunk_tags/cprnc_140129
+utils/pio/cmake     https://github.com/quantheory/CMake_Fortran_utils/tags/CMake_Fortran_utils_140408
+utils/cprnc https://svn-ccsm-models.cgd.ucar.edu/tools/cprnc/trunk_tags/cprnc_140408
