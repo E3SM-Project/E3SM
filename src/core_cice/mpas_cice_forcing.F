@@ -212,7 +212,7 @@ contains
          uPOPAlongGridVector, &
          vPOPAlongGridVector
 
-    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
 
     call MPAS_pool_get_array(atmos_forcing, "airTemperature", airTemperature)
     call MPAS_pool_get_array(atmos_forcing, "uAirVelocityPOP", uAirVelocityPOP)
@@ -457,7 +457,7 @@ contains
     integer, pointer :: &
          nCells
 
-    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
 
     forcingField % forcingType = trim(forcingType)
 
@@ -926,9 +926,10 @@ contains
          POPindxi, &
          POPindxj
 
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+
     call MPAS_pool_get_array(mesh, "POP_nx", POP_nx)
     call MPAS_pool_get_array(mesh, "POP_ny", POP_ny)
-    call MPAS_pool_get_array(mesh, "nCells", nCells)
     call MPAS_pool_get_array(mesh, "POPindxi", POPindxi)
     call MPAS_pool_get_array(mesh, "POPindxj", POPindxj)
 
@@ -991,7 +992,8 @@ contains
          POPindxi, &
          POPindxj
 
-    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+
     call MPAS_pool_get_array(mesh, "POPindxi", POPindxi)
     call MPAS_pool_get_array(mesh, "POPindxj", POPindxj)
 
@@ -1103,7 +1105,8 @@ contains
          POPindxi, &
          POPindxj
 
-    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+
     call MPAS_pool_get_array(mesh, "POPindxi", POPindxi)
     call MPAS_pool_get_array(mesh, "POPindxj", POPindxj)
 
@@ -1224,7 +1227,8 @@ contains
          yEdge, &
          zEdge
 
-    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+
     call MPAS_pool_get_array(mesh, "POPindxi", POPindxi)
     call MPAS_pool_get_array(mesh, "POPindxj", POPindxj)
     call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
@@ -1415,9 +1419,10 @@ contains
          POPindxi, &
          POPindxj
 
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+
     call MPAS_pool_get_array(mesh, "POP_nx", POP_nx)
     call MPAS_pool_get_array(mesh, "POP_ny", POP_ny)
-    call MPAS_pool_get_array(mesh, "nCells", nCells)
     call MPAS_pool_get_array(mesh, "POPindxi", POPindxi)
     call MPAS_pool_get_array(mesh, "POPindxj", POPindxj)
 

@@ -143,7 +143,8 @@ contains
          yCell
 
     ! init variables
-    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+
     call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
     call MPAS_pool_get_array(mesh, "verticesOnCell", verticesOnCell)
     call MPAS_pool_get_array(mesh, "xVertex", xVertex)
@@ -198,7 +199,8 @@ contains
          nEdgesOnCell
 
     ! init variables
-    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+
     call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
 
     ! loop over cells
@@ -560,7 +562,8 @@ contains
          verticesOnCell
 
     ! init variables
-    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+
     call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
     call MPAS_pool_get_array(mesh, "verticesOnCell", verticesOnCell)
 
@@ -691,7 +694,8 @@ contains
          nEdgesOnCell
 
     ! init variables
-    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+
     call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
 
     do iCell = 1, nCells
@@ -1035,7 +1039,8 @@ contains
          verticesOnCell
 
     ! init variables
-    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+
     call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
     call MPAS_pool_get_array(mesh, "verticesOnCell", verticesOnCell)
 
@@ -1134,8 +1139,9 @@ contains
          areaTriangle
 
     ! init variables
-    call MPAS_pool_get_array(mesh, "nVertices", nVertices)
-    call MPAS_pool_get_array(mesh, "vertexDegree", vertexDegree)
+    call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
+    call MPAS_pool_get_dimension(mesh, "vertexDegree", vertexDegree)
+
     call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
     call MPAS_pool_get_array(mesh, "cellsOnVertex", cellsOnVertex)
     call MPAS_pool_get_array(mesh, "areaTriangle", areaTriangle)

@@ -93,8 +93,9 @@ contains
     call MPAS_pool_get_subpool(block % structs, "hexdyn", hexdyn)
     call MPAS_pool_get_subpool(block % structs, "hexweak", hexweak)
 
-    call MPAS_pool_get_array(mesh, "nCells", nCells)
-    call MPAS_pool_get_array(mesh, "nVertices", nVertices)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
+
     call MPAS_pool_get_array(mesh, "sphere_radius", sphere_radius)
     call MPAS_pool_get_array(mesh, "xVertex", xVertex)
     call MPAS_pool_get_array(mesh, "yVertex", yVertex)
@@ -619,8 +620,9 @@ contains
     call MPAS_pool_get_subpool(block % structs, "hexdyn", hexdyn)
     call MPAS_pool_get_subpool(block % structs, "hexweak", hexweak)
 
-    call MPAS_pool_get_array(mesh, "nCells", nCells)
-    call MPAS_pool_get_array(mesh, "nVertices", nVertices)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
+
     call MPAS_pool_get_array(mesh, "sphere_radius", sphere_radius)
     call MPAS_pool_get_array(mesh, "xVertex", xVertex)
     call MPAS_pool_get_array(mesh, "yVertex", yVertex)

@@ -88,7 +88,7 @@ contains
          nCells
 
     ! init variables
-    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
 
     do iCell = 1, nCells
 

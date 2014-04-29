@@ -130,7 +130,8 @@ contains
          areaCell
 
     ! init variables
-    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+
     call MPAS_pool_get_array(mesh, "areaCell", areaCell)
 
     njunk = nCells + 1
@@ -162,7 +163,7 @@ contains
          uVelocity, &
          vVelocity
 
-    real(kind=RKIND), dimension(:,:), pointer :: &
+    real(kind=RKIND), dimension(:,:,:), pointer :: &
          iceAreaCategory, &
          iceVolumeCategory, &
          snowVolumeCategory
@@ -180,9 +181,9 @@ contains
          config_initial_uvelocity, &
          config_initial_vvelocity
 
-    call MPAS_pool_get_array(tracers, "iceAreaCategory", iceAreaCategory)
-    call MPAS_pool_get_array(tracers, "iceVolumeCategory", iceVolumeCategory)
-    call MPAS_pool_get_array(tracers, "snowVolumeCategory", snowVolumeCategory)
+    call MPAS_pool_get_array(tracers, "iceAreaCategory", iceAreaCategory, 1)
+    call MPAS_pool_get_array(tracers, "iceVolumeCategory", iceVolumeCategory, 1)
+    call MPAS_pool_get_array(tracers, "snowVolumeCategory", snowVolumeCategory, 1)
 
     call MPAS_pool_get_array(hexdyn, "uVelocity", uVelocity)
     call MPAS_pool_get_array(hexdyn, "vVelocity", vVelocity)
@@ -265,7 +266,7 @@ contains
 
     type (MPAS_pool_type), pointer, intent(in) :: mesh
     
-    real(kind=RKIND), dimension(:,:), intent(out) :: &
+    real(kind=RKIND), dimension(:,:,:), intent(out) :: &
          iceAreaCategory, &
          iceVolumeCategory, &
          snowVolumeCategory
@@ -291,7 +292,8 @@ contains
          latCell
 
     ! init variables
-    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+
     call MPAS_pool_get_array(mesh, "latCell", latCell)
 
     do iCell = 1, nCells
@@ -300,16 +302,16 @@ contains
            latCell(iCell) <= latitudeLimitSouth * rad_to_deg) then
 
           ! has ice
-          iceAreaCategory(:,iCell)     = iceAreaInitial
-          iceVolumeCategory(:,iCell)   = iceVolumeInitial
-          snowVolumeCategory(:,iCell) = snowVolumeInitial
+          iceAreaCategory(1,:,iCell)     = iceAreaInitial
+          iceVolumeCategory(1,:,iCell)   = iceVolumeInitial
+          snowVolumeCategory(1,:,iCell) = snowVolumeInitial
           
        else
 
           ! no ice
-          iceAreaCategory(:,iCell)    = 0.0_RKIND
-          iceVolumeCategory(:,iCell)  = 0.0_RKIND
-          snowVolumeCategory(:,iCell) = 0.0_RKIND
+          iceAreaCategory(1,:,iCell)    = 0.0_RKIND
+          iceVolumeCategory(1,:,iCell)  = 0.0_RKIND
+          snowVolumeCategory(1,:,iCell) = 0.0_RKIND
 
        endif
 
@@ -330,7 +332,7 @@ contains
 
     type (MPAS_pool_type), pointer, intent(in) :: mesh
     
-    real(kind=RKIND), dimension(:,:), intent(out) :: &
+    real(kind=RKIND), dimension(:,:,:), intent(out) :: &
          iceAreaCategory, &
          iceVolumeCategory, &
          snowVolumeCategory
@@ -358,7 +360,8 @@ contains
          zCell
    
     ! init variables
-    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+
     call MPAS_pool_get_array(mesh, "xCell", xCell)
     call MPAS_pool_get_array(mesh, "yCell", yCell)
     call MPAS_pool_get_array(mesh, "zCell", zCell)
@@ -372,16 +375,16 @@ contains
        if (sqrt(x**2+z**2) < circle_radius .and. y > 0.0_RKIND) then
           
           ! has ice
-          iceAreaCategory(:,iCell)    = iceAreaInitial
-          iceVolumeCategory(:,iCell)  = iceVolumeInitial
-          snowVolumeCategory(:,iCell) = snowVolumeInitial
+          iceAreaCategory(1,:,iCell)    = iceAreaInitial
+          iceVolumeCategory(1,:,iCell)  = iceVolumeInitial
+          snowVolumeCategory(1,:,iCell) = snowVolumeInitial
           
        else
           
           ! no ice
-          iceAreaCategory(:,iCell)    = 0.0_RKIND
-          iceVolumeCategory(:,iCell)  = 0.0_RKIND
-          snowVolumeCategory(:,iCell) = 0.0_RKIND
+          iceAreaCategory(1,:,iCell)    = 0.0_RKIND
+          iceVolumeCategory(1,:,iCell)  = 0.0_RKIND
+          snowVolumeCategory(1,:,iCell) = 0.0_RKIND
           
        endif
        
@@ -414,7 +417,7 @@ contains
     integer, pointer :: &
          nVertices
 
-    call MPAS_pool_get_array(mesh, "nVertices", nVertices)
+    call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
 
     do iVertex = 1, nVertices
 

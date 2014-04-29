@@ -168,8 +168,8 @@ contains
          seaSurfaceSalinity
 
     ! init variables
-    call MPAS_pool_get_array(mesh, "nCells", nCells)
-    call MPAS_pool_get_array(mesh, "nCategories", nCategories)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
 
     call MPAS_pool_get_array(tracers, "iceAreaCategory", iceAreaCategory)
     call MPAS_pool_get_array(tracers, "iceVolumeCategory", iceVolumeCategory)
@@ -1366,11 +1366,12 @@ contains
          snowVolumeCategory, &
          surfaceTemperature
     
-    call MPAS_pool_get_array(mesh, "nCells", nCells)
-    call MPAS_pool_get_array(tracers, "iceAreaCategory", iceAreaCategory)
-    call MPAS_pool_get_array(tracers, "iceVolumeCategory", iceVolumeCategory)
-    call MPAS_pool_get_array(tracers, "snowVolumeCategory", snowVolumeCategory)
-    call MPAS_pool_get_array(tracers, "surfaceTemperature", surfaceTemperature)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+
+    call MPAS_pool_get_array(tracers, "iceAreaCategory", iceAreaCategory, 1)
+    call MPAS_pool_get_array(tracers, "iceVolumeCategory", iceVolumeCategory, 1)
+    call MPAS_pool_get_array(tracers, "snowVolumeCategory", snowVolumeCategory, 1)
+    call MPAS_pool_get_array(tracers, "surfaceTemperature", surfaceTemperature, 1)
 
     do iCategory = 1, nCategories
        do iCell = 1, nCells

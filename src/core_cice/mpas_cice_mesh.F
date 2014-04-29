@@ -67,9 +67,10 @@ contains
          iCell
 
     ! init variables
-    call MPAS_pool_get_array(mesh, "nVertices", nVertices)
-    call MPAS_pool_get_array(mesh, "vertexDegree", vertexDegree)
-    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
+    call MPAS_pool_get_dimension(mesh, "vertexDegree", vertexDegree)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+
     call MPAS_pool_get_array(mesh, "cellsOnVertex", cellsOnVertex)
 
     ! boundary vertices
@@ -129,7 +130,8 @@ contains
          nAdjacentCells
 
     ! init variables
-    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+
     call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
     call MPAS_pool_get_array(mesh, "cellsOnCell", cellsOnCell)
 
@@ -215,8 +217,9 @@ contains
          linterior
 
     ! init variables
-    call MPAS_pool_get_array(mesh, "nVertices", nVertices)
-    call MPAS_pool_get_array(mesh, "vertexDegree", vertexDegree)
+    call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
+    call MPAS_pool_get_dimension(mesh, "vertexDegree", vertexDegree)
+
     call MPAS_pool_get_array(mesh, "cellsOnVertex", cellsOnVertex)
 
     ! boundary vertices
@@ -306,8 +309,9 @@ contains
          iCellsOnEdge
     
     ! init variables
-    call MPAS_pool_get_array(mesh, "nEdges", nEdges)
-    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nEdges", nEdges)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+
     call MPAS_pool_get_array(mesh, "cellsOnEdge", cellsOnEdge)
 
     ! boundary edges
@@ -359,8 +363,9 @@ contains
          jVertex
     
     ! init variables
-    call MPAS_pool_get_array(mesh, "nVertices", nVertices)
-    call MPAS_pool_get_array(mesh, "vertexDegree", vertexDegree)
+    call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
+    call MPAS_pool_get_dimension(mesh, "vertexDegree", vertexDegree)
+
     call MPAS_pool_get_array(mesh, "cellsOnVertex", cellsOnVertex)
     call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
     call MPAS_pool_get_array(mesh, "verticesOnCell", verticesOnCell)
@@ -464,7 +469,8 @@ contains
          dx, dy
 
     ! init variables
-    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+
     call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
     call MPAS_pool_get_array(mesh, "edgesOnCell", edgesOnCell)
     call MPAS_pool_get_array(mesh, "xEdge", xEdge)
@@ -524,8 +530,9 @@ contains
          dx, dy
 
     ! init variables
-    call MPAS_pool_get_array(mesh, "nVertices", nVertices)
-    call MPAS_pool_get_array(mesh, "vertexDegree", vertexDegree)
+    call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
+    call MPAS_pool_get_dimension(mesh, "vertexDegree", vertexDegree)
+
     call MPAS_pool_get_array(mesh, "edgesOnVertex", edgesOnVertex)
     call MPAS_pool_get_array(mesh, "xEdge", xEdge)
     call MPAS_pool_get_array(mesh, "yEdge", yEdge)
@@ -625,7 +632,8 @@ contains
          rad_to_deg = 180.0_RKIND / 3.14159265359_RKIND
 
     ! init variables
-    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+
     call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
     call MPAS_pool_get_array(mesh, "edgesOnCell", edgesOnCell)
     call MPAS_pool_get_array(mesh, "verticesOnEdge", verticesOnEdge)
@@ -793,7 +801,8 @@ contains
          rad_to_deg = 180.0_RKIND / 3.14159265359_RKIND
 
     ! init variables
-    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+
     call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
     call MPAS_pool_get_array(mesh, "verticesOnEdge", verticesOnEdge)
     call MPAS_pool_get_array(mesh, "cellsOnEdge", cellsOnEdge)
@@ -937,8 +946,9 @@ contains
     zRotationMatrix(3,3) = 1.0_RKIND
 
     ! init variables
-    call MPAS_pool_get_array(mesh, "nVertices", nVertices)
-    call MPAS_pool_get_array(mesh, "vertexDegree", vertexDegree)
+    call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
+    call MPAS_pool_get_dimension(mesh, "vertexDegree", vertexDegree)
+
     call MPAS_pool_get_array(mesh, "edgesOnVertex", edgesOnVertex)
     call MPAS_pool_get_array(mesh, "cellsOnEdge", cellsOnEdge)
     call MPAS_pool_get_array(mesh, "verticesOnEdge", verticesOnEdge)
@@ -1090,8 +1100,9 @@ contains
          iCell2
 
     ! init variables
-    call MPAS_pool_get_array(mesh, "nVertices", nVertices)
-    call MPAS_pool_get_array(mesh, "vertexDegree", vertexDegree)
+    call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
+    call MPAS_pool_get_dimension(mesh, "vertexDegree", vertexDegree)
+
     call MPAS_pool_get_array(mesh, "edgesOnVertex", edgesOnVertex)
     call MPAS_pool_get_array(mesh, "cellsOnEdge", cellsOnEdge)
     call MPAS_pool_get_array(mesh, "verticesOnEdge", verticesOnEdge)
@@ -1233,7 +1244,8 @@ contains
          zCell
 
     ! init variables
-    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+
     call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
     call MPAS_pool_get_array(mesh, "sphere_radius", sphere_radius)
     call MPAS_pool_get_array(mesh, "xCell", xCell)
@@ -1304,8 +1316,9 @@ contains
          zVertex
 
     ! init variables
-    call MPAS_pool_get_array(mesh, "nVertices", nVertices)
-    call MPAS_pool_get_array(mesh, "vertexDegree", vertexDegree)
+    call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
+    call MPAS_pool_get_dimension(mesh, "vertexDegree", vertexDegree)
+
     call MPAS_pool_get_array(mesh, "sphere_radius", sphere_radius)
     call MPAS_pool_get_array(mesh, "xVertex", xVertex)
     call MPAS_pool_get_array(mesh, "yVertex", yVertex)
@@ -1430,7 +1443,8 @@ contains
          zEdge
 
     ! init variables
-    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+
     call MPAS_pool_get_array(mesh, "cellsOnCell", cellsOnCell)
     call MPAS_pool_get_array(mesh, "edgesOnCell", edgesOnCell)
     call MPAS_pool_get_array(mesh, "xCell", xCell)
@@ -1981,8 +1995,9 @@ contains
          kiteAreasOnVertex
 
     ! init variables
-    call MPAS_pool_get_array(mesh, "nVertices", nVertices)
-    call MPAS_pool_get_array(mesh, "vertexDegree", vertexDegree)
+    call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
+    call MPAS_pool_get_dimension(mesh, "vertexDegree", vertexDegree)
+
     call MPAS_pool_get_array(mesh, "cellsOnVertex", cellsOnVertex)
     call MPAS_pool_get_array(mesh, "areaCell", areaCell)
     call MPAS_pool_get_array(mesh, "areaTriangle", areaTriangle)

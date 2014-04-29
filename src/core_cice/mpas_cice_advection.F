@@ -485,9 +485,10 @@ contains
          iCategory, &
          iTracerDimension
 
-    call MPAS_pool_get_array(mesh, "nEdges", nEdges)   
-    call MPAS_pool_get_array(mesh, "nCells", nCells)    
-    call MPAS_pool_get_array(mesh, "nCategories", nCategories)
+    call MPAS_pool_get_dimension(mesh, "nEdges", nEdges)   
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)    
+    call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
+
     call MPAS_pool_get_array(mesh, "cellsOnEdge", cellsOnEdge)
     call MPAS_pool_get_array(mesh, "nAdvCellsForEdge", nAdvCellsForEdge)  
     call MPAS_pool_get_array(mesh, "advCellsForEdge", advCellsForEdge)  
@@ -589,8 +590,8 @@ contains
          nEdges, &
          nCategories
 
-    call MPAS_pool_get_array(mesh, "nEdges", nEdges)
-    call MPAS_pool_get_array(mesh, "nCategories", nCategories)
+    call MPAS_pool_get_dimension(mesh, "nEdges", nEdges)
+    call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
 
     allocate(edgeVelocity(nEdges))
     allocate(edgeFlux(nCategories,nEdges))
@@ -692,7 +693,8 @@ contains
          cellsOnEdge, &
          verticesOnEdge
 
-    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+
     call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
     call MPAS_pool_get_array(mesh, "edgesOnCell", edgesOnCell)
     call MPAS_pool_get_array(mesh, "cellsOnEdge", cellsOnEdge)
@@ -763,10 +765,11 @@ contains
          iCell, &
          iCategory
 
-    call MPAS_pool_get_array(mesh, "nCells", nCells)
-    call MPAS_pool_get_array(tracers, "iceAreaCategory", iceAreaCategory)
-    call MPAS_pool_get_array(tracers, "iceVolumeCategory", iceVolumeCategory)
-    call MPAS_pool_get_array(tracers, "snowVolumeCategory", snowVolumeCategory)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+
+    call MPAS_pool_get_array(tracers, "iceAreaCategory", iceAreaCategory, 1)
+    call MPAS_pool_get_array(tracers, "iceVolumeCategory", iceVolumeCategory, 1)
+    call MPAS_pool_get_array(tracers, "snowVolumeCategory", snowVolumeCategory, 1)
 
     do iCell = 1, nCells
        do iCategory = 1, nCategories
@@ -813,10 +816,11 @@ contains
 
     call MPAS_pool_shift_time_levels(tracers)
 
-    call MPAS_pool_get_array(mesh, "nCells", nCells)
-    call MPAS_pool_get_array(tracers, "iceAreaCategory", iceAreaCategory)
-    call MPAS_pool_get_array(tracers, "iceVolumeCategory", iceVolumeCategory)
-    call MPAS_pool_get_array(tracers, "snowVolumeCategory", snowVolumeCategory)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+
+    call MPAS_pool_get_array(tracers, "iceAreaCategory", iceAreaCategory, 1)
+    call MPAS_pool_get_array(tracers, "iceVolumeCategory", iceVolumeCategory, 1)
+    call MPAS_pool_get_array(tracers, "snowVolumeCategory", snowVolumeCategory, 1)
 
     do iCell = 1, nCells
        do iCategory = 1, nCategories

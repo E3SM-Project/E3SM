@@ -157,9 +157,9 @@ contains
          snowVolumeCategory
 
     ! init variables
-    call MPAS_pool_get_array(tracers, "iceAreaCategory", iceAreaCategory)
-    call MPAS_pool_get_array(tracers, "iceVolumeCategory", iceVolumeCategory)
-    call MPAS_pool_get_array(tracers, "snowVolumeCategory", snowVolumeCategory)
+    call MPAS_pool_get_array(tracers, "iceAreaCategory", iceAreaCategory, 1)
+    call MPAS_pool_get_array(tracers, "iceVolumeCategory", iceVolumeCategory, 1)
+    call MPAS_pool_get_array(tracers, "snowVolumeCategory", snowVolumeCategory, 1)
 
     call MPAS_pool_get_array(icestate, "iceAreaCell", iceAreaCell)
     call MPAS_pool_get_array(icestate, "iceVolumeCell", iceVolumeCell)
@@ -515,7 +515,8 @@ contains
     call MPAS_pool_get_array(icestate, "iceAreaVertex", iceAreaVertex)
     call MPAS_pool_get_array(icestate, "totalMassVertex", totalMassVertex)
 
-    call MPAS_pool_get_array(mesh, "nVertices", nVertices)
+    call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
+
     call MPAS_pool_get_array(mesh, "fvertex", fvertex)
 
     call MPAS_pool_get_array(normal, "normalVectorPolygon", normalVectorPolygon)
@@ -639,8 +640,8 @@ contains
          nCells, &
          nCategories
 
-    call MPAS_pool_get_array(mesh, "nCells", nCells)
-    call MPAS_pool_get_array(mesh, "nCategories", nCategories)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
 
     do iCell = 1, nCells
 
@@ -695,7 +696,8 @@ contains
     integer, dimension(:,:), pointer :: &
          cellsOnCell
 
-    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+
     call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
     call MPAS_pool_get_array(mesh, "cellsOnCell", cellsOnCell)
 
@@ -758,7 +760,7 @@ contains
     integer, pointer :: &
          nVertices
 
-    call MPAS_pool_get_array(mesh, "nVertices", nVertices)
+    call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
 
     do iVertex = 1, nVertices
 

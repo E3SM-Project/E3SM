@@ -155,7 +155,8 @@ contains
          yVertex
 
     ! init variables
-    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+
     call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
     call MPAS_pool_get_array(mesh, "verticesOnCell", verticesOnCell)
     call MPAS_pool_get_array(mesh, "cellsOnCell", cellsOnCell)
@@ -334,9 +335,10 @@ contains
          yCell
 
     ! init variables
-    call MPAS_pool_get_array(mesh, "nCells", nCells)
-    call MPAS_pool_get_array(mesh, "nVertices", nVertices)
-    call MPAS_pool_get_array(mesh, "vertexDegree", vertexDegree)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
+    call MPAS_pool_get_dimension(mesh, "vertexDegree", vertexDegree)
+
     call MPAS_pool_get_array(mesh, "cellsOnVertex", cellsOnVertex)
     call MPAS_pool_get_array(mesh, "xVertex", xVertex)
     call MPAS_pool_get_array(mesh, "yVertex", yVertex)
@@ -513,7 +515,8 @@ contains
          yVertex
 
     ! init variables
-    call MPAS_pool_get_array(mesh, "nVertices", nVertices)
+    call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
+
     call MPAS_pool_get_array(mesh, "xVertex", xVertex)
     call MPAS_pool_get_array(mesh, "yVertex", yVertex)
 
@@ -675,10 +678,11 @@ contains
          yVertex
 
     ! init variables
-    call MPAS_pool_get_array(mesh, "nCells", nCells)
-    call MPAS_pool_get_array(mesh, "nVertices", nVertices)
-    call MPAS_pool_get_array(mesh, "nEdges", nEdges)
-    call MPAS_pool_get_array(mesh, "vertexDegree", vertexDegree)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
+    call MPAS_pool_get_dimension(mesh, "nEdges", nEdges)
+    call MPAS_pool_get_dimension(mesh, "vertexDegree", vertexDegree)
+
     call MPAS_pool_get_array(mesh, "cellsOnEdge", cellsOnEdge)
     call MPAS_pool_get_array(mesh, "verticesOnEdge", verticesOnEdge)
     call MPAS_pool_get_array(mesh, "cellsOnVertex", cellsOnVertex)
@@ -834,7 +838,7 @@ contains
          nCells
 
     ! init variables
-    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
 
     do iCell = 1, nCells
 
@@ -983,7 +987,7 @@ contains
          nVertices
 
     ! init variables
-    call MPAS_pool_get_array(mesh, "nVertices", nVertices)
+    call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
 
     do iVertex = 1, nVertices
 
@@ -1047,7 +1051,8 @@ contains
          yCell
 
     ! init variables
-    call MPAS_pool_get_array(mesh, "vertexDegree", vertexDegree)
+    call MPAS_pool_get_dimension(mesh, "vertexDegree", vertexDegree)
+
     call MPAS_pool_get_array(mesh, "cellsOnVertex", cellsOnVertex)
     call MPAS_pool_get_array(mesh, "xVertex", xVertex)
     call MPAS_pool_get_array(mesh, "yVertex", yVertex)
@@ -1155,7 +1160,8 @@ contains
          yCell
 
     ! init variables
-    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+
     call MPAS_pool_get_array(mesh, "xCell", xCell)
     call MPAS_pool_get_array(mesh, "yCell", yCell)
 
@@ -1237,7 +1243,8 @@ contains
          yVertex
 
     ! init variables
-    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+
     call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
     call MPAS_pool_get_array(mesh, "verticesOnCell", verticesOnCell)
     call MPAS_pool_get_array(mesh, "xVertex", xVertex)
@@ -1312,7 +1319,8 @@ contains
          nEdgesOnCell
 
     ! init variables
-    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+
     call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
 
     open(55,file=filename)
@@ -1355,7 +1363,8 @@ contains
          nEdgesOnCell
 
     ! init variables
-    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+
     call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
 
     open(55,file=filename)
@@ -1404,7 +1413,8 @@ contains
          yCell
 
     ! init variables
-    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+
     call MPAS_pool_get_array(mesh, "xCell", xCell)
     call MPAS_pool_get_array(mesh, "yCell", yCell)
 
@@ -1454,9 +1464,10 @@ contains
          yEdge
 
     ! init variables
-    call MPAS_pool_get_array(mesh, "nCells", nCells)
-    call MPAS_pool_get_array(mesh, "nVertices", nVertices)
-    call MPAS_pool_get_array(mesh, "nEdges", nEdges)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
+    call MPAS_pool_get_dimension(mesh, "nEdges", nEdges)
+
     call MPAS_pool_get_array(mesh, "xCell", xCell)
     call MPAS_pool_get_array(mesh, "yCell", yCell)
     call MPAS_pool_get_array(mesh, "xVertex", xVertex)
@@ -1678,8 +1689,9 @@ contains
          zCell
     
     ! init variables
-    call MPAS_pool_get_array(mesh, "nVertices", nVertices)
-    call MPAS_pool_get_array(mesh, "vertexDegree", vertexDegree)
+    call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
+    call MPAS_pool_get_dimension(mesh, "vertexDegree", vertexDegree)
+
     call MPAS_pool_get_array(mesh, "cellsOnVertex", cellsOnVertex)
     call MPAS_pool_get_array(mesh, "sphere_radius", sphere_radius)
     call MPAS_pool_get_array(mesh, "xVertex", xVertex)
@@ -1984,7 +1996,8 @@ contains
          zVertex
 
     ! init variables
-    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+
     call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
     call MPAS_pool_get_array(mesh, "verticesOnCell", verticesOnCell)
     call MPAS_pool_get_array(mesh, "sphere_radius", sphere_radius)
@@ -2307,9 +2320,10 @@ contains
          POPindxj
 
     ! init variables
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+
     call MPAS_pool_get_array(mesh, "POP_nx", POP_nx)
     call MPAS_pool_get_array(mesh, "POP_ny", POP_ny)
-    call MPAS_pool_get_array(mesh, "nCells", nCells)
     call MPAS_pool_get_array(mesh, "POPindxi", POPindxi)
     call MPAS_pool_get_array(mesh, "POPindxj", POPindxj)
 
@@ -2403,9 +2417,10 @@ contains
          POPindxjv
 
     ! init variables
+    call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
+
     call MPAS_pool_get_array(mesh, "POP_nx", POP_nx)
     call MPAS_pool_get_array(mesh, "POP_ny", POP_ny)
-    call MPAS_pool_get_array(mesh, "nVertices", nVertices)
     call MPAS_pool_get_array(mesh, "POPindxiv", POPindxiv)
     call MPAS_pool_get_array(mesh, "POPindxjv", POPindxjv)
 
@@ -2503,9 +2518,10 @@ contains
          latVertex
 
     ! init variables
-    call MPAS_pool_get_array(mesh, "nCells", nCells)
-    call MPAS_pool_get_array(mesh, "nVertices", nVertices)
-    call MPAS_pool_get_array(mesh, "vertexDegree", vertexDegree)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
+    call MPAS_pool_get_dimension(mesh, "vertexDegree", vertexDegree)
+
     call MPAS_pool_get_array(mesh, "POP_nx", POP_nx)
     call MPAS_pool_get_array(mesh, "POPindxi", POPindxi)
     call MPAS_pool_get_array(mesh, "POPindxj", POPindxj)
@@ -2628,7 +2644,8 @@ contains
          POPindxj
 
     ! init variables
-    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+
     call MPAS_pool_get_array(mesh, "POPindxi", POPindxi)
     call MPAS_pool_get_array(mesh, "POPindxj", POPindxj)
 
@@ -2766,7 +2783,8 @@ contains
     call MPAS_pool_get_array(icestate, "iceVolumeCell", iceVolumeCell)
     call MPAS_pool_get_array(icestate, "snowVolumeCell", snowVolumeCell)
 
-    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+
     call MPAS_pool_get_array(mesh, "areaCell", areaCell)
     call MPAS_pool_get_array(mesh, "latCell", latCell)
 

@@ -71,7 +71,8 @@
 		<nml_option name="config_unit_test_subtype"           type="character"     default_value=""/>
 	</nml_record>
 	<nml_record name="velocity_solver" in_defaults="true">
-		<nml_option name="config_velocity_solver_type"       type="character"     default_value="none"/>
+		<nml_option name="config_stress_divergence_scheme"    type="character"     default_value="weak"/>
+		<nml_option name="config_variational_basis"           type="character"     default_value="wachspress"/>
 	</nml_record>
 
 	<nml_record name="advection" in_defaults="true">

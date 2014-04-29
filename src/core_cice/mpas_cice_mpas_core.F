@@ -35,8 +35,6 @@ module mpas_core
 
       call MPAS_pool_get_config(configs, "config_dt", dt)
 
-      write(*,*) "config_dt", dt
-
       call simulation_clock_init(domain, dt, startTimeStamp)
 
       block => domain % blocklist
@@ -139,12 +137,6 @@ module mpas_core
       integer, pointer :: nCells, vertexDegree
 
       call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
-
-      call MPAS_pool_get_array(mesh, "nCells", nCells)
-      call MPAS_pool_get_array(mesh, "vertexDegree", vertexDegree)
-      write(*,*) "nCells", nCells
-      write(*,*) "vertexDegree", vertexDegree
-      stop
 
       call mpas_rbf_interp_initialize(mesh)
       call mpas_init_reconstruct(mesh)
@@ -336,10 +328,10 @@ module mpas_core
 
       logical, pointer :: &
            config_use_velocity_solver, &
-           pkgWeak, &
-           pkgVariational, &
-           pkgWachspress, &
-           pkgPieceWiseLinear
+           pkgWeakActive, &
+           pkgVariationalActive, &
+           pkgWachspressActive, &
+           pkgPieceWiseLinearActive
 
       character(len=strKIND), pointer :: &
            config_stress_divergence_scheme, &
@@ -356,10 +348,10 @@ module mpas_core
       call MPAS_pool_get_config(configs, "config_stress_divergence_scheme", config_stress_divergence_scheme)
       call MPAS_pool_get_config(configs, "config_variational_basis", config_variational_basis)
 
-      call MPAS_pool_get_package(packages, "pkgWeak", pkgWeak)
-      call MPAS_pool_get_package(packages, "pkgVariational", pkgVariational)
-      call MPAS_pool_get_package(packages, "pkgWachspress", pkgWachspress)
-      call MPAS_pool_get_package(packages, "pkgPieceWiseLinear", pkgPieceWiseLinear)
+      call MPAS_pool_get_package(packages, "pkgWeakActive", pkgWeakActive)
+      call MPAS_pool_get_package(packages, "pkgVariationalActive", pkgVariationalActive)
+      call MPAS_pool_get_package(packages, "pkgWachspressActive", pkgWachspressActive)
+      call MPAS_pool_get_package(packages, "pkgPieceWiseLinearActive", pkgPieceWiseLinearActive)
 
       ! is the velocity solver on
       if (config_use_velocity_solver) then
@@ -368,23 +360,23 @@ module mpas_core
          if (trim(config_stress_divergence_scheme) == "weak") then
 
             ! weak stress divergence scheme
-            pkgWeak = .true.
+            pkgWeakActive = .true.
 
          else if (trim(config_stress_divergence_scheme) == "variational") then
 
             ! variational stress divergence scheme
-            pkgVariational = .true.
+            pkgVariationalActive = .true.
 
             ! variational basis function scheme
             if (trim(config_variational_basis) == "wachspress") then
 
                ! wachspress basis functions
-               pkgWachspress = .true.
+               pkgWachspressActive = .true.
                
             else if (trim(config_variational_basis) == "pwl") then
 
                ! piecewise linear basis functions
-               pkgPieceWiseLinear = .true.
+               pkgPieceWiseLinearActive = .true.
 
             else
 

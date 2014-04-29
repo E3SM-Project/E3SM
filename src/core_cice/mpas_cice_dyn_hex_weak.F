@@ -213,7 +213,8 @@ contains
          areaCell
 
     ! init variables
-    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+
     call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
     call MPAS_pool_get_array(mesh, "POPindxi", POPindxi)
     call MPAS_pool_get_array(mesh, "POPindxj", POPindxj)
@@ -341,7 +342,8 @@ contains
          areaCell
 
     ! init variables
-    call MPAS_pool_get_array(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+
     call MPAS_pool_get_array(mesh, "areaCell", areaCell)
 
     do iCell = 1, nCells
@@ -432,8 +434,9 @@ contains
          dcEdge
 
     ! init variables
-    call MPAS_pool_get_array(mesh, "nVertices", nVertices)
-    call MPAS_pool_get_array(mesh, "vertexDegree", vertexDegree)
+    call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
+    call MPAS_pool_get_dimension(mesh, "vertexDegree", vertexDegree)
+
     call MPAS_pool_get_array(mesh, "POPindxiv", POPindxiv)
     call MPAS_pool_get_array(mesh, "POPindxjv", POPindxjv)
     call MPAS_pool_get_array(mesh, "cellsOnVertex", cellsOnVertex)
