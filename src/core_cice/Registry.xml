@@ -239,13 +239,13 @@
 		<var name="snowEnthalpy"                      type="real"     dimensions="nSnowLayers nCategories nCells"  name_in_code="snowEnthalpy"/>
 	</var_struct>
 	<var_struct name="tracer_tendencies" time_levs="1">
-		<var name="iceAreaCategory"                   type="real"     dimensions="ONE nCategories nCells"  name_in_code="iceAreaCategory"/>
-		<var name="iceVolumeCategory"                 type="real"     dimensions="ONE nCategories nCells"  name_in_code="iceVolumeCategory"/>
-		<var name="snowVolumeCategory"                type="real"     dimensions="ONE nCategories nCells"  name_in_code="snowVolumeCategory"/>
-		<var name="surfaceTemperature"                type="real"     dimensions="ONE nCategories nCells"  name_in_code="surfaceTemperature"/>
-		<var name="iceEnthalpy"                       type="real"     dimensions="nIceLayers nCategories nCells"  name_in_code="iceEnthalpy"/>
-		<var name="iceSalinity"                       type="real"     dimensions="nIceLayers nCategories nCells"  name_in_code="iceSalinity"/>
-		<var name="snowEnthalpy"                      type="real"     dimensions="nSnowLayers nCategories nCells"  name_in_code="snowEnthalpy"/>
+		<var name="iceAreaCategoryTend"               type="real"     dimensions="ONE nCategories nCells"  name_in_code="iceAreaCategory"/>
+		<var name="iceVolumeCategoryTend"             type="real"     dimensions="ONE nCategories nCells"  name_in_code="iceVolumeCategory"/>
+		<var name="snowVolumeCategoryTend"            type="real"     dimensions="ONE nCategories nCells"  name_in_code="snowVolumeCategory"/>
+		<var name="surfaceTemperatureTend"            type="real"     dimensions="ONE nCategories nCells"  name_in_code="surfaceTemperature"/>
+		<var name="iceEnthalpyTend"                   type="real"     dimensions="nIceLayers nCategories nCells"  name_in_code="iceEnthalpy"/>
+		<var name="iceSalinityTend"                   type="real"     dimensions="nIceLayers nCategories nCells"  name_in_code="iceSalinity"/>
+		<var name="snowEnthalpyTend"                  type="real"     dimensions="nSnowLayers nCategories nCells"  name_in_code="snowEnthalpy"/>
 	</var_struct>
 	<var_struct name="icestate" time_levs="1">
 		<var name="iceAreaCell"                       type="real"     dimensions="nCells"              name_in_code="iceAreaCell"/>
@@ -329,21 +329,21 @@
 	</var_struct>
 	<!-- weak formulation on hexagons -->
 	<var_struct name="hexweak" time_levs="1" packages="pkgWeak">
-		<var name="strain11"                          type="real"     dimensions="nCells"                     name_in_code="strain11"/>
-		<var name="strain22"                          type="real"     dimensions="nCells"                     name_in_code="strain22"/>
-		<var name="strain12"                          type="real"     dimensions="nCells"                     name_in_code="strain12"/>
-		<var name="stress11"                          type="real"     dimensions="nCells"                     name_in_code="stress11"/>
-		<var name="stress22"                          type="real"     dimensions="nCells"                     name_in_code="stress22"/>
-		<var name="stress12"                          type="real"     dimensions="nCells"                     name_in_code="stress12"/>
+		<var name="strain11weak"                      type="real"     dimensions="nCells"                     name_in_code="strain11"/>
+		<var name="strain22weak"                      type="real"     dimensions="nCells"                     name_in_code="strain22"/>
+		<var name="strain12weak"                      type="real"     dimensions="nCells"                     name_in_code="strain12"/>
+		<var name="stress11weak"                      type="real"     dimensions="nCells"                     name_in_code="stress11"/>
+		<var name="stress22weak"                      type="real"     dimensions="nCells"                     name_in_code="stress22"/>
+		<var name="stress12weak"                      type="real"     dimensions="nCells"                     name_in_code="stress12"/>
 	</var_struct>
 	<!-- variational formulation on hexagons -->
 	<var_struct name="hexvar" time_levs="1" packages="pkgVariational">
-		<var name="strain11"                          type="real"     dimensions="maxEdges nCells"          name_in_code="strain11"/>
-		<var name="strain22"                          type="real"     dimensions="maxEdges nCells"          name_in_code="strain22"/>
-		<var name="strain12"                          type="real"     dimensions="maxEdges nCells"          name_in_code="strain12"/>
-		<var name="stress11"                          type="real"     dimensions="maxEdges nCells"          name_in_code="stress11"/>
-		<var name="stress22"                          type="real"     dimensions="maxEdges nCells"          name_in_code="stress22"/>
-		<var name="stress12"                          type="real"     dimensions="maxEdges nCells"          name_in_code="stress12"/>
+		<var name="strain11var"                       type="real"     dimensions="maxEdges nCells"          name_in_code="strain11"/>
+		<var name="strain22var"                       type="real"     dimensions="maxEdges nCells"          name_in_code="strain22"/>
+		<var name="strain12var"                       type="real"     dimensions="maxEdges nCells"          name_in_code="strain12"/>
+		<var name="stress11var"                       type="real"     dimensions="maxEdges nCells"          name_in_code="stress11"/>
+		<var name="stress22var"                       type="real"     dimensions="maxEdges nCells"          name_in_code="stress22"/>
+		<var name="stress12var"                       type="real"     dimensions="maxEdges nCells"          name_in_code="stress12"/>
 		<var name="xLocal"                            type="real"     dimensions="maxEdges nCells"          name_in_code="xLocal"/>
 		<var name="yLocal"                            type="real"     dimensions="maxEdges nCells"          name_in_code="yLocal"/>
 		<var name="cellVerticesAtVertex"              type="integer"  dimensions="vertexDegree nVertices"   name_in_code="cellVerticesAtVertex"/>
@@ -354,13 +354,13 @@
 		<var name="wachspressKappa"                   type="real"     dimensions="maxEdges maxEdges nCells" name_in_code="wachspressKappa"/>
 		<var name="basisIntegralsU"                   type="real"     dimensions="maxEdges maxEdges nCells" name_in_code="basisIntegralsU"/>
 		<var name="basisIntegralsV"                   type="real"     dimensions="maxEdges maxEdges nCells" name_in_code="basisIntegralsV"/>
-		<var name="basisGradientU"                    type="real"     dimensions="maxEdges maxEdges nCells" name_in_code="basisGradientU"/>
-		<var name="basisGradientV"                    type="real"     dimensions="maxEdges maxEdges nCells" name_in_code="basisGradientV"/>
+		<var name="basisGradientUWach"                type="real"     dimensions="maxEdges maxEdges nCells" name_in_code="basisGradientU"/>
+		<var name="basisGradientVWach"                type="real"     dimensions="maxEdges maxEdges nCells" name_in_code="basisGradientV"/>
 	</var_struct>
 	<var_struct name="hexpwl" time_levs="1" packages="pkgPieceWiseLinear">
 		<var name="basisSubArea"                      type="real"     dimensions="maxEdges nCells"     name_in_code="basisSubArea"/>
-		<var name="basisGradientU"                    type="real"     dimensions="TWO maxEdges nCells" name_in_code="basisGradientU"/>
-		<var name="basisGradientV"                    type="real"     dimensions="TWO maxEdges nCells" name_in_code="basisGradientV"/>
+		<var name="basisGradientUPWL"                 type="real"     dimensions="TWO maxEdges nCells" name_in_code="basisGradientU"/>
+		<var name="basisGradientVPWL"                 type="real"     dimensions="TWO maxEdges nCells" name_in_code="basisGradientV"/>
 	</var_struct>
 
 </registry>
