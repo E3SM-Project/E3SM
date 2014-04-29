@@ -1654,7 +1654,7 @@ contains
     call t_startf("PIO_closefile")
 #endif
     ierr = PIOc_closefile(file%fh)
-
+    nullify(file%iosystem)
 #ifdef TIMING
     call t_stopf("PIO_closefile")
 #endif

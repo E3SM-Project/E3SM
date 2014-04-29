@@ -203,7 +203,7 @@ contains
          character(C_char) :: op(*)
        end function PIOc_get_att_text
     end interface
-    values = C_NULL_CHAR
+    values = ' '
     ierr = PIOc_get_att_text (ncid,varid-1,trim(name)//C_NULL_CHAR, values)
     call replace_c_null(values)
 
@@ -251,11 +251,11 @@ contains
          character(C_CHAR) :: name(*)
          integer(C_INT), value :: xtype
          integer(C_SIZE_T), value :: len
-         {CTYPE} :: op
+         {CTYPE} :: op(*)
        end function PIOc_put_att_{NCTYPE}
     end interface
 
-    ierr = PIOc_put_att_{NCTYPE} (ncid, varid-1, trim(name)//C_NULL_CHAR, PIO_{TYPE} , len, values(1))
+    ierr = PIOc_put_att_{NCTYPE} (ncid, varid-1, trim(name)//C_NULL_CHAR, PIO_{TYPE} , len, values)
 
   end function put_att_1d_id_internal_{TYPE}
 
@@ -371,7 +371,7 @@ contains
          type(C_PTR), value :: op
        end function PIOc_get_att_{NCTYPE}
     end interface
-
+    values = ' '
     ierr = PIOc_get_att_{NCTYPE} (ncid,varid-1,trim(name)//C_NULL_CHAR, C_LOC(values))
 
   end function get_att_id_{TYPE}
@@ -431,7 +431,7 @@ contains
          type(C_PTR), value :: op
        end function PIOc_get_att_{NCTYPE}
     end interface
-
+    
     ierr = PIOc_get_att_{NCTYPE} (ncid, varid-1, trim(name)//C_NULL_CHAR, C_LOC(values))
 
 

@@ -358,7 +358,7 @@ int PIOc_get_var_double (int ncid, int varid, double *buf)
   int ndims;
   size_t ibufcnt;
 
-
+  ierr = PIO_NOERR;
   file = pio_get_file_from_id(ncid);
   if(file == NULL)
     return PIO_EBADID;
@@ -366,15 +366,18 @@ int PIOc_get_var_double (int ncid, int varid, double *buf)
   msg = PIO_MSG_GET_VAR_DOUBLE;
   ibuftype = MPI_DOUBLE;
   ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
+  //  printf("%s %d %d %d\n",__FILE__,__LINE__,varid,ierr);
   int dimid[ndims];
   PIO_Offset dimsize;
   ibufcnt = 1;
-  PIOc_inq_vardimid(file->fh, varid, dimid);
+  ierr = PIOc_inq_vardimid(file->fh, varid, dimid);
+  //  printf("%s %d %d\n",__FILE__,__LINE__,ierr);
   for(int i=0;i<ndims;i++){
-    PIOc_inq_dimlen(file->fh, dimid[i], &dimsize);
+    ierr = PIOc_inq_dimlen(file->fh, dimid[i], &dimsize);
     ibufcnt *= dimsize;
+    //   printf("%s %d %d\n",__FILE__,__LINE__,ierr);
   }
-  ierr = PIO_NOERR;
+
 
   if(ios->async_interface && ! ios->ioproc){
     if(ios->compmaster) 
@@ -417,7 +420,7 @@ int PIOc_get_var_double (int ncid, int varid, double *buf)
   if(ios->async_interface ||  (ios->num_iotasks < ios->num_comptasks)){
     MPI_Bcast(buf, ibufcnt, ibuftype, ios->ioroot, ios->my_comm);
   }
-
+  //  printf("%s %d %d\n",__FILE__,__LINE__,ierr);
   return ierr;
 }
 

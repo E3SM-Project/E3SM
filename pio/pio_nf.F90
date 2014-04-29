@@ -302,7 +302,9 @@ contains
          character(c_char) :: name
        end function PIOc_inq_dimname
     end interface
+    name = ' '
     ierr = PIOc_inq_dimname(ncid                            ,dimid-1,name)
+    call replace_c_null(name)
   end function inq_dimname_id
 
 
@@ -804,6 +806,7 @@ contains
          character(C_CHAR) :: name
        end function PIOc_inq_varname
     end interface
+    name = ' '
     ierr = PIOc_inq_varname(ncid                            ,varid-1,name)
     call replace_c_null(name)
   end function inq_varname_id
@@ -1010,8 +1013,9 @@ contains
          character(C_CHAR) :: name
        end function PIOc_inq_attname
     end interface
-
+    name = ' '
     ierr = PIOc_inq_attname(ncid,varid-1,attnum-1,name)
+    call replace_c_null(name)
 
   end function inq_attname_id
 

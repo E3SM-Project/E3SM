@@ -28,6 +28,11 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
   file = (file_desc_t *) malloc(sizeof(file_desc_t));
   file->next = NULL;
   file->iosystem = ios;
+  for(int i=0; i<PIO_MAX_VARS;i++){
+    file->varlist[i].record = -1;
+    file->varlist[i].ndims = -1;
+    file->varlist[i].buffer = NULL;
+  }
   
 #ifdef _NETCDF
   if(ios->num_iotasks==1 && *iotype==PIO_IOTYPE_PNETCDF) {
@@ -113,13 +118,6 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
   if(ierr==PIO_NOERR){
     mpierr = MPI_Bcast(&(file->fh), 1, MPI_INT, ios->ioroot, ios->my_comm);
-    
-    for(int i=0; i<PIO_MAX_VARS;i++){
-      file->varlist[i].record = -1;
-      file->varlist[i].ndims = -1;
-      file->varlist[i].buffer = NULL;
-    }
-
     pio_add_to_file_list(file);
     *ncidp = file->fh;
   }
@@ -148,6 +146,11 @@ int PIOc_createfile(const int iosysid, int *ncidp,  int *iotype,
   file = (file_desc_t *) malloc(sizeof(file_desc_t));
   file->next = NULL;
   file->iosystem = ios;
+  for(int i=0; i<PIO_MAX_VARS;i++){
+    file->varlist[i].record = -1;
+    file->varlist[i].ndims = -1;
+    file->varlist[i].buffer = NULL;
+  }
 
   msg = PIO_MSG_CREATE_FILE;
   amode = mode;
@@ -233,12 +236,6 @@ int PIOc_createfile(const int iosysid, int *ncidp,  int *iotype,
 
   if(ierr == PIO_NOERR){
     mpierr = MPI_Bcast(&(file->fh), 1, MPI_INT, ios->ioroot, ios->my_comm);
-    for(int i=0; i<PIO_MAX_VARS;i++){
-      file->varlist[i].record = -1;
-      file->varlist[i].ndims = -1;
-      file->varlist[i].buffer = NULL;
-    }
-
     pio_add_to_file_list(file);
     *ncidp = file->fh;
   }

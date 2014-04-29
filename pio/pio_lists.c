@@ -25,8 +25,8 @@ void pio_add_to_file_list(file_desc_t *file)
     cnt =  min(cnt,cfile->fh-1);
     while(cfile->next != NULL)
       {
-	cnt =  min(cnt,cfile->fh-1);
 	cfile=cfile->next;
+	cnt =  min(cnt,cfile->fh-1);
       }
     cfile->next = file;
   }

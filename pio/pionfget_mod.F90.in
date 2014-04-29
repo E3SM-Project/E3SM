@@ -156,7 +156,7 @@ CONTAINS
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid, start(:), count(:)
     character(len=*), intent(out) :: ival{DIMSTR}
-
+    ival = ' '
     ierr = get_vara_text_internal (File%fh, varid, start, count, size(ival), ival)
 
   end function get_vara_{DIMS}d_text
@@ -226,6 +226,7 @@ CONTAINS
          character(C_CHAR) :: ival(*)
        end function PIOc_get_var_text
     end interface
+    ival = ' '
     ierr = PIOc_get_var_text(File%fh, varid-1, ival)
     call replace_c_null(ival)
 
@@ -257,7 +258,7 @@ CONTAINS
     type (File_desc_t), intent(in) :: File
     integer, intent(in) :: varid
     character(len=*), intent(out) :: ival{DIMSTR}
-
+    ival = ' '
     ierr = get_var_text_internal(File%fh, varid, size(ival), ival)
 
   end function get_var_{DIMS}d_text
@@ -277,7 +278,6 @@ CONTAINS
          character(C_CHAR) :: ival(*)
        end function PIOc_get_var_text
     end interface
-
     ierr = PIOc_get_var_text(ncid, varid-1, ival)
     do j=1,nstrs
        call replace_c_null(ival(j))

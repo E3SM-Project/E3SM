@@ -176,7 +176,8 @@ int PIOc_inq_varid (int ncid, const char *name, int *varidp)
       ierr = iotype_error(file->iotype,__FILE__,__LINE__);
     }
   }
-
+  if(ierr != PIO_NOERR)
+	printf("%s %d %s\n",__FILE__,__LINE__,name);	
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
   mpierr = MPI_Bcast(varidp,1, MPI_INT, ios->ioroot, ios->my_comm);
 
