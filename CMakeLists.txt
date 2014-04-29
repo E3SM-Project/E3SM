@@ -155,6 +155,9 @@ ENDIF ()
 SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/utils/pio/cmake" ${CMAKE_MODULE_PATH})
 ADD_SUBDIRECTORY(utils/pio)
 
+# CPRNC locations
+SET (CPRNC_INSTALL_DIR ${CMAKE_BINARY_DIR}/utils/cprnc)
+SET (CPRNC_BINARY ${CMAKE_BINARY_DIR}/utils/cprnc/bin/cprnc)
 ADD_SUBDIRECTORY(utils/cprnc)
 
 ADD_SUBDIRECTORY(utils/timing)
