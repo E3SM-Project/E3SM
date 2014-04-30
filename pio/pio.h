@@ -1,10 +1,10 @@
 #ifndef _PIO_H_
 #define _PIO_H_
-#include <mpi.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h> // memcpy
+#include <mpi.h>
 
 #ifdef _NETCDF
 #include <netcdf.h>
@@ -18,8 +18,13 @@
 
 #ifdef _MPISERIAL
 typedef int MPI_Info;
-#define MPI_Offset long long
+typedef long long MPI_Offset;
+#define MPI_OFFSET  ((MPI_Datatype)0x4c000844)
+#define MPI_LONG_LONG ((MPI_Datatype)0x4c000809)
+#define  MPI_UNSIGNED_LONG_LONG ((MPI_Datatype)0x4c000819)
+#define MPI_CHARACTER ((MPI_Datatype)1275068698)
 #endif
+
 #define PIO_OFFSET MPI_OFFSET
 #define PIO_Offset MPI_Offset
 #define PIO_MAX_VARS 8192

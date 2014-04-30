@@ -68,8 +68,9 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, voi
     size_t start[ndims+1];
     size_t count[ndims+1];
     int buflen, j, i;
-
+#ifndef _MPISERIAL
     MPI_Type_size(iodesc->basetype, &tsize);
+#endif
     region = iodesc->firstregion;
 
     if(vdesc->record >= 0)
@@ -138,7 +139,9 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, voi
 #endif
       case PIO_IOTYPE_NETCDF:
 	{
+#ifndef _MPISERIAL
 	  mpierr = MPI_Type_size(iodesc->basetype, &dsize);
+#endif
 	  size_t tstart[ndims], tcount[ndims];
 	  if(ios->io_rank==0){
 	    for(i=0;i<iodesc->num_aiotasks;i++){
@@ -329,8 +332,9 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void
     // We can potentially allow for one iodesc to have multiple datatypes by allowing the
     // calling program to change the basetype.   
     region = iodesc->firstregion;
+#ifndef _MPISERIAL
     MPI_Type_size(iodesc->basetype, &tsize);
-
+#endif
     for(regioncnt=0;regioncnt<iodesc->maxregions;regioncnt++){
       for(i=0;i<ndims;i++){
 	start[i] = 0;

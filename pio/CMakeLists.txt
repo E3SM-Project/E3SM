@@ -61,9 +61,3 @@ TARGET_LINK_LIBRARIES(pioc ${ADDITIONAL_LIBS})
 
 
 
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/../unittests)
-  ADD_SUBDIRECTORY(../unittests unittests)
-endif()
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/../testpio)
-  ADD_SUBDIRECTORY(../testpio testpio)
-endif()

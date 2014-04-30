@@ -133,12 +133,10 @@ int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const
     return PIO_EBADID;
   
   iodesc = malloc_iodesc(basetype, ndims);
-
   if(rearranger == NULL)
     iodesc->rearranger = ios->default_rearranger;
   else
     iodesc->rearranger = *rearranger;
-
     
   if(iodesc->rearranger==PIO_REARR_SUBSET){
     if((iostart != NULL) && (iocount != NULL)){ 
@@ -273,10 +271,10 @@ int PIOc_set_hint(const int iosysid, const char hint[], const char hintval[])
   ios = pio_get_iosystem_from_id(iosysid);
   if(ios == NULL)
     return PIO_EBADID;
-  
+#ifndef _MPISERIAL  
   if(ios->ioproc)
     CheckMPIReturn( MPI_Info_set(ios->info, hint, hintval), __FILE__,__LINE__);
-
+#endif
   return PIO_NOERR;
 
 }

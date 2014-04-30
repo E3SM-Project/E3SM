@@ -69,9 +69,9 @@ int pio_fc_gather( void *sendbuf, const int sendcnt, const MPI_Datatype sendtype
       int count=0;
       int tail = 0;
       MPI_Request rcvid[gather_block_size];// = (MPI_Request *) malloc(gather_block_size * sizeof(MPI_Request));
-
+#ifndef _MPISERIAL
       CheckMPIReturn(MPI_Type_size(recvtype, &dsize), __FILE__,__LINE__);
-      
+#endif      
       for(int p=0;p<nprocs;p++){
 	if(p != root){
 	  if(recvcnt > 0){
@@ -92,13 +92,17 @@ int pio_fc_gather( void *sendbuf, const int sendcnt, const MPI_Datatype sendtype
       }
 
       // copy local data
+#ifndef _MPISERIAL
       CheckMPIReturn(MPI_Type_size(sendtype, &dsize), __FILE__,__LINE__);      
+#endif
       memcpy(recvbuf, sendbuf, sendcnt*dsize );
 
       count = min(count, preposts);
 
+#ifndef _MPISERIAL	
       if(count>0)
 	CheckMPIReturn(MPI_Waitall( count, rcvid, MPI_STATUSES_IGNORE),__FILE__,__LINE__);
+#endif
     }else{
       if(sendcnt > 0){
 	CheckMPIReturn(MPI_Recv( &hs, 1, MPI_INT, root, mtag, comm, &status), __FILE__,__LINE__);
@@ -147,10 +151,12 @@ int pio_swapm(void *sndbuf,   int sndlths[], int sdispls[],  MPI_Datatype stypes
     for(int i=0; i< nprocs; i++){
       stsize = 0;
       rtsize = 0;
+#ifndef _MPISERIAL
       if(stypes[i] != MPI_DATATYPE_NULL)
 	MPI_Type_size(stypes[i], &stsize);
       if(rtypes[i] != MPI_DATATYPE_NULL)
 	MPI_Type_size(rtypes[i], &rtsize);
+#endif
       printf("%d:%d %d %d %d %d %d %d\n",mytask, i, sndlths[i],sdispls[i],stsize, rcvlths[i],rdispls[i], rtsize);
       if(sndlths[i]+sdispls[i] > maxsend)
 	maxsend = sndlths[i]+sdispls[i] ;
@@ -162,11 +168,12 @@ int pio_swapm(void *sndbuf,   int sndlths[], int sdispls[],  MPI_Datatype stypes
     MPI_Barrier(comm);
     isend = false;
   }
-
+#ifndef _MPISERIAL
   if(max_requests == 0) {
     CheckMPIReturn(MPI_Alltoallw( sndbuf, sndlths, sdispls, stypes, rcvbuf, rcvlths, rdispls, rtypes, comm),__FILE__,__LINE__);
     return PIO_NOERR;
   }
+#endif
   int tag;
   int offset_t;
   int ierr;
@@ -264,9 +271,10 @@ int pio_swapm(void *sndbuf,   int sndlths[], int sdispls[],  MPI_Datatype stypes
     if(rcvlths[p] > 0){
       tag = p + offset_t;
       ptr = (char *) rcvbuf + rdispls[p];
-
+#ifndef _MPISERIAL
 	  int tsize;
 	  MPI_Type_size(rtypes[p], &tsize);
+#endif
 	  //	  printf("rcvlths[%d] %d %d\n",p,rcvlths[p], tsize);
 
       CheckMPIReturn(MPI_Irecv( ptr, rcvlths[p], rtypes[p], p, tag, comm, rcvids+istep), __FILE__,__LINE__);
@@ -313,7 +321,9 @@ int pio_swapm(void *sndbuf,   int sndlths[], int sdispls[],  MPI_Datatype stypes
 	  ptr = (char *) rcvbuf + rdispls[p];
 	  
 	  int tsize;
+#ifndef _MPISERIAL
 	  MPI_Type_size(rtypes[p], &tsize);
+#endif
 	  // printf("rcvlths[%d] %d %d\n",p,rcvlths[p], tsize);
 	  CheckMPIReturn(MPI_Irecv( ptr, rcvlths[p], rtypes[p], p, tag, comm, rcvids+rstep), __FILE__,__LINE__);
 	  // printf("%d rcvids[%d] %d %d\n",__LINE__,rstep,rcvids[rstep],rcvlths[p]);
@@ -326,12 +336,13 @@ int pio_swapm(void *sndbuf,   int sndlths[], int sdispls[],  MPI_Datatype stypes
   }
   //  for(int i=0;i<steps; i++)
   // printf("%d rcvids[%d] %d\n",__LINE__,i,rcvids[i]);    
+#ifndef _MPISERIAL
   if(steps>0){
     CheckMPIReturn(MPI_Waitall(steps, rcvids, MPI_STATUSES_IGNORE), __FILE__,__LINE__);
     if(isend)
       CheckMPIReturn(MPI_Waitall(steps, sndids, MPI_STATUSES_IGNORE), __FILE__,__LINE__);
   }
-
+#endif
   if(handshake)
     free(hs_rcvids);
   if(isend)

@@ -164,6 +164,7 @@ foreach my $func (keys %{$functions}){
 	  }
 
 	  if($line =~ /check_netcdf/){
+
 	      if($func =~ /inq_varid/){
 		  print F "    mpierr = MPI_Bcast(varidp,1, MPI_INT, ios->ioroot, ios->my_comm);\n";
 	      }elsif($func =~ /inq_ndims/){
@@ -249,6 +250,7 @@ foreach my $func (keys %{$functions}){
 		  print F "        mpierr = MPI_Bcast(unlimdimidp, 1, MPI_INT, ios->ioroot, ios->my_comm);\n ";
 
 	      }
+
 	  }
       }
 

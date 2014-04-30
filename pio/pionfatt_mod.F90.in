@@ -20,7 +20,11 @@ module pionfatt_mod
   interface put_att
      module procedure put_att_id_{TYPE}, put_att_desc_{TYPE}, put_att_vid_{TYPE}
      ! TYPE real,int,double
-     module procedure put_att_1d_id_{TYPE}, put_att_1d_desc_{TYPE}, put_att_1d_vid_{TYPE}
+     module procedure put_att_1d_id_{TYPE}
+     ! TYPE real,int,double
+     module procedure put_att_1d_desc_{TYPE}
+     ! TYPE real,int,double
+     module procedure put_att_1d_vid_{TYPE}
   end interface
 
 
@@ -120,7 +124,7 @@ contains
          integer(C_INT), value :: varid
          character(C_CHAR) :: name(*)
          integer(C_SIZE_T), value :: len
-         character(C_char) :: op(*)
+         character(C_char) :: op
        end function PIOc_put_att_text
     end interface
     
@@ -130,7 +134,7 @@ contains
     do i=1,clen
        cvar(i) = values(i:i)
     end do
-    ierr = PIOc_put_att_text (ncid,varid-1,trim(name)//C_NULL_CHAR, clen, cvar)
+    ierr = PIOc_put_att_text (ncid,varid-1,trim(name)//C_NULL_CHAR, clen, cvar(1))
     deallocate(cvar)
   end function put_att_id_text
 
@@ -176,11 +180,11 @@ contains
          integer(C_INT), value :: varid
          character(C_CHAR) :: name(*)
          integer(C_SIZE_T), value :: len
-         character(C_char) :: op(*)
+	 character(C_char) :: op
        end function PIOc_put_att_text
     end interface
 
-    ierr = PIOc_put_att_text (ncid,varid-1,trim(name)//C_NULL_CHAR, int(arrlen,C_SIZE_T),values)
+    ierr = PIOc_put_att_text (ncid,varid-1,trim(name)//C_NULL_CHAR, int(arrlen,C_SIZE_T),values(1))
         
 
   end function put_att_1d_id_text_internal
@@ -251,11 +255,11 @@ contains
          character(C_CHAR) :: name(*)
          integer(C_INT), value :: xtype
          integer(C_SIZE_T), value :: len
-         {CTYPE} :: op(*)
+         {CTYPE} :: op
        end function PIOc_put_att_{NCTYPE}
     end interface
 
-    ierr = PIOc_put_att_{NCTYPE} (ncid, varid-1, trim(name)//C_NULL_CHAR, PIO_{TYPE} , len, values)
+    ierr = PIOc_put_att_{NCTYPE} (ncid, varid-1, trim(name)//C_NULL_CHAR, PIO_{TYPE} , len, values(1))
 
   end function put_att_1d_id_internal_{TYPE}
 
@@ -371,7 +375,6 @@ contains
          type(C_PTR), value :: op
        end function PIOc_get_att_{NCTYPE}
     end interface
-    values = ' '
     ierr = PIOc_get_att_{NCTYPE} (ncid,varid-1,trim(name)//C_NULL_CHAR, C_LOC(values))
 
   end function get_att_id_{TYPE}

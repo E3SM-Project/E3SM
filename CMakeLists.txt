@@ -13,11 +13,6 @@ ENDIF()
 find_file( TESTFILE NAMES TryCSizeOf.f90 PATHS ${CMAKE_MODULE_PATH} NO_DEFAULT_PATH)
 get_filename_component( TESTFILEPATH ${TESTFILE} PATH)
 
-
-#IF("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "NAG")
-#  SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS}  -wmismatch=mpi_send,mpi_recv,mpi_bcast,mpi_allreduce,mpi_reduce,mpi_isend,mpi_irecv,mpi_irsend,mpi_rsend,mpi_gatherv,mpi_gather,mpi_scatterv,mpi_allgather,mpi_alltoallv,mpi_file_read_all,mpi_file_write_all,mpibcast,mpiscatterv -DCPRNAG")
-#ENDIF()
-
 SET(pio_include_dirs_  ${CMAKE_CURRENT_SOURCE_DIR}/pio ${CMAKE_CURRENT_BINARY_DIR}/pio)
 SET(PIO_LIB_DIR  ${CMAKE_CURRENT_SOURCE_DIR}/pio ${CMAKE_CURRENT_BINARY_DIR}/pio CACHE STRING "")
 
@@ -141,6 +136,7 @@ ENDIF()
 
 
 OPTION(PIO_BUILD_TIMING  "" OFF)
+OPTION(PIO_BUILD_TESTS   "" OFF)
 
 if(${PIO_BUILD_TIMING})
   if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/timing)
@@ -156,4 +152,9 @@ SET(PIO_INCLUDE_DIRS   ${pio_include_dirs_} CACHE STRING "")
 INCLUDE_DIRECTORIES(${PIO_INCLUDE_DIRS})
 
 ADD_SUBDIRECTORY(pio)
-ADD_SUBDIRECTORY(test)
+if(${PIO_BUILD_TESTS})
+  ADD_SUBDIRECTORY(test)
+  ADD_SUBDIRECTORY(unittests)
+  ADD_SUBDIRECTORY(testpio)
+endif()
+

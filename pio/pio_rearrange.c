@@ -4,6 +4,7 @@
 
 // Convert a global array index to a global coordinate value
 
+
 void gindex_to_coord(const int ndims, const PIO_Offset gindex, const PIO_Offset gstride[], PIO_Offset *gcoord)
 {
   PIO_Offset tempindex;
@@ -51,7 +52,10 @@ void compute_maxIObuffersize(MPI_Comm io_comm, io_desc_t *iodesc)
   }
   iodesc->llen = totiosize;
   // Share the max io buffer size with all io tasks
+#ifndef _MPISERIAL
   CheckMPIReturn(MPI_Allreduce(MPI_IN_PLACE, &totiosize, 1, MPI_INT, MPI_MAX, io_comm),__FILE__,__LINE__);
+#endif
+  
   iodesc->maxiobuflen = totiosize;
   //  printf("%d iosize %d %d\n",__LINE__,totiosize, iodesc->llen);
 }
@@ -154,14 +158,14 @@ int create_mpi_datatypes(const MPI_Datatype basetype,const int msgcnt,const PIO_
 
     //    printf("blocksize = %d %d\n",blocksize, msgcnt);
     
-
+#ifndef _MPISERIAL
     if(blocksize>1){
       CheckMPIReturn(MPI_Type_contiguous(blocksize, basetype, &newtype),__FILE__,__LINE__);
     }else{
       CheckMPIReturn(MPI_Type_dup(basetype, &newtype), __FILE__,__LINE__);
     }
     CheckMPIReturn(MPI_Type_commit(&newtype), __FILE__,__LINE__);
-     
+#endif     
 
     pos = 0;
     for(int i=0;i< msgcnt; i++){
@@ -180,13 +184,16 @@ int create_mpi_datatypes(const MPI_Datatype basetype,const int msgcnt,const PIO_
 	    //	    printf("displace[%d] %d pos %d lindex %d blocksize %d\n", j, displace[j],pos, (lindex+pos)[j*blocksize],blocksize);
 	  }
 	}
+#ifndef _MPISERIAL
 	CheckMPIReturn(MPI_Type_create_indexed_block(len, 1, displace, newtype, mtype+i),__FILE__,__LINE__);
 	CheckMPIReturn(MPI_Type_commit(mtype+i), __FILE__,__LINE__);
 	pos+=mcount[i];
-
+#endif
       }
     }
+#ifndef _MPISERIAL
     CheckMPIReturn(MPI_Type_free(&newtype),__FILE__,__LINE__);
+#endif
   }
   
   return PIO_NOERR;
@@ -247,7 +254,6 @@ int compute_counts(const iosystem_desc_t ios, io_desc_t *iodesc, const int dest_
   int pio_maxreq;  
   int ierr;
   int io_comprank;
-  MPI_Datatype dtype;
   int ioindex;
   int tsize;
   int ndof= iodesc->ndof;
@@ -356,11 +362,13 @@ int compute_counts(const iosystem_desc_t ios, io_desc_t *iodesc, const int dest_
     recv_counts[i] = 0;
     recv_displs[i]   =0;
   }
-
-  PIO_Offset_size(&dtype, &tsize);
-
+#ifndef _MPISERIAL
+  MPI_Type_size(MPI_OFFSET, &tsize);
+#else
+  tsize = sizeof(long long);
+#endif
   for(i=0; i<ncomptasks; i++){
-    sr_types[i] = dtype;
+    sr_types[i] = MPI_OFFSET;
   }
   for(i=0;i<niotasks;i++){
     io_comprank = ios.ioranks[i];
@@ -577,11 +585,11 @@ int box_rearrange_io2comp(const iosystem_desc_t ios, io_desc_t *iodesc, void *sb
   return PIO_NOERR;
 
 }
-
+/*
 void PIO_Offset_size(MPI_Datatype *dtype, int *tsize)
 {
   int  tsizei, tsizel;
-   
+#ifndef _MPISERIAL   
   MPI_Type_dup(MPI_OFFSET, dtype);
   MPI_Type_size(*dtype,tsize);
   return;
@@ -597,7 +605,7 @@ void PIO_Offset_size(MPI_Datatype *dtype, int *tsize)
   }
 
 }
-
+*/
 
 
 int box_rearrange_create(const iosystem_desc_t ios,const int maplen, const PIO_Offset compmap[], const int gsize[],
@@ -629,8 +637,10 @@ int box_rearrange_create(const iosystem_desc_t ios,const int maplen, const PIO_O
   for(int i=ndims-2;i>=0; i--)
     gstride[i]=gstride[i+1]*gsize[i+1];
 
-  PIO_Offset_size(&dtype, &tsize);
-
+  //  PIO_Offset_size(&dtype, &tsize);
+#ifndef _MPISERIAL
+  MPI_Type_size(MPI_OFFSET, &tsize);
+#endif
   sndlths = (int *) malloc(nprocs*sizeof(int)); 
   sdispls= (int *) malloc(nprocs*sizeof(int));
   recvlths= (int *) malloc(nprocs*sizeof(int));
@@ -647,7 +657,7 @@ int box_rearrange_create(const iosystem_desc_t ios,const int maplen, const PIO_O
     sdispls[i] = 0;
     recvlths[i] = 0;
     rdispls[i] = 0;
-    dtypes[i] = dtype;
+    dtypes[i] = MPI_OFFSET;
   }
   if(ios.ioproc){
     for( i=0;i<nprocs;i++){
@@ -778,8 +788,9 @@ void get_start_and_count_regions(const MPI_Comm io_comm, io_desc_t *iodesc, cons
     }
   }
   // pad maxregions on all tasks to the maximum and use this to assure that collective io calls are made.
+#ifndef _MPISERIAL  
   MPI_Allreduce(MPI_IN_PLACE,&(iodesc->maxregions), 1, MPI_INTEGER, MPI_MAX, io_comm);
-
+#endif
 
 
 
@@ -823,8 +834,12 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, const PI
   iodesc->ndof = maplen;
   iodesc->rearranger = PIO_REARR_SUBSET;
 
-  PIO_Offset_size(&dtype, &tsize);
-  
+  //  PIO_Offset_size(&dtype, &tsize);
+#ifndef _MPISERIAL
+  MPI_Type_size(MPI_INT, &tsize);
+#else
+  tsize = sizeof(int);
+#endif
   taskratio = nprocs/nioprocs;
 
   gstride[ndims-1]=1;
