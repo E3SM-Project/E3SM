@@ -137,12 +137,18 @@ program prim_main
   nete=dom_mt(ithr)%end
   ! ================================================
   ! Initialize thread decomposition
+  ! Note: The OMP Critical is required for threading since the Fortran 
+  !   standard prohibits multiple I/O operations on the same unit.
   ! ================================================
+#if (! defined ELEMENT_OPENMP)
+  !$OMP CRITICAL
+#endif
   if (par%rank<100) then 
      write(6,9) par%rank,ithr,nets,nete 
   endif
 9 format("process: ",i2,1x,"thread: ",i2,1x,"element limits: ",i5," - ",i5)
 #if (defined HORIZ_OPENMP)
+  !$OMP END CRITICAL
   !$OMP END PARALLEL
 #endif
   
