@@ -153,6 +153,10 @@ ENDIF ()
 
 # Use pio FindNETCDF path
 SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/utils/pio/cmake" ${CMAKE_MODULE_PATH})
+# For pio - allow the user to set HDF5_DIR to find libhdf5 etc.
+IF (HDF5_DIR)
+  SET(ENV{HDF5_ROOT} ${HDF5_DIR})
+ENDIF ()
 ADD_SUBDIRECTORY(utils/pio)
 
 # CPRNC locations
