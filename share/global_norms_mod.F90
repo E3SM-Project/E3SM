@@ -115,25 +115,14 @@ contains
     real (kind=real_kind)             :: I_sphere
 
     ! Local variables
-    real (kind=real_kind), allocatable :: h(:,:,:)
+    real (kind=real_kind) :: h(np,np,nets:nete)
     ! Element statisics
-    real (kind=real_kind) :: min_area,max_area,avg_area
-    real (kind=real_kind) :: min_max_dx, max_max_dx, avg_max_dx
+    real (kind=real_kind) :: min_area,max_area,avg_area, max_ratio
     real (kind=real_kind) :: min_min_dx, max_min_dx, avg_min_dx
-    real (kind=real_kind) :: min_unif_dx, max_unif_dx
-    real (kind=real_kind) :: min_max_eig, max_max_eig, avg_max_eig
-    real (kind=real_kind) :: min_min_eig, max_min_eig, avg_min_eig
+    real (kind=real_kind) :: min_normDinv, max_normDinv
     real (kind=real_kind) :: min_len
-    real (kind=real_kind) :: max_ratio
     integer :: ie,corner, i, j,nlon
 
-    !   MNL: use these variables for calculating largest length scale of element with
-    !        smallest dx (in uniform meshes, these are in the corner, with
-    !        max_dx = sqrt(3)*min_dx
-!    real (kind=real_kind) :: max_dx_at_min_dx
-!    integer :: max_dx_at_min_dx_id
-
-    allocate(h(np,np,nets:nete))
 
     h(:,:,nets:nete)=1.0D0
 
@@ -147,17 +136,8 @@ contains
 
     max_ratio = 0
 
-    min_max_eig=1d99
-    max_max_eig=0
-    avg_max_eig=0_real_kind
-
-    min_min_eig=1d99
-    max_min_eig=0
-    avg_min_eig=0_real_kind
-
-    min_max_dx=1d99
-    max_max_dx=0
-    avg_max_dx=0_real_kind
+    min_normDinv=1d99
+    max_normDinv=0
 
     min_min_dx=1d99
     max_min_dx=0
@@ -169,64 +149,36 @@ contains
        min_area=min(min_area,elem(ie)%area)
        max_area=max(max_area,elem(ie)%area)
 
-       min_max_eig = min(min_max_eig,elem(ie)%max_eig)
-       max_max_eig = max(max_max_eig,elem(ie)%max_eig)
+       min_normDinv = min(min_normDinv,elem(ie)%normDinv)
+       max_normDinv = max(max_normDinv,elem(ie)%normDinv)
 
-       max_ratio   = max(max_ratio,elem(ie)%max_eig_ratio)
+       max_ratio   = max(max_ratio,elem(ie)%dx_long/elem(ie)%dx_short)
 
-       min_min_eig = min(min_min_eig,elem(ie)%min_eig)
-       max_min_eig = max(max_min_eig,elem(ie)%min_eig)
-
-       min_max_dx = min(min_max_dx,elem(ie)%dx_long)
-       max_max_dx = max(max_max_dx,elem(ie)%dx_long)
 
        min_min_dx = min(min_min_dx,elem(ie)%dx_short)
        max_min_dx = max(max_min_dx,elem(ie)%dx_short)
-       ! MNL: Want this output from all the uniform meshes
 
 
        global_shared_buf(ie,1) = elem(ie)%area
-       global_shared_buf(ie,2) = elem(ie)%max_eig
-       global_shared_buf(ie,3) = elem(ie)%min_eig
-       global_shared_buf(ie,4) = elem(ie)%dx_long
-       global_shared_buf(ie,5) = elem(ie)%dx_short
-
-       !      (Useful for setting level of variable hypervis)
-       !      (For now, only run on 1 proc if you want correct output!)
-!       if (elem(ie)%dx_short.eq.min_min_dx) then
-!           max_dx_at_min_dx = elem(ie)%dx_long
-!           max_dx_at_min_dx_id = elem(ie)%GlobalId
-!       end if
+       global_shared_buf(ie,2) = elem(ie)%dx_short
 
     enddo
-    ! MNL See comment above re: output from uniform meshes
-!    print*, "Min dx_short: ", min_min_dx
-!    print*, "Occurs at elem ", max_dx_at_min_dx_id, " where dx_long = ", max_dx_at_min_dx
 
     min_area=ParallelMin(min_area,hybrid)
     max_area=ParallelMax(max_area,hybrid)
 
-    min_max_eig=ParallelMin(min_max_eig,hybrid)
-    max_max_eig=ParallelMax(max_max_eig,hybrid)
+    min_normDinv=ParallelMin(min_normDinv,hybrid)
+    max_normDinv=ParallelMax(max_normDinv,hybrid)
 
     max_ratio=ParallelMax(max_ratio,hybrid)
-
-    min_min_eig=ParallelMin(min_min_eig,hybrid)
-    max_min_eig=ParallelMax(max_min_eig,hybrid)
-
-    min_max_dx=ParallelMin(min_max_dx,hybrid)
-    max_max_dx=ParallelMax(max_max_dx,hybrid)
 
     min_min_dx=ParallelMin(min_min_dx,hybrid)
     max_min_dx=ParallelMax(max_min_dx,hybrid)
 
-    call wrap_repro_sum(nvars=5, comm=hybrid%par%comm)
+    call wrap_repro_sum(nvars=2, comm=hybrid%par%comm)
 
     avg_area = global_shared_sum(1)/dble(nelem)
-    avg_max_eig = global_shared_sum(2)/dble(nelem)
-    avg_min_eig = global_shared_sum(3)/dble(nelem)
-    avg_max_dx = global_shared_sum(4)/dble(nelem)
-    avg_min_dx = global_shared_sum(5)/dble(nelem)
+    avg_min_dx = global_shared_sum(2)/dble(nelem)
 
     ! Physical units for area
     min_area = min_area*rearth*rearth/1000000_real_kind
@@ -250,20 +202,16 @@ contains
            write(iulog,'(a,f6.3,f8.2)') "Average equatorial node spacing (deg, km) = ", &
                 dble(90)/dble(ne*(np-1)), DD_PI*rearth/(2000.0d0*dble(ne*(np-1)))
        end if
-       write(iulog,'(a,2f9.3)') 'Min eigenvalue of Dinv (min, max): ', min_min_eig, max_min_eig
-       write(iulog,'(a,2f9.3)') 'Max eigenvalue of Dinv (min, max): ', min_max_eig, max_max_eig
-       write(iulog,'(a,1e11.3)') 'Max eigenvalue ratio (element distortion): ', max_ratio
-       write(iulog,'(a,3f8.2)') 'dx for CFL (based on Dinv eigenvalue): ave,min,max = ', avg_min_dx, min_min_dx, max_min_dx
-!       write(iulog,'(a,3f8.2)') 'dx for hypervis (largest scale per elem): ave,min,max = ', avg_max_dx, min_max_dx, max_max_dx
+       write(iulog,'(a,2f9.3)') 'norm of Dinv (min, max): ', min_normDinv, max_normDinv
+       write(iulog,'(a,1f8.2)') 'Max Dinv svd ratio (element distortion): ', max_ratio
+       write(iulog,'(a,3f8.2)') 'dx based on Dinv svd:          ave,min,max = ', avg_min_dx, min_min_dx, max_min_dx
        write(iulog,'(a,3f8.2)') "dx based on sqrt element area: ave,min,max = ", &
                 sqrt(avg_area)/(np-1),sqrt(min_area)/(np-1),sqrt(max_area)/(np-1)
     end if
 
-    deallocate(h)
-    
     if(present(mindxout)) then
         ! min_len now based on norm(Dinv)
-        min_len = 0.002d0*rearth/(dble(np-1)*max_max_eig)
+        min_len = 0.002d0*rearth/(dble(np-1)*max_normDinv)
         mindxout=1000_real_kind*min_len
     end if
 
@@ -309,13 +257,10 @@ contains
     real (kind=real_kind), intent(in) :: dtnu  
 
     ! Element statisics
-    real (kind=real_kind) :: min_max_dx, max_max_dx, avg_max_dx
-    real (kind=real_kind) :: min_min_dx, max_min_dx, avg_min_dx
-    real (kind=real_kind) :: max_unif_dx
-    real (kind=real_kind) :: min_max_eig, max_max_eig, avg_max_eig
-    real (kind=real_kind) :: min_min_eig, max_min_eig, avg_min_eig
+    real (kind=real_kind) :: min_max_dx,max_unif_dx   ! used for normalizing scalar HV
+    real (kind=real_kind) :: max_normDinv  ! used for CFL
     real (kind=real_kind) :: min_hypervis, max_hypervis, avg_hypervis, stable_hv
-    real (kind=real_kind) :: max_eig_hypervis
+    real (kind=real_kind) :: normDinv_hypervis
     real (kind=real_kind) :: x, y, noreast, nw, se, sw
     real (kind=real_kind), dimension(np,np,nets:nete) :: zeta
     real (kind=real_kind) :: lambda_max, lambda_vis, min_gw, lambda, nu_div_actual
@@ -327,6 +272,7 @@ contains
     select case (np)
         case (2)
             lambda_max = 0.5d0
+            lambda_vis = 0.0d0  ! need to compute this
         case (3)
             lambda_max = 1.5d0
             lambda_vis = 12.0d0
@@ -354,6 +300,10 @@ contains
         print*, "lambda_max not calculated for NP = ",np
         print*, "Estimate of gravity wave timestep will be incorrect"
     end if
+    if ((lambda_vis.eq.0d0).and.(hybrid%masterthread)) then
+        print*, "lambda_vis not calculated for NP = ",np
+        print*, "Estimate of viscous CFLs will be incorrect"
+    end if
 
     do ie=nets,nete
       elem(ie)%variable_hyperviscosity = 1.0
@@ -362,74 +312,39 @@ contains
     gp=gausslobatto(np)
     min_gw = minval(gp%weights)
 
-    min_max_eig=1d99
-    max_max_eig=0
-    avg_max_eig=0_real_kind
-
-    min_min_eig=1d99
-    max_min_eig=0
-    avg_min_eig=0_real_kind
-
+    max_normDinv=0
     min_max_dx=1d99
-    max_max_dx=0
-    avg_max_dx=0_real_kind
-
-    min_min_dx=1d99
-    max_min_dx=0
-    avg_min_dx=0_real_kind
-
     do ie=nets,nete
-        min_max_eig = min(min_max_eig,elem(ie)%max_eig)
-        max_max_eig = max(max_max_eig,elem(ie)%max_eig)
-
-        min_min_eig = min(min_min_eig,elem(ie)%min_eig)
-        max_min_eig = max(max_min_eig,elem(ie)%min_eig)
-
+        max_normDinv = max(max_normDinv,elem(ie)%normDinv)
         min_max_dx = min(min_max_dx,elem(ie)%dx_long)
-        max_max_dx = max(max_max_dx,elem(ie)%dx_long)
-
-        min_min_dx = min(min_min_dx,elem(ie)%dx_short)
-        max_min_dx = max(max_min_dx,elem(ie)%dx_short)
-
-       global_shared_buf(ie,1) = elem(ie)%max_eig
-       global_shared_buf(ie,2) = elem(ie)%min_eig
-       global_shared_buf(ie,3) = elem(ie)%dx_long
-       global_shared_buf(ie,4) = elem(ie)%dx_short
     enddo
-
-    min_max_eig=ParallelMin(min_max_eig,hybrid)
-    max_max_eig=ParallelMax(max_max_eig,hybrid)
-
-    min_min_eig=ParallelMin(min_min_eig,hybrid)
-    max_min_eig=ParallelMax(max_min_eig,hybrid)
-
+    max_normDinv=ParallelMax(max_normDinv,hybrid)
     min_max_dx=ParallelMin(min_max_dx,hybrid)
-    max_max_dx=ParallelMax(max_max_dx,hybrid)
-
-    min_min_dx=ParallelMin(min_min_dx,hybrid)
-    max_min_dx=ParallelMax(max_min_dx,hybrid)
-
-    call wrap_repro_sum(nvars=4, comm=hybrid%par%comm)
-
-    avg_max_eig = global_shared_sum(1)/dble(nelem)
-    avg_min_eig = global_shared_sum(2)/dble(nelem)
-    avg_max_dx = global_shared_sum(3)/dble(nelem)
-    avg_min_dx = global_shared_sum(4)/dble(nelem)
 
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!  SCALAR, RESOLUTION-AWARE HYPERVISCOSITY
+!  this block of code initializes the variable_hyperviscsoity() array
+!  based on largest length scale in each element and user specified scaling
+!  it then limits the coefficient if the user specifed a max CFL
+!  this limiting is based on the smallest length scale of each element
+!  since that controls the CFL.
+!  Mike Levy 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     if (hypervis_power /= 0) then
 
         min_hypervis = 1d99
         max_hypervis = 0
         avg_hypervis = 0
 
+
+        max_unif_dx = min_max_dx  ! use this for average resolution, unless:
 !       viscosity in namelist specified for smallest element:
-        max_unif_dx = min_max_dx
         if (fine_ne>0) then
            ! viscosity in namelist specified for regions with a resolution
            ! equivilant to a uniform grid with ne=fine_ne
-!!! og: is this in km? np=4? yes
-           max_unif_dx = (111.28*30)/dble(fine_ne)
+           if (np /= 4 ) call abortmp('ERROR: setting fine_ne only supported with NP=4')
+           max_unif_dx = (111.28*30)/dble(fine_ne)   ! in km
         endif
 
 ! 
@@ -448,34 +363,19 @@ contains
 !            
 !
 
-        max_eig_hypervis = 0
+        normDinv_hypervis = 0
 
         do ie=nets,nete
            ! variable viscosity based on map from ulatlon -> ucontra
 
            ! dx_long
            elem(ie)%variable_hyperviscosity = sqrt((elem(ie)%dx_long/max_unif_dx) ** hypervis_power)
-            
-           ! dx_short
-           !elem(ie)%variable_hyperviscosity = sqrt((elem(ie)%dx_short/1.25/min_min_dx) ** hypervis_power)
-
-           ! geometric mean:
-           !elem(ie)%variable_hyperviscosity = sqrt(  (sqrt(elem(ie)%dx_short*elem(ie)%dx_long)/min_min_dx/1.9) ** hypervis_power)
-
-           ! average
-           !elem(ie)%variable_hyperviscosity = sqrt( ( (elem(ie)%dx_short+elem(ie)%dx_long)/3.8/min_min_dx) ** hypervis_power)
-
-           ! sqrt(area)
-           ! area = unit sphere.  other variables in km
-           !elem(ie)%variable_hyperviscosity = sqrt( ( sqrt(elem(ie)%area)*Rearth/2.4e3/max_unif_dx) ** hypervis_power)
-           
-           
-           elem(ie)%hv_courant = dtnu*(elem(ie)%variable_hyperviscosity(1,1)**2) * (lambda_vis**2) * ((rrearth*elem(ie)%max_eig)**4)
+           elem(ie)%hv_courant = dtnu*(elem(ie)%variable_hyperviscosity(1,1)**2) * (lambda_vis**2) * ((rrearth*elem(ie)%normDinv)**4)
 
             ! Check to see if this is stable
             if (elem(ie)%hv_courant.gt.max_hypervis_courant) then
                 stable_hv = sqrt( max_hypervis_courant / &
-                     (  dtnu * (lambda_vis)**2 * (rrearth*elem(ie)%max_eig)**4 ) )
+                     (  dtnu * (lambda_vis)**2 * (rrearth*elem(ie)%normDinv)**4 ) )
 
 #if 0
          ! Useful print statements for debugging the adjustments to hypervis 
@@ -488,9 +388,9 @@ contains
 
 !                make sure that: elem(ie)%hv_courant <=  max_hypervis_courant 
                 elem(ie)%variable_hyperviscosity = stable_hv
-                elem(ie)%hv_courant = dtnu*(stable_hv**2) * (lambda_vis)**2 * (rrearth*elem(ie)%max_eig)**4               
+                elem(ie)%hv_courant = dtnu*(stable_hv**2) * (lambda_vis)**2 * (rrearth*elem(ie)%normDinv)**4               
             end if
-            max_eig_hypervis = max(max_eig_hypervis, elem(ie)%hv_courant/dtnu)
+            normDinv_hypervis = max(normDinv_hypervis, elem(ie)%hv_courant/dtnu)
 
             min_hypervis = min(min_hypervis, elem(ie)%variable_hyperviscosity(1,1))
             max_hypervis = max(max_hypervis, elem(ie)%variable_hyperviscosity(1,1))
@@ -502,7 +402,7 @@ contains
         call wrap_repro_sum(nvars=1, comm=hybrid%par%comm)
         avg_hypervis = global_shared_sum(1)/dble(nelem)
 
-        max_eig_hypervis = ParallelMax(max_eig_hypervis, hybrid)
+        normDinv_hypervis = ParallelMax(normDinv_hypervis, hybrid)
 
         ! apply DSS (aka assembly procedure) to variable_hyperviscosity (makes continuous)
         call initEdgeBuffer(hybrid%par,edgebuf,1)
@@ -539,22 +439,23 @@ contains
        ! tensorHV.  New eigenvalues are the eigenvalues of the tensor V
        ! formulas here must match what is in cube_mod.F90
        ! for tensorHV, we scale out the rearth dependency
-       lambda = max_max_eig**2
-       max_eig_hypervis = (lambda_vis**2) * (max_max_eig**4) * &
+       lambda = max_normDinv**2
+       normDinv_hypervis = (lambda_vis**2) * (max_normDinv**4) * &
             (lambda**(-hypervis_scaling/2) )
     else
        ! constant coefficient formula:
-       max_eig_hypervis = (lambda_vis**2) * (rrearth*max_max_eig)**4
+       normDinv_hypervis = (lambda_vis**2) * (rrearth*max_normDinv)**4
     endif
 
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!  TENSOR, RESOLUTION-AWARE HYPERVISCOSITY
+!  The tensorVisc() array is computed in cube_mod.F90
+!  this block of code will DSS it so the tensor if C0
+!  and also make it bilinear in each element.
+!  Oksana Guba
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    if (hypervis_scaling /= 0) then
-!this is a code for smoothing V for tensor HV
-
-!if nu=0, we have extra 4 DSS here!
-!rowind, colind are from 1 to 2 cause they correspond to 2D tensor in lat/lon
-
-!IF DSSED V NEEDED
 #if 1
     call initEdgeBuffer(hybrid%par,edgebuf,1)
     do rowind=1,2
@@ -600,32 +501,33 @@ contains
     enddo !colind
 #endif
     endif
+    deallocate(gp%points)
+    deallocate(gp%weights)
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    deallocate(gp%points)
-    deallocate(gp%weights)
+!    
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
      if (hybrid%masterthread) then
        write(iulog,'(a,f10.2)') 'CFL estimates in terms of S=time step stability region'
        write(iulog,'(a,f10.2)') '(i.e. advection w/leapfrog: S=1, viscosity w/forward Euler: S=2)'
        if (rk_stage_user>0) then
           write(iulog,'(a,f10.2,a)') 'SSP preservation (120m/s) RKSSP euler step dt  < S *', &
-               min_gw/(120.0d0*max_max_eig*rrearth),'s'
+               min_gw/(120.0d0*max_normDinv*rrearth),'s'
        endif
-       write(iulog,'(a,f10.2,a)') 'Stability: advective (120m/s)   dt_tracer < S *', 1/(120.0d0*max_max_eig*lambda_max*rrearth),'s'
+       write(iulog,'(a,f10.2,a)') 'Stability: advective (120m/s)   dt_tracer < S *', 1/(120.0d0*max_normDinv*lambda_max*rrearth),'s'
        write(iulog,'(a,f10.2,a)') 'Stability: gravity wave(342m/s)   dt_dyn  < S *', &
-            1/(342.0d0*max_max_eig*lambda_max*rrearth),'s'
+            1/(342.0d0*max_normDinv*lambda_max*rrearth),'s'
        if (nu>0) then
           if (hypervis_order==1) then
-              write(iulog,'(a,f10.2,a)') 'Stability: viscosity dt < S *',1/(((rrearth*max_max_eig)**2)*lambda_vis),'s'
+              write(iulog,'(a,f10.2,a)') 'Stability: viscosity dt < S *',1/(((rrearth*max_normDinv)**2)*lambda_vis),'s'
           endif
           if (hypervis_order==2) then
-             ! counrant number = dtnu*max_eig_hypervis  < S
-             !  dt < S  1/nu*max_eig
-             write(iulog,'(a,f10.2,a)') "Stability: nu_q   hyperviscosity dt < S *", 1/(nu_q*max_eig_hypervis),'s'
-             write(iulog,'(a,f10.2,a)') "Stability: nu_vor hyperviscosity dt < S *", 1/(nu*max_eig_hypervis),'s'
+             ! counrant number = dtnu*normDinv_hypervis  < S
+             !  dt < S  1/nu*normDinv
+             write(iulog,'(a,f10.2,a)') "Stability: nu_q   hyperviscosity dt < S *", 1/(nu_q*normDinv_hypervis),'s'
+             write(iulog,'(a,f10.2,a)') "Stability: nu_vor hyperviscosity dt < S *", 1/(nu*normDinv_hypervis),'s'
              
              ! bug in nu_div implimentation:
              ! we apply nu_ration=(nu_div/nu) in laplace, so it is applied 2x
@@ -633,12 +535,12 @@ contains
              ! should be fixed - but need all CAM defaults adjusted, 
              ! so we have to coordiante with CAM
              nu_div_actual = nu_div**2/nu
-             write(iulog,'(a,f10.2,a)') "Stability: nu_div hyperviscosity dt < S *", 1/(nu_div_actual*max_eig_hypervis),'s'
+             write(iulog,'(a,f10.2,a)') "Stability: nu_div hyperviscosity dt < S *", 1/(nu_div_actual*normDinv_hypervis),'s'
           endif
        endif
        if(nu_top>0) then
           write(iulog,'(a,f10.2,a)') 'TOP3 viscosity CFL: dt < S*', &
-                                  1.0d0/(4*nu_top*((rrearth*max_max_eig)**2)*lambda_vis),'s'
+                                  1.0d0/(4*nu_top*((rrearth*max_normDinv)**2)*lambda_vis),'s'
        end if
       if (hypervis_power /= 0) then 
         write(iulog,'(a,3e11.4)')'Hyperviscosity (dynamics): ave,min,max = ', &
