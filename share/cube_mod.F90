@@ -326,7 +326,6 @@ contains
           min_svd = min(norm, min_svd)
 
           ! some kind of pseudo-norm of Dinv
-          ! this is the correct norm that controlls CFL
           ! C = 1/sqrt(2) sqrt( |g^x|^2 + |g^y|^2 + 2*|g^x dot g^y|)
           !   = 1/sqrt(2) sqrt( |g_x|^2 + |g_y|^2 + 2*|g_x dot g_y|) / J
           ! g^x = Dinv(:,1)    g_x = D(1,:)
@@ -464,10 +463,11 @@ contains
     end do
 
 !    see Paul Ullrich writeup:   
-!      max_normDinv might be a tighter bound.  
-!      max_svd is an upper bound for max_normDinv.
-!      with equality holding if |g^x| = |g^y|             
+!    max_normDinv might be a tighter bound than max_svd for deformed elements
+!    max_svd >= max_normDinv/sqrt(2), with equality holding if |g^x| = |g^y| 
 !    elem%normDinv=max_normDinv/sqrt(2)     
+
+    ! this norm is consistent with length scales defined below:
     elem%normDinv=max_svd
 
 
