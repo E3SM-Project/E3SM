@@ -24,7 +24,7 @@ contains
     use kinds, only : log_kind
     use edge_mod, only : Edgebuffer_t
     use schedtype_mod, only : schedule_t, cycle_t, schedule
-    use thread_mod, only : omp_in_parallel
+    use thread_mod, only : omp_in_parallel, omp_get_thread_num
 #ifdef _MPI
     use parallel_mod, only : parallel_t, abortmp, status, srequest, rrequest, &
          mpireal_t, mpiinteger_t, mpi_success
@@ -48,7 +48,7 @@ contains
     integer        :: i
 
 #ifdef _MPI
-    if(omp_in_parallel()) then 
+    if(omp_get_thread_num() > 0) then
        print *,'bndry_exchangeV: Warning you are calling a non-thread safe'
        print *,'		 routine inside a threaded region....     '
        print *,'                Results are not predictable!!            '
@@ -170,7 +170,7 @@ contains
     integer        :: i
 
 #ifdef _MPI
-    if(omp_in_parallel()) then 
+    if(omp_in_parallel()) then
        print *,'bndry_exchangeV: Warning you are calling a non-thread safe'
        print *,'		 routine inside a threaded region....     '
        print *,'                Results are not predictable!!            '
@@ -262,12 +262,12 @@ contains
     call t_startf('bndry_exchange')
 #if (defined HORIZ_OPENMP)
     !$OMP BARRIER
-#endif
+    !$OMP MASTER
     ! Only the root thread calls the bndry_exchangeV_nonth
-    if(hybrid%ithr == 0) then 
-      call bndry_exchangeV_nonth(hybrid%par,buffer)
-    endif 
+#endif
+    call bndry_exchangeV_nonth(hybrid%par,buffer)
 #if (defined HORIZ_OPENMP)
+    !$OMP END MASTER
     !$OMP BARRIER
 #endif
     call t_stopf('bndry_exchange')
