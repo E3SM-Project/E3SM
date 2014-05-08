@@ -251,7 +251,7 @@ contains
 
        if(par%masterproc)       write(iulog,*)"...done."
     end if
-
+    if(par%masterproc) write(iulog,*)"total number of elements nelem = ",nelem
 
     !debug  call PrintGridVertex(GridVertex)
 
