@@ -203,7 +203,7 @@ contains
                 dble(90)/dble(ne*(np-1)), DD_PI*rearth/(2000.0d0*dble(ne*(np-1)))
        end if
        write(iulog,'(a,2f9.3)') 'norm of Dinv (min, max): ', min_normDinv, max_normDinv
-       write(iulog,'(a,1f8.2)') 'Max Dinv svd ratio (element distortion): ', max_ratio
+       write(iulog,'(a,1f8.2)') 'Max Dinv-based element distortion: ', max_ratio
        write(iulog,'(a,3f8.2)') 'dx based on Dinv svd:          ave,min,max = ', avg_min_dx, min_min_dx, max_min_dx
        write(iulog,'(a,3f8.2)') "dx based on sqrt element area: ave,min,max = ", &
                 sqrt(avg_area)/(np-1),sqrt(min_area)/(np-1),sqrt(max_area)/(np-1)
