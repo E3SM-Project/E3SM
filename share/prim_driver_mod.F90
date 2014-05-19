@@ -1533,7 +1533,10 @@ contains
     use hybvcoord_mod, only : hvcoord_t
     use time_mod, only : TimeLevel_t, timelevel_update, nsplit
     use control_mod, only: statefreq, integration, ftype, qsplit, nu_p, test_cfldep, rsplit
-    use control_mod   , only : use_semi_lagrange_transport
+    use control_mod, only : use_semi_lagrange_transport, tracer_transport_type
+    use control_mod, only : TRACERTRANSPORT_GLL
+    use fvm_mod,     only : fvm_ideal_test, IDEAL_TEST_OFF, IDEAL_TEST_ANALYTICAL_WINDS
+    use fvm_mod,     only : fvm_test_type, IDEAL_TEST_BOOMERANG, IDEAL_TEST_SOLIDBODY
     use prim_advance_mod, only : prim_advance_exp, overwrite_SEdensity
     use prim_advection_mod, only : prim_advec_tracers_remap, prim_advec_tracers_fvm, &
          prim_advec_tracers_spelt
@@ -1584,7 +1587,15 @@ contains
       end if
 
       ! save velocity at time t for seme-legrangian transport
-      if (use_semi_lagrange_transport) then
+      if (fvm_ideal_test == IDEAL_TEST_ANALYTICAL_WINDS) then
+        if (fvm_test_type == IDEAL_TEST_BOOMERANG) then
+          elem(ie)%derived%vstar=get_boomerang_velocities_gll(elem(ie), tl%n0)
+        else if (fvm_test_type == IDEAL_TEST_SOLIDBODY) then
+          elem(ie)%derived%vstar=get_solidbody_velocities_gll(elem(ie), tl%n0)
+        else
+          call abortmp('Bad fvm_test_type in prim_step')
+        end if
+      else if (use_semi_lagrange_transport) then
         elem(ie)%derived%vstar=elem(ie)%state%v(:,:,:,:,tl%n0)
       end if
 

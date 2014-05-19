@@ -30,7 +30,15 @@ module fvm_mod
   type (ghostBuffertr_t)                      :: cellghostbuf
   type (EdgeBuffer_t)                         :: edgeveloc
   
-  !   public :: cslam_run, cslam_runair, cslam_runairdensity
+  ! namelist variables for testing
+  integer, public, parameter            :: IDEAL_TEST_OFF = 0
+  integer, public, parameter            :: IDEAL_TEST_ANALYTICAL_DEPARTURE = 1
+  integer, public, parameter            :: IDEAL_TEST_ANALYTICAL_WINDS = 2
+  integer, public                       :: fvm_ideal_test = IDEAL_TEST_OFF
+  integer, public, parameter            :: IDEAL_TEST_BOOMERANG = 1
+  integer, public, parameter            :: IDEAL_TEST_SOLIDBODY = 2
+  integer, public                       :: fvm_test_type = IDEAL_TEST_BOOMERANG
+
   public :: cslam_run, cslam_runairdensity, cslam_runflux
   
   public :: cellghostbuf, edgeveloc, fvm_init1,fvm_init2, fvm_mcgregor, fvm_mcgregordss
@@ -223,10 +231,10 @@ contains
              ! do remapping for x (j=1) and y (j=2) fluxes
              !
              do j=1,2
-                call cslam_remap_q(tracer0,flux_tracer(:,:,j),weights_all(1:jall(j),:,j), &
+                call cslam_remap_q(tracer0,flux_tracer(:,:,j),weights_all(:,:,j), &
                      recons, &
-                     fvm(ie)%spherecentroid, weights_eul_index_all(1:jall(j),:,j),&
-                     weights_lgr_index_all(1:jall(j),:,j), jall(j))  
+                     fvm(ie)%spherecentroid, weights_eul_index_all(:,:,j),&
+                     weights_lgr_index_all(:,:,j), jall(j))  
              end do
              !
              ! forecast equation for tracer (kg/kg)
@@ -612,11 +620,11 @@ contains
     integer (kind=int_kind), intent(in)        :: iflux !to accomodate flux call
     real (kind=real_kind),   intent(inout)     :: tracer1(1:nc+iflux,1:nc+iflux)
     integer (kind=int_kind), intent(in)        :: jall  
-    real (kind=real_kind),   intent(in)        :: weights(jall,6)
+    real (kind=real_kind),   intent(in)        :: weights(:,:)
     real (kind=real_kind),   intent(in)        :: recons(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
     real (kind=real_kind),   intent(in)        :: centroid(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
-    integer (kind=int_kind), intent(in)        :: weights_eul_index_all(jall,2)
-    integer (kind=int_kind), intent(in)        :: weights_lgr_index_all(jall,2)
+    integer (kind=int_kind), intent(in)        :: weights_eul_index_all(:,:)
+    integer (kind=int_kind), intent(in)        :: weights_lgr_index_all(:,:)
  
     integer                                     :: h, jx, jy, jdx, jdy
     
@@ -655,11 +663,11 @@ contains
     real (kind=real_kind), intent(in)           :: tracer0(1-nhc:nc+nhc,1-nhc:nc+nhc)
     real (kind=real_kind), intent(inout)        :: flux(1:nc+1,1:nc+1)
     integer (kind=int_kind), intent(in)         :: jall  
-    real (kind=real_kind), intent(in)           :: weights(jall,6)
+    real (kind=real_kind), intent(in)           :: weights(:,:)
     real (kind=real_kind), intent(in)           :: recons(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
     real (kind=real_kind), intent(in)           :: centroid(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
-    integer (kind=int_kind), intent(in)        :: weights_eul_index_all(jall,2)
-    integer (kind=int_kind), intent(in)        :: weights_lgr_index_all(jall,2)
+    integer (kind=int_kind), intent(in)        :: weights_eul_index_all(:,:)
+    integer (kind=int_kind), intent(in)        :: weights_lgr_index_all(:,:)
     
     real (kind=real_kind)        :: flux_area(1:nc+1,1:nc+1)
     
@@ -967,9 +975,8 @@ contains
   !SUBROUTINE FVM_MESH_DEP--------------------------------------------------CE-for FVM!
   ! AUTHOR: CHRISTOPH ERATH, 30.October 2011                                          !
   ! DESCRIPTION: Calculates the departure mesh                                        !
-  !              Please select the test cases by an COMMENT/UNCOMMENT basis           !
   !                                                                                   !
-  ! CALLS: solidbody, cart2cubedspherexy, analytical_function                         !
+  ! CALLS: solidbody or boomerang, cart2cubedspherexy, analytical_function            !
   ! INTPUT/OUTPUT:                                                                    !
   !        fvm   ...  structure                                                       !
   ! INPUT: nstep   ... actual step                                                    !
@@ -983,13 +990,7 @@ contains
     use control_mod, only : test_cfldep
     
     use derivative_mod, only : derivative_t
-    
-!#undef ANALITICAL_DEPATURE
-#define ANALITICAL_DEPATURE
-#ifdef ANALITICAL_DEPATURE
-    use fvm_bsp_mod, only: boomerang
-!    use fvm_bsp_mod, only: solidbody
-#endif
+    use fvm_bsp_mod, only: boomerang, solidbody
     
     implicit none
     type (derivative_t)  , intent(in) :: deriv
@@ -1004,19 +1005,24 @@ contains
     
     
 !phl    ! for the benchmark test, use more accurate departure point creation
-#ifdef ANALITICAL_DEPATURE
+    if (fvm_ideal_test == IDEAL_TEST_OFF) then
+  ! for given velocities in the element structure
+      call fvm_dep_from_gll(elem, deriv, fvm%asphere,fvm%dsphere,dt,tl,klev)    
+    else
 !phl    !CE: define new mesh for fvm fvm on an equal angular grid
 !phl    ! go from alpha,beta -> cartesian xy on cube -> lat lon on the sphere
-    do j=1,nc+1
-       do i=1,nc+1               
-          !         call solidbody(fvm%asphere(i,j), fvm%dsphere(i,j,klev))
-          call boomerang(fvm%asphere(i,j), fvm%dsphere(i,j,klev),tl%nstep)
-       end do
-    end do
-#else
-    ! for given velocities in the element structure
-    call fvm_dep_from_gll(elem, deriv, fvm%asphere,fvm%dsphere,dt,tl,klev)    
-#endif
+      do j = 1, nc+1
+        do i = 1, nc+1               
+          if (fvm_test_type == IDEAL_TEST_BOOMERANG) then
+            call boomerang(fvm%asphere(i,j), fvm%dsphere(i,j,klev),tl%nstep)
+          else if (fvm_test_type == IDEAL_TEST_SOLIDBODY) then
+            call solidbody(fvm%asphere(i,j), fvm%dsphere(i,j,klev))
+          else
+            call haltmp("Unknown FVM ideal test type")
+          end if
+        end do
+      end do
+    end if
     
     if (test_cfldep) then
        call check_departurecell(fvm,klev) 

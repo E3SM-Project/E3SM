@@ -3222,7 +3222,7 @@ end subroutine ghostVunpackR
       integer,               intent(in)     :: vlyr,kptr
       integer,              intent(in)      :: nhc,npoints
       
-      real (kind=real_kind),intent(in)      :: v(1-nhc:npoints+nhc,1-nhc:npoints+nhc, vlyr)
+      real (kind=real_kind),intent(in)      :: v(1-nhc:,1-nhc:,:)
       type (EdgeDescriptor_t),intent(in)    :: desc
 
       ! Local variables
@@ -3391,7 +3391,7 @@ end subroutine ghostVunpackR
 
     integer,              intent(in)      :: nhc,npoints, vlyr,kptr
 
-    real (kind=real_kind), intent(inout)  :: v(1-nhc:npoints+nhc,1-nhc:npoints+nhc, vlyr)
+    real (kind=real_kind), intent(inout)  :: v(1-nhc:,1-nhc:,:)
     type (EdgeDescriptor_t)               :: desc
 
 

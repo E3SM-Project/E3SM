@@ -2440,7 +2440,7 @@ end subroutine getdep_cellboundariesxyvec
 !            stop
 !
             call get_weights_exact(lexact_horizontal_line_integrals.AND.ABS(yseg(2)-yseg(1))<tiny,&
-                 weights(jsegment,1:nreconstruction),&
+                 weights(jsegment,:),&
                  xseg,yseg,nreconstruction,ngauss,gauss_weights,abscissae)
             if (ldbg) then
                write(*,*) "from inside side-integral"
@@ -2507,7 +2507,7 @@ end subroutine getdep_cellboundariesxyvec
     implicit none
     logical, intent(in) :: lexact_horizontal_line_integrals
     integer (kind=int_kind), intent(in) :: nreconstruction, ngauss
-    real (kind=real_kind), dimension(nreconstruction), intent(out) :: weights
+    real (kind=real_kind), intent(out) :: weights(:)
     real (kind=real_kind), dimension(ngauss), intent(in) :: gauss_weights, abscissae
     
     
@@ -2545,7 +2545,7 @@ end subroutine getdep_cellboundariesxyvec
     
     implicit none
     integer (kind=int_kind), intent(in) :: nreconstruction,ngauss
-    real (kind=real_kind), dimension(nreconstruction), intent(out) :: weights
+    real (kind=real_kind), intent(out) :: weights(:)
     real (kind=real_kind), dimension(2     ), intent(in) :: xseg,yseg
     real (kind=real_kind) :: slope
     !
