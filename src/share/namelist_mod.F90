@@ -89,6 +89,10 @@ module namelist_mod
        vert_remap_q_alg, &
 #ifndef CAM
        pertlim,      &
+       tracer_transport_type,    &
+       TRACERTRANSPORT_GLL,      &
+       TRACERTRANSPORT_CSLAM,    &
+       TRACERTRANSPORT_FLUXFORM, &
 #endif
        test_cfldep
       
@@ -161,6 +165,12 @@ module namelist_mod
 
 #endif
   use interpolate_mod, only : set_interp_parameter, get_interp_parameter
+
+#ifndef CAM
+  use fvm_mod, only: fvm_ideal_test, ideal_test_off, ideal_test_analytical_departure, ideal_test_analytical_winds
+  use fvm_mod, only: fvm_test_type, ideal_test_boomerang, ideal_test_solidbody
+#endif
+
 !=======================================================================================================!
 !    Adding for SW DG                                                                                   !
 !=======================================================================================================!
@@ -215,6 +225,11 @@ module namelist_mod
     integer :: se_ne
     integer :: unitn
     character(len=*), parameter ::  subname = "homme:namelist_mod"
+#endif
+#ifndef CAM
+    character(len=32) :: tracer_transport_method
+    character(len=32) :: cslam_ideal_test
+    character(len=32) :: cslam_test_type
 #endif
     ! ============================================
     ! Namelists
@@ -375,6 +390,16 @@ module namelist_mod
         interp_gridtype,      &
         interp_type,          &
         interpolate_analysis
+
+!=======================================================================================================!
+!   Namelist for CSLAM                                                                                  !
+!=======================================================================================================!
+#ifndef CAM
+    namelist /cslam_nl/           &
+         tracer_transport_method, &
+         cslam_ideal_test,        &
+         cslam_test_type
+#endif
 
 !=======================================================================================================!
 !   Adding for SW DG                                                                                    !
@@ -712,6 +737,19 @@ module namelist_mod
 #else
        read(*,nml=analysis_nl)
 #endif
+
+       write(iulog,*)"reading CSLAM namelist..."
+#ifndef CAM
+       tracer_transport_method = 'eulerian'
+       cslam_ideal_test = 'off'
+       cslam_test_type = 'boomerang'
+#if defined(OSF1) || defined(_BGL) || defined(_NAMELIST_FROM_FILE)
+       read(unit=7,nml=cslam_nl)
+#else
+       read(*,nml=cslam_nl)
+#endif
+#endif
+
       if (io_stride .eq.0 .and. num_io_procs .eq.0) then
          ! user did not set anything
          io_stride=1
@@ -947,6 +985,39 @@ module namelist_mod
     call MPI_bcast(num_io_procs , 1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(output_type , 9,MPIChar_t,par%root,par%comm,ierr)
     call MPI_bcast(infilenames ,160*MAX_INFILES ,MPIChar_t,par%root,par%comm,ierr)
+! These options are set by the CAM namelist
+#ifndef CAM
+! Set and broadcast tracer transport type
+    if (trim(tracer_transport_method) == 'gll') then
+      tracer_transport_type = TRACERTRANSPORT_GLL
+    else if (trim(tracer_transport_method) == 'cslam') then
+      tracer_transport_type = TRACERTRANSPORT_CSLAM
+    else if (trim(tracer_transport_method) == 'flux_form') then
+      tracer_transport_type = TRACERTRANSPORT_FLUXFORM
+    else
+      call abortmp('Unknown tracer transport method: '//trim(tracer_transport_method))
+    end if
+    call MPI_bcast(tracer_transport_type,1,MPIinteger_t,par%root,par%comm,ierr)
+! Set and broadcast CSLAM options
+    if (trim(cslam_ideal_test) == 'off') then
+      fvm_ideal_test = IDEAL_TEST_OFF
+    else if (trim(cslam_ideal_test) == 'analytical_departure') then
+      fvm_ideal_test = IDEAL_TEST_ANALYTICAL_DEPARTURE
+    else if (trim(cslam_ideal_test) == 'analytical_winds') then
+      fvm_ideal_test = IDEAL_TEST_ANALYTICAL_WINDS
+    else
+      call abortmp('Unknown ideal_cslam_test: '//trim(cslam_ideal_test))
+    end if
+    if (trim(cslam_test_type) == 'boomerang') then
+      fvm_test_type = IDEAL_TEST_BOOMERANG
+    else if (trim(cslam_test_type) == 'solidbody') then
+      fvm_test_type = IDEAL_TEST_SOLIDBODY
+    else
+      call abortmp('Unknown cslam test type: '//trim(cslam_test_type))
+    end if
+    call MPI_bcast(fvm_ideal_test,1,MPIinteger_t,par%root,par%comm,ierr)
+    call MPI_bcast(fvm_test_type,1,MPIinteger_t,par%root,par%comm,ierr)
+#endif
 
 #ifdef IS_ACCELERATOR
     if (nthreads_accel > 0) then

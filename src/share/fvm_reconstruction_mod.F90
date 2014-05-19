@@ -463,8 +463,8 @@ function cubic_equispace_interp(dx, x, y)
 
   implicit none
   real (kind=real_kind)                             :: cubic_equispace_interp
-  real (kind=real_kind),intent(in)                  :: dx, x
-  real (kind=real_kind), dimension(1:4),intent(in)  :: y
+  real (kind=real_kind), intent(in)                 :: dx, x
+  real (kind=real_kind), intent(in)                 :: y(:)
 
   cubic_equispace_interp =                                                   &
     (-y(1) / (6 * dx**3)) * (x - dx) * (x - 2 * dx) * (x - 3 * dx) +         &

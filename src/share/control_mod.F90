@@ -18,6 +18,12 @@ module control_mod
   integer, public  :: tracer_advection_formulation  = TRACERADV_TOTAL_DIVERGENCE
   logical, public  :: use_semi_lagrange_transport   = .false.
 
+! Tracer transport type
+  integer, public, parameter :: TRACERTRANSPORT_GLL = 1
+  integer, public, parameter :: TRACERTRANSPORT_CSLAM = 2
+  integer, public, parameter :: TRACERTRANSPORT_FLUXFORM = 3
+  integer, public            :: tracer_transport_type = TRACERTRANSPORT_GLL
+
 !shallow water advection tests:
 !kmass points to a level with density.  other levels contain test tracers
   integer, public  :: kmass  = -1
