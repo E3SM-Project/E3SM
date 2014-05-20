@@ -667,10 +667,11 @@ contains
 !! @param iostart   The start index for the block-cyclic io decomposition
 !! @param iocount   The count for the block-cyclic io decomposition
 !<
-  subroutine PIO_initdecomp_dof_i4(iosystem,basepiotype,dims,compdof, iodesc, iostart, iocount)
+  subroutine PIO_initdecomp_dof_i4(iosystem,basepiotype,dims,compdof, iodesc, rearr, iostart, iocount)
     type (iosystem_desc_t), intent(inout) :: iosystem
     integer(i4), intent(in)           :: basepiotype
     integer(i4), intent(in)          :: compdof(:)   ! global degrees of freedom for computational decomposition
+    integer, optional, target :: rearr
     integer (PIO_OFFSET_KIND), optional :: iostart(:), iocount(:)
     type (io_desc_t), intent(inout)     :: iodesc
     integer(PIO_OFFSET_KIND), pointer :: internal_compdof(:)
@@ -683,7 +684,7 @@ contains
        call pio_initdecomp_dof_i8(iosystem, basepiotype, dims, internal_compdof, iodesc, &
             PIO_REARR_NONE, iostart, iocount)
     else 
-       call pio_initdecomp_dof_i8(iosystem, basepiotype, dims, internal_compdof, iodesc)
+       call pio_initdecomp_dof_i8(iosystem, basepiotype, dims, internal_compdof, iodesc, rearr)
     endif
     deallocate(internal_compdof)
 
@@ -1496,16 +1497,25 @@ contains
          integer(c_int), value :: iosysid
          integer(c_int) :: fh
          integer(c_int) :: iotype
-         character(kind=c_char) :: fname
+         character(kind=c_char) :: fname(*)
          integer(c_int), value :: mode
        end function PIOc_createfile
     end interface
+    character, allocatable :: cfname(:)
+    integer :: i, nl
 #ifdef TIMING
     call t_startf("PIO_createfile")
 #endif
     mode = 0
     if(present(amode_in)) mode = amode_in
-    ierr = PIOc_createfile(iosystem%iosysid, file%fh, iotype, trim(fname)//C_NULL_CHAR, mode)
+    nl = len_trim(fname)
+    allocate(cfname(nl+1))
+    do i=1,nl
+       cfname(i) = fname(i:i)
+    enddo
+    cfname(nl+1)=C_NULL_CHAR
+    ierr = PIOc_createfile(iosystem%iosysid, file%fh, iotype, cfname, mode)
+    deallocate(cfname)
     file%iosystem => iosystem
 #ifdef TIMING
     call t_stopf("PIO_createfile")
@@ -1545,21 +1555,28 @@ contains
          integer(c_int), value :: iosysid
          integer(c_int) :: fh
          integer(c_int) :: iotype
-         character(kind=c_char) :: fname
+         character(kind=c_char) :: fname(*)
          integer(c_int), value :: mode
          logical(c_bool), value :: CheckMPI
        end function PIOc_openfile
     end interface
     logical(c_bool) :: iCheckMPI=.true.
-    integer :: imode=0
+    integer :: imode=0, i, nl
+    character, allocatable :: cfname(:)
 #ifdef TIMING
     call t_startf("PIO_openfile")
 #endif
     if(present(Checkmpi)) icheckmpi=logical(Checkmpi,c_bool)
     if(present(mode)) imode = mode
+    nl = len_trim(fname)
+    allocate(cfname(nl+1))
+    do i=1,nl
+       cfname(i) = fname(i:i)
+    enddo
+    cfname(nl+1)=C_NULL_CHAR
     ierr = PIOc_openfile( iosystem%iosysid, file%fh, iotype, &
-         trim(fname)//C_NULL_CHAR, imode, iCheckMPI)
-
+         cfname, imode, iCheckMPI)
+    deallocate(cfname)
     file%iosystem => iosystem
 #ifdef TIMING
     call t_stopf("PIO_openfile")
@@ -1611,7 +1628,7 @@ contains
          integer(C_INT), intent(in), value :: iosysid, ioid
        end function PIOc_freedecomp
     end interface
-
+    
     ierr = PIOc_freedecomp(ios%iosysid, iodesc%ioid)
 
   end subroutine freedecomp_ios

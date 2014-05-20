@@ -141,7 +141,6 @@ int PIOc_inq_varid (int ncid, const char *name, int *varidp)
   file = pio_get_file_from_id(ncid);
   if(file == NULL)
     return PIO_EBADID;
-
   ios = file->iosystem;
   msg = PIO_MSG_INQ_VARID;
 
@@ -151,7 +150,7 @@ int PIOc_inq_varid (int ncid, const char *name, int *varidp)
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, 0, ios->intercomm);
   }
 
-  *varidp = -1;
+
   if(ios->ioproc){
     switch(file->iotype){
 #ifdef _NETCDF
@@ -176,10 +175,9 @@ int PIOc_inq_varid (int ncid, const char *name, int *varidp)
       ierr = iotype_error(file->iotype,__FILE__,__LINE__);
     }
   }
-  if(ierr != PIO_NOERR)
-	printf("%s %d %s\n",__FILE__,__LINE__,name);	
+
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
-  mpierr = MPI_Bcast(varidp,1, MPI_INT, ios->ioroot, ios->my_comm);
+    mpierr = MPI_Bcast(varidp,1, MPI_INT, ios->ioroot, ios->my_comm);
 
   return ierr;
 }
@@ -2049,9 +2047,8 @@ int PIOc_inq_varndims (int ncid, int varid, int *ndimsp)
   }
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
-    mpierr = MPI_Bcast(ndimsp,1, MPI_INT, ios->ioroot, ios->my_comm);
-    file->varlist[varid].ndims = (*ndimsp);
-
+  mpierr = MPI_Bcast(ndimsp,1, MPI_INT, ios->ioroot, ios->my_comm);
+  file->varlist[varid].ndims = (*ndimsp);
   return ierr;
 }
 
@@ -2343,9 +2340,10 @@ int PIOc_inq_vardimid (int ncid, int varid, int *dimidsp)
   }
 
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
-    {int ndims;
-    PIOc_inq_varndims(file->fh, varid, &ndims);
-    mpierr = MPI_Bcast(dimidsp , ndims, MPI_INT, ios->ioroot, ios->my_comm);
+    if(ierr==PIO_NOERR){
+      int ndims;
+      ierr = PIOc_inq_varndims(file->fh, varid, &ndims);
+      mpierr = MPI_Bcast(dimidsp , ndims, MPI_INT, ios->ioroot, ios->my_comm);
      }
 
   return ierr;

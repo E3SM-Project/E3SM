@@ -228,9 +228,10 @@ foreach my $func (keys %{$functions}){
 		  print F "        mpierr = MPI_Bcast(tname , PIO_MAX_NAME, MPI_CHAR, ios->ioroot, ios->my_comm);\n";
 		  print F "      strcpy(name,tname); }\n";
 	      }elsif($func =~ /inq_vardimid/){
-		  print F "    {int ndims;\n";
-		  print F "    PIOc_inq_varndims(file->fh, varid, \&ndims);\n";
-		  print F "    mpierr = MPI_Bcast(dimidsp , ndims, MPI_INT, ios->ioroot, ios->my_comm);\n ";
+		  print F "    if(ierr==PIO_NOERR){\n";
+                  print F "      int ndims;\n";
+		  print F "      PIOc_inq_varndims(file->fh, varid, \&ndims);\n";
+		  print F "      mpierr = MPI_Bcast(dimidsp , ndims, MPI_INT, ios->ioroot, ios->my_comm);\n ";
 		  print F "    }\n";
 	      }elsif($func =~ /get_att_(\w+)/){
 		  my $atype = $1;

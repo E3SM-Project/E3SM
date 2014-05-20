@@ -24,10 +24,13 @@ typedef long long MPI_Offset;
 #define  MPI_UNSIGNED_LONG_LONG ((MPI_Datatype)0x4c000819)
 #define MPI_CHARACTER ((MPI_Datatype)1275068698)
 #endif
+#ifndef MPI_OFFSET
+#define MPI_OFFSET  ((MPI_Datatype)0x4c000844)
+#endif
 
 #define PIO_OFFSET MPI_OFFSET
 #define PIO_Offset MPI_Offset
-#define PIO_MAX_VARS 8192
+#define PIO_MAX_VARS 2048
 
 int PIOc_freedecomp(int iosysid, int ioid);
 

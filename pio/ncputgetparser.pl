@@ -246,6 +246,8 @@ foreach my $func (keys %{$functions}){
 	      $line =~ s/msg = 0/msg = $msg/;
 #	      print "  $msg,\n";
 	  }
+	  my $preline;
+	  my $postline;
 	  if($line =~/function/){
 	      if($line =~ s/PIO_function/PIOc_$func/){
 		  $line =~ s/\(\)/ $functions->{$func}{pnetcdf} / ; 
@@ -262,7 +264,9 @@ foreach my $func (keys %{$functions}){
 		      }
 		  }else{
 		      if($line =~ s/ncmpi_function/ncmpi_$func/){
+			  $preline = "        ncmpi_begin_indep_data(file->fh);\n        if(ios->iomaster){\n";
 			  $args = $functions->{$func}{pnetcdf} ;
+                          $postline = "        };\n         ncmpi_end_indep_data(file->fh);\n        bcast=true;\n";
 		      }
 		  }
 		  if($line =~ s/nc_function/nc_$func/){
@@ -318,7 +322,9 @@ foreach my $func (keys %{$functions}){
 #	      print F "  file->varlist[*varidp].record=-1;\n";
 #	      print F "  file->varlist[*varidp].buffer=NULL;\n";
 #	  }
+	  print F $preline if(defined $preline);
 	  print F $line;
+	  print F $postline if(defined $postline);
 
 
       }

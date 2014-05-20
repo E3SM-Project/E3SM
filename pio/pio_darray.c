@@ -34,6 +34,7 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, voi
   MPI_Status status;
   PIO_Offset usage;
   MPI_Request request;
+  int fndims;
 
   ierr = PIO_NOERR;
 
@@ -57,6 +58,7 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, voi
     mpierr = MPI_Bcast(&(file->fh),1, MPI_INT, ios->compmaster, ios->intercomm);
   }
 
+  ierr = PIOc_inq_varndims(file->fh, vid, &fndims);
   
   if(ios->ioproc){
     io_region *region;
@@ -73,7 +75,7 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, voi
 #endif
     region = iodesc->firstregion;
 
-    if(vdesc->record >= 0)
+    if(vdesc->record >= 0 && ndims<fndims)
       ndims++;
 #ifdef _PNETCDF
     if(file->iotype == PIO_IOTYPE_PNETCDF){
@@ -200,14 +202,17 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, voi
 #endif
 #ifdef _PNETCDF
       case PIO_IOTYPE_PNETCDF:
-      
 	for( i=0,dsize=1;i<ndims;i++)
 	  dsize*=count[i];
-	// printf("dsize %ld\n",dsize);
 	ierr = ncmpi_bput_vara(ncid, vid,  (PIO_Offset *) start,(PIO_Offset *) count, bufptr,
 			       dsize, iodesc->basetype, &request);
 	pio_push_request(file,request);
-	
+	if(ierr != PIO_NOERR){
+	printf("%s %d",__FILE__,__LINE__);
+	for( i=0;i<ndims;i++)
+	  printf(" %ld %ld ",start[i],count[i]);
+	 printf("dsize %ld\n",dsize);
+	}
 	break;
 #endif
       default:
@@ -303,10 +308,9 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void
   int ierr=PIO_NOERR;
   iosystem_desc_t *ios;
   var_desc_t *vdesc;
-  int ndims;
+  int ndims, fndims;
   MPI_Status status;
   int i;
-
   ios = file->iosystem;
   if(ios == NULL)
     return PIO_EBADID;
@@ -317,12 +321,14 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void
     return PIO_EBADID;
 
   ndims = iodesc->ndims;
+  ierr = PIOc_inq_varndims(file->fh, vid, &fndims);
+  
   if(ios->ioproc){
     io_region *region;
-    size_t start[ndims+1];
-    size_t count[ndims+1];
-    size_t tmp_start[ndims+1];
-    size_t tmp_count[ndims+1];
+    size_t start[fndims];
+    size_t count[fndims];
+    size_t tmp_start[fndims];
+    size_t tmp_count[fndims];
     size_t tmp_bufsize=1;
     int regioncnt;
     void *bufptr;
@@ -336,14 +342,14 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void
     MPI_Type_size(iodesc->basetype, &tsize);
 #endif
     for(regioncnt=0;regioncnt<iodesc->maxregions;regioncnt++){
-      for(i=0;i<ndims;i++){
+      for(i=0;i<fndims;i++){
 	start[i] = 0;
 	count[i] = 0;
       }       
       if(region!=NULL){
 	bufptr=IOBUF+tsize*region->loffset;
 
-	if(vdesc->record >= 0){
+	if(fndims>ndims && vdesc->record >= 0){
 	  ndims++;
 	  start[0] = vdesc->record;
 	  count[0] = 1;
@@ -427,7 +433,14 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void
 	      }else{
 		fprintf(stderr,"Type not recognized %d in pioc_write_darray\n",(int) iodesc->basetype);
 	      }	
-
+	      /*
+	      if(ierr != PIO_NOERR){
+		printf("%s %d ",__FILE__,__LINE__);
+		for(int j=0;j<ndims;j++)
+		  printf(" %ld %ld",start[j],count[j]);
+		printf("\n");
+	      }
+	      */
 	      if(i>0){
 		MPI_Rsend(bufptr, tmp_bufsize, iodesc->basetype, i, i, ios->io_comm);
 	      }
@@ -442,8 +455,11 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void
 	    PIO_Offset tmp_bufsize=1;
 	    for(int j=0;j<ndims; j++){
 	      tmp_bufsize *= count[j];
+	      //	      printf("%s %d %d %ld %ld\n",__FILE__,__LINE__,j,start[j],count[j]); 
 	    }
-	    ncmpi_get_vara_all(file->fh, vid,(PIO_Offset *) start,(PIO_Offset *) count, bufptr, tmp_bufsize, iodesc->basetype);
+	    // printf("%s %d %ld \n",__FILE__,__LINE__,tmp_bufsize); 
+	    
+	    ierr = ncmpi_get_vara_all(file->fh, vid,(PIO_Offset *) start,(PIO_Offset *) count, bufptr, tmp_bufsize, iodesc->basetype);
 	  }
 	  break;
 #endif
@@ -532,15 +548,20 @@ int flush_output_buffer(file_desc_t *file)
   var_desc_t *vardesc;
   int ierr=PIO_NOERR;
 #ifdef _PNETCDF
-  int status[PIO_MAX_VARS];
+  if(file->nreq==0)
+    return ierr;
 
-
-  ierr = ncmpi_wait_all(file->fh, PIO_MAX_VARS,  file->request, status);
+  if(file->nreq>PIO_MAX_VARS){
+    fprintf(stderr,"Need to increase PIO_MAX_VARS %d\n",file->nreq);
+  }
+  // Since we don't know if the number of requests match across tasks we
+  // need to use PIO_MAX_VARS here rather than file->nreq
+  int status[file->nreq];
+  ierr = ncmpi_wait_all(file->fh,file->nreq,  file->request,status);
   for(int i=0;i<file->nreq;i++){
     file->request[i]=MPI_REQUEST_NULL;
   }
   file->nreq = 0;
-
 
 #endif
   return ierr;

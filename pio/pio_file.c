@@ -1,10 +1,7 @@
-#include <pio.h>
 #include <pio_internal.h>
-#include <string.h>
-#include <stdio.h>
 
 int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
-		  char *fname, const int mode, _Bool checkmpi)
+		  const char filename[], const int mode, _Bool checkmpi)
 {
   int ierr;
   int msg;
@@ -25,7 +22,10 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
     return PIO_EBADID;
   }
 
-  file = (file_desc_t *) malloc(sizeof(file_desc_t));
+  file = (file_desc_t *) malloc(sizeof(*file));
+  if(file==NULL){
+    return PIO_ENOMEM;
+  }
   file->next = NULL;
   file->iosystem = ios;
   for(int i=0; i<PIO_MAX_VARS;i++){
@@ -60,8 +60,8 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
   if(ios->async_interface && ! ios->ioproc){
     if(ios->comp_rank==0) 
       mpierr = MPI_Send(&msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    len = strlen(fname);
-    mpierr = MPI_Bcast((void *) fname,len, MPI_CHAR, ios->compmaster, ios->intercomm);
+    len = strlen(filename);
+    mpierr = MPI_Bcast((void *) filename,len, MPI_CHAR, ios->compmaster, ios->intercomm);
     mpierr = MPI_Bcast(&(file->iotype), 1, MPI_INT,  ios->compmaster, ios->intercomm);
     mpierr = MPI_Bcast(&amode, 1, MPI_INT,  ios->compmaster, ios->intercomm);
     mpierr = MPI_Bcast(&checkmpi, 1, MPI_INT,  ios->compmaster, ios->intercomm);
@@ -71,33 +71,33 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
     switch(file->iotype){
     case PIO_IOYTPE_DIRECT_PBINARY:
     case PIO_IOTYPE_PBINARY:
-      //      ierr = pio_open_mpiio(file, fname, checkmpi);
+      //      ierr = pio_open_mpiio(file, filename, checkmpi);
       break;
 #ifdef _NETCDF
 #ifdef _NETCDF4
     case PIO_IOTYPE_NETCDF4P:
 #ifdef _MPISERIAL      
-      ierr = nc_open(fname, amode, &(file->fh));
+      ierr = nc_open(filename, amode, &(file->fh));
 #else
       amode = amode & PIO_64BIT_DATA;
       amode = amode  & PIO_64BIT_OFFSET;
       //printf("%d %d  \n",__LINE__,amode);
       amode = amode |  NC_MPIIO;
 
-      ierr = nc_open_par(fname, amode, ios->io_comm,ios->info, &(file->fh));
+      ierr = nc_open_par(filename, amode, ios->io_comm,ios->info, &(file->fh));
 #endif
       break;
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
       if(ios->io_rank==0){
-	ierr = nc_open(fname, amode, &(file->fh));
+	ierr = nc_open(filename, amode, &(file->fh));
       }
       break;
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ierr = ncmpi_open(ios->io_comm, fname, amode, ios->info, &(file->fh));
+      ierr = ncmpi_open(ios->io_comm, filename, amode, ios->info, &(file->fh));
       // This should only be done with a file opened to append
       if(ierr == PIO_NOERR && (amode & PIO_WRITE)){
 	if(ios->iomaster) printf("%d Setting IO buffer %d\n",__LINE__,PIO_BUFFER_SIZE_LIMIT);
@@ -113,7 +113,7 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
     }
   }
   if(ios->io_rank==0){
-    printf("Open file %s %d\n",fname,file->fh);
+    printf("Open file %s %d\n",filename,file->fh);
   }
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
   if(ierr==PIO_NOERR){
@@ -128,7 +128,7 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
 
 
 int PIOc_createfile(const int iosysid, int *ncidp,  int *iotype,
-		 const char *fname, const int mode)
+		 const char filename[], const int mode)
 {
   int ierr;
   int msg;
@@ -180,8 +180,8 @@ int PIOc_createfile(const int iosysid, int *ncidp,  int *iotype,
   if(ios->async_interface && ! ios->ioproc){
     if(ios->comp_rank==0) 
       mpierr = MPI_Send( &msg, 1,MPI_INT, ios->ioroot, 1, ios->union_comm);
-    len = strlen(fname);
-    mpierr = MPI_Bcast((void *) fname,len, MPI_CHAR, ios->compmaster, ios->intercomm);
+    len = strlen(filename);
+    mpierr = MPI_Bcast((void *) filename,len, MPI_CHAR, ios->compmaster, ios->intercomm);
     mpierr = MPI_Bcast(&(file->iotype), 1, MPI_INT,  ios->compmaster, ios->intercomm);
     mpierr = MPI_Bcast(&amode, 1, MPI_INT,  ios->compmaster, ios->intercomm);
   }
@@ -191,7 +191,7 @@ int PIOc_createfile(const int iosysid, int *ncidp,  int *iotype,
     switch(file->iotype){
     case PIO_IOYTPE_DIRECT_PBINARY:
     case PIO_IOTYPE_PBINARY:
-      //      ierr = pio_create_mpiio(file, fname);
+      //      ierr = pio_create_mpiio(file, filename);
       break;
 #ifdef _NETCDF
 #ifdef _NETCDF4
@@ -204,19 +204,19 @@ int PIOc_createfile(const int iosysid, int *ncidp,  int *iotype,
       amode = amode |  NC_MPIIO;
       printf("%d %d \n",__LINE__,amode);
 
-      ierr = nc_create_par(fname, amode, ios->io_comm,ios->info  , &(file->fh));
+      ierr = nc_create_par(filename, amode, ios->io_comm,ios->info  , &(file->fh));
       break;
     case PIO_IOTYPE_NETCDF4C:
 #endif
     case PIO_IOTYPE_NETCDF:
       if(ios->io_rank==0){
-	ierr = nc_create(fname, amode, &(file->fh));
+	ierr = nc_create(filename, amode, &(file->fh));
       }
       break;
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      ierr = ncmpi_create(ios->io_comm, fname, amode, ios->info, &(file->fh));
+      ierr = ncmpi_create(ios->io_comm, filename, amode, ios->info, &(file->fh));
       if(ierr == PIO_NOERR){
 	if(ios->iomaster) printf("%d Setting IO buffer %d\n",__LINE__,PIO_BUFFER_SIZE_LIMIT);
 	ierr = ncmpi_buffer_attach(file->fh, PIO_BUFFER_SIZE_LIMIT );
@@ -282,7 +282,7 @@ int PIOc_closefile(int ncid)
 #endif
 #ifdef _PNETCDF
     case PIO_IOTYPE_PNETCDF:
-      flush_output_buffer(file);
+      ierr = flush_output_buffer(file);
       ierr = ncmpi_buffer_detach(file->fh);
       ierr = ncmpi_close(file->fh);
       break;
@@ -303,7 +303,7 @@ int PIOc_closefile(int ncid)
   return ierr;
 }
 
-int PIOc_deletefile(const int iosysid, const char fname[])
+int PIOc_deletefile(const int iosysid, const char filename[])
 {
   int ierr;
   int msg;
@@ -329,10 +329,10 @@ int PIOc_deletefile(const int iosysid, const char fname[])
     MPI_Barrier(ios->io_comm);
 #ifdef _NETCDF
     if(ios->io_rank==0)
-      ierr = nc_delete(fname);
+      ierr = nc_delete(filename);
 #else
 #ifdef _PNETCDF
-    ierr = ncmpi_delete(fname, ios->info);
+    ierr = ncmpi_delete(filename, ios->info);
 #endif
 #endif
     MPI_Barrier(ios->io_comm);

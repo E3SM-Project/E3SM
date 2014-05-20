@@ -65,17 +65,13 @@ int check_netcdf(file_desc_t *file,int status, const char *fname, const int line
 #endif
 #ifdef _PNETCDF
   case PIO_IOTYPE_PNETCDF:
-      if(ios->iomaster){
-	if(status != NC_NOERR && (ios->error_handler == PIO_INTERNAL_ERROR))	
-	  fprintf(stderr,"PNETCDF ERROR: %s %s %d\n",ncmpi_strerror(status),fname,line);
-      }
-      if(ios->error_handler == PIO_INTERNAL_ERROR){
-	if(status != NC_NOERR)	
-	  MPI_Abort(MPI_COMM_WORLD,status);
-	// abort
-      }else if(ios->error_handler==PIO_BCAST_ERROR){
-	ierr = MPI_Bcast(&status, 1, MPI_INTEGER, ios->ioroot, ios->my_comm);
-      }
+    if(status != NC_NOERR && (ios->error_handler == PIO_INTERNAL_ERROR)) {
+      //	  fprintf(stderr,"PNETCDF ERROR: %s %s %d\n",ncmpi_strerror(status),fname,line);
+      piodie(ncmpi_strerror(status),fname,line);
+    }
+    if(ios->error_handler==PIO_BCAST_ERROR){
+      ierr = MPI_Bcast(&status, 1, MPI_INTEGER, ios->ioroot, ios->my_comm);
+    }
     break;
 #endif
   default:

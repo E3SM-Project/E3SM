@@ -570,7 +570,7 @@ int box_rearrange_io2comp(const iosystem_desc_t ios, io_desc_t *iodesc, void *sb
   //
   // Data in sbuf on the ionodes is sent to rbuf on the compute nodes
   //
-
+  maxreq=0;
   pio_swapm( sbuf,  sendcounts, sdispls, sendtypes,
 	     rbuf, recvcounts, rdispls, recvtypes, 
 	     ios.union_comm, handshake,isend, maxreq);
@@ -585,28 +585,6 @@ int box_rearrange_io2comp(const iosystem_desc_t ios, io_desc_t *iodesc, void *sb
   return PIO_NOERR;
 
 }
-/*
-void PIO_Offset_size(MPI_Datatype *dtype, int *tsize)
-{
-  int  tsizei, tsizel;
-#ifndef _MPISERIAL   
-  MPI_Type_dup(MPI_OFFSET, dtype);
-  MPI_Type_size(*dtype,tsize);
-  return;
-  MPI_Type_size(MPI_LONG_LONG, &tsizel);
-  MPI_Type_size(MPI_INT, &tsizei);
-
-  if(sizeof(PIO_Offset) == tsizei){
-    *dtype = MPI_INT;
-    *tsize = tsizei;
-  }else if(sizeof(PIO_Offset) == tsizel){
-    *dtype = MPI_LONG_LONG;
-    *tsize = tsizel;
-  }
-
-}
-*/
-
 
 int box_rearrange_create(const iosystem_desc_t ios,const int maplen, const PIO_Offset compmap[], const int gsize[],
 			 const int ndims, io_desc_t *iodesc)
@@ -805,8 +783,6 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, const PI
 {
   int *dest_ioproc=NULL;
   PIO_Offset *dest_ioindex=NULL;
-  int tsize;
-  MPI_Datatype dtype;
   int taskratio;
   int nprocs = ios.num_comptasks;
   int nioprocs = ios.num_iotasks;
@@ -834,12 +810,6 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, const PI
   iodesc->ndof = maplen;
   iodesc->rearranger = PIO_REARR_SUBSET;
 
-  //  PIO_Offset_size(&dtype, &tsize);
-#ifndef _MPISERIAL
-  MPI_Type_size(MPI_INT, &tsize);
-#else
-  tsize = sizeof(int);
-#endif
   taskratio = nprocs/nioprocs;
 
   gstride[ndims-1]=1;
@@ -919,15 +889,11 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, const PI
   }
   
   for(i=0;i<nprocs;i++){
-    dtypes[i] = dtype;
-    //    printf("rdispls[%d] %d\n",i,rdispls[i]);
+    dtypes[i] = iodesc->basetype;
   }
-  //    for(i=0;i<maplen;i++)
-  //    printf("compmap[%d] %ld\n",i,compmap[i]);
-
   pio_swapm(compmap, sndlths, sdispls, dtypes, 
 	    iomap, recvlths, rdispls, dtypes, 
-	    ios.union_comm, hs, true, MAX_GATHER_BLOCK_SIZE);
+	    ios.union_comm, hs, isend, MAX_GATHER_BLOCK_SIZE);
 
 
   if(ios.ioproc){
@@ -962,7 +928,8 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, const PI
 
 
   }
-  //  printf("%d %d\n",__LINE__,recvlths[1]);
+  if(ios.ioroot) 
+    printf("%d %d %d\n",__LINE__,(int) dtypes[0],(int) dtypes[1]);
   pio_swapm(destoffset, recvlths, rdispls, dtypes, 
 	    dest_ioindex, sndlths, sdispls, dtypes, 
 	    ios.union_comm, hs, isend, MAX_GATHER_BLOCK_SIZE);

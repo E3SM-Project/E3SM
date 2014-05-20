@@ -372,10 +372,10 @@ contains
          integer(C_INT), value :: ncid
          integer(C_INT), value :: varid
          character(C_CHAR) :: name(*)
-         type(C_PTR), value :: op
+         {CTYPE}, intent(out) :: op
        end function PIOc_get_att_{NCTYPE}
     end interface
-    ierr = PIOc_get_att_{NCTYPE} (ncid,varid-1,trim(name)//C_NULL_CHAR, C_LOC(values))
+    ierr = PIOc_get_att_{NCTYPE} (ncid,varid-1,trim(name)//C_NULL_CHAR, values)
 
   end function get_att_id_{TYPE}
 
@@ -431,11 +431,11 @@ contains
          integer(C_INT), value :: ncid
          integer(C_INT), value :: varid
          character(C_CHAR) :: name(*)
-         type(C_PTR), value :: op
+         {CTYPE}, intent(out) :: op
        end function PIOc_get_att_{NCTYPE}
     end interface
     
-    ierr = PIOc_get_att_{NCTYPE} (ncid, varid-1, trim(name)//C_NULL_CHAR, C_LOC(values))
+    ierr = PIOc_get_att_{NCTYPE} (ncid, varid-1, trim(name)//C_NULL_CHAR, values(1))
 
 
   end function get_att_1d_id_{TYPE}
