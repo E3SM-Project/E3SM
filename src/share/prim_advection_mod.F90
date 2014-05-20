@@ -1294,6 +1294,27 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
   enddo
   end do
 
+  do ie=nets,nete
+     do q = 1 , qsize
+        do k = 1 , nlev    !  Potential loop inversion (AAM)
+           elem(ie)%state%Qdp(:,:,k,q,np1_qdp) = elem(ie)%spheremp(:,:)* elem(ie)%state%Qdp(:,:,k,q,np1_qdp)
+        enddo
+     enddo
+      call edgeVpack(edgeAdv    , elem(ie)%state%Qdp(:,:,:,:,np1_qdp) , nlev*qsize , 0 , elem(ie)%desc )
+  enddo
+  call bndry_exchangeV( hybrid , edgeAdv    )
+  do ie = nets , nete
+     call edgeVunpack( edgeAdv    , elem(ie)%state%Qdp(:,:,:,:,np1_qdp) , nlev*qsize , 0 , elem(ie)%desc )
+     do q = 1 , qsize
+        do k = 1 , nlev    !  Potential loop inversion (AAM)
+           elem(ie)%state%Qdp(:,:,k,q,np1_qdp) = elem(ie)%rspheremp(:,:) * elem(ie)%state%Qdp(:,:,k,q,np1_qdp)
+        enddo
+     enddo
+  enddo
+
+
+
+
 end subroutine Prim_Advec_Tracers_remap_ALE
 
 subroutine VDOT(rp,Que,rho,mass,hybrid,nets,nete)
