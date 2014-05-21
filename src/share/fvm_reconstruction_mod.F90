@@ -197,11 +197,11 @@ end subroutine get_equispace_weights
 function matmul_w(w,f)
   implicit none
   real (kind=real_kind)                          :: matmul_w
-  real (kind=real_kind),dimension(4), intent(in) :: w,f
+  real (kind=real_kind),dimension(:), intent(in) :: w,f      !dimension(ns)
   real (kind=real_kind)                          :: tmp
   integer                                        :: k
   matmul_w = 0.0D0
-  do k=1,4
+  do k=1,ns
      matmul_w = matmul_w+w(k)*f(k)
   end do
 end function matmul_w
