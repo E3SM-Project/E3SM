@@ -40,9 +40,15 @@ module dimensions_mod
   integer, parameter, public :: nhe=1     !number/depth of the extended element (CFL number)
   ! nhc ... halo/depth for the tracer values, only cubic reconstruction is supported
   !         now, therefore nhc=nhe+3    
-  integer, parameter, public :: nhc=nhe+3 
-  
+!phl  integer, parameter, public :: nhc=nhe+3
+  integer, parameter, public :: nhc=nc       !determines with of halo exchanged with neighboring elements - phl
+  integer, parameter, public :: nhr=2        !halo width needed for reconstruction - phl
+  integer, parameter, public :: nht=nhe+nhr  !total halo width where reconstruction is needed (nht<=nc) - phl
+                                             ! (different from halo needed for elements on edges and corners
+  integer, parameter, public :: ns = 4 !stencil needed for 1D halo interpolation (must be even integer) - phl
+  !  
   ! constants for SPELT
+  !
   integer, parameter, public :: nip=3     !number of interpolation values, works only for this
   integer, parameter, public :: nipm=nip-1
   integer, parameter, public :: nep=nipm*nc+1      ! number of points in an element  

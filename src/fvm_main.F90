@@ -135,9 +135,6 @@ program fvm_main
   allocate(fvm(nelemd))
   call fvm_init2(elem,fvm,hybrid,nets,nete,tl)
 
-
-
-
   call cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
 
 #if (defined HORIZ_OPENMP)
