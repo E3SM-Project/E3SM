@@ -1371,6 +1371,7 @@ subroutine Cobra_SLBQP(Que, Que_t, rho, minq, maxq, mass, hybrid, nets, nete)
   real(kind=real_kind), intent(in)              :: mass              (nlev,qsize)
   type (hybrid_t)     , intent(in)              :: hybrid
 
+  integer,                            parameter :: max_clip = 100
   real(kind=real_kind),               parameter :: eta = 1D-12           
   real(kind=real_kind),               parameter :: hfd = 1D-12             
   real(kind=real_kind)                          :: lambda_p          (nlev,qsize)
@@ -1414,7 +1415,7 @@ subroutine Cobra_SLBQP(Que, Que_t, rho, minq, maxq, mass, hybrid, nets, nete)
   lambda_p = 0
   lambda_c =  -alpha*rp
 
-  do while (MAXVAL(ABS(rc)).gt.eta)
+  do while (MAXVAL(ABS(rc)).gt.eta .and. nclip.lt.max_clip)
 
     do ie=nets,nete
     do q=1,qsize
