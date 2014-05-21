@@ -1534,15 +1534,17 @@ contains
     use time_mod, only : TimeLevel_t, timelevel_update, nsplit
     use control_mod, only: statefreq, integration, ftype, qsplit, nu_p, test_cfldep, rsplit
     use control_mod, only : use_semi_lagrange_transport, tracer_transport_type
-    use control_mod, only : TRACERTRANSPORT_GLL
+    use control_mod, only : TRACERTRANSPORT_EULERIAN
     use fvm_mod,     only : fvm_ideal_test, IDEAL_TEST_OFF, IDEAL_TEST_ANALYTICAL_WINDS
     use fvm_mod,     only : fvm_test_type, IDEAL_TEST_BOOMERANG, IDEAL_TEST_SOLIDBODY
+    use fvm_bsp_mod, only : get_boomerang_velocities_gll, get_solidbody_velocities_gll
     use prim_advance_mod, only : prim_advance_exp, overwrite_SEdensity
     use prim_advection_mod, only : prim_advec_tracers_remap, prim_advec_tracers_fvm, &
          prim_advec_tracers_spelt
     use parallel_mod, only : abortmp
     use reduction_mod, only : parallelmax
     use derivative_mod, only : interpolate_gll2spelt_points
+    use time_mod,    only : time_at
 
     type (element_t) , intent(inout)        :: elem(:)
 
@@ -1588,13 +1590,15 @@ contains
 
       ! save velocity at time t for seme-legrangian transport
       if (fvm_ideal_test == IDEAL_TEST_ANALYTICAL_WINDS) then
-        if (fvm_test_type == IDEAL_TEST_BOOMERANG) then
-          elem(ie)%derived%vstar=get_boomerang_velocities_gll(elem(ie), tl%n0)
-        else if (fvm_test_type == IDEAL_TEST_SOLIDBODY) then
-          elem(ie)%derived%vstar=get_solidbody_velocities_gll(elem(ie), tl%n0)
-        else
-          call abortmp('Bad fvm_test_type in prim_step')
-        end if
+        do k = 1, nlev
+          if (fvm_test_type == IDEAL_TEST_BOOMERANG) then
+            elem(ie)%derived%vstar(:,:,:,k)=get_boomerang_velocities_gll(elem(ie), time_at(tl%n0))
+          else if (fvm_test_type == IDEAL_TEST_SOLIDBODY) then
+            elem(ie)%derived%vstar(:,:,:,k)=get_solidbody_velocities_gll(elem(ie), time_at(tl%n0))
+          else
+            call abortmp('Bad fvm_test_type in prim_step')
+          end if
+        end do
       else if (use_semi_lagrange_transport) then
         elem(ie)%derived%vstar=elem(ie)%state%v(:,:,:,:,tl%n0)
       end if
