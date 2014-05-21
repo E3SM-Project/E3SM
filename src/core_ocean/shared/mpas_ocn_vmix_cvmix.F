@@ -129,7 +129,7 @@ contains
 
       integer :: k, iCell, nVertLevels, jCell, iNeighbor, iter
       real (kind=RKIND) :: r, layerSum
-      real (kind=RKIND), dimension(:), allocatable :: sigma, turbulentScalarVelocityScale
+      real (kind=RKIND), dimension(:), allocatable :: sigma, Nsqr_iface, turbulentScalarVelocityScale
 
       !-----------------------------------------------------------------
       !
@@ -223,6 +223,7 @@ contains
       allocate(cvmix_variables % Rib(nVertLevels))
 
       allocate(sigma(nVertLevels))
+      allocate(Nsqr_iface(nVertLevels+1))
       allocate(turbulentScalarVelocityScale(nVertLevels))
 
       do iCell=1,mesh%nCells
@@ -381,9 +382,11 @@ contains
          ! the computation of the boundary layer depth is iterative
          do iter=1,config_cvmix_kpp_niteratorOBL_solver
 
-           ! compute sigma at cell center
+           ! compute sigma at cell center and fill N^2 at interfaces
            do k=1,maxLevelCell(iCell)
              sigma(k) = -cvmix_variables % zt(k) / max(1.0, diagnostics % boundaryLayerDepth % array(iCell))
+             Nsqr_iface(1:nVertLevels) = diagnostics % BruntVaisalaFreqTop % array(1:nVertLevels,iCell)
+             Nsqr_iface(nVertLevels+1) = 1.0e-10
            enddo
 
            ! compute the turbulent scales in order to compute the bulk Richardson number
@@ -399,7 +402,7 @@ contains
              diagnostics % bulkRichardsonNumberBuoy % array(1:nVertLevels,iCell), &
              diagnostics % bulkRichardsonNumberShear % array(1:nVertLevels,iCell), &
              ws_cntr = turbulentScalarVelocityScale(:), &
-             Nsqr_iface = diagnostics % BruntVaisalaFreqTop % array(:,iCell) )
+             Nsqr_iface = Nsqr_iface(1:nVertLevels+1) )
 
            ! compute the boundary layer depth based on model state at current time step
            ! boundaryLayerDepth is then smoothed and a halo update is applied elsewhere
@@ -453,6 +456,7 @@ contains
       deallocate(cvmix_variables % Rib)
   
       deallocate(sigma)
+      deallocate(Nsqr_iface)
       deallocate(turbulentScalarVelocityScale)
 
    !--------------------------------------------------------------------
