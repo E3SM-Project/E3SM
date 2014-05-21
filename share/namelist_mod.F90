@@ -90,8 +90,8 @@ module namelist_mod
 #ifndef CAM
        pertlim,      &
        tracer_transport_type,    &
-       TRACERTRANSPORT_GLL,      &
-       TRACERTRANSPORT_CSLAM,    &
+       TRACERTRANSPORT_EULERIAN,      &
+       TRACERTRANSPORT_LAGRANGIAN,    &
        TRACERTRANSPORT_FLUXFORM, &
 #endif
        test_cfldep
@@ -225,6 +225,10 @@ module namelist_mod
     integer :: se_ne
     integer :: unitn
     character(len=*), parameter ::  subname = "homme:namelist_mod"
+! These items are only here to keep readnl from crashing. Remove when possible
+    integer :: se_fv_nphys
+    character(len=80)  :: se_write_phys_grid
+    character(len=256) :: se_phys_grid_file
 #endif
 #ifndef CAM
     character(len=32) :: tracer_transport_method
@@ -308,7 +312,11 @@ module namelist_mod
 
 #ifdef CAM
     namelist  /ctl_nl/ SE_NSPLIT,  &       ! number of dynamics steps per physics timestep
-                       se_phys_tscale
+                       se_phys_tscale, &
+! These items are only here to keep readnl from crashing. Remove when possible
+                       se_fv_nphys,    &      ! Linear size of FV physics grid
+                       se_write_phys_grid, &  ! Write physics grid file if .true.
+                       se_phys_grid_file      ! Physics grid filename
 #else
     namelist /ctl_nl/test_case,       &       ! test case
                      sub_case,        &       ! generic test case parameter
@@ -430,7 +438,8 @@ module namelist_mod
     ! set all CAM defaults
     ! CAM requires forward-in-time, subcycled dynamics
     ! RK2 3 stage tracers, sign-preserving conservative
-    tstep_type = 1            ! forward-in-time RK methods
+!!XXgoldyXX: Changed default to 5 since we don't have it in the CAM namelist
+    tstep_type              = 5 !1      ! forward-in-time RK methods
     qsplit=4; rk_stage_user=3
     se_limiter_option=4
     se_ftype = 2
@@ -491,6 +500,7 @@ module namelist_mod
        do while ( ierr /= 0 )
           read (unitn,ctl_nl,iostat=ierr)
           if (ierr < 0) then
+            write(6,*) 'ierr =',ierr
              call abortmp( subname//':: namelist read returns an'// &
                   ' end of file or end of record condition' )
           end if
@@ -738,8 +748,8 @@ module namelist_mod
        read(*,nml=analysis_nl)
 #endif
 
-       write(iulog,*)"reading CSLAM namelist..."
 #ifndef CAM
+       write(iulog,*)"reading CSLAM namelist..."
        tracer_transport_method = 'eulerian'
        cslam_ideal_test = 'off'
        cslam_test_type = 'boomerang'
@@ -988,10 +998,10 @@ module namelist_mod
 ! These options are set by the CAM namelist
 #ifndef CAM
 ! Set and broadcast tracer transport type
-    if (trim(tracer_transport_method) == 'gll') then
-      tracer_transport_type = TRACERTRANSPORT_GLL
-    else if (trim(tracer_transport_method) == 'cslam') then
-      tracer_transport_type = TRACERTRANSPORT_CSLAM
+    if (trim(tracer_transport_method) == 'eulerian') then
+      tracer_transport_type = TRACERTRANSPORT_EULERIAN
+    else if (trim(tracer_transport_method) == 'lagrangian') then
+      tracer_transport_type = TRACERTRANSPORT_LAGRANGIAN
     else if (trim(tracer_transport_method) == 'flux_form') then
       tracer_transport_type = TRACERTRANSPORT_FLUXFORM
     else

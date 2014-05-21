@@ -1022,12 +1022,15 @@ contains
         dt,tl,nets,nete)
     use perf_mod, only : t_startf, t_stopf            ! _EXTERNAL
     use vertremap_mod, only: remap1_nofilter  ! _EXTERNAL (actually INTERNAL)
-    use fvm_mod, only : cslam_run, cslam_runairdensity, edgeveloc, fvm_mcgregor, fvm_mcgregordss, fvm_rkdss
+    use fvm_mod, only : cslam_run, cslam_runairdensity, cslam_runflux, edgeveloc
+    use fvm_mod, only: fvm_mcgregor, fvm_mcgregordss, fvm_rkdss
     use fvm_mod, only : fvm_ideal_test, IDEAL_TEST_OFF, IDEAL_TEST_ANALYTICAL_WINDS
     use fvm_mod, only : fvm_test_type, IDEAL_TEST_BOOMERANG, IDEAL_TEST_SOLIDBODY
-    use control_mod, only : tracer_transport_type, TRACERTRANSPORT_GLL
-    use control_mod, only : TRACERTRANSPORT_CSLAM, TRACERTRANSPORT_FLUXFORM
-  integer, public            :: 
+    use fvm_bsp_mod, only: get_boomerang_velocities_gll, get_solidbody_velocities_gll
+    use control_mod, only : tracer_transport_type, TRACERTRANSPORT_EULERIAN
+    use control_mod, only : TRACERTRANSPORT_LAGRANGIAN, TRACERTRANSPORT_FLUXFORM
+    use control_mod, only : use_semi_lagrange_transport
+    use time_mod,    only : time_at
 
     implicit none
     type (element_t), intent(inout)   :: elem(:)
@@ -1083,16 +1086,17 @@ contains
                   ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,np1)
              dp_star(:,:,k) = dp(:,:,k) + dt*(elem(ie)%derived%eta_dot_dpdn(:,:,k+1) -&
                   elem(ie)%derived%eta_dot_dpdn(:,:,k))
+             if (fvm_ideal_test == IDEAL_TEST_ANALYTICAL_WINDS) then
+               if (fvm_test_type == IDEAL_TEST_BOOMERANG) then
+                 elem(ie)%derived%vstar(:,:,:,k)=get_boomerang_velocities_gll(elem(ie), time_at(np1))
+               else if (fvm_test_type == IDEAL_TEST_SOLIDBODY) then
+                 elem(ie)%derived%vstar(:,:,:,k)=get_solidbody_velocities_gll(elem(ie), time_at(np1))
+               else
+                 call abortmp('Bad fvm_test_type in prim_step')
+               end if
+             end if
           enddo
-          if (fvm_ideal_test == IDEAL_TEST_ANALYTICAL_WINDS) then
-            if (fvm_test_type == IDEAL_TEST_BOOMERANG) then
-              elem(ie)%derived%vstar=get_boomerang_velocities_gll(elem(ie), np1)
-            else if (fvm_test_type == IDEAL_TEST_SOLIDBODY) then
-              elem(ie)%derived%vstar=get_solidbody_velocities_gll(elem(ie), np1)
-            else
-              call abortmp('Bad fvm_test_type in prim_step')
-            end if
-          else if (use_semi_lagrange_transport) then
+          if (use_semi_lagrange_transport) then
             elem(ie)%derived%vstar=elem(ie)%state%v(:,:,:,:,np1)
           end if
           call remap1_nofilter(elem(ie)%derived%vstar,np,1,dp,dp_star)
@@ -1119,11 +1123,11 @@ contains
     
     ! fvm departure calcluation should use vstar.
     ! from c(n0) compute c(np1):
-    if (tracer_transport_type == TRACERTRANSPORT_GLL) then
+    if (tracer_transport_type == TRACERTRANSPORT_EULERIAN) then
       call abortmp('Tracer transport set to GLL but ntrac > 0')
     else if (tracer_transport_type == TRACERTRANSPORT_FLUXFORM) then
       call cslam_runflux(elem,fvm,hybrid,deriv,dt,tl,nets,nete)
-    else if (tracer_transport_type == TRACERTRANSPORT_CSLAM) then
+    else if (tracer_transport_type == TRACERTRANSPORT_LAGRANGIAN) then
       call cslam_runairdensity(elem,fvm,hybrid,deriv,dt,tl,nets,nete)
     else
       call abortmp('Bad tracer_transport_type in Prim_Advec_Tracers_fvm')
