@@ -108,7 +108,7 @@ ifort-gcc:
 	"CFLAGS_OPT = -O3" \
 	"LDFLAGS_OPT = -O3" \
 	"FFLAGS_DEBUG = -real-size 64 -g -convert big_endian -FR -CU -CB -check all -fpe0 -traceback" \
-	"CFLAGS_DEBUG = -g -traceback" \
+	"CFLAGS_DEBUG = -g" \
 	"LDFLAGS_DEBUG = -g -fpe0 -traceback" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
