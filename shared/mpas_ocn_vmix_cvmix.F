@@ -425,27 +425,27 @@ contains
       !
       ! smooth boundary layer depth
       !
-      if (config_use_cvmix_kpp) then
-        do iCell=1,mesh%nCells
+     !if (config_use_cvmix_kpp) then
+     !  do iCell=1,mesh%nCells
   
-          ! loop over all cell neighbors and add up boundary layer depth
-          r = 0.0
-          do iNeighbor=1,mesh%nEdgesOnCell%array(iCell)
-            jCell = mesh%CellsOnCell%array(iNeighbor,iCell)
-            r = r + diagnostics % boundaryLayerDepth % array(jCell)
-          end do
+     !    ! loop over all cell neighbors and add up boundary layer depth
+     !    r = 0.0
+     !    do iNeighbor=1,mesh%nEdgesOnCell%array(iCell)
+     !      jCell = mesh%CellsOnCell%array(iNeighbor,iCell)
+     !      r = r + diagnostics % boundaryLayerDepth % array(jCell)
+     !    end do
   
-          ! replace boundary layer depth with average of itself and neigbhbors
-          diagnostics % boundaryLayerDepth % array(iCell) = &
-             0.5*(diagnostics % boundaryLayerDepth % array(iCell)+r/mesh%nEdgesOnCell%array(iCell))
+     !    ! replace boundary layer depth with average of itself and neigbhbors
+     !    diagnostics % boundaryLayerDepth % array(iCell) = &
+     !       0.5*(diagnostics % boundaryLayerDepth % array(iCell)+r/mesh%nEdgesOnCell%array(iCell))
   
-          ! make sure that boundary layer is not thicker than entire ocean column
-          diagnostics % boundaryLayerDepth % array(iCell) = &
-             min(bottomDepth(iCell), diagnostics % boundaryLayerDepth % array(iCell))
+     !    ! make sure that boundary layer is not thicker than entire ocean column
+     !    diagnostics % boundaryLayerDepth % array(iCell) = &
+     !       min(bottomDepth(iCell), diagnostics % boundaryLayerDepth % array(iCell))
     
-        end do  ! do iCell=1,mesh%nCells
+     !  end do  ! do iCell=1,mesh%nCells
   
-      end if ! if (config_use_cvmix_kpp)
+     !end if ! if (config_use_cvmix_kpp)
 
       ! dellocate cmvix variables
       deallocate(cvmix_variables % visc_iface)
