@@ -119,17 +119,6 @@ ELSE()
   ADD_SUBDIRECTORY(libs/lapack)
 ENDIF()
 
-# Netcdf is required
-FIND_PACKAGE(Netcdf REQUIRED)
-
-# PNetcdf is optional but used by default
-OPTION(WITH_PNETCDF "Whether to build with PNetcdf" TRUE)
-IF (${WITH_PNETCDF})
-  FIND_PACKAGE(Pnetcdf REQUIRED)
-ELSE ()
-  MESSAGE(WARNING "Warning: Not building with PNetcdf - cannot run all regression tests.")
-ENDIF ()
-
 IF (${HOMME_USE_TRILINOS})
   MESSAGE(STATUS "This configuration of requires Trilinos")
   FIND_PACKAGE(Trilinos REQUIRED)
@@ -162,7 +151,18 @@ IF (${ENABLE_NANOTIMERS})
   ENDIF ()
 ENDIF ()
 
+# Use pio FindNETCDF path
+SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/utils/pio/cmake" ${CMAKE_MODULE_PATH})
+# For pio - allow the user to set HDF5_DIR to find libhdf5 etc.
+IF (HDF5_DIR)
+  SET(ENV{HDF5_ROOT} ${HDF5_DIR})
+ENDIF ()
 ADD_SUBDIRECTORY(utils/pio)
+
+# CPRNC locations
+SET (CPRNC_INSTALL_DIR ${CMAKE_BINARY_DIR}/utils/cprnc)
+SET (CPRNC_BINARY ${CMAKE_BINARY_DIR}/utils/cprnc/cprnc)
+ADD_SUBDIRECTORY(utils/cprnc)
 
 ADD_SUBDIRECTORY(utils/timing)
 
