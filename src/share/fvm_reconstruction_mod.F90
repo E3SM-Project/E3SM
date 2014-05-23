@@ -185,13 +185,15 @@ subroutine get_equispace_weights(dx, x,halo_interp_weight)
   !                http://mathworld.wolfram.com/LagrangeInterpolatingPolynomial.html
   !
   halo_interp_weight = 1.0D0
-  do j=1,ns
-     do k=1,ns
-        if (k.ne.j) then
-           halo_interp_weight(j)=halo_interp_weight(j)*(x-dble(k-1)*dx)/(dble(j-1)*dx-dble(k-1)*dx)
-        end if
+  if (ns.ne.1) then
+     do j=1,ns
+        do k=1,ns
+           if (k.ne.j) then
+              halo_interp_weight(j)=halo_interp_weight(j)*(x-dble(k-1)*dx)/(dble(j-1)*dx-dble(k-1)*dx)
+           end if
+        end do
      end do
-  end do
+  end if
 end subroutine get_equispace_weights
 
 function matmul_w(w,f)
