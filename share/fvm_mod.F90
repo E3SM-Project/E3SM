@@ -850,14 +850,32 @@ contains
     use parallel_mod, only : parallel_t, haltmp
     type (parallel_t) :: par
     
-    if (nc<4) then
+    if (par%masterproc) then
+       print *, "Dimension variable for fvm is          nc = ",nc
+       print *, "Width of halo interpolation for fvm is ns = ",ns
+    end if
+
+
+    if (nc<3) then
        if (par%masterproc) then
           print *, "NUMBER OF CELLS ERROR for fvm: Number of cells parmeter"
-          print *, "parameter nc at least 4 (nc>=4), nc*nc cells per element. This is"
+          print *, "parameter nc at least 3 (nc>=3), nc*nc cells per element. This is"
           print *, "needed for the cubic reconstruction, which is only implemented yet! STOP"
        endif
        call haltmp("stopping")
     end if
+
+    if (nc==3.and.ns.ne.2) then
+       if (par%masterproc) then
+          print *, "For nc==3 one must use linear interpolation in halo (i.e. ns=2)"
+          print *, "For nc==4 one can use linear or cubic interpolation in haloe "
+          print *, "(i.e. ns=2 or ns=3, respectively)"
+          print *, "You chose (nc,ns) = ",nc,ns          
+       end if
+       call haltmp("stopping")
+    end if
+
+
     if (nhe .ne. 1) then
        if (par%masterproc) then
           print *, "PARAMTER ERROR for fvm: Number of halo zone for the extended"
