@@ -17,7 +17,7 @@ module fvm_mod
   use edge_mod, only : ghostbuffertr_t, initghostbufferTR, freeghostbuffertr, &
        ghostVpack, ghostVunpack,  edgebuffer_t, initEdgebuffer
   use bndry_mod, only: ghost_exchangeV                     
-  use dimensions_mod, only: nelem, nelemd, nelemdmax, nlev, ne, nc, nhc, nhe, nlev, ntrac, np, ntrac_d
+  use dimensions_mod, only: nelem, nelemd, nelemdmax, nlev, ne, nc, nhc, nhe, nlev, ntrac, np, ntrac_d,ns
   use time_mod, only : timelevel_t
   use element_mod, only : element_t, timelevels
   use fvm_control_volume_mod, only: fvm_struct
@@ -851,8 +851,8 @@ contains
     type (parallel_t) :: par
     
     if (par%masterproc) then
-       print *, "Dimension variable for fvm is          nc = ",nc
-       print *, "Width of halo interpolation for fvm is ns = ",ns
+       print *, 'Dimension variable for fvm is          nc = ',nc
+       print *, 'Width of halo interpolation for fvm is ns = ',ns
     end if
 
 
