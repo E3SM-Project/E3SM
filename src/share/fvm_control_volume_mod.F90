@@ -902,7 +902,7 @@ subroutine create_interpolation_points(elem,fvm)
           tmpgnom%x=cube_xstart-(halo-0.5)*fvm%dalpha
           do i=halo-nh,nc+nh-(halo-1) !see fvm_reconstruction to understand these boundaries
             tmpgnom%y=gnomystart(i)
-            call interpolation_point(tmpgnom,gnomystart,1,4,1,0, fvm%interp(i,halo,1),&
+            call interpolation_point(tmpgnom,gnomystart,1,4,1,fvm%interp(i,halo,1),&
                                      ida,ide,iref1,fvm%ibase(i,halo,1))
           end do
         end do
@@ -915,7 +915,7 @@ subroutine create_interpolation_points(elem,fvm)
           tmpgnom%x=cube_xend+(halo-0.5)*fvm%dalpha
           do i=halo-nh,nc+nh-(halo-1)
             tmpgnom%y=gnomystart(i)
-            call interpolation_point(tmpgnom,gnomystart,1,2,1,0, fvm%interp(i,halo,1),&
+            call interpolation_point(tmpgnom,gnomystart,1,2,1,fvm%interp(i,halo,1),&
                                      ida,ide,iref1,fvm%ibase(i,halo,1))                                                  
           end do 
         end do  
@@ -932,7 +932,7 @@ subroutine create_interpolation_points(elem,fvm)
             ! dbg - change to fvm%interp(i,halo,1) instead of fvm%interp(i,halo,2)
             !       so that I can get rid of iinterp = 1 in fvm_reconstruction_mod
             !
-            call interpolation_point(tmpgnom,gnomxstart,1,6,0,0, fvm%interp(i,halo,2),&
+            call interpolation_point(tmpgnom,gnomxstart,1,6,0,fvm%interp(i,halo,2),&
                                      ida,ide,iref1,fvm%ibase(i,halo,2))                                      
           end do
         end do
@@ -944,7 +944,7 @@ subroutine create_interpolation_points(elem,fvm)
           tmpgnom%y=cube_ystart-(halo-0.5)*fvm%dbeta
           do i=halo-nh,nc+nh-(halo-1)
             tmpgnom%x=gnomxstart(i)
-            call interpolation_point(tmpgnom,gnomxstart,1,5,0,0, fvm%interp(i,halo,2),&
+            call interpolation_point(tmpgnom,gnomxstart,1,5,0,fvm%interp(i,halo,2),&
                                      ida,ide,iref1,fvm%ibase(i,halo,2))                                      
           end do
         end do      
@@ -979,7 +979,7 @@ subroutine create_interpolation_points(elem,fvm)
           iref1=ida
           do i=0,nc+nh-(halo-1)
             tmpgnom%y=gnomystart(i)            
-            call interpolation_point(tmpgnom,gnomystart,1,4,1,-1, fvm%interp(i,halo,1),&
+            call interpolation_point(tmpgnom,gnomystart,1,4,1,fvm%interp(i,halo,1),&
                                      ida,ide,iref1,fvm%ibase(i,halo,1))
           end do
        end do
@@ -993,7 +993,7 @@ subroutine create_interpolation_points(elem,fvm)
           iref1=ida
           do i=0,nc+nh-(halo-1)
             tmpgnom%y=gnomystart(i)
-            call interpolation_point(tmpgnom,gnomystart,1,2,1,-1, fvm%interp(i,halo,1),&
+            call interpolation_point(tmpgnom,gnomystart,1,2,1, fvm%interp(i,halo,1),&
                                      ida,ide,iref1,fvm%ibase(i,halo,1))                                      
           end do
        end do
@@ -1007,7 +1007,7 @@ subroutine create_interpolation_points(elem,fvm)
           iref1=ida
           do i=halo-nh,nc+1
             tmpgnom%y=gnomyend(i)
-            call interpolation_point(tmpgnom,gnomyend,1,2,1,1, fvm%interp(i,halo,1),&
+            call interpolation_point(tmpgnom,gnomyend,1,2,1, fvm%interp(i,halo,1),&
                                      ida,ide,iref1,fvm%ibase(i,halo,1))                                      
           end do
        end do
@@ -1021,7 +1021,7 @@ subroutine create_interpolation_points(elem,fvm)
           iref1=ida
           do i=halo-nh,nc+1
             tmpgnom%y=gnomyend(i)
-            call interpolation_point(tmpgnom,gnomyend,1,4,1,1, fvm%interp(i,halo,1),&
+            call interpolation_point(tmpgnom,gnomyend,1,4,1, fvm%interp(i,halo,1),&
                                      ida,ide,iref1,fvm%ibase(i,halo,1))                                      
           end do
        end do
@@ -1073,7 +1073,7 @@ end subroutine create_interpolation_points
 !        point    ... provides the difference of the interpolation point to use it  !
 !                     directly in CUBIC_EQUISPACE_INTERP                            !                
 !-----------------------------------------------------------------------------------!
-subroutine interpolation_point(gnom,gnom1d,face1,face2,xy,except, point,ida,ide,iref,ibaseref)
+subroutine interpolation_point(gnom,gnom1d,face1,face2,xy,point,ida,ide,iref,ibaseref)
   
   use coordinate_systems_mod, only : cubedsphere2cart, cart2cubedsphere, &
                                      cartesian2D_t,cartesian3D_t
@@ -1082,7 +1082,7 @@ subroutine interpolation_point(gnom,gnom1d,face1,face2,xy,except, point,ida,ide,
   type (cartesian2D_t), intent(in)                                :: gnom  
   real (kind=real_kind), dimension(1-nhc:nc+nhc), intent(in)      :: gnom1d  
   integer, intent(in)                                             :: face1, face2, xy
-  integer,intent(in)                                              :: except,ida, ide
+  integer,intent(in)                                              :: ida, ide
   integer,intent(inout)                                           :: iref,ibaseref
   real (kind=real_kind), intent(inout)                            :: point
   
@@ -1107,22 +1107,14 @@ subroutine interpolation_point(gnom,gnom1d,face1,face2,xy,except, point,ida,ide,
     iref = iref + 1
   end do
   !
+  ! this code is only coded for ns even
+  !
+  !
   ! ibaseref is the left most index used for 1D interpolation
   ! (hence iref = iref-ns/2 except near corners)
   !
-  if ((iref<=ida+1).AND.(except==-1)) then
-     !
-     ! if swest or nwest (corner)
-     !
-     ibaseref=ida
-  elseif ((iref>=ide).AND.(except==1)) then
-     !
-     ! if neast or seast (corner)
-     !
-    ibaseref=ide-(ns/2+1)
-  else
-    ibaseref=iref-ns/2
-  end if
+  iref = iref-ns/2
+  ibaseref = min(max(iref,ida),ide-(ns-1))
   point=point-gnom1d(ibaseref)
 end subroutine interpolation_point
 !END SUBROUTINE INTERPOLATION_POINT---------------------------------------CE-for FVM!
