@@ -850,12 +850,6 @@ contains
     use parallel_mod, only : parallel_t, haltmp
     type (parallel_t) :: par
     
-    if (par%masterproc) then
-       print *, 'Dimension variable for fvm is          nc = ',nc
-       print *, 'Width of halo interpolation for fvm is ns = ',ns
-    end if
-
-
     if (nc<3) then
        if (par%masterproc) then
           print *, "NUMBER OF CELLS ERROR for fvm: Number of cells parmeter"
@@ -865,11 +859,22 @@ contains
        call haltmp("stopping")
     end if
 
-    if (nc==3.and.ns.ne.2) then
+    if (par%masterproc) then
+       if (ns==1) then
+          print *, "ns==1: using no interpolation for mapping cell averages values across edges"
+       else if (ns==2) then
+          print *, "ns==2: using linear interpolation for mapping cell averages values across edges"
+       else if (ns==4) then
+          print *, "ns==4: using cubic interpolation for mapping cell averages values across edges"
+       else
+          print *, "value of ns not supported/tested: ns = ",ns
+          stop
+       end if
+    end if
+
+    if (nhe+ns>nc) then
        if (par%masterproc) then
-          print *, "For nc==3 one must use linear interpolation in halo (i.e. ns=2)"
-          print *, "For nc==4 one can use linear or cubic interpolation in haloe "
-          print *, "(i.e. ns=2 or ns=3, respectively)"
+          print *, "ns+nhe must be less than or equal nc - optimal choice is ns+nhe=nc!"
           print *, "You chose (nc,ns) = ",nc,ns          
        end if
        call haltmp("stopping")
