@@ -42,7 +42,7 @@ module fvm_control_volume_mod
     type (spherical_polar_t) :: asphere(nc+1,nc+1) ! spherical coordinates
     ! save velocity at time t 
     real (kind=real_kind)    :: vn0(np,np,2,nlev)
-    real (kind=real_kind)    :: vstar(2-np:2*np-1,2-np:2*np-1,2,nlev,4)
+    real (kind=real_kind)    :: vstar(2-np:2*np-1,2-np:2*np-1,2,nlev,4) !phl - nhe depedency?
 !-----------------------------------------------------------------------------------!
     real (kind=real_kind)    :: dalpha, dbeta    ! grid step in alpha/beta coord.
 !-----------------------------------------------------------------------------------!
@@ -1106,16 +1106,26 @@ subroutine interpolation_point(gnom,gnom1d,face1,face2,xy,point,ida,ide,iref,iba
   do while ((iref .ne. nc+nc-1) .AND. (point>gnom1d(iref) ))
     iref = iref + 1
   end do
-  !
-  ! this code is only coded for ns even
-  !
-  !
-  ! ibaseref is the left most index used for 1D interpolation
-  ! (hence iref = iref-ns/2 except near corners)
-  !
-  iref = iref-ns/2
-  ibaseref = min(max(iref,ida),ide-(ns-1))
-  point=point-gnom1d(ibaseref)
+
+  if (ns==1) then
+     !
+     ! no halo interpolation option - for debugging
+     !
+     if (gnom1d(iref)-point>point-gnom1d(iref-1)) iref=iref-1
+     ibaseref = min(max(iref,ida),ide)
+     point=point-gnom1d(ibaseref)
+  else
+     !
+     ! this code is only coded for ns even
+     !
+     !
+     ! ibaseref is the left most index used for 1D interpolation
+     ! (hence iref = iref-ns/2 except near corners)
+     !
+     iref = iref-ns/2
+     ibaseref = min(max(iref,ida),ide-(ns-1))
+     point=point-gnom1d(ibaseref)
+  end if
 end subroutine interpolation_point
 !END SUBROUTINE INTERPOLATION_POINT---------------------------------------CE-for FVM!
 
