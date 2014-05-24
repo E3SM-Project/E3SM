@@ -76,7 +76,7 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
   integer                                     :: jx_min2, jx_max2, jy_min2, jy_max2
   logical                                     :: swap1, swap2
   
-  integer (kind=int_kind)                     :: i, jtmp
+  integer (kind=int_kind)                     :: i, jtmp, k
   
   type (cartesian2D_t)                        :: dcart(-1:nc+3,-1:nc+3)       ! Cartesian coordinates 
   
@@ -1698,21 +1698,20 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
   jall=jall-1
 
   if(EOC) then
-    !
-    ! here is the correction (Erath et al., 2013), uncomment it if you want to run the scheme 
-    ! without weight correction
-    !  
-    do ja=1,jall
-     jx = weights_eul_index_all(ja,1); jy = weights_eul_index_all(ja,2);
-     area=fvm%area_sphere(jx,jy)
-  !    
-     weights_all(ja,1) = weights_all(ja,1)*abs(area/da_cslam(jx,jy))
-     weights_all(ja,2) = weights_all(ja,2)*abs(area*fvm%spherecentroid(1,jx,jy)/centroid_cslam(1,jx,jy))
-     weights_all(ja,3) = weights_all(ja,3)*abs(area*fvm%spherecentroid(2,jx,jy)/centroid_cslam(2,jx,jy))
-     weights_all(ja,4) = weights_all(ja,4)*abs(area*fvm%spherecentroid(3,jx,jy)/centroid_cslam(3,jx,jy))  
-     weights_all(ja,5) = weights_all(ja,5)*abs(area*fvm%spherecentroid(4,jx,jy)/centroid_cslam(4,jx,jy))
-     weights_all(ja,6) = weights_all(ja,6)*abs(area*fvm%spherecentroid(5,jx,jy)/centroid_cslam(5,jx,jy))
-    end do
+     !
+     ! here is the correction (Erath et al., 2013), uncomment it if you want to run the scheme 
+     ! without weight correction
+     !  
+     do ja=1,jall
+        jx = weights_eul_index_all(ja,1); jy = weights_eul_index_all(ja,2);
+        area=fvm%area_sphere(jx,jy)
+        weights_all(ja,1) = weights_all(ja,1)*abs(area/da_cslam(jx,jy))
+        do k=2,6
+           if (ABS(centroid_cslam(k-1,jx,jy))>tiny) &
+                weights_all(ja,k) = weights_all(ja,k)*&
+                abs(area*fvm%spherecentroid(k-1,jx,jy)/centroid_cslam(k-1,jx,jy))
+        end do
+     end do
   endif
  
 end subroutine compute_weights  
