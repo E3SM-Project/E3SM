@@ -251,8 +251,16 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
     
     
 ! ! end mcgregordss   
-    call cslam_runflux(elem,fvm,hybrid,deriv,tstep,tl,nets,nete) !run flux-form CSLAM
-!    call cslam_runairdensity(elem,fvm,hybrid,deriv,tstep,tl,nets,nete) !run regular CSLAM
+!    if(hybrid%masterthread) then 
+!       write(*,*) "running FF-CSLAM"
+!    end if
+!    call cslam_runflux(elem,fvm,hybrid,deriv,tstep,tl,nets,nete) !run flux-form CSLAM
+
+
+    if(hybrid%masterthread) then 
+       write(*,*) "running CSLAM"
+    end if
+    call cslam_runairdensity(elem,fvm,hybrid,deriv,tstep,tl,nets,nete) !run regular CSLAM
 !     call cslam_runtest(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
 !     call cslam_run(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)!phl
     
