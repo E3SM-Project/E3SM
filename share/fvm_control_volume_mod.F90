@@ -86,6 +86,8 @@ module fvm_control_volume_mod
     ! reconstruction   
     real (kind=real_kind)    :: interp(1-nh:nc+nh,1:nhr,2)  
     integer                  :: ibase(1-nh:nc+nh,1:nhr,2)  
+!----------
+    real (kind=real_kind) :: halo_interp_weight(1-nh:nc+nh,1:nhr,1:ns,2)
   end type fvm_struct
 
   public :: fvm_mesh_ari
@@ -155,6 +157,9 @@ subroutine fvm_mesh_ari(elem, fvm, tl)
   call create_ari(elem,fvm)
   call create_interpolation_points(elem,fvm)
 
+  if (fvm%cubeboundary > 0) then    
+     call compute_halo_weights(fvm)  
+  end if
 end subroutine fvm_mesh_ari
 !END SUBROUTINE fvm_MESH_ARI----------------------------------------------CE-for FVM
 
@@ -1128,5 +1133,110 @@ subroutine interpolation_point(gnom,gnom1d,face1,face2,xy,point,ida,ide,iref,iba
   end if
 end subroutine interpolation_point
 !END SUBROUTINE INTERPOLATION_POINT---------------------------------------CE-for FVM!
+
+
+!
+! a "pre-compute" version of fillhalo_cubic
+!
+subroutine compute_halo_weights(fvm)
+  implicit none
+  type (fvm_struct), intent(inout)     :: fvm
+  
+  integer                                       :: i, halo, ibaseref
+  !
+  ! pre-compute weight/index matrices
+  !
+
+  !
+  !
+  !
+  real (kind=real_kind), dimension(1-nc:nc+nc) :: gno_equi
+  integer :: imin,imax,jmin,jmax,iinterp
+  
+  fvm%halo_interp_weight(:,:,:,:) = 9.99E9 !dbg
+
+  if (fvm%cubeboundary>0) then
+     
+     if (fvm%cubeboundary<5) then
+        !
+        ! element is located at a panel side but is not a corner element
+        ! (west,east,south,north) = (1,2,3,4)
+        !
+        if (fvm%cubeboundary==west .or.fvm%cubeboundary==east ) then
+           iinterp = 1
+        end if
+        if (fvm%cubeboundary==north.or.fvm%cubeboundary==south) iinterp = 2
+        do halo=1,nhr
+           do i=halo-nh,nc+nh-(halo-1)
+              ibaseref=fvm%ibase(i,halo,iinterp)
+             call get_equispace_weights(fvm%dbeta, fvm%interp(i,halo,iinterp),fvm%halo_interp_weight(i,halo,:,1))
+           end do
+        end do
+     else
+        ! 
+        ! element is located at a cube corner
+        ! (swest,seast,nwest,neast)=(5,6,7,8)
+        !
+        do halo=1,nhr
+           if (fvm%cubeboundary==swest .or.fvm%cubeboundary==seast) then
+              imin = 0      ; imax = nc+nh-(halo-1);
+              jmin = halo-nh; jmax = nc+1;
+           else
+              jmin = 0      ; jmax = nc+nh-(halo-1);                
+              imin = halo-nh; imax = nc+1;
+           end if
+           do i=imin,imax
+              ibaseref=fvm%ibase(i,halo,1)
+              call get_equispace_weights(fvm%dbeta, fvm%interp(i,halo,1),fvm%halo_interp_weight(i,halo,:,1))
+           end do
+           !
+           ! reverse weights/indices for fotherpanel (see details on reconstruct_matrix)
+           !
+           fvm%halo_interp_weight(jmin:jmax,halo,1:ns,2) = fvm%halo_interp_weight(imax:imin:-1,halo,ns:1:-1,1)
+           fvm%ibase       (jmin:jmax,halo     ,2) = nc+1-(ns-1)-fvm%ibase(imax:imin:-1,halo        ,1)
+        end do
+     end if
+  end if
+end subroutine compute_halo_weights
+
+! ---------------------------------------------------------------------!
+!                                                                      !
+! Precompute weights for cubic Lagrange interpolation                  !
+! for equi-distant source grid values                                  !
+!                                                                      !
+!----------------------------------------------------------------------!
+
+subroutine get_equispace_weights(dx, x,halo_interp_weight)
+  !
+  ! Coordinate system for Lagrange interpolation:
+  !
+  ! |------|------|------|------|
+  ! 0     dx    2*dx   3*dx   ns*dx
+  !
+  implicit none
+  real (kind=real_kind),intent(in)                  :: dx  ! spacing of points, alpha/beta
+  real (kind=real_kind),intent(in)                  :: x   ! X coordinate where interpolation is to be applied
+  real (kind=real_kind),dimension(ns),intent(out)    :: halo_interp_weight
+  !
+  real (kind=real_kind) :: dx3
+  integer :: j,k
+
+  !
+  ! use Lagrange interpolation formulate, e.g.,: 
+  !
+  !                http://mathworld.wolfram.com/LagrangeInterpolatingPolynomial.html
+  !
+  halo_interp_weight = 1.0D0
+  if (ns.ne.1) then
+     do j=1,ns
+        do k=1,ns
+           if (k.ne.j) then
+              halo_interp_weight(j)=halo_interp_weight(j)*(x-dble(k-1)*dx)/(dble(j-1)*dx-dble(k-1)*dx)
+           end if
+        end do
+     end do
+  end if
+end subroutine get_equispace_weights
+
 
 end module fvm_control_volume_mod

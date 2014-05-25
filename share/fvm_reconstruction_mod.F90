@@ -24,7 +24,7 @@ module fvm_reconstruction_mod
   private
   integer, parameter, private:: nh = nhr+(nhe-1) ! = 2 (nhr=2; nhe=1)
                                                  ! = 3 (nhr=2; nhe=2)
-  integer, dimension(1-nht:nc+nht,nhr,2), private :: ibase
+!  integer, dimension(1-nht:nc+nht,nhr,2), private :: ibase
   logical, private, parameter :: lplot = .false.
   public :: reconstruction
 contains
@@ -74,9 +74,7 @@ subroutine reconstruction(fcube,fvm,recons)
 
   call compute_reconstruct_matrix(fvm, recons_matrix) !can be re-used for each additional tracer
   
-  if (fvm%cubeboundary > 0) then    
-     call compute_halo_weights(fvm,halo_interp_weight)  
-  end if
+
   call fill_halo(fcube,fvm,halo_interp_weight,fpanel,fotherpanel)
   call get_reconstruction(fvm, fpanel, fotherpanel,recons_matrix,recons)
   
@@ -89,112 +87,8 @@ subroutine reconstruction(fcube,fvm,recons)
 end subroutine reconstruction
 !END SUBROUTINE RECONSTRUCTION--------------------------------------------CE-for FVM!
 
-!
-! a "pre-compute" version of fillhalo_cubic
-!
-subroutine compute_halo_weights(fvm,halo_interp_weight)
-  implicit none
-  type (fvm_struct), intent(in)     :: fvm
-  
-  integer                                       :: i, halo, ibaseref
-  !
-  ! pre-compute weight/index matrices
-  !
-  real (kind=real_kind), dimension(1-nh:nc+nh,1:nhr,1:ns,2), intent(out) :: halo_interp_weight
-  !
-  !
-  !
-  real (kind=real_kind), dimension(1-nc:nc+nc) :: gno_equi
-  integer :: imin,imax,jmin,jmax,iinterp
-  
-  halo_interp_weight(:,:,:,:) = 9.99E9 !dbg
-
-  if (fvm%cubeboundary>0) then
-     
-     if (fvm%cubeboundary<5) then
-        !
-        ! element is located at a panel side but is not a corner element
-        ! (west,east,south,north) = (1,2,3,4)
-        !
-        if (fvm%cubeboundary==west .or.fvm%cubeboundary==east ) then
-           iinterp = 1
-        end if
-        if (fvm%cubeboundary==north.or.fvm%cubeboundary==south) iinterp = 2
-        do halo=1,nhr
-           do i=halo-nh,nc+nh-(halo-1)
-              ibaseref=fvm%ibase(i,halo,iinterp)
-              ibase(i,halo,1) = ibaseref
-              call get_equispace_weights(fvm%dbeta, fvm%interp(i,halo,iinterp),halo_interp_weight(i,halo,:,1))
-           end do
-        end do
-     else
-        ! 
-        ! element is located at a cube corner
-        ! (swest,seast,nwest,neast)=(5,6,7,8)
-        !
-        do halo=1,nhr
-           if (fvm%cubeboundary==swest .or.fvm%cubeboundary==seast) then
-              imin = 0      ; imax = nc+nh-(halo-1);
-              jmin = halo-nh; jmax = nc+1;
-           else
-              jmin = 0      ; jmax = nc+nh-(halo-1);                
-              imin = halo-nh; imax = nc+1;
-           end if
-           do i=imin,imax
-              ibaseref=fvm%ibase(i,halo,1)
-              ibase(i,halo,1) = ibaseref
-              call get_equispace_weights(fvm%dbeta, fvm%interp(i,halo,1),halo_interp_weight(i,halo,:,1))
-           end do
-           !
-           ! reverse weights/indices for fotherpanel (see details on reconstruct_matrix)
-           !
-           halo_interp_weight(jmin:jmax,halo,1:ns,2) =      halo_interp_weight(imax:imin:-1,halo,ns:1:-1,1)
-           ibase       (jmin:jmax,halo     ,2) = nc+1-(ns-1)-ibase(imax:imin:-1,halo        ,1)
-        end do
-     end if
-  end if
-end subroutine compute_halo_weights
 
 
-
-! ---------------------------------------------------------------------!
-!                                                                      !
-! Precompute weights for cubic Lagrange interpolation                  !
-! for equi-distant source grid values                                  !
-!                                                                      !
-!----------------------------------------------------------------------!
-
-subroutine get_equispace_weights(dx, x,halo_interp_weight)
-  !
-  ! Coordinate system for Lagrange interpolation:
-  !
-  ! |------|------|------|------|
-  ! 0     dx    2*dx   3*dx   ns*dx
-  !
-  implicit none
-  real (kind=real_kind),intent(in)                  :: dx  ! spacing of points, alpha/beta
-  real (kind=real_kind),intent(in)                  :: x   ! X coordinate where interpolation is to be applied
-  real (kind=real_kind),dimension(ns),intent(out)    :: halo_interp_weight
-  !
-  real (kind=real_kind) :: dx3
-  integer :: j,k
-
-  !
-  ! use Lagrange interpolation formulate, e.g.,: 
-  !
-  !                http://mathworld.wolfram.com/LagrangeInterpolatingPolynomial.html
-  !
-  halo_interp_weight = 1.0D0
-  if (ns.ne.1) then
-     do j=1,ns
-        do k=1,ns
-           if (k.ne.j) then
-              halo_interp_weight(j)=halo_interp_weight(j)*(x-dble(k-1)*dx)/(dble(j-1)*dx-dble(k-1)*dx)
-           end if
-        end do
-     end do
-  end if
-end subroutine get_equispace_weights
 
 function matmul_w(w,f)
   implicit none
@@ -333,8 +227,7 @@ subroutine fill_halo(fcube,fvm,halo_interp_weight,fpanel,fotherpanel)!dbg
      w = halo_interp_weight(:,:,:,1)
      do halo=1,nhr
         do i=halo-nh,nc+nh-(halo-1)
-!           ibaseref=fvm%ibase(i,halo,1)                                              
-           ibaseref = ibase(i,halo,1)
+           ibaseref=fvm%ibase(i,halo,1)                                              
            fpanel(1-halo ,i) = matmul_w(w(i,halo,:),fcube(1-halo ,ibaseref:ibaseref+ns-1))
            !
            ! Exploit symmetry in interpolation weights
@@ -389,8 +282,7 @@ subroutine fill_halo(fcube,fvm,halo_interp_weight,fpanel,fotherpanel)!dbg
      w = halo_interp_weight(:,:,:,1)
      do halo=1,nhr
         do i=halo-nh,nc+nh-(halo-1)
-!           ibaseref=fvm%ibase(i,halo,1 )                                              
-           ibaseref = ibase(i,halo,1)
+           ibaseref=fvm%ibase(i,halo,1 )                                              
            fpanel      (nc+halo   ,i  ) = matmul_w(w(i,halo,:),fcube(nc  +halo,ibaseref:ibaseref+ns-1))
            fotherpanel (nc+1-halo ,i,1) = matmul_w(w(i,halo,:),fcube(nc+1-halo,ibaseref:ibaseref+ns-1))
         end do
@@ -437,7 +329,7 @@ subroutine fill_halo(fcube,fvm,halo_interp_weight,fpanel,fotherpanel)!dbg
      do halo=1,nhr
         do i=halo-nh,nc+nh-(halo-1)
 !           ibaseref=fvm%ibase(i,halo,2) 
-           ibaseref = ibase(i,halo,1)
+           ibaseref = fvm%ibase(i,halo,1)
            fpanel      (i,nc+halo    ) = matmul_w(w(i,halo,:),fcube(ibaseref:ibaseref+ns-1,nc+halo  )) !north
            fotherpanel (i,nc+1-halo,1) = matmul_w(w(i,halo,:),fcube(ibaseref:ibaseref+ns-1,nc+1-halo))
         end do
@@ -482,7 +374,7 @@ subroutine fill_halo(fcube,fvm,halo_interp_weight,fpanel,fotherpanel)!dbg
      w = halo_interp_weight(:,:,:,1)
      do halo=1,nhr
         do i=halo-nh,nc+nh-(halo-1)
-           ibaseref=ibase(i,halo,1)!fvm%ibase(i,halo,2) 
+           ibaseref=fvm%ibase(i,halo,1)!fvm%ibase(i,halo,2) 
            fpanel      (i,1-halo ) = matmul_w(w(i,halo,:),fcube(ibaseref:ibaseref+ns-1,1-halo))  !south
            fotherpanel (i,  halo,1) = matmul_w(w(i,halo,:),fcube(ibaseref:ibaseref+ns-1,  halo))
         end do
@@ -532,7 +424,7 @@ subroutine fill_halo(fcube,fvm,halo_interp_weight,fpanel,fotherpanel)!dbg
      w = halo_interp_weight(:,:,:,1)
      do halo=1,nhr
         do i=max(halo-nh,0),nc+nh-(halo-1)
-           ibaseref=ibase(i,halo,1)!fvm%ibase(i,halo,1)      
+           ibaseref=fvm%ibase(i,halo,1)!fvm%ibase(i,halo,1)      
            fpanel(1-halo ,i) = matmul_w(w(i,halo,:),fcube(1-halo ,ibaseref:ibaseref+ns-1)) !west
            fpanel(i,1-halo ) = matmul_w(w(i,halo,:),fcube(ibaseref:ibaseref+ns-1,1-halo))  !south
         end do
@@ -588,7 +480,7 @@ subroutine fill_halo(fcube,fvm,halo_interp_weight,fpanel,fotherpanel)!dbg
      w = halo_interp_weight(:,:,:,1)
      do halo=1,nhr
         do i=max(halo-nh,0),nc+nh-(halo-1)
-           ibaseref=ibase(i,halo,1)
+           ibaseref=fvm%ibase(i,halo,1)
            !
            ! use same weights as interpolation south from main panel (symmetric)
            !
@@ -601,7 +493,7 @@ subroutine fill_halo(fcube,fvm,halo_interp_weight,fpanel,fotherpanel)!dbg
      w = halo_interp_weight(:,:,:,2)
      do halo=1,nhr
         do i=nc+halo-nhr,nc+1
-           ibaseref=ibase(i,halo,2)-nc
+           ibaseref=fvm%ibase(i,halo,2)-nc
            !
            ! fotherpanel indexing follows main panel indexing
            ! fcube indexing most be "rotated":
@@ -677,7 +569,7 @@ subroutine fill_halo(fcube,fvm,halo_interp_weight,fpanel,fotherpanel)!dbg
      w = halo_interp_weight(:,:,:,1) ! symmetry
      do halo=1,nhr
         do i=max(halo-nh,0),nc+nh-(halo-1)
-           ibaseref=ibase(i,halo,1)
+           ibaseref=fvm%ibase(i,halo,1)
            !
            ! use same weights as interpolation south from main panel (symmetric)
            !
@@ -690,7 +582,7 @@ subroutine fill_halo(fcube,fvm,halo_interp_weight,fpanel,fotherpanel)!dbg
      w = halo_interp_weight(:,:,:,2)
      do halo=1,nhr
         do i=nc+halo-nhr,nc+1
-           ibaseref=ibase(i,halo,2)-nc
+           ibaseref=fvm%ibase(i,halo,2)-nc
            !
            ! fotherpanel indexing follows main panel indexing
            ! fcube indexing most be "rotated":
@@ -747,7 +639,7 @@ subroutine fill_halo(fcube,fvm,halo_interp_weight,fpanel,fotherpanel)!dbg
      w = halo_interp_weight(:,:,:,1)
      do halo=1,nhr
         do i=max(halo-nh,0),nc+nh-(halo-1)
-           ibaseref = ibase(i,halo,1)
+           ibaseref = fvm%ibase(i,halo,1)
            fpanel(nc+halo,i) = matmul_w(w(i,halo,:),fcube(nc  +halo,ibaseref:ibaseref+ns-1))
         end do
      end do
@@ -757,7 +649,7 @@ subroutine fill_halo(fcube,fvm,halo_interp_weight,fpanel,fotherpanel)!dbg
      w = halo_interp_weight(:,:,:,2)
      do halo=1,nhr
         do i=halo-nh,min(nc+nh-(halo-1),nc+1)
-           ibaseref = ibase(i,halo,2)
+           ibaseref = fvm%ibase(i,halo,2)
            fpanel(i,1-halo ) = matmul_w(w(i,halo,:),fcube(ibaseref:ibaseref+ns-1,1-halo))  !south
         end do
      end do
@@ -813,7 +705,7 @@ subroutine fill_halo(fcube,fvm,halo_interp_weight,fpanel,fotherpanel)!dbg
      !
      do halo=1,nhr
         do i=halo-nh,min(nc+nh-(halo-1),nc+1)
-           ibaseref = ibase(i,halo,2)
+           ibaseref = fvm%ibase(i,halo,2)
            fotherpanel (i,halo,1) = matmul_w(w(i,halo,:),fcube(ibaseref:ibaseref+ns-1,  halo))
         end do
      end do
@@ -823,7 +715,7 @@ subroutine fill_halo(fcube,fvm,halo_interp_weight,fpanel,fotherpanel)!dbg
      w = halo_interp_weight(:,:,:,1)
      do halo=1,nhr
         do i=0,nht-halo!nc+nh-(halo-1)
-           ibaseref = ibase(i,halo,1)
+           ibaseref = fvm%ibase(i,halo,1)
            !
            ! fother panel follows indexing on main panel
            !
@@ -889,7 +781,7 @@ subroutine fill_halo(fcube,fvm,halo_interp_weight,fpanel,fotherpanel)!dbg
      w = halo_interp_weight(:,:,:,1)
      do halo=1,nhr
         do i=0,nc+nh-(halo-1)
-           ibaseref = ibase(i,halo,1)
+           ibaseref = fvm%ibase(i,halo,1)
            fotherpanel(nc+1-halo,i,2) = matmul_w(w(i,halo,:),fcube(nc+1-halo,ibaseref:ibaseref+ns-1))
         end do
      end do
@@ -919,7 +811,7 @@ subroutine fill_halo(fcube,fvm,halo_interp_weight,fpanel,fotherpanel)!dbg
            !
            ! shift (since we are using south weights from main panel interpolation
            !
-           ibaseref = ibase(i,halo,2)-nc 
+           ibaseref = fvm%ibase(i,halo,2)-nc 
            !
            ! fotherpanel index: reverse
            !
@@ -974,7 +866,7 @@ subroutine fill_halo(fcube,fvm,halo_interp_weight,fpanel,fotherpanel)!dbg
      w = halo_interp_weight(:,:,:,2)
      do halo=1,nhr
         do i=max(halo-nh,0),nc+nh-(halo-1)
-           ibaseref = ibase(i,halo,2)
+           ibaseref = fvm%ibase(i,halo,2)
            fpanel(i,nc+halo) = matmul_w(w(i,halo,:),fcube(ibaseref:ibaseref+ns-1,nc+halo  )) !north
         end do
      end do
@@ -1019,7 +911,7 @@ subroutine fill_halo(fcube,fvm,halo_interp_weight,fpanel,fotherpanel)!dbg
      w = halo_interp_weight(:,:,:,2)
      do halo=1,nhr
         do i=max(halo-nh,0),nc+nh-(halo-1)
-           ibaseref = ibase(i,halo,2)
+           ibaseref = fvm%ibase(i,halo,2)
            fotherpanel(i,nc+1-halo,1) = matmul_w(w(i,halo,:),fcube(ibaseref:ibaseref+ns-1,nc+1-halo  ))
         end do
      end do
@@ -1097,7 +989,7 @@ subroutine fill_halo(fcube,fvm,halo_interp_weight,fpanel,fotherpanel)!dbg
      w = halo_interp_weight(:,:,:,2)
      do halo=1,nhr
         do i=0,nht-halo
-           ibaseref = ibase(i,halo,2)+nc
+           ibaseref = fvm%ibase(i,halo,2)+nc
            fotherpanel(1-i,nc+halo,2) = matmul_w(w(i,halo,:),fcube(halo,ibaseref:ibaseref+ns-1)) !north
         end do
      end do
@@ -1139,7 +1031,7 @@ subroutine fill_halo(fcube,fvm,halo_interp_weight,fpanel,fotherpanel)!dbg
      w = halo_interp_weight(:,:,:,1)
      do halo=1,nhr
         do i=halo-nh,min(nc+nh-(halo-1),nc+1)
-           ibaseref=ibase(i,halo,1 )                                              
+           ibaseref=fvm%ibase(i,halo,1 )                                              
            fpanel(nc+halo,i) = matmul_w(w(i,halo,:),fcube(nc  +halo,ibaseref:ibaseref+ns-1))
         end do
      end do
@@ -1149,7 +1041,7 @@ subroutine fill_halo(fcube,fvm,halo_interp_weight,fpanel,fotherpanel)!dbg
 !     w = halo_interp_weight(:,:,:,1)
      do halo=1,nhr
         do i=halo-nh,min(nc+nh-(halo-1),nc+1)
-           ibaseref=ibase(i,halo,1) 
+           ibaseref=fvm%ibase(i,halo,1) 
            fpanel(i,nc+halo) = matmul_w(w(i,halo,:),fcube(ibaseref:ibaseref+ns-1,nc+halo  )) !north
         end do
      end do
@@ -1205,7 +1097,7 @@ subroutine fill_halo(fcube,fvm,halo_interp_weight,fpanel,fotherpanel)!dbg
      w = halo_interp_weight(:,:,:,1)
      do halo=1,nhr
         do i=halo-nh,min(nc+nh-(halo-1),nc+1)
-           ibaseref=ibase(i,halo,1) 
+           ibaseref=fvm%ibase(i,halo,1) 
            fotherpanel (i,nc+1-halo,1) = matmul_w(w(i,halo,:),fcube(ibaseref:ibaseref+ns-1,nc+1-halo))
         end do
      end do
@@ -1215,7 +1107,7 @@ subroutine fill_halo(fcube,fvm,halo_interp_weight,fpanel,fotherpanel)!dbg
      w = halo_interp_weight(:,:,:,2)
      do halo=1,nhr
         do i=max(halo-nh,0),nht-halo
-           ibaseref=ibase(i,halo,2) +nc
+           ibaseref=fvm%ibase(i,halo,2) +nc
            !
            ! fotherpanel uses indexing of main panel's projection
            ! fcube: rotated indexing
@@ -1282,7 +1174,7 @@ subroutine fill_halo(fcube,fvm,halo_interp_weight,fpanel,fotherpanel)!dbg
      w = halo_interp_weight(:,:,:,1)
      do halo=1,nhr
         do i=halo-nh,min(nc+nh-(halo-1),nc+1)
-           ibaseref=ibase(i,halo,1 )                                              
+           ibaseref=fvm%ibase(i,halo,1 )                                              
            fotherpanel(nc+1-halo,i,2) = matmul_w(w(i,halo,:),fcube(nc+1-halo,ibaseref:ibaseref+ns-1))
         end do
      end do
@@ -1292,7 +1184,7 @@ subroutine fill_halo(fcube,fvm,halo_interp_weight,fpanel,fotherpanel)!dbg
      w = halo_interp_weight(:,:,:,2)
      do halo=1,nhr
         do i=max(halo-nh,0),nht-halo
-           ibaseref=ibase(i,halo,2) +nc
+           ibaseref=fvm%ibase(i,halo,2) +nc
            !
            ! fotherpanel uses indexing of main panel's projection
            ! fcube: rotated indexing
