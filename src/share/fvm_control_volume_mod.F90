@@ -25,13 +25,14 @@ module fvm_control_volume_mod
 
   use parallel_mod, only : abortmp
 
-
-  
   implicit none
   private
   
   integer, parameter, private:: nh = nhr+(nhe-1) ! = 2 (nhr=2; nhe=1)
                                                  ! = 3 (nhr=2; nhe=2)
+
+  integer, private           :: ibase_tmp(1-nh:nc+nh,1:nhr,2)  
+
   type, public :: fvm_struct
     ! fvm tracer mixing ratio: (kg/kg)
     real (kind=real_kind) :: c(1-nhc:nc+nhc,1-nhc:nc+nhc,nlev,ntrac_d,timelevels) 
@@ -84,10 +85,9 @@ module fvm_control_volume_mod
 !-----------------------------------------------------------------------------------!     
     ! provide fixed interpolation points with respect to the arrival grid for 
     ! reconstruction   
-    real (kind=real_kind)    :: interp(1-nh:nc+nh,1:nhr,2)  
+    real (kind=real_kind)    :: interp(1-nh:nc+nh,1:nhr,2)  !can be moved to private
     integer                  :: ibase(1-nh:nc+nh,1:nhr,2)  
-!----------
-    real (kind=real_kind) :: halo_interp_weight(1-nh:nc+nh,1:nhr,1:ns,2)
+    real (kind=real_kind)    :: halo_interp_weight(1-nh:nc+nh,1:nhr,1:ns,2)
   end type fvm_struct
 
   public :: fvm_mesh_ari
@@ -156,10 +156,7 @@ subroutine fvm_mesh_ari(elem, fvm, tl)
 
   call create_ari(elem,fvm)
   call create_interpolation_points(elem,fvm)
-
-  if (fvm%cubeboundary > 0) then    
-     call compute_halo_weights(fvm)  
-  end if
+  call compute_halo_weights(fvm,elem)  !dbg
 end subroutine fvm_mesh_ari
 !END SUBROUTINE fvm_MESH_ARI----------------------------------------------CE-for FVM
 
@@ -908,7 +905,7 @@ subroutine create_interpolation_points(elem,fvm)
           do i=halo-nh,nc+nh-(halo-1) !see fvm_reconstruction to understand these boundaries
             tmpgnom%y=gnomystart(i)
             call interpolation_point(tmpgnom,gnomystart,1,4,1,fvm%interp(i,halo,1),&
-                                     ida,ide,iref1,fvm%ibase(i,halo,1))
+                                     ida,ide,iref1,ibase_tmp(i,halo,1))
           end do
         end do
 
@@ -921,7 +918,7 @@ subroutine create_interpolation_points(elem,fvm)
           do i=halo-nh,nc+nh-(halo-1)
             tmpgnom%y=gnomystart(i)
             call interpolation_point(tmpgnom,gnomystart,1,2,1,fvm%interp(i,halo,1),&
-                                     ida,ide,iref1,fvm%ibase(i,halo,1))                                                  
+                                     ida,ide,iref1,ibase_tmp(i,halo,1))                                                  
           end do 
         end do  
 
@@ -938,7 +935,7 @@ subroutine create_interpolation_points(elem,fvm)
             !       so that I can get rid of iinterp = 1 in fvm_reconstruction_mod
             !
             call interpolation_point(tmpgnom,gnomxstart,1,6,0,fvm%interp(i,halo,2),&
-                                     ida,ide,iref1,fvm%ibase(i,halo,2))                                      
+                                     ida,ide,iref1,ibase_tmp(i,halo,2))                                      
           end do
         end do
       !CASE SOUTH   
@@ -950,7 +947,7 @@ subroutine create_interpolation_points(elem,fvm)
           do i=halo-nh,nc+nh-(halo-1)
             tmpgnom%x=gnomxstart(i)
             call interpolation_point(tmpgnom,gnomxstart,1,5,0,fvm%interp(i,halo,2),&
-                                     ida,ide,iref1,fvm%ibase(i,halo,2))                                      
+                                     ida,ide,iref1,ibase_tmp(i,halo,2))                                      
           end do
         end do      
 
@@ -985,7 +982,7 @@ subroutine create_interpolation_points(elem,fvm)
           do i=0,nc+nh-(halo-1)
             tmpgnom%y=gnomystart(i)            
             call interpolation_point(tmpgnom,gnomystart,1,4,1,fvm%interp(i,halo,1),&
-                                     ida,ide,iref1,fvm%ibase(i,halo,1))
+                                     ida,ide,iref1,ibase_tmp(i,halo,1))
           end do
        end do
       !CASE SOUTH EAST  
@@ -999,7 +996,7 @@ subroutine create_interpolation_points(elem,fvm)
           do i=0,nc+nh-(halo-1)
             tmpgnom%y=gnomystart(i)
             call interpolation_point(tmpgnom,gnomystart,1,2,1, fvm%interp(i,halo,1),&
-                                     ida,ide,iref1,fvm%ibase(i,halo,1))                                      
+                                     ida,ide,iref1,ibase_tmp(i,halo,1))                                      
           end do
        end do
       !CASE NORTH EAST     
@@ -1013,7 +1010,7 @@ subroutine create_interpolation_points(elem,fvm)
           do i=halo-nh,nc+1
             tmpgnom%y=gnomyend(i)
             call interpolation_point(tmpgnom,gnomyend,1,2,1, fvm%interp(i,halo,1),&
-                                     ida,ide,iref1,fvm%ibase(i,halo,1))                                      
+                                     ida,ide,iref1,ibase_tmp(i,halo,1))                                      
           end do
        end do
       !CASE NORTH WEST   
@@ -1027,7 +1024,7 @@ subroutine create_interpolation_points(elem,fvm)
           do i=halo-nh,nc+1
             tmpgnom%y=gnomyend(i)
             call interpolation_point(tmpgnom,gnomyend,1,4,1, fvm%interp(i,halo,1),&
-                                     ida,ide,iref1,fvm%ibase(i,halo,1))                                      
+                                     ida,ide,iref1,ibase_tmp(i,halo,1))                                      
           end do
        end do
         !THIS CASE SHOULD NOT HAPPEN!     
@@ -1138,21 +1135,18 @@ end subroutine interpolation_point
 !
 ! a "pre-compute" version of fillhalo_cubic
 !
-subroutine compute_halo_weights(fvm)
+subroutine compute_halo_weights(fvm,elem)!dbg
   implicit none
-  type (fvm_struct), intent(inout)     :: fvm
+  type (fvm_struct), intent(inout)     :: fvm !xxx
   
   integer                                       :: i, halo, ibaseref
+  type (element_t), intent(in)      :: elem !dbg
   !
   ! pre-compute weight/index matrices
   !
-
-  !
-  !
-  !
   real (kind=real_kind), dimension(1-nc:nc+nc) :: gno_equi
   integer :: imin,imax,jmin,jmax,iinterp
-  
+  fvm%ibase = 99999 !dbg
   fvm%halo_interp_weight(:,:,:,:) = 9.99E9 !dbg
 
   if (fvm%cubeboundary>0) then
@@ -1168,8 +1162,10 @@ subroutine compute_halo_weights(fvm)
         if (fvm%cubeboundary==north.or.fvm%cubeboundary==south) iinterp = 2
         do halo=1,nhr
            do i=halo-nh,nc+nh-(halo-1)
-              ibaseref=fvm%ibase(i,halo,iinterp)
-             call get_equispace_weights(fvm%dbeta, fvm%interp(i,halo,iinterp),fvm%halo_interp_weight(i,halo,:,1))
+              ibaseref=ibase_tmp(i,halo,iinterp)
+              fvm%ibase(i,halo,1) = ibaseref
+              call get_equispace_weights(fvm%dbeta, fvm%interp(i,halo,iinterp),&
+                   fvm%halo_interp_weight(i,halo,:,1))
            end do
         end do
      else
@@ -1186,7 +1182,8 @@ subroutine compute_halo_weights(fvm)
               imin = halo-nh; imax = nc+1;
            end if
            do i=imin,imax
-              ibaseref=fvm%ibase(i,halo,1)
+              ibaseref=ibase_tmp(i,halo,1)
+              fvm%ibase(i,halo,1) = ibaseref
               call get_equispace_weights(fvm%dbeta, fvm%interp(i,halo,1),fvm%halo_interp_weight(i,halo,:,1))
            end do
            !
@@ -1194,10 +1191,14 @@ subroutine compute_halo_weights(fvm)
            !
            fvm%halo_interp_weight(jmin:jmax,halo,1:ns,2) = fvm%halo_interp_weight(imax:imin:-1,halo,ns:1:-1,1)
            fvm%ibase       (jmin:jmax,halo     ,2) = nc+1-(ns-1)-fvm%ibase(imax:imin:-1,halo        ,1)
+!           ibase       (jmin:jmax,halo     ,2) = nc+1-(ns-1)-fvm%ibase(imax:imin:-1,halo        ,1)
         end do
      end if
+!     fvm%ibase = ibase
   end if
 end subroutine compute_halo_weights
+
+
 
 ! ---------------------------------------------------------------------!
 !                                                                      !
@@ -1206,7 +1207,7 @@ end subroutine compute_halo_weights
 !                                                                      !
 !----------------------------------------------------------------------!
 
-subroutine get_equispace_weights(dx, x,halo_interp_weight)
+subroutine get_equispace_weights(dx, x,w)
   !
   ! Coordinate system for Lagrange interpolation:
   !
@@ -1216,7 +1217,7 @@ subroutine get_equispace_weights(dx, x,halo_interp_weight)
   implicit none
   real (kind=real_kind),intent(in)                  :: dx  ! spacing of points, alpha/beta
   real (kind=real_kind),intent(in)                  :: x   ! X coordinate where interpolation is to be applied
-  real (kind=real_kind),dimension(ns),intent(out)    :: halo_interp_weight
+  real (kind=real_kind),dimension(ns),intent(out)    :: w
   !
   real (kind=real_kind) :: dx3
   integer :: j,k
@@ -1226,17 +1227,18 @@ subroutine get_equispace_weights(dx, x,halo_interp_weight)
   !
   !                http://mathworld.wolfram.com/LagrangeInterpolatingPolynomial.html
   !
-  halo_interp_weight = 1.0D0
+  w = 1.0D0
   if (ns.ne.1) then
      do j=1,ns
         do k=1,ns
            if (k.ne.j) then
-              halo_interp_weight(j)=halo_interp_weight(j)*(x-dble(k-1)*dx)/(dble(j-1)*dx-dble(k-1)*dx)
+              w(j)=w(j)*(x-dble(k-1)*dx)/(dble(j-1)*dx-dble(k-1)*dx)
            end if
         end do
      end do
   end if
 end subroutine get_equispace_weights
+
 
 
 end module fvm_control_volume_mod
