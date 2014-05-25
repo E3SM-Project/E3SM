@@ -862,24 +862,19 @@ contains
     if (par%masterproc) then
        if (ns==1) then
           print *, "ns==1: using no interpolation for mapping cell averages values across edges"
+          print *, "Note: this is not a recommended setting - large errors at panel edges!"
        else if (ns==2) then
           print *, "ns==2: using linear interpolation for mapping cell averages values across edges"
+          print *, "Note that ns=4 is default CSLAM setting used in Lauritzen et al. (2010)"
+          print *, "so this option is slightly less accurate (but the stencil is smaller near panel edges!"
        else if (ns==4) then
           print *, "ns==4: using cubic interpolation for mapping cell averages values across edges"
+          print *, "default CSLAM setting used in Lauritzen et al. (2010)"
        else
           print *, "value of ns not supported/tested: ns = ",ns
           stop
        end if
     end if
-
-    if (nhe+ns>nc) then
-       if (par%masterproc) then
-          print *, "ns+nhe must be less than or equal nc - optimal choice is ns+nhe=nc!"
-          print *, "You chose (nc,ns) = ",nc,ns          
-       end if
-       call haltmp("stopping")
-    end if
-
 
     if (nhe .ne. 1) then
        if (par%masterproc) then
@@ -921,6 +916,7 @@ contains
     
     
     do ie=nets,nete
+       write(*,*) "ie=",ie
        call fvm_mesh_ari(elem(ie),fvm(ie),tl)
        call computexytosphere_moments(fvm(ie),elem(ie)%desc)
     enddo
