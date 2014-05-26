@@ -302,9 +302,7 @@ function get_boomerang_velocities_gll(elem, time) result(vstar)
     do j=1,np
       lon = elem%spherep(i,j)%lon
       lat = elem%spherep(i,j)%lat
-      !ldbg start
-!      if (lon<DD_PI+0.4D0.and.lon>DD_PI-0.4D0.and.lat<0.4D0.and.lat>-0.4) then
-         !ldbg end
+
       slat  = sin(lat)
       clat  = cos(lat)
 
@@ -319,10 +317,15 @@ function get_boomerang_velocities_gll(elem, time) result(vstar)
       ! meters/sec 
       vstar(i,j,1)=u * Rearth /( ndays*3600*24.0D0/5.0D0)
       vstar(i,j,2)=v * Rearth /( ndays*3600*24.0D0/5.0D0)
-!      else
-!         vstar(i,j,1)=0.0D0
-!         vstar(i,j,2)=0.0D0
-!      end if !ldbg
+
+
+!      !dbg start
+!      if (abs(elem%spherep(i,j)%lat)>0.3D0) then
+!         vstar=0.0D0
+!         u = 0.0D0
+!         v= 0.0D0
+!      end if
+!      !dbg end
     enddo
   enddo
 end function get_boomerang_velocities_gll     
