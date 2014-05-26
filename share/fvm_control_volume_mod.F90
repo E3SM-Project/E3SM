@@ -30,7 +30,10 @@ module fvm_control_volume_mod
   integer, parameter, private:: nh = nhr+(nhe-1) ! = 2 (nhr=2; nhe=1)
                                                  ! = 3 (nhr=2; nhe=2)
 
-  integer, private           :: ibase_tmp(1-nh:nc+nh,1:nhr,2)  
+  integer, private                :: ibase_tmp(1-nh:nc+nh,1:nhr,2)  
+  real (kind=real_kind), private  :: interp(1-nh:nc+nh,1:nhr,2)
+
+
 
   type, public :: fvm_struct
     ! fvm tracer mixing ratio: (kg/kg)
@@ -84,12 +87,11 @@ module fvm_control_volume_mod
 !-----------------------------------------------------------------------------------!     
     ! provide fixed interpolation points with respect to the arrival grid for 
     ! reconstruction   
-    real (kind=real_kind)    :: interp(1-nh:nc+nh,1:nhr,2)  !can be moved to private
     integer                  :: ibase(1-nh:nc+nh,1:nhr,2)  
     real (kind=real_kind)    :: halo_interp_weight(1-nh:nc+nh,1:nhr,1:ns,2)
 !------------------------------------------------------------------------------------
     !
-    ! for finite-difference reconstruction - computed in fvm_analytic_mod.F90
+    ! for finite-difference reconstruction - computed in computexytosphere_moments
     !
     real (kind=real_kind)    :: recons_matrix(1:5,1:6,1-nhe:nc+nhe,1-nhe:nc+nhe)
   end type fvm_struct
@@ -908,7 +910,7 @@ subroutine create_interpolation_points(elem,fvm)
           tmpgnom%x=cube_xstart-(halo-0.5)*fvm%dalpha
           do i=halo-nh,nc+nh-(halo-1) !see fvm_reconstruction to understand these boundaries
             tmpgnom%y=gnomystart(i)
-            call interpolation_point(tmpgnom,gnomystart,1,4,1,fvm%interp(i,halo,1),&
+            call interpolation_point(tmpgnom,gnomystart,1,4,1,interp(i,halo,1),&
                                      ida,ide,iref1,ibase_tmp(i,halo,1))
           end do
         end do
@@ -921,7 +923,7 @@ subroutine create_interpolation_points(elem,fvm)
           tmpgnom%x=cube_xend+(halo-0.5)*fvm%dalpha
           do i=halo-nh,nc+nh-(halo-1)
             tmpgnom%y=gnomystart(i)
-            call interpolation_point(tmpgnom,gnomystart,1,2,1,fvm%interp(i,halo,1),&
+            call interpolation_point(tmpgnom,gnomystart,1,2,1,interp(i,halo,1),&
                                      ida,ide,iref1,ibase_tmp(i,halo,1))                                                  
           end do 
         end do  
@@ -935,10 +937,10 @@ subroutine create_interpolation_points(elem,fvm)
           do i=halo-nh,nc+nh-(halo-1)
             tmpgnom%x=gnomxstart(i)
             !
-            ! dbg - change to fvm%interp(i,halo,1) instead of fvm%interp(i,halo,2)
+            ! dbg - change to interp(i,halo,1) instead of interp(i,halo,2)
             !       so that I can get rid of iinterp = 1 in fvm_reconstruction_mod
             !
-            call interpolation_point(tmpgnom,gnomxstart,1,6,0,fvm%interp(i,halo,2),&
+            call interpolation_point(tmpgnom,gnomxstart,1,6,0,interp(i,halo,2),&
                                      ida,ide,iref1,ibase_tmp(i,halo,2))                                      
           end do
         end do
@@ -950,7 +952,7 @@ subroutine create_interpolation_points(elem,fvm)
           tmpgnom%y=cube_ystart-(halo-0.5)*fvm%dbeta
           do i=halo-nh,nc+nh-(halo-1)
             tmpgnom%x=gnomxstart(i)
-            call interpolation_point(tmpgnom,gnomxstart,1,5,0,fvm%interp(i,halo,2),&
+            call interpolation_point(tmpgnom,gnomxstart,1,5,0,interp(i,halo,2),&
                                      ida,ide,iref1,ibase_tmp(i,halo,2))                                      
           end do
         end do      
@@ -985,7 +987,7 @@ subroutine create_interpolation_points(elem,fvm)
           iref1=ida
           do i=0,nc+nh-(halo-1)
             tmpgnom%y=gnomystart(i)           
-            call interpolation_point(tmpgnom,gnomystart,1,4,1,fvm%interp(i,halo,1),&
+            call interpolation_point(tmpgnom,gnomystart,1,4,1,interp(i,halo,1),&
                                      ida,ide,iref1,ibase_tmp(i,halo,1))
           end do
        end do
@@ -999,7 +1001,7 @@ subroutine create_interpolation_points(elem,fvm)
           iref1=ida
           do i=0,nc+nh-(halo-1)
             tmpgnom%y=gnomystart(i)
-            call interpolation_point(tmpgnom,gnomystart,1,2,1, fvm%interp(i,halo,1),&
+            call interpolation_point(tmpgnom,gnomystart,1,2,1, interp(i,halo,1),&
                                      ida,ide,iref1,ibase_tmp(i,halo,1))                                      
           end do
        end do
@@ -1013,7 +1015,7 @@ subroutine create_interpolation_points(elem,fvm)
           iref1=ida
           do i=halo-nh,nc+1
             tmpgnom%y=gnomyend(i)
-            call interpolation_point(tmpgnom,gnomyend,1,2,1, fvm%interp(i,halo,1),&
+            call interpolation_point(tmpgnom,gnomyend,1,2,1, interp(i,halo,1),&
                                      ida,ide,iref1,ibase_tmp(i,halo,1))                                      
           end do
        end do
@@ -1027,7 +1029,7 @@ subroutine create_interpolation_points(elem,fvm)
           iref1=ida
           do i=halo-nh,nc+1
             tmpgnom%y=gnomyend(i)
-            call interpolation_point(tmpgnom,gnomyend,1,4,1, fvm%interp(i,halo,1),&
+            call interpolation_point(tmpgnom,gnomyend,1,4,1, interp(i,halo,1),&
                                      ida,ide,iref1,ibase_tmp(i,halo,1))                                      
           end do
        end do
@@ -1172,7 +1174,7 @@ subroutine compute_halo_weights(fvm)
            do i=halo-nh,nc+nh-(halo-1)
               ibaseref=ibase_tmp(i,halo,iinterp)
               fvm%ibase(i,halo,1) = ibaseref
-              call get_equispace_weights(fvm%dbeta, fvm%interp(i,halo,iinterp),&
+              call get_equispace_weights(fvm%dbeta, interp(i,halo,iinterp),&
                    fvm%halo_interp_weight(i,halo,:,1))
            end do
         end do
@@ -1192,7 +1194,7 @@ subroutine compute_halo_weights(fvm)
            do i=imin,imax
               ibaseref=ibase_tmp(i,halo,1)
               fvm%ibase(i,halo,1) = ibaseref
-              call get_equispace_weights(fvm%dbeta, fvm%interp(i,halo,1),fvm%halo_interp_weight(i,halo,:,1))
+              call get_equispace_weights(fvm%dbeta, interp(i,halo,1),fvm%halo_interp_weight(i,halo,:,1))
            end do
            !
            ! reverse weights/indices for fotherpanel (see details on reconstruct_matrix)
