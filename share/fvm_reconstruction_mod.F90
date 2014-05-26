@@ -69,12 +69,8 @@ subroutine reconstruction(fcube,fvm,recons)
 
   ! if element lies on a cube edge, recalculation the values in the halo zone
 
-  real (kind=real_kind), dimension(1:5,1:6,1-nhe:nc+nhe,1-nhe:nc+nhe)   :: recons_matrix
-
-  call compute_reconstruct_matrix(fvm, recons_matrix) !can be re-used for each additional tracer
-  
   call fill_halo(fcube,fvm,fpanel,fotherpanel)
-  call get_reconstruction(fvm, fpanel, fotherpanel,recons_matrix,recons)
+  call get_reconstruction(fvm, fpanel, fotherpanel,recons)
   
 !  call debug_halo(fvm,fcubenew,fpanel)
 !  call debug_halo_recons(fvm,recons,recons_trunk)
@@ -1195,7 +1191,7 @@ subroutine fill_halo(fcube,fvm,fpanel,fotherpanel)!dbg
 end subroutine fill_halo
 
 
-subroutine get_reconstruction(fvm, fpanel, fotherpanel, recons_matrix,recons)
+subroutine get_reconstruction(fvm, fpanel, fotherpanel, recons)
   implicit none
 
   type (fvm_struct), intent(in)                                     :: fvm
@@ -1203,8 +1199,6 @@ subroutine get_reconstruction(fvm, fpanel, fotherpanel, recons_matrix,recons)
   real (kind=real_kind), dimension(    1-nht:nc+nht,1-nht:nc+nht,2), intent(in)   :: fotherpanel
   real (kind=real_kind), dimension(1:5,1-nhe:nc+nhe,1-nhe:nc+nhe  ), intent(inout):: recons
 
-  real (kind=real_kind), &
-      dimension(1:5,1:6,1-nhe:nc+nhe,1-nhe:nc+nhe), intent(in)   :: recons_matrix
   real (kind=real_kind), dimension(1-nht:nc+nht,1-nht:nc+nht,1:5,1:5)   :: fcube_matrix
   integer  :: i, j, k, h
   !
@@ -1224,14 +1218,14 @@ subroutine get_reconstruction(fvm, fpanel, fotherpanel, recons_matrix,recons)
               !
               ! loop over finite-difference (and metric terms) matrix
               !
-              recons(k,i,j) = recons(k,i,j) + recons_matrix(h,k,i,j)*fcube_matrix(i,j,k,h)
+              recons(k,i,j) = recons(k,i,j) + fvm%recons_matrix(h,k,i,j)*fcube_matrix(i,j,k,h)
            end do
         end do
         !
         ! stretching of d^2f/dx^2 and d^2f/dy^2 (can not be cassed in matrix form)
         !
-        recons(3,i,j) = (recons(3,i,j) + recons_matrix(1,6,i,j)*recons(1,i,j))*recons_matrix(2,6,i,j)
-        recons(4,i,j) = (recons(4,i,j) + recons_matrix(3,6,i,j)*recons(2,i,j))*recons_matrix(4,6,i,j)
+        recons(3,i,j) = (recons(3,i,j) + fvm%recons_matrix(1,6,i,j)*recons(1,i,j))*fvm%recons_matrix(2,6,i,j)
+        recons(4,i,j) = (recons(4,i,j) + fvm%recons_matrix(3,6,i,j)*recons(2,i,j))*fvm%recons_matrix(4,6,i,j)
      end do
   end do
 end subroutine get_reconstruction
@@ -1334,117 +1328,7 @@ subroutine get_fcube_matrix_otherpanel_swap(fcube_matrix,f,invx,invy)
   fcube_matrix(5,5) = inv*f( 1, 1)
 end subroutine get_fcube_matrix_otherpanel_swap
  
-!
-! matrix version of reconstruct_cubic_onface
-!
-subroutine compute_reconstruct_matrix(fvm, recons_matrix)
-  implicit none
-  type (fvm_struct)                                                  , intent(in)  :: fvm
-  real (kind=real_kind), dimension(1:5,1:6,1-nhe:nc+nhe,1-nhe:nc+nhe), intent(out) :: recons_matrix
-  !
-  integer  :: i, j
-  real (kind=real_kind) :: coef, coef2
-  !
-  ! pre-compute reconstruction matrix so that reconstruction array can be computed as:
-  !
-  !               recons(k,i,j) = recons_matrix(k,:,i,j)*f(:,k)
-  !
-  ! where
-  !
-  !          | (i-2,j) (i,j-2) (i-2,j) (i,j-2) (i-1,j-1) |^T
-  !          | (i-1,j) (i,j-1) (i-1,j) (i,j-1) (i-1,j+1) |
-  ! f(:,:) = | (i  ,j) (i,j  ) (i  ,j) (i,j  ) (i  ,j  ) |
-  !          | (i+1,j) (i,j+1) (i+1,j) (i,j+1) (i+1,j-1) |
-  !          | (i+2,j) (i,j+2) (i+2,j) (i,j+2) (i+1,j+1) |
-  !
-  !
-!  do j = fvm%jy_min, fvm%jy_max-1
-!     do i = fvm%jx_min, fvm%jx_max-1
-  do j= 1-nhe,nc+nhe
-     do i=1-nhe,nc+nhe
-        !
-        !***************
-        !*    dfdx     *
-        !***************
-        !
-        coef = 1.0D0/(12.0D0 * fvm%dalpha)                   !finite difference coefficient
-        coef = coef /( 1.0D0 + fvm%spherecentroid(1,i,j)**2) !stretching coefficient
-        !
-        recons_matrix(1,1,i,j) =        coef !(i-2,j)
-        recons_matrix(2,1,i,j) = -8.0D0*coef !(i-1,j)
-        recons_matrix(3,1,i,j) =  0.0D0      !(i  ,j)
-        recons_matrix(4,1,i,j) =  8.0D0*coef !(i+1,j)
-        recons_matrix(5,1,i,j) = -1.0D0*coef !(i+2,j)
 
-        !
-        coef = 1.0D0/(12.0D0 * fvm%dbeta)                    !finite difference coefficient
-        coef = coef /( 1.0D0 + fvm%spherecentroid(2,i,j)**2) !stretching coefficient
-        !
-        !***************
-        !*    dfdy     *
-        !***************
-        !
-        recons_matrix(1,2,i,j) =        coef !(i,j-2)
-        recons_matrix(2,2,i,j) = -8.0D0*coef !(i,j-1)
-        recons_matrix(3,2,i,j) =    0D0*coef !(i,j  )
-        recons_matrix(4,2,i,j) =  8.0D0*coef !(i,j+1)
-        recons_matrix(5,2,i,j) = -1.0D0*coef !(i,j+2)
-        !
-        !*****************
-        !*    d2fdx2     *
-        !*****************
-        !
-        coef = 1.0D0 / (12.0D0 * fvm%dalpha**2)                  !finite difference coefficient
-        !
-        recons_matrix(1,3,i,j) =        -coef !(i-2,j)
-        recons_matrix(2,3,i,j) =  16.0D0*coef !(i-1,j)
-        recons_matrix(3,3,i,j) = -30.0D0*coef !(i  ,j)
-        recons_matrix(4,3,i,j) =  16.0D0*coef !(i+1,j)
-        recons_matrix(5,3,i,j) =        -coef !(i+2,j)
-        !
-        ! stretching coefficient part 2
-        !      recons(3,i,j) = (a * recons(1,i,j)+ recons(3,i,j))*b
-        !
-        recons_matrix(1,6,i,j) = -2.0D0*fvm%spherecentroid(1,i,j)*(1.0D0 + fvm%spherecentroid(1,i,j)**2)
-        recons_matrix(2,6,i,j) =  0.5D0/((1.0D0 + fvm%spherecentroid(1,i,j)**2)**2)
-        !
-        !*****************
-        !*    d2fdy2     *
-        !*****************
-        !
-        !
-        coef = 1.0D0 / (12.0D0 * fvm%dbeta**2)                     !finite difference coefficient
-        !
-        recons_matrix(1,4,i,j) =        -coef !(i,j-2)
-        recons_matrix(2,4,i,j) =  16.0D0*coef !(i,j-1)
-        recons_matrix(3,4,i,j) = -30.0D0*coef !(i  ,j)
-        recons_matrix(4,4,i,j) =  16.0D0*coef !(i,j+1)
-        recons_matrix(5,4,i,j) =        -coef !(i,j+2)
-        !
-        ! stretching coefficient part 2
-        !
-        !      recons(4,i,j) = (a * recons(1,i,j)+ recons(4,i,j))*b
-        !
-        recons_matrix(3,6,i,j) = -2.0D0*fvm%spherecentroid(2,i,j)*(1.0D0 + fvm%spherecentroid(2,i,j)**2)
-        recons_matrix(4,6,i,j) =  0.5D0/((1.0D0 + fvm%spherecentroid(2,i,j)**2)**2)
-        !
-        !*****************
-        !*    d2fdxdy    *
-        !*****************
-        !
-        !
-        coef = 1.0D0 / (4.0D0 * fvm%dalpha * fvm%dbeta)            !finite difference coefficient
-        coef = coef  / ((1.0D0 + fvm%spherecentroid(1,i,j)**2) * &
-                        (1.0D0 + fvm%spherecentroid(2,i,j)**2))    !stretching coefficient 
-        !
-        recons_matrix(1,5,i,j) =  coef !(i-1,j-1)
-        recons_matrix(2,5,i,j) = -coef !(i-1,j+1)
-        recons_matrix(3,5,i,j) = 0.0D0 !(i  ,j  )
-        recons_matrix(4,5,i,j) = -coef !(i+1,j-1)
-        recons_matrix(5,5,i,j) =  coef !(i+1,j+1)
-    enddo
-  enddo
-end subroutine compute_reconstruct_matrix
 
 !
 ! the subroutines below are just for debugging

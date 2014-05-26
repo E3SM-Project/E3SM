@@ -87,6 +87,11 @@ module fvm_control_volume_mod
     real (kind=real_kind)    :: interp(1-nh:nc+nh,1:nhr,2)  !can be moved to private
     integer                  :: ibase(1-nh:nc+nh,1:nhr,2)  
     real (kind=real_kind)    :: halo_interp_weight(1-nh:nc+nh,1:nhr,1:ns,2)
+!------------------------------------------------------------------------------------
+    !
+    ! for finite-difference reconstruction - computed in fvm_analytic_mod.F90
+    !
+    real (kind=real_kind)    :: recons_matrix(1:5,1:6,1-nhe:nc+nhe,1-nhe:nc+nhe)
   end type fvm_struct
 
   public :: fvm_mesh_ari
@@ -1222,7 +1227,6 @@ subroutine get_equispace_weights(dx, x,w)
   !
   real (kind=real_kind) :: dx3
   integer :: j,k
-
   !
   ! use Lagrange interpolation formulate, e.g.,: 
   !
@@ -1239,7 +1243,5 @@ subroutine get_equispace_weights(dx, x,w)
      end do
   end if
 end subroutine get_equispace_weights
-
-
 
 end module fvm_control_volume_mod

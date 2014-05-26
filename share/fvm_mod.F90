@@ -934,7 +934,6 @@ contains
     
     
     do ie=nets,nete
-       write(*,*) "ie=",ie
        call fvm_mesh_ari(elem(ie),fvm(ie),tl)
        call computexytosphere_moments(fvm(ie),elem(ie)%desc)
     enddo
