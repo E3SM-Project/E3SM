@@ -45,9 +45,9 @@ module dimensions_mod
   integer, parameter, public :: nhr=2        !halo width needed for reconstruction - phl
   integer, parameter, public :: nht=nhe+nhr  !total halo width where reconstruction is needed (nht<=nc) - phl
                                              ! (different from halo needed for elements on edges and corners
-!  integer, parameter, public :: ns = 4 !stencil needed for 1D halo interpolation (must be even integer) - phl
-  integer, parameter, public :: ns = 2 !stencil needed for 1D halo interpolation (must be even integer) - phl
-!  integer, parameter, public :: ns = 1 !stencil needed for 1D halo interpolation (must be even integer) - phl
+  integer, parameter, public :: ns=2    !stencil needed for 1D halo interpolation - recommended setting for nc=3
+!  integer, parameter, public :: ns = 4 !recommended setting for nc=4
+
   !  
   ! constants for SPELT
   !

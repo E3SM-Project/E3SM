@@ -27,7 +27,6 @@ module fvm_control_volume_mod
 
   implicit none
   private
-  
   integer, parameter, private:: nh = nhr+(nhe-1) ! = 2 (nhr=2; nhe=1)
                                                  ! = 3 (nhr=2; nhe=2)
 
@@ -156,7 +155,7 @@ subroutine fvm_mesh_ari(elem, fvm, tl)
 
   call create_ari(elem,fvm)
   call create_interpolation_points(elem,fvm)
-  call compute_halo_weights(fvm,elem)  !dbg
+  call compute_halo_weights(fvm)
 end subroutine fvm_mesh_ari
 !END SUBROUTINE fvm_MESH_ARI----------------------------------------------CE-for FVM
 
@@ -980,7 +979,7 @@ subroutine create_interpolation_points(elem,fvm)
           ide=nc+nc
           iref1=ida
           do i=0,nc+nh-(halo-1)
-            tmpgnom%y=gnomystart(i)            
+            tmpgnom%y=gnomystart(i)           
             call interpolation_point(tmpgnom,gnomystart,1,4,1,fvm%interp(i,halo,1),&
                                      ida,ide,iref1,ibase_tmp(i,halo,1))
           end do
@@ -1105,10 +1104,16 @@ subroutine interpolation_point(gnom,gnom1d,face1,face2,xy,point,ida,ide,iref,iba
   ! |----------|---------|------x---|----------|------|------
   !                 gno(iref-1)  gno(iref)
   !
-  do while ((iref .ne. nc+nc-1) .AND. (point>gnom1d(iref) ))
+  do while (point>gnom1d(iref))
     iref = iref + 1
+    if (iref>ide+1) then
+       write(*,*) "error in search - ABORT; probably invalid ns-nc combination"
+       stop
+    end if
   end do
-
+  !
+  ! this routine works for ns=1 and ns even
+  !
   if (ns==1) then
      !
      ! no halo interpolation option - for debugging
@@ -1119,7 +1124,6 @@ subroutine interpolation_point(gnom,gnom1d,face1,face2,xy,point,ida,ide,iref,iba
   else
      !
      ! this code is only coded for ns even
-     !
      !
      ! ibaseref is the left most index used for 1D interpolation
      ! (hence iref = iref-ns/2 except near corners)
@@ -1135,12 +1139,11 @@ end subroutine interpolation_point
 !
 ! a "pre-compute" version of fillhalo_cubic
 !
-subroutine compute_halo_weights(fvm,elem)!dbg
+subroutine compute_halo_weights(fvm)
   implicit none
-  type (fvm_struct), intent(inout)     :: fvm !xxx
+  type (fvm_struct), intent(inout)     :: fvm
   
   integer                                       :: i, halo, ibaseref
-  type (element_t), intent(in)      :: elem !dbg
   !
   ! pre-compute weight/index matrices
   !
@@ -1191,10 +1194,8 @@ subroutine compute_halo_weights(fvm,elem)!dbg
            !
            fvm%halo_interp_weight(jmin:jmax,halo,1:ns,2) = fvm%halo_interp_weight(imax:imin:-1,halo,ns:1:-1,1)
            fvm%ibase       (jmin:jmax,halo     ,2) = nc+1-(ns-1)-fvm%ibase(imax:imin:-1,halo        ,1)
-!           ibase       (jmin:jmax,halo     ,2) = nc+1-(ns-1)-fvm%ibase(imax:imin:-1,halo        ,1)
         end do
      end if
-!     fvm%ibase = ibase
   end if
 end subroutine compute_halo_weights
 

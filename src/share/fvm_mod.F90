@@ -849,7 +849,7 @@ contains
   subroutine fvm_init1(par)
     use parallel_mod, only : parallel_t, haltmp
     type (parallel_t) :: par
-    
+
     if (nc<3) then
        if (par%masterproc) then
           print *, "NUMBER OF CELLS ERROR for fvm: Number of cells parmeter"
@@ -874,6 +874,24 @@ contains
           print *, "value of ns not supported/tested: ns = ",ns
           stop
        end if
+    end if
+
+    if (nc==3.and.ns.ne.2) then
+       if (par%masterproc) then
+          print *, "Recommended setting for nc=3 is ns=2 (linear interpolation in halo)"
+          print *, "You choose ns=",ns
+          print *, "Goto dimensions_mod to change value of ns"
+       endif
+       call haltmp("stopping")
+    end if
+
+    if (nc==4.and.ns.ne.4) then
+       if (par%masterproc) then
+          print *, "Recommended setting for nc=4 is ns=4 (cubic interpolation in halo)"
+          print *, "You choose ns=",ns
+          print *, "Goto dimensions_mod to change value of ns"
+       endif
+       call haltmp("stopping")
     end if
 
     if (nhe .ne. 1) then
