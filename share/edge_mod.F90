@@ -2366,7 +2366,9 @@ subroutine ghostVunpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,tn0,timelevels,desc)
   logical :: reverse
   
   real (kind=real_kind)                       :: NaN=-1.0
-  NaN=sqrt(NaN)
+!!XXgoldyXX: This is not legitimate Fortran code, replacing
+!  NaN=sqrt(NaN)
+  NaN = 1.e100_real_kind
 
   threadsafe=.false.
 
@@ -2586,7 +2588,9 @@ subroutine ghostVunpackR(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
   logical :: reverse
   
   real (kind=real_kind)                       :: NaN=-1.0
-  NaN=sqrt(NaN)
+!!XXgoldyXX: This is not legitimate Fortran code, replacing
+!  NaN=sqrt(NaN)
+  NaN = 1.e100_real_kind
 
   threadsafe=.false.
 
@@ -3006,7 +3010,9 @@ end subroutine ghostVunpackR
     logical :: reverse
     
     real (kind=real_kind)                       :: NaN=-1.0
-    NaN=sqrt(NaN)
+!!XXgoldyXX: This is not legitimate Fortran code, replacing
+!    NaN=sqrt(NaN)
+  NaN = 1.e100_real_kind
 
     threadsafe=.false.
 
@@ -3402,7 +3408,9 @@ end subroutine ghostVunpackR
     logical :: reverse
     
     real (kind=real_kind)                       :: NaN=-1.0
-    NaN=sqrt(NaN)
+!!XXgoldyXX: This is not legitimate Fortran code, replacing
+!   NaN=sqrt(NaN)
+  NaN = 1.e100_real_kind
 
     threadsafe=.false.
 
@@ -3754,7 +3762,9 @@ end subroutine ghostVunpackR
     logical :: reverse
     
     real (kind=real_kind)                       :: NaN=-1.0
-    NaN=sqrt(NaN)
+!!XXgoldyXX: This is not legitimate Fortran code, replacing
+!    NaN=sqrt(NaN)
+  NaN = 1.e100_real_kind
 
     threadsafe=.false.
 
@@ -4153,7 +4163,9 @@ end subroutine ghostVunpackR
     logical :: reverse
     
     real (kind=real_kind)                       :: NaN=-1.0
-    NaN=sqrt(NaN)
+!!XXgoldyXX: This is not legitimate Fortran code, replacing
+!    NaN=sqrt(NaN)
+  NaN = 1.e100_real_kind
 
     threadsafe=.false.
 
