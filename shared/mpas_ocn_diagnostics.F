@@ -117,7 +117,8 @@ contains
         normalizedRelativeVorticityEdge, normalizedRelativeVorticityVertex, normalizedRelativeVorticityCell, &
         density, displacedDensity, potentialDensity, temperature, salinity, kineticEnergyVertex, kineticEnergyVertexOnCells, uBolusGM, uTransport, &
         vertVelocityTop, BruntVaisalaFreqTop, &
-        vorticityGradientNormalComponent, vorticityGradientTangentialComponent, gradSSH
+        vorticityGradientNormalComponent, vorticityGradientTangentialComponent, gradSSH, &
+        inSituThermalExpansionCoeff, inSituSalineContractionCoeff
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers, derivTwo
       character :: c1*6
 
@@ -174,6 +175,8 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'uBolusGM', uBolusGM)
       call mpas_pool_get_array(diagnosticsPool, 'uTransport', uTransport)
       call mpas_pool_get_array(diagnosticsPool, 'gradSSH', gradSSH)
+      call mpas_pool_get_array(diagnosticsPool, 'inSituThermalExpansionCoeff',inSituThermalExpansionCoeff)
+      call mpas_pool_get_array(diagnosticsPool, 'inSituSalineContractionCoeff', inSituSalineContractionCoeff)
 
       call mpas_pool_get_array(meshPool, 'weightsOnEdge', weightsOnEdge)
       call mpas_pool_get_array(meshPool, 'kiteAreasOnVertex', kiteAreasOnVertex)
@@ -440,7 +443,8 @@ contains
       call mpas_timer_start("equation of state", .false., diagEOSTimer)
 
       ! compute in-place density
-      call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, 0, 'relative', density, err, timeLevelIn=timeLevel)
+      call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, 0, 'relative', density, err, &
+         inSituThermalExpansionCoeff, inSituSalineContractionCoeff, timeLevelIn=timeLevel)
 
       ! compute potentialDensity, the density displaced adiabatically to the mid-depth of top layer.
       call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, 1, 'absolute', potentialDensity, err, timeLevelIn=timeLevel)
@@ -481,7 +485,7 @@ contains
         end do
         deallocate(pTop)
 
-      elseif (config_pressure_gradient_type.eq.'pressure_and_zmid') then
+      else
 
         do iCell = 1, nCells
            ! Pressure for generalized coordinates.

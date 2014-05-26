@@ -216,13 +216,6 @@ module mpas_core
          call mpas_dmpar_abort(dminfo)
       endif
 
-      write (stdoutUnit,'(a,a)') ' Pressure type is: ',trim(config_pressure_gradient_type)
-      if (config_pressure_gradient_type.ne.'pressure_and_zmid'.and. &
-          config_pressure_gradient_type.ne.'MontgomeryPotential') then
-         write (stderrUnit,*) ' Incorrect choice of config_pressure_gradient_type.'
-         call mpas_dmpar_abort(dminfo)
-      endif
-
       if(config_vert_coord_movement .ne. 'impermeable_interfaces' .and. config_pressure_gradient_type .eq. 'MontgomeryPotential') then
          write (stderrUnit,*) ' Incorrect combination of config_vert_coord_movement and config_pressure_gradient_type'
          call mpas_dmpar_abort(dminfo)

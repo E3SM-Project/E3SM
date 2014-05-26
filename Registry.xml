@@ -530,11 +530,15 @@
 	<nml_record name="pressure_gradient" in_defaults="true">
 		<nml_option name="config_pressure_gradient_type" type="character" default_value="pressure_and_zmid" units="unitless"
 					description="Form of pressure gradient terms in momentum equation. For most applications, the gradient of pressure and layer mid-depth are appropriate.  For isopycnal coordinates, one may use the gradient of the Montgomery potential."
-					possible_values="'pressure_and_zmid' or 'MontgomeryPotential'"
+					possible_values="'pressure_and_zmid' or 'Jacobian_from_density' or 'Jacobian_from_TS' or 'MontgomeryPotential'"
 		/>
 		<nml_option name="config_density0" type="real" default_value="1014.65" units="kg m^{-3}"
 					description="Density used as a coefficient of the pressure gradient terms, $\rho_0$.  This is a constant due to the Boussinesq approximation."
 					possible_values="any positive real, but typically 1000-1035"
+		/>
+		<nml_option name="config_common_level_weight" type="real" default_value="0.5" units="unitless"
+					description="The weight between standard Jacobian and weighted Jacobian, $\gamma$."
+					possible_values="any real between 0 and 1"
 		/>
 	</nml_record>
 	<nml_record name="eos" in_defaults="true">
@@ -1359,10 +1363,17 @@
 		<var name="potentialDensity" type="real" dimensions="nVertLevels nCells Time" units="kg m^{-3}"
 			 description="potential density: density displaced adiabatically to the mid-depth of top layer"
 		/>
+		<var name="inSituThermalExpansionCoeff" 
+			 type="real" dimensions="nVertLevels nCells Time" units="C^{-1}"
+			 description="Thermal expansion coefficient (alpha), defined as $-1/\rho d\rho/dT$ (note negative sign).  This is in situ, i.e. not displaced to another depth."
+		/>
+		<var name="inSituSalineContractionCoeff" 
+			 type="real" dimensions="nVertLevels nCells Time" units="PSU^{-1}"
+			 description="Saline contraction coefficient (beta), defined as $1/\rho d\rho/dS$.  This is also called the haline contraction coefficient.  This is in situ, i.e. not displaced to another depth."
+		/>
 		<var name="BruntVaisalaFreqTop" type="real" dimensions="nVertLevels nCells Time" units="s^{-2}"
 			 description="Brunt Vaisala frequency defined at the center (horizontally) and top (vertically) of cell"
 		/>
-
 		<var name="montgomeryPotential" type="real" dimensions="nVertLevels nCells Time" units="m^2 s^{-2}"
 			 description="Montgomery potential, may be used as the pressure for isopycnal coordinates."
 		/>
