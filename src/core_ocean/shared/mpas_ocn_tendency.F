@@ -185,14 +185,17 @@ contains
       real (kind=RKIND), dimension(:), pointer :: surfaceWindStress
 
       real (kind=RKIND), dimension(:,:), pointer :: &
-        layerThicknessEdge, normalVelocity, tangentialVelocity, density, zMid, pressure, &
+        layerThicknessEdge, normalVelocity, tangentialVelocity, density, potentialDensity, zMid, pressure, &
         tend_normalVelocity, circulation, relativeVorticity, viscosity, kineticEnergyCell, &
         normalizedRelativeVorticityEdge, normalizedPlanetaryVorticityEdge, &
-        montgomeryPotential, vertTransportVelocityTop, divergence, vertViscTopOfEdge
+        montgomeryPotential, vertTransportVelocityTop, divergence, vertViscTopOfEdge, &
+        temperature, salinity, inSituThermalExpansionCoeff, inSituSalineContractionCoeff
+      real (kind=RKIND), dimension(:,:,:), pointer :: tracers
 
       integer :: timeLevel
 
       integer :: err
+      integer, pointer :: indexTemperature, indexSalinity
 
       logical, pointer :: config_disable_vel_all_tend
       character (len=StrKIND), pointer :: config_pressure_gradient_type
@@ -209,6 +212,9 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_pressure_gradient_type', config_pressure_gradient_type)
 
       call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel)
+      call mpas_pool_get_array(statePool, 'tracers', tracers, timeLevel)
+      call mpas_pool_get_dimension(statePool, 'index_temperature', indexTemperature)
+      call mpas_pool_get_dimension(statePool, 'index_salinity', indexSalinity)
 
       call mpas_pool_get_array(diagnosticsPool, 'kineticEnergyCell', kineticEnergyCell)
       call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdge', layerThicknessEdge)
@@ -223,7 +229,10 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'pressure', pressure)
       call mpas_pool_get_array(diagnosticsPool, 'vertViscTopOfEdge', vertViscTopOfEdge)
       call mpas_pool_get_array(diagnosticsPool, 'density', density)
+      call mpas_pool_get_array(diagnosticsPool, 'potentialDensity', potentialDensity)
       call mpas_pool_get_array(diagnosticsPool, 'tangentialVelocity', tangentialVelocity)
+      call mpas_pool_get_array(diagnosticsPool, 'inSituThermalExpansionCoeff',inSituThermalExpansionCoeff)
+      call mpas_pool_get_array(diagnosticsPool, 'inSituSalineContractionCoeff', inSituSalineContractionCoeff)
 
       call mpas_pool_get_array(tendPool, 'normalVelocity', tend_normalVelocity)
                   
@@ -256,11 +265,9 @@ contains
       ! velocity tendency: pressure gradient
       !
       call mpas_timer_start("pressure grad", .false., velPgradTimer)
-      if (config_pressure_gradient_type.eq.'MontgomeryPotential') then
-          call ocn_vel_pressure_grad_tend(meshPool, montgomeryPotential,  zMid, density, tend_normalVelocity, err)
-      else
-          call ocn_vel_pressure_grad_tend(meshPool, pressure, zMid, density, tend_normalVelocity, err)
-      end if
+      call ocn_vel_pressure_grad_tend(meshPool, pressure, montgomeryPotential, zMid, density, potentialDensity, &
+         indexTemperature, indexSalinity, tracers, inSituThermalExpansionCoeff,inSituSalineContractionCoeff, &
+         tend_normalVelocity, err)
       call mpas_timer_stop("pressure grad", velPgradTimer)
 
       !

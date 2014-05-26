@@ -94,7 +94,7 @@ contains
    !        s - state: tracers
    !        k_displaced 
 
-   !  If k_displaced<=0, density is returned with no displaced
+   !  If k_displaced=0, density is returned with no displacement
    !  If k_displaced>0,the density returned is that for a parcel
    !  adiabatically displaced from its original level to level 
    !  k_displaced.
