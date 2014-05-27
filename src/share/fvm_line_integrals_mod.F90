@@ -56,12 +56,11 @@ subroutine compute_weights(fvm,nreconstruction,weights_all,weights_eul_index_all
   type (fvm_struct), intent(inout)                                :: fvm
   integer (kind=int_kind), intent(in)                            :: nreconstruction
   ! arrays for collecting cell data
-  real (kind=real_kind),dimension(10*(nc+2*nhe)*(nc+2*nhe),nreconstruction), &
-                                                intent(out) :: weights_all
-  integer (kind=int_kind), dimension(10*(nc+2*nhe)*(nc+2*nhe),2), &
-                                                intent(out) :: weights_eul_index_all
-  integer (kind=int_kind), dimension(10*(nc+2*nhe)*(nc+2*nhe),2), &
-                                                intent(out) :: weights_lgr_index_all
+  !
+  ! dimension(10*(nc+2*nhe)*(nc+2*nhe),2)
+  !
+  real (kind=real_kind)  , dimension(:,:), intent(out) :: weights_all
+  integer (kind=int_kind), dimension(:,:), intent(out) :: weights_eul_index_all, weights_lgr_index_all
   integer (kind=int_kind), intent(in)                       :: klev
   integer (kind=int_kind), intent(out)                      :: jall
 
@@ -1733,9 +1732,13 @@ end subroutine compute_weights
 subroutine getdep_cellboundariesxyvec(xcell,ycell,jx,jy,dcart)
 use coordinate_systems_mod, only : cartesian2D_t
   implicit none
-  real (kind=real_kind), dimension(0:5), intent(inout)     :: xcell,ycell
+  !
+  ! dimension(0:5)
+  !
+  real (kind=real_kind), dimension(0:), intent(inout)     :: xcell,ycell
   integer (kind=int_kind), intent(in)                      :: jx, jy
-  type (cartesian2D_t), intent(in)                         :: dcart(-1:nc+3,-1:nc+3)
+!  type (cartesian2D_t), intent(in)                         :: dcart(-1:nc+3,-1:nc+3)
+  type (cartesian2D_t), intent(in)                         :: dcart(-1:,-1:)
 
   xcell(1) = dcart(jx  ,jy  )%x 
   ycell(1) = dcart(jx  ,jy  )%y
@@ -1768,15 +1771,20 @@ end subroutine getdep_cellboundariesxyvec
     integer (kind=int_kind), intent(in) :: nvertex
     logical, intent(in) :: lexact_horizontal_line_integrals
     integer (kind=int_kind)                  , intent(in):: nreconstruction, jx,jy,ngauss,jmax_segments
-    real (kind=real_kind)   ,  dimension(nvertex), intent(in):: xcell_in,ycell_in
+    !
+    ! dimension(nvertex)
+    !
+    real (kind=real_kind)   ,  dimension(:), intent(in):: xcell_in,ycell_in
     !
     integer (kind=int_kind), intent(in)               :: jx_min, jy_min, jx_max, jy_max
-    real (kind=real_kind), dimension(-nhe:nc+2+nhe), intent(in) :: xgno
-    real (kind=real_kind), dimension(-nhe:nc+2+nhe), intent(in) :: ygno
+    !
+    ! dimension(-nhe:nc+2+nhe)
+    !
+    real (kind=real_kind), dimension(-nhe:), intent(in) :: xgno, ygno
     !
     ! for Gaussian quadrature
     !
-    real (kind=real_kind), dimension(ngauss), intent(in) :: gauss_weights, abscissae
+    real (kind=real_kind), dimension(:), intent(in) :: gauss_weights, abscissae !dimension(ngauss)
     !
     ! boundaries of domain
     !
@@ -1906,8 +1914,9 @@ end subroutine getdep_cellboundariesxyvec
     implicit none
     integer (kind=int_kind),                                  INTENT(IN   ) :: jsegment,jmax_segments
     integer (kind=int_kind)                                 , intent(in)    :: nreconstruction
-    real (kind=real_kind)   , dimension(jmax_segments,nreconstruction), intent(inout) :: weights
-    integer (kind=int_kind), dimension(jmax_segments,2     ), intent(inout) :: weights_eul_index
+    !
+    real (kind=real_kind)  , dimension(:,:), intent(inout) :: weights !dimension(jmax_segments,nreconstruction)
+    integer (kind=int_kind), dimension(:,:), intent(inout) :: weights_eul_index !dimension(jmax_segments,2)
     integer (kind=int_kind),                                  INTENT(OUT  ) :: jcollect
     !
     ! local workspace
@@ -1915,7 +1924,7 @@ end subroutine getdep_cellboundariesxyvec
     integer (kind=int_kind) :: imin, imax, jmin, jmax, i,j,k,h
     logical                 :: ltmp
 
-    real (kind=real_kind)   , dimension(jmax_segments,nreconstruction) :: weights_out
+    real (kind=real_kind)  , dimension(jmax_segments,nreconstruction) :: weights_out
     integer (kind=int_kind), dimension(jmax_segments,2     ) :: weights_eul_index_out
 
     weights_out           = 0.0D0
@@ -1983,19 +1992,22 @@ end subroutine getdep_cellboundariesxyvec
     !
     ! max. crossings per side is 2*nhe
     !
-    real (kind=real_kind), &
-         dimension(8*nhe,2), intent(in):: r_cross_lat
-    integer (kind=int_kind), &
-         dimension(8*nhe,2), intent(in):: cross_lat_eul_index
-    integer (kind=int_kind), intent(in):: jx_min, jx_max, jy_min, jy_max
+    
+    real (kind=real_kind)  , dimension(:,:), intent(in):: r_cross_lat ! dimension(8*nhe,2)
+    integer (kind=int_kind), dimension(:,:), intent(in):: cross_lat_eul_index ! ! dimension(8*nhe,2)
+    integer (kind=int_kind)                , intent(in):: jx_min, jx_max, jy_min, jy_max
 
-    real (kind=real_kind), dimension(-nhe:nc+2+nhe), intent(in)  :: xgno
-    real (kind=real_kind)   ,  &
-         dimension(jmax_segments,nreconstruction), intent(inout) :: weights
-    integer (kind=int_kind),  &
-         dimension(jmax_segments,2), intent(inout)               :: weights_eul_index
+    real (kind=real_kind), dimension(-nhe:), intent(in)  :: xgno !dimension(-nhe:nc+2+nhe)
+    !
+    ! dimension(jmax_segments,nreconstruction)
+    !
+    real (kind=real_kind), dimension(:,:), intent(inout) :: weights
+    !
+    ! dimension(jmax_segments,2)
+    !
+    integer (kind=int_kind), dimension(:,:), intent(inout)               :: weights_eul_index
+
     real (kind=real_kind)   , dimension(nreconstruction)         :: weights_tmp
-
     integer (kind=int_kind) :: imin, imax, jmin, jmax, i,j,k, isgn, h, eul_jx, eul_jy
     integer (kind=int_kind) :: idx_start_y,idx_end_y
     logical                 :: ltmp,lcontinue
@@ -2095,16 +2107,14 @@ end subroutine getdep_cellboundariesxyvec
     !
     ! for Gaussian quadrature
     !
-    real (kind=real_kind), dimension(ngauss), intent(in) :: gauss_weights, abscissae
-    real (kind=real_kind), dimension(1:nvertex)        , intent(in)    :: x_in,y_in
+    real (kind=real_kind), dimension(:), intent(in) :: gauss_weights, abscissae !dimension(ngauss)
+    real (kind=real_kind), dimension(:)        , intent(in)    :: x_in,y_in !dimension(1:nvertex)
 
     integer (kind=int_kind), intent(in)               :: jx_min, jy_min, jx_max, jy_max
-    real (kind=real_kind), dimension(-nhe:nc+2+nhe), intent(in) :: xgno
-    real (kind=real_kind), dimension(-nhe:nc+2+nhe), intent(in) :: ygno
+    real (kind=real_kind), dimension(-nhe:), intent(in) :: xgno, ygno !dimension(-nhe:nc+2+nhe)
     integer (kind=int_kind),            intent(inout) :: jsegment
 !    integer (kind=int_kind),dimension(0:2),intent(in)    :: jx_eul_in, jy_eul_in
-    real (kind=real_kind)   ,  &
-         dimension(jmax_segments,nreconstruction), intent(out) :: weights
+    real (kind=real_kind)   , dimension(:,:), intent(out) :: weights !dimension(jmax_segments,nreconstruction)
     integer (kind=int_kind),  &
          dimension(jmax_segments,2), intent(out) :: weights_eul_index
 
@@ -2466,7 +2476,7 @@ end subroutine getdep_cellboundariesxyvec
 
   real (kind=real_kind) function compute_slope(x,y)
     implicit none
-    real (kind=real_kind), dimension(2), intent(in) :: x,y
+    real (kind=real_kind), dimension(:), intent(in) :: x,y !dimension(2)
     if (fuzzy(ABS(x(2)-x(1)),fuzzy_width)>0) THEN
       compute_slope = (y(2)-y(1))/(x(2)-x(1))
     else
@@ -2507,10 +2517,10 @@ end subroutine getdep_cellboundariesxyvec
     logical, intent(in) :: lexact_horizontal_line_integrals
     integer (kind=int_kind), intent(in) :: nreconstruction, ngauss
     real (kind=real_kind), intent(out) :: weights(:)
-    real (kind=real_kind), dimension(ngauss), intent(in) :: gauss_weights, abscissae
+    real (kind=real_kind), dimension(:), intent(in) :: gauss_weights, abscissae !dimension(ngauss)
     
     
-    real (kind=real_kind), dimension(2     ), intent(in) :: xseg,yseg
+    real (kind=real_kind), dimension(:), intent(in) :: xseg,yseg !dimension(2)
     !
     ! compute weights
     !
@@ -2692,8 +2702,8 @@ end subroutine getdep_cellboundariesxyvec
   subroutine which_eul_cell(x,j_eul,gno)
     implicit none
     integer (kind=int_kind)                               , intent(inout) :: j_eul
-    real (kind=real_kind), dimension(3)                    , intent(in)    :: x
-    real (kind=real_kind), dimension(-nhe:nc+2+nhe), intent(in)    :: gno !phl
+    real (kind=real_kind), dimension(:)                    , intent(in)    :: x !dimension(3)
+    real (kind=real_kind), dimension(-nhe:), intent(in)    :: gno ! dimension(-nhe:nc+2+nhe)
 !    real (kind=real_kind), intent(in)    :: eps
     
     real (kind=real_kind) :: d1,d2,d3,d1p1
@@ -2765,7 +2775,7 @@ end subroutine getdep_cellboundariesxyvec
     implicit none
     integer (kind=int_kind)                               , intent(inout) :: j_eul
     real (kind=real_kind)                    , intent(inout)    :: x
-    real (kind=real_kind), dimension(-nhe:nc+2+nhe), intent(in)    :: gno !phl
+    real (kind=real_kind), dimension(-nhe:), intent(in)    :: gno !dimension(-nhe:nc+2+nhe)
 !    real (kind=real_kind), intent(in)    :: eps
     
     logical                 :: lcontinue
@@ -2817,7 +2827,7 @@ end subroutine getdep_cellboundariesxyvec
 subroutine gauss_points(n,weights,points)
   implicit none
   integer (kind=int_kind)           , intent(in ) :: n
-  real (kind=real_kind), dimension(n), intent(out) :: weights, points
+  real (kind=real_kind), dimension(:), intent(out) :: weights, points !dimension(n)
   
   select case (n)
 !    CASE(1)
