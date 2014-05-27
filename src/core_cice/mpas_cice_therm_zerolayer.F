@@ -1,3 +1,4 @@
+#define test_1d 0
 module cice_therm_zerolayer
 
   use mpas_grid_types
@@ -7,8 +8,7 @@ module cice_therm_zerolayer
   private
   public :: &
        therm_zerolayer, &
-       init_semtner_forcing, &
-       init_semtner_test_case
+       zero_layer_thermo_semtner_unit_test
 
   logical :: ltest = .false.
 
@@ -31,9 +31,9 @@ module cice_therm_zerolayer
        stefanBoltzmann              = 5.79484e-8_RKIND, & ! J m-2 K-4 s-1
        airSaturationHumidityCoeff1  = 11637800.0_RKIND, &
        airSaturationHumidityCoeff2  = 5897.8_RKIND, &
-       iceAlbedo                    = 0.64_RKIND, &
-       snowAlbedoConstant           = 0.85_RKIND, &
-       internalAbsorptionCorrection = 0.4_RKIND, &
+       iceAlbedo                    = 0.5_RKIND, &!0.64_RKIND, &
+       snowAlbedoConstant           = 0.7_RKIND, &!0.85_RKIND, &
+       internalAbsorptionCorrection = 0.0_RKIND, &!0.4_RKIND, &
        fractionPenetratingRadiation = 0.17_RKIND, &
        liquidusSlope                = 0.054_RKIND, &
        iceEnergyDensitySemtner      = 72.0_RKIND, & ! cal cm-3
@@ -119,28 +119,32 @@ module cice_therm_zerolayer
 
     real(kind=RKIND), dimension(nSnowPeriods) :: &
          snowfallDuration, &
-         snowfallAccumulationRate    
+         snowfallAccumulationRate   
+
+    integer, dimension(1) :: iCell_test = (/-1/)
 
 contains
 
   !-------------------------------------------------------------
 
-  subroutine therm_zerolayer(mesh, tracers, atmos_forcing, ocean_forcing, dt, time)
+  subroutine therm_zerolayer(block)
 
-    type (MPAS_pool_type), intent(inout) :: mesh
+    type(block_type), intent(inout) :: block
 
-    type (MPAS_pool_type), pointer :: tracers
-    type (MPAS_pool_type), pointer :: atmos_forcing
-    type (MPAS_pool_type), pointer :: ocean_forcing
-
-    real(kind=RKIND), intent(in) :: &
-         dt, &
-         time
+    type (MPAS_pool_type), pointer :: &
+         mesh, &
+         configs, &
+         tracers, &
+         atmos_forcing, &
+         ocean_forcing
 
     real(kind=RKIND) :: &
          cumulativeIceAblation, &
          cumulativeBasalAblation, &
          cumulativeBasalAccretion
+
+    real(kind=RKIND), pointer :: &
+         dt
          
     integer :: &
          iCell, &
@@ -150,7 +154,7 @@ contains
          nCells, &
          nCategories
 
-    real(kind=RKIND), dimension(:,:), pointer :: &
+    real(kind=RKIND), dimension(:,:,:), pointer :: &
          iceAreaCategory, &
          iceVolumeCategory, &
          snowVolumeCategory, &
@@ -167,14 +171,28 @@ contains
          snowfallRate, &
          seaSurfaceSalinity
 
-    ! init variables
+#if test_1d == 1
+    ! testing
+    real(kind=RKIND), dimension(:), pointer :: &
+         latCell
+    ! testing
+#endif
+
+    configs => block % configs
+    call MPAS_pool_get_config(configs, "config_dt", dt)
+    
+    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+    call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
+    call MPAS_pool_get_subpool(block % structs, "atmos_forcing", atmos_forcing)
+    call MPAS_pool_get_subpool(block % structs, "ocean_forcing", ocean_forcing)
+
     call MPAS_pool_get_dimension(mesh, "nCells", nCells)
     call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
 
-    call MPAS_pool_get_array(tracers, "iceAreaCategory", iceAreaCategory)
-    call MPAS_pool_get_array(tracers, "iceVolumeCategory", iceVolumeCategory)
-    call MPAS_pool_get_array(tracers, "snowVolumeCategory", snowVolumeCategory)
-    call MPAS_pool_get_array(tracers, "surfaceTemperature", surfaceTemperature)
+    call MPAS_pool_get_array(tracers, "iceAreaCategory", iceAreaCategory, 1)
+    call MPAS_pool_get_array(tracers, "iceVolumeCategory", iceVolumeCategory, 1)
+    call MPAS_pool_get_array(tracers, "snowVolumeCategory", snowVolumeCategory, 1)
+    call MPAS_pool_get_array(tracers, "surfaceTemperature", surfaceTemperature, 1)
     call MPAS_pool_get_array(atmos_forcing, "shortwaveDown", shortwaveDown)
     call MPAS_pool_get_array(atmos_forcing, "longwaveDown", longwaveDown)
     call MPAS_pool_get_array(atmos_forcing, "airDensity", airDensity)
@@ -185,21 +203,33 @@ contains
     call MPAS_pool_get_array(atmos_forcing, "snowfallRate", snowfallRate)
     call MPAS_pool_get_array(ocean_forcing, "seaSurfaceSalinity", seaSurfaceSalinity)
 
-    !call run_semtner_test_case()
+#if test_1d == 1
+    call MPAS_pool_get_array(mesh, "latCell", latCell) ! testing 
+
+    ! testing
+    if (iCell_test(1) == -1) then
+       iCell_test = maxloc(latCell)
+    endif
+    ! testing
+#endif
 
     do iCategory = 1, nCategories
 
        do iCell = 1, nCells
-          
-          if (iceAreaCategory(iCategory,iCell) > 0.0_RKIND) then
 
-             if (iCell == 7134 .or. iCell == 7133) ltest = .true.
+#if test_1d == 1
+          ! testing
+          if (iCell == iCell_test(1)) then
+          ! testing
+#endif          
+
+          if (iceAreaCategory(1,iCategory,iCell) > 0.0_RKIND) then
              
              call therm_zerolayer_column( &
-                  iceAreaCategory(iCategory,iCell), &
-                  iceVolumeCategory(iCategory,iCell), &
-                  snowVolumeCategory(iCategory,iCell), &
-                  surfaceTemperature(iCategory,iCell), &
+                  iceAreaCategory(1,iCategory,iCell), &
+                  iceVolumeCategory(1,iCategory,iCell), &
+                  snowVolumeCategory(1,iCategory,iCell), &
+                  surfaceTemperature(1,iCategory,iCell), &
                   shortwaveDown(iCell), &
                   longwaveDown(iCell), &
                   airDensity(iCell), &
@@ -212,22 +242,31 @@ contains
                   cumulativeIceAblation, &
                   cumulativeBasalAblation, &
                   cumulativeBasalAccretion, &
-                  dt, &
-                  time)
-             
-             ltest = .false.
+                  dt)
              
           else
-             
+
              call add_new_ice( &
-                  iceAreaCategory(iCategory,iCell), &
-                  iceVolumeCategory(iCategory,iCell), &
-                  snowVolumeCategory(iCategory,iCell), &
-                  surfaceTemperature(iCategory,iCell), &
+                  iceAreaCategory(1,iCategory,iCell), &
+                  iceVolumeCategory(1,iCategory,iCell), &
+                  snowVolumeCategory(1,iCategory,iCell), &
+                  surfaceTemperature(1,iCategory,iCell), &
                   airPotentialTemperature(iCell))
-             
+
           endif ! iceAreaCell
+
+#if test_1d == 1
+          call writeout_zero_layer_thermo_point(&
+               iCell, &
+               mesh, &
+               iceAreaCategory(1,iCategory,iCell), &
+               iceVolumeCategory(1,iCategory,iCell), &
+               snowVolumeCategory(1,iCategory,iCell), &
+               surfaceTemperature(1,iCategory,iCell))
           
+       endif ! testing 
+#endif
+
        enddo ! iCell
 
     enddo ! iCategory
@@ -282,8 +321,7 @@ contains
        cumulativeIceAblation, &
        cumulativeBasalAblation, &
        cumulativeBasalAccretion, &
-       dt, &
-       time)
+       dt)
 
     real(kind=RKIND), intent(inout) :: &
          iceAreaCategory, &
@@ -304,8 +342,7 @@ contains
          latentTransferCoefficient, &
          snowfallRateForcing, &
          seaSurfaceSalinity, &
-         dt, &
-         time
+         dt
 
     real(kind=RKIND) :: &
          iceThickness, &
@@ -384,7 +421,6 @@ contains
          shortwaveAbsorbed, &
          bottomTemperature, &
          cumulativeIceAblation, &
-         time, &
          dt)
 
     surfaceTemperature = newSurfaceTemperature
@@ -506,7 +542,6 @@ contains
        shortwaveAbsorbed, &
        bottomTemperature, &
        cumulativeIceAblation, &
-       time, &
        dt)
 
     real(kind=RKIND), intent(inout) :: &
@@ -521,7 +556,6 @@ contains
          latentHeatFlux, &
          shortwaveAbsorbed, &
          bottomTemperature, &
-         time, &
          dt
 
     real(kind=RKIND) :: &
@@ -539,10 +573,10 @@ contains
     lmelt = .false.
 
     ! surface temperature
-    if (newSurfaceTemperature > snowMeltingTemperature .and. snowThickness > 0.0_RKIND) then
+    if (newSurfaceTemperature >= snowMeltingTemperature .and. snowThickness > 0.0_RKIND) then
        newSurfaceTemperature = snowMeltingTemperature
        lmelt = .true.
-    else if (newSurfaceTemperature > iceMeltingTemperature .and. snowThickness == 0.0_RKIND) then
+    else if (newSurfaceTemperature >= iceMeltingTemperature .and. snowThickness == 0.0_RKIND) then
        newSurfaceTemperature = iceMeltingTemperature
        lmelt = .true.
     endif
@@ -820,8 +854,8 @@ contains
 
     else
 
-       shortwaveAbsorbed = shortwaveDown * (1.0_RKIND - iceAlbedo) * (1.0_RKIND - fractionPenetratingRadiation) + &
-                           shortwaveDown * (1.0_RKIND - iceAlbedo) * fractionPenetratingRadiation * (1.0_RKIND - internalAbsorptionCorrection)
+       shortwaveAbsorbed = shortwaveDown * (1.0_RKIND - iceAlbedo) * &
+            ((1.0_RKIND - fractionPenetratingRadiation) + fractionPenetratingRadiation * (1.0_RKIND - internalAbsorptionCorrection))
 
     endif
     
@@ -869,7 +903,7 @@ contains
          oceanicFluxSemtner = -1.5_RKIND ! kcal cm-2 year-1
 
     !bottomTemperature = -liquidusSlope * seaSurfaceSalinity
-    bottomTemperature = -2.0_RKIND
+    bottomTemperature = -liquidusSlope * 34.0_RKIND
 
     oceanicFlux = (oceanicFluxSemtner * kcal_to_cal * cal_to_joule * m_to_cm**2) / seconds_in_year
 
@@ -877,6 +911,16 @@ contains
 
   !-------------------------------------------------------------
   ! Semtner forcing test case
+  !-------------------------------------------------------------
+
+  subroutine zero_layer_thermo_semtner_unit_test()
+
+    call init_semtner_forcing()    
+
+    call run_semtner_test_case()
+
+  end subroutine zero_layer_thermo_semtner_unit_test
+
   !-------------------------------------------------------------
 
   subroutine run_semtner_test_case()
@@ -956,8 +1000,7 @@ contains
             cumulativeIceAblation, &
             cumulativeBasalAblation, &
             cumulativeBasalAccretion, &
-            dt, &
-            time)
+            dt)
 
        if (mod(istep,24) == 0) then
           write(11,*) time, iceVolumeCategory, snowVolumeCategory, surfaceTemperature
@@ -1088,11 +1131,11 @@ contains
          snowfallRate, &
          time
 
-    open(11,file="semtner/shortwaveFluxSemtnerData.txt")
-    open(12,file="semtner/longwaveFluxSemtnerData.txt")
-    open(13,file="semtner/sensibleFluxSemtnerData.txt")
-    open(14,file="semtner/latentFluxSemtnerData.txt")
-    open(15,file="semtner/snowAlbedoSemtnerData.txt")
+    open(11,file="shortwaveFluxSemtnerData.txt")
+    open(12,file="longwaveFluxSemtnerData.txt")
+    open(13,file="sensibleFluxSemtnerData.txt")
+    open(14,file="latentFluxSemtnerData.txt")
+    open(15,file="snowAlbedoSemtnerData.txt")
 
     do nMonth = 1, 12
 
@@ -1110,13 +1153,13 @@ contains
     close(14)
     close(15)
 
-    open(11,file="semtner/shortwaveFluxSemtner.txt")
-    open(12,file="semtner/longwaveFluxSemtner.txt")
-    open(13,file="semtner/sensibleFluxSemtner.txt")
-    open(14,file="semtner/latentFluxSemtner.txt")
-    open(15,file="semtner/snowAlbedoSemtner.txt")
+    open(11,file="shortwaveFluxSemtner.txt")
+    open(12,file="longwaveFluxSemtner.txt")
+    open(13,file="sensibleFluxSemtner.txt")
+    open(14,file="latentFluxSemtner.txt")
+    open(15,file="snowAlbedoSemtner.txt")
 
-    open(16,file="semtner/snowfallRateSemtner.txt")    
+    open(16,file="snowfallRateSemtner.txt")    
 
     do iday = 0, 360*24 
 
@@ -1387,6 +1430,50 @@ contains
     enddo ! iCategory
 
   end subroutine init_semtner_test_case
+
+  !-------------------------------------------------------------
+
+  subroutine writeout_zero_layer_thermo_point(&
+       iCell, &
+       mesh, &
+       iceAreaCategory, &
+       iceVolumeCategory, &
+       snowVolumeCategory, &
+       surfaceTemperature)
+
+    integer, intent(in) :: &
+         iCell
+
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh
+    
+    real(kind=RKIND), intent(in) :: &
+         iceAreaCategory, &
+         iceVolumeCategory, &
+         snowVolumeCategory, &
+         surfaceTemperature  
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         latCell
+
+    integer, dimension(1) :: &
+        max_loc 
+
+    !call MPAS_pool_get_array(mesh, "latCell", latCell)
+
+    !max_loc = maxloc(latCell)
+
+    !if (iCell == max_loc(1)) then
+    
+       open(55,file="semtner_output.txt",position="append")
+
+       write(55,*) iceAreaCategory, iceVolumeCategory, snowVolumeCategory, surfaceTemperature
+       
+       close(55)
+
+    !endif
+
+  end subroutine writeout_zero_layer_thermo_point
 
   !-------------------------------------------------------------
 

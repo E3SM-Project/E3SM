@@ -18,16 +18,17 @@ contains
   ! Initialization
   !-------------------------------------------------------------
 
-  subroutine init_dynamics_hex_weak(mesh, boundary, normal, gridCurvature)
+  subroutine init_dynamics_hex_weak(mesh, boundary, hexweak, rotateCartesianGrid)
 
     use cice_mesh, only: normal_vectors
 
     type(MPAS_pool_type), pointer, intent(inout) :: mesh
 
-    type(MPAS_pool_type), pointer :: normal
+    type(MPAS_pool_type), pointer :: hexweak
     type(MPAS_pool_type), pointer :: boundary
 
-    character(len=*), intent(in) :: gridCurvature
+    logical, intent(in) :: &
+         rotateCartesianGrid
 
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          normalVectorPolygon, &
@@ -40,17 +41,21 @@ contains
     integer, dimension(:), pointer :: &
          interiorVertex
 
-    call MPAS_pool_get_array(mesh, "normalVectorPolygon", normalVectorPolygon)
-    call MPAS_pool_get_array(mesh, "normalVectorTriangle", normalVectorTriangle)
+    call MPAS_pool_get_array(hexweak, "normalVectorPolygon", normalVectorPolygon)
+    call MPAS_pool_get_array(hexweak, "normalVectorTriangle", normalVectorTriangle)
+    call MPAS_pool_get_array(hexweak, "latCellRotated", latCellRotated)
+    call MPAS_pool_get_array(hexweak, "latVertexRotated", latVertexRotated)
     call MPAS_pool_get_array(boundary, "interiorVertex", interiorVertex)
 
-    call normal_vectors(mesh, &
-         normalVectorPolygon,         &
-         normalVectorTriangle,        &
-         latCellRotated,              &
-         latVertexRotated,            &
-         interiorVertex,            &
-         gridCurvature)
+    call normal_vectors(&
+         mesh,                 &
+         normalVectorPolygon,  &
+         normalVectorTriangle, &
+         interiorVertex,       &
+         rotateCartesianGrid,  &
+         .true.,               &
+         latCellRotated,       &
+         latVertexRotated)
 
   end subroutine init_dynamics_hex_weak
 
@@ -61,8 +66,6 @@ contains
   subroutine internal_stress_weak(&
        mesh,                hexweak, &
        uVelocity,           vVelocity, &
-       normalVectorPolygon, normalVectorTriangle, &
-       latCellRotated,      latVertexRotated, &
        icePressure,         replacementPressure, &
        dtElastic,           evpDamping, &
        stressDivergenceU,   stressDivergenceV, &
@@ -74,17 +77,11 @@ contains
 
     real(kind=RKIND), dimension(:), intent(in) :: &
          uVelocity, &
-         vVelocity, &
-         latCellRotated, &
-         latVertexRotated         
+         vVelocity  
 
     real(kind=RKIND), dimension(:), intent(inout) :: &
          icePressure, &
          replacementPressure
-
-    real(kind=RKIND), dimension(:,:,:), intent(in) :: &
-         normalVectorPolygon, &
-         normalVectorTriangle
 
     real(kind=RKIND), intent(in) :: &
          dtElastic
@@ -106,8 +103,18 @@ contains
          strain12, &
          stress11, &
          stress22, &
-         stress12
+         stress12, &
+         latCellRotated, &
+         latVertexRotated
 
+    real(kind=RKIND), dimension(:,:,:), pointer :: &
+         normalVectorPolygon, &
+         normalVectorTriangle
+
+    call MPAS_pool_get_array(hexweak, "normalVectorPolygon", normalVectorPolygon)
+    call MPAS_pool_get_array(hexweak, "normalVectorTriangle", normalVectorTriangle)
+    call MPAS_pool_get_array(hexweak, "latCellRotated", latCellRotated)
+    call MPAS_pool_get_array(hexweak, "latVertexRotated", latVertexRotated)
     call MPAS_pool_get_array(hexweak, "strain11", strain11)
     call MPAS_pool_get_array(hexweak, "strain22", strain22)
     call MPAS_pool_get_array(hexweak, "strain12", strain12)
@@ -214,6 +221,7 @@ contains
 
     ! init variables
     call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+    call MPAS_pool_get_config(mesh, "sphere_radius", sphere_radius)
 
     call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
     call MPAS_pool_get_array(mesh, "POPindxi", POPindxi)
@@ -221,7 +229,6 @@ contains
     call MPAS_pool_get_array(mesh, "verticesOnCell", verticesOnCell)
     call MPAS_pool_get_array(mesh, "edgesOnCell", edgesOnCell)
     call MPAS_pool_get_array(mesh, "verticesOnEdge", verticesOnEdge)
-    call MPAS_pool_get_array(mesh, "sphere_radius", sphere_radius)
     call MPAS_pool_get_array(mesh, "dvEdge", dvEdge)
     call MPAS_pool_get_array(mesh, "areaCell", areaCell)
 
@@ -269,17 +276,10 @@ contains
                   uVelocityEdge * normalVectorPolygon(2,iEdgeOnCell,iCell) + &
                   vVelocityEdge * normalVectorPolygon(1,iEdgeOnCell,iCell) ) * dvEdge(iEdge)
 
-             !write(72,*) POPindxi(iCell), POPindxj(iCell), iEdgeOnCell, &
-             !     uVelocityEdge, normalVectorPolygon(1,iEdgeOnCell,iCell), dvEdge(iEdge), &
-             !     uVelocityEdge * normalVectorPolygon(1,iEdgeOnCell,iCell) * dvEdge(iEdge)
-
           enddo ! iEdgeOnCell
 
           uCellCentre = uCellCentre / real(nEdgesOnCell(iCell), RKIND)
           vCellCentre = vCellCentre / real(nEdgesOnCell(iCell), RKIND)
-
-          !write(72,*) POPindxi(iCell), POPindxj(iCell), 0, &
-          !     strain11(iCell), strain11(iCell) / areaCell(iCell), areaCell(iCell)
 
           strain11(iCell) = strain11(iCell) / areaCell(iCell)
           strain22(iCell) = strain22(iCell) / areaCell(iCell)
@@ -289,8 +289,7 @@ contains
           strain11(iCell) = strain11(iCell) - (vCellCentre * tan(latCellRotated(iCell))) / sphere_radius
           strain12(iCell) = strain12(iCell) + (uCellCentre * tan(latCellRotated(iCell)) * 0.5_RKIND) / sphere_radius
 
-          if (abs(strain11(iCell)) < 1e-10_RKIND) strain11(iCell) = 0.0_RKIND
-          write(71,*) POPindxi(iCell), POPindxj(iCell), strain11(iCell), strain22(iCell), strain12(iCell)
+          !if (abs(strain11(iCell)) < 1e-10_RKIND) strain11(iCell) = 0.0_RKIND
 
        endif ! solveStress
 
@@ -436,13 +435,13 @@ contains
     ! init variables
     call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
     call MPAS_pool_get_dimension(mesh, "vertexDegree", vertexDegree)
+    call MPAS_pool_get_config(mesh, "sphere_radius", sphere_radius)
 
     call MPAS_pool_get_array(mesh, "POPindxiv", POPindxiv)
     call MPAS_pool_get_array(mesh, "POPindxjv", POPindxjv)
     call MPAS_pool_get_array(mesh, "cellsOnVertex", cellsOnVertex)
     call MPAS_pool_get_array(mesh, "edgesOnVertex", edgesOnVertex)
     call MPAS_pool_get_array(mesh, "cellsOnEdge", cellsOnEdge)
-    call MPAS_pool_get_array(mesh, "sphere_radius", sphere_radius)
     call MPAS_pool_get_array(mesh, "areaTriangle", areaTriangle)
     call MPAS_pool_get_array(mesh, "dcEdge", dcEdge)
 
@@ -495,29 +494,22 @@ contains
                   (stress22Edge * normalVectorTriangle(2,iVertexDegree,iVertex) + &
                    stress12Edge * normalVectorTriangle(1,iVertexDegree,iVertex)) * dcEdge(iEdge)
 
-             write(70,*) POPindxiv(iVertex), POPindxjv(iVertex), &
-                  -1, iVertexDegree, stress11Edge, normalVectorTriangle(1,iVertexDegree,iVertex), stress12Edge, normalVectorTriangle(2,iVertexDegree,iVertex), dcEdge(iEdge)
-
           enddo ! iVertexDegree
 
           stress11Vertex = stress11Vertex / real(vertexDegree, RKIND)
           stress22Vertex = stress22Vertex / real(vertexDegree, RKIND)
           stress12Vertex = stress12Vertex / real(vertexDegree, RKIND)
+
+          write(72,*) iVertex, stressDivergenceU(iVertex), stressDivergenceU(iVertex) / areaTriangle(iVertex), areaTriangle(iVertex)
           
           stressDivergenceU(iVertex) = stressDivergenceU(iVertex) / areaTriangle(iVertex)
           stressDivergenceV(iVertex) = stressDivergenceV(iVertex) / areaTriangle(iVertex)
-
-          write(70,*) POPindxiv(iVertex), POPindxjv(iVertex), &
-               0, stressDivergenceU(iVertex)
 
           ! metric terms
           stressDivergenceU(iVertex) = stressDivergenceU(iVertex) - &
                (tan(latVertexRotated(iVertex)) * stress12Vertex * 2.0_RKIND) / sphere_radius
           stressDivergenceV(iVertex) = stressDivergenceV(iVertex) + &
                (tan(latVertexRotated(iVertex)) * (stress11Vertex - stress22Vertex)) / sphere_radius
-
-          write(70,*) POPindxiv(iVertex), POPindxjv(iVertex), &
-               1, stressDivergenceU(iVertex)
 
        endif ! solveVelocity
 

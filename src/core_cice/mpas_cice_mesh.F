@@ -9,9 +9,9 @@ module cice_mesh
        init_boundary, &
        calc_cell_vertices_at_vertex, &
        normal_vectors, &
+       normal_vectors_polygon, &
        dot_product_3space, &
        grid_rotation_forward, &
-       grid_rotation_forward_nochange, &
        latlon_vector_rotation_forward, &
        latlon_vector_rotation_backward, &
        latlon_from_xyz, &
@@ -30,14 +30,17 @@ contains
          boundary
 
     integer, dimension(:), pointer :: &
-         interiorVertex
+         interiorVertex, &
+         interiorCell
 
     call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
     call MPAS_pool_get_subpool(block % structs, "boundary", boundary)
 
     call MPAS_pool_get_array(boundary, "interiorVertex", interiorVertex)
+    call MPAS_pool_get_array(boundary, "interiorCell", interiorCell)
 
     call interior_vertices(mesh, interiorVertex)
+    call interior_cells(mesh, interiorCell)
 
   end subroutine init_boundary
 
@@ -98,10 +101,55 @@ contains
           interiorVertex(iVertex) = 1
           
        endif
-       
+
     enddo ! iVertex
 
   end subroutine interior_vertices
+
+  !-------------------------------------------------------------
+
+  subroutine interior_cells(mesh, interiorCell)
+
+    type (MPAS_pool_type), pointer, intent(in) :: mesh
+
+    integer, dimension(:), intent(out) :: &
+         interiorCell
+
+    integer :: &
+         iCell, &
+         iEdgeOnCell
+
+    integer, pointer :: &
+         nCells
+
+    integer, dimension(:), pointer :: &
+         nEdgesOnCell
+
+    integer, dimension(:,:), pointer :: &
+         cellsOnCell
+
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+    
+    call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
+    call MPAS_pool_get_array(mesh, "cellsOnCell", cellsOnCell)
+
+    do iCell = 1, nCells
+
+       interiorCell(iCell) = 1
+
+       do iEdgeOnCell = 1, nEdgesOnCell(iCell)
+
+          if (cellsOnCell(iEdgeOnCell,iCell) > nCells) then
+
+             interiorCell(iCell) = 0
+
+          endif
+
+       enddo ! iEdgeOnCell
+
+    enddo ! iCell
+
+  end subroutine interior_cells
 
   !-------------------------------------------------------------
 
@@ -396,15 +444,19 @@ contains
 
    end subroutine calc_cell_vertices_at_vertex
 
-
   !-------------------------------------------------------------
   ! normal vectors
   !-------------------------------------------------------------
 
-  subroutine normal_vectors(mesh, &
-                            normalVectorPolygon, normalVectorTriangle, &
-                            latCellRotated,      latVertexRotated,     &
-                            interiorVertex,      gridCurvature)
+  subroutine normal_vectors(&
+       mesh, &
+       normalVectorPolygon, &
+       normalVectorTriangle, &
+       interiorVertex, &
+       rotateCartesianGrid, &
+       removeMetricTerms, &
+       latCellRotated, &
+       latVertexRotated)
 
     type(MPAS_pool_type), pointer, intent(in) :: mesh
 
@@ -412,29 +464,107 @@ contains
          normalVectorPolygon, &
          normalVectorTriangle
 
-    real(kind=RKIND), dimension(:), intent(out) :: &
+    integer, dimension(:), intent(in) :: &
+         interiorVertex
+
+    logical, intent(in) :: &
+         rotateCartesianGrid, &
+         removeMetricTerms
+
+    real(kind=RKIND), dimension(:), intent(out), optional :: &
          latCellRotated, &
          latVertexRotated
+
+    call normal_vectors_polygon(&
+         mesh, &
+         normalVectorPolygon, &
+         rotateCartesianGrid, &
+         removeMetricTerms, &
+         latCellRotated)
+    
+    call normal_vectors_triangle(&
+         mesh, &
+         normalVectorTriangle, &
+         interiorVertex, &
+         rotateCartesianGrid, &
+         removeMetricTerms, &
+         latVertexRotated)
+
+  end subroutine normal_vectors
+
+  !-------------------------------------------------------------
+
+  subroutine normal_vectors_polygon(&
+       mesh, &
+       normalVectorPolygon, &
+       rotateCartesianGrid, &
+       removeMetricTerms, &
+       latCellRotated)
+
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
+
+    real(kind=RKIND), dimension(:,:,:), intent(out) :: &
+         normalVectorPolygon
+
+    logical, intent(in) :: &
+         rotateCartesianGrid, &
+         removeMetricTerms
+
+    real(kind=RKIND), dimension(:), intent(out), optional :: &
+         latCellRotated
+
+    logical, pointer :: &
+         on_a_sphere
+
+    call MPAS_pool_get_config(mesh, "on_a_sphere", on_a_sphere)
+
+    if (on_a_sphere) then
+       call normal_vectors_spherical_polygon_metric(mesh, rotateCartesianGrid, removeMetricTerms, normalVectorPolygon, latCellRotated)
+    else 
+       call normal_vectors_planar_polygon(mesh, normalVectorPolygon)
+       latCellRotated = 0.0_RKIND
+    endif
+
+  end subroutine normal_vectors_polygon
+
+  !-------------------------------------------------------------
+
+  subroutine normal_vectors_triangle(&
+       mesh, &
+       normalVectorTriangle, &
+       interiorVertex, &
+       rotateCartesianGrid, &
+       removeMetricTerms, &
+       latVertexRotated)
+
+    type(MPAS_pool_type), pointer, intent(in) :: mesh
+
+    real(kind=RKIND), dimension(:,:,:), intent(out) :: &
+         normalVectorTriangle
 
     integer, dimension(:), intent(in) :: &
          interiorVertex
 
-    character(len=*), intent(in) :: &
-         gridCurvature
+    logical, intent(in) :: &
+         rotateCartesianGrid, &
+         removeMetricTerms
 
-    if (trim(gridCurvature) == "planar") then
+    real(kind=RKIND), dimension(:), intent(out), optional :: &
+         latVertexRotated
 
-       call normal_vectors_planar_polygon(mesh, normalVectorPolygon)
+    logical, pointer :: &
+         on_a_sphere
+
+    call MPAS_pool_get_config(mesh, "on_a_sphere", on_a_sphere)
+
+    if (on_a_sphere) then
+       call normal_vectors_spherical_triangle_metric(mesh, rotateCartesianGrid, removeMetricTerms, normalVectorTriangle, interiorVertex, latVertexRotated)
+    else 
        call normal_vectors_planar_triangle(mesh, normalVectorTriangle, interiorVertex)
-
-    else if (trim(gridCurvature) == "spherical") then
-
-       call normal_vectors_spherical_polygon_metric(mesh, normalVectorPolygon, latCellRotated)
-       call normal_vectors_spherical_triangle_metric(mesh, normalVectorTriangle, latVertexRotated, interiorVertex)
-
+       latVertexRotated = 0.0_RKIND
     endif
 
-  end subroutine normal_vectors
+  end subroutine normal_vectors_triangle
 
   !-------------------------------------------------------------
 
@@ -565,15 +695,24 @@ contains
 
   !-------------------------------------------------------------
 
-  subroutine normal_vectors_spherical_polygon_metric(mesh, normalVectorPolygon, latCellRotated)
+  subroutine normal_vectors_spherical_polygon_metric(&
+       mesh, &
+       rotateCartesianGrid, &
+       removeMetricTerms, &
+       normalVectorPolygon, &
+       latCellRotatedOut)
 
     type(MPAS_pool_type), pointer, intent(in) :: mesh
+
+    logical, intent(in) :: &
+         rotateCartesianGrid, &
+         removeMetricTerms
 
     real(kind=RKIND), dimension(:,:,:), intent(out) :: &
          normalVectorPolygon
 
-    real(kind=RKIND), dimension(:), intent(out) :: &
-         latCellRotated
+    real(kind=RKIND), dimension(:), intent(out), optional :: &
+         latCellRotatedOut
     
     real(kind=RKIND), dimension(3) :: &
          cellCentreRotated, &
@@ -589,6 +728,7 @@ contains
          eastwardsVector
 
     real(kind=RKIND) :: &
+         latCellRotated, &
          lonCellRotated, &
          normalGreatCircleNorm
 
@@ -633,12 +773,12 @@ contains
 
     ! init variables
     call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+    call MPAS_pool_get_config(mesh, "sphere_radius", sphere_radius)
 
     call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
     call MPAS_pool_get_array(mesh, "edgesOnCell", edgesOnCell)
     call MPAS_pool_get_array(mesh, "verticesOnEdge", verticesOnEdge)
     call MPAS_pool_get_array(mesh, "cellsOnEdge", cellsOnEdge)
-    call MPAS_pool_get_array(mesh, "sphere_radius", sphere_radius)
     call MPAS_pool_get_array(mesh, "xCell", xCell)
     call MPAS_pool_get_array(mesh, "yCell", yCell)
     call MPAS_pool_get_array(mesh, "zCell", zCell)
@@ -659,32 +799,35 @@ contains
 
        ! rotate the cell centre to rotated geographical grid
        call grid_rotation_forward(cellCentreRotated(1), cellCentreRotated(2), cellCentreRotated(3), &
-                                  xCell(iCell),         yCell(iCell),         zCell(iCell))
+                                  xCell(iCell),         yCell(iCell),         zCell(iCell), &
+                                  rotateCartesianGrid)
 
        ! calculate lon and lat of the cell centre in the rotated coordinate system
-       lonCellRotated        = atan2(cellCentreRotated(2), cellCentreRotated(1))
-       latCellRotated(iCell) = asin(cellCentreRotated(3) / sphere_radius)
+       lonCellRotated = atan2(cellCentreRotated(2), cellCentreRotated(1))
+       latCellRotated = asin(cellCentreRotated(3) / sphere_radius)
 
        ! rotate the cell centre onto the rotated equator
-       !yRotationMatrix(1,1) =  cos(latCellRotated(iCell))
-       !yRotationMatrix(1,3) =  sin(latCellRotated(iCell))
-       !yRotationMatrix(3,1) = -sin(latCellRotated(iCell))
-       !yRotationMatrix(3,3) =  cos(latCellRotated(iCell))
-
-       !zRotationMatrix(1,1) =  cos(-lonCellRotated)
-       !zRotationMatrix(1,2) = -sin(-lonCellRotated)
-       !zRotationMatrix(2,1) =  sin(-lonCellRotated)
-       !zRotationMatrix(2,2) =  cos(-lonCellRotated)
-
-       yRotationMatrix(1,1) = 1.0_RKIND
-       yRotationMatrix(1,3) = 0.0_RKIND
-       yRotationMatrix(3,1) = 0.0_RKIND
-       yRotationMatrix(3,3) = 1.0_RKIND
-
-       zRotationMatrix(1,1) = 1.0_RKIND
-       zRotationMatrix(1,2) = 0.0_RKIND
-       zRotationMatrix(2,1) = 0.0_RKIND
-       zRotationMatrix(2,2) = 1.0_RKIND
+       if (removeMetricTerms) then
+          yRotationMatrix(1,1) =  cos(latCellRotated)
+          yRotationMatrix(1,3) =  sin(latCellRotated)
+          yRotationMatrix(3,1) = -sin(latCellRotated)
+          yRotationMatrix(3,3) =  cos(latCellRotated)
+          
+          zRotationMatrix(1,1) =  cos(-lonCellRotated)
+          zRotationMatrix(1,2) = -sin(-lonCellRotated)
+          zRotationMatrix(2,1) =  sin(-lonCellRotated)
+          zRotationMatrix(2,2) =  cos(-lonCellRotated)
+       else
+          yRotationMatrix(1,1) = 1.0_RKIND
+          yRotationMatrix(1,3) = 0.0_RKIND
+          yRotationMatrix(3,1) = 0.0_RKIND
+          yRotationMatrix(3,3) = 1.0_RKIND
+          
+          zRotationMatrix(1,1) = 1.0_RKIND
+          zRotationMatrix(1,2) = 0.0_RKIND
+          zRotationMatrix(2,1) = 0.0_RKIND
+          zRotationMatrix(2,2) = 1.0_RKIND
+       endif
 
        ! this should be (r, 0, 0)
        !cellCentreEquator = matmul(yRotationMatrix, matmul(zRotationMatrix, cellCentreRotated))
@@ -699,13 +842,16 @@ contains
 
           ! perform grid rotations
           call grid_rotation_forward(edgeRotated(1), edgeRotated(2), edgeRotated(3), &
-                                     xEdge(iEdge),   yEdge(iEdge),   zEdge(iEdge))
+                                     xEdge(iEdge),   yEdge(iEdge),   zEdge(iEdge), &
+                                     rotateCartesianGrid)
           
           call grid_rotation_forward(vertexRotated1(1), vertexRotated1(2), vertexRotated1(3), &
-                                     xVertex(iVertex1), yVertex(iVertex1), zVertex(iVertex1))
+                                     xVertex(iVertex1), yVertex(iVertex1), zVertex(iVertex1), &
+                                     rotateCartesianGrid)
 
           call grid_rotation_forward(vertexRotated2(1), vertexRotated2(2), vertexRotated2(3), &
-                                     xVertex(iVertex2), yVertex(iVertex2), zVertex(iVertex2))
+                                     xVertex(iVertex2), yVertex(iVertex2), zVertex(iVertex2), &
+                                     rotateCartesianGrid)
 
           ! rotate to equator in new coords
           edgeEquator    = matmul(yRotationMatrix, matmul(zRotationMatrix, edgeRotated))
@@ -745,6 +891,8 @@ contains
                                                    * sqrt(1.0_RKIND - max(min(normalVectorPolygon(1,iEdgeOnCell,iCell),1.0_RKIND),-1.0_RKIND)**2)
 
        enddo ! iEdgeOnCell
+
+       if (present(latCellRotatedOut)) latCellRotatedOut(iCell) = latCellRotated
        
     enddo ! iCell
 
@@ -752,9 +900,12 @@ contains
 
   !-------------------------------------------------------------
 
-  subroutine normal_vectors_spherical_polygon(mesh, normalVectorPolygon)
+  subroutine normal_vectors_spherical_polygon(mesh, rotateCartesianGrid, normalVectorPolygon)
 
     type(MPAS_pool_type), pointer, intent(in) :: mesh
+
+    logical, intent(in) :: &
+         rotateCartesianGrid
 
     real(kind=RKIND), dimension(:,:,:), intent(out) :: &
          normalVectorPolygon
@@ -824,14 +975,17 @@ contains
           iVertex2 = verticesOnEdge(2,iEdge)
 
           ! perform grid rotations
-          call grid_rotation_forward_nochange(xEdge0, yEdge0, zEdge0, &
-                                     xEdge(iEdge), yEdge(iEdge), zEdge(iEdge))
+          call grid_rotation_forward(xEdge0,       yEdge0,       zEdge0, &
+                                     xEdge(iEdge), yEdge(iEdge), zEdge(iEdge), &
+                                     rotateCartesianGrid)
           
-          call grid_rotation_forward_nochange(xVertex1, yVertex1, zVertex1, &
-                                     xVertex(iVertex1), yVertex(iVertex1), zVertex(iVertex1))
+          call grid_rotation_forward(xVertex1,          yVertex1,          zVertex1, &
+                                     xVertex(iVertex1), yVertex(iVertex1), zVertex(iVertex1), &
+                                     rotateCartesianGrid)
 
-          call grid_rotation_forward_nochange(xVertex2, yVertex2, zVertex2, &
-                                     xVertex(iVertex2), yVertex(iVertex2), zVertex(iVertex2))
+          call grid_rotation_forward(xVertex2,          yVertex2,          zVertex2, &
+                                     xVertex(iVertex2), yVertex(iVertex2), zVertex(iVertex2), &
+                                     rotateCartesianGrid)
 
           ! form great circle plane normal vector
           call cross_product_3space(normalGreatCircle(1), normalGreatCircle(2), normalGreatCircle(3), &
@@ -870,18 +1024,28 @@ contains
 
   !-------------------------------------------------------------
 
-  subroutine normal_vectors_spherical_triangle_metric(mesh, normalVectorTriangle, latVertexRotated, interiorVertex)
+  subroutine normal_vectors_spherical_triangle_metric(&
+       mesh, &
+       rotateCartesianGrid, &
+       removeMetricTerms, &
+       normalVectorTriangle, &
+       interiorVertex, &
+       latVertexRotatedOut)
 
     type(MPAS_pool_type), pointer, intent(in) :: mesh
+
+    logical, intent(in) :: &
+         rotateCartesianGrid, &
+         removeMetricTerms
 
     real(kind=RKIND), dimension(:,:,:), intent(out) :: &
          normalVectorTriangle
 
-    real(kind=RKIND), dimension(:), intent(out) :: &
-         latVertexRotated
-
     integer, dimension(:), intent(in) :: &
          interiorVertex
+
+    real(kind=RKIND), dimension(:), intent(out), optional :: &
+         latVertexRotatedOut
 
     real(kind=RKIND), dimension(3) :: &
          vertexRotated, &
@@ -897,6 +1061,7 @@ contains
          eastwardsVector
 
     real(kind=RKIND) :: &
+         latVertexRotated, &
          lonVertexRotated, &
          normalGreatCircleNorm
 
@@ -948,11 +1113,11 @@ contains
     ! init variables
     call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
     call MPAS_pool_get_dimension(mesh, "vertexDegree", vertexDegree)
+    call MPAS_pool_get_config(mesh, "sphere_radius", sphere_radius)
 
     call MPAS_pool_get_array(mesh, "edgesOnVertex", edgesOnVertex)
     call MPAS_pool_get_array(mesh, "cellsOnEdge", cellsOnEdge)
     call MPAS_pool_get_array(mesh, "verticesOnEdge", verticesOnEdge)
-    call MPAS_pool_get_array(mesh, "sphere_radius", sphere_radius)
     call MPAS_pool_get_array(mesh, "xVertex", xVertex)
     call MPAS_pool_get_array(mesh, "yVertex", yVertex)
     call MPAS_pool_get_array(mesh, "zVertex", zVertex)
@@ -967,26 +1132,41 @@ contains
 
        normalVectorTriangle(:,:,iVertex) = 0.0_RKIND
 
+       if (present(latVertexRotatedOut)) latVertexRotatedOut(iVertex) = 0.0_RKIND
+
        if (interiorVertex(iVertex) == 1) then
 
           ! rotate the cell centre to rotated geographical grid
           call grid_rotation_forward(vertexRotated(1), vertexRotated(2), vertexRotated(3), &
-                                     xVertex(iVertex), yVertex(iVertex), zVertex(iVertex))
+                                     xVertex(iVertex), yVertex(iVertex), zVertex(iVertex), &
+                                     rotateCartesianGrid)
  
           ! calculate lon and lat of the cell centre in the rotated coordinate system
-          lonVertexRotated          = atan2(vertexRotated(2), vertexRotated(1))
-          latVertexRotated(iVertex) = asin(vertexRotated(3) / sphere_radius)
+          lonVertexRotated = atan2(vertexRotated(2), vertexRotated(1))
+          latVertexRotated = asin(vertexRotated(3) / sphere_radius)
           
           ! rotate the cell centre onto the rotated equator
-          yRotationMatrix(1,1) =  cos(latVertexRotated(iVertex))
-          yRotationMatrix(1,3) =  sin(latVertexRotated(iVertex))
-          yRotationMatrix(3,1) = -sin(latVertexRotated(iVertex))
-          yRotationMatrix(3,3) =  cos(latVertexRotated(iVertex))
-          
-          zRotationMatrix(1,1) =  cos(-lonVertexRotated)
-          zRotationMatrix(1,2) = -sin(-lonVertexRotated)
-          zRotationMatrix(2,1) =  sin(-lonVertexRotated)
-          zRotationMatrix(2,2) =  cos(-lonVertexRotated)
+          if (removeMetricTerms) then
+             yRotationMatrix(1,1) =  cos(latVertexRotated)
+             yRotationMatrix(1,3) =  sin(latVertexRotated)
+             yRotationMatrix(3,1) = -sin(latVertexRotated)
+             yRotationMatrix(3,3) =  cos(latVertexRotated)
+             
+             zRotationMatrix(1,1) =  cos(-lonVertexRotated)
+             zRotationMatrix(1,2) = -sin(-lonVertexRotated)
+             zRotationMatrix(2,1) =  sin(-lonVertexRotated)
+             zRotationMatrix(2,2) =  cos(-lonVertexRotated)
+          else
+             yRotationMatrix(1,1) = 1.0_RKIND
+             yRotationMatrix(1,3) = 0.0_RKIND
+             yRotationMatrix(3,1) = 0.0_RKIND
+             yRotationMatrix(3,3) = 1.0_RKIND
+             
+             zRotationMatrix(1,1) = 1.0_RKIND
+             zRotationMatrix(1,2) = 0.0_RKIND
+             zRotationMatrix(2,1) = 0.0_RKIND
+             zRotationMatrix(2,2) = 1.0_RKIND
+          endif
 
           ! this should be (r, 0, 0)
           !vertexEquator = matmul(yRotationMatrix, matmul(zRotationMatrix, vertexRotated))
@@ -1001,13 +1181,16 @@ contains
 
              ! perform grid rotations
              call grid_rotation_forward(edgeRotated(1), edgeRotated(2), edgeRotated(3), &
-                                        xEdge(iEdge),   yEdge(iEdge),   zEdge(iEdge))
+                                        xEdge(iEdge),   yEdge(iEdge),   zEdge(iEdge), &
+                                        rotateCartesianGrid)
 
              call grid_rotation_forward(cellRotated1(1), cellRotated1(2), cellRotated1(3), &
-                                        xCell(iCell1),   yCell(iCell1),   zCell(iCell1))
+                                        xCell(iCell1),   yCell(iCell1),   zCell(iCell1), &
+                                        rotateCartesianGrid)
 
              call grid_rotation_forward(cellRotated2(1), cellRotated2(2), cellRotated2(3), &
-                                        xCell(iCell2),   yCell(iCell2),   zCell(iCell2))
+                                        xCell(iCell2),   yCell(iCell2),   zCell(iCell2), &
+                                        rotateCartesianGrid)
 
              ! rotate to equator in new coords
              edgeEquator  = matmul(yRotationMatrix, matmul(zRotationMatrix, edgeRotated))
@@ -1048,6 +1231,8 @@ contains
 
           enddo ! iVertexDegree
 
+          if (present(latVertexRotatedOut)) latVertexRotatedOut(iVertex) = latVertexRotated
+
        endif ! interiorVertex
 
     enddo ! iVertex
@@ -1056,9 +1241,12 @@ contains
 
   !-------------------------------------------------------------
 
-  subroutine normal_vectors_spherical_triangle(mesh, normalVectorTriangle, interiorVertex)
+  subroutine normal_vectors_spherical_triangle(mesh, rotateCartesianGrid, normalVectorTriangle, interiorVertex)
 
     type(MPAS_pool_type), pointer, intent(in) :: mesh
+
+    logical, intent(in) :: &
+         rotateCartesianGrid
 
     real(kind=RKIND), dimension(:,:,:), intent(out) :: &
          normalVectorTriangle
@@ -1129,13 +1317,16 @@ contains
 
              ! perform grid rotations
              call grid_rotation_forward(xEdge0,       yEdge0,       zEdge0, &
-                                        xEdge(iEdge), yEdge(iEdge), zEdge(iEdge))
+                                        xEdge(iEdge), yEdge(iEdge), zEdge(iEdge), &
+                                        rotateCartesianGrid)
 
              call grid_rotation_forward(xCell1,        yCell1,        zCell1, &
-                                        xCell(iCell1), yCell(iCell1), zCell(iCell1))
+                                        xCell(iCell1), yCell(iCell1), zCell(iCell1), &
+                                        rotateCartesianGrid)
 
              call grid_rotation_forward(xCell2,        yCell2,        zCell2, &
-                                        xCell(iCell2), yCell(iCell2), zCell(iCell2))
+                                        xCell(iCell2), yCell(iCell2), zCell(iCell2), &
+                                        rotateCartesianGrid)
 
              ! form great circle plane normal vector
              call cross_product_3space(normalGreatCircle(1), normalGreatCircle(2), normalGreatCircle(3), &
@@ -1202,9 +1393,12 @@ contains
 
   !-------------------------------------------------------------
 
-  subroutine normal_vectors_spherical_polygon_2(mesh, normalVectorPolygon, latCellRotated)
+  subroutine normal_vectors_spherical_polygon_2(mesh, rotateCartesianGrid, normalVectorPolygon, latCellRotated)
 
     type(MPAS_pool_type), pointer, intent(in) :: mesh
+
+    logical, intent(in) :: &
+         rotateCartesianGrid
 
     real(kind=RKIND), dimension(:,:,:), intent(out) :: &
          normalVectorPolygon ! TWO maxEdges nCells
@@ -1245,9 +1439,9 @@ contains
 
     ! init variables
     call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+    call MPAS_pool_get_config(mesh, "sphere_radius", sphere_radius)
 
     call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
-    call MPAS_pool_get_array(mesh, "sphere_radius", sphere_radius)
     call MPAS_pool_get_array(mesh, "xCell", xCell)
     call MPAS_pool_get_array(mesh, "yCell", yCell)
     call MPAS_pool_get_array(mesh, "zCell", zCell)
@@ -1258,7 +1452,8 @@ contains
        ! get rotated three space positions
        call grid_rotation_forward(&
             xCell0,       yCell0,       zCell0, &
-            xCell(iCell), yCell(iCell), zCell(iCell))
+            xCell(iCell), yCell(iCell), zCell(iCell), &
+            rotateCartesianGrid)
 
        ! get the rotated latitude
        latCellRotated(iCell) = asin(zCell0 / sphere_radius)
@@ -1267,7 +1462,7 @@ contains
        do iEdgeOnCell = 1, nEdgesOnCell(iCell)
 
           ! get the polygon side normal unit vector
-          call get_polygon_side_normal_3D_vector(mesh, iCell, iEdgeOnCell, xCell0, yCell0, zCell0, normalVector3D)
+          call get_polygon_side_normal_3D_vector(mesh, iCell, iEdgeOnCell, xCell0, yCell0, zCell0, rotateCartesianGrid, normalVector3D)
 
           ! project the 3D vector onto the local 2D plane
           call project_3D_vector_onto_local_2D(normalVectorPolygon(:,iEdgeOnCell,iCell), normalVector3D, xCell0, yCell0, zCell0)
@@ -1280,9 +1475,12 @@ contains
 
   !-------------------------------------------------------------
   
-  subroutine normal_vectors_spherical_triangle_2(mesh, normalVectorTriangle, latVertexRotated, interiorVertex)
+  subroutine normal_vectors_spherical_triangle_2(mesh, rotateCartesianGrid, normalVectorTriangle, latVertexRotated, interiorVertex)
 
     type(MPAS_pool_type), pointer, intent(in) :: mesh
+
+    logical, intent(in) :: &
+         rotateCartesianGrid
 
     real(kind=RKIND), dimension(:,:,:), intent(out) :: &
          normalVectorTriangle ! TWO vertexDegree nVertices
@@ -1318,8 +1516,8 @@ contains
     ! init variables
     call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
     call MPAS_pool_get_dimension(mesh, "vertexDegree", vertexDegree)
+    call MPAS_pool_get_config(mesh, "sphere_radius", sphere_radius)
 
-    call MPAS_pool_get_array(mesh, "sphere_radius", sphere_radius)
     call MPAS_pool_get_array(mesh, "xVertex", xVertex)
     call MPAS_pool_get_array(mesh, "yVertex", yVertex)
     call MPAS_pool_get_array(mesh, "zVertex", zVertex)
@@ -1334,7 +1532,8 @@ contains
           ! get rotated three space positions
           call grid_rotation_forward(&
                xVertex0,         yVertex0,         zVertex0, &
-               xVertex(iVertex), yVertex(iVertex), zVertex(iVertex))
+               xVertex(iVertex), yVertex(iVertex), zVertex(iVertex), &
+               rotateCartesianGrid)
 
           ! get the rotated latitude
           latVertexRotated(iVertex) = asin(zVertex0 / sphere_radius)
@@ -1343,7 +1542,7 @@ contains
           do iVertexDegree = 1, vertexDegree
 
              ! get the triangle side normal unit vector
-             call get_triangle_side_normal_3D_vector(mesh, iVertex, iVertexDegree, xVertex0, yVertex0, zVertex0, normalVector3D)
+             call get_triangle_side_normal_3D_vector(mesh, iVertex, iVertexDegree, xVertex0, yVertex0, zVertex0, rotateCartesianGrid, normalVector3D)
 
              ! project the 3D vector onto the local 2D plane
              call project_3D_vector_onto_local_2D(normalVectorTriangle(:,iVertexDegree,iVertex), normalVector3D, xVertex0, yVertex0, zVertex0)
@@ -1405,7 +1604,7 @@ contains
 
   !-------------------------------------------------------------
 
-  subroutine get_polygon_side_normal_3D_vector(mesh, iCell, iEdgeOnCell, xCell0, yCell0, zCell0, normalVector3D)
+  subroutine get_polygon_side_normal_3D_vector(mesh, iCell, iEdgeOnCell, xCell0, yCell0, zCell0, rotateCartesianGrid, normalVector3D)
 
     type(MPAS_pool_type), pointer, intent(in) :: mesh
 
@@ -1415,6 +1614,9 @@ contains
 
     real(kind=RKIND), intent(in) :: &
          xCell0, yCell0, zCell0
+
+    logical, intent(in) :: &
+         rotateCartesianGrid
 
     real(kind=RKIND), dimension(3), intent(out) :: &
          normalVector3D
@@ -1465,7 +1667,8 @@ contains
        ! get rotated three space positions
        call grid_rotation_forward(&
             xCell2,        yCell2,        zCell2, &
-            xCell(iCell2), yCell(iCell2), zCell(iCell2))
+            xCell(iCell2), yCell(iCell2), zCell(iCell2), &
+            rotateCartesianGrid)
 
        normalVector3D(1) = xCell2 - xCell0
        normalVector3D(2) = yCell2 - yCell0
@@ -1480,7 +1683,8 @@ contains
        ! get rotated three space positions
        call grid_rotation_forward(&
             xEdge0,       yEdge0,       zEdge0, &
-            xEdge(iEdge), yEdge(iEdge), zEdge(iEdge))
+            xEdge(iEdge), yEdge(iEdge), zEdge(iEdge), &
+            rotateCartesianGrid)
 
        normalVector3D(1) = xEdge0 - xCell0
        normalVector3D(2) = yEdge0 - yCell0
@@ -1492,7 +1696,7 @@ contains
 
   !-------------------------------------------------------------
 
-  subroutine get_triangle_side_normal_3D_vector(mesh, iVertex, iVertexDegree, xVertex0, yVertex0, zVertex0, normalVector3D)
+  subroutine get_triangle_side_normal_3D_vector(mesh, iVertex, iVertexDegree, xVertex0, yVertex0, zVertex0, rotateCartesianGrid, normalVector3D)
 
     type(MPAS_pool_type), pointer, intent(in) :: mesh
 
@@ -1502,6 +1706,9 @@ contains
 
     real(kind=RKIND), intent(in) :: &
          xVertex0, yVertex0, zVertex0
+
+    logical, intent(in) :: &
+         rotateCartesianGrid
 
     real(kind=RKIND), dimension(3), intent(out) :: &
          normalVector3D
@@ -1541,7 +1748,8 @@ contains
     ! get rotated three space positions
     call grid_rotation_forward(&
          xVertex2,          yVertex2,          zVertex2, &
-         xVertex(iVertex2), yVertex(iVertex2), zVertex(iVertex2))
+         xVertex(iVertex2), yVertex(iVertex2), zVertex(iVertex2), &
+         rotateCartesianGrid)
     
     normalVector3D(1) = xVertex2 - xVertex0
     normalVector3D(2) = yVertex2 - yVertex0
@@ -1604,7 +1812,7 @@ contains
   ! rotated lat-lon grid
   !-------------------------------------------------------------
 
-  subroutine grid_rotation_forward(xp, yp, zp, x, y, z)
+  subroutine grid_rotation_forward(xp, yp, zp, x, y, z, rotateCartesianGrid)
 
     ! rotate xyz coordinates from geographical grid to rotated grid with poles on real equator
 
@@ -1618,39 +1826,28 @@ contains
          y,  & ! y position of point on geographical grid
          z     ! z position of point on geographical grid
 
-    !call grid_rotation_forward_nochange(xp, yp, zp, x, y, z)
+    logical, intent(in) :: &
+         rotateCartesianGrid
 
-    xp = -z
-    yp = y
-    zp = x
+    if (rotateCartesianGrid) then
+
+       xp = -z
+       yp = y
+       zp = x
+
+    else
+
+       xp = x
+       yp = y
+       zp = z
+
+    endif
 
   end subroutine grid_rotation_forward
 
   !-------------------------------------------------------------
 
-  subroutine grid_rotation_forward_nochange(xp, yp, zp, x, y, z)
-
-    ! leave the grid unchanged - for testing
-
-    real(kind=RKIND), intent(out) :: &
-         xp, & ! x position of point on rotated grid
-         yp, & ! y position of point on rotated grid
-         zp    ! z position of point on rotated grid
-
-    real(kind=RKIND), intent(in) :: &
-         x,  & ! x position of point on geographical grid
-         y,  & ! y position of point on geographical grid
-         z     ! z position of point on geographical grid
-
-    xp = x
-    yp = y
-    zp = z
-
-  end subroutine grid_rotation_forward_nochange
-
-  !-------------------------------------------------------------
-
-  subroutine grid_rotation_backward(x, y, z, xp, yp, zp)
+  subroutine grid_rotation_backward(x, y, z, xp, yp, zp, rotateCartesianGrid)
 
     ! rotate xyz coordinates from rotated grid with poles on real equator to geographical grid
 
@@ -1664,39 +1861,28 @@ contains
          yp, & ! y position of point on rotated grid
          zp    ! z position of point on rotated grid
 
-    !call grid_rotation_backward_nochange(x, y, z, xp, yp, zp)
+    logical, intent(in) :: &
+         rotateCartesianGrid
 
-    x = zp
-    y = yp
-    z = -xp
+    if (rotateCartesianGrid) then
+
+       x = zp
+       y = yp
+       z = -xp
+
+    else
+
+       x = xp
+       y = yp
+       z = zp
+
+    endif
 
   end subroutine grid_rotation_backward
 
   !-------------------------------------------------------------
 
-  subroutine grid_rotation_backward_nochange(x, y, z, xp, yp, zp)
-
-    ! rotate xyz coordinates from rotated grid with poles on real equator to geographical grid
-
-    real(kind=RKIND), intent(out) :: &
-         x,  & ! x position of point on geographical grid
-         y,  & ! y position of point on geographical grid
-         z     ! z position of point on geographical grid
-
-    real(kind=RKIND), intent(in) :: &
-         xp, & ! x position of point on rotated grid
-         yp, & ! y position of point on rotated grid
-         zp    ! z position of point on rotated grid
-
-    x = xp
-    y = yp
-    z = zp
-
-  end subroutine grid_rotation_backward_nochange
-
-  !-------------------------------------------------------------
-
-  subroutine xyz_vector_rotation_forward(vxp, vyp, vzp, vx, vy, vz)
+  subroutine xyz_vector_rotation_forward(vxp, vyp, vzp, vx, vy, vz, rotateCartesianGrid)
 
     ! rotate a xyz vector from geographical grid to rotated grid with poles on real equator
 
@@ -1710,39 +1896,28 @@ contains
          vy,  & ! y component of velocity vector on geographical grid
          vz     ! z component of velocity vector on geographical grid
     
-    !call xyz_vector_rotation_forward_nochange(vxp, vyp, vzp, vx, vy, vz) 
+    logical, intent(in) :: &
+         rotateCartesianGrid
 
-    vxp = -vz
-    vyp =  vy
-    vzp =  vx
+    if (rotateCartesianGrid) then
+       
+       vxp = -vz
+       vyp =  vy
+       vzp =  vx
+       
+    else
+
+       vxp = vx
+       vyp = vy
+       vzp = vz
+
+    endif
 
   end subroutine xyz_vector_rotation_forward
 
   !-------------------------------------------------------------
 
-  subroutine xyz_vector_rotation_forward_nochange(vxp, vyp, vzp, vx, vy, vz)
-
-    ! rotate a xyz vector from geographical grid to rotated grid with poles on real equator
-
-    real(kind=RKIND), intent(out) :: &
-         vxp, & ! x component of velocity vector on rotated grid
-         vyp, & ! y component of velocity vector on rotated grid
-         vzp    ! z component of velocity vector on rotated grid
-
-    real(kind=RKIND), intent(in) :: &
-         vx,  & ! x component of velocity vector on geographical grid
-         vy,  & ! y component of velocity vector on geographical grid
-         vz     ! z component of velocity vector on geographical grid
-    
-    vxp = vx
-    vyp = vy
-    vzp = vz
-
-  end subroutine xyz_vector_rotation_forward_nochange
-
-  !-------------------------------------------------------------
-
-  subroutine xyz_vector_rotation_backward(vx, vy, vz, vxp, vyp, vzp)
+  subroutine xyz_vector_rotation_backward(vx, vy, vz, vxp, vyp, vzp, rotateCartesianGrid)
 
     ! rotate xyz vector from rotated grid with poles on real equator to geographical grid
 
@@ -1756,39 +1931,28 @@ contains
          vyp, & ! y component of velocity vector on rotated grid
          vzp    ! z component of velocity vector on rotated grid
 
-    !call xyz_vector_rotation_backward_nochange(vx, vy, vz, vxp, vyp, vzp)
+    logical, intent(in) :: &
+         rotateCartesianGrid
 
-    vx =  vzp
-    vy =  vyp
-    vz = -vxp
+    if (rotateCartesianGrid) then
+
+       vx =  vzp
+       vy =  vyp
+       vz = -vxp
+
+    else
+
+       vx = vxp
+       vy = vyp
+       vz = vzp
+
+    endif
 
   end subroutine xyz_vector_rotation_backward
 
   !-------------------------------------------------------------
 
-  subroutine xyz_vector_rotation_backward_nochange(vx, vy, vz, vxp, vyp, vzp)
-
-    ! rotate xyz vector from rotated grid with poles on real equator to geographical grid
-
-    real(kind=RKIND), intent(out) :: &
-         vx,  & ! x component of velocity vector on geographical grid
-         vy,  & ! y component of velocity vector on geographical grid
-         vz     ! z component of velocity vector on geographical grid
-
-    real(kind=RKIND), intent(in) :: &
-         vxp, & ! x component of velocity vector on rotated grid
-         vyp, & ! y component of velocity vector on rotated grid
-         vzp    ! z component of velocity vector on rotated grid
-
-    vx = vxp
-    vy = vyp
-    vz = vzp
-
-  end subroutine xyz_vector_rotation_backward_nochange
-
-  !-------------------------------------------------------------
-
-  subroutine latlon_vector_rotation_forward(up, vp, u, v, lat, lon, x, y, z, r)
+  subroutine latlon_vector_rotation_forward(up, vp, u, v, lat, lon, x, y, z, r, rotateCartesianGrid)
 
     ! rotate a latlon vector from geographical grid to rotated grid with poles on real equator
 
@@ -1806,6 +1970,9 @@ contains
          z,    & ! z position of point on geographical grid
          r       ! radius of the earth 
 
+    logical, intent(in) :: &
+         rotateCartesianGrid
+
     real(kind=RKIND) :: &
          xp,   & ! x position of point on rotated grid
          yp,   & ! y position of point on rotated grid
@@ -1820,7 +1987,7 @@ contains
          vzp     ! z component of velocity vector on rotated grid
 
     ! perform rotation of the point from geographical grid to rotated grid
-    call grid_rotation_forward(xp, yp, zp, x, y, z)
+    call grid_rotation_forward(xp, yp, zp, x, y, z, rotateCartesianGrid)
 
     ! calculate latitude and longitude of the point in the rotated grid
     call latlon_from_xyz(latp, lonp, xp, yp, zp, r)
@@ -1829,7 +1996,7 @@ contains
     call latlon_vector_to_xyz_vector(vx, vy, vz, u, v, lat, lon)
 
     ! perform rotation of geographical xyz vector to rotated grid
-    call xyz_vector_rotation_forward(vxp, vyp, vzp, vx, vy, vz)
+    call xyz_vector_rotation_forward(vxp, vyp, vzp, vx, vy, vz, rotateCartesianGrid)
 
     ! convert xyz vector to lat lon vector on rotated grid
     call xyz_vector_to_latlon_vector(up, vp, vxp, vyp, vzp, latp, lonp)
@@ -1838,7 +2005,7 @@ contains
 
   !-------------------------------------------------------------
 
-  subroutine latlon_vector_rotation_backward(u, v, up, vp, lat, lon, x, y, z, r)
+  subroutine latlon_vector_rotation_backward(u, v, up, vp, lat, lon, x, y, z, r, rotateCartesianGrid)
 
     ! rotate latlon vector from rotated grid with poles on real equator to geographical grid
 
@@ -1856,6 +2023,9 @@ contains
          z,    & ! z position of point on geographical grid
          r       ! radius of the earth 
 
+    logical, intent(in) :: &
+         rotateCartesianGrid
+
     real(kind=RKIND) :: &
          xp,   & ! x position of point on rotated grid
          yp,   & ! y position of point on rotated grid
@@ -1870,7 +2040,7 @@ contains
          vzp     ! z component of velocity vector on rotated grid
 
     ! perform rotation of the point from geographical grid to rotated grid
-    call grid_rotation_forward(xp, yp, zp, x, y, z)
+    call grid_rotation_forward(xp, yp, zp, x, y, z, rotateCartesianGrid)
 
     ! calculate latitude and longitude of the point in the rotated grid
     call latlon_from_xyz(latp, lonp, xp, yp, zp, r)
@@ -1879,7 +2049,7 @@ contains
     call latlon_vector_to_xyz_vector(vxp, vyp, vzp, up, vp, latp, lonp)
 
     ! perform rotation of rotated xyz vector to geographical grid
-    call xyz_vector_rotation_backward(vx, vy, vz, vxp, vyp, vzp)
+    call xyz_vector_rotation_backward(vx, vy, vz, vxp, vyp, vzp, rotateCartesianGrid)
 
     ! convert xyz vector to lat lon vector on geographical grid
     call xyz_vector_to_latlon_vector(u, v, vx, vy, vz, lat, lon)
@@ -2026,6 +2196,67 @@ contains
     enddo ! iVertex    
 
   end subroutine interpolate_cell_to_vertex
+
+  !-------------------------------------------------------------
+  ! scale unit sphere to physical sphere
+  !-------------------------------------------------------------
+
+  subroutine scale_unit_sphere(mesh)
+
+    type(MPAS_pool_type), pointer :: mesh
+
+    real(kind=RKIND), pointer :: &
+         sphere_radius
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         xCell, &
+         yCell, &
+         zCell, &
+         xEdge, &
+         yEdge, &
+         zEdge, &
+         xVertex, &
+         yVertex, &
+         zVertex, &
+         dvEdge, &
+         dcEdge, &
+         areaCell, &
+         areaTriangle, &
+         kiteAreasOnVertex
+
+    call MPAS_pool_get_config(mesh, "sphere_radius", sphere_radius)
+
+    call MPAS_pool_get_array(mesh, "xCell", xCell)
+    call MPAS_pool_get_array(mesh, "yCell", yCell)
+    call MPAS_pool_get_array(mesh, "zCell", zCell)
+    call MPAS_pool_get_array(mesh, "xEdge", xEdge)
+    call MPAS_pool_get_array(mesh, "yEdge", yEdge)
+    call MPAS_pool_get_array(mesh, "zEdge", zEdge)
+    call MPAS_pool_get_array(mesh, "xVertex", xVertex)
+    call MPAS_pool_get_array(mesh, "yVertex", yVertex)
+    call MPAS_pool_get_array(mesh, "zVertex", zVertex)
+    call MPAS_pool_get_array(mesh, "dvEdge", dvEdge)
+    call MPAS_pool_get_array(mesh, "dcEdge", dcEdge)
+    call MPAS_pool_get_array(mesh, "areaCell", areaCell)
+    call MPAS_pool_get_array(mesh, "areaTriangle", areaTriangle)
+    call MPAS_pool_get_array(mesh, "kiteAreasOnVertex", kiteAreasOnVertex)
+    
+    xCell = xCell * sphere_radius
+    yCell = yCell * sphere_radius
+    zCell = zCell * sphere_radius
+    xEdge = xEdge * sphere_radius
+    yEdge = yEdge * sphere_radius
+    zEdge = zEdge * sphere_radius
+    xVertex = xVertex * sphere_radius
+    yVertex = yVertex * sphere_radius
+    zVertex = zVertex * sphere_radius
+    dvEdge = dvEdge * sphere_radius
+    dcEdge = dcEdge * sphere_radius
+    areaCell = areaCell * sphere_radius**2
+    areaTriangle = areaTriangle * sphere_radius**2
+    kiteAreasOnVertex = kiteAreasOnVertex * sphere_radius**2
+
+  end subroutine scale_unit_sphere
 
   !-------------------------------------------------------------
 

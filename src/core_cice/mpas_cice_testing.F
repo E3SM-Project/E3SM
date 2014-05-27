@@ -191,57 +191,63 @@ contains
   ! Square test case
   !-------------------------------------------------------------
 
-  subroutine init_square_test_case_hex(mesh, tracers, hexdyn, hexfor, boundary, atmos_forcing)
+  subroutine init_square_test_case_hex(mesh, tracers, hexdyn, boundary, atmos_forcing, ocean_forcing)
 
     type(MPAS_pool_type), pointer, intent(inout) :: mesh
     type(MPAS_pool_type), pointer :: tracers
     type(MPAS_pool_type), pointer :: hexdyn
-    type(MPAS_pool_type), pointer :: hexfor
     type(MPAS_pool_type), pointer :: boundary
     type(MPAS_pool_type), pointer :: atmos_forcing
+    type(MPAS_pool_type), pointer :: ocean_forcing
 
     real(kind=RKIND), dimension(:), pointer :: &
          xCell, &
          yCell, &
-         xVertex, &
-         yVertex, &
          uAirVelocity, &
          vAirVelocity, &
+         airDensity, &
          uOceanVelocity, &
          vOceanVelocity
 
     ! init variables
     call MPAS_pool_get_array(mesh, "xCell", xCell)
     call MPAS_pool_get_array(mesh, "yCell", yCell)
-    call MPAS_pool_get_array(mesh, "xVertex", xVertex)
-    call MPAS_pool_get_array(mesh, "yVertex", yVertex)
 
     call MPAS_pool_get_array(atmos_forcing, "uAirVelocity", uAirVelocity)
     call MPAS_pool_get_array(atmos_forcing, "vAirVelocity", vAirVelocity)
+    call MPAS_pool_get_array(atmos_forcing, "airDensity", airDensity)
 
-    call MPAS_pool_get_array(hexfor, "uOceanVelocity", uOceanVelocity)
-    call MPAS_pool_get_array(hexfor, "vOceanVelocity", vOceanVelocity)
+    call MPAS_pool_get_array(ocean_forcing, "uOceanVelocity", uOceanVelocity)
+    call MPAS_pool_get_array(ocean_forcing, "vOceanVelocity", vOceanVelocity)
 
     call square_test_correct_positions(mesh)
 
-    call init_atmos_velocity(uAirVelocity, &
-                             vAirVelocity, &
-                             xCell,        &
-                             yCell,        &
-                             0.0_RKIND)
+    call init_square_test_case_atmos(&
+         uAirVelocity, &
+         vAirVelocity, &
+         airDensity,   &
+         xCell,        &
+         yCell,        &
+         0.0_RKIND)
 
-    call init_ocean_velocity(uOceanVelocity, &
-                             vOceanVelocity, &
-                             xVertex,        &
-                             yVertex)
+    call init_square_test_case_ocean(&
+         uOceanVelocity, &
+         vOceanVelocity, &
+         xCell,          &
+         yCell)
 
-    call init_ice_state(mesh, tracers, hexdyn, hexfor, boundary)
+    call init_square_test_case_state(&
+         mesh,          &
+         tracers,       &
+         hexdyn,        &
+         ocean_forcing, &
+         boundary)
 
   end subroutine init_square_test_case_hex
 
   !-------------------------------------------------------------
 
-  subroutine init_ocean_velocity(uOceanVelocity, vOceanVelocity, x, y)
+  subroutine init_square_test_case_ocean(uOceanVelocity, vOceanVelocity, x, y)
 
     real(kind=RKIND), dimension(:), intent(out) :: &
          uOceanVelocity, &
@@ -268,15 +274,16 @@ contains
        
     enddo ! iCell
 
-  end subroutine init_ocean_velocity
+  end subroutine init_square_test_case_ocean
 
   !-------------------------------------------------------------
 
-  subroutine init_atmos_velocity(uAirVelocity, vAirVelocity, xin, yin, time)
+  subroutine init_square_test_case_atmos(uAirVelocity, vAirVelocity, airDensity, xin, yin, time)
 
     real(kind=RKIND), dimension(:), intent(out) :: &
          uAirVelocity, &
-         vAirVelocity
+         vAirVelocity, &
+         airDensity
 
     real(kind=RKIND), dimension(:), intent(in) :: &
          xin, yin
@@ -315,6 +322,7 @@ contains
        x = xin(iPoint)
        y = yin(iPoint)
 
+       ! velocities
        uAirVelocity(iPoint) = &!a * (y / Ly)
             a + (sin((2.0_RKIND * pi * time) / theta) - b) * sin(2.0_RKIND * pi * (x / Lx)) * sin(pi * (y / Ly))
        vAirVelocity(iPoint) = &!0.0_RKIND!&
@@ -325,18 +333,24 @@ contains
 
        !write(*,*) iPoint, x, y, uAirVelocity(iPoint), vAirVelocity(iPoint), time
 
+       ! air density
+       airDensity(iPoint) = 1.3_RKIND
+
     enddo ! iPoint
-!stop
-  end subroutine init_atmos_velocity
+
+  end subroutine init_square_test_case_atmos
 
   !-------------------------------------------------------------
 
-  subroutine init_ice_state(mesh, tracers, hexdyn, hexfor, boundary)
+  subroutine init_square_test_case_state(mesh, tracers, hexdyn, ocean_forcing, boundary)
+
+    use cice_mesh, only: &
+         interpolate_cell_to_vertex
 
     type(MPAS_pool_type), pointer, intent(in) :: mesh
     type(MPAS_pool_type), pointer :: tracers
     type(MPAS_pool_type), pointer :: hexdyn
-    type(MPAS_pool_type), pointer :: hexfor
+    type(MPAS_pool_type), pointer :: ocean_forcing
     type(MPAS_pool_type), pointer :: boundary
 
     real(kind=RKIND) :: iceThickness
@@ -362,9 +376,11 @@ contains
          uVelocity, &
          vVelocity, &
          uOceanVelocity, &
-         vOceanVelocity
+         vOceanVelocity, &
+         uOceanVelocityVertex, &
+         vOceanVelocityVertex
 
-    real(kind=RKIND), dimension(:,:), pointer :: &    
+    real(kind=RKIND), dimension(:,:,:), pointer :: &    
          iceAreaCategory, &
          iceVolumeCategory, &
          snowVolumeCategory
@@ -384,42 +400,31 @@ contains
     call MPAS_pool_get_array(hexdyn, "uVelocity", uVelocity)
     call MPAS_pool_get_array(hexdyn, "vVelocity", vVelocity)
 
-    call MPAS_pool_get_array(hexfor, "uOceanVelocity", uOceanVelocity)
-    call MPAS_pool_get_array(hexfor, "vOceanVelocity", vOceanVelocity)
+    call MPAS_pool_get_array(hexdyn, "uOceanVelocityVertex", uOceanVelocityVertex)
+    call MPAS_pool_get_array(hexdyn, "vOceanVelocityVertex", vOceanVelocityVertex)
 
+    call MPAS_pool_get_array(ocean_forcing, "uOceanVelocity", uOceanVelocity)
+    call MPAS_pool_get_array(ocean_forcing, "vOceanVelocity", vOceanVelocity)
+
+    ! thickness and area
+    
     iceThickness = 2.0_RKIND
 
     do iCell = 1, nCells
 
        x = xCell(iCell)
 
-       iceAreaCategory(:,iCell) = &!0.95_RKIND!&
+       iceAreaCategory(1,:,iCell) = &!0.95_RKIND!&
             max(min(x / Lx, 1.0_RKIND), 0.0_RKIND)
 
-       iceVolumeCategory(:,iCell) = &
-            iceThickness * iceAreaCategory(:,iCell)
+       iceVolumeCategory(1,:,iCell) = &
+            iceThickness * iceAreaCategory(1,:,iCell)
 
-       snowVolumeCategory(:,iCell) = 0.0_RKIND
+       snowVolumeCategory(1,:,iCell) = 0.0_RKIND
           
     enddo ! iCell
 
-    do iVertex = 1, nVertices
-    
-       if (interiorVertex(iVertex) == 1) then
-
-          uVelocity(iVertex) = uOceanVelocity(iVertex)
-          vVelocity(iVertex) = vOceanVelocity(iVertex)
-
-       else
-
-          uVelocity(iVertex) = 0.0_RKIND
-          vVelocity(iVertex) = 0.0_RKIND
-
-       endif
-
-    enddo ! iVertex
-
-  end subroutine init_ice_state
+  end subroutine init_square_test_case_state
 
   !-------------------------------------------------------------
 

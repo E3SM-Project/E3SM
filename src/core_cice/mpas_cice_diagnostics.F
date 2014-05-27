@@ -18,7 +18,10 @@ module cice_diagnostics
        plot_vertices_spherical, &
        plot_state, &
        init_ijpop_from_ivertex, &
-       output_meridonal_strip
+       output_meridonal_strip, &
+       plot_vertices_planar, &
+       plot_spherical_latlon, &
+       prepare_plot_variables
 
   integer, public :: iCellTest
   
@@ -1691,9 +1694,9 @@ contains
     ! init variables
     call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
     call MPAS_pool_get_dimension(mesh, "vertexDegree", vertexDegree)
+    call MPAS_pool_get_config(mesh, "sphere_radius", sphere_radius)
 
     call MPAS_pool_get_array(mesh, "cellsOnVertex", cellsOnVertex)
-    call MPAS_pool_get_array(mesh, "sphere_radius", sphere_radius)
     call MPAS_pool_get_array(mesh, "xVertex", xVertex)
     call MPAS_pool_get_array(mesh, "yVertex", yVertex)
     call MPAS_pool_get_array(mesh, "zVertex", zVertex)
@@ -1997,10 +2000,10 @@ contains
 
     ! init variables
     call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+    call MPAS_pool_get_config(mesh, "sphere_radius", sphere_radius)
 
     call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
     call MPAS_pool_get_array(mesh, "verticesOnCell", verticesOnCell)
-    call MPAS_pool_get_array(mesh, "sphere_radius", sphere_radius)
     call MPAS_pool_get_array(mesh, "xCell", xCell)
     call MPAS_pool_get_array(mesh, "yCell", yCell)
     call MPAS_pool_get_array(mesh, "zCell", zCell)
@@ -2228,7 +2231,7 @@ contains
          sphere_radius
 
     ! init variables
-    call MPAS_pool_get_array(mesh, "sphere_radius", sphere_radius)
+    call MPAS_pool_get_config(mesh, "sphere_radius", sphere_radius)
 
     z = sphere_radius * sin(lat*deg_to_rad)
     x = sphere_radius * cos(lon*deg_to_rad) * cos(lat*deg_to_rad)
@@ -2321,9 +2324,9 @@ contains
 
     ! init variables
     call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "POP_nx", POP_nx)
+    call MPAS_pool_get_dimension(mesh, "POP_ny", POP_ny)
 
-    call MPAS_pool_get_array(mesh, "POP_nx", POP_nx)
-    call MPAS_pool_get_array(mesh, "POP_ny", POP_ny)
     call MPAS_pool_get_array(mesh, "POPindxi", POPindxi)
     call MPAS_pool_get_array(mesh, "POPindxj", POPindxj)
 
@@ -2370,6 +2373,14 @@ contains
     enddo ! i
 
     close(55)
+
+    do iCell = 1, nCells
+
+       write(*,*) iCell, POPindxi(iCell), POPindxj(iCell)
+
+    enddo ! iCell
+
+    stop
 
   end subroutine plot_pop_grid_cells
 
@@ -2418,9 +2429,9 @@ contains
 
     ! init variables
     call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
+    call MPAS_pool_get_dimension(mesh, "POP_nx", POP_nx)
+    call MPAS_pool_get_dimension(mesh, "POP_ny", POP_ny)
 
-    call MPAS_pool_get_array(mesh, "POP_nx", POP_nx)
-    call MPAS_pool_get_array(mesh, "POP_ny", POP_ny)
     call MPAS_pool_get_array(mesh, "POPindxiv", POPindxiv)
     call MPAS_pool_get_array(mesh, "POPindxjv", POPindxjv)
 
@@ -2521,8 +2532,8 @@ contains
     call MPAS_pool_get_dimension(mesh, "nCells", nCells)
     call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
     call MPAS_pool_get_dimension(mesh, "vertexDegree", vertexDegree)
+    call MPAS_pool_get_dimension(mesh, "POP_nx", POP_nx)
 
-    call MPAS_pool_get_array(mesh, "POP_nx", POP_nx)
     call MPAS_pool_get_array(mesh, "POPindxi", POPindxi)
     call MPAS_pool_get_array(mesh, "POPindxj", POPindxj)
     call MPAS_pool_get_array(mesh, "POPindxiv", POPindxiv)
@@ -2880,6 +2891,334 @@ contains
     close(55)
 
   end subroutine global_statistics
+
+  !-------------------------------------------------------------
+  ! planar plots
+  !-------------------------------------------------------------
+
+  subroutine plot_vertices_planar(mesh, array, interiorVertex, filename)
+
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh
+
+    real(kind=RKIND), dimension(:), intent(in) :: &
+         array
+
+    integer, dimension(:), intent(in) :: &
+         interiorVertex
+
+    character(len=*), intent(in) :: &
+         filename
+
+    integer, pointer :: &
+         nVertices, &
+         vertexDegree
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         xCell, &
+         yCell
+
+    integer, dimension(:,:), pointer :: &
+         cellsOnVertex
+
+    integer :: &
+         iCell, &
+         iVertex, &
+         iVertexDegree, &
+         iObject
+
+    real(kind=RKIND) :: &
+         xv, yv, &
+         xv0, yv0
+
+    character(len=1000) :: &
+         strout, &
+         stroutvertex
+
+    call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
+    call MPAS_pool_get_dimension(mesh, "vertexDegree", vertexDegree)
+
+    call MPAS_pool_get_array(mesh, "xCell", xCell)
+    call MPAS_pool_get_array(mesh, "yCell", yCell)
+    call MPAS_pool_get_array(mesh, "cellsOnVertex", cellsOnVertex)
+
+    iObject = 1
+
+    open(55,file=trim(filename))
+
+    write(55,*) "#", minval(array), maxval(array)
+    write(55,*) "set cbrange [",minval(array),":",maxval(array),"]"
+    write(55,*) "set xrange  [",minval(xCell),":",maxval(xCell),"]"
+    write(55,*) "set yrange  [",minval(yCell),":",maxval(yCell),"]"
+
+    write(55,*) "set pm3d"
+    write(55,*) "set size square"
+    write(55,*) "unset key"
+    write(55,*) "set palette defined (0 0.0 0.0 0.5, 1 0.0 0.0 1.0, 2 0.0 0.5 1.0, 3 0.0 1.0 1.0, 4 0.5 1.0 0.5, 5 1.0 1.0 0.0, 6 1.0 0.5 0.0, 7 1.0 0.0 0.0, 8 0.5 0.0 0.0 )"
+
+    do iVertex = 1, nVertices
+
+       if (interiorVertex(iVertex) == 1) then
+       
+          write(strout,fmt='(a,i5,a)') "set object ",iObject," polygon from "
+
+          do iVertexDegree = 1, vertexDegree
+
+             iCell = cellsOnVertex(iVertexDegree, iVertex)
+
+             xv = xCell(iCell)
+             yv = yCell(iCell)
+
+             if (iVertexDegree == 1) then
+                xv0 = xv
+                yv0 = yv
+             endif
+
+             write(stroutvertex,fmt='(f14.2,a,f14.2,a)') xv, ",", yv, " to "
+             strout = trim(strout)//trim(stroutvertex)
+
+          enddo ! iVertexDegree
+
+          write(stroutvertex,fmt='(f14.2,a,f14.2)') xv0, ",", yv0
+          strout = trim(strout)//trim(stroutvertex)
+          write(55,*) trim(strout)
+
+          write(strout,fmt='(a,i5,a,e13.6,a)') "set object ",iObject,' fc palette cb ', array(iVertex), ' fillstyle solid'
+          write(55,*) trim(strout)
+
+          iObject = iObject + 1
+
+       endif
+
+    enddo ! iVertex
+
+    write(55,*) "plot ", minval(yCell)
+
+    close(55)
+
+  end subroutine plot_vertices_planar
+
+  !-------------------------------------------------------------
+  ! plot spherical on lat lon
+  !-------------------------------------------------------------
+
+  subroutine plot_spherical_latlon(mesh, array, filename)
+
+    use mpas_constants, only: &
+         pii
+
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh
+
+    real(kind=RKIND), dimension(:), intent(in) :: &
+         array
+
+    character(len=*), intent(in) :: &
+         filename
+
+    integer, pointer :: &
+         nCells, &
+         nVertices, &
+         vertexDegree
+
+    integer, dimension(:), pointer :: &
+         nEdgesOnCell
+
+    integer, dimension(:,:), pointer :: &
+         pointVertexOnPoint
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         lonPointVertex, &
+         latPointVertex, &
+         lonPoint, &
+         latPoint
+
+    integer, dimension(:), allocatable :: &
+         nPointVerticesOnPoint, &
+         plotPoint
+
+    integer :: &
+         iPoint, &
+         iPointVertexOnPoint, &
+         iPointVertex, &
+         nPoints, &
+         array_size
+
+    real(kind=RKIND) :: &
+         plotLonPointVertex, &
+         plotLatPointVertex, &
+         plotLonPointVertex0, &
+         plotLatPointVertex0
+
+    character(len=2000) :: &
+         strout, &
+         stroutvertex
+
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
+
+    if (size(array) == nCells+1 .or. size(array) == nCells) then
+
+       array_size = nCells
+
+       nPoints = nCells
+       call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
+       allocate(nPointVerticesOnPoint(nCells))
+       nPointVerticesOnPoint(:) = nEdgesOnCell(1:nCells)
+       call MPAS_pool_get_array(mesh, "verticesOnCell", pointVertexOnPoint)
+       call MPAS_pool_get_array(mesh, "lonVertex", lonPointVertex)
+       call MPAS_pool_get_array(mesh, "latVertex", latPointVertex)
+       call MPAS_pool_get_array(mesh, "lonCell", lonPoint)
+       call MPAS_pool_get_array(mesh, "latCell", latPoint)
+       allocate(plotPoint(nCells))
+       plotPoint = 1
+
+    else if (size(array) == nVertices+1 .or. size(array) == nVertices) then
+
+       array_size = nVertices
+
+       nPoints = nVertices
+       call MPAS_pool_get_dimension(mesh, "vertexDegree", vertexDegree)
+       allocate(nPointVerticesOnPoint(nVertices))
+       nPointVerticesOnPoint(:) = vertexDegree
+       call MPAS_pool_get_array(mesh, "cellsOnVertex", pointVertexOnPoint)
+       call MPAS_pool_get_array(mesh, "lonCell", lonPointVertex)
+       call MPAS_pool_get_array(mesh, "latCell", latPointVertex)
+       call MPAS_pool_get_array(mesh, "lonVertex", lonPoint)
+       call MPAS_pool_get_array(mesh, "latVertex", latPoint)
+       allocate(plotPoint(nVertices))
+       do iPoint = 1, nVertices
+          plotPoint(iPoint) = 1
+          do iPointVertexOnPoint = 1, vertexDegree
+             if (pointVertexOnPoint(iPointVertexOnPoint,iPoint) > nCells) then
+                plotPoint(iPoint) = 0
+             endif
+          enddo ! iPointVertexOnPoint
+       enddo ! iPoint
+
+    else
+       write(*,*) "plot_spherical_latlon: size not supported: ", size(array)
+    endif
+
+    open(55,file=trim(filename))
+
+    write(55,*) "set xrange [0:6.283]"
+    write(55,*) "set yrange [-1.571:1.571]"
+    write(55,*) "set cbrange [",minval(array(1:array_size)),":",maxval(array(1:array_size)),"]"
+
+    write(55,*) "set pm3d"
+    write(55,*) "set size square"
+    write(55,*) "unset key"
+    write(55,*) "set palette defined (0 0.0 0.0 0.5, 1 0.0 0.0 1.0, 2 0.0 0.5 1.0, 3 0.0 1.0 1.0, 4 0.5 1.0 0.5, 5 1.0 1.0 0.0, 6 1.0 0.5 0.0, 7 1.0 0.0 0.0, 8 0.5 0.0 0.0 )"
+
+    iObject = 1
+
+    do iPoint = 1, nPoints
+
+       if (plotPoint(iPoint) == 1) then
+
+          write(strout,fmt='(a,i5,a)') "set object ",iObject," polygon from "
+          
+          do iPointVertexOnPoint = 1, nPointVerticesOnPoint(iPoint)
+             
+             iPointVertex = pointVertexOnPoint(iPointVertexOnPoint,iPoint)
+             
+             plotLonPointVertex = lonPointVertex(iPointVertex)
+             plotLatPointVertex = latPointVertex(iPointVertex)
+ 
+             if (lonPoint(iPoint) <= pii) then
+                
+                if (plotLonPointVertex >= 0.9_RKIND * 2.0_RKIND * pii) then
+                   plotLonPointVertex = plotLonPointVertex - 2.0_RKIND * pii
+                endif
+                
+             endif
+             
+             if (lonPoint(iPoint) > pii) then
+                
+                if (plotLonPointVertex <= 0.1_RKIND * 2.0_RKIND * pii) then
+                   plotLonPointVertex = plotLonPointVertex + 2.0_RKIND * pii
+                endif
+                
+             endif
+             
+             if (iPointVertexOnPoint == 1) then
+                
+                plotLonPointVertex0 = plotLonPointVertex
+                plotLatPointVertex0 = plotLatPointVertex
+                
+             endif
+             
+             write(stroutvertex,fmt='(f14.2,a,f14.2,a)') plotLonPointVertex, ",", plotLatPointVertex, " to "
+             strout = trim(strout)//trim(stroutvertex)
+
+          enddo ! iPointVertexOnPoint
+          
+          write(stroutvertex,fmt='(f14.2,a,f14.2)') plotLonPointVertex0, ",", plotLatPointVertex0
+          strout = trim(strout)//trim(stroutvertex)
+          write(55,*) trim(strout)
+          
+          write(strout,fmt='(a,i5,a,e13.6,a)') "set object ",iObject,' fc palette cb ', array(iPoint), ' fillstyle solid'
+          write(55,*) trim(strout)
+          
+          iObject = iObject + 1
+          
+       endif ! plotPoint
+
+    enddo ! iPoint
+
+    deallocate(nPointVerticesOnPoint)
+    deallocate(plotPoint)
+
+    write(55,*) "plot -10"
+
+    close(55)
+
+  end subroutine plot_spherical_latlon
+
+  !-------------------------------------------------------------
+  ! MPAS DRAW
+  !-------------------------------------------------------------
+
+  subroutine prepare_plot_variables(block)
+
+    type(block_type), intent(inout) :: block
+
+    type (MPAS_pool_type), pointer :: &
+         tracers, &
+         plotting
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         iceAreaCategoryPlot, &
+         iceVolumeCategoryPlot, &
+         snowVolumeCategoryPlot, &
+         surfaceTemperaturePlot
+
+    real(kind=RKIND), dimension(:,:,:), pointer :: &    
+         iceAreaCategory, &
+         iceVolumeCategory, &
+         snowVolumeCategory, &
+         surfaceTemperature
+
+    call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
+    call MPAS_pool_get_subpool(block % structs, "plotting", plotting)
+
+    call MPAS_pool_get_array(tracers, "iceAreaCategory", iceAreaCategory)
+    call MPAS_pool_get_array(tracers, "iceVolumeCategory", iceVolumeCategory)
+    call MPAS_pool_get_array(tracers, "snowVolumeCategory", snowVolumeCategory)
+    call MPAS_pool_get_array(tracers, "surfaceTemperature", surfaceTemperature)    
+
+    call MPAS_pool_get_array(plotting, "iceAreaCategoryPlot", iceAreaCategoryPlot)
+    call MPAS_pool_get_array(plotting, "iceVolumeCategoryPlot", iceVolumeCategoryPlot)
+    call MPAS_pool_get_array(plotting, "snowVolumeCategoryPlot", snowVolumeCategoryPlot)
+    call MPAS_pool_get_array(plotting, "surfaceTemperaturePlot", surfaceTemperaturePlot)    
+
+    iceAreaCategoryPlot(:) = iceAreaCategory(1,1,:)
+    iceVolumeCategoryPlot(:) = iceVolumeCategory(1,1,:)
+    snowVolumeCategoryPlot(:) = snowVolumeCategory(1,1,:)
+    surfaceTemperaturePlot(:) = surfaceTemperature(1,1,:)
+
+  end subroutine prepare_plot_variables
 
   !-------------------------------------------------------------
 

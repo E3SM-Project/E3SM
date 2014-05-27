@@ -197,7 +197,7 @@ contains
          shortwaveDown, &
          cloudFraction, &
          precipitationRate, &
-         longWavedown, &
+         longwaveDown, &
          snowfallRate, &
          airPotentialTemperature, &
          windSpeed, &
@@ -222,7 +222,7 @@ contains
     call MPAS_pool_get_array(atmos_forcing, "shortwaveDown", shortwaveDown)
     call MPAS_pool_get_array(atmos_forcing, "cloudFraction", cloudFraction)
     call MPAS_pool_get_array(atmos_forcing, "precipitationRate", precipitationRate)
-    call MPAS_pool_get_array(atmos_forcing, "longWavedown", longWavedown)
+    call MPAS_pool_get_array(atmos_forcing, "longwaveDown", longwaveDown)
     call MPAS_pool_get_array(atmos_forcing, "snowfallRate", snowfallRate)
     call MPAS_pool_get_array(atmos_forcing, "airPotentialTemperature", airPotentialTemperature)
     call MPAS_pool_get_array(atmos_forcing, "windSpeed", windSpeed)
@@ -310,7 +310,6 @@ contains
                                         vAirVelocityPOP,     &
                                         uPOPAlongGridVector, &
                                         vPOPAlongGridVector)
-
 
     ! calculate other quantities
     do iCell = 1, nCells
@@ -927,9 +926,9 @@ contains
          POPindxj
 
     call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "POP_nx", POP_nx)
+    call MPAS_pool_get_dimension(mesh, "POP_ny", POP_ny)
 
-    call MPAS_pool_get_array(mesh, "POP_nx", POP_nx)
-    call MPAS_pool_get_array(mesh, "POP_ny", POP_ny)
     call MPAS_pool_get_array(mesh, "POPindxi", POPindxi)
     call MPAS_pool_get_array(mesh, "POPindxj", POPindxj)
 
@@ -1164,9 +1163,9 @@ contains
 
   subroutine POP_grid_basis(mesh, uPOPAlongGridVector, vPOPAlongGridVector)
 
-    use cice_mesh, only: grid_rotation_forward, &
-                         grid_rotation_forward_nochange, &
-                         dot_product_3space
+    use cice_mesh, only: &
+         grid_rotation_forward, &
+         dot_product_3space
 
     type(MPAS_pool_type), pointer, intent(in) :: mesh
 
@@ -1235,7 +1234,9 @@ contains
     call MPAS_pool_get_array(mesh, "cellsOnCell", cellsOnCell)
     call MPAS_pool_get_array(mesh, "edgesOnCell", edgesOnCell)
 
-
+    call MPAS_pool_get_array(mesh, "xCell", xCell)
+    call MPAS_pool_get_array(mesh, "yCell", yCell)
+    call MPAS_pool_get_array(mesh, "zCell", zCell)
     call MPAS_pool_get_array(mesh, "xEdge", xEdge)
     call MPAS_pool_get_array(mesh, "yEdge", yEdge)
     call MPAS_pool_get_array(mesh, "zEdge", zEdge)
@@ -1244,7 +1245,8 @@ contains
 
        ! eastwards vector
        call grid_rotation_forward(xCell0,       yCell0,       zCell0, &
-                                  xCell(iCell), yCell(iCell), zCell(iCell))
+                                  xCell(iCell), yCell(iCell), zCell(iCell), &
+                                  .true.)
 
        eastwardsVector(1) = -yCell0
        eastwardsVector(2) =  xCell0
@@ -1331,10 +1333,12 @@ contains
        
        ! U vector
        call grid_rotation_forward(xEdge2,         yEdge2,         zEdge2, &
-                                  xEdge(iEdgeU2), yEdge(iEdgeU2), zEdge(iEdgeU2))
+                                  xEdge(iEdgeU2), yEdge(iEdgeU2), zEdge(iEdgeU2), &
+                                  .true.)
        
        call grid_rotation_forward(xEdge1,         yEdge1,         zEdge1, &
-                                  xEdge(iEdgeU1), yEdge(iEdgeU1), zEdge(iEdgeU1))
+                                  xEdge(iEdgeU1), yEdge(iEdgeU1), zEdge(iEdgeU1), &
+                                  .true.)
        
        uVector(1) = xEdge2 - xEdge1
        uVector(2) = yEdge2 - yEdge1
@@ -1352,10 +1356,12 @@ contains
        
        ! V vector
        call grid_rotation_forward(xEdge2,         yEdge2,         zEdge2, &
-                                  xEdge(iEdgeV2), yEdge(iEdgeV2), zEdge(iEdgeV2))
+                                  xEdge(iEdgeV2), yEdge(iEdgeV2), zEdge(iEdgeV2), &
+                                  .true.)
        
        call grid_rotation_forward(xEdge1,         yEdge1,         zEdge1, &
-                                  xEdge(iEdgeV1), yEdge(iEdgeV1), zEdge(iEdgeV1))
+                                  xEdge(iEdgeV1), yEdge(iEdgeV1), zEdge(iEdgeV1), &
+                                  .true.)
        
        vVector(1) = xEdge2 - xEdge1
        vVector(2) = yEdge2 - yEdge1

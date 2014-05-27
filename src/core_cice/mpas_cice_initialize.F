@@ -18,13 +18,11 @@ contains
     use mpas_configure  
 
     use cice_mesh, only: init_boundary
-    !use cice_advection, only: init_advection
+    use cice_advection, only: init_advection
     use cice_dynamics, only: init_dynamics
     use cice_testing, only: init_spherical_test_case
     use cice_diagnostics, only: writeout_state
     use cice_forcing, only: init_forcing, get_forcing, forcing_file_comparison
-    use cice_therm_zerolayer, only: init_semtner_forcing, init_semtner_test_case  
-    use cice_unit_test, only: perform_unit_test
 
     type(block_type), intent(inout) :: block
     type (MPAS_Clock_type), intent(in) :: clock
@@ -38,24 +36,21 @@ contains
          tracers, &
          icestate, &
          hexdyn, &
+         ocean_forcing, &
          boundary, &
          configs
 
     logical, pointer :: &
          config_use_velocity_solver, &
          config_use_advection, &
-         config_use_forcing, &
-         config_perform_unit_test
-
-    character(len=strKIND), pointer :: &
-         config_unit_test_type, &
-         config_unit_test_subtype
+         config_use_forcing
 
     call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
     call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
     call MPAS_pool_get_subpool(block % structs, "atmos_forcing", atmos_forcing)
     call MPAS_pool_get_subpool(block % structs, "icestate", icestate)
     call MPAS_pool_get_subpool(block % structs, "hexdyn", hexdyn)
+    call MPAS_pool_get_subpool(block % structs, "ocean_forcing", ocean_forcing)
     call MPAS_pool_get_subpool(block % structs, "boundary", boundary)
 
     configs => block % configs
@@ -63,9 +58,6 @@ contains
     call MPAS_pool_get_config(configs, "config_use_velocity_solver", config_use_velocity_solver)
     call MPAS_pool_get_config(configs, "config_use_advection", config_use_advection)
     call MPAS_pool_get_config(configs, "config_use_forcing", config_use_forcing)
-    call MPAS_pool_get_config(configs, "config_perform_unit_test", config_perform_unit_test)
-    call MPAS_pool_get_config(configs, "config_unit_test_type", config_unit_test_type)
-    call MPAS_pool_get_config(configs, "config_unit_test_subtype", config_unit_test_subtype)
 
     call init_junk_values(mesh)
 
@@ -77,8 +69,8 @@ contains
          call init_dynamics(block, dt)
     
     ! init advection
-    !if (config_use_advection) &
-    !     call init_advection(mesh)
+    if (config_use_advection) &
+         call init_advection(block)
     
     ! init forcing
     if (config_use_forcing) then
@@ -101,10 +93,8 @@ contains
          tracers, &
          hexdyn, &
          boundary, &
-         atmos_forcing)
-    
-    if (config_perform_unit_test) &
-         call perform_unit_test(block, config_unit_test_type, config_unit_test_subtype)
+         atmos_forcing, &
+         ocean_forcing)
     
     ! write out the initial condition
     !call writeout_state(block, 0)
@@ -148,20 +138,27 @@ contains
        tracers, &
        hexdyn, &
        boundary, &
-       atmos_forcing)
+       atmos_forcing, &
+       ocean_forcing)
 
     use mpas_configure
+    use cice_testing, only: &
+         init_square_test_case_hex
 
-    type (MPAS_pool_type), pointer, intent(in) :: mesh
+    type (MPAS_pool_type), pointer, intent(inout) :: mesh
     type (MPAS_pool_type), pointer :: tracers
     type (MPAS_pool_type), pointer :: hexdyn
     type (MPAS_pool_type), pointer :: boundary
     type (MPAS_pool_type), pointer :: atmos_forcing
+    type (MPAS_pool_type), pointer :: ocean_forcing
     type (MPAS_pool_type), pointer :: configs
 
     real(kind=RKIND), dimension(:), pointer :: &
          uVelocity, &
-         vVelocity
+         vVelocity, &
+         uOceanVelocity, &
+         vOceanVelocity, &
+         iceAreaCategoryPlot
 
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          iceAreaCategory, &
@@ -181,12 +178,21 @@ contains
          config_initial_uvelocity, &
          config_initial_vvelocity
 
+    integer, dimension(:), pointer :: &
+         interiorVertex
+
     call MPAS_pool_get_array(tracers, "iceAreaCategory", iceAreaCategory, 1)
+    call MPAS_pool_get_array(hexdyn, "iceAreaCategoryPlot", iceAreaCategoryPlot)
     call MPAS_pool_get_array(tracers, "iceVolumeCategory", iceVolumeCategory, 1)
     call MPAS_pool_get_array(tracers, "snowVolumeCategory", snowVolumeCategory, 1)
 
     call MPAS_pool_get_array(hexdyn, "uVelocity", uVelocity)
     call MPAS_pool_get_array(hexdyn, "vVelocity", vVelocity)
+
+    call MPAS_pool_get_array(ocean_forcing, "uOceanVelocity", uOceanVelocity)
+    call MPAS_pool_get_array(ocean_forcing, "vOceanVelocity", vOceanVelocity)
+
+    call MPAS_pool_get_array(boundary, "interiorVertex", interiorVertex)
 
     call MPAS_pool_get_config(configs, "config_initial_condition_type", config_initial_condition_type)
     call MPAS_pool_get_config(configs, "config_initial_velocity_type", config_initial_velocity_type)
@@ -223,6 +229,16 @@ contains
             config_initial_ice_volume, &
             config_initial_snow_volume)
 
+    else if (trim(config_initial_condition_type) == "square") then
+
+       call init_square_test_case_hex(&
+            mesh, &
+            tracers, &
+            hexdyn, &
+            boundary, &
+            atmos_forcing, &
+            ocean_forcing)
+
     else
        
        write(*,*) "Ice initial condition type unknown!"
@@ -239,7 +255,18 @@ contains
             uVelocity, &
             vVelocity, &
             config_initial_uvelocity, &
-            config_initial_vvelocity)
+            config_initial_vvelocity, &
+            interiorVertex)
+
+    else if (trim(config_initial_velocity_type) == "ocean") then
+
+       call init_ice_velocity_ocean(&
+            mesh, &
+            uVelocity, &
+            vVelocity, &
+            uOceanVelocity, &
+            vOceanVelocity, &
+            interiorVertex)
 
     else
 
@@ -344,9 +371,6 @@ contains
 
     integer :: &
          iCell
-
-    real(kind=RKIND) :: &
-         x, y, z
     
     real(kind=RKIND), parameter :: &
          circle_radius = 1.0e6_RKIND
@@ -368,11 +392,7 @@ contains
 
     do iCell = 1, nCells
        
-       x = xCell(iCell)
-       y = yCell(iCell)
-       z = zCell(iCell)
-       
-       if (sqrt(x**2+z**2) < circle_radius .and. y > 0.0_RKIND) then
+       if (sqrt(xCell(iCell)**2 + zCell(iCell)**2) < circle_radius .and. yCell(iCell) > 0.0_RKIND) then
           
           ! has ice
           iceAreaCategory(1,:,iCell)    = iceAreaInitial
@@ -399,7 +419,8 @@ contains
        uVelocity, &
        vVelocity, &
        InitialUVelocity, &
-       InitialVVelocity)
+       InitialVVelocity, &
+       interiorVertex)
     
     type (MPAS_pool_type), pointer, intent(in) :: mesh
     
@@ -410,6 +431,9 @@ contains
     real(kind=RKIND), intent(in) :: &
          InitialUVelocity, &
          InitialVVelocity
+
+    integer, dimension(:), intent(in) :: &
+         interiorVertex
     
     integer :: &
          iVertex
@@ -421,12 +445,91 @@ contains
 
     do iVertex = 1, nVertices
 
-       uVelocity(iVertex) = InitialUVelocity
-       vVelocity(iVertex) = InitialVVelocity
+       if (interiorVertex(iVertex) == 1) then
+          
+          uVelocity(iVertex) = InitialUVelocity
+          vVelocity(iVertex) = InitialVVelocity
+          
+       else
+
+          uVelocity(iVertex) = 0.0_RKIND
+          vVelocity(iVertex) = 0.0_RKIND
+
+       endif
 
     enddo ! iVertex
 
   end subroutine init_ice_velocity_uniform
+
+  !--------------------------------------------------------------------------
+
+  subroutine init_ice_velocity_ocean(&
+       mesh, &
+       uVelocity, &
+       vVelocity, &
+       uOceanVelocity, &
+       vOceanVelocity, &
+       interiorVertex)
+
+    use cice_mesh, only: &
+         interpolate_cell_to_vertex
+    
+    type (MPAS_pool_type), pointer, intent(in) :: mesh
+    
+    real(kind=RKIND), dimension(:), intent(out) :: &
+         uVelocity, &
+         vVelocity
+    
+    real(kind=RKIND), dimension(:), intent(in) :: &    
+         uOceanVelocity, &
+         vOceanVelocity
+
+    integer, dimension(:), intent(in) :: &
+         interiorVertex
+
+    integer :: &
+         iVertex
+
+    integer, pointer :: &
+         nVertices
+
+    real(kind=RKIND), dimension(:), allocatable :: &
+         uOceanVelocityVertex, &
+         vOceanVelocityVertex
+
+    call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
+
+    allocate(uOceanVelocityVertex(nVertices))
+    allocate(vOceanVelocityVertex(nVertices))
+
+    call interpolate_cell_to_vertex(mesh, &
+         uOceanVelocityVertex, &
+         uOceanVelocity)
+
+    call interpolate_cell_to_vertex(mesh, &
+         vOceanVelocityVertex, &
+         vOceanVelocity)
+
+    do iVertex = 1, nVertices
+    
+       if (interiorVertex(iVertex) == 1) then
+
+          uVelocity(iVertex) = uOceanVelocityVertex(iVertex)
+          vVelocity(iVertex) = vOceanVelocityVertex(iVertex)
+
+       else
+
+          uVelocity(iVertex) = 0.0_RKIND
+          vVelocity(iVertex) = 0.0_RKIND
+
+       endif
+
+    enddo ! iVertex
+
+    deallocate(uOceanVelocityVertex)
+    deallocate(vOceanVelocityVertex)
+
+  end subroutine init_ice_velocity_ocean
 
   !--------------------------------------------------------------------------
 

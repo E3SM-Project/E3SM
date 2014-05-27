@@ -13,6 +13,7 @@ module cice_dynamics_shared
        air_stress, &
        ocean_stress, &
        ocean_stress_coefficient, &
+       ocean_stress_final, &
        solve_velocity, &
        surface_tilt, &
        principal_stresses
@@ -36,20 +37,25 @@ module cice_dynamics_shared
        elapsedTime, &
        evpDampingCriterion
 
-  integer, parameter, public :: &
-       nElasticSubcycle = 120 ! will be from namelist
-
 contains
 
   !-------------------------------------------------------------
 
-  subroutine init_evp(dt)
+  subroutine init_evp(dt, configs)
 
     real(kind=RKIND), intent(in) :: dt
 
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         configs
+
+    integer, pointer :: &
+         config_elastic_subcycle_number
+
+    call MPAS_pool_get_config(configs, "config_elastic_subcycle_number", config_elastic_subcycle_number)
+
     dtDynamics = dt
 
-    dtElastic = dtDynamics / real(nElasticSubcycle,RKIND)
+    dtElastic = dtDynamics / real(config_elastic_subcycle_number,RKIND)
 
     dampingTimescale = dampingTimescaleParameter * dtDynamics
 
@@ -265,11 +271,6 @@ contains
           uVelocity(iPoint) = (leftMatrix(2,2) * rightHandSide(1) - leftMatrix(1,2) * rightHandSide(2)) / solutionDenominator
           vVelocity(iPoint) = (leftMatrix(1,1) * rightHandSide(2) - leftMatrix(2,1) * rightHandSide(1)) / solutionDenominator
 
-          write(70,*) &
-               POPindxiv(iPoint), &
-               POPindxjv(iPoint), &
-               uVelocity(iPoint), coriolisParameter(iPoint)
-
        else
 
           uVelocity(iPoint) = 0.0_RKIND
@@ -314,7 +315,11 @@ contains
        airStressU(iPoint) = airDensity(iPoint) * windSpeed * airStressCoeff * uAirVelocity(iPoint) * iceArea(iPoint)
        airStressV(iPoint) = airDensity(iPoint) * windSpeed * airStressCoeff * vAirVelocity(iPoint) * iceArea(iPoint)
 
+       !write(*,*) iPoint, airStressU(iPoint), airDensity(iPoint), windSpeed, airStressCoeff, uAirVelocity(iPoint), iceArea(iPoint)
+
     enddo ! iPoint
+
+    !stop
 
   end subroutine air_stress
 
@@ -408,6 +413,74 @@ contains
     enddo ! iPoint
 
   end subroutine ocean_stress_coefficient
+
+  !-------------------------------------------------------------
+
+  subroutine ocean_stress_final(&
+       iceArea, &
+       coriolisParameter, &
+       uVelocity, &
+       vVelocity, &
+       uOceanVelocity, &
+       vOceanVelocity, &
+       oceanStressU, &
+       oceanStressV, &
+       oceanStressCoeff, &
+       solvePoints)
+
+    real(kind=RKIND), dimension(:), intent(in) :: &    
+         iceArea, &
+         coriolisParameter, &
+         uVelocity, &
+         vVelocity, &
+         uOceanVelocity, &
+         vOceanVelocity
+    
+    real(kind=RKIND), dimension(:), intent(out) :: &
+         oceanStressU, &
+         oceanStressV, &
+         oceanStressCoeff
+
+    integer, dimension(:), intent(in) :: &
+         solvePoints
+
+    real(kind=RKIND) :: &
+         oceanIceRelativeVelocity
+
+    integer :: &
+         nPoints, &
+         iPoint
+
+    call ocean_stress_coefficient(&
+         oceanStressCoeff, &
+         uOceanVelocity, &
+         vOceanVelocity, &
+         uVelocity, &
+         vVelocity, &
+         iceArea, &
+         solvePoints) 
+    
+    nPoints = size(oceanStressCoeff,1)
+
+    do iPoint = 1, nPoints
+
+       if (solvePoints(iPoint) == 1) then
+
+          oceanStressU(iPoint) = oceanStressCoeff(iPoint) * ((uOceanVelocity(iPoint) - uVelocity(iPoint)) * cosOceanTurningAngle &
+                                                           - (vOceanVelocity(iPoint) - vVelocity(iPoint)) * sinOceanTurningAngle * sign(1.0_RKIND,coriolisParameter(iPoint)))
+          oceanStressV(iPoint) = oceanStressCoeff(iPoint) * ((vOceanVelocity(iPoint) - vVelocity(iPoint)) * cosOceanTurningAngle &
+                                                           + (uOceanVelocity(iPoint) - uVelocity(iPoint)) * sinOceanTurningAngle * sign(1.0_RKIND,coriolisParameter(iPoint)))
+
+       else
+
+          oceanStressU(iPoint) = 0.0_RKIND
+          oceanStressV(iPoint) = 0.0_RKIND
+
+       endif ! solvePoints
+
+    enddo ! iPoint
+
+  end subroutine ocean_stress_final
   
   !-------------------------------------------------------------
 

@@ -10,26 +10,36 @@ contains
 
   !--------------------------------------------------------------------------
 
-  subroutine perform_unit_test(block, unit_test_type, unit_test_subtype)
+  subroutine perform_unit_test(block, configs)
 
     use cice_dynamics_unit_tests, only: &
          strain_rate_operator_unit_test, &
          stress_divergence_operator_unit_test
+    use cice_therm_zerolayer, only: &
+         zero_layer_thermo_semtner_unit_test
 
     type(block_type), intent(inout) :: block
 
-    character(len=*), intent(in) :: &
-         unit_test_type, &
-         unit_test_subtype
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         configs
 
-    select case (trim(unit_test_type))
+    character(len=strKIND), pointer :: &
+         config_unit_test_type, &
+         config_unit_test_subtype
+
+    call MPAS_pool_get_config(configs, "config_unit_test_type", config_unit_test_type)
+    call MPAS_pool_get_config(configs, "config_unit_test_subtype", config_unit_test_subtype)
+
+    select case (trim(config_unit_test_type))
     case ("strain rate operator")
-       call strain_rate_operator_unit_test(block, trim(unit_test_subtype))
+       call strain_rate_operator_unit_test(block, trim(config_unit_test_subtype))
     case ("stress divergence operator")
-       call stress_divergence_operator_unit_test(block, trim(unit_test_subtype))
+       call stress_divergence_operator_unit_test(block, trim(config_unit_test_subtype))
+    case ("semtner 1d thermo test")
+       call zero_layer_thermo_semtner_unit_test()
     case default
        write(*,*) "Unit test unknown!"
-       write(*,*) "config_unit_test_type:", trim(unit_test_type)
+       write(*,*) "config_unit_test_type:", trim(config_unit_test_type)
     end select
 
     stop

@@ -8,26 +8,6 @@ module cice_dynamics
   public :: init_dynamics, &
             run_dynamics
 
-  !--------------------------------------------------------------------------
-  ! Dynamics options
-  !--------------------------------------------------------------------------
-  
-  ! "hex" or ??
-  character(len=200), parameter :: dynamicsGridType = "hex";
-
-  ! "weak", "variational" or "pwl" 
-  character(len=200), parameter :: divergenceFormulation = "weak"
-  !character(len=200), parameter :: divergenceFormulation = "variational"
-  !character(len=200), parameter :: divergenceFormulation = "pwl"
-
-  ! EVP Damping - ".false." or ".true."
-  logical, parameter :: evpDamping = .true.
-  !logical, parameter :: evpDamping = .false.
-
-  ! Grid curvature - "planar" or "spherical"
-  !character(len=200), parameter :: gridCurvature = "planar"
-  character(len=200), parameter :: gridCurvature = "spherical"
-
 contains
 
   !--------------------------------------------------------------------------
@@ -42,30 +22,37 @@ contains
     type (MPAS_pool_type), pointer :: &
          mesh, &
          boundary, &
-         normal, &
+         hexweak, &
          hexvar, &
          hexwach, &
-         hexpwl
+         hexpwl, &
+         configs
+
+    character(len=strKIND), pointer :: &
+         config_dynamics_grid_type
+
+    configs => block % configs
+
+    call MPAS_pool_get_config(configs, "config_dynamics_grid_type", config_dynamics_grid_type)
 
     call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
     call MPAS_pool_get_subpool(block % structs, "boundary", boundary)
-    call MPAS_pool_get_subpool(block % structs, "normal", normal)
+    call MPAS_pool_get_subpool(block % structs, "hexweak", hexweak)
     call MPAS_pool_get_subpool(block % structs, "hexvar", hexvar)
     call MPAS_pool_get_subpool(block % structs, "hexwach", hexwach)
     call MPAS_pool_get_subpool(block % structs, "hexpwl", hexpwl)
 
-    if (trim(dynamicsGridType) == "hex") then
+    if (trim(config_dynamics_grid_type) == "hex") then
 
        call init_dynamics_hex(&
             mesh,                  &
             dt,                    &
             boundary,              &
-            normal,                &
+            hexweak,               &
             hexvar,                &
             hexwach,               &
             hexpwl,                &
-            divergenceFormulation, &
-            gridCurvature)
+            configs)
 
     else
 
@@ -88,48 +75,48 @@ contains
 
     type (MPAS_pool_type), pointer :: &
          mesh,          &
+         configs,       &
          tracers,       &
          icestate,      &
          boundary,      &
-         normal,        &
          atmos_forcing, &
+         ocean_forcing, &
          hexdyn,        &
          hexweak,       &
          hexvar,        &
          hexwach,       &
-         hexpwl,        &
-         hexfor
+         hexpwl
+
+    character(len=strKIND), pointer :: &
+         config_dynamics_grid_type
+
+    configs => block % configs
+
+    call MPAS_pool_get_config(configs, "config_dynamics_grid_type", config_dynamics_grid_type)
 
     call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
     call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
     call MPAS_pool_get_subpool(block % structs, "icestate", icestate)
     call MPAS_pool_get_subpool(block % structs, "boundary", boundary)
-    call MPAS_pool_get_subpool(block % structs, "normal", normal)
     call MPAS_pool_get_subpool(block % structs, "atmos_forcing", atmos_forcing)
+    call MPAS_pool_get_subpool(block % structs, "ocean_forcing", ocean_forcing)
     call MPAS_pool_get_subpool(block % structs, "hexdyn", hexdyn)
     call MPAS_pool_get_subpool(block % structs, "hexweak", hexweak)
     call MPAS_pool_get_subpool(block % structs, "hexvar", hexvar)
     call MPAS_pool_get_subpool(block % structs, "hexwach", hexwach)
     call MPAS_pool_get_subpool(block % structs, "hexpwl", hexpwl)
-    call MPAS_pool_get_subpool(block % structs, "hexfor", hexfor)
 
-    if (trim(dynamicsGridType) == "hex") then
+    if (trim(config_dynamics_grid_type) == "hex") then
 
        call run_dynamics_hex(&
-            mesh,                      &
-            tracers,                   &
-            icestate,                  &
-            boundary,                  &
-            normal,                    &
-            atmos_forcing,             &
-            hexdyn,                    &
-            hexweak,                   &
-            hexvar,                    &
-            hexwach,                   &
-            hexpwl,                    &
-            hexfor,                    &
-            dt, divergenceFormulation, &
-            evpDamping, &
+            mesh, &
+            tracers,       icestate,      &
+            boundary,                     &
+            atmos_forcing, ocean_forcing, &
+            hexdyn,                       &
+            hexweak,       hexvar,        &
+            hexwach,       hexpwl,        &
+            dt,            configs,       &
             nstep)
   
     end if

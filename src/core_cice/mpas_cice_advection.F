@@ -7,10 +7,11 @@ module cice_advection
   private
   public :: &
        init_advection, &
-       advection
+       run_advection
   
   integer, parameter :: &
-       nTracerVariables = 7
+       nTracerVariables = 1
+       !nTracerVariables = 7
 
   ! tracerConnectivity(iTracer, 1) ! child tracer name in code
   ! tracerConnectivity(iTracer, 2) ! parent tracer name in code
@@ -27,19 +28,27 @@ contains
 
     use mpas_tracer_advection_helpers, only: &
          mpas_tracer_advection_coefficients
+    
+    use cice_mesh, only: &
+         normal_vectors_polygon
 
     type(block_type), intent(inout) :: &
          block
 
     type (MPAS_pool_type), pointer :: &
          mesh, &
-         configs
+         configs, &
+         hexdyn
 
     integer, pointer :: &
          config_horiz_tracer_adv_order
 
+    logical, pointer :: &
+         config_rotate_cartesian_grid
+
     real(kind=RKIND), dimension(:,:,:), pointer :: &
-         derivTwo
+         derivTwo, &
+         normalVectorEdge
 
     real(kind=RKIND), dimension(:,:), pointer :: &
          advCoefs, &
@@ -58,9 +67,11 @@ contains
          err
 
     call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+    call MPAS_pool_get_subpool(block % structs, "hexdyn", hexdyn)
 
     configs => block % configs
     call MPAS_pool_get_config(configs, "config_horiz_tracer_adv_order", config_horiz_tracer_adv_order)
+    call MPAS_pool_get_config(configs, "config_rotate_cartesian_grid", config_rotate_cartesian_grid)
 
     call MPAS_pool_get_array(mesh, "derivTwo", derivTwo)
     call MPAS_pool_get_array(mesh, "advCoefs", advCoefs)
@@ -70,6 +81,8 @@ contains
     call MPAS_pool_get_array(mesh, "maxLevelCell", maxLevelCell)
     call MPAS_pool_get_array(mesh, "highOrderAdvectionMask", highOrderAdvectionMask)
     call MPAS_pool_get_array(mesh, "boundaryCell", boundaryCell)
+
+    call MPAS_pool_get_array(hexdyn, "normalVectorEdge", normalVectorEdge)
 
     err = 0
 
@@ -87,6 +100,12 @@ contains
          boundaryCell)
 
     call define_tracer_connectivity()
+    
+    call normal_vectors_polygon(&
+         mesh, &
+         normalVectorEdge, &
+         config_rotate_cartesian_grid, &
+         .false.)
 
   end subroutine init_advection
 
@@ -95,13 +114,13 @@ contains
   subroutine define_tracer_connectivity()
 
     ! child tracer                                 ! parent tracer to child
-    tracerConnectivity(1,1) = 'iceAreaCell'        ; tracerConnectivity(1,2) = 'none'
-    tracerConnectivity(2,1) = 'surfaceTemperature' ; tracerConnectivity(2,2) = 'iceAreaCell'
-    tracerConnectivity(3,1) = 'iceVolumeCell'      ; tracerConnectivity(3,2) = 'iceAreaCell'
-    tracerConnectivity(4,1) = 'snowVolumeCell'     ; tracerConnectivity(4,2) = 'iceAreaCell'
-    tracerConnectivity(5,1) = 'iceEnthalpy'        ; tracerConnectivity(5,2) = 'iceVolumeCell'
-    tracerConnectivity(6,1) = 'iceSalinity'        ; tracerConnectivity(6,2) = 'iceVolumeCell'
-    tracerConnectivity(7,1) = 'snowEnthalpy'       ; tracerConnectivity(7,2) = 'snowVolumeCell'
+    tracerConnectivity(1,1) = 'iceAreaCategory'    ; tracerConnectivity(1,2) = 'none'
+    !tracerConnectivity(2,1) = 'surfaceTemperature' ; tracerConnectivity(2,2) = 'iceAreaCategory'
+    !tracerConnectivity(3,1) = 'iceVolumeCategory'  ; tracerConnectivity(3,2) = 'iceAreaCategory'
+    !tracerConnectivity(4,1) = 'snowVolumeCategory' ; tracerConnectivity(4,2) = 'iceAreaCategory'
+    !tracerConnectivity(5,1) = 'iceEnthalpy'        ; tracerConnectivity(5,2) = 'iceVolumeCategory'
+    !tracerConnectivity(6,1) = 'iceSalinity'        ; tracerConnectivity(6,2) = 'iceVolumeCategory'
+    !tracerConnectivity(7,1) = 'snowEnthalpy'       ; tracerConnectivity(7,2) = 'snowVolumeCategory'
 
   end subroutine define_tracer_connectivity
 
@@ -109,7 +128,7 @@ contains
   ! time stepping
   !--------------------------------------------------------------------------
 
-  subroutine advection(block, dt)
+  subroutine run_advection(block, dt)
 
     type (block_type), intent(inout) :: block
 
@@ -120,15 +139,14 @@ contains
          mesh, &
          tracers, &
          tracer_tendencies, &
-         hexdyn, &
-         normal
+         hexdyn
 
     real(kind=RKIND), dimension(:), pointer :: &
          uVelocity, &
          vVelocity
 
     real(kind=RKIND), dimension(:,:,:), pointer :: &
-         normalVectorPolygon
+         normalVectorEdge
 
     integer :: &
          iTracerVariable
@@ -145,18 +163,17 @@ contains
     call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
     call MPAS_pool_get_subpool(block % structs, "tracer_tendencies", tracer_tendencies)
     call MPAS_pool_get_subpool(block % structs, "hexdyn", hexdyn)
-    call MPAS_pool_get_subpool(block % structs, "normal", normal)
 
     call MPAS_pool_get_array(hexdyn, "uVelocity", uVelocity)
     call MPAS_pool_get_array(hexdyn, "vVelocity", vVelocity)
-    call MPAS_pool_get_array(normal, "normalVectorPolygon", normalVectorPolygon)
+    call MPAS_pool_get_array(hexdyn, "normalVectorEdge", normalVectorEdge)
 
     call prepare_advection(&
          mesh, &
          tracers, &
          uVelocity, &
          vVelocity, &
-         normalVectorPolygon, &
+         normalVectorEdge, &
          edgeVelocity, &
          edgeFlux, &
          verticalVelocity, &
@@ -164,12 +181,14 @@ contains
 
     do iTracerVariable = 1, nTracerVariables
 
+       write(*,*) "iTracerVariable: ", iTracerVariable, trim(tracerConnectivity(iTracerVariable,1)), trim(tracerConnectivity(iTracerVariable,2))
+
        call run_advection_variable(&
             mesh, &
             tracers, &
             tracer_tendencies, &
-            tracerConnectivity(iTracerVariable,1), &
-            tracerConnectivity(iTracerVariable,2), &
+            trim(tracerConnectivity(iTracerVariable,1)), &
+            trim(tracerConnectivity(iTracerVariable,2)), &
             edgeVelocity, &
             edgeFlux, &
             verticalVelocity, &
@@ -186,11 +205,11 @@ contains
          verticalVelocity, &
          verticalCellSize)
 
-  end subroutine advection
+  end subroutine run_advection
 
   !--------------------------------------------------------------------------
   
-  subroutine advection_variable(&
+  subroutine run_advection_variable(&
        mesh, &
        tracers, &
        tracer_tendencies, &
@@ -230,9 +249,11 @@ contains
 
     call mpas_pool_get_field_info(tracers, trim(childTracerName), childFieldInfo)
 
+    write(*,*) trim(childTracerName), "  childFieldInfo % nDims", childFieldInfo % nDims
+
     if (childFieldInfo % nDims == 3) then
 
-       call advection_variable_3D(&
+       call run_advection_variable_3D(&
             mesh, &
             tracers, &
             tracer_tendencies, &
@@ -246,7 +267,7 @@ contains
        
     else if (childFieldInfo % nDims == 4) then
 
-       call advection_variable_4D(&
+       call run_advection_variable_4D(&
             mesh, &
             tracers, &
             tracer_tendencies, &
@@ -260,11 +281,11 @@ contains
 
     endif
 
-  end subroutine advection_variable
+  end subroutine run_advection_variable
 
   !--------------------------------------------------------------------------
 
-  subroutine advection_variable_3D(&
+  subroutine run_advection_variable_3D(&
        mesh, &
        tracers, &
        tracer_tendencies, &
@@ -308,37 +329,87 @@ contains
     real (kind=RKIND), dimension(:,:,:), pointer :: &
          parentTracerOld, &
          parentTracerNew, &
-         parentTendency    
+         parentTendency
 
-    ! child tracer
-    call MPAS_pool_get_array(tracers, trim(childTracerName), childTracerOld, 1)
-    call MPAS_pool_get_array(tracers, trim(childTracerName), childTracerNew, 2)
-    call MPAS_pool_get_array(tracer_tendencies, trim(childTracerName), childTendency)
+    real (kind=RKIND), dimension(:,:,:), allocatable :: &
+         parentTracerOldNone, &
+         parentTracerNewNone, &
+         parentTendencyNone
 
-    ! parent tracer
-    call MPAS_pool_get_array(tracers, trim(parentTracerName), parentTracerOld, 1)
-    call MPAS_pool_get_array(tracers, trim(parentTracerName), parentTracerOld, 2)
-    call MPAS_pool_get_array(tracer_tendencies, trim(parentTracerName), parentTendency)
+    integer, pointer :: &
+         ONE, &
+         nCategories, &
+         nCells
 
-    call advection_subvariable(&
-         mesh, &
-         childTracerOld(:,:,:), &
-         childTracerNew(:,:,:), &
-         childTendency(:,:,:), &
-         parentTracerOld(:,:,:), &
-         parentTracerNew(:,:,:), &
-         parentTendency(:,:,:), &
-         edgeVelocity, &
-         edgeFlux, &
-         verticalVelocity, &
-         verticalCellSize, &
-         dt)
+    if (trim(parentTracerName) == 'none') then
 
-  end subroutine advection_variable_3D
+       ! child tracer
+       call MPAS_pool_get_array(tracers, trim(childTracerName), childTracerOld, 1)
+       call MPAS_pool_get_array(tracers, trim(childTracerName), childTracerNew, 2)
+       call MPAS_pool_get_array(tracer_tendencies, trim(childTracerName), childTendency)
+
+       ! parent tracer
+       call MPAS_pool_get_dimension(mesh, "ONE", ONE)
+       call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
+       call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+       allocate(parentTracerOldNone(ONE,nCategories,nCells))
+       allocate(parentTracerNewNone(ONE,nCategories,nCells))
+       allocate(parentTendencyNone(ONE,nCategories,nCells))
+       parentTracerOldNone = 1.0_RKIND
+       parentTracerNewNone = 1.0_RKIND
+       parentTendencyNone  = 0.0_RKIND
+
+       call run_advection_subvariable(&
+            mesh, &
+            childTracerOld(:,:,:), &
+            childTracerNew(:,:,:), &
+            childTendency(:,:,:), &
+            parentTracerOldNone(:,:,:), &
+            parentTracerNewNone(:,:,:), &
+            parentTendencyNone(:,:,:), &
+            edgeVelocity, &
+            edgeFlux, &
+            verticalVelocity, &
+            verticalCellSize, &
+            dt)
+
+       deallocate(parentTracerOldNone)
+       deallocate(parentTracerNewNone)
+       deallocate(parentTendencyNone)
+
+    else
+       
+       ! child tracer
+       call MPAS_pool_get_array(tracers, trim(childTracerName), childTracerOld, 1)
+       call MPAS_pool_get_array(tracers, trim(childTracerName), childTracerNew, 2)
+       call MPAS_pool_get_array(tracer_tendencies, trim(childTracerName), childTendency)
+
+       ! parent tracer
+       call MPAS_pool_get_array(tracers, trim(parentTracerName), parentTracerOld, 1)
+       call MPAS_pool_get_array(tracers, trim(parentTracerName), parentTracerNew, 2)
+       call MPAS_pool_get_array(tracer_tendencies, trim(parentTracerName), parentTendency)
+
+       call run_advection_subvariable(&
+            mesh, &
+            childTracerOld(:,:,:), &
+            childTracerNew(:,:,:), &
+            childTendency(:,:,:), &
+            parentTracerOld(:,:,:), &
+            parentTracerNew(:,:,:), &
+            parentTendency(:,:,:), &
+            edgeVelocity, &
+            edgeFlux, &
+            verticalVelocity, &
+            verticalCellSize, &
+            dt)
+
+    endif
+
+  end subroutine run_advection_variable_3D
 
   !--------------------------------------------------------------------------
 
-  subroutine advection_variable_4D(&
+  subroutine run_advection_variable_4D(&
        mesh, &
        tracers, &
        tracer_tendencies, &
@@ -399,7 +470,7 @@ contains
     
     do iTracerDimension = 1, size(childTracerNew,1)
 
-       call advection_subvariable(&
+       call run_advection_subvariable(&
             mesh, &
             childTracerOld(iTracerDimension,:,:,:), &
             childTracerNew(iTracerDimension,:,:,:), &
@@ -415,11 +486,11 @@ contains
        
     enddo ! iTracerDimension
     
-  end subroutine advection_variable_4D
+  end subroutine run_advection_variable_4D
 
   !--------------------------------------------------------------------------
 
-  subroutine advection_subvariable(&
+  subroutine run_advection_subvariable(&
        mesh, &
        childTracerOld, &
        childTracerNew, &
@@ -550,7 +621,7 @@ contains
        enddo ! iCategory
     enddo ! iCell
 
-  end subroutine advection_subvariable
+  end subroutine run_advection_subvariable
 
   !--------------------------------------------------------------------------
 
@@ -559,7 +630,7 @@ contains
        tracers, &
        uVelocity, &
        vVelocity, &
-       normalVectorPolygon, &
+       normalVectorEdge, &
        edgeVelocity, &
        edgeFlux, &
        verticalVelocity, &
@@ -576,7 +647,7 @@ contains
          vVelocity
 
     real(kind=RKIND), dimension(:,:,:), intent(in) :: &
-         normalVectorPolygon
+         normalVectorEdge
 
     real(kind=RKIND), dimension(:), allocatable :: &
          edgeVelocity
@@ -606,7 +677,7 @@ contains
          mesh, &
          uVelocity, &
          vVelocity, &
-         normalVectorPolygon, &
+         normalVectorEdge, &
          edgeVelocity)
 
     call prepare_tracers(&
@@ -656,7 +727,7 @@ contains
        mesh, &
        uVelocity, &
        vVelocity, &
-       normalVectorPolygon, &
+       normalVectorEdge, &
        edgeVelocity)
 
     type(MPAS_pool_type), intent(in) :: mesh
@@ -666,7 +737,7 @@ contains
          vVelocity
 
     real(kind=RKIND), dimension(:,:,:), intent(in) :: &
-         normalVectorPolygon
+         normalVectorEdge
 
     real(kind=RKIND), dimension(:), intent(out) :: &
          edgeVelocity
@@ -729,8 +800,8 @@ contains
 
              ! rotate u,v velocity to normal
              edgeVelocity(iEdge) = &
-                  uVelocityEdge * normalVectorPolygon(1,iEdgeOnCell,iCell) + &
-                  vVelocityEdge * normalVectorPolygon(2,iEdgeOnCell,iCell)
+                  uVelocityEdge * normalVectorEdge(1,iEdgeOnCell,iCell) + &
+                  vVelocityEdge * normalVectorEdge(2,iEdgeOnCell,iCell)
 
           endif
 
@@ -766,6 +837,7 @@ contains
          iCategory
 
     call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
 
     call MPAS_pool_get_array(tracers, "iceAreaCategory", iceAreaCategory, 1)
     call MPAS_pool_get_array(tracers, "iceVolumeCategory", iceVolumeCategory, 1)
@@ -817,6 +889,7 @@ contains
     call MPAS_pool_shift_time_levels(tracers)
 
     call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+    call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
 
     call MPAS_pool_get_array(tracers, "iceAreaCategory", iceAreaCategory, 1)
     call MPAS_pool_get_array(tracers, "iceVolumeCategory", iceVolumeCategory, 1)
