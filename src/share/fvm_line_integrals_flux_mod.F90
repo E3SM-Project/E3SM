@@ -46,14 +46,16 @@ contains
     !
     ! nhe is CEILING(CN) which is 1 here
     !
-    real (kind=real_kind),dimension(4*(nc+2*nhe)*(nc+nhe),nreconstruction,2), &
-         intent(out) :: weights_all
-    integer (kind=int_kind), dimension(4*(nc+2*nhe)*(nc+nhe),2,2), &
-         intent(out) :: weights_eul_index_all
-    integer (kind=int_kind), dimension(4*(nc+2*nhe)*(nc+nhe),2,2), &
-         intent(out) :: weights_lgr_index_all
+    !
+    ! dimension(4*(nc+2*nhe)*(nc+nhe),nreconstruction,2)
+    !
+    real (kind=real_kind),dimension(:,:,:), intent(out) :: weights_all
+    !
+    ! dimension(4*(nc+2*nhe)*(nc+nhe),2,2)
+    !
+    integer (kind=int_kind), dimension(:,:,:), intent(out) :: weights_eul_index_all, weights_lgr_index_all
     integer (kind=int_kind), intent(in)                       :: klev
-    integer (kind=int_kind), dimension(2), intent(out)        :: jall
+    integer (kind=int_kind), dimension(:), intent(out)        :: jall !dimension(2)
     
     ! local workspace
     ! max number of line segments is:
@@ -1422,17 +1424,16 @@ contains
     use fvm_line_integrals_mod, only : compute_weights_cell
     implicit none
     logical, intent(in) :: ldo_xflux, ldo_yflux
-    integer (kind=int_kind)                  , intent(in):: nreconstruction, jx,jy,ngauss,jmax_segments
-    real (kind=real_kind)   ,  dimension(0:5), intent(inout):: xflux_x,xflux_y     
-    real (kind=real_kind)   ,  dimension(0:5), intent(inout):: yflux_x,yflux_y
+    integer (kind=int_kind)                 , intent(in):: nreconstruction, jx,jy,ngauss,jmax_segments
+    real (kind=real_kind)   ,  dimension(0:), intent(inout):: xflux_x,xflux_y !dimension(0:5)
+    real (kind=real_kind)   ,  dimension(0:), intent(inout):: yflux_x,yflux_y !dimension(0:5)
     !
     integer (kind=int_kind), intent(in)               :: jx_min, jy_min, jx_max, jy_max
-    real (kind=real_kind), dimension(-nhe:nc+2+nhe), intent(inout) :: xgno
-    real (kind=real_kind), dimension(-nhe:nc+2+nhe), intent(inout) :: ygno
+    real (kind=real_kind), dimension(-nhe:), intent(inout) :: xgno, ygno !dimension(-nhe:nc+2+nhe)
     !
     ! for Gaussian quadrature
     !
-    real (kind=real_kind), dimension(ngauss), intent(in) :: gauss_weights, abscissae
+    real (kind=real_kind), dimension(:), intent(in) :: gauss_weights, abscissae !dimension(ngauss)
     !
     ! boundaries of domain
     !
@@ -1440,7 +1441,7 @@ contains
     !
     ! Number of Eulerian sub-cell integrals for the cell in question
     !
-    integer (kind=int_kind), dimension(2), intent(out)       :: jcollect
+    integer (kind=int_kind), dimension(:), intent(out)       :: jcollect !dimension(2)
     !
     ! local workspace
     !
@@ -1449,10 +1450,8 @@ contains
     !
     ! (number of longitudes)*(max average number of crossings per line segment = 3)*ncube*2
     !
-    real (kind=real_kind)   ,  &
-         dimension(jmax_segments,nreconstruction,2), intent(out) :: weights
-    integer (kind=int_kind),  &
-         dimension(jmax_segments,2,2), intent(out)      :: weights_eul_index
+    real (kind=real_kind)  , dimension(:,:,:), intent(out) :: weights !dimension(jmax_segments,nreconstruction,2)
+    integer (kind=int_kind), dimension(:,:,:), intent(out) :: weights_eul_index !dimension(jmax_segments,2,2)
     !
     ! local workspace
     !
@@ -1596,8 +1595,8 @@ contains
        lzero_flux,nvertex,weight_sign,weight_sign2)
     implicit none
     integer (kind=int_kind)              , intent(in   ):: jx,jy
-    real (kind=real_kind), dimension(0:5), intent(inout):: xcell_flux   ,ycell_flux
-    real (kind=real_kind), dimension(0:5), intent(  out):: xcell_flux2  ,ycell_flux2
+    real (kind=real_kind), dimension(0:), intent(inout):: xcell_flux   ,ycell_flux !dimension(0:5)
+    real (kind=real_kind), dimension(0:), intent(  out):: xcell_flux2  ,ycell_flux2!dimension(0:5)
     logical                , intent(out) :: lzero_flux
     integer (kind=int_kind), intent(out):: nvertex
     real (kind=real_kind), intent(out) :: weight_sign,weight_sign2
@@ -1831,10 +1830,10 @@ contains
     use fvm_line_integrals_mod, only: area
     implicit none
     integer (kind=int_kind)                      , intent(in):: nvertex
-    real (kind=real_kind), dimension(0:nvertex+1), intent(inout):: x,y
+    real (kind=real_kind), dimension(0:), intent(inout):: x,y !dimension(0:nvertex+1)
     real (kind=real_kind)                        , intent(out  ):: weight_sign
     !
-    real (kind=real_kind), dimension(0:nvertex+1) :: xtmp,ytmp
+    real (kind=real_kind), dimension(0:nvertex+1) :: xtmp,ytmp 
 
     if (area(x(1:nvertex),y(1:nvertex),nvertex)<0) then
        xtmp(1:nvertex)=x(1:nvertex); ytmp(1:nvertex)=y(1:nvertex)
@@ -1853,7 +1852,7 @@ contains
   subroutine reverse(x,y,nvertex)
     implicit none
     integer (kind=int_kind)           , intent(in):: nvertex
-    real (kind=real_kind), dimension(0:nvertex+1), intent(inout):: x,y
+    real (kind=real_kind), dimension(0:), intent(inout):: x,y !dimension(0:nvertex+1)
     !
     real (kind=real_kind), dimension(0:nvertex+1) :: xtmp,ytmp
 
@@ -1868,11 +1867,9 @@ contains
 subroutine getdep_cellboundariesxyvec_xflux(xcell,ycell,jx,jy,acart,dcart)
 use coordinate_systems_mod, only : cartesian2D_t
   implicit none
-  real (kind=real_kind), dimension(0:5), intent(out)       :: xcell,ycell
+  real (kind=real_kind), dimension(0:), intent(out)       :: xcell,ycell !dimension(0:5)
   integer (kind=int_kind), intent(in)                      :: jx, jy
-  type (cartesian2D_t), intent(in)                         :: dcart(-1:nc+3,-1:nc+3)
-  type (cartesian2D_t), intent(in)                         :: acart(-1:nc+3,-1:nc+3)
-
+  type (cartesian2D_t), intent(in)                         :: dcart(-1:,-1:),acart(-1:,-1:) !(-1:nc+3,-1:nc+3)
 
   xcell(1) = dcart(jx,jy  )%x ; ycell(1) = dcart(jx,jy  )%y
   xcell(2) = dcart(jx,jy+1)%x ; ycell(2) = dcart(jx,jy+1)%y
@@ -1897,10 +1894,9 @@ end subroutine getdep_cellboundariesxyvec_xflux
 subroutine getdep_cellboundariesxyvec_yflux(xcell,ycell,jx,jy,acart,dcart)
 use coordinate_systems_mod, only : cartesian2D_t
   implicit none
-  real (kind=real_kind), dimension(0:5), intent(out)       :: xcell,ycell
+  real (kind=real_kind), dimension(0:), intent(out)       :: xcell,ycell !dimension(0:5)
   integer (kind=int_kind), intent(in)                      :: jx, jy
-  type (cartesian2D_t), intent(in)                         :: dcart(-1:nc+3,-1:nc+3)
-  type (cartesian2D_t), intent(in)                         :: acart(-1:nc+3,-1:nc+3)
+  type (cartesian2D_t), intent(in)                         :: dcart(-1:,-1:), acart(-1:,-1:)!(-1:nc+3,-1:nc+3)
 
   xcell(1) = dcart(jx+1,jy)%x ; ycell(1) = dcart(jx+1,jy)%y
   xcell(2) = dcart(jx  ,jy)%x ; ycell(2) = dcart(jx  ,jy)%y
@@ -1956,7 +1952,7 @@ end function isLeft
 !
 subroutine line_intersect(x,y,xintersect,yintersect,intersect)
   implicit none
-  real (kind=real_kind), DIMENSION(4), INTENT(IN ) :: x,y
+  real (kind=real_kind), DIMENSION(:), INTENT(IN ) :: x,y !dimension(4)
   real (kind=real_kind), INTENT(OUT) :: xintersect,yintersect
   integer (kind=int_kind), intent(out) :: intersect
 
