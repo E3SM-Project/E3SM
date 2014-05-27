@@ -40,34 +40,17 @@ contains
 !-----------------------------------------------------------------------------------!
 subroutine reconstruction(fcube,fvm,recons)
   use fvm_control_volume_mod, only: fvm_struct
-
   implicit none
-  real (kind=real_kind), dimension(1-nhc:nc+nhc, 1-nhc:nc+nhc), intent(in) :: fcube
-  type (fvm_struct), intent(in)                                     :: fvm
-  real (kind=real_kind), dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe), &
-                                                    intent(out)       :: recons
-  
-  real (kind=real_kind),dimension(-1:nc+2,2,2)                        :: fnewval
-  real (kind=real_kind), dimension(-1:nc+2,2,2)                       :: fhalo
-  real (kind=real_kind), dimension(0:nhe+1,2,2)                       :: fhaloex
-  
+  type (fvm_struct), intent(in)                                  :: fvm
   !
-  ! new code
-  ! 
-  real (kind=real_kind), dimension(1-nhc:nc+nhc, 1-nhc:nc+nhc)    :: fcubenew
+  ! dimension(1-nhc:nc+nhc, 1-nhc:nc+nhc)
+  !
+  real (kind=real_kind), dimension(1-nhc:, 1-nhc:), intent(in)   :: fcube
+  real (kind=real_kind), dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe), intent(out)  :: recons 
+                                                    
+
   real (kind=real_kind), dimension(1-nht:nc+nht, 1-nht:nc+nht)    :: fpanel
   real   (kind=real_kind), dimension(1-nht:nc+nht,1-nht:nc+nht,2) :: fotherpanel
-  real   (kind=real_kind), dimension(1-nht:nc+nht,1-nht:nc+nht,2) :: fotherface !dbg
-  real (kind=real_kind), dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe)   :: recons_trunk !dbg
-                                                     
-  !
-  ! pre-computed
-  !
-  ! dimension explanation: halo length, hal depth, #weights, for corner treatment
-  !
-
-
-  ! if element lies on a cube edge, recalculation the values in the halo zone
 
   call fill_halo(fcube,fvm,fpanel,fotherpanel)
   call get_reconstruction(fvm, fpanel, fotherpanel,recons)
@@ -100,9 +83,10 @@ subroutine fill_halo(fcube,fvm,fpanel,fotherpanel)!dbg
   type (fvm_struct), intent(in)                                   :: fvm
         
 
-!  real (kind=real_kind)  , dimension(1-nh:nc+nh,1:nhr,1:ns,2)    , intent(in ) :: halo_interp_weight
-  real (kind=real_kind)  , dimension(1-nht:nc+nht, 1-nht:nc+nht ), intent(out) :: fpanel
-  real   (kind=real_kind), dimension(1-nht:nc+nht,1-nht:nc+nht,2), intent(out) :: fotherpanel
+!  real (kind=real_kind)  , dimension(1-nht:nc+nht, 1-nht:nc+nht ), intent(out) :: fpanel
+!  real   (kind=real_kind), dimension(1-nht:nc+nht,1-nht:nc+nht,2), intent(out) :: fotherpanel
+  real (kind=real_kind)  , dimension(1-nht:, 1-nht:),  intent(out) :: fpanel
+  real   (kind=real_kind), dimension(1-nht:,1-nht:,:), intent(out) :: fotherpanel
 
 
   integer (kind=int_kind)                                         :: i, j, halo,ibaseref
@@ -1195,9 +1179,14 @@ subroutine get_reconstruction(fvm, fpanel, fotherpanel, recons)
   implicit none
 
   type (fvm_struct), intent(in)                                     :: fvm
-  real (kind=real_kind), dimension(    1-nht:nc+nht,1-nht:nc+nht  ), intent(in)   :: fpanel
-  real (kind=real_kind), dimension(    1-nht:nc+nht,1-nht:nc+nht,2), intent(in)   :: fotherpanel
-  real (kind=real_kind), dimension(1:5,1-nhe:nc+nhe,1-nhe:nc+nhe  ), intent(inout):: recons
+!  real (kind=real_kind), dimension(    1-nht:nc+nht,1-nht:nc+nht  ), intent(in)   :: fpanel
+!  real (kind=real_kind), dimension(    1-nht:nc+nht,1-nht:nc+nht,2), intent(in)   :: fotherpanel
+!  real (kind=real_kind), dimension(1:5,1-nhe:nc+nhe,1-nhe:nc+nhe  ), intent(inout):: recons
+!  real (kind=real_kind), dimension(1-nht:nc+nht,1-nht:nc+nht,1:5,1:5)   :: fcube_matrix
+
+  real (kind=real_kind), dimension(  1-nht:,1-nht:  ), intent(in)   :: fpanel
+  real (kind=real_kind), dimension(  1-nht:,1-nht:,:), intent(in)   :: fotherpanel
+  real (kind=real_kind), dimension(:,1-nhe:,1-nhe:  ), intent(inout):: recons
 
   real (kind=real_kind), dimension(1-nht:nc+nht,1-nht:nc+nht,1:5,1:5)   :: fcube_matrix
   integer  :: i, j, k, h
@@ -1233,9 +1222,12 @@ end subroutine get_reconstruction
 subroutine fill_fcube_matrix(fvm,fpanel,fotherpanel,fcube_matrix)
   implicit none
   type (fvm_struct), intent(in)                                                    :: fvm
-  real (kind=real_kind), dimension(1-nht:nc+nht,1-nht:nc+nht        ), intent(in)  :: fpanel
-  real (kind=real_kind), dimension(1-nht:nc+nht,1-nht:nc+nht,2      ), intent(in)  :: fotherpanel
-  real (kind=real_kind), dimension(1-nht:nc+nht,1-nht:nc+nht,1:5,1:5), intent(out) :: fcube_matrix
+!  real (kind=real_kind), dimension(1-nht:nc+nht,1-nht:nc+nht        ), intent(in)  :: fpanel
+!  real (kind=real_kind), dimension(1-nht:nc+nht,1-nht:nc+nht,2      ), intent(in)  :: fotherpanel
+!  real (kind=real_kind), dimension(1-nht:nc+nht,1-nht:nc+nht,1:5,1:5), intent(out) :: fcube_matrix
+  real (kind=real_kind), dimension(1-nht:,1-nht:    ), intent(in)  :: fpanel
+  real (kind=real_kind), dimension(1-nht:,1-nht:,:  ), intent(in)  :: fotherpanel
+  real (kind=real_kind), dimension(1-nht:,1-nht:,:,:), intent(out) :: fcube_matrix
   integer  :: i,j, k
 
   integer, dimension(2)  :: imin,imax,jmin,jmax,invx,invy
@@ -1276,7 +1268,8 @@ end subroutine fill_fcube_matrix
 
 subroutine get_fcube_matrix(fcube_matrix,f)
   implicit none
-  real (kind=real_kind), dimension(1:5,1:5),intent(out) :: fcube_matrix
+!  real (kind=real_kind), dimension(1:5,1:5),intent(out) :: fcube_matrix
+  real (kind=real_kind), dimension(:,:),intent(out) :: fcube_matrix
   real (kind=real_kind), dimension(-2:2,-2:2), intent(in)   :: f
   ! for x-derivative
   fcube_matrix(1,:) = f(:,0); fcube_matrix(3,:) = fcube_matrix(1,:)
@@ -1290,7 +1283,8 @@ end subroutine get_fcube_matrix
 
 subroutine get_fcube_matrix_otherpanel(fcube_matrix,f,invx,invy)
   implicit none
-  real (kind=real_kind), dimension(1:5,1:5)  , intent(out) :: fcube_matrix
+!  real (kind=real_kind), dimension(1:5,1:5)  , intent(out) :: fcube_matrix
+  real (kind=real_kind), dimension(:,:)  , intent(out) :: fcube_matrix
   real (kind=real_kind), dimension(-2:2,-2:2), intent(in)  :: f
   integer                                    , intent(in)  :: invx, invy
 
@@ -1310,7 +1304,8 @@ end subroutine get_fcube_matrix_otherpanel
 
 subroutine get_fcube_matrix_otherpanel_swap(fcube_matrix,f,invx,invy)
   implicit none
-  real (kind=real_kind), dimension(1:5,1:5)  , intent(out) :: fcube_matrix
+!  real (kind=real_kind), dimension(1:5,1:5)  , intent(out) :: fcube_matrix
+  real (kind=real_kind), dimension(:,:)  , intent(out) :: fcube_matrix
   real (kind=real_kind), dimension(-2:2,-2:2), intent(in)  :: f
   integer                                    , intent(in)  :: invx, invy
 
@@ -1340,7 +1335,6 @@ subroutine debug_halo(fvm,fcubenew,fpanel)!
         
   real (kind=real_kind),   &
         dimension(1-nhc:nc+nhc, 1-nhc:nc+nhc), intent(in)            :: fcubenew !dbg
-!phl        dimension(1-nhc:nc+nhc, 1-nhc:nc+nhc)                     :: fcubenew
   real (kind=real_kind), dimension(1-nht:nc+nht, 1-nht:nc+nht) :: fpanel
 
   integer (kind=int_kind)                                         :: i, j
