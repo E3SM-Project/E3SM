@@ -130,6 +130,9 @@ contains
 
   subroutine run_advection(block, dt)
 
+    use cice_diagnostics, only: &
+         plot_spherical_latlon
+
     type (block_type), intent(inout) :: block
 
     real(kind=RKIND), intent(in) :: &
@@ -180,8 +183,6 @@ contains
          verticalCellSize)
 
     do iTracerVariable = 1, nTracerVariables
-
-       write(*,*) "iTracerVariable: ", iTracerVariable, trim(tracerConnectivity(iTracerVariable,1)), trim(tracerConnectivity(iTracerVariable,2))
 
        call run_advection_variable(&
             mesh, &
@@ -248,8 +249,6 @@ contains
     type (mpas_pool_field_info_type) :: childFieldInfo
 
     call mpas_pool_get_field_info(tracers, trim(childTracerName), childFieldInfo)
-
-    write(*,*) trim(childTracerName), "  childFieldInfo % nDims", childFieldInfo % nDims
 
     if (childFieldInfo % nDims == 3) then
 
@@ -602,10 +601,10 @@ contains
          dt,                              & ! 
          mesh,                            & ! 
          parentTendency(1,:,:),           & ! (nCategories, nCells)
-         childTendency,                   & ! (nTracers, nCategories, nCells)
-         highOrderAdvectionMask_in =      & ! (nCategories nEdges)
-         highOrderAdvectionMask)!,          &
-         !lvertical_in=.false.)
+         childTendency                    & ! (nTracers, nCategories, nCells)
+         !highOrderAdvectionMask_in =      & ! (nCategories nEdges)
+         !highOrderAdvectionMask,          &
+         )
 
     ! apply the advective changes
     do iCell = 1, nCells
@@ -709,6 +708,22 @@ contains
          edgeFlux, &
          verticalVelocity, &
          verticalCellSize
+
+    !!! Testing - final chnages to tracer
+    real(kind=RKIND), dimension(:,:,:), pointer :: area_new, area_old
+
+    integer :: iCell
+    integer, pointer :: nCells
+
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+
+    call MPAS_pool_get_array(tracers, "iceAreaCategory", area_old, 1)
+    call MPAS_pool_get_array(tracers, "iceAreaCategory", area_new, 2)
+
+    do iCell = 1, nCells
+       if (iCell >= 8200 .and. iCell <= 8300) write(*,*) iCell, area_old(1,1,iCell), area_new(1,1,iCell)
+    enddo ! iCell
+    !!! Testing
 
     call finalize_tracers(&
          mesh, &
