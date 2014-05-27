@@ -1119,12 +1119,13 @@ subroutine interpolation_point(gnom,gnom1d,face1,face2,xy,point,ida,ide,iref,iba
   !
   ! this routine works for ns=1 and ns even
   !
-  if (ns==1) then
+  if (MOD(ns,2)==1) then
      !
      ! no halo interpolation option - for debugging
      !
      if (gnom1d(iref)-point>point-gnom1d(iref-1)) iref=iref-1
-     ibaseref = min(max(iref,ida),ide)
+     iref=iref-((ns-1)/2)
+     ibaseref = min(max(iref,ida),ide-(ns-1))
      point=point-gnom1d(ibaseref)
   else if (MOD(ns, 2)==0) then
      !
@@ -1136,9 +1137,6 @@ subroutine interpolation_point(gnom,gnom1d,face1,face2,xy,point,ida,ide,iref,iba
      iref = iref-ns/2
      ibaseref = min(max(iref,ida),ide-(ns-1))
      point=point-gnom1d(ibaseref)
-  else
-     write(*,*) "ns must be 1 or even integer! Aborting ..."
-     call haltmp("stopping")
   end if
 end subroutine interpolation_point
 !END SUBROUTINE INTERPOLATION_POINT---------------------------------------CE-for FVM!
@@ -1161,7 +1159,6 @@ subroutine compute_halo_weights(fvm)
   fvm%halo_interp_weight(:,:,:,:) = 9.99E9 !dbg
 
   if (fvm%cubeboundary>0) then
-     
      if (fvm%cubeboundary<5) then
         !
         ! element is located at a panel side but is not a corner element

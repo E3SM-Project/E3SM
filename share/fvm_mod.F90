@@ -17,7 +17,7 @@ module fvm_mod
   use edge_mod, only : ghostbuffertr_t, initghostbufferTR, freeghostbuffertr, &
        ghostVpack, ghostVunpack,  edgebuffer_t, initEdgebuffer
   use bndry_mod, only: ghost_exchangeV                     
-  use dimensions_mod, only: nelem, nelemd, nelemdmax, nlev, ne, nc, nhe, nlev, ntrac, np, ntrac_d,ns
+  use dimensions_mod, only: nelem, nelemd, nelemdmax, nlev, ne, nc, nhe, nlev, ntrac, np, ntrac_d,ns, nhr
   use time_mod, only : timelevel_t
   use element_mod, only : element_t, timelevels
   use fvm_control_volume_mod, only: fvm_struct
@@ -866,23 +866,37 @@ contains
        else if (ns==2) then
           print *, "ns==2: using linear interpolation for mapping cell averages values across edges"
           print *, "Note that ns=4 is default CSLAM setting used in Lauritzen et al. (2010)"
-          print *, "so this option is slightly less accurate (but the stencil is smaller near panel edges!"
+          print *, "so this option is slightly less accurate (but the stencil is smaller near panel edges!)"
+
+       else if (ns==3) then
+          print *, "ns==3: using quadratic interpolation for mapping cell averages values across edges"
+          print *, "Note that ns=4 is default CSLAM setting used in Lauritzen et al. (2010)"
+          print *, "so this option is slightly less accurate (but the stencil is smaller near panel edges!)"
        else if (ns==4) then
           print *, "ns==4: using cubic interpolation for mapping cell averages values across edges"
           print *, "default CSLAM setting used in Lauritzen et al. (2010)"
-       else if (mod(ns,2)==0) then
+       else 
           print *, "Not a tested value for ns but it should work! You choose ns = ",ns
-       else
-          print *, "ns must be 1 or even integer. You choose ns = ",ns
-          stop
        end if
     end if
 
-    if (nc==3.and.ns.ne.2) then
+    if (MOD(ns,2)==0.and.nhr+(nhe-1)+ns/2>nc+nc) then
+       print *, "to run this combination of ns and nhr you need to increase nc to ",nhr+ns/2+nhe-1
+       print *, "You choose (ns,nhr,nc,nhe)=",ns,nhr,nc,nhe
+       call haltmp("stopping")
+    end if
+    if (MOD(ns,2)==1.and.nhr+(ns-1)/2+(nhe-1)>nc+nc) then
+       print *, "to run this combination of ns and nhr you need to increase nc to ",nhr+(ns-1)/2+nhe-1
+       print *, "You choose (ns,nhr,nc,nhe)=",ns,nhr,nc,nhe
+       call haltmp("stopping")
+    end if
+
+    if (nc==3.and.ns.ne.3) then
        if (par%masterproc) then
-          print *, "Recommended setting for nc=3 is ns=2 (linear interpolation in halo)"
+          print *, "Recommended setting for nc=3 is ns=3 (linear interpolation in halo)"
           print *, "You choose ns=",ns
           print *, "Goto dimensions_mod to change value of ns"
+          print *, "or outcomment call haltmop below (i.e. you know what you are doing!)"
        endif
        call haltmp("stopping")
     end if
@@ -892,6 +906,7 @@ contains
           print *, "Recommended setting for nc=4 is ns=4 (cubic interpolation in halo)"
           print *, "You choose ns=",ns
           print *, "Goto dimensions_mod to change value of ns"
+          print *, "or outcomment call haltmop below (i.e. you know what you are doing!)"
        endif
        call haltmp("stopping")
     end if
