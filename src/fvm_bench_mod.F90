@@ -14,7 +14,7 @@ module fvm_bench_mod
   use kinds, only : real_kind, int_kind, longdouble_kind
   use edge_mod, only : freeghostbuffertr, ghostVpack, ghostVunpack, &
                        edgeVpack, edgeVunpack, freeedgebuffer 
-  use dimensions_mod, only: nelem, nelemd, nelemdmax, nlev, np, ne, nc, nhc, nhe, nlev, ntrac
+  use dimensions_mod, only: nelem, nelemd, nelemdmax, nlev, np, ne, nc, nhe, nlev, ntrac
   use time_mod, only : timelevel_t
   use element_mod, only : element_t, timelevels
   use hybrid_mod, only : hybrid_t
@@ -145,8 +145,8 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
     ! reset the new unknown
     do k=1,nlev
       do itr=1,ntrac
-        do j=1-nhc,nc+nhc
-          do i=1-nhc,nc+nhc 
+        do j=1-nc,nc+nc
+          do i=1-nc,nc+nc 
           fvm(ie)%c(i,j,k,itr,tl%np1)=0.0D0
           end do
         end do

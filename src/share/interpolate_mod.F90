@@ -5,7 +5,7 @@
 module interpolate_mod
   use kinds, only : real_kind, iulog
   use element_mod, only : element_t
-  use dimensions_mod, only : np, ne, nelemd, nc, nhe, nhc
+  use dimensions_mod, only : np, ne, nelemd, nc, nhe
   use quadrature_mod, only : quadrature_t, legendre, quad_norm
   use coordinate_systems_mod, only : spherical_polar_t, cartesian2d_t, &
        cartesian3D_t, sphere2cubedsphere, spherical_to_cart, &
@@ -615,7 +615,7 @@ subroutine interpol_phys_latlon(interpdata,f, fvm, corners, desc, flatlon)
   use edge_mod, only : edgedescriptor_t
   
   type (interpdata_t), intent(in)     :: interpdata                        
-  real (kind=real_kind), intent(in)   :: f(1-nhc:nc+nhc,1-nhc:nc+nhc)
+  real (kind=real_kind), intent(in)   :: f(1-nc:nc+nc,1-nc:nc+nc)
   type (fvm_struct), intent(in)       :: fvm
   type (cartesian2d_t), intent(in)    :: corners(:)
   type (edgedescriptor_t),intent(in)  :: desc
