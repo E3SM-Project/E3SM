@@ -17,7 +17,7 @@ module fvm_control_volume_mod
   ! ---------------------------------------------------------------------------------
   use element_mod, only: timelevels, element_t
   ! ---------------------------------------------------------------------------------
-  use dimensions_mod, only: nc, nhc, nhe, nlev, ntrac, ntrac_d, ne, np, nhr, ns
+  use dimensions_mod, only: nc, nhe, nlev, ntrac, ntrac_d, ne, np, nhr, ns
   ! ---------------------------------------------------------------------------------
   use control_mod, only : north, south, east, west, neast, nwest, seast, swest
   ! ---------------------------------------------------------------------------------
@@ -37,8 +37,8 @@ module fvm_control_volume_mod
 
   type, public :: fvm_struct
     ! fvm tracer mixing ratio: (kg/kg)
-    real (kind=real_kind) :: c(1-nhc:nc+nhc,1-nhc:nc+nhc,nlev,ntrac_d,timelevels) 
-    real (kind=real_kind) :: psc(1-nhc:nc+nhc,1-nhc:nc+nhc)
+    real (kind=real_kind) :: c(1-nc:nc+nc,1-nc:nc+nc,nlev,ntrac_d,timelevels) 
+    real (kind=real_kind) :: psc(1-nc:nc+nc,1-nc:nc+nc)
     real (kind=real_kind) :: cstart(1:nc,1:nc)
 !-----------------------------------------------------------------------------------!
     ! define the arrival grid, which is build on the original HOMME elements
@@ -212,8 +212,8 @@ subroutine create_ari(elem, fvm)
   !
   do j=1,nc
     do i=1,nc
-      centerx = tan(elem%corners(1)%x+(i-0.5)*fvm%dalpha)  
-      centery = tan(elem%corners(1)%y+(j-0.5)*fvm%dbeta) 
+      centerx = tan(elem%corners(1)%x+(i-0.5D0)*fvm%dalpha)  
+      centery = tan(elem%corners(1)%y+(j-0.5D0)*fvm%dbeta) 
       fvm%centersphere(i,j) = &
             cart2spherical(centerx,centery,fvm%faceno)
            
@@ -881,19 +881,18 @@ end subroutine create_ari
 !-----------------------------------------------------------------------------------!
 subroutine create_interpolation_points(elem,fvm)
   implicit none
-  type (element_t), intent(in)      :: elem
-  type (fvm_struct), intent(inout)   :: fvm  
+  type (element_t), intent(in)     :: elem
+  type (fvm_struct), intent(inout) :: fvm  
   
-  real    (kind=real_kind), dimension(1-nc:nc+nc)  :: gnomxstart, gnomxend, &
-                                                        gnomystart, gnomyend
-  integer                                       :: i, halo, ida, ide, iref1, iref2
-  type (cartesian2D_t)                          :: tmpgnom     
+  real    (kind=real_kind), dimension(1-nc:nc+nc) :: gnomxstart, gnomxend, gnomystart, gnomyend
+  integer                                         :: i, halo, ida, ide, iref1, iref2
+  type (cartesian2D_t)                            :: tmpgnom     
 
   ! element is not on a corner, but shares a cube edge (call of subroutine)
   if(fvm%cubeboundary <= 4) then
-    gnomxstart(1-nhc)=elem%corners(1)%x-(nhc-0.5)*fvm%dalpha
-    gnomystart(1-nhc)=elem%corners(1)%y-(nhc-0.5)*fvm%dbeta
-    do i=2-nhc,nc+nhc
+    gnomxstart(1-nc)=elem%corners(1)%x-(nc-0.5D0)*fvm%dalpha
+    gnomystart(1-nc)=elem%corners(1)%y-(nc-0.5D0)*fvm%dbeta
+    do i=2-nc,nc+nc
       gnomxstart(i)=gnomxstart(i-1)+fvm%dalpha
       gnomystart(i)=gnomystart(i-1)+fvm%dbeta
     end do
@@ -907,7 +906,7 @@ subroutine create_interpolation_points(elem,fvm)
       case(west) 
         do halo=1,nhr
           iref1=ida
-          tmpgnom%x=cube_xstart-(halo-0.5)*fvm%dalpha
+          tmpgnom%x=cube_xstart-(halo-0.5D0)*fvm%dalpha
           do i=halo-nh,nc+nh-(halo-1) !see fvm_reconstruction to understand these boundaries
             tmpgnom%y=gnomystart(i)
             call interpolation_point(tmpgnom,gnomystart,1,4,1,interp(i,halo,1),&
@@ -920,7 +919,7 @@ subroutine create_interpolation_points(elem,fvm)
         ! east zone
         do halo=1,nhr
           iref1=ida
-          tmpgnom%x=cube_xend+(halo-0.5)*fvm%dalpha
+          tmpgnom%x=cube_xend+(halo-0.5D0)*fvm%dalpha
           do i=halo-nh,nc+nh-(halo-1)
             tmpgnom%y=gnomystart(i)
             call interpolation_point(tmpgnom,gnomystart,1,2,1,interp(i,halo,1),&
@@ -932,7 +931,7 @@ subroutine create_interpolation_points(elem,fvm)
       case(north)
         ! north zone
         do halo=1,nhr 
-          tmpgnom%y=cube_yend+(halo-0.5)*fvm%dbeta
+          tmpgnom%y=cube_yend+(halo-0.5D0)*fvm%dbeta
           iref1=ida 
           do i=halo-nh,nc+nh-(halo-1)
             tmpgnom%x=gnomxstart(i)
@@ -949,7 +948,7 @@ subroutine create_interpolation_points(elem,fvm)
        !south zone
        do halo=1,nhr
           iref1=ida
-          tmpgnom%y=cube_ystart-(halo-0.5)*fvm%dbeta
+          tmpgnom%y=cube_ystart-(halo-0.5D0)*fvm%dbeta
           do i=halo-nh,nc+nh-(halo-1)
             tmpgnom%x=gnomxstart(i)
             call interpolation_point(tmpgnom,gnomxstart,1,5,0,interp(i,halo,2),&
@@ -965,11 +964,11 @@ subroutine create_interpolation_points(elem,fvm)
     end select
   !CORNER TREATMENT
   else  
-    gnomxstart(1-nhc)=cube_xstart-(nhc-0.5)*fvm%dalpha
-    gnomxend(nc+nhc)=cube_xend+(nhc-0.5)*fvm%dalpha
-    gnomystart(1-nhc)=cube_ystart-(nhc-0.5)*fvm%dbeta
-    gnomyend(nc+nhc)=cube_yend+(nhc-0.5)*fvm%dbeta
-    do i=2-nhc,nc+nhc
+    gnomxstart(1-nc)=cube_xstart-(nc-0.5D0)*fvm%dalpha
+    gnomxend(nc+nc)=cube_xend+(nc-0.5D0)*fvm%dalpha
+    gnomystart(1-nc)=cube_ystart-(nc-0.5D0)*fvm%dbeta
+    gnomyend(nc+nc)=cube_yend+(nc-0.5D0)*fvm%dbeta
+    do i=2-nc,nc+nc
       gnomxstart(i)=gnomxstart(i-1)+fvm%dalpha
       gnomxend(nc+1-i)=gnomxend(nc+2-i)-fvm%dalpha
       gnomystart(i)=gnomystart(i-1)+fvm%dbeta
@@ -981,7 +980,7 @@ subroutine create_interpolation_points(elem,fvm)
       case(swest) 
         ! west zone
         do halo=1,nhr
-          tmpgnom%x=cube_xstart-(halo-0.5)*fvm%dalpha
+          tmpgnom%x=cube_xstart-(halo-0.5D0)*fvm%dalpha
           ida=1
           ide=nc+nc
           iref1=ida
@@ -995,7 +994,7 @@ subroutine create_interpolation_points(elem,fvm)
       case(seast)
         ! east zone
         do halo=1,nhr
-          tmpgnom%x=cube_xend+(halo-0.5)*fvm%dalpha
+          tmpgnom%x=cube_xend+(halo-0.5D0)*fvm%dalpha
           ida=1
           ide=nc+nc
           iref1=ida
@@ -1009,7 +1008,7 @@ subroutine create_interpolation_points(elem,fvm)
       case(neast)
         ! east zone
         do halo=1,nhr
-          tmpgnom%x=cube_xend+(halo-0.5)*fvm%dalpha
+          tmpgnom%x=cube_xend+(halo-0.5D0)*fvm%dalpha
           ida=1-nc
           ide=nc
           iref1=ida
@@ -1023,7 +1022,7 @@ subroutine create_interpolation_points(elem,fvm)
       case(nwest)
         ! west zone
         do halo=1,2
-          tmpgnom%x=cube_xstart-(halo-0.5)*fvm%dalpha
+          tmpgnom%x=cube_xstart-(halo-0.5D0)*fvm%dalpha
           ida=1-nc
           ide=nc
           iref1=ida
@@ -1085,15 +1084,14 @@ subroutine interpolation_point(gnom,gnom1d,face1,face2,xy,point,ida,ide,iref,iba
   
   use coordinate_systems_mod, only : cubedsphere2cart, cart2cubedsphere, &
                                      cartesian2D_t,cartesian3D_t
-
+  use parallel_mod, only : haltmp
   implicit none
-  type (cartesian2D_t), intent(in)                                :: gnom  
-  real (kind=real_kind), dimension(1-nhc:nc+nhc), intent(in)      :: gnom1d  
-  integer, intent(in)                                             :: face1, face2, xy
-  integer,intent(in)                                              :: ida, ide
-  integer,intent(inout)                                           :: iref,ibaseref
-  real (kind=real_kind), intent(inout)                            :: point
-  
+  type (cartesian2D_t), intent(in)                     :: gnom  
+  real (kind=real_kind), dimension(1-nc:), intent(in) :: gnom1d  !dimension(1-nc:nc+nc)
+  integer, intent(in)                                  :: face1, face2, xy
+  integer,intent(in)                                   :: ida, ide
+  integer,intent(inout)                                :: iref,ibaseref
+  real (kind=real_kind), intent(inout)                 :: point
   
   type(cartesian3D_t)                 :: tmpcart3d
   type (cartesian2D_t)                :: tmpgnom
@@ -1128,7 +1126,7 @@ subroutine interpolation_point(gnom,gnom1d,face1,face2,xy,point,ida,ide,iref,iba
      if (gnom1d(iref)-point>point-gnom1d(iref-1)) iref=iref-1
      ibaseref = min(max(iref,ida),ide)
      point=point-gnom1d(ibaseref)
-  else
+  else if (MOD(ns, 2)==0) then
      !
      ! this code is only coded for ns even
      !
@@ -1138,6 +1136,9 @@ subroutine interpolation_point(gnom,gnom1d,face1,face2,xy,point,ida,ide,iref,iba
      iref = iref-ns/2
      ibaseref = min(max(iref,ida),ide-(ns-1))
      point=point-gnom1d(ibaseref)
+  else
+     write(*,*) "ns must be 1 or even integer! Aborting ..."
+     call haltmp("stopping")
   end if
 end subroutine interpolation_point
 !END SUBROUTINE INTERPOLATION_POINT---------------------------------------CE-for FVM!
@@ -1150,7 +1151,7 @@ subroutine compute_halo_weights(fvm)
   implicit none
   type (fvm_struct), intent(inout)     :: fvm
   
-  integer                                       :: i, halo, ibaseref
+  integer                              :: i, halo, ibaseref
   !
   ! pre-compute weight/index matrices
   !
@@ -1210,7 +1211,7 @@ end subroutine compute_halo_weights
 
 ! ---------------------------------------------------------------------!
 !                                                                      !
-! Precompute weights for cubic Lagrange interpolation                  !
+! Precompute weights for Lagrange interpolation                        !
 ! for equi-distant source grid values                                  !
 !                                                                      !
 !----------------------------------------------------------------------!
@@ -1225,12 +1226,12 @@ subroutine get_equispace_weights(dx, x,w)
   implicit none
   real (kind=real_kind),intent(in)                  :: dx  ! spacing of points, alpha/beta
   real (kind=real_kind),intent(in)                  :: x   ! X coordinate where interpolation is to be applied
-  real (kind=real_kind),dimension(ns),intent(out)    :: w
+  real (kind=real_kind),dimension(:),intent(out)    :: w   ! dimension(ns)
   !
   real (kind=real_kind) :: dx3
   integer :: j,k
   !
-  ! use Lagrange interpolation formulate, e.g.,: 
+  ! use Lagrange interpolation formulae, e.g.,: 
   !
   !                http://mathworld.wolfram.com/LagrangeInterpolatingPolynomial.html
   !

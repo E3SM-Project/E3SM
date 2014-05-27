@@ -17,7 +17,7 @@ module fvm_mod
   use edge_mod, only : ghostbuffertr_t, initghostbufferTR, freeghostbuffertr, &
        ghostVpack, ghostVunpack,  edgebuffer_t, initEdgebuffer
   use bndry_mod, only: ghost_exchangeV                     
-  use dimensions_mod, only: nelem, nelemd, nelemdmax, nlev, ne, nc, nhc, nhe, nlev, ntrac, np, ntrac_d,ns
+  use dimensions_mod, only: nelem, nelemd, nelemdmax, nlev, ne, nc, nhe, nlev, ntrac, np, ntrac_d,ns
   use time_mod, only : timelevel_t
   use element_mod, only : element_t, timelevels
   use fvm_control_volume_mod, only: fvm_struct
@@ -85,9 +85,9 @@ contains
     
     real (kind=real_kind), dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe)      :: recons
     
-    real (kind=real_kind), dimension(1-nhc:nc+nhc,1-nhc:nc+nhc)        :: tracer0 
+    real (kind=real_kind), dimension(1-nc:nc+nc,1-nc:nc+nc)        :: tracer0 
     
-    real (kind=real_kind), dimension(1-nhc:nc+nhc,1-nhc:nc+nhc)        :: tracer_air0   
+    real (kind=real_kind), dimension(1-nc:nc+nc,1-nc:nc+nc)        :: tracer_air0   
 !    real (kind=real_kind), dimension(1:nc,1:nc)                        :: tracer1, tracer_air1 !dbg
     real (kind=real_kind), dimension(1:nc,1:nc):: cslam_area, fluxform_effective_area, &
          area_flux !dbg
@@ -259,19 +259,19 @@ contains
           enddo  !End Tracer
        end do  !End Level
        !note write tl%np1 in buffer
-       call ghostVpack(cellghostbuf, fvm(ie)%c,nhc,nc,nlev,ntrac,0,tl%np1,timelevels,elem(ie)%desc)
+       call ghostVpack(cellghostbuf, fvm(ie)%c,nc,nc,nlev,ntrac,0,tl%np1,timelevels,elem(ie)%desc)
     end do
 !    write(*,*) "done flux-form time-step run"
 !    write(*,*) "jall_max ",tl%nstep,jall_max
     !  stop
     call t_stopf('Fluxform-CSLAM scheme')
     call t_startf('FVM Communication')
-    call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc,ntrac)
+    call ghost_exchangeV(hybrid,cellghostbuf,nc,nc,ntrac)
     call t_stopf('FVM Communication')
     !-----------------------------------------------------------------------------------!
     call t_startf('FVM Unpack')
     do ie=nets,nete
-       call ghostVunpack(cellghostbuf, fvm(ie)%c, nhc, nc,nlev,ntrac, 0, tl%np1, timelevels,elem(ie)%desc)
+       call ghostVunpack(cellghostbuf, fvm(ie)%c, nc, nc,nlev,ntrac, 0, tl%np1, timelevels,elem(ie)%desc)
     enddo
     call t_stopf('FVM Unpack')
     call freeghostbuffertr(buflatlon)
@@ -314,9 +314,9 @@ contains
     
     real (kind=real_kind), dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe)      :: recons
     
-    real (kind=real_kind), dimension(1-nhc:nc+nhc,1-nhc:nc+nhc)        :: tracer0 
+    real (kind=real_kind), dimension(1-nc:nc+nc,1-nc:nc+nc)        :: tracer0 
     
-    real (kind=real_kind), dimension(1-nhc:nc+nhc,1-nhc:nc+nhc)        :: tracer_air0   
+    real (kind=real_kind), dimension(1-nc:nc+nc,1-nc:nc+nc)        :: tracer_air0   
     real (kind=real_kind), dimension(1:nc,1:nc)                        :: tracer1, tracer_air1 
     real (kind=real_kind), dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe)      :: recons_air   
     
@@ -392,16 +392,16 @@ contains
           enddo  !End Tracer
        end do  !End Level
        !note write tl%np1 in buffer
-       call ghostVpack(cellghostbuf, fvm(ie)%c,nhc,nc,nlev,ntrac,0,tl%np1,timelevels,elem(ie)%desc)
+       call ghostVpack(cellghostbuf, fvm(ie)%c,nc,nc,nlev,ntrac,0,tl%np1,timelevels,elem(ie)%desc)
     end do
     call t_stopf('CSLAM scheme')
     call t_startf('FVM Communication')
-    call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc,ntrac)
+    call ghost_exchangeV(hybrid,cellghostbuf,nc,nc,ntrac)
     call t_stopf('FVM Communication')
     !-----------------------------------------------------------------------------------!
     call t_startf('FVM Unpack')
     do ie=nets,nete
-       call ghostVunpack(cellghostbuf, fvm(ie)%c, nhc, nc,nlev,ntrac, 0, tl%np1, timelevels,elem(ie)%desc)
+       call ghostVunpack(cellghostbuf, fvm(ie)%c, nc, nc,nlev,ntrac, 0, tl%np1, timelevels,elem(ie)%desc)
     enddo
     call t_stopf('FVM Unpack')
     call freeghostbuffertr(buflatlon)
@@ -443,7 +443,7 @@ contains
     integer (kind=int_kind)                                          :: jall
     
     real (kind=real_kind), dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe)      :: recons
-    real (kind=real_kind), dimension(1-nhc:nc+nhc,1-nhc:nc+nhc)        :: tracer0 
+    real (kind=real_kind), dimension(1-nc:nc+nc,1-nc:nc+nc)        :: tracer0 
     real (kind=real_kind), dimension(1:nc,1:nc)                        :: tracer1
     type (ghostBuffertr_t)                      :: buflatlon
     
@@ -499,17 +499,17 @@ contains
           
        end do  !End Level
        !note write tl%np1 in buffer
-       call ghostVpack(cellghostbuf, fvm(ie)%c,nhc,nc,nlev,ntrac,0,tl%np1,timelevels,elem(ie)%desc)
+       call ghostVpack(cellghostbuf, fvm(ie)%c,nc,nc,nlev,ntrac,0,tl%np1,timelevels,elem(ie)%desc)
     end do
     
     call t_startf('FVM Communication')
-    call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc,ntrac)
+    call ghost_exchangeV(hybrid,cellghostbuf,nc,nc,ntrac)
     call t_stopf('FVM Communication')
     
     !-----------------------------------------------------------------------------------!
     call t_startf('FVM Unpack')!   !-----------------------------------------------------------------------------------!
     do ie=nets,nete
-       call ghostVunpack(cellghostbuf, fvm(ie)%c, nhc, nc,nlev,ntrac, 0, tl%np1, timelevels,elem(ie)%desc)
+       call ghostVunpack(cellghostbuf, fvm(ie)%c, nc, nc,nlev,ntrac, 0, tl%np1, timelevels,elem(ie)%desc)
     enddo
     !-----------------------------------------------------------------------------------!
     call t_stopf('FVM Unpack')
@@ -551,9 +551,9 @@ contains
   !   integer (kind=int_kind)                                          :: jall
   !     
   !   real (kind=real_kind), dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe)      :: recons
-  !   real (kind=real_kind), dimension(1-nhc:nc+nhc,1-nhc:nc+nhc)        :: tracer0 
+  !   real (kind=real_kind), dimension(1-nc:nc+nc,1-nc:nc+nc)        :: tracer0 
   !   
-  !   real (kind=real_kind), dimension(1-nhc:nc+nhc,1-nhc:nc+nhc)        :: tracer_air0   
+  !   real (kind=real_kind), dimension(1-nc:nc+nc,1-nc:nc+nc)        :: tracer_air0   
   !   real (kind=real_kind), dimension(1:nc,1:nc)                        :: tracer1, tracer_air1 
   !   real (kind=real_kind), dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe)      :: recons_air   
   !    
@@ -600,14 +600,14 @@ contains
   !       enddo  !End Tracer
   !     end do  !End Level
   !     !note write tl%np1 in buffer
-  !     call ghostVpack(cellghostbuf, fvm(ie)%c,nhc,nc,nlev,ntrac,0,tl%np1,timelevels,elem(ie)%desc)
+  !     call ghostVpack(cellghostbuf, fvm(ie)%c,nc,nc,nlev,ntrac,0,tl%np1,timelevels,elem(ie)%desc)
   !   end do
   !   call t_startf('FVM Communication')
-  !   call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc,ntrac)
+  !   call ghost_exchangeV(hybrid,cellghostbuf,nc,nc,ntrac)
   !   call t_stopf('FVM Communication')
   !   !-----------------------------------------------------------------------------------!
   !   do ie=nets,nete
-  !      call ghostVunpack(cellghostbuf, fvm(ie)%c, nhc, nc,nlev,ntrac, 0, tl%np1, timelevels,elem(ie)%desc)
+  !      call ghostVunpack(cellghostbuf, fvm(ie)%c, nc, nc,nlev,ntrac, 0, tl%np1, timelevels,elem(ie)%desc)
   !   enddo
   ! end subroutine cslam_runair
   
@@ -616,7 +616,7 @@ contains
   subroutine cslam_remap(tracer0,tracer1,weights,recons,centroid, &
        weights_eul_index_all, weights_lgr_index_all, jall, iflux)
     
-    real (kind=real_kind),   intent(in)        :: tracer0(1-nhc:nc+nhc,1-nhc:nc+nhc)
+    real (kind=real_kind),   intent(in)        :: tracer0(1-nc:nc+nc,1-nc:nc+nc)
     integer (kind=int_kind), intent(in)        :: iflux !to accomodate flux call
     real (kind=real_kind),   intent(inout)     :: tracer1(1:nc+iflux,1:nc+iflux)
     integer (kind=int_kind), intent(in)        :: jall  
@@ -660,7 +660,7 @@ contains
   subroutine cslam_remap_q(tracer0,flux,weights,recons,centroid, &
        weights_eul_index_all, weights_lgr_index_all, jall)
     
-    real (kind=real_kind), intent(in)           :: tracer0(1-nhc:nc+nhc,1-nhc:nc+nhc)
+    real (kind=real_kind), intent(in)           :: tracer0(1-nc:nc+nc,1-nc:nc+nc)
     real (kind=real_kind), intent(inout)        :: flux(1:nc+1,1:nc+1)
     integer (kind=int_kind), intent(in)         :: jall  
     real (kind=real_kind), intent(in)           :: weights(:,:)
@@ -782,9 +782,9 @@ contains
   subroutine cslam_remap_air(tracer0,tracer1,tracer_air, weights,recons, recons_air, centroid, &
        weights_eul_index_all, weights_lgr_index_all, jall)
     
-    real (kind=real_kind), intent(in)           :: tracer0(1-nhc:nc+nhc,1-nhc:nc+nhc)
+    real (kind=real_kind), intent(in)           :: tracer0(1-nc:nc+nc,1-nc:nc+nc)
     real (kind=real_kind), intent(inout)        :: tracer1(1:nc,1:nc)
-    real (kind=real_kind), intent(in)           :: tracer_air(1-nhc:nc+nhc,1-nhc:nc+nhc)
+    real (kind=real_kind), intent(in)           :: tracer_air(1-nc:nc+nc,1-nc:nc+nc)
     real (kind=real_kind), intent(in)           :: recons(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
     real (kind=real_kind), intent(in)           :: recons_air(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
  
@@ -870,8 +870,10 @@ contains
        else if (ns==4) then
           print *, "ns==4: using cubic interpolation for mapping cell averages values across edges"
           print *, "default CSLAM setting used in Lauritzen et al. (2010)"
+       else if (mod(ns,2)==0) then
+          print *, "Not a tested value for ns but it should work! You choose ns = ",ns
        else
-          print *, "value of ns not supported/tested: ns = ",ns
+          print *, "ns must be 1 or even integer. You choose ns = ",ns
           stop
        end if
     end if
@@ -906,7 +908,7 @@ contains
        call haltmp("PARAMTER ERROR for fvm: ntrac > ntrac_d")
     endif
     
-    call initghostbufferTR(cellghostbuf,nlev,ntrac,nhc,nc) !+1 for the air_density, which comes from SE
+    call initghostbufferTR(cellghostbuf,nlev,ntrac,nc,nc) !+1 for the air_density, which comes from SE
     
     call initEdgebuffer(par,edgeveloc,2*nlev)
   end subroutine fvm_init1
@@ -997,13 +999,13 @@ contains
     
   ! do it only for FVM tracers, FIRST TRACER will be the AIR DENSITY   
     do ie=nets,nete 
-       call ghostVpack(cellghostbuf, fvm(ie)%c,nhc,nc,nlev,ntrac,0,tnp0,timelevels,elem(ie)%desc)
+       call ghostVpack(cellghostbuf, fvm(ie)%c,nc,nc,nlev,ntrac,0,tnp0,timelevels,elem(ie)%desc)
     end do
     !exchange values for the initial data
-    call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc,ntrac)
+    call ghost_exchangeV(hybrid,cellghostbuf,nc,nc,ntrac)
     !-----------------------------------------------------------------------------------!
     do ie=nets,nete
-       call ghostVunpack(cellghostbuf, fvm(ie)%c, nhc, nc,nlev,ntrac, 0, tnp0, timelevels,elem(ie)%desc)
+       call ghostVunpack(cellghostbuf, fvm(ie)%c, nc, nc,nlev,ntrac, 0, tnp0, timelevels,elem(ie)%desc)
     enddo
     
   end subroutine fvm_init3
