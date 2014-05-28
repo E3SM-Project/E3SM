@@ -163,7 +163,7 @@ contains
              stop
           endif
 
-          tracer_air0=fvm(ie)%dp_fvm(:,:,1,k,tl%n0)       
+          tracer_air0=fvm(ie)%dp_fvm(:,:,k,tl%n0)       
           call reconstruction(tracer_air0, fvm(ie),recons)
 !          recons = 0.0!dbg
           call monotonic_gradient_cart(tracer_air0, fvm(ie),recons, elem(ie)%desc)
@@ -181,7 +181,7 @@ contains
           !
           do j=1,nc
              do i=1,nc
-                fvm(ie)%dp_fvm(i,j,k,1,tl%np1)=tracer_air0(i,j)-(&  
+                fvm(ie)%dp_fvm(i,j,k,tl%np1)=tracer_air0(i,j)-(&  
                      flux_air(i+1,j,1)-flux_air(i,j,1)+flux_air(i,j+1,2)-flux_air(i,j,2)&
                      )/fvm(ie)%area_sphere(i,j)
                 
@@ -210,8 +210,8 @@ contains
              do j=1,nc
                 do i=1,nc
                    q0   = fvm(ie)%c(i,j,k,itr,tl%n0)
-                   rho0 = fvm(ie)%dp_fvm(i,j,k,1,tl%n0)
-                   rho1 = fvm(ie)%dp_fvm(i,j,k,1,tl%np1)
+                   rho0 = fvm(ie)%dp_fvm(i,j,k,tl%n0)
+                   rho1 = fvm(ie)%dp_fvm(i,j,k,tl%np1)
                    area = fvm(ie)%area_sphere(i,j)
                    !
                    q1=q0*rho0-(&  
@@ -227,8 +227,8 @@ contains
           enddo  !End Tracer
        end do  !End Level
        !note write tl%np1 in buffer
-       call ghostVpack(cellghostbuf, fvm(ie)%dp_fvm,nc,nc,nlev,1    ,0,0,tl%np1,timelevels,elem(ie)%desc)
-       call ghostVpack(cellghostbuf, fvm(ie)%c     ,nc,nc,nlev,ntrac,0,1,tl%np1,timelevels,elem(ie)%desc)
+       call ghostVpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:,tl%np1),nc,nc,nlev,1,    0,   elem(ie)%desc)
+       call ghostVpack(cellghostbuf, fvm(ie)%c(:,:,:,:,tl%np1),   nc,nc,nlev,ntrac,nlev,elem(ie)%desc)
     end do
     call t_stopf('Fluxform-CSLAM scheme')
     call t_startf('FVM Communication')
@@ -237,8 +237,8 @@ contains
     !-----------------------------------------------------------------------------------!
     call t_startf('FVM Unpack')
     do ie=nets,nete
-       call ghostVunpack(cellghostbuf, fvm(ie)%dp_fvm, nc, nc,nlev,    1,0,0,tl%np1, timelevels,elem(ie)%desc)
-       call ghostVunpack(cellghostbuf, fvm(ie)%c     , nc, nc,nlev,ntrac,0,1,tl%np1, timelevels,elem(ie)%desc)
+       call ghostVunpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:,tl%np1), nc, nc,nlev,1,    0,   elem(ie)%desc)
+       call ghostVunpack(cellghostbuf, fvm(ie)%c(:,:,:,:,tl%np1),    nc, nc,nlev,ntrac,nlev,elem(ie)%desc)
     enddo
     call t_stopf('FVM Unpack')
     call freeghostbuffertr(buflatlon)
@@ -317,7 +317,7 @@ contains
           call compute_weights(fvm(ie),6,weights_all,weights_eul_index_all, &
                weights_lgr_index_all,k,jall)     
           
-          tracer_air0=fvm(ie)%dp_fvm(:,:,k,1,tl%n0)       
+          tracer_air0=fvm(ie)%dp_fvm(:,:,k,tl%n0)       
           call reconstruction(tracer_air0, fvm(ie),recons_air)
           call monotonic_gradient_cart(tracer_air0, fvm(ie),recons_air, elem(ie)%desc)
           
@@ -329,7 +329,7 @@ contains
           do j=1,nc
              do i=1,nc
                 tracer_air1(i,j)=tracer_air1(i,j)/fvm(ie)%area_sphere(i,j)
-                fvm(ie)%dp_fvm(i,j,k,1,tl%np1)=tracer_air1(i,j)
+                fvm(ie)%dp_fvm(i,j,k,tl%np1)=tracer_air1(i,j)
              end do
           end do
           !loop through all tracers
@@ -356,8 +356,8 @@ contains
        end do  !End Level
        !note write tl%np1 in buffer                                                                 
 
-       call ghostVpack(cellghostbuf, fvm(ie)%dp_fvm,nc,nc,nlev,1    ,0,0,tl%np1,timelevels,elem(ie)%desc)
-       call ghostVpack(cellghostbuf, fvm(ie)%c     ,nc,nc,nlev,ntrac,0,1,tl%np1,timelevels,elem(ie)%desc)
+       call ghostVpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:,tl%np1),nc,nc,nlev,1,    0,   elem(ie)%desc)
+       call ghostVpack(cellghostbuf, fvm(ie)%c(:,:,:,:,tl%np1),   nc,nc,nlev,ntrac,nlev,elem(ie)%desc)
     end do
     call t_stopf('CSLAM scheme')
     call t_startf('FVM Communication')
@@ -366,8 +366,8 @@ contains
     !-----------------------------------------------------------------------------------!                         
     call t_startf('FVM Unpack')
     do ie=nets,nete
-       call ghostVunpack(cellghostbuf, fvm(ie)%dp_fvm, nc, nc,nlev,    1,0,0,tl%np1, timelevels,elem(ie)%desc)
-       call ghostVunpack(cellghostbuf, fvm(ie)%c     , nc, nc,nlev,ntrac,0,1,tl%np1, timelevels,elem(ie)%desc)
+       call ghostVunpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:,tl%np1), nc, nc,nlev,1,    0,   elem(ie)%desc)
+       call ghostVunpack(cellghostbuf, fvm(ie)%c(:,:,:,:,tl%np1),    nc, nc,nlev,ntrac,nlev,elem(ie)%desc)
     enddo
     call t_stopf('FVM Unpack')
     call freeghostbuffertr(buflatlon)
@@ -781,15 +781,15 @@ contains
 
  ! do it only for FVM tracers, FIRST TRACER will be the AIR DENSITY                                              
     do ie=nets,nete
-       call ghostVpack(cellghostbuf, fvm(ie)%dp_fvm,nc,nc,nlev,1    ,0,0,tnp0,timelevels,elem(ie)%desc)
-       call ghostVpack(cellghostbuf, fvm(ie)%c     ,nc,nc,nlev,ntrac,0,1,tnp0,timelevels,elem(ie)%desc)
+       call ghostVpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:,tnp0),nc,nc,nlev,1,    0,   elem(ie)%desc)
+       call ghostVpack(cellghostbuf, fvm(ie)%c(:,:,:,:,tnp0)   ,nc,nc,nlev,ntrac,nlev,elem(ie)%desc)
     end do
     !exchange values for the initial data                                                                         
     call ghost_exchangeV(hybrid,cellghostbuf,nc,nc,ntrac+1)
     !-----------------------------------------------------------------------------------!                         
     do ie=nets,nete
-       call ghostVunpack(cellghostbuf, fvm(ie)%dp_fvm, nc, nc,nlev,1    ,0,0,tnp0, timelevels,elem(ie)%desc)
-       call ghostVunpack(cellghostbuf, fvm(ie)%c     , nc, nc,nlev,ntrac,0,1,tnp0, timelevels,elem(ie)%desc)
+       call ghostVunpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:,tnp0), nc, nc,nlev,1    ,0,   elem(ie)%desc)
+       call ghostVunpack(cellghostbuf, fvm(ie)%c(:,:,:,:,tnp0),    nc, nc,nlev,ntrac,nlev,elem(ie)%desc)
     enddo
 
 

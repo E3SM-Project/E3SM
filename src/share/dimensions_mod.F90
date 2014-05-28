@@ -28,7 +28,8 @@ module dimensions_mod
 
  
   integer, parameter, public :: np = NP
-  integer, parameter, public :: nc = NC
+  integer, parameter, public :: nc  = NC
+  integer, parameter, public :: nhc = nc
   integer         :: ntrac = 0
   integer         :: qsize = 0
 
