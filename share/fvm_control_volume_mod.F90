@@ -37,7 +37,8 @@ module fvm_control_volume_mod
 
   type, public :: fvm_struct
     ! fvm tracer mixing ratio: (kg/kg)
-    real (kind=real_kind) :: c(1-nc:nc+nc,1-nc:nc+nc,nlev,ntrac_d,timelevels) 
+    real (kind=real_kind) :: c     (1-nc:nc+nc,1-nc:nc+nc,nlev,ntrac_d,timelevels) 
+    real (kind=real_kind) :: dp_fvm(1-nc:nc+nc,1-nc:nc+nc,nlev,      1,timelevels) 
     real (kind=real_kind) :: psc(1-nc:nc+nc,1-nc:nc+nc)
     real (kind=real_kind) :: cstart(1:nc,1:nc)
 !-----------------------------------------------------------------------------------!

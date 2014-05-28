@@ -39,7 +39,7 @@ module fvm_mod
   integer, public, parameter            :: IDEAL_TEST_SOLIDBODY = 2
   integer, public                       :: fvm_test_type = IDEAL_TEST_BOOMERANG
 
-  public :: cslam_run, cslam_runairdensity, cslam_runflux
+  public :: cslam_runairdensity, cslam_runflux
   
   public :: cellghostbuf, edgeveloc, fvm_init1,fvm_init2, fvm_mcgregor, fvm_mcgregordss
   public :: fvm_init3, fvm_rkdss
@@ -115,6 +115,9 @@ contains
     
     
     do ie=nets,nete
+       !
+       ! if changing to nhe>1 the 3rd argument has to be changed to nhe+1
+       !
        call ghostVpack2d_level(buflatlon,fvm(ie)%dsphere(:,:,:)%lat,1,2, nc+1,nlev,elem(ie)%desc) !kptr = 1 for lat
        call ghostVpack2d_level(buflatlon,fvm(ie)%dsphere(:,:,:)%lon,2,2, nc+1,nlev,elem(ie)%desc) !kptr =2 for lon
     end do
@@ -160,38 +163,7 @@ contains
              stop
           endif
 
-!          if (jall(1)>jall_max) jall_max=jall(1)
-!          if (jall(2)>jall_max) jall_max=jall(2)
-
-!          if (.false.) then
-!             !
-!             ! for debugging
-!             !
-!             call cslam_get_area(fvm(ie),cslam_area,k)
-!             call fluxform_cslam_area(fluxform_effective_area,&
-!                  fvm(ie)%area_sphere(1:nc,1:nc),&
-!                  weights_all,weights_eul_index_all, weights_lgr_index_all, jall)
-!             do j=1,nc
-!                do i=1,nc
-!                   !                fvm(ie)%c(i,j,k,1,tl%np1)=fluxform_effective_area(i,j)/fvm(ie)%area_sphere(i,j)
-!                   diff_dbg = (cslam_area(i,j)-fluxform_effective_area(i,j))
-!                   diff_dbg = diff_dbg/cslam_area(i,j)
-!                   if (ABS(diff_dbg)>1.0E-12) then
-!                      write(*,*) "effective flux departure cell area"
-!                      write(*,*) "different than CSLAM departure area"
-!                      write(*,*) "absolute difference is ",diff_dbg,i,j,ie
-!                      write(*,*) "cslam_area(i,j),fluxform_effective_area(i,j)",cslam_area(i,j),fluxform_effective_area(i,j)
-!                   end if
-!                end do
-!             end do
-!          end if
-!          ! end debugging
-          
-
-          !
-          ! THE FIRST TRACER IS AIRDENSITY
-          !
-          tracer_air0=fvm(ie)%c(:,:,k,1,tl%n0)       
+          tracer_air0=fvm(ie)%dp_fvm(:,:,1,k,tl%n0)       
           call reconstruction(tracer_air0, fvm(ie),recons)
 !          recons = 0.0!dbg
           call monotonic_gradient_cart(tracer_air0, fvm(ie),recons, elem(ie)%desc)
@@ -204,16 +176,12 @@ contains
                   fvm(ie)%spherecentroid, weights_eul_index_all(1:jall(j),:,j),&
                   weights_lgr_index_all(1:jall(j),:,j), jall(j),1)  
           end do
-          
-          
-          
-          
           !
           ! forecast equation for air density
           !
           do j=1,nc
              do i=1,nc
-                fvm(ie)%c(i,j,k,1,tl%np1)=tracer_air0(i,j)-(&  
+                fvm(ie)%dp_fvm(i,j,k,1,tl%np1)=tracer_air0(i,j)-(&  
                      flux_air(i+1,j,1)-flux_air(i,j,1)+flux_air(i,j+1,2)-flux_air(i,j,2)&
                      )/fvm(ie)%area_sphere(i,j)
                 
@@ -222,7 +190,7 @@ contains
           !
           !loop through all tracers
           !
-          do itr=2,ntrac
+          do itr=1,ntrac
              tracer0=fvm(ie)%c(:,:,k,itr,tl%n0)
              call reconstruction(tracer0, fvm(ie),recons)
              call monotonic_gradient_cart(tracer0, fvm(ie),recons, elem(ie)%desc)
@@ -242,8 +210,8 @@ contains
              do j=1,nc
                 do i=1,nc
                    q0   = fvm(ie)%c(i,j,k,itr,tl%n0)
-                   rho0 = fvm(ie)%c(i,j,k,1  ,tl%n0)
-                   rho1 = fvm(ie)%c(i,j,k,1  ,tl%np1)
+                   rho0 = fvm(ie)%dp_fvm(i,j,k,1,tl%n0)
+                   rho1 = fvm(ie)%dp_fvm(i,j,k,1,tl%np1)
                    area = fvm(ie)%area_sphere(i,j)
                    !
                    q1=q0*rho0-(&  
@@ -259,19 +227,18 @@ contains
           enddo  !End Tracer
        end do  !End Level
        !note write tl%np1 in buffer
-       call ghostVpack(cellghostbuf, fvm(ie)%c,nc,nc,nlev,ntrac,0,tl%np1,timelevels,elem(ie)%desc)
+       call ghostVpack(cellghostbuf, fvm(ie)%dp_fvm,nc,nc,nlev,1    ,0,0,tl%np1,timelevels,elem(ie)%desc)
+       call ghostVpack(cellghostbuf, fvm(ie)%c     ,nc,nc,nlev,ntrac,0,1,tl%np1,timelevels,elem(ie)%desc)
     end do
-!    write(*,*) "done flux-form time-step run"
-!    write(*,*) "jall_max ",tl%nstep,jall_max
-    !  stop
     call t_stopf('Fluxform-CSLAM scheme')
     call t_startf('FVM Communication')
-    call ghost_exchangeV(hybrid,cellghostbuf,nc,nc,ntrac)
+    call ghost_exchangeV(hybrid,cellghostbuf,nc,nc,ntrac+1)
     call t_stopf('FVM Communication')
     !-----------------------------------------------------------------------------------!
     call t_startf('FVM Unpack')
     do ie=nets,nete
-       call ghostVunpack(cellghostbuf, fvm(ie)%c, nc, nc,nlev,ntrac, 0, tl%np1, timelevels,elem(ie)%desc)
+       call ghostVunpack(cellghostbuf, fvm(ie)%dp_fvm, nc, nc,nlev,    1,0,0,tl%np1, timelevels,elem(ie)%desc)
+       call ghostVunpack(cellghostbuf, fvm(ie)%c     , nc, nc,nlev,ntrac,0,1,tl%np1, timelevels,elem(ie)%desc)
     enddo
     call t_stopf('FVM Unpack')
     call freeghostbuffertr(buflatlon)
@@ -319,11 +286,10 @@ contains
     real (kind=real_kind), dimension(1-nc:nc+nc,1-nc:nc+nc)        :: tracer_air0   
     real (kind=real_kind), dimension(1:nc,1:nc)                        :: tracer1, tracer_air1 
     real (kind=real_kind), dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe)      :: recons_air   
-    
+
     type (ghostBuffertr_t)                      :: buflatlon
-    
+
     call initghostbufferTR(buflatlon,nlev,2,2,nc+1)    ! use the tracer entry 2 for lat lon
-    
     call t_startf('CSLAM scheme') 
     
     do ie=nets, nete
@@ -331,7 +297,6 @@ contains
           call fvm_mesh_dep(elem(ie),deriv,fvm(ie),tstep,tl,k)
        end do
     end do
-    
     
     do ie=nets,nete
        call ghostVpack2d_level(buflatlon,fvm(ie)%dsphere(:,:,:)%lat,1,2, nc+1,nlev,elem(ie)%desc) !kptr = 1 for lat
@@ -346,15 +311,13 @@ contains
        fvm(ie)%dsphere(:,:,:)%r=1.0D0  !!! RADIUS IS ASSUMED TO BE 1.0DO !!!!
        
     end do
-    
     do ie=nets, nete
        do k=1,nlev
           !-Departure fvm Meshes, initialization done                                                               
           call compute_weights(fvm(ie),6,weights_all,weights_eul_index_all, &
                weights_lgr_index_all,k,jall)     
           
-          ! THE FIRST TRACER IS AIRDENSITY
-          tracer_air0=fvm(ie)%c(:,:,k,1,tl%n0)       
+          tracer_air0=fvm(ie)%dp_fvm(:,:,k,1,tl%n0)       
           call reconstruction(tracer_air0, fvm(ie),recons_air)
           call monotonic_gradient_cart(tracer_air0, fvm(ie),recons_air, elem(ie)%desc)
           
@@ -366,11 +329,11 @@ contains
           do j=1,nc
              do i=1,nc
                 tracer_air1(i,j)=tracer_air1(i,j)/fvm(ie)%area_sphere(i,j)
-                fvm(ie)%c(i,j,k,1,tl%np1)=tracer_air1(i,j)
+                fvm(ie)%dp_fvm(i,j,k,1,tl%np1)=tracer_air1(i,j)
              end do
           end do
           !loop through all tracers
-          do itr=2,ntrac
+          do itr=1,ntrac
              tracer0=fvm(ie)%c(:,:,k,itr,tl%n0)
              call reconstruction(tracer0, fvm(ie),recons)
              call monotonic_gradient_cart(tracer0, fvm(ie),recons, elem(ie)%desc)
@@ -391,225 +354,27 @@ contains
              end do
           enddo  !End Tracer
        end do  !End Level
-       !note write tl%np1 in buffer
-       call ghostVpack(cellghostbuf, fvm(ie)%c,nc,nc,nlev,ntrac,0,tl%np1,timelevels,elem(ie)%desc)
+       !note write tl%np1 in buffer                                                                 
+
+       call ghostVpack(cellghostbuf, fvm(ie)%dp_fvm,nc,nc,nlev,1    ,0,0,tl%np1,timelevels,elem(ie)%desc)
+       call ghostVpack(cellghostbuf, fvm(ie)%c     ,nc,nc,nlev,ntrac,0,1,tl%np1,timelevels,elem(ie)%desc)
     end do
     call t_stopf('CSLAM scheme')
     call t_startf('FVM Communication')
-    call ghost_exchangeV(hybrid,cellghostbuf,nc,nc,ntrac)
+    call ghost_exchangeV(hybrid,cellghostbuf,nc,nc,ntrac+1)
     call t_stopf('FVM Communication')
-    !-----------------------------------------------------------------------------------!
+    !-----------------------------------------------------------------------------------!                         
     call t_startf('FVM Unpack')
     do ie=nets,nete
-       call ghostVunpack(cellghostbuf, fvm(ie)%c, nc, nc,nlev,ntrac, 0, tl%np1, timelevels,elem(ie)%desc)
+       call ghostVunpack(cellghostbuf, fvm(ie)%dp_fvm, nc, nc,nlev,    1,0,0,tl%np1, timelevels,elem(ie)%desc)
+       call ghostVunpack(cellghostbuf, fvm(ie)%c     , nc, nc,nlev,ntrac,0,1,tl%np1, timelevels,elem(ie)%desc)
     enddo
     call t_stopf('FVM Unpack')
     call freeghostbuffertr(buflatlon)
+
     
   end subroutine cslam_runairdensity
   
-  
-  
-  subroutine cslam_run(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
-    ! ---------------------------------------------------------------------------------
-    use fvm_line_integrals_mod, only: compute_weights
-    ! ---------------------------------------------------------------------------------  
-    use fvm_filter_mod, only: monotonic_gradient_cart
-    ! ---------------------------------------------------------------------------------
-    use fvm_reconstruction_mod, only: reconstruction
-    ! ---------------------------------------------------------------------------------
-    use derivative_mod, only : derivative_t
-    ! ---------------------------------------------------------------------------------
-    use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
-    ! -----------------------------------------------
-    use edge_mod, only :  ghostBuffertr_t,ghostVpack2d_level, ghostVunpack2d_level,initghostbufferTR,freeghostbuffertr
-    
-    
-    implicit none
-    type (element_t), intent(inout)                :: elem(:)
-    type (fvm_struct), intent(inout)             :: fvm(:)
-    type (hybrid_t), intent(in)                 :: hybrid   ! distributed parallel structure (shared)
-    integer, intent(in)                         :: nets  ! starting thread element number (private)
-    integer, intent(in)                         :: nete  ! ending thread element number   (private)
-    real (kind=real_kind)                       :: tstep
-    
-    integer                                     :: i,j,k,ie,itr, jx, jy, jdx, jdy, h
-    type (TimeLevel_t)                          :: tl              ! time level struct
-    type (derivative_t)                         :: deriv           ! derivative struct
-    
-    real (kind=real_kind)   , dimension(10*(nc+2*nhe)*(nc+2*nhe),6)  :: weights_all
-    integer (kind=int_kind),  dimension(10*(nc+2*nhe)*(nc+2*nhe),2)  :: weights_eul_index_all
-    integer (kind=int_kind),  dimension(10*(nc+2*nhe)*(nc+2*nhe),2)  :: weights_lgr_index_all
-    integer (kind=int_kind)                                          :: jall
-    
-    real (kind=real_kind), dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe)      :: recons
-    real (kind=real_kind), dimension(1-nc:nc+nc,1-nc:nc+nc)        :: tracer0 
-    real (kind=real_kind), dimension(1:nc,1:nc)                        :: tracer1
-    type (ghostBuffertr_t)                      :: buflatlon
-    
-    
-    
-    call initghostbufferTR(buflatlon,nlev,2,2,nc+1)    ! use the tracer entry 2 for lat lon
-    
-    call t_startf('CSLAM scheme') 
-    
-    do ie=nets, nete
-       do k=1,nlev
-          call fvm_mesh_dep(elem(ie),deriv,fvm(ie),tstep,tl,k)
-       end do
-    end do
-    
-    
-    do ie=nets,nete
-       call ghostVpack2d_level(buflatlon,fvm(ie)%dsphere(:,:,:)%lat,1,2, nc+1,nlev,elem(ie)%desc) !kptr = 1 for lat
-       call ghostVpack2d_level(buflatlon,fvm(ie)%dsphere(:,:,:)%lon,2,2, nc+1,nlev,elem(ie)%desc) !kptr =2 for lon
-    end do
-    !-----------------------------------------------------------------------------------! 
-    call ghost_exchangeV(hybrid,buflatlon,2,nc+1,2)
-    !-----------------------------------------------------------------------------------!  
-    do ie=nets,nete
-       call ghostVunpack2d_level(buflatlon,fvm(ie)%dsphere(:,:,:)%lat,1,2, nc+1,nlev,elem(ie)%desc)
-       call ghostVunpack2d_level(buflatlon,fvm(ie)%dsphere(:,:,:)%lon,2,2, nc+1,nlev,elem(ie)%desc)
-       fvm(ie)%dsphere(:,:,:)%r=1.0D0  !!! RADIUS IS ASSUMED TO BE 1.0DO !!!!
-       
-    end do
-    do ie=nets, nete
-       do k=1,nlev
-          !       call fvm_mesh_dep(elem(ie),deriv,fvm(ie),tstep,tl,k)
-          !-Departure fvm Meshes, initialization done     
-          call compute_weights(fvm(ie),6,weights_all,weights_eul_index_all, &
-               weights_lgr_index_all,k,jall) 
-          
-          !loop through all tracers
-          
-          do itr=1,ntrac
-             tracer0=fvm(ie)%c(:,:,k,itr,tl%n0)
-             call reconstruction(tracer0, fvm(ie),recons)
-             call monotonic_gradient_cart(tracer0, fvm(ie),recons, elem(ie)%desc)
-             tracer1=0.0D0   
-             call cslam_remap(tracer0,tracer1,weights_all(1:jall,:), recons, &
-                  fvm(ie)%spherecentroid, weights_eul_index_all(1:jall,:), weights_lgr_index_all(1:jall,:), jall,0)
-             ! finish scheme
-             do j=1,nc
-                do i=1,nc
-                   fvm(ie)%c(i,j,k,itr,tl%np1)=tracer1(i,j)/fvm(ie)%area_sphere(i,j)
-                end do
-             end do
-          enddo  !End Tracer
-          
-       end do  !End Level
-       !note write tl%np1 in buffer
-       call ghostVpack(cellghostbuf, fvm(ie)%c,nc,nc,nlev,ntrac,0,tl%np1,timelevels,elem(ie)%desc)
-    end do
-    
-    call t_startf('FVM Communication')
-    call ghost_exchangeV(hybrid,cellghostbuf,nc,nc,ntrac)
-    call t_stopf('FVM Communication')
-    
-    !-----------------------------------------------------------------------------------!
-    call t_startf('FVM Unpack')!   !-----------------------------------------------------------------------------------!
-    do ie=nets,nete
-       call ghostVunpack(cellghostbuf, fvm(ie)%c, nc, nc,nlev,ntrac, 0, tl%np1, timelevels,elem(ie)%desc)
-    enddo
-    !-----------------------------------------------------------------------------------!
-    call t_stopf('FVM Unpack')
-    !   call t_stopf('ALL CSLAM')
-    call t_stopf('CSLAM scheme') 
-    call freeghostbuffertr(buflatlon)
-    
-  end subroutine cslam_run
-  
-  ! ! use this subroutine for benchmark tests, couple airdensity with tracer concentration
-  ! subroutine cslam_runair(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
-  !   ! ---------------------------------------------------------------------------------
-  !   use fvm_line_integrals_mod, only: compute_weights
-  !   ! ---------------------------------------------------------------------------------  
-  !   use fvm_filter_mod, only: monotonic_gradient_cart
-  !   ! ---------------------------------------------------------------------------------
-  !   use fvm_reconstruction_mod, only: reconstruction
-  !   ! ---------------------------------------------------------------------------------
-  !   use derivative_mod, only : derivative_t
-  !   ! ---------------------------------------------------------------------------------
-  !   use perf_mod, only : t_startf, t_stopf ! _EXTERNAL
-  !   ! -----------------------------------------------
-  !    
-  !   implicit none
-  !   type (element_t), intent(inout)                :: elem(:)
-  !   type (fvm_struct), intent(inout)             :: fvm(:)
-  !   type (hybrid_t), intent(in)                 :: hybrid   ! distributed parallel structure (shared)
-  !   integer, intent(in)                         :: nets  ! starting thread element number (private)
-  !   integer, intent(in)                         :: nete  ! ending thread element number   (private)
-  !   real (kind=real_kind)                       :: tstep
-  !   
-  !   integer                                     :: i,j,k,ie,itr, jx, jy, jdx, jdy, h
-  !   type (TimeLevel_t)                          :: tl              ! time level struct
-  !   type (derivative_t)                         :: deriv           ! derivative struct
-  !  
-  !   real (kind=real_kind)   , dimension(10*(nc+2*nhe)*(nc+2*nhe),6)  :: weights_all
-  !   integer (kind=int_kind),  dimension(10*(nc+2*nhe)*(nc+2*nhe),2)  :: weights_eul_index_all
-  !   integer (kind=int_kind),  dimension(10*(nc+2*nhe)*(nc+2*nhe),2)  :: weights_lgr_index_all
-  !   integer (kind=int_kind)                                          :: jall
-  !     
-  !   real (kind=real_kind), dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe)      :: recons
-  !   real (kind=real_kind), dimension(1-nc:nc+nc,1-nc:nc+nc)        :: tracer0 
-  !   
-  !   real (kind=real_kind), dimension(1-nc:nc+nc,1-nc:nc+nc)        :: tracer_air0   
-  !   real (kind=real_kind), dimension(1:nc,1:nc)                        :: tracer1, tracer_air1 
-  !   real (kind=real_kind), dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe)      :: recons_air   
-  !    
-  !   do ie=nets, nete
-  !     do k=1,nlev
-  !       call fvm_mesh_dep(elem(ie),deriv,fvm(ie),tstep,tl,k)
-  !       !-Departure fvm Meshes, initialization done                                                               
-  !       call compute_weights(fvm(ie),6,weights_all,weights_eul_index_all, &
-  !              weights_lgr_index_all,jall) 
-  !       !loop through all tracers
-  !       do itr=1,ntrac
-  !         tracer0=fvm(ie)%c(:,:,k,itr,tl%n0)
-  ! !         call reconstruction(tracer0, fvm(ie),recons)
-  ! !         call monotonic_gradient_cart(tracer0, fvm(ie),recons, elem(ie)%desc)
-  !         recons(1,:,:)=0.0D0
-  !         recons(2,:,:)=0.0D0
-  !         recons(3,:,:)=0.0D0
-  !         recons(4,:,:)=0.0D0
-  !         recons(5,:,:)=0.0D0
-  !         tracer1=0.0D0   
-  !         if (itr==1) then !calculation for air density  (the first tracer is supposed to be)
-  !           recons_air=recons
-  !           tracer_air0=tracer0
-  !           call cslam_remap(tracer0,tracer1,weights_all, recons, &
-  !                  fvm(ie)%spherecentroid, weights_eul_index_all, weights_lgr_index_all, jall)
-  !           ! finish scheme
-  !           do j=1,nc
-  !             do i=1,nc
-  !               tracer_air1(i,j)=tracer1(i,j)/fvm(ie)%area_sphere(i,j)
-  !               fvm(ie)%c(i,j,k,itr,tl%np1)=tracer_air1(i,j)
-  !             end do
-  !           end do
-  !         else !calculation for the other tracers    
-  !           call cslam_remap_air(tracer0,tracer1,tracer_air0,weights_all, recons,recons_air,&
-  !                        fvm(ie)%spherecentroid,weights_eul_index_all, weights_lgr_index_all, jall)                
-  !           ! finish scheme
-  !           do j=1,nc
-  !             do i=1,nc
-  !               fvm(ie)%c(i,j,k,itr,tl%np1)= &
-  !               (tracer1(i,j)/fvm(ie)%area_sphere(i,j))/tracer_air1(i,j)
-  !             end do
-  !           end do            
-  !         end if
-  !       enddo  !End Tracer
-  !     end do  !End Level
-  !     !note write tl%np1 in buffer
-  !     call ghostVpack(cellghostbuf, fvm(ie)%c,nc,nc,nlev,ntrac,0,tl%np1,timelevels,elem(ie)%desc)
-  !   end do
-  !   call t_startf('FVM Communication')
-  !   call ghost_exchangeV(hybrid,cellghostbuf,nc,nc,ntrac)
-  !   call t_stopf('FVM Communication')
-  !   !-----------------------------------------------------------------------------------!
-  !   do ie=nets,nete
-  !      call ghostVunpack(cellghostbuf, fvm(ie)%c, nc, nc,nlev,ntrac, 0, tl%np1, timelevels,elem(ie)%desc)
-  !   enddo
-  ! end subroutine cslam_runair
   
   
   ! do the remapping
@@ -923,7 +688,9 @@ contains
        call haltmp("PARAMTER ERROR for fvm: ntrac > ntrac_d")
     endif
     
-    call initghostbufferTR(cellghostbuf,nlev,ntrac,nc,nc) !+1 for the air_density, which comes from SE
+!phl    call initghostbufferTR(cellghostbuf,nlev,ntrac,nc,nc) !+1 for the air_density, which comes from SE
+    call initghostbufferTR(cellghostbuf,nlev,ntrac+1,nc,nc) !+1 for the air_density, which comes from SE
+!    call initghostbufferTR(cellghostbuf,nlev,1,nc,nc) !+1 for the air_density, which comes from SE
     
     call initEdgebuffer(par,edgeveloc,2*nlev)
   end subroutine fvm_init1
@@ -1011,18 +778,23 @@ contains
     integer,intent(in)                        :: nets,nete,tnp0       
     
     integer                                   :: ie                 
-    
-  ! do it only for FVM tracers, FIRST TRACER will be the AIR DENSITY   
-    do ie=nets,nete 
-       call ghostVpack(cellghostbuf, fvm(ie)%c,nc,nc,nlev,ntrac,0,tnp0,timelevels,elem(ie)%desc)
-    end do
-    !exchange values for the initial data
-    call ghost_exchangeV(hybrid,cellghostbuf,nc,nc,ntrac)
-    !-----------------------------------------------------------------------------------!
+
+ ! do it only for FVM tracers, FIRST TRACER will be the AIR DENSITY                                              
     do ie=nets,nete
-       call ghostVunpack(cellghostbuf, fvm(ie)%c, nc, nc,nlev,ntrac, 0, tnp0, timelevels,elem(ie)%desc)
+       call ghostVpack(cellghostbuf, fvm(ie)%dp_fvm,nc,nc,nlev,1    ,0,0,tnp0,timelevels,elem(ie)%desc)
+       call ghostVpack(cellghostbuf, fvm(ie)%c     ,nc,nc,nlev,ntrac,0,1,tnp0,timelevels,elem(ie)%desc)
+    end do
+    !exchange values for the initial data                                                                         
+    call ghost_exchangeV(hybrid,cellghostbuf,nc,nc,ntrac+1)
+    !-----------------------------------------------------------------------------------!                         
+    do ie=nets,nete
+       call ghostVunpack(cellghostbuf, fvm(ie)%dp_fvm, nc, nc,nlev,1    ,0,0,tnp0, timelevels,elem(ie)%desc)
+       call ghostVunpack(cellghostbuf, fvm(ie)%c     , nc, nc,nlev,ntrac,0,1,tnp0, timelevels,elem(ie)%desc)
     enddo
-    
+
+
+
+   
   end subroutine fvm_init3
   ! ----------------------------------------------------------------------------------!
   !SUBROUTINE FVM_MESH_DEP--------------------------------------------------CE-for FVM!
@@ -1560,7 +1332,7 @@ contains
        ! vn0 = U(x,t)
        ! vstar = U(x,t+1)
        do k=1,nlev
-          !         ugradvtmp(:,:,:)=ugradv_sphere(fvm(ie)%vn0(:,:,:,k),elem(ie)%derived%vstar(:,:,:,k),deriv,elem(ie))
+          !ugradvtmp(:,:,:)=ugradv_sphere(fvm(ie)%vn0(:,:,:,k),elem(ie)%derived%vstar(:,:,:,k),deriv,elem(ie))
           ugradvtmp(:,:,:)=ugradv_sphere(elem(ie)%derived%vstar(:,:,:,k),fvm(ie)%vn0(:,:,:,k),deriv,elem(ie))
           
           elem(ie)%derived%vstar(:,:,:,k) = &

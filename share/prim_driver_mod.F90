@@ -974,7 +974,7 @@ contains
 		       ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,tl%n0)
 	      enddo
 	    enddo
-          !write air density in tracer 1 of FVM
+          !write air density in tracer 1 of FVM 
           fvm(ie)%c(1:nep,1:nep,k,1,tl%n0)=interpolate_gll2spelt_points(elem(ie)%derived%dp(:,:,k),deriv(hybrid%ithr))
         enddo
       enddo
@@ -1002,15 +1002,15 @@ contains
 	      enddo
 	    enddo
           !write air density in tracer 1 of FVM
-          fvm(ie)%c(1:nc,1:nc,k,1,tl%n0)=interpolate_gll2fvm_points(elem(ie)%derived%dp(:,:,k),deriv(hybrid%ithr))
-!            fvm(ie)%c(:,:,k,1,tl%n0)=1.0D0
+          fvm(ie)%dp_fvm(1:nc,1:nc,k,1,tl%n0)=interpolate_gll2fvm_points(elem(ie)%derived%dp(:,:,k),deriv(hybrid%ithr))
         enddo
       enddo
       call fvm_init3(elem,fvm,hybrid,nets,nete,tl%n0)
       do ie=nets,nete
 	    do i=1-nhc,nc+nhc
 	      do j=1-nhc,nc+nhc
-	        fvm(ie)%psc(i,j) = sum(fvm(ie)%c(i,j,:,1,tl%n0)) +  hvcoord%hyai(1)*hvcoord%ps0
+!	        fvm(ie)%psc(i,j) = sum(fvm(ie)%c(i,j,:,1,tl%n0)) +  hvcoord%hyai(1)*hvcoord%ps0
+	        fvm(ie)%psc(i,j) = sum(fvm(ie)%dp_fvm(i,j,:,tl%n0)) +  hvcoord%hyai(1)*hvcoord%ps0
 	      enddo
 	    enddo
       enddo
@@ -1663,7 +1663,8 @@ contains
       if ( n_Q /= tl%n0 ) then
         ! make sure tl%n0 contains tracers at start of timestep
         do ie=nets,nete
-          fvm(ie)%c(:,:,:,1:ntrac,tl%n0)  = fvm(ie)%c(:,:,:,1:ntrac,n_Q)
+          fvm(ie)%c     (:,:,:,1:ntrac,tl%n0)  = fvm(ie)%c     (:,:,:,1:ntrac,n_Q)
+          fvm(ie)%dp_fvm(:,:,:,       ,tl%n0)  = fvm(ie)%dp_fvm(:,:,:,        n_Q)
         enddo
       endif
 #if defined(_SPELT)
@@ -1700,7 +1701,7 @@ contains
        do ie=nets,nete
          do i=1-nhc,nc+nhc
            do j=1-nhc,nc+nhc
-             fvm(ie)%psc(i,j) = sum(fvm(ie)%c(i,j,:,1,tl%np1)) +  hvcoord%hyai(1)*hvcoord%ps0
+             fvm(ie)%psc(i,j) = sum(fvm(ie)%dp_fvm(i,j,:,tl%np1)) +  hvcoord%hyai(1)*hvcoord%ps0
            enddo
          enddo
        enddo
