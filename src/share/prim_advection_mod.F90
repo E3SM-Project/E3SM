@@ -1022,7 +1022,7 @@ contains
         dt,tl,nets,nete)
     use perf_mod, only : t_startf, t_stopf            ! _EXTERNAL
     use vertremap_mod, only: remap1_nofilter  ! _EXTERNAL (actually INTERNAL)
-    use fvm_mod, only : cslam_run, cslam_runairdensity, cslam_runflux, edgeveloc
+    use fvm_mod, only : cslam_runairdensity, cslam_runflux, edgeveloc
     use fvm_mod, only: fvm_mcgregor, fvm_mcgregordss, fvm_rkdss
     use fvm_mod, only : fvm_ideal_test, IDEAL_TEST_OFF, IDEAL_TEST_ANALYTICAL_WINDS
     use fvm_mod, only : fvm_test_type, IDEAL_TEST_BOOMERANG, IDEAL_TEST_SOLIDBODY
@@ -2934,6 +2934,9 @@ end subroutine ALE_parametric_coords
         do i=1,nc
           do j=1,nc
             ! 1. compute surface pressure, 'ps_c', from FVMair density
+
+! phl dp_cslam
+
             psc(i,j)=sum(fvm(ie)%c(i,j,:,1,np1)) +  hvcoord%hyai(1)*hvcoord%ps0
             ! 2. compute dp_np1 using FVM air density and eta coordinate formula
             ! get the dp now on the eta coordinates (reference level)
@@ -2946,6 +2949,7 @@ end subroutine ALE_parametric_coords
         end do
         dpc_star=fvm(ie)%c(1:nc,1:nc,:,1,np1)
         call remap1(cdp,nc,ntrac-1,dpc_star,dpc)
+! phl ntrac-1 -> ntrac       call remap1(cdp,nc,ntrac-1,dpc_star,dpc)
         do i=1,nc
           do j=1,nc
             do k=1,nlev
