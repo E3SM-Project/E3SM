@@ -690,6 +690,7 @@ contains
     
 !phl    call initghostbufferTR(cellghostbuf,nlev,ntrac,nc,nc) !+1 for the air_density, which comes from SE
     call initghostbufferTR(cellghostbuf,nlev,ntrac+1,nc,nc) !+1 for the air_density, which comes from SE
+
 !    call initghostbufferTR(cellghostbuf,nlev,1,nc,nc) !+1 for the air_density, which comes from SE
     
     call initEdgebuffer(par,edgeveloc,2*nlev)
