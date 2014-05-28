@@ -1002,7 +1002,7 @@ contains
 	      enddo
 	    enddo
           !write air density in tracer 1 of FVM
-          fvm(ie)%dp_fvm(1:nc,1:nc,k,1,tl%n0)=interpolate_gll2fvm_points(elem(ie)%derived%dp(:,:,k),deriv(hybrid%ithr))
+          fvm(ie)%dp_fvm(1:nc,1:nc,k,tl%n0)=interpolate_gll2fvm_points(elem(ie)%derived%dp(:,:,k),deriv(hybrid%ithr))
         enddo
       enddo
       call fvm_init3(elem,fvm,hybrid,nets,nete,tl%n0)
@@ -1664,7 +1664,7 @@ contains
         ! make sure tl%n0 contains tracers at start of timestep
         do ie=nets,nete
           fvm(ie)%c     (:,:,:,1:ntrac,tl%n0)  = fvm(ie)%c     (:,:,:,1:ntrac,n_Q)
-          fvm(ie)%dp_fvm(:,:,:,       ,tl%n0)  = fvm(ie)%dp_fvm(:,:,:,        n_Q)
+          fvm(ie)%dp_fvm(:,:,:,        tl%n0)  = fvm(ie)%dp_fvm(:,:,:,        n_Q)
         enddo
       endif
 #if defined(_SPELT)
