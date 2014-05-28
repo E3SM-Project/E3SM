@@ -948,13 +948,24 @@ contains
     call t_barrierf('sync_prim_advec_tracers_spelt', hybrid%par%comm)
     call t_startf('prim_advec_tracers_spelt')
     np1 = tl%np1
-
-
-    ! interpolate t+1 velocity from reference levels to lagrangian levels
-    ! For rsplit=0, we need to first compute lagrangian levels based on vertical velocity
-    ! which requires we first DSS mean vertical velocity from dynamics
+    ! departure algorithm requires two velocities:
     !
+    ! spelt%v0:      velocity at beginning of tracer timestep (time n0_qdp)
+    !                this was saved before the (possibly many) dynamics steps
+    ! elem%derived%vstar:    
+    !                velocity at end of tracer timestep (time np1 = np1_qdp)
+    !                for lagrangian dynamics, this is on lagrangian levels
+    !                for eulerian dynamcis, this is on reference levels
+    !                and it should be interpolated.
+    !
+    do ie=nets,nete
+       elem(ie)%derived%vstar(:,:,:,:)=elem(ie)%state%v(:,:,:,:,np1)
+    enddo
+
     if (rsplit==0) then
+       ! interpolate t+1 velocity from reference levels to lagrangian levels
+       ! For rsplit=0, we need to first compute lagrangian levels based on vertical velocity
+       ! which requires we first DSS mean vertical velocity from dynamics
        do ie=nets,nete
           do k=1,nlev
              elem(ie)%derived%eta_dot_dpdn(:,:,k) = elem(ie)%spheremp(:,:)*elem(ie)%derived%eta_dot_dpdn(:,:,k)
@@ -979,15 +990,15 @@ contains
              dp_star(:,:,k) = dp(:,:,k) + dt*(elem(ie)%derived%eta_dot_dpdn(:,:,k+1) -&
                   elem(ie)%derived%eta_dot_dpdn(:,:,k))
           enddo
-          elem(ie)%derived%vstar=elem(ie)%state%v(:,:,:,:,np1)
+          !elem(ie)%derived%vstar=elem(ie)%state%v(:,:,:,:,np1) ; done above
           call remap1_nofilter(elem(ie)%derived%vstar,np,1,dp,dp_star)
           !take the average on level, should be improved later, because we know the SE velocity at t+1/2
           spelt(ie)%vn12=(spelt(ie)%vn0+elem(ie)%derived%vstar)/2.0D0
        end do
     else
-       ! for rsplit>0:  dynamics is also vertically lagrangian, so we do not need to
-       ! remap the velocities
-       stop 'FVM need to use lagrangian winds here'
+       ! for rsplit>0:  do nothing.
+       ! dynamics is also vertically lagrangian, so we do not need to
+       ! remap the velocities and we dont need eta_dot_dpdn
     endif
 
 
@@ -1058,11 +1069,25 @@ contains
     call t_startf('prim_advec_tracers_fvm')
     np1 = tl%np1
 
-    ! interpolate t+1 velocity from reference levels to lagrangian levels
-    ! For rsplit=0, we need to first compute lagrangian levels based on vertical velocity
-    ! which requires we first DSS mean vertical velocity from dynamics
+    ! departure algorithm requires two velocities:
     !
+    ! fvm%v0:        velocity at beginning of tracer timestep (time n0_qdp)
+    !                this was saved before the (possibly many) dynamics steps
+    ! elem%derived%vstar:    
+    !                velocity at end of tracer timestep (time np1 = np1_qdp)
+    !                for lagrangian dynamics, this is on lagrangian levels
+    !                for eulerian dynamcis, this is on reference levels
+    !                and it should be interpolated.
+    !
+    do ie=nets,nete
+       elem(ie)%derived%vstar(:,:,:,:)=elem(ie)%state%v(:,:,:,:,np1)
+    enddo
+
+
     if (rsplit==0) then
+       ! interpolate t+1 velocity from reference levels to lagrangian levels
+       ! For rsplit=0, we need to first compute lagrangian levels based on vertical velocity
+       ! which requires we first DSS mean vertical velocity from dynamics
        do ie=nets,nete
           do k=1,nlev
              elem(ie)%derived%eta_dot_dpdn(:,:,k) = elem(ie)%spheremp(:,:)*elem(ie)%derived%eta_dot_dpdn(:,:,k)
@@ -1096,15 +1121,12 @@ contains
                end if
              end if
           enddo
-          if (use_semi_lagrange_transport) then
-            elem(ie)%derived%vstar=elem(ie)%state%v(:,:,:,:,np1)
-          end if
           call remap1_nofilter(elem(ie)%derived%vstar,np,1,dp,dp_star)
        end do
     else
-       ! for rsplit>0:  dynamics is also vertically lagrangian, so we do not need to
-       ! remap the velocities
-       stop 'FVM need to use lagrangian winds here'
+       ! do nothing
+       ! for rsplit>0:  dynamics is also vertically lagrangian, so we do not need 
+       ! to interpolate v(np1). 
     endif
 
 
