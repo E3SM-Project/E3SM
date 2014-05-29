@@ -2005,10 +2005,10 @@ subroutine ghostVpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
     do k=1,vlyr
       do i=1,npoints
         do j=1,nhc
-          edge%buf(i,j,k+kptr,itr,is)   = v(i  ,j ,k,itr)
-          edge%buf(i,j,k+kptr,itr,ie)   = v(npoints-j+1 ,i ,k,itr)
-          edge%buf(i,j,k+kptr,itr,in)   = v(i  ,npoints-j+1,k,itr)
-          edge%buf(i,j,k+kptr,itr,iw)   = v(j  ,i ,k,itr)
+          edge%buf(i,j,k,itr+kptr,is)   = v(i  ,j ,k,itr)
+          edge%buf(i,j,k,itr+kptr,ie)   = v(npoints-j+1 ,i ,k,itr)
+          edge%buf(i,j,k,itr+kptr,in)   = v(i  ,npoints-j+1,k,itr)
+          edge%buf(i,j,k,itr+kptr,iw)   = v(j  ,i ,k,itr)
         enddo
       end do
     end do
@@ -2025,7 +2025,7 @@ subroutine ghostVpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
        do i=1,npoints
          do j=1,nhc
            ir = npoints-i+1
-           edge%buf(ir,j,kptr+k,itr,is)=v(i,j,k,itr)
+           edge%buf(ir,j,k,itr+kptr,is)=v(i,j,k,itr)
          enddo
        enddo
      enddo
@@ -2039,7 +2039,7 @@ subroutine ghostVpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
        do i=1,npoints
          do j=1,nhc
            ir = npoints-i+1
-           edge%buf(ir,j,kptr+k,itr,ie)=v(npoints-j+1,i,k,itr)
+           edge%buf(ir,j,k,itr+kptr,ie)=v(npoints-j+1,i,k,itr)
           enddo
         enddo
       enddo
@@ -2053,7 +2053,7 @@ subroutine ghostVpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
         do i=1,npoints
           do j=1,nhc
             ir = npoints-i+1
-            edge%buf(ir,j,kptr+k,itr,in)=v(i,npoints-j+1,k,itr)
+            edge%buf(ir,j,k,itr+kptr,in)=v(i,npoints-j+1,k,itr)
           enddo
         enddo
       enddo
@@ -2067,7 +2067,7 @@ subroutine ghostVpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
        do i=1,npoints
          do j=1,nhc
             ir = npoints-i+1
-            edge%buf(ir,j,kptr+k,itr,iw)=v(j,i,k,itr)
+            edge%buf(ir,j,k,itr+kptr,iw)=v(j,i,k,itr)
           enddo
         enddo
       enddo
@@ -2087,7 +2087,7 @@ subroutine ghostVpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
            ! edge%buf(1,1,kptr+k,desc%putmapP_ghost(l))=v(1,1 ,k)
           do i=1,nhc
             do j=1,nhc
-              edge%buf(i,j,kptr+k,itr,desc%putmapP_ghost(l))=v(i  ,j ,k,itr)
+              edge%buf(i,j,k,itr+kptr,desc%putmapP_ghost(l))=v(i  ,j ,k,itr)
             enddo
           end do
         end do
@@ -2104,7 +2104,7 @@ subroutine ghostVpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
            ! edge%buf(1,1,kptr+k,desc%putmapP_ghost(l))=v(nc ,1 ,k)
           do i=1,nhc
             do j=1,nhc
-              edge%buf(i,j,kptr+k,itr,desc%putmapP_ghost(l))=v(npoints-i+1 ,j ,k,itr)
+              edge%buf(i,j,k,itr+kptr,desc%putmapP_ghost(l))=v(npoints-i+1 ,j ,k,itr)
             enddo
           end do
         end do
@@ -2121,7 +2121,7 @@ subroutine ghostVpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
            !edge%buf(1,1,kptr+k,desc%putmapP_ghost(l))=v(nc ,nc,k)
            do i=1,nhc
               do j=1,nhc
-                 edge%buf(i,j,kptr+k,itr,desc%putmapP_ghost(l))=v(npoints-i+1,npoints-j+1,k,itr)
+                 edge%buf(i,j,k,itr+kptr,desc%putmapP_ghost(l))=v(npoints-i+1,npoints-j+1,k,itr)
               enddo
             enddo
           end do
@@ -2138,7 +2138,7 @@ subroutine ghostVpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
            !edge%buf(1,1,kptr+k,desc%putmapP_ghost(l))=v(1  ,nc,k)
           do i=1,nhc
             do j=1,nhc
-              edge%buf(i,j,kptr+k,itr,desc%putmapP_ghost(l))=v(i  ,npoints-j+1,k,itr)
+              edge%buf(i,j,k,itr+kptr,desc%putmapP_ghost(l))=v(i  ,npoints-j+1,k,itr)
             enddo
           end do
         end do
@@ -2382,10 +2382,10 @@ subroutine ghostVunpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
     do k=1,vlyr
       do i=1,npoints
        do j=1,nhc
-          v(i  ,1-j  ,k,itr)      = edge%buf(i,j,kptr+k,itr,is  )
-          v(npoints+j ,i  ,k,itr) = edge%buf(i,j,kptr+k,itr,ie  )
-          v(i  ,npoints+j ,k,itr) = edge%buf(i,j,kptr+k,itr,in  )
-          v(1-j  ,i  ,k,itr)      = edge%buf(i,j,kptr+k,itr,iw  )
+          v(i  ,1-j  ,k,itr)      = edge%buf(i,j,k,itr+kptr,is  )
+          v(npoints+j ,i  ,k,itr) = edge%buf(i,j,k,itr+kptr,ie  )
+          v(i  ,npoints+j ,k,itr) = edge%buf(i,j,k,itr+kptr,in  )
+          v(1-j  ,i  ,k,itr)      = edge%buf(i,j,k,itr+kptr,iw  )
        end do
       end do
     end do
@@ -2402,7 +2402,7 @@ subroutine ghostVunpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
               !v(0  ,0 ,k)=edge%buf(1,1,kptr+k,desc%getmapP_ghost(l))
               do j=1,nhc
                  do i=1,nhc
-                    v(1-j,1-i,k,itr)=edge%buf(i,j,kptr+k,itr,ic)
+                    v(1-j,1-i,k,itr)=edge%buf(i,j,k,itr+kptr,ic)
                  enddo
               enddo
              enddo
@@ -2413,7 +2413,7 @@ subroutine ghostVunpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
               !v(0  ,0 ,k)=edge%buf(1,1,kptr+k,desc%getmapP_ghost(l))
               do j=1,nhc
                  do i=1,nhc
-                    v(1-j,1-i,k,itr)=edge%buf(j,i,kptr+k,itr,ic)
+                    v(1-j,1-i,k,itr)=edge%buf(j,i,k,itr+kptr,ic)
                  enddo
               enddo
              enddo
@@ -2443,7 +2443,7 @@ subroutine ghostVunpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
               !v(nc+1 ,0 ,k)=edge%buf(1,1,kptr+k,desc%getmapP_ghost(l))
               do j=1,nhc
                  do i=1,nhc
-                    v(npoints+i,1-j,k,itr)=edge%buf(j,i,kptr+k,itr,ic)
+                    v(npoints+i,1-j,k,itr)=edge%buf(j,i,k,itr+kptr,ic)
                  enddo
               enddo
             enddo
@@ -2454,7 +2454,7 @@ subroutine ghostVunpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
               !v(nc+1 ,0 ,k)=edge%buf(1,1,kptr+k,desc%getmapP_ghost(l))
               do j=1,nhc
                  do i=1,nhc
-                    v(npoints+i ,1-j ,k,itr)=edge%buf(i,j,kptr+k,itr,ic)
+                    v(npoints+i ,1-j ,k,itr)=edge%buf(i,j,k,itr+kptr,ic)
                  enddo
               enddo
             enddo
@@ -2484,7 +2484,7 @@ subroutine ghostVunpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
               !v(nc+1 ,nc+1,k)=edge%buf(1,1,kptr+k,desc%getmapP_ghost(l))
               do j=1,nhc
                  do i=1,nhc
-                    v(npoints+i ,npoints+j,k,itr)=edge%buf(j,i,kptr+k,itr,ic)
+                    v(npoints+i ,npoints+j,k,itr)=edge%buf(j,i,k,itr+kptr,ic)
                  enddo
               enddo
             enddo
@@ -2495,7 +2495,7 @@ subroutine ghostVunpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
               !v(nc+1 ,nc+1,k)=edge%buf(1,1,kptr+k,desc%getmapP_ghost(l))
               do j=1,nhc
                  do i=1,nhc
-                    v(npoints+i ,npoints+j,k,itr)=edge%buf(i,j,kptr+k,itr,ic)
+                    v(npoints+i ,npoints+j,k,itr)=edge%buf(i,j,k,itr+kptr,ic)
                  enddo
               enddo
             enddo
@@ -2525,7 +2525,7 @@ subroutine ghostVunpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
               !v(0  ,nc+1,k)=edge%buf(1,1,kptr+k,desc%getmapP_ghost(l))
               do j=1,nhc
                  do i=1,nhc
-                    v(1-i ,npoints+j,k,itr)=edge%buf(j,i,kptr+k,itr,ic)
+                    v(1-i ,npoints+j,k,itr)=edge%buf(j,i,k,itr+kptr,ic)
                  enddo
               enddo
             enddo
@@ -2536,7 +2536,7 @@ subroutine ghostVunpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
               !v(0  ,nc+1,k)=edge%buf(1,1,kptr+k,desc%getmapP_ghost(l))
               do j=1,nhc
                  do i=1,nhc
-                    v(1-i ,npoints+j,k,itr)=edge%buf(i,j,kptr+k,itr,ic)
+                    v(1-i ,npoints+j,k,itr)=edge%buf(i,j,k,itr+kptr,ic)
                  enddo
               enddo
             enddo
