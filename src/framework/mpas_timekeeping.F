@@ -1635,8 +1635,6 @@ subroutine wrf_error_fatal(msg)
 
    character (len=*) :: msg
 
-   write(0,*) 'MPAS_TIMEKEEPING: '//trim(msg)
-
-   stop
+   call mpas_dmpar_global_abort('ERROR: mpas_timekeeping: '//trim(msg))
 
 end subroutine wrf_error_fatal

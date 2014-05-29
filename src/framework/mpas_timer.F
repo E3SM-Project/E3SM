@@ -248,7 +248,7 @@
 
           if(.not.timer_found) then
             print *,' timer_stop :: timer_stop called with timer_name =', timer_name,' when timer has not been started.'
-            stop
+            call mpas_dmpar_global_abort('ERROR: in subroutine mpas_timer_stop()')
           endif
 
           if(current%running) then
@@ -316,7 +316,7 @@
 
           if(present(timer_ptr) .and. (.not.present(total_ptr))) then
             print *,'timer_write :: timer_ptr valid, but total_ptr is not assigned.'
-            stop
+            call mpas_dmpar_global_abort('ERROR: in subroutine mpas_timer_write()')
           else if(present(timer_ptr)) then
             tname = ''
             do i=0,timer_ptr%levels+2
@@ -352,7 +352,7 @@
 
           if(.not.total_found) then
             print *,' timer_write :: no timer named "total time" found.'
-            stop
+            call mpas_dmpar_global_abort('ERROR: in subroutine mpas_timer_write()')
           end if
 
           write(stdoutUnit,'(3x, a10, 24x, a15, a10, a13, a15, a15, a12, a12)') 'timer_name', 'total', 'calls', 'min', 'max', &

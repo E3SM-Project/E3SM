@@ -1374,7 +1374,7 @@ contains
 
      else
        write (stderrUnit,*) 'bad choice of tensor_test_function: ',tensor_test_function
-       stop
+       call mpas_dmpar_global_abort('ERROR: in subroutine mpas_test_tensor()')
      endif
 
      if (computeStrainRate) then

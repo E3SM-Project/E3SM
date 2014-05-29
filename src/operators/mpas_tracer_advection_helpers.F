@@ -334,7 +334,6 @@ module mpas_tracer_advection_helpers
 
 
       integer, parameter :: polynomial_order = 2
-      logical, parameter :: debug = .false.
       logical, parameter :: least_squares = .true.
       logical :: add_the_cell, do_the_cell
 
@@ -699,8 +698,6 @@ module mpas_tracer_advection_helpers
       deallocate(theta_abs)
       deallocate(angle_2d)
 
-      if (debug) stop
-
 
 !      write(stderrUnit,*) ' check for deriv2 coefficients, iEdge 4 '
 !
@@ -718,7 +715,6 @@ module mpas_tracer_advection_helpers
 !      do j=2,7
 !         write(stderrUnit,*) ' j, icell, coef ',j, cellsOnCell(j-1,iCell),deriv_two(j,2,iEdge)
 !      end do
-!      stop
 
    end subroutine mpas_initialize_deriv_two!}}}
 
