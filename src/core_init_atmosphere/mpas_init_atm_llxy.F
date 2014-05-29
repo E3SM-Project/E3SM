@@ -2227,8 +2227,7 @@ MODULE init_atm_llxy
 
       CHARACTER (LEN=*), INTENT(IN) :: mesg
 
-      WRITE(0,*) trim(mesg)
-      STOP
+      CALL mpas_dmpar_global_abort(trim(mesg))
 
    END SUBROUTINE llxy_error_fatal
   

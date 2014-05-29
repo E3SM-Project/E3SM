@@ -56,7 +56,7 @@ write(0,*) trim(str)
  write(0,*)
  write(0,*) ( '------------------------------ FATAL CALLED ------------------------------')
  write(0,*) trim(str)
- stop ' MPAS core_physics abort'
+ call mpas_dmpar_global_abort('ERROR: MPAS core_physics abort')
  
  end subroutine physics_error_fatal
 

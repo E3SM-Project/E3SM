@@ -303,7 +303,7 @@
           write(0,201) j,i,k,dz_p(i,k,j),pressure_b(k,i),pressure_p(k,i),pres_p(i,k,j), &
              rho_p(i,k,j),th_p(i,k,j),t_p(i,k,j),qv_p(i,k,j)
        enddo
-!      stop
+!      call mpas_dmpar_global_abort('ERROR: pressure increasing with height')
     endif
  enddo
  enddo
