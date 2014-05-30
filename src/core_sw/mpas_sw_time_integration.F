@@ -485,7 +485,7 @@ module sw_time_integration
          end do
       end do
 
-#ifdef LANL_FORMULATION
+
       !
       ! Compute u (normal) velocity tendency for each edge (cell face)
       !
@@ -512,34 +512,6 @@ module sw_time_integration
          end do
       end do
 
-
-#endif
-
-#ifdef NCAR_FORMULATION
-      !
-      ! Compute u (normal) velocity tendency for each edge (cell face)
-      !
-      tend_u(:,:) = 0.0
-      do iEdge = 1, nEdgesSolve
-         vertex1 = verticesOnEdge(1,iEdge)
-         vertex2 = verticesOnEdge(2,iEdge)
-         cell1 = cellsOnEdge(1,iEdge)
-         cell2 = cellsOnEdge(2,iEdge)
-
-         do k = 1, nVertLevels
-            vorticity_abs = fEdge(iEdge) + (circulation(k,vertex1) + circulation(k,vertex2)) / &
-                                           (areaTriangle(vertex1) + areaTriangle(vertex2))
-
-            workpv = 2.0 * vorticity_abs / (h(k,cell1) + h(k,cell2))
-
-            tend_u(k,iEdge) = workpv * vh(k,iEdge) - &
-                              (ke(k,cell2) - ke(k,cell1) + &
-                                 gravity * (h(k,cell2) + h_s(cell2) - h(k,cell1) - h_s(cell1)) &
-                              ) / &
-                              dcEdge(iEdge)
-         end do
-      end do
-#endif
 
      ! Compute diffusion, computed as \nabla divergence - k \times \nabla vorticity
      !                    only valid for visc == constant
