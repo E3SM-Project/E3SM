@@ -130,11 +130,11 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
      do j=1,nc
         do i=1,nc
               fvm(ie)%elem_mass=fvm(ie)%elem_mass + &
-                   fvm(ie)%area_sphere(i,j)*fvm(ie)%dp_fvm(i,j,chooselev,1,tl%n0)
-              fvm(ie)%cstart(i,j)=fvm(ie)%dp_fvm(i,j,chooselev,1,tl%n0)
+                   fvm(ie)%area_sphere(i,j)*fvm(ie)%dp_fvm(i,j,chooselev,tl%n0)
+              fvm(ie)%cstart(i,j)=fvm(ie)%dp_fvm(i,j,chooselev,tl%n0)
 
 !              fvm(ie)%elem_mass=fvm(ie)%elem_mass + &
-!                   fvm(ie)%area_sphere(i,j)*fvm(ie)%dp_fvm(i,j,chooselev,1,tl%n0)*&
+!                   fvm(ie)%area_sphere(i,j)*fvm(ie)%dp_fvm(i,j,chooselev,tl%n0)*&
 !                   fvm(ie)%c(i,j,chooselev,choosetrac,tl%n0)
 !              fvm(ie)%cstart(i,j)=fvm(ie)%c(i,j,chooselev,choosetrac,tl%n0)
         enddo
@@ -143,7 +143,7 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
      ! reset the new unknown
      !
      fvm(ie)%c     (:,:,:,:,tl%np1)=0.0D0
-     fvm(ie)%dp_fvm(:,:,:,:,tl%np1)=0.0D0
+     fvm(ie)%dp_fvm(:,:,:  ,tl%np1)=0.0D0
   end do
   
   !first exchange of the initial values
@@ -157,8 +157,8 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
     global_shared_buf(ie,1)=0.0D0
     global_shared_buf(ie,1)=fvm(ie)%elem_mass
     ! for the max value on the sphere
-    tmp1(ie) = MAXVAL(fvm(ie)%dp_fvm(:,:,chooselev,1,tl%n0))
-    tmp2(ie) = MINVAL(fvm(ie)%dp_fvm(:,:,chooselev,1,tl%n0))   
+    tmp1(ie) = MAXVAL(fvm(ie)%dp_fvm(:,:,chooselev,tl%n0))
+    tmp2(ie) = MINVAL(fvm(ie)%dp_fvm(:,:,chooselev,tl%n0))   
 
 !    tmp1(ie) = MAXVAL(fvm(ie)%c(:,:,chooselev,choosetrac,tl%n0))
 !    tmp2(ie) = MINVAL(fvm(ie)%c(:,:,chooselev,choosetrac,tl%n0))   
@@ -272,20 +272,20 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
                  ! air density
                  !
                  global_shared_buf(ie,1)=global_shared_buf(ie,1)+fvm(ie)%area_sphere(i,j)*&
-                      fvm(ie)%dp_fvm(i,j,chooselev,1,tl%n0)
+                      fvm(ie)%dp_fvm(i,j,chooselev,tl%n0)
                  !
                  ! tracer mass
                  !
                  !           global_shared_buf(ie,1)=global_shared_buf(ie,1)+fvm(ie)%area_sphere(i,j)*&
-                 !                fvm(ie)%dp_fvm(i,j,chooselev,1,tl%n0)*fvm(ie)%c(i,j,chooselev,choosetrac,tl%n0)
+                 !                fvm(ie)%dp_fvm(i,j,chooselev,tl%n0)*fvm(ie)%c(i,j,chooselev,choosetrac,tl%n0)
                  
               end do
            end do
            ! for the max/min value on the sphere
            !      tmp1(ie) = MAXVAL(fvm(ie)%c(:,:,chooselev,choosetrac,tl%n0))
            !      tmp2(ie) = MINVAL(fvm(ie)%c(:,:,chooselev,choosetrac,tl%n0))
-           tmp1(ie) = MAXVAL(fvm(ie)%dp_fvm(:,:,chooselev,1,tl%n0))
-           tmp2(ie) = MINVAL(fvm(ie)%dp_fvm(:,:,chooselev,1,tl%n0))
+           tmp1(ie) = MAXVAL(fvm(ie)%dp_fvm(:,:,chooselev,tl%n0))
+           tmp2(ie) = MINVAL(fvm(ie)%dp_fvm(:,:,chooselev,tl%n0))
         end do
         !-----------------------------------------------------------------------------------!
         ! for mass calculation

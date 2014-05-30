@@ -17,7 +17,7 @@ module fvm_control_volume_mod
   ! ---------------------------------------------------------------------------------
   use element_mod, only: timelevels, element_t
   ! ---------------------------------------------------------------------------------
-  use dimensions_mod, only: nc, nhe, nlev, ntrac, ntrac_d, ne, np, nhr, ns
+  use dimensions_mod, only: nc, nhe, nlev, ntrac, ntrac_d, ne, np, nhr, ns, nhc
   ! ---------------------------------------------------------------------------------
   use control_mod, only : north, south, east, west, neast, nwest, seast, swest
   ! ---------------------------------------------------------------------------------
@@ -37,9 +37,9 @@ module fvm_control_volume_mod
 
   type, public :: fvm_struct
     ! fvm tracer mixing ratio: (kg/kg)
-    real (kind=real_kind) :: c     (1-nc:nc+nc,1-nc:nc+nc,nlev,ntrac_d,timelevels) 
-    real (kind=real_kind) :: dp_fvm(1-nc:nc+nc,1-nc:nc+nc,nlev,timelevels) 
-    real (kind=real_kind) :: psc(1-nc:nc+nc,1-nc:nc+nc)
+    real (kind=real_kind) :: c     (1-nhc:nc+nhc,1-nhc:nc+nhc,nlev,ntrac_d,timelevels) 
+    real (kind=real_kind) :: dp_fvm(1-nhc:nc+nhc,1-nhc:nc+nhc,nlev        ,timelevels) 
+    real (kind=real_kind) :: psc(1-nhc:nc+nhc,1-nc:nc+nhc)
     real (kind=real_kind) :: cstart(1:nc,1:nc)
 !-----------------------------------------------------------------------------------!
     ! define the arrival grid, which is build on the original HOMME elements
@@ -891,14 +891,14 @@ subroutine create_interpolation_points(elem,fvm)
 
   ! element is not on a corner, but shares a cube edge (call of subroutine)
   if(fvm%cubeboundary <= 4) then
-    gnomxstart(1-nc)=elem%corners(1)%x-(nc-0.5D0)*fvm%dalpha
-    gnomystart(1-nc)=elem%corners(1)%y-(nc-0.5D0)*fvm%dbeta
-    do i=2-nc,nc+nc
+    gnomxstart(1-nhc)=elem%corners(1)%x-(nhc-0.5D0)*fvm%dalpha
+    gnomystart(1-nhc)=elem%corners(1)%y-(nhc-0.5D0)*fvm%dbeta
+    do i=2-nhc,nc+nhc
       gnomxstart(i)=gnomxstart(i-1)+fvm%dalpha
       gnomystart(i)=gnomystart(i-1)+fvm%dbeta
     end do
-    ida=1-nc  !lower bound
-    ide=nc+nc !upper bound
+    ida=1-nhc  !lower bound
+    ide=nc+nhc !upper bound
     select case (fvm%cubeboundary)
       !INTERIOR element
       case(0)
@@ -965,11 +965,11 @@ subroutine create_interpolation_points(elem,fvm)
     end select
   !CORNER TREATMENT
   else  
-    gnomxstart(1-nc)=cube_xstart-(nc-0.5D0)*fvm%dalpha
-    gnomxend(nc+nc)=cube_xend+(nc-0.5D0)*fvm%dalpha
-    gnomystart(1-nc)=cube_ystart-(nc-0.5D0)*fvm%dbeta
-    gnomyend(nc+nc)=cube_yend+(nc-0.5D0)*fvm%dbeta
-    do i=2-nc,nc+nc
+    gnomxstart(1-nhc)=cube_xstart-(nhc-0.5D0)*fvm%dalpha
+    gnomxend(nc+nhc)=cube_xend+(nhc-0.5D0)*fvm%dalpha
+    gnomystart(1-nhc)=cube_ystart-(nhc-0.5D0)*fvm%dbeta
+    gnomyend(nc+nhc)=cube_yend+(nhc-0.5D0)*fvm%dbeta
+    do i=2-nhc,nc+nhc
       gnomxstart(i)=gnomxstart(i-1)+fvm%dalpha
       gnomxend(nc+1-i)=gnomxend(nc+2-i)-fvm%dalpha
       gnomystart(i)=gnomystart(i-1)+fvm%dbeta
@@ -1088,7 +1088,7 @@ subroutine interpolation_point(gnom,gnom1d,face1,face2,xy,point,ida,ide,iref,iba
   use parallel_mod, only : haltmp
   implicit none
   type (cartesian2D_t), intent(in)                     :: gnom  
-  real (kind=real_kind), dimension(1-nc:), intent(in) :: gnom1d  !dimension(1-nc:nc+nc)
+  real (kind=real_kind), dimension(1-nc:), intent(in) :: gnom1d  !dimension(1-nhc:nc+nhc)
   integer, intent(in)                                  :: face1, face2, xy
   integer,intent(in)                                   :: ida, ide
   integer,intent(inout)                                :: iref,ibaseref
