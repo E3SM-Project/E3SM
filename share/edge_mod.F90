@@ -1959,7 +1959,7 @@ contains
 ! =========================================
 
 subroutine ghostVpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
-  use dimensions_mod, only : max_corner_elem!, ntrac_d
+  use dimensions_mod, only : max_corner_elem
   use control_mod, only : north, south, east, west, neast, nwest, seast, swest
 
   type (Ghostbuffertr_t)                      :: edge
@@ -1967,8 +1967,7 @@ subroutine ghostVpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
   integer,              intent(in)   :: ntrac
   integer,              intent(in)   :: npoints,nhc, kptr
   
-  real (kind=real_kind),intent(in)   :: v(1-nhc:npoints+nhc,1-nhc:npoints+nhc,vlyr,ntrac)  !phl
-!  real (kind=real_kind),intent(in)   :: v(1-nhc:npoints+nhc,1-nhc:npoints+nhc,vlyr,ntrac_d,timelevels)
+  real (kind=real_kind),intent(in)   :: v(1-nhc:npoints+nhc,1-nhc:npoints+nhc,vlyr,ntrac)
   type (EdgeDescriptor_t),intent(in) :: desc
 
   ! Local variables
@@ -2348,7 +2347,7 @@ end subroutine GhostVpackR
 ! Unpack the halo zone into v
 ! ========================================
 subroutine ghostVunpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
-  use dimensions_mod, only : max_corner_elem!, ntrac_d
+  use dimensions_mod, only : max_corner_elem
   use control_mod, only : north, south, east, west, neast, nwest, seast, swest
   type (Ghostbuffertr_t),         intent(in)  :: edge
 
@@ -2357,7 +2356,6 @@ subroutine ghostVunpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
   integer,               intent(in)  :: kptr,nhc,npoints
   
   real (kind=real_kind), intent(inout) :: v(1-nhc:npoints+nhc,1-nhc:npoints+nhc,vlyr,ntrac)
-!  real (kind=real_kind), intent(inout) :: v(1-nhc:npoints+nhc,1-nhc:npoints+nhc,vlyr,ntrac_d,timelevels)
   
   type (EdgeDescriptor_t)            :: desc
 
