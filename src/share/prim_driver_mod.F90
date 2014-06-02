@@ -1319,7 +1319,7 @@ contains
     use hybvcoord_mod, only : hvcoord_t
     use time_mod, only : TimeLevel_t, timelevel_update, timelevel_qdp, nsplit
     use control_mod, only: statefreq,&
-           energy_fixer, ftype, qsplit, rsplit, test_cfldep
+           energy_fixer, ftype, qsplit, rsplit, test_cfldep, disable_diagnostics
     use prim_advance_mod, only : applycamforcing, &
                                  applycamforcing_dynamics
     use prim_state_mod, only : prim_printstate, prim_diag_scalars, prim_energy_halftimes
@@ -1378,6 +1378,9 @@ contains
        compute_diagnostics=.true.
        compute_energy = .true.
     endif
+
+    if(disable_diagnostics) compute_diagnostics=.false.
+
     if (compute_diagnostics) &
        call prim_diag_scalars(elem,hvcoord,tl,4,.true.,nets,nete)
 
