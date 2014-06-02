@@ -100,7 +100,7 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
       ierr = ncmpi_open(ios->io_comm, filename, amode, ios->info, &(file->fh));
       // This should only be done with a file opened to append
       if(ierr == PIO_NOERR && (amode & PIO_WRITE)){
-	if(ios->iomaster) printf("%d Setting IO buffer %d\n",__LINE__,PIO_BUFFER_SIZE_LIMIT);
+	if(ios->iomaster) printf("%d Setting IO buffer %ld\n",__LINE__,PIO_BUFFER_SIZE_LIMIT);
 	ierr = ncmpi_buffer_attach(file->fh, PIO_BUFFER_SIZE_LIMIT );
       }
       for(int i=0;i<PIO_MAX_VARS;i++)
@@ -218,7 +218,7 @@ int PIOc_createfile(const int iosysid, int *ncidp,  int *iotype,
     case PIO_IOTYPE_PNETCDF:
       ierr = ncmpi_create(ios->io_comm, filename, amode, ios->info, &(file->fh));
       if(ierr == PIO_NOERR){
-	if(ios->iomaster) printf("%d Setting IO buffer %d\n",__LINE__,PIO_BUFFER_SIZE_LIMIT);
+	printf("%d %d Setting IO buffer %ld\n",__LINE__,ios->io_rank,PIO_BUFFER_SIZE_LIMIT);
 	ierr = ncmpi_buffer_attach(file->fh, PIO_BUFFER_SIZE_LIMIT );
       }
       for(int i=0;i<PIO_MAX_VARS;i++)

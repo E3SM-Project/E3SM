@@ -83,7 +83,6 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, voi
 	ierr = ncmpi_inq_buffer_usage(ncid, &usage);
 	usage += tsize*(iodesc->maxiobuflen);
 	MPI_Allreduce(MPI_IN_PLACE, &usage, 1,  MPI_LONG_LONG,  MPI_MAX, ios->io_comm);
-	//	printf("usage %ld\n",usage);
 	if(usage >= PIO_BUFFER_SIZE_LIMIT){
 	  flush_output_buffer(file);
 	}
@@ -208,7 +207,7 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, voi
 			       dsize, iodesc->basetype, &request);
 	pio_push_request(file,request);
 	if(ierr != PIO_NOERR){
-	printf("%s %d",__FILE__,__LINE__);
+	  printf("%s %d usage %ld %d %ld",__FILE__,__LINE__,usage,tsize,iodesc->maxiobuflen);
 	for( i=0;i<ndims;i++)
 	  printf(" %ld %ld ",start[i],count[i]);
 	 printf("dsize %ld\n",dsize);

@@ -4,8 +4,8 @@ enum PIO_DATATYPE{
   PIO_INT,
   PIO_DOUBLE
 };
-
-
+#define PIO_NOERR 0
+typedef long long PIO_Offset;
 #define max(a,b) \
    ({ __typeof__ (a) _a = (a); \
        __typeof__ (b) _b = (b); \
@@ -17,6 +17,7 @@ enum PIO_DATATYPE{
      _a < _b ? _a : _b; })
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
 #else
 #include <pio.h>
 #include <pio_internal.h>
@@ -103,17 +104,20 @@ void computestartandcount(const int gdim, const int ioprocs, const int rank,
   int irank;
   int remainder;
   int adds;
+  PIO_Offset lstart, lkount;
 
   irank = rank % ioprocs;
-  *kount =(long int) (gdim/ioprocs);
-  *start = (long int) (*kount*irank);
-  remainder = gdim - *kount*ioprocs;
+  lkount =(long int) (gdim/ioprocs);
+  lstart = (long int) (lkount*irank);
+  remainder = gdim - lkount*ioprocs;
 
   if(remainder>= ioprocs-irank){
-    *kount++;
+    lkount++;
     if((adds = irank+remainder-ioprocs)>0)
-      *start+= adds;
+      lstart+= adds;
   }
+  *start = lstart;
+  *kount = lkount;
   
 }
 
@@ -256,7 +260,7 @@ int CalcStartandCount(const int basetype, const int ndims,const int *gdims, cons
       }
       ldims = ndims-1;
       p=basesize;
-      for(i=0;i<ndims;i++){
+      for(i=ndims-1;i>=0;i--){
 	p=p*gdims[i];
 	if(p/use_io_procs > maxbytes){
 	  ldims = i;
@@ -273,26 +277,28 @@ int CalcStartandCount(const int basetype, const int ndims,const int *gdims, cons
 
       ioprocs = use_io_procs;
       tiorank = iorank;
-      //      for(i=ldims;i>=0;i--){
+#ifdef TESTCALCDECOMP
+      if(myiorank==0)      printf("%d use_io_procs %d ldims %d\n",__LINE__,use_io_procs,ldims);
+#endif
       for(i=0;i<=ldims;i++){
 	if(gdims[i]>= ioprocs){
-	  computestartandcount(gdims[i],ioprocs,tiorank,start+i,kount+i);
-
+	  computestartandcount(gdims[i],ioprocs,tiorank,start+i,kount+i);      
+#ifdef TESTCALCDECOMP
+	  if(myiorank==0)      printf("%d tiorank %d i %d start %d count %d\n",__LINE__,tiorank,i,start[i],kount[i]);
+#endif
 	  if(start[i]+kount[i]>gdims[i]+1){
 #ifndef TESTCALCDECOMP
 	    piodie("Start plus count exceeds dimension bound",__FILE__,__LINE__);
 #endif
 	  }
-	  break;
 	}else if(gdims[i]>1){
 	  tioprocs=gdims[i];
 	  tiorank = (iorank*tioprocs)/ioprocs;
 	  computestartandcount(gdims[i],tioprocs,tiorank,start+i,kount+i);
-	  
 	  ioprocs = ioprocs/tioprocs;
 	  tiorank  = iorank % ioprocs;
 	}
-	
+
       }
       if(myiorank==iorank){
 	for(i=0;i<ndims;i++){
@@ -301,23 +307,28 @@ int CalcStartandCount(const int basetype, const int ndims,const int *gdims, cons
 	}
       }
       pknt = 1;
+      
       for(i=0;i<ndims;i++)
 	pknt*=kount[i];
+	
       tpsize+=pknt;
 
+      //      printf("%d myiorank %d tpsize %ld pknt %ld kount %ld %ld\n",__LINE__,myiorank,tpsize,pknt, kount[0],kount[1]);
 
       if(tpsize==pgdims && use_io_procs==iorank+1){
 	converged = true;
-
 	break;
       }else if(tpsize>=pgdims) {
 	break;
       }
     }
     if(! converged) {
+#ifdef TESTCALCDECOMP
+      printf("%d start %d %d count %d %d tpsize %ld\n",__LINE__,mystart[0],mystart[1],mykount[0],mykount[1],tpsize);
+#endif      
       tpsize = 0;
       use_io_procs--;
-    }   
+    }
 
   }
 
@@ -339,9 +350,9 @@ int CalcStartandCount(const int basetype, const int ndims,const int *gdims, cons
 #ifdef TESTCALCDECOMP
 int main()
 {
-  int ndims=4;
-  int gdims[4]={720,360,3,2};
-  int num_io_procs=14;
+  int ndims=2;
+  int gdims[2]={31,777602};
+  int num_io_procs=24;
   bool converged=false;
   long int start[ndims], kount[ndims];
   int iorank, numaiotasks;
@@ -359,6 +370,9 @@ int main()
   while (! converged){
     for(iorank=0;iorank<num_io_procs;iorank++){
       numaiotasks = CalcStartandCount(PIO_DOUBLE,ndims,gdims,num_io_procs, iorank, start,kount);
+      if(iorank<numaiotasks)
+	printf("iorank %d start %ld %ld count %ld %ld\n",iorank,start[0],start[1],kount[0],kount[1]);
+
       if(numaiotasks<0) return numaiotasks;
 
       psize=1;
@@ -370,7 +384,6 @@ int main()
       tpsize+=psize;
 
     }
- 
     if(tpsize==pgdims)
       converged = true;
     else{
@@ -379,6 +392,10 @@ int main()
       num_io_procs--;
     }
   }
+
+  
+
+
 }
 #endif      
 

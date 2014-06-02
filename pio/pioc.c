@@ -160,18 +160,9 @@ int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const
 	  }
 	  iodesc->num_aiotasks = ios->num_iotasks;
 	}else{
-	
 	  iodesc->num_aiotasks = CalcStartandCount(basetype, ndims, dims, 
 						   ios->num_iotasks, ios->io_rank,
 						   iodesc->firstregion->start, iodesc->firstregion->count);
-
-	//	for(int j=0;j<ndims;j++)
-	//	  printf("%d start[%d] %ld count %ld\n",ios->io_rank,j,iodesc->start[j],iodesc->count[j]);
-
-
-
-
-
       }
       compute_maxIObuffersize(ios->io_comm, iodesc);
 
@@ -183,10 +174,16 @@ int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const
     if(iodesc->rearranger==PIO_REARR_BOX){   
       ierr = box_rearrange_create( *ios, maplen, compmap, dims, ndims, iodesc);
     }
-
-    //  if(ios->ioproc)
-    //   for(int i=0;i<ndims;i++)
-    //     printf("%s %d dim %d start %ld count %ld\n",__FILE__,__LINE__,dims[i],iodesc->start[i],iodesc->count[i]);
+    /*
+    if(ios->ioproc){
+      io_region *ioregion = iodesc->firstregion;
+      while(ioregion != NULL){
+	for(int i=0;i<ndims;i++)
+	  printf("%s %d i %d dim %d start %ld count %ld\n",__FILE__,__LINE__,i,dims[i],ioregion->start[i],ioregion->count[i]);
+	ioregion = ioregion->next;
+      }
+    }
+    */
   }
 
   *ioidp = pio_add_to_iodesc_list(iodesc);

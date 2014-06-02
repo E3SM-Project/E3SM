@@ -52,19 +52,17 @@ contains
   subroutine pio_set_buffer_size_limit(limit)
     integer(PIO_OFFSET_KIND), intent(in) :: limit    
     integer(PIO_OFFSET_KIND) :: oldval
-    integer(C_LONG_LONG) :: clim
     interface 
        integer(C_LONG_LONG) function PIOc_set_buffer_size_limit(limit) &
             bind(C,name="PIOc_set_buffer_size_limit")
          use iso_c_binding
-         integer(C_LONG_LONG) :: limit
+         integer(C_LONG_LONG), value :: limit
        end function PIOc_set_buffer_size_limit
     end interface
     if(limit<0) then
        call piodie(__PIO_FILE__,__LINE__,' bad value to buffer_size_limit: ',int(limit))
     end if
-    clim = limit
-    oldval = PIOc_set_buffer_size_limit(clim)
+    oldval = PIOc_set_buffer_size_limit(limit)
        
   end subroutine pio_set_buffer_size_limit
 
