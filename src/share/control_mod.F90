@@ -19,10 +19,17 @@ module control_mod
   logical, public  :: use_semi_lagrange_transport   = .false.
 
 ! Tracer transport type
-  integer, public, parameter :: TRACERTRANSPORT_EULERIAN = 1
-  integer, public, parameter :: TRACERTRANSPORT_LAGRANGIAN = 2
-  integer, public, parameter :: TRACERTRANSPORT_FLUXFORM = 3
-  integer, public            :: tracer_transport_type = TRACERTRANSPORT_EULERIAN
+! We potentially have five types of tracer advection. However, not all of them
+! may be chosen at runtime due to compile-type restrictions on arrays
+  integer, public, parameter :: TRACERTRANSPORT_SE_GLL          = 1
+  integer, public, parameter :: TRACERTRANSPORT_SEMILAGRANG_GLL = 2
+  integer, public, parameter :: TRACERTRANSPORT_LAGRANGIAN_FVM  = 3
+  integer, public, parameter :: TRACERTRANSPORT_FLUXFORM_FVM    = 4
+  integer, public, parameter :: TRACERTRANSPORT_SPELT_FVM       = 5
+  integer, public            :: tracer_transport_type = TRACERTRANSPORT_SE_GLL
+  integer, public, parameter :: TRACER_GRIDTYPE_GLL = 11
+  integer, public, parameter :: TRACER_GRIDTYPE_FVM = 12
+  integer, public            :: tracer_grid_type = TRACER_GRIDTYPE_GLL
 
 !shallow water advection tests:
 !kmass points to a level with density.  other levels contain test tracers

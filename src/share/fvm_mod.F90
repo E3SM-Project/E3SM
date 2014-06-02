@@ -782,15 +782,15 @@ contains
 
  ! do it only for FVM tracers, FIRST TRACER will be the AIR DENSITY                                              
     do ie=nets,nete
-       call ghostVpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:,tnp0),nhc,nc,nlev,1,    0   ,elem(ie)%desc)
-       call ghostVpack(cellghostbuf, fvm(ie)%c(:,:,:,:,tnp0)   ,nhc,nc,nlev,ntrac,nlev,elem(ie)%desc)
+       call ghostVpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:,tnp0),nhc,nc,nlev,1,    0,elem(ie)%desc)
+       call ghostVpack(cellghostbuf, fvm(ie)%c(:,:,:,:,tnp0)   ,nhc,nc,nlev,ntrac,1,elem(ie)%desc)
     end do
     !exchange values for the initial data                                                                         
     call ghost_exchangeV(hybrid,cellghostbuf,nhc,nc,ntrac+1)
     !-----------------------------------------------------------------------------------!                         
     do ie=nets,nete
-       call ghostVunpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:,tnp0), nhc, nc,nlev,1    ,0,   elem(ie)%desc)
-       call ghostVunpack(cellghostbuf, fvm(ie)%c(:,:,:,:,tnp0),    nhc, nc,nlev,ntrac,nlev,elem(ie)%desc)
+       call ghostVunpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:,tnp0), nhc, nc,nlev,1    ,0,elem(ie)%desc)
+       call ghostVunpack(cellghostbuf, fvm(ie)%c(:,:,:,:,tnp0),    nhc, nc,nlev,ntrac,1,elem(ie)%desc)
     enddo
 
 

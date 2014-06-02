@@ -1038,8 +1038,8 @@ contains
     use fvm_mod, only : fvm_ideal_test, IDEAL_TEST_OFF, IDEAL_TEST_ANALYTICAL_WINDS
     use fvm_mod, only : fvm_test_type, IDEAL_TEST_BOOMERANG, IDEAL_TEST_SOLIDBODY
     use fvm_bsp_mod, only: get_boomerang_velocities_gll, get_solidbody_velocities_gll
-    use control_mod, only : tracer_transport_type, TRACERTRANSPORT_EULERIAN
-    use control_mod, only : TRACERTRANSPORT_LAGRANGIAN, TRACERTRANSPORT_FLUXFORM
+    use control_mod, only : tracer_transport_type
+    use control_mod, only : TRACERTRANSPORT_LAGRANGIAN_FVM, TRACERTRANSPORT_FLUXFORM_FVM
     use control_mod, only : use_semi_lagrange_transport
     use time_mod,    only : time_at
 
@@ -1145,11 +1145,9 @@ contains
     
     ! fvm departure calcluation should use vstar.
     ! from c(n0) compute c(np1):
-    if (tracer_transport_type == TRACERTRANSPORT_EULERIAN) then
-      call abortmp('Tracer transport set to GLL but ntrac > 0')
-    else if (tracer_transport_type == TRACERTRANSPORT_FLUXFORM) then
+    if (tracer_transport_type == TRACERTRANSPORT_FLUXFORM_FVM) then
       call cslam_runflux(elem,fvm,hybrid,deriv,dt,tl,nets,nete)
-    else if (tracer_transport_type == TRACERTRANSPORT_LAGRANGIAN) then
+    else if (tracer_transport_type == TRACERTRANSPORT_LAGRANGIAN_FVM) then
       call cslam_runairdensity(elem,fvm,hybrid,deriv,dt,tl,nets,nete)
     else
       call abortmp('Bad tracer_transport_type in Prim_Advec_Tracers_fvm')
