@@ -89,10 +89,14 @@ module namelist_mod
        vert_remap_q_alg, &
 #ifndef CAM
        pertlim,      &
-       tracer_transport_type,    &
-       TRACERTRANSPORT_EULERIAN,      &
-       TRACERTRANSPORT_LAGRANGIAN,    &
-       TRACERTRANSPORT_FLUXFORM, &
+       tracer_transport_type,           &
+       TRACERTRANSPORT_SEMILAGRANG_GLL, &
+       TRACERTRANSPORT_LAGRANGIAN_FVM,  &
+       TRACERTRANSPORT_FLUXFORM_FVM,    &
+       TRACERTRANSPORT_SPELT_FVM,       &
+       tracer_grid_type,                &
+       TRACER_GRIDTYPE_GLL,             &
+       TRACER_GRIDTYPE_FVM,             &
 #endif
        test_cfldep
       
@@ -750,7 +754,7 @@ module namelist_mod
 
 #ifndef CAM
        write(iulog,*)"reading CSLAM namelist..."
-       tracer_transport_method = 'eulerian'
+       tracer_transport_method = 'se_gll'
        cslam_ideal_test = 'off'
        cslam_test_type = 'boomerang'
 #if defined(OSF1) || defined(_BGL) || defined(_NAMELIST_FROM_FILE)
@@ -998,17 +1002,21 @@ module namelist_mod
 ! These options are set by the CAM namelist
 #ifndef CAM
 ! Set and broadcast tracer transport type
-    if (trim(tracer_transport_method) == 'eulerian') then
-      tracer_transport_type = TRACERTRANSPORT_EULERIAN
-    else if (trim(tracer_transport_method) == 'lagrangian') then
-      tracer_transport_type = TRACERTRANSPORT_LAGRANGIAN
-    else if (trim(tracer_transport_method) == 'flux_form') then
-      tracer_transport_type = TRACERTRANSPORT_FLUXFORM
+    if (trim(tracer_transport_method) == 'se_gll') then
+      tracer_transport_type = TRACERTRANSPORT_SE_GLL
+      tracer_grid_type = TRACER_GRIDTYPE_GLL
+    else if (trim(tracer_transport_method) == 'cslam_fvm') then
+      tracer_transport_type = TRACERTRANSPORT_LAGRANGIAN_FVM
+      tracer_grid_type = TRACER_GRIDTYPE_FVM
+    else if (trim(tracer_transport_method) == 'flux_form_cslam_fvm') then
+      tracer_transport_type = TRACERTRANSPORT_FLUXFORM_FVM
+      tracer_grid_type = TRACER_GRIDTYPE_FVM
     else
       call abortmp('Unknown tracer transport method: '//trim(tracer_transport_method))
     end if
     call MPI_bcast(tracer_transport_type,1,MPIinteger_t,par%root,par%comm,ierr)
-! Set and broadcast CSLAM options
+    call MPI_bcast(tracer_grid_type,1,MPIinteger_t,par%root,par%comm,ierr)
+! Set and broadcast CSLAM test options
     if (trim(cslam_ideal_test) == 'off') then
       fvm_ideal_test = IDEAL_TEST_OFF
     else if (trim(cslam_ideal_test) == 'analytical_departure') then

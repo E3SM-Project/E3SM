@@ -1534,7 +1534,7 @@ contains
     use time_mod, only : TimeLevel_t, timelevel_update, nsplit
     use control_mod, only: statefreq, integration, ftype, qsplit, nu_p, test_cfldep, rsplit
     use control_mod, only : use_semi_lagrange_transport, tracer_transport_type
-    use control_mod, only : TRACERTRANSPORT_EULERIAN
+    use control_mod, only : tracer_grid_type, TRACER_GRIDTYPE_GLL
     use fvm_mod,     only : fvm_ideal_test, IDEAL_TEST_OFF, IDEAL_TEST_ANALYTICAL_WINDS
     use fvm_mod,     only : fvm_test_type, IDEAL_TEST_BOOMERANG, IDEAL_TEST_SOLIDBODY
     use fvm_bsp_mod, only : get_boomerang_velocities_gll, get_solidbody_velocities_gll
@@ -1656,10 +1656,12 @@ contains
     !   if tracer scheme needs v on lagrangian levels it has to vertically interpolate
     !   if tracer scheme needs dp3d, it needs to derive it from ps_v
     ! ===============
-    if (qsize>0) call Prim_Advec_Tracers_remap(elem, deriv(hybrid%ithr),hvcoord,flt_advection,hybrid,&
-         dt_q,tl,nets,nete)
+    if (tracer_grid_type == TRACER_GRIDTYPE_GLL) then
+      call Prim_Advec_Tracers_remap(elem, deriv(hybrid%ithr),hvcoord,flt_advection,hybrid,&
+           dt_q,tl,nets,nete)
+    else
+      ! FVM transport
 
-    if (ntrac>0) then
       if ( n_Q /= tl%n0 ) then
         ! make sure tl%n0 contains tracers at start of timestep
         do ie=nets,nete
