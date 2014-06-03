@@ -864,7 +864,10 @@ module prim_advection_mod
 
   public :: Prim_Advec_Init
   public :: Prim_Advec_Tracers_remap, Prim_Advec_Tracers_remap_rk2, Prim_Advec_Tracers_remap_ALE
-  public :: prim_advec_tracers_fvm, prim_advec_tracers_spelt
+  public :: prim_advec_tracers_fvm
+#if defined(_SPELT)
+  public :: prim_advec_tracers_spelt
+#endif
   public :: vertical_remap
 
   type (EdgeBuffer_t) :: edgeAdv, edgeAdvQ3, edgeAdv_p1, edgeAdvQ2, edgeAdv1,  edgeveloc
@@ -916,6 +919,7 @@ contains
 
   end subroutine Prim_Advec_Init
 
+#if defined(_SPELT)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! SPELT driver
@@ -1023,6 +1027,7 @@ contains
 !       call spelt_runlimit(elem,spelt,hybrid,deriv,dt,tl,nets,nete)
     call t_stopf('prim_advec_tracers_spelt')
   end subroutine Prim_Advec_Tracers_spelt
+#endif
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2951,6 +2956,9 @@ end subroutine ALE_parametric_coords
         ! convert back to mass:
         ! fvm%c(:,:,:,1,np1) = dp(:,:,:)
         ! fvm%c(:,:,:,n,np1) = fvm%c(:,:,:,n,np1)/dp(:,:,:)
+!!XXgoldyXX
+#ifdef FVM_TRACERS
+!!XXgoldyXX:
         do i=1,nc
           do j=1,nc
             ! 1. compute surface pressure, 'ps_c', from FVMair density
@@ -2978,6 +2986,9 @@ end subroutine ALE_parametric_coords
             end do
           end do
         end do
+!!XXgoldyXX
+#endif
+!!XXgoldyXX
 !         call remap_velocityC(np1,dt,elem,fvm,hvcoord,ie)
 #endif
      endif
