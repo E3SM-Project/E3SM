@@ -90,6 +90,7 @@ module namelist_mod
 #ifndef CAM
        pertlim,      &
        tracer_transport_type,           &
+       TRACERTRANSPORT_SE_GLL,          &
        TRACERTRANSPORT_SEMILAGRANG_GLL, &
        TRACERTRANSPORT_LAGRANGIAN_FVM,  &
        TRACERTRANSPORT_FLUXFORM_FVM,    &
