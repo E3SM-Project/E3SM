@@ -887,7 +887,7 @@ subroutine create_interpolation_points(elem,fvm)
   type (element_t), intent(in)     :: elem
   type (fvm_struct), intent(inout) :: fvm  
   
-  real    (kind=real_kind), dimension(1-nc:nc+nc) :: gnomxstart, gnomxend, gnomystart, gnomyend
+  real    (kind=real_kind), dimension(1-nhc:nc+nhc) :: gnomxstart, gnomxend, gnomystart, gnomyend
   integer                                         :: i, halo, ida, ide, iref1, iref2
   type (cartesian2D_t)                            :: tmpgnom     
 

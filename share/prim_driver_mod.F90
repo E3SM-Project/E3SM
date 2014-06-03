@@ -25,7 +25,9 @@ module prim_driver_mod
 
   use fvm_mod, only : fvm_init1,fvm_init2, fvm_init3
   use fvm_control_volume_mod, only : fvm_struct
+#if defined(_SPELT)
   use spelt_mod, only : spelt_struct, spelt_init1,spelt_init2, spelt_init3
+#endif
 
   use element_mod, only : element_t, timelevels,  allocate_element_desc
   use thread_mod, only : omp_get_num_threads
@@ -1539,8 +1541,10 @@ contains
     use fvm_mod,     only : fvm_test_type, IDEAL_TEST_BOOMERANG, IDEAL_TEST_SOLIDBODY
     use fvm_bsp_mod, only : get_boomerang_velocities_gll, get_solidbody_velocities_gll
     use prim_advance_mod, only : prim_advance_exp, overwrite_SEdensity
-    use prim_advection_mod, only : prim_advec_tracers_remap, prim_advec_tracers_fvm, &
-         prim_advec_tracers_spelt
+    use prim_advection_mod, only : prim_advec_tracers_remap, prim_advec_tracers_fvm
+#if defined(_SPELT)
+    use prim_advection_mod, only : prim_advec_tracers_spelt
+#endif
     use parallel_mod, only : abortmp
     use reduction_mod, only : parallelmax
     use derivative_mod, only : interpolate_gll2spelt_points
