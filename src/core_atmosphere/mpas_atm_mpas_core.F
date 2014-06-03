@@ -247,7 +247,7 @@ module mpas_core
       real (kind=RKIND), dimension(:,:), pointer :: u, uReconstructX, uReconstructY, uReconstructZ, uReconstructZonal, uReconstructMeridional
       real (kind=RKIND), dimension(:), pointer :: meshScalingDel2, meshScalingDel4
 
-      integer, pointer :: nEdges
+      integer, pointer :: nEdgesSolve
    
       logical, pointer :: config_do_restart, config_do_DAcycling
 
@@ -306,14 +306,14 @@ module mpas_core
 
       call atm_compute_pgf_coefs(mesh, block % configs)
 
-      call mpas_pool_get_dimension(mesh, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(mesh, 'nEdgesSolve', nEdgesSolve)
       call mpas_pool_get_array(mesh, 'meshScalingDel2', meshScalingDel2)
       call mpas_pool_get_array(mesh, 'meshScalingDel4', meshScalingDel4)
 
-      write(0,*) 'min/max of meshScalingDel2 = ', minval(meshScalingDel2(1:nEdges)), &
-                                                  maxval(meshScalingDel2(1:nEdges))
-      write(0,*) 'min/max of meshScalingDel4 = ', minval(meshScalingDel4(1:nEdges)), &
-                                                  maxval(meshScalingDel4(1:nEdges))
+      write(0,*) 'min/max of meshScalingDel2 = ', minval(meshScalingDel2(1:nEdgesSolve)), &
+                                                  maxval(meshScalingDel2(1:nEdgesSolve))
+      write(0,*) 'min/max of meshScalingDel4 = ', minval(meshScalingDel4(1:nEdgesSolve)), &
+                                                  maxval(meshScalingDel4(1:nEdgesSolve))
 
       call atm_adv_coef_compression(mesh)
 
