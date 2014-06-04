@@ -316,7 +316,7 @@ int PIOc_get_att_uchar (int ncid, int varid, const char *name, unsigned char *ip
 int PIOc_createfile(const int iosysid, int *ncidp,  int *iotype,
 		    const char *fname, const int mode);
 int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
-		  char *fname, const int mode, _Bool checkmpi);
+		  const char *fname, const int mode, _Bool checkmpi);
   int PIOc_write_darray(const int ncid, const int vid, const int ioid, const PIO_Offset arraylen, void *array, void *fillvalue);
 
 
