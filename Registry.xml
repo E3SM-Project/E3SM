@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<registry model="mpas" core="ocean" version="2.0">
+<registry model="mpas" core="ocean" version="2.1">
 	<dims>
 		<dim name="nCells" units="unitless"
 			 description="The number of polygons in the primary grid."
