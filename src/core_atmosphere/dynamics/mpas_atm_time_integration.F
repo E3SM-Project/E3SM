@@ -608,7 +608,8 @@ module atm_time_integration
       type (diag_type) :: diag
       type (mesh_type) :: grid
 
-      integer :: iCell, iEdge, k, cell1, cell2, coef_3rd_order
+      integer :: iCell, iEdge, k, cell1, cell2
+      real (kind=RKIND) :: coef_3rd_order
       integer :: nCellsSolve, nCells, nVertLevels, nEdges
       integer, dimension(:,:), pointer :: cellsOnEdge
       real (kind=RKIND), dimension(:), pointer :: fzm, fzp, dvEdge, areaCell
@@ -3322,7 +3323,8 @@ module atm_time_integration
       type (diag_type), intent(inout) :: diag
       type (mesh_type), intent(inout) :: grid
 
-      integer :: k,iCell,iEdge,iCell1,iCell2, cell1, cell2, coef_3rd_order
+      integer :: k,iCell,iEdge,iCell1,iCell2, cell1, cell2
+      real (kind=RKIND) :: coef_3rd_order
       integer :: nCells, nEdges, nVertLevels
       real (kind=RKIND) :: p0, rcv, flux
       integer, dimension(:,:), pointer :: cellsOnEdge
