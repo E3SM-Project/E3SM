@@ -759,10 +759,11 @@ module namelist_mod
        cslam_ideal_test = 'off'
        cslam_test_type = 'boomerang'
 #if defined(OSF1) || defined(_BGL) || defined(_NAMELIST_FROM_FILE)
-       read(unit=7,nml=cslam_nl)
+       read(unit=7,nml=cslam_nl,end=1000)
 #else
-       read(*,nml=cslam_nl)
+       read(*,nml=cslam_nl,end=1000)
 #endif
+1000   continue
 #endif
 
       if (io_stride .eq.0 .and. num_io_procs .eq.0) then
@@ -1370,6 +1371,35 @@ module namelist_mod
              end select
           end if
        end do
+#endif
+#ifndef CAM
+       ! Write CSLAM namelist values
+       select case (tracer_transport_type)
+       case (TRACERTRANSPORT_SE_GLL)
+         write(iulog, *) 'Eulerian tracer advection on GLL grid'
+       case (TRACERTRANSPORT_SEMILAGRANG_GLL)
+         write(iulog, *) 'Classic semi-Lagrangian tracer advection on GLL grid'
+       case (TRACERTRANSPORT_LAGRANGIAN_FVM)
+         write(iulog, *) 'CSLAM tracer advection on FVM grid'
+       case (TRACERTRANSPORT_FLUXFORM_FVM)
+         write(iulog, *) 'Flux-form CSLAM tracer advection on FVM grid'
+       case (TRACERTRANSPORT_SPELT_FVM)
+         write(iulog, *) 'Spelt tracer advection on FVM grid'
+       end select
+       if (fvm_ideal_test /= IDEAL_TEST_OFF) then
+         select case (fvm_test_type)
+         case (IDEAL_TEST_BOOMERANG)
+           write(iulog, *) 'Running boomerang CSLAM test'
+         case (IDEAL_TEST_SOLIDBODY)
+           write(iulog, *) 'Running solid body CSLAM test'
+         end select
+         select case (fvm_ideal_test)
+         case (IDEAL_TEST_ANALYTICAL_DEPARTURE)
+           write(iulog, *) 'Using analytical departure points for CSLAM test'
+         case (IDEAL_TEST_ANALYTICAL_WINDS)
+           write(iulog, *) 'Using analytical winds for CSLAM test'
+         end select
+       end if
 #endif
        write(iulog,*)" analysis interpolation = ", interpolate_analysis
        if(any(interpolate_analysis)) then
