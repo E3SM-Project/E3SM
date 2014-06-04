@@ -482,7 +482,7 @@
 					description="Coefficient used to determine transmission of surface fluxes. Fluxes are defined with $e^{z/\gamma}$ where this coefficient is $\gamma$."
 					possible_values="Any real number $\gamma>0.0$ and $\gamma \le 1.0$."
 		/>
-		<nml_option name="config_frazil_ice_formation" type="logical" default_value=".true." units="unitless"
+		<nml_option name="config_frazil_ice_formation" type="logical" default_value=".false." units="unitless"
 					description="Logical flag that determines if the formation of frazil ice is allowed."
 					possible_values=".true. or .false."
 		/>
