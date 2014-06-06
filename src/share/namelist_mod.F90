@@ -236,9 +236,9 @@ module namelist_mod
     character(len=256) :: se_phys_grid_file
 #endif
 #ifndef CAM
-    character(len=32) :: tracer_transport_method
-    character(len=32) :: cslam_ideal_test
-    character(len=32) :: cslam_test_type
+    character(len=32) :: tracer_transport_method = 'se_gll'
+    character(len=32) :: cslam_ideal_test = 'off'
+    character(len=32) :: cslam_test_type = 'boomerang'
 #endif
     ! ============================================
     ! Namelists
@@ -261,6 +261,9 @@ module namelist_mod
                      smooth,        &        ! Timestep Filter
                      omega,         &
                      pertlim,        &        !temperature initial perturbation
+         tracer_transport_method, &
+         cslam_ideal_test,        &
+         cslam_test_type,         &
 #endif
                      npart,         &
                      uselapi,       &
@@ -403,16 +406,6 @@ module namelist_mod
         interp_gridtype,      &
         interp_type,          &
         interpolate_analysis
-
-!=======================================================================================================!
-!   Namelist for CSLAM                                                                                  !
-!=======================================================================================================!
-#ifndef CAM
-    namelist /cslam_nl/           &
-         tracer_transport_method, &
-         cslam_ideal_test,        &
-         cslam_test_type
-#endif
 
 !=======================================================================================================!
 !   Adding for SW DG                                                                                    !
@@ -751,19 +744,6 @@ module namelist_mod
        read(unit=7,nml=analysis_nl)
 #else
        read(*,nml=analysis_nl)
-#endif
-
-#ifndef CAM
-       write(iulog,*)"reading CSLAM namelist..."
-       tracer_transport_method = 'se_gll'
-       cslam_ideal_test = 'off'
-       cslam_test_type = 'boomerang'
-#if defined(OSF1) || defined(_BGL) || defined(_NAMELIST_FROM_FILE)
-       read(unit=7,nml=cslam_nl,end=1000)
-#else
-       read(*,nml=cslam_nl,end=1000)
-#endif
-1000   continue
 #endif
 
       if (io_stride .eq.0 .and. num_io_procs .eq.0) then
