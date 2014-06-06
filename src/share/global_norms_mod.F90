@@ -624,8 +624,8 @@ contains
           if (hypervis_order==2) then
              ! counrant number = dtnu*max_eig_hypervis  < S
              !  dt < S  1/nu*max_eig
-             write(iulog,'(a,f10.2,a)') "Stability: nu_q   hyperviscosity dt < S *", 1/(nu_q*max_eig_hypervis),'s'
-             write(iulog,'(a,f10.2,a)') "Stability: nu_vor hyperviscosity dt < S *", 1/(nu*max_eig_hypervis),'s'
+             write(iulog,'(a,es10.3,a)') "Stability: nu_q   hyperviscosity dt < S *", 1/(nu_q*max_eig_hypervis),'s'
+             write(iulog,'(a,es10.3,a)') "Stability: nu_vor hyperviscosity dt < S *", 1/(nu*max_eig_hypervis),'s'
              
              ! bug in nu_div implimentation:
              ! we apply nu_ration=(nu_div/nu) in laplace, so it is applied 2x
