@@ -6,7 +6,7 @@ module prim_state_mod
   ! ------------------------------
   use kinds, only : real_kind, iulog
   ! ------------------------------
-  use dimensions_mod, only : nlev, np, qsize_d, qsize, nelemd, ntrac, ntrac_d
+  use dimensions_mod, only : nlev, np, nc, qsize_d, qsize, nelemd, ntrac, ntrac_d
   ! ------------------------------
   use parallel_mod, only :  ordered, parallel_t, syncmp
   use parallel_mod, only: global_shared_buf, global_shared_sum
@@ -215,15 +215,15 @@ contains
     enddo
     do q=1,ntrac
        do ie=nets,nete
-          tmp1(ie) = MINVAL(fvm(ie)%c(:,:,:,q,n0))
+          tmp1(ie) = MINVAL(fvm(ie)%c(1:nc,1:nc,:,q,n0))
        enddo
        cmin(q) = ParallelMin(tmp1,hybrid)
        do ie=nets,nete
-          tmp1(ie) = MAXVAL(fvm(ie)%c(:,:,:,q,n0))
+          tmp1(ie) = MAXVAL(fvm(ie)%c(1:nc,1:nc,:,q,n0))
        enddo
        cmax(q) = ParallelMax(tmp1,hybrid)
        do ie=nets,nete
-          global_shared_buf(ie,1) = SUM(fvm(ie)%c(:,:,:,q,n0))
+          global_shared_buf(ie,1) = SUM(fvm(ie)%c(1:nc,1:nc,:,q,n0))
        enddo
        call wrap_repro_sum(nvars=1, comm=hybrid%par%comm)
        csum(q) = global_shared_sum(1)
