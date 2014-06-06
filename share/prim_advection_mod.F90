@@ -2803,7 +2803,7 @@ end subroutine ALE_parametric_coords
   use kinds, only : real_kind
   use hybvcoord_mod, only : hvcoord_t
   use vertremap_mod, only : remap1, remap1_nofilter, remap_q_ppm ! _EXTERNAL (actually INTERNAL)
-  use control_mod, only :  rsplit
+  use control_mod, only :  rsplit, tracer_transport_type, TRACER_GRIDTYPE_FVM
   use parallel_mod, only : abortmp
 #if defined(_SPELT)
   use spelt_mod, only: spelt_struct
@@ -2820,7 +2820,7 @@ end subroutine ALE_parametric_coords
   real (kind=real_kind)  :: psc(nep,nep), dpc(nep,nep,nlev),dpc_star(nep,nep,nlev)
 #else
   type(fvm_struct), intent(inout) :: fvm(:)
-  real (kind=real_kind) :: cdp(1:nc,1:nc,nlev,ntrac-1)
+  real (kind=real_kind) :: cdp(1:nc,1:nc,nlev,ntrac)
   real (kind=real_kind)  :: psc(nc,nc), dpc(nc,nc,nlev),dpc_star(nc,nc,nlev)
 #endif
 
@@ -2947,48 +2947,43 @@ end subroutine ALE_parametric_coords
         end do
 !         call remap_velocityCspelt(np1,dt,elem,fvm,hvcoord,ie)
 #else
-        ! create local variable  cdp(1:nc,1:nc,nlev,ntrac-1)
-        ! cdp(:,:,:,n) = fvm%c(:,:,:,n+1,np1)*fvm%c(:,:,:,1,np1)
+        ! create local variable  cdp(1:nc,1:nc,nlev,ntrac)
+        ! cdp(:,:,:,n) = fvm%c(:,:,:,n,np1)*fvm%dp_fvm(:,:,:,np1)
         ! dp(:,:,:) = reference level thicknesses
 
         ! call remap1(cdp,nc,ntrac-1,fvm%c(:,:,:,1,np1),dp)
 
         ! convert back to mass:
-        ! fvm%c(:,:,:,1,np1) = dp(:,:,:)
+        ! fvm%dp_fvm(:,:,:,np1) = dp(:,:,:) ??XXgoldyXX??
         ! fvm%c(:,:,:,n,np1) = fvm%c(:,:,:,n,np1)/dp(:,:,:)
-!!XXgoldyXX
-#ifdef FVM_TRACERS
-!!XXgoldyXX:
-        do i=1,nc
-          do j=1,nc
-            ! 1. compute surface pressure, 'ps_c', from FVMair density
+        if (tracer_transport_type == TRACER_GRIDTYPE_FVM) then
+          do i=1,nc
+            do j=1,nc
+              ! 1. compute surface pressure, 'ps_c', from FVMair density
 
 ! phl dp_cslam
-
-            psc(i,j)=sum(fvm(ie)%c(i,j,:,1,np1)) +  hvcoord%hyai(1)*hvcoord%ps0
-            ! 2. compute dp_np1 using FVM air density and eta coordinate formula
-            ! get the dp now on the eta coordinates (reference level)
-            do k=1,nlev
-              dpc(i,j,k) = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + &
-                              (hvcoord%hybi(k+1) - hvcoord%hybi(k))*psc(i,j)
-              cdp(i,j,k,1:(ntrac-1))=fvm(ie)%c(i,j,k,2:ntrac,np1)*fvm(ie)%c(i,j,k,1,np1)
+              psc(i,j)=sum(fvm(ie)%dp_fvm(i,j,:,np1)) +  hvcoord%hyai(1)*hvcoord%ps0
+              ! 2. compute dp_np1 using FVM air density and eta coordinate formula
+              ! get the dp now on the eta coordinates (reference level)
+              do k=1,nlev
+                dpc(i,j,k) = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + &
+                             (hvcoord%hybi(k+1) - hvcoord%hybi(k))*psc(i,j)
+                cdp(i,j,k,1:ntrac)=fvm(ie)%c(i,j,k,1:ntrac,np1)*fvm(ie)%dp_fvm(i,j,k,np1)
+              end do
             end do
           end do
-        end do
-        dpc_star=fvm(ie)%c(1:nc,1:nc,:,1,np1)
-        call remap1(cdp,nc,ntrac-1,dpc_star,dpc)
+          dpc_star=fvm(ie)%dp_fvm(1:nc,1:nc,:,np1)
+          call remap1(cdp,nc,ntrac,dpc_star,dpc)
 ! phl ntrac-1 -> ntrac       call remap1(cdp,nc,ntrac-1,dpc_star,dpc)
-        do i=1,nc
-          do j=1,nc
-            do k=1,nlev
-              fvm(ie)%c(i,j,k,1,np1)=dpc(i,j,k)
-              fvm(ie)%c(i,j,k,2:ntrac,np1)=cdp(i,j,k,1:(ntrac-1))/dpc(i,j,k)
+          do k=1,nlev
+            do j=1,nc
+              do i=1,nc
+                fvm(ie)%dp_fvm(i,j,k,np1)=dpc(i,j,k) !!XXgoldyXX??
+                fvm(ie)%c(i,j,k,:,np1)=cdp(i,j,k,:)/dpc(i,j,k)
+              end do
             end do
           end do
-        end do
-!!XXgoldyXX
-#endif
-!!XXgoldyXX
+        end if
 !         call remap_velocityC(np1,dt,elem,fvm,hvcoord,ie)
 #endif
      endif

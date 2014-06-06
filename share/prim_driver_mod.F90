@@ -962,8 +962,6 @@ contains
        enddo
     endif
 
- ! do it only for SPELT/FVM tracers, FIRST TRACER will be the AIR DENSITY
- ! should be optimize and combined with the above caculation
     if (ntrac>0) then
 #if defined(_SPELT)
       ! do it only for SPELT tracers, FIRST TRACER will be the AIR DENSITY
@@ -993,7 +991,7 @@ contains
          write(iulog,*) 'FVM (Spelt) tracers (incl. in halo zone) initialized. FIRST tracer has air density!'
       end if
 #else
-      ! do it only for FVM tracers, FIRST TRACER will be the AIR DENSITY
+      ! do it only for FVM tracers, dp_fvm field will be the AIR DENSITY
       ! should be optimize and combined with the above caculation
       do ie=nets,nete
         do k=1,nlev
@@ -1003,7 +1001,7 @@ contains
 		       ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,tl%n0)
 	      enddo
 	    enddo
-          !write air density in tracer 1 of FVM
+          !write air density in dp_fvm field of FVM
           fvm(ie)%dp_fvm(1:nc,1:nc,k,tl%n0)=interpolate_gll2fvm_points(elem(ie)%derived%dp(:,:,k),deriv(hybrid%ithr))
         enddo
       enddo
@@ -1017,7 +1015,7 @@ contains
 	    enddo
       enddo
       if (hybrid%masterthread) then
-         write(iulog,*) 'FVM tracers (incl. in halo zone) initialized. FIRST tracer has air density!'
+         write(iulog,*) 'FVM tracers (incl. in halo zone) initialized.'
       end if
 #endif
     endif
