@@ -357,7 +357,7 @@ contains
        !note write tl%np1 in buffer                                                                 
 
        call ghostVpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:,tl%np1),nhc,nc,nlev,1,    0,   elem(ie)%desc)
-       call ghostVpack(cellghostbuf, fvm(ie)%c(:,:,:,:,tl%np1),   nhc,nc,nlev,ntrac,nlev,elem(ie)%desc)
+       call ghostVpack(cellghostbuf, fvm(ie)%c(:,:,:,:,tl%np1),   nhc,nc,nlev,ntrac,1,elem(ie)%desc)
     end do
     call t_stopf('CSLAM scheme')
     call t_startf('FVM Communication')
@@ -367,7 +367,7 @@ contains
     call t_startf('FVM Unpack')
     do ie=nets,nete
        call ghostVunpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:,tl%np1), nhc, nc,nlev,1,    0,   elem(ie)%desc)
-       call ghostVunpack(cellghostbuf, fvm(ie)%c(:,:,:,:,tl%np1),    nhc, nc,nlev,ntrac,nlev,elem(ie)%desc)
+       call ghostVunpack(cellghostbuf, fvm(ie)%c(:,:,:,:,tl%np1),    nhc, nc,nlev,ntrac,1,elem(ie)%desc)
     enddo
     call t_stopf('FVM Unpack')
     call freeghostbuffertr(buflatlon)
@@ -780,7 +780,7 @@ contains
     integer                                   :: ie                 
 
 
- ! do it only for FVM tracers, FIRST TRACER will be the AIR DENSITY                                              
+ ! do it only for FVM tracers, and air density (dp_fvm)
     do ie=nets,nete
        call ghostVpack(cellghostbuf, fvm(ie)%dp_fvm(:,:,:,tnp0),nhc,nc,nlev,1,    0,elem(ie)%desc)
        call ghostVpack(cellghostbuf, fvm(ie)%c(:,:,:,:,tnp0)   ,nhc,nc,nlev,ntrac,1,elem(ie)%desc)
