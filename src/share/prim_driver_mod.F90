@@ -549,6 +549,8 @@ contains
          sub_case, &
          limiter_option, nu, nu_q, nu_div, tstep_type, hypervis_subcycle, &
          hypervis_subcycle_q, use_semi_lagrange_transport
+    use control_mod, only : tracer_transport_type
+    use control_mod, only : TRACERTRANSPORT_LAGRANGIAN_FVM, TRACERTRANSPORT_FLUXFORM_FVM, TRACERTRANSPORT_SE_GLL
 #ifndef CAM
     use control_mod, only : pertlim                     !used for homme temperature perturbations
 #endif
@@ -1051,10 +1053,16 @@ contains
        ! CAM has set tstep based on dtime before calling prim_init2(),
        ! so only now does HOMME learn the timstep.  print them out:
        write(iulog,'(a,2f9.2)') "dt_remap: (0=disabled)   ",tstep*qsplit*rsplit
-       write(iulog,'(a,2f9.2)') "dt_tracer, per RK stage: ",tstep*qsplit,(tstep*qsplit)/(rk_stage_user-1)
-       write(iulog,'(a,2f9.2)') "dt_dyn:                  ",tstep
-       write(iulog,'(a,2f9.2)') "dt_dyn (viscosity):      ",dt_dyn_vis
-       write(iulog,'(a,2f9.2)') "dt_tracer (viscosity):   ",dt_tracer_vis
+
+       if (tracer_transport_type == TRACERTRANSPORT_FLUXFORM_FVM.or.&
+           tracer_transport_type == TRACERTRANSPORT_LAGRANGIAN_FVM) then
+          write(iulog,'(a,2f9.2)') "dt_tracer (fvm)          ",tstep*qsplit
+       else if (tracer_transport_type == TRACERTRANSPORT_SE_GLL) then
+          write(iulog,'(a,2f9.2)') "dt_tracer, per RK stage: ",tstep*qsplit,(tstep*qsplit)/(rk_stage_user-1)
+       end if
+       write(iulog,'(a,2f9.2)')    "dt_dyn:                  ",tstep
+       write(iulog,'(a,2f9.2)')    "dt_dyn (viscosity):      ",dt_dyn_vis
+       write(iulog,'(a,2f9.2)')    "dt_tracer (viscosity):   ",dt_tracer_vis
 
 
 #ifdef CAM
