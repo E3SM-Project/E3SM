@@ -68,7 +68,7 @@ module interp_movie_mod
                                                  'Q4       ', &
                                                  'Q5       ', &
                                                  'psC      ', &
-                                                 'C        ', &
+                                                 'C1       ', &
                                                  'C2       ', &
                                                  'C3       ', &
                                                  'C4       ', &
@@ -144,7 +144,7 @@ module interp_movie_mod
        1,2,3,5,0,  &   ! Q4
        1,2,3,5,0,  &   ! Q5
        1,2,5,0,0,  &   ! psC
-       1,2,3,5,0,  &   ! C
+       1,2,3,5,0,  &   ! C1
        1,2,3,5,0,  &   ! C2
        1,2,3,5,0,  &   ! C3
        1,2,3,5,0,  &   ! C4
@@ -202,7 +202,7 @@ module interp_movie_mod
                                               'v       ','zeta    ','lon     ', &
                                               'lat     ','gw      ','time    ', &
                                               'hypervis','max_dx  ','min_dx  ', &
-                                              'psC     ','C       ','C1      ','C2      ', &
+                                              'psC     ','C1      ','C2      ', &
                                               'C3      ','C4      ',            &
                                               'div     '/)
   integer, parameter :: vartype(varcnt)=(/PIO_double,PIO_double,PIO_double,PIO_double, &
@@ -358,7 +358,7 @@ contains
     call nf_variable_attributes(ncdf, 'lon', 'column longitude','degrees_east')
     call nf_variable_attributes(ncdf, 'time', 'Model elapsed time','days')
     call nf_variable_attributes(ncdf, 'psC', 'surface pressure','Pa')
-    call nf_variable_attributes(ncdf, 'C', 'concentration','kg/kg')
+    call nf_variable_attributes(ncdf, 'C1', 'concentration','kg/kg')
     call nf_variable_attributes(ncdf, 'C2', 'concentration','kg/kg')
     call nf_variable_attributes(ncdf, 'C3', 'concentration','kg/kg')
     call nf_variable_attributes(ncdf, 'C4', 'concentration','kg/kg')
@@ -674,7 +674,6 @@ contains
 
 #endif
 
-#if defined(_FVM) 
            if(nf_selectedvar('psC', output_varnames)) then
               if (hybrid%par%masterproc) print *,'writing psC...'
               st=1
@@ -697,10 +696,9 @@ contains
            
             do cindex=1,min(ntrac,5)  ! allow a maximum output of 5 tracers
                write(vname,'(a1,i1)') 'C',cindex
-               if (cindex==1) vname='C'
 
                if(nf_selectedvar(vname, output_varnames)) then
-                  if (hybrid%par%masterproc) print *,'writing ',vname
+                  if (hybrid%par%masterproc) print *,'writing FVM tracer ',vname
                   allocate(datall(ncnt,nlev))
                   st=1
                   do ie=nets,nete
@@ -715,7 +713,6 @@ contains
                   deallocate(datall)                  
                end if
             enddo
-#endif
 
 #if defined(_SPELT) 
            if(nf_selectedvar('psC', output_varnames)) then
