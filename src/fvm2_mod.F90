@@ -115,8 +115,8 @@ kptr=0
 do ie=nets, nete
   call ghostcellpack(cellbuffer, elem(ie)%state%c(:,:,:,tl%n0),nlev,kptr,elem(ie)%desc) 
   ! reset the new unknown
-    do j=1-nc,nc+nc
-      do i=1-nc,nc+nc 
+    do j=1-nc,nc+nhc
+      do i=1-nc,nc+nhc 
         elem(ie)%state%c(i,j,1,tl%np1)=0.0D0
       end do
     end do
