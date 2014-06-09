@@ -15,7 +15,7 @@
 module fvm_reconstruction_mod
 
   use kinds, only                  : int_kind, real_kind
-  use dimensions_mod, only         : nc,nhe,nhr,nht,ns
+  use dimensions_mod, only         : nc,nhe,nhr,nht,ns,nhc
   use coordinate_systems_mod, only : cartesian2D_t,cartesian3D_t
   use control_mod, only : north, south, east, west, neast, nwest, seast, swest
   use fvm_control_volume_mod, only: fvm_struct
@@ -43,9 +43,9 @@ subroutine reconstruction(fcube,fvm,recons)
   implicit none
   type (fvm_struct), intent(in)                                  :: fvm
   !
-  ! dimension(1-nc:nc+nc, 1-nc:nc+nc)
+  ! dimension(1-nhc:nc+nhc, 1-nhc:nc+nhc)
   !
-  real (kind=real_kind), dimension(1-nc:, 1-nc:), intent(in)   :: fcube
+  real (kind=real_kind), dimension(1-nhc:, 1-nhc:), intent(in)   :: fcube
   real (kind=real_kind), dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe), intent(out)  :: recons 
                                                     
 
@@ -79,7 +79,7 @@ end function matmul_w
 subroutine fill_halo(fcube,fvm,fpanel,fotherpanel)!dbg
   implicit none
   real (kind=real_kind),   &
-       dimension(1-nc:nc+nc, 1-nc:nc+nc), intent(in)          :: fcube
+       dimension(1-nhc:nc+nhc, 1-nhc:nc+nhc), intent(in)          :: fcube
   type (fvm_struct), intent(in)                                   :: fvm
         
 
@@ -1334,19 +1334,19 @@ subroutine debug_halo(fvm,fcubenew,fpanel)!
   type (fvm_struct), intent(in)                                 :: fvm
         
   real (kind=real_kind),   &
-        dimension(1-nc:nc+nc, 1-nc:nc+nc), intent(in)            :: fcubenew !dbg
+        dimension(1-nhc:nc+nhc, 1-nhc:nc+nhc), intent(in)            :: fcubenew !dbg
   real (kind=real_kind), dimension(1-nht:nc+nht, 1-nht:nc+nht) :: fpanel
 
   integer (kind=int_kind)                                         :: i, j
 
   integer (kind=int_kind)                                         :: i1,i2, j1,j2,istart,iend, count
 
-  logical, dimension(1-nc:nc+nc,1-nc:nc+nc) :: lhalo
+  logical, dimension(1-nhc:nc+nhc,1-nhc:nc+nhc) :: lhalo
 
   call indicator_fct_recons(fvm,lhalo,.false.)
   
-  do j=1-nc,nc+nc
-     do i=1-nc,nc+nc
+  do j=1-nhc,nc+nhc
+     do i=1-nhc,nc+nhc
         if (lhalo(i,j)) then
            if (ABS(fcubenew(i,j)-fpanel(i,j))>1.0E-12 &
                    .or.fpanel(i,j).ne.fpanel(i,j).or.&
@@ -1372,7 +1372,7 @@ subroutine debug_halo_recons(fvm,recons,recons_trunk)!
 
   integer (kind=int_kind)                                         :: i1,i2, j1,j2,istart,iend, count
 
-  logical, dimension(1-nc:nc+nc,1-nc:nc+nc) :: lhalo
+  logical, dimension(1-nhc:nc+nhc,1-nhc:nc+nhc) :: lhalo
 
   call indicator_fct_recons(fvm,lhalo,.true.)
   
@@ -1410,8 +1410,8 @@ subroutine indicator_fct_recons(fvm,lhalo,lrecons)!
 
   integer (kind=int_kind)                                         :: imin,imax,jmin,jmax
 
-  logical, dimension(1-nc:nc+nc,1-nc:nc+nc), intent(out) :: lhalo
-  CHARACTER(len=2), dimension(1-nc:nc+nc,1-nc:nc+nc)     :: chalo
+  logical, dimension(1-nhc:nc+nhc,1-nhc:nc+nhc), intent(out) :: lhalo
+  CHARACTER(len=2), dimension(1-nhc:nc+nhc,1-nhc:nc+nhc)     :: chalo
   logical, intent(in) :: lrecons
   !
   lhalo = .false.
@@ -1455,7 +1455,7 @@ subroutine debug_halo_neighbor(fvm,fcubenew,fotherpanel)!
   type (fvm_struct), intent(in)                                 :: fvm
         
 !  real (kind=real_kind),   &
-!phl        dimension(1-nc:nc+nc, 1-nc:nc+nc)                     :: fcubenew
+!phl        dimension(1-nhc:nc+nhc, 1-nhc:nc+nhc)                     :: fcubenew
  
   real (kind=real_kind), dimension(1-nht:nc+nht, 1-nht:nc+nht,2) :: fotherpanel,fcubenew
 
@@ -1463,8 +1463,8 @@ subroutine debug_halo_neighbor(fvm,fcubenew,fotherpanel)!
 
   integer (kind=int_kind)                                         :: i1,i2, j1,j2,istart,iend, count,k
 
-  logical, dimension(1-nc:nc+nc,1-nc:nc+nc,2) :: lhalo
-  CHARACTER(len=2), dimension(1-nc:nc+nc,1-nc:nc+nc,2)   :: chalo
+  logical, dimension(1-nhc:nc+nhc,1-nhc:nc+nhc,2) :: lhalo
+  CHARACTER(len=2), dimension(1-nhc:nc+nhc,1-nhc:nc+nhc,2)   :: chalo
 
   call indicator_fct_recons_neighbor(fvm,lhalo,chalo,.false.)
   
@@ -1475,8 +1475,8 @@ subroutine debug_halo_neighbor(fvm,fcubenew,fotherpanel)!
   if (fvm%cubeboundary>0) then
      do k=1,2
         write(*,*) "k=",k
-        do j=1-nc,nc+nc
-           do i=1-nc,nc+nc
+        do j=1-nhc,nc+nhc
+           do i=1-nhc,nc+nhc
               if (lhalo(i,j,k)) then
                  if (ABS(fcubenew(i,j,k)-fotherpanel(i,j,k))>1.0E-12&
                       .or.fotherpanel(i,j,k).ne.fotherpanel(i,j,k).or.&
@@ -1502,8 +1502,8 @@ subroutine debug_halo_neighbor_recons(fvm,recons,recons_trunk)
   integer (kind=int_kind)                                         :: i, j, h, k
 
 
-  logical, dimension(1-nc:nc+nc,1-nc:nc+nc,2) :: lhalo
-  CHARACTER(len=2), dimension(1-nc:nc+nc,1-nc:nc+nc,2)   :: chalo
+  logical, dimension(1-nhc:nc+nhc,1-nhc:nc+nhc,2) :: lhalo
+  CHARACTER(len=2), dimension(1-nhc:nc+nhc,1-nhc:nc+nhc,2)   :: chalo
 
   call indicator_fct_recons_neighbor(fvm,lhalo,chalo,.true.)
   
@@ -1544,11 +1544,11 @@ subroutine indicator_fct_recons_neighbor(fvm,lhalo,chalo,lrecons)!
 
   integer (kind=int_kind)                                         :: i1,i2, j1,j2,istart,iend, count, halo
 
-  logical, dimension(1-nc:nc+nc,1-nc:nc+nc,2), intent(out) :: lhalo
-  CHARACTER(len=2), dimension(1-nc:nc+nc,1-nc:nc+nc,2)  , intent(out) :: chalo
+  logical, dimension(1-nhc:nc+nhc,1-nhc:nc+nhc,2), intent(out) :: lhalo
+  CHARACTER(len=2), dimension(1-nhc:nc+nhc,1-nhc:nc+nhc,2)  , intent(out) :: chalo
 
-  logical, dimension(1-nc:nc+nc,1-nc:nc+nc)          :: lh
-  CHARACTER(len=2), dimension(1-nc:nc+nc,1-nc:nc+nc) :: ch
+  logical, dimension(1-nhc:nc+nhc,1-nhc:nc+nhc)          :: lh
+  CHARACTER(len=2), dimension(1-nhc:nc+nhc,1-nhc:nc+nhc) :: ch
 
   logical, intent(in) :: lrecons
 
@@ -1853,15 +1853,15 @@ subroutine plot_stencil(lhalo,chalo)
   implicit none
   integer (kind=int_kind)                                         :: i, j
 
-  logical, dimension(1-nc:nc+nc,1-nc:nc+nc), intent(in) :: lhalo
-  CHARACTER(len=2), dimension(1-nc:nc+nc,1-nc:nc+nc), intent(in)   :: chalo
+  logical, dimension(1-nhc:nc+nhc,1-nhc:nc+nhc), intent(in) :: lhalo
+  CHARACTER(len=2), dimension(1-nhc:nc+nhc,1-nhc:nc+nhc), intent(in)   :: chalo
   !
   ! plot stencil to screen
   !
   write(*,*) "   "
   write(*,*) "   "
-  do j=nc+nc,1-nc,-1
-     do i=1-nc,nc+nc
+  do j=nc+nhc,1-nhc,-1
+     do i=1-nhc,nc+nhc
         if ((j==nc.or.j==0).and.i>0.and.i<nc+2) then
            if (i==nc+1) then
               write(*,'(A4)',advance='no') "0---"
@@ -1877,7 +1877,7 @@ subroutine plot_stencil(lhalo,chalo)
         end if
      end do
      write(*,'(A1)') "x"
-     do i=1-nc,nc+nc
+     do i=1-nhc,nc+nhc
         if ((i==1.or.i==nc+1).and.(j>0.and.j<nc+1)) then
            write(*,'(A2)',advance='no') "0 "
         else
@@ -1888,7 +1888,7 @@ subroutine plot_stencil(lhalo,chalo)
      end do
      write(*,'(A1)') "|"
   end do
-  do i=1-nc,nc+nc
+  do i=1-nhc,nc+nhc
      write(*,'(A4)',advance='no') "x---"
   end do
   write(*,*) "   "
@@ -1901,8 +1901,8 @@ subroutine get_stencil (lhalo,chalo,i,j,cubeboundary,lrecons)!
   implicit none
   integer (kind=int_kind)                               , intent(in)    :: i, j
   integer (kind=int_kind)                               , intent(in)    :: cubeboundary
-  logical         , dimension(1-nc:nc+nc,1-nc:nc+nc), intent(inout) :: lhalo
-  CHARACTER(len=2), dimension(1-nc:nc+nc,1-nc:nc+nc), intent(inout) :: chalo
+  logical         , dimension(1-nhc:nc+nhc,1-nhc:nc+nhc), intent(inout) :: lhalo
+  CHARACTER(len=2), dimension(1-nhc:nc+nhc,1-nhc:nc+nhc), intent(inout) :: chalo
   logical, intent(in) :: lrecons
   !
   integer (kind=int_kind)   :: ii, jj
