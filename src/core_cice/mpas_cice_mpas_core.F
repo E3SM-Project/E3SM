@@ -291,7 +291,7 @@ module mpas_core
 
       block => domain % blocklist
       do while (associated(block))
-         call cice_timestep(block, clock, dt)
+         call cice_timestep(block, clock, dt, itimestep)
          block => block % next
       end do
 

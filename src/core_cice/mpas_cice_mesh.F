@@ -522,7 +522,7 @@ contains
        call normal_vectors_spherical_polygon_metric(mesh, rotateCartesianGrid, removeMetricTerms, normalVectorPolygon, latCellRotated)
     else 
        call normal_vectors_planar_polygon(mesh, normalVectorPolygon)
-       latCellRotated = 0.0_RKIND
+       if (present(latCellRotated)) latCellRotated = 0.0_RKIND
     endif
 
   end subroutine normal_vectors_polygon
@@ -561,7 +561,7 @@ contains
        call normal_vectors_spherical_triangle_metric(mesh, rotateCartesianGrid, removeMetricTerms, normalVectorTriangle, interiorVertex, latVertexRotated)
     else 
        call normal_vectors_planar_triangle(mesh, normalVectorTriangle, interiorVertex)
-       latVertexRotated = 0.0_RKIND
+       if (present(latVertexRotated)) latVertexRotated = 0.0_RKIND
     endif
 
   end subroutine normal_vectors_triangle

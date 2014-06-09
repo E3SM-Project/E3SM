@@ -6,6 +6,7 @@ module cice_diagnostics
 
   private
   public :: &
+       test_case_output, &
        writeout_state, &
        gnuplot_cell, &
        matlab_jet, &
@@ -20,8 +21,10 @@ module cice_diagnostics
        init_ijpop_from_ivertex, &
        output_meridonal_strip, &
        plot_vertices_planar, &
+       plot_cells_planar, &
        plot_spherical_latlon, &
-       prepare_plot_variables
+       prepare_plot_variables, &
+       strip_plot
 
   integer, public :: iCellTest
   
@@ -2999,10 +3002,139 @@ contains
   end subroutine plot_vertices_planar
 
   !-------------------------------------------------------------
+
+  subroutine plot_cells_planar(mesh, array, filename, tag)
+
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh
+
+    real(kind=RKIND), dimension(:), intent(in) :: &
+         array
+
+    character(len=*), intent(in) :: &
+         filename
+
+    integer, intent(in), optional :: &
+         tag
+
+    integer, pointer :: &
+         nCells
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         xVertex, &
+         yVertex
+
+    integer, dimension(:), pointer :: &    
+         nEdgesOnCell
+
+    integer, dimension(:,:), pointer :: &
+         verticesOnCell
+
+    integer :: &
+         iCell, &
+         iVertex, &
+         iVertexOnCell, &
+         iObject
+
+    real(kind=RKIND) :: &
+         xv, yv, &
+         xv0, yv0
+
+    character(len=1000) :: &
+         strout, &
+         stroutvertex
+
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+
+    call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
+    call MPAS_pool_get_array(mesh, "xVertex", xVertex)
+    call MPAS_pool_get_array(mesh, "yVertex", yVertex)
+    call MPAS_pool_get_array(mesh, "verticesOnCell", verticesOnCell)
+
+    iObject = 1
+
+    call open_filename_tag(55, filename, tag)
+
+    write(55,*) "#", minval(array), maxval(array)
+    write(55,*) "set cbrange [",minval(array),":",maxval(array),"]"
+    write(55,*) "set xrange  [",minval(xVertex),":",maxval(xVertex),"]"
+    write(55,*) "set yrange  [",minval(yVertex),":",maxval(yVertex),"]"
+
+    write(55,*) "set pm3d"
+    write(55,*) "set size square"
+    write(55,*) "unset key"
+    write(55,*) "set palette defined (0 0.0 0.0 0.5, 1 0.0 0.0 1.0, 2 0.0 0.5 1.0, 3 0.0 1.0 1.0, 4 0.5 1.0 0.5, 5 1.0 1.0 0.0, 6 1.0 0.5 0.0, 7 1.0 0.0 0.0, 8 0.5 0.0 0.0 )"
+
+    do iCell = 1, nCells
+       
+       write(strout,fmt='(a,i5,a)') "set object ",iObject," polygon from "
+
+       do iVertexOnCell = 1, nEdgesOnCell(iCell)
+
+          iVertex = verticesOnCell(iVertexOnCell, iCell)
+
+          xv = xVertex(iVertex)
+          yv = yVertex(iVertex)
+
+          if (iVertexOnCell == 1) then
+             xv0 = xv
+             yv0 = yv
+          endif
+
+          write(stroutvertex,fmt='(f14.2,a,f14.2,a)') xv, ",", yv, " to "
+          strout = trim(strout)//trim(stroutvertex)
+
+       enddo ! iVertexOnCell
+
+       write(stroutvertex,fmt='(f14.2,a,f14.2)') xv0, ",", yv0
+       strout = trim(strout)//trim(stroutvertex)
+       write(55,*) trim(strout)
+
+       write(strout,fmt='(a,i5,a,e13.6,a)') "set object ",iObject,' fc palette cb ', array(iCell), ' fillstyle solid'
+       write(55,*) trim(strout)
+
+       iObject = iObject + 1
+
+    enddo ! iVertex
+
+    write(55,*) "plot ", minval(yVertex)
+
+    close(55)
+
+  end subroutine plot_cells_planar
+
+  !-------------------------------------------------------------
+
+  subroutine open_filename_tag(unit, filename, tag)
+    
+    integer, intent(in) :: &
+         unit
+
+    character(len=*), intent(in) :: &
+         filename
+
+    integer, optional, intent(in) :: &
+         tag
+
+    character(len=2000) :: &
+         strtag, &
+         filename_use
+
+    if (present(tag)) then
+       write(strtag,fmt='(i5.5)') tag
+       filename_use = filename(1:len(trim(filename))-4)//"_"//trim(strtag)//filename(len(trim(filename))-3:)
+       open(unit,file=trim(filename_use),action='write')
+    else
+       open(unit,file=trim(filename),action='write')
+    endif
+
+  end subroutine open_filename_tag
+
+  !-------------------------------------------------------------
   ! plot spherical on lat lon
   !-------------------------------------------------------------
 
-  subroutine plot_spherical_latlon(mesh, array, filename)
+  subroutine plot_spherical_latlon(mesh, array, filename, tag)
 
     use mpas_constants, only: &
          pii
@@ -3015,6 +3147,9 @@ contains
 
     character(len=*), intent(in) :: &
          filename
+
+    integer, optional, intent(in) :: &
+         tag
 
     integer, pointer :: &
          nCells, &
@@ -3100,7 +3235,7 @@ contains
        write(*,*) "plot_spherical_latlon: size not supported: ", size(array)
     endif
 
-    open(55,file=trim(filename))
+    call open_filename_tag(55, filename, tag)
 
     write(55,*) "set xrange [0:6.283]"
     write(55,*) "set yrange [-1.571:1.571]"
@@ -3219,6 +3354,172 @@ contains
     surfaceTemperaturePlot(:) = surfaceTemperature(1,1,:)
 
   end subroutine prepare_plot_variables
+
+  !-------------------------------------------------------------
+  ! strip_plot
+  !-------------------------------------------------------------
+
+  subroutine strip_plot(array, filename, tag)
+
+    real(kind=RKIND), dimension(:), intent(in) :: &
+         array
+
+    character(len=*), intent(in) :: &
+         filename
+
+    integer, intent(in) :: &
+         tag
+
+    integer :: &
+         iCell
+
+    integer, parameter :: &
+         iCellPoint = 81*40
+
+    real(kind=RKIND) :: &
+         diff
+
+    call open_filename_tag(55, filename, tag)
+
+    do iCell = iCellPoint - 5, iCellPoint + 45
+
+       diff = array(iCell) - 1.0_RKIND
+       if (array(iCell) == 0.0_RKIND) diff = 0
+
+       write(55,*) iCell, array(iCell), diff
+
+    enddo ! iCell
+
+    close(55)
+
+  end subroutine strip_plot
+
+  !if (iCell >= iCellPoint - 5 .and. iCell <= iCellPoint + 45) then
+  !   write(*,*) iCell, 
+  !endif
+
+  !-------------------------------------------------------------
+  ! test case output
+  !-------------------------------------------------------------
+
+  subroutine test_case_output(block, itimestep)
+
+    type(block_type), intent(inout) :: block
+    integer, intent(in) :: itimestep
+
+    type (MPAS_pool_type), pointer :: &
+         configs
+
+    logical, pointer :: &
+         config_test_case_diag
+
+    character(len=strKIND), pointer :: &
+         config_test_case_diag_type
+
+    configs => block % configs
+
+    call MPAS_pool_get_config(configs, "config_test_case_diag", config_test_case_diag)
+
+    if (config_test_case_diag) then
+
+       call MPAS_pool_get_config(configs, "config_test_case_diag_type", config_test_case_diag_type)
+
+       select case (trim(config_test_case_diag_type))
+       case ("global_velocity")
+          call test_case_output_global_velocity(block)
+       case ("square_advection")
+          call test_case_output_square_advection(block, itimestep)
+       case ("advection")
+          !call test_case_output_advection(block, itimestep)
+       case default
+          write(*,*) "Test case diagnostics not implemented!", trim(config_test_case_diag_type)
+          stop
+       end select
+
+    endif
+
+  end subroutine test_case_output
+
+  !-------------------------------------------------------------
+  
+  subroutine test_case_output_global_velocity(block)
+
+    type(block_type), intent(inout) :: block
+
+    type (MPAS_pool_type), pointer :: &
+         mesh
+
+    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+
+  end subroutine test_case_output_global_velocity
+
+  !-------------------------------------------------------------
+
+  subroutine test_case_output_square_advection(block, itimestep)
+
+    type(block_type), intent(inout) :: block
+    integer, intent(in) :: itimestep
+
+    type (MPAS_pool_type), pointer :: &
+         mesh, &
+         tracers
+
+    real(kind=RKIND), dimension(:,:,:), pointer :: &
+         iceAreaCategory, &
+         iceVolumeCategory, &
+         snowVolumeCategory, &
+         surfaceTemperature
+
+    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+    call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
+
+    call MPAS_pool_get_array(tracers, "iceAreaCategory", iceAreaCategory, 1)
+    call MPAS_pool_get_array(tracers, "iceVolumeCategory", iceVolumeCategory, 1)
+    call MPAS_pool_get_array(tracers, "snowVolumeCategory", snowVolumeCategory, 1)
+    call MPAS_pool_get_array(tracers, "surfaceTemperature", surfaceTemperature, 1)
+
+    call strip_plot(iceAreaCategory(1,1,:), "iceAreaCategory_strip.txt", itimestep)
+    call strip_plot(surfaceTemperature(1,1,:), "surfaceTemperature_strip.txt", itimestep)
+    call strip_plot(iceVolumeCategory(1,1,:), "iceVolumeCategory_strip.txt", itimestep)
+    call strip_plot(snowVolumeCategory(1,1,:), "snowVolumeCategory_strip.txt", itimestep)
+
+  end subroutine test_case_output_square_advection
+
+  !-------------------------------------------------------------
+
+  subroutine test_case_output_advection(block, itimestep)
+
+    type(block_type), intent(inout) :: block
+    integer, intent(in) :: itimestep
+
+    type (MPAS_pool_type), pointer :: &
+         mesh, &
+         tracers
+
+    real(kind=RKIND), dimension(:,:,:), pointer :: &
+         iceAreaCategory, &
+         iceVolumeCategory, &
+         snowVolumeCategory, &
+         surfaceTemperature
+    
+    if (mod(itimestep, 24) == 0) then
+       
+       call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+       call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
+       
+       call MPAS_pool_get_array(tracers, "iceAreaCategory", iceAreaCategory, 1)
+       call MPAS_pool_get_array(tracers, "iceVolumeCategory", iceVolumeCategory, 1)
+       call MPAS_pool_get_array(tracers, "snowVolumeCategory", snowVolumeCategory, 1)
+       call MPAS_pool_get_array(tracers, "surfaceTemperature", surfaceTemperature, 1)
+       
+       call plot_spherical_latlon(mesh, iceAreaCategory(1,1,:), "iceAreaCategory.txt", itimestep)
+       call plot_spherical_latlon(mesh, iceVolumeCategory(1,1,:), "iceVolumeCategory.txt", itimestep)
+       call plot_spherical_latlon(mesh, snowVolumeCategory(1,1,:), "snowVolumeCategory.txt", itimestep)
+       call plot_spherical_latlon(mesh, surfaceTemperature(1,1,:), "surfaceTemperature.txt", itimestep)
+       
+    endif
+
+  end subroutine test_case_output_advection
 
   !-------------------------------------------------------------
 

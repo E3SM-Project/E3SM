@@ -38,6 +38,8 @@
 		<nml_option name="config_pio_num_iotasks"            type="integer"       default_value="0"/>
 		<nml_option name="config_pio_stride"                 type="integer"       default_value="1"/>
 		<nml_option name="config_restart_timestamp_name"     type="character"     default_value="restart_timestamp"/>
+		<nml_option name="config_test_case_diag"             type="logical"       default_value="false"/>
+		<nml_option name="config_test_case_diag_type"        type="character"     default_value="none"/>
 	</nml_record>
 	<nml_record name="decomposition" in_defaults="true">
 		<nml_option name="config_block_decomp_file_prefix"   type="character"     default_value="graph.info.part."/>
@@ -342,7 +344,17 @@
 		<var name="iceSalinityTend"                   type="real"     dimensions="nIceLayers nCategories nCells"   name_in_code="iceSalinity"/>
 		<var name="snowEnthalpyTend"                  type="real"     dimensions="nSnowLayers nCategories nCells"  name_in_code="snowEnthalpy"/>
 	</var_struct>
+	<var_struct name="tracer_edge_fluxes" time_levs="1">
+		<var name="iceAreaCategoryEdgeFlux"           type="real"     dimensions="ONE nCategories nEdges"          name_in_code="iceAreaCategory"/>
+		<var name="iceVolumeCategoryEdgeFlux"         type="real"     dimensions="ONE nCategories nEdges"          name_in_code="iceVolumeCategory"/>
+		<var name="snowVolumeCategoryEdgeFlux"        type="real"     dimensions="ONE nCategories nEdges"          name_in_code="snowVolumeCategory"/>
+		<var name="surfaceTemperatureEdgeFlux"        type="real"     dimensions="ONE nCategories nEdges"          name_in_code="surfaceTemperature"/>
+		<var name="iceEnthalpyEdgeFlux"               type="real"     dimensions="nIceLayers nCategories nEdges"   name_in_code="iceEnthalpy"/>
+		<var name="iceSalinityEdgeFlux"               type="real"     dimensions="nIceLayers nCategories nEdges"   name_in_code="iceSalinity"/>
+		<var name="snowEnthalpyEdgeFlux"              type="real"     dimensions="nSnowLayers nCategories nEdges"  name_in_code="snowEnthalpy"/>
+	</var_struct>
 	<var_struct name="icestate" time_levs="1">
+	        <var name="iceAreaCategoryMask"               type="integer"  dimensions="nCategories nCells Time"  name_in_code="iceAreaCategoryMask"/>
 		<var name="iceAreaCell"                       type="real"     dimensions="nCells Time"              name_in_code="iceAreaCell"/>
 		<var name="iceVolumeCell"                     type="real"     dimensions="nCells Time"              name_in_code="iceVolumeCell"/>
 		<var name="snowVolumeCell"                    type="real"     dimensions="nCells Time"              name_in_code="snowVolumeCell"/>

@@ -11,6 +11,7 @@ module cice_testing
        divergence_stress_test_stress_set_tri, &
        divergence_stress_test_stress_set_weak, &
        init_square_test_case_hex, &
+       init_square_point_test_case_hex, &
        init_spherical_test_case
 
   ! parameter in constant stress strain relation
@@ -191,14 +192,22 @@ contains
   ! Square test case
   !-------------------------------------------------------------
 
-  subroutine init_square_test_case_hex(mesh, tracers, hexdyn, boundary, atmos_forcing, ocean_forcing)
+  subroutine init_square_test_case_hex(&
+       block, &
+       configs)
 
-    type(MPAS_pool_type), pointer, intent(inout) :: mesh
-    type(MPAS_pool_type), pointer :: tracers
-    type(MPAS_pool_type), pointer :: hexdyn
-    type(MPAS_pool_type), pointer :: boundary
-    type(MPAS_pool_type), pointer :: atmos_forcing
-    type(MPAS_pool_type), pointer :: ocean_forcing
+    type(block_type), intent(inout) :: block
+
+    type (MPAS_pool_type), pointer, intent(in) :: &
+         configs
+
+    type (MPAS_pool_type), pointer :: &
+         mesh, &
+         tracers, &
+         hexdyn, &
+         boundary, &
+         atmos_forcing, &
+         ocean_forcing
 
     real(kind=RKIND), dimension(:), pointer :: &
          xCell, &
@@ -209,7 +218,13 @@ contains
          uOceanVelocity, &
          vOceanVelocity
 
-    ! init variables
+    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+    call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
+    call MPAS_pool_get_subpool(block % structs, "hexdyn", hexdyn)
+    call MPAS_pool_get_subpool(block % structs, "boundary", boundary)
+    call MPAS_pool_get_subpool(block % structs, "atmos_forcing", atmos_forcing)
+    call MPAS_pool_get_subpool(block % structs, "ocean_forcing", ocean_forcing)
+
     call MPAS_pool_get_array(mesh, "xCell", xCell)
     call MPAS_pool_get_array(mesh, "yCell", yCell)
 
@@ -522,6 +537,45 @@ contains
     fEdge   = 2.0_RKIND * omega * sin(latEdge)
 
   end subroutine square_test_correct_positions
+
+  !-------------------------------------------------------------
+  ! point square test case
+  !-------------------------------------------------------------
+
+  subroutine init_square_point_test_case_hex(&
+       block, &
+       configs)
+
+    type(block_type), intent(inout) :: block
+
+    type (MPAS_pool_type), pointer, intent(in) :: &
+         configs
+
+    type(MPAS_pool_type), pointer :: &
+         tracers
+
+    real(kind=RKIND), dimension(:,:,:), pointer :: &
+         iceAreaCategory, &
+         surfaceTemperature, &
+         iceVolumeCategory, &
+         snowVolumeCategory
+
+    integer, parameter :: &
+         iCellPoint = 81*40
+
+    call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
+
+    call MPAS_pool_get_array(tracers, "iceAreaCategory", iceAreaCategory, 1)
+    call MPAS_pool_get_array(tracers, "surfaceTemperature", surfaceTemperature, 1)
+    call MPAS_pool_get_array(tracers, "iceVolumeCategory", iceVolumeCategory, 1)
+    call MPAS_pool_get_array(tracers, "snowVolumeCategory", snowVolumeCategory, 1)
+
+    iceAreaCategory(:,:,iCellPoint:iCellPoint+9) = 1.0_RKIND
+    surfaceTemperature(:,:,iCellPoint:iCellPoint+9) = 1.0_RKIND
+    iceVolumeCategory(:,:,iCellPoint:iCellPoint+9) = 1.0_RKIND  
+    snowVolumeCategory(:,:,iCellPoint:iCellPoint+9) = 1.0_RKIND  
+
+  end subroutine init_square_point_test_case_hex
 
   !-------------------------------------------------------------
   ! stress divergence operator test velocities

@@ -11,7 +11,7 @@ contains
 
   !--------------------------------------------------------------------------
 
-  subroutine cice_timestep(block, clock, dt)
+  subroutine cice_timestep(block, clock, dt, itimestep)
 
     use mpas_configure
 
@@ -32,19 +32,19 @@ contains
 
     use cice_diagnostics, only:&
          writeout_state, &
-         prepare_plot_variables
+         prepare_plot_variables, &
+         test_case_output
 
     type(block_type), intent(inout) :: block
     type (MPAS_Clock_type), intent(in) :: clock
     real(kind=RKIND), intent(in) :: dt
+    integer, intent(in) :: itimestep
 
     real(kind=RKIND) :: &
          time
 
     type (MPAS_pool_type), pointer :: &
-         configs, &
-         mesh, &
-         atmos_forcing
+         configs
 
     logical, pointer :: &
          config_perform_unit_test, &
@@ -64,9 +64,6 @@ contains
     call MPAS_pool_get_config(configs, "config_use_vertical_thermodynamics", config_use_vertical_thermodynamics)
     call MPAS_pool_get_config(configs, "config_perform_unit_test", config_perform_unit_test)
 
-    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
-    call MPAS_pool_get_subpool(block % structs, "atmos_forcing", atmos_forcing)
-
     if (config_perform_unit_test) then
        call perform_unit_test(block, configs)
        return
@@ -74,10 +71,7 @@ contains
 
     ! get forcing
     if (config_use_forcing) &
-         call get_forcing( &
-            mesh, &
-            clock, &
-            atmos_forcing)
+         call get_forcing(block, clock)
 
     ! velocity solve
     if (config_use_velocity_solver) &
@@ -91,8 +85,8 @@ contains
     if (config_use_vertical_thermodynamics) &
          call therm_zerolayer(block)
 
-    ! output
-    !call writeout_state(block, nstep)
+    ! test case output
+    call test_case_output(block, itimestep)
 
     call prepare_plot_variables(block)
 

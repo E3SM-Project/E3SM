@@ -67,15 +67,20 @@ contains
   ! Specific forcing
   !-------------------------------------------------------------
 
-  subroutine init_forcing(mesh, atmos_forcing)
+  subroutine init_forcing(block)
 
-    type(MPAS_pool_type), pointer, intent(in) :: mesh
+    type(block_type), intent(inout) :: block
 
-    type(MPAS_pool_type), pointer :: atmos_forcing
+    type(MPAS_pool_type), pointer :: &
+         mesh, &
+         atmos_forcing
 
     real(kind=RKIND), dimension(:,:), pointer :: &
          uPOPAlongGridVector, &
          vPOPAlongGridVector
+
+    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+    call MPAS_pool_get_subpool(block % structs, "atmos_forcing", atmos_forcing)
 
     call init_forcing_generic()
 
@@ -142,11 +147,15 @@ contains
 
   !-------------------------------------------------------------
 
-  subroutine get_forcing(mesh, clock, atmos_forcing)
+  subroutine get_forcing(block, clock)
 
-    type (MPAS_pool_type), pointer, intent(in) :: mesh
+    type(block_type), intent(inout) :: block
+
     type (MPAS_Clock_type), intent(in) :: clock
-    type (MPAS_pool_type), pointer :: atmos_forcing
+
+    type (MPAS_pool_type), pointer :: &
+         mesh, &
+         atmos_forcing
 
     integer :: &
          year, &
@@ -156,6 +165,9 @@ contains
     real(kind=RKIND) :: &
          forcingTime, &
          forcingTimeEpoch
+
+    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+    call MPAS_pool_get_subpool(block % structs, "atmos_forcing", atmos_forcing)
 
     elapsed_time_forcing = elapsed_time_forcing + 3600.0_RKIND
 
