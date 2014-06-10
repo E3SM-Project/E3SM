@@ -1578,14 +1578,17 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
 
 
-  subroutine applyCAMforcing(elem,hvcoord,np1,np1_qdp,dt_q,nets,nete)
+  subroutine applyCAMforcing(elem,fvm,hvcoord,np1,np1_qdp,dt_q,nets,nete)
   use dimensions_mod, only : np, nlev, qsize, ntrac
   use element_mod, only : element_t
   use hybvcoord_mod, only : hvcoord_t
-  use control_mod, only : moisture
+  use control_mod, only : moisture, tracer_grid_type
+  use control_mod, only : TRACER_GRIDTYPE_GLL, TRACER_GRIDTYPE_FVM
   use physical_constants, only: Cp
+  use fvm_control_volume_mod, only : fvm_struct
   implicit none
   type (element_t)     , intent(inout) :: elem(:)
+  type(fvm_struct)     , intent(inout) :: fvm(:)
   real (kind=real_kind), intent(in) :: dt_q
   type (hvcoord_t), intent(in)      :: hvcoord
   integer,  intent(in) :: np1,nets,nete,np1_qdp
@@ -1604,56 +1607,57 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(q,k,i,j,v1)
 #endif
-     do q=1,qsize
-        do k=1,nlev
-           do j=1,np
-              do i=1,np
-                 v1 = dt_q*elem(ie)%derived%FQ(i,j,k,q,1)
-                 !if (elem(ie)%state%Qdp(i,j,k,q,np1) + v1 < 0 .and. v1<0) then
-                 if (elem(ie)%state%Qdp(i,j,k,q,np1_qdp) + v1 < 0 .and. v1<0) then
-                    !if (elem(ie)%state%Qdp(i,j,k,q,np1) < 0 ) then
-                    if (elem(ie)%state%Qdp(i,j,k,q,np1_qdp) < 0 ) then
-                       v1=0  ! Q already negative, dont make it more so
-                    else
-                       !v1 = -elem(ie)%state%Qdp(i,j,k,q,np1)
-                       v1 = -elem(ie)%state%Qdp(i,j,k,q,np1_qdp)
+     if (tracer_grid_type == TRACER_GRIDTYPE_GLL) then
+        do q=1,qsize
+           do k=1,nlev
+              do j=1,np
+                 do i=1,np
+                    v1 = dt_q*elem(ie)%derived%FQ(i,j,k,q,1)
+                    !if (elem(ie)%state%Qdp(i,j,k,q,np1) + v1 < 0 .and. v1<0) then
+                    if (elem(ie)%state%Qdp(i,j,k,q,np1_qdp) + v1 < 0 .and. v1<0) then
+                       !if (elem(ie)%state%Qdp(i,j,k,q,np1) < 0 ) then
+                       if (elem(ie)%state%Qdp(i,j,k,q,np1_qdp) < 0 ) then
+                          v1=0  ! Q already negative, dont make it more so
+                       else
+                          !v1 = -elem(ie)%state%Qdp(i,j,k,q,np1)
+                          v1 = -elem(ie)%state%Qdp(i,j,k,q,np1_qdp)
+                       endif
                     endif
-                 endif
-                 !elem(ie)%state%Qdp(i,j,k,q,np1) = elem(ie)%state%Qdp(i,j,k,q,np1)+v1
-                 elem(ie)%state%Qdp(i,j,k,q,np1_qdp) = elem(ie)%state%Qdp(i,j,k,q,np1_qdp)+v1
-                 if (q==1) then
-                    elem(ie)%derived%FQps(i,j,1)=elem(ie)%derived%FQps(i,j,1)+v1/dt_q
-                 endif
+                    !elem(ie)%state%Qdp(i,j,k,q,np1) = elem(ie)%state%Qdp(i,j,k,q,np1)+v1
+                    elem(ie)%state%Qdp(i,j,k,q,np1_qdp) = elem(ie)%state%Qdp(i,j,k,q,np1_qdp)+v1
+                    if (q==1) then
+                       elem(ie)%derived%FQps(i,j,1)=elem(ie)%derived%FQps(i,j,1)+v1/dt_q
+                    endif
+                 enddo
               enddo
            enddo
         enddo
-     enddo
-#if 0
-     ! Repeat for the fvm tracers
-     do q=1,ntrac
-        do k=1,nlev
-           do j=1,np
-              do i=1,np
-                 v1 = dt_q*fvm(ie)%derived%fc(i,j,k,q)
-                 if (elem(ie)%state%Qdp(i,j,k,q,np1_qdp) + v1 < 0 .and. v1<0) then
-                    !if (elem(ie)%state%Qdp(i,j,k,q,np1) < 0 ) then
-                    if (elem(ie)%state%Qdp(i,j,k,q,np1_qdp) < 0 ) then
-                       v1=0  ! Q already negative, dont make it more so
-                    else
-                       !v1 = -elem(ie)%state%Qdp(i,j,k,q,np1)
-                       v1 = -elem(ie)%state%Qdp(i,j,k,q,np1_qdp)
-                    endif
-                 endif
-                 !elem(ie)%state%Qdp(i,j,k,q,np1) = elem(ie)%state%Qdp(i,j,k,q,np1)+v1
-                 elem(ie)%state%Qdp(i,j,k,q,np1_qdp) = elem(ie)%state%Qdp(i,j,k,q,np1_qdp)+v1
-                 if (q==1) then
-                    elem(ie)%derived%FQps(i,j,1)=elem(ie)%derived%FQps(i,j,1)+v1/dt_q
-                 endif
-              enddo
-           enddo
-        enddo
-     enddo
-#endif
+     else if (tracer_grid_type == TRACER_GRIDTYPE_FVM) then
+        ! Repeat for the fvm tracers
+        do q = 1, ntrac
+           do k = 1, nlev
+              do j = 1, np
+                 do i = 1, np
+                    v1 = fvm(ie)%fc(i,j,k,q)
+                    if (fvm(ie)%c(i,j,k,q,np1_qdp) + v1 < 0 .and. v1<0) then
+                       if (fvm(ie)%c(i,j,k,q,np1_qdp) < 0 ) then
+                          v1 = 0  ! C already negative, dont make it more so
+                       else
+                          v1 = -fvm(ie)%c(i,j,k,q,np1_qdp)
+                       end if
+                    end if
+                    fvm(ie)%c(i,j,k,q,np1_qdp) = fvm(ie)%c(i,j,k,q,np1_qdp) + v1
+!                    if (q == 1) then
+!!XXgoldyXX: Should update the pressure forcing here??!!??
+!                    elem(ie)%derived%FQps(i,j,1)=elem(ie)%derived%FQps(i,j,1)+v1/dt_q
+!                  end if
+                 end do
+              end do
+           end do
+        end do
+     else
+        call abortmp('applyCAMforcing: ERROR: unsupported value for tracer_grid_type')
+     end if
 
      if (wet .and. qsize>0) then
         ! to conserve dry mass in the precese of Q1 forcing:

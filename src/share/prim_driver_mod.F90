@@ -1400,7 +1400,7 @@ contains
     ! ftype=-1 do not apply forcing
     call TimeLevel_Qdp( tl, qsplit, n0_qdp)
     if (ftype==0) then
-      call ApplyCAMForcing(elem, hvcoord,tl%n0,n0_qdp, dt_remap,nets,nete)
+      call ApplyCAMForcing(elem, fvm, hvcoord,tl%n0,n0_qdp, dt_remap,nets,nete)
     end if
     if (ftype==2) call ApplyCAMForcing_dynamics(elem, hvcoord,tl%n0,dt_remap,nets,nete)
 #endif

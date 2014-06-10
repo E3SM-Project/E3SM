@@ -2805,6 +2805,7 @@ end subroutine ALE_parametric_coords
   use vertremap_mod, only : remap1, remap1_nofilter, remap_q_ppm ! _EXTERNAL (actually INTERNAL)
   use control_mod, only :  rsplit, tracer_transport_type, TRACER_GRIDTYPE_FVM
   use parallel_mod, only : abortmp
+  use dp_grids, only : dyn2phys
 #if defined(_SPELT)
   use spelt_mod, only: spelt_struct
 #else
@@ -2832,6 +2833,7 @@ end subroutine ALE_parametric_coords
   integer :: ie,i,j,k,np1,nets,nete,np1_qdp
   real (kind=real_kind), dimension(np,np,nlev)  :: dp,dp_star
   real (kind=real_kind), dimension(np,np,nlev,2)  :: ttmp
+  real (kind=real_kind), dimension(nc*nc,nlev)  :: dptmp
 
 #if USE_CUDA_FORTRAN
   call vertical_remap_cuda(elem,fvm,hvcoord,dt,np1,np1_qdp,nets,nete)
@@ -2981,6 +2983,15 @@ end subroutine ALE_parametric_coords
                 fvm(ie)%dp_fvm(i,j,k,np1)=dpc(i,j,k) !!XXgoldyXX??
                 fvm(ie)%c(i,j,k,:,np1)=cdp(i,j,k,:)/dpc(i,j,k)
               end do
+            end do
+          end do
+          ! Recompute dp_fvm
+          call dyn2phys(ie, dp, dptmp)
+          k = 1
+          do j=1,nc
+            do i=1,nc
+              fvm(ie)%dp_fvm(i,j,:,np1) = dptmp(k,:)
+              k = k + 1
             end do
           end do
         end if
