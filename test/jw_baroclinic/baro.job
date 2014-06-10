@@ -127,7 +127,10 @@ endif
 set name = jw-ne${ne}-nlev${nlev}-qsize${qsize}
 set run = $wdir/$name
 
-
+if ( $ne == 4 ) then
+   set tstep=1800
+   set nu=4.5e17
+endif
 if ( $ne == 16 ) then
    set tstep=600
    set nu=7e15
