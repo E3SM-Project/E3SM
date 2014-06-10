@@ -43,7 +43,7 @@ module dimensions_mod
   integer         :: qsize = 0
 
   ! fvm dimensions:
-  integer, parameter, public :: ngpc=5       !number of Gausspoints for the fvm integral approximation  
+  integer, parameter, public :: ngpc=2       !number of Gausspoints for the fvm integral approximation  
   integer, parameter, public :: nhe=1        !Max. Courant number
   integer, parameter, public :: nhr=2        !halo width needed for reconstruction - phl
   integer, parameter, public :: nht=nhe+nhr  !total halo width where reconstruction is needed (nht<=nc) - phl
