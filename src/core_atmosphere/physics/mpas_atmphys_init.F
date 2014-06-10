@@ -21,8 +21,6 @@
  use mpas_atmphys_landuse
  use mpas_atmphys_o3climatology
 
- use physics_wrf/module_oml, only:omlinit
-
  implicit none
  private
  public:: physics_init
@@ -112,7 +110,8 @@
  real(kind=RKIND),dimension(:,:),pointer:: tlag
 
  real(kind=RKIND),dimension(:),pointer  :: t_oml, t_oml_initial, t_oml_200m_initial
- real(kind=RKIND),dimension(:),pointer  :: h_oml, h_oml_initial, hu_oml, hv_oml, oml_hml0
+ real(kind=RKIND),dimension(:),pointer  :: h_oml, h_oml_initial, hu_oml, hv_oml
+ real(kind=RKIND), pointer :: config_oml_hml0
  integer,pointer:: nCells
  logical,pointer:: config_oml1d
  
@@ -203,7 +202,7 @@
  call mpas_pool_get_array(diag_physics,'h_oml_initial'     ,h_oml_initial)
  call mpas_pool_get_array(diag_physics,'hu_oml'            ,hu_oml)
  call mpas_pool_get_array(diag_physics,'hv_oml'            ,hv_oml)
- call mpas_pool_get_config(configs,'config_oml1D'          ,config_oml1D  )
+ call mpas_pool_get_config(configs,'config_oml1d'          ,config_oml1d  )
  call mpas_pool_get_config(configs,'config_oml_hml0'       ,config_oml_hml0  )
  call mpas_pool_get_dimension(mesh,'nCells',nCells)
 
@@ -300,17 +299,17 @@
  endif
 
 ! initialized the 1D ocean mixed-layer model  (code from wrf module_sf_oml)
- if (config_oml1D) then
-   if (.not. config_do_restart)) then
+ if (config_oml1d) then
+   if (.not. config_do_restart) then
       write(0,*) ' initializing 1D ocean mixed layer model '
       do iCell = 1, nCellsSolve
         t_oml(iCell) = sst(iCell)
         t_oml_initial(iCell) = sst(iCell)
       end do
-      if (oml_hml0 .gt. 0) then
+      if (config_oml_hml0 .gt. 0) then
         do iCell = 1, nCellsSolve
-          h_oml(iCell) = oml_hml0
-          h_oml_initial(iCell) = oml_hml0
+          h_oml(iCell) = config_oml_hml0
+          h_oml_initial(iCell) = config_oml_hml0
           hu_oml(iCell) = 0.
           hv_oml(iCell) = 0.
           t_oml_200m_initial(iCell) = sst(iCell) - 5.
@@ -320,7 +319,7 @@
           h_oml(iCell) = h_oml_initial(iCell)
           ! WRF COMMENT:
           ! fill in near coast area with SST: 200 K was set as missing value in ocean pre-processing code
-          if( (t_oml_200m_initial(iCell) > 200.) and (t_oml_200m_initial(iCell) <= 200.)  &
+          if( (t_oml_200m_initial(iCell) > 200.) .and. (t_oml_200m_initial(iCell) <= 200.) )  &
                t_oml_200m_initial(iCell) = sst(iCell)
         end do
       end if

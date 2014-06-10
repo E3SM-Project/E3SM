@@ -513,6 +513,13 @@
 			<var name="ol2"/>
 			<var name="ol3"/>
 			<var name="ol4"/>
+			<var name="t_oml"/>
+			<var name="t_oml_initial"/>
+			<var name="t_oml_200m_initial"/>
+			<var name="h_oml"/>
+			<var name="h_oml_initial"/>
+			<var name="hu_oml"/>
+			<var name="hv_oml"/>
 		</stream>
 
 		<stream name="output" type="output">
@@ -863,6 +870,10 @@
 			<var name="ol2"/>
 			<var name="ol3"/>
 			<var name="ol4"/>
+			<var name="t_oml"/>
+			<var name="h_oml"/>
+			<var name="hu_oml"/>
+			<var name="hv_oml"/>
 		</stream>
 
 		<stream name="surface" type="input;output">
@@ -1640,7 +1651,7 @@
 
                 <!-- t_oml              :ocean mixed layer temperature                                              [K] -->
                 <!-- t_oml_initial      :ocean mixed layer temperature at initial time                              [K] -->
-                <!-- t_oml_200m_initial :ocean mixed layer 100 m mean temperature at initial time                   [K] -->
+                <!-- t_oml_200m_initial :ocean mixed layer 200 m mean temperature at initial time                   [K] -->
                 <!-- h_oml              :ocean mixed layer depth                                                    [m] -->
                 <!-- h_oml_initial      :ocean mixed layer depth at initial time                                    [m] -->
                 <!-- hu_oml             :ocean mixed layer integrated u (zonal velocity)                        [m^2/s] -->
@@ -1648,7 +1659,7 @@
 
                 <var name="t_oml"                 type="real"     dimensions="nCells Time"/>
                 <var name="t_oml_initial"         type="real"     dimensions="nCells Time"/>
-                <var name="t_oml_100m_initial"    type="real"     dimensions="nCells Time"/>
+                <var name="t_oml_200m_initial"    type="real"     dimensions="nCells Time"/>
                 <var name="h_oml"                 type="real"     dimensions="nCells Time"/>
                 <var name="h_oml_initial"         type="real"     dimensions="nCells Time"/>
                 <var name="hu_oml"                type="real"     dimensions="nCells Time"/>
