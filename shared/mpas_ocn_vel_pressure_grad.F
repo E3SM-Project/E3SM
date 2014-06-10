@@ -76,8 +76,7 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_vel_pressure_grad_tend(meshPool, pressure, montgomeryPotential, zMid, density, potentialDensity, &
-      indexT, indexS, tracers, inSituThermalExpansionCoeff,inSituSalineContractionCoeff, &
-      tend, err)!{{{
+      indexT, indexS, tracers, tend, err, inSituThermalExpansionCoeff,inSituSalineContractionCoeff)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -92,7 +91,9 @@ contains
          montgomeryPotential, & !< Input: Mongomery potential
          zMid, &     !< Input: z-coordinate at mid-depth of layer
          density, &      !< Input: density
-         potentialDensity, &      !< Input: potentialDensity
+         potentialDensity         !< Input: potentialDensity
+
+      real (kind=RKIND), dimension(:,:), intent(in), optional :: &
          inSituThermalExpansionCoeff, &  
          inSituSalineContractionCoeff
 

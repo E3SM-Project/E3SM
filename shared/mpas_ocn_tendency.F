@@ -231,8 +231,6 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'density', density)
       call mpas_pool_get_array(diagnosticsPool, 'potentialDensity', potentialDensity)
       call mpas_pool_get_array(diagnosticsPool, 'tangentialVelocity', tangentialVelocity)
-      call mpas_pool_get_array(diagnosticsPool, 'inSituThermalExpansionCoeff',inSituThermalExpansionCoeff)
-      call mpas_pool_get_array(diagnosticsPool, 'inSituSalineContractionCoeff', inSituSalineContractionCoeff)
 
       call mpas_pool_get_array(tendPool, 'normalVelocity', tend_normalVelocity)
                   
@@ -265,9 +263,18 @@ contains
       ! velocity tendency: pressure gradient
       !
       call mpas_timer_start("pressure grad", .false., velPgradTimer)
-      call ocn_vel_pressure_grad_tend(meshPool, pressure, montgomeryPotential, zMid, density, potentialDensity, &
-         indexTemperature, indexSalinity, tracers, inSituThermalExpansionCoeff,inSituSalineContractionCoeff, &
-         tend_normalVelocity, err)
+      if (config_pressure_gradient_type.eq.'common_level_eos') then
+         ! only pass EOS derivatives if needed.
+         call mpas_pool_get_array(diagnosticsPool, 'inSituThermalExpansionCoeff',inSituThermalExpansionCoeff)
+         call mpas_pool_get_array(diagnosticsPool, 'inSituSalineContractionCoeff', inSituSalineContractionCoeff)
+         call ocn_vel_pressure_grad_tend(meshPool, pressure, montgomeryPotential, zMid, density, potentialDensity, &
+              indexTemperature, indexSalinity, tracers, tend_normalVelocity, err, &
+              inSituThermalExpansionCoeff,inSituSalineContractionCoeff)
+      else
+         call ocn_vel_pressure_grad_tend(meshPool, pressure, montgomeryPotential, zMid, density, potentialDensity, &
+              indexTemperature, indexSalinity, tracers, tend_normalVelocity, err, &
+              inSituThermalExpansionCoeff,inSituSalineContractionCoeff)
+      endif
       call mpas_timer_stop("pressure grad", velPgradTimer)
 
       !
