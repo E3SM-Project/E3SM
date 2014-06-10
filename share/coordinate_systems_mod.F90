@@ -774,6 +774,12 @@ end subroutine cart2cubedspherexy
   !  output: area
   !  based on formulas in STRI_QUAD:
   !  http://people.sc.fsu.edu/~burkardt/f_src/stri_quad/stri_quad.html
+  !
+  ! MT:  note that the usual Girard formula used below is ill-conditioned
+  ! for small nearly flat triangles (which is probably our case).  
+  ! I put in a crude fix below.    
+  ! We should instead be using l'Huiller's formula,
+  ! see:  http://williams.best.vwh.net/avform.htm
   use physical_constants, only : dd_pi
   implicit none
   real(kind=real_kind) area
