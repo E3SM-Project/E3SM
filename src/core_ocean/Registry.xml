@@ -729,6 +729,7 @@
 		<package name="surfaceRestoring" description="This package includes variables required for surface tracer restoring."/>
 		<package name="bulkForcing" description="This package includes varibles required for bulk surface forcing."/>
 		<package name="frazilIce" description="This package includes variables required for frazil ice formation."/>
+		<package name="inSituEOS" description="This package includes variables required for to compute in situ equation of state derivatives, like thermal expansion and haline contraction."/>
 	</packages>
 	<streams>
 		<stream name="input" type="input">
@@ -1366,11 +1367,14 @@
 		<var name="inSituThermalExpansionCoeff" 
 			 type="real" dimensions="nVertLevels nCells Time" units="C^{-1}"
 			 description="Thermal expansion coefficient (alpha), defined as $-1/\rho d\rho/dT$ (note negative sign).  This is in situ, i.e. not displaced to another depth."
+			 packages="inSituEOS"
 		/>
 		<var name="inSituSalineContractionCoeff" 
 			 type="real" dimensions="nVertLevels nCells Time" units="PSU^{-1}"
 			 description="Saline contraction coefficient (beta), defined as $1/\rho d\rho/dS$.  This is also called the haline contraction coefficient.  This is in situ, i.e. not displaced to another depth."
+			 packages="inSituEOS"
 		/>
+
 		<var name="BruntVaisalaFreqTop" type="real" dimensions="nVertLevels nCells Time" units="s^{-2}"
 			 description="Brunt Vaisala frequency defined at the center (horizontally) and top (vertically) of cell"
 		/>

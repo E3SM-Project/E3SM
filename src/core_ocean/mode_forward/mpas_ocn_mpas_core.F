@@ -1000,21 +1000,24 @@ print *, 'output alarmTimeStep', alarmTimeStep, ierr
       logical, pointer :: surfaceRestoringActive
       logical, pointer :: bulkForcingActive
       logical, pointer :: frazilIceActive
+      logical, pointer :: inSituEOSActive
 
       logical, pointer :: config_use_freq_filtered_thickness
       logical, pointer :: config_frazil_ice_formation
-      character (len=StrKIND), pointer :: config_time_integrator, config_forcing_type
+      character (len=StrKIND), pointer :: config_time_integrator, config_forcing_type, config_pressure_gradient_type
 
       call mpas_pool_get_package(packagePool, 'thicknessFilterActive', thicknessFilterActive)
       call mpas_pool_get_package(packagePool, 'splitTimeIntegratorActive', splitTimeIntegratorActive)
       call mpas_pool_get_package(packagePool, 'surfaceRestoringActive', surfaceRestoringActive)
       call mpas_pool_get_package(packagePool, 'bulkForcingActive', bulkForcingActive)
       call mpas_pool_get_package(packagePool, 'frazilIceActive', frazilIceActive)
+      call mpas_pool_get_package(packagePool, 'inSituEOSActive', inSituEOSActive)
 
       call mpas_pool_get_config(configPool, 'config_use_freq_filtered_thickness', config_use_freq_filtered_thickness)
       call mpas_pool_get_config(configPool, 'config_time_integrator', config_time_integrator)
       call mpas_pool_get_config(configPool, 'config_forcing_type', config_forcing_type)
       call mpas_pool_get_config(configPool, 'config_frazil_ice_formation', config_frazil_ice_formation)
+      call mpas_pool_get_config(configPool, 'config_pressure_gradient_type', config_pressure_gradient_type)
 
       ierr = 0
 
@@ -1036,6 +1039,10 @@ print *, 'output alarmTimeStep', alarmTimeStep, ierr
 
       if (config_frazil_ice_formation) then
          frazilIceActive = .true.
+      end if
+
+      if (config_pressure_gradient_type.eq.'common_level_eos') then
+         inSituEOSActive = .true.
       end if
 
       call ocn_analysis_setup_packages(configPool, packagePool, err_tmp)

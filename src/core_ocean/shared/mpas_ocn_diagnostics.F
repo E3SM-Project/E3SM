@@ -175,8 +175,6 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'uBolusGM', uBolusGM)
       call mpas_pool_get_array(diagnosticsPool, 'uTransport', uTransport)
       call mpas_pool_get_array(diagnosticsPool, 'gradSSH', gradSSH)
-      call mpas_pool_get_array(diagnosticsPool, 'inSituThermalExpansionCoeff',inSituThermalExpansionCoeff)
-      call mpas_pool_get_array(diagnosticsPool, 'inSituSalineContractionCoeff', inSituSalineContractionCoeff)
 
       call mpas_pool_get_array(meshPool, 'weightsOnEdge', weightsOnEdge)
       call mpas_pool_get_array(meshPool, 'kiteAreasOnVertex', kiteAreasOnVertex)
@@ -443,8 +441,16 @@ contains
       call mpas_timer_start("equation of state", .false., diagEOSTimer)
 
       ! compute in-place density
-      call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, 0, 'relative', density, err, &
-         inSituThermalExpansionCoeff, inSituSalineContractionCoeff, timeLevelIn=timeLevel)
+      if (config_pressure_gradient_type.eq.'common_level_eos') then
+         ! only compute EOS derivatives if needed.
+         call mpas_pool_get_array(diagnosticsPool, 'inSituThermalExpansionCoeff',inSituThermalExpansionCoeff)
+         call mpas_pool_get_array(diagnosticsPool, 'inSituSalineContractionCoeff', inSituSalineContractionCoeff)
+         call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, 0, 'relative', density, err, &
+              inSituThermalExpansionCoeff, inSituSalineContractionCoeff, timeLevelIn=timeLevel)
+      else
+         call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, 0, 'relative', density, err, &
+              timeLevelIn=timeLevel)
+      endif
 
       ! compute potentialDensity, the density displaced adiabatically to the mid-depth of top layer.
       call ocn_equation_of_state_density(statePool, diagnosticsPool, meshPool, 1, 'absolute', potentialDensity, err, timeLevelIn=timeLevel)
