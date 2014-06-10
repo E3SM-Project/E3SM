@@ -1200,6 +1200,10 @@
                 <nml_option name="config_bucket_radt"                type="real"          default_value="1.0e9"      in_defaults="false"/>
                 <nml_option name="config_bucket_rainc"               type="real"          default_value="100.0"      in_defaults="false"/>
                 <nml_option name="config_bucket_rainnc"              type="real"          default_value="100.0"      in_defaults="false"/>
+
+                <nml_option name="config_oml1d"                      type="logical"       default_value="false"      in_defaults="false"/>
+                <nml_option name="config_oml_hml0"                   type="real"          default_value="30.0"       in_defaults="false"/>
+                
         </nml_record>
 
         <var_struct name="diag_physics" time_levs="1">
@@ -1629,6 +1633,27 @@
                 <var name="xicem"         type="real"     dimensions="nCells Time"/>
                 <var name="z0"            type="real"     dimensions="nCells Time"/>
                 <var name="zs"            type="real"     dimensions="nCells Time"/>
+
+                <!-- ================================================================================================== -->
+                <!-- ... PARAMETERIZATION OF THE 1D OCEAN MIXED LAYER                                                   -->
+                <!-- ================================================================================================== -->
+
+                <!-- t_oml              :ocean mixed layer temperature                                              [K] -->
+                <!-- t_oml_initial      :ocean mixed layer temperature at initial time                              [K] -->
+                <!-- t_oml_200m_initial :ocean mixed layer 100 m mean temperature at initial time                   [K] -->
+                <!-- h_oml              :ocean mixed layer depth                                                    [m] -->
+                <!-- h_oml_initial      :ocean mixed layer depth at initial time                                    [m] -->
+                <!-- hu_oml             :ocean mixed layer integrated u (zonal velocity)                        [m^2/s] -->
+                <!-- hv_oml             :ocean mixed layer integrated v (meridional velocity)                   [m^2/s] -->
+
+                <var name="t_oml"                 type="real"     dimensions="nCells Time"/>
+                <var name="t_oml_initial"         type="real"     dimensions="nCells Time"/>
+                <var name="t_oml_100m_initial"    type="real"     dimensions="nCells Time"/>
+                <var name="h_oml"                 type="real"     dimensions="nCells Time"/>
+                <var name="h_oml_initial"         type="real"     dimensions="nCells Time"/>
+                <var name="hu_oml"                type="real"     dimensions="nCells Time"/>
+                <var name="hv_oml"                type="real"     dimensions="nCells Time"/>
+
         </var_struct>
 
         <var_struct name="tend_physics" time_levs="1">
