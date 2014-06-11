@@ -27,7 +27,7 @@ OBJS = \
 	module_sf_noahlsm.o        \
 	module_sf_sfclay.o         \
 	module_sf_urban.o          \
-	module_sf_oml.F
+	module_sf_oml.o
 
 physics_wrf: $(OBJS)
 	ar -ru ./../libphys.a $(OBJS)
@@ -66,7 +66,7 @@ module_sf_bep_bem.o: \
 	module_sf_urban.o
 
 module_sf_noahdrv.o: \
- 	module_sf_bem.o \
+	module_sf_bem.o \
 	module_sf_bep.o \
 	module_sf_bep_bem.o \
 	module_sf_noahlsm.o \

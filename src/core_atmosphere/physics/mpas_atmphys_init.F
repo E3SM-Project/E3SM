@@ -301,7 +301,7 @@
 ! initialized the 1D ocean mixed-layer model  (code from wrf module_sf_oml)
  if (config_oml1d) then
    if (.not. config_do_restart) then
-      write(0,*) ' initializing 1D ocean mixed layer model '
+      write(0,*) '--- initialization of 1D ocean mixed layer model '
       do iCell = 1, nCellsSolve
         t_oml(iCell) = sst(iCell)
         t_oml_initial(iCell) = sst(iCell)
@@ -324,7 +324,6 @@
         end do
       end if
    end if
-    write(0,*) ' finished 1D ocean mixed layer model init '
  end if
 
 !initialization of temperatures needed for updating the deep soil temperature:

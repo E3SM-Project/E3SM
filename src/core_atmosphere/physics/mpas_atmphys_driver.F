@@ -120,6 +120,8 @@
                                   config_radt_sw_scheme,   &
                                   config_sfclayer_scheme
 
+ logical, pointer:: config_oml1d
+
 !local variables:
  type(block_type),pointer:: block
 
@@ -136,6 +138,7 @@
  call mpas_pool_get_config(domain%configs,'config_sfclayer_scheme' ,config_sfclayer_scheme )
  call mpas_pool_get_config(domain%configs,'config_bucket_radt'     ,config_bucket_radt     )
  call mpas_pool_get_config(domain%configs,'config_bucket_update'   ,config_bucket_update   )
+ call mpas_pool_get_config(domain%configs,'config_oml1d'   ,config_oml1d   )
 
  if(config_conv_deep_scheme    .ne. 'off' .or. &
     config_lsm_scheme          .ne. 'off' .or. &
@@ -202,7 +205,7 @@
     endif
 
     !call to 1d ocean mixed-layer model
-    if(config_oml1d) call driver_oml1d(block%configs, mesh, diag_physics)
+    if(config_oml1d) call driver_oml1d(block%configs, mesh, diag, diag_physics, sfc_input)
 
     !call to land-surface scheme:
     if(config_lsm_scheme .ne. 'off') then

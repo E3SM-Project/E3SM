@@ -26,6 +26,7 @@ OBJS = \
 	mpas_atmphys_driver_radiation_lw.o    \
 	mpas_atmphys_driver_radiation_sw.o    \
 	mpas_atmphys_driver_sfclayer.o        \
+	mpas_atmphys_driver_oml.o        \
 	mpas_atmphys_init.o                   \
 	mpas_atmphys_landuse.o                \
 	mpas_atmphys_lsm_noahinit.o           \
@@ -74,6 +75,7 @@ mpas_atmphys_driver.o: \
 	mpas_atmphys_driver_radiation_lw.o \
 	mpas_atmphys_driver_radiation_sw.o \
 	mpas_atmphys_driver_sfclayer.o \
+	mpas_atmphys_driver_oml.o \
 	mpas_atmphys_constants.o \
 	mpas_atmphys_interface_nhyd.o \
 	mpas_atmphys_update.o \
@@ -136,6 +138,11 @@ mpas_atmphys_driver_sfclayer.o: \
 	mpas_atmphys_constants.o \
 	mpas_atmphys_vars.o \
 	./physics_wrf/module_sf_sfclay.o
+
+mpas_atmphys_driver_oml.o: \
+	mpas_atmphys_constants.o \
+	mpas_atmphys_vars.o \
+	./physics_wrf/module_sf_oml.o
 
 mpas_atmphys_init.o: \
 	mpas_atmphys_driver_convection_deep.o \
