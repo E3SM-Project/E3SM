@@ -1579,7 +1579,7 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
 
   subroutine applyCAMforcing(elem,fvm,hvcoord,np1,np1_qdp,dt_q,nets,nete)
-  use dimensions_mod, only : np, nlev, qsize, ntrac
+  use dimensions_mod, only : np, nc, nlev, qsize, ntrac
   use element_mod, only : element_t
   use hybvcoord_mod, only : hvcoord_t
   use control_mod, only : moisture, tracer_grid_type
@@ -1636,8 +1636,8 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
         ! Repeat for the fvm tracers
         do q = 1, ntrac
            do k = 1, nlev
-              do j = 1, np
-                 do i = 1, np
+              do j = 1, nc
+                 do i = 1, nc
                     v1 = fvm(ie)%fc(i,j,k,q)
                     if (fvm(ie)%c(i,j,k,q,np1_qdp) + v1 < 0 .and. v1<0) then
                        if (fvm(ie)%c(i,j,k,q,np1_qdp) < 0 ) then

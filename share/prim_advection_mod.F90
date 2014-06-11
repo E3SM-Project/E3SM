@@ -862,7 +862,7 @@ module prim_advection_mod
   private
   save
 
-  public :: Prim_Advec_Init
+  public :: Prim_Advec_Init1, Prim_Advec_Init2
   public :: Prim_Advec_Tracers_remap, Prim_Advec_Tracers_remap_rk2, Prim_Advec_Tracers_remap_ALE
   public :: prim_advec_tracers_fvm
 #if defined(_SPELT)
@@ -880,13 +880,15 @@ module prim_advection_mod
 
   real(kind=real_kind), allocatable :: qmin(:,:,:), qmax(:,:,:)
 
+  type (derivative_t), public, allocatable   :: deriv(:) ! derivative struct (nthreads)
 
 contains
 
-  subroutine Prim_Advec_Init(par)
+  subroutine Prim_Advec_Init1(par, n_domains)
     use dimensions_mod, only : nlev, qsize, nelemd
     use parallel_mod, only : parallel_t
     type(parallel_t) :: par
+    integer, intent(in) :: n_domains
 
     ! Shared buffer pointers.
     ! Using "=> null()" in a subroutine is usually bad, because it makes
@@ -913,11 +915,29 @@ contains
     nullify(buf_ptr)
     nullify(receive_ptr)
 
+    allocate(deriv(0:n_domains-1))
+
     ! this static array is shared by all threads, so dimension for all threads (nelemd), not nets:nete:
     allocate (qmin(nlev,qsize,nelemd))
     allocate (qmax(nlev,qsize,nelemd))
 
-  end subroutine Prim_Advec_Init
+  end subroutine Prim_Advec_Init1
+
+  subroutine Prim_Advec_Init2(hybrid,fvm_corners, fvm_points, spelt_refnep)
+    use kinds,          only : longdouble_kind
+    use dimensions_mod, only : nc, nep
+    use derivative_mod, only : derivinit
+
+    type (hybrid_t), intent(in) :: hybrid
+    real(kind=longdouble_kind), intent(in) :: fvm_corners(nc+1)
+    real(kind=longdouble_kind), intent(in) :: fvm_points(nc)
+    real(kind=longdouble_kind), intent(in) :: spelt_refnep(1:nep)
+
+    ! ==================================
+    ! Initialize derivative structure
+    ! ==================================
+    call derivinit(deriv(hybrid%ithr),fvm_corners, fvm_points, spelt_refnep)
+  end subroutine Prim_Advec_Init2
 
 #if defined(_SPELT)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2787,7 +2807,7 @@ end subroutine ALE_parametric_coords
 
 
 
-  subroutine vertical_remap(elem,fvm,hvcoord,dt,np1,np1_qdp,nets,nete)
+  subroutine vertical_remap(hybrid,elem,fvm,hvcoord,dt,np1,np1_qdp,nets,nete)
   ! This routine is called at the end of the vertically Lagrangian
   ! dynamics step to compute the vertical flux needed to get back
   ! to reference eta levels
@@ -2805,7 +2825,8 @@ end subroutine ALE_parametric_coords
   use vertremap_mod, only : remap1, remap1_nofilter, remap_q_ppm ! _EXTERNAL (actually INTERNAL)
   use control_mod, only :  rsplit, tracer_transport_type, TRACER_GRIDTYPE_FVM
   use parallel_mod, only : abortmp
-  use dp_grids, only : dyn2phys
+  use hybrid_mod     , only : hybrid_t
+  use derivative_mod, only : interpolate_gll2fvm_points
 #if defined(_SPELT)
   use spelt_mod, only: spelt_struct
 #else
@@ -2815,6 +2836,7 @@ end subroutine ALE_parametric_coords
   use cuda_mod, only: vertical_remap_cuda
 #endif
 
+  type (hybrid_t), intent(in) :: hybrid  ! distributed parallel structure (shared)
 #if defined(_SPELT)
   type(spelt_struct), intent(inout) :: fvm(:)
   real (kind=real_kind) :: cdp(1:nep,1:nep,nlev,ntrac-1)
@@ -2833,7 +2855,6 @@ end subroutine ALE_parametric_coords
   integer :: ie,i,j,k,np1,nets,nete,np1_qdp
   real (kind=real_kind), dimension(np,np,nlev)  :: dp,dp_star
   real (kind=real_kind), dimension(np,np,nlev,2)  :: ttmp
-  real (kind=real_kind), dimension(nc*nc,nlev)  :: dptmp
 
 #if USE_CUDA_FORTRAN
   call vertical_remap_cuda(elem,fvm,hvcoord,dt,np1,np1_qdp,nets,nete)
@@ -2986,13 +3007,8 @@ end subroutine ALE_parametric_coords
             end do
           end do
           ! Recompute dp_fvm
-          call dyn2phys(ie, dp, dptmp)
-          k = 1
-          do j=1,nc
-            do i=1,nc
-              fvm(ie)%dp_fvm(i,j,:,np1) = dptmp(k,:)
-              k = k + 1
-            end do
+          do k = 1, nlev
+            fvm(ie)%dp_fvm(1:nc,1:nc,k,np1)=interpolate_gll2fvm_points(dp(:,:,k),deriv(hybrid%ithr))
           end do
         end if
 !         call remap_velocityC(np1,dt,elem,fvm,hvcoord,ie)
