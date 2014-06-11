@@ -1717,7 +1717,6 @@ endif
                 endif
              endif
           enddo
-          print *,'x2=',x2
           if (x2>1+tol) call abortmp('ERROR: did not find next intersection point')
           if (x2<=x1) call abortmp('ERROR: next intersection point did not advance')
           count=count+1
