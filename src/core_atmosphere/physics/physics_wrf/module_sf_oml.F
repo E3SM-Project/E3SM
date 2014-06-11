@@ -1,17 +1,15 @@
 !WRF:MODEL_LAYER:PHYSICS
 !
+! MPAS version (pulled out all the unused WRF indices)  WCS 20140611
 MODULE module_sf_oml
 
 CONTAINS
 
 !----------------------------------------------------------------
-   SUBROUTINE OML1D(I,J,TML,T0ML,H,H0,HUML,                              &
-                    HVML,TSK,HFX,                                        &
-                    LH,GSW,GLW,TMOML,                                    &
-                    UAIR,VAIR,UST,F,EMISS,STBOLT,G,DT,OML_GAMMA,         &
-                    ids,ide, jds,jde, kds,kde,                           &
-                    ims,ime, jms,jme, kms,kme,                           &
-                    its,ite, jts,jte, kts,kte                            )
+   SUBROUTINE OML1D(TML,T0ML,H,H0,HUML,                          &
+                    HVML,TSK,HFX,                                &
+                    LH,GSW,GLW,TMOML,                            &
+                    UAIR,VAIR,UST,F,EMISS,STBOLT,G,DT,OML_GAMMA )
 
 !----------------------------------------------------------------
    IMPLICIT NONE
@@ -44,10 +42,6 @@ CONTAINS
 !-- G           acceleration due to gravity
 !
 !----------------------------------------------------------------
-   INTEGER, INTENT(IN   )    ::      I, J
-   INTEGER, INTENT(IN   )    ::      ids,ide, jds,jde, kds,kde, &
-                                     ims,ime, jms,jme, kms,kme, &
-                                     its,ite, jts,jte, kts,kte
 
    REAL,    INTENT(INOUT)    :: TML, H, H0, HUML, HVML, TSK
 
@@ -150,72 +144,5 @@ CONTAINS
 !     end if
 
    END SUBROUTINE OML1D
-
-!================================================================
-   SUBROUTINE omlinit(oml_hml0, tsk,                           &
-                      tml,t0ml,hml,h0ml,huml,hvml,tmoml,       &
-                      allowed_to_read, start_of_simulation,    &
-                      ids,ide, jds,jde, kds,kde,               &
-                      ims,ime, jms,jme, kms,kme,               &
-                      its,ite, jts,jte, kts,kte                )
-!----------------------------------------------------------------
-   IMPLICIT NONE
-!----------------------------------------------------------------
-   LOGICAL , INTENT(IN)      ::      allowed_to_read
-   LOGICAL , INTENT(IN)      ::      start_of_simulation
-   INTEGER, INTENT(IN   )    ::      ids,ide, jds,jde, kds,kde, &
-                                     ims,ime, jms,jme, kms,kme, &
-                                     its,ite, jts,jte, kts,kte
-
-   REAL,    DIMENSION( ims:ime, jms:jme )                     , &
-            INTENT(IN)    ::                               TSK
-
-   REAL,    DIMENSION( ims:ime, jms:jme )                     , &
-            INTENT(INOUT)    ::     TML, T0ML, HML, H0ML, HUML, HVML, TMOML
-   REAL   , INTENT(IN   )    ::     oml_hml0
-
-!  LOCAR VAR
-
-   INTEGER                   ::      L,J,I,itf,jtf
-   CHARACTER*1024 message
-
-!----------------------------------------------------------------
- 
-   itf=min0(ite,ide-1)
-   jtf=min0(jte,jde-1)
-
-   IF(start_of_simulation) THEN
-     DO J=jts,jtf
-     DO I=its,itf
-       TML(I,J)=TSK(I,J)
-       T0ML(I,J)=TSK(I,J)
-     ENDDO
-     ENDDO
-     IF (oml_hml0 .gt. 0.) THEN
-        WRITE(message,*)'Initializing OML with HML0 = ', oml_hml0
-        CALL wrf_debug (0, TRIM(message))
-        DO J=jts,jtf
-        DO I=its,itf
-          HML(I,J)=oml_hml0
-          H0ML(I,J)=HML(I,J)
-          HUML(I,J)=0.
-          HVML(I,J)=0.
-          TMOML(I,J)=TSK(I,J)-5.
-        ENDDO
-        ENDDO
-     ELSE
-        WRITE(message,*)'Initializing OML with real HML0, h(1,1) = ', h0ml(1,1)
-        CALL wrf_debug (0, TRIM(message))
-        DO J=jts,jtf
-        DO I=its,itf
-          HML(I,J)=H0ML(I,J)
-! fill in near coast area with SST: 200 K was set as missing value in ocean pre-processing code
-          IF(TMOML(I,J).GT.200. .and. TMOML(I,J).LE.201.) TMOML(I,J)=TSK(I,J)
-        ENDDO
-        ENDDO
-     ENDIF
-   ENDIF
-
-   END SUBROUTINE omlinit
 
 END MODULE module_sf_oml

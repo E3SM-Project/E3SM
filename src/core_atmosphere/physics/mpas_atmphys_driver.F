@@ -18,6 +18,7 @@
  use mpas_atmphys_driver_radiation_lw
  use mpas_atmphys_driver_radiation_sw 
  use mpas_atmphys_driver_sfclayer
+ use mpas_atmphys_driver_oml
  use mpas_atmphys_constants
  use mpas_atmphys_interface_nhyd
  use mpas_atmphys_update
@@ -199,6 +200,9 @@
        call driver_sfclayer(mesh,diag_physics,sfc_input)
        call deallocate_sfclayer
     endif
+
+    !call to 1d ocean mixed-layer model
+    if(config_oml1d) call driver_oml1d(block%configs, mesh, diag_physics)
 
     !call to land-surface scheme:
     if(config_lsm_scheme .ne. 'off') then
