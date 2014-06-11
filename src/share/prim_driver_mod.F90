@@ -50,7 +50,6 @@ module prim_driver_mod
   type (blkjac_t),allocatable  :: blkjac(:)  ! (nets:nete)
   type (filter_t)       :: flt             ! Filter struct for v and p grid
   type (filter_t)       :: flt_advection   ! Filter struct for v grid for advection only
-  type (derivative_t), allocatable   :: deriv(:) ! derivative struct (nthreads)
   real*8  :: tot_iter
   type (ReductionBuffer_ordered_1d_t), save :: red   ! reduction buffer               (shared)
 
@@ -90,7 +89,7 @@ contains
     ! --------------------------------
     use schedule_mod, only : genEdgeSched,  PrintSchedule
     ! --------------------------------
-    use prim_advection_mod, only: prim_advec_init
+    use prim_advection_mod, only: prim_advec_init1
     ! --------------------------------
     use prim_advance_mod, only: prim_advance_init
     ! --------------------------------
@@ -518,10 +517,9 @@ contains
 #ifndef CAM
     allocate(cm(0:n_domains-1))
 #endif
-    allocate(deriv(0:n_domains-1))
     allocate(cg(0:n_domains-1))
     call prim_advance_init(par,integration)
-    call Prim_Advec_Init(par)
+    call Prim_Advec_Init1(par, n_domains)
     call diffusion_init(par)
     if (ntrac>0) then
 #if defined(_SPELT)
@@ -564,6 +562,7 @@ contains
     use derivative_mod, only : derivinit, interpolate_gll2fvm_points, interpolate_gll2spelt_points, v2pinit
     use global_norms_mod, only : test_global_integral, print_cfl
     use hybvcoord_mod, only : hvcoord_t
+    use prim_advection_mod, only: prim_advec_init2, deriv
 #ifdef CAM
 #else
     use column_model_mod, only : InitColumnModel
@@ -721,7 +720,8 @@ contains
     ! ==================================
     ! Initialize derivative structure
     ! ==================================
-    call derivinit(deriv(hybrid%ithr),fvm_corners, fvm_points, spelt_refnep)
+    call Prim_Advec_Init2(hybrid, fvm_corners, fvm_points, spelt_refnep)
+
     ! ================================================
     ! fvm initialization
     ! ================================================
@@ -1141,6 +1141,7 @@ contains
     use control_mod, only: statefreq, integration, ftype, qsplit, disable_diagnostics
     use prim_advance_mod, only : prim_advance_exp, prim_advance_si, preq_robert3
     use prim_state_mod, only : prim_printstate, prim_diag_scalars, prim_energy_halftimes
+    use prim_advection_mod, only: deriv
     use parallel_mod, only : abortmp
 #ifndef CAM
     use column_model_mod, only : ApplyColumnModel
@@ -1447,7 +1448,7 @@ contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !compute timelevels for tracers (no longer the same as dynamics)
     call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp)
-    call vertical_remap(elem,fvm,hvcoord,dt_remap,tl%np1,np1_qdp,nets,nete)
+    call vertical_remap(hybrid,elem,fvm,hvcoord,dt_remap,tl%np1,np1_qdp,nets,nete)
 
 #if USE_CUDA_FORTRAN
     call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp)
@@ -1549,7 +1550,7 @@ contains
     use fvm_mod,     only : fvm_test_type, IDEAL_TEST_BOOMERANG, IDEAL_TEST_SOLIDBODY
     use fvm_bsp_mod, only : get_boomerang_velocities_gll, get_solidbody_velocities_gll
     use prim_advance_mod, only : prim_advance_exp, overwrite_SEdensity
-    use prim_advection_mod, only : prim_advec_tracers_remap, prim_advec_tracers_fvm
+    use prim_advection_mod, only : prim_advec_tracers_remap, prim_advec_tracers_fvm, deriv
 #if defined(_SPELT)
     use prim_advection_mod, only : prim_advec_tracers_spelt
 #endif
@@ -1891,6 +1892,7 @@ contains
     use derivative_mod, only : derivative_t , laplace_sphere_wk
     use viscosity_mod, only : biharmonic_wk
     use prim_advance_mod, only : smooth_phis
+    use prim_advection_mod, only: deriv
     implicit none
 
     integer , intent(in) :: nets,nete
