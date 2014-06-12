@@ -4066,7 +4066,7 @@ write(0,*) 'PROCESSING SEAICE'
             target_z = 0.5 * (zgrid(k,iCell) + zgrid(k+1,iCell))
 !           t(k,iCell) = vertical_interp(target_z, nfglevels_actual, sorted_arr, order=1, extrap=1)
             t(k,iCell) = vertical_interp(target_z, nfglevels_actual-1, &
-                                      sorted_arr(:,1:nfglevels_actual-1), order=1, extrap=1)
+                                      sorted_arr(:,1:nfglevels_actual-1), order=1, extrap=2)
          end do
 
 
@@ -4498,6 +4498,8 @@ write(0,*) 'PROCESSING SEAICE'
          else if (extrap_type == 1) then
             slope = (zf(2,2) - zf(2,1)) / (zf(1,2) - zf(1,1))
             vertical_interp = zf(2,1) + slope * (target_z - zf(1,1))
+         else if (extrap_type == 2) then
+            vertical_interp = zf(2,1) - (target_z - zf(1,1))*0.0065
          end if
          return
       end if
