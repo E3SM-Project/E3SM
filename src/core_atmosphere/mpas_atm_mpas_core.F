@@ -626,8 +626,6 @@ module mpas_core
       type (mpas_pool_type), pointer :: diag
       type (mpas_pool_type), pointer :: diag_physics
       logical, pointer :: on_a_sphere
-      real (kind=RKIND), pointer :: sphere_radius
-      character (len=StrKIND), pointer :: modelName, coreName, modelVersion
       type (field0DChar), pointer :: xtime
       type (field1DReal), pointer :: olrtoa, rainc, rainnc, refl10cm_max, precipw
       type (field1DReal), pointer :: temperature_200hPa
@@ -660,15 +658,10 @@ module mpas_core
          call MPAS_writeStreamAtt(hifreq_stream, 'on_a_sphere', 'NO              ', ierr)
       end if
 
-      call mpas_pool_get_config(block_ptr % configs, 'sphere_radius', sphere_radius)
-      call mpas_pool_get_config(block_ptr % configs, 'modelName', modelName)
-      call mpas_pool_get_config(block_ptr % configs, 'coreName', coreName)
-      call mpas_pool_get_config(block_ptr % configs, 'modelVersion', modelVersion)
-
-      call MPAS_writeStreamAtt(hifreq_stream, 'sphere_radius', sphere_radius, ierr)
-      call MPAS_writeStreamAtt(hifreq_stream, 'model_name', modelName, ierr)
-      call MPAS_writeStreamAtt(hifreq_stream, 'core_name', coreName, ierr)
-      call MPAS_writeStreamAtt(hifreq_stream, 'model_version', modelVersion, ierr)
+      call MPAS_writeStreamAtt(hifreq_stream, 'sphere_radius', block_ptr % domain % sphere_radius, ierr)
+      call MPAS_writeStreamAtt(hifreq_stream, 'model_name', block_ptr % domain % modelName, ierr)
+      call MPAS_writeStreamAtt(hifreq_stream, 'core_name', block_ptr % domain % coreName, ierr)
+      call MPAS_writeStreamAtt(hifreq_stream, 'model_version', block_ptr % domain % modelVersion, ierr)
       call MPAS_writeStreamAtt(hifreq_stream, 'source', 'MPAS', ierr)
       call MPAS_writeStreamAtt(hifreq_stream, 'Conventions', 'MPAS', ierr)
 
