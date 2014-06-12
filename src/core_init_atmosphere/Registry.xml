@@ -344,6 +344,10 @@
 			<var name="vegfra"/>
 			<var name="sfc_albbck"/>
 			<var name="xland"/>
+			<var name="u10"/>
+			<var name="v10"/>
+			<var name="q2"/>
+			<var name="t2"/>
 			<var name="rho"/>
 			<var name="theta"/>
 			<var name="v"/>
@@ -530,6 +534,13 @@
                 <var name="vegfra"                            type="real"     dimensions="nCells Time"/>
                 <var name="sfc_albbck"                        type="real"     dimensions="nCells Time"/>
                 <var name="xland"                             type="real"     dimensions="nCells Time"/>
+
+                <!-- diagnostic fields that we get from first-guess data, and which we want to have at model initial output time -->
+                <var name="u10"                               type="real"     dimensions="nCells Time"/>
+                <var name="v10"                               type="real"     dimensions="nCells Time"/>
+                <var name="q2"                                type="real"     dimensions="nCells Time"/>
+                <var name="t2"                                type="real"     dimensions="nCells Time"/>
+                <var name="rh2"                               type="real"     dimensions="nCells Time"/>
         </var_struct>
 
         <var_struct name="diag" time_levs="1">

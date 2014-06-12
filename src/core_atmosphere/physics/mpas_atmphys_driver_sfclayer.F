@@ -308,8 +308,8 @@
  call mpas_pool_get_array(diag_physics,'zol'   , zol   )
 
  call mpas_pool_get_array(diag_physics,'q2'    , q2    )
- call mpas_pool_get_array(diag_physics,'t2m'   , t2m   )
- call mpas_pool_get_array(diag_physics,'th2m'  , th2m  )
+ call mpas_pool_get_array(diag_physics,'t2'    , t2m   )
+ call mpas_pool_get_array(diag_physics,'th2'   , th2m  )
  call mpas_pool_get_array(diag_physics,'u10'   , u10   )
  call mpas_pool_get_array(diag_physics,'v10'   , v10   )
 
