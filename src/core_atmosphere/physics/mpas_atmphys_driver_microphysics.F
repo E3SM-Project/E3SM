@@ -300,6 +300,8 @@
     call compute_relhum(mesh,diag_physics)
 
  end if
+ write(0,*) '--- l_diags =', l_diags
+!call compute_relhum(diag_physics)
 
 !... copy updated precipitation from the wrf-physics grid back to the geodesic-dynamics grid:
  call precip_to_MPAS(configs,mesh,diag_physics)
@@ -575,7 +577,7 @@
 !local variables and arrays:
  integer:: i,j,k
 
- real(kind=RKIND):: tempc
+ real(kind=RKIND):: tempc, rh
  real(kind=RKIND),dimension(:),allocatable:: qv1d,qvs1d,t1d,p1d
 
 !--------------------------------------------------------------------------------------------------
@@ -602,11 +604,19 @@
        qvs1d(k) = rslf(p1d(k),t1d(k))
        if(tempc .le. 0._RKIND) qvs1d(k) = rsif(p1d(k),t1d(k))
        qv1d(k) = qv_p(i,k,j)
-       relhum(k,i) = qv1d(k) / qvs1d(k)
+       rh = qv1d(k) / qvs1d(k)
+       rh = min(100., rh)
+       rh = max(0., rh)
+       relhum(k,i) = rh
+!      relhum(k,i) = qv1d(k) / qvs1d(k)
+!      write(0,101) i,k,p1d(k),t1d(k),qvs1d(k), &
+!         relhum(k,i)*100._RKIND
     enddo
+!   write(0,*)
 
  enddo
  enddo
+ 101 format(2(1x,i8),5(1x,e15.8))
 
  if(allocated(p1d)  ) deallocate(p1d  )
  if(allocated(t1d)  ) deallocate(t1d  )
