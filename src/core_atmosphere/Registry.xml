@@ -1215,6 +1215,7 @@
                 <nml_option name="config_oml1d"                      type="logical"       default_value="false"      in_defaults="false"/>
                 <nml_option name="config_oml_hml0"                   type="real"          default_value="30.0"       in_defaults="false"/>
                 <nml_option name="config_oml_gamma"                  type="real"          default_value="0.14"       in_defaults="false"/>
+                <nml_option name="config_oml_relaxation_time"        type="real"          default_value="864000."    in_defaults="false"/>
                 
         </nml_record>
 

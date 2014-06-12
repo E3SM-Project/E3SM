@@ -48,6 +48,7 @@
 
   logical,pointer:: config_oml1d
   real(kind=RKIND),pointer:: oml_gamma
+  real(kind=RKIND),pointer:: oml_relaxation_time
 
   real(kind=RKIND), dimension(:), pointer:: t_oml
   real(kind=RKIND), dimension(:), pointer:: t_oml_initial
@@ -80,8 +81,9 @@
  write(0,*) '--- enter subroutine driver_oml1d:'
 
 ! namelist parameters for ocean mixed layer model
- call mpas_pool_get_config(configs,'config_oml1d'       ,config_oml1d )
- call mpas_pool_get_config(configs,'config_oml_gamma'   ,oml_gamma )
+ call mpas_pool_get_config(configs,'config_oml1d'               ,config_oml1d )
+ call mpas_pool_get_config(configs,'config_oml_gamma'           ,oml_gamma )
+ call mpas_pool_get_config(configs,'config_oml_relaxation_time' ,oml_relaxation_time )
 
 ! state and initial state for ocean mixed layer model
  call mpas_pool_get_array(diag_physics,'t_oml'              ,t_oml )
@@ -123,7 +125,7 @@
                    lh(iCell), gsw(iCell), glw(iCell), t_oml_200m_initial(iCell),            &
                    uReconstructZonal(1,iCell), uReconstructMeridional(1,iCell),             &
                    ust(iCell), f_coriolis, sfc_emiss(iCell), stbolt, gravity, dt_pbl,       &
-                   oml_gamma                                                               )
+                   oml_gamma, oml_relaxation_time                                          )
      end if
    end do
 
