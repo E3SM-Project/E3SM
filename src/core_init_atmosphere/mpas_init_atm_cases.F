@@ -2494,8 +2494,9 @@ module init_atm_cases
       type (field1DReal), pointer :: ter_field
       type (field1DReal), target :: tempFieldTarget
 
-      real(kind=RKIND), dimension(:), pointer :: hs, hs1
-      real(kind=RKIND) :: hm, hm_global, zh, dzmin, dzmina, dzmina_global, dzminf, sm
+      real(kind=RKIND), dimension(:), pointer :: hs, hs1, sm0
+      real(kind=RKIND) :: hm, hm_global, zh, dzmin, dzmina, dzmina_global, dzminf, dzminf_global, sm
+      real(kind=RKIND) :: dcsum
       integer :: nsmterrain, kz, sfc_k
       logical :: hybrid, smooth
 
@@ -2549,6 +2550,8 @@ module init_atm_cases
       logical, pointer :: config_met_interp
       logical, pointer :: config_vertical_grid
       integer, pointer :: config_nsmterrain
+      integer, pointer :: config_nsm
+      real (kind=RKIND), pointer :: config_dzmin
       real (kind=RKIND), pointer :: config_ztop
       integer, pointer :: config_nfglevels
       integer, pointer :: config_nfgsoillevels
@@ -2605,6 +2608,8 @@ module init_atm_cases
       call mpas_pool_get_config(configs, 'config_met_interp', config_met_interp)
       call mpas_pool_get_config(configs, 'config_vertical_grid', config_vertical_grid)
       call mpas_pool_get_config(configs, 'config_nsmterrain', config_nsmterrain)
+      call mpas_pool_get_config(configs, 'config_nsm', config_nsm)
+      call mpas_pool_get_config(configs, 'config_dzmin', config_dzmin)
       call mpas_pool_get_config(configs, 'config_ztop', config_ztop)
       call mpas_pool_get_config(configs, 'config_nfglevels', config_nfglevels)
       call mpas_pool_get_config(configs, 'config_nfgsoillevels', config_nfgsoillevels)
@@ -2868,7 +2873,7 @@ module init_atm_cases
       kz = nz
       if (hybrid) then
       
-         zh = zt
+         zh = 30000.0
 !         zh = 0.5*zt
 
          do k=1,nz
@@ -2929,22 +2934,31 @@ module init_atm_cases
 !     Smoothing algorithm for coordinate surfaces 
 
       smooth = config_smooth_surfaces
-!      smooth = .false.
 
       if (smooth) then
 
-         dzmin = 0.5
+         dzmin = config_dzmin
+
+         allocate(sm0(nCells+1))
+
+         do iCell=1,nCells
+            dcsum = 0.0
+            do j=1,nEdgesOnCell(iCell)
+               dcsum = dcsum + dcEdge(edgesOnCell(j,iCell))
+            end do
+            dcsum = dcsum / real(nEdgesOnCell(iCell))
+            sm0(iCell) = max(0.01_RKIND, 0.125 * min(1.0_RKIND, 3000.0_RKIND/dcsum))
+         end do
 
          do k=2,kz-1
             hx(k,:) = hx(k-1,:)
             dzminf = zw(k)-zw(k-1)
 
-!            dzmin = max(0.5_RKIND,1.-.5*zw(k)/hm)
-
-            sm = .02*min(0.5_RKIND*zw(k)/hm,1.0_RKIND)
-          
-            do i=1,30
+            do i=1,config_nsm + k
                do iCell=1,nCells
+
+                  sm = sm0(iCell) * min((3.0*zw(k)/zt)**2.0, 1.0_RKIND)
+
                   hs1(iCell) = 0.
                   do j = 1,nEdgesOnCell(iCell)
 
@@ -2976,23 +2990,25 @@ module init_atm_cases
 
                call mpas_dmpar_exch_halo_field(tempField)
 
-             !  dzmina = minval(hs(:)-hx(k-1,:))
-               dzmina = minval(zw(k)+ah(k)*hs(1:nCellsSolve)-zw(k-1)-ah(k-1)*hx(k-1,1:nCellsSolve))
-               call mpas_dmpar_min_real(dminfo, dzmina, dzmina_global)
-             !  write(0,*) ' k,i, dzmina, dzmin, zw(k)-zw(k-1) ', k,i, dzmina, dzmin, zw(k)-zw(k-1)
-               if (dzmina_global >= dzmin*(zw(k)-zw(k-1))) then
-                  hx(k,:)=hs(:)
-                  dzminf = dzmina_global
-               else
-                  exit
-               end if
+               do iCell=1,nCells
+                  dzmina = (zw(k) + ah(k)*hs(iCell)) - (zw(k-1) + ah(k-1)*hx(k-1,iCell))
+                  if (dzmina > dzmin*(zw(k)-zw(k-1))) then
+                     hx(k,iCell) = hs(iCell)
+                     if (dzmina < dzminf) dzminf = dzmina
+                  end if 
+               end do
+
             end do
-            write(0,*) k,i,sm,dzminf/(zw(k)-zw(k-1)),dzmina/(zw(k)-zw(k-1))
+            call mpas_dmpar_min_real(dminfo, dzminf, dzminf_global)
+            write(0,*) k,i,sm,dzminf_global/(zw(k)-zw(k-1))
          end do
+
+         deallocate(sm0)
 
          do k=kz,nz
                hx(k,:) = 0.
          end do
+
       else
 
          do k=2,nz1
@@ -3033,14 +3049,6 @@ module init_atm_cases
            end if
          end do
       end do
-
-!      do k=1,nz1
-!         write(0,*) ' k, zgrid(k,1),hx(k,1) ',k,zgrid(k,1),hx(k,1)
-!      end do
-
-!      do k=1,nz1
-!         write(0,*) ' k, zx(k,1) ',k,zx(k,1)
-!      end do
 
 
       ! For z-metric term in omega equation
