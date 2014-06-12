@@ -10,7 +10,7 @@ CONTAINS
                     HVML,TSK,HFX,                                &
                     LH,GSW,GLW,TMOML,                            &
                     UAIR,VAIR,UST,F,EMISS,STBOLT,G,DT,           &
-                    OML_GAMMA, OLM_RELAXATION_TIME )
+                    OML_GAMMA, OML_RELAXATION_TIME )
 
 !----------------------------------------------------------------
    IMPLICIT NONE
@@ -41,7 +41,7 @@ CONTAINS
 !-- F           Coriolis parameter
 !-- DT          time step (second)
 !-- G           acceleration due to gravity
-!-- OLM_RELAXATION_TIME  time scale (s) to relax TML to T0ML, H to H0,
+!-- OML_RELAXATION_TIME  time scale (s) to relax TML to T0ML, H to H0,
 !                        HUML and HVML to 0; value <=0 means no relaxation
 !
 !----------------------------------------------------------------
