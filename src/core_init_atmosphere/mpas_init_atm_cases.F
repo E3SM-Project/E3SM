@@ -2544,6 +2544,7 @@ module init_atm_cases
       real (kind=RKIND), dimension(nlat) :: lat_2d
       real (kind=RKIND) :: dlat
       real (kind=RKIND) :: z_edge, z_edge3, d2fdx2_cell1, d2fdx2_cell2
+      real (kind=RKIND) :: alt, als, zetal, zl
 
       character (len=StrKIND), pointer :: config_met_prefix
       character (len=StrKIND), pointer :: config_start_time
@@ -2553,6 +2554,7 @@ module init_atm_cases
       integer, pointer :: config_nsm
       real (kind=RKIND), pointer :: config_dzmin
       real (kind=RKIND), pointer :: config_ztop
+      logical, pointer :: config_tc_vertical_grid
       integer, pointer :: config_nfglevels
       integer, pointer :: config_nfgsoillevels
       logical, pointer :: config_smooth_surfaces
@@ -2611,6 +2613,7 @@ module init_atm_cases
       call mpas_pool_get_config(configs, 'config_nsm', config_nsm)
       call mpas_pool_get_config(configs, 'config_dzmin', config_dzmin)
       call mpas_pool_get_config(configs, 'config_ztop', config_ztop)
+      call mpas_pool_get_config(configs, 'config_tc_vertical_grid', config_tc_vertical_grid)
       call mpas_pool_get_config(configs, 'config_nfglevels', config_nfglevels)
       call mpas_pool_get_config(configs, 'config_nfgsoillevels', config_nfgsoillevels)
       call mpas_pool_get_config(configs, 'config_smooth_surfaces', config_smooth_surfaces)
@@ -2851,15 +2854,43 @@ module init_atm_cases
 
 !     Metrics for hybrid coordinate and vertical stretching
 
-      str = 1.5
-!      str = 1.
-      zt = config_ztop
-      dz = zt/float(nz1)
+      if (config_tc_vertical_grid) then
 
-      do k=1,nz
-         zw(k) = (real(k-1)/real(nz1))**str*zt
-         if (k > 1) dzw(k-1) = zw(k)-zw(k-1)
-      end do
+         write(0,*) 'Setting up vertical levels as in 2014 TC experiments'
+
+         zt = config_ztop
+         dz = zt/float(nz1)
+
+         als   =  .075
+         alt   = 1.23
+         zetal =  .31
+         do k=1,nz
+            zl = 1.-alt*(1.-zetal)
+            if ((real(k-1)/real(nz1)).LT.zetal) then
+                 zw(k) =              (als*real(K-1)/real(nz1)      &
+                     +(3.*(1.-alt)+2.*(alt-als)*zetal)              &
+                                     *((K-1)*dz/(zt*zetal))**2      &
+                     -(2.*(1.-alt) +  (alt-als)*zetal)              &
+                                     *(real(k-1)*dz/(zt*zetal))**3) * zt
+            else
+                 zw(K) = (zl+alt*(real(K-1)/real(nz1)-zetal))*zt
+            end if
+            if (k > 1) dzw(k-1) = zw(k)-zw(k-1)
+         end do
+
+      else
+
+         write(0,*) 'Setting up vertical levels as in MPAS 2.0 and earlier'
+
+         str = 1.5
+         zt = config_ztop
+         dz = zt/float(nz1)
+
+         do k=1,nz
+            zw(k) = (real(k-1)/real(nz1))**str*zt
+            if (k > 1) dzw(k-1) = zw(k)-zw(k-1)
+         end do
+      end if
 
 !     ah(k) governs the transition between terrain-following 
 !        and pure height coordinates
