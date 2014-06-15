@@ -187,7 +187,8 @@ contains
              unit_basename = 'kg'  
           endif
 
-          call addfld (trim(aer_wetdep_list(m))//'SFWET',unit_basename//'/m2/s ',1,  'A','Wet deposition flux at surface',phys_decomp)
+          call addfld (trim(aer_wetdep_list(m))//'SFWET',unit_basename//'/m2/s ', &
+               1,  'A','Wet deposition flux at surface',phys_decomp)
           call addfld (trim(aer_wetdep_list(m))//'SFSIC',unit_basename//'/m2/s ', &
                1,  'A','Wet deposition flux (incloud, convective) at surface',phys_decomp)
           call addfld (trim(aer_wetdep_list(m))//'SFSIS',unit_basename//'/m2/s ', &
@@ -1621,6 +1622,8 @@ contains
 !   lunerr = logical unit for error message
 !
      use shr_kind_mod, only: r8 => shr_kind_r8
+     use mo_constants, only: boltz_cgs, pi, rhowater => rhoh2o_cgs, &
+                             gravity => gravity_cgs, rgas => rgas_cgs
 
 	implicit none
 
@@ -1641,11 +1644,11 @@ contains
 
 	integer i, ja, jr, na, nr
 	real(r8) a, aerodiffus, aeromass, ag0, airdynvisc, airkinvisc
-     	real(r8) anumsum, avolsum, boltzmann, cair, chi
+     	real(r8) anumsum, avolsum, cair, chi
      	real(r8) d, dr, dum, dumfuchs, dx
-     	real(r8) ebrown, eimpact, eintercept, etotal, freepath, gravity 
-     	real(r8) pi, precip, precipmmhr, precipsum
-     	real(r8) r, rainsweepout, reynolds, rhi, rhoair, rhowater, rlo, rnumsum
+     	real(r8) ebrown, eimpact, eintercept, etotal, freepath
+     	real(r8) precip, precipmmhr, precipsum
+     	real(r8) r, rainsweepout, reynolds, rhi, rhoair, rlo, rnumsum
      	real(r8) scavsumnum, scavsumnumbb
      	real(r8) scavsumvol, scavsumvolbb
      	real(r8) schmidt, sqrtreynolds, sstar, stokes, sx              
@@ -1687,17 +1690,11 @@ contains
 9120	format( '*** subr. calc_1_impact_rate -- na > naerosvmax' )
 
 !   air molar density
-	cair = press/(8.31436e7_r8*temp)
+	cair = press/(rgas*temp)
 !   air mass density
 	rhoair = 28.966_r8*cair
 !   molecular freepath
 	freepath = 2.8052e-10_r8/cair
-!   boltzmann constant
-	boltzmann = 1.3807e-16_r8
-!   water density
-	rhowater = 1.0_r8
-!   gravity
-	gravity = 980.616_r8
 !   air dynamic viscosity
 	airdynvisc = 1.8325e-4_r8 * (416.16_r8/(temp+120._r8)) *    &
                                         ((temp/296.16_r8)**1.5_r8)
@@ -1705,8 +1702,6 @@ contains
 	airkinvisc = airdynvisc/rhoair
 !   ratio of water viscosity to air viscosity (from Slinn)
 	xmuwaterair = 60.0_r8
-
-	pi = 3.1415926536_r8
 
 !
 !   compute rain drop number concentrations
@@ -1804,7 +1799,7 @@ contains
 	taurelax = 2._r8*rhoaero*a*a*dumfuchs/(9._r8*rhoair*airkinvisc)
 
 	aeromass = 4._r8*pi*a*a*a*rhoaero/3._r8
-	aerodiffus = boltzmann*temp*taurelax/aeromass
+	aerodiffus = boltz_cgs*temp*taurelax/aeromass
 
 	schmidt = airkinvisc/aerodiffus
 	stokes = vfall*taurelax/r

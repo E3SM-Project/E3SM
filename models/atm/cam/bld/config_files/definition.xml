@@ -32,11 +32,6 @@ Switch to turn on waccm physics: 0 => no, 1 => yes.
 <entry id="offline_dyn" valid_values="0,1" value="0">
 Switch to turn on FV offline driver: 0 => no, 1 => yes.
 </entry>
-<entry id="offline_drv" valid_values="rad,stub" value="">
- Offline unit driver:
-  rad : radiation offline unit driver
-  stub : stub offline unit driver
-</entry>
 <entry id="waccmx" valid_values="0,1" value="0">
 Option to turn on waccmx thermosphere/ionosphere extension: 0 => no, 1 => yes
 </entry>
@@ -194,7 +189,7 @@ User specified C compiler options to append to Makefile defaults.
 <entry id="fc" value="">
 User specified Fortran compiler overrides Makefile default.
 </entry>
-<entry id="fc_type" valid_values="pgi,intel,gnu,pathscale,lahey,xlf,nag" value="">
+<entry id="fc_type" valid_values="pgi,intel,gnu,pathscale,xlf,nag" value="">
 Type of Fortran compiler.  Used when -fc specifies a generic wrapper script
 such as mpif90 or ftn.
 </entry>

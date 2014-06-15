@@ -216,10 +216,11 @@ OPTIONS
                         one of the config_files/defaults_*.xml files.  This file is used to specify model
                         configuration parameters only.  Parameters relating to the build which
                         are system dependent will be ignored.
+     -cosp_libdir <dir> Directory containing COSP library.
      -esmf_libdir <dir> Directory containing ESMF library and esmf.mk file.
      -fc <name>         User specified Fortran compiler.  Overrides Makefile default.
-     -fc_type <name>    Type of Fortran compiler [pgi | lahey | intel |
-                        pathscale].  This argument is used in conjunction
+     -fc_type <name>    Type of Fortran compiler [pgi | intel | gnu | pathscale
+                        | xlf | nag].  This argument is used in conjunction
                         with the -fc argument when the name of the fortran
                         compiler refers to a wrapper script (e.g., mpif90
                         or ftn).  In this case the user needs to specify
@@ -248,7 +249,6 @@ OPTIONS
 			executing as defined by the perl \$OSNAME variable.
      -usr_src <dir1>[,<dir2>[,<dir3>[...]]]
                         Directories containing user source code.
-     -offline_drv <name> Specify offline unit driver [ rad | stub ]
 EOF
 }
 
@@ -313,6 +313,7 @@ GetOptions(
     "waccm_phys"                => \$opts{'waccm_phys'},
     "offline_dyn"               => \$opts{'offline_dyn'},
     "waccmx"                    => \$opts{'waccmx'},
+    "cosp_libdir=s"             => \$opts{'cosp_libdir'},
     "esmf_libdir=s"             => \$opts{'esmf_libdir'},
     "mct_libdir=s"              => \$opts{'mct_libdir'},
     "fc=s"                      => \$opts{'fc'},
@@ -348,7 +349,6 @@ GetOptions(
     "prog_species=s"            => \$opts{'prog_species'},
     "psubcols=s"                => \$opts{'psubcols'},
     "rad=s"                     => \$opts{'rad'},
-    "offline_drv=s"             => \$opts{'offline_drv'},
     "res=s"                     => \$opts{'res'},
     "rof=s"                     => \$opts{'rof'},
     "scam"                      => \$opts{'scam'},
@@ -774,11 +774,6 @@ if (defined $opts{'waccm_phys'}) {
 }
 my $waccm_phys = $cfg_ref->get('waccm_phys');
 
-# offline unit driver
-if (defined $opts{'offline_drv'}) {
-    $cfg_ref->set('offline_drv', $opts{'offline_drv'});
-}
-
 # WACCM only runs with FV dycore
 if ( ($waccm_phys) and ($dyn_pkg ne 'fv') and ($dyn_pkg ne 'se') ) {
     die <<"EOF";
@@ -905,15 +900,6 @@ if ($clubb_sgs and $microphys_pkg !~ m/^mg/) {
 EOF
 }
 
-#CLUBB_SGS doesn't work when threading is turned on
-if ($clubb_sgs and ($smp eq 'ON' or $ENV{'NTHRDS_ATM'} > 1)) {
-  die <<"EOF";
-**
-**    ERROR: CLUBB_SGS doesn't support multiple threads in this version.
-**
-EOF
-}
-
 #-----------------------------------------------------------------------------------------------
 # Macro-physics package
 # The default for the current physics package is:
@@ -1029,10 +1015,6 @@ my $ocn_pkg = 'docn';
 if ($phys_pkg =~ m/ideal|adiabatic/) {
     $ocn_pkg = 'socn';
 }
-elsif (defined $opts{'offline_drv'}) {
-    $ocn_pkg = 'socn';
-} 
-
 
 # Allow the user to override the default via the commandline.
 if (defined $opts{'ocn'}) {
@@ -1053,10 +1035,6 @@ if ($phys_pkg =~ m/ideal|adiabatic/) {
 elsif ($ocn_pkg eq 'aquaplanet') {
     $lnd_pkg = 'slnd';
 }
-elsif (defined $opts{'offline_drv'}) {
-    $lnd_pkg = 'slnd';
-}
-
 # If building for CESM then do nothing for land component
 if ($ccsm_seq) {
     $lnd_pkg = 'none';
@@ -1085,9 +1063,6 @@ elsif ($phys_pkg eq 'cam3') {
 elsif ($ocn_pkg eq 'aquaplanet') {
     $ice_pkg = 'sice';
 }
-elsif (defined $opts{'offline_drv'}) {
-    $ice_pkg = 'sice';
-}
 # If building for CESM then do nothing for sea ice component
 if ($ccsm_seq) {
     $ice_pkg = 'none';
@@ -1112,10 +1087,6 @@ if ($phys_pkg =~ m/ideal|adiabatic/) {
 elsif ($ocn_pkg eq 'aquaplanet') {
     $rof_pkg = 'srof';
 }
-elsif (defined $opts{'offline_drv'}) {
-    $rof_pkg = 'srof';
-}
-
 # If building for CESM then do nothing for runoff component
 if ($ccsm_seq) {
     $rof_pkg = 'none';
@@ -1707,7 +1678,6 @@ else {
 # section of the Makefile.
 
 if    ($fc =~ /pgf/)    { $fc_type = 'pgi'; }
-elsif ($fc =~ /^lf/)    { $fc_type = 'lahey'; }
 elsif ($fc =~ /ifort/)  { $fc_type = 'intel'; }
 elsif ($fc =~ /^nag/)    { $fc_type = 'nag'; }
 elsif ($fc =~ /path/)   { $fc_type = 'pathscale'; }
@@ -1752,7 +1722,6 @@ if ($cc eq '') {
 
 	# Set default C compiler based on fc_type
 	if    ($fc_type eq 'pgi')       { $cc = 'pgcc'; }
-	elsif ($fc_type eq 'lahey')     { $cc = 'gcc'; }
 	elsif ($fc_type eq 'intel')     { $cc = 'icc'; }
         elsif ($fc_type eq 'nag')       { $cc = 'gcc'; }
 	elsif ($fc_type eq 'pathscale') { $cc = 'pathcc'; }
@@ -1927,7 +1896,6 @@ if ( ($ccsm_seq) and ($spmd eq 'ON') ) { $cfg_cppdefs .= " -DSPMD"; }
 
 # Chem CPP defs
 $cfg_cppdefs .= $chem_cppdefs;
-if ($waccm_phys) { $cfg_cppdefs .= ' -DWACCM_PHYS'; }
 
 # CARMA CPP defs
 $cfg_cppdefs .= $carma_cppdefs;
@@ -2017,10 +1985,10 @@ if ($cam_build) {
 	# nc-config script has already set an arg to be passed to the linker.
 	if ($nc_ldflags !~ m/-Wl/) {
 	    if ($fc_type eq 'nag') {
-		$nc_ldflags .= " -Wl,-Wl,,-rpath=$nc_lib";
+		$nc_ldflags .= " -Wl,-Wl,,-rpath -Wl,-Wl,,$nc_lib";
 	    }
 	    else {
-		$nc_ldflags .= " -Wl,-rpath=$nc_lib";
+		$nc_ldflags .= " -Wl,-rpath -Wl,$nc_lib";
 	    }
 	}
 
@@ -2266,13 +2234,18 @@ if ($print>=2) { print "CPP definitions set by configure: \'$cfg_cppdefs\'$eol";
 
 #-----------------------------------------------------------------------------------------------
 # COSP library.
-
-# Only build COSP as a separate library if doing a CAM standalone build.
-if ($cosp and $cam_build) {
+if ($cosp) {
 
     # Set the directory used to build cosp.  Add location and library name
     # to the user specified load flags.
-    my $cosp_libdir = "$cam_bld/cosp";
+    my $cosp_libdir = '';
+    if (defined $opts{'cosp_libdir'}) {
+      $cosp_libdir = $opts{'cosp_libdir'};
+    } else
+    {
+	$cosp_libdir = "$cam_bld/cosp";
+    } 
+
     $cfg_ref->set('cosp_libdir', "$cosp_libdir");
 
     my $ldflags = $cfg_ref->get('ldflags');
@@ -2286,8 +2259,8 @@ if ($cosp and $cam_build) {
     }
 
     # Create the COSP Makefile from a template and copy it into the cosp bld directory
-    write_cosp_makefile("$cfgdir/../src/physics/cosp/Makefile.cospinline.in", "$cam_bld/cosp/Makefile");
-    if ($print) { print "creating $cam_bld/cosp/Makefile\n"; }
+    write_cosp_makefile("$cfgdir/../src/physics/cosp/Makefile.cospinline.in", "$cosp_libdir/Makefile");
+    if ($print) { print "creating $cosp_libdir/Makefile\n"; }
 }
 
 
@@ -2528,7 +2501,6 @@ sub write_filepath
     my $lnd           = $cfg_ref->get('lnd');
     my $ice           = $cfg_ref->get('ice');
     my $rof           = $cfg_ref->get('rof');
-    my $offline_drv   = $cfg_ref->get('offline_drv');
 
     # Root directory
     my $srcdir = "$cam_root/models";
@@ -2553,17 +2525,6 @@ sub write_filepath
 	my $CASEROOT = "$ENV{'CASEROOT'}";
 	print $fh "$CASEROOT/SourceMods/src.cam\n";
     }
-
-    # offline unit driver
-    if ($offline_drv) {
-	if (!($offline_drv eq 'stub')) {
-	    print $fh "$srcdir/atm/cam/src/unit_drivers/${offline_drv}\n";
-	    if ($rad eq 'camrt') {
-		print $fh "$srcdir/atm/cam/src/unit_drivers/${offline_drv}/$rad\n";
-	    }
-	}
-    }
-
 
     if ($carma ne 'none') {
 	# This directory needs to precede physics/cam/ to replace
@@ -2630,26 +2591,9 @@ sub write_filepath
     print $fh "$srcdir/atm/cam/src/control\n";
     print $fh "$srcdir/atm/cam/src/utils\n";
 
-    if ($ccsm_seq) {
+    if ($cam_build) {
 
-	# These paths are only needed for the CESM build which builds COSP
-	# as a part of the atm component library.  The CAM standalone build
-	# issues a sub-make call to build COSP in it's own library.
-	if ($cosp) {
-	    # COSP simulator
-	    print $fh "$srcdir/atm/cam/src/physics/cosp\n";
-	    print $fh "$srcdir/atm/cam/src/physics/icarus-scops\n";
-	    print $fh "$srcdir/atm/cam/src/physics/cosp/quickbeam\n";
-	    print $fh "$srcdir/atm/cam/src/physics/cosp/actsim\n";
-	    print $fh "$srcdir/atm/cam/src/physics/cosp/llnl\n";
-	    print $fh "$srcdir/atm/cam/src/physics/cosp/MISR_simulator\n";
-	    print $fh "$srcdir/atm/cam/src/physics/cosp/MODIS_simulator\n";
-	}
-
-    }
-    else {
-
-	# The rest of these paths are only needed for CAM standalone builds
+	# These paths are only needed for CAM standalone builds
 
 	print $fh "$srcdir/utils/timing\n";
 	print $fh "$srcdir/utils/pio\n";

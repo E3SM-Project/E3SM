@@ -109,6 +109,16 @@ module csr_matrix_class
     intlc_5d_5d_ja_size, & ! Size of the interlaced 5-diag+5-diag ja arrays.
     intlc_td_5d_ja_size  ! Size of the interlaced tridiag+5-diag ja arrays.
 
+!$omp threadprivate( csr_tridiag_ia, csr_tridiag_ja)
+!$omp threadprivate(csr_banddiag5_135_ia, csr_banddiag5_135_ja)
+!$omp threadprivate(csr_banddiag5_12345_ia, csr_banddiag5_12345_ja)
+!$omp threadprivate(ia_size, tridiag_ja_size, band12345_ja_size, band135_ja_size)
+!$omp threadprivate(csr_intlc_s3b_f5b_ia, csr_intlc_s3b_f5b_ja)
+!$omp threadprivate(csr_intlc_trid_5b_ia, csr_intlc_trid_5b_ja)
+!$omp threadprivate(csr_intlc_5b_5b_ia, csr_intlc_5b_5b_ja)
+!$omp threadprivate(intlc_ia_size, intlc_s3d_5d_ja_size, intlc_5d_5d_ja_size)
+!$omp threadprivate(intlc_td_5d_ja_size)
+
   contains
 
   !============================================================================

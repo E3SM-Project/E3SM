@@ -92,10 +92,9 @@ contains
     integer :: i,j,k,ie
     integer,parameter  :: type=ORDERED
 
-    real (kind=real_kind)  :: Mass2,Mass,Mass_np1
+    real (kind=real_kind)  :: Mass2,Mass
     real (kind=real_kind)  :: TOTE(4),KEner(4),PEner(4),IEner(4),IEner_wet(4)
     real (kind=real_kind)  :: Qvar(qsize_d,4),Qmass(qsize_d,4),Q1mass(qsize_d)
-    real (kind=real_kind)  :: Qmass_added(qsize_d)
     real (kind=real_kind),save  :: time0
     real (kind=real_kind),save  :: TOTE0=0,Qmass0(qsize_d)=0
     real (kind=real_kind)  :: I_div(nlev)
@@ -362,7 +361,6 @@ contains
     do ie=nets,nete
        tmp(:,:,ie)=elem(ie)%state%ps_v(:,:,np1) 
     enddo
-    Mass_np1 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
 
     !
     !   ptop =  hvcoord%hyai(1)*hvcoord%ps0)  + hvcoord%hybi(1)*ps(i,j)
@@ -371,20 +369,8 @@ contains
     !                                                         ! ~20 kg/m^2 (effects 4th digit of Mass)
     !   BUT: CAM EUL defines mass as integral( ps ), so to be consistent, ignore ptop contribution; 
     Mass = Mass2*scale
-    Mass_np1 = Mass_np1*scale
 
 
-    !   sum the mass added by the mass fixer
-    !   mass fixer computed mass within each element.  now just global sum:
-    !   result in kg/m^2
-    do q=1,qsize
-       do ie=nets,nete
-          tmp1(ie) = elem(ie)%accum%mass_added(q)
-          global_shared_buf(ie,1) = tmp1(ie)
-       enddo
-       call wrap_repro_sum(nvars=1, comm=hybrid%par%comm)
-       Qmass_added(q) = global_shared_sum(1)*scale
-    enddo
 
 
     if(hybrid%masterthread) then
@@ -411,11 +397,6 @@ contains
        if(fvmin_p.ne.fvmax_p) write(iulog,100) "fv = ",fvmin_p,fvmax_p,fvsum_p
        if(ftmin_p.ne.ftmax_p) write(iulog,100) "ft = ",ftmin_p,ftmax_p,ftsum_p
        if(fqmin_p.ne.fqmax_p) write(iulog,100) "fq = ",fqmin_p, fqmax_p, fqsum_p
-       do q=1,qsize
-          if (Qmass_added(q) /= 0) then
-             write(iulog,'(a,i1,a,E23.15)') "Q",q," qnegfix mass added:: ",Qmass_added(q)
-          endif
-       enddo
     endif
  
 
@@ -604,7 +585,6 @@ contains
        ! note: diagnostics not yet coded for semi-implicit 
        if (integration == "explicit") then
           
-          
           write(iulog,'(3a25)') "**DYNAMICS**        J/m^2","   W/m^2","W/m^2    "
 #ifdef ENERGY_DIAGNOSTICS
           ! terms computed during prim_advance, if ENERGY_DIAGNOSTICS is enabled
@@ -740,7 +720,8 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     use hybvcoord_mod, only : hvcoord_t
     use element_mod, only : element_t
     use physical_constants, only : Cp, cpwater_vapor
-    use physics_mod, only : Virtual_Specific_Heat
+    use physics_mod, only : Virtual_Specific_Heat, Virtual_Temperature
+    use prim_si_mod, only : preq_hydrostatic
 
     integer :: t1,t2,n,nets,nete
     type (element_t)     , intent(inout), target :: elem(:)
@@ -753,7 +734,12 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     real (kind=real_kind), dimension(np,np)  :: E
     real (kind=real_kind), dimension(np,np)  :: suml,suml2,v1,v2
     real (kind=real_kind), dimension(np,np,nlev)  :: sumlk, suml2k
+    real (kind=real_kind), dimension(np,np,nlev)  :: p,T_v,phi
     real (kind=real_kind) :: cp_star1,cp_star2,qval_t1,qval_t2
+    real (kind=real_kind) :: Qt
+    logical :: wet
+
+
     logical tstagger
     integer:: t2_qdp, t1_qdp   ! the time pointers for Qdp are not the same
 
@@ -858,6 +844,7 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
        enddo
        elem(ie)%accum%KEner(:,:,n)=suml(:,:)
 
+
     
     !   PE   dp/dn PHIs
        suml=0
@@ -870,6 +857,25 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
           endif
        enddo
        elem(ie)%accum%PEner(:,:,n)=suml(:,:)
+
+
+
+!      compute alternate PE term which matches what is used in CAM physics
+       wet =(moisture /= "dry")
+       do k=1,nlev
+          p(:,:,k)   = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem(ie)%state%ps_v(:,:,t2)
+          do j=1,np
+             do i=1,np
+                if (wet) then
+                   Qt = elem(ie)%state%Qdp(i,j,k,1,t2_qdp)/dpt2(i,j,k)
+                   T_v(i,j,k) = Virtual_Temperature(elem(ie)%state%T(i,j,k,t2),Qt)
+                else
+                   T_v(i,j,k) = elem(ie)%state%T(i,j,k,t2)
+                endif
+             end do
+          end do
+       end do
+
     enddo
     
 end subroutine prim_energy_halftimes

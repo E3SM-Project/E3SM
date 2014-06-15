@@ -330,6 +330,8 @@ module ccsm_comp_mod
    real(r8) :: reprosum_diffmax       ! setup reprosum, set rel_diff_max
    logical  :: reprosum_recompute     ! setup reprosum, recompute if tolerance exceeded
 
+   logical  :: output_perf = .false.  ! require timing data output for this pe
+
    !--- history & budgets ---
    logical       :: do_budgets        ! heat/water budgets on
    logical       :: do_histinit       ! initial hist file
@@ -557,8 +559,10 @@ subroutine ccsm_pre_init()
 
       !--- get some general data ---
       call seq_comm_setptrs(GLOID,mpicom=mpicom_GLOID,iamroot=iamroot_GLOID,nthreads=nthreads_GLOID)
+      if (iamroot_GLOID) output_perf = .true.
       it=1
       call seq_comm_setptrs(CPLID,mpicom=mpicom_CPLID,iamroot=iamroot_CPLID,nthreads=nthreads_CPLID,iam=comp_comm_iam(it))
+      if (iamroot_CPLID) output_perf = .true.
       comp_id(it) = CPLID
       comp_comm(it) = mpicom_CPLID
       iamin_CPLID    = seq_comm_iamin(CPLID)
@@ -576,6 +580,7 @@ subroutine ccsm_pre_init()
               mpicom=mpicom_ATMID(eai), &
               iamroot=iamroot_ATMID(eai), &
               nthreads=nthreads_ATMID, iam=comp_comm_iam(it))
+         if (iamroot_ATMID(eai)) output_perf = .true.
          iamin_ATMID(eai) = seq_comm_iamin (ATMID(eai))
          atm_name   (eai) = seq_comm_name  (ATMID(eai))
          atm_suffix (eai) = seq_comm_suffix(ATMID(eai))
@@ -601,6 +606,7 @@ subroutine ccsm_pre_init()
               mpicom=mpicom_LNDID(eli), &
               iamroot=iamroot_LNDID(eli), &
               nthreads=nthreads_LNDID, iam=comp_comm_iam(it))
+         if (iamroot_LNDID(eli)) output_perf = .true.
          iamin_LNDID(eli) = seq_comm_iamin (LNDID(eli))
          lnd_name   (eli) = seq_comm_name  (LNDID(eli))
          lnd_suffix (eli) = seq_comm_suffix(LNDID(eli))
@@ -627,6 +633,7 @@ subroutine ccsm_pre_init()
               iamroot=iamroot_OCNID(eoi), &
               nthreads=nthreads_OCNID, &
               iam=comp_comm_iam(it))
+         if (iamroot_OCNID(eoi)) output_perf = .true.
          iamin_OCNID(eoi) = seq_comm_iamin (OCNID(eoi))
          ocn_name   (eoi) = seq_comm_name  (OCNID(eoi))
          ocn_suffix (eoi) = seq_comm_suffix(OCNID(eoi))
@@ -653,6 +660,7 @@ subroutine ccsm_pre_init()
               iamroot=iamroot_ICEID(eii), &
               nthreads=nthreads_ICEID, &
               iam=comp_comm_iam(it))
+         if (iamroot_ICEID(eii)) output_perf = .true.
          iamin_ICEID(eii) = seq_comm_iamin (ICEID(eii))
          ice_name   (eii) = seq_comm_name  (ICEID(eii))
          ice_suffix (eii) = seq_comm_suffix(ICEID(eii))
@@ -679,6 +687,7 @@ subroutine ccsm_pre_init()
               iamroot=iamroot_GLCID(egi), &
               nthreads=nthreads_GLCID, &
               iam=comp_comm_iam(it))
+         if (iamroot_GLCID(egi)) output_perf = .true.
          comp_comm(it) = mpicom_glcid(egi)
          iamin_GLCID(egi) = seq_comm_iamin (GLCID(egi))
          glc_name   (egi) = seq_comm_name  (GLCID(egi))
@@ -704,6 +713,7 @@ subroutine ccsm_pre_init()
               mpicom=mpicom_ROFID(eri), &
               iamroot=iamroot_ROFID(eri), &
               nthreads=nthreads_ROFID, iam=comp_comm_iam(it))
+         if (iamroot_ROFID(eri)) output_perf = .true.
          iamin_ROFID(eri) = seq_comm_iamin (ROFID(eri))
          rof_name   (eri) = seq_comm_name  (ROFID(eri))
          rof_suffix (eri) = seq_comm_suffix(ROFID(eri))
@@ -730,6 +740,7 @@ subroutine ccsm_pre_init()
               iamroot=iamroot_WAVID(ewi), &
               nthreads=nthreads_WAVID, &
               iam=comp_comm_iam(it))
+         if (iamroot_WAVID(ewi)) output_perf = .true.
          comp_comm(it) = mpicom_wavid(ewi)
          iamin_WAVID(ewi) = seq_comm_iamin (WAVID(ewi))
          wav_name   (ewi) = seq_comm_name  (WAVID(ewi))
@@ -829,7 +840,8 @@ subroutine ccsm_init()
    !-----------------------------------------------------------------------------
    ! Memory test
    !-----------------------------------------------------------------------------
-   call shr_mem_init(prt=.true.)
+!   call shr_mem_init(prt=.true.)
+    call shr_mem_init(prt=iamroot_CPLID)
 
    !-----------------------------------------------------------------------------
    ! Initialize coupled fields
@@ -4505,8 +4517,13 @@ subroutine ccsm_run()
          call t_stopf("sync1_tprof")
 
          write(timing_file,'(a,i8.8,a1,i5.5)') trim(tchkpt_dir)//"/ccsm_timing_",ymd,"_",tod
-         call t_prf(filename=trim(timing_file), mpicom=mpicom_GLOID, &
-                    num_outpe=1)
+         if (output_perf) then
+            call t_prf(filename=trim(timing_file), mpicom=mpicom_GLOID, &
+                       num_outpe=0, output_thispe=output_perf)
+         else
+            call t_prf(filename=trim(timing_file), mpicom=mpicom_GLOID, &
+                       num_outpe=0)
+         endif
 
          call t_startf("sync2_tprof")
          call mpi_barrier(mpicom_GLOID,ierr)
@@ -4635,7 +4652,12 @@ subroutine ccsm_final()
    endif
 
    call t_stopf  ('DRIVER_FINAL')
-   call t_prf(trim(timing_dir)//'/ccsm_timing', mpicom_GLOID)
+   if (output_perf) then
+      call t_prf(trim(timing_dir)//'/ccsm_timing', mpicom=mpicom_GLOID, &
+                 output_thispe=output_perf)
+   else
+      call t_prf(trim(timing_dir)//'/ccsm_timing', mpicom=mpicom_GLOID)
+   endif
    call t_finalizef()
 
 end subroutine ccsm_final

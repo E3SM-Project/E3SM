@@ -14,8 +14,8 @@ use physconst,        only: gravit, rair, tmelt, cpair, rh2o, &
 
 use rad_constituents, only: rad_cnst_get_info, rad_cnst_get_aer_props
 
-use shr_spfn_mod,     only: erf => shr_spfn_erf_nonintrinsic, &
-                            erfc => shr_spfn_erfc_nonintrinsic
+use shr_spfn_mod,     only: erf => shr_spfn_erf, &
+                            erfc => shr_spfn_erfc
 use wv_saturation,    only: qsat
 use cam_history,      only: addfld, add_default, phys_decomp, outfld 
 use cam_logfile,      only: iulog

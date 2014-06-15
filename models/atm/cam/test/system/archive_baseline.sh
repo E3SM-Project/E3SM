@@ -24,14 +24,14 @@ SYNOPSIS
 ENVIROMENT VARIABLES
 
 	CAM_TESTDIR - Directory that contains the finished results you wish to archive.
-	CAM_FC      - Compiler used, only used on frankfurt (PGI,LAHEY), where the compiler
+	CAM_FC      - Compiler used, only used on frankfurt (PGI,NAG), where the compiler
                       name is appended to the archive directory.
 
 
 BASELINE ARCHIVED LOCATION
 
 	frankfurt:    /fs/cgd/csm/models/atm/cam/pretag_bl/TAGNAME_pgi
-	              /fs/cgd/csm/models/atm/cam/pretag_bl/TAGNAME_lahey
+	              /fs/cgd/csm/models/atm/cam/pretag_bl/TAGNAME_nag
         yellowstone:  /glade/p/cesm/cseg/models/atm/cam/pretag_bl/TAGNAME
 
 
@@ -83,7 +83,7 @@ case $hostname in
   fr*)
     echo "server: frankfurt"
     if [ -z "$CAM_FC" ]; then
-      CAM_FC="LAHEY"
+      CAM_FC="PGI"
     fi
     test_file_list="tests_pretag_frankfurt_${CAM_FC,,}"
     baselinedir="/fs/cgd/csm/models/atm/cam/pretag_bl/$1_${CAM_FC,,}"

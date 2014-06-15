@@ -441,7 +441,7 @@ contains
 !        ... set the user specified reaction rates
 !-----------------------------------------------------------------
     
-    use mo_constants,  only : pi, avo => avogadro, boltz=>boltzmann
+    use mo_constants,  only : pi, avo => avogadro, boltz_cgs, rgas
     use chem_mods,     only : nfs, rxntot, gas_pcnst, inv_m_ndx=>indexm
     use mo_chem_utls,  only : get_rxt_ndx, get_spc_ndx
     use mo_setinv,     only : inv_o2_ndx=>o2_ndx, inv_h2o_ndx=>h2o_ndx
@@ -532,7 +532,7 @@ contains
     real(r8), parameter  :: K298_SO2_HSO3 =  1.3e-02_r8
     real(r8), parameter  :: H298_SO2_HSO3 = -4.16e+03_r8
     real(r8), parameter  :: R_CONC        =  82.05e+00_r8 / avo
-    real(r8), parameter  :: R_CAL         =  8.314e+00_r8 * 0.239006e+00_r8
+    real(r8), parameter  :: R_CAL         =  rgas * 0.239006e+00_r8
     real(r8), parameter  :: K_AQ          =  7.57e+07_r8
     real(r8), parameter  :: ER_AQ         =  4.43e+03_r8
 
@@ -692,7 +692,8 @@ contains
 !           co + oh --> co2 + ho2     CAM-Chem
 !-----------------------------------------------------------------
        if( usr_CO_OH_a_ndx > 0 ) then
-          rxt(:,k,usr_CO_OH_a_ndx) = 1.5e-13_r8 * (1._r8 + 6.e-7_r8*boltz*m(:,k)*temp(:ncol,k))
+          rxt(:,k,usr_CO_OH_a_ndx) = 1.5e-13_r8 * &
+               (1._r8 + 6.e-7_r8*boltz_cgs*m(:,k)*temp(:ncol,k))
        end if
 !-----------------------------------------------------------------
 ! 	... co + oh --> co2 + h (second branch JPL06; pg2.2; 2.10) WACCM
@@ -1212,8 +1213,6 @@ contains
 !-----------------------------------------------------------------
 !        ... local variables
 !-----------------------------------------------------------------
-      real(r8), parameter :: boltz = 1.38044e-16_r8         ! erg / K
-      real(r8), parameter :: avo   = 6.023e23_r8            ! molecules/mole
 
       integer  ::  k
       real(r8), dimension(ncol) :: &

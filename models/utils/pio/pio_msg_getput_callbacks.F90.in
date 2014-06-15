@@ -2,7 +2,7 @@
 !>
 !! @file 
 !! $Revision: 757 $
-!! $LastChangedDate: 2013-04-02 13:55:15 -0600 (Tue, 02 Apr 2013) $
+!! $LastChangedDate: 2013-04-02 15:55:15 -0400 (Tue, 02 Apr 2013) $
 !! @brief Callback functions for Asyncronous IO 
 !<
 subroutine string_handler_for_var1(file, varid, index, ndims, strlen, msg)

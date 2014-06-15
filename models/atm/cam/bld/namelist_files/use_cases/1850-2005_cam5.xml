@@ -70,7 +70,6 @@
 <bndtvs hgrid="32x64"      sim_year="1850-2000">atm/cam/sst/sst_HadOIBl_bc_32x64_1850_2012_c130411.nc</bndtvs>
 <bndtvs hgrid="8x16"       sim_year="1850-2000">atm/cam/sst/sst_HadOIBl_bc_8x16_1850_2012_c130411.nc</bndtvs>
 
-
 <!-- Use the clim_pi SST datasets if AMIP datasets not available -->
 <sstcyc            hgrid="0.23x0.31">.true.</sstcyc>
 <stream_year_first hgrid="0.23x0.31">0</stream_year_first>

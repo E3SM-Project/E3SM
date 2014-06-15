@@ -41,7 +41,7 @@ module micro_mg1_0
 ! 4) svp over ice
 
 #ifndef HAVE_GAMMA_INTRINSICS
-use shr_spfn_mod, only: gamma => shr_spfn_gamma_nonintrinsic
+use shr_spfn_mod, only: gamma => shr_spfn_gamma
 #endif
 
   use wv_sat_methods, only: &
@@ -96,25 +96,16 @@ real(r8) :: pi       ! pi
 ! Additional constants to help speed up code
 
 real(r8) :: cons1
-real(r8) :: cons2
-real(r8) :: cons3
 real(r8) :: cons4
 real(r8) :: cons5
 real(r8) :: cons6
 real(r8) :: cons7
 real(r8) :: cons8
-real(r8) :: cons9
-real(r8) :: cons10
 real(r8) :: cons11
-real(r8) :: cons12
 real(r8) :: cons13
 real(r8) :: cons14
-real(r8) :: cons15
 real(r8) :: cons16
 real(r8) :: cons17
-real(r8) :: cons18
-real(r8) :: cons19
-real(r8) :: cons20
 real(r8) :: cons22
 real(r8) :: cons23
 real(r8) :: cons24
@@ -486,6 +477,17 @@ character(128),   intent(out) :: errstring       ! Output status (non-blank for 
 
 ! local workspace
 ! all units mks unless otherwise stated
+
+! Additional constants to help speed up code
+real(r8) :: cons2
+real(r8) :: cons3
+real(r8) :: cons9
+real(r8) :: cons10
+real(r8) :: cons12
+real(r8) :: cons15
+real(r8) :: cons18
+real(r8) :: cons19
+real(r8) :: cons20
 
 ! temporary variables for sub-stepping 
 real(r8) :: t1(pcols,pver)

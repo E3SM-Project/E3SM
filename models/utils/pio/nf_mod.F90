@@ -4,7 +4,7 @@
 !! @brief NetCDF interface routines
 !!
 !! $Revision: 766 $
-!! $LastChangedDate: 2013-04-22 16:42:31 -0600 (Mon, 22 Apr 2013) $
+!! $LastChangedDate: 2013-04-22 18:42:31 -0400 (Mon, 22 Apr 2013) $
 !!
 !<
 module nf_mod

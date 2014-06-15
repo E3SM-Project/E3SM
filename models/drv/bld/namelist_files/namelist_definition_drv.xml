@@ -1667,6 +1667,13 @@ group="prof_inparm">
 </entry>
 
 <entry 
+id="profile_outpe_stride"
+type="integer"
+category="performance" 
+group="prof_inparm">
+</entry>
+
+<entry 
 id="profile_detail_limit"
 type="integer"
 category="performance" 

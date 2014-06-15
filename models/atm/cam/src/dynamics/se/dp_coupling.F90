@@ -32,14 +32,15 @@ CONTAINS
 
 !===============================================================================
   subroutine d_p_coupling(phys_state, phys_tend,  pbuf2d, dyn_out)
-    use physics_buffer, only: physics_buffer_desc
+    use physics_buffer, only: physics_buffer_desc, pbuf_get_chunk, &
+                              pbuf_get_field
     use shr_vmath_mod,  only: shr_vmath_exp
     use time_manager,   only: is_first_step
     use viscosity_mod,  only: compute_zeta_C0
     use abortutils,     only: endrun
     use gravity_waves_sources, only: gws_src_fnct
-    use phys_control,   only: do_waccm_phys
-    use physics_types,  only: physics_state_dycore_alloc
+    use dyn_comp,       only: frontgf_idx, frontga_idx
+    use phys_control,   only: use_gw_front
     implicit none
 !-----------------------------------------------------------------------
 ! !INPUT PARAMETERS:
@@ -63,8 +64,12 @@ CONTAINS
     real (kind=real_kind)    :: q_tmp(npsq,pver,pcnst,nelemd) ! temporary to hold advected constituents
     real (kind=real_kind)    :: omega_tmp(npsq,pver,nelemd) ! temporary array to hold omega
 
-    real (kind=real_kind), allocatable :: frontgf_tmp(:,:,:) ! temporary arrays to hold frontogenesis
-    real (kind=real_kind), allocatable :: frontga_tmp(:,:,:) !   function (frontgf) and angle (frontga)
+    ! Frontogenesis
+    real (kind=real_kind), allocatable :: frontgf(:,:,:) ! temporary arrays to hold frontogenesis
+    real (kind=real_kind), allocatable :: frontga(:,:,:) !   function (frontgf) and angle (frontga)
+    ! Pointers to pbuf
+    real (kind=r8),        pointer     :: pbuf_frontgf(:,:)
+    real (kind=r8),        pointer     :: pbuf_frontga(:,:)
 
     integer :: ncols,i,j,ierr
 
@@ -77,19 +82,22 @@ CONTAINS
     real (kind=real_kind), allocatable, dimension(:) :: bbuffer, cbuffer ! transpose buffers
     integer :: tl_f
 
-    if (do_waccm_phys()) then
-       ! Currently, only WACCM uses dycore-initialized fields in physics_state.
+    type(physics_buffer_desc), pointer :: pbuf_chnk(:)
 
-!$omp parallel do private (lchnk)
-       do lchnk = begchunk, endchunk
-          if (.not. phys_state(lchnk)%dycore_alloc) &
-               call physics_state_dycore_alloc(phys_state(lchnk))
-       end do
+    !----------------------------------------------------------------------
 
-       allocate(frontgf_tmp(npsq,pver,nelemd), stat=ierr)
-       if (ierr /= 0) call endrun("dp_coupling: Allocate of frontgf_tmp failed.")
-       allocate(frontga_tmp(npsq,pver,nelemd), stat=ierr)
-       if (ierr /= 0) call endrun("dp_coupling: Allocate of frontga_tmp failed.")
+    nullify(pbuf_chnk)
+    nullify(pbuf_frontgf)
+    nullify(pbuf_frontga)
+
+    if (use_gw_front) then
+
+       allocate(frontgf(npsq,pver,nelemd), stat=ierr)
+       if (ierr /= 0) call endrun("dp_coupling: Allocate of frontgf failed.")
+
+       allocate(frontga(npsq,pver,nelemd), stat=ierr)
+       if (ierr /= 0) call endrun("dp_coupling: Allocate of frontga failed.")
+
     end if
 
     if( iam < par%nprocs) then
@@ -111,15 +119,15 @@ CONTAINS
        end do
        call t_stopf('UniquePoints')
 
-       if (do_waccm_phys()) call gws_src_fnct(elem, tl_f, frontga_tmp, frontgf_tmp)
+       if (use_gw_front) call gws_src_fnct(elem, tl_f, frontgf, frontga)
     else
        ps_tmp(:,:) = 0._r8
        T_tmp(:,:,:) = 0._r8
        uv_tmp(:,:,:,:) = 0._r8
        omega_tmp(:,:,:) = 0._r8
-       if (do_waccm_phys()) then
-          frontga_tmp(:,:,:) = 0._r8
-          frontgf_tmp(:,:,:) = 0._r8
+       if (use_gw_front) then
+          frontgf(:,:,:) = 0._r8
+          frontga(:,:,:) = 0._r8
        end if
        phis_tmp(:,:) = 0._r8
        Q_tmp(:,:,:,:) = 0._r8
@@ -128,10 +136,18 @@ CONTAINS
     call t_startf('dpcopy')
     if (local_dp_map) then
 
-!$omp parallel do private (lchnk, ncols, pgcols, icol, idmb1, idmb2, idmb3, ie, ioff, ilyr, m)
+!$omp parallel do private (lchnk, ncols, pgcols, icol, idmb1, idmb2, idmb3, ie, ioff, ilyr, m, pbuf_chnk, pbuf_frontgf, pbuf_frontga)
        do lchnk=begchunk,endchunk
           ncols=get_ncols_p(lchnk)
           call get_gcol_all_p(lchnk,pcols,pgcols)
+
+          pbuf_chnk => pbuf_get_chunk(pbuf2d, lchnk)
+
+          if (use_gw_front) then
+             call pbuf_get_field(pbuf_chnk, frontgf_idx, pbuf_frontgf)
+             call pbuf_get_field(pbuf_chnk, frontga_idx, pbuf_frontga)
+          end if
+
           do icol=1,ncols
              call get_gcol_block_d(pgcols(icol),1,idmb1,idmb2,idmb3)
              ie = idmb3(1)
@@ -144,10 +160,11 @@ CONTAINS
                 phys_state(lchnk)%u(icol,ilyr)=uv_tmp(ioff,1,ilyr,ie)
                 phys_state(lchnk)%v(icol,ilyr)=uv_tmp(ioff,2,ilyr,ie)
                 phys_state(lchnk)%omega(icol,ilyr)=omega_tmp(ioff,ilyr,ie)
-                if (do_waccm_phys()) then
-                   phys_state(lchnk)%frontga(icol,ilyr)=frontga_tmp(ioff,ilyr,ie)
-                   phys_state(lchnk)%frontgf(icol,ilyr)=frontgf_tmp(ioff,ilyr,ie)
-                end if
+
+                if (use_gw_front) then
+                   pbuf_frontgf(icol,ilyr) = frontgf(ioff,ilyr,ie)
+                   pbuf_frontga(icol,ilyr) = frontga(ioff,ilyr,ie)
+                endif
              end do
 
              do m=1,pcnst
@@ -161,7 +178,7 @@ CONTAINS
     else  ! .not. local_dp_map
 
        tsize = 4 + pcnst
-       if (do_waccm_phys()) tsize = tsize + 2
+       if (use_gw_front) tsize = tsize + 2
 
        allocate(bbuffer(tsize*block_buf_nrecs))
        allocate(cbuffer(tsize*chunk_buf_nrecs))
@@ -183,10 +200,12 @@ CONTAINS
                    bbuffer(bpter(icol,ilyr)+1) = uv_tmp(icol,1,ilyr,ie)
                    bbuffer(bpter(icol,ilyr)+2) = uv_tmp(icol,2,ilyr,ie)
                    bbuffer(bpter(icol,ilyr)+3) = omega_tmp(icol,ilyr,ie)
-                   if (do_waccm_phys()) then
-                      bbuffer(bpter(icol,ilyr)+4) = frontga_tmp(icol,ilyr,ie)
-                      bbuffer(bpter(icol,ilyr)+5) = frontgf_tmp(icol,ilyr,ie)
+
+                   if (use_gw_front) then
+                      bbuffer(bpter(icol,ilyr)+4) = frontgf(icol,ilyr,ie)
+                      bbuffer(bpter(icol,ilyr)+5) = frontga(icol,ilyr,ie)
                    end if
+
                    do m=1,pcnst
                       bbuffer(bpter(icol,ilyr)+tsize-pcnst-1+m) = Q_tmp(icol,ilyr,m,ie)
                    end do
@@ -204,9 +223,16 @@ CONTAINS
        call transpose_block_to_chunk(tsize, bbuffer, cbuffer)
        call t_stopf  ('block_to_chunk')
 
-!$omp parallel do private (lchnk, ncols, cpter, icol, ilyr, m)
+!$omp parallel do private (lchnk, ncols, cpter, icol, ilyr, m, pbuf_chnk, pbuf_frontgf, pbuf_frontga)
        do lchnk = begchunk,endchunk
           ncols = phys_state(lchnk)%ncol
+
+          pbuf_chnk => pbuf_get_chunk(pbuf2d, lchnk)
+
+          if (use_gw_front) then
+             call pbuf_get_field(pbuf_chnk, frontgf_idx, pbuf_frontgf)
+             call pbuf_get_field(pbuf_chnk, frontga_idx, pbuf_frontga)
+          end if
 
           call block_to_chunk_recv_pters(lchnk,pcols,pver+1,tsize,cpter)
 
@@ -221,10 +247,12 @@ CONTAINS
                 phys_state(lchnk)%u     (icol,ilyr)   = cbuffer(cpter(icol,ilyr)+1)
                 phys_state(lchnk)%v     (icol,ilyr)   = cbuffer(cpter(icol,ilyr)+2)
                 phys_state(lchnk)%omega (icol,ilyr)   = cbuffer(cpter(icol,ilyr)+3)
-                if (do_waccm_phys()) then
-                   phys_state(lchnk)%frontga(icol,ilyr)  = cbuffer(cpter(icol,ilyr)+4)
-                   phys_state(lchnk)%frontgf(icol,ilyr)  = cbuffer(cpter(icol,ilyr)+5)
-                end if
+
+                if (use_gw_front) then
+                   pbuf_frontgf(icol,ilyr) = cbuffer(cpter(icol,ilyr)+4)
+                   pbuf_frontga(icol,ilyr) = cbuffer(cpter(icol,ilyr)+5)
+                endif
+
                 do m=1,pcnst
                    phys_state(lchnk)%q  (icol,ilyr,m) = cbuffer(cpter(icol,ilyr)+tsize-pcnst-1+m)
                 end do
@@ -495,7 +523,7 @@ CONTAINS
 
        call geopotential_t (phys_state(lchnk)%lnpint, phys_state(lchnk)%lnpmid  , phys_state(lchnk)%pint  , &
             phys_state(lchnk)%pmid  , phys_state(lchnk)%pdel    , phys_state(lchnk)%rpdel , &
-            phys_state(lchnk)%t     , phys_state(lchnk)%q(1,1,1), rairv(:,:,lchnk),  gravit,  zvirv       , &
+            phys_state(lchnk)%t     , phys_state(lchnk)%q(:,:,1), rairv(:,:,lchnk),  gravit,  zvirv       , &
             phys_state(lchnk)%zi    , phys_state(lchnk)%zm      , ncol                )
           
 ! Compute initial dry static energy, include surface geopotential

@@ -23,6 +23,9 @@ if (-e /opt/modules/default/init/csh) then
   module load cmake/2.8.6
 # module list
 endif
+
+module list
+
 #-------------------------------------------------------------------------------
 # Runtime environment variables
 #-------------------------------------------------------------------------------
@@ -30,10 +33,11 @@ endif
 setenv MPICH_ENV_DISPLAY 1
 setenv MPICH_VERSION_DISPLAY 1
 setenv MPICH_CPUMASK_DISPLAY 1
-setenv MPICH_RANK_REORDER_DISPLAY 1
+# setenv MPICH_RANK_REORDER_DISPLAY 1
 
 limit coredumpsize unlimited
 limit stacksize unlimited
+
 # The environment variable below increase the stack size, which is necessary for
 # CICE to run threaded on this machine. 
 setenv MPSTKZ 64M

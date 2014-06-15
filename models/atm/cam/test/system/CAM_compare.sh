@@ -28,7 +28,7 @@ elif grep -c "the two files seem to be DIFFERENT" cprnc.out > /dev/null; then
     echo "CAM_compare.sh: files are NOT b4b...the following fields had diffs" 
     result=`perl -e 'while (my $ll = <>) \
 	{ if ($ll =~ /RMS\s+(\S+)\s+(\S+)/) \
-	{ print "$1 " if $2>0 }}' cprnc.out`
+	{ print "$1 " }}' cprnc.out`
     echo $result
     exit 3
 else

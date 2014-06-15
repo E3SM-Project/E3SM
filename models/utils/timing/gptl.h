@@ -113,8 +113,12 @@ extern int GPTLsetoption (const int, const int);
 extern int GPTLinitialize (void);
 extern int GPTLstart (const char *);
 extern int GPTLstart_handle (const char *, void **);
+extern int GPTLstartf (const char *, const int);
+extern int GPTLstartf_handle (const char *, const int, void **);
 extern int GPTLstop (const char *);
+extern int GPTLstopf (const char *, const int);
 extern int GPTLstop_handle (const char *, void **);
+extern int GPTLstopf_handle (const char *, const int, void **);
 extern int GPTLstamp (double *, double *, double *);
 extern int GPTLpr_set_append (void);
 extern int GPTLpr_query_append (void);
@@ -152,7 +156,7 @@ extern int GPTLevent_name_to_code (const char *, int *);
 extern int GPTLevent_code_to_name (const int, char *);
 
 #ifdef __cplusplus
-};
+}
 #endif
 
 #endif

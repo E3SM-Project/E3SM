@@ -1,0 +1,114 @@
+*** Lahey compiler note If you build definehires with lf95, you must
+*** execute with the -T runtime option, to get the proper byte
+*** ordering on input. Otherwise, you get nonsense. The GTOPO30 input
+*** files are binary, with "bigendian" ordering.  
+*** definesurf -Wl,-T
+
+Running gnumake in this directory will create an executable named
+"definehires".  Its function is to produce a 10-minute topography
+dataset from a USGS 30-second topographic dataset.  The 30-second
+dataset contains only a height field.  The 10-minute dataset contains
+ height field, a binary land mask, and a fractional land mask.
+
+Ocean points are indicated in the 30-second dataset by a missing data
+flag and are assumed to have elevation 0m.  However, the Caspian Sea
+is not flagged as ocean.  The definehires program generates a Caspian
+Sea based on elevation, and reports these points as ocean while
+generating the 10-minute dataset.  This is done through three calls to
+the new routine expand_sea.
+
+The 30-second dataset needed by definehires can be obtained from the
+following USGS web site:
+
+http://edcdaac.usgs.gov/gtopo30/gtopo30.asp
+
+For each tile in the dataset, both the *.DEM and *.HDR files must be
+present in the directory from which definehires is run. On NCAR
+machines, this may be accomplished by repeating the following snippet
+from a user csh or tcsh shell.
+
+>> foreach temp ( /fs/cgd/csm/inputdata/atm/cam2/gtopo30data/* )
+foreach? ln -s $temp
+foreach? end
+
+Once the appropriate data files are in place, simply type:
+./definehires
+
+This will produce a new 10-minute high-resolution dataset named
+topo_gtopo30_10min.nc
+
+
+
+-------------------------------------
+Feb 01, 2005
+-------------------------------------
+
+-------------------------------------
+*********** definehires *************
+-------------------------------------
+
+The GTOPO30 30" is converted to a 10' dataset using definehires
+ Originally by Jiundar Chern (jchern@dao.gsfc.nasa.gov), 
+ updated by Jim McCaa (jmccaa@ucar.edu)
+ updated by B.A. Boville
+
+./definehires  generates file "topo_gtopo30_10min.nc" containing 5 variables
+  lon       dimension variable of longitudes
+  lat       dimension variable of latitudes
+  variance  variance of 30" height w.r.t. 10' grid
+  htopo     average terrain height on 10' grid
+  landfract land fraction on 10' grid, 
+            cells are either land or ocean on 30" grid
+	    Caspian sea is identified as ocean, but has nonzero height
+
+The original GTOPO30 files contain only elevation, with a flag for
+ocean points (NODATA=-9999). The Caspian Sea is not connected to the
+oceans and is not at sea level. Definehires identifies the Caspian Sea
+in the 30" data using an algorithm based on elevation. Therefore,
+the land fraction reflects the presence of the Caspian and the
+elevation is nonzero.
+
+method: 
+
+   Subroutine expand_sea is called 3 times, once for each GTOPO30 tile
+   which contains part of the Caspian. The arguments include the x,y
+   indices of a start point which is known to be in the Caspian. These
+   3 points had to identified by hand.
+
+   1. the start point is flagged by 
+      adding NODATA + NODATA to the original height
+      setting a flag true for the block of surrounding points:
+      (startx-1:startx+1,starty-1:starty+1)
+
+   2. find points with the same elevation as the start point and whose
+      flag is true. Flag them the same way as the start point. 
+
+   This provides an expanding mask of potential Caspian points, which
+   are flagged true, and an expanding region of actual Caspian points
+   which are flagged with the original elavation + NODATA + NODATA.
+
+   Subroutine avg is called to compute the area weighted average and
+   land fraction of the 30" data with respect to the 10' grid. The
+   weighting accounts for the area change with latitude. Points with
+   elavation = NODATA are given elevation = 0 and land fraction =
+   0. Caspian points (elevation < NODATA) are given their original
+   elevation (elevation - NODATA - NODATA) and land fraction = 0.
+
+   The variance of the 30" height data with respect to the 10' average
+   is computed without area weighting.
+
+Note on method. The Caspian terrain height flag is exact because the
+height is an integer. However, I would have preferred to 
+
+  Convert the height of ocean points from NODATA to ZERO and make a
+  land fraction array with 0. or 1.. This could be done with a
+  subroutine find_ocn.
+
+  Then the Caspian points would retain their original elevations and
+  also get land fraction 0 in find_caspian (instead of
+  expand_sea). Still called for only the 3 tiles.
+
+  Subroutine avg would not have to recognize anything special about
+  Caspian points.
+
+ 

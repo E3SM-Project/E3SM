@@ -70,6 +70,7 @@ module parameters_tunable
     C6thl_Lscale0 = 14.0_core_rknd,      & ! Damp C6thl as a function of Lscale
     C7_Lscale0    = 0.8500000_core_rknd, & ! Damp C7 as a function of Lscale
     wpxp_L_thresh = 60.0_core_rknd         ! Lscale threshold for damping C6 and C7 coefficients
+!$omp   threadprivate(C6rt_Lscale0, C6thl_Lscale0, C7_Lscale0, wpxp_L_thresh)
 
   real( kind = core_rknd ), public :: & 
     c_K         = 0.200000_core_rknd,    & ! Constant C_mu^(1/4) in Duynkerke & Driedonks 1987.

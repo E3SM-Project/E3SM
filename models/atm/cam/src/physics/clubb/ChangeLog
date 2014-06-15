@@ -1,5 +1,31 @@
 ===============================================================
 
+Tag name: clubb01_03
+Originator(s): Cheryl Craig
+Date: 6/21/13
+One-line Summary: Added missing omp threadprivate variables
+
+Purpose of changes:
+  - Added missing omp threadprivate variables
+
+
+Files modified:
+M       variables_prognostic_module.F90
+M       saturation.F90
+M       csr_matrix_class_3array.F90
+M       parameters_model.F90
+M       ChangeLog
+M       parameters_radiation.F90
+M       parameters_microphys.F90
+M       gmres_cache.F90
+M       model_flags.F90
+M       sponge_layer_damping.F90
+M       stats_variables.F90
+M       parameters_tunable.F90
+
+===============================================================
+===============================================================
+
 Tag name: clubb01_02
 Originator(s): Cheryl Craig
 Date: 3/22/13

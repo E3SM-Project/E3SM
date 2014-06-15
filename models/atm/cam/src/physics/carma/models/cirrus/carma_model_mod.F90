@@ -1535,7 +1535,7 @@ contains
   !! in the cldwat2m module available for this purpose rather than duplicating the
   !! code and the parameters here.
   subroutine CARMA_GetGammaParmsForIce(carma, qiic, niic, rho, pgam, lami, rc)
-    use shr_spfn_mod, only           : gamma => shr_spfn_gamma_nonintrinsic
+    use shr_spfn_mod, only           : gamma => shr_spfn_gamma
 
     implicit none
     
@@ -1646,7 +1646,7 @@ contains
   !! in the cldwat2m module available for this purpose rather than duplicating the
   !! code and the parameters here.
   subroutine CARMA_GetGammaParmsForLiq(carma, qcic, ncic, rho, pgam, lamc, rc)
-    use shr_spfn_mod, only           : gamma => shr_spfn_gamma_nonintrinsic
+    use shr_spfn_mod, only           : gamma => shr_spfn_gamma
 
     implicit none
     
@@ -1735,7 +1735,7 @@ contains
   
   ! Using the specified parameters for the gamma distribution, determine the mass mixing ratio of particles
   subroutine CARMA_GetMmrFromGamma(carma, r, dr, rmass, qic, nic, mu, lambda, mmr, rc)
-    use shr_spfn_mod, only           : gamma => shr_spfn_gamma_nonintrinsic
+    use shr_spfn_mod, only           : gamma => shr_spfn_gamma
 
     implicit none
     

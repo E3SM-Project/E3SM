@@ -2,7 +2,6 @@
       module mo_airglow
 
       use shr_kind_mod,  only : r8 => shr_kind_r8
-      use physconst,     only : avogad
       use abortutils,    only : endrun
 
       implicit none
@@ -15,7 +14,6 @@
       real(r8), parameter :: hc       = 6.62608e-34_r8*2.9979e8_r8/1.e-9_r8
       real(r8), parameter :: wc_o2_1s = 1._r8/762._r8
       real(r8), parameter :: wc_o2_1d = 1._r8/1270._r8
-      real(r8), parameter :: avo      = 1.e-3_r8 * avogad
 
       integer :: rid_ag1, rid_ag2
       logical :: has_airglow
@@ -56,6 +54,7 @@
       use chem_mods,     only : rxntot
       use ppgrid,        only : pver
       use cam_history,   only : outfld
+      use mo_constants,  only : avo => avogadro
 
       implicit none
 

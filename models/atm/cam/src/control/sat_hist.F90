@@ -26,6 +26,7 @@ module sat_hist
   implicit none
 
   private
+  save
 
   public :: sat_hist_readnl
   public :: sat_hist_init
@@ -34,7 +35,7 @@ module sat_hist
   public :: is_satfile
 
   character(len=max_string_len)  :: sathist_track_infile
-  type(file_desc_t), save :: infile
+  type(file_desc_t) :: infile
 
   integer :: half_step
   logical :: has_sat_hist = .false.
@@ -497,7 +498,7 @@ contains
 
 !-------------------------------------------------------------------------------
   subroutine dump_columns( File, hitem, ncols, nfils, fdims, ldims, owners  )
-    use cam_history_support,  only: field_info, hentry, hist_mdims
+    use cam_history_support,  only: field_info, hentry, hist_coords
     use pionfwrite_mod, only: write_nf
     use cam_pio_utils, only : fillvalue
     use pio,            only: pio_initdecomp, pio_freedecomp, pio_setframe, pio_offset, pio_iam_iotask, pio_setdebuglevel
@@ -538,7 +539,7 @@ contains
     dimlens(ndims)=ncols
     if(ndims>2) then
        do i=1,ndims-1
-          dimlens(i)=hist_mdims(field%mdims(i))%value
+          dimlens(i)=hist_coords(field%mdims(i))%dimsize
        enddo
     else if(field%numlev>1) then
        dimlens(1) = field%numlev

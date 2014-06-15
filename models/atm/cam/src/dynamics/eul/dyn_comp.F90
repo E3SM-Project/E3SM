@@ -11,7 +11,6 @@ use constituents, only: pcnst, cnst_name, cnst_longname
 use constituents, only: sflxnam, tendnam, fixcnam, tottnam, hadvnam, vadvnam, cnst_get_ind
 use pmgrid,       only: plev, plevp, dyndecomp_set
 use hycoef,       only: hycoef_init
-
 use cam_history,  only: dyn_decomp, addfld, add_default
 use phys_control, only: phys_getopts
 use eul_control_mod, only: dyn_eul_readnl, eul_nsplit
@@ -42,8 +41,6 @@ CONTAINS
 !#######################################################################
 
 subroutine dyn_init(file, nlfilename)
-
-
    ! ARGUMENTS:
    type(file_desc_t), intent(in) :: file       ! PIO file handle for initial or restart file
    character(len=*),  intent(in) :: nlfilename
@@ -66,6 +63,9 @@ subroutine dyn_init(file, nlfilename)
    call spmd_readnl(nlfilename)
    call spmdinit_dyn()
 #endif 
+
+   ! Initialize hybrid coordinate arrays
+   call hycoef_init(file)
 
    call addfld ('ETADOT  ','1/s ',plevp,'A','Vertical (eta) velocity',dyn_decomp)
    call addfld ('U&IC    ','m/s ',plev, 'I','Zonal wind'                                    ,dyn_decomp )
@@ -130,9 +130,6 @@ subroutine dyn_init(file, nlfilename)
       call add_default('VAT     '       , history_budget_histfile_num, ' ')
       call add_default('DTH     '       , history_budget_histfile_num, ' ')
    end if
-
-   ! Initialize hybrid coordinate arrays
-   call hycoef_init(file)
 
 end subroutine dyn_init
 

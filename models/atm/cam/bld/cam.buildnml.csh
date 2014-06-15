@@ -35,8 +35,13 @@ if ($BUILD_COMPLETE == 'FALSE') then
   if ($COMP_INTERFACE == 'MCT' ) set comp = mct
   if ($COMP_INTERFACE == 'ESMF') set comp = esmf
 
+  set CAM_LIB_DIRS = ""
+  if ("$CAM_CONFIG_OPTS" =~ "*cosp*") then
+    set CAM_LIB_DIRS = "-cosp_libdir $EXEROOT/atm/obj/cosp"
+  endif
+
   $CODEROOT/atm/cam/bld/configure -s  -ccsm_seq -ice none -ocn $ocn  -comp_intf $comp \
-      $scm $spmd -dyn $CAM_DYCORE -res $ATM_GRID  $CAM_CONFIG_OPTS || exit -1
+      $scm $spmd -dyn $CAM_DYCORE -res $ATM_GRID $CAM_LIB_DIRS $CAM_CONFIG_OPTS || exit -1
 
 else
 

@@ -64,7 +64,7 @@ contains
     !        ... set the invariant densities (molecules/cm**3)
     !-----------------------------------------------------------------
 
-    use mo_constants,  only : boltz=>boltzmann
+    use mo_constants,  only : boltz_cgs
     use tracer_cnst,   only : num_tracer_cnst, tracer_cnst_flds, get_cnst_data
     use mo_chem_utls,  only : get_inv_ndx
     use physics_buffer, only : physics_buffer_desc
@@ -104,7 +104,7 @@ contains
     !	... set m, n2, o2, and h2o densities
     !-----------------------------------------------------------------
     do k = 1,pver
-       invariants(:ncol,k,m_ndx) = Pa_xfac * pmid(:ncol,k) / (boltz*tfld(:ncol,k))
+       invariants(:ncol,k,m_ndx) = Pa_xfac * pmid(:ncol,k) / (boltz_cgs*tfld(:ncol,k))
     end do
 
     if( has_n2 ) then

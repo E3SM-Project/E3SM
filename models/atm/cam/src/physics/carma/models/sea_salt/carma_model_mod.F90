@@ -783,7 +783,7 @@ contains
   !! @version August-2010
    subroutine WeibullWind(u, uth, n, uwb, wbk)
     use shr_kind_mod,   only: r8 => shr_kind_r8
-    use shr_spfn_mod, only: gamma => shr_spfn_gamma_nonintrinsic, &
+    use shr_spfn_mod, only: gamma => shr_spfn_gamma, &
          igamma => shr_spfn_igamma
 
     implicit none

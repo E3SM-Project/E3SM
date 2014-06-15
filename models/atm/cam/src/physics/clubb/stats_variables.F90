@@ -33,7 +33,7 @@ module stats_variables
     l_netcdf, & ! Output to NetCDF format
     l_grads     ! Output to GrADS format
 
-!$omp   threadprivate(l_stats, l_netcdf, l_grads)
+!$omp   threadprivate(l_stats, l_output_rad_files, l_netcdf, l_grads)
 
   logical, public :: & 
     l_stats_samp,   & ! Sample flag for current time step
@@ -121,7 +121,7 @@ module stats_variables
 !$omp   ip_in_Pa, iexner, irho_ds_zt, ithv_ds_zt, iLscale, iwp3, &
 !$omp   iwpthlp2, iwp2thlp, iwprtp2, iwp2rtp, iLscale_up, iLscale_down, &
 !$omp   itau_zt, iKh_zt, iwp2thvp, iwp2rcp, iwprtpthlp, isigma_sqd_w_zt, &
-!$omp   irho, irel_humidity, iNcm, iNcnm, isnowslope, &
+!$omp   irho, irel_humidity, iNcm, iNcnm, iNcm_in_cloud, iNc_activated, isnowslope, &
 !$omp   ised_rcm, irsat, irsati, irrainm, &
 !$omp   im_vol_rad_rain, im_vol_rad_cloud, &
 !$omp   irain_rate_zt, iAKm, iLH_AKm, &
@@ -373,7 +373,7 @@ module stats_variables
     iNcm_act
 
 !$omp threadprivate(iNcm_bt, iNcm_ma, iNcm_dff, &
-!$omp   iNcm_mc, iNcm_cl)
+!$omp   iNcm_mc, iNcm_cl, iNcm_act)
 
 
   ! Wind budgets
@@ -457,11 +457,13 @@ module stats_variables
     isclrm,    & ! Passive scalar mean (1)
     isclrm_f     ! Passive scalar forcing (1)
 
+!$omp   threadprivate(isclrm, isclrm_f)
+
 ! Used to calculate clear-sky radiative fluxes.
   integer, public :: &
     ifulwcl, ifdlwcl, ifdswcl, ifuswcl
+!$omp   threadprivate(ifulwcl, ifdlwcl, ifdswcl, ifuswcl)
 
-!$omp   threadprivate(isclrm, isclrm_f)
 
   integer, target, allocatable, dimension(:), public :: & 
     iedsclrm,   & ! Eddy-diff. scalar term (1)
@@ -576,6 +578,7 @@ module stats_variables
 !$omp   threadprivate(iwp4, iwpthvp, irtpthvp, ithlpthvp, itau_zm, iKh_zm)
 !$omp   threadprivate(iwprcp, ithlprcp, irtprcp, ircp2, iupwp, ivpwp)
 !$omp   threadprivate(irho_zm, isigma_sqd_w, irho_ds_zm, ithv_ds_zm, iem, ishear)
+!$omp   threadprivate(imean_w_up, imean_w_down)
 !$omp   threadprivate(iFrad, iFrad_LW, iFrad_SW, iFrad_SW_up, iFrad_SW_down)
 !$omp   threadprivate(iFrad_LW_up, iFrad_LW_down, iFprec, iFcsed)
 
@@ -623,7 +626,7 @@ module stats_variables
 !$omp   threadprivate(iwp2_bt, iwp2_ma, iwp2_ta, iwp2_ac, iwp2_bp)
 !$omp   threadprivate(iwp2_pr1, iwp2_pr2, iwp2_pr3)
 !$omp   threadprivate(iwp2_dp1, iwp2_dp2, iwp2_4hd)
-!$omp   threadprivate(iwp2_pd, iwp2_cl)
+!$omp   threadprivate(iwp2_pd, iwp2_cl, iwp2_sf)
 
   integer, public :: & 
      iwprtp_bt, & 
@@ -681,7 +684,7 @@ module stats_variables
      irtp2_sf
      
 !$omp   threadprivate(irtp2_bt, irtp2_ma, irtp2_ta, irtp2_tp)
-!$omp   threadprivate(irtp2_dp1, irtp2_dp2, irtp2_pd, irtp2_cl)
+!$omp   threadprivate(irtp2_dp1, irtp2_dp2, irtp2_pd, irtp2_cl,irtp2_sf)
 
   integer, public :: & 
      ithlp2_bt, & 
@@ -695,7 +698,7 @@ module stats_variables
      ithlp2_sf
 
 !$omp   threadprivate(ithlp2_bt, ithlp2_ma, ithlp2_ta, ithlp2_tp)
-!$omp   threadprivate(ithlp2_dp1, ithlp2_dp2, ithlp2_pd, ithlp2_cl)
+!$omp   threadprivate(ithlp2_dp1, ithlp2_dp2, ithlp2_pd, ithlp2_cl, ithlp2_sf)
 
   integer, public :: & 
     irtpthlp_bt, & 
@@ -710,7 +713,7 @@ module stats_variables
 
 !$omp   threadprivate(irtpthlp_bt, irtpthlp_ma, irtpthlp_ta)
 !$omp   threadprivate(irtpthlp_tp1, irtpthlp_tp2, irtpthlp_dp1)
-!$omp   threadprivate(irtpthlp_dp2, irtpthlp_cl)
+!$omp   threadprivate(irtpthlp_dp2, irtpthlp_cl, irtpthlp_sf)
 
   integer, public :: & 
     iup2, & 
@@ -743,10 +746,10 @@ module stats_variables
     ivp2_sf
 
 !$omp   threadprivate(iup2_bt, iup2_ta, iup2_tp, iup2_ma, iup2_dp1)
-!$omp   threadprivate(iup2_dp2, iup2_pr1, iup2_pr2, iup2_cl)
+!$omp   threadprivate(iup2_dp2, iup2_pr1, iup2_pr2, iup2_cl, iup2_sf)
 !$omp   threadprivate(ivp2_bt, ivp2_ta, ivp2_tp, ivp2_ma, ivp2_dp1)
 !$omp   threadprivate(ivp2_dp2, ivp2_pr1, ivp2_pr2, ivp2_cl)
-!$omp   threadprivate(iup2_pd, ivp2_pd)
+!$omp   threadprivate(iup2_pd, ivp2_pd, ivp2_sf)
 
 !       Passive scalars.  Note that floating point roundoff may make
 !       mathematically equivalent variables different values.
@@ -848,9 +851,6 @@ module stats_variables
     imorr_rain_rate, &
     imorr_snow_rate
 
-  integer, public :: &
-    irtm_spur_src,    &
-    ithlm_spur_src
 !$omp threadprivate(iustar, isoil_heat_flux, iveg_T_in_K, isfc_soil_T_in_K, ideep_soil_T_in_K, &
 !$omp   ilh, ish, icc, ilwp, ivwp, iiwp, iswp, irwp, iz_cloud_base, iz_inversion, &
 !$omp   irain_rate_sfc, irain_flux_sfc, irrainm_sfc, &
@@ -861,6 +861,11 @@ module stats_variables
 !$omp   irtp2_matrix_condt_num, ithlp2_matrix_condt_num, irtpthlp_matrix_condt_num, &
 !$omp   iup2_vp2_matrix_condt_num, iwindm_matrix_condt_num, &
 !$omp   imorr_rain_rate, imorr_snow_rate)
+
+  integer, public :: &
+    irtm_spur_src,    &
+    ithlm_spur_src
+!$omp  threadprivate( irtm_spur_src, ithlm_spur_src)
 
   integer, public :: &
     iSkw_velocity, & ! Skewness velocity

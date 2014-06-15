@@ -45,7 +45,7 @@ module convect_deep
    integer     ::  prec_dp_idx     = 0
    integer     ::  snow_dp_idx     = 0
 
-   integer     ::  zmdt_idx        = 0
+   integer     ::  ttend_dp_idx        = 0
 
 !=========================================================================================
   contains 
@@ -79,7 +79,7 @@ subroutine convect_deep_register
   
   use physics_buffer, only : pbuf_add_field, dtype_r8
   use zm_conv_intr, only: zm_conv_register
-  use phys_control, only: phys_getopts
+  use phys_control, only: phys_getopts, use_gw_convect
 
   implicit none
 
@@ -99,6 +99,11 @@ subroutine convect_deep_register
   call pbuf_add_field('PREC_DP',    'physpkg',dtype_r8,(/pcols/),     prec_dp_idx)
   call pbuf_add_field('SNOW_DP',   'physpkg',dtype_r8,(/pcols/),      snow_dp_idx)
 
+  ! If WACCM gravity waves are on, output this field.
+  if (use_gw_convect) then
+     call pbuf_add_field('TTEND_DP','physpkg',dtype_r8,(/pcols,pver/),ttend_dp_idx)
+  end if
+
 end subroutine convect_deep_register
 
 !=========================================================================================
@@ -115,14 +120,12 @@ subroutine convect_deep_init(pref_edge)
   use spmd_utils,    only: masterproc
   use zm_conv_intr,  only: zm_conv_init
   use abortutils,    only: endrun
-  use phys_control,  only: do_waccm_phys
   
-  use physics_buffer,        only: physics_buffer_desc, pbuf_get_index
+  use physics_buffer, only: physics_buffer_desc, pbuf_get_index
 
   implicit none
 
   real(r8),intent(in) :: pref_edge(plevp)        ! reference pressures at interfaces
-  integer k
 
   select case ( deep_scheme )
   case('off') !     ==> no deep convection
@@ -142,8 +145,6 @@ subroutine convect_deep_init(pref_edge)
   pblh_idx   = pbuf_get_index('pblh')
   tpert_idx  = pbuf_get_index('tpert')
 
-  if (do_waccm_phys()) zmdt_idx = pbuf_get_index('ZMDT')
-
 end subroutine convect_deep_init
 !=========================================================================================
 !subroutine convect_deep_tend(state, ptend, tdt, pbuf)
@@ -161,7 +162,6 @@ subroutine convect_deep_tend( &
    use zm_conv_intr,   only: zm_conv_tend
    use cam_history,    only: outfld
    use physconst,      only: cpair
-   use phys_control,   only: do_waccm_phys
    use physics_buffer, only: physics_buffer_desc, pbuf_get_field
 
 ! Arguments
@@ -201,9 +201,7 @@ subroutine convect_deep_tend( &
 
   integer i, k
 
-   real(r8), pointer, dimension(:,:) :: zmdt
-   ! (Is this necessary, or can we pass zmdt to outfld directly?)
-   real(r8) :: ftem(pcols,pver)              ! Temporary workspace for outfld variables
+   real(r8), pointer, dimension(:,:) :: ttend_dp
 
    call pbuf_get_field(pbuf, cldtop_idx, jctop )
    call pbuf_get_field(pbuf, cldbot_idx, jcbot )
@@ -256,12 +254,10 @@ subroutine convect_deep_tend( &
 
   end select
 
-  if (do_waccm_phys()) then
-     call pbuf_get_field(pbuf, zmdt_idx, zmdt)
-     ftem(:state%ncol,:pver) = ptend%s(:state%ncol,:pver)/cpair
-     zmdt(:state%ncol,:pver) = ftem(:state%ncol,:pver)
-     call outfld('ZMDT    ',ftem           ,pcols   ,state%lchnk   )
-     call outfld('ZMDQ    ',ptend%q(:,:,1) ,pcols   ,state%lchnk   )
+  ! If we added this, set it.
+  if (ttend_dp_idx > 0) then
+     call pbuf_get_field(pbuf, ttend_dp_idx, ttend_dp)
+     ttend_dp(:state%ncol,:pver) = ptend%s(:state%ncol,:pver)/cpair
   end if
 
 

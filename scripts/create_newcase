@@ -835,6 +835,8 @@ system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 	  "$scriptsroot/ccsm_utils/Tools/st_archive.sh", 
 	  "$scriptsroot/ccsm_utils/Tools/user_nlcreate", 
 	  "$scriptsroot/ccsm_utils/Tools/user_nl_add",
+	  "$scriptsroot/ccsm_utils/Tools/mdiag_reduce.csh",
+	  "$scriptsroot/ccsm_utils/Tools/mdiag_reduce.pl",
 	  "$scriptsroot/ccsm_utils/Tools/timing/getTiming.csh", 
 	  "$scriptsroot/ccsm_utils/Tools/timing/getTiming2.pl",
 	  "$scriptsroot/ccsm_utils/Case.template/config_definition.xml",
@@ -994,6 +996,15 @@ if( -e "$machdir/Depends.$mach" ) {
 }
 if( -e "$machdir/Depends.$compiler" ) {
   $sysmod = "cp $machdir/Depends.$compiler $caseroot/";
+  system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+}
+
+# The following creates mach_syslog
+if( -e "$machdir/syslog.$mach" ) {
+  $sysmod = "cp $machdir/syslog.$mach $caseroot/Tools/mach_syslog";
+  system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+}else{
+  $sysmod = "cp $machdir/syslog.generic $caseroot/Tools/mach_syslog";
   system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
 }
 

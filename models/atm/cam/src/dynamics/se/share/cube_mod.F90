@@ -262,7 +262,6 @@ contains
     real (kind=real_kind) :: M(2,2),E(2,2),eig(2),DE(2,2),DEL(2,2),V(2,2), nu1, nu2, lamStar1, lamStar2
     integer :: imaxM(2)
     real (kind=real_kind) :: l1, l2, sc     ! eigen values of met
-    real (kind=real_kind) :: max_ratio
 
     real (kind=real_kind) :: roundoff_err = 1e-11 !!! OG: this is a temporal fix
     
@@ -345,9 +344,6 @@ contains
           eig(2) = (M(1,1) + M(2,2) - sqrt(4.0d0*M(1,2)*M(2,1) + &
               (M(1,1) - M(2,2))**2))/2.0d0
           
-          max_ratio=sqrt( max(abs(eig(1)/eig(2)),abs(eig(2)/eig(1))) )
-          elem%max_eig_ratio = max(max_ratio,elem%max_eig_ratio)
-
           ! use DE to store M - Lambda, to compute eigenvectors
           DE=M
           DE(1,1)=DE(1,1)-eig(1)
@@ -377,88 +373,63 @@ contains
 	  E(:,2)=E(:,2)/sqrt(sum(E(:,2)*E(:,2))); 
 
 
-!matrix D*E, original V tensor
+! OBTAINING TENSOR FOR HV:
+
+! Instead of the traditional scalar Laplace operator \grad \cdot \grad
+! we introduce \grad \cdot V \grad
+! where V = D E LAM LAM^* E^T D^T. 
+! Recall (metric_tensor)^{-1}=(D^T D)^{-1} = E LAM E^T.
+! Here, LAM = diag( 4/((np-1)dx)^2 , 4/((np-1)dy)^2 ) = diag(  4/(dx_elem)^2, 4/(dy_elem)^2 )
+! Note that metric tensors and LAM correspondingly are quantities on a unit sphere.
+
+! This motivates us to use V = D E LAM LAM^* E^T D^T
+! where LAM^* = diag( nu1, nu2 ) where nu1, nu2 are HV coefficients scaled like (dx)^{hv_scaling/2}, (dy)^{hv_scaling/2}.
+! (Halves in powers come from the fact that HV consists of two Laplace iterations.)
+
+! Originally, we took LAM^* = diag(
+!  1/(eig(1)**(hypervis_scaling/4.0d0))*(rearth**(hypervis_scaling/2.0d0))
+!  1/(eig(2)**(hypervis_scaling/4.0d0))*(rearth**(hypervis_scaling/2.0d0)) ) = 
+!  = diag( lamStar1, lamStar2)
+!  \simeq ((np-1)*dx_sphere / 2 )^hv_scaling/2 = SQRT(OPERATOR_HV)
+! because 1/eig(...) \simeq (dx_on_unit_sphere)^2 .
+! Introducing the notation OPERATOR = lamStar^2 is useful for conversion formulas.
+
+! This leads to the following conversion formula: nu_const is nu used for traditional HV on uniform grids
+! nu_tensor = nu_const * OPERATOR_HV^{-1}, so
+! nu_tensor = nu_const *((np-1)*dx_sphere / 2 )^{ - hv_scaling} or
+! nu_tensor = nu_const *(2/( (np-1) * dx_sphere) )^{hv_scaling} .
+! dx_sphere = 2\pi *rearth/(np-1)/4/NE
+! [nu_tensor] = [meter]^{4-hp_scaling}/[sec]
+
+! (1) Later developments:
+! Apply tensor V only at the second Laplace iteration. Thus, LAM^* should be scaled as (dx)^{hv_scaling}, (dy)^{hv_scaling},
+! see this code below:
+!          DEL(1:2,1) = (lamStar1**2) *eig(1)*DE(1:2,1)
+!          DEL(1:2,2) = (lamStar2**2) *eig(2)*DE(1:2,2)
+
+! (2) Later developments:
+! Bringing [nu_tensor] to 1/[sec]:
+!	  lamStar1=1/(eig(1)**(hypervis_scaling/4.0d0)) *(rearth**2.0d0)
+!	  lamStar2=1/(eig(2)**(hypervis_scaling/4.0d0)) *(rearth**2.0d0)
+! OPERATOR_HV = ( (np-1)*dx_unif_sphere / 2 )^{hv_scaling} * rearth^4
+! Conversion formula:
+! nu_tensor = nu_const * OPERATOR_HV^{-1}, so
+! nu_tensor = nu_const *( 2*rearth /((np-1)*dx))^{hv_scaling} * rearth^{-4.0}.
+
+! For the baseline coefficient nu=1e15 for NE30, 
+! nu_tensor=7e-8 (BUT RUN TWICE AS SMALL VALUE FOR NOW) for hv_scaling=3.2
+! and 
+! nu_tensor=1.3e-6 for hv_scaling=4.0.
+
+
+!matrix D*E
           DE(1,1)=sum(elem%D(1,:,i,j)*E(:,1))
           DE(1,2)=sum(elem%D(1,:,i,j)*E(:,2))
           DE(2,1)=sum(elem%D(2,:,i,j)*E(:,1))
           DE(2,2)=sum(elem%D(2,:,i,j)*E(:,2))
 
-#if 0
-! verify that M = E LAMBDA E^t   and E E^t = I
-! or:  M E = E LAMBDA
-           print *,'E^t E should be I'
-           write(*,'(2e20.10)') sum(E(:,1)*E(:,1)),sum(E(:,1)*E(:,2))
-           write(*,'(2e20.10)') sum(E(:,2)*E(:,1)),sum(E(:,2)*E(:,2))
-           print *,'E E^t should be I'
-           write(*,'(2e20.10)') sum(E(1,:)*E(1,:)),sum(E(1,:)*E(2,:))
-           write(*,'(2e20.10)') sum(E(2,:)*E(1,:)),sum(E(2,:)*E(2,:))
-           print *,'M E - E LAMBDA (should be zero)'
-           write(*,'(2e20.10)') sum(M(1,:)*E(:,1))-eig(1)*E(1,1),sum(M(1,:)*E(:,2))-eig(2)*E(1,2)
-           write(*,'(2e20.10)') sum(M(2,:)*E(:,1))-eig(1)*E(2,1),sum(M(2,:)*E(:,2))-eig(2)*E(2,2)
-#endif
-
-! introduce Lambda = diag( nu1*eig1, nu2*eig2 )
-! viscosity tensor = DE * Lambda^* * Lambda * (DE)^t     
-! lamStar is like a diag matrix Lam* which is inserted in front of matrix Lambda=(lam_1 0;0 lam2) 
-! in order to scale Lambda
-! 4th order scaling is given by division by lambda, because lambda ~ 4/((np-1)Delta x)^2
-! 4th order scaling, for example, is 
-!	  lamStar1=1/(eig(1))*(rearth**2)
-!	  lamStar2=1/(eig(2))*(rearth**2)
-
-
-
-!TENSOR IS V = D E LAM LAM^* E^T D^T
-
-!CONVERSION between const HV coefficient and tensor HV coefficient:
-!nu_tensor = nu_const *(2/((np-1)\Delta x))^{hv_scaling/2} * rearth^hv_scaling
-!Delta x = 2\pi *rearth/(np-1)/4/NE
-
-!comment out R^{hv_scaling/2} to bring tensor HV coefficient to dimensions meter^4/sec
-!instead of meter^{4-hp_scaling}/sec
-!note that this leads to following hv coeffs: Based on nu=1e15 for NE30, nu_tensor=3.3e21 for 4th order scaling
-!and nu_tensor=6e19 for scaling=3.2
-!See below
-	  lamStar1=1/(eig(1)**(hypervis_scaling/4.0d0))!*(rearth**(hypervis_scaling/2.0d0))
-	  lamStar2=1/(eig(2)**(hypervis_scaling/4.0d0))!*(rearth**(hypervis_scaling/2.0d0))
-
-!Due to big values of nu for tensor HV, is it reasonable to set
-!	  lamStar1=1/(eig(1)**(hypervis_scaling/4.0d0)) *rearth
-!	  lamStar2=1/(eig(2)**(hypervis_scaling/4.0d0)) *rearth
-!which would lead to nu_tensor dimensions meter^2/sec
-!and nu_tensor values to become 8e7 and 1.5e6 for scalings 4.0 and 3.2 correspondingly?
-
-
-#if 0
-          ! eig(1) >= eig(2)
-          ! theoretical:  nu1 = 1/eig(1)
-          !               nu2 = 1/eig(2)
-          ! but this creates a tensor V that is discontinuous at element
-          ! boundaries - which yelds poor results
-          ! nu1=nu2=nu reproduces our constant coefficient viscosity
-          !            which is excellent
-          ! on cubed sphere grid, eig(1)/eig(2) <= 3  (3 at cube corners)
-          ! THUS:
-          ! for eig(1)/eig(2) <= 3     nu1 = nu2 = geometric mean
-          ! for eig(1)/eig(2) >= 3     nu1 = (1/eig(1))  (1/sqrt(3))
-          !                            nu2 = (1/eig(2)) sqrt(3)
-          ! which means use the theoretical values, but reduces the coefficient in
-          ! the long direction by 58% and increase the coefficient in the small direction
-          ! by 58%
-          sc = max( 1d0, (eig(1)/eig(2))/ 3.0 )
-	  lamStar1= (1/sqrt(eig(1)*eig(2)) ) / sqrt(sc)
-	  lamStar2= (1/sqrt(eig(1)*eig(2)) ) * sqrt(sc)
-
-          ! above gives a laplace oefficient that scales like dx^2
-          ! Sometimes we want dx^1.61 or dx^1.5 which gives hyperviscosity scaling
-          ! like dx^3.22 or dx^3
-          !lamStar1 = lamStar1 ** (tensor_laplace_scaling/2)
-          !lamStar1 = lamStar1 ** (tensor_laplace_scaling/2)
-             
-	  lamStar1=(rearth**2)*lamStar1
-	  lamStar2=(rearth**2)*lamStar2
-#endif
-
+	  lamStar1=1/(eig(1)**(hypervis_scaling/4.0d0)) *(rearth**2.0d0)
+	  lamStar2=1/(eig(2)**(hypervis_scaling/4.0d0)) *(rearth**2.0d0)
 
 !matrix (DE) * Lam^* * Lam , tensor HV when V is applied at each Laplace calculation
 !          DEL(1:2,1) = lamStar1*eig(1)*DE(1:2,1)
@@ -475,17 +446,8 @@ contains
           V(2,1)=sum(DEL(2,:)*DE(1,:))
           V(2,2)=sum(DEL(2,:)*DE(2,:))
 
-! for 4th order scaling, V=DD^t
-! very usefult for debugging
-!TENSOR IS DD^T
-!           V(1,1)=sum(elem%D(1,:,i,j)*elem%D(1,:,i,j))*(rearth**(2.0d0))
-!           V(1,2)=sum(elem%D(1,:,i,j)*elem%D(2,:,i,j))*(rearth**(2.0d0))
-!           V(2,1)=sum(elem%D(2,:,i,j)*elem%D(1,:,i,j))*(rearth**(2.0d0))
-!           V(2,2)=sum(elem%D(2,:,i,j)*elem%D(2,:,i,j))*(rearth**(2.0d0))
-
-
 	  elem%tensorVisc(:,:,i,j)=V(:,:)
-!        print *, V
+
        end do
     end do
 

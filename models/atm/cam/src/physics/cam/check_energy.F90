@@ -189,13 +189,13 @@ end subroutine check_energy_get_integrals
     type(physics_buffer_desc), pointer      :: pbuf(:)
 !---------------------------Local storage-------------------------------
 
-    real(r8) :: ke(pcols)                          ! vertical integral of kinetic energy
-    real(r8) :: se(pcols)                          ! vertical integral of static energy
-    real(r8) :: wv(pcols)                          ! vertical integral of water (vapor)
-    real(r8) :: wl(pcols)                          ! vertical integral of water (liquid)
-    real(r8) :: wi(pcols)                          ! vertical integral of water (ice)
-    real(r8) :: tr(pcols)                          ! vertical integral of tracer
-    real(r8) :: trpdel(pcols, pver)                ! pdel for tracer
+    real(r8) :: ke(state%ncol)                     ! vertical integral of kinetic energy
+    real(r8) :: se(state%ncol)                     ! vertical integral of static energy
+    real(r8) :: wv(state%ncol)                     ! vertical integral of water (vapor)
+    real(r8) :: wl(state%ncol)                     ! vertical integral of water (liquid)
+    real(r8) :: wi(state%ncol)                     ! vertical integral of water (ice)
+    real(r8) :: tr(state%ncol)                     ! vertical integral of tracer
+    real(r8) :: trpdel(state%ncol,pver)            ! pdel for tracer
 
     integer lchnk                                  ! chunk identifier
     integer ncol                                   ! number of atmospheric columns
@@ -269,10 +269,10 @@ end subroutine check_energy_get_integrals
     character*(*),intent(in) :: name               ! parameterization name for fluxes
     integer , intent(in   ) :: nstep               ! current timestep number
     real(r8), intent(in   ) :: ztodt               ! 2 delta t (model time increment)
-    real(r8), intent(in   ) :: flx_vap(pcols)      ! boundary flux of vapor         (kg/m2/s)
-    real(r8), intent(in   ) :: flx_cnd(pcols)      ! boundary flux of liquid+ice    (m/s) (precip?)
-    real(r8), intent(in   ) :: flx_ice(pcols)      ! boundary flux of ice           (m/s) (snow?)
-    real(r8), intent(in   ) :: flx_sen(pcols)      ! boundary flux of sensible heat (w/m2)
+    real(r8), intent(in   ) :: flx_vap(:)          ! (pcols) - boundary flux of vapor         (kg/m2/s)
+    real(r8), intent(in   ) :: flx_cnd(:)          ! (pcols) -boundary flux of liquid+ice    (m/s) (precip?)
+    real(r8), intent(in   ) :: flx_ice(:)          ! (pcols) -boundary flux of ice           (m/s) (snow?)
+    real(r8), intent(in   ) :: flx_sen(:)          ! (pcols) -boundary flux of sensible heat (w/m2)
 
 !******************** BAB ******************************************************
 !******* Note that the precip and ice fluxes are in precip units (m/s). ********
@@ -282,24 +282,24 @@ end subroutine check_energy_get_integrals
 
 !---------------------------Local storage-------------------------------
 
-    real(r8) :: te_xpd(pcols)                   ! expected value (f0 + dt*boundary_flux)
-    real(r8) :: te_dif(pcols)                   ! energy of input state - original energy
-    real(r8) :: te_tnd(pcols)                   ! tendency from last process
-    real(r8) :: te_rer(pcols)                   ! relative error in energy column
+    real(r8) :: te_xpd(state%ncol)                 ! expected value (f0 + dt*boundary_flux)
+    real(r8) :: te_dif(state%ncol)                 ! energy of input state - original energy
+    real(r8) :: te_tnd(state%ncol)                 ! tendency from last process
+    real(r8) :: te_rer(state%ncol)                 ! relative error in energy column
 
-    real(r8) :: tw_xpd(pcols)                   ! expected value (w0 + dt*boundary_flux)
-    real(r8) :: tw_dif(pcols)                   ! tw_inp - original water
-    real(r8) :: tw_tnd(pcols)                   ! tendency from last process
-    real(r8) :: tw_rer(pcols)                   ! relative error in water column
+    real(r8) :: tw_xpd(state%ncol)                 ! expected value (w0 + dt*boundary_flux)
+    real(r8) :: tw_dif(state%ncol)                 ! tw_inp - original water
+    real(r8) :: tw_tnd(state%ncol)                 ! tendency from last process
+    real(r8) :: tw_rer(state%ncol)                 ! relative error in water column
 
-    real(r8) :: ke(pcols)                          ! vertical integral of kinetic energy
-    real(r8) :: se(pcols)                          ! vertical integral of static energy
-    real(r8) :: wv(pcols)                          ! vertical integral of water (vapor)
-    real(r8) :: wl(pcols)                          ! vertical integral of water (liquid)
-    real(r8) :: wi(pcols)                          ! vertical integral of water (ice)
+    real(r8) :: ke(state%ncol)                     ! vertical integral of kinetic energy
+    real(r8) :: se(state%ncol)                     ! vertical integral of static energy
+    real(r8) :: wv(state%ncol)                     ! vertical integral of water (vapor)
+    real(r8) :: wl(state%ncol)                     ! vertical integral of water (liquid)
+    real(r8) :: wi(state%ncol)                     ! vertical integral of water (ice)
 
-    real(r8) :: te(pcols)                          ! vertical integral of total energy
-    real(r8) :: tw(pcols)                          ! vertical integral of total water
+    real(r8) :: te(state%ncol)                     ! vertical integral of total energy
+    real(r8) :: tw(state%ncol)                     ! vertical integral of total water
 
     integer lchnk                                  ! chunk identifier
     integer ncol                                   ! number of atmospheric columns

@@ -95,8 +95,12 @@
       integer gptlinitialize
       integer gptlstart
       integer gptlstart_handle
+      integer gptlstartf
+      integer gptlstartf_handle
       integer gptlstop
       integer gptlstop_handle
+      integer gptlstopf
+      integer gptlstopf_handle
       integer gptlstamp 
       integer gptlpr_set_append
       integer gptlpr_query_append
@@ -128,8 +132,12 @@
       external gptlinitialize
       external gptlstart
       external gptlstart_handle
+      external gptlstartf
+      external gptlstartf_handle
       external gptlstop
       external gptlstop_handle
+      external gptlstopf
+      external gptlstopf_handle
       external gptlstamp 
       external gptlpr_set_append
       external gptlpr_query_append

@@ -237,8 +237,13 @@ EOF
     submit_script="`pwd -P`/test_driver_frankfurt_${cur_time}.sh"
     export PATH=/cluster/torque/bin:${PATH}
 
+    # Default setting is 12 hr in the long queue; the short queue only
+    # allows 1 hr runs.
+    wallclock_limit="12:00:00"
     if [ -z "$CAM_BATCHQ" ]; then
         export CAM_BATCHQ="long"
+    elif [[ "$CAM_BATCHQ" == short ]]; then
+        wallclock_limit="1:00:00"
     fi
 
     if [ $gmake_j = 0 ]; then
@@ -253,7 +258,7 @@ cat > ${submit_script} << EOF
 # Name of the queue (CHANGE THIS if needed)
 #PBS -q $CAM_BATCHQ
 # Number of nodes (CHANGE THIS if needed)
-#PBS -l walltime=8:00:00,nodes=1:ppn=16
+#PBS -l walltime=$wallclock_limit,nodes=1:ppn=16
 # output file base name
 #PBS -N test_dr
 # Put standard error and standard out in same file
@@ -289,10 +294,9 @@ export CAM_TASKS=16
 export CAM_RESTART_TASKS=8
 
 export INTEL=/usr/local/intel-cluster
-export LAHEY=/usr/local/lf6481
 export NAG=/usr/local/nag
 export PGI=/usr/local/pgi-pgcc-pghf-11.5
-export LD_LIBRARY_PATH=\${PGI}/linux86/lib:\${LAHEY}/lib64:/cluster/torque/lib:\${INTEL}/lib/intel64:\${LD_LIBRARY_PATH}
+export LD_LIBRARY_PATH=\${PGI}/linux86/lib:/cluster/torque/lib:\${INTEL}/lib/intel64:\${LD_LIBRARY_PATH}
 echo \${LD_LIBRARY_PATH}
 export P4_GLOBMEMSIZE=500000000
 
@@ -308,6 +312,7 @@ if [ "\$CAM_FC" = "INTEL" ]; then
     export CFG_STRING="-fc ifort "
     export MAKE_CMD="gmake -j $gmake_j"
     input_file="tests_posttag_frankfurt"
+    export CCSM_MACH="frankfurt_intel"
 elif [ "\$CAM_FC" = "NAG" ]; then
     . /usr/local/nag/nag-bash.rc 
     netcdf=/usr/local/netcdf-gcc-nag
@@ -321,7 +326,9 @@ elif [ "\$CAM_FC" = "NAG" ]; then
     export CFG_STRING="-fc nagfor "
     export MAKE_CMD="gmake -j $gmake_j"
     input_file="tests_pretag_frankfurt_nag"
-elif [ "\$CAM_FC" = "PGI" ]; then
+    export CCSM_MACH="frankfurt_nag"
+    export CCSM_MPILIB="mpich"
+else
     export LAPACK_LIBDIR=/usr/local/pgi-pgcc-pghf-11.5/linux86-64/11.5/lib
     export INC_NETCDF=/usr/local/netcdf-4.1.3-pgi-hpf-cc-11.5-0/include
     export LIB_NETCDF=/usr/local/netcdf-4.1.3-pgi-hpf-cc-11.5-0/lib
@@ -332,17 +339,7 @@ elif [ "\$CAM_FC" = "PGI" ]; then
     export LD_LIBRARY_PATH=\${LIB_NETCDF}:\${LD_LIBRARY_PATH}
     export MAKE_CMD="gmake -j $gmake_j"
     input_file="tests_pretag_frankfurt_pgi"
-else
-    export INC_NETCDF=/usr/local/netcdf-4.1.3-gcc-4.4.4-13-lf9581/include
-    export LIB_NETCDF=/usr/local/netcdf-4.1.3-gcc-4.4.4-13-lf9581/lib
-    mpich=/usr/local/mpich-gcc-lf64
-    export INC_MPI=\${mpich}/include
-    export LIB_MPI=\${mpich}/lib
-    export PATH=\${LAHEY}/bin:\${mpich}/bin:\${PATH}
-    export LD_LIBRARY_PATH=/usr/local/netcdf-4.1.3-pgi-hpf-cc-11.5-0/lib:\${LD_LIBRARY_PATH}
-    export CFG_STRING="-fc lf95 "
-    export MAKE_CMD="gmake -j $gmake_j"
-    input_file="tests_pretag_frankfurt_lahey"
+    export CCSM_MACH="frankfurt_pgi"
 fi
 export MACH_WORKSPACE="/scratch/cluster"
 export CPRNC_EXE=/fs/cgd/csm/tools/cprnc_64/cprnc
@@ -405,7 +402,7 @@ export CAM_RESTART_TASKS=8
 module load cray-netcdf
 
 export CFG_STRING="-fc ftn -cc cc -fc_type intel "
-export CCSM_MACH="edinson_intel"
+export CCSM_MACH="edison_intel"
 module list
 
 export MPICH_MAX_SHORT_MSG_SIZE=1024

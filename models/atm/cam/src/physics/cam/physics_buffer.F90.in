@@ -14,13 +14,13 @@ module physics_buffer
 
   use shr_kind_mod, only: r8 => shr_kind_r8, r4=> shr_kind_r4, i4=> shr_kind_i4
   use constituents, only: pcnst
-  use ppgrid, only: pcols, pver, begchunk, endchunk
+  use ppgrid, only: pcols, pver, begchunk, endchunk, psubcols
   use cam_logfile,     only: iulog
   use pio, only : var_desc_t
   use dyn_grid, only : ptimelevels
   use abortutils, only : endrun
   use buffer, only : buffer_field_allocate, buffer_field_deallocate, buffer_get_field_ptr, buffer_set_field, &
-       dtype_i4, dtype_r4, dtype_r8, buffer_field_default_type
+       dtype_i4, dtype_r4, dtype_r8, buffer_field_default_type, buffer_field_is_alloc
 
   implicit none
   private
@@ -37,6 +37,7 @@ module physics_buffer
      integer :: dtype
      integer :: persistance
      integer :: dimsizes(6)   
+     integer :: dimsizes_sc(6)   
      type(var_desc_t) :: vardesc  ! var id for restart files
      type(physics_buffer_hdr), pointer :: nexthdr => null()
 
@@ -52,6 +53,7 @@ module physics_buffer
      private
      type(physics_buffer_hdr), pointer :: hdr => null()
      type(buffer_field_default_type) :: bfg
+     type(buffer_field_default_type) :: bfg_sc
   end type physics_buffer_desc
 
   interface pbuf_get_field
@@ -380,14 +382,33 @@ CONTAINS
     integer, intent(in) :: index
 
     integer, pointer :: dimsizes(:)
+    integer, pointer :: dimsizes_sc(:)
     integer :: c
 
+    ! Note - dimsizes(:)=0 is special case to indicate "do not allocate" and is not fatal
     dimsizes=>pbuf2d(index,begchunk)%hdr%dimsizes
+    dimsizes_sc=>pbuf2d(index,begchunk)%hdr%dimsizes_sc
 
-    do c=begchunk,endchunk
-       call buffer_field_allocate(pbuf2d(index,c)%bfg,dimsizes,dtype)
-    end do
+    if (any(dimsizes(:) < 0)) &
+       call endrun('pbuf_allocate_field: dimsizes must be greater than 0 for pbuf field with index '&
+                     //trim(pbuf2d(index,begchunk)%hdr%name))
+
+    if (any(dimsizes_sc(:) < 0)) &
+       call endrun('pbuf_allocate_field: dimsizes_sc must be greater than 0 for pbuf field with index '&
+                     //trim(pbuf2d(index,begchunk)%hdr%name))
+
+    if (all(dimsizes(:) /= 0)) then
+       do c=begchunk,endchunk
+          call buffer_field_allocate(pbuf2d(index,c)%bfg,   dimsizes,   dtype)
+       end do
+    end if
     
+    if (all(dimsizes_sc(:) /= 0)) then
+       do c=begchunk,endchunk
+          call buffer_field_allocate(pbuf2d(index,c)%bfg_sc,dimsizes_sc,dtype)
+       end do
+    end if
+
   end subroutine pbuf_allocate_field_{TYPE}
 
 
@@ -440,10 +461,13 @@ CONTAINS
   !  dtype can be any of r8, r4, i4 as defined in shr_kinds_mod.F90
 
   ! TYPE int,double,real 
-  subroutine pbuf_add_field_{TYPE}(name, persistance, dtype, dimsizes, index)
+  subroutine pbuf_add_field_{TYPE}(name, persistance, dtype, dimsizes, index, grid_types_flag)
+    use grid_flag_utils, only : flag_gridcol, flag_subcol, is_col_type_set, bit_field_kind
     character(len=*), intent(in) :: name, persistance
     {VTYPE}, intent(in) :: dtype   ! used only to differentiate specific calls
-    integer, intent(in) :: dimsizes(:)
+    integer, intent(in) :: dimsizes(:) ! dimension sizes of grid field
+    integer(bit_field_kind), intent(in), optional :: grid_types_flag 
+
 
     integer, intent(out) :: index
 
@@ -460,6 +484,16 @@ CONTAINS
     
     dimcnt=1
     bufptr=>hdrbuffertop
+
+    ! If neither grid nor sub-columns specified, write out error message and return
+    if (present(grid_types_flag)) then
+       if (.not. (is_col_type_set(grid_types_flag,flag_gridcol) .or. (is_col_type_set(grid_types_flag,flag_subcol)))) then
+           write(iulog, *) 'Warning -- Trying to add field ',trim(name),&
+                           ' but grid_types_flag is not set for either grid or sub-columns -- Field not added'
+           return
+       end if
+    end if
+
     do while(associated(bufptr%nexthdr))
        if((bufptr%name) .eq. name) then
           call endrun('Attempt to redefine pbuf field in use: '//trim(name))
@@ -484,6 +518,25 @@ CONTAINS
 
     bufptr%dimsizes=1
     bufptr%dimsizes(1:dimcnt) = dimsizes
+
+    ! If not using grid columns, then grid dimensions are all set to 0
+    if (present(grid_types_flag)) then
+      if (.not. is_col_type_set(grid_types_flag,flag_gridcol)) then
+         bufptr%dimsizes=0
+      end if
+    end if
+
+
+    ! Set the sub-column dimensions if requested
+    bufptr%dimsizes_sc=0
+    if (present(grid_types_flag)) then
+       if (is_col_type_set(grid_types_flag,flag_subcol)) then
+          if (dimsizes(1) /= pcols) call endrun('First dimension of field to be sub-columnized must be pcols '//trim(name))
+          bufptr%dimsizes_sc=1
+          bufptr%dimsizes_sc(1) = pcols*psubcols
+          bufptr%dimsizes_sc(2:dimcnt) = dimsizes(2:dimcnt)
+       end if
+    end if
 
     allocate(bufptr%nexthdr)
 
@@ -512,7 +565,7 @@ CONTAINS
   end subroutine pbuf1d_print
   !
   ! Given a pbuf field name return an integer index to the field.  
-  ! This index can be used to retreave the field and is much faster
+  ! This index can be used to retrieve the field and is much faster
   ! than using the name in most cases  
   ! 
 
@@ -553,12 +606,18 @@ CONTAINS
 
   ! TYPE int,double,real 
   ! DIMS 1,2,3,4,5,6
-  subroutine get_pbuf1d_field_by_index_{DIMS}d_{TYPE}(pbuf, index, field, start,kount)
+  subroutine get_pbuf1d_field_by_index_{DIMS}d_{TYPE}(pbuf, index, field, start,kount, col_type)
+
+    ! Get the data based on the col_type which is specified.  If no col_type, then grid field is returned
+    use grid_flag_utils, only : flag_gridcol, flag_subcol
     type(physics_buffer_desc), pointer:: pbuf(:)
     integer, intent(in) :: index
     {VTYPE}, pointer :: field{DIMSTR}
     integer, intent(in), optional :: start(:),kount(:)
+    integer, intent(in), optional :: col_type
 
+    integer :: col_type_use
+    logical :: subset
 
     ! Copy the generic type to one compatable with the request
     if(index<1 .or. index>size(pbuf)) then
@@ -566,26 +625,83 @@ CONTAINS
        call endrun('index out of range')
     end if
 
-    if(present(start) .and. present(kount)) then
-       call buffer_get_field_ptr(pbuf(index)%bfg,field,start,kount )
-    else
-       call buffer_get_field_ptr(pbuf(index)%bfg,field)
+    ! Default col_type is grid columns
+    col_type_use = flag_gridcol
+    if (present(col_type)) col_type_use = col_type
+
+    ! Check whether subset of data requested (default is false)
+    subset = .false.
+    if (present(start) .and. present(kount)) subset = .true.
+
+    ! Check for ill-formed request
+    if ( (present(start) .and. .not. present(kount)) .or.&
+         (.not. present(start) .and. present(kount)) ) then
+       call endrun('pbuf_get_field: Both start and kount must be present for '//trim(pbuf(index)%hdr%name))
+    end if
+
+    
+    if(subset) then
+       select case(col_type_use)
+          case(flag_subcol)
+             if (.not. buffer_field_is_alloc(pbuf(index)%bfg_sc)) &
+                    call endrun('pbuf_get_field: sub-column field not allocated for '//trim(pbuf(index)%hdr%name))
+             call buffer_get_field_ptr(pbuf(index)%bfg_sc,field,start,kount )
+          case(flag_gridcol)
+             if (.not. buffer_field_is_alloc(pbuf(index)%bfg)) &
+                    call endrun('pbuf_get_field: grid field not allocated for '//trim(pbuf(index)%hdr%name))
+             call buffer_get_field_ptr(pbuf(index)%bfg,   field,start,kount )
+          case default
+             call endrun('pbuf_get_field: Invalid col_type ')
+       end select
+
+    else 
+       select case(col_type_use)
+          case(flag_subcol) 
+             if (.not. buffer_field_is_alloc(pbuf(index)%bfg_sc)) &
+                    call endrun('pbuf_get_field: sub-column field not allocated for '//trim(pbuf(index)%hdr%name))
+             call buffer_get_field_ptr(pbuf(index)%bfg_sc,field)
+          case(flag_gridcol)
+             if (.not. buffer_field_is_alloc(pbuf(index)%bfg)) &
+                    call endrun('pbuf_get_field: grid field not allocated for '//trim(pbuf(index)%hdr%name))
+             call buffer_get_field_ptr(pbuf(index)%bfg   ,field)
+          case default
+             call endrun('pbuf_get_field: Invalid col_type ')
+          end select
     end if
        
   end subroutine get_pbuf1d_field_by_index_{DIMS}d_{TYPE}
 
   ! TYPE int,double,real 
   ! DIMS 1,2,3,4,5,6
-  subroutine get_pbuf2d_field_by_index_{DIMS}d_{TYPE}(pbuf2d, lchnk, index, field, start, kount)
+  subroutine get_pbuf2d_field_by_index_{DIMS}d_{TYPE}(pbuf2d, lchnk, index, field, start, kount, col_type)
+
+    ! Get the data based on the col_type which is specified.  If no col_type, then grid field is returned
     type(physics_buffer_desc), pointer :: pbuf2d(:,:)
     integer, intent(in) :: lchnk
     integer, intent(in) :: index
     integer, intent(in), optional :: start(:),kount(:)
+    integer, intent(in), optional :: col_type
+ 
+    logical :: subset
 
     {VTYPE}, pointer :: field{DIMSTR}
 
-    if(present(start) .and. present(kount)) then
+    ! Check whether subset of data requested (default is false)
+    subset = .false.
+    if (present(start) .and. present(kount)) subset = .true.
+
+    ! Check for ill-formed request
+    if ( (present(start) .and. .not. present(kount)) .or.&
+         (.not. present(start) .and. present(kount)) ) then
+       call endrun('pbuf_get_field: Both start and kount must be present for '//trim(pbuf2d(index,begchunk)%hdr%name))
+    end if
+    
+    if(subset .and. present(col_type)) then
+       call pbuf_get_field(pbuf_get_chunk(pbuf2d,lchnk), index, field, start,kount, col_type)
+    else if(subset) then
        call pbuf_get_field(pbuf_get_chunk(pbuf2d,lchnk), index, field, start,kount)
+    else if(present(col_type)) then
+       call pbuf_get_field(pbuf_get_chunk(pbuf2d,lchnk), index, field, col_type=col_type)
     else
        call pbuf_get_field(pbuf_get_chunk(pbuf2d,lchnk), index, field)
     end if
@@ -593,40 +709,113 @@ CONTAINS
 
   ! TYPE int,double,real 
   ! DIMS 1,2,3,4,5,6
-  subroutine set_pbuf2d_field_const_by_index_{TYPE}(pbuf2d,index,const)
+  subroutine set_pbuf2d_field_const_by_index_{TYPE}(pbuf2d,index,const, grid_types_flag)
+
+    use grid_flag_utils, only : bit_field_kind
+    ! Set the field(s) specified by the grid_types_flag
     type(physics_buffer_desc), pointer :: pbuf2d(:,:)
     integer, intent(in) :: index
     {VTYPE},intent(in) :: const
+    integer(bit_field_kind),intent(in),optional :: grid_types_flag
 
     integer :: c
     
     do c=begchunk,endchunk
-       call set_pbuf1d_field_const_by_index_{TYPE}(pbuf_get_chunk(pbuf2d,c),index,const)
+       if(present(grid_types_flag)) then
+          call set_pbuf1d_field_const_by_index_{TYPE}(pbuf_get_chunk(pbuf2d,c),index,const, grid_types_flag=grid_types_flag)
+       else
+          call set_pbuf1d_field_const_by_index_{TYPE}(pbuf_get_chunk(pbuf2d,c),index,const)
+       end if
     enddo
 
   end subroutine set_pbuf2d_field_const_by_index_{TYPE}
 
   ! TYPE int,double,real 
   ! DIMS 1,2,3,4,5,6
-  subroutine set_pbuf1d_field_const_by_index_{TYPE}(pbuf,index,const,start,kount)
+  subroutine set_pbuf1d_field_const_by_index_{TYPE}(pbuf,index,const,start,kount, grid_types_flag)
+
+    ! Set the field(s) specified by the grid_types_flag
+    use grid_flag_utils, only : flag_gridcol, flag_subcol, is_col_type_set, bit_field_kind, set_col_type
     type(physics_buffer_desc), pointer :: pbuf(:)
     integer, intent(in) :: index
     {VTYPE},intent(in) :: const
     integer, intent(in), optional :: start(:),kount(:)
+    integer(bit_field_kind), intent(in), optional :: grid_types_flag
+   
+    integer(bit_field_kind) :: grid_types_flag_use
+    logical :: subset
 
-    if(present(start) .and. present(kount)) then
-       call buffer_set_field(pbuf(index)%bfg,const,start,kount)
-    else
-       call buffer_set_field(pbuf(index)%bfg,const)
+
+    ! Default grid_types_flag is grid only
+    grid_types_flag_use = set_col_type(flag_gridcol)
+    if (present(grid_types_flag)) grid_types_flag_use = grid_types_flag
+
+    ! Check whether subset of data requested (default is false)
+    subset = .false.
+    if (present(start) .and. present(kount)) subset = .true.
+
+    ! Check for ill-formed request
+    if ( (present(start) .and. .not. present(kount)) .or.&
+         (.not. present(start) .and. present(kount)) ) then
+       call endrun('pbuf_set_field: Both start and kount must be present for '//trim(pbuf(index)%hdr%name))
     end if
+    
+    ! Check for invalid grid_types_flag
+    if (.not. (is_col_type_set(grid_types_flag_use,flag_gridcol) .or. (is_col_type_set(grid_types_flag_use,flag_subcol)))) then
+         call endrun('pbuf_set_field: Trying to set '//trim(pbuf(index)%hdr%name)//&
+                     ' but grid_types_flag not set correctly')
+    end if
+
+    ! Set the appropriate grid and/or sub-column fields.  Check that the fields have been allocated.
+    if(subset) then 
+
+       ! Set sub-column field
+       if (is_col_type_set(grid_types_flag_use,flag_subcol)) then
+          if (.not. buffer_field_is_alloc(pbuf(index)%bfg_sc)) &
+                 call endrun('pbuf_set_field: sub-column field not allocated for '//trim(pbuf(index)%hdr%name))
+          call buffer_set_field(pbuf(index)%bfg_sc,const,start,kount)
+        end if
+
+       
+       ! Set grid field
+       if (is_col_type_set(grid_types_flag_use,flag_gridcol)) then
+          if (.not. buffer_field_is_alloc(pbuf(index)%bfg)) &
+                 call endrun('pbuf_set_field: grid field not allocated for '//trim(pbuf(index)%hdr%name))
+          call buffer_set_field(pbuf(index)%bfg   ,const,start,kount)
+       end if 
+
+    else 
+
+       ! Set sub-column field
+       if (is_col_type_set(grid_types_flag_use,flag_subcol)) then
+          if (.not. buffer_field_is_alloc(pbuf(index)%bfg_sc)) &
+                 call endrun('pbuf_set_field: sub-column field not allocated for '//trim(pbuf(index)%hdr%name))
+          call buffer_set_field(pbuf(index)%bfg_sc,const)
+       end if
+
+       ! Set grid field
+       if (is_col_type_set(grid_types_flag_use,flag_gridcol)) then
+          if (.not. buffer_field_is_alloc(pbuf(index)%bfg)) &
+                 call endrun('pbuf_set_field: grid field not allocated for '//trim(pbuf(index)%hdr%name))
+          call buffer_set_field(pbuf(index)%bfg   ,const)
+       end if
+
+    end if
+
   end subroutine set_pbuf1d_field_const_by_index_{TYPE}
 
   ! TYPE int,double,real 
   ! DIMS 1,2,3,4,5,6
-  subroutine set_pbuf2d_field_by_index_{DIMS}d_{TYPE}(pbuf2d,index,field, start, kount)
+  subroutine set_pbuf2d_field_by_index_{DIMS}d_{TYPE}(pbuf2d,index,field, start, kount, grid_types_flag)
+
+    use grid_flag_utils, only : bit_field_kind
+    ! Set the field(s) specified by the grid_types_flag
     type(physics_buffer_desc), pointer :: pbuf2d(:,:)
     integer, intent(in) :: index
     integer,intent(in),optional :: start(:), kount(:)
+    integer(bit_field_kind),intent(in),optional :: grid_types_flag
+
+    logical :: subset
 
     integer :: c
     {VTYPE}, pointer :: fld{DIMSTR}
@@ -645,10 +834,25 @@ CONTAINS
 #elif ({DIMS}==6)
     {VTYPE},pointer :: field(:,:,:,:,:,:,:)
 #endif
+
+    ! Check whether subset of data requested (default is false)
+    subset = .false.
+    if (present(start) .and. present(kount)) subset = .true.
+
+    ! Check for ill-formed request
+    if ( (present(start) .and. .not. present(kount)) .or.&
+         (.not. present(start) .and. present(kount)) ) then
+       call endrun('pbuf_set_field: Both start and kount must be present for '//trim(pbuf2d(index,begchunk)%hdr%name))
+    end if
+
     do c=begchunk,endchunk
        fld => get_field_chunk_{DIMS}d_{TYPE}(field,c)
-       if(present(start) .and. present(kount)) then
+       if(subset .and. present(grid_types_flag)) then
+          call pbuf_set_field(pbuf_get_chunk(pbuf2d,c),index,fld,start,kount, grid_types_flag)
+       else if(subset) then
           call pbuf_set_field(pbuf_get_chunk(pbuf2d,c),index,fld,start,kount)
+       else if(present(grid_types_flag)) then
+          call pbuf_set_field(pbuf_get_chunk(pbuf2d,c),index,fld,grid_types_flag=grid_types_flag)
        else
           call pbuf_set_field(pbuf_get_chunk(pbuf2d,c),index,fld)
        end if
@@ -688,19 +892,71 @@ CONTAINS
 
   ! TYPE int,double,real 
   ! DIMS 1,2,3,4,5,6
-  subroutine set_pbuf1d_field_by_index_{DIMS}d_{TYPE}(pbuf,index,field, start, kount)
+  subroutine set_pbuf1d_field_by_index_{DIMS}d_{TYPE}(pbuf,index,field, start, kount, grid_types_flag)
+
+    ! Set the field(s) specified by the grid_types_flag
+    use grid_flag_utils, only : flag_gridcol, flag_subcol, is_col_type_set, bit_field_kind, set_col_type
     type(physics_buffer_desc), pointer :: pbuf(:)
     integer, intent(in) :: index
     {VTYPE}, intent(in) :: field{DIMSTR}
     integer,intent(in),optional :: start(:), kount(:)
+    integer(bit_field_kind),intent(in),optional :: grid_types_flag
 
+    integer(bit_field_kind) :: grid_types_flag_use
+    logical :: subset
 
-    if(present(start) .and. present(kount)) then
-       call buffer_set_field(pbuf(index)%bfg,field,start,kount)      
-    else if(present(start) .or. present(kount)) then
-       call endrun('Both start and kount must be present')
-    else
-       call buffer_set_field(pbuf(index)%bfg,field)
+    ! Default grid_types_flag is grid only
+    grid_types_flag_use = set_col_type(flag_gridcol)
+    if (present(grid_types_flag)) grid_types_flag_use = grid_types_flag
+
+    ! Check whether subset of data requested (default is false)
+    subset = .false.
+    if (present(start) .and. present(kount)) subset = .true.
+
+    ! Check for ill-formed request
+    if ( (present(start) .and. .not. present(kount)) .or.&
+         (.not. present(start) .and. present(kount)) ) then
+       call endrun('pbuf_set_field: Both start and kount must be present for '//trim(pbuf(index)%hdr%name))
+    end if
+
+    ! Check for invalid grid_types_flag
+    if (.not. (is_col_type_set(grid_types_flag_use,flag_gridcol) .or. (is_col_type_set(grid_types_flag_use,flag_subcol)))) then
+         call endrun('pbuf_set_field: Trying to set '//trim(pbuf(index)%hdr%name)//&
+                    ' but grid_types_flag not set correctly')
+    end if
+
+    if(subset) then
+
+       ! Set sub-column field
+       if (is_col_type_set(grid_types_flag_use,flag_subcol)) then
+          if (.not. buffer_field_is_alloc(pbuf(index)%bfg_sc)) &
+              call endrun('pbuf_set_field: sub-column field not allocated for '//trim(pbuf(index)%hdr%name))
+          call buffer_set_field(pbuf(index)%bfg_sc,field,start,kount)      
+       end if
+
+       ! Set grid field
+       if (is_col_type_set(grid_types_flag_use,flag_gridcol)) then
+          if (.not. buffer_field_is_alloc(pbuf(index)%bfg)) &
+                 call endrun('pbuf_set_field: grid field not allocated for '//trim(pbuf(index)%hdr%name))
+          call buffer_set_field(pbuf(index)%bfg   ,field,start,kount)
+       end if
+
+    else 
+
+       ! Set sub-column field
+       if (is_col_type_set(grid_types_flag_use,flag_subcol)) then
+          if (.not. buffer_field_is_alloc(pbuf(index)%bfg_sc)) &
+              call endrun('pbuf_set_field: sub-column field not allocated for '//trim(pbuf(index)%hdr%name))
+          call buffer_set_field(pbuf(index)%bfg_sc,field)
+       end if
+
+       ! Set grid field
+       if (is_col_type_set(grid_types_flag_use,flag_gridcol)) then
+          if (.not. buffer_field_is_alloc(pbuf(index)%bfg)) &
+                 call endrun('pbuf_set_field: grid field not allocated for '//trim(pbuf(index)%hdr%name))
+          call buffer_set_field(pbuf(index)%bfg   ,field)
+       end if
+
     endif
   end subroutine set_pbuf1d_field_by_index_{DIMS}d_{TYPE}
 

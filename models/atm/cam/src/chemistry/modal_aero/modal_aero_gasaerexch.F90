@@ -889,6 +889,7 @@ implicit none
    integer, parameter :: nghq = 2
    integer :: i, iq, k, l1, l2, la, n
 
+   ! Can use sqrt here once Lahey is gone.
    real(r8), parameter :: tworootpi = 3.5449077_r8
    real(r8), parameter :: root2 = 1.4142135_r8
    real(r8), parameter :: beta = 2.0_r8
@@ -993,6 +994,7 @@ implicit none
           g_soa_tend, a_soa_tend )
 !         g_soa_tend, a_soa_tend, g0_soa, idiagss )
 
+        use mo_constants, only: rgas ! Gas constant (J/K/mol)
 !-----------------------------------------------------------------------
 !
 ! Purpose:
@@ -1038,8 +1040,6 @@ implicit none
       real(r8), parameter :: delh_vap_soa = 156.0e3_r8
       ! delh_vap_soa = heat of vaporization for gas soa (J/mol)
       real(r8), parameter :: p0_soa_298 = 1.0e-10_r8
-      ! p0_soa_298 = soa gas equilib vapor presssure (atm) at 298 k
-      real(r8), parameter :: rgas = 8.3144_r8   ! gas constant in J/K/mol
 
       real(r8) :: a_opoa(ntot_soamode)    ! oxidized-poa aerosol mixrat (mol/mol)
       real(r8) :: a_soa(ntot_soamode)     ! soa aerosol mixrat (mol/mol)

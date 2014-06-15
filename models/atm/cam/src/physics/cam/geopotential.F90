@@ -13,7 +13,7 @@ module geopotential
 !---------------------------------------------------------------------------------
 
   use shr_kind_mod, only: r8 => shr_kind_r8
-  use ppgrid,       only: pcols, pver, pverp
+  use ppgrid,       only: pver, pverp
   use dycore,       only: dycore_is
 
   implicit none
@@ -43,38 +43,38 @@ contains
 
     ! rair, and cpair are passed in as slices of rank 3 arrays allocated
     ! at runtime. Don't specify size to avoid temporary copy.
-    real(r8), intent(in) :: piln (pcols,pverp)   ! Log interface pressures
-    real(r8), intent(in) :: pmln (pcols,pver)    ! Log midpoint pressures
-    real(r8), intent(in) :: pint (pcols,pverp)   ! Interface pressures
-    real(r8), intent(in) :: pmid (pcols,pver)    ! Midpoint pressures
-    real(r8), intent(in) :: pdel (pcols,pver)    ! layer thickness
-    real(r8), intent(in) :: rpdel(pcols,pver)    ! inverse of layer thickness
-    real(r8), intent(in) :: dse  (pcols,pver)    ! dry static energy
-    real(r8), intent(in) :: q    (pcols,pver)    ! specific humidity
-    real(r8), intent(in) :: phis (pcols)         ! surface geopotential
-    real(r8), intent(in) :: rair (:,:)           ! Gas constant for dry air
-    real(r8), intent(in) :: gravit               ! Acceleration of gravity
-    real(r8), intent(in) :: cpair(:,:)           ! specific heat at constant p for dry air
-    real(r8), intent(in) :: zvir (pcols,pver)    ! rh2o/rair - 1
+    real(r8), intent(in) :: piln (:,:)    ! (pcols,pverp) - Log interface pressures
+    real(r8), intent(in) :: pmln (:,:)    ! (pcols,pver)  - Log midpoint pressures
+    real(r8), intent(in) :: pint (:,:)    ! (pcols,pverp) - Interface pressures
+    real(r8), intent(in) :: pmid (:,:)    ! (pcols,pver)  - Midpoint pressures
+    real(r8), intent(in) :: pdel (:,:)    ! (pcols,pver)  - layer thickness
+    real(r8), intent(in) :: rpdel(:,:)    ! (pcols,pver)  - inverse of layer thickness
+    real(r8), intent(in) :: dse  (:,:)    ! (pcols,pver)  - dry static energy
+    real(r8), intent(in) :: q    (:,:)    ! (pcols,pver)  - specific humidity
+    real(r8), intent(in) :: phis (:)      ! (pcols)       - surface geopotential
+    real(r8), intent(in) :: rair (:,:)    !               - Gas constant for dry air
+    real(r8), intent(in) :: gravit        !               - Acceleration of gravity
+    real(r8), intent(in) :: cpair(:,:)    !               - specific heat at constant p for dry air
+    real(r8), intent(in) :: zvir (:,:)    ! (pcols,pver)  - rh2o/rair - 1
 
 ! Output arguments
 
-    real(r8), intent(out) :: t(pcols,pver)       ! temperature
-    real(r8), intent(out) :: zi(pcols,pverp)     ! Height above surface at interfaces
-    real(r8), intent(out) :: zm(pcols,pver)      ! Geopotential height at mid level
+    real(r8), intent(out) :: t(:,:)       ! (pcols,pver)  - temperature
+    real(r8), intent(out) :: zi(:,:)      ! (pcols,pverp) - Height above surface at interfaces
+    real(r8), intent(out) :: zm(:,:)      ! (pcols,pver)  - Geopotential height at mid level
 !
 !---------------------------Local variables-----------------------------------------
 !
-    logical  :: fvdyn              ! finite volume dynamics
-    integer  :: i,k                ! Lon, level, level indices
-    real(r8) :: hkk(pcols)         ! diagonal element of hydrostatic matrix
-    real(r8) :: hkl(pcols)         ! off-diagonal element
-    real(r8) :: rog(pcols,pver)    ! Rair / gravit
-    real(r8) :: tv                 ! virtual temperature
-    real(r8) :: tvfac              ! Tv/T
+    logical  :: fvdyn                   ! finite volume dynamics
+    integer  :: i,k                     ! Lon, level, level indices
+    real(r8) :: hkk(ncol)               ! diagonal element of hydrostatic matrix
+    real(r8) :: hkl(ncol)               ! off-diagonal element
+    real(r8) :: rog(ncol,pver)          ! Rair / gravit
+    real(r8) :: tv                      ! virtual temperature
+    real(r8) :: tvfac                   ! Tv/T
 !
 !----------------------------------------------------------------------------------
-    rog(:,:) = rair(:,:) / gravit
+    rog(:ncol,:) = rair(:ncol,:) / gravit
 
 ! Set dynamics flag
     fvdyn = dycore_is ('LR')
@@ -131,6 +131,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
+use ppgrid, only : pcols
 
 !------------------------------Arguments--------------------------------
 !
@@ -138,36 +139,36 @@ contains
 !
     integer, intent(in) :: ncol                  ! Number of longitudes
 
-    real(r8), intent(in) :: piln (pcols,pverp)   ! Log interface pressures
-    real(r8), intent(in) :: pmln (pcols,pver)    ! Log midpoint pressures
-    real(r8), intent(in) :: pint (pcols,pverp)   ! Interface pressures
-    real(r8), intent(in) :: pmid (pcols,pver)    ! Midpoint pressures
-    real(r8), intent(in) :: pdel (pcols,pver)    ! layer thickness
-    real(r8), intent(in) :: rpdel(pcols,pver)    ! inverse of layer thickness
-    real(r8), intent(in) :: t    (pcols,pver)    ! temperature
-    real(r8), intent(in) :: q    (pcols,pver)    ! specific humidity
-    real(r8), intent(in) :: rair (pcols,pver)    ! Gas constant for dry air
-    real(r8), intent(in) :: gravit               ! Acceleration of gravity
-    real(r8), intent(in) :: zvir (pcols,pver)    ! rh2o/rair - 1
+    real(r8), intent(in) :: piln (:,:)    ! (pcols,pverp) - Log interface pressures
+    real(r8), intent(in) :: pmln (:,:)    ! (pcols,pver)  - Log midpoint pressures
+    real(r8), intent(in) :: pint (:,:)    ! (pcols,pverp) - Interface pressures
+    real(r8), intent(in) :: pmid (:,:)    ! (pcols,pver)  - Midpoint pressures
+    real(r8), intent(in) :: pdel (:,:)    ! (pcols,pver)  - layer thickness
+    real(r8), intent(in) :: rpdel(:,:)    ! (pcols,pver)  - inverse of layer thickness
+    real(r8), intent(in) :: t    (:,:)    ! (pcols,pver)  - temperature
+    real(r8), intent(in) :: q    (:,:)    ! (pcols,pver)  - specific humidity
+    real(r8), intent(in) :: rair (:,:)    ! (pcols,pver)  - Gas constant for dry air
+    real(r8), intent(in) :: gravit        !               - Acceleration of gravity
+    real(r8), intent(in) :: zvir (:,:)    ! (pcols,pver)  - rh2o/rair - 1
 
 ! Output arguments
 
-    real(r8), intent(out) :: zi(pcols,pverp)     ! Height above surface at interfaces
-    real(r8), intent(out) :: zm(pcols,pver)      ! Geopotential height at mid level
+    real(r8), intent(out) :: zi(:,:)      ! (pcols,pverp) - Height above surface at interfaces
+    real(r8), intent(out) :: zm(:,:)      ! (pcols,pver)  - Geopotential height at mid level
 !
 !---------------------------Local variables-----------------------------
 !
-    logical  :: fvdyn              ! finite volume dynamics
-    integer  :: i,k                ! Lon, level indices
-    real(r8) :: hkk(pcols)         ! diagonal element of hydrostatic matrix
-    real(r8) :: hkl(pcols)         ! off-diagonal element
-    real(r8) :: rog(pcols,pver)    ! Rair / gravit
-    real(r8) :: tv                 ! virtual temperature
-    real(r8) :: tvfac              ! Tv/T
+    logical  :: fvdyn                   ! finite volume dynamics
+    integer  :: i,k                     ! Lon, level indices
+    real(r8) :: hkk(ncol)               ! diagonal element of hydrostatic matrix
+    real(r8) :: hkl(ncol)               ! off-diagonal element
+    real(r8) :: rog(ncol,pver)          ! Rair / gravit
+    real(r8) :: tv                      ! virtual temperature
+    real(r8) :: tvfac                   ! Tv/T
 !
 !-----------------------------------------------------------------------
 !
-    rog(:,:) = rair(:,:) / gravit
+    rog(:ncol,:) = rair(:ncol,:) / gravit
 
 ! Set dynamics flag
 

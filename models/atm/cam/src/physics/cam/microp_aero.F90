@@ -29,8 +29,8 @@ use physics_buffer,   only: physics_buffer_desc, pbuf_get_index, pbuf_old_tim_id
 use phys_control,     only: phys_getopts
 use rad_constituents, only: rad_cnst_get_info, rad_cnst_get_aer_mmr, rad_cnst_get_aer_props, &
                             rad_cnst_get_mode_num, rad_cnst_get_mode_props
-use shr_spfn_mod,     only: erf => shr_spfn_erf_nonintrinsic, &
-                            erfc => shr_spfn_erfc_nonintrinsic
+use shr_spfn_mod,     only: erf => shr_spfn_erf, &
+                            erfc => shr_spfn_erfc
 use wv_saturation,    only: qsat_water
 use nucleate_ice,     only: nucleati
 use ndrop,            only: ndrop_init, dropmixnuc

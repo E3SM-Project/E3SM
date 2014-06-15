@@ -159,6 +159,7 @@ contains
     use ppgrid,       only : pver, pcols
     use phys_grid,    only : get_rlat_all_p
     use abortutils,   only : endrun
+    use mo_constants, only : avo => avogadro, boltz_cgs
 
     implicit none
     !-----------------------------------------------------------------------      
@@ -182,8 +183,6 @@ contains
     !-----------------------------------------------------------------------      
     !       ... local variables
     !-----------------------------------------------------------------------      
-    real(r8), parameter ::  boltz = 1.38044e-16_r8      ! erg/K
-    real(r8), parameter ::  avo   = 6.023e23_r8         ! 1/mol
     real(r8), parameter ::  xrm   = .189_r8             ! mean diameter of rain drop (cm)
     real(r8), parameter ::  xum   = 748._r8             ! mean rain drop terminal velocity (cm/s)
     real(r8), parameter ::  xvv   = 6.18e-2_r8          ! kinetic viscosity (cm^2/s)
@@ -195,7 +194,7 @@ contains
     real(r8), parameter ::  satf_so2   = .016_r8        ! saturation factor for so2 in clouds 
     real(r8), parameter ::  satf_ch2o  = .1_r8          ! saturation factor for ch2o in clouds 
     real(r8), parameter ::  satf_sog  =  .016_r8        ! saturation factor for sog in clouds
-    real(r8), parameter ::  const0   = boltz * 1.e-6_r8 ! (atmospheres/deg k/cm^3)
+    real(r8), parameter ::  const0   = boltz_cgs * 1.e-6_r8 ! (atmospheres/deg k/cm^3)
     real(r8), parameter ::  hno3_diss = 15.4_r8         ! hno3 dissociation constant
     real(r8), parameter ::  geo_fac  = 6._r8            ! geometry factor (surf area/volume = geo_fac/diameter)
     real(r8), parameter ::  mass_air = 29._r8           ! mass of background atmosphere (amu)

@@ -9,8 +9,6 @@
   ! Public interfaces :                                                                 ! 
   !    init_vdiff       initializes time independent coefficients                       !
   !    compute_vdiff    solves diffusion equations                                      !
-  !    vd_lu_solve      tridiagonal solver also used by gwd (should be private)         !
-  !    vd_lu_decomp     tridiagonal solver also used by gwd (should be private)         !
   !    vdiff_selector   type for storing fields selected to be diffused                 !
   !    vdiff_select     selects fields to be diffused                                   !
   !    operator(.not.)  extends .not. to operate on type vdiff_selector                 !
@@ -21,8 +19,6 @@
   ! Modularization      :  J. McCaa, September 2004                                     !
   ! Most Recent Code    :  Sungsu Park, Aug. 2006, Dec. 2008, Jan. 2010.                !
   !------------------------------------------------------------------------------------ !
-
-  use cam_logfile,   only : iulog
 
   implicit none
   private       
@@ -37,8 +33,6 @@
   public init_vdiff                                      ! Initialization
   public new_fieldlist_vdiff                             ! Returns an empty fieldlist
   public compute_vdiff                                   ! Full routine
-  public vd_lu_solve                                     ! Tridiagonal solver also used by gwd ( should be private! )
-  public vd_lu_decomp                                    ! Tridiagonal solver also used by gwd ( should be private! )
   public vdiff_selector                                  ! Type for storing fields selected to be diffused
   public vdiff_select                                    ! Selects fields to be diffused
   public operator(.not.)                                 ! Extends .not. to operate on type vdiff_selector
@@ -67,6 +61,9 @@
   ! Private data !
   ! ------------ !
 
+  ! Unit number for log output
+  integer :: iulog = -1
+
   real(r8), private   :: cpair                           ! Specific heat of dry air
   real(r8), private   :: gravit                          ! Acceleration due to gravity
   real(r8), private   :: rair                            ! Gas constant for dry air
@@ -90,15 +87,18 @@
   !                                                                                 !
   ! =============================================================================== !
 
-  subroutine init_vdiff( kind, rair_in, gravit_in, do_iss_in, errstring )
+  subroutine init_vdiff( kind, iulog_in, rair_in, gravit_in, do_iss_in, &
+                         errstring )
 
     integer,              intent(in)  :: kind            ! Kind used for reals
+    integer,              intent(in)  :: iulog_in        ! Unit number for log output.
     real(r8),             intent(in)  :: rair_in         ! Input gas constant for dry air
     real(r8),             intent(in)  :: gravit_in       ! Input gravitational acceleration
     logical,              intent(in)  :: do_iss_in       ! Input ISS flag
     character(128),       intent(out) :: errstring       ! Output status
     
     errstring = ''
+    iulog = iulog_in
     if( kind .ne. r8 ) then
         write(iulog,*) 'KIND of reals passed to init_vdiff -- exiting.'
         errstring = 'init_vdiff'
@@ -147,9 +147,10 @@
     ! obtained from the turbulence module.                                      !
     !-------------------------------------------------------------------------- !
 
-    use phys_debug_util,    only : phys_debug_col
-    use time_manager,       only : is_first_step, get_nstep
-    use phys_control,       only : waccmx_is
+!    Used for CAM debugging.
+!    use phys_debug_util,    only : phys_debug_col
+!    use time_manager,       only : is_first_step, get_nstep
+    use vdiff_lu_solver,     only : lu_decomp, vd_lu_decomp, vd_lu_solve
   
   ! Modification : Ideally, we should diffuse 'liquid-ice static energy' (sl), not the dry static energy.
   !                Also, vertical diffusion of cloud droplet number concentration and aerosol number
@@ -239,10 +240,8 @@
     logical  :: cnst_fixed_ubc(ncnst)                    ! Whether upper boundary condition is fixed
     logical  :: cnst_fixed_ubflx(ncnst)                  ! Whether upper boundary flux is a fixed non-zero value
 
-    real(r8) :: tmpm(pcols,pver)                         ! Potential temperature, ze term in tri-diag sol'n
-    real(r8) :: ca(pcols,pver)                           ! - Upper diag of tri-diag matrix
-    real(r8) :: cc(pcols,pver)                           ! - Lower diag of tri-diag matrix
-    real(r8) :: dnom(pcols,pver)                         ! 1./(1. + ca(k) + cc(k) - cc(k)*ze(k-1))
+    ! LU decomposition information.
+    type(lu_decomp) :: decomp
 
     real(r8) :: tmp1(pcols)                              ! Temporary storage
     real(r8) :: tmpi1(pcols,pver+1)                      ! Interface KE dissipation
@@ -302,6 +301,7 @@
     !--------------------------------
     ! Variables needed for WACCM-X
     !--------------------------------
+    logical  :: kvt_returned
     real(r8) :: ttemp(pcols,pver)			 ! temporary temperature array
     real(r8) :: ttemp0(pcols,pver)			 ! temporary temperature array
 
@@ -370,13 +370,14 @@
                                      pcols         , pver            , ncnst      , ncol      , t      , pmid   , pint   ,        &
                                      zi            , ztodt           , kvm        , kvt       , tint   , rhoi   , tmpi2  ,        &
                                      kq_scal       , ubc_t           , ubc_mmr    , ubc_flux  , dse_top, cc_top , cd_top ,cnst_mw,&
-                                     cnst_fixed_ubc, cnst_fixed_ubflx, mw_fac_loc , ntop_molec, nbot_molec )
+                                     cnst_fixed_ubc, cnst_fixed_ubflx, mw_fac_loc , ntop_molec, nbot_molec,       kvt_returned )
 
     else
 
         kq_scal(:,:) = 0._r8
         cd_top(:)    = 0._r8
         cc_top(:)    = 0._r8
+        kvt_returned = .false.
 
     endif
 
@@ -494,15 +495,15 @@
        ! Note that in all the two cases above, 'tms' is fully implicitly treated.                !
        ! --------------------------------------------------------------------------------------- !
 
-       call vd_lu_decomp( pcols , pver , ncol  ,                        &
-                          ksrf  , kvm  , tmpi2 , rpdel , ztodt , zero , &
-                          ca    , cc   , dnom  , tmpm  , ntop  , nbot )
+       call vd_lu_decomp( pcols , pver , ncol  ,                         &
+                          ksrf  , kvm  , tmpi2 , rpdel , ztodt , gravit, &
+                          zero  , ntop , nbot  , decomp)
 
-       call vd_lu_solve(  pcols , pver , ncol  ,                        &
-                          u     , ca   , tmpm  , dnom  , ntop  , nbot , zero )
+       call vd_lu_solve(  pcols , pver  , ncol  ,                        &
+                          u     , decomp, ntop  , nbot , zero )
 
-       call vd_lu_solve(  pcols , pver , ncol  ,                        &
-                          v     , ca   , tmpm  , dnom  , ntop  , nbot , zero )
+       call vd_lu_solve(  pcols , pver  , ncol  ,                        &
+                          v     , decomp, ntop  , nbot , zero )
 
        ! ---------------------------------------------------------------------- !
        ! Calculate 'total' ( tautotx ) and 'tms' ( tautmsx ) stresses that      !
@@ -653,17 +654,17 @@
      ! In Extended WACCM, kvt is calculated rather kvh. This is because molecular diffusion operates on 
      ! temperature, while eddy diffusion operates on dse.  Also, pass in constituent dependent "constants"
      !----------------------------------------------------------------------------------------------------
-       if ( waccmx_is('ionosphere') .or. waccmx_is('neutral') ) then 
+       if ( kvt_returned ) then 
          cc_top(:) = 0._r8      
          cd_top(:) = 0._r8
        endif
 
        call vd_lu_decomp( pcols , pver , ncol  ,                         &
-                          zero  , kvh  , tmpi2 , rpdel , ztodt , cc_top, &
-                          ca    , cc   , dnom  , tmpm  , ntop  , nbot    )
+                          zero  , kvh  , tmpi2 , rpdel , ztodt , gravit, &
+                          cc_top, ntop , nbot  , decomp )
 
-       call vd_lu_solve(  pcols , pver , ncol  ,                         &
-                          dse   , ca   , tmpm  , dnom  , ntop  , nbot  , cd_top )
+       call vd_lu_solve(  pcols , pver  , ncol  ,                         &
+                          dse   , decomp, ntop  , nbot  , cd_top )
 
      ! Calculate flux at top interface
      
@@ -677,11 +678,11 @@
        !---------------------------------------------------
        ! Solve for temperature using thermal conductivity 
        !---------------------------------------------------
-       if ( waccmx_is('ionosphere') .or. waccmx_is('neutral') ) then 
+       if ( kvt_returned ) then 
 
-         call vd_lu_decomp( pcols , pver , ncol  ,                           &
-                            zero  , kvt  , tmpi2 , rpdel , ztodt , zero,     &
-                            ca    , cc   , dnom  , tmpm  , ntop  , nbot, cpairv    )
+         call vd_lu_decomp( pcols , pver , ncol  ,                         &
+                            zero  , kvt  , tmpi2 , rpdel , ztodt , gravit, &
+                            zero  , ntop , nbot  , decomp, cpairv )
 
          do k = 1,pver
            ttemp0(:ncol,k) = t(:ncol,k)
@@ -690,7 +691,7 @@
 
          call vd_lu_solve(                                                &
             pcols, pver, ncol     ,                                       &
-            ttemp      ,ca       ,tmpm     ,dnom     ,ntop     ,nbot,zero    )   ! upper boundary is zero flux for extended model
+            ttemp      ,decomp    ,ntop     ,nbot,zero    )   ! upper boundary is zero flux for extended model
     
          !-------------------------------------
          !  Update dry static energy
@@ -746,8 +747,8 @@
            if( need_decomp ) then
 
                call vd_lu_decomp( pcols , pver , ncol  ,                         &
-                                  zero  , kvq  , tmpi2 , rpdel , ztodt , zero  , &
-                                  ca    , cc   , dnom  , tmpm  , ntop  , nbot )
+                                  zero  , kvq  , tmpi2 , rpdel , ztodt , gravit, &
+                                  zero  , ntop , nbot  , decomp)
 
                if( do_molec_diff ) then
 
@@ -758,7 +759,7 @@
 
                      status = vd_lu_qdecomp( pcols , pver   , ncol              , cnst_fixed_ubc(m), cnst_mw(m), ubc_mmr(:,m), &
                                              kvq   , kq_scal, mw_fac_loc(:,:,m) ,tmpi2             , rpdel     ,               &
-                                             ca    , cc     , dnom              , tmpm             , rhoi      ,               &
+                                             decomp, rhoi      ,               &
                                              tint  , ztodt  , ntop_molec        , nbot_molec       , cd_top    ,               &
                                              lchnk , pmid   , pint              , t                , m         )
 
@@ -775,207 +776,16 @@
            end if
 
            call vd_lu_solve(  pcols , pver , ncol  ,                         &
-                              q(1,1,m) , ca, tmpm  , dnom  , ntop  , nbot  , cd_top )
+                              q(1,1,m) , decomp    , ntop  , nbot  , cd_top )
        end if
     end do
 
+    ! Probably unnecessary, but just in case there's an OpenMP problem,
+    ! deallocate the decomp object.
+    call decomp%finalize()
+
     return
   end subroutine compute_vdiff
-
-  ! =============================================================================== !
-  !                                                                                 !
-  ! =============================================================================== !
-
-  subroutine vd_lu_decomp( pcols, pver, ncol ,                        &
-                           ksrf , kv  , tmpi , rpdel, ztodt , cc_top, &
-                           ca   , cc  , dnom , ze   , ntop  , nbot, cpairv )
-    !---------------------------------------------------------------------- !
-    ! Determine superdiagonal (ca(k)) and subdiagonal (cc(k)) coeffs of the ! 
-    ! tridiagonal diffusion matrix.                                         ! 
-    ! The diagonal elements (1+ca(k)+cc(k)) are not required by the solver. !
-    ! Also determine ze factor and denominator for ze and zf (see solver).  !
-    !---------------------------------------------------------------------- !
-
-    ! --------------------- !
-    ! Input-Output Argument !
-    ! --------------------- !
-
-    integer,  intent(in)  :: pcols                 ! Number of allocated atmospheric columns
-    integer,  intent(in)  :: pver                  ! Number of allocated atmospheric levels 
-    integer,  intent(in)  :: ncol                  ! Number of computed atmospheric columns
-    integer,  intent(in)  :: ntop                  ! Top level to operate on
-    integer,  intent(in)  :: nbot                  ! Bottom level to operate on
-    real(r8), intent(in)  :: ksrf(pcols)           ! Surface "drag" coefficient [ kg/s/m2 ]
-    real(r8), intent(in)  :: kv(pcols,pver+1)      ! Vertical diffusion coefficients [ m2/s ]
-    real(r8), intent(in)  :: tmpi(pcols,pver+1)    ! dt*(g/R)**2/dp*pi(k+1)/(.5*(tm(k+1)+tm(k))**2
-    real(r8), intent(in)  :: rpdel(pcols,pver)     ! 1./pdel  (thickness bet interfaces)
-    real(r8), intent(in)  :: ztodt                 ! 2 delta-t [ s ]
-    real(r8), intent(in)  :: cc_top(pcols)         ! Lower diagonal on top interface (for fixed ubc only)
-
-    real(r8), intent(out) :: ca(pcols,pver)        ! Upper diagonal
-    real(r8), intent(out) :: cc(pcols,pver)        ! Lower diagonal
-    real(r8), intent(out) :: dnom(pcols,pver)      ! 1./(1. + ca(k) + cc(k) - cc(k)*ze(k-1))
-    real(r8), intent(out) :: ze(pcols,pver)        ! Term in tri-diag. matrix system
-
-    real(r8), intent(in), optional  :: cpairv(pcols,pver) ! "Variable" specific heat at constant pressure
-
-    ! --------------- !
-    ! Local Variables !
-    ! --------------- !
-
-    integer :: i                                   ! Longitude index
-    integer :: k                                   ! Vertical  index
-
-    ! ----------------------- !
-    ! Main Computation Begins !
-    ! ----------------------- !
-
-    ! Determine superdiagonal (ca(k)) and subdiagonal (cc(k)) coeffs of the 
-    ! tridiagonal diffusion matrix. The diagonal elements  (cb=1+ca+cc) are
-    ! a combination of ca and cc; they are not required by the solver.
-
-    !
-    !  If switch present and set true, then input kv is kvt for use in diagonal calculations
-    !
-
-    if ( present(cpairv) ) then
-      do k = nbot-1, ntop, -1
-        do i = 1, ncol
-           ca(i,k  ) = kv(i,k+1)*tmpi(i,k+1)*rpdel(i,k  ) / cpairv(i,k)
-           cc(i,k+1) = kv(i,k+1)*tmpi(i,k+1)*rpdel(i,k+1) / cpairv(i,k+1)
-        end do
-      end do
-    else
-      do k = nbot - 1, ntop, -1
-        do i = 1, ncol
-          ca(i,k  ) = kv(i,k+1) * tmpi(i,k+1) * rpdel(i,k  )
-          cc(i,k+1) = kv(i,k+1) * tmpi(i,k+1) * rpdel(i,k+1)
-        end do
-      end do
-    endif
-
-    ! The bottom element of the upper diagonal (ca) is zero (element not used).
-    ! The subdiagonal (cc) is not needed in the solver.
-
-    do i = 1, ncol
-       ca(i,nbot) = 0._r8
-    end do
-
-    ! Calculate e(k).  This term is 
-    ! required in solution of tridiagonal matrix defined by implicit diffusion eqn.
-
-    do i = 1, ncol
-       dnom(i,nbot) = 1._r8/(1._r8 + cc(i,nbot) + ksrf(i)*ztodt*gravit*rpdel(i,nbot))
-       ze(i,nbot)   = cc(i,nbot)*dnom(i,nbot)
-    end do
-
-    do k = nbot - 1, ntop + 1, -1
-       do i = 1, ncol
-          dnom(i,k) = 1._r8/(1._r8 + ca(i,k) + cc(i,k) - ca(i,k)*ze(i,k+1))
-          ze(i,k)   = cc(i,k)*dnom(i,k)
-       end do
-    end do
-
-    do i = 1, ncol
-       dnom(i,ntop) = 1._r8/(1._r8 + ca(i,ntop) + cc_top(i) - ca(i,ntop)*ze(i,ntop+1))
-    end do
-
-    return
-  end subroutine vd_lu_decomp
-
-  ! =============================================================================== !
-  !                                                                                 !
-  ! =============================================================================== !
-
-  subroutine vd_lu_solve( pcols , pver , ncol , &
-                          q     , ca   , ze   , dnom , ntop , nbot , cd_top )
-    !----------------------------------------------------------------------------------- !
-    ! Solve the implicit vertical diffusion equation with zero flux boundary conditions. !
-    ! Procedure for solution of the implicit equation follows Richtmyer and              !
-    ! Morton (1967,pp 198-200).                                                          !
-    !                                                                                    !
-    ! The equation solved is                                                             !
-    !                                                                                    !  
-    !     -ca(k)*q(k+1) + cb(k)*q(k) - cc(k)*q(k-1) = d(k),                              !
-    !                                                                                    !
-    ! where d(k) is the input profile and q(k) is the output profile                     !
-    !                                                                                    ! 
-    ! The solution has the form                                                          !
-    !                                                                                    !
-    !     q(k) = ze(k)*q(k-1) + zf(k)                                                    !
-    !                                                                                    !
-    !     ze(k) = cc(k) * dnom(k)                                                        !
-    !                                                                                    !  
-    !     zf(k) = [d(k) + ca(k)*zf(k+1)] * dnom(k)                                       !
-    !                                                                                    !
-    !     dnom(k) = 1/[cb(k) - ca(k)*ze(k+1)] =  1/[1 + ca(k) + cc(k) - ca(k)*ze(k+1)]   !
-    !                                                                                    !
-    ! Note that the same routine is used for temperature, momentum and tracers,          !
-    ! and that input variables are replaced.                                             !
-    ! ---------------------------------------------------------------------------------- ! 
-
-    ! --------------------- !
-    ! Input-Output Argument !
-    ! --------------------- !
-
-    integer,  intent(in)    :: pcols                  ! Number of allocated atmospheric columns
-    integer,  intent(in)    :: pver                   ! Number of allocated atmospheric levels 
-    integer,  intent(in)    :: ncol                   ! Number of computed atmospheric columns
-    integer,  intent(in)    :: ntop                   ! Top level to operate on
-    integer,  intent(in)    :: nbot                   ! Bottom level to operate on
-    real(r8), intent(in)    :: ca(pcols,pver)         ! -Upper diag coeff.of tri-diag matrix
-    real(r8), intent(in)    :: ze(pcols,pver)         ! Term in tri-diag solution
-    real(r8), intent(in)    :: dnom(pcols,pver)       ! 1./(1. + ca(k) + cc(k) - ca(k)*ze(k+1))
-    real(r8), intent(in)    :: cd_top(pcols)          ! cc_top * ubc value
-
-    real(r8), intent(inout) :: q(pcols,pver)          ! Constituent field
-
-    ! --------------- !
-    ! Local Variables ! 
-    ! --------------- !
-
-    real(r8)                :: zf(pcols,pver)         ! Term in tri-diag solution
-    integer                    i, k                   ! Longitude, vertical indices
-
-    ! ----------------------- !
-    ! Main Computation Begins !
-    ! ----------------------- !
-
-    ! Calculate zf(k). Terms zf(k) and ze(k) are required in solution of 
-    ! tridiagonal matrix defined by implicit diffusion equation.
-    ! Note that only levels ntop through nbot need be solved for.
-
-    do i = 1, ncol
-       zf(i,nbot) = q(i,nbot)*dnom(i,nbot)
-    end do
-
-    do k = nbot - 1, ntop + 1, -1
-       do i = 1, ncol
-          zf(i,k) = (q(i,k) + ca(i,k)*zf(i,k+1))*dnom(i,k)
-       end do
-    end do
-
-    ! Include boundary condition on top element
-
-    k = ntop
-    do i = 1, ncol
-       zf(i,k) = (q(i,k) + cd_top(i) + ca(i,k)*zf(i,k+1))*dnom(i,k)
-    end do
-
-    ! Perform back substitution
-
-    do i = 1, ncol
-       q(i,ntop) = zf(i,ntop)
-    end do
-
-    do k = ntop + 1, nbot, +1
-       do i = 1, ncol
-          q(i,k) = zf(i,k) + ze(i,k)*q(i,k-1)
-       end do
-    end do
-
-    return
-  end subroutine vd_lu_solve
 
   ! =============================================================================== !
   !                                                                                 !

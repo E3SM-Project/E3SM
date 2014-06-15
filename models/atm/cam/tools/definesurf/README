@@ -1,0 +1,156 @@
+Running gnumake in this directory will create an executable named
+"definesurf".  Its function is to compute required CAM initial dataset
+variables SGH, PHIS, and LANDFRAC from a high-resolution topography dataset,
+and LANDM_COSLAT from a T42 "master", then add or replace the values on an
+existing initial dataset.  SGH is the standard deviation of PHIS used in the
+gravity wave drag scheme.  PHIS is the geopotential height.  LANDFRAC is land
+fraction.  LANDM_COSLAT is a field derived from LANDFRAC which is required by
+the prognostic cloud water parameterization.  There is a cosine(latitude)
+dependence built in to the function.
+
+The cam standard high resolution dataset is now based on the USGS
+GTOPO30 digital elevation model at 30" resolution. It is converted to
+10' resolution by definehires.
+
+The older high resolution topography dataset (10') used by definesurf
+is named topo.nc and is included as part of the CAM distribution in
+the datasets tar file. topo.nc was derived from the U.S. Navy Global
+Elevation 10-MIN dataset DS754.0 Please refer to the following NCAR
+website for more information:
+
+http://www.scd.ucar.edu/dss/catalogs/geo.html
+
+The algorithms within this code should be considered experimental.
+For example, a 1-2-1 smoothing operator (sm121, called from subroutine
+sghphis) is applied twice in succession to the topography variance
+field regardless of horizontal resolution. Also, a spectral filter
+will be applied to the PHIS field within the CAM at model startup
+(except for the fv dycore) if PHIS was defined from the high
+resolution topography dataset.  The model determines this by checking
+for the presence of netcdf attribute "from_hires" on variable PHIS.
+
+-------------------------------------
+Feb 01, 2005
+-------------------------------------
+-------------------------------------
+*********** definesurf **************
+-------------------------------------
+
+A 10' data file is read in and averaged to the model grid by
+definesurf. The present form of definesurf also takes a model initial
+condition file as input and gets model grid description from it. The
+terrain data mapped to the model grid is output on a new file.
+
+Command line flags are used for
+  -t name  - (required) name of 10' data file 
+  -g name  - (required) name of cam initial condition file containing grid description
+  -l name  - (required) name of land mask file on ?? grid
+  -r       - (optional) do not extend Ross sea (default is extend)
+  -v       - (optional) verbose (default is false)
+  -del2    - (optional) filter the elevations with a del2 filter (use for fv only)
+  -remap   - (optional) filter the elevations with a remapping filter (use for fv only)
+  -sgh     - (optional) filter the standard deviations with same filter as height
+  name     - (required) name of i.c. file with existing terrain data, 
+                        must be final argument
+
+definesurf -t topo_gtopo30_10min.nc -g cami_*.nc -l landm_coslat.nc -remap oro_GTOPO30.nc
+generates the file oro_GTOPO30.nc using the remapping filter.
+
+definesurf calls shgphis, which recognizes 2 input 10' data file formats
+  Old style, no 30" variance data on 10' grid, variance = -1
+             land fraction called "ftopo"
+  New style, 30" variance data is present
+             land fraction called "landfract"
+
+  Land fraction and 30" variance (if present) are averaged to the
+  model grid.
+
+  if plon >= 128 then
+    Height is averaged to the model grid and the variance w.r.t to the
+    10' data is computed. 
+  if plon <  128 then
+    Height is averaged to a 3 degree grid and the variance w.r.t to the
+    10' data is computed. The avg height and the variance of
+    the 3 degree data are then averaged to the model grid.
+
+  1-2-1 smoothers are applied twice to the model grid averaged values
+  of the two variance fields: 10' w.r.t. model grid; 30" w.r.t. 10'
+  (if 30" variance is present).
+
+  The averaged and smoothed variances are converted to standard
+  deviations.
+
+  The averaged height is converted to a geopotential (z*9.80616)
+
+Attributes are added to input file to describe what definesurf is doing.
+
+Land mask for clouds is interpolated to model grid.
+
+Extend land to -79 degrees for Ross ice shelf, unless -r flag was
+set. 
+
+Run terrain filter, if requested (-remap or -del2). Should only be
+done for fv grids. For spectral grid, filtering is done in the model
+based on the value of the attribute "from_hires".
+  Diffusive filter or remapping is appled to 
+    surface geopotential
+    standard deviation of 10' data w.r.t. model grid
+    standard deviation of 30" data w.r.t. 10' grid (if present)
+
+**** It is not clear that the filter should be applied to the
+**** standard deviations.
+
+  The remapping filter removes structure near grid scale by using the
+  ppm mapping code to go to a half resolution grid and back to the
+  full resolution grid. Order (accuracy) parameters iord=7 and jord=3
+  are used. A polar filter is also applied.
+
+-------------------------------------------------------
+******* diffusive (-del2) terrain filter notes ********
+-------------------------------------------------------
+
+The del2 filter is a bit of a pain to figure out from the code (as is the
+spectral one applied in the model for eul and sld dycores). It looks like
+
+(1) h(n+1) = h(n) + c*del2(h(n)),  c=0.25
+
+del2(h) = div(grad(h))
+
+however, buried inside the del2 routine is a scaling by
+CD = 0.25*DL*DP*coszc**2,
+
+coszc = cos(60*pi/180)     [= 0.5]
+DL = 2*pi/NLON  is delta lambda
+DP = pi / (NLAT-1) is delta phi
+so 
+CD = 0.0625 * 2*pi/NLON * pi/(NLAT-1) = 0.4 / NLON / (NLAT-1)
+
+So the scaling factor reduces as the square of the resolution, just like
+a del2 coefficient should, in order to maintain a constant damping rate
+at the truncation limit.
+CD = 3E-5, for 2x2.5
+
+However, the number of iterations is NLON/12, so there is an additional
+scaling upward of diffusion with resolution.
+
+going back to (1) 
+h(n+1) = h(n) + c*CD*del2(h(n)) 
+c*CD = 7.57E-6  for 2x2.5
+c*CD is just dt*k for a normal diffusion equation, where dt is the time
+step and k is the diffusivity on the unit sphere. For a sphere with
+radius a (=6.37E6), the diffusivity is K=k*a**2 .
+Then dt*K = c*CD*a**2 = 3E8 and assuming dt=3600, K = 8.5E4
+
+The del4 diffusivity in the spectral case is 5E15 at T63. The equivalent
+del2 coefficient is K = 5E15 * 63*64/a**2 = 5E5 to damp wave 63 at the
+same rate. 
+
+So, we have K_fv ~ 8.5E4 and K_eul ~ 5E5. So the fv damping should
+actually be less than the spectral/eulerian damping. 
+
+Also, the damping is applied 25 times in the spectral case and NLON/12
+times for fv. NLON/12 =12 for 2x2.5, =24 for 1x1.25 and =48 for
+0.5x0.625. 
+
+The big difference is that the spectral/eulerian actually uses del4,
+which confines the damping much closer to grid scale.

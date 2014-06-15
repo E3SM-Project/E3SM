@@ -50,13 +50,21 @@
 
 #define gptlinitialize              FCI_GLOBAL(gptlinitialize,GPTLINITIALIZE)
 #define gptlfinalize                FCI_GLOBAL(gptlfinalize,GPTLFINALIZE)
+#define gptlpr_set_append           FCI_GLOBAL(gptlpr_set_append,GPTLPR_SET_APPEND)
+#define gptlpr_query_append         FCI_GLOBAL(gptlpr_query_append,GPTLPR_QUERY_APPEND)
+#define gptlpr_set_write            FCI_GLOBAL(gptlpr_set_write,GPTLPR_SET_WRITE)
+#define gptlpr_query_write          FCI_GLOBAL(gptlpr_query_write,GPTLPR_QUERY_WRITE)
 #define gptlpr                      FCI_GLOBAL(gptlpr,GPTLPR)
 #define gptlpr_file                 FCI_GLOBAL(gptlpr_file,GPTLPR_FILE)
 #define gptlpr_summary              FCI_GLOBAL(gptlpr_summary,GPTLPR_SUMMARY)
+#define gptlpr_summary_file         FCI_GLOBAL(gptlpr_summary_file,GPTLPR_SUMMARY_FILE)
+#define gptlbarrier                 FCI_GLOBAL(gptlbarrier,GPTLBARRIER)
 #define gptlreset                   FCI_GLOBAL(gptlreset,GPTLRESET)
 #define gptlstamp                   FCI_GLOBAL(gptlstamp,GPTLSTAMP)
 #define gptlstart                   FCI_GLOBAL(gptlstart,GPTLSTART)
+#define gptlstart_handle            FCI_GLOBAL(gptlstart_handle,GPTLSTART_HANDLE)
 #define gptlstop                    FCI_GLOBAL(gptlstop,GPTLSTOP)
+#define gptlstop_handle             FCI_GLOBAL(gptlstop_handle,GPTLSTOP_HANDLE)
 #define gptlsetoption               FCI_GLOBAL(gptlsetoption,GPTLSETOPTION)
 #define gptlenable                  FCI_GLOBAL(gptlenable,GPTLENABLE)
 #define gptldisable                 FCI_GLOBAL(gptldisable,GPTLDISABLE)
@@ -319,54 +327,58 @@ int gptlstamp (double *wall, double *usr, double *sys)
 
 int gptlstart (char *name, int nc1)
 {
-  char cname[MAX_CHARS+1];
-  int numchars;
+  /*  char cname[MAX_CHARS+1]; */
+  /*  int numchars; */
 
-  numchars = MIN (nc1, MAX_CHARS);
-  strncpy (cname, name, numchars);
-  cname[numchars] = '\0';
-  return GPTLstart (cname);
+  /*  numchars = MIN (nc1, MAX_CHARS);*/
+  /*  strncpy (cname, name, numchars);*/
+  /*  cname[numchars] = '\0';*/
+  /*  return GPTLstart (cname);*/
+  return GPTLstartf (name, nc1);
 }
 
 int gptlstart_handle (char *name, void **handle, int nc1)
 {
-  char cname[MAX_CHARS+1];
-  int numchars;
+  /*  char cname[MAX_CHARS+1];*/
+  /*  int numchars;*/
 
-  if (*handle) {
-    cname[0] = '\0';
-  } else {
-    numchars = MIN (nc1, MAX_CHARS);
-    strncpy (cname, name, numchars);
-    cname[numchars] = '\0';
-  }
-  return GPTLstart_handle (cname, handle);
+  /*  if (*handle) {*/
+  /*    cname[0] = '\0';*/
+  /*  } else {*/
+  /*    numchars = MIN (nc1, MAX_CHARS);*/
+  /*    strncpy (cname, name, numchars);*/
+  /*    cname[numchars] = '\0';*/
+  /*  }*/
+  /*  return GPTLstart_handle (cname, handle);*/
+  return GPTLstartf_handle (name, nc1, handle);
 }
 
 int gptlstop (char *name, int nc1)
 {
-  char cname[MAX_CHARS+1];
-  int numchars;
+  /*  char cname[MAX_CHARS+1];*/
+  /*  int numchars;*/
 
-  numchars = MIN (nc1, MAX_CHARS);
-  strncpy (cname, name, numchars);
-  cname[numchars] = '\0';
-  return GPTLstop (cname);
+  /*  numchars = MIN (nc1, MAX_CHARS);*/
+  /*  strncpy (cname, name, numchars);*/
+  /*  cname[numchars] = '\0';*/
+  /*  return GPTLstop (cname);*/
+  return GPTLstopf (name, nc1);
 }
 
 int gptlstop_handle (char *name, void **handle, int nc1)
 {
-  char cname[MAX_CHARS+1];
-  int numchars;
+  /*  char cname[MAX_CHARS+1];*/
+  /*  int numchars;*/
 
-  if (*handle) {
-    cname[0] = '\0';
-  } else {
-    numchars = MIN (nc1, MAX_CHARS);
-    strncpy (cname, name, numchars);
-    cname[numchars] = '\0';
-  }
-  return GPTLstop_handle (cname, handle);
+  /*  if (*handle) {*/
+  /*    cname[0] = '\0';*/
+  /*  } else {*/
+  /*    numchars = MIN (nc1, MAX_CHARS);*/
+  /*    strncpy (cname, name, numchars);*/
+  /*    cname[numchars] = '\0';*/
+  /*  }*/
+  /*  return GPTLstop_handle (cname, handle);*/
+  return GPTLstopf_handle (name, nc1, handle);
 }
 
 int gptlsetoption (int *option, int *val)

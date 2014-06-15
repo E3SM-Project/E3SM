@@ -78,7 +78,7 @@
    use mo_constants,  only:  pi
    use physconst, only: gravit, mwdry
    use units, only: getunit
-   use shr_spfn_mod, only: erfc => shr_spfn_erfc_nonintrinsic
+   use shr_spfn_mod, only: erfc => shr_spfn_erfc
 
    implicit none
 

@@ -245,16 +245,16 @@ contains
        write(iulog,* )"Running Global Integral Diagnostic..."
        write(iulog,*)"Area of unit sphere is",I_sphere
        write(iulog,*)"Should be 1.0 to round off..."
-       write(iulog,'(a,f7.3)') 'Element area:  max/min',(max_area/min_area)
+       write(iulog,'(a,f9.3)') 'Element area:  max/min',(max_area/min_area)
        if (.not.MeshUseMeshFile) then 
            write(iulog,'(a,f6.3,f8.2)') "Average equatorial node spacing (deg, km) = ", &
                 dble(90)/dble(ne*(np-1)), DD_PI*rearth/(2000.0d0*dble(ne*(np-1)))
        end if
-       write(iulog,'(a,2f8.4)') 'Min eigenvalue of Dinv (min, max): ', min_min_eig, max_min_eig
-       write(iulog,'(a,2f8.4)') 'Max eigenvalue of Dinv (min, max): ', min_max_eig, max_max_eig
-       write(iulog,'(a,1f8.2)') 'Max eigenvalue ratio (element distortion): ', max_ratio
-       write(iulog,'(a,3f8.2)') 'dx for CFL (smallest scale per elem): ave,min,max = ', avg_min_dx, min_min_dx, max_min_dx
-       write(iulog,'(a,3f8.2)') 'dx for hypervis (largest scale per elem): ave,min,max = ', avg_max_dx, min_max_dx, max_max_dx
+       write(iulog,'(a,2f9.3)') 'Min eigenvalue of Dinv (min, max): ', min_min_eig, max_min_eig
+       write(iulog,'(a,2f9.3)') 'Max eigenvalue of Dinv (min, max): ', min_max_eig, max_max_eig
+       write(iulog,'(a,1e11.3)') 'Max eigenvalue ratio (element distortion): ', max_ratio
+       write(iulog,'(a,3f8.2)') 'dx for CFL (based on Dinv eigenvalue): ave,min,max = ', avg_min_dx, min_min_dx, max_min_dx
+!       write(iulog,'(a,3f8.2)') 'dx for hypervis (largest scale per elem): ave,min,max = ', avg_max_dx, min_max_dx, max_max_dx
        write(iulog,'(a,3f8.2)') "dx based on sqrt element area: ave,min,max = ", &
                 sqrt(avg_area)/(np-1),sqrt(min_area)/(np-1),sqrt(max_area)/(np-1)
     end if
@@ -296,7 +296,7 @@ contains
 
     use reduction_mod, only : ParallelMin,ParallelMax
     use physical_constants, only : rrearth, rearth,dd_pi
-    use control_mod, only : nu, nu_div, hypervis_order, nu_top, hypervis_power, &
+    use control_mod, only : nu, nu_q, nu_div, hypervis_order, nu_top, hypervis_power, &
                             fine_ne, rk_stage_user, max_hypervis_courant, hypervis_scaling
     use parallel_mod, only : abortmp, global_shared_buf, global_shared_sum
     use edge_mod, only : EdgeBuffer_t, initedgebuffer, FreeEdgeBuffer, edgeVpack, edgeVunpack
@@ -318,7 +318,7 @@ contains
     real (kind=real_kind) :: max_eig_hypervis
     real (kind=real_kind) :: x, y, noreast, nw, se, sw
     real (kind=real_kind), dimension(np,np,nets:nete) :: zeta
-    real (kind=real_kind) :: lambda_max, lambda_vis, min_gw
+    real (kind=real_kind) :: lambda_max, lambda_vis, min_gw, lambda, nu_div_actual
     integer :: ie,corner, i, j, rowind, colind
     type (quadrature_t)    :: gp
 
@@ -535,9 +535,17 @@ contains
                 end do
             end do
         end do
+    else  if (hypervis_scaling/=0) then
+       ! tensorHV.  New eigenvalues are the eigenvalues of the tensor V
+       ! formulas here must match what is in cube_mod.F90
+       ! for tensorHV, we scale out the rearth dependency
+       lambda = max_max_eig**2
+       max_eig_hypervis = (lambda_vis**2) * (max_max_eig**4) * &
+            (lambda**(-hypervis_scaling/2) )
     else
-        max_eig_hypervis = (lambda_vis)**2 * (rrearth*max_max_eig)**4
-    end if
+       ! constant coefficient formula:
+       max_eig_hypervis = (lambda_vis**2) * (rrearth*max_max_eig)**4
+    endif
 
 
    if (hypervis_scaling /= 0) then
@@ -616,9 +624,16 @@ contains
           if (hypervis_order==2) then
              ! counrant number = dtnu*max_eig_hypervis  < S
              !  dt < S  1/nu*max_eig
-             write(iulog,'(a,f10.2,a)') "Stability: nu_q   hyperviscosity dt < S *", 1/(nu*max_eig_hypervis),'s'
+             write(iulog,'(a,f10.2,a)') "Stability: nu_q   hyperviscosity dt < S *", 1/(nu_q*max_eig_hypervis),'s'
              write(iulog,'(a,f10.2,a)') "Stability: nu_vor hyperviscosity dt < S *", 1/(nu*max_eig_hypervis),'s'
-             write(iulog,'(a,f10.2,a)') "Stability: nu_div hyperviscosity dt < S *", 1/(nu_div*max_eig_hypervis),'s'
+             
+             ! bug in nu_div implimentation:
+             ! we apply nu_ration=(nu_div/nu) in laplace, so it is applied 2x
+             ! making the effective nu_div = nu * (nu_div/nu)**2 
+             ! should be fixed - but need all CAM defaults adjusted, 
+             ! so we have to coordiante with CAM
+             nu_div_actual = nu_div**2/nu
+             write(iulog,'(a,f10.2,a)') "Stability: nu_div hyperviscosity dt < S *", 1/(nu_div_actual*max_eig_hypervis),'s'
           endif
        endif
        if(nu_top>0) then

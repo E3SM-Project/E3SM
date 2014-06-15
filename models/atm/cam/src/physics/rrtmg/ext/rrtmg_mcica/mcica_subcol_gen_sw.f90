@@ -37,7 +37,6 @@
       use rrsw_vsn
 
       implicit none
-      private
 
 ! public interfaces/functions/subroutines
       public :: mcica_subcol_sw, generate_stochastic_clouds_sw
@@ -554,10 +553,6 @@
       end subroutine generate_stochastic_clouds_sw
 
 
-!------------------------------------------------------------------
-! Private subroutines
-!------------------------------------------------------------------
-
 !-------------------------------------------------------------------------------------------------- 
       subroutine kissvec(seed1,seed2,seed3,seed4,ran_arr)
 !-------------------------------------------------------------------------------------------------- 
@@ -567,42 +562,30 @@
 ! downloaded by pjr on 03/16/04 for NCAR CAM
 ! converted to vector form, functions inlined by pjr,mvr on 05/10/2004
 
-! safeguard against integer overflow, statement function changed to
-! internal function by santos, Nov. 2012
-
 ! The  KISS (Keep It Simple Stupid) random number generator. Combines:
 ! (1) The congruential generator x(n)=69069*x(n-1)+1327217885, period 2^32.
 ! (2) A 3-shift shift-register generator, period 2^32-1,
 ! (3) Two 16-bit multiply-with-carry generators, period 597273182964842497>2^59
 !  Overall period>2^123; 
 !
-      use shr_kind_mod, only: i8 => shr_kind_i8
-
       real(kind=r8), dimension(:), intent(inout)  :: ran_arr
       integer, dimension(:), intent(inout) :: seed1,seed2,seed3,seed4
-      integer(i8) :: kiss
-      integer :: i
+      integer :: i,sz,kiss
+      integer :: m, k, n
 
-      do i = 1, size(ran_arr)
-         kiss = 69069_i8 * seed1(i) + 1327217885
-         seed1(i) = transfer(kiss,1)
+! inline function 
+      m(k, n) = ieor (k, ishft (k, n) )
+
+      sz = size(ran_arr)
+      do i = 1, sz
+         seed1(i) = 69069 * seed1(i) + 1327217885
          seed2(i) = m (m (m (seed2(i), 13), - 17), 5)
          seed3(i) = 18000 * iand (seed3(i), 65535) + ishft (seed3(i), - 16)
          seed4(i) = 30903 * iand (seed4(i), 65535) + ishft (seed4(i), - 16)
-         kiss = int(seed1(i), i8) + seed2(i) + ishft (seed3(i), 16) + seed4(i)
-         ran_arr(i) = transfer(kiss,1)*2.328306e-10_r8 + 0.5_r8
+         kiss = seed1(i) + seed2(i) + ishft (seed3(i), 16) + seed4(i)
+         ran_arr(i) = kiss*2.328306e-10_r8 + 0.5_r8
       end do
     
-      contains
-
-        pure integer function m(k, n)
-          integer, intent(in) :: k
-          integer, intent(in) :: n
-
-          m = ieor (k, ishft (k, n) )
-
-        end function m
-
       end subroutine kissvec
 
       end module mcica_subcol_gen_sw

@@ -34,7 +34,6 @@ module physpkg
   use perf_mod
   use cam_logfile,     only: iulog
   use camsrfexch,      only: cam_export
-  use phys_control,    only: do_waccm_phys
 
   implicit none
   private
@@ -114,8 +113,6 @@ subroutine phys_register
     use radiation,          only: radiation_register
     use co2_cycle,          only: co2_register
     use flux_avg,           only: flux_avg_register
-    use exbdrift,           only: exbdrift_register
-    use gw_drag,            only: gw_drag_register
     use iondrag,            only: iondrag_register
     use ionosphere,         only: ionos_register
     use string_utils,       only: to_lower
@@ -221,25 +218,18 @@ subroutine phys_register
        ! register various data model gasses with pbuf
        call ghg_data_register()
 
-       ! Initialize e and b fields
-       if (do_waccm_phys()) call exbdrift_register()
-
-       ! waccm gravity wave drag
-       call gw_drag_register()
-
        ! carma microphysics
        ! 
        ! NOTE: Needs to come before aerosol_register_cnst, so that the CARMA
        ! flags are defined by then.
        call carma_register()
 
-       if ( waccmx_is('ionosphere') .or. waccmx_is('neutral') ) then
-          ! Register iondrag variables with pbuf
-          call iondrag_register()
-          ! Register ionosphere variables with pbuf if mode set to ionosphere
-          if( waccmx_is('ionosphere') ) then
-             call ionos_register()
-          endif
+       ! Register iondrag variables with pbuf
+       call iondrag_register()
+
+       ! Register ionosphere variables with pbuf if mode set to ionosphere
+       if( waccmx_is('ionosphere') ) then
+          call ionos_register()
        endif
 
        ! aerosols
@@ -604,8 +594,8 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     !-----------------------------------------------------------------------
 
     use physics_buffer,     only: physics_buffer_desc, pbuf_initialize, pbuf_get_index
-    use physconst,          only: rair, cpair, cpwv, gravit, stebol, tmelt, &
-                                  latvap, latice, rh2o, rhoh2o, pstd, zvir,         &
+    use physconst,          only: rair, cpair, gravit, stebol, tmelt, &
+                                  latvap, latice, rh2o, rhoh2o, pstd, zvir, &
                                   karman, rhodair, physconst_init 
     use ref_pres,           only: pref_edge, pref_mid
 
@@ -626,7 +616,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     use convect_deep,       only: convect_deep_init
     use convect_shallow,    only: convect_shallow_init
     use cam_diagnostics,    only: diag_init
-    use gw_drag,            only: gw_inti
+    use gw_drag,            only: gw_init
     use cam3_aero_data,     only: cam3_aero_data_on, cam3_aero_data_init
     use cam3_ozone_data,    only: cam3_ozone_data_on, cam3_ozone_data_init
     use radheat,            only: radheat_init
@@ -648,10 +638,8 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     use phys_debug_util,    only: phys_debug_init
     use rad_constituents,   only: rad_cnst_init
     use aer_rad_props,      only: aer_rad_props_init
-#if ( defined WACCM_PHYS )
     use qbo,                only: qbo_init
     use iondrag,            only: iondrag_init
-#endif
 #if ( defined OFFLINE_DYN )
     use metdata,            only: metdata_phys_init
 #endif
@@ -760,7 +748,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     ! CAM3 prescribed ozone
     if (cam3_ozone_data_on) call cam3_ozone_data_init(phys_state)
 
-    call gw_inti(cpair, cpwv, gravit, rair, pref_edge)
+    call gw_init()
 
     call rayleigh_friction_init()
 
@@ -803,10 +791,9 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     ! initiate CLUBB within CAM
     if (do_clubb_sgs) call clubb_ini_cam(pbuf2d)
 
-#if ( defined WACCM_PHYS )
-    call iondrag_init(pref_mid)
     call qbo_init
-#endif
+
+    call iondrag_init(pref_mid)
 
 #if ( defined OFFLINE_DYN )
     call metdata_phys_init()
@@ -1023,7 +1010,7 @@ subroutine phys_run1_adiabatic_or_ideal(ztodt, phys_state, phys_tend,  pbuf2d)
        ! Dump dynamics variables to history buffers
        call diag_phys_writeout(phys_state(c))
 
-       if (dycore_is('LR')) then
+       if (dycore_is('LR') .or. dycore_is('SE') ) then
           call check_energy_fix(phys_state(c), ptend, nstep, flx_heat)
           call physics_update(phys_state(c), ptend, ztodt, phys_tend(c))
           call check_energy_chng(phys_state(c), phys_tend(c), "chkengyfix", nstep, ztodt, &
@@ -1212,7 +1199,7 @@ subroutine tphysac (ztodt,   cam_in,  &
     use shr_kind_mod,       only: r8 => shr_kind_r8
     use chemistry,          only: chem_is_active, chem_timestep_tend
     use cam_diagnostics,    only: diag_phys_tend_writeout
-    use gw_drag,            only: gw_intr
+    use gw_drag,            only: gw_tend
     use vertical_diffusion, only: vertical_diffusion_tend
     use rayleigh_friction,  only: rayleigh_friction_tend
     use constituents,       only: cnst_get_ind
@@ -1236,10 +1223,8 @@ subroutine tphysac (ztodt,   cam_in,  &
     use mo_gas_phase_chemdr,only: map2chm
     use clybry_fam,         only: clybry_fam_set
     use charge_neutrality,  only: charge_fix
-#if ( defined WACCM_PHYS )
-    use iondrag,            only: iondrag_calc, do_waccm_ions
     use qbo,                only: qbo_relax
-#endif
+    use iondrag,            only: iondrag_calc, do_waccm_ions
     use clubb_intr,         only: clubb_surface
     use perf_mod
     use phys_control,       only: phys_do_flux_avg, waccmx_is
@@ -1484,27 +1469,26 @@ subroutine tphysac (ztodt,   cam_in,  &
     !---------------------------------------------------------------------------------
     !	... enforce charge neutrality
     !---------------------------------------------------------------------------------
-    if (do_waccm_phys()) call charge_fix( ncol, state%q(:,:,:) )
+    call charge_fix( ncol, state%q(:,:,:) )
 
     !===================================================
     ! Gravity wave drag
     !===================================================
-    call t_startf('gw_intr')
+    call t_startf('gw_tend')
 
-    call gw_intr(state, sgh, pbuf, ztodt, ptend, cam_in%landfrac)
+    call gw_tend(state, sgh, pbuf, ztodt, ptend, cam_in)
 
     call physics_update(state, ptend, ztodt, tend)
     ! Check energy integrals
     call check_energy_chng(state, tend, "gwdrag", nstep, ztodt, zero, zero, zero, zero)
-    call t_stopf('gw_intr')
-
-#if ( defined WACCM_PHYS )
+    call t_stopf('gw_tend')
 
     ! QBO relaxation
-    call qbo_relax(state, ptend)
+    call qbo_relax(state, pbuf, ptend)
     call physics_update(state, ptend, ztodt, tend)
     ! Check energy integrals
     call check_energy_chng(state, tend, "qborelax", nstep, ztodt, zero, zero, zero, zero)
+
     ! Ion drag calculation
     call t_startf ( 'iondrag' )
 
@@ -1524,8 +1508,6 @@ subroutine tphysac (ztodt,   cam_in,  &
     ! Check energy integrals
     call check_energy_chng(state, tend, "iondrag", nstep, ztodt, zero, zero, zero, zero)
     call t_stopf  ( 'iondrag' )
-
-#endif
 
 
     !-------------- Energy budget checks vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
@@ -1850,7 +1832,7 @@ subroutine tphysbc (ztodt,               &
 
     !*** BAB's FV heating kludge *** save the initial temperature
     tini(:ncol,:pver) = state%t(:ncol,:pver)
-    if (dycore_is('LR')) then
+    if (dycore_is('LR') .or. dycore_is('SE') ) then
        call check_energy_fix(state, ptend, nstep, flx_heat)
        call physics_update(state, ptend, ztodt, tend)
        call check_energy_chng(state, tend, "chkengyfix", nstep, ztodt, zero, zero, zero, flx_heat)
@@ -2041,7 +2023,7 @@ subroutine tphysbc (ztodt,               &
           ! =====================================================  
    
           call clubb_tend_cam(state,ptend,pbuf,1.0_r8*ztodt,&
-             cmfmc, cmfmc2, cam_in, sgh30, dlf, det_s, det_ice)
+             cmfmc, cmfmc2, cam_in, sgh30, dlf, det_s, det_ice, cmeliq)
 
           !  Since we "added" the reserved liquid back in this routine, we need 
 	  !    to account for it in the energy checker
@@ -2208,11 +2190,9 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
   use vertical_diffusion,  only: vertical_diffusion_ts_init
   use radheat,             only: radheat_timestep_init
   use solar_data,          only: solar_data_advance
-  use efield,              only: get_efield
-#if ( defined WACCM_PHYS )
-  use iondrag,             only: do_waccm_ions
   use qbo,                 only: qbo_timestep_init
-#endif
+  use efield,              only: get_efield
+  use iondrag,             only: do_waccm_ions
   use perf_mod
 
   use prescribed_ozone,    only: prescribed_ozone_adv
@@ -2233,7 +2213,7 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
   !-----------------------------------------------------------------------------
 
   ! Chemistry surface values
-  call chem_surfvals_set(phys_state)
+  call chem_surfvals_set()
 
   ! Solar irradiance
   call solar_data_advance()
@@ -2266,18 +2246,17 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
   ! Time interpolate for vertical diffusion upper boundary condition
   call vertical_diffusion_ts_init(pbuf2d, phys_state)
 
-#if ( defined WACCM_PHYS )
+  !----------------------------------------------------------------------
+  ! update QBO data for this time step
+  !----------------------------------------------------------------------
+  call qbo_timestep_init
+
   if (do_waccm_ions) then
      ! Compute the electric field
      call t_startf ('efield')
      call get_efield
      call t_stopf ('efield')
   endif
-  !----------------------------------------------------------------------
-  ! update QBO data for this time step
-  !----------------------------------------------------------------------
-  call qbo_timestep_init
-#endif
 
   call carma_timestep_init()
 

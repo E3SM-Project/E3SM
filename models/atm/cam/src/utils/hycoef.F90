@@ -22,10 +22,10 @@ save
 ! 
 !-----------------------------------------------------------------------
 
-real(r8), public :: hyai(plevp)       ! ps0 component of hybrid coordinate - interfaces
-real(r8), public :: hyam(plev)        ! ps0 component of hybrid coordinate - midpoints
-real(r8), public :: hybi(plevp)       ! ps component of hybrid coordinate - interfaces
-real(r8), public :: hybm(plev)        ! ps component of hybrid coordinate - midpoints
+real(r8), public, target :: hyai(plevp) ! ps0 component of hybrid coordinate - interfaces
+real(r8), public, target :: hyam(plev)  ! ps0 component of hybrid coordinate - midpoints
+real(r8), public, target :: hybi(plevp) ! ps component of hybrid coordinate - interfaces
+real(r8), public, target :: hybm(plev)  ! ps component of hybrid coordinate - midpoints
 
 real(r8), public :: etamid(plev)      ! hybrid coordinate - midpoints
 
@@ -36,6 +36,9 @@ real(r8), public :: hypd(plev)        ! reference pressure layer thickness
 
 real(r8), public, parameter :: ps0 = 1.0e5_r8    ! Base state surface pressure (pascals)
 real(r8), public, parameter :: psr = 1.0e5_r8    ! Reference surface pressure (pascals)
+
+real(r8), target :: alev(plev)    ! level values (pascals) for 'lev' coord
+real(r8), target :: ailev(plevp)  ! interface level values for 'ilev' coord
 
 integer, public :: nprlev       ! number of pure pressure levels at top
 
@@ -49,6 +52,7 @@ contains
 !=======================================================================
 
 subroutine hycoef_init(file)
+   use cam_history_support, only: add_vert_coord, formula_terms_t
 
    !----------------------------------------------------------------------- 
    ! 
@@ -78,8 +82,10 @@ subroutine hycoef_init(file)
    ! arguments
    type(file_desc_t), intent(in) :: file
 
+   ! local variables
    integer  :: k        ! Level index
    real(r8) :: amean, bmean, atest, btest, eps
+   type(formula_terms_t) :: formula_terms ! For the 'lev' and 'ilev' coords
    !-----------------------------------------------------------------------
 
 
@@ -149,6 +155,50 @@ subroutine hycoef_init(file)
          end if
       end if
    end do
+
+   ! Add the information for the 'lev' and 'ilev' mdim history coordinates
+   ! Note that this must be after hycoef_init and before any addfld calls
+   !
+   ! 0.01 converts Pascals to millibars
+   !
+   alev(:plev) = 0.01_r8*ps0*(hyam(:plev) + hybm(:plev))
+   ailev(:plevp) = 0.01_r8*ps0*(hyai(:plevp) + hybi(:plevp))
+
+   formula_terms%a_name       =  'hyam'
+   formula_terms%a_long_name  =  'hybrid A coefficient at layer midpoints'
+   formula_terms%a_values     => hyam
+   formula_terms%b_name       =  'hybm'
+   formula_terms%b_long_name  =  'hybrid B coefficient at layer midpoints'
+   formula_terms%b_values     => hybm
+   formula_terms%p0_name      =  'P0'
+   formula_terms%p0_long_name = 'reference pressure'
+   formula_terms%p0_units     =  'Pa'
+   formula_terms%p0_value     =  ps0
+   formula_terms%ps_name      =  'PS'
+
+   call add_vert_coord('lev', plev,                                         &
+        'hybrid level at midpoints (1000*(A+B))', 'hPa', alev,              &
+        positive='down',                                                    &
+        standard_name='atmosphere_hybrid_sigma_pressure_coordinate',        &
+        formula_terms=formula_terms)
+
+   formula_terms%a_name       =  'hyai'
+   formula_terms%a_long_name  =  'hybrid A coefficient at layer interfaces'
+   formula_terms%a_values     => hyai
+   formula_terms%b_name       =  'hybi'
+   formula_terms%b_long_name  =  'hybrid B coefficient at layer interfaces'
+   formula_terms%b_values     => hybi
+   formula_terms%p0_name      =  'P0'
+   formula_terms%p0_long_name = 'reference pressure'
+   formula_terms%p0_units     =  'Pa'
+   formula_terms%p0_value     =  ps0
+   formula_terms%ps_name      =  'PS'
+
+   call add_vert_coord('ilev', plevp,                                       &
+        'hybrid level at interfaces (1000*(A+B))', 'hPa', ailev,            &
+        positive='down',                                                    &
+        standard_name='atmosphere_hybrid_sigma_pressure_coordinate',        &
+        formula_terms=formula_terms)
 
    if (masterproc) then
       write(iulog,'(a)')' Layer Locations (*1000) '

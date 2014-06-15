@@ -79,9 +79,10 @@ sm317 TSM.sh f10c5cdm outfrq3s 9s
 sm318 TSM.sh f10c4cdm sat_hist 9s
 sm319 TSM.sh fn10c5dm outfrq3s_bam 9s
 sm320 TSM.sh fn10c5dm rad_diag 9s
+
 sm321 TSM.sh f10c5cdm atrain 9s
 sm322 TSM.sh fn1.9c5dh outfrq3s 9s
-
+sm323 TSM.sh wg4c4dm outfrq3s+waccm_sc_2000_cam4 9s
 
 sm330 TSM.sh f4c5paqdh aqpgro+aquaplanet_cam5 3s
 sm331 TSM.sh f4c4dh co2rmp+1850_cam4 9s
@@ -98,7 +99,7 @@ sm352 TSM.sh f0.9c4m outfrq24h+1850_cam4 2d
 
 sm360 TSM.sh f1.9c5carmdusdm outfrq24h_carma 2d
 sm361 TSM.sh f1.9c5mg1_5m outfrq3s 9s
-sm366 TSM.sh f1.9c5clbdm outfrq3s_clubb 9s
+sm366 TSM.sh f1.9c5clbdh outfrq3s_clubb 9s
 
 sm370 TSM.sh fmo1.9c4dh off1.9x2.5 9s
 sm371 TSM.sh f1.9c5dm fvvp_lb2 9s
@@ -162,6 +163,8 @@ sm556 TSM.sh s64c5paqdh aqpgro+aquaplanet_cam5 3s
 sm557 TSM.sh s64adh adia 9s
 sm558 TSM.sh s64idh idphys 9s
 
+sm723 TSM.sh h30c4wgdm outfrq3s_wse+waccm_sc_2000_cam4 9s
+
 sm731 TSM.sh h16c3aqdh aqua+aquaplanet_cam3 9s
 sm734 TSM.sh hn16c5aqdm outfrq3s_bam+aquaplanet_cam5 9s
 sm735 TSM.sh h16c5aqdm outfrq3s+aquaplanet_cam5 9s
@@ -192,9 +195,10 @@ er317 TER.sh f10c5cdm outfrq3s 4+5s
 er318 TER.sh f10c4cdm sat_hist 4+5s
 er319 TER.sh fn10c5dm outfrq3s_bam 4+5s
 er320 TER.sh fn10c5dm rad_diag 4+5s
+
 er321 TER.sh f10c5cdm atrain 4+5s
 er322 TER.sh fn1.9c5dh outfrq3s 4+5s
-
+er323 TER.sh wg4c4dm outfrq3s+waccm_sc_2000_cam4 4+5s
 
 er331 TER.sh f4c4dh co2rmp+1850_cam4 4+5s
 er332 TER.sh f4c5dm ghgrmp+1850_cam5 4+5s
@@ -209,7 +213,7 @@ er352 TER.sh f0.9c4m outfrq24h+1850_cam4 1+1d
 
 er360 TER.sh f1.9c5carmdusdm outfrq24h_carma 1+1d
 er361 TER.sh f1.9c5mg1_5m outfrq3s 4+5s
-er366 TER.sh f1.9c5clbdm outfrq3s_clubb 4+5s
+er366 TER.sh f1.9c5clbdh outfrq3s_clubb 4+5s
 
 er370 TER.sh fmo1.9c4dh off1.9x2.5 4+5s
 er371 TER.sh f1.9c5dm fvvp_lb2 4+5s
@@ -263,6 +267,8 @@ er554 TER.sh s64c5dh co2rmp 4+5s
 er555 TER.sh s64c5dh ghgrmp 4+5s
 er557 TER.sh s64adh adia 4+5s
 er558 TER.sh s64idh idphys 4+5s
+
+er723 TER.sh h30c4wgdm outfrq3s_wse+waccm_sc_2000_cam4 4+5s
 
 er731 TER.sh h16c3aqdh aqua+aquaplanet_cam3 4+5s
 er734 TER.sh hn16c5aqdm outfrq3s_bam+aquaplanet_cam5 4+5s
@@ -349,9 +355,10 @@ bl317 TBL.sh f10c5cdm outfrq3s 9s
 bl318 TBL.sh f10c4cdm sat_hist 9s
 bl319 TBL.sh fn10c5dm outfrq3s_bam 9s
 bl320 TBL.sh fn10c5dm rad_diag 9s
+
 bl321 TBL.sh f10c5cdm atrain 9s
 bl322 TBL.sh fn1.9c5dh outfrq3s 9s
-
+bl323 TBL.sh wg4c4dm outfrq3s+waccm_sc_2000_cam4 9s
 
 bl330 TBL.sh f4c5paqdh aqpgro+aquaplanet_cam5 3s
 bl331 TBL.sh f4c4dh co2rmp+1850_cam4 9s
@@ -368,7 +375,7 @@ bl352 TBL.sh f0.9c4m outfrq24h+1850_cam4 2d
 
 bl360 TBL.sh f1.9c5carmdusdm outfrq24h_carma 2d
 bl361 TBL.sh f1.9c5mg1_5m outfrq3s 9s
-bl366 TBL.sh f1.9c5clbdm outfrq3s_clubb 9s
+bl366 TBL.sh f1.9c5clbdh outfrq3s_clubb 9s
 
 bl370 TBL.sh fmo1.9c4dh off1.9x2.5 9s
 bl371 TBL.sh f1.9c5dm fvvp_lb2 9s
@@ -431,6 +438,8 @@ bl555 TBL.sh s64c5dh ghgrmp 9s
 bl556 TBL.sh s64c5paqdh aqpgro+aquaplanet_cam5 3s
 bl557 TBL.sh s64adh adia 9s
 bl558 TBL.sh s64idh idphys 9s
+
+bl723 TBL.sh h30c4wgdm outfrq3s_wse+waccm_sc_2000_cam4 9s
 
 bl731 TBL.sh h16c3aqdh aqua+aquaplanet_cam3 9s
 bl734 TBL.sh hn16c5aqdm outfrq3s_bam+aquaplanet_cam5 9s

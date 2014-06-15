@@ -36,10 +36,10 @@ CONTAINS
 
 subroutine dyn_init(file, nlfilename)
 
-   use spmd_utils,      only: masterproc
-   use sld_control_mod, only: dyn_sld_readnl
+   use spmd_utils,          only: masterproc
+   use sld_control_mod,     only: dyn_sld_readnl
 #if (defined SPMD)
-   use spmd_dyn,        only: spmd_readnl,spmdinit_dyn
+   use spmd_dyn,            only: spmd_readnl,spmdinit_dyn
 #endif
 
    ! ARGUMENTS:
@@ -58,6 +58,9 @@ subroutine dyn_init(file, nlfilename)
    call spmd_readnl(nlfilename)
    call spmdinit_dyn()
 #endif 
+
+   ! Initialize hybrid coordinate arrays
+   call hycoef_init(file)
 
    call addfld ('ETADOT  ','1/s ',plevp,'A','Vertical (eta) velocity',dyn_decomp)
    call addfld ('U&IC    ','m/s ',plev, 'I','Zonal wind'                                    ,dyn_decomp )
@@ -96,9 +99,6 @@ subroutine dyn_init(file, nlfilename)
    call addfld ('LPSTEN  ','Pa/s    ',1,    'A','Surface pressure tendency',dyn_decomp)
    call addfld ('VAT     ','K/s     ',plev, 'A','Vertical advective tendency of T',dyn_decomp)
    call addfld ('KTOOP   ','K/s     ',plev, 'A','(Kappa*T)*(omega/P)',dyn_decomp)
-
-   ! Initialize hybrid coordinate arrays
-   call hycoef_init(file)
 
 end subroutine dyn_init
 
