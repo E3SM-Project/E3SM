@@ -295,8 +295,8 @@ contains
     enddo
   end function Temp2PotTemp
 
-  function Exner_function(pr3d,t3d) result(exner)
-    real (kind=real_kind),intent(in) :: pr3d(np,np,nlev),t3d(np,np,nlev)
+  function Exner_function(pr3d) result(exner)
+    real (kind=real_kind),intent(in) :: pr3d(np,np,nlev)
     real (kind=real_kind)            :: exner(np,np,nlev)
     integer:: i,j,k    
     real (kind=real_kind):: pp
