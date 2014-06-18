@@ -2187,13 +2187,15 @@ contains
           variableVertex(iVertex) = variableVertex(iVertex) + areaCell(iCell) * variableCell(iCell)
           totalArea = totalArea + areaCell(iCell)
 
+          !write(*,*) iVertex, iVertexDegree, iCell, areaCell(iCell), variableCell(iCell)
+
        enddo ! iVertexDegree
 
        variableVertex(iVertex) = variableVertex(iVertex) / totalArea
 
        !variableVertex(iVertex) = variableVertex(iVertex) / areaTriangle(iVertex)
 
-    enddo ! iVertex    
+    enddo ! iVertex
 
   end subroutine interpolate_cell_to_vertex
 

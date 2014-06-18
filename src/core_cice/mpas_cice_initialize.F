@@ -84,6 +84,8 @@ contains
 
   subroutine init_junk_values(block)
 
+    use cice_diagnostics, only: init_ijpop_from_ivertex
+
     type(block_type), intent(inout) :: block
 
     type(MPAS_pool_type), pointer :: &
@@ -102,6 +104,8 @@ contains
          areaCell
 
     call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+
+    call init_ijpop_from_ivertex(mesh)
 
     call MPAS_pool_get_dimension(mesh, "nCells", nCells)
 

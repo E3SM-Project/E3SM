@@ -155,7 +155,8 @@ contains
 
     type (MPAS_pool_type), pointer :: &
          mesh, &
-         atmos_forcing
+         atmos_forcing, &
+         configs
 
     integer :: &
          year, &
@@ -166,6 +167,8 @@ contains
          forcingTime, &
          forcingTimeEpoch
 
+    configs => block % configs
+
     call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
     call MPAS_pool_get_subpool(block % structs, "atmos_forcing", atmos_forcing)
 
@@ -173,17 +176,20 @@ contains
 
     call get_forcing_times(forcingTime, forcingTimeEpoch, year, month, dayOfMonth, clock)
 
-    call get_atmos_forcing(mesh, atmos_forcing, forcingTime, forcingTimeEpoch, year, month, dayOfMonth)
+    call get_atmos_forcing(mesh, configs, atmos_forcing, forcingTime, forcingTimeEpoch, year, month, dayOfMonth)
 
   end subroutine get_forcing
 
   !-------------------------------------------------------------
 
-  subroutine get_atmos_forcing(mesh, atmos_forcing, forcingTime, forcingTimeEpoch, year, month, dayOfMonth)
+  subroutine get_atmos_forcing(mesh, configs, atmos_forcing, forcingTime, forcingTimeEpoch, year, month, dayOfMonth)
+
+    use cice_mesh, only: &
+         latlon_vector_rotation_forward
 
     use cice_diagnostics, only: plot_pop_grid_cells, plot_cells_spherical
     
-    type (MPAS_pool_type), pointer, intent(in) :: mesh
+    type (MPAS_pool_type), pointer, intent(in) :: mesh, configs
     type (MPAS_pool_type), pointer :: atmos_forcing
 
     integer, intent(in) :: &
@@ -218,13 +224,33 @@ contains
          uAirStress, &
          vAirStress, &
          uAirVelocity, &
-         vAirVelocity
+         vAirVelocity, &
+         xCell, &
+         yCell, &
+         zCell, &
+         latCell, &
+         lonCell
 
     real(kind=RKIND), dimension(:,:), pointer :: &
          uPOPAlongGridVector, &
          vPOPAlongGridVector
 
+    real(kind=RKIND), pointer :: &
+         sphere_radius
+
+    logical, pointer :: &
+         config_rotate_cartesian_grid
+
     call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+
+    call MPAS_pool_get_array(mesh, "xCell", xCell)
+    call MPAS_pool_get_array(mesh, "yCell", yCell)
+    call MPAS_pool_get_array(mesh, "zCell", zCell)
+    call MPAS_pool_get_array(mesh, "latCell", latCell)
+    call MPAS_pool_get_array(mesh, "lonCell", lonCell)
+    
+    call MPAS_pool_get_config(mesh, "sphere_radius", sphere_radius)
+    call MPAS_pool_get_config(configs, "config_rotate_cartesian_grid", config_rotate_cartesian_grid)
 
     call MPAS_pool_get_array(atmos_forcing, "airTemperature", airTemperature)
     call MPAS_pool_get_array(atmos_forcing, "uAirVelocityPOP", uAirVelocityPOP)
@@ -296,35 +322,24 @@ contains
          atmosForcingFields % forcingFieldsArray(8), &
          precipitationRate(1:nCells))
 
-    !iCell = POPiCell(mesh,69,59)
-    !write(56,*) elapsed_time_forcing/3600.0_RKIND, &
-    !     airTemperature(iCell), &
-    !     uAirVelocityPOP(iCell), &
-    !     vAirVelocityPOP(iCell), &
-    !     airDensity(iCell), &
-    !     airSpecificHumidity(iCell), &
-    !     shortwaveDown(iCell), &         
-    !     cloudFraction(iCell), &
-    !     precipitationRate(iCell)
-
-    ! plot 'fort.56' using 1:2 with linespoints, '/Users/akt/Work/MPAS-CICE/cice_sphere/rundir/fort.55' using 1:2 with lines
-    ! plot 'fort.56' using 1:3 with linespoints, '/Users/akt/Work/MPAS-CICE/cice_sphere/rundir/fort.55' using 1:3 with lines
-    ! plot 'fort.56' using 1:4 with linespoints, '/Users/akt/Work/MPAS-CICE/cice_sphere/rundir/fort.55' using 1:4 with lines
-    ! plot 'fort.56' using 1:5 with linespoints, '/Users/akt/Work/MPAS-CICE/cice_sphere/rundir/fort.55' using 1:5 with lines
-    ! plot 'fort.56' using 1:6 with linespoints, '/Users/akt/Work/MPAS-CICE/cice_sphere/rundir/fort.55' using 1:6 with lines
-    ! plot 'fort.56' using 1:7 with linespoints, '/Users/akt/Work/MPAS-CICE/cice_sphere/rundir/fort.55' using 1:7 with lines
-    ! plot 'fort.56' using 1:8 with linespoints, '/Users/akt/Work/MPAS-CICE/cice_sphere/rundir/fort.55' using 1:8 with lines
-    ! plot 'fort.56' using 1:9 with linespoints, '/Users/akt/Work/MPAS-CICE/cice_sphere/rundir/fort.55' using 1:9 with lines
-
-    call rotate_vector_POP_to_cartesian(uAirVelocity,        &   
-                                        vAirVelocity,        &
-                                        uAirVelocityPOP,     &  
-                                        vAirVelocityPOP,     &
-                                        uPOPAlongGridVector, &
-                                        vPOPAlongGridVector)
-
     ! calculate other quantities
     do iCell = 1, nCells
+
+       ! rotate the geographical inputs to the rotated grid
+       call latlon_vector_rotation_forward(&
+            uAirVelocity(iCell), &
+            vAirVelocity(iCell), &
+            uAirVelocityPOP(iCell), &
+            vAirVelocityPOP(iCell), &
+            latCell(iCell), &
+            lonCell(iCell), &
+            xCell(iCell), &
+            yCell(iCell), &
+            zCell(iCell), &
+            sphere_radius, &
+            config_rotate_cartesian_grid)
+       !uAirVelocity(iCell) = uAirVelocityPOP(iCell)
+       !vAirVelocity(iCell) = vAirVelocityPOP(iCell)
 
        call calculate_derived_forcing_variables( &
             longWavedown(iCell), &
@@ -1071,7 +1086,7 @@ contains
           else if (position == 2) then
 
              write(filename,fmt='(a,a,a,i4.4,a)') trim(forcingDirectory), trim(forcingField % filenameDirectory), trim(forcingField % filenamePrefix), desiredYear-1, trim(forcingField % filenameSuffix)
-             
+
              usedRecordNumber = forcingField % pointsPerYear
 
           endif
@@ -1087,7 +1102,7 @@ contains
           else if (position == 2) then
 
              write(filename,fmt='(a,a,a,i4.4,a)') trim(forcingDirectory), trim(forcingField % filenameDirectory), trim(forcingField % filenamePrefix), desiredYear-1, trim(forcingField % filenameSuffix)
-             
+
              usedRecordNumber = 1
 
           endif

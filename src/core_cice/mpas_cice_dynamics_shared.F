@@ -16,6 +16,7 @@ module cice_dynamics_shared
        ocean_stress_final, &
        solve_velocity, &
        surface_tilt, &
+       coriolis_force_coefficient, &
        principal_stresses
 
   real(kind=RKIND), parameter, public :: &
@@ -159,8 +160,7 @@ contains
     stress2 = stress11 - stress22
 
     ! perform the constituitive relation
-    Delta = sqrt(strainDivergence**2 + &
-         (strainTension**2 + strainShearing**2) / eccentricitySquared)
+    Delta = sqrt(strainDivergence**2 + (strainTension**2 + strainShearing**2) / eccentricitySquared)
 
     if (evpDamping) then
        pressureCoefficient = icePressure  / max(Delta,4.0_RKIND*puny)
@@ -170,11 +170,11 @@ contains
        pressureCoefficient = icePressure / max(Delta,puny)
        replacementPressure = pressureCoefficient * Delta
     endif
-
+write(*,*) 1, pressureCoefficient
     pressureCoefficient = (pressureCoefficient * dtElastic) / (2.0_RKIND * dampingTimescale)
-
+write(*,*) 2, pressureCoefficient, dtElastic / (2.0_RKIND * dampingTimescale)
     denominator = 1.0_RKIND + (0.5_RKIND * dtElastic) / dampingTimescale
-
+write(*,*) 3, stress1, pressureCoefficient, strainDivergence, Delta,  1.0_RKIND / denominator
     stress1  = (stress1  +  pressureCoefficient                        * (strainDivergence - Delta))  / denominator
 
     stress2  = (stress2  + (pressureCoefficient / eccentricitySquared) *  strainTension             ) / denominator
@@ -189,14 +189,14 @@ contains
 
   !-------------------------------------------------------------
 
-  subroutine solve_velocity(nPoints,           solvePoints,       &
-                            uVelocity,         vVelocity,         &
-                            mass,              coriolisParameter, &
-                            stressDivergenceU, stressDivergenceV, &
-                            airStressU,        airStressV,        &
-                            surfaceTiltForceU, surfaceTiltForceV, &
-                            oceanStressU,      oceanStressV,      &
-                            oceanStressCoeff,  dtElastic,         &
+  subroutine solve_velocity(nPoints,           solvePoints,           &
+                            uVelocity,         vVelocity,             &
+                            mass,              massCoriolisParameter, &
+                            stressDivergenceU, stressDivergenceV,     &
+                            airStressU,        airStressV,            &
+                            surfaceTiltForceU, surfaceTiltForceV,     &
+                            oceanStressU,      oceanStressV,          &
+                            oceanStressCoeff,  dtElastic,             &
                             mesh)
 
     integer, intent(in) :: &
@@ -210,22 +210,23 @@ contains
          vVelocity
 
     real(kind=RKIND), dimension(:), intent(in) :: &
-         mass,              &
-         coriolisParameter, &
-         stressDivergenceU, &
-         stressDivergenceV, &
-         airStressU,        &
-         airStressV,        &
-         surfaceTiltForceU, &
-         surfaceTiltForceV, &
-         oceanStressU,      &
-         oceanStressV,      &
+         mass,                  &
+         massCoriolisParameter, &
+         stressDivergenceU,     &
+         stressDivergenceV,     &
+         airStressU,            &
+         airStressV,            &
+         surfaceTiltForceU,     &
+         surfaceTiltForceV,     &
+         oceanStressU,          &
+         oceanStressV,          &
          oceanStressCoeff
 
     real(kind=RKIND), intent(in) :: &
          dtElastic
 
-    type(MPAS_pool_type), pointer, intent(in) :: mesh
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh
 
     real(kind=RKIND), dimension(2) :: &
          rightHandSide
@@ -237,26 +238,19 @@ contains
          solutionDenominator
 
     integer :: &
-         iPoint,i,j
-
-    integer, dimension(:), pointer :: &
-         POPindxiv, &
-         POPindxjv
-
-    call MPAS_pool_get_array(mesh, "POPindxiv", POPindxiv)
-    call MPAS_pool_get_array(mesh, "POPindxjv", POPindxjv)
+         iPoint
 
     do iPoint = 1, nPoints
 
        if (solvePoints(iPoint) == 1) then
 
           ! U equation
-          leftMatrix(1,1) =  mass(iPoint) / dtElastic                 + oceanStressCoeff(iPoint) * cosOceanTurningAngle
-          leftMatrix(1,2) = -mass(iPoint) * coriolisParameter(iPoint) - oceanStressCoeff(iPoint) * sinOceanTurningAngle * sign(1.0_RKIND,coriolisParameter(iPoint))
+          leftMatrix(1,1) =  mass(iPoint) / dtElastic      + oceanStressCoeff(iPoint) * cosOceanTurningAngle
+          leftMatrix(1,2) = -massCoriolisParameter(iPoint) - oceanStressCoeff(iPoint) * sinOceanTurningAngle * sign(1.0_RKIND,massCoriolisParameter(iPoint))
 
           ! V equation
-          leftMatrix(2,1) =  mass(iPoint) * coriolisParameter(iPoint) + oceanStressCoeff(iPoint) * sinOceanTurningAngle * sign(1.0_RKIND,coriolisParameter(iPoint))
-          leftMatrix(2,2) =  mass(iPoint) / dtElastic                 + oceanStressCoeff(iPoint) * cosOceanTurningAngle
+          leftMatrix(2,1) =  massCoriolisParameter(iPoint) + oceanStressCoeff(iPoint) * sinOceanTurningAngle * sign(1.0_RKIND,massCoriolisParameter(iPoint))
+          leftMatrix(2,2) =  mass(iPoint) / dtElastic      + oceanStressCoeff(iPoint) * cosOceanTurningAngle
 
           ! right hand side of matrix solve
           rightHandSide(1) = stressDivergenceU(iPoint) + airStressU(iPoint) + surfaceTiltForceU(iPoint) + &
@@ -278,9 +272,72 @@ contains
 
        endif ! solvePoints
 
-    enddo ! iCell
+    enddo ! iPoint
 
   end subroutine solve_velocity
+
+  !-------------------------------------------------------------
+
+  function find_nearest_vertex(mesh, lat, lon) result(iVertexNearest)
+
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh
+
+    real(kind=RKIND), intent(in) :: &
+         lat, lon
+
+    integer :: iVertexNearest
+
+    integer :: &
+         iVertex
+
+    real(kind=RKIND) :: &
+         min_dist, &
+         x, y, z, &
+         dist
+
+    integer, pointer :: &
+         nVertices
+
+    real(kind=RKIND), pointer :: &
+         sphere_radius
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         xVertex, &
+         yVertex, &
+         zVertex
+
+    iVertexNearest = -1
+    min_dist = 1.0e30_RKIND
+
+    call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
+
+    call MPAS_pool_get_config(mesh, "sphere_radius", sphere_radius)
+
+    call MPAS_pool_get_array(mesh, "xVertex", xVertex)
+    call MPAS_pool_get_array(mesh, "yVertex", yVertex)
+    call MPAS_pool_get_array(mesh, "zVertex", zVertex)
+
+    z = sphere_radius * sin(lat)
+    x = sphere_radius * cos(lon) * cos(lat)
+    y = sphere_radius * sin(lon) * cos(lat)
+    
+    do iVertex = 1, nVertices
+
+       dist = sqrt((x - xVertex(iVertex))**2 + &
+                   (y - yVertex(iVertex))**2 + &
+                   (z - zVertex(iVertex))**2)
+
+       if (dist < min_dist) then
+
+          min_dist = dist
+          iVertexNearest = iVertex
+
+       endif
+
+    enddo ! iVertex
+
+  end function find_nearest_vertex
 
   !-------------------------------------------------------------
 
@@ -315,11 +372,7 @@ contains
        airStressU(iPoint) = airDensity(iPoint) * windSpeed * airStressCoeff * uAirVelocity(iPoint) * iceArea(iPoint)
        airStressV(iPoint) = airDensity(iPoint) * windSpeed * airStressCoeff * vAirVelocity(iPoint) * iceArea(iPoint)
 
-       !write(*,*) iPoint, airStressU(iPoint), airDensity(iPoint), windSpeed, airStressCoeff, uAirVelocity(iPoint), iceArea(iPoint)
-
     enddo ! iPoint
-
-    !stop
 
   end subroutine air_stress
 
@@ -525,6 +578,31 @@ contains
     enddo ! iPoint
 
   end subroutine surface_tilt
+
+  !-------------------------------------------------------------
+
+  subroutine coriolis_force_coefficient(&
+         totalMassCoriolisParameter, &
+         totalMass, &
+         coriolisParameter)
+
+    real(kind=RKIND), dimension(:), intent(out) :: &
+         totalMassCoriolisParameter
+
+    real(kind=RKIND), dimension(:), intent(in) :: &
+         totalMass, &
+         coriolisParameter
+
+    integer :: &
+         iPoint
+
+    do iPoint = 1, size(totalMassCoriolisParameter)
+
+       totalMassCoriolisParameter(iPoint) = totalMass(iPoint) * coriolisParameter(iPoint)
+
+    enddo ! iPoint
+
+  end subroutine coriolis_force_coefficient
 
   !-------------------------------------------------------------
 

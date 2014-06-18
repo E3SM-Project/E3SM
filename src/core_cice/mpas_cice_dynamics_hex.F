@@ -93,12 +93,15 @@ contains
          ocean_stress, &
          ocean_stress_final, &
          surface_tilt, &
+         coriolis_force_coefficient, &
          dtDynamics, &
          dtElastic, &
          elapsedTime
     
     use cice_diagnostics, only: &
          plot_vertices_planar         
+
+    use mpas_constants, only: pii
 
     type(MPAS_pool_type), pointer, intent(in) :: mesh
     type(MPAS_pool_type), pointer, intent(in) :: configs
@@ -144,6 +147,7 @@ contains
          oceanStressCoeff, &
          surfaceTiltForceU, &
          surfaceTiltForceV, &
+         totalMassVertexfVertex, &
          principalStress1, &
          principalStress2, &
          replacementPressure, &
@@ -156,7 +160,8 @@ contains
          vAirVelocity, &
          uVelocity, &
          vVelocity, &
-         fVertex
+         fVertex, &
+         latCell
 
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          iceAreaCategory, &
@@ -189,6 +194,7 @@ contains
     call MPAS_pool_get_array(hexdyn, "oceanStressCoeff", oceanStressCoeff)
     call MPAS_pool_get_array(hexdyn, "surfaceTiltForceU", surfaceTiltForceU)
     call MPAS_pool_get_array(hexdyn, "surfaceTiltForceV", surfaceTiltForceV)
+    call MPAS_pool_get_array(hexdyn, "totalMassVertexfVertex", totalMassVertexfVertex)
     call MPAS_pool_get_array(hexdyn, "principalStress1", principalStress1)
     call MPAS_pool_get_array(hexdyn, "principalStress2", principalStress2)
     call MPAS_pool_get_array(hexdyn, "replacementPressure", replacementPressure)
@@ -270,6 +276,12 @@ contains
     call interpolate_cell_to_vertex(mesh, &
          vOceanVelocityVertex, &
          vOceanVelocity)
+
+    ! calculate the coriolis force coefficient
+    call coriolis_force_coefficient(&
+         totalMassVertexfVertex, &
+         totalMassVertex, &
+         fVertex)
 
     ! calculate the ocean stress
     call ocean_stress(& 
@@ -435,7 +447,6 @@ contains
 
     do iElasticSubcycle = 1, config_elastic_subcycle_number
 
-       !write(*,*) "subcycle: ", iElasticSubcycle
        call single_subcycle_dynamics_hex(mesh, &
                                          icestate,   boundary,  &
                                          hexdyn,                &
@@ -528,6 +539,7 @@ contains
          airStressVertexV, &
          surfaceTiltForceU, &
          surfaceTiltForceV, &
+         totalMassVertexfVertex, &
          oceanStressU, &
          oceanStressV, &
          oceanStressCoeff, &
@@ -542,7 +554,6 @@ contains
     call MPAS_pool_get_array(icestate, "totalMassVertex", totalMassVertex)
 
     call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
-    call MPAS_pool_get_array(mesh, "fVertex", fVertex)
 
     call MPAS_pool_get_array(hexdyn, "solveVelocity", solveVelocity)
     call MPAS_pool_get_array(hexdyn, "solveStress", solveStress)
@@ -556,6 +567,7 @@ contains
     call MPAS_pool_get_array(hexdyn, "airStressVertexV", airStressVertexV)
     call MPAS_pool_get_array(hexdyn, "surfaceTiltForceU", surfaceTiltForceU)
     call MPAS_pool_get_array(hexdyn, "surfaceTiltForceV", surfaceTiltForceV)
+    call MPAS_pool_get_array(hexdyn, "totalMassVertexfVertex", totalMassVertexfVertex)
     call MPAS_pool_get_array(hexdyn, "oceanStressU", oceanStressU)
     call MPAS_pool_get_array(hexdyn, "oceanStressV", oceanStressV)
     call MPAS_pool_get_array(hexdyn, "oceanStressCoeff", oceanStressCoeff)
@@ -611,21 +623,21 @@ contains
          solveVelocity)
 
     call solve_velocity(&
-         nVertices,         &
-         solveVelocity,     &
-         uVelocity,         &   
-         vVelocity,         &
-         totalMassVertex,   & 
-         fVertex,           &
-         stressDivergenceU, & 
-         stressDivergenceV, &
-         airStressVertexU,  & 
-         airStressVertexV,  &
-         surfaceTiltForceU, &
-         surfaceTiltForceV, &
-         oceanStressU,      &
-         oceanStressV,      &
-         oceanStressCoeff,  &
+         nVertices,              &
+         solveVelocity,          &
+         uVelocity,              &   
+         vVelocity,              &
+         totalMassVertex,        & 
+         totalMassVertexfVertex, &
+         stressDivergenceU,      & 
+         stressDivergenceV,      &
+         airStressVertexU,       & 
+         airStressVertexV,       &
+         surfaceTiltForceU,      &
+         surfaceTiltForceV,      &
+         oceanStressU,           &
+         oceanStressV,           &
+         oceanStressCoeff,       &
          dtElastic, mesh)
 
   end subroutine single_subcycle_dynamics_hex
@@ -688,8 +700,6 @@ contains
                snowVolumeCell(iCell) * rhos
 
        enddo ! iCategory
-
-       write(70,*) iCell, iceAreaCell(iCell), iceVolumeCell(iCell), totalMassCell(iCell)
 
     enddo ! iCell
 

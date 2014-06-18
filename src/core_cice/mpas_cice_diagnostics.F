@@ -1586,13 +1586,13 @@ contains
 
        write(suffix,fmt='(a,i10.10,a)') "_", nint(time), ".txt"
        
-       call plot_cells_spherical(mesh, airPotentialTemperature, "movie/data/airTemperature"//trim(suffix), -50.0_RKIND, 50.0_RKIND)
-       call plot_cells_spherical(mesh, longwaveDown, "movie/data/longwave"//trim(suffix), 0.0_RKIND, 1000.0_RKIND)
+       !call plot_cells_spherical(mesh, airPotentialTemperature, "movie/data/airTemperature"//trim(suffix), -50.0_RKIND, 50.0_RKIND)
+       !call plot_cells_spherical(mesh, longwaveDown, "movie/data/longwave"//trim(suffix), 0.0_RKIND, 1000.0_RKIND)
 
-       call plot_cells_spherical(mesh, iceAreaCell, "movie/data/iceAreaCell"//trim(suffix),          0.0_RKIND, 1.0_RKIND)
-       call plot_cells_spherical(mesh, iceThickness,       "movie/data/iceThickness"//trim(suffix),         0.0_RKIND, 2.0_RKIND)
-       call plot_cells_spherical(mesh, snowThickness,      "movie/data/snowThickness"//trim(suffix),        0.0_RKIND, 2.0_RKIND)
-       call plot_cells_spherical(mesh, surfaceTemperature, "movie/data/surfaceTemperature"//trim(suffix), -60.0_RKIND, 0.1_RKIND)
+       !call plot_cells_spherical(mesh, iceAreaCell, "movie/data/iceAreaCell"//trim(suffix),          0.0_RKIND, 1.0_RKIND)
+       !call plot_cells_spherical(mesh, iceThickness,       "movie/data/iceThickness"//trim(suffix),         0.0_RKIND, 2.0_RKIND)
+       !call plot_cells_spherical(mesh, snowThickness,      "movie/data/snowThickness"//trim(suffix),        0.0_RKIND, 2.0_RKIND)
+       !call plot_cells_spherical(mesh, surfaceTemperature, "movie/data/surfaceTemperature"//trim(suffix), -60.0_RKIND, 0.1_RKIND)
 
        deallocate(iceThickness)
        deallocate(snowThickness)
@@ -1605,7 +1605,7 @@ contains
 
   !-------------------------------------------------------------
 
-  subroutine plot_vertices_spherical(mesh, cellArray, interiorVertex, filename, fmin, fmax)
+  subroutine plot_vertices_spherical(mesh, cellArray, interiorVertex, filename, tag)
 
     type(MPAS_pool_type), pointer, intent(in) :: mesh
     
@@ -1617,10 +1617,9 @@ contains
 
     character(len=*), optional, intent(in) :: &
          filename
-    
-    real(kind=RKIND), optional, intent(in) :: &
-         fmin, &
-         fmax
+
+    integer, intent(in), optional :: &
+         tag
 
     real(kind=RKIND) :: &
          xc, yc, zc, &
@@ -1643,11 +1642,6 @@ contains
 
     logical :: lnofill
 
-    real(kind=RKIND) :: &
-         fValue, &
-         fMin_use, &
-         fMax_use
-
     integer :: &
          iVertex, &
          iVertexDegree, &
@@ -1664,17 +1658,11 @@ contains
          dLat, &
          dLon
 
-    character(len=7) :: &
-         color
-
     character(len=400) :: &
          stroutvertex, &
          strout, &
          stroutlabel, &
          stroutint
-
-    character(len=200) :: &
-         filename_use
 
     integer, pointer :: &
          nVertices, &
@@ -1693,6 +1681,15 @@ contains
          xCell, &
          yCell, &
          zCell
+
+    logical, parameter :: &
+         lgrid = .false., &
+         lequator = .false., &
+         lprimemeridian = .false.
+
+    real(kind=RKIND) :: &
+         minArray, &
+         maxArray
     
     ! init variables
     call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)
@@ -1711,44 +1708,45 @@ contains
 
     lnofill = .false.
 
-    if (present(fmin) .and. present(fmax)) then
-       fMin_use = fmin
-       fMax_use = fmax
-    else
-       fMin_use = minval(cellArray(1:nVertices))
-       fMax_use = maxval(cellArray(1:nVertices))
-    endif
+    call open_filename_tag(55, trim(filename), tag)
 
-    filename_use = "spherical_vertices.txt"
-    if (present(filename)) filename_use = trim(filename)
+    write(55,*) "set xrange [-1:1]"
+    write(55,*) "set yrange [-1:1]"
+    !write(55,*) "set cbrange [",minval(cellArray(1:nVertices)),":",maxval(cellArray(1:nVertices)),"]"
+    !write(55,*) "set cbrange [-0.3:0.3]"
 
-    open(55,file=trim(filename_use),action="write")
-    open(56,file="clearPlot.gnuplot",action="write")
+    write(55,*) "set pm3d"
+    write(55,*) "set size square"
+    write(55,*) "unset key"
+    write(55,*) "set palette defined (0 0.0 0.0 0.5, 1 0.0 0.0 1.0, 2 0.0 0.5 1.0, 3 0.0 1.0 1.0, 4 0.5 1.0 0.5, 5 1.0 1.0 0.0, 6 1.0 0.5 0.0, 7 1.0 0.0 0.0, 8 0.5 0.0 0.0 )"
+
+    minArray = 1e30
+    maxArray = -1e30
 
     do iVertex = 1, nVertices
 
        if (interiorVertex(iVertex) == 1) then
 
-          xc = xVertex(iVertex)
-          yc = yVertex(iVertex)
-          zc = zVertex(iVertex)
+          xc = xVertex(iVertex) / sphere_radius
+          yc = yVertex(iVertex) / sphere_radius
+          zc = zVertex(iVertex) / sphere_radius
           
           call perform_rotation(xc, yc, zc)
           
           if (xc > 0.0_RKIND) then
-             
-             fValue = (cellArray(iVertex) - fMin_use) / (fMax_use - fMin_use)
-             !fValue = (real(iCell,RKIND) - fMin_use) / (fMax_use - fMin_use)
-             
+
+             minArray = min(minArray,cellArray(iVertex))
+             maxArray = max(maxArray,cellArray(iVertex))
+
              write(strout,fmt='(a,i5,a)') "set object ",iObject," polygon from "
              
              do iVertexDegree = 1, vertexDegree
                 
                 iCell = cellsOnVertex(iVertexDegree, iVertex)
                 
-                xv = xCell(iCell)
-                yv = yCell(iCell)
-                zv = zCell(iCell)
+                xv = xCell(iCell) / sphere_radius
+                yv = yCell(iCell) / sphere_radius
+                zv = zCell(iCell) / sphere_radius
                 
                 call perform_rotation(xv, yv, zv)
                 
@@ -1758,25 +1756,23 @@ contains
                    zv0 = zv
                 endif
                 
-                write(stroutvertex,fmt='(f14.2,a,f14.2,a)') yv, ",", zv, " to "
+                write(stroutvertex,fmt='(e14.6,a,e14.6,a)') yv, ", ", zv, " to "
                 strout = trim(strout)//trim(stroutvertex)
                 
              enddo ! iVertexDegree
              
-             write(stroutvertex,fmt='(f14.2,a,f14.2)') yv0, ",", zv0
+             write(stroutvertex,fmt='(e14.6,a,e14.6)') yv0, ", ", zv0
              strout = trim(strout)//trim(stroutvertex)
              write(55,*) trim(strout)
              
-             color = matlab_jet(fValue)
              if (lnofill) then
                 write(strout,fmt='(a,i5,a,a,a)') "set object ",iObject,' fillstyle empty border lt -1'
              else
-                write(strout,fmt='(a,i5,a,a,a)') "set object ",iObject,' fc rgb "', color, '" fillstyle solid'
+                write(strout,fmt='(a,i5,a,e14.6,a)') "set object ",iObject,' fc palette cb ', cellArray(iVertex), ' fillstyle solid'
              endif
              
              write(55,*) trim(strout)
-             
-             write(56,*) "unset object ", iObject
+            
              iObject = iObject + 1
              
           endif
@@ -1784,136 +1780,146 @@ contains
        endif ! interiorVertex
        
     enddo ! iVertex
+
+    write(55,*) "set cbrange [",minArray,":",maxArray,"]"
        
     ! now write on latitude/longitude lines
-    dLat = 180.0_RKIND / real(nLat,RKIND)
-    dLon = 360.0_RKIND / real(nLon,RKIND)
+    if (lgrid) then
+       dLat = 180.0_RKIND / real(nLat,RKIND)
+       dLon = 360.0_RKIND / real(nLon,RKIND)
 
-    do iLat = 1, nLat-2
+       do iLat = 1, nLat-2
+          do iLon = 1, nLon
+
+             lat0 = (real(iLat,RKIND) + 0.5_RKIND) * dLat - 90.0_RKIND
+             lon0 = (real(iLon,RKIND) + 0.5_RKIND) * dLat
+
+             lat1 = (real(iLat,RKIND) + 0.0_RKIND) * dLat - 90.0_RKIND
+             lon1 = (real(iLon,RKIND) + 0.0_RKIND) * dLat
+
+             lat2 = (real(iLat,RKIND) + 1.0_RKIND) * dLat - 90.0_RKIND
+             lon2 = (real(iLon,RKIND) + 0.0_RKIND) * dLat
+
+             lat3 = (real(iLat,RKIND) + 1.0_RKIND) * dLat - 90.0_RKIND
+             lon3 = (real(iLon,RKIND) + 1.0_RKIND) * dLat
+
+             lat4 = (real(iLat,RKIND) + 0.0_RKIND) * dLat - 90.0_RKIND
+             lon4 = (real(iLon,RKIND) + 1.0_RKIND) * dLat
+
+             call latlon_to_xyz(mesh, x0, y0, z0, lat0, lon0)
+             call perform_rotation(x0, y0, z0)
+
+             if (x0 > 0.0_RKIND) then
+
+                call latlon_to_xyz(mesh, x1, y1, z1, lat1, lon1) ; call perform_rotation(x1, y1, z1)
+                call latlon_to_xyz(mesh, x2, y2, z2, lat2, lon2) ; call perform_rotation(x2, y2, z2)
+                call latlon_to_xyz(mesh, x3, y3, z3, lat3, lon3) ; call perform_rotation(x3, y3, z3)
+                call latlon_to_xyz(mesh, x4, y4, z4, lat4, lon4) ; call perform_rotation(x4, y4, z4)
+
+                write(strout,fmt='(a,i5,a)') "set object ",iObject," polygon from "
+
+                x1 = x1 / sphere_radius ; y1 = y1 / sphere_radius ; z1 = z1 / sphere_radius
+                x2 = x2 / sphere_radius ; y2 = y2 / sphere_radius ; z2 = z2 / sphere_radius
+                x3 = x3 / sphere_radius ; y3 = y3 / sphere_radius ; z3 = z3 / sphere_radius
+                x4 = x4 / sphere_radius ; y4 = y4 / sphere_radius ; z4 = z4 / sphere_radius
+
+                write(stroutvertex,fmt='(e14.6,a,e14.6,a)') y1, ",", z1, " to " ; strout = trim(strout)//trim(stroutvertex)
+                write(stroutvertex,fmt='(e14.6,a,e14.6,a)') y2, ",", z2, " to " ; strout = trim(strout)//trim(stroutvertex)
+                write(stroutvertex,fmt='(e14.6,a,e14.6,a)') y3, ",", z3, " to " ; strout = trim(strout)//trim(stroutvertex)
+                write(stroutvertex,fmt='(e14.6,a,e14.6,a)') y4, ",", z4, " to " ; strout = trim(strout)//trim(stroutvertex)
+                write(stroutvertex,fmt='(e14.6,a,e14.6)')   y1, ",", z1         ; strout = trim(strout)//trim(stroutvertex)
+
+                write(55,*) trim(strout)
+
+                write(strout,fmt='(a,i5,a,a,a)') "set object ",iObject,' fillstyle empty border rgb "gray" lw 0.2'
+
+                write(55,*) trim(strout)
+
+                iObject = iObject + 1
+
+             endif
+
+          enddo ! iLon
+
+       enddo ! iLat
+    endif ! lgrid
+
+    ! prime meridian
+    if (lprimemeridian) then
+       do iLat = 1, nLat
+
+          lat1 = real(iLat-1,RKIND) * dLat - 90.0_RKIND
+          lon1 = 0.0_RKIND
+
+          lat2 = real(iLat,RKIND) * dLat - 90.0_RKIND
+          lon2 = 0.0_RKIND
+
+          call latlon_to_xyz(mesh, x1, y1, z1, lat1, lon1) ; call perform_rotation(x1, y1, z1)
+          call latlon_to_xyz(mesh, x2, y2, z2, lat2, lon2) ; call perform_rotation(x2, y2, z2)
+
+          x1 = x1 / sphere_radius ; y1 = y1 / sphere_radius ; z1 = z1 / sphere_radius
+          x2 = x2 / sphere_radius ; y2 = y2 / sphere_radius ; z2 = z2 / sphere_radius
+
+          if (0.5_RKIND * (x1 + x2) > 0.0_RKIND) then
+
+             write(strout,fmt='(a,i5,a,e14.6,a,e14.6,a,e14.6,a,e14.6,a)') "set arrow ",iArrow," from ", y1, ", ", z1, " to ", y2, ", ", z2, " nohead lt 4"
+             write(55,*) trim(strout)
+
+             iArrow = iArrow + 1
+
+          endif
+
+       enddo ! iLat
+    endif ! lprimemeridian
+
+    ! equator
+    if (lequator) then
        do iLon = 1, nLon
 
-          lat0 = (real(iLat,RKIND) + 0.5_RKIND) * dLat - 90.0_RKIND
-          lon0 = (real(iLon,RKIND) + 0.5_RKIND) * dLat
+          lat1 = 0.0_RKIND
+          lon1 = real(iLon-1,RKIND) * dLat
 
-          lat1 = (real(iLat,RKIND) + 0.0_RKIND) * dLat - 90.0_RKIND
-          lon1 = (real(iLon,RKIND) + 0.0_RKIND) * dLat
+          lat2 = 0.0_RKIND
+          lon2 = real(iLon,RKIND) * dLat
 
-          lat2 = (real(iLat,RKIND) + 1.0_RKIND) * dLat - 90.0_RKIND
-          lon2 = (real(iLon,RKIND) + 0.0_RKIND) * dLat
+          call latlon_to_xyz(mesh, x1, y1, z1, lat1, lon1) ; call perform_rotation(x1, y1, z1)
+          call latlon_to_xyz(mesh, x2, y2, z2, lat2, lon2) ; call perform_rotation(x2, y2, z2)
 
-          lat3 = (real(iLat,RKIND) + 1.0_RKIND) * dLat - 90.0_RKIND
-          lon3 = (real(iLon,RKIND) + 1.0_RKIND) * dLat
+          x1 = x1 / sphere_radius ; y1 = y1 / sphere_radius ; z1 = z1 / sphere_radius
+          x2 = x2 / sphere_radius ; y2 = y2 / sphere_radius ; z2 = z2 / sphere_radius
 
-          lat4 = (real(iLat,RKIND) + 0.0_RKIND) * dLat - 90.0_RKIND
-          lon4 = (real(iLon,RKIND) + 1.0_RKIND) * dLat
+          if (0.5_RKIND * (x1 + x2) > 0.0_RKIND) then
 
-          call latlon_to_xyz(mesh, x0, y0, z0, lat0, lon0)
-          call perform_rotation(x0, y0, z0)
-
-          if (x0 > 0.0_RKIND) then
-
-             call latlon_to_xyz(mesh, x1, y1, z1, lat1, lon1) ; call perform_rotation(x1, y1, z1)
-             call latlon_to_xyz(mesh, x2, y2, z2, lat2, lon2) ; call perform_rotation(x2, y2, z2)
-             call latlon_to_xyz(mesh, x3, y3, z3, lat3, lon3) ; call perform_rotation(x3, y3, z3)
-             call latlon_to_xyz(mesh, x4, y4, z4, lat4, lon4) ; call perform_rotation(x4, y4, z4)
-             
-             write(strout,fmt='(a,i5,a)') "set object ",iObject," polygon from "
-             
-             write(stroutvertex,fmt='(f14.2,a,f14.2,a)') y1, ",", z1, " to " ; strout = trim(strout)//trim(stroutvertex)
-             write(stroutvertex,fmt='(f14.2,a,f14.2,a)') y2, ",", z2, " to " ; strout = trim(strout)//trim(stroutvertex)
-             write(stroutvertex,fmt='(f14.2,a,f14.2,a)') y3, ",", z3, " to " ; strout = trim(strout)//trim(stroutvertex)
-             write(stroutvertex,fmt='(f14.2,a,f14.2,a)') y4, ",", z4, " to " ; strout = trim(strout)//trim(stroutvertex)
-             write(stroutvertex,fmt='(f14.2,a,f14.2)')   y1, ",", z1         ; strout = trim(strout)//trim(stroutvertex)
-
+             write(strout,fmt='(a,i5,a,e14.6,a,e14.6,a,e14.6,a,e14.6,a)') "set arrow ",iArrow," from ", y1, ", ", z1, " to ", y2, ", ", z2, " nohead lt 3"
              write(55,*) trim(strout)
 
-             write(strout,fmt='(a,i5,a,a,a)') "set object ",iObject,' fillstyle empty border rgb "gray" lw 0.2'
-
-             write(55,*) trim(strout)
-
-             write(56,*) "unset object ", iObject
-             iObject = iObject + 1
+             iArrow = iArrow + 1
 
           endif
 
        enddo ! iLon
-
-    enddo ! iLat
-
-    ! prime meridian
-    do iLat = 1, nLat
-
-       lat1 = real(iLat-1,RKIND) * dLat - 90.0_RKIND
-       lon1 = 0.0_RKIND
-       
-       lat2 = real(iLat,RKIND) * dLat - 90.0_RKIND
-       lon2 = 0.0_RKIND
-
-       call latlon_to_xyz(mesh, x1, y1, z1, lat1, lon1) ; call perform_rotation(x1, y1, z1)
-       call latlon_to_xyz(mesh, x2, y2, z2, lat2, lon2) ; call perform_rotation(x2, y2, z2)
-
-       if (0.5_RKIND * (x1 + x2) > 0.0_RKIND) then
-
-          write(strout,fmt='(a,i5,a,f14.2,a,f14.2,a,f14.2,a,f14.2,a)') "set arrow ",iArrow," from ", y1, ", ", z1, " to ", y2, ", ", z2, " nohead lt 4"
-          write(55,*) trim(strout)
-
-          write(56,*) "unset arrow ", iArrow
-          iArrow = iArrow + 1
-
-       endif
-
-    enddo ! iLat
-
-    ! equator
-    do iLon = 1, nLon
-
-       lat1 = 0.0_RKIND
-       lon1 = real(iLon-1,RKIND) * dLat
-       
-       lat2 = 0.0_RKIND
-       lon2 = real(iLon,RKIND) * dLat
-
-       call latlon_to_xyz(mesh, x1, y1, z1, lat1, lon1) ; call perform_rotation(x1, y1, z1)
-       call latlon_to_xyz(mesh, x2, y2, z2, lat2, lon2) ; call perform_rotation(x2, y2, z2)
-
-       if (0.5_RKIND * (x1 + x2) > 0.0_RKIND) then
-
-          write(strout,fmt='(a,i5,a,f14.2,a,f14.2,a,f14.2,a,f14.2,a)') "set arrow ",iArrow," from ", y1, ", ", z1, " to ", y2, ", ", z2, " nohead lt 3"
-          write(55,*) trim(strout)
-
-          write(56,*) "unset arrow ", iArrow
-          iArrow = iArrow + 1
-
-       endif
-
-    enddo ! iLon
+    endif ! lequator
 
     ! min/max labels
-    write(stroutint,fmt='(e20.8)') fMax_use
-    write(stroutlabel,fmt='(a,i5,a,a,a)') "set label ",iLabel,' "',trim(adjustl(stroutint)),'" at graph 1.02, 0.9'
-    write(55,*) trim(stroutlabel)
-    write(56,*) "unset label ", iLabel
-    iLabel = iLabel + 1
+    !write(stroutint,fmt='(e20.8)') fMax_use
+    !write(stroutlabel,fmt='(a,i5,a,a,a)') "set label ",iLabel,' "',trim(adjustl(stroutint)),'" at graph 1.02, 0.9'
+    !write(55,*) trim(stroutlabel)
+    !iLabel = iLabel + 1
 
-    write(stroutint,fmt='(e20.8)') fMin_use
-    write(stroutlabel,fmt='(a,i5,a,a,a)') "set label ",iLabel,' "',trim(adjustl(stroutint)),'" at graph 1.02, 0.8'
-    write(55,*) trim(stroutlabel)
-    write(56,*) "unset label ", iLabel
-    iLabel = iLabel + 1
+    !write(stroutint,fmt='(e20.8)') fMin_use
+    !write(stroutlabel,fmt='(a,i5,a,a,a)') "set label ",iLabel,' "',trim(adjustl(stroutint)),'" at graph 1.02, 0.8'
+    !write(55,*) trim(stroutlabel)
+    !iLabel = iLabel + 1
+
+    write(55,*) "plot -10"
 
     close(55)
-    close(56)
-
-    write(strout,fmt='(a,f15.3,a,f15.3,a,f15.3,a,f15.3,a)') &
-         "set xrange [",-sphere_radius*1.1_RKIND,":",sphere_radius*1.1_RKIND,&
-         "] ; set yrange [",-sphere_radius*1.1_RKIND,":",sphere_radius*1.1_RKIND,"]"
-    !write(*,*) trim(strout)
 
   end subroutine plot_vertices_spherical
 
   !-------------------------------------------------------------
 
-  subroutine plot_cells_spherical(mesh, cellArray, filename, fmin, fmax)
+  subroutine plot_cells_spherical(mesh, cellArray, filename, tag)
 
     type(MPAS_pool_type), pointer, intent(in) :: mesh
     
@@ -1922,10 +1928,9 @@ contains
 
     character(len=*), optional, intent(in) :: &
          filename
-    
-    real(kind=RKIND), optional, intent(in) :: &
-         fmin, &
-         fmax
+
+    integer, intent(in), optional :: &
+         tag
 
     real(kind=RKIND) :: &
          xc, yc, zc, &
@@ -1947,11 +1952,6 @@ contains
          lat4, lon4
 
     logical :: lnofill
-
-    real(kind=RKIND) :: &
-         fValue, &
-         fMin_use, &
-         fMax_use
 
     integer :: &
          iCell, &
@@ -1978,9 +1978,6 @@ contains
          stroutlabel, &
          stroutint
 
-    character(len=200) :: &
-         filename_use
-
     integer, pointer :: &
          nCells
 
@@ -2001,6 +1998,11 @@ contains
          yVertex, &
          zVertex
 
+    logical, parameter :: &
+         lgrid = .false., &
+         lequator = .false., &
+         lprimemeridian = .false.
+
     ! init variables
     call MPAS_pool_get_dimension(mesh, "nCells", nCells)
     call MPAS_pool_get_config(mesh, "sphere_radius", sphere_radius)
@@ -2018,34 +2020,27 @@ contains
 
     lnofill = .false.
 
-    if (present(fmin) .and. present(fmax)) then
-       fMin_use = fmin
-       fMax_use = fmax
-    else
-       fMin_use = minval(cellArray(1:nCells))
-       fMax_use = maxval(cellArray(1:nCells))
-    endif
+    call open_filename_tag(55, trim(filename), tag)
 
-    filename_use = "spherical_cells.txt"
-    if (present(filename)) filename_use = trim(filename)
+    write(55,*) "set xrange [-1:1]"
+    write(55,*) "set yrange [-1:1]"
+    write(55,*) "set cbrange [",minval(cellArray(1:nCells)),":",maxval(cellArray(1:nCells)),"]"
+    !write(55,*) "set cbrange [-0.3:0.3]"
 
-    open(55,file=trim(filename_use),action="write")
-    open(56,file="clearPlot.gnuplot",action="write")
+    write(55,*) "set pm3d"
+    write(55,*) "set size square"
+    write(55,*) "unset key"
+    write(55,*) "set palette defined (0 0.0 0.0 0.5, 1 0.0 0.0 1.0, 2 0.0 0.5 1.0, 3 0.0 1.0 1.0, 4 0.5 1.0 0.5, 5 1.0 1.0 0.0, 6 1.0 0.5 0.0, 7 1.0 0.0 0.0, 8 0.5 0.0 0.0 )"
 
     do iCell = 1, nCells
 
-       xc = xCell(iCell)
-       yc = yCell(iCell)
-       zc = zCell(iCell)
+       xc = xCell(iCell) / sphere_radius
+       yc = yCell(iCell) / sphere_radius
+       zc = zCell(iCell) / sphere_radius
 
        call perform_rotation(xc, yc, zc)
 
        if (xc > 0.0_RKIND) then
-
-          fValue = (cellArray(iCell) - fMin_use) / (fMax_use - fMin_use)
-          !fValue = (real(iCell,RKIND) - fMin_use) / (fMax_use - fMin_use)
-
-          !write(*,*) iCell, iObject, fValue, cellArray(iCell)
 
           write(strout,fmt='(a,i5,a)') "set object ",iObject," polygon from "
 
@@ -2053,9 +2048,9 @@ contains
 
              iVertex = verticesOnCell(iVertexOnCell, iCell)
 
-             xv = xVertex(iVertex)
-             yv = yVertex(iVertex)
-             zv = zVertex(iVertex)
+             xv = xVertex(iVertex) / sphere_radius
+             yv = yVertex(iVertex) / sphere_radius
+             zv = zVertex(iVertex) / sphere_radius
 
              call perform_rotation(xv, yv, zv)
 
@@ -2065,25 +2060,23 @@ contains
                 zv0 = zv
              endif
 
-             write(stroutvertex,fmt='(f14.2,a,f14.2,a)') yv, ",", zv, " to "
+             write(stroutvertex,fmt='(e14.6,a,e14.6,a)') yv, ",", zv, " to "
              strout = trim(strout)//trim(stroutvertex)
 
           enddo ! iVertexOnCell
 
-          write(stroutvertex,fmt='(f14.2,a,f14.2)') yv0, ",", zv0
+          write(stroutvertex,fmt='(e14.6,a,e14.6)') yv0, ",", zv0
           strout = trim(strout)//trim(stroutvertex)
           write(55,*) trim(strout)
 
-          color = matlab_jet(fValue)
           if (lnofill) then
              write(strout,fmt='(a,i5,a,a,a)') "set object ",iObject,' fillstyle empty border lt -1'
           else
-             write(strout,fmt='(a,i5,a,a,a)') "set object ",iObject,' fc rgb "', color, '" fillstyle solid'
+             write(strout,fmt='(a,i5,a,e14.6,a)') "set object ",iObject,' fc palette cb ', cellArray(iCell), ' fillstyle solid'
           endif
 
           write(55,*) trim(strout)
 
-          write(56,*) "unset object ", iObject
           iObject = iObject + 1
 
        endif
@@ -2091,128 +2084,138 @@ contains
     enddo ! iCell
 
     ! now write on latitude/longitude lines
-    dLat = 180.0_RKIND / real(nLat,RKIND)
-    dLon = 360.0_RKIND / real(nLon,RKIND)
+    if (lgrid) then
+       dLat = 180.0_RKIND / real(nLat,RKIND)
+       dLon = 360.0_RKIND / real(nLon,RKIND)
 
-    do iLat = 1, nLat-2
+       do iLat = 1, nLat-2
+          do iLon = 1, nLon
+
+             lat0 = (real(iLat,RKIND) + 0.5_RKIND) * dLat - 90.0_RKIND
+             lon0 = (real(iLon,RKIND) + 0.5_RKIND) * dLat
+
+             lat1 = (real(iLat,RKIND) + 0.0_RKIND) * dLat - 90.0_RKIND
+             lon1 = (real(iLon,RKIND) + 0.0_RKIND) * dLat
+
+             lat2 = (real(iLat,RKIND) + 1.0_RKIND) * dLat - 90.0_RKIND
+             lon2 = (real(iLon,RKIND) + 0.0_RKIND) * dLat
+
+             lat3 = (real(iLat,RKIND) + 1.0_RKIND) * dLat - 90.0_RKIND
+             lon3 = (real(iLon,RKIND) + 1.0_RKIND) * dLat
+
+             lat4 = (real(iLat,RKIND) + 0.0_RKIND) * dLat - 90.0_RKIND
+             lon4 = (real(iLon,RKIND) + 1.0_RKIND) * dLat
+
+             call latlon_to_xyz(mesh, x0, y0, z0, lat0, lon0)
+             call perform_rotation(x0, y0, z0)
+
+             if (x0 > 0.0_RKIND) then
+
+                call latlon_to_xyz(mesh, x1, y1, z1, lat1, lon1) ; call perform_rotation(x1, y1, z1)
+                call latlon_to_xyz(mesh, x2, y2, z2, lat2, lon2) ; call perform_rotation(x2, y2, z2)
+                call latlon_to_xyz(mesh, x3, y3, z3, lat3, lon3) ; call perform_rotation(x3, y3, z3)
+                call latlon_to_xyz(mesh, x4, y4, z4, lat4, lon4) ; call perform_rotation(x4, y4, z4)
+
+                write(strout,fmt='(a,i5,a)') "set object ",iObject," polygon from "
+
+                x1 = x1 / sphere_radius ; y1 = y1 / sphere_radius ; z1 = z1 / sphere_radius
+                x2 = x2 / sphere_radius ; y2 = y2 / sphere_radius ; z2 = z2 / sphere_radius
+                x3 = x3 / sphere_radius ; y3 = y3 / sphere_radius ; z3 = z3 / sphere_radius
+                x4 = x4 / sphere_radius ; y4 = y4 / sphere_radius ; z4 = z4 / sphere_radius
+
+                write(stroutvertex,fmt='(f14.2,a,f14.2,a)') y1, ",", z1, " to " ; strout = trim(strout)//trim(stroutvertex)
+                write(stroutvertex,fmt='(f14.2,a,f14.2,a)') y2, ",", z2, " to " ; strout = trim(strout)//trim(stroutvertex)
+                write(stroutvertex,fmt='(f14.2,a,f14.2,a)') y3, ",", z3, " to " ; strout = trim(strout)//trim(stroutvertex)
+                write(stroutvertex,fmt='(f14.2,a,f14.2,a)') y4, ",", z4, " to " ; strout = trim(strout)//trim(stroutvertex)
+                write(stroutvertex,fmt='(f14.2,a,f14.2)')   y1, ",", z1         ; strout = trim(strout)//trim(stroutvertex)
+
+                write(55,*) trim(strout)
+
+                write(strout,fmt='(a,i5,a,a,a)') "set object ",iObject,' fillstyle empty border rgb "gray" lw 0.2'
+
+                write(55,*) trim(strout)
+
+                iObject = iObject + 1
+
+             endif
+
+          enddo ! iLon
+
+       enddo ! iLat
+    endif ! lgrid
+
+    ! prime meridian
+    if (lprimemeridian) then
+       do iLat = 1, nLat
+
+          lat1 = real(iLat-1,RKIND) * dLat - 90.0_RKIND
+          lon1 = 0.0_RKIND
+
+          lat2 = real(iLat,RKIND) * dLat - 90.0_RKIND
+          lon2 = 0.0_RKIND
+
+          call latlon_to_xyz(mesh, x1, y1, z1, lat1, lon1) ; call perform_rotation(x1, y1, z1)
+          call latlon_to_xyz(mesh, x2, y2, z2, lat2, lon2) ; call perform_rotation(x2, y2, z2)
+
+          x1 = x1 / sphere_radius ; y1 = y1 / sphere_radius ; z1 = z1 / sphere_radius
+          x2 = x2 / sphere_radius ; y2 = y2 / sphere_radius ; z2 = z2 / sphere_radius
+
+          if (0.5_RKIND * (x1 + x2) > 0.0_RKIND) then
+
+             write(strout,fmt='(a,i5,a,f14.2,a,f14.2,a,f14.2,a,f14.2,a)') "set arrow ",iArrow," from ", y1, ", ", z1, " to ", y2, ", ", z2, " nohead lt 4"
+             write(55,*) trim(strout)
+
+             iArrow = iArrow + 1
+
+          endif
+
+       enddo ! iLat
+    endif ! lprimemeridian
+
+    ! equator
+    if (lequator) then
        do iLon = 1, nLon
 
-          lat0 = (real(iLat,RKIND) + 0.5_RKIND) * dLat - 90.0_RKIND
-          lon0 = (real(iLon,RKIND) + 0.5_RKIND) * dLat
+          lat1 = 0.0_RKIND
+          lon1 = real(iLon-1,RKIND) * dLat
 
-          lat1 = (real(iLat,RKIND) + 0.0_RKIND) * dLat - 90.0_RKIND
-          lon1 = (real(iLon,RKIND) + 0.0_RKIND) * dLat
+          lat2 = 0.0_RKIND
+          lon2 = real(iLon,RKIND) * dLat
 
-          lat2 = (real(iLat,RKIND) + 1.0_RKIND) * dLat - 90.0_RKIND
-          lon2 = (real(iLon,RKIND) + 0.0_RKIND) * dLat
+          call latlon_to_xyz(mesh, x1, y1, z1, lat1, lon1) ; call perform_rotation(x1, y1, z1)
+          call latlon_to_xyz(mesh, x2, y2, z2, lat2, lon2) ; call perform_rotation(x2, y2, z2)
 
-          lat3 = (real(iLat,RKIND) + 1.0_RKIND) * dLat - 90.0_RKIND
-          lon3 = (real(iLon,RKIND) + 1.0_RKIND) * dLat
+          x1 = x1 / sphere_radius ; y1 = y1 / sphere_radius ; z1 = z1 / sphere_radius
+          x2 = x2 / sphere_radius ; y2 = y2 / sphere_radius ; z2 = z2 / sphere_radius
 
-          lat4 = (real(iLat,RKIND) + 0.0_RKIND) * dLat - 90.0_RKIND
-          lon4 = (real(iLon,RKIND) + 1.0_RKIND) * dLat
+          if (0.5_RKIND * (x1 + x2) > 0.0_RKIND) then
 
-          call latlon_to_xyz(mesh, x0, y0, z0, lat0, lon0)
-          call perform_rotation(x0, y0, z0)
-
-          if (x0 > 0.0_RKIND) then
-
-             call latlon_to_xyz(mesh, x1, y1, z1, lat1, lon1) ; call perform_rotation(x1, y1, z1)
-             call latlon_to_xyz(mesh, x2, y2, z2, lat2, lon2) ; call perform_rotation(x2, y2, z2)
-             call latlon_to_xyz(mesh, x3, y3, z3, lat3, lon3) ; call perform_rotation(x3, y3, z3)
-             call latlon_to_xyz(mesh, x4, y4, z4, lat4, lon4) ; call perform_rotation(x4, y4, z4)
-             
-             write(strout,fmt='(a,i5,a)') "set object ",iObject," polygon from "
-             
-             write(stroutvertex,fmt='(f14.2,a,f14.2,a)') y1, ",", z1, " to " ; strout = trim(strout)//trim(stroutvertex)
-             write(stroutvertex,fmt='(f14.2,a,f14.2,a)') y2, ",", z2, " to " ; strout = trim(strout)//trim(stroutvertex)
-             write(stroutvertex,fmt='(f14.2,a,f14.2,a)') y3, ",", z3, " to " ; strout = trim(strout)//trim(stroutvertex)
-             write(stroutvertex,fmt='(f14.2,a,f14.2,a)') y4, ",", z4, " to " ; strout = trim(strout)//trim(stroutvertex)
-             write(stroutvertex,fmt='(f14.2,a,f14.2)')   y1, ",", z1         ; strout = trim(strout)//trim(stroutvertex)
-
+             write(strout,fmt='(a,i5,a,f14.2,a,f14.2,a,f14.2,a,f14.2,a)') "set arrow ",iArrow," from ", y1, ", ", z1, " to ", y2, ", ", z2, " nohead lt 3"
              write(55,*) trim(strout)
 
-             write(strout,fmt='(a,i5,a,a,a)') "set object ",iObject,' fillstyle empty border rgb "gray" lw 0.2'
-
-             write(55,*) trim(strout)
-
-             write(56,*) "unset object ", iObject
-             iObject = iObject + 1
+             iArrow = iArrow + 1
 
           endif
 
        enddo ! iLon
-
-    enddo ! iLat
-
-    ! prime meridian
-    do iLat = 1, nLat
-
-       lat1 = real(iLat-1,RKIND) * dLat - 90.0_RKIND
-       lon1 = 0.0_RKIND
-       
-       lat2 = real(iLat,RKIND) * dLat - 90.0_RKIND
-       lon2 = 0.0_RKIND
-
-       call latlon_to_xyz(mesh, x1, y1, z1, lat1, lon1) ; call perform_rotation(x1, y1, z1)
-       call latlon_to_xyz(mesh, x2, y2, z2, lat2, lon2) ; call perform_rotation(x2, y2, z2)
-
-       if (0.5_RKIND * (x1 + x2) > 0.0_RKIND) then
-
-          write(strout,fmt='(a,i5,a,f14.2,a,f14.2,a,f14.2,a,f14.2,a)') "set arrow ",iArrow," from ", y1, ", ", z1, " to ", y2, ", ", z2, " nohead lt 4"
-          write(55,*) trim(strout)
-
-          write(56,*) "unset arrow ", iArrow
-          iArrow = iArrow + 1
-
-       endif
-
-    enddo ! iLat
-
-    ! equator
-    do iLon = 1, nLon
-
-       lat1 = 0.0_RKIND
-       lon1 = real(iLon-1,RKIND) * dLat
-       
-       lat2 = 0.0_RKIND
-       lon2 = real(iLon,RKIND) * dLat
-
-       call latlon_to_xyz(mesh, x1, y1, z1, lat1, lon1) ; call perform_rotation(x1, y1, z1)
-       call latlon_to_xyz(mesh, x2, y2, z2, lat2, lon2) ; call perform_rotation(x2, y2, z2)
-
-       if (0.5_RKIND * (x1 + x2) > 0.0_RKIND) then
-
-          write(strout,fmt='(a,i5,a,f14.2,a,f14.2,a,f14.2,a,f14.2,a)') "set arrow ",iArrow," from ", y1, ", ", z1, " to ", y2, ", ", z2, " nohead lt 3"
-          write(55,*) trim(strout)
-
-          write(56,*) "unset arrow ", iArrow
-          iArrow = iArrow + 1
-
-       endif
-
-    enddo ! iLon
+    endif ! lequator
 
     ! min/max labels
-    write(stroutint,fmt='(e20.8)') fMax_use
-    write(stroutlabel,fmt='(a,i5,a,a,a)') "set label ",iLabel,' "',trim(adjustl(stroutint)),'" at graph 1.02, 0.9'
-    write(55,*) trim(stroutlabel)
-    write(56,*) "unset label ", iLabel
-    iLabel = iLabel + 1
+    !write(stroutint,fmt='(e20.8)') fMax_use
+    !write(stroutlabel,fmt='(a,i5,a,a,a)') "set label ",iLabel,' "',trim(adjustl(stroutint)),'" at graph 1.02, 0.9'
+    !write(55,*) trim(stroutlabel)
+    !write(56,*) "unset label ", iLabel
+    !iLabel = iLabel + 1
 
-    write(stroutint,fmt='(e20.8)') fMin_use
-    write(stroutlabel,fmt='(a,i5,a,a,a)') "set label ",iLabel,' "',trim(adjustl(stroutint)),'" at graph 1.02, 0.8'
-    write(55,*) trim(stroutlabel)
-    write(56,*) "unset label ", iLabel
-    iLabel = iLabel + 1
+    !write(stroutint,fmt='(e20.8)') fMin_use
+    !write(stroutlabel,fmt='(a,i5,a,a,a)') "set label ",iLabel,' "',trim(adjustl(stroutint)),'" at graph 1.02, 0.8'
+    !write(55,*) trim(stroutlabel)
+    !write(56,*) "unset label ", iLabel
+    !iLabel = iLabel + 1
+
+    write(55,*) "plot -10"
 
     close(55)
-    close(56)
-
-    write(strout,fmt='(a,f15.3,a,f15.3,a,f15.3,a,f15.3,a)') &
-         "set xrange [",-sphere_radius*1.1_RKIND,":",sphere_radius*1.1_RKIND,&
-         "] ; set yrange [",-sphere_radius*1.1_RKIND,":",sphere_radius*1.1_RKIND,"]"
-    !write(*,*) trim(strout)
 
   end subroutine plot_cells_spherical
 
@@ -2263,8 +2266,8 @@ contains
          thetaz    ! rotate about axis (positive look west)
 
     thetax = 0.0_RKIND
-    thetay = 60.0_RKIND
-    thetaz = 70.0_RKIND
+    thetay = -90.0_RKIND
+    thetaz = 90.0_RKIND
 
     v1(1) = x ; v1(2) = y ; v1(3) = z
 
@@ -2986,7 +2989,7 @@ contains
           strout = trim(strout)//trim(stroutvertex)
           write(55,*) trim(strout)
 
-          write(strout,fmt='(a,i5,a,e13.6,a)') "set object ",iObject,' fc palette cb ', array(iVertex), ' fillstyle solid'
+          write(strout,fmt='(a,i5,a,e14.6,a)') "set object ",iObject,' fc palette cb ', array(iVertex), ' fillstyle solid'
           write(55,*) trim(strout)
 
           iObject = iObject + 1
@@ -3090,7 +3093,7 @@ contains
        strout = trim(strout)//trim(stroutvertex)
        write(55,*) trim(strout)
 
-       write(strout,fmt='(a,i5,a,e13.6,a)') "set object ",iObject,' fc palette cb ', array(iCell), ' fillstyle solid'
+       write(strout,fmt='(a,i5,a,e14.6,a)') "set object ",iObject,' fc palette cb ', array(iCell), ' fillstyle solid'
        write(55,*) trim(strout)
 
        iObject = iObject + 1
@@ -3293,7 +3296,7 @@ contains
           strout = trim(strout)//trim(stroutvertex)
           write(55,*) trim(strout)
           
-          write(strout,fmt='(a,i5,a,e13.6,a)') "set object ",iObject,' fc palette cb ', array(iPoint), ' fillstyle solid'
+          write(strout,fmt='(a,i5,a,e14.6,a)') "set object ",iObject,' fc palette cb ', array(iPoint), ' fillstyle solid'
           write(55,*) trim(strout)
           
           iObject = iObject + 1
@@ -3426,7 +3429,7 @@ contains
 
        select case (trim(config_test_case_diag_type))
        case ("global_velocity")
-          call test_case_output_global_velocity(block)
+          call test_case_output_global_velocity(block, itimestep)
        case ("square_advection")
           call test_case_output_square_advection(block, itimestep)
        case ("advection")
@@ -3442,14 +3445,252 @@ contains
 
   !-------------------------------------------------------------
   
-  subroutine test_case_output_global_velocity(block)
+  subroutine test_case_output_global_velocity(block, itimestep)
+
+    use cice_mesh, only: &
+         latlon_vector_rotation_backward
 
     type(block_type), intent(inout) :: block
+    integer, intent(in) :: itimestep
 
     type (MPAS_pool_type), pointer :: &
-         mesh
+         configs, &
+         mesh, &
+         hexdyn, &
+         boundary, &
+         atmos_forcing, &
+         icestate
+
+    integer, dimension(:), pointer :: &
+         interiorVertex
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         uVelocity, &
+         vVelocity, &
+         airStressVertexU, &
+         airStressVertexV, &
+         airStressCellU, &
+         airStressCellV, &
+         totalMassVertexfVertex, &
+         uAirVelocity, &
+         vAirVelocity, &
+         stressDivergenceU, &
+         stressDivergenceV, &
+         latVertex, &
+         lonVertex, &
+         xVertex, &
+         yVertex, &
+         zVertex, &
+         latCell, &
+         lonCell, &
+         xCell, &
+         yCell, &
+         zCell, &
+         iceAreaCell
+
+    real(kind=RKIND), dimension(:), allocatable :: &
+         uVelocityGeographical, &
+         vVelocityGeographical, &
+         airStressVertexUGeographical, &
+         airStressVertexVGeographical, &
+         airStressCellUGeographical, &
+         airStressCellVGeographical, &
+         uAirVelocityGeographical, &
+         vAirVelocityGeographical, &
+         stressDivergenceUGeographical, &
+         stressDivergenceVGeographical
+
+    integer, pointer :: &
+         nVertices, &
+         nCells
+
+    logical, pointer :: &
+         config_rotate_cartesian_grid
+
+    real(kind=RKIND), pointer :: &
+         sphere_radius
+
+    integer :: &
+         iVertex, &
+         iCell
+
+    configs => block % configs
+    call MPAS_pool_get_config(configs, "config_rotate_cartesian_grid", config_rotate_cartesian_grid)
 
     call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+    call MPAS_pool_get_subpool(block % structs, "hexdyn", hexdyn)
+    call MPAS_pool_get_subpool(block % structs, "boundary", boundary)
+    call MPAS_pool_get_subpool(block % structs, "atmos_forcing", atmos_forcing)
+    call MPAS_pool_get_subpool(block % structs, "icestate", icestate)
+
+    call MPAS_pool_get_config(mesh, "sphere_radius", sphere_radius)
+
+    call MPAS_pool_get_dimension(mesh, "nVertices", nVertices)   
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)  
+
+    call MPAS_pool_get_array(mesh, "latVertex", latVertex)    
+    call MPAS_pool_get_array(mesh, "lonVertex", lonVertex) 
+    call MPAS_pool_get_array(mesh, "xVertex", xVertex) 
+    call MPAS_pool_get_array(mesh, "yVertex", yVertex) 
+    call MPAS_pool_get_array(mesh, "zVertex", zVertex) 
+
+    call MPAS_pool_get_array(mesh, "latCell", latCell)    
+    call MPAS_pool_get_array(mesh, "lonCell", lonCell) 
+    call MPAS_pool_get_array(mesh, "xCell", xCell) 
+    call MPAS_pool_get_array(mesh, "yCell", yCell) 
+    call MPAS_pool_get_array(mesh, "zCell", zCell) 
+
+    call MPAS_pool_get_array(boundary, "interiorVertex", interiorVertex)
+
+    call MPAS_pool_get_array(hexdyn, "uVelocity", uVelocity)    
+    call MPAS_pool_get_array(hexdyn, "vVelocity", vVelocity)
+    call MPAS_pool_get_array(hexdyn, "airStressVertexU", airStressVertexU)    
+    call MPAS_pool_get_array(hexdyn, "airStressVertexV", airStressVertexV)    
+    call MPAS_pool_get_array(hexdyn, "airStressCellU", airStressCellU)    
+    call MPAS_pool_get_array(hexdyn, "airStressCellV", airStressCellV)    
+    call MPAS_pool_get_array(hexdyn, "totalMassVertexfVertex", totalMassVertexfVertex)
+    call MPAS_pool_get_array(hexdyn, "stressDivergenceU", stressDivergenceU)
+    call MPAS_pool_get_array(hexdyn, "stressDivergenceV", stressDivergenceV)
+
+    call MPAS_pool_get_array(atmos_forcing, "uAirVelocity", uAirVelocity)    
+    call MPAS_pool_get_array(atmos_forcing, "vAirVelocity", vAirVelocity)    
+
+    call MPAS_pool_get_array(icestate, "iceAreaCell", iceAreaCell)    
+
+    allocate(uVelocityGeographical(nVertices))
+    allocate(vVelocityGeographical(nVertices))
+    allocate(airStressVertexUGeographical(nVertices))
+    allocate(airStressVertexVGeographical(nVertices))
+    allocate(airStressCellUGeographical(nCells))
+    allocate(airStressCellVGeographical(nCells))
+    allocate(uAirVelocityGeographical(nCells))
+    allocate(vAirVelocityGeographical(nCells))
+    allocate(stressDivergenceUGeographical(nVertices))
+    allocate(stressDivergenceVGeographical(nVertices))
+
+    do iVertex = 1, nVertices
+       call latlon_vector_rotation_backward(&
+            uVelocityGeographical(iVertex), &
+            vVelocityGeographical(iVertex), &
+            uVelocity(iVertex), &
+            vVelocity(iVertex), &
+            latVertex(iVertex), &
+            lonVertex(iVertex), &
+            xVertex(iVertex), &
+            yVertex(iVertex), &
+            zVertex(iVertex), &
+            sphere_radius, &
+            config_rotate_cartesian_grid)
+       call latlon_vector_rotation_backward(&
+            airStressVertexUGeographical(iVertex), &
+            airStressVertexVGeographical(iVertex), &
+            airStressVertexU(iVertex), &
+            airStressVertexV(iVertex), &
+            latVertex(iVertex), &
+            lonVertex(iVertex), &
+            xVertex(iVertex), &
+            yVertex(iVertex), &
+            zVertex(iVertex), &
+            sphere_radius, &
+            config_rotate_cartesian_grid)
+       call latlon_vector_rotation_backward(&
+            stressDivergenceUGeographical(iVertex), &
+            stressDivergenceVGeographical(iVertex), &
+            stressDivergenceU(iVertex), &
+            stressDivergenceV(iVertex), &
+            latVertex(iVertex), &
+            lonVertex(iVertex), &
+            xVertex(iVertex), &
+            yVertex(iVertex), &
+            zVertex(iVertex), &
+            sphere_radius, &
+            config_rotate_cartesian_grid)
+    enddo ! iVertex
+
+    do iCell = 1, nCells
+       call latlon_vector_rotation_backward(&
+            uAirVelocityGeographical(iCell), &
+            vAirVelocityGeographical(iCell), &
+            uAirVelocity(iCell), &
+            vAirVelocity(iCell), &
+            latCell(iCell), &
+            lonCell(iCell), &
+            xCell(iCell), &
+            yCell(iCell), &
+            zCell(iCell), &
+            sphere_radius, &
+            config_rotate_cartesian_grid)
+       call latlon_vector_rotation_backward(&
+            airStressCellUGeographical(iCell), &
+            airStressCellVGeographical(iCell), &
+            airStressCellU(iCell), &
+            airStressCellV(iCell), &
+            latCell(iCell), &
+            lonCell(iCell), &
+            xCell(iCell), &
+            yCell(iCell), &
+            zCell(iCell), &
+            sphere_radius, &
+            config_rotate_cartesian_grid)
+    enddo ! iCell
+    !uAirVelocityGeographical = uAirVelocity(1:nCells)
+    !vAirVelocityGeographical = vAirVelocity(1:nCells)
+
+    ! air velocity
+    call plot_cells_spherical(mesh, uAirVelocityGeographical, "uAirVelocity.txt", itimestep)
+    call plot_cells_spherical(mesh, vAirVelocityGeographical, "vAirVelocity.txt", itimestep)
+
+    write(*,*) "uAirVelocity: ", sum(abs(uAirVelocityGeographical(1:nCells))), nCells
+    write(*,*) "vAirVelocity: ", sum(abs(vAirVelocityGeographical(1:nCells))), nCells
+
+    ! air stress on cells
+    call plot_cells_spherical(mesh, airStressCellUGeographical, "airStressCellU.txt", itimestep)
+    call plot_cells_spherical(mesh, airStressCellVGeographical, "airStressCellV.txt", itimestep)
+
+    write(*,*) "airStressCellU: ", sum(abs(airStressCellUGeographical(1:nCells))), nCells
+    write(*,*) "airStressCellV: ", sum(abs(airStressCellVGeographical(1:nCells))), nCells
+
+    ! area on cell
+    call plot_cells_spherical(mesh, iceAreaCell, "iceAreaCell.txt", itimestep)
+
+    write(*,*) "iceAreaCell: ", sum(abs(iceAreaCell(1:nCells))), nCells
+
+    ! air stress on vertices
+    call plot_vertices_spherical(mesh, airStressVertexUGeographical, interiorVertex, "airStressVertexU.txt", itimestep)
+    call plot_vertices_spherical(mesh, airStressVertexVGeographical, interiorVertex, "airStressVertexV.txt", itimestep)
+
+    write(*,*) "airStressVertexU: ", sum(abs(airStressVertexUGeographical(1:nVertices))), nVertices, sum(interiorVertex)
+    write(*,*) "airStressVertexV: ", sum(abs(airStressVertexVGeographical(1:nVertices))), nVertices, sum(interiorVertex)
+
+    ! coriolis force coefficient
+    call plot_vertices_spherical(mesh, totalMassVertexfVertex, interiorVertex, "totalMassVertexfVertex.txt", itimestep)
+
+    write(*,*) "totalMassVertexfVertex: ", sum(abs(totalMassVertexfVertex(1:nVertices))), nVertices, sum(interiorVertex)
+
+    ! ice internal stress
+    call plot_vertices_spherical(mesh, stressDivergenceUGeographical, interiorVertex, "stressDivergenceU.txt", itimestep)
+    call plot_vertices_spherical(mesh, stressDivergenceVGeographical, interiorVertex, "stressDivergenceV.txt", itimestep)
+
+    write(*,*) "stressDivergenceU: ", sum(abs(stressDivergenceUGeographical(1:nVertices)), mask=interiorVertex(1:nVertices)==1), nVertices, sum(interiorVertex)
+    write(*,*) "stressDivergenceV: ", sum(abs(stressDivergenceVGeographical(1:nVertices)), mask=interiorVertex(1:nVertices)==1), nVertices, sum(interiorVertex)
+
+    ! ice velocity
+    call plot_vertices_spherical(mesh, uVelocityGeographical, interiorVertex, "uVelocity.txt", itimestep)
+    call plot_vertices_spherical(mesh, vVelocityGeographical, interiorVertex, "vVelocity.txt", itimestep)
+
+    write(*,*) "uVelocity: ", sum(abs(uVelocityGeographical(1:nVertices)), mask=interiorVertex(1:nVertices)==1), nVertices, sum(interiorVertex)
+    write(*,*) "vVelocity: ", sum(abs(vVelocityGeographical(1:nVertices)), mask=interiorVertex(1:nVertices)==1), nVertices, sum(interiorVertex)
+
+    deallocate(uVelocityGeographical)
+    deallocate(vVelocityGeographical)
+    deallocate(airStressVertexUGeographical)
+    deallocate(airStressVertexVGeographical)
+    deallocate(airStressCellUGeographical)
+    deallocate(airStressCellVGeographical)
+    deallocate(uAirVelocityGeographical)
+    deallocate(vAirVelocityGeographical)
+    deallocate(stressDivergenceUGeographical)
+    deallocate(stressDivergenceVGeographical)
 
   end subroutine test_case_output_global_velocity
 

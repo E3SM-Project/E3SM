@@ -7,7 +7,8 @@ module cice_dynamics_unit_tests
   private
   public :: &
        strain_rate_operator_unit_test, &
-       stress_divergence_operator_unit_test
+       stress_divergence_operator_unit_test, &
+       constitutive_relationship_unit_test
 
 contains
 
@@ -1223,6 +1224,175 @@ contains
            (1.0_RKIND / r) * tan(lat)   * stress22
 
   end function divergenceStressV
+
+  !--------------------------------------------------------------------------
+  ! EVP Constitutive relationship unit test
+  !--------------------------------------------------------------------------
+
+  subroutine constitutive_relationship_unit_test(block)
+
+    use cice_dynamics_shared, only: &
+         evp_constitutive_relation, &
+         init_evp
+
+    use cice_dynamics_shared, only: &
+         dtElastic
+
+    type(block_type), intent(inout) :: block
+
+    type (MPAS_pool_type), pointer :: &
+         configs
+
+    integer, parameter :: &
+         nTests = 2
+
+    real(kind=RKIND), dimension(nTests) :: &
+         icePressure, &
+         stress11, &
+         stress22, &
+         stress12, &
+         strain11, &
+         strain22, &
+         strain12
+
+    real(kind=RKIND) :: &
+         replacementPressure, &
+         areaCell
+
+    logical, pointer :: &
+         config_evp_damping
+
+    real(kind=RKIND), pointer :: &
+         config_dt
+
+    integer :: &
+         iTest
+
+    configs => block % configs
+
+    call MPAS_pool_get_config(configs, "config_evp_damping", config_evp_damping)
+    call MPAS_pool_get_config(configs, "config_dt", config_dt)
+
+    call init_evp(config_dt, configs)
+
+    call constitutive_relationship_set_strains(&
+         stress11, &
+         stress22, &
+         stress12, &
+         icePressure, &
+         strain11, &
+         strain22, &
+         strain12)
+
+    areaCell = 1.0_RKIND
+
+    do iTest = 1, nTests
+
+       call evp_constitutive_relation(&
+            stress11(iTest), stress22(iTest), stress12(iTest), &
+            strain11(iTest), strain22(iTest), strain12(iTest), &
+            icePressure(iTest), replacementPressure,   &
+            areaCell,    dtElastic,   config_evp_damping)
+
+    enddo ! iTest
+
+    call constitutive_relationship_writeout(&
+         icePressure, &
+         strain11, &
+         strain22, &
+         strain12, &
+         stress11, &
+         stress22, &
+         stress12)
+
+  end subroutine constitutive_relationship_unit_test
+
+  !--------------------------------------------------------------------------
+
+  subroutine constitutive_relationship_set_strains(&
+       stress11, &
+       stress22, &
+       stress12, &
+       icePressure, &
+       strain11, &
+       strain22, &
+       strain12)
+
+    real(kind=RKIND), dimension(:), intent(out) :: &
+         stress11, &
+         stress22, &
+         stress12, &
+         icePressure, &
+         strain11, &
+         strain22, &
+         strain12 
+
+    integer :: &
+         iTest
+
+    ! test 1
+    iTest = 1
+    stress11(iTest) = 0.0_RKIND
+    stress22(iTest) = 0.0_RKIND
+    stress12(iTest) = 0.0_RKIND
+    icePressure(iTest) = 0.0_RKIND
+    strain11(iTest) = 0.0_RKIND
+    strain22(iTest) = 0.0_RKIND
+    strain12(iTest) = 0.0_RKIND
+
+    ! test 2
+    iTest = 2
+    stress11(iTest) = 0.0_RKIND
+    stress22(iTest) = 0.0_RKIND
+    stress12(iTest) = 0.0_RKIND
+    icePressure(iTest) = 1000000000.0_RKIND
+    strain11(iTest) = 1.0_RKIND
+    strain22(iTest) = 1.0_RKIND
+    strain12(iTest) = 1.0_RKIND
+
+  end subroutine constitutive_relationship_set_strains
+
+  !--------------------------------------------------------------------------
+
+  subroutine constitutive_relationship_writeout(&
+       icePressure, &
+       strain11, &
+       strain22, &
+       strain12, &
+       stress11, &
+       stress22, &
+       stress12)
+
+    real(kind=RKIND), dimension(:), intent(in) :: &
+         icePressure, &
+         strain11, &
+         strain22, &
+         strain12, &
+         stress11, &
+         stress22, &
+         stress12
+
+    integer :: &
+         iTest
+
+    write(*,*) "Constitutive tests"
+    write(*,*)
+
+    do iTest = 1, size(icePressure)
+
+       write(*,*) "Constitutive test ", iTest
+
+       write(*,*) "strength: ", icePressure(iTest)
+       write(*,*) "strain11: ", strain11(iTest)
+       write(*,*) "strain22: ", strain22(iTest)
+       write(*,*) "strain12: ", strain12(iTest)
+       write(*,*) "stress11: ", stress11(iTest)
+       write(*,*) "stress22: ", stress22(iTest)
+       write(*,*) "stress12: ", stress12(iTest)
+
+    enddo ! iTest
+
+  end subroutine constitutive_relationship_writeout
 
   !--------------------------------------------------------------------------
 

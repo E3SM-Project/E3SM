@@ -14,7 +14,8 @@ contains
 
     use cice_dynamics_unit_tests, only: &
          strain_rate_operator_unit_test, &
-         stress_divergence_operator_unit_test
+         stress_divergence_operator_unit_test, &
+         constitutive_relationship_unit_test
     use cice_therm_zerolayer, only: &
          zero_layer_thermo_semtner_unit_test
 
@@ -35,6 +36,8 @@ contains
        call strain_rate_operator_unit_test(block, trim(config_unit_test_subtype))
     case ("stress divergence operator")
        call stress_divergence_operator_unit_test(block, trim(config_unit_test_subtype))
+    case ("constitutive relationship")
+       call constitutive_relationship_unit_test(block)
     case ("semtner 1d thermo test")
        call zero_layer_thermo_semtner_unit_test()
     case default
