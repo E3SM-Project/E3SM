@@ -159,7 +159,7 @@
  call mpas_pool_get_config(domain%blocklist%configs,'config_radtlw_interval' ,config_radtlw_interval )
  call mpas_pool_get_config(domain%blocklist%configs,'config_radtsw_interval' ,config_radtsw_interval )
 
- call mpas_pool_get_config(domain%blocklist%configs,'config_frac_seaice'        ,config_o3climatology      )
+ call mpas_pool_get_config(domain%blocklist%configs,'config_frac_seaice'        ,config_frac_seaice        )
  call mpas_pool_get_config(domain%blocklist%configs,'config_o3climatology'      ,config_o3climatology      )
  call mpas_pool_get_config(domain%blocklist%configs,'config_sfc_albedo'         ,config_sfc_albedo         )
  call mpas_pool_get_config(domain%blocklist%configs,'config_sst_update'         ,config_sst_update         )

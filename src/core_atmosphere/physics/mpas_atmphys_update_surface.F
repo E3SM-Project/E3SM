@@ -494,10 +494,10 @@
  call mpas_pool_get_array(diag_physics,'tday_accum'  ,tday_accum  )
  call mpas_pool_get_array(diag_physics,'tyear_accum' ,tyear_accum )
  call mpas_pool_get_array(diag_physics,'tyear_mean'  ,tyear_mean  )
+ call mpas_pool_get_array(diag_physics,'tlag'        ,tlag        )
 
  call mpas_pool_get_array(sfc_input,'tmn'     ,tmn )
  call mpas_pool_get_array(sfc_input,'skintemp',tsk )
- call mpas_pool_get_array(sfc_input,'tlag'    ,tlag)
 
 !... defines the number of days in the year:
  if(LeapYear) then
