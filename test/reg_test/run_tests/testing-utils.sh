@@ -306,7 +306,7 @@ createAllRunScripts() {
       echo "" >> $thisRunScript # new line
     done
 
-    if [ -n "${OMP_NUM_TESTS}" -a "${RUN_OPENMP}" = TRUE ]; then
+    if [ -n "${OMP_NUM_TESTS}" -a "${RUN_OPENMP}" = ON ]; then
       echo "export OMP_NUM_THREADS=${OMP_NUMBER_THREADS}" >> $thisRunScript
       echo "export OMP_STACKSIZE=128M" >> $thisRunScript
       echo "" >> $thisRunScript # new line
@@ -420,7 +420,7 @@ createRunScript() {
     echo "" >> $thisRunScript # new line
   done
 
-  if [ -n "${OMP_NUM_TESTS}" -a "${RUN_OPENMP}" == true ]; then
+  if [ -n "${OMP_NUM_TESTS}" -a "${RUN_OPENMP}" = ON ]; then
     echo "export OMP_NUM_THREADS=${OMP_NUMBER_THREADS}" >> $thisRunScript
     echo "" >> $thisRunScript # new line
     for testNum in $(seq 1 ${OMP_NUM_TESTS})
