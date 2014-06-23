@@ -152,14 +152,17 @@ ENDIF ()
 #   1) HORIZ_OPENMP OpenMP over elements (standard OPENMP)
 #   2) COLUMN_OPENMP OpenMP within an element (previously called ELEMENT_OPENMP)
 ##############################################################################
-OPTION(ENABLE_OPENMP "OpenMP across elements" FALSE)
-OPTION(ENABLE_HORIZ_OPENMP "OpenMP across elements" FALSE)
+OPTION(ENABLE_OPENMP "OpenMP across elements" TRUE)
+OPTION(ENABLE_HORIZ_OPENMP "OpenMP across elements" TRUE)
 OPTION(ENABLE_COLUMN_OPENMP "OpenMP within an element" FALSE)
-##############################################################################
-IF (${ENABLE_OPENMP})
-  SET (ENABLE_HORIZ_OPENMP TRUE)
+
+# If OpenMP is turned off also turn off ENABLE_HORIZ_OPENMP
+IF (NOT ${ENABLE_OPENMP}) 
+  SET(ENABLE_HORIZ_OPENMP FALSE) 
+  SET(ENABLE_COLUMN_OPENMP FALSE) 
 ENDIF ()
 
+##############################################################################
 IF (ENABLE_HORIZ_OPENMP OR ENABLE_COLUMN_OPENMP)
   IF(NOT ${CMAKE_Fortran_COMPILER_ID} STREQUAL Cray) 
     FIND_PACKAGE(OpenMP)

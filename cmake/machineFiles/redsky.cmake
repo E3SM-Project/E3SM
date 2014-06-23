@@ -20,7 +20,6 @@ SET (ADD_Fortran_FLAGS "-traceback" CACHE STRING "")
 SET (FORCE_Fortran_FLAGS "-openmp -traceback -fp-model precise -ftz -g -O2" CACHE STRING "")
 
 
-SET (ENABLE_OPENMP TRUE CACHE BOOL "")
 #SET (NETCDF_DIR "/projects/ccsm/netcdf4.2.1.1-intel" CACHE FILEPATH "")
 SET (NETCDF_DIR "/opt/netcdf-4.1-intel" CACHE FILEPATH "")
 SET (PNETCDF_DIR "/projects/ccsm/pnetcdf1.2.0-intel" CACHE FILEPATH "")

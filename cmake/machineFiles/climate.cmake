@@ -12,7 +12,6 @@ SET (CMAKE_CXX_COMPILER mpicc CACHE FILEPATH "")
 #
 #SET (FORCE_Fortran_FLAGS "-traceback -openmp -fp-model fast -ftz -g -O2" CACHE STRING "")
 SET (FORCE_Fortran_FLAGS "-traceback -openmp -fp-model precise -ftz -g -O2" CACHE STRING "")
-SET (ENABLE_OPENMP TRUE CACHE BOOL "")
 
 # ignored if FORCE_Fortran_FLAGS used above
 #SET (ADD_Fortran_FLAGS "-traceback" CACHE STRING "")
