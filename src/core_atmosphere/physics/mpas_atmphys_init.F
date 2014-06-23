@@ -50,7 +50,10 @@
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2013-08-24.
 !>    * throughout the sourcecode, replaced all "var_struct" defined arrays by local pointers.
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-22.
-!>    * Modified sourcecode to use pools.
+!>    * modified sourcecode to use pools.
+!>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-05-15.
+!>    * added initialization of the accumulated surface pressure. Added initialization of the 
+!>      tendency and accumulated tendency of the surface pressure.
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-05-15.
 
 
@@ -58,7 +61,7 @@
 
 
 !==================================================================================================
- subroutine physics_init(dminfo,clock,configs,mesh,diag,state,time_lev,diag_physics, &
+ subroutine physics_init(dminfo,clock,configs,mesh,diag,tend,state,time_lev,diag_physics, &
                          atm_input,sfc_input)
 !==================================================================================================
 
@@ -66,13 +69,14 @@
  type(dm_info),intent(in):: dminfo
  type(mpas_pool_type),intent(in):: mesh
  type(mpas_pool_type),intent(in):: configs
- type(mpas_pool_type),intent(in):: diag
  type(MPAS_Clock_type),intent(in):: clock
 
  integer,intent(in):: time_lev
 
 !inout arguments:
  type(mpas_pool_type),intent(inout):: state
+ type(mpas_pool_type),intent(inout):: diag
+ type(mpas_pool_type),intent(inout):: tend
  type(mpas_pool_type),intent(inout):: diag_physics
  type(mpas_pool_type),intent(inout):: atm_input
  type(mpas_pool_type),intent(inout):: sfc_input

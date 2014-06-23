@@ -55,6 +55,10 @@
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-04-22.
 !>    * Modified sourcecode to use pools.
 !>      Laura D. Fowler (birch.mmm.ucar.edu) / 2014-05-15.
+!>    * Added calculation of the surface pressure tendency. Moved the calculation of znu_p below 
+!>      the calculation of the surface pressure to avoid dividing by zero if the surface pressure
+!>      is not output in the init file.
+!>      Laura D. Fowler (birch.mmm.ucar.ecu) / 2014-06-23. 
 
 
  contains
@@ -169,7 +173,7 @@
  integer,pointer:: index_qv,index_qc,index_qr,index_qi,index_qs,index_qg
  real(kind=RKIND),dimension(:),pointer    :: latCell,lonCell
  real(kind=RKIND),dimension(:),pointer    :: fzm,fzp,rdzw
- real(kind=RKIND),dimension(:),pointer    :: sfc_pressure,plrad
+ real(kind=RKIND),dimension(:),pointer    :: surface_pressure,plrad
  real(kind=RKIND),dimension(:,:),pointer  :: zgrid
  real(kind=RKIND),dimension(:,:),pointer  :: zz,exner,pressure_b,rtheta_p,rtheta_b
  real(kind=RKIND),dimension(:,:),pointer  :: rho_zz,theta_m,pressure_p,u,v,w
@@ -203,14 +207,14 @@
  call mpas_pool_get_array(mesh,'zgrid'  ,zgrid  )
  call mpas_pool_get_array(mesh,'zz'     ,zz     )
 
- call mpas_pool_get_array(diag,'surface_pressure'      ,sfc_pressure)
- call mpas_pool_get_array(diag,'exner'                 ,exner       )
- call mpas_pool_get_array(diag,'pressure_base'         ,pressure_b  )
- call mpas_pool_get_array(diag,'pressure_p'            ,pressure_p  )
- call mpas_pool_get_array(diag,'rtheta_base'           ,rtheta_b    )
- call mpas_pool_get_array(diag,'rtheta_p'              ,rtheta_p    )
- call mpas_pool_get_array(diag,'uReconstructZonal'     ,u           )
- call mpas_pool_get_array(diag,'uReconstructMeridional',v           )
+ call mpas_pool_get_array(diag,'surface_pressure'      ,surface_pressure)
+ call mpas_pool_get_array(diag,'exner'                 ,exner           )
+ call mpas_pool_get_array(diag,'pressure_base'         ,pressure_b      )
+ call mpas_pool_get_array(diag,'pressure_p'            ,pressure_p      )
+ call mpas_pool_get_array(diag,'rtheta_base'           ,rtheta_b        )
+ call mpas_pool_get_array(diag,'rtheta_p'              ,rtheta_p        )
+ call mpas_pool_get_array(diag,'uReconstructZonal'     ,u               )
+ call mpas_pool_get_array(diag,'uReconstructMeridional',v               )
 
  call mpas_pool_get_array(state,'rho_zz' ,rho_zz ,time_lev)
  call mpas_pool_get_array(state,'theta_m',theta_m,time_lev)
@@ -257,7 +261,6 @@
 
     pi_p(i,k,j)   = exner(k,i)
     pres_p(i,k,j) = pressure_p(k,i) + pressure_b(k,i)
-    znu_p(i,k,j)  = pres_p(i,k,j) / sfc_pressure(i)
 
     zmid_p(i,k,j) = 0.5*(zgrid(k+1,i)+zgrid(k,i))
     dz_p(i,k,j)   = zgrid(k+1,i)-zgrid(k,i)
@@ -273,9 +276,15 @@
     tem2 = zgrid(3,i)-zgrid(2,i)
     rho1 = rho_zz(1,i) * zz(1,i) * (1. + qv_p(i,1,j))
     rho2 = rho_zz(2,i) * zz(2,i) * (1. + qv_p(i,2,j))
-    sfc_pressure(i) = 0.5*gravity*(zgrid(2,i)-zgrid(1,i)) &
+    surface_pressure(i) = 0.5*gravity*(zgrid(2,i)-zgrid(1,i)) &
                     * (rho1 + 0.5*(rho2-rho1)*tem1/(tem1+tem2))
-    sfc_pressure(i) = sfc_pressure(i) + pressure_p(1,i) + pressure_b(1,i)
+    surface_pressure(i) = surface_pressure(i) + pressure_p(1,i) + pressure_b(1,i)
+ enddo
+ 
+ do k = kts,kte
+ do i = its,ite
+    znu_p(i,k,j)  = pres_p(i,k,j) / surface_pressure(i)
+ enddo
  enddo
  enddo
 
@@ -512,7 +521,7 @@
 !local pointers:
  integer,pointer:: index_qv,index_qc,index_qr,index_qi,index_qs,index_qg
  real(kind=RKIND),dimension(:),pointer    :: rdzw
- real(kind=RKIND),dimension(:),pointer    :: sfc_pressure
+ real(kind=RKIND),dimension(:),pointer    :: surface_pressure,tend_sfc_pressure
  real(kind=RKIND),dimension(:,:),pointer  :: zgrid
  real(kind=RKIND),dimension(:,:),pointer  :: zz,exner,exner_b,pressure_b,rtheta_p,rtheta_b
  real(kind=RKIND),dimension(:,:),pointer  :: rho_zz,theta_m,pressure_p
@@ -535,13 +544,15 @@
  call mpas_pool_get_array(mesh,'zz'   ,zz   )
  call mpas_pool_get_array(mesh,'zgrid',zgrid)
 
- call mpas_pool_get_array(diag,'exner'           ,exner       )
- call mpas_pool_get_array(diag,'exner_base'      ,exner_b     )
- call mpas_pool_get_array(diag,'pressure_base'   ,pressure_b  )
- call mpas_pool_get_array(diag,'pressure_p'      ,pressure_p  )
- call mpas_pool_get_array(diag,'rtheta_base'     ,rtheta_b    )
- call mpas_pool_get_array(diag,'rtheta_p'        ,rtheta_p    )
- call mpas_pool_get_array(diag,'surface_pressure',sfc_pressure) 
+ call mpas_pool_get_array(diag,'exner'           ,exner           )
+ call mpas_pool_get_array(diag,'exner_base'      ,exner_b         )
+ call mpas_pool_get_array(diag,'pressure_base'   ,pressure_b      )
+ call mpas_pool_get_array(diag,'pressure_p'      ,pressure_p      )
+ call mpas_pool_get_array(diag,'rtheta_base'     ,rtheta_b        )
+ call mpas_pool_get_array(diag,'rtheta_p'        ,rtheta_p        )
+ call mpas_pool_get_array(diag,'surface_pressure',surface_pressure)
+
+ call mpas_pool_get_array(tend,'tend_sfc_pressure',tend_sfc_pressure)
 
  call mpas_pool_get_array(state,'rho_zz' ,rho_zz ,time_lev)
  call mpas_pool_get_array(state,'theta_m',theta_m,time_lev)
@@ -597,16 +608,19 @@
  enddo
  if(allocated(t_p)) deallocate(t_p)
 
-!updates the surface pressure.
+!updates the surface pressure and calculates the surface pressure tendency:
  do j = jts,jte
  do i = its,ite
     tem1 = zgrid(2,i)-zgrid(1,i)
     tem2 = zgrid(3,i)-zgrid(2,i)
     rho1 = rho_zz(1,i) * zz(1,i) * (1. + qv_p(i,1,j))
     rho2 = rho_zz(2,i) * zz(2,i) * (1. + qv_p(i,2,j))
-    sfc_pressure(i) = 0.5*gravity*(zgrid(2,i)-zgrid(1,i)) &
-                    * (rho1 + 0.5*(rho2-rho1)*tem1/(tem1+tem2))
-    sfc_pressure(i) = sfc_pressure(i) + pressure_p(1,i) + pressure_b(1,i)
+
+    tend_sfc_pressure(i) = surface_pressure(i)
+    surface_pressure(i)  = 0.5*gravity*(zgrid(2,i)-zgrid(1,i)) &
+                         * (rho1 + 0.5*(rho2-rho1)*tem1/(tem1+tem2))
+    surface_pressure(i)  = surface_pressure(i) + pressure_p(1,i) + pressure_b(1,i)
+    tend_sfc_pressure(i)   = (surface_pressure(i)-tend_sfc_pressure(i)) / dt_dyn
  enddo
  enddo
 

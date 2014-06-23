@@ -334,6 +334,7 @@
 			<var name="rtheta_p"/>
 			<var name="rho_p"/>
 			<var name="surface_pressure"/>
+                        <var name="tend_sfc_pressure"/>
 			<var name="rt_diabatic_tend"/>
 			<var name="dcEdge_m"/>
 			<var name="nsteps_accum"/>
@@ -618,6 +619,7 @@
 			<var name="theta_base"/>
 			<var name="kdiff"/>
 			<var name="surface_pressure"/>
+			<var name="tend_sfc_pressure"/>
 			<var name="temperature_200hPa"/>
 			<var name="temperature_500hPa"/>
 			<var name="temperature_700hPa"/>
@@ -1137,6 +1139,7 @@
                 <var name="euler_tend_theta"   name_in_code="theta_euler" type="real"     dimensions="nVertLevels nCells Time"/>
                 <var name="tend_w_pgf"         name_in_code="w_pgf"       type="real"     dimensions="nVertLevelsP1 nCells Time"/>
                 <var name="tend_w_buoy"        name_in_code="w_buoy"      type="real"     dimensions="nVertLevelsP1 nCells Time"/>
+                <var name="tend_sfc_pressure"                             type="real"     dimensions="nCells Time"/>
 
                 <!-- scalar tendencies -->
                 <var_array name="scalars_tend" type="real" dimensions="nVertLevels nCells Time">

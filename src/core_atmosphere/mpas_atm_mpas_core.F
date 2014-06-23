@@ -242,6 +242,7 @@ module mpas_core
 
       type (mpas_pool_type), pointer :: state
       type (mpas_pool_type), pointer :: diag
+      type (mpas_pool_type), pointer :: tend
       type (mpas_pool_type), pointer :: sfc_input
       type (mpas_pool_type), pointer :: diag_physics
       type (mpas_pool_type), pointer :: atm_input
@@ -304,13 +305,14 @@ module mpas_core
 
       if (moist_physics) then
          !initialization of some input variables in registry:
+         call mpas_pool_get_subpool(block % structs, 'tend', tend)
          call mpas_pool_get_subpool(block % structs, 'diag_physics', diag_physics)
          call mpas_pool_get_subpool(block % structs, 'atm_input', atm_input)
          call physics_registry_init(mesh, block % configs, sfc_input)
          call physics_run_init(block % configs, mesh, state, clock)
 
          !initialization of all physics:
-         call physics_init(dminfo, clock, block % configs, mesh, diag, state, 1, diag_physics, &
+         call physics_init(dminfo, clock, block % configs, mesh, diag, tend, state, 1, diag_physics, &
                            atm_input, sfc_input)
       endif
 #endif
@@ -639,9 +641,12 @@ module mpas_core
       type (mpas_pool_type), pointer :: mesh
       type (mpas_pool_type), pointer :: state
       type (mpas_pool_type), pointer :: diag
+      type (mpas_pool_type), pointer :: tend
       type (mpas_pool_type), pointer :: diag_physics
       logical, pointer :: on_a_sphere
       type (field0DChar), pointer :: xtime
+      type (field1DReal), pointer :: surface_pressure
+      type (field1DReal), pointer :: tend_sfc_pressure
       type (field1DReal), pointer :: olrtoa, rainc, rainnc, refl10cm_max, precipw
       type (field1DReal), pointer :: temperature_200hPa
       type (field1DReal), pointer :: temperature_500hPa
@@ -683,6 +688,7 @@ module mpas_core
       call mpas_pool_get_subpool(block_ptr % structs, 'state', state)
       call mpas_pool_get_subpool(block_ptr % structs, 'diag_physics', diag_physics)
       call mpas_pool_get_subpool(block_ptr % structs, 'diag', diag)
+      call mpas_pool_get_subpool(block_ptr % structs, 'tend', tend)
 
       call mpas_pool_get_field(state, 'xtime', xtime, 1)
       call mpas_pool_get_field(diag_physics, 'olrtoa', olrtoa)
@@ -690,6 +696,8 @@ module mpas_core
       call mpas_pool_get_field(diag_physics, 'rainnc', rainnc)
       call mpas_pool_get_field(diag_physics, 'refl10cm_max', refl10cm_max)
       call mpas_pool_get_field(diag_physics, 'precipw', precipw)
+      call mpas_pool_get_field(tend, 'tend_sfc_pressure', tend_sfc_pressure)
+      call mpas_pool_get_field(diag, 'surface_pressure', surface_pressure)
       call mpas_pool_get_field(diag, 'temperature_200hPa', temperature_200hPa)
       call mpas_pool_get_field(diag, 'temperature_500hPa', temperature_500hPa)
       call mpas_pool_get_field(diag, 'temperature_850hPa', temperature_850hPa)
@@ -710,6 +718,8 @@ module mpas_core
       call mpas_pool_get_field(diag, 'vorticity_850hPa', vorticity_850hPa)
 
       call MPAS_streamAddField(hifreq_stream, xtime, ierr)
+      call MPAS_streamAddField(hifreq_stream, surface_pressure, ierr)
+      call MPAS_streamAddField(hifreq_stream, tend_sfc_pressure, ierr)
       call MPAS_streamAddField(hifreq_stream, olrtoa, ierr)
       call MPAS_streamAddField(hifreq_stream, rainc, ierr)
       call MPAS_streamAddField(hifreq_stream, rainnc, ierr)
