@@ -1,8 +1,8 @@
 #!/bin/tcsh -f 
 #SBATCH --job-name baroclinic
-#SBATCH -N 8
+#SBATCH -N 25
 #SBATCH --account=FY139209
-#SBATCH --time=0:60:00
+#SBATCH --time=0:50:00
 
 # SNL batch system:
 #XPBS -l nodes=60:ppn=4
@@ -51,7 +51,6 @@ set vcoord = $HOMME/test/vcoord          # location of vertical coordinate files
 set qsize = 4             # number of tracers  (0 or 4)
 set u_perturb = 1         # size of perturbation (0 or 1)
 set rotate = 0            # rotation, in degrees.  0, 45 and 90
-set limiter = 4
 
 # other defaults:
 set psurf = 0
@@ -59,6 +58,7 @@ set npdg=0
 set nu_p = 0
 set nu_div = -1
 set hsub = 1
+set mesh_file = none
 
 # Advection scheme
 
@@ -80,13 +80,42 @@ set limiter = 8
 set rsplit=0
 set energy_fixer = -1  # disabled
 
-# resolution parameters
-set ne = 30    # setup for 8,15,30,60,120?
+# tensor HV options
+set hypervis_scaling = 0  # 3.2 or 4 to turn on tensor HV
 
+
+
+# resolution parameters
+set ne = 8    # setup for 8,15,30,60,120?
+#set ne = 0
 
 
 #set ndays = 30
 set ndays = 9
+
+if ( $ne == 0 ) then
+    # CAM defaults
+    set RK2 = 5  # turn on K&G 5 stage optionoption    5 dycore + 3 vis
+    set qsplit=1
+    set rsplit=3
+    set hsub=3
+
+    #set mesh_file = $HOMME/utils/CUBIT_scripts/exodus/arm_30_x8_lowconn.g
+    #set tstep=10
+
+    set mesh_file = ~/codes/mapping/grids/poles_30_x4.g
+    set tstep=75
+
+    set hypervis_scaling = 3.2  
+    set nu = 8.0e-8
+    set nu_div = $nu
+    #set nu_div = 20e-8 ; set hsub=2
+    set nu_q = $nu
+    set nu_p = $nu
+
+
+
+endif
 if ( $ne == 8 ) then
    # 3.75 degree      # bluevista: run takes 4min on 16 processors
    set tstep = 360        # dynamics timestep
@@ -104,7 +133,8 @@ if ( $ne == 15 ) then
    set resolution = medium
 
    # test new consistent advection with nu_p>0:
-   #set nu_p = $nu_q
+   set nu_p = $nu_q
+   set limiter=4
 
    # test DG option:
    #set npdg=3 ; set limiter=4 ; set nu_q=0
@@ -119,7 +149,18 @@ if ( $ne == 30 ) then
    set resolution = medium_high
 
 
-    if ( 0 ) then
+    if ( 0  ) then
+        # CAM defaults vert lagangian
+        set rsplit = 5 
+        set nu = 1e15
+        set nu_div = $nu
+        #set nu_div = 2.5e15  ; set hsub = 2
+        set nu_q = $nu
+        set nu_p = $nu
+
+        #set limiter = 4
+    endif
+    if ( 0  ) then
         # Kinnmark and Gray Options:
         # CAM defaults
         set nu = 1e15
@@ -135,8 +176,15 @@ if ( $ne == 30 ) then
     
         set energy_fixer = -1
     endif
-    
-
+    if ( 0 ) then
+       # tensorHV instead of constant coefficient
+       set hypervis_scaling = 3.2  
+       set nu = 8.0e-8
+       set nu_div = $nu
+       #set nu_div = 20e-8 ; set hsub=2
+       set nu_q = $nu
+       set nu_p = $nu
+    endif
 endif
 if ( $ne == 60 ) then
    # 0.5 degree
@@ -183,8 +231,17 @@ set sfreq = `echo "$sfreq / $tstep " | bc`
 # if ( $psurf == 1 ) set name = $name-psurf
 
 set name = jwasp-ne${ne}-nu$nu
+if ( $nu != $nu_div ) then
+    set name = ${name}-nudiv$nu_div
+endif
 if ( $RK2 > 1 ) then
-    set name = jwasp-ne${ne}-nu$nu-RK$RK2-q$qsplit-r$rsplit
+    set name = ${name}-RK$RK2-q$qsplit
+endif
+if ( $rsplit > 0 ) then
+    set name = ${name}-r$rsplit
+endif
+if ( ! ($hypervis_scaling == 0) ) then
+    set name = ${name}-tensorHV
 endif
 
 
@@ -192,29 +249,31 @@ echo runname =  $name
 
 # create working directory
 mkdir $wdir
-set wdir = $wdir/$name
-mkdir $wdir
-mkdir $wdir/movies
-
+mkdir $wdir/bld
+mkdir $wdir/$name
+mkdir $wdir/$name/movies
+set bld = $wdir/bld
+set run = $wdir/$name
 
 
 # create the namelist (input file) based on parameters set above
 cd $input
-rm -f $wdir/explicit.nl
+rm -f $run/explicit.nl
 sed s/NE/$ne/ explicit26.nl.sed |\
 sed s/TSTEP/"$tstep qsplit=$qsplit rsplit=$rsplit psurf_vis=$psurf  "/ |\
 sed s/SFREQ/$sfreq/ |\
 sed s/tracer_advection_formulation.\*/"tstep_type = $RK2  hypervis_subcycle = $hsub"/ |\
 sed s/NU1/$nu/ | sed s/NU2/$nu_q/ | \
-sed s/nu_div.\*/"nu_div = $nu_div  npdg=$npdg"/ |\
+sed s:nu_div.\*:"nu_div = $nu_div  npdg=$npdg  mesh_file='$mesh_file'": |\
 sed s/nu_p.\*/"nu_p = $nu_p"/ |\
+sed s/hypervis_order.\*/"hypervis_order=2  hypervis_scaling=$hypervis_scaling  "/ |\
 sed s/u_perturb.\*/"u_perturb = $u_perturb"/ |\
 sed s/rotate_grid.\*/"rotate_grid = $rotate"/ |\
 sed s/ndays.\*/"ndays = $ndays"/ |\
 sed s/energy_fixer.\*/"energy_fixer = $energy_fixer"/ |\
 sed s/limiter_option.\*/"limiter_option = $limiter"/ |\
 sed s/smooth.\*/"smooth = $smooth"/ |\
-sed s/qsize.\*/"qsize = $qsize"/    > $wdir/input.nl
+sed s/qsize.\*/"qsize = $qsize"/    > $run/input.nl
 
 
 
@@ -237,7 +296,6 @@ endif
 echo using NCPU = $NCPU
 
 
-set build = run  # build, make or run(default)
 
 set machine = default
 if ( yodjag == `hostname | head -c 6` ) set machine = titan
@@ -256,24 +314,33 @@ else
    set mpirun = "mpirun -np $NCPU"
 endif
 
-
-cd $wdir
-if ( $#argv >= 1) set build = $1
-if ( $build == "build" ) then
+#
+#  BUILD
+#
+cd $bld
+set option = run  # command line opption: [build]
+if ( $#argv >= 1) set option = $1
+if ( ! -f CMakeCache.txt) set option = "build"   # no cmake files.  force build
+if ( $option == "build" ) then
    rm -rf CMakeFiles CMakeCache.txt
-   cmake -C $MACH -DPREQX_PLEV=26 -DPREQX_NP=4 -DWITH_ENERGY=TRUE  $HOMME
-   make -j4 preqx
-   exit
+   cmake -C $MACH -DPREQX_PLEV=26 -DPREQX_NP=4 -DPREQX_USE_ENERGY=TRUE  $HOMME
+   make -j4 clean
 endif
+#make VERBOSE=1 -j4 preqx
 make -j4 preqx
 if ($status) exit
-set exe = $wdir/src/preqx/preqx
+set exe = $bld/src/preqx/preqx
 
+
+#
+#  RUN
+#
+cd $run
 rm -f vcoord
 ln -s $vcoord vcoord
 
 date
-$mpirun  $exe x < $wdir/input.nl
+$mpirun  $exe x < $run/input.nl
 if ($status) exit
 date
 

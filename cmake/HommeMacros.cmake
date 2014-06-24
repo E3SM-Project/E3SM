@@ -44,9 +44,19 @@ macro(createTestExec execName execType macroNP macroNC
     SET(ENERGY_DIAGNOSTICS)
   ENDIF ()
 
-  # This is needed to create the test executables with the correct options
+
+  # This is needed to compile the test executables with the correct options
+  SET(THIS_CONFIG_HC ${CMAKE_CURRENT_BINARY_DIR}/config.h.c)
   SET(THIS_CONFIG_H ${CMAKE_CURRENT_BINARY_DIR}/config.h)
-  CONFIGURE_FILE(${HOMME_SOURCE_DIR}/src/${execType}/config.h.cmake.in ${THIS_CONFIG_H})
+
+  # First configure the file (which formats the file as C)
+  CONFIGURE_FILE(${HOMME_SOURCE_DIR}/src/${execType}/config.h.cmake.in ${THIS_CONFIG_HC})
+
+  # Next reformat the file as Fortran by appending comment lines with an exclamation mark
+  EXECUTE_PROCESS(COMMAND sed "s;^/;!/;g"
+                     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+                     INPUT_FILE ${THIS_CONFIG_HC}
+                     OUTPUT_FILE ${THIS_CONFIG_H})
 
   ADD_DEFINITIONS(-DHAVE_CONFIG_H)
 

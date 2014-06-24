@@ -51,20 +51,20 @@ module surfaces_mod
   end type ctrlvol_t
 
   ! three options:
-  ! (1) cv_gnominc = .true.
+  ! (1) for NP<>4 or Refined Meshes  (this is less accurate)
   !     build control volumes out of lines which are
   !     always gnomonic coordinate lines.  results in hexagon control volumes
   !     at cube corners and edges.  control volumes at cube-sphere edges are
   !     non-convex, which breaks SCRIP.
-  ! (2) cv_gnomonic = .false.  undef USE_PENTAGONS
+  ! iterative options for NP=4 only:
+  ! (2) undef USE_PENTAGONS
   !     iterate to minimize difference between spherical area and GLL weight
   !     iteration will not converge for the 4 cvs in the center of some elements
   !     control volumes are all triangles or squares
-  ! (3) cv_gnomonic = .false.  def USE_PENTAGONS
+  ! (3) def USE_PENTAGONS (default)
   !     iterate to minimize difference between spherical area and GLL weight
   !     introduce pentagons in the center of each element to make areas agree
   !     control volumes are triangles, squares or pentagons
-  logical :: cv_gnomonic = .false.
 #define USE_PENTAGONS
 
   type (ctrlvol_t),    public, allocatable, target  :: cvlist(:)
@@ -161,7 +161,7 @@ contains
     integer,              intent(in)          :: nets,nete
     type (element_t),     intent(in), target  :: elem(:)
     type (hybrid_t),      intent(in)          :: hybrid
-    if (ne == 0 ) then
+    if (ne == 0 .or. np/=4) then
        call InitControlVolumes_duel(elem, hybrid,nets,nete)
     else
        call InitControlVolumes_gll(elem, hybrid,nets,nete)

@@ -175,7 +175,7 @@ module interp_movie_mod
 
   character*(*),parameter::dimnames(maxdims)=(/'lon ','lat ','lev ','ilev','time'/)  
 #else
-  integer, parameter :: varcnt = 19
+  integer, parameter :: varcnt = 18
   integer, parameter :: maxdims=4
   character*(*),parameter::dimnames(maxdims)=(/'lon ','lat ','lev ','time'/)  
   integer, parameter :: vardims(maxdims,varcnt) =  reshape( (/ 1,2,4,0,  &
@@ -195,7 +195,6 @@ module interp_movie_mod
                                                                1,2,3,4,  &
                                                                1,2,3,4,  &
                                                                1,2,3,4,  &
-                                                               1,2,3,4,  &
                                                                1,2,3,4/),&
                                                                shape=(/maxdims,varcnt/))
   character*(*),parameter::varnames(varcnt)=(/'ps      ','geop    ','u       ', &
@@ -209,11 +208,11 @@ module interp_movie_mod
                                           PIO_double,PIO_double,PIO_double,PIO_double, &
                                           PIO_double,PIO_double,PIO_double,PIO_double, &
                                           PIO_double, PIO_double,PIO_double,PIO_double, &
-                                          PIO_double, PIO_double, PIO_double/)
+                                          PIO_double, PIO_double/)
   logical, parameter :: varrequired(varcnt)=(/.false.,.false.,.false.,.false.,&
                                               .false.,.true.,.true.,.true.,.true.,&
                                               .false.,.false.,.false.,.false., &
-                                              .false.,.false.,.false.,.false.,.false.,.false./)
+                                              .false.,.false.,.false.,.false.,.false./)
 
 #endif
   type(interpolate_t) :: interp

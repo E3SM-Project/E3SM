@@ -32,7 +32,7 @@ if ( $build == "build" ) then
    rm -rf CMakeFiles CMakeCache.txt
 
    cmake -C $MACH -DPREQX_PLEV=26 -DPREQX_NP=4 -DPREQX_NC=$NC \
-           -DPREQX_USE_PIO=TRUE -DWITH_ENERGY=TRUE \
+           -DPREQX_USE_PIO=TRUE -DPREQX_USE_ENERGY=TRUE \
             $HOMME
    make -j4 preqx
    make -j4 cprnc

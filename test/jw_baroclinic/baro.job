@@ -44,7 +44,8 @@ setenv CRAY_CUDA_PROXY 1
 #  mpi run command
 #
 set NCPU = 4
-setenv OMP_NUM_THREADS 4
+#setenv OMP_NUM_THREADS 4
+setenv OMP_NUM_THREADS 1
 
 if ( ${?SLURM_NNODES} ) then   # redsky
     set NCPU = $SLURM_NNODES
@@ -61,8 +62,8 @@ endif
 
 echo using NCPU=$NCPU   NTHREADS=$OMP_NUM_THREADS
 #set mpirun = "mpirun -np $NCPU"
-#set mpirun = "mpirun -loadbalance -np $NCPU"
-set mpirun = "aprun -n $NCPU -d $OMP_NUM_THREADS "
+set mpirun = "mpirun -loadbalance -np $NCPU"
+#set mpirun = "aprun -n $NCPU -d $OMP_NUM_THREADS "
 
 
 
@@ -73,19 +74,21 @@ set rotate = 0
 
                   # number of elemnets:  6*ne*ne
 set ne = 16       # horizontal resolution   16,30,60,120,240
-#set nlev=30       # vertical resolution
-#set qsize = 4     # number of passive tracers
+set nlev=26       # vertical resolution
+set qsize = 4     # number of passive tracers
 
 # simulate CAM5:
 #set nlev=30
 #set qsize=25
 
 # simulate future DOE version:
-# todo: generate cam60 level files
-set nlev=60
-set qsize=30
+# NOTE: HOMME includes vertical coordinate files for 26, 30, 60, 64, 96 levels
+#set nlev=60
+#set qsize=30
 
-
+ set namelist = jw_baroclinic.nl  # CAM-style, vertically lagrangian
+#set namelist = jw_baroclinic_eulerian.nl
+               
 
 
 #
@@ -94,7 +97,7 @@ set qsize=30
 mkdir -p $bld
 cd $bld
 set exe = $bld/src/preqx/preqx
-set build = 0  # set to 1 to force build
+set build = 1  # set to 1 to force build
 set conf = 0   # set to 1 to force configure
 
 if ( ! -f CMakeCache.txt) set conf = 1   # no cmake files.  force configure
@@ -102,7 +105,6 @@ if ( $conf == 1 ) then
    rm -rf CMakeFiles CMakeCache.txt src
    #rm -rf utils/pio  utils/timing utils/cprnc   # may also need to do this
    echo "running CMAKE to configure the model"
-   echo $NETCDF_DIR
 
    cmake -C $MACH -DQSIZE_D=$qsize -DPREQX_PLEV=$nlev -DPREQX_NP=4  \
    -DBUILD_HOMME_SWDGX=FALSE                     \
@@ -127,7 +129,10 @@ endif
 set name = jw-ne${ne}-nlev${nlev}-qsize${qsize}
 set run = $wdir/$name
 
-
+if ( $ne == 4 ) then
+   set tstep=1800
+   set nu=4.5e17
+endif
 if ( $ne == 16 ) then
    set tstep=600
    set nu=7e15
@@ -164,21 +169,32 @@ mkdir -p $run/movies
 cd $run
 
 
+# default: assume pure sigma levels:
+set vfile_mid     = "./sabm-$nlev.ascii"
+set vfile_int     = "./sabi-$nlev.ascii"
+cp $vdir/sab?-*..ascii  $run   
+
+# special cases:
 # copy vertical level files to run directory
+if ( $nlev == 26 ) then
+   set vfile_mid     = "./camm-26.ascii"
+   set vfile_int     = "./cami-26.ascii"
+   cp $vdir/cam*26.ascii  $run   
+endif
 if ( $nlev == 30 ) then
    set vfile_mid     = "./camm-30.ascii"
    set vfile_int     = "./cami-30.ascii"
    cp $vdir/cam*30.ascii  $run   
-else
+endif
+if ( $nlev == 60 ) then
    set vfile_mid     = "./aspL60_mid.ascii"
    set vfile_int     = "./aspL60_int.ascii"
    cp $vdir/aspL60_*.ascii $run
 endif
 
 
-
 #  create a new namelist from original ne16 template:
-sed s/ne=.\*/ne=$ne/ $input/jw_baroclinic.nl |\
+sed s/ne=.\*/ne=$ne/ $input/$namelist |\
 sed s/tstep=.\*/tstep=$tstep/ | \
 sed s/nu=.\*/nu=$nu/ | \
 sed s/nu_div=.\*/nu_div=$nu/ | \

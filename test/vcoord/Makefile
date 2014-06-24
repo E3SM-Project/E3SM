@@ -56,8 +56,8 @@ ifeq ($(ARCH),Linux)
 endif
 
 ifeq ($(ARCH),Darwin)
-  F90     = f95
-  FBASE   = -D$(ARCH) -f free
+  F90     = gfortran
+  FBASE   = -D$(ARCH) -ffree-form
   FOPT    = -O3
   FLAGS   = $(FOPT) $(FBASE)
   LDFLAGS = $(FLAGS)
