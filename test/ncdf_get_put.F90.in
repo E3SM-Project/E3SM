@@ -60,13 +60,16 @@ PIO_TF_AUTO_TEST_SUB_BEGIN test_put_get_1dval
   integer :: pio_dim
   integer, parameter :: DIM_LEN = 100
   PIO_TF_FC_DATA_TYPE, dimension(DIM_LEN) :: pval, gval
+  PIO_TF_FC_DATA_TYPE :: init_val
   CHARACTER(len=DIM_LEN) :: pcval, gcval
   integer, dimension(:), allocatable :: iotypes
   character(len=PIO_TF_MAX_STR_LEN), dimension(:), allocatable :: iotype_descs
   integer :: num_iotypes
   integer :: i, ret
   
-  pval = pio_tf_world_sz_
+  init_val = pio_tf_world_sz_
+
+  pval = init_val
   pcval = "DUMMY_STRING"
   num_iotypes = 0
   call PIO_TF_Get_nc_iotypes(iotypes, iotype_descs, num_iotypes)
@@ -94,10 +97,12 @@ PIO_TF_AUTO_TEST_SUB_BEGIN test_put_get_1dval
     ret = PIO_enddef(pio_file)
     PIO_TF_CHECK_ERR(ret, "Failed to enddef:" // trim(filename))
 
-    ! FIXME: Check the values are correct
     ret = PIO_get_att(pio_file, pio_var, 'dummy_att_val', gval);
     PIO_TF_CHECK_ERR(ret, "Failed to get attribute:" // trim(filename))
 
+    PIO_TF_CHECK_VAL((gval, init_val), "Got wrong value")
+
+    ! FIXME: Check the values are correct
     ret = PIO_get_att(pio_file, pio_cvar, 'dummy_att_cval', gcval);
     PIO_TF_CHECK_ERR(ret, "Failed to get attribute:" // trim(filename))
 
