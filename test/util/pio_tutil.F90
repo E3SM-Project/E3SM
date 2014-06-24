@@ -27,6 +27,10 @@ MODULE pio_tutil
   INTEGER ::  pio_tf_world_rank_, pio_tf_world_sz_
   INTEGER :: pio_tf_comm_
 
+  ! REAL types
+  INTEGER, PARAMETER, PUBLIC :: fc_real   = selected_real_kind(6)
+  INTEGER, PARAMETER, PUBLIC :: fc_double = selected_real_kind(13)
+
   ! Misc constants
   INTEGER, PARAMETER :: PIO_TF_MAX_STR_LEN=100
 
@@ -58,6 +62,18 @@ MODULE pio_tutil
   PUBLIC  :: PIO_TF_Get_nc_iotypes, PIO_TF_Get_undef_nc_iotypes
   PUBLIC  :: PIO_TF_Get_iotypes, PIO_TF_Get_undef_iotypes
   PUBLIC  :: PIO_TF_Get_data_types
+  PUBLIC  :: PIO_TF_Check_val_
+  ! Private functions
+  PRIVATE :: PIO_TF_Check_arr_int_val, PIO_TF_Check_arr_real_val
+  PRIVATE :: PIO_TF_Check_arr_double_val, PIO_TF_Check_char_str_str
+
+  INTERFACE PIO_TF_Check_val_
+    MODULE PROCEDURE                  &
+        PIO_TF_Check_arr_int_val,     &
+        PIO_TF_Check_arr_real_val,    &
+        PIO_TF_Check_arr_double_val,  &
+        PIO_TF_Check_char_str_str
+  END INTERFACE
 
 CONTAINS
   ! Initialize Testing framework - Internal (Not directly used by unit tests)
@@ -477,6 +493,178 @@ CONTAINS
     !data_type_descs(4) = "PIO_char"
 
   END SUBROUTINE PIO_TF_Get_data_types
+
+  LOGICAL FUNCTION PIO_TF_Check_arr_int_val(arr, val)
+#ifndef NO_MPIMOD
+    USE mpi
+#else
+    include 'mpif.h'
+#endif
+    INTEGER, DIMENSION(:), INTENT(IN) :: arr
+    INTEGER, INTENT(IN) :: val
+    INTEGER :: arr_sz, i, ierr
+    ! Not equal at id = nequal_idx
+    INTEGER :: nequal_idx
+    ! Local and global equal bools
+    LOGICAL :: lequal, gequal
+    LOGICAL :: failed
+    TYPE failed_info
+      SEQUENCE
+      INTEGER :: idx
+      INTEGER :: val
+      INTEGER :: exp_val
+    END TYPE failed_info
+    TYPE (failed_info) :: lfail_info
+    TYPE (failed_info), DIMENSION(:), ALLOCATABLE :: gfail_info
+
+    arr_sz = SIZE(arr)
+    lequal = .TRUE.;
+    gequal = .TRUE.;
+    nequal_idx = -1;
+    DO i=1, arr_sz
+      IF (arr(i) /= val) THEN
+        lequal = .FALSE.
+        nequal_idx = i
+      END IF
+    END DO
+    CALL MPI_ALLREDUCE(lequal, gequal, 1, MPI_LOGICAL, MPI_LAND, pio_tf_comm_, ierr)
+    IF (.NOT. gequal) THEN
+      lfail_info % idx = nequal_idx
+      IF (nequal_idx /= -1) THEN
+        lfail_info % val     = arr(nequal_idx)
+        lfail_info % exp_val = val
+      END IF
+      IF (pio_tf_world_rank_ == 0) THEN
+        ALLOCATE(gfail_info(pio_tf_world_sz_))
+      END IF
+      ! Gather the ranks where assertion failed
+      CALL MPI_GATHER(lfail_info, 3, MPI_INTEGER, gfail_info, 3, MPI_INTEGER, 0, pio_tf_comm_, ierr)
+      DO i=1,pio_tf_world_sz_
+        IF(gfail_info(i) % idx /= -1) THEN
+          PRINT *, "PIO_TF: Fatal Error: rank =", i, ", Val[", gfail_info(i) % idx, "]=", gfail_info(i) % val, ", Expected = ", gfail_info(i) % exp_val 
+        END IF
+      END DO
+    END IF
+
+    PIO_TF_Check_arr_int_val = gequal
+  END FUNCTION
+
+  LOGICAL FUNCTION PIO_TF_Check_arr_real_val(arr, val)
+#ifndef NO_MPIMOD
+    USE mpi
+#else
+    include 'mpif.h'
+#endif
+    REAL(KIND=fc_real), DIMENSION(:), INTENT(IN) :: arr
+    REAL(KIND=fc_real), INTENT(IN) :: val
+    INTEGER :: arr_sz, i, ierr
+    ! Not equal at id = nequal_idx
+    REAL(KIND=fc_real) :: nequal_idx
+    ! Local and global equal bools
+    LOGICAL :: lequal, gequal
+    LOGICAL :: failed
+    TYPE failed_info
+      SEQUENCE
+      REAL(KIND=fc_real) :: idx
+      REAL(KIND=fc_real) :: val
+      REAL(KIND=fc_real) :: exp_val
+    END TYPE failed_info
+    TYPE (failed_info) :: lfail_info
+    TYPE (failed_info), DIMENSION(:), ALLOCATABLE :: gfail_info
+
+    arr_sz = SIZE(arr)
+    lequal = .TRUE.;
+    gequal = .TRUE.;
+    nequal_idx = -1;
+    DO i=1, arr_sz
+      IF (arr(i) /= val) THEN
+        lequal = .FALSE.
+        nequal_idx = i
+      END IF
+    END DO
+    CALL MPI_ALLREDUCE(lequal, gequal, 1, MPI_LOGICAL, MPI_LAND, pio_tf_comm_, ierr)
+    IF (.NOT. gequal) THEN
+      lfail_info % idx = nequal_idx
+      IF (INT(nequal_idx) /= -1) THEN
+        lfail_info % val     = arr(INT(nequal_idx))
+        lfail_info % exp_val = val
+      END IF
+      IF (pio_tf_world_rank_ == 0) THEN
+        ALLOCATE(gfail_info(pio_tf_world_sz_))
+      END IF
+      ! Gather the ranks where assertion failed
+      CALL MPI_GATHER(lfail_info, 3, MPI_REAL, gfail_info, 3, MPI_REAL, 0, pio_tf_comm_, ierr)
+      DO i=1,pio_tf_world_sz_
+        IF(INT(gfail_info(i) % idx) /= -1) THEN
+          PRINT *, "PIO_TF: Fatal Error: rank =", i, ", Val[", INT(gfail_info(i) % idx), "]=", gfail_info(i) % val, ", Expected = ", gfail_info(i) % exp_val 
+        END IF
+      END DO
+    END IF
+
+    PIO_TF_Check_arr_real_val = gequal
+  END FUNCTION
+
+  LOGICAL FUNCTION PIO_TF_Check_arr_double_val(arr, val)
+#ifndef NO_MPIMOD
+    USE mpi
+#else
+    include 'mpif.h'
+#endif
+    REAL(KIND=fc_double), DIMENSION(:), INTENT(IN) :: arr
+    REAL(KIND=fc_double), INTENT(IN) :: val
+    INTEGER :: arr_sz, i, ierr
+    ! Not equal at id = nequal_idx
+    REAL(KIND=fc_double) :: nequal_idx
+    ! Local and global equal bools
+    LOGICAL :: lequal, gequal
+    LOGICAL :: failed
+    TYPE failed_info
+      SEQUENCE
+      REAL(KIND=fc_double) :: idx
+      REAL(KIND=fc_double) :: val
+      REAL(KIND=fc_double) :: exp_val
+    END TYPE failed_info
+    TYPE (failed_info) :: lfail_info
+    TYPE (failed_info), DIMENSION(:), ALLOCATABLE :: gfail_info
+
+    arr_sz = SIZE(arr)
+    lequal = .TRUE.;
+    gequal = .TRUE.;
+    nequal_idx = -1;
+    DO i=1, arr_sz
+      IF (arr(i) /= val) THEN
+        lequal = .FALSE.
+        nequal_idx = i
+      END IF
+    END DO
+    CALL MPI_ALLREDUCE(lequal, gequal, 1, MPI_LOGICAL, MPI_LAND, pio_tf_comm_, ierr)
+    IF (.NOT. gequal) THEN
+      lfail_info % idx = nequal_idx
+      IF (INT(nequal_idx) /= -1) THEN
+        lfail_info % val     = arr(INT(nequal_idx))
+        lfail_info % exp_val = val
+      END IF
+      IF (pio_tf_world_rank_ == 0) THEN
+        ALLOCATE(gfail_info(pio_tf_world_sz_))
+      END IF
+      ! Gather the ranks where assertion failed
+      CALL MPI_GATHER(lfail_info, 3, MPI_DOUBLE, gfail_info, 3, MPI_DOUBLE, 0, pio_tf_comm_, ierr)
+      DO i=1,pio_tf_world_sz_
+        IF(INT(gfail_info(i) % idx) /= -1) THEN
+          PRINT *, "PIO_TF: Fatal Error: rank =", i, ", Val[", INT(gfail_info(i) % idx), "]=", gfail_info(i) % val, ", Expected = ", gfail_info(i) % exp_val 
+        END IF
+      END DO
+    END IF
+
+    PIO_TF_Check_arr_double_val = gequal
+  END FUNCTION
+
+  LOGICAL FUNCTION PIO_TF_Check_char_str_str(str1, str2)
+    CHARACTER(LEN=*), INTENT(IN)  :: str1
+    CHARACTER(LEN=*), INTENT(IN)  :: str2
+
+    PIO_TF_Check_char_str_str = .TRUE.
+  END FUNCTION
 
   ! Parse and process input arguments like "--pio-tf-stride=2" passed
   ! to the unit tests - PRIVATE function

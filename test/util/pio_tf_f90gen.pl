@@ -56,9 +56,9 @@ sub init_predef_types
   push(@{$template_predef_typename_types{"PIO_TF_DATA_TYPE"}}, "PIO_int");
   push(@{$template_predef_typename_types{"PIO_TF_FC_DATA_TYPE"}}, "integer");
   push(@{$template_predef_typename_types{"PIO_TF_DATA_TYPE"}}, "PIO_real");
-  push(@{$template_predef_typename_types{"PIO_TF_FC_DATA_TYPE"}}, "real(kind=4)");
+  push(@{$template_predef_typename_types{"PIO_TF_FC_DATA_TYPE"}}, "real(kind=fc_real)");
   push(@{$template_predef_typename_types{"PIO_TF_DATA_TYPE"}}, "PIO_double");
-  push(@{$template_predef_typename_types{"PIO_TF_FC_DATA_TYPE"}}, "real(kind=8)");
+  push(@{$template_predef_typename_types{"PIO_TF_FC_DATA_TYPE"}}, "real(kind=fc_double)");
 }
 
 # Generates the generic template function bodies (or names)
@@ -407,6 +407,19 @@ sub transform_src
     $out_line = $out_line . $1 . "  pio_tf_retval_utest_ = -1\n";
     $out_line = $out_line . $1 . "  IF (pio_tf_world_rank_ == 0) THEN\n";
     $out_line = $out_line . $1 . "    PRINT *, \"PIO_TF: PIO Function failed:\",&\n";
+    $out_line = $out_line . $1 . "      " . $3 . ",&\n";
+    $out_line = $out_line . $1 . "      \":\", __FILE__, \":\", __LINE__,&\n";
+    $out_line = $out_line . $1 . "      " . "\"($template_fname:$template_line_no)\"\n";
+    $out_line = $out_line . $1 . "  END IF\n";
+    $out_line = $out_line . $1 . "  RETURN\n";
+    $out_line = $out_line . $1 . "END IF";
+  }
+  elsif(/^(\s*)PIO_TF_CHECK_VAL\(\s*\((.*)\)\s*,(.+)\)(\s*)$/s){
+    $out_line = $1 . $4 . "\n";
+    $out_line = $out_line . $1 . "IF (.NOT. PIO_TF_Check_val_($2)) THEN\n";
+    $out_line = $out_line . $1 . "  pio_tf_retval_utest_ = -1\n";
+    $out_line = $out_line . $1 . "  IF (pio_tf_world_rank_ == 0) THEN\n";
+    $out_line = $out_line . $1 . "    PRINT *, \"PIO_TF: PIO Check failed:\",&\n";
     $out_line = $out_line . $1 . "      " . $3 . ",&\n";
     $out_line = $out_line . $1 . "      \":\", __FILE__, \":\", __LINE__,&\n";
     $out_line = $out_line . $1 . "      " . "\"($template_fname:$template_line_no)\"\n";
