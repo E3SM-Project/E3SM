@@ -1,3 +1,14 @@
+/**
+ * @file pioc_sc.c
+ * @author Jim Edwards
+ * @date  2014
+ * @brief Compute start and count arrays for the box rearranger
+ *
+ * 
+ * 
+ * 
+ * @see http://code.google.com/p/parallelio/
+ */
 #ifdef TESTCALCDECOMP
 enum PIO_DATATYPE{
   PIO_REAL,

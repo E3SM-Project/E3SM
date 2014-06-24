@@ -31,7 +31,6 @@ int PIOc_openfile(const int iosysid, int *ncidp, int *iotype,
   for(int i=0; i<PIO_MAX_VARS;i++){
     file->varlist[i].record = -1;
     file->varlist[i].ndims = -1;
-    file->varlist[i].buffer = NULL;
   }
   
 #ifdef _NETCDF
@@ -149,7 +148,6 @@ int PIOc_createfile(const int iosysid, int *ncidp,  int *iotype,
   for(int i=0; i<PIO_MAX_VARS;i++){
     file->varlist[i].record = -1;
     file->varlist[i].ndims = -1;
-    file->varlist[i].buffer = NULL;
   }
 
   msg = PIO_MSG_CREATE_FILE;

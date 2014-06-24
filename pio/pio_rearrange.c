@@ -1,3 +1,14 @@
+/**
+ * @file pio_rearrange.c
+ * @author Jim Edwards
+ * @date 2014
+ * @brief Code to map IO to model decomposition
+ *
+ * 
+ * 
+ * 
+ * @see  http://code.google.com/p/parallelio/
+ */
 #include <pio.h>
 #include <pio_internal.h>
 #define DEF_P2P_MAXREQ 64
@@ -35,7 +46,7 @@ PIO_Offset coord_to_lindex(const int ndims, const PIO_Offset lcoord[], const PIO
 
 void compute_maxIObuffersize(MPI_Comm io_comm, io_desc_t *iodesc)
 {
-  int iosize, totiosize;
+  PIO_Offset iosize, totiosize;
   int i;
   io_region *region;
 
@@ -53,11 +64,11 @@ void compute_maxIObuffersize(MPI_Comm io_comm, io_desc_t *iodesc)
   iodesc->llen = totiosize;
   // Share the max io buffer size with all io tasks
 #ifndef _MPISERIAL
-  CheckMPIReturn(MPI_Allreduce(MPI_IN_PLACE, &totiosize, 1, MPI_INT, MPI_MAX, io_comm),__FILE__,__LINE__);
+  //  printf("%s %d %ld\n",__FILE__,__LINE__,totiosize);
+  CheckMPIReturn(MPI_Allreduce(MPI_IN_PLACE, &totiosize, 1, MPI_OFFSET, MPI_MAX, io_comm),__FILE__,__LINE__);
 #endif
   
   iodesc->maxiobuflen = totiosize;
-  //  printf("%d iosize %d %d\n",__LINE__,totiosize, iodesc->llen);
 }
 
 
@@ -181,10 +192,14 @@ int create_mpi_datatypes(const MPI_Datatype basetype,const int msgcnt,const PIO_
 	    (lindex+pos)[j]++;
 	  for(int j=0;j<len;j++){
 	    displace[j]= ((lindex+pos)[j*blocksize]-1)/blocksize;
-	    //	    printf("displace[%d] %d pos %d lindex %d blocksize %d\n", j, displace[j],pos, (lindex+pos)[j*blocksize],blocksize);
 	  }
 	}
 #ifndef _MPISERIAL
+	/*	printf("%s %d %d %d\n", __FILE__,__LINE__,i,len);
+	for(int j=0;j<len;j++){
+	  printf("displace[%d] %d \n", j, displace[j]);
+	}
+	*/
 	CheckMPIReturn(MPI_Type_create_indexed_block(len, 1, displace, newtype, mtype+i),__FILE__,__LINE__);
 	CheckMPIReturn(MPI_Type_commit(mtype+i), __FILE__,__LINE__);
 	pos+=mcount[i];
@@ -207,14 +222,14 @@ int define_iodesc_datatypes(const iosystem_desc_t ios, io_desc_t *iodesc)
     //    printf("%d IO:\n",ios.io_rank);
     if(iodesc->rtype==NULL){
       iodesc->rtype = (MPI_Datatype *) malloc(max(1,iodesc->nrecvs)*sizeof(MPI_Datatype));
-      /*      
+      /*       
       printf("rindex: \n");
       for(int i=0;i<iodesc->llen;i++)
 	printf("%d ",iodesc->rindex[i]);
       printf("\n");
       for(int i=0;i<iodesc->nrecvs;i++)
 	printf("%d rcount %d \n",i,iodesc->rcount[i]);
-      */      
+      */     
 
      create_mpi_datatypes(iodesc->basetype, iodesc->nrecvs, iodesc->llen, iodesc->rindex, iodesc->rcount, iodesc->rtype);
     }
@@ -711,6 +726,11 @@ int box_rearrange_create(const iosystem_desc_t ios,const int maplen, const PIO_O
   }
 
   compute_counts(ios, iodesc, dest_ioproc, dest_ioindex);
+  if(ios.ioproc){
+    compute_maxIObuffersize(ios.io_comm, iodesc);
+    if(ios.iomaster)
+      printf("%d iosize %d %d\n",__LINE__,iodesc->maxiobuflen, iodesc->llen);
+  }
 
   return PIO_NOERR;
 }
@@ -922,6 +942,9 @@ int subset_rearrange_create(const iosystem_desc_t ios,const int maplen, const PI
     get_start_and_count_regions(ios.io_comm,iodesc,gsize,iomap);
 
     compute_maxIObuffersize(ios.io_comm, iodesc);
+    if(ios.iomaster)
+      printf("%d iosize %d %d\n",__LINE__,iodesc->maxiobuflen, iodesc->llen);
+
 
     free(map);
     free(iomap);

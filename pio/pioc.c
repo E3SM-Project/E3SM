@@ -1,3 +1,16 @@
+/**
+ * @file pioc.c
+ * @author Jim Edwards
+ * @date  2014
+ * @brief PIO C interface 
+ *
+ * 
+ * 
+ * 
+ * @see http://code.google.com/p/parallelio/
+ */
+
+
 #include <pio.h>
 #include <pio_internal.h>
 

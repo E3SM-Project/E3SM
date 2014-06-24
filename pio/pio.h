@@ -1,3 +1,15 @@
+/**
+ * @file pio.h
+ * @author Jim Edwards
+ * @date  2014
+ * @brief Public headers for the PIO C interface
+ *
+ * 
+ * 
+ * 
+ * @see http://code.google.com/p/parallelio/
+ */
+
 #ifndef _PIO_H_
 #define _PIO_H_
 #include <stdio.h>
@@ -35,15 +47,27 @@ typedef long long MPI_Offset;
 
 int PIOc_freedecomp(int iosysid, int ioid);
 
-
+/**
+ * @brief Variable description structure
+ *
+ * The variable record is the index into the unlimited dimension in the netcdf file
+ *  typically this is the time dimension.
+ *  ndims is the number of dimensions on the file for this variable 
+*/
 typedef struct var_desc_t
 {
-  int record;                      // the unlimited dimension index
-  int ndims;                      // number of variable dimensions
-  void *buffer;                  // data holder for buffered output
+  int record; 
+  int ndims;
 } var_desc_t;
 
-
+/**
+ * @brief io region structure
+ *
+ * Each IO region is a unit of data which can be described using start and count
+ * arrays.   Each IO task may in general have multiple io regions per variable.  The 
+ * box rearranger will have at most one io region per variable.
+ * 
+*/
 typedef struct io_region
 {
   int loffset;
@@ -51,7 +75,14 @@ typedef struct io_region
   PIO_Offset *count;
   struct io_region *next;
 } io_region;
-
+ 
+/**
+ * @brief io descriptor structure
+ *
+ * This structure defines the mapping for a given variable between 
+ * compute and IO decomposition.   
+ * 
+*/
 typedef struct io_desc_t
 {
   int ioid;
@@ -82,7 +113,13 @@ typedef struct io_desc_t
   struct io_desc_t *next;
 } io_desc_t;
 
-
+/**
+ * @brief io system descriptor structure
+ *
+ * This structure contains the general IO subsystem data 
+ *  and MPI structure
+ * 
+*/
 typedef struct iosystem_desc_t 
 {
   int iosysid;

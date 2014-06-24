@@ -153,37 +153,34 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, voi
 		  tmp_buf = bufptr;
 		}
 	      }else{
-		if(i==1){
-		  tmp_buf = malloc(iodesc->maxiobuflen * dsize);	
-		}
-	    
 		mpierr = MPI_Send( &ierr, 1, MPI_INT, i, 0, ios->io_comm);  // handshake - tell the sending task I'm ready
-		mpierr = MPI_Recv( tstart, ndims, MPI_OFFSET, i, ios->num_iotasks+i, ios->io_comm, &status);
-		mpierr = MPI_Recv( tcount, ndims, MPI_OFFSET, i,2*ios->num_iotasks+i, ios->io_comm, &status);
-		buflen=1;
-		for(j=0;j<ndims;j++)
-		  buflen*=tcount[j];
-		mpierr = MPI_Recv( tmp_buf, buflen, iodesc->basetype, i, i, ios->io_comm, &status);
-	      }
-
-	      //	      for(int j=0;j<ndims;j++)
-	      //	printf("tstart[%d] %ld tcount %ld %ld\n",j,tstart[j],tcount[j], iodesc->maxiobuflen);
-	    
-	      if(iodesc->basetype == MPI_INTEGER){
-		ierr = nc_put_vara_int (ncid, vid, tstart, tcount, (const int *) tmp_buf); 
-	      }else if(iodesc->basetype == MPI_DOUBLE || iodesc->basetype == MPI_REAL8){
-		ierr = nc_put_vara_double (ncid, vid, tstart, tcount, (const double *) tmp_buf); 
-	      }else if(iodesc->basetype == MPI_FLOAT || iodesc->basetype == MPI_REAL4){
-		ierr = nc_put_vara_float (ncid,vid, tstart, tcount, (const float *) tmp_buf); 
-	      }else{
-		fprintf(stderr,"Type not recognized %d in pioc_write_darray\n",(int) iodesc->basetype);
-	      }
-	      if(ierr == PIO_EEDGE){
-		for(i=0;i<ndims;i++)
-		  fprintf(stderr,"dim %d start %ld count %ld\n",i,tstart[i],tcount[i]);
+		mpierr = MPI_Recv( buflen, 1, MPI_INT, i, 1, ios->io_comm, &status);
+		if(buflen>0){
+		  mpierr = MPI_Recv( tstart, ndims, MPI_OFFSET, i, ios->num_iotasks+i, ios->io_comm, &status);
+		  mpierr = MPI_Recv( tcount, ndims, MPI_OFFSET, i,2*ios->num_iotasks+i, ios->io_comm, &status);
+		  tmp_buf = malloc(buflen * dsize);	
+		  mpierr = MPI_Recv( tmp_buf, buflen, iodesc->basetype, i, i, ios->io_comm, &status);
+		}
 	      }
 	      
-	    }     
+	      if(buflen>0){
+		if(iodesc->basetype == MPI_INTEGER){
+		  ierr = nc_put_vara_int (ncid, vid, tstart, tcount, (const int *) tmp_buf); 
+		}else if(iodesc->basetype == MPI_DOUBLE || iodesc->basetype == MPI_REAL8){
+		  ierr = nc_put_vara_double (ncid, vid, tstart, tcount, (const double *) tmp_buf); 
+		}else if(iodesc->basetype == MPI_FLOAT || iodesc->basetype == MPI_REAL4){
+		  ierr = nc_put_vara_float (ncid,vid, tstart, tcount, (const float *) tmp_buf); 
+		}else{
+		  fprintf(stderr,"Type not recognized %d in pioc_write_darray\n",(int) iodesc->basetype);
+		}
+		if(ierr == PIO_EEDGE){
+		  for(i=0;i<ndims;i++)
+		    fprintf(stderr,"dim %d start %ld count %ld\n",i,tstart[i],tcount[i]);
+		}
+		if(tmp_buf != bufptr)
+		  free(tmp_buf);
+	      }
+	    }
 	  }else if(ios->io_rank < iodesc->num_aiotasks ){
 	    buflen=1;
 	    for(i=0;i<ndims;i++){
@@ -192,9 +189,12 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, voi
 	      buflen*=tcount[i];
 	    }
 	    mpierr = MPI_Recv( &ierr, 1, MPI_INT, 0, 0, ios->io_comm, &status);  // task0 is ready to recieve
-	    mpierr = MPI_Rsend( tstart, ndims, MPI_OFFSET, 0, ios->num_iotasks+ios->io_rank, ios->io_comm);
-	    mpierr = MPI_Rsend( tcount, ndims, MPI_OFFSET, 0,2*ios->num_iotasks+ios->io_rank, ios->io_comm);
-	    mpierr = MPI_Rsend( bufptr, buflen, iodesc->basetype, 0, ios->io_rank, ios->io_comm);
+	    mpierr = MPI_Rsend( buflen, 1, MPI_INT, 0, 1, ios->io_comm);
+	    if(buflen>0) {
+	      mpierr = MPI_Rsend( tstart, ndims, MPI_OFFSET, 0, ios->num_iotasks+ios->io_rank, ios->io_comm);
+	      mpierr = MPI_Rsend( tcount, ndims, MPI_OFFSET, 0,2*ios->num_iotasks+ios->io_rank, ios->io_comm);
+	      mpierr = MPI_Rsend( bufptr, buflen, iodesc->basetype, 0, ios->io_rank, ios->io_comm);
+	    }
 	  }
 	  break;
 	}
@@ -221,10 +221,6 @@ int pio_write_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, voi
       if(region->next != NULL)
 	region = region->next;
     } //    for(regioncnt=0;regioncnt<iodesc->maxregions;regioncnt++){
-    if(tmp_buf != NULL && tmp_buf != bufptr)
-      free(tmp_buf);
-
-
   } // if(ios->ioproc)
   ierr = check_netcdf(file, ierr, __FILE__,__LINE__);
   return ierr;
