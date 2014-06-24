@@ -252,7 +252,7 @@ contains
 
        if(par%masterproc)       write(iulog,*)"...done."
     end if
-
+    if(par%masterproc) write(iulog,*)"total number of elements nelem = ",nelem
 
     !debug  call PrintGridVertex(GridVertex)
 
@@ -941,22 +941,20 @@ contains
        do ie=nets,nete
           elem(ie)%derived%omega_p(:,:,:) = 0D0
        end do
-       call TimeLevel_Qdp( tl, qsplit, n0_qdp)
        do ie=nets,nete
 #if (defined COLUMN_OPENMP)
 !$omp parallel do default(shared), private(k, t, q, i, j, dp)
 #endif
           do k=1,nlev    !  Loop inversion (AAM)
-             do t=1,3
-                do q=1,qsize
-                   do i=1,np
-                      do j=1,np
-                         dp = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-                              ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,t)
-
-                         elem(ie)%state%Qdp(i,j,k,q,n0_qdp)=elem(ie)%state%Q(i,j,k,q)*dp
-
-                      enddo
+             do q=1,qsize
+                do i=1,np
+                   do j=1,np
+                      dp = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+                           ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,tl%n0)
+                      
+                      elem(ie)%state%Qdp(i,j,k,q,1)=elem(ie)%state%Q(i,j,k,q)*dp
+                      elem(ie)%state%Qdp(i,j,k,q,2)=elem(ie)%state%Q(i,j,k,q)*dp
+                      
                    enddo
                 enddo
              enddo
@@ -1330,7 +1328,7 @@ contains
     use hybvcoord_mod, only : hvcoord_t
     use time_mod, only : TimeLevel_t, timelevel_update, timelevel_qdp, nsplit
     use control_mod, only: statefreq,&
-           energy_fixer, ftype, qsplit, rsplit, test_cfldep
+           energy_fixer, ftype, qsplit, rsplit, test_cfldep, disable_diagnostics
     use prim_advance_mod, only : applycamforcing, &
                                  applycamforcing_dynamics
     use prim_state_mod, only : prim_printstate, prim_diag_scalars, prim_energy_halftimes
@@ -1389,6 +1387,9 @@ contains
        compute_diagnostics=.true.
        compute_energy = .true.
     endif
+
+    if(disable_diagnostics) compute_diagnostics=.false.
+
     if (compute_diagnostics) &
        call prim_diag_scalars(elem,hvcoord,tl,4,.true.,nets,nete)
 

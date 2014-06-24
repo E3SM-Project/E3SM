@@ -261,9 +261,8 @@ contains
     real (kind=real_kind) :: tmpD(2,2)
     real (kind=real_kind) :: M(2,2),E(2,2),eig(2),DE(2,2),DEL(2,2),V(2,2), nu1, nu2, lamStar1, lamStar2
     integer :: imaxM(2)
-    real (kind=real_kind) :: l1, l2, sc     ! eigen values of met
+    real (kind=real_kind) :: l1, l2, sc,min_svd,max_svd,max_normDinv
 
-    real (kind=real_kind) :: roundoff_err = 1e-11 !!! OG: this is a temporal fix
     
     ! ==============================================
     ! Initialize differential mapping operator
@@ -278,9 +277,9 @@ contains
        call elem_jacobians(elem%cartp, elem%u2qmap)
     endif
 
-    elem%max_eig = 0.0d0
-    elem%min_eig = 1d99
-    elem%max_eig_ratio = 0d0
+    max_svd = 0.0d0
+    max_normDinv = 0.0d0
+    min_svd = 1d99
     do j=1,np
        do i=1,np
           x1=gll_points(i)
@@ -320,11 +319,23 @@ contains
           ! Max L2 norm of Dinv is sqrt of max eigenvalue of metinv
           ! max eigenvalue of metinv is 1/min eigenvalue of met
           norm = 1.0d0/sqrt(min(abs(l1),abs(l2)))
-          elem%max_eig = max(norm, elem%max_eig)
+          max_svd = max(norm, max_svd)
           ! Min L2 norm of Dinv is sqrt of min eigenvalue of metinv
           ! min eigenvalue of metinv is 1/max eigenvalue of met
           norm = 1.0d0/sqrt(max(abs(l1),abs(l2)))
-          elem%min_eig = min(norm, elem%min_eig)
+          min_svd = min(norm, min_svd)
+
+          ! some kind of pseudo-norm of Dinv
+          ! C = 1/sqrt(2) sqrt( |g^x|^2 + |g^y|^2 + 2*|g^x dot g^y|)
+          !   = 1/sqrt(2) sqrt( |g_x|^2 + |g_y|^2 + 2*|g_x dot g_y|) / J
+          ! g^x = Dinv(:,1)    g_x = D(1,:)
+          ! g^y = Dinv(:,2)    g_y = D(2,:)
+          norm = (2*abs(sum(elem%Dinv(:,1,i,j)*elem%Dinv(:,2,i,j))) + sum(elem%Dinv(:,1,i,j)**2) + sum(elem%Dinv(:,2,i,j)**2))
+          norm = sqrt(norm)
+!          norm = (2*abs(sum(elem%D(1,:,i,j)*elem%D(2,:,i,j))) + sum(elem%D(1,:,i,j)**2) + sum(elem%D(2,:,i,j)**2))
+!          norm = sqrt(norm)/detD
+          max_normDinv = max(norm,max_normDinv)
+
 
           ! Need inverse of met if not calculated analytically
           elem%metdet(i,j) = abs(detD)
@@ -451,24 +462,20 @@ contains
        end do
     end do
 
-    elem%dx_short = 1.0d0/(elem%max_eig*0.5d0*dble(np-1)*rrearth*1000.0d0)
-    elem%dx_long  = 1.0d0/(elem%min_eig*0.5d0*dble(np-1)*rrearth*1000.0d0)
-    ! ===============================================
-    !
-    ! Initialize equal angular metric tensor on each 
-    ! on velocity grid for unit sphere.
-    !
-    ! Initialize gdet = SQRT(ABS(DET(gij)))
-    !
-    ! These quantities are the same on every face
-    ! of the cube.
-    !
-    ! =================================================
+!    see Paul Ullrich writeup:   
+!    max_normDinv might be a tighter bound than max_svd for deformed elements
+!    max_svd >= max_normDinv/sqrt(2), with equality holding if |g^x| = |g^y| 
+!    elem%normDinv=max_normDinv/sqrt(2)     
 
-    ! mt: better might be to compute all these quantities directly from D
-    ! for consistency?
-    !
-    ! MNL: done
+    ! this norm is consistent with length scales defined below:
+    elem%normDinv=max_svd
+
+
+    ! compute element length scales, based on SVDs, in km:
+    elem%dx_short = 1.0d0/(max_svd*0.5d0*dble(np-1)*rrearth*1000.0d0)
+    elem%dx_long  = 1.0d0/(min_svd*0.5d0*dble(np-1)*rrearth*1000.0d0)
+
+    ! optional noramlization:
     elem%D = elem%D * sqrt(alpha) 
     elem%Dinv = elem%Dinv / sqrt(alpha) 
     elem%metdet = elem%metdet * alpha

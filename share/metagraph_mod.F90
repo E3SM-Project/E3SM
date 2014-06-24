@@ -209,11 +209,10 @@ contains
     implicit none 
     type (MetaVertex_t), intent(in),target  :: Vertex
 
-    integer               :: i,j,npart
+    integer               :: j
 
 
     write(iulog,*)
-    write(iulog,90) i
     write(iulog,95) Vertex%nmembers
     call PrintGridVertex(Vertex%members)
     write(iulog,96) Vertex%nedges
@@ -221,16 +220,13 @@ contains
        do j=1,Vertex%nedges
           write(iulog,97) Vertex%edges(j)%number,     Vertex%edges(j)%type,              &
                Vertex%edges(j)%wgtP,        Vertex%edges(j)%HeadVertex,        &
-               Vertex%edges(j)%TailVertex	 
+               Vertex%edges(j)%TailVertex
        enddo
     endif
 
-90  format('METAVERTEX #',I2,2x)
 95  format(5x,I2,' Member Grid Vertices')
 96  format(5x,I2,' Incident Meta Edges ')
 97  format(10x,'METAEDGE #',I2,2x,'TYPE ',I1,2x,'WGT ',I4,2x,'Processors ',I2,' ---> ',I2)
-98  format(5x,'GRIDVERTEX #',5x,'West',5x,'East',5x,'South',5x,'North')
-99  format(10x,I2,7x,4(2x,I3,1x,'(',I1,')'))
 
   end subroutine PrintMetaVertex
 

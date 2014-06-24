@@ -24,10 +24,6 @@ module ll_mod
   public :: LLSetEdgeCount,LLGetEdgeCount
   public :: LLFree
 
-  interface assignment(=) 
-     module procedure copy_node
-  end interface
-
 contains 
 
   subroutine LLSetEdgeCount(value)
@@ -41,21 +37,6 @@ contains
     integer,intent(out)  :: value
     value=NumEdges
   end subroutine LLGetEdgeCount
-
-  recursive subroutine copy_node(node2,node1)
-
-    type (node_t), intent(out) :: node2
-    type (node_t), intent(in)  :: node1
-
-
-    node2%Src    = node1%Src
-    node2%Dest    = node1%Dest
-    node2%id      = node1%id
-    node2%valid    = node1%valid
-    node2%prev       = node1%prev
-    node2%next       = node1%next
-
-  end subroutine copy_node
 
   subroutine PrintEdgeList(EdgeList)
 

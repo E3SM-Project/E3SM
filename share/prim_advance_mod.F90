@@ -25,98 +25,7 @@ module prim_advance_mod
 
   real (kind=real_kind), allocatable :: ur_weights(:)
 
-
-!!XXgoldyXX:
-  interface statVar
-    module procedure statVar2Delem
-    module procedure statVar3Delem
-  end interface
-!!XXgoldyXX:
-
 contains
-!!XXgoldyXX:
-  subroutine statVar2Delem(var, name, ie)
-    use shr_sys_mod,    only: shr_sys_flush
-    use spmd_utils,     only: npes, mpicom, mpi_real8, mpi_min, mpi_max
-    use spmd_utils,     only: masterproc, masterprocid
-    use dimensions_mod, only: nelemd, nelemdmax
-
-    real(real_kind),         intent(in) :: var(:,:)
-    character(len=*), intent(in) :: name
-    integer,          intent(in) :: ie
-
-    real(real_kind), parameter :: minstart = HUGE(real_kind)
-    real(real_kind), parameter :: maxstart = -HUGE(real_kind)
-    real(real_kind), save :: vmin = minstart
-    real(real_kind), save :: vmax = maxstart
-    real(real_kind)       :: tmp
-    integer        :: pe, ierr
-
-    if (ie <= nelemd) then
-      tmp = MINVAL(var)
-      vmin = MIN(tmp, vmin)
-      tmp = MAXVAL(var)
-      vmax = MAX(tmp, vmax)
-    end if
-
-!    if (ie == nelemdmax) then
-      call mpi_reduce(vmin, tmp, 1, mpi_real8, mpi_min, masterprocid, mpicom, ierr)
-      if (masterproc) then
-        vmin = tmp
-      end if
-      call mpi_reduce(vmax, tmp, 1, mpi_real8, mpi_max, masterprocid, mpicom, ierr)
-      if (masterproc) then
-        vmax = tmp
-        write(iulog, '(i2,2a,2(a,es12.5))') ie,': ',trim(name),': min = ',vmin,', max = ',vmax
-        call shr_sys_flush(iulog)
-      end if
-      vmin = minstart
-      vmax = maxstart
- !   end if
-
-  end subroutine statVar2Delem
-
-  subroutine statVar3Delem(var, name, ie)
-    use shr_sys_mod,    only: shr_sys_flush
-    use spmd_utils,     only: npes, mpicom, mpi_real8, mpi_min, mpi_max
-    use spmd_utils,     only: masterproc, masterprocid
-    use dimensions_mod, only: nelemd, nelemdmax
-
-    real(real_kind),         intent(in) :: var(:,:,:)
-    character(len=*), intent(in) :: name
-    integer,          intent(in) :: ie
-
-    real(real_kind), parameter :: minstart = HUGE(real_kind)
-    real(real_kind), parameter :: maxstart = -HUGE(real_kind)
-    real(real_kind), save :: vmin = minstart
-    real(real_kind), save :: vmax = maxstart
-    real(real_kind)       :: tmp
-    integer        :: pe, ierr
-
-    if (ie <= nelemd) then
-      tmp = MINVAL(var)
-      vmin = MIN(tmp, vmin)
-      tmp = MAXVAL(var)
-      vmax = MAX(tmp, vmax)
-    end if
-
-!    if (ie == nelemdmax) then
-      call mpi_reduce(vmin, tmp, 1, mpi_real8, mpi_min, masterprocid, mpicom, ierr)
-      if (masterproc) then
-        vmin = tmp
-      end if
-      call mpi_reduce(vmax, tmp, 1, mpi_real8, mpi_max, masterprocid, mpicom, ierr)
-      if (masterproc) then
-        vmax = tmp
-        write(iulog, '(i2,2a,2(a,es12.5))') ie,': ',trim(name),': min = ',vmin,', max = ',vmax
-        call shr_sys_flush(iulog)
-      end if
-      vmin = minstart
-      vmax = maxstart
-!    end if
-
-  end subroutine statVar3Delem
-!!XXgoldyXX:
 
   subroutine prim_advance_init(par,integration)
     use edge_mod, only : initEdgeBuffer
@@ -2800,9 +2709,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
            end do
         end do
      end if
-!!XXgoldyXX
-!call statVar(T_v(:,:,:), 'T_v', ie)
-!!XXgoldyXX
 
 
      ! ====================================================
@@ -2864,11 +2770,6 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
         ! ===========================================================
         ! Compute vertical advection of T and v from eq. CCM2 (3.b.1)
         ! ==============================================
-!!XXgoldyXX
-!call statVar(elem(ie)%state%T(:,:,:,n0), 'T', ie)
-!call statVar(elem(ie)%state%v(:,:,:,1,n0), 'U', ie)
-!call statVar(elem(ie)%state%v(:,:,:,2,n0), 'V', ie)
-!!XXgoldyXX
         call preq_vertadv(elem(ie)%state%T(:,:,:,n0),elem(ie)%state%v(:,:,:,:,n0), &
              eta_dot_dpdn,rdp,T_vadv,v_vadv)
      endif

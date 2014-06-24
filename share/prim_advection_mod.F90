@@ -1364,6 +1364,27 @@ subroutine  Prim_Advec_Tracers_remap_ALE( elem , deriv , hybrid , dt , tl , nets
   enddo
   end do
 
+! do ie=nets,nete
+!    do q = 1 , qsize
+!       do k = 1 , nlev    !  Potential loop inversion (AAM)
+!          elem(ie)%state%Qdp(:,:,k,q,np1_qdp) = elem(ie)%spheremp(:,:)* elem(ie)%state%Qdp(:,:,k,q,np1_qdp)
+!       enddo
+!    enddo
+!     call edgeVpack(edgeAdv    , elem(ie)%state%Qdp(:,:,:,:,np1_qdp) , nlev*qsize , 0 , elem(ie)%desc )
+! enddo
+! call bndry_exchangeV( hybrid , edgeAdv    )
+! do ie = nets , nete
+!    call edgeVunpack( edgeAdv    , elem(ie)%state%Qdp(:,:,:,:,np1_qdp) , nlev*qsize , 0 , elem(ie)%desc )
+!    do q = 1 , qsize
+!       do k = 1 , nlev    !  Potential loop inversion (AAM)
+!          elem(ie)%state%Qdp(:,:,k,q,np1_qdp) = elem(ie)%rspheremp(:,:) * elem(ie)%state%Qdp(:,:,k,q,np1_qdp)
+!       enddo
+!    enddo
+! enddo
+
+
+
+
 end subroutine Prim_Advec_Tracers_remap_ALE
 
 subroutine VDOT(rp,Que,rho,mass,hybrid,nets,nete)
@@ -1420,6 +1441,7 @@ subroutine Cobra_SLBQP(Que, Que_t, rho, minq, maxq, mass, hybrid, nets, nete)
   real(kind=real_kind), intent(in)              :: mass              (nlev,qsize)
   type (hybrid_t)     , intent(in)              :: hybrid
 
+  integer,                            parameter :: max_clip = 100
   real(kind=real_kind),               parameter :: eta = 1D-12           
   real(kind=real_kind),               parameter :: hfd = 1D-12             
   real(kind=real_kind)                          :: lambda_p          (nlev,qsize)
@@ -1463,7 +1485,7 @@ subroutine Cobra_SLBQP(Que, Que_t, rho, minq, maxq, mass, hybrid, nets, nete)
   lambda_p = 0
   lambda_c =  -alpha*rp
 
-  do while (MAXVAL(ABS(rc)).gt.eta)
+  do while (MAXVAL(ABS(rc)).gt.eta .and. nclip.lt.max_clip)
 
     do ie=nets,nete
     do q=1,qsize
@@ -2072,7 +2094,7 @@ end subroutine ALE_parametric_coords
         if ( rhs_viss /= 0 ) Qtens(:,:,k) = Qtens(:,:,k) + Qtens_biharmonic(:,:,k,q,ie)
       enddo
 
-      if ( limiter_option == 8 ) then
+      if ( limiter_option == 8) then
         do k = 1 , nlev  ! Loop index added (AAM)
           ! UN-DSS'ed dp at timelevel n0+1:
           dp_star(:,:,k) = dp(:,:,k) - dt * elem(ie)%derived%divdp(:,:,k)
@@ -2088,6 +2110,21 @@ end subroutine ALE_parametric_coords
                                       qmax(:,q,ie) , dp_star(:,:,:) )
       endif
 
+
+      if ( limiter_option==84) then
+        do k = 1 , nlev  ! Loop index added (AAM)
+           qmin(k,1,1)=minval(elem(ie)%state%Qdp(:,:,k,q,n0_qdp)/dp(:,:,k))
+           qmin(k,1,1)=max(qmin(k,1,1),0d0)
+           qmax(k,1,1)=maxval(elem(ie)%state%Qdp(:,:,k,q,n0_qdp)/dp(:,:,k))
+           
+           ! UN-DSS'ed dp at timelevel n0+1:
+           dp_star(:,:,k) = dp(:,:,k) - dt * elem(ie)%derived%divdp(:,:,k)
+        enddo
+        call limiter2d_minmax(Qtens,dp_star,elem(ie)%spheremp,qmin(:,1,1),qmax(:,1,1))
+      endif
+
+
+
       ! apply mass matrix, overwrite np1 with solution:
       ! dont do this earlier, since we allow np1_qdp == n0_qdp
       ! and we dont want to overwrite n0_qdp until we are done using it
@@ -2099,7 +2136,7 @@ end subroutine ALE_parametric_coords
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
         ! sign-preserving limiter, applied after mass matrix
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
-        call limiter2d_zero( elem(ie)%state%Qdp(:,:,:,q,np1_qdp) , hvcoord )
+        call limiter2d_zero( elem(ie)%state%Qdp(:,:,:,q,np1_qdp))
       endif
     enddo
 
@@ -2225,8 +2262,8 @@ end subroutine ALE_parametric_coords
   !   compute biharmonic mixing term f
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   rhs_viss=0
-  if (limiter_option == 8) then
-     call abortmp('limiter_opiton=8 not supported for dg advection')
+  if (limiter_option /= 4) then
+     call abortmp('only limiter_opiton=4 supported for dg advection')
      ! todo:  we need to track a 'dg' mass, and use that to back out Q
      ! then compute Qmin/Qmax here
   endif
@@ -2343,7 +2380,7 @@ end subroutine ALE_parametric_coords
            do k=1,nlev
               elem(ie)%state%Qdp(:,:,k,q,np1_qdp)=elem(ie)%state%Qdp(:,:,k,q,np1_qdp)*elem(ie)%spheremp(:,:)
            enddo
-           call limiter2d_zero(elem(ie)%state%Qdp(:,:,:,q,np1_qdp),hvcoord)
+           call limiter2d_zero(elem(ie)%state%Qdp(:,:,:,q,np1_qdp))
            do k=1,nlev
               elem(ie)%state%Qdp(:,:,k,q,np1_qdp)=elem(ie)%state%Qdp(:,:,k,q,np1_qdp)/elem(ie)%spheremp(:,:)
            enddo
@@ -2525,36 +2562,36 @@ end subroutine ALE_parametric_coords
 !-----------------------------------------------------------------------------
 !-----------------------------------------------------------------------------
 
-  subroutine limiter2d_minmax(Q,dp,hvcoord,spheremp,qmin,qmax)
+  subroutine limiter2d_minmax(Qdp,dp,spheremp,qmin,qmax)
 !
 ! mass conserving limiter (2D only).  to be called just before DSS
 !
 ! in pure 2D advection, the element mass will not be negative before DSS
 ! this routine will redistribute to remove negative values (conservative)
 !
-! if used in 3D, should be applied with 2D/vertical split advection
-!
 ! call with Qdp and assocated dp
 !
 !
   implicit none
-  real (kind=real_kind), intent(inout) :: Q(np,np,nlev)
+  real (kind=real_kind), intent(inout) :: Qdp(np,np,nlev)
   real (kind=real_kind), intent(in   ) :: spheremp(np,np)
   real (kind=real_kind), intent(in   ) ::  dp(np,np,nlev)
-  type (hvcoord_t)     , intent(in   ) :: hvcoord
+  real (kind=real_kind), intent(in   ) :: qmin(nlev),qmax(nlev)
 
   ! local
   integer i,j,k
-  real (kind=real_kind) :: mass,mass_new,area,qmin(nlev),qmax(nlev),mass2
+  real (kind=real_kind) :: mass,mass_new,area,mass2
+  real (kind=real_kind) :: Q(np,np,nlev)
+
+  Q(:,:,:)=Qdp(:,:,:)/dp(:,:,:)  ! convert to concentration
+
 
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,mass,area,mass2,mass_new,i,j)
 #endif
   do k = 1 , nlev
-    mass = sum( Q(:,:,k)*spheremp(:,:) )
+    mass = sum( Qdp(:,:,k)*spheremp(:,:) )
     area = sum( dp(:,:,k)*spheremp(:,:) )
-
-    Q(:,:,k) = Q(:,:,k) / dp(:,:,k)  ! % convert to concentration
 
 !   if (mass>0) print *,k,mass/area,qmin(k),qmax(k)
     ! max limiter
@@ -2606,14 +2643,14 @@ end subroutine ALE_parametric_coords
       Q(:,:,k) = Q(:,:,k) + qmin(k)
     endif
 
-    Q(:,:,k) = Q(:,:,k) * dp(:,:,k)
+    Qdp(:,:,k) = Q(:,:,k) * dp(:,:,k)
   enddo
   end subroutine limiter2d_minmax
 
 !-----------------------------------------------------------------------------
 !-----------------------------------------------------------------------------
 
-  subroutine limiter2d_zero(Q,hvcoord)
+  subroutine limiter2d_zero(Q)
   ! mass conserving zero limiter (2D only).  to be called just before DSS
   !
   ! this routine is called inside a DSS loop, and so Q had already
@@ -2624,7 +2661,6 @@ end subroutine ALE_parametric_coords
   ! so ps should be at one timelevel behind Q
   implicit none
   real (kind=real_kind), intent(inout) :: Q(np,np,nlev)
-  type (hvcoord_t)     , intent(in   ) :: hvcoord
 
   ! local
   real (kind=real_kind) :: dp(np,np)
@@ -2774,7 +2810,7 @@ end subroutine ALE_parametric_coords
         enddo
 
         ! smooth some of the negativities introduced by diffusion:
-        call limiter2d_zero( elem(ie)%state%Qdp(:,:,:,q,nt_qdp) , hvcoord )
+        call limiter2d_zero( elem(ie)%state%Qdp(:,:,:,q,nt_qdp))
       enddo
       call edgeVpack  ( edgeAdv , elem(ie)%state%Qdp(:,:,:,:,nt_qdp) , qsize*nlev , 0 , elem(ie)%desc )
     enddo
