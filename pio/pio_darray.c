@@ -412,14 +412,17 @@ int pio_read_darray_nc(file_desc_t *file, io_desc_t *iodesc, const int vid, void
 	    if(tmp_bufsize>0){
 	      if(i==0){
 		for(int k=0;k<ndims;k++)
-		  tmp_start[k] = start[k];
+		  tmp_start[k] = start[k]; 
 	      }else{
 		MPI_Recv(tmp_start, ndims, MPI_OFFSET, i, i, ios->io_comm, &status);
 	      }
-	      //	      for(int k=0;k<ndims;k++)
-	      //	printf("%d %d %ld %ld %d\n",vid,k,tmp_start[k],tmp_count[k], ierr);
-	      
+
 	      if(iodesc->basetype == MPI_DOUBLE || iodesc->basetype == MPI_REAL8){
+		/*
+	      for(int k=0;k<ndims;k++)
+	      	printf("%s %d %d %d %ld %ld \n",__FILE__,__LINE__,vid,k,tmp_start[k],tmp_count[k]);
+	      fflush(stdout); 
+		*/
 		ierr = nc_get_vara_double (file->fh, vid, tmp_start, tmp_count, bufptr); 
 	      }else if(iodesc->basetype == MPI_INTEGER){
 		ierr = nc_get_vara_int (file->fh, vid, tmp_start, tmp_count,  bufptr); 	     
@@ -494,15 +497,18 @@ int PIOc_read_darray(const int ncid, const int vid, const int ioid, const PIO_Of
     return PIO_EBADID;
   }
   ios = file->iosystem;
-  rlen = iodesc->llen;
-  
+  if(ios->iomaster){
+    rlen = iodesc->maxiobuflen;
+  }else{
+    rlen = iodesc->llen;
+  }
   if(iodesc->rearranger > 0){
     if(ios->ioproc && rlen>0){
       vtype = (MPI_Datatype) iodesc->basetype;
       if(vtype == MPI_INTEGER){
 	iobuf = malloc( rlen*sizeof(int));
       }else if(vtype == MPI_FLOAT || vtype == MPI_REAL4){
-      iobuf = malloc( rlen*sizeof(float));
+	iobuf = malloc( rlen*sizeof(float));
       }else if(vtype == MPI_DOUBLE || vtype == MPI_REAL8){
 	iobuf = malloc( rlen*sizeof(double));
       }else if(vtype == MPI_CHARACTER){

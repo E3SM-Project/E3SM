@@ -30,7 +30,9 @@ module pionfput_mod
      !  DIMS 0,1,2,3,4,5
      module procedure put_var_{DIMS}d_{TYPE}, put_var_vdesc_{DIMS}d_{TYPE}
      !  DIMS 1,2,3,4,5
-     module procedure put_vara_{DIMS}d_{TYPE}, put_vara_vdesc_{DIMS}d_{TYPE}
+     module procedure put_vara_{DIMS}d_{TYPE} 
+     !  DIMS 1,2,3,4,5
+     module procedure put_vara_vdesc_{DIMS}d_{TYPE}
      module procedure put_var1_{TYPE}, put_var1_vdesc_{TYPE}
   end interface
 contains

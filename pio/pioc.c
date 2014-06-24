@@ -157,7 +157,6 @@ int PIOc_InitDecomp(const int iosysid, const int basetype,const int ndims, const
 	      "are incompatable with subset rearrange method and will be ignored");
     }
     iodesc->num_aiotasks = ios->num_iotasks;
-    printf("%s %d %d\n",__FILE__,__LINE__,(int) iodesc->basetype);
     ierr = subset_rearrange_create( *ios, maplen, compmap, dims, ndims, iodesc);
   }else{
       if(ios->ioproc){

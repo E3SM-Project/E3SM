@@ -80,7 +80,7 @@ io_desc_t *malloc_iodesc(const int piotype, const int ndims);
 int flush_output_buffer(file_desc_t *file);
 void compute_maxIObuffersize(MPI_Comm io_comm, io_desc_t *iodesc);
 io_region *alloc_region(const int ndims);
-
+  int pio_delete_iosystem_from_list(int piosysid);
 
 #if defined(__cplusplus)
 }
