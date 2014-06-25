@@ -7,10 +7,7 @@ module interp_movie_mod
   use dimensions_mod, only :  nlev, nelemd, np, ne, qsize, ntrac, nc
   use interpolate_mod, only : interpolate_t, setup_latlon_interp, interpdata_t, &
        get_interp_parameter, get_interp_lat, get_interp_lon, interpolate_scalar, interpolate_vector, &
-       set_interp_parameter, interpol_phys_latlon
-#if defined(_SPELT)
-  use interpolate_mod, only : interpol_spelt_latlon
-#endif
+       set_interp_parameter, interpol_phys_latlon, interpol_spelt_latlon
   use pio_io_mod, only : & 
        nf_output_init_begin,&
        nf_output_init_complete,  &
@@ -68,7 +65,7 @@ module interp_movie_mod
                                                  'Q4       ', &
                                                  'Q5       ', &
                                                  'psC      ', &
-                                                 'C1       ', &
+                                                 'C        ', &
                                                  'C2       ', &
                                                  'C3       ', &
                                                  'C4       ', &
@@ -144,7 +141,7 @@ module interp_movie_mod
        1,2,3,5,0,  &   ! Q4
        1,2,3,5,0,  &   ! Q5
        1,2,5,0,0,  &   ! psC
-       1,2,3,5,0,  &   ! C1
+       1,2,3,5,0,  &   ! C
        1,2,3,5,0,  &   ! C2
        1,2,3,5,0,  &   ! C3
        1,2,3,5,0,  &   ! C4
@@ -175,7 +172,7 @@ module interp_movie_mod
 
   character*(*),parameter::dimnames(maxdims)=(/'lon ','lat ','lev ','ilev','time'/)  
 #else
-  integer, parameter :: varcnt = 18
+  integer, parameter :: varcnt = 19
   integer, parameter :: maxdims=4
   character*(*),parameter::dimnames(maxdims)=(/'lon ','lat ','lev ','time'/)  
   integer, parameter :: vardims(maxdims,varcnt) =  reshape( (/ 1,2,4,0,  &
@@ -195,24 +192,25 @@ module interp_movie_mod
                                                                1,2,3,4,  &
                                                                1,2,3,4,  &
                                                                1,2,3,4,  &
+                                                               1,2,3,4,  &
                                                                1,2,3,4/),&
                                                                shape=(/maxdims,varcnt/))
   character*(*),parameter::varnames(varcnt)=(/'ps      ','geop    ','u       ', &
                                               'v       ','zeta    ','lon     ', &
                                               'lat     ','gw      ','time    ', &
                                               'hypervis','max_dx  ','min_dx  ', &
-                                              'psC     ','C1      ','C2      ', &
+                                              'psC     ','C       ','C1      ','C2      ', &
                                               'C3      ','C4      ',            &
                                               'div     '/)
   integer, parameter :: vartype(varcnt)=(/PIO_double,PIO_double,PIO_double,PIO_double, &
                                           PIO_double,PIO_double,PIO_double,PIO_double, &
                                           PIO_double,PIO_double,PIO_double,PIO_double, &
                                           PIO_double, PIO_double,PIO_double,PIO_double, &
-                                          PIO_double, PIO_double/)
+                                          PIO_double, PIO_double, PIO_double/)
   logical, parameter :: varrequired(varcnt)=(/.false.,.false.,.false.,.false.,&
                                               .false.,.true.,.true.,.true.,.true.,&
                                               .false.,.false.,.false.,.false., &
-                                              .false.,.false.,.false.,.false.,.false./)
+                                              .false.,.false.,.false.,.false.,.false.,.false./)
 
 #endif
   type(interpolate_t) :: interp
@@ -357,7 +355,7 @@ contains
     call nf_variable_attributes(ncdf, 'lon', 'column longitude','degrees_east')
     call nf_variable_attributes(ncdf, 'time', 'Model elapsed time','days')
     call nf_variable_attributes(ncdf, 'psC', 'surface pressure','Pa')
-    call nf_variable_attributes(ncdf, 'C1', 'concentration','kg/kg')
+    call nf_variable_attributes(ncdf, 'C', 'concentration','kg/kg')
     call nf_variable_attributes(ncdf, 'C2', 'concentration','kg/kg')
     call nf_variable_attributes(ncdf, 'C3', 'concentration','kg/kg')
     call nf_variable_attributes(ncdf, 'C4', 'concentration','kg/kg')
@@ -673,6 +671,7 @@ contains
 
 #endif
 
+#if defined(_FVM) 
            if(nf_selectedvar('psC', output_varnames)) then
               if (hybrid%par%masterproc) print *,'writing psC...'
               st=1
@@ -695,16 +694,17 @@ contains
            
             do cindex=1,min(ntrac,5)  ! allow a maximum output of 5 tracers
                write(vname,'(a1,i1)') 'C',cindex
+               if (cindex==1) vname='C'
 
                if(nf_selectedvar(vname, output_varnames)) then
-                  if (hybrid%par%masterproc) print *,'writing FVM tracer ',vname
+                  if (hybrid%par%masterproc) print *,'writing ',vname
                   allocate(datall(ncnt,nlev))
                   st=1
                   do ie=nets,nete
                      en=st+interpdata(ie)%n_interp-1
                      do k=1,nlev                       
                        call interpol_phys_latlon(interpdata(ie),fvm(ie)%c(:,:,k,cindex,n0), &
-                                          fvm(ie),elem(ie)%corners,elem(ie)%desc,datall(st:en,k))
+                                          fvm(ie),elem(ie)%corners,elem(ie)%desc,datall(st:en,k))                                          
                      end do
                      st=st+interpdata(ie)%n_interp
                   enddo                  
@@ -712,6 +712,7 @@ contains
                   deallocate(datall)                  
                end if
             enddo
+#endif
 
 #if defined(_SPELT) 
            if(nf_selectedvar('psC', output_varnames)) then

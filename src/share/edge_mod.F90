@@ -94,8 +94,6 @@ module edge_mod
      integer :: elem_size ! size of 2D array (first two dimensions of buf())
   end type GhostBuffer3D_t
 
-  real(kind=real_kind), parameter, public :: edgeDefaultVal = 1.11e+100_real_kind
-
 ! NOTE ON ELEMENT ORIENTATION
 !
 ! Element orientation:  index V(i,j)
@@ -1957,17 +1955,18 @@ contains
 ! Christoph Erath
 !> Packs the halo zone from v
 ! =========================================
-
-subroutine ghostVpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
-  use dimensions_mod, only : max_corner_elem
+! NOTE: I have to give timelevels as argument, because element_mod is not compiled first
+! and the array call has to be done in this way because of performance reasons!!!
+subroutine ghostVpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,tn0,timelevels,desc)
+  use dimensions_mod, only : max_corner_elem, ntrac_d
   use control_mod, only : north, south, east, west, neast, nwest, seast, swest
 
   type (Ghostbuffertr_t)                      :: edge
   integer,              intent(in)   :: vlyr
   integer,              intent(in)   :: ntrac
-  integer,              intent(in)   :: npoints,nhc, kptr
+  integer,              intent(in)   :: npoints,nhc,kptr, tn0, timelevels
   
-  real (kind=real_kind),intent(in)   :: v(1-nhc:npoints+nhc,1-nhc:npoints+nhc,vlyr,ntrac)
+  real (kind=real_kind),intent(in)   :: v(1-nhc:npoints+nhc,1-nhc:npoints+nhc,vlyr,ntrac_d,timelevels)
   type (EdgeDescriptor_t),intent(in) :: desc
 
   ! Local variables
@@ -2004,10 +2003,10 @@ subroutine ghostVpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
     do k=1,vlyr
       do i=1,npoints
         do j=1,nhc
-          edge%buf(i,j,k,itr+kptr,is)   = v(i  ,j ,k,itr)
-          edge%buf(i,j,k,itr+kptr,ie)   = v(npoints-j+1 ,i ,k,itr)
-          edge%buf(i,j,k,itr+kptr,in)   = v(i  ,npoints-j+1,k,itr)
-          edge%buf(i,j,k,itr+kptr,iw)   = v(j  ,i ,k,itr)
+          edge%buf(i,j,kptr+k,itr,is)   = v(i  ,j ,k,itr,tn0)
+          edge%buf(i,j,kptr+k,itr,ie)   = v(npoints-j+1 ,i ,k,itr,tn0)
+          edge%buf(i,j,kptr+k,itr,in)   = v(i  ,npoints-j+1,k,itr,tn0)
+          edge%buf(i,j,kptr+k,itr,iw)   = v(j  ,i ,k,itr,tn0)
         enddo
       end do
     end do
@@ -2024,7 +2023,7 @@ subroutine ghostVpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
        do i=1,npoints
          do j=1,nhc
            ir = npoints-i+1
-           edge%buf(ir,j,k,itr+kptr,is)=v(i,j,k,itr)
+           edge%buf(ir,j,kptr+k,itr,is)=v(i,j,k,itr,tn0)
          enddo
        enddo
      enddo
@@ -2038,7 +2037,7 @@ subroutine ghostVpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
        do i=1,npoints
          do j=1,nhc
            ir = npoints-i+1
-           edge%buf(ir,j,k,itr+kptr,ie)=v(npoints-j+1,i,k,itr)
+           edge%buf(ir,j,kptr+k,itr,ie)=v(npoints-j+1,i,k,itr,tn0)
           enddo
         enddo
       enddo
@@ -2052,7 +2051,7 @@ subroutine ghostVpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
         do i=1,npoints
           do j=1,nhc
             ir = npoints-i+1
-            edge%buf(ir,j,k,itr+kptr,in)=v(i,npoints-j+1,k,itr)
+            edge%buf(ir,j,kptr+k,itr,in)=v(i,npoints-j+1,k,itr,tn0)
           enddo
         enddo
       enddo
@@ -2066,7 +2065,7 @@ subroutine ghostVpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
        do i=1,npoints
          do j=1,nhc
             ir = npoints-i+1
-            edge%buf(ir,j,k,itr+kptr,iw)=v(j,i,k,itr)
+            edge%buf(ir,j,kptr+k,itr,iw)=v(j,i,k,itr,tn0)
           enddo
         enddo
       enddo
@@ -2086,7 +2085,7 @@ subroutine ghostVpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
            ! edge%buf(1,1,kptr+k,desc%putmapP_ghost(l))=v(1,1 ,k)
           do i=1,nhc
             do j=1,nhc
-              edge%buf(i,j,k,itr+kptr,desc%putmapP_ghost(l))=v(i  ,j ,k,itr)
+              edge%buf(i,j,kptr+k,itr,desc%putmapP_ghost(l))=v(i  ,j ,k,itr,tn0)
             enddo
           end do
         end do
@@ -2103,7 +2102,7 @@ subroutine ghostVpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
            ! edge%buf(1,1,kptr+k,desc%putmapP_ghost(l))=v(nc ,1 ,k)
           do i=1,nhc
             do j=1,nhc
-              edge%buf(i,j,k,itr+kptr,desc%putmapP_ghost(l))=v(npoints-i+1 ,j ,k,itr)
+              edge%buf(i,j,kptr+k,itr,desc%putmapP_ghost(l))=v(npoints-i+1 ,j ,k,itr,tn0)
             enddo
           end do
         end do
@@ -2120,7 +2119,7 @@ subroutine ghostVpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
            !edge%buf(1,1,kptr+k,desc%putmapP_ghost(l))=v(nc ,nc,k)
            do i=1,nhc
               do j=1,nhc
-                 edge%buf(i,j,k,itr+kptr,desc%putmapP_ghost(l))=v(npoints-i+1,npoints-j+1,k,itr)
+                 edge%buf(i,j,kptr+k,itr,desc%putmapP_ghost(l))=v(npoints-i+1,npoints-j+1,k,itr,tn0)
               enddo
             enddo
           end do
@@ -2137,7 +2136,7 @@ subroutine ghostVpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
            !edge%buf(1,1,kptr+k,desc%putmapP_ghost(l))=v(1  ,nc,k)
           do i=1,nhc
             do j=1,nhc
-              edge%buf(i,j,k,itr+kptr,desc%putmapP_ghost(l))=v(i  ,npoints-j+1,k,itr)
+              edge%buf(i,j,kptr+k,itr,desc%putmapP_ghost(l))=v(i  ,npoints-j+1,k,itr,tn0)
             enddo
           end do
         end do
@@ -2154,7 +2153,7 @@ end subroutine GhostVpack
 ! NOTE: I have to give timelevels as argument, because element_mod is not compiled first
 ! and the array call has to be done in this way because of performance reasons!!!
 subroutine ghostVpackR(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
-  use dimensions_mod, only : max_corner_elem!, ntrac_d
+  use dimensions_mod, only : max_corner_elem, ntrac_d
   use control_mod, only : north, south, east, west, neast, nwest, seast, swest
 
   type (Ghostbuffertr_t)                      :: edge
@@ -2162,8 +2161,7 @@ subroutine ghostVpackR(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
   integer,              intent(in)   :: ntrac
   integer,              intent(in)   :: npoints,nhc,kptr
   
-!  real (kind=real_kind),intent(in)   :: v(1-nhc:npoints+nhc,1-nhc:npoints+nhc,vlyr,ntrac_d)
-  real (kind=real_kind),intent(in)   :: v(1-nhc:npoints+nhc,1-nhc:npoints+nhc,vlyr,ntrac)!phl
+  real (kind=real_kind),intent(in)   :: v(1-nhc:npoints+nhc,1-nhc:npoints+nhc,vlyr,ntrac_d)
   type (EdgeDescriptor_t),intent(in) :: desc
 
   ! Local variables
@@ -2346,16 +2344,18 @@ end subroutine GhostVpackR
 !
 ! Unpack the halo zone into v
 ! ========================================
-subroutine ghostVunpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
-  use dimensions_mod, only : max_corner_elem
+! NOTE: I have to give timelevels as argument, because element_mod is not compiled first
+! and the array call has to be done in this way because of performance reasons!!!
+subroutine ghostVunpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,tn0,timelevels,desc)
+  use dimensions_mod, only : max_corner_elem, ntrac_d
   use control_mod, only : north, south, east, west, neast, nwest, seast, swest
   type (Ghostbuffertr_t),         intent(in)  :: edge
 
   integer,               intent(in)  :: vlyr
   integer,              intent(in)   :: ntrac
-  integer,               intent(in)  :: kptr,nhc,npoints
+  integer,               intent(in)  :: kptr,nhc,npoints, tn0, timelevels
   
-  real (kind=real_kind), intent(inout) :: v(1-nhc:npoints+nhc,1-nhc:npoints+nhc,vlyr,ntrac)
+  real (kind=real_kind), intent(inout) :: v(1-nhc:npoints+nhc,1-nhc:npoints+nhc,vlyr,ntrac_d,timelevels)
   
   type (EdgeDescriptor_t)            :: desc
 
@@ -2365,6 +2365,9 @@ subroutine ghostVunpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
   integer :: is,ie,in,iw,ic
   logical :: reverse
   
+  real (kind=real_kind)                       :: NaN=-1.0
+  NaN=sqrt(NaN)
+
   threadsafe=.false.
 
   is=desc%getmapP_ghost(south) 
@@ -2380,10 +2383,10 @@ subroutine ghostVunpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
     do k=1,vlyr
       do i=1,npoints
        do j=1,nhc
-          v(i  ,1-j  ,k,itr)      = edge%buf(i,j,k,itr+kptr,is  )
-          v(npoints+j ,i  ,k,itr) = edge%buf(i,j,k,itr+kptr,ie  )
-          v(i  ,npoints+j ,k,itr) = edge%buf(i,j,k,itr+kptr,in  )
-          v(1-j  ,i  ,k,itr)      = edge%buf(i,j,k,itr+kptr,iw  )
+          v(i  ,1-j  ,k,itr,tn0)      = edge%buf(i,j,kptr+k,itr,is  )
+          v(npoints+j ,i  ,k,itr,tn0) = edge%buf(i,j,kptr+k,itr,ie  )
+          v(i  ,npoints+j ,k,itr,tn0) = edge%buf(i,j,kptr+k,itr,in  )
+          v(1-j  ,i  ,k,itr,tn0)      = edge%buf(i,j,kptr+k,itr,iw  )
        end do
       end do
     end do
@@ -2400,7 +2403,7 @@ subroutine ghostVunpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
               !v(0  ,0 ,k)=edge%buf(1,1,kptr+k,desc%getmapP_ghost(l))
               do j=1,nhc
                  do i=1,nhc
-                    v(1-j,1-i,k,itr)=edge%buf(i,j,k,itr+kptr,ic)
+                    v(1-j,1-i,k,itr,tn0)=edge%buf(i,j,kptr+k,itr,ic)
                  enddo
               enddo
              enddo
@@ -2411,7 +2414,7 @@ subroutine ghostVunpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
               !v(0  ,0 ,k)=edge%buf(1,1,kptr+k,desc%getmapP_ghost(l))
               do j=1,nhc
                  do i=1,nhc
-                    v(1-j,1-i,k,itr)=edge%buf(j,i,k,itr+kptr,ic)
+                    v(1-j,1-i,k,itr,tn0)=edge%buf(j,i,kptr+k,itr,ic)
                  enddo
               enddo
              enddo
@@ -2422,7 +2425,7 @@ subroutine ghostVunpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
          do k=1,vlyr
            do j=1,nhc
              do i=1,nhc
-               v(1-i,1-j,k,itr)=edgeDefaultVal
+               v(1-i,1-j,k,itr,tn0)=NaN
              enddo
            enddo
          enddo
@@ -2441,7 +2444,7 @@ subroutine ghostVunpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
               !v(nc+1 ,0 ,k)=edge%buf(1,1,kptr+k,desc%getmapP_ghost(l))
               do j=1,nhc
                  do i=1,nhc
-                    v(npoints+i,1-j,k,itr)=edge%buf(j,i,k,itr+kptr,ic)
+                    v(npoints+i,1-j,k,itr,tn0)=edge%buf(j,i,kptr+k,itr,ic)
                  enddo
               enddo
             enddo
@@ -2452,7 +2455,7 @@ subroutine ghostVunpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
               !v(nc+1 ,0 ,k)=edge%buf(1,1,kptr+k,desc%getmapP_ghost(l))
               do j=1,nhc
                  do i=1,nhc
-                    v(npoints+i ,1-j ,k,itr)=edge%buf(i,j,k,itr+kptr,ic)
+                    v(npoints+i ,1-j ,k,itr,tn0)=edge%buf(i,j,kptr+k,itr,ic)
                  enddo
               enddo
             enddo
@@ -2463,7 +2466,7 @@ subroutine ghostVunpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
          do k=1,vlyr
           do j=1,nhc
             do i=1,nhc
-              v(npoints+i,1-j,k,itr)=edgeDefaultVal
+              v(npoints+i,1-j,k,itr,tn0)=NaN
             enddo
           enddo
          enddo
@@ -2482,7 +2485,7 @@ subroutine ghostVunpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
               !v(nc+1 ,nc+1,k)=edge%buf(1,1,kptr+k,desc%getmapP_ghost(l))
               do j=1,nhc
                  do i=1,nhc
-                    v(npoints+i ,npoints+j,k,itr)=edge%buf(j,i,k,itr+kptr,ic)
+                    v(npoints+i ,npoints+j,k,itr,tn0)=edge%buf(j,i,kptr+k,itr,ic)
                  enddo
               enddo
             enddo
@@ -2493,7 +2496,7 @@ subroutine ghostVunpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
               !v(nc+1 ,nc+1,k)=edge%buf(1,1,kptr+k,desc%getmapP_ghost(l))
               do j=1,nhc
                  do i=1,nhc
-                    v(npoints+i ,npoints+j,k,itr)=edge%buf(i,j,k,itr+kptr,ic)
+                    v(npoints+i ,npoints+j,k,itr,tn0)=edge%buf(i,j,kptr+k,itr,ic)
                  enddo
               enddo
             enddo
@@ -2504,7 +2507,7 @@ subroutine ghostVunpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
          do k=1,vlyr        
           do j=1,nhc
             do i=1,nhc
-              v(npoints+i,npoints+j,k,itr)=edgeDefaultVal
+              v(npoints+i,npoints+j,k,itr,tn0)=NaN
             enddo
           enddo
          enddo
@@ -2523,7 +2526,7 @@ subroutine ghostVunpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
               !v(0  ,nc+1,k)=edge%buf(1,1,kptr+k,desc%getmapP_ghost(l))
               do j=1,nhc
                  do i=1,nhc
-                    v(1-i ,npoints+j,k,itr)=edge%buf(j,i,k,itr+kptr,ic)
+                    v(1-i ,npoints+j,k,itr,tn0)=edge%buf(j,i,kptr+k,itr,ic)
                  enddo
               enddo
             enddo
@@ -2534,7 +2537,7 @@ subroutine ghostVunpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
               !v(0  ,nc+1,k)=edge%buf(1,1,kptr+k,desc%getmapP_ghost(l))
               do j=1,nhc
                  do i=1,nhc
-                    v(1-i ,npoints+j,k,itr)=edge%buf(i,j,k,itr+kptr,ic)
+                    v(1-i ,npoints+j,k,itr,tn0)=edge%buf(i,j,kptr+k,itr,ic)
                  enddo
               enddo
             enddo
@@ -2545,7 +2548,7 @@ subroutine ghostVunpack(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
          do k=1,vlyr
           do j=1,nhc
             do i=1,nhc
-              v(1-i,npoints+j,k,itr)=edgeDefaultVal
+              v(1-i,npoints+j,k,itr,tn0)=NaN
             enddo
           enddo
          enddo
@@ -2564,7 +2567,7 @@ end subroutine ghostVunpack
 ! NOTE: I have to give timelevels as argument, because element_mod is not compiled first
 ! and the array call has to be done in this way because of performance reasons!!!
 subroutine ghostVunpackR(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
-  use dimensions_mod, only : max_corner_elem!, ntrac_d
+  use dimensions_mod, only : max_corner_elem, ntrac_d
   use control_mod, only : north, south, east, west, neast, nwest, seast, swest
   type (Ghostbuffertr_t),         intent(in)  :: edge
 
@@ -2572,8 +2575,7 @@ subroutine ghostVunpackR(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
   integer,              intent(in)   :: ntrac
   integer,               intent(in)  :: kptr,nhc,npoints
   
-!  real (kind=real_kind), intent(inout) :: v(1-nhc:npoints+nhc,1-nhc:npoints+nhc,vlyr,ntrac_d)
-  real (kind=real_kind), intent(inout) :: v(1-nhc:npoints+nhc,1-nhc:npoints+nhc,vlyr,ntrac)!phl
+  real (kind=real_kind), intent(inout) :: v(1-nhc:npoints+nhc,1-nhc:npoints+nhc,vlyr,ntrac_d)
   
   type (EdgeDescriptor_t)            :: desc
 
@@ -2583,6 +2585,9 @@ subroutine ghostVunpackR(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
   integer :: is,ie,in,iw,ic
   logical :: reverse
   
+  real (kind=real_kind)                       :: NaN=-1.0
+  NaN=sqrt(NaN)
+
   threadsafe=.false.
 
   is=desc%getmapP_ghost(south) 
@@ -2640,7 +2645,7 @@ subroutine ghostVunpackR(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
          do k=1,vlyr
            do j=1,nhc
              do i=1,nhc
-               v(1-i,1-j,k,itr)=edgeDefaultVal
+               v(1-i,1-j,k,itr)=NaN
              enddo
            enddo
          enddo
@@ -2681,7 +2686,7 @@ subroutine ghostVunpackR(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
          do k=1,vlyr
           do j=1,nhc
             do i=1,nhc
-              v(npoints+i,1-j,k,itr)=edgeDefaultVal
+              v(npoints+i,1-j,k,itr)=NaN
             enddo
           enddo
          enddo
@@ -2722,7 +2727,7 @@ subroutine ghostVunpackR(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
          do k=1,vlyr        
           do j=1,nhc
             do i=1,nhc
-              v(npoints+i,npoints+j,k,itr)=edgeDefaultVal
+              v(npoints+i,npoints+j,k,itr)=NaN
             enddo
           enddo
          enddo
@@ -2763,7 +2768,7 @@ subroutine ghostVunpackR(edge,v,nhc,npoints,vlyr,ntrac,kptr,desc)
          do k=1,vlyr
           do j=1,nhc
             do i=1,nhc
-              v(1-i,npoints+j,k,itr)=edgeDefaultVal
+              v(1-i,npoints+j,k,itr)=NaN
             enddo
           enddo
          enddo
@@ -2795,7 +2800,7 @@ end subroutine ghostVunpackR
   ! data will be located.
   ! =================================================================================
     subroutine ghostVpack2d(ghost,v,nhc, npoints,vlyr,ntrac,kptr,tn0,timelevels,desc)
-      use dimensions_mod, only : max_corner_elem!, ntrac_d
+      use dimensions_mod, only : max_corner_elem, ntrac_d
       use control_mod, only : north, south, east, west, neast, nwest, seast, swest
 
       type (Ghostbuffertr_t)                  :: ghost
@@ -2803,8 +2808,7 @@ end subroutine ghostVunpackR
       integer,              intent(in)   :: ntrac
       integer,              intent(in)      :: nhc,npoints,kptr, tn0, timelevels
       
-      real (kind=real_kind),intent(in)      :: v(1-nhc:npoints+nhc,1-nhc:npoints+nhc, vlyr, ntrac,timelevels)!phl
-!      real (kind=real_kind),intent(in)      :: v(1-nhc:npoints+nhc,1-nhc:npoints+nhc, vlyr, ntrac_d,timelevels)
+      real (kind=real_kind),intent(in)      :: v(1-nhc:npoints+nhc,1-nhc:npoints+nhc, vlyr, ntrac_d,timelevels)
       type (EdgeDescriptor_t),intent(in)    :: desc
 
       ! Local variables
@@ -2985,14 +2989,13 @@ end subroutine ghostVunpackR
   ! =================================================================================
 
   subroutine ghostVunpack2d(ghost,v,nhc,npoints,vlyr,ntrac,kptr,tn0,timelevels,desc)
-    use dimensions_mod, only : max_corner_elem!, ntrac_d
+    use dimensions_mod, only : max_corner_elem, ntrac_d
     use control_mod, only : north, south, east, west, neast, nwest, seast, swest
     type (Ghostbuffertr_t),         intent(in)  :: ghost
 
     integer,              intent(in)      :: nhc,npoints,kptr, vlyr,ntrac,tn0,timelevels
 
-!    real (kind=real_kind), intent(inout)  :: v(1-nhc:npoints+nhc,1-nhc:npoints+nhc, vlyr, ntrac_d,timelevels)
-    real (kind=real_kind), intent(inout)  :: v(1-nhc:npoints+nhc,1-nhc:npoints+nhc, vlyr, ntrac,timelevels)!phl
+    real (kind=real_kind), intent(inout)  :: v(1-nhc:npoints+nhc,1-nhc:npoints+nhc, vlyr, ntrac_d,timelevels)
     type (EdgeDescriptor_t)               :: desc
 
 
@@ -3002,6 +3005,9 @@ end subroutine ghostVunpackR
     integer :: is,ie,in,iw,ic
     logical :: reverse
     
+    real (kind=real_kind)                       :: NaN=-1.0
+    NaN=sqrt(NaN)
+
     threadsafe=.false.
 
     is=desc%getmapP_ghost(south) 
@@ -3057,7 +3063,7 @@ end subroutine ghostVunpackR
            do k=1,vlyr
              do j=1,nhc
                do i=1,nhc
-                 v(1-i,1-j,k,itr,tn0)=edgeDefaultVal
+                 v(1-i,1-j,k,itr,tn0)=NaN
                enddo
              enddo
            enddo
@@ -3096,7 +3102,7 @@ end subroutine ghostVunpackR
            do k=1,vlyr
               do j=1,nhc
                 do i=1,nhc
-                  v(npoints+i ,1-j,k,itr,tn0)=edgeDefaultVal
+                  v(npoints+i ,1-j,k,itr,tn0)=NaN
                 enddo
               enddo
             enddo
@@ -3137,7 +3143,7 @@ end subroutine ghostVunpackR
             do k=1,vlyr
               do j=1,nhc
                 do i=1,nhc
-                  v(npoints+i ,npoints+j,k,itr,tn0)=edgeDefaultVal
+                  v(npoints+i ,npoints+j,k,itr,tn0)=NaN
                 enddo
               enddo 
             enddo
@@ -3177,7 +3183,7 @@ end subroutine ghostVunpackR
             do k=1,vlyr
               do j=1,nhc
                 do i=1,nhc
-                  v(1-i ,npoints+j,k,itr,tn0)=edgeDefaultVal
+                  v(1-i ,npoints+j,k,itr,tn0)=NaN
                 enddo
               enddo
             enddo
@@ -3209,14 +3215,14 @@ end subroutine ghostVunpackR
   ! data will be located.
   ! =================================================================================
     subroutine ghostVpack2d_level(ghost,v,kptr,nhc, npoints,vlyr,desc)
-      use dimensions_mod, only : max_corner_elem!, ntrac_d
+      use dimensions_mod, only : max_corner_elem, ntrac_d
       use control_mod, only : north, south, east, west, neast, nwest, seast, swest
 
       type (Ghostbuffertr_t)                  :: ghost
       integer,               intent(in)     :: vlyr,kptr
       integer,              intent(in)      :: nhc,npoints
       
-      real (kind=real_kind),intent(in)      :: v(1-nhc:,1-nhc:,:)
+      real (kind=real_kind),intent(in)      :: v(1-nhc:npoints+nhc,1-nhc:npoints+nhc, vlyr)
       type (EdgeDescriptor_t),intent(in)    :: desc
 
       ! Local variables
@@ -3379,13 +3385,13 @@ end subroutine ghostVunpackR
   ! =================================================================================
 
   subroutine ghostVunpack2d_level(ghost,v,kptr,nhc,npoints,vlyr,desc)
-    use dimensions_mod, only : max_corner_elem!, ntrac_d
+    use dimensions_mod, only : max_corner_elem, ntrac_d
     use control_mod, only : north, south, east, west, neast, nwest, seast, swest
     type (Ghostbuffertr_t),         intent(in)  :: ghost
 
     integer,              intent(in)      :: nhc,npoints, vlyr,kptr
 
-    real (kind=real_kind), intent(inout)  :: v(1-nhc:,1-nhc:,:)
+    real (kind=real_kind), intent(inout)  :: v(1-nhc:npoints+nhc,1-nhc:npoints+nhc, vlyr)
     type (EdgeDescriptor_t)               :: desc
 
 
@@ -3395,6 +3401,9 @@ end subroutine ghostVunpackR
     integer :: is,ie,in,iw,ic
     logical :: reverse
     
+    real (kind=real_kind)                       :: NaN=-1.0
+    NaN=sqrt(NaN)
+
     threadsafe=.false.
 
     is=desc%getmapP_ghost(south) 
@@ -3443,7 +3452,7 @@ end subroutine ghostVunpackR
            do k=1,vlyr
              do j=1,nhc
                do i=1,nhc
-                 v(1-i,1-j,k)=edgeDefaultVal
+                 v(1-i,1-j,k)=NaN
                enddo
              enddo
            enddo
@@ -3476,7 +3485,7 @@ end subroutine ghostVunpackR
            do k=1,vlyr
               do j=1,nhc
                 do i=1,nhc
-                  v(npoints+i ,1-j,k)=edgeDefaultVal
+                  v(npoints+i ,1-j,k)=NaN
                 enddo
               enddo
             enddo
@@ -3511,7 +3520,7 @@ end subroutine ghostVunpackR
             do k=1,vlyr
               do j=1,nhc
                 do i=1,nhc
-                  v(npoints+i ,npoints+j,k)=edgeDefaultVal
+                  v(npoints+i ,npoints+j,k)=NaN
                 enddo
               enddo 
             enddo
@@ -3545,7 +3554,7 @@ end subroutine ghostVunpackR
             do k=1,vlyr
               do j=1,nhc
                 do i=1,nhc
-                  v(1-i ,npoints+j,k)=edgeDefaultVal
+                  v(1-i ,npoints+j,k)=NaN
                 enddo
               enddo
             enddo
@@ -3576,7 +3585,7 @@ end subroutine ghostVunpackR
   ! data will be located.
   ! =================================================================================
     subroutine ghostVpack2d_single(ghost,v,nhc, npoints,desc)
-      use dimensions_mod, only : max_corner_elem!, ntrac_d
+      use dimensions_mod, only : max_corner_elem, ntrac_d
       use control_mod, only : north, south, east, west, neast, nwest, seast, swest
 
       type (Ghostbuffertr_t)                  :: ghost
@@ -3728,7 +3737,7 @@ end subroutine ghostVunpackR
   ! =================================================================================
 
   subroutine ghostVunpack2d_single(ghost,v,nhc,npoints,desc)
-    use dimensions_mod, only : max_corner_elem!, ntrac_d
+    use dimensions_mod, only : max_corner_elem, ntrac_d
     use control_mod, only : north, south, east, west, neast, nwest, seast, swest
     type (Ghostbuffertr_t),         intent(in)  :: ghost
 
@@ -3744,6 +3753,9 @@ end subroutine ghostVunpackR
     integer :: is,ie,in,iw,ic
     logical :: reverse
     
+    real (kind=real_kind)                       :: NaN=-1.0
+    NaN=sqrt(NaN)
+
     threadsafe=.false.
 
     is=desc%getmapP_ghost(south) 
@@ -3785,7 +3797,7 @@ end subroutine ghostVunpackR
        else
          do j=1,nhc
            do i=1,nhc
-             v(1-i,1-j)=edgeDefaultVal
+             v(1-i,1-j)=NaN
            enddo
          enddo     
        endif
@@ -3812,7 +3824,7 @@ end subroutine ghostVunpackR
        else
           do j=1,nhc
             do i=1,nhc
-              v(npoints+i ,1-j)=edgeDefaultVal
+              v(npoints+i ,1-j)=NaN
             enddo
           enddo
        endif
@@ -3841,7 +3853,7 @@ end subroutine ghostVunpackR
         else
           do j=1,nhc
             do i=1,nhc
-              v(npoints+i ,npoints+j)=edgeDefaultVal
+              v(npoints+i ,npoints+j)=NaN
             enddo
           enddo  
        endif
@@ -3869,7 +3881,7 @@ end subroutine ghostVunpackR
         else
           do j=1,nhc
             do i=1,nhc
-              v(1-i ,npoints+j)=edgeDefaultVal
+              v(1-i ,npoints+j)=NaN
             enddo
           enddo
        endif
@@ -4140,6 +4152,9 @@ end subroutine ghostVunpackR
     integer :: is,ie,in,iw,ic
     logical :: reverse
     
+    real (kind=real_kind)                       :: NaN=-1.0
+    NaN=sqrt(NaN)
+
     threadsafe=.false.
 
     nhc     = g%nhc
@@ -4150,14 +4165,14 @@ end subroutine ghostVunpackR
     in=desc%getmapP_ghost(north) 
     iw=desc%getmapP_ghost(west)  
 
-! fill in optional values with edgeDefaultVal
+! fill in optional values with NaN
     do k=1,vlyr
        do j=1,nhc
           do i=1,nhc
-             v(1-i,   1-j, k)=edgeDefaultVal
-             v(np+i , 1-j, k)=edgeDefaultVal
-             v(np+i, np+j, k)=edgeDefaultVal
-             v(1-i , np+j, k)=edgeDefaultVal
+             v(1-i,   1-j, k)=NaN
+             v(np+i , 1-j, k)=NaN
+             v(np+i, np+j, k)=NaN
+             v(1-i , np+j, k)=NaN
           enddo
        enddo
     enddo

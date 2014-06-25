@@ -42,8 +42,6 @@ SET(PREQX_SRCS_F90
   ${SRC_SHARE_DIR}/spacecurve_mod.F90
   ${SRC_SHARE_DIR}/cube_mod.F90
   ${SRC_SHARE_DIR}/interpolate_mod.F90
-  ${SRC_SHARE_DIR}/fvm_bsp_mod.F90
-  ${SRC_SHARE_DIR}/fvm_transformation_mod.F90
   ${PHYSICS_DIR}/physics_types_mod.F90
   ${SRC_SHARE_DIR}/dof_mod.F90
   ${SRC_DIR}/common_io_mod.F90

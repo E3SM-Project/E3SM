@@ -22,6 +22,8 @@ SET(SWIM_SRCS ${SRC_SHARE_DIR}/kinds.F90
                ${SRC_DIR}/checksum_mod.F90
                ${SRC_DIR}/common_io_mod.F90
                ${SRC_DIR}/common_movie_mod.F90
+               ${SRC_DIR}/fvm_bsp_mod.F90
+               ${SRC_DIR}/fvm_transformation_mod.F90
                ${SRC_DIR}/init_mod.F90
                ${SRC_DIR}/interp_movie_mod.F90
                ${SRC_DIR}/netcdf_io_mod.F90
@@ -35,8 +37,6 @@ SET(SWIM_SRCS ${SRC_SHARE_DIR}/kinds.F90
                ${SRC_DIR}/state_mod.F90
                ${SRC_DIR}/sweq_mod.F90
                ${SRC_DIR}/types_mod.F90
-               ${SRC_SHARE_DIR}/fvm_bsp_mod.F90
-               ${SRC_SHARE_DIR}/fvm_transformation_mod.F90
                ${SRC_SHARE_DIR}/bndry_mod.F90
                ${SRC_SHARE_DIR}/cg_mod.F90
                ${SRC_SHARE_DIR}/control_mod.F90

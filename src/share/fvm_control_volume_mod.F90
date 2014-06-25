@@ -17,38 +17,28 @@ module fvm_control_volume_mod
   ! ---------------------------------------------------------------------------------
   use element_mod, only: timelevels, element_t
   ! ---------------------------------------------------------------------------------
-  use dimensions_mod, only: nc, nhe, nlev, ntrac, ntrac_d, ne, np, nhr, ns, nhc
+  use dimensions_mod, only: nc, nhc, nhe, nlev, ntrac, ntrac_d, ne, np
   ! ---------------------------------------------------------------------------------
   use control_mod, only : north, south, east, west, neast, nwest, seast, swest
   ! ---------------------------------------------------------------------------------
   use cube_mod, only     : cube_xstart, cube_xend, cube_ystart, cube_yend
 
   use parallel_mod, only : abortmp
-
+  
   implicit none
   private
-  integer, parameter, private:: nh = nhr+(nhe-1) ! = 2 (nhr=2; nhe=1)
-                                                 ! = 3 (nhr=2; nhe=2)
-
-  integer, private                :: ibase_tmp(1-nh:nc+nh,1:nhr,2)  
-  real (kind=real_kind), private  :: interp(1-nh:nc+nh,1:nhr,2)
-
-
-
+  
   type, public :: fvm_struct
     ! fvm tracer mixing ratio: (kg/kg)
-    real (kind=real_kind) :: c     (1-nhc:nc+nhc,1-nhc:nc+nhc,nlev,ntrac_d,timelevels)
-    ! fvm tracer mixing ratio tendency: (kg/kg/s)
-    real (kind=real_kind) :: fc(nc,nc,nlev,ntrac_d)
-    real (kind=real_kind) :: dp_fvm(1-nhc:nc+nhc,1-nhc:nc+nhc,nlev        ,timelevels)
-    real (kind=real_kind) :: psc(1-nhc:nc+nhc,1-nc:nc+nhc)
+    real (kind=real_kind) :: c(1-nhc:nc+nhc,1-nhc:nc+nhc,nlev,ntrac_d,timelevels) 
+    real (kind=real_kind) :: psc(1-nhc:nc+nhc,1-nhc:nc+nhc)
     real (kind=real_kind) :: cstart(1:nc,1:nc)
 !-----------------------------------------------------------------------------------!
     ! define the arrival grid, which is build on the original HOMME elements
     type (spherical_polar_t) :: asphere(nc+1,nc+1) ! spherical coordinates
     ! save velocity at time t 
     real (kind=real_kind)    :: vn0(np,np,2,nlev)
-    real (kind=real_kind)    :: vstar(2-np:2*np-1,2-np:2*np-1,2,nlev,4) !phl - nhe depedency?
+    real (kind=real_kind)    :: vstar(2-np:2*np-1,2-np:2*np-1,2,nlev,4)
 !-----------------------------------------------------------------------------------!
     real (kind=real_kind)    :: dalpha, dbeta    ! grid step in alpha/beta coord.
 !-----------------------------------------------------------------------------------!
@@ -90,13 +80,12 @@ module fvm_control_volume_mod
 !-----------------------------------------------------------------------------------!     
     ! provide fixed interpolation points with respect to the arrival grid for 
     ! reconstruction   
-    integer                  :: ibase(1-nh:nc+nh,1:nhr,2)  
-    real (kind=real_kind)    :: halo_interp_weight(1-nh:nc+nh,1:nhr,1:ns,2)
-!------------------------------------------------------------------------------------
-    !
-    ! for finite-difference reconstruction - computed in computexytosphere_moments
-    !
-    real (kind=real_kind)    :: recons_matrix(1:5,1:6,1-nhe:nc+nhe,1-nhe:nc+nhe)
+    real (kind=real_kind)    :: interp(-1:nc+2,2,2)
+    real (kind=real_kind)    :: interphalo(-1:nc+2,2,2)
+    real (kind=real_kind)    :: interphaloex(-1:nc+2,2,2)
+    integer                  :: ibase(-1:nc+2,2,2)
+    integer                  :: ibasehalo(-1:nc+2,2,2)
+    integer                  :: ibasehaloex(-1:nc+2,2,2)     
   end type fvm_struct
 
   public :: fvm_mesh_ari
@@ -165,7 +154,7 @@ subroutine fvm_mesh_ari(elem, fvm, tl)
 
   call create_ari(elem,fvm)
   call create_interpolation_points(elem,fvm)
-  call compute_halo_weights(fvm)
+
 end subroutine fvm_mesh_ari
 !END SUBROUTINE fvm_MESH_ARI----------------------------------------------CE-for FVM
 
@@ -199,10 +188,6 @@ subroutine create_ari(elem, fvm)
   invy1=1 ! 1 order the same, -1 reorder in y direction
   invx2=1 ! 1 order the same, -1 reorder in x direction
   invy2=1 ! 1 order the same, -1 reorder in y direction
-
-  jx_min1 = 0; jx_max1 = 0; jy_min1 = 0; jy_max1 = 0
-  jx_min2 = 0; jx_max2 = 0; jy_min2 = 0; jy_max2 = 0
-
 ! fvm mesh is (alpha,beta) equidistant
   fvm%dalpha=abs(elem%corners(1)%x-elem%corners(2)%x)/nc !in alpha 
   fvm%dbeta=abs(elem%corners(1)%y-elem%corners(4)%y)/nc  !in beta
@@ -215,8 +200,8 @@ subroutine create_ari(elem, fvm)
   !
   do j=1,nc
     do i=1,nc
-      centerx = tan(elem%corners(1)%x+(i-0.5D0)*fvm%dalpha)  
-      centery = tan(elem%corners(1)%y+(j-0.5D0)*fvm%dbeta) 
+      centerx = tan(elem%corners(1)%x+(i-0.5)*fvm%dalpha)  
+      centery = tan(elem%corners(1)%y+(j-0.5)*fvm%dbeta) 
       fvm%centersphere(i,j) = &
             cart2spherical(centerx,centery,fvm%faceno)
            
@@ -884,93 +869,136 @@ end subroutine create_ari
 !-----------------------------------------------------------------------------------!
 subroutine create_interpolation_points(elem,fvm)
   implicit none
-  type (element_t), intent(in)     :: elem
-  type (fvm_struct), intent(inout) :: fvm  
+  type (element_t), intent(in)      :: elem
+  type (fvm_struct), intent(inout)   :: fvm  
   
-  real    (kind=real_kind), dimension(1-nhc:nc+nhc) :: gnomxstart, gnomxend, gnomystart, gnomyend
-  integer                                         :: i, halo, ida, ide, iref1, iref2
-  type (cartesian2D_t)                            :: tmpgnom     
+  real    (kind=real_kind), dimension(1-nhc:nc+nhc)  :: gnomxstart, gnomxend, &
+                                                        gnomystart, gnomyend
+  integer                                       :: i, halo, ida, ide, iref1, iref2
+  type (cartesian2D_t)                          :: tmpgnom     
+
+
 
   ! element is not on a corner, but shares a cube edge (call of subroutine)
   if(fvm%cubeboundary <= 4) then
-    gnomxstart(1-nhc)=elem%corners(1)%x-(nhc-0.5D0)*fvm%dalpha
-    gnomystart(1-nhc)=elem%corners(1)%y-(nhc-0.5D0)*fvm%dbeta
+    gnomxstart(1-nhc)=elem%corners(1)%x-(nhc-0.5)*fvm%dalpha
+    gnomystart(1-nhc)=elem%corners(1)%y-(nhc-0.5)*fvm%dbeta
     do i=2-nhc,nc+nhc
       gnomxstart(i)=gnomxstart(i-1)+fvm%dalpha
       gnomystart(i)=gnomystart(i-1)+fvm%dbeta
     end do
-    ida=1-nhc  !lower bound
-    ide=nc+nhc !upper bound
     select case (fvm%cubeboundary)
       !INTERIOR element
       case(0)
         ! nothing to do!
       !CASE WEST
       case(west) 
-        do halo=1,nhr
+        ! west zone
+        ida=-3
+        ide=nc+4
+        do halo=1,2
           iref1=ida
-          tmpgnom%x=cube_xstart-(halo-0.5D0)*fvm%dalpha
-          do i=halo-nh,nc+nh-(halo-1) !see fvm_reconstruction to understand these boundaries
+          tmpgnom%x=cube_xstart-(halo-0.5)*fvm%dalpha
+          do i=-1,nc+2
             tmpgnom%y=gnomystart(i)
-            call interpolation_point(tmpgnom,gnomystart,1,4,1,interp(i,halo,1),&
-                                     ida,ide,iref1,ibase_tmp(i,halo,1))
+            call interpolation_point(tmpgnom,gnomystart,1,4,1,0, fvm%interp(i,halo,1),&
+                                     ida,ide,iref1,fvm%ibase(i,halo,1))
           end do
         end do
-
+        !westhalo: east zone (because of the reconstruction in the halo, conservation!)
+        do halo=1,2
+          iref1=ida
+          tmpgnom%x=cube_xend+(halo-0.5)*fvm%dalpha
+          do i=-1,nc+2
+            tmpgnom%y=gnomystart(i)
+            call interpolation_point(tmpgnom,gnomystart,4,1,1,0, fvm%interphalo(i,halo,1),&
+                                     ida,ide,iref1,fvm%ibasehalo(i,halo,1))                                    
+          end do
+        end do
       !CASE EAST  
       case(east)
         ! east zone
-        do halo=1,nhr
+        ida=-3
+        ide=nc+4
+        do halo=1,2
           iref1=ida
-          tmpgnom%x=cube_xend+(halo-0.5D0)*fvm%dalpha
-          do i=halo-nh,nc+nh-(halo-1)
+          tmpgnom%x=cube_xend+(halo-0.5)*fvm%dalpha
+          do i=-1,nc+2
             tmpgnom%y=gnomystart(i)
-            call interpolation_point(tmpgnom,gnomystart,1,2,1,interp(i,halo,1),&
-                                     ida,ide,iref1,ibase_tmp(i,halo,1))                                                  
+            call interpolation_point(tmpgnom,gnomystart,1,2,1,0, fvm%interp(i,halo,1),&
+                                     ida,ide,iref1,fvm%ibase(i,halo,1))                                                  
           end do 
         end do  
-
+        !easthalo: west zone (because of the reconstruction in the halo, conservation!)
+        do halo=1,2
+          iref1=ida
+          tmpgnom%x=cube_xstart-(halo-0.5)*fvm%dalpha
+          do i=-1,nc+2
+            tmpgnom%y=gnomystart(i)
+            call interpolation_point(tmpgnom,gnomystart,1,4,1,0, fvm%interphalo(i,halo,1),&
+                                     ida,ide,iref1,fvm%ibasehalo(i,halo,1))                                    
+          end do
+        end do
       !CASE NORTH    
       case(north)
         ! north zone
-        do halo=1,nhr 
-          tmpgnom%y=cube_yend+(halo-0.5D0)*fvm%dbeta
+          ida=-3
+          ide=nc+4
+        do halo=1,2 
+          tmpgnom%y=cube_yend+(halo-0.5)*fvm%dbeta
           iref1=ida 
-          do i=halo-nh,nc+nh-(halo-1)
+          do i=-1,nc+2
             tmpgnom%x=gnomxstart(i)
-            !
-            ! dbg - change to interp(i,halo,1) instead of interp(i,halo,2)
-            !       so that I can get rid of iinterp = 1 in fvm_reconstruction_mod
-            !
-            call interpolation_point(tmpgnom,gnomxstart,1,6,0,interp(i,halo,2),&
-                                     ida,ide,iref1,ibase_tmp(i,halo,2))                                      
+            call interpolation_point(tmpgnom,gnomxstart,1,6,0,0, fvm%interp(i,halo,2),&
+                                     ida,ide,iref1,fvm%ibase(i,halo,2))                                      
           end do
         end do
+        !northhalo: south zone (because of the reconstruction in the halo, conservation!)
+        do halo=1,2
+          iref1=ida
+          tmpgnom%y=cube_ystart-(halo-0.5)*fvm%dbeta
+          do i=-1,nc+2
+            tmpgnom%x=gnomxstart(i)
+            call interpolation_point(tmpgnom,gnomxstart,1,5,0,0, fvm%interphalo(i,halo,2),&
+                                     ida,ide,iref1,fvm%ibasehalo(i,halo,2))                                    
+          end do
+        end do            
       !CASE SOUTH   
       case(south)
        !south zone
-       do halo=1,nhr
+       ida=-3
+       ide=nc+4
+       do halo=1,2
           iref1=ida
-          tmpgnom%y=cube_ystart-(halo-0.5D0)*fvm%dbeta
-          do i=halo-nh,nc+nh-(halo-1)
+          tmpgnom%y=cube_ystart-(halo-0.5)*fvm%dbeta
+          do i=-1,nc+2
             tmpgnom%x=gnomxstart(i)
-            call interpolation_point(tmpgnom,gnomxstart,1,5,0,interp(i,halo,2),&
-                                     ida,ide,iref1,ibase_tmp(i,halo,2))                                      
+            call interpolation_point(tmpgnom,gnomxstart,1,5,0,0, fvm%interp(i,halo,2),&
+                                     ida,ide,iref1,fvm%ibase(i,halo,2))                                      
           end do
         end do      
 
-        !
-        !THIS CASE SHOULD NOT HAPPEN!     
-     case default
+        !southhalo: north zone (because of the reconstruction in the halo, conservation!) 
+        do halo=1,2
+          iref1=ida
+          tmpgnom%y=cube_yend+(halo-0.5)*fvm%dbeta
+          do i=-1,nc+2
+            tmpgnom%x=gnomxstart(i)
+            call interpolation_point(tmpgnom,gnomxstart,1,6,0,0, fvm%interphalo(i,halo,2),&
+                                     ida,ide,iref1,fvm%ibasehalo(i,halo,2))                                    
+          end do
+        end do
+      !THIS CASE SHOULD NOT HAPPEN!     
+        case default
            print *,'Fatal Error in first select statement:'
            call abortmp('fvm_reconstruction_mod.F90 subroutine fillhalo_cubic!' )
     end select
   !CORNER TREATMENT
   else  
-    gnomxstart(1-nhc)=cube_xstart-(nhc-0.5D0)*fvm%dalpha
-    gnomxend(nc+nhc)=cube_xend+(nhc-0.5D0)*fvm%dalpha
-    gnomystart(1-nhc)=cube_ystart-(nhc-0.5D0)*fvm%dbeta
-    gnomyend(nc+nhc)=cube_yend+(nhc-0.5D0)*fvm%dbeta
+    gnomxstart(1-nhc)=cube_xstart-(nhc-0.5)*fvm%dalpha
+    gnomxend(nc+nhc)=cube_xend+(nhc-0.5)*fvm%dalpha
+    gnomystart(1-nhc)=cube_ystart-(nhc-0.5)*fvm%dbeta
+    gnomyend(nc+nhc)=cube_yend+(nhc-0.5)*fvm%dbeta
     do i=2-nhc,nc+nhc
       gnomxstart(i)=gnomxstart(i-1)+fvm%dalpha
       gnomxend(nc+1-i)=gnomxend(nc+2-i)-fvm%dalpha
@@ -982,59 +1010,274 @@ subroutine create_interpolation_points(elem,fvm)
       !CASE SOUTH WEST
       case(swest) 
         ! west zone
-        do halo=1,nhr
-          tmpgnom%x=cube_xstart-(halo-0.5D0)*fvm%dalpha
+        do halo=1,2
+          tmpgnom%x=cube_xstart-(halo-0.5)*fvm%dalpha
           ida=1
-          ide=nc+nc
+          ide=nc+4
           iref1=ida
-          do i=0,nc+nh-(halo-1)
-            tmpgnom%y=gnomystart(i)           
-            call interpolation_point(tmpgnom,gnomystart,1,4,1,interp(i,halo,1),&
-                                     ida,ide,iref1,ibase_tmp(i,halo,1))
+          do i=0,nc+2
+            tmpgnom%y=gnomystart(i)
+            call interpolation_point(tmpgnom,gnomystart,1,4,1,-1, fvm%interp(i,halo,1),&
+                                     ida,ide,iref1,fvm%ibase(i,halo,1))                                      
           end do
-       end do
+        ! south zone
+          tmpgnom%y=cube_ystart-(halo-0.5)*fvm%dbeta
+          iref2=ida
+          do i=0,nc+2
+            tmpgnom%x=gnomxstart(i)
+            call interpolation_point(tmpgnom,gnomxstart,1,5,0,-1, fvm%interp(i,halo,2),&
+                                     ida,ide,iref2,fvm%ibase(i,halo,2))                                      
+          end do
+        end do
+        !westhalo: east zone & south zone
+        !(because of the reconstruction in the halo, conservation!) 
+        do halo=1,2
+          ida=1
+          ide=nc+4
+          tmpgnom%x=cube_xend+(halo-0.5)*fvm%dalpha
+          iref1=ida
+          do i=0,nc+2
+            tmpgnom%y=gnomystart(i)
+            call interpolation_point(tmpgnom,gnomystart,4,1,1,-1, fvm%interphalo(i,halo,1),&
+                                     ida,ide,iref1,fvm%ibasehalo(i,halo,1))                                    
+          end do
+          tmpgnom%y=cube_ystart-(halo-0.5)*fvm%dbeta
+
+          ida=nc-nhc+1
+          ide=nc 
+          iref2=ida
+          do i=0,nhe+1
+            tmpgnom%x=gnomxend(nc-nhe+i)
+            call interpolation_point(tmpgnom,gnomxend,1,5,0,1, fvm%interphaloex(i,halo,1),&
+                                     ida,ide,iref2,fvm%ibasehaloex(i,halo,1))                                          
+          end do
+        end do
+        !southhalo: north zone & west zone
+        !(because of the reconstruction in the halo, conservation!) 
+        do halo=1,2
+          ida=1
+          ide=nc+4
+          tmpgnom%y=cube_yend+(halo-0.5)*fvm%dbeta
+          iref1=ida
+          do i=0,nc+2
+            tmpgnom%x=gnomxstart(i)
+            call interpolation_point(tmpgnom,gnomxstart,1,6,0,-1, fvm%interphalo(i,halo,2),&
+                                     ida,ide,iref1,fvm%ibasehalo(i,halo,2))                                    
+          end do
+          tmpgnom%x=cube_xstart-(halo-0.5)*fvm%dalpha
+          ida=nc-nhc+1
+          ide=nc
+          iref2=ida
+          do i=0,nhe+1
+            tmpgnom%y=gnomyend(nc-nhe+i)
+            call interpolation_point(tmpgnom,gnomyend,1,4,1,1, fvm%interphaloex(i,halo,2),&
+                                     ida,ide,iref2,fvm%ibasehaloex(i,halo,2))                                          
+          end do
+        end do
       !CASE SOUTH EAST  
       case(seast)
         ! east zone
-        do halo=1,nhr
-          tmpgnom%x=cube_xend+(halo-0.5D0)*fvm%dalpha
+        do halo=1,2
+          tmpgnom%x=cube_xend+(halo-0.5)*fvm%dalpha
           ida=1
-          ide=nc+nc
+          ide=nc+4
           iref1=ida
-          do i=0,nc+nh-(halo-1)
+          do i=0,nc+2
             tmpgnom%y=gnomystart(i)
-            call interpolation_point(tmpgnom,gnomystart,1,2,1, interp(i,halo,1),&
-                                     ida,ide,iref1,ibase_tmp(i,halo,1))                                      
+            call interpolation_point(tmpgnom,gnomystart,1,2,1,-1, fvm%interp(i,halo,1),&
+                                     ida,ide,iref1,fvm%ibase(i,halo,1))                                      
           end do
-       end do
+        ! south zone
+          tmpgnom%y=cube_ystart-(halo-0.5)*fvm%dbeta
+          ida=-3
+          ide=nc
+          iref2=ida
+          do i=-1,nc+1
+            tmpgnom%x=gnomxend(i)
+            call interpolation_point(tmpgnom,gnomxend,1,5,0,1, fvm%interp(i,halo,2),&
+                                     ida,ide,iref2,fvm%ibase(i,halo,2))                                       
+          end do
+        end do      
+        !easthalo: west zone & south zone
+        !(because of the reconstruction in the halo, conservation!) 
+        do halo=1,2
+          tmpgnom%x=cube_xstart-(halo-0.5)*fvm%dalpha
+          ida=1
+          ide=nc+4
+          iref1=ida
+          do i=0,nc+2
+            tmpgnom%y=gnomystart(i)
+            call interpolation_point(tmpgnom,gnomystart,1,4,1,-1, fvm%interphalo(i,halo,1),&
+                                     ida,ide,iref1,fvm%ibasehalo(i,halo,1))                                    
+          end do
+          tmpgnom%y=cube_ystart-(halo-0.5)*fvm%dbeta
+          ida=1
+          ide=nhc 
+          iref2=ida
+          do i=0,nhe+1
+            tmpgnom%x=gnomxstart(i)
+            call interpolation_point(tmpgnom,gnomystart,1,5,0,-1, fvm%interphaloex(i,halo,1),&
+                                     ida,ide,iref2,fvm%ibasehaloex(i,halo,1))                                      
+          end do
+        end do
+        !(because of the reconstruction in the halo, conservation!) 
+        !southhalo: north zone & west zone
+        do halo=1,2
+          tmpgnom%y=cube_yend+(halo-0.5)*fvm%dbeta
+          ida=-3
+          ide=nc
+          iref1=ida
+          do i=-1,nc+1
+            tmpgnom%x=gnomxend(i)
+            call interpolation_point(tmpgnom,gnomxend,1,6,0,1, fvm%interphalo(i,halo,2),&
+                                     ida,ide,iref1,fvm%ibasehalo(i,halo,2))                                    
+          end do
+          tmpgnom%x=cube_xend+(halo-0.5)*fvm%dalpha
+          ida=nc-nhc+1
+          ide=nc 
+          iref2=ida
+          do i=0,nhe+1
+            tmpgnom%y=gnomyend(nc-nhe+i)
+            call interpolation_point(tmpgnom,gnomyend,1,2,1,1, fvm%interphaloex(i,halo,2),&
+                                     ida,ide,iref2,fvm%ibasehaloex(i,halo,2))                                          
+          end do
+        end do      
       !CASE NORTH EAST     
       case(neast)
         ! east zone
-        do halo=1,nhr
-          tmpgnom%x=cube_xend+(halo-0.5D0)*fvm%dalpha
-          ida=1-nc
+        do halo=1,2
+          tmpgnom%x=cube_xend+(halo-0.5)*fvm%dalpha
+          ida=-3
           ide=nc
           iref1=ida
-          do i=halo-nh,nc+1
+          do i=-1,nc+1 
             tmpgnom%y=gnomyend(i)
-            call interpolation_point(tmpgnom,gnomyend,1,2,1, interp(i,halo,1),&
-                                     ida,ide,iref1,ibase_tmp(i,halo,1))                                      
+            call interpolation_point(tmpgnom,gnomyend,1,2,1,1, fvm%interp(i,halo,1),&
+                                     ida,ide,iref1,fvm%ibase(i,halo,1))                                      
           end do
-       end do
+        ! north zone
+          tmpgnom%y=cube_yend+(halo-0.5)*fvm%dbeta
+          ida=-3
+          ide=nc
+          iref2=ida
+          do i=-1,nc+1
+            tmpgnom%x=gnomxend(i)
+            call interpolation_point(tmpgnom,gnomxend,1,6,0,1, fvm%interp(i,halo,2),&
+                                     ida,ide,iref2,fvm%ibase(i,halo,2))                                      
+          end do
+        end do
+        !easthalo: west zone & north zone
+        !(because of the reconstruction in the halo, conservation!) 
+        do halo=1,2
+          ida=-3
+          ide=nc
+          iref1=ida
+          tmpgnom%x=cube_xstart-(halo-0.5)*fvm%dalpha
+          do i=-1,nc+1
+            tmpgnom%y=gnomyend(i)
+            call interpolation_point(tmpgnom,gnomyend,1,4,1,1, fvm%interphalo(i,halo,1),&
+                                     ida,ide,iref1,fvm%ibasehalo(i,halo,1))                                    
+          end do
+          tmpgnom%y=cube_yend+(halo-0.5)*fvm%dbeta
+          ida=1
+          ide=nhc
+          iref2=ida
+          do i=0,nhe+1
+            tmpgnom%x=gnomxstart(i)
+            call interpolation_point(tmpgnom,gnomxstart,1,6,0,-1, fvm%interphaloex(i,halo,1),&
+                                     ida,ide,iref2,fvm%ibasehaloex(i,halo,1))                                      
+          end do
+        end do
+        !northhalo: south zone & east zone
+        !(because of the reconstruction in the halo, conservation!)         
+        do halo=1,2
+          ida=-3
+          ide=nc
+          iref1=ida
+          tmpgnom%y=cube_ystart-(halo-0.5)*fvm%dbeta
+          do i=-1,nc+1
+            tmpgnom%x=gnomxend(i)
+            call interpolation_point(tmpgnom,gnomyend,1,5,0,1, fvm%interphalo(i,halo,2),&
+                                     ida,ide,iref1,fvm%ibasehalo(i,halo,2))                                    
+          end do
+          tmpgnom%x=cube_xend+(halo-0.5)*fvm%dalpha
+          ida=1
+          ide=nhc
+          iref2=ida
+          do i=0,nhe+1
+            tmpgnom%y=gnomystart(i)
+            call interpolation_point(tmpgnom,gnomystart,1,2,1,-1, fvm%interphaloex(i,halo,2),&
+                                     ida,ide,iref2,fvm%ibasehaloex(i,halo,2))                                      
+          end do
+        end do            
       !CASE NORTH WEST   
       case(nwest)
         ! west zone
         do halo=1,2
-          tmpgnom%x=cube_xstart-(halo-0.5D0)*fvm%dalpha
-          ida=1-nc
+          tmpgnom%x=cube_xstart-(halo-0.5)*fvm%dalpha
+          ida=-3
           ide=nc
           iref1=ida
-          do i=halo-nh,nc+1
+          do i=-1,nc+1
             tmpgnom%y=gnomyend(i)
-            call interpolation_point(tmpgnom,gnomyend,1,4,1, interp(i,halo,1),&
-                                     ida,ide,iref1,ibase_tmp(i,halo,1))                                      
+            call interpolation_point(tmpgnom,gnomyend,1,4,1,1, fvm%interp(i,halo,1),&
+                                     ida,ide,iref1,fvm%ibase(i,halo,1))                                      
           end do
-       end do
+        ! north zone
+          tmpgnom%y=cube_yend+(halo-0.5)*fvm%dbeta
+          ida=1
+          ide=nc+4
+          iref2=ida
+          do i=0,nc+2
+            tmpgnom%x=gnomxstart(i)
+            call interpolation_point(tmpgnom,gnomxstart,1,6,0,-1, fvm%interp(i,halo,2),&
+                                     ida,ide,iref2,fvm%ibase(i,halo,2))                                      
+          end do
+        end do
+        !westhalo: east zone & north zone
+        !(because of the reconstruction in the halo, conservation!) 
+        do halo=1,2
+          ida=-3
+          ide=nc
+          iref1=ida
+          tmpgnom%x=cube_xend+(halo-0.5)*fvm%dalpha
+          do i=-1,nc+1
+            tmpgnom%y=gnomyend(i)
+            call interpolation_point(tmpgnom,gnomyend,4,1,1,1, fvm%interphalo(i,halo,1),&
+                                     ida,ide,iref1,fvm%ibasehalo(i,halo,1))                                    
+          end do
+          tmpgnom%y=cube_yend+(halo-0.5)*fvm%dbeta
+          ida=nc-nhc+1
+          ide=nc
+          iref2=ida
+          do i=0,nhe+1
+            tmpgnom%x=gnomxend(nc-nhe+i)
+            call interpolation_point(tmpgnom,gnomxend,1,6,0,1, fvm%interphaloex(i,halo,1),&
+                                     ida,ide,iref2,fvm%ibasehaloex(i,halo,1))                                          
+          end do
+        end do        
+        !northhalo: south zone & west zone
+        !(because of the reconstruction in the halo, conservation!) 
+        do halo=1,2
+          ida=1
+          ide=nc+4
+          iref1=ida
+          tmpgnom%y=cube_ystart-(halo-0.5)*fvm%dbeta
+          do i=0,nc+2
+            tmpgnom%x=gnomxstart(i)
+            call interpolation_point(tmpgnom,gnomxstart,1,5,0,-1, fvm%interphalo(i,halo,2),&
+                                     ida,ide,iref1,fvm%ibasehalo(i,halo,2))                                    
+          end do
+          tmpgnom%x=cube_xstart-(halo-0.5)*fvm%dalpha
+          ida=1
+          ide=nhc
+          iref2=ida
+          do i=0,nhe+1
+            tmpgnom%y=gnomystart(i)
+            call interpolation_point(tmpgnom,gnomystart,1,4,1,-1, fvm%interphaloex(i,halo,2),&
+                                     ida,ide,iref2,fvm%ibasehaloex(i,halo,2))                                      
+          end do
+        end do
         !THIS CASE SHOULD NOT HAPPEN!     
           case default
             print *,'Fatal Error in second select statement:'
@@ -1083,18 +1326,19 @@ end subroutine create_interpolation_points
 !        point    ... provides the difference of the interpolation point to use it  !
 !                     directly in CUBIC_EQUISPACE_INTERP                            !                
 !-----------------------------------------------------------------------------------!
-subroutine interpolation_point(gnom,gnom1d,face1,face2,xy,point,ida,ide,iref,ibaseref)
+subroutine interpolation_point(gnom,gnom1d,face1,face2,xy,except, point,ida,ide,iref,ibaseref)
   
   use coordinate_systems_mod, only : cubedsphere2cart, cart2cubedsphere, &
                                      cartesian2D_t,cartesian3D_t
-  use parallel_mod, only : haltmp
+
   implicit none
-  type (cartesian2D_t), intent(in)                     :: gnom  
-  real (kind=real_kind), dimension(1-nc:), intent(in) :: gnom1d  !dimension(1-nhc:nc+nhc)
-  integer, intent(in)                                  :: face1, face2, xy
-  integer,intent(in)                                   :: ida, ide
-  integer,intent(inout)                                :: iref,ibaseref
-  real (kind=real_kind), intent(inout)                 :: point
+  type (cartesian2D_t), intent(in)                                :: gnom  
+  real (kind=real_kind), dimension(1-nhc:nc+nhc), intent(in)      :: gnom1d  
+  integer, intent(in)                                             :: face1, face2, xy
+  integer,intent(in)                                              :: except,ida, ide
+  integer,intent(inout)                                           :: iref,ibaseref
+  real (kind=real_kind), intent(inout)                            :: point
+  
   
   type(cartesian3D_t)                 :: tmpcart3d
   type (cartesian2D_t)                :: tmpgnom
@@ -1106,145 +1350,24 @@ subroutine interpolation_point(gnom,gnom1d,face1,face2,xy,point,ida,ide,iref,iba
   else
     point=tmpgnom%y
   end if 
-  !
-  ! in which cell is interpolation point located? gno(iref) is location of point to the right that is closest
-  !
-  ! |----------|---------|------x---|----------|------|------
-  !                 gno(iref-1)  gno(iref)
-  !
-  do while (point>gnom1d(iref))
+  
+  do while ((iref .ne. nc+3) .AND. (point>gnom1d(iref) ))
     iref = iref + 1
-    if (iref>ide+1) then
-       write(*,*) "error in search - ABORT; probably invalid ns-nc combination"
-       stop
-    end if
   end do
-  !
-  ! this routine works for ns=1 and ns even
-  !
-  if (MOD(ns,2)==1) then
-     !
-     ! no halo interpolation option - for debugging
-     !
-     if (gnom1d(iref)-point>point-gnom1d(iref-1)) iref=iref-1
-     iref=iref-((ns-1)/2)
-     ibaseref = min(max(iref,ida),ide-(ns-1))
-     point=point-gnom1d(ibaseref)
-  else if (MOD(ns, 2)==0) then
-     !
-     ! this code is only coded for ns even
-     !
-     ! ibaseref is the left most index used for 1D interpolation
-     ! (hence iref = iref-ns/2 except near corners)
-     !
-     iref = iref-ns/2
-     ibaseref = min(max(iref,ida),ide-(ns-1))
-     point=point-gnom1d(ibaseref)
+  if ((iref<=ida+1).AND.(except==-1)) then
+    ibaseref=ida
+  elseif ((iref>=ide).AND.(except==1)) then
+    ibaseref=ide-3
+  else
+    ibaseref=iref-2  
   end if
+  if (ibaseref < 1-nhc ) then
+     print *,'ERROR: ibaseref out of range: ',ibaseref,ida,ide,iref
+  else
+     point=point-gnom1d(ibaseref)
+  endif
+  
 end subroutine interpolation_point
 !END SUBROUTINE INTERPOLATION_POINT---------------------------------------CE-for FVM!
-
-
-!
-! a "pre-compute" version of fillhalo_cubic
-!
-subroutine compute_halo_weights(fvm)
-  implicit none
-  type (fvm_struct), intent(inout)     :: fvm
-  
-  integer                              :: i, halo, ibaseref
-  !
-  ! pre-compute weight/index matrices
-  !
-  real (kind=real_kind), dimension(1-nc:nc+nc) :: gno_equi
-  integer :: imin,imax,jmin,jmax,iinterp
-  fvm%ibase = 99999 !dbg
-  fvm%halo_interp_weight(:,:,:,:) = 9.99E9 !dbg
-
-  if (fvm%cubeboundary>0) then
-     if (fvm%cubeboundary<5) then
-        !
-        ! element is located at a panel side but is not a corner element
-        ! (west,east,south,north) = (1,2,3,4)
-        !
-        if (fvm%cubeboundary==west .or.fvm%cubeboundary==east ) then
-           iinterp = 1
-        end if
-        if (fvm%cubeboundary==north.or.fvm%cubeboundary==south) iinterp = 2
-        do halo=1,nhr
-           do i=halo-nh,nc+nh-(halo-1)
-              ibaseref=ibase_tmp(i,halo,iinterp)
-              fvm%ibase(i,halo,1) = ibaseref
-              call get_equispace_weights(fvm%dbeta, interp(i,halo,iinterp),&
-                   fvm%halo_interp_weight(i,halo,:,1))
-           end do
-        end do
-     else
-        ! 
-        ! element is located at a cube corner
-        ! (swest,seast,nwest,neast)=(5,6,7,8)
-        !
-        do halo=1,nhr
-           if (fvm%cubeboundary==swest .or.fvm%cubeboundary==seast) then
-              imin = 0      ; imax = nc+nh-(halo-1);
-              jmin = halo-nh; jmax = nc+1;
-           else
-              jmin = 0      ; jmax = nc+nh-(halo-1);                
-              imin = halo-nh; imax = nc+1;
-           end if
-           do i=imin,imax
-              ibaseref=ibase_tmp(i,halo,1)
-              fvm%ibase(i,halo,1) = ibaseref
-              call get_equispace_weights(fvm%dbeta, interp(i,halo,1),fvm%halo_interp_weight(i,halo,:,1))
-           end do
-           !
-           ! reverse weights/indices for fotherpanel (see details on reconstruct_matrix)
-           !
-           fvm%halo_interp_weight(jmin:jmax,halo,1:ns,2) = fvm%halo_interp_weight(imax:imin:-1,halo,ns:1:-1,1)
-           fvm%ibase       (jmin:jmax,halo     ,2) = nc+1-(ns-1)-fvm%ibase(imax:imin:-1,halo        ,1)
-        end do
-     end if
-  end if
-end subroutine compute_halo_weights
-
-
-
-! ---------------------------------------------------------------------!
-!                                                                      !
-! Precompute weights for Lagrange interpolation                        !
-! for equi-distant source grid values                                  !
-!                                                                      !
-!----------------------------------------------------------------------!
-
-subroutine get_equispace_weights(dx, x,w)
-  !
-  ! Coordinate system for Lagrange interpolation:
-  !
-  ! |------|------|------|------|
-  ! 0     dx    2*dx   3*dx   ns*dx
-  !
-  implicit none
-  real (kind=real_kind),intent(in)                  :: dx  ! spacing of points, alpha/beta
-  real (kind=real_kind),intent(in)                  :: x   ! X coordinate where interpolation is to be applied
-  real (kind=real_kind),dimension(:),intent(out)    :: w   ! dimension(ns)
-  !
-  real (kind=real_kind) :: dx3
-  integer :: j,k
-  !
-  ! use Lagrange interpolation formulae, e.g.,: 
-  !
-  !                http://mathworld.wolfram.com/LagrangeInterpolatingPolynomial.html
-  !
-  w = 1.0D0
-  if (ns.ne.1) then
-     do j=1,ns
-        do k=1,ns
-           if (k.ne.j) then
-              w(j)=w(j)*(x-dble(k-1)*dx)/(dble(j-1)*dx-dble(k-1)*dx)
-           end if
-        end do
-     end do
-  end if
-end subroutine get_equispace_weights
 
 end module fvm_control_volume_mod

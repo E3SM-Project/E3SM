@@ -5,23 +5,22 @@ topology                     = "cube"
 test_case                    = "asp_baroclinic"
 rotate_grid                  = 0
 ne                           = 15 !120 !30 !30
-qsize                        = 0
+qsize                        = 4
 ntrac                        = 4
 test_cfldep                  = .TRUE.
-tstep_type                   = 5 
+tstep_type                   = 1 
 ndays                        = 9
-statefreq                    = 1   ! 240
+statefreq                    = 240
 runtype                      = 0
-tstep                        = 600   ! 180 ! 90 !20 !90 !50
-qsplit                       = 3 !4
-rsplit                       = 1
+tstep                        = 180 ! 90 !20 !90 !50
+qsplit                       = 4 !4
 rk_stage_user                = 3
 integration                  = "explicit"
 smooth                       = 0
 nu                           = 1e16 !1.1e13 !9.6e14 !2e14
 nu_s                         = -1       ! use same value as nu
 nu_q                         = 1e16 !1.1e13 !9.6e14 !2e14    
-nu_p                         = 1e16
+nu_p                         = 0
 limiter_option               = 8 
 energy_fixer                 = -1
 hypervis_order               = 2
@@ -48,8 +47,8 @@ kcut_fm       = 2
 
 &vert_nl
 vform         = "ccm"
-vfile_mid     = "../vcoord/camm-26.ascii"
-vfile_int     = "../vcoord/cami-26.ascii"
+vfile_mid     = "../vcoord/camm-26.fbin.littleendian"
+vfile_int     = "../vcoord/cami-26.fbin.littleendian"
 /
 
 &prof_inparm

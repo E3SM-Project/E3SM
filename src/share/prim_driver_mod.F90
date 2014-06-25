@@ -25,9 +25,7 @@ module prim_driver_mod
 
   use fvm_mod, only : fvm_init1,fvm_init2, fvm_init3
   use fvm_control_volume_mod, only : fvm_struct
-#if defined(_SPELT)
   use spelt_mod, only : spelt_struct, spelt_init1,spelt_init2, spelt_init3
-#endif
 
   use element_mod, only : element_t, timelevels,  allocate_element_desc
   use thread_mod, only : omp_get_num_threads
@@ -50,6 +48,7 @@ module prim_driver_mod
   type (blkjac_t),allocatable  :: blkjac(:)  ! (nets:nete)
   type (filter_t)       :: flt             ! Filter struct for v and p grid
   type (filter_t)       :: flt_advection   ! Filter struct for v grid for advection only
+  type (derivative_t), allocatable   :: deriv(:) ! derivative struct (nthreads)
   real*8  :: tot_iter
   type (ReductionBuffer_ordered_1d_t), save :: red   ! reduction buffer               (shared)
 
@@ -89,7 +88,7 @@ contains
     ! --------------------------------
     use schedule_mod, only : genEdgeSched,  PrintSchedule
     ! --------------------------------
-    use prim_advection_mod, only: prim_advec_init1
+    use prim_advection_mod, only: prim_advec_init
     ! --------------------------------
     use prim_advance_mod, only: prim_advance_init
     ! --------------------------------
@@ -517,9 +516,10 @@ contains
 #ifndef CAM
     allocate(cm(0:n_domains-1))
 #endif
+    allocate(deriv(0:n_domains-1))
     allocate(cg(0:n_domains-1))
     call prim_advance_init(par,integration)
-    call Prim_Advec_Init1(par, n_domains)
+    call Prim_Advec_Init(par)
     call diffusion_init(par)
     if (ntrac>0) then
 #if defined(_SPELT)
@@ -547,8 +547,6 @@ contains
          sub_case, &
          limiter_option, nu, nu_q, nu_div, tstep_type, hypervis_subcycle, &
          hypervis_subcycle_q, use_semi_lagrange_transport
-    use control_mod, only : tracer_transport_type
-    use control_mod, only : TRACERTRANSPORT_LAGRANGIAN_FVM, TRACERTRANSPORT_FLUXFORM_FVM, TRACERTRANSPORT_SE_GLL
 #ifndef CAM
     use control_mod, only : pertlim                     !used for homme temperature perturbations
 #endif
@@ -562,7 +560,6 @@ contains
     use derivative_mod, only : derivinit, interpolate_gll2fvm_points, interpolate_gll2spelt_points, v2pinit
     use global_norms_mod, only : test_global_integral, print_cfl
     use hybvcoord_mod, only : hvcoord_t
-    use prim_advection_mod, only: prim_advec_init2, deriv
 #ifdef CAM
 #else
     use column_model_mod, only : InitColumnModel
@@ -720,8 +717,7 @@ contains
     ! ==================================
     ! Initialize derivative structure
     ! ==================================
-    call Prim_Advec_Init2(hybrid, fvm_corners, fvm_points, spelt_refnep)
-
+    call derivinit(deriv(hybrid%ithr),fvm_corners, fvm_points, spelt_refnep)
     ! ================================================
     ! fvm initialization
     ! ================================================
@@ -962,6 +958,8 @@ contains
        enddo
     endif
 
+ ! do it only for SPELT/FVM tracers, FIRST TRACER will be the AIR DENSITY
+ ! should be optimize and combined with the above caculation
     if (ntrac>0) then
 #if defined(_SPELT)
       ! do it only for SPELT tracers, FIRST TRACER will be the AIR DENSITY
@@ -974,7 +972,7 @@ contains
 		       ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,tl%n0)
 	      enddo
 	    enddo
-          !write air density in tracer 1 of FVM 
+          !write air density in tracer 1 of FVM
           fvm(ie)%c(1:nep,1:nep,k,1,tl%n0)=interpolate_gll2spelt_points(elem(ie)%derived%dp(:,:,k),deriv(hybrid%ithr))
         enddo
       enddo
@@ -991,7 +989,7 @@ contains
          write(iulog,*) 'FVM (Spelt) tracers (incl. in halo zone) initialized. FIRST tracer has air density!'
       end if
 #else
-      ! do it only for FVM tracers, dp_fvm field will be the AIR DENSITY
+      ! do it only for FVM tracers, FIRST TRACER will be the AIR DENSITY
       ! should be optimize and combined with the above caculation
       do ie=nets,nete
         do k=1,nlev
@@ -1001,21 +999,21 @@ contains
 		       ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(i,j,tl%n0)
 	      enddo
 	    enddo
-          !write air density in dp_fvm field of FVM
-          fvm(ie)%dp_fvm(1:nc,1:nc,k,tl%n0)=interpolate_gll2fvm_points(elem(ie)%derived%dp(:,:,k),deriv(hybrid%ithr))
+          !write air density in tracer 1 of FVM
+          fvm(ie)%c(1:nc,1:nc,k,1,tl%n0)=interpolate_gll2fvm_points(elem(ie)%derived%dp(:,:,k),deriv(hybrid%ithr))
+!            fvm(ie)%c(:,:,k,1,tl%n0)=1.0D0
         enddo
       enddo
       call fvm_init3(elem,fvm,hybrid,nets,nete,tl%n0)
       do ie=nets,nete
 	    do i=1-nhc,nc+nhc
 	      do j=1-nhc,nc+nhc
-!	        fvm(ie)%psc(i,j) = sum(fvm(ie)%c(i,j,:,1,tl%n0)) +  hvcoord%hyai(1)*hvcoord%ps0
-	        fvm(ie)%psc(i,j) = sum(fvm(ie)%dp_fvm(i,j,:,tl%n0)) +  hvcoord%hyai(1)*hvcoord%ps0
+	        fvm(ie)%psc(i,j) = sum(fvm(ie)%c(i,j,:,1,tl%n0)) +  hvcoord%hyai(1)*hvcoord%ps0
 	      enddo
 	    enddo
       enddo
       if (hybrid%masterthread) then
-         write(iulog,*) 'FVM tracers (incl. in halo zone) initialized.'
+         write(iulog,*) 'FVM tracers (incl. in halo zone) initialized. FIRST tracer has air density!'
       end if
 #endif
     endif
@@ -1051,16 +1049,10 @@ contains
        ! CAM has set tstep based on dtime before calling prim_init2(),
        ! so only now does HOMME learn the timstep.  print them out:
        write(iulog,'(a,2f9.2)') "dt_remap: (0=disabled)   ",tstep*qsplit*rsplit
-
-       if (tracer_transport_type == TRACERTRANSPORT_FLUXFORM_FVM.or.&
-           tracer_transport_type == TRACERTRANSPORT_LAGRANGIAN_FVM) then
-          write(iulog,'(a,2f9.2)') "dt_tracer (fvm)          ",tstep*qsplit
-       else if (tracer_transport_type == TRACERTRANSPORT_SE_GLL) then
-          write(iulog,'(a,2f9.2)') "dt_tracer, per RK stage: ",tstep*qsplit,(tstep*qsplit)/(rk_stage_user-1)
-       end if
-       write(iulog,'(a,2f9.2)')    "dt_dyn:                  ",tstep
-       write(iulog,'(a,2f9.2)')    "dt_dyn (viscosity):      ",dt_dyn_vis
-       write(iulog,'(a,2f9.2)')    "dt_tracer (viscosity):   ",dt_tracer_vis
+       write(iulog,'(a,2f9.2)') "dt_tracer, per RK stage: ",tstep*qsplit,(tstep*qsplit)/(rk_stage_user-1)
+       write(iulog,'(a,2f9.2)') "dt_dyn:                  ",tstep
+       write(iulog,'(a,2f9.2)') "dt_dyn (viscosity):      ",dt_dyn_vis
+       write(iulog,'(a,2f9.2)') "dt_tracer (viscosity):   ",dt_tracer_vis
 
 
 #ifdef CAM
@@ -1139,7 +1131,6 @@ contains
     use control_mod, only: statefreq, integration, ftype, qsplit, disable_diagnostics
     use prim_advance_mod, only : prim_advance_exp, prim_advance_si, preq_robert3
     use prim_state_mod, only : prim_printstate, prim_diag_scalars, prim_energy_halftimes
-    use prim_advection_mod, only: deriv
     use parallel_mod, only : abortmp
 #ifndef CAM
     use column_model_mod, only : ApplyColumnModel
@@ -1401,9 +1392,7 @@ contains
     ! ftype=0 means forcing apply here
     ! ftype=-1 do not apply forcing
     call TimeLevel_Qdp( tl, qsplit, n0_qdp)
-    if (ftype==0) then
-      call ApplyCAMForcing(elem, fvm, hvcoord,tl%n0,n0_qdp, dt_remap,nets,nete)
-    end if
+    if (ftype==0) call ApplyCAMForcing(elem, hvcoord,tl%n0,n0_qdp, dt_remap,nets,nete)
     if (ftype==2) call ApplyCAMForcing_dynamics(elem, hvcoord,tl%n0,dt_remap,nets,nete)
 #endif
 
@@ -1449,7 +1438,7 @@ contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !compute timelevels for tracers (no longer the same as dynamics)
     call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp)
-    call vertical_remap(hybrid,elem,fvm,hvcoord,dt_remap,tl%np1,np1_qdp,nets,nete)
+    call vertical_remap(elem,fvm,hvcoord,dt_remap,tl%np1,np1_qdp,nets,nete)
 
 #if USE_CUDA_FORTRAN
     call TimeLevel_Qdp( tl, qsplit, n0_qdp, np1_qdp)
@@ -1545,20 +1534,13 @@ contains
     use hybvcoord_mod, only : hvcoord_t
     use time_mod, only : TimeLevel_t, timelevel_update, nsplit
     use control_mod, only: statefreq, integration, ftype, qsplit, nu_p, test_cfldep, rsplit
-    use control_mod, only : use_semi_lagrange_transport, tracer_transport_type
-    use control_mod, only : tracer_grid_type, TRACER_GRIDTYPE_GLL
-    use fvm_mod,     only : fvm_ideal_test, IDEAL_TEST_OFF, IDEAL_TEST_ANALYTICAL_WINDS
-    use fvm_mod,     only : fvm_test_type, IDEAL_TEST_BOOMERANG, IDEAL_TEST_SOLIDBODY
-    use fvm_bsp_mod, only : get_boomerang_velocities_gll, get_solidbody_velocities_gll
+    use control_mod   , only : use_semi_lagrange_transport
     use prim_advance_mod, only : prim_advance_exp, overwrite_SEdensity
-    use prim_advection_mod, only : prim_advec_tracers_remap, prim_advec_tracers_fvm, deriv
-#if defined(_SPELT)
-    use prim_advection_mod, only : prim_advec_tracers_spelt
-#endif
+    use prim_advection_mod, only : prim_advec_tracers_remap, prim_advec_tracers_fvm, &
+         prim_advec_tracers_spelt
     use parallel_mod, only : abortmp
     use reduction_mod, only : parallelmax
     use derivative_mod, only : interpolate_gll2spelt_points
-    use time_mod,    only : time_at
 
     type (element_t) , intent(inout)        :: elem(:)
 
@@ -1603,17 +1585,7 @@ contains
       end if
 
       ! save velocity at time t for seme-legrangian transport
-      if (fvm_ideal_test == IDEAL_TEST_ANALYTICAL_WINDS) then
-        do k = 1, nlev
-          if (fvm_test_type == IDEAL_TEST_BOOMERANG) then
-            elem(ie)%derived%vstar(:,:,:,k)=get_boomerang_velocities_gll(elem(ie), time_at(tl%n0))
-          else if (fvm_test_type == IDEAL_TEST_SOLIDBODY) then
-            elem(ie)%derived%vstar(:,:,:,k)=get_solidbody_velocities_gll(elem(ie), time_at(tl%n0))
-          else
-            call abortmp('Bad fvm_test_type in prim_step')
-          end if
-        end do
-      else if (use_semi_lagrange_transport) then
+      if (use_semi_lagrange_transport) then
         elem(ie)%derived%vstar=elem(ie)%state%v(:,:,:,:,tl%n0)
       end if
 
@@ -1670,17 +1642,14 @@ contains
     !   if tracer scheme needs v on lagrangian levels it has to vertically interpolate
     !   if tracer scheme needs dp3d, it needs to derive it from ps_v
     ! ===============
-    if (tracer_grid_type == TRACER_GRIDTYPE_GLL) then
-      call Prim_Advec_Tracers_remap(elem, deriv(hybrid%ithr),hvcoord,flt_advection,hybrid,&
-           dt_q,tl,nets,nete)
-    else
-      ! FVM transport
+    if (qsize>0) call Prim_Advec_Tracers_remap(elem, deriv(hybrid%ithr),hvcoord,flt_advection,hybrid,&
+         dt_q,tl,nets,nete)
 
+    if (ntrac>0) then
       if ( n_Q /= tl%n0 ) then
         ! make sure tl%n0 contains tracers at start of timestep
         do ie=nets,nete
-          fvm(ie)%c     (:,:,:,1:ntrac,tl%n0)  = fvm(ie)%c     (:,:,:,1:ntrac,n_Q)
-          fvm(ie)%dp_fvm(:,:,:,        tl%n0)  = fvm(ie)%dp_fvm(:,:,:,        n_Q)
+          fvm(ie)%c(:,:,:,1:ntrac,tl%n0)  = fvm(ie)%c(:,:,:,1:ntrac,n_Q)
         enddo
       endif
 #if defined(_SPELT)
@@ -1717,7 +1686,7 @@ contains
        do ie=nets,nete
          do i=1-nhc,nc+nhc
            do j=1-nhc,nc+nhc
-             fvm(ie)%psc(i,j) = sum(fvm(ie)%dp_fvm(i,j,:,tl%np1)) +  hvcoord%hyai(1)*hvcoord%ps0
+             fvm(ie)%psc(i,j) = sum(fvm(ie)%c(i,j,:,1,tl%np1)) +  hvcoord%hyai(1)*hvcoord%ps0
            enddo
          enddo
        enddo
@@ -1893,7 +1862,6 @@ contains
     use derivative_mod, only : derivative_t , laplace_sphere_wk
     use viscosity_mod, only : biharmonic_wk
     use prim_advance_mod, only : smooth_phis
-    use prim_advection_mod, only: deriv
     implicit none
 
     integer , intent(in) :: nets,nete

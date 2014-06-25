@@ -16,7 +16,7 @@ contains
 
 subroutine cslam_run(elem,cellbuffer,pointsbuffer,red,par,ithr,nets,nete)
   ! ---------------------------------------------------------------------------------
-  use dimensions_mod, only: nc
+  use dimensions_mod, only: nc, nhc
   ! ---------------------------------------------------------------------------------
   use fvm_control_volume_mod, only: fvm_mesh, fvm_struct
   ! ---------------------------------------------------------------------------------
@@ -115,8 +115,8 @@ kptr=0
 do ie=nets, nete
   call ghostcellpack(cellbuffer, elem(ie)%state%c(:,:,:,tl%n0),nlev,kptr,elem(ie)%desc) 
   ! reset the new unknown
-    do j=1-nc,nc+nhc
-      do i=1-nc,nc+nhc 
+    do j=1-nhc,nc+nhc
+      do i=1-nhc,nc+nhc 
         elem(ie)%state%c(i,j,1,tl%np1)=0.0D0
       end do
     end do
