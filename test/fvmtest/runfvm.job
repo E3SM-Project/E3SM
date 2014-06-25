@@ -8,22 +8,24 @@
 #
 
 # USER specific directores:
-set HOMME = ~/codes/homme
-set MACH = $HOMME/cmake/machineFiles/climate.cmake
-set wdir = ~/scratch1/preqx/fvm
-mkdir $wdir
-mkdir $wdir/movies
+set HOMME = ~/codes/homme_cslam
+set MACH = $HOMME/cmake/machineFiles/darwin.cmake
+set wdir = ~/scratch1/preqx
+mkdir -p $wdir/bld
+mkdir -p $wdir/vcoord
+mkdir -p $wdir/fvm/movies
 
 
 
 # location of test case and vertical coordinate files 
 set input = $HOMME/test/fvmtest     # test cases
 set vcoord = $HOMME/test/vcoord    # location of vertical coordinate files
+rsync -a $vcoord/cam*26.ascii  $wdir/vcoord
 
-set NC = 4
+set NC = 3
 set NP = 4
 
-cd $wdir
+cd $wdir/bld
 set build = run
 if ( $#argv >= 1) set build = $1
 if ( $build == "build" ) then
@@ -38,17 +40,20 @@ if ( $build == "build" ) then
 endif
 make -j4 preqx
 if ($status) exit
-set exe = $wdir/src/preqx/preqx
+set exe = $wdir/bld/src/preqx/preqx
 
 
+cd $wdir/fvm
 \cp -f $input/baro-ne15.nl input.nl
-mpirun -np 24 $exe  < input.nl
+mpirun -np 2 $exe  < input.nl
 
 
 # create plots
 ncl $input/baro.ncl
 
-$wdir/utils/cprnc/bin/cprnc  \
+exit
+
+$wdir/bld/utils/cprnc/bin/cprnc  \
    movies/asp_baroclinic2.nc movies/asp_baroclinic2.orig.nc |\
    grep diff_test
 

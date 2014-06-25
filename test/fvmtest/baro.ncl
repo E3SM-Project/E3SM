@@ -7,11 +7,9 @@ begin
   fname1 =  "movies/asp_baroclinic1.nc"
   f1     = addfile(fname1,"r")       ; Open netCDF file.	
 
-  field = (/"Q", "C4", "Q2", "C2", "Q3", "C3", "Q4", "C"/)
+;  field = (/"Q", "C4", "Q2", "C2", "Q3", "C3", "Q4", "C"/)
   ; field = (/"C4"/)
-  ; field = (/"C4", "C2", "C3", "C"/)
-  ; field = (/"C4","C2","C3","C"/)
-  ; field = (/"Q","Q2","Q3"/)
+   field = (/"C4", "C2", "C3", "C"/)
   output_format = "pdf"
 
 

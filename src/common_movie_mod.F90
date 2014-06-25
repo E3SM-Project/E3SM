@@ -33,7 +33,7 @@ module common_movie_mod
                                                  'faceno     ', &
                                                  'zeta       ', &
                                                  'div        ', &
-                                                 'C          ', &
+                                                 'C1         ', &
                                                  'C2         ', &
                                                  'C3         ', &
                                                  'C4         ', &
@@ -74,7 +74,7 @@ module common_movie_mod
                                                                1,2,5,0,0,0,0, & ! faceno
                                                                1,2,5,0,0,0,0, & ! zeta
                                                                1,2,5,0,0,0,0, & ! div
-                                                               6,2,5,0,0,0,0, & ! C
+                                                               6,2,5,0,0,0,0, & ! C1
                                                                6,2,5,0,0,0,0, & ! C2
                                                                6,2,5,0,0,0,0, & ! C3
                                                                6,2,5,0,0,0,0, & ! C4
@@ -185,7 +185,7 @@ module common_movie_mod
                                                                5,0,0,0,0,  &  !phys_lat
                                                                5,0,0,0,0,  &  !phys_area
                                                                4,0,0,0,0,  &  ! time
-                                                               5,2,4,0,0,  &  ! c
+                                                               5,2,4,0,0,  &  ! c1
                                                                5,2,4,0,0,  &  ! c2
                                                                5,2,4,0,0,  &  ! c3
                                                                5,2,4,0,0,  &  ! c4
@@ -196,7 +196,7 @@ module common_movie_mod
   character*(*),parameter::varnames(varcnt)=(/'ps       ','geop     ','u        ','v        ',&
                                               'lon      ','lat      ',&
                                               'phys_lon ','phys_lat ','phys_area',&
-                                              'time     ','c        ','c2       ','c3       ','c4       ',&
+                                              'time     ','c1       ','c2       ','c3       ','c4       ',&
                                               'zeta     ','div      ','area     '/)
   integer, parameter :: vartype(varcnt)=(/nf_double,nf_double,nf_double,nf_double,nf_double,&
        nf_double,nf_double,nf_double,nf_double,nf_double,nf_double,nf_double,&
