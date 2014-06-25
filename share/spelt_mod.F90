@@ -1147,7 +1147,7 @@ subroutine spelt_runair(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
              endif
              if (mod(j,2)==1) then            ! works only for nip=3!!!
                fluxval(i,j,2) =  dt6 * sga*(contrauv(i,j,2,1)* slval_air(i,j,1) + & 
-                        4.0D0 * contrauv(i,j,2,2)*slval_air(i,j,2) + contrauv(i,j,2,3)*slval_air(i,j,3) )                                
+                        4.0D0 * contrauv(i,j,2,2)*slval_air(i,j,2) + contrauv(i,j,2,3)*slval_air(i,j,3) )
              endif
           end do
         end do 
@@ -1235,8 +1235,8 @@ subroutine spelt_runair(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
                                            flux(2) - &
                                            flux(3) - &
                                            flux(4) ) / (spelt(ie)%area_sphere(icell,jcell))
-              spelt(ie)%c(i+1,j+1,k,itr,tl%np1) = spelt(ie)%c(i+1,j+1,k,itr,tl%np1)/spelt(ie)%c(i+1,j+1,k,1,tl%np1)                             
-            end do
+              spelt(ie)%c(i+1,j+1,k,itr,tl%np1) = spelt(ie)%c(i+1,j+1,k,itr,tl%np1)/spelt(ie)%c(i+1,j+1,k,1,tl%np1)
+           end do
           end do
         end do      
       end do      
@@ -1359,7 +1359,7 @@ subroutine spelt_runair_old(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
             endif
             if (mod(j,2)==1) then            ! works only for nip=3!!!
                fluxval(i,j,2) =  dt6 * sga*(contrauv(i,j,2,1)* slvalone(i,j,1) + & 
-                        4.0D0 * contrauv(i,j,2,2)*slvalone(i,j,2) + contrauv(i,j,2,3)*slvalone(i,j,3) )                                
+                        4.0D0 * contrauv(i,j,2,2)*slvalone(i,j,2) + contrauv(i,j,2,3)*slvalone(i,j,3) )
             endif
           end do
         end do
