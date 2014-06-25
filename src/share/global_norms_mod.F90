@@ -455,7 +455,6 @@ contains
 
            ! dx_long
            elem(ie)%variable_hyperviscosity = sqrt((elem(ie)%dx_long/max_unif_dx) ** hypervis_power)
-            
            ! dx_short
            !elem(ie)%variable_hyperviscosity = sqrt((elem(ie)%dx_short/1.25/min_min_dx) ** hypervis_power)
 
