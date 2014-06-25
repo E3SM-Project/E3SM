@@ -89,6 +89,15 @@ module namelist_mod
        vert_remap_q_alg, &
 #ifndef CAM
        pertlim,      &
+       tracer_transport_type,           &
+       TRACERTRANSPORT_SE_GLL,          &
+       TRACERTRANSPORT_SEMILAGRANG_GLL, &
+       TRACERTRANSPORT_LAGRANGIAN_FVM,  &
+       TRACERTRANSPORT_FLUXFORM_FVM,    &
+       TRACERTRANSPORT_SPELT_FVM,       &
+       tracer_grid_type,                &
+       TRACER_GRIDTYPE_GLL,             &
+       TRACER_GRIDTYPE_FVM,             &
 #endif
        test_cfldep
       
@@ -161,6 +170,12 @@ module namelist_mod
 
 #endif
   use interpolate_mod, only : set_interp_parameter, get_interp_parameter
+
+#ifndef CAM
+  use fvm_mod, only: fvm_ideal_test, ideal_test_off, ideal_test_analytical_departure, ideal_test_analytical_winds
+  use fvm_mod, only: fvm_test_type, ideal_test_boomerang, ideal_test_solidbody
+#endif
+
 !=======================================================================================================!
 !    Adding for SW DG                                                                                   !
 !=======================================================================================================!
@@ -215,6 +230,15 @@ module namelist_mod
     integer :: se_ne
     integer :: unitn
     character(len=*), parameter ::  subname = "homme:namelist_mod"
+! These items are only here to keep readnl from crashing. Remove when possible
+    integer :: se_fv_nphys
+    character(len=80)  :: se_write_phys_grid
+    character(len=256) :: se_phys_grid_file
+#endif
+#ifndef CAM
+    character(len=32) :: tracer_transport_method = 'se_gll'
+    character(len=32) :: cslam_ideal_test = 'off'
+    character(len=32) :: cslam_test_type = 'boomerang'
 #endif
     ! ============================================
     ! Namelists
@@ -237,6 +261,9 @@ module namelist_mod
                      smooth,        &        ! Timestep Filter
                      omega,         &
                      pertlim,        &        !temperature initial perturbation
+         tracer_transport_method, &
+         cslam_ideal_test,        &
+         cslam_test_type,         &
 #endif
                      npart,         &
                      uselapi,       &
@@ -293,7 +320,11 @@ module namelist_mod
 
 #ifdef CAM
     namelist  /ctl_nl/ SE_NSPLIT,  &       ! number of dynamics steps per physics timestep
-                       se_phys_tscale
+                       se_phys_tscale, &
+! These items are only here to keep readnl from crashing. Remove when possible
+                       se_fv_nphys,    &      ! Linear size of FV physics grid
+                       se_write_phys_grid, &  ! Write physics grid file if .true.
+                       se_phys_grid_file      ! Physics grid filename
 #else
     namelist /ctl_nl/test_case,       &       ! test case
                      sub_case,        &       ! generic test case parameter
@@ -405,7 +436,7 @@ module namelist_mod
     ! set all CAM defaults
     ! CAM requires forward-in-time, subcycled dynamics
     ! RK2 3 stage tracers, sign-preserving conservative
-    tstep_type = 1            ! forward-in-time RK methods
+    tstep_type              = 1      ! forward-in-time RK methods
     qsplit=4; rk_stage_user=3
     se_limiter_option=4
     se_ftype = 2
@@ -466,6 +497,7 @@ module namelist_mod
        do while ( ierr /= 0 )
           read (unitn,ctl_nl,iostat=ierr)
           if (ierr < 0) then
+            write(6,*) 'ierr =',ierr
              call abortmp( subname//':: namelist read returns an'// &
                   ' end of file or end of record condition' )
           end if
@@ -712,6 +744,7 @@ module namelist_mod
 #else
        read(*,nml=analysis_nl)
 #endif
+
       if (io_stride .eq.0 .and. num_io_procs .eq.0) then
          ! user did not set anything
          io_stride=1
@@ -947,6 +980,43 @@ module namelist_mod
     call MPI_bcast(num_io_procs , 1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(output_type , 9,MPIChar_t,par%root,par%comm,ierr)
     call MPI_bcast(infilenames ,160*MAX_INFILES ,MPIChar_t,par%root,par%comm,ierr)
+! These options are set by the CAM namelist
+#ifndef CAM
+! Set and broadcast tracer transport type
+    if (trim(tracer_transport_method) == 'se_gll') then
+      tracer_transport_type = TRACERTRANSPORT_SE_GLL
+      tracer_grid_type = TRACER_GRIDTYPE_GLL
+    else if (trim(tracer_transport_method) == 'cslam_fvm') then
+      tracer_transport_type = TRACERTRANSPORT_LAGRANGIAN_FVM
+      tracer_grid_type = TRACER_GRIDTYPE_FVM
+    else if (trim(tracer_transport_method) == 'flux_form_cslam_fvm') then
+      tracer_transport_type = TRACERTRANSPORT_FLUXFORM_FVM
+      tracer_grid_type = TRACER_GRIDTYPE_FVM
+    else
+      call abortmp('Unknown tracer transport method: '//trim(tracer_transport_method))
+    end if
+    call MPI_bcast(tracer_transport_type,1,MPIinteger_t,par%root,par%comm,ierr)
+    call MPI_bcast(tracer_grid_type,1,MPIinteger_t,par%root,par%comm,ierr)
+! Set and broadcast CSLAM test options
+    if (trim(cslam_ideal_test) == 'off') then
+      fvm_ideal_test = IDEAL_TEST_OFF
+    else if (trim(cslam_ideal_test) == 'analytical_departure') then
+      fvm_ideal_test = IDEAL_TEST_ANALYTICAL_DEPARTURE
+    else if (trim(cslam_ideal_test) == 'analytical_winds') then
+      fvm_ideal_test = IDEAL_TEST_ANALYTICAL_WINDS
+    else
+      call abortmp('Unknown ideal_cslam_test: '//trim(cslam_ideal_test))
+    end if
+    if (trim(cslam_test_type) == 'boomerang') then
+      fvm_test_type = IDEAL_TEST_BOOMERANG
+    else if (trim(cslam_test_type) == 'solidbody') then
+      fvm_test_type = IDEAL_TEST_SOLIDBODY
+    else
+      call abortmp('Unknown cslam test type: '//trim(cslam_test_type))
+    end if
+    call MPI_bcast(fvm_ideal_test,1,MPIinteger_t,par%root,par%comm,ierr)
+    call MPI_bcast(fvm_test_type,1,MPIinteger_t,par%root,par%comm,ierr)
+#endif
 
 #ifdef IS_ACCELERATOR
     if (nthreads_accel > 0) then
@@ -1280,6 +1350,35 @@ module namelist_mod
              end select
           end if
        end do
+#endif
+#ifndef CAM
+       ! Write CSLAM namelist values
+       select case (tracer_transport_type)
+       case (TRACERTRANSPORT_SE_GLL)
+         write(iulog, *) 'Eulerian tracer advection on GLL grid'
+       case (TRACERTRANSPORT_SEMILAGRANG_GLL)
+         write(iulog, *) 'Classic semi-Lagrangian tracer advection on GLL grid'
+       case (TRACERTRANSPORT_LAGRANGIAN_FVM)
+         write(iulog, *) 'CSLAM tracer advection on FVM grid'
+       case (TRACERTRANSPORT_FLUXFORM_FVM)
+         write(iulog, *) 'Flux-form CSLAM tracer advection on FVM grid'
+       case (TRACERTRANSPORT_SPELT_FVM)
+         write(iulog, *) 'Spelt tracer advection on FVM grid'
+       end select
+       if (fvm_ideal_test /= IDEAL_TEST_OFF) then
+         select case (fvm_test_type)
+         case (IDEAL_TEST_BOOMERANG)
+           write(iulog, *) 'Running boomerang CSLAM test'
+         case (IDEAL_TEST_SOLIDBODY)
+           write(iulog, *) 'Running solid body CSLAM test'
+         end select
+         select case (fvm_ideal_test)
+         case (IDEAL_TEST_ANALYTICAL_DEPARTURE)
+           write(iulog, *) 'Using analytical departure points for CSLAM test'
+         case (IDEAL_TEST_ANALYTICAL_WINDS)
+           write(iulog, *) 'Using analytical winds for CSLAM test'
+         end select
+       end if
 #endif
        write(iulog,*)" analysis interpolation = ", interpolate_analysis
        if(any(interpolate_analysis)) then
