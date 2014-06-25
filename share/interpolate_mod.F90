@@ -56,10 +56,7 @@ module interpolate_mod
   public :: interpolate_scalar
   public :: interpolate_ce
   
-  public :: interpol_phys_latlon
-#if defined(_SPELT)
-  public :: interpol_spelt_latlon
-#endif
+  public :: interpol_phys_latlon, interpol_spelt_latlon
   public :: interpolate_vector
   public :: set_interp_parameter
   public :: get_interp_parameter
@@ -678,7 +675,6 @@ subroutine interpol_phys_latlon(interpdata,f, fvm, corners, desc, flatlon)
 end subroutine interpol_phys_latlon
 
 
-#if defined(_SPELT)
 ! ----------------------------------------------------------------------------------!
 !FUNCTION   interpol_spelt_latlon---------------------------------------CE-for spelt!
 ! AUTHOR: CHRISTOPH ERATH, 24. August 2012                                          !
@@ -785,7 +781,6 @@ subroutine interpol_spelt_latlon(interpdata,f, spelt,corners, flatlon)
 !     flatlon(i)=f(icell*nipm,jcell*nipm)    
   end do
 end subroutine interpol_spelt_latlon
-#endif
 
 
   function parametric_coordinates(sphere, corners3D,ref_map_in, corners,u2qmap,facenum) result (ref)

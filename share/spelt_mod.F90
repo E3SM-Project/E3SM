@@ -61,16 +61,14 @@ module spelt_mod
     integer                  :: Facenumber
   end type spelt_struct
 
-#if defined(_SPELT)
   public :: cellghostbuf, factorR, edgeveloc
   public :: spelt_init1,spelt_init2, spelt_init3, spelt_mcgregordss,spelt_rkdss, spelt_grid_init
   public :: spelt_run, spelt_runair, spelt_runair_old
   public :: cip_coeff, cip_interpolate, metric_term, cell_search, qmsl_cell_filter, cell_minmax, cip_cell_avr
   public :: spelt_runlimit, spelt_runpos, spelt_runtest
-#endif
 contains
 
-#if defined(_SPELT)
+
 subroutine spelt_runtest(elem,spelt,hybrid,deriv,tstep,tl,nets,nete)
 
   use derivative_mod, only : derivative_t
@@ -3379,6 +3377,6 @@ subroutine slopelimiter_val(value, cell_value, local_min, local_max, min_phi)
   endif
 
 end subroutine slopelimiter_val
-#endif
+
 
 end module spelt_mod
