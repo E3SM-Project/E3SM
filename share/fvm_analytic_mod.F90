@@ -25,12 +25,12 @@ contains
 !         desc... edge descriptor, needed for reordering                            !
 !-----------------------------------------------------------------------------------!
 subroutine computexytosphere_moments(fvm,desc)
-  use fvm_control_volume_mod, only:  fvm_struct 
+  use fvm_control_volume_mod, only: fvm_struct
   use control_mod, only : north, south, east, west, neast, nwest, seast, swest
   use edge_mod, only : edgedescriptor_t
   implicit none
   
-  type (fvm_struct), intent(inout)                  :: fvm
+  type (fvm_struct), intent(inout)                    :: fvm
   type (edgedescriptor_t),intent(in)                  :: desc
   
   real (kind=real_kind)                               :: tmpval(5,1-nhe:nc+nhe)
@@ -112,7 +112,10 @@ subroutine computexytosphere_moments(fvm,desc)
       endif
     endif
   endif
-!   
+  !
+  ! pre-compute matrix for finite-difference reconstruction
+  !
+  call compute_reconstruct_matrix(fvm)
 end subroutine computexytosphere_moments
 !END SUBROUTINE COMPUTEXYTOSPHERE_MOMENTS---------------------------------CE-for FVM!
 ! ----------------------------------------------------------------------------------!
@@ -288,5 +291,115 @@ function I_11(x,y)
 end function I_11
 !END SUBROUTINES I_00, I_01, I_20, I_02, I11------------------------------CE-for FVM!
 
+
+!
+! matrix version of reconstruct_cubic_onface
+!
+subroutine compute_reconstruct_matrix(fvm)
+  use fvm_control_volume_mod, only: fvm_struct
+  implicit none
+  type (fvm_struct), intent(inout)  :: fvm
+  !
+  integer  :: i, j
+  real (kind=real_kind) :: coef, coef2
+  !
+  ! pre-compute reconstruction matrix so that reconstruction array can be computed as:
+  !
+  !               recons(k,i,j) = fvm%recons_matrix(k,:,i,j)*f(:,k)
+  !
+  ! where
+  !
+  !          | (i-2,j) (i,j-2) (i-2,j) (i,j-2) (i-1,j-1) |^T
+  !          | (i-1,j) (i,j-1) (i-1,j) (i,j-1) (i-1,j+1) |
+  ! f(:,:) = | (i  ,j) (i,j  ) (i  ,j) (i,j  ) (i  ,j  ) |
+  !          | (i+1,j) (i,j+1) (i+1,j) (i,j+1) (i+1,j-1) |
+  !          | (i+2,j) (i,j+2) (i+2,j) (i,j+2) (i+1,j+1) |
+  !
+  !
+  do j= 1-nhe,nc+nhe
+     do i=1-nhe,nc+nhe
+        !
+        !***************
+        !*    dfdx     *
+        !***************
+        !
+        coef = 1.0D0/(12.0D0 * fvm%dalpha)                   !finite difference coefficient
+        coef = coef /( 1.0D0 + fvm%spherecentroid(1,i,j)**2) !stretching coefficient
+        !
+        fvm%recons_matrix(1,1,i,j) =        coef !(i-2,j)
+        fvm%recons_matrix(2,1,i,j) = -8.0D0*coef !(i-1,j)
+        fvm%recons_matrix(3,1,i,j) =  0.0D0      !(i  ,j)
+        fvm%recons_matrix(4,1,i,j) =  8.0D0*coef !(i+1,j)
+        fvm%recons_matrix(5,1,i,j) = -1.0D0*coef !(i+2,j)
+
+        !
+        coef = 1.0D0/(12.0D0 * fvm%dbeta)                    !finite difference coefficient
+        coef = coef /( 1.0D0 + fvm%spherecentroid(2,i,j)**2) !stretching coefficient
+        !
+        !***************
+        !*    dfdy     *
+        !***************
+        !
+        fvm%recons_matrix(1,2,i,j) =        coef !(i,j-2)
+        fvm%recons_matrix(2,2,i,j) = -8.0D0*coef !(i,j-1)
+        fvm%recons_matrix(3,2,i,j) =    0D0*coef !(i,j  )
+        fvm%recons_matrix(4,2,i,j) =  8.0D0*coef !(i,j+1)
+        fvm%recons_matrix(5,2,i,j) = -1.0D0*coef !(i,j+2)
+        !
+        !*****************
+        !*    d2fdx2     *
+        !*****************
+        !
+        coef = 1.0D0 / (12.0D0 * fvm%dalpha**2)                  !finite difference coefficient
+        !
+        fvm%recons_matrix(1,3,i,j) =        -coef !(i-2,j)
+        fvm%recons_matrix(2,3,i,j) =  16.0D0*coef !(i-1,j)
+        fvm%recons_matrix(3,3,i,j) = -30.0D0*coef !(i  ,j)
+        fvm%recons_matrix(4,3,i,j) =  16.0D0*coef !(i+1,j)
+        fvm%recons_matrix(5,3,i,j) =        -coef !(i+2,j)
+        !
+        ! stretching coefficient part 2
+        !      recons(3,i,j) = (a * recons(1,i,j)+ recons(3,i,j))*b
+        !
+        fvm%recons_matrix(1,6,i,j) = -2.0D0*fvm%spherecentroid(1,i,j)*(1.0D0 + fvm%spherecentroid(1,i,j)**2)
+        fvm%recons_matrix(2,6,i,j) =  0.5D0/((1.0D0 + fvm%spherecentroid(1,i,j)**2)**2)
+        !
+        !*****************
+        !*    d2fdy2     *
+        !*****************
+        !
+        !
+        coef = 1.0D0 / (12.0D0 * fvm%dbeta**2)                     !finite difference coefficient
+        !
+        fvm%recons_matrix(1,4,i,j) =        -coef !(i,j-2)
+        fvm%recons_matrix(2,4,i,j) =  16.0D0*coef !(i,j-1)
+        fvm%recons_matrix(3,4,i,j) = -30.0D0*coef !(i  ,j)
+        fvm%recons_matrix(4,4,i,j) =  16.0D0*coef !(i,j+1)
+        fvm%recons_matrix(5,4,i,j) =        -coef !(i,j+2)
+        !
+        ! stretching coefficient part 2
+        !
+        !      recons(4,i,j) = (a * recons(1,i,j)+ recons(4,i,j))*b
+        !
+        fvm%recons_matrix(3,6,i,j) = -2.0D0*fvm%spherecentroid(2,i,j)*(1.0D0 + fvm%spherecentroid(2,i,j)**2)
+        fvm%recons_matrix(4,6,i,j) =  0.5D0/((1.0D0 + fvm%spherecentroid(2,i,j)**2)**2)
+        !
+        !*****************
+        !*    d2fdxdy    *
+        !*****************
+        !
+        !
+        coef = 1.0D0 / (4.0D0 * fvm%dalpha * fvm%dbeta)            !finite difference coefficient
+        coef = coef  / ((1.0D0 + fvm%spherecentroid(1,i,j)**2) * &
+                        (1.0D0 + fvm%spherecentroid(2,i,j)**2))    !stretching coefficient 
+        !
+        fvm%recons_matrix(1,5,i,j) =  coef !(i-1,j-1)
+        fvm%recons_matrix(2,5,i,j) = -coef !(i-1,j+1)
+        fvm%recons_matrix(3,5,i,j) = 0.0D0 !(i  ,j  )
+        fvm%recons_matrix(4,5,i,j) = -coef !(i+1,j-1)
+        fvm%recons_matrix(5,5,i,j) =  coef !(i+1,j+1)
+    enddo
+  enddo
+end subroutine compute_reconstruct_matrix
 
 end module fvm_analytic_mod

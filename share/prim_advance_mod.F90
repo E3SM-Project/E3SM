@@ -25,7 +25,6 @@ module prim_advance_mod
 
   real (kind=real_kind), allocatable :: ur_weights(:)
 
-
 contains
 
   subroutine prim_advance_init(par,integration)
@@ -350,15 +349,32 @@ contains
 #else
        ! Ullrich 3nd order 5 stage:   CFL=sqrt( 4^2 -1) = 3.87
        ! u1 = u0 + dt/5 RHS(u0)  (save u1 in timelevel nm1)
+
+       !
+       ! phl: rhs: t=t
+       !
        call compute_and_apply_rhs(nm1,n0,n0,qn0,dt/5,elem,hvcoord,hybrid,&
             deriv,nets,nete,compute_diagnostics,eta_ave_w/4)
        ! u2 = u0 + dt/5 RHS(u1)
+
+       !
+       ! phl: rhs: t=t+dt/5
+       !
        call compute_and_apply_rhs(np1,n0,nm1,qn0,dt/5,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,0d0)
        ! u3 = u0 + dt/3 RHS(u2)
+       !
+       ! phl: rhs: t=t+2*dt/5
+       !
+
        call compute_and_apply_rhs(np1,n0,np1,qn0,dt/3,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,0d0)
        ! u4 = u0 + 2dt/3 RHS(u3)
+
+       !
+       ! phl: rhs: t=t+2*dt/5+dt/3
+       !
+
        call compute_and_apply_rhs(np1,n0,np1,qn0,2*dt/3,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,0d0)
 
@@ -377,6 +393,10 @@ contains
           endif
        enddo
        ! u5 = (5*u1/4 - u0/4) + 3dt/4 RHS(u4)
+       !
+       ! phl: rhs: t=t+2*dt/5+dt/3+3*dt/4         -wrong RK times ...
+       !
+
        call compute_and_apply_rhs(np1,nm1,np1,qn0,3*dt/4,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,3*eta_ave_w/4)
        ! final method is the same as:
@@ -1467,14 +1487,17 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 
 
 
-  subroutine applyCAMforcing(elem,hvcoord,np1,np1_qdp,dt_q,nets,nete)
-  use dimensions_mod, only : np, nlev, qsize
+  subroutine applyCAMforcing(elem,fvm,hvcoord,np1,np1_qdp,dt_q,nets,nete)
+  use dimensions_mod, only : np, nc, nlev, qsize, ntrac
   use element_mod, only : element_t
   use hybvcoord_mod, only : hvcoord_t
-  use control_mod, only : moisture
+  use control_mod, only : moisture, tracer_grid_type
+  use control_mod, only : TRACER_GRIDTYPE_GLL, TRACER_GRIDTYPE_FVM
   use physical_constants, only: Cp
+  use fvm_control_volume_mod, only : fvm_struct
   implicit none
   type (element_t)     , intent(inout) :: elem(:)
+  type(fvm_struct)     , intent(inout) :: fvm(:)
   real (kind=real_kind), intent(in) :: dt_q
   type (hvcoord_t), intent(in)      :: hvcoord
   integer,  intent(in) :: np1,nets,nete,np1_qdp
@@ -1493,30 +1516,57 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(q,k,i,j,v1)
 #endif
-     do q=1,qsize
-        do k=1,nlev
-           do j=1,np
-              do i=1,np
-                 v1 = dt_q*elem(ie)%derived%FQ(i,j,k,q,1)
-                 !if (elem(ie)%state%Qdp(i,j,k,q,np1) + v1 < 0 .and. v1<0) then
-                 if (elem(ie)%state%Qdp(i,j,k,q,np1_qdp) + v1 < 0 .and. v1<0) then
-                    !if (elem(ie)%state%Qdp(i,j,k,q,np1) < 0 ) then
-                    if (elem(ie)%state%Qdp(i,j,k,q,np1_qdp) < 0 ) then
-                       v1=0  ! Q already negative, dont make it more so
-                    else
-                       !v1 = -elem(ie)%state%Qdp(i,j,k,q,np1)
-                       v1 = -elem(ie)%state%Qdp(i,j,k,q,np1_qdp)
+     if (tracer_grid_type == TRACER_GRIDTYPE_GLL) then
+        do q=1,qsize
+           do k=1,nlev
+              do j=1,np
+                 do i=1,np
+                    v1 = dt_q*elem(ie)%derived%FQ(i,j,k,q,1)
+                    !if (elem(ie)%state%Qdp(i,j,k,q,np1) + v1 < 0 .and. v1<0) then
+                    if (elem(ie)%state%Qdp(i,j,k,q,np1_qdp) + v1 < 0 .and. v1<0) then
+                       !if (elem(ie)%state%Qdp(i,j,k,q,np1) < 0 ) then
+                       if (elem(ie)%state%Qdp(i,j,k,q,np1_qdp) < 0 ) then
+                          v1=0  ! Q already negative, dont make it more so
+                       else
+                          !v1 = -elem(ie)%state%Qdp(i,j,k,q,np1)
+                          v1 = -elem(ie)%state%Qdp(i,j,k,q,np1_qdp)
+                       endif
                     endif
-                 endif
-                 !elem(ie)%state%Qdp(i,j,k,q,np1) = elem(ie)%state%Qdp(i,j,k,q,np1)+v1
-                 elem(ie)%state%Qdp(i,j,k,q,np1_qdp) = elem(ie)%state%Qdp(i,j,k,q,np1_qdp)+v1
-                 if (q==1) then
-                    elem(ie)%derived%FQps(i,j,1)=elem(ie)%derived%FQps(i,j,1)+v1/dt_q
-                 endif
+                    !elem(ie)%state%Qdp(i,j,k,q,np1) = elem(ie)%state%Qdp(i,j,k,q,np1)+v1
+                    elem(ie)%state%Qdp(i,j,k,q,np1_qdp) = elem(ie)%state%Qdp(i,j,k,q,np1_qdp)+v1
+                    if (q==1) then
+                       elem(ie)%derived%FQps(i,j,1)=elem(ie)%derived%FQps(i,j,1)+v1/dt_q
+                    endif
+                 enddo
               enddo
            enddo
         enddo
-     enddo
+     else if (tracer_grid_type == TRACER_GRIDTYPE_FVM) then
+        ! Repeat for the fvm tracers
+        do q = 1, ntrac
+           do k = 1, nlev
+              do j = 1, nc
+                 do i = 1, nc
+                    v1 = fvm(ie)%fc(i,j,k,q)
+                    if (fvm(ie)%c(i,j,k,q,np1_qdp) + v1 < 0 .and. v1<0) then
+                       if (fvm(ie)%c(i,j,k,q,np1_qdp) < 0 ) then
+                          v1 = 0  ! C already negative, dont make it more so
+                       else
+                          v1 = -fvm(ie)%c(i,j,k,q,np1_qdp)
+                       end if
+                    end if
+                    fvm(ie)%c(i,j,k,q,np1_qdp) = fvm(ie)%c(i,j,k,q,np1_qdp) + v1
+!                    if (q == 1) then
+!!XXgoldyXX: Should update the pressure forcing here??!!??
+!                    elem(ie)%derived%FQps(i,j,1)=elem(ie)%derived%FQps(i,j,1)+v1/dt_q
+!                  end if
+                 end do
+              end do
+           end do
+        end do
+     else
+        call abortmp('applyCAMforcing: ERROR: unsupported value for tracer_grid_type')
+     end if
 
      if (wet .and. qsize>0) then
         ! to conserve dry mass in the precese of Q1 forcing:
@@ -2438,6 +2488,10 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
   end subroutine advance_hypervis_lf
 
 
+  !
+  ! phl notes: output is stored in first argument. Advances from 2nd argument using tendencies evaluated at 3rd rgument: 
+  ! phl: for offline winds use time at 3rd argument (same as rhs currently)
+  !
   subroutine compute_and_apply_rhs(np1,nm1,n0,qn0,dt2,elem,hvcoord,hybrid,&
        deriv,nets,nete,compute_diagnostics,eta_ave_w)
   ! ===================================
@@ -2636,11 +2690,15 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
 #if (defined COLUMN_OPENMP)
 !$omp parallel do private(k,i,j,Qt)
 #endif
+
         do k=1,nlev
            do j=1,np
               do i=1,np
                  ! Qt = elem(ie)%state%Q(i,j,k,1)
                  Qt = elem(ie)%state%Qdp(i,j,k,1,qn0)/dp(i,j,k)
+!!XXgoldyXX
+!Qt=0._real_kind
+!!XXgoldyXX
                  T_v(i,j,k) = Virtual_Temperature(elem(ie)%state%T(i,j,k,n0),Qt)
                  if (use_cpstar==1) then
                     kappa_star(i,j,k) =  Rgas/Virtual_Specific_Heat(Qt)
@@ -2782,13 +2840,19 @@ subroutine prim_advance_si(elem, nets, nete, cg, blkjac, red, &
               vtens1(i,j,k) =   - v_vadv(i,j,1,k)                           &
                    + v2*(elem(ie)%fcor(i,j) + vort(i,j,k))        &
                    - vtemp(i,j,1) - glnps1
-
+              !
+              ! phl: add forcing term to zonal wind u
+              !
               vtens2(i,j,k) =   - v_vadv(i,j,2,k)                            &
                    - v1*(elem(ie)%fcor(i,j) + vort(i,j,k))        &
                    - vtemp(i,j,2) - glnps2
-
+              !
+              ! phl: add forcing term to meridional wind v
+              !
               ttens(i,j,k)  = - T_vadv(i,j,k) - vgrad_T(i,j) + kappa_star(i,j,k)*T_v(i,j,k)*omega_p(i,j,k)
-
+              !
+              ! phl: add forcing term to T
+              !
            end do
         end do
 
