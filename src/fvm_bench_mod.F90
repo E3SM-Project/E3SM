@@ -14,7 +14,7 @@ module fvm_bench_mod
   use kinds, only : real_kind, int_kind, longdouble_kind
   use edge_mod, only : freeghostbuffertr, ghostVpack, ghostVunpack, &
                        edgeVpack, edgeVunpack, freeedgebuffer 
-  use dimensions_mod, only: nelem, nelemd, nelemdmax, nlev, np, ne, nc, nhc, nhe, nlev, ntrac
+  use dimensions_mod, only: nelem, nelemd, nelemdmax, nlev, np, ne, nc, nhe, nlev, ntrac
   use time_mod, only : timelevel_t
   use element_mod, only : element_t, timelevels
   use hybrid_mod, only : hybrid_t
@@ -28,7 +28,7 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
   ! ---------------------------------------------------------------------------------  
   use fvm_control_volume_mod, only: fvm_struct
   ! ---------------------------------------------------------------------------------
-  use fvm_mod, only: cslam_run,cslam_runairdensity, cslam_runflux, fvm_init1,fvm_init2 
+  use fvm_mod, only: cslam_runairdensity, cslam_runflux, fvm_init1,fvm_init2 
   use fvm_mod, only: fvm_init3, fvm_mcgregor,fvm_mcgregordss, fvm_rkdss,cellghostbuf, edgeveloc
   ! ---------------------------------------------------------------------------------
   ! ---------------------------------------------------------------------------------
@@ -100,7 +100,8 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
   
   integer  choosetrac, chooselev   !for test reason the output
  !-----------------------------------------------------------------------------------!  
- choosetrac=2
+! choosetrac=2
+ choosetrac=1
  chooselev=1
  
   if(hybrid%masterthread) then 
@@ -122,39 +123,33 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
     fvm_nodes(i)= 2*(i-1)/xtmp - 1
   end do
   call derivinit(deriv,fvm_corners=fvm_nodes)
-
 !-----------------------------------------------------------------------------------! 
   do ie=nets,nete
-    call fvm_bsp(fvm(ie),tl)
-    fvm(ie)%elem_mass=0.0D0
-    do j=1,nc
-      do i=1,nc
-        if (choosetrac==1) then   ! mass of air, code is not optimal
-          fvm(ie)%elem_mass=fvm(ie)%elem_mass + &
-                        fvm(ie)%area_sphere(i,j)*fvm(ie)%c(i,j,chooselev,choosetrac,tl%n0)
-        else
-          fvm(ie)%elem_mass=fvm(ie)%elem_mass + &
-                        fvm(ie)%area_sphere(i,j)*fvm(ie)%c(i,j,chooselev,1,tl%n0)*&
-                                                   fvm(ie)%c(i,j,chooselev,choosetrac,tl%n0)
-        endif
-        fvm(ie)%cstart(i,j)=fvm(ie)%c(i,j,chooselev,choosetrac,tl%n0)
-      enddo
-    enddo
-    !
-    ! reset the new unknown
-    do k=1,nlev
-      do itr=1,ntrac
-        do j=1-nhc,nc+nhc
-          do i=1-nhc,nc+nhc 
-          fvm(ie)%c(i,j,k,itr,tl%np1)=0.0D0
-          end do
-        end do
-      enddo
-    enddo
+     call fvm_bsp(fvm(ie),tl)
+     fvm(ie)%elem_mass=0.0D0
+     do j=1,nc
+        do i=1,nc
+              fvm(ie)%elem_mass=fvm(ie)%elem_mass + &
+                   fvm(ie)%area_sphere(i,j)*fvm(ie)%dp_fvm(i,j,chooselev,tl%n0)
+              fvm(ie)%cstart(i,j)=fvm(ie)%dp_fvm(i,j,chooselev,tl%n0)
+
+!              fvm(ie)%elem_mass=fvm(ie)%elem_mass + &
+!                   fvm(ie)%area_sphere(i,j)*fvm(ie)%dp_fvm(i,j,chooselev,tl%n0)*&
+!                   fvm(ie)%c(i,j,chooselev,choosetrac,tl%n0)
+!              fvm(ie)%cstart(i,j)=fvm(ie)%c(i,j,chooselev,choosetrac,tl%n0)
+        enddo
+     enddo
+     !
+     ! reset the new unknown
+     !
+     fvm(ie)%c     (:,:,:,:,tl%np1)=0.0D0
+     fvm(ie)%dp_fvm(:,:,:  ,tl%np1)=0.0D0
   end do
   
   !first exchange of the initial values
+  write(*,*) "first exchange of the initial values" !dbg
   call fvm_init3(elem,fvm,hybrid,nets,nete,tl%n0)
+  write(*,*) "done first exchange of the initial values" !dbg
 !-----------------------------------------------------------------------------------!     
 
   do ie=nets,nete
@@ -162,8 +157,11 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
     global_shared_buf(ie,1)=0.0D0
     global_shared_buf(ie,1)=fvm(ie)%elem_mass
     ! for the max value on the sphere
-    tmp1(ie) = MAXVAL(fvm(ie)%c(:,:,chooselev,choosetrac,tl%n0))
-    tmp2(ie) = MINVAL(fvm(ie)%c(:,:,chooselev,choosetrac,tl%n0))   
+    tmp1(ie) = MAXVAL(fvm(ie)%dp_fvm(:,:,chooselev,tl%n0))
+    tmp2(ie) = MINVAL(fvm(ie)%dp_fvm(:,:,chooselev,tl%n0))   
+
+!    tmp1(ie) = MAXVAL(fvm(ie)%c(:,:,chooselev,choosetrac,tl%n0))
+!    tmp2(ie) = MINVAL(fvm(ie)%c(:,:,chooselev,choosetrac,tl%n0))   
   end do
 
 !-----------------------------------------------------------------------------------!
@@ -199,120 +197,132 @@ subroutine cslam_run_bench(elem,fvm,red,hybrid,nets,nete,tl)
   
   !BEGIN TIME LOOP, start at 0, calculate then next step
   DO WHILE(tl%nstep< nmax)
-  
-! start old mcgregor----------------------
-!     do ie=nets,nete
-!       do k=1,nlev
-!         vstar = get_boomerang_velocities_gll(elem(ie), time_at(tl%nstep+1))
-!         vhat= (get_boomerang_velocities_gll(elem(ie), time_at(tl%nstep)) + vstar) / 2.0D0
-!         ! calculate high order approximation
-!         call fvm_mcgregor(elem(ie), deriv, tstep, vhat, vstar, 3)
-!      
-!         ! apply DSS to make vstar C0
-!         elem(ie)%derived%vstar(:,:,1,k) = elem(ie)%spheremp(:,:)*vstar(:,:,1) 
-!         elem(ie)%derived%vstar(:,:,2,k) = elem(ie)%spheremp(:,:)*vstar(:,:,2) 
-!       enddo
-!       call edgeVpack(edgeveloc,elem(ie)%derived%vstar(:,:,1,:),nlev,0,elem(ie)%desc)
-!       call edgeVpack(edgeveloc,elem(ie)%derived%vstar(:,:,2,:),nlev,nlev,elem(ie)%desc)
-!     enddo 
-!     call bndry_exchangeV(hybrid,edgeveloc)
-!     do ie=nets,nete
-!        call edgeVunpack(edgeveloc,elem(ie)%derived%vstar(:,:,1,:),nlev,0,elem(ie)%desc)
-!        call edgeVunpack(edgeveloc,elem(ie)%derived%vstar(:,:,2,:),nlev,nlev,elem(ie)%desc)
-!        do k=1, nlev  
-!          elem(ie)%derived%vstar(:,:,1,k)=elem(ie)%derived%vstar(:,:,1,k)*elem(ie)%rspheremp(:,:)
-!          elem(ie)%derived%vstar(:,:,2,k)=elem(ie)%derived%vstar(:,:,2,k)*elem(ie)%rspheremp(:,:)
-!        end do
-!     end do
-!end old mcgegor-----------------------
-! ! start mcgregordss
-    do ie=nets,nete
-      do k=1,nlev
-        elem(ie)%derived%vstar(:,:,:,k)=get_boomerang_velocities_gll(elem(ie), time_at(tl%nstep+1))
-        fvm(ie)%vn0(:,:,:,k)=get_boomerang_velocities_gll(elem(ie),time_at(tl%nstep))
-!         elem(ie)%derived%vstar(:,:,:,k)=get_solidbody_velocities_gll(elem(ie), time_at(tl%nstep+1))
-!         fvm(ie)%vn0(:,:,:,k)=get_solidbody_velocities_gll(elem(ie),time_at(tl%nstep))
-      end do
-    end do
-!     call fvm_mcgregordss(elem,fvm,nets,nete, hybrid, deriv, tstep, 3)
-    call fvm_rkdss(elem,fvm,nets,nete, hybrid, deriv, tstep, 3)
-    
-!     tmpt=(time_at(tl%nstep+1)-time_at(tl%nstep))/3
-!     do ie=nets,nete
-! !       do i=1,4
-!         do k=1,nlev
-!           fvm(ie)%vstar(:,:,:,k)=get_boomerang_velocities_gll(elem(ie),time_at(tl%nstep+1)-tmpt*(i-1))
-! !         elem(ie)%derived%vstar(:,:,:,k)=get_solidbody_velocities_gll(elem(ie), time_at(tl%nstep+1))
-! !         fvm(ie)%vn0(:,:,:,k)=get_solidbody_velocities_gll(elem(ie),time_at(tl%nstep))
-!         end do
-! !       end do
-!     end do    
-    
-    
-! ! end mcgregordss   
-!     call cslam_runflux(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
-    call cslam_runairdensity(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
-!     call cslam_runtest(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
-!     call cslam_run(elem,fvm,hybrid,deriv,tstep,tl,nets,nete)
-    
-    call TimeLevel_update(tl,"forward")
      
-if (mod(tl%nstep,1)==0) then  
-    do ie=nets,nete
-    ! prepare data for I/O
-      global_shared_buf(ie,1)=0.0D0  ! for mass calculation
-      ! test mass, just for chooselev and choosetrac, it is not optimized yet
-      do j=1,nc
-        do i=1,nc   
-          if (choosetrac==1) then
-            global_shared_buf(ie,1)=global_shared_buf(ie,1)+fvm(ie)%area_sphere(i,j)*&
-                                    fvm(ie)%c(i,j,chooselev,choosetrac,tl%n0)
-          else   
-            global_shared_buf(ie,1)=global_shared_buf(ie,1)+fvm(ie)%area_sphere(i,j)*&
-                 fvm(ie)%c(i,j,chooselev,1,tl%n0)*fvm(ie)%c(i,j,chooselev,choosetrac,tl%n0)
-          endif
+     ! start old mcgregor----------------------
+     !     do ie=nets,nete
+     !       do k=1,nlev
+     !         vstar = get_boomerang_velocities_gll(elem(ie), time_at(tl%nstep+1))
+     !         vhat= (get_boomerang_velocities_gll(elem(ie), time_at(tl%nstep)) + vstar) / 2.0D0
+     !         ! calculate high order approximation
+     !         call fvm_mcgregor(elem(ie), deriv, tstep, vhat, vstar, 3)
+     !      
+     !         ! apply DSS to make vstar C0
+     !         elem(ie)%derived%vstar(:,:,1,k) = elem(ie)%spheremp(:,:)*vstar(:,:,1) 
+     !         elem(ie)%derived%vstar(:,:,2,k) = elem(ie)%spheremp(:,:)*vstar(:,:,2) 
+     !       enddo
+     !       call edgeVpack(edgeveloc,elem(ie)%derived%vstar(:,:,1,:),nlev,0,elem(ie)%desc)
+     !       call edgeVpack(edgeveloc,elem(ie)%derived%vstar(:,:,2,:),nlev,nlev,elem(ie)%desc)
+     !     enddo 
+     !     call bndry_exchangeV(hybrid,edgeveloc)
+     !     do ie=nets,nete
+     !        call edgeVunpack(edgeveloc,elem(ie)%derived%vstar(:,:,1,:),nlev,0,elem(ie)%desc)
+     !        call edgeVunpack(edgeveloc,elem(ie)%derived%vstar(:,:,2,:),nlev,nlev,elem(ie)%desc)
+     !        do k=1, nlev  
+     !          elem(ie)%derived%vstar(:,:,1,k)=elem(ie)%derived%vstar(:,:,1,k)*elem(ie)%rspheremp(:,:)
+     !          elem(ie)%derived%vstar(:,:,2,k)=elem(ie)%derived%vstar(:,:,2,k)*elem(ie)%rspheremp(:,:)
+     !        end do
+     !     end do
+     !end old mcgegor-----------------------
+     ! ! start mcgregordss
+     do ie=nets,nete
+        do k=1,nlev
+           elem(ie)%derived%vstar(:,:,:,k)=get_boomerang_velocities_gll(elem(ie), time_at(tl%nstep+1))
+           fvm(ie)%vn0(:,:,:,k)=get_boomerang_velocities_gll(elem(ie),time_at(tl%nstep))
+           !         elem(ie)%derived%vstar(:,:,:,k)=get_solidbody_velocities_gll(elem(ie), time_at(tl%nstep+1))
+           !         fvm(ie)%vn0(:,:,:,k)=get_solidbody_velocities_gll(elem(ie),time_at(tl%nstep))
         end do
-      end do
-      ! for the max/min value on the sphere
-      tmp1(ie) = MAXVAL(fvm(ie)%c(:,:,chooselev,choosetrac,tl%n0))
-      tmp2(ie) = MINVAL(fvm(ie)%c(:,:,chooselev,choosetrac,tl%n0))
-    end do
-!-----------------------------------------------------------------------------------!
-    ! for mass calculation
-    call wrap_repro_sum(nvars=1, comm=hybrid%par%comm)
+     end do
+     !     call fvm_mcgregordss(elem,fvm,nets,nete, hybrid, deriv, tstep, 3)
+     call fvm_rkdss(elem,fvm,nets,nete, hybrid, deriv, tstep, 3)
+     
+     !     tmpt=(time_at(tl%nstep+1)-time_at(tl%nstep))/3
+     !     do ie=nets,nete
+     ! !       do i=1,4
+     !         do k=1,nlev
+     !           fvm(ie)%vstar(:,:,:,k)=get_boomerang_velocities_gll(elem(ie),time_at(tl%nstep+1)-tmpt*(i-1))
+     ! !         elem(ie)%derived%vstar(:,:,:,k)=get_solidbody_velocities_gll(elem(ie), time_at(tl%nstep+1))
+     ! !         fvm(ie)%vn0(:,:,:,k)=get_solidbody_velocities_gll(elem(ie),time_at(tl%nstep))
+     !         end do
+     ! !       end do
+     !     end do    
+     
+     
+     ! ! end mcgregordss   
+!     if(hybrid%masterthread) then 
+!        write(*,*) "running FF-CSLAM"
+!     end if
+!     call cslam_runflux(elem,fvm,hybrid,deriv,tstep,tl,nets,nete) !run flux-form CSLAM
+     
+     
+     if(hybrid%masterthread) then 
+        write(*,*) "running CSLAM"
+     end if
+     call cslam_runairdensity(elem,fvm,hybrid,deriv,tstep,tl,nets,nete) !run regular CSLAM
+      
+     call TimeLevel_update(tl,"forward")
+     
+     if (mod(tl%nstep,1)==0) then  
+        do ie=nets,nete
+           ! prepare data for I/O
+           global_shared_buf(ie,1)=0.0D0  ! for mass calculation
+           ! test mass, just for chooselev and choosetrac, it is not optimized yet
+           do j=1,nc
+              do i=1,nc   
+                 !
+                 ! air density
+                 !
+                 global_shared_buf(ie,1)=global_shared_buf(ie,1)+fvm(ie)%area_sphere(i,j)*&
+                      fvm(ie)%dp_fvm(i,j,chooselev,tl%n0)
+                 !
+                 ! tracer mass
+                 !
+                 !           global_shared_buf(ie,1)=global_shared_buf(ie,1)+fvm(ie)%area_sphere(i,j)*&
+                 !                fvm(ie)%dp_fvm(i,j,chooselev,tl%n0)*fvm(ie)%c(i,j,chooselev,choosetrac,tl%n0)
+                 
+              end do
+           end do
+           ! for the max/min value on the sphere
+           !      tmp1(ie) = MAXVAL(fvm(ie)%c(:,:,chooselev,choosetrac,tl%n0))
+           !      tmp2(ie) = MINVAL(fvm(ie)%c(:,:,chooselev,choosetrac,tl%n0))
+           tmp1(ie) = MAXVAL(fvm(ie)%dp_fvm(:,:,chooselev,tl%n0))
+           tmp2(ie) = MINVAL(fvm(ie)%dp_fvm(:,:,chooselev,tl%n0))
+        end do
+        !-----------------------------------------------------------------------------------!
+        ! for mass calculation
+        call wrap_repro_sum(nvars=1, comm=hybrid%par%comm)
+        
+        mass=global_shared_sum(1)
+        maxc = parallelmax(tmp1,hybrid)
+        minc = parallelmin(tmp2,hybrid)
+        maxcflx = parallelmax(fvm(:)%maxcfl(1,chooselev),hybrid)
+        maxcfly = parallelmax(fvm(:)%maxcfl(2,chooselev),hybrid)
+        !
+        if  (hybrid%masterthread) then 
+           write(*,*) 'time=', time_at(tl%nstep), 'timeatmax',Time_at(nmax)
+           write(*,*) 'chooselev=', chooselev, 'choosetrac=', choosetrac
+           write(*,*) 'STEP',tl%nstep,'MAXSTEP',nmax, &
+                't0', tl%n0, 't1', tl%np1
+           write(*,*) 'massbegin', massstart, 'massend', mass 
+           write(*,*) 'rel', (mass-massstart)/massstart           
+           write(*,*) 'maxvaluestart:', maxcstart, 'minvaluestart:', mincstart
+           write(*,*) 'maxvalue:     ', maxc,       'minvalue:    ', minc
+           write(*,*) "CFL: maxcflx=", maxcflx, "maxcfly=", maxcfly 
+           print *
+           if (abs((mass-massstart)/massstart) > 1.0D-2 ) then
+              write(*,*) 'mass error to high, stop'
+              !dbg        stop
+           endif
+        endif
+     endif
 
-    mass=global_shared_sum(1)
-    maxc = parallelmax(tmp1,hybrid)
-    minc = parallelmin(tmp2,hybrid)
-    maxcflx = parallelmax(fvm(:)%maxcfl(1,chooselev),hybrid)
-    maxcfly = parallelmax(fvm(:)%maxcfl(2,chooselev),hybrid)
-    !
-    if  (hybrid%masterthread) then 
-      write(*,*) 'time=', time_at(tl%nstep), 'timeatmax',Time_at(nmax)
-      write(*,*) 'chooselev=', chooselev, 'choosetrac=', choosetrac
-      write(*,*) 'STEP',tl%nstep,'MAXSTEP',nmax, &
-                 't0', tl%n0, 't1', tl%np1
-               write(*,*) 'massbegin', massstart, 'massend', mass 
-      write(*,*) 'rel', (mass-massstart)/massstart           
-      write(*,*) 'maxvaluestart:', maxcstart, 'minvaluestart:', mincstart
-      write(*,*) 'maxvalue:     ', maxc,       'minvalue:    ', minc
-      write(*,*) "CFL: maxcflx=", maxcflx, "maxcfly=", maxcfly 
-      print *
-      if (abs((mass-massstart)/massstart) > 1.0D-2 ) then
-        write(*,*) 'mass error to high, stop'
-        stop
-      endif
-    endif
-endif
-
-!-----------------------------------------------------------------------------------!  
-
+     !-----------------------------------------------------------------------------------!  
+     
 #ifdef PIO_INTERP
-    call interp_movie_output(elem, tl, hybrid, 0D0, nets, nete,fvm)
+     call interp_movie_output(elem, tl, hybrid, 0D0, nets, nete,fvm)
 #else     
-    call shal_movie_output(elem, tl, hybrid, 0D0, nets, nete,deriv,fvm)
+     call shal_movie_output(elem, tl, hybrid, 0D0, nets, nete,deriv,fvm)
 #endif
-!-----------------------------------------------------------------------------------!  
+     !-----------------------------------------------------------------------------------!  
   END DO
 !------------END TIME LOOP-------------END TIME LOOP--------------END TIME LOOP-----!
 !-----------------------------------------------------------------------------------! 
@@ -334,11 +344,13 @@ endif
       global_shared_buf(ie,:)=0.0D0
       do j=1,nc
         do i=1,nc
-          global_shared_buf(ie,1)=global_shared_buf(ie,1)+fvm(ie)%area_sphere(i,j)*abs(fvm(ie)%c(i,j,chooselev,choosetrac,tl%n0)-fvm(ie)%cstart(i,j))
+          global_shared_buf(ie,1)=global_shared_buf(ie,1)+ &
+               fvm(ie)%area_sphere(i,j)*abs(fvm(ie)%c(i,j,chooselev,choosetrac,tl%n0)-fvm(ie)%cstart(i,j))
           global_shared_buf(ie,2)=global_shared_buf(ie,2)+fvm(ie)%area_sphere(i,j)*abs(fvm(ie)%cstart(i,j))
-          
-          global_shared_buf(ie,3)=global_shared_buf(ie,3)+fvm(ie)%area_sphere(i,j)*(fvm(ie)%c(i,j,chooselev,choosetrac,tl%n0)-fvm(ie)%cstart(i,j))* &
-                                            (fvm(ie)%c(i,j,chooselev,choosetrac,tl%n0)-fvm(ie)%cstart(i,j))
+
+          global_shared_buf(ie,3)=global_shared_buf(ie,3)+ &
+               fvm(ie)%area_sphere(i,j)*(fvm(ie)%c(i,j,chooselev,choosetrac,tl%n0)-fvm(ie)%cstart(i,j))* &
+               (fvm(ie)%c(i,j,chooselev,choosetrac,tl%n0)-fvm(ie)%cstart(i,j))
           global_shared_buf(ie,4)=global_shared_buf(ie,4)+fvm(ie)%area_sphere(i,j)*(fvm(ie)%cstart(i,j))*(fvm(ie)%cstart(i,j))
           
           tmp=max(tmp,abs(fvm(ie)%c(i,j,chooselev,choosetrac,tl%n0)-fvm(ie)%cstart(i,j)))

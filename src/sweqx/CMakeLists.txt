@@ -16,8 +16,6 @@ SET(SWEQX_SRCS
                ${SRC_BASE}/checksum_mod.F90
                ${SRC_BASE}/common_io_mod.F90
                ${SRC_BASE}/common_movie_mod.F90
-               ${SRC_BASE}/fvm_bsp_mod.F90
-               ${SRC_BASE}/fvm_transformation_mod.F90
                ${SRC_BASE}/init_mod.F90
                ${SRC_BASE}/interp_movie_mod.F90
                ${SRC_BASE}/netcdf_io_mod.F90
@@ -31,6 +29,8 @@ SET(SWEQX_SRCS
                ${SRC_BASE}/state_mod.F90
                ${SRC_BASE}/sweq_mod.F90
                ${SRC_BASE}/types_mod.F90
+               ${SRC_SHARE}/fvm_bsp_mod.F90
+               ${SRC_SHARE}/fvm_transformation_mod.F90
                ${SRC_SHARE}/bndry_mod.F90
                ${SRC_SHARE}/cg_mod.F90
                ${SRC_SHARE}/control_mod.F90

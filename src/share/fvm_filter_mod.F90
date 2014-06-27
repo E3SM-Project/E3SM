@@ -10,7 +10,7 @@
 module fvm_filter_mod
 
   use kinds, only                  : int_kind, real_kind
-  use dimensions_mod, only         : nc,nhc,nhe
+  use dimensions_mod, only         : nc,nhe
   use coordinate_systems_mod, only : cartesian2D_t,cartesian3D_t
   use control_mod, only : north, south, east, west, neast, nwest, seast, swest
   use parallel_mod, only : haltmp
@@ -43,9 +43,15 @@ subroutine monotonic_gradient_cart(fcube,fvm,recons,desc)
   use edge_mod, only : edgedescriptor_t
   
   implicit none
-  real (kind=real_kind), dimension(1-nhc:nc+nhc, 1-nhc:nc+nhc),intent(in)    :: fcube
-  type (fvm_struct), intent(in)                                            :: fvm   
-  real (kind=real_kind),dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe),intent(inout) :: recons  
+  !
+  ! dimension(1-nc:nc+nc, 1-nc:nc+nc)
+  !
+  real (kind=real_kind), dimension(1-nc:, 1-nc:),intent(in)    :: fcube
+  type (fvm_struct), intent(in)                                              :: fvm   
+  !
+  ! dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
+  !
+  real (kind=real_kind),dimension(:,1-nhe:,1-nhe:),intent(inout) :: recons  
   type (edgedescriptor_t),intent(in)                                         :: desc
   
   integer (kind=int_kind)          :: i, j, m, n,tmpi,tmpj
@@ -105,10 +111,23 @@ subroutine monotonic_int(fcube,recons,acartx,acarty,centroid,jx_min,jx_max,jy_mi
                          cubeboundary)
   
   implicit none
-  real (kind=real_kind), dimension(1-nhc:nc+nhc, 1-nhc:nc+nhc),intent(in)    :: fcube  
-  real (kind=real_kind),dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe),intent(inout) :: recons  
-  real (kind=real_kind), dimension(-nhe:nc+2+nhe), intent(in)   :: acartx, acarty
-  real (kind=real_kind), dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe), intent(in)  :: centroid
+  !
+  ! dimension(1-nc:nc+nc, 1-nc:nc+nc)
+  !
+  real (kind=real_kind), dimension(1-nc:, 1-nc:)   ,intent(in)    :: fcube  
+  !
+  ! dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
+  !
+  real (kind=real_kind),dimension(:,1-nhe:,1-nhe:) ,intent(inout) :: recons  
+  !
+  ! dimension(-nhe:nc+2+nhe)
+  !
+  real (kind=real_kind), dimension(-nhe:)          , intent(in)   :: acartx, acarty
+  !
+  ! dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
+  !
+  real (kind=real_kind), dimension(:,1-nhe:,1-nhe:), intent(in)   :: centroid
+
   integer, intent(in)                                  :: cubeboundary
   
   integer, intent(in)                                  :: jx_min,jx_max,jy_min,jy_max
@@ -245,10 +264,22 @@ subroutine monotonic_halo(fcube,recons,acartx,acarty,centroid,&
   use edge_mod, only : edgedescriptor_t
   
   implicit none
-  real (kind=real_kind), dimension(1-nhc:nc+nhc, 1-nhc:nc+nhc),intent(in)    :: fcube  
-  real (kind=real_kind),dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe),intent(inout) :: recons  
-  real (kind=real_kind), dimension(-nhe:nc+2+nhe), intent(in)   :: acartx, acarty
-  real (kind=real_kind), dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe), intent(in)  :: centroid
+  !
+  ! dimension(1-nc:nc+nc, 1-nc:nc+nc)
+  !
+  real (kind=real_kind), dimension(1-nc:, 1-nc:)  ,intent(in)    :: fcube  
+  !
+  ! dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
+  !
+  real (kind=real_kind),dimension(:,1-nhe:,1-nhe:),intent(inout) :: recons  
+  !
+  ! dimension(-nhe:nc+2+nhe)
+  !
+  real (kind=real_kind), dimension(-nhe:)         , intent(in)   :: acartx, acarty
+  !
+  ! dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
+  !
+  real (kind=real_kind), dimension(:,1-nhe:,1-nhe:), intent(in)  :: centroid
   integer, intent(in)                                  :: jx_min,jx_max,jy_min,jy_max
   integer, intent(in)                                  :: cubeboundary
   type (edgedescriptor_t),intent(in)                   :: desc
@@ -387,10 +418,22 @@ subroutine monotonic_haloswap(fcube,recons,acartx,acarty,centroid,&
   use edge_mod, only : edgedescriptor_t
   
   implicit none
-  real (kind=real_kind), dimension(1-nhc:nc+nhc, 1-nhc:nc+nhc),intent(in)    :: fcube  
-  real (kind=real_kind),dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe),intent(inout) :: recons  
-  real (kind=real_kind), dimension(-nhe:nc+2+nhe), intent(in)   :: acartx, acarty
-  real (kind=real_kind), dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe), intent(in)  :: centroid
+  !
+  ! dimension(1-nc:nc+nc, 1-nc:nc+nc)
+  !
+  real (kind=real_kind), dimension(1-nc:, 1-nc:),intent(in)    :: fcube  
+  !
+  ! dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
+  !
+  real (kind=real_kind),dimension(:,1-nhe:,1-nhe:),intent(inout) :: recons  
+  !
+  !dimension(-nhe:nc+2+nhe)
+  !
+  real (kind=real_kind), dimension(-nhe:), intent(in)   :: acartx, acarty
+  !
+  ! dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
+  !
+  real (kind=real_kind), dimension(:,1-nhe:,1-nhe:), intent(in)  :: centroid
   integer, intent(in)                                  :: jx_min,jx_max,jy_min,jy_max
   integer, intent(in)                                  :: cubeboundary
   type (edgedescriptor_t),intent(in)                   :: desc
@@ -518,10 +561,13 @@ end subroutine monotonic_haloswap
 !-----------------------------------------------------------------------------------!
 subroutine minmax_patch(fcube, a, b, min_val, max_val,cubeboundary)
   implicit none
-  real (kind=real_kind), dimension(1-nhc:nc+nhc, 1-nhc:nc+nhc), intent(in) :: fcube
-  integer, intent(in)                                                      :: a, b
-  real    (kind=real_kind), intent(out)                          :: min_val, max_val
-  integer, intent(in)                                  :: cubeboundary
+  !
+  ! dimension(1-nc:nc+nc, 1-nc:nc+nc)
+  !
+  real (kind=real_kind), dimension(1-nc:, 1-nc:), intent(in)  :: fcube
+  integer, intent(in)                                         :: a, b
+  real    (kind=real_kind)                      , intent(out) :: min_val, max_val
+  integer, intent(in)                                         :: cubeboundary
 
 
   integer               :: i, j
@@ -563,13 +609,15 @@ end subroutine minmax_patch
 subroutine minmax_patch_halo(fcube, a, b, cubeboundary, min_val, max_val)
   use control_mod, only : north, south, east, west, neast, nwest, seast, swest
   implicit none
+  !
+  ! dimension(1-nc:nc+nc, 1-nc:nc+nc)
+  !
+  real (kind=real_kind), dimension(1-nc:, 1-nc:), intent(in) :: fcube
 
-  real (kind=real_kind), dimension(1-nhc:nc+nhc, 1-nhc:nc+nhc), intent(in) :: fcube
-
-  integer, intent(in)                                            :: a, b
-  integer, intent(in)                                            :: cubeboundary  
+  integer, intent(in)                                        :: a, b
+  integer, intent(in)                                        :: cubeboundary  
   
-  real    (kind=real_kind), intent(out)                          :: min_val, max_val
+  real    (kind=real_kind), intent(out)                      :: min_val, max_val
 
   ! Local variables
   integer               :: i, j
@@ -660,12 +708,18 @@ end subroutine minmax_patch_halo
 subroutine recons_val_cart(fcube, cartx, carty, centroid, recons, a, b, value)
 
   implicit none
-  real (kind=real_kind), dimension(1-nhc:nc+nhc, 1-nhc:nc+nhc), intent(in) :: fcube
+  real (kind=real_kind), dimension(1-nc:nc+nc, 1-nc:nc+nc), intent(in) :: fcube
   real (kind=real_kind), intent(in)                                   :: cartx, carty 
-  real (kind=real_kind), dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe),intent(in) :: centroid
-  real (kind=real_kind), dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe), intent(in):: recons
-  integer (kind=int_kind), intent(in)                                      :: a, b
-  real    (kind=real_kind), intent(out)                                    :: value
+  !
+  ! dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
+  !
+  real (kind=real_kind), dimension(:,1-nhe:,1-nhe:),intent(in) :: centroid
+  !
+  ! dimension(5,1-nhe:nc+nhe,1-nhe:nc+nhe)
+  !
+  real (kind=real_kind), dimension(:,1-nhe:,1-nhe:), intent(in):: recons
+  integer (kind=int_kind), intent(in)                          :: a, b
+  real    (kind=real_kind), intent(out)                        :: value
 
   ! Evaluate constant order terms
   value = fcube(a,b) + &

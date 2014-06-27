@@ -135,73 +135,78 @@ subroutine analytical_function(value,sphere,klev,itr)
   type(cartesian3D_t)                     :: cart, cartcenter
   type (spherical_polar_t)                :: spherecenter
 !   ! temporary: set all parameters for the Solid Body rotation test
-!   Solid Body test ----------------------------------------------------------------!
-!   R0=sphere%r/3.0D0
-!   h0=1000.0D0
-!   lon1=3.0D0*DD_PI/2.0D0
-! !   lon1=DD_PI/1.0D0
-!   lat1=0
-!   Rg1 = acos(sin(lat1)*sin(sphere%lat)+cos(lat1)*cos(sphere%lat)*cos(sphere%lon-lon1))
-! !   lon2=6.0D0*DD_PI/5.0D0
-! !   lat2=0.0D0
-! !   Rg2 = acos(sin(lat2)*sin(sphere%lat)+cos(lat2)*cos(sphere%lat)*cos(sphere%lon-lon2))
-!   if (Rg1 .le. R0) then
-!     value = (h0/4.0D0)*(1.0D0+cos(DD_PI*Rg1/R0))*(1.0D0+cos(DD_PI*Rg1/R0))
-! !     value=sin(sphere%lon)*cos(sphere%lat)
-! !   elseif (Rg2 .le. R0) then
-! !     value = 1.0D0+(h0/2.0D0)*(1.0D0+cos(DD_PI*Rg2/R0))
-!   else
-!     value = 0.0D0
-!   endif
    
 
 ! infinity smooth initial condition----------------------------------------------------------------!
 
-    spherecenter%r=sphere%r
-    spherecenter%lon=4.0D0*DD_PI/5.0D0
-    spherecenter%lat=0.0D0
-    h0=0.95D0
-    R0=5.0D0
-    
-    cart=spherical_to_cart(sphere)
-    cartcenter=spherical_to_cart(spherecenter)
-    
-    tmp=(cart%x-cartcenter%x)*(cart%x-cartcenter%x)+(cart%y-cartcenter%y)*(cart%y-cartcenter%y) + &
-        (cart%z-cartcenter%z)*(cart%z-cartcenter%z)
-    value=h0*exp(-R0*tmp)
-    
-    spherecenter%lon=6.0D0*DD_PI/5.0D0
-    spherecenter%lat=0.0D0
-    
-    cartcenter=spherical_to_cart(spherecenter)
-    
-    tmp=(cart%x-cartcenter%x)*(cart%x-cartcenter%x)+(cart%y-cartcenter%y)*(cart%y-cartcenter%y) + &
-        (cart%z-cartcenter%z)*(cart%z-cartcenter%z)
-        
-    value=value+h0*exp(-R0*tmp)
-    
+  if (itr==1) then
+     spherecenter%r=sphere%r
+     spherecenter%lon=4.0D0*DD_PI/5.0D0
+     spherecenter%lat=0.0D0
+     h0=0.95D0
+     R0=5.0D0
+     
+     cart=spherical_to_cart(sphere)
+     cartcenter=spherical_to_cart(spherecenter)
+     
+     tmp=(cart%x-cartcenter%x)*(cart%x-cartcenter%x)+(cart%y-cartcenter%y)*(cart%y-cartcenter%y) + &
+          (cart%z-cartcenter%z)*(cart%z-cartcenter%z)
+     value=h0*exp(-R0*tmp)
+     
+     spherecenter%lon=6.0D0*DD_PI/5.0D0
+     spherecenter%lat=0.0D0
+     
+     cartcenter=spherical_to_cart(spherecenter)
+     
+     tmp=(cart%x-cartcenter%x)*(cart%x-cartcenter%x)+(cart%y-cartcenter%y)*(cart%y-cartcenter%y) + &
+          (cart%z-cartcenter%z)*(cart%z-cartcenter%z)
+     
+     value=value+h0*exp(-R0*tmp)
+     value=value+1.0!phl
+  else if (itr==2) then
 !   !Non-smooth scalar field (slotted cylinder) --------------------------------------!
-!  R0=0.5D0
-!  lon1=4.0D0*DD_PI/5.0D0
-!  lat1=0.0D0
-!  Rg1 = acos(sin(lat1)*sin(sphere%lat)+cos(lat1)*cos(sphere%lat)*cos(sphere%lon-lon1))
-!  lon2=6.0D0*DD_PI/5.0D0
-!  lat2=0.0D0
-!  Rg2 = acos(sin(lat2)*sin(sphere%lat)+cos(lat2)*cos(sphere%lat)*cos(sphere%lon-lon2))   
+     R0=0.5D0
+     lon1=4.0D0*DD_PI/5.0D0
+     lat1=0.0D0
+     Rg1 = acos(sin(lat1)*sin(sphere%lat)+cos(lat1)*cos(sphere%lat)*cos(sphere%lon-lon1))
+     lon2=6.0D0*DD_PI/5.0D0
+     lat2=0.0D0
+     Rg2 = acos(sin(lat2)*sin(sphere%lat)+cos(lat2)*cos(sphere%lat)*cos(sphere%lon-lon2))   
 ! 
-!  if ((Rg1 .le. R0) .AND. (abs(sphere%lon-lon1).ge. R0/6)) then
-!    value = 1.0D0 !+ itr*1.0D0/ntrac + klev*1.0D0/nlev
-!  elseif ((Rg2 .le. R0) .AND. (abs(sphere%lon-lon2).ge. R0/6)) then
-!    value = 1.0D0 !+ itr*1.0D0/ntrac + klev*1.0D0/nlev
-!  elseif ((Rg1 .le. R0) .AND. (abs(sphere%lon-lon1) < R0/6) &
-!                        .AND. (sphere%lat-lat1 < -5.0D0*R0/12.0D0)) then
-!    value = 1.0D0 !+ itr*1.0D0/ntrac + klev*1.0D0/nlev
-!  elseif ((Rg2 .le. R0) .AND. (abs(sphere%lon-lon2) < R0/6) &
-!                        .AND. (sphere%lat-lat2 > 5.0D0*R0/12.0D0)) then
-!    value = 1.0D0 !+ itr*1.0D0/ntrac + klev*1.0D0/nlev
-!  else
-!    value = 0.0D0 !2.0D0 !+ itr*1.0D0/ntrac + klev*1.0D0/nlev   
-!  endif  
+     if ((Rg1 .le. R0) .AND. (abs(sphere%lon-lon1).ge. R0/6)) then
+        value = 2.0D0 !+ itr*1.0D0/ntrac + klev*1.0D0/nlev
+     elseif ((Rg2 .le. R0) .AND. (abs(sphere%lon-lon2).ge. R0/6)) then
+        value = 2.0D0 !+ itr*1.0D0/ntrac + klev*1.0D0/nlev
+     elseif ((Rg1 .le. R0) .AND. (abs(sphere%lon-lon1) < R0/6) &
+          .AND. (sphere%lat-lat1 < -5.0D0*R0/12.0D0)) then
+        value = 2.0D0 !+ itr*1.0D0/ntrac + klev*1.0D0/nlev
+     elseif ((Rg2 .le. R0) .AND. (abs(sphere%lon-lon2) < R0/6) &
+          .AND. (sphere%lat-lat2 > 5.0D0*R0/12.0D0)) then
+        value = 2.0D0 !+ itr*1.0D0/ntrac + klev*1.0D0/nlev
+     else
+        value = 1.0D0 !2.0D0 !+ itr*1.0D0/ntrac + klev*1.0D0/nlev   
+     endif
+  else
+!   Solid Body test ----------------------------------------------------------------!
+     R0=sphere%r/3.0D0
+     h0=1000.0D0
+     lon1=3.0D0*DD_PI/2.0D0
+     !   lon1=DD_PI/1.0D0
+     lat1=0
+     Rg1 = acos(sin(lat1)*sin(sphere%lat)+cos(lat1)*cos(sphere%lat)*cos(sphere%lon-lon1))
+     !   lon2=6.0D0*DD_PI/5.0D0
+     !   lat2=0.0D0
+     !   Rg2 = acos(sin(lat2)*sin(sphere%lat)+cos(lat2)*cos(sphere%lat)*cos(sphere%lon-lon2))
+     if (Rg1 .le. R0) then
+        value = (h0/4.0D0)*(1.0D0+cos(DD_PI*Rg1/R0))*(1.0D0+cos(DD_PI*Rg1/R0))
+        !     value=sin(sphere%lon)*cos(sphere%lat)
+        !   elseif (Rg2 .le. R0) then
+        !     value = 1.0D0+(h0/2.0D0)*(1.0D0+cos(DD_PI*Rg2/R0))
+     else
+        value = 0.0D0
+     endif
+
+  end if
 end subroutine analytical_function
 !END SUBROUTINE ANALYTICAL_FUNCTION---------------------------------------CE-for FVM!
 
@@ -229,8 +234,8 @@ subroutine fvm_bsp(fvm, tl)
   integer                              :: i,j,k,itr
   
   do k=1, nlev
-    fvm%c(:,:,k,1,tl%n0)=1.0D0    !density of the air
-    do itr=2,ntrac
+    fvm%dp_fvm(:,:,k,tl%n0)=1.0D0    !density of the air
+    do itr=1,ntrac
       do j=1,nc
         do i=1,nc               
           call analytical_function(fvm%c(i,j,k,itr,tl%n0),fvm%centersphere(i,j),k,itr)      
@@ -316,9 +321,17 @@ function get_boomerang_velocities_gll(elem, time) result(vstar)
       ! meters/sec 
       vstar(i,j,1)=u * Rearth /( ndays*3600*24.0D0/5.0D0)
       vstar(i,j,2)=v * Rearth /( ndays*3600*24.0D0/5.0D0)
+
+
+!      !dbg start
+!      if (abs(elem%spherep(i,j)%lat)>0.3D0) then
+!         vstar=0.0D0
+!         u = 0.0D0
+!         v= 0.0D0
+!      end if
+!      !dbg end
     enddo
   enddo
-
 end function get_boomerang_velocities_gll     
 
 subroutine set_boomerang_velocities_gll(elem, time,klev)
@@ -326,7 +339,7 @@ subroutine set_boomerang_velocities_gll(elem, time,klev)
   use element_mod, only : element_t
   use fvm_control_volume_mod, only: fvm_struct
   use physical_constants, only : DD_PI, rearth
-  
+
   implicit none
   type (element_t), intent(inout)   :: elem
   real (kind=real_kind),intent(in)             :: time  ! time of the arrival grid
@@ -406,6 +419,8 @@ subroutine boomerang(asphere,dsphere,nstep,part)
   
   nmaxaround=12*nmax/ndays          ! in 12 days around the earth
   nmaxaround=nmax
+
+
 !   tmp_time=(nstep)*5.0D0/nmaxaround
 !   tmp_dt = 5.0D0/nmaxaround/iteration
   tmp_time=(nstep+1)*5.0D0/(nmaxaround)
@@ -422,7 +437,7 @@ subroutine boomerang(asphere,dsphere,nstep,part)
   if (present(part)) then
     iteration=5
   endif
-  
+
   DO i=1,iteration
 
     omega = DD_PI/tt
@@ -532,10 +547,9 @@ subroutine fvm_init_tracer(fvm, tl)
   integer                              :: i,j,k,itr
   
   do k=1, nlev
-    fvm%c(:,:,k,1,tl%n0)=1.0D0    !density of the air
-!     fvm%c(:,:,k,2,tl%n0)=10.0D0    !density of the air
-    
-    do itr=2,ntrac
+    fvm%dp_fvm(:,:,k,tl%n0)=1.0D0    !density of the air
+
+    do itr=1,ntrac
       do j=1,nc
         do i=1,nc               
           call analytical_function(fvm%c(i,j,k,itr,tl%n0),fvm%centersphere(i,j),k,itr)      

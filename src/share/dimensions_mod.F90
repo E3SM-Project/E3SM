@@ -4,14 +4,23 @@
 
 module dimensions_mod
 #ifdef CAM
-  use constituents, only : qsize_d=>pcnst ! _EXTERNAL
+#ifdef FVM_TRACERS
   use constituents, only : ntrac_d=>pcnst ! _EXTERNAL
+#else
+  use constituents, only : qsize_d=>pcnst ! _EXTERNAL
+#endif
 #endif
   implicit none
   private
 
 ! set MAX number of tracers.  actual number of tracers is a run time argument  
-#ifndef CAM
+#ifdef CAM
+#ifdef FVM_TRACERS
+  integer, parameter         :: qsize_d = 1        ! SE tracers  
+#else
+  integer, parameter         :: ntrac_d = 0        ! fvm tracers
+#endif
+#else
 #ifdef QSIZE_D
   integer, parameter         :: qsize_d=QSIZE_D    ! SE tracers  
 #else
@@ -28,20 +37,27 @@ module dimensions_mod
 
  
   integer, parameter, public :: np = NP
-  integer, parameter, public :: nc = NC
+  integer, parameter, public :: nc  = NC
+
   integer         :: ntrac = 0
   integer         :: qsize = 0
 
   ! fvm dimensions:
-  integer, parameter, public :: ngpc=2    !number of Gausspoints for the fvm integral approximation  
-  ! nhe ... halo/depth of the extended element (CFL number), now only nhe=1 is tested !
-  !         this number sets where we have to calculate the reconstruction in the halo!
-  integer, parameter, public :: nhe=1     !number/depth of the extended element (CFL number)
-  ! nhc ... halo/depth for the tracer values, only cubic reconstruction is supported
-  !         now, therefore nhc=nhe+3    
-  integer, parameter, public :: nhc=nhe+3 
-  
+  integer, parameter, public :: ngpc=2       !number of Gausspoints for the fvm integral approximation  
+  integer, parameter, public :: nhe=1        !Max. Courant number
+  integer, parameter, public :: nhr=2        !halo width needed for reconstruction - phl
+  integer, parameter, public :: nht=nhe+nhr  !total halo width where reconstruction is needed (nht<=nc) - phl
+                                             !(different from halo needed for elements on edges and corners
+!  integer, parameter, public :: ns=3         !quadratic halo interpolation - recommended setting for nc=3
+!  integer, parameter, public :: ns=4         !cubic halo interpolation     - recommended setting for nc=4
+  integer, parameter, public :: ns=NC
+
+  !nhc determines width of halo exchanged with neighboring elements
+  integer, parameter, public :: nhc = nhr+(nhe-1)+(ns-MOD(ns,2))/2
+
+  !  
   ! constants for SPELT
+  !
   integer, parameter, public :: nip=3     !number of interpolation values, works only for this
   integer, parameter, public :: nipm=nip-1
   integer, parameter, public :: nep=nipm*nc+1      ! number of points in an element  

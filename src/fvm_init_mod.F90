@@ -38,7 +38,8 @@ contains
     ! --------------------------------
     use gridgraph_mod, only : gridvertex_t, gridedge_t, allocate_gridvertex_nbrs
     ! --------------------------------
-    use schedule_mod, only : schedule, genEdgeSched
+    use schedule_mod,  only : genEdgeSched
+    use schedtype_mod, only : Schedule_t, schedule
     ! --------------------------------
     use state_mod, only : printstate_init
     ! --------------------------------

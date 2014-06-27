@@ -1443,13 +1443,26 @@ if (present(fvm)) then
      enddo
   endif
 #else
+  !
+  ! CSLAM tracers
+  !
   if (ntrac>=1) then
      idex=1
-     ! First tracer will be airdensity
+     eta_c = 0.6
      do ie=nets,nete
-        fvm(ie)%c(:,:,:,idex,:) = 1
+        do j=1,nc
+           do i=1,nc
+              lon = fvm(ie)%centersphere(i,j)%lon
+              lat = fvm(ie)%centersphere(i,j)%lat
+              do k=1,nlev
+                 fvm(ie)%c(i,j,k,idex,:) = tracer_q1_q2(lon,lat,hvcoord%etam(k),rotate_grid, eta_c)
+              enddo
+           enddo
+        enddo
      enddo
   endif
+
+
   if (ntrac>=2) then
      idex=2
      eta_c = 1
