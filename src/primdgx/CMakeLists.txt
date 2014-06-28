@@ -41,6 +41,7 @@ SET(PRIMDGX_SRCS
     ${SRC_SHARE}/spelt_mod.F90
     ${SRC_SHARE}/fvm_control_volume_mod.F90
     ${SRC_SHARE}/fvm_reconstruction_mod.F90
+    ${SRC_SHARE}/fvm_transformation_mod.F90
     ${SRC_SHARE}/fvm_bsp_mod.F90
     ${SRC_SHARE}/fvm_control_volume_mod.F90
     ${SRC_SHARE}/fvm_filter_mod.F90
